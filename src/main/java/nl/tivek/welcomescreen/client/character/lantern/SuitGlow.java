@@ -1,7 +1,9 @@
 package nl.tivek.welcomescreen.client.character.lantern;
 
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
+import com.mojang.blaze3d.vertex.VertexFormat;
 import java.util.HashMap;
 import java.util.Map;
 import net.minecraft.Util;
@@ -10,9 +12,12 @@ import net.minecraft.client.model.PlayerModel;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.RenderStateShard;
+import net.minecraft.client.renderer.RenderType;
 import net.minecraft.util.Mth;
 import nl.tivek.welcomescreen.character.CharacterAbility;
 import nl.tivek.welcomescreen.character.GameCharacter;
+import nl.tivek.welcomescreen.character.lantern.LandingSlam;
 import nl.tivek.welcomescreen.client.character.ClientCharacter;
 import nl.tivek.welcomescreen.client.character.MouseHold;
 import nl.tivek.welcomescreen.network.RingPayload;
@@ -22,10 +27,12 @@ import org.joml.Matrix4f;
  * The uniform lighting up while the ring works. Only then: a resting ring leaves the suit as it is. The more the
  * ring does (a shield, a fist, flying, the beam), the brighter it gets:
  * <ul>
- * <li>the lantern on the chest, the core of the suit, glows;</li>
- * <li>lines of green energy light up all over the suit, and bright pulses run along them out of the core;</li>
- * <li>most of it runs down the right arm into the ring, the thickest line of all, and the ring itself flares
- * (see {@link Ring}).</li>
+ * <li>the whole uniform glows green from head to toe, with a soft haze of light around it;</li>
+ * <li>the lantern on the chest, the core of the suit, burns bright;</li>
+ * <li>the energy streams out of the core: first and most of all over the right shoulder and down the right arm
+ * into the ring, the thickest and fastest stream of all, and from there on through the rest of the body, the
+ * other arm, the back and the legs;</li>
+ * <li>the ring itself flares (see {@link Ring}).</li>
  * </ul>
  * Drawn on the body seen from outside, and on your own arms in first person.
  */
@@ -40,8 +47,32 @@ final class SuitGlow {
     private static final float SUIT = 0.3F;
     private static final float LIFT = 0.06F;
     // How fast the pulses run out of the core, in pixels per tick, and how far apart they are.
-    private static final float FLOW = 0.9F;
-    private static final float GAP = 7.0F;
+    private static final float FLOW = 1.8F;
+    private static final float GAP = 6.0F;
+    // The light lying over the whole uniform, and the haze around it: how far out each lies, in pixels, and how
+    // bright each is at full strength.
+    private static final float SHELL = SUIT + 0.12F;
+    private static final float HAZE = SUIT + 1.1F;
+    private static final float SHELL_LIGHT = 0.3F;
+    private static final float HAZE_LIGHT = 0.16F;
+    // The main stream (core to ring) is this much wider than the others.
+    private static final float MAIN = 1.6F;
+    /**
+     * The light over the uniform: added on top like the other glow, but only on the sides that face you, so a side
+     * behind never adds to one in front.
+     */
+    private static final RenderType SHELL_TYPE = RenderType.create("welcomescreen_suit_shell",
+            DefaultVertexFormat.POSITION_COLOR, VertexFormat.Mode.QUADS, 4096, false, false,
+            RenderType.CompositeState.builder()
+                    .setShaderState(RenderStateShard.RENDERTYPE_LIGHTNING_SHADER)
+                    .setTransparencyState(RenderStateShard.LIGHTNING_TRANSPARENCY)
+                    .setWriteMaskState(RenderStateShard.COLOR_WRITE)
+                    .setCullState(RenderStateShard.CULL)
+                    .createCompositeState(false));
+    // The boxes of the body's parts, in each part's own pixels: {x0, y0, z0, x1, y1, z1}.
+    private static final float[] HEAD = { -4, -8, -4, 4, 0, 4 };
+    private static final float[] TORSO = { -4, 0, -2, 4, 12, 2 };
+    private static final float[] LEG_BOX = { -2, 0, -2, 2, 12, 2 };
 
     private static final Map<Integer, Level> LEVELS = new HashMap<>();
 
@@ -81,6 +112,11 @@ final class SuitGlow {
             want = Math.max(want, Mth.clamp(RechargeAnimation.glow(recharge) * 0.6F, 0.0F, 1.0F));
         }
         want = Math.max(want, ClientConstructs.working(player.getId()));
+        // A landing slam: the ring throws everything it has into the construct.
+        float slam = ClientFlight.slam(player, partialTick);
+        if (slam >= 0.0F && slam < LandingSlam.BURST_TICK) {
+            want = 1.0F;
+        }
         if (player == Minecraft.getInstance().player && ClientCharacter.active() == GameCharacter.GREEN_LANTERN) {
             for (CharacterAbility ability : GameCharacter.GREEN_LANTERN.abilities()) {
                 float hold = MouseHold.progress(ability, partialTick);
@@ -111,30 +147,42 @@ final class SuitGlow {
         if (glow <= 0.01F) {
             return;
         }
+        // The light over the whole uniform and the haze around it, breathing slowly.
+        float breath = glow * (0.88F + 0.12F * Mth.sin(time * 0.25F));
+        VertexConsumer shell = buffers.getBuffer(SHELL_TYPE);
+        shell(pose, shell, suit.head, HEAD, breath * 0.7F);
+        shell(pose, shell, suit.body, TORSO, breath);
+        shell(pose, shell, suit.rightArm, armBox(true, slim), breath * 1.15F);
+        shell(pose, shell, suit.leftArm, armBox(false, slim), breath * 0.85F);
+        shell(pose, shell, suit.rightLeg, LEG_BOX, breath * 0.8F);
+        shell(pose, shell, suit.leftLeg, LEG_BOX, breath * 0.8F);
         VertexConsumer light = buffers.getBuffer(Ring.HALO);
         pose.pushPose();
         suit.body.translateAndRotate(pose);
         chest(light, pose.last().pose(), glow, time);
         pose.popPose();
-        part(pose, light, suit.body, glow, time, BODY);
-        part(pose, light, suit.rightArm, glow, time, rightArm(slim));
-        part(pose, light, suit.leftArm, glow * 0.6F, time, leftArm(slim));
-        part(pose, light, suit.rightLeg, glow * 0.5F, time, LEG);
-        part(pose, light, suit.leftLeg, glow * 0.5F, time, LEG);
+        part(pose, light, suit.body, glow, time, MAIN_BODY, MAIN);
+        part(pose, light, suit.body, glow * 0.8F, time, BODY, 1.0F);
+        part(pose, light, suit.rightArm, glow, time, rightArm(slim), MAIN);
+        part(pose, light, suit.leftArm, glow * 0.75F, time, leftArm(slim), 1.0F);
+        part(pose, light, suit.rightLeg, glow * 0.7F, time, LEG, 1.0F);
+        part(pose, light, suit.leftLeg, glow * 0.7F, time, LEG, 1.0F);
     }
 
-    /** One arm of your own in first person: the lines on it, and for the right arm the flow into the ring. */
+    /** One arm of your own in first person: the light over it, the lines on it, and the flow into the ring. */
     static void arm(PoseStack pose, MultiBufferSource buffers, ModelPart sleeve, boolean right, boolean slim,
             float glow, float time) {
         if (glow <= 0.01F) {
             return;
         }
-        part(pose, buffers.getBuffer(Ring.HALO), sleeve, right ? glow : glow * 0.6F, time,
-                right ? rightArm(slim) : leftArm(slim));
+        // Right in front of your eyes the haze would cover half the screen, so it stays fainter here.
+        shell(pose, buffers.getBuffer(SHELL_TYPE), sleeve, armBox(right, slim), glow * (right ? 0.8F : 0.6F));
+        part(pose, buffers.getBuffer(Ring.HALO), sleeve, right ? glow : glow * 0.75F, time,
+                right ? rightArm(slim) : leftArm(slim), right ? MAIN : 1.0F);
     }
 
     private static void part(PoseStack pose, VertexConsumer light, ModelPart part, float glow, float time,
-            float[][] lines) {
+            float[][] lines, float width) {
         if (!part.visible) {
             return;
         }
@@ -142,9 +190,70 @@ final class SuitGlow {
         part.translateAndRotate(pose);
         Matrix4f matrix = pose.last().pose();
         for (float[] line : lines) {
-            path(light, matrix, line, glow, time);
+            path(light, matrix, line, glow, time, width);
         }
         pose.popPose();
+    }
+
+    /** The box of an arm, in its own pixels: slim arms are a pixel narrower on the outside. */
+    private static float[] armBox(boolean right, boolean slim) {
+        float narrow = slim ? 1.0F : 0.0F;
+        return right ? new float[] { -3 + narrow, -2, -2, 1, 10, 2 } : new float[] { -1, -2, -2, 3 - narrow, 10, 2 };
+    }
+
+    /**
+     * The glow of one part of the uniform: a thin layer of green light right over it, so the whole uniform reads
+     * as lit from within, and a haze further out that is brightest in the middle of each side and fades to nothing
+     * at its edges, so it looks like light spilling off the body rather than a box around it.
+     */
+    private static void shell(PoseStack pose, VertexConsumer shell, ModelPart part, float[] box, float glow) {
+        if (!part.visible || glow <= 0.01F) {
+            return;
+        }
+        pose.pushPose();
+        part.translateAndRotate(pose);
+        Matrix4f matrix = pose.last().pose();
+        for (int face = 0; face < 6; face++) {
+            side(shell, matrix, box, SHELL, face, GREEN, glow * SHELL_LIGHT, glow * SHELL_LIGHT);
+            side(shell, matrix, box, HAZE, face, BRIGHT, glow * HAZE_LIGHT, 0.0F);
+        }
+        pose.popPose();
+    }
+
+    /**
+     * One side of a box grown by {@code out} pixels, as four pieces around its middle: {@code middle} is the light
+     * in the middle of the side and {@code edge} at its edges. The corners run the right way round for each side, so
+     * only the sides that face the camera are drawn.
+     *
+     * @param face 0 = -x, 1 = +x, 2 = -y, 3 = +y, 4 = -z, 5 = +z
+     */
+    private static void side(VertexConsumer shell, Matrix4f matrix, float[] box, float out, int face, int rgb,
+            float middle, float edge) {
+        float x0 = box[0] - out;
+        float y0 = box[1] - out;
+        float z0 = box[2] - out;
+        float x1 = box[3] + out;
+        float y1 = box[4] + out;
+        float z1 = box[5] + out;
+        float[][] c = switch (face) {
+            case 0 -> new float[][] { { x0, y0, z0 }, { x0, y0, z1 }, { x0, y1, z1 }, { x0, y1, z0 } };
+            case 1 -> new float[][] { { x1, y0, z1 }, { x1, y0, z0 }, { x1, y1, z0 }, { x1, y1, z1 } };
+            case 2 -> new float[][] { { x0, y0, z1 }, { x0, y0, z0 }, { x1, y0, z0 }, { x1, y0, z1 } };
+            case 3 -> new float[][] { { x0, y1, z0 }, { x0, y1, z1 }, { x1, y1, z1 }, { x1, y1, z0 } };
+            case 4 -> new float[][] { { x1, y0, z0 }, { x0, y0, z0 }, { x0, y1, z0 }, { x1, y1, z0 } };
+            default -> new float[][] { { x0, y0, z1 }, { x1, y0, z1 }, { x1, y1, z1 }, { x0, y1, z1 } };
+        };
+        float mx = (c[0][0] + c[2][0]) * 0.5F;
+        float my = (c[0][1] + c[2][1]) * 0.5F;
+        float mz = (c[0][2] + c[2][2]) * 0.5F;
+        for (int i = 0; i < 4; i++) {
+            float[] a = c[i];
+            float[] b = c[(i + 1) % 4];
+            vertex(shell, matrix, a[0], a[1], a[2], rgb, edge);
+            vertex(shell, matrix, b[0], b[1], b[2], rgb, edge);
+            vertex(shell, matrix, mx, my, mz, rgb, middle);
+            vertex(shell, matrix, mx, my, mz, rgb, middle);
+        }
     }
 
     // ---- The lines, in each part's own pixels ----
@@ -152,40 +261,57 @@ final class SuitGlow {
     // ...}. The side is the way it looks (0 = -x, 1 = +x, 4 = -z the front, 5 = +z the back); start is how far from
     // the core the line begins, in pixels, so the pulses run on from one part into the next.
 
-    /** The body: from the lantern on the chest up to both shoulders, down the sides and down to the legs. */
-    private static final float[][] BODY = {
+    /**
+     * The main stream on the body: out of the lantern on the chest over the right shoulder (the right side of the
+     * body is its -x), on the front and, straight through, on the back, so it shows from every side. It goes on down
+     * the right arm into the ring.
+     */
+    private static final float[][] MAIN_BODY = {
             { 4, 0, -1.5F, 2.4F, -2, -3.1F, 0.9F, -2, -4.0F, 0.2F, -2 },
+            { 5, 0, -0.5F, 3.0F, 2, -2.6F, 1.4F, 2, -4.0F, 0.2F, 2 } };
+
+    /** The rest of the body: to the other shoulder, down the middle and the sides to the legs, and down the back. */
+    private static final float[][] BODY = {
             { 4, 0, 1.5F, 2.4F, -2, 3.1F, 0.9F, -2, 4.0F, 0.2F, -2 },
             { 4, 0, -0.5F, 4.8F, -2, -0.5F, 8.6F, -2, -1.9F, 11.8F, -2 },
             { 4, 4, -0.5F, 8.6F, -2, 1.9F, 11.8F, -2 },
             { 4, 2, -1.5F, 3.6F, -2, -3.4F, 6.8F, -2, -3.6F, 11.6F, -2 },
-            { 4, 2, 1.5F, 3.6F, -2, 3.4F, 6.8F, -2, 3.6F, 11.6F, -2 } };
+            { 4, 2, 1.5F, 3.6F, -2, 3.4F, 6.8F, -2, 3.6F, 11.6F, -2 },
+            { 5, 0, 0.5F, 3.0F, 2, 2.6F, 1.4F, 2, 4.0F, 0.2F, 2 },
+            { 5, 0, 0.0F, 3.0F, 2, 0.0F, 7.5F, 2, -1.9F, 11.8F, 2 },
+            { 5, 5, 0.0F, 7.5F, 2, 1.9F, 11.8F, 2 } };
 
     /**
-     * The right arm: one thick line down its outer side (the back of the hand) straight into the ring, and a
-     * thinner one down its front.
+     * The right arm, the end of the main stream: a thick line down its outer side (the back of the hand) straight
+     * into the ring, one down its front and one down its back.
      */
     private static float[][] rightArm(boolean slim) {
         float out = slim ? -2.0F : -3.0F;
         return new float[][] { { 0, 6, out, -1.8F, -0.5F, out, 3.8F, -0.5F, out, 8.0F, -0.5F },
-                { 4, 6, out + 1.2F, -1.8F, -2, out + 1.0F, 4.0F, -2, out + 1.2F, 9.6F, -2 } };
+                { 4, 6, out + 1.2F, -1.8F, -2, out + 1.0F, 4.0F, -2, out + 1.2F, 9.6F, -2 },
+                { 5, 6, out + 1.2F, -1.8F, 2, out + 1.0F, 4.0F, 2, out + 1.2F, 9.6F, 2 } };
     }
 
     /** The left arm: the same lines, weaker, running down to the hand. */
     private static float[][] leftArm(boolean slim) {
         float out = slim ? 2.0F : 3.0F;
         return new float[][] { { 1, 6, out, -1.8F, -0.5F, out, 4.0F, -0.5F, out, 9.6F, -0.5F },
-                { 4, 6, out - 1.2F, -1.8F, -2, out - 1.0F, 4.0F, -2, out - 1.2F, 9.6F, -2 } };
+                { 4, 6, out - 1.2F, -1.8F, -2, out - 1.0F, 4.0F, -2, out - 1.2F, 9.6F, -2 },
+                { 5, 6, out - 1.2F, -1.8F, 2, out - 1.0F, 4.0F, 2, out - 1.2F, 9.6F, 2 } };
     }
 
-    /** A leg: one line down its front. */
-    private static final float[][] LEG = { { 4, 12, 0, 0.3F, -2, 0.2F, 6.0F, -2, 0, 11.6F, -2 } };
+    /** A leg: one line down its front and one down its back. */
+    private static final float[][] LEG = { { 4, 12, 0, 0.3F, -2, 0.2F, 6.0F, -2, 0, 11.6F, -2 },
+            { 5, 12, 0, 0.3F, 2, -0.2F, 6.0F, 2, 0, 11.6F, 2 } };
 
     /**
      * One line: a bright core and a soft glow either side, lying flat on its side of the part, with pulses of
      * light running along it away from the core.
+     *
+     * @param width how much wider than an ordinary line it is (the main stream is wider)
      */
-    private static void path(VertexConsumer light, Matrix4f matrix, float[] line, float glow, float time) {
+    private static void path(VertexConsumer light, Matrix4f matrix, float[] line, float glow, float time,
+            float width) {
         int face = (int) line[0];
         float along = line[1];
         for (int i = 2; i + 5 < line.length; i += 3) {
@@ -202,9 +328,9 @@ final class SuitGlow {
                 float b = (float) (s + 1) / steps;
                 float d = along + length * (a + b) * 0.5F;
                 float pulse = pulse(d, time);
-                float bright = glow * (0.45F + 0.55F * pulse);
+                float bright = glow * (0.7F + 0.3F * pulse);
                 segment(light, matrix, face, Mth.lerp(a, x0, x1), Mth.lerp(a, y0, y1), Mth.lerp(a, z0, z1),
-                        Mth.lerp(b, x0, x1), Mth.lerp(b, y0, y1), Mth.lerp(b, z0, z1), bright, pulse);
+                        Mth.lerp(b, x0, x1), Mth.lerp(b, y0, y1), Mth.lerp(b, z0, z1), bright, pulse, width);
             }
             along += length;
         }
@@ -223,7 +349,7 @@ final class SuitGlow {
      * arms keep their line on the given x (outer side) or z (front); the body always on its front.
      */
     private static void segment(VertexConsumer light, Matrix4f matrix, int face, float x0, float y0, float z0,
-            float x1, float y1, float z1, float bright, float pulse) {
+            float x1, float y1, float z1, float bright, float pulse, float width) {
         boolean sideways = face == 0 || face == 1;
         // Across the line, in the plane of its side.
         float dy = y1 - y0;
@@ -234,11 +360,11 @@ final class SuitGlow {
         }
         float ny = -da / length;
         float na = dy / length;
-        float core = 0.22F + 0.18F * pulse;
-        float halo = 0.9F + 0.5F * pulse;
-        int coreRgb = Ring.mix(GREEN, BRIGHT, 0.5F + 0.5F * pulse);
+        float core = (0.42F + 0.3F * pulse) * width;
+        float halo = (1.9F + 0.9F * pulse) * width;
+        int coreRgb = Ring.mix(BRIGHT, 0xE6FFEC, pulse);
         quad(light, matrix, face, x0, y0, z0, x1, y1, z1, ny, na, core, coreRgb, bright);
-        quad(light, matrix, face, x0, y0, z0, x1, y1, z1, ny, na, halo, GREEN, bright * 0.45F);
+        quad(light, matrix, face, x0, y0, z0, x1, y1, z1, ny, na, halo, GREEN, bright * 0.6F);
     }
 
     /** A strip along a piece of line, strongest along its middle and fading out to both edges. */
@@ -288,11 +414,11 @@ final class SuitGlow {
         for (int i = 0; i < sides; i++) {
             float a0 = Mth.TWO_PI * i / sides;
             float a1 = Mth.TWO_PI * (i + 1) / sides;
-            // The soft light over the chest.
-            fan(light, matrix, cx, cy, z, a0, a1, 0.0F, 3.4F * beat, GREEN, 0.5F * glow, 0.0F);
+            // The soft light over the chest, and the hot middle of the core.
+            fan(light, matrix, cx, cy, z, a0, a1, 0.0F, 5.5F * beat, GREEN, 0.85F * glow, 0.0F);
+            fan(light, matrix, cx, cy, z, a0, a1, 0.0F, 1.1F, 0xE6FFEC, 0.8F * glow * beat, 0.3F * glow);
             // The lantern's ring, bright.
-            fan(light, matrix, cx, cy, z, a0, a1, 1.0F, 1.55F, BRIGHT, 0.0F, 0.0F);
-            ringBand(light, matrix, cx, cy, z, a0, a1, 1.05F, 1.5F, BRIGHT, glow * beat);
+            ringBand(light, matrix, cx, cy, z, a0, a1, 1.0F, 1.6F, BRIGHT, glow * beat);
         }
         // The two bars of the lantern symbol, above and below the ring.
         bar(light, matrix, cx, cy - 1.9F, z, 1.4F, 0.3F, glow * beat);

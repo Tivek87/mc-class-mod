@@ -61,12 +61,11 @@ final class GiantFist implements SpellEffect {
     // How far off your line of sight it may fly when what you aim at is right beside you, too close for it to
     // swing in first. This only stops it from flying back past you at something almost against your feet.
     private static final double MAX_AIM_DEGREES = 80.0;
-    // Once let go it swings in onto your line of sight and flies straight along it from there. It joins that line
-    // this many times further along than it hung beside it (but never later than a little way out), and the
-    // curve is cut into this many pieces.
+    // Once let go it swings in onto your line of sight and flies straight along it from there (see
+    // ConstructPath). It joins that line this many times further along than it hung beside it, but never later
+    // than a little way out.
     private static final double JOIN = 1.3;
     private static final double MIN_JOIN = 1.5;
-    private static final int CURVE_STEPS = 16;
     // Its shape, as parts of how wide it is: how tall, from its middle to the front of the knuckles, and
     // from its middle to the back of the wrist (the forearm behind that is only a fading trail of light).
     private static final double HEIGHT = 0.65;
@@ -137,14 +136,9 @@ final class GiantFist implements SpellEffect {
     private Vec3 center;
     private Vec3 facing;
     private double travelled;
-    // The way it flies once let go: from where it was let go, along the curve onto your line of sight (null when
-    // it flies straight), and then straight on along that line. The lengths are how far along the curve each
-    // point lies.
-    private Vec3 start;
-    private Vec3[] curve;
-    private double[] curveAt;
-    private Vec3 line;
-    private double speed = SPEED;
+    // The way it flies once let go: from where it was let go, along a curve onto your line of sight, and then
+    // straight on along that line. Clients get it too, and move the fist along it by themselves.
+    private ConstructPath path;
 
     private GiantFist(ServerPlayer owner, CharacterAbility ability) {
         this.owner = owner;
@@ -470,46 +464,16 @@ final class GiantFist implements SpellEffect {
         double aside = fromEye.subtract(look.scale(ahead)).length();
         double aimed = target.subtract(eye).dot(look);
         double join = Math.min(aimed, ahead + Math.max(MIN_JOIN, JOIN * aside));
-        this.start = this.center;
         // While you fly yourself it takes your speed along, so you never catch up with your own fist.
-        this.speed = SPEED + Math.max(0.0, Flight.velocity(this.owner).dot(look));
+        double speed = SPEED + Math.max(0.0, Flight.velocity(this.owner).dot(look));
         if (join <= ahead + 0.5) {
-            this.curve = null;
-            this.line = this.flightWay(target);
-            this.facing = this.line;
-            return;
+            this.path = new ConstructPath(this.center, null, null, this.flightWay(target), speed, this.range);
+        } else {
+            Vec3 end = eye.add(look.scale(join));
+            Vec3 control = eye.add(look.scale((ahead + join) * 0.5));
+            this.path = new ConstructPath(this.center, control, end, look, speed, this.range);
         }
-        this.line = look;
-        Vec3 end = eye.add(look.scale(join));
-        Vec3 control = eye.add(look.scale((ahead + join) * 0.5));
-        this.curve = new Vec3[CURVE_STEPS + 1];
-        this.curveAt = new double[CURVE_STEPS + 1];
-        for (int i = 0; i <= CURVE_STEPS; i++) {
-            double t = (double) i / CURVE_STEPS;
-            double u = 1.0 - t;
-            this.curve[i] = this.center.scale(u * u).add(control.scale(2.0 * u * t)).add(end.scale(t * t));
-            this.curveAt[i] = i == 0 ? 0.0 : this.curveAt[i - 1] + this.curve[i].distanceTo(this.curve[i - 1]);
-        }
-        this.facing = this.curve[1].subtract(this.curve[0]).normalize();
-    }
-
-    /** Where the middle of the fist is once it has flown this far: along the curve, then straight on. */
-    private Vec3 along(double distance) {
-        if (this.curve == null) {
-            return this.start.add(this.line.scale(distance));
-        }
-        int last = this.curve.length - 1;
-        if (distance >= this.curveAt[last]) {
-            return this.curve[last].add(this.line.scale(distance - this.curveAt[last]));
-        }
-        for (int i = 1; i <= last; i++) {
-            if (distance <= this.curveAt[i]) {
-                double piece = this.curveAt[i] - this.curveAt[i - 1];
-                double t = piece < 1.0E-9 ? 0.0 : (distance - this.curveAt[i - 1]) / piece;
-                return this.curve[i - 1].lerp(this.curve[i], t);
-            }
-        }
-        return this.curve[last];
+        this.facing = this.path.way(0.0);
     }
 
     /**
@@ -553,8 +517,9 @@ final class GiantFist implements SpellEffect {
     /** Hard light: it smashes the soft blocks in its way and goes straight through everything else. */
     private void fly(ServerLevel level) {
         Vec3 from = this.center;
-        this.travelled = Math.min(this.range, this.travelled + this.speed);
-        Vec3 to = this.along(this.travelled);
+        // Counted from the ticks it has flown, the way every client counts it too.
+        this.travelled = this.path.travelled(this.phaseAge);
+        Vec3 to = this.path.along(this.travelled);
         if (to.distanceToSqr(from) > 1.0E-8) {
             this.facing = to.subtract(from).normalize();
         }
@@ -699,9 +664,13 @@ final class GiantFist implements SpellEffect {
         // While you hold it, where it hangs around your eyes goes out instead of a point in the world: every
         // client hangs it on you itself, so it keeps up with you however fast you turn or fly.
         boolean held = this.phase == Phase.HOLD;
+        // On its way it goes out with its path and how long it has flown: every client moves it along that path by
+        // its own clock (see ClientConstructs), so it glides instead of jumping from one update to the next.
+        boolean flying = this.phase == Phase.FLY;
         PacketDistributor.sendToPlayersNear(level, null, this.center.x, this.center.y, this.center.z, VIEW_RANGE,
                 new ConstructPayload(this.id, this.owner.getId(), held ? this.offset : this.center, this.facing,
-                        this.size(), this.solid(), (float) this.charge(), held, ConstructPayload.FIST));
+                        this.size(), this.solid(), (float) this.charge(), held, ConstructPayload.FIST, 0,
+                        flying ? this.phaseAge : 0, flying ? this.path : null));
     }
 
     private void sound(ServerLevel level, SoundEvent sound, float volume, float pitch) {

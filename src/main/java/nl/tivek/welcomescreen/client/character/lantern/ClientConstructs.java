@@ -24,6 +24,8 @@ import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import nl.tivek.welcomescreen.WelcomeScreenMod;
 import nl.tivek.welcomescreen.character.CharacterAbility;
 import nl.tivek.welcomescreen.character.GameCharacter;
+import nl.tivek.welcomescreen.character.lantern.ConstructPath;
+import nl.tivek.welcomescreen.character.lantern.LandingSlam;
 import nl.tivek.welcomescreen.character.lantern.LightShield;
 import nl.tivek.welcomescreen.network.ConstructPayload;
 import org.joml.Vector3f;
@@ -39,6 +41,8 @@ public final class ClientConstructs {
     private static final int TIMEOUT = 10;
     // Updates waiting beyond this many are skipped, so a network hiccup never leaves one lagging behind.
     private static final int MAX_WAITING = 2;
+    // How long the shockwave of a slam shakes the view, in ticks.
+    private static final double SHAKE_TICKS = 8.0;
 
     // The beam starts on the line from your eye through your own hand, but this much nearer than the hand
     // itself: on screen that is the same spot, and it keeps the beam from starting inside a wall.
@@ -50,22 +54,60 @@ public final class ClientConstructs {
     private ClientConstructs() {
     }
 
-    /** The server updates of one construct, played back one per client tick. */
+    /**
+     * The server updates of one construct, played back one per client tick. A construct that moves by itself (a
+     * fist or bolt on its way, a landing slam) also runs on a clock of its own: the server says how long ago it
+     * set off, and from then on the client counts on by itself, so it moves at an even pace however unevenly the
+     * updates come in.
+     */
     private static final class Track {
         private final ArrayDeque<ConstructPayload> waiting = new ArrayDeque<>();
         private ConstructPayload previous;
         private ConstructPayload current;
+        // The newest update, the moment it arrives.
+        private ConstructPayload latest;
         private int lastSeen;
+        // The client time it set off, the most the server told it has aged, and the way it flies (null: none).
+        private double start = Double.NaN;
+        private int told = -1;
+        @Nullable
+        private ConstructPath path;
 
         Track(ConstructPayload first) {
             this.previous = first;
             this.current = first;
+            this.latest = first;
             this.lastSeen = clientTicks;
+            this.time(first);
         }
 
         void add(ConstructPayload update) {
             this.waiting.add(update);
+            this.latest = update;
             this.lastSeen = clientTicks;
+            this.time(update);
+        }
+
+        private void time(ConstructPayload update) {
+            if (update.path() == null && update.shape() != ConstructPayload.SLAM) {
+                return;
+            }
+            if (update.path() != null) {
+                this.path = update.path();
+            }
+            float partialTick = Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(false);
+            double setOff = clientTicks + partialTick - update.age();
+            // The update that came through quickest tells best when it really set off.
+            this.start = Double.isNaN(this.start) ? setOff : Math.min(this.start, setOff);
+            this.told = Math.max(this.told, update.age());
+        }
+
+        /** Ticks since it set off by the client's own clock: smooth, and never far ahead of what the server told. */
+        double clock(float partialTick) {
+            if (Double.isNaN(this.start)) {
+                return Math.max(0, this.told);
+            }
+            return Mth.clamp(clientTicks + partialTick - this.start, 0.0, this.told + 1.5);
         }
 
         void advance() {
@@ -137,6 +179,38 @@ public final class ClientConstructs {
                 default -> 0.0F;
             };
             most = Math.max(most, here * now.solid());
+        }
+        return most;
+    }
+
+    /** How many ticks ago this player's landing slam began, by the client's own clock, or -1 when there is none. */
+    static float slamAge(int owner, float partialTick) {
+        for (Track track : CONSTRUCTS.values()) {
+            if (track.latest.shape() == ConstructPayload.SLAM && track.latest.owner() == owner) {
+                return (float) track.clock(partialTick);
+            }
+        }
+        return -1.0F;
+    }
+
+    /**
+     * How hard the shockwave of a slam nearby shakes a view from {@code from}: 1 right next to it as it strikes,
+     * fading with distance and over the next few ticks, 0 when there is none.
+     */
+    static float shake(Vec3 from, float partialTick) {
+        float most = 0.0F;
+        for (Track track : CONSTRUCTS.values()) {
+            ConstructPayload slam = track.latest;
+            if (slam.shape() != ConstructPayload.SLAM) {
+                continue;
+            }
+            double since = track.clock(partialTick) - LandingSlam.IMPACT_TICK;
+            double near = 1.0 - from.distanceTo(slam.center()) / (slam.size() * 3.0 + 4.0);
+            if (since < 0.0 || since >= SHAKE_TICKS || near <= 0.0) {
+                continue;
+            }
+            double fade = 1.0 - since / SHAKE_TICKS;
+            most = Math.max(most, (float) (fade * fade * Math.min(1.0, near * 1.5)));
         }
         return most;
     }
@@ -223,6 +297,15 @@ public final class ClientConstructs {
             double solid = Mth.lerp(partialTick, was.solid(), now.solid());
             double charge = Mth.lerp(partialTick, was.charge(), now.charge());
             Vec3 center = where(was, now, owner, partialTick);
+            // A fist or bolt on its way glides along its path by the client's own clock. Once it stops (it hit
+            // something, or falls apart at the end of its way) it stays where the server says it stopped.
+            boolean onItsWay = track.path != null && !track.latest.held();
+            if (onItsWay) {
+                boolean moving = track.latest.path() != null;
+                double travelled = track.path.travelled(moving ? track.clock(partialTick) : track.told);
+                center = moving ? track.path.along(travelled) : track.latest.center();
+                way = track.path.way(travelled);
+            }
             Vec3 ring = owner == null ? null : ringHand(minecraft, camera, owner, partialTick, event);
             boolean own = owner == minecraft.player && !camera.isDetached();
             // What hangs on its owner is worked out here from how he stands right now, so it moves with him
@@ -237,7 +320,7 @@ public final class ClientConstructs {
                             .add(0.0, owner.getBbHeight() * 0.5, 0.0);
                     case ConstructPayload.BEAM -> way = owner.getViewVector(partialTick);
                     case ConstructPayload.FIST -> {
-                        if (now.held()) {
+                        if (now.held() && !onItsWay) {
                             way = heldFacing(owner, partialTick);
                         }
                     }
@@ -251,34 +334,26 @@ public final class ClientConstructs {
                 case ConstructPayload.SHIELD -> painter.shield(center, way, size, solid, charge, ring, own);
                 case ConstructPayload.DOME -> painter.dome(center, size, solid, charge, own);
                 case ConstructPayload.RAM -> painter.ram(center, ramWay(owner, way), solid, charge, own);
+                case ConstructPayload.SLAM -> SlamPainter.draw(painter, track.latest, track.clock(partialTick), ring);
                 case ConstructPayload.BEAM -> {
                     if (ring != null && owner != null) {
                         painter.beamOfLight(ring, beamEnd(level, owner, way, now, partialTick), solid);
                     }
                 }
-                default -> painter.fist(center, way, size, solid, charge, now.held(), ring);
+                default -> painter.fist(center, way, size, solid, charge, now.held() && !onItsWay, ring);
             }
         }
         painter.finish(minecraft.renderBuffers().bufferSource());
     }
 
     /**
-     * Where a construct is between two updates. A held fist hangs on its owner (see {@link #hung}); a bolt or fist
-     * on its way is carried on along its last step instead of blended from the one before, so it is drawn where
-     * it is now and not a tick behind: at top speed in the air you would otherwise see your own bolts come from
-     * behind you.
+     * Where a construct is between two updates: a held fist hangs on its owner (see {@link #hung}), anything else
+     * is blended from one update to the next. (A fist or bolt on its way follows its path instead.)
      */
     private static Vec3 where(ConstructPayload was, ConstructPayload now, @Nullable Entity owner, float partialTick) {
         if (now.held() && now.shape() == ConstructPayload.FIST) {
             Vec3 spot = was.held() ? was.center().lerp(now.center(), partialTick) : now.center();
             return owner == null ? now.center() : hung(owner, spot, partialTick);
-        }
-        if (was.held() && was.shape() == ConstructPayload.FIST) {
-            // The tick it is let go: from where it hung, onto its way.
-            return owner == null ? now.center() : hung(owner, was.center(), partialTick).lerp(now.center(), partialTick);
-        }
-        if (now.solid() >= 1.0F && (now.shape() == ConstructPayload.BOLT || now.shape() == ConstructPayload.FIST)) {
-            return now.center().add(now.center().subtract(was.center()).scale(partialTick));
         }
         return was.center().lerp(now.center(), partialTick);
     }

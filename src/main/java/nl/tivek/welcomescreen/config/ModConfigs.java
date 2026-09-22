@@ -1,5 +1,6 @@
 package nl.tivek.welcomescreen.config;
 
+import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.config.ModConfig;
 import nl.tivek.welcomescreen.WelcomeScreenMod;
@@ -25,9 +26,9 @@ public final class ModConfigs {
     }
 
     /** Called once when the mod starts: gives every settings file its place. */
-    public static void register(ModContainer container) {
+    public static void register(ModContainer container, IEventBus modEventBus) {
         container.registerConfig(ModConfig.Type.COMMON, StaminaConfig.SPEC, file("stamina"));
-        CharacterConfig.register(container);
+        CharacterConfig.register(container, modEventBus);
     }
 
     /** The path of one settings file: "welcomescreen/doc_ock.toml". */

@@ -2,9 +2,11 @@ package nl.tivek.welcomescreen.character;
 
 import java.util.ArrayList;
 import java.util.List;
+import javax.annotation.Nullable;
 import net.minecraft.network.chat.Component;
 import nl.tivek.welcomescreen.WelcomeScreenMod;
 import nl.tivek.welcomescreen.config.CharacterConfig;
+import nl.tivek.welcomescreen.config.Unit;
 
 /**
  * One ability of one character, in one {@link AbilitySlot}. Everything about it is described here
@@ -48,16 +50,34 @@ public final class CharacterAbility {
      * One extra setting of this ability in the config file, next to its cooldown and its damage.
      *
      * @param whole true for a whole number (a count), false for a number with decimals
+     * @param unit  what the number counts, so the settings screen can say what it means
+     * @param group which part of the ability it belongs to ("beam", "dome"), or null for the ability as a whole
+     * @param was   what older versions of the mod had as its default: a file that still holds one of those gets
+     *              the new default once (see {@link CharacterConfig})
      */
-    public record Setting(String key, boolean whole, double value, double min, double max, String comment) {
+    public record Setting(String key, boolean whole, double value, double min, double max, Unit unit,
+            @Nullable Group group, String comment, double[] was) {
+    }
+
+    /**
+     * A part of an ability that has settings of its own, like the beam of the bolt ability.
+     *
+     * @param id    its name in the translations ("beam")
+     * @param title how the settings file calls it, in English
+     */
+    public record Group(String id, String title) {
     }
 
     private final GameCharacter character;
     private final AbilitySlot slot;
     private final String id;
     private final List<Setting> settings = new ArrayList<>();
+    @Nullable
+    private Group group;
     private int defaultCooldown;
     private double defaultDamage;
+    private boolean usesCooldown;
+    private boolean usesDamage;
     private boolean held;
     private boolean clientOnly;
     private Crouch crouch = Crouch.SAME;
@@ -76,12 +96,14 @@ public final class CharacterAbility {
     /** Ticks before it can be used again; 20 ticks = 1 second. */
     public CharacterAbility cooldown(int ticks) {
         this.defaultCooldown = ticks;
+        this.usesCooldown = true;
         return this;
     }
 
     /** What its main hit does, in half hearts. */
     public CharacterAbility damage(double halfHearts) {
         this.defaultDamage = halfHearts;
+        this.usesDamage = true;
         return this;
     }
 
@@ -129,14 +151,39 @@ public final class CharacterAbility {
     }
 
     /** An extra setting of its own in the config file. */
-    public CharacterAbility setting(String key, double value, double min, double max, String comment) {
-        this.settings.add(new Setting(key, false, value, min, max, comment));
+    public CharacterAbility setting(String key, double value, double min, double max, Unit unit, String comment) {
+        this.settings.add(new Setting(key, false, value, min, max, unit, this.group, comment, new double[0]));
         return this;
     }
 
     /** An extra setting of its own that counts whole things (blocks, ticks). */
-    public CharacterAbility settingInt(String key, int value, int min, int max, String comment) {
-        this.settings.add(new Setting(key, true, value, min, max, comment));
+    public CharacterAbility settingInt(String key, int value, int min, int max, Unit unit, String comment) {
+        this.settings.add(new Setting(key, true, value, min, max, unit, this.group, comment, new double[0]));
+        return this;
+    }
+
+    /**
+     * The settings that come after this belong to one part of the ability (the beam, the dome), and are shown
+     * together under its name.
+     *
+     * @param id    its name in the translations
+     * @param title how the settings file calls it, in English
+     */
+    public CharacterAbility group(String id, String title) {
+        this.group = new Group(id, title);
+        return this;
+    }
+
+    /**
+     * The setting added last used to have one of these numbers as its default. A settings file that still holds
+     * one of them was never changed by hand there, so it follows the new default (once, see
+     * {@link CharacterConfig}).
+     */
+    public CharacterAbility was(double... oldDefaults) {
+        int last = this.settings.size() - 1;
+        Setting setting = this.settings.get(last);
+        this.settings.set(last, new Setting(setting.key(), setting.whole(), setting.value(), setting.min(),
+                setting.max(), setting.unit(), setting.group(), setting.comment(), oldDefaults));
         return this;
     }
 
@@ -203,6 +250,16 @@ public final class CharacterAbility {
 
     public double defaultDamage() {
         return this.defaultDamage;
+    }
+
+    /** True when this ability has a cooldown at all; only then is there one in the settings file. */
+    public boolean usesCooldown() {
+        return this.usesCooldown;
+    }
+
+    /** True when this ability does damage with its main hit; only then is there a damage in the settings file. */
+    public boolean usesDamage() {
+        return this.usesDamage;
     }
 
     /** The cooldown from the config file, in ticks. */

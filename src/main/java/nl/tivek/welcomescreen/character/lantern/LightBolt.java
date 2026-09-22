@@ -53,6 +53,9 @@ final class LightBolt implements SpellEffect {
     // How far it goes each tick: its own speed where the crosshair points, and whatever its owner flew at.
     private final Vec3 step;
     private final Vec3 facing;
+    // Its straight way, for clients to move it along by their own clock; and the ticks it has flown.
+    private final ConstructPath path;
+    private int age;
     private double travelled;
     private int fade = -1;
 
@@ -65,6 +68,7 @@ final class LightBolt implements SpellEffect {
         Vec3 step = aim.scale(ability.value("speedBlocks")).add(Flight.velocity(owner));
         this.step = step.lengthSqr() < 1.0E-6 ? aim.scale(ability.value("speedBlocks")) : step;
         this.facing = this.step.normalize();
+        this.path = new ConstructPath(from, null, null, this.facing, this.step.length(), this.range);
     }
 
     /**
@@ -154,9 +158,10 @@ final class LightBolt implements SpellEffect {
             return true;
         }
         Vec3 from = this.center;
-        double stride = this.step.length();
-        Vec3 to = from.add(this.step.scale(Math.min(1.0, (this.range - this.travelled) / stride)));
-        this.travelled += from.distanceTo(to);
+        this.age++;
+        // Counted from the ticks it has flown, the way every client counts it too.
+        this.travelled = this.path.travelled(this.age);
+        Vec3 to = this.path.along(this.travelled);
         this.center = to;
         SpellFx.line(level, SpellFx.dust(PowerRing.GREEN, 0.9F), from, to, 0.35);
         if (this.hitSomething(level, from, to) || this.travelled >= this.range - 1.0E-4) {
@@ -205,6 +210,7 @@ final class LightBolt implements SpellEffect {
         float solid = this.fade < 0 ? 1.0F : 1.0F - (float) this.fade / FADE_TICKS;
         PacketDistributor.sendToPlayersNear(level, null, this.center.x, this.center.y, this.center.z, VIEW_RANGE,
                 new ConstructPayload(this.id, this.owner.getId(), this.center, this.facing, (float) SIZE, solid,
-                        this.fade < 0 ? (float) this.step.length() : 0.0F, false, ConstructPayload.BOLT));
+                        this.fade < 0 ? (float) this.step.length() : 0.0F, false, ConstructPayload.BOLT, 0, this.age,
+                        this.fade < 0 ? this.path : null));
     }
 }

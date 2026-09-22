@@ -21,7 +21,7 @@ import nl.tivek.welcomescreen.spell.Spell;
 import nl.tivek.welcomescreen.spell.SpellCasting;
 
 public final class ModNetwork {
-    private static final String VERSION = "13";
+    private static final String VERSION = "14";
 
     private ModNetwork() {
     }

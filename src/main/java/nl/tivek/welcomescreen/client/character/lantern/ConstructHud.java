@@ -1,5 +1,7 @@
 package nl.tivek.welcomescreen.client.character.lantern;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import javax.annotation.Nullable;
 import net.minecraft.ChatFormatting;
@@ -57,9 +59,17 @@ public final class ConstructHud {
     private static final int PADDING = 7;
     /** How wide the ring around your crosshair grows, in screen points. */
     private static final float FLASH_RADIUS = 44.0F;
-    /** How far from your crosshair the arcs of a held mouse button run, and from how far along they show. */
-    private static final float HOLD_RADIUS = 11.0F;
-    private static final float HOLD_SHOWN = 0.12F;
+    /**
+     * The arcs of a held mouse button: how far from your crosshair they run, how thick they are, and from how far
+     * along they show (a quick tap never shows one).
+     */
+    private static final float HOLD_INNER = 13.0F;
+    private static final float HOLD_OUTER = 17.5F;
+    private static final float HOLD_SHOWN = 0.1F;
+    // How long the flash lasts once an arc is full, in milliseconds.
+    private static final float HOLD_FLASH_MS = 350.0F;
+    // When each button's arc filled up (left, right), or 0 while it is not full.
+    private static final long[] FULL_AT = new long[2];
 
     public ConstructHud(IEventBus modEventBus) {
         modEventBus.addListener(ConstructHud::onRegisterLayers);
@@ -91,41 +101,88 @@ public final class ConstructHud {
     }
 
     /**
-     * Holding a mouse button on its way to its hold version: an arc beside your crosshair fills up, on the right
-     * for the hand that attacks and on the left for the hand that defends. Once the hold version runs, the arc
-     * stays full and throbs. A quick tap never shows it.
+     * Holding a mouse button on its way to its hold version: a thick arc beside your crosshair fills up, on the
+     * right for the hand that attacks and on the left for the hand that defends, with the name of what is coming
+     * next to it (the laser, the dome, the air brake). The moment it is full it flashes, and while the hold version
+     * runs it stays full and throbs. A quick tap never shows it.
      */
     private static void renderHold(GuiGraphics graphics, float partialTick) {
+        Minecraft minecraft = Minecraft.getInstance();
         float middleX = graphics.guiWidth() * 0.5F;
         float middleY = graphics.guiHeight() * 0.5F;
+        long now = Util.getMillis();
+        List<Runnable> labels = new ArrayList<>();
         boolean drawn = false;
         for (CharacterAbility ability : GameCharacter.GREEN_LANTERN.abilities()) {
-            float progress = MouseHold.progress(ability, partialTick);
-            if (progress < HOLD_SHOWN || ability.mouseButton() == CharacterAbility.Mouse.NONE) {
+            if (ability.mouseButton() == CharacterAbility.Mouse.NONE) {
                 continue;
             }
             boolean right = ability.mouseButton() == CharacterAbility.Mouse.LEFT;
-            float filling = Mth.clamp((progress - HOLD_SHOWN) / (1.0F - HOLD_SHOWN), 0.0F, 1.0F);
-            float from = right ? 35.0F : 325.0F;
-            float span = right ? 110.0F : -110.0F;
-            float appear = Mth.clamp((progress - HOLD_SHOWN) * 8.0F, 0.0F, 1.0F);
-            // The empty track, then how far it is filled.
-            GuiShapes.arc(graphics, middleX, middleY, HOLD_RADIUS, HOLD_RADIUS + 2.0F, Math.min(from, from + span),
-                    Math.max(from, from + span), GuiShapes.fade(0x0B2E18, 0.55F * appear));
-            float end = from + span * filling;
-            if (progress >= 1.0F) {
-                float throb = 0.7F + 0.3F * Mth.sin((Util.getMillis() % 100000L) / 90.0F);
-                GuiShapes.arc(graphics, middleX, middleY, HOLD_RADIUS - 0.5F, HOLD_RADIUS + 2.5F,
-                        Math.min(from, end), Math.max(from, end), GuiShapes.fade(BRIGHT, throb));
-            } else {
-                GuiShapes.arc(graphics, middleX, middleY, HOLD_RADIUS, HOLD_RADIUS + 2.0F, Math.min(from, end),
-                        Math.max(from, end), GuiShapes.fade(GREEN, 0.9F * appear));
+            int button = right ? 0 : 1;
+            float progress = MouseHold.progress(ability, partialTick);
+            if (progress < 1.0F) {
+                FULL_AT[button] = 0L;
+            } else if (FULL_AT[button] == 0L) {
+                FULL_AT[button] = now;
             }
+            if (progress < HOLD_SHOWN) {
+                continue;
+            }
+            float filling = Mth.clamp((progress - HOLD_SHOWN) / (1.0F - HOLD_SHOWN), 0.0F, 1.0F);
+            float from = right ? 30.0F : 330.0F;
+            float span = right ? 120.0F : -120.0F;
+            float appear = Mth.clamp((progress - HOLD_SHOWN) * 8.0F, 0.0F, 1.0F);
+            // A dark track with a thin rim, so the arc reads on any background.
+            GuiShapes.arc(graphics, middleX, middleY, HOLD_INNER - 1.0F, HOLD_OUTER + 1.0F, Math.min(from, from + span),
+                    Math.max(from, from + span), GuiShapes.fade(0x000000, 0.45F * appear));
+            GuiShapes.arc(graphics, middleX, middleY, HOLD_INNER, HOLD_OUTER, Math.min(from, from + span),
+                    Math.max(from, from + span), GuiShapes.fade(0x0E3A1E, 0.8F * appear));
+            float end = from + span * filling;
+            boolean full = progress >= 1.0F;
+            if (full) {
+                float throb = 0.75F + 0.25F * Mth.sin((now % 100000L) / 90.0F);
+                GuiShapes.arc(graphics, middleX, middleY, HOLD_INNER - 0.5F, HOLD_OUTER + 0.5F, Math.min(from, end),
+                        Math.max(from, end), GuiShapes.fade(BRIGHT, throb));
+                // The flash the moment it filled up: a band of light that swells out and fades.
+                float flash = (now - FULL_AT[button]) / HOLD_FLASH_MS;
+                if (flash < 1.0F) {
+                    float out = HOLD_OUTER + 8.0F * flash;
+                    GuiShapes.arc(graphics, middleX, middleY, out - 2.0F, out, Math.min(from, end), Math.max(from, end),
+                            GuiShapes.fade(0xE6FFEC, 1.0F - flash));
+                }
+            } else {
+                // The filled part grows brighter as it fills, with a bright head where it is now.
+                int color = GuiShapes.mix(GREEN, BRIGHT, filling);
+                GuiShapes.arc(graphics, middleX, middleY, HOLD_INNER, HOLD_OUTER, Math.min(from, end),
+                        Math.max(from, end), GuiShapes.fade(color, 0.95F * appear));
+                GuiShapes.arc(graphics, middleX, middleY, HOLD_INNER - 1.0F, HOLD_OUTER + 1.0F,
+                        right ? end - 3.0F : end, right ? end : end + 3.0F, GuiShapes.fade(0xE6FFEC, appear));
+            }
+            Component name = holdName(ability, minecraft.player);
+            float fullness = full ? 1.0F : filling;
+            labels.add(() -> {
+                int width = minecraft.font.width(name);
+                int x = right ? Mth.floor(middleX + HOLD_OUTER + 5.0F) : Mth.ceil(middleX - HOLD_OUTER - 5.0F) - width;
+                int alpha = (int) (255 * appear);
+                int color = GuiShapes.mix(GREEN, full ? 0xFFFFFF : BRIGHT, fullness);
+                graphics.drawString(minecraft.font, name, x, Mth.floor(middleY) - 4, alpha << 24 | color);
+            });
             drawn = true;
         }
         if (drawn) {
             GuiShapes.flush(graphics);
         }
+        labels.forEach(Runnable::run);
+    }
+
+    /** What holding this button leads to: the laser, the dome, or in the air the brake. */
+    private static Component holdName(CharacterAbility ability, @Nullable Player player) {
+        String prefix = "screen." + WelcomeScreenMod.MODID + ".hold.";
+        if (ability.mouseButton() == CharacterAbility.Mouse.LEFT) {
+            return Component.translatable(prefix + "beam");
+        }
+        boolean flying = player != null && ClientRing.flight(player, 0.0F) >= 0.0F;
+        return Component.translatable(prefix + (flying ? "brake" : "dome"));
     }
 
     /**

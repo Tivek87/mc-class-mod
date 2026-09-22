@@ -41,6 +41,10 @@ public final class Flight implements SpellEffect {
     private static final int DESCENT_MAX = 2400;
     // Ticks without any movement from his game before he counts as standing still in the air.
     private static final int STILL_TICKS = 2;
+    // How much of his top speed of the last few ticks is kept each tick, and how much of his top speed the server
+    // must have seen before it believes a landing slam (his own game asks for it at 70%).
+    private static final double PEAK_FADE = 0.85;
+    private static final double SLAM_CHECK = 0.45;
 
     private static final Map<UUID, Flight> FLYING = new HashMap<>();
 
@@ -51,6 +55,8 @@ public final class Flight implements SpellEffect {
     private int descentTicks;
     // How far he moved on the last tick, as his own game told it: the speed his shots take along.
     private Vec3 velocity = Vec3.ZERO;
+    // His top speed of the last few ticks, fading: the tick he hits the ground he hardly moves any more.
+    private double peak;
     private Vec3 lastPos;
     private int still;
     // Entity id -> the game time it may be rammed again.
@@ -184,6 +190,39 @@ public final class Flight implements SpellEffect {
         }
         this.lastPos = now;
         this.velocity = this.still >= STILL_TICKS ? Vec3.ZERO : this.owner.getKnownMovement();
+        this.peak = Math.max(this.velocity.length(), this.peak * PEAK_FADE);
+    }
+
+    /**
+     * His own game tells he flew into the ground at full speed. Checked against how fast the server saw him go:
+     * then he lands with a slam, and when the ring can pay for it a construct in front of him sends a shockwave
+     * over the ground (see {@link LandingSlam}); without the power it is just a hard landing.
+     *
+     * @return true when he landed, so the key's cooldown starts
+     */
+    static boolean slam(ServerPlayer owner, ServerLevel level, CharacterAbility ability) {
+        Flight flight = FLYING.get(owner.getUUID());
+        if (flight == null || flight.descending || flight.ticks < ARISE_TICKS) {
+            return false;
+        }
+        double top = ability.value("topSpeed") / 20.0;
+        if (flight.peak < top * SLAM_CHECK) {
+            return false;
+        }
+        flight.end();
+        owner.setDeltaMovement(Vec3.ZERO);
+        owner.hurtMarked = true;
+        float cost = (float) ability.value("slamPowerCost");
+        float power = PowerRing.power(owner);
+        if (power + 1.0E-4F >= cost && !Lantern.busy(owner)) {
+            PowerRing.setPower(owner, power - cost);
+            LandingSlam.start(owner, level, ability);
+        } else {
+            level.playSound(null, owner.getX(), owner.getY(), owner.getZ(), SoundEvents.MACE_SMASH_GROUND,
+                    SoundSource.PLAYERS, 1.0F, 1.1F);
+        }
+        PowerRing.sync(owner);
+        return true;
     }
 
     /**

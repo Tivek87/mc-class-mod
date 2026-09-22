@@ -36,7 +36,8 @@ import org.joml.Vector3f;
  * <li><b>Flying</b>: the faster he goes the more his body lines up with the way he flies, arms back along his
  * sides and legs together, like the pictures. He banks into his turns and leans into sideways slides, dives head
  * first and climbs head up, and his head keeps looking where he looks.</li>
- * <li>An empty ring lets him sink with his arms up; landing is a short dip.</li>
+ * <li>An empty ring lets him sink with his arms up; landing is a short dip, and a landing at full speed a slam:
+ * down on one knee with his ring fist in the ground.</li>
  * <li>On top of that, standing or flying: the ring hand points along the beam, both hands hold the dome open,
  * and in flight the shield hand goes out in front, fist first, into the ram cone.</li>
  * </ul>
@@ -50,6 +51,9 @@ final class FlightPose {
     private static final int LAND_TICKS = 8;
     // How quickly the arms blend from one thing to the next, per second.
     private static final float BLEND = 9.0F;
+    // How long the pose of a landing slam lasts, in ticks; your own fist shows in first person this long.
+    private static final float SLAM_TICKS = 20.0F;
+    private static final float SLAM_HAND_TICKS = 14.0F;
 
     private static final Map<Integer, Blend> BLENDS = new HashMap<>();
     // The player being drawn right now, and whether his body was turned (so it is turned back afterwards).
@@ -94,7 +98,7 @@ final class FlightPose {
      * @param time   ticks, for everything that sways
      */
     private record Frame(int entity, float t, float fast, float tilt, float roll, float land, boolean sinking,
-            float time, Blend blend, Vec3 pivot, Vec3 forward, Vec3 left, Quaternionf turn) {
+            float slam, float time, Blend blend, Vec3 pivot, Vec3 forward, Vec3 left, Quaternionf turn) {
     }
 
     /**
@@ -113,10 +117,12 @@ final class FlightPose {
         boolean ramming = flying && ClientRing.has(player, RingPayload.SHIELD);
         float land = motion == null || motion.sinceEnd >= LAND_TICKS ? 0.0F
                 : Mth.sin((motion.sinceEnd + partialTick) / LAND_TICKS * Mth.PI);
+        float slam = ClientFlight.slam(player, partialTick);
+        boolean slamming = slam >= 0.0F && slam < SLAM_TICKS;
         frame = null;
         Blend blend = BLENDS.get(player.getId());
         if (blend == null) {
-            if (!flying && !beaming && !domed && land <= 0.0F) {
+            if (!flying && !beaming && !domed && !slamming && land <= 0.0F) {
                 return false;
             }
             blend = new Blend();
@@ -124,7 +130,7 @@ final class FlightPose {
         }
         blend.toward(flying, beaming, domed, ramming);
         // Only forgotten once nothing is wanted any more and everything has blended back out.
-        if (!flying && !beaming && !domed && blend.idle() && land <= 0.0F) {
+        if (!flying && !beaming && !domed && !slamming && blend.idle() && land <= 0.0F) {
             BLENDS.remove(player.getId());
             return false;
         }
@@ -157,7 +163,7 @@ final class FlightPose {
         Quaternionf turn = new Quaternionf().rotateAxis(roll, (float) forward.x, 0.0F, (float) forward.z)
                 .rotateAxis(tilt, (float) left.x, 0.0F, (float) left.z);
         frame = new Frame(player.getId(), t, fast, tilt, roll, land, ClientRing.has(player, RingPayload.DESCENT),
-                player.tickCount + partialTick, blend, pivot, forward, left, turn);
+                slamming ? slam : -1.0F, player.tickCount + partialTick, blend, pivot, forward, left, turn);
         PoseStack pose = event.getPoseStack();
         float dip = dip(t, land);
         pushed = Math.abs(tilt) > 1.0E-3F || Math.abs(roll) > 1.0E-3F || dip > 1.0E-3F;
@@ -242,6 +248,35 @@ final class FlightPose {
             limb.xRot = Mth.lerp(blend.dome, limb.xRot, -0.55F);
             limb.yRot = Mth.lerp(blend.dome, limb.yRot, 0.0F);
             limb.zRot = Mth.lerp(blend.dome, limb.zRot, side * 1.2F);
+        }
+        if (f.slam() >= 0.0F) {
+            slam(model, limb, right, f.slam());
+        }
+    }
+
+    /**
+     * The landing slam, on top of the crouch the game already gives him: the ring fist comes up and smashes down
+     * into the ground in front of him and stays there a moment, the other arm swings out and back, one knee comes
+     * up and the other goes down; then he rises again.
+     *
+     * @param age ticks since he hit the ground
+     */
+    private static void slam(HumanoidModel<?> model, ModelPart limb, boolean right, float age) {
+        float weight = (float) (ClientFlight.smooth(age / 1.5) * (1.0 - ClientFlight.smooth((age - 12.0) / 8.0)));
+        if (right) {
+            float strike = (float) ClientFlight.smooth(age / 3.0);
+            limb.xRot = Mth.lerp(weight, limb.xRot, Mth.lerp(strike, -2.7F, -1.15F));
+            limb.yRot = Mth.lerp(weight, limb.yRot, 0.1F);
+            limb.zRot = Mth.lerp(weight, limb.zRot, 0.1F);
+            // Once for both legs (this runs for each arm).
+            model.rightLeg.xRot = Mth.lerp(weight, model.rightLeg.xRot, -1.1F);
+            model.leftLeg.xRot = Mth.lerp(weight, model.leftLeg.xRot, 0.55F);
+            model.rightLeg.zRot = Mth.lerp(weight, model.rightLeg.zRot, 0.05F);
+            model.leftLeg.zRot = Mth.lerp(weight, model.leftLeg.zRot, -0.1F);
+        } else {
+            limb.xRot = Mth.lerp(weight, limb.xRot, 0.5F);
+            limb.yRot = Mth.lerp(weight, limb.yRot, 0.0F);
+            limb.zRot = Mth.lerp(weight, limb.zRot, -1.0F);
         }
     }
 
@@ -375,6 +410,11 @@ final class FlightPose {
         if (player == null || player.isInvisible() || !player.getMainHandItem().isEmpty()) {
             return false;
         }
+        float slam = ClientFlight.slam(player, event.getPartialTick());
+        if (slam >= 0.0F && slam < SLAM_HAND_TICKS) {
+            slamHand(event, player, slam);
+            return true;
+        }
         float t = ClientRing.flight(player, event.getPartialTick());
         if (t < 0.0F || t > ClientFlight.SWEEP + 2.0F) {
             return false;
@@ -399,5 +439,25 @@ final class FlightPose {
             RechargeAnimation.arm(pose, buffers, event.getPackedLight(), player, renderer, side, hand, from);
         }
         return true;
+    }
+
+    /**
+     * Your own landing slam: your ring fist comes up at the right of your screen and smashes down out of sight into
+     * the ground, stays there a moment, and comes back.
+     */
+    private static void slamHand(RenderHandEvent event, LocalPlayer player, float age) {
+        event.setCanceled(true);
+        if (event.getHand() != InteractionHand.MAIN_HAND) {
+            return;
+        }
+        Minecraft minecraft = Minecraft.getInstance();
+        PlayerRenderer renderer = (PlayerRenderer) minecraft.getEntityRenderDispatcher().getRenderer(player);
+        float down = (float) ClientFlight.smooth(age / 2.5);
+        float back = (float) ClientFlight.smooth((age - 9.0) / 5.0);
+        Vector3f raised = new Vector3f(0.5F, 0.1F, -0.75F);
+        Vector3f ground = new Vector3f(0.3F, -1.2F, -0.9F);
+        Vector3f hand = new Vector3f(raised).lerp(ground, down).lerp(new Vector3f(RechargeAnimation.HAND_RIGHT), back);
+        RechargeAnimation.arm(event.getPoseStack(), event.getMultiBufferSource(), event.getPackedLight(), player,
+                renderer, 1.0F, hand, new Vector3f(1.5F, -0.4F, 0.35F));
     }
 }

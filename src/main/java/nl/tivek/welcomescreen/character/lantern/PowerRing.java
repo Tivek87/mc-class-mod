@@ -67,8 +67,9 @@ public final class PowerRing {
             // What the mouse always does. Tap: a bolt, or the shield up or away. Hold: the beam, or the dome.
             case "light_bolt" -> LightBolt.use(player, level, ability, on, data);
             case "light_shield" -> LightShield.use(player, level, ability, on, data);
-            // Take off, or land again.
-            case "flight" -> on && Flight.toggle(player, level, ability);
+            // Take off, or land again; flying into the ground at full speed lands with a slam.
+            case "flight" -> on && ((data & Characters.SLAM) != 0 ? Flight.slam(player, level, ability)
+                    : Flight.toggle(player, level, ability));
             default -> false;
         };
     }

@@ -37,6 +37,11 @@ public final class Characters {
      * starts. It lasts until the button comes up again (a press with {@code on} false).
      */
     public static final int HOLD = 4;
+    /**
+     * Bit in the flight key's {@code data}, sent by your own game rather than by the key: you flew into the ground at
+     * full speed, so you land with a slam instead of simply landing.
+     */
+    public static final int SLAM = 8;
 
     private static final Map<UUID, GameCharacter> ACTIVE = new HashMap<>();
     // Per player, per character: the server tick each slot is ready again on, in AbilitySlot order.

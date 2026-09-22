@@ -40,7 +40,9 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import nl.tivek.welcomescreen.WelcomeScreenMod;
 import nl.tivek.welcomescreen.character.CharacterAbility;
 import nl.tivek.welcomescreen.character.GameCharacter;
+import nl.tivek.welcomescreen.character.Characters;
 import nl.tivek.welcomescreen.character.lantern.Flight;
+import nl.tivek.welcomescreen.character.lantern.LandingSlam;
 import nl.tivek.welcomescreen.client.character.ClientCharacter;
 import nl.tivek.welcomescreen.network.AbilityActionPayload;
 import nl.tivek.welcomescreen.network.RingPayload;
@@ -51,12 +53,13 @@ import nl.tivek.welcomescreen.network.RingPayload;
  * <li><b>Taking off</b> (see {@link Flight#ARISE_TICKS}): you stop where you are while your fists come to your
  * chest, then your arms sweep down along your sides and you rise a few blocks, looking up, and from there you
  * fly on without a break.</li>
- * <li><b>Flying</b>: hold forward and you pick up speed the way you look, up to half again as fast as an elytra
+ * <li><b>Flying</b>: hold forward and you pick up speed the way you look, up to a little faster than an elytra
  * with rockets; let go and you glide to a hover. Jump and sneak rise and sink, left and right slide sideways.
  * You carry your speed into every turn, so you swing through curves instead of snapping round.</li>
  * <li>The dome works as a brake chute: while it is up your speed is halved.</li>
  * <li>Walls and the ground stop you; knocks from a hit or a blast move you as they would anyone. Sink down onto
- * the ground slowly and you land by yourself.</li>
+ * the ground slowly and you land by yourself; dive into it at full speed and you land with a slam, down on your
+ * fist for a moment while the ring throws up a construct (see LandingSlam).</li>
  * <li>An empty ring lets you sink down gently, with no more steering, until you touch ground.</li>
  * </ul>
  * For everyone who flies, you included, this also keeps how fast they go and how they bank for their poses
@@ -102,6 +105,18 @@ public final class ClientFlight {
     private static boolean landing;
     @Nullable
     private static WindSound wind;
+    // The speed you had when the ground stopped you last tick, or null when it did not.
+    @Nullable
+    private static Vec3 landedWith;
+
+    // ---- Your own landing slam ----
+    // How much of your top speed you must fly into the ground with, and how much of that must go down, for a slam.
+    private static final double SLAM_SPEED = 0.7;
+    private static final double SLAM_DOWN = 0.35;
+    /** Ticks you stay down after a slam, crouched on your fist: you cannot move meanwhile. */
+    static final int SLAM_ROOT = 10;
+    // The tick (of your own player) you last slammed into the ground, or MIN_VALUE.
+    private static int slamTick = Integer.MIN_VALUE;
 
     // ---- Everyone who flies, as seen ----
     private static final Map<Integer, Motion> MOTIONS = new HashMap<>();
@@ -139,9 +154,30 @@ public final class ClientFlight {
 
     /** Your own top speed right now, in blocks per tick: halved while the dome brakes you. */
     private static double topSpeed(LocalPlayer player) {
-        CharacterAbility flight = GameCharacter.GREEN_LANTERN.byName("flight");
-        double top = flight == null ? 2.5 : flight.value("topSpeed") / 20.0;
+        double top = fullSpeed();
         return ClientRing.has(player, RingPayload.DOME) ? top * 0.5 : top;
+    }
+
+    /** The top speed of a flight from the settings, in blocks per tick. */
+    private static double fullSpeed() {
+        CharacterAbility flight = GameCharacter.GREEN_LANTERN.byName("flight");
+        return flight == null ? 1.75 : flight.value("topSpeed") / 20.0;
+    }
+
+    /**
+     * How many ticks ago this player hit the ground with a landing slam (with the part of a tick), or -1 when he
+     * did not just now. Your own is known the moment you land; anyone else's once the server's construct arrives.
+     */
+    static float slam(Entity player, float partialTick) {
+        float seen = ClientConstructs.slamAge(player.getId(), partialTick);
+        Minecraft minecraft = Minecraft.getInstance();
+        if (player == minecraft.player && slamTick != Integer.MIN_VALUE) {
+            float own = player.tickCount - slamTick + partialTick;
+            if (own >= 0.0F && own < LandingSlam.END_TICK) {
+                seen = Math.max(seen, own);
+            }
+        }
+        return seen;
     }
 
     // ---- Steering yourself ----
@@ -154,6 +190,19 @@ public final class ClientFlight {
     public static void onInput(MovementInputUpdateEvent event) {
         Minecraft minecraft = Minecraft.getInstance();
         if (!(event.getEntity() instanceof LocalPlayer player) || player != minecraft.player) {
+            return;
+        }
+        // Right after a slam you stay down on your fist a moment: crouched, and going nowhere.
+        float slammed = slam(player, 0.0F);
+        if (slammed >= 0.0F && slammed < SLAM_ROOT) {
+            Input input = event.getInput();
+            input.forwardImpulse = 0.0F;
+            input.leftImpulse = 0.0F;
+            input.jumping = false;
+            input.shiftKeyDown = true;
+            velocity = Vec3.ZERO;
+            afterMove = null;
+            player.setDeltaMovement(Vec3.ZERO);
             return;
         }
         float t = ClientRing.flight(player, 0.0F);
@@ -179,6 +228,14 @@ public final class ClientFlight {
             landing = false;
         }
         absorb(player);
+        // Flown into the ground at full speed, diving: a slam instead of a landing.
+        Vec3 impact = landedWith;
+        landedWith = null;
+        if (impact != null && t >= ARISE && player.onGround() && !ClientRing.has(player, RingPayload.DESCENT)
+                && impact.length() >= fullSpeed() * SLAM_SPEED && -impact.y >= impact.length() * SLAM_DOWN) {
+            slamDown(player);
+            return;
+        }
         if (ClientRing.has(player, RingPayload.DESCENT)) {
             velocity = new Vec3(velocity.x * 0.95, Mth.lerp(0.15, velocity.y, -SINK), velocity.z * 0.95);
         } else if (t < ARISE) {
@@ -223,6 +280,9 @@ public final class ClientFlight {
         afterMove = null;
         if (before == null) {
             return;
+        }
+        if (before.y == 0.0 && velocity.y < -1.0E-3) {
+            landedWith = velocity;
         }
         Vec3 now = player.getDeltaMovement();
         Vec3 knock = now.subtract(before);
@@ -278,6 +338,21 @@ public final class ClientFlight {
             rate = BRAKE;
         }
         return velocity.lerp(target, rate * grip);
+    }
+
+    /**
+     * You slam into the ground: you stop dead on your fist, and the server hears of it (it lands you and has the
+     * ring throw up a construct, see LandingSlam).
+     */
+    private static void slamDown(LocalPlayer player) {
+        landing = true;
+        slamTick = player.tickCount;
+        velocity = Vec3.ZERO;
+        player.setDeltaMovement(Vec3.ZERO);
+        CharacterAbility flight = GameCharacter.GREEN_LANTERN.byName("flight");
+        if (flight != null) {
+            PacketDistributor.sendToServer(new AbilityActionPayload(flight.slot().ordinal(), true, Characters.SLAM));
+        }
     }
 
     /** Your flight is over (you landed, turned it off, or are no longer Green Lantern): the game has you again. */
@@ -426,20 +501,38 @@ public final class ClientFlight {
         if (!steering || event.getPlayer() != Minecraft.getInstance().player) {
             return;
         }
-        double fast = Mth.clamp(velocity.length() / 2.5, 0.0, 1.0);
+        double fast = Mth.clamp(velocity.length() / fullSpeed(), 0.0, 1.0);
         float effect = Minecraft.getInstance().options.fovEffectScale().get().floatValue();
         event.setNewFovModifier(event.getNewFovModifier() * (1.0F + 0.14F * (float) fast * effect));
     }
 
-    /** As you rise off the ground in first person, your view tips up a little with the head of the body. */
+    /**
+     * A landing slam shakes the view: your own landing a little, and the shockwave of any slam nearby hard. As you
+     * rise off the ground in first person, your view tips up a little with the head of the body.
+     */
     @SubscribeEvent
     public static void onCameraAngles(ViewportEvent.ComputeCameraAngles event) {
         Minecraft minecraft = Minecraft.getInstance();
         LocalPlayer player = minecraft.player;
-        if (player == null || event.getCamera().isDetached() || event.getCamera().getEntity() != player) {
+        if (player == null) {
             return;
         }
-        float t = ClientRing.flight(player, (float) event.getPartialTick());
+        float partialTick = (float) event.getPartialTick();
+        float shake = ClientConstructs.shake(event.getCamera().getPosition(), partialTick);
+        float slammed = slam(player, partialTick);
+        if (slammed >= 0.0F && slammed < 5.0F) {
+            shake = Math.max(shake, 0.6F * (1.0F - slammed / 5.0F));
+        }
+        if (shake > 0.0F) {
+            float time = player.tickCount + partialTick;
+            event.setPitch(event.getPitch() + 1.8F * shake * Mth.sin(time * 2.9F));
+            event.setYaw(event.getYaw() + 1.3F * shake * Mth.sin(time * 3.7F + 1.0F));
+            event.setRoll(event.getRoll() + 1.5F * shake * Mth.sin(time * 4.3F + 2.0F));
+        }
+        if (event.getCamera().isDetached() || event.getCamera().getEntity() != player) {
+            return;
+        }
+        float t = ClientRing.flight(player, partialTick);
         if (t < GATHER || t > ARISE + 6.0F) {
             return;
         }

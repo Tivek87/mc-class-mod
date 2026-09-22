@@ -20,7 +20,7 @@ public class WelcomeScreenMod {
         nl.tivek.welcomescreen.init.ModItems.register(modEventBus);
         nl.tivek.welcomescreen.init.ModEffects.register(modEventBus);
         // Every settings file of this mod, together in config/welcomescreen.
-        ModConfigs.register(modContainer);
+        ModConfigs.register(modContainer, modEventBus);
         // The config screen is registered in WelcomeScreenClient: screen classes do not
         // exist on a server.
     }

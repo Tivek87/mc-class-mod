@@ -3,8 +3,10 @@ package nl.tivek.welcomescreen.config;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
+import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.config.ModConfig;
+import net.neoforged.fml.event.config.ModConfigEvent;
 import net.neoforged.neoforge.common.ModConfigSpec;
 import nl.tivek.welcomescreen.character.CharacterAbility;
 import nl.tivek.welcomescreen.character.GameCharacter;
@@ -25,7 +27,14 @@ import nl.tivek.welcomescreen.character.GameCharacter;
  * CharacterAbility), so a new character brings its own file and its own settings along by itself.
  */
 public final class CharacterConfig {
+    /**
+     * The version of the mod's defaults. Raise it whenever a default changes, and tell the setting what it was
+     * before with {@link CharacterAbility#was}: files that still hold the old number then take the new one.
+     */
+    private static final int DEFAULTS_VERSION = 2;
+
     private static final Map<GameCharacter, ModConfigSpec> SPECS = new EnumMap<>(GameCharacter.class);
+    private static final Map<GameCharacter, ModConfigSpec.IntValue> VERSIONS = new EnumMap<>(GameCharacter.class);
     // Keyed by "doc_ock.portal", and by "doc_ock.portal.homingRangeBlocks" for the settings.
     private static final Map<String, ModConfigSpec.IntValue> COOLDOWNS = new HashMap<>();
     private static final Map<String, ModConfigSpec.DoubleValue> DAMAGE = new HashMap<>();
@@ -41,17 +50,25 @@ public final class CharacterConfig {
     }
 
     /** Gives every character its own file in the mod's config folder. */
-    static void register(ModContainer container) {
+    static void register(ModContainer container, IEventBus modEventBus) {
         for (Map.Entry<GameCharacter, ModConfigSpec> entry : SPECS.entrySet()) {
             container.registerConfig(ModConfig.Type.COMMON, entry.getValue(),
                     ModConfigs.file(entry.getKey().getId()));
         }
+        modEventBus.addListener(ModConfigEvent.Loading.class, CharacterConfig::onLoad);
+        modEventBus.addListener(ModConfigEvent.Reloading.class, CharacterConfig::onLoad);
     }
 
     private static ModConfigSpec build(GameCharacter character) {
         ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
-        builder.comment("The abilities of " + character.getId() + ".",
-                "Cooldowns are in ticks (20 ticks = 1 second), damage is in half hearts (an Iron Golem has 100).")
+        VERSIONS.put(character, builder.comment("Kept up to date by the mod, leave it as it is: which of the mod's"
+                + " defaults this file has taken over. A setting you never changed follows the mod when its default"
+                + " changes; one you did change stays yours.")
+                .defineInRange("defaultsVersion", 0, 0, Integer.MAX_VALUE));
+        builder.comment("The abilities of " + character.getId() + ", one section per ability.",
+                "Cooldowns are in ticks (20 ticks = 1 second), damage is in half hearts (an Iron Golem has 100),",
+                "ring power is out of the 100 a full ring holds. The same numbers can be changed in the game:",
+                "Mods > this mod > Config.")
                 .push("abilities");
         if (character.abilities().isEmpty()) {
             builder.comment("This character has no abilities yet.").define("none", true);
@@ -60,21 +77,67 @@ public final class CharacterConfig {
             builder.comment("Ability " + ability.slot().number()
                     + ": the key \"Ability " + ability.slot().number() + "\" in Options > Controls")
                     .push(ability.id());
-            COOLDOWNS.put(ability.path(), builder.comment("Cooldown in ticks (20 = 1 second)")
-                    .defineInRange("cooldownTicks", ability.defaultCooldown(), 0, 72000));
-            DAMAGE.put(ability.path(), builder.comment("Damage in half hearts (0 = this ability does none)")
-                    .defineInRange("damage", ability.defaultDamage(), 0.0, 2000.0));
+            if (ability.usesCooldown()) {
+                COOLDOWNS.put(ability.path(), builder.comment("Cooldown in ticks (20 = 1 second)")
+                        .defineInRange("cooldownTicks", ability.defaultCooldown(), 0, 72000));
+            }
+            if (ability.usesDamage()) {
+                DAMAGE.put(ability.path(), builder.comment("Damage in half hearts (0 = this ability does none)")
+                        .defineInRange("damage", ability.defaultDamage(), 0.0, 2000.0));
+            }
             for (CharacterAbility.Setting setting : ability.settings()) {
+                // Every part of the ability says which part it is: "[Light Beam (hold ...)] Damage ...".
+                String comment = setting.group() == null ? setting.comment()
+                        : "[" + setting.group().title() + "] " + setting.comment();
                 SETTINGS.put(ability.path() + "." + setting.key(), setting.whole()
-                        ? builder.comment(setting.comment()).defineInRange(setting.key(),
+                        ? builder.comment(comment).defineInRange(setting.key(),
                                 (int) setting.value(), (int) setting.min(), (int) setting.max())
-                        : builder.comment(setting.comment()).defineInRange(setting.key(),
+                        : builder.comment(comment).defineInRange(setting.key(),
                                 setting.value(), setting.min(), setting.max()));
             }
             builder.pop();
         }
         builder.pop();
         return builder.build();
+    }
+
+    /**
+     * A character's file has been read (or read again after it changed on disk). Once for every new version of
+     * the defaults: every setting that still holds one of its old defaults was never changed by hand, so it takes
+     * the new default, and the file remembers it is up to date.
+     */
+    private static void onLoad(ModConfigEvent event) {
+        for (Map.Entry<GameCharacter, ModConfigSpec> entry : SPECS.entrySet()) {
+            ModConfigSpec spec = entry.getValue();
+            if (event.getConfig().getSpec() != spec || !spec.isLoaded()) {
+                continue;
+            }
+            ModConfigSpec.IntValue version = VERSIONS.get(entry.getKey());
+            if (version.get() >= DEFAULTS_VERSION) {
+                return;
+            }
+            for (CharacterAbility ability : entry.getKey().abilities()) {
+                for (CharacterAbility.Setting setting : ability.settings()) {
+                    ModConfigSpec.ConfigValue<? extends Number> value = SETTINGS.get(ability.path() + "."
+                            + setting.key());
+                    if (value != null && wasDefault(value.get().doubleValue(), setting.was())) {
+                        setValue(ability, setting.key(), setting.value());
+                    }
+                }
+            }
+            version.set(DEFAULTS_VERSION);
+            spec.save();
+            return;
+        }
+    }
+
+    private static boolean wasDefault(double value, double[] oldDefaults) {
+        for (double old : oldDefaults) {
+            if (Math.abs(value - old) < 1.0E-6) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /** True once this character's file has been read; before that the defaults are used. */

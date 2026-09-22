@@ -56,14 +56,14 @@ final class ConstructPainter {
                     .setOutputState(RenderStateShard.WEATHER_TARGET)
                     .createCompositeState(false));
 
-    private static final Vec3 UP = new Vec3(0, 1, 0);
+    static final Vec3 UP = new Vec3(0, 1, 0);
     // The ring's green, the bright green of the edges, and the almost white heart of fresh light.
-    private static final int GREEN = 0x3CE86A;
-    private static final int BRIGHT = 0x6CFF8E;
-    private static final int HOT = 0xE4FFEA;
+    static final int GREEN = 0x3CE86A;
+    static final int BRIGHT = 0x6CFF8E;
+    static final int HOT = 0xE4FFEA;
     // The green the mass itself is made of: a shade brighter than the light around it, so it reads as
     // something you could knock on rather than as a shadow.
-    private static final int MASS_GREEN = 0x4BEF78;
+    static final int MASS_GREEN = 0x4BEF78;
     // How wide the fist model below is, from the thumb to the little finger: a fist of size 1 is one block wide.
     private static final double MODEL_WIDTH = 1.23;
     // Specks of light that keep landing on the fist while it charges.
@@ -165,7 +165,7 @@ final class ConstructPainter {
     }
 
     /** Where a construct is and how it is turned: its middle, its own right, up and forward, and its scale. */
-    private record Frame(Vec3 center, Vec3 right, Vec3 up, Vec3 forward, double scale) {
+    record Frame(Vec3 center, Vec3 right, Vec3 up, Vec3 forward, double scale) {
         /** A point of the model (in blocks at scale 1) out in the world. */
         Vec3 at(double x, double y, double z) {
             return this.center.add(this.right.scale(x * this.scale)).add(this.up.scale(y * this.scale))
@@ -260,6 +260,60 @@ final class ConstructPainter {
         if (held && !full) {
             this.feed(frame);
         }
+    }
+
+    /**
+     * Any shape made of boxes, the way the fist is ({@link #FIST}: six numbers per box and how brightly it burns),
+     * at {@code frame}: solid green sides, bright lines where the shape ends, and a glow. What comes close to the
+     * camera fades out.
+     *
+     * @param solid  0 = gone, 1 = fully there
+     * @param bright how brightly it burns, on top of each box's own brightness
+     */
+    void model(double[][] model, Frame frame, double solid, double bright) {
+        double strength = Mth.clamp(solid, 0.0, 1.0);
+        if (strength <= 0.0) {
+            return;
+        }
+        Vec3[] corners = new Vec3[8];
+        Vec3 view = frame.local(this.camera);
+        this.nearFade = true;
+        for (int b = 0; b < model.length; b++) {
+            double[] box = model[b];
+            for (int i = 0; i < 8; i++) {
+                corners[i] = frame.at(box[(i & 1) == 0 ? 0 : 3], box[(i & 2) == 0 ? 1 : 4],
+                        box[(i & 4) == 0 ? 2 : 5]);
+            }
+            this.box(model, b, corners, view, Math.min(frame.scale(), WIDTH_CAP), strength, box[6] * bright,
+                    (box[2] + box[5]) * 0.5, 0.0);
+        }
+        this.nearFade = false;
+    }
+
+    /** A solid side of hard light, from four corners (for shapes that are not boxes). */
+    void side(Vec3 p0, Vec3 p1, Vec3 p2, Vec3 p3, int rgb, double solid) {
+        this.quad(this.mass, p0, p1, p2, p3, rgb, alpha(solid));
+    }
+
+    /** A bright line of light from {@code a} to {@code b}, with its glow around it. */
+    void edge(Vec3 a, Vec3 b, double width, double strength) {
+        this.line(this.light, a, b, width, BRIGHT, alpha(EDGE * strength));
+        this.line(this.glow, a, b, width * 3.0, GREEN, alpha(HALO * strength));
+    }
+
+    /** The boxes of the fist, for other constructs that are made of fists. */
+    static double[][] fistModel() {
+        return FIST;
+    }
+
+    /** The camera, where everything is drawn from. */
+    Vec3 camera() {
+        return this.camera;
+    }
+
+    /** The time of this frame, in ticks, for everything that ripples. */
+    float time() {
+        return this.time;
     }
 
     /**
@@ -424,7 +478,7 @@ final class ConstructPainter {
      * construct and two fine strands winding around it. It stays as long as the construct does: the light always
      * hangs on the ring that wills it.
      */
-    private void beam(Vec3 ring, Vec3 end, double solid, double scale) {
+    void beam(Vec3 ring, Vec3 end, double solid, double scale) {
         double strength = Mth.clamp(solid, 0.0, 1.0);
         double length = ring.distanceTo(end);
         if (strength <= 0.0 || length < 1.0E-3) {
@@ -687,7 +741,7 @@ final class ConstructPainter {
      *
      * @param size how far its glow reaches, in blocks
      */
-    private void flare(Vec3 at, double size, double strength) {
+    void flare(Vec3 at, double size, double strength) {
         if (strength <= 0.0) {
             return;
         }
@@ -742,7 +796,7 @@ final class ConstructPainter {
     }
 
     /** A ring of light around {@code center}, in the flat plane through the unit vectors {@code a} and {@code b}. */
-    private void circle(Vec3 center, Vec3 a, Vec3 b, double radius, double width, double glowWidth, int edge,
+    void circle(Vec3 center, Vec3 a, Vec3 b, double radius, double width, double glowWidth, int edge,
             int halo) {
         int segments = 24;
         Vec3 last = center.add(a.scale(radius));
@@ -854,7 +908,7 @@ final class ConstructPainter {
      *
      * @param middle the middle of the box, to tell which way the side faces
      */
-    private static double lit(Vec3 p0, Vec3 p1, Vec3 p2, Vec3 middle) {
+    static double lit(Vec3 p0, Vec3 p1, Vec3 p2, Vec3 middle) {
         Vec3 normal = p1.subtract(p0).cross(p2.subtract(p0));
         if (normal.lengthSqr() < 1.0E-12) {
             return 0.8;
@@ -867,7 +921,7 @@ final class ConstructPainter {
     }
 
     /** The same colour, darker or lighter. */
-    private static int shade(int rgb, double amount) {
+    static int shade(int rgb, double amount) {
         int red = (int) Mth.clamp((rgb >> 16 & 0xFF) * amount, 0.0, 255.0);
         int green = (int) Mth.clamp((rgb >> 8 & 0xFF) * amount, 0.0, 255.0);
         int blue = (int) Mth.clamp((rgb & 0xFF) * amount, 0.0, 255.0);
@@ -889,7 +943,7 @@ final class ConstructPainter {
     }
 
     /** 0 below 0, 1 above 1, and a smooth S-curve in between. */
-    private static double smooth(double t) {
+    static double smooth(double t) {
         double c = Mth.clamp(t, 0.0, 1.0);
         return c * c * (3.0 - 2.0 * c);
     }
@@ -938,7 +992,7 @@ final class ConstructPainter {
         return (int) (alpha * smooth((point.distanceTo(this.camera) - NEAR_GONE) / (NEAR_CLEAR - NEAR_GONE)));
     }
 
-    private static int alpha(double value) {
+    static int alpha(double value) {
         return (int) (255 * Mth.clamp(value, 0.0, 1.0));
     }
 }
