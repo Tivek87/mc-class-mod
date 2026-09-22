@@ -1,0 +1,13 @@
+{
+  "entries": [
+    {
+      "enum": "net/minecraft/client/model/HumanoidModel$ArmPose",
+      "name": "WELCOMESCREEN_LANTERN",
+      "constructor": "(ZLnet/neoforged/neoforge/client/IArmPoseTransformer;)V",
+      "parameters": {
+        "class": "nl/tivek/welcomescreen/client/character/lantern/LanternPose",
+        "field": "POSE"
+      }
+    }
+  ]
+}

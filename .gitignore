@@ -1,0 +1,28 @@
+# Gradle
+.gradle/
+build/
+
+# IDE (Eclipse, VS Code, IntelliJ)
+.classpath
+.project
+.settings/
+.eclipse/
+.vscode/
+.idea/
+*.iml
+*.ipr
+*.iws
+bin/
+out/
+
+# Run directories
+run/
+run-server/
+
+# Environment / Secrets
+.env
+*.local
+
+# Local backups and scratch files
+backup*.zip
+scratch/
