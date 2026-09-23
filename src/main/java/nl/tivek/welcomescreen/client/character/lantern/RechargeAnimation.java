@@ -2,6 +2,7 @@ package nl.tivek.welcomescreen.client.character.lantern;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
+import javax.annotation.Nullable;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.client.model.geom.ModelPart;
@@ -73,6 +74,8 @@ public final class RechargeAnimation {
     // your height.
     private static final float HELD_SCALE = 0.56F;
     private static final float WORN_SCALE = 0.8F;
+    // Flying speed at which the wind tugs at the lantern in your hand the hardest, in blocks per tick.
+    private static final float FULL_WIND = 1.5F;
 
     // Your arms where the game holds an empty hand: the shoulder, the grip, and how long the arm is between.
     static final Vector3f SHOULDER_RIGHT = restPoint(1.0F, -2.0F);
@@ -203,9 +206,13 @@ public final class RechargeAnimation {
 
     /**
      * The lantern in a left hand, seen from outside. The pose stack must stand in the player model, as it does
-     * in a render layer; the lantern hangs straight down from the hand whatever the arm does.
+     * in a render layer; the lantern hangs straight down from the hand whatever the arm does, and in flight
+     * whatever the body does, so its light blasts out ahead of him.
+     *
+     * @param bodyTurn how the flight pose turns the body (see {@link FlightPose#bodyTurn}), or null
      */
-    static void lanternInHand(PoseStack poseStack, MultiBufferSource buffers, ModelPart arm, boolean slim, float t) {
+    static void lanternInHand(PoseStack poseStack, MultiBufferSource buffers, ModelPart arm, boolean slim, float t,
+            @Nullable Quaternionf bodyTurn) {
         float shown = shown(t);
         if (shown <= 0.0F) {
             return;
@@ -215,6 +222,9 @@ public final class RechargeAnimation {
         // The grip: the middle of the hand, at the fingertips.
         poseStack.translate((slim ? 0.5F : 1.0F) / 16.0F, 10.0F / 16.0F, 0.0F);
         poseStack.mulPose(new Quaternionf().rotationZYX(arm.zRot, arm.yRot, arm.xRot).invert());
+        if (bodyTurn != null) {
+            poseStack.mulPose(new Quaternionf(bodyTurn).invert());
+        }
         // A player model is drawn upside down (y runs down); the lantern is made with y up.
         poseStack.scale(1.0F, -1.0F, 1.0F);
         float scale = WORN_SCALE * shown;
@@ -250,18 +260,25 @@ public final class RechargeAnimation {
         int light = event.getPackedLight();
         PlayerRenderer renderer = (PlayerRenderer) minecraft.getEntityRenderDispatcher().getRenderer(player);
 
-        // The left hand comes up with the lantern and grips it by its handle; the smack shoves it away.
+        // The left hand comes up with the lantern and grips it by its handle; the smack shoves it away. In flight
+        // the wind pushes it back and down a little and makes it tremble, the harder the faster you fly.
         float kick = kick(t);
+        float gust = ClientRing.flight(player, event.getPartialTick()) < 0.0F ? 0.0F
+                : Mth.clamp((float) ClientFlight.ownVelocity().length() / FULL_WIND, 0.0F, 1.0F);
+        float time = player.tickCount + event.getPartialTick();
         Vector3f grip = new Vector3f(GRIP_DOWN).lerp(GRIP_UP, lift(t))
-                .add(KNOCK.x * kick, KNOCK.y * kick, KNOCK.z * kick);
+                .add(KNOCK.x * kick, KNOCK.y * kick, KNOCK.z * kick)
+                .add(gust * 0.012F * Mth.sin(time * 1.9F), gust * (0.01F * Mth.sin(time * 2.7F) - 0.04F),
+                        gust * 0.05F);
         arm(pose, buffers, light, player, renderer, -1.0F, grip, LEFT_FROM);
         float shown = shown(t);
         if (shown > 0.0F) {
             pose.pushPose();
             pose.translate(grip.x, grip.y, grip.z);
             // Turned a little so you see it is round. Its front (-z of its own) looks away from you, so the
-            // fist lands on the back and the light blasts out ahead of you.
+            // fist lands on the back and the light blasts out ahead of you. The wind tips its top towards you.
             pose.mulPose(Axis.YP.rotationDegrees(-14.0F));
+            pose.mulPose(Axis.XP.rotationDegrees(gust * (10.0F + 2.0F * Mth.sin(time * 2.3F))));
             float scale = HELD_SCALE * shown;
             pose.scale(scale, scale, scale);
             PowerBattery.draw(pose, buffers, glow(t), burst(t));

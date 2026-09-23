@@ -94,8 +94,10 @@ The ring makes Green Lantern's uniform over your own clothes.
   at night); the stone glows by itself. All of it is solid and never see-through. In first person that side
   faces up, so you see it on top of your fist. The stone's colour shows how much power is left (see below).
 - **While the ring works, the uniform lights up.** Only then: a resting ring leaves the suit as it is. The
-  lantern on your chest glows like a core, lines of green energy light up over the suit with pulses running
-  out of the core, most of all down your right arm into the ring, and the ring's light flares out around its
+  lantern on your chest glows like a core, and green energy runs out of it along lines of light all over the
+  suit, with pulses running outwards: the thickest and fastest over your right shoulder and down your right arm
+  into the ring, and the rest over the chest and the back, down the flanks, the other arm and the legs, and up
+  the back of the head. The ring's light flares out around its
   stone. The harder the ring works, the brighter all of it: a little for the shield, more for a fist or a
   bolt, a lot for flying, the dome and the beam. You see it on your own arms in first person too.
 - When you change back, the line slides up again and the uniform falls apart into green sparks.
@@ -142,15 +144,17 @@ quick one, 2 seconds of holding for the lasting one.
 **Right click (the left hand defends)**
 
 - **Tap — Light Shield (on/off).** A round pane of hard light stands in front of you, in the way you look,
-  held up by your left hand. It stays up until you tap again. It turns with your head.
+  held up by your left hand. It stays up until you tap again. It turns with your head. Everyone else sees it
+  as solid as any construct; only from your own eyes in first person you look through the pane.
   - **Takes 70%** off every hit that comes at you from the front. Damage that goes straight through armour
     anyway (poison, falling, drowning, the void) goes through it as well, and so do arrows that pierce.
   - **Power:** 0.5 per second while it is up.
   - The light flares where a hit lands on it. Tap again, recharge or run the ring dry and it falls apart.
   - While you fly it becomes a **ram cone** (see Flight).
 - **Hold 2 seconds — Light Dome.** The shield opens out into a dome of hard light all around you, for as
-  long as you keep holding: faint where you look straight through it, bright along its outline, with seams
-  of light over it.
+  long as you keep holding, with seams of light over it. From outside it is solid; from under it (your own
+  eyes, or anyone else's inside it) it is faint where you look straight through it and bright along its
+  outline, so you can still see out.
   - **Takes 40%** off every hit, **from every side**. It covers more than the shield and holds less. The
     same hits go straight through it as through the shield.
   - **Power:** 1.5 per second. A shield you had up waits under the dome and costs nothing meanwhile.
@@ -179,8 +183,9 @@ Green Lantern recharges his ring at his lantern, the power battery.
   breaks no blocks.
 - While you recharge, the ring makes nothing else: a shield, dome or beam you had going stops. While you
   charge a fist you cannot recharge: let go of the fist first.
-- **Not in the air.** The lantern stands on the ground, so a flight lasts only as long as the ring does:
-  land first, then recharge.
+- **In the air too**, once the take-off is over: you keep flying while you do it. The lantern hangs upright
+  from your hand however your body lies, the wind shakes it in first person, and the hit sends rings of light
+  out around the way you fly. Recharging while an empty ring lets you sink makes you fly again.
 
 ### Flight (key C)
 
@@ -197,19 +202,39 @@ Green Lantern recharges his ring at his lantern, the power battery.
   together; you bank into your turns, dive head first and climb head up, and your head keeps looking where
   you look. A streak of green light trails behind you at speed, and flying low throws up dust from the
   ground or spray from the water below.
-- **Landing:** sink down onto the ground slowly and you land by yourself, or press C again anywhere to stop
-  flying (in the air you then fall from there). Walls and the ground stop you; hits and blasts still knock
-  you about.
+- **Landing:** sink down onto the ground slowly and you land by yourself, or fly into it while looking down at
+  it and you land as well, whatever your speed; or press C again anywhere to stop flying (in the air you then
+  fall from there). Walls and the ground stop you; hits and blasts still knock you about.
 - **Power:** a full ring keeps you up for **15 seconds**, so flying costs **6.7 power a second** (100
   divided by 15), from the moment you take off. You need at least **5 power** to take off. Everything you do
   while flying costs on top of that, so you run dry sooner. The panel shows how many seconds you have left.
 - **Out of power in the air:** the ring's last light lets you sink down gently, arms up, and you cannot steer
-  any more. You do not get hurt when you touch the ground. Recharge before you fly again.
+  any more. You do not get hurt when you touch the ground. Recharge (on the way down or on the ground) to fly
+  again.
+- **Landing slam (by itself, no key):** dive into the ground at (nearly) full speed and your flight ends in a
+  hero's landing. Just before the ground you swing upright, feet first, ring fist cocked high; then you come
+  down low on one knee and smash that fist into the ground, which cracks open around it and throws up chunks,
+  the other arm flung out behind you. In first person your view dips down to your fist in the ground and comes
+  back up in time to see the construct strike. The ring throws up a giant construct ahead of you that strikes
+  and sends a shockwave over the ground: 6 hearts in the middle, half at the edge 5 blocks out, and everything
+  is thrown away. It costs 4 power; without it you just land hard. Which construct is random every time, one of
+  **32**:
+  - out of the sky: a fist, a war hammer, an anvil, a boot, a ton weight, your own lantern, a safe, an anchor on
+    its chain, a spiked ball, a barbell, a bell that rings, a slapping hand, a sword that stays planted, a piano,
+    a toy brick, a stamp that leaves the emblem glowing in the ground, a block of TNT that blows up, and a
+    burning meteor;
+  - clapping shut: two hands, two fists, two cymbals, a bear trap and a book;
+  - out of the ground: an uppercut (the ground cracks and rumbles first, then fist and arm burst out), two rings
+    of spikes, and a pillar that bursts up and topples over;
+  - swung down: a fly swatter and a pickaxe over your shoulder, a gavel on its block, drumsticks on a drum;
+  - the lantern emblem falling flat on its face, and a volley of five rockets.
+  Every construct is solid and grows out of the ring's light; at the end it breaks into solid pieces (or sinks
+  back into the ground). The shockwave runs out as a low ring of solid hard light.
 - **Fighting in the air** works with the same buttons, shaped for flying:
   - **Tap left:** a bolt that takes your own speed along, so at top speed you never overtake your own shots.
   - **Hold left:** the beam, for strafing runs over creatures and the ground.
-  - **Tap right:** the shield becomes a pointed, streamlined **ram cone** out in front of you, with your left
-    fist out in front like a punch. It still takes 70% off hits from ahead, and whatever you fly into is
+  - **Tap right:** the shield becomes a pointed, streamlined **ram cone** out in front of you (solid to everyone
+    else, see-through only from your own eyes), with your left fist out in front like a punch. It still takes 70% off hits from ahead, and whatever you fly into is
     rammed away: a hard throw and **2 hearts plus 3 hearts for every block per tick you fly** (about 9.5 hearts
     at top speed). The same creature can be rammed again after 0.6 seconds.
   - **Hold right:** the dome works as a **brake chute**: your speed is halved for as long as you hold it.

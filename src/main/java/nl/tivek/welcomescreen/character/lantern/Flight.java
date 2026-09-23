@@ -27,8 +27,8 @@ import nl.tivek.welcomescreen.spell.SpellFx;
  * his shield ram whatever he flies into.
  *
  * <p>A full ring keeps him up for a set number of seconds; what he shoots or holds up meanwhile costs on top.
- * If the ring runs dry up there, its last light lets him sink down gently, and he can fly again once he has
- * recharged it on the ground.
+ * If the ring runs dry up there, its last light lets him sink down gently, until he recharges it at his lantern
+ * (in the air or on the ground).
  */
 public final class Flight implements SpellEffect {
     /** Ticks the take-off lasts: fists to the chest, arms down along the sides, and up. Clients play it too. */
@@ -42,7 +42,7 @@ public final class Flight implements SpellEffect {
     // Ticks without any movement from his game before he counts as standing still in the air.
     private static final int STILL_TICKS = 2;
     // How much of his top speed of the last few ticks is kept each tick, and how much of his top speed the server
-    // must have seen before it believes a landing slam (his own game asks for it at 70%).
+    // must have seen before it believes a landing slam (his own game asks for it at 60%).
     private static final double PEAK_FADE = 0.85;
     private static final double SLAM_CHECK = 0.45;
 
@@ -137,6 +137,18 @@ public final class Flight implements SpellEffect {
         return moving.lengthSqr() > RAM_SPEED * RAM_SPEED * 0.25 ? moving.normalize() : player.getLookAngle();
     }
 
+    /** The ring was recharged in the air: if an empty ring was letting him sink, it carries him again. */
+    static void recharged(ServerPlayer player, ServerLevel level) {
+        Flight flight = FLYING.get(player.getUUID());
+        if (flight == null || !flight.descending) {
+            return;
+        }
+        flight.descending = false;
+        flight.descentTicks = 0;
+        flight.sound(level, SoundEvents.BEACON_POWER_SELECT, 0.9F, 1.5F);
+        PowerRing.sync(player);
+    }
+
     /** The server stops: nobody flies any more. */
     static void clear() {
         FLYING.clear();
@@ -194,9 +206,9 @@ public final class Flight implements SpellEffect {
     }
 
     /**
-     * His own game tells he flew into the ground at full speed. Checked against how fast the server saw him go:
-     * then he lands with a slam, and when the ring can pay for it a construct in front of him sends a shockwave
-     * over the ground (see {@link LandingSlam}); without the power it is just a hard landing.
+     * His own game tells he flew into the ground at full speed. He lands in any case: the flight is over. Checked
+     * against how fast the server saw him go, it is a slam, and when the ring can pay for it a construct in front of
+     * him sends a shockwave over the ground (see {@link LandingSlam}); otherwise it is just a hard landing.
      *
      * @return true when he landed, so the key's cooldown starts
      */
@@ -206,15 +218,13 @@ public final class Flight implements SpellEffect {
             return false;
         }
         double top = ability.value("topSpeed") / 20.0;
-        if (flight.peak < top * SLAM_CHECK) {
-            return false;
-        }
+        boolean fast = flight.peak >= top * SLAM_CHECK;
         flight.end();
         owner.setDeltaMovement(Vec3.ZERO);
         owner.hurtMarked = true;
         float cost = (float) ability.value("slamPowerCost");
         float power = PowerRing.power(owner);
-        if (power + 1.0E-4F >= cost && !Lantern.busy(owner)) {
+        if (fast && power + 1.0E-4F >= cost && !Lantern.busy(owner)) {
             PowerRing.setPower(owner, power - cost);
             LandingSlam.start(owner, level, ability);
         } else {

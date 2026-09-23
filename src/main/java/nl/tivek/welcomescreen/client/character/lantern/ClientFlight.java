@@ -58,8 +58,10 @@ import nl.tivek.welcomescreen.network.RingPayload;
  * You carry your speed into every turn, so you swing through curves instead of snapping round.</li>
  * <li>The dome works as a brake chute: while it is up your speed is halved.</li>
  * <li>Walls and the ground stop you; knocks from a hit or a blast move you as they would anyone. Sink down onto
- * the ground slowly and you land by yourself; dive into it at full speed and you land with a slam, down on your
- * fist for a moment while the ring throws up a construct (see LandingSlam).</li>
+ * the ground slowly and you land by yourself, and fly into it looking down and you land as well. Dive into it at full
+ * speed and you land with a slam: just before the ground you swing upright, feet first, with your ring fist cocked,
+ * and you come down on one knee with that fist smashed into the ground while the ring throws up a construct (see
+ * LandingSlam).</li>
  * <li>An empty ring lets you sink down gently, with no more steering, until you touch ground.</li>
  * </ul>
  * For everyone who flies, you included, this also keeps how fast they go and how they bank for their poses
@@ -101,6 +103,10 @@ public final class ClientFlight {
     // change after that and before the next tick is a knock from outside.
     @Nullable
     private static Vec3 afterMove;
+    // Whether the ground (or a ceiling) stopped you as you moved. The game adds its gravity after that, so the speed
+    // it leaves you with never shows it by itself.
+    private static boolean stoppedDown;
+    private static boolean stoppedUp;
     private static boolean airborne;
     private static boolean landing;
     @Nullable
@@ -111,10 +117,16 @@ public final class ClientFlight {
 
     // ---- Your own landing slam ----
     // How much of your top speed you must fly into the ground with, and how much of that must go down, for a slam.
-    private static final double SLAM_SPEED = 0.7;
+    private static final double SLAM_SPEED = 0.6;
     private static final double SLAM_DOWN = 0.35;
+    // Flying into the ground slower than a slam but still going down this fast, in blocks per tick, and looking at
+    // least this far down, in degrees: you land.
+    private static final double DIVE_LAND = 0.15;
+    private static final float DIVE_LOOK = 20.0F;
+    // How many ticks before a slam a diving flyer starts to swing upright for it, fist cocked.
+    private static final double BRACE_TICKS = 5.0;
     /** Ticks you stay down after a slam, crouched on your fist: you cannot move meanwhile. */
-    static final int SLAM_ROOT = 10;
+    static final int SLAM_ROOT = 14;
     // The tick (of your own player) you last slammed into the ground, or MIN_VALUE.
     private static int slamTick = Integer.MIN_VALUE;
 
@@ -139,6 +151,18 @@ public final class ClientFlight {
         /** Ticks since the flight ended, for the landing; very large while the flight goes on. */
         int sinceEnd = Integer.MAX_VALUE;
         boolean flew;
+        /** 0 to 1: how far he has swung upright for a slam into the ground just ahead; last tick and now. */
+        float braceO;
+        float brace;
+    }
+
+    /**
+     * 0 to 1: how far this flyer has swung upright for a slam, feet first and ring fist cocked, because the ground
+     * is only a few ticks away along his dive at full speed.
+     */
+    static float brace(Entity player, float partialTick) {
+        Motion motion = MOTIONS.get(player.getId());
+        return motion == null ? 0.0F : Mth.lerp(partialTick, motion.braceO, motion.brace);
     }
 
     /** How a flyer moves right now, or null for someone who does not fly (and has not just landed). */
@@ -228,13 +252,17 @@ public final class ClientFlight {
             landing = false;
         }
         absorb(player);
-        // Flown into the ground at full speed, diving: a slam instead of a landing.
         Vec3 impact = landedWith;
         landedWith = null;
-        if (impact != null && t >= ARISE && player.onGround() && !ClientRing.has(player, RingPayload.DESCENT)
-                && impact.length() >= fullSpeed() * SLAM_SPEED && -impact.y >= impact.length() * SLAM_DOWN) {
-            slamDown(player);
-            return;
+        boolean dove = false;
+        if (impact != null && t >= ARISE && player.onGround() && !ClientRing.has(player, RingPayload.DESCENT)) {
+            // Flown into the ground at full speed, diving: a slam instead of a landing.
+            if (impact.length() >= fullSpeed() * SLAM_SPEED && -impact.y >= impact.length() * SLAM_DOWN) {
+                slamDown(player);
+                return;
+            }
+            // Flown into it slower but on purpose, looking down at it: you land all the same.
+            dove = -impact.y > DIVE_LAND && player.getXRot() > DIVE_LOOK;
         }
         if (ClientRing.has(player, RingPayload.DESCENT)) {
             velocity = new Vec3(velocity.x * 0.95, Mth.lerp(0.15, velocity.y, -SINK), velocity.z * 0.95);
@@ -246,9 +274,13 @@ public final class ClientFlight {
         if (!player.onGround()) {
             airborne = true;
         }
-        // Sinking down onto the ground slowly after the take-off: you land by yourself.
-        if (!landing && airborne && t > ARISE + 4.0F && player.onGround() && !up
-                && velocity.horizontalDistance() < LAND_SPEED && !ClientRing.has(player, RingPayload.DESCENT)) {
+        if (dove) {
+            // Down on your feet where you hit the ground, not sliding on over it.
+            velocity = Vec3.ZERO;
+        }
+        // Sinking down onto the ground slowly after the take-off, or flown into it: you land by yourself.
+        if (!landing && (dove || airborne && t > ARISE + 4.0F && player.onGround() && !up
+                && velocity.horizontalDistance() < LAND_SPEED && !ClientRing.has(player, RingPayload.DESCENT))) {
             landing = true;
             CharacterAbility flight = GameCharacter.GREEN_LANTERN.byName("flight");
             if (flight != null) {
@@ -268,6 +300,8 @@ public final class ClientFlight {
     public static void onPlayerTick(PlayerTickEvent.Post event) {
         if (steering && event.getEntity() == Minecraft.getInstance().player) {
             afterMove = event.getEntity().getDeltaMovement();
+            stoppedDown = event.getEntity().verticalCollisionBelow;
+            stoppedUp = event.getEntity().verticalCollision && !stoppedDown;
         }
     }
 
@@ -281,13 +315,15 @@ public final class ClientFlight {
         if (before == null) {
             return;
         }
-        if (before.y == 0.0 && velocity.y < -1.0E-3) {
+        boolean down = stoppedDown && velocity.y < -1.0E-3;
+        boolean up = stoppedUp && velocity.y > 1.0E-3;
+        if (down) {
             landedWith = velocity;
         }
         Vec3 now = player.getDeltaMovement();
         Vec3 knock = now.subtract(before);
         double x = before.x == 0.0 && Math.abs(velocity.x) > 1.0E-3 ? 0.0 : velocity.x;
-        double y = before.y == 0.0 && Math.abs(velocity.y) > 1.0E-3 ? 0.0 : velocity.y;
+        double y = down || up ? 0.0 : velocity.y;
         double z = before.z == 0.0 && Math.abs(velocity.z) > 1.0E-3 ? 0.0 : velocity.z;
         velocity = new Vec3(x, y, z);
         if (knock.lengthSqr() > 1.0E-4) {
@@ -424,6 +460,25 @@ public final class ClientFlight {
         if (flying && speed > FAST * 0.6) {
             skim(level, player, motion, speed);
         }
+        motion.braceO = motion.brace;
+        float want = flying && diving(level, player, motion.velocity) ? 1.0F : 0.0F;
+        motion.brace = Mth.lerp(want > motion.brace ? 0.5F : 0.3F, motion.brace, want);
+    }
+
+    /**
+     * True when this flyer dives at slam speed and the ground is only a few ticks away along the way he goes: the
+     * moment to swing upright for the landing.
+     */
+    private static boolean diving(ClientLevel level, Entity player, Vec3 velocity) {
+        double speed = velocity.length();
+        if (speed < fullSpeed() * SLAM_SPEED || -velocity.y < speed * SLAM_DOWN
+                || ClientRing.has(player, RingPayload.DESCENT)) {
+            return false;
+        }
+        Vec3 from = player.position();
+        BlockHitResult hit = level.clip(new ClipContext(from, from.add(velocity.scale(BRACE_TICKS)),
+                ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, player));
+        return hit.getType() != HitResult.Type.MISS;
     }
 
     /** How far down the ground (or water) is below a flyer's feet, up to a little past {@link #SKIM}. */
@@ -507,8 +562,10 @@ public final class ClientFlight {
     }
 
     /**
-     * A landing slam shakes the view: your own landing a little, and the shockwave of any slam nearby hard. As you
-     * rise off the ground in first person, your view tips up a little with the head of the body.
+     * A landing slam shakes the view: your own landing a little, and the shockwave of any slam nearby hard. In first
+     * person your own slam also dips your view for a moment, down to your fist in the ground, and brings it back up in
+     * time to see the construct strike. As you rise off the ground, your view tips up a little with the head of the
+     * body.
      */
     @SubscribeEvent
     public static void onCameraAngles(ViewportEvent.ComputeCameraAngles event) {
@@ -531,6 +588,10 @@ public final class ClientFlight {
         }
         if (event.getCamera().isDetached() || event.getCamera().getEntity() != player) {
             return;
+        }
+        if (slammed >= 0.0F && slammed < LandingSlam.IMPACT_TICK) {
+            float dip = (float) (smooth(slammed / 1.5) * (1.0 - smooth((slammed - 3.5) / 5.0)));
+            event.setPitch(event.getPitch() + 22.0F * dip);
         }
         float t = ClientRing.flight(player, partialTick);
         if (t < GATHER || t > ARISE + 6.0F) {

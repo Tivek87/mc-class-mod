@@ -146,6 +146,8 @@ final class ConstructPainter {
             { -0.20, -0.20, 0.25, 0.20, 0.20, 0.55, 1.3 } };
     // How wide that bullet is at its widest, so a bolt of size 1 is one block wide.
     private static final double BOLT_WIDTH = 0.64;
+    /** A cube of one block round its middle: chunks thrown up by a blow. */
+    private static final double[][] CUBE = { { -0.5, -0.5, -0.5, 0.5, 0.5, 0.5, 1.0 } };
     // The dome: how many rings and slices its sphere is cut into.
     private static final int DOME_RINGS = 12;
     private static final int DOME_SLICES = 24;
@@ -301,6 +303,53 @@ final class ConstructPainter {
         this.line(this.glow, a, b, width * 3.0, GREEN, alpha(HALO * strength));
     }
 
+    /**
+     * A shape made of boxes breaking up, still solid: every box flies out from the middle of the shape, tumbling and
+     * dropping as it goes, and shrinks away to nothing. Nothing of it fades out: a construct is never see-through.
+     *
+     * @param apart 0 = still whole, 1 = gone
+     */
+    void shattered(double[][] model, Frame frame, double apart, double bright) {
+        double gone = Mth.clamp(apart, 0.0, 1.0);
+        double left = 1.0 - gone;
+        if (left <= 0.0) {
+            return;
+        }
+        Vec3[] corners = new Vec3[8];
+        Vec3 view = frame.local(this.camera);
+        double size = Math.max(1.0, frame.scale());
+        this.nearFade = true;
+        for (int b = 0; b < model.length; b++) {
+            double[] box = model[b];
+            Vec3 middle = frame.at((box[0] + box[3]) * 0.5, (box[1] + box[4]) * 0.5, (box[2] + box[5]) * 0.5);
+            Vec3 out = middle.subtract(frame.center());
+            Vec3 scatter = direction(b, 7);
+            Vec3 way = out.lengthSqr() > 1.0E-6 ? out.normalize().add(scatter.scale(0.6)).normalize() : scatter;
+            double speed = (1.2 + 1.8 * noise(b, 7, 3)) * size;
+            // Out and up at first, then down: thrown pieces.
+            Vec3 moved = middle.add(way.scale(speed * gone)).add(0.0, (1.2 * gone - 2.6 * gone * gone) * size, 0.0);
+            Vec3 axis = direction(b, 9);
+            double turn = gone * (1.5 + 3.0 * noise(b, 9, 2));
+            for (int i = 0; i < 8; i++) {
+                Vec3 corner = frame.at(box[(i & 1) == 0 ? 0 : 3], box[(i & 2) == 0 ? 1 : 4], box[(i & 4) == 0 ? 2 : 5]);
+                corners[i] = moved.add(spin(corner.subtract(middle), axis, turn).scale(left));
+            }
+            this.box(model, b, corners, view, Math.min(frame.scale(), WIDTH_CAP), 1.0, box[6] * bright,
+                    (box[2] + box[5]) * 0.5, 0.0);
+        }
+        this.nearFade = false;
+    }
+
+    /** A solid cube of hard light, turned by {@code angle} about {@code axis}: a chunk thrown up by a blow. */
+    void chunk(Vec3 at, double size, Vec3 axis, double angle, double bright) {
+        if (size <= 0.0) {
+            return;
+        }
+        Vec3 forward = spin(new Vec3(0, 0, 1), axis, angle);
+        Vec3 up = spin(UP, axis, angle);
+        this.model(CUBE, new Frame(at, forward.cross(up), up, forward, size), 1.0, bright);
+    }
+
     /** The boxes of the fist, for other constructs that are made of fists. */
     static double[][] fistModel() {
         return FIST;
@@ -365,9 +414,9 @@ final class ConstructPainter {
     }
 
     /**
-     * The shield: a round pane of hard light standing across {@code facing}, thick enough to read as
-     * something solid and bright all around its edge. It is left a little see-through on purpose, because it
-     * hangs right in front of the eyes of the one holding it.
+     * The shield: a round pane of hard light standing across {@code facing}, as solid as any construct, bright all
+     * around its edge. Only from the eyes of the one holding it is the pane left see-through, because it hangs right
+     * in front of them.
      *
      * @param size  how wide the pane is, in blocks
      * @param solid 0 = gone, 1 = fully there; it also folds out from the middle as this grows
@@ -381,8 +430,7 @@ final class ConstructPainter {
             return;
         }
         // Your own shield stays up while you walk and fight, right in front of your eyes: you see it by its
-        // rim and ribs, and look straight through the pane.
-        double pane = own ? 0.22 : 1.0;
+        // rim and ribs, and look straight through the pane. Everyone else sees it solid.
         Vec3 forward = facing.lengthSqr() < 1.0E-6 ? new Vec3(0, 0, 1) : facing.normalize();
         Vec3 right = forward.cross(UP);
         right = right.lengthSqr() < 1.0E-4 ? new Vec3(1, 0, 0) : right.normalize();
@@ -392,7 +440,7 @@ final class ConstructPainter {
         double hit = Mth.clamp(flash, 0.0, 1.0);
         double burn = 1.0 + 0.5 * hit;
         double ripple = 0.92 + 0.08 * Math.sin(this.time * 0.5);
-        int face = alpha((0.5 + 0.18 * hit) * strength * pane);
+        int face = own ? alpha((0.5 + 0.18 * hit) * strength * 0.22) : 255;
         int faceRgb = shade(MASS_GREEN, Math.min(1.0, 0.8 * burn * ripple));
         int edgeRgb = shade(MASS_GREEN, Math.min(1.0, burn));
         // Your own pane is drawn as light only, so it never hides anything behind it.
@@ -408,7 +456,7 @@ final class ConstructPainter {
                 this.quad(faces, front, front.add(lastOut), front.add(out), front, faceRgb, face);
                 this.quad(faces, back, back.add(out), back.add(lastOut), back, faceRgb, face);
                 this.quad(faces, front.add(lastOut), back.add(lastOut), back.add(out), front.add(out),
-                        edgeRgb, alpha((own ? 0.55 : 0.9) * strength));
+                        edgeRgb, own ? alpha(0.55 * strength) : 255);
                 Vec3 a = center.add(lastOut);
                 Vec3 b = center.add(out);
                 this.line(this.light, a, b, radius * 0.07, BRIGHT, alpha(EDGE * burn * strength));
@@ -456,7 +504,7 @@ final class ConstructPainter {
     }
 
     /** The same number between 0 and 1 every frame for the same three numbers. */
-    private static double noise(int a, int b, int c) {
+    static double noise(int a, int b, int c) {
         long h = a * 73856093L ^ b * 19349663L ^ c * 83492791L;
         h ^= h >>> 13;
         h *= 0x5bd1e995L;
@@ -464,8 +512,8 @@ final class ConstructPainter {
         return (h & 0xFFFF) / 65536.0;
     }
 
-    /** A direction of its own for every speck. */
-    private static Vec3 direction(int a, int b) {
+    /** A direction of its own for every speck (or piece, or crack). */
+    static Vec3 direction(int a, int b) {
         double yaw = noise(a, b, 0) * Math.PI * 2;
         double y = noise(a, b, 1) * 2.0 - 1.0;
         double flat = Math.sqrt(1.0 - y * y);
@@ -582,11 +630,11 @@ final class ConstructPainter {
     }
 
     /**
-     * The dome: a bubble of hard light around its owner. Faint where you look straight through it and bright
-     * where it curves away (its outline), with a web of seams over it and a ripple running round it, so it reads
-     * as a shell and still lets you see out. Hits make it flare.
+     * The dome: a bubble of hard light around its owner, with a web of seams over it and a ripple running round it.
+     * Seen from outside it is as solid as any construct. Seen from under it, it is faint where you look straight
+     * through it and bright where it curves away (its outline), so it still lets you see out. Hits make it flare.
      *
-     * @param inside true when you are the one under it, looking out: then it is kept fainter still
+     * @param inside true when you are the one under it, looking out (anyone whose eyes are inside it counts too)
      */
     void dome(Vec3 center, double size, double solid, double flash, boolean inside) {
         double strength = Mth.clamp(solid, 0.0, 1.0);
@@ -595,8 +643,9 @@ final class ConstructPainter {
         }
         double radius = size * 0.5 * (0.45 + 0.55 * strength);
         double hit = Mth.clamp(flash, 0.0, 1.0);
-        double base = inside ? 0.04 : 0.1;
-        double edge = inside ? 0.16 : 0.42;
+        boolean under = inside || this.camera.distanceTo(center) < radius;
+        double base = under ? 0.04 : 0.1;
+        double edge = under ? 0.16 : 0.42;
         Vec3[][] points = new Vec3[DOME_RINGS + 1][DOME_SLICES + 1];
         for (int i = 0; i <= DOME_RINGS; i++) {
             double polar = Math.PI * i / DOME_RINGS;
@@ -615,6 +664,13 @@ final class ConstructPainter {
                 double facing = view.lengthSqr() < 1.0E-8 ? 1.0 : Math.abs(normal.dot(view.normalize()));
                 double rim = (1.0 - facing) * (1.0 - facing);
                 double band = Math.max(0.0, 1.0 - Math.abs((double) i / DOME_RINGS - ripple) * 8.0);
+                if (!under) {
+                    // A solid shell, lit like a block: brightest on top.
+                    double lit = (0.62 + 0.38 * (normal.y * 0.5 + 0.5)) * (0.9 + 0.2 * band) * (1.0 + 0.3 * hit);
+                    this.quad(this.mass, points[i][j], points[i + 1][j], points[i + 1][j + 1], points[i][j + 1],
+                            shade(MASS_GREEN, Math.min(1.0, lit)), 255);
+                    continue;
+                }
                 double a = (base + edge * rim + 0.12 * band + 0.25 * hit) * strength;
                 this.quad(this.light, points[i][j], points[i + 1][j], points[i + 1][j + 1], points[i][j + 1],
                         shade(MASS_GREEN, 0.85 + 0.25 * band), alpha(a));
@@ -638,11 +694,12 @@ final class ConstructPainter {
     }
 
     /**
-     * The shield while its owner flies: a pointed, streamlined cone of hard light out in front of him, its tip
-     * where he is going, with bright ridges running to the tip and a glowing rim round its open end. Hits and
+     * The shield while its owner flies: a pointed, streamlined cone of solid hard light out in front of him, its
+     * tip where he is going, with bright ridges running to the tip and a glowing rim round its open end. Hits and
      * rams make it flare.
      *
-     * @param own true when it is your own and you look out through it: then it is left see-through, like the shield
+     * @param own true when it is your own and you look out through it: only then is it left see-through, like the
+     *            shield
      */
     void ram(Vec3 center, Vec3 way, double solid, double flash, boolean own) {
         double strength = Mth.clamp(solid, 0.0, 1.0);
@@ -676,7 +733,7 @@ final class ConstructPainter {
                 if (own) {
                     this.quad(this.light, p0, p1, p2, p3, rgb, alpha(0.16 * strength));
                 } else {
-                    this.quad(this.mass, p0, p1, p2, p3, rgb, alpha(0.62 * strength));
+                    this.quad(this.mass, p0, p1, p2, p3, rgb, 255);
                 }
             }
         }
@@ -936,7 +993,7 @@ final class ConstructPainter {
     }
 
     /** {@code v} turned by {@code angle} (radians) around the unit vector {@code axis}. */
-    private static Vec3 spin(Vec3 v, Vec3 axis, double angle) {
+    static Vec3 spin(Vec3 v, Vec3 axis, double angle) {
         double cos = Math.cos(angle);
         double sin = Math.sin(angle);
         return v.scale(cos).add(axis.cross(v).scale(sin)).add(axis.scale(axis.dot(v) * (1.0 - cos)));

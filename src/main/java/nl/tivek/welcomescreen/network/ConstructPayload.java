@@ -45,27 +45,77 @@ public record ConstructPayload(int id, int owner, Vec3 center, Vec3 facing, floa
     /** The shield while he flies: a pointed cone out in front of him that rams whatever he flies into. */
     public static final int RAM = 5;
     /**
-     * A landing at full speed: a big construct that slams down where he landed and sends a shockwave over the
-     * ground. {@code center} is where it strikes the ground, {@code facing} the way he faced, {@code size} how far
-     * the shockwave reaches, {@code age} how long ago he landed, and {@code variant} which construct it is.
+     * A landing at full speed: a big construct that strikes where he landed and sends a shockwave over the ground.
+     * {@code center} is where it strikes the ground, {@code facing} the way he faced, {@code size} how far the
+     * shockwave reaches, {@code age} how long ago he landed, and {@code variant} which construct it is.
      */
     public static final int SLAM = 6;
-    /** A giant fist that smashes down from above. */
+    /** A giant fist that smashes down out of the sky, knuckles first. */
     public static final int SLAM_FIST = 0;
     /** Two giant open hands that clap together. */
     public static final int SLAM_HANDS = 1;
     /** Two giant fists that bump together. */
     public static final int SLAM_FISTS = 2;
-    /** A giant hammer that drops head first. */
+    /** A giant war hammer that drops head first. */
     public static final int SLAM_HAMMER = 3;
-    /** The lantern emblem, standing up and falling flat. */
+    /** The lantern emblem, standing up and falling flat on its face. */
     public static final int SLAM_EMBLEM = 4;
     /** A giant anvil that drops. */
     public static final int SLAM_ANVIL = 5;
     /** Two giant cymbals that crash together. */
     public static final int SLAM_CYMBALS = 6;
+    /** A giant fist and arm that burst up out of the ground, an uppercut. */
+    public static final int SLAM_UPPERCUT = 7;
+    /** Two rings of spikes that shoot up out of the ground around where it strikes. */
+    public static final int SLAM_SPIKES = 8;
+    /** A giant boot that stomps down out of the sky. */
+    public static final int SLAM_BOOT = 9;
+    /** A cartoon weight of one ton that drops. */
+    public static final int SLAM_WEIGHT = 10;
+    /** A giant sword that drops point first out of the sky and stays standing in the ground. */
+    public static final int SLAM_SWORD = 11;
+    /** A volley of rockets from behind him that come down one after another. */
+    public static final int SLAM_ROCKETS = 12;
+    /** A giant fly swatter that he swings down flat onto the ground ahead of him. */
+    public static final int SLAM_SWATTER = 13;
+    /** His own lantern, the power battery, dropping out of the sky. */
+    public static final int SLAM_LANTERN = 14;
+    /** A giant safe that drops. */
+    public static final int SLAM_SAFE = 15;
+    /** A ship's anchor on its chain that drops. */
+    public static final int SLAM_ANCHOR = 16;
+    /** A spiked ball, tumbling as it drops. */
+    public static final int SLAM_MACE = 17;
+    /** A giant barbell that drops. */
+    public static final int SLAM_BARBELL = 18;
+    /** A giant bell that drops on its rim and rings. */
+    public static final int SLAM_BELL = 19;
+    /** A meteor that streaks in out of the sky ahead of him. */
+    public static final int SLAM_METEOR = 20;
+    /** A giant open hand that slaps down flat on the ground. */
+    public static final int SLAM_PALM = 21;
+    /** A judge's gavel that strikes its block. */
+    public static final int SLAM_GAVEL = 22;
+    /** A giant pickaxe he swings over his head into the ground. */
+    public static final int SLAM_PICKAXE = 23;
+    /** A bear trap whose jaws snap shut. */
+    public static final int SLAM_TRAP = 24;
+    /** A giant book that slams shut. */
+    public static final int SLAM_BOOK = 25;
+    /** A giant drum struck by two drumsticks. */
+    public static final int SLAM_DRUM = 26;
+    /** A pillar that bursts up out of the ground and topples over away from him. */
+    public static final int SLAM_PILLAR = 27;
+    /** A block of TNT that drops and blows up. */
+    public static final int SLAM_TNT = 28;
+    /** An upright piano that drops. */
+    public static final int SLAM_PIANO = 29;
+    /** A giant toy brick that drops. */
+    public static final int SLAM_BRICK = 30;
+    /** A giant rubber stamp that stamps the lantern emblem into the ground. */
+    public static final int SLAM_STAMP = 31;
     /** How many different slam constructs there are. */
-    public static final int SLAM_KINDS = 7;
+    public static final int SLAM_KINDS = 32;
 
     public static final CustomPacketPayload.Type<ConstructPayload> TYPE = new CustomPacketPayload.Type<>(
             ResourceLocation.fromNamespaceAndPath(WelcomeScreenMod.MODID, "construct"));

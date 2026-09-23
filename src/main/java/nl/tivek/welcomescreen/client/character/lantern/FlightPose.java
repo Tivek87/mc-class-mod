@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.Map;
 import javax.annotation.Nullable;
 import net.minecraft.Util;
+import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.client.model.PlayerModel;
@@ -36,8 +37,10 @@ import org.joml.Vector3f;
  * <li><b>Flying</b>: the faster he goes the more his body lines up with the way he flies, arms back along his
  * sides and legs together, like the pictures. He banks into his turns and leans into sideways slides, dives head
  * first and climbs head up, and his head keeps looking where he looks.</li>
- * <li>An empty ring lets him sink with his arms up; landing is a short dip, and a landing at full speed a slam:
- * down on one knee with his ring fist in the ground.</li>
+ * <li>An empty ring lets him sink with his arms up; landing is a short dip, and a landing at full speed a slam, the
+ * way heroes land: just before the ground he swings upright, feet first, ring fist cocked high; then he comes down
+ * low on one knee, the other leg forward, and smashes that fist into the ground in front of him, the other arm flung
+ * out behind, until the construct has struck and he rises again.</li>
  * <li>On top of that, standing or flying: the ring hand points along the beam, both hands hold the dome open,
  * and in flight the shield hand goes out in front, fist first, into the ram cone.</li>
  * </ul>
@@ -52,8 +55,15 @@ final class FlightPose {
     // How quickly the arms blend from one thing to the next, per second.
     private static final float BLEND = 9.0F;
     // How long the pose of a landing slam lasts, in ticks; your own fist shows in first person this long.
-    private static final float SLAM_TICKS = 20.0F;
-    private static final float SLAM_HAND_TICKS = 14.0F;
+    private static final float SLAM_TICKS = 24.0F;
+    private static final float SLAM_HAND_TICKS = 18.0F;
+    // How far the body goes down in a slam's landing, in blocks: low enough for the fist to reach into the ground.
+    private static final float SLAM_DIP = 0.55F;
+    // Your own ring fist in first person, in blocks in front of your eyes: cocked high on the right before a slam, and
+    // smashed into the ground in front of you (low on your screen, while your view dips down to it).
+    private static final Vector3f COCKED = new Vector3f(0.55F, 0.42F, -0.72F);
+    private static final Vector3f PLANTED = new Vector3f(0.18F, -0.95F, -0.9F);
+    private static final Vector3f ARM_FROM = new Vector3f(1.5F, -0.4F, 0.35F);
 
     private static final Map<Integer, Blend> BLENDS = new HashMap<>();
     // The player being drawn right now, and whether his body was turned (so it is turned back afterwards).
@@ -95,10 +105,12 @@ final class FlightPose {
      * @param tilt   how far the body tips forward, in radians (a quarter turn lies flat)
      * @param roll   how far it leans sideways, in radians: positive to his right
      * @param land   0 to 1: the dip of a landing
+     * @param slam   ticks since he landed with a slam, or -1
+     * @param brace  0 to 1: how far he has swung upright for a slam just ahead
      * @param time   ticks, for everything that sways
      */
     private record Frame(int entity, float t, float fast, float tilt, float roll, float land, boolean sinking,
-            float slam, float time, Blend blend, Vec3 pivot, Vec3 forward, Vec3 left, Quaternionf turn) {
+            float slam, float brace, float time, Blend blend, Vec3 pivot, Vec3 forward, Vec3 left, Quaternionf turn) {
     }
 
     /**
@@ -119,6 +131,11 @@ final class FlightPose {
                 : Mth.sin((motion.sinceEnd + partialTick) / LAND_TICKS * Mth.PI);
         float slam = ClientFlight.slam(player, partialTick);
         boolean slamming = slam >= 0.0F && slam < SLAM_TICKS;
+        float brace = flying ? ClientFlight.brace(player, partialTick) : 0.0F;
+        if (slamming) {
+            // A slam has a landing of its own.
+            land = 0.0F;
+        }
         frame = null;
         Blend blend = BLENDS.get(player.getId());
         if (blend == null) {
@@ -158,14 +175,18 @@ final class FlightPose {
                 roll *= in;
                 fast *= in;
             }
+            // Swinging upright for a slam into the ground just ahead: he comes down feet first.
+            tilt *= 1.0F - brace;
+            roll *= 1.0F - brace;
+            fast *= 1.0F - brace;
         }
         Vec3 pivot = new Vec3(0.0, player.getBbHeight() * 0.55, 0.0);
         Quaternionf turn = new Quaternionf().rotateAxis(roll, (float) forward.x, 0.0F, (float) forward.z)
                 .rotateAxis(tilt, (float) left.x, 0.0F, (float) left.z);
         frame = new Frame(player.getId(), t, fast, tilt, roll, land, ClientRing.has(player, RingPayload.DESCENT),
-                slamming ? slam : -1.0F, player.tickCount + partialTick, blend, pivot, forward, left, turn);
+                slamming ? slam : -1.0F, brace, player.tickCount + partialTick, blend, pivot, forward, left, turn);
         PoseStack pose = event.getPoseStack();
-        float dip = dip(t, land);
+        float dip = dip(t, land) + (slamming ? SLAM_DIP * kneel(slam) : 0.0F);
         pushed = Math.abs(tilt) > 1.0E-3F || Math.abs(roll) > 1.0E-3F || dip > 1.0E-3F;
         if (pushed) {
             pose.pushPose();
@@ -249,35 +270,69 @@ final class FlightPose {
             limb.yRot = Mth.lerp(blend.dome, limb.yRot, 0.0F);
             limb.zRot = Mth.lerp(blend.dome, limb.zRot, side * 1.2F);
         }
+        if (f.brace() > 0.0F) {
+            brace(model, limb, right, f.brace());
+        }
         if (f.slam() >= 0.0F) {
             slam(model, limb, right, f.slam());
         }
     }
 
     /**
-     * The landing slam, on top of the crouch the game already gives him: the ring fist comes up and smashes down
-     * into the ground in front of him and stays there a moment, the other arm swings out and back, one knee comes
-     * up and the other goes down; then he rises again.
+     * Swinging upright for a slam into the ground just ahead: the ring fist cocked high over his head, the other arm
+     * out for balance, one knee drawn up and the other leg back, looking down at where he will hit.
+     */
+    private static void brace(HumanoidModel<?> model, ModelPart limb, boolean right, float weight) {
+        if (right) {
+            // Raised, an arm swings out the other way round than hanging down, hence the minus.
+            limb.xRot = Mth.lerp(weight, limb.xRot, -2.9F);
+            limb.yRot = Mth.lerp(weight, limb.yRot, 0.0F);
+            limb.zRot = Mth.lerp(weight, limb.zRot, -0.12F);
+            // Once for both legs and the head (this runs for each arm).
+            model.rightLeg.xRot = Mth.lerp(weight, model.rightLeg.xRot, 0.55F);
+            model.leftLeg.xRot = Mth.lerp(weight, model.leftLeg.xRot, -0.95F);
+            model.head.xRot = Mth.clamp(model.head.xRot + 0.4F * weight, -1.35F, 1.1F);
+        } else {
+            limb.xRot = Mth.lerp(weight, limb.xRot, -0.3F);
+            limb.yRot = Mth.lerp(weight, limb.yRot, 0.0F);
+            limb.zRot = Mth.lerp(weight, limb.zRot, -1.25F);
+        }
+    }
+
+    /**
+     * The landing slam, the way heroes land, on top of the crouch the game already gives him: the ring fist comes
+     * down out of its cocked position and smashes into the ground in front of him, and he stays down low on one knee,
+     * the other leg forward and the other arm flung out behind him, while the construct strikes; then he rises again.
+     * The body itself goes down with it in {@link #pre}.
      *
      * @param age ticks since he hit the ground
      */
     private static void slam(HumanoidModel<?> model, ModelPart limb, boolean right, float age) {
-        float weight = (float) (ClientFlight.smooth(age / 1.5) * (1.0 - ClientFlight.smooth((age - 12.0) / 8.0)));
+        float weight = kneel(age);
+        // The crouch the game adds afterwards turns both arms a little further forward: taken off here.
+        float crouch = model.crouching ? 0.4F : 0.0F;
         if (right) {
-            float strike = (float) ClientFlight.smooth(age / 3.0);
-            limb.xRot = Mth.lerp(weight, limb.xRot, Mth.lerp(strike, -2.7F, -1.15F));
-            limb.yRot = Mth.lerp(weight, limb.yRot, 0.1F);
-            limb.zRot = Mth.lerp(weight, limb.zRot, 0.1F);
-            // Once for both legs (this runs for each arm).
-            model.rightLeg.xRot = Mth.lerp(weight, model.rightLeg.xRot, -1.1F);
-            model.leftLeg.xRot = Mth.lerp(weight, model.leftLeg.xRot, 0.55F);
-            model.rightLeg.zRot = Mth.lerp(weight, model.rightLeg.zRot, 0.05F);
-            model.leftLeg.zRot = Mth.lerp(weight, model.leftLeg.zRot, -0.1F);
+            float strike = (float) ClientFlight.smooth(age / 1.4);
+            limb.xRot = Mth.lerp(weight, limb.xRot, Mth.lerp(strike, -2.9F, -0.45F) - crouch);
+            limb.yRot = Mth.lerp(weight, limb.yRot, 0.05F);
+            limb.zRot = Mth.lerp(weight, limb.zRot, Mth.lerp(strike, -0.12F, 0.08F));
+            // Once for both legs (this runs for each arm): the right knee down, the left leg forward.
+            model.rightLeg.xRot = Mth.lerp(weight, model.rightLeg.xRot, 1.2F);
+            model.leftLeg.xRot = Mth.lerp(weight, model.leftLeg.xRot, -1.3F);
+            model.rightLeg.yRot = Mth.lerp(weight, model.rightLeg.yRot, 0.0F);
+            model.leftLeg.yRot = Mth.lerp(weight, model.leftLeg.yRot, 0.0F);
+            model.rightLeg.zRot = Mth.lerp(weight, model.rightLeg.zRot, 0.06F);
+            model.leftLeg.zRot = Mth.lerp(weight, model.leftLeg.zRot, -0.14F);
         } else {
-            limb.xRot = Mth.lerp(weight, limb.xRot, 0.5F);
+            limb.xRot = Mth.lerp(weight, limb.xRot, 0.8F - crouch);
             limb.yRot = Mth.lerp(weight, limb.yRot, 0.0F);
-            limb.zRot = Mth.lerp(weight, limb.zRot, -1.0F);
+            limb.zRot = Mth.lerp(weight, limb.zRot, -1.05F);
         }
+    }
+
+    /** 0 to 1: how far down he is in the landing of a slam: straight down on impact, a hold, and up again. */
+    private static float kneel(float age) {
+        return (float) (ClientFlight.smooth(age / 1.0) * (1.0 - ClientFlight.smooth((age - 13.0) / 8.0)));
     }
 
     /**
@@ -391,6 +446,19 @@ final class FlightPose {
         return new Vec3(local.x, local.y, local.z);
     }
 
+    /**
+     * How the flight pose turns this player's body, in the model's own directions (x to the left, y down, -z
+     * ahead), or null when it is not turned. Undoing it keeps something he holds upright in the world.
+     */
+    @Nullable
+    static Quaternionf bodyTurn(LivingEntity entity) {
+        Frame f = frame;
+        if (f == null || f.entity() != entity.getId() || !pushed) {
+            return null;
+        }
+        return new Quaternionf().rotateAxis(f.roll(), 0.0F, 0.0F, -1.0F).rotateAxis(f.tilt(), 1.0F, 0.0F, 0.0F);
+    }
+
     /** Forgets everyone (you left the world). */
     static void clear() {
         BLENDS.clear();
@@ -401,8 +469,9 @@ final class FlightPose {
     // ---- First person ----
 
     /**
-     * Your own hands during the take-off: both fists come up to your chest at the bottom of your screen, then
-     * sweep down and out of sight as you rise.
+     * Your own hands in first person: during the take-off both fists come up to your chest at the bottom of your
+     * screen, then sweep down and out of sight as you rise; diving into a slam your ring fist comes up cocked high on
+     * the right, and on the landing it smashes into the ground in front of you (see {@link #slamHand}).
      */
     static boolean hands(RenderHandEvent event) {
         Minecraft minecraft = Minecraft.getInstance();
@@ -413,6 +482,17 @@ final class FlightPose {
         float slam = ClientFlight.slam(player, event.getPartialTick());
         if (slam >= 0.0F && slam < SLAM_HAND_TICKS) {
             slamHand(event, player, slam);
+            return true;
+        }
+        float brace = ClientFlight.brace(player, event.getPartialTick());
+        if (brace > 0.01F) {
+            event.setCanceled(true);
+            if (event.getHand() == InteractionHand.MAIN_HAND) {
+                PlayerRenderer renderer = (PlayerRenderer) minecraft.getEntityRenderDispatcher().getRenderer(player);
+                RechargeAnimation.arm(event.getPoseStack(), event.getMultiBufferSource(), event.getPackedLight(),
+                        player, renderer, 1.0F, new Vector3f(RechargeAnimation.HAND_RIGHT).lerp(COCKED, brace),
+                        ARM_FROM);
+            }
             return true;
         }
         float t = ClientRing.flight(player, event.getPartialTick());
@@ -442,8 +522,9 @@ final class FlightPose {
     }
 
     /**
-     * Your own landing slam: your ring fist comes up at the right of your screen and smashes down out of sight into
-     * the ground, stays there a moment, and comes back.
+     * Your own landing slam: your ring fist comes down out of its cocked position on the right and smashes into the
+     * ground in front of you, right where the cracks run out from (whichever way you look, while your view dips down
+     * to it); it shudders from the blow, stays there while the construct strikes, and comes back.
      */
     private static void slamHand(RenderHandEvent event, LocalPlayer player, float age) {
         event.setCanceled(true);
@@ -452,12 +533,40 @@ final class FlightPose {
         }
         Minecraft minecraft = Minecraft.getInstance();
         PlayerRenderer renderer = (PlayerRenderer) minecraft.getEntityRenderDispatcher().getRenderer(player);
-        float down = (float) ClientFlight.smooth(age / 2.5);
-        float back = (float) ClientFlight.smooth((age - 9.0) / 5.0);
-        Vector3f raised = new Vector3f(0.5F, 0.1F, -0.75F);
-        Vector3f ground = new Vector3f(0.3F, -1.2F, -0.9F);
-        Vector3f hand = new Vector3f(raised).lerp(ground, down).lerp(new Vector3f(RechargeAnimation.HAND_RIGHT), back);
+        float down = (float) ClientFlight.smooth(age / 1.4);
+        float back = (float) ClientFlight.smooth((age - 12.0) / 6.0);
+        float shudder = age < 6.0F ? 0.025F * (1.0F - age / 6.0F) * Mth.sin(age * 9.0F) : 0.0F;
+        Vector3f hand = new Vector3f(COCKED).lerp(planted(minecraft, player, event.getPartialTick()), down)
+                .lerp(new Vector3f(RechargeAnimation.HAND_RIGHT), back).add(shudder, shudder * 0.5F, 0.0F);
         RechargeAnimation.arm(event.getPoseStack(), event.getMultiBufferSource(), event.getPackedLight(), player,
-                renderer, 1.0F, hand, new Vector3f(1.5F, -0.4F, 0.35F));
+                renderer, 1.0F, hand, ARM_FROM);
+    }
+
+    /**
+     * Where your fist is in the ground in first person, in blocks in front of your eyes: the spot beside you where the
+     * slam's cracks run out from, seen from your camera as it is turned right now. It is kept on your screen: looking
+     * too far up, it shows at the bottom edge instead, and behind your eyes it stays low on your screen.
+     */
+    private static Vector3f planted(Minecraft minecraft, LocalPlayer player, float partialTick) {
+        Vec3 facing = ClientConstructs.slamFacing(player.getId());
+        if (facing == null) {
+            facing = Vec3.directionFromRotation(0.0F, player.getViewYRot(partialTick));
+        }
+        Vec3 forward = new Vec3(facing.x, 0.0, facing.z);
+        if (forward.lengthSqr() < 1.0E-6) {
+            return new Vector3f(PLANTED);
+        }
+        forward = forward.normalize();
+        Vec3 right = forward.cross(new Vec3(0.0, 1.0, 0.0));
+        Vec3 fist = player.getPosition(partialTick).add(forward.scale(0.4)).add(right.scale(0.3)).add(0.0, 0.1, 0.0);
+        Camera camera = minecraft.gameRenderer.getMainCamera();
+        Vec3 way = fist.subtract(camera.getPosition());
+        float ahead = (float) way.dot(new Vec3(camera.getLookVector()));
+        if (ahead < 0.3F) {
+            return new Vector3f(PLANTED);
+        }
+        float x = (float) -way.dot(new Vec3(camera.getLeftVector()));
+        float y = (float) way.dot(new Vec3(camera.getUpVector()));
+        return new Vector3f(Mth.clamp(x, -0.8F * ahead, 0.8F * ahead), Math.max(y, -0.55F * ahead), -ahead);
     }
 }

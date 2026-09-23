@@ -52,8 +52,9 @@ final class Lantern implements SpellEffect {
             PowerRing.tell(owner, "busy_fist");
             return false;
         }
-        // The lantern stands on the ground: in the air the ring only has what it has, so a flight has an end.
-        if (Flight.ticks(owner) >= 0) {
+        // In the air it works too, but not during the take-off: both fists are busy lifting him then.
+        int flying = Flight.ticks(owner);
+        if (flying >= 0 && flying < Flight.ARISE_TICKS) {
             PowerRing.tell(owner, "busy_flying");
             return false;
         }
@@ -141,8 +142,16 @@ final class Lantern implements SpellEffect {
         this.sound(level, SoundEvents.GENERIC_EXPLODE.value(), 0.8F, 1.7F);
         this.sound(level, SoundEvents.BEACON_ACTIVATE, 1.0F, 1.5F);
         this.sound(level, SoundEvents.AMETHYST_BLOCK_CHIME, 1.4F, 0.9F);
+        // In flight the light also bursts out in rings around the way he flies, like breaking through the air.
+        if (Flight.ticks(this.owner) >= 0) {
+            SpellFx.disc(level, SpellFx.dust(PowerRing.PALE, 1.4F), front, ahead, 0.8, 22, 0.0);
+            SpellFx.disc(level, SpellFx.dust(PowerRing.GREEN, 1.8F), at.subtract(ahead.scale(0.6)), ahead, 1.4, 30,
+                    0.1);
+            this.sound(level, SoundEvents.FIREWORK_ROCKET_LARGE_BLAST, 1.0F, 0.7F);
+        }
         PowerRing.setPower(this.owner, PowerRing.power(this.owner) + this.restore);
         PowerRing.tell(this.owner, "recharged");
+        Flight.recharged(this.owner, level);
     }
 
     /** While the fist stays on the lantern, its light keeps shooting out of the front. */
@@ -169,15 +178,27 @@ final class Lantern implements SpellEffect {
         PowerRing.sync(this.owner);
     }
 
-    /** Where the lantern is while the fist smacks it: in front of his chest, a little to the left. */
+    /**
+     * Where the lantern is while the fist smacks it: in front of his chest, a little to the left. In flight it is
+     * where he is this tick, not where he was, so the light does not burst out behind him.
+     */
     private Vec3 lanternPoint() {
-        Vec3 flat = this.ahead();
+        Vec3 look = this.owner.getLookAngle();
+        Vec3 flat = look.horizontalDistanceSqr() < 1.0E-4 ? new Vec3(0.0, 0.0, 1.0)
+                : new Vec3(look.x, 0.0, look.z).normalize();
         Vec3 left = new Vec3(flat.z, 0.0, -flat.x);
-        return this.owner.getEyePosition().add(flat.scale(0.85)).add(left.scale(0.2)).add(0.0, -0.35, 0.0);
+        return this.owner.getEyePosition().add(this.ahead().scale(0.85)).add(left.scale(0.2)).add(0.0, -0.35, 0.0)
+                .add(Flight.velocity(this.owner));
     }
 
-    /** The way he faces, flat along the ground: the front of the lantern looks that way. */
+    /**
+     * The way the front of the lantern looks: the way he faces, flat along the ground, or in flight the way he
+     * flies.
+     */
     private Vec3 ahead() {
+        if (Flight.ticks(this.owner) >= 0) {
+            return Flight.heading(this.owner);
+        }
         Vec3 look = this.owner.getLookAngle();
         Vec3 flat = new Vec3(look.x, 0.0, look.z);
         return flat.lengthSqr() < 1.0E-4 ? new Vec3(0.0, 0.0, 1.0) : flat.normalize();

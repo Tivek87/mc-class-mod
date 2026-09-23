@@ -2,6 +2,40 @@
 
 What changed in the project, newest first.
 
+## [Recharging in flight, 32 solid slam constructs and a hero's landing] - 2026-09-23
+
+### Added
+- **32 landing-slam constructs**, one picked at random every time, each one something that would really make a
+  shockwave: things that drop out of the sky (a fist, a hammer, an anvil, a boot, a ton weight, your lantern, a
+  safe, an anchor, a spiked ball, a barbell, a bell, a slapping hand, a sword, a piano, a toy brick, a stamp, TNT,
+  a meteor), things that clap shut (hands, fists, cymbals, a bear trap, a book), things that burst out of the
+  ground (an uppercut, spikes, a toppling pillar), things swung down (a fly swatter, a pickaxe, a gavel,
+  drumsticks on a drum), the emblem falling flat and a volley of rockets.
+- **A hero's landing.** Diving into the ground at full speed you swing upright just before it, fist cocked, then
+  come down on one knee and smash your ring fist into the ground, which cracks open and throws up chunks. In
+  first person your view dips to your fist in the ground and comes back up for the construct.
+- **Flying into the ground looking down lands you**, also slower than a slam.
+
+### Fixed
+- **The landing slam never went off.** The ground was only noticed when your speed down came out at exactly
+  zero, which the game's gravity never allows; now a dive into the ground at full speed really slams.
+- **A slam the server does not believe still lands you**, instead of leaving you flying along the ground.
+
+### Changed
+- **Constructs are always solid.** The slam constructs grow out of the ring's light and break into solid pieces
+  at the end instead of fading; the shockwave is a ring of solid hard light. The shield, the dome and the ram
+  cone are solid to everyone else; only from your own eyes (or from inside a dome) you look through them.
+- **More energy in the suit, along straight lines** out of the core: over the chest, the back, the flanks, both
+  arms, the legs and the head, the thickest and fastest to the ring.
+- The slam constructs strike a moment later (half a second after you land) and stay a little longer, so you can
+  see them.
+- **Recharge works in the air**, once the take-off is over. You keep flying while the lantern comes out; seen
+  from outside it hangs upright from your hand however your body lies, in first person the wind pushes and
+  shakes it, and the hit sends rings of light out around the way you fly. Recharging while an empty ring lets
+  you sink makes you fly again.
+- **The settings screens are translated** (English and Dutch): every number has a short name and an
+  explanation.
+
 ## [Flight, and the ring takes the mouse] - 2026-09-22
 
 ### Added

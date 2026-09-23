@@ -193,6 +193,17 @@ public final class ClientConstructs {
         return -1.0F;
     }
 
+    /** The way this player faced when his landing slam began, or null when he has none (yet). */
+    @Nullable
+    static Vec3 slamFacing(int owner) {
+        for (Track track : CONSTRUCTS.values()) {
+            if (track.latest.shape() == ConstructPayload.SLAM && track.latest.owner() == owner) {
+                return track.latest.facing();
+            }
+        }
+        return null;
+    }
+
     /**
      * How hard the shockwave of a slam nearby shakes a view from {@code from}: 1 right next to it as it strikes,
      * fading with distance and over the next few ticks, 0 when there is none.
@@ -334,7 +345,8 @@ public final class ClientConstructs {
                 case ConstructPayload.SHIELD -> painter.shield(center, way, size, solid, charge, ring, own);
                 case ConstructPayload.DOME -> painter.dome(center, size, solid, charge, own);
                 case ConstructPayload.RAM -> painter.ram(center, ramWay(owner, way), solid, charge, own);
-                case ConstructPayload.SLAM -> SlamPainter.draw(painter, track.latest, track.clock(partialTick), ring);
+                case ConstructPayload.SLAM -> SlamPainter.draw(painter, track.latest, track.clock(partialTick), ring,
+                        owner == null ? null : owner.getPosition(partialTick));
                 case ConstructPayload.BEAM -> {
                     if (ring != null && owner != null) {
                         painter.beamOfLight(ring, beamEnd(level, owner, way, now, partialTick), solid);

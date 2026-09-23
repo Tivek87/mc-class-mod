@@ -63,12 +63,13 @@ public final class LanternArms {
         Player player = event.getEntity();
         PlayerModel<AbstractClientPlayer> model = event.getRenderer().getModel();
         HumanoidModel.ArmPose pose = LanternPose.POSE.getValue();
+        // A recharge in the air keeps the body in its flight pose; only the arms are the lantern's.
+        FlightPose.pre(event);
         if (ClientRing.recharge(player, event.getPartialTick()) >= 0.0F) {
             model.leftArmPose = pose;
             model.rightArmPose = pose;
             return;
         }
-        FlightPose.pre(event);
         ClientConstructs.Held held = ClientConstructs.heldBy(player.getId());
         if (held == null) {
             return;
@@ -88,16 +89,16 @@ public final class LanternArms {
     }
 
     /**
-     * The pose itself, one arm at a time: the lantern's part; or the flight and the ring's shapes, with the arm
-     * reaching out to a construct it holds on top.
+     * The pose itself, one arm at a time: the flight and the ring's shapes, with on top the lantern's part, or the
+     * arm reaching out to a construct it holds.
      */
     static void pose(HumanoidModel<?> model, LivingEntity entity, HumanoidArm arm) {
         float partialTick = Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(false);
+        FlightPose.pose(model, entity, arm);
         if (ClientRing.recharge(entity, partialTick) >= 0.0F) {
             RechargeAnimation.pose(model, entity, arm);
             return;
         }
-        FlightPose.pose(model, entity, arm);
         ClientConstructs.Held held = ClientConstructs.heldBy(entity.getId());
         if (held != null && arm == (held.defends() ? HumanoidArm.LEFT : HumanoidArm.RIGHT)) {
             reach(held.defends() ? model.leftArm : model.rightArm, entity, held, partialTick);
