@@ -1,5 +1,6 @@
 package nl.tivek.welcomescreen.network;
 
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforge.network.PacketDistributor;
@@ -10,6 +11,7 @@ import nl.tivek.welcomescreen.WelcomeScreenMod;
 import nl.tivek.welcomescreen.character.Characters;
 import nl.tivek.welcomescreen.character.GameCharacter;
 import nl.tivek.welcomescreen.character.docock.OctopusArms;
+import nl.tivek.welcomescreen.character.lantern.LandingSlam;
 import nl.tivek.welcomescreen.classes.ClassData;
 import nl.tivek.welcomescreen.classes.ClassGroup;
 import nl.tivek.welcomescreen.classes.PlayerClass;
@@ -21,7 +23,7 @@ import nl.tivek.welcomescreen.spell.Spell;
 import nl.tivek.welcomescreen.spell.SpellCasting;
 
 public final class ModNetwork {
-    private static final String VERSION = "14";
+    private static final String VERSION = "15";
 
     private ModNetwork() {
     }
@@ -50,6 +52,19 @@ public final class ModNetwork {
                 ModNetwork::onCharacterLook);
         registrar.playToServer(TransformPayload.TYPE, TransformPayload.STREAM_CODEC, ModNetwork::onTransform);
         registrar.playToClient(StaminaCostPayload.TYPE, StaminaCostPayload.STREAM_CODEC, ModNetwork::onStaminaCost);
+        registrar.playToServer(ConstructPickPayload.TYPE, ConstructPickPayload.STREAM_CODEC,
+                ModNetwork::onConstructPick);
+    }
+
+    /** The screen of /constructshockwave: a construct was picked. Players who may not cheat are told so. */
+    private static void onConstructPick(ConstructPickPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> {
+            if (context.player() instanceof ServerPlayer serverPlayer
+                    && !LandingSlam.pick(serverPlayer, payload.variant())) {
+                serverPlayer.displayClientMessage(Component.translatable("ring." + WelcomeScreenMod.MODID
+                        + ".pick_denied"), true);
+            }
+        });
     }
 
     /** An ability key, or the client telling that it is holding on to a wall. */

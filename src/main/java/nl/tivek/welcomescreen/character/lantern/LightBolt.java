@@ -68,7 +68,7 @@ final class LightBolt implements SpellEffect {
         Vec3 step = aim.scale(ability.value("speedBlocks")).add(Flight.velocity(owner));
         this.step = step.lengthSqr() < 1.0E-6 ? aim.scale(ability.value("speedBlocks")) : step;
         this.facing = this.step.normalize();
-        this.path = new ConstructPath(from, null, null, this.facing, this.step.length(), this.range);
+        this.path = ConstructPath.straight(from, this.facing, this.step.length(), this.range);
     }
 
     /**
@@ -161,7 +161,7 @@ final class LightBolt implements SpellEffect {
         this.age++;
         // Counted from the ticks it has flown, the way every client counts it too.
         this.travelled = this.path.travelled(this.age);
-        Vec3 to = this.path.along(this.travelled);
+        Vec3 to = this.path.along(this.travelled, null);
         this.center = to;
         SpellFx.line(level, SpellFx.dust(PowerRing.GREEN, 0.9F), from, to, 0.35);
         if (this.hitSomething(level, from, to) || this.travelled >= this.range - 1.0E-4) {

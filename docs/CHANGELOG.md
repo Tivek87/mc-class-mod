@@ -2,6 +2,36 @@
 
 What changed in the project, newest first.
 
+## [A steerable Giant Fist, living constructs and clearer settings] - 2026-09-23
+
+### Added
+- **`/constructshockwave`:** a screen with all 32 landing-slam constructs, in groups, each explaining itself.
+  Click one and a second later it strikes in front of you, shockwave and all. For anyone with cheats on (or an
+  operator), whatever character they are; free, no cooldown.
+- **Scraping with the ram cone:** flying with it low along the ground (under 1.5 blocks) or sliding over it costs
+  2 more power a second, throws sparks, grinds and shakes your view. Three new settings under Light Shield.
+- **Two new settings under Shockwave:** how big the constructs are (1.35) and how slowly they play (1.5).
+
+### Changed
+- **The Giant Fist is steered by your eyes.** Let go and it glides from beside you onto the middle of your view
+  without turning, then stays exactly under your crosshair for its whole flight and follows where you look.
+  It no longer turns or slides off sideways as it sets off.
+- **All 32 landing-slam constructs are rebuilt** with far more detail: round things are truly round (bells,
+  drums, coins, chains, plates), angular things have many more parts. Every one of them moves: the safe's
+  door flies open and money spills out, the piano's lids spring up, the TNT's fuse burns down, the anchor's
+  chain piles up, the drumsticks play a roll, and so on for all 32.
+- **The constructs are 35% bigger and play half again as slowly**, and stand a good second after they strike,
+  so you can see what happens. The shockwave strikes a little later with them; its reach is the same.
+- **The shield is a real shield:** bulging, with a rim, rivets, the emblem and a grip, a ripple where hits land
+  and a glint now and then. The dome's seams run like a stone wall, the ram cone has drill ridges and turns,
+  the bolt is a round bullet, and your fist wears your ring.
+- **The settings screen is rebuilt:** tabs for the stamina bar and every character, abilities that fold open
+  and shut, a search box that looks through everything, a bar that explains the number you point at, shift
+  for ten steps, and one Apply or Save for the changes on every tab.
+
+### Fixed
+- The name of what holding a mouse button leads to (beam, dome, brake) showed as a raw text key.
+
 ## [Multiverse Powers, and a power screen by franchise] - 2026-09-23
 
 ### Added

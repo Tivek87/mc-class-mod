@@ -18,9 +18,11 @@ import nl.tivek.welcomescreen.character.lantern.ConstructPath;
  *               instead (x to his right, y up, z ahead), so every client can hang it on him without lag
  * @param facing the way it points (a fist: the way it punches; the beam: the way it shines)
  * @param size   how wide it is, in blocks; a little wider while it falls apart. The beam: how long it is
- * @param solid  0 = not there, 1 = fully solid. Below 0 = the construct is gone
+ * @param solid  0 = not there, 1 = fully solid. Below 0 = the construct is gone. A slam: how big its construct is,
+ *               next to the size it was made at
  * @param charge how far it has been charged: 0 = not at all, 1 = as far as it goes. The shields: 1 right after
- *               a hit landed on them. A bolt: how far it flies each tick, so clients can keep it moving
+ *               a hit landed on them. A bolt: how far it flies each tick, so clients can keep it moving. A slam:
+ *               how slowly it plays (1 = the pace its constructs were made for, 1.5 = half again as slow)
  * @param held    true while the ring still holds it beside you (it charges); false once it flies
  * @param shape   which construct it is, see {@link #FIST}
  * @param variant which one of its kind: for {@link #SLAM} which construct makes the shockwave (see

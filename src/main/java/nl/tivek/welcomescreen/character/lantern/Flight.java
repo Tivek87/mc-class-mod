@@ -10,6 +10,7 @@ import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.phys.AABB;
@@ -35,6 +36,8 @@ public final class Flight implements SpellEffect {
     public static final int ARISE_TICKS = 24;
     // Below this speed, in blocks per tick, flying into a creature with the shield up does not ram it.
     private static final double RAM_SPEED = 0.4;
+    /** Below this speed, in blocks per tick, the ram cone low over the ground does not scrape along it. */
+    public static final double SCRAPE_SPEED = 0.2;
     // Ticks before the same creature can be rammed again.
     private static final int RAM_AGAIN = 12;
     // A descent that somehow never touches ground ends by itself after this many ticks.
@@ -223,7 +226,39 @@ public final class Flight implements SpellEffect {
         // Every tick this tells everyone the new power, and with it whether he dives.
         PowerRing.setPower(this.owner, power - this.perTick);
         this.ram(level);
+        this.scrape(level);
         return true;
+    }
+
+    /**
+     * True while this flyer is low over the ground: something solid is less than {@code height} blocks below the
+     * bottom of his body. His own game asks it to shake his view, the server to make the ram cone cost more.
+     */
+    public static boolean scraping(Entity flyer, double height) {
+        AABB below = flyer.getBoundingBox().expandTowards(0.0, -height, 0.0);
+        return flyer.level().getBlockCollisions(flyer, below).iterator().hasNext();
+    }
+
+    /**
+     * Flying low along the ground with the ram cone, or scraping over it, wears the cone down: the ring pays extra
+     * for it, sparks fly off where it scrapes and it grinds.
+     */
+    private void scrape(ServerLevel level) {
+        CharacterAbility shield = GameCharacter.GREEN_LANTERN.byName("light_shield");
+        if (shield == null || this.velocity.length() < SCRAPE_SPEED || !LightShield.up(this.owner)
+                || !scraping(this.owner, shield.value("ramGroundBlocks"))) {
+            return;
+        }
+        float cost = (float) (shield.value("ramGroundPowerPerSecond") / 20.0);
+        PowerRing.setPower(this.owner, Math.max(0.0F, PowerRing.power(this.owner) - cost));
+        if (this.ticks % 2 == 0) {
+            Vec3 at = this.owner.position();
+            SpellFx.cloud(level, SpellFx.dust(PowerRing.BRIGHT, 1.0F), at, 4, 0.4, 0.05);
+            level.sendParticles(ParticleTypes.ELECTRIC_SPARK, at.x, at.y + 0.1, at.z, 6, 0.4, 0.05, 0.4, 0.2);
+        }
+        if (this.ticks % 6 == 0) {
+            this.sound(level, SoundEvents.GRINDSTONE_USE, 0.5F, 1.4F);
+        }
     }
 
     /** How far he moved on this tick: what his own game sent, or nothing once he has stood still a moment. */

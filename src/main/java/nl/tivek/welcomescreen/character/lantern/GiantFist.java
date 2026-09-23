@@ -39,11 +39,11 @@ import nl.tivek.welcomescreen.spell.SpellFx;
  * nearly six (in about 4 seconds by default), and every half second of it costs power. It keeps to a spot
  * around him that has room for it: on his right, and when that would put it through a wall or the ground,
  * higher up, above his head or on his left, flowing smoothly from one spot to the next while it keeps
- * charging. When he lets go it swings in onto his line of sight and flies straight along it, so its middle
- * goes exactly where his crosshair points, and the ring pays for it. It rams every creature in its
- * way (each one once: a heavy hit that throws it far, and the bigger the fist the harder it hits), smashes
- * the soft blocks it touches and goes straight through everything harder, until the end of its range. Then
- * it falls apart into green light.
+ * charging. When he lets go the ring pays for it and it flies: it glides in onto his line of sight without
+ * turning, and from then on he steers it with his eyes, its middle always right under his crosshair, further out
+ * every tick wherever he looks. It rams every creature in its way (each one once: a heavy hit that throws it
+ * far, and the bigger the fist the harder it hits), smashes the soft blocks it touches and goes straight through
+ * everything harder, until the end of its range. Then it falls apart into green light.
  */
 final class GiantFist implements SpellEffect {
     // The smallest fist, in blocks across: what a tap of the key gives.
@@ -56,16 +56,15 @@ final class GiantFist implements SpellEffect {
     private static final int HUM_TICKS = 6;
     // Ticks it takes to fall apart.
     private static final int FADE_TICKS = 6;
-    // Blocks per tick in flight; while you fly yourself, your own speed comes on top.
+    // Blocks per tick in flight, out along your line of sight. It flies on from your eyes, so however fast you go
+    // yourself, you never catch up with it.
     private static final double SPEED = 1.3;
-    // How far off your line of sight it may fly when what you aim at is right beside you, too close for it to
-    // swing in first. This only stops it from flying back past you at something almost against your feet.
-    private static final double MAX_AIM_DEGREES = 80.0;
-    // Once let go it swings in onto your line of sight and flies straight along it from there (see
-    // ConstructPath). It joins that line this many times further along than it hung beside it, but never later
-    // than a little way out.
+    // Once let go it glides in onto your line of sight (see ConstructPath) over this many times as far as it hung
+    // beside that line, and over at least MIN_JOIN blocks. What you aim at as you let go that is closer than that,
+    // it is on the line by the time it gets there, but it never takes less than NEAREST_JOIN blocks to get onto it.
     private static final double JOIN = 1.3;
     private static final double MIN_JOIN = 1.5;
+    private static final double NEAREST_JOIN = 1.0;
     // Its shape, as parts of how wide it is: how tall, from its middle to the front of the knuckles, and
     // from its middle to the back of the wrist (the forearm behind that is only a fading trail of light).
     private static final double HEIGHT = 0.65;
@@ -136,9 +135,13 @@ final class GiantFist implements SpellEffect {
     private Vec3 center;
     private Vec3 facing;
     private double travelled;
-    // The way it flies once let go: from where it was let go, along a curve onto your line of sight, and then
-    // straight on along that line. Clients get it too, and move the fist along it by themselves.
+    // The way it flies once let go: steered by your eyes (see ConstructPath). Clients get it too, and move the fist
+    // along it by themselves.
     private ConstructPath path;
+    // Where on your line of sight it was headed last tick, and the way that point moved since: what it hits is
+    // thrown that way, on ahead, or aside when you swing it round with your view.
+    private Vec3 onSight;
+    private Vec3 push;
 
     private GiantFist(ServerPlayer owner, CharacterAbility ability) {
         this.owner = owner;
@@ -433,8 +436,8 @@ final class GiantFist implements SpellEffect {
     }
 
     /**
-     * Off it goes, straight at what you aim at: it charges beside you, but lands under the crosshair. The ring
-     * pays for it now.
+     * Off it goes, under your crosshair: it charges beside you, but you steer it with your eyes. The ring pays for it
+     * now.
      */
     private void shoot(ServerLevel level) {
         this.phase = Phase.FLY;
@@ -450,55 +453,28 @@ final class GiantFist implements SpellEffect {
 
     /**
      * Works out the way it flies. It charges beside you, but the middle of the fist must go exactly where your
-     * crosshair points, at any distance: so it swings in onto your line of sight along a smooth curve, and from
-     * there flies straight along that line, through whatever you aim at. What you aim at that is closer than
-     * where it would join the line, it swings in onto right there. Only something almost against your side is
-     * too close for a curve: then it flies straight at it.
+     * crosshair points: so it glides in onto your line of sight over its first few blocks, and from then on stays on
+     * that line wherever you look, further out every tick. It points the way you look all the while, so it never
+     * turns aside; only when you look further up or down than it tips while you charge it, it tips the rest of the
+     * way as it glides in.
      */
     private void plan(ServerLevel level) {
-        Vec3 eye = this.owner.getEyePosition();
-        Vec3 look = this.owner.getLookAngle();
-        Vec3 target = this.aimedAt(level);
-        Vec3 fromEye = this.center.subtract(eye);
-        double ahead = fromEye.dot(look);
-        double aside = fromEye.subtract(look.scale(ahead)).length();
-        double aimed = target.subtract(eye).dot(look);
-        double join = Math.min(aimed, ahead + Math.max(MIN_JOIN, JOIN * aside));
-        // While you fly yourself it takes your speed along, so you never catch up with your own fist.
-        double speed = SPEED + Math.max(0.0, Flight.velocity(this.owner).dot(look));
-        if (join <= ahead + 0.5) {
-            this.path = new ConstructPath(this.center, null, null, this.flightWay(target), speed, this.range);
-        } else {
-            Vec3 end = eye.add(look.scale(join));
-            Vec3 control = eye.add(look.scale((ahead + join) * 0.5));
-            this.path = new ConstructPath(this.center, control, end, look, speed, this.range);
-        }
-        this.facing = this.path.way(0.0);
+        ConstructPath.Sight sight = this.sight();
+        Vec3 offset = sight.local(this.center);
+        double aside = Math.sqrt(offset.x * offset.x + offset.y * offset.y);
+        double aimed = sight.local(this.aimedAt(level)).z - offset.z;
+        double join = Math.max(NEAREST_JOIN, Math.min(aimed, Math.max(MIN_JOIN, JOIN * aside)));
+        float pitch = this.owner.getXRot();
+        double tilt = Math.toRadians(pitch - Mth.clamp(pitch, -MAX_HELD_PITCH, MAX_HELD_PITCH));
+        this.path = ConstructPath.steered(offset, tilt, join, SPEED, this.range);
+        this.facing = this.path.way(0.0, sight);
+        this.onSight = this.path.onSight(0.0, sight);
+        this.push = sight.forward();
     }
 
-    /**
-     * The way it flies when what you aim at is too close for a curve: straight at it, but never turned further
-     * than {@link #MAX_AIM_DEGREES} away from the way you look, so it never sets off sideways at something standing
-     * right next to you.
-     */
-    private Vec3 flightWay(Vec3 target) {
-        Vec3 look = this.owner.getLookAngle();
-        Vec3 toTarget = target.subtract(this.center);
-        if (toTarget.lengthSqr() < 1.0) {
-            return look;
-        }
-        Vec3 way = toTarget.normalize();
-        double straight = Mth.clamp(way.dot(look), -1.0, 1.0);
-        double limit = Math.toRadians(MAX_AIM_DEGREES);
-        if (straight >= Math.cos(limit)) {
-            return way;
-        }
-        // Too far off: turn it back towards your line of sight until exactly the limit is left.
-        Vec3 sideways = way.subtract(look.scale(straight));
-        if (sideways.lengthSqr() < 1.0E-9) {
-            return look;
-        }
-        return look.scale(Math.cos(limit)).add(sideways.normalize().scale(Math.sin(limit)));
+    /** Your eyes and the way you look right now: the fist on its way stays on your line of sight. */
+    private ConstructPath.Sight sight() {
+        return ConstructPath.Sight.of(this.owner.getEyePosition(), this.owner.getYRot(), this.owner.getXRot());
     }
 
     /** What you aim at: the creature in your sights, else the block, else the end of the range. */
@@ -519,10 +495,14 @@ final class GiantFist implements SpellEffect {
         Vec3 from = this.center;
         // Counted from the ticks it has flown, the way every client counts it too.
         this.travelled = this.path.travelled(this.phaseAge);
-        Vec3 to = this.path.along(this.travelled);
-        if (to.distanceToSqr(from) > 1.0E-8) {
-            this.facing = to.subtract(from).normalize();
+        ConstructPath.Sight sight = this.sight();
+        Vec3 to = this.path.along(this.travelled, sight);
+        this.facing = this.path.way(this.travelled, sight);
+        Vec3 onSight = this.path.onSight(this.travelled, sight);
+        if (onSight.distanceToSqr(this.onSight) > 1.0E-8) {
+            this.push = onSight.subtract(this.onSight).normalize();
         }
+        this.onSight = onSight;
         this.ram(level, from, to);
         this.smash(level, from, to);
         this.center = to;
@@ -597,15 +577,18 @@ final class GiantFist implements SpellEffect {
         return a.add(ab.scale(t));
     }
 
-    /** A heavy hit that counts as your attack, and a push straight on, the way the fist flies. */
+    /**
+     * A heavy hit that counts as your attack, and a push the way the fist goes: straight on, or aside when you swing it
+     * round.
+     */
     private void punch(ServerLevel level, LivingEntity target) {
         // Hits in quick succession all land.
         target.invulnerableTime = 0;
         target.hurt(level.damageSources().playerAttack(this.owner), this.damage());
         // Knockback resistance (netherite armour) still counts.
         double resist = Mth.clamp(target.getAttributeValue(Attributes.KNOCKBACK_RESISTANCE), 0.0, 1.0);
-        target.setDeltaMovement(new Vec3(this.facing.x * this.knockback,
-                Math.max(0.0, this.facing.y * this.knockback) + LIFT, this.facing.z * this.knockback)
+        target.setDeltaMovement(new Vec3(this.push.x * this.knockback,
+                Math.max(0.0, this.push.y * this.knockback) + LIFT, this.push.z * this.knockback)
                 .scale(1.0 - resist));
         target.hasImpulse = true;
         // Players move themselves on their own client, so they have to be told about the push.

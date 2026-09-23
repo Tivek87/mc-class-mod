@@ -10,6 +10,7 @@ import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.RegisterClientCommandsEvent;
 import nl.tivek.welcomescreen.WelcomeScreenMod;
+import nl.tivek.welcomescreen.client.character.lantern.ConstructPickScreen;
 import nl.tivek.welcomescreen.client.classes.ClientClassData;
 import nl.tivek.welcomescreen.client.classes.EffectTestScreen;
 import nl.tivek.welcomescreen.client.classes.WelcomeScreen;
@@ -26,13 +27,21 @@ public final class ClientEvents {
         welcomePending = true;
     }
 
-    /** /classfx opens the developer menu that plays any class's start ceremony. */
+    /**
+     * /classfx opens the developer menu that plays any class's start ceremony; /constructshockwave the screen with
+     * every landing-slam construct, to strike in front of you (with cheats).
+     */
     @SubscribeEvent
     public static void onRegisterClientCommands(RegisterClientCommandsEvent event) {
         event.getDispatcher().register(Commands.literal("classfx").executes(context -> {
             Minecraft minecraft = Minecraft.getInstance();
             // A command runs while the chat screen is still open, so switch screens afterwards.
             minecraft.tell(() -> minecraft.setScreen(new EffectTestScreen()));
+            return 1;
+        }));
+        event.getDispatcher().register(Commands.literal("constructshockwave").executes(context -> {
+            Minecraft minecraft = Minecraft.getInstance();
+            minecraft.tell(() -> minecraft.setScreen(new ConstructPickScreen()));
             return 1;
         }));
     }

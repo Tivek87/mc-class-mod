@@ -149,8 +149,8 @@ quick one, 2 seconds of holding for the lasting one.
 
 **Left click (the right hand attacks)**
 
-- **Tap — Light Bolt.** A small bullet of hard light leaves your ring and flies exactly where the crosshair
-  points. It bursts on the first creature or wall it meets. Your right hand punches forward with every shot.
+- **Tap — Light Bolt.** A small bullet of hard light (round, with a pointed nose and a streak of light behind
+  it) leaves your ring and flies exactly where the crosshair points. It bursts on the first creature or wall it meets. Your right hand punches forward with every shot.
   - **Damage:** 3 hearts per bolt. Every bolt lands, however quickly they follow each other.
   - **Power:** 0.16 per bolt.
   - **Every 0.3 seconds.** Click again as soon as it is ready; clicking faster does not shoot faster.
@@ -165,16 +165,21 @@ quick one, 2 seconds of holding for the lasting one.
 
 **Right click (the left hand defends)**
 
-- **Tap — Light Shield (on/off).** A round pane of hard light stands in front of you, in the way you look,
+- **Tap — Light Shield (on/off).** A round shield of hard light stands in front of you, in the way you look,
   held up by your left hand. It stays up until you tap again. It turns with your head. Everyone else sees it
-  as solid as any construct; only from your own eyes in first person you look through the pane.
+  as solid as any construct; only from your own eyes in first person you look through it, seeing its outline
+  and a faint glow.
+  - **How it looks:** it bulges a little to the front, with a round raised rim, a groove turned into its face,
+    a ring of rivets that slowly turns, the lantern emblem raised in its middle and a grip on its back. A hit
+    sends a ripple of light out over its face, and now and then a glint sweeps across it.
   - **Takes 70%** off every hit that comes at you from the front. Damage that goes straight through armour
     anyway (poison, falling, drowning, the void) goes through it as well, and so do arrows that pierce.
   - **Power:** 0.08 per second while it is up.
   - The light flares where a hit lands on it. Tap again, recharge or run the ring dry and it falls apart.
   - While you fly it becomes a **ram cone** (see Flight).
 - **Hold 2 seconds — Light Dome.** The shield opens out into a dome of hard light all around you, for as
-  long as you keep holding, with seams of light over it. From outside it is solid; from under it (your own
+  long as you keep holding. Its seams of light run like the joints of a stone wall, with a bright band where
+  it meets the ground and a crown of light on top. From outside it is solid; from under it (your own
   eyes, or anyone else's inside it) it is faint where you look straight through it and bright along its
   outline, so you can still see out.
   - **Takes 40%** off every hit, **from every side**. It covers more than the shield and holds less. The
@@ -252,13 +257,32 @@ Green Lantern recharges his ring at his lantern, the power battery.
   - the lantern emblem falling flat on its face, and a volley of five rockets.
   Every construct is solid and grows out of the ring's light; at the end it breaks into solid pieces (or sinks
   back into the ground). The shockwave runs out as a low ring of solid hard light.
+  - **Big and easy to follow:** they are 35% bigger than they used to be (so they strike a little further in
+    front of you) and play half again as slowly: a construct takes shape and comes down in about 0.75 seconds,
+    stands a good second after it struck, then breaks up; a little over 3 seconds in all. Both are settings
+    (see Shockwave).
+  - **Every one of them moves:** the safe thuds down, its wheel spins, its door flies open and coins, notes and
+    gold bars spill out; the piano's lid springs up, the cover over its keys flies open, its keys jump and notes
+    of light float up; the anvil throws sparks and hops once more; the ton weight squashes flat; the TNT lands,
+    swells and flashes while its fuse burns down, and blows up; the toy brick and the barbell bounce; the stamp
+    rocks as it presses and leaves the emblem glowing; the boot lands heel first and its toe slaps down after;
+    the lantern's handle swings; the anchor's chain comes down after it and piles up; the spiked ball rocks;
+    the bell shivers, its clapper swings and rings of sound run out; the meteor glows with cracks of fire; the
+    sword quivers; the cymbals bounce apart and ring; the bear trap rattles; the book flips its pages and slams
+    shut; the gavel knocks once more; the drumsticks play a roll with ripples running over the drumhead; the
+    crystal spikes overshoot and glint; the pillar bounces and its drums come apart; the emblem bounces on the
+    ground; the slapping hand drums its fingers; the clapping hands bend their fingers.
 - **Fighting in the air** works with the same buttons, shaped for flying:
   - **Tap left:** a bolt that takes your own speed along, so at top speed you never overtake your own shots.
   - **Hold left:** the beam, for strafing runs over creatures and the ground.
   - **Tap right:** the shield becomes a pointed, streamlined **ram cone** out in front of you (solid to everyone
-    else, see-through only from your own eyes), with your left fist out in front like a punch. It still takes 70% off hits from ahead, and whatever you fly into is
-    rammed away: a hard throw and **2 hearts plus 3 hearts for every block per tick you fly** (about 7 hearts
-    at top speed). The same creature can be rammed again after 0.6 seconds.
+    else, see-through only from your own eyes), with your left fist out in front like a punch; ridges wind
+    round it to its tip like the thread of a drill, and it turns as you fly. It still takes 70% off hits from
+    ahead, and whatever you fly into is rammed away: a hard throw and **2 hearts plus 3 hearts for every block
+    per tick you fly** (about 7 hearts at top speed). The same creature can be rammed again after 0.6 seconds.
+  - **Scraping:** fly with the ram cone low along the ground (less than 1.5 blocks above it) or slide over it,
+    and it wears the cone down: **2 more power a second**, sparks fly off where it scrapes, it grinds, and your
+    view shakes, the harder the faster you go. All three are settings (Light Shield, the ram cone part).
   - **Hold right:** the dome works as a **brake chute**: your speed is halved for as long as you hold it.
 - A short cooldown of **1 second** after landing keeps you from taking off again straight away.
 
@@ -268,6 +292,7 @@ Green Lantern recharges his ring at his lantern, the power battery.
 | Power | 1.07 a second (a full ring lasts 93.75 seconds), plus whatever you use meanwhile |
 | Take off | at least 0.8 power; not while recharging |
 | Ram (shield up) | 2 hearts + 3 hearts per block per tick of speed, strong knockback |
+| Scraping (ram cone low along the ground) | 2 more power a second, your view shakes |
 | Brake (dome up) | half speed |
 
 ### Shockwave (key X)
@@ -285,7 +310,8 @@ the 32 giant constructs (a random one), which strikes and sends a shockwave over
 - **Cooldown:** 5 seconds, from when you press X.
 - Not while you recharge or charge the Giant Fist, and not while your last slam is still going.
 - Its damage, reach, push and cost count for the landing slam of a flight as well: one set of numbers, under
-  Shockwave in the settings.
+  Shockwave in the settings. Under *The constructs* you also set **how big** the constructs are (1.35 by
+  default) and **how slowly** they play (1.5 by default; the shockwave strikes that much later too).
 - On the way down the panel says `diving` next to the key.
 
 | Shockwave | |
@@ -294,6 +320,14 @@ the 32 giant constructs (a random one), which strikes and sends a shockwave over
 | Reach | 5 blocks |
 | Power | 1.6 per slam |
 | Cooldown | 5 s |
+| Constructs | 35% bigger, half again as slow (both settings) |
+
+**Trying them out: `/constructshockwave`.** Type it in the chat and a screen opens with all 32 constructs, in
+groups (out of the sky, clapping shut, out of the ground, swung down, and more), each explaining itself when you
+point at it. Click one (or *Random*): the screen closes and a second later that construct strikes in front of
+you, shockwave and all. Anyone can use it, whatever character they are, but only with cheats on (or as an
+operator); without, the server tells you so. It costs no power and has no cooldown; while your last slam is
+still going, it waits for you to try again.
 
 ### Giant Fist (key R)
 
@@ -311,7 +345,8 @@ off at what you aim at.
 - **It is solid.** Hard light is a thing, not a haze: green sides that catch the light like blocks do, and
   a glow around it. You cannot see through it, and it hides its own far side. It is shaped like a real fist:
   four fingers each curled in two bones with the tips tucked into the palm, the thumb folded over the front
-  of the first two fingers, knuckles and tendons standing out on the back of the hand, and a cuff at the wrist.
+  of the first two fingers with a nail on it, knuckles and tendons standing out on the back of the hand, a
+  cuff at the wrist, and your ring with its gem on the middle finger.
 - **Lines only where it ends.** A bright line runs along the edges where the shape stops against what is
   behind it; over the sides you are looking at there is nothing, so it reads as mass and not as wire.
 - **It charges slowly.** A tap of R gives a fist one block across. Keep holding R and it grows, until after
@@ -328,12 +363,12 @@ off at what you aim at.
   to 3.2 for a full charge. The ring pays when the fist flies. If the ring runs out while you charge, the fist
   stops growing and you are told why.
 - **Crouch while you hold R** and the fist simply falls apart: no shot, no power and no cooldown.
-- **The middle of the fist goes exactly where your crosshair points.** It charges beside you, so when you
-  let go it swings in onto your line of sight in a smooth curve, like a hook, and from there flies dead
-  straight along it, through whatever you aim at: from that point on it sits right on your crosshair at any
-  distance. Something closer than where it would join your line of sight, it swings in onto right there. Only
-  something almost against your side is too close for a curve: then it flies straight at it.
-- While you fly yourself, the fist takes your speed along, so you never catch up with it.
+- **You steer it with your eyes: the middle of the fist stays right under your crosshair.** It charges beside
+  you, so when you let go it glides from there onto the middle of your view, without turning, in a moment;
+  from then on it stays exactly on your crosshair for its whole flight. Look aside, up or down and it goes
+  along, so you can steer it round a corner or down onto something. Something closer than where it would reach
+  the middle of your view, it glides in onto right there.
+- It flies along with you: while you fly yourself you never catch up with it.
 - Every creature in its way takes a heavy hit and is thrown far, the way the fist flies. It keeps going
   after a hit, so it can knock down a whole row; each creature is hit only once.
 - **A bigger fist hits harder**, and over a wider area: 6 hearts with a tap, growing with its width up to
@@ -614,14 +649,23 @@ The whole run takes about 12 seconds, longer when the creature runs.
 
 Every cooldown and every damage number on this page can be changed in two ways.
 
-**In the game:** Mods > Multiverse Powers > Config. First pick what you want to change: the stamina bar,
-or one of the characters. A character's screen shows one ability at a time, with arrows to flip through
-them, and a line for its cooldown, its damage and each of its own settings. Next to every number it says
-what it means (seconds, hearts). "Defaults" puts that one ability back to the mod's own numbers,
-"Save & close" writes everything into the file.
+**In the game:** Mods > Multiverse Powers > Config (or `/stamina` in the chat).
+
+- **Tabs** along the top: the stamina bar, and every character. A dot after a tab's name means it has changes
+  that are not saved yet.
+- **Every ability is a part you can fold open and shut:** click its title. The title says how many numbers are
+  in it and which key or button it sits on. *Open all* and *Close all* fold the whole page at once.
+- **Search:** type in the box and the list shows every number of every tab whose name or explanation matches,
+  under the name of its tab and ability.
+- **Every number has its own line:** its name, `-` and `+` around a box you can type in (hold shift for ten
+  steps at once), a button to put it back to the mod's own number once you changed it, and what it means in
+  plain words (seconds, hearts, blocks). A number you changed turns gold. Point at a line and the bar under
+  the list says what it does; point at its name for its default and the range it may go.
+- **Buttons:** *Defaults* puts every number in the list back to the mod's own; *Apply* saves every change on
+  every tab and keeps the screen open; *Save & close* saves and closes; *Cancel* throws the changes away.
 
 A settings file that already exists keeps its own numbers, also when the mod changes its numbers in a new
-version. Press "Defaults" on that ability (or delete its file) to take the new ones.
+version. Press "Defaults" (or delete its file) to take the new ones.
 
 **By hand:** all the mod's settings live together in the `welcomescreen` folder inside the world's (or
 the server's) `config` folder:

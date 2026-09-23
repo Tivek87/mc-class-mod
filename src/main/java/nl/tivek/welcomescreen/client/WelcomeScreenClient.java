@@ -7,6 +7,7 @@ import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
 import nl.tivek.welcomescreen.WelcomeScreenMod;
 import nl.tivek.welcomescreen.client.character.lantern.GreenLanternSuitLayer;
+import nl.tivek.welcomescreen.client.config.SettingsScreen;
 
 /**
  * Client-only start of the mod. Kept apart from WelcomeScreenMod, because a dedicated server cannot
@@ -16,7 +17,7 @@ import nl.tivek.welcomescreen.client.character.lantern.GreenLanternSuitLayer;
 public final class WelcomeScreenClient {
     public WelcomeScreenClient(ModContainer container, IEventBus modEventBus) {
         container.registerExtensionPoint(IConfigScreenFactory.class,
-                (mod, parent) -> new ModConfigScreen(parent));
+                (mod, parent) -> new SettingsScreen(parent));
         modEventBus.addListener(GreenLanternSuitLayer::onAddLayers);
     }
 }

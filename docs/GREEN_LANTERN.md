@@ -47,7 +47,7 @@ Voor **alle** linksklik- (aanval) en rechtsklik-acties (verdediging) geldt een a
 
 ### Left Click (Aanval)
 - **Click / Tap (Light Bolt):**
-  - **Actie:** Schiet een compacte bolt / kogel af van geconcentreerde energie / construct.
+  - **Actie:** Schiet een compacte bolt af: een rond kogeltje van hard licht met een punt, met een lichtstreep erachter.
   - **Schade:** 3 harten per schot.
   - **Kosten:** 0,16 power per schot.
   - **Cooldown:** 0,3 sec tussen losse schoten.
@@ -60,12 +60,13 @@ Voor **alle** linksklik- (aanval) en rechtsklik-acties (verdediging) geldt een a
 
 ### Right Click (Verdediging)
 - **Click / Tap (Light Shield, aan/uit):**
-  - **Actie:** Een tik zet een klein rond schild van hard licht voor je in je kijkrichting, vastgehouden door je linkerhand. Het blijft staan tot je nog een keer tikt. Anderen zien het solid; alleen in je eigen first-person-beeld kijk je erdoorheen.
+  - **Actie:** Een tik zet een klein rond schild van hard licht voor je in je kijkrichting, vastgehouden door je linkerhand. Het blijft staan tot je nog een keer tikt. Anderen zien het solid; alleen in je eigen first-person-beeld kijk je erdoorheen (je ziet dan de omtrek en een zachte gloed).
+  - **Uiterlijk:** licht bol, met een ronde verhoogde rand, een groef in de voorkant, klinknagels die langzaam ronddraaien, het lantaarn-embleem in het midden en een handgreep achterop. Een inslag stuurt een rimpel van licht over de voorkant, en af en toe glijdt er een glans overheen.
   - **Verdediging:** 70% minder schade van alles wat van voren komt. Schade die sowieso dwars door armor gaat (gif, vallen, verdrinken, de void) en doorborende pijlen gaan er ook dwars doorheen.
   - **Kosten:** 0,08 power per seconde zolang het staat.
   - **Stopt:** Nog een tik, recharge of een lege ring.
 - **Hold na 2 sec (Forcefield Dome / Krachtveld-Koepel):**
-  - **Actie:** Het schild vouwt open tot een koepel van hard licht rondom je hele lichaam (360°), zolang je rechtsklik inhoudt. Van buiten is hij solid; wie erin staat kijkt erdoorheen.
+  - **Actie:** Het schild vouwt open tot een koepel van hard licht rondom je hele lichaam (360°), zolang je rechtsklik inhoudt. Van buiten is hij solid; wie erin staat kijkt erdoorheen. De naden lopen als de voegen van een stenen muur, met een heldere band waar hij de grond raakt en een kroon van licht bovenop.
   - **Verdediging:** 40% minder schade uit alle richtingen (dekt meer dan het schild, houdt minder tegen). Dezelfde uitzonderingen als het schild.
   - **Kosten:** 0,24 power per seconde. Een schild dat al aan stond wacht onder de koepel en kost dan niets.
   - **Stopt:** Zodra je rechtsklik loslaat, recharge of een lege ring.
@@ -77,7 +78,8 @@ Voor **alle** linksklik- (aanval) en rechtsklik-acties (verdediging) geldt een a
 - **Actie:** Een grote vuist van groen licht verschijnt rechts naast je en laadt op zolang je R inhoudt.
 - **Opladen:** Groeit langzaam zolang je R inhoudt. Wijkt zelf soepel uit naar boven of links als een muur of de grond in de weg zit.
 - **Afvuren:** Laat R los om de vuist af te vuren. Gaat dwars door muren heen en raakt alle vijanden op zijn pad.
-- **Richten:** Het midden van de vuist gaat precies naar waar je crosshair op richt; hij zwaait in een vloeiende boog vanaf rechts naar je richtlijn.
+- **Richten (stuurbaar):** De vuist blijft zijn hele vlucht precies onder je crosshair. Bij het loslaten glijdt hij vanaf rechts naast je naar het midden van je beeld zonder te draaien, en daarna volgt hij je blik: kijk je opzij of omlaag, dan gaat hij mee.
+- **Uiterlijk:** Je ring zit aan de middelvinger van de vuist (de ring met zijn edelsteen), en de duim heeft een nagel.
 - **Grootte:** Tot 5,7 blokken breed bij een volle lading.
 - **Schade:** 6 harten bij een korte tik, tot 14 harten bij een volle lading.
 - **Kosten:** 1,6 power (tik) tot 3,2 power (volle lading). De ring betaalt pas als hij wordt afgevuurd.
@@ -130,10 +132,13 @@ Voor **alle** linksklik- (aanval) en rechtsklik-acties (verdediging) geldt een a
   - *Neergezwaaid:* vliegenmepper en pickaxe over je schouder, hamer van een rechter op zijn blok, drumstokken op een trommel.
   - Het embleem dat plat voorover valt, en een salvo van vijf raketten.
   - Elk construct is solid en groeit uit het licht van de ring; aan het eind breekt het in solid stukken (of zakt terug de grond in). De schokgolf is een lage ring van solid hard licht.
+  - **Groot en goed te volgen:** standaard 35% groter dan eerst (ze slaan daarom iets verder voor je in) en anderhalf keer zo traag: het construct vormt zich en valt in ongeveer 0,75 sec, blijft na de klap ruim een seconde staan en breekt dan op; alles samen ruim 3 seconden. Allebei instelbaar (zie 9).
+  - **Elk construct beweegt:** de kluis ploft neer, het wiel draait, de deur vliegt open en munten, biljetten en goudstaven vallen eruit; de piano-klep springt open, de klep over de toetsen slaat omhoog, de toetsen springen en er zweven noten op; het aambeeld spat vonken en hupt nog een keer; het gewicht plet zwaar; de TNT landt, zwelt, knippert terwijl het lontje opbrandt en ontploft; de speelgoedsteen en de halter stuiteren; de stempel wiebelt en laat het embleem gloeiend achter; de laars landt hak eerst en de neus klapt erachteraan; het hengsel van de lantaarn zwaait; de ketting van het anker valt erachteraan en stapelt zich op; de stekelbal schommelt na; de klok schudt, de klepel zwaait en er lopen geluidsringen weg; de meteoor heeft gloeiende scheuren; het zwaard trilt na; de bekkens stuiteren uit elkaar en galmen; de berenklem rammelt; het boek bladert en klapt dicht; de hamer van de rechter klopt nog een keer; de trommelstokken spelen een roffel met rimpels over het vel; de kristalpieken schieten door en glinsteren; de zuil stuitert en zijn stukken schuiven uit elkaar; het embleem stuitert op de grond; de klets-hand trommelt met zijn vingers; de handen buigen hun vingers bij het klappen.
 - **Vechten in de lucht (dezelfde knoppen):**
   - *Tik links:* bolt neemt jouw snelheid mee, dus je haalt je eigen schoten nooit in.
   - *Hold links:* de laser, voor strafing runs over vijanden en de grond.
-  - *Tik rechts:* het schild wordt een puntige, gestroomlijnde **ramkegel** voor je, linkervuist vooruit. Houdt 70% van voren tegen; wat je raakt wordt weggeslingerd en krijgt **2 harten + 3 harten per blok per tick snelheid** (ongeveer 7 harten op topsnelheid). Zelfde wezen pas na 0,6 sec opnieuw.
+  - *Tik rechts:* het schild wordt een puntige, gestroomlijnde **ramkegel** voor je, linkervuist vooruit, met ribbels die als de draad van een boor naar de punt lopen en ronddraaien. Houdt 70% van voren tegen; wat je raakt wordt weggeslingerd en krijgt **2 harten + 3 harten per blok per tick snelheid** (ongeveer 7 harten op topsnelheid). Zelfde wezen pas na 0,6 sec opnieuw.
+  - *Schrapen:* vlieg je met de ramkegel laag over de grond (minder dan 1,5 blok erboven) of glijd je eroverheen, dan kost dat **2 power per sec extra**, vliegen er vonken af, schuurt hij hoorbaar en schudt je beeld (harder naarmate je sneller gaat). Alle drie instelbaar onder Light Shield › Ramkegel.
   - *Hold rechts:* de koepel werkt als **luchtrem**: je snelheid halveert zolang je inhoudt.
 
 ---
@@ -148,5 +153,13 @@ Voor **alle** linksklik- (aanval) en rechtsklik-acties (verdediging) geldt een a
 - **Kosten:** 1,6 power, betaald als de klap valt; zonder genoeg power land je alleen hard.
 - **Cooldown:** 5 sec, vanaf het indrukken.
 - **Kan niet** tijdens het opladen van de ring of het laden van de Giant Fist, en niet terwijl je vorige klap nog bezig is.
-- **Instellingen:** schade, bereik, terugslag en kosten gelden ook voor de landingsklap bij het vliegen (één set, onder Schokgolf).
+- **Instellingen:** schade, bereik, terugslag en kosten gelden ook voor de landingsklap bij het vliegen (één set, onder Schokgolf). Onder *De constructs* staan ook **Grootte van de constructs** (standaard 1,35) en **Slowmotion** (standaard 1,5: anderhalf keer zo traag; ook de schokgolf komt dan zoveel later).
 - **Paneel:** op weg naar beneden staat er `duikt` achter de toets.
+
+---
+
+## 10. Constructs uitproberen (`/constructshockwave`)
+
+- **Actie:** Typ `/constructshockwave` in de chat. Er opent een scherm met alle 32 constructs, in groepjes (uit de lucht, klappen dicht, uit de grond, neergezwaaid, en meer), met bij elk een korte uitleg als je hem aanwijst. Klik er één (of *Willekeurig*): het scherm sluit en een seconde later slaat dat construct voor je in, met schokgolf.
+- **Voor wie:** iedereen, als personage maakt niet uit, maar alleen met cheats aan (of als operator). Zonder dat zegt de server het je.
+- **Kosten:** geen power en geen cooldown. Loopt je vorige klap nog, dan wacht je even.

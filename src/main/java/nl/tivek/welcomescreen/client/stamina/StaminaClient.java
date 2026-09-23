@@ -15,7 +15,6 @@ import net.neoforged.neoforge.client.event.MovementInputUpdateEvent;
 import net.neoforged.neoforge.client.event.RegisterClientCommandsEvent;
 import net.neoforged.neoforge.event.entity.living.LivingEvent;
 import nl.tivek.welcomescreen.WelcomeScreenMod;
-import nl.tivek.welcomescreen.client.config.SettingsPages;
 import nl.tivek.welcomescreen.client.config.SettingsScreen;
 import nl.tivek.welcomescreen.config.StaminaConfig;
 
@@ -91,13 +90,13 @@ public final class StaminaClient {
                 Commands.literal("stamina")
                         .executes(ctx -> {
                             Minecraft mc = Minecraft.getInstance();
-                            mc.tell(() -> mc.setScreen(new SettingsScreen(null, SettingsPages.stamina())));
+                            mc.tell(() -> mc.setScreen(new SettingsScreen(null, 0)));
                             return 1;
                         })
                         .then(Commands.literal("config")
                                 .executes(ctx -> {
                                     Minecraft mc = Minecraft.getInstance();
-                                    mc.tell(() -> mc.setScreen(new SettingsScreen(null, SettingsPages.stamina())));
+                                    mc.tell(() -> mc.setScreen(new SettingsScreen(null, 0)));
                                     return 1;
                                 }))
         );

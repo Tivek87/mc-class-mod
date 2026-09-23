@@ -83,6 +83,9 @@ final class ConstructPainter {
     private static final double EDGE_WIDTH = 0.035;
     private static final double HALO_WIDTH = 0.1;
     private static final double WIDTH_CAP = 3.0;
+    // A part smaller than this (in blocks at scale 1, see fine) gets finer lines, down to FINEST times the usual.
+    private static final double FINE_SIZE = 0.35;
+    private static final double FINEST = 0.35;
     // The beam from the ring is drawn in this many pieces, and a piece this close to the camera is left
     // out because it cannot be turned to face it.
     private static final int BEAM_STEPS = 16;
@@ -130,6 +133,7 @@ final class ConstructPainter {
             { -0.72, -0.28, -0.30, -0.52, 0.06, 0.10, 1.0 },
             { -0.74, -0.34, 0.08, -0.50, -0.06, 0.42, 1.0 },
             { -0.64, -0.40, 0.42, -0.08, -0.16, 0.62, 1.05 },
+            { -0.30, -0.36, 0.62, -0.10, -0.20, 0.635, 1.25 },
             // Wrist, a bright cuff, and the forearm fading out towards the ring
             { -0.38, -0.27, -0.72, 0.38, 0.25, -0.42, 0.9 },
             { -0.44, -0.33, -0.86, 0.44, 0.31, -0.72, 1.2 },
@@ -137,14 +141,13 @@ final class ConstructPainter {
     // Where the forearm ends: the beam from the ring comes in there.
     private static final double BACK = -1.25;
     /**
-     * The bolt the ring shoots: a small bullet of light, in the same three numbers per corner. A pointed
-     * nose, a body, and a tail that burns lower behind it.
+     * His ring, on the middle finger of the fist (only a right fist wears it): a band round the finger just past its
+     * knuckle, a setting on top and the gem in it.
      */
-    private static final double[][] BOLT = {
-            { -0.20, -0.20, -0.75, 0.20, 0.20, -0.40, 0.7 },
-            { -0.32, -0.32, -0.40, 0.32, 0.32, 0.25, 1.0 },
-            { -0.20, -0.20, 0.25, 0.20, 0.20, 0.55, 1.3 } };
-    // How wide that bullet is at its widest, so a bolt of size 1 is one block wide.
+    static final Shape FIST_RING = new Shape(new double[][] { { -0.285, 0.28, 0.36, -0.005, 0.31, 0.44, 1.2 } },
+            Mesh.cylinder(10, 0.08, 0.30, 0.335, 1.3).moved(-0.145, 0.0, 0.40),
+            Mesh.ball(10, 6, 0.065, 1.6).scaled(1.0, 0.6, 1.0).moved(-0.145, 0.34, 0.40));
+    // How wide the bolt (see BOLT_SHAPE) is at its widest, so a bolt of size 1 is one block wide.
     private static final double BOLT_WIDTH = 0.64;
     /** A cube of one block round its middle: chunks thrown up by a blow. */
     private static final double[][] CUBE = { { -0.5, -0.5, -0.5, 0.5, 0.5, 0.5, 1.0 } };
@@ -156,8 +159,30 @@ final class ConstructPainter {
     private static final int RAM_SIDES = 16;
     private static final double[][] RAM = { { -0.45, 0.92 }, { 0.35, 0.8 }, { 1.05, 0.52 }, { 1.55, 0.2 },
             { 1.8, 0.0 } };
-    // How many corners the round pane of the shield is cut into.
-    private static final int SHIELD_SIDES = 16;
+    // How strongly the outline of a see-through shape shows, next to that of a solid one.
+    private static final double SEE_THROUGH_EDGE = 0.55;
+    /**
+     * The shield, round its middle with its face towards +z and a radius of 1 at scale 1: a body that bulges a little
+     * to the front, a round rim, a groove turned into its face, the lantern emblem raised in its middle, and a grip on
+     * its back.
+     */
+    private static final Shape SHIELD = Shape.of(
+            Mesh.lathe(40, 1.0, 0.0, -0.07, 0.90, -0.07, 0.97, -0.03, 0.97, 0.03, 0.90, 0.05, 0.60, 0.11, 0.30, 0.14,
+                    0.0, 0.15).alongZ(),
+            Mesh.torus(48, 8, 0.96, 0.06, 1.2).alongZ(),
+            Mesh.torus(48, 6, 0.70, 0.025, 1.3).alongZ().moved(0.0, 0.0, 0.095),
+            Mesh.torus(32, 6, 0.24, 0.045, 1.45).alongZ().moved(0.0, 0.0, 0.155),
+            Mesh.box(-0.30, 0.31, 0.10, 0.30, 0.39, 0.20, 1.45),
+            Mesh.box(-0.30, -0.39, 0.10, 0.30, -0.31, 0.20, 1.45),
+            Mesh.box(-0.08, -0.30, -0.13, 0.08, 0.30, -0.07, 1.0));
+    /** The rivets round the face of the shield, drawn on their own so the ring of them can turn slowly. */
+    private static final Shape SHIELD_RIVETS = Shape.of(rivets());
+    /** The bolt the ring shoots, along z: a pointed nose, a round body, and a tail narrowing behind it. */
+    private static final Shape BOLT_SHAPE = Shape.of(Mesh.lathe(10, 1.15, 0.0, -0.75, 0.18, -0.75, 0.24, -0.55,
+            0.32, -0.40, 0.32, 0.20, 0.24, 0.40, 0.10, 0.55, 0.0, 0.60).alongZ());
+    // Where the bolt's nose and tail end, along z at scale 1.
+    private static final double BOLT_NOSE = 0.60;
+    private static final double BOLT_TAIL = -0.75;
     // The four corners of each side of a box. A corner is three bits: 1 = far x, 2 = far y, 4 = far z.
     private static final int[][] SIDES = { { 0, 2, 6, 4 }, { 1, 5, 7, 3 }, { 0, 4, 5, 1 }, { 2, 3, 7, 6 },
             { 0, 1, 3, 2 }, { 4, 6, 7, 5 } };
@@ -166,7 +191,10 @@ final class ConstructPainter {
     private record Corner(Vec3 at, int rgb, int alpha) {
     }
 
-    /** Where a construct is and how it is turned: its middle, its own right, up and forward, and its scale. */
+    /**
+     * Where a construct is and how it is turned: its middle, its own right, up and forward, and its scale. Its three
+     * ways are one long, unless it is squashed or stretched (see {@link #stretched}).
+     */
     record Frame(Vec3 center, Vec3 right, Vec3 up, Vec3 forward, double scale) {
         /** A point of the model (in blocks at scale 1) out in the world. */
         Vec3 at(double x, double y, double z) {
@@ -177,8 +205,55 @@ final class ConstructPainter {
         /** The other way around: where a point of the world lies in the model. */
         Vec3 local(Vec3 world) {
             Vec3 way = world.subtract(this.center);
-            return new Vec3(way.dot(this.right) / this.scale, way.dot(this.up) / this.scale,
-                    way.dot(this.forward) / this.scale);
+            return new Vec3(way.dot(this.right) / (this.right.lengthSqr() * this.scale),
+                    way.dot(this.up) / (this.up.lengthSqr() * this.scale),
+                    way.dot(this.forward) / (this.forward.lengthSqr() * this.scale));
+        }
+
+        /** The way a side of the model faces (one long, in the model) as a way in the world, one long. */
+        Vec3 normal(Vec3 model) {
+            Vec3 way = this.right.scale(model.x / this.right.lengthSqr())
+                    .add(this.up.scale(model.y / this.up.lengthSqr()))
+                    .add(this.forward.scale(model.z / this.forward.lengthSqr()));
+            double length = way.length();
+            return length < 1.0E-12 ? Vec3.ZERO : way.scale(1.0 / length);
+        }
+
+        /** The same frame with its middle at a point of the model: for a part that turns about its own middle. */
+        Frame moved(double x, double y, double z) {
+            return new Frame(this.at(x, y, z), this.right, this.up, this.forward, this.scale);
+        }
+
+        /**
+         * The same frame turned by {@code angle} (radians) about a line through a point of the model that runs along
+         * (ax, ay, az) in the model: a lid on its hinge, a door, a jaw. The angle turns the way it would in the model's
+         * own terms (counter-clockwise looking down the line from its tip), also when the frame is a mirror image, as
+         * one with his right as its x is.
+         */
+        Frame turned(double px, double py, double pz, double ax, double ay, double az, double angle) {
+            Vec3 axis = this.right.scale(ax).add(this.up.scale(ay)).add(this.forward.scale(az)).normalize();
+            double turn = this.right.cross(this.up).dot(this.forward) < 0.0 ? -angle : angle;
+            Vec3 pivot = this.at(px, py, pz);
+            return new Frame(pivot.add(spin(this.center.subtract(pivot), axis, turn)), spin(this.right, axis, turn),
+                    spin(this.up, axis, turn), spin(this.forward, axis, turn), this.scale);
+        }
+
+        /** The same frame squashed or stretched along its own right, up and forward (1 = as it is). */
+        Frame stretched(double x, double y, double z) {
+            return new Frame(this.center, this.right.scale(x), this.up.scale(y), this.forward.scale(z), this.scale);
+        }
+    }
+
+    /**
+     * The shape of a construct, or of one part of it that moves on its own: boxes (see {@link #model}) and round or
+     * slanted parts (see {@link Mesh}), in blocks at scale 1.
+     */
+    record Shape(double[][] boxes, Mesh... meshes) {
+        private static final double[][] NO_BOXES = new double[0][];
+
+        /** A shape of round or slanted parts only. */
+        static Shape of(Mesh... meshes) {
+            return new Shape(NO_BOXES, meshes);
         }
     }
 
@@ -191,6 +266,8 @@ final class ConstructPainter {
     private final List<Corner> glow = new ArrayList<>();
     // True while a construct's own shape is drawn: then what comes close to the camera fades out.
     private boolean nearFade;
+    // Above 0 while a see-through shape is drawn (see seeThrough): how strongly its sides show.
+    private double faint;
 
     ConstructPainter(PoseStack pose, Vec3 camera, float time) {
         this.matrix = pose.last().pose();
@@ -254,6 +331,7 @@ final class ConstructPainter {
                     (box[2] + box[5]) * 0.5, grown);
         }
         this.nearFade = false;
+        this.shape(FIST_RING, frame, strength, throb);
         if (ring == null) {
             return;
         }
@@ -340,6 +418,135 @@ final class ConstructPainter {
         this.nearFade = false;
     }
 
+    /** A shape of boxes and round parts at {@code frame}, drawn the way {@link #model} draws boxes. */
+    void shape(Shape shape, Frame frame, double solid, double bright) {
+        if (shape.boxes().length > 0) {
+            this.model(shape.boxes(), frame, solid, bright);
+        }
+        for (Mesh mesh : shape.meshes()) {
+            this.mesh(mesh, frame, solid, bright);
+        }
+    }
+
+    /**
+     * A shape of boxes and round parts breaking up, still solid: every box and every round part flies off on its own
+     * (see {@link #shattered(double[][], Frame, double, double)}).
+     */
+    void shattered(Shape shape, Frame frame, double apart, double bright) {
+        if (shape.boxes().length > 0) {
+            this.shattered(shape.boxes(), frame, apart, bright);
+        }
+        for (int k = 0; k < shape.meshes().length; k++) {
+            this.shatteredMesh(shape.meshes()[k], frame, shape.boxes().length + k, apart, bright);
+        }
+    }
+
+    /** A round or slanted part (see {@link Mesh}) at {@code frame}, drawn the way {@link #model} draws boxes. */
+    void mesh(Mesh mesh, Frame frame, double solid, double bright) {
+        double strength = Mth.clamp(solid, 0.0, 1.0);
+        if (strength <= 0.0) {
+            return;
+        }
+        Vec3[] world = new Vec3[mesh.points.length];
+        for (int i = 0; i < world.length; i++) {
+            Vec3 point = mesh.points[i];
+            world[i] = frame.at(point.x, point.y, point.z);
+        }
+        Vec3[] normals = new Vec3[mesh.sides.length];
+        for (int s = 0; s < normals.length; s++) {
+            normals[s] = frame.normal(mesh.normals[s]);
+        }
+        this.drawMesh(mesh, world, normals, Math.min(frame.scale(), WIDTH_CAP), strength, bright);
+    }
+
+    /** One round part flying off as its construct breaks up, the way a box does in {@link #shattered}. */
+    private void shatteredMesh(Mesh mesh, Frame frame, int piece, double apart, double bright) {
+        double gone = Mth.clamp(apart, 0.0, 1.0);
+        double left = 1.0 - gone;
+        if (left <= 0.0) {
+            return;
+        }
+        double size = Math.max(1.0, frame.scale());
+        Vec3 middle = frame.at(mesh.middle.x, mesh.middle.y, mesh.middle.z);
+        Vec3 out = middle.subtract(frame.center());
+        Vec3 scatter = direction(piece, 7);
+        Vec3 way = out.lengthSqr() > 1.0E-6 ? out.normalize().add(scatter.scale(0.6)).normalize() : scatter;
+        double speed = (1.2 + 1.8 * noise(piece, 7, 3)) * size;
+        Vec3 moved = middle.add(way.scale(speed * gone)).add(0.0, (1.2 * gone - 2.6 * gone * gone) * size, 0.0);
+        Vec3 axis = direction(piece, 9);
+        double turn = gone * (1.5 + 3.0 * noise(piece, 9, 2));
+        Vec3[] world = new Vec3[mesh.points.length];
+        for (int i = 0; i < world.length; i++) {
+            Vec3 point = mesh.points[i];
+            world[i] = moved.add(spin(frame.at(point.x, point.y, point.z).subtract(middle), axis, turn).scale(left));
+        }
+        Vec3[] normals = new Vec3[mesh.sides.length];
+        for (int s = 0; s < normals.length; s++) {
+            normals[s] = spin(frame.normal(mesh.normals[s]), axis, turn);
+        }
+        this.drawMesh(mesh, world, normals, Math.min(frame.scale(), WIDTH_CAP), 1.0, bright);
+    }
+
+    /**
+     * Draws a round part whose corners and sides are out in the world already: solid sides lit like the sides of a
+     * box, and a bright line along every edge where its outline runs as you look at it (one side along it faces you and
+     * the other faces away), or where it has only one side.
+     */
+    private void drawMesh(Mesh mesh, Vec3[] world, Vec3[] normals, double width, double solid, double bright) {
+        int count = mesh.sides.length;
+        boolean[] facing = new boolean[count];
+        // A see-through shape (see seeThrough) puts its sides with the light, faint, so they hide nothing.
+        boolean faint = this.faint > 0.0;
+        List<Corner> sides = faint ? this.light : this.mass;
+        int body = alpha(faint ? this.faint * solid : solid);
+        this.nearFade = true;
+        for (int s = 0; s < count; s++) {
+            Vec3 normal = normals[s];
+            if (normal.lengthSqr() < 0.5) {
+                continue;
+            }
+            int[] side = mesh.sides[s];
+            Vec3 middle = world[side[0]].add(world[side[2]]).scale(0.5);
+            Vec3 view = this.camera.subtract(middle);
+            double look = normal.dot(view);
+            facing[s] = look > 0.0;
+            double away = view.length();
+            double face = away < 1.0E-6 ? 1.0 : Math.abs(look) / away;
+            double ripple = 0.9 + 0.06 * Math.sin(this.time * 0.5 - mesh.middles[s].z * 4.0);
+            double light = (0.62 + 0.38 * (normal.y * 0.5 + 0.5)) * sheen(face) * ripple * bright * mesh.bright[s];
+            this.quad(sides, world[side[0]], world[side[1]], world[side[2]], world[side[3]],
+                    shade(MASS_GREEN, Math.min(1.0, light)), body);
+        }
+        double quiet = faint ? SEE_THROUGH_EDGE : 1.0;
+        int edge = alpha(EDGE * solid * quiet);
+        int halo = alpha(HALO * solid * quiet);
+        double fine = width * mesh.fine;
+        for (int e = 0; e < mesh.edgeFrom.length; e++) {
+            int left = mesh.edgeLeft[e];
+            int right = mesh.edgeRight[e];
+            if (left >= 0 && right >= 0 && facing[left] == facing[right]) {
+                continue;
+            }
+            Vec3 a = this.lifted(world[mesh.edgeFrom[e]], fine);
+            Vec3 b = this.lifted(world[mesh.edgeTo[e]], fine);
+            this.line(this.light, a, b, EDGE_WIDTH * fine, BRIGHT, edge);
+            // Round things have short edges: a glow wider than the edge is long would stick out at every corner.
+            this.line(this.glow, a, b, Math.min(HALO_WIDTH * fine, 0.9 * a.distanceTo(b)), GREEN, halo);
+        }
+        this.nearFade = false;
+    }
+
+    /**
+     * How much a side's light changes with how it faces you, as a part of it: a little dimmer where you look straight
+     * at it and a little brighter where it turns away towards its outline, so round things read round and every shape
+     * seems to glow at its edges.
+     *
+     * @param face 1 when the side faces you straight, 0 when you see it edge-on
+     */
+    private static double sheen(double face) {
+        return 0.88 + 0.24 * (1.0 - Mth.clamp(face, 0.0, 1.0));
+    }
+
     /** A solid cube of hard light, turned by {@code angle} about {@code axis}: a chunk thrown up by a blow. */
     void chunk(Vec3 at, double size, Vec3 axis, double angle, double bright) {
         if (size <= 0.0) {
@@ -380,20 +587,10 @@ final class ConstructPainter {
         // so it reads as a shot of energy and never as a green block flying past your eyes.
         Frame frame = new Frame(center, right, right.cross(facing), facing, size * 0.5 / BOLT_WIDTH);
         double strength = Mth.clamp(solid, 0.0, 1.0);
-        Vec3[] corners = new Vec3[8];
-        Vec3 view = frame.local(this.camera);
+        this.shape(BOLT_SHAPE, frame, strength, 1.0);
         this.nearFade = true;
-        for (int b = 0; b < BOLT.length; b++) {
-            double[] box = BOLT[b];
-            for (int i = 0; i < 8; i++) {
-                corners[i] = frame.at(box[(i & 1) == 0 ? 0 : 3], box[(i & 2) == 0 ? 1 : 4],
-                        box[(i & 4) == 0 ? 2 : 5]);
-            }
-            this.box(BOLT, b, corners, view, Math.min(frame.scale(), WIDTH_CAP), strength, box[6] * 1.15,
-                    (box[2] + box[5]) * 0.5, 0.0);
-        }
-        Vec3 nose = frame.at(0.0, 0.0, BOLT[2][5] + 0.2);
-        Vec3 tail = frame.at(0.0, 0.0, BOLT[0][2]);
+        Vec3 nose = frame.at(0.0, 0.0, BOLT_NOSE + 0.15);
+        Vec3 tail = frame.at(0.0, 0.0, BOLT_TAIL);
         this.line(this.light, tail, nose, size * 0.3, HOT, alpha(0.9 * strength));
         this.line(this.glow, tail, nose, size * 1.3, GREEN, alpha(0.6 * strength));
         // The streak it leaves, fading out behind it.
@@ -409,19 +606,21 @@ final class ConstructPainter {
         // Only while it is still near the hand: a beam stretching across half the world behind every bolt
         // would turn a burst of them into a fan of stripes.
         if (ring != null && ring.distanceToSqr(center) < BOLT_BEAM * BOLT_BEAM) {
-            this.beam(ring, frame.at(0.0, 0.0, BOLT[0][2]), strength * 0.7, frame.scale());
+            this.beam(ring, frame.at(0.0, 0.0, BOLT_TAIL), strength * 0.7, frame.scale());
         }
     }
 
     /**
-     * The shield: a round pane of hard light standing across {@code facing}, as solid as any construct, bright all
-     * around its edge. Only from the eyes of the one holding it is the pane left see-through, because it hangs right
-     * in front of them.
+     * The shield: a round shield of hard light standing across {@code facing} (see {@link #SHIELD}), as solid as any
+     * construct. The ring of rivets round its face turns slowly, a glint sweeps over it now and then, and a hit sends a
+     * ripple of light out over its face. Only from the eyes of the one holding it is it left see-through, because it
+     * hangs right in front of them.
      *
-     * @param size  how wide the pane is, in blocks
-     * @param solid 0 = gone, 1 = fully there; it also folds out from the middle as this grows
+     * @param size  how wide it is, in blocks
+     * @param solid 0 = gone, 1 = fully there; it also opens out from the middle as this grows
      * @param flash 1 right after a hit landed on it, 0 otherwise
      * @param ring  where the ring holding it is, or null when its owner is out of sight
+     * @param own   true when it is your own and you look out through it
      */
     void shield(Vec3 center, Vec3 facing, double size, double solid, double flash, @Nullable Vec3 ring,
             boolean own) {
@@ -429,49 +628,67 @@ final class ConstructPainter {
         if (strength <= 0.0) {
             return;
         }
-        // Your own shield stays up while you walk and fight, right in front of your eyes: you see it by its
-        // rim and ribs, and look straight through the pane. Everyone else sees it solid.
         Vec3 forward = facing.lengthSqr() < 1.0E-6 ? new Vec3(0, 0, 1) : facing.normalize();
         Vec3 right = forward.cross(UP);
         right = right.lengthSqr() < 1.0E-4 ? new Vec3(1, 0, 0) : right.normalize();
         Vec3 up = right.cross(forward);
         double radius = size * 0.5 * (0.55 + 0.45 * strength);
-        double thick = Math.max(0.02, radius * 0.09);
+        Frame frame = new Frame(center, right, up, forward, radius);
         double hit = Mth.clamp(flash, 0.0, 1.0);
         double burn = 1.0 + 0.5 * hit;
-        double ripple = 0.92 + 0.08 * Math.sin(this.time * 0.5);
-        int face = own ? alpha((0.5 + 0.18 * hit) * strength * 0.22) : 255;
-        int faceRgb = shade(MASS_GREEN, Math.min(1.0, 0.8 * burn * ripple));
-        int edgeRgb = shade(MASS_GREEN, Math.min(1.0, burn));
-        // Your own pane is drawn as light only, so it never hides anything behind it.
-        List<Corner> faces = own ? this.light : this.mass;
-        Vec3 front = center.add(forward.scale(thick));
-        Vec3 back = center.subtract(forward.scale(thick));
-        Vec3 lastOut = null;
-        for (int i = 0; i <= SHIELD_SIDES; i++) {
-            double angle = Math.PI * 2 * i / SHIELD_SIDES;
-            Vec3 out = right.scale(Math.cos(angle) * radius).add(up.scale(Math.sin(angle) * radius));
-            if (lastOut != null) {
-                // The two flat faces, each as a wedge from the middle, and the strip of edge between them.
-                this.quad(faces, front, front.add(lastOut), front.add(out), front, faceRgb, face);
-                this.quad(faces, back, back.add(out), back.add(lastOut), back, faceRgb, face);
-                this.quad(faces, front.add(lastOut), back.add(lastOut), back.add(out), front.add(out),
-                        edgeRgb, own ? alpha(0.55 * strength) : 255);
-                Vec3 a = center.add(lastOut);
-                Vec3 b = center.add(out);
-                this.line(this.light, a, b, radius * 0.07, BRIGHT, alpha(EDGE * burn * strength));
-                this.line(this.glow, a, b, radius * 0.24, GREEN, alpha(HALO * burn * strength));
-            }
-            // Ribs out of the middle, every fourth corner: it reads as something shaped, not as a green plate.
-            if (i % 4 == 0 && i < SHIELD_SIDES) {
-                this.line(this.light, center, center.add(out), radius * 0.045, BRIGHT,
-                        alpha(0.55 * burn * strength));
-            }
-            lastOut = out;
+        Frame rivets = frame.turned(0.0, 0.0, 0.0, 0.0, 0.0, 1.0, this.time * 0.02);
+        if (own) {
+            // Your own shield stays up while you walk and fight, right in front of your eyes: you see it by its
+            // outline and the faint glow of its face, and look straight through it. Everyone else sees it solid.
+            this.seeThrough(SHIELD, frame, (0.1 + 0.12 * hit) * strength, burn);
+            this.seeThrough(SHIELD_RIVETS, rivets, (0.1 + 0.12 * hit) * strength, burn);
+        } else {
+            this.shape(SHIELD, frame, 1.0, burn);
+            this.shape(SHIELD_RIVETS, rivets, 1.0, burn);
+        }
+        Vec3 face = frame.at(0.0, 0.0, 0.17);
+        double quiet = own ? 0.5 : 1.0;
+        if (hit > 0.0) {
+            this.circle(face, right, up, radius * (0.2 + 0.8 * (1.0 - hit)), 0.05, 0.25, alpha(hit * quiet),
+                    alpha(0.5 * hit * quiet));
+        }
+        // Now and then a glint sweeps across its face, from its top left to its bottom right.
+        double sweep = Mth.frac(this.time / 70.0) * 4.0 - 1.2;
+        if (Math.abs(sweep) < 1.0) {
+            double reach = Math.sqrt(1.0 - sweep * sweep) * 0.85;
+            Vec3 across = right.add(up).normalize();
+            Vec3 along = right.subtract(up).normalize();
+            Vec3 middle = face.add(along.scale(sweep * radius * 0.85));
+            this.line(this.light, middle.subtract(across.scale(reach * radius)), middle.add(across.scale(reach
+                    * radius)), radius * 0.03, HOT, alpha(0.5 * strength * quiet * (1.0 - Math.abs(sweep))));
         }
         if (ring != null) {
-            this.beam(ring, center.subtract(forward.scale(thick + 0.02)), strength, radius);
+            this.beam(ring, frame.at(0.0, 0.0, -0.13), strength, radius);
         }
+    }
+
+    /** The rivets round the face of the shield. */
+    private static Mesh[] rivets() {
+        Mesh[] rivets = new Mesh[12];
+        for (int i = 0; i < rivets.length; i++) {
+            double angle = Math.PI * 2.0 * i / rivets.length;
+            rivets[i] = Mesh.ball(6, 4, 0.035, 1.4).moved(0.84 * Math.cos(angle), 0.84 * Math.sin(angle), 0.065);
+        }
+        return rivets;
+    }
+
+    /**
+     * The round parts of a shape drawn see-through: their sides as faint light that hides nothing behind it, and their
+     * outline quieter than that of a solid construct. Only for a construct right in front of its owner's eyes.
+     *
+     * @param faint how strongly the sides show, 0 to 1
+     */
+    private void seeThrough(Shape shape, Frame frame, double faint, double bright) {
+        this.faint = Math.max(1.0E-3, faint);
+        for (Mesh mesh : shape.meshes()) {
+            this.mesh(mesh, frame, 1.0, bright);
+        }
+        this.faint = 0.0;
     }
 
     /** While the fist grows in your hand, specks of light keep flying in and landing all over it. */
@@ -676,7 +893,8 @@ final class ConstructPainter {
                         shade(MASS_GREEN, 0.85 + 0.25 * band), alpha(a));
             }
         }
-        // The seams: every other ring and every third slice.
+        // The seams, like the joints of a wall of stones: a ring round it every other row, and in every band between
+        // two of them an upright joint every fourth slice, shifted half a stone from one band to the next.
         int seam = alpha((0.5 + 0.4 * hit) * strength);
         int seamGlow = alpha((0.25 + 0.3 * hit) * strength);
         for (int i = 2; i < DOME_RINGS; i += 2) {
@@ -685,12 +903,24 @@ final class ConstructPainter {
                 this.line(this.glow, points[i][j], points[i][j + 1], 0.12, GREEN, seamGlow);
             }
         }
-        for (int j = 0; j < DOME_SLICES; j += 3) {
-            for (int i = 0; i < DOME_RINGS; i++) {
-                this.line(this.light, points[i][j], points[i + 1][j], 0.025, BRIGHT, seam);
-                this.line(this.glow, points[i][j], points[i + 1][j], 0.12, GREEN, seamGlow);
+        for (int band = 0; band < DOME_RINGS; band += 2) {
+            for (int j = (band / 2 % 2) * 2; j < DOME_SLICES; j += 4) {
+                for (int i = band; i < band + 2; i++) {
+                    this.line(this.light, points[i][j], points[i + 1][j], 0.025, BRIGHT, seam);
+                    this.line(this.glow, points[i][j], points[i + 1][j], 0.12, GREEN, seamGlow);
+                }
             }
         }
+        // A bright band round its middle, where it meets the ground, and a crown of light on its top.
+        int band = alpha((0.8 + 0.2 * hit) * strength);
+        int bandGlow = alpha((0.4 + 0.3 * hit) * strength);
+        int middle = DOME_RINGS / 2;
+        for (int j = 0; j < DOME_SLICES; j++) {
+            this.line(this.light, points[middle][j], points[middle][j + 1], 0.06, BRIGHT, band);
+            this.line(this.glow, points[middle][j], points[middle][j + 1], 0.25, GREEN, bandGlow);
+            this.line(this.light, points[1][j], points[1][j + 1], 0.04, BRIGHT, band);
+        }
+        this.flare(points[0][0], 0.35 * (1.0 + hit), 0.8 * strength);
     }
 
     /**
@@ -715,7 +945,7 @@ final class ConstructPainter {
             Vec3 middle = center.add(forward.scale(RAM[k][0] * grow));
             double radius = RAM[k][1] * grow;
             for (int s = 0; s <= RAM_SIDES; s++) {
-                double angle = Math.PI * 2 * s / RAM_SIDES + this.time * 0.02;
+                double angle = Math.PI * 2 * s / RAM_SIDES + this.time * 0.08;
                 rings[k][s] = middle.add(across[0].scale(Math.cos(angle) * radius))
                         .add(across[1].scale(Math.sin(angle) * radius));
             }
@@ -739,13 +969,18 @@ final class ConstructPainter {
         }
         // Looking out through your own cone, its lines run past your eyes: they are kept quieter then.
         double quiet = own ? 0.45 : 1.0;
+        // Ridges that wind round it towards the tip, like the thread of a drill; the cone turns as it flies.
         for (int s = 0; s < RAM_SIDES; s += 4) {
             for (int k = 0; k + 1 < RAM.length; k++) {
-                this.line(this.light, rings[k][s], rings[k + 1][s], 0.04, BRIGHT,
-                        alpha(EDGE * burn * strength * quiet));
-                this.line(this.glow, rings[k][s], rings[k + 1][s], 0.16, GREEN,
-                        alpha(HALO * burn * strength * quiet));
+                Vec3 from = rings[k][(s + 2 * k) % RAM_SIDES];
+                Vec3 to = rings[k + 1][(s + 2 * k + 2) % RAM_SIDES];
+                this.line(this.light, from, to, 0.04, BRIGHT, alpha(EDGE * burn * strength * quiet));
+                this.line(this.glow, from, to, 0.16, GREEN, alpha(HALO * burn * strength * quiet));
             }
+        }
+        // A second bright ring a little way up it.
+        for (int s = 0; s < RAM_SIDES; s++) {
+            this.line(this.light, rings[1][s], rings[1][s + 1], 0.035, BRIGHT, alpha(0.7 * burn * strength * quiet));
         }
         for (int s = 0; s < RAM_SIDES; s++) {
             this.line(this.light, rings[0][s], rings[0][s + 1], 0.05, BRIGHT, alpha(EDGE * burn * strength * quiet));
@@ -887,23 +1122,38 @@ final class ConstructPainter {
             Vec3 p0 = corners[side[0]];
             Vec3 p1 = corners[side[1]];
             Vec3 p2 = corners[side[2]];
+            Vec3 toEye = this.camera.subtract(p0.add(p2).scale(0.5));
+            Vec3 normal = p1.subtract(p0).cross(p2.subtract(p0));
+            double across = normal.length() * toEye.length();
+            double face = across < 1.0E-12 ? 1.0 : Math.abs(normal.dot(toEye)) / across;
             // Never brighter than the green itself: past that the mass washes out to white.
-            this.quad(this.mass, p0, p1, p2, corners[side[3]],
-                    shade(MASS_GREEN, Math.min(1.0, lit(p0, p1, p2, middle) * ripple * bright)), body);
+            this.quad(this.mass, p0, p1, p2, corners[side[3]], shade(MASS_GREEN,
+                    Math.min(1.0, lit(p0, p1, p2, middle) * sheen(face) * ripple * bright)), body);
         }
         int edge = alpha(EDGE * ripple * solid);
         int halo = alpha(HALO * (1.0 + 0.4 * charge) * solid);
+        double[] box = model[index];
+        double fine = width * fine(box[3] - box[0], box[4] - box[1], box[5] - box[2]);
         for (int i = 0; i < 8; i++) {
             for (int bit = 1; bit < 8; bit <<= 1) {
                 if ((i & bit) != 0 || !rim(model, index, i, bit, view)) {
                     continue;
                 }
-                Vec3 a = this.lifted(corners[i], width);
-                Vec3 b = this.lifted(corners[i | bit], width);
-                this.line(this.light, a, b, EDGE_WIDTH * width, BRIGHT, edge);
-                this.line(this.glow, a, b, HALO_WIDTH * width, GREEN, halo);
+                Vec3 a = this.lifted(corners[i], fine);
+                Vec3 b = this.lifted(corners[i | bit], fine);
+                this.line(this.light, a, b, EDGE_WIDTH * fine, BRIGHT, edge);
+                this.line(this.glow, a, b, HALO_WIDTH * fine, GREEN, halo);
             }
         }
+    }
+
+    /**
+     * How thick the lines along a part are drawn, as a part of the usual: a small part (a knob, a coin, a spoke) gets
+     * finer lines, so its glow does not swallow it. It goes by the middle one of its three sizes, at scale 1.
+     */
+    static double fine(double x, double y, double z) {
+        double middle = Math.max(Math.min(x, y), Math.min(Math.max(x, y), z));
+        return Mth.clamp(middle / FINE_SIZE, FINEST, 1.0);
     }
 
     /**

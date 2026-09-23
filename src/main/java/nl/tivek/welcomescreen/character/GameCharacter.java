@@ -157,7 +157,15 @@ public enum GameCharacter {
                     .setting("ramDamagePerSpeed", 6.0, 0.0, 200.0, Unit.HALF_HEARTS_PER_SPEED,
                             "Extra ram damage in half hearts for every block per tick you fly (1.75 at top speed)")
                     .setting("ramKnockback", 1.4, 0.0, 6.0, Unit.STRENGTH,
-                            "How hard a ram throws a creature away; the faster you fly, the further it goes");
+                            "How hard a ram throws a creature away; the faster you fly, the further it goes")
+                    .setting("ramGroundPowerPerSecond", 2.0, 0.0, 50.0, Unit.POWER_PER_SECOND,
+                            "Extra ring power a second while you fly with the ram cone low along the ground or"
+                                    + " scrape over it")
+                    .setting("ramGroundBlocks", 1.5, 0.2, 6.0, Unit.BLOCKS,
+                            "How close above the ground the ram cone counts as scraping along it, in blocks")
+                    .setting("ramGroundShake", 1.0, 0.0, 3.0, Unit.STRENGTH,
+                            "How hard your view shakes while the ram cone scrapes along the ground (0 = not at"
+                                    + " all)");
             // Smash the ring fist into the ground: the ring throws up a construct in front of him that strikes and
             // sends a shockwave over it. In the air he dives down to the ground first. Flying into the ground at full
             // speed does the same by itself, with these same numbers.
@@ -167,7 +175,14 @@ public enum GameCharacter {
                             "How hard the shockwave throws creatures away from where it strikes")
                     .setting("powerCost", 1.6, 0.0, 100.0, Unit.POWER,
                             "Ring power one shockwave costs, also the one of a landing at full speed; without it you"
-                                    + " just land");
+                                    + " just land")
+                    .group("constructs", "The constructs")
+                    .setting("constructScale", 1.35, 0.5, 3.0, Unit.STRENGTH,
+                            "How big the constructs are: 1 = the size they were made at, 1.35 = 35% bigger. The"
+                                    + " bigger they are, the further in front of you they strike")
+                    .setting("slowMotion", 1.5, 0.5, 4.0, Unit.STRENGTH,
+                            "How slowly the constructs play: 1 = the old pace, 1.5 = half again as slow, 2 = twice"
+                                    + " as slow. The shockwave strikes that much later too");
             // Fly: fists to the chest, arms down along the sides and up you go. The ring pays for every second of
             // it, so a full ring lasts a set time in the air.
             this.add(abilities, AbilitySlot.ABILITY_9, "flight").cooldown(20)

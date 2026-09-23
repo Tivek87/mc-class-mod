@@ -72,6 +72,11 @@ public final class ClientConstructs {
         private int told = -1;
         @Nullable
         private ConstructPath path;
+        // Where a steered one was drawn last, and the way it pointed: once it stops it falls apart right there.
+        @Nullable
+        private Vec3 lastCenter;
+        @Nullable
+        private Vec3 lastWay;
 
         Track(ConstructPayload first) {
             this.previous = first;
@@ -183,11 +188,15 @@ public final class ClientConstructs {
         return most;
     }
 
-    /** How many ticks ago this player's landing slam began, by the client's own clock, or -1 when there is none. */
+    /**
+     * How many ticks ago this player's landing slam began, by the client's own clock, or -1 when there is none.
+     * Counted at the pace the constructs were made for (see {@link SlamPainter#pace}), like the timeline of
+     * {@link LandingSlam}.
+     */
     static float slamAge(int owner, float partialTick) {
         for (Track track : CONSTRUCTS.values()) {
             if (track.latest.shape() == ConstructPayload.SLAM && track.latest.owner() == owner) {
-                return (float) track.clock(partialTick);
+                return (float) (track.clock(partialTick) / SlamPainter.pace(track.latest));
             }
         }
         return -1.0F;
@@ -215,7 +224,7 @@ public final class ClientConstructs {
             if (slam.shape() != ConstructPayload.SLAM) {
                 continue;
             }
-            double since = track.clock(partialTick) - LandingSlam.IMPACT_TICK;
+            double since = track.clock(partialTick) / SlamPainter.pace(slam) - LandingSlam.IMPACT_TICK;
             double near = 1.0 - from.distanceTo(slam.center()) / (slam.size() * 3.0 + 4.0);
             if (since < 0.0 || since >= SHAKE_TICKS || near <= 0.0) {
                 continue;
@@ -308,14 +317,15 @@ public final class ClientConstructs {
             double solid = Mth.lerp(partialTick, was.solid(), now.solid());
             double charge = Mth.lerp(partialTick, was.charge(), now.charge());
             Vec3 center = where(was, now, owner, partialTick);
-            // A fist or bolt on its way glides along its path by the client's own clock. Once it stops (it hit
-            // something, or falls apart at the end of its way) it stays where the server says it stopped.
+            // A fist or bolt on its way glides along its path by the client's own clock; a fist stays on its owner's
+            // line of sight as he looks right now, so your own is always right under your crosshair. Once it stops
+            // (it hit something, or falls apart at the end of its way) a bolt stays where the server says it stopped,
+            // and a fist where it was drawn last.
             boolean onItsWay = track.path != null && !track.latest.held();
             if (onItsWay) {
-                boolean moving = track.latest.path() != null;
-                double travelled = track.path.travelled(moving ? track.clock(partialTick) : track.told);
-                center = moving ? track.path.along(travelled) : track.latest.center();
-                way = track.path.way(travelled);
+                on(track, owner, partialTick);
+                center = track.lastCenter;
+                way = track.lastWay;
             }
             Vec3 ring = owner == null ? null : ringHand(minecraft, camera, owner, partialTick, event);
             boolean own = owner == minecraft.player && !camera.isDetached();
@@ -356,6 +366,35 @@ public final class ClientConstructs {
             }
         }
         painter.finish(minecraft.renderBuffers().bufferSource());
+    }
+
+    /**
+     * Moves a fist or bolt on its way along its path (see {@link ConstructPath}) and keeps where it is and the way it
+     * points on its track. A steered fist whose owner is out of sight goes where the server says.
+     */
+    private static void on(Track track, @Nullable Entity owner, float partialTick) {
+        ConstructPath path = track.path;
+        ConstructPayload latest = track.latest;
+        boolean moving = latest.path() != null;
+        if (path == null) {
+            return;
+        }
+        if (!path.steered()) {
+            double travelled = path.travelled(moving ? track.clock(partialTick) : track.told);
+            track.lastCenter = moving ? path.along(travelled, null) : latest.center();
+            track.lastWay = path.way(travelled, null);
+            return;
+        }
+        if (moving && owner != null) {
+            ConstructPath.Sight sight = ConstructPath.Sight.of(owner.getEyePosition(partialTick),
+                    owner.getViewYRot(partialTick), owner.getViewXRot(partialTick));
+            double travelled = path.travelled(track.clock(partialTick));
+            track.lastCenter = path.along(travelled, sight);
+            track.lastWay = path.way(travelled, sight);
+        } else if (track.lastCenter == null || moving) {
+            track.lastCenter = track.previous.center().lerp(track.current.center(), partialTick);
+            track.lastWay = latest.facing();
+        }
     }
 
     /**

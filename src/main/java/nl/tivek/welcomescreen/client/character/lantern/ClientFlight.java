@@ -127,7 +127,10 @@ public final class ClientFlight {
     private static final double BRACE_TICKS = 5.0;
     // On a dive for a slam (the shockwave key): how much of the way to straight down at full speed you swing each tick.
     private static final double DIVE_TURN = 0.4;
-    /** Ticks you stay down after a slam, crouched on your fist: you cannot move meanwhile. */
+    /**
+     * Ticks you stay down after a slam, crouched on your fist: you cannot move meanwhile. Counted at the pace the
+     * constructs were made for, like {@link #slam}; only Green Lantern smashes his fist into the ground.
+     */
     static final int SLAM_ROOT = 14;
     // The tick (of your own player) you last slammed into the ground, or MIN_VALUE.
     private static int slamTick = Integer.MIN_VALUE;
@@ -201,12 +204,16 @@ public final class ClientFlight {
     /**
      * How many ticks ago this player hit the ground with a landing slam (with the part of a tick), or -1 when he
      * did not just now. Your own is known the moment you land; anyone else's once the server's construct arrives.
+     * Counted at the pace the constructs were made for, like the timeline of {@link LandingSlam}: your own at the pace
+     * of your own settings until the server's construct tells its own.
      */
     static float slam(Entity player, float partialTick) {
         float seen = ClientConstructs.slamAge(player.getId(), partialTick);
         Minecraft minecraft = Minecraft.getInstance();
         if (player == minecraft.player && slamTick != Integer.MIN_VALUE) {
-            float own = player.tickCount - slamTick + partialTick;
+            CharacterAbility shockwave = GameCharacter.GREEN_LANTERN.byName("shockwave");
+            double pace = shockwave == null ? 1.0 : shockwave.value("slowMotion");
+            float own = (float) ((player.tickCount - slamTick + partialTick) / pace);
             if (own >= 0.0F && own < LandingSlam.END_TICK) {
                 seen = Math.max(seen, own);
             }
@@ -233,7 +240,7 @@ public final class ClientFlight {
         }
         // Right after a slam you stay down on your fist a moment: crouched, and going nowhere.
         float slammed = slam(player, 0.0F);
-        if (slammed >= 0.0F && slammed < SLAM_ROOT) {
+        if (slammed >= 0.0F && slammed < SLAM_ROOT && ClientCharacter.active() == GameCharacter.GREEN_LANTERN) {
             Input input = event.getInput();
             input.forwardImpulse = 0.0F;
             input.leftImpulse = 0.0F;
@@ -594,6 +601,20 @@ public final class ClientFlight {
     }
 
     /**
+     * How hard your view shakes because you fly with the ram cone low along the ground (see {@link Flight#scraping}):
+     * harder the faster you go, as hard as the setting {@code ramGroundShake} makes it; 0 when you do not.
+     */
+    private static float scrapeShake(LocalPlayer player) {
+        CharacterAbility shield = GameCharacter.GREEN_LANTERN.byName("light_shield");
+        double speed = velocity.length();
+        if (!steering || shield == null || speed < Flight.SCRAPE_SPEED || !ClientRing.has(player, RingPayload.SHIELD)
+                || !Flight.scraping(player, shield.value("ramGroundBlocks"))) {
+            return 0.0F;
+        }
+        return (float) (shield.value("ramGroundShake") * 0.55 * Mth.clamp(speed / fullSpeed(), 0.3, 1.0));
+    }
+
+    /**
      * A landing slam shakes the view: your own landing a little, and the shockwave of any slam nearby hard. In first
      * person your own slam also dips your view for a moment, down to your fist in the ground, and brings it back up in
      * time to see the construct strike. As you rise off the ground, your view tips up a little with the head of the
@@ -607,7 +628,8 @@ public final class ClientFlight {
             return;
         }
         float partialTick = (float) event.getPartialTick();
-        float shake = ClientConstructs.shake(event.getCamera().getPosition(), partialTick);
+        float shake = Math.max(ClientConstructs.shake(event.getCamera().getPosition(), partialTick),
+                scrapeShake(player));
         float slammed = slam(player, partialTick);
         if (slammed >= 0.0F && slammed < 5.0F) {
             shake = Math.max(shake, 0.6F * (1.0F - slammed / 5.0F));
@@ -621,7 +643,8 @@ public final class ClientFlight {
         if (event.getCamera().isDetached() || event.getCamera().getEntity() != player) {
             return;
         }
-        if (slammed >= 0.0F && slammed < LandingSlam.IMPACT_TICK) {
+        if (slammed >= 0.0F && slammed < LandingSlam.IMPACT_TICK
+                && ClientCharacter.active() == GameCharacter.GREEN_LANTERN) {
             float dip = (float) (smooth(slammed / 1.5) * (1.0 - smooth((slammed - 3.5) / 5.0)));
             event.setPitch(event.getPitch() + 22.0F * dip);
         }

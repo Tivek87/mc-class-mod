@@ -50,6 +50,21 @@ public final class SettingsPages {
     public record Group(@Nullable Component title, List<ConfigNumber> numbers) {
     }
 
+    /** Every page, in the order of the tabs: the stamina bar first, then every character. */
+    public static List<Page> all() {
+        List<Page> pages = new ArrayList<>();
+        pages.add(stamina());
+        for (GameCharacter character : GameCharacter.values()) {
+            pages.add(character(character));
+        }
+        return pages;
+    }
+
+    /** The tab of this character's page (see {@link #all}). */
+    public static int tab(GameCharacter character) {
+        return 1 + character.ordinal();
+    }
+
     // ---- The stamina bar ----
 
     public static Page stamina() {
