@@ -1,0 +1,45 @@
+==================================================
+WAT ER IS GEDAAN (Vanaf de energiestrepen tot nu)
+==================================================
+
+1. Het pak en de energiestrepen
+- Als je krachten gebruikt, lichten er groene energiestrepen op over je hele pak (borst, rug, zijkanten, armen en benen).
+- De strepen lopen vanuit het logo naar je ring toe: hoe harder de ring werkt, hoe feller het licht.
+
+2. Vliegen en energieverbruik
+- Opladen met de lantaarn kan nu ook gewoon terwijl je in de lucht vliegt.
+- De ring is 60% zuiniger gemaakt: je kunt nu ruim 1,5 minuut achter elkaar vliegen op een volle ring.
+- De energiebalk knippert niet meer vervelend: hij zakt nu rustig en laat een klein gouden spoor achter.
+
+3. Superhelden-landing en Schokgolf (toets X)
+- Als je in volle vlucht omlaag duikt en de grond raakt, land je op één knie en sla je met je vuist op de grond. De grond barst dan open met rondvliegende stukken steen.
+- Nieuwe toets X (Schokgolf): hiermee doe je deze krachtige klap direct, ook gewoon vanaf de grond of tijdens het springen.
+
+4. De klap-constructs (groter en bewegend)
+- Bij elke landing of schokgolf verschijnt er een grote groen voorwerp uit een randomised pool (zoals een aambeeld, piano, kluis, hamer of bel).
+- Ze zijn nu massief (geen doorzichtige hologrammen meer) en 35% groter.
+- Ze hebben allemaal een eigen animatie gekregen:
+  * De kluis springt open en er vliegt geld uit.
+  * De klep van de piano wipt open.
+  * Het lontje van de TNT brandt op.
+  * De ankerketting valt op een hoop, enzovoort.
+  * NOTE: Het is nog niet 100% af. (de animaties sowieso niet.)
+
+5. De Grote Vuist (Giant Fist)
+- Als je de vuist afvuurt, schiet hij niet meer schuin weg.
+- De vuist is nu bestuurbaar: hij volgt precies waar je naar kijkt tijdens het vliegen.
+
+6. Schild, boor en schrapen
+- Het schild ziet er nu uit als een echt stevig schild met een rand, handgreep en rimpels als je geraakt wordt.
+- De ramkegel heeft draaiende boorgroeven.
+- Scheer je met het kogelschild tijdens het vliegen erg rakelings over de grond? Dan schraapt hij over de blokken met vonken, een schuddend scherm en extra energieverbruik.
+
+7. Multiverse Powers menu (toets G)
+- De mod heet nu "Multiverse Powers".
+- Het keuzemenu (toets G) heeft nu duidelijke blokken per merk (zoals Marvel, DC, Disney en Warner Bros).
+
+8. Instellingen en testen
+- Het instellingenmenu is vernieuwd: met tabbladen per personage, een zoekbalk en duidelijke uitleg bij elk getal.
+- Nieuw commando `/constructshockwave`: hiermee kun je elk van de construct shockwave voorwerpen aanklikken om ze rustig te bekijken en testen.
+==================================================
+
