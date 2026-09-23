@@ -41,7 +41,7 @@ they do depends purely on who you are.
 | H | Ability 5 | Ground Slam | Light Shield *(right click)* |
 | N | Ability 6 | Portal | - |
 | Y | Ability 7 | Octopus Rampage | - |
-| X | Ability 8 | *(free)* | - |
+| X | Ability 8 | *(free)* | Shockwave |
 | C | Ability 9 | Feet or Tentacles | Flight |
 | Left Alt | Ability 10 | Ground Strike | - |
 | K | Ability 11 | *(free)* | - |
@@ -74,8 +74,8 @@ they do depends purely on who you are.
 
 Green Lantern's power ring turns willpower into hard light: solid shapes of green light that only last
 while he keeps them going. His mouse always does something: bolts and a beam on left click, a shield and a
-dome on right click. On top of that he has the Giant Fist, his lantern to recharge the ring, flight, and the
-wheel you pick a weapon from. Every other ability key tells you he has nothing on it yet.
+dome on right click. On top of that he has the Giant Fist, his lantern to recharge the ring, flight, the
+shockwave, and the wheel you pick a weapon from. Every other ability key tells you he has nothing on it yet.
 
 His hands work the way the game's own buttons do: the **right hand attacks** (left click) and the **left hand
 defends** (right click). The ring sits on his right hand, the Giant Fist charges on his right, and the lantern
@@ -107,10 +107,14 @@ The ring makes Green Lantern's uniform over your own clothes.
 
 - The ring holds **100 power**. A full ring is bright green; the emptier it gets, the darker and duller it
   goes, and a ring that is nearly empty sputters.
-- The panel in the bottom right shows it as a green bar with the number next to it. While you charge the
-  Giant Fist, the part it is going to cost blinks at the end of the bar, and the number shows it as well
-  (for example `73 -14.7`). While the ring drains by itself (flying, the shield, the dome, the beam) it says
-  how fast (`73 -2.5/s`), and in the air also how many seconds of flight that leaves (`73 -6.7/s 11s`).
+- The panel in the bottom right shows it as a green bar with the number next to it, and small marks at a
+  quarter, half and three quarters. Nothing on it blinks:
+  - When the ring pays for something, the bar drops at once and what it paid stays behind it for a moment as
+    a gold piece that then runs out, so you see how big every cost was. Recharging makes the bar glide up.
+  - While you charge the Giant Fist, the part it is going to cost is a steady striped piece at the end of the
+    bar, with a white line where the ring will end up, and the number shows it as well (for example `100 -2.2`).
+  - While the ring drains by itself (flying, the shield, the dome, the beam) it says in gold how fast
+    (`97 -0.08/s`), and in the air also how many seconds of flight that leaves (`90 -1.07/s 85s`).
 - Once the ring cannot pay for the smallest fist, the bar turns red and the Giant Fist says **no power**.
   Pressing R then tells you which key recharges the ring.
 - What is left in the ring stays with you: also while you are someone else, and after dying or logging out.
@@ -130,7 +134,7 @@ quick one, 2 seconds of holding for the lasting one.
 - **Tap — Light Bolt.** A small bullet of hard light leaves your ring and flies exactly where the crosshair
   points. It bursts on the first creature or wall it meets. Your right hand punches forward with every shot.
   - **Damage:** 3 hearts per bolt. Every bolt lands, however quickly they follow each other.
-  - **Power:** 1 per bolt.
+  - **Power:** 0.16 per bolt.
   - **Every 0.3 seconds.** Click again as soon as it is ready; clicking faster does not shoot faster.
   - It flies 48 blocks before it fades, and a line of light hangs behind it back to the ring while it is
     still near your hand. Shot while you fly, it takes your own speed along, so you never overtake it.
@@ -138,7 +142,7 @@ quick one, 2 seconds of holding for the lasting one.
   crosshair, with your right arm pointing along it, for as long as you keep holding.
   - It goes **through a whole row of creatures** and stops at the first wall, up to 40 blocks away.
   - **Damage:** 2.5 hearts, 4 times a second, to everything in it (10 hearts a second).
-  - **Power:** 5 per second.
+  - **Power:** 0.8 per second.
   - Let go, run the ring dry or start a Giant Fist and it dies down.
 
 **Right click (the left hand defends)**
@@ -148,7 +152,7 @@ quick one, 2 seconds of holding for the lasting one.
   as solid as any construct; only from your own eyes in first person you look through the pane.
   - **Takes 70%** off every hit that comes at you from the front. Damage that goes straight through armour
     anyway (poison, falling, drowning, the void) goes through it as well, and so do arrows that pierce.
-  - **Power:** 0.5 per second while it is up.
+  - **Power:** 0.08 per second while it is up.
   - The light flares where a hit lands on it. Tap again, recharge or run the ring dry and it falls apart.
   - While you fly it becomes a **ram cone** (see Flight).
 - **Hold 2 seconds — Light Dome.** The shield opens out into a dome of hard light all around you, for as
@@ -157,15 +161,15 @@ quick one, 2 seconds of holding for the lasting one.
   outline, so you can still see out.
   - **Takes 40%** off every hit, **from every side**. It covers more than the shield and holds less. The
     same hits go straight through it as through the shield.
-  - **Power:** 1.5 per second. A shield you had up waits under the dome and costs nothing meanwhile.
+  - **Power:** 0.24 per second. A shield you had up waits under the dome and costs nothing meanwhile.
   - While you fly it works as a **brake chute** (see Flight).
 
 | | Damage | Power | Other |
 |---|---|---|---|
-| Light Bolt (tap left) | 3 hearts | 1 per bolt | one every 0.3 s, 48 blocks |
-| Light Beam (hold left) | 2.5 hearts, 4x a second | 5 a second | goes through creatures, 40 blocks |
-| Light Shield (tap right) | - | 0.5 a second | 70% off hits from the front |
-| Light Dome (hold right) | - | 1.5 a second | 40% off hits from every side |
+| Light Bolt (tap left) | 3 hearts | 0.16 per bolt | one every 0.3 s, 48 blocks |
+| Light Beam (hold left) | 2.5 hearts, 4x a second | 0.8 a second | goes through creatures, 40 blocks |
+| Light Shield (tap right) | - | 0.08 a second | 70% off hits from the front |
+| Light Dome (hold right) | - | 0.24 a second | 40% off hits from every side |
 
 ### Recharge (key Z)
 
@@ -193,8 +197,8 @@ Green Lantern recharges his ring at his lantern, the power battery.
   down along your sides, your head goes up and you rise a few blocks, with a flash of light at your feet.
   From there you fly on without a break. It takes a little over a second, and it also catches you in the
   middle of a fall.
-- **Flying:** hold **forward** and you pick up speed the way you look, up to **50 blocks a second**, half
-  again as fast as an elytra with firework rockets. Let go and you glide to a hover. **Jump** rises, **sneak**
+- **Flying:** hold **forward** and you pick up speed the way you look, up to **35 blocks a second**, a little
+  faster than an elytra with firework rockets (about 33). Let go and you glide to a hover. **Jump** rises, **sneak**
   sinks, left and right slide sideways, back drifts backwards. You carry your speed into every turn, so you
   swing through curves instead of snapping round. The world widens a little around you at speed.
 - **How it looks:** hovering you stand upright with your arms a little out and your legs hanging loose.
@@ -205,19 +209,19 @@ Green Lantern recharges his ring at his lantern, the power battery.
 - **Landing:** sink down onto the ground slowly and you land by yourself, or fly into it while looking down at
   it and you land as well, whatever your speed; or press C again anywhere to stop flying (in the air you then
   fall from there). Walls and the ground stop you; hits and blasts still knock you about.
-- **Power:** a full ring keeps you up for **15 seconds**, so flying costs **6.7 power a second** (100
-  divided by 15), from the moment you take off. You need at least **5 power** to take off. Everything you do
-  while flying costs on top of that, so you run dry sooner. The panel shows how many seconds you have left.
+- **Power:** a full ring keeps you up for **93.75 seconds**, so flying costs **1.07 power a second** (100
+  divided by 93.75), from the moment you take off. You need at least **0.8 power** to take off. Everything you
+  do while flying costs on top of that, so you run dry sooner. The panel shows how many seconds you have left.
 - **Out of power in the air:** the ring's last light lets you sink down gently, arms up, and you cannot steer
   any more. You do not get hurt when you touch the ground. Recharge (on the way down or on the ground) to fly
   again.
-- **Landing slam (by itself, no key):** dive into the ground at (nearly) full speed and your flight ends in a
-  hero's landing. Just before the ground you swing upright, feet first, ring fist cocked high; then you come
-  down low on one knee and smash that fist into the ground, which cracks open around it and throws up chunks,
+- **Landing slam (by itself; key X does it on purpose, see Shockwave):** dive into the ground at (nearly) full
+  speed and your flight ends in a hero's landing. Just before the ground you swing upright, feet first, ring
+  fist cocked high; then you come down low on one knee and smash that fist into the ground, which cracks open around it and throws up chunks,
   the other arm flung out behind you. In first person your view dips down to your fist in the ground and comes
   back up in time to see the construct strike. The ring throws up a giant construct ahead of you that strikes
   and sends a shockwave over the ground: 6 hearts in the middle, half at the edge 5 blocks out, and everything
-  is thrown away. It costs 4 power; without it you just land hard. Which construct is random every time, one of
+  is thrown away. It costs 1.6 power; without it you just land hard. Which construct is random every time, one of
   **32**:
   - out of the sky: a fist, a war hammer, an anvil, a boot, a ton weight, your own lantern, a safe, an anchor on
     its chain, a spiked ball, a barbell, a bell that rings, a slapping hand, a sword that stays planted, a piano,
@@ -235,18 +239,43 @@ Green Lantern recharges his ring at his lantern, the power battery.
   - **Hold left:** the beam, for strafing runs over creatures and the ground.
   - **Tap right:** the shield becomes a pointed, streamlined **ram cone** out in front of you (solid to everyone
     else, see-through only from your own eyes), with your left fist out in front like a punch. It still takes 70% off hits from ahead, and whatever you fly into is
-    rammed away: a hard throw and **2 hearts plus 3 hearts for every block per tick you fly** (about 9.5 hearts
+    rammed away: a hard throw and **2 hearts plus 3 hearts for every block per tick you fly** (about 7 hearts
     at top speed). The same creature can be rammed again after 0.6 seconds.
   - **Hold right:** the dome works as a **brake chute**: your speed is halved for as long as you hold it.
 - A short cooldown of **1 second** after landing keeps you from taking off again straight away.
 
 | Flight | |
 |---|---|
-| Top speed | 50 blocks a second |
-| Power | 6.7 a second (a full ring lasts 15 seconds), plus whatever you use meanwhile |
-| Take off | at least 5 power; not while recharging |
+| Top speed | 35 blocks a second |
+| Power | 1.07 a second (a full ring lasts 93.75 seconds), plus whatever you use meanwhile |
+| Take off | at least 0.8 power; not while recharging |
 | Ram (shield up) | 2 hearts + 3 hearts per block per tick of speed, strong knockback |
 | Brake (dome up) | half speed |
+
+### Shockwave (key X)
+
+The landing slam whenever you want it: you smash your ring fist into the ground and the ring throws up one of
+the 32 giant constructs (a random one), which strikes and sends a shockwave over the ground.
+
+- **On the ground** it goes off at once: down on one knee, fist in the ground.
+- **Flying**, you dive straight down at full speed (your keys wait until you hit the ground) and slam where
+  you come down. Not during the take-off.
+- **Jumping or falling**, you drop straight down, upright with your fist cocked, and slam the moment you touch
+  the ground. The ring breaks your fall: no fall damage, however high you were. In water nothing happens.
+- **Damage:** 6 hearts in the middle, half at the edge 5 blocks out; everything is thrown away.
+- **Power:** 1.6, paid when the slam lands; without it you just land hard.
+- **Cooldown:** 5 seconds, from when you press X.
+- Not while you recharge or charge the Giant Fist, and not while your last slam is still going.
+- Its damage, reach, push and cost count for the landing slam of a flight as well: one set of numbers, under
+  Shockwave in the settings.
+- On the way down the panel says `diving` next to the key.
+
+| Shockwave | |
+|---|---|
+| Damage | 6 hearts in the middle, 3 at the edge |
+| Reach | 5 blocks |
+| Power | 1.6 per slam |
+| Cooldown | 5 s |
 
 ### Giant Fist (key R)
 
@@ -277,8 +306,8 @@ off at what you aim at.
   smoothly to another spot and keeps charging there: first higher up on your right, then above your head,
   then on your left. Once its first spot has been free again for a moment, it goes back there. If there is
   no room anywhere, it takes the spot where the least is in its way.
-- **It costs ring power:** 10 for the smallest fist, rising by about 1.2 for every half second of charging,
-  to 20 for a full charge. The ring pays when the fist flies. If the ring runs out while you charge, the fist
+- **It costs ring power:** 1.6 for the smallest fist, rising by about 0.2 for every half second of charging,
+  to 3.2 for a full charge. The ring pays when the fist flies. If the ring runs out while you charge, the fist
   stops growing and you are told why.
 - **Crouch while you hold R** and the fist simply falls apart: no shot, no power and no cooldown.
 - **The middle of the fist goes exactly where your crosshair points.** It charges beside you, so when you
@@ -309,7 +338,7 @@ off at what you aim at.
 | Damage | 6 hearts with a tap, up to 14 hearts for a full charge, to every creature it hits |
 | Range | 32 blocks |
 | Size | 1 block across with a tap; up to 5.7 blocks after 4.1 seconds of charging |
-| Power | 10 for a tap, up to 20 for a full charge (about 1.2 per half second) |
+| Power | 1.6 for a tap, up to 3.2 for a full charge (about 0.2 per half second) |
 | Blocks | Everything up to the hardness of wood, at most 150 blocks per fist |
 | Cooldown | 4 s, counted from when you let go of R |
 

@@ -40,7 +40,8 @@ import org.joml.Vector3f;
  * <li>An empty ring lets him sink with his arms up; landing is a short dip, and a landing at full speed a slam, the
  * way heroes land: just before the ground he swings upright, feet first, ring fist cocked high; then he comes down
  * low on one knee, the other leg forward, and smashes that fist into the ground in front of him, the other arm flung
- * out behind, until the construct has struck and he rises again.</li>
+ * out behind, until the construct has struck and he rises again. Dropping down to a slam without flying (the
+ * shockwave key while he jumps or falls) he is upright with his fist cocked the whole way down.</li>
  * <li>On top of that, standing or flying: the ring hand points along the beam, both hands hold the dome open,
  * and in flight the shield hand goes out in front, fist first, into the ram cone.</li>
  * </ul>
@@ -131,7 +132,9 @@ final class FlightPose {
                 : Mth.sin((motion.sinceEnd + partialTick) / LAND_TICKS * Mth.PI);
         float slam = ClientFlight.slam(player, partialTick);
         boolean slamming = slam >= 0.0F && slam < SLAM_TICKS;
-        float brace = flying ? ClientFlight.brace(player, partialTick) : 0.0F;
+        // Dropping down to a slam he is upright, fist cocked, the whole way down.
+        boolean dropping = ClientFlight.dropping(player);
+        float brace = flying || dropping ? ClientFlight.brace(player, partialTick) : 0.0F;
         if (slamming) {
             // A slam has a landing of its own.
             land = 0.0F;
@@ -139,7 +142,7 @@ final class FlightPose {
         frame = null;
         Blend blend = BLENDS.get(player.getId());
         if (blend == null) {
-            if (!flying && !beaming && !domed && !slamming && land <= 0.0F) {
+            if (!flying && !dropping && !beaming && !domed && !slamming && land <= 0.0F) {
                 return false;
             }
             blend = new Blend();
@@ -147,7 +150,7 @@ final class FlightPose {
         }
         blend.toward(flying, beaming, domed, ramming);
         // Only forgotten once nothing is wanted any more and everything has blended back out.
-        if (!flying && !beaming && !domed && !slamming && blend.idle() && land <= 0.0F) {
+        if (!flying && !dropping && !beaming && !domed && !slamming && blend.idle() && land <= 0.0F) {
             BLENDS.remove(player.getId());
             return false;
         }

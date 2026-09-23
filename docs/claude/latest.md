@@ -1,13 +1,11 @@
 # Laatste sessie
 
 - Datum: 2026-09-23
-- Vraag: energie zonder spiralen; 32 willekeurige, logische, solid landingsconstructs (uppercut duidelijker, niets dat van opzij inzwaait); constructs altijd solid (regel vastleggen); automatisch stoppen met vliegen als je omlaag de grond in duikt; veel betere landing waarbij je arm de grond in ramt.
-- Keuzes van de gebruiker: veel rechte energielijnen; schild/koepel/ramkegel solid voor anderen, doorzichtig alleen in je eigen first-person-beeld.
-- Gedaan:
-  - 32 constructs (SlamModels + SlamPainter herschreven): groeien uit het licht, breken in solid stukken of zakken terug; solid schokgolf-ring; scheuren en brokken bij je vuist. Knuppel, sloopkogel en lichtbol eruit.
-  - Superhelden-landing: brace vóór de grond (rechtop, vuist geheven), laag op één knie met vuist in de grond; first person: vuist op het echte inslagpunt, camera knikt even omlaag.
-  - Duik de grond in terwijl je omlaag kijkt = altijd landen; server laat je ook landen als hij de klap niet gelooft.
-  - SuitGlow: ~56 rechte lijnen vanuit de kern; ConstructPainter: shield/dome/ram solid voor anderen.
-  - CLAUDE.md: solid-regel, logische-klap-regel, testlessen (F1 verbergt je hand, camera loggen).
-- Getest: build ok; in-game: alle 32 constructs, schild/koepel van buiten en binnen, pak, twee echte duiken (third en first person), langzame duik-landing, pose vanuit 4 hoeken, first-person vuist. Testklasse, wereld en screenshots verwijderd.
-- Open: niets gecommit (vraag staat nog). Docs noemen nog oude vliegwaarden (5 power, 15 s, 50 b/s).
+- Vraag (1): Green Lantern 60% minder power-verbruik; de landingsklap als eigen toets. Daarna (2): power-balk beter (niet knipperen), commit + push; dan krachten-UI: hover 25% langer, characters per franchise (Marvel/DC/Disney/Warner Bros) met alle 27 uit CHARACTERS.md (niet beschikbaar = coming soon), meer QOL, mod hernoemen (jar), commit + push.
+- Gedaan (batch 1, getest in-game): alle power-kosten x0,4 met config-migratie (versie 3); nieuwe ability Schokgolf op X (grond: meteen; vliegend: duik; springend/vallend: recht omlaag, geen valschade), 1,6 power, 5 s cooldown; slam-instellingen verhuisd van Vliegen naar Schokgolf.
+- Fix: server-`onGround` loopt een tick voor, daardoor startte de klap in de lucht; nu echte grondcheck + klap-pauze laat je niet meer zweven.
+- Power-balk: geen knipperen meer; gouden spoor van wat betaald is, glijdt omhoog bij opladen, gestreepte vuistkosten met eindstreepje, kwartstreepjes, verbruik in goud.
+- Docs bijgewerkt: GREEN_LANTERN, POWERS, PROJECT, CHANGELOG (ook oude vliegwaarden rechtgezet).
+- Nieuw bestand: character/lantern/Shockwave.java; verder GameCharacter, Flight, LandingSlam, PowerRing, ClientFlight, FlightPose, SuitGlow, ConstructHud, RingPayload, CharacterConfig, lang-bestanden.
+- Webcheck: Terminator (StudioCanal/Skydance) en Spawn (Image Comics) vallen buiten Marvel/DC/Disney/WB.
+- Open: akkoord commit/push batch 1; keuzes voor batch 2 (tab voor Terminator/Spawn, nieuwe modnaam, welke QOL).

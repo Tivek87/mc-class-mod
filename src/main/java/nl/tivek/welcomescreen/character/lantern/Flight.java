@@ -39,6 +39,8 @@ public final class Flight implements SpellEffect {
     private static final int RAM_AGAIN = 12;
     // A descent that somehow never touches ground ends by itself after this many ticks.
     private static final int DESCENT_MAX = 2400;
+    // A dive for a slam that somehow never meets the ground ends after this many ticks, and he flies on.
+    private static final int DIVE_MAX = 300;
     // Ticks without any movement from his game before he counts as standing still in the air.
     private static final int STILL_TICKS = 2;
     // How much of his top speed of the last few ticks is kept each tick, and how much of his top speed the server
@@ -53,6 +55,9 @@ public final class Flight implements SpellEffect {
     private int ticks;
     private boolean descending;
     private int descentTicks;
+    // On his way down to a slam, after the shockwave key: his own game dives him straight down.
+    private boolean dive;
+    private int diveTicks;
     // How far he moved on the last tick, as his own game told it: the speed his shots take along.
     private Vec3 velocity = Vec3.ZERO;
     // His top speed of the last few ticks, fading: the tick he hits the ground he hardly moves any more.
@@ -114,6 +119,31 @@ public final class Flight implements SpellEffect {
     static boolean descending(ServerPlayer player) {
         Flight flight = FLYING.get(player.getUUID());
         return flight != null && flight.descending;
+    }
+
+    /**
+     * The shockwave key while he flies (see {@link Shockwave}): he dives straight down, fist cocked, and slams where
+     * he hits the ground. His own game steers the dive, as it steers all of his flying.
+     *
+     * @return true when the dive began
+     */
+    static boolean dive(ServerPlayer owner, ServerLevel level) {
+        Flight flight = FLYING.get(owner.getUUID());
+        if (flight == null || flight.descending || flight.ticks < ARISE_TICKS || flight.dive) {
+            return false;
+        }
+        flight.dive = true;
+        flight.diveTicks = 0;
+        flight.sound(level, SoundEvents.MACE_SMASH_AIR, 1.0F, 0.8F);
+        flight.sound(level, SoundEvents.BEACON_POWER_SELECT, 0.8F, 1.6F);
+        PowerRing.sync(owner);
+        return true;
+    }
+
+    /** True while this player dives on his ring for a slam. */
+    static boolean diving(ServerPlayer player) {
+        Flight flight = FLYING.get(player.getUUID());
+        return flight != null && flight.dive;
     }
 
     /** How many ticks ago this player took off, or -1 when he is not in the air on his ring. */
@@ -187,6 +217,10 @@ public final class Flight implements SpellEffect {
             this.descend(level);
             return true;
         }
+        if (this.dive && ++this.diveTicks > DIVE_MAX) {
+            this.dive = false;
+        }
+        // Every tick this tells everyone the new power, and with it whether he dives.
         PowerRing.setPower(this.owner, power - this.perTick);
         this.ram(level);
         return true;
@@ -206,9 +240,10 @@ public final class Flight implements SpellEffect {
     }
 
     /**
-     * His own game tells he flew into the ground at full speed. He lands in any case: the flight is over. Checked
-     * against how fast the server saw him go, it is a slam, and when the ring can pay for it a construct in front of
-     * him sends a shockwave over the ground (see {@link LandingSlam}); otherwise it is just a hard landing.
+     * His own game tells he flew into the ground at full speed, or at the end of a dive for a slam. He lands in any
+     * case: the flight is over. A dive always slams; anything else is checked against how fast the server saw him go.
+     * When the ring can pay for it, a construct in front of him sends a shockwave over the ground (see
+     * {@link LandingSlam}, with the numbers of the shockwave key); otherwise it is just a hard landing.
      *
      * @return true when he landed, so the key's cooldown starts
      */
@@ -218,16 +253,12 @@ public final class Flight implements SpellEffect {
             return false;
         }
         double top = ability.value("topSpeed") / 20.0;
-        boolean fast = flight.peak >= top * SLAM_CHECK;
+        boolean fast = flight.dive || flight.peak >= top * SLAM_CHECK;
         flight.end();
         owner.setDeltaMovement(Vec3.ZERO);
         owner.hurtMarked = true;
-        float cost = (float) ability.value("slamPowerCost");
-        float power = PowerRing.power(owner);
-        if (fast && power + 1.0E-4F >= cost && !Lantern.busy(owner)) {
-            PowerRing.setPower(owner, power - cost);
-            LandingSlam.start(owner, level, ability);
-        } else {
+        CharacterAbility shockwave = GameCharacter.GREEN_LANTERN.byName("shockwave");
+        if (!fast || shockwave == null || !LandingSlam.start(owner, level, shockwave)) {
             level.playSound(null, owner.getX(), owner.getY(), owner.getZ(), SoundEvents.MACE_SMASH_GROUND,
                     SoundSource.PLAYERS, 1.0F, 1.1F);
         }
@@ -281,6 +312,7 @@ public final class Flight implements SpellEffect {
     /** The ring has nothing left: its last light lets him sink down gently, and he steers no more. */
     private void descend(ServerLevel level) {
         this.descending = true;
+        this.dive = false;
         PowerRing.tell(this.owner, "flight_empty");
         this.sound(level, SoundEvents.BEACON_DEACTIVATE, 1.0F, 1.3F);
         LightShield.stop(this.owner);

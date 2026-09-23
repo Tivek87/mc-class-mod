@@ -17,7 +17,7 @@ import nl.tivek.welcomescreen.WelcomeScreenMod;
  * @param lantern how many ticks into recharging he is, or -1 when he is not recharging
  * @param flight  how many ticks ago he took off, or -1 when he is not flying
  * @param state   what the ring holds up or pours out right now: {@link #SHIELD}, {@link #DOME}, {@link #BEAM},
- *                and {@link #DESCENT} while an empty ring lets him down
+ *                {@link #DESCENT} while an empty ring lets him down, and {@link #DIVE} while he dives for a slam
  */
 public record RingPayload(int entity, float power, float pending, int lantern, int flight, int state)
         implements CustomPacketPayload {
@@ -29,6 +29,8 @@ public record RingPayload(int entity, float power, float pending, int lantern, i
     public static final int BEAM = 4;
     /** The ring ran dry in the air: it lets him sink down gently, and does nothing else. */
     public static final int DESCENT = 8;
+    /** He is on his way down to a slam (the shockwave key in the air): diving on his ring, or dropping. */
+    public static final int DIVE = 16;
 
     public static final CustomPacketPayload.Type<RingPayload> TYPE = new CustomPacketPayload.Type<>(
             ResourceLocation.fromNamespaceAndPath(WelcomeScreenMod.MODID, "ring"));

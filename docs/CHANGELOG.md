@@ -2,6 +2,29 @@
 
 What changed in the project, newest first.
 
+## [Shockwave key, a ring that lasts far longer, and a calmer power bar] - 2026-09-23
+
+### Added
+- **Shockwave (key X, ability 8).** The slam of a landing at full speed, whenever you want it: your ring fist
+  smashes into the ground and one of the 32 giant constructs strikes and sends a shockwave over it (6 hearts in
+  the middle, half at the edge 5 blocks out). On the ground it goes off at once. Flying, you dive straight down
+  at full speed and slam where you hit the ground. Jumping or falling, you drop straight down with your fist
+  cocked, and the ring breaks your fall. 1.6 power, 5 seconds cooldown. Its damage, reach, push and cost are
+  the landing slam's too; in the settings they moved from Flight to Shockwave.
+
+### Changed
+- **Everything the ring does costs 60% less power**: a bolt 0.16, the beam 0.8 a second, the shield 0.08, the
+  dome 0.24, the Giant Fist 1.6 to 3.2, a slam 1.6, and flying 1.07 a second, so a full ring keeps you up for
+  93.75 seconds (0.8 to take off). Settings you never changed take the new numbers by themselves.
+- **The power bar no longer blinks.** It drops at once when the ring pays and leaves a gold trail of what it
+  paid that runs out a moment later; it glides up as you recharge; the cost of a fist you charge is a steady
+  striped piece with a line where you will end up; marks show the quarters; the drain a second is shown in gold,
+  now also the shield's small one.
+
+### Fixed
+- **A slam that starts just before you touch the ground no longer leaves you hanging in the air** until you get
+  up again.
+
 ## [Recharging in flight, 32 solid slam constructs and a hero's landing] - 2026-09-23
 
 ### Added

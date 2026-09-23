@@ -67,6 +67,8 @@ public final class PowerRing {
             // What the mouse always does. Tap: a bolt, or the shield up or away. Hold: the beam, or the dome.
             case "light_bolt" -> LightBolt.use(player, level, ability, on, data);
             case "light_shield" -> LightShield.use(player, level, ability, on, data);
+            // Smash the ring fist into the ground for a shockwave; in the air he goes down to the ground first.
+            case "shockwave" -> Shockwave.use(player, level, ability);
             // Take off, or land again; flying into the ground at full speed lands with a slam.
             case "flight" -> on && ((data & Characters.SLAM) != 0 ? Flight.slam(player, level, ability)
                     : Flight.toggle(player, level, ability));
@@ -74,7 +76,7 @@ public final class PowerRing {
         };
     }
 
-    /** The server stops: forget every construct that was still held, every recharge and every flight. */
+    /** The server stops: forget every construct that was still held, every recharge, flight and slam. */
     public static void clear() {
         GiantFist.clear();
         Lantern.clear();
@@ -83,6 +85,8 @@ public final class PowerRing {
         LightShield.clear();
         LightDome.clear();
         Flight.clear();
+        Shockwave.clear();
+        LandingSlam.clear();
     }
 
     /** True while this player can keep a construct going in this level: alive, here, and still Green Lantern. */
@@ -153,7 +157,8 @@ public final class PowerRing {
     private static RingPayload state(ServerPlayer player) {
         int state = (LightShield.up(player) ? RingPayload.SHIELD : 0) | (LightDome.up(player) ? RingPayload.DOME : 0)
                 | (LightBeam.firing(player) ? RingPayload.BEAM : 0)
-                | (Flight.descending(player) ? RingPayload.DESCENT : 0);
+                | (Flight.descending(player) ? RingPayload.DESCENT : 0)
+                | (Flight.diving(player) || Shockwave.dropping(player) ? RingPayload.DIVE : 0);
         return new RingPayload(player.getId(), power(player), GiantFist.pending(player), Lantern.ticks(player),
                 Flight.ticks(player), state);
     }

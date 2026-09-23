@@ -1,7 +1,10 @@
 package nl.tivek.welcomescreen.character.lantern;
 
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.BlockParticleOption;
 import net.minecraft.core.particles.ParticleTypes;
@@ -27,14 +30,15 @@ import nl.tivek.welcomescreen.spell.SpellEffect;
 import nl.tivek.welcomescreen.spell.SpellFx;
 
 /**
- * A landing at full speed. Green Lantern smashes his ring fist into the ground, and the ring throws up a huge
- * construct in front of him that strikes the ground and sends a shockwave over it. Which one is picked at random every
- * time, out of {@link ConstructPayload#SLAM_KINDS}: things that drop out of the sky (a fist, a hammer, an anvil, a
- * boot, a ton weight, his lantern, a safe, an anchor, a spiked ball, a barbell, a bell, a meteor, a slapping hand, a
- * sword, a piano, a toy brick, a stamp, TNT), things that clap shut (two hands, two fists, cymbals, a bear trap, a
- * book), things that burst out of the ground (an uppercut, spikes, a pillar that topples), things swung down (a fly
- * swatter, a gavel, a pickaxe, drumsticks on a drum), the lantern emblem falling flat, and a volley of rockets. Every
- * creature the wave reaches is hurt (most near the middle) and thrown away from it.
+ * A landing at full speed, or the shockwave key (see {@link Shockwave}). Green Lantern smashes his ring fist into the
+ * ground, and the ring throws up a huge construct in front of him that strikes the ground and sends a shockwave over
+ * it. Which one is picked at random every time, out of {@link ConstructPayload#SLAM_KINDS}: things that drop out of
+ * the sky (a fist, a hammer, an anvil, a boot, a ton weight, his lantern, a safe, an anchor, a spiked ball, a
+ * barbell, a bell, a meteor, a slapping hand, a sword, a piano, a toy brick, a stamp, TNT), things that clap shut
+ * (two hands, two fists, cymbals, a bear trap, a book), things that burst out of the ground (an uppercut, spikes, a
+ * pillar that topples), things swung down (a fly swatter, a gavel, a pickaxe, drumsticks on a drum), the lantern
+ * emblem falling flat, and a volley of rockets. Every creature the wave reaches is hurt (most near the middle) and
+ * thrown away from it.
  *
  * <p>Clients play the construct from its age (see {@link ConstructPayload#SLAM}), so the timing below is shared.
  */
@@ -62,6 +66,9 @@ public final class LandingSlam implements SpellEffect {
     // The tick the TNT lands, before it blows up.
     private static final int TNT_LANDS = 7;
 
+    // Everyone whose slam is still going: one at a time, so his pose follows the one construct.
+    private static final Map<UUID, LandingSlam> RUNNING = new HashMap<>();
+
     private final int id = PowerRing.newId();
     private final ServerPlayer owner;
     private final int variant;
@@ -72,14 +79,14 @@ public final class LandingSlam implements SpellEffect {
     private final double knockback;
     private int age;
 
-    private LandingSlam(ServerPlayer owner, CharacterAbility flight, int variant, Vec3 center, Vec3 facing) {
+    private LandingSlam(ServerPlayer owner, CharacterAbility shockwave, int variant, Vec3 center, Vec3 facing) {
         this.owner = owner;
         this.variant = variant;
         this.center = center;
         this.facing = facing;
-        this.radius = flight.value("slamRadiusBlocks");
-        this.damage = (float) flight.value("slamDamage");
-        this.knockback = flight.value("slamKnockback");
+        this.radius = shockwave.value("radiusBlocks");
+        this.damage = shockwave.getDamage();
+        this.knockback = shockwave.value("knockback");
     }
 
     /**
@@ -96,14 +103,26 @@ public final class LandingSlam implements SpellEffect {
         };
     }
 
-    /** He hits the ground: a random construct takes shape in front of him. */
-    static void start(ServerPlayer owner, ServerLevel level, CharacterAbility flight) {
+    /**
+     * He hits the ground: a random construct takes shape in front of him, as long as the ring can pay for it, is not
+     * busy at the lantern and has no slam of his going already.
+     *
+     * @return true when it came; false leaves it at a hard landing
+     */
+    static boolean start(ServerPlayer owner, ServerLevel level, CharacterAbility shockwave) {
+        float cost = (float) shockwave.value("powerCost");
+        float power = PowerRing.power(owner);
+        if (power + 1.0E-4F < cost || Lantern.busy(owner) || running(owner)) {
+            return false;
+        }
+        PowerRing.setPower(owner, power - cost);
         Vec3 look = owner.getLookAngle();
         Vec3 facing = new Vec3(look.x, 0.0, look.z);
         facing = facing.lengthSqr() < 1.0E-6 ? new Vec3(0.0, 0.0, 1.0) : facing.normalize();
         int variant = owner.getRandom().nextInt(ConstructPayload.SLAM_KINDS);
         Vec3 center = ground(level, owner, owner.position().add(facing.scale(ahead(variant))));
-        LandingSlam slam = new LandingSlam(owner, flight, variant, center, facing);
+        LandingSlam slam = new LandingSlam(owner, shockwave, variant, center, facing);
+        RUNNING.put(owner.getUUID(), slam);
         SpellCasting.start(level, slam);
         // His fist hits the ground: a first, smaller thud before the construct's own.
         Vec3 fist = owner.position().add(facing.scale(0.4)).add(right(facing).scale(0.3));
@@ -114,6 +133,17 @@ public final class LandingSlam implements SpellEffect {
         level.playSound(null, center.x, center.y, center.z, SoundEvents.BEACON_POWER_SELECT, SoundSource.PLAYERS,
                 1.0F, 1.4F);
         slam.send(level);
+        return true;
+    }
+
+    /** True while this player's slam is still going, from his fist hitting the ground until its wave has died out. */
+    static boolean running(ServerPlayer player) {
+        return RUNNING.containsKey(player.getUUID());
+    }
+
+    /** The server stops: no slam is going any more. */
+    static void clear() {
+        RUNNING.clear();
     }
 
     /** His right, from the way he faces. */
@@ -143,6 +173,7 @@ public final class LandingSlam implements SpellEffect {
         }
         if (this.age >= END_TICK || this.owner.level() != level) {
             PacketDistributor.sendToPlayersInDimension(level, ConstructPayload.remove(this.id));
+            RUNNING.remove(this.owner.getUUID(), this);
             return false;
         }
         this.send(level);

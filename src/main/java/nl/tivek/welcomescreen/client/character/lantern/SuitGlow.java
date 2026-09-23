@@ -93,8 +93,8 @@ final class SuitGlow {
 
     /**
      * How hard this player's ring works right now, 0 = resting to 1 = as hard as it goes: what it holds up or
-     * pours out, whether he flies, charges a fist or shot a bolt just now, and for yourself how far you hold a
-     * button on its way to the hold version.
+     * pours out, whether he flies, goes down to a slam, charges a fist or shot a bolt just now, and for yourself how
+     * far you hold a button on its way to the hold version.
      */
     static float level(AbstractClientPlayer player, float partialTick) {
         float want = 0.0F;
@@ -112,6 +112,10 @@ final class SuitGlow {
         }
         if (ClientRing.has(player, RingPayload.SHIELD)) {
             want = Math.max(want, 0.55F);
+        }
+        // On the way down to a slam: the ring drives him down.
+        if (ClientRing.has(player, RingPayload.DIVE)) {
+            want = Math.max(want, 0.9F);
         }
         float recharge = ClientRing.recharge(player, partialTick);
         if (recharge >= 0.0F) {

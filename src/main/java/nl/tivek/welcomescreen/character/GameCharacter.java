@@ -89,13 +89,13 @@ public enum GameCharacter {
                     .setting("chargeSeconds", 4.1, 0.5, 20.0, Unit.SECONDS,
                             "Seconds of holding the key before the fist is as big as it gets")
                     .group("power", "Ring power")
-                    .setting("powerCost", 4.0, 0.0, 100.0, Unit.POWER,
+                    .setting("powerCost", 1.6, 0.0, 100.0, Unit.POWER,
                             "Ring power the smallest fist costs (a full ring holds 100)")
-                    .was(10.0)
-                    .setting("fullChargePowerCost", 8.0, 0.0, 100.0, Unit.POWER,
+                    .was(10.0, 4.0)
+                    .setting("fullChargePowerCost", 3.2, 0.0, 100.0, Unit.POWER,
                             "Ring power a fully charged fist costs: every half second of charging adds an"
                                     + " equal share of the difference")
-                    .was(20.0, 11.0)
+                    .was(20.0, 11.0, 8.0)
                     .group("blocks", "Smashing blocks")
                     .setting("breakHardness", 3.0, -1.0, 100.0, Unit.HARDNESS,
                             "How hard a block may be for the fist to smash it (dirt 0.5, stone 1.5, wood 2,"
@@ -118,8 +118,8 @@ public enum GameCharacter {
                     .group("bolt", "Light Bolt (tap the button)")
                     .settingInt("shotTicks", 6, 1, 100, Unit.TICKS,
                             "Ticks before the next bolt can be shot (20 ticks = 1 second)")
-                    .setting("powerCost", 0.4, 0.0, 100.0, Unit.POWER, "Ring power one bolt costs")
-                    .was(1.0)
+                    .setting("powerCost", 0.16, 0.0, 100.0, Unit.POWER, "Ring power one bolt costs")
+                    .was(1.0, 0.4)
                     .setting("speedBlocks", 2.4, 0.5, 10.0, Unit.BLOCKS_PER_TICK,
                             "How far a bolt flies per tick, in blocks; while you fly, your own speed comes on top")
                     .setting("rangeBlocks", 48.0, 4.0, 128.0, Unit.BLOCKS,
@@ -128,9 +128,9 @@ public enum GameCharacter {
                     .setting("beamDamage", 5.0, 0.0, 2000.0, Unit.HALF_HEARTS,
                             "Damage the beam does to everything in it, in half hearts, once every beamTicks")
                     .settingInt("beamTicks", 5, 1, 40, Unit.TICKS, "Ticks between two hits of the beam")
-                    .setting("beamPowerPerSecond", 2.0, 0.0, 100.0, Unit.POWER_PER_SECOND,
+                    .setting("beamPowerPerSecond", 0.8, 0.0, 100.0, Unit.POWER_PER_SECOND,
                             "Ring power the beam costs a second")
-                    .was(5.0)
+                    .was(5.0, 2.0)
                     .setting("beamRangeBlocks", 40.0, 4.0, 128.0, Unit.BLOCKS, "How far the beam reaches, in blocks");
             this.add(abilities, AbilitySlot.ABILITY_5, "light_shield").held().mouse(CharacterAbility.Mouse.RIGHT)
                     .holdVersion(40, CharacterAbility.Tap.RELEASE)
@@ -140,16 +140,16 @@ public enum GameCharacter {
                                     + " takes 70%). Damage that goes straight through armour, and arrows that pierce,"
                                     + " are not stopped")
                     .was(0.35)
-                    .setting("powerPerSecond", 0.2, 0.0, 20.0, Unit.POWER_PER_SECOND,
+                    .setting("powerPerSecond", 0.08, 0.0, 20.0, Unit.POWER_PER_SECOND,
                             "Ring power the shield costs a second while it is up")
-                    .was(0.5)
+                    .was(0.5, 0.2)
                     .group("dome", "Light Dome (hold the button 2 seconds)")
                     .setting("domeDamageKept", 0.6, 0.0, 1.0, Unit.PART_KEPT,
                             "Part of a hit from any side that still gets through the dome: 0.6 = 60%, so it takes"
                                     + " 40%")
-                    .setting("domePowerPerSecond", 0.6, 0.0, 20.0, Unit.POWER_PER_SECOND,
+                    .setting("domePowerPerSecond", 0.24, 0.0, 20.0, Unit.POWER_PER_SECOND,
                             "Ring power the dome costs a second")
-                    .was(1.5)
+                    .was(1.5, 0.6)
                     .group("ram", "Ram cone (the shield while you fly)")
                     .setting("ramDamage", 4.0, 0.0, 2000.0, Unit.HALF_HEARTS,
                             "Damage of flying into a creature with the shield up, in half hearts, at the slowest"
@@ -158,28 +158,28 @@ public enum GameCharacter {
                             "Extra ram damage in half hearts for every block per tick you fly (1.75 at top speed)")
                     .setting("ramKnockback", 1.4, 0.0, 6.0, Unit.STRENGTH,
                             "How hard a ram throws a creature away; the faster you fly, the further it goes");
+            // Smash the ring fist into the ground: the ring throws up a construct in front of him that strikes and
+            // sends a shockwave over it. In the air he dives down to the ground first. Flying into the ground at full
+            // speed does the same by itself, with these same numbers.
+            this.add(abilities, AbilitySlot.ABILITY_8, "shockwave").cooldown(100).damage(12.0)
+                    .setting("radiusBlocks", 5.0, 1.0, 16.0, Unit.BLOCKS, "How far the shockwave reaches, in blocks")
+                    .setting("knockback", 1.2, 0.0, 5.0, Unit.STRENGTH,
+                            "How hard the shockwave throws creatures away from where it strikes")
+                    .setting("powerCost", 1.6, 0.0, 100.0, Unit.POWER,
+                            "Ring power one shockwave costs, also the one of a landing at full speed; without it you"
+                                    + " just land");
             // Fly: fists to the chest, arms down along the sides and up you go. The ring pays for every second of
             // it, so a full ring lasts a set time in the air.
             this.add(abilities, AbilitySlot.ABILITY_9, "flight").cooldown(20)
-                    .group("flight", "Flying")
-                    .setting("powerCost", 2.0, 0.0, 100.0, Unit.POWER, "Ring power you need at least to take off")
-                    .was(5.0)
-                    .setting("fullRingSeconds", 37.5, 1.0, 600.0, Unit.RING_SECONDS,
+                    .setting("powerCost", 0.8, 0.0, 100.0, Unit.POWER, "Ring power you need at least to take off")
+                    .was(5.0, 2.0)
+                    .setting("fullRingSeconds", 93.75, 1.0, 600.0, Unit.RING_SECONDS,
                             "Seconds a full ring keeps you in the air: flying costs 100 divided by this a second,"
                                     + " and what you shoot or hold up while flying comes on top")
-                    .was(15.0)
+                    .was(15.0, 37.5)
                     .setting("topSpeed", 35.0, 5.0, 150.0, Unit.BLOCKS_PER_SECOND,
                             "Top speed in blocks per second (an elytra with firework rockets does about 33)")
-                    .was(50.0)
-                    .group("slam", "Landing slam (fly into the ground at full speed)")
-                    .setting("slamDamage", 12.0, 0.0, 2000.0, Unit.HALF_HEARTS,
-                            "Damage of the shockwave in the middle, in half hearts; at its edge half of it")
-                    .setting("slamRadiusBlocks", 5.0, 1.0, 16.0, Unit.BLOCKS,
-                            "How far the shockwave reaches, in blocks")
-                    .setting("slamKnockback", 1.2, 0.0, 5.0, Unit.STRENGTH,
-                            "How hard the shockwave throws creatures away from where you landed")
-                    .setting("slamPowerCost", 4.0, 0.0, 100.0, Unit.POWER,
-                            "Ring power the construct of a landing slam costs; without it you just land");
+                    .was(50.0);
         }
     };
 

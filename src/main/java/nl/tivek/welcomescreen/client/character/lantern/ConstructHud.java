@@ -27,6 +27,7 @@ import nl.tivek.welcomescreen.character.lantern.PowerRing;
 import nl.tivek.welcomescreen.client.GuiShapes;
 import nl.tivek.welcomescreen.client.character.ClientCharacter;
 import nl.tivek.welcomescreen.client.character.MouseHold;
+import nl.tivek.welcomescreen.config.Unit;
 import nl.tivek.welcomescreen.network.RingPayload;
 
 /**
@@ -47,10 +48,22 @@ public final class ConstructHud {
     private static final int MUTED = 0xFF8FA898;
     private static final int PENDING = 0xFFCFFFDC;
     private static final int LOW = 0xFFFF5A3A;
+    /** What the ring pays: the trail it leaves on the bar, and how fast it drains in the text. */
+    private static final int PAID = 0xF2D98A;
     /** The light of the lantern flashing over your screen. */
     private static final int FLASH = 0xE8FFEE;
     /** How thick the ring's power bar is. */
-    private static final float BAR_THICK = 5.0F;
+    private static final float BAR_THICK = 6.0F;
+    // Below this, in power a second, the ring counts as not draining: the cheapest drain, the shield, is 0.08.
+    private static final float MIN_DRAIN = 0.02F;
+    // How the bar moves: it drops at once when the ring pays and glides up as it fills (this fast, per second);
+    // what was just paid stays behind it as a gold trail this long, then runs out (this fast).
+    private static final float RISE_RATE = 9.0F;
+    private static final long TRAIL_WAIT_MS = 450L;
+    private static final float TRAIL_RATE = 5.0F;
+    // The stripes over the part the fist you charge will take: how far apart, and how wide.
+    private static final float STRIPE_GAP = 3.0F;
+    private static final float STRIPE_WIDTH = 1.2F;
 
     /** The middle of the bar, this far up from the bottom of the screen. */
     private static final int BAR_UP = 72;
@@ -70,6 +83,12 @@ public final class ConstructHud {
     private static final float HOLD_FLASH_MS = 350.0F;
     // When each button's arc filled up (left, right), or 0 while it is not full.
     private static final long[] FULL_AT = new long[2];
+    // The power bar as drawn, in power: where it is, where its trail is and until when that trail waits, and when
+    // the bar was drawn last.
+    private static float shown = -1.0F;
+    private static float trail;
+    private static long trailWaits;
+    private static long lastDrawn;
 
     public ConstructHud(IEventBus modEventBus) {
         modEventBus.addListener(ConstructHud::onRegisterLayers);
@@ -187,7 +206,7 @@ public final class ConstructHud {
 
     /**
      * What an ability of Green Lantern is doing right now, for the panel with your abilities, or null to let the
-     * panel say it itself: the shield is on, the dome or the beam is up, you fly or sink.
+     * panel say it itself: the shield is on, the dome or the beam is up, you go down to a slam, you fly or sink.
      */
     @Nullable
     public static Component status(CharacterAbility ability, Player player) {
@@ -198,6 +217,8 @@ public final class ConstructHud {
             case "light_shield" -> ClientRing.has(player, RingPayload.DOME)
                     ? Component.translatable(prefix + "dome")
                     : ClientRing.has(player, RingPayload.SHIELD) ? Component.translatable(prefix + "on") : null;
+            case "shockwave" -> ClientRing.has(player, RingPayload.DIVE)
+                    ? Component.translatable(prefix + "diving") : null;
             case "flight" -> ClientRing.has(player, RingPayload.DESCENT) ? Component.translatable(prefix + "sinking")
                     : ClientRing.flight(player, 0.0F) >= 0.0F ? Component.translatable(prefix + "flying") : null;
             default -> null;
@@ -212,8 +233,16 @@ public final class ConstructHud {
     }
 
     /**
-     * The ring's power, as the bottom line of the panel with your abilities: how full it is, and while you
-     * charge a fist, the part that letting go will cost. Red once it cannot pay for the smallest fist.
+     * The ring's power, as the bottom line of the panel with your abilities. Nothing on it blinks:
+     * <ul>
+     * <li>the bar drops at once when the ring pays and glides up as it fills, and what it just paid stays behind it
+     * for a moment as a gold trail that then runs out, so every cost shows how big it was;</li>
+     * <li>while you charge a fist, the part letting go will cost is a steady striped piece at the end of the bar, with
+     * a line where the ring will end up;</li>
+     * <li>the text says how much is left, what the fist will cost, or how fast the ring drains by itself (flying, the
+     * shield, the dome, the beam) and in the air how many seconds that leaves;</li>
+     * <li>red once it cannot pay for the smallest fist.</li>
+     * </ul>
      *
      * @param lowAt below this much power the ring is shown as too low
      */
@@ -222,48 +251,124 @@ public final class ConstructHud {
         float power = ClientRing.power(player);
         float pending = Math.min(ClientRing.pending(player), power);
         boolean low = power + 1.0E-4F < lowAt;
-        Component label = Component.translatable("ring." + WelcomeScreenMod.MODID + ".label");
-        // While the ring drains by itself (flying, the shield, the beam) it says how fast, and in the air how many
-        // seconds that leaves.
-        boolean steady = ClientRing.flight(player, 0.0F) >= 0.0F || ClientRing.has(player, RingPayload.SHIELD)
+        boolean flying = ClientRing.flight(player, 0.0F) >= 0.0F;
+        boolean steady = flying || ClientRing.has(player, RingPayload.SHIELD)
                 || ClientRing.has(player, RingPayload.DOME) || ClientRing.has(player, RingPayload.BEAM);
         float drain = steady ? ClientRing.drain() : 0.0F;
-        String amount;
+        // The text in up to three parts, each in its own colour: what is left, what goes off, and the time left.
+        String number = String.format(Locale.ROOT, "%.0f", power);
+        String goes = "";
+        int goesColor = PENDING;
+        String time = "";
         if (pending > 0.0F) {
-            amount = String.format(Locale.ROOT, "%.0f -%.1f", power, pending);
-        } else if (drain >= 0.2F && ClientRing.flight(player, 0.0F) >= 0.0F) {
-            amount = String.format(Locale.ROOT, "%.0f -%.1f/s %ds", power, drain, (int) Math.ceil(power / drain));
-        } else if (drain >= 0.2F) {
-            amount = String.format(Locale.ROOT, "%.0f -%.1f/s", power, drain);
-        } else {
-            amount = String.format(Locale.ROOT, "%.0f", power);
+            goes = String.format(Locale.ROOT, " -%.1f", pending);
+        } else if (drain >= MIN_DRAIN) {
+            goes = " -" + Unit.number(drain) + "/s";
+            goesColor = 0xFF000000 | PAID;
+            if (flying) {
+                time = " " + (int) Math.ceil(power / drain) + "s";
+            }
         }
+        Component label = Component.translatable("ring." + WelcomeScreenMod.MODID + ".label");
         int labelWidth = font.width(label);
-        int amountWidth = font.width(amount);
+        int amountWidth = font.width(number) + font.width(goes) + font.width(time);
         graphics.drawString(font, label, left, y, MUTED, false);
-        graphics.drawString(font, amount, right - amountWidth, y, low ? LOW : pending > 0.0F ? PENDING : TEXT, false);
+        int x = right - amountWidth;
+        x = graphics.drawString(font, number, x, y, low ? LOW : TEXT, false);
+        x = graphics.drawString(font, goes, x, y, goesColor, false);
+        graphics.drawString(font, time, x, y, MUTED, false);
 
         float barLeft = left + labelWidth + 5.0F;
         float barWidth = right - amountWidth - 5.0F - barLeft;
         if (barWidth < 8.0F) {
             return;
         }
+        follow(power);
         float barTop = y + (font.lineHeight - 1 - BAR_THICK) * 0.5F;
-        float full = barWidth * Mth.clamp(power / PowerRing.MAX_POWER, 0.0F, 1.0F);
-        float cost = barWidth * pending / PowerRing.MAX_POWER;
-        GuiShapes.roundRect(graphics, barLeft, barTop, barWidth, BAR_THICK, BAR_THICK * 0.5F,
-                GuiShapes.fade(0x0B2E18, 0.9F));
-        if (full > 0.5F) {
-            GuiShapes.roundRect(graphics, barLeft, barTop, full, BAR_THICK, BAR_THICK * 0.5F,
-                    GuiShapes.fade(low ? 0xFF5A3A : GREEN, 1.0F));
+        float radius = BAR_THICK * 0.5F;
+        float nowX = barLeft + barWidth * Mth.clamp(shown / PowerRing.MAX_POWER, 0.0F, 1.0F);
+        float trailX = barLeft + barWidth * Mth.clamp(trail / PowerRing.MAX_POWER, 0.0F, 1.0F);
+        float afterX = Math.max(barLeft, nowX - barWidth * pending / PowerRing.MAX_POWER);
+        // The track with a thin rim, then from the back to the front: the trail of what was just paid, the part the
+        // fist will take, and what is left after that. Each lies over the start of the one behind it.
+        GuiShapes.roundRect(graphics, barLeft - 1.0F, barTop - 1.0F, barWidth + 2.0F, BAR_THICK + 2.0F, radius + 1.0F,
+                GuiShapes.fade(0x000000, 0.45F));
+        GuiShapes.roundRect(graphics, barLeft, barTop, barWidth, BAR_THICK, radius, GuiShapes.fade(0x0B2E18, 0.95F));
+        if (trailX - nowX > 0.3F) {
+            GuiShapes.roundRect(graphics, barLeft, barTop, trailX - barLeft, BAR_THICK, radius,
+                    GuiShapes.fade(PAID, 0.9F));
         }
-        // The part the fist you charge will take, blinking at the end of what is left.
-        if (cost > 0.5F) {
-            float blink = 0.55F + 0.45F * Mth.sin((Util.getMillis() % 100000L) / 120.0F);
-            GuiShapes.roundRect(graphics, barLeft + full - cost, barTop, cost, BAR_THICK, BAR_THICK * 0.5F,
-                    GuiShapes.fade(BRIGHT, blink));
+        boolean costs = nowX - afterX > 0.3F;
+        if (costs) {
+            GuiShapes.roundRect(graphics, barLeft, barTop, nowX - barLeft, BAR_THICK, radius,
+                    GuiShapes.fade(BRIGHT, 0.95F));
+        }
+        if (afterX - barLeft > 0.3F) {
+            GuiShapes.roundRect(graphics, barLeft, barTop, afterX - barLeft, BAR_THICK, radius,
+                    GuiShapes.fade(low ? 0xFF5A3A : GREEN, 1.0F));
+            // A lighter top edge, so the bar reads as a tube of light.
+            GuiShapes.roundRect(graphics, barLeft + 1.0F, barTop + 0.6F, Math.max(0.0F, afterX - barLeft - 2.0F),
+                    BAR_THICK * 0.3F, BAR_THICK * 0.15F, GuiShapes.fade(0xFFFFFF, 0.25F));
+        }
+        // Marks at a quarter, half and three quarters of a full ring.
+        for (int quarter = 1; quarter < 4; quarter++) {
+            float markX = barLeft + barWidth * quarter / 4.0F;
+            GuiShapes.quad(graphics, markX - 0.25F, barTop + 1.0F, markX + 0.25F, barTop + 1.0F, markX + 0.25F,
+                    barTop + BAR_THICK - 1.0F, markX - 0.25F, barTop + BAR_THICK - 1.0F, GuiShapes.fade(0x000000, 0.3F));
+        }
+        if (costs) {
+            stripes(graphics, afterX, barTop, nowX - radius * 0.5F);
+            // Where the ring will end up once the fist flies.
+            GuiShapes.quad(graphics, afterX - 0.5F, barTop - 1.0F, afterX + 0.5F, barTop - 1.0F, afterX + 0.5F,
+                    barTop + BAR_THICK + 1.0F, afterX - 0.5F, barTop + BAR_THICK + 1.0F, GuiShapes.fade(0xFFFFFF, 0.95F));
         }
         GuiShapes.flush(graphics);
+    }
+
+    /**
+     * Moves the bar as drawn one frame towards what the ring holds: down at once, up with a glide, and the trail
+     * of what was just paid runs out after a moment. After a while without the bar it starts over where the ring is.
+     */
+    private static void follow(float power) {
+        long now = Util.getMillis();
+        float seconds = Math.min(0.25F, (now - lastDrawn) / 1000.0F);
+        if (shown < 0.0F || now - lastDrawn > 1000L) {
+            shown = power;
+            trail = power;
+            seconds = 0.0F;
+        }
+        lastDrawn = now;
+        if (power < shown) {
+            // A trail that had run out starts to wait again; one that is still there keeps running out.
+            if (trail - shown < 0.05F) {
+                trailWaits = now + TRAIL_WAIT_MS;
+            }
+            trail = Math.max(trail, shown);
+            shown = power;
+        } else {
+            shown += (power - shown) * (1.0F - (float) Math.exp(-RISE_RATE * seconds));
+        }
+        if (now >= trailWaits) {
+            trail += (shown - trail) * (1.0F - (float) Math.exp(-TRAIL_RATE * seconds));
+        }
+        trail = Math.max(trail, shown);
+    }
+
+    /** Slanted stripes over the part of the bar from {@code from} to {@code to}: the part the fist will take. */
+    private static void stripes(GuiGraphics graphics, float from, float top, float to) {
+        if (to - from < 0.5F) {
+            return;
+        }
+        // Only inside that part: the stripes run on past both ends and are cut off there.
+        GuiShapes.flush(graphics);
+        graphics.enableScissor(Mth.floor(from), Mth.floor(top), Mth.ceil(to), Mth.ceil(top + BAR_THICK));
+        int color = GuiShapes.fade(GREEN, 0.55F);
+        for (float x = from - BAR_THICK; x < to; x += STRIPE_GAP) {
+            GuiShapes.quad(graphics, x, top + BAR_THICK, x + STRIPE_WIDTH, top + BAR_THICK,
+                    x + STRIPE_WIDTH + BAR_THICK, top, x + BAR_THICK, top, color);
+        }
+        GuiShapes.flush(graphics);
+        graphics.disableScissor();
     }
 
     /** A ring of green light that flares out of your crosshair the moment your hands change. */

@@ -61,7 +61,7 @@ import nl.tivek.welcomescreen.network.RingPayload;
  * the ground slowly and you land by yourself, and fly into it looking down and you land as well. Dive into it at full
  * speed and you land with a slam: just before the ground you swing upright, feet first, with your ring fist cocked,
  * and you come down on one knee with that fist smashed into the ground while the ring throws up a construct (see
- * LandingSlam).</li>
+ * LandingSlam). The shockwave key does that dive for you: straight down at full speed, into a slam.</li>
  * <li>An empty ring lets you sink down gently, with no more steering, until you touch ground.</li>
  * </ul>
  * For everyone who flies, you included, this also keeps how fast they go and how they bank for their poses
@@ -125,6 +125,8 @@ public final class ClientFlight {
     private static final float DIVE_LOOK = 20.0F;
     // How many ticks before a slam a diving flyer starts to swing upright for it, fist cocked.
     private static final double BRACE_TICKS = 5.0;
+    // On a dive for a slam (the shockwave key): how much of the way to straight down at full speed you swing each tick.
+    private static final double DIVE_TURN = 0.4;
     /** Ticks you stay down after a slam, crouched on your fist: you cannot move meanwhile. */
     static final int SLAM_ROOT = 14;
     // The tick (of your own player) you last slammed into the ground, or MIN_VALUE.
@@ -169,6 +171,14 @@ public final class ClientFlight {
     @Nullable
     static Motion motion(Entity entity) {
         return MOTIONS.get(entity.getId());
+    }
+
+    /**
+     * True while this player drops straight down to a slam: the shockwave key, used jumping or falling rather than
+     * flying. The ring drives him down, fist cocked.
+     */
+    static boolean dropping(Entity player) {
+        return ClientRing.flight(player, 0.0F) < 0.0F && ClientRing.has(player, RingPayload.DIVE);
     }
 
     /** Your own speed in blocks per tick while you steer yourself through the air; zero otherwise. */
@@ -216,6 +226,11 @@ public final class ClientFlight {
         if (!(event.getEntity() instanceof LocalPlayer player) || player != minecraft.player) {
             return;
         }
+        // Dropping down to a slam and on the ground now: it is known the moment you touch it (the server throws up
+        // the construct).
+        if (player.onGround() && dropping(player) && slam(player, 0.0F) < 0.0F) {
+            slamTick = player.tickCount;
+        }
         // Right after a slam you stay down on your fist a moment: crouched, and going nowhere.
         float slammed = slam(player, 0.0F);
         if (slammed >= 0.0F && slammed < SLAM_ROOT) {
@@ -226,7 +241,9 @@ public final class ClientFlight {
             input.shiftKeyDown = true;
             velocity = Vec3.ZERO;
             afterMove = null;
-            player.setDeltaMovement(Vec3.ZERO);
+            // No sliding on, but still falling: a slam that begins a moment before you touch down never leaves you
+            // hanging in the air.
+            player.setDeltaMovement(0.0, Math.min(0.0, player.getDeltaMovement().y), 0.0);
             return;
         }
         float t = ClientRing.flight(player, 0.0F);
@@ -255,9 +272,13 @@ public final class ClientFlight {
         Vec3 impact = landedWith;
         landedWith = null;
         boolean dove = false;
+        // On a dive for a slam (the shockwave key): your keys wait until you hit the ground.
+        boolean onDive = t >= ARISE && ClientRing.has(player, RingPayload.DIVE)
+                && !ClientRing.has(player, RingPayload.DESCENT);
         if (impact != null && t >= ARISE && player.onGround() && !ClientRing.has(player, RingPayload.DESCENT)) {
-            // Flown into the ground at full speed, diving: a slam instead of a landing.
-            if (impact.length() >= fullSpeed() * SLAM_SPEED && -impact.y >= impact.length() * SLAM_DOWN) {
+            // Flown into the ground at full speed, diving, or at the end of a dive for a slam: a slam instead of a
+            // landing.
+            if (onDive || impact.length() >= fullSpeed() * SLAM_SPEED && -impact.y >= impact.length() * SLAM_DOWN) {
                 slamDown(player);
                 return;
             }
@@ -268,6 +289,9 @@ public final class ClientFlight {
             velocity = new Vec3(velocity.x * 0.95, Mth.lerp(0.15, velocity.y, -SINK), velocity.z * 0.95);
         } else if (t < ARISE) {
             velocity = arise(player, t, forward, strafe, up, down);
+        } else if (onDive) {
+            // Straight down at full speed, swinging round into it out of whatever way you flew.
+            velocity = velocity.lerp(new Vec3(0.0, -fullSpeed(), 0.0), DIVE_TURN);
         } else {
             velocity = steer(player, forward, strafe, up, down, 1.0);
         }
@@ -278,8 +302,9 @@ public final class ClientFlight {
             // Down on your feet where you hit the ground, not sliding on over it.
             velocity = Vec3.ZERO;
         }
-        // Sinking down onto the ground slowly after the take-off, or flown into it: you land by yourself.
-        if (!landing && (dove || airborne && t > ARISE + 4.0F && player.onGround() && !up
+        // Sinking down onto the ground slowly after the take-off, or flown into it: you land by yourself. A dive that
+        // starts on the ground slams into it on the next tick instead.
+        if (!landing && !onDive && (dove || airborne && t > ARISE + 4.0F && player.onGround() && !up
                 && velocity.horizontalDistance() < LAND_SPEED && !ClientRing.has(player, RingPayload.DESCENT))) {
             landing = true;
             CharacterAbility flight = GameCharacter.GREEN_LANTERN.byName("flight");
@@ -409,15 +434,16 @@ public final class ClientFlight {
         }
         for (AbstractClientPlayer player : level.players()) {
             boolean flying = ClientRing.flight(player, 0.0F) >= 0.0F;
+            boolean dropping = dropping(player);
             Motion motion = MOTIONS.get(player.getId());
             if (motion == null) {
-                if (!flying) {
+                if (!flying && !dropping) {
                     continue;
                 }
                 motion = new Motion();
                 MOTIONS.put(player.getId(), motion);
             }
-            track(level, player, motion, flying, player == minecraft.player && steering);
+            track(level, player, motion, flying, dropping, player == minecraft.player && steering);
         }
         // A flyer that went out of sight, or landed a while ago, is forgotten.
         Iterator<Map.Entry<Integer, Motion>> all = MOTIONS.entrySet().iterator();
@@ -430,9 +456,12 @@ public final class ClientFlight {
         }
     }
 
-    /** One tick of how a flyer moves: speed, lean, the streak behind them and what they throw up below. */
+    /**
+     * One tick of how a flyer moves: speed, lean, the streak behind them and what they throw up below. Someone who
+     * drops down to a slam is followed too, for the streak and his cocked fist.
+     */
     private static void track(ClientLevel level, AbstractClientPlayer player, Motion motion, boolean flying,
-            boolean own) {
+            boolean dropping, boolean own) {
         Vec3 moved = own ? velocity : new Vec3(player.getX() - player.xo, player.getY() - player.yo,
                 player.getZ() - player.zo);
         motion.velocity = motion.velocity.lerp(moved, own ? 0.6 : 0.35);
@@ -445,6 +474,8 @@ public final class ClientFlight {
         motion.bank = Mth.lerp(0.18F, motion.bank, lean);
         if (flying) {
             motion.flew = true;
+        }
+        if (flying || dropping) {
             motion.sinceEnd = Integer.MAX_VALUE;
         } else if (motion.sinceEnd == Integer.MAX_VALUE) {
             motion.sinceEnd = 0;
@@ -461,7 +492,8 @@ public final class ClientFlight {
             skim(level, player, motion, speed);
         }
         motion.braceO = motion.brace;
-        float want = flying && diving(level, player, motion.velocity) ? 1.0F : 0.0F;
+        // Dropping, he is upright with his fist cocked all the way down.
+        float want = flying && diving(level, player, motion.velocity) || dropping ? 1.0F : 0.0F;
         motion.brace = Mth.lerp(want > motion.brace ? 0.5F : 0.3F, motion.brace, want);
     }
 

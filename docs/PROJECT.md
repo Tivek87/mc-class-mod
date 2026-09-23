@@ -62,7 +62,8 @@ A Minecraft mod that adds classes and a stamina bar. You pick a class before you
   Dying or logging out turns you back too.
 - **Ability keys are the same for everyone.** There are eleven keys, and they are only numbered: ability
   1 up to ability 11. Each one does whatever the character you are has on that number, so no key is a
-  kind of ability. Default: R, V, Z, B, H, N, Y, X, C, Left Alt and K. X is free at the moment.
+  kind of ability. Default: R, V, Z, B, H, N, Y, X, C, Left Alt and K. Keys a character has nothing on yet
+  say so when you press them.
 - A panel in the bottom right shows who you are and what each key does right now, with its cooldown.
 - Every character's numbers can be changed in the game: Mods > Classes & Stamina > Config.
 - **Crouching + a key** is up to the character: with some abilities it undoes them (let go, put down),
@@ -72,7 +73,7 @@ A Minecraft mod that adds classes and a stamina bar. You pick a class before you
 | Character | What they are |
 |---|---|
 | Doctor Octopus | Four robot tentacles from your back. Walk on your own feet or on 2, 3 or 4 tentacles; every tentacle you do not walk on is free to grab and fight. Always: long reach, tentacle strikes, wall climbing around corners and under ceilings. On keys: grabbing and smashing, Multi-Tentacle, dash, block, ground slam, a ground strike on creatures you mark, portals, and the ultimate Octopus Rampage. |
-| Green Lantern | A power ring that shapes green hard light, and puts his uniform on you over your own clothes. The ring holds 100 power and glows as bright as it is full. With empty hands: left click fires energy bolts (3 hearts, 0.3 s auto-fire, 1 power), right click holds a small shield (65% damage reduction, 0.5 power/s). On keys so far: Giant Fist, a fist of light that charges beside you while you hold the key (1 up to 16 blocks across, finding room around you by itself), costs ring power, and rams everything in its way, straight through walls and the ground; Recharge, where you raise your lantern and punch it to fill the ring; and the Construct Wheel, twelve slots kept free for hard-light weapons (the picking works, every slot is still a placeholder; left click will attack, right click defend). More powers are on the way. |
+| Green Lantern | A power ring that shapes green hard light, and puts his uniform on you over your own clothes. The ring holds 100 power and glows as bright as it is full. With empty hands: left click fires energy bolts (3 hearts, 0.3 s auto-fire, 0.16 power), right click puts up a small shield (70% damage reduction, 0.08 power/s); holding the button gives a beam or a dome. On keys so far: Giant Fist, a fist of light that charges beside you while you hold the key (1 up to 5.7 blocks across, finding room around you by itself), costs ring power, and rams everything in its way, straight through walls and the ground; Recharge, where you raise your lantern and punch it to fill the ring; Flight; the Shockwave, your ring fist smashed into the ground while a random giant construct strikes in front of you; and the Construct Wheel, twelve slots kept free for hard-light weapons (the picking works, every slot is still a placeholder; left click will attack, right click defend). More powers are on the way. |
 
 - Every cooldown and damage number can be changed per character and per ability: every character has
   their own settings file in the `config/welcomescreen` folder. See
