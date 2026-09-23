@@ -34,8 +34,9 @@ final class SlamRisers {
     static Vec3 spikes(ConstructPainter painter, Moment m) {
         Vec3 ground = m.ground();
         double warn = Mth.clamp(m.t() / (LandingSlam.IMPACT_TICK - 1.0), 0.0, 1.0);
-        SlamPainter.cracks(painter, ground, (1.0 + 2.6 * warn) * m.size(), m.struck() ? 1.0 - m.since() / 12.0 : warn,
-                11);
+        SlamPainter.cracks(painter, ground, (1.0 + 2.6 * warn) * m.size(),
+                m.struck() ? 1.0 - m.since() / 12.0 : 0.35 + 0.65 * warn, 11);
+        SlamPainter.buildUp(painter, ground, 3.2 * m.size(), m, 11);
         int[] counts = { 7, 11 };
         double[] radii = { 1.5, 3.2 };
         double[] sizes = { 1.3, 1.0 };

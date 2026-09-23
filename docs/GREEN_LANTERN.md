@@ -4,13 +4,16 @@
 
 ## 1. Transformatie & Uniform
 
-- **Veranderen in Green Lantern:**
-  - Een groene lichtlijn glijdt van je hoofd naar je voeten omlaag.
-  - Dit laat het Green Lantern pak achter over je eigen kleding: groen met zwart, het lantaarnsymbool op de borst, witte handschoenen en een groen masker voor je ogen.
-  - Je eigen gezicht en haar blijven zichtbaar.
-  - De Power Ring verschijnt om de middelvinger van je rechterhand.
+- **Veranderen in Green Lantern (de ring komt naar je toe):**
+  - De ring verschijnt ergens 16 tot 32 blokken van je af, pulseert van licht en vliegt in 3 seconden naar je toe; hij blijft 3 blokken voor je in de lucht hangen.
+  - Daar vormt hij je lantaarn uit zijn licht; de lantaarn vliegt naar je linkerhand en je vangt hem.
+  - Dan vliegt de ring om je middelvinger. Zodra hij zit, rolt er een schokgolf van licht 16 blokken om je heen: de wezens van het duister daarin (ondoden, de Warden, vexes, endermen, endermites) rennen 10 seconden van je weg.
+  - Tegelijk groeit het pak langzaam uit de ring over je heen: je arm op, naar de lantaarn op je borst, dan over je hele lichaam. Het masker komt pas als de rest helemaal aan is.
+  - Tot slot sla je vanzelf met je ringvuist op de lantaarn en laadt de ring op (de recharge).
+  - Tot dat klaar is doet de ring niets anders.
+  - Het pak: groen met zwart, het lantaarnsymbool op de borst, witte handschoenen en een groen masker voor je ogen. Je eigen gezicht en haar blijven zichtbaar.
 - **Terugveranderen:**
-  - De lichtlijn glijdt weer omhoog en het pak valt uit elkaar in groene vonken.
+  - Andersom: eerst gaat het masker weg, dan trekt het pak terug over je benen, je lijf en je arm in de ring, en de ring vliegt omhoog weg.
 - **Zichtbaarheid:**
   - Zichtbaar in first-person en third-person, en voor iedereen om je heen.
 
@@ -52,7 +55,9 @@ Voor **alle** linksklik- (aanval) en rechtsklik-acties (verdediging) geldt een a
   - **Kosten:** 0,16 power per schot.
   - **Cooldown:** 0,3 sec tussen losse schoten.
 - **Hold na 2 sec (Continuous Laser / Beam):**
-  - **Actie:** Bundelt de energie in een continue, felle groene laserstraal recht vooruit.
+  - **Opladen:** Terwijl je inhoudt vult de energie je pak: vanuit de lantaarn op je borst loopt hij je rechterarm af naar de ring (die arm gloeit steeds feller en komt omhoog om te richten), daarna over de rest van het pak. Lichtspikkels stromen van alle kanten de ring in, een lichtbol zwelt in je vuist met twee draaiende lichtringen eromheen, aan het eind knetteren er vonken af en een fluittoon stijgt. Laat je eerder los, dan zakt het weer weg. Iedereen om je heen ziet het.
+  - **Losbarsten:** De straal schiet in een oogwenk uit de ring met een flits en een ring van licht uit je vuist, en je beeld schokt even terug. Daarna brult hij door: een witheet hart in een dikke, ademende groene gloed, met lichtgolven die erlangs razen, drie draden die eromheen draaien, lichtringen die erlangs lopen en vonken die eraf knetteren. Waar hij inslaat spat hij uiteen: een hete flits, rimpels en vonken die terugspatten. Je beeld trilt licht zolang hij straalt.
+  - **Actie:** Bundelt de energie in een continue, felle groene laserstraal recht vooruit. Elke treffer duwt wat hij raakt een stukje terug.
   - **Werking:** Blijft ononderbroken vuren zolang je linksklik inhoudt na de drempel van 2 seconden.
   - **Schade:** 2,5 harten per 0,25 sec (10 harten per seconde) aan alles in het pad van de laser: dwars door een hele rij wezens, tot de eerste muur, max 40 blokken.
   - **Kosten:** 0,8 power per seconde.
@@ -93,7 +98,7 @@ Voor **alle** linksklik- (aanval) en rechtsklik-acties (verdediging) geldt een a
 
 - **Actie:** Keuzewiel om hard-licht wapens in je handen te nemen.
 - **Tikken:** Snelle wissel tussen lege handen en je laatste construct.
-- **Inhouden:** Opent een wiel met 12 slots (midden is lege handen / alleen de ring).
+- **Inhouden:** Opent een groot wiel met 16 slots (midden is lege handen / alleen de ring). Het midden zegt wat je aanwijst; een balk onderaan zegt hoe de knoppen werken.
 - **Besturing per construct (Click vs. Hold):**
   - **Linksklik (Aanval):**
     - *Click / Tap:* Standaard wapenaanval (bijv. snelle zwaardhouw, hamerslag, speerstoot).
@@ -119,20 +124,20 @@ Voor **alle** linksklik- (aanval) en rechtsklik-acties (verdediging) geldt een a
 ## 8. Vliegen (toets C, ability 9)
 
 - **Opstijgen:** Beide vuisten naar je borst met een kleine dip, dan zwaaien je armen omlaag langs je zij, je hoofd gaat omhoog en je stijgt een paar blokken, met een lichtflits aan je voeten. Daarna vlieg je zonder pauze door. Duurt iets meer dan 1 sec en vangt je ook op midden in een val.
-- **Vliegen:** Vooruit inhouden = snelheid opbouwen in je kijkrichting, tot **35 blokken per sec** (iets sneller dan een elytra met raketten, die ongeveer 33 haalt). Loslaten = uitglijden tot zweven. Springen = stijgen, bukken = zakken, links/rechts = opzij, achteruit = terugdrijven. Je neemt je snelheid mee in bochten.
+- **Vliegen:** Vooruit inhouden = vliegen in je kijkrichting. **Je begint langzaam en gaat sneller hoe langer je doorvliegt:** je start op ongeveer **12 blokken per sec** (een derde van de top) en bouwt **12 seconden** lang snelheid op, tot de top van **35 blokken per sec** (iets sneller dan een elytra met raketten, die ongeveer 33 haalt), en nooit meer. Vooruit loslaten = uitglijden tot zweven, en de opgebouwde snelheid zakt langzaam weer weg (helemaal in 3 sec); tegen een muur duwen houdt hem vast. Springen = stijgen, bukken = zakken, links/rechts = opzij, achteruit = terugdrijven. Je neemt je snelheid mee in bochten. Begin- en opbouwtijd zijn instellingen.
 - **Animatie:** Zwevend sta je rechtop met armen iets uit. Hoe sneller, hoe meer je lichaam langs je vliegrichting ligt (armen langs je zij, benen bij elkaar); je helt over in bochten, duikt met je hoofd voorop en klimt met je hoofd omhoog. Een streep groen licht achter je bij hoge snelheid; laag vliegen blaast stof of water op.
 - **Kosten:** Opstijgen minstens **0,8 power**. Vliegen kost **1,07 power per sec** (100 / 93,75): een volle ring houdt je **max 93,75 sec** (ruim anderhalve minuut) in de lucht. Alles wat je tijdens het vliegen doet kost daar bovenop.
 - **Landen:** Rustig op de grond zakken = vanzelf landen, of C nog een keer (in de lucht val je dan vanaf daar). Daarna 1 sec cooldown.
 - **Ring leeg in de lucht:** Je zakt langzaam omlaag met je armen omhoog, zonder sturen, en landt zonder schade. Opladen onderweg laat je weer vliegen.
 - **Landen door een duik:** vlieg je de grond in terwijl je naar beneden kijkt, dan stop je automatisch met vliegen, ook als je niet volle snelheid gaat.
-- **Landingsklap (automatisch; met X doe je hem zelf, zie 9):** duik je op (bijna) volle snelheid de grond in, dan stopt de vlucht met een superhelden-landing. Vlak voor de grond draai je rechtop, voeten eerst, ringvuist hoog geheven; dan kom je laag op één knie en ram je die vuist de grond in, die rondom openscheurt en brokken opgooit, je andere arm naar achteren. In first person knikt je blik even omlaag naar je vuist in de grond en weer omhoog op tijd voor de klap. De ring maakt een reuzenconstruct dat een schokgolf geeft (schade en terugslag rondom, standaard 6 harten in het midden, 5 blokken ver, kost 1,6 power; zonder genoeg power land je alleen hard). Elke keer willekeurig één van **32**:
+- **Landingsklap (automatisch; met X doe je hem zelf, zie 9):** duik je snel de grond in (minstens 21 blokken per sec, dus eerst een paar seconden doorvliegen), dan stopt de vlucht met een superhelden-landing. Vlak voor de grond draai je rechtop, voeten eerst, ringvuist hoog geheven; dan kom je laag op één knie en ram je die vuist de grond in, die rondom openscheurt en brokken opgooit, je andere arm naar achteren. In first person knikt je blik even omlaag naar je vuist in de grond, en kijkt dan omhoog naar het construct dat zich in de lucht voor je vormt en volgt het omlaag als het inslaat. De ring maakt een reuzenconstruct dat een schokgolf geeft (schade en terugslag rondom, standaard 6 harten in het midden, 5 blokken ver, kost 1,6 power; zonder genoeg power land je alleen hard). Elke keer willekeurig één van **32**:
   - *Uit de lucht:* vuist, strijdhamer, aambeeld, laars, gewicht van 1 ton, je eigen lantaarn, kluis, anker aan een ketting, stekelbal, halter, klok die luidt, slaande hand, zwaard dat blijft staan, piano, speelgoedsteen, stempel die het embleem in de grond drukt, blok TNT dat ontploft, brandende meteoor.
   - *Dichtklappend:* twee handen, twee vuisten, bekkens, berenklem, boek.
   - *Uit de grond:* uppercut (de grond scheurt en rommelt eerst, dan barsten vuist en arm eruit), twee ringen pieken, een pilaar die omhoog schiet en omvalt.
   - *Neergezwaaid:* vliegenmepper en pickaxe over je schouder, hamer van een rechter op zijn blok, drumstokken op een trommel.
   - Het embleem dat plat voorover valt, en een salvo van vijf raketten.
   - Elk construct is solid en groeit uit het licht van de ring; aan het eind breekt het in solid stukken (of zakt terug de grond in). De schokgolf is een lage ring van solid hard licht.
-  - **Groot en goed te volgen:** standaard 35% groter dan eerst (ze slaan daarom iets verder voor je in) en anderhalf keer zo traag: het construct vormt zich en valt in ongeveer 0,75 sec, blijft na de klap ruim een seconde staan en breekt dan op; alles samen ruim 3 seconden. Allebei instelbaar (zie 9).
+  - **Groot en goed te volgen:** standaard 35% groter dan eerst (ze slaan daarom iets verder voor je in) en anderhalf keer zo traag: het construct vormt zich in de lucht voor je, waar je het goed ziet, hangt even, haalt uit en slaat na ongeveer 1 sec in; het blijft na de klap ruim een seconde staan en breekt dan op; alles samen ruim 3 seconden. Allebei instelbaar (zie 9). Constructs die dichtklappen staan schuin naar je toe gedraaid, zodat je ze ziet dichtslaan in plaats van alleen hun randen.
   - **Elk construct beweegt:** de kluis ploft neer, het wiel draait, de deur vliegt open en munten, biljetten en goudstaven vallen eruit; de piano-klep springt open, de klep over de toetsen slaat omhoog, de toetsen springen en er zweven noten op; het aambeeld spat vonken en hupt nog een keer; het gewicht plet zwaar; de TNT landt, zwelt, knippert terwijl het lontje opbrandt en ontploft; de speelgoedsteen en de halter stuiteren; de stempel wiebelt en laat het embleem gloeiend achter; de laars landt hak eerst en de neus klapt erachteraan; het hengsel van de lantaarn zwaait; de ketting van het anker valt erachteraan en stapelt zich op; de stekelbal schommelt na; de klok schudt, de klepel zwaait en er lopen geluidsringen weg; de meteoor heeft gloeiende scheuren; het zwaard trilt na; de bekkens stuiteren uit elkaar en galmen; de berenklem rammelt; het boek bladert en klapt dicht; de hamer van de rechter klopt nog een keer; de trommelstokken spelen een roffel met rimpels over het vel; de kristalpieken schieten door en glinsteren; de zuil stuitert en zijn stukken schuiven uit elkaar; het embleem stuitert op de grond; de klets-hand trommelt met zijn vingers; de handen buigen hun vingers bij het klappen.
 - **Vechten in de lucht (dezelfde knoppen):**
   - *Tik links:* bolt neemt jouw snelheid mee, dus je haalt je eigen schoten nooit in.
@@ -163,3 +168,40 @@ Voor **alle** linksklik- (aanval) en rechtsklik-acties (verdediging) geldt een a
 - **Actie:** Typ `/constructshockwave` in de chat. Er opent een scherm met alle 32 constructs, in groepjes (uit de lucht, klappen dicht, uit de grond, neergezwaaid, en meer), met bij elk een korte uitleg als je hem aanwijst. Klik er één (of *Willekeurig*): het scherm sluit en een seconde later slaat dat construct voor je in, met schokgolf.
 - **Voor wie:** iedereen, als personage maakt niet uit, maar alleen met cheats aan (of als operator). Zonder dat zegt de server het je.
 - **Kosten:** geen power en geen cooldown. Loopt je vorige klap nog, dan wacht je even.
+
+---
+
+## 11. Ring-scan (toets N, ability 6)
+
+- **Actie:** De ring scant alles om je heen, zoals in de strips ("Ring, scan het gebied"). Een golf van ringlicht rolt vanuit jou naar buiten, door muren heen, tot **32 blokken** ver. Iedereen om je heen ziet de golf.
+- **Markeringen (alleen voor jou):** elk wezen dat de golf passeert krijgt **12 sec** een kader van licht met gemarkeerde hoeken, door muren heen zichtbaar, met zijn naam en levens erboven. Kleur: rood = vijandig, violet = wezen van het duister, blauw = andere speler, groen = de rest. Elk kader klikt vast met een tikje zodra de golf het bereikt.
+- **Melding:** de ring zegt op je actiebalk hoeveel vijandige en andere levensvormen hij vond.
+- **Kosten:** 2 power. **Cooldown:** 8 sec.
+
+---
+
+## 12. Constructstorm (toets Y, ability 7: de ultimate)
+
+- **Y is altijd de ultimate** van een personage (bij Doctor Octopus de razernij).
+- **Actie:** Je steekt je ringvuist naar de hemel. Een pilaar van licht schiet recht omhoog uit de ring en barst open in een **grote ring van licht** hoog boven je hoofd (ongeveer 15 blokken, lager onder een dak): twee ringen die tegen elkaar in draaien, spaken van licht ertussen en het lantaarn-embleem in het midden. Je actiebalk roept "CONSTRUCTSTORM!" en de titel van het paneel wordt rood en telt af.
+- **Regen van constructs:** **8 sec** lang hangt de ring boven je, waar je ook gaat, met een draad van licht aan je ring vast. Elke 0,4 sec vormt zich eronder een van de constructs die uit de lucht vallen (vuist, strijdhamer, aambeeld, laars, gewicht van 1 ton, je lantaarn, kluis, anker, stekelbal, halter, klok, slaande hand, zwaard, piano, speelgoedsteen, stempel) en **valt op een wezen** binnen 20 blokken dat jou kwaad wil (of een speler, waar spelers mogen vechten). Hij blijft boven zijn wezen hangen terwijl hij vorm krijgt, een lichtring op de grond wijst aan waar hij inslaat, en hij slaat in met een eigen schokgolf: **5 harten** in het midden, de helft aan de rand, en alles vliegt weg.
+- **Eerlijk verdeeld:** de constructs verdelen zich over de wezens; niets valt vlak naast jou; zonder wezens slaan ze om je heen op lege grond in, nooit op een huisdier of dorpeling.
+- **Einde:** na de regen barst de ring in de lucht uiteen.
+- **Kosten:** 20 power. **Cooldown:** 90 sec.
+- **Instellingen:** duur, tijd tussen constructs, bereik, schade en kosten.
+- Elk construct is solid en groeit uit het licht van de ring in de lucht (die zelf aan je ring hangt); aan het eind breekt het in solid stukken. De ring in de lucht en de pilaar zijn licht, geen constructs.
+
+---
+
+## 13. Lantaarnflits (toets Left Alt, ability 10)
+
+- **Actie:** Je steekt je ringvuist hoog op en de ring vormt **je lantaarn** erboven: een solid construct dat uit het licht van de ring groeit. Licht stroomt er van alle kanten in en zijn hart brandt steeds feller, tot hij na bijna een seconde **uiteenbarst als een kleine zon**: stralen schieten weg, een schil van licht raast naar buiten en de lantaarn breekt in solid stukken.
+- **Effect:** elk wezen binnen **12 blokken** dat de lantaarn kan zien is **4 sec verblind**, 3 sec vertraagd en verzwakt, en verliest wie het achterna zat. Wezens van het duister kunnen het licht niet verdragen: ze branden ook, krijgen **4 harten** schade en vluchten even.
+- **Verblinding:** wie naar de flits kijkt krijgt even een wit-groen scherm, hoe rechter hij keek hoe erger. Je eigen flits houd je boven je hoofd, dus die verblindt jou maar een beetje.
+- **Kosten:** 6 power. **Cooldown:** 15 sec.
+
+---
+
+## Lege toetsen
+
+- Green Lantern gebruikt nu ability 1 t/m 10. Alleen **K (ability 11)** is nog vrij.

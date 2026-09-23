@@ -59,6 +59,14 @@ public final class PowerRing {
      */
     public static boolean use(ServerPlayer player, CharacterAbility ability, boolean on, int data) {
         ServerLevel level = player.serverLevel();
+        // The ring is still on its way to him, or dressing him: it does nothing else until that is done. Letting go of
+        // a key is always fine.
+        if (Arrival.busy(player)) {
+            if (on) {
+                tell(player, "arriving");
+            }
+            return false;
+        }
         return switch (ability.id()) {
             // Hold the key to charge the fist; it flies when you let go.
             case "giant_fist" -> on ? GiantFist.launch(player, level, ability) : GiantFist.letGo(player);
@@ -69,6 +77,12 @@ public final class PowerRing {
             case "light_shield" -> LightShield.use(player, level, ability, on, data);
             // Smash the ring fist into the ground for a shockwave; in the air he goes down to the ground first.
             case "shockwave" -> Shockwave.use(player, level, ability);
+            // A wave of the ring's light rolls out and marks every creature it passes.
+            case "ring_scan" -> RingScan.use(player, level, ability);
+            // The ring fist thrown up high: the lantern takes shape over it and bursts out blinding.
+            case "light_flare" -> LightFlare.use(player, level, ability);
+            // The ultimate: a great ring of light in the sky, raining constructs down on everything around him.
+            case "construct_storm" -> ConstructStorm.use(player, level, ability);
             // Take off, or land again; flying into the ground at full speed lands with a slam.
             case "flight" -> on && ((data & Characters.SLAM) != 0 ? Flight.slam(player, level, ability)
                     : Flight.toggle(player, level, ability));
@@ -87,6 +101,10 @@ public final class PowerRing {
         Flight.clear();
         Shockwave.clear();
         LandingSlam.clear();
+        Arrival.clear();
+        Fear.clear();
+        LightFlare.clear();
+        ConstructStorm.clear();
     }
 
     /** True while this player can keep a construct going in this level: alive, here, and still Green Lantern. */
@@ -160,7 +178,7 @@ public final class PowerRing {
                 | (Flight.descending(player) ? RingPayload.DESCENT : 0)
                 | (Flight.diving(player) || Shockwave.dropping(player) ? RingPayload.DIVE : 0);
         return new RingPayload(player.getId(), power(player), GiantFist.pending(player), Lantern.ticks(player),
-                Flight.ticks(player), state);
+                Flight.ticks(player), state, Arrival.ticks(player), Arrival.from(player), LightBeam.charging(player));
     }
 
     /** A line about the ring on the player's action bar. */

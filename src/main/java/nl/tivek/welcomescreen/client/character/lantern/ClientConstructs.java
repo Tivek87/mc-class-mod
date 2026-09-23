@@ -1,13 +1,16 @@
 package nl.tivek.welcomescreen.client.character.lantern;
 
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
@@ -27,6 +30,7 @@ import nl.tivek.welcomescreen.character.GameCharacter;
 import nl.tivek.welcomescreen.character.lantern.ConstructPath;
 import nl.tivek.welcomescreen.character.lantern.LandingSlam;
 import nl.tivek.welcomescreen.character.lantern.LightShield;
+import nl.tivek.welcomescreen.character.lantern.RingScan;
 import nl.tivek.welcomescreen.network.ConstructPayload;
 import org.joml.Vector3f;
 
@@ -47,6 +51,11 @@ public final class ClientConstructs {
     // The beam starts on the line from your eye through your own hand, but this much nearer than the hand
     // itself: on screen that is the same spot, and it keeps the beam from starting inside a wall.
     private static final double RING_NEAR = 0.45;
+    // The ram cone points where its owner looks below the first speed, and the way he flies above the second, in
+    // blocks per tick; seen from his own eyes its middle hangs this far in front of them.
+    private static final double RAM_LOOK = 0.1;
+    private static final double RAM_ALONG = 0.45;
+    private static final double RAM_OWN_AHEAD = 0.85;
 
     private static final Map<Integer, Track> CONSTRUCTS = new HashMap<>();
     private static int clientTicks;
@@ -94,7 +103,7 @@ public final class ClientConstructs {
         }
 
         private void time(ConstructPayload update) {
-            if (update.path() == null && update.shape() != ConstructPayload.SLAM) {
+            if (update.path() == null && !timed(update.shape())) {
                 return;
             }
             if (update.path() != null) {
@@ -128,6 +137,15 @@ public final class ClientConstructs {
         boolean timedOut() {
             return clientTicks - this.lastSeen > TIMEOUT;
         }
+    }
+
+    /** True for the shapes that play along a timeline of their own, from how long ago they set off. */
+    private static boolean timed(int shape) {
+        return switch (shape) {
+            case ConstructPayload.SLAM, ConstructPayload.SCAN, ConstructPayload.FLARE, ConstructPayload.BEAM,
+                    ConstructPayload.STORM, ConstructPayload.DROP -> true;
+            default -> false;
+        };
     }
 
     /**
@@ -202,6 +220,102 @@ public final class ClientConstructs {
         return -1.0F;
     }
 
+    /**
+     * One scan of a ring rolling out: whose it is, where it set out from, how far it reaches and has got by now (by the
+     * client's own clock), and how long what it passes stays marked, in seconds.
+     */
+    record Scan(int id, int owner, Vec3 center, double radius, double reached, double seconds) {
+    }
+
+    /** Every scan rolling out right now. */
+    static List<Scan> scans(float partialTick) {
+        List<Scan> scans = new ArrayList<>();
+        for (Map.Entry<Integer, Track> entry : CONSTRUCTS.entrySet()) {
+            ConstructPayload scan = entry.getValue().latest;
+            if (scan.shape() == ConstructPayload.SCAN) {
+                double reached = Math.min(scan.size(), RingScan.SPEED * entry.getValue().clock(partialTick));
+                scans.add(new Scan(entry.getKey(), scan.owner(), scan.center(), scan.size(), reached, scan.charge()));
+            }
+        }
+        return scans;
+    }
+
+    /**
+     * How long ago this player's flare began to gather its light, by the client's own clock, and where it is; null when
+     * he has none going.
+     */
+    @Nullable
+    static FlareLight.Going flare(int owner, float partialTick) {
+        for (Track track : CONSTRUCTS.values()) {
+            ConstructPayload flare = track.latest;
+            if (flare.shape() == ConstructPayload.FLARE && flare.owner() == owner) {
+                return new FlareLight.Going(owner, track.clock(partialTick), flare.center(), flare.size());
+            }
+        }
+        return null;
+    }
+
+    /** Every flare going right now, whoever's it is. */
+    static List<FlareLight.Going> flares(float partialTick) {
+        List<FlareLight.Going> flares = new ArrayList<>();
+        for (Track track : CONSTRUCTS.values()) {
+            ConstructPayload flare = track.latest;
+            if (flare.shape() == ConstructPayload.FLARE) {
+                flares.add(new FlareLight.Going(flare.owner(), track.clock(partialTick), flare.center(), flare.size()));
+            }
+        }
+        return flares;
+    }
+
+    /**
+     * Where this player's storm hangs its ring of light, or null when he has none going: over his head as he is drawn
+     * right now, or where the server says when he is out of sight.
+     */
+    @Nullable
+    static Vec3 storm(int owner, float partialTick) {
+        for (Track track : CONSTRUCTS.values()) {
+            ConstructPayload storm = track.latest;
+            if (storm.shape() == ConstructPayload.STORM && storm.owner() == owner) {
+                Minecraft minecraft = Minecraft.getInstance();
+                Entity entity = minecraft.level == null ? null : minecraft.level.getEntity(owner);
+                return entity == null ? storm.center()
+                        : entity.getEyePosition(partialTick).add(0.0, storm.solid(), 0.0);
+            }
+        }
+        return null;
+    }
+
+    /** How many ticks ago this player's storm was called (by the client's own clock), or -1 when he has none. */
+    static float stormAge(int owner, float partialTick) {
+        for (Track track : CONSTRUCTS.values()) {
+            if (track.latest.shape() == ConstructPayload.STORM && track.latest.owner() == owner) {
+                return (float) track.clock(partialTick);
+            }
+        }
+        return -1.0F;
+    }
+
+    /** How many ticks ago this player's beam broke loose (by the client's own clock), or -1 when it is not pouring. */
+    static float beamAge(int owner, float partialTick) {
+        for (Track track : CONSTRUCTS.values()) {
+            if (track.latest.shape() == ConstructPayload.BEAM && track.latest.owner() == owner
+                    && track.latest.solid() >= 1.0F) {
+                return (float) track.clock(partialTick);
+            }
+        }
+        return -1.0F;
+    }
+
+    /** Which construct this player's landing slam throws up, or -1 when he has none (yet). */
+    static int slamVariant(int owner) {
+        for (Track track : CONSTRUCTS.values()) {
+            if (track.latest.shape() == ConstructPayload.SLAM && track.latest.owner() == owner) {
+                return track.latest.variant();
+            }
+        }
+        return -1;
+    }
+
     /** The way this player faced when his landing slam began, or null when he has none (yet). */
     @Nullable
     static Vec3 slamFacing(int owner) {
@@ -221,7 +335,7 @@ public final class ClientConstructs {
         float most = 0.0F;
         for (Track track : CONSTRUCTS.values()) {
             ConstructPayload slam = track.latest;
-            if (slam.shape() != ConstructPayload.SLAM) {
+            if (slam.shape() != ConstructPayload.SLAM && slam.shape() != ConstructPayload.DROP) {
                 continue;
             }
             double since = track.clock(partialTick) / SlamPainter.pace(slam) - LandingSlam.IMPACT_TICK;
@@ -230,7 +344,9 @@ public final class ClientConstructs {
                 continue;
             }
             double fade = 1.0 - since / SHAKE_TICKS;
-            most = Math.max(most, (float) (fade * fade * Math.min(1.0, near * 1.5)));
+            // A storm drops one after another: each shakes a little less than a slam of your own.
+            double hard = slam.shape() == ConstructPayload.DROP ? 0.6 : 1.0;
+            most = Math.max(most, (float) (hard * fade * fade * Math.min(1.0, near * 1.5)));
         }
         return most;
     }
@@ -291,12 +407,12 @@ public final class ClientConstructs {
     // After water and glass: light never hides what is behind it, so it has to come after them.
     @SubscribeEvent
     public static void onRenderLevel(RenderLevelStageEvent event) {
-        if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_TRANSLUCENT_BLOCKS || CONSTRUCTS.isEmpty()) {
+        if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_TRANSLUCENT_BLOCKS) {
             return;
         }
         Minecraft minecraft = Minecraft.getInstance();
         ClientLevel level = minecraft.level;
-        if (level == null) {
+        if (level == null || CONSTRUCTS.isEmpty() && !BeamCharge.any(level)) {
             return;
         }
         // The same blend between ticks that entities are drawn with.
@@ -328,7 +444,8 @@ public final class ClientConstructs {
                 way = track.lastWay;
             }
             Vec3 ring = owner == null ? null : ringHand(minecraft, camera, owner, partialTick, event);
-            boolean own = owner == minecraft.player && !camera.isDetached();
+            // Seen from your own eyes: not from behind, and not while the camera looks out of something else.
+            boolean own = owner == minecraft.player && camera.getEntity() == owner && !camera.isDetached();
             // What hangs on its owner is worked out here from how he stands right now, so it moves with him
             // without dragging a tick behind, however fast he turns or flies.
             if (owner != null) {
@@ -337,7 +454,14 @@ public final class ClientConstructs {
                         way = owner.getViewVector(partialTick);
                         center = pane(owner, partialTick);
                     }
-                    case ConstructPayload.RAM, ConstructPayload.DOME -> center = owner.getPosition(partialTick)
+                    case ConstructPayload.RAM -> {
+                        way = ramWay(owner, partialTick);
+                        // Seen from your own eyes it hangs in front of them, its open end just before the camera, so
+                        // none of its sides ever sweeps through your view; seen from outside it is round his body.
+                        center = own ? owner.getEyePosition(partialTick).add(way.scale(RAM_OWN_AHEAD))
+                                : owner.getPosition(partialTick).add(0.0, owner.getBbHeight() * 0.5, 0.0);
+                    }
+                    case ConstructPayload.DOME -> center = owner.getPosition(partialTick)
                             .add(0.0, owner.getBbHeight() * 0.5, 0.0);
                     case ConstructPayload.BEAM -> way = owner.getViewVector(partialTick);
                     case ConstructPayload.FIST -> {
@@ -354,15 +478,32 @@ public final class ClientConstructs {
                 case ConstructPayload.BOLT -> painter.bolt(center, way, size, solid, ring);
                 case ConstructPayload.SHIELD -> painter.shield(center, way, size, solid, charge, ring, own);
                 case ConstructPayload.DOME -> painter.dome(center, size, solid, charge, own);
-                case ConstructPayload.RAM -> painter.ram(center, ramWay(owner, way), solid, charge, own);
+                case ConstructPayload.RAM -> painter.ram(center, way, solid, charge, own);
                 case ConstructPayload.SLAM -> SlamPainter.draw(painter, track.latest, track.clock(partialTick), ring,
                         owner == null ? null : owner.getPosition(partialTick));
+                case ConstructPayload.SCAN -> RingSight.wave(painter, now.center(), now.size(),
+                        track.clock(partialTick));
+                case ConstructPayload.FLARE -> FlareLight.draw(painter, owner == null ? now.center()
+                        : own ? FlareLight.ownRing(camera) : ring != null ? ring : FlareLight.ring(owner, partialTick),
+                        owner == null ? way : owner.getViewVector(partialTick), track.clock(partialTick), own);
                 case ConstructPayload.BEAM -> {
                     if (ring != null && owner != null) {
-                        painter.beamOfLight(ring, beamEnd(level, owner, way, now, partialTick), solid);
+                        painter.beamOfLight(ring, beamEnd(level, owner, way, now, partialTick), solid,
+                                track.clock(partialTick), 1.0);
                     }
                 }
+                case ConstructPayload.STORM -> StormLight.draw(painter, now, track.clock(partialTick), ring,
+                        owner == null ? center : owner.getEyePosition(partialTick).add(0.0, solid, 0.0));
+                case ConstructPayload.DROP -> SlamPainter.drop(painter, now, center, track.clock(partialTick),
+                        storm(now.owner(), partialTick), owner == null ? null : owner.getPosition(partialTick));
                 default -> painter.fist(center, way, size, solid, charge, now.held() && !onItsWay, ring);
+            }
+        }
+        // The light every ring gathers for the beam.
+        for (AbstractClientPlayer player : level.players()) {
+            if (BeamCharge.charge(player, partialTick) >= 0.0F) {
+                BeamCharge.draw(painter, player, ringHand(minecraft, camera, player, partialTick, event), camera,
+                        partialTick);
             }
         }
         painter.finish(minecraft.renderBuffers().bufferSource());
@@ -415,14 +556,21 @@ public final class ClientConstructs {
                 owner.getViewYRot(partialTick));
     }
 
-    /** The way the ram cone points: the way its owner flies, or the way he looks while he hardly moves. */
-    private static Vec3 ramWay(@Nullable Entity owner, Vec3 fallback) {
-        ClientFlight.Motion motion = owner == null ? null : ClientFlight.motion(owner);
-        if (motion == null) {
-            return fallback;
+    /**
+     * The way the ram cone points: the way its owner looks while he hovers, the way he flies once he is going, and
+     * in between it swings over smoothly. Both are taken as they are this very frame (the speed glides from one tick
+     * to the next), so the cone never jumps from one way to the other or steps along with the ticks.
+     */
+    private static Vec3 ramWay(Entity owner, float partialTick) {
+        Vec3 look = owner.getViewVector(partialTick);
+        Vec3 moving = ClientFlight.velocity(owner, partialTick);
+        double speed = moving.length();
+        double along = ClientFlight.smooth((speed - RAM_LOOK) / (RAM_ALONG - RAM_LOOK));
+        if (along <= 0.0) {
+            return look;
         }
-        Vec3 moving = owner == Minecraft.getInstance().player ? ClientFlight.ownVelocity() : motion.velocity;
-        return moving.lengthSqr() > 0.04 ? moving.normalize() : fallback;
+        Vec3 way = look.scale(1.0 - along).add(moving.scale(along / speed));
+        return way.lengthSqr() < 1.0E-6 ? look : way.normalize();
     }
 
     /**

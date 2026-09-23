@@ -19,7 +19,7 @@ final class SlamDrops {
 
     // ---- The war hammer ----
 
-    private static final double HAMMER_SCALE = 1.5;
+    private static final double HAMMER_SCALE = 1.8;
     // How far the head reaches below the middle of the shape, and the height of the head's own middle.
     private static final double HAMMER_FOOT = 0.73;
     private static final double HEAD_Y = -0.34;
@@ -48,9 +48,12 @@ final class SlamDrops {
         return Mesh.torus(10, 4, radius, 0.022, 1.15).moved(0.0, y, 0.0);
     }
 
-    /** A war hammer dropping head first, that lands with sparks flying off its head. */
+    /**
+     * A war hammer: it takes shape lying across the air before him, so he sees all of it, swings round head down as it
+     * drops, and lands with sparks flying off its head.
+     */
     static Vec3 hammer(ConstructPainter painter, Moment m) {
-        Frame frame = SlamPainter.dropped(m, HAMMER_SCALE, HAMMER_FOOT, m.right(), 0.0);
+        Frame frame = SlamPainter.dropped(m, HAMMER_SCALE, HAMMER_FOOT, m.forward(), 1.35);
         SlamPainter.marker(painter, m, HAMMER_SCALE);
         SlamPainter.piece(painter, HAMMER, frame, m);
         SlamPainter.sparks(painter, m.ground().add(0.0, 0.05, 0.0), m.since(), 12, 0.3, 45);
@@ -59,7 +62,7 @@ final class SlamDrops {
 
     // ---- The boot ----
 
-    private static final double BOOT_SCALE = 2.2;
+    private static final double BOOT_SCALE = 1.35;
     // How far its toe is up as it comes down, heel first.
     private static final double BOOT_TOE = Math.toRadians(22.0);
 
@@ -123,6 +126,20 @@ final class SlamDrops {
     /** The lantern's handle: an arch over its top, from one side to the other. */
     private static final Shape LANTERN_HANDLE = Shape.of(Mesh.tube(false, 6, 0.05, 1.1, arch(0.40, HANDLE_Y, 12)));
 
+    /**
+     * His lantern as a construct of its own, its foot at the middle of {@code frame}: whole, or {@code apart} of the
+     * way broken into solid pieces. The Lantern Flare shapes it over his fist (see {@link FlareLight}).
+     */
+    static void lantern(ConstructPainter painter, Frame frame, double apart, double bright) {
+        if (apart > 0.0) {
+            painter.shattered(LANTERN, frame, apart, bright);
+            painter.shattered(LANTERN_HANDLE, frame, apart, bright);
+        } else {
+            painter.shape(LANTERN, frame, 1.0, bright);
+            painter.shape(LANTERN_HANDLE, frame, 1.0, bright);
+        }
+    }
+
     private static Mesh post(double x, double z) {
         return Mesh.cylinder(8, 0.07, 0.38, 1.70, 1.1).moved(x, 0.0, z);
     }
@@ -154,7 +171,7 @@ final class SlamDrops {
 
     // ---- The anchor ----
 
-    private static final double ANCHOR_SCALE = 1.5;
+    private static final double ANCHOR_SCALE = 1.7;
     // The arms: a curve round this middle, this far out, and how far round they reach either side of the bottom.
     private static final double ARM_RADIUS = 1.1;
     private static final double ARM_Y = 1.25;
@@ -246,7 +263,7 @@ final class SlamDrops {
 
     // ---- The spiked ball ----
 
-    private static final double MACE_SCALE = 1.2;
+    private static final double MACE_SCALE = 1.6;
     // How far the tips of its spikes reach from its middle.
     private static final double MACE_REACH = 1.35;
 
@@ -281,7 +298,7 @@ final class SlamDrops {
     /** A spiked ball, tumbling as it drops, that lands with its spikes in the ground and rocks there a moment. */
     static Vec3 mace(ConstructPainter painter, Moment m) {
         double s = m.scale(MACE_SCALE);
-        double height = SlamPainter.DROP * (1.0 - m.fall()) + MACE_REACH * s - (m.struck() ? 0.5 * s : 0.0);
+        double height = SlamPainter.drop(m) + MACE_REACH * s - (m.struck() ? 0.5 * s : 0.0);
         Vec3 center = m.ground().add(0.0, height, 0.0);
         Vec3 axis = m.right().add(m.forward()).normalize();
         double turn = 5.0 * (1.0 - m.go());
@@ -298,7 +315,7 @@ final class SlamDrops {
 
     // ---- The barbell ----
 
-    private static final double BARBELL_SCALE = 1.4;
+    private static final double BARBELL_SCALE = 1.75;
     // How far its plates reach below its middle.
     private static final double BARBELL_FOOT = 0.85;
 
@@ -399,7 +416,7 @@ final class SlamDrops {
 
     // ---- The meteor ----
 
-    private static final double METEOR_SCALE = 1.3;
+    private static final double METEOR_SCALE = 1.9;
     // How many sides and rings its rock has, so its cracks can find their way over its corners.
     private static final int ROCK_SIDES = 14;
     private static final int ROCK_RINGS = 9;
@@ -417,10 +434,12 @@ final class SlamDrops {
     static Vec3 meteor(ConstructPainter painter, Moment m) {
         double s = m.scale(METEOR_SCALE);
         Vec3 end = m.ground().add(0.0, 0.55 * s - (m.struck() ? 0.45 * s : 0.0), 0.0);
-        Vec3 start = m.ground().add(m.forward().scale(14.0)).add(m.right().scale(4.0)).add(0.0, 13.0, 0.0);
-        Vec3 at = start.lerp(end, m.fall());
+        Vec3 start = m.ground().add(m.forward().scale(16.0)).add(m.right().scale(5.0)).add(0.0, 14.0, 0.0);
+        // It is on its way from the moment it takes shape, far off in the sky, so he sees it coming.
+        double p = Mth.clamp((m.t() - 1.0) / (LandingSlam.IMPACT_TICK - 1.0), 0.0, 1.0);
+        Vec3 at = start.lerp(end, p * p);
         Vec3 axis = m.right().add(0.0, 0.4, 0.0).normalize();
-        double turn = 6.0 * (1.0 - m.go());
+        double turn = 6.0 * (1.0 - p);
         Frame frame = new Frame(at, ConstructPainter.spin(m.right(), axis, turn),
                 ConstructPainter.spin(SlamPainter.UP, axis, turn), ConstructPainter.spin(m.forward(), axis, turn), s);
         SlamPainter.marker(painter, m, 1.4);
@@ -431,10 +450,20 @@ final class SlamDrops {
             crack(painter, frame, 5, 7, glow);
         }
         if (!m.struck()) {
-            // It burns as it comes in: a blaze on it and a streak of fire behind it.
+            // It burns as it comes in: a blaze on it, a long tail of fire behind it, and embers flying off.
             Vec3 back = start.subtract(end).normalize();
-            painter.flare(at, 1.4 * s, 0.9);
-            painter.edge(at.add(back.scale(0.8 * s)), at.add(back.scale(6.0 * s)), 0.5 * s, 0.8);
+            painter.flare(at, 1.6 * s, 1.0);
+            for (int k = 0; k < 4; k++) {
+                double from = (0.7 + 1.6 * k) * s;
+                painter.edge(at.add(back.scale(from)), at.add(back.scale(from + 2.2 * s)), (0.9 - 0.18 * k) * s,
+                        0.9 - 0.18 * k);
+            }
+            for (int k = 0; k < 8; k++) {
+                double drift = Mth.frac(m.t() * 0.35 + ConstructPainter.noise(k, 73, 0));
+                Vec3 ember = at.add(back.scale((1.0 + 7.0 * drift) * s))
+                        .add(ConstructPainter.direction(k, 73).scale(0.9 * drift * s));
+                painter.flare(ember, 0.18 * s, 1.0 - drift);
+            }
         }
         return at;
     }
@@ -487,7 +516,7 @@ final class SlamDrops {
         double lean = SWORD_LEAN + quiver;
         Vec3 up = SlamPainter.UP.scale(Math.cos(lean)).subtract(m.forward().scale(Math.sin(lean)));
         double plunge = m.struck() ? 1.0 * s : 0.0;
-        Vec3 tip = m.ground().add(0.0, (SlamPainter.DROP + 3.0) * (1.0 - m.fall()), 0.0).subtract(up.scale(plunge));
+        Vec3 tip = m.ground().add(0.0, 0.6 * SlamPainter.drop(m), 0.0).subtract(up.scale(plunge));
         Frame frame = new Frame(tip, m.right(), up, up.cross(m.right()), s);
         SlamPainter.marker(painter, m, 0.8);
         SlamPainter.piece(painter, SWORD, frame, m);
@@ -508,35 +537,61 @@ final class SlamDrops {
             Mesh.cone(10, 0.17, 0.12, -1.20, -0.95, 1.2).alongZ(),
             fin(0.0), fin(90.0), fin(180.0), fin(270.0));
 
+    /** Where a rocket is on its way from its place in the row, over the top, down to where it lands. */
+    private static Vec3 rocketAt(Vec3 from, Vec3 over, Vec3 to, double p) {
+        double u = 1.0 - p;
+        return from.scale(u * u).add(over.scale(2.0 * u * p)).add(to.scale(p * p));
+    }
+
+    /** The way a rocket points on its way: along its path. */
+    private static Vec3 rocketWay(Vec3 from, Vec3 over, Vec3 to, double p) {
+        Vec3 way = over.subtract(from).scale(2.0 * (1.0 - p)).add(to.subtract(over).scale(2.0 * p));
+        return way.lengthSqr() < 1.0E-8 ? SlamPainter.UP : way.normalize();
+    }
+
     private static Mesh fin(double degrees) {
         return Mesh.prism(-0.03, 0.03, 1.05, 0.20, -0.95, 0.55, -1.05, 0.55, -0.75, 0.20, -0.40)
                 .turned(0.0, 1.0, 0.0, degrees).alongZ();
     }
 
     /**
-     * The rockets: five of them go up from behind him and arc over his head, their ends burning, and come down on and
-     * around where it strikes one after the other, each with a blast and chunks flying.
+     * The rockets: five of them take shape in a row in the air before him, noses up, their ends glowing; one after the
+     * other they blast off, climb, turn over and dive down onto and around where it strikes, each trailing fire and
+     * landing with a blast and chunks flying.
      */
     static Vec3 rockets(ConstructPainter painter, Moment m) {
         Vec3 anchor = m.ground().add(0.0, 1.0, 0.0);
+        double size = 1.9 * m.size() * m.grow();
         for (int i = 0; i < 5; i++) {
             Vec3 target = LandingSlam.rocketTarget(m.ground(), m.forward(), i);
             double lands = LandingSlam.IMPACT_TICK - 2.0 + i;
-            double p = Mth.clamp((m.t() - (lands - 6.0)) / 6.0, 0.0, 1.0);
-            Vec3 from = m.him().subtract(m.forward()).add(m.right().scale((i - 2) * 0.8)).add(0.0, 2.6 + 0.3 * i,
-                    0.0);
-            Vec3 to = target.add(0.0, 0.4, 0.0);
-            Vec3 over = from.lerp(to, 0.5).add(0.0, 6.0, 0.0);
-            if (p > 0.0 && p < 1.0) {
-                double u = 1.0 - p;
-                Vec3 at = from.scale(u * u).add(over.scale(2.0 * u * p)).add(to.scale(p * p));
-                Vec3 way = over.subtract(from).scale(2.0 * u).add(to.subtract(over).scale(2.0 * p)).normalize();
-                Vec3 top = SlamPainter.UP.subtract(way.scale(way.y));
+            double launch = lands - 4.5;
+            // Where it waits, in the row, bobbing a little on its flame.
+            Vec3 rack = m.ground().subtract(m.forward().scale(1.4 * m.size()))
+                    .add(m.right().scale((i - 2) * 1.15 * m.size()))
+                    .add(0.0, (SlamPainter.HANG + 0.3 + 0.08 * Math.sin(m.t() * 1.3 + i)) * m.size(), 0.0);
+            Vec3 to = target.add(0.0, 0.3, 0.0);
+            Vec3 over = rack.add(0.0, 4.5 * m.size(), 0.0).add(to.subtract(rack).scale(0.25));
+            double p = (m.t() - launch) / (lands - launch);
+            if (p < 1.0) {
+                Vec3 at = rocketAt(rack, over, to, Math.max(0.0, p));
+                Vec3 way = p <= 0.0 ? SlamPainter.UP : rocketWay(rack, over, to, p);
+                Vec3 top = m.forward().subtract(way.scale(way.dot(m.forward())));
                 top = top.lengthSqr() < 1.0E-6 ? m.right() : top.normalize();
-                double size = 1.1 * m.size() * Math.min(1.0, p * 6.0);
                 Frame frame = new Frame(at, way.cross(top), top, way, size);
                 painter.shape(ROCKET, frame, 1.0, 1.1);
-                painter.flare(frame.at(0.0, 0.0, -1.4), 0.35 * size, 1.0);
+                painter.flare(frame.at(0.0, 0.0, -1.35), (p > 0.0 ? 0.6 : 0.3) * size, 1.0);
+                // The trail of fire it leaves on its way.
+                Vec3 last = frame.at(0.0, 0.0, -1.2);
+                for (int k = 1; k <= 6 && p > 0.0; k++) {
+                    double q = p - 0.07 * k;
+                    if (q <= 0.0) {
+                        break;
+                    }
+                    Vec3 next = rocketAt(rack, over, to, q);
+                    painter.edge(last, next, (0.34 - 0.04 * k) * size, 1.0 - 0.14 * k);
+                    last = next;
+                }
                 anchor = at;
             }
             double since = m.t() - lands;

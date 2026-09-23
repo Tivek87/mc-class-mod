@@ -2,7 +2,6 @@ package nl.tivek.welcomescreen.client.character.lantern;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.PlayerModel;
 import net.minecraft.client.model.geom.builders.CubeDeformation;
 import net.minecraft.client.model.geom.builders.LayerDefinition;
@@ -16,7 +15,6 @@ import net.minecraft.client.renderer.entity.layers.RenderLayer;
 import net.minecraft.client.renderer.entity.player.PlayerRenderer;
 import net.minecraft.client.resources.PlayerSkin;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Player;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 import nl.tivek.welcomescreen.WelcomeScreenMod;
@@ -32,8 +30,6 @@ public final class GreenLanternSuitLayer extends RenderLayer<AbstractClientPlaye
     // Just outside the skin's own outer layer (0.25). The mask is on the hat part, which is 0.5 bigger
     // again: just outside the skin's own hat.
     private static final CubeDeformation FIT = new CubeDeformation(0.3F);
-    // How far above and below the line of light the uniform fades in or out, in blocks.
-    private static final float SOFT = 0.2F;
 
     private static PlayerModel<AbstractClientPlayer> wide;
     private static PlayerModel<AbstractClientPlayer> slim;
@@ -87,12 +83,23 @@ public final class GreenLanternSuitLayer extends RenderLayer<AbstractClientPlaye
         if (player.isInvisible()) {
             return;
         }
-        // Recharging: the lantern hangs from the left hand, which the arm pose has raised.
+        // Recharging: the lantern hangs from the left hand, which the arm pose has raised. While the ring dresses him
+        // he holds it there already, from the moment it flew into his hand.
         float recharge = ClientRing.recharge(player, partialTick);
         boolean slim = player.getSkin().model() == PlayerSkin.Model.SLIM;
         if (recharge >= 0.0F) {
-            RechargeAnimation.lanternInHand(poseStack, buffers, this.getParentModel().leftArm, slim, recharge,
+            RechargeAnimation.lanternInHand(poseStack, buffers, this.getParentModel().leftArm, slim, player, recharge,
                     FlightPose.bodyTurn(player));
+        } else if (ArrivalAnimation.holdsLantern(player, partialTick)) {
+            RechargeAnimation.lanternInHand(poseStack, buffers, this.getParentModel().leftArm, slim, 1.0F,
+                    ArrivalAnimation.lanternGlow(player, partialTick), 0.0F, FlightPose.bodyTurn(player));
+        }
+        int overlay = LivingEntityRenderer.getOverlayCoords(player, 0.0F);
+        // Kneeling in the landing of a slam his legs bend at the knee, which the game's straight legs cannot: they are
+        // hidden (see FlightPose) and drawn here in two halves, his own and the uniform's.
+        float[] knees = FlightPose.knees(player);
+        if (knees != null) {
+            KneelLegs.skin(poseStack, buffers, light, overlay, player, this.getParentModel(), knees);
         }
         ClientLooks.Uniform uniform = ClientLooks.uniform(player, partialTick);
         if (uniform == null) {
@@ -100,19 +107,33 @@ public final class GreenLanternSuitLayer extends RenderLayer<AbstractClientPlaye
         }
         PlayerModel<AbstractClientPlayer> suit = model(player);
         this.getParentModel().copyPropertiesTo(suit);
-        int overlay = LivingEntityRenderer.getOverlayCoords(player, 0.0F);
+        suit.rightLeg.visible = knees == null;
+        suit.leftLeg.visible = knees == null;
         if (uniform.complete()) {
-            suit.renderToBuffer(poseStack, buffers.getBuffer(RenderType.entityCutoutNoCull(TEXTURE)), light, overlay);
+            VertexConsumer cloth = buffers.getBuffer(RenderType.entityCutoutNoCull(TEXTURE));
+            suit.renderToBuffer(poseStack, cloth, light, overlay);
+            if (knees != null) {
+                KneelLegs.suit(poseStack, cloth, light, overlay, suit, knees, FIT);
+            }
         } else {
-            // Entities are drawn with the camera as their origin, so a vertex's height minus the camera's is
-            // its height in the world.
-            double cameraY = Minecraft.getInstance().gameRenderer.getMainCamera().getPosition().y;
-            suit.renderToBuffer(poseStack, new Wipe(buffers.getBuffer(RenderType.entityTranslucent(TEXTURE)),
-                    (float) (uniform.line() - cameraY)), light, overlay);
+            // Only as far as it has got, each part from where it starts, with a seam of light along its edge; the
+            // lantern on the chest flares as the uniform bursts out of it.
+            SuitSpread spread = new SuitSpread(buffers.getBuffer(RenderType.entityCutoutNoCull(TEXTURE)));
+            spread.render(suit.rightArm, uniform.armField(), poseStack, light, overlay);
+            spread.render(suit.body, uniform.torsoField(), poseStack, light, overlay);
+            spread.render(suit.leftArm, uniform.leftArmField(), poseStack, light, overlay);
+            spread.render(suit.rightLeg, uniform.legField(), poseStack, light, overlay);
+            spread.render(suit.leftLeg, uniform.legField(), poseStack, light, overlay);
+            spread.render(suit.hat, uniform.maskField(), poseStack, light, overlay);
+            spread.seam(buffers, 1.0F);
+            SuitGlow.core(poseStack, buffers, suit, uniform.core(), ageInTicks);
         }
+        suit.rightLeg.visible = true;
+        suit.leftLeg.visible = true;
         // While the ring works the uniform lights up, most of all down the right arm into the ring.
         float glow = uniform.complete() ? SuitGlow.level(player, partialTick) : 0.0F;
-        SuitGlow.body(poseStack, buffers, suit, slim, glow, ageInTicks);
+        SuitGlow.body(poseStack, buffers, suit, slim, glow, ageInTicks, knees != null,
+                BeamCharge.charge(player, partialTick));
         poseStack.pushPose();
         suit.rightArm.translateAndRotate(poseStack);
         Ring.draw(poseStack, buffers, light, slim, uniform.ring(), ClientRing.charge(player), glow);
@@ -120,62 +141,4 @@ public final class GreenLanternSuitLayer extends RenderLayer<AbstractClientPlaye
         poseStack.popPose();
     }
 
-    /**
-     * Shows only what is above the line of light: every corner below it is see-through, with a soft edge,
-     * so the uniform seems to be painted on (or wiped off) by the line as it moves.
-     */
-    private static final class Wipe implements VertexConsumer {
-        private final VertexConsumer inner;
-        private final float line;
-
-        Wipe(VertexConsumer inner, float line) {
-            this.inner = inner;
-            this.line = line;
-        }
-
-        @Override
-        public void addVertex(float x, float y, float z, int color, float u, float v, int packedOverlay,
-                int packedLight, float normalX, float normalY, float normalZ) {
-            float shown = Mth.clamp((y - this.line) / SOFT + 0.5F, 0.0F, 1.0F);
-            int alpha = Math.round((color >>> 24) * shown);
-            this.inner.addVertex(x, y, z, alpha << 24 | color & 0xFFFFFF, u, v, packedOverlay, packedLight,
-                    normalX, normalY, normalZ);
-        }
-
-        @Override
-        public VertexConsumer addVertex(float x, float y, float z) {
-            this.inner.addVertex(x, y, z);
-            return this;
-        }
-
-        @Override
-        public VertexConsumer setColor(int red, int green, int blue, int alpha) {
-            this.inner.setColor(red, green, blue, alpha);
-            return this;
-        }
-
-        @Override
-        public VertexConsumer setUv(float u, float v) {
-            this.inner.setUv(u, v);
-            return this;
-        }
-
-        @Override
-        public VertexConsumer setUv1(int u, int v) {
-            this.inner.setUv1(u, v);
-            return this;
-        }
-
-        @Override
-        public VertexConsumer setUv2(int u, int v) {
-            this.inner.setUv2(u, v);
-            return this;
-        }
-
-        @Override
-        public VertexConsumer setNormal(float normalX, float normalY, float normalZ) {
-            this.inner.setNormal(normalX, normalY, normalZ);
-            return this;
-        }
-    }
 }

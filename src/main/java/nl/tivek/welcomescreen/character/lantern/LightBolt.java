@@ -84,12 +84,18 @@ final class LightBolt implements SpellEffect {
         if ((data & Characters.HOLD) != 0) {
             return LightBeam.start(owner, level, ability);
         }
-        return (data & Characters.TAP) != 0 && shoot(owner, level, ability);
+        if ((data & Characters.TAP) == 0) {
+            return false;
+        }
+        // The button went down: a bolt, and the ring starts gathering its light in case he holds it for the beam.
+        LightBeam.charge(owner);
+        return shoot(owner, level, ability);
     }
 
     /** One bolt, as long as the ring hand is free, the ring can pay for it and the cooldown is over. */
     private static boolean shoot(ServerPlayer owner, ServerLevel level, CharacterAbility ability) {
-        if (Lantern.busy(owner) || GiantFist.holding(owner) || Flight.descending(owner)) {
+        if (Lantern.busy(owner) || GiantFist.holding(owner) || Flight.descending(owner) || LightFlare.up(owner)
+                || ConstructStorm.calling(owner)) {
             return false;
         }
         long now = level.getGameTime();

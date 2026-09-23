@@ -6,6 +6,7 @@
 - Landing-slam constructs must make a logical shockwave: something that drops, claps shut, bursts out of the ground or is swung down onto it. Nothing that sweeps in from the side.
 
 ## Construct drawing
+- Player model arms: a `ModelPart` turns about x first, then about z, so an arm raised overhead (xRot near -π) spreads outward with the opposite zRot sign from a hanging arm (the raised right arm goes out with a negative zRot).
 - A `ConstructPainter.Frame` built as (right = forward × UP, UP, forward) is left-handed; `Frame.turned()` corrects the angle for that, so reason in the model's own axes: about +x by +φ lifts the -z edge up, about +y by +θ moves +x towards -z. Round parts are a `Mesh` (lathe, torus, tube), angular parts boxes. Timelines count in ticks at the pace the constructs were made for (`SlamPainter.pace`), sizes at scale 1 times `Moment.size`.
 
 ## In-game tests
@@ -13,6 +14,6 @@
 - GUI scale is capped by the window size (320x240 px per step, a higher `guiScale` is refused): resize the window first, then set `guiScale`, then `resizeDisplay()`. Smallest GUI: window 854x480 + guiScale 2 (427x240).
 - No world on disk: make one with `createFreshLevel` (flat, SURVIVAL: a creative world leaves creative flying on after the welcome screen's spectator mode, which bypasses ring flight). Set `options.pauseOnLostFocus = false` or the pause menu covers the screenshots. Compare many screenshots on one contact sheet (PowerShell System.Drawing).
 - `options.hideGui` (F1) also hides your own first-person hand: keep the GUI on for first-person hand shots. Log the camera type with every shot; it can change during a run (F5), so check it before trusting a shot.
-- Before every run, tell the user in one line not to click or type in the game window. Check the screenshots for interference (open screen, moved camera, F3/F1) before trusting them.
+- Before every run, tell the user in one line not to click or type in the game window. Outside input still happens: the test class sets the camera type and the look direction again every tick, and closes (and logs) any screen that opens by itself. Check the screenshots for interference (open screen, moved camera, F3/F1, a character switched off) before trusting them.
 - Test tools: run commands on the server thread with `server.getCommands().performPrefixedCommand(server.createCommandSourceStack(), ...)` (needs no cheats); a single press is `KeyMapping.click(key)` (`setDown` gives no click); point the mouse in a screen by setting `MouseHandler` `xpos`/`ypos` through reflection (the real cursor stays put); a `ServerTickEvent.Post` handler in the test class traces the server side per tick; `ClientCommandHandler.runCommand("name")` runs a client-only command; loop over a copy of `screen.children()` when a test changes a screen's widgets. Only one temporary test class may start at the title screen: move the others out before a run.
 - The server's `onGround()` of a player runs a tick ahead: every tick it moves him one step by itself, puts him back where his client says, but keeps whether that step hit ground. For "is he really standing" check for a collision just below his bounding box.

@@ -17,6 +17,8 @@ import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 import nl.tivek.welcomescreen.WelcomeScreenMod;
 import nl.tivek.welcomescreen.character.docock.OctopusArms;
+import nl.tivek.welcomescreen.character.lantern.Arrival;
+import nl.tivek.welcomescreen.character.lantern.ConstructStorm;
 import nl.tivek.welcomescreen.character.lantern.PowerRing;
 import nl.tivek.welcomescreen.network.CharacterLookPayload;
 import nl.tivek.welcomescreen.network.CharacterStatePayload;
@@ -81,12 +83,14 @@ public final class Characters {
 
     private static void enter(ServerPlayer player, GameCharacter character) {
         ServerLevel level = player.serverLevel();
-        transformEffect(player, level, character);
         switch (character) {
-            case DOC_OCK -> OctopusArms.armsOut(player, level);
-            // The ring makes every construct the moment its key is pressed; everyone around only has to
-            // learn how brightly it glows.
-            case GREEN_LANTERN -> PowerRing.sync(player);
+            case DOC_OCK -> {
+                transformEffect(player, level, character);
+                OctopusArms.armsOut(player, level);
+            }
+            // The ring comes for him from afar, and dresses him in the uniform (see Arrival); it has light and sound of
+            // its own.
+            case GREEN_LANTERN -> Arrival.begin(player);
         }
         player.displayClientMessage(Component.translatable("character." + WelcomeScreenMod.MODID + ".became",
                 character.getDisplayName()).withColor(character.getColor()), false);
@@ -96,7 +100,9 @@ public final class Characters {
         switch (character) {
             case DOC_OCK -> OctopusArms.armsIn(player);
             case GREEN_LANTERN -> {
-                // His constructs fall apart by themselves once he is no longer Green Lantern.
+                // His constructs fall apart by themselves once he is no longer Green Lantern; so does a ring still on
+                // its way to him.
+                Arrival.end(player);
             }
         }
         if (!player.hasDisconnected()) {
@@ -184,7 +190,8 @@ public final class Characters {
         boolean docOck = character == GameCharacter.DOC_OCK;
         PacketDistributor.sendToPlayer(player, new CharacterStatePayload(
                 character == null ? -1 : character.ordinal(), cooldowns,
-                docOck ? OctopusArms.ultimateLeft(player) : 0,
+                docOck ? OctopusArms.ultimateLeft(player)
+                        : character == GameCharacter.GREEN_LANTERN ? ConstructStorm.left(player) : 0,
                 docOck ? OctopusArms.legCount(player) : 0,
                 docOck ? OctopusArms.markCount(player) : 0));
     }

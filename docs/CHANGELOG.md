@@ -2,6 +2,36 @@
 
 What changed in the project, newest first.
 
+## [Construct Storm, Ring Scan, Lantern Flare and the ring coming to you] - 2026-09-23
+
+### Added
+- **Construct Storm (Y), Green Lantern's ultimate:** you throw your ring fist up at the sky, a pillar of light
+  opens into a great ring of light over your head, and for 8 seconds it rains constructs down on the creatures
+  around you (a fist, a hammer, an anvil, a safe, a piano and more), each with a shockwave of its own. The panel's
+  title turns red and counts down. Y is now the ultimate key for every character.
+- **Ring Scan (N):** a wave of the ring's light rolls out through walls; every creature it passes is framed for
+  you, with its name and health, for 12 seconds, and the ring tells you what it found.
+- **Lantern Flare (Left Alt):** the ring shapes your lantern over your raised fist; it fills with light and
+  bursts like a small sun, blinding and slowing everything that sees it and burning the creatures of the dark.
+- **The ring comes to you:** becoming Green Lantern, the ring flies to you from far off, shapes your lantern for
+  you to catch and slides onto your finger; a shockwave makes the creatures of the dark flee, the uniform grows
+  over you out of the ring (the mask last), and you recharge the ring. Changing back plays it the other way round.
+- **The beam charges up:** while you hold left click on its way to the beam, the energy runs from your chest
+  down your arm into the ring and over your whole suit, light streams into your fist and a whine rises.
+
+### Changed
+- **The beam is far more dramatic:** it shoots out with a flash, roars with surges, spinning strands, rings and
+  crackling sparks, splashes where it strikes, shakes your view a little and pushes what it hits back.
+- **Flying starts three times slower and speeds up the longer you fly,** up to the same top speed as before
+  after 12 seconds; letting go of forward loses the speed again. Both are settings.
+- **The landing-slam constructs** take shape in the air before you, hang, wind up and strike, and your view
+  follows them; many of them are bigger, clearer and better animated, and they are lit like real objects.
+- **The landing on one knee** really kneels now, and the fist goes into the ground in front of you.
+- **The Construct Wheel is bigger and has 16 slots.**
+
+### Fixed
+- The ram cone no longer flickers or jumps while you fly.
+
 ## [A steerable Giant Fist, living constructs and clearer settings] - 2026-09-23
 
 ### Added

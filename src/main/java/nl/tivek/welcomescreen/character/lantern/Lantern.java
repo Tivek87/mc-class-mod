@@ -12,6 +12,7 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.welcomescreen.character.CharacterAbility;
+import nl.tivek.welcomescreen.character.GameCharacter;
 import nl.tivek.welcomescreen.spell.SpellCasting;
 import nl.tivek.welcomescreen.spell.SpellEffect;
 import nl.tivek.welcomescreen.spell.SpellFx;
@@ -73,6 +74,22 @@ final class Lantern implements SpellEffect {
         lantern.sound(level, SoundEvents.AMETHYST_BLOCK_RESONATE, 1.0F, 1.2F);
         PowerRing.sync(owner);
         return true;
+    }
+
+    /**
+     * The end of the ring's arrival (see {@link Arrival}): the lantern is in his left hand already, and he smacks the
+     * ring into it, whether the ring is full or not.
+     */
+    static void arrive(ServerPlayer owner, ServerLevel level) {
+        CharacterAbility ability = GameCharacter.GREEN_LANTERN.byName("recharge");
+        if (busy(owner) || ability == null) {
+            return;
+        }
+        Lantern lantern = new Lantern(owner, (float) ability.value("powerRestored"));
+        ACTIVE.put(owner.getUUID(), lantern);
+        SpellCasting.start(level, lantern);
+        lantern.sound(level, SoundEvents.BEACON_POWER_SELECT, 0.8F, 0.8F);
+        PowerRing.sync(owner);
     }
 
     /** True while this player is recharging: the ring makes nothing else then. */

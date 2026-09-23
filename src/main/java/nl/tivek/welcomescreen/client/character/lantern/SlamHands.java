@@ -131,7 +131,7 @@ final class SlamHands {
     /** The fist out of the sky: knuckles down, the back of the hand towards him, its arm up behind it. */
     static Vec3 skyFist(ConstructPainter painter, Moment m) {
         double s = m.scale(3.3 / FIST_WIDTH);
-        double height = SlamPainter.DROP * (1.0 - m.fall()) - (m.struck() ? 0.15 * s : 0.0);
+        double height = SlamPainter.drop(m) - (m.struck() ? 0.15 * s : 0.0);
         Vec3 towards = m.forward().scale(-1.0);
         Frame frame = new Frame(m.ground().add(0.0, FIST_REACH * s + height, 0.0), SlamPainter.DOWN.cross(towards),
                 towards, SlamPainter.DOWN, s);
@@ -154,26 +154,50 @@ final class SlamHands {
      * swing in, snap straight as they meet, and flex once after.
      */
     static Vec3 hands(ConstructPainter painter, Moment m) {
-        double s = m.scale(1.45);
+        double s = m.scale(1.6);
         Vec3 clap = m.ground().add(0.0, 1.9 * m.size(), 0.0);
-        double apart = 0.14 * s + 3.2 * (1.0 - m.fall()) + SlamPainter.vibrate(m, 0.06);
-        Vec3 back = m.forward().scale(-1.0);
+        // Wide apart as they take shape, drawn back a little further as they wind up, then together.
+        double apart = 0.14 * s + (3.2 + 0.7 * m.windup()) * (1.0 - m.fall()) + SlamPainter.vibrate(m, 0.06);
+        Vec3 across = SlamPainter.facingHim(m.right());
+        Vec3 back = SlamPainter.facingHim(m.forward().scale(-1.0));
         double bend = m.struck() ? 0.3 * Math.max(0.0, Math.sin(0.8 * m.since())) * Math.exp(-0.25 * m.since())
                 : 0.3 * (1.0 - m.fall());
         double[] curl = bent(bend, 0.5 * bend);
-        hand(painter, new Frame(clap.add(m.right().scale(apart)), m.right(), SlamPainter.UP, back, s), m, curl,
-                true);
-        hand(painter, new Frame(clap.subtract(m.right().scale(apart)), m.right().scale(-1.0), SlamPainter.UP, back,
-                s), m, curl, false);
+        hand(painter, new Frame(clap.add(across.scale(apart)), across, SlamPainter.UP, back, s), m, curl, true);
+        hand(painter, new Frame(clap.subtract(across.scale(apart)), across.scale(-1.0), SlamPainter.UP, back, s), m,
+                curl, false);
+        clapRings(painter, clap, across, m, s);
         return clap;
+    }
+
+    /**
+     * Where two things clap together, the air bursts out: a ring of light, and a second one after it, spreading out
+     * across the way they came together. Light, not a construct.
+     */
+    static void clapRings(ConstructPainter painter, Vec3 at, Vec3 across, Moment m, double s) {
+        if (!m.struck()) {
+            return;
+        }
+        Vec3 side = across.cross(SlamPainter.UP).normalize();
+        for (int k = 0; k < 2; k++) {
+            double age = m.since() - 1.5 * k;
+            if (age > 0.0 && age < 7.0) {
+                double fade = 1.0 - age / 7.0;
+                painter.circle(at, side, SlamPainter.UP, (0.6 + 0.5 * age) * s, 0.07, 0.35,
+                        ConstructPainter.alpha(0.9 * fade), ConstructPainter.alpha(0.45 * fade));
+            }
+        }
+        if (m.since() < 4.0) {
+            painter.flare(at, (0.8 + 0.6 * (1.0 - m.since() / 4.0)) * s, 1.0 - m.since() / 4.0);
+        }
     }
 
     /** Two fists that bump knuckles in front of him, each with its forearm behind it; his ring on the right one. */
     static Vec3 fists(ConstructPainter painter, Moment m) {
-        double s = m.scale(2.2 / FIST_WIDTH);
+        double s = m.scale(2.4 / FIST_WIDTH);
         Vec3 meet = m.ground().add(0.0, 1.7 * m.size(), 0.0);
-        double apart = FIST_REACH * s + 3.0 * (1.0 - m.fall()) + SlamPainter.vibrate(m, 0.05);
-        Vec3 right = m.right();
+        double apart = FIST_REACH * s + (3.0 + 0.7 * m.windup()) * (1.0 - m.fall()) + SlamPainter.vibrate(m, 0.05);
+        Vec3 right = SlamPainter.facingHim(m.right());
         Vec3 in = right.scale(-1.0);
         Frame rightFist = new Frame(meet.add(right.scale(apart)), in.cross(SlamPainter.UP), SlamPainter.UP, in, s);
         fist(painter, rightFist, m, true);
@@ -183,6 +207,7 @@ final class SlamHands {
                 SlamPainter.UP, right, s);
         fist(painter, leftFist, m, false);
         SlamPainter.piece(painter, BUMP_ARM, leftFist, m);
+        clapRings(painter, meet, right, m, s);
         return meet;
     }
 
@@ -196,7 +221,9 @@ final class SlamHands {
         Vec3 ground = m.ground();
         double s = 3.0 / FIST_WIDTH * m.size();
         double warn = Mth.clamp(m.t() / (LandingSlam.IMPACT_TICK - 1.0), 0.0, 1.0);
-        SlamPainter.cracks(painter, ground, 1.2 + 1.6 * warn, m.struck() ? 1.0 - m.since() / 12.0 : warn, 7);
+        SlamPainter.cracks(painter, ground, (1.2 + 1.6 * warn) * m.size(),
+                m.struck() ? 1.0 - m.since() / 12.0 : 0.35 + 0.65 * warn, 7);
+        SlamPainter.buildUp(painter, ground, 1.8 * m.size(), m, 7);
         double out = Mth.clamp((m.t() - (LandingSlam.IMPACT_TICK - 0.6)) / 3.5, 0.0, 1.0);
         double rise = 1.0 - Math.pow(1.0 - out, 2.2);
         double back = ConstructPainter.smooth((m.t() - LandingSlam.BURST_TICK) / 7.0);
@@ -220,7 +247,7 @@ final class SlamHands {
      */
     static Vec3 palm(ConstructPainter painter, Moment m) {
         double s = m.scale(2.2);
-        double height = SlamPainter.DROP * (1.0 - m.fall()) + 0.16 * s - (m.struck() ? 0.08 * s : 0.0);
+        double height = SlamPainter.drop(m) + 0.16 * s - (m.struck() ? 0.08 * s : 0.0);
         // The hand's own x (the back of the hand) is up, its y (the fingers) ahead, its z (the thumb) to his left.
         Frame frame = new Frame(m.ground().add(0.0, height, 0.0), SlamPainter.UP, m.forward(),
                 m.right().scale(-1.0), s);

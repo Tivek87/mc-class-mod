@@ -97,6 +97,10 @@ final class ConstructPainter {
     private static final double BEAM_FULL = 1.6;
     // A bolt keeps its beam back to the ring only while it is still this near the hand, in blocks.
     private static final double BOLT_BEAM = 6.0;
+    // How long the beam of the attack button takes to shoot out of the ring, and how long the flash lasts as it breaks
+    // loose, in ticks.
+    private static final double BEAM_SHOOT = 2.5;
+    private static final double BEAM_BURST = 6.0;
 
     /**
      * The fist, box by box, in blocks at scale 1: x to the right, y up, z the way it punches. A right
@@ -161,6 +165,12 @@ final class ConstructPainter {
             { 1.8, 0.0 } };
     // How strongly the outline of a see-through shape shows, next to that of a solid one.
     private static final double SEE_THROUGH_EDGE = 0.55;
+    // The light on the solid mass (see light): what every side gets, what the sky adds from above, and what the sun
+    // adds to the sides that face it, from high over one corner of the world.
+    private static final double SKY_FLOOR = 0.42;
+    private static final double SKY = 0.3;
+    private static final double SUN_LIGHT = 0.3;
+    private static final Vec3 SUN = new Vec3(0.45, 0.75, -0.5).normalize();
     /**
      * The shield, round its middle with its face towards +z and a radius of 1 at scale 1: a body that bulges a little
      * to the front, a round rim, a groove turned into its face, the lantern emblem raised in its middle, and a grip on
@@ -268,6 +278,8 @@ final class ConstructPainter {
     private boolean nearFade;
     // Above 0 while a see-through shape is drawn (see seeThrough): how strongly its sides show.
     private double faint;
+    // How far the solid shapes drawn right now flare up towards white: a construct the moment it strikes.
+    private double glare;
 
     ConstructPainter(PoseStack pose, Vec3 camera, float time) {
         this.matrix = pose.last().pose();
@@ -402,7 +414,8 @@ final class ConstructPainter {
             Vec3 middle = frame.at((box[0] + box[3]) * 0.5, (box[1] + box[4]) * 0.5, (box[2] + box[5]) * 0.5);
             Vec3 out = middle.subtract(frame.center());
             Vec3 scatter = direction(b, 7);
-            Vec3 way = out.lengthSqr() > 1.0E-6 ? out.normalize().add(scatter.scale(0.6)).normalize() : scatter;
+            Vec3 way = this.awayFromEye(middle,
+                    out.lengthSqr() > 1.0E-6 ? out.normalize().add(scatter.scale(0.6)).normalize() : scatter);
             double speed = (1.2 + 1.8 * noise(b, 7, 3)) * size;
             // Out and up at first, then down: thrown pieces.
             Vec3 moved = middle.add(way.scale(speed * gone)).add(0.0, (1.2 * gone - 2.6 * gone * gone) * size, 0.0);
@@ -416,6 +429,21 @@ final class ConstructPainter {
                     (box[2] + box[5]) * 0.5, 0.0);
         }
         this.nearFade = false;
+    }
+
+    /**
+     * The way a piece flies off as its construct breaks up, turned aside where it would come at the camera: the pieces
+     * of a construct never fly into your face and fill your view.
+     */
+    private Vec3 awayFromEye(Vec3 from, Vec3 way) {
+        Vec3 toEye = this.camera.subtract(from);
+        double length = toEye.length();
+        if (length < 1.0E-6) {
+            return way;
+        }
+        toEye = toEye.scale(1.0 / length);
+        double at = way.dot(toEye);
+        return at > 0.0 ? way.subtract(toEye.scale(1.6 * at)).normalize() : way;
     }
 
     /** A shape of boxes and round parts at {@code frame}, drawn the way {@link #model} draws boxes. */
@@ -470,7 +498,8 @@ final class ConstructPainter {
         Vec3 middle = frame.at(mesh.middle.x, mesh.middle.y, mesh.middle.z);
         Vec3 out = middle.subtract(frame.center());
         Vec3 scatter = direction(piece, 7);
-        Vec3 way = out.lengthSqr() > 1.0E-6 ? out.normalize().add(scatter.scale(0.6)).normalize() : scatter;
+        Vec3 way = this.awayFromEye(middle,
+                out.lengthSqr() > 1.0E-6 ? out.normalize().add(scatter.scale(0.6)).normalize() : scatter);
         double speed = (1.2 + 1.8 * noise(piece, 7, 3)) * size;
         Vec3 moved = middle.add(way.scale(speed * gone)).add(0.0, (1.2 * gone - 2.6 * gone * gone) * size, 0.0);
         Vec3 axis = direction(piece, 9);
@@ -513,9 +542,8 @@ final class ConstructPainter {
             double away = view.length();
             double face = away < 1.0E-6 ? 1.0 : Math.abs(look) / away;
             double ripple = 0.9 + 0.06 * Math.sin(this.time * 0.5 - mesh.middles[s].z * 4.0);
-            double light = (0.62 + 0.38 * (normal.y * 0.5 + 0.5)) * sheen(face) * ripple * bright * mesh.bright[s];
-            this.quad(sides, world[side[0]], world[side[1]], world[side[2]], world[side[3]],
-                    shade(MASS_GREEN, Math.min(1.0, light)), body);
+            double light = light(normal) * sheen(face) * ripple * bright * mesh.bright[s];
+            this.quad(sides, world[side[0]], world[side[1]], world[side[2]], world[side[3]], this.mass(light), body);
         }
         double quiet = faint ? SEE_THROUGH_EDGE : 1.0;
         int edge = alpha(EDGE * solid * quiet);
@@ -797,53 +825,135 @@ final class ConstructPainter {
     }
 
     /**
-     * The beam that pours out of the ring while the attack button is held: a white-hot core in a thick glow of
-     * green, flickering, with light rushing along it away from the ring and two strands winding around it, a
-     * spark at the ring and a splash of light where it strikes.
+     * The beam that pours out of the ring while the attack button is held. It shoots out of the ring in a blink, with
+     * a flash and a ring of light bursting out of the fist, and then roars on: a white-hot core in a cord of bright
+     * light and a thick, breathing glow of green, surges of light racing along it away from the ring, three strands
+     * winding round it, rings of light running down it and sparks of it crackling off its sides. At the ring a lens of
+     * light turns; where it strikes it splashes: a hot flare, ripples running out and sparks spraying back.
+     *
+     * @param solid how far it is there, 0 to 1 (it dies down when he lets go)
+     * @param age   ticks since it broke loose
+     * @param thick how thick it is: 1 for the beam of the attack button, more for the storm's pillar of light
      */
-    void beamOfLight(Vec3 from, Vec3 to, double solid) {
+    void beamOfLight(Vec3 from, Vec3 target, double solid, double age, double thick) {
         double strength = Mth.clamp(solid, 0.0, 1.0);
-        double length = from.distanceTo(to);
-        if (strength <= 0.0 || length < 0.05) {
+        double full = from.distanceTo(target);
+        if (strength <= 0.0 || full < 0.05) {
             return;
         }
-        Vec3 axis = to.subtract(from).scale(1.0 / length);
+        Vec3 axis = target.subtract(from).scale(1.0 / full);
         Vec3[] across = Basis.of(axis);
+        // It shoots out of the ring in a blink.
+        double out = Mth.clamp(age / BEAM_SHOOT, 0.0, 1.0);
+        Vec3 to = from.lerp(target, 1.0 - (1.0 - out) * (1.0 - out));
+        double length = from.distanceTo(to);
         double flicker = 0.9 + 0.1 * Math.sin(this.time * 2.7) * Math.sin(this.time * 1.3 + 1.0);
-        int steps = Mth.clamp((int) (length / 0.6), 10, 72);
+        int steps = Mth.clamp((int) (length / 0.5), 10, 90);
         Vec3 last = from;
-        Vec3 lastA = from;
-        Vec3 lastB = from;
-        for (int i = 1; i <= steps; i++) {
-            double t = Math.pow((double) i / steps, 1.4);
+        Vec3[] strands = { from, from, from };
+        for (int i = 1; i <= steps && length > 0.02; i++) {
+            double t = Math.pow((double) i / steps, 1.3);
             Vec3 next = from.lerp(to, t);
             double away = this.camera.distanceTo(last.add(next).scale(0.5));
-            double near = Mth.clamp(away / 1.2, 0.22, 1.0);
-            double run = Mth.frac(t * length * 0.25 - this.time * 0.3);
-            double pulse = Math.max(0.0, 1.0 - Math.abs(run - 0.5) * 5.0);
-            double turn = length * t * 2.2 + this.time * 0.6;
-            double radius = 0.1 * near;
-            Vec3 a = next.add(across[0].scale(Math.cos(turn) * radius)).add(across[1].scale(Math.sin(turn) * radius));
-            Vec3 b = next.subtract(across[0].scale(Math.cos(turn) * radius))
-                    .subtract(across[1].scale(Math.sin(turn) * radius));
+            // Thin where it is right in front of your eye, so your own beam never fills your screen.
+            double near = Mth.clamp(away / 1.2, 0.22, 1.0) * thick;
+            double along = t * length;
+            // Surges of light racing along it, and its glow breathing in and out along its length.
+            double run = Mth.frac(along * 0.2 - this.time * 0.45);
+            double surge = Math.max(0.0, 1.0 - Math.abs(run - 0.5) * 5.0);
+            double breath = 1.0 + 0.25 * Math.sin(along * 1.3 - this.time * 0.9);
             if (away >= BEAM_NEAR) {
-                this.line(this.light, last, next, 0.07 * near * flicker, HOT, alpha(strength));
-                this.line(this.light, last, next, 0.17 * near * flicker, BRIGHT, alpha((0.6 + 0.3 * pulse) * strength));
-                this.line(this.glow, last, next, 0.6 * near * flicker, GREEN, alpha((0.4 + 0.25 * pulse) * strength));
-                if (i > 1) {
-                    this.line(this.light, lastA, a, 0.035 * near, BRIGHT, alpha(0.55 * strength));
-                    this.line(this.light, lastB, b, 0.035 * near, BRIGHT, alpha(0.55 * strength));
+                this.line(this.light, last, next, 0.09 * near * flicker * (1.0 + 0.5 * surge), HOT, alpha(strength));
+                this.line(this.light, last, next, 0.24 * near * flicker, BRIGHT, alpha((0.6 + 0.3 * surge) * strength));
+                this.line(this.glow, last, next, 0.8 * near * breath, GREEN, alpha((0.45 + 0.25 * surge) * strength));
+                if (away > 2.5) {
+                    this.line(this.glow, last, next, 1.7 * near * breath, GREEN, alpha(0.14 * strength));
                 }
             }
+            // Three strands winding round it.
+            for (int k = 0; k < 3; k++) {
+                double turn = along * 2.4 + this.time * 0.8 + k * Math.PI * 2.0 / 3.0;
+                double radius = 0.15 * near * (1.0 + 0.2 * surge);
+                Vec3 strand = next.add(across[0].scale(Math.cos(turn) * radius))
+                        .add(across[1].scale(Math.sin(turn) * radius));
+                if (i > 1 && away >= BEAM_NEAR) {
+                    this.line(this.light, strands[k], strand, 0.035 * near, BRIGHT, alpha(0.6 * strength));
+                }
+                strands[k] = strand;
+            }
             last = next;
-            lastA = a;
-            lastB = b;
         }
-        this.flare(from, 0.05 * Mth.clamp(this.camera.distanceTo(from) / 0.5, 0.6, 3.0), strength);
-        double splash = 0.32 * (0.85 + 0.15 * Math.sin(this.time * 1.9));
+        // Rings of light running down it, away from the ring; none right in front of your eye.
+        double spacing = 2.4 * thick;
+        for (double d = this.time * 0.7 % spacing; d < length; d += spacing) {
+            Vec3 at = from.add(axis.scale(d));
+            double away = this.camera.distanceTo(at);
+            if (away < 1.4) {
+                continue;
+            }
+            double near = Mth.clamp(away / 1.2, 0.22, 1.0) * thick;
+            double swell = 0.5 + 0.5 * Math.sin(d * 0.9 - this.time * 0.3);
+            this.circle(at, across[0], across[1], (0.26 + 0.08 * swell) * near, 0.03 * near, 0.16 * near,
+                    alpha(0.75 * strength), alpha(0.35 * strength));
+        }
+        // Sparks of it crackling off its sides, a new few every other tick.
+        int flick = (int) (this.time / 2.0);
+        for (int k = 0; k < 5; k++) {
+            Vec3 base = from.add(axis.scale(noise(flick, k, 21) * length));
+            if (this.camera.distanceTo(base) < 1.4) {
+                continue;
+            }
+            double angle = noise(flick, k, 22) * Math.PI * 2.0;
+            Vec3 side = across[0].scale(Math.cos(angle)).add(across[1].scale(Math.sin(angle)));
+            Vec3 middle = base.add(side.scale(0.25 * thick)).add(axis.scale(0.15 * thick));
+            Vec3 tip = base.add(side.scale((0.45 + 0.3 * noise(flick, k, 23)) * thick))
+                    .subtract(axis.scale(0.1 * thick));
+            this.edge(base, middle, 0.03 * thick, 0.9 * strength);
+            this.edge(middle, tip, 0.025 * thick, 0.7 * strength);
+        }
+        // At the ring a lens of light turns.
+        double muzzle = Mth.clamp(this.camera.distanceTo(from) / 0.5, 0.6, 3.0);
+        this.flare(from, 0.06 * muzzle * thick, strength);
+        double lens = this.time * 0.25;
+        Vec3 lensA = across[0].scale(Math.cos(lens)).add(across[1].scale(Math.sin(lens)));
+        Vec3 lensB = axis.cross(lensA);
+        this.circle(from.add(axis.scale(0.04 * muzzle)), lensA, lensB, 0.05 * muzzle * thick, 0.008 * muzzle,
+                0.04 * muzzle, alpha(0.8 * strength), alpha(0.4 * strength));
+        // It broke loose just now: a flash and a ring of light bursting out of the fist, never so big that it fills
+        // your own screen.
+        if (age < BEAM_BURST) {
+            double u = Math.max(0.0, age) / BEAM_BURST;
+            double fade = (1.0 - u) * strength;
+            double burst = Mth.clamp(this.camera.distanceTo(from) / 1.5, 0.25, 1.2) * thick;
+            this.flare(from, (0.12 + 0.2 * (1.0 - u)) * muzzle * thick, fade);
+            double wide = (0.1 + 0.6 * (1.0 - (1.0 - u) * (1.0 - u) * (1.0 - u))) * burst;
+            this.circle(from.add(axis.scale(0.05 * muzzle)), across[0], across[1], wide, 0.02 * burst,
+                    0.12 * burst, alpha(fade), alpha(0.5 * fade));
+        }
+        if (out < 1.0) {
+            // The head of the beam on its way out.
+            this.flare(to, 0.25 * thick, strength);
+            return;
+        }
+        // Where it strikes: a hot flare, ripples running out and sparks spraying back.
+        double splash = 0.42 * thick * (0.85 + 0.15 * Math.sin(this.time * 1.9));
         this.flare(to, splash, strength);
-        this.circle(to.subtract(axis.scale(0.05)), across[0], across[1], splash * 1.2, 0.03, 0.18,
-                alpha(0.8 * strength), alpha(0.4 * strength));
+        Vec3 face = to.subtract(axis.scale(0.05));
+        for (int k = 0; k < 3; k++) {
+            double ripple = Mth.frac(this.time / 9.0 + k / 3.0);
+            this.circle(face, across[0], across[1], (0.15 + 1.0 * ripple) * thick, 0.03 * thick, 0.16 * thick,
+                    alpha(0.8 * (1.0 - ripple) * strength), alpha(0.4 * (1.0 - ripple) * strength));
+        }
+        for (int k = 0; k < 8; k++) {
+            double phase = this.time / 6.0 + noise(k, 31, 0);
+            int round = (int) Math.floor(phase);
+            double cycle = phase - round;
+            // Back towards the ring, spread out, and dropping as they go.
+            Vec3 way = direction(k, 31 + round);
+            way = way.subtract(axis.scale(1.4 + way.dot(axis))).normalize();
+            Vec3 head = face.add(way.scale((0.2 + 1.3 * cycle) * thick)).add(0.0, -0.3 * cycle * cycle * thick, 0.0);
+            this.edge(head.subtract(way.scale(0.3 * thick)), head, 0.03 * thick, 1.0 - cycle);
+        }
     }
 
     /**
@@ -968,7 +1078,7 @@ final class ConstructPainter {
             }
         }
         // Looking out through your own cone, its lines run past your eyes: they are kept quieter then.
-        double quiet = own ? 0.45 : 1.0;
+        double quiet = own ? 0.3 : 1.0;
         // Ridges that wind round it towards the tip, like the thread of a drill; the cone turns as it flies.
         for (int s = 0; s < RAM_SIDES; s += 4) {
             for (int k = 0; k + 1 < RAM.length; k++) {
@@ -978,9 +1088,11 @@ final class ConstructPainter {
                 this.line(this.glow, from, to, 0.16, GREEN, alpha(HALO * burn * strength * quiet));
             }
         }
-        // A second bright ring a little way up it.
-        for (int s = 0; s < RAM_SIDES; s++) {
-            this.line(this.light, rings[1][s], rings[1][s + 1], 0.035, BRIGHT, alpha(0.7 * burn * strength * quiet));
+        // A second bright ring a little way up it; from your own eyes it would frame your whole view, so not there.
+        if (!own) {
+            for (int s = 0; s < RAM_SIDES; s++) {
+                this.line(this.light, rings[1][s], rings[1][s + 1], 0.035, BRIGHT, alpha(0.7 * burn * strength));
+            }
         }
         for (int s = 0; s < RAM_SIDES; s++) {
             this.line(this.light, rings[0][s], rings[0][s + 1], 0.05, BRIGHT, alpha(EDGE * burn * strength * quiet));
@@ -1126,9 +1238,8 @@ final class ConstructPainter {
             Vec3 normal = p1.subtract(p0).cross(p2.subtract(p0));
             double across = normal.length() * toEye.length();
             double face = across < 1.0E-12 ? 1.0 : Math.abs(normal.dot(toEye)) / across;
-            // Never brighter than the green itself: past that the mass washes out to white.
-            this.quad(this.mass, p0, p1, p2, corners[side[3]], shade(MASS_GREEN,
-                    Math.min(1.0, lit(p0, p1, p2, middle) * sheen(face) * ripple * bright)), body);
+            this.quad(this.mass, p0, p1, p2, corners[side[3]],
+                    this.mass(lit(p0, p1, p2, middle) * sheen(face) * ripple * bright), body);
         }
         int edge = alpha(EDGE * ripple * solid);
         int halo = alpha(HALO * (1.0 + 0.4 * charge) * solid);
@@ -1210,8 +1321,7 @@ final class ConstructPainter {
     }
 
     /**
-     * How brightly one side of a box is lit, as a part of its colour: the side facing up catches the most
-     * light and the one facing down the least, the way a block's sides do.
+     * How brightly one side of a box is lit, as a part of its colour (see {@link #light}).
      *
      * @param middle the middle of the box, to tell which way the side faces
      */
@@ -1224,7 +1334,31 @@ final class ConstructPainter {
         if (normal.dot(p0.subtract(middle)) < 0.0) {
             normal = normal.scale(-1.0);
         }
-        return 0.62 + 0.38 * (normal.y * 0.5 + 0.5);
+        return light(normal);
+    }
+
+    /**
+     * How brightly a side facing {@code normal} (one long, in the world) is lit, as a part of its colour: the side
+     * facing up catches the most light and the one facing down the least, the way a block's sides do, and the sides
+     * facing the sun, high over one corner of the world, more than those facing away from it. So every side of a
+     * shape comes out a shade of its own and its corners and folds read at a glance, as a solid thing does.
+     */
+    static double light(Vec3 normal) {
+        return SKY_FLOOR + SKY * (normal.y * 0.5 + 0.5) + SUN_LIGHT * Math.max(0.0, normal.dot(SUN));
+    }
+
+    /**
+     * The colour of the solid mass at this much light: the green of hard light, darker in the shade, never brighter
+     * than the green itself (past that it would wash out to white), except while it glares as it strikes.
+     */
+    private int mass(double light) {
+        int rgb = shade(MASS_GREEN, Math.min(1.0, light));
+        return this.glare > 0.0 ? Ring.mix(rgb, HOT, (float) Math.min(0.75, this.glare * Math.min(1.0, light))) : rgb;
+    }
+
+    /** How far the solid shapes drawn from now on flare up towards white, 0 to 1 (0 once they are done). */
+    void glare(double amount) {
+        this.glare = Mth.clamp(amount, 0.0, 1.0);
     }
 
     /** The same colour, darker or lighter. */

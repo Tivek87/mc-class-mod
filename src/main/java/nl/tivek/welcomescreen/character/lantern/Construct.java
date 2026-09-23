@@ -9,7 +9,7 @@ import nl.tivek.welcomescreen.WelcomeScreenMod;
 /**
  * The hard-light shapes Green Lantern can will into his hands, and the empty hands he starts with.
  *
- * <p>None of them exist yet. The wheel keeps twelve slots free for them and every slot says the same
+ * <p>None of them exist yet. The wheel keeps sixteen slots free for them and every slot says the same
  * thing: placeholder, coming soon. Filling a slot in later is a name in the language files plus the code
  * that makes it do something.
  *
@@ -30,11 +30,15 @@ public enum Construct {
     SLOT_9("slot_9"),
     SLOT_10("slot_10"),
     SLOT_11("slot_11"),
-    SLOT_12("slot_12");
+    SLOT_12("slot_12"),
+    SLOT_13("slot_13"),
+    SLOT_14("slot_14"),
+    SLOT_15("slot_15"),
+    SLOT_16("slot_16");
 
     private static final String KEY = "construct." + WelcomeScreenMod.MODID + ".";
 
-    /** The twelve slots around the wheel, clockwise from the top; the middle of the wheel is NONE. */
+    /** The sixteen slots around the wheel, clockwise from the top; the middle of the wheel is NONE. */
     public static final List<Construct> WHEEL = wheel();
 
     private final String id;
@@ -57,7 +61,7 @@ public enum Construct {
         return this.id;
     }
 
-    /** Which slot of the wheel this is, 1 up to 12; 0 for empty hands. */
+    /** Which slot of the wheel this is, 1 up to 16; 0 for empty hands. */
     public int number() {
         return this.ordinal();
     }

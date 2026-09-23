@@ -183,7 +183,7 @@ public final class ClientCharacter {
         switch (MouseHold.tick(ability, free && key.isDown(), !free)) {
             case TAP -> tap(player, ability);
             case HOLD -> send(index, true, data(player) | Characters.HOLD);
-            case RELEASE -> send(index, false, data(player));
+            case RELEASE, LET_GO -> send(index, false, data(player));
             case NOTHING -> {
                 // Still down and not held long enough yet, or up and nothing to tell.
             }
@@ -379,7 +379,8 @@ public final class ClientCharacter {
         graphics.fill(left - 3, top - 3, right + 3, top + height, PANEL);
 
         Component title = ultimate > 0
-                ? Component.translatable(prefix + "ultimate", now.getDisplayName(), (ultimate + 19) / 20)
+                ? Component.translatable(prefix + "ultimate." + now.getId(), now.getDisplayName(),
+                        (ultimate + 19) / 20)
                 : now.getDisplayName();
         graphics.drawString(font, title, left, top, ultimate > 0 ? RED : 0xFF000000 | now.getColor());
         int y = top + line;

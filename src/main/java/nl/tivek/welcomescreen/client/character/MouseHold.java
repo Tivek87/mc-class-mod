@@ -20,7 +20,12 @@ public final class MouseHold {
         /** The button has been down long enough: the hold version starts. */
         HOLD,
         /** A button that was held long enough came up: the hold version stops. */
-        RELEASE
+        RELEASE,
+        /**
+         * The button came up before the hold version, after its tap went off as it went down: whatever got ready for
+         * the hold version (the ring gathering its light for the beam) stops.
+         */
+        LET_GO
     }
 
     // Per button (left, right): how many ticks it has been down, -1 while it is up, and whether it got as far as
@@ -64,7 +69,10 @@ public final class MouseHold {
         if (held) {
             return Step.RELEASE;
         }
-        return !cancelled && ability.tapWhen() == CharacterAbility.Tap.RELEASE ? Step.TAP : Step.NOTHING;
+        if (ability.tapWhen() == CharacterAbility.Tap.PRESS) {
+            return ability.holdTicks() > 0 ? Step.LET_GO : Step.NOTHING;
+        }
+        return !cancelled ? Step.TAP : Step.NOTHING;
     }
 
     /**

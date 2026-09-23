@@ -84,6 +84,10 @@ public final class ClientFlight {
     private static final double SPEED_UP = 0.085;
     private static final double SLOW_DOWN = 0.055;
     private static final double BRAKE = 0.13;
+    // You pick up speed only while you fly at least this much of the top speed you have by now; letting go of forward
+    // loses all of it in this many seconds.
+    private static final double GAIN_FROM = 0.85;
+    private static final double LOSE_SECONDS = 3.0;
     // How fast you rise at the height of the take-off, and how fast an empty ring lets you sink.
     private static final double RISE = 0.46;
     private static final double SINK = 0.18;
@@ -99,6 +103,8 @@ public final class ClientFlight {
     // ---- Your own flight ----
     private static boolean steering;
     private static Vec3 velocity = Vec3.ZERO;
+    // Your speed one tick earlier, so what hangs on it can glide between two ticks instead of stepping.
+    private static Vec3 velocityO = Vec3.ZERO;
     // What the game made of the speed you gave it, right after you moved: a wall stops one part of it, and any
     // change after that and before the next tick is a knock from outside.
     @Nullable
@@ -109,6 +115,8 @@ public final class ClientFlight {
     private static boolean stoppedUp;
     private static boolean airborne;
     private static boolean landing;
+    // How much speed you have picked up by flying on, 0 (the speed you set off at) to 1 (the top speed).
+    private static double momentum;
     @Nullable
     private static WindSound wind;
     // The speed you had when the ground stopped you last tick, or null when it did not.
@@ -131,7 +139,7 @@ public final class ClientFlight {
      * Ticks you stay down after a slam, crouched on your fist: you cannot move meanwhile. Counted at the pace the
      * constructs were made for, like {@link #slam}; only Green Lantern smashes his fist into the ground.
      */
-    static final int SLAM_ROOT = 14;
+    static final int SLAM_ROOT = 17;
     // The tick (of your own player) you last slammed into the ground, or MIN_VALUE.
     private static int slamTick = Integer.MIN_VALUE;
 
@@ -143,8 +151,9 @@ public final class ClientFlight {
 
     /** How one flyer moves, smoothed out, for the poses and the light around them. */
     static final class Motion {
-        /** How fast and which way, in blocks per tick. */
+        /** How fast and which way, in blocks per tick; and the same one tick earlier. */
         Vec3 velocity = Vec3.ZERO;
+        Vec3 velocityO = Vec3.ZERO;
         /** Lean into a turn, in radians: positive leans to the right. */
         float bank;
         /** The way the body faced last tick, in degrees, to tell how fast it turns. */
@@ -189,10 +198,52 @@ public final class ClientFlight {
         return steering ? velocity : Vec3.ZERO;
     }
 
-    /** Your own top speed right now, in blocks per tick: halved while the dome brakes you. */
+    /** The same, but gliding from last tick's speed to this tick's, for what is drawn in between. */
+    static Vec3 ownVelocity(float partialTick) {
+        return steering ? velocityO.lerp(velocity, partialTick) : Vec3.ZERO;
+    }
+
+    /** How fast a flyer moves right now, gliding between two ticks; zero for someone who does not fly. */
+    static Vec3 velocity(Entity flyer, float partialTick) {
+        if (flyer == Minecraft.getInstance().player) {
+            return ownVelocity(partialTick);
+        }
+        Motion motion = MOTIONS.get(flyer.getId());
+        return motion == null ? Vec3.ZERO : motion.velocityO.lerp(motion.velocity, partialTick);
+    }
+
+    /**
+     * Your own top speed right now, in blocks per tick: the speed you set off at, rising to the top speed of the
+     * settings the longer you fly on (see {@link #gainSpeed}), and halved while the dome brakes you.
+     */
     private static double topSpeed(LocalPlayer player) {
-        double top = fullSpeed();
+        double full = fullSpeed();
+        double top = Mth.lerp(momentum, Math.min(full, startSpeed()), full);
         return ClientRing.has(player, RingPayload.DOME) ? top * 0.5 : top;
+    }
+
+    /**
+     * The longer you fly on, the faster you go: while you fly forward as fast as you can go by now, you pick up speed,
+     * until after the setting {@code speedUpSeconds} you reach the top speed, and never more. Letting go of forward
+     * loses it again, slowly; pushing against a wall keeps what you have.
+     */
+    private static void gainSpeed(LocalPlayer player, boolean forward) {
+        if (!forward) {
+            momentum = Math.max(0.0, momentum - 1.0 / (LOSE_SECONDS * 20.0));
+            return;
+        }
+        if (velocity.length() < topSpeed(player) * GAIN_FROM) {
+            return;
+        }
+        CharacterAbility flight = GameCharacter.GREEN_LANTERN.byName("flight");
+        double seconds = flight == null ? 12.0 : flight.value("speedUpSeconds");
+        momentum = seconds <= 0.0 ? 1.0 : Math.min(1.0, momentum + 1.0 / (seconds * 20.0));
+    }
+
+    /** The speed a flight sets off at, from the settings, in blocks per tick. */
+    private static double startSpeed() {
+        CharacterAbility flight = GameCharacter.GREEN_LANTERN.byName("flight");
+        return flight == null ? 11.7 / 20.0 : flight.value("startSpeed") / 20.0;
     }
 
     /** The top speed of a flight from the settings, in blocks per tick. */
@@ -233,6 +284,7 @@ public final class ClientFlight {
         if (!(event.getEntity() instanceof LocalPlayer player) || player != minecraft.player) {
             return;
         }
+        velocityO = velocity;
         // Dropping down to a slam and on the ground now: it is known the moment you touch it (the server throws up
         // the construct).
         if (player.onGround() && dropping(player) && slam(player, 0.0F) < 0.0F) {
@@ -274,6 +326,7 @@ public final class ClientFlight {
             afterMove = null;
             airborne = false;
             landing = false;
+            momentum = 0.0;
         }
         absorb(player);
         Vec3 impact = landedWith;
@@ -300,6 +353,7 @@ public final class ClientFlight {
             // Straight down at full speed, swinging round into it out of whatever way you flew.
             velocity = velocity.lerp(new Vec3(0.0, -fullSpeed(), 0.0), DIVE_TURN);
         } else {
+            gainSpeed(player, forward > 0.01F);
             velocity = steer(player, forward, strafe, up, down, 1.0);
         }
         if (!player.onGround()) {
@@ -428,6 +482,7 @@ public final class ClientFlight {
         steering = false;
         afterMove = null;
         landing = false;
+        momentum = 0.0;
     }
 
     // ---- Everyone who flies, as seen ----
@@ -471,6 +526,7 @@ public final class ClientFlight {
             boolean dropping, boolean own) {
         Vec3 moved = own ? velocity : new Vec3(player.getX() - player.xo, player.getY() - player.yo,
                 player.getZ() - player.zo);
+        motion.velocityO = motion.velocity;
         motion.velocity = motion.velocity.lerp(moved, own ? 0.6 : 0.35);
         float yaw = player.getYRot();
         float turn = Float.isNaN(motion.lastYaw) ? 0.0F : Mth.wrapDegrees(yaw - motion.lastYaw);
@@ -616,9 +672,9 @@ public final class ClientFlight {
 
     /**
      * A landing slam shakes the view: your own landing a little, and the shockwave of any slam nearby hard. In first
-     * person your own slam also dips your view for a moment, down to your fist in the ground, and brings it back up in
-     * time to see the construct strike. As you rise off the ground, your view tips up a little with the head of the
-     * body.
+     * person your own slam also dips your view for a moment, down to your fist in the ground; then it looks up at the
+     * construct taking shape in the air before you and follows it down as it strikes (see {@link SlamPainter#look}).
+     * As you rise off the ground, your view tips up a little with the head of the body.
      */
     @SubscribeEvent
     public static void onCameraAngles(ViewportEvent.ComputeCameraAngles event) {
@@ -645,8 +701,11 @@ public final class ClientFlight {
         }
         if (slammed >= 0.0F && slammed < LandingSlam.IMPACT_TICK
                 && ClientCharacter.active() == GameCharacter.GREEN_LANTERN) {
-            float dip = (float) (smooth(slammed / 1.5) * (1.0 - smooth((slammed - 3.5) / 5.0)));
-            event.setPitch(event.getPitch() + 22.0F * dip);
+            float dip = (float) (smooth(slammed / 1.5) * (1.0 - smooth((slammed - 2.5) / 3.0)));
+            float look = SlamPainter.look(ClientConstructs.slamVariant(player.getId()));
+            float up = (float) (smooth((slammed - 3.0) / 3.0) * (1.0 - smooth((slammed - LandingSlam.HANG_TICKS)
+                    / (LandingSlam.IMPACT_TICK - LandingSlam.HANG_TICKS))));
+            event.setPitch(event.getPitch() + 20.0F * dip - look * up);
         }
         float t = ClientRing.flight(player, partialTick);
         if (t < GATHER || t > ARISE + 6.0F) {
@@ -660,6 +719,7 @@ public final class ClientFlight {
     public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
         stop();
         velocity = Vec3.ZERO;
+        velocityO = Vec3.ZERO;
         MOTIONS.clear();
         wind = null;
         FlightPose.clear();

@@ -12,6 +12,7 @@ import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.entity.player.PlayerRenderer;
 import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.world.entity.LivingEntity;
 import net.neoforged.api.distmarker.Dist;
@@ -91,6 +92,24 @@ public final class RechargeAnimation {
     /** How far the lantern is raised: 0 = down out of sight, 1 = up in front of you. */
     static float lift(float t) {
         return smooth(t / RAISED) * (1.0F - smooth((t - BACK) / (GONE - BACK)));
+    }
+
+    /**
+     * True when this recharge ends the ring's arrival (see {@link ArrivalAnimation}): the lantern is in the left hand,
+     * raised, already, since it flew there; it does not come up out of nowhere first.
+     */
+    static boolean heldAlready(Entity player) {
+        return ClientRing.arrival(player, 0.0F) >= 0.0F;
+    }
+
+    /** {@link #lift}, for this player: raised from the start when the lantern is in the hand already. */
+    static float lift(Entity player, float t) {
+        return heldAlready(player) && t < BACK ? 1.0F : lift(t);
+    }
+
+    /** {@link #shown}, for this player: all there from the start when the lantern is in the hand already. */
+    static float shown(Entity player, float t) {
+        return heldAlready(player) && t < GONE - POP ? 1.0F : shown(t);
     }
 
     /**
@@ -190,7 +209,7 @@ public final class RechargeAnimation {
         if (arm == HumanoidArm.LEFT) {
             // Raised up and forward, so the hand is at the height of the head and the lantern hangs in front
             // of the chest; the smack shoves it a little further out.
-            float lift = lift(t);
+            float lift = lift(entity, t);
             model.leftArm.xRot = Mth.lerp(lift, model.leftArm.xRot, -1.85F + look - kick(t) * 0.2F);
             model.leftArm.yRot = Mth.lerp(lift, model.leftArm.yRot, 0.4F);
             model.leftArm.zRot = Mth.lerp(lift, model.leftArm.zRot, 0.0F);
@@ -211,9 +230,17 @@ public final class RechargeAnimation {
      *
      * @param bodyTurn how the flight pose turns the body (see {@link FlightPose#bodyTurn}), or null
      */
-    static void lanternInHand(PoseStack poseStack, MultiBufferSource buffers, ModelPart arm, boolean slim, float t,
-            @Nullable Quaternionf bodyTurn) {
-        float shown = shown(t);
+    static void lanternInHand(PoseStack poseStack, MultiBufferSource buffers, ModelPart arm, boolean slim,
+            Entity player, float t, @Nullable Quaternionf bodyTurn) {
+        lanternInHand(poseStack, buffers, arm, slim, shown(player, t), glow(t), burst(t), bodyTurn);
+    }
+
+    /**
+     * The lantern in a left hand, seen from outside, as far as it is there ({@code shown}), burning {@code glow} and
+     * blasting {@code burst} out of its front (see {@link PowerBattery#draw}).
+     */
+    static void lanternInHand(PoseStack poseStack, MultiBufferSource buffers, ModelPart arm, boolean slim,
+            float shown, float glow, float burst, @Nullable Quaternionf bodyTurn) {
         if (shown <= 0.0F) {
             return;
         }
@@ -230,7 +257,7 @@ public final class RechargeAnimation {
         float scale = WORN_SCALE * shown;
         poseStack.scale(scale, scale, scale);
         // A model's own front is -z, and so is the lantern's: its light blasts out away from the chest.
-        PowerBattery.draw(poseStack, buffers, glow(t), burst(t));
+        PowerBattery.draw(poseStack, buffers, glow, burst);
         poseStack.popPose();
     }
 
@@ -266,12 +293,12 @@ public final class RechargeAnimation {
         float gust = ClientRing.flight(player, event.getPartialTick()) < 0.0F ? 0.0F
                 : Mth.clamp((float) ClientFlight.ownVelocity().length() / FULL_WIND, 0.0F, 1.0F);
         float time = player.tickCount + event.getPartialTick();
-        Vector3f grip = new Vector3f(GRIP_DOWN).lerp(GRIP_UP, lift(t))
+        Vector3f grip = new Vector3f(GRIP_DOWN).lerp(GRIP_UP, lift(player, t))
                 .add(KNOCK.x * kick, KNOCK.y * kick, KNOCK.z * kick)
                 .add(gust * 0.012F * Mth.sin(time * 1.9F), gust * (0.01F * Mth.sin(time * 2.7F) - 0.04F),
                         gust * 0.05F);
         arm(pose, buffers, light, player, renderer, -1.0F, grip, LEFT_FROM);
-        float shown = shown(t);
+        float shown = shown(player, t);
         if (shown > 0.0F) {
             pose.pushPose();
             pose.translate(grip.x, grip.y, grip.z);

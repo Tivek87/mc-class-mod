@@ -70,10 +70,19 @@ final class PowerBattery {
      * @param burst how hard the light is blasting out of the front: 0 = not at all, 1 = right on the smack
      */
     static void draw(PoseStack poseStack, MultiBufferSource buffers, float glow, float burst) {
+        draw(poseStack, buffers, glow, burst, 0.0F);
+    }
+
+    /**
+     * The same, fresh out of the ring's light: at {@code hot} 1 all of it is still the ring's white-hot green, and it
+     * cools down to silver and its own light as {@code hot} goes to 0.
+     */
+    static void draw(PoseStack poseStack, MultiBufferSource buffers, float glow, float burst, float hot) {
         Matrix4f matrix = poseStack.last().pose();
         VertexConsumer solid = buffers.getBuffer(Ring.BAND);
+        float heat = Mth.clamp(hot, 0.0F, 1.0F);
         for (int i = 0; i < METAL.length; i++) {
-            box(solid, matrix, METAL[i], METAL_COLOR[i], true, 255);
+            box(solid, matrix, METAL[i], Ring.mix(METAL_COLOR[i], BRIGHT, heat), true, 255);
         }
         float burn = Mth.clamp(glow, 0.0F, 1.0F);
         float flash = Mth.clamp(glow - 1.0F, 0.0F, 1.0F);

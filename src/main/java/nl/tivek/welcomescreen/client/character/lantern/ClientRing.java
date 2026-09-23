@@ -3,14 +3,17 @@ package nl.tivek.welcomescreen.client.character.lantern;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import javax.annotation.Nullable;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import nl.tivek.welcomescreen.WelcomeScreenMod;
+import nl.tivek.welcomescreen.character.lantern.Arrival;
 import nl.tivek.welcomescreen.character.lantern.PowerRing;
 import nl.tivek.welcomescreen.network.RingPayload;
 
@@ -44,8 +47,14 @@ public final class ClientRing {
      * @param since   the client tick the recharge started, or {@link Integer#MIN_VALUE} when there is none
      * @param took    the client tick its owner took off, or {@link Integer#MIN_VALUE} while he is not flying
      * @param state   what the ring holds up or pours out, see {@link RingPayload#SHIELD}
+     * @param came    the client tick the ring set out to make him Green Lantern, or {@link Integer#MIN_VALUE} when
+     *                that is over (see {@link Arrival})
+     * @param from    where the ring showed up for that, or null
+     * @param charged the client tick the ring started gathering its light for the beam, or {@link Integer#MIN_VALUE}
+     *                while it gathers none
      */
-    private record State(float power, float pending, int since, int took, int state) {
+    private record State(float power, float pending, int since, int took, int state, int came, @Nullable Vec3 from,
+            int charged) {
         boolean recharging() {
             return this.since != Integer.MIN_VALUE && clientTicks - this.since < PowerRing.RECHARGE_TICKS + SLACK;
         }
@@ -66,8 +75,52 @@ public final class ClientRing {
             took = old != null && old.took() != Integer.MIN_VALUE && Math.abs(old.took() - told) <= RESYNC
                     ? old.took() : told;
         }
-        RINGS.put(payload.entity(),
-                new State(payload.power(), payload.pending(), since, took, payload.state()));
+        int came = Integer.MIN_VALUE;
+        if (payload.arrival() >= 0) {
+            int told = clientTicks - payload.arrival();
+            // The same for the ring's arrival.
+            came = old != null && old.came() != Integer.MIN_VALUE && Math.abs(old.came() - told) <= RESYNC
+                    ? old.came() : told;
+        }
+        int charged = Integer.MIN_VALUE;
+        if (payload.charge() >= 0) {
+            int told = clientTicks - payload.charge();
+            // The same for the light the ring gathers for the beam.
+            charged = old != null && old.charged() != Integer.MIN_VALUE && Math.abs(old.charged() - told) <= RESYNC
+                    ? old.charged() : told;
+        }
+        RINGS.put(payload.entity(), new State(payload.power(), payload.pending(), since, took, payload.state(), came,
+                payload.from(), charged));
+    }
+
+    /**
+     * How many ticks ago this player's ring started gathering its light for the beam (with the part of a tick), or -1
+     * while it gathers none. Your own is better known from your own button (see {@link BeamCharge}).
+     */
+    static float charging(Entity player, float partialTick) {
+        State state = RINGS.get(player.getId());
+        return state == null || state.charged() == Integer.MIN_VALUE ? -1.0F
+                : Math.max(0.0F, clientTicks - state.charged() + partialTick);
+    }
+
+    /**
+     * How many ticks ago the ring set out to make this player Green Lantern (with the part of a tick), or -1 when
+     * that is over or never was (see {@link Arrival}).
+     */
+    public static float arrival(Entity player, float partialTick) {
+        State state = RINGS.get(player.getId());
+        if (state == null || state.came() == Integer.MIN_VALUE) {
+            return -1.0F;
+        }
+        float ticks = clientTicks - state.came() + partialTick;
+        return ticks < Arrival.TICKS + SLACK ? Math.max(0.0F, ticks) : -1.0F;
+    }
+
+    /** Where the ring showed up to make this player Green Lantern, or null when it is not on its way. */
+    @Nullable
+    static Vec3 arrivalFrom(Entity player) {
+        State state = RINGS.get(player.getId());
+        return state == null || state.came() == Integer.MIN_VALUE ? null : state.from();
     }
 
     /** How many ticks ago this player took off (with the part of a tick), or -1 while he is not flying. */

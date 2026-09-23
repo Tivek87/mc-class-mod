@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
+import nl.tivek.welcomescreen.character.lantern.LandingSlam;
 import nl.tivek.welcomescreen.client.character.lantern.ConstructPainter.Frame;
 import nl.tivek.welcomescreen.client.character.lantern.ConstructPainter.Shape;
 import nl.tivek.welcomescreen.client.character.lantern.SlamPainter.Moment;
@@ -29,7 +30,7 @@ final class SlamCartoon {
 
     // ---- The safe ----
 
-    private static final double SAFE_SCALE = 1.8;
+    private static final double SAFE_SCALE = 1.45;
     // The line the door turns about: straight up through here.
     private static final double HINGE_X = -0.64;
     private static final double HINGE_Z = -0.76;
@@ -431,7 +432,7 @@ final class SlamCartoon {
 
     private static final double TNT_SCALE = 1.6;
     // The tick it lands, on the server too, and the points its fuse runs through, from the top of the block.
-    private static final double TNT_LANDS = 7.0;
+    private static final double TNT_LANDS = 9.0;
     private static final Vec3[] FUSE = { new Vec3(0.0, 1.50, 0.0), new Vec3(0.0, 1.62, 0.02),
             new Vec3(0.03, 1.72, 0.05), new Vec3(0.08, 1.80, 0.06), new Vec3(0.14, 1.85, 0.04),
             new Vec3(0.20, 1.87, 0.0) };
@@ -457,14 +458,15 @@ final class SlamCartoon {
      */
     static Vec3 tnt(ConstructPainter painter, Moment m) {
         double s = m.scale(TNT_SCALE);
-        double go = Mth.clamp((m.t() - 4.0) / (TNT_LANDS - 4.0), 0.0, 1.0);
-        double height = SlamPainter.DROP * (1.0 - go * go);
+        // It drops early, straight out of where it took shape, so its fuse has time to burn down on the ground.
+        double go = Mth.clamp((m.t() - LandingSlam.FORM_TICKS) / (TNT_LANDS - LandingSlam.FORM_TICKS), 0.0, 1.0);
+        double height = SlamPainter.HANG * m.size() * (1.0 - go * go);
         double sitting = m.t() - TNT_LANDS;
         if (sitting > 0.0) {
             height = 0.4 * s * Math.sin(Math.PI * Mth.clamp(sitting / 1.4, 0.0, 1.0));
         }
         boolean waiting = sitting > 0.0 && !m.struck();
-        double swell = waiting ? 1.0 + 0.1 * sitting / (10.0 - TNT_LANDS) : 1.0;
+        double swell = waiting ? 1.0 + 0.12 * sitting / (LandingSlam.IMPACT_TICK - TNT_LANDS) : 1.0;
         double blink = waiting ? 0.35 * Math.abs(Math.sin(sitting * 4.0)) : 0.0;
         Frame frame = new Frame(m.ground().add(0.0, height, 0.0), m.right(), SlamPainter.UP, m.forward(), s * swell);
         if (m.struck()) {
@@ -478,7 +480,8 @@ final class SlamCartoon {
         SlamPainter.marker(painter, m, TNT_SCALE);
         painter.shape(TNT, frame, 1.0, 1.0 + blink);
         // The fuse burns down from its end, piece by piece, a spark at the end.
-        double left = (1.0 - Mth.clamp((m.t() - 5.0) / 5.0, 0.0, 0.95)) * (FUSE.length - 1);
+        double left = (1.0 - Mth.clamp((m.t() - TNT_LANDS + 1.0) / (LandingSlam.IMPACT_TICK - TNT_LANDS + 1.0),
+                0.0, 0.95)) * (FUSE.length - 1);
         int whole = (int) left;
         for (int i = 0; i < whole; i++) {
             painter.mesh(rod(FUSE[i], FUSE[i + 1], 0.035), frame, 1.0, 1.1);
@@ -488,7 +491,7 @@ final class SlamCartoon {
             tip = FUSE[whole].lerp(FUSE[whole + 1], left - whole);
             painter.mesh(rod(FUSE[whole], tip, 0.035), frame, 1.0, 1.1);
         }
-        if (m.t() > 5.0) {
+        if (m.t() > TNT_LANDS - 1.0) {
             painter.flare(frame.at(tip.x, tip.y, tip.z), 0.22 + 0.08 * Math.sin(m.t() * 5.0), 1.0);
         }
         return frame.at(0.0, 0.75, 0.0);

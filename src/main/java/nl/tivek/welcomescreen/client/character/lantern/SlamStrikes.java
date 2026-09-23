@@ -39,12 +39,14 @@ final class SlamStrikes {
         double s = m.scale(CYMBAL_SCALE);
         Vec3 meet = m.ground().add(0.0, 1.9 * m.size(), 0.0);
         double since = m.since();
-        double apart = 0.1 * s + 3.2 * m.size() * (1.0 - m.fall())
+        Vec3 across = SlamPainter.facingHim(m.right());
+        Vec3 along = SlamPainter.facingHim(m.forward());
+        double apart = 0.1 * s + (2.3 + 0.5 * m.windup()) * m.size() * (1.0 - m.fall())
                 + (m.struck() ? 0.3 * s * ConstructPainter.smooth(since / 1.5) : 0.0);
         double wobble = m.struck() ? 0.3 * Math.sin(2.6 * since) * Math.exp(-0.3 * since) : 0.0;
         for (int k = -1; k <= 1; k += 2) {
-            Vec3 toward = m.right().scale(-k);
-            Frame frame = new Frame(meet.add(m.right().scale(k * apart)), m.forward(), toward, SlamPainter.UP, s)
+            Vec3 toward = across.scale(-k);
+            Frame frame = new Frame(meet.add(across.scale(k * apart)), along, toward, SlamPainter.UP, s)
                     .turned(0.0, 0.0, 0.0, 1.0, 0.0, 0.0, k * wobble);
             SlamPainter.piece(painter, CYMBAL, frame, m);
         }
@@ -53,7 +55,7 @@ final class SlamStrikes {
                 double age = since - 1.4 * k;
                 if (age > 0.0 && age < 8.0) {
                     double fade = 1.0 - age / 8.0;
-                    painter.circle(meet, m.forward(), SlamPainter.UP, (0.9 + 0.45 * age) * s, 0.05, 0.25,
+                    painter.circle(meet, along, SlamPainter.UP, (0.9 + 0.45 * age) * s, 0.05, 0.25,
                             ConstructPainter.alpha(0.85 * fade), ConstructPainter.alpha(0.4 * fade));
                 }
             }
@@ -199,11 +201,12 @@ final class SlamStrikes {
      */
     static Vec3 book(ConstructPainter painter, Moment m) {
         double s = m.scale(BOOK_SCALE);
-        Vec3 r = m.right();
-        Vec3 f = m.forward();
+        Vec3 r = SlamPainter.facingHim(m.right());
+        Vec3 f = SlamPainter.facingHim(m.forward());
         Vec3 up = SlamPainter.UP;
         Vec3 spine = m.ground().add(f.scale(1.0 * m.size())).add(0.0, 1.45 * s + 0.1, 0.0);
-        double open = Math.toRadians(Mth.lerp(m.fall(), 70.0, 0.0) + 5.0 * SlamPainter.vibrate(m, 1.0));
+        double open = Math.toRadians(Mth.lerp(m.fall(), 70.0 + 12.0 * m.windup(), 0.0)
+                + 5.0 * SlamPainter.vibrate(m, 1.0));
         Vec3 coverA = f.scale(-Math.cos(open)).add(r.scale(Math.sin(open)));
         Vec3 coverB = f.scale(-Math.cos(open)).subtract(r.scale(Math.sin(open)));
         SlamPainter.piece(painter, COVER_NEG, new Frame(spine.add(r.scale(COVER_OUT * s)), coverA, up,
@@ -273,20 +276,25 @@ final class SlamStrikes {
     }
 
     /**
-     * The fly swatter: its handle in his hand, it comes up from behind him over his shoulder and swings down flat onto
-     * the ground ahead of him, and bounces a little on it.
+     * The fly swatter: it stands up on the end of its handle beyond where it strikes, its face towards him, leans back
+     * a little as it winds up, and swings down flat onto the ground before him with a slap; it bounces up once and
+     * slaps down again.
      */
     static Vec3 swatter(ConstructPainter painter, Moment m) {
-        Vec3 pivot = m.him().add(0.0, 1.0, 0.0).add(m.right().scale(0.35));
-        double g = m.scale(1.0);
+        double g = m.scale(0.8);
         Vec3 plate = m.ground().add(0.0, 0.12 * g, 0.0);
-        Vec3 near = plate.subtract(m.forward().scale((SWATTER_HALF + 0.45) * g));
-        // The whole swatter turns about his hand, from behind him to flat on the ground.
-        double swing = Math.toRadians(160.0 * (1.0 - m.fall()) + 8.0 * SlamPainter.vibrate(m, 1.0));
+        Vec3 near = plate.add(m.forward().scale((SWATTER_HALF + 0.45) * g));
+        // The end of the handle, beyond the head: the whole swatter turns about it.
+        Vec3 pivot = near.add(m.forward().scale(1.8 * g));
+        double since = m.since();
+        double bounce = m.struck() ? 16.0 * Math.abs(Math.sin(1.1 * since)) * Math.exp(-0.45 * since) : 0.0;
+        // Up on its end is a quarter turn back from lying flat; it leans on past that as it winds up.
+        double swing = -Math.toRadians((95.0 + 18.0 * m.windup()) * (1.0 - m.fall()) + bounce
+                + 6.0 * SlamPainter.vibrate(m, 1.0));
         Vec3 axis = m.right();
         Vec3 nearNow = pivot.add(ConstructPainter.spin(near.subtract(pivot), axis, swing));
         Vec3 plateNow = pivot.add(ConstructPainter.spin(plate.subtract(pivot), axis, swing));
-        Vec3 along = ConstructPainter.spin(m.forward(), axis, swing);
+        Vec3 along = ConstructPainter.spin(m.forward().scale(-1.0), axis, swing);
         Vec3 face = ConstructPainter.spin(SlamPainter.UP, axis, swing);
         Vec3 stick = nearNow.subtract(pivot);
         double length = Math.max(0.1, stick.length());
@@ -312,15 +320,15 @@ final class SlamStrikes {
      * socket, and an arm curving down either way to a point.
      */
     private static final Shape PICKAXE = new Shape(new double[][] {
-            { -0.19, 2.76, -0.19, 0.19, 3.22, 0.19, 1.05 },
-            { -0.14, 3.22, -0.14, 0.14, 3.28, 0.14, 1.15 } },
-            Mesh.lathe(10, 0.95, 0.0, 0.0, 0.12, 0.0, 0.13, 0.07, 0.10, 0.22, 0.085, 0.50, 0.085, 2.78, 0.0, 2.78),
-            wrapAt(0.35), wrapAt(0.47), wrapAt(0.59), wrapAt(0.71), wrapAt(0.83), wrapAt(0.95),
-            Mesh.tube(false, 8, 0.10, 1.0, arm(1.0)), Mesh.tube(false, 8, 0.10, 1.0, arm(-1.0)),
+            { -0.27, 2.72, -0.27, 0.27, 3.26, 0.27, 1.05 },
+            { -0.20, 3.26, -0.20, 0.20, 3.34, 0.20, 1.15 } },
+            Mesh.lathe(10, 0.95, 0.0, 0.0, 0.19, 0.0, 0.21, 0.07, 0.16, 0.22, 0.14, 0.50, 0.14, 2.78, 0.0, 2.78),
+            wrapAt(0.35), wrapAt(0.49), wrapAt(0.63), wrapAt(0.77), wrapAt(0.91), wrapAt(1.05),
+            Mesh.tube(false, 8, 0.17, 1.0, arm(1.0)), Mesh.tube(false, 8, 0.17, 1.0, arm(-1.0)),
             point(1.0), point(-1.0));
 
     private static Mesh wrapAt(double y) {
-        return Mesh.torus(10, 4, 0.09, 0.02, 1.15).moved(0.0, y, 0.0);
+        return Mesh.torus(10, 4, 0.145, 0.03, 1.15).moved(0.0, y, 0.0);
     }
 
     /** The arm curving out along {@code side} x, through {@link #ARM}. */
@@ -344,7 +352,7 @@ final class SlamStrikes {
 
     private static Mesh point(double side) {
         Vec3 way = outward(side);
-        return Mesh.cone(8, 0.10, 0.0, -0.02, POINT, 1.25).pointing(way.x, way.y, way.z).moved(side * ARM[2][0],
+        return Mesh.cone(8, 0.17, 0.0, -0.02, POINT, 1.25).pointing(way.x, way.y, way.z).moved(side * ARM[2][0],
                 ARM[2][1], 0.0);
     }
 
@@ -354,21 +362,24 @@ final class SlamStrikes {
     }
 
     /**
-     * A pickaxe: its handle in his hand, it swings from behind him up over his head and down, its point biting into
-     * the ground ahead of him with sparks; it stays stuck there, quivering.
+     * A pickaxe: it stands up on the end of its handle on the ground to his right of where it strikes, its head high,
+     * tips back away as it winds up, and swings over across in front of him, its point biting into the ground where
+     * it strikes with sparks; it stays stuck there, quivering. It swings across his view, so he sees all of it.
      */
     static Vec3 pickaxe(ConstructPainter painter, Moment m) {
-        Vec3 pivot = m.him().add(0.0, 1.05, 0.0).add(m.right().scale(0.35));
+        Vec3 over = m.right().scale(-1.0);
+        Vec3 pivot = m.ground().add(m.right().scale(3.9 * m.size())).add(0.0, 0.2 * m.size(), 0.0);
         Vec3 to = m.ground().subtract(0.0, 0.25, 0.0).subtract(pivot);
         double tip = Math.sqrt(PICK_TIP[0] * PICK_TIP[0] + PICK_TIP[1] * PICK_TIP[1]);
         double s = Math.max(0.5, to.length() / tip);
-        // Angles in the upright plane through the way he faces, from straight up (0) towards ahead.
-        double strike = Math.atan2(to.dot(m.forward()), to.y) - Math.atan2(PICK_TIP[0], PICK_TIP[1]);
+        // Angles in the upright plane across his view, from straight up (0) over towards where it strikes.
+        double strike = Math.atan2(to.dot(over), to.y) - Math.atan2(PICK_TIP[0], PICK_TIP[1]);
         double quiver = m.struck() ? Math.toRadians(3.0) * Math.sin(3.0 * m.since()) * Math.exp(-0.3 * m.since())
                 : 0.0;
-        double angle = Mth.lerp(m.fall(), Math.toRadians(-120.0), strike) + quiver;
-        Vec3 up = SlamPainter.UP.scale(Math.cos(angle)).add(m.forward().scale(Math.sin(angle)));
-        Vec3 lead = SlamPainter.UP.scale(-Math.sin(angle)).add(m.forward().scale(Math.cos(angle)));
+        double start = Math.toRadians(-10.0 - 28.0 * m.windup());
+        double angle = Mth.lerp(m.fall(), start, strike) + quiver;
+        Vec3 up = SlamPainter.UP.scale(Math.cos(angle)).add(over.scale(Math.sin(angle)));
+        Vec3 lead = SlamPainter.UP.scale(-Math.sin(angle)).add(over.scale(Math.cos(angle)));
         Frame frame = new Frame(pivot, lead, up, up.cross(lead), s * m.grow());
         SlamPainter.piece(painter, PICKAXE, frame, m);
         SlamPainter.sparks(painter, m.ground().add(0.0, 0.05, 0.0), m.since(), 10, 0.25, 48);
@@ -377,7 +388,7 @@ final class SlamStrikes {
 
     // ---- The gavel ----
 
-    private static final double GAVEL_SCALE = 1.3;
+    private static final double GAVEL_SCALE = 1.75;
     // How far along the gavel's handle its end lies from the middle of its head.
     private static final double GAVEL_REACH = 2.58;
 
@@ -429,7 +440,7 @@ final class SlamStrikes {
 
     // ---- The drum ----
 
-    private static final double DRUM_SCALE = 1.4;
+    private static final double DRUM_SCALE = 1.5;
     // How high the drum's head is, and how far along a drumstick the middle of its ball lies.
     private static final double DRUM_TOP = 1.46;
     private static final double STICK_REACH = 2.53;

@@ -36,6 +36,9 @@ import org.joml.Matrix4f;
  * back, down the flanks, the other arm and the legs, and up the back of the head;</li>
  * <li>the ring itself flares (see {@link Ring}).</li>
  * </ul>
+ * While the ring gathers its light for the beam (see {@link BeamCharge}) the energy fills the suit bit by bit: it runs
+ * out of the core down the ring arm first, the arm glowing brighter and brighter, and then over the rest of the suit,
+ * its front a bright band of light, until everything is lit as the beam breaks loose.
  * Drawn on the body seen from outside, and on your own arms in first person.
  */
 final class SuitGlow {
@@ -60,6 +63,19 @@ final class SuitGlow {
     // The main stream (core to ring) is this much wider than the others, and its pulses run this much faster.
     private static final float MAIN = 1.4F;
     private static final float FAST = 1.7F;
+    // While the ring gathers its light for the beam the energy fills the suit out of the core: how far along its lines
+    // it has got (in pixels from the core) once the ring arm is full and once the whole suit is. The ring arm is full
+    // at this much of the charge; the rest of the suit starts to fill at this much. Its front is a band of light this
+    // many pixels long, and the pulses run this much faster at full charge; the ring arm glows this much brighter.
+    private static final float ARM_FULL = 16.0F;
+    private static final float SUIT_FULL = 22.0F;
+    private static final float ARM_AT = 0.55F;
+    private static final float SUIT_FROM = 0.3F;
+    private static final float FRONT = 1.6F;
+    private static final float RUSH = 1.5F;
+    private static final float ARM_SHINE = 1.0F;
+    // No charge: every line is lit all the way.
+    private static final float ALL = Float.MAX_VALUE;
     // The way each side of a box faces: 0 = -x, 1 = +x, 2 = -y, 3 = +y, 4 = -z, 5 = +z.
     private static final float[][] NORMALS = { { -1, 0, 0 }, { 1, 0, 0 }, { 0, -1, 0 }, { 0, 1, 0 }, { 0, 0, -1 },
             { 0, 0, 1 } };
@@ -135,6 +151,11 @@ final class SuitGlow {
                 }
             }
         }
+        // Gathering light for the beam: it rises with the charge, for everyone who sees it.
+        float charge = BeamCharge.charge(player, partialTick);
+        if (charge >= 0.0F) {
+            want = Math.max(want, 0.3F + 0.7F * charge);
+        }
         Level level = LEVELS.computeIfAbsent(player.getId(), id -> new Level());
         long now = Util.getMillis();
         float seconds = Math.min(0.25F, (now - level.last) / 1000.0F);
@@ -151,73 +172,145 @@ final class SuitGlow {
 
     // ---- Seen from outside ----
 
-    /** The whole suit lit up, on a body posed as {@code suit}; {@code glow} from {@link #level}. */
+    /**
+     * The whole suit lit up, on a body posed as {@code suit}; {@code glow} from {@link #level}. While he kneels his
+     * legs bend (see {@link KneelLegs}) and the light on them, made for straight legs, is left out.
+     *
+     * @param charge how far his ring has gathered its light for the beam, 0 to 1, or -1 when it gathers none (see
+     *               {@link BeamCharge#charge})
+     */
     static void body(PoseStack pose, MultiBufferSource buffers, PlayerModel<AbstractClientPlayer> suit, boolean slim,
-            float glow, float time) {
+            float glow, float time, boolean kneeling, float charge) {
         if (glow <= 0.01F) {
             return;
         }
-        // The light over the whole uniform and the haze around it, breathing slowly.
+        float arm = armReach(charge);
+        float rest = restReach(charge);
+        float rush = charge < 0.0F ? 1.0F : 1.0F + RUSH * charge;
+        // The light over the whole uniform and the haze around it, breathing slowly. While the ring gathers its light
+        // for the beam, each part only lights up as the energy reaches it: the chest first, then the ring arm, then
+        // the rest.
         float breath = glow * (0.88F + 0.12F * Mth.sin(time * 0.25F));
+        float chest = charge < 0.0F ? 1.0F : 0.45F + 0.55F * Mth.clamp(charge / 0.15F, 0.0F, 1.0F);
+        float others = charge < 0.0F ? 1.0F : restFill(charge);
+        float ring = charge < 0.0F ? 1.15F : (1.15F + ARM_SHINE) * armFill(charge);
         VertexConsumer shell = buffers.getBuffer(SHELL_TYPE);
-        shell(pose, shell, suit.head, HEAD, breath * 0.7F);
-        shell(pose, shell, suit.body, TORSO, breath);
-        shell(pose, shell, suit.rightArm, armBox(true, slim), breath * 1.15F);
-        shell(pose, shell, suit.leftArm, armBox(false, slim), breath * 0.85F);
-        shell(pose, shell, suit.rightLeg, LEG_BOX, breath * 0.8F);
-        shell(pose, shell, suit.leftLeg, LEG_BOX, breath * 0.8F);
+        shell(pose, shell, suit.head, HEAD, breath * 0.7F * others);
+        shell(pose, shell, suit.body, TORSO, breath * chest);
+        shell(pose, shell, suit.rightArm, armBox(true, slim), breath * ring);
+        shell(pose, shell, suit.leftArm, armBox(false, slim), breath * 0.85F * others);
+        if (!kneeling) {
+            shell(pose, shell, suit.rightLeg, LEG_BOX, breath * 0.8F * others);
+            shell(pose, shell, suit.leftLeg, LEG_BOX, breath * 0.8F * others);
+        }
         VertexConsumer light = buffers.getBuffer(Ring.HALO);
         pose.pushPose();
         suit.body.translateAndRotate(pose);
         Matrix4f torso = pose.last().pose();
         chest(light, torso, glow, time);
         node(light, torso, glow * 0.6F, time);
-        lines(light, torso, CHEST_MAIN, glow, time, MAIN, FAST);
-        lines(light, torso, CHEST, glow * 0.85F, time, 1.0F, 1.0F);
-        lines(light, torso, BACK_MAIN, glow * 0.9F, time, MAIN, FAST);
-        lines(light, torso, BACK, glow * 0.75F, time, 1.0F, 1.0F);
-        lines(light, torso, FLANKS, glow * 0.7F, time, 1.0F, 1.0F);
+        lines(light, torso, CHEST_MAIN, glow, time, MAIN, FAST * rush, arm);
+        lines(light, torso, CHEST, glow * 0.85F, time, 1.0F, 1.0F, rest);
+        lines(light, torso, BACK_MAIN, glow * 0.9F, time, MAIN, FAST * rush, arm);
+        lines(light, torso, BACK, glow * 0.75F, time, 1.0F, 1.0F, rest);
+        lines(light, torso, FLANKS, glow * 0.7F, time, 1.0F, 1.0F, rest);
         pose.popPose();
-        part(pose, light, suit.rightArm, glow, time, rightArmMain(slim), MAIN, FAST);
-        part(pose, light, suit.rightArm, glow * 0.9F, time, rightArm(slim), 1.0F, FAST);
-        part(pose, light, suit.leftArm, glow * 0.75F, time, leftArm(slim), 1.0F, 1.0F);
-        part(pose, light, suit.rightLeg, glow * 0.7F, time, LEG, 1.0F, 1.0F);
-        part(pose, light, suit.leftLeg, glow * 0.7F, time, LEG, 1.0F, 1.0F);
-        part(pose, light, suit.head, glow * 0.45F, time, HEAD_LINES, 0.8F, 1.0F);
+        part(pose, light, suit.rightArm, glow, time, rightArmMain(slim), MAIN, FAST * rush, arm);
+        part(pose, light, suit.rightArm, glow * 0.9F, time, rightArm(slim), 1.0F, FAST * rush, arm);
+        part(pose, light, suit.leftArm, glow * 0.75F, time, leftArm(slim), 1.0F, 1.0F, rest);
+        if (!kneeling) {
+            part(pose, light, suit.rightLeg, glow * 0.7F, time, LEG, 1.0F, 1.0F, rest);
+            part(pose, light, suit.leftLeg, glow * 0.7F, time, LEG, 1.0F, 1.0F, rest);
+        }
+        part(pose, light, suit.head, glow * 0.45F, time, HEAD_LINES, 0.8F, 1.0F, rest);
     }
 
-    /** One arm of your own in first person: the light over it, and its lines into the ring. */
+    /** How far out of the core the energy has got along the ring arm's lines, in pixels, for this charge. */
+    private static float armReach(float charge) {
+        return charge < 0.0F ? ALL : ARM_FULL * armFill(charge);
+    }
+
+    /** How far out of the core the energy has got along the lines of the rest of the suit, in pixels. */
+    private static float restReach(float charge) {
+        return charge < 0.0F ? ALL : SUIT_FULL * restFill(charge);
+    }
+
+    /** How full the rest of the suit is of the energy, 0 to 1: 0 with no charge going. */
+    private static float restFill(float charge) {
+        return charge < 0.0F ? 0.0F : Mth.clamp((charge - SUIT_FROM) / (1.0F - SUIT_FROM), 0.0F, 1.0F);
+    }
+
+    /** How full the ring arm is of the energy, 0 to 1: 0 with no charge going. */
+    private static float armFill(float charge) {
+        return charge < 0.0F ? 0.0F : Mth.clamp(charge / ARM_AT, 0.0F, 1.0F);
+    }
+
+    /**
+     * Only the lantern on the chest, flaring: the uniform bursts out of it while the ring dresses him.
+     *
+     * @param strength 0 to 1, from {@link ClientLooks.Uniform#core}
+     */
+    static void core(PoseStack pose, MultiBufferSource buffers, PlayerModel<AbstractClientPlayer> suit, float strength,
+            float time) {
+        if (strength <= 0.01F) {
+            return;
+        }
+        VertexConsumer light = buffers.getBuffer(Ring.HALO);
+        pose.pushPose();
+        suit.body.translateAndRotate(pose);
+        Matrix4f torso = pose.last().pose();
+        chest(light, torso, 1.4F * strength, time);
+        node(light, torso, strength, time);
+        pose.popPose();
+    }
+
+    /**
+     * One arm of your own in first person: the light over it, and its lines into the ring.
+     *
+     * @param charge how far your ring has gathered its light for the beam, or -1 (see {@link BeamCharge#charge})
+     */
     static void arm(PoseStack pose, MultiBufferSource buffers, ModelPart sleeve, boolean right, boolean slim,
-            float glow, float time) {
+            float glow, float time, float charge) {
         if (glow <= 0.01F) {
             return;
         }
-        // Right in front of your eyes the haze would cover half the screen, so it stays fainter here.
-        shell(pose, buffers.getBuffer(SHELL_TYPE), sleeve, armBox(right, slim), glow * (right ? 0.8F : 0.6F));
+        float rush = charge < 0.0F ? 1.0F : 1.0F + RUSH * charge;
+        // Right in front of your eyes the haze would cover half the screen, so it stays fainter here. Gathering light
+        // for the beam, each arm only lights up as the energy reaches it.
+        float lit = charge < 0.0F ? (right ? 0.8F : 0.6F)
+                : right ? (0.8F + 0.7F * ARM_SHINE) * armFill(charge) : 0.6F * restFill(charge);
+        shell(pose, buffers.getBuffer(SHELL_TYPE), sleeve, armBox(right, slim), glow * lit);
         VertexConsumer light = buffers.getBuffer(Ring.HALO);
         if (right) {
-            part(pose, light, sleeve, glow * 0.85F, time, rightArmMain(slim), MAIN, FAST);
-            part(pose, light, sleeve, glow * 0.75F, time, rightArm(slim), 1.0F, FAST);
+            part(pose, light, sleeve, glow * 0.85F, time, rightArmMain(slim), MAIN, FAST * rush, armReach(charge));
+            part(pose, light, sleeve, glow * 0.75F, time, rightArm(slim), 1.0F, FAST * rush, armReach(charge));
         } else {
-            part(pose, light, sleeve, glow * 0.65F, time, leftArm(slim), 1.0F, 1.0F);
+            part(pose, light, sleeve, glow * 0.65F, time, leftArm(slim), 1.0F, 1.0F, restReach(charge));
         }
     }
 
+    /**
+     * The lines of one part.
+     *
+     * @param reach how far out of the core the energy has got, in pixels along the lines: nothing beyond it is lit
+     */
     private static void part(PoseStack pose, VertexConsumer light, ModelPart part, float glow, float time,
-            float[][] lines, float width, float flow) {
+            float[][] lines, float width, float flow, float reach) {
         if (!part.visible || glow <= 0.01F) {
             return;
         }
         pose.pushPose();
         part.translateAndRotate(pose);
-        lines(light, pose.last().pose(), lines, glow, time, width, flow);
+        lines(light, pose.last().pose(), lines, glow, time, width, flow, reach);
         pose.popPose();
     }
 
     private static void lines(VertexConsumer light, Matrix4f matrix, float[][] lines, float glow, float time,
-            float width, float flow) {
+            float width, float flow, float reach) {
         for (float[] line : lines) {
-            trace(light, matrix, line, glow, time, width, flow);
+            if (line[1] < reach) {
+                trace(light, matrix, line, glow, time, width, flow, reach);
+            }
         }
     }
 
@@ -330,7 +423,7 @@ final class SuitGlow {
      * clear of the uniform.
      */
     private static void trace(VertexConsumer light, Matrix4f matrix, float[] line, float glow, float time,
-            float width, float flow) {
+            float width, float flow, float reach) {
         int face = (int) line[0];
         float[] normal = NORMALS[face];
         List<float[]> points = new ArrayList<>();
@@ -350,7 +443,7 @@ final class SuitGlow {
         }
         int last = line.length - 3;
         points.add(lifted(normal, line[last], line[last + 1], line[last + 2]));
-        run(light, matrix, points.toArray(new float[0][]), line[1], glow, time, width, flow);
+        run(light, matrix, points.toArray(new float[0][]), line[1], glow, time, width, flow, reach);
     }
 
     /** A point of a line lifted off the part's box onto the uniform, just clear of it, with the way that side faces. */
@@ -366,11 +459,12 @@ final class SuitGlow {
      *
      * @param start how far from the core the line begins, in pixels
      * @param flow  how much faster than the others its pulses run
+     * @param reach how far out of the core the energy has got: the line stops there, in a bright band of light
      */
     private static void run(VertexConsumer light, Matrix4f matrix, float[][] points, float start, float glow,
-            float time, float width, float flow) {
+            float time, float width, float flow, float reach) {
         float along = start;
-        for (int i = 0; i + 1 < points.length; i++) {
+        for (int i = 0; i + 1 < points.length && along < reach; i++) {
             float[] a = points[i];
             float[] b = points[i + 1];
             float dx = b[0] - a[0];
@@ -381,6 +475,9 @@ final class SuitGlow {
                 continue;
             }
             float pulse = pulse(along + length * 0.5F, time, flow);
+            // The front of the energy while it fills the suit burns brightest.
+            float front = reach == ALL ? 0.0F : Mth.clamp(1.0F - (reach - along - length * 0.5F) / FRONT, 0.0F, 1.0F);
+            pulse = Math.max(pulse, front);
             along += length;
             // Across the line, in the plane of the uniform: along the line crossed with the way it faces.
             float cx = dy * a[5] - dz * a[4];

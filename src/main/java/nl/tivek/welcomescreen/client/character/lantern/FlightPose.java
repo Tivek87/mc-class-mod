@@ -55,11 +55,34 @@ final class FlightPose {
     private static final int LAND_TICKS = 8;
     // How quickly the arms blend from one thing to the next, per second.
     private static final float BLEND = 9.0F;
+    // How far the ring arm comes up towards where he aims while the ring gathers light for the beam, once it is full.
+    private static final float CHARGE_AIM = 0.8F;
     // How long the pose of a landing slam lasts, in ticks; your own fist shows in first person this long.
-    private static final float SLAM_TICKS = 24.0F;
-    private static final float SLAM_HAND_TICKS = 18.0F;
-    // How far the body goes down in a slam's landing, in blocks: low enough for the fist to reach into the ground.
-    private static final float SLAM_DIP = 0.55F;
+    private static final float SLAM_TICKS = 23.0F;
+    private static final float SLAM_HAND_TICKS = 21.0F;
+    // The tick of a slam he starts to rise again from his knee, and how long that takes.
+    private static final float KNEEL_HOLD = 15.0F;
+    private static final float KNEEL_RISE = 7.0F;
+    // The landing on one knee: how far his hips come down, in blocks (from 0.7 to under 0.4, so the right knee is on
+    // the ground), and how far his body leans forward over them, in radians.
+    private static final float KNEEL_DROP = 0.32F;
+    private static final float KNEEL_LEAN = 1.0F;
+    // What the crouch he is in already lowers his body by, in blocks: the rest of the drop is ours.
+    private static final float CROUCH_DROP = 0.125F;
+    // Where his limbs point in the world while he kneels, in radians from straight down, positive swinging back: the
+    // right thigh straight down to the knee on the ground, the left thigh out in front almost flat, the ring arm
+    // straight down into the ground, the other arm flung back and up.
+    private static final float DOWN_THIGH = 0.05F;
+    private static final float STEP_THIGH = -1.4F;
+    private static final float FIST_ARM = -0.1F;
+    private static final float BACK_ARM = 2.15F;
+    // How far each knee bends: the right shin lies back along the ground, the left one stands straight down to the
+    // foot planted in front of him.
+    private static final float DOWN_KNEE = 1.52F;
+    private static final float STEP_KNEE = 1.4F;
+    // How high his hips are over his feet, in blocks: 12 pixels of the model, which the game draws a little smaller
+    // for players.
+    private static final float HIP_HEIGHT = 12.0F * 0.9375F / 16.0F;
     // Your own ring fist in first person, in blocks in front of your eyes: cocked high on the right before a slam, and
     // smashed into the ground in front of you (low on your screen, while your view dips down to it).
     private static final Vector3f COCKED = new Vector3f(0.55F, 0.42F, -0.72F);
@@ -83,12 +106,12 @@ final class FlightPose {
         float ram;
         long last = Util.getMillis();
 
-        void toward(boolean flying, boolean beaming, boolean domed, boolean ramming) {
+        void toward(boolean flying, float beaming, boolean domed, boolean ramming) {
             long now = Util.getMillis();
             float step = 1.0F - (float) Math.exp(-BLEND * Math.min(0.25F, (now - this.last) / 1000.0F));
             this.last = now;
             this.fly = Mth.lerp(step, this.fly, flying ? 1.0F : 0.0F);
-            this.beam = Mth.lerp(step, this.beam, beaming ? 1.0F : 0.0F);
+            this.beam = Mth.lerp(step, this.beam, beaming);
             this.dome = Mth.lerp(step, this.dome, domed ? 1.0F : 0.0F);
             this.ram = Mth.lerp(step, this.ram, ramming ? 1.0F : 0.0F);
         }
@@ -111,7 +134,8 @@ final class FlightPose {
      * @param time   ticks, for everything that sways
      */
     private record Frame(int entity, float t, float fast, float tilt, float roll, float land, boolean sinking,
-            float slam, float brace, float time, Blend blend, Vec3 pivot, Vec3 forward, Vec3 left, Quaternionf turn) {
+            float slam, float brace, float time, Blend blend, Vec3 pivot, Vec3 forward, Vec3 left, Quaternionf turn,
+            float kneel) {
     }
 
     /**
@@ -125,7 +149,10 @@ final class FlightPose {
         float t = ClientRing.flight(player, partialTick);
         ClientFlight.Motion motion = ClientFlight.motion(player);
         boolean flying = t >= 0.0F;
-        boolean beaming = ClientRing.has(player, RingPayload.BEAM);
+        // Gathering light for the beam, the ring arm already comes up towards where he aims.
+        float charge = BeamCharge.charge(player, partialTick);
+        float aim = ClientRing.has(player, RingPayload.BEAM) ? 1.0F : CHARGE_AIM * Math.max(0.0F, charge);
+        boolean beaming = aim > 0.0F;
         boolean domed = ClientRing.has(player, RingPayload.DOME);
         boolean ramming = flying && ClientRing.has(player, RingPayload.SHIELD);
         float land = motion == null || motion.sinceEnd >= LAND_TICKS ? 0.0F
@@ -148,7 +175,7 @@ final class FlightPose {
             blend = new Blend();
             BLENDS.put(player.getId(), blend);
         }
-        blend.toward(flying, beaming, domed, ramming);
+        blend.toward(flying, aim, domed, ramming);
         // Only forgotten once nothing is wanted any more and everything has blended back out.
         if (!flying && !dropping && !beaming && !domed && !slamming && blend.idle() && land <= 0.0F) {
             BLENDS.remove(player.getId());
@@ -186,33 +213,70 @@ final class FlightPose {
         Vec3 pivot = new Vec3(0.0, player.getBbHeight() * 0.55, 0.0);
         Quaternionf turn = new Quaternionf().rotateAxis(roll, (float) forward.x, 0.0F, (float) forward.z)
                 .rotateAxis(tilt, (float) left.x, 0.0F, (float) left.z);
+        float kneel = slamming ? kneel(slam) : 0.0F;
         frame = new Frame(player.getId(), t, fast, tilt, roll, land, ClientRing.has(player, RingPayload.DESCENT),
-                slamming ? slam : -1.0F, brace, player.tickCount + partialTick, blend, pivot, forward, left, turn);
+                slamming ? slam : -1.0F, brace, player.tickCount + partialTick, blend, pivot, forward, left, turn,
+                kneel);
         PoseStack pose = event.getPoseStack();
-        float dip = dip(t, land) + (slamming ? SLAM_DIP * kneel(slam) : 0.0F);
-        pushed = Math.abs(tilt) > 1.0E-3F || Math.abs(roll) > 1.0E-3F || dip > 1.0E-3F;
+        float dip = dip(t, land);
+        float lean = KNEEL_LEAN * kneel;
+        float drop = kneel <= 0.0F ? 0.0F
+                : Math.max(0.0F, KNEEL_DROP - (player.isCrouching() ? CROUCH_DROP : 0.0F)) * kneel;
+        pushed = Math.abs(tilt) > 1.0E-3F || Math.abs(roll) > 1.0E-3F || dip > 1.0E-3F || kneel > 0.0F;
         if (pushed) {
             pose.pushPose();
             pose.translate(pivot.x, pivot.y - dip, pivot.z);
             pose.mulPose(turn);
             pose.translate(-pivot.x, -pivot.y, -pivot.z);
+            if (kneel > 0.0F) {
+                // Down onto his knee, and his body leaning forward over his hips.
+                pose.translate(0.0F, HIP_HEIGHT - drop, 0.0F);
+                pose.mulPose(new Quaternionf().rotateAxis(lean, (float) left.x, 0.0F, (float) left.z));
+                pose.translate(0.0F, -HIP_HEIGHT, 0.0F);
+            }
         }
         PlayerModel<AbstractClientPlayer> model = event.getRenderer().getModel();
         model.leftArmPose = LanternPose.POSE.getValue();
         model.rightArmPose = LanternPose.POSE.getValue();
-        if (flying) {
+        if (flying || kneel > 0.0F) {
             model.crouching = false;
+        }
+        if (kneel > 0.0F) {
+            // His legs bend at the knee now, which the game's legs cannot: they are drawn in two halves instead (see
+            // KneelLegs). Armour copies the legs as they are, so it shrinks to the upper half with them.
+            model.rightLeg.visible = false;
+            model.leftLeg.visible = false;
+            model.rightPants.visible = false;
+            model.leftPants.visible = false;
+            model.rightLeg.yScale = 0.5F;
+            model.leftLeg.yScale = 0.5F;
         }
         return true;
     }
 
-    /** After the game drew the player: his body is turned back. */
+    /** After the game drew the player: his body is turned back, and legs made short for a kneel are whole again. */
     static void post(RenderPlayerEvent.Post event) {
         if (pushed && frame != null && frame.entity() == event.getEntity().getId()) {
             event.getPoseStack().popPose();
         }
+        PlayerModel<AbstractClientPlayer> model = event.getRenderer().getModel();
+        model.rightLeg.yScale = 1.0F;
+        model.leftLeg.yScale = 1.0F;
         pushed = false;
         frame = null;
+    }
+
+    /**
+     * How far this player's knees bend right now, right and left, in radians, while he kneels in the landing of a slam;
+     * null while he does not, and his legs are the game's own straight ones.
+     */
+    @Nullable
+    static float[] knees(LivingEntity entity) {
+        Frame f = frame;
+        if (f == null || f.entity() != entity.getId() || f.kneel() <= 0.0F) {
+            return null;
+        }
+        return new float[] { DOWN_KNEE * f.kneel(), STEP_KNEE * f.kneel() };
     }
 
     /** How far the body dips: a small crouch as the fists come to the chest, and as he lands. */
@@ -277,7 +341,7 @@ final class FlightPose {
             brace(model, limb, right, f.brace());
         }
         if (f.slam() >= 0.0F) {
-            slam(model, limb, right, f.slam());
+            slam(model, limb, right, f.slam(), f.kneel());
         }
     }
 
@@ -303,39 +367,50 @@ final class FlightPose {
     }
 
     /**
-     * The landing slam, the way heroes land, on top of the crouch the game already gives him: the ring fist comes
-     * down out of its cocked position and smashes into the ground in front of him, and he stays down low on one knee,
-     * the other leg forward and the other arm flung out behind him, while the construct strikes; then he rises again.
-     * The body itself goes down with it in {@link #pre}.
+     * The landing slam, the way heroes land: his body drops and leans forward over his hips (see {@link #pre}), his
+     * right knee comes down on the ground with the shin lying back along it, his left foot is planted out in front,
+     * the ring fist comes down out of its cocked position straight into the ground before him, and the other arm is
+     * flung back and up. He stays down there while the construct strikes; then he rises again. The legs bend at the
+     * knee, which the game's own legs cannot: their thighs are posed here and their shins hung on them in
+     * {@link KneelLegs}.
      *
-     * @param age ticks since he hit the ground
+     * <p>Every angle is set where the limb has to point in the world, less the lean of his body, since the limbs lean
+     * along with it.
+     *
+     * @param age   ticks since he hit the ground
+     * @param kneel 0 to 1: how far down he is
      */
-    private static void slam(HumanoidModel<?> model, ModelPart limb, boolean right, float age) {
-        float weight = kneel(age);
-        // The crouch the game adds afterwards turns both arms a little further forward: taken off here.
-        float crouch = model.crouching ? 0.4F : 0.0F;
+    private static void slam(HumanoidModel<?> model, ModelPart limb, boolean right, float age, float kneel) {
+        float lean = KNEEL_LEAN * kneel;
         if (right) {
+            // The fist: from cocked high over his head, straight down into the ground.
             float strike = (float) ClientFlight.smooth(age / 1.4);
-            limb.xRot = Mth.lerp(weight, limb.xRot, Mth.lerp(strike, -2.9F, -0.45F) - crouch);
-            limb.yRot = Mth.lerp(weight, limb.yRot, 0.05F);
-            limb.zRot = Mth.lerp(weight, limb.zRot, Mth.lerp(strike, -0.12F, 0.08F));
-            // Once for both legs (this runs for each arm): the right knee down, the left leg forward.
-            model.rightLeg.xRot = Mth.lerp(weight, model.rightLeg.xRot, 1.2F);
-            model.leftLeg.xRot = Mth.lerp(weight, model.leftLeg.xRot, -1.3F);
-            model.rightLeg.yRot = Mth.lerp(weight, model.rightLeg.yRot, 0.0F);
-            model.leftLeg.yRot = Mth.lerp(weight, model.leftLeg.yRot, 0.0F);
-            model.rightLeg.zRot = Mth.lerp(weight, model.rightLeg.zRot, 0.06F);
-            model.leftLeg.zRot = Mth.lerp(weight, model.leftLeg.zRot, -0.14F);
+            float shudder = age < 5.0F ? 0.05F * (1.0F - age / 5.0F) * Mth.sin(age * 8.0F) : 0.0F;
+            limb.xRot = Mth.lerp(kneel, limb.xRot, Mth.lerp(strike, -2.9F, FIST_ARM - lean) + shudder);
+            limb.yRot = Mth.lerp(kneel, limb.yRot, 0.0F);
+            limb.zRot = Mth.lerp(kneel, limb.zRot, Mth.lerp(strike, -0.12F, 0.1F));
+            // Once for both legs and the head (this runs for each arm).
+            model.rightLeg.xRot = Mth.lerp(kneel, model.rightLeg.xRot, DOWN_THIGH - lean);
+            model.rightLeg.yRot = Mth.lerp(kneel, model.rightLeg.yRot, 0.0F);
+            model.rightLeg.zRot = Mth.lerp(kneel, model.rightLeg.zRot, 0.04F);
+            model.leftLeg.xRot = Mth.lerp(kneel, model.leftLeg.xRot, STEP_THIGH - lean);
+            model.leftLeg.yRot = Mth.lerp(kneel, model.leftLeg.yRot, -0.12F);
+            model.leftLeg.zRot = Mth.lerp(kneel, model.leftLeg.zRot, -0.1F);
+            // Looking ahead, a little down, over the fist in the ground.
+            model.head.xRot = Mth.lerp(kneel, model.head.xRot, Mth.clamp(0.25F - lean, -1.35F, 1.1F));
+            model.head.yRot = Mth.lerp(kneel, model.head.yRot, 0.0F);
         } else {
-            limb.xRot = Mth.lerp(weight, limb.xRot, 0.8F - crouch);
-            limb.yRot = Mth.lerp(weight, limb.yRot, 0.0F);
-            limb.zRot = Mth.lerp(weight, limb.zRot, -1.05F);
+            // Flung back and up as the fist comes down, and out to the side for balance.
+            float fling = (float) ClientFlight.smooth(age / 2.0);
+            limb.xRot = Mth.lerp(kneel, limb.xRot, Mth.lerp(fling, 0.4F, BACK_ARM) - lean);
+            limb.yRot = Mth.lerp(kneel, limb.yRot, 0.0F);
+            limb.zRot = Mth.lerp(kneel, limb.zRot, -0.45F);
         }
     }
 
     /** 0 to 1: how far down he is in the landing of a slam: straight down on impact, a hold, and up again. */
     private static float kneel(float age) {
-        return (float) (ClientFlight.smooth(age / 1.0) * (1.0 - ClientFlight.smooth((age - 13.0) / 8.0)));
+        return (float) (ClientFlight.smooth(age / 1.0) * (1.0 - ClientFlight.smooth((age - KNEEL_HOLD) / KNEEL_RISE)));
     }
 
     /**
@@ -537,7 +612,7 @@ final class FlightPose {
         Minecraft minecraft = Minecraft.getInstance();
         PlayerRenderer renderer = (PlayerRenderer) minecraft.getEntityRenderDispatcher().getRenderer(player);
         float down = (float) ClientFlight.smooth(age / 1.4);
-        float back = (float) ClientFlight.smooth((age - 12.0) / 6.0);
+        float back = (float) ClientFlight.smooth((age - KNEEL_HOLD) / 6.0);
         float shudder = age < 6.0F ? 0.025F * (1.0F - age / 6.0F) * Mth.sin(age * 9.0F) : 0.0F;
         Vector3f hand = new Vector3f(COCKED).lerp(planted(minecraft, player, event.getPartialTick()), down)
                 .lerp(new Vector3f(RechargeAnimation.HAND_RIGHT), back).add(shudder, shudder * 0.5F, 0.0F);
@@ -561,7 +636,7 @@ final class FlightPose {
         }
         forward = forward.normalize();
         Vec3 right = forward.cross(new Vec3(0.0, 1.0, 0.0));
-        Vec3 fist = player.getPosition(partialTick).add(forward.scale(0.4)).add(right.scale(0.3)).add(0.0, 0.1, 0.0);
+        Vec3 fist = player.getPosition(partialTick).add(forward.scale(0.5)).add(right.scale(0.3)).add(0.0, 0.1, 0.0);
         Camera camera = minecraft.gameRenderer.getMainCamera();
         Vec3 way = fist.subtract(camera.getPosition());
         float ahead = (float) way.dot(new Vec3(camera.getLookVector()));

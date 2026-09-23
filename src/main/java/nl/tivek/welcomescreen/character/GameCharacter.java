@@ -131,7 +131,9 @@ public enum GameCharacter {
                     .setting("beamPowerPerSecond", 0.8, 0.0, 100.0, Unit.POWER_PER_SECOND,
                             "Ring power the beam costs a second")
                     .was(5.0, 2.0)
-                    .setting("beamRangeBlocks", 40.0, 4.0, 128.0, Unit.BLOCKS, "How far the beam reaches, in blocks");
+                    .setting("beamRangeBlocks", 40.0, 4.0, 128.0, Unit.BLOCKS, "How far the beam reaches, in blocks")
+                    .setting("beamKnockback", 0.25, 0.0, 3.0, Unit.STRENGTH,
+                            "How hard every hit of the beam drives what it hits back (0 = not at all)");
             this.add(abilities, AbilitySlot.ABILITY_5, "light_shield").held().mouse(CharacterAbility.Mouse.RIGHT)
                     .holdVersion(40, CharacterAbility.Tap.RELEASE)
                     .group("shield", "Light Shield (tap the button)")
@@ -166,6 +168,24 @@ public enum GameCharacter {
                     .setting("ramGroundShake", 1.0, 0.0, 3.0, Unit.STRENGTH,
                             "How hard your view shakes while the ram cone scrapes along the ground (0 = not at"
                                     + " all)");
+            // The ring scans the area: a wave of its light rolls out through walls and all, and marks every creature
+            // it passes for him, with its name and health, a while.
+            this.add(abilities, AbilitySlot.ABILITY_6, "ring_scan").cooldown(160)
+                    .setting("rangeBlocks", 32.0, 8.0, 96.0, Unit.BLOCKS,
+                            "How far the scan reaches, through walls and all, in blocks")
+                    .setting("markSeconds", 12.0, 2.0, 60.0, Unit.SECONDS,
+                            "How long every creature the scan passed stays marked for you, in seconds")
+                    .setting("powerCost", 2.0, 0.0, 100.0, Unit.POWER, "Ring power one scan costs");
+            // The ultimate: he throws his ring fist up at the sky, a pillar of light opens into a great ring of light
+            // over his head, and for a while it rains the constructs that drop down on everything around him, each
+            // with a shockwave of its own (this damage in the middle, half of it at the edge).
+            this.add(abilities, AbilitySlot.ABILITY_7, "construct_storm").cooldown(1800).damage(10.0)
+                    .settingInt("durationTicks", 160, 20, 1200, Unit.TICKS,
+                            "How long the constructs rain down, in ticks (20 ticks = 1 second)")
+                    .settingInt("dropTicks", 8, 2, 100, Unit.TICKS, "Ticks between two constructs dropping")
+                    .setting("radiusBlocks", 20.0, 4.0, 48.0, Unit.BLOCKS,
+                            "How far around you the constructs drop onto creatures, in blocks")
+                    .setting("powerCost", 20.0, 0.0, 100.0, Unit.POWER, "Ring power the storm costs");
             // Smash the ring fist into the ground: the ring throws up a construct in front of him that strikes and
             // sends a shockwave over it. In the air he dives down to the ground first. Flying into the ground at full
             // speed does the same by itself, with these same numbers.
@@ -194,7 +214,24 @@ public enum GameCharacter {
                     .was(15.0, 37.5)
                     .setting("topSpeed", 35.0, 5.0, 150.0, Unit.BLOCKS_PER_SECOND,
                             "Top speed in blocks per second (an elytra with firework rockets does about 33)")
-                    .was(50.0);
+                    .was(50.0)
+                    .setting("startSpeed", 11.7, 1.0, 150.0, Unit.BLOCKS_PER_SECOND,
+                            "Speed you set off at, in blocks per second: the longer you fly on, the faster you go, up"
+                                    + " to the top speed")
+                    .setting("speedUpSeconds", 12.0, 0.0, 120.0, Unit.SECONDS,
+                            "Seconds of flying on before you reach the top speed (0 = straight away); letting go of"
+                                    + " forward loses the speed again, slowly");
+            // The ring fist thrown up high: the lantern takes shape over it out of the ring's light, fills with light
+            // and bursts like a small sun, blinding and slowing everything that sees it; the creatures of the dark
+            // burn, are hurt (this damage) and flee.
+            this.add(abilities, AbilitySlot.ABILITY_10, "light_flare").cooldown(300).damage(8.0)
+                    .setting("radiusBlocks", 12.0, 2.0, 32.0, Unit.BLOCKS,
+                            "How far the flash reaches, in blocks: only what can see the ring is struck")
+                    .setting("blindSeconds", 4.0, 0.0, 30.0, Unit.SECONDS,
+                            "How long whatever the flash strikes is blinded, in seconds")
+                    .setting("stunSeconds", 3.0, 0.0, 30.0, Unit.SECONDS,
+                            "How long whatever the flash strikes is slowed down and weakened, in seconds")
+                    .setting("powerCost", 6.0, 0.0, 100.0, Unit.POWER, "Ring power one flash costs");
         }
     };
 

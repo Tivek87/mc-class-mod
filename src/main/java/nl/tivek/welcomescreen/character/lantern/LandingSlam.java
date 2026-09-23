@@ -5,6 +5,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import javax.annotation.Nullable;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.BlockParticleOption;
 import net.minecraft.core.particles.ParticleTypes;
@@ -14,6 +15,7 @@ import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.level.ClipContext;
@@ -46,16 +48,18 @@ import nl.tivek.welcomescreen.spell.SpellFx;
  * every one of these ticks lasts that many real ticks.
  */
 public final class LandingSlam implements SpellEffect {
-    /** Ticks the construct takes to take shape. */
-    public static final int FORM_TICKS = 4;
+    /** Ticks the construct takes to take shape, in the air before him where he can see it. */
+    public static final int FORM_TICKS = 6;
+    /** The tick it has wound up (risen a little, like a fist drawn back) and sets off to strike. */
+    public static final int HANG_TICKS = 9;
     /** The tick it strikes and the shockwave goes out. */
-    public static final int IMPACT_TICK = 10;
+    public static final int IMPACT_TICK = 13;
     /** The tick it starts to break up into pieces (or sink away). */
-    public static final int BURST_TICK = 26;
+    public static final int BURST_TICK = 30;
     /** The tick it is all over, the wave included. */
-    public static final int END_TICK = 42;
+    public static final int END_TICK = 46;
     /** How far in front of him most constructs strike, in blocks. */
-    public static final double AHEAD = 3.0;
+    public static final double AHEAD = 4.2;
     /**
      * Half the height of the lantern emblem, in blocks: it stands up in front of him and falls flat away from him, so
      * the middle of where it lands (and of its wave) lies this much further out.
@@ -67,7 +71,7 @@ public final class LandingSlam implements SpellEffect {
     // A creature caught by the wave always flies up at least this much.
     private static final double LIFT = 0.35;
     // The tick the TNT lands, before it blows up.
-    private static final int TNT_LANDS = 7;
+    private static final int TNT_LANDS = 9;
     // Ticks between picking a construct with /constructshockwave and it taking shape.
     private static final int PICK_DELAY = 20;
 
@@ -76,8 +80,13 @@ public final class LandingSlam implements SpellEffect {
 
     private final int id = PowerRing.newId();
     private final ServerPlayer owner;
+    // What clients are told it is: his own slam, or one of the constructs his storm drops (see ConstructStorm).
+    private final int shape;
     private final int variant;
-    private final Vec3 center;
+    // Where it strikes: a construct of the storm follows its creature until it sets off.
+    private Vec3 center;
+    @Nullable
+    private final LivingEntity follow;
     private final Vec3 facing;
     private final double radius;
     private final float damage;
@@ -88,15 +97,58 @@ public final class LandingSlam implements SpellEffect {
     private int age;
 
     private LandingSlam(ServerPlayer owner, CharacterAbility shockwave, int variant, Vec3 center, Vec3 facing) {
+        this(owner, ConstructPayload.SLAM, variant, center, null, facing, shockwave.value("radiusBlocks"),
+                shockwave.getDamage(), shockwave.value("knockback"), shockwave.value("slowMotion"),
+                shockwave.value("constructScale"));
+    }
+
+    private LandingSlam(ServerPlayer owner, int shape, int variant, Vec3 center, @Nullable LivingEntity follow,
+            Vec3 facing, double radius, float damage, double knockback, double pace, double size) {
         this.owner = owner;
+        this.shape = shape;
         this.variant = variant;
         this.center = center;
+        this.follow = follow;
         this.facing = facing;
-        this.radius = shockwave.value("radiusBlocks");
-        this.damage = shockwave.getDamage();
-        this.knockback = shockwave.value("knockback");
-        this.pace = shockwave.value("slowMotion");
-        this.size = shockwave.value("constructScale");
+        this.radius = radius;
+        this.damage = damage;
+        this.knockback = knockback;
+        this.pace = pace;
+        this.size = size;
+    }
+
+    /**
+     * One construct of his storm (see {@link ConstructStorm}): it takes shape high over {@code center}, follows
+     * {@code follow} (when there is one) until it sets off, and drops with a shockwave of its own. Not his own slam, so
+     * any number of these go at once and none of them poses him.
+     *
+     * @param radius how far its shockwave reaches, in blocks
+     * @param pace   how slowly it plays, like the setting {@code slowMotion}
+     * @param size   how big it is, like the setting {@code constructScale}
+     */
+    static void drop(ServerPlayer owner, ServerLevel level, int variant, Vec3 center, @Nullable LivingEntity follow,
+            double radius, float damage, double knockback, double pace, double size) {
+        Vec3 way = new Vec3(center.x - owner.getX(), 0.0, center.z - owner.getZ());
+        if (way.lengthSqr() < 1.0E-4) {
+            Vec3 look = owner.getLookAngle();
+            way = new Vec3(look.x, 0.0, look.z);
+        }
+        way = way.lengthSqr() < 1.0E-6 ? new Vec3(0.0, 0.0, 1.0) : way.normalize();
+        LandingSlam drop = new LandingSlam(owner, ConstructPayload.DROP, variant, center, follow, way, radius, damage,
+                knockback, pace, size);
+        SpellCasting.start(level, drop);
+        drop.send(level);
+    }
+
+    /**
+     * The top of the ground under a creature: from its feet down to a good way below, so a construct dropped on one
+     * that flies or jumps still strikes the ground under it; where there is none, its feet.
+     */
+    static Vec3 groundUnder(ServerLevel level, Entity entity) {
+        Vec3 from = entity.position().add(0.0, 0.5, 0.0);
+        BlockHitResult hit = level.clip(new ClipContext(from, from.subtract(0.0, 12.0, 0.0), ClipContext.Block.COLLIDER,
+                ClipContext.Fluid.NONE, entity));
+        return hit.getType() == HitResult.Type.MISS ? entity.position() : hit.getLocation();
     }
 
     /**
@@ -108,9 +160,9 @@ public final class LandingSlam implements SpellEffect {
     public static double ahead(int variant, double size) {
         double ahead = switch (variant) {
             case ConstructPayload.SLAM_EMBLEM -> AHEAD + EMBLEM_HALF;
-            case ConstructPayload.SLAM_PALM -> 3.8;
-            case ConstructPayload.SLAM_PILLAR -> 4.2;
-            case ConstructPayload.SLAM_PIANO, ConstructPayload.SLAM_BARBELL -> 3.4;
+            case ConstructPayload.SLAM_PALM -> 5.0;
+            case ConstructPayload.SLAM_PILLAR -> 5.4;
+            case ConstructPayload.SLAM_PIANO, ConstructPayload.SLAM_BARBELL -> 4.6;
             default -> AHEAD;
         };
         return ahead * size;
@@ -172,7 +224,7 @@ public final class LandingSlam implements SpellEffect {
         RUNNING.put(owner.getUUID(), slam);
         SpellCasting.start(level, slam);
         // His fist hits the ground: a first, smaller thud before the construct's own.
-        Vec3 fist = owner.position().add(facing.scale(0.4)).add(right(facing).scale(0.3));
+        Vec3 fist = owner.position().add(facing.scale(0.5)).add(right(facing).scale(0.3));
         level.playSound(null, fist.x, fist.y, fist.z, SoundEvents.MACE_SMASH_GROUND, SoundSource.PLAYERS, 1.0F, 1.1F);
         dust(level, fist, 0.4, 14);
         dust(level, fist, 1.1, 22);
@@ -213,6 +265,11 @@ public final class LandingSlam implements SpellEffect {
     @Override
     public boolean tick(ServerLevel level, int tick) {
         this.age++;
+        // A construct of the storm keeps over its creature while it takes shape, and sets off from there.
+        if (this.follow != null && this.follow.isAlive() && this.follow.level() == level
+                && this.age < HANG_TICKS * this.pace) {
+            this.center = groundUnder(level, this.follow);
+        }
         // Every tick of the timeline that went by on this real tick: none, one, or more when it plays fast.
         int from = (int) Math.floor((this.age - 1) / this.pace) + 1;
         int to = (int) Math.floor(this.age / this.pace);
@@ -450,7 +507,6 @@ public final class LandingSlam implements SpellEffect {
     private void send(ServerLevel level) {
         PacketDistributor.sendToPlayersNear(level, null, this.center.x, this.center.y, this.center.z, VIEW_RANGE,
                 new ConstructPayload(this.id, this.owner.getId(), this.center, this.facing, (float) this.radius,
-                        (float) this.size, (float) this.pace, false, ConstructPayload.SLAM, this.variant, this.age,
-                        null));
+                        (float) this.size, (float) this.pace, false, this.shape, this.variant, this.age, null));
     }
 }

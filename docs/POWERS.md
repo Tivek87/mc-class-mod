@@ -46,9 +46,10 @@ Good to know:
 
 ## The same keys for everyone
 
-There are ten ability keys and they are only **numbered**: ability 1 up to ability 10. A key is never a
-kind of ability, so every character is free to put anything on any number. Learn the ten keys once; what
-they do depends purely on who you are.
+There are eleven ability keys and they are only **numbered**: ability 1 up to ability 11. A key is never a
+kind of ability, so every character is free to put anything on any number. Learn the keys once; what
+they do depends purely on who you are. **Y is always the character's ultimate**: its biggest power, with a
+long cooldown; while it goes, the panel's title turns red and counts down.
 
 | Key | Ability | Doctor Octopus | Green Lantern |
 |---|---|---|---|
@@ -57,12 +58,12 @@ they do depends purely on who you are.
 | Z | Ability 3 | Tentacle Dash | Recharge |
 | B (hold) | Ability 4 | Block | Light Bolt *(left click)* |
 | H | Ability 5 | Ground Slam | Light Shield *(right click)* |
-| N | Ability 6 | Portal | - |
-| Y | Ability 7 | Octopus Rampage | - |
+| N | Ability 6 | Portal | Ring Scan |
+| Y | Ability 7 | Octopus Rampage *(ultimate)* | Construct Storm *(ultimate)* |
 | X | Ability 8 | *(free)* | Shockwave |
 | C | Ability 9 | Feet or Tentacles | Flight |
-| Left Alt | Ability 10 | Ground Strike | - |
-| K | Ability 11 | *(free)* | - |
+| Left Alt | Ability 10 | Ground Strike | Lantern Flare |
+| K | Ability 11 | *(free)* | *(free)* |
 
 - Every key can be changed in Options > Controls, under "Multiverse Powers".
 - A panel in the bottom right shows who you are and what each key does right now, with its cooldown.
@@ -93,7 +94,8 @@ they do depends purely on who you are.
 Green Lantern's power ring turns willpower into hard light: solid shapes of green light that only last
 while he keeps them going. His mouse always does something: bolts and a beam on left click, a shield and a
 dome on right click. On top of that he has the Giant Fist, his lantern to recharge the ring, flight, the
-shockwave, and the wheel you pick a weapon from. Every other ability key tells you he has nothing on it yet.
+shockwave, the wheel you pick a weapon from, the Ring Scan, the Lantern Flare and his ultimate, the Construct
+Storm. Only K is still free: it tells you he has nothing on it yet.
 
 His hands work the way the game's own buttons do: the **right hand attacks** (left click) and the **left hand
 defends** (right click). The ring sits on his right hand, the Giant Fist charges on his right, and the lantern
@@ -103,9 +105,16 @@ goes in his left hand.
 
 The ring makes Green Lantern's uniform over your own clothes.
 
-- When you become Green Lantern, a line of green light slides down from your head to your feet and
-  leaves the uniform behind it: the green and black suit with the lantern on the chest, white gloves, and
-  a green mask over your eyes. Your own face and hair stay.
+- **When you become Green Lantern, the ring comes to you.** It shows up somewhere 16 to 32 blocks away,
+  pulsing with light, and flies to you in three seconds, to hang in the air three blocks in front of you.
+  There it shapes your lantern out of its light; the lantern flies into your left hand and you catch it. Then
+  the ring flies onto your finger, and the moment it is on, a shockwave of light rolls out 16 blocks around you:
+  the creatures of the dark in it (the undead, the Warden, vexes, endermen and endermites) run from you for 10
+  seconds. Meanwhile the uniform spreads over you, slowly, out of the ring: up your arm to the lantern on your
+  chest, from there over your whole body, and only once all of it is on, the mask over your eyes. Last of all
+  you hit the lantern with your ring fist and the ring fills up (the recharge, see below). Until then the ring
+  does nothing else. The uniform: the green and black suit with the lantern on the chest, white gloves, and a
+  green mask over your eyes. Your own face and hair stay.
 - The ring sits on top of the middle finger of your right hand, on the back of the hand, close to the
   fingertips, made like the real one: a silver band, a dark angular setting, and a big round green stone in
   it with a light glint on top. Band and setting are metal that catches the light like the rest of you (dim
@@ -118,7 +127,8 @@ The ring makes Green Lantern's uniform over your own clothes.
   the back of the head. The ring's light flares out around its
   stone. The harder the ring works, the brighter all of it: a little for the shield, more for a fist or a
   bolt, a lot for flying, the dome and the beam. You see it on your own arms in first person too.
-- When you change back, the line slides up again and the uniform falls apart into green sparks.
+- When you change back it goes the other way round: the mask goes first, then the uniform draws back over your
+  legs, your body and down your arm into the ring, and the ring flies off, up and away.
 - Everyone around you sees it, also players who come into view later.
 
 ### The ring's power
@@ -158,7 +168,18 @@ quick one, 2 seconds of holding for the lasting one.
     still near your hand. Shot while you fly, it takes your own speed along, so you never overtake it.
 - **Hold 2 seconds — Light Beam.** A steady beam of hard light pours out of the ring straight along your
   crosshair, with your right arm pointing along it, for as long as you keep holding.
-  - It goes **through a whole row of creatures** and stops at the first wall, up to 40 blocks away.
+  - **It charges up first.** While you hold the button on its way to the beam, the energy fills your suit:
+    it runs out of the lantern on your chest down your right arm into the ring, the arm glowing brighter and
+    brighter and coming up to aim, and then over the rest of the suit. Specks of light stream into the ring from
+    all around, a ball of light swells in your fist with two rings of light spinning round it, sparks crackle
+    off it near the end, and a whine rises. Let go early and it dies away again. Everyone around sees it.
+  - **Then it breaks loose:** it shoots out of the ring in a blink with a flash and a ring of light bursting
+    out of your fist, and your view kicks back. It roars on as a white-hot core in a thick, breathing glow of
+    green, with surges of light racing along it, three strands winding round it, rings of light running down
+    it and sparks crackling off its sides. Where it strikes it splashes: a hot flare, ripples running out and
+    sparks spraying back. Your view trembles a little while it pours.
+  - It goes **through a whole row of creatures** and stops at the first wall, up to 40 blocks away. Every hit
+    drives what it hits back a little.
   - **Damage:** 2.5 hearts, 4 times a second, to everything in it (10 hearts a second).
   - **Power:** 0.8 per second.
   - Let go, run the ring dry or start a Giant Fist and it dies down.
@@ -220,10 +241,14 @@ Green Lantern recharges his ring at his lantern, the power battery.
   down along your sides, your head goes up and you rise a few blocks, with a flash of light at your feet.
   From there you fly on without a break. It takes a little over a second, and it also catches you in the
   middle of a fall.
-- **Flying:** hold **forward** and you pick up speed the way you look, up to **35 blocks a second**, a little
-  faster than an elytra with firework rockets (about 33). Let go and you glide to a hover. **Jump** rises, **sneak**
-  sinks, left and right slide sideways, back drifts backwards. You carry your speed into every turn, so you
-  swing through curves instead of snapping round. The world widens a little around you at speed.
+- **Flying:** hold **forward** and you fly the way you look. **You set off slowly and get faster the longer you
+  fly on:** a flight starts at about **12 blocks a second** (a third of the top speed) and picks up speed for
+  **12 seconds** of flying forward, until it reaches the top speed of **35 blocks a second**, a little faster
+  than an elytra with firework rockets (about 33), and never more. Let go of forward and you glide to a hover
+  and slowly lose the speed you built up again (all of it in 3 seconds); pushing against a wall keeps it.
+  **Jump** rises, **sneak** sinks, left and right slide sideways, back drifts backwards. You carry your speed
+  into every turn, so you swing through curves instead of snapping round. The world widens a little around
+  you at speed.
 - **How it looks:** hovering you stand upright with your arms a little out and your legs hanging loose.
   The faster you go, the more your body lines up with the way you fly, arms back along your sides and legs
   together; you bank into your turns, dive head first and climb head up, and your head keeps looking where
@@ -238,11 +263,13 @@ Green Lantern recharges his ring at his lantern, the power battery.
 - **Out of power in the air:** the ring's last light lets you sink down gently, arms up, and you cannot steer
   any more. You do not get hurt when you touch the ground. Recharge (on the way down or on the ground) to fly
   again.
-- **Landing slam (by itself; key X does it on purpose, see Shockwave):** dive into the ground at (nearly) full
-  speed and your flight ends in a hero's landing. Just before the ground you swing upright, feet first, ring
+- **Landing slam (by itself; key X does it on purpose, see Shockwave):** dive into the ground fast (at least
+  21 blocks a second, so fly on for a few seconds first) and your flight ends in a hero's landing. Just before
+  the ground you swing upright, feet first, ring
   fist cocked high; then you come down low on one knee and smash that fist into the ground, which cracks open around it and throws up chunks,
-  the other arm flung out behind you. In first person your view dips down to your fist in the ground and comes
-  back up in time to see the construct strike. The ring throws up a giant construct ahead of you that strikes
+  the other arm flung out behind you. In first person your view dips down to your fist in the ground, then looks
+  up at the construct taking shape in the air before you and follows it down as it strikes. The ring throws up a
+  giant construct ahead of you that strikes
   and sends a shockwave over the ground: 6 hearts in the middle, half at the edge 5 blocks out, and everything
   is thrown away. It costs 1.6 power; without it you just land hard. Which construct is random every time, one of
   **32**:
@@ -258,9 +285,10 @@ Green Lantern recharges his ring at his lantern, the power battery.
   Every construct is solid and grows out of the ring's light; at the end it breaks into solid pieces (or sinks
   back into the ground). The shockwave runs out as a low ring of solid hard light.
   - **Big and easy to follow:** they are 35% bigger than they used to be (so they strike a little further in
-    front of you) and play half again as slowly: a construct takes shape and comes down in about 0.75 seconds,
-    stands a good second after it struck, then breaks up; a little over 3 seconds in all. Both are settings
-    (see Shockwave).
+    front of you) and play half again as slowly: a construct takes shape in the air before you, where you can
+    see it, hangs a moment, winds up and strikes after about a second; it stands a good second after it struck,
+    then breaks up; a little over 3 seconds in all. Both are settings (see Shockwave). The ones that clap shut
+    are turned towards you a little, so you see them slam together instead of only their edges.
   - **Every one of them moves:** the safe thuds down, its wheel spins, its door flies open and coins, notes and
     gold bars spill out; the piano's lid springs up, the cover over its keys flies open, its keys jump and notes
     of light float up; the anvil throws sparks and hops once more; the ton weight squashes flat; the TNT lands,
@@ -288,7 +316,7 @@ Green Lantern recharges his ring at his lantern, the power battery.
 
 | Flight | |
 |---|---|
-| Top speed | 35 blocks a second |
+| Speed | starts at about 12 blocks a second, up to 35 after 12 seconds of flying forward |
 | Power | 1.07 a second (a full ring lasts 93.75 seconds), plus whatever you use meanwhile |
 | Take off | at least 0.8 power; not while recharging |
 | Ram (shield up) | 2 hearts + 3 hearts per block per tick of speed, strong knockback |
@@ -402,21 +430,21 @@ their own (see "Changing the numbers").
 
 ### Construct Wheel (key V)
 
-The ring can shape hard light into your hands. Twelve slots are kept free for it, and none of them are
+The ring can shape hard light into your hands. Sixteen slots are kept free for it, and none of them are
 filled in yet: every slot is called **Placeholder** and says **Coming soon**. Picking one changes nothing
 but the bar above your hotbar, so you can already feel how the picking itself works.
 
 - **Tap V** and nothing opens at all: you swap straight between empty hands and the last slot you had
   out. That is the quick one, for in a fight.
-- **Hold V** a moment longer and the wheel opens around your crosshair: twelve slots in a circle, each
+- **Hold V** a moment longer and the wheel opens around your crosshair, big: sixteen slots in a circle, each
   with an empty frame where its picture will go, and empty hands in the middle.
 - **Flick the mouse** towards the slot you want. Only the direction counts, not how far you move, so a
   short flick is enough and it does not matter if the mouse runs off the edge of your screen. The slot
   you point at lights up and grows. Your mouse wheel steps from slot to slot as well.
-- **A plate above the wheel** says what you point at: its name, what it is, how its mouse buttons work and
-  what to do. It never covers the wheel: on a small screen the wheel gets smaller and the last lines of
-  writing make way. The bar above your hotbar and the panel with your abilities are hidden while the
-  wheel is open.
+- **The middle of the wheel** says what you point at: its name and what it is. A bar along the bottom of the
+  screen says how the mouse buttons work and what to do. Neither ever covers a slot: on a small screen the
+  wheel gets smaller and the writing shorter. The bar above your hotbar and the panel with your abilities are
+  hidden while the wheel is open.
 - **Every construct will use the mouse the same way**, with the same **click or hold** as empty hands (see
   "The same keys for everyone"):
   - **Left click (attack):** a tap does a quick attack (a slash, a thrust, a smash); holding it 2 seconds
@@ -435,6 +463,54 @@ but the bar above your hotbar, so you can already feel how the picking itself wo
 - Empty hands are normal, so nothing is shown above your hotbar then. The bar only appears once you are
   holding a slot.
 - The wheel does not pause the game, and your pick is only on your own screen: nobody else sees it yet.
+
+### Ring Scan (key N)
+
+The ring scans everything around you, the way it does in the comics ("Ring, scan the area").
+
+- **Press N.** A wave of the ring's light rolls out from you, through walls and all, up to **32 blocks** away.
+  Everyone around sees the wave go by.
+- Every creature it passes is **marked for you alone** for **12 seconds**: a frame of light round it, its
+  corners marked, that you see through walls, with its name and its health over it. The colour says what it is
+  to you: red for what is out to hurt you, violet for the creatures of the dark, blue for other players, green
+  for everything else. Each frame snaps in with a tick you can hear as the wave reaches it.
+- The ring tells you on your action bar what it found: how many hostile and how many other lifeforms.
+- **Power:** 2 per scan. **Cooldown:** 8 seconds.
+
+### Construct Storm (key Y, the ultimate)
+
+Green Lantern's ultimate: the ring rains constructs down out of the sky.
+
+- **Press Y.** You throw your ring fist up at the sky and a pillar of light shoots out of the ring, straight
+  up, and bursts open into a **great ring of light** high over your head (about 15 blocks up, lower under a
+  roof): two rings turning against each other, spokes of light between them and the lantern emblem in the
+  middle. "CONSTRUCT STORM!" says your action bar, and the panel's title turns red and counts down.
+- For **8 seconds** the ring hangs over you wherever you go, tied to your ring by a thread of light, and every
+  0.4 seconds one of the constructs that drop out of the sky takes shape under it and **drops onto a creature**
+  within 20 blocks that is out to hurt you (or a player, where players may fight each other): the fist, the war
+  hammer, the anvil, the boot, the ton weight, your lantern, the safe, the anchor, the spiked ball, the barbell,
+  the bell, the slapping hand, the sword, the piano, the toy brick and the stamp. It keeps over its creature
+  while it takes shape, a ring of light on the ground shows where it will strike, and it drops with a shockwave
+  of its own: **5 hearts** in the middle, half at the edge, and a throw away from it. They share themselves out
+  over the creatures there are; nothing drops on anything right next to you, and with nobody about they crash
+  down round you on empty ground, never on a pet or a villager.
+- Once the rain is over the ring in the sky bursts.
+- **Power:** 20. **Cooldown:** 90 seconds.
+- All of it is a setting: how long it rains, how often a construct drops, how far round you, the damage and the
+  cost.
+
+### Lantern Flare (key Left Alt)
+
+- **Press Left Alt.** You throw your ring fist up high and the ring shapes **your lantern** over it, a solid
+  construct growing out of the ring's light. Light streams into it from all round and its heart burns brighter
+  and brighter, until after most of a second it **bursts like a small sun**: rays shoot out, a shell of light
+  races out, and the lantern breaks into solid pieces.
+- Every creature within **12 blocks** that can see the lantern is struck: **blinded for 4 seconds**, slowed down
+  and weakened for 3 seconds, and whatever was after someone loses them. The creatures of the dark cannot bear
+  its light: they also burn, take **4 hearts** and flee a moment.
+- Anyone who looks at the burst is dazzled: their screen goes white-green a moment, the more the straighter they
+  looked at it. Your own is held up over your head, so it dazzles you a little.
+- **Power:** 6. **Cooldown:** 15 seconds.
 
 ---
 
