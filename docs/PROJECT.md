@@ -1,7 +1,9 @@
-# Classes & Stamina - overview
+# Multiverse Powers - overview
 
 ## 1. What it is
-A Minecraft mod that adds classes and a stamina bar. You pick a class before you start playing.
+A Minecraft mod that adds classes, a stamina bar, spells, and characters from across the multiverse you can
+turn into. You pick a class before you start playing. The jar is `multiverse-powers-<version>.jar`; inside the
+game the mod's id is still `welcomescreen`, so worlds, settings and keys carry over.
 
 - [Classes and skill trees](CLASSES.md)
 - [Callings and Crowns](CALLINGS.md)
@@ -49,12 +51,12 @@ A Minecraft mod that adds classes and a stamina bar. You pick a class before you
 ---
 
 ## 5. The wheel: characters and spells
-- Hold **G** to open it. The **characters** you can turn into stand side by side at the top; under a
-  dividing line sits the table of the ten **schools of magic**, five cards across. Rest the mouse on a
-  school for half a second and that school opens as a page of its own with its spells on it. Move the mouse
-  onto a character or a spell and let go of G. Letting go over nothing closes the screen; right-click
-  or Escape goes back a page.
-- The key can be changed in Options > Controls, under "Classes & Stamina".
+- Hold **G** to open it. At the top are the **franchises** of the characters (Marvel, DC, Disney, Warner Bros.
+  and Other); under them the fifteen **schools of magic**, as the same cards. Rest the mouse on a franchise or
+  a school for 0.38 seconds and it opens as a page of its own with its characters or spells. Move the mouse
+  onto a character or a spell and let go of G. Characters that are not in the game yet say "Coming soon" and
+  cannot be picked. Letting go over nothing closes the screen; right-click or Escape goes back a page.
+- The key can be changed in Options > Controls, under "Multiverse Powers".
 - Full details: **[Characters and their powers](POWERS.md)** and **[Spells](SPELLS.md)**.
 
 ### Characters
@@ -65,7 +67,7 @@ A Minecraft mod that adds classes and a stamina bar. You pick a class before you
   kind of ability. Default: R, V, Z, B, H, N, Y, X, C, Left Alt and K. Keys a character has nothing on yet
   say so when you press them.
 - A panel in the bottom right shows who you are and what each key does right now, with its cooldown.
-- Every character's numbers can be changed in the game: Mods > Classes & Stamina > Config.
+- Every character's numbers can be changed in the game: Mods > Multiverse Powers > Config.
 - **Crouching + a key** is up to the character: with some abilities it undoes them (let go, put down),
   with others it is a second version of the same ability, and with the rest it changes nothing. The
   panel and [Characters and their powers](POWERS.md) say which is which.

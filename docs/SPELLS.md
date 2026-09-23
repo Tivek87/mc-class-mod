@@ -11,22 +11,24 @@ Back to the [overview](PROJECT.md). Turning into a character and their abilities
 
 ## How casting works
 
-1. **Hold G.** The screen opens. At the top, side by side, stand the characters you can turn into (see
-   [Characters and their powers](POWERS.md)). A line under them keeps them well apart from the magic.
-2. **The 10 schools of magic** are the table under that line: five cards across, two rows deep. Earth,
-   Air, Fire, Water, Holy, Dark, Ice, Lightning, Nature, Blood. The schools that already hold spells are
-   in the top row; the ones still being filled say "Coming soon".
-3. **Rest on a school.** Keep the mouse still on a school card for **0.75 seconds** and that school opens
+1. **Hold G.** The screen opens. At the top are the franchises of the characters you can turn into (see
+   [Characters and their powers](POWERS.md)); under them, the schools of magic, as the same kind of cards.
+2. **The 15 schools of magic**, five cards across, three rows deep. The ones that hold spells come first
+   (Air, Fire, Darkness, Lightning, Nature); the ones still being filled say "Coming soon" (Earth, Water,
+   Holy, Ice, Blood, Metal, Gravity, Time, Illusion, Cosmic).
+3. **Rest on a school.** Keep the mouse still on a school card for **0.38 seconds** and that school opens
    as a page of its own: the same kind of cards, one for every spell in it. A bar fills along the bottom
-   of the card while you wait, so you can see it coming. Nothing has to be clicked.
-4. **Cast:** move onto a spell and let go of G. Clicking it works too. Letting go over nothing closes the
-   screen. **Right-click or Escape** goes back to the schools, and so does resting on the Back card.
+   of the card while you wait, so you can see it coming. Nothing has to be clicked. A card only starts to
+   wait once you have moved the mouse, so a page never opens or closes by itself under a mouse you left alone.
+4. **Cast:** move onto a spell and let go of G. **Click** a spell to read what it does instead; letting go
+   then casts nothing. Letting go over nothing closes the screen. **Right-click or Escape** goes back to the
+   first page, and so does resting on the Back card.
 5. **Cooldown.** After casting, the spell needs time before it can be cast again.
    - The line on the card shows "Ready" or the seconds left, in red.
    - Picking a spell that is not ready yet shows how long is left, and casts nothing.
 
 Good to know:
-- The key can be changed in Options > Controls, under "Classes & Stamina".
+- The key can be changed in Options > Controls, under "Multiverse Powers".
 - Anyone can cast every spell, whatever their class. Spells cost nothing but their cooldown.
 - The cooldown starts when the spell is cast, not when it ends.
 - While the screen is open you stand still, but the world keeps running.

@@ -10,19 +10,37 @@ Back to the [overview](PROJECT.md). The plain spells anyone can cast are in [Spe
 
 ## The wheel
 
-1. **Hold G.** The screen opens. The characters you can turn into stand side by side in a bar of their
-   own at the top, well clear of the magic: the schools of spells are in a table under a dividing line.
-2. **Move the mouse** onto a character. The card lights up and says whether you already are them.
-3. **Let go of G.** You turn into that character. Clicking works too.
-   - Letting go over nothing closes the screen; right-click and Escape do the same.
+1. **Hold G.** The screen opens. At the top are the franchises the characters come from: **Marvel, DC,
+   Disney, Warner Bros. and Other**, each saying how many of its characters you can play already. Under them
+   are the schools of magic, as the same kind of cards.
+2. **Rest on a franchise.** Keep the mouse still on it for **0.38 seconds** and it opens as a page of its own
+   with every character of that franchise from the [multiverse list](CHARACTERS.md). A bar fills along the
+   bottom of the card while you wait. A card only starts to wait once you have moved the mouse, so a page
+   never opens or closes by itself under a mouse you left alone.
+3. **Move the mouse** onto a character. The card lights up and says whether you already are them.
+   Characters that are not in the game yet are dimmed and say **Coming soon**; the mouse passes over them.
+4. **Let go of G.** You turn into that character. Clicking works too.
+   - Letting go over nothing closes the screen. Right-click, Escape or resting on the Back card goes back a
+     page.
    - Picking the character you already are turns you back into yourself.
-   - The spells under the line are opened by hovering their school; they are in [Spells](SPELLS.md).
+   - The schools open the same way; the spells are in [Spells](SPELLS.md).
+
+| Franchise | Characters |
+|---|---|
+| Marvel | **Doctor Octopus**, Mysterio, Doctor Strange, Doctor Doom, Thanos, Loki, Iron Man, Magneto, Galactus, Thor, Spider-Man, The Hulk, Venom, Wolverine, Silver Surfer, The Sentry |
+| DC | **Green Lantern**, The Flash, Black Adam, Doctor Manhattan, Darkseid, Doctor Fate |
+| Disney | Bill Cipher (Gravity Falls), Darth Vader (Star Wars, Lucasfilm) |
+| Warner Bros. | Rick Sanchez (Rick and Morty, Adult Swim) |
+| Other | The Terminator (StudioCanal, Skydance), Spawn (Image Comics) |
+
+The ones in bold can be played; the rest are coming.
 
 Good to know:
 - You are only one character at a time. Turning into someone else puts the one before away first.
 - Dying, logging out or going into spectator mode turns you back into yourself.
 - Everyone nearby sees you change, and sees everything your abilities do.
-- The key can be changed in Options > Controls, under "Classes & Stamina".
+- The key can be changed in Options > Controls, under "Multiverse Powers".
+- While the screen is open, the panel with your abilities is hidden.
 
 ---
 
@@ -46,7 +64,7 @@ they do depends purely on who you are.
 | Left Alt | Ability 10 | Ground Strike | - |
 | K | Ability 11 | *(free)* | - |
 
-- Every key can be changed in Options > Controls, under "Classes & Stamina".
+- Every key can be changed in Options > Controls, under "Multiverse Powers".
 - A panel in the bottom right shows who you are and what each key does right now, with its cooldown.
 - A key your character has nothing on says so and does nothing.
 - **A character can also sit on the mouse.** Green Lantern does: left click shoots, right click puts up a
@@ -596,7 +614,7 @@ The whole run takes about 12 seconds, longer when the creature runs.
 
 Every cooldown and every damage number on this page can be changed in two ways.
 
-**In the game:** Mods > Classes & Stamina > Config. First pick what you want to change: the stamina bar,
+**In the game:** Mods > Multiverse Powers > Config. First pick what you want to change: the stamina bar,
 or one of the characters. A character's screen shows one ability at a time, with arrows to flip through
 them, and a line for its cooldown, its damage and each of its own settings. Next to every number it says
 what it means (seconds, hearts). "Defaults" puts that one ability back to the mod's own numbers,

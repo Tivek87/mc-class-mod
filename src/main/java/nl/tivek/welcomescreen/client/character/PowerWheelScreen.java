@@ -14,6 +14,7 @@ import net.minecraft.sounds.SoundEvents;
 import net.neoforged.neoforge.network.PacketDistributor;
 import nl.tivek.welcomescreen.WelcomeScreenMod;
 import nl.tivek.welcomescreen.character.GameCharacter;
+import nl.tivek.welcomescreen.client.GuiShapes;
 import nl.tivek.welcomescreen.client.spell.ClientSpellCooldowns;
 import nl.tivek.welcomescreen.network.CastSpellPayload;
 import nl.tivek.welcomescreen.network.TransformPayload;
@@ -22,74 +23,96 @@ import nl.tivek.welcomescreen.spell.Spell;
 import org.lwjgl.glfw.GLFW;
 
 /**
- * The power screen you get while you hold the wheel key.
+ * The power screen you get while you hold the wheel key: who you can turn into, and the spells you can cast.
  *
- * <p>
- * The screen is split in two clearly separated halves:
- * </p>
- * <ul>
- * <li>the characters you can turn into, side by side in their own bar at the
- * top;</li>
- * <li>the schools of magic well below them, as a table five cards across.</li>
- * </ul>
+ * <p>The first page has two parts, with the same cards: the franchises the characters come from (Marvel, DC, Disney,
+ * Warner Bros. and the rest, see {@link Roster}), and under them the schools of magic.
  *
- * <p>
- * Nothing needs to be clicked. Keep the mouse still on a school for a moment
- * and that school opens
- * as a page of its own, with its spells as the same kind of cards. Let the key
- * go over a spell to cast
- * it, or over a character to turn into them. Right-click or Escape goes back a
- * page.
- * </p>
+ * <p>Nothing needs to be clicked. Keep the mouse still on a franchise or a school for a moment and it opens as a
+ * page of its own, with its characters or its spells. Let the key go over a character to turn into them, or over a
+ * spell to cast it; click a spell to read what it does. Characters that are not in the game yet say they are coming
+ * soon, and the mouse passes over them. Resting on the back card, right-click or Escape goes back a page.
  */
 public class PowerWheelScreen extends Screen {
     private static final String KEY = "screen." + WelcomeScreenMod.MODID + ".spell_wheel.";
 
     /** How long the mouse has to stay on a card before it opens by itself. */
-    private static final long HOLD_MS = 305L;
+    private static final long HOLD_MS = 381L;
 
-    // The bar of characters at the top.
-    private static final int CHAR_CARD_W = 120;
-    private static final int CHAR_CARD_H = 22;
-    private static final int CHAR_CARD_GAP = 12;
-    private static final int CHAR_Y = 22;
-
-    // The table of cards underneath, well clear of the characters.
     private static final int COLS = 5;
-    private static final int GRID_TOP = 80;
-    private static final int GRID_GAP_X = 6;
-    private static final int GRID_GAP_Y = 8;
     private static final int CARD_H = 26;
+    private static final int GAP_X = 6;
+    private static final int GAP_Y = 8;
     private static final int CARD_W_MIN = 58;
-    private static final int CARD_W_MAX = 84;
-    // A page of spells has fewer, wider cards, so their names fit.
+    private static final int CARD_W_MAX = 96;
+    // A page of characters or spells has wider cards, so their names fit.
     private static final int CARD_W_WIDE = 116;
+    private static final float RADIUS = 3.0F;
+    // Where things sit: the franchises and the schools on the first page, and the cards of an opened page.
+    private static final int FRANCHISE_Y = 26;
+    private static final int SCHOOL_Y = 86;
+    private static final int PAGE_Y = 36;
 
-    private static final int DIM = 0x55000000;
-    private static final int CARD_FILL = 0xC8000000;
-    private static final int CARD_FILL_HOVER = 0xEA2A2A2A;
+    private static final int DIM = 0x88000000;
+    private static final int CARD_FILL = 0xE0141418;
+    private static final int CARD_FILL_HOVER = 0xF02A2A32;
+    private static final int CARD_FILL_OFF = 0x9A0E0E10;
     private static final int LINE = 0x44FFFFFF;
+    private static final int INSPECTED = 0x55FFFF;
 
     private static final int MUTED_COLOR = 0xFFA8A090;
+    private static final int OFF_COLOR = 0xFF6A6A6A;
     private static final int COOLDOWN_COLOR = 0xFFE06050;
     private static final int ACTIVE_COLOR = 0xFF7FD46B;
 
-    private final GameCharacter[] characters;
-    private final MagicSchool[] schools;
+    /** Which page is showing. */
+    private enum Page {
+        HOME,
+        FRANCHISE,
+        SCHOOL
+    }
+
+    /** What a card on the page stands for. */
+    private enum Kind {
+        FRANCHISE,
+        SCHOOL,
+        BACK,
+        CHARACTER,
+        SPELL
+    }
 
     /**
-     * Which school's page is open, as an index in {@link #schools}, or -1 for the
-     * page of schools.
+     * One card as it is laid out right now.
+     *
+     * @param index which franchise, school, character or spell it is, in the list of its page
      */
-    private int open = -1;
-    /** Which card on this page the mouse is on, or -1 for none. */
-    private int hovered = -1;
-    private long hoverSince;
+    private record Card(Kind kind, int index, int x, int y, int w) {
+        boolean same(@Nullable Card other) {
+            return other != null && other.kind == this.kind && other.index == this.index;
+        }
+    }
 
+    private final Roster.Franchise[] franchises = Roster.Franchise.values();
+    private final MagicSchool[] schools;
+
+    private Page page = Page.HOME;
+    /** Which franchise or school is open, as an index in {@link #franchises} or {@link #schools}. */
+    private int opened;
+    private List<Card> cards = List.of();
+    /** The card the mouse is on, or null for none (or one that cannot be picked). */
     @Nullable
-    private GameCharacter hoveredCharacter;
-    @Nullable
-    private Spell hoveredSpell;
+    private Card hovered;
+    private long hoverSince;
+    // When the screen opens (the mouse jumps to the middle) or the page changes, the mouse may rest on a card it
+    // never went to (the back card sits where the franchise or school was). Such a card only waits once the mouse
+    // has moved; until then this is where the mouse was, in gui points. The first frame fills it in.
+    private boolean firstFrame = true;
+    private double stillX = Double.NaN;
+    private double stillY;
+    // Where the mouse was when the page was last drawn, in gui points.
+    private double mouseX;
+    private double mouseY;
+
     @Nullable
     private Spell inspectedSpell;
     private boolean clickedToInspect;
@@ -98,10 +121,8 @@ public class PowerWheelScreen extends Screen {
 
     public PowerWheelScreen() {
         super(Component.translatable(KEY + "title"));
-        this.characters = GameCharacter.values();
-        // Schools that already hold spells come first, so the top row is the one you
-        // really use and
-        // the ones still being filled sit together in the row below.
+        // Schools that already hold spells come first, so the top row is the one you really use and the ones still
+        // being filled sit together in the row below.
         List<MagicSchool> order = new ArrayList<>();
         for (MagicSchool school : MagicSchool.values()) {
             if (!school.getSpells().isEmpty()) {
@@ -137,20 +158,19 @@ public class PowerWheelScreen extends Screen {
         return key.getValue() != InputConstants.UNKNOWN.getValue() && InputConstants.isKeyDown(window, key.getValue());
     }
 
-    /**
-     * Letting the wheel key go does whatever the mouse is pointing at, and
-     * otherwise just closes.
-     */
+    /** Letting the wheel key go does whatever the mouse is pointing at, and otherwise just closes. */
     private void handleRelease() {
         if (this.clickedToInspect) {
-            // Player clicked to read the explanation; do not cast on release!
+            // The spell was clicked to read about it: letting go must not cast it.
             this.onClose();
             return;
         }
-        if (this.hoveredCharacter != null) {
-            this.selectCharacter(this.hoveredCharacter);
-        } else if (this.hoveredSpell != null) {
-            this.castSpell(this.hoveredSpell);
+        GameCharacter character = this.hoveredCharacter();
+        Spell spell = this.hoveredSpell();
+        if (character != null) {
+            this.selectCharacter(character);
+        } else if (spell != null) {
+            this.castSpell(spell);
         } else {
             this.onClose();
         }
@@ -158,7 +178,7 @@ public class PowerWheelScreen extends Screen {
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        if (keyCode == GLFW.GLFW_KEY_ESCAPE && this.open >= 0) {
+        if (keyCode == GLFW.GLFW_KEY_ESCAPE && this.page != Page.HOME) {
             this.goBack();
             return true;
         }
@@ -167,23 +187,25 @@ public class PowerWheelScreen extends Screen {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
-            if (this.hoveredCharacter != null) {
-                this.selectCharacter(this.hoveredCharacter);
+        if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT && this.hovered != null) {
+            GameCharacter character = this.hoveredCharacter();
+            Spell spell = this.hoveredSpell();
+            if (character != null) {
+                this.selectCharacter(character);
                 return true;
             }
-            if (this.hoveredSpell != null) {
-                this.inspectedSpell = this.hoveredSpell;
+            if (spell != null) {
+                this.inspectedSpell = spell;
                 this.clickedToInspect = true;
                 this.click(1.2F);
                 return true;
             }
-            if (this.open >= 0 && this.hovered == 0) {
+            if (this.hovered.kind() == Kind.BACK) {
                 this.goBack();
                 return true;
             }
         } else if (button == GLFW.GLFW_MOUSE_BUTTON_RIGHT) {
-            if (this.open >= 0) {
+            if (this.page != Page.HOME) {
                 this.goBack();
             } else {
                 this.onClose();
@@ -222,22 +244,27 @@ public class PowerWheelScreen extends Screen {
         this.onClose();
     }
 
-    private void openSchool(int index) {
-        this.open = index;
-        this.hovered = -1;
-        this.inspectedSpell = null;
-        this.clickedToInspect = false;
-        this.hoverSince = Util.getMillis();
+    private void open(Page page, int index) {
+        this.page = page;
+        this.opened = index;
+        this.turned();
         this.click(1.3F);
     }
 
     private void goBack() {
-        this.open = -1;
-        this.hovered = -1;
+        this.page = Page.HOME;
+        this.turned();
+        this.click(0.9F);
+    }
+
+    /** A new page: nothing on it is hovered or read yet, and it waits for the mouse to move (see stillX). */
+    private void turned() {
+        this.hovered = null;
         this.inspectedSpell = null;
         this.clickedToInspect = false;
         this.hoverSince = Util.getMillis();
-        this.click(0.9F);
+        this.stillX = this.mouseX;
+        this.stillY = this.mouseY;
     }
 
     private void click(float pitch) {
@@ -250,109 +277,140 @@ public class PowerWheelScreen extends Screen {
         return String.format(Locale.ROOT, "%.1f", ticks / 20.0);
     }
 
-    // ---- What is on this page, and where it sits
-    // ------------------------------------------
+    // ---- What is on this page, and where it sits ----
 
-    /**
-     * The spells of the school whose page is open; empty on the page of schools.
-     */
+    /** The characters of the open franchise; empty on any other page. */
+    private List<Roster.Entry> roster() {
+        return this.page == Page.FRANCHISE ? Roster.of(this.franchises[this.opened]) : List.of();
+    }
+
+    /** The spells of the open school; empty on any other page. */
     private List<Spell> spells() {
-        return this.open < 0 ? List.of() : this.schools[this.open].getSpells();
+        return this.page == Page.SCHOOL ? this.schools[this.opened].getSpells() : List.of();
+    }
+
+    /** Every card on this page, where it sits right now. */
+    private List<Card> layout() {
+        List<Card> cards = new ArrayList<>();
+        if (this.page == Page.HOME) {
+            int cardW = this.cardWidth(COLS, CARD_W_MAX);
+            this.grid(cards, slots(null, Kind.FRANCHISE, this.franchises.length), FRANCHISE_Y, cardW);
+            this.grid(cards, slots(null, Kind.SCHOOL, this.schools.length), SCHOOL_Y, cardW);
+        } else {
+            // The back card comes first, the characters or spells after it on the same rows.
+            List<Card> slots = this.page == Page.FRANCHISE
+                    ? slots(Kind.BACK, Kind.CHARACTER, this.roster().size())
+                    : slots(Kind.BACK, Kind.SPELL, this.spells().size());
+            this.grid(cards, slots, PAGE_Y, this.cardWidth(slots.size(), CARD_W_WIDE));
+        }
+        return cards;
+    }
+
+    /** Cards that still have to be put in place: maybe one of {@code first}, then {@code count} of {@code kind}. */
+    private static List<Card> slots(@Nullable Kind first, Kind kind, int count) {
+        List<Card> slots = new ArrayList<>();
+        if (first != null) {
+            slots.add(new Card(first, 0, 0, 0, 0));
+        }
+        for (int i = 0; i < count; i++) {
+            slots.add(new Card(kind, i, 0, 0, 0));
+        }
+        return slots;
+    }
+
+    private int cardWidth(int count, int widest) {
+        int cols = Math.min(COLS, Math.max(1, count));
+        int fits = (this.width - 40 - (cols - 1) * GAP_X) / cols;
+        return Math.max(CARD_W_MIN, Math.min(widest, fits));
     }
 
     /**
-     * How many cards this page has: the schools, or a back card plus that school's
-     * spells.
+     * Puts cards in rows of {@link #COLS} from {@code top} down, every row centred on its own, so a row that is not
+     * full does not hang to the left.
      */
-    private int cardCount() {
-        return this.open < 0 ? this.schools.length : this.spells().size() + 1;
+    private void grid(List<Card> cards, List<Card> slots, int top, int cardW) {
+        for (int i = 0; i < slots.size(); i++) {
+            int row = i / COLS;
+            int inRow = Math.min(COLS, slots.size() - row * COLS);
+            int rowWidth = inRow * cardW + (inRow - 1) * GAP_X;
+            int x = (this.width - rowWidth) / 2 + (i % COLS) * (cardW + GAP_X);
+            Card slot = slots.get(i);
+            cards.add(new Card(slot.kind(), slot.index(), x, top + row * (CARD_H + GAP_Y), cardW));
+        }
     }
 
-    private int cardWidth() {
-        int cols = Math.min(COLS, Math.max(1, this.cardCount()));
-        int fits = (this.width - 40 - (cols - 1) * GRID_GAP_X) / cols;
-        return Math.max(CARD_W_MIN, Math.min(this.open < 0 ? CARD_W_MAX : CARD_W_WIDE, fits));
+    /** False for a character that is not in the game yet: the mouse passes over it. */
+    private boolean pickable(Card card) {
+        return card.kind() != Kind.CHARACTER || this.roster().get(card.index()).available();
     }
 
-    /**
-     * Every row is centred on its own, so a row that is not full does not hang to
-     * the left.
-     */
-    private int cardX(int index, int cardW) {
-        int row = index / COLS;
-        int inRow = Math.min(COLS, this.cardCount() - row * COLS);
-        int width = inRow * cardW + (inRow - 1) * GRID_GAP_X;
-        return (this.width - width) / 2 + (index % COLS) * (cardW + GRID_GAP_X);
+    @Nullable
+    private GameCharacter hoveredCharacter() {
+        return this.hovered != null && this.hovered.kind() == Kind.CHARACTER
+                ? this.roster().get(this.hovered.index()).character() : null;
     }
 
-    private int cardY(int index) {
-        return GRID_TOP + (index / COLS) * (CARD_H + GRID_GAP_Y);
-    }
-
-    private int charX(int index) {
-        int total = this.characters.length * CHAR_CARD_W + (this.characters.length - 1) * CHAR_CARD_GAP;
-        return (this.width - total) / 2 + index * (CHAR_CARD_W + CHAR_CARD_GAP);
-    }
-
-    private static boolean inside(double mouseX, double mouseY, int x, int y, int w, int h) {
-        return mouseX >= x && mouseX < x + w && mouseY >= y && mouseY < y + h;
+    @Nullable
+    private Spell hoveredSpell() {
+        return this.hovered != null && this.hovered.kind() == Kind.SPELL ? this.spells().get(this.hovered.index())
+                : null;
     }
 
     private void updateHover(double mouseX, double mouseY) {
-        this.hoveredCharacter = null;
-        this.hoveredSpell = null;
-        int was = this.hovered;
-        this.hovered = -1;
-
-        for (int i = 0; i < this.characters.length; i++) {
-            if (inside(mouseX, mouseY, this.charX(i), CHAR_Y, CHAR_CARD_W, CHAR_CARD_H)) {
-                this.hoveredCharacter = this.characters[i];
-                // Characters have their own numbers, well away from the cards below.
-                this.hovered = -2 - i;
+        this.mouseX = mouseX;
+        this.mouseY = mouseY;
+        if (this.firstFrame) {
+            this.firstFrame = false;
+            this.stillX = mouseX;
+            this.stillY = mouseY;
+        }
+        if (!Double.isNaN(this.stillX) && Math.abs(mouseX - this.stillX) + Math.abs(mouseY - this.stillY) > 2.0) {
+            // The mouse moved since the page changed: whatever it rests on from now on starts its wait afresh.
+            this.stillX = Double.NaN;
+            this.hoverSince = Util.getMillis();
+        }
+        Card was = this.hovered;
+        this.hovered = null;
+        for (Card card : this.cards) {
+            if (mouseX >= card.x() && mouseX < card.x() + card.w() && mouseY >= card.y()
+                    && mouseY < card.y() + CARD_H && this.pickable(card)) {
+                this.hovered = card;
                 break;
             }
         }
-        if (this.hoveredCharacter == null) {
-            int cardW = this.cardWidth();
-            for (int i = 0; i < this.cardCount(); i++) {
-                if (inside(mouseX, mouseY, this.cardX(i, cardW), this.cardY(i), cardW, CARD_H)) {
-                    this.hovered = i;
-                    break;
-                }
-            }
-        }
-        if (this.hovered != was) {
+        if (this.hovered == null ? was != null : !this.hovered.same(was)) {
             this.hoverSince = Util.getMillis();
-        }
-        if (this.open >= 0 && this.hovered > 0) {
-            this.hoveredSpell = this.spells().get(this.hovered - 1);
         }
     }
 
-    /**
-     * How far the mouse is through the wait on the card it is resting on: 0 to 1.
-     */
+    /** How far the mouse is through the wait on the card it is resting on: 0 to 1. */
     private double held() {
         return Math.min(1.0, (Util.getMillis() - this.hoverSince) / (double) HOLD_MS);
     }
 
-    /**
-     * Resting on a school opens it; resting on the back card goes back. Nothing is
-     * ever clicked.
-     */
+    /** True for a card that does something by itself once the mouse has rested on it long enough. */
+    private static boolean opens(Card card) {
+        return card.kind() == Kind.FRANCHISE || card.kind() == Kind.SCHOOL || card.kind() == Kind.BACK;
+    }
+
+    /** True while the card under the mouse may wait to open: not right after the page changed under it. */
+    private boolean waiting() {
+        return this.hovered != null && opens(this.hovered) && Double.isNaN(this.stillX);
+    }
+
+    /** Resting on a franchise or a school opens it; resting on the back card goes back. */
     private void followHover() {
-        if (this.hovered < 0 || this.held() < 1.0) {
+        if (!this.waiting() || this.held() < 1.0) {
             return;
         }
-        if (this.open < 0) {
-            this.openSchool(this.hovered);
-        } else if (this.hovered == 0) {
-            this.goBack();
+        switch (this.hovered.kind()) {
+            case FRANCHISE -> this.open(Page.FRANCHISE, this.hovered.index());
+            case SCHOOL -> this.open(Page.SCHOOL, this.hovered.index());
+            default -> this.goBack();
         }
     }
 
-    // ---- Drawing
-    // ---------------------------------------------------------------------------
+    // ---- Drawing ----
 
     @Override
     public void renderBackground(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
@@ -362,145 +420,193 @@ public class PowerWheelScreen extends Screen {
     @Override
     public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
         super.render(guiGraphics, mouseX, mouseY, partialTick);
+        this.cards = this.layout();
         this.updateHover(mouseX, mouseY);
         this.followHover();
-
-        this.renderCharacterBar(guiGraphics);
-        if (this.open < 0) {
-            this.renderSchools(guiGraphics);
-        } else {
-            this.renderSpells(guiGraphics);
+        // Following the mouse can open another page: lay that one out before it is drawn.
+        this.cards = this.layout();
+        if (this.hovered != null && this.cards.stream().noneMatch(card -> card.same(this.hovered))) {
+            this.hovered = null;
         }
 
-        Component hint = Component.translatable(
-                KEY + (this.clickedToInspect ? "inspected_hint" : (this.open < 0 ? "hint_schools" : "hint")),
-                AbilityKeys.SPELL_WHEEL.getTranslatedKeyMessage());
-        guiGraphics.drawCenteredString(this.font, hint, this.width / 2, this.height - 18, MUTED_COLOR);
-    }
-
-    private void renderCharacterBar(GuiGraphics guiGraphics) {
-        guiGraphics.drawCenteredString(this.font, Component.translatable(KEY + "characters"), this.width / 2,
-                CHAR_Y - 12, MUTED_COLOR);
-
-        for (int i = 0; i < this.characters.length; i++) {
-            GameCharacter character = this.characters[i];
-            int x = this.charX(i);
-            boolean hovered = character == this.hoveredCharacter;
-            boolean active = ClientCharacter.active() == character;
-            int color = 0xFF000000 | character.getColor();
-
-            guiGraphics.fill(x, CHAR_Y, x + CHAR_CARD_W, CHAR_Y + CHAR_CARD_H, hovered ? CARD_FILL_HOVER : CARD_FILL);
-            guiGraphics.renderOutline(x, CHAR_Y, CHAR_CARD_W, CHAR_CARD_H,
-                    hovered ? 0xFFFFFFFF : (active ? ACTIVE_COLOR : color));
-            guiGraphics.fill(x + 1, CHAR_Y + 1, x + 4, CHAR_Y + CHAR_CARD_H - 1, color);
-
-            int textX = x + 8;
-            guiGraphics.drawString(this.font, character.getDisplayName(), textX, CHAR_Y + 2, color);
-            Component status = Component.translatable(KEY + (active ? "active" : "become"));
-            guiGraphics.drawString(this.font, status, textX, CHAR_Y + 12, active ? ACTIVE_COLOR : MUTED_COLOR);
+        switch (this.page) {
+            case HOME -> {
+                this.heading(guiGraphics, Component.translatable(KEY + "characters"), MUTED_COLOR, FRANCHISE_Y - 14);
+                this.heading(guiGraphics, Component.translatable(KEY + "schools"), MUTED_COLOR, SCHOOL_Y - 14);
+            }
+            case FRANCHISE -> {
+                Roster.Franchise franchise = this.franchises[this.opened];
+                this.heading(guiGraphics, franchise.getDisplayName(), 0xFF000000 | franchise.getColor(), PAGE_Y - 16);
+            }
+            case SCHOOL -> {
+                MagicSchool school = this.schools[this.opened];
+                this.heading(guiGraphics, school.getDisplayName(), 0xFF000000 | school.getColor(), PAGE_Y - 16);
+            }
         }
-    }
-
-    /** The line and the heading between the characters and the cards under them. */
-    private void header(GuiGraphics guiGraphics, Component title, int color, int cardW) {
-        int left = this.cardX(0, cardW);
-        int right = left + Math.min(COLS, this.cardCount()) * cardW
-                + (Math.min(COLS, this.cardCount()) - 1) * GRID_GAP_X;
-        int lineY = (CHAR_Y + CHAR_CARD_H + GRID_TOP) / 2 - 8;
-        guiGraphics.fill(Math.min(left, this.width / 2 - 100), lineY, Math.max(right, this.width / 2 + 100),
-                lineY + 1, LINE);
-        guiGraphics.drawCenteredString(this.font, title, this.width / 2, lineY + 7, color);
-    }
-
-    private void renderSchools(GuiGraphics guiGraphics) {
-        int cardW = this.cardWidth();
-        this.header(guiGraphics, Component.translatable(KEY + "schools"), MUTED_COLOR, cardW);
-
-        for (int i = 0; i < this.schools.length; i++) {
-            MagicSchool school = this.schools[i];
-            int color = 0xFF000000 | school.getColor();
-            int count = school.getSpells().size();
-            Component line = switch (count) {
-                case 0 -> Component.translatable(KEY + "empty_school");
-                case 1 -> Component.translatable(KEY + "spells_one");
-                default -> Component.translatable(KEY + "spells_count", count);
-            };
-            this.card(guiGraphics, i, cardW, school.getDisplayName(), color, line,
-                    count == 0 ? MUTED_COLOR : ACTIVE_COLOR);
+        // The shapes of every card first, then all the text on top of them.
+        for (Card card : this.cards) {
+            this.cardShape(guiGraphics, card);
         }
-    }
-
-    private void renderSpells(GuiGraphics guiGraphics) {
-        MagicSchool school = this.schools[this.open];
-        int cardW = this.cardWidth();
-        this.header(guiGraphics, school.getDisplayName(), 0xFF000000 | school.getColor(), cardW);
-
-        this.card(guiGraphics, 0, cardW, Component.translatable(KEY + "back"), MUTED_COLOR,
-                Component.translatable(KEY + "back_hint"), MUTED_COLOR);
-
-        List<Spell> spells = this.spells();
-        for (int i = 0; i < spells.size(); i++) {
-            Spell spell = spells.get(i);
-            int left = ClientSpellCooldowns.remaining(spell);
-            Component status = left > 0
-                    ? Component.translatable(KEY + "cooldown", seconds(left))
-                    : Component.translatable(KEY + "ready");
-            this.card(guiGraphics, i + 1, cardW, spell.getDisplayName(), 0xFF000000 | spell.getColor(),
-                    status, left > 0 ? COOLDOWN_COLOR : ACTIVE_COLOR);
+        GuiShapes.flush(guiGraphics);
+        for (Card card : this.cards) {
+            this.cardText(guiGraphics, card);
         }
-        if (spells.isEmpty()) {
+        if (this.page == Page.SCHOOL && this.spells().isEmpty()) {
             guiGraphics.drawCenteredString(this.font, Component.translatable(KEY + "empty_school"),
-                    this.width / 2, GRID_TOP + CARD_H + GRID_GAP_Y + 8, MUTED_COLOR);
+                    this.width / 2, PAGE_Y + CARD_H + GAP_Y + 8, MUTED_COLOR);
+        }
+        if (this.page == Page.SCHOOL && this.inspectedSpell != null) {
+            this.renderInspected(guiGraphics, this.inspectedSpell);
         }
 
-        // Selected spell explanation box (max 2 sentences, clean & readable)
-        if (this.inspectedSpell != null) {
-            int boxW = Math.min(350, this.width - 40);
-            int boxH = 48;
-            int boxX = (this.width - boxW) / 2;
-            int boxY = this.height - 72;
+        String hint = this.clickedToInspect ? "inspected_hint"
+                : switch (this.page) {
+                    case HOME -> "hint_home";
+                    case FRANCHISE -> "hint_characters";
+                    case SCHOOL -> "hint";
+                };
+        guiGraphics.drawCenteredString(this.font, Component.translatable(KEY + hint,
+                AbilityKeys.SPELL_WHEEL.getTranslatedKeyMessage()), this.width / 2, this.height - 18, MUTED_COLOR);
+    }
 
-            int spellColor = 0xFF000000 | this.inspectedSpell.getColor();
-            guiGraphics.fill(boxX, boxY, boxX + boxW, boxY + boxH, 0xEE121218);
-            guiGraphics.renderOutline(boxX, boxY, boxW, boxH, spellColor);
-            guiGraphics.fill(boxX + 1, boxY + 1, boxX + 4, boxY + boxH - 1, spellColor);
+    /** A title in the middle, with a thin line out to either side of it. */
+    private void heading(GuiGraphics guiGraphics, Component title, int color, int y) {
+        int middle = this.width / 2;
+        int half = Math.min(250, middle - 20);
+        int textHalf = this.font.width(title) / 2 + 6;
+        guiGraphics.fill(middle - half, y + 4, middle - textHalf, y + 5, LINE);
+        guiGraphics.fill(middle + textHalf, y + 4, middle + half, y + 5, LINE);
+        guiGraphics.drawCenteredString(this.font, title, middle, y, color);
+    }
 
-            Component title = Component.literal(this.inspectedSpell.getDisplayName().getString() + "  ")
-                    .append(Component.literal("(" + seconds(this.inspectedSpell.getCooldown()) + "s)")
-                            .withColor(MUTED_COLOR));
-            guiGraphics.drawString(this.font, title, boxX + 10, boxY + 5, spellColor);
-            guiGraphics.drawWordWrap(this.font, this.inspectedSpell.getDescription(), boxX + 10, boxY + 18, boxW - 18,
-                    0xFFE0E0E0);
-        }
+    /** The colour a card is drawn in: its franchise, school, character or spell. */
+    private int color(Card card) {
+        return switch (card.kind()) {
+            case FRANCHISE -> this.franchises[card.index()].getColor();
+            case SCHOOL -> this.schools[card.index()].getColor();
+            case BACK -> MUTED_COLOR & 0xFFFFFF;
+            case CHARACTER -> {
+                Roster.Entry entry = this.roster().get(card.index());
+                GameCharacter character = entry.character();
+                yield character != null ? character.getColor() : entry.franchise().getColor();
+            }
+            case SPELL -> this.spells().get(card.index()).getColor();
+        };
     }
 
     /**
-     * One card: a name, a colour strip, a line under it, and the wait bar while you
-     * rest on it.
+     * The body of a card: a rim in its colour (white while the mouse is on it), a colour strip on its left, and while
+     * the mouse rests on a card that opens by itself, a bar along its bottom that fills up until it does.
      */
-    private void card(GuiGraphics guiGraphics, int index, int cardW, Component name, int color,
-            Component line, int lineColor) {
-        int x = this.cardX(index, cardW);
-        int y = this.cardY(index);
-        boolean hovered = index == this.hovered;
-        boolean selected = this.open >= 0 && index > 0 && (index - 1) < this.spells().size()
-                && this.spells().get(index - 1) == this.inspectedSpell;
-
-        guiGraphics.fill(x, y, x + cardW, y + CARD_H, hovered || selected ? CARD_FILL_HOVER : CARD_FILL);
-        guiGraphics.renderOutline(x, y, cardW, CARD_H, selected ? 0xFF55FFFF : (hovered ? 0xFFFFFFFF : color));
-        guiGraphics.fill(x + 1, y + 1, x + 3, y + CARD_H - 1, color);
-
-        int textX = x + 6;
-        guiGraphics.drawString(this.font, name, textX, y + 4, color);
-        guiGraphics.drawString(this.font, line, textX, y + 15, lineColor);
-
-        // The bar that fills while the mouse rests here: it says the page is about to
-        // open by itself.
-        boolean waits = hovered && (this.open < 0 || index == 0);
-        if (waits) {
-            int width = (int) ((cardW - 2) * this.held());
-            guiGraphics.fill(x + 1, y + CARD_H - 2, x + 1 + width, y + CARD_H - 1, 0xFFFFFFFF);
+    private void cardShape(GuiGraphics guiGraphics, Card card) {
+        boolean pickable = this.pickable(card);
+        boolean hovered = card.same(this.hovered);
+        boolean inspected = card.kind() == Kind.SPELL && this.spells().get(card.index()) == this.inspectedSpell;
+        int color = this.color(card);
+        float x = card.x();
+        float y = card.y();
+        float w = card.w();
+        int rim = inspected ? INSPECTED : hovered ? 0xFFFFFF : color;
+        float rimAlpha = !pickable ? 0.22F : hovered || inspected ? 1.0F : 0.55F;
+        GuiShapes.roundRect(guiGraphics, x, y, w, CARD_H, RADIUS, GuiShapes.fade(rim, rimAlpha));
+        GuiShapes.roundRect(guiGraphics, x + 1.0F, y + 1.0F, w - 2.0F, CARD_H - 2.0F, RADIUS - 1.0F,
+                !pickable ? CARD_FILL_OFF : hovered || inspected ? CARD_FILL_HOVER : CARD_FILL);
+        GuiShapes.roundRect(guiGraphics, x + 3.0F, y + 4.0F, 2.0F, CARD_H - 8.0F, 1.0F,
+                GuiShapes.fade(color, pickable ? 1.0F : 0.3F));
+        if (hovered && this.waiting()) {
+            float filled = (float) ((w - 8.0F) * this.held());
+            if (filled > 0.5F) {
+                GuiShapes.roundRect(guiGraphics, x + 4.0F, y + CARD_H - 4.0F, filled, 1.5F, 0.75F,
+                        GuiShapes.fade(0xFFFFFF, 0.9F));
+            }
         }
+    }
+
+    /** The name on a card, and the line under it. */
+    private void cardText(GuiGraphics guiGraphics, Card card) {
+        Component name;
+        Component line;
+        int nameColor = 0xFF000000 | this.color(card);
+        int lineColor = MUTED_COLOR;
+        switch (card.kind()) {
+            case FRANCHISE -> {
+                Roster.Franchise franchise = this.franchises[card.index()];
+                int playable = Roster.available(franchise);
+                name = franchise.getDisplayName();
+                line = playable == 0 ? Component.translatable(KEY + "coming_soon")
+                        : Component.translatable(KEY + "playable", playable, Roster.of(franchise).size());
+                lineColor = playable == 0 ? MUTED_COLOR : ACTIVE_COLOR;
+            }
+            case SCHOOL -> {
+                MagicSchool school = this.schools[card.index()];
+                int count = school.getSpells().size();
+                name = school.getDisplayName();
+                line = switch (count) {
+                    case 0 -> Component.translatable(KEY + "empty_school");
+                    case 1 -> Component.translatable(KEY + "spells_one");
+                    default -> Component.translatable(KEY + "spells_count", count);
+                };
+                lineColor = count == 0 ? MUTED_COLOR : ACTIVE_COLOR;
+            }
+            case BACK -> {
+                name = Component.translatable(KEY + "back");
+                line = Component.translatable(KEY + "back_hint");
+                nameColor = MUTED_COLOR;
+            }
+            case CHARACTER -> {
+                Roster.Entry entry = this.roster().get(card.index());
+                boolean active = entry.character() != null && ClientCharacter.active() == entry.character();
+                name = entry.getDisplayName();
+                if (!entry.available()) {
+                    line = Component.translatable(KEY + "coming_soon");
+                    nameColor = OFF_COLOR;
+                    lineColor = OFF_COLOR;
+                } else {
+                    line = Component.translatable(KEY + (active ? "active" : "become"));
+                    lineColor = active ? ACTIVE_COLOR : MUTED_COLOR;
+                }
+            }
+            case SPELL -> {
+                Spell spell = this.spells().get(card.index());
+                int left = ClientSpellCooldowns.remaining(spell);
+                name = spell.getDisplayName();
+                line = left > 0 ? Component.translatable(KEY + "cooldown", seconds(left))
+                        : Component.translatable(KEY + "ready");
+                lineColor = left > 0 ? COOLDOWN_COLOR : ACTIVE_COLOR;
+            }
+            default -> throw new IllegalStateException();
+        }
+        int textX = card.x() + 8;
+        int room = card.w() - 12;
+        guiGraphics.drawString(this.font, this.fit(name, room), textX, card.y() + 4, nameColor);
+        guiGraphics.drawString(this.font, this.fit(line, room), textX, card.y() + 15, lineColor);
+    }
+
+    /** Text cut short with an ellipsis when it does not fit, so it never runs out of its card. */
+    private Component fit(Component text, int width) {
+        if (this.font.width(text) <= width) {
+            return text;
+        }
+        String cut = this.font.plainSubstrByWidth(text.getString(), Math.max(0, width - this.font.width("…")));
+        return Component.literal(cut + "…").withStyle(text.getStyle());
+    }
+
+    /** The spell you clicked: its name, its cooldown and what it does, in a box at the bottom. */
+    private void renderInspected(GuiGraphics guiGraphics, Spell spell) {
+        int boxW = Math.min(350, this.width - 40);
+        int boxH = 48;
+        int boxX = (this.width - boxW) / 2;
+        int boxY = this.height - 72;
+        int spellColor = spell.getColor();
+        GuiShapes.roundRect(guiGraphics, boxX, boxY, boxW, boxH, 4.0F, GuiShapes.fade(spellColor, 0.9F));
+        GuiShapes.roundRect(guiGraphics, boxX + 1.0F, boxY + 1.0F, boxW - 2.0F, boxH - 2.0F, 3.0F, 0xF0121218);
+        GuiShapes.roundRect(guiGraphics, boxX + 4.0F, boxY + 5.0F, 2.0F, boxH - 10.0F, 1.0F,
+                GuiShapes.fade(spellColor, 1.0F));
+        GuiShapes.flush(guiGraphics);
+        Component title = Component.literal(spell.getDisplayName().getString() + "  ")
+                .append(Component.literal("(" + seconds(spell.getCooldown()) + "s)").withColor(MUTED_COLOR));
+        guiGraphics.drawString(this.font, title, boxX + 11, boxY + 6, 0xFF000000 | spellColor);
+        guiGraphics.drawWordWrap(this.font, spell.getDescription(), boxX + 11, boxY + 19, boxW - 20, 0xFFE0E0E0);
     }
 
     @Override

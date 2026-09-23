@@ -2,6 +2,23 @@
 
 What changed in the project, newest first.
 
+## [Multiverse Powers, and a power screen by franchise] - 2026-09-23
+
+### Added
+- **Every character of the multiverse list is in the power screen**, sorted by who owns them: Marvel, DC,
+  Disney, Warner Bros. and Other (The Terminator and Spawn belong to none of the four). Doctor Octopus and
+  Green Lantern can be picked; the other 25 are dimmed, say "Coming soon", and the mouse passes over them.
+
+### Changed
+- **The mod is called Multiverse Powers**, and so is its jar: `multiverse-powers-1.0.0.jar`. Its id inside
+  the game stays `welcomescreen`, so worlds, settings and keys carry over.
+- **The power screen (hold G) is rebuilt.** The first page shows the franchises and the schools of magic as
+  the same rounded cards; resting on one opens it after 0.38 seconds instead of 0.3 (25% longer). A card only
+  starts to wait once you have moved the mouse, also right after the screen opens or a page changes, so
+  nothing opens or goes back under a mouse you left alone. Long names are cut short with "…" instead of
+  running out of their card, the background is darker, and the panel with your abilities is hidden while the
+  screen is open.
+
 ## [Shockwave key, a ring that lasts far longer, and a calmer power bar] - 2026-09-23
 
 ### Added

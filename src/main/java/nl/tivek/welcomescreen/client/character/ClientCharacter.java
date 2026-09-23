@@ -362,9 +362,9 @@ public final class ClientCharacter {
     private static void render(GuiGraphics graphics, DeltaTracker deltaTracker) {
         Minecraft minecraft = Minecraft.getInstance();
         GameCharacter now = character;
-        // The construct wheel is picked from on its own: nothing may sit under it.
+        // The construct wheel and the power screen are picked from on their own: nothing may sit under them.
         if (now == null || minecraft.player == null || minecraft.options.hideGui
-                || minecraft.screen instanceof ConstructWheelScreen) {
+                || minecraft.screen instanceof ConstructWheelScreen || minecraft.screen instanceof PowerWheelScreen) {
             return;
         }
         Font font = minecraft.font;
