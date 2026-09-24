@@ -13,8 +13,6 @@ import nl.tivek.multiversepowers.engine.effect.Effects;
 import nl.tivek.multiversepowers.engine.entity.HeldMobs;
 import nl.tivek.multiversepowers.engine.fx.ParticleBatch;
 import nl.tivek.multiversepowers.network.ModNetwork;
-import nl.tivek.multiversepowers.registry.ModEffects;
-import nl.tivek.multiversepowers.registry.ModItems;
 import nl.tivek.multiversepowers.spell.SpellCasting;
 import org.slf4j.Logger;
 
@@ -31,8 +29,6 @@ public class MultiversePowers {
 
     public MultiversePowers(IEventBus modEventBus, ModContainer modContainer) {
         modEventBus.addListener(ModNetwork::register);
-        ModItems.register(modEventBus);
-        ModEffects.register(modEventBus);
         // Every settings file of this mod, together in config/welcomescreen.
         ModConfigs.register(modContainer, modEventBus);
         // The config screen is registered in MultiversePowersClient: screen classes do not
