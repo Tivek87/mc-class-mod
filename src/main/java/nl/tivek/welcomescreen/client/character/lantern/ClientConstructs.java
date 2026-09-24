@@ -55,6 +55,12 @@ public final class ClientConstructs {
     // How long the crash of an air strike's plane shakes the view, in ticks, and up to how far away, in blocks.
     private static final double CRASH_SHAKE_TICKS = 30.0;
     private static final double CRASH_SHAKE_RANGE = 140.0;
+    // The same for the small blast of one of its missiles.
+    private static final double BLAST_SHAKE_TICKS = 10.0;
+    private static final double BLAST_SHAKE_RANGE = 24.0;
+    // The same for a slam of a Light Bubble pounded into the ground.
+    private static final double POUND_SHAKE_TICKS = 9.0;
+    private static final double POUND_SHAKE_RANGE = 26.0;
 
     // The beam starts on the line from your eye through your own hand, but this much nearer than the hand
     // itself: on screen that is the same spot, and it keeps the beam from starting inside a wall.
@@ -106,18 +112,26 @@ public final class ClientConstructs {
         // How long it stays without a word from the server: a round from a minigun is told about only once, as it is
         // fired, and flies on by itself.
         private final int keep;
+        // The age of the first update that told of the variant it has now: a Light Bubble's pound is timed from there.
+        private int variantSince;
 
         Track(ConstructPayload first) {
             this.previous = first;
             this.current = first;
             this.latest = first;
             this.lastSeen = clientTicks;
-            this.keep = first.shape() == ConstructPayload.BULLET ? PlanePainter.bulletTicks(first) : TIMEOUT;
+            this.keep = first.shape() == ConstructPayload.BULLET ? PlanePainter.bulletTicks(first)
+                    : first.shape() == ConstructPayload.BLAST ? PlanePainter.BLAST_TICKS + 2
+                    : first.shape() == ConstructPayload.POUND ? BubblePainter.POUND_TICKS + 2 : TIMEOUT;
+            this.variantSince = first.age();
             this.time(first);
         }
 
         void add(ConstructPayload update) {
             this.waiting.add(update);
+            if (update.variant() != this.latest.variant()) {
+                this.variantSince = update.age();
+            }
             this.latest = update;
             this.lastSeen = clientTicks;
             this.time(update);
@@ -164,8 +178,8 @@ public final class ClientConstructs {
     private static boolean timed(int shape) {
         return switch (shape) {
             case ConstructPayload.SLAM, ConstructPayload.SCAN, ConstructPayload.FLARE, ConstructPayload.BEAM,
-                    ConstructPayload.PLANE, ConstructPayload.MISSILE, ConstructPayload.BULLET,
-                    ConstructPayload.BUBBLE, ConstructPayload.SWORD -> true;
+                    ConstructPayload.PLANE, ConstructPayload.MISSILE, ConstructPayload.BULLET, ConstructPayload.BLAST,
+                    ConstructPayload.BUBBLE, ConstructPayload.SWORD, ConstructPayload.POUND -> true;
             default -> false;
         };
     }
@@ -283,17 +297,22 @@ public final class ClientConstructs {
                 // Holding a creature up in a bubble, and most of all hurling it down.
                 case ConstructPayload.BUBBLE -> now.variant() == LightBubble.SMASHING ? 1.0F
                         : now.variant() == LightBubble.HOLDING ? 0.8F : 0.0F;
-                // The sword and shield: shaping them, every swing and bash, and hardest in a flurry, a charge or a slam.
+                // The sword and shield: shaping them, every swing, holding the shield up, and hardest in a flurry, a
+                // charge (every ram most of all) or a slam.
                 case ConstructPayload.SWORD -> {
-                    SwordMove move = SwordMove.byIndex(now.variant());
+                    SwordMove move = SwordMove.sent(now.variant());
                     double t = track.clock(partialTick) - now.charge();
                     if (now.size() >= 0.0F || move == null) {
                         yield 0.0F;
                     }
+                    if ((now.variant() & SwordMove.CHARGING) != 0) {
+                        yield move.kind() == SwordMove.Kind.BASH && t < move.ticks() ? 1.0F : 0.85F;
+                    }
+                    float held = (now.variant() & SwordMove.BLOCKING) != 0 ? 0.5F : 0.3F;
                     yield switch (move.kind()) {
-                        case EQUIP -> t < 12.0 ? 0.9F : 0.35F;
-                        case FLURRY, CHARGE, SLAM -> t < move.ticks() ? 0.85F : 0.3F;
-                        default -> t < move.ticks() ? 0.55F : 0.3F;
+                        case EQUIP -> t < 12.0 ? 0.9F : held;
+                        case FLURRY, SLAM -> t < move.ticks() ? 0.85F : held;
+                        default -> t < move.ticks() ? Math.max(0.6F, held) : held;
                     };
                 }
                 case ConstructPayload.PLANE -> {
@@ -500,6 +519,25 @@ public final class ClientConstructs {
                 if (since >= 0.0 && since < CRASH_SHAKE_TICKS && near > 0.0) {
                     double fade = 1.0 - since / CRASH_SHAKE_TICKS;
                     most = Math.max(most, (float) (fade * fade * Math.min(1.0, near * 1.2)));
+                }
+                continue;
+            }
+            if (slam.shape() == ConstructPayload.BLAST) {
+                double since = track.clock(partialTick);
+                double near = 1.0 - from.distanceTo(slam.center()) / BLAST_SHAKE_RANGE;
+                if (since < BLAST_SHAKE_TICKS && near > 0.0) {
+                    double fade = 1.0 - since / BLAST_SHAKE_TICKS;
+                    most = Math.max(most, (float) (0.55 * fade * fade * near));
+                }
+                continue;
+            }
+            if (slam.shape() == ConstructPayload.POUND) {
+                double since = track.clock(partialTick);
+                double near = 1.0 - from.distanceTo(slam.center()) / POUND_SHAKE_RANGE;
+                if (since < POUND_SHAKE_TICKS && near > 0.0) {
+                    double fade = 1.0 - since / POUND_SHAKE_TICKS;
+                    double hard = BubblePainter.last(slam) ? 0.95 : 0.55;
+                    most = Math.max(most, (float) (hard * fade * fade * Math.min(1.0, near * 1.3)));
                 }
                 continue;
             }
@@ -711,9 +749,14 @@ public final class ClientConstructs {
                         track.clock(partialTick), ring, partialTick);
                 case ConstructPayload.MISSILE -> PlanePainter.missile(painter, center, way, track.clock(partialTick));
                 case ConstructPayload.BULLET -> PlanePainter.bullet(painter, track.latest, track.clock(partialTick));
-                // Until it breaks up its charge is the creature inside, not a time.
+                case ConstructPayload.BLAST -> PlanePainter.missileBlast(painter, track.latest,
+                        track.clock(partialTick));
+                // Until it breaks up its charge is the creature inside, not a time. A pound is timed by the updates as
+                // they are drawn, so every slam squashes it the moment it is drawn on the ground.
                 case ConstructPayload.BUBBLE -> BubblePainter.draw(painter, now, center, solid,
-                        was.variant() == LightBubble.BREAKING ? charge : 0.0, now.held(), track.clock(partialTick), ring);
+                        was.variant() == LightBubble.BREAKING ? charge : 0.0, now.held(), track.clock(partialTick), ring,
+                        now.age() - 1.0 + partialTick - track.variantSince, now.center().subtract(was.center()));
+                case ConstructPayload.POUND -> BubblePainter.pound(painter, track.latest, track.clock(partialTick));
                 case ConstructPayload.SWORD -> {
                     // Your own in first person are drawn with your hands (see SwordArms).
                     if (owner != null && !own) {

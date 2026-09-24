@@ -1,6 +1,7 @@
 package nl.tivek.welcomescreen.client.character.lantern;
 
 import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.math.Axis;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -8,8 +9,11 @@ import java.util.Map;
 import javax.annotation.Nullable;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.HumanoidModel;
+import net.minecraft.client.model.PlayerModel;
+import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.player.Input;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.entity.player.PlayerRenderer;
 import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
@@ -26,6 +30,8 @@ import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.ComputeFovModifierEvent;
 import net.neoforged.neoforge.client.event.MovementInputUpdateEvent;
 import net.neoforged.neoforge.client.event.RenderHandEvent;
+import net.neoforged.neoforge.client.event.RenderPlayerEvent;
+import net.neoforged.neoforge.client.event.ViewportEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 import nl.tivek.welcomescreen.WelcomeScreenMod;
@@ -40,45 +46,64 @@ import org.joml.Vector3f;
 
 /**
  * The sword and shield of the construct wheel in the hands of every Green Lantern around you (see
- * {@link SwordShield}): which move each is doing and how far into it, the pose of his arms and body that goes with it
- * (see {@link SwordPoses}), and where the sword and shield are drawn.
+ * {@link SwordShield}): which move each is doing and how far into it, whether he holds the shield up or charges, the
+ * pose that goes with it (see {@link SwordPoses}), and where the sword and shield are drawn.
  * <ul>
  * <li>Your own sword and shield play every move the moment you click, before the server has even heard of it; everyone
- * else's play what the server tells.</li>
- * <li>Seen from outside, his arms, his upper body and his legs are posed, and the sword and shield hang where his hands
- * were really drawn (see {@link SwordSpot}).</li>
- * <li>In first person your own two arms are drawn with the sword and the shield in your hands, moving through the very
- * same poses.</li>
+ * else's play what the server tells. The rams of a charge are the server's to throw: yours play as it tells of them.</li>
+ * <li>In first person you see the poses as they are made: your right fist round the grip of the sword, which stands
+ * upright in the guard, and your left forearm on the back of the shield, the fist round its grip; both arms reach in
+ * from below the edges of the screen. A blow that lands jolts your view a little.</li>
+ * <li>Seen from outside, each arm points at where the pose puts its hand, and the upper body turns, bends and steps into
+ * the move (the spinning cut turns the whole body round); the sword and shield hang where his hands were really drawn
+ * (see {@link SwordSpot}).</li>
  * <li>While you charge behind the shield your own game runs you straight ahead, and stops you at a wall.</li>
  * </ul>
  */
 @EventBusSubscriber(modid = WelcomeScreenMod.MODID, value = Dist.CLIENT)
 public final class SwordArms {
     // How big the sword and shield are on a body seen from outside, and in your own hands in first person.
-    private static final double SWORD_SCALE = 0.95;
-    private static final double SHIELD_SCALE = 0.92;
-    private static final double OWN_SWORD = 0.6;
-    private static final double OWN_SHIELD = 0.55;
-    // First person: where your hands are while you stand in the guard, in blocks before your eyes (x to the right, y up,
-    // -z ahead). Every other pose moves them from there as far as the pose moves them.
-    private static final Vec3 OWN_RIGHT = new Vec3(0.56, -0.46, -0.95);
-    private static final Vec3 OWN_LEFT = new Vec3(-0.58, -0.5, -0.92);
-    // Your own arms in first person reach in from the game's shoulders out of view below, which follow a hand this much of
-    // the way it moves.
-    private static final double OWN_FOLLOW = 0.35;
-    // To work out where a hand is from a pose: how far the shoulders are from the middle of the body, how long an arm is,
-    // and how far a step of a lunge carries the body forward, in blocks.
+    private static final double SWORD_SCALE = 0.9;
+    private static final double SHIELD_SCALE = 0.76;
+    private static final double OWN_SWORD = 0.74;
+    private static final double OWN_SHIELD = 0.62;
+    // First person: where your arms reach in from, below the bottom corners of the screen (x to the right, y up, -z
+    // ahead), which follow the hands this much of the way they move; the arms are drawn this much of their size, shrunk
+    // towards the hand, so they stay slim.
+    private static final Vec3 OWN_SHOULDER_RIGHT = new Vec3(0.8, -1.3, 0.1);
+    private static final Vec3 OWN_SHOULDER_LEFT = new Vec3(-0.86, -1.32, 0.12);
+    private static final double OWN_FOLLOW = 0.3;
+    private static final float OWN_ARM = 0.62F;
+    /**
+     * Seen from outside, a place before your eyes in first person is a place before the body, measured from the middle of
+     * the chest at the height of the shoulders (x to his right, y up, z ahead): across and up it is squeezed and raised
+     * this much, and ahead it is this much of the depth, less this much.
+     */
+    private static final double BODY_ACROSS = 0.65;
+    private static final double BODY_UP = 1.12;
+    private static final double BODY_RAISE = 0.16;
+    private static final double BODY_AHEAD = 0.9;
+    private static final double BODY_BACK = 0.46;
+    // How far the shoulders are from the middle of the body, in blocks.
     private static final double SHOULDER = 0.31;
-    private static final double ARM = 0.6;
-    private static final double STEP = 0.35;
-    // How far the shield sits out in front of the forearm, and how high the sword is tossed while it takes shape.
-    private static final double SHIELD_OUT = 0.06;
-    private static final double TOSS_HIGH = 1.35;
+    // How far the shield sits out in front of the forearm seen from outside.
+    private static final double SHIELD_OUT = 0.07;
+    // How far the upper body bends forward at a lean of 1, in radians, the way it does when crouching.
+    private static final float TILT = 0.5F;
     // How many earlier moments the streak of a swung blade reaches back over, and how far apart they are, in ticks.
-    private static final int TRAIL = 8;
-    private static final float TRAIL_STEP = 0.5F;
+    private static final int TRAIL = 10;
+    private static final float TRAIL_STEP = 0.45F;
+    // How long ago the blade is looked back at to tell which way it sweeps (it leads with its edge), in ticks.
+    private static final float LEAD_STEP = 0.35F;
+    // How long the shield takes to come up to block, or to go back down, in ticks.
+    private static final float BLOCK_TICKS = 1.8F;
     // A charge widens your view this much.
     private static final float CHARGE_FOV = 1.12F;
+    // A blow that lands jolts your own view: for this many ticks, rolled this far with the blow and dipped this far, in
+    // degrees; a slam of the shield twice as hard.
+    private static final float KICK_TICKS = 5.0F;
+    private static final float KICK_ROLL = 1.6F;
+    private static final float KICK_DIP = 0.8F;
 
     /** Your own sword and shield: played the moment you click, before the server has heard of it. */
     private static final class Own {
@@ -87,34 +112,46 @@ public final class SwordArms {
         float taken;
         float broke = -1.0F;
         boolean charging;
+        boolean blocking;
+        float blockSince;
         int charged;
+        // The server's tick the last ram it told of began on, so each one is played once.
+        double ram = Double.NaN;
         Vec3 way = new Vec3(0.0, 0.0, 1.0);
         @Nullable
         SwordMove lastAttack;
-        @Nullable
-        SwordMove lastBash;
+        // The last tick of the move a blow was felt on, so each blow jolts the view once.
+        int felt = -1;
     }
 
     @Nullable
     private static Own own;
+    // The jolt of the last blow that landed: when (client ticks), and which way it rolls and how hard.
+    private static float kickAt = -100.0F;
+    private static float kickRoll;
+    private static float kickHard;
 
-    /** What one body's arms did last, to come in from when a new move starts. */
+    /** What one body's arms did last, to come in from when a new move starts, and how far its shield is up. */
     private static final class Blend {
         @Nullable
         SwordMove move;
         float start = Float.NaN;
         SwordPoses.Pose from = SwordPoses.GUARD;
         SwordPoses.Pose now = SwordPoses.GUARD;
+        float block;
+        float blockAt = Float.NaN;
     }
 
     private static final Map<Integer, Blend> BLENDS = new HashMap<>();
+    // The bodies turned round for the spinning cut while they are drawn, to turn back once they are.
+    private static final Map<Integer, Boolean> SPUN = new HashMap<>();
     private static int clientTicks;
 
     /**
      * Someone's sword and shield right now: the move, how many ticks into it, how many ticks ago they took shape, how many
-     * ticks ago they began to break up (-1 while whole), and the way a charge runs.
+     * ticks ago they began to break up (-1 while whole), the way a charge runs, and whether he blocks or charges.
      */
-    record State(SwordMove move, float t, float age, float broken, Vec3 way) {
+    record State(SwordMove move, float t, float age, float broken, Vec3 way, boolean blocking, boolean charging) {
     }
 
     private SwordArms() {
@@ -134,18 +171,22 @@ public final class SwordArms {
                 return null;
             }
             return new State(mine.move, now - mine.start, now - mine.taken, mine.broke < 0.0F ? -1.0F : now - mine.broke,
-                    mine.way);
+                    mine.way, mine.blocking, mine.charging);
         }
         ClientConstructs.Sword sword = ClientConstructs.sword(player.getId(), partialTick);
         if (sword == null) {
             return null;
         }
-        SwordMove move = SwordMove.byIndex(sword.move());
+        SwordMove move = SwordMove.sent(sword.move());
         return new State(move == null ? SwordMove.EQUIP : move, (float) (sword.clock() - sword.moveStart()),
-                (float) sword.clock(), sword.broken(), sword.way());
+                (float) sword.clock(), sword.broken(), sword.way(), (sword.move() & SwordMove.BLOCKING) != 0,
+                (sword.move() & SwordMove.CHARGING) != 0);
     }
 
-    /** The pose of this player's arms and body right now, coming in from the last one as a new move starts. */
+    /**
+     * The pose of this player right now: the move, coming in from wherever the arms were as it began, with the shield held
+     * up to block laid over it. Remembers it, so the next move can come in from here.
+     */
     static SwordPoses.Pose pose(Entity player, State state, float partialTick) {
         Blend blend = BLENDS.computeIfAbsent(player.getId(), id -> new Blend());
         float now = now(partialTick);
@@ -155,11 +196,26 @@ public final class SwordArms {
             blend.move = state.move();
             blend.start = start;
         }
-        SwordPoses.Pose target = SwordPoses.at(state.move(), state.t(), now);
-        float in = SwordPoses.blendIn(state.move());
-        SwordPoses.Pose pose = state.t() < in ? blend.from.mix(target, SwordPoses.smooth(state.t() / in)) : target;
+        float step = Float.isNaN(blend.blockAt) ? 1.0F : Mth.clamp(now - blend.blockAt, 0.0F, 5.0F) / BLOCK_TICKS;
+        blend.blockAt = now;
+        float want = state.blocking() && !state.charging() && state.broken() < 0.0F ? 1.0F : 0.0F;
+        blend.block = want > blend.block ? Math.min(want, blend.block + step) : Math.max(want, blend.block - step);
+        SwordPoses.Pose pose = earlier(blend, state, now, 0.0F);
         blend.now = pose;
         return pose;
+    }
+
+    /** The pose of a body {@code ago} ticks before now, from the move it is doing now (for streaks and edges). */
+    private static SwordPoses.Pose earlier(Blend blend, State state, float now, float ago) {
+        SwordPoses.Pose pose = SwordPoses.at(state.move(), Math.max(0.0F, state.t() - ago), now - ago, blend.from);
+        return SwordPoses.block(pose, SwordPoses.smooth(blend.block));
+    }
+
+    /** The pose right now with the edge of the blade leading the way it sweeps (see {@link SwordPoses#led}). */
+    private static SwordPoses.Pose leading(Entity player, State state, float partialTick) {
+        SwordPoses.Pose pose = pose(player, state, partialTick);
+        Blend blend = BLENDS.get(player.getId());
+        return SwordPoses.led(pose, earlier(blend, state, now(partialTick), LEAD_STEP));
     }
 
     // ---- Your own: what the mouse does with them ----
@@ -169,17 +225,22 @@ public final class SwordArms {
         return own != null && own.broke < 0.0F;
     }
 
+    /** True while you charge behind the shield. */
+    public static boolean charging() {
+        return own != null && own.charging;
+    }
+
     /** True while you may start a new move: the last one has come far enough, and you are not charging. */
     private static boolean ready() {
         Own mine = own;
-        return mine != null && mine.broke < 0.0F && !mine.charging
-                && now(0.0F) - mine.start >= mine.move.ready();
+        return mine != null && mine.broke < 0.0F && !mine.charging && now(0.0F) - mine.start >= mine.move.ready();
     }
 
     private static void begin(SwordMove move) {
         if (own != null) {
             own.move = move;
             own.start = now(Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(false));
+            own.felt = -1;
         }
     }
 
@@ -191,18 +252,6 @@ public final class SwordArms {
         }
         SwordMove move = SwordMove.randomAttack(player.getRandom(), own.lastAttack);
         own.lastAttack = move;
-        begin(move);
-        return move;
-    }
-
-    /** A tap of the defend button: one of the shield's bashes at random, or null when the last move is not done yet. */
-    @Nullable
-    public static SwordMove bash(LocalPlayer player) {
-        if (!ready()) {
-            return null;
-        }
-        SwordMove move = SwordMove.randomBash(player.getRandom(), own.lastBash);
-        own.lastBash = move;
         begin(move);
         return move;
     }
@@ -224,14 +273,30 @@ public final class SwordArms {
         }
     }
 
-    /** The defend button held long enough: the charge, on your feet, as long as you are free and the ring can pay. */
+    /**
+     * The defend button held: the shield comes up to block ({@code up}), or goes back down. True when that changed
+     * anything.
+     */
+    public static boolean block(boolean up) {
+        Own mine = own;
+        if (mine == null || mine.broke >= 0.0F || mine.charging || mine.blocking == up) {
+            return false;
+        }
+        mine.blocking = up;
+        mine.blockSince = now(0.0F);
+        return true;
+    }
+
+    /** The defend button clicked: the charge, on your feet, as long as you are free and the ring can pay. */
     public static boolean charge(LocalPlayer player) {
-        if (!ready() || ClientRing.flight(player, 0.0F) >= 0.0F || !canPay(player, "chargePowerCost")) {
+        if (!ready() || own.blocking || ClientRing.flight(player, 0.0F) >= 0.0F
+                || !canPay(player, "chargePowerCost")) {
             return false;
         }
         begin(SwordMove.CHARGE);
         own.charging = true;
         own.charged = 0;
+        own.ram = Double.NaN;
         Vec3 look = player.getLookAngle();
         Vec3 flat = new Vec3(look.x, 0.0, look.z);
         own.way = flat.lengthSqr() < 1.0E-6 ? new Vec3(0.0, 0.0, 1.0) : flat.normalize();
@@ -271,6 +336,7 @@ public final class SwordArms {
         } else if (own != null && own.broke < 0.0F) {
             own.broke = now;
             own.charging = false;
+            own.blocking = false;
         }
     }
 
@@ -300,15 +366,106 @@ public final class SwordArms {
                 // The server let them break up (the ring gave out): so do they here.
                 mine.broke = now;
                 mine.charging = false;
+                mine.blocking = false;
+            } else if (told != null) {
+                follow(mine, told, now);
+            }
+            if (own != null && mine.broke < 0.0F) {
+                feel(player, mine, now);
             }
         }
         BLENDS.keySet().removeIf(id -> minecraft.level.getEntity(id) == null);
+    }
+
+    /**
+     * What the server tells that your own game cannot know by itself: a ram it threw at something in the way of your
+     * charge (played from where it is by now), and a shield it let drop because the ring could not hold it up.
+     */
+    private static void follow(Own mine, ClientConstructs.Sword told, float now) {
+        SwordMove move = SwordMove.sent(told.move());
+        double into = told.clock() - told.moveStart();
+        if (mine.charging && move != null && move.kind() == SwordMove.Kind.BASH && into < move.ticks()
+                && told.moveStart() != mine.ram) {
+            mine.ram = told.moveStart();
+            mine.move = move;
+            mine.start = now - (float) Math.max(0.0, into);
+            mine.felt = -1;
+        }
+        if (mine.blocking && (told.move() & SwordMove.BLOCKING) == 0 && now - mine.blockSince > 10.0F) {
+            mine.blocking = false;
+        }
+    }
+
+    /**
+     * A blow of your own lands (a cut or thrust, a stab of the flurry, a ram, the slam, a knock on the shield as they
+     * take shape): your view is jolted a little, rolled the way the blade swept.
+     */
+    private static void feel(LocalPlayer player, Own mine, float now) {
+        int t = (int) Math.floor(now - mine.start);
+        if (t == mine.felt) {
+            return;
+        }
+        boolean blow = switch (mine.move.kind()) {
+            case ATTACK, BASH, SLAM -> contains(mine.move.hits(), t);
+            case FLURRY -> t >= SwordMove.FIRST_STAB && (t - SwordMove.FIRST_STAB) % SwordMove.STAB_EVERY == 0
+                    && (t - SwordMove.FIRST_STAB) / SwordMove.STAB_EVERY < SwordMove.STABS;
+            case EQUIP -> t == SwordMove.KNOCK || t == SwordMove.KNOCK + 3;
+            case CHARGE -> false;
+        };
+        if (!blow) {
+            return;
+        }
+        mine.felt = t;
+        Blend blend = BLENDS.get(player.getId());
+        State state = state(player, 0.0F);
+        if (blend == null || state == null) {
+            return;
+        }
+        SwordPoses.Pose at = earlier(blend, state, now, 0.0F);
+        SwordPoses.Pose was = earlier(blend, state, now, 1.0F);
+        double across = at.hand().add(at.blade()).x - was.hand().add(was.blade()).x;
+        kickAt = now;
+        kickRoll = (float) Math.signum(across);
+        kickHard = switch (mine.move.kind()) {
+            case SLAM -> 2.0F;
+            case BASH -> 1.3F;
+            case FLURRY, EQUIP -> 0.45F;
+            default -> mine.move == SwordMove.OVERHEAD || mine.move == SwordMove.LUNGE ? 1.4F : 1.0F;
+        };
+    }
+
+    private static boolean contains(int[] ticks, int t) {
+        for (int tick : ticks) {
+            if (tick == t) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** The jolt of a blow that landed, on your own view in first person. */
+    @SubscribeEvent
+    public static void onCameraAngles(ViewportEvent.ComputeCameraAngles event) {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (own == null || minecraft.player == null || event.getCamera().getEntity() != minecraft.player
+                || event.getCamera().isDetached()) {
+            return;
+        }
+        float since = now((float) event.getPartialTick()) - kickAt;
+        if (since < 0.0F || since >= KICK_TICKS) {
+            return;
+        }
+        float fade = 1.0F - since / KICK_TICKS;
+        float kick = kickHard * fade * fade;
+        event.setRoll(event.getRoll() + KICK_ROLL * kickRoll * kick);
+        event.setPitch(event.getPitch() + KICK_DIP * kick);
     }
 
     @SubscribeEvent
     public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
         own = null;
         BLENDS.clear();
+        SPUN.clear();
         SwordSpot.clear();
     }
 
@@ -340,8 +497,10 @@ public final class SwordArms {
             return;
         }
         double speed = wheel().value("chargeSpeed") / 20.0;
+        // It takes a moment to get going.
+        double going = Math.min(1.0, (mine.charged + 1) / 3.0);
         Vec3 moving = player.getDeltaMovement();
-        player.setDeltaMovement(mine.way.x * speed, moving.y, mine.way.z * speed);
+        player.setDeltaMovement(mine.way.x * speed * going, moving.y, mine.way.z * speed * going);
         player.setSprinting(true);
     }
 
@@ -354,8 +513,14 @@ public final class SwordArms {
             return;
         }
         mine.charged++;
-        if (player.horizontalCollision || mine.charged >= wheel().value("chargeSeconds") * 20.0) {
-            stopCharge();
+        if (mine.charged > 2 && player.horizontalCollision || mine.charged >= wheel().value("chargeSeconds") * 20.0) {
+            endCharge();
+        }
+    }
+
+    /** Your charge ends here and now (a wall, its time, or a second click): the slam, and the server is told. */
+    public static void endCharge() {
+        if (stopCharge()) {
             CharacterAbility shield = GameCharacter.GREEN_LANTERN.byName("light_shield");
             if (shield != null) {
                 PacketDistributor.sendToServer(new AbilityActionPayload(shield.slot().ordinal(), false,
@@ -378,15 +543,35 @@ public final class SwordArms {
         return state(player, partialTick) != null;
     }
 
-    /** True while this body crouches for its move: down low for a sweep, behind the shield in a charge, in a slam. */
-    static boolean crouching(Entity player, float partialTick) {
-        State state = state(player, partialTick);
-        return state != null && pose(player, state, partialTick).crouch() > 0.5F;
+    /**
+     * Just before a body is drawn: for the spinning cut the whole body is turned round (about the upright line through its
+     * feet) as far as the cut has spun it. Turned back once it is drawn (see {@link #unspin}).
+     */
+    static void spin(RenderPlayerEvent.Pre event) {
+        State state = state(event.getEntity(), event.getPartialTick());
+        if (state == null) {
+            return;
+        }
+        float orbit = pose(event.getEntity(), state, event.getPartialTick()).orbit();
+        if (Math.abs(orbit) < 1.0E-3F) {
+            return;
+        }
+        event.getPoseStack().pushPose();
+        event.getPoseStack().mulPose(Axis.YP.rotation(orbit));
+        SPUN.put(event.getEntity().getId(), Boolean.TRUE);
+    }
+
+    /** A body turned round for the spinning cut is turned back once it is drawn. */
+    static void unspin(RenderPlayerEvent.Post event) {
+        if (SPUN.remove(event.getEntity().getId()) != null) {
+            event.getPoseStack().popPose();
+        }
     }
 
     /**
-     * One arm (and the upper body and legs with it) while the game poses the model: where the pose points the arm, the
-     * upper body turned on the hips with the shoulders going round with it, and the legs apart in a lunge.
+     * One arm while the game poses the model: pointed at where the pose puts its hand (the sword hand, or the middle of
+     * the shield), seen from its shoulder on the upper body as that turns into the move, and before the game bends the
+     * upper body forward (see {@link #lean}), which it then goes along with.
      */
     static void pose(HumanoidModel<?> model, LivingEntity entity, HumanoidArm arm) {
         float partialTick = Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(false);
@@ -395,35 +580,68 @@ public final class SwordArms {
             return;
         }
         SwordPoses.Pose pose = pose(entity, state, partialTick);
-        // Crouching, the game tips both arms a little further forward afterwards: taken off here beforehand.
-        float crouch = model.crouching ? 0.4F : 0.0F;
-        if (arm == HumanoidArm.RIGHT) {
-            float sway = model.rightArm.xRot * 0.2F;
-            model.rightArm.xRot = -(Mth.HALF_PI + pose.armPitch()) + sway - crouch;
-            model.rightArm.yRot = pose.armYaw() + pose.twist();
-            model.rightArm.zRot = 0.0F;
-        } else {
-            float sway = model.leftArm.xRot * 0.2F;
-            model.leftArm.xRot = -(Mth.HALF_PI + pose.shieldArmPitch()) + sway - crouch;
-            model.leftArm.yRot = pose.shieldArmYaw() + pose.twist();
-            model.leftArm.zRot = 0.0F;
-        }
+        boolean right = arm == HumanoidArm.RIGHT;
         float twist = pose.twist();
+        float tilt = TILT * Mth.clamp(pose.lean(), -0.35F, 1.0F);
+        Vec3 target = unbent(unturned(body(right ? pose.hand() : pose.shield()), twist), tilt);
+        Vec3 reach = target.subtract(right ? SHOULDER : -SHOULDER, 0.0, 0.0);
+        reach = reach.lengthSqr() < 1.0E-6 ? new Vec3(0.0, -1.0, 0.0) : reach.normalize();
+        float pitch = (float) Math.asin(Mth.clamp(reach.y, -1.0, 1.0));
+        float yaw = (float) Mth.atan2(reach.x, reach.z);
+        ModelPart limb = right ? model.rightArm : model.leftArm;
+        float sway = limb.xRot * 0.15F;
+        limb.xRot = -(Mth.HALF_PI + pitch) + sway;
+        limb.yRot = yaw + twist;
+        limb.zRot = 0.0F;
         model.body.yRot = twist;
         model.rightArm.z = Mth.sin(twist) * 5.0F;
         model.rightArm.x = -Mth.cos(twist) * 5.0F;
         model.leftArm.z = -Mth.sin(twist) * 5.0F;
         model.leftArm.x = Mth.cos(twist) * 5.0F;
-        if (pose.step() > 0.0F) {
-            model.rightLeg.xRot = Mth.lerp(pose.step(), model.rightLeg.xRot, -0.75F);
-            model.leftLeg.xRot = Mth.lerp(pose.step(), model.leftLeg.xRot, 0.55F);
+    }
+
+    /**
+     * Once the game has posed the whole body: the upper body bends forward into the move (or back a little), the arms and
+     * head going with it, the hips going back and the legs stepping into a lunge; the layers of the skin follow.
+     */
+    public static void lean(PlayerModel<?> model, LivingEntity entity) {
+        float partialTick = Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(false);
+        State state = state(entity, partialTick);
+        if (state == null) {
+            return;
         }
+        SwordPoses.Pose pose = pose(entity, state, partialTick);
+        float lean = Mth.clamp(pose.lean(), -0.35F, 1.0F);
+        float down = Math.max(0.0F, lean);
+        float tilt = TILT * lean;
+        model.body.xRot += tilt;
+        model.body.y += 3.2F * down;
+        model.head.y += 4.2F * down;
+        model.rightArm.y += 3.2F * down;
+        model.leftArm.y += 3.2F * down;
+        model.rightArm.xRot += tilt;
+        model.leftArm.xRot += tilt;
+        model.rightLeg.z += 3.9F * down;
+        model.leftLeg.z += 3.9F * down;
+        model.rightLeg.y += 0.2F * down;
+        model.leftLeg.y += 0.2F * down;
+        float step = Mth.clamp(pose.step(), 0.0F, 1.0F);
+        if (step > 0.0F) {
+            model.rightLeg.xRot = Mth.lerp(step, model.rightLeg.xRot, -0.7F);
+            model.leftLeg.xRot = Mth.lerp(step, model.leftLeg.xRot, 0.5F);
+        }
+        model.hat.copyFrom(model.head);
+        model.jacket.copyFrom(model.body);
+        model.rightSleeve.copyFrom(model.rightArm);
+        model.leftSleeve.copyFrom(model.leftArm);
+        model.rightPants.copyFrom(model.rightLeg);
+        model.leftPants.copyFrom(model.leftLeg);
     }
 
     /**
      * The sword and shield of someone seen from outside (you too, from behind), where his hands were drawn: the sword in
-     * his fist (or tossed up, spinning, while they take shape), the shield on his forearm, the streak of a swung blade,
-     * and the light of a slam. While they take shape the ring feeds the growing shield a beam of its light.
+     * his fist, the shield on his forearm, the streak of a swung blade, and the light of a slam. While they take shape the
+     * ring feeds the growing shield a beam of its light.
      */
     static void draw(ConstructPainter painter, Entity player, @Nullable Vec3 ring, float partialTick) {
         State state = state(player, partialTick);
@@ -431,27 +649,14 @@ public final class SwordArms {
         if (state == null || spot == null) {
             return;
         }
-        SwordPoses.Pose pose = pose(player, state, partialTick);
-        float twist = pose.twist();
+        SwordPoses.Pose pose = leading(player, state, partialTick);
         double apart = state.broken() < 0.0F ? 0.0 : Math.max(1.0E-3, state.broken() / SwordShield.BREAK_TICKS);
-        // Where the middle of his body is: worked back from where his fist was drawn.
-        Vec3 origin = spot.grip().subtract(spot.world(hand(pose, true), 0.0F));
-        Vec3[] blade = SwordPoses.frame(pose.bladeYaw(), pose.bladePitch(), pose.bladeRoll());
-        Vec3 forward = spot.world(blade[0], twist);
-        Vec3 edge = spot.world(blade[1], twist);
-        Vec3 grip = spot.grip();
-        float[] toss = SwordPoses.toss(state.move(), state.t());
-        if (toss != null) {
-            grip = origin.add(spot.world(tossed(toss[0]), 0.0F));
-            Vec3 across = forward.cross(edge).normalize();
-            forward = ConstructPainter.spin(forward, across, toss[1]);
-            edge = ConstructPainter.spin(edge, across, toss[1]);
-        }
-        double swordGrown = SwordPoses.swordGrown(state.move(), state.age());
-        SwordPainter.sword(painter, grip, forward, edge, SWORD_SCALE, swordGrown, apart);
-        Vec3[] shield = SwordPoses.frame(pose.shieldYaw(), pose.shieldPitch(), pose.shieldRoll());
-        Vec3 face = spot.world(shield[0], twist);
-        Vec3 top = spot.world(shield[1], twist);
+        Vec3 forward = spot.world(way(pose.blade()), 0.0F);
+        Vec3 edge = spot.world(way(pose.edge()), 0.0F);
+        SwordPainter.sword(painter, spot.grip(), forward, edge, SWORD_SCALE,
+                SwordPoses.swordGrown(state.move(), state.age()), apart);
+        Vec3 face = spot.world(way(pose.face()), 0.0F);
+        Vec3 top = spot.world(way(pose.top()), 0.0F);
         Vec3 middle = spot.mount().add(face.scale(SHIELD_OUT));
         double shieldGrown = SwordPoses.shieldGrown(state.move(), state.age());
         SwordPainter.shield(painter, middle, face, top, SHIELD_SCALE, shieldGrown, apart);
@@ -461,22 +666,29 @@ public final class SwordArms {
         if (ring != null && shieldGrown < 1.0) {
             painter.beam(ring, middle, 1.0 - shieldGrown * 0.6, 0.6);
         }
-        trail(painter, state, pose, body -> origin.add(spot.world(body, 0.0F)), SWORD_SCALE);
-        slamLight(painter, state, origin.add(spot.world(new Vec3(0.0, 0.0, 1.3), 0.0F)).subtract(0.0,
-                origin.y - player.getY(), 0.0));
+        // Where the middle of his chest is: worked back from where his fist was drawn.
+        Vec3 chest = spot.grip().subtract(spot.world(body(pose.hand()), 0.0F));
+        Blend blend = BLENDS.get(player.getId());
+        float now = now(partialTick);
+        trail(painter, state, (ago, from) -> {
+            SwordPoses.Pose at = earlier(blend, state, now, ago);
+            float turn = pose.orbit() - at.orbit();
+            return chest.add(spot.world(body(at.hand()).add(way(at.blade()).scale(from * SWORD_SCALE)), turn));
+        });
+        slamLight(painter, state, chest.add(spot.world(new Vec3(0.0, 0.0, 1.3), 0.0F)).subtract(0.0,
+                chest.y - player.getY(), 0.0));
     }
 
-    /** Turns a point of the body (x to his right, y up, z ahead of his middle) into a point to draw at. */
-    private interface Placing {
-        Vec3 at(Vec3 body);
+    /** Where a point along the blade was {@code ago} ticks back: {@code from} (in blocks at scale 1) out from the grip. */
+    private interface Blade {
+        Vec3 at(float ago, double from);
     }
 
     /**
      * The streak a swung blade leaves: while a cut or thrust whips through, a sheet of light between where the tip and
      * the root of the blade were over the last few moments.
      */
-    private static void trail(ConstructPainter painter, State state, SwordPoses.Pose pose, Placing placing,
-            double scale) {
+    private static void trail(ConstructPainter painter, State state, Blade blade) {
         SwordMove move = state.move();
         if (move.kind() != SwordMove.Kind.ATTACK && move != SwordMove.FLURRY) {
             return;
@@ -486,19 +698,16 @@ public final class SwordArms {
         float last = move == SwordMove.FLURRY ? SwordMove.FIRST_STAB + (SwordMove.STABS - 1) * SwordMove.STAB_EVERY
                 : hits[hits.length - 1];
         float t = state.t();
-        if (t < first - 2.5F || t > last + 2.5F) {
+        if (t < first - 3.0F || t > last + 3.0F) {
             return;
         }
-        double strength = 1.0 - Math.max(0.0, Math.abs(t - Mth.clamp(t, first - 1.0F, last + 0.5F)) / 1.5);
+        double strength = 1.0 - Math.max(0.0, Math.abs(t - Mth.clamp(t, first - 1.5F, last + 0.8F)) / 1.8);
         List<Vec3> tips = new ArrayList<>(TRAIL);
         List<Vec3> roots = new ArrayList<>(TRAIL);
         for (int k = 0; k < TRAIL; k++) {
-            float then = t - k * TRAIL_STEP;
-            SwordPoses.Pose at = k == 0 ? pose : SwordPoses.at(move, Math.max(0.0F, then), then);
-            Vec3 hand = hand(at, true);
-            Vec3 way = SwordPoses.way(at.bladeYaw() + at.twist(), at.bladePitch());
-            tips.add(placing.at(hand.add(way.scale(SwordPainter.TIP * scale))));
-            roots.add(placing.at(hand.add(way.scale(0.45 * scale))));
+            float ago = Math.min(t, k * TRAIL_STEP);
+            tips.add(blade.at(ago, SwordPainter.TIP));
+            roots.add(blade.at(ago, 0.5));
         }
         SwordPainter.trail(painter, tips, roots, Mth.clamp(strength, 0.0, 1.0) * (move == SwordMove.FLURRY ? 0.6 : 1.0));
     }
@@ -534,7 +743,7 @@ public final class SwordArms {
 
     /**
      * Your own two arms with the sword and the shield, instead of your empty hands: both drawn along with the main hand,
-     * moving through the very same poses as your body seen from outside.
+     * in the pose as it is made, turned round with the body for the spinning cut.
      */
     @SubscribeEvent(priority = EventPriority.LOW)
     public static void onRenderHand(RenderHandEvent event) {
@@ -553,80 +762,83 @@ public final class SwordArms {
         if (state == null) {
             return;
         }
-        SwordPoses.Pose pose = pose(player, state, partialTick);
-        SwordPoses.Pose guard = SwordPoses.GUARD;
-        Vec3 right = OWN_RIGHT.add(view(hand(pose, true).subtract(hand(guard, true))));
-        Vec3 left = OWN_LEFT.add(view(hand(pose, false).subtract(hand(guard, false))));
-        Vec3 leftWay = view(SwordPoses.way(pose.shieldArmYaw() + pose.twist(), pose.shieldArmPitch()));
+        SwordPoses.Pose made = leading(player, state, partialTick);
+        float orbit = made.orbit();
+        SwordPoses.Pose pose = made.turned(orbit);
+        Vec3 grip = pose.hand();
+        Vec3 shieldGrip = pose.shieldGrip(OWN_SHIELD);
         PoseStack stack = event.getPoseStack();
         PlayerRenderer renderer = (PlayerRenderer) minecraft.getEntityRenderDispatcher().getRenderer(player);
-        RechargeAnimation.arm(stack, event.getMultiBufferSource(), event.getPackedLight(), player, renderer, 1.0F,
-                vector(right), shoulder(RechargeAnimation.SHOULDER_RIGHT, right.subtract(OWN_RIGHT)));
-        RechargeAnimation.arm(stack, event.getMultiBufferSource(), event.getPackedLight(), player, renderer, -1.0F,
-                vector(left), shoulder(RechargeAnimation.SHOULDER_LEFT, left.subtract(OWN_LEFT)));
+        arm(stack, event.getMultiBufferSource(), event.getPackedLight(), player, renderer, 1.0F, grip,
+                shoulder(OWN_SHOULDER_RIGHT, made.hand().subtract(SwordPoses.GUARD.hand()), orbit));
+        arm(stack, event.getMultiBufferSource(), event.getPackedLight(), player, renderer, -1.0F, shieldGrip,
+                shoulder(OWN_SHOULDER_LEFT, made.shieldGrip(OWN_SHIELD).subtract(SwordPoses.GUARD.shieldGrip(OWN_SHIELD)),
+                        orbit));
         float time = player.tickCount + partialTick;
         ConstructPainter painter = ConstructPainter.hand(stack, time);
         double apart = state.broken() < 0.0F ? 0.0 : Math.max(1.0E-3, state.broken() / SwordShield.BREAK_TICKS);
-        Vec3[] blade = SwordPoses.frame(pose.bladeYaw() + pose.twist(), pose.bladePitch(), pose.bladeRoll());
-        Vec3 forward = view(blade[0]);
-        Vec3 edge = view(blade[1]);
-        Vec3 grip = right;
-        float[] toss = SwordPoses.toss(state.move(), state.t());
-        if (toss != null) {
-            grip = OWN_RIGHT.add(view(tossed(toss[0]).subtract(hand(guard, true))));
-            Vec3 across = forward.cross(edge).normalize();
-            forward = ConstructPainter.spin(forward, across, toss[1]);
-            edge = ConstructPainter.spin(edge, across, toss[1]);
-        }
-        SwordPainter.sword(painter, grip, forward, edge, OWN_SWORD, SwordPoses.swordGrown(state.move(), state.age()),
-                apart);
-        Vec3[] shield = SwordPoses.frame(pose.shieldYaw() + pose.twist(), pose.shieldPitch(), pose.shieldRoll());
-        Vec3 face = view(shield[0]);
-        SwordPainter.shield(painter, left.add(face.scale(SHIELD_OUT)).subtract(leftWay.scale(0.12)), face,
-                view(shield[1]), OWN_SHIELD, SwordPoses.shieldGrown(state.move(), state.age()), apart);
+        SwordPainter.sword(painter, grip, pose.blade(), pose.edge(), OWN_SWORD,
+                SwordPoses.swordGrown(state.move(), state.age()), apart);
+        SwordPainter.shield(painter, pose.shield(), pose.face(), pose.top(), OWN_SHIELD,
+                SwordPoses.shieldGrown(state.move(), state.age()), apart);
         if (apart <= 0.0) {
-            trail(painter, state, pose, body -> OWN_RIGHT.add(view(body.subtract(hand(guard, true)))), OWN_SWORD);
+            Blend blend = BLENDS.get(player.getId());
+            float now = now(partialTick);
+            trail(painter, state, (ago, from) -> {
+                SwordPoses.Pose at = earlier(blend, state, now, ago);
+                SwordPoses.Pose seen = at.turned(at.orbit());
+                return seen.hand().add(seen.blade().scale(from * OWN_SWORD));
+            });
         }
         painter.finish(minecraft.renderBuffers().bufferSource());
     }
 
-    // ---- Where things are, from a pose ----
-
-    /**
-     * Where a hand is, seen from the middle of his body at the height of his shoulders (x to his right, y up, z ahead):
-     * at the end of the arm, from a shoulder that goes round as the upper body turns, and further forward in a lunge.
-     */
-    static Vec3 hand(SwordPoses.Pose pose, boolean right) {
-        double side = right ? 1.0 : -1.0;
-        double cos = Mth.cos(pose.twist());
-        double sin = Mth.sin(pose.twist());
-        Vec3 shoulder = new Vec3(side * SHOULDER * cos, 0.0, -side * SHOULDER * sin);
-        Vec3 way = right ? SwordPoses.way(pose.armYaw() + pose.twist(), pose.armPitch())
-                : SwordPoses.way(pose.shieldArmYaw() + pose.twist(), pose.shieldArmPitch());
-        return shoulder.add(way.scale(ARM)).add(0.0, 0.0, STEP * pose.step());
+    /** One of your own arms in first person, drawn slim: shrunk towards its hand. */
+    private static void arm(PoseStack stack, MultiBufferSource buffers, int light, LocalPlayer player,
+            PlayerRenderer renderer, float side, Vec3 hand, Vector3f from) {
+        stack.pushPose();
+        stack.translate(hand.x, hand.y, hand.z);
+        stack.scale(OWN_ARM, OWN_ARM, OWN_ARM);
+        stack.translate(-hand.x, -hand.y, -hand.z);
+        RechargeAnimation.arm(stack, buffers, light, player, renderer, side, vector(hand), from);
+        stack.popPose();
     }
 
     /**
-     * Where the sword is while it is tossed up as it takes shape: from where the fist let go of it, up high and back down
-     * into where the fist catches it, {@code u} (0 to 1) of the way.
+     * Where one of your own arms reaches in from in first person: below a bottom corner of the screen, following its hand
+     * a little as that moves from the guard, and going round with the body for the spinning cut.
      */
-    private static Vec3 tossed(float u) {
-        Vec3 from = hand(SwordPoses.at(SwordMove.EQUIP, 10.0F, 0.0F), true);
-        Vec3 to = hand(SwordPoses.at(SwordMove.EQUIP, 20.0F, 0.0F), true);
-        return from.lerp(to, u).add(0.0, TOSS_HIGH * 4.0 * u * (1.0 - u), 0.25 * Math.sin(Math.PI * u));
-    }
-
-    /** A way seen from the body (x to his right, y up, z ahead) as a way before your eyes in first person. */
-    private static Vec3 view(Vec3 body) {
-        return new Vec3(body.x, body.y, -body.z);
-    }
-
-    /** Where one of your own arms reaches in from in first person, with its hand moved {@code moved} from the guard. */
-    private static Vector3f shoulder(Vector3f rest, Vec3 moved) {
-        return new Vector3f(rest).add(vector(moved.scale(OWN_FOLLOW)));
+    private static Vector3f shoulder(Vec3 rest, Vec3 moved, float orbit) {
+        return vector(SwordPoses.spin(rest.add(moved.scale(OWN_FOLLOW)), orbit));
     }
 
     private static Vector3f vector(Vec3 at) {
         return new Vector3f((float) at.x, (float) at.y, (float) at.z);
+    }
+
+    // ---- From your own eyes to the body seen from outside ----
+
+    /** A place before your eyes in first person as a place before the body (see {@link #BODY_ACROSS}). */
+    private static Vec3 body(Vec3 view) {
+        return new Vec3(view.x * BODY_ACROSS, view.y * BODY_UP + BODY_RAISE, -view.z * BODY_AHEAD - BODY_BACK);
+    }
+
+    /** A way before your eyes in first person as a way seen from the body (x to his right, y up, z ahead). */
+    private static Vec3 way(Vec3 view) {
+        return new Vec3(view.x, view.y, -view.z);
+    }
+
+    /** A place before the body as seen from the upper body turned {@code twist} to his right. */
+    private static Vec3 unturned(Vec3 at, float twist) {
+        double cos = Mth.cos(twist);
+        double sin = Mth.sin(twist);
+        return new Vec3(at.x * cos - at.z * sin, at.y, at.x * sin + at.z * cos);
+    }
+
+    /** A place before the upper body as it is before the game bends it forward by {@code tilt} (radians). */
+    private static Vec3 unbent(Vec3 at, float tilt) {
+        double cos = Mth.cos(tilt);
+        double sin = Mth.sin(tilt);
+        return new Vec3(at.x, at.y * cos + at.z * sin, -at.y * sin + at.z * cos);
     }
 }

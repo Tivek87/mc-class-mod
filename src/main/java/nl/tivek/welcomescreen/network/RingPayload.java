@@ -19,8 +19,7 @@ import nl.tivek.welcomescreen.WelcomeScreenMod;
  * @param lantern how many ticks into recharging he is, or -1 when he is not recharging
  * @param flight  how many ticks ago he took off, or -1 when he is not flying
  * @param state   what the ring holds up or pours out right now: {@link #SHIELD}, {@link #DOME}, {@link #BEAM},
- *                {@link #DESCENT} while an empty ring lets him down, {@link #DIVE} while he dives for a slam and
- *                {@link #BOOST} while he flies at top speed
+ *                {@link #DESCENT} while an empty ring lets him down and {@link #DIVE} while he dives for a slam
  * @param arrival how many ticks ago the ring set out to make him Green Lantern, or -1 when that is over (see
  *                {@link nl.tivek.welcomescreen.character.lantern.Arrival})
  * @param from    where the ring showed up for that, or null when it is over
@@ -39,8 +38,6 @@ public record RingPayload(int entity, float power, float pending, int lantern, i
     public static final int DESCENT = 8;
     /** He is on his way down to a slam (the shockwave key in the air): diving on his ring, or dropping. */
     public static final int DIVE = 16;
-    /** He flies at top speed: two jets of hard light hang behind him on chains. */
-    public static final int BOOST = 32;
 
     public static final CustomPacketPayload.Type<RingPayload> TYPE = new CustomPacketPayload.Type<>(
             ResourceLocation.fromNamespaceAndPath(WelcomeScreenMod.MODID, "ring"));

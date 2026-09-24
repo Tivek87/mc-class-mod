@@ -455,6 +455,112 @@ final class Mesh {
         return builder.build();
     }
 
+    /**
+     * A body swept along z through sections of the same outline, the way {@link #loft} does with ovals: a blade with
+     * flat faces and bevelled edges, a fuselage with a flat belly, a beam of any cross-section. {@code outline} gives
+     * pairs of x and y all round it, seen whole from its own middle; every section gives its z, how far the outline is
+     * stretched along x and along y, and how high its middle is. A section stretched to nothing ends the body there in a
+     * point; an end that is not a point is closed flat.
+     */
+    static Mesh sweep(double bright, double[] outline, double[]... sections) {
+        int round = outline.length / 2;
+        int n = sections.length;
+        Builder builder = new Builder();
+        int[][] ring = new int[n][round];
+        boolean[] point = new boolean[n];
+        for (int i = 0; i < n; i++) {
+            double[] section = sections[i];
+            point[i] = section[1] <= 1.0E-9 && section[2] <= 1.0E-9;
+            if (point[i]) {
+                Arrays.fill(ring[i], builder.point(0.0, section[3], section[0]));
+                continue;
+            }
+            for (int j = 0; j < round; j++) {
+                ring[i][j] = builder.point(outline[2 * j] * section[1], section[3] + outline[2 * j + 1] * section[2],
+                        section[0]);
+            }
+        }
+        for (int i = 0; i + 1 < n; i++) {
+            Vec3 axis = new Vec3(0.0, (sections[i][3] + sections[i + 1][3]) * 0.5,
+                    (sections[i][0] + sections[i + 1][0]) * 0.5);
+            for (int j = 0; j < round; j++) {
+                int k = (j + 1) % round;
+                builder.outward(axis, bright, ring[i][j], ring[i][k], ring[i + 1][k], ring[i + 1][j]);
+            }
+        }
+        for (int end = 0; end < 2; end++) {
+            int i = end == 0 ? 0 : n - 1;
+            if (point[i] || n < 2) {
+                continue;
+            }
+            int other = end == 0 ? 1 : n - 2;
+            Vec3 inside = new Vec3(0.0, sections[i][3], sections[i][0] + (sections[other][0] - sections[i][0]) * 0.01);
+            int middle = builder.point(0.0, sections[i][3], sections[i][0]);
+            for (int j = 0; j < round; j++) {
+                int k = (j + 1) % round;
+                builder.outward(inside, bright, middle, ring[i][j], ring[i][k], ring[i][k]);
+            }
+        }
+        return builder.build();
+    }
+
+    /**
+     * A curved plate: a flat outline filled in from its middle, {@code back} to {@code front} thick along z, and bowed
+     * out towards +z by {@code bulge} in its middle, less and less towards its rim, the way a shield or a hatch is. The
+     * outline gives pairs of x and y all round it, seen whole from its own middle.
+     *
+     * @param rings how many rings the face is cut into from its middle to its rim: the more, the rounder it bows
+     */
+    static Mesh dish(int rings, double back, double front, double bulge, double bright, double... outline) {
+        int n = outline.length / 2;
+        double cx = 0.0;
+        double cy = 0.0;
+        for (int i = 0; i < n; i++) {
+            cx += outline[2 * i] / n;
+            cy += outline[2 * i + 1] / n;
+        }
+        Builder builder = new Builder();
+        int[][] face = new int[rings + 1][n];
+        int[][] rear = new int[rings + 1][n];
+        for (int r = 0; r <= rings; r++) {
+            double f = (double) r / rings;
+            double bow = bulge * (1.0 - f * f);
+            for (int i = 0; i < n; i++) {
+                double x = cx + (outline[2 * i] - cx) * f;
+                double y = cy + (outline[2 * i + 1] - cy) * f;
+                if (r == 0) {
+                    if (i == 0) {
+                        face[0][0] = builder.point(x, y, front + bow);
+                        rear[0][0] = builder.point(x, y, back + bow);
+                    }
+                    face[0][i] = face[0][0];
+                    rear[0][i] = rear[0][0];
+                    continue;
+                }
+                face[r][i] = builder.point(x, y, front + bow);
+                rear[r][i] = builder.point(x, y, back + bow);
+            }
+        }
+        double middle = (front + back) * 0.5;
+        for (int r = 0; r < rings; r++) {
+            double f = (r + 0.5) / rings;
+            double bow = bulge * (1.0 - f * f);
+            Vec3 behind = new Vec3(cx, cy, middle + bow - 8.0 * Math.max(0.05, Math.abs(front - back)));
+            Vec3 before = new Vec3(cx, cy, middle + bow + 8.0 * Math.max(0.05, Math.abs(front - back)));
+            for (int i = 0; i < n; i++) {
+                int j = (i + 1) % n;
+                builder.outward(behind, bright, face[r][i], face[r][j], face[r + 1][j], face[r + 1][i]);
+                builder.outward(before, bright, rear[r][i], rear[r][j], rear[r + 1][j], rear[r + 1][i]);
+            }
+        }
+        Vec3 inside = new Vec3(cx, cy, middle);
+        for (int i = 0; i < n; i++) {
+            int j = (i + 1) % n;
+            builder.outward(inside, bright, rear[rings][i], rear[rings][j], face[rings][j], face[rings][i]);
+        }
+        return builder.build();
+    }
+
     /** The four corners round one section of a wing: its leading edge, its top, its trailing edge, its bottom. */
     private static int[] section(Builder builder, double x, double y, double back, double front, double thick) {
         double crest = front - (front - back) * 0.35;

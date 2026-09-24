@@ -45,11 +45,6 @@ public final class Characters {
      */
     public static final int SLAM = 8;
     /**
-     * Bit in the flight key's {@code data}, sent by your own game rather than by the key: you have reached top speed
-     * ({@code on} true) or dropped below it again ({@code on} false). Everyone sees the jets that come with it.
-     */
-    public static final int BOOST = 16;
-    /**
      * Bit in a mouse ability's {@code data} with the button of the hand that defends coming up: it did not come up, the
      * charge of the shield ran into a wall and stopped by itself.
      */

@@ -27,11 +27,12 @@ import org.lwjgl.glfw.GLFW;
  * closes without changing anything. Only tapping the key never gets this far: that swaps on the spot
  * (see {@link ConstructWheel}).
  *
- * <p>The wheel fills almost the whole height of the screen. What the mouse points at is written in its middle:
- * its name, and what it is. A thin plate along the top of the screen (never over the wheel) says how a
- * construct's mouse buttons work and what to do. Every construct will use the mouse the same way: left click
- * attacks, from the right hand (where the ring is); right click defends, from the left hand. None of them do
- * anything yet: picking one only writes it down (see {@link ConstructChoice}) and shows it above your hotbar.
+ * <p>The wheel fills almost the whole height of the screen. Every slice shows its construct (see
+ * {@link ConstructIcons}): one that exists as its own hard-light model, a slot still kept free as the lantern emblem.
+ * What the mouse points at is written in its middle: its name, and what it is. A thin plate along the top of the screen
+ * (never over the wheel) says how a construct's mouse buttons work and what to do. Every construct uses the mouse the
+ * same way: left click attacks, from the right hand (where the ring is); right click defends, from the left hand.
+ * Picking one takes it out (see {@link ConstructChoice}) and shows it above your hotbar.
  */
 public class ConstructWheelScreen extends Screen {
     private static final String KEY = "screen." + WelcomeScreenMod.MODID + ".construct_wheel.";
@@ -311,14 +312,11 @@ public class ConstructWheelScreen extends Screen {
             float angle = this.slice(i) * Mth.DEG_TO_RAD;
             float iconX = middleX + Mth.sin(angle) * radius;
             float iconY = middleY - Mth.cos(angle) * radius;
-            float iconSize = (edge - inner) * 0.34F * (1.0F + 0.08F * glow);
+            // A construct that exists is its own model, as big as the slice allows; a free slot a small emblem.
+            float iconSize = (edge - inner) * (construct.made() ? 0.62F : 0.34F) * (0.86F + 0.14F * this.open);
             int iconColour = GuiShapes.mix(GREEN, BRIGHT, 0.3F + 0.7F * glow);
-            float iconAlpha = (0.55F + 0.45F * glow) * this.open;
-            if (construct == Construct.SWORD_SHIELD) {
-                swordShieldIcon(graphics, iconX, iconY, iconSize, iconColour, iconAlpha);
-            } else {
-                emptyIcon(graphics, iconX, iconY, iconSize, iconColour, iconAlpha);
-            }
+            float iconAlpha = (0.4F + 0.5F * glow) * this.open;
+            ConstructIcons.draw(graphics, construct, iconX, iconY, iconSize, glow, iconColour, iconAlpha);
             // A dot marks the one you already have out.
             if (construct == held) {
                 GuiShapes.disc(graphics, middleX + Mth.sin(angle) * (inner + 4.0F),
@@ -339,64 +337,6 @@ public class ConstructWheelScreen extends Screen {
                 GuiShapes.fade(GuiShapes.mix(GREEN, BRIGHT, glow), (0.45F + 0.55F * glow) * this.open));
         GuiShapes.ring(graphics, middleX, middleY, hub * 0.72F, Math.max(1.0F, hub * 0.05F),
                 GuiShapes.fade(GREEN, (0.14F + 0.2F * glow) * this.open));
-    }
-
-    /**
-     * The empty square where a construct's picture will go. The drawings are not made yet, so every slot
-     * shows the same frame; swap this for the 16x16 icon once it exists.
-     */
-    private static void emptyIcon(GuiGraphics graphics, float x, float y, float size, int rgb, float alpha) {
-        float half = size * 0.5F;
-        float thick = Math.max(1.0F, size * 0.09F);
-        int line = GuiShapes.fade(rgb, alpha);
-        // Four short corner pieces rather than a full box, so it reads as an empty slot, not a button.
-        float leg = half * 0.62F;
-        for (int sx = -1; sx <= 1; sx += 2) {
-            for (int sy = -1; sy <= 1; sy += 2) {
-                GuiShapes.stroke(graphics, x + sx * half, y + sy * half, x + sx * (half - leg), y + sy * half,
-                        thick, line);
-                GuiShapes.stroke(graphics, x + sx * half, y + sy * half, x + sx * half, y + sy * (half - leg),
-                        thick, line);
-            }
-        }
-        GuiShapes.disc(graphics, x, y, thick * 0.9F, GuiShapes.fade(rgb, alpha * 0.8F));
-    }
-
-    /**
-     * The picture of the sword and shield: a heater shield with a ring on its face, and a sword crossing behind it from
-     * its bottom left to its top right, with its crossguard and pommel.
-     */
-    private static void swordShieldIcon(GuiGraphics graphics, float x, float y, float size, int rgb, float alpha) {
-        float half = size * 0.5F;
-        float thick = Math.max(1.0F, size * 0.09F);
-        int line = GuiShapes.fade(rgb, alpha);
-        // The sword, corner to corner behind the shield.
-        float fromX = x - half * 0.95F;
-        float fromY = y + half * 0.95F;
-        float toX = x + half * 1.05F;
-        float toY = y - half * 1.05F;
-        GuiShapes.stroke(graphics, fromX, fromY, toX, toY, thick * 1.1F, line);
-        float guardX = x - half * 0.55F;
-        float guardY = y + half * 0.55F;
-        float cross = half * 0.32F;
-        GuiShapes.stroke(graphics, guardX - cross, guardY - cross, guardX + cross, guardY + cross, thick, line);
-        GuiShapes.disc(graphics, fromX, fromY, thick * 1.1F, line);
-        // The shield: flat on top, sides coming in to a point below.
-        float w = half * 0.62F;
-        float top = y - half * 0.62F;
-        float waist = y + half * 0.1F;
-        float point = y + half * 0.78F;
-        int shield = GuiShapes.fade(GuiShapes.mix(0x0B2E18, rgb, 0.35F), Math.min(1.0F, alpha * 1.1F));
-        for (float row = top; row <= point; row += 0.75F) {
-            float across = row <= waist ? w : w * (1.0F - (row - waist) / (point - waist));
-            GuiShapes.stroke(graphics, x - across, row, x + across, row, 1.0F, shield);
-        }
-        GuiShapes.stroke(graphics, x - w, top, x + w, top, thick, line);
-        GuiShapes.stroke(graphics, x - w, top, x - w, waist, thick, line);
-        GuiShapes.stroke(graphics, x + w, top, x + w, waist, thick, line);
-        GuiShapes.stroke(graphics, x - w, waist, x, point, thick, line);
-        GuiShapes.stroke(graphics, x + w, waist, x, point, thick, line);
-        GuiShapes.ring(graphics, x, y - half * 0.1F, half * 0.26F, Math.max(1.0F, thick * 0.8F), line);
     }
 
     /** A little wedge that shows which way the mouse is pointing. */

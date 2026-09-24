@@ -24,8 +24,8 @@ import net.minecraft.world.phys.Vec3;
 public record PlanePath(Vec3 start, Vec3 way, double drop, int attack, double end) {
     /** Ticks from the call until it flies at its full speed: it takes shape meanwhile. */
     public static final int FORM = 40;
-    /** Ticks a full dive takes, from the moment its nose drops to the ground. */
-    public static final int DIVE = 30;
+    /** Ticks a full dive takes, from the moment its nose drops to the ground: all at once, boom. */
+    public static final int DIVE = 20;
     /** How fast it flies, in blocks per tick: a big, slow plane. */
     public static final double SPEED = 0.18;
     // How much faster it goes forward at the end of the dive than while it drones on, and how steeply the fall

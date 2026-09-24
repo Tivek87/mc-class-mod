@@ -40,17 +40,18 @@ import nl.tivek.welcomescreen.spell.SpellFx;
 
 /**
  * The first construct of the wheel: a sword of hard light in the ring hand and a shield on the other arm. They take
- * shape when he picks them (the sword tossed up spinning and caught, and knocked on the shield) and break into solid
- * pieces when he puts them away. While he holds them the mouse is theirs:
+ * shape when he picks them (the sword grows out of his fist and is tossed up spinning and caught, twirled and knocked on
+ * the shield) and break into solid pieces when he puts them away. While he holds them the mouse is theirs:
  * <ul>
  * <li><b>Left click:</b> one of twelve cuts and thrusts (see {@link SwordMove}), picked at random each time and
  * flowing on from the last.</li>
  * <li><b>Left held 2 seconds:</b> the shield before his chest (it takes most of what comes from the front) and twelve
  * quick stabs all over the front.</li>
- * <li><b>Right click:</b> one of six shield bashes that shove what they strike away from him.</li>
- * <li><b>Right held 2 seconds:</b> bent forward behind the locked shield he charges straight ahead, shoving everyone in
- * his way aside with a light hit; running into a wall or letting go ends it, and he slams the shield into the ground
- * for a small shockwave.</li>
+ * <li><b>Right held:</b> he blocks: the shield up before him takes most of what comes from the front, for as long as he
+ * holds it. He can still cut and thrust behind it.</li>
+ * <li><b>Right click:</b> bent forward behind the locked shield he charges straight ahead, and rams everyone in his way
+ * aside with one of six rams and a light hit; running into a wall, clicking again or running out of time ends it, and he
+ * slams the shield into the ground for a small shockwave.</li>
  * </ul>
  * The numbers are settings of the Construct Wheel. His client plays every move the moment he clicks; the server strikes
  * on the move's own ticks and shows the moves to everyone else.
@@ -89,6 +90,10 @@ public final class SwordShield implements SpellEffect {
     private int moveStart;
     private boolean flurry;
     private boolean charging;
+    private int chargeStart;
+    @Nullable
+    private SwordMove lastRam;
+    private boolean blocking;
     private Vec3 way = new Vec3(0.0, 0.0, 1.0);
     private int breaking = -1;
 
@@ -149,8 +154,8 @@ public final class SwordShield implements SpellEffect {
     }
 
     /**
-     * The button of the hand that defends, while he holds the shield: a tap bashes (the bash his client picked), holding
-     * it charges, and letting go (or running into a wall) ends the charge with a slam.
+     * The button of the hand that defends, while he holds the shield: holding it blocks, a click charges, and letting go
+     * ends the block; a charge ends by itself (a wall, a second click, or its time running out: his client tells).
      *
      * @return true when something happened
      */
@@ -160,17 +165,12 @@ public final class SwordShield implements SpellEffect {
             return false;
         }
         if (!on) {
-            return sword.stopCharge();
+            return sword.blocking ? sword.stopBlock() : sword.stopCharge();
         }
         if ((data & Characters.HOLD) != 0) {
-            return sword.startCharge();
+            return sword.startBlock();
         }
-        if ((data & Characters.TAP) == 0) {
-            return false;
-        }
-        SwordMove move = SwordMove.byIndex(data >> Characters.MOVE_SHIFT);
-        return sword.begin(move != null && move.kind() == SwordMove.Kind.BASH ? move
-                : SwordMove.randomBash(player.getRandom(), null));
+        return (data & Characters.TAP) != 0 && sword.startCharge();
     }
 
     /** The server stops: nobody holds a sword any more. */
@@ -195,11 +195,26 @@ public final class SwordShield implements SpellEffect {
         this.move = next;
         this.moveStart = this.age;
         this.flurry = false;
-        if (next.kind() == SwordMove.Kind.BASH) {
-            this.sound(SoundEvents.PLAYER_ATTACK_KNOCKBACK, 0.7F, 0.8F);
-        } else {
-            this.sound(SoundEvents.PLAYER_ATTACK_SWEEP, 0.6F, 1.3F + 0.3F * this.owner.getRandom().nextFloat());
+        this.sound(SoundEvents.PLAYER_ATTACK_SWEEP, 0.6F, 1.3F + 0.3F * this.owner.getRandom().nextFloat());
+        return true;
+    }
+
+    /** He raises the shield before him and holds it there: it takes most of what comes from the front. */
+    private boolean startBlock() {
+        if (this.charging || this.blocking) {
+            return false;
         }
+        this.blocking = true;
+        this.sound(SoundEvents.ARMOR_EQUIP_IRON.value(), 0.8F, 1.2F);
+        this.sound(SoundEvents.AMETHYST_BLOCK_RESONATE, 0.5F, 1.6F);
+        return true;
+    }
+
+    private boolean stopBlock() {
+        if (!this.blocking) {
+            return false;
+        }
+        this.blocking = false;
         return true;
     }
 
@@ -235,7 +250,7 @@ public final class SwordShield implements SpellEffect {
     }
 
     private boolean startCharge() {
-        if (!this.free() || Flight.flying(this.owner)) {
+        if (!this.free() || this.blocking || Flight.flying(this.owner)) {
             return false;
         }
         float cost = (float) wheel().value("chargePowerCost");
@@ -247,7 +262,10 @@ public final class SwordShield implements SpellEffect {
         PowerRing.setPower(this.owner, power - cost);
         this.move = SwordMove.CHARGE;
         this.moveStart = this.age;
+        this.chargeStart = this.age;
         this.charging = true;
+        this.flurry = false;
+        this.lastRam = null;
         this.way = flat(this.owner.getLookAngle());
         this.shoved.clear();
         this.sound(SoundEvents.ARMOR_EQUIP_NETHERITE.value(), 1.0F, 0.7F);
@@ -285,15 +303,31 @@ public final class SwordShield implements SpellEffect {
         }
         this.age++;
         int t = this.age - this.moveStart;
+        if (this.blocking) {
+            // Holding the shield up costs the ring a little all the while; an empty ring lets it drop.
+            float cost = (float) wheel().value("blockPowerPerSecond") / 20.0F;
+            float power = PowerRing.power(this.owner);
+            if (power + 1.0E-4F < cost) {
+                this.stopBlock();
+                PowerRing.tell(this.owner, "no_power");
+            } else {
+                PowerRing.setPower(this.owner, power - cost);
+            }
+        }
+        if (this.charging) {
+            this.charge(level, this.age - this.chargeStart);
+            this.send(level);
+            return true;
+        }
         switch (this.move.kind()) {
-            case ATTACK, BASH, SLAM -> {
+            case ATTACK, SLAM -> {
                 int[] hits = this.move.hits();
                 for (int k = 0; k < hits.length; k++) {
                     if (t == hits[k]) {
                         this.strike(level);
                     }
                 }
-                if (this.move == SwordMove.LUNGE && t == 6) {
+                if (this.move == SwordMove.LUNGE && t == 5) {
                     // The step of the lunge: he is thrown forward a little way.
                     Vec3 ahead = flat(this.owner.getLookAngle());
                     this.owner.setDeltaMovement(this.owner.getDeltaMovement().add(ahead.scale(0.75)).add(0.0, 0.06,
@@ -311,21 +345,28 @@ public final class SwordShield implements SpellEffect {
                     this.flurry = false;
                 }
             }
-            case CHARGE -> this.charge(level, t);
             case EQUIP -> this.equipping(t);
+            case BASH, CHARGE -> {
+                // A ram or the run itself only ever happen while he charges.
+            }
         }
         this.send(level);
         return true;
     }
 
-    /** The sounds of their taking shape: the toss, the catch, and two knocks on the shield. */
+    /** The sounds of their taking shape: the twirl whirring round and ending, and two knocks on the shield. */
     private void equipping(int t) {
         switch (t) {
-            case 10 -> this.sound(SoundEvents.TRIDENT_THROW.value(), 0.6F, 1.5F);
-            case 20 -> this.sound(SoundEvents.ARMOR_EQUIP_IRON.value(), 0.9F, 1.3F);
-            case 24, 28 -> {
-                this.sound(SoundEvents.SHIELD_BLOCK, 0.8F, t == 24 ? 1.3F : 1.5F);
-                this.sound(SoundEvents.AMETHYST_BLOCK_HIT, 0.8F, t == 24 ? 1.1F : 1.3F);
+            case SwordMove.TWIRL -> this.sound(SoundEvents.PLAYER_ATTACK_SWEEP, 0.6F, 1.6F);
+            case SwordMove.TWIRL + 4 -> this.sound(SoundEvents.PLAYER_ATTACK_SWEEP, 0.5F, 1.8F);
+            case SwordMove.TWIRLED -> {
+                this.sound(SoundEvents.ARMOR_EQUIP_IRON.value(), 0.9F, 1.3F);
+                this.sound(SoundEvents.AMETHYST_BLOCK_CHIME, 0.8F, 1.2F);
+            }
+            case SwordMove.KNOCK, SwordMove.KNOCK + 3 -> {
+                boolean first = t == SwordMove.KNOCK;
+                this.sound(SoundEvents.SHIELD_BLOCK, 0.8F, first ? 1.3F : 1.5F);
+                this.sound(SoundEvents.AMETHYST_BLOCK_HIT, 0.8F, first ? 1.1F : 1.3F);
             }
             default -> {
             }
@@ -333,8 +374,8 @@ public final class SwordShield implements SpellEffect {
     }
 
     /**
-     * A cut, a thrust or a bash lands: everything fair game in its arc and within its reach, not behind a wall, is
-     * struck and thrown the way the move goes. The end of a charge slams the shield into the ground instead.
+     * A cut or a thrust lands: everything fair game in its arc and within its reach, not behind a wall, is struck and
+     * thrown the way the move goes. The end of a charge slams the shield into the ground instead.
      */
     private void strike(ServerLevel level) {
         CharacterAbility wheel = wheel();
@@ -342,12 +383,11 @@ public final class SwordShield implements SpellEffect {
             this.slam(level, wheel);
             return;
         }
-        boolean bash = this.move.kind() == SwordMove.Kind.BASH;
         Vec3 origin = this.owner.position().add(0.0, this.owner.getBbHeight() * CHEST, 0.0);
         Vec3 look = flat(this.owner.getLookAngle());
         Vec3 right = new Vec3(-look.z, 0.0, look.x);
-        double damage = (bash ? wheel.value("bashDamage") : wheel.value("swordDamage")) * this.move.power();
-        double reach = this.move.reach() * (bash ? 1.0 : wheel.value("swordReach") / 3.2);
+        double damage = wheel.value("swordDamage") * this.move.power();
+        double reach = this.move.reach() * wheel.value("swordReach") / 3.2;
         int struck = 0;
         for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, new AABB(origin, origin)
                 .inflate(reach + 1.5), this::fair)) {
@@ -367,34 +407,25 @@ public final class SwordShield implements SpellEffect {
             }
             target.invulnerableTime = 0;
             target.hurt(level.damageSources().playerAttack(this.owner), (float) damage);
-            push(target, this.move, look, right, to, bash ? wheel.value("bashKnockback") : 0.35);
-            level.sendParticles(bash ? ParticleTypes.CRIT : ParticleTypes.ENCHANTED_HIT, middle.x, middle.y, middle.z,
-                    8, 0.2, 0.2, 0.2, 0.25);
+            push(target, this.move, look, right, to, 0.35);
+            level.sendParticles(ParticleTypes.ENCHANTED_HIT, middle.x, middle.y, middle.z, 8, 0.2, 0.2, 0.2, 0.25);
             struck++;
         }
         Vec3 front = origin.add(look.scale(1.6));
-        if (bash) {
-            this.sound(struck > 0 ? SoundEvents.SHIELD_BLOCK : SoundEvents.PLAYER_ATTACK_NODAMAGE, 1.0F,
-                    struck > 0 ? 0.8F : 1.2F);
-            if (struck > 0) {
-                this.sound(SoundEvents.AMETHYST_BLOCK_RESONATE, 0.8F, 1.4F);
-            }
-        } else {
-            if (this.move != SwordMove.STAB && this.move != SwordMove.LUNGE) {
-                level.sendParticles(ParticleTypes.SWEEP_ATTACK, front.x, front.y, front.z, 1, 0.0, 0.0, 0.0, 0.0);
-            }
-            this.sound(struck > 0 ? SoundEvents.PLAYER_ATTACK_STRONG : SoundEvents.PLAYER_ATTACK_SWEEP, 0.9F,
-                    struck > 0 ? 1.0F : 1.5F);
-            if (struck > 0) {
-                this.sound(SoundEvents.AMETHYST_BLOCK_HIT, 1.0F, 1.2F);
-            }
+        if (this.move != SwordMove.STAB && this.move != SwordMove.LUNGE) {
+            level.sendParticles(ParticleTypes.SWEEP_ATTACK, front.x, front.y, front.z, 1, 0.0, 0.0, 0.0, 0.0);
+        }
+        this.sound(struck > 0 ? SoundEvents.PLAYER_ATTACK_STRONG : SoundEvents.PLAYER_ATTACK_SWEEP, 0.9F,
+                struck > 0 ? 1.0F : 1.5F);
+        if (struck > 0) {
+            this.sound(SoundEvents.AMETHYST_BLOCK_HIT, 1.0F, 1.2F);
         }
         SpellFx.cloud(level, SpellFx.dust(PowerRing.BRIGHT, 0.8F), front, 5, 0.3, 0.05);
     }
 
     /**
-     * Throws a creature the move struck the way the move goes: a cut across sweeps it aside, an uppercut or an upward
-     * bash throws it up, a bash from above knocks it down (and slows it a moment), anything else straight away.
+     * Throws a creature a cut or thrust struck the way the move goes: a cut across sweeps it aside, an uppercut throws
+     * it up, a chop from above knocks it down, anything else straight away.
      */
     private static void push(LivingEntity target, SwordMove move, Vec3 look, Vec3 right, Vec3 to, double strength) {
         Vec3 away = new Vec3(to.x, 0.0, to.z);
@@ -404,19 +435,36 @@ public final class SwordShield implements SpellEffect {
             case BACKHAND -> away.add(right).normalize();
             case UPPERCUT -> away.scale(0.3).add(0.0, 1.0, 0.0);
             case OVERHEAD -> away.scale(0.6).add(0.0, -0.2, 0.0);
-            case BASH_SWEEP -> right.add(away.scale(0.5)).normalize();
-            case BASH_BACKHAND -> right.scale(-1.0).add(away.scale(0.5)).normalize();
-            case BASH_UP -> away.scale(0.4).add(0.0, 1.1, 0.0);
-            case BASH_DOWN -> away.add(0.0, -0.1, 0.0);
             default -> away;
         };
         double resist = Mth.clamp(target.getAttributeValue(Attributes.KNOCKBACK_RESISTANCE), 0.0, 1.0);
-        double lift = move == SwordMove.BASH_DOWN || move == SwordMove.OVERHEAD ? 0.0 : 0.15;
+        double lift = move == SwordMove.OVERHEAD ? 0.0 : 0.15;
         target.setDeltaMovement(target.getDeltaMovement().add(push.scale(strength * (1.0 - resist)))
                 .add(0.0, lift * strength * (1.0 - resist), 0.0));
         target.hasImpulse = true;
         target.hurtMarked = true;
-        if (move == SwordMove.BASH_DOWN) {
+    }
+
+    /**
+     * Throws a creature in the way of a charge off to the side of him it stood on ({@code side} 1 for his right, -1 for
+     * his left), the way the ram he threw at it goes: a punch of the shield sends it ahead and aside, a sweep flings it
+     * far aside, from under it throws it up, the rim from above knocks it down and slows it, and a shoulder behind the
+     * shield bowls it over hardest.
+     */
+    private static void ram(LivingEntity target, SwordMove ram, Vec3 way, Vec3 right, double side, double strength) {
+        Vec3 aside = right.scale(side);
+        Vec3 push = switch (ram) {
+            case BASH -> way.scale(0.9).add(aside.scale(0.6)).add(0.0, 0.3, 0.0);
+            case BASH_SWEEP, BASH_BACKHAND -> aside.scale(1.25).add(way.scale(0.3)).add(0.0, 0.32, 0.0);
+            case BASH_UP -> aside.scale(0.6).add(way.scale(0.2)).add(0.0, 1.05, 0.0);
+            case BASH_DOWN -> aside.scale(0.95).add(way.scale(0.2)).add(0.0, 0.05, 0.0);
+            default -> aside.scale(1.35).add(way.scale(0.55)).add(0.0, 0.45, 0.0);
+        };
+        double resist = Mth.clamp(target.getAttributeValue(Attributes.KNOCKBACK_RESISTANCE), 0.0, 1.0);
+        target.setDeltaMovement(target.getDeltaMovement().add(push.scale(strength * (1.0 - resist))));
+        target.hasImpulse = true;
+        target.hurtMarked = true;
+        if (ram == SwordMove.BASH_DOWN) {
             target.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 30, 2));
         }
     }
@@ -447,7 +495,10 @@ public final class SwordShield implements SpellEffect {
                 1.4F + 0.05F * k);
     }
 
-    /** A tick of the charge: whoever stands in his way is shoved aside to the side of him it stood on, with a light hit. */
+    /**
+     * A tick of the charge: whoever stands in his way is rammed aside to the side of him it stood on, with one of the
+     * shield's six rams (see {@link #ram}) and a light hit. Clients play the ram from the move it sets.
+     */
     private void charge(ServerLevel level, int t) {
         CharacterAbility wheel = wheel();
         if (t >= Math.round(wheel.value("chargeSeconds") * 20.0) + 4) {
@@ -467,17 +518,20 @@ public final class SwordShield implements SpellEffect {
             this.shoved.add(target.getId());
             double side = to.dot(right);
             double sign = Math.abs(side) < 0.05 ? (this.owner.getRandom().nextBoolean() ? 1.0 : -1.0) : Math.signum(side);
+            SwordMove ram = SwordMove.randomRam(this.owner.getRandom(), sign > 0.0, this.lastRam);
+            this.lastRam = ram;
+            this.move = ram;
+            this.moveStart = this.age;
             target.invulnerableTime = 0;
-            target.hurt(level.damageSources().playerAttack(this.owner), (float) wheel.value("chargeDamage"));
-            double resist = Mth.clamp(target.getAttributeValue(Attributes.KNOCKBACK_RESISTANCE), 0.0, 1.0);
-            Vec3 push = right.scale(sign * 1.05).add(this.way.scale(0.35)).add(0.0, 0.32, 0.0).scale(1.0 - resist);
-            target.setDeltaMovement(target.getDeltaMovement().add(push));
-            target.hasImpulse = true;
-            target.hurtMarked = true;
+            target.hurt(level.damageSources().playerAttack(this.owner),
+                    (float) (wheel.value("chargeDamage") * ram.power()));
+            ram(target, ram, this.way, right, sign, wheel.value("bashKnockback"));
             Vec3 middle = target.getBoundingBox().getCenter();
-            level.sendParticles(ParticleTypes.CRIT, middle.x, middle.y, middle.z, 10, 0.3, 0.3, 0.3, 0.3);
+            level.sendParticles(ParticleTypes.CRIT, middle.x, middle.y, middle.z, 12, 0.3, 0.3, 0.3, 0.35);
+            SpellFx.cloud(level, SpellFx.dust(PowerRing.BRIGHT, 1.2F), middle, 8, 0.35, 0.08);
             this.sound(SoundEvents.SHIELD_BLOCK, 1.0F, 0.7F);
             this.sound(SoundEvents.PLAYER_ATTACK_KNOCKBACK, 1.0F, 0.9F);
+            this.sound(SoundEvents.AMETHYST_BLOCK_RESONATE, 0.7F, 1.3F);
         }
         if (t % 3 == 0) {
             BlockState ground = level.getBlockState(BlockPos.containing(at.subtract(0.0, 0.2, 0.0)));
@@ -535,6 +589,7 @@ public final class SwordShield implements SpellEffect {
         this.breaking = 0;
         this.flurry = false;
         this.charging = false;
+        this.blocking = false;
         this.sound(SoundEvents.AMETHYST_CLUSTER_BREAK, 0.9F, 1.3F);
     }
 
@@ -553,15 +608,17 @@ public final class SwordShield implements SpellEffect {
     }
 
     /**
-     * What everyone around needs to play it: which move it is, from which of its ticks, the way a charge goes, and how
-     * far it has broken up ({@code size}: -1 while whole).
+     * What everyone around needs to play it: which move it is (and whether he blocks or charges), from which of its
+     * ticks, the way a charge goes, and how far it has broken up ({@code size}: -1 while whole).
      */
     private void send(ServerLevel level) {
         Vec3 at = this.owner.position();
+        int move = this.move.ordinal() | (this.blocking ? SwordMove.BLOCKING : 0)
+                | (this.charging ? SwordMove.CHARGING : 0);
         PacketDistributor.sendToPlayersNear(level, null, at.x, at.y, at.z, VIEW_RANGE,
                 new ConstructPayload(this.id, this.owner.getId(), at, this.charging ? this.way
                         : this.owner.getLookAngle(), this.breaking, 1.0F, this.moveStart, true, ConstructPayload.SWORD,
-                        this.move.ordinal(), this.age, null));
+                        move, this.age, null));
     }
 
     private void sound(SoundEvent sound, float volume, float pitch) {
@@ -570,8 +627,9 @@ public final class SwordShield implements SpellEffect {
     }
 
     /**
-     * A hit on someone holding the shield up before him: the flurry's guard stops most of what comes from the front,
-     * the shield locked before him in a charge nearly all of it. Damage that goes through armour anyway goes through.
+     * A hit on someone holding the shield up before him: blocking it stops most of what comes from the front, the
+     * flurry's guard a good part of it, the shield locked before him in a charge nearly all of it. Damage that goes
+     * through armour anyway goes through. A blocked hit sparks off the face of the shield.
      */
     @SubscribeEvent
     public static void onIncomingDamage(LivingIncomingDamageEvent event) {
@@ -584,19 +642,24 @@ public final class SwordShield implements SpellEffect {
             return;
         }
         boolean guarding = sword.flurry && sword.move == SwordMove.FLURRY;
-        if (!guarding && !sword.charging) {
+        if (!guarding && !sword.charging && !sword.blocking) {
             return;
         }
+        Vec3 front = flat(player.getLookAngle());
         Vec3 from = event.getSource().getSourcePosition();
         if (from != null) {
-            Vec3 front = flat(player.getLookAngle());
             Vec3 toSource = new Vec3(from.x - player.getX(), 0.0, from.z - player.getZ());
             if (toSource.lengthSqr() > 1.0E-4 && front.dot(toSource.normalize()) < FRONT) {
                 return;
             }
         }
-        float kept = sword.charging ? CHARGE_KEPT : (float) wheel().value("guardDamageKept");
+        float kept = sword.charging ? CHARGE_KEPT : sword.blocking ? (float) wheel().value("blockDamageKept")
+                : (float) wheel().value("guardDamageKept");
         event.setAmount(event.getAmount() * kept);
-        sword.sound(SoundEvents.SHIELD_BLOCK, 1.0F, 1.0F);
+        sword.sound(SoundEvents.SHIELD_BLOCK, 1.0F, 0.9F + 0.2F * player.getRandom().nextFloat());
+        sword.sound(SoundEvents.AMETHYST_BLOCK_HIT, 0.8F, 1.4F);
+        Vec3 face = player.getEyePosition().add(front.scale(0.7)).subtract(0.0, 0.35, 0.0);
+        player.serverLevel().sendParticles(ParticleTypes.CRIT, face.x, face.y, face.z, 10, 0.2, 0.25, 0.2, 0.3);
+        SpellFx.cloud(player.serverLevel(), SpellFx.dust(PowerRing.BRIGHT, 1.0F), face, 6, 0.25, 0.06);
     }
 }

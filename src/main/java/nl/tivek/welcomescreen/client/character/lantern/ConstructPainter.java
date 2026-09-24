@@ -402,6 +402,8 @@ final class ConstructPainter {
     private double glare;
     // How far the pieces of a construct breaking up right now fly, next to how far they usually do (see fling).
     private double fling = 1.0;
+    // Light from within added to every solid side drawn right now (see ambient).
+    private double ambient;
 
     ConstructPainter(PoseStack pose, Vec3 camera, float time) {
         this(pose, camera, time, null);
@@ -839,7 +841,7 @@ final class ConstructPainter {
             double away = Math.sqrt(vx * vx + vy * vy + vz * vz);
             double face = away < 1.0E-6 ? 1.0 : Math.abs(look) / away;
             double ripple = 0.9 + 0.06 * Math.sin(this.time * 0.5 - mesh.middleZ[s] * 4.0);
-            double light = light(x, y, z) * sheen(face) * ripple * bright * mesh.bright[s];
+            double light = (light(x, y, z) + this.ambient) * sheen(face) * ripple * bright * mesh.bright[s];
             this.quadAt(sides, side[0], side[1], side[2], side[3], this.mass(light), body);
         }
         double quiet = faint ? SEE_THROUGH_EDGE : 1.0;
@@ -1587,7 +1589,7 @@ final class ConstructPainter {
     }
 
     /** Two directions square to {@code axis} and to each other, to lay things out around it. */
-    private static final class Basis {
+    static final class Basis {
         private Basis() {
         }
 
@@ -1644,7 +1646,7 @@ final class ConstructPainter {
             double across = normal.length() * toEye.length();
             double face = across < 1.0E-12 ? 1.0 : Math.abs(normal.dot(toEye)) / across;
             this.quad(this.mass, p0, p1, p2, corners[side[3]],
-                    this.mass(lit(p0, p1, p2, middle) * sheen(face) * ripple * bright), body);
+                    this.mass((lit(p0, p1, p2, middle) + this.ambient) * sheen(face) * ripple * bright), body);
         }
         int edge = alpha(EDGE * ripple * solid);
         int halo = glowing ? alpha(HALO * (1.0 + 0.4 * charge) * solid) : 0;
@@ -1754,6 +1756,59 @@ final class ConstructPainter {
      */
     void fling(double amount) {
         this.fling = Math.max(0.0, amount);
+    }
+
+    /**
+     * How much light from within the solid shapes drawn from now on get on top of the sky's (0 once they are done): hard
+     * light glows of itself, so a big construct seen from below (the belly of a plane high over you) is not left a dark
+     * shadow, and every part and seam on its underside still reads.
+     */
+    void ambient(double amount) {
+        this.ambient = Math.max(0.0, amount);
+    }
+
+    /**
+     * A glowing haze filling an egg shape round {@code center}, with {@code a}, {@code b} and {@code c} its three
+     * half-axes: light added on top of whatever is behind it, strongest in its middle, where you look through the most of
+     * it, and fading out softly towards its rim. The fireball of a blast, a cloud of light. Light, not a construct: it
+     * hides nothing, and it is the one thing that may be see-through.
+     */
+    void haze(Vec3 center, Vec3 a, Vec3 b, Vec3 c, int rgb, double strength) {
+        double reach = Math.max(a.length(), Math.max(b.length(), c.length()));
+        if (strength <= 0.0 || reach <= 1.0E-3 || !this.visible(center, reach)) {
+            return;
+        }
+        int rings = 9;
+        int slices = 16;
+        Vec3[][] points = new Vec3[rings + 1][slices + 1];
+        int[][] alphas = new int[rings + 1][slices + 1];
+        for (int i = 0; i <= rings; i++) {
+            double polar = Math.PI * i / rings;
+            for (int j = 0; j <= slices; j++) {
+                double around = Math.PI * 2.0 * j / slices;
+                Vec3 out = a.scale(Math.sin(polar) * Math.cos(around)).add(b.scale(Math.cos(polar)))
+                        .add(c.scale(Math.sin(polar) * Math.sin(around)));
+                Vec3 at = center.add(out);
+                points[i][j] = at;
+                Vec3 toEye = this.camera.subtract(at);
+                double away = toEye.length();
+                double length = out.length();
+                double facing = away < 1.0E-6 || length < 1.0E-9 ? 1.0 : Math.abs(out.dot(toEye)) / (length * away);
+                alphas[i][j] = alpha(strength * Math.pow(facing, 1.6));
+            }
+        }
+        for (int i = 0; i < rings; i++) {
+            for (int j = 0; j < slices; j++) {
+                Vec3 p0 = points[i][j];
+                Vec3 p1 = points[i + 1][j];
+                Vec3 p2 = points[i + 1][j + 1];
+                Vec3 p3 = points[i][j + 1];
+                this.put(this.glow, p0.x, p0.y, p0.z, rgb, alphas[i][j]);
+                this.put(this.glow, p1.x, p1.y, p1.z, rgb, alphas[i + 1][j]);
+                this.put(this.glow, p2.x, p2.y, p2.z, rgb, alphas[i + 1][j + 1]);
+                this.put(this.glow, p3.x, p3.y, p3.z, rgb, alphas[i][j + 1]);
+            }
+        }
     }
 
     /** The same colour, darker or lighter. */

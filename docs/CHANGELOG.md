@@ -2,6 +2,36 @@
 
 What changed in the project, newest first.
 
+## [Sword and shield remade, quicker flight and a harder Light Bubble] - 2026-09-24
+
+### Added
+- **Pictures on the Construct Wheel:** every slot shows its construct. The sword and shield are their own small
+  hard-light model, solid and glowing, the shield turning gently to and fro with the sword crossed behind it; a
+  slot still to come shows the lantern emblem. The bar above your hotbar shows the picture of what you hold.
+
+### Changed
+- **Sword and shield, remade:** you hold them the way the game holds a sword and shield: in first person the sword
+  stands upright in your right fist at the bottom right, the shield hangs on your left forearm at the bottom left.
+  Taking them out: the sword grows hilt first, you look it over, twirl it round once and knock it twice on the
+  shield. Every cut winds up, whips through and brakes, the edge always leading; your body turns, bends and steps
+  into it, and a blow that lands jolts your view.
+- **The shield:** holding right now **blocks** (85% of what comes from the front, as long as you hold it);
+  clicking right **charges**, ramming what is in your way aside with one of six rams (1.5 hearts each), and ends in
+  the shield slam on a wall, on a second click or after 1.4 seconds. The shield bashes became those rams.
+- **Flight picks up speed quickly:** from 6.4 to a cruising 13 blocks a second within 3 seconds, then slowly on to
+  the top speed of 19.25 over 30 seconds more.
+- **Light Bubble pounds harder:** pressing K again pounds the bubble into the ground three times (straight down,
+  then on your left, then on your right), each slam harder (2, 2 and 6 hearts). The bubble stretches and squashes,
+  the ground bursts up, a shockwave with cracks of light runs out and the view shakes; the last shockwave reaches
+  4.5 blocks.
+- **Air Strike:** the gunship flies lower (55 blocks up, it needs 21 blocks of room) and never stops firing: with
+  nothing marked it rakes the ground along its way. Big six-barrelled guns with thick glowing tracers, missiles
+  streaking down on a trail of light that each blow a small crater, a quicker crash (about a second) and a crater
+  that keeps smoking and burning a while.
+
+### Removed
+- **The jets at top speed:** no more chains and small jets of hard light behind you while you fly.
+
 ## [Gunship air strike, Light Bubble and the sword and shield] - 2026-09-24
 
 ### Added

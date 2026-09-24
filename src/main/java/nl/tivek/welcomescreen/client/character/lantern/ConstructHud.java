@@ -133,7 +133,9 @@ public final class ConstructHud {
         List<Runnable> labels = new ArrayList<>();
         boolean drawn = false;
         for (CharacterAbility ability : GameCharacter.GREEN_LANTERN.abilities()) {
-            if (ability.mouseButton() == CharacterAbility.Mouse.NONE) {
+            // With the sword and shield the defend button blocks the moment it is held: there is nothing to fill up.
+            if (ability.mouseButton() == CharacterAbility.Mouse.NONE
+                    || SwordArms.holding() && ability.mouseButton() == CharacterAbility.Mouse.RIGHT) {
                 continue;
             }
             boolean right = ability.mouseButton() == CharacterAbility.Mouse.LEFT;
@@ -196,13 +198,12 @@ public final class ConstructHud {
 
     /**
      * What holding this button leads to: the laser, the dome, or in the air the brake; with the sword and shield the
-     * flurry of stabs and the shield charge.
+     * flurry of stabs.
      */
     private static Component holdName(CharacterAbility ability, @Nullable Player player) {
         String prefix = "screen." + WelcomeScreenMod.MODID + ".hold.";
         if (SwordArms.holding()) {
-            return Component.translatable(prefix + (ability.mouseButton() == CharacterAbility.Mouse.LEFT ? "flurry"
-                    : "charge"));
+            return Component.translatable(prefix + "flurry");
         }
         if (ability.mouseButton() == CharacterAbility.Mouse.LEFT) {
             return Component.translatable(prefix + "beam");
@@ -401,7 +402,7 @@ public final class ConstructHud {
         GuiShapes.flush(graphics);
     }
 
-    /** The bar itself: an empty picture frame, the slot's name, and that it is still to come. */
+    /** The bar itself: the picture of what you hold (see {@link ConstructIcons}), its name, and what it does. */
     private static void renderBar(GuiGraphics graphics, Font font, Construct held) {
         MutableComponent name = held.getDisplayName().copy();
         MutableComponent about = held.getDescription().copy().withStyle(ChatFormatting.ITALIC);
@@ -415,12 +416,10 @@ public final class ConstructHud {
                 GuiShapes.fade(0x04140A, 0.62F));
         GuiShapes.arc(graphics, left + BAR_HEIGHT * 0.5F, top + BAR_HEIGHT * 0.5F,
                 BAR_HEIGHT * 0.5F - 1.0F, BAR_HEIGHT * 0.5F, 90.0F, 270.0F, GuiShapes.fade(GREEN, 0.5F));
-        // The construct drawings are not made yet, so the frame stays empty.
+        // The picture of what you hold, a little bigger than the bar so it stands out of it.
         float iconX = left + PADDING + ICON_ROOM * 0.5F;
         float iconY = top + BAR_HEIGHT * 0.5F;
-        float half = ICON_ROOM * 0.32F;
-        GuiShapes.arc(graphics, iconX, iconY, half - 1.4F, half, 0.0F, 360.0F, GuiShapes.fade(BRIGHT, 0.5F));
-        GuiShapes.disc(graphics, iconX, iconY, 1.6F, GuiShapes.fade(BRIGHT, 0.95F));
+        ConstructIcons.draw(graphics, held, iconX, iconY, ICON_ROOM * 1.35F, 0.0F, BRIGHT, 0.9F);
         GuiShapes.flush(graphics);
 
         int textX = Mth.floor(left) + PADDING + ICON_ROOM + 5;

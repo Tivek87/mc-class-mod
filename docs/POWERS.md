@@ -259,11 +259,12 @@ Green Lantern recharges his ring at his lantern, the power battery.
   at your feet. From there you fly on without a break. It takes a little over a second, and it also catches you
   in the middle of a jump or a fall (the double tap works there too; in creative the double tap stays the
   game's own flying).
-- **Flying:** hold **forward** and you fly the way you look. **You set off slowly and get faster the longer you
-  fly on:** a flight starts at about **6.4 blocks a second** (a third of the top speed) and picks up speed for
-  **30 seconds** of flying forward, until it reaches the top speed of **19.25 blocks a second**, a good deal
-  slower than an elytra with firework rockets (about 33), and never more. Let go of forward and you glide to a hover
-  and slowly lose the speed you built up again (all of it in 3 seconds); pushing against a wall keeps it.
+- **Flying:** hold **forward** and you fly the way you look. **You pick up speed quickly and then keep getting
+  faster the longer you fly on:** a flight starts at about **6.4 blocks a second** and within **3 seconds** you are
+  up to a fast cruising speed of **13 blocks a second**; from there you keep gaining, slowly, for **30 seconds**
+  more, until you reach the top speed of **19.25 blocks a second**, a good deal slower than an elytra with firework
+  rockets (about 33), and never more. Let go of forward and you glide to a hover and lose the speed you built up
+  again (all of it in 3 seconds); pushing against a wall keeps it.
   **Jump** rises, **sneak** sinks, left and right slide sideways, back drifts backwards. You carry your speed
   into every turn, so you swing through curves instead of snapping round. The world widens a little around
   you at speed.
@@ -272,10 +273,6 @@ Green Lantern recharges his ring at his lantern, the power battery.
   together; you bank into your turns, dive head first and climb head up, and your head keeps looking where
   you look. A streak of green light trails behind you at speed, and flying low throws up dust from the
   ground or spray from the water below.
-- **At top speed:** two chains of hard light shoot out of your waist, back to your left and back to your right,
-  and at the end of each a small fighter jet of hard light grows out of the ring's light, flying along with you,
-  the turbo booster at its back glowing and roaring out a flame. They swing out a little in your turns and bob on
-  their chains. Drop below top speed and jets and chains break into solid pieces. Everyone around sees them.
 - **Landing:** sink down onto the ground slowly and you land by yourself, or fly into it while looking down at
   it and you land as well, whatever your speed; or press C again anywhere to stop flying (in the air you then
   fall from there). Walls and the ground stop you; hits and blasts still knock you about.
@@ -286,7 +283,8 @@ Green Lantern recharges his ring at his lantern, the power battery.
   any more. You do not get hurt when you touch the ground. Recharge (on the way down or on the ground) to fly
   again.
 - **Landing slam (by itself; key X does it on purpose, see Shockwave):** dive into the ground fast (at least
-  about 9 blocks a second, nearly half your top speed, so fly on for a while first) and your flight ends in a
+  about 9 blocks a second, nearly half your top speed, so fly on for a couple of seconds first) and your flight ends
+  in a
   hero's landing. Just before
   the ground you swing upright, feet first, ring
   fist cocked high; then you come down low on one knee and smash that fist into the ground, which cracks open around it and throws up chunks,
@@ -459,8 +457,10 @@ those changes nothing but the bar above your hotbar.
 
 - **Tap V** and nothing opens at all: you swap straight between empty hands and the last slot you had
   out. That is the quick one, for in a fight.
-- **Hold V** a moment longer and the wheel opens around your crosshair, big: sixteen slots in a circle, each
-  with an empty frame where its picture will go, and empty hands in the middle.
+- **Hold V** a moment longer and the wheel opens around your crosshair, big: sixteen slots in a circle and empty
+  hands in the middle. Every slot shows its picture: the sword and shield as their own small hard-light model, solid
+  and glowing, the shield turning gently to and fro with the sword crossed behind it; a slot still to come shows the
+  lantern emblem, faint.
 - **Flick the mouse** towards the slot you want. Only the direction counts, not how far you move, so a
   short flick is enough and it does not matter if the mouse runs off the edge of your screen. The slot
   you point at lights up and grows. Your mouse wheel steps from slot to slot as well.
@@ -478,7 +478,7 @@ those changes nothing but the bar above your hotbar.
   - Holding a placeholder does exactly what empty hands do: bolts and the beam on left click, the shield and
     the dome on right click.
 - **Let go of V** and the wheel closes: green light flares out of your crosshair and the bar above your
-  hotbar shows what you now hold. You can also just click a slot while the wheel is open.
+  hotbar shows what you now hold, with its picture. You can also just click a slot while the wheel is open.
 - **The middle is empty hands**, written out as *Nothing — default: no construct, just your ring*. Let go
   there and whatever you held is gone again.
 - **A dot on a slot** means that is the one you already have out.
@@ -492,30 +492,39 @@ those changes nothing but the bar above your hotbar.
 A plain knight's sword of hard light in your ring hand and a heater shield with the lantern emblem on your other
 arm, both as solid as every construct.
 
-- **Taking them out:** the sword grows up out of the light of the ring in your fist while the shield grows onto
-  your forearm, fed by a beam from the ring. You flick the sword up into the air, it spins end over end, you catch
-  it, and knock it twice on the shield: then you are ready. Putting them away (any other slot, or empty hands),
-  they break into solid pieces.
+- **How you hold them:** in first person the sword stands upright in your right fist at the bottom right of your
+  screen, the blade a little forward and turned so you see its flat, and the shield hangs on your left forearm at
+  the bottom left, its back to you: your forearm lies on it through a strap and your fist holds its grip. Seen from
+  outside he holds the sword upright before his right hip and the shield before his left side.
+- **Taking them out:** your hands come up into view while the sword grows out of the ring's light in your fist,
+  hilt first and then the blade running out to its point, and the shield grows on your forearm out of its middle,
+  fed by a beam from the ring. You hold the sword up before your eyes and turn it to see both flats, twirl it once
+  round like a wheel, and knock it twice on the rim of the shield: then you are ready. Putting them away (any other
+  slot, or empty hands), they break into solid pieces.
 - **Left click (the sword):** one of **twelve** cuts and thrusts, a different one every click and never the same
   twice in a row: a cut across from the right, a backhand from the left, a cut down from high right, one from high
   left, a rising cut, an uppercut that throws into the air, a chop from over your head (the hardest), a quick stab,
-  a lunge with a step forward, a sweep at the legs down low, a whole turn with the blade held out that strikes all
-  round you, and two quick cuts crossing in an X. Every move starts from where the last one left your arms, so they
-  flow into each other, and a swung blade leaves a streak of light behind it. **4 hearts** a cut (the quick ones a
-  little less, the heavy ones more), 3.2 blocks.
+  a lunge with a step forward, a sweep at the legs down low, a whole turn of your body with the blade held out that
+  strikes all round you, and two quick cuts crossing in an X. Every cut winds up, whips through as it strikes and
+  brakes after, the tip of the blade drawing one clean arc and the edge always leading; the body turns, bends and
+  steps into it. Every move starts from where the last one left your arms, so they flow into each other, a swung
+  blade leaves a streak of light behind it, and a blow that lands jolts your view a little. **4 hearts** a cut (the
+  quick ones a little less, the heavy ones more), 3.2 blocks.
 - **Holding left 2 seconds:** the shield comes up before your chest (it stops **60%** of what comes from the front)
   and you stab **twelve times** very fast all over the front, **2 hearts** a stab. Costs 2 power. Letting go ends
   it at once.
-- **Right click (the shield):** one of **six** bashes that shove what they strike away from you: straight out,
-  swung across to your right, swung back to your left, up from below (throws it into the air), down from above
-  (knocks it down and slows it a moment), and a whole turn with the face of the shield. **1 heart** each.
-- **Holding right 2 seconds:** you bend forward, lock the shield before you and **charge** straight ahead, very
-  fast (16 blocks a second). Everyone in your way is shoved aside to the side they stood on and takes **1.5
-  hearts**; the shield stops nearly everything from the front. Running into a wall or letting go ends it (at the
-  latest after 3 seconds): you slam the shield into the ground before you for a small shockwave (**3 hearts** in
-  the middle, 3.5 blocks). Costs 2 power. Not while flying.
-- Everything is a setting under the Construct Wheel: the damage and reach of the sword, the flurry, the bashes,
-  the charge and its slam.
+- **Holding right (the shield):** you **block**: the shield comes up square before you, just below your line of
+  sight, and stops **85%** of what comes from the front for as long as you hold it (costs a little power while it is
+  up). You can still cut with the sword behind it.
+- **Clicking right:** you bend forward, lock the shield before you and **charge** straight ahead, very fast (16
+  blocks a second). Everything in your way is rammed aside to the side it stood on, with one of **six** rams: the
+  face punched straight out, swung out to your right, swung out to your left, driven up from under it (throws it into
+  the air), its rim brought down on it (knocks it down and slows it a moment), or your shoulder turned into it behind
+  the shield (bowls it over hardest). **1.5 hearts** a ram; the shield stops nearly everything from the front.
+  Running into a wall, clicking again or 1.4 seconds end it: you slam the shield into the ground before you for a
+  small shockwave (**3 hearts** in the middle, 3.5 blocks). Costs 2 power. Not while flying.
+- Everything is a setting under the Construct Wheel: the damage and reach of the sword, the flurry, the block, the
+  charge, its rams and its slam.
 
 ### Ring Scan (key N)
 
@@ -537,8 +546,8 @@ The ring scans everything around you, the way it does in the comics ("Ring, scan
 Green Lantern's ultimate: a big, slow gunship of hard light high over the battlefield.
 
 - **Press Y.** You throw your ring fist up at the sky and a thick pillar of light shoots out of the ring. High in
-  the sky, about **84 blocks** up (twice as high as before), a **big gunship with four propellers** grows out of its
-  light, white-hot at first and cooling to green. It is a solid construct of hard light, never a real aircraft,
+  the sky, about **55 blocks** up, a **big gunship with four propellers** grows out of its light, white-hot at first
+  and cooling to green. It is a solid construct of hard light, never a real aircraft,
   and made in detail: a long round body with a glowing windscreen, rows of windows, doors and a cargo ramp under
   its tail, a high wing with flaps, four engines with big four-bladed propellers turning in front of them, a tall
   tail fin with the lantern emblem, a minigun on either side, a missile launcher under either wing and a sensor
@@ -546,33 +555,35 @@ Green Lantern's ultimate: a big, slow gunship of hard light high over the battle
   flies. "AIR STRIKE!" says your action bar, and the panel's title turns red and counts down.
 - **Its way:** it flies in **one straight line** the way you looked, slowly, and passes right over the spot you
   looked at (up to 32 blocks away, or 16 blocks ahead of you) halfway through. It needs open sky: with less than
-  32 blocks of room above you the ring tells you so and nothing happens.
-- **For 20 seconds** it drones on and attacks:
+  21 blocks of room above you the ring tells you so and nothing happens.
+- **For 20 seconds** it drones on and never stops firing:
   - **it scans:** its sensor shines a cone of light down onto the ground and a scan wave rolls out from under it,
     like your Ring Scan but half as far again (**84 blocks**), and marks only what is out to hurt you (red, through
-    walls, for 21 seconds). It scans again every 5 seconds as it flies on. Its guns and missiles only go for what
-    it marked.
-  - **the two miniguns**, one on each side, swing round to their target and fire in turn: together **2 rounds
-    every 0.3 seconds**, their barrels spinning and their muzzles flashing. The rounds spread wide, so many miss,
-    but there are a lot of them: **1.5 hearts** for every round that strikes.
-  - **the two missile launchers** fire in turn: **one homing missile every 2 seconds**, left, right, left. Nine in
-    ten find their creature: **4 hearts** and a small explosion (less for what else it reaches); the others strike
-    the ground a few blocks off. The launcher grows its next missile out of the light.
+    walls, for 21 seconds). It scans again every 5 seconds as it flies on. Its guns and missiles go for what it
+    marked; with nothing marked they rake the ground ahead of it along its way.
+  - **the two miniguns**, big six-barrelled guns hanging under either side of its body, swing round and fire in
+    turn: together **2 rounds every 0.3 seconds**, their barrels spinning, their muzzles flashing and thick glowing
+    tracers streaking down. The rounds spread wide, so many miss, but there are a lot of them: **1.5 hearts** for
+    every round that strikes.
+  - **the two missile launchers** fire in turn: **one homing missile every 2 seconds**, left, right, left, each
+    lighting up and streaking down on a trail of light. Nine in ten find their creature: **4 hearts** and a small
+    explosion (less for what else it reaches); every missile that strikes the ground blows a **small crater** in it
+    and throws up blocks. The launcher grows its next missile out of the light.
 - **Then all at once it crashes:** an engine bursts into flame and its propeller dies, the nose drops and the plane
-  plunges straight into the ground, rolling over, trailing fire and light, in about a second and a half. It strikes
+  plunges straight into the ground, rolling over, trailing fire and light, in about a second. It strikes
   in a blast like a small sun: a flash, a fireball rising on a stem of light and rolling into a mushroom cloud, a
   ring of light racing out round its middle, a shell of light and rings running out over the ground, and the plane
   breaks into solid pieces flung far. The view of everyone close by shakes. The blast does **20 hearts** in the
   middle, half at its edge 14 blocks out, throws everything away, and **blows a crater out of the ground**: its
-  blocks are hurled up and away and come down all round it. Blocks that hold something (chests and the like),
-  blocks harder than ores, and water stay.
+  blocks are hurled up and away and come down all round it, and smoke and flames rise from it for a while after.
+  Blocks that hold something (chests and the like), blocks harder than ores, and water stay.
 - Only the blast is see-through: the plane, its guns, its rounds and its missiles are all solid constructs.
 - **Who gets hit:** only what is out to hurt you (monsters, and anything that has turned on you) and, by the crash,
   players where players may fight each other; never your own pets, and never you.
 - If you stop being Green Lantern before it crashes, the plane breaks apart in the air.
 - **Power:** 20. **Cooldown:** 90 seconds.
 - All of it is a setting: how long it attacks, how far it scans, the cost, the miniguns (how often, damage,
-  spread), the missiles (how often, damage, hit chance) and the crash (damage, reach, the size of the crater, how
+  spread), the missiles (how often, damage, hit chance, the size of their craters) and the crash (damage, reach, the size of the crater, how
   hard a block may be to be blown away, how many blocks are hurled; a hardness of -1 leaves the ground alone).
 
 ### Lantern Flare (key Left Alt)
@@ -605,9 +616,15 @@ The ring's prison, straight out of the comics: a bubble of hard light round your
   over it now and then.
 - **In the bubble it can do nothing** for **6 seconds**: it cannot move, and nothing it does hurts anyone. Then
   the bubble bursts and lets it drop.
-- **Press K again** to smash it down: your fist swings down and the bubble streaks to the ground and strikes it.
-  The creature in it takes **6 hearts**, a small shockwave throws what stands round it away (half of that damage,
-  3.5 blocks) and the bubble breaks into solid pieces.
+- **Press K again** to **pound it into the ground**, three times, harder each time, your fist going up and down
+  with it: the ring yanks the bubble up and slams it straight down, swings it up over its own height and slams it
+  down on your left, and swings it over once more for the hardest slam of all on your right. The bubble is stretched
+  long as it is driven down and squashes flat against the ground at every slam, flaring up; the ground bursts up
+  round it in pillars of dust and flying chunks, a shockwave of light with jagged cracks of light runs out over the
+  ground, and the view of everyone close by shakes. The first two slams do **2 hearts** each to the creature in it,
+  the last **6 hearts**; every shockwave throws what stands round it away and hurts it half as much (the last one
+  4.5 blocks, the others less far). The last slam breaks the bubble into solid pieces. All of it takes about a
+  second and a half.
 - **Crouch and press K** to let it go without harm.
 - Bosses (the Wither, the Ender Dragon, the Warden) and creatures too big for a bubble cannot be caught.
 - **Power:** 4. **Cooldown:** 12 seconds, counted from when the bubble is gone.

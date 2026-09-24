@@ -8,73 +8,90 @@ import net.minecraft.util.RandomSource;
  * and on every client, which plays it: how long each move takes, from when the next one may follow, how hard and how
  * far it strikes, over which arc in front of him, and on which ticks it lands.
  *
- * <p>The sword has twelve cuts and thrusts and the shield six bashes; every click picks one of them at random, never the
- * same twice in a row, so a fight never looks the same. Every move starts from wherever the last one left his arms, so
- * they flow into each other.
+ * <p>The sword has twelve cuts and thrusts; every click picks one of them at random, never the same twice in a row, so a
+ * fight never looks the same. Every move starts from wherever the last one left his arms, so they flow into each other.
+ * The shield has six rams, one of which he throws at every creature in his way while he charges behind it.
  */
 public enum SwordMove {
     // ---- The sword (left click) ----
     /** A cut across, from his right to his left. */
-    SLASH(Kind.ATTACK, 12, 9, 1.0, 3.2, -70, 70, 6),
+    SLASH(Kind.ATTACK, 14, 10, 1.0, 3.2, -75, 75, 6),
     /** A backhand cut across, from his left to his right. */
-    BACKHAND(Kind.ATTACK, 12, 9, 1.0, 3.2, -70, 70, 6),
+    BACKHAND(Kind.ATTACK, 14, 10, 1.0, 3.2, -75, 75, 6),
     /** A cut down from high on his right to low on his left. */
-    CLEAVE(Kind.ATTACK, 13, 10, 1.1, 3.2, -55, 55, 7),
+    CLEAVE(Kind.ATTACK, 15, 11, 1.1, 3.2, -60, 60, 7),
     /** A cut down from high on his left to low on his right. */
-    REVERSE_CLEAVE(Kind.ATTACK, 13, 10, 1.1, 3.2, -55, 55, 7),
+    REVERSE_CLEAVE(Kind.ATTACK, 15, 11, 1.1, 3.2, -60, 60, 7),
     /** A cut up from low on his left to high on his right. */
-    RISING(Kind.ATTACK, 12, 9, 1.0, 3.2, -60, 60, 6),
+    RISING(Kind.ATTACK, 14, 10, 1.0, 3.2, -60, 60, 6),
     /** An uppercut: straight up from below, throwing what it strikes into the air. */
-    UPPERCUT(Kind.ATTACK, 13, 10, 1.15, 3.0, -35, 35, 7),
-    /** A chop straight down from high over his head: slow, and the hardest cut. */
-    OVERHEAD(Kind.ATTACK, 15, 12, 1.35, 3.3, -30, 30, 9),
+    UPPERCUT(Kind.ATTACK, 15, 11, 1.15, 3.0, -35, 35, 7),
+    /** A chop straight down from high over his head, with a step into it: slow, and the hardest cut. */
+    OVERHEAD(Kind.ATTACK, 18, 13, 1.35, 3.4, -30, 30, 9),
     /** A quick thrust straight ahead: short, and reaching further. */
-    STAB(Kind.ATTACK, 10, 7, 0.9, 3.9, -22, 22, 5),
-    /** A step forward and a long thrust. */
-    LUNGE(Kind.ATTACK, 16, 12, 1.25, 4.6, -20, 20, 8),
-    /** Down low, a cut at the legs from his right to his left. */
-    LOW_SWEEP(Kind.ATTACK, 13, 10, 0.9, 3.3, -75, 75, 7),
+    STAB(Kind.ATTACK, 11, 8, 0.9, 3.9, -22, 22, 5),
+    /** A long step forward and a deep thrust. */
+    LUNGE(Kind.ATTACK, 17, 12, 1.25, 4.6, -20, 20, 8),
+    /** Down low on one knee, a cut at the legs from his right to his left. */
+    LOW_SWEEP(Kind.ATTACK, 16, 12, 0.9, 3.3, -80, 80, 8),
     /** A whole turn with the blade held out: it strikes all round him. */
-    SPIN(Kind.ATTACK, 18, 14, 1.2, 3.3, -180, 180, 9),
+    SPIN(Kind.ATTACK, 19, 15, 1.2, 3.3, -180, 180, 10),
     /** Two quick cuts crossing in an X: two strikes, each a little softer. */
-    CROSS(Kind.ATTACK, 16, 13, 0.75, 3.2, -50, 50, 5, 10),
-    // ---- The shield (right click) ----
-    /** The shield rammed straight ahead: shoves straight away. */
-    BASH(Kind.BASH, 11, 9, 1.0, 2.6, -45, 45, 5),
-    /** The shield swung across from his left to his right: shoves to his right. */
-    BASH_SWEEP(Kind.BASH, 12, 10, 1.0, 2.6, -70, 70, 6),
-    /** The shield swung back across to his left: shoves to his left. */
-    BASH_BACKHAND(Kind.BASH, 12, 10, 1.0, 2.6, -70, 70, 6),
-    /** The shield driven up from below: throws up into the air. */
-    BASH_UP(Kind.BASH, 12, 10, 1.0, 2.5, -40, 40, 6),
-    /** The shield raised and brought down edge first: knocks down and away, harder. */
-    BASH_DOWN(Kind.BASH, 13, 11, 1.2, 2.5, -40, 40, 7),
-    /** A turn, and the face of the shield into everything round him. */
-    BASH_SPIN(Kind.BASH, 15, 12, 1.1, 2.8, -180, 180, 8),
+    CROSS(Kind.ATTACK, 17, 13, 0.75, 3.2, -55, 55, 5, 11),
+    // ---- The shield: six ways to ram what stands in the way of a charge ----
+    /** The face of the shield punched straight out: sends it flying ahead and aside. */
+    BASH(Kind.BASH, 9, 9, 1.0, 1.6, -90, 90, 2),
+    /** The shield swung out to his right: sweeps it off to his right. */
+    BASH_SWEEP(Kind.BASH, 9, 9, 1.0, 1.6, -90, 90, 2),
+    /** The shield swung out to his left: sweeps it off to his left. */
+    BASH_BACKHAND(Kind.BASH, 9, 9, 1.0, 1.6, -90, 90, 2),
+    /** The shield driven up from under it: throws it up and aside. */
+    BASH_UP(Kind.BASH, 9, 9, 1.0, 1.6, -90, 90, 2),
+    /** The rim of the shield brought down on it: knocks it down aside and slows it. */
+    BASH_DOWN(Kind.BASH, 10, 10, 1.2, 1.6, -90, 90, 3),
+    /** A shoulder turned into it behind the shield: bowls it over hardest of all. */
+    BASH_SPIN(Kind.BASH, 10, 10, 1.1, 1.6, -90, 90, 3),
     // ---- Holding a button ----
     /** The sword held 2 seconds: the shield before his chest and twelve quick stabs all round the front. */
-    FLURRY(Kind.FLURRY, 42, 42, 1.0, 3.4, -45, 45),
-    /** The shield held 2 seconds: bent forward behind it, he charges straight ahead. */
+    FLURRY(Kind.FLURRY, 44, 44, 1.0, 3.4, -45, 45),
+    /** The shield clicked: bent forward behind it, he charges straight ahead. */
     CHARGE(Kind.CHARGE, 1000, 1000, 1.0, 1.6, -80, 80),
     /** The end of a charge: the shield slammed into the ground for a small shockwave. */
-    SLAM(Kind.SLAM, 14, 12, 1.0, 3.5, -180, 180, 7),
+    SLAM(Kind.SLAM, 16, 13, 1.0, 3.5, -180, 180, 7),
     // ---- Taking them out ----
-    /** The sword and shield take shape: the sword tossed up spinning and caught, and knocked on the shield. */
-    EQUIP(Kind.EQUIP, 32, 32, 0.0, 0.0, 0, 0);
+    /**
+     * The sword and shield take shape: the sword grows out of his fist and the shield on his forearm as both come up, he
+     * holds the sword up before his eyes and turns it to see both flats, twirls it once round like a wheel and knocks it
+     * twice on the rim of the shield.
+     */
+    EQUIP(Kind.EQUIP, 36, 32, 0.0, 0.0, 0, 0);
 
     /** What a move is. */
     public enum Kind {
         ATTACK, BASH, FLURRY, CHARGE, SLAM, EQUIP
     }
 
+    /**
+     * The ticks of taking them out: the twirl of the sword begins and ends, and it is knocked on the shield (the second
+     * knock three ticks after the first).
+     */
+    public static final int TWIRL = 12;
+    public static final int TWIRLED = 20;
+    public static final int KNOCK = 27;
     /** How many stabs the flurry has, how many ticks apart they come, and the tick the first one lands on. */
     public static final int STABS = 12;
     public static final int STAB_EVERY = 3;
-    public static final int FIRST_STAB = 3;
+    public static final int FIRST_STAB = 5;
+    /** What the move number is sent with: whether he holds the shield up, and whether he charges. */
+    public static final int BLOCKING = 32;
+    public static final int CHARGING = 64;
+    private static final int MOVE_BITS = 31;
 
     private static final SwordMove[] ATTACKS = { SLASH, BACKHAND, CLEAVE, REVERSE_CLEAVE, RISING, UPPERCUT, OVERHEAD,
             STAB, LUNGE, LOW_SWEEP, SPIN, CROSS };
-    private static final SwordMove[] BASHES = { BASH, BASH_SWEEP, BASH_BACKHAND, BASH_UP, BASH_DOWN, BASH_SPIN };
+    // The rams that throw a creature off to his right, and those that throw it off to his left.
+    private static final SwordMove[] RAMS_RIGHT = { BASH, BASH_SWEEP, BASH_UP };
+    private static final SwordMove[] RAMS_LEFT = { BASH_BACKHAND, BASH_DOWN, BASH_SPIN };
 
     private final Kind kind;
     private final int ticks;
@@ -138,9 +155,12 @@ public enum SwordMove {
         return pick(ATTACKS, random, last);
     }
 
-    /** One of the shield's six bashes at random, never {@code last} again. */
-    public static SwordMove randomBash(RandomSource random, @Nullable SwordMove last) {
-        return pick(BASHES, random, last);
+    /**
+     * One of the shield's rams for a creature in the way of a charge, never {@code last} again: one that throws it off
+     * to the side of him it stands on ({@code right} true for his right).
+     */
+    public static SwordMove randomRam(RandomSource random, boolean right, @Nullable SwordMove last) {
+        return pick(right ? RAMS_RIGHT : RAMS_LEFT, random, last);
     }
 
     private static SwordMove pick(SwordMove[] moves, RandomSource random, @Nullable SwordMove last) {
@@ -156,6 +176,12 @@ public enum SwordMove {
     public static SwordMove byIndex(int index) {
         SwordMove[] all = values();
         return index >= 0 && index < all.length ? all[index] : null;
+    }
+
+    /** The move a number sent with {@link #BLOCKING} and {@link #CHARGING} stands for, or null. */
+    @Nullable
+    public static SwordMove sent(int number) {
+        return byIndex(number & MOVE_BITS);
     }
 
     /**

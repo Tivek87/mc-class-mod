@@ -39,8 +39,13 @@ public final class LanternArms {
     // Where the right hand ends up in first person while it holds a construct, in blocks in front of your
     // eyes (x to the right, y up, -z ahead): further out and further in than where the game rests it.
     private static final Vector3f REACH = new Vector3f(0.5F, -0.22F, -1.25F);
-    // Where it swings down to while it smashes a bubble onto the ground.
+    // Pounding a bubble into the ground: where the fist comes down to as it slams, and where it goes up to as the ring
+    // swings the bubble up high; and how far over the level of your eyes (as an angle, in radians) the bubble is
+    // swung for the fist to be all the way up, and how far below them it lies on the ground for all the way down.
     private static final Vector3f SMASH = new Vector3f(0.36F, -0.72F, -0.95F);
+    private static final Vector3f POUND_UP = new Vector3f(0.42F, 0.02F, -1.05F);
+    private static final double POUND_HIGH = 0.5;
+    private static final double POUND_LOW = -0.08;
     // How far out the hand comes while the ring gathers its light for the beam, once it is full: most of the way.
     private static final float CHARGE_REACH = 0.7F;
     // How high on the body the shoulder of the reaching arm sits, as a part of the body's height, and how
@@ -88,14 +93,12 @@ public final class LanternArms {
             model.rightArmPose = pose;
             return;
         }
-        // The sword and shield of the construct wheel: both arms, the upper body and the legs are theirs, and some moves
-        // crouch.
+        // The sword and shield of the construct wheel: both arms, the upper body and the legs are theirs (the upper body
+        // bends into the moves once the game has posed it, see SwordArms.lean).
         if (SwordArms.posing(player, event.getPartialTick())) {
             model.leftArmPose = pose;
             model.rightArmPose = pose;
-            if (SwordArms.crouching(player, event.getPartialTick())) {
-                model.crouching = true;
-            }
+            SwordArms.spin(event);
         }
         // A flare or calling an air strike: the ring fist thrown up high. A scan: the ring fist held out, sweeping.
         if (FlareLight.up(player, event.getPartialTick()) > 0.0F || ScanArm.out(player, event.getPartialTick()) > 0.0F) {
@@ -110,9 +113,10 @@ public final class LanternArms {
         }
     }
 
-    /** The body a flight turned is turned back once it is drawn. */
+    /** The body a spinning cut or a flight turned is turned back once it is drawn, in the order they were turned. */
     @SubscribeEvent
     public static void onRenderPlayerPost(RenderPlayerEvent.Post event) {
+        SwordArms.unspin(event);
         FlightPose.post(event);
     }
 
@@ -265,9 +269,13 @@ public final class LanternArms {
         float charge = Math.max(0.0F, BeamArm.gathering(player, partialTick)) * CHARGE_REACH;
         Vector3f hand = new Vector3f(RechargeAnimation.HAND_RIGHT).lerp(REACH, Math.max(Math.max(construct, beam),
                 charge));
-        // Smashing a bubble down, the fist swings down with it.
+        // Pounding a bubble into the ground, the fist goes up and down with it: up as the ring swings it up high, and
+        // down with every slam.
         if (held != null && held.smashing()) {
-            hand.lerp(SMASH, construct);
+            Vec3 to = held.center().subtract(player.getEyePosition(partialTick));
+            double pitch = Math.atan2(to.y, Math.max(0.5, to.horizontalDistance()));
+            float up = (float) Mth.clamp((pitch - POUND_LOW) / (POUND_HIGH - POUND_LOW), 0.0, 1.0);
+            hand.lerp(new Vector3f(SMASH).lerp(POUND_UP, up), construct);
         }
         float time = player.tickCount + partialTick;
         float tremble = HAND_TREMBLE * BeamArm.tremble(player, partialTick);

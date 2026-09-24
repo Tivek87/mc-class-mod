@@ -31,7 +31,7 @@ public final class CharacterConfig {
      * The version of the mod's defaults. Raise it whenever a default changes, and tell the setting what it was
      * before with {@link CharacterAbility#was}: files that still hold the old number then take the new one.
      */
-    private static final int DEFAULTS_VERSION = 5;
+    private static final int DEFAULTS_VERSION = 8;
 
     private static final Map<GameCharacter, ModConfigSpec> SPECS = new EnumMap<>(GameCharacter.class);
     private static final Map<GameCharacter, ModConfigSpec.IntValue> VERSIONS = new EnumMap<>(GameCharacter.class);

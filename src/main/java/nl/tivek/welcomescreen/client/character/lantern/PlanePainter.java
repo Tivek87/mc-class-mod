@@ -21,8 +21,8 @@ import nl.tivek.welcomescreen.network.ConstructPayload;
 
 /**
  * The air strike as everyone sees it (see {@link AirStrike}). A pillar of light shoots out of the ring into the sky and
- * a big gunship grows out of the top of it, white-hot at first and cooling to the green of hard light, twice as high as
- * a jet would fly. It is solid hard light like every construct, and made in detail:
+ * a big gunship grows out of the top of it, white-hot at first and cooling to the green of hard light, high over the
+ * battlefield. It is solid hard light like every construct, and made in detail:
  * <ul>
  * <li>a long, round body with a radome nose, a windscreen and side windows burning bright, a crew door, paratroop doors
  * and rows of windows, bands of plating, a cargo ramp under its upswept tail, landing gear pods on its sides, blade
@@ -61,20 +61,20 @@ final class PlanePainter {
     private static final double PROP_DIES = 7.0;
     // How long the tip of a propeller blade is from the hub, in blocks at scale 1.
     private static final double PROP_RADIUS = 3.25;
-    // How long before its nose drops one of its engines bursts, in ticks (as on the server).
-    private static final double FAILING = 8.0;
     // How fast the barrels of a minigun spin while it fires, in radians per tick, and how long they take to run down.
     private static final double BARREL_SPIN = 1.1;
     private static final double BARREL_DIES = 18.0;
     // How long a minigun keeps pointing where it last fired, and then swings back to rest, in ticks.
     private static final double GUN_HOLDS = 22.0;
     private static final double GUN_BACK = 14.0;
+    /** How long the small blast of a missile goes on, in ticks. */
+    static final int BLAST_TICKS = 30;
     // The blast of the crash: how far its shell of light races out, how high its fireball climbs, how big it gets, and how
     // far the ring of light round its middle races out.
-    private static final double SHELL = 30.0;
-    private static final double FIREBALL_HIGH = 28.0;
-    private static final double FIREBALL = 11.0;
-    private static final double COLLAR = 40.0;
+    private static final double SHELL = 40.0;
+    private static final double FIREBALL_HIGH = 36.0;
+    private static final double FIREBALL = 16.0;
+    private static final double COLLAR = 56.0;
 
     /**
      * The body of the plane, as sections along z (see {@link Mesh#loft}): z, half width, half height, and how high its
@@ -95,12 +95,19 @@ final class PlanePainter {
     private static final ConstructPainter.Shape GUN = ConstructPainter.Shape.of(gun());
     /** The six barrels of a minigun, with their clamps and muzzle ring, turning about z. */
     private static final ConstructPainter.Shape BARRELS = ConstructPainter.Shape.of(barrels());
-    /** A homing missile of hard light along z, its nose ahead: 4.6 blocks long at scale 1. */
+    /**
+     * A homing missile of hard light along z, its nose ahead: 4.6 blocks long at scale 1, drawn {@link #MISSILE_SCALE}
+     * times that, on its rail and in the air alike.
+     */
     private static final ConstructPainter.Shape MISSILE = ConstructPainter.Shape.of(missile(0.36));
     private static final double MISSILE_TAIL = -2.3;
-    /** A round from a minigun: a small slug of hard light along z, its nose ahead. */
-    private static final ConstructPainter.Shape SLUG = ConstructPainter.Shape.of(Mesh.lathe(8, 1.3, 0.0, -0.45, 0.09,
+    static final double MISSILE_SCALE = 1.45;
+    /** A round from a minigun: a slug of hard light along z, its nose ahead, drawn {@link #SLUG_SCALE} times as big. */
+    private static final ConstructPainter.Shape SLUG = ConstructPainter.Shape.of(Mesh.lathe(8, 1.35, 0.0, -0.45, 0.09,
             -0.4, 0.11, 0.15, 0.07, 0.4, 0.0, 0.5).alongZ());
+    private static final double SLUG_SCALE = 2.6;
+    // How much light from within the plane's hard light gets on top of the sky's, so its belly high over you still reads.
+    private static final double GLOWS = 0.3;
 
     // The drone of every plane in the air, by the id of its construct.
     private static final Map<Integer, PlaneSound> SOUNDS = new HashMap<>();
@@ -190,20 +197,49 @@ final class PlanePainter {
                 .moved(0.0, 2.7, 0.0));
         pair(parts, Mesh.wing(9.0, -21.6, -16.0, -21.2, -18.8, 0.3, 0.55, 0.25, 1.0).moved(0.9, 2.2, 0.0));
         pair(parts, Mesh.wing(8.4, -22.5, -21.55, -21.95, -21.15, 0.28, 0.25, 0.15, 1.08).moved(1.0, 2.2, 0.0));
-        // The landing gear pods on its lower sides.
+        // The landing gear pods on its lower sides, each with the seam of its doors.
         pair(parts, Mesh.loft(16, 1.0, new double[] { 6.6, 0.0, 0.0, 0.0 }, new double[] { 5.8, 0.82, 0.86, 0.0 },
                 new double[] { -3.4, 0.86, 0.9, 0.0 }, new double[] { -4.8, 0.0, 0.0, 0.0 }).moved(2.55, -1.75, 0.0));
-        // The sponsons of the miniguns and the round mounts they turn in.
-        pair(parts, Mesh.loft(16, 1.0, new double[] { 13.6, 0.0, 0.0, 0.0 }, new double[] { 12.6, 0.55, 0.95, 0.0 },
-                new double[] { 9.4, 0.55, 0.95, 0.0 }, new double[] { 8.2, 0.0, 0.0, 0.0 })
-                .moved(2.55, AirStrike.GUN_Y, 0.0));
-        pair(parts, Mesh.cylinder(18, 0.82, 0.0, 0.5, 1.12).alongX().moved(AirStrike.GUN_X - 0.72, AirStrike.GUN_Y,
+        pair(parts, Mesh.box(-0.05, -0.02, -3.0, 0.05, 0.05, 5.4, 1.45).moved(2.62, -2.62, 0.0));
+        // The sponsons of the miniguns: a long blister on each side of the belly, a stub reaching out of it and the big
+        // round collar the gun's ball turns in, with a glowing ring round its lip.
+        pair(parts, Mesh.loft(18, 1.0, new double[] { 15.4, 0.0, 0.0, 0.0 }, new double[] { 14.2, 0.7, 0.8, 0.0 },
+                new double[] { 11.8, 0.95, 1.05, 0.0 }, new double[] { 7.6, 0.95, 1.05, 0.0 },
+                new double[] { 5.6, 0.6, 0.7, 0.0 }, new double[] { 4.4, 0.0, 0.0, 0.0 })
+                .moved(2.45, AirStrike.GUN_Y + 0.35, 0.0));
+        pair(parts, Mesh.cylinder(20, 1.22, 0.0, 0.9, 1.08).alongX().moved(AirStrike.GUN_X - 1.2, AirStrike.GUN_Y,
                 AirStrike.GUN_Z));
-        // The missile launchers under the wings: a pylon down from the wing, and a rail the missile hangs from.
-        pair(parts, Mesh.box(-0.15, 0.0, -1.6, 0.15, 1.95, 2.4, 1.0).moved(AirStrike.LAUNCHER_X,
-                AirStrike.LAUNCHER_Y + 0.52, AirStrike.LAUNCHER_Z - 0.4));
-        pair(parts, Mesh.box(-0.24, 0.38, -2.4, 0.24, 0.58, 2.7, 1.12).moved(AirStrike.LAUNCHER_X,
+        pair(parts, Mesh.torus(24, 6, 1.22, 0.11, 1.55).alongX().moved(AirStrike.GUN_X - 0.3, AirStrike.GUN_Y,
+                AirStrike.GUN_Z));
+        // The missile launchers under the wings: a swept pylon down from the wing, and a rail the missile hangs from,
+        // with a glowing cradle at either end and a blast shield behind it.
+        pair(parts, Mesh.wing(2.4, -2.4, 2.6, -1.6, 2.2, 0.0, 0.4, 0.3, 1.0).turned(0.0, 0.0, 1.0, -90.0)
+                .moved(AirStrike.LAUNCHER_X, AirStrike.LAUNCHER_Y + 3.05, AirStrike.LAUNCHER_Z));
+        pair(parts, Mesh.box(-0.3, 0.55, -3.3, 0.3, 0.85, 3.7, 1.12).moved(AirStrike.LAUNCHER_X,
                 AirStrike.LAUNCHER_Y, AirStrike.LAUNCHER_Z));
+        for (double z : new double[] { -2.4, 2.8 }) {
+            pair(parts, Mesh.box(-0.42, 0.42, z - 0.22, 0.42, 0.62, z + 0.22, 1.6).moved(AirStrike.LAUNCHER_X,
+                    AirStrike.LAUNCHER_Y, AirStrike.LAUNCHER_Z));
+        }
+        pair(parts, Mesh.box(-0.7, 0.3, -3.9, 0.7, 1.0, -3.6, 1.05).moved(AirStrike.LAUNCHER_X,
+                AirStrike.LAUNCHER_Y, AirStrike.LAUNCHER_Z));
+        // The ring's light running through it: glowing strips along the leading edges of its wings and tailplanes, a
+        // spine along its back and two seams along its belly.
+        pair(parts, Mesh.tube(false, 6, 0.13, 1.7, new Vec3(3.0, 2.99, 4.32), new Vec3(28.0, 3.45, 2.24)));
+        pair(parts, Mesh.tube(false, 5, 0.09, 1.65, new Vec3(1.3, 2.2, -16.0), new Vec3(9.9, 2.5, -18.8)));
+        parts.add(plate(-13.5, 17.2, 87.0, 93.0, 0.035, 1.55));
+        pair(parts, plate(-11.5, 17.0, 256.0, 260.0, 0.035, 1.6));
+        // Flap track fairings: slim pods under the trailing edge of each wing, where the flaps run out on their tracks.
+        for (double x : new double[] { 5.0, 9.5, 14.2, 19.5, 24.5 }) {
+            double rise = 2.95 + 0.5 * (x - 1.0) / 27.0;
+            pair(parts, Mesh.loft(10, 1.02, new double[] { -6.0 + 0.07 * x, 0.0, 0.0, 0.0 },
+                    new double[] { -5.3 + 0.07 * x, 0.16, 0.2, 0.0 }, new double[] { -3.2 + 0.07 * x, 0.25, 0.32, 0.0 },
+                    new double[] { -0.8 + 0.07 * x, 0.2, 0.24, 0.05 }, new double[] { 0.4 + 0.07 * x, 0.0, 0.0, 0.1 })
+                    .moved(x, rise - 0.45, 0.0));
+        }
+        // Landing lights under its nose and at the roots of its wings, burning bright.
+        pair(parts, Mesh.ball(10, 6, 0.26, 2.0).moved(0.85, -2.2, 17.0));
+        pair(parts, Mesh.ball(10, 6, 0.3, 2.0).moved(4.2, 2.62, 3.4));
         // The sensor ball under the nose, on its mount, with its lens looking forward and down.
         parts.add(Mesh.cylinder(14, 0.36, -0.55, 0.05, 1.0).moved(0.0, AirStrike.SENSOR_Y + 0.72, AirStrike.SENSOR_Z));
         parts.add(Mesh.ball(16, 10, 0.55, 1.1).moved(0.0, AirStrike.SENSOR_Y, AirStrike.SENSOR_Z));
@@ -223,6 +259,8 @@ final class PlanePainter {
         // The lantern emblem: on both sides of the fin, its bars along the fin, and on top of each wing.
         pair(parts, emblem(1.25).turned(0.0, 1.0, 0.0, 90.0).turned(0.0, 0.0, 1.0, -90.0).moved(0.4, 7.4, -20.3));
         pair(parts, emblem(1.6).moved(21.0, 3.62, 0.3));
+        // ... and under each wing, big, where you see it from the ground.
+        pair(parts, emblem(1.9).moved(19.0, 2.8, 1.0));
         return parts.toArray(Mesh[]::new);
     }
 
@@ -249,25 +287,46 @@ final class PlanePainter {
         return parts.toArray(Mesh[]::new);
     }
 
+    /**
+     * A minigun round the ball it turns on, pointing along z: the ball, the receiver with a glowing sight on top, the
+     * cooling jacket round the root of the barrels, the motor behind it, a big ammunition drum on its left side with the
+     * feed chute into the receiver, and two spade grips at its back.
+     */
     private static Mesh[] gun() {
-        return new Mesh[] { Mesh.ball(14, 8, 0.5, 1.0), Mesh.box(-0.36, -0.34, -1.1, 0.36, 0.34, 0.45, 1.0),
-                Mesh.cylinder(10, 0.2, 0.0, 0.55, 1.1).alongZ().moved(0.0, 0.44, -0.95),
-                Mesh.box(-0.98, -0.3, -0.95, -0.42, 0.36, 0.25, 0.95),
-                Mesh.tube(false, 6, 0.1, 1.05, new Vec3(-0.7, 0.36, -0.35), new Vec3(-0.55, 0.52, -0.1),
-                        new Vec3(-0.3, 0.4, 0.05)) };
+        List<Mesh> parts = new ArrayList<>();
+        parts.add(Mesh.ball(18, 10, 1.0, 1.0));
+        parts.add(Mesh.box(-0.66, -0.62, -2.1, 0.66, 0.62, 1.05, 1.0));
+        parts.add(Mesh.cylinder(14, 0.5, -2.1, 1.05, 1.04).alongZ().moved(0.0, 0.5, 0.0));
+        parts.add(Mesh.box(-0.12, 1.0, -0.9, 0.12, 1.28, 0.6, 1.7));
+        parts.add(Mesh.cylinder(18, 0.66, 0.9, 2.3, 1.02).alongZ());
+        parts.add(Mesh.torus(20, 5, 0.66, 0.07, 1.5).alongZ().moved(0.0, 0.0, 2.3));
+        parts.add(Mesh.cylinder(14, 0.44, -2.9, -2.1, 0.96).alongZ());
+        parts.add(Mesh.torus(16, 4, 0.44, 0.06, 1.4).alongZ().moved(0.0, 0.0, -2.9));
+        parts.add(Mesh.cylinder(20, 0.8, -0.45, 0.45, 1.0).alongX().moved(-1.25, -0.25, -0.9));
+        parts.add(Mesh.torus(20, 5, 0.8, 0.06, 1.5).alongX().moved(-0.8, -0.25, -0.9));
+        parts.add(Mesh.tube(false, 8, 0.16, 1.05, new Vec3(-1.0, 0.45, -0.7), new Vec3(-0.75, 0.75, -0.45),
+                new Vec3(-0.45, 0.62, -0.2)));
+        for (int side = -1; side <= 1; side += 2) {
+            parts.add(Mesh.tube(false, 6, 0.08, 1.1, new Vec3(0.3 * side, 0.2, -2.1), new Vec3(0.34 * side, 0.1, -2.7),
+                    new Vec3(0.34 * side, -0.35, -2.8)));
+        }
+        return parts.toArray(Mesh[]::new);
     }
 
+    /** The six barrels of a minigun, with the clamps that hold them together and a muzzle brake, turning about z. */
     private static Mesh[] barrels() {
         List<Mesh> parts = new ArrayList<>();
         for (int k = 0; k < 6; k++) {
             double angle = Math.PI * 2.0 * k / 6.0;
-            parts.add(Mesh.cylinder(6, 0.075, 0.45, AirStrike.GUN_LENGTH - 0.05, 1.05).alongZ()
-                    .moved(0.21 * Math.cos(angle), 0.21 * Math.sin(angle), 0.0));
+            parts.add(Mesh.cylinder(8, 0.13, 1.0, AirStrike.GUN_LENGTH - 0.05, 1.05).alongZ()
+                    .moved(0.37 * Math.cos(angle), 0.37 * Math.sin(angle), 0.0));
         }
-        parts.add(Mesh.cylinder(8, 0.07, 0.4, AirStrike.GUN_LENGTH - 0.2, 1.0).alongZ());
-        parts.add(Mesh.torus(16, 5, 0.23, 0.05, 1.2).alongZ().moved(0.0, 0.0, 1.6));
-        parts.add(Mesh.torus(16, 5, 0.23, 0.05, 1.2).alongZ().moved(0.0, 0.0, 3.05));
-        parts.add(Mesh.torus(16, 5, 0.25, 0.055, 1.35).alongZ().moved(0.0, 0.0, AirStrike.GUN_LENGTH - 0.1));
+        parts.add(Mesh.cylinder(10, 0.13, 1.0, AirStrike.GUN_LENGTH - 0.3, 1.0).alongZ());
+        for (double z : new double[] { 3.0, 4.6 }) {
+            parts.add(Mesh.torus(20, 5, 0.52, 0.08, 1.2).alongZ().moved(0.0, 0.0, z));
+        }
+        parts.add(Mesh.cylinder(20, 0.6, AirStrike.GUN_LENGTH - 0.45, AirStrike.GUN_LENGTH, 1.1).alongZ());
+        parts.add(Mesh.torus(20, 5, 0.6, 0.09, 1.5).alongZ().moved(0.0, 0.0, AirStrike.GUN_LENGTH));
         return parts.toArray(Mesh[]::new);
     }
 
@@ -352,14 +411,17 @@ final class PlanePainter {
                 : 0.0;
         double hot = 0.6 * (1.0 - ConstructPainter.smooth((t - GROW_FROM) / GROW_TICKS));
         painter.glare(Math.max(hot, flicker));
+        painter.ambient(GLOWS);
         painter.shape(BODY, frame, 1.0, 1.0 + 0.3 * flicker);
         propellers(painter, path, frame, t, grown);
         guns(painter, id, owner, frame, t, grown, partialTick);
         launchers(painter, owner, frame, grown, partialTick);
+        painter.ambient(0.0);
         painter.glare(0.0);
         lights(painter, frame, t, down);
+        engines(painter, path, frame, t, grown);
         scanCone(painter, owner, frame, partialTick);
-        if (t >= path.diveTick() - FAILING) {
+        if (t >= path.diveTick() - AirStrike.FAILING) {
             burning(painter, path, frame, t);
         }
     }
@@ -370,7 +432,7 @@ final class PlanePainter {
      */
     private static void propellers(ConstructPainter painter, PlanePath path, ConstructPainter.Frame frame, double t,
             double grown) {
-        double failed = path.diveTick() - FAILING;
+        double failed = path.diveTick() - AirStrike.FAILING;
         double[] xs = { -AirStrike.ENGINE_OUTER_X, -AirStrike.ENGINE_X, AirStrike.ENGINE_X, AirStrike.ENGINE_OUTER_X };
         for (int e = 0; e < xs.length; e++) {
             boolean bursts = e == 2;
@@ -436,15 +498,17 @@ final class PlanePainter {
             ConstructPainter.Frame mount = ConstructPainter.Frame.of(pivot, aim, frame.up(), frame.scale());
             painter.shape(GUN, mount, 1.0, 1.0);
             painter.shape(BARRELS, mount.turned(0.0, 0.0, 0.0, 0.0, 0.0, 1.0, turned[gun]), 1.0, 1.0);
-            if (since < 2.5) {
-                // The muzzle flashes with the round going out.
-                double flash = 1.0 - since / 2.5;
-                Vec3 muzzle = mount.at(0.0, 0.0, AirStrike.GUN_LENGTH + 0.3);
-                painter.flare(muzzle, 1.6 * grown * (0.6 + 0.4 * flash), flash);
-                for (int k = 0; k < 4; k++) {
-                    Vec3 ray = ConstructPainter.direction((int) (t / 2.0), 211 + k).scale(0.6).add(aim);
-                    painter.edge(muzzle, muzzle.add(ray.normalize().scale(1.8 * flash)), 0.12, flash);
+            if (since < 3.0) {
+                // The muzzle flashes with the round going out: a burst of light, a star of flame and a puff of light
+                // blown out ahead of it.
+                double flash = 1.0 - since / 3.0;
+                Vec3 muzzle = mount.at(0.0, 0.0, AirStrike.GUN_LENGTH + 0.4);
+                painter.flare(muzzle, 3.4 * grown * (0.6 + 0.4 * flash), flash);
+                for (int k = 0; k < 5; k++) {
+                    Vec3 ray = ConstructPainter.direction((int) (t / 2.0), 211 + k).scale(0.55).add(aim);
+                    painter.edge(muzzle, muzzle.add(ray.normalize().scale(3.6 * flash)), 0.3, flash);
                 }
+                painter.edge(muzzle, muzzle.add(aim.scale(5.5 * flash)), 0.55, 0.9 * flash);
             }
         }
     }
@@ -461,7 +525,7 @@ final class PlanePainter {
             }
             ConstructPainter.Frame rail = frame.moved(x, AirStrike.LAUNCHER_Y, AirStrike.LAUNCHER_Z);
             ConstructPainter.Frame missile = new ConstructPainter.Frame(rail.center(), frame.right(), frame.up(),
-                    frame.forward(), frame.scale() * load);
+                    frame.forward(), frame.scale() * load * MISSILE_SCALE);
             boolean growing = since >= 0.0 && since < AirStrike.RELOAD_TICKS + 2.0;
             painter.glare(growing ? 0.6 * (1.0 - load) : 0.0);
             painter.shape(MISSILE, missile, 1.0, 1.0);
@@ -469,21 +533,48 @@ final class PlanePainter {
         }
     }
 
-    /** Lights on its wingtips and tail blinking in turn, and a faint glow on the tips of its wings. */
+    /**
+     * Lights on its wingtips and tail blinking in turn, beacons on its back and belly flashing, its landing lights
+     * burning, and a faint glow on the tips of its wings.
+     */
     private static void lights(ConstructPainter painter, ConstructPainter.Frame frame, double t, double down) {
         double blink = Math.max(0.0, 1.0 - Mth.frac(t / 30.0) * 6.0);
         double tail = Math.max(0.0, 1.0 - Mth.frac(t / 30.0 + 0.5) * 6.0);
+        double beacon = Math.max(0.0, 1.0 - Mth.frac(t / 18.0 + 0.25) * 4.0);
         double s = frame.scale();
         for (int side = -1; side <= 1; side += 2) {
             painter.flare(frame.at(side * 28.0, 3.45, 0.4), (0.6 + 1.6 * blink) * s, 0.4 + 0.6 * blink);
+            painter.flare(frame.at(side * 0.85, -2.3, 17.0), 1.3 * s, 0.7);
         }
         painter.flare(frame.at(0.0, 2.45, -22.75), (0.5 + 1.4 * tail) * s, 0.35 + 0.6 * tail);
+        painter.flare(frame.at(0.0, -2.75, 1.5), (0.4 + 2.2 * beacon) * s, 0.3 + 0.7 * beacon);
+        painter.flare(frame.at(0.0, 3.5, 1.5), (0.4 + 1.8 * beacon) * s, 0.3 + 0.7 * beacon);
         if (down > 0.0) {
             // Going down, the tips of its wings trail streaks of light.
             for (int side = -1; side <= 1; side += 2) {
                 Vec3 tip = frame.at(side * 28.0, 3.45, 0.4);
                 painter.edge(tip, tip.subtract(frame.forward().scale(8.0 * down * s)), 0.3 * s, 0.6 * down);
             }
+        }
+    }
+
+    /** Every engine breathes a faint flame of light out of its exhaust stack; the one that burst only burns. */
+    private static void engines(ConstructPainter painter, PlanePath path, ConstructPainter.Frame frame, double t,
+            double grown) {
+        double power = 0.55 * ConstructPainter.smooth((t - GROW_FROM - 10.0) / 20.0) * Math.min(1.0, grown);
+        if (power <= 0.01) {
+            return;
+        }
+        double failed = path.diveTick() - AirStrike.FAILING;
+        Vec3 back = frame.forward().scale(-1.0);
+        double s = frame.scale();
+        double[] xs = { -AirStrike.ENGINE_OUTER_X, -AirStrike.ENGINE_X, AirStrike.ENGINE_X, AirStrike.ENGINE_OUTER_X };
+        for (int e = 0; e < xs.length; e++) {
+            if (e == 2 && t > failed) {
+                continue;
+            }
+            Vec3 stack = frame.at(xs[e] + Math.signum(xs[e]) * 1.2, AirStrike.ENGINE_Y + 0.42, -0.75);
+            painter.exhaust(stack, back, 2.6 * s, 0.22 * s, power);
         }
     }
 
@@ -521,7 +612,7 @@ final class PlanePainter {
      * of light and sparks follows the plane down.
      */
     private static void burning(ConstructPainter painter, PlanePath path, ConstructPainter.Frame frame, double t) {
-        double failed = path.diveTick() - FAILING;
+        double failed = path.diveTick() - AirStrike.FAILING;
         double after = t - failed;
         double s = frame.scale();
         Vec3 engine = frame.at(AirStrike.ENGINE_X, AirStrike.ENGINE_Y, 1.0);
@@ -608,14 +699,36 @@ final class PlanePainter {
         Vec3 east = new Vec3(1.0, 0.0, 0.0);
         Vec3 south = new Vec3(0.0, 0.0, 1.0);
         Vec3 up = ConstructPainter.UP;
-        // The flash, blinding for a moment.
+        // The flash, blinding for a moment: a ball of white light bursting out.
         double flash = Math.max(0.0, 1.0 - since / 10.0);
         painter.flare(ground.add(0.0, 3.0, 0.0), 6.0 + 40.0 * flash * flash, Math.min(1.0, 0.4 + flash));
-        // The fireball: it swells fast, then climbs slowly on its stem, burning down as it goes.
+        if (flash > 0.0) {
+            double burst = 4.0 + 18.0 * (1.0 - flash * flash);
+            painter.haze(ground.add(0.0, 2.0, 0.0), east.scale(burst), up.scale(burst * 0.8), south.scale(burst),
+                    ConstructPainter.HOT, 0.8 * flash);
+        }
+        // The fireball: it swells fast, then climbs slowly on its stem, burning down as it goes; a white-hot heart in a
+        // glowing green cloud.
         double swell = 1.0 - Math.pow(1.0 - Math.min(1.0, since / 22.0), 3.0);
         double climb = 1.0 - Math.pow(1.0 - Math.min(1.0, since / 70.0), 2.0);
         double radius = 2.5 + FIREBALL * swell;
         Vec3 ball = ground.add(0.0, 2.0 + FIREBALL_HIGH * climb, 0.0);
+        double heat = Math.max(0.0, 1.0 - since / 45.0);
+        painter.haze(ball, east.scale(radius), up.scale(radius * 0.92), south.scale(radius), ConstructPainter.GREEN,
+                0.55 * life);
+        painter.haze(ball, east.scale(radius * 0.62), up.scale(radius * 0.58), south.scale(radius * 0.62),
+                ConstructPainter.HOT, 0.6 * heat * life);
+        // Its cap spreads into a mushroom as it climbs, and the dust of the blast surges out low over the ground.
+        if (since > 6.0) {
+            double cap = ConstructPainter.smooth((since - 6.0) / 30.0);
+            double wide = radius * (1.25 + 0.55 * cap);
+            painter.haze(ball.subtract(0.0, radius * 0.25, 0.0), east.scale(wide), up.scale(radius * 0.5),
+                    south.scale(wide), ConstructPainter.GREEN, 0.4 * cap * life);
+        }
+        double surge = 1.0 - Math.pow(1.0 - Math.min(1.0, since / 26.0), 2.0);
+        double spread = 5.0 + (SHELL - 4.0) * surge;
+        painter.haze(ground.add(0.0, 1.2, 0.0), east.scale(spread), up.scale(1.6 + 2.2 * surge), south.scale(spread),
+                ConstructPainter.GREEN, 0.45 * life * (1.0 - 0.6 * surge));
         int shell = ConstructPainter.alpha(0.85 * life);
         int haze = ConstructPainter.alpha(0.4 * life);
         for (int k = -3; k <= 3; k++) {
@@ -653,6 +766,9 @@ final class PlanePainter {
         Vec3 top = ball.subtract(0.0, radius * 0.7, 0.0);
         if (top.y > foot.y + 1.0) {
             painter.beamOfLight(foot, top, life, 20.0 + since, 3.2 + 1.6 * (1.0 - climb));
+            double stem = 2.2 + 1.6 * (1.0 - climb);
+            painter.haze(foot.lerp(top, 0.5), east.scale(stem), up.scale((top.y - foot.y) * 0.5), south.scale(stem),
+                    ConstructPainter.GREEN, 0.4 * life);
             for (int k = 0; k < 3; k++) {
                 double skirt = 2.5 + 3.5 * climb + k * 1.4;
                 painter.circle(foot.add(0.0, 0.4 + k * 0.8, 0.0), east, south, skirt, 0.2, 1.6, shell, haze);
@@ -710,25 +826,37 @@ final class PlanePainter {
 
     // ---- What it fires ----
 
-    /** A homing missile of hard light on its way, trailing its own flame and a streak of light. */
+    /**
+     * A homing missile of hard light on its way: it drops off its rail, its motor lights with a flash, and it streaks on
+     * trailing its own flame and a long, thinning streak of light.
+     */
     static void missile(ConstructPainter painter, Vec3 at, Vec3 way, double clock) {
         Vec3 forward = way.lengthSqr() < 1.0E-6 ? new Vec3(0.0, -1.0, 0.0) : way.normalize();
-        ConstructPainter.Frame frame = ConstructPainter.Frame.of(at, forward, ConstructPainter.UP, 1.0);
-        painter.shape(MISSILE, frame, 1.0, 1.1);
+        ConstructPainter.Frame frame = ConstructPainter.Frame.of(at, forward, ConstructPainter.UP, MISSILE_SCALE);
+        painter.ambient(GLOWS);
+        painter.shape(MISSILE, frame, 1.0, 1.15);
+        painter.ambient(0.0);
         Vec3 tail = frame.at(0.0, 0.0, MISSILE_TAIL);
-        painter.exhaust(tail, forward.scale(-1.0), 3.4, 0.32, Math.min(1.0, clock / 2.0));
-        // A streak of light behind it.
+        double lit = ConstructPainter.smooth((clock - 2.0) / 3.0);
+        if (clock > 2.0 && clock < 5.0) {
+            // Its motor lights.
+            painter.flare(tail, 2.6 * (1.0 - (clock - 2.0) / 3.0) + 0.8, 1.0 - (clock - 2.0) / 3.0);
+        }
+        painter.exhaust(tail, forward.scale(-1.0), 5.0, 0.46, lit);
+        // A long streak of light behind it, thinning out.
         Vec3 last = tail;
-        for (int k = 1; k <= 6; k++) {
-            Vec3 next = tail.subtract(forward.scale(1.2 * k));
-            painter.edge(last, next, 0.4 * (1.0 - 0.13 * k), 0.6 * (1.0 - k / 7.0));
+        int streak = 9;
+        for (int k = 1; k <= streak; k++) {
+            Vec3 next = tail.subtract(forward.scale(1.8 * k));
+            double fade = 1.0 - (double) k / (streak + 1);
+            painter.edge(last, next, 0.7 * fade, 0.75 * fade * lit);
             last = next;
         }
     }
 
     /**
-     * A round from a minigun: a small solid slug of hard light with a streak of light behind it, flying from the muzzle
-     * to where it strikes, and splashing there in a flash and a ripple of light.
+     * A round from a minigun: a solid slug of hard light with a long, bright tracer streak behind it, flying from the
+     * muzzle to where it strikes, and splashing there in a flash, a spray of sparks and a ripple of light.
      */
     static void bullet(ConstructPainter painter, ConstructPayload round, double clock) {
         Vec3 to = round.center();
@@ -739,9 +867,11 @@ final class PlanePainter {
             double u = clock / travel;
             Vec3 way = to.subtract(muzzle).normalize();
             Vec3 head = muzzle.lerp(to, u);
-            painter.shape(SLUG, ConstructPainter.Frame.of(head, way, ConstructPainter.UP, 1.6), 1.0, 1.2);
-            Vec3 tail = head.subtract(way.scale(Math.min(5.0, distance * u)));
-            painter.edge(tail, head, 0.22, 0.9);
+            painter.shape(SLUG, ConstructPainter.Frame.of(head, way, ConstructPainter.UP, SLUG_SCALE), 1.0, 1.3);
+            Vec3 tail = head.subtract(way.scale(Math.min(9.0, distance * u)));
+            painter.edge(tail, head, 0.5, 1.0);
+            painter.edge(head.subtract(way.scale(Math.min(3.0, distance * u))), head, 0.9, 0.8);
+            painter.flare(head, 1.1, 0.65);
             return;
         }
         double after = clock - travel;
@@ -749,14 +879,106 @@ final class PlanePainter {
             return;
         }
         double fade = 1.0 - after / 8.0;
-        painter.flare(to.add(0.0, 0.25, 0.0), 0.5 + 1.2 * fade, fade);
+        Vec3 hit = to.add(0.0, 0.2, 0.0);
+        painter.flare(hit, 0.8 + 2.2 * fade, fade);
         painter.circle(to.add(0.0, 0.06, 0.0), new Vec3(1.0, 0.0, 0.0), new Vec3(0.0, 0.0, 1.0),
-                0.25 + 1.3 * (1.0 - fade), 0.05, 0.35, ConstructPainter.alpha(fade), ConstructPainter.alpha(0.5 * fade));
+                0.3 + 1.8 * (1.0 - fade), 0.08, 0.5, ConstructPainter.alpha(fade), ConstructPainter.alpha(0.5 * fade));
+        if (after < 4.0) {
+            double sparks = 1.0 - after / 4.0;
+            for (int k = 0; k < 6; k++) {
+                Vec3 way = ConstructPainter.direction(round.id(), 261 + k);
+                way = new Vec3(way.x, Math.abs(way.y) + 0.35, way.z).normalize();
+                Vec3 from = hit.add(way.scale(0.4 + 1.6 * (1.0 - sparks)));
+                painter.edge(from, from.add(way.scale(0.9 * sparks)), 0.12, sparks);
+            }
+        }
     }
 
     /** How long a round stays on screen, from when it was fired: its flight and its splash, in ticks. */
     static int bulletTicks(ConstructPayload round) {
         return (int) Math.ceil(Math.max(2.0, Math.ceil(round.charge() / AirStrike.BULLET_SPEED))) + 9;
+    }
+
+    /**
+     * The small blast of a missile, light and nothing else but the missile itself: the missile breaks into solid pieces
+     * flung out from where it struck, a white-hot flash, a fireball of light that swells and climbs as it burns out, a
+     * ring of light racing out over the ground and rays and sparks shooting out.
+     *
+     * @param since ticks since it burst
+     */
+    static void missileBlast(ConstructPainter painter, ConstructPayload blast, double since) {
+        double life = 1.0 - since / BLAST_TICKS;
+        if (life <= 0.0) {
+            return;
+        }
+        Vec3 heart = blast.center();
+        double reach = Math.max(1.0, blast.size());
+        if (!painter.visible(heart, reach * 3.0)) {
+            return;
+        }
+        Vec3 east = new Vec3(1.0, 0.0, 0.0);
+        Vec3 south = new Vec3(0.0, 0.0, 1.0);
+        Vec3 up = ConstructPainter.UP;
+        // The missile itself breaks into solid pieces, flung out from where it struck.
+        double apart = since / 16.0;
+        if (apart < 1.0) {
+            ConstructPainter.Frame frame = ConstructPainter.Frame.of(heart, blast.facing(), up, MISSILE_SCALE);
+            painter.glare(Math.max(0.0, 0.8 - since / 6.0));
+            painter.fling(2.2);
+            painter.shattered(MISSILE, frame, apart, 1.3);
+            painter.fling(1.0);
+            painter.glare(0.0);
+        }
+        // The flash.
+        double flash = Math.max(0.0, 1.0 - since / 5.0);
+        if (flash > 0.0) {
+            painter.flare(heart, reach * (1.2 + 3.0 * flash), flash);
+        }
+        // The fireball: it swells fast, climbs a little and burns out.
+        double swell = 1.0 - Math.pow(1.0 - Math.min(1.0, since / 7.0), 3.0);
+        double radius = reach * (0.3 + 0.75 * swell);
+        Vec3 ball = heart.add(0.0, 0.35 * reach * Math.min(1.0, since / 20.0), 0.0);
+        double burn = life * life;
+        painter.haze(ball, east.scale(radius), up.scale(radius * 0.9), south.scale(radius), ConstructPainter.GREEN,
+                0.55 * burn);
+        painter.haze(ball, east.scale(radius * 0.55), up.scale(radius * 0.5), south.scale(radius * 0.55),
+                ConstructPainter.HOT, 0.7 * burn * Math.max(0.0, 1.0 - since / 14.0));
+        int shell = ConstructPainter.alpha(0.85 * burn);
+        int haze = ConstructPainter.alpha(0.4 * burn);
+        for (int k = -2; k <= 2; k++) {
+            double lat = k / 2.5 * (Math.PI * 0.5);
+            double turn = painter.time() * 0.03 + k;
+            Vec3 a = new Vec3(Math.cos(turn), 0.0, Math.sin(turn));
+            painter.circle(ball.add(0.0, radius * Math.sin(lat), 0.0), a, a.cross(up), radius * Math.cos(lat), 0.08,
+                    0.7, shell, haze);
+        }
+        for (int k = 0; k < 3; k++) {
+            double turn = k * Math.PI / 3.0 + painter.time() * 0.02;
+            painter.circle(ball, new Vec3(Math.cos(turn), 0.0, Math.sin(turn)), up, radius, 0.06, 0.55, shell, haze);
+        }
+        painter.flare(ball, radius * 1.6, 0.6 * burn);
+        // A ring of light racing out over the ground, and a second one after it.
+        for (int k = 0; k < 2; k++) {
+            double ring = since - k * 3.0;
+            if (ring < 0.0) {
+                continue;
+            }
+            double wave = 1.0 - Math.pow(1.0 - Math.min(1.0, ring / 10.0), 2.0);
+            double fade = Math.max(0.0, 1.0 - ring / 14.0);
+            painter.circle(heart.subtract(0.0, 0.45, 0.0), east, south, 0.4 + reach * 1.9 * wave, 0.1, 0.8,
+                    ConstructPainter.alpha(fade), ConstructPainter.alpha(0.5 * fade));
+        }
+        // Rays and sparks shooting out of it.
+        if (since < 10.0) {
+            double rays = 1.0 - since / 10.0;
+            for (int k = 0; k < 14; k++) {
+                Vec3 way = ConstructPainter.direction(k + blast.id(), 251);
+                way = new Vec3(way.x, Math.abs(way.y) * 0.9 + 0.1, way.z).normalize();
+                double out = reach * (0.8 + 2.4 * ConstructPainter.noise(k, blast.id(), 5)) * Math.min(1.0,
+                        since / 3.0 + 0.3);
+                painter.edge(heart.add(way.scale(out * 0.35)), heart.add(way.scale(out)), 0.12 * rays, rays);
+            }
+        }
     }
 
     // ---- His arm ----

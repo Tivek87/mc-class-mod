@@ -89,9 +89,8 @@ public final class PowerRing {
             // A bubble of hard light round a creature, lifted up; again to smash it down, crouching to let it go.
             case "light_bubble" -> LightBubble.use(player, level, ability, data);
             // Take off, or land again; flying into the ground at full speed lands with a slam.
-            case "flight" -> (data & Characters.BOOST) != 0 ? Flight.boost(player, on)
-                    : on && ((data & Characters.SLAM) != 0 ? Flight.slam(player, level, ability)
-                            : Flight.toggle(player, level, ability));
+            case "flight" -> on && ((data & Characters.SLAM) != 0 ? Flight.slam(player, level, ability)
+                    : Flight.toggle(player, level, ability));
             default -> false;
         };
     }
@@ -184,8 +183,7 @@ public final class PowerRing {
         int state = (LightShield.up(player) ? RingPayload.SHIELD : 0) | (LightDome.up(player) ? RingPayload.DOME : 0)
                 | (LightBeam.firing(player) ? RingPayload.BEAM : 0)
                 | (Flight.descending(player) ? RingPayload.DESCENT : 0)
-                | (Flight.diving(player) || Shockwave.dropping(player) ? RingPayload.DIVE : 0)
-                | (Flight.boosting(player) ? RingPayload.BOOST : 0);
+                | (Flight.diving(player) || Shockwave.dropping(player) ? RingPayload.DIVE : 0);
         return new RingPayload(player.getId(), power(player), GiantFist.pending(player), Lantern.ticks(player),
                 Flight.ticks(player), state, Arrival.ticks(player), Arrival.from(player), LightBeam.charging(player));
     }

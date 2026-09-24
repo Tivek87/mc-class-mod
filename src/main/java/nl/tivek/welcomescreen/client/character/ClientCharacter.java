@@ -77,6 +77,11 @@ public final class ClientCharacter {
     // Which keys you hold down right now, so a start and a stop are sent exactly once.
     private static final boolean[] HELD = new boolean[AbilitySlot.values().length];
     private static boolean climbing;
+    // With the sword and shield: how many ticks the defend button has been down (-1 while it is up), and whether this
+    // press ended a charge. Held this long, the shield comes up to block; let go sooner, and it was a click: a charge.
+    private static final int BLOCK_AFTER = 5;
+    private static int defendDown = -1;
+    private static boolean endedCharge;
 
     private ClientCharacter() {
     }
@@ -184,8 +189,9 @@ public final class ClientCharacter {
         int index = ability.slot().ordinal();
         MouseHold.Step step = MouseHold.tick(ability, free && key.isDown(), !free);
         if (SwordArms.holding()) {
-            sword(player, ability, index, step);
+            sword(player, ability, index, step, free && key.isDown());
         } else {
+            defendDown = -1;
             switch (step) {
                 case TAP -> tap(player, ability);
                 case HOLD -> send(index, true, data(player) | Characters.HOLD);
@@ -204,35 +210,65 @@ public final class ClientCharacter {
     }
 
     /**
-     * The mouse while you hold the sword and shield of the construct wheel: a tap of the attack button cuts or thrusts, a
-     * tap of the defend button bashes (a move picked at random, played at once and told to the server), holding the
-     * attack button does the flurry and holding the defend button charges; letting go ends either.
+     * The mouse while you hold the sword and shield of the construct wheel. The attack button: a tap cuts or thrusts (a
+     * move picked at random, played at once and told to the server), holding it does the flurry and letting go ends it.
+     * The defend button: held a moment, the shield comes up to block until you let go; a click charges, and a click while
+     * you charge ends the charge.
+     *
+     * @param down whether the button is down and the mouse is the sword and shield's right now
      */
-    private static void sword(LocalPlayer player, CharacterAbility ability, int index, MouseHold.Step step) {
-        boolean attack = ability.mouseButton() == CharacterAbility.Mouse.LEFT;
-        switch (step) {
-            case TAP -> {
-                SwordMove move = attack ? SwordArms.attack(player) : SwordArms.bash(player);
-                if (move != null) {
-                    send(index, true, data(player) | Characters.TAP | move.ordinal() << Characters.MOVE_SHIFT);
+    private static void sword(LocalPlayer player, CharacterAbility ability, int index, MouseHold.Step step,
+            boolean down) {
+        if (ability.mouseButton() == CharacterAbility.Mouse.LEFT) {
+            switch (step) {
+                case TAP -> {
+                    SwordMove move = SwordArms.attack(player);
+                    if (move != null) {
+                        send(index, true, data(player) | Characters.TAP | move.ordinal() << Characters.MOVE_SHIFT);
+                    }
                 }
-            }
-            case HOLD -> {
-                if (attack ? SwordArms.flurry(player) : SwordArms.charge(player)) {
-                    send(index, true, data(player) | Characters.HOLD);
+                case HOLD -> {
+                    if (SwordArms.flurry(player)) {
+                        send(index, true, data(player) | Characters.HOLD);
+                    }
                 }
-            }
-            case RELEASE, LET_GO -> {
-                if (attack) {
+                case RELEASE, LET_GO -> {
                     SwordArms.stopFlurry();
                     send(index, false, data(player));
-                } else if (SwordArms.stopCharge()) {
-                    send(index, false, data(player));
+                }
+                case NOTHING -> {
+                    // Still down and not held long enough yet, or up and nothing to tell.
                 }
             }
-            case NOTHING -> {
-                // Still down and not held long enough yet, or up and nothing to tell.
+            return;
+        }
+        if (down) {
+            if (defendDown < 0) {
+                defendDown = 0;
+                // A click while you charge ends the charge, and no new one comes of it.
+                endedCharge = SwordArms.charging();
+                if (endedCharge) {
+                    SwordArms.endCharge();
+                }
+            } else {
+                defendDown++;
             }
+            if (defendDown == BLOCK_AFTER && SwordArms.block(true)) {
+                send(index, true, data(player) | Characters.HOLD);
+            }
+            return;
+        }
+        if (defendDown < 0) {
+            return;
+        }
+        int held = defendDown;
+        defendDown = -1;
+        if (held >= BLOCK_AFTER) {
+            if (SwordArms.block(false)) {
+                send(index, false, data(player));
+            }
+        } else if (!endedCharge && SwordArms.charge(player)) {
+            send(index, true, data(player) | Characters.TAP);
         }
     }
 

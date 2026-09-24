@@ -2,271 +2,454 @@ package nl.tivek.welcomescreen.client.character.lantern;
 
 import java.util.EnumMap;
 import java.util.Map;
-import javax.annotation.Nullable;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.welcomescreen.character.lantern.SwordMove;
 
 /**
- * How Green Lantern moves with the sword and shield of the construct wheel (see {@link SwordMove}): every move as a
- * handful of key poses on its own ticks, and smooth curves through them, so a cut winds up, whips through and follows
- * through. A new move starts from wherever the last one left the arms and runs on into its own first pose; once a move
- * is over the arms settle back into the guard.
+ * How Green Lantern moves with the sword and shield of the construct wheel (see {@link SwordMove}).
  *
- * <p>A pose says where each arm points and where the sword and the shield point, seen from his upper body: x to his
- * right, y up, z ahead; a yaw turns to his right, a pitch up. The upper body itself can turn on the hips (twist),
- * crouch and step forward into a lunge. Both the body seen from outside and your own arms in first person are posed
- * from the very same numbers.
+ * <p>Every move is made as it looks through his own eyes, the way a game with a sword in first person makes it: a
+ * handful of key poses, each saying where the sword hand grips, where the blade points and which way its edge faces,
+ * and where the shield hangs and faces. Between the keys everything runs along smooth curves through all of them
+ * (never from key to key and stopping), so a cut winds up, whips through the moment it strikes and brakes after, and
+ * the tip of the blade draws one clean arc; a key can also be a stop, where the move hangs a moment before it strikes. A
+ * new move starts from wherever the last one left the arms, and once a move is over they settle back into the guard.
+ *
+ * <p>In the guard the sword stands upright in the right fist, the blade a little forward, and the shield hangs on the left
+ * forearm, its back to you and its face turned out and forward. The body seen from outside is posed from the very same
+ * poses (see {@link SwordArms}); for that each key also says how far the upper body turns into the move (twist), bends
+ * forward (lean) and steps into it (step), and for the spinning cut how far the whole body has spun round (orbit).
  */
 final class SwordPoses {
     /**
-     * One pose, in radians: where the sword arm points (yaw, pitch; pitch -90 degrees hangs straight down), where the
-     * blade points and how far it is rolled about itself (roll 0: its edges up and down), the same for the shield arm and
-     * the face of the shield, how far the upper body turns to his right, how far he crouches (0 to 1) and how far he has
-     * stepped forward (0 to 1).
+     * One pose, as your own eyes see it (x to the right, y up, -z ahead, in blocks): where the sword hand grips, where
+     * the blade points and where its edge faces (one long, square to each other), where the middle of the shield is, where
+     * its face points and where its top is; how far the upper body turns to the right (twist, radians), bends forward
+     * (lean, 0 to 1, a little back below 0) and has stepped forward (step, 0 to 1); and how far the whole body has spun
+     * round to the left (orbit, radians), which in first person takes everything round with it.
      */
-    record Pose(float armYaw, float armPitch, float bladeYaw, float bladePitch, float bladeRoll, float shieldArmYaw,
-            float shieldArmPitch, float shieldYaw, float shieldPitch, float shieldRoll, float twist, float crouch,
-            float step) {
-        Pose mix(Pose to, float t) {
-            return new Pose(Mth.lerp(t, this.armYaw, to.armYaw), Mth.lerp(t, this.armPitch, to.armPitch),
-                    Mth.lerp(t, this.bladeYaw, to.bladeYaw), Mth.lerp(t, this.bladePitch, to.bladePitch),
-                    Mth.lerp(t, this.bladeRoll, to.bladeRoll), Mth.lerp(t, this.shieldArmYaw, to.shieldArmYaw),
-                    Mth.lerp(t, this.shieldArmPitch, to.shieldArmPitch), Mth.lerp(t, this.shieldYaw, to.shieldYaw),
-                    Mth.lerp(t, this.shieldPitch, to.shieldPitch), Mth.lerp(t, this.shieldRoll, to.shieldRoll),
-                    Mth.lerp(t, this.twist, to.twist), Mth.lerp(t, this.crouch, to.crouch),
-                    Mth.lerp(t, this.step, to.step));
-        }
-
-        /** The same pose with its twist brought back to within half a turn: after a spin, a whole turn is no turn. */
-        Pose unwound() {
-            float twist = Mth.wrapDegrees(this.twist * Mth.RAD_TO_DEG) * Mth.DEG_TO_RAD;
-            return new Pose(this.armYaw, this.armPitch, this.bladeYaw, this.bladePitch, this.bladeRoll,
-                    this.shieldArmYaw, this.shieldArmPitch, this.shieldYaw, this.shieldPitch, this.shieldRoll, twist,
-                    this.crouch, this.step);
-        }
+    record Pose(Vec3 hand, Vec3 blade, Vec3 edge, Vec3 shield, Vec3 face, Vec3 top, float twist, float lean,
+            float step, float orbit) {
+        static final int SIZE = 22;
+        // Where the shield's numbers are in numbers(): its middle, face and top.
+        private static final int SHIELD_FROM = 9;
+        private static final int SHIELD_TO = 17;
 
         float[] numbers() {
-            return new float[] { this.armYaw, this.armPitch, this.bladeYaw, this.bladePitch, this.bladeRoll,
-                    this.shieldArmYaw, this.shieldArmPitch, this.shieldYaw, this.shieldPitch, this.shieldRoll,
-                    this.twist, this.crouch, this.step };
+            return new float[] { (float) this.hand.x, (float) this.hand.y, (float) this.hand.z, (float) this.blade.x,
+                    (float) this.blade.y, (float) this.blade.z, (float) this.edge.x, (float) this.edge.y,
+                    (float) this.edge.z, (float) this.shield.x, (float) this.shield.y, (float) this.shield.z,
+                    (float) this.face.x, (float) this.face.y, (float) this.face.z, (float) this.top.x, (float) this.top.y,
+                    (float) this.top.z, this.twist, this.lean, this.step, this.orbit };
         }
 
+        /** A pose from its numbers; the ways are made one long and square to each other again. */
         static Pose of(float[] n) {
-            return new Pose(n[0], n[1], n[2], n[3], n[4], n[5], n[6], n[7], n[8], n[9], n[10], n[11], n[12]);
+            Vec3 blade = unit(new Vec3(n[3], n[4], n[5]), new Vec3(0.0, 1.0, 0.0));
+            Vec3 edge = square(new Vec3(n[6], n[7], n[8]), blade);
+            Vec3 face = unit(new Vec3(n[12], n[13], n[14]), new Vec3(0.0, 0.0, -1.0));
+            Vec3 top = square(new Vec3(n[15], n[16], n[17]), face);
+            return new Pose(new Vec3(n[0], n[1], n[2]), blade, edge, new Vec3(n[9], n[10], n[11]), face, top, n[18],
+                    n[19], n[20], n[21]);
+        }
+
+        Pose mix(Pose to, float t) {
+            float[] a = this.numbers();
+            float[] b = to.numbers();
+            for (int k = 0; k < a.length; k++) {
+                a[k] = Mth.lerp(t, a[k], b[k]);
+            }
+            return of(a);
+        }
+
+        /** The same pose with the shield of {@code other}, {@code t} of the way. */
+        Pose shieldOf(Pose other, float t) {
+            if (t <= 0.0F) {
+                return this;
+            }
+            float[] a = this.numbers();
+            float[] b = other.numbers();
+            for (int k = SHIELD_FROM; k <= SHIELD_TO; k++) {
+                a[k] = Mth.lerp(t, a[k], b[k]);
+            }
+            return of(a);
+        }
+
+        /** The same pose with its twist and its spin brought back to within half a turn: a whole turn is no turn. */
+        Pose unwound() {
+            return new Pose(this.hand, this.blade, this.edge, this.shield, this.face, this.top, wrap(this.twist),
+                    this.lean, this.step, wrap(this.orbit));
+        }
+
+        /** The same pose turned {@code angle} (radians) to the left about the upright line through your eyes. */
+        Pose turned(double angle) {
+            if (angle == 0.0) {
+                return this;
+            }
+            return new Pose(spin(this.hand, angle), spin(this.blade, angle), spin(this.edge, angle),
+                    spin(this.shield, angle), spin(this.face, angle), spin(this.top, angle), this.twist, this.lean,
+                    this.step, this.orbit);
+        }
+
+        /** The shield's own right: along it the forearm lies on its back, from the elbow to the fist. */
+        Vec3 shieldRight() {
+            return this.face.cross(this.top).normalize();
+        }
+
+        /** Where the fist grips the shield: the grip on its back, at a shield of scale {@code scale}. */
+        Vec3 shieldGrip(double scale) {
+            return this.shield.add(this.shieldRight().scale(SwordPainter.GRIP_X * scale))
+                    .add(this.face.scale(SwordPainter.GRIP_Z * scale));
         }
     }
 
-    /** One key pose of a move, on its own tick. */
-    private record Key(float tick, Pose pose) {
+    /** One key pose of a move: on its own tick, and whether the move stops there a moment (a windup before a strike). */
+    private record Key(float tick, boolean stop, float[] numbers) {
     }
 
-    /** The guard he stands in: sword forward and a little up in front of his right hip, shield before his left side. */
-    static final Pose GUARD = deg(12, -52, -6, 28, 0, 14, -36, -6, 2, 0, 0, 0, 0);
-    // How long the arms take to settle back into the guard once a move is over, in ticks.
-    private static final float SETTLE = 6.0F;
-    // The shield held before the chest in the flurry, and the sword pulled back between two stabs.
-    private static final Pose FLURRY_GUARD = deg(18, -34, 4, 0, 90, 36, -14, 6, 4, 0, 0, 0, 0);
-    // How far a stab of the flurry reaches out, as a part of the way from pulled back to the full thrust.
+    // How long the arms take to settle back into the guard once the last key of a move is past, and into the run once a
+    // ram of the shield is past, in ticks.
+    private static final float SETTLE = 7.0F;
+    private static final float RAM_SETTLE = 4.0F;
+    // How long a flurry or a charge takes to come in from wherever the arms were, in ticks.
+    private static final float BLEND_IN = 3.0F;
+
+    /**
+     * The guard: the sword upright in the right fist before the right hip, its blade a little forward and its edge
+     * turned so you see its flat, and the shield on the left forearm low before the left hip, its back to you.
+     */
+    static final Pose GUARD = pose(0.46, -0.50, -0.92, -0.10, 0.93, -0.36, -0.30, 0.0, -1.0,
+            -0.50, -0.52, -0.92, -0.45, 0.05, -1.0, 0.08, 1.0, 0.12, 0, 0.05F, 0, 0);
+    /**
+     * The shield held up to block: the forearm across before the chest, the shield square to the front just below your
+     * line of sight, so you look over it. Laid over the shield only, so the sword can still cut behind it.
+     */
+    private static final Pose BLOCK = pose(0.46, -0.50, -0.92, -0.10, 0.93, -0.36, -0.30, 0.0, -1.0,
+            -0.28, -0.44, -0.76, 0.14, 0.03, -1.0, 0.0, 1.0, 0.08, 0, 0.12F, 0, 0);
+    // The flurry: the shield up before the chest, the sword pulled back beside it between two stabs, and how far a stab
+    // reaches out, as a part of the way from pulled back to the full thrust.
+    private static final Pose FLURRY_GUARD = pose(0.46, -0.36, -0.72, -0.12, 0.08, -0.99, 1.0, 0.0, 0.0,
+            -0.30, -0.38, -0.80, 0.06, 0.05, -1.0, 0.0, 1.0, 0.05, -6, 0.2F, 0.15F, 0);
     private static final float STAB_OUT = 1.5F;
 
     private static final Map<SwordMove, Key[]> MOVES = new EnumMap<>(SwordMove.class);
 
     static {
-        // ---- The sword: twelve cuts and thrusts. Numbers: arm yaw, arm pitch, blade yaw, pitch, roll, and twist. ----
-        sword(SwordMove.SLASH, 3, 68, 8, 104, 12, 90, 18, 5, 30, 6, 45, 6, 90, 8, 6, 0, 5, 0, 4, 90, 0, 7, -40, 3, -62,
-                2, 90, -12, 9, -68, -12, -104, -8, 90, -22, 12, -22, -42, -34, 14, 45, -8);
-        sword(SwordMove.BACKHAND, 3, -58, 10, -98, 14, -90, -22, 5, -24, 7, -40, 8, -90, -8, 6, 4, 5, 6, 5, -90, 2, 7,
-                38, 3, 62, 2, -90, 12, 9, 66, -10, 100, -6, -90, 22, 12, 24, -40, 30, 14, -45, 6);
-        sword(SwordMove.CLEAVE, 4, 40, 70, 55, 115, 20, 16, 6, 18, 30, 25, 45, 20, 6, 7, -6, -8, -10, -20, 20, -4, 8,
-                -26, -34, -38, -52, 20, -12, 10, -40, -52, -55, -70, 20, -16, 13, -10, -48, -12, 5, 10, -5);
-        sword(SwordMove.REVERSE_CLEAVE, 4, -34, 72, -50, 115, -20, -18, 6, -14, 30, -20, 45, -20, -6, 7, 6, -8, 10,
-                -20, -20, 4, 8, 26, -34, 38, -52, -20, 12, 10, 40, -52, 55, -70, -20, 16, 13, 16, -48, 8, 8, -10, 4);
-        sword(SwordMove.RISING, 3, -38, -62, -58, -42, -30, -18, 5, -12, -22, -18, -2, -30, -6, 6, 8, 8, 12, 24, -30,
-                2, 7, 26, 30, 36, 50, -30, 10, 9, 40, 52, 52, 78, -30, 16, 12, 20, -20, 10, 30, -10, 5);
-        sword(SwordMove.UPPERCUT, 4, 4, -78, 0, -62, 0, 0, 6, 2, -8, 0, 28, 0, 0, 7, 0, 38, 0, 72, 0, 0, 9, -2, 62, 0,
-                100, 0, 0, 13, 8, -30, -4, 30, 0, 0);
-        sword(SwordMove.OVERHEAD, 5, 4, 118, 0, 150, 0, 0, 7, 3, 92, 0, 110, 0, 0, 8, 2, 45, 0, 40, 0, 0, 9, 0, -2, 0,
-                -14, 0, 0, 11, -2, -42, 0, -58, 0, 0, 15, 8, -50, -4, 20, 0, 0);
-        sword(SwordMove.STAB, 3, 18, -34, 2, 2, 90, 10, 4, 8, -18, 0, 0, 90, 4, 5, 0, -3, 0, -2, 90, -10, 7, 0, -5, 0,
-                -3, 90, -10, 10, 12, -46, -4, 22, 30, 0);
-        stepping(SwordMove.STAB, 0.0F, 0.1F, 0.35F, 0.35F, 0.0F);
-        sword(SwordMove.LUNGE, 5, 22, -44, 4, 0, 90, 14, 7, 8, -14, 0, -1, 90, -6, 8, 0, -2, 0, -3, 90, -14, 12, 0, -4,
-                0, -4, 90, -14, 16, 12, -50, -4, 24, 30, 0);
-        stepping(SwordMove.LUNGE, 0.0F, 0.8F, 1.0F, 1.0F, 0.0F);
-        sword(SwordMove.LOW_SWEEP, 4, 66, -48, 100, -22, 90, 20, 6, 20, -54, 30, -26, 90, 6, 7, -12, -56, -18, -26,
-                90, -6, 8, -40, -56, -60, -24, 90, -14, 10, -66, -52, -100, -20, 90, -22, 13, -18, -50, -24, 16, 40, -6);
-        crouching(SwordMove.LOW_SWEEP, 1.0F, 1.0F, 1.0F, 1.0F, 1.0F, 0.0F);
-        sword(SwordMove.SPIN, 4, 62, 2, 92, 2, 90, 26, 6, 70, 2, 96, 2, 90, 0, 9, 70, 2, 96, 2, 90, -150, 12, 70, 2, 96,
-                2, 90, -300, 14, 60, -6, 86, -2, 90, -360, 18, 14, -50, -4, 26, 0, -360);
-        sword(SwordMove.CROSS, 2, 44, 62, 58, 96, 25, 14, 4, 8, 10, 10, 20, 25, 2, 5, -22, -26, -32, -40, 25, -8, 7,
-                -40, 62, -56, 96, -25, -14, 9, -8, 10, -10, 20, -25, -2, 10, 22, -26, 32, -40, -25, 8, 12, 34, -44,
-                46, -58, -25, 12, 16, 12, -50, -4, 24, 0, 0);
-        // ---- The shield: six bashes. Numbers: shield arm yaw, pitch, shield yaw, pitch, twist and step. ----
-        shield(SwordMove.BASH, 3, 28, -48, 12, -4, -16, 0, 5, 8, -4, 4, 2, 18, 0.4F, 7, 8, -6, 4, 2, 16, 0.4F, 11, 14,
-                -36, -6, 2, 0, 0);
-        shield(SwordMove.BASH_SWEEP, 3, -58, -12, -70, 0, -20, 0, 5, -12, -8, -18, 0, -4, 0, 6, 18, -8, 30, 0, 8, 0, 8,
-                44, -12, 60, 0, 18, 0, 12, 14, -36, -6, 2, 0, 0);
-        shield(SwordMove.BASH_BACKHAND, 3, 52, -22, 62, 0, 20, 0, 5, 18, -10, 20, 0, 6, 0, 6, -12, -8, -18, 0, -6, 0,
-                8, -52, -12, -66, 0, -20, 0, 12, 14, -36, -6, 2, 0, 0);
-        shield(SwordMove.BASH_UP, 3, 12, -74, 4, -42, 0, 0, 5, 10, -20, 4, 18, 0, 0, 6, 8, 30, 4, 52, 0, 0, 8, 8, 48, 4,
-                66, 0, 0, 12, 14, -36, -6, 2, 0, 0);
-        shield(SwordMove.BASH_DOWN, 4, 12, 76, 4, 62, 0, 0, 6, 10, 30, 4, 10, 0, 0, 7, 8, -30, 4, -62, 0, 0, 9, 8, -44,
-                4, -74, 0, 0, 13, 14, -36, -6, 2, 0, 0);
-        shield(SwordMove.BASH_SPIN, 3, -56, -10, -84, 0, 24, 0, 6, -62, -8, -90, 0, -60, 0, 8, -62, -8, -90, 0, -180, 0,
-                11, -62, -8, -90, 0, -300, 0, 12, -50, -14, -76, 0, -336, 0, 15, 14, -36, -6, 2, -360, 0);
-        // ---- The end of a charge: the shield raised and slammed into the ground before him. ----
-        shield(SwordMove.SLAM, 4, 12, 74, 4, 58, -8, 0, 6, 10, 20, 4, -10, -4, 0, 7, 8, -58, 4, -84, 0, 0, 10, 8, -60, 4,
-                -86, 0, 0, 14, 14, -36, -6, 2, 0, 0);
-        crouching(SwordMove.SLAM, 0.0F, 0.0F, 1.0F, 1.0F, 0.0F);
-        // ---- Taking shape: the sword grows up out of the fist, is flicked up and caught, and knocks on the shield. ----
-        MOVES.put(SwordMove.EQUIP, new Key[] { key(0, deg(10, -24, 0, 82, 0, 16, -30, -4, 2, 0, 0, 0, 0)),
-                key(7, deg(12, -30, 0, 84, 0, 16, -32, -4, 2, 0, 0, 0, 0)),
-                key(9, deg(12, -44, 0, 70, 0, 16, -32, -4, 2, 0, 0, 0, 0)),
-                key(10, deg(10, 28, 0, 95, 0, 16, -30, -4, 2, 0, 0, 0, 0)),
-                key(13, deg(8, 18, 0, 90, 0, 18, -28, -6, 2, 0, 0, 0, 0)),
-                key(19, deg(8, 22, 0, 60, 0, 18, -28, -6, 2, 0, 0, 0, 0)),
-                key(20, deg(8, 12, 0, 40, 0, 18, -28, -6, 2, 0, 0, 0, 0)),
-                key(22, deg(10, -12, 0, 20, 0, 18, -24, -10, 0, 0, -4, 0, 0)),
-                key(24, deg(-34, -18, -62, 4, 0, 18, -22, -14, 0, 0, -10, 0, 0)),
-                key(26, deg(-12, -22, -30, 10, 0, 18, -22, -14, 0, 0, -4, 0, 0)),
-                key(28, deg(-36, -18, -64, 4, 0, 18, -22, -14, 0, 0, -10, 0, 0)),
-                key(32, GUARD) });
+        // ---- The sword: twelve cuts and thrusts, the shield kept in its guard. Numbers per key: the tick, whether it
+        // stops there (1), where the fist is (x, y, z), where the blade points, where its edge faces, the twist of the
+        // upper body (degrees), how far it bends forward and how far it steps. ----
+        sword(SwordMove.SLASH,
+                4, 1, 0.70, 0.02, -0.68, 0.55, 0.62, 0.55, -0.50, 0.40, -0.75, 34, 0.10F, 0,
+                5, 0, 0.48, -0.06, -0.94, 0.70, 0.30, -0.65, -0.70, 0.20, -0.70, 22, 0.16F, 0.12F,
+                6, 0, 0.12, -0.14, -1.05, -0.40, 0.10, -0.91, -0.90, 0.05, 0.40, 6, 0.24F, 0.25F,
+                8, 0, -0.48, -0.38, -0.82, -0.88, -0.30, -0.08, -0.25, -0.90, 0.30, -32, 0.28F, 0.30F,
+                11, 0, 0.05, -0.50, -0.90, -0.35, 0.65, -0.55, -0.30, 0.0, -1.0, -14, 0.12F, 0.12F);
+        sword(SwordMove.BACKHAND,
+                4, 1, -0.30, -0.02, -0.66, -0.55, 0.62, 0.56, 0.60, 0.40, -0.70, -34, 0.10F, 0,
+                5, 0, -0.14, -0.08, -0.92, -0.60, 0.32, -0.72, 0.70, 0.20, -0.70, -22, 0.16F, 0.12F,
+                6, 0, 0.20, -0.14, -1.05, 0.38, 0.10, -0.92, 0.92, 0.05, 0.38, -6, 0.24F, 0.25F,
+                8, 0, 0.76, -0.34, -0.80, 0.90, -0.28, -0.05, 0.20, -0.90, 0.35, 32, 0.26F, 0.28F,
+                11, 0, 0.55, -0.46, -0.90, 0.05, 0.80, -0.55, -0.30, 0.0, -1.0, 14, 0.12F, 0.10F);
+        sword(SwordMove.CLEAVE,
+                5, 1, 0.60, 0.22, -0.64, 0.30, 0.82, 0.48, -0.40, 0.30, -0.85, 28, -0.10F, 0,
+                7, 0, 0.12, -0.10, -1.02, -0.42, -0.22, -0.88, -0.70, -0.60, 0.30, 2, 0.32F, 0.32F,
+                9, 0, -0.42, -0.56, -0.82, -0.58, -0.78, -0.22, -0.30, -0.40, 0.85, -28, 0.46F, 0.36F,
+                12, 0, 0.08, -0.52, -0.92, -0.28, 0.70, -0.62, -0.30, 0.0, -1.0, -12, 0.20F, 0.15F);
+        sword(SwordMove.REVERSE_CLEAVE,
+                5, 1, -0.24, 0.20, -0.66, -0.32, 0.82, 0.46, 0.40, 0.30, -0.85, -28, -0.10F, 0,
+                7, 0, 0.26, -0.10, -1.02, 0.44, -0.22, -0.87, 0.70, -0.60, 0.30, -2, 0.32F, 0.32F,
+                9, 0, 0.74, -0.52, -0.80, 0.62, -0.74, -0.20, 0.30, -0.40, 0.85, 28, 0.46F, 0.36F,
+                12, 0, 0.55, -0.48, -0.92, 0.02, 0.82, -0.55, -0.30, 0.0, -1.0, 12, 0.20F, 0.15F);
+        sword(SwordMove.RISING,
+                4, 1, -0.30, -0.62, -0.78, -0.62, -0.62, -0.30, 0.55, 0.60, -0.55, -30, 0.36F, 0.10F,
+                6, 0, 0.18, -0.24, -1.05, 0.44, 0.34, -0.82, 0.70, 0.60, 0.35, 0, 0.20F, 0.22F,
+                8, 0, 0.66, 0.12, -0.78, 0.50, 0.82, 0.18, 0.60, 0.0, 0.80, 30, 0.0F, 0.25F,
+                11, 0, 0.52, -0.38, -0.90, 0.05, 0.90, -0.40, -0.30, 0.0, -1.0, 10, 0.04F, 0.10F);
+        sword(SwordMove.UPPERCUT,
+                5, 1, 0.26, -0.72, -0.74, 0.04, -0.55, -0.83, 0.0, -0.83, 0.55, 4, 0.60F, 0.25F,
+                7, 0, 0.18, -0.24, -1.12, 0.0, 0.58, -0.81, 0.0, 0.81, 0.58, 0, 0.28F, 0.30F,
+                9, 0, 0.16, 0.20, -0.85, 0.0, 0.96, 0.28, 0.0, -0.28, 0.96, 0, -0.18F, 0.26F,
+                12, 0, 0.42, -0.38, -0.92, -0.05, 0.92, -0.38, -0.30, 0.0, -1.0, 2, 0.0F, 0.10F);
+        sword(SwordMove.OVERHEAD,
+                6, 1, 0.24, 0.28, -0.56, 0.05, 0.62, 0.78, 0.0, 0.78, -0.62, 0, -0.25F, 0,
+                7, 1, 0.24, 0.31, -0.55, 0.05, 0.56, 0.83, 0.0, 0.83, -0.56, 0, -0.30F, 0.10F,
+                8, 0, 0.20, 0.15, -0.80, 0.02, 0.85, -0.52, 0.0, 0.52, 0.85, 0, 0.10F, 0.35F,
+                9, 0, 0.14, -0.12, -1.06, 0.0, -0.32, -0.95, 0.0, -0.95, 0.32, 0, 0.55F, 0.60F,
+                11, 0, 0.12, -0.60, -0.86, 0.0, -0.90, -0.40, 0.0, -0.40, 0.90, 0, 0.72F, 0.62F,
+                13, 0, 0.30, -0.55, -0.95, 0.05, 0.10, -1.0, -0.30, 0.0, -1.0, 0, 0.50F, 0.45F,
+                15, 0, 0.42, -0.46, -0.92, -0.05, 0.85, -0.50, -0.30, 0.0, -1.0, 0, 0.30F, 0.30F);
+        sword(SwordMove.STAB,
+                3, 1, 0.54, -0.44, -0.62, -0.18, 0.06, -0.98, 1.0, 0.0, 0.0, 14, 0.10F, 0,
+                5, 0, 0.14, -0.20, -1.50, -0.06, 0.03, -1.0, 1.0, 0.0, 0.0, -16, 0.32F, 0.55F,
+                7, 1, 0.14, -0.21, -1.46, -0.06, 0.03, -1.0, 1.0, 0.0, 0.0, -16, 0.34F, 0.55F,
+                9, 0, 0.45, -0.48, -0.96, -0.10, 0.82, -0.56, -0.30, 0.0, -1.0, -4, 0.12F, 0.18F);
+        sword(SwordMove.LUNGE,
+                4, 1, 0.60, -0.40, -0.56, -0.22, 0.10, -0.97, 1.0, 0.0, 0.0, 22, 0.20F, 0,
+                6, 0, 0.40, -0.30, -0.95, -0.12, 0.06, -0.99, 1.0, 0.0, 0.0, 10, 0.40F, 0.50F,
+                8, 0, 0.10, -0.18, -1.72, -0.04, 0.02, -1.0, 1.0, 0.0, 0.0, -24, 0.62F, 1.0F,
+                11, 1, 0.10, -0.20, -1.66, -0.04, 0.02, -1.0, 1.0, 0.0, 0.0, -24, 0.62F, 1.0F,
+                14, 0, 0.45, -0.48, -0.96, -0.10, 0.82, -0.56, -0.30, 0.0, -1.0, -6, 0.20F, 0.30F);
+        sword(SwordMove.LOW_SWEEP,
+                5, 1, 0.74, -0.56, -0.72, 0.80, -0.10, 0.55, -0.60, -0.20, -0.75, 32, 0.80F, 0.50F,
+                7, 0, 0.50, -0.60, -0.98, 0.55, -0.30, -0.78, -0.80, -0.10, 0.55, 16, 0.88F, 0.50F,
+                8, 0, 0.12, -0.62, -1.05, -0.30, -0.30, -0.90, -0.95, -0.10, 0.30, 0, 0.90F, 0.50F,
+                10, 0, -0.52, -0.60, -0.80, -0.90, -0.32, -0.02, -0.10, -0.10, 1.0, -34, 0.86F, 0.50F,
+                13, 0, 0.08, -0.55, -0.92, -0.22, 0.66, -0.72, -0.30, 0.0, -1.0, -14, 0.40F, 0.20F);
+        // The spinning cut: the blade held out to his right while the whole body goes round once to the left.
+        spin(SwordMove.SPIN,
+                4, 1, 0.62, -0.28, -0.74, 0.80, 0.06, 0.60, -0.60, 0.0, 0.80, 20, 0.20F, -20,
+                7, 0, 0.58, -0.25, -0.82, 0.70, 0.04, -0.71, 0.70, 0.0, 0.70, 0, 0.26F, 40,
+                10, 0, 0.58, -0.25, -0.82, 0.70, 0.04, -0.71, 0.70, 0.0, 0.70, 0, 0.28F, 190,
+                13, 0, 0.58, -0.25, -0.82, 0.70, 0.04, -0.71, 0.70, 0.0, 0.70, 0, 0.26F, 310,
+                15, 0, 0.50, -0.32, -0.86, 0.25, 0.40, -0.88, 0.60, 0.0, 0.80, 0, 0.18F, 360,
+                18, 0, 0.46, -0.48, -0.92, -0.08, 0.90, -0.42, -0.30, 0.0, -1.0, 0, 0.08F, 360);
+        sword(SwordMove.CROSS,
+                3, 1, 0.60, 0.16, -0.66, 0.36, 0.78, 0.50, -0.40, 0.30, -0.85, 24, 0.0F, 0,
+                4, 0, 0.42, 0.02, -0.90, 0.25, 0.70, -0.66, -0.60, 0.30, -0.70, 14, 0.08F, 0.10F,
+                5, 0, 0.10, -0.12, -1.04, -0.44, -0.24, -0.86, -0.70, -0.60, 0.30, 0, 0.24F, 0.20F,
+                7, 0, -0.44, -0.46, -0.82, -0.60, -0.72, -0.25, -0.30, -0.40, 0.85, -20, 0.20F, 0.20F,
+                8, 0, -0.50, -0.20, -0.72, -0.80, -0.10, 0.55, 0.40, 0.0, 0.90, -24, 0.14F, 0.20F,
+                9, 1, -0.28, 0.14, -0.70, -0.36, 0.80, 0.46, 0.40, 0.30, -0.85, -24, 0.10F, 0.20F,
+                10, 0, -0.05, 0.02, -0.92, -0.22, 0.72, -0.66, 0.60, 0.30, -0.70, -12, 0.16F, 0.25F,
+                11, 0, 0.24, -0.12, -1.04, 0.44, -0.24, -0.86, 0.70, -0.60, 0.30, 0, 0.32F, 0.35F,
+                13, 0, 0.72, -0.48, -0.80, 0.62, -0.72, -0.22, 0.30, -0.40, 0.85, 22, 0.36F, 0.35F,
+                14, 0, 0.70, -0.35, -0.85, 0.75, 0.20, -0.60, -0.40, 0.0, -0.90, 16, 0.24F, 0.25F,
+                16, 0, 0.50, -0.46, -0.92, 0.0, 0.85, -0.52, -0.30, 0.0, -1.0, 8, 0.10F, 0.10F);
+        // ---- The shield's six rams, thrown at whatever stands in the way of a charge while the sword is held back
+        // along his side. Numbers per key: the tick, whether it stops there, the middle of the shield, the way its face
+        // points and where its top is, the twist of the upper body (degrees) and how far it bends forward. ----
+        ram(SwordMove.BASH,
+                1, 1, -0.12, -0.40, -0.60, 0.05, 0.02, -1.0, 0.0, 1.0, 0.05, 12, 0.70F,
+                2, 0, -0.08, -0.30, -1.08, 0.06, 0.04, -1.0, 0.0, 1.0, 0.05, -14, 0.82F,
+                5, 0, -0.10, -0.34, -0.90, 0.07, 0.03, -1.0, 0.0, 1.0, 0.05, -10, 0.80F);
+        ram(SwordMove.BASH_SWEEP,
+                1, 1, -0.42, -0.36, -0.70, -0.55, 0.02, -0.84, 0.0, 1.0, 0.0, -22, 0.70F,
+                2, 0, 0.0, -0.33, -1.02, 0.25, 0.02, -0.97, 0.0, 1.0, 0.0, 4, 0.76F,
+                5, 0, 0.46, -0.36, -0.84, 0.85, 0.02, -0.52, 0.0, 1.0, 0.0, 30, 0.74F);
+        ram(SwordMove.BASH_BACKHAND,
+                1, 1, 0.14, -0.36, -0.72, 0.45, 0.02, -0.90, 0.0, 1.0, 0.0, 24, 0.70F,
+                2, 0, -0.18, -0.33, -1.02, -0.25, 0.02, -0.97, 0.0, 1.0, 0.0, -4, 0.76F,
+                5, 0, -0.58, -0.36, -0.80, -0.85, 0.02, -0.50, 0.0, 1.0, 0.0, -30, 0.74F);
+        ram(SwordMove.BASH_UP,
+                1, 1, -0.10, -0.62, -0.72, 0.05, -0.50, -0.86, 0.0, 0.86, -0.50, 0, 0.90F,
+                2, 0, -0.08, -0.22, -1.02, 0.05, 0.38, -0.92, 0.0, 0.92, 0.38, 0, 0.60F,
+                5, 0, -0.08, 0.05, -0.90, 0.05, 0.75, -0.66, 0.0, 0.66, 0.75, 0, 0.42F);
+        ram(SwordMove.BASH_DOWN,
+                2, 1, -0.10, 0.05, -0.70, 0.05, 0.62, -0.78, 0.0, 0.78, 0.62, 6, 0.50F,
+                3, 0, -0.08, -0.36, -1.02, 0.05, -0.42, -0.90, 0.0, 0.90, -0.42, 0, 0.80F,
+                6, 0, -0.10, -0.56, -0.90, 0.05, -0.75, -0.66, 0.0, 0.66, -0.75, -4, 0.96F);
+        ram(SwordMove.BASH_SPIN,
+                2, 1, -0.46, -0.32, -0.64, -0.62, 0.02, -0.78, 0.0, 1.0, 0.0, 46, 0.78F,
+                3, 0, -0.04, -0.28, -1.06, 0.10, 0.02, -1.0, 0.0, 1.0, 0.0, 0, 0.90F,
+                6, 0, 0.12, -0.30, -1.0, 0.30, 0.02, -0.95, 0.0, 1.0, 0.0, -34, 0.94F);
+        // ---- The end of a charge: the shield raised high and slammed down into the ground before him, face down. ----
+        MOVES.put(SwordMove.SLAM, new Key[] {
+                key(4, true, pose(0.55, -0.52, -0.78, -0.08, 0.94, -0.34, -0.30, 0.0, -1.0, -0.10, 0.22, -0.70, 0.05,
+                        0.35, -0.94, 0.0, 0.94, -0.35, 0, -0.10F, 0, 0)),
+                key(6, false, pose(0.55, -0.54, -0.80, -0.08, 0.94, -0.34, -0.30, 0.0, -1.0, -0.08, -0.18, -0.95,
+                        0.05, -0.55, -0.83, 0.0, 0.83, -0.55, 0, 0.40F, 0.20F, 0)),
+                key(7, false, pose(0.56, -0.58, -0.82, -0.10, 0.93, -0.36, -0.30, 0.0, -1.0, -0.06, -0.64, -1.06,
+                        0.03, -0.97, -0.25, 0.0, 0.25, -0.97, 0, 0.90F, 0.40F, 0)),
+                key(10, true, pose(0.56, -0.58, -0.82, -0.10, 0.93, -0.36, -0.30, 0.0, -1.0, -0.06, -0.62, -1.05,
+                        0.03, -0.97, -0.25, 0.0, 0.25, -0.97, 0, 0.96F, 0.40F, 0)) });
+        // ---- Taking them out: both hands come up out of sight while the sword grows out of the fist and the shield on
+        // the forearm; the sword is held up before the eyes and turned to show both flats, twirled once round like a
+        // wheel, and knocked twice on the rim of the shield. ----
+        MOVES.put(SwordMove.EQUIP, new Key[] {
+                key(0, true, pose(0.40, -1.05, -0.80, -0.05, 0.95, -0.30, -0.30, 0.0, -1.0, -0.46, -1.10, -0.85, -0.30,
+                        0.10, -1.0, 0.0, 1.0, 0.10, 0, 0, 0, 0)),
+                key(7, true, pose(0.20, -0.30, -0.78, -0.04, 0.99, -0.12, -1.0, 0.0, 0.0, -0.52, -0.55, -0.92, -0.45,
+                        0.05, -1.0, 0.08, 1.0, 0.12, 0, 0.05F, 0, 0)),
+                key(10, false, pose(0.22, -0.28, -0.78, -0.04, 0.99, -0.12, 0.0, 0.0, -1.0, -0.52, -0.55, -0.92, -0.45,
+                        0.05, -1.0, 0.08, 1.0, 0.12, 0, 0.05F, 0, 0)),
+                key(SwordMove.TWIRL, true, pose(0.30, -0.36, -0.86, 0.0, 1.0, -0.05, 1.0, 0.0, 0.0, -0.52, -0.55,
+                        -0.92, -0.45, 0.05, -1.0, 0.08, 1.0, 0.12, 0, 0.05F, 0, 0)),
+                key(14, false, pose(0.27, -0.36, -0.86, 1.0, 0.0, -0.10, 0.0, -1.0, 0.0, -0.52, -0.55, -0.92, -0.45,
+                        0.05, -1.0, 0.08, 1.0, 0.12, 0, 0.05F, 0, 0)),
+                key(16, false, pose(0.30, -0.33, -0.86, 0.0, -1.0, -0.10, -1.0, 0.0, 0.0, -0.52, -0.55, -0.92, -0.45,
+                        0.05, -1.0, 0.08, 1.0, 0.12, 0, 0.05F, 0, 0)),
+                key(18, false, pose(0.33, -0.36, -0.86, -1.0, 0.0, -0.10, 0.0, 1.0, 0.0, -0.52, -0.55, -0.92, -0.45,
+                        0.05, -1.0, 0.08, 1.0, 0.12, 0, 0.05F, 0, 0)),
+                key(SwordMove.TWIRLED, true, pose(0.30, -0.39, -0.86, 0.0, 1.0, -0.10, 1.0, 0.0, 0.0, -0.52, -0.55,
+                        -0.92, -0.45, 0.05, -1.0, 0.08, 1.0, 0.12, 0, 0.05F, 0, 0)),
+                key(24, true, pose(0.12, -0.18, -0.80, -0.35, 0.80, -0.48, -0.60, -0.40, -0.70, -0.46, -0.46, -0.90,
+                        -0.30, 0.10, -1.0, 0.05, 1.0, 0.12, -8, 0.05F, 0, 0)),
+                key(SwordMove.KNOCK, false, pose(-0.02, -0.34, -0.86, -0.75, 0.25, -0.60, -0.40, -0.90, 0.10, -0.46,
+                        -0.44, -0.90, -0.30, 0.10, -1.0, 0.05, 1.0, 0.12, -14, 0.08F, 0, 0)),
+                key(SwordMove.KNOCK + 1.5F, false, pose(0.06, -0.24, -0.84, -0.50, 0.62, -0.60, -0.55, -0.60, -0.60,
+                        -0.46, -0.45, -0.90, -0.30, 0.10, -1.0, 0.05, 1.0, 0.12, -10, 0.06F, 0, 0)),
+                key(SwordMove.KNOCK + 3, false, pose(-0.02, -0.34, -0.86, -0.75, 0.25, -0.60, -0.40, -0.90, 0.10,
+                        -0.46, -0.44, -0.90, -0.30, 0.10, -1.0, 0.05, 1.0, 0.12, -14, 0.08F, 0, 0)),
+                key(SwordMove.KNOCK + 5, false, pose(0.20, -0.36, -0.88, -0.30, 0.80, -0.52, -0.40, 0.0, -0.90, -0.48,
+                        -0.50, -0.91, -0.40, 0.07, -1.0, 0.07, 1.0, 0.12, -6, 0.06F, 0, 0)) });
     }
 
     private SwordPoses() {
     }
 
-    /** A pose from its thirteen numbers, the angles given in degrees. */
-    private static Pose deg(float armYaw, float armPitch, float bladeYaw, float bladePitch, float bladeRoll,
-            float shieldArmYaw, float shieldArmPitch, float shieldYaw, float shieldPitch, float shieldRoll, float twist,
-            float crouch, float step) {
-        float r = Mth.DEG_TO_RAD;
-        return new Pose(armYaw * r, armPitch * r, bladeYaw * r, bladePitch * r, bladeRoll * r, shieldArmYaw * r,
-                shieldArmPitch * r, shieldYaw * r, shieldPitch * r, shieldRoll * r, twist * r, crouch, step);
+    /** A pose from its numbers: the fist, blade and edge, the shield, its face and top, twist (degrees), lean, step, orbit (degrees). */
+    private static Pose pose(double hx, double hy, double hz, double bx, double by, double bz, double ex, double ey,
+            double ez, double sx, double sy, double sz, double fx, double fy, double fz, double tx, double ty, double tz,
+            float twist, float lean, float step, float orbit) {
+        return Pose.of(new float[] { (float) hx, (float) hy, (float) hz, (float) bx, (float) by, (float) bz, (float) ex,
+                (float) ey, (float) ez, (float) sx, (float) sy, (float) sz, (float) fx, (float) fy, (float) fz,
+                (float) tx, (float) ty, (float) tz, twist * Mth.DEG_TO_RAD, lean, step, orbit * Mth.DEG_TO_RAD });
     }
 
-    private static Key key(float tick, Pose pose) {
-        return new Key(tick, pose);
+    private static Key key(float tick, boolean stop, Pose pose) {
+        return new Key(tick, stop, pose.numbers());
     }
 
     /**
-     * A move of the sword arm, as keys of seven numbers: the tick, where the arm points (yaw, pitch), where the blade
-     * points and its roll, and how far the upper body turns. The shield stays in the guard.
+     * A move of the sword, as keys of fourteen numbers: the tick, whether it stops there, the fist, the blade, its edge,
+     * the twist of the upper body (degrees), how far it bends forward and how far it steps. The shield stays in its guard.
      */
-    private static void sword(SwordMove move, float... n) {
-        Key[] keys = new Key[n.length / 7];
+    private static void sword(SwordMove move, double... n) {
+        Key[] keys = new Key[n.length / 14];
         for (int k = 0; k < keys.length; k++) {
-            int i = k * 7;
-            keys[k] = key(n[i], deg(n[i + 1], n[i + 2], n[i + 3], n[i + 4], n[i + 5], 14, -36, -6, 2, 0, n[i + 6], 0, 0));
+            int i = k * 14;
+            keys[k] = key((float) n[i], n[i + 1] > 0.5, pose(n[i + 2], n[i + 3], n[i + 4], n[i + 5], n[i + 6], n[i + 7],
+                    n[i + 8], n[i + 9], n[i + 10], GUARD.shield().x, GUARD.shield().y, GUARD.shield().z,
+                    GUARD.face().x, GUARD.face().y, GUARD.face().z, GUARD.top().x, GUARD.top().y, GUARD.top().z,
+                    (float) n[i + 11], (float) n[i + 12], (float) n[i + 13], 0));
         }
         MOVES.put(move, keys);
     }
 
     /**
-     * A move of the shield arm, as keys of seven numbers: the tick, where the shield arm points (yaw, pitch), where the
-     * face of the shield points (yaw, pitch), how far the upper body turns and how far he steps forward. The sword is held
-     * back low out of the way.
+     * The spinning cut, as keys of fourteen numbers: the tick, whether it stops there, the fist, the blade, its edge, the
+     * twist of the upper body (degrees), how far it bends forward, and how far the whole body has spun round (degrees).
      */
-    private static void shield(SwordMove move, float... n) {
-        Key[] keys = new Key[n.length / 7];
+    private static void spin(SwordMove move, double... n) {
+        Key[] keys = new Key[n.length / 14];
         for (int k = 0; k < keys.length; k++) {
-            int i = k * 7;
-            keys[k] = key(n[i], deg(22, -62, 8, 12, 0, n[i + 1], n[i + 2], n[i + 3], n[i + 4], 0, n[i + 5], 0,
-                    n[i + 6]));
+            int i = k * 14;
+            keys[k] = key((float) n[i], n[i + 1] > 0.5, pose(n[i + 2], n[i + 3], n[i + 4], n[i + 5], n[i + 6], n[i + 7],
+                    n[i + 8], n[i + 9], n[i + 10], GUARD.shield().x, GUARD.shield().y, GUARD.shield().z,
+                    GUARD.face().x, GUARD.face().y, GUARD.face().z, GUARD.top().x, GUARD.top().y, GUARD.top().z,
+                    (float) n[i + 11], (float) n[i + 12], 0, (float) n[i + 13]));
         }
         MOVES.put(move, keys);
     }
 
-    /** Sets how far he has stepped forward on every key of a move, in order. */
-    private static void stepping(SwordMove move, float... steps) {
-        Key[] keys = MOVES.get(move);
-        for (int k = 0; k < keys.length && k < steps.length; k++) {
-            float[] n = keys[k].pose().numbers();
-            n[12] = steps[k];
-            keys[k] = key(keys[k].tick(), Pose.of(n));
+    /**
+     * A ram of the shield in a charge, as keys of thirteen numbers: the tick, whether it stops there, the middle of the
+     * shield, its face, its top, the twist of the upper body (degrees) and how far it bends forward. The sword stays held
+     * back as it runs (see {@link #charge}).
+     */
+    private static void ram(SwordMove move, double... n) {
+        Pose run = charge(0.0F);
+        Key[] keys = new Key[n.length / 13];
+        for (int k = 0; k < keys.length; k++) {
+            int i = k * 13;
+            keys[k] = key((float) n[i], n[i + 1] > 0.5, pose(run.hand().x, run.hand().y, run.hand().z, run.blade().x,
+                    run.blade().y, run.blade().z, run.edge().x, run.edge().y, run.edge().z, n[i + 2], n[i + 3],
+                    n[i + 4], n[i + 5], n[i + 6], n[i + 7], n[i + 8], n[i + 9], n[i + 10], (float) n[i + 11],
+                    (float) n[i + 12], 0, 0));
         }
-    }
-
-    /** Sets how far he crouches on every key of a move, in order. */
-    private static void crouching(SwordMove move, float... crouches) {
-        Key[] keys = MOVES.get(move);
-        for (int k = 0; k < keys.length && k < crouches.length; k++) {
-            float[] n = keys[k].pose().numbers();
-            n[11] = crouches[k];
-            keys[k] = key(keys[k].tick(), Pose.of(n));
-        }
-    }
-
-    /** How long a new move takes to get from wherever the arms were into its own first pose, in ticks. */
-    static float blendIn(SwordMove move) {
-        return switch (move) {
-            case FLURRY -> 3.0F;
-            case CHARGE -> 4.0F;
-            default -> {
-                Key[] keys = MOVES.get(move);
-                yield keys == null ? 3.0F : Math.max(1.5F, keys[0].tick());
-            }
-        };
+        MOVES.put(move, keys);
     }
 
     /**
-     * The pose {@code t} ticks into a move: through its keys, settling back into the guard once it is over. The first
-     * moment of a move is left to {@link #blendIn}: it comes in from wherever the arms were.
+     * The pose {@code t} ticks into a move, coming in from {@code from} (where the arms were as it began) and settling
+     * back into the guard (or, after a ram, into the run) once it is over.
      *
      * @param time ticks of the client's own clock, for everything that sways
      */
-    static Pose at(SwordMove move, float t, float time) {
+    static Pose at(SwordMove move, float t, float time, Pose from) {
         return switch (move) {
-            case FLURRY -> flurry(t);
-            case CHARGE -> charge(time);
-            default -> keyed(MOVES.get(move), move.ticks(), t);
+            case FLURRY -> from.mix(flurry(t), smooth(t / BLEND_IN));
+            case CHARGE -> from.mix(charge(time), smooth(t / BLEND_IN));
+            default -> keyed(MOVES.get(move), t, from, move.kind() == SwordMove.Kind.BASH ? charge(time) : GUARD,
+                    move.kind() == SwordMove.Kind.BASH ? RAM_SETTLE : SETTLE);
         };
     }
 
-    private static Pose keyed(@Nullable Key[] keys, float ticks, float t) {
+    /**
+     * The pose {@code t} ticks into a move of keys: along a smooth curve through {@code from} (at tick 0), every key, and
+     * {@code rest} once the last key is {@code settle} ticks past. Each key is passed at the speed the keys round it
+     * give (the way from the one before to the one after), so nothing stops on a key but the stops, the start and the
+     * end.
+     */
+    private static Pose keyed(Key[] keys, float t, Pose from, Pose rest, float settle) {
         if (keys == null || keys.length == 0) {
-            return GUARD;
+            return rest;
         }
         Key last = keys[keys.length - 1];
-        if (t >= last.tick()) {
-            return last.pose().unwound().mix(GUARD, smooth((t - Math.max(last.tick(), ticks)) / SETTLE));
+        // A move that spun the body round ends a whole number of turns further: that is where it rests.
+        float turns = Math.round(last.numbers()[Pose.SIZE - 1] / Mth.TWO_PI) * Mth.TWO_PI;
+        float[] restNumbers = rest.numbers();
+        restNumbers[Pose.SIZE - 1] += turns;
+        float end = last.tick() + settle;
+        if (t >= end) {
+            return Pose.of(restNumbers);
         }
-        if (t <= keys[0].tick()) {
-            return keys[0].pose();
-        }
+        boolean fromStart = keys[0].tick() > 0.0F;
+        int count = keys.length + (fromStart ? 2 : 1);
+        float[] ticks = new float[count];
+        float[][] values = new float[count][];
+        boolean[] stops = new boolean[count];
         int i = 0;
-        while (i + 1 < keys.length && keys[i + 1].tick() < t) {
+        if (fromStart) {
+            ticks[i] = 0.0F;
+            values[i] = from.numbers();
+            stops[i] = true;
             i++;
         }
-        Key a = keys[i];
-        Key b = keys[i + 1];
-        Key before = i > 0 ? keys[i - 1] : a;
-        Key after = i + 2 < keys.length ? keys[i + 2] : b;
-        float span = b.tick() - a.tick();
-        float u = (t - a.tick()) / span;
-        float[] p0 = a.pose().numbers();
-        float[] p1 = b.pose().numbers();
-        float[] pb = before.pose().numbers();
-        float[] pa = after.pose().numbers();
-        float[] out = new float[p0.length];
-        float h00 = 2 * u * u * u - 3 * u * u + 1;
-        float h10 = u * u * u - 2 * u * u + u;
-        float h01 = -2 * u * u * u + 3 * u * u;
-        float h11 = u * u * u - u * u;
-        // A curve through the keys: at every key it keeps going the way the keys on either side of it go.
-        float spanBefore = Math.max(1.0E-3F, b.tick() - before.tick());
-        float spanAfter = Math.max(1.0E-3F, after.tick() - a.tick());
-        for (int k = 0; k < out.length; k++) {
-            float m0 = i > 0 ? (p1[k] - pb[k]) / spanBefore * span : 0.0F;
-            float m1 = i + 2 < keys.length ? (pa[k] - p0[k]) / spanAfter * span : 0.0F;
-            out[k] = h00 * p0[k] + h10 * m0 + h01 * p1[k] + h11 * m1;
+        for (Key key : keys) {
+            ticks[i] = key.tick();
+            values[i] = key.numbers();
+            stops[i] = key.stop();
+            i++;
         }
-        return Pose.of(out);
+        ticks[i] = end;
+        values[i] = restNumbers;
+        stops[i] = true;
+        return Pose.of(curve(ticks, values, stops, Math.max(0.0F, t)));
     }
 
     /**
-     * The flurry: the shield comes up before his chest, and the sword stabs out twelve times all over the front, pulled
+     * A smooth curve through numbers given at ticks: between two of them a cubic that leaves the first and reaches the
+     * second at the speed the neighbours round each give (zero at a stop and at both ends).
+     */
+    private static float[] curve(float[] ticks, float[][] values, boolean[] stops, float t) {
+        int n = ticks.length;
+        int i = 0;
+        while (i + 2 < n && ticks[i + 1] <= t) {
+            i++;
+        }
+        float t0 = ticks[i];
+        float t1 = ticks[i + 1];
+        float h = Math.max(1.0E-3F, t1 - t0);
+        float s = Mth.clamp((t - t0) / h, 0.0F, 1.0F);
+        float s2 = s * s;
+        float s3 = s2 * s;
+        float h00 = 2.0F * s3 - 3.0F * s2 + 1.0F;
+        float h10 = s3 - 2.0F * s2 + s;
+        float h01 = -2.0F * s3 + 3.0F * s2;
+        float h11 = s3 - s2;
+        float[] a = values[i];
+        float[] b = values[i + 1];
+        float[] out = new float[a.length];
+        for (int c = 0; c < a.length; c++) {
+            float m0 = slope(ticks, values, stops, i, c);
+            float m1 = slope(ticks, values, stops, i + 1, c);
+            out[c] = h00 * a[c] + h10 * h * m0 + h01 * b[c] + h11 * h * m1;
+        }
+        return out;
+    }
+
+    /** How fast number {@code c} runs through key {@code i}: from the key before to the one after, or zero at a stop. */
+    private static float slope(float[] ticks, float[][] values, boolean[] stops, int i, int c) {
+        if (stops[i] || i == 0 || i == ticks.length - 1) {
+            return 0.0F;
+        }
+        return (values[i + 1][c] - values[i - 1][c]) / Math.max(1.0E-3F, ticks[i + 1] - ticks[i - 1]);
+    }
+
+    /**
+     * The flurry: the shield comes up before the chest, and the sword stabs out twelve times all over the front, pulled
      * back between two stabs, each along its own way (see {@link SwordMove#stab}).
      */
     private static Pose flurry(float t) {
@@ -277,61 +460,94 @@ final class SwordPoses {
         float out = t < first - STAB_OUT || t > first + (SwordMove.STABS - 1) * every + STAB_OUT ? 0.0F
                 : Math.max(0.0F, 1.0F - u * u);
         double[] way = SwordMove.stab(k);
-        float side = (float) way[0];
-        float up = (float) way[1];
-        Pose stab = deg(side, up - 6, side, up, 90, 36, -14, 6, 4, 0, -10, 0, 0.15F);
+        double side = way[0] * Mth.DEG_TO_RAD;
+        double up = way[1] * Mth.DEG_TO_RAD;
+        Vec3 aim = new Vec3(Math.sin(side) * Math.cos(up), Math.sin(up), -Math.cos(side) * Math.cos(up));
+        // Every stab thrown with the shoulder behind it: the body twists into it and leans a little further.
+        Pose stab = pose(0.16 + aim.x * 0.9, -0.22 + aim.y * 0.9, -1.48, aim.x, aim.y, aim.z, 1.0, 0.0, 0.0,
+                FLURRY_GUARD.shield().x, FLURRY_GUARD.shield().y, FLURRY_GUARD.shield().z, FLURRY_GUARD.face().x,
+                FLURRY_GUARD.face().y, FLURRY_GUARD.face().z, 0.0, 1.0, 0.05, (float) (-16.0 + way[0] * 0.25), 0.3F,
+                0.3F, 0);
         Pose pose = FLURRY_GUARD.mix(stab, out);
         return t > SwordMove.FLURRY.ticks() ? pose.mix(GUARD, smooth((t - SwordMove.FLURRY.ticks()) / SETTLE)) : pose;
     }
 
-    /** Bent forward behind the shield locked before him, the sword held back low, running. */
-    private static Pose charge(float time) {
+    /**
+     * Running behind the shield in a charge: the shield locked before the body, the sword held back low along the right
+     * side, and everything bobbing with the steps; seen from outside he is bent far forward.
+     */
+    static Pose charge(float time) {
         float bob = Mth.sin(time * 1.4F);
-        return deg(24, -76, 14, -34, 90, 34, -6 + 2 * bob, 4, 8 + 3 * bob, 0, -16, 1, 0);
+        return pose(0.62, -0.62 + 0.015 * bob, -0.66, 0.30, 0.62, 0.72, 0.0, 0.76, -0.64, -0.14, -0.40 + 0.02 * bob,
+                -0.74, 0.08, 0.02, -1.0, 0.0, 1.0, 0.08, -8.0F * bob * 0.3F, 0.72F, 0, 0);
     }
 
-    /**
-     * Where the sword is while it is tossed up in the air while it takes shape, or null while it is in his hand: how far
-     * it has come on its way up and back down (0 to 1) and how far it has spun.
-     */
-    @Nullable
-    static float[] toss(SwordMove move, float t) {
-        if (move != SwordMove.EQUIP || t <= 10.0F || t >= 20.0F) {
-            return null;
-        }
-        float u = (t - 10.0F) / 10.0F;
-        return new float[] { u, u * Mth.TWO_PI * 2.0F };
+    /** The pose with the shield held up to block laid over it, {@code amount} (0 to 1) of the way. */
+    static Pose block(Pose pose, float amount) {
+        return pose.shieldOf(BLOCK, amount);
     }
 
     /** How far the sword has grown out of the ring's light while they take shape, 0 to 1 (1 for every other move). */
     static float swordGrown(SwordMove move, float t) {
-        return move == SwordMove.EQUIP ? smooth(t / 7.0F) : 1.0F;
+        return move == SwordMove.EQUIP ? smooth((t - 1.0F) / 7.0F) : 1.0F;
     }
 
     /** How far the shield has grown out of the ring's light while they take shape, 0 to 1. */
     static float shieldGrown(SwordMove move, float t) {
-        return move == SwordMove.EQUIP ? smooth((t - 1.0F) / 7.0F) : 1.0F;
-    }
-
-    // ---- The pose as ways in space ----
-
-    /** A way given as a yaw (to his right) and a pitch (up), one long: x to his right, y up, z ahead. */
-    static Vec3 way(float yaw, float pitch) {
-        return new Vec3(Mth.sin(yaw) * Mth.cos(pitch), Mth.sin(pitch), Mth.cos(yaw) * Mth.cos(pitch));
+        return move == SwordMove.EQUIP ? smooth((t - 2.0F) / 7.0F) : 1.0F;
     }
 
     /**
-     * The blade (or the shield) as two ways, seen from his upper body: where it points, and where its edge (the top of
-     * the shield) faces, turned {@code roll} about it from facing up.
+     * The pose with the edge of the blade turned into the way the blade sweeps, the faster the more: a cut always leads
+     * with its edge, whichever way it goes. Of the two edges the one nearer to where the keys put it leads, so the blade
+     * never flips over. {@code before} is the pose a moment earlier.
      */
-    static Vec3[] frame(float yaw, float pitch, float roll) {
-        Vec3 forward = way(yaw, pitch);
-        Vec3 reference = Math.abs(forward.y) < 0.95 ? new Vec3(0.0, 1.0, 0.0) : way(yaw, 0.0F).scale(-Math.signum(
-                forward.y));
-        Vec3 up = reference.subtract(forward.scale(forward.dot(reference))).normalize();
-        Vec3 side = forward.cross(up);
-        Vec3 edge = up.scale(Mth.cos(roll)).add(side.scale(Mth.sin(roll)));
-        return new Vec3[] { forward, edge };
+    static Pose led(Pose now, Pose before) {
+        Vec3 tip = now.hand().add(now.blade());
+        Vec3 was = before.hand().add(before.blade());
+        Vec3 sweep = tip.subtract(was);
+        Vec3 across = sweep.subtract(now.blade().scale(sweep.dot(now.blade())));
+        double speed = across.length();
+        if (speed < 1.0E-3) {
+            return now;
+        }
+        Vec3 lead = across.scale(1.0 / speed);
+        if (lead.dot(now.edge()) < 0.0) {
+            lead = lead.scale(-1.0);
+        }
+        double w = smooth((float) (speed / 0.12));
+        Vec3 edge = square(now.edge().lerp(lead, w), now.blade());
+        return new Pose(now.hand(), now.blade(), edge, now.shield(), now.face(), now.top(), now.twist(), now.lean(),
+                now.step(), now.orbit());
+    }
+
+    // ---- Ways ----
+
+    /** {@code way} made one long, or {@code otherwise} when it has hardly any length. */
+    private static Vec3 unit(Vec3 way, Vec3 otherwise) {
+        double length = way.length();
+        return length < 1.0E-4 ? otherwise : way.scale(1.0 / length);
+    }
+
+    /** {@code way} with the part along {@code axis} taken out, made one long: square to that axis. */
+    private static Vec3 square(Vec3 way, Vec3 axis) {
+        Vec3 flat = way.subtract(axis.scale(way.dot(axis)));
+        if (flat.lengthSqr() < 1.0E-6) {
+            Vec3 other = Math.abs(axis.y) < 0.9 ? new Vec3(0.0, 1.0, 0.0) : new Vec3(1.0, 0.0, 0.0);
+            flat = other.subtract(axis.scale(other.dot(axis)));
+        }
+        return flat.normalize();
+    }
+
+    /** {@code way} turned {@code angle} (radians) to the left about the upright line: +x goes towards -z. */
+    static Vec3 spin(Vec3 way, double angle) {
+        double cos = Math.cos(angle);
+        double sin = Math.sin(angle);
+        return new Vec3(way.x * cos + way.z * sin, way.y, -way.x * sin + way.z * cos);
+    }
+
+    private static float wrap(float radians) {
+        return Mth.wrapDegrees(radians * Mth.RAD_TO_DEG) * Mth.DEG_TO_RAD;
     }
 
     /** 0 below 0, 1 above 1, and a smooth S-curve in between. */

@@ -60,8 +60,6 @@ public final class Flight implements SpellEffect {
     private int descentTicks;
     // On his way down to a slam, after the shockwave key: his own game dives him straight down.
     private boolean dive;
-    // At top speed, as his own game told: two jets of hard light hang behind him on chains.
-    private boolean boost;
     private int diveTicks;
     // How far he moved on the last tick, as his own game told it: the speed his shots take along.
     private Vec3 velocity = Vec3.ZERO;
@@ -143,28 +141,6 @@ public final class Flight implements SpellEffect {
         flight.sound(level, SoundEvents.BEACON_POWER_SELECT, 0.8F, 1.6F);
         PowerRing.sync(owner);
         return true;
-    }
-
-    /**
-     * His own game tells he reached top speed ({@code on}) or dropped below it: everyone around sees the jets that
-     * hang behind him then. It starts no cooldown.
-     *
-     * @return always false
-     */
-    static boolean boost(ServerPlayer owner, boolean on) {
-        Flight flight = FLYING.get(owner.getUUID());
-        boolean now = on && flight != null && !flight.descending && flight.ticks >= ARISE_TICKS;
-        if (flight != null && flight.boost != now) {
-            flight.boost = now;
-            PowerRing.sync(owner);
-        }
-        return false;
-    }
-
-    /** True while this player flies at top speed. */
-    static boolean boosting(ServerPlayer player) {
-        Flight flight = FLYING.get(player.getUUID());
-        return flight != null && flight.boost;
     }
 
     /** True while this player dives on his ring for a slam. */
@@ -372,7 +348,6 @@ public final class Flight implements SpellEffect {
     private void descend(ServerLevel level) {
         this.descending = true;
         this.dive = false;
-        this.boost = false;
         PowerRing.tell(this.owner, "flight_empty");
         this.sound(level, SoundEvents.BEACON_DEACTIVATE, 1.0F, 1.3F);
         LightShield.stop(this.owner);

@@ -53,10 +53,10 @@ import nl.tivek.welcomescreen.network.RingPayload;
  * <li><b>Taking off</b> (see {@link Flight#ARISE_TICKS}), with the flight key or by tapping jump twice: you stop
  * where you are while your fists come to your chest, then your arms sweep down along your sides and you rise a few
  * blocks, looking up, and from there you fly on without a break.</li>
- * <li><b>Flying</b>: hold forward and you pick up speed the way you look, slowly, until after half a minute you
- * reach the top speed; let go and you glide to a hover. Jump and sneak rise and sink, left and right slide
- * sideways. You carry your speed into every turn, so you swing through curves instead of snapping round. At top
- * speed two jets of hard light hang behind you on chains (see {@link BoostJets}).</li>
+ * <li><b>Flying</b>: hold forward and you pick up speed the way you look: within a few seconds you are up to a fast
+ * cruising speed, and from there you keep gaining, slowly, until after half a minute more you reach the top speed;
+ * let go and you glide to a hover. Jump and sneak rise and sink, left and right slide sideways. You carry your speed
+ * into every turn, so you swing through curves instead of snapping round.</li>
  * <li>The dome works as a brake chute: while it is up your speed is halved.</li>
  * <li>Walls and the ground stop you; knocks from a hit or a blast move you as they would anyone. Sink down onto
  * the ground slowly and you land by yourself, and fly into it looking down and you land as well. Dive into it at full
@@ -85,9 +85,11 @@ public final class ClientFlight {
     private static final double SPEED_UP = 0.085;
     private static final double SLOW_DOWN = 0.055;
     private static final double BRAKE = 0.13;
-    // You pick up speed only while you fly at least this much of the top speed you have by now; letting go of forward
-    // loses all of it in this many seconds.
+    // You pick up speed only while you fly at least this much of the top speed you have by now (less while you are
+    // still getting up to the cruising speed, which goes quickly); letting go of forward loses all of it in this many
+    // seconds.
     private static final double GAIN_FROM = 0.85;
+    private static final double GAIN_FROM_CRUISE = 0.55;
     private static final double LOSE_SECONDS = 3.0;
     // How fast you rise at the height of the take-off, and how fast an empty ring lets you sink.
     private static final double RISE = 0.46;
@@ -116,7 +118,7 @@ public final class ClientFlight {
     private static boolean stoppedUp;
     private static boolean airborne;
     private static boolean landing;
-    // How much speed you have picked up by flying on, 0 (the speed you set off at) to 1 (the top speed).
+    // How long you have flown on at speed, in seconds: up to the cruising speed and on to the top speed (see topSpeed).
     private static double momentum;
     @Nullable
     private static WindSound wind;
@@ -144,14 +146,11 @@ public final class ClientFlight {
     // The tick (of your own player) you last slammed into the ground, or MIN_VALUE.
     private static int slamTick = Integer.MIN_VALUE;
 
-    // ---- Taking off with a double jump, and the jets at top speed ----
+    // ---- Taking off with a double jump ----
     // Two taps of jump at most this many ticks apart take off, as the flight key does.
     private static final int DOUBLE_JUMP = 7;
-    // At top speed the jets come; they go again once you have lost this much of the speed you picked up.
-    private static final double BOOST_KEEP = 0.85;
     private static boolean jumpWasDown;
     private static int lastJump = Integer.MIN_VALUE;
-    private static boolean boosting;
 
     // ---- Everyone who flies, as seen ----
     private static final Map<Integer, Motion> MOTIONS = new HashMap<>();
@@ -203,17 +202,6 @@ public final class ClientFlight {
         return ClientRing.flight(player, 0.0F) < 0.0F && ClientRing.has(player, RingPayload.DIVE);
     }
 
-    /**
-     * True while this flyer is at top speed, with the jets behind him: your own the moment you reach it, anyone else's
-     * as the server tells.
-     */
-    static boolean boosting(Entity flyer) {
-        if (flyer == Minecraft.getInstance().player) {
-            return steering && boosting;
-        }
-        return ClientRing.has(flyer, RingPayload.BOOST) && ClientRing.flight(flyer, 0.0F) >= 0.0F;
-    }
-
     /** Your own speed in blocks per tick while you steer yourself through the air; zero otherwise. */
     static Vec3 ownVelocity() {
         return steering ? velocity : Vec3.ZERO;
@@ -234,43 +222,58 @@ public final class ClientFlight {
     }
 
     /**
-     * Your own top speed right now, in blocks per tick: the speed you set off at, rising to the top speed of the
-     * settings the longer you fly on (see {@link #gainSpeed}), and halved while the dome brakes you.
+     * Your own top speed right now, in blocks per tick: the speed you set off at, rising quickly to the cruising speed of
+     * the settings in the first seconds you fly on ({@code cruiseSeconds}), easing into it, and from there slowly on to
+     * the top speed over {@code speedUpSeconds} more (see {@link #gainSpeed}); halved while the dome brakes you.
      */
     private static double topSpeed(LocalPlayer player) {
         double full = fullSpeed();
-        double top = Mth.lerp(momentum, Math.min(full, startSpeed()), full);
+        double start = Math.min(full, flightSetting("startSpeed", 6.4) / 20.0);
+        double cruise = Mth.clamp(flightSetting("cruiseSpeed", 13.0) / 20.0, start, full);
+        double quick = cruiseSeconds();
+        double slow = Math.max(0.0, flightSetting("speedUpSeconds", 30.0));
+        double top;
+        if (momentum < quick) {
+            double u = momentum / quick;
+            top = Mth.lerp(1.0 - (1.0 - u) * (1.0 - u), start, cruise);
+        } else {
+            top = slow <= 0.0 ? full : Mth.lerp(Math.min(1.0, (momentum - quick) / slow), cruise, full);
+        }
         return ClientRing.has(player, RingPayload.DOME) ? top * 0.5 : top;
     }
 
     /**
-     * The longer you fly on, the faster you go: while you fly forward as fast as you can go by now, you pick up speed,
-     * until after the setting {@code speedUpSeconds} you reach the top speed, and never more. Letting go of forward
-     * loses it again, slowly; pushing against a wall keeps what you have.
+     * The longer you fly on, the faster you go: while you fly forward about as fast as you can go by now, the seconds
+     * count up, first to the cruising speed and then on to the top speed, and never further. Letting go of forward
+     * loses it all again in a few seconds; pushing against a wall keeps what you have.
      */
     private static void gainSpeed(LocalPlayer player, boolean forward) {
+        double total = cruiseSeconds() + Math.max(0.0, flightSetting("speedUpSeconds", 30.0));
         if (!forward) {
-            momentum = Math.max(0.0, momentum - 1.0 / (LOSE_SECONDS * 20.0));
+            momentum = Math.max(0.0, momentum - total / (LOSE_SECONDS * 20.0));
             return;
         }
-        if (velocity.length() < topSpeed(player) * GAIN_FROM) {
+        double from = momentum < cruiseSeconds() ? GAIN_FROM_CRUISE : GAIN_FROM;
+        if (velocity.length() < topSpeed(player) * from) {
             return;
         }
-        CharacterAbility flight = GameCharacter.GREEN_LANTERN.byName("flight");
-        double seconds = flight == null ? 12.0 : flight.value("speedUpSeconds");
-        momentum = seconds <= 0.0 ? 1.0 : Math.min(1.0, momentum + 1.0 / (seconds * 20.0));
+        momentum = Math.min(total, momentum + 1.0 / 20.0);
     }
 
-    /** The speed a flight sets off at, from the settings, in blocks per tick. */
-    private static double startSpeed() {
-        CharacterAbility flight = GameCharacter.GREEN_LANTERN.byName("flight");
-        return flight == null ? 11.7 / 20.0 : flight.value("startSpeed") / 20.0;
+    /** How long flying on takes to get from the speed you set off at to the cruising speed, in seconds. */
+    private static double cruiseSeconds() {
+        return Math.max(0.0, flightSetting("cruiseSeconds", 3.0));
     }
 
     /** The top speed of a flight from the settings, in blocks per tick. */
     static double fullSpeed() {
+        return flightSetting("topSpeed", 19.25) / 20.0;
+    }
+
+    /** One of the flight's settings, or {@code fallback} while Green Lantern has no flight. */
+    private static double flightSetting(String key, double fallback) {
         CharacterAbility flight = GameCharacter.GREEN_LANTERN.byName("flight");
-        return flight == null ? 1.75 : flight.value("topSpeed") / 20.0;
+        return flight == null ? fallback : flight.value(key);
     }
 
     /**
@@ -377,8 +380,6 @@ public final class ClientFlight {
             gainSpeed(player, forward > 0.01F);
             velocity = steer(player, forward, strafe, up, down, 1.0);
         }
-        boost(!onDive && !ClientRing.has(player, RingPayload.DESCENT) && t >= ARISE
-                && (momentum >= 1.0 || boosting && momentum >= BOOST_KEEP));
         if (!player.onGround()) {
             airborne = true;
         }
@@ -502,25 +503,10 @@ public final class ClientFlight {
 
     /** Your flight is over (you landed, turned it off, or are no longer Green Lantern): the game has you again. */
     private static void stop() {
-        boost(false);
         steering = false;
         afterMove = null;
         landing = false;
         momentum = 0.0;
-    }
-
-    /**
-     * You reach top speed, or drop below it again: the jets come or go, and the server tells everyone around.
-     */
-    private static void boost(boolean on) {
-        if (on == boosting) {
-            return;
-        }
-        boosting = on;
-        CharacterAbility flight = GameCharacter.GREEN_LANTERN.byName("flight");
-        if (flight != null && Minecraft.getInstance().getConnection() != null) {
-            PacketDistributor.sendToServer(new AbilityActionPayload(flight.slot().ordinal(), on, Characters.BOOST));
-        }
     }
 
     /**

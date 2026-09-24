@@ -1,6 +1,7 @@
 package nl.tivek.welcomescreen.character.lantern;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -42,24 +43,26 @@ import nl.tivek.welcomescreen.spell.SpellFx;
 
 /**
  * Green Lantern's ultimate, the Air Strike. He throws his ring fist up at the sky and a pillar of light shoots out of
- * the ring; high over the battlefield, twice as high as a jet would fly, a big, slow gunship with four propellers grows
- * out of it, a construct like any other. It drones on in one straight line over the area he looked at (see
- * {@link PlanePath}) for {@code attackSeconds}:
+ * the ring; high over the battlefield, some 55 blocks over his eyes, a big, slow gunship with four propellers grows out
+ * of it, a construct like any other. It drones on in one straight line over the area he looked at (see
+ * {@link PlanePath}) for {@code attackSeconds}, and it never stops firing:
  * <ul>
  * <li>its sensor under the nose scans the ground round it like the Ring Scan, half as far again, and marks every
  * creature out to hurt him for him, now and every few seconds after;</li>
- * <li>the two miniguns on its sides fire at what it marked in turn, one round each every {@code gunTicks}: many rounds
- * of hard light that spread wide, so not every one strikes;</li>
+ * <li>the two miniguns on its sides fire in turn, one round each every {@code gunTicks}: many rounds of hard light that
+ * spread wide, so not every one strikes. They go for what it marked; with nothing marked in reach they rake the ground
+ * along its way, their rounds walking to and fro ahead of it;</li>
  * <li>its two missile launchers, one under each wing, fire a homing missile in turn every {@code missileTicks}, that
- * finds its creature {@code hitChance} of the time and bursts in a small blast either way.</li>
+ * finds a marked creature {@code hitChance} of the time (or else strikes the ground along its way) and bursts in a
+ * small blast that blows a small crater out of the ground.</li>
  * </ul>
- * Then, all at once, its nose drops and it plunges into the ground: a massive blast of green energy (the ability's
- * damage in the middle, half of it at the edge of {@code crashRadius}) that blows a crater out of the ground and hurls
- * its blocks up and away. Nothing it does ever hurts him, his pets, villagers or animals; other players only where
- * players may fight each other.
+ * Then, all at once, its nose drops and it plunges into the ground in a second: a massive blast of green energy (the
+ * ability's damage in the middle, half of it at the edge of {@code crashRadius}) that blows a crater out of the ground
+ * and hurls its blocks up and away. Nothing it does ever hurts him, his pets, villagers or animals; other players only
+ * where players may fight each other.
  *
  * <p>The plane, its guns, its rounds and its missiles are hard light shaped by his ring, solid like every construct;
- * the pillar, the scan and the blast are light. If he stops being Green Lantern the plane breaks apart in the air.
+ * the pillar, the scan and the blasts are light. If he stops being Green Lantern the plane breaks apart in the air.
  */
 public final class AirStrike implements SpellEffect {
     /** How long he holds his ring fist up to call the plane, in ticks: the ring does nothing else meanwhile. */
@@ -70,10 +73,10 @@ public final class AirStrike implements SpellEffect {
      * Where the miniguns turn on the sides of its body, in blocks at scale 1 from its middle: to its right (the left gun
      * at minus this), up, and ahead; and how long they are from there to the muzzle.
      */
-    public static final double GUN_X = 3.2;
-    public static final double GUN_Y = -0.6;
-    public static final double GUN_Z = 11.0;
-    public static final double GUN_LENGTH = 3.6;
+    public static final double GUN_X = 4.3;
+    public static final double GUN_Y = -1.7;
+    public static final double GUN_Z = 10.0;
+    public static final double GUN_LENGTH = 6.4;
     /** Where the missile launchers hang under its wings, in blocks from its middle (the left one at minus x). */
     public static final double LAUNCHER_X = 12.6;
     public static final double LAUNCHER_Y = 0.7;
@@ -97,8 +100,8 @@ public final class AirStrike implements SpellEffect {
     public static final int RELOAD_TICKS = 26;
     // How high over his eyes it flies at most and at least (under a roof it flies lower, or not at all), how far he may
     // look for the middle of the area, and how far the middle is when he looks at nothing.
-    private static final double HEIGHT = 84.0;
-    private static final double LOWEST = 32.0;
+    private static final double HEIGHT = 55.0;
+    private static final double LOWEST = 21.0;
     private static final double LOOK_REACH = 32.0;
     private static final double LOOK_AHEAD = 16.0;
     // How far above and below its sensor's line a creature may be to be marked, in blocks.
@@ -115,10 +118,25 @@ public final class AirStrike implements SpellEffect {
     private static final double MISS_FAR = 6.0;
     private static final double MISSILE_SPEED = 2.6;
     private static final double MISSILE_REACH = 150.0;
+    // How far below a missile's blast the ground may lie for it to blow a small crater there, and how many of that
+    // crater's blocks it hurls away.
+    private static final double MISSILE_GROUND = 2.5;
+    private static final int MISSILE_DEBRIS = 5;
+    // Where the guns rake the ground when nothing is marked: how far ahead of the spot under the plane, between these
+    // two, and how far to its side, between these two.
+    private static final double RAKE_NEAR = 6.0;
+    private static final double RAKE_FAR = 20.0;
+    private static final double RAKE_IN = 2.5;
+    private static final double RAKE_OUT = 9.0;
+    // Where a missile with nothing to find strikes: this far ahead of the spot under the plane, and at most this far to
+    // the side of its way.
+    private static final double AHEAD_NEAR = 14.0;
+    private static final double AHEAD_FAR = 30.0;
+    private static final double AHEAD_WIDE = 10.0;
     private static final double CRASH_KNOCKBACK = 2.6;
     private static final double VIEW_RANGE = 260.0;
-    // How long before its nose drops one of its engines bursts, in ticks.
-    private static final int FAILING = 8;
+    /** How long before its nose drops one of its engines bursts, in ticks. */
+    public static final int FAILING = 6;
 
     private static final Map<UUID, AirStrike> ACTIVE = new HashMap<>();
 
@@ -313,6 +331,8 @@ public final class AirStrike implements SpellEffect {
         if (!this.crashed && this.age >= this.path.crashTick()) {
             this.crashed = true;
             this.crash(level);
+        } else if (this.crashed && this.age % 3 == 0) {
+            this.smoulder(level);
         }
         if (this.age >= this.path.crashTick() + BLAST_TICKS) {
             this.end(level);
@@ -425,22 +445,23 @@ public final class AirStrike implements SpellEffect {
     private record Bullet(Vec3 from, Vec3 to, int arrives) {
     }
 
-    /** A round from one minigun and then the other, at a creature its scan marked; nothing when none is in reach. */
+    /**
+     * A round from one minigun and then the other: at a creature its scan marked when one is in reach, and otherwise at
+     * the ground along its way (see {@link #rake}).
+     */
     private void fireGun(ServerLevel level) {
         this.leftGun = !this.leftGun;
         double side = this.leftGun ? -1.0 : 1.0;
         Vec3 pivot = this.path.point(this.age, GUN_X * side, GUN_Y, GUN_Z);
         LivingEntity target = this.pickMarked(level, pivot, GUN_REACH, side);
-        if (target == null) {
-            return;
-        }
         // Low accuracy: the rounds spread wide round what they aim at.
         RandomSource random = this.owner.getRandom();
         double spread = this.ability.value("gunSpread");
         double angle = random.nextDouble() * Math.PI * 2.0;
         double far = Math.sqrt(random.nextDouble()) * spread;
-        Vec3 aim = target.getBoundingBox().getCenter().add(Math.cos(angle) * far,
-                (random.nextDouble() - 0.5) * target.getBbHeight() * 0.6, Math.sin(angle) * far);
+        Vec3 aim = target == null ? this.rake(level, side).add(Math.cos(angle) * far, 0.0, Math.sin(angle) * far)
+                : target.getBoundingBox().getCenter().add(Math.cos(angle) * far,
+                        (random.nextDouble() - 0.5) * target.getBbHeight() * 0.6, Math.sin(angle) * far);
         Vec3 way = aim.subtract(pivot).normalize();
         Vec3 muzzle = pivot.add(way.scale(GUN_LENGTH));
         // It flies on past what it aimed at until it strikes the ground, or a roof on the way.
@@ -456,6 +477,21 @@ public final class AirStrike implements SpellEffect {
                         1.0F, (float) distance, false, ConstructPayload.BULLET, this.leftGun ? 0 : 1, 0, null));
         this.sound(level, muzzle, SoundEvents.FIREWORK_ROCKET_BLAST_FAR, 9.0F, 1.7F);
         this.sound(level, muzzle, SoundEvents.CHAIN_HIT, 6.0F, 0.6F);
+    }
+
+    /**
+     * Where a gun with nothing marked to fire at rakes the ground: ahead of the plane on its own side, the spot walking
+     * to and fro across its way and nearer and further, so its rounds stitch lines over the ground as it drones on.
+     *
+     * @param side 1 for its right side, -1 for its left
+     */
+    private Vec3 rake(ServerLevel level, double side) {
+        Vec3 way = this.path.way();
+        Vec3 right = way.cross(new Vec3(0.0, 1.0, 0.0)).normalize();
+        double phase = side > 0.0 ? 0.0 : 1.9;
+        double ahead = Mth.lerp(0.5 + 0.5 * Math.sin(this.age * 0.05 + phase), RAKE_NEAR, RAKE_FAR);
+        double across = side * Mth.lerp(0.5 + 0.5 * Math.sin(this.age * 0.13 + phase * 1.7), RAKE_IN, RAKE_OUT);
+        return this.ground(level, this.path.at(this.age).add(way.scale(ahead)).add(right.scale(across)));
     }
 
     /** Rounds that get where they were going strike: the first creature along their last stretch takes the hit. */
@@ -484,11 +520,11 @@ public final class AirStrike implements SpellEffect {
                 at = from.add(way.scale(Math.sqrt(nearest)));
                 struck.invulnerableTime = 0;
                 struck.hurt(level.damageSources().playerAttack(this.owner), (float) this.ability.value("gunDamage"));
-                level.sendParticles(ParticleTypes.CRIT, at.x, at.y, at.z, 6, 0.15, 0.15, 0.15, 0.2);
+                SpellFx.send(level, ParticleTypes.CRIT, at.x, at.y, at.z, 6, 0.15, 0.15, 0.15, 0.2);
             } else {
                 BlockState ground = level.getBlockState(BlockPos.containing(at.subtract(way.scale(-0.1))));
                 if (!ground.isAir()) {
-                    level.sendParticles(new BlockParticleOption(ParticleTypes.BLOCK, ground), at.x, at.y + 0.1, at.z,
+                    SpellFx.send(level, new BlockParticleOption(ParticleTypes.BLOCK, ground), at.x, at.y + 0.1, at.z,
                             8, 0.15, 0.05, 0.15, 0.15);
                 }
             }
@@ -544,45 +580,72 @@ public final class AirStrike implements SpellEffect {
             return u >= 1.0;
         }
 
-        /** It bursts: a small blast of light and fire where it struck. */
+        /**
+         * It bursts: a small blast of light and fire where it struck, that blows a small crater out of the ground under
+         * it and hurls a few of its blocks away.
+         */
         void strike(ServerLevel level) {
             PacketDistributor.sendToPlayersInDimension(level, ConstructPayload.remove(this.id));
             AirStrike.this.blast(level, this.at, MISSILE_BLAST, AirStrike.this.ability.value("missileDamage"),
-                    this.homing ? this.target : null, 0.7);
-            SpellFx.sphereOut(level, SpellFx.dust(PowerRing.BRIGHT, 1.8F), this.at, 26, 0.35);
-            SpellFx.sphereOut(level, SpellFx.dust(PowerRing.GREEN, 2.4F), this.at, 18, 0.22);
-            level.sendParticles(ParticleTypes.EXPLOSION, this.at.x, this.at.y + 0.3, this.at.z, 3, 0.6, 0.4, 0.6, 0.0);
-            level.sendParticles(ParticleTypes.LARGE_SMOKE, this.at.x, this.at.y + 0.3, this.at.z, 8, 0.5, 0.3, 0.5,
-                    0.04);
-            AirStrike.this.sound(level, this.at, SoundEvents.GENERIC_EXPLODE.value(), 2.2F, 1.2F);
-            AirStrike.this.sound(level, this.at, SoundEvents.AMETHYST_CLUSTER_BREAK, 1.4F, 1.1F);
+                    this.homing ? this.target : null, 0.9);
+            // On a creature it bursts at its middle: the crater goes into the ground under it, if that is near.
+            BlockHitResult under = level.clip(new ClipContext(this.at.add(0.0, 0.3, 0.0),
+                    this.at.subtract(0.0, MISSILE_GROUND, 0.0), ClipContext.Block.COLLIDER, ClipContext.Fluid.ANY,
+                    CollisionContext.empty()));
+            Vec3 ground = under.getType() == HitResult.Type.MISS ? null : under.getLocation();
+            if (ground != null) {
+                AirStrike.this.crater(level, ground, AirStrike.this.ability.value("missileCraterRadius"),
+                        MISSILE_DEBRIS);
+            }
+            Vec3 heart = ground == null ? this.at : ground.add(0.0, 0.6, 0.0);
+            Vec3 way = this.at.subtract(this.from);
+            PacketDistributor.sendToPlayersNear(level, null, heart.x, heart.y, heart.z, VIEW_RANGE,
+                    new ConstructPayload(PowerRing.newId(), AirStrike.this.owner.getId(), heart,
+                            way.lengthSqr() < 1.0E-6 ? new Vec3(0.0, -1.0, 0.0) : way.normalize(),
+                            (float) MISSILE_BLAST, 1.0F, 0.0F, false, ConstructPayload.BLAST, 0, 0, null));
+            SpellFx.sphereOut(level, SpellFx.dust(PowerRing.BRIGHT, 1.8F), heart, 26, 0.35);
+            SpellFx.sphereOut(level, SpellFx.dust(PowerRing.GREEN, 2.4F), heart, 18, 0.22);
+            SpellFx.send(level, ParticleTypes.EXPLOSION_EMITTER, heart.x, heart.y + 0.3, heart.z, 1, 0.0, 0.0, 0.0,
+                    0.0);
+            SpellFx.send(level, ParticleTypes.EXPLOSION, heart.x, heart.y + 0.3, heart.z, 6, 0.9, 0.5, 0.9, 0.0);
+            SpellFx.send(level, ParticleTypes.FLAME, heart.x, heart.y + 0.3, heart.z, 24, 0.5, 0.3, 0.5, 0.12);
+            SpellFx.send(level, ParticleTypes.LARGE_SMOKE, heart.x, heart.y + 0.5, heart.z, 18, 0.7, 0.4, 0.7, 0.05);
+            SpellFx.send(level, ParticleTypes.CAMPFIRE_COSY_SMOKE, heart.x, heart.y + 0.4, heart.z, 6, 0.5, 0.2, 0.5,
+                    0.02);
+            AirStrike.this.sound(level, heart, SoundEvents.GENERIC_EXPLODE.value(), 3.0F, 1.1F);
+            AirStrike.this.sound(level, heart, SoundEvents.DRAGON_FIREBALL_EXPLODE, 1.6F, 1.3F);
+            AirStrike.this.sound(level, heart, SoundEvents.AMETHYST_CLUSTER_BREAK, 1.4F, 1.1F);
         }
     }
 
-    /** A missile off one launcher and then the other, at a creature its scan marked; nothing when none is in reach. */
+    /**
+     * A missile off one launcher and then the other: at a creature its scan marked when one is in reach, and otherwise at
+     * the ground a way ahead of the plane on the launcher's side.
+     */
     private void fireMissile(ServerLevel level) {
         this.leftLauncher = !this.leftLauncher;
         double side = this.leftLauncher ? -1.0 : 1.0;
         Vec3 from = this.path.point(this.age, LAUNCHER_X * side, LAUNCHER_Y, LAUNCHER_Z);
         LivingEntity target = this.pickMarked(level, from, MISSILE_REACH, side);
-        if (target == null) {
-            // Nothing to fire at: this launcher keeps its missile for the next time.
-            this.leftLauncher = !this.leftLauncher;
-            return;
-        }
         Vec3[] axes = this.path.axes(this.age);
         Vec3 bend = from.add(axes[2].scale(16.0)).add(axes[0].scale(side * 6.0)).add(0.0, -12.0, 0.0);
         RandomSource random = this.owner.getRandom();
-        boolean homing = random.nextDouble() < this.ability.value("hitChance");
+        boolean homing = target != null && random.nextDouble() < this.ability.value("hitChance");
         Vec3 aim;
         if (homing) {
             aim = target.getBoundingBox().getCenter();
-        } else {
+        } else if (target != null) {
             double angle = random.nextDouble() * Math.PI * 2.0;
             double far = MISS_NEAR + random.nextDouble() * (MISS_FAR - MISS_NEAR);
             aim = this.ground(level, target.position().add(Math.cos(angle) * far, 0.0, Math.sin(angle) * far));
+        } else {
+            Vec3 way = this.path.way();
+            Vec3 right = way.cross(new Vec3(0.0, 1.0, 0.0)).normalize();
+            double ahead = Mth.lerp(random.nextDouble(), AHEAD_NEAR, AHEAD_FAR);
+            double across = side * AHEAD_WIDE * (0.25 + 0.75 * random.nextDouble());
+            aim = this.ground(level, this.path.at(this.age).add(way.scale(ahead)).add(right.scale(across)));
         }
-        this.missiles.add(new Missile(from, bend, target, homing, aim, this.leftLauncher ? 0 : 1));
+        this.missiles.add(new Missile(from, bend, homing ? target : null, homing, aim, this.leftLauncher ? 0 : 1));
         this.sound(level, from, SoundEvents.FIREWORK_ROCKET_LAUNCH, 8.0F, 0.6F);
         this.sound(level, from, SoundEvents.BEACON_POWER_SELECT, 5.0F, 1.8F);
     }
@@ -608,10 +671,12 @@ public final class AirStrike implements SpellEffect {
         Vec3 at = this.path.crash();
         double radius = this.ability.value("crashRadius");
         this.blast(level, at, radius, this.ability.getDamage(), null, CRASH_KNOCKBACK);
-        this.crater(level, at);
-        level.sendParticles(ParticleTypes.EXPLOSION_EMITTER, at.x, at.y + 1.5, at.z, 6, 3.0, 1.5, 3.0, 0.0);
-        level.sendParticles(ParticleTypes.FLASH, at.x, at.y + 2.0, at.z, 2, 0.0, 0.0, 0.0, 0.0);
-        level.sendParticles(ParticleTypes.LARGE_SMOKE, at.x, at.y + 2.0, at.z, 60, 4.0, 2.0, 4.0, 0.08);
+        this.crater(level, at, this.ability.value("craterRadius"), this.ability.intValue("debrisBlocks"));
+        SpellFx.send(level, ParticleTypes.EXPLOSION_EMITTER, at.x, at.y + 1.5, at.z, 8, 3.5, 1.5, 3.5, 0.0);
+        SpellFx.send(level, ParticleTypes.FLASH, at.x, at.y + 2.0, at.z, 2, 0.0, 0.0, 0.0, 0.0);
+        SpellFx.send(level, ParticleTypes.LARGE_SMOKE, at.x, at.y + 2.0, at.z, 80, 4.0, 2.0, 4.0, 0.1);
+        SpellFx.send(level, ParticleTypes.FLAME, at.x, at.y + 1.0, at.z, 90, 3.0, 1.0, 3.0, 0.35);
+        SpellFx.send(level, ParticleTypes.LAVA, at.x, at.y + 0.5, at.z, 30, 2.5, 0.5, 2.5, 0.0);
         SpellFx.sphereOut(level, SpellFx.dust(PowerRing.BRIGHT, 3.0F), at.add(0.0, 1.0, 0.0), 120, 1.3);
         SpellFx.sphereOut(level, SpellFx.dust(PowerRing.GREEN, 3.5F), at.add(0.0, 1.0, 0.0), 90, 0.8);
         SpellFx.shockwave(level, SpellFx.dust(PowerRing.GREEN, 2.5F), at.add(0.0, 0.3, 0.0), 160, 1.9);
@@ -627,13 +692,40 @@ public final class AirStrike implements SpellEffect {
     }
 
     /**
-     * The crater: a bowl blown out of the ground where it struck, rough at its rim. Some of its blocks are hurled up and
-     * away and come down all round it; the rest are gone. Blocks harder than {@code breakHardness}, blocks that hold
-     * something (chests and the like) and blocks he may not touch there all stay; so does water.
+     * After the crash its crater smoulders while the blast dies down: columns of smoke climb out of it, fires lick at it
+     * and a haze of smoke hangs over it.
      */
-    private void crater(ServerLevel level, Vec3 at) {
+    private void smoulder(ServerLevel level) {
+        Vec3 at = this.path.crash();
+        double fade = 1.0 - (this.age - this.path.crashTick()) / BLAST_TICKS;
+        if (fade <= 0.0) {
+            return;
+        }
+        RandomSource random = this.owner.getRandom();
+        double radius = Math.max(2.0, this.ability.value("craterRadius"));
+        for (int k = 0; k < 2; k++) {
+            double angle = random.nextDouble() * Math.PI * 2.0;
+            double far = Math.sqrt(random.nextDouble()) * radius * 0.8;
+            double x = at.x + Math.cos(angle) * far;
+            double z = at.z + Math.sin(angle) * far;
+            SpellFx.send(level, ParticleTypes.CAMPFIRE_SIGNAL_SMOKE, x, at.y - 0.5, z, 0, 0.0, 1.0, 0.0, 0.07);
+            SpellFx.send(level, ParticleTypes.FLAME, x, at.y - 0.3, z, 4, 0.5, 0.3, 0.5, 0.04);
+        }
+        SpellFx.send(level, ParticleTypes.LARGE_SMOKE, at.x, at.y + 1.0, at.z, 2 + (int) (6.0 * fade), radius * 0.5,
+                0.8, radius * 0.5, 0.05);
+        if (random.nextDouble() < 0.4 * fade) {
+            SpellFx.send(level, ParticleTypes.LAVA, at.x, at.y, at.z, 3, radius * 0.4, 0.2, radius * 0.4, 0.0);
+        }
+    }
+
+    /**
+     * A crater of {@code radius}: a bowl blown out of the ground at {@code at}, rough at its rim. Up to {@code debris} of
+     * its blocks are hurled up and away and come down all round it; the rest are gone. Blocks harder than
+     * {@code breakHardness}, blocks that hold something (chests and the like) and blocks he may not touch there all
+     * stay; so does water.
+     */
+    private void crater(ServerLevel level, Vec3 at, double radius, int debris) {
         double hardest = this.ability.value("breakHardness");
-        double radius = this.ability.value("craterRadius");
         if (hardest < 0.0 || radius <= 0.0) {
             return;
         }
@@ -664,20 +756,19 @@ public final class AirStrike implements SpellEffect {
                 }
             }
         }
-        // The ones hurled away are taken from near the top of the bowl, where the blast tears the ground open.
+        // The ones hurled away are taken from near the top of the bowl, where the blast tears the ground open, from all
+        // round it.
         RandomSource random = this.owner.getRandom();
-        int debris = Math.max(0, this.ability.intValue("debrisBlocks"));
         List<BlockPos> hurled = new ArrayList<>();
         for (BlockPos pos : blown) {
-            if (hurled.size() >= debris) {
-                break;
-            }
-            BlockState state = level.getBlockState(pos);
-            if (pos.getY() >= middle.getY() - 2 && state.isCollisionShapeFullBlock(level, pos)
-                    && random.nextDouble() < 0.35) {
+            if (pos.getY() >= middle.getY() - 2 && level.getBlockState(pos).isCollisionShapeFullBlock(level, pos)) {
                 hurled.add(pos);
             }
         }
+        for (int i = hurled.size() - 1; i > 0; i--) {
+            Collections.swap(hurled, i, random.nextInt(i + 1));
+        }
+        hurled = new ArrayList<>(hurled.subList(0, Math.min(hurled.size(), Math.max(0, debris))));
         for (BlockPos pos : blown) {
             if (!hurled.contains(pos)) {
                 level.setBlock(pos, Blocks.AIR.defaultBlockState(), 3);

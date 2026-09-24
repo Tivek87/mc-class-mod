@@ -116,17 +116,23 @@ public enum GameCharacter {
                     .setting("guardDamageKept", 0.4, 0.0, 1.0, Unit.PART_KEPT,
                             "Part of a hit from the front that still gets through the shield held before the chest"
                                     + " during the flurry (0.4 = 40%, so it takes 60%)")
-                    .group("wheel_shield", "Shield (right click)")
-                    .setting("bashDamage", 2.0, 0.0, 2000.0, Unit.HALF_HEARTS,
-                            "Damage of a bash of the shield, in half hearts")
-                    .setting("bashKnockback", 1.4, 0.0, 5.0, Unit.STRENGTH,
-                            "How hard a bash of the shield shoves what it strikes away")
+                    .group("wheel_shield", "Shield (right button)")
+                    .setting("blockDamageKept", 0.15, 0.0, 1.0, Unit.PART_KEPT,
+                            "Part of a hit from the front that still gets through the shield while you block (hold the"
+                                    + " right button): 0.15 = 15%, so it takes 85%")
+                    .setting("blockPowerPerSecond", 0.08, 0.0, 20.0, Unit.POWER_PER_SECOND,
+                            "Ring power holding the shield up to block costs a second")
                     .setting("chargeSpeed", 16.0, 4.0, 40.0, Unit.BLOCKS_PER_SECOND,
-                            "How fast the charge behind the shield runs (hold 2 seconds), in blocks per second")
-                    .setting("chargeSeconds", 3.0, 0.5, 10.0, Unit.SECONDS,
-                            "How long a charge runs at most, in seconds; a wall or letting go ends it sooner")
+                            "How fast the charge behind the shield runs (click the right button), in blocks per"
+                                    + " second")
+                    .setting("chargeSeconds", 1.4, 0.3, 10.0, Unit.SECONDS,
+                            "How long a charge runs at most, in seconds; a wall or a second click ends it sooner")
+                    .was(3.0)
                     .setting("chargeDamage", 3.0, 0.0, 2000.0, Unit.HALF_HEARTS,
-                            "Damage to every creature the charge shoves aside, in half hearts")
+                            "Damage of a ram of the shield to every creature in the way of a charge, in half hearts;"
+                                    + " the heavier rams do a little more")
+                    .setting("bashKnockback", 1.4, 0.0, 5.0, Unit.STRENGTH,
+                            "How hard a ram of the shield throws what stands in the way of a charge aside")
                     .setting("chargePowerCost", 2.0, 0.0, 100.0, Unit.POWER, "Ring power one charge costs")
                     .setting("slamDamage", 6.0, 0.0, 2000.0, Unit.HALF_HEARTS,
                             "Damage in the middle of the small shockwave that ends a charge, in half hearts; half at"
@@ -208,9 +214,9 @@ public enum GameCharacter {
                     .was(12.0)
                     .setting("powerCost", 2.0, 0.0, 100.0, Unit.POWER, "Ring power one scan costs");
             // The ultimate: he throws his ring fist up at the sky and a big, slow gunship of hard light with four
-            // propellers takes shape twice as high as a jet would fly. It drones on in a straight line over the area he
-            // looked at, scans it for everything out to hurt him and fires its two miniguns and two missile launchers at
-            // that; then all at once it plunges down and crashes in a massive blast of green energy that blows a crater
+            // propellers takes shape high over the battlefield. It drones on in a straight line over the area he looked
+            // at, scans it for everything out to hurt him and fires its two miniguns and two missile launchers at that
+            // (with nothing marked they rake the ground along its way); then all at once it plunges down and crashes in a massive blast of green energy that blows a crater
             // out of the ground (this damage in the middle, half of it at the edge).
             this.add(abilities, AbilitySlot.ABILITY_7, "air_strike").cooldown(1800).damage(40.0)
                     .setting("attackSeconds", 20.0, 2.0, 60.0, Unit.SECONDS,
@@ -239,6 +245,9 @@ public enum GameCharacter {
                             "How often a missile finds its creature (0.9 = 90%); the others strike the ground a few"
                                     + " blocks off")
                     .was(0.65)
+                    .setting("missileCraterRadius", 2.2, 0.0, 6.0, Unit.BLOCKS,
+                            "How wide the small crater a missile blows out of the ground is, from its middle, in blocks"
+                                    + " (0 = none; the crash's block hardness applies here too)")
                     .group("crash", "The crash")
                     .setting("crashRadius", 14.0, 2.0, 40.0, Unit.BLOCKS,
                             "How far the blast of the crash reaches, in blocks")
@@ -249,8 +258,9 @@ public enum GameCharacter {
                     .setting("breakHardness", 3.0, -1.0, 100.0, Unit.HARDNESS,
                             "How hard a block may be for the crash to blow it away (dirt 0.5, stone 1.5, wood 2, iron"
                                     + " 5); -1 leaves the ground alone. Blocks that hold something, like chests, stay")
-                    .settingInt("debrisBlocks", 40, 0, 400, Unit.BLOCK_COUNT,
-                            "How many of the crater's blocks are hurled up and away, to come down all round it");
+                    .settingInt("debrisBlocks", 90, 0, 400, Unit.BLOCK_COUNT,
+                            "How many of the crater's blocks are hurled up and away, to come down all round it")
+                    .was(40.0);
             // Smash the ring fist into the ground: the ring throws up a construct in front of him that strikes and
             // sends a shockwave over it. In the air he dives down to the ground first. Flying into the ground at full
             // speed does the same by itself, with these same numbers.
@@ -278,16 +288,21 @@ public enum GameCharacter {
                                     + " and what you shoot or hold up while flying comes on top")
                     .was(15.0, 37.5)
                     .setting("topSpeed", 19.25, 5.0, 150.0, Unit.BLOCKS_PER_SECOND,
-                            "Top speed in blocks per second (an elytra with firework rockets does about 33); once you"
-                                    + " reach it, two jets of hard light hang behind you on chains")
+                            "Top speed in blocks per second (an elytra with firework rockets does about 33)")
                     .was(50.0, 35.0)
                     .setting("startSpeed", 6.4, 1.0, 150.0, Unit.BLOCKS_PER_SECOND,
                             "Speed you set off at, in blocks per second: the longer you fly on, the faster you go, up"
                                     + " to the top speed")
                     .was(11.7)
+                    .setting("cruiseSpeed", 13.0, 1.0, 150.0, Unit.BLOCKS_PER_SECOND,
+                            "Cruising speed in blocks per second: flying on, you are up to it within a few seconds,"
+                                    + " and from there you keep gaining slowly, up to the top speed")
+                    .setting("cruiseSeconds", 3.0, 0.0, 60.0, Unit.SECONDS,
+                            "Seconds of flying on from the speed you set off at to the cruising speed (0 = straight"
+                                    + " away)")
                     .setting("speedUpSeconds", 30.0, 0.0, 300.0, Unit.SECONDS,
-                            "Seconds of flying on before you reach the top speed (0 = straight away); letting go of"
-                                    + " forward loses the speed again, slowly")
+                            "Seconds of flying on from the cruising speed to the top speed (0 = straight away);"
+                                    + " letting go of forward loses the speed again in a few seconds")
                     .was(12.0);
             // The ring fist thrown up high: the lantern takes shape over it out of the ring's light, fills with light
             // and bursts like a small sun, blinding and slowing everything that sees it; blinded creatures cannot find
@@ -308,8 +323,9 @@ public enum GameCharacter {
                     .setting("powerCost", 8.0, 0.0, 100.0, Unit.POWER, "Ring power one flash costs")
                     .was(6.0);
             // A bubble of hard light round the creature he looks at: the ring lifts it off the ground and holds it
-            // there, unable to do anything. Press again to smash the bubble down onto the ground (this damage, half
-            // of it to what stands round it); crouch and press to let it go. The cooldown starts once it is gone.
+            // there, unable to do anything. Press again to pound it into the ground: three slams, straight down, on his
+            // left and on his right (the last one this damage, the two before it a third of it each; half of that to
+            // what stands round it); crouch and press to let it go. The cooldown starts once it is gone.
             this.add(abilities, AbilitySlot.ABILITY_11, "light_bubble").cooldown(240).damage(12.0)
                     .crouch(CharacterAbility.Crouch.UNDO)
                     .setting("rangeBlocks", 24.0, 4.0, 64.0, Unit.BLOCKS,
@@ -318,9 +334,11 @@ public enum GameCharacter {
                             "How long a bubble holds its creature before it bursts by itself, in seconds")
                     .setting("liftBlocks", 3.0, 0.0, 10.0, Unit.BLOCKS,
                             "How high a bubble lifts its creature off the ground, in blocks")
-                    .setting("slamRadius", 3.5, 0.0, 10.0, Unit.BLOCKS,
-                            "How far the shockwave of a smashed bubble reaches, in blocks: what else stands in it"
-                                    + " takes half the damage")
+                    .setting("slamRadius", 4.5, 0.0, 10.0, Unit.BLOCKS,
+                            "How far the shockwave of the last slam of a pound reaches, in blocks (the slams before it"
+                                    + " reach less far): what else stands in it is thrown away and takes half the"
+                                    + " damage")
+                    .was(3.5)
                     .setting("powerCost", 4.0, 0.0, 100.0, Unit.POWER, "Ring power catching a creature costs");
         }
     };

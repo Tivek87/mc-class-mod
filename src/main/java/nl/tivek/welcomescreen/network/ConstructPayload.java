@@ -93,7 +93,8 @@ public record ConstructPayload(int id, int owner, Vec3 center, Vec3 facing, floa
      * The Light Bubble: a cage of hard light round a creature the ring holds up. {@code center} is its middle,
      * {@code facing} the way its maker looked as he caught it, {@code size} its radius, {@code solid} how far it has
      * grown round its creature, {@code held} true while the ring still holds it, {@code variant} what it does (see
-     * {@link nl.tivek.welcomescreen.character.lantern.LightBubble#HOLDING}), {@code charge} the entity id of its creature
+     * {@link nl.tivek.welcomescreen.character.lantern.LightBubble#HOLDING}; a pound is timed from the first update that
+     * tells of it), {@code charge} the entity id of its creature
      * until it breaks up and from then on how many ticks ago it began to, and {@code age} how long ago it caught its
      * creature.
      */
@@ -105,6 +106,20 @@ public record ConstructPayload(int id, int owner, Vec3 center, Vec3 facing, floa
      * {@code charge} the tick of their clock that move began on, and {@code age} how long ago they took shape.
      */
     public static final int SWORD = 13;
+    /**
+     * The small blast of one of the plane's missiles, sent once as it bursts: clients play it out by themselves.
+     * {@code center} is its heart, {@code facing} the way the missile came in, {@code size} how far it reaches and
+     * {@code age} how long ago it burst. Light, not a construct.
+     */
+    public static final int BLAST = 14;
+    /**
+     * One slam of a Light Bubble pounded into the ground, sent once as it strikes: clients play out its shockwave by
+     * themselves. {@code center} is where it struck the ground, {@code facing} the way its maker looked as he caught the
+     * creature, {@code size} how far the shockwave reaches, {@code variant} which slam of the pound it is (see
+     * {@link nl.tivek.welcomescreen.character.lantern.LightBubble#POUND}; the last is the hardest) and {@code age} how
+     * long ago it struck. Light, not a construct.
+     */
+    public static final int POUND = 15;
     /** A giant fist that smashes down out of the sky, knuckles first. */
     public static final int SLAM_FIST = 0;
     /** Two giant open hands that clap together. */
