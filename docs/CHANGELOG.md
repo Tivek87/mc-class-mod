@@ -6,15 +6,22 @@ What changed in the project, newest first.
 
 ### Added
 - **Pictures on the Construct Wheel:** every slot shows its construct. The sword and shield are their own small
-  hard-light model, solid and glowing, the shield turning gently to and fro with the sword crossed behind it; a
-  slot still to come shows the lantern emblem. The bar above your hotbar shows the picture of what you hold.
+  hard-light model, solid and glowing, the shield turning gently to and fro with the sword crossed behind it. The bar
+  above your hotbar shows the picture of what you hold.
+- **All sixteen weapons on the Construct Wheel:** the fifteen placeholders became Energy Whip, Brawler Gauntlets /
+  Boxing Gloves, Dual Energy Daggers, Battleaxe, Two-handed War Hammer, Spear / Halberd, Heavy Chainsaw, Dual
+  Revolvers / Hand Cannons, Sawed-off Shotgun, Dual Micro-SMGs, Arm Cannon / Mega Blaster, Rotary Grenade Launcher,
+  Minigun, Rocket Launcher / RPG and Plasma Flamethrower. Each has its own detailed hard-light model as its picture;
+  they show only their name (no line under it) and do nothing yet. A long name breaks after its slash.
 
 ### Changed
 - **Sword and shield, remade:** you hold them the way the game holds a sword and shield: in first person the sword
   stands upright in your right fist at the bottom right, the shield hangs on your left forearm at the bottom left.
   Taking them out: the sword grows hilt first, you look it over, twirl it round once and knock it twice on the
   shield. Every cut winds up, whips through and brakes, the edge always leading; your body turns, bends and steps
-  into it, and a blow that lands jolts your view.
+  into it, and a blow that lands jolts your view. In first person every cut stays in view: where the blade strikes
+  it lies across the screen, the thrusts go in from low at the right to where you aim, and your arms are slim and
+  always run out of view.
 - **The shield:** holding right now **blocks** (85% of what comes from the front, as long as you hold it);
   clicking right **charges**, ramming what is in your way aside with one of six rams (1.5 hearts each), and ends in
   the shield slam on a wall, on a second click or after 1.4 seconds. The shield bashes became those rams.
@@ -31,6 +38,7 @@ What changed in the project, newest first.
 
 ### Removed
 - **The jets at top speed:** no more chains and small jets of hard light behind you while you fly.
+- **The Dutch translation:** the mod is English only.
 
 ## [Gunship air strike, Light Bubble and the sword and shield] - 2026-09-24
 

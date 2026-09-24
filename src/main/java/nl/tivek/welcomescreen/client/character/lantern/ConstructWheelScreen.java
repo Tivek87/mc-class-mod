@@ -4,6 +4,7 @@ import java.util.List;
 import net.minecraft.ChatFormatting;
 import net.minecraft.Util;
 import net.minecraft.client.KeyMapping;
+import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
@@ -27,9 +28,9 @@ import org.lwjgl.glfw.GLFW;
  * closes without changing anything. Only tapping the key never gets this far: that swaps on the spot
  * (see {@link ConstructWheel}).
  *
- * <p>The wheel fills almost the whole height of the screen. Every slice shows its construct (see
- * {@link ConstructIcons}): one that exists as its own hard-light model, a slot still kept free as the lantern emblem.
- * What the mouse points at is written in its middle: its name, and what it is. A thin plate along the top of the screen
+ * <p>The wheel fills almost the whole height of the screen. Every slice shows its construct as its own hard-light model
+ * (see {@link ConstructIcons}). What the mouse points at is written in its middle: its name, and what it does for a
+ * construct that already does something. A thin plate along the top of the screen
  * (never over the wheel) says how a construct's mouse buttons work and what to do. Every construct uses the mouse the
  * same way: left click attacks, from the right hand (where the ring is); right click defends, from the left hand.
  * Picking one takes it out (see {@link ConstructChoice}) and shows it above your hotbar.
@@ -312,11 +313,9 @@ public class ConstructWheelScreen extends Screen {
             float angle = this.slice(i) * Mth.DEG_TO_RAD;
             float iconX = middleX + Mth.sin(angle) * radius;
             float iconY = middleY - Mth.cos(angle) * radius;
-            // A construct that exists is its own model, as big as the slice allows; a free slot a small emblem.
-            float iconSize = (edge - inner) * (construct.made() ? 0.62F : 0.34F) * (0.86F + 0.14F * this.open);
-            int iconColour = GuiShapes.mix(GREEN, BRIGHT, 0.3F + 0.7F * glow);
-            float iconAlpha = (0.4F + 0.5F * glow) * this.open;
-            ConstructIcons.draw(graphics, construct, iconX, iconY, iconSize, glow, iconColour, iconAlpha);
+            // Every construct is its own model, as big as the slice allows.
+            float iconSize = (edge - inner) * 0.74F * (0.86F + 0.14F * this.open);
+            ConstructIcons.draw(graphics, construct, iconX, iconY, iconSize, glow);
             // A dot marks the one you already have out.
             if (construct == held) {
                 GuiShapes.disc(graphics, middleX + Mth.sin(angle) * (inner + 4.0F),
@@ -350,42 +349,79 @@ public class ConstructWheelScreen extends Screen {
     }
 
     /**
-     * What the mouse points at, in the middle of the wheel: its name, and under it what it is, both made smaller
-     * when they would not fit in the button.
+     * What the mouse points at, in the middle of the wheel: its name, and under it what it does when it has a line for
+     * that. A long name breaks over two lines; both are made smaller when they would not fit in the button.
      */
     private void renderName(GuiGraphics graphics, float middleX, float middleY, float hub) {
         Construct construct = this.pointed < 0 ? Construct.NONE : this.wheel.get(this.pointed);
         float room = hub * 2.0F * HUB_TEXT;
-        Component name = construct.getDisplayName();
-        float nameScale = Math.min(1.0F, room / Math.max(1, this.font.width(name)));
-        // What it is, broken over as many lines as it needs at a size that fits, never more than three.
-        float aboutScale = 0.8F;
-        List<FormattedCharSequence> about = this.font.split(
-                construct.getDescription().copy().withStyle(ChatFormatting.ITALIC), (int) (room / aboutScale));
-        while (about.size() > 3 && aboutScale > 0.5F) {
-            aboutScale -= 0.1F;
-            about = this.font.split(construct.getDescription().copy().withStyle(ChatFormatting.ITALIC),
-                    (int) (room / aboutScale));
-        }
-        float nameHeight = this.font.lineHeight * nameScale;
-        float aboutLine = (this.font.lineHeight + 1) * aboutScale;
-        float total = nameHeight + 3.0F + aboutLine * Math.min(3, about.size());
+        Lines name = this.fitName(construct.getDisplayName(), room);
+        // What it does, broken over as many lines as it needs at a size that fits, never more than three.
+        Component description = construct.getDescription();
+        Lines about = description == null ? new Lines(List.of(), 1.0F)
+                : this.fit(description.copy().withStyle(ChatFormatting.ITALIC), room, 0.8F, 3);
+        float total = name.height(this.font) + (about.lines().isEmpty() ? 0.0F : 3.0F + about.height(this.font));
         float y = middleY - total * 0.5F;
         int alpha = (int) (255 * Mth.clamp(this.open, 0.1F, 1.0F)) << 24;
-        graphics.pose().pushPose();
-        graphics.pose().translate(middleX, y, 0.0F);
-        graphics.pose().scale(nameScale, nameScale, 1.0F);
-        graphics.drawString(this.font, name, -this.font.width(name) / 2, 0, TEXT & 0xFFFFFF | alpha);
-        graphics.pose().popPose();
-        y += nameHeight + 3.0F;
-        for (int i = 0; i < Math.min(3, about.size()); i++) {
-            FormattedCharSequence line = about.get(i);
+        this.renderLines(graphics, name, middleX, y, TEXT & 0xFFFFFF | alpha);
+        this.renderLines(graphics, about, middleX, y + name.height(this.font) + 3.0F, MUTED & 0xFFFFFF | alpha);
+    }
+
+    /** Text broken over lines, and the scale it is written at. */
+    private record Lines(List<FormattedCharSequence> lines, float scale) {
+        float step(Font font) {
+            return (font.lineHeight + 1) * this.scale;
+        }
+
+        float height(Font font) {
+            return this.step(font) * this.lines.size();
+        }
+    }
+
+    /**
+     * A name on one line when it fits. A longer one is broken over two: right after its slash when it has one ("Spear /"
+     * over "Halberd"), or else wherever it has to be.
+     */
+    private Lines fitName(Component name, float room) {
+        String text = name.getString();
+        int slash = text.indexOf(" / ");
+        if (slash < 0 || this.font.width(name) <= room) {
+            return this.fit(name, room, 1.0F, 2);
+        }
+        List<FormattedCharSequence> lines = List.of(
+                Component.literal(text.substring(0, slash + 2)).getVisualOrderText(),
+                Component.literal(text.substring(slash + 3)).getVisualOrderText());
+        int widest = Math.max(this.font.width(lines.get(0)), this.font.width(lines.get(1)));
+        return new Lines(lines, Math.min(1.0F, room / widest));
+    }
+
+    /**
+     * {@code text} broken over at most {@code lines} lines of {@code room} wide, at {@code scale} or as much smaller as
+     * it takes to fit (never below half, unless a single word is wider than the room).
+     */
+    private Lines fit(Component text, float room, float scale, int lines) {
+        List<FormattedCharSequence> split = this.font.split(text, (int) (room / scale));
+        while (split.size() > lines && scale > 0.5F) {
+            scale -= 0.1F;
+            split = this.font.split(text, (int) (room / scale));
+        }
+        // A single word wider than the room is shrunk until it fits on its own.
+        int widest = 1;
+        for (FormattedCharSequence line : split) {
+            widest = Math.max(widest, this.font.width(line));
+        }
+        return new Lines(split.subList(0, Math.min(lines, split.size())), Math.min(scale, room / widest));
+    }
+
+    /** The lines centred on {@code middleX}, the first at {@code y}. */
+    private void renderLines(GuiGraphics graphics, Lines text, float middleX, float y, int colour) {
+        for (FormattedCharSequence line : text.lines()) {
             graphics.pose().pushPose();
             graphics.pose().translate(middleX, y, 0.0F);
-            graphics.pose().scale(aboutScale, aboutScale, 1.0F);
-            graphics.drawString(this.font, line, -this.font.width(line) / 2, 0, MUTED & 0xFFFFFF | alpha);
+            graphics.pose().scale(text.scale(), text.scale(), 1.0F);
+            graphics.drawString(this.font, line, -this.font.width(line) / 2, 0, colour);
             graphics.pose().popPose();
-            y += aboutLine;
+            y += text.step(this.font);
         }
     }
 

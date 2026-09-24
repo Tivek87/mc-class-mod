@@ -7,6 +7,9 @@
 - The 32 slam constructs are only ever for the shockwave: the dive from the air and the normal ground slam. Never use them for anything else (another ability, an ultimate, a HUD).
 - Every aircraft, jet and machine Green Lantern makes is always a pure hard-light construct, shaped out of the ring's green light, never a real vehicle.
 
+## Language
+- The mod is English only: every in-game text lives in `en_us.json`, never add another language file.
+
 ## Engine
 - The engine (`ConstructPainter`, `Mesh` and what they draw with) may always be updated and extended on your own. Extensions or additions around the character itself (new abilities, new constructs, changes to how Green Lantern plays) always need the user's permission first.
 

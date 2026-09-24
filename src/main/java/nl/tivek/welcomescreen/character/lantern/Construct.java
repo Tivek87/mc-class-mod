@@ -9,9 +9,9 @@ import nl.tivek.welcomescreen.WelcomeScreenMod;
 /**
  * The hard-light shapes Green Lantern can will into his hands, and the empty hands he starts with.
  *
- * <p>The first slot of the wheel holds a sword and a shield (see {@link SwordShield}); the other fifteen are still
- * kept free and say placeholder, coming soon. Filling a slot in later is a name in the language files plus the code
- * that makes it do something.
+ * <p>The first slot of the wheel holds a sword and a shield (see {@link SwordShield}). The other fifteen weapons have
+ * their name and their picture already, but nothing to do yet: holding one does what empty hands do. Making one work is
+ * the code that makes it do something, and the line in the language files that says how (see {@link #made}).
  *
  * <p>Every construct uses the mouse the same way, as the game itself does: left click attacks, with the
  * right hand (the one with the ring); right click defends, with the left hand.
@@ -21,21 +21,21 @@ public enum Construct {
     NONE("none"),
     /** A sword in the ring hand and a shield on the other arm. */
     SWORD_SHIELD("sword_shield"),
-    SLOT_2("slot_2"),
-    SLOT_3("slot_3"),
-    SLOT_4("slot_4"),
-    SLOT_5("slot_5"),
-    SLOT_6("slot_6"),
-    SLOT_7("slot_7"),
-    SLOT_8("slot_8"),
-    SLOT_9("slot_9"),
-    SLOT_10("slot_10"),
-    SLOT_11("slot_11"),
-    SLOT_12("slot_12"),
-    SLOT_13("slot_13"),
-    SLOT_14("slot_14"),
-    SLOT_15("slot_15"),
-    SLOT_16("slot_16");
+    ENERGY_WHIP("energy_whip"),
+    GAUNTLETS("gauntlets"),
+    DAGGERS("daggers"),
+    BATTLEAXE("battleaxe"),
+    WAR_HAMMER("war_hammer"),
+    HALBERD("halberd"),
+    CHAINSAW("chainsaw"),
+    REVOLVERS("revolvers"),
+    SHOTGUN("shotgun"),
+    SMGS("smgs"),
+    ARM_CANNON("arm_cannon"),
+    GRENADE_LAUNCHER("grenade_launcher"),
+    MINIGUN("minigun"),
+    ROCKET_LAUNCHER("rocket_launcher"),
+    FLAMETHROWER("flamethrower");
 
     private static final String KEY = "construct." + WelcomeScreenMod.MODID + ".";
 
@@ -62,24 +62,22 @@ public enum Construct {
         return this.id;
     }
 
-    /** Which slot of the wheel this is, 1 up to 16; 0 for empty hands. */
-    public int number() {
-        return this.ordinal();
-    }
-
-    /** True for a construct that really exists; false for a slot still kept free (a placeholder). */
+    /** True for a construct that already does something; false for a weapon that only has its name and picture yet. */
     public boolean made() {
         return this == NONE || this == SWORD_SHIELD;
     }
 
     public Component getDisplayName() {
-        return this.made() ? Component.translatable(KEY + this.id)
-                : Component.translatable(KEY + "placeholder", this.number());
+        return Component.translatable(KEY + this.id);
     }
 
-    /** The line under the name: what it is, or that this slot is still to come. */
+    /**
+     * The line under the name: what it does. Only a construct that is {@link #made} has one; the rest show their name
+     * alone.
+     */
+    @Nullable
     public Component getDescription() {
-        return Component.translatable(this.made() ? KEY + this.id + ".about" : KEY + "placeholder.about");
+        return this.made() ? Component.translatable(KEY + this.id + ".about") : null;
     }
 
     /** The construct with this number (its ordinal), or {@link #NONE}. */

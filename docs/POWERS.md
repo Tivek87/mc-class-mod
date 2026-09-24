@@ -451,20 +451,26 @@ their own (see "Changing the numbers").
 
 ### Construct Wheel (key V)
 
-The ring can shape hard light into your hands. The wheel has sixteen slots: the first holds the **Sword and
-Shield** (see below); the other fifteen are still called **Placeholder** and say **Coming soon**. Picking one of
-those changes nothing but the bar above your hotbar.
+The ring can shape hard light into your hands. The wheel has sixteen slots: the first holds the **Sword &
+Shield** (see below); the other fifteen hold the weapons still to come, each with its name and picture but nothing
+to do yet: **Energy Whip**, **Brawler Gauntlets / Boxing Gloves**, **Dual Energy Daggers**, **Battleaxe**,
+**Two-handed War Hammer**, **Spear / Halberd**, **Heavy Chainsaw**, **Dual Revolvers / Hand Cannons**, **Sawed-off
+Shotgun**, **Dual Micro-SMGs**, **Arm Cannon / Mega Blaster**, **Rotary Grenade Launcher**, **Minigun**, **Rocket
+Launcher / RPG** and **Plasma Flamethrower**. Picking one of those changes nothing but the bar above your hotbar.
 
 - **Tap V** and nothing opens at all: you swap straight between empty hands and the last slot you had
   out. That is the quick one, for in a fight.
 - **Hold V** a moment longer and the wheel opens around your crosshair, big: sixteen slots in a circle and empty
-  hands in the middle. Every slot shows its picture: the sword and shield as their own small hard-light model, solid
-  and glowing, the shield turning gently to and fro with the sword crossed behind it; a slot still to come shows the
-  lantern emblem, faint.
+  hands in the middle. Every slot shows its weapon as its own small hard-light model, solid and glowing, turning
+  gently to and fro: the shield with the sword crossed behind it, a long weapon lying from low at the left to high at
+  the right, a gun on its side with its muzzle to the right; a pair (gloves bumping fists, crossed daggers, crossed
+  revolvers, two submachine guns back to back) as two. A shot charges in the muzzle of the arm cannon and a pilot flame
+  burns at the nozzle of the flamethrower.
 - **Flick the mouse** towards the slot you want. Only the direction counts, not how far you move, so a
   short flick is enough and it does not matter if the mouse runs off the edge of your screen. The slot
   you point at lights up and grows. Your mouse wheel steps from slot to slot as well.
-- **The middle of the wheel** says what you point at: its name and what it is. A plate along the top of the
+- **The middle of the wheel** says what you point at: its name (a long one on two lines, broken after its slash),
+  and for one that already works what it does. A plate along the top of the
   screen says how the mouse buttons work and what to do. Neither ever covers a slot: on a small screen the
   wheel gets smaller and the writing shorter. The bar above your hotbar and the panel with your abilities are
   hidden while the wheel is open.
@@ -475,8 +481,8 @@ those changes nothing but the bar above your hotbar.
   - **Right click (defence):** a tap does a quick block or parry; holding it 2 seconds raises a stronger,
     lasting defence (a barricade, a fortress stance).
   - **At the same time:** just like with empty hands, attack and defence can be clicked or held together.
-  - Holding a placeholder does exactly what empty hands do: bolts and the beam on left click, the shield and
-    the dome on right click.
+  - Holding a weapon that does nothing yet does exactly what empty hands do: bolts and the beam on left click, the
+    shield and the dome on right click.
 - **Let go of V** and the wheel closes: green light flares out of your crosshair and the bar above your
   hotbar shows what you now hold, with its picture. You can also just click a slot while the wheel is open.
 - **The middle is empty hands**, written out as *Nothing — default: no construct, just your ring*. Let go
@@ -487,7 +493,7 @@ those changes nothing but the bar above your hotbar.
   holding a slot.
 - The wheel does not pause the game. Everyone around you sees what you take out.
 
-#### Sword and Shield (slot 1)
+#### Sword & Shield (slot 1)
 
 A plain knight's sword of hard light in your ring hand and a heater shield with the lantern emblem on your other
 arm, both as solid as every construct.

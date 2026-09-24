@@ -402,13 +402,17 @@ public final class ConstructHud {
         GuiShapes.flush(graphics);
     }
 
-    /** The bar itself: the picture of what you hold (see {@link ConstructIcons}), its name, and what it does. */
+    /**
+     * The bar itself: the picture of what you hold (see {@link ConstructIcons}), its name, and what it does when it has
+     * a line for that.
+     */
     private static void renderBar(GuiGraphics graphics, Font font, Construct held) {
         MutableComponent name = held.getDisplayName().copy();
-        MutableComponent about = held.getDescription().copy().withStyle(ChatFormatting.ITALIC);
+        Component description = held.getDescription();
+        MutableComponent about = description == null ? null : description.copy().withStyle(ChatFormatting.ITALIC);
         int nameWidth = font.width(name);
-        int aboutWidth = font.width(about);
-        int width = PADDING + ICON_ROOM + 5 + nameWidth + 6 + aboutWidth + PADDING;
+        int aboutWidth = about == null ? 0 : 6 + font.width(about);
+        int width = PADDING + ICON_ROOM + 5 + nameWidth + aboutWidth + PADDING;
 
         float left = (graphics.guiWidth() - width) * 0.5F;
         float top = graphics.guiHeight() - BAR_UP - BAR_HEIGHT * 0.5F;
@@ -419,12 +423,14 @@ public final class ConstructHud {
         // The picture of what you hold, a little bigger than the bar so it stands out of it.
         float iconX = left + PADDING + ICON_ROOM * 0.5F;
         float iconY = top + BAR_HEIGHT * 0.5F;
-        ConstructIcons.draw(graphics, held, iconX, iconY, ICON_ROOM * 1.35F, 0.0F, BRIGHT, 0.9F);
+        ConstructIcons.draw(graphics, held, iconX, iconY, ICON_ROOM * 1.35F, 0.0F);
         GuiShapes.flush(graphics);
 
         int textX = Mth.floor(left) + PADDING + ICON_ROOM + 5;
         int textY = Mth.floor(top) + (BAR_HEIGHT - font.lineHeight) / 2 + 1;
         graphics.drawString(font, name, textX, textY, TEXT, false);
-        graphics.drawString(font, about, textX + nameWidth + 6, textY, MUTED, false);
+        if (about != null) {
+            graphics.drawString(font, about, textX + nameWidth + 6, textY, MUTED, false);
+        }
     }
 }

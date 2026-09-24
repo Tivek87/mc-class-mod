@@ -42,6 +42,7 @@ import nl.tivek.welcomescreen.character.lantern.Construct;
 import nl.tivek.welcomescreen.character.lantern.SwordMove;
 import nl.tivek.welcomescreen.character.lantern.SwordShield;
 import nl.tivek.welcomescreen.network.AbilityActionPayload;
+import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
 /**
@@ -68,12 +69,22 @@ public final class SwordArms {
     private static final double OWN_SWORD = 0.74;
     private static final double OWN_SHIELD = 0.62;
     // First person: where your arms reach in from, below the bottom corners of the screen (x to the right, y up, -z
-    // ahead), which follow the hands this much of the way they move; the arms are drawn this much of their size, shrunk
-    // towards the hand, so they stay slim.
+    // ahead), which follow the hands this much of the way they move. The arms are drawn this much of their thickness,
+    // so they stay slim, and always long enough to run out of sight (never a stump hanging in view): as far as that
+    // takes, and a little more, at least this much of their own length and at most this much.
     private static final Vec3 OWN_SHOULDER_RIGHT = new Vec3(0.8, -1.3, 0.1);
     private static final Vec3 OWN_SHOULDER_LEFT = new Vec3(-0.86, -1.32, 0.12);
     private static final double OWN_FOLLOW = 0.3;
-    private static final float OWN_ARM = 0.62F;
+    private static final float OWN_ARM = 0.66F;
+    private static final double OWN_ARM_PAST = 0.1;
+    private static final float OWN_ARM_SHORTEST = 0.66F;
+    private static final float OWN_ARM_LONGEST = 1.3F;
+    // How far an arm runs back from its fist to its shoulder at its own size, in blocks (from the fist, 9 pixels along
+    // it, to its top at -2), and the field of view the game draws your hands with, whatever yours is set to (degrees).
+    private static final double ARM_BACK = 11.0 / 16.0;
+    private static final double HAND_FOV = 70.0;
+    // Whether your own arms are being drawn in first person right now (the game poses them as it draws them).
+    private static boolean ownArms;
     /**
      * Seen from outside, a place before your eyes in first person is a place before the body, measured from the middle of
      * the chest at the height of the shoulders (x to his right, y up, z ahead): across and up it is squeezed and raised
@@ -605,6 +616,9 @@ public final class SwordArms {
      * head going with it, the hips going back and the legs stepping into a lunge; the layers of the skin follow.
      */
     public static void lean(PlayerModel<?> model, LivingEntity entity) {
+        if (ownArms) {
+            return;
+        }
         float partialTick = Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(false);
         State state = state(entity, partialTick);
         if (state == null) {
@@ -793,15 +807,58 @@ public final class SwordArms {
         painter.finish(minecraft.renderBuffers().bufferSource());
     }
 
-    /** One of your own arms in first person, drawn slim: shrunk towards its hand. */
+    /**
+     * One of your own arms in first person, drawn slim: thinner than it is, and as long as it takes to run from its fist
+     * towards {@code from} out of sight.
+     */
     private static void arm(PoseStack stack, MultiBufferSource buffers, int light, LocalPlayer player,
             PlayerRenderer renderer, float side, Vec3 hand, Vector3f from) {
+        Vec3 back = new Vec3(from.x - hand.x, from.y - hand.y, from.z - hand.z);
+        if (back.lengthSqr() < 1.0E-6) {
+            return;
+        }
+        back = back.normalize();
+        float length = (float) Mth.clamp((outOfSight(hand, back) + OWN_ARM_PAST) / ARM_BACK, OWN_ARM_SHORTEST,
+                OWN_ARM_LONGEST);
+        Quaternionf along = new Quaternionf().rotationTo(new Vector3f(0.0F, 0.0F, 1.0F), vector(back));
         stack.pushPose();
         stack.translate(hand.x, hand.y, hand.z);
-        stack.scale(OWN_ARM, OWN_ARM, OWN_ARM);
+        stack.mulPose(along);
+        stack.scale(OWN_ARM, OWN_ARM, length);
+        stack.mulPose(new Quaternionf(along).conjugate());
         stack.translate(-hand.x, -hand.y, -hand.z);
-        RechargeAnimation.arm(stack, buffers, light, player, renderer, side, vector(hand), from);
+        // The game poses the arm afresh before it draws it: the body bending into a move must not shift it.
+        ownArms = true;
+        try {
+            RechargeAnimation.arm(stack, buffers, light, player, renderer, side, vector(hand), from);
+        } finally {
+            ownArms = false;
+        }
         stack.popPose();
+    }
+
+    /**
+     * How far a line from {@code at} before your eyes (in first person) runs along {@code way} before you no longer see
+     * it: out over an edge of the screen, or past your eyes; 0 if you do not see {@code at} to begin with.
+     */
+    private static double outOfSight(Vec3 at, Vec3 way) {
+        Minecraft minecraft = Minecraft.getInstance();
+        double up = Math.tan(HAND_FOV * 0.5 * Mth.DEG_TO_RAD);
+        double across = up * minecraft.getWindow().getWidth() / Math.max(1, minecraft.getWindow().getHeight());
+        double out = past(-at.y + at.z * up, -way.y + way.z * up);
+        out = Math.min(out, past(at.y + at.z * up, way.y + way.z * up));
+        out = Math.min(out, past(at.x + at.z * across, way.x + way.z * across));
+        out = Math.min(out, past(-at.x + at.z * across, -way.x + way.z * across));
+        out = Math.min(out, past(at.z, way.z));
+        return out == Double.MAX_VALUE ? 0.0 : out;
+    }
+
+    /** Where {@code a + b t} first comes above 0: at once if it already is, never (MAX_VALUE) if it never does. */
+    private static double past(double a, double b) {
+        if (a >= 0.0) {
+            return 0.0;
+        }
+        return b > 0.0 ? -a / b : Double.MAX_VALUE;
     }
 
     /**
