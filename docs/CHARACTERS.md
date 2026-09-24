@@ -168,17 +168,18 @@ Dit document bevat de lore, achtergrond en belangrijkste krachten van de 27 pers
 ---
 
 ### 13. Thor (Thor Odinson)
-- **Franchise:** Marvel Comics (The Avengers)
-- **Wie hij is:** De Asgardiaanse God van de Donder, zoon van Odin en kroonprins van Asgard.
-- **Lore & Achtergrond:** Thor begon als een trotse en arrogante krijger. Om hem nederigheid te leren, ontnam zijn vader Odin hem zijn herinneringen en hamer en verbande hem naar de aarde in een sterfelijk lichaam. Pas nadat Thor bewees dat hij bereid was zijn leven op te offeren voor anderen, werd hij weer waardig bevonden om zijn magische hamer Mjolnir op te tillen. Sindsdien verdeelt hij zijn tijd tussen het beschermen van de Negen Werelden en het strijden aan de zijde van de Avengers.
+- **Franchise:** Marvel Comics & God of War (Hybride)
+- **Wie hij is:** De ontzagwekkende God van de Donder; een krachtige mix tussen de nobele superheld van Marvel en de rauwe, bloeddorstige en zwaargebouwde Noorse krijgergod uit *God of War (Ragnarök)*.
+- **Lore & Achtergrond:** Deze versie van Thor combineert het heroïsche hart van de Marvel-krijger met de meedogenloze wreedheid en oerkracht van de mythische Noorse Aesir-god. Hij is een bebaarde, imposante geweldenaar die leeft voor de strijd, drinkt als een tempelier en de donder over zijn vijanden laat neerdalen. Hij kent momenten van diepe eer en loyaliteit aan zijn bondgenoten, maar ontketent in gevechten een ongeëvenaarde woede en brute kracht waarmee hij reuzen, goden en monsters velt met zijn legendarische hamer Mjölnir.
 - **Belangrijkste krachten & gaven:**
-  - Goddelijke fysiologie: vrijwel onkwetsbaar lichaam, gigantische spierkracht en een levensduur van millennia.
-  - Weersbeheersing: roept bliksem, donder, orkanen en regen op en stuurt deze naar wens.
-  - Hamer Mjolnir (en Stormbreaker):
-    - Geleidt en versterkt massieve bliksemontladingen.
-    - Vliegen door de hamer met brute kracht weg te werpen en vast te houden.
-    - Kan dimensionale poorten openen (*Bifrost*).
-    - Keert altijd direct terug naar Thors hand als hij roept.
+  - **Noorse oerkracht & Berserker-rage (God of War):** Kolossale brute slagkracht, meedogenloos hand-to-hand brawling, en een onstuitbare vechtwoede die zijn klappen laadt met verpletterende fysieke impact.
+  - **Bliksem- & Weersbeheersing (Marvel & GoW):** Complete controle over stormen, orkanen en bliksem; kan zowel gerichte kosmische bliksemschichten afvuren als verwoestende elektrische velden om zich heen laten exploderen.
+  - **Mjölnir meesterschap:**
+    - Dodelijke worpen waarbij de zware hamer vijanden verplettert en direct terugvliegt naar Thors hand.
+    - *Ground Slam*: hamer met gigantisch geweld in de grond slaan voor aardbevingen en elektrische schokgolven.
+    - Hamer-voortstuwing: zichzelf met Mjölnir door de lucht lanceren om te vliegen of vijanden te rammen.
+  - **Bliksem-resurrectie / Defibrillatie:** Kan zijn eigen hart en levenskracht herstarten via een brute interne stroomstoot van zuivere bliksem wanneer hij zwaar gewond raakt.
+  - **Bifrost-energie:** Manipulatie van kosmische Bifrost-straling voor dimensionale doorgang en energie-aanvallen.
 
 ---
 

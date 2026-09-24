@@ -4,6 +4,11 @@
 - Hands, as in vanilla: attacks use the right hand and left click, defence uses the left hand and right click. Green Lantern: ring on the right middle finger, fist charges on the right, lantern in the left hand; every construct follows this.
 - Green Lantern's constructs are ALWAYS solid, like the Giant Fist (R): an opaque green mass with bright edges, never see-through or transparent. They appear by growing out of the ring's light and disappear by breaking into solid pieces or sinking away, never by fading. Only exception: your own shield, dome and ram cone stay see-through in your own first-person view (and a dome for anyone looking from inside it), because they would block your sight. Light effects (the beam from the ring, flares, cracks, the flight streak) are not constructs.
 - Landing-slam constructs must make a logical shockwave: something that drops, claps shut, bursts out of the ground or is swung down onto it. Nothing that sweeps in from the side.
+- The 32 slam constructs are only ever for the shockwave: the dive from the air and the normal ground slam. Never use them for anything else (another ability, an ultimate, a HUD).
+- Every aircraft, jet and machine Green Lantern makes is always a pure hard-light construct, shaped out of the ring's green light, never a real vehicle.
+
+## Engine
+- The engine (`ConstructPainter`, `Mesh` and what they draw with) may always be updated and extended on your own. Extensions or additions around the character itself (new abilities, new constructs, changes to how Green Lantern plays) always need the user's permission first.
 
 ## Construct drawing
 - Player model arms: a `ModelPart` turns about x first, then about z, so an arm raised overhead (xRot near -π) spreads outward with the opposite zRot sign from a hanging arm (the raised right arm goes out with a negative zRot).

@@ -40,15 +40,15 @@ import nl.tivek.welcomescreen.network.CharacterLookPayload;
  * over the eyes comes last, once all the rest is on.</li>
  * <li><b>Taking it off</b> runs the other way: the mask goes first, then the uniform draws back from the hands and feet
  * into the lantern on the chest, from there up the arm, and back into the ring, which then slides off the finger and
- * flies away (see {@link ArrivalAnimation}).</li>
+ * flies away up into the sky (see {@link ArrivalAnimation}).</li>
  * </ul>
  * The uniform is cut off along the edge it has got to (see {@link SuitSpread}), so it is solid wherever it is.
  */
 @EventBusSubscriber(modid = WelcomeScreenMod.MODID, value = Dist.CLIENT)
 public final class ClientLooks {
     /** How long the uniform takes to draw back into the ring, and then how long the ring takes to fly off, in ticks. */
-    static final int UNDRESS_TICKS = 40;
-    static final int DEPART_TICKS = UNDRESS_TICKS + 30;
+    static final int UNDRESS_TICKS = 56;
+    static final int DEPART_TICKS = UNDRESS_TICKS + 50;
     // How long someone who just became Green Lantern waits, unclothed, for the ring's arrival to be told, in ticks.
     private static final int WAIT_TICKS = 40;
     // Where on the ring hand the uniform starts, along the arm in its own pixels (the shoulder at -2, the fingertips

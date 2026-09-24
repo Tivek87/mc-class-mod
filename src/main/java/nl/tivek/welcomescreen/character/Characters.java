@@ -18,7 +18,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import nl.tivek.welcomescreen.WelcomeScreenMod;
 import nl.tivek.welcomescreen.character.docock.OctopusArms;
 import nl.tivek.welcomescreen.character.lantern.Arrival;
-import nl.tivek.welcomescreen.character.lantern.ConstructStorm;
+import nl.tivek.welcomescreen.character.lantern.AirStrike;
 import nl.tivek.welcomescreen.character.lantern.PowerRing;
 import nl.tivek.welcomescreen.network.CharacterLookPayload;
 import nl.tivek.welcomescreen.network.CharacterStatePayload;
@@ -44,6 +44,21 @@ public final class Characters {
      * full speed, so you land with a slam instead of simply landing.
      */
     public static final int SLAM = 8;
+    /**
+     * Bit in the flight key's {@code data}, sent by your own game rather than by the key: you have reached top speed
+     * ({@code on} true) or dropped below it again ({@code on} false). Everyone sees the jets that come with it.
+     */
+    public static final int BOOST = 16;
+    /**
+     * Bit in a mouse ability's {@code data} with the button of the hand that defends coming up: it did not come up, the
+     * charge of the shield ran into a wall and stopped by itself.
+     */
+    public static final int WALL = 32;
+    /**
+     * Where in a mouse ability's {@code data} the move of the sword or shield his client picked for a tap sits (see
+     * {@link nl.tivek.welcomescreen.character.lantern.SwordMove}): {@code data >> MOVE_SHIFT}.
+     */
+    public static final int MOVE_SHIFT = 8;
 
     private static final Map<UUID, GameCharacter> ACTIVE = new HashMap<>();
     // Per player, per character: the server tick each slot is ready again on, in AbilitySlot order.
@@ -167,6 +182,21 @@ public final class Characters {
         sync(player);
     }
 
+    /**
+     * Starts the cooldown of this ability now, for an ability that decides by itself when it is done (a bubble that
+     * holds its creature a while): its key said nothing was used, so none started on the press. Only for the character
+     * the player still is.
+     */
+    public static void startCooldown(ServerPlayer player, CharacterAbility ability) {
+        if (ability.getCooldown() <= 0 || ACTIVE.get(player.getUUID()) != ability.character()) {
+            return;
+        }
+        READY_AT.computeIfAbsent(player.getUUID(), id -> new HashMap<>())
+                .computeIfAbsent(ability.character(), id -> new int[AbilitySlot.values().length])[ability.slot()
+                        .ordinal()] = player.server.getTickCount() + ability.getCooldown();
+        sync(player);
+    }
+
     private static int left(ServerPlayer player, GameCharacter character, AbilitySlot slot) {
         Map<GameCharacter, int[]> perCharacter = READY_AT.get(player.getUUID());
         int[] ready = perCharacter == null ? null : perCharacter.get(character);
@@ -191,7 +221,7 @@ public final class Characters {
         PacketDistributor.sendToPlayer(player, new CharacterStatePayload(
                 character == null ? -1 : character.ordinal(), cooldowns,
                 docOck ? OctopusArms.ultimateLeft(player)
-                        : character == GameCharacter.GREEN_LANTERN ? ConstructStorm.left(player) : 0,
+                        : character == GameCharacter.GREEN_LANTERN ? AirStrike.left(player) : 0,
                 docOck ? OctopusArms.legCount(player) : 0,
                 docOck ? OctopusArms.markCount(player) : 0));
     }

@@ -28,11 +28,14 @@ import org.joml.Vector3f;
 
 /**
  * The Lantern Flare as everyone sees it (see {@link LightFlare}): he throws his ring fist up high and the ring shapes
- * his lantern over it, a construct like any other: it grows out of the ring's light, white-hot at first. Light runs
- * into it from all round, specks of it streaming in and its heart burning brighter and brighter, until it bursts like a
- * small sun, rays shooting out and a shell of light racing out as far as the flash reaches, and the lantern breaks into
- * solid pieces. Whoever looks at it is dazzled: their screen goes white-green a moment, fading, the more the straighter
- * they looked at it. The flash is light, the lantern a construct.
+ * his lantern over it, a construct of its own like any other: a stepped foot, a barrel of light in a cage of bars with
+ * a band round its heart, a cap with a ring to carry it by and a handle on either side. It grows out of the ring's
+ * light, white-hot at first, and turns slowly. Light runs into it from all round, specks of it streaming in, rings of
+ * light closing in on it and its heart burning brighter and brighter, until it bursts like a small sun: a flash with a
+ * cross of light through it, rays shooting out, a shell of light racing out as far as the flash reaches, a ring of it
+ * running out over the ground, and the lantern breaks into solid pieces. Then specks of its light drift down and fade.
+ * Whoever looks at it is dazzled: their screen goes white-green a moment, fading, the more the straighter they looked
+ * at it. The flash is light, the lantern a construct.
  */
 @EventBusSubscriber(modid = WelcomeScreenMod.MODID, value = Dist.CLIENT)
 public final class FlareLight {
@@ -54,7 +57,16 @@ public final class FlareLight {
     private static final double LANTERN_OVER = 0.12;
     private static final double LANTERN_HEART = 1.05;
     private static final double LANTERN_GROWS = 6.0;
-    private static final double LANTERN_BREAKS = 7.0;
+    private static final double LANTERN_BREAKS = 9.0;
+    // How long the flash itself lasts, and the specks of light drifting down after it, in ticks.
+    private static final double FLASH_TICKS = 12.0;
+    private static final int MOTES = 26;
+    /**
+     * The flare's own lantern, standing on its foot at y = 0, 2.3 blocks high at scale 1 with its heart at
+     * {@link #LANTERN_HEART}: a stepped foot, a barrel of light in a cage of six bars with a band round its heart, a
+     * cap, a ring on top to carry it by and a handle on either side.
+     */
+    private static final ConstructPainter.Shape LANTERN = ConstructPainter.Shape.of(lantern());
     // Your own flare in first person hangs this far out along the way to your raised fist, a little over it, and this
     // much bigger, so it shows over the fist at the top right of your screen.
     private static final double OWN_OUT = 2.2;
@@ -62,6 +74,37 @@ public final class FlareLight {
     private static final double OWN_SCALE = 0.75;
 
     private FlareLight() {
+    }
+
+    private static Mesh[] lantern() {
+        Mesh foot = Mesh.lathe(24, 1.0, 0.0, 0.0, 0.64, 0.0, 0.64, 0.12, 0.52, 0.2, 0.42, 0.3, 0.48, 0.37, 0.0, 0.37);
+        Mesh glass = Mesh.lathe(24, 1.55, 0.0, 0.37, 0.5, 0.41, 0.58, 0.72, 0.6, 1.05, 0.58, 1.38, 0.5, 1.69, 0.0,
+                1.73);
+        Mesh band = Mesh.torus(28, 6, 0.62, 0.055, 1.7).moved(0.0, LANTERN_HEART, 0.0);
+        Mesh cap = Mesh.lathe(24, 1.05, 0.0, 1.71, 0.56, 1.71, 0.56, 1.78, 0.42, 1.88, 0.22, 1.96, 0.0, 1.98);
+        Mesh ring = Mesh.torus(18, 6, 0.24, 0.055, 1.2).alongZ().moved(0.0, 2.25, 0.0);
+        Mesh neck = Mesh.cylinder(8, 0.06, 1.96, 2.02, 1.1);
+        Mesh[] parts = new Mesh[12];
+        parts[0] = foot;
+        parts[1] = glass;
+        parts[2] = band;
+        parts[3] = cap;
+        parts[4] = ring;
+        parts[5] = neck;
+        for (int k = 0; k < 4; k++) {
+            double angle = Math.PI * 2.0 * k / 6.0 + Math.PI / 6.0;
+            parts[6 + k] = Mesh.box(-0.045, 0.38, -0.045, 0.045, 1.72, 0.045, 1.2).moved(0.61 * Math.cos(angle), 0.0,
+                    0.61 * Math.sin(angle));
+        }
+        // The two bars at the sides carry the handles instead.
+        for (int side = 0; side < 2; side++) {
+            double x = side == 0 ? 1.0 : -1.0;
+            parts[10 + side] = Mesh.merged(Mesh.box(-0.045, 0.38, -0.045, 0.045, 1.72, 0.045, 1.2).moved(0.61 * x, 0.0,
+                    0.0), Mesh.tube(false, 6, 0.05, 1.1, new Vec3(0.6 * x, 0.62, 0.0), new Vec3(0.86 * x, 0.78, 0.0),
+                            new Vec3(0.94 * x, 1.05, 0.0), new Vec3(0.86 * x, 1.32, 0.0),
+                            new Vec3(0.6 * x, 1.48, 0.0)));
+        }
+        return parts;
     }
 
     /** A flare going: whose it is, how long ago its light began to gather, where it is, how far the flash reaches. */
@@ -100,79 +143,142 @@ public final class FlareLight {
     static void draw(ConstructPainter painter, Vec3 at, Vec3 facing, double clock, boolean own) {
         double gather = LightFlare.GATHER_TICKS;
         double scale = own ? OWN_SCALE : 1.0;
-        Vec3 forward = new Vec3(facing.x, 0.0, facing.z);
-        forward = forward.lengthSqr() < 1.0E-6 ? new Vec3(0.0, 0.0, 1.0) : forward.normalize();
-        Vec3 right = forward.cross(ConstructPainter.UP).normalize();
-        double size = LANTERN_SCALE * scale * SlamPainter.backOut(clock / LANTERN_GROWS);
+        Vec3 flat = new Vec3(facing.x, 0.0, facing.z);
+        flat = flat.lengthSqr() < 1.0E-6 ? new Vec3(0.0, 0.0, 1.0) : flat.normalize();
+        // It turns slowly as the light gathers, faster and faster.
+        Vec3 forward = ConstructPainter.spin(flat, ConstructPainter.UP, 0.04 * clock * clock / gather);
+        double size = LANTERN_SCALE * scale * ConstructPainter.backOut(clock / LANTERN_GROWS);
         Vec3 foot = at.add(0.0, LANTERN_OVER * scale, 0.0);
         Vec3 heart = foot.add(0.0, LANTERN_HEART * LANTERN_SCALE * scale, 0.0);
         double since = clock - gather;
         double apart = Mth.clamp(since / LANTERN_BREAKS, 0.0, 1.0);
         if (size > 0.01 && apart < 1.0) {
-            ConstructPainter.Frame frame = new ConstructPainter.Frame(foot, right, ConstructPainter.UP, forward, size);
-            // Fresh out of the ring it is white-hot and cools to green as it takes shape; it flares up as it bursts.
-            painter.glare(since >= 0.0 ? 1.0 - 0.5 * apart
-                    : 0.6 * (1.0 - ConstructPainter.smooth(clock / LANTERN_GROWS)));
-            SlamDrops.lantern(painter, frame, apart, since >= 0.0 ? 1.5 : 1.0 + 0.5 * clock / gather);
-            painter.glare(0.0);
+            ConstructPainter.Frame frame = ConstructPainter.Frame.of(foot, forward, ConstructPainter.UP, size);
             if (since < 0.0) {
+                // Fresh out of the ring it is white-hot and cools to green as it takes shape, then burns hotter and
+                // hotter as the light fills it.
+                double fill = clock / gather;
+                double fresh = 0.6 * (1.0 - ConstructPainter.smooth(clock / LANTERN_GROWS));
+                painter.glare(Math.max(fresh, 0.5 * fill * fill));
+                painter.shape(LANTERN, frame, 1.0, 1.0 + 0.5 * fill);
+                painter.glare(0.0);
                 // The ring feeds it.
                 painter.beam(at, foot, 1.0, 0.6 * scale);
+            } else {
+                painter.glare(1.0 - 0.6 * apart);
+                painter.shattered(LANTERN, frame, apart, 1.5);
+                painter.glare(0.0);
             }
         }
         if (clock < gather) {
-            double t = clock / gather;
-            painter.flare(heart, (0.15 + 0.6 * t * t) * scale, 0.6 + 0.4 * t);
-            // Specks of light running in from all round.
-            for (int k = 0; k < 14; k++) {
-                double cycle = Mth.frac(clock / 5.0 + ConstructPainter.noise(k, 81, 0));
-                Vec3 way = ConstructPainter.direction(k, 81 + (int) (clock / 5.0));
-                double far = 2.4 * (1.0 - cycle) * (1.0 - cycle) * scale;
-                Vec3 head = heart.add(way.scale(far));
-                Vec3 tail = heart.add(way.scale(far + 0.35 * (1.0 - cycle) * scale));
-                painter.edge(tail, head, 0.05 * scale, 0.3 + 0.7 * cycle);
-            }
+            gathering(painter, heart, clock / gather, scale);
             return;
         }
+        burst(painter, heart, since, scale);
+    }
+
+    /** The light gathering in the lantern: specks streaming in, rings closing in on it, its heart swelling. */
+    private static void gathering(ConstructPainter painter, Vec3 heart, double t, double scale) {
+        painter.flare(heart, (0.15 + 0.7 * t * t) * scale, 0.6 + 0.4 * t);
+        double clock = t * LightFlare.GATHER_TICKS;
+        for (int k = 0; k < 18; k++) {
+            double cycle = Mth.frac(clock / (5.0 - 2.0 * t) + ConstructPainter.noise(k, 81, 0));
+            Vec3 way = ConstructPainter.direction(k, 81 + (int) (clock / 4.0));
+            double far = 2.6 * (1.0 - cycle) * (1.0 - cycle) * scale;
+            Vec3 head = heart.add(way.scale(far));
+            Vec3 tail = heart.add(way.scale(far + 0.35 * (1.0 - cycle) * scale));
+            painter.edge(tail, head, 0.05 * scale, 0.3 + 0.7 * cycle);
+        }
+        // Rings of light closing in on it, tipped every way, one after the other.
+        for (int k = 0; k < 3; k++) {
+            double close = Mth.frac(clock / 7.0 + k / 3.0);
+            Vec3 tip = ConstructPainter.direction(k, 85);
+            Vec3 a = tip.cross(ConstructPainter.UP).lengthSqr() < 1.0E-6 ? new Vec3(1.0, 0.0, 0.0)
+                    : tip.cross(ConstructPainter.UP).normalize();
+            Vec3 b = tip.cross(a).normalize();
+            double radius = (2.2 * (1.0 - close) + 0.2) * scale;
+            painter.circle(heart, a, b, radius, 0.03 * scale, 0.18 * scale,
+                    ConstructPainter.alpha(0.8 * close * (0.4 + 0.6 * t)), ConstructPainter.alpha(0.35 * close));
+        }
+    }
+
+    /**
+     * The burst: a flash with a cross of light through it, rays shooting out, a shell of light racing out as far as the
+     * flash reaches, a ring of it running out over the ground, and then specks of light drifting down and fading.
+     */
+    private static void burst(ConstructPainter painter, Vec3 at, double since, double scale) {
         if (since > LightFlare.BURST_TICKS) {
             return;
         }
-        at = heart;
-        double fade = 1.0 - since / LightFlare.BURST_TICKS;
-        painter.flare(at, 0.6 + 3.5 * fade * fade, fade);
-        // Rays shooting out, and a shell of light racing out as far as the flash reaches.
-        for (int k = 0; k < 16; k++) {
-            Vec3 way = ConstructPainter.direction(k, 83);
-            double reach = (1.5 + 5.0 * ConstructPainter.noise(k, 83, 5)) * (0.4 + 0.6 * Math.min(1.0, since / 3.0));
-            painter.edge(at.add(way.scale(0.3)), at.add(way.scale(reach)), 0.12 * fade, fade);
-        }
-        double out = 1.0 - Math.pow(1.0 - Math.min(1.0, since / 6.0), 3.0);
-        double radius = Math.max(0.3, 7.0 * out);
+        double fade = Math.max(0.0, 1.0 - since / FLASH_TICKS);
         Vec3 east = new Vec3(1.0, 0.0, 0.0);
         Vec3 south = new Vec3(0.0, 0.0, 1.0);
         Vec3 up = ConstructPainter.UP;
-        painter.circle(at, east, south, radius, 0.08, 0.6, ConstructPainter.alpha(fade),
-                ConstructPainter.alpha(0.5 * fade));
-        painter.circle(at, east, up, radius, 0.06, 0.4, ConstructPainter.alpha(0.7 * fade),
-                ConstructPainter.alpha(0.35 * fade));
-        painter.circle(at, south, up, radius, 0.06, 0.4, ConstructPainter.alpha(0.7 * fade),
-                ConstructPainter.alpha(0.35 * fade));
+        if (fade > 0.0) {
+            painter.flare(at, 0.6 + 4.2 * fade * fade, fade);
+            // A cross of light through the flash, wide and flat, the way a sun glares in a lens.
+            Vec3 toCamera = painter.camera().subtract(at);
+            if (toCamera.lengthSqr() > 1.0E-6) {
+                Vec3 across = toCamera.cross(up);
+                across = across.lengthSqr() < 1.0E-6 ? east : across.normalize();
+                double wide = (3.0 + 6.0 * (1.0 - fade)) * fade * scale;
+                painter.edge(at.subtract(across.scale(wide)), at.add(across.scale(wide)), 0.14 * fade * scale, fade);
+                painter.edge(at.subtract(0.0, wide * 0.5, 0.0), at.add(0.0, wide * 0.5, 0.0), 0.1 * fade * scale,
+                        0.8 * fade);
+            }
+            // Rays shooting out.
+            for (int k = 0; k < 20; k++) {
+                Vec3 way = ConstructPainter.direction(k, 83);
+                double reach = (1.5 + 6.0 * ConstructPainter.noise(k, 83, 5))
+                        * (0.4 + 0.6 * Math.min(1.0, since / 3.0));
+                painter.edge(at.add(way.scale(0.3)), at.add(way.scale(reach)), 0.12 * fade, fade);
+            }
+            // A shell of light racing out as far as the flash reaches.
+            double out = 1.0 - Math.pow(1.0 - Math.min(1.0, since / 6.0), 3.0);
+            double radius = Math.max(0.3, 8.0 * out);
+            painter.circle(at, east, south, radius, 0.08, 0.6, ConstructPainter.alpha(fade),
+                    ConstructPainter.alpha(0.5 * fade));
+            painter.circle(at, east, up, radius, 0.06, 0.4, ConstructPainter.alpha(0.7 * fade),
+                    ConstructPainter.alpha(0.35 * fade));
+            painter.circle(at, south, up, radius, 0.06, 0.4, ConstructPainter.alpha(0.7 * fade),
+                    ConstructPainter.alpha(0.35 * fade));
+        }
+        // A ring of light running out over the ground under him.
+        double ground = Math.max(0.0, 1.0 - since / 18.0);
+        if (ground > 0.0 && scale >= 1.0) {
+            double run = 1.0 - Math.pow(1.0 - Math.min(1.0, since / 14.0), 2.0);
+            Vec3 feet = at.subtract(0.0, 2.6, 0.0);
+            painter.circle(feet, east, south, 0.5 + 12.0 * run, 0.12, 0.8, ConstructPainter.alpha(0.8 * ground),
+                    ConstructPainter.alpha(0.4 * ground));
+        }
+        // Specks of its light drifting down and fading.
+        double left = 1.0 - since / LightFlare.BURST_TICKS;
+        for (int k = 0; k < MOTES; k++) {
+            Vec3 way = ConstructPainter.direction(k, 87);
+            double out = (1.0 - Math.exp(-since * 0.25)) * (2.0 + 3.0 * ConstructPainter.noise(k, 87, 3)) * scale;
+            Vec3 mote = at.add(way.scale(out)).subtract(0.0, 0.002 * since * since * scale, 0.0);
+            double twinkle = 0.6 + 0.4 * Math.sin(since * 0.9 + k);
+            painter.flare(mote, 0.08 * scale, left * twinkle);
+        }
     }
 
-    /** How far this player's ring fist is thrown up high, 0 to 1: for a flare, or to call a storm. */
+    /** How far this player's ring fist is thrown up high, 0 to 1: for a flare, or to call an air strike's plane. */
     static float up(Entity player, float partialTick) {
-        return Math.max(raised(player, partialTick), StormLight.raised(player, partialTick));
+        return Math.max(raised(player, partialTick), PlanePainter.raised(player, partialTick));
     }
 
-    /** How far this player's ring fist is up for a flare, 0 to 1: straight up as it starts, down again after. */
+    /**
+     * How far this player's ring fist is up for a flare, 0 to 1: straight up as it starts, and down again a moment
+     * after the burst.
+     */
     static float raised(Entity player, float partialTick) {
         Going flare = ClientConstructs.flare(player.getId(), partialTick);
         if (flare == null) {
             return 0.0F;
         }
-        double end = LightFlare.GATHER_TICKS + LightFlare.BURST_TICKS;
+        double down = LightFlare.GATHER_TICKS + LightFlare.ARM_DOWN;
         return (float) (ConstructPainter.smooth(flare.clock() / 2.5) * (1.0 - ConstructPainter.smooth((flare.clock()
-                - end + 5.0) / 5.0)));
+                - down + 5.0) / 5.0)));
     }
 
     /** Seen from outside: the ring arm thrown straight up, the fist high over his head. */

@@ -39,6 +39,8 @@ public final class LanternArms {
     // Where the right hand ends up in first person while it holds a construct, in blocks in front of your
     // eyes (x to the right, y up, -z ahead): further out and further in than where the game rests it.
     private static final Vector3f REACH = new Vector3f(0.5F, -0.22F, -1.25F);
+    // Where it swings down to while it smashes a bubble onto the ground.
+    private static final Vector3f SMASH = new Vector3f(0.36F, -0.72F, -0.95F);
     // How far out the hand comes while the ring gathers its light for the beam, once it is full: most of the way.
     private static final float CHARGE_REACH = 0.7F;
     // How high on the body the shoulder of the reaching arm sits, as a part of the body's height, and how
@@ -47,9 +49,21 @@ public final class LanternArms {
     private static final double SHOULDER_SIDE = 0.31;
     // How far the hand is from that shoulder, in blocks: the length of the arm.
     private static final double ARM = 0.68;
+    // Your own ring hand with the beam in first person (see BeamArm), in blocks in front of your eyes: where the
+    // beam breaking loose kicks it (up and back towards you) and how far it trembles at its hardest.
+    private static final Vector3f HAND_KICK = new Vector3f(0.0F, 0.09F, 0.2F);
+    private static final float HAND_TREMBLE = 0.018F;
+    // Your other hand bracing the ring arm's wrist: it grips this far back along the ring arm from the hand and a
+    // little under it, comes up from out of sight below, and its arm reaches in from low on your left.
+    private static final float WRIST_BACK = 0.17F;
+    private static final Vector3f UNDER_WRIST = new Vector3f(-0.03F, -0.075F, 0.0F);
+    private static final Vector3f BRACE_REST = new Vector3f(-0.45F, -1.1F, -0.7F);
+    private static final Vector3f BRACE_FROM = new Vector3f(-1.25F, -1.15F, 0.25F);
 
-    // How far your own ring hand reaches out along the beam in first person, eased from frame to frame.
+    // How far your own ring hand reaches out along the beam in first person, and how far your other hand has come
+    // over to brace it, eased from frame to frame.
     private static float beam;
+    private static float brace;
     private static long beamAt = Util.getMillis();
 
     private LanternArms() {
@@ -74,19 +88,25 @@ public final class LanternArms {
             model.rightArmPose = pose;
             return;
         }
-        // A flare or a storm: the ring fist thrown up high.
-        if (FlareLight.up(player, event.getPartialTick()) > 0.0F) {
+        // The sword and shield of the construct wheel: both arms, the upper body and the legs are theirs, and some moves
+        // crouch.
+        if (SwordArms.posing(player, event.getPartialTick())) {
+            model.leftArmPose = pose;
             model.rightArmPose = pose;
+            if (SwordArms.crouching(player, event.getPartialTick())) {
+                model.crouching = true;
+            }
         }
-        ClientConstructs.Held held = ClientConstructs.heldBy(player.getId());
-        if (held == null) {
-            return;
+        // A flare or calling an air strike: the ring fist thrown up high. A scan: the ring fist held out, sweeping.
+        if (FlareLight.up(player, event.getPartialTick()) > 0.0F || ScanArm.out(player, event.getPartialTick()) > 0.0F) {
+            model.rightArmPose = pose;
         }
         // The hand that defends holds up a shield; everything else hangs on the ring hand.
-        if (held.defends()) {
-            model.leftArmPose = pose;
-        } else {
+        if (ClientConstructs.heldBy(player.getId(), false) != null) {
             model.rightArmPose = pose;
+        }
+        if (ClientConstructs.heldBy(player.getId(), true) != null) {
+            model.leftArmPose = pose;
         }
     }
 
@@ -111,10 +131,12 @@ public final class LanternArms {
             ArrivalAnimation.pose(model, entity, arm);
             return;
         }
+        SwordArms.pose(model, entity, arm);
+        ScanArm.pose(model, entity, arm);
         FlareLight.pose(model, entity, arm);
-        ClientConstructs.Held held = ClientConstructs.heldBy(entity.getId());
-        if (held != null && arm == (held.defends() ? HumanoidArm.LEFT : HumanoidArm.RIGHT)) {
-            reach(held.defends() ? model.leftArm : model.rightArm, entity, held, partialTick);
+        ClientConstructs.Held held = ClientConstructs.heldBy(entity.getId(), arm == HumanoidArm.LEFT);
+        if (held != null) {
+            reach(arm == HumanoidArm.LEFT ? model.leftArm : model.rightArm, entity, held, partialTick);
         }
     }
 
@@ -164,10 +186,10 @@ public final class LanternArms {
         Vec3 left = new Vec3(Math.cos(yaw), 0.0, Math.sin(yaw));
         Vec3 shoulder = shoulder(entity, left, partialTick);
         Vec3 down = new Vec3(0.0, -1.0, 0.0).add(forward.scale(0.25)).normalize();
-        ClientConstructs.Held held = ClientConstructs.heldBy(entity.getId());
-        Vec3 way = down;
         // A shield hangs on the other hand, so the ring hand stays where it is and only feeds it.
-        if (held != null && !held.defends()) {
+        ClientConstructs.Held held = ClientConstructs.heldBy(entity.getId(), false);
+        Vec3 way = down;
+        if (held != null) {
             Vec3 out = held.center().subtract(shoulder);
             if (out.lengthSqr() > 1.0E-6) {
                 // The arm swings out as the construct comes in, so the hand follows it on the way.
@@ -201,8 +223,16 @@ public final class LanternArms {
         PoseStack pose = event.getPoseStack();
         MultiBufferSource buffers = event.getMultiBufferSource();
         PlayerRenderer renderer = (PlayerRenderer) minecraft.getEntityRenderDispatcher().getRenderer(player);
-        RechargeAnimation.arm(pose, buffers, event.getPackedLight(), player, renderer, 1.0F,
-                handPoint(player, event.getPartialTick()), RechargeAnimation.SHOULDER_RIGHT);
+        Vector3f hand = handPoint(player, event.getPartialTick());
+        RechargeAnimation.arm(pose, buffers, event.getPackedLight(), player, renderer, 1.0F, hand,
+                RechargeAnimation.SHOULDER_RIGHT);
+        // Your other hand comes up to grip the ring arm's wrist while the ring fills and the beam pours.
+        if (brace > 0.01F) {
+            Vector3f wrist = new Vector3f(RechargeAnimation.SHOULDER_RIGHT).sub(hand).normalize().mul(WRIST_BACK)
+                    .add(hand).add(UNDER_WRIST);
+            Vector3f grip = new Vector3f(BRACE_REST).lerp(wrist, (float) ClientFlight.smooth(brace));
+            RechargeAnimation.arm(pose, buffers, event.getPackedLight(), player, renderer, -1.0F, grip, BRACE_FROM);
+        }
     }
 
     /**
@@ -215,25 +245,35 @@ public final class LanternArms {
         float step = 1.0F - (float) Math.exp(-10.0 * Math.min(0.25, (now - beamAt) / 1000.0));
         beamAt = now;
         beam = Mth.lerp(step, beam, ClientRing.has(player, RingPayload.BEAM) ? 1.0F : 0.0F);
-        ClientConstructs.Held held = ClientConstructs.heldBy(player.getId());
-        float construct = held == null || held.defends() ? 0.0F : Mth.clamp(held.strength(), 0.0F, 1.0F);
+        ClientConstructs.Held held = ClientConstructs.heldBy(player.getId(), false);
+        float construct = held == null ? 0.0F : Mth.clamp(held.strength(), 0.0F, 1.0F);
         float partialTick = Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(false);
-        float charge = Math.max(0.0F, BeamCharge.charge(player, partialTick)) * CHARGE_REACH;
+        brace = Mth.lerp(step, brace, BeamArm.brace(player, partialTick));
+        float charge = Math.max(0.0F, BeamArm.gathering(player, partialTick)) * CHARGE_REACH;
         return Math.max(Math.max(construct, beam), charge);
     }
 
     /**
      * Where your own right hand is in first person, in blocks in front of your eyes: where the game rests it,
-     * or out towards the construct you are holding, or along the beam, or thrown up high for a flare or a storm.
+     * or out towards the construct you are holding, or along the beam (trembling and kicking with it), or thrown up
+     * high for a flare or to call an air strike.
      */
     static Vector3f handPoint(LocalPlayer player, float partialTick) {
-        ClientConstructs.Held held = ClientConstructs.heldBy(player.getId());
-        float construct = held == null || held.defends() ? 0.0F : Mth.clamp(held.strength(), 0.0F, 1.0F);
+        ClientConstructs.Held held = ClientConstructs.heldBy(player.getId(), false);
+        float construct = held == null ? 0.0F : Mth.clamp(held.strength(), 0.0F, 1.0F);
         // Gathering light for the beam the hand comes out, the further the fuller the ring.
-        float charge = Math.max(0.0F, BeamCharge.charge(player, partialTick)) * CHARGE_REACH;
+        float charge = Math.max(0.0F, BeamArm.gathering(player, partialTick)) * CHARGE_REACH;
         Vector3f hand = new Vector3f(RechargeAnimation.HAND_RIGHT).lerp(REACH, Math.max(Math.max(construct, beam),
                 charge));
-        // Thrown up high for a flare or a storm.
+        // Smashing a bubble down, the fist swings down with it.
+        if (held != null && held.smashing()) {
+            hand.lerp(SMASH, construct);
+        }
+        float time = player.tickCount + partialTick;
+        float tremble = HAND_TREMBLE * BeamArm.tremble(player, partialTick);
+        hand.add(tremble * BeamArm.shake(time, 1), tremble * BeamArm.shake(time, 0), 0.0F)
+                .add(new Vector3f(HAND_KICK).mul(BeamArm.kick(player, partialTick)));
+        // Thrown up high for a flare or to call an air strike.
         return hand.lerp(FlareLight.UP_HIGH, FlareLight.up(player, partialTick));
     }
 }

@@ -63,7 +63,8 @@ public final class BeamCharge {
             return -1.0F;
         }
         if (player == Minecraft.getInstance().player) {
-            if (ClientCharacter.active() != GameCharacter.GREEN_LANTERN) {
+            // With the sword and shield in your hands the button is theirs: holding it leads to the flurry instead.
+            if (ClientCharacter.active() != GameCharacter.GREEN_LANTERN || SwordArms.holding()) {
                 return -1.0F;
             }
             float progress = MouseHold.progress(bolt, partialTick);

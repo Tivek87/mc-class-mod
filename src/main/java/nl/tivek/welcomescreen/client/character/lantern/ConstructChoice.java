@@ -4,14 +4,15 @@ import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.sounds.SoundEvents;
+import net.neoforged.neoforge.network.PacketDistributor;
 import nl.tivek.welcomescreen.character.lantern.Construct;
+import nl.tivek.welcomescreen.network.ConstructHoldPayload;
 
 /**
- * Which construct Green Lantern is holding right now.
- *
- * <p>Nothing of this leaves your own game yet: the weapons are not built, so the server is told
- * nothing and other players see nothing. All this does is remember your pick, so the wheel and the bar
- * above your hotbar can show it, and note when it changed so both can flash.
+ * Which construct Green Lantern is holding right now. Every pick is told to the server, which makes the construct and
+ * shows it to everyone (the sword and shield, see {@link SwordArms}); your own game plays its taking shape at once. This
+ * also remembers your pick, so the wheel and the bar above your hotbar can show it, and notes when it changed so both
+ * can flash.
  */
 public final class ConstructChoice {
     /** How long the flash around your crosshair lasts after a pick, in milliseconds. */
@@ -44,6 +45,8 @@ public final class ConstructChoice {
         }
         held = construct;
         changedAt = Util.getMillis();
+        PacketDistributor.sendToServer(new ConstructHoldPayload(construct.ordinal()));
+        SwordArms.picked(construct);
         Minecraft minecraft = Minecraft.getInstance();
         if (construct == Construct.NONE) {
             minecraft.getSoundManager().play(
@@ -65,10 +68,14 @@ public final class ConstructChoice {
         take(held == Construct.NONE ? last : Construct.NONE);
     }
 
-    /** Puts everything away without a sound: you stopped being Green Lantern, or left the world. */
+    /**
+     * Puts everything away without a sound: you stopped being Green Lantern, or left the world. The server lets go of
+     * the construct by itself.
+     */
     public static void forget() {
         held = Construct.NONE;
         changedAt = Long.MIN_VALUE / 2L;
+        SwordArms.forget();
     }
 
     /** How long ago your pick changed, in milliseconds. */

@@ -192,7 +192,7 @@ public final class SettingsPages {
             case POWER -> size < 2.0 ? 0.1 : size < 20.0 ? 0.5 : 1.0;
             case POWER_PER_SECOND, STRENGTH -> 0.1;
             case RING_SECONDS -> 2.5;
-            case PART_KEPT, STAMINA_PER_TICK -> 0.05;
+            case PART_KEPT, STAMINA_PER_TICK, CHANCE -> 0.05;
             case BLOCK_COUNT -> 10.0;
         };
     }

@@ -19,6 +19,7 @@ import net.minecraft.client.renderer.RenderType;
 import net.minecraft.util.Mth;
 import nl.tivek.welcomescreen.character.CharacterAbility;
 import nl.tivek.welcomescreen.character.GameCharacter;
+import nl.tivek.welcomescreen.character.lantern.Arrival;
 import nl.tivek.welcomescreen.character.lantern.LandingSlam;
 import nl.tivek.welcomescreen.client.character.ClientCharacter;
 import nl.tivek.welcomescreen.client.character.MouseHold;
@@ -47,6 +48,8 @@ final class SuitGlow {
     // How quickly the glow comes up and dies down again, per second.
     private static final float RISE = 10.0F;
     private static final float FALL = 2.5F;
+    // How long the surge of light over a uniform just made complete by the ring's arrival lasts, in ticks.
+    private static final float SURGE_TICKS = 20.0F;
     // How far the uniform lies over the body's own boxes, and how far above the uniform the lines lie, in pixels:
     // just clear of it, so they are never swallowed by it.
     private static final float SUIT = 0.3F;
@@ -133,11 +136,16 @@ final class SuitGlow {
         if (ClientRing.has(player, RingPayload.DIVE)) {
             want = Math.max(want, 0.9F);
         }
+        // The uniform just complete at the end of the ring's arrival: a surge of its light runs over all of it.
+        float dressed = ClientRing.arrival(player, partialTick) - Arrival.DRESSED;
+        if (dressed >= 0.0F && dressed < SURGE_TICKS) {
+            want = Math.max(want, 1.0F - dressed / SURGE_TICKS);
+        }
         float recharge = ClientRing.recharge(player, partialTick);
         if (recharge >= 0.0F) {
             want = Math.max(want, Mth.clamp(RechargeAnimation.glow(recharge) * 0.6F, 0.0F, 1.0F));
         }
-        want = Math.max(want, ClientConstructs.working(player.getId()));
+        want = Math.max(want, ClientConstructs.working(player.getId(), partialTick));
         // A landing slam: the ring throws everything it has into the construct.
         float slam = ClientFlight.slam(player, partialTick);
         if (slam >= 0.0F && slam < LandingSlam.BURST_TICK) {

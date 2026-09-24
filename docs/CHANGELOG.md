@@ -2,6 +2,68 @@
 
 What changed in the project, newest first.
 
+## [Gunship air strike, Light Bubble and the sword and shield] - 2026-09-24
+
+### Added
+- **Light Bubble (K), Green Lantern's eleventh power:** a ball-shaped cage of hard light grows round the creature
+  you look at (up to 24 blocks away) and lifts it 3 blocks up; for 6 seconds it can do nothing. Press again to
+  smash the bubble into the ground (6 hearts and a small shockwave round it); crouch and press to let it go.
+  Too big creatures and bosses do not fit.
+- **Sword and shield (Construct Wheel, slot 1):** the sword spins up out of the ring and you catch it, the shield
+  grows onto your left arm. Left click: 12 different sword moves (slash, backhand, cleave, uppercut, overhead,
+  stab, lunge, low sweep, spin and more) that flow into each other in a random order. Right click: 6 shield bashes
+  that shove creatures away. Hold left click 2 seconds: shield up in front of your chest and 12 lightning-fast
+  stabs around you, while the shield takes most of the damage. Hold right click 2 seconds: you bend forward behind
+  the shield and sprint straight ahead, shoving everything in your path aside; on a wall or when you let go you
+  slam the shield into the ground for a small shockwave.
+- **Every power has its own animation,** the Ring Scan too: your ring hand comes up and sweeps the area.
+
+### Changed
+- **Air Strike is a gunship now:** a big, slow hard-light plane with four propellers flies twice as high as the
+  jet did, in one straight line over the area for 20 seconds. Two miniguns on its sides fire two bullets every
+  0.3 seconds (many bullets, not very precise), and two missile launchers fire a homing missile every 2 seconds
+  (about nine in ten hit, each with a small blast). It scans the ground for enemies only, over half again the Ring
+  Scan's area. Then an engine fails and it suddenly noses down into the ground: a real explosion that blasts a crater and
+  throws blocks about, and a giant see-through mushroom cloud of green energy.
+- **The ring glows** whenever it does something, and blazes during the ultimate.
+
+## [Air Strike, jets at top speed and a ring that comes from the sky] - 2026-09-23
+
+### Added
+- **Air Strike (Y), Green Lantern's new ultimate:** you throw your ring fist up at the sky and a giant fighter jet
+  of hard light takes shape high over the area you look at. For 10 seconds it circles there, firing homing
+  missiles (about two in three find their creature) and bursts from its guns; then it slowly loses height and
+  crashes into the middle in a massive blast of green energy that shakes the view of everyone close by. It only
+  goes for what is out to hurt you, never your pets.
+- **Jets at top speed:** once you fly at top speed, two chains of hard light run from your waist back to your
+  left and right, each ending in a small jet of hard light with a glowing booster; they break apart when you slow
+  down.
+- **Take off by tapping jump twice,** on the ground or in the middle of a jump or a fall.
+- **The ring scans you** when it comes for you, speaks to you ("you have the ability to overcome great fear"),
+  and welcomes you to the Corps once the uniform is on.
+
+### Changed
+- **The ring's arrival is longer and closer to the comics:** it streaks down out of the sky like a comet, circles
+  you once, scans you, and flares up round you as it slides on; your eyes light up and a surge runs over the suit
+  once the mask is on. About 15 seconds in all.
+- **Changing back is longer too:** your eyes go dark, the uniform draws back into the ring with specks of light
+  streaming off you, and the ring hangs over your head a moment before it spirals off into the sky and is gone
+  in a twinkle.
+- **The beam arm:** your arm trembles as the ring fills, your other hand comes over to brace your wrist, and the
+  beam breaking loose kicks your arm up and back before it settles, in first person and seen from outside.
+- **Lantern Flare** is much stronger and looks better: 14 blocks, blinded and slowed for 12.5 seconds (hard at
+  first, then milder), weakened, dazed creatures stumble about unable to find anyone, the invisible show again,
+  the creatures of the dark are thrown back. It costs 8 power and waits 30 seconds between flares.
+- **Ring Scan:** reaches 56 blocks, marks for 21 seconds, and the marked glow clearly through walls: red when out
+  to hurt you, green otherwise.
+- **Flight:** a slower top speed (19.25 blocks a second, reached after 30 seconds of flying on); the ram cone does
+  more damage for its speed, so a full-speed ram still does about 7 hearts.
+- **The Construct Wheel** shows how the buttons work at the top of the screen instead of the bottom.
+- **Landing-slam constructs are only for the shockwave:** the lantern of the Lantern Flare is its own now.
+
+### Removed
+- **Construct Storm**, the old ultimate.
+
 ## [Construct Storm, Ring Scan, Lantern Flare and the ring coming to you] - 2026-09-23
 
 ### Added

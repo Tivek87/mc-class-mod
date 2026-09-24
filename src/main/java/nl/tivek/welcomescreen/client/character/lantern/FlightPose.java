@@ -42,21 +42,30 @@ import org.joml.Vector3f;
  * low on one knee, the other leg forward, and smashes that fist into the ground in front of him, the other arm flung
  * out behind, until the construct has struck and he rises again. Dropping down to a slam without flying (the
  * shockwave key while he jumps or falls) he is upright with his fist cocked the whole way down.</li>
- * <li>On top of that, standing or flying: the ring hand points along the beam, both hands hold the dome open,
+ * <li>On top of that, standing or flying: the ring hand points along the beam, trembling and kicking with it, the
+ * other hand bracing its wrist (see {@link BeamArm}); both hands hold the dome open,
  * and in flight the shield hand goes out in front, fist first, into the ram cone.</li>
  * </ul>
  * The whole body is turned in {@link #pre}, before the game draws it; the limbs are set in {@link #pose}, which
  * the game calls while it poses the arms.
  */
 final class FlightPose {
-    // Speed at which the body lies fully along the way it flies, in blocks per tick.
-    private static final double LINED_UP = 1.3;
+    // Part of the top speed at which the body lies fully along the way it flies.
+    private static final double LINED_UP = 0.74;
     // How long a landing dip lasts, in ticks.
     private static final int LAND_TICKS = 8;
     // How quickly the arms blend from one thing to the next, per second.
     private static final float BLEND = 9.0F;
     // How far the ring arm comes up towards where he aims while the ring gathers light for the beam, once it is full.
     private static final float CHARGE_AIM = 0.8F;
+    // The ring arm with the beam (see BeamArm), in radians: how far it trembles at its hardest, how far the beam
+    // breaking loose kicks it up, and how far it swings in towards the middle of his chest once the other hand braces
+    // it. That hand then comes across (turned in towards the ring arm) and a little lower, under its wrist.
+    private static final float BEAM_TREMBLE = 0.05F;
+    private static final float BEAM_KICK = 0.42F;
+    private static final float BRACE_IN = 0.2F;
+    private static final float BRACE_ACROSS = 0.72F;
+    private static final float BRACE_DROP = 0.14F;
     // How long the pose of a landing slam lasts, in ticks; your own fist shows in first person this long.
     private static final float SLAM_TICKS = 23.0F;
     private static final float SLAM_HAND_TICKS = 21.0F;
@@ -102,22 +111,25 @@ final class FlightPose {
     private static final class Blend {
         float fly;
         float beam;
+        float brace;
         float dome;
         float ram;
         long last = Util.getMillis();
 
-        void toward(boolean flying, float beaming, boolean domed, boolean ramming) {
+        void toward(boolean flying, float beaming, float bracing, boolean domed, boolean ramming) {
             long now = Util.getMillis();
             float step = 1.0F - (float) Math.exp(-BLEND * Math.min(0.25F, (now - this.last) / 1000.0F));
             this.last = now;
             this.fly = Mth.lerp(step, this.fly, flying ? 1.0F : 0.0F);
             this.beam = Mth.lerp(step, this.beam, beaming);
+            this.brace = Mth.lerp(step, this.brace, bracing);
             this.dome = Mth.lerp(step, this.dome, domed ? 1.0F : 0.0F);
             this.ram = Mth.lerp(step, this.ram, ramming ? 1.0F : 0.0F);
         }
 
         boolean idle() {
-            return this.fly < 0.01F && this.beam < 0.01F && this.dome < 0.01F && this.ram < 0.01F;
+            return this.fly < 0.01F && this.beam < 0.01F && this.brace < 0.01F && this.dome < 0.01F
+                    && this.ram < 0.01F;
         }
     }
 
@@ -150,7 +162,7 @@ final class FlightPose {
         ClientFlight.Motion motion = ClientFlight.motion(player);
         boolean flying = t >= 0.0F;
         // Gathering light for the beam, the ring arm already comes up towards where he aims.
-        float charge = BeamCharge.charge(player, partialTick);
+        float charge = BeamArm.gathering(player, partialTick);
         float aim = ClientRing.has(player, RingPayload.BEAM) ? 1.0F : CHARGE_AIM * Math.max(0.0F, charge);
         boolean beaming = aim > 0.0F;
         boolean domed = ClientRing.has(player, RingPayload.DOME);
@@ -175,7 +187,7 @@ final class FlightPose {
             blend = new Blend();
             BLENDS.put(player.getId(), blend);
         }
-        blend.toward(flying, aim, domed, ramming);
+        blend.toward(flying, aim, beaming ? BeamArm.brace(player, partialTick) : 0.0F, domed, ramming);
         // Only forgotten once nothing is wanted any more and everything has blended back out.
         if (!flying && !dropping && !beaming && !domed && !slamming && blend.idle() && land <= 0.0F) {
             BLENDS.remove(player.getId());
@@ -192,7 +204,9 @@ final class FlightPose {
             double ahead = v.dot(forward);
             double side = -v.dot(left);
             double speed = v.length();
-            fast = (float) ClientFlight.smooth((speed - 0.25) / (LINED_UP - 0.25));
+            double lined = LINED_UP * ClientFlight.fullSpeed();
+            double slow = 0.19 * lined;
+            fast = (float) ClientFlight.smooth((speed - slow) / (lined - slow));
             // Hovering he only leans a little into where he drifts; fast, his body lies along the way he flies.
             float drift = (float) Mth.clamp(ahead * 1.1, -0.3, 0.45);
             float along = (float) Math.atan2(Math.max(ahead, 0.0), v.y);
@@ -320,10 +334,8 @@ final class FlightPose {
             model.head.xRot = Mth.clamp(model.head.xRot + look * fly, -1.35F, 1.1F);
         }
         // What the ring does with his hands comes on top.
-        if (right && blend.beam > 0.0F) {
-            limb.xRot = Mth.lerp(blend.beam, limb.xRot, -Mth.HALF_PI + model.head.xRot);
-            limb.yRot = Mth.lerp(blend.beam, limb.yRot, -0.08F + model.head.yRot);
-            limb.zRot = Mth.lerp(blend.beam, limb.zRot, 0.0F);
+        if (blend.beam > 0.0F) {
+            beam(model, limb, right, blend, entity, partialTick, f.time());
         }
         if (!right && blend.ram > 0.0F) {
             // Superman's punch: the fist goes out in front along the way he flies, into the tip of the cone.
@@ -342,6 +354,28 @@ final class FlightPose {
         }
         if (f.slam() >= 0.0F) {
             slam(model, limb, right, f.slam(), f.kneel());
+        }
+    }
+
+    /**
+     * The beam (see {@link BeamArm}): the ring arm points where he looks, trembling and kicking with the light; once
+     * the other hand braces it, the ring arm swings in a little towards the middle of his chest and the other arm
+     * comes across under it, its hand at the wrist, trembling and kicking along.
+     */
+    private static void beam(HumanoidModel<?> model, ModelPart limb, boolean right, Blend blend, LivingEntity entity,
+            float partialTick, float time) {
+        float tremble = BEAM_TREMBLE * BeamArm.tremble(entity, partialTick);
+        float lift = model.head.xRot - BEAM_KICK * BeamArm.kick(entity, partialTick)
+                + tremble * BeamArm.shake(time, 0);
+        float turn = model.head.yRot + tremble * BeamArm.shake(time, 1);
+        if (right) {
+            limb.xRot = Mth.lerp(blend.beam, limb.xRot, -Mth.HALF_PI + lift);
+            limb.yRot = Mth.lerp(blend.beam, limb.yRot, -0.08F - BRACE_IN * blend.brace + turn);
+            limb.zRot = Mth.lerp(blend.beam, limb.zRot, 0.0F);
+        } else if (blend.brace > 0.0F) {
+            limb.xRot = Mth.lerp(blend.brace, limb.xRot, -Mth.HALF_PI + BRACE_DROP + lift);
+            limb.yRot = Mth.lerp(blend.brace, limb.yRot, BRACE_ACROSS + turn);
+            limb.zRot = Mth.lerp(blend.brace, limb.zRot, 0.0F);
         }
     }
 

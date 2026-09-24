@@ -34,6 +34,20 @@ final class Mesh {
     final Vec3 middle;
     /** How thick the lines along it are drawn, as a part of the usual (see {@link ConstructPainter#fine}). */
     final double fine;
+    /** Its corners as plain numbers, and the way each side faces: the painter draws from these. */
+    final double[] px;
+    final double[] py;
+    final double[] pz;
+    final double[] nx;
+    final double[] ny;
+    final double[] nz;
+    /** How far ahead the middle of each side is: the light ripples along the construct by it. */
+    final double[] middleZ;
+    /** A ball round all of it, to skip it when it is out of view: its middle and how far it reaches. */
+    final double boundX;
+    final double boundY;
+    final double boundZ;
+    final double boundRadius;
 
     private Mesh(Vec3[] points, int[][] sides, double[] bright) {
         this.points = points;
@@ -109,6 +123,35 @@ final class Mesh {
         }
         this.middle = points.length == 0 ? Vec3.ZERO : all.scale(1.0 / points.length);
         this.fine = points.length == 0 ? 1.0 : ConstructPainter.fine(high.x - low.x, high.y - low.y, high.z - low.z);
+        this.px = new double[points.length];
+        this.py = new double[points.length];
+        this.pz = new double[points.length];
+        for (int i = 0; i < points.length; i++) {
+            this.px[i] = points[i].x;
+            this.py[i] = points[i].y;
+            this.pz[i] = points[i].z;
+        }
+        this.nx = new double[sides.length];
+        this.ny = new double[sides.length];
+        this.nz = new double[sides.length];
+        this.middleZ = new double[sides.length];
+        for (int s = 0; s < sides.length; s++) {
+            this.nx[s] = this.normals[s].x;
+            this.ny[s] = this.normals[s].y;
+            this.nz[s] = this.normals[s].z;
+            this.middleZ[s] = this.middles[s].z;
+        }
+        if (points.length == 0) {
+            this.boundX = 0.0;
+            this.boundY = 0.0;
+            this.boundZ = 0.0;
+            this.boundRadius = 0.0;
+        } else {
+            this.boundX = (low.x + high.x) * 0.5;
+            this.boundY = (low.y + high.y) * 0.5;
+            this.boundZ = (low.z + high.z) * 0.5;
+            this.boundRadius = high.subtract(low).length() * 0.5;
+        }
     }
 
     // ---- Shapes ----
@@ -283,6 +326,161 @@ final class Mesh {
         return builder.build();
     }
 
+    /**
+     * A body lofted along z through rings of an oval cross-section, the way the body of an aircraft, a missile or an
+     * engine is shaped. Every section gives, in this order, its z, its half width, its half height and how high its
+     * middle is; they run one way along z (either way). A section of no size ends the body there in a point; an end
+     * that is not a point is closed flat.
+     *
+     * @param round how many sides it has all round
+     */
+    static Mesh loft(int round, double bright, double[]... sections) {
+        int n = sections.length;
+        Builder builder = new Builder();
+        int[][] ring = new int[n][round];
+        boolean[] point = new boolean[n];
+        for (int i = 0; i < n; i++) {
+            double[] section = sections[i];
+            point[i] = section[1] <= 1.0E-9 && section[2] <= 1.0E-9;
+            if (point[i]) {
+                Arrays.fill(ring[i], builder.point(0.0, section[3], section[0]));
+                continue;
+            }
+            for (int j = 0; j < round; j++) {
+                double angle = Math.PI * 2.0 * j / round;
+                ring[i][j] = builder.point(Math.cos(angle) * section[1], section[3] + Math.sin(angle) * section[2],
+                        section[0]);
+            }
+        }
+        for (int i = 0; i + 1 < n; i++) {
+            Vec3 axis = new Vec3(0.0, (sections[i][3] + sections[i + 1][3]) * 0.5,
+                    (sections[i][0] + sections[i + 1][0]) * 0.5);
+            for (int j = 0; j < round; j++) {
+                int k = (j + 1) % round;
+                builder.outward(axis, bright, ring[i][j], ring[i][k], ring[i + 1][k], ring[i + 1][j]);
+            }
+        }
+        for (int end = 0; end < 2; end++) {
+            int i = end == 0 ? 0 : n - 1;
+            if (point[i] || n < 2) {
+                continue;
+            }
+            int other = end == 0 ? 1 : n - 2;
+            Vec3 inside = new Vec3(0.0, sections[i][3], sections[i][0] + (sections[other][0] - sections[i][0]) * 0.01);
+            int middle = builder.point(0.0, sections[i][3], sections[i][0]);
+            for (int j = 0; j < round; j++) {
+                int k = (j + 1) % round;
+                builder.outward(inside, bright, middle, ring[i][j], ring[i][k], ring[i][k]);
+            }
+        }
+        return builder.build();
+    }
+
+    /**
+     * A curved plate lying on a lofted body (see {@link #loft}), {@code thick} proud of it: a window, a door, a hatch, a
+     * band of plating round it. It covers the body's sections (given the same way as for {@link #loft}) only between two
+     * angles round it, counted the way the loft counts them: 0 along +x (its right side), a quarter turn on top (+y), half
+     * a turn on its left, three quarters underneath. Going all the way round (a whole turn) makes a ring round the body.
+     * It is closed all round, so it reads as a plate of its own with its outline lit where it runs.
+     *
+     * @param steps how many pieces it is cut into round the body
+     */
+    static Mesh panel(int steps, double bright, double from, double to, double thick, double[]... sections) {
+        int n = sections.length;
+        Builder builder = new Builder();
+        int[][] outer = new int[n][steps + 1];
+        int[][] inner = new int[n][steps + 1];
+        for (int i = 0; i < n; i++) {
+            double[] s = sections[i];
+            for (int j = 0; j <= steps; j++) {
+                double angle = from + (to - from) * j / steps;
+                double cos = Math.cos(angle);
+                double sin = Math.sin(angle);
+                inner[i][j] = builder.point(cos * s[1], s[3] + sin * s[2], s[0]);
+                outer[i][j] = builder.point(cos * (s[1] + thick), s[3] + sin * (s[2] + thick), s[0]);
+            }
+        }
+        double middleZ = (sections[0][0] + sections[n - 1][0]) * 0.5;
+        double middleAngle = (from + to) * 0.5;
+        for (int i = 0; i + 1 < n; i++) {
+            double[] a = sections[i];
+            double[] b = sections[i + 1];
+            Vec3 axis = new Vec3(0.0, (a[3] + b[3]) * 0.5, (a[0] + b[0]) * 0.5);
+            for (int j = 0; j < steps; j++) {
+                // Its face looks away from the body's axis; its underside towards it.
+                builder.outward(axis, bright, outer[i][j], outer[i][j + 1], outer[i + 1][j + 1], outer[i + 1][j]);
+                double angle = from + (to - from) * (j + 0.5) / steps;
+                double far = 4.0 * Math.max(a[1] + b[1], a[2] + b[2]);
+                Vec3 beyond = axis.add(Math.cos(angle) * far, Math.sin(angle) * far, 0.0);
+                builder.outward(beyond, bright, inner[i][j], inner[i][j + 1], inner[i + 1][j + 1], inner[i + 1][j]);
+            }
+            // Its two long edges, where it starts and where it ends round the body.
+            for (int end = 0; end < 2; end++) {
+                int j = end == 0 ? 0 : steps;
+                Vec3 inside = axis.add(Math.cos(middleAngle) * a[1], Math.sin(middleAngle) * a[2], 0.0);
+                builder.outward(inside, bright, inner[i][j], outer[i][j], outer[i + 1][j], inner[i + 1][j]);
+            }
+        }
+        // Its two short edges, at its first and last section.
+        for (int end = 0; end < 2; end++) {
+            int i = end == 0 ? 0 : n - 1;
+            Vec3 inside = new Vec3(0.0, sections[i][3], middleZ);
+            for (int j = 0; j < steps; j++) {
+                builder.outward(inside, bright, inner[i][j], inner[i][j + 1], outer[i][j + 1], outer[i][j]);
+            }
+        }
+        return builder.build();
+    }
+
+    /**
+     * A wing, a fin or a blade: a tapering panel out along x from its root at x = 0 to its tip at x = {@code span}. The
+     * root runs along z from {@code rootBack} to {@code rootFront}, the tip from {@code tipBack} to {@code tipFront} (a
+     * tip further back makes a swept wing), and the tip sits {@code rise} higher than the root. Its cross-section is a
+     * flattened diamond, thickest a third of the way back from its leading edge the way a real wing is:
+     * {@code rootThick} thick at the root and {@code tipThick} at the tip. Turn it a quarter about z for a fin that
+     * stands up, mirror it along x for the wing on the other side.
+     */
+    static Mesh wing(double span, double rootBack, double rootFront, double tipBack, double tipFront, double rise,
+            double rootThick, double tipThick, double bright) {
+        Builder builder = new Builder();
+        int[] root = section(builder, 0.0, 0.0, rootBack, rootFront, rootThick);
+        int[] tip = section(builder, span, rise, tipBack, tipFront, tipThick);
+        Vec3 inside = new Vec3(span * 0.5, rise * 0.5, (rootBack + rootFront + tipBack + tipFront) * 0.25);
+        for (int k = 0; k < 4; k++) {
+            int next = (k + 1) % 4;
+            builder.outward(inside, bright, root[k], root[next], tip[next], tip[k]);
+        }
+        builder.outward(inside, bright, root[0], root[1], root[2], root[3]);
+        builder.outward(inside, bright, tip[0], tip[1], tip[2], tip[3]);
+        return builder.build();
+    }
+
+    /** The four corners round one section of a wing: its leading edge, its top, its trailing edge, its bottom. */
+    private static int[] section(Builder builder, double x, double y, double back, double front, double thick) {
+        double crest = front - (front - back) * 0.35;
+        return new int[] { builder.point(x, y, front), builder.point(x, y + thick * 0.5, crest),
+                builder.point(x, y, back), builder.point(x, y - thick * 0.5, crest) };
+    }
+
+    /**
+     * Several shapes as one: drawn in one go, and skipped in one go when out of view. Where they meet they stay
+     * separate shapes, each with its own outline, so parts that touch still read as parts.
+     */
+    static Mesh merged(Mesh... parts) {
+        Builder builder = new Builder();
+        for (Mesh part : parts) {
+            int base = builder.points.size();
+            for (Vec3 point : part.points) {
+                builder.point(point.x, point.y, point.z);
+            }
+            for (int s = 0; s < part.sides.length; s++) {
+                int[] side = part.sides[s];
+                builder.side(base + side[0], base + side[1], base + side[2], base + side[3], part.bright[s]);
+            }
+        }
+        return builder.build();
+    }
+
     private static Mesh turning(int sides, double bright, boolean loop, double[] profile) {
         int n = profile.length / 2;
         Builder builder = new Builder();
@@ -359,6 +557,11 @@ final class Mesh {
             return way.y > 0.0 ? this : this.turned(1.0, 0.0, 0.0, 180.0);
         }
         return this.turned(axis.x, axis.y, axis.z, Math.toDegrees(Math.acos(Math.max(-1.0, Math.min(1.0, way.y)))));
+    }
+
+    /** The same shape, mirrored from right to left (its sides turned back so they still face outwards). */
+    Mesh mirrored() {
+        return this.scaled(-1.0, 1.0, 1.0);
     }
 
     /** The same shape, lying along x: what stood up along y now points along +x. */

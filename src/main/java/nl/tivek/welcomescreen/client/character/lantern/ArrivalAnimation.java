@@ -3,6 +3,8 @@ package nl.tivek.welcomescreen.client.character.lantern;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.math.Axis;
+import java.util.HashMap;
+import java.util.Map;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.HumanoidModel;
@@ -11,6 +13,8 @@ import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.entity.player.PlayerRenderer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
@@ -20,6 +24,8 @@ import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
+import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.RenderHandEvent;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import net.neoforged.neoforge.client.event.ViewportEvent;
@@ -31,15 +37,21 @@ import org.joml.Vector3f;
 /**
  * The ring's arrival as everyone sees it (the server keeps the time, see {@link Arrival}), and its departure.
  * <ul>
- * <li>The ring shows up far off, a spark of green that pulses and sends out rings of light, then flies in, swooping,
- * a streak of light behind it, and hangs three blocks before his eyes, turning slowly.</li>
+ * <li>The ring streaks down out of the sky like a comet, flares up far off and pulses there, sending out rings of
+ * light, then flies in, circling him once on its way down, a long streak of light behind it, and hangs three blocks
+ * before his eyes, turning slowly.</li>
+ * <li>It scans him: a band of light runs down him from over his head to his feet and back up, fed by a fan of light
+ * out of the ring.</li>
  * <li>A beam out of it shapes the lantern below it: white-hot at first, cooling to silver. The lantern flies to his
  * left hand, which reaches out and catches it and holds it up.</li>
- * <li>His right fist comes up and the ring shoots onto its middle finger: a flash, and a ring of hard light races out
- * over the ground as far as the creatures of the dark are sent running. The uniform spreads from the ring (see
- * {@link ClientLooks}), and in the end he smacks the ring into the lantern (see {@link RechargeAnimation}).</li>
- * <li>Taking the uniform off, it draws back into the ring (see {@link ClientLooks}); then the ring slides off his
- * finger, rises over his head, and shoots off into the sky, gone in a flash.</li>
+ * <li>His right fist comes up and the ring shoots onto its middle finger: a flash, a ring of hard light races out over
+ * the ground as far as the creatures of the dark are sent running, and the ring's light flares up round him in tongues
+ * of light. The uniform spreads from the ring (see {@link ClientLooks}); once the mask is on his eyes light up, and in
+ * the end he smacks the ring into the lantern (see {@link RechargeAnimation}).</li>
+ * <li>Taking the uniform off, the glow of his eyes goes out and the uniform draws back into the ring (see
+ * {@link ClientLooks}), specks of its light streaming off him into it; then the ring slides off his finger, rises over
+ * his head and hangs there a moment, turning, sending out a last ring of light, and spirals off up into the sky, a
+ * long streak behind it, until it is a twinkle high up and gone.</li>
  * </ul>
  * In first person your own arms are drawn here while the lantern comes to your hand and the ring to your finger.
  */
@@ -53,9 +65,32 @@ public final class ArrivalAnimation {
     private static final int SILVER = 0xD2DBD6;
     private static final int SETTING_COLOR = 0x4B5652;
     private static final int STONE_COLOR = 0x2EF566;
-    // The ring's flight in: it waits where it showed up, pulsing, sets off, and arrives before his eyes.
-    private static final float SET_OFF = 12.0F;
-    private static final float ARRIVES = 58.0F;
+    // The ring's flight in: it streaks down out of the sky to where it shows up (this many blocks above it, coming in
+    // over there), waits there pulsing, sets off, and arrives before his eyes.
+    private static final float STREAK_TICKS = 8.0F;
+    private static final double STREAK_HIGH = 40.0;
+    private static final float SET_OFF = Arrival.SET_OFF;
+    private static final float ARRIVES = Arrival.APPROACH - 2.0F;
+    // How many bits of the streak of light behind the flying ring there are, and how far apart in time, in ticks.
+    private static final int TRAIL = 14;
+    private static final float TRAIL_STEP = 0.8F;
+    // The scan: how far out the band of light round him is, in blocks, and how far over his head it starts.
+    private static final double SCAN_RADIUS = 0.75;
+    private static final double SCAN_TOP = 0.25;
+    // The ring's light flaring up round him as it slides on: how long, in ticks, and how many tongues of light.
+    private static final float AURA_TICKS = 40.0F;
+    private static final int AURA_TONGUES = 18;
+    // His eyes lighting up once the mask is on, and going out as he takes the uniform off: how long, in ticks.
+    private static final float EYES_TICKS = 24.0F;
+    private static final float EYES_OUT = 8.0F;
+    // The ring leaving, as parts of its flight off: it has risen over his head, and sets off up into the sky. And how
+    // high it flies, and how far ahead of him, in blocks.
+    private static final float RISEN = 0.25F;
+    private static final float LAUNCH = 0.45F;
+    private static final double AWAY_HIGH = 60.0;
+    private static final double AWAY_AHEAD = 30.0;
+    // How many specks of the uniform's light stream off him into the ring while it draws back.
+    private static final int SPECKS = 26;
     // How big the ring is while far off, while it hangs before him, and on a finger (seen from outside and from your
     // own eyes), across in blocks.
     private static final double FAR_SIZE = 0.5;
@@ -77,6 +112,9 @@ public final class ArrivalAnimation {
     private static final Vector3f RIGHT_FROM = new Vector3f(1.5F, -0.4F, 0.35F);
     private static final Vector3f GRIP_DOWN = new Vector3f(-0.55F, -1.0F, -0.8F);
     private static final Vector3f GRIP_UP = new Vector3f(-0.22F, 0.2F, -0.8F);
+
+    // How far into taking the uniform off each player was last tick (see ClientLooks#departure), for the sounds.
+    private static final Map<Integer, Float> DEPARTING = new HashMap<>();
 
     private ArrivalAnimation() {
     }
@@ -147,7 +185,7 @@ public final class ArrivalAnimation {
         for (AbstractClientPlayer player : level.players()) {
             float a = ClientRing.arrival(player, partialTick);
             float d = ClientLooks.departure(player, partialTick);
-            if ((a < 0.0F || a > Arrival.RING_ON + WAVE_FADE) && d < ClientLooks.UNDRESS_TICKS) {
+            if ((a < 0.0F || a > Arrival.DRESSED + EYES_TICKS) && d < 0.0F) {
                 continue;
             }
             if (painter == null) {
@@ -175,19 +213,26 @@ public final class ArrivalAnimation {
         Vec3 eye = player.getEyePosition(partialTick);
         Vec3 hover = hover(player, partialTick, a);
         if (a < Arrival.RING_ON) {
-            Vec3 from = ClientRing.arrivalFrom(player);
+            Vec3 shown = ClientRing.arrivalFrom(player);
+            Vec3 from = shown == null ? hover : shown;
             Vec3 finger = finger(event, player, partialTick);
-            Vec3 at = ringAt(from == null ? hover : from, hover, finger, a);
+            Vec3 at = ringAt(from, eye, hover, finger, a);
             double size = ringSize(a, own);
-            // The ring turns slowly about the way up, its face to him.
+            // The ring turns slowly about the way up, its face to him; faster while it scans him.
             Vec3 toEye = eye.subtract(at);
             Vec3 face = toEye.lengthSqr() < 1.0E-6 ? ahead(player, partialTick).scale(-1.0) : toEye.normalize();
-            ring(event, buffers, at, face, a * 0.12, size);
+            float scanning = a >= Arrival.SCAN && a < Arrival.SCANNED ? 1.0F : 0.0F;
+            ring(event, buffers, at, face, a * (0.12 + 0.25 * scanning), size);
             // It glows, pulsing, brightest far off so he can spot it, and sends out rings of light while it waits.
-            float pulse = 0.5F + 0.5F * Mth.sin(a * 0.8F);
+            float pulse = 0.5F + 0.5F * Mth.sin(a * (0.8F + 0.6F * scanning));
             double far = Mth.clamp(at.distanceTo(eye) / 20.0, 0.15, 1.0);
             painter.flare(at, (0.35 + 0.9 * far) * (0.8 + 0.4 * pulse), 0.75 + 0.25 * pulse);
-            if (a < SET_OFF + 6.0F) {
+            // Flaring up where it comes to a stop out of the sky.
+            if (a >= STREAK_TICKS && a < STREAK_TICKS + 8.0F) {
+                float flash = 1.0F - (a - STREAK_TICKS) / 8.0F;
+                painter.flare(at, 4.0 * flash * (0.5 + far), flash);
+            }
+            if (a >= STREAK_TICKS && a < SET_OFF + 6.0F) {
                 for (int k = 0; k < 2; k++) {
                     float age = (a + k * 6.0F) % 12.0F;
                     Vec3[] across = acrossOf(face);
@@ -196,38 +241,70 @@ public final class ArrivalAnimation {
                             ConstructPainter.alpha(0.45 * (1.0 - age / 12.0)));
                 }
             }
-            // A streak of light behind it while it flies.
-            if (a > SET_OFF && a < ARRIVES || a > Arrival.RING_FLY) {
+            // A long streak of light behind it while it flies, down out of the sky and in to him; a short one on its
+            // way onto his finger.
+            boolean streaking = a < STREAK_TICKS + 2.0F || a > SET_OFF && a < ARRIVES + 2.0F;
+            if (streaking || a > Arrival.RING_FLY) {
+                int bits = streaking ? TRAIL : 7;
                 Vec3 last = at;
-                for (int k = 1; k <= 7; k++) {
-                    Vec3 next = ringAt(from == null ? hover : from, hover, finger, a - 0.7F * k);
-                    painter.edge(last, next, size * (0.5 - 0.05 * k), 0.9 - 0.12 * k);
+                for (int k = 1; k <= bits; k++) {
+                    Vec3 next = ringAt(from, eye, hover, finger, Math.max(0.0F, a - TRAIL_STEP * k));
+                    double fade = 1.0 - (double) k / (bits + 1);
+                    painter.edge(last, next, Math.max(size, 0.25 * far) * 0.55 * fade, 0.95 * fade);
                     last = next;
                 }
             }
+            scan(painter, player, at, a, partialTick);
             lantern(event, painter, buffers, player, at, a, partialTick, own);
             return;
         }
-        // The ring is on: a flash at the hand and a ring of hard light racing out over the ground.
+        // The ring is on: a flash at the hand, a ring of hard light racing out over the ground and the ring's light
+        // flaring up round him; once the mask is on, his eyes light up.
         float since = a - Arrival.RING_ON;
         Vec3 finger = finger(event, player, partialTick);
         if (since < 7.0F) {
             float burst = 1.0F - since / 7.0F;
             painter.flare(finger, (0.4 + 1.4 * burst) * (own ? 0.5 : 1.0), burst);
         }
-        wave(painter, player.getPosition(partialTick), since);
+        Vec3 feet = player.getPosition(partialTick);
+        wave(painter, feet, since);
+        aura(painter, feet, player.getBbHeight(), since);
+        float lit = a - Arrival.DRESSED;
+        if (!own && lit >= 0.0F && lit < EYES_TICKS) {
+            eyes(painter, player, lit < 3.0F ? lit / 3.0F : 1.0F - (lit - 3.0F) / (EYES_TICKS - 3.0F), partialTick);
+        }
     }
 
-    /** Where the ring is on its way, from where it showed up to before his eyes and from there onto his finger. */
-    private static Vec3 ringAt(Vec3 from, Vec3 hover, Vec3 finger, float a) {
+    /**
+     * Where the ring is on its way: streaking down out of the sky to where it shows up, circling him once from there
+     * down to before his eyes, and from there onto his finger.
+     */
+    private static Vec3 ringAt(Vec3 from, Vec3 eye, Vec3 hover, Vec3 finger, float a) {
+        if (a < STREAK_TICKS) {
+            // Out of the sky over the far side of where it shows up, slowing down to a stop.
+            Vec3 out = new Vec3(from.x - eye.x, 0.0, from.z - eye.z);
+            Vec3 sky = (out.lengthSqr() < 1.0E-6 ? ConstructPainter.UP : out.normalize().scale(0.5)
+                    .add(ConstructPainter.UP)).normalize();
+            double left = 1.0 - a / STREAK_TICKS;
+            return from.add(sky.scale(STREAK_HIGH * left * left));
+        }
         if (a < SET_OFF) {
             return from.add(0.0, 0.08 * Mth.sin(a * 0.5F), 0.0);
         }
         if (a < ARRIVES) {
             double t = ConstructPainter.smooth((a - SET_OFF) / (ARRIVES - SET_OFF));
-            // Swooping in: it rises out of a straight line on the way and comes down to him at the end.
-            double swoop = Math.min(3.0, 0.15 * from.distanceTo(hover));
-            return from.lerp(hover, t).add(0.0, swoop * Math.sin(Math.PI * t), 0.0);
+            // Round him once on the way, closing in fast and then circling closer, coming down as it goes.
+            Vec3 start = from.subtract(eye);
+            Vec3 end = hover.subtract(eye);
+            double startAngle = Math.atan2(start.z, start.x);
+            double turn = Mth.wrapDegrees(Math.toDegrees(Math.atan2(end.z, end.x) - startAngle)) * Mth.DEG_TO_RAD;
+            turn += turn >= 0.0 ? Math.PI * 2.0 : -Math.PI * 2.0;
+            double angle = startAngle + turn * t;
+            double startReach = Math.sqrt(start.x * start.x + start.z * start.z);
+            double endReach = Math.sqrt(end.x * end.x + end.z * end.z);
+            double reach = Mth.lerp(1.0 - Math.pow(1.0 - t, 2.5), startReach, endReach);
+            double high = Mth.lerp(t, start.y, end.y);
+            return eye.add(Math.cos(angle) * reach, high, Math.sin(angle) * reach);
         }
         if (a < Arrival.RING_FLY) {
             return hover;
@@ -330,38 +407,154 @@ public final class ArrivalAnimation {
                 0.14 + 0.1 * fade, 1.0, ConstructPainter.alpha(fade), ConstructPainter.alpha(0.6 * fade));
     }
 
-    /** One player's ring leaving him once the uniform is back in it: up over his head, and off into the sky. */
+    /**
+     * The ring scanning him: a band of light round him running down from over his head to his feet and back up, fed
+     * by a fan of light out of the ring.
+     */
+    private static void scan(ConstructPainter painter, AbstractClientPlayer player, Vec3 ring, float a,
+            float partialTick) {
+        float u = (a - Arrival.SCAN) / (Arrival.SCANNED - Arrival.SCAN);
+        if (u < 0.0F || u > 1.0F) {
+            return;
+        }
+        double down = u < 0.5F ? ConstructPainter.smooth(u * 2.0) : 1.0 - ConstructPainter.smooth(u * 2.0 - 1.0);
+        Vec3 feet = player.getPosition(partialTick);
+        Vec3 band = feet.add(0.0, Mth.lerp(down, player.getBbHeight() + SCAN_TOP, 0.05), 0.0);
+        double fade = Math.min(1.0, Math.min(u, 1.0F - u) * 10.0);
+        painter.circle(band, new Vec3(1.0, 0.0, 0.0), new Vec3(0.0, 0.0, 1.0), SCAN_RADIUS, 0.03, 0.35,
+                ConstructPainter.alpha(0.95 * fade), ConstructPainter.alpha(0.45 * fade));
+        for (int k = 0; k < 8; k++) {
+            double angle = k * Math.PI / 4.0 + a * 0.05;
+            Vec3 edge = band.add(Math.cos(angle) * SCAN_RADIUS, 0.0, Math.sin(angle) * SCAN_RADIUS);
+            painter.edge(ring, edge, 0.012, 0.35 * fade);
+        }
+    }
+
+    /**
+     * The ring's light flaring up round him as it slides on: tongues of light licking up round him from his feet and
+     * a glowing ring of light at them, dying down.
+     */
+    private static void aura(ConstructPainter painter, Vec3 feet, double height, float since) {
+        if (since < 0.0F || since >= AURA_TICKS) {
+            return;
+        }
+        double life = 1.0 - since / AURA_TICKS;
+        double grow = Math.min(1.0, since / 4.0);
+        for (int k = 0; k < AURA_TONGUES; k++) {
+            double angle = Math.PI * 2.0 * k / AURA_TONGUES + since * 0.04;
+            double phase = (since * 0.09 + ConstructPainter.noise(k, 171, 0)) % 1.0;
+            Vec3 way = new Vec3(Math.cos(angle), 0.0, Math.sin(angle));
+            double out = 0.42 + 0.12 * Math.sin(since * 0.3 + k);
+            Vec3 base = feet.add(way.scale(out)).add(0.0, height * (0.05 + 1.0 * phase) * grow, 0.0);
+            Vec3 tip = base.add(way.scale(-0.06)).add(0.0,
+                    height * (0.2 + 0.2 * ConstructPainter.noise(k, 171, 1)) * grow, 0.0);
+            painter.edge(base, tip, 0.05 * life, life * (1.0 - phase));
+        }
+        painter.circle(feet.add(0.0, 0.05, 0.0), new Vec3(1.0, 0.0, 0.0), new Vec3(0.0, 0.0, 1.0), 0.6, 0.06, 0.6,
+                ConstructPainter.alpha(0.8 * life), ConstructPainter.alpha(0.4 * life));
+    }
+
+    /** His eyes glowing behind the mask, {@code glow} from 0 (out) to 1 (as bright as they get). */
+    private static void eyes(ConstructPainter painter, AbstractClientPlayer player, double glow, float partialTick) {
+        if (glow <= 0.0) {
+            return;
+        }
+        Vec3 look = player.getViewVector(partialTick);
+        Vec3 side = look.cross(ConstructPainter.UP);
+        side = side.lengthSqr() < 1.0E-6 ? new Vec3(1.0, 0.0, 0.0) : side.normalize();
+        Vec3 face = player.getEyePosition(partialTick).add(look.scale(0.27));
+        for (int k = -1; k <= 1; k += 2) {
+            painter.flare(face.add(side.scale(0.1 * k)), 0.1 + 0.3 * glow, glow);
+        }
+    }
+
+    /**
+     * One player taking the uniform off: the glow of his eyes goes out and specks of the uniform's light stream off
+     * him into the ring while it draws back; then the ring leaves him, up over his head, where it hangs a moment,
+     * turning, and sends out a last ring of light, and off up into the sky in a spiral, until it is a twinkle high up.
+     */
     private static void departing(RenderLevelStageEvent event, ConstructPainter painter,
             MultiBufferSource.BufferSource buffers, AbstractClientPlayer player, float d, float partialTick) {
-        float e = (d - ClientLooks.UNDRESS_TICKS) / (ClientLooks.DEPART_TICKS - ClientLooks.UNDRESS_TICKS);
+        boolean own = player == Minecraft.getInstance().player && !event.getCamera().isDetached();
         Vec3 finger = finger(event, player, partialTick);
-        Vec3 above = player.getEyePosition(partialTick).add(0.0, 0.9, 0.0);
+        if (d < ClientLooks.UNDRESS_TICKS) {
+            if (!own && d < EYES_OUT) {
+                eyes(painter, player, 1.0 - d / EYES_OUT, partialTick);
+            }
+            specks(painter, player, finger, d, partialTick);
+            return;
+        }
+        float e = (d - ClientLooks.UNDRESS_TICKS) / (ClientLooks.DEPART_TICKS - ClientLooks.UNDRESS_TICKS);
+        Vec3 above = player.getEyePosition(partialTick).add(0.0, 1.0, 0.0);
         Vec3 ahead = ahead(player, partialTick);
-        Vec3 away = above.add(0.0, 40.0, 0.0).add(ahead.scale(24.0));
-        Vec3 at;
-        double size;
-        if (e < 0.35F) {
-            at = finger.lerp(above, ConstructPainter.smooth(e / 0.35));
-            size = Mth.lerp(ConstructPainter.smooth(e / 0.35), FINGER_SIZE, HOVER_SIZE);
-        } else {
-            double t = (e - 0.35) / 0.65;
-            at = above.lerp(away, t * t);
-            size = HOVER_SIZE;
+        Vec3 at = departAt(finger, above, ahead, e);
+        double size = Mth.lerp(ConstructPainter.smooth(e / RISEN), own ? OWN_FINGER_SIZE : FINGER_SIZE, HOVER_SIZE);
+        if (e >= RISEN && e < LAUNCH) {
+            // Hanging over his head a moment: a last ring of light out of it.
+            float wave = (e - RISEN) / (LAUNCH - RISEN);
+            painter.circle(at, new Vec3(1.0, 0.0, 0.0), new Vec3(0.0, 0.0, 1.0), 0.2 + 2.6 * wave, 0.05, 0.3,
+                    ConstructPainter.alpha(0.9 * (1.0 - wave)), ConstructPainter.alpha(0.45 * (1.0 - wave)));
+        }
+        if (e >= LAUNCH) {
+            // A long streak of light behind it on its way up.
             Vec3 last = at;
-            for (int k = 1; k <= 7; k++) {
-                double q = Math.max(0.0, t - 0.03 * k);
-                Vec3 next = above.lerp(away, q * q);
-                painter.edge(last, next, 0.25 * (1.0 - 0.1 * k), 0.9 - 0.12 * k);
+            for (int k = 1; k <= TRAIL; k++) {
+                Vec3 next = departAt(finger, above, ahead, Math.max(LAUNCH, e - 0.012F * k));
+                double fade = 1.0 - (double) k / (TRAIL + 1);
+                painter.edge(last, next, 0.3 * fade, 0.95 * fade);
                 last = next;
             }
         }
         Vec3 toCamera = event.getCamera().getPosition().subtract(at);
         Vec3 face = toCamera.lengthSqr() < 1.0E-6 ? ahead : toCamera.normalize();
-        if (e < 0.97F) {
-            ring(event, buffers, at, face, d * 0.2, size);
-            painter.flare(at, 0.35 + 0.25 * Mth.sin(d * 0.8F), 0.9);
+        if (e < 0.96F) {
+            ring(event, buffers, at, face, d * (e < LAUNCH ? 0.2 : 0.5), size);
+            painter.flare(at, 0.35 + 0.25 * Mth.sin(d * 0.8F) + 1.2 * Math.max(0.0, e - LAUNCH), 0.9);
         } else {
-            painter.flare(at, 2.5, (1.0F - e) / 0.03F);
+            // Gone in a twinkle high up.
+            double twinkle = (1.0F - e) / 0.04F;
+            painter.flare(at, 5.0 * twinkle, twinkle);
+            painter.edge(at.add(-3.0 * twinkle, 0.0, 0.0), at.add(3.0 * twinkle, 0.0, 0.0), 0.15, twinkle);
+            painter.edge(at.add(0.0, -3.0 * twinkle, 0.0), at.add(0.0, 3.0 * twinkle, 0.0), 0.15, twinkle);
+        }
+    }
+
+    /** Where the ring is as it leaves: {@code e} from 0 (on his finger) to 1 (gone high up in the sky). */
+    private static Vec3 departAt(Vec3 finger, Vec3 above, Vec3 ahead, float e) {
+        if (e < RISEN) {
+            return finger.lerp(above, ConstructPainter.smooth(e / RISEN));
+        }
+        if (e < LAUNCH) {
+            return above.add(0.0, 0.08 * Math.sin((e - RISEN) * 40.0), 0.0);
+        }
+        double t = (e - LAUNCH) / (1.0 - LAUNCH);
+        double climb = t * t;
+        Vec3 side = new Vec3(-ahead.z, 0.0, ahead.x);
+        double swirl = 2.5 * Math.sqrt(t);
+        double turn = t * Math.PI * 4.0;
+        return above.add(0.0, AWAY_HIGH * climb, 0.0).add(ahead.scale(AWAY_AHEAD * climb))
+                .add(side.scale(swirl * Math.cos(turn))).add(ahead.scale(swirl * Math.sin(turn)));
+    }
+
+    /** Specks of the uniform's light streaming off him into the ring while it draws back, most of all halfway. */
+    private static void specks(ConstructPainter painter, AbstractClientPlayer player, Vec3 finger, float d,
+            float partialTick) {
+        double strength = Math.sin(Math.PI * d / ClientLooks.UNDRESS_TICKS);
+        if (strength <= 0.0) {
+            return;
+        }
+        Vec3 feet = player.getPosition(partialTick);
+        double height = player.getBbHeight();
+        for (int k = 0; k < SPECKS; k++) {
+            double cycle = d / 12.0 + ConstructPainter.noise(k, 181, 0);
+            int round = (int) Math.floor(cycle);
+            double phase = cycle - round;
+            double angle = ConstructPainter.noise(k, 181 + round, 1) * Math.PI * 2.0;
+            Vec3 start = feet.add(0.32 * Math.cos(angle), height * (0.1 + 0.8 * ConstructPainter.noise(k,
+                    181 + round, 2)), 0.32 * Math.sin(angle));
+            Vec3 head = start.lerp(finger, phase * phase);
+            Vec3 tail = start.lerp(finger, Math.max(0.0, phase - 0.15) * Math.max(0.0, phase - 0.15));
+            painter.edge(tail, head, 0.055, Math.min(1.0, strength * (0.6 + 0.6 * phase)));
         }
     }
 
@@ -407,6 +600,55 @@ public final class ArrivalAnimation {
         Vec3 side = Math.abs(axis.y) < 0.95 ? axis.cross(ConstructPainter.UP) : axis.cross(new Vec3(1.0, 0.0, 0.0));
         side = side.normalize();
         return new Vec3[] { side, side.cross(axis).normalize() };
+    }
+
+    /** The sounds of the ring leaving, each as its moment comes: see {@link #departing}. */
+    @SubscribeEvent
+    public static void onClientTick(ClientTickEvent.Post event) {
+        Minecraft minecraft = Minecraft.getInstance();
+        ClientLevel level = minecraft.level;
+        if (level == null || minecraft.isPaused()) {
+            return;
+        }
+        float undress = ClientLooks.UNDRESS_TICKS;
+        float span = ClientLooks.DEPART_TICKS - undress;
+        for (AbstractClientPlayer player : level.players()) {
+            float d = ClientLooks.departure(player, 0.0F);
+            if (d < 0.0F) {
+                DEPARTING.remove(player.getId());
+                continue;
+            }
+            Float was = DEPARTING.put(player.getId(), d);
+            float before = was == null ? -1.0F : was;
+            Vec3 at = player.position().add(0.0, 1.2, 0.0);
+            if (passed(before, d, 0.0F)) {
+                level.playLocalSound(at.x, at.y, at.z, SoundEvents.BEACON_DEACTIVATE, SoundSource.PLAYERS, 1.0F, 1.3F,
+                        false);
+            }
+            if (passed(before, d, undress)) {
+                level.playLocalSound(at.x, at.y, at.z, SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.PLAYERS, 1.2F,
+                        1.2F, false);
+            }
+            if (passed(before, d, undress + span * LAUNCH)) {
+                level.playLocalSound(at.x, at.y, at.z, SoundEvents.TRIDENT_RIPTIDE_3.value(), SoundSource.PLAYERS,
+                        0.9F, 1.5F, false);
+            }
+            if (passed(before, d, undress + span * 0.96F)) {
+                level.playLocalSound(at.x, at.y, at.z, SoundEvents.AMETHYST_CLUSTER_BREAK, SoundSource.PLAYERS, 0.6F,
+                        1.8F, false);
+            }
+        }
+        DEPARTING.keySet().removeIf(id -> level.getEntity(id) == null);
+    }
+
+    /** True when {@code moment} came between last tick ({@code before}) and this one ({@code now}). */
+    private static boolean passed(float before, float now, float moment) {
+        return before < moment && now >= moment;
+    }
+
+    @SubscribeEvent
+    public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
+        DEPARTING.clear();
     }
 
     /** The moment the ring slides onto your own finger, your view jolts a little. */

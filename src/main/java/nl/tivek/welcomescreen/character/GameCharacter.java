@@ -103,9 +103,36 @@ public enum GameCharacter {
                                     + " never break")
                     .settingInt("maxBlocksBroken", 150, 0, 4000, Unit.BLOCK_COUNT,
                             "How many blocks one fist can smash at most before it only pushes through");
-            // Hold the key for the wheel of hard-light weapons. Only the menu exists so far, so this one
-            // never leaves your own game.
-            this.add(abilities, AbilitySlot.ABILITY_2, "construct_wheel").held().clientOnly();
+            // Hold the key for the wheel of hard-light weapons; your own game tells the server what you pick. Its first
+            // construct is a sword and a shield: the mouse is theirs while you hold them (see SwordShield).
+            this.add(abilities, AbilitySlot.ABILITY_2, "construct_wheel").held().clientOnly()
+                    .group("sword", "Sword (left click)")
+                    .setting("swordDamage", 8.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                            "Damage of one cut or thrust, in half hearts; the heavy ones do more, the quick ones less")
+                    .setting("swordReach", 3.2, 1.0, 8.0, Unit.BLOCKS, "How far the sword reaches, in blocks")
+                    .setting("flurryDamage", 4.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                            "Damage of every one of the twelve stabs of the flurry (hold 2 seconds), in half hearts")
+                    .setting("flurryPowerCost", 2.0, 0.0, 100.0, Unit.POWER, "Ring power one flurry costs")
+                    .setting("guardDamageKept", 0.4, 0.0, 1.0, Unit.PART_KEPT,
+                            "Part of a hit from the front that still gets through the shield held before the chest"
+                                    + " during the flurry (0.4 = 40%, so it takes 60%)")
+                    .group("wheel_shield", "Shield (right click)")
+                    .setting("bashDamage", 2.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                            "Damage of a bash of the shield, in half hearts")
+                    .setting("bashKnockback", 1.4, 0.0, 5.0, Unit.STRENGTH,
+                            "How hard a bash of the shield shoves what it strikes away")
+                    .setting("chargeSpeed", 16.0, 4.0, 40.0, Unit.BLOCKS_PER_SECOND,
+                            "How fast the charge behind the shield runs (hold 2 seconds), in blocks per second")
+                    .setting("chargeSeconds", 3.0, 0.5, 10.0, Unit.SECONDS,
+                            "How long a charge runs at most, in seconds; a wall or letting go ends it sooner")
+                    .setting("chargeDamage", 3.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                            "Damage to every creature the charge shoves aside, in half hearts")
+                    .setting("chargePowerCost", 2.0, 0.0, 100.0, Unit.POWER, "Ring power one charge costs")
+                    .setting("slamDamage", 6.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                            "Damage in the middle of the small shockwave that ends a charge, in half hearts; half at"
+                                    + " its edge")
+                    .setting("slamRadius", 3.5, 0.5, 10.0, Unit.BLOCKS,
+                            "How far that shockwave reaches, in blocks");
             // Hold the lantern up and smack the ring against it: the ring drinks part of its light.
             this.add(abilities, AbilitySlot.ABILITY_3, "recharge").cooldown(60)
                     .setting("powerRestored", 50.0, 1.0, 100.0, Unit.POWER,
@@ -156,8 +183,10 @@ public enum GameCharacter {
                     .setting("ramDamage", 4.0, 0.0, 2000.0, Unit.HALF_HEARTS,
                             "Damage of flying into a creature with the shield up, in half hearts, at the slowest"
                                     + " speed that rams")
-                    .setting("ramDamagePerSpeed", 6.0, 0.0, 200.0, Unit.HALF_HEARTS_PER_SPEED,
-                            "Extra ram damage in half hearts for every block per tick you fly (1.75 at top speed)")
+                    .setting("ramDamagePerSpeed", 10.5, 0.0, 200.0, Unit.HALF_HEARTS_PER_SPEED,
+                            "Extra ram damage in half hearts for every block per tick you fly (about 0.96 at top"
+                                    + " speed)")
+                    .was(6.0)
                     .setting("ramKnockback", 1.4, 0.0, 6.0, Unit.STRENGTH,
                             "How hard a ram throws a creature away; the faster you fly, the further it goes")
                     .setting("ramGroundPowerPerSecond", 2.0, 0.0, 50.0, Unit.POWER_PER_SECOND,
@@ -171,21 +200,57 @@ public enum GameCharacter {
             // The ring scans the area: a wave of its light rolls out through walls and all, and marks every creature
             // it passes for him, with its name and health, a while.
             this.add(abilities, AbilitySlot.ABILITY_6, "ring_scan").cooldown(160)
-                    .setting("rangeBlocks", 32.0, 8.0, 96.0, Unit.BLOCKS,
+                    .setting("rangeBlocks", 56.0, 8.0, 128.0, Unit.BLOCKS,
                             "How far the scan reaches, through walls and all, in blocks")
-                    .setting("markSeconds", 12.0, 2.0, 60.0, Unit.SECONDS,
+                    .was(32.0)
+                    .setting("markSeconds", 21.0, 2.0, 120.0, Unit.SECONDS,
                             "How long every creature the scan passed stays marked for you, in seconds")
+                    .was(12.0)
                     .setting("powerCost", 2.0, 0.0, 100.0, Unit.POWER, "Ring power one scan costs");
-            // The ultimate: he throws his ring fist up at the sky, a pillar of light opens into a great ring of light
-            // over his head, and for a while it rains the constructs that drop down on everything around him, each
-            // with a shockwave of its own (this damage in the middle, half of it at the edge).
-            this.add(abilities, AbilitySlot.ABILITY_7, "construct_storm").cooldown(1800).damage(10.0)
-                    .settingInt("durationTicks", 160, 20, 1200, Unit.TICKS,
-                            "How long the constructs rain down, in ticks (20 ticks = 1 second)")
-                    .settingInt("dropTicks", 8, 2, 100, Unit.TICKS, "Ticks between two constructs dropping")
-                    .setting("radiusBlocks", 20.0, 4.0, 48.0, Unit.BLOCKS,
-                            "How far around you the constructs drop onto creatures, in blocks")
-                    .setting("powerCost", 20.0, 0.0, 100.0, Unit.POWER, "Ring power the storm costs");
+            // The ultimate: he throws his ring fist up at the sky and a big, slow gunship of hard light with four
+            // propellers takes shape twice as high as a jet would fly. It drones on in a straight line over the area he
+            // looked at, scans it for everything out to hurt him and fires its two miniguns and two missile launchers at
+            // that; then all at once it plunges down and crashes in a massive blast of green energy that blows a crater
+            // out of the ground (this damage in the middle, half of it at the edge).
+            this.add(abilities, AbilitySlot.ABILITY_7, "air_strike").cooldown(1800).damage(40.0)
+                    .setting("attackSeconds", 20.0, 2.0, 60.0, Unit.SECONDS,
+                            "How long the plane drones on and fires before it plunges down, in seconds")
+                    .was(10.0)
+                    .setting("scanBlocks", 84.0, 8.0, 160.0, Unit.BLOCKS,
+                            "How far its sensor scans the ground round it for creatures to fire at, in blocks (the"
+                                    + " Ring Scan reaches 56)")
+                    .setting("powerCost", 20.0, 0.0, 100.0, Unit.POWER, "Ring power the air strike costs")
+                    .group("guns", "The miniguns")
+                    .settingInt("gunTicks", 6, 2, 100, Unit.TICKS,
+                            "Ticks between two rounds of one minigun; the two fire in turn, so together they fire"
+                                    + " twice in that time (20 ticks = 1 second)")
+                    .setting("gunDamage", 3.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                            "Damage of one round that strikes, in half hearts")
+                    .setting("gunSpread", 2.4, 0.0, 12.0, Unit.BLOCKS,
+                            "How far round what they aim at the rounds spread, in blocks: the wider, the fewer strike")
+                    .group("missiles", "Homing missiles")
+                    .settingInt("missileTicks", 40, 4, 400, Unit.TICKS,
+                            "Ticks between two missiles; the two launchers fire in turn (20 ticks = 1 second)")
+                    .was(10.0)
+                    .setting("missileDamage", 8.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                            "Damage of a missile to the creature it finds, in half hearts; what else its small blast"
+                                    + " reaches takes less")
+                    .setting("hitChance", 0.9, 0.0, 1.0, Unit.CHANCE,
+                            "How often a missile finds its creature (0.9 = 90%); the others strike the ground a few"
+                                    + " blocks off")
+                    .was(0.65)
+                    .group("crash", "The crash")
+                    .setting("crashRadius", 14.0, 2.0, 40.0, Unit.BLOCKS,
+                            "How far the blast of the crash reaches, in blocks")
+                    .was(12.0)
+                    .setting("craterRadius", 7.0, 0.0, 16.0, Unit.BLOCKS,
+                            "How wide the crater the crash blows out of the ground is, from its middle, in blocks (0 ="
+                                    + " no crater)")
+                    .setting("breakHardness", 3.0, -1.0, 100.0, Unit.HARDNESS,
+                            "How hard a block may be for the crash to blow it away (dirt 0.5, stone 1.5, wood 2, iron"
+                                    + " 5); -1 leaves the ground alone. Blocks that hold something, like chests, stay")
+                    .settingInt("debrisBlocks", 40, 0, 400, Unit.BLOCK_COUNT,
+                            "How many of the crater's blocks are hurled up and away, to come down all round it");
             // Smash the ring fist into the ground: the ring throws up a construct in front of him that strikes and
             // sends a shockwave over it. In the air he dives down to the ground first. Flying into the ground at full
             // speed does the same by itself, with these same numbers.
@@ -212,26 +277,51 @@ public enum GameCharacter {
                             "Seconds a full ring keeps you in the air: flying costs 100 divided by this a second,"
                                     + " and what you shoot or hold up while flying comes on top")
                     .was(15.0, 37.5)
-                    .setting("topSpeed", 35.0, 5.0, 150.0, Unit.BLOCKS_PER_SECOND,
-                            "Top speed in blocks per second (an elytra with firework rockets does about 33)")
-                    .was(50.0)
-                    .setting("startSpeed", 11.7, 1.0, 150.0, Unit.BLOCKS_PER_SECOND,
+                    .setting("topSpeed", 19.25, 5.0, 150.0, Unit.BLOCKS_PER_SECOND,
+                            "Top speed in blocks per second (an elytra with firework rockets does about 33); once you"
+                                    + " reach it, two jets of hard light hang behind you on chains")
+                    .was(50.0, 35.0)
+                    .setting("startSpeed", 6.4, 1.0, 150.0, Unit.BLOCKS_PER_SECOND,
                             "Speed you set off at, in blocks per second: the longer you fly on, the faster you go, up"
                                     + " to the top speed")
-                    .setting("speedUpSeconds", 12.0, 0.0, 120.0, Unit.SECONDS,
+                    .was(11.7)
+                    .setting("speedUpSeconds", 30.0, 0.0, 300.0, Unit.SECONDS,
                             "Seconds of flying on before you reach the top speed (0 = straight away); letting go of"
-                                    + " forward loses the speed again, slowly");
+                                    + " forward loses the speed again, slowly")
+                    .was(12.0);
             // The ring fist thrown up high: the lantern takes shape over it out of the ring's light, fills with light
-            // and bursts like a small sun, blinding and slowing everything that sees it; the creatures of the dark
-            // burn, are hurt (this damage) and flee.
-            this.add(abilities, AbilitySlot.ABILITY_10, "light_flare").cooldown(300).damage(8.0)
-                    .setting("radiusBlocks", 12.0, 2.0, 32.0, Unit.BLOCKS,
+            // and bursts like a small sun, blinding and slowing everything that sees it; blinded creatures cannot find
+            // anyone for as long as it lasts. The creatures of the dark burn, are hurt (this damage), thrown back and
+            // flee.
+            this.add(abilities, AbilitySlot.ABILITY_10, "light_flare").cooldown(600).cooldownWas(300).damage(8.0)
+                    .setting("radiusBlocks", 14.0, 2.0, 32.0, Unit.BLOCKS,
                             "How far the flash reaches, in blocks: only what can see the ring is struck")
-                    .setting("blindSeconds", 4.0, 0.0, 30.0, Unit.SECONDS,
-                            "How long whatever the flash strikes is blinded, in seconds")
-                    .setting("stunSeconds", 3.0, 0.0, 30.0, Unit.SECONDS,
-                            "How long whatever the flash strikes is slowed down and weakened, in seconds")
-                    .setting("powerCost", 6.0, 0.0, 100.0, Unit.POWER, "Ring power one flash costs");
+                    .was(12.0)
+                    .setting("blindSeconds", 12.5, 0.0, 60.0, Unit.SECONDS,
+                            "How long whatever the flash strikes is blinded, in seconds: a blinded creature loses"
+                                    + " whoever it was after and cannot find anyone further off than a few blocks")
+                    .was(4.0)
+                    .setting("stunSeconds", 12.5, 0.0, 60.0, Unit.SECONDS,
+                            "How long whatever the flash strikes is slowed down and weakened, in seconds: hard at"
+                                    + " first, then milder for the rest of it")
+                    .was(3.0)
+                    .setting("powerCost", 8.0, 0.0, 100.0, Unit.POWER, "Ring power one flash costs")
+                    .was(6.0);
+            // A bubble of hard light round the creature he looks at: the ring lifts it off the ground and holds it
+            // there, unable to do anything. Press again to smash the bubble down onto the ground (this damage, half
+            // of it to what stands round it); crouch and press to let it go. The cooldown starts once it is gone.
+            this.add(abilities, AbilitySlot.ABILITY_11, "light_bubble").cooldown(240).damage(12.0)
+                    .crouch(CharacterAbility.Crouch.UNDO)
+                    .setting("rangeBlocks", 24.0, 4.0, 64.0, Unit.BLOCKS,
+                            "How far away a creature can be caught in a bubble, in blocks")
+                    .setting("holdSeconds", 6.0, 1.0, 30.0, Unit.SECONDS,
+                            "How long a bubble holds its creature before it bursts by itself, in seconds")
+                    .setting("liftBlocks", 3.0, 0.0, 10.0, Unit.BLOCKS,
+                            "How high a bubble lifts its creature off the ground, in blocks")
+                    .setting("slamRadius", 3.5, 0.0, 10.0, Unit.BLOCKS,
+                            "How far the shockwave of a smashed bubble reaches, in blocks: what else stands in it"
+                                    + " takes half the damage")
+                    .setting("powerCost", 4.0, 0.0, 100.0, Unit.POWER, "Ring power catching a creature costs");
         }
     };
 

@@ -1,6 +1,8 @@
 package nl.tivek.welcomescreen.character.lantern;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import net.minecraft.core.particles.ParticleTypes;
@@ -9,10 +11,15 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.util.Mth;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.OwnableEntity;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.ai.memory.MemoryModuleType;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.HitResult;
@@ -28,9 +35,15 @@ import nl.tivek.welcomescreen.spell.SpellFx;
  * The Lantern Flare: Green Lantern throws his ring fist up high and the ring shapes his lantern over it; light gathers
  * in the lantern for most of a second, and it bursts like a small sun, breaking into pieces. Every creature within the
  * setting {@code radiusBlocks} that can see the ring is struck:
- * blinded for {@code blindSeconds}, and slowed down and weakened for {@code stunSeconds}; a creature that was after
- * someone loses them. The creatures of the dark (see {@link Fear}) cannot bear it: they burn, are hurt (the ability's
- * damage) and flee a moment. Players are only struck where players may fight each other.
+ * <ul>
+ * <li>blinded for {@code blindSeconds}: a creature that was after someone loses them, and for as long as it is blind
+ * it cannot find anyone further off than a few blocks; it stumbles about, dazed, with specks of light round its
+ * head;</li>
+ * <li>slowed down and weakened for {@code stunSeconds}: hard for the first few seconds, milder for the rest;</li>
+ * <li>no longer invisible: nothing hides from the ring's light.</li>
+ * </ul>
+ * The creatures of the dark (see {@link Fear}) cannot bear it: they burn, are hurt (the ability's damage), thrown back
+ * and flee a moment. Players are only struck where players may fight each other; his own pets never.
  *
  * <p>The flash is light and nothing of it stays; the lantern is a construct, grown out of the ring's light and broken
  * into solid pieces. Everyone around sees it, and whoever looks at the burst is dazzled a moment (on their own screen,
@@ -39,10 +52,18 @@ import nl.tivek.welcomescreen.spell.SpellFx;
 public final class LightFlare implements SpellEffect {
     /** How long the light gathers in the lantern before it bursts, and how long the burst lasts, in ticks. */
     public static final int GATHER_TICKS = 14;
-    public static final int BURST_TICKS = 12;
-    // How long the creatures of the dark flee from the burst, in ticks, and how long they burn.
+    public static final int BURST_TICKS = 34;
+    /** How long after the burst his ring fist stays up, in ticks: then the ring is free again. */
+    public static final int ARM_DOWN = 10;
+    // How long the creatures of the dark flee from the burst, in ticks, how long they burn, and how hard they are
+    // thrown back.
     private static final int FLEE_TICKS = 60;
     private static final int BURN_TICKS = 80;
+    private static final double THROW = 0.9;
+    // The slowness is hard for this many ticks at most (then milder), and how hard, as the game counts it.
+    private static final int HARD_TICKS = 80;
+    private static final int HARD = 3;
+    private static final int MILD = 1;
     private static final double VIEW_RANGE = 96.0;
 
     private static final Map<UUID, LightFlare> ACTIVE = new HashMap<>();
@@ -92,9 +113,10 @@ public final class LightFlare implements SpellEffect {
         return true;
     }
 
-    /** True while this player's flare gathers or bursts: his ring fist is up. */
+    /** True while this player's flare gathers or has just burst: his ring fist is up. */
     static boolean up(ServerPlayer player) {
-        return ACTIVE.containsKey(player.getUUID());
+        LightFlare flare = ACTIVE.get(player.getUUID());
+        return flare != null && flare.age < GATHER_TICKS + ARM_DOWN;
     }
 
     /** The server stops: no flare is going any more. */
@@ -135,6 +157,11 @@ public final class LightFlare implements SpellEffect {
         if (this.age == GATHER_TICKS) {
             this.burst(level);
         }
+        if (this.age == GATHER_TICKS + 3) {
+            // The light rings on in the air a moment after the bang.
+            this.sound(level, SoundEvents.AMETHYST_BLOCK_RESONATE, 1.6F, 1.6F);
+            this.sound(level, SoundEvents.BELL_RESONATE, 1.0F, 1.8F);
+        }
         if (this.age >= GATHER_TICKS + BURST_TICKS) {
             this.end(level);
             return false;
@@ -150,8 +177,10 @@ public final class LightFlare implements SpellEffect {
         int blind = (int) Math.round(this.ability.value("blindSeconds") * 20.0);
         int stun = (int) Math.round(this.ability.value("stunSeconds") * 20.0);
         AABB area = new AABB(at, at).inflate(radius);
+        List<Mob> dazed = new ArrayList<>();
         for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, area,
-                entity -> PowerRing.canHit(this.owner, entity))) {
+                entity -> PowerRing.canHit(this.owner, entity)
+                        && !(entity instanceof OwnableEntity pet && pet.getOwner() == this.owner))) {
             Vec3 eye = target.getEyePosition();
             if (eye.distanceToSqr(at) > radius * radius || !this.sees(level, at, eye)) {
                 continue;
@@ -160,29 +189,107 @@ public final class LightFlare implements SpellEffect {
                 target.addEffect(new MobEffectInstance(MobEffects.BLINDNESS, blind, 0), this.owner);
             }
             if (stun > 0) {
-                target.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, stun, 3), this.owner);
+                // Hard at first; underneath it the milder slowness runs the whole time and takes over after.
+                MobEffectInstance mild = new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, stun, MILD);
+                target.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, Math.min(stun, HARD_TICKS),
+                        HARD, false, true, true, mild), this.owner);
                 target.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, stun, 1), this.owner);
             }
+            // Nothing hides from the ring's light.
+            target.removeEffect(MobEffects.INVISIBILITY);
             if (target instanceof Mob mob) {
                 // Dazzled, it loses whoever it was after and stands a moment.
                 mob.setTarget(null);
                 mob.getNavigation().stop();
+                if (blind > 0) {
+                    dazed.add(mob);
+                }
                 if (mob.getType().is(Fear.FEARS_THE_LIGHT)) {
                     target.invulnerableTime = 0;
                     target.hurt(level.damageSources().playerAttack(this.owner), this.ability.getDamage());
                     target.setRemainingFireTicks(Math.max(target.getRemainingFireTicks(), BURN_TICKS));
                     Fear.frighten(mob, at, level.getGameTime() + FLEE_TICKS);
+                    Vec3 away = new Vec3(mob.getX() - at.x, 0.0, mob.getZ() - at.z);
+                    if (away.lengthSqr() > 1.0E-4) {
+                        away = away.normalize();
+                        double resist = Mth.clamp(mob.getAttributeValue(Attributes.KNOCKBACK_RESISTANCE), 0.0, 1.0);
+                        mob.setDeltaMovement(mob.getDeltaMovement().add(new Vec3(away.x * THROW, 0.35,
+                                away.z * THROW).scale(1.0 - resist)));
+                        mob.hurtMarked = true;
+                    }
                 }
             }
             SpellFx.cloud(level, SpellFx.dust(PowerRing.BRIGHT, 1.2F), target.getBoundingBox().getCenter(), 8, 0.3,
                     0.05);
         }
-        SpellFx.sphereOut(level, SpellFx.dust(PowerRing.BRIGHT, 2.0F), at, 60, 0.6);
-        SpellFx.sphereOut(level, SpellFx.dust(PowerRing.GREEN, 2.5F), at, 40, 0.4);
+        if (!dazed.isEmpty()) {
+            SpellCasting.start(level, new Daze(this.owner, dazed, blind));
+        }
+        SpellFx.sphereOut(level, SpellFx.dust(PowerRing.BRIGHT, 2.0F), at, 70, 0.7);
+        SpellFx.sphereOut(level, SpellFx.dust(PowerRing.GREEN, 2.5F), at, 50, 0.45);
+        SpellFx.shockwave(level, SpellFx.dust(PowerRing.PALE, 1.6F), this.owner.position().add(0.0, 0.2, 0.0), 60,
+                0.9);
         level.sendParticles(ParticleTypes.FLASH, at.x, at.y, at.z, 1, 0.0, 0.0, 0.0, 0.0);
         this.sound(level, SoundEvents.FIREWORK_ROCKET_BLAST, 1.6F, 0.8F);
+        this.sound(level, SoundEvents.FIREWORK_ROCKET_TWINKLE, 1.4F, 1.2F);
         this.sound(level, SoundEvents.BEACON_ACTIVATE, 1.4F, 1.8F);
         this.sound(level, SoundEvents.AMETHYST_CLUSTER_BREAK, 1.4F, 0.8F);
+    }
+
+    /**
+     * The creatures a flare blinded: for as long as they are blind they cannot find anyone further off than a few
+     * blocks, forget whoever they were after, and stumble about dazed, specks of light turning round their heads.
+     */
+    private static final class Daze implements SpellEffect {
+        // How close a blind creature still finds whoever it is after, in blocks, and how often it stumbles somewhere
+        // else, in ticks.
+        private static final double FEEL = 2.5;
+        private static final int STUMBLE = 30;
+
+        private final ServerPlayer owner;
+        private final List<Mob> mobs;
+        private final int ticks;
+        private int age;
+
+        Daze(ServerPlayer owner, List<Mob> mobs, int ticks) {
+            this.owner = owner;
+            this.mobs = mobs;
+            this.ticks = ticks;
+        }
+
+        @Override
+        public boolean tick(ServerLevel level, int tick) {
+            this.age++;
+            this.mobs.removeIf(mob -> !mob.isAlive() || mob.level() != level || !mob.hasEffect(MobEffects.BLINDNESS));
+            if (this.age > this.ticks || this.mobs.isEmpty()) {
+                return false;
+            }
+            RandomSource random = level.getRandom();
+            for (Mob mob : this.mobs) {
+                LivingEntity target = mob.getTarget();
+                if (target != null && mob.distanceTo(target) > FEEL) {
+                    mob.setTarget(null);
+                    mob.getBrain().eraseMemory(MemoryModuleType.ATTACK_TARGET);
+                    mob.getNavigation().stop();
+                }
+                if ((this.age + mob.getId()) % STUMBLE == 0 && mob.getNavigation().isDone()) {
+                    Vec3 to = mob.position().add(random.nextDouble() * 6.0 - 3.0, 0.0, random.nextDouble() * 6.0 - 3.0);
+                    mob.getNavigation().moveTo(to.x, to.y, to.z, 0.6);
+                }
+                if ((this.age + mob.getId()) % 6 == 0) {
+                    // Specks of light turning round its head.
+                    double angle = (this.age + mob.getId()) * 0.5;
+                    Vec3 head = mob.getEyePosition().add(0.0, mob.getBbHeight() * 0.25 + 0.1, 0.0);
+                    for (int k = 0; k < 3; k++) {
+                        double a = angle + k * Math.PI * 2.0 / 3.0;
+                        double r = mob.getBbWidth() * 0.5 + 0.2;
+                        level.sendParticles(SpellFx.dust(PowerRing.PALE, 0.7F), head.x + Math.cos(a) * r, head.y,
+                                head.z + Math.sin(a) * r, 1, 0.0, 0.0, 0.0, 0.0);
+                    }
+                }
+            }
+            return true;
+        }
     }
 
     /** Whether nothing solid is in between: the flash only strikes what can see the ring. */

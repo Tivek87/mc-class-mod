@@ -72,20 +72,26 @@ public final class PowerRing {
             case "giant_fist" -> on ? GiantFist.launch(player, level, ability) : GiantFist.letGo(player);
             // Raise the lantern and smack the ring into it.
             case "recharge" -> Lantern.recharge(player, level, ability);
-            // What the mouse always does. Tap: a bolt, or the shield up or away. Hold: the beam, or the dome.
-            case "light_bolt" -> LightBolt.use(player, level, ability, on, data);
-            case "light_shield" -> LightShield.use(player, level, ability, on, data);
+            // What the mouse always does. Tap: a bolt, or the shield up or away. Hold: the beam, or the dome. With the
+            // sword and shield of the construct wheel in his hands the mouse is theirs instead.
+            case "light_bolt" -> SwordShield.equipped(player) ? SwordShield.attack(player, level, on, data)
+                    : LightBolt.use(player, level, ability, on, data);
+            case "light_shield" -> SwordShield.equipped(player) ? SwordShield.defend(player, level, on, data)
+                    : LightShield.use(player, level, ability, on, data);
             // Smash the ring fist into the ground for a shockwave; in the air he goes down to the ground first.
             case "shockwave" -> Shockwave.use(player, level, ability);
             // A wave of the ring's light rolls out and marks every creature it passes.
             case "ring_scan" -> RingScan.use(player, level, ability);
             // The ring fist thrown up high: the lantern takes shape over it and bursts out blinding.
             case "light_flare" -> LightFlare.use(player, level, ability);
-            // The ultimate: a great ring of light in the sky, raining constructs down on everything around him.
-            case "construct_storm" -> ConstructStorm.use(player, level, ability);
+            // The ultimate: a big gunship of hard light drones over the battlefield, fires and crashes in a blast.
+            case "air_strike" -> AirStrike.use(player, level, ability);
+            // A bubble of hard light round a creature, lifted up; again to smash it down, crouching to let it go.
+            case "light_bubble" -> LightBubble.use(player, level, ability, data);
             // Take off, or land again; flying into the ground at full speed lands with a slam.
-            case "flight" -> on && ((data & Characters.SLAM) != 0 ? Flight.slam(player, level, ability)
-                    : Flight.toggle(player, level, ability));
+            case "flight" -> (data & Characters.BOOST) != 0 ? Flight.boost(player, on)
+                    : on && ((data & Characters.SLAM) != 0 ? Flight.slam(player, level, ability)
+                            : Flight.toggle(player, level, ability));
             default -> false;
         };
     }
@@ -104,7 +110,9 @@ public final class PowerRing {
         Arrival.clear();
         Fear.clear();
         LightFlare.clear();
-        ConstructStorm.clear();
+        AirStrike.clear();
+        LightBubble.clear();
+        SwordShield.clear();
     }
 
     /** True while this player can keep a construct going in this level: alive, here, and still Green Lantern. */
@@ -176,7 +184,8 @@ public final class PowerRing {
         int state = (LightShield.up(player) ? RingPayload.SHIELD : 0) | (LightDome.up(player) ? RingPayload.DOME : 0)
                 | (LightBeam.firing(player) ? RingPayload.BEAM : 0)
                 | (Flight.descending(player) ? RingPayload.DESCENT : 0)
-                | (Flight.diving(player) || Shockwave.dropping(player) ? RingPayload.DIVE : 0);
+                | (Flight.diving(player) || Shockwave.dropping(player) ? RingPayload.DIVE : 0)
+                | (Flight.boosting(player) ? RingPayload.BOOST : 0);
         return new RingPayload(player.getId(), power(player), GiantFist.pending(player), Lantern.ticks(player),
                 Flight.ticks(player), state, Arrival.ticks(player), Arrival.from(player), LightBeam.charging(player));
     }

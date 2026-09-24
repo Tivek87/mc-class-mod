@@ -9,8 +9,8 @@ import nl.tivek.welcomescreen.WelcomeScreenMod;
 /**
  * The hard-light shapes Green Lantern can will into his hands, and the empty hands he starts with.
  *
- * <p>None of them exist yet. The wheel keeps sixteen slots free for them and every slot says the same
- * thing: placeholder, coming soon. Filling a slot in later is a name in the language files plus the code
+ * <p>The first slot of the wheel holds a sword and a shield (see {@link SwordShield}); the other fifteen are still
+ * kept free and say placeholder, coming soon. Filling a slot in later is a name in the language files plus the code
  * that makes it do something.
  *
  * <p>Every construct uses the mouse the same way, as the game itself does: left click attacks, with the
@@ -19,7 +19,8 @@ import nl.tivek.welcomescreen.WelcomeScreenMod;
 public enum Construct {
     /** Nothing in your hands: only the ring on your finger. This is what you start with. */
     NONE("none"),
-    SLOT_1("slot_1"),
+    /** A sword in the ring hand and a shield on the other arm. */
+    SWORD_SHIELD("sword_shield"),
     SLOT_2("slot_2"),
     SLOT_3("slot_3"),
     SLOT_4("slot_4"),
@@ -66,14 +67,25 @@ public enum Construct {
         return this.ordinal();
     }
 
+    /** True for a construct that really exists; false for a slot still kept free (a placeholder). */
+    public boolean made() {
+        return this == NONE || this == SWORD_SHIELD;
+    }
+
     public Component getDisplayName() {
-        return this == NONE ? Component.translatable(KEY + "none")
+        return this.made() ? Component.translatable(KEY + this.id)
                 : Component.translatable(KEY + "placeholder", this.number());
     }
 
-    /** The line under the name: what empty hands mean, or that this slot is still to come. */
+    /** The line under the name: what it is, or that this slot is still to come. */
     public Component getDescription() {
-        return Component.translatable(this == NONE ? KEY + "none.about" : KEY + "placeholder.about");
+        return Component.translatable(this.made() ? KEY + this.id + ".about" : KEY + "placeholder.about");
+    }
+
+    /** The construct with this number (its ordinal), or {@link #NONE}. */
+    public static Construct byIndex(int index) {
+        Construct[] all = values();
+        return index >= 0 && index < all.length ? all[index] : NONE;
     }
 
     @Nullable

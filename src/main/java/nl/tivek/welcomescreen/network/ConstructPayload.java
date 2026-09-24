@@ -54,10 +54,13 @@ public record ConstructPayload(int id, int owner, Vec3 center, Vec3 facing, floa
     public static final int SLAM = 6;
     /**
      * The ring's scan: a wave of light rolling out through everything. {@code center} is where it set out from,
-     * {@code size} how far it reaches, {@code charge} how many seconds what it passes stays marked for its maker, and
-     * {@code age} how long ago it set out. Not a construct, only light.
+     * {@code size} how far it reaches, {@code charge} how many seconds what it passes stays marked for its maker,
+     * {@code variant} {@link #SCAN_HOSTILE} when it marks only what is out to hurt him, and {@code age} how long ago it
+     * set out. Not a construct, only light.
      */
     public static final int SCAN = 7;
+    /** A {@link #SCAN} of the air strike's plane: it marks only the creatures out to hurt its maker. */
+    public static final int SCAN_HOSTILE = 1;
     /**
      * The ring's flare: light gathering at the ring held high, and bursting out blinding. {@code center} is the ring,
      * {@code size} how far the flash reaches, and {@code age} how long ago the light started to gather. Not a
@@ -65,19 +68,43 @@ public record ConstructPayload(int id, int owner, Vec3 center, Vec3 facing, floa
      */
     public static final int FLARE = 8;
     /**
-     * The construct storm, Green Lantern's ultimate: a great ring of light high over his head, fed by a pillar of
-     * light out of his ring. {@code center} is where it hangs, {@code size} how wide it is, {@code solid} how high over
-     * his head it hangs, {@code charge} how many ticks the whole storm lasts and {@code age} how long ago he called it.
-     * Only light; what it drops are constructs of their own (see {@link #DROP}).
+     * The air strike, Green Lantern's ultimate: a big hard-light gunship with four propellers high over the
+     * battlefield, that drones on in a straight line and plunges down. It flies a path both sides work out alike from
+     * how long ago it was called (see {@link nl.tivek.welcomescreen.character.lantern.PlanePath}): {@code center} is
+     * where it takes shape, {@code facing} the way it flies, {@code size} how far below where it takes shape the ground
+     * of its dive is, {@code charge} how many ticks it attacks, {@code variant} how far through its dive it strikes the
+     * ground in hundredths, and {@code age} how long ago he called it.
      */
-    public static final int STORM = 9;
+    public static final int PLANE = 9;
     /**
-     * One construct of the storm: it takes shape just under the storm's ring and drops out of the sky onto a creature,
-     * with a shockwave where it strikes. Everything else as for a {@link #SLAM}: {@code center} is where it strikes,
-     * {@code facing} the way from its maker to there, {@code size} how far its wave reaches, {@code solid} how big it
-     * is, {@code charge} how slowly it plays and {@code variant} which construct it is.
+     * A homing missile of hard light the plane fires. {@code center} is where it is, {@code facing} the way it flies,
+     * {@code variant} the launcher it came from (0 the left one, 1 the right one) and {@code age} how long ago it was
+     * fired.
      */
-    public static final int DROP = 10;
+    public static final int MISSILE = 10;
+    /**
+     * A round of hard light from one of the plane's miniguns, sent once as it is fired: clients fly it on by
+     * themselves. {@code center} is where it strikes, {@code facing} the way from there back to the muzzle,
+     * {@code charge} how far the muzzle is, {@code variant} the gun (0 the left one, 1 the right one) and {@code age} how
+     * long ago it was fired.
+     */
+    public static final int BULLET = 11;
+    /**
+     * The Light Bubble: a cage of hard light round a creature the ring holds up. {@code center} is its middle,
+     * {@code facing} the way its maker looked as he caught it, {@code size} its radius, {@code solid} how far it has
+     * grown round its creature, {@code held} true while the ring still holds it, {@code variant} what it does (see
+     * {@link nl.tivek.welcomescreen.character.lantern.LightBubble#HOLDING}), {@code charge} the entity id of its creature
+     * until it breaks up and from then on how many ticks ago it began to, and {@code age} how long ago it caught its
+     * creature.
+     */
+    public static final int BUBBLE = 12;
+    /**
+     * The sword and shield of the construct wheel, in the hands of the one holding them. {@code center} is where he is,
+     * {@code facing} the way he looks (or charges), {@code size} how many ticks ago they began to break up (-1 while
+     * whole), {@code variant} the move they do (see {@link nl.tivek.welcomescreen.character.lantern.SwordMove}),
+     * {@code charge} the tick of their clock that move began on, and {@code age} how long ago they took shape.
+     */
+    public static final int SWORD = 13;
     /** A giant fist that smashes down out of the sky, knuckles first. */
     public static final int SLAM_FIST = 0;
     /** Two giant open hands that clap together. */

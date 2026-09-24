@@ -1,12 +1,15 @@
-# Laatste sessie (2026-09-23)
+# Laatste sessie - 2026-09-24
 
-**Vraag:** Green Lantern: 32 slam-constructs mooier, ramkegel-glitch, knie-landing, wiel 16 slots, nieuwe aan/uit-animatie (ring komt naar je toe), 2 nieuwe abilities; daarna: Y = ultimate, abilities echt GL, vliegen 3x trager met opbouw + max, straal laadt pak op en is heftiger.
+Vraag: Green Lantern afmaken: Lichtbel (K), vliegtuig-ultimate (gunship), ring-gloed, animaties overal, zwaard & schild (wiel slot 1).
 
-**Gedaan:**
-- Y = Constructstorm (ultimate): ring van licht in de lucht, 8 s constructs op vijanden. N = Ring-scan. Left Alt = Lantaarnflits (lantaarn-construct op je vuist, barst als zon).
-- Vliegen start op ~12 b/s, bouwt in 12 s op tot 35 b/s (max); straal: pak laadt op (borst -> arm -> lijf), flits bij start, veel heftiger, duwt terug.
-- Bug gefixt: scan crashte bij meerdere markeringen (buffer-volgorde).
-- Vertalingen EN/NL, docs (POWERS, GREEN_LANTERN, PROJECT, CHANGELOG), regels in CLAUDE.md.
-- 3 in-game tests (3e schoon), build groen; testklasse, testwereld en screenshots gewist.
+Gedaan:
+- Alles gebouwd (vorige context) en nu in-game getest met automatische testrun (3 runs, screenshots bekeken).
+- Fix: first-person armen met zwaard/schild waren gigantisch -> reiken nu vanaf de schouder buiten beeld, handen verder weg.
+- Fix: gevangen wezen bleef hangen als de bel neergesmeten werd -> client zet het wezen elke tick in de bel.
+- Fix: hold-label bij zwaard toonde "Koepel" -> nu "Steekregen" / "Stormloop".
+- Fix: oude opgeslagen instellingen (10 s aanval, raket elke 10 ticks) -> DEFAULTS_VERSION 5, migreert naar nieuwe waarden.
+- Docs: CHANGELOG, PROJECT.md, POWERS.md, GREEN_LANTERN.md.
 
-**Open:** commit + push wacht op akkoord. Niet getest: oplaad-effect van een andere speler (multiplayer). Lege toets GL: alleen K. Let op: Left Alt gaat ook af bij Alt+Tab.
+Bestanden deze ronde: SwordArms, RechargeAnimation, ClientConstructs, LightBubble, ConstructPayload, ConstructHud, CharacterConfig, lang en/nl, docs.
+
+Open: commit + push wacht op jouw ja (vorige batch + deze samen). Testklasse, testwereld en screenshots zijn opgeruimd.

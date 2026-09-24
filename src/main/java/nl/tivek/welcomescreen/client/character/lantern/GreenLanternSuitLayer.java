@@ -83,6 +83,8 @@ public final class GreenLanternSuitLayer extends RenderLayer<AbstractClientPlaye
         if (player.isInvisible()) {
             return;
         }
+        // How the body stands as a whole, for the sword and shield of the construct wheel (see SwordSpot).
+        SwordSpot.onRoot(player, poseStack);
         // Recharging: the lantern hangs from the left hand, which the arm pose has raised. While the ring dresses him
         // he holds it there already, from the moment it flew into his hand.
         float recharge = ClientRing.recharge(player, partialTick);
@@ -138,6 +140,11 @@ public final class GreenLanternSuitLayer extends RenderLayer<AbstractClientPlaye
         suit.rightArm.translateAndRotate(poseStack);
         Ring.draw(poseStack, buffers, light, slim, uniform.ring(), ClientRing.charge(player), glow);
         RingSpot.onBody(player, poseStack, Ring.stone(slim));
+        SwordSpot.onArm(player, poseStack, true, slim);
+        poseStack.popPose();
+        poseStack.pushPose();
+        suit.leftArm.translateAndRotate(poseStack);
+        SwordSpot.onArm(player, poseStack, false, slim);
         poseStack.popPose();
     }
 

@@ -5,7 +5,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import javax.annotation.Nullable;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.BlockParticleOption;
 import net.minecraft.core.particles.ParticleTypes;
@@ -15,7 +14,6 @@ import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
-import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.level.ClipContext;
@@ -80,13 +78,9 @@ public final class LandingSlam implements SpellEffect {
 
     private final int id = PowerRing.newId();
     private final ServerPlayer owner;
-    // What clients are told it is: his own slam, or one of the constructs his storm drops (see ConstructStorm).
-    private final int shape;
     private final int variant;
-    // Where it strikes: a construct of the storm follows its creature until it sets off.
-    private Vec3 center;
-    @Nullable
-    private final LivingEntity follow;
+    // Where it strikes.
+    private final Vec3 center;
     private final Vec3 facing;
     private final double radius;
     private final float damage;
@@ -97,58 +91,15 @@ public final class LandingSlam implements SpellEffect {
     private int age;
 
     private LandingSlam(ServerPlayer owner, CharacterAbility shockwave, int variant, Vec3 center, Vec3 facing) {
-        this(owner, ConstructPayload.SLAM, variant, center, null, facing, shockwave.value("radiusBlocks"),
-                shockwave.getDamage(), shockwave.value("knockback"), shockwave.value("slowMotion"),
-                shockwave.value("constructScale"));
-    }
-
-    private LandingSlam(ServerPlayer owner, int shape, int variant, Vec3 center, @Nullable LivingEntity follow,
-            Vec3 facing, double radius, float damage, double knockback, double pace, double size) {
         this.owner = owner;
-        this.shape = shape;
         this.variant = variant;
         this.center = center;
-        this.follow = follow;
         this.facing = facing;
-        this.radius = radius;
-        this.damage = damage;
-        this.knockback = knockback;
-        this.pace = pace;
-        this.size = size;
-    }
-
-    /**
-     * One construct of his storm (see {@link ConstructStorm}): it takes shape high over {@code center}, follows
-     * {@code follow} (when there is one) until it sets off, and drops with a shockwave of its own. Not his own slam, so
-     * any number of these go at once and none of them poses him.
-     *
-     * @param radius how far its shockwave reaches, in blocks
-     * @param pace   how slowly it plays, like the setting {@code slowMotion}
-     * @param size   how big it is, like the setting {@code constructScale}
-     */
-    static void drop(ServerPlayer owner, ServerLevel level, int variant, Vec3 center, @Nullable LivingEntity follow,
-            double radius, float damage, double knockback, double pace, double size) {
-        Vec3 way = new Vec3(center.x - owner.getX(), 0.0, center.z - owner.getZ());
-        if (way.lengthSqr() < 1.0E-4) {
-            Vec3 look = owner.getLookAngle();
-            way = new Vec3(look.x, 0.0, look.z);
-        }
-        way = way.lengthSqr() < 1.0E-6 ? new Vec3(0.0, 0.0, 1.0) : way.normalize();
-        LandingSlam drop = new LandingSlam(owner, ConstructPayload.DROP, variant, center, follow, way, radius, damage,
-                knockback, pace, size);
-        SpellCasting.start(level, drop);
-        drop.send(level);
-    }
-
-    /**
-     * The top of the ground under a creature: from its feet down to a good way below, so a construct dropped on one
-     * that flies or jumps still strikes the ground under it; where there is none, its feet.
-     */
-    static Vec3 groundUnder(ServerLevel level, Entity entity) {
-        Vec3 from = entity.position().add(0.0, 0.5, 0.0);
-        BlockHitResult hit = level.clip(new ClipContext(from, from.subtract(0.0, 12.0, 0.0), ClipContext.Block.COLLIDER,
-                ClipContext.Fluid.NONE, entity));
-        return hit.getType() == HitResult.Type.MISS ? entity.position() : hit.getLocation();
+        this.radius = shockwave.value("radiusBlocks");
+        this.damage = shockwave.getDamage();
+        this.knockback = shockwave.value("knockback");
+        this.pace = shockwave.value("slowMotion");
+        this.size = shockwave.value("constructScale");
     }
 
     /**
@@ -265,11 +216,6 @@ public final class LandingSlam implements SpellEffect {
     @Override
     public boolean tick(ServerLevel level, int tick) {
         this.age++;
-        // A construct of the storm keeps over its creature while it takes shape, and sets off from there.
-        if (this.follow != null && this.follow.isAlive() && this.follow.level() == level
-                && this.age < HANG_TICKS * this.pace) {
-            this.center = groundUnder(level, this.follow);
-        }
         // Every tick of the timeline that went by on this real tick: none, one, or more when it plays fast.
         int from = (int) Math.floor((this.age - 1) / this.pace) + 1;
         int to = (int) Math.floor(this.age / this.pace);
@@ -507,6 +453,7 @@ public final class LandingSlam implements SpellEffect {
     private void send(ServerLevel level) {
         PacketDistributor.sendToPlayersNear(level, null, this.center.x, this.center.y, this.center.z, VIEW_RANGE,
                 new ConstructPayload(this.id, this.owner.getId(), this.center, this.facing, (float) this.radius,
-                        (float) this.size, (float) this.pace, false, this.shape, this.variant, this.age, null));
+                        (float) this.size, (float) this.pace, false, ConstructPayload.SLAM, this.variant, this.age,
+                        null));
     }
 }

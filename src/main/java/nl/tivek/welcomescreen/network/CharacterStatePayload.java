@@ -14,8 +14,8 @@ import nl.tivek.welcomescreen.WelcomeScreenMod;
  *
  * @param character  index in GameCharacter, or -1 when the player is nobody special
  * @param cooldowns  ticks left per AbilitySlot, in slot order
- * @param ultimate   ticks left of the character's big ability (Doctor Octopus: Rampage, Green Lantern: the Construct
- *                   Storm); 0 when off
+ * @param ultimate   ticks left of the character's big ability (Doctor Octopus: Rampage, Green Lantern: the Air
+ *                   Strike); 0 when off
  * @param legs       how many tentacles the player walks on (0 = walking on their own feet)
  * @param marked     how many creatures are marked for the next Ground Strike
  */

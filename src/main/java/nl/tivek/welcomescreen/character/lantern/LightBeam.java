@@ -80,7 +80,7 @@ final class LightBeam implements SpellEffect {
         // Whatever happens now, the gathering is over.
         boolean charged = CHARGING.remove(owner.getUUID()) != null;
         if (FIRING.containsKey(owner.getUUID()) || Lantern.busy(owner) || GiantFist.holding(owner)
-                || Flight.descending(owner) || LightFlare.up(owner) || ConstructStorm.calling(owner)) {
+                || Flight.descending(owner) || LightFlare.up(owner) || AirStrike.calling(owner)) {
             if (charged) {
                 PowerRing.sync(owner);
             }

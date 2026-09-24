@@ -25,9 +25,9 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.entity.monster.Enemy;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
@@ -37,17 +37,17 @@ import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import nl.tivek.welcomescreen.WelcomeScreenMod;
-import nl.tivek.welcomescreen.character.lantern.Fear;
 import nl.tivek.welcomescreen.character.lantern.RingScan;
+import nl.tivek.welcomescreen.character.lantern.ScanGlow;
 import org.joml.Matrix4f;
 
 /**
  * What the ring's scan shows (see {@link RingScan}). Everyone sees its wave roll out: a band of light spreading out
  * from where it set out, a curtain of light under and over it, through walls and all. Only its maker sees what it
- * found: every creature it passed gets a frame of light round it, its corners marked, that shows through walls, with
- * its name and its health over it, for as long as the scan said. The frame snaps in from wide as the wave reaches it,
- * with a tick you can hear. Its colour says what it is: red for what is out to hurt you, violet for the creatures of
- * the dark (see {@link Fear}), blue for other players, green for everything else.
+ * found: every creature it passed glows, its whole outline drawn through walls and everything (see {@link ScanGlow}),
+ * and gets a frame of light round it, its corners marked, with its name and its health over it, for as long as the
+ * scan said. The frame snaps in from wide as the wave reaches it, with a tick you can hear. Its colour says what it is
+ * to you: red for what is out to hurt you (a monster, or anything angry with you), green for everything else.
  */
 @EventBusSubscriber(modid = WelcomeScreenMod.MODID, value = Dist.CLIENT)
 public final class RingSight {
@@ -61,16 +61,16 @@ public final class RingSight {
                     .setWriteMaskState(RenderStateShard.COLOR_WRITE)
                     .setCullState(RenderStateShard.NO_CULL)
                     .createCompositeState(false));
-    private static final int HOSTILE = 0xFF5A3C;
-    private static final int DARK = 0xC070FF;
-    private static final int PLAYER = 0x7FD4FF;
-    private static final int OTHER = 0x6CFF8E;
+    private static final int HOSTILE = 0xFF3A30;
+    private static final int FRIENDLY = 0x4CFF6E;
     // How long a frame takes to snap in, and to die away at the end, in ticks; how long the wave dies away.
     private static final float SNAP = 5.0F;
     private static final float GONE = 10.0F;
     private static final float WAVE_FADE = 10.0F;
     // How many new marks may tick at once, so a crowded place does not rattle.
     private static final int TICKS_AT_ONCE = 3;
+    // How far above and below the ground under it the air strike's plane marks creatures, in blocks (as the server).
+    private static final double PLANE_SCAN_HIGH = 48.0;
 
     /** One creature the scan marked: from when, until when, in client ticks. */
     private record Mark(int from, int until) {
@@ -110,6 +110,33 @@ public final class RingSight {
         }
     }
 
+    /**
+     * The ring he holds out while it scans: it shines, pulsing as it reads, and a ring of light bursts out of it as the
+     * wave sets off. Light, not a construct.
+     *
+     * @param own true for your own ring in first person: kept small, so it never covers your view
+     */
+    static void ringLight(ConstructPainter painter, Vec3 ring, double clock, boolean own) {
+        double strength = ConstructPainter.smooth(clock / 4.0) * (1.0 - ConstructPainter.smooth((clock - 30.0) / 8.0));
+        if (strength <= 0.0) {
+            return;
+        }
+        double size = own ? 0.06 : 0.22;
+        double pulse = 0.8 + 0.2 * Math.sin(clock * 1.3);
+        painter.flare(ring, size * pulse, strength);
+        if (clock < 8.0) {
+            Vec3 view = painter.camera().subtract(ring);
+            if (view.lengthSqr() > 1.0E-6) {
+                Vec3 facing = view.normalize();
+                Vec3 side = facing.cross(ConstructPainter.UP);
+                side = side.lengthSqr() < 1.0E-6 ? new Vec3(1.0, 0.0, 0.0) : side.normalize();
+                double burst = clock / 8.0;
+                painter.circle(ring, side, side.cross(facing), size * (1.0 + 5.0 * burst), size * 0.08, size * 0.5,
+                        ConstructPainter.alpha(1.0 - burst), ConstructPainter.alpha(0.5 * (1.0 - burst)));
+            }
+        }
+    }
+
     // ---- Marking ----
 
     @SubscribeEvent
@@ -122,6 +149,7 @@ public final class RingSight {
         }
         clientTicks++;
         MARKED.values().removeIf(mark -> clientTicks > mark.until() + GONE);
+        glow(level);
         Set<Integer> going = new HashSet<>();
         int ticked = 0;
         for (ClientConstructs.Scan scan : ClientConstructs.scans(0.0F)) {
@@ -130,11 +158,17 @@ public final class RingSight {
                 continue;
             }
             Set<Integer> seen = SEEN.computeIfAbsent(scan.id(), id -> new HashSet<>());
-            AABB area = new AABB(scan.center(), scan.center()).inflate(scan.reached());
+            // The plane's scans roll out over the ground under it and only mark what is out to hurt you, as far above
+            // and below as the plane's own guns look.
+            double high = scan.hostileOnly() ? PLANE_SCAN_HIGH : scan.reached();
+            AABB area = new AABB(scan.center(), scan.center()).inflate(scan.reached(), high, scan.reached());
             for (LivingEntity living : level.getEntitiesOfClass(LivingEntity.class, area,
                     entity -> entity != player && entity.isAlive() && !entity.isSpectator()
                             && !(entity instanceof ArmorStand))) {
-                if (living.distanceToSqr(scan.center()) > scan.reached() * scan.reached()
+                double dx = living.getX() - scan.center().x;
+                double dz = living.getZ() - scan.center().z;
+                double far = scan.hostileOnly() ? dx * dx + dz * dz : living.distanceToSqr(scan.center());
+                if (far > scan.reached() * scan.reached() || scan.hostileOnly() && !hostile(living)
                         || !seen.add(living.getId())) {
                     continue;
                 }
@@ -142,17 +176,30 @@ public final class RingSight {
                 MARKED.put(living.getId(), new Mark(clientTicks, until));
                 if (ticked++ < TICKS_AT_ONCE) {
                     minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.AMETHYST_CLUSTER_HIT,
-                            living instanceof Enemy ? 1.6F : 2.0F, 0.35F));
+                            hostile(living) ? 1.6F : 2.0F, 0.35F));
                 }
             }
         }
         SEEN.keySet().retainAll(going);
     }
 
+    /** Every creature still marked glows through walls in its colour; one whose mark has run out stops. */
+    private static void glow(ClientLevel level) {
+        Map<Integer, Integer> glowing = new HashMap<>();
+        for (Map.Entry<Integer, Mark> entry : MARKED.entrySet()) {
+            if (clientTicks <= entry.getValue().until()
+                    && level.getEntity(entry.getKey()) instanceof LivingEntity living && living.isAlive()) {
+                glowing.put(entry.getKey(), colour(living));
+            }
+        }
+        ScanGlow.set(glowing);
+    }
+
     @SubscribeEvent
     public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
         MARKED.clear();
         SEEN.clear();
+        ScanGlow.clear();
     }
 
     // ---- Drawing the marks ----
@@ -217,15 +264,17 @@ public final class RingSight {
     private record Label(LivingEntity living, Vec3 at, int rgb, float strength) {
     }
 
-    /** What colour a creature's frame is: what it is to you. */
+    /**
+     * What colour a creature's frame and glow are: what it is to you. Red for what is out to hurt you (a monster, or
+     * anything that has turned on you, like an angry wolf or golem), green for everything else.
+     */
     private static int colour(LivingEntity living) {
-        if (living.getType().is(Fear.FEARS_THE_LIGHT)) {
-            return DARK;
-        }
-        if (living instanceof Enemy) {
-            return HOSTILE;
-        }
-        return living instanceof Player ? PLAYER : OTHER;
+        return hostile(living) ? HOSTILE : FRIENDLY;
+    }
+
+    /** True for a creature out to hurt you: a monster, or one that is angry (its game says it is aggressive). */
+    static boolean hostile(LivingEntity living) {
+        return living instanceof Enemy || living instanceof Mob mob && mob.isAggressive();
     }
 
     /** The eight corners of a box marked with short lines of light, three at each corner along its edges. */

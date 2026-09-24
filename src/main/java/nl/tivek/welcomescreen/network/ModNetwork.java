@@ -11,7 +11,9 @@ import nl.tivek.welcomescreen.WelcomeScreenMod;
 import nl.tivek.welcomescreen.character.Characters;
 import nl.tivek.welcomescreen.character.GameCharacter;
 import nl.tivek.welcomescreen.character.docock.OctopusArms;
+import nl.tivek.welcomescreen.character.lantern.Construct;
 import nl.tivek.welcomescreen.character.lantern.LandingSlam;
+import nl.tivek.welcomescreen.character.lantern.SwordShield;
 import nl.tivek.welcomescreen.classes.ClassData;
 import nl.tivek.welcomescreen.classes.ClassGroup;
 import nl.tivek.welcomescreen.classes.PlayerClass;
@@ -54,6 +56,17 @@ public final class ModNetwork {
         registrar.playToClient(StaminaCostPayload.TYPE, StaminaCostPayload.STREAM_CODEC, ModNetwork::onStaminaCost);
         registrar.playToServer(ConstructPickPayload.TYPE, ConstructPickPayload.STREAM_CODEC,
                 ModNetwork::onConstructPick);
+        registrar.playToServer(ConstructHoldPayload.TYPE, ConstructHoldPayload.STREAM_CODEC,
+                ModNetwork::onConstructHold);
+    }
+
+    /** The construct wheel: Green Lantern took a construct out, or put his away. */
+    private static void onConstructHold(ConstructHoldPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> {
+            if (context.player() instanceof ServerPlayer serverPlayer) {
+                SwordShield.hold(serverPlayer, Construct.byIndex(payload.construct()));
+            }
+        });
     }
 
     /** The screen of /constructshockwave: a construct was picked. Players who may not cheat are told so. */

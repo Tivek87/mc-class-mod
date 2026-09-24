@@ -34,11 +34,6 @@ final class SlamPainter {
     // him, where he can see them; and how far they rise from there as they wind up to strike.
     static final double HANG = 2.6;
     static final double RISE = 0.7;
-    // A storm's constructs take shape this far under its ring of light, in blocks, at most this much higher than a
-    // landing slam's, and this much higher when the ring is out of sight.
-    private static final double STORM_UNDER = 1.5;
-    private static final double STORM_HIGHEST = 18.0;
-    private static final double STORM_HIGH = 10.0;
     // How long a construct takes to break up, in ticks.
     private static final double BREAK_TICKS = 8.0;
     // How far the ones that clap shut are turned towards him, in radians: seen straight from behind, two things that
@@ -68,12 +63,9 @@ final class SlamPainter {
      * @param flash   1 the moment it strikes, dying down over a few ticks
      * @param apart   0 to 1: how far it has broken up at the end
      * @param burst   the tick it starts to break up
-     * @param sky     how much higher than usual the ones that drop take shape, in blocks: 0 for a landing slam, high up
-     *                for the constructs of a storm (see {@link #drop})
      */
     record Moment(Vec3 ground, Vec3 forward, Vec3 right, Vec3 him, double t, double size, double grow,
-            double windup, double go, double fall, double since, double flash, double apart, double burst,
-            double sky) {
+            double windup, double go, double fall, double since, double flash, double apart, double burst) {
         boolean struck() {
             return this.since >= 0.0;
         }
@@ -117,32 +109,7 @@ final class SlamPainter {
      */
     static void draw(ConstructPainter painter, ConstructPayload slam, double clock, @Nullable Vec3 ring,
             @Nullable Vec3 him) {
-        play(painter, slam, slam.center(), clock, ring, him, 0.0, true);
-    }
-
-    /**
-     * One construct of a storm (see {@link ConstructPayload#DROP}): it takes shape high up, just under the storm's ring
-     * of light, which feeds it, and drops out of the sky onto {@code ground} with a shockwave of its own.
-     *
-     * @param ground where it strikes, glided between the server's updates (it keeps over its creature at first)
-     * @param sky    where the storm's ring hangs, or null when it is out of sight
-     * @param him    where its maker is, or null when he is out of sight
-     */
-    static void drop(ConstructPainter painter, ConstructPayload drop, Vec3 ground, double clock, @Nullable Vec3 sky,
-            @Nullable Vec3 him) {
-        double size = size(drop);
-        double high = sky == null ? STORM_HIGH : sky.y - ground.y - (HANG + RISE) * size - STORM_UNDER;
-        play(painter, drop, ground, clock, sky, him, Mth.clamp(high, 0.0, STORM_HIGHEST), false);
-    }
-
-    /**
-     * A construct that strikes the ground with a shockwave, at {@code ground}: a landing slam's, or one of a storm's,
-     * taking shape {@code sky} blocks higher up.
-     *
-     * @param fist true for a landing slam: his own fist smashed into the ground beside him
-     */
-    private static void play(ConstructPainter painter, ConstructPayload slam, Vec3 ground, double clock,
-            @Nullable Vec3 ring, @Nullable Vec3 him, double sky, boolean fist) {
+        Vec3 ground = slam.center();
         double t = clock / pace(slam);
         double size = size(slam);
         Vec3 forward = new Vec3(slam.facing().x, 0.0, slam.facing().z);
@@ -158,7 +125,7 @@ final class SlamPainter {
         double burst = burst(slam.variant());
         double apart = Mth.clamp((t - burst) / BREAK_TICKS, 0.0, 1.0);
         Moment m = new Moment(ground, forward, right, feet, t, size, backOut(t / LandingSlam.FORM_TICKS), windup, go,
-                go * go, since, flash, apart, burst, sky);
+                go * go, since, flash, apart, burst);
         if (apart < 1.0) {
             // Fresh out of the ring it is white-hot and cools to green as it takes shape; the moment it strikes it
             // flares up once more.
@@ -173,9 +140,7 @@ final class SlamPainter {
                 streaks(painter, anchor, m);
             }
         }
-        if (fist) {
-            fistImpact(painter, m);
-        }
+        fistImpact(painter, m);
         if (m.struck()) {
             wave(painter, m, slam.size());
         }
@@ -391,7 +356,7 @@ final class SlamPainter {
      * winds up, and then drops, faster and faster, onto the ground.
      */
     static double drop(Moment m) {
-        return ((HANG + RISE * m.windup()) * m.size() + m.sky()) * (1.0 - m.fall());
+        return (HANG + RISE * m.windup()) * m.size() * (1.0 - m.fall());
     }
 
     /** Where a dropped shape is: upright over where it strikes, as high as its fall has got. */

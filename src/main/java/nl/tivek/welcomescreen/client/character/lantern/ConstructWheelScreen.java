@@ -28,7 +28,7 @@ import org.lwjgl.glfw.GLFW;
  * (see {@link ConstructWheel}).
  *
  * <p>The wheel fills almost the whole height of the screen. What the mouse points at is written in its middle:
- * its name, and what it is. A thin plate along the bottom of the screen (never over the wheel) says how a
+ * its name, and what it is. A thin plate along the top of the screen (never over the wheel) says how a
  * construct's mouse buttons work and what to do. Every construct will use the mouse the same way: left click
  * attacks, from the right hand (where the ring is); right click defends, from the left hand. None of them do
  * anything yet: picking one only writes it down (see {@link ConstructChoice}) and shows it above your hotbar.
@@ -49,7 +49,7 @@ public class ConstructWheelScreen extends Screen {
     /** How big the wheel gets at most, and the least it shrinks to on the smallest screens. */
     private static final float OUTER_MAX = 170.0F;
     private static final float OUTER_MIN = 28.0F;
-    /** The plate along the bottom: its padding, the height of a line, and how far it keeps from the edge. */
+    /** The plate along the top: its padding, the height of a line, and how far it keeps from the edge. */
     private static final float BAR_PAD = 4.0F;
     private static final int BAR_LINE = 11;
     private static final float EDGE = 5.0F;
@@ -174,13 +174,13 @@ public class ConstructWheelScreen extends Screen {
 
     // ---- Where everything sits ----
 
-    /** How tall the plate along the bottom is: two lines. */
+    /** How tall the plate along the top is: two lines. */
     private static float bar() {
         return BAR_PAD * 2.0F + BAR_LINE * 2;
     }
 
     /**
-     * Half the height of the wheel: as big as fits above the plate at the bottom, with the dark disc behind it clear
+     * Half the height of the wheel: as big as fits below the plate at the top, with the dark disc behind it clear
      * of the edges too, under a limit.
      */
     private float outer() {
@@ -193,9 +193,9 @@ public class ConstructWheelScreen extends Screen {
         return this.width * 0.5F;
     }
 
-    /** The middle of the wheel: halfway down the room above the plate, so a little above the middle of the screen. */
+    /** The middle of the wheel: halfway down the room below the plate, so a little below the middle of the screen. */
     private float middleY() {
-        return (this.height - bar()) * 0.5F;
+        return (this.height + bar()) * 0.5F;
     }
 
     /** The middle of slice number {@code index}, in degrees clockwise from straight up. */
@@ -207,7 +207,7 @@ public class ConstructWheelScreen extends Screen {
      * Which slice the mouse points at. Only the direction counts, so a flick of the mouse is enough and
      * it does not matter how far it went; close to the middle nothing is pointed at. The direction is taken
      * from the middle of the screen, where the mouse stands when the wheel opens, so a flick straight to the
-     * right picks the slice straight to the right even though the wheel sits a little higher.
+     * right picks the slice straight to the right even though the wheel sits a little lower.
      */
     private void followMouse(double mouseX, double mouseY) {
         // A mouse that has not moved says nothing: that leaves a slot picked with the scroll wheel alone
@@ -309,9 +309,16 @@ public class ConstructWheelScreen extends Screen {
 
             float radius = (inner + edge) * 0.5F;
             float angle = this.slice(i) * Mth.DEG_TO_RAD;
-            emptyIcon(graphics, middleX + Mth.sin(angle) * radius, middleY - Mth.cos(angle) * radius,
-                    (edge - inner) * 0.34F * (1.0F + 0.08F * glow),
-                    GuiShapes.mix(GREEN, BRIGHT, 0.3F + 0.7F * glow), (0.55F + 0.45F * glow) * this.open);
+            float iconX = middleX + Mth.sin(angle) * radius;
+            float iconY = middleY - Mth.cos(angle) * radius;
+            float iconSize = (edge - inner) * 0.34F * (1.0F + 0.08F * glow);
+            int iconColour = GuiShapes.mix(GREEN, BRIGHT, 0.3F + 0.7F * glow);
+            float iconAlpha = (0.55F + 0.45F * glow) * this.open;
+            if (construct == Construct.SWORD_SHIELD) {
+                swordShieldIcon(graphics, iconX, iconY, iconSize, iconColour, iconAlpha);
+            } else {
+                emptyIcon(graphics, iconX, iconY, iconSize, iconColour, iconAlpha);
+            }
             // A dot marks the one you already have out.
             if (construct == held) {
                 GuiShapes.disc(graphics, middleX + Mth.sin(angle) * (inner + 4.0F),
@@ -353,6 +360,43 @@ public class ConstructWheelScreen extends Screen {
             }
         }
         GuiShapes.disc(graphics, x, y, thick * 0.9F, GuiShapes.fade(rgb, alpha * 0.8F));
+    }
+
+    /**
+     * The picture of the sword and shield: a heater shield with a ring on its face, and a sword crossing behind it from
+     * its bottom left to its top right, with its crossguard and pommel.
+     */
+    private static void swordShieldIcon(GuiGraphics graphics, float x, float y, float size, int rgb, float alpha) {
+        float half = size * 0.5F;
+        float thick = Math.max(1.0F, size * 0.09F);
+        int line = GuiShapes.fade(rgb, alpha);
+        // The sword, corner to corner behind the shield.
+        float fromX = x - half * 0.95F;
+        float fromY = y + half * 0.95F;
+        float toX = x + half * 1.05F;
+        float toY = y - half * 1.05F;
+        GuiShapes.stroke(graphics, fromX, fromY, toX, toY, thick * 1.1F, line);
+        float guardX = x - half * 0.55F;
+        float guardY = y + half * 0.55F;
+        float cross = half * 0.32F;
+        GuiShapes.stroke(graphics, guardX - cross, guardY - cross, guardX + cross, guardY + cross, thick, line);
+        GuiShapes.disc(graphics, fromX, fromY, thick * 1.1F, line);
+        // The shield: flat on top, sides coming in to a point below.
+        float w = half * 0.62F;
+        float top = y - half * 0.62F;
+        float waist = y + half * 0.1F;
+        float point = y + half * 0.78F;
+        int shield = GuiShapes.fade(GuiShapes.mix(0x0B2E18, rgb, 0.35F), Math.min(1.0F, alpha * 1.1F));
+        for (float row = top; row <= point; row += 0.75F) {
+            float across = row <= waist ? w : w * (1.0F - (row - waist) / (point - waist));
+            GuiShapes.stroke(graphics, x - across, row, x + across, row, 1.0F, shield);
+        }
+        GuiShapes.stroke(graphics, x - w, top, x + w, top, thick, line);
+        GuiShapes.stroke(graphics, x - w, top, x - w, waist, thick, line);
+        GuiShapes.stroke(graphics, x + w, top, x + w, waist, thick, line);
+        GuiShapes.stroke(graphics, x - w, waist, x, point, thick, line);
+        GuiShapes.stroke(graphics, x + w, waist, x, point, thick, line);
+        GuiShapes.ring(graphics, x, y - half * 0.1F, half * 0.26F, Math.max(1.0F, thick * 0.8F), line);
     }
 
     /** A little wedge that shows which way the mouse is pointing. */
@@ -406,7 +450,7 @@ public class ConstructWheelScreen extends Screen {
     }
 
     /**
-     * A thin plate along the bottom of the screen: how a construct's mouse buttons work (left click attacks from the
+     * A thin plate along the top of the screen: how a construct's mouse buttons work (left click attacks from the
      * right hand, right click defends from the left hand) and what to do. It never reaches the wheel.
      */
     private void renderBar(GuiGraphics graphics) {
@@ -424,7 +468,7 @@ public class ConstructWheelScreen extends Screen {
         Component hint = Component.translatable(KEY + (this.pointed < 0 ? "hint_middle" : "hint"),
                 this.key.getTranslatedKeyMessage());
         float plateWidth = Math.min(widest, Math.max(this.font.width(controls), this.font.width(hint)) + 16.0F);
-        float top = this.height - EDGE - bar();
+        float top = EDGE;
         GuiShapes.roundRect(graphics, middle - plateWidth * 0.5F, top, plateWidth, bar(), 4.0F,
                 GuiShapes.fade(0x04140A, 0.78F * this.open));
         GuiShapes.flush(graphics);

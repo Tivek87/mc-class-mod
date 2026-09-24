@@ -194,9 +194,16 @@ public final class ConstructHud {
         labels.forEach(Runnable::run);
     }
 
-    /** What holding this button leads to: the laser, the dome, or in the air the brake. */
+    /**
+     * What holding this button leads to: the laser, the dome, or in the air the brake; with the sword and shield the
+     * flurry of stabs and the shield charge.
+     */
     private static Component holdName(CharacterAbility ability, @Nullable Player player) {
         String prefix = "screen." + WelcomeScreenMod.MODID + ".hold.";
+        if (SwordArms.holding()) {
+            return Component.translatable(prefix + (ability.mouseButton() == CharacterAbility.Mouse.LEFT ? "flurry"
+                    : "charge"));
+        }
         if (ability.mouseButton() == CharacterAbility.Mouse.LEFT) {
             return Component.translatable(prefix + "beam");
         }
@@ -211,6 +218,11 @@ public final class ConstructHud {
     @Nullable
     public static Component status(CharacterAbility ability, Player player) {
         String prefix = "screen." + WelcomeScreenMod.MODID + ".character.";
+        // With the sword and shield of the construct wheel in his hands the mouse is theirs.
+        if (SwordArms.holding() && ability.mouseButton() != CharacterAbility.Mouse.NONE) {
+            return Component.translatable(prefix + (ability.mouseButton() == CharacterAbility.Mouse.LEFT ? "sword"
+                    : "shield"));
+        }
         return switch (ability.id()) {
             case "light_bolt" -> ClientRing.has(player, RingPayload.BEAM)
                     ? Component.translatable(prefix + "beam") : null;
@@ -221,6 +233,8 @@ public final class ConstructHud {
                     ? Component.translatable(prefix + "diving") : null;
             case "flight" -> ClientRing.has(player, RingPayload.DESCENT) ? Component.translatable(prefix + "sinking")
                     : ClientRing.flight(player, 0.0F) >= 0.0F ? Component.translatable(prefix + "flying") : null;
+            case "light_bubble" -> ClientConstructs.bubbleAge(player.getId(), 0.0F) >= 0.0F
+                    ? Component.translatable(prefix + "trapped") : null;
             default -> null;
         };
     }

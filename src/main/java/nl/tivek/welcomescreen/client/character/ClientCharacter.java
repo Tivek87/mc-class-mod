@@ -25,6 +25,7 @@ import nl.tivek.welcomescreen.character.AbilitySlot;
 import nl.tivek.welcomescreen.character.CharacterAbility;
 import nl.tivek.welcomescreen.character.Characters;
 import nl.tivek.welcomescreen.character.GameCharacter;
+import nl.tivek.welcomescreen.character.lantern.SwordMove;
 import nl.tivek.welcomescreen.client.character.docock.ClimbControl;
 import nl.tivek.welcomescreen.client.character.docock.TentacleLegs;
 import nl.tivek.welcomescreen.client.character.lantern.ClientRing;
@@ -32,6 +33,7 @@ import nl.tivek.welcomescreen.client.character.lantern.ConstructChoice;
 import nl.tivek.welcomescreen.client.character.lantern.ConstructHud;
 import nl.tivek.welcomescreen.client.character.lantern.ConstructWheel;
 import nl.tivek.welcomescreen.client.character.lantern.ConstructWheelScreen;
+import nl.tivek.welcomescreen.client.character.lantern.SwordArms;
 import nl.tivek.welcomescreen.client.stamina.StaminaClient;
 import nl.tivek.welcomescreen.network.AbilityActionPayload;
 import nl.tivek.welcomescreen.network.CharacterStatePayload;
@@ -180,18 +182,56 @@ public final class ClientCharacter {
         boolean ours = takesMouse(player) && !handBusy(player, now, ability.mouseButton());
         boolean free = ours && minecraft.screen == null && !StaminaClient.isExhausted();
         int index = ability.slot().ordinal();
-        switch (MouseHold.tick(ability, free && key.isDown(), !free)) {
-            case TAP -> tap(player, ability);
-            case HOLD -> send(index, true, data(player) | Characters.HOLD);
-            case RELEASE, LET_GO -> send(index, false, data(player));
-            case NOTHING -> {
-                // Still down and not held long enough yet, or up and nothing to tell.
+        MouseHold.Step step = MouseHold.tick(ability, free && key.isDown(), !free);
+        if (SwordArms.holding()) {
+            sword(player, ability, index, step);
+        } else {
+            switch (step) {
+                case TAP -> tap(player, ability);
+                case HOLD -> send(index, true, data(player) | Characters.HOLD);
+                case RELEASE, LET_GO -> send(index, false, data(player));
+                case NOTHING -> {
+                    // Still down and not held long enough yet, or up and nothing to tell.
+                }
             }
         }
         HELD[index] = MouseHold.holding(ability.mouseButton());
         if (ours) {
             while (key.consumeClick()) {
                 // The ring answers the button itself; the game must not swing or use anything as well.
+            }
+        }
+    }
+
+    /**
+     * The mouse while you hold the sword and shield of the construct wheel: a tap of the attack button cuts or thrusts, a
+     * tap of the defend button bashes (a move picked at random, played at once and told to the server), holding the
+     * attack button does the flurry and holding the defend button charges; letting go ends either.
+     */
+    private static void sword(LocalPlayer player, CharacterAbility ability, int index, MouseHold.Step step) {
+        boolean attack = ability.mouseButton() == CharacterAbility.Mouse.LEFT;
+        switch (step) {
+            case TAP -> {
+                SwordMove move = attack ? SwordArms.attack(player) : SwordArms.bash(player);
+                if (move != null) {
+                    send(index, true, data(player) | Characters.TAP | move.ordinal() << Characters.MOVE_SHIFT);
+                }
+            }
+            case HOLD -> {
+                if (attack ? SwordArms.flurry(player) : SwordArms.charge(player)) {
+                    send(index, true, data(player) | Characters.HOLD);
+                }
+            }
+            case RELEASE, LET_GO -> {
+                if (attack) {
+                    SwordArms.stopFlurry();
+                    send(index, false, data(player));
+                } else if (SwordArms.stopCharge()) {
+                    send(index, false, data(player));
+                }
+            }
+            case NOTHING -> {
+                // Still down and not held long enough yet, or up and nothing to tell.
             }
         }
     }

@@ -50,12 +50,13 @@ import nl.tivek.welcomescreen.network.RingPayload;
 /**
  * Flying as Green Lantern, on this side. Every game moves its own player, so your own flight is steered here:
  * <ul>
- * <li><b>Taking off</b> (see {@link Flight#ARISE_TICKS}): you stop where you are while your fists come to your
- * chest, then your arms sweep down along your sides and you rise a few blocks, looking up, and from there you
- * fly on without a break.</li>
- * <li><b>Flying</b>: hold forward and you pick up speed the way you look, up to a little faster than an elytra
- * with rockets; let go and you glide to a hover. Jump and sneak rise and sink, left and right slide sideways.
- * You carry your speed into every turn, so you swing through curves instead of snapping round.</li>
+ * <li><b>Taking off</b> (see {@link Flight#ARISE_TICKS}), with the flight key or by tapping jump twice: you stop
+ * where you are while your fists come to your chest, then your arms sweep down along your sides and you rise a few
+ * blocks, looking up, and from there you fly on without a break.</li>
+ * <li><b>Flying</b>: hold forward and you pick up speed the way you look, slowly, until after half a minute you
+ * reach the top speed; let go and you glide to a hover. Jump and sneak rise and sink, left and right slide
+ * sideways. You carry your speed into every turn, so you swing through curves instead of snapping round. At top
+ * speed two jets of hard light hang behind you on chains (see {@link BoostJets}).</li>
  * <li>The dome works as a brake chute: while it is up your speed is halved.</li>
  * <li>Walls and the ground stop you; knocks from a hit or a blast move you as they would anyone. Sink down onto
  * the ground slowly and you land by yourself, and fly into it looking down and you land as well. Dive into it at full
@@ -92,9 +93,9 @@ public final class ClientFlight {
     private static final double RISE = 0.46;
     private static final double SINK = 0.18;
     // You land by yourself when you touch ground slower than this.
-    private static final double LAND_SPEED = 0.35;
-    // Speed that counts as fast: the streak of light, the dust and the wind start around here.
-    private static final double FAST = 0.9;
+    private static final double LAND_SPEED = 0.2;
+    // Part of the top speed that counts as fast: the streak of light, the dust and the wind start around here.
+    private static final double FAST = 0.51;
     // How many ticks of the path behind a flyer the streak of light shows.
     private static final int TRAIL = 12;
     // How far below a flyer the ground still throws up dust, in blocks.
@@ -125,7 +126,7 @@ public final class ClientFlight {
 
     // ---- Your own landing slam ----
     // How much of your top speed you must fly into the ground with, and how much of that must go down, for a slam.
-    private static final double SLAM_SPEED = 0.6;
+    private static final double SLAM_SPEED = 0.45;
     private static final double SLAM_DOWN = 0.35;
     // Flying into the ground slower than a slam but still going down this fast, in blocks per tick, and looking at
     // least this far down, in degrees: you land.
@@ -142,6 +143,15 @@ public final class ClientFlight {
     static final int SLAM_ROOT = 17;
     // The tick (of your own player) you last slammed into the ground, or MIN_VALUE.
     private static int slamTick = Integer.MIN_VALUE;
+
+    // ---- Taking off with a double jump, and the jets at top speed ----
+    // Two taps of jump at most this many ticks apart take off, as the flight key does.
+    private static final int DOUBLE_JUMP = 7;
+    // At top speed the jets come; they go again once you have lost this much of the speed you picked up.
+    private static final double BOOST_KEEP = 0.85;
+    private static boolean jumpWasDown;
+    private static int lastJump = Integer.MIN_VALUE;
+    private static boolean boosting;
 
     // ---- Everyone who flies, as seen ----
     private static final Map<Integer, Motion> MOTIONS = new HashMap<>();
@@ -191,6 +201,17 @@ public final class ClientFlight {
      */
     static boolean dropping(Entity player) {
         return ClientRing.flight(player, 0.0F) < 0.0F && ClientRing.has(player, RingPayload.DIVE);
+    }
+
+    /**
+     * True while this flyer is at top speed, with the jets behind him: your own the moment you reach it, anyone else's
+     * as the server tells.
+     */
+    static boolean boosting(Entity flyer) {
+        if (flyer == Minecraft.getInstance().player) {
+            return steering && boosting;
+        }
+        return ClientRing.has(flyer, RingPayload.BOOST) && ClientRing.flight(flyer, 0.0F) >= 0.0F;
     }
 
     /** Your own speed in blocks per tick while you steer yourself through the air; zero otherwise. */
@@ -247,7 +268,7 @@ public final class ClientFlight {
     }
 
     /** The top speed of a flight from the settings, in blocks per tick. */
-    private static double fullSpeed() {
+    static double fullSpeed() {
         CharacterAbility flight = GameCharacter.GREEN_LANTERN.byName("flight");
         return flight == null ? 1.75 : flight.value("topSpeed") / 20.0;
     }
@@ -356,6 +377,8 @@ public final class ClientFlight {
             gainSpeed(player, forward > 0.01F);
             velocity = steer(player, forward, strafe, up, down, 1.0);
         }
+        boost(!onDive && !ClientRing.has(player, RingPayload.DESCENT) && t >= ARISE
+                && (momentum >= 1.0 || boosting && momentum >= BOOST_KEEP));
         if (!player.onGround()) {
             airborne = true;
         }
@@ -479,10 +502,51 @@ public final class ClientFlight {
 
     /** Your flight is over (you landed, turned it off, or are no longer Green Lantern): the game has you again. */
     private static void stop() {
+        boost(false);
         steering = false;
         afterMove = null;
         landing = false;
         momentum = 0.0;
+    }
+
+    /**
+     * You reach top speed, or drop below it again: the jets come or go, and the server tells everyone around.
+     */
+    private static void boost(boolean on) {
+        if (on == boosting) {
+            return;
+        }
+        boosting = on;
+        CharacterAbility flight = GameCharacter.GREEN_LANTERN.byName("flight");
+        if (flight != null && Minecraft.getInstance().getConnection() != null) {
+            PacketDistributor.sendToServer(new AbilityActionPayload(flight.slot().ordinal(), on, Characters.BOOST));
+        }
+    }
+
+    /**
+     * Tapping jump twice takes off, as the flight key does: on the ground (the first tap jumps) or in the middle of a
+     * jump or a fall. Not while the game lets you fly by itself (creative), where the double tap is the game's own.
+     */
+    private static void doubleJump(Minecraft minecraft, LocalPlayer player) {
+        boolean down = minecraft.options.keyJump.isDown();
+        if (down && !jumpWasDown && minecraft.screen == null) {
+            boolean free = ClientCharacter.active() == GameCharacter.GREEN_LANTERN
+                    && ClientRing.flight(player, 0.0F) < 0.0F && ClientRing.arrival(player, 0.0F) < 0.0F
+                    && !player.getAbilities().mayfly && !player.isPassenger() && !player.isFallFlying()
+                    && !player.isSpectator();
+            // No earlier tap is no double tap (and the gap is only counted once there is one: the sum would run over).
+            int gap = lastJump == Integer.MIN_VALUE ? Integer.MAX_VALUE : player.tickCount - lastJump;
+            if (free && gap >= 0 && gap <= DOUBLE_JUMP) {
+                lastJump = Integer.MIN_VALUE;
+                CharacterAbility flight = GameCharacter.GREEN_LANTERN.byName("flight");
+                if (flight != null) {
+                    PacketDistributor.sendToServer(new AbilityActionPayload(flight.slot().ordinal(), true, 0));
+                }
+            } else {
+                lastJump = player.tickCount;
+            }
+        }
+        jumpWasDown = down;
     }
 
     // ---- Everyone who flies, as seen ----
@@ -493,6 +557,9 @@ public final class ClientFlight {
         ClientLevel level = minecraft.level;
         if (level == null || minecraft.isPaused()) {
             return;
+        }
+        if (minecraft.player != null) {
+            doubleJump(minecraft, minecraft.player);
         }
         for (AbstractClientPlayer player : level.players()) {
             boolean flying = ClientRing.flight(player, 0.0F) >= 0.0F;
@@ -533,7 +600,8 @@ public final class ClientFlight {
         motion.lastYaw = yaw;
         double speed = motion.velocity.length();
         // Turning at speed leans you into the curve, the way a bird banks.
-        float lean = flying ? Mth.clamp(turn * 0.045F * (float) Math.min(1.0, speed / FAST), -0.75F, 0.75F) : 0.0F;
+        float lean = flying ? Mth.clamp(turn * 0.045F * (float) Math.min(1.0, speed / fast()), -0.75F, 0.75F)
+                : 0.0F;
         motion.bank = Mth.lerp(0.18F, motion.bank, lean);
         if (flying) {
             motion.flew = true;
@@ -551,7 +619,7 @@ public final class ClientFlight {
             motion.trail.removeLast();
         }
         motion.ground = groundBelow(level, player);
-        if (flying && speed > FAST * 0.6) {
+        if (flying && speed > fast() * 0.6) {
             skim(level, player, motion, speed);
         }
         motion.braceO = motion.brace;
@@ -591,7 +659,7 @@ public final class ClientFlight {
         }
         BlockPos below = BlockPos.containing(player.getX(), player.getY() - motion.ground - 0.2, player.getZ());
         BlockState state = level.getBlockState(below);
-        double strength = (1.0 - motion.ground / SKIM) * Math.min(1.0, speed / 2.0);
+        double strength = (1.0 - motion.ground / SKIM) * Math.min(1.0, speed / (fullSpeed() * 1.15));
         int count = (int) (1 + strength * 5);
         double y = below.getY() + 1.05;
         for (int i = 0; i < count; i++) {
@@ -629,7 +697,7 @@ public final class ClientFlight {
             Motion motion = entry.getValue();
             Entity entity = level.getEntity(entry.getKey());
             double speed = motion.velocity.length();
-            if (entity == null || entity.isInvisible() || motion.trail.size() < 3 || speed < FAST * 0.5) {
+            if (entity == null || entity.isInvisible() || motion.trail.size() < 3 || speed < fast() * 0.5) {
                 continue;
             }
             if (painter == null) {
@@ -637,7 +705,7 @@ public final class ClientFlight {
                         (float) (level.getGameTime() % 24000L) + partialTick);
             }
             Vec3 head = entity.getPosition(partialTick).add(0.0, entity.getBbHeight() * 0.5, 0.0);
-            painter.trail(head, motion.trail, Mth.clamp((speed - FAST * 0.5) / FAST, 0.0, 1.0),
+            painter.trail(head, motion.trail, Mth.clamp((speed - fast() * 0.5) / fast(), 0.0, 1.0),
                     entity == minecraft.player && !camera.isDetached());
         }
         if (painter != null) {
@@ -726,6 +794,11 @@ public final class ClientFlight {
         SuitGlow.clear();
     }
 
+    /** The speed that counts as fast, in blocks per tick: about half the top speed. */
+    static double fast() {
+        return FAST * fullSpeed();
+    }
+
     /** 0 below 0, 1 above 1, and a smooth S-curve in between. */
     static double smooth(double t) {
         double c = Mth.clamp(t, 0.0, 1.0);
@@ -753,9 +826,9 @@ public final class ClientFlight {
             this.x = this.player.getX();
             this.y = this.player.getY();
             this.z = this.player.getZ();
-            double speed = velocity.length();
-            this.volume = (float) Mth.clamp((speed - 0.3) / 2.2, 0.0, 0.85);
-            this.pitch = 0.9F + (float) Math.min(0.5, speed * 0.18);
+            double speed = velocity.length() / fullSpeed();
+            this.volume = (float) Mth.clamp((speed - 0.17) * 0.8, 0.0, 0.85);
+            this.pitch = 0.9F + (float) Math.min(0.5, speed * 0.32);
         }
     }
 }

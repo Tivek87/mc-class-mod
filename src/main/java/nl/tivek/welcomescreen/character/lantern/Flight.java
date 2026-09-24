@@ -35,9 +35,9 @@ public final class Flight implements SpellEffect {
     /** Ticks the take-off lasts: fists to the chest, arms down along the sides, and up. Clients play it too. */
     public static final int ARISE_TICKS = 24;
     // Below this speed, in blocks per tick, flying into a creature with the shield up does not ram it.
-    private static final double RAM_SPEED = 0.4;
+    private static final double RAM_SPEED = 0.22;
     /** Below this speed, in blocks per tick, the ram cone low over the ground does not scrape along it. */
-    public static final double SCRAPE_SPEED = 0.2;
+    public static final double SCRAPE_SPEED = 0.11;
     // Ticks before the same creature can be rammed again.
     private static final int RAM_AGAIN = 12;
     // A descent that somehow never touches ground ends by itself after this many ticks.
@@ -49,7 +49,7 @@ public final class Flight implements SpellEffect {
     // How much of his top speed of the last few ticks is kept each tick, and how much of his top speed the server
     // must have seen before it believes a landing slam (his own game asks for it at 60%).
     private static final double PEAK_FADE = 0.85;
-    private static final double SLAM_CHECK = 0.45;
+    private static final double SLAM_CHECK = 0.35;
 
     private static final Map<UUID, Flight> FLYING = new HashMap<>();
 
@@ -60,6 +60,8 @@ public final class Flight implements SpellEffect {
     private int descentTicks;
     // On his way down to a slam, after the shockwave key: his own game dives him straight down.
     private boolean dive;
+    // At top speed, as his own game told: two jets of hard light hang behind him on chains.
+    private boolean boost;
     private int diveTicks;
     // How far he moved on the last tick, as his own game told it: the speed his shots take along.
     private Vec3 velocity = Vec3.ZERO;
@@ -141,6 +143,28 @@ public final class Flight implements SpellEffect {
         flight.sound(level, SoundEvents.BEACON_POWER_SELECT, 0.8F, 1.6F);
         PowerRing.sync(owner);
         return true;
+    }
+
+    /**
+     * His own game tells he reached top speed ({@code on}) or dropped below it: everyone around sees the jets that
+     * hang behind him then. It starts no cooldown.
+     *
+     * @return always false
+     */
+    static boolean boost(ServerPlayer owner, boolean on) {
+        Flight flight = FLYING.get(owner.getUUID());
+        boolean now = on && flight != null && !flight.descending && flight.ticks >= ARISE_TICKS;
+        if (flight != null && flight.boost != now) {
+            flight.boost = now;
+            PowerRing.sync(owner);
+        }
+        return false;
+    }
+
+    /** True while this player flies at top speed. */
+    static boolean boosting(ServerPlayer player) {
+        Flight flight = FLYING.get(player.getUUID());
+        return flight != null && flight.boost;
     }
 
     /** True while this player dives on his ring for a slam. */
@@ -348,6 +372,7 @@ public final class Flight implements SpellEffect {
     private void descend(ServerLevel level) {
         this.descending = true;
         this.dive = false;
+        this.boost = false;
         PowerRing.tell(this.owner, "flight_empty");
         this.sound(level, SoundEvents.BEACON_DEACTIVATE, 1.0F, 1.3F);
         LightShield.stop(this.owner);

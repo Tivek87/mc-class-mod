@@ -80,7 +80,7 @@ public final class RechargeAnimation {
 
     // Your arms where the game holds an empty hand: the shoulder, the grip, and how long the arm is between.
     static final Vector3f SHOULDER_RIGHT = restPoint(1.0F, -2.0F);
-    private static final Vector3f SHOULDER_LEFT = restPoint(-1.0F, -2.0F);
+    static final Vector3f SHOULDER_LEFT = restPoint(-1.0F, -2.0F);
     static final Vector3f HAND_RIGHT = restPoint(1.0F, 9.0F);
     private static final Vector3f HAND_LEFT = restPoint(-1.0F, 9.0F);
 

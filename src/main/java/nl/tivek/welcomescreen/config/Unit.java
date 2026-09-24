@@ -40,7 +40,9 @@ public enum Unit {
     /** A number of blocks. */
     BLOCK_COUNT,
     /** A strength without a unit of its own (a push, a throw): shown as a factor. */
-    STRENGTH;
+    STRENGTH,
+    /** A chance from 0 to 1: shown as a percentage. */
+    CHANCE;
 
     private static final String PREFIX = "config." + WelcomeScreenMod.MODID + ".unit.";
 
@@ -63,6 +65,7 @@ public enum Unit {
             case HARDNESS -> value < 0.0 ? key("breaks_nothing") : key("breaks_up_to", key(material(value)));
             case BLOCK_COUNT -> key("block_count", number(value));
             case STRENGTH -> key("factor", number(value));
+            case CHANCE -> key("chance", number(Math.round(value * 100.0)));
         };
     }
 

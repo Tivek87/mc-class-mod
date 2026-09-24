@@ -4,14 +4,18 @@ import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.blaze3d.vertex.VertexFormat;
-import java.util.ArrayList;
+import java.util.ArrayDeque;
+import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
+import java.util.Map;
+import java.util.WeakHashMap;
 import javax.annotation.Nullable;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderStateShard;
 import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.util.Mth;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix4f;
 
@@ -19,6 +23,19 @@ import org.joml.Matrix4f;
  * Draws Green Lantern's hard-light constructs: solid green shapes with bright edges and a glow around them,
  * and the beam of light from the ring that feeds them. A fist is built out of boxes (palm, fingers,
  * knuckles, thumb, wrist, forearm), the way the ring would shape it.
+ *
+ * <p>The engine under it is built for big models too (a jet the size of a house has thousands of sides):
+ * <ul>
+ * <li>every corner is kept as plain numbers in buffers that are used again frame after frame, so drawing makes
+ * nothing new for each corner;</li>
+ * <li>a shape that lies wholly outside the view is skipped at once (see {@link #visible}), measured by a ball round
+ * it that is worked out once per shape;</li>
+ * <li>which edges of a box model have another box against them is worked out once per model, not every frame;</li>
+ * <li>far away, where a shape is only a few pixels big, the soft glow along its edges is left out (see
+ * {@link #tiny}).</li>
+ * </ul>
+ * Besides boxes and the round parts of {@link Mesh} (with lofted bodies and wings for aircraft), it draws exhaust
+ * flames ({@link #exhaust}) and chains of solid links ({@link #chain}).
  */
 final class ConstructPainter {
     /**
@@ -54,6 +71,26 @@ final class ConstructPainter {
                     .setWriteMaskState(RenderStateShard.COLOR_WRITE)
                     .setCullState(RenderStateShard.NO_CULL)
                     .setOutputState(RenderStateShard.WEATHER_TARGET)
+                    .createCompositeState(false));
+    /**
+     * The bright lines and the glow of constructs in your own hands in first person: those are drawn after the world,
+     * straight into the picture (the target the world's light goes to has already been put on screen by then).
+     */
+    private static final RenderType HAND_LIGHT = RenderType.create("welcomescreen_hard_light_hand",
+            DefaultVertexFormat.POSITION_COLOR, VertexFormat.Mode.QUADS, 4096, false, false,
+            RenderType.CompositeState.builder()
+                    .setShaderState(RenderStateShard.POSITION_COLOR_SHADER)
+                    .setTransparencyState(RenderStateShard.TRANSLUCENT_TRANSPARENCY)
+                    .setWriteMaskState(RenderStateShard.COLOR_WRITE)
+                    .setCullState(RenderStateShard.NO_CULL)
+                    .createCompositeState(false));
+    private static final RenderType HAND_GLOW = RenderType.create("welcomescreen_hard_light_hand_glow",
+            DefaultVertexFormat.POSITION_COLOR, VertexFormat.Mode.QUADS, 4096, false, false,
+            RenderType.CompositeState.builder()
+                    .setShaderState(RenderStateShard.RENDERTYPE_LIGHTNING_SHADER)
+                    .setTransparencyState(RenderStateShard.LIGHTNING_TRANSPARENCY)
+                    .setWriteMaskState(RenderStateShard.COLOR_WRITE)
+                    .setCullState(RenderStateShard.NO_CULL)
                     .createCompositeState(false));
 
     static final Vec3 UP = new Vec3(0, 1, 0);
@@ -190,6 +227,13 @@ final class ConstructPainter {
     /** The bolt the ring shoots, along z: a pointed nose, a round body, and a tail narrowing behind it. */
     private static final Shape BOLT_SHAPE = Shape.of(Mesh.lathe(10, 1.15, 0.0, -0.75, 0.18, -0.75, 0.24, -0.55,
             0.32, -0.40, 0.32, 0.20, 0.24, 0.40, 0.10, 0.55, 0.0, 0.60).alongZ());
+    /**
+     * One link of a chain (see {@link #chain}): a flat oval ring lying round y with its long way along z, one long and
+     * three quarters of that wide at scale 1.
+     */
+    private static final Mesh LINK = Mesh.torus(12, 6, 0.3, 0.075, 1.15).scaled(1.0, 1.0, 1.335);
+    // How far apart two links sit, as a part of a link's length: less than one, so they hook into each other.
+    private static final double CHAIN_STEP = 0.72;
     // Where the bolt's nose and tail end, along z at scale 1.
     private static final double BOLT_NOSE = 0.60;
     private static final double BOLT_TAIL = -0.75;
@@ -197,9 +241,52 @@ final class ConstructPainter {
     private static final int[][] SIDES = { { 0, 2, 6, 4 }, { 1, 5, 7, 3 }, { 0, 4, 5, 1 }, { 2, 3, 7, 6 },
             { 0, 1, 3, 2 }, { 4, 6, 7, 5 } };
 
-    /** One corner of a quad, kept until {@link #finish} draws them all. */
-    private record Corner(Vec3 at, int rgb, int alpha) {
+    // A shape smaller on screen than this (its size over its distance) gets no soft glow along its edges.
+    private static final double TINY = 0.012;
+
+    /**
+     * The corners of one kind of quad drawn this frame (the solid sides, the bright lines or the glow), kept as plain
+     * numbers until {@link #finish} draws them: where each is, seen from the camera, and its colour with its alpha. A
+     * big construct has many thousands of them, so nothing is made for each one; the buffers are handed from one frame
+     * to the next (see {@link #SPARE}) and only ever grow.
+     */
+    private static final class Layer {
+        private float[] at = new float[3 * 1024];
+        private int[] color = new int[1024];
+        private int count;
+
+        void add(double x, double y, double z, int rgb, int alpha) {
+            if (this.count == this.color.length) {
+                this.at = Arrays.copyOf(this.at, this.at.length * 2);
+                this.color = Arrays.copyOf(this.color, this.color.length * 2);
+            }
+            int i = this.count++;
+            this.at[3 * i] = (float) x;
+            this.at[3 * i + 1] = (float) y;
+            this.at[3 * i + 2] = (float) z;
+            this.color[i] = alpha << 24 | rgb & 0xFFFFFF;
+        }
     }
+
+    /** Buffers a finished frame gave back, for the next painter to fill. Only the render thread draws. */
+    private static final ArrayDeque<Layer> SPARE = new ArrayDeque<>();
+
+    private static Layer take() {
+        Layer layer = SPARE.poll();
+        return layer == null ? new Layer() : layer;
+    }
+
+    /**
+     * What a box model needs worked out only once: for every edge of every box whether another box lies against it
+     * (see {@link #rim}), and a ball round the whole model, in its own blocks at scale 1, to skip it when it is out of
+     * view. Kept per model for as long as the model itself is kept.
+     */
+    private record ModelInfo(boolean[] covered, double x, double y, double z, double radius) {
+    }
+
+    private static final Map<double[][], ModelInfo> MODELS = new WeakHashMap<>();
+    // A model with fewer boxes than this is worked out on the spot: those are often made new every frame.
+    private static final int CACHED_FROM = 4;
 
     /**
      * Where a construct is and how it is turned: its middle, its own right, up and forward, and its scale. Its three
@@ -252,6 +339,25 @@ final class ConstructPainter {
         Frame stretched(double x, double y, double z) {
             return new Frame(this.center, this.right.scale(x), this.up.scale(y), this.forward.scale(z), this.scale);
         }
+
+        /** How long its longest way is: 1, unless it is stretched. */
+        double stretch() {
+            return Math.sqrt(Math.max(this.right.lengthSqr(), Math.max(this.up.lengthSqr(), this.forward.lengthSqr())));
+        }
+
+        /**
+         * A frame at {@code center} that faces {@code forward}, its up as near {@code up} as it can be and its right
+         * worked out from the two, the way every construct stands (see the note on handedness in the project rules).
+         */
+        static Frame of(Vec3 center, Vec3 forward, Vec3 up, double scale) {
+            Vec3 ahead = forward.lengthSqr() < 1.0E-12 ? new Vec3(0.0, 0.0, 1.0) : forward.normalize();
+            Vec3 right = ahead.cross(up);
+            if (right.lengthSqr() < 1.0E-8) {
+                right = ahead.cross(Math.abs(ahead.x) < 0.9 ? new Vec3(1.0, 0.0, 0.0) : new Vec3(0.0, 0.0, 1.0));
+            }
+            right = right.normalize();
+            return new Frame(center, right, right.cross(ahead).normalize(), ahead, scale);
+        }
     }
 
     /**
@@ -270,44 +376,97 @@ final class ConstructPainter {
     private final Matrix4f matrix;
     private final Vec3 camera;
     private final float time;
+    // What is in view, or null to draw everything.
+    @Nullable
+    private final Frustum frustum;
+    // True for constructs in your own hands in first person (see hand): drawn with their own light, never faded out.
+    private final boolean hand;
     // What this frame draws: the solid sides, the bright lines, and the glow around them.
-    private final List<Corner> mass = new ArrayList<>();
-    private final List<Corner> light = new ArrayList<>();
-    private final List<Corner> glow = new ArrayList<>();
+    private final Layer mass = take();
+    private final Layer light = take();
+    private final Layer glow = take();
+    // Room to work a round part out in, used again for every part: its corners out in the world, the way its sides
+    // face, and which of them face the camera.
+    private double[] wx = new double[256];
+    private double[] wy = new double[256];
+    private double[] wz = new double[256];
+    private double[] nx = new double[256];
+    private double[] ny = new double[256];
+    private double[] nz = new double[256];
+    private boolean[] facingCamera = new boolean[256];
     // True while a construct's own shape is drawn: then what comes close to the camera fades out.
     private boolean nearFade;
     // Above 0 while a see-through shape is drawn (see seeThrough): how strongly its sides show.
     private double faint;
     // How far the solid shapes drawn right now flare up towards white: a construct the moment it strikes.
     private double glare;
+    // How far the pieces of a construct breaking up right now fly, next to how far they usually do (see fling).
+    private double fling = 1.0;
 
     ConstructPainter(PoseStack pose, Vec3 camera, float time) {
+        this(pose, camera, time, null);
+    }
+
+    /**
+     * @param frustum what is in view: shapes wholly outside it are skipped; null draws everything
+     */
+    ConstructPainter(PoseStack pose, Vec3 camera, float time, @Nullable Frustum frustum) {
+        this(pose, camera, time, frustum, false);
+    }
+
+    private ConstructPainter(PoseStack pose, Vec3 camera, float time, @Nullable Frustum frustum, boolean hand) {
         this.matrix = pose.last().pose();
         this.camera = camera;
         this.time = time;
+        this.frustum = frustum;
+        this.hand = hand;
+    }
+
+    /**
+     * A painter for constructs in your own hands in first person, drawn along with your hands: everything is given in
+     * blocks in front of your eyes (x to the right, y up, -z ahead), the camera sits at 0, and nothing close by fades
+     * out, since that is exactly where your hands are.
+     */
+    static ConstructPainter hand(PoseStack pose, float time) {
+        return new ConstructPainter(pose, Vec3.ZERO, time, null, true);
     }
 
     /** Draws everything of this frame: the solid shapes first, then their lines and the glow on top. */
     void finish(MultiBufferSource.BufferSource buffers) {
         this.draw(buffers, MASS, this.mass);
-        this.draw(buffers, LIGHT, this.light);
-        this.draw(buffers, GLOW, this.glow);
+        this.draw(buffers, this.hand ? HAND_LIGHT : LIGHT, this.light);
+        this.draw(buffers, this.hand ? HAND_GLOW : GLOW, this.glow);
     }
 
-    private void draw(MultiBufferSource.BufferSource buffers, RenderType type, List<Corner> corners) {
-        if (corners.isEmpty()) {
-            return;
+    private void draw(MultiBufferSource.BufferSource buffers, RenderType type, Layer layer) {
+        if (layer.count > 0) {
+            VertexConsumer buffer = buffers.getBuffer(type);
+            float[] at = layer.at;
+            int[] color = layer.color;
+            for (int i = 0; i < layer.count; i++) {
+                int argb = color[i];
+                buffer.addVertex(this.matrix, at[3 * i], at[3 * i + 1], at[3 * i + 2]).setColor(argb >> 16 & 0xFF,
+                        argb >> 8 & 0xFF, argb & 0xFF, argb >>> 24);
+            }
+            buffers.endBatch(type);
         }
-        VertexConsumer buffer = buffers.getBuffer(type);
-        for (Corner corner : corners) {
-            Vec3 p = corner.at();
-            int rgb = corner.rgb();
-            buffer.addVertex(this.matrix, (float) (p.x - this.camera.x), (float) (p.y - this.camera.y),
-                    (float) (p.z - this.camera.z)).setColor(rgb >> 16 & 0xFF, rgb >> 8 & 0xFF, rgb & 0xFF,
-                            corner.alpha());
-        }
-        corners.clear();
-        buffers.endBatch(type);
+        layer.count = 0;
+        SPARE.push(layer);
+    }
+
+    /**
+     * Whether any of a ball round {@code center} of this {@code radius} (in blocks) can be in view. Anything that is
+     * not need not be drawn at all.
+     */
+    boolean visible(Vec3 center, double radius) {
+        return this.frustum == null || this.frustum.isVisible(new AABB(center.x - radius, center.y - radius,
+                center.z - radius, center.x + radius, center.y + radius, center.z + radius));
+    }
+
+    /** True when a ball this big round {@code center} is only a few pixels on screen: its soft glow is left out. */
+    private boolean tiny(Vec3 center, double radius) {
+        double away = center.distanceTo(this.camera);
+        return away > 1.0 && radius / away < TINY;
     }
 
     /**
@@ -332,6 +491,7 @@ final class ConstructPainter {
         double throb = full ? 0.85 + 0.25 * Math.sin(this.time * 0.6) : 1.0;
         Vec3[] corners = new Vec3[8];
         Vec3 view = frame.local(this.camera);
+        ModelInfo info = info(FIST);
         this.nearFade = true;
         for (int b = 0; b < FIST.length; b++) {
             double[] box = FIST[b];
@@ -339,8 +499,8 @@ final class ConstructPainter {
                 corners[i] = frame.at(box[(i & 1) == 0 ? 0 : 3], box[(i & 2) == 0 ? 1 : 4],
                         box[(i & 4) == 0 ? 2 : 5]);
             }
-            this.box(FIST, b, corners, view, Math.min(frame.scale(), WIDTH_CAP), strength, box[6] * throb,
-                    (box[2] + box[5]) * 0.5, grown);
+            this.box(FIST, info, b, corners, view, Math.min(frame.scale(), WIDTH_CAP), strength, box[6] * throb,
+                    (box[2] + box[5]) * 0.5, grown, true);
         }
         this.nearFade = false;
         this.shape(FIST_RING, frame, strength, throb);
@@ -364,9 +524,16 @@ final class ConstructPainter {
      */
     void model(double[][] model, Frame frame, double solid, double bright) {
         double strength = Mth.clamp(solid, 0.0, 1.0);
-        if (strength <= 0.0) {
+        if (strength <= 0.0 || model.length == 0) {
             return;
         }
+        ModelInfo info = info(model);
+        Vec3 middle = frame.at(info.x(), info.y(), info.z());
+        double reach = info.radius() * frame.scale() * frame.stretch();
+        if (!this.visible(middle, reach)) {
+            return;
+        }
+        boolean halo = !this.tiny(middle, reach);
         Vec3[] corners = new Vec3[8];
         Vec3 view = frame.local(this.camera);
         this.nearFade = true;
@@ -376,10 +543,70 @@ final class ConstructPainter {
                 corners[i] = frame.at(box[(i & 1) == 0 ? 0 : 3], box[(i & 2) == 0 ? 1 : 4],
                         box[(i & 4) == 0 ? 2 : 5]);
             }
-            this.box(model, b, corners, view, Math.min(frame.scale(), WIDTH_CAP), strength, box[6] * bright,
-                    (box[2] + box[5]) * 0.5, 0.0);
+            this.box(model, info, b, corners, view, Math.min(frame.scale(), WIDTH_CAP), strength, box[6] * bright,
+                    (box[2] + box[5]) * 0.5, 0.0, halo);
         }
         this.nearFade = false;
+    }
+
+    /** What is worked out once for a box model (see {@link ModelInfo}): kept for big ones, made anew for the rest. */
+    private static ModelInfo info(double[][] model) {
+        if (model.length < CACHED_FROM) {
+            return work(model);
+        }
+        ModelInfo info = MODELS.get(model);
+        if (info == null) {
+            info = work(model);
+            MODELS.put(model, info);
+        }
+        return info;
+    }
+
+    /**
+     * Works out, for every edge of every box, whether another box lies against it there (the middle of the edge, a hair
+     * outside the box, lies inside another box), and a ball round the whole model.
+     */
+    private static ModelInfo work(double[][] model) {
+        boolean[] covered = new boolean[model.length * 24];
+        double[] low = { Double.MAX_VALUE, Double.MAX_VALUE, Double.MAX_VALUE };
+        double[] high = { -Double.MAX_VALUE, -Double.MAX_VALUE, -Double.MAX_VALUE };
+        double[] at = new double[3];
+        for (int b = 0; b < model.length; b++) {
+            double[] box = model[b];
+            for (int k = 0; k < 3; k++) {
+                low[k] = Math.min(low[k], box[k]);
+                high[k] = Math.max(high[k], box[3 + k]);
+            }
+            for (int corner = 0; corner < 8; corner++) {
+                for (int axis = 0; axis < 3; axis++) {
+                    int bit = 1 << axis;
+                    if ((corner & bit) != 0) {
+                        continue;
+                    }
+                    for (int k = 0; k < 3; k++) {
+                        int mask = 1 << k;
+                        if (mask == bit) {
+                            at[k] = (box[k] + box[3 + k]) * 0.5;
+                        } else {
+                            at[k] = (corner & mask) != 0 ? box[3 + k] + EDGE_OUT : box[k] - EDGE_OUT;
+                        }
+                    }
+                    for (int o = 0; o < model.length; o++) {
+                        double[] other = model[o];
+                        if (o != b && at[0] > other[0] && at[0] < other[3] && at[1] > other[1] && at[1] < other[4]
+                                && at[2] > other[2] && at[2] < other[5]) {
+                            covered[b * 24 + corner * 3 + axis] = true;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        double dx = high[0] - low[0];
+        double dy = high[1] - low[1];
+        double dz = high[2] - low[2];
+        return new ModelInfo(covered, (low[0] + high[0]) * 0.5, (low[1] + high[1]) * 0.5, (low[2] + high[2]) * 0.5,
+                Math.sqrt(dx * dx + dy * dy + dz * dz) * 0.5);
     }
 
     /** A solid side of hard light, from four corners (for shapes that are not boxes). */
@@ -391,6 +618,21 @@ final class ConstructPainter {
     void edge(Vec3 a, Vec3 b, double width, double strength) {
         this.line(this.light, a, b, width, BRIGHT, alpha(EDGE * strength));
         this.line(this.glow, a, b, width * 3.0, GREEN, alpha(HALO * strength));
+    }
+
+    /**
+     * A sheet of light between four corners, each as strong as given (0 to 1): the streak a swung blade leaves in the
+     * air. Light, not a construct: it hides nothing.
+     */
+    void sheet(Vec3 p0, Vec3 p1, Vec3 p2, Vec3 p3, double a0, double a1, double a2, double a3) {
+        this.put(this.glow, p0.x, p0.y, p0.z, GREEN, alpha(0.6 * a0));
+        this.put(this.glow, p1.x, p1.y, p1.z, GREEN, alpha(0.6 * a1));
+        this.put(this.glow, p2.x, p2.y, p2.z, GREEN, alpha(0.6 * a2));
+        this.put(this.glow, p3.x, p3.y, p3.z, GREEN, alpha(0.6 * a3));
+        this.put(this.light, p0.x, p0.y, p0.z, BRIGHT, alpha(0.3 * a0));
+        this.put(this.light, p1.x, p1.y, p1.z, BRIGHT, alpha(0.3 * a1));
+        this.put(this.light, p2.x, p2.y, p2.z, BRIGHT, alpha(0.3 * a2));
+        this.put(this.light, p3.x, p3.y, p3.z, BRIGHT, alpha(0.3 * a3));
     }
 
     /**
@@ -407,7 +649,8 @@ final class ConstructPainter {
         }
         Vec3[] corners = new Vec3[8];
         Vec3 view = frame.local(this.camera);
-        double size = Math.max(1.0, frame.scale());
+        double size = Math.max(1.0, frame.scale()) * this.fling;
+        ModelInfo info = info(model);
         this.nearFade = true;
         for (int b = 0; b < model.length; b++) {
             double[] box = model[b];
@@ -425,8 +668,8 @@ final class ConstructPainter {
                 Vec3 corner = frame.at(box[(i & 1) == 0 ? 0 : 3], box[(i & 2) == 0 ? 1 : 4], box[(i & 4) == 0 ? 2 : 5]);
                 corners[i] = moved.add(spin(corner.subtract(middle), axis, turn).scale(left));
             }
-            this.box(model, b, corners, view, Math.min(frame.scale(), WIDTH_CAP), 1.0, box[6] * bright,
-                    (box[2] + box[5]) * 0.5, 0.0);
+            this.box(model, info, b, corners, view, Math.min(frame.scale(), WIDTH_CAP), 1.0, box[6] * bright,
+                    (box[2] + box[5]) * 0.5, 0.0, true);
         }
         this.nearFade = false;
     }
@@ -472,29 +715,73 @@ final class ConstructPainter {
     /** A round or slanted part (see {@link Mesh}) at {@code frame}, drawn the way {@link #model} draws boxes. */
     void mesh(Mesh mesh, Frame frame, double solid, double bright) {
         double strength = Mth.clamp(solid, 0.0, 1.0);
-        if (strength <= 0.0) {
+        if (strength <= 0.0 || mesh.points.length == 0) {
             return;
         }
-        Vec3[] world = new Vec3[mesh.points.length];
-        for (int i = 0; i < world.length; i++) {
-            Vec3 point = mesh.points[i];
-            world[i] = frame.at(point.x, point.y, point.z);
+        Vec3 middle = frame.at(mesh.boundX, mesh.boundY, mesh.boundZ);
+        double reach = mesh.boundRadius * frame.scale() * frame.stretch();
+        if (!this.visible(middle, reach)) {
+            return;
         }
-        Vec3[] normals = new Vec3[mesh.sides.length];
-        for (int s = 0; s < normals.length; s++) {
-            normals[s] = frame.normal(mesh.normals[s]);
+        this.room(mesh.points.length, mesh.sides.length);
+        double scale = frame.scale();
+        Vec3 c = frame.center();
+        Vec3 r = frame.right();
+        Vec3 u = frame.up();
+        Vec3 f = frame.forward();
+        for (int i = 0; i < mesh.px.length; i++) {
+            double x = mesh.px[i] * scale;
+            double y = mesh.py[i] * scale;
+            double z = mesh.pz[i] * scale;
+            this.wx[i] = c.x + r.x * x + u.x * y + f.x * z;
+            this.wy[i] = c.y + r.y * x + u.y * y + f.y * z;
+            this.wz[i] = c.z + r.z * x + u.z * y + f.z * z;
         }
-        this.drawMesh(mesh, world, normals, Math.min(frame.scale(), WIDTH_CAP), strength, bright);
+        // The way a side faces, out in the world (see Frame.normal): a stretched frame bends it the other way.
+        double r2 = r.lengthSqr();
+        double u2 = u.lengthSqr();
+        double f2 = f.lengthSqr();
+        for (int k = 0; k < mesh.sides.length; k++) {
+            double a = mesh.nx[k] / r2;
+            double b = mesh.ny[k] / u2;
+            double d = mesh.nz[k] / f2;
+            double x = r.x * a + u.x * b + f.x * d;
+            double y = r.y * a + u.y * b + f.y * d;
+            double z = r.z * a + u.z * b + f.z * d;
+            double length = Math.sqrt(x * x + y * y + z * z);
+            double to = length < 1.0E-12 ? 0.0 : 1.0 / length;
+            this.nx[k] = x * to;
+            this.ny[k] = y * to;
+            this.nz[k] = z * to;
+        }
+        this.drawMesh(mesh, Math.min(scale, WIDTH_CAP), strength, bright, !this.tiny(middle, reach));
+    }
+
+    /** Makes the room to work out a part of this many corners and sides in. */
+    private void room(int points, int sides) {
+        if (this.wx.length < points) {
+            int size = Math.max(points, this.wx.length * 2);
+            this.wx = new double[size];
+            this.wy = new double[size];
+            this.wz = new double[size];
+        }
+        if (this.nx.length < sides) {
+            int size = Math.max(sides, this.nx.length * 2);
+            this.nx = new double[size];
+            this.ny = new double[size];
+            this.nz = new double[size];
+            this.facingCamera = new boolean[size];
+        }
     }
 
     /** One round part flying off as its construct breaks up, the way a box does in {@link #shattered}. */
     private void shatteredMesh(Mesh mesh, Frame frame, int piece, double apart, double bright) {
         double gone = Mth.clamp(apart, 0.0, 1.0);
         double left = 1.0 - gone;
-        if (left <= 0.0) {
+        if (left <= 0.0 || mesh.points.length == 0) {
             return;
         }
-        double size = Math.max(1.0, frame.scale());
+        double size = Math.max(1.0, frame.scale()) * this.fling;
         Vec3 middle = frame.at(mesh.middle.x, mesh.middle.y, mesh.middle.z);
         Vec3 out = middle.subtract(frame.center());
         Vec3 scatter = direction(piece, 7);
@@ -504,64 +791,104 @@ final class ConstructPainter {
         Vec3 moved = middle.add(way.scale(speed * gone)).add(0.0, (1.2 * gone - 2.6 * gone * gone) * size, 0.0);
         Vec3 axis = direction(piece, 9);
         double turn = gone * (1.5 + 3.0 * noise(piece, 9, 2));
-        Vec3[] world = new Vec3[mesh.points.length];
-        for (int i = 0; i < world.length; i++) {
+        this.room(mesh.points.length, mesh.sides.length);
+        for (int i = 0; i < mesh.points.length; i++) {
             Vec3 point = mesh.points[i];
-            world[i] = moved.add(spin(frame.at(point.x, point.y, point.z).subtract(middle), axis, turn).scale(left));
+            Vec3 at = moved.add(spin(frame.at(point.x, point.y, point.z).subtract(middle), axis, turn).scale(left));
+            this.wx[i] = at.x;
+            this.wy[i] = at.y;
+            this.wz[i] = at.z;
         }
-        Vec3[] normals = new Vec3[mesh.sides.length];
-        for (int s = 0; s < normals.length; s++) {
-            normals[s] = spin(frame.normal(mesh.normals[s]), axis, turn);
+        for (int k = 0; k < mesh.sides.length; k++) {
+            Vec3 normal = spin(frame.normal(mesh.normals[k]), axis, turn);
+            this.nx[k] = normal.x;
+            this.ny[k] = normal.y;
+            this.nz[k] = normal.z;
         }
-        this.drawMesh(mesh, world, normals, Math.min(frame.scale(), WIDTH_CAP), 1.0, bright);
+        this.drawMesh(mesh, Math.min(frame.scale(), WIDTH_CAP), 1.0, bright, true);
     }
 
     /**
-     * Draws a round part whose corners and sides are out in the world already: solid sides lit like the sides of a
-     * box, and a bright line along every edge where its outline runs as you look at it (one side along it faces you and
-     * the other faces away), or where it has only one side.
+     * Draws a round part whose corners and sides have just been worked out into the room for it (see {@link #room}):
+     * solid sides lit like the sides of a box, and a bright line along every edge where its outline runs as you look at
+     * it (one side along it faces you and the other faces away), or where it has only one side.
+     *
+     * @param halo false to leave out the soft glow along its edges: far away it would only blur it
      */
-    private void drawMesh(Mesh mesh, Vec3[] world, Vec3[] normals, double width, double solid, double bright) {
+    private void drawMesh(Mesh mesh, double width, double solid, double bright, boolean halo) {
         int count = mesh.sides.length;
-        boolean[] facing = new boolean[count];
         // A see-through shape (see seeThrough) puts its sides with the light, faint, so they hide nothing.
         boolean faint = this.faint > 0.0;
-        List<Corner> sides = faint ? this.light : this.mass;
+        Layer sides = faint ? this.light : this.mass;
         int body = alpha(faint ? this.faint * solid : solid);
         this.nearFade = true;
         for (int s = 0; s < count; s++) {
-            Vec3 normal = normals[s];
-            if (normal.lengthSqr() < 0.5) {
+            double x = this.nx[s];
+            double y = this.ny[s];
+            double z = this.nz[s];
+            if (x * x + y * y + z * z < 0.5) {
+                this.facingCamera[s] = false;
                 continue;
             }
             int[] side = mesh.sides[s];
-            Vec3 middle = world[side[0]].add(world[side[2]]).scale(0.5);
-            Vec3 view = this.camera.subtract(middle);
-            double look = normal.dot(view);
-            facing[s] = look > 0.0;
-            double away = view.length();
+            double vx = this.camera.x - (this.wx[side[0]] + this.wx[side[2]]) * 0.5;
+            double vy = this.camera.y - (this.wy[side[0]] + this.wy[side[2]]) * 0.5;
+            double vz = this.camera.z - (this.wz[side[0]] + this.wz[side[2]]) * 0.5;
+            double look = x * vx + y * vy + z * vz;
+            this.facingCamera[s] = look > 0.0;
+            double away = Math.sqrt(vx * vx + vy * vy + vz * vz);
             double face = away < 1.0E-6 ? 1.0 : Math.abs(look) / away;
-            double ripple = 0.9 + 0.06 * Math.sin(this.time * 0.5 - mesh.middles[s].z * 4.0);
-            double light = light(normal) * sheen(face) * ripple * bright * mesh.bright[s];
-            this.quad(sides, world[side[0]], world[side[1]], world[side[2]], world[side[3]], this.mass(light), body);
+            double ripple = 0.9 + 0.06 * Math.sin(this.time * 0.5 - mesh.middleZ[s] * 4.0);
+            double light = light(x, y, z) * sheen(face) * ripple * bright * mesh.bright[s];
+            this.quadAt(sides, side[0], side[1], side[2], side[3], this.mass(light), body);
         }
         double quiet = faint ? SEE_THROUGH_EDGE : 1.0;
         int edge = alpha(EDGE * solid * quiet);
-        int halo = alpha(HALO * solid * quiet);
+        int glowing = halo ? alpha(HALO * solid * quiet) : 0;
         double fine = width * mesh.fine;
+        double lift = 0.01 + 0.02 * fine;
         for (int e = 0; e < mesh.edgeFrom.length; e++) {
             int left = mesh.edgeLeft[e];
             int right = mesh.edgeRight[e];
-            if (left >= 0 && right >= 0 && facing[left] == facing[right]) {
+            if (left >= 0 && right >= 0 && this.facingCamera[left] == this.facingCamera[right]) {
                 continue;
             }
-            Vec3 a = this.lifted(world[mesh.edgeFrom[e]], fine);
-            Vec3 b = this.lifted(world[mesh.edgeTo[e]], fine);
-            this.line(this.light, a, b, EDGE_WIDTH * fine, BRIGHT, edge);
-            // Round things have short edges: a glow wider than the edge is long would stick out at every corner.
-            this.line(this.glow, a, b, Math.min(HALO_WIDTH * fine, 0.9 * a.distanceTo(b)), GREEN, halo);
+            int from = mesh.edgeFrom[e];
+            int to = mesh.edgeTo[e];
+            // Both ends moved a hair towards the camera, so the line is not swallowed by the side it lies on.
+            double ax = this.wx[from];
+            double ay = this.wy[from];
+            double az = this.wz[from];
+            double bx = this.wx[to];
+            double by = this.wy[to];
+            double bz = this.wz[to];
+            double da = Math.sqrt(sq(this.camera.x - ax) + sq(this.camera.y - ay) + sq(this.camera.z - az));
+            if (da > 1.0E-6) {
+                double k = lift / da;
+                ax += (this.camera.x - ax) * k;
+                ay += (this.camera.y - ay) * k;
+                az += (this.camera.z - az) * k;
+            }
+            double db = Math.sqrt(sq(this.camera.x - bx) + sq(this.camera.y - by) + sq(this.camera.z - bz));
+            if (db > 1.0E-6) {
+                double k = lift / db;
+                bx += (this.camera.x - bx) * k;
+                by += (this.camera.y - by) * k;
+                bz += (this.camera.z - bz) * k;
+            }
+            this.line(this.light, ax, ay, az, bx, by, bz, EDGE_WIDTH * fine, BRIGHT, edge);
+            if (glowing > 0) {
+                // Round things have short edges: a glow wider than the edge is long would stick out at every corner.
+                double length = Math.sqrt(sq(bx - ax) + sq(by - ay) + sq(bz - az));
+                this.line(this.glow, ax, ay, az, bx, by, bz, Math.min(HALO_WIDTH * fine, 0.9 * length), GREEN,
+                        glowing);
+            }
         }
         this.nearFade = false;
+    }
+
+    private static double sq(double value) {
+        return value * value;
     }
 
     /**
@@ -833,7 +1160,7 @@ final class ConstructPainter {
      *
      * @param solid how far it is there, 0 to 1 (it dies down when he lets go)
      * @param age   ticks since it broke loose
-     * @param thick how thick it is: 1 for the beam of the attack button, more for the storm's pillar of light
+     * @param thick how thick it is: 1 for the beam of the attack button, more for the air strike's pillar of light
      */
     void beamOfLight(Vec3 from, Vec3 target, double solid, double age, double thick) {
         double strength = Mth.clamp(solid, 0.0, 1.0);
@@ -1141,6 +1468,84 @@ final class ConstructPainter {
     }
 
     /**
+     * The flame out of the back of a jet engine, a turbo booster or a rocket: a white-hot core inside a cone of bright
+     * green light that flickers, a glow round all of it, bright rings standing in the flame (the shock diamonds of an
+     * afterburner) and a flare at the nozzle. Light, not a construct.
+     *
+     * @param from   the middle of the nozzle
+     * @param way    the way the flame blows out, one long
+     * @param length how long the flame is at full thrust, in blocks
+     * @param radius how wide the nozzle is, in blocks
+     * @param thrust 0 = out, 1 = full: the flame grows and brightens with it
+     */
+    void exhaust(Vec3 from, Vec3 way, double length, double radius, double thrust) {
+        double power = Mth.clamp(thrust, 0.0, 1.0);
+        if (power <= 0.01 || way.lengthSqr() < 1.0E-8 || !this.visible(from, length + radius * 4.0)) {
+            return;
+        }
+        Vec3 along = way.normalize();
+        double flicker = 0.85 + 0.15 * Math.sin(this.time * 3.1) * Math.sin(this.time * 1.7 + 0.6);
+        double reach = length * power * flicker;
+        this.line(this.glow, from, from.add(along.scale(reach)), radius * 4.0 * (0.6 + 0.4 * power), GREEN,
+                alpha(0.55 * power));
+        this.line(this.light, from, from.add(along.scale(reach * 0.8)), radius * 1.9, BRIGHT, alpha(0.75 * power));
+        this.line(this.light, from, from.add(along.scale(reach * 0.45)), radius * 0.9, HOT, alpha(0.95 * power));
+        Vec3[] across = Basis.of(along);
+        int diamonds = 4;
+        for (int k = 1; k <= diamonds; k++) {
+            double t = k / (diamonds + 1.0);
+            Vec3 at = from.add(along.scale(reach * t * 0.9));
+            double ring = radius * (1.0 - 0.6 * t) * (0.9 + 0.1 * Math.sin(this.time * 2.3 + k));
+            this.circle(at, across[0], across[1], ring, radius * 0.12, radius * 0.6,
+                    alpha(0.8 * power * (1.0 - t)), alpha(0.4 * power * (1.0 - t)));
+        }
+        this.flare(from, radius * 1.6 * (0.7 + 0.3 * power), 0.8 * power);
+    }
+
+    /**
+     * A chain of solid hard-light links from {@code from} to {@code to}, sagging {@code sag} blocks in its middle:
+     * every link a flat oval ring, every other one turned a quarter, so they hook into each other. It runs out from
+     * {@code from} link by link as it takes shape.
+     *
+     * @param link  how long one link is, in blocks
+     * @param grown 0 to 1: how much of it has run out from {@code from}
+     * @param apart 0 while it holds; above that it is breaking up, every link flying off on its own, gone at 1
+     */
+    void chain(Vec3 from, Vec3 to, double sag, double link, double solid, double bright, double grown,
+            double apart) {
+        double length = from.distanceTo(to);
+        if (length < 1.0E-3 || solid <= 0.0 || grown <= 0.0 || apart >= 1.0) {
+            return;
+        }
+        int links = Math.max(2, (int) Math.ceil(length / (link * CHAIN_STEP)));
+        int shown = (int) Math.ceil(links * Mth.clamp(grown, 0.0, 1.0));
+        Vec3 last = from;
+        for (int i = 1; i <= shown; i++) {
+            double t = (double) i / links;
+            Vec3 point = from.lerp(to, t).add(0.0, -4.0 * sag * t * (1.0 - t), 0.0);
+            Vec3 along = point.subtract(last);
+            Vec3 side = along.cross(UP);
+            Vec3 up = i % 2 == 0 || side.lengthSqr() < 1.0E-8 ? UP : side;
+            Frame frame = Frame.of(last.add(point).scale(0.5), along, up, link);
+            if (apart > 0.0) {
+                this.shatteredMesh(LINK, frame, i, apart, bright);
+            } else {
+                this.mesh(LINK, frame, solid, bright);
+            }
+            last = point;
+        }
+    }
+
+    /**
+     * An easing that shoots a little past the end and settles back: 0 at 0, a hair over 1 on the way, 1 from 1 on. The
+     * way a construct pops into shape.
+     */
+    static double backOut(double t) {
+        double c = Mth.clamp(t, 0.0, 1.0) - 1.0;
+        return 1.0 + c * c * (2.70158 * c + 1.70158);
+    }
+
+    /**
      * A spark of light facing you: a soft glow, a bright heart and four short rays turning slowly.
      *
      * @param size how far its glow reaches, in blocks
@@ -1171,14 +1576,14 @@ final class ConstructPainter {
     }
 
     /** One slice of a round glow: bright at {@code at}, fading out to its edge. */
-    private void fan(List<Corner> layer, Vec3 at, Vec3 r0, Vec3 r1, double size, int rgb, int alpha) {
+    private void fan(Layer layer, Vec3 at, Vec3 r0, Vec3 r1, double size, int rgb, int alpha) {
         if (alpha <= 0) {
             return;
         }
-        layer.add(new Corner(at, rgb, alpha));
-        layer.add(new Corner(at.add(r0.scale(size)), rgb, 0));
-        layer.add(new Corner(at.add(r1.scale(size)), rgb, 0));
-        layer.add(new Corner(at, rgb, alpha));
+        this.put(layer, at.x, at.y, at.z, rgb, alpha);
+        this.put(layer, at.x + r0.x * size, at.y + r0.y * size, at.z + r0.z * size, rgb, 0);
+        this.put(layer, at.x + r1.x * size, at.y + r1.y * size, at.z + r1.z * size, rgb, 0);
+        this.put(layer, at.x, at.y, at.z, rgb, alpha);
     }
 
     /** Two directions square to {@code axis} and to each other, to lay things out around it. */
@@ -1225,8 +1630,8 @@ final class ConstructPainter {
      * @param bright how brightly this box burns next to the rest of the fist
      * @param charge how far the fist is charged: 0 = not at all, 1 = as far as it goes
      */
-    private void box(double[][] model, int index, Vec3[] corners, Vec3 view, double width, double solid,
-            double bright, double depth, double charge) {
+    private void box(double[][] model, ModelInfo info, int index, Vec3[] corners, Vec3 view, double width,
+            double solid, double bright, double depth, double charge, boolean glowing) {
         double ripple = 0.9 + (0.06 + 0.06 * charge) * Math.sin(this.time * 0.5 - depth * 4.0);
         int body = alpha(solid);
         Vec3 middle = corners[0].add(corners[7]).scale(0.5);
@@ -1242,12 +1647,13 @@ final class ConstructPainter {
                     this.mass(lit(p0, p1, p2, middle) * sheen(face) * ripple * bright), body);
         }
         int edge = alpha(EDGE * ripple * solid);
-        int halo = alpha(HALO * (1.0 + 0.4 * charge) * solid);
+        int halo = glowing ? alpha(HALO * (1.0 + 0.4 * charge) * solid) : 0;
         double[] box = model[index];
         double fine = width * fine(box[3] - box[0], box[4] - box[1], box[5] - box[2]);
         for (int i = 0; i < 8; i++) {
-            for (int bit = 1; bit < 8; bit <<= 1) {
-                if ((i & bit) != 0 || !rim(model, index, i, bit, view)) {
+            for (int axis = 0; axis < 3; axis++) {
+                int bit = 1 << axis;
+                if ((i & bit) != 0 || !rim(model, info, index, i, axis, view)) {
                     continue;
                 }
                 Vec3 a = this.lifted(corners[i], fine);
@@ -1270,49 +1676,25 @@ final class ConstructPainter {
     /**
      * Whether an edge of a box is worth a line of light. It is when the shape ends there as you look at it:
      * one of the two sides that meet at the edge faces you and the other faces away. An edge with another
-     * box right against it is left out as well, because there the mass simply goes on.
+     * box right against it is left out as well, because there the mass simply goes on (worked out once per model, see
+     * {@link ModelInfo}).
      *
-     * @param corner the corner the edge starts at; {@code bit} is the way it runs (1 = x, 2 = y, 4 = z)
+     * @param corner the corner the edge starts at; {@code axis} is the way it runs (0 = x, 1 = y, 2 = z)
      * @param view   where the camera is, in the model's own space
      */
-    private static boolean rim(double[][] model, int index, int corner, int bit, Vec3 view) {
+    private static boolean rim(double[][] model, ModelInfo info, int index, int corner, int axis, Vec3 view) {
         double[] box = model[index];
-        double[] outward = { 0.0, 0.0, 0.0 };
         int facing = 0;
-        for (int axis = 0; axis < 3; axis++) {
-            int mask = 1 << axis;
-            if (mask == bit) {
+        for (int other = 0; other < 3; other++) {
+            if (other == axis) {
                 continue;
             }
-            boolean far = (corner & mask) != 0;
-            if (far == (axis(view, axis) > (far ? box[3 + axis] : box[axis]))) {
+            boolean far = (corner & 1 << other) != 0;
+            if (far == (axis(view, other) > (far ? box[3 + other] : box[other]))) {
                 facing++;
             }
-            outward[axis] = far ? EDGE_OUT : -EDGE_OUT;
         }
-        if (facing != 1) {
-            return false;
-        }
-        double x = along(box, corner, bit, 0) + outward[0];
-        double y = along(box, corner, bit, 1) + outward[1];
-        double z = along(box, corner, bit, 2) + outward[2];
-        for (int b = 0; b < model.length; b++) {
-            double[] other = model[b];
-            if (b != index && x > other[0] && x < other[3] && y > other[1] && y < other[4] && z > other[2]
-                    && z < other[5]) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    /** One coordinate of the middle of an edge: along the edge the middle, across it the corner's own. */
-    private static double along(double[] box, int corner, int bit, int axis) {
-        int mask = 1 << axis;
-        if (mask == bit) {
-            return (box[axis] + box[3 + axis]) * 0.5;
-        }
-        return (corner & mask) != 0 ? box[3 + axis] : box[axis];
+        return facing == 1 && !info.covered()[index * 24 + corner * 3 + axis];
     }
 
     /** One of the three numbers of a point: 0 = x, 1 = y, 2 = z. */
@@ -1344,7 +1726,12 @@ final class ConstructPainter {
      * shape comes out a shade of its own and its corners and folds read at a glance, as a solid thing does.
      */
     static double light(Vec3 normal) {
-        return SKY_FLOOR + SKY * (normal.y * 0.5 + 0.5) + SUN_LIGHT * Math.max(0.0, normal.dot(SUN));
+        return light(normal.x, normal.y, normal.z);
+    }
+
+    /** {@link #light(Vec3)}, for a way given as three numbers. */
+    static double light(double x, double y, double z) {
+        return SKY_FLOOR + SKY * (y * 0.5 + 0.5) + SUN_LIGHT * Math.max(0.0, x * SUN.x + y * SUN.y + z * SUN.z);
     }
 
     /**
@@ -1359,6 +1746,14 @@ final class ConstructPainter {
     /** How far the solid shapes drawn from now on flare up towards white, 0 to 1 (0 once they are done). */
     void glare(double amount) {
         this.glare = Mth.clamp(amount, 0.0, 1.0);
+    }
+
+    /**
+     * How far the pieces of what breaks up from now on fly, next to how far they usually do (1 once it is done): a thing
+     * as big as a plane is flung far further apart than a fist.
+     */
+    void fling(double amount) {
+        this.fling = Math.max(0.0, amount);
     }
 
     /** The same colour, darker or lighter. */
@@ -1390,47 +1785,87 @@ final class ConstructPainter {
     }
 
     /** A line that always faces the camera: strongest along the middle, fading out to its sides. */
-    private void line(List<Corner> layer, Vec3 a, Vec3 b, double width, int rgb, int alpha) {
+    private void line(Layer layer, Vec3 a, Vec3 b, double width, int rgb, int alpha) {
+        this.line(layer, a.x, a.y, a.z, b.x, b.y, b.z, width, rgb, alpha);
+    }
+
+    private void line(Layer layer, double ax, double ay, double az, double bx, double by, double bz, double width,
+            int rgb, int alpha) {
         if (alpha <= 0) {
             return;
         }
-        Vec3 side = b.subtract(a).cross(this.camera.subtract(a.add(b).scale(0.5)));
-        double length = side.length();
+        double dx = bx - ax;
+        double dy = by - ay;
+        double dz = bz - az;
+        double tx = this.camera.x - (ax + bx) * 0.5;
+        double ty = this.camera.y - (ay + by) * 0.5;
+        double tz = this.camera.z - (az + bz) * 0.5;
+        double sx = dy * tz - dz * ty;
+        double sy = dz * tx - dx * tz;
+        double sz = dx * ty - dy * tx;
+        double length = Math.sqrt(sx * sx + sy * sy + sz * sz);
         if (length < 1.0E-6) {
             return;
         }
-        side = side.scale(width * 0.5 / length);
-        int alphaA = this.faded(a, alpha);
-        int alphaB = this.faded(b, alpha);
-        layer.add(new Corner(a, rgb, alphaA));
-        layer.add(new Corner(b, rgb, alphaB));
-        layer.add(new Corner(b.add(side), rgb, 0));
-        layer.add(new Corner(a.add(side), rgb, 0));
-        layer.add(new Corner(a, rgb, alphaA));
-        layer.add(new Corner(b, rgb, alphaB));
-        layer.add(new Corner(b.subtract(side), rgb, 0));
-        layer.add(new Corner(a.subtract(side), rgb, 0));
+        double k = width * 0.5 / length;
+        sx *= k;
+        sy *= k;
+        sz *= k;
+        int alphaA = this.faded(ax, ay, az, alpha);
+        int alphaB = this.faded(bx, by, bz, alpha);
+        this.put(layer, ax, ay, az, rgb, alphaA);
+        this.put(layer, bx, by, bz, rgb, alphaB);
+        this.put(layer, bx + sx, by + sy, bz + sz, rgb, 0);
+        this.put(layer, ax + sx, ay + sy, az + sz, rgb, 0);
+        this.put(layer, ax, ay, az, rgb, alphaA);
+        this.put(layer, bx, by, bz, rgb, alphaB);
+        this.put(layer, bx - sx, by - sy, bz - sz, rgb, 0);
+        this.put(layer, ax - sx, ay - sy, az - sz, rgb, 0);
     }
 
-    private void quad(List<Corner> layer, Vec3 p0, Vec3 p1, Vec3 p2, Vec3 p3, int rgb, int alpha) {
+    private void quad(Layer layer, Vec3 p0, Vec3 p1, Vec3 p2, Vec3 p3, int rgb, int alpha) {
         if (alpha <= 0) {
             return;
         }
-        layer.add(new Corner(p0, rgb, this.faded(p0, alpha)));
-        layer.add(new Corner(p1, rgb, this.faded(p1, alpha)));
-        layer.add(new Corner(p2, rgb, this.faded(p2, alpha)));
-        layer.add(new Corner(p3, rgb, this.faded(p3, alpha)));
+        this.put(layer, p0.x, p0.y, p0.z, rgb, this.faded(p0.x, p0.y, p0.z, alpha));
+        this.put(layer, p1.x, p1.y, p1.z, rgb, this.faded(p1.x, p1.y, p1.z, alpha));
+        this.put(layer, p2.x, p2.y, p2.z, rgb, this.faded(p2.x, p2.y, p2.z, alpha));
+        this.put(layer, p3.x, p3.y, p3.z, rgb, this.faded(p3.x, p3.y, p3.z, alpha));
+    }
+
+    /** A quad of four corners worked out into the room for a part (see {@link #room}), by their numbers. */
+    private void quadAt(Layer layer, int a, int b, int c, int d, int rgb, int alpha) {
+        if (alpha <= 0) {
+            return;
+        }
+        this.putAt(layer, a, rgb, alpha);
+        this.putAt(layer, b, rgb, alpha);
+        this.putAt(layer, c, rgb, alpha);
+        this.putAt(layer, d, rgb, alpha);
+    }
+
+    private void putAt(Layer layer, int i, int rgb, int alpha) {
+        double x = this.wx[i];
+        double y = this.wy[i];
+        double z = this.wz[i];
+        this.put(layer, x, y, z, rgb, this.faded(x, y, z, alpha));
+    }
+
+    /** One corner, out in the world, into a layer: kept as where it is seen from the camera. */
+    private void put(Layer layer, double x, double y, double z, int rgb, int alpha) {
+        layer.add(x - this.camera.x, y - this.camera.y, z - this.camera.z, rgb, alpha);
     }
 
     /**
-     * {@code alpha} at {@code point}: while a construct's own shape is drawn, what comes close to the
-     * camera fades out, so a big fist hanging right next to you never fills your screen.
+     * {@code alpha} at a point: while a construct's own shape is drawn, what comes close to the camera fades out, so a
+     * big fist hanging right next to you never fills your screen.
      */
-    private int faded(Vec3 point, int alpha) {
-        if (!this.nearFade) {
+    private int faded(double x, double y, double z, int alpha) {
+        if (!this.nearFade || this.hand) {
             return alpha;
         }
-        return (int) (alpha * smooth((point.distanceTo(this.camera) - NEAR_GONE) / (NEAR_CLEAR - NEAR_GONE)));
+        double away = Math.sqrt(sq(x - this.camera.x) + sq(y - this.camera.y) + sq(z - this.camera.z));
+        return (int) (alpha * smooth((away - NEAR_GONE) / (NEAR_CLEAR - NEAR_GONE)));
     }
 
     static int alpha(double value) {

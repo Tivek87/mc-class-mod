@@ -7,6 +7,7 @@ import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.phys.AABB;
@@ -20,15 +21,16 @@ import nl.tivek.welcomescreen.spell.SpellEffect;
 
 /**
  * The ring scans the area around Green Lantern: a wave of its light rolls out from him through everything, walls and
- * all, as far as the setting {@code rangeBlocks}; every creature it passes is marked for him, with its name and health
- * in a frame of light he sees through walls, for {@code markSeconds} (see the client's RingSight). His action bar
- * says what it found. Everyone around sees the wave go by, not what it marked.
+ * all, as far as the setting {@code rangeBlocks}; every creature it passes is marked for him for {@code markSeconds}:
+ * it glows through walls, red when it is out to hurt him and green otherwise, in a frame of light with its name and
+ * health (see the client's RingSight). His action bar says what it found. Everyone around sees the wave go by, not what
+ * it marked.
  */
 public final class RingScan implements SpellEffect {
     /** How fast the wave rolls out, in blocks per tick. */
     public static final double SPEED = 1.6;
-    // How long the wave takes to die away once it reached its end, in ticks.
-    private static final int FADE = 10;
+    /** How long the wave takes to die away once it reached its end, in ticks. */
+    static final int FADE = 10;
     private static final double VIEW_RANGE = 96.0;
 
     private final int id = PowerRing.newId();
@@ -83,7 +85,7 @@ public final class RingScan implements SpellEffect {
                 entity -> entity != this.owner && entity.isAlive() && !entity.isSpectator()
                         && !(entity instanceof ArmorStand)
                         && entity.distanceToSqr(this.center) <= (double) this.radius * this.radius)) {
-            if (living instanceof Enemy) {
+            if (living instanceof Enemy || living instanceof Mob mob && mob.getTarget() == this.owner) {
                 hostile++;
             } else {
                 other++;

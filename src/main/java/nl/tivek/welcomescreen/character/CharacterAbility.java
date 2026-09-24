@@ -75,6 +75,7 @@ public final class CharacterAbility {
     @Nullable
     private Group group;
     private int defaultCooldown;
+    private int[] oldCooldowns = new int[0];
     private double defaultDamage;
     private boolean usesCooldown;
     private boolean usesDamage;
@@ -97,6 +98,15 @@ public final class CharacterAbility {
     public CharacterAbility cooldown(int ticks) {
         this.defaultCooldown = ticks;
         this.usesCooldown = true;
+        return this;
+    }
+
+    /**
+     * Its cooldown used to have one of these defaults, in ticks. A settings file that still holds one of them was never
+     * changed by hand there, so it follows the new default (once, see {@link CharacterConfig}).
+     */
+    public CharacterAbility cooldownWas(int... oldTicks) {
+        this.oldCooldowns = oldTicks;
         return this;
     }
 
@@ -242,6 +252,11 @@ public final class CharacterAbility {
             }
         }
         return false;
+    }
+
+    /** The cooldowns it used to have by default, in ticks (see {@link #cooldownWas}). */
+    public int[] oldCooldowns() {
+        return this.oldCooldowns;
     }
 
     public int defaultCooldown() {

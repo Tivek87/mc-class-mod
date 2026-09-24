@@ -27,10 +27,15 @@ import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import nl.tivek.welcomescreen.WelcomeScreenMod;
 import nl.tivek.welcomescreen.character.CharacterAbility;
 import nl.tivek.welcomescreen.character.GameCharacter;
+import nl.tivek.welcomescreen.character.lantern.AirStrike;
 import nl.tivek.welcomescreen.character.lantern.ConstructPath;
 import nl.tivek.welcomescreen.character.lantern.LandingSlam;
+import nl.tivek.welcomescreen.character.lantern.LightBubble;
+import nl.tivek.welcomescreen.character.lantern.LightFlare;
 import nl.tivek.welcomescreen.character.lantern.LightShield;
+import nl.tivek.welcomescreen.character.lantern.PlanePath;
 import nl.tivek.welcomescreen.character.lantern.RingScan;
+import nl.tivek.welcomescreen.character.lantern.SwordMove;
 import nl.tivek.welcomescreen.network.ConstructPayload;
 import org.joml.Vector3f;
 
@@ -47,18 +52,30 @@ public final class ClientConstructs {
     private static final int MAX_WAITING = 2;
     // How long the shockwave of a slam shakes the view, in ticks.
     private static final double SHAKE_TICKS = 8.0;
+    // How long the crash of an air strike's plane shakes the view, in ticks, and up to how far away, in blocks.
+    private static final double CRASH_SHAKE_TICKS = 30.0;
+    private static final double CRASH_SHAKE_RANGE = 140.0;
 
     // The beam starts on the line from your eye through your own hand, but this much nearer than the hand
     // itself: on screen that is the same spot, and it keeps the beam from starting inside a wall.
     private static final double RING_NEAR = 0.45;
     // The ram cone points where its owner looks below the first speed, and the way he flies above the second, in
     // blocks per tick; seen from his own eyes its middle hangs this far in front of them.
-    private static final double RAM_LOOK = 0.1;
-    private static final double RAM_ALONG = 0.45;
+    private static final double RAM_LOOK = 0.08;
+    private static final double RAM_ALONG = 0.3;
     private static final double RAM_OWN_AHEAD = 0.85;
 
     private static final Map<Integer, Track> CONSTRUCTS = new HashMap<>();
+    // Planes whose maker let go of them in the air: they break up where they were. By id: the last word about it, the
+    // clock it had then, and the client tick it was let go on.
+    private static final Map<Integer, Broken> BROKEN = new HashMap<>();
+    // How long a plane that was let go takes to break up and be gone, in ticks.
+    private static final int BROKEN_TICKS = 42;
     private static int clientTicks;
+
+    /** A plane let go of in the air, breaking up. */
+    private record Broken(ConstructPayload plane, double clock, int since) {
+    }
 
     private ClientConstructs() {
     }
@@ -86,12 +103,16 @@ public final class ClientConstructs {
         private Vec3 lastCenter;
         @Nullable
         private Vec3 lastWay;
+        // How long it stays without a word from the server: a round from a minigun is told about only once, as it is
+        // fired, and flies on by itself.
+        private final int keep;
 
         Track(ConstructPayload first) {
             this.previous = first;
             this.current = first;
             this.latest = first;
             this.lastSeen = clientTicks;
+            this.keep = first.shape() == ConstructPayload.BULLET ? PlanePainter.bulletTicks(first) : TIMEOUT;
             this.time(first);
         }
 
@@ -135,7 +156,7 @@ public final class ClientConstructs {
         }
 
         boolean timedOut() {
-            return clientTicks - this.lastSeen > TIMEOUT;
+            return clientTicks - this.lastSeen > this.keep;
         }
     }
 
@@ -143,16 +164,18 @@ public final class ClientConstructs {
     private static boolean timed(int shape) {
         return switch (shape) {
             case ConstructPayload.SLAM, ConstructPayload.SCAN, ConstructPayload.FLARE, ConstructPayload.BEAM,
-                    ConstructPayload.STORM, ConstructPayload.DROP -> true;
+                    ConstructPayload.PLANE, ConstructPayload.MISSILE, ConstructPayload.BULLET,
+                    ConstructPayload.BUBBLE, ConstructPayload.SWORD -> true;
             default -> false;
         };
     }
 
     /**
-     * A construct someone is holding beside them: where it hangs, how far it has come in, and which shape it
-     * is (the hand that holds it depends on that: the ring hand attacks, the other one defends).
+     * A construct someone is holding beside them: where it hangs, how far it has come in, which shape it is (the hand
+     * that holds it depends on that: the ring hand attacks, the other one defends), and whether it is being smashed
+     * down (a bubble: the ring hand swings down with it).
      */
-    public record Held(Vec3 center, float strength, int shape) {
+    public record Held(Vec3 center, float strength, int shape, boolean smashing) {
         /** True while this is something the hand that defends holds up, not something the ring hand shapes. */
         public boolean defends() {
             return this.shape == ConstructPayload.SHIELD;
@@ -160,11 +183,19 @@ public final class ClientConstructs {
     }
 
     /**
-     * The construct this player holds out with one hand, or null when they hold none: a fist they charge, or the
-     * shield in front of them. (The dome, the ram cone and the beam are posed with the flight, see FlightPose.)
+     * The construct this player holds out with one hand, or null when they hold none: a fist they charge or a bubble
+     * the ring holds up (the ring hand), or else the shield in front of them (the other hand). (The dome, the ram cone
+     * and the beam are posed with the flight, see FlightPose.)
      */
     @Nullable
     public static Held heldBy(int owner) {
+        Held attacks = heldBy(owner, false);
+        return attacks != null ? attacks : heldBy(owner, true);
+    }
+
+    /** The construct this player holds out with the hand that defends ({@code defends}), or with the ring hand. */
+    @Nullable
+    public static Held heldBy(int owner, boolean defends) {
         Minecraft minecraft = Minecraft.getInstance();
         Entity entity = minecraft.level == null ? null : minecraft.level.getEntity(owner);
         float partialTick = minecraft.getTimer().getGameTimeDeltaPartialTick(false);
@@ -173,23 +204,66 @@ public final class ClientConstructs {
             if (now.owner() != owner || !now.held()) {
                 continue;
             }
-            if (now.shape() == ConstructPayload.FIST) {
+            if (now.shape() == ConstructPayload.FIST && !defends) {
                 Vec3 center = entity == null ? now.center() : hung(entity, now.center(), partialTick);
-                return new Held(center, now.solid(), now.shape());
+                return new Held(center, now.solid(), now.shape(), false);
             }
-            if (now.shape() == ConstructPayload.SHIELD) {
+            if (now.shape() == ConstructPayload.BUBBLE && !defends) {
+                return new Held(track.previous.center().lerp(now.center(), partialTick),
+                        Math.min(1.0F, now.solid() * 1.5F), now.shape(), now.variant() == LightBubble.SMASHING);
+            }
+            if (now.shape() == ConstructPayload.SHIELD && defends) {
                 Vec3 center = entity == null ? now.center() : pane(entity, partialTick);
-                return new Held(center, now.solid(), now.shape());
+                return new Held(center, now.solid(), now.shape(), false);
             }
         }
         return null;
     }
 
     /**
-     * How hard the constructs of this player make the ring work right now, for the glow of the uniform: a fist
-     * that charges (more as it grows), a fist or a bolt on its way.
+     * What the server says about the sword and shield of one player (see {@link SwordArms}): the move they do, on which
+     * tick of their clock it began, their clock (by the client's own clock), how many ticks ago they began to break up
+     * (-1 while whole), and the way a charge runs.
      */
-    static float working(int owner) {
+    record Sword(int move, double moveStart, double clock, float broken, Vec3 way) {
+    }
+
+    /** The sword and shield this player holds, as the server tells, or null when he holds none. */
+    @Nullable
+    static Sword sword(int owner, float partialTick) {
+        for (Track track : CONSTRUCTS.values()) {
+            ConstructPayload sword = track.latest;
+            if (sword.shape() == ConstructPayload.SWORD && sword.owner() == owner) {
+                double clock = track.clock(partialTick);
+                float broken = sword.size() < 0.0F ? -1.0F
+                        : (float) (sword.size() + Math.max(0.0, clock - sword.age()));
+                return new Sword(sword.variant(), sword.charge(), clock, broken, sword.facing());
+            }
+        }
+        return null;
+    }
+
+    /**
+     * How many ticks ago this player caught a creature in the bubble he holds (by the client's own clock), or -1 when
+     * he holds none.
+     */
+    static float bubbleAge(int owner, float partialTick) {
+        for (Track track : CONSTRUCTS.values()) {
+            ConstructPayload bubble = track.latest;
+            if (bubble.shape() == ConstructPayload.BUBBLE && bubble.owner() == owner
+                    && bubble.variant() != LightBubble.BREAKING) {
+                return (float) track.clock(partialTick);
+            }
+        }
+        return -1.0F;
+    }
+
+    /**
+     * How hard the constructs of this player make the ring work right now, for the glow of the ring and the uniform:
+     * a fist that charges (more as it grows), a fist or a bolt on its way, a scan rolling out, a flare gathering its
+     * light, and an air strike most of all, from the call until its plane has crashed.
+     */
+    static float working(int owner, float partialTick) {
         float most = 0.0F;
         for (Track track : CONSTRUCTS.values()) {
             ConstructPayload now = track.current;
@@ -199,9 +273,42 @@ public final class ClientConstructs {
             float here = switch (now.shape()) {
                 case ConstructPayload.FIST -> now.held() ? 0.6F + 0.4F * now.charge() : 0.5F;
                 case ConstructPayload.BOLT -> 0.7F;
+                case ConstructPayload.SCAN -> {
+                    // The ring's own scan, while its wave rolls out; the plane's scans glow with the plane.
+                    double rolled = track.clock(partialTick) * RingScan.SPEED / Math.max(1.0, now.size());
+                    yield now.variant() == ConstructPayload.SCAN_HOSTILE ? 0.0F
+                            : (float) (0.95 * (1.0 - ConstructPainter.smooth((rolled - 0.6) / 0.6)));
+                }
+                case ConstructPayload.FLARE -> track.clock(partialTick) < LightFlare.GATHER_TICKS + 4.0 ? 1.0F : 0.0F;
+                // Holding a creature up in a bubble, and most of all hurling it down.
+                case ConstructPayload.BUBBLE -> now.variant() == LightBubble.SMASHING ? 1.0F
+                        : now.variant() == LightBubble.HOLDING ? 0.8F : 0.0F;
+                // The sword and shield: shaping them, every swing and bash, and hardest in a flurry, a charge or a slam.
+                case ConstructPayload.SWORD -> {
+                    SwordMove move = SwordMove.byIndex(now.variant());
+                    double t = track.clock(partialTick) - now.charge();
+                    if (now.size() >= 0.0F || move == null) {
+                        yield 0.0F;
+                    }
+                    yield switch (move.kind()) {
+                        case EQUIP -> t < 12.0 ? 0.9F : 0.35F;
+                        case FLURRY, CHARGE, SLAM -> t < move.ticks() ? 0.85F : 0.3F;
+                        default -> t < move.ticks() ? 0.55F : 0.3F;
+                    };
+                }
+                case ConstructPayload.PLANE -> {
+                    // The ring pours everything it has into the call, holds the plane up hard the whole time it flies,
+                    // and flares as it plunges.
+                    double clock = track.clock(partialTick);
+                    PlanePath path = PlanePainter.path(track.latest);
+                    if (clock >= path.crashTick()) {
+                        yield (float) Math.max(0.0, 1.0 - (clock - path.crashTick()) / 20.0);
+                    }
+                    yield clock < AirStrike.CALL_TICKS + 8.0 || clock >= path.diveTick() - 8.0 ? 1.0F : 0.85F;
+                }
                 default -> 0.0F;
             };
-            most = Math.max(most, here * now.solid());
+            most = Math.max(most, here * Math.min(1.0F, now.solid()));
         }
         return most;
     }
@@ -221,10 +328,11 @@ public final class ClientConstructs {
     }
 
     /**
-     * One scan of a ring rolling out: whose it is, where it set out from, how far it reaches and has got by now (by the
-     * client's own clock), and how long what it passes stays marked, in seconds.
+     * One scan rolling out: whose it is, where it set out from, how far it reaches and has got by now (by the client's
+     * own clock), how long what it passes stays marked, in seconds, and whether it only marks what is out to hurt its
+     * maker (the scans of the air strike's plane).
      */
-    record Scan(int id, int owner, Vec3 center, double radius, double reached, double seconds) {
+    record Scan(int id, int owner, Vec3 center, double radius, double reached, double seconds, boolean hostileOnly) {
     }
 
     /** Every scan rolling out right now. */
@@ -234,10 +342,76 @@ public final class ClientConstructs {
             ConstructPayload scan = entry.getValue().latest;
             if (scan.shape() == ConstructPayload.SCAN) {
                 double reached = Math.min(scan.size(), RingScan.SPEED * entry.getValue().clock(partialTick));
-                scans.add(new Scan(entry.getKey(), scan.owner(), scan.center(), scan.size(), reached, scan.charge()));
+                scans.add(new Scan(entry.getKey(), scan.owner(), scan.center(), scan.size(), reached, scan.charge(),
+                        scan.variant() == ConstructPayload.SCAN_HOSTILE));
             }
         }
         return scans;
+    }
+
+    /**
+     * How many ticks ago this player's own Ring Scan set out (by the client's own clock), or -1 when none is rolling:
+     * for his arm, which holds the ring out while it scans.
+     */
+    static float scanAge(int owner, float partialTick) {
+        float youngest = -1.0F;
+        for (Track track : CONSTRUCTS.values()) {
+            ConstructPayload scan = track.latest;
+            if (scan.shape() == ConstructPayload.SCAN && scan.owner() == owner
+                    && scan.variant() != ConstructPayload.SCAN_HOSTILE) {
+                float clock = (float) track.clock(partialTick);
+                youngest = youngest < 0.0F ? clock : Math.min(youngest, clock);
+            }
+        }
+        return youngest;
+    }
+
+    /** One round a minigun fired: from its muzzle to where it strikes, and how long ago, by the client's own clock. */
+    record Shot(Vec3 muzzle, Vec3 to, double clock) {
+    }
+
+    /** The last two rounds one gun of this player's plane fired (0 the left one, 1 the right one), newest first. */
+    static List<Shot> shots(int owner, int gun, float partialTick) {
+        Shot newest = null;
+        Shot before = null;
+        for (Track track : CONSTRUCTS.values()) {
+            ConstructPayload round = track.latest;
+            if (round.shape() != ConstructPayload.BULLET || round.owner() != owner || round.variant() != gun) {
+                continue;
+            }
+            Shot shot = new Shot(round.center().add(round.facing().scale(round.charge())), round.center(),
+                    track.clock(partialTick));
+            if (newest == null || shot.clock() < newest.clock()) {
+                before = newest;
+                newest = shot;
+            } else if (before == null || shot.clock() < before.clock()) {
+                before = shot;
+            }
+        }
+        List<Shot> shots = new ArrayList<>(2);
+        if (newest != null) {
+            shots.add(newest);
+            if (before != null) {
+                shots.add(before);
+            }
+        }
+        return shots;
+    }
+
+    /**
+     * How many ticks ago one launcher of this player's plane fired its newest missile that is still on its way (0 the
+     * left one, 1 the right one), or -1 when none is.
+     */
+    static double missileSince(int owner, int side, float partialTick) {
+        double youngest = -1.0;
+        for (Track track : CONSTRUCTS.values()) {
+            ConstructPayload missile = track.latest;
+            if (missile.shape() == ConstructPayload.MISSILE && missile.owner() == owner && missile.variant() == side) {
+                double clock = track.clock(partialTick);
+                youngest = youngest < 0.0 ? clock : Math.min(youngest, clock);
+            }
+        }
+        return youngest;
     }
 
     /**
@@ -268,27 +442,11 @@ public final class ClientConstructs {
     }
 
     /**
-     * Where this player's storm hangs its ring of light, or null when he has none going: over his head as he is drawn
-     * right now, or where the server says when he is out of sight.
+     * How many ticks ago this player called his air strike (by the client's own clock), or -1 when he has none going.
      */
-    @Nullable
-    static Vec3 storm(int owner, float partialTick) {
+    static float planeAge(int owner, float partialTick) {
         for (Track track : CONSTRUCTS.values()) {
-            ConstructPayload storm = track.latest;
-            if (storm.shape() == ConstructPayload.STORM && storm.owner() == owner) {
-                Minecraft minecraft = Minecraft.getInstance();
-                Entity entity = minecraft.level == null ? null : minecraft.level.getEntity(owner);
-                return entity == null ? storm.center()
-                        : entity.getEyePosition(partialTick).add(0.0, storm.solid(), 0.0);
-            }
-        }
-        return null;
-    }
-
-    /** How many ticks ago this player's storm was called (by the client's own clock), or -1 when he has none. */
-    static float stormAge(int owner, float partialTick) {
-        for (Track track : CONSTRUCTS.values()) {
-            if (track.latest.shape() == ConstructPayload.STORM && track.latest.owner() == owner) {
+            if (track.latest.shape() == ConstructPayload.PLANE && track.latest.owner() == owner) {
                 return (float) track.clock(partialTick);
             }
         }
@@ -328,14 +486,24 @@ public final class ClientConstructs {
     }
 
     /**
-     * How hard the shockwave of a slam nearby shakes a view from {@code from}: 1 right next to it as it strikes,
-     * fading with distance and over the next few ticks, 0 when there is none.
+     * How hard the shockwave of a slam nearby, or the crash of an air strike's plane, shakes a view from {@code from}:
+     * 1 right next to it as it strikes, fading with distance and over the next few ticks, 0 when there is none.
      */
     static float shake(Vec3 from, float partialTick) {
         float most = 0.0F;
         for (Track track : CONSTRUCTS.values()) {
             ConstructPayload slam = track.latest;
-            if (slam.shape() != ConstructPayload.SLAM && slam.shape() != ConstructPayload.DROP) {
+            if (slam.shape() == ConstructPayload.PLANE) {
+                PlanePath path = PlanePainter.path(slam);
+                double since = track.clock(partialTick) - path.crashTick();
+                double near = 1.0 - from.distanceTo(path.crash()) / CRASH_SHAKE_RANGE;
+                if (since >= 0.0 && since < CRASH_SHAKE_TICKS && near > 0.0) {
+                    double fade = 1.0 - since / CRASH_SHAKE_TICKS;
+                    most = Math.max(most, (float) (fade * fade * Math.min(1.0, near * 1.2)));
+                }
+                continue;
+            }
+            if (slam.shape() != ConstructPayload.SLAM) {
                 continue;
             }
             double since = track.clock(partialTick) / SlamPainter.pace(slam) - LandingSlam.IMPACT_TICK;
@@ -344,9 +512,7 @@ public final class ClientConstructs {
                 continue;
             }
             double fade = 1.0 - since / SHAKE_TICKS;
-            // A storm drops one after another: each shakes a little less than a slam of your own.
-            double hard = slam.shape() == ConstructPayload.DROP ? 0.6 : 1.0;
-            most = Math.max(most, (float) (hard * fade * fade * Math.min(1.0, near * 1.5)));
+            most = Math.max(most, (float) (fade * fade * Math.min(1.0, near * 1.5)));
         }
         return most;
     }
@@ -369,7 +535,7 @@ public final class ClientConstructs {
 
     public static void update(ConstructPayload payload) {
         if (payload.solid() < 0.0F) {
-            CONSTRUCTS.remove(payload.id());
+            letGo(CONSTRUCTS.remove(payload.id()));
             return;
         }
         Track track = CONSTRUCTS.get(payload.id());
@@ -392,16 +558,59 @@ public final class ClientConstructs {
             Track track = tracks.next();
             if (track.timedOut()) {
                 tracks.remove();
+                letGo(track);
             } else {
                 track.advance();
             }
+        }
+        BROKEN.values().removeIf(broken -> clientTicks - broken.since() > BROKEN_TICKS);
+    }
+
+    /**
+     * A creature caught in a Light Bubble stays right in its middle on your screen too. The game itself only tells where
+     * it is every few ticks and glides it there, well behind a bubble that is smashed down.
+     */
+    @SubscribeEvent
+    public static void onClientTickDone(ClientTickEvent.Post event) {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.level == null || minecraft.isPaused()) {
+            return;
+        }
+        for (Track track : CONSTRUCTS.values()) {
+            ConstructPayload now = track.current;
+            if (now.shape() != ConstructPayload.BUBBLE || now.variant() == LightBubble.BREAKING) {
+                continue;
+            }
+            Entity caught = minecraft.level.getEntity((int) now.charge());
+            if (caught == null || caught == minecraft.player) {
+                continue;
+            }
+            caught.setPos(now.center().x, now.center().y - caught.getBbHeight() * 0.5, now.center().z);
+            caught.setDeltaMovement(Vec3.ZERO);
+        }
+    }
+
+    /**
+     * A construct is gone. A plane still in the air when it goes was let go of by its maker: it breaks into solid pieces
+     * where it was instead of simply vanishing, as every construct does.
+     */
+    private static void letGo(@Nullable Track track) {
+        if (track == null || track.latest.shape() != ConstructPayload.PLANE) {
+            return;
+        }
+        float partialTick = Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(false);
+        double clock = track.clock(partialTick);
+        if (clock < PlanePainter.path(track.latest).crashTick()) {
+            BROKEN.put(track.latest.id(), new Broken(track.latest, clock, clientTicks));
         }
     }
 
     @SubscribeEvent
     public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
         CONSTRUCTS.clear();
+        BROKEN.clear();
         RingSpot.clear();
+        PlanePainter.clear();
     }
 
     // After water and glass: light never hides what is behind it, so it has to come after them.
@@ -412,14 +621,15 @@ public final class ClientConstructs {
         }
         Minecraft minecraft = Minecraft.getInstance();
         ClientLevel level = minecraft.level;
-        if (level == null || CONSTRUCTS.isEmpty() && !BeamCharge.any(level)) {
+        if (level == null || CONSTRUCTS.isEmpty() && BROKEN.isEmpty() && !BeamCharge.any(level)) {
             return;
         }
         // The same blend between ticks that entities are drawn with.
         float partialTick = event.getPartialTick().getGameTimeDeltaPartialTick(false);
         float time = (float) (level.getGameTime() % 24000L) + partialTick;
         Camera camera = event.getCamera();
-        ConstructPainter painter = new ConstructPainter(event.getPoseStack(), camera.getPosition(), time);
+        ConstructPainter painter = new ConstructPainter(event.getPoseStack(), camera.getPosition(), time,
+                event.getFrustum());
         for (Track track : CONSTRUCTS.values()) {
             ConstructPayload was = track.previous;
             ConstructPayload now = track.current;
@@ -481,8 +691,13 @@ public final class ClientConstructs {
                 case ConstructPayload.RAM -> painter.ram(center, way, solid, charge, own);
                 case ConstructPayload.SLAM -> SlamPainter.draw(painter, track.latest, track.clock(partialTick), ring,
                         owner == null ? null : owner.getPosition(partialTick));
-                case ConstructPayload.SCAN -> RingSight.wave(painter, now.center(), now.size(),
-                        track.clock(partialTick));
+                case ConstructPayload.SCAN -> {
+                    RingSight.wave(painter, now.center(), now.size(), track.clock(partialTick));
+                    // The ring he holds out shines while it reads (the plane's scans shine out of its own sensor).
+                    if (ring != null && now.variant() != ConstructPayload.SCAN_HOSTILE) {
+                        RingSight.ringLight(painter, ring, track.clock(partialTick), own);
+                    }
+                }
                 case ConstructPayload.FLARE -> FlareLight.draw(painter, owner == null ? now.center()
                         : own ? FlareLight.ownRing(camera) : ring != null ? ring : FlareLight.ring(owner, partialTick),
                         owner == null ? way : owner.getViewVector(partialTick), track.clock(partialTick), own);
@@ -492,12 +707,25 @@ public final class ClientConstructs {
                                 track.clock(partialTick), 1.0);
                     }
                 }
-                case ConstructPayload.STORM -> StormLight.draw(painter, now, track.clock(partialTick), ring,
-                        owner == null ? center : owner.getEyePosition(partialTick).add(0.0, solid, 0.0));
-                case ConstructPayload.DROP -> SlamPainter.drop(painter, now, center, track.clock(partialTick),
-                        storm(now.owner(), partialTick), owner == null ? null : owner.getPosition(partialTick));
+                case ConstructPayload.PLANE -> PlanePainter.draw(painter, now.id(), track.latest,
+                        track.clock(partialTick), ring, partialTick);
+                case ConstructPayload.MISSILE -> PlanePainter.missile(painter, center, way, track.clock(partialTick));
+                case ConstructPayload.BULLET -> PlanePainter.bullet(painter, track.latest, track.clock(partialTick));
+                // Until it breaks up its charge is the creature inside, not a time.
+                case ConstructPayload.BUBBLE -> BubblePainter.draw(painter, now, center, solid,
+                        was.variant() == LightBubble.BREAKING ? charge : 0.0, now.held(), track.clock(partialTick), ring);
+                case ConstructPayload.SWORD -> {
+                    // Your own in first person are drawn with your hands (see SwordArms).
+                    if (owner != null && !own) {
+                        SwordArms.draw(painter, owner, ring, partialTick);
+                    }
+                }
                 default -> painter.fist(center, way, size, solid, charge, now.held() && !onItsWay, ring);
             }
+        }
+        for (Broken broken : BROKEN.values()) {
+            double since = clientTicks - broken.since() + partialTick;
+            PlanePainter.broken(painter, broken.plane(), broken.clock() + since, since);
         }
         // The light every ring gathers for the beam.
         for (AbstractClientPlayer player : level.players()) {

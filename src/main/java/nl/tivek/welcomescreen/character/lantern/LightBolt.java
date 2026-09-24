@@ -95,7 +95,7 @@ final class LightBolt implements SpellEffect {
     /** One bolt, as long as the ring hand is free, the ring can pay for it and the cooldown is over. */
     private static boolean shoot(ServerPlayer owner, ServerLevel level, CharacterAbility ability) {
         if (Lantern.busy(owner) || GiantFist.holding(owner) || Flight.descending(owner) || LightFlare.up(owner)
-                || ConstructStorm.calling(owner)) {
+                || AirStrike.calling(owner)) {
             return false;
         }
         long now = level.getGameTime();
