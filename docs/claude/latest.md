@@ -12,4 +12,4 @@ Gedaan:
 
 Bestanden deze ronde: SwordArms, RechargeAnimation, ClientConstructs, LightBubble, ConstructPayload, ConstructHud, CharacterConfig, lang en/nl, docs.
 
-Open: commit + push wacht op jouw ja (vorige batch + deze samen). Testklasse, testwereld en screenshots zijn opgeruimd.
+Gecommit en gepusht: 7425202 naar origin/master. Open: niets; niet getest: multiplayer, echte muisklikken, geluid.
