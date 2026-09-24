@@ -160,7 +160,7 @@ public final class LightBubble implements Effect {
             PowerRing.tell(owner, "busy_lantern");
             return false;
         }
-        if (GiantFist.holding(owner) || AirStrike.calling(owner) || LightFlare.up(owner)) {
+        if (GiantFist.holding(owner) || AirStrike.calling(owner) || GiantHands.waving(owner)) {
             return false;
         }
         float cost = (float) ability.value("powerCost");

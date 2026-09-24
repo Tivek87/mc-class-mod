@@ -14,7 +14,13 @@ import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.OwnableEntity;
+import net.minecraft.world.entity.decoration.ArmorStand;
+import net.minecraft.world.entity.monster.Enemy;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.ClipContext;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
@@ -29,11 +35,12 @@ import nl.tivek.multiversepowers.character.CharacterAbility;
 import nl.tivek.multiversepowers.character.GameCharacter;
 import nl.tivek.multiversepowers.character.greenlantern.ConstructPath;
 import nl.tivek.multiversepowers.character.greenlantern.ConstructPayload;
+import nl.tivek.multiversepowers.character.greenlantern.HandDuo;
+import nl.tivek.multiversepowers.character.greenlantern.HandPose;
 import nl.tivek.multiversepowers.character.greenlantern.PlanePath;
 import nl.tivek.multiversepowers.character.greenlantern.ability.AirStrike;
 import nl.tivek.multiversepowers.character.greenlantern.ability.LandingSlam;
 import nl.tivek.multiversepowers.character.greenlantern.ability.LightBubble;
-import nl.tivek.multiversepowers.character.greenlantern.ability.LightFlare;
 import nl.tivek.multiversepowers.character.greenlantern.ability.LightShield;
 import nl.tivek.multiversepowers.character.greenlantern.ability.RingScan;
 import nl.tivek.multiversepowers.character.greenlantern.ability.SwordMove;
@@ -42,7 +49,7 @@ import nl.tivek.multiversepowers.character.greenlantern.client.body.RingSpot;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.SwordArms;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.BeamCharge;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.BubblePainter;
-import nl.tivek.multiversepowers.character.greenlantern.client.render.FlareLight;
+import nl.tivek.multiversepowers.character.greenlantern.client.render.HandPainter;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.LanternPainter;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.PlanePainter;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.RingSight;
@@ -59,6 +66,26 @@ import org.joml.Vector3f;
 public final class ClientConstructs {
     // A construct the server stopped updating (out of range, or a lost packet) disappears.
     private static final int TIMEOUT = 10;
+    // A plane flies a path both sides work out alike: it stays this long without a word (a hitch of the server, or out
+    // of its reach for a moment), in ticks.
+    private static final int PLANE_KEEP = 100;
+    // How a clock keeps time with the server's (see Track#retime): how far ahead of the last word it may be before the
+    // server seems to run behind and where it is drifts later (at most this much, and this much of how far past that
+    // it is, per tick); how far ahead is a hitch it gives up on; how hard it catches up (its pace, next to how far off
+    // it is); how slow and how fast it may run and how much its pace may change in a tick; and how far ahead of the
+    // last word it may run at all (what flies a path of its own a little further) and how hard it slows down as it gets
+    // there.
+    private static final double LEAD_OK = 2.5;
+    private static final double DRIFT = 0.3;
+    private static final double DRIFT_PULL = 0.3;
+    private static final double LEAD_LOST = 40.0;
+    private static final double CATCH_UP = 0.2;
+    private static final double SLOWEST = 0.25;
+    private static final double FASTEST = 2.0;
+    private static final double PACE_CHANGE = 0.2;
+    private static final double AHEAD = 6.0;
+    private static final double AHEAD_OWN = 12.0;
+    private static final double AHEAD_PULL = 0.3;
     // Updates waiting beyond this many are skipped, so a network hiccup never leaves one lagging behind.
     private static final int MAX_WAITING = 2;
     // How long the shockwave of a slam shakes the view, in ticks.
@@ -72,6 +99,14 @@ public final class ClientConstructs {
     // The same for a slam of a Light Bubble pounded into the ground.
     private static final double POUND_SHAKE_TICKS = 9.0;
     private static final double POUND_SHAKE_RANGE = 26.0;
+    // The same for the axe a pair of giant hands chops into the ground, and for a giant middle finger bursting out of
+    // it, with how hard each shakes it right next to it.
+    private static final double AXE_SHAKE_TICKS = 10.0;
+    private static final double AXE_SHAKE_RANGE = 24.0;
+    private static final double AXE_SHAKE = 0.8;
+    private static final double FINGER_SHAKE_TICKS = 8.0;
+    private static final double FINGER_SHAKE_RANGE = 18.0;
+    private static final double FINGER_SHAKE = 0.5;
 
     // The beam starts on the line from your eye through your own hand, but this much nearer than the hand
     // itself: on screen that is the same spot, and it keeps the beam from starting inside a wall.
@@ -86,16 +121,21 @@ public final class ClientConstructs {
     // Planes whose maker let go of them in the air: they break up where they were. By id: the last word about it, the
     // clock it had then, and the client tick it was let go on.
     private static final Map<Integer, Broken> BROKEN = new HashMap<>();
+    // Giant hands whose maker let go of them before they were done: they break up where they were. By id, as above.
+    private static final Map<Integer, Broken> BROKEN_HANDS = new HashMap<>();
     // How long a plane that was let go takes to break up and be gone, in ticks.
     private static final int BROKEN_TICKS = 42;
     // The client time each player's newest bolt left the ring, by the id of its owner (see boltAge), and how long that
     // is kept, in ticks.
     private static final Map<Integer, Double> BOLTS = new HashMap<>();
     private static final int BOLT_MEMORY = 40;
+    // The tick of its plane's clock each pylon of each player's jets last fired a missile on (see launched), by the id
+    // of the player and the pylon.
+    private static final Map<Long, Integer> LAUNCHES = new HashMap<>();
     private static int clientTicks;
 
-    /** A plane let go of in the air, breaking up. */
-    private record Broken(ConstructPayload plane, double clock, int since) {
+    /** A plane or giant hand let go of before it was done, breaking up. */
+    private record Broken(ConstructPayload construct, double clock, int since) {
     }
 
     private ClientConstructs() {
@@ -117,6 +157,14 @@ public final class ClientConstructs {
         // The client time it set off, the most the server told it has aged, and the way it flies (null: none).
         private double start = Double.NaN;
         private int told = -1;
+        // Its clock as it is drawn (see clock): what it read on client tick shownAt, and how fast it runs now (ticks
+        // per tick). It glides after the server's (see retime): it never jumps, never runs in steps, never stops dead.
+        private double shown;
+        private int shownAt;
+        private double pace = 1.0;
+        // A missile of an air strike: where it was on each tick it was told of (see Flown); null for anything else.
+        @Nullable
+        private Flown flown;
         @Nullable
         private ConstructPath path;
         // Where a steered one was drawn last, and the way it pointed: once it stops it falls apart right there.
@@ -127,8 +175,12 @@ public final class ClientConstructs {
         // How long it stays without a word from the server: a round from a minigun is told about only once, as it is
         // fired, and flies on by itself.
         private final int keep;
+        // True for what the server tells about only once (see sentOnce): its clock runs on by itself from there.
+        private final boolean once;
         // The age of the first update that told of the variant it has now: a Light Bubble's pound is timed from there.
         private int variantSince;
+        // A giant hand that slapped its palm down flat: what lay under it was squashed (see slapped).
+        private boolean struck;
 
         Track(ConstructPayload first) {
             this.previous = first;
@@ -136,8 +188,10 @@ public final class ClientConstructs {
             this.latest = first;
             this.lastSeen = clientTicks;
             this.keep = first.shape() == ConstructPayload.BULLET ? PlanePainter.bulletTicks(first)
-                    : first.shape() == ConstructPayload.BLAST ? PlanePainter.BLAST_TICKS + 2
-                    : first.shape() == ConstructPayload.POUND ? BubblePainter.POUND_TICKS + 2 : TIMEOUT;
+                    : first.shape() == ConstructPayload.BLAST ? PlanePainter.BLAST_TICKS + 8
+                    : first.shape() == ConstructPayload.POUND ? BubblePainter.POUND_TICKS + 2
+                    : first.shape() == ConstructPayload.PLANE ? PLANE_KEEP : TIMEOUT;
+            this.once = sentOnce(first.shape());
             this.variantSince = first.age();
             this.time(first);
         }
@@ -162,16 +216,71 @@ public final class ClientConstructs {
             float partialTick = Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(false);
             double setOff = clientTicks + partialTick - update.age();
             // The update that came through quickest tells best when it really set off.
-            this.start = Double.isNaN(this.start) ? setOff : Math.min(this.start, setOff);
+            if (Double.isNaN(this.start)) {
+                this.start = setOff;
+                this.shownAt = clientTicks;
+                this.shown = clientTicks - setOff;
+            } else {
+                this.start = Math.min(this.start, setOff);
+            }
             this.told = Math.max(this.told, update.age());
         }
 
-        /** Ticks since it set off by the client's own clock: smooth, and never far ahead of what the server told. */
+        /**
+         * Ticks since it set off by the client's own clock: smooth, keeping time with the server's (see retime). What
+         * the server tells about only once plays on by itself, however long ago that was.
+         */
         double clock(float partialTick) {
             if (Double.isNaN(this.start)) {
                 return Math.max(0, this.told);
             }
-            return Mth.clamp(clientTicks + partialTick - this.start, 0.0, this.told + 1.5);
+            if (this.once) {
+                return Math.max(0.0, clientTicks + partialTick - this.start);
+            }
+            return Math.max(0.0, this.shown + (clientTicks - this.shownAt + partialTick) * this.pace);
+        }
+
+        /**
+         * Once every client tick: its clock glides after the server's. Where the server is, is where its quickest
+         * update says (see time), drifting later a little at a time while the server runs behind. The clock speeds up
+         * or slows down gently to get there, so a late update, a hitch or a slow server never makes it jump, step or
+         * stop dead. It runs ahead of the server's last word by a few ticks at most (what flies a path of its own, see
+         * ownPath, a little further), easing to a stop when the server hitches and on again when it goes on. A missile
+         * that struck is heard of no more: its clock runs on as it was, while it breaks up.
+         */
+        void retime() {
+            if (this.once || Double.isNaN(this.start)) {
+                return;
+            }
+            this.shown += (clientTicks - this.shownAt) * this.pace;
+            this.shownAt = clientTicks;
+            if (this.flown != null && this.flown.ends < Double.POSITIVE_INFINITY) {
+                return;
+            }
+            double lead = clientTicks - this.start - this.told;
+            if (lead > LEAD_LOST) {
+                this.start = clientTicks - this.told - 1.0;
+            } else if (lead > LEAD_OK) {
+                this.start += Math.min(DRIFT, (lead - LEAD_OK) * DRIFT_PULL);
+            }
+            double off = clientTicks - this.start - this.shown;
+            if (Math.abs(off) > LEAD_LOST) {
+                this.shown = clientTicks - this.start;
+                this.pace = 1.0;
+                return;
+            }
+            double pace = Mth.clamp(1.0 + off * CATCH_UP, SLOWEST, FASTEST);
+            pace = Mth.clamp(pace, this.pace - PACE_CHANGE, this.pace + PACE_CHANGE);
+            double ahead = ownPath(this.latest.shape()) ? AHEAD_OWN : AHEAD;
+            this.pace = Math.min(pace, Math.max(0.0, (this.told + ahead - this.shown) * AHEAD_PULL));
+        }
+
+        /** Keeps the time of the plane it left: its clock is the plane's, less the tick it was let go on. */
+        void follow(Track plane, int fired) {
+            this.start = Math.min(this.start, plane.start + fired);
+            this.shown = plane.shown - fired;
+            this.shownAt = plane.shownAt;
+            this.pace = plane.pace;
         }
 
         void advance() {
@@ -189,10 +298,26 @@ public final class ClientConstructs {
         }
     }
 
+    /**
+     * True for the shapes the server tells about only once, as they set off: a round from a minigun, a missile's blast,
+     * a slam of a pound. Their clocks run on by themselves.
+     */
+    private static boolean sentOnce(int shape) {
+        return shape == ConstructPayload.BULLET || shape == ConstructPayload.BLAST || shape == ConstructPayload.POUND;
+    }
+
+    /**
+     * True for the shapes that fly a path of their own, worked out alike on both sides: the air strike's plane and its
+     * missiles. Their clocks run on a little longer while the server says nothing, as the plane flies on.
+     */
+    private static boolean ownPath(int shape) {
+        return shape == ConstructPayload.PLANE || shape == ConstructPayload.MISSILE;
+    }
+
     /** True for the shapes that play along a timeline of their own, from how long ago they set off. */
     private static boolean timed(int shape) {
         return switch (shape) {
-            case ConstructPayload.SLAM, ConstructPayload.SCAN, ConstructPayload.FLARE, ConstructPayload.BEAM,
+            case ConstructPayload.SLAM, ConstructPayload.SCAN, ConstructPayload.HAND, ConstructPayload.BEAM,
                     ConstructPayload.PLANE, ConstructPayload.MISSILE, ConstructPayload.BULLET, ConstructPayload.BLAST,
                     ConstructPayload.BUBBLE, ConstructPayload.SWORD, ConstructPayload.POUND -> true;
             default -> false;
@@ -289,8 +414,8 @@ public final class ClientConstructs {
 
     /**
      * How hard the constructs of this player make the ring work right now, for the glow of the ring and the uniform:
-     * a fist that charges (more as it grows), a fist or a bolt on its way, a scan rolling out, a flare gathering its
-     * light, and an air strike most of all, from the call until its plane has crashed.
+     * a fist that charges (more as it grows), a fist or a bolt on its way, a scan rolling out, the hands being called,
+     * and an air strike most of all, from the call until its plane has crashed.
      */
     public static float working(int owner, float partialTick) {
         float most = 0.0F;
@@ -308,7 +433,9 @@ public final class ClientConstructs {
                     yield now.variant() == ConstructPayload.SCAN_HOSTILE ? 0.0F
                             : (float) (0.95 * (1.0 - Ease.smooth((rolled - 0.6) / 0.6)));
                 }
-                case ConstructPayload.FLARE -> track.clock(partialTick) < LightFlare.GATHER_TICKS + 4.0 ? 1.0F : 0.0F;
+                // Every giant hand as the ring's light shoots off to it and it bursts out of the ground.
+                case ConstructPayload.HAND -> (float) (0.9
+                        * (1.0 - Ease.smooth((track.clock(partialTick) - 8.0) / 8.0)));
                 // Holding a creature up in a bubble, and most of all hurling it down.
                 case ConstructPayload.BUBBLE -> now.variant() == LightBubble.SMASHING ? 1.0F
                         : now.variant() == LightBubble.HOLDING ? 0.8F : 0.0F;
@@ -401,79 +528,235 @@ public final class ClientConstructs {
         return youngest;
     }
 
-    /** One round a minigun fired: from its muzzle to where it strikes, and how long ago, by the client's own clock. */
-    public record Shot(Vec3 muzzle, Vec3 to, double clock) {
-    }
-
-    /** The last two rounds one gun of this player's plane fired (0 the left one, 1 the right one), newest first. */
-    public static List<Shot> shots(int owner, int gun, float partialTick) {
-        Shot newest = null;
-        Shot before = null;
-        for (Track track : CONSTRUCTS.values()) {
-            ConstructPayload round = track.latest;
-            if (round.shape() != ConstructPayload.BULLET || round.owner() != owner || round.variant() != gun) {
-                continue;
-            }
-            Shot shot = new Shot(round.center().add(round.facing().scale(round.charge())), round.center(),
-                    track.clock(partialTick));
-            if (newest == null || shot.clock() < newest.clock()) {
-                before = newest;
-                newest = shot;
-            } else if (before == null || shot.clock() < before.clock()) {
-                before = shot;
-            }
-        }
-        List<Shot> shots = new ArrayList<>(2);
-        if (newest != null) {
-            shots.add(newest);
-            if (before != null) {
-                shots.add(before);
-            }
-        }
-        return shots;
+    /** Where a missile was on one tick it was told of: its middle, its nose and its up (carried along as it swings). */
+    private record Spot(double age, Vec3 at, Vec3 nose, Vec3 up) {
     }
 
     /**
-     * How many ticks ago one launcher of this player's plane fired its newest missile that is still on its way (0 the
-     * left one, 1 the right one), or -1 when none is.
+     * What this client keeps of one missile of an air strike: where it was on the ticks the server told of, so it is
+     * drawn smoothly by its own clock between them (see missile); how it was let go; and, once it has struck, when by
+     * that clock, so it is seen to get there before it breaks up.
      */
-    public static double missileSince(int owner, int side, float partialTick) {
-        double youngest = -1.0;
-        for (Track track : CONSTRUCTS.values()) {
-            ConstructPayload missile = track.latest;
-            if (missile.shape() == ConstructPayload.MISSILE && missile.owner() == owner && missile.variant() == side) {
-                double clock = track.clock(partialTick);
-                youngest = youngest < 0.0 ? clock : Math.min(youngest, clock);
+    private static final class Flown {
+        // How many of the ticks it was told of are kept, and how soon a correction dies away (in ticks, most of it).
+        private static final int KEPT = 8;
+        private static final double SETTLES = 1.5;
+        private final ArrayDeque<Spot> spots = new ArrayDeque<>();
+        private final boolean small;
+        private final int variant;
+        private final int fired;
+        private final int ignites;
+        // The way the plane flies it left, when this client draws that plane (null: it does not): the plane then draws
+        // it itself while it falls with its motor dead (see PlanePainter).
+        @Nullable
+        private final PlanePath path;
+        // Ticks after it was let go (by its clock) that it struck, or forever while it flies on; and whether the blast
+        // it struck with is timed from it yet.
+        private double ends = Double.POSITIVE_INFINITY;
+        private boolean blasted;
+        // What is left of a correction: where it was drawn less where it is now worked out to be, as a tick told of
+        // came in later than it was drawn (see settle), and from when (ticks after the first tick it was told of, by its
+        // clock). It dies away instead of making the missile jump.
+        private Vec3 offset = Vec3.ZERO;
+        private double offsetFrom;
+
+        Flown(ConstructPayload first, @Nullable PlanePath path) {
+            this.small = first.variant() >= AirStrike.JET_MISSILE;
+            this.variant = first.variant();
+            this.fired = Math.round(first.size());
+            this.ignites = Math.round(first.charge());
+            this.path = path;
+        }
+
+        /** Until how many ticks after it was let go the plane draws it: while it still falls with its motor dead. */
+        double leaves() {
+            return this.path == null ? Double.NEGATIVE_INFINITY : Math.min(this.ignites, this.ends);
+        }
+
+        /** Where it is on a tick the server tells of, heard of as it was drawn {@code drawn} ticks after the first. */
+        void add(ConstructPayload update, double drawn) {
+            Spot last = this.spots.peekLast();
+            if (this.ends < Double.POSITIVE_INFINITY || last != null && update.age() <= last.age()) {
+                return;
+            }
+            Vec3 was = this.drawnAt(drawn);
+            Vec3 nose = update.facing().lengthSqr() < 1.0E-6 ? new Vec3(0.0, -1.0, 0.0) : update.facing().normalize();
+            Vec3 up = last != null ? PlanePath.carried(last.up(), nose) : this.firstUp(update.age(), nose);
+            this.spots.add(new Spot(update.age(), update.center(), nose, up));
+            while (this.spots.size() > KEPT) {
+                this.spots.poll();
+            }
+            this.settle(was, drawn);
+        }
+
+        /**
+         * Where it is drawn {@code age} ticks after the first tick it was told of, with what is left of a correction; null
+         * while nothing is drawn of it yet, or the plane draws it (see leaves).
+         */
+        @Nullable
+        Vec3 drawnAt(double age) {
+            return this.spots.isEmpty() || age + 1.0 <= this.leaves() ? null : this.at(age).at().add(this.off(age));
+        }
+
+        /** What is left of a correction {@code age} ticks after the first tick it was told of. */
+        Vec3 off(double age) {
+            return this.offset.scale(Math.exp(-Math.max(0.0, age - this.offsetFrom) / SETTLES));
+        }
+
+        /**
+         * News came in that moves where it is worked out to be right now, where it was drawn at {@code was}: it goes on
+         * from there and eases over to where it now is, instead of jumping.
+         */
+        private void settle(@Nullable Vec3 was, double age) {
+            if (was != null && age + 1.0 > this.leaves()) {
+                this.offset = was.subtract(this.at(age).at());
+                this.offsetFrom = age;
             }
         }
-        return youngest;
+
+        /** Its up on the first tick heard of: carried along from how it left the plane, just as the plane draws it. */
+        private Vec3 firstUp(int age, Vec3 nose) {
+            if (this.path == null) {
+                return PlanePath.carried(new Vec3(0.0, 1.0, 0.0), nose);
+            }
+            int k = (this.variant - AirStrike.JET_MISSILE) / 2;
+            Vec3[] state = this.small ? this.path.firedOff(k, (this.variant - AirStrike.JET_MISSILE) % 2, this.fired)
+                    : this.path.dropsOut(this.fired);
+            for (int step = 0; step <= age && step < this.ignites; step++) {
+                state = PlanePath.fall(state, this.small);
+            }
+            return PlanePath.carried(state[3], nose);
+        }
+
+        /**
+         * It struck, or was let go of: the last tick told of is where it ends. Struck partway through that tick, it
+         * gets there as much sooner as it went less far, so it never slows down on its last stretch. Heard of as it was
+         * drawn {@code drawn} ticks after the first tick told of.
+         */
+        void strikes(double drawn) {
+            if (this.ends < Double.POSITIVE_INFINITY || this.spots.isEmpty()) {
+                return;
+            }
+            Vec3 was = this.drawnAt(drawn);
+            Spot last = this.spots.pollLast();
+            Spot before = this.spots.peekLast();
+            double part = 1.0;
+            if (before != null) {
+                Spot earlier = null;
+                for (Spot spot : this.spots) {
+                    if (spot != before) {
+                        earlier = spot;
+                    }
+                }
+                double step = earlier == null ? 0.0 : before.at().distanceTo(earlier.at());
+                if (step > 1.0E-6) {
+                    part = Mth.clamp(last.at().distanceTo(before.at()) / step, 0.05, 1.0);
+                }
+            }
+            double age = before == null ? last.age() : before.age() + part;
+            this.spots.add(new Spot(age, last.at(), last.nose(), last.up()));
+            this.ends = age + 1.0;
+            this.settle(was, drawn);
+        }
+
+        /**
+         * Where it is {@code age} ticks after the first tick it was told of by its own clock: between the ticks told
+         * of, smooth; past the last one, on the way it went, a little way, until it hears more.
+         */
+        Spot at(double age) {
+            Spot before = null;
+            Spot after = null;
+            Spot earlier = null;
+            for (Spot spot : this.spots) {
+                if (spot.age() <= age) {
+                    earlier = before;
+                    before = spot;
+                } else {
+                    after = spot;
+                    break;
+                }
+            }
+            if (before == null) {
+                return this.spots.peekFirst();
+            }
+            if (after == null) {
+                if (earlier == null || this.ends < Double.POSITIVE_INFINITY) {
+                    return before;
+                }
+                double on = Math.min(2.0, age - before.age()) / Math.max(1.0E-6, before.age() - earlier.age());
+                return new Spot(age, before.at().add(before.at().subtract(earlier.at()).scale(on)), before.nose(),
+                        before.up());
+            }
+            double u = (age - before.age()) / Math.max(1.0E-6, after.age() - before.age());
+            Vec3 nose = before.nose().lerp(after.nose(), u).normalize();
+            return new Spot(age, before.at().lerp(after.at(), u), nose,
+                    PlanePath.carried(before.up().lerp(after.up(), u), nose));
+        }
     }
 
     /**
-     * How long ago this player's flare began to gather its light, by the client's own clock, and where it is; null when
-     * he has none going.
+     * A missile of an air strike as this client knows it, for the plane to draw it leaving its hatch or a jet's wing:
+     * how many ticks ago it was let go (by its own clock, which keeps the plane's time), and until how many ticks after
+     * that the plane draws it (while it falls with its motor dead, until its motor fires or it strikes).
+     */
+    public record Launch(double since, double leaves) {
+    }
+
+    /**
+     * The missile this player's air strike let go of on tick {@code fired} of its plane's clock from where
+     * {@code variant} says (see {@link AirStrike#BIG_MISSILE}), or null when this client has not heard of it (yet).
      */
     @Nullable
-    public static FlareLight.Going flare(int owner, float partialTick) {
+    public static Launch launch(int owner, int variant, int fired, float partialTick) {
         for (Track track : CONSTRUCTS.values()) {
-            ConstructPayload flare = track.latest;
-            if (flare.shape() == ConstructPayload.FLARE && flare.owner() == owner) {
-                return new FlareLight.Going(owner, track.clock(partialTick), flare.center(), flare.size());
+            Flown flown = track.flown;
+            if (flown != null && flown.fired == fired && flown.variant == variant && track.latest.owner() == owner) {
+                return new Launch(track.clock(partialTick), Math.min(flown.ignites, flown.ends));
             }
         }
         return null;
     }
 
-    /** Every flare going right now, whoever's it is. */
-    public static List<FlareLight.Going> flares(float partialTick) {
-        List<FlareLight.Going> flares = new ArrayList<>();
+    /**
+     * The tick of its plane's clock this player's air strike last let go of a missile from where {@code variant} says
+     * (a pylon of one of its jets, see {@link AirStrike#JET_MISSILE}), or -1 when it has not yet: remembered however
+     * soon that missile struck, so the next one grows on the pylon in its own time.
+     */
+    public static int launched(int owner, int variant) {
+        return LAUNCHES.getOrDefault(((long) owner << 8) | variant, -1);
+    }
+
+    /**
+     * The giant hands this player called lately, for his ring arm: where the newest came up and how long ago he called
+     * it (by the client's own clock), and where the one before it came up (null when there is none).
+     */
+    public record Wave(Vec3 newest, double clock, @Nullable Vec3 before) {
+    }
+
+    /** The giant hands this player is calling, or null when he calls none. */
+    @Nullable
+    public static Wave wave(int owner, float partialTick) {
+        ConstructPayload newest = null;
+        ConstructPayload before = null;
+        double newestClock = 0.0;
+        double beforeClock = 0.0;
         for (Track track : CONSTRUCTS.values()) {
-            ConstructPayload flare = track.latest;
-            if (flare.shape() == ConstructPayload.FLARE) {
-                flares.add(new FlareLight.Going(flare.owner(), track.clock(partialTick), flare.center(), flare.size()));
+            ConstructPayload hand = track.latest;
+            if (hand.shape() != ConstructPayload.HAND || hand.owner() != owner) {
+                continue;
+            }
+            double clock = track.clock(partialTick);
+            if (newest == null || clock < newestClock) {
+                before = newest;
+                beforeClock = newestClock;
+                newest = hand;
+                newestClock = clock;
+            } else if (before == null || clock < beforeClock) {
+                before = hand;
+                beforeClock = clock;
             }
         }
-        return flares;
+        return newest == null ? null : new Wave(newest.center(), newestClock, before == null ? null : before.center());
     }
 
     /**
@@ -548,11 +831,12 @@ public final class ClientConstructs {
                 continue;
             }
             if (slam.shape() == ConstructPayload.BLAST) {
-                double since = track.clock(partialTick);
+                double since = sinceSent(track, partialTick);
                 double near = 1.0 - from.distanceTo(slam.center()) / BLAST_SHAKE_RANGE;
-                if (since < BLAST_SHAKE_TICKS && near > 0.0) {
+                if (since >= 0.0 && since < BLAST_SHAKE_TICKS && near > 0.0) {
                     double fade = 1.0 - since / BLAST_SHAKE_TICKS;
-                    most = Math.max(most, (float) (0.55 * fade * fade * near));
+                    double hard = slam.variant() == AirStrike.SMALL_BLAST ? 0.3 : 0.65;
+                    most = Math.max(most, (float) (hard * fade * fade * near));
                 }
                 continue;
             }
@@ -564,6 +848,10 @@ public final class ClientConstructs {
                     double hard = BubblePainter.last(slam) ? 0.95 : 0.55;
                     most = Math.max(most, (float) (hard * fade * fade * Math.min(1.0, near * 1.3)));
                 }
+                continue;
+            }
+            if (slam.shape() == ConstructPayload.HAND) {
+                most = Math.max(most, handShake(track, from, partialTick));
                 continue;
             }
             if (slam.shape() != ConstructPayload.SLAM) {
@@ -578,6 +866,43 @@ public final class ClientConstructs {
             most = Math.max(most, (float) (fade * fade * Math.min(1.0, near * 1.5)));
         }
         return most;
+    }
+
+    /**
+     * How hard a giant hand shakes a view from {@code from} (see shake): the axe of a pair as it bites into the ground,
+     * and a middle finger as it bursts out of it; 0 for the other moves.
+     */
+    private static float handShake(Track track, Vec3 from, float partialTick) {
+        ConstructPayload hand = track.latest;
+        int move = HandPose.move(hand.variant());
+        double clock = track.clock(partialTick);
+        double since;
+        double ticks;
+        double hard;
+        double near;
+        if (move == HandPose.AXE) {
+            since = clock - HandDuo.IMPACT;
+            if (since < 0.0 || since >= AXE_SHAKE_TICKS) {
+                return 0.0F;
+            }
+            Vec3 strike = HandDuo.strike(hand.center(), hand.variant(), hand.center().add(hand.facing()),
+                    Math.max(0.1, hand.size()));
+            ticks = AXE_SHAKE_TICKS;
+            hard = AXE_SHAKE;
+            near = 1.0 - from.distanceTo(strike) / AXE_SHAKE_RANGE;
+        } else if (move == HandPose.FINGER) {
+            since = clock - HandPose.FINGER_BURSTS;
+            ticks = FINGER_SHAKE_TICKS;
+            hard = FINGER_SHAKE;
+            near = 1.0 - from.distanceTo(hand.center()) / FINGER_SHAKE_RANGE;
+        } else {
+            return 0.0F;
+        }
+        if (since < 0.0 || since >= ticks || near <= 0.0) {
+            return 0.0F;
+        }
+        double fade = 1.0 - since / ticks;
+        return (float) (hard * fade * fade * Math.min(1.0, near * 1.2));
     }
 
     /**
@@ -598,12 +923,21 @@ public final class ClientConstructs {
 
     public static void update(ConstructPayload payload) {
         if (payload.solid() < 0.0F) {
+            Track going = CONSTRUCTS.get(payload.id());
+            if (going != null && going.flown != null) {
+                // A missile that struck (or was let go of) is seen to get there first, then breaks up (see missile).
+                going.flown.strikes(going.clock(Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(false))
+                        - 1.0);
+                return;
+            }
             letGo(CONSTRUCTS.remove(payload.id()));
             return;
         }
         Track track = CONSTRUCTS.get(payload.id());
         if (track == null) {
-            CONSTRUCTS.put(payload.id(), new Track(payload));
+            track = new Track(payload);
+            CONSTRUCTS.put(payload.id(), track);
+            fromAirStrike(track, payload);
             if (payload.shape() == ConstructPayload.BOLT) {
                 // Seen first on its way (it came into range late), it still left the ring as long ago as it has flown.
                 float partialTick = Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(false);
@@ -612,6 +946,82 @@ public final class ClientConstructs {
         } else {
             track.add(payload);
         }
+        if (track.flown != null) {
+            track.flown.add(payload,
+                    track.clock(Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(false)) - 1.0);
+        }
+    }
+
+    /**
+     * Something new of an air strike: it keeps the time of its plane. A missile runs on the plane's clock (see
+     * Track#follow) and a round flies out as its gun fired it by that clock, so they leave the plane just where it is
+     * drawn; the gun swings to where the round says it is to point next; a missile's blast bursts as the missile gets
+     * there on your screen; and a new plane forgets when the last one's jets fired.
+     */
+    private static void fromAirStrike(Track track, ConstructPayload payload) {
+        float partialTick = Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(false);
+        int owner = payload.owner();
+        switch (payload.shape()) {
+            case ConstructPayload.PLANE -> LAUNCHES.keySet().removeIf(key -> (int) (key >> 8) == owner);
+            case ConstructPayload.MISSILE -> {
+                Track plane = planeOf(owner);
+                track.flown = new Flown(payload, plane == null ? null : PlanePainter.path(plane.latest));
+                if (plane != null) {
+                    track.follow(plane, track.flown.fired);
+                }
+                if (payload.variant() >= AirStrike.JET_MISSILE) {
+                    LAUNCHES.put(((long) owner << 8) | payload.variant(), track.flown.fired);
+                }
+            }
+            case ConstructPayload.BULLET -> {
+                Track plane = planeOf(owner);
+                if (plane != null) {
+                    track.start = clientTicks + partialTick - (plane.clock(partialTick) - payload.charge());
+                    PlanePainter.fired(plane.latest, payload);
+                }
+            }
+            case ConstructPayload.BLAST -> {
+                Track missile = null;
+                double nearest = 64.0;
+                for (Track other : CONSTRUCTS.values()) {
+                    Flown flown = other.flown;
+                    if (flown != null && !flown.blasted && flown.ends < Double.POSITIVE_INFINITY
+                            && other.latest.owner() == owner) {
+                        double far = flown.spots.getLast().at().distanceToSqr(payload.center());
+                        if (far < nearest) {
+                            nearest = far;
+                            missile = other;
+                        }
+                    }
+                }
+                if (missile != null) {
+                    missile.flown.blasted = true;
+                    track.start = clientTicks + partialTick - (missile.clock(partialTick) - missile.flown.ends);
+                }
+            }
+            default -> {
+                // Nothing of an air strike.
+            }
+        }
+    }
+
+    /** The track of this player's air strike's plane, or null when this client has none. */
+    @Nullable
+    private static Track planeOf(int owner) {
+        for (Track track : CONSTRUCTS.values()) {
+            if (track.latest.shape() == ConstructPayload.PLANE && track.latest.owner() == owner) {
+                return track;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Ticks since what the server tells about only once set off by the client's own clock, below 0 while it still waits
+     * (a round fired a moment ahead of its plane's clock, a blast whose missile is still on its way).
+     */
+    private static double sinceSent(Track track, float partialTick) {
+        return Double.isNaN(track.start) ? 0.0 : clientTicks + partialTick - track.start;
     }
 
     @SubscribeEvent
@@ -624,20 +1034,85 @@ public final class ClientConstructs {
         Iterator<Track> tracks = CONSTRUCTS.values().iterator();
         while (tracks.hasNext()) {
             Track track = tracks.next();
+            track.retime();
+            if (track.flown != null && track.flown.ends < Double.POSITIVE_INFINITY) {
+                // A missile that struck is gone once it has got there and broken up.
+                if (track.clock(0.0F) > track.flown.ends + PlanePainter.MISSILE_BREAKS + 1.0
+                        || clientTicks - track.lastSeen > PLANE_KEEP) {
+                    tracks.remove();
+                }
+                continue;
+            }
             if (track.timedOut()) {
                 tracks.remove();
-                letGo(track);
+                // A plane not heard of a while is out of reach or the server hitches: it did not break up.
+                if (track.latest.shape() != ConstructPayload.PLANE) {
+                    letGo(track);
+                }
             } else {
                 track.advance();
+                slapped(minecraft.level, track);
             }
         }
         BROKEN.values().removeIf(broken -> clientTicks - broken.since() > BROKEN_TICKS);
+        BROKEN_HANDS.values().removeIf(broken -> clientTicks - broken.since() > HandPainter.breakTicks());
         BOLTS.values().removeIf(shot -> clientTicks - shot > BOLT_MEMORY);
     }
 
     /**
-     * A creature caught in a Light Bubble stays right in its middle on your screen too. The game itself only tells where
-     * it is every few ticks and glides it there, well behind a bubble that is smashed down.
+     * A giant hand slaps its palm down flat: every creature under it that the server presses against the ground (see
+     * pressed) is drawn squashed flat a moment (see {@link Flattened}).
+     */
+    private static void slapped(ClientLevel level, Track track) {
+        ConstructPayload hand = track.latest;
+        if (hand.shape() != ConstructPayload.HAND || HandPose.move(hand.variant()) != HandPose.SLAM || track.struck
+                || track.clock(0.0F) < HandPose.SLAM_HITS) {
+            return;
+        }
+        track.struck = true;
+        double scale = Math.max(0.1, hand.size());
+        double reach = Math.sqrt(hand.facing().x * hand.facing().x + hand.facing().z * hand.facing().z) / scale;
+        HandPose.Place place = HandPose.at(hand.variant(), HandPose.SLAM_HITS, reach).place(hand.center(),
+                hand.facing(), scale);
+        Vec3 along = new Vec3(place.up().x, 0.0, place.up().z);
+        along = along.lengthSqr() < 1.0E-6 ? new Vec3(0.0, 0.0, 1.0) : along.normalize();
+        Vec3 across = along.cross(new Vec3(0.0, 1.0, 0.0));
+        Entity owner = level.getEntity(hand.owner());
+        for (LivingEntity living : level.getEntitiesOfClass(LivingEntity.class,
+                new AABB(hand.center(), hand.center()).inflate(10.0 * scale),
+                living -> pressed(owner, hand.owner(), living))) {
+            Vec3 to = living.position().subtract(place.wrist());
+            double wide = 2.0 * scale + living.getBbWidth() * 0.5;
+            if (to.dot(along) >= -0.4 && to.dot(along) <= 6.6 * scale && Math.abs(to.dot(across)) <= wide
+                    && to.y <= 1.6 * scale && to.y >= -2.5) {
+                Flattened.flatten(living.getId());
+            }
+        }
+    }
+
+    /**
+     * Whether the server presses this creature flat under a giant hand (see GiantHands), as far as a client can tell:
+     * never the hand's maker, his pets, a spectator, an armor stand, a player in creative mode or one of his own team
+     * that it spares; a monster or another player always, and any other creature only while it is out to attack (the
+     * server strikes it only while it attacks the maker).
+     */
+    private static boolean pressed(@Nullable Entity owner, int ownerId, LivingEntity living) {
+        if (living.getId() == ownerId || !living.isAlive() || living.isSpectator() || living instanceof ArmorStand) {
+            return false;
+        }
+        if (living instanceof OwnableEntity pet && owner != null && owner.getUUID().equals(pet.getOwnerUUID())) {
+            return false;
+        }
+        if (living instanceof Player player) {
+            return !player.isCreative() && !(owner instanceof Player maker && !maker.canHarmPlayer(player));
+        }
+        return living instanceof Enemy || living instanceof Mob mob && mob.isAggressive();
+    }
+
+    /**
+     * A creature caught in a Light Bubble stays right in its middle on your screen too, and one a giant hand holds right
+     * in its fist. The game itself only tells where it is every few ticks and glides it there, well behind a bubble that
+     * is smashed down or a hand that throws.
      */
     @SubscribeEvent
     public static void onClientTickDone(ClientTickEvent.Post event) {
@@ -647,6 +1122,10 @@ public final class ClientConstructs {
         }
         for (Track track : CONSTRUCTS.values()) {
             ConstructPayload now = track.current;
+            if (now.shape() == ConstructPayload.HAND) {
+                held(minecraft, track);
+                continue;
+            }
             if (now.shape() != ConstructPayload.BUBBLE || now.variant() == LightBubble.BREAKING) {
                 continue;
             }
@@ -660,16 +1139,44 @@ public final class ClientConstructs {
     }
 
     /**
-     * A construct is gone. A plane still in the air when it goes was let go of by its maker: it breaks into solid pieces
-     * where it was instead of simply vanishing, as every construct does.
+     * What a giant hand holds sits in its fist, where the hand is by the client's own clock. A pair of hands with an
+     * axe never holds anything.
+     */
+    private static void held(Minecraft minecraft, Track track) {
+        ConstructPayload hand = track.latest;
+        if (hand.charge() < 0.0F || minecraft.level == null || HandPose.move(hand.variant()) == HandPose.AXE) {
+            return;
+        }
+        Entity caught = minecraft.level.getEntity(Math.round(hand.charge()));
+        if (caught == null || caught == minecraft.player) {
+            return;
+        }
+        double scale = Math.max(0.1, hand.size());
+        double reach = Math.sqrt(hand.facing().x * hand.facing().x + hand.facing().z * hand.facing().z) / scale;
+        Vec3 grip = HandPose.at(hand.variant(), track.clock(1.0F), reach).place(hand.center(), hand.facing(), scale)
+                .at(HandPose.GRIP);
+        caught.setPos(grip.x, grip.y - caught.getBbHeight() * 0.5, grip.z);
+        caught.setDeltaMovement(Vec3.ZERO);
+    }
+
+    /**
+     * A construct is gone. A plane still in the air when it goes was let go of by its maker, and so was a giant hand
+     * that had not yet sunk back into the ground, or a pair of them whose axe had not yet broken up: they break into
+     * solid pieces where they were instead of simply vanishing, as every construct does.
      */
     private static void letGo(@Nullable Track track) {
-        if (track == null || track.latest.shape() != ConstructPayload.PLANE) {
+        if (track == null) {
             return;
         }
         float partialTick = Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(false);
         double clock = track.clock(partialTick);
-        if (clock < PlanePainter.path(track.latest).crashTick()) {
+        if (track.latest.shape() == ConstructPayload.HAND) {
+            if (clock < HandPose.sinks(track.latest.variant()) && clock > HandPose.ARRIVES) {
+                BROKEN_HANDS.put(track.latest.id(), new Broken(track.latest, clock, clientTicks));
+            }
+            return;
+        }
+        if (track.latest.shape() == ConstructPayload.PLANE && clock < PlanePainter.path(track.latest).crashTick()) {
             BROKEN.put(track.latest.id(), new Broken(track.latest, clock, clientTicks));
         }
     }
@@ -678,9 +1185,12 @@ public final class ClientConstructs {
     public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
         CONSTRUCTS.clear();
         BROKEN.clear();
+        BROKEN_HANDS.clear();
         BOLTS.clear();
+        LAUNCHES.clear();
         RingSpot.clear();
         PlanePainter.clear();
+        Flattened.clear();
     }
 
     // After water and glass: light never hides what is behind it, so it has to come after them.
@@ -691,7 +1201,8 @@ public final class ClientConstructs {
         }
         Minecraft minecraft = Minecraft.getInstance();
         ClientLevel level = minecraft.level;
-        if (level == null || CONSTRUCTS.isEmpty() && BROKEN.isEmpty() && !BeamCharge.any(level)) {
+        if (level == null || CONSTRUCTS.isEmpty() && BROKEN.isEmpty() && BROKEN_HANDS.isEmpty()
+                && !BeamCharge.any(level)) {
             return;
         }
         // The same blend between ticks that entities are drawn with.
@@ -773,9 +1284,8 @@ public final class ClientConstructs {
                         RingSight.ringLight(painter, ring, track.clock(partialTick), own);
                     }
                 }
-                case ConstructPayload.FLARE -> FlareLight.draw(painter, owner == null ? now.center()
-                        : own ? FlareLight.ownRing(camera) : ring != null ? ring : FlareLight.ring(owner, partialTick),
-                        owner == null ? way : owner.getViewVector(partialTick), track.clock(partialTick), own);
+                case ConstructPayload.HAND -> HandPainter.draw(painter, track.latest, was.facing().lerp(now.facing(),
+                        partialTick), track.clock(partialTick), ring);
                 case ConstructPayload.BEAM -> {
                     if (ring != null && owner != null) {
                         painter.beamOfLight(ring, beamEnd(level, owner, way, now, partialTick), solid,
@@ -784,10 +1294,11 @@ public final class ClientConstructs {
                 }
                 case ConstructPayload.PLANE -> PlanePainter.draw(painter, now.id(), track.latest,
                         track.clock(partialTick), ring, partialTick);
-                case ConstructPayload.MISSILE -> PlanePainter.missile(painter, center, way, track.clock(partialTick));
-                case ConstructPayload.BULLET -> PlanePainter.bullet(painter, track.latest, track.clock(partialTick));
+                case ConstructPayload.MISSILE -> missile(painter, track, partialTick);
+                case ConstructPayload.BULLET -> PlanePainter.bullet(painter, track.latest,
+                        sinceSent(track, partialTick));
                 case ConstructPayload.BLAST -> PlanePainter.missileBlast(painter, track.latest,
-                        track.clock(partialTick));
+                        sinceSent(track, partialTick));
                 // Until it breaks up its charge is the creature inside, not a time. A pound is timed by the updates as
                 // they are drawn, so every slam squashes it the moment it is drawn on the ground.
                 case ConstructPayload.BUBBLE -> BubblePainter.draw(painter, now, center, solid,
@@ -805,7 +1316,11 @@ public final class ClientConstructs {
         }
         for (Broken broken : BROKEN.values()) {
             double since = clientTicks - broken.since() + partialTick;
-            PlanePainter.broken(painter, broken.plane(), broken.clock() + since, since);
+            PlanePainter.broken(painter, broken.construct(), broken.clock() + since, since);
+        }
+        for (Broken broken : BROKEN_HANDS.values()) {
+            HandPainter.broken(painter, broken.construct(), broken.clock(),
+                    clientTicks - broken.since() + partialTick);
         }
         // The light every ring gathers for the beam.
         for (AbstractClientPlayer player : level.players()) {
@@ -815,6 +1330,34 @@ public final class ClientConstructs {
             }
         }
         painter.finish(minecraft.renderBuffers().bufferSource());
+    }
+
+    /**
+     * A missile of an air strike on its way, drawn by its own clock (which keeps its plane's time) where it was on the
+     * ticks told of, smooth between them (see Flown), and breaking into solid pieces once it has got where it struck.
+     * While it still falls off the plane or a jet's wing with its motor dead, the plane draws it (see
+     * {@link PlanePainter}), from the very spot it hung.
+     */
+    private static void missile(LanternPainter painter, Track track, float partialTick) {
+        Flown flown = track.flown;
+        if (flown == null || flown.spots.isEmpty()) {
+            return;
+        }
+        double since = track.clock(partialTick);
+        if (since <= flown.leaves() && planeOf(track.latest.owner()) != null) {
+            return;
+        }
+        if (since >= flown.ends) {
+            Spot last = flown.spots.getLast();
+            PlanePainter.missile(painter, flown.small, last.at().add(flown.off(flown.ends - 1.0)), last.nose(),
+                    last.up(), -1.0, since - flown.ends);
+            return;
+        }
+        // Sent on the tick it was let go of, it had already moved one tick on: drawn a tick later, so it leaves the
+        // plane from where it hung.
+        Spot spot = flown.at(since - 1.0);
+        PlanePainter.missile(painter, flown.small, spot.at().add(flown.off(since - 1.0)), spot.nose(), spot.up(),
+                since - flown.ignites, -1.0);
     }
 
     /**

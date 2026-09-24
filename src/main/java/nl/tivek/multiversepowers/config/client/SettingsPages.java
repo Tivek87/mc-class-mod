@@ -233,6 +233,7 @@ public final class SettingsPages {
             case RING_SECONDS -> 2.5;
             case PART_KEPT, STAMINA_PER_TICK, CHANCE -> 0.05;
             case BLOCK_COUNT -> 10.0;
+            case COUNT -> 1.0;
         };
     }
 }

@@ -61,11 +61,13 @@ public enum SwordMove {
     SLAM(Kind.SLAM, 16, 13, 1.0, 3.5, -180, 180, 7),
     // ---- Taking them out ----
     /**
-     * The sword and shield take shape: the sword grows out of his fist and the shield on his forearm as both come up, he
-     * holds the sword up before his eyes and turns it to see both flats, twirls it once round like a wheel and knocks it
-     * twice on the rim of the shield.
+     * The sword and shield take shape: the sword grows out of his fist as his hand comes up, and the shield out of the
+     * ring's light on his forearm, from its boss outwards, until its strap closes. He dips his hand and flicks the
+     * sword up into the air, where it turns over twice, reaches up to catch it and rides it down, brings it up before
+     * his eyes and turns it slowly from the one flat to the other while a gleam of light runs up its blade, and then
+     * bangs it twice on the rim of the shield. He can cut from the moment he has caught it.
      */
-    EQUIP(Kind.EQUIP, 36, 32, 0.0, 0.0, 0, 0);
+    EQUIP(Kind.EQUIP, 73, 34, 0.0, 0.0, 0, 0);
 
     /** What a move is. */
     public enum Kind {
@@ -73,12 +75,18 @@ public enum SwordMove {
     }
 
     /**
-     * The ticks of taking them out: the twirl of the sword begins and ends, and it is knocked on the shield (the second
-     * knock three ticks after the first).
+     * The ticks of taking them out: the strap of the shield closes round his forearm; the sword leaves his hand, tossed
+     * up, and is caught again; the gleam starts to run up its blade as he looks at it; and it is banged on the shield,
+     * twice.
      */
-    public static final int TWIRL = 12;
-    public static final int TWIRLED = 20;
-    public static final int KNOCK = 27;
+    public static final int SHIELD_LOCK = 10;
+    public static final int TOSS = 12;
+    public static final int CATCH = 30;
+    public static final int GLEAM = 41;
+    public static final int KNOCK = 57;
+    public static final int KNOCK_AGAIN = 61;
+    /** How many times the tossed sword turns over in the air before he catches it. */
+    public static final int TOSS_TURNS = 2;
     /** How many stabs the flurry has, how many ticks apart they come, and the tick the first one lands on. */
     public static final int STABS = 12;
     public static final int STAB_EVERY = 3;
@@ -178,6 +186,14 @@ public enum SwordMove {
             move = moves[random.nextInt(moves.length)];
         } while (move == last);
         return move;
+    }
+
+    /**
+     * The moment (ticks into taking them out) the tossed sword whirs past half a turn for the {@code k}th time, 1 up to
+     * one less than twice {@link #TOSS_TURNS}: it turns over evenly all through its flight.
+     */
+    public static float whir(int k) {
+        return TOSS + k * (CATCH - TOSS) / (2.0F * TOSS_TURNS);
     }
 
     /** The move with this number, or null. */

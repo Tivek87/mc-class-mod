@@ -19,7 +19,6 @@ import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.character.greenlantern.ability.RingScan;
 import nl.tivek.multiversepowers.character.greenlantern.client.ClientConstructs;
 import nl.tivek.multiversepowers.character.greenlantern.client.ClientRing;
-import nl.tivek.multiversepowers.character.greenlantern.client.render.FlareLight;
 import nl.tivek.multiversepowers.engine.math.Ease;
 import org.joml.Vector3f;
 
@@ -88,7 +87,8 @@ public final class ScanArm {
         LocalPlayer player = minecraft.player;
         if (player == null || player.isInvisible() || event.getHand() != InteractionHand.MAIN_HAND
                 || !player.getMainHandItem().isEmpty() || ClientRing.recharge(player, event.getPartialTick()) >= 0.0F
-                || FlareLight.up(player, event.getPartialTick()) > 0.0F) {
+                || CallArm.up(player, event.getPartialTick()) > 0.0F
+                || HandsArm.out(player, event.getPartialTick()) > 0.0F) {
             return;
         }
         float out = out(player, event.getPartialTick());

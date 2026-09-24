@@ -1,9 +1,9 @@
-# Laatste sessie — 2026-09-24 (avond)
+# Laatste sessie — 2026-09-25 (nacht, sessie 977b9b37)
 
-- **Vraag:** GL bolt: arm recht vooruit bij schieten en weer omlaag; alles multiplayer-proof; chunks rond/vóór vliegers pre-generaten (vastlopen); world- én client-config; daarna commit + push alles.
-- **Bolt-pose:** `BoltArm` + `FlightPose`/`LanternArms`: ringarm wijst waar je richt, terugslag per schot, zakt 0,7 s na laatste schot; eigen klik start direct (`ClientCharacter.sinceTap`), anderen via bolt-payload. Swing weg in `LightBolt`.
-- **Config:** SERVER-configs per wereld (`WorldSettings` + mixin `MinecraftServer.runServer` maakt `<world>/serverconfig/welcomescreen/*.toml` uit sjabloon in `config/`), live resync (`WorldSettingsPayload`). CLIENT: `ClientSettings` (cameraShake, ramGroundShake). Scherm: tab "Your settings"; wereld-tabs alleen bewerkbaar in eigen wereld.
-- **Vliegen:** `engine/world/ChunkPreloader` (tickets rond 128 blokken + 8 s vooruit, verlopen vanzelf) + client `ChunkEdge` (afremmen vóór ongeladen chunk i.p.v. bevriezen). Instellingen flight › *The world ahead*.
-- **Multiplayer (5 audits + 2 fix-agents):** deeltjes gebundeld per speler/tick, flush-batching, ring-sync 1x/tick, removes alleen dichtbij, Doc Ock arm-dedupe, geen chunk-loads op afstand (`LoadedWorld`), `BlockRules` (adventure/claims), cooldowns niet resetten bij relog, spectators geen krachten, bubble/claw kick+dubbel vasthouden, naamlabels recht (mixin `PlayerRenderer.setupRotations`), PvP-lekken spells, Void Walk herstel, klassekeuze na dood, bounded strings, throttles.
-- **Getest in-game:** SP (armpose zij/1e persoon, config-bestanden, instellingenscherm, vliegen 60/150 b/s: geen stops; preloader 50–73% klaar op 200–500 blokken vs 0%), dedicated server + client (sync, live config-wijziging, 15 s vliegen zonder kick), rooktest Doc Ock/spells/ceremonie, vliegpose. `gradlew build` ok; testklassen verwijderd.
-- **Open:** server-side flight-snelheidscap en server-stamina voor Doc Ock (anti-cheat) niet gedaan; ceremonies zijn nog steeds veel deeltjes (nu wel gebundeld).
+- **Vraag:** ongebruikte mod-files weg, Air Strike fixes, Lantern Flare → Giant Hands (video), zwaard/schild loadout, handen vloeiender + bijl-paar. Daarna: STOP, docs + vervolgprompt, commit + push (limiet bijna op).
+- **Gedaan:** audit (35 agents), 7 implementatie-agents (hands-motion, hands-duo, hands-painter, hands-server, plane, sword, cleanup): alles af en nagerekend met harnesses; `gradlew compileJava` OK.
+- **Opgeruimd:** 57 mod-files (oude item-assets, `registry/`, Cosmic Realm-dimensie), 208 dode lang-keys. CHANGELOG: sectie Removed.
+- **Afgebroken door STOP:** 6 reviews (geen bevindingen opgeslagen) en de in-game handen-test (spel nog niet gestart, niets achtergelaten).
+- **Files:** zie commits van 2026-09-25 (opruimen + Green Lantern WIP) en `docs/claude/vervolg-2026-09-25.md`.
+- **Volgende stap:** vervolgprompt in `docs/claude/vervolg-2026-09-25.md` (onderaan) plakken op het andere device: reviews → in-game tests → fixes → docs (ook GREEN_LANTERN.md) → commit-vraag.
+- **Let op:** `gunTicks` int→double in oude config, nieuwe `Track`-klok voor alle constructs, bijl-paar vuisten draaien ~200°.

@@ -42,7 +42,9 @@ import org.joml.Vector3f;
  * <li>light: lines ({@link #edge}, {@link #lightLine}, {@link #glowLine}), sheets ({@link #sheet}), flares
  * ({@link #flare}), rings ({@link #circle}), streaks behind a flyer ({@link #trail}), jet flames ({@link #exhaust}),
  * glowing haze ({@link #haze});</li>
- * <li>chains of solid links ({@link #chain}) and tumbling chunks ({@link #chunk}).</li>
+ * <li>chains of solid links ({@link #chain}) and tumbling chunks ({@link #chunk});</li>
+ * <li>any of the solid shapes above cut off at a plane, with a seam of light along the cut, for a thing coming out
+ * of a surface of light ({@link #clip}, {@link #noClip}).</li>
  * </ul>
  *
  * <p>It is built for big models too (a plane the size of a house has thousands of sides):
@@ -134,6 +136,8 @@ public class ConstructPainter {
     private static final double[][] CUBE = { { -0.5, -0.5, -0.5, 0.5, 0.5, 0.5, 1.0 } };
     // How strongly the outline of a see-through shape shows, next to that of a solid one.
     private static final double SEE_THROUGH_EDGE = 0.55;
+    // How much wider the seam of light along a cut (see clip) is drawn than an edge, and its glow than an edge's glow.
+    private static final double SEAM_WIDTH = 1.5;
     // The light on the solid mass (see light): what every side gets, what the sky adds from above, and what the sun
     // adds to the sides that face it, from high over one corner of the world.
     private static final double SKY_FLOOR = 0.42;
@@ -329,6 +333,25 @@ public class ConstructPainter {
     private double fling = 1.0;
     // Light from within added to every solid side drawn right now (see ambient).
     private double ambient;
+    // True while everything solid is cut off at a plane (see clip): a point on it, the way to the side that is kept
+    // (one long), and how strongly the seam of light along the cut burns.
+    private boolean clipping;
+    private double clipX;
+    private double clipY;
+    private double clipZ;
+    private double clipNormalX;
+    private double clipNormalY;
+    private double clipNormalZ;
+    private double seam;
+    // Room to cut one side in, used again for every side (see cut), as x, y, z one corner after another: its four
+    // corners going in and how far each lies in front of the plane, what is left of it (a side of four corners cut by
+    // a plane keeps at most six), and where its edges cross the plane (at most four times). And the two ends of a
+    // line being cut (see cutLine).
+    private final double[] cutIn = new double[12];
+    private final double[] cutAhead = new double[4];
+    private final double[] cutOut = new double[18];
+    private final double[] cutCross = new double[12];
+    private final double[] cutEnds = new double[6];
 
     /**
      * A painter that draws everything, wherever it is.
@@ -447,6 +470,16 @@ public class ConstructPainter {
         }
         boolean halo = !this.tiny(middle, reach);
         Vec3 view = frame.local(this.camera);
+        boolean clipped = this.clipping;
+        if (clipped) {
+            // Cut off at a plane (see clip): a model wholly behind it is left out, one wholly in front of it is drawn
+            // whole, without cutting it side by side.
+            double ahead = this.ahead(middle.x, middle.y, middle.z);
+            if (ahead < -reach) {
+                return;
+            }
+            this.clipping = ahead <= reach;
+        }
         this.nearFade = true;
         for (int b = 0; b < model.length; b++) {
             double[] box = model[b];
@@ -455,6 +488,9 @@ public class ConstructPainter {
                     (box[2] + box[5]) * 0.5, 0.0, halo);
         }
         this.nearFade = false;
+        if (clipped) {
+            this.clipping = true;
+        }
     }
 
     /**
@@ -631,6 +667,11 @@ public class ConstructPainter {
      * @param apart 0 = still whole, 1 = gone
      */
     public void shattered(double[][] model, Frame frame, double apart, double bright) {
+        this.shattered(model, frame, apart, bright, 0);
+    }
+
+    /** Boxes breaking up (see above), their pieces counted from {@code seed} on: that sets the way each one flies. */
+    private void shattered(double[][] model, Frame frame, double apart, double bright, int seed) {
         double gone = Mth.clamp(apart, 0.0, 1.0);
         double left = 1.0 - gone;
         if (left <= 0.0) {
@@ -645,14 +686,15 @@ public class ConstructPainter {
             double[] box = model[b];
             Vec3 middle = frame.at((box[0] + box[3]) * 0.5, (box[1] + box[4]) * 0.5, (box[2] + box[5]) * 0.5);
             Vec3 out = middle.subtract(frame.center());
-            Vec3 scatter = Noise.direction(b, 7);
+            int piece = seed + b;
+            Vec3 scatter = Noise.direction(piece, 7);
             Vec3 way = this.awayFromEye(middle,
                     out.lengthSqr() > 1.0E-6 ? out.normalize().add(scatter.scale(0.6)).normalize() : scatter);
-            double speed = (1.2 + 1.8 * Noise.of(b, 7, 3)) * size;
+            double speed = (1.2 + 1.8 * Noise.of(piece, 7, 3)) * size;
             // Out and up at first, then down: thrown pieces.
             Vec3 moved = middle.add(way.scale(speed * gone)).add(0.0, (1.2 * gone - 2.6 * gone * gone) * size, 0.0);
-            Vec3 axis = Noise.direction(b, 9);
-            double turn = gone * (1.5 + 3.0 * Noise.of(b, 9, 2));
+            Vec3 axis = Noise.direction(piece, 9);
+            double turn = gone * (1.5 + 3.0 * Noise.of(piece, 9, 2));
             for (int i = 0; i < 8; i++) {
                 Vec3 corner = frame.at(box[(i & 1) == 0 ? 0 : 3], box[(i & 2) == 0 ? 1 : 4], box[(i & 4) == 0 ? 2 : 5]);
                 Vec3 flown = moved.add(Vectors.spin(corner.subtract(middle), axis, turn).scale(left));
@@ -696,11 +738,20 @@ public class ConstructPainter {
      * (see {@link #shattered(double[][], Frame, double, double)}).
      */
     public void shattered(Shape shape, Frame frame, double apart, double bright) {
+        this.shattered(shape, frame, apart, bright, 0);
+    }
+
+    /**
+     * A shape breaking up (see above), its pieces flying off the ways of piece {@code seed} and on: give the parts of
+     * one thing that break up together (the joints of a finger, each a shape of one round part) seeds far enough apart,
+     * or they all fly off the same way, tumbling alike.
+     */
+    public void shattered(Shape shape, Frame frame, double apart, double bright, int seed) {
         if (shape.boxes().length > 0) {
-            this.shattered(shape.boxes(), frame, apart, bright);
+            this.shattered(shape.boxes(), frame, apart, bright, seed);
         }
         for (int k = 0; k < shape.meshes().length; k++) {
-            this.shatteredMesh(shape.meshes()[k], frame, shape.boxes().length + k, apart, bright);
+            this.shatteredMesh(shape.meshes()[k], frame, seed + shape.boxes().length + k, apart, bright);
         }
     }
 
@@ -714,6 +765,16 @@ public class ConstructPainter {
         double reach = mesh.boundRadius * frame.scale() * frame.stretch();
         if (!this.visible(middle, reach)) {
             return;
+        }
+        boolean clipped = this.clipping;
+        if (clipped) {
+            // Cut off at a plane (see clip): a part wholly behind it is left out, one wholly in front of it is drawn
+            // whole, without cutting it side by side.
+            double ahead = this.ahead(middle.x, middle.y, middle.z);
+            if (ahead < -reach) {
+                return;
+            }
+            this.clipping = ahead <= reach;
         }
         this.room(mesh.points.length, mesh.sides.length);
         double scale = frame.scale();
@@ -747,6 +808,9 @@ public class ConstructPainter {
             this.nz[k] = z * to;
         }
         this.drawMesh(mesh, Math.min(scale, WIDTH_CAP), strength, bright, !this.tiny(middle, reach));
+        if (clipped) {
+            this.clipping = true;
+        }
     }
 
     /** Makes the room to work out a part of this many corners and sides in. */
@@ -814,6 +878,8 @@ public class ConstructPainter {
         boolean faint = this.faint > 0.0;
         Layer sides = faint ? this.light : this.mass;
         int body = Colors.alpha(faint ? this.faint * solid : solid);
+        double quiet = faint ? SEE_THROUGH_EDGE : 1.0;
+        double fine = width * mesh.fine;
         this.nearFade = true;
         for (int s = 0; s < count; s++) {
             double x = this.nx[s];
@@ -833,12 +899,14 @@ public class ConstructPainter {
             double face = away < 1.0E-6 ? 1.0 : Math.abs(look) / away;
             double ripple = 0.9 + 0.06 * Math.sin(this.time * 0.5 - mesh.middleZ[s] * 4.0);
             double light = (light(x, y, z) + this.ambient) * sheen(face) * ripple * bright * mesh.bright[s];
-            this.quadAt(sides, side[0], side[1], side[2], side[3], this.mass(light), body);
+            if (this.clipping) {
+                this.cutAt(sides, side, this.mass(light), body, fine, solid * quiet, halo);
+            } else {
+                this.quadAt(sides, side[0], side[1], side[2], side[3], this.mass(light), body);
+            }
         }
-        double quiet = faint ? SEE_THROUGH_EDGE : 1.0;
         int edge = Colors.alpha(EDGE * solid * quiet);
         int glowing = halo ? Colors.alpha(HALO * solid * quiet) : 0;
-        double fine = width * mesh.fine;
         double lift = 0.01 + 0.02 * fine;
         for (int e = 0; e < mesh.edgeFrom.length; e++) {
             int left = mesh.edgeLeft[e];
@@ -855,6 +923,19 @@ public class ConstructPainter {
             double bx = this.wx[to];
             double by = this.wy[to];
             double bz = this.wz[to];
+            if (this.clipping) {
+                // Cut off at the plane (see clip) before it is lifted: the part behind it is not drawn.
+                if (!this.cutLine(ax, ay, az, bx, by, bz)) {
+                    continue;
+                }
+                double[] ends = this.cutEnds;
+                ax = ends[0];
+                ay = ends[1];
+                az = ends[2];
+                bx = ends[3];
+                by = ends[4];
+                bz = ends[5];
+            }
             double da = Math.sqrt(sq(this.camera.x - ax) + sq(this.camera.y - ay) + sq(this.camera.z - az));
             if (da > 1.0E-6) {
                 double k = lift / da;
@@ -1128,6 +1209,8 @@ public class ConstructPainter {
         double mx = (at[0] + at[21]) * 0.5;
         double my = (at[1] + at[22]) * 0.5;
         double mz = (at[2] + at[23]) * 0.5;
+        double[] box = model[index];
+        double fine = width * fine(box[3] - box[0], box[4] - box[1], box[5] - box[2]);
         for (int[] side : SIDES) {
             int p0 = 3 * side[0];
             int p1 = 3 * side[1];
@@ -1148,12 +1231,15 @@ public class ConstructPainter {
             double across = Math.sqrt(nx * nx + ny * ny + nz * nz) * Math.sqrt(ex * ex + ey * ey + ez * ez);
             double face = across < 1.0E-12 ? 1.0 : Math.abs(nx * ex + ny * ey + nz * ez) / across;
             double lit = lit(nx, ny, nz, at[p0] - mx, at[p0 + 1] - my, at[p0 + 2] - mz);
-            this.quadCorners(this.mass, side, this.mass((lit + this.ambient) * sheen(face) * ripple * bright), body);
+            int rgb = this.mass((lit + this.ambient) * sheen(face) * ripple * bright);
+            if (this.clipping) {
+                this.cutCorners(this.mass, side, rgb, body, fine, solid, glowing);
+            } else {
+                this.quadCorners(this.mass, side, rgb, body);
+            }
         }
         int edge = Colors.alpha(EDGE * ripple * solid);
         int halo = glowing ? Colors.alpha(HALO * (1.0 + 0.4 * charge) * solid) : 0;
-        double[] box = model[index];
-        double fine = width * fine(box[3] - box[0], box[4] - box[1], box[5] - box[2]);
         // Every corner moved a hair towards the camera (see lifted), so an edge is not swallowed by its sides.
         double[] lifted = this.liftedCorner;
         double lift = 0.01 + 0.02 * fine;
@@ -1177,6 +1263,19 @@ public class ConstructPainter {
                 }
                 int a = 3 * i;
                 int b = 3 * (i | bit);
+                if (this.clipping) {
+                    // Cut off at the plane (see clip) before it is lifted: the part behind it is not drawn.
+                    if (this.cutLine(at[a], at[a + 1], at[a + 2], at[b], at[b + 1], at[b + 2])) {
+                        double[] ends = this.cutEnds;
+                        this.lift(ends, 0, lift);
+                        this.lift(ends, 3, lift);
+                        this.line(this.light, ends[0], ends[1], ends[2], ends[3], ends[4], ends[5],
+                                EDGE_WIDTH * fine, edgeRgb, edge);
+                        this.line(this.glow, ends[0], ends[1], ends[2], ends[3], ends[4], ends[5],
+                                HALO_WIDTH * fine, glowRgb, halo);
+                    }
+                    continue;
+                }
                 this.line(this.light, lifted[a], lifted[a + 1], lifted[a + 2], lifted[b], lifted[b + 1],
                         lifted[b + 2], EDGE_WIDTH * fine, edgeRgb, edge);
                 this.line(this.glow, lifted[a], lifted[a + 1], lifted[a + 2], lifted[b], lifted[b + 1],
@@ -1313,6 +1412,229 @@ public class ConstructPainter {
      */
     public void ambient(double amount) {
         this.ambient = Math.max(0.0, amount);
+    }
+
+    /**
+     * From now on everything solid drawn (the sides and edges of box models, round parts and shapes, whole or breaking
+     * up, and see-through ones) is cut off at a plane: only what lies on the side {@code normal} points to is drawn,
+     * and where the plane cuts through a solid side a bright line runs along the cut, {@code seam} strong (0 = none),
+     * so a thing seems to come out of a surface of light. Light (edge, sheet, flare, circle, trail, haze...) is never
+     * cut, and neither are loose sides ({@link #side}, {@link #massQuad}). Lasts until {@link #noClip}.
+     *
+     * @param point  a point on the plane
+     * @param normal the way to the side that is kept, any length (with no length at all nothing is cut)
+     */
+    public void clip(Vec3 point, Vec3 normal, double seam) {
+        double length = normal.length();
+        if (length < 1.0E-9) {
+            this.noClip();
+            return;
+        }
+        this.clipping = true;
+        this.clipX = point.x;
+        this.clipY = point.y;
+        this.clipZ = point.z;
+        this.clipNormalX = normal.x / length;
+        this.clipNormalY = normal.y / length;
+        this.clipNormalZ = normal.z / length;
+        this.seam = Math.max(0.0, seam);
+    }
+
+    /** Stops cutting (see {@link #clip}). */
+    public void noClip() {
+        this.clipping = false;
+    }
+
+    /** How far a point lies in front of the plane everything solid is cut off at (see {@link #clip}): below 0 = cut. */
+    private double ahead(double x, double y, double z) {
+        return (x - this.clipX) * this.clipNormalX + (y - this.clipY) * this.clipNormalY
+                + (z - this.clipZ) * this.clipNormalZ;
+    }
+
+    /** A side of a round part (see {@link #quadAt}), by the numbers of its corners, cut off at the plane (see cut). */
+    private void cutAt(Layer layer, int[] side, int rgb, int alpha, double fine, double solid, boolean halo) {
+        double[] in = this.cutIn;
+        for (int k = 0; k < 4; k++) {
+            int i = side[k];
+            in[3 * k] = this.wx[i];
+            in[3 * k + 1] = this.wy[i];
+            in[3 * k + 2] = this.wz[i];
+        }
+        this.cut(layer, rgb, alpha, fine, solid, halo);
+    }
+
+    /** A side of a box (see {@link #quadCorners}), by the numbers of its corners, cut off at the plane (see cut). */
+    private void cutCorners(Layer layer, int[] side, int rgb, int alpha, double fine, double solid, boolean halo) {
+        double[] at = this.corner;
+        double[] in = this.cutIn;
+        for (int k = 0; k < 4; k++) {
+            int i = 3 * side[k];
+            in[3 * k] = at[i];
+            in[3 * k + 1] = at[i + 1];
+            in[3 * k + 2] = at[i + 2];
+        }
+        this.cut(layer, rgb, alpha, fine, solid, halo);
+    }
+
+    /**
+     * Draws the solid side whose four corners are in {@link #cutIn}, cut off at the plane (see {@link #clip}): whole
+     * when it lies wholly in front of it, not at all when wholly behind it, and otherwise only what is in front (its
+     * corners in front and the points where its edges cross the plane, walked round in order, as Sutherland and Hodgman
+     * cut a polygon), with the seam of light along the cut. A side of three corners (its last one repeated) is cut the
+     * same way.
+     *
+     * @param fine  how thick the lines along the part are drawn, as a scale (see {@link #fine})
+     * @param solid how strongly its seam shows, 0 to 1
+     * @param halo  false to leave out the soft glow along its seam
+     */
+    private void cut(Layer layer, int rgb, int alpha, double fine, double solid, boolean halo) {
+        if (alpha <= 0) {
+            return;
+        }
+        double[] in = this.cutIn;
+        double[] ahead = this.cutAhead;
+        boolean front = false;
+        boolean behind = false;
+        for (int k = 0; k < 4; k++) {
+            ahead[k] = this.ahead(in[3 * k], in[3 * k + 1], in[3 * k + 2]);
+            if (ahead[k] >= 0.0) {
+                front = true;
+            } else {
+                behind = true;
+            }
+        }
+        if (!front) {
+            return;
+        }
+        if (!behind) {
+            for (int i = 0; i < 12; i += 3) {
+                this.put(layer, in[i], in[i + 1], in[i + 2], rgb, this.faded(in[i], in[i + 1], in[i + 2], alpha));
+            }
+            return;
+        }
+        // What is left: every corner in front, and where an edge runs from one side of the plane to the other, the
+        // point where it crosses. A way round four corners crosses the plane an even number of times, at most four,
+        // and then only two corners are in front: never more than six corners are left.
+        double[] out = this.cutOut;
+        double[] cross = this.cutCross;
+        int corners = 0;
+        int crossings = 0;
+        for (int k = 0; k < 4; k++) {
+            int next = (k + 1) % 4;
+            int i = 3 * k;
+            int j = 3 * next;
+            double a = ahead[k];
+            double b = ahead[next];
+            if (a >= 0.0) {
+                int o = 3 * corners++;
+                out[o] = in[i];
+                out[o + 1] = in[i + 1];
+                out[o + 2] = in[i + 2];
+            }
+            if ((a >= 0.0) != (b >= 0.0)) {
+                double t = a / (a - b);
+                int o = 3 * corners++;
+                out[o] = in[i] + (in[j] - in[i]) * t;
+                out[o + 1] = in[i + 1] + (in[j + 1] - in[i + 1]) * t;
+                out[o + 2] = in[i + 2] + (in[j + 2] - in[i + 2]) * t;
+                int c = 3 * crossings++;
+                cross[c] = out[o];
+                cross[c + 1] = out[o + 1];
+                cross[c + 2] = out[o + 2];
+            }
+        }
+        // Drawn as quads fanning out from its first corner: (0, 1, 2, 3), (0, 3, 4, 5), and one left over with a
+        // corner too few as a quad with its last corner repeated.
+        for (int first = 1; first + 1 < corners; first += 2) {
+            int last = first + 2 < corners ? first + 2 : first + 1;
+            this.putCut(layer, 0, rgb, alpha);
+            this.putCut(layer, first, rgb, alpha);
+            this.putCut(layer, first + 1, rgb, alpha);
+            this.putCut(layer, last, rgb, alpha);
+        }
+        if (this.seam > 0.0) {
+            for (int c = 0; c + 1 < crossings; c += 2) {
+                this.seamLine(3 * c, fine, solid, halo);
+            }
+        }
+    }
+
+    /** One corner of what is left of a side after it is cut (see cut), into a layer, faded like any other. */
+    private void putCut(Layer layer, int corner, int rgb, int alpha) {
+        double[] out = this.cutOut;
+        int i = 3 * corner;
+        this.put(layer, out[i], out[i + 1], out[i + 2], rgb, this.faded(out[i], out[i + 1], out[i + 2], alpha));
+    }
+
+    /**
+     * The seam of light where the plane cuts through a solid side (see {@link #clip}): a bright line from the crossing
+     * at {@code from} in {@link #cutCross} to the one after it, with its glow, both a hair towards the camera the way
+     * edges are, so the side they lie on does not swallow them.
+     */
+    private void seamLine(int from, double fine, double solid, boolean halo) {
+        double[] ends = this.cutEnds;
+        System.arraycopy(this.cutCross, from, ends, 0, 6);
+        double lift = 0.01 + 0.02 * fine;
+        this.lift(ends, 0, lift);
+        this.lift(ends, 3, lift);
+        double strength = solid * this.seam;
+        this.line(this.light, ends[0], ends[1], ends[2], ends[3], ends[4], ends[5], EDGE_WIDTH * fine * SEAM_WIDTH,
+                this.material.edge(), Colors.alpha(EDGE * strength));
+        if (halo) {
+            // The cut runs over many short sides of a round part: a glow wider than a piece of it is long would stick
+            // out at every bend (see drawMesh).
+            double length = Math.sqrt(sq(ends[3] - ends[0]) + sq(ends[4] - ends[1]) + sq(ends[5] - ends[2]));
+            this.line(this.glow, ends[0], ends[1], ends[2], ends[3], ends[4], ends[5],
+                    Math.min(HALO_WIDTH * fine * SEAM_WIDTH, 0.9 * length), this.material.glow(),
+                    Colors.alpha(HALO * strength));
+        }
+    }
+
+    /**
+     * The line between two points cut off at the plane (see {@link #clip}), into {@link #cutEnds}: false when it lies
+     * wholly behind it, otherwise true, with an end that lies behind it moved to where the line crosses the plane.
+     */
+    private boolean cutLine(double ax, double ay, double az, double bx, double by, double bz) {
+        double[] ends = this.cutEnds;
+        ends[0] = ax;
+        ends[1] = ay;
+        ends[2] = az;
+        ends[3] = bx;
+        ends[4] = by;
+        ends[5] = bz;
+        double a = this.ahead(ax, ay, az);
+        double b = this.ahead(bx, by, bz);
+        boolean frontA = a >= 0.0;
+        boolean frontB = b >= 0.0;
+        if (frontA && frontB) {
+            return true;
+        }
+        if (!frontA && !frontB) {
+            return false;
+        }
+        // The end behind it slides along the line towards the other one, up to the plane.
+        int back = frontA ? 3 : 0;
+        int front = 3 - back;
+        double t = frontA ? b / (b - a) : a / (a - b);
+        for (int k = 0; k < 3; k++) {
+            ends[back + k] += (ends[front + k] - ends[back + k]) * t;
+        }
+        return true;
+    }
+
+    /** Moves the point at {@code i} in {@code points} {@code lift} blocks towards the camera, as edges are. */
+    private void lift(double[] points, int i, double lift) {
+        double x = this.camera.x - points[i];
+        double y = this.camera.y - points[i + 1];
+        double z = this.camera.z - points[i + 2];
+        double length = Math.sqrt(x * x + y * y + z * z);
+        if (length < 1.0E-6) {
+            return;
+        }
+        double k = lift / length;
+        points[i] += x * k;
+        points[i + 1] += y * k;
+        points[i + 2] += z * k;
     }
 
     /**

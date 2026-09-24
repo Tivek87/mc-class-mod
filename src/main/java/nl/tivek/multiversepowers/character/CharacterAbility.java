@@ -76,6 +76,7 @@ public final class CharacterAbility {
     private int defaultCooldown;
     private int[] oldCooldowns = new int[0];
     private double defaultDamage;
+    private double[] oldDamages = new double[0];
     private boolean usesCooldown;
     private boolean usesDamage;
     private boolean held;
@@ -106,6 +107,15 @@ public final class CharacterAbility {
      */
     public CharacterAbility cooldownWas(int... oldTicks) {
         this.oldCooldowns = oldTicks;
+        return this;
+    }
+
+    /**
+     * Its damage used to have one of these defaults, in half hearts. A settings file that still holds one of them was
+     * never changed by hand there, so it follows the new default (once, see {@link CharacterConfig}).
+     */
+    public CharacterAbility damageWas(double... oldHalfHearts) {
+        this.oldDamages = oldHalfHearts;
         return this;
     }
 
@@ -264,6 +274,11 @@ public final class CharacterAbility {
 
     public double defaultDamage() {
         return this.defaultDamage;
+    }
+
+    /** The damage it used to have by default, in half hearts (see {@link #damageWas}). */
+    public double[] oldDamages() {
+        return this.oldDamages;
     }
 
     /** True when this ability has a cooldown at all; only then is there one in the settings file. */

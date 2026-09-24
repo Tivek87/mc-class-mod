@@ -44,8 +44,8 @@ import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 
 /**
  * The first construct of the wheel: a sword of hard light in the ring hand and a shield on the other arm. They take
- * shape when he picks them (the sword grows out of his fist and is tossed up spinning and caught, twirled and knocked on
- * the shield) and break into solid pieces when he puts them away. While he holds them the mouse is theirs:
+ * shape when he picks them (the sword grows out of his fist and is tossed up spinning and caught, looked over and banged
+ * on the shield, see {@link SwordMove#EQUIP}) and break into solid pieces when he puts them away. While he holds them the mouse is theirs:
  * <ul>
  * <li><b>Left click:</b> one of twelve cuts and thrusts (see {@link SwordMove}), picked at random each time and
  * flowing on from the last.</li>
@@ -372,23 +372,59 @@ public final class SwordShield implements Effect {
         return true;
     }
 
-    /** The sounds of their taking shape: the twirl whirring round and ending, and two knocks on the shield. */
+    /**
+     * The sounds of their taking shape, for everyone round him but himself: his own game plays them the moment they
+     * happen (see {@link #equipSounds}).
+     */
     private void equipping(int t) {
-        switch (t) {
-            case SwordMove.TWIRL -> this.sound(SoundEvents.PLAYER_ATTACK_SWEEP, 0.6F, 1.6F);
-            case SwordMove.TWIRL + 4 -> this.sound(SoundEvents.PLAYER_ATTACK_SWEEP, 0.5F, 1.8F);
-            case SwordMove.TWIRLED -> {
-                this.sound(SoundEvents.ARMOR_EQUIP_IRON.value(), 0.9F, 1.3F);
-                this.sound(SoundEvents.AMETHYST_BLOCK_CHIME, 0.8F, 1.2F);
-            }
-            case SwordMove.KNOCK, SwordMove.KNOCK + 3 -> {
-                boolean first = t == SwordMove.KNOCK;
-                this.sound(SoundEvents.SHIELD_BLOCK, 0.8F, first ? 1.3F : 1.5F);
-                this.sound(SoundEvents.AMETHYST_BLOCK_HIT, 0.8F, first ? 1.1F : 1.3F);
-            }
-            default -> {
+        equipSounds(t - 1, t, this::soundForOthers);
+    }
+
+    /** Somewhere a sound is played: at a volume and a pitch. */
+    @FunctionalInterface
+    public interface Sounding {
+        void play(SoundEvent sound, float volume, float pitch);
+    }
+
+    /**
+     * The sounds of taking the sword and shield out that fall after {@code from} and up to {@code to} ticks in: the
+     * strap of the shield closing round the forearm, the flick that tosses the sword, its whir each time it turns half
+     * over in the air, the catch, the gleam running up the blade, and two bangs on the rim of the shield, the second
+     * lighter.
+     */
+    public static void equipSounds(float from, float to, Sounding sounding) {
+        if (crossed(from, to, SwordMove.SHIELD_LOCK)) {
+            sounding.play(SoundEvents.ARMOR_EQUIP_IRON.value(), 0.55F, 1.5F);
+            sounding.play(SoundEvents.AMETHYST_BLOCK_RESONATE, 0.5F, 1.7F);
+        }
+        if (crossed(from, to, SwordMove.TOSS)) {
+            sounding.play(SoundEvents.PLAYER_ATTACK_SWEEP, 0.6F, 1.1F);
+        }
+        for (int k = 1; k < 2 * SwordMove.TOSS_TURNS; k++) {
+            if (crossed(from, to, SwordMove.whir(k))) {
+                sounding.play(SoundEvents.PLAYER_ATTACK_SWEEP, 0.35F, 1.7F + 0.05F * k);
             }
         }
+        if (crossed(from, to, SwordMove.CATCH)) {
+            sounding.play(SoundEvents.ARMOR_EQUIP_IRON.value(), 1.0F, 1.2F);
+            sounding.play(SoundEvents.AMETHYST_BLOCK_PLACE, 0.8F, 1.4F);
+        }
+        if (crossed(from, to, SwordMove.GLEAM)) {
+            sounding.play(SoundEvents.AMETHYST_BLOCK_CHIME, 0.9F, 1.5F);
+        }
+        for (int knock : new int[] { SwordMove.KNOCK, SwordMove.KNOCK_AGAIN }) {
+            if (crossed(from, to, knock)) {
+                boolean first = knock == SwordMove.KNOCK;
+                sounding.play(SoundEvents.SHIELD_BLOCK, first ? 1.0F : 0.8F, first ? 1.1F : 1.35F);
+                sounding.play(SoundEvents.ANVIL_LAND, first ? 0.3F : 0.2F, first ? 1.8F : 2.0F);
+                sounding.play(SoundEvents.AMETHYST_BLOCK_HIT, 0.8F, first ? 1.0F : 1.25F);
+            }
+        }
+    }
+
+    /** True when {@code moment} falls after {@code from} and no later than {@code to}. */
+    private static boolean crossed(float from, float to, float moment) {
+        return from < moment && moment <= to;
     }
 
     /**

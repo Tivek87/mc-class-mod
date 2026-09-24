@@ -30,7 +30,7 @@ public final class CharacterConfig {
      * The version of the mod's defaults. Raise it whenever a default changes, and tell the setting what it was
      * before with {@link CharacterAbility#was}: files that still hold the old number then take the new one.
      */
-    private static final int DEFAULTS_VERSION = 9;
+    private static final int DEFAULTS_VERSION = 12;
 
     private static final Map<GameCharacter, ModConfigSpec> SPECS = new EnumMap<>(GameCharacter.class);
     private static final Map<GameCharacter, ModConfigSpec.IntValue> VERSIONS = new EnumMap<>(GameCharacter.class);
@@ -130,6 +130,10 @@ public final class CharacterConfig {
                             cooldown.set(ability.defaultCooldown());
                         }
                     }
+                }
+                ModConfigSpec.DoubleValue damage = DAMAGE.get(ability.path());
+                if (damage != null && wasDefault(damage.get(), ability.oldDamages())) {
+                    damage.set(ability.defaultDamage());
                 }
                 for (CharacterAbility.Setting setting : ability.settings()) {
                     ModConfigSpec.ConfigValue<? extends Number> value = SETTINGS.get(ability.path() + "."

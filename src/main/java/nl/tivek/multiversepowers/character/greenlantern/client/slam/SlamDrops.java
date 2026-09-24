@@ -3,7 +3,6 @@ package nl.tivek.multiversepowers.character.greenlantern.client.slam;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.character.greenlantern.ability.LandingSlam;
-import nl.tivek.multiversepowers.character.greenlantern.client.render.FlareLight;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.LanternPainter;
 import nl.tivek.multiversepowers.character.greenlantern.client.slam.SlamPainter.Moment;
 import nl.tivek.multiversepowers.engine.client.render.ConstructPainter.Frame;
@@ -131,20 +130,6 @@ final class SlamDrops {
             Mesh.lathe(16, 1.0, 0.0, 1.70, 0.62, 1.70, 0.62, 1.80, 0.50, 1.90, 0.44, 2.02, 0.20, 2.10, 0.0, 2.12));
     /** The lantern's handle: an arch over its top, from one side to the other. */
     private static final Shape LANTERN_HANDLE = Shape.of(Mesh.tube(false, 6, 0.05, 1.1, arch(0.40, HANDLE_Y, 12)));
-
-    /**
-     * His lantern as a construct of its own, its foot at the middle of {@code frame}: whole, or {@code apart} of the
-     * way broken into solid pieces. The Lantern Flare shapes it over his fist (see {@link FlareLight}).
-     */
-    static void lantern(LanternPainter painter, Frame frame, double apart, double bright) {
-        if (apart > 0.0) {
-            painter.shattered(LANTERN, frame, apart, bright);
-            painter.shattered(LANTERN_HANDLE, frame, apart, bright);
-        } else {
-            painter.shape(LANTERN, frame, 1.0, bright);
-            painter.shape(LANTERN_HANDLE, frame, 1.0, bright);
-        }
-    }
 
     private static Mesh post(double x, double z) {
         return Mesh.cylinder(8, 0.07, 0.38, 1.70, 1.1).moved(x, 0.0, z);

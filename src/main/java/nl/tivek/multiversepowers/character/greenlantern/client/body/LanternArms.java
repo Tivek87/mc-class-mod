@@ -27,7 +27,6 @@ import nl.tivek.multiversepowers.character.greenlantern.RingPayload;
 import nl.tivek.multiversepowers.character.greenlantern.client.ClientConstructs;
 import nl.tivek.multiversepowers.character.greenlantern.client.ClientRing;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.ArrivalAnimation;
-import nl.tivek.multiversepowers.character.greenlantern.client.render.FlareLight;
 import nl.tivek.multiversepowers.engine.math.Ease;
 import org.joml.Vector3f;
 
@@ -113,8 +112,10 @@ public final class LanternArms {
             model.rightArmPose = pose;
             SwordArms.spin(event);
         }
-        // A flare or calling an air strike: the ring fist thrown up high. A scan: the ring fist held out, sweeping.
-        if (FlareLight.up(player, event.getPartialTick()) > 0.0F || ScanArm.out(player, event.getPartialTick()) > 0.0F) {
+        // Calling an air strike: the ring fist thrown up high. A scan: the ring fist held out, sweeping. Calling the
+        // giant hands: the ring arm flung out towards every one.
+        if (CallArm.up(player, event.getPartialTick()) > 0.0F || ScanArm.out(player, event.getPartialTick()) > 0.0F
+                || HandsArm.out(player, event.getPartialTick()) > 0.0F) {
             model.rightArmPose = pose;
         }
         // The hand that defends holds up a shield; everything else hangs on the ring hand.
@@ -167,7 +168,8 @@ public final class LanternArms {
         }
         SwordArms.pose(model, entity, arm);
         ScanArm.pose(model, entity, arm);
-        FlareLight.pose(model, entity, arm);
+        CallArm.pose(model, entity, arm);
+        HandsArm.pose(model, entity, arm);
         ClientConstructs.Held held = ClientConstructs.heldBy(entity.getId(), arm == HumanoidArm.LEFT);
         if (held != null) {
             reach(arm == HumanoidArm.LEFT ? model.leftArm : model.rightArm, entity, held, partialTick);
@@ -295,8 +297,7 @@ public final class LanternArms {
     /**
      * Where your own right hand is in first person, in blocks in front of your eyes: where the game rests it,
      * or pointing straight ahead while you shoot bolts (kicking with each one), or out towards the construct you are
-     * holding, or along the beam (trembling and kicking with it), or thrown up high for a flare or to call an air
-     * strike.
+     * holding, or along the beam (trembling and kicking with it), or thrown up high to call an air strike.
      */
     public static Vector3f handPoint(LocalPlayer player, float partialTick) {
         ClientConstructs.Held held = ClientConstructs.heldBy(player.getId(), false);
@@ -318,7 +319,7 @@ public final class LanternArms {
         float tremble = HAND_TREMBLE * BeamArm.tremble(player, partialTick);
         hand.add(tremble * BeamArm.shake(time, 1), tremble * BeamArm.shake(time, 0), 0.0F)
                 .add(new Vector3f(HAND_KICK).mul(BeamArm.kick(player, partialTick)));
-        // Thrown up high for a flare or to call an air strike.
-        return hand.lerp(FlareLight.UP_HIGH, FlareLight.up(player, partialTick));
+        // Thrown up high to call an air strike.
+        return hand.lerp(CallArm.UP_HIGH, CallArm.up(player, partialTick));
     }
 }

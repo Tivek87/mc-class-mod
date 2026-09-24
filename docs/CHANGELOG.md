@@ -2,6 +2,45 @@
 
 What changed in the project, newest first.
 
+## [Giant Hands, a new Air Strike and the sword thrown up] - 2026-09-24
+
+### Added
+- **Giant Hands (Left Alt)**, in place of the Lantern Flare: wave your ring hand and giant hands of hard light rise
+  out of the ground one after another (six, at most three at once, the next once the one before is halfway) at the
+  enemies within 20 blocks of you. Each smacks its enemy away, grabs it and throws it, slaps it flat against the
+  ground (it lies squashed a moment and springs back), pounds it with the flat of its fist three times, or shoots up
+  right in front of it with its middle finger raised, launching it and everything round it far away and high up.
+  They stay where they came up, turn after the enemy nearest to them and sink back into the ground when they are
+  done. Or two of them come as a **pair** out of portals of the ring's light (counting as two hands): they snap
+  their fingers and make the OK sign, pull a **giant axe** of hard light out of a third portal, chop it down on the
+  enemy (18 hearts, flinging everything round it far away), leave it stuck in the ground and give you a thumbs up.
+- **Air Strike jets:** two jets of hard light race round the gunship and fire small homing missiles at your
+  enemies. When the gunship's engine bursts they break away, break the sound barrier with a thunderclap and a ring
+  of light, and vanish in a star of light.
+
+### Changed
+- **Giant Hands** move far more smoothly: their fingers close and open one after another, their wrists follow
+  through after every blow, and while they wait they sway a little and their fingers drift. The middle finger
+  shoots up out of the ground, overshoots, settles and jabs at its enemy, and launches what is round it.
+- **Air Strike missiles** now drop out of a bomb bay in the gunship's belly (its doors swing open and shut again),
+  fall a way, fire their motor at a moment of their own and home in on the enemy nearest to them; they do three
+  times the damage (12 hearts).
+- **Air Strike miniguns** fire about 30% faster, their rounds are smaller, and the guns swing smoothly after what
+  they fire at and stay on it.
+- **Air Strike crash:** the gunship no longer drops out of the sky in a second: an engine bursts, it shudders and
+  struggles, and only then does its nose drop slowly into a dive of about three seconds. The blast is a little
+  bigger and harder (24 hearts, 16 blocks).
+- **Taking out the sword and shield:** you now toss the sword up spinning, catch it, look it over while a gleam runs
+  up the blade, and bang it twice on the shield.
+
+### Removed
+- Leftovers of old weapons and spells that were no longer in the game: the unused **Void Instability** effect (no
+  longer in `/effect`), the empty **Cosmic Realm** dimension, and the old item pictures and texts.
+
+### Fixed
+- The rounds of the Air Strike's miniguns froze in the air, and the blasts of its missiles (and of a pounded Light
+  Bubble) stopped halfway, leaving a missile stuck in the ground.
+
 ## [World and client settings, flying over new land, and ready for servers] - 2026-09-24
 
 ### Added

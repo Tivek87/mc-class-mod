@@ -62,7 +62,7 @@ long cooldown; while it goes, the panel's title turns red and counts down.
 | Y | Ability 7 | Octopus Rampage *(ultimate)* | Air Strike *(ultimate)* |
 | X | Ability 8 | *(free)* | Shockwave |
 | C | Ability 9 | Feet or Tentacles | Flight |
-| Left Alt | Ability 10 | Ground Strike | Lantern Flare |
+| Left Alt | Ability 10 | Ground Strike | Giant Hands |
 | K | Ability 11 | *(free)* | Light Bubble |
 
 - Every key can be changed in Options > Controls, under "Multiverse Powers".
@@ -94,8 +94,8 @@ long cooldown; while it goes, the panel's title turns red and counts down.
 Green Lantern's power ring turns willpower into hard light: solid shapes of green light that only last
 while he keeps them going. His mouse always does something: bolts and a beam on left click, a shield and a
 dome on right click. On top of that he has the Giant Fist, his lantern to recharge the ring, flight, the
-shockwave, the wheel you pick a weapon from (its first weapon is a sword and shield), the Ring Scan, the Lantern
-Flare, the Light Bubble and his ultimate, the Air Strike. Every key is his now. Every ability has a move of his
+shockwave, the wheel you pick a weapon from (its first weapon is a sword and shield), the Ring Scan, the Giant
+Hands, the Light Bubble and his ultimate, the Air Strike. Every key is his now. Every ability has a move of his
 own that goes with it, seen from outside and in first person.
 
 His hands work the way the game's own buttons do: the **right hand attacks** (left click) and the **left hand
@@ -515,8 +515,10 @@ arm, both as solid as every construct.
   outside he holds the sword upright before his right hip and the shield before his left side.
 - **Taking them out:** your hands come up into view while the sword grows out of the ring's light in your fist,
   hilt first and then the blade running out to its point, and the shield grows on your forearm out of its middle,
-  fed by a beam from the ring. You hold the sword up before your eyes and turn it to see both flats, twirl it once
-  round like a wheel, and knock it twice on the rim of the shield: then you are ready. Putting them away (any other
+  fed by a beam from the ring. You dip your hand and toss the sword up into the air, where it wheels round twice with
+  a streak of light, catch it again, bring it up close before your eyes and turn it slowly from the one flat over its
+  edge to the other while a gleam of light runs up the blade, and bang it twice on the rim of the shield: then you
+  are ready. You can cut from the moment you have caught it. Putting them away (any other
   slot, or empty hands), they break into solid pieces.
 - **Left click (the sword):** one of **twelve** cuts and thrusts, a different one every click and never the same
   twice in a row: a cut across from the right, a backhand from the left, a cut down from high right, one from high
@@ -561,67 +563,110 @@ The ring scans everything around you, the way it does in the comics ("Ring, scan
 
 ### Air Strike (key Y, the ultimate)
 
-Green Lantern's ultimate: a big, slow gunship of hard light high over the battlefield.
+Green Lantern's ultimate: a big, slow gunship of hard light high over the battlefield, with two jets.
 
 - **Press Y.** You throw your ring fist up at the sky and a thick pillar of light shoots out of the ring. High in
   the sky, about **55 blocks** up, a **big gunship with four propellers** grows out of its light, white-hot at first
   and cooling to green. It is a solid construct of hard light, never a real aircraft,
   and made in detail: a long round body with a glowing windscreen, rows of windows, doors and a cargo ramp under
   its tail, a high wing with flaps, four engines with big four-bladed propellers turning in front of them, a tall
-  tail fin with the lantern emblem, a minigun on either side, a missile launcher under either wing and a sensor
+  tail fin with the lantern emblem, a minigun on either side, a bomb bay with two doors in its belly and a sensor
   ball under its nose. A thin thread of light ties it to your ring, and your ring and uniform blaze as long as it
   flies. "AIR STRIKE!" says your action bar, and the panel's title turns red and counts down.
+- **Its jets:** a moment later two sleek **jets of hard light** grow out of threads of your ring's light under its
+  wings, each with a bubble canopy, glowing wings, twin tails, two flaming exhausts and a small missile under each
+  wing. They peel off and race round the gunship, fast, banking into their turns, one high and one low.
 - **Its way:** it flies in **one straight line** the way you looked, slowly, and passes right over the spot you
   looked at (up to 32 blocks away, or 16 blocks ahead of you) halfway through. It needs open sky: with less than
   21 blocks of room above you the ring tells you so and nothing happens.
 - **For 20 seconds** it drones on and never stops firing:
   - **it scans:** its sensor shines a cone of light down onto the ground and a scan wave rolls out from under it,
     like your Ring Scan but half as far again (**84 blocks**), and marks only what is out to hurt you (red, through
-    walls, for 21 seconds). It scans again every 5 seconds as it flies on. Its guns and missiles go for what it
-    marked; with nothing marked they rake the ground ahead of it along its way.
-  - **the two miniguns**, big six-barrelled guns hanging under either side of its body, swing round and fire in
-    turn: together **2 rounds every 0.3 seconds**, their barrels spinning, their muzzles flashing and thick glowing
-    tracers streaking down. The rounds spread wide, so many miss, but there are a lot of them: **1.5 hearts** for
-    every round that strikes.
-  - **the two missile launchers** fire in turn: **one homing missile every 2 seconds**, left, right, left, each
-    lighting up and streaking down on a trail of light. Nine in ten find their creature: **4 hearts** and a small
-    explosion (less for what else it reaches); every missile that strikes the ground blows a **small crater** in it
-    and throws up blocks. The launcher grows its next missile out of the light.
-- **Then all at once it crashes:** an engine bursts into flame and its propeller dies, the nose drops and the plane
-  plunges straight into the ground, rolling over, trailing fire and light, in about a second. It strikes
-  in a blast like a small sun: a flash, a fireball rising on a stem of light and rolling into a mushroom cloud, a
-  ring of light racing out round its middle, a shell of light and rings running out over the ground, and the plane
-  breaks into solid pieces flung far. The view of everyone close by shakes. The blast does **20 hearts** in the
-  middle, half at its edge 14 blocks out, throws everything away, and **blows a crater out of the ground**: its
-  blocks are hurled up and away and come down all round it, and smoke and flames rise from it for a while after.
-  Blocks that hold something (chests and the like), blocks harder than ores, and water stay.
-- Only the blast is see-through: the plane, its guns, its rounds and its missiles are all solid constructs.
-- **Who gets hit:** only what is out to hurt you (monsters, and anything that has turned on you) and, by the crash,
+    walls, for 21 seconds). It scans again every 5 seconds as it flies on. Its guns go for what it marked; with
+    nothing marked they rake the ground ahead of it along its way.
+  - **the two miniguns**, big six-barrelled guns hanging under either side of its body, swing smoothly round to
+    what they fire at and stay on it a while, firing in turn: together **2 rounds every 0.23 seconds**, their
+    barrels spinning, their muzzles flashing and slim glowing tracers streaking down. The rounds spread wide, so many
+    miss, but there are a lot of them: **1.5 hearts** for every round that strikes.
+  - **homing missiles out of the belly:** every **2 seconds** the two doors of the bomb bay swing open, a big
+    missile is lowered out and drops, and the doors swing shut behind it. It falls a way, and then, at a moment of
+    its own, its motor bursts into life with a flash: it turns and streaks off at the creature out to hurt you
+    nearest to it, trailing flame and light, and bursts on it for **12 hearts** (less for what else its blast
+    reaches). With nothing to find it strikes the ground along the way. Every missile that bursts near the ground
+    blows a **small crater** in it and throws up blocks.
+  - **the jets** fire a small homing missile from under one wing and then the other, each about every **1.2
+    seconds**, at the creature out to hurt you nearest to them: **2.5 hearts** and a small blast. The pylon grows
+    its next missile out of the light.
+- **Then it fails:** an engine bursts into flame and its propeller runs down. The gunship shudders, leans over to
+  that side and fights to stay up, trailing fire and light, while its **jets break away**: their flames roar out,
+  they race off faster and faster, a cone of mist forms round them and they **break the sound barrier** with a
+  thunderclap and a ring of light, and a moment later they are gone in a **star of light**, breaking into solid
+  pieces. Then the gunship's nose drops, slowly at first, and it plunges into the ground, rolling over, faster and
+  faster, in about three seconds. It strikes in a blast like a small sun: a flash, a fireball rising on a stem of
+  light and rolling into a mushroom cloud, a ring of light racing out round its middle, a shell of light and rings
+  running out over the ground, and the plane breaks into solid pieces flung far. The view of everyone close by
+  shakes. The blast does **24 hearts** in the middle, half at its edge 16 blocks out, throws everything away, and
+  **blows a crater out of the ground**: its blocks are hurled up and away and come down all round it, and smoke
+  and flames rise from it for a while after. Blocks that hold something (chests and the like), blocks harder than
+  ores, and water stay.
+- Only the blasts are see-through: the plane, its jets, its guns, its rounds and its missiles are all solid
+  constructs.
+- **Who gets hit:** only what is out to hurt you (monsters, and anything that has turned on you) and, by the blasts,
   players where players may fight each other; never your own pets, and never you.
-- If you stop being Green Lantern before it crashes, the plane breaks apart in the air.
+- If you stop being Green Lantern before it crashes, the plane and its jets break apart in the air.
 - **Power:** 20. **Cooldown:** 90 seconds.
 - All of it is a setting: how long it attacks, how far it scans, the cost, the miniguns (how often, damage,
-  spread), the missiles (how often, damage, hit chance, the size of their craters) and the crash (damage, reach, the size of the crater, how
-  hard a block may be to be blown away, how many blocks are hurled; a hardness of -1 leaves the ground alone).
+  spread), the missiles (how often, damage, the size of their craters), the jets' missiles (how often, damage) and
+  the crash (damage, reach, the size of the crater, how hard a block may be to be blown away, how many blocks are
+  hurled; a hardness of -1 leaves the ground alone).
 
-### Lantern Flare (key Left Alt)
+### Giant Hands (key Left Alt)
 
-- **Press Left Alt.** You throw your ring fist up high and the ring shapes **your lantern** over it, a solid
-  construct growing out of the ring's light, white-hot at first, turning slowly and fed by a beam out of your
-  ring. Specks of light stream into it from all round and rings of light close in on it while its heart burns
-  brighter and brighter, until after most of a second it **bursts like a small sun**: a flash with a cross of
-  light, rays shooting out all round, a shell of light racing out, a ring of light over the ground, and the
-  lantern breaks into solid pieces while motes of light drift down.
-- Every creature within **14 blocks** that can see the lantern is struck, except your own pets:
-  - **blinded for 12.5 seconds;** while it lasts it loses whoever it was after and cannot find anyone further
-    off than a few blocks, so it stumbles about, dazed, with pale specks of light round its head;
-  - **slowed down and weakened for 12.5 seconds:** hard for the first 4 seconds, milder for the rest;
-  - whatever was invisible shows again.
-- The creatures of the dark cannot bear its light: they also burn, take **4 hearts**, are thrown back and flee
-  a moment.
-- Anyone who looks at the burst is dazzled: their screen goes white-green a moment, the more the straighter they
-  looked at it. Your own is held up over your head, so it dazzles you a little.
-- **Power:** 8. **Cooldown:** 30 seconds (the dazing lasts long, so it cannot be kept up).
+- **Press Left Alt.** You wave your ring hand out towards one of the creatures out to hurt you, somewhere within
+  **20 blocks** of you every way (an area 40 blocks across), picked at random: the ring's light shoots off to it, a
+  ring of light glows on the ground there, the ground cracks open, and a **giant hand of hard light** rises up out
+  of it in a cloud of dust, white-hot at first and cooling to green. Every hand is big (many times taller than you) and
+  made in detail: Green Lantern's own right hand, with a forearm and a glowing gauntlet ring, a glowing cuff round the
+  wrist, a palm with its pads and glowing creases, knuckles and glowing tendons and the lantern emblem on its back,
+  four fingers of three joints each with a nail on every tip, a thumb, and the ring itself on its middle finger.
+- **Six hands** come up one after another, **never more than three at once**: the next one only comes once the one
+  before is halfway through what it does, and you wave your hand towards every one. Each does one of these to its
+  creature, never the same one twice in a row:
+  - **a smack:** it rises low beside the creature, winds up and sweeps its open palm through it, swatting it
+    away from you (**6 hearts**);
+  - **a grab and a throw:** it rises right in front of the creature, closes its fingers round it, lifts it high,
+    leans back and throws it away from you (**3.6 hearts**, and the fall);
+  - **the middle finger:** it shoots up out of the ground right in front of the creature, middle finger first, in a
+    blast of dust and a wide wave of light: the creature and everything round it is **launched far away and high up**
+    (**15 hearts**, and the fall). Then it stands there with the back of the hand to it and gives it the finger,
+    jabbing it at it, with a grumble and angry clouds over it;
+  - **a slap flat:** it rises straight up, cocks its wrist back and bends it over, slapping its open palm down
+    flat on the creature: it is pressed flat against the ground (**7.8 hearts**, slowed down a while), lies there
+    squashed like in a cartoon and springs back into shape;
+  - **a pound:** it rises as a fist and pounds the flat of it down on the ground three times, each time on the
+    creature nearest to it (**3.3 hearts** a blow, and knocked up);
+  - **the axe pair:** the ring's light shoots off and **two portals** of it burst open in the air on either side of
+    the creature and beyond it. A giant right hand (with the ring) and a left hand (without one) push out of them,
+    fingers first, and hover there, their fingers rippling up and down. The right hand **snaps its fingers**, the
+    left makes the **OK sign**; then they roll round each other with their fingers crawling, fling apart, and a
+    third portal opens beyond them. A **giant axe of hard light** slides out of it; they grab its haft with both
+    hands, draw it out, heave it up over the top and **chop it down** towards you onto the creature: **18 hearts** in
+    the middle of the blow, half at its edge 6 blocks out, and everything there is **flung far away and up**, in a
+    flash, with rings and cracks of light running out over the ground and the view of everyone close by shaking.
+    They leave the axe stuck in the ground, rise and give you a **thumbs up**, and pull back into their portals,
+    which snap shut; a moment later the axe breaks into solid pieces. The pair **counts as two of the hands** (so
+    there are still never more than three at once), and only comes where there is open space round and above the
+    creature.
+- Every hand moves **smoothly and heavily, with life in its fingers**: they close and open one after another, it
+  winds up before every blow and follows through after it, and while it waits it sways a little and its fingers
+  drift. A hand stays where it came up, but turns slowly after the creature nearest to it and reaches for that one.
+  Its blows leave streaks of light in the air and rings of light running out over the ground. When it is done it
+  sinks back into the ground; if you stop being Green Lantern it breaks into solid pieces (a pair and its axe too).
+- With nothing out to hurt you nearby the ring tells you so and nothing happens.
+- **Who gets hit:** only what is out to hurt you, and players where players may fight each other; never your own
+  pets, villagers or animals, and never you.
+- **Power:** 8. **Cooldown:** 30 seconds. The damage, the reach, how many hands come and how hard they send
+  creatures flying are settings.
 
 ### Light Bubble (key K)
 

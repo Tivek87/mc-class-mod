@@ -39,6 +39,8 @@ public enum Unit {
     HARDNESS,
     /** A number of blocks. */
     BLOCK_COUNT,
+    /** A number of things (hands, blows): shown as it is. */
+    COUNT,
     /** A strength without a unit of its own (a push, a throw): shown as a factor. */
     STRENGTH,
     /** A chance from 0 to 1: shown as a percentage. */
@@ -64,6 +66,7 @@ public enum Unit {
             case STAMINA_PER_TICK -> key("stamina_per_second", number(value * 20.0));
             case HARDNESS -> value < 0.0 ? key("breaks_nothing") : key("breaks_up_to", key(material(value)));
             case BLOCK_COUNT -> key("block_count", number(value));
+            case COUNT -> key("count", number(value));
             case STRENGTH -> key("factor", number(value));
             case CHANCE -> key("chance", number(Math.round(value * 100.0)));
         };

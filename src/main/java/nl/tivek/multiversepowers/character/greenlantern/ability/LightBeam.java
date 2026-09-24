@@ -90,7 +90,7 @@ public final class LightBeam implements Effect {
         // believed.
         boolean ready = charged && owner.server.getTickCount() - since >= ability.holdTicks() * GATHER_SEEN;
         if (!ready || FIRING.containsKey(owner.getUUID()) || Recharge.busy(owner) || GiantFist.holding(owner)
-                || Flight.descending(owner) || LightFlare.up(owner) || AirStrike.calling(owner)) {
+                || Flight.descending(owner) || GiantHands.waving(owner) || AirStrike.calling(owner)) {
             if (charged) {
                 PowerRing.sync(owner);
             }

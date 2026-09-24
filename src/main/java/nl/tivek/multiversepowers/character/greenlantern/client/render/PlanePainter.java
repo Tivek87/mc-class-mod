@@ -14,6 +14,8 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.Vec3;
+import nl.tivek.multiversepowers.character.CharacterAbility;
+import nl.tivek.multiversepowers.character.GameCharacter;
 import nl.tivek.multiversepowers.character.greenlantern.ConstructPayload;
 import nl.tivek.multiversepowers.character.greenlantern.PlanePath;
 import nl.tivek.multiversepowers.character.greenlantern.ability.AirStrike;
@@ -38,17 +40,21 @@ import nl.tivek.multiversepowers.engine.math.Vectors;
  * intake, an exhaust stack and a big four-bladed propeller turning in front of it;</li>
  * <li>a tall fin with a rudder and a dorsal fillet, tailplanes with elevators, and the lantern emblem on its fin and on
  * top of its wings, with lights on its wingtips and its tail;</li>
- * <li>two miniguns on ball mounts in sponsons on its sides, that swing round to what they fire at, their six barrels
- * spinning and their muzzles flashing as they fire;</li>
- * <li>two missile launchers under its wings, each a pylon and a rail with a homing missile on it, that grows its next
- * missile out of the light once it has fired;</li>
+ * <li>two miniguns on ball mounts in sponsons on its sides, that swing smoothly round to what they fire at, their six
+ * barrels spinning and their muzzles flashing as they fire;</li>
+ * <li>a bomb bay in its belly, whose two doors swing open on their hinges before a missile is lowered out and drops,
+ * and swing shut behind it;</li>
  * <li>a sensor ball under its nose, that shines its scan down onto the ground in a cone of light.</li>
  * </ul>
- * All at once an engine bursts into flame, its propeller dies and the plane's nose drops: it plunges into the ground,
- * rolling over, trailing fire and light, and crashes in a blast like a small sun: a flash, a fireball rising on a stem of
- * light into a mushroom cloud, a ring of light racing out round its middle, a shell of light and rings running out over
- * the ground, while the plane breaks into solid pieces that are flung far. Only that blast is see-through: it is light,
- * not a construct. If its maker stops being Green Lantern the plane breaks apart in the air (see {@link #broken}).
+ * Two jets fly with it (see {@link #jets}), sleek fighters with a bubble canopy, twin tails and a small missile under each
+ * wing, that grow out of the ring's light beside it and race round it, banking into their turns. Then an engine bursts
+ * into flame, its propeller dies and the plane shudders and struggles: its jets break away, their flames roaring, a cone
+ * of mist forms round them as they break the sound barrier with a ring of light, and they are gone in a star of light,
+ * breaking into solid pieces. The plane's nose drops: it plunges into the ground, rolling over, trailing fire and light,
+ * and crashes in a blast like a small sun: a flash, a fireball rising on a stem of light into a mushroom cloud, a ring of
+ * light racing out round its middle, a shell of light and rings running out over the ground, while the plane breaks into
+ * solid pieces that are flung far. Only that blast is see-through: it is light, not a construct. If its maker stops being
+ * Green Lantern the plane and its jets break apart in the air (see {@link #broken}).
  */
 public final class PlanePainter {
     // How long the plane takes to grow out of the light, from when, in ticks after the call; and how long it takes to
@@ -57,7 +63,7 @@ public final class PlanePainter {
     private static final double GROW_TICKS = 30.0;
     private static final double BREAK_TICKS = 40.0;
     // How far its pieces are flung when it crashes, and when it breaks up in the air.
-    private static final double CRASH_FLING = 9.0;
+    private static final double CRASH_FLING = 10.0;
     private static final double AIR_FLING = 5.0;
     // The pillar of light: how thick it is, and until when it pours up into the plane.
     private static final double PILLAR_THICK = 3.6;
@@ -65,23 +71,47 @@ public final class PlanePainter {
     // How fast the propellers turn at full speed, in radians per tick, and how long the one that bursts takes to run
     // down, in ticks.
     private static final double PROP_SPIN = 0.55;
-    private static final double PROP_DIES = 7.0;
+    private static final double PROP_DIES = 12.0;
     // How long the tip of a propeller blade is from the hub, in blocks at scale 1.
     private static final double PROP_RADIUS = 3.25;
+    // How far to its right the hubs of its four propellers are: the left outer one, the left inner one, the right inner
+    // one (the one that bursts) and the right outer one.
+    private static final double[] ENGINES = { -AirStrike.ENGINE_OUTER_X, -AirStrike.ENGINE_X, AirStrike.ENGINE_X,
+            AirStrike.ENGINE_OUTER_X };
     // How fast the barrels of a minigun spin while it fires, in radians per tick, and how long they take to run down.
     private static final double BARREL_SPIN = 1.1;
     private static final double BARREL_DIES = 18.0;
-    // How long a minigun keeps pointing where it last fired, and then swings back to rest, in ticks.
-    private static final double GUN_HOLDS = 22.0;
-    private static final double GUN_BACK = 14.0;
-    /** How long the small blast of a missile goes on, in ticks. */
+    // How long a minigun takes to swing over to where it really points when news of where it was told to point came in
+    // late, and how long it takes to level its roll out again after pointing straight down (in ticks, most of the way).
+    private static final double GUN_CATCHES_UP = 2.5;
+    private static final double GUN_LEVELS = 8.0;
+    /** How long the blast of a missile goes on, in ticks. */
     public static final int BLAST_TICKS = 30;
+    /** How long a missile takes to break into pieces once it has struck, in ticks. */
+    public static final double MISSILE_BREAKS = 12.0;
+    // How long a round that struck nothing takes to break into crumbs once it is out of reach, in ticks.
+    private static final double SLUG_BREAKS = 4.0;
+    // How fast a jet's pieces fly on once it is gone, and how soon they slow down (ticks' worth of its speed).
+    private static final double JET_FLIES_ON = 5.0;
+    // A big missile's motor fires this many ticks after it dropped at the earliest: until then it only falls.
+    private static final int EARLIEST_IGNITION = 4;
     // The blast of the crash: how far its shell of light races out, how high its fireball climbs, how big it gets, and how
     // far the ring of light round its middle races out.
-    private static final double SHELL = 40.0;
-    private static final double FIREBALL_HIGH = 36.0;
-    private static final double FIREBALL = 16.0;
-    private static final double COLLAR = 56.0;
+    private static final double SHELL = 46.0;
+    private static final double FIREBALL_HIGH = 40.0;
+    private static final double FIREBALL = 18.5;
+    private static final double COLLAR = 64.0;
+    // The bomb bay: how far round the body its doors reach either way from the bottom of its belly, in degrees, and how
+    // far they swing open.
+    private static final double BAY_HALF_ANGLE = 25.0;
+    private static final double DOOR_OPEN = Math.toRadians(95.0);
+    // Where a missile waits in the bay, how high in the body, before it is lowered out.
+    private static final double IN_BAY_Y = -1.95;
+    // A jet's size, next to the blocks its model is made in; how long its pieces take to fly apart as it goes; and how
+    // long the star of light it goes in shines, in ticks.
+    private static final double JET_SCALE = 1.0;
+    private static final double JET_BREAKS = 9.0;
+    private static final double STAR_TICKS = 18.0;
 
     /**
      * The body of the plane, as sections along z (see {@link Mesh#loft}): z, half width, half height, and how high its
@@ -108,18 +138,26 @@ public final class PlanePainter {
      */
     private static final ConstructPainter.Shape MISSILE = ConstructPainter.Shape.of(missile(0.36));
     private static final double MISSILE_TAIL = -2.3;
-    static final double MISSILE_SCALE = 1.45;
+    static final double MISSILE_SCALE = AirStrike.MISSILE_SCALE;
+    /** How big a jet's small missile is drawn, next to the model of a missile. */
+    static final double SMALL_MISSILE_SCALE = AirStrike.SMALL_MISSILE_SCALE;
     /** A round from a minigun: a slug of hard light along z, its nose ahead, drawn {@link #SLUG_SCALE} times as big. */
     private static final ConstructPainter.Shape SLUG = ConstructPainter.Shape.of(Mesh.lathe(8, 1.35, 0.0, -0.45, 0.09,
             -0.4, 0.11, 0.15, 0.07, 0.4, 0.0, 0.5).alongZ());
-    private static final double SLUG_SCALE = 2.6;
+    private static final double SLUG_SCALE = 1.6;
+    /** One door of the bomb bay, the right one, on its hinge along the body: the left one is its mirror image. */
+    private static final ConstructPainter.Shape BAY_DOOR = ConstructPainter.Shape.of(bayDoor());
+    /** The inside of the bomb bay, deep in the belly, that shows while its doors are open. */
+    private static final ConstructPainter.Shape BAY_INSIDE = ConstructPainter.Shape.of(bayInside());
+    /** A jet: at scale 1 some 13.5 blocks long and 11 wide, x to its right, y up, z ahead. */
+    private static final ConstructPainter.Shape JET = ConstructPainter.Shape.of(jet());
     // How much light from within the plane's hard light gets on top of the sky's, so its belly high over you still reads.
     private static final double GLOWS = 0.3;
 
     // The drone of every plane in the air, by the id of its construct.
     private static final Map<Integer, PlaneSound> SOUNDS = new HashMap<>();
-    // How far the barrels of each gun of each plane have turned, and how fast they turn, by the id of the plane.
-    private static final Map<Integer, double[]> BARRELS_TURNED = new HashMap<>();
+    // How the miniguns of each player's plane swing and spin, by the id of the player.
+    private static final Map<Integer, Guns> GUNS = new HashMap<>();
 
     private PlanePainter() {
     }
@@ -218,24 +256,21 @@ public final class PlanePainter {
                 AirStrike.GUN_Z));
         pair(parts, Mesh.torus(24, 6, 1.22, 0.11, 1.55).alongX().moved(AirStrike.GUN_X - 0.3, AirStrike.GUN_Y,
                 AirStrike.GUN_Z));
-        // The missile launchers under the wings: a swept pylon down from the wing, and a rail the missile hangs from,
-        // with a glowing cradle at either end and a blast shield behind it.
-        pair(parts, Mesh.wing(2.4, -2.4, 2.6, -1.6, 2.2, 0.0, 0.4, 0.3, 1.0).turned(0.0, 0.0, 1.0, -90.0)
-                .moved(AirStrike.LAUNCHER_X, AirStrike.LAUNCHER_Y + 3.05, AirStrike.LAUNCHER_Z));
-        pair(parts, Mesh.box(-0.3, 0.55, -3.3, 0.3, 0.85, 3.7, 1.12).moved(AirStrike.LAUNCHER_X,
-                AirStrike.LAUNCHER_Y, AirStrike.LAUNCHER_Z));
-        for (double z : new double[] { -2.4, 2.8 }) {
-            pair(parts, Mesh.box(-0.42, 0.42, z - 0.22, 0.42, 0.62, z + 0.22, 1.6).moved(AirStrike.LAUNCHER_X,
-                    AirStrike.LAUNCHER_Y, AirStrike.LAUNCHER_Z));
+        // The bomb bay in its belly: a glowing rim round its hatch, at its front and back and along the hinges of its
+        // two doors.
+        double bayBack = AirStrike.BAY_Z - AirStrike.BAY_LENGTH * 0.5;
+        double bayFront = AirStrike.BAY_Z + AirStrike.BAY_LENGTH * 0.5;
+        for (double z : new double[] { bayBack - 0.18, bayFront }) {
+            parts.add(plate(z, z + 0.18, 270.0 - BAY_HALF_ANGLE - 3.0, 270.0 + BAY_HALF_ANGLE + 3.0, 0.07, 1.55));
         }
-        pair(parts, Mesh.box(-0.7, 0.3, -3.9, 0.7, 1.0, -3.6, 1.05).moved(AirStrike.LAUNCHER_X,
-                AirStrike.LAUNCHER_Y, AirStrike.LAUNCHER_Z));
+        pair(parts, plate(bayBack, bayFront, 270.0 + BAY_HALF_ANGLE, 270.0 + BAY_HALF_ANGLE + 3.0, 0.07, 1.55));
         // The ring's light running through it: glowing strips along the leading edges of its wings and tailplanes, a
-        // spine along its back and two seams along its belly.
+        // spine along its back and two seams along its belly, broken off round the hatch.
         pair(parts, Mesh.tube(false, 6, 0.13, 1.7, new Vec3(3.0, 2.99, 4.32), new Vec3(28.0, 3.45, 2.24)));
         pair(parts, Mesh.tube(false, 5, 0.09, 1.65, new Vec3(1.3, 2.2, -16.0), new Vec3(9.9, 2.5, -18.8)));
         parts.add(plate(-13.5, 17.2, 87.0, 93.0, 0.035, 1.55));
-        pair(parts, plate(-11.5, 17.0, 256.0, 260.0, 0.035, 1.6));
+        pair(parts, plate(-11.5, bayBack - 0.3, 256.0, 260.0, 0.035, 1.6));
+        pair(parts, plate(bayFront + 0.3, 17.0, 256.0, 260.0, 0.035, 1.6));
         // Flap track fairings: slim pods under the trailing edge of each wing, where the flaps run out on their tracks.
         for (double x : new double[] { 5.0, 9.5, 14.2, 19.5, 24.5 }) {
             double rise = 2.95 + 0.5 * (x - 1.0) / 27.0;
@@ -257,7 +292,7 @@ public final class PlanePainter {
             parts.add(Mesh.wing(1.0, z - 0.45, z + 0.35, z - 0.6, z - 0.1, 0.0, 0.12, 0.06, 1.2)
                     .turned(0.0, 0.0, 1.0, 90.0).moved(0.0, 2.8, 0.0));
         }
-        parts.add(Mesh.wing(0.8, 2.6, 3.3, 2.5, 2.9, 0.0, 0.1, 0.05, 1.2).turned(0.0, 0.0, 1.0, -90.0)
+        parts.add(Mesh.wing(0.8, 5.4, 6.1, 5.3, 5.7, 0.0, 0.1, 0.05, 1.2).turned(0.0, 0.0, 1.0, -90.0)
                 .moved(0.0, -2.55, 0.0));
         pair(parts, Mesh.cylinder(6, 0.05, 0.0, 1.3, 1.3).alongZ().moved(1.45, 0.35, 19.6));
         // Lights on the wingtips and the tail.
@@ -357,6 +392,79 @@ public final class PlanePainter {
         return parts.toArray(Mesh[]::new);
     }
 
+    /**
+     * The right door of the bomb bay: a curved plate from the middle of the belly out to its hinge, stiffened by three
+     * glowing ribs across it and a glowing lip along its free edge.
+     */
+    private static Mesh[] bayDoor() {
+        double back = AirStrike.BAY_Z - AirStrike.BAY_LENGTH * 0.5 + 0.05;
+        double front = AirStrike.BAY_Z + AirStrike.BAY_LENGTH * 0.5 - 0.05;
+        List<Mesh> parts = new ArrayList<>();
+        parts.add(plate(back, front, 270.0, 270.0 + BAY_HALF_ANGLE, 0.06, 1.08));
+        for (double z : new double[] { back + 1.6, AirStrike.BAY_Z, front - 1.6 }) {
+            parts.add(plate(z - 0.08, z + 0.08, 271.0, 270.0 + BAY_HALF_ANGLE - 1.0, 0.085, 1.45));
+        }
+        parts.add(plate(back, front, 270.2, 271.6, 0.08, 1.6));
+        return parts.toArray(Mesh[]::new);
+    }
+
+    /** The inside of the bomb bay: a dark hollow under the doors, and the glowing clamps a missile hangs from. */
+    private static Mesh[] bayInside() {
+        double back = AirStrike.BAY_Z - AirStrike.BAY_LENGTH * 0.5;
+        double front = AirStrike.BAY_Z + AirStrike.BAY_LENGTH * 0.5;
+        List<Mesh> parts = new ArrayList<>();
+        parts.add(plate(back, front, 270.0 - BAY_HALF_ANGLE, 270.0 + BAY_HALF_ANGLE, 0.012, 0.32));
+        for (double z : new double[] { AirStrike.BAY_Z - 2.2, AirStrike.BAY_Z + 2.2 }) {
+            parts.add(Mesh.box(-0.5, -1.4, z - 0.14, 0.5, -1.2, z + 0.14, 1.5));
+        }
+        return parts.toArray(Mesh[]::new);
+    }
+
+    /**
+     * A jet: a long, slim body with a pointed nose and a seam round it, a bubble canopy of bright light, two air intakes
+     * with glowing lips, swept wings with glowing leading edges, the lantern emblem and a light on each tip, a pylon under
+     * each wing, two tails canted outward, tailplanes, two small fins under its tail, a glowing spine along its back and
+     * two exhaust nozzles with a ring of light in each.
+     */
+    private static Mesh[] jet() {
+        List<Mesh> parts = new ArrayList<>();
+        parts.add(Mesh.loft(20, 1.0, new double[] { 7.4, 0.0, 0.0, -0.05 }, new double[] { 6.9, 0.2, 0.18, -0.04 },
+                new double[] { 6.0, 0.42, 0.38, 0.0 }, new double[] { 4.6, 0.62, 0.55, 0.05 },
+                new double[] { 3.0, 0.8, 0.62, 0.08 }, new double[] { 1.2, 1.1, 0.62, 0.02 },
+                new double[] { -1.8, 1.25, 0.6, 0.0 }, new double[] { -4.2, 1.2, 0.55, 0.02 },
+                new double[] { -5.5, 1.05, 0.48, 0.05 }, new double[] { -5.9, 0.0, 0.0, 0.05 }));
+        parts.add(Mesh.torus(20, 4, 0.47, 0.035, 1.45).alongZ().scaled(1.0, 0.9, 1.0).moved(0.0, 0.0, 5.7));
+        // The canopy, like glass full of light, with a frame across it.
+        parts.add(Mesh.loft(16, 1.8, new double[] { 5.2, 0.0, 0.0, 0.42 }, new double[] { 4.6, 0.28, 0.26, 0.47 },
+                new double[] { 3.4, 0.4, 0.36, 0.52 }, new double[] { 2.0, 0.34, 0.3, 0.5 },
+                new double[] { 1.2, 0.0, 0.0, 0.45 }));
+        parts.add(Mesh.tube(false, 6, 0.045, 1.25, new Vec3(-0.38, 0.5, 3.2), new Vec3(0.0, 0.9, 3.25),
+                new Vec3(0.38, 0.5, 3.2)));
+        // The intakes on its sides, each with a glowing lip.
+        pair(parts, Mesh.loft(10, 1.0, new double[] { 3.2, 0.0, 0.0, 0.0 }, new double[] { 3.1, 0.34, 0.4, 0.0 },
+                new double[] { 0.5, 0.36, 0.42, 0.0 }, new double[] { -1.2, 0.0, 0.0, 0.0 }).moved(1.05, -0.15, 0.0));
+        pair(parts, Mesh.torus(12, 4, 0.34, 0.05, 1.7).alongZ().scaled(1.0, 1.18, 1.0).moved(1.05, -0.15, 3.12));
+        // The wings, their glowing leading edges, the emblem on each, the lights on their tips and a pylon under each.
+        pair(parts, Mesh.wing(4.4, -3.8, 1.6, -4.4, -2.9, -0.15, 0.26, 0.08, 1.0).moved(1.0, -0.05, 0.0));
+        pair(parts, Mesh.tube(false, 5, 0.06, 1.7, new Vec3(1.1, 0.0, 1.55), new Vec3(5.35, -0.18, -2.9)));
+        pair(parts, emblem(0.7).moved(3.0, 0.08, -1.7));
+        pair(parts, Mesh.ball(8, 6, 0.14, 1.9).moved(5.42, -0.2, -3.6));
+        pair(parts, Mesh.box(-0.07, -0.34, -0.9, 0.07, -0.08, 0.8, 1.05).moved(AirStrike.PYLON_X, 0.0, 0.0));
+        // The tails, canted outward, with glowing leading edges, and the tailplanes.
+        pair(parts, Mesh.wing(2.6, -5.6, -3.4, -6.0, -5.0, 0.0, 0.2, 0.07, 1.0).turned(0.0, 0.0, 1.0, 70.0)
+                .moved(0.75, 0.35, 0.0));
+        pair(parts, Mesh.tube(false, 5, 0.05, 1.65, new Vec3(0.76, 0.4, -3.45), new Vec3(1.63, 2.78, -5.0)));
+        pair(parts, Mesh.wing(2.3, -6.1, -4.4, -6.3, -5.6, 0.0, 0.16, 0.06, 1.0).moved(1.05, -0.05, 0.0));
+        pair(parts, Mesh.wing(0.7, -5.2, -3.9, -5.4, -4.9, 0.0, 0.1, 0.05, 1.0).turned(0.0, 0.0, 1.0, -80.0)
+                .moved(0.7, -0.45, 0.0));
+        parts.add(Mesh.tube(false, 5, 0.05, 1.6, new Vec3(0.0, 0.62, 1.0), new Vec3(0.0, 0.58, -4.5)));
+        // The nozzles, each with a ring of light deep inside it.
+        pair(parts, Mesh.lathe(16, 1.05, 0.0, -0.9, 0.46, -0.9, 0.5, -0.2, 0.44, 0.35, 0.0, 0.35).alongZ()
+                .moved(0.55, 0.0, -5.6));
+        pair(parts, Mesh.torus(16, 4, 0.38, 0.06, 2.0).alongZ().moved(0.55, 0.0, -6.46));
+        return parts.toArray(Mesh[]::new);
+    }
+
     // ---- The plane ----
 
     /** The way the plane of this air strike flies, from what the server said about it. */
@@ -376,11 +484,13 @@ public final class PlanePainter {
         PlanePath path = path(plane);
         double crash = path.crashTick();
         double t = Math.min(clock, crash);
-        sound(id, path.at(t), clock < crash ? path.down(t) : -1.0);
+        sound(id, path, t, clock < crash ? path.down(t) : -1.0);
         if (clock < crash) {
             flying(painter, id, plane.owner(), path, clock, ring, partialTick);
+            dropping(painter, plane.owner(), path, clock, partialTick);
+            jets(painter, plane.owner(), path, clock, ring, partialTick);
         } else {
-            crashed(painter, path, clock - crash);
+            crashed(painter, plane.owner(), path, clock - crash);
         }
     }
 
@@ -401,36 +511,116 @@ public final class PlanePainter {
         double down = path.down(t);
         ConstructPainter.Frame frame = frame(path, t, Math.max(grown, 1.0E-3));
         // The pillar of light pours up out of the ring into it while it takes shape; after that a thread of the ring's
-        // light keeps hanging on it, as on every construct.
+        // light keeps hanging on it, as on every construct, and gives out as the plane struggles, before its nose
+        // drops.
         if (ring != null) {
             if (t < PILLAR_UNTIL) {
                 double fade = 1.0 - Ease.smooth((t - PlanePath.FORM) / 4.0);
                 painter.beamOfLight(ring, path.at(t), fade, t, PILLAR_THICK);
-            } else if (down <= 0.0) {
-                painter.beam(ring, frame.at(0.0, -2.6, 2.0), 0.55, 2.0);
+            } else {
+                double holds = 1.0 - Ease.smooth(path.failing(t) * 1.25);
+                if (holds > 0.01) {
+                    painter.beam(ring, frame.at(0.0, -2.6, 2.0), 0.55 * holds, 2.0);
+                }
             }
+        }
+        // Its scan and the trail of its burning engine reach far out from it: they show even with the plane itself out
+        // of view.
+        scanCone(painter, owner, frame, partialTick);
+        if (t >= path.failTick()) {
+            burning(painter, path, frame, t);
         }
         if (grown <= 0.01 || !painter.visible(frame.center(), 40.0 * grown)) {
             return;
         }
-        // White-hot as it grows out of the light, cooling to green; plunging down, its hull flickers.
-        double flicker = down > 0.0 ? 0.25 + 0.45 * down * Math.max(0.0, Math.sin(t * 1.7) * Math.sin(t * 0.63 + 2.0))
-                : 0.0;
+        // White-hot as it grows out of the light, cooling to green; plunging down, its hull flickers, more and more.
+        double flicker = Ease.smooth(down / 0.15)
+                * (0.25 + 0.45 * down * Math.max(0.0, Math.sin(t * 1.7) * Math.sin(t * 0.63 + 2.0)));
         double hot = 0.6 * (1.0 - Ease.smooth((t - GROW_FROM) / GROW_TICKS));
         painter.glare(Math.max(hot, flicker));
         painter.ambient(GLOWS);
         painter.shape(BODY, frame, 1.0, 1.0 + 0.3 * flicker);
         propellers(painter, path, frame, t, grown);
-        guns(painter, id, owner, frame, t, grown, partialTick);
-        launchers(painter, owner, frame, grown, partialTick);
+        guns(painter, id, owner, path, frame, t, grown);
+        hatch(painter, path, frame, t);
         painter.ambient(0.0);
         painter.glare(0.0);
         lights(painter, frame, t, down);
         engines(painter, path, frame, t, grown);
-        scanCone(painter, owner, frame, partialTick);
-        if (t >= path.diveTick() - AirStrike.FAILING) {
-            burning(painter, path, frame, t);
+    }
+
+    /** How many ticks there are between two missiles out of the hatch, as the world's settings have it. */
+    private static int missileEvery() {
+        CharacterAbility strike = GameCharacter.GREEN_LANTERN.byName("air_strike");
+        return Math.max(4, strike == null ? 40 : strike.intValue("missileTicks"));
+    }
+
+    /**
+     * The bomb bay: its two doors swing open on their hinges (and the dark hollow behind them shows) before a missile
+     * drops, the missile is lowered out of it, and the doors swing shut again once it is clear.
+     */
+    private static void hatch(LanternPainter painter, PlanePath path, ConstructPainter.Frame frame, double t) {
+        int every = missileEvery();
+        double open = path.hatch(t, every);
+        if (open > 0.0) {
+            painter.shape(BAY_INSIDE, frame, 1.0, 1.0);
         }
+        // Each door turns about its hinge, where it meets the body, outwards and down.
+        double[] hull = hull(AirStrike.BAY_Z);
+        double hinge = Math.toRadians(270.0 + BAY_HALF_ANGLE);
+        double hingeX = hull[1] * Math.cos(hinge);
+        double hingeY = hull[3] + hull[2] * Math.sin(hinge);
+        double swing = DOOR_OPEN * Ease.smoother(open);
+        for (int side = -1; side <= 1; side += 2) {
+            ConstructPainter.Frame door = side > 0 ? frame : frame.stretched(-1.0, 1.0, 1.0);
+            painter.shape(BAY_DOOR, door.turned(hingeX, hingeY, 0.0, 0.0, 0.0, 1.0, swing), 1.0, 1.0);
+        }
+        double lowered = path.lowered(t, every);
+        if (open > 0.0 && lowered >= 0.0) {
+            double y = Mth.lerp(lowered, IN_BAY_Y, AirStrike.DROP_Y);
+            ConstructPainter.Frame missile = new ConstructPainter.Frame(frame.at(0.0, y, AirStrike.BAY_Z),
+                    frame.right(), frame.up(), frame.forward(), frame.scale() * MISSILE_SCALE);
+            painter.shape(MISSILE, missile, 1.0, 1.0);
+        }
+    }
+
+    /**
+     * The big missiles that just dropped out of the hatch, falling away under the plane with their motors dead, the way
+     * the server moves them (see {@link PlanePath#fall}), from the very spot they hung in the hatch: until each one's
+     * motor fires or it strikes, when it is drawn as a missile of its own (see {@link ClientConstructs#launch}).
+     */
+    private static void dropping(LanternPainter painter, int owner, PlanePath path, double t, float partialTick) {
+        int every = missileEvery();
+        for (int release = path.lastRelease(t, every); release >= 0 && t - release <= AirStrike.IGNITE_LATEST + 2;
+                release -= every) {
+            ClientConstructs.Launch launch = ClientConstructs.launch(owner, AirStrike.BIG_MISSILE, release,
+                    partialTick);
+            double since = launch == null ? t - release : launch.since();
+            double until = launch == null ? EARLIEST_IGNITION : launch.leaves();
+            if (since >= 0.0 && since <= until) {
+                Vec3[] state = falling(path.dropsOut(release), false, since);
+                missile(painter, false, state[0], state[1], state[2], -1.0, -1.0);
+            }
+            if (release - every < PlanePath.FORM + PlanePath.MISSILE_FIRST) {
+                break;
+            }
+        }
+    }
+
+    /**
+     * A missile let go of {@code since} ticks ago, still falling with its motor dead (see {@link PlanePath#fall}), from
+     * how it was let go: {where it is, its nose, its up}, smooth between the ticks.
+     */
+    private static Vec3[] falling(Vec3[] released, boolean small, double since) {
+        int ticks = (int) Math.floor(Math.max(0.0, since));
+        Vec3[] state = released;
+        for (int k = 0; k < ticks; k++) {
+            state = PlanePath.fall(state, small);
+        }
+        Vec3[] next = PlanePath.fall(state, small);
+        double u = Mth.clamp(since - ticks, 0.0, 1.0);
+        Vec3 nose = state[2].lerp(next[2], u).normalize();
+        return new Vec3[] { state[0].lerp(next[0], u), nose, PlanePath.carried(state[3].lerp(next[3], u), nose) };
     }
 
     /**
@@ -439,21 +629,14 @@ public final class PlanePainter {
      */
     private static void propellers(LanternPainter painter, PlanePath path, ConstructPainter.Frame frame, double t,
             double grown) {
-        double failed = path.diveTick() - AirStrike.FAILING;
-        double[] xs = { -AirStrike.ENGINE_OUTER_X, -AirStrike.ENGINE_X, AirStrike.ENGINE_X, AirStrike.ENGINE_OUTER_X };
-        for (int e = 0; e < xs.length; e++) {
-            boolean bursts = e == 2;
-            double spun = spun(t);
+        double failed = path.failTick();
+        for (int e = 0; e < ENGINES.length; e++) {
             double speed = PROP_SPIN * Ease.smooth((t - GROW_FROM) / 40.0);
-            if (bursts && t > failed) {
-                double after = t - failed;
-                spun = spun(failed) + PROP_SPIN * PROP_DIES * (1.0 - Math.exp(-after / PROP_DIES));
-                speed = PROP_SPIN * Math.exp(-after / PROP_DIES);
+            if (e == 2 && t > failed) {
+                speed = PROP_SPIN * Math.exp(-(t - failed) / PROP_DIES);
             }
-            // The left ones turn the other way round, as they would on a real plane.
-            double angle = (e < 2 ? -spun : spun) + e * 0.7;
-            ConstructPainter.Frame hub = frame.moved(xs[e], AirStrike.ENGINE_Y, AirStrike.ENGINE_Z);
-            painter.shape(PROPELLER, hub.turned(0.0, 0.0, 0.0, 0.0, 0.0, 1.0, angle), 1.0, 1.0);
+            ConstructPainter.Frame hub = frame.moved(ENGINES[e], AirStrike.ENGINE_Y, AirStrike.ENGINE_Z);
+            painter.shape(PROPELLER, hub.turned(0.0, 0.0, 0.0, 0.0, 0.0, 1.0, propeller(path, e, t)), 1.0, 1.0);
             // Turning fast, the air round its blades shimmers: a faint ring of light where their tips run.
             double blur = Mth.clamp(speed / PROP_SPIN, 0.0, 1.0) * grown;
             if (blur > 0.05) {
@@ -471,40 +654,152 @@ public final class PlanePainter {
     }
 
     /**
-     * The two miniguns: each swings round on its ball to where it last fired and back to rest when it has nothing to fire
-     * at, its barrels spinning as it fires and its muzzle flashing with every round.
+     * How far propeller {@code e} (see {@link #ENGINES}) is turned about its hub {@code t} ticks after the call, in
+     * radians: the one that bursts runs down after the burst and stands still, and the left ones turn the other way
+     * round, as they would on a real plane.
      */
-    private static void guns(LanternPainter painter, int id, int owner, ConstructPainter.Frame frame, double t,
-            double grown, float partialTick) {
-        double[] turned = BARRELS_TURNED.computeIfAbsent(id, key -> new double[] { 0.0, 0.0, t, 0.0, 0.0 });
-        double step = Math.max(0.0, t - turned[2]);
-        turned[2] = t;
+    private static double propeller(PlanePath path, int e, double t) {
+        double failed = path.failTick();
+        double spun = spun(t);
+        if (e == 2 && t > failed) {
+            spun = spun(failed) + PROP_SPIN * PROP_DIES * (1.0 - Math.exp(-(t - failed) / PROP_DIES));
+        }
+        return (e < 2 ? -spun : spun) + e * 0.7;
+    }
+
+    /**
+     * The plane's own moving parts breaking up with it (see {@link ConstructPainter#shattered}), as they were when it
+     * broke: its propellers, its miniguns as they pointed, and the doors of its hatch.
+     */
+    private static void partsBroken(LanternPainter painter, int owner, PlanePath path, ConstructPainter.Frame frame,
+            double t, double apart, double bright) {
+        for (int e = 0; e < ENGINES.length; e++) {
+            painter.shattered(PROPELLER, frame.moved(ENGINES[e], AirStrike.ENGINE_Y, AirStrike.ENGINE_Z)
+                    .turned(0.0, 0.0, 0.0, 0.0, 0.0, 1.0, propeller(path, e, t)), apart, bright);
+        }
+        Guns guns = GUNS.get(owner);
+        for (int gun = 0; gun < 2; gun++) {
+            double side = gun == 0 ? -1.0 : 1.0;
+            Vec3 aim = guns != null && guns.drawn[gun] != null ? guns.drawn[gun] : path.gunRest(gun, t);
+            Vec3 up = guns != null && guns.up[gun] != null ? guns.up[gun] : frame.up();
+            ConstructPainter.Frame mount = ConstructPainter.Frame.of(frame.at(side * AirStrike.GUN_X, AirStrike.GUN_Y,
+                    AirStrike.GUN_Z), aim, up, frame.scale());
+            painter.shattered(GUN, mount, apart, bright);
+            double turned = guns == null ? 0.0 : guns.turned[gun];
+            painter.shattered(BARRELS, mount.turned(0.0, 0.0, 0.0, 0.0, 0.0, 1.0, turned), apart, bright);
+        }
+        double[] hull = hull(AirStrike.BAY_Z);
+        double hinge = Math.toRadians(270.0 + BAY_HALF_ANGLE);
+        double swing = DOOR_OPEN * Ease.smoother(path.hatch(t, missileEvery()));
+        for (int side = -1; side <= 1; side += 2) {
+            ConstructPainter.Frame door = side > 0 ? frame : frame.stretched(-1.0, 1.0, 1.0);
+            painter.shattered(BAY_DOOR, door.turned(hull[1] * Math.cos(hinge), hull[3] + hull[2] * Math.sin(hinge), 0.0,
+                    0.0, 0.0, 1.0, swing), apart, bright);
+        }
+    }
+
+    /**
+     * How the two miniguns of one player's plane swing and spin (0 the left one, 1 the right one): how each swings,
+     * worked out just as the server works it out (see {@link PlanePath.Turret}), and what is kept from frame to frame
+     * so they move smoothly.
+     */
+    private static final class Guns {
+        private final int plane;
+        private final PlanePath path;
+        private final PlanePath.Turret[] turrets;
+        // How far its barrels have turned, in radians, and how fast they turn now.
+        private final double[] turned = new double[2];
+        private final double[] spin = new double[2];
+        // The way each was drawn pointing last and its up (null until it is first drawn), and what is left of a swing
+        // over to where it really points after news came in late (its axis times its angle; null when there is none),
+        // from when.
+        private final Vec3[] drawn = new Vec3[2];
+        private final Vec3[] up = new Vec3[2];
+        private final Vec3[] catching = new Vec3[2];
+        private final double[] caughtFrom = new double[2];
+        // The plane's clock when they were drawn last.
+        private double last = Double.NaN;
+
+        Guns(int plane, PlanePath path) {
+            this.plane = plane;
+            this.path = path;
+            this.turrets = new PlanePath.Turret[] { new PlanePath.Turret(path, 0), new PlanePath.Turret(path, 1) };
+        }
+    }
+
+    /** The miniguns of this player's plane, new with every plane he calls. */
+    private static Guns guns(int owner, int plane, PlanePath path) {
+        Guns guns = GUNS.get(owner);
+        if (guns == null || guns.plane != plane) {
+            guns = new Guns(plane, path);
+            GUNS.put(owner, guns);
+        }
+        return guns;
+    }
+
+    /**
+     * A round one of the miniguns of this plane fired: from then on its gun swings to where the round says it is to
+     * point next, just as it does on the server.
+     */
+    public static void fired(ConstructPayload plane, ConstructPayload round) {
+        Vec3 next = round.facing();
+        if (next.lengthSqr() < 1.0E-6 || round.variant() < 0 || round.variant() > 1) {
+            return;
+        }
+        guns(round.owner(), plane.id(), path(plane)).turrets[round.variant()].fired(Math.round(round.charge()),
+                next.normalize());
+    }
+
+    /**
+     * The two miniguns: each swings smoothly round on its ball to where it is told to fire, and back to rest when it
+     * has nothing to fire at (see {@link PlanePath.Turret}), its barrels spinning as it fires and its muzzle flashing
+     * with every round. Its roll is carried along as it swings, so it never flips over, however far down it points.
+     */
+    private static void guns(LanternPainter painter, int id, int owner, PlanePath path, ConstructPainter.Frame frame,
+            double t, double grown) {
+        Guns state = guns(owner, id, path);
+        double step = Double.isNaN(state.last) ? 0.0 : Mth.clamp(t - state.last, 0.0, 5.0);
+        state.last = t;
         for (int gun = 0; gun < 2; gun++) {
             double side = gun == 0 ? -1.0 : 1.0;
             Vec3 pivot = frame.at(side * AirStrike.GUN_X, AirStrike.GUN_Y, AirStrike.GUN_Z);
-            Vec3 rest = frame.forward().scale(0.3).add(frame.right().scale(side * 0.8)).add(frame.up().scale(-0.55))
-                    .normalize();
-            List<ClientConstructs.Shot> shots = ClientConstructs.shots(owner, gun, partialTick);
-            Vec3 aim = rest;
-            double since = Double.MAX_VALUE;
-            if (!shots.isEmpty()) {
-                ClientConstructs.Shot last = shots.get(0);
-                since = last.clock();
-                Vec3 newest = last.to().subtract(pivot).normalize();
-                Vec3 before = shots.size() > 1 ? shots.get(1).to().subtract(pivot).normalize() : newest;
-                // It swings smoothly from where it fired the round before to where it fired the last one.
-                aim = before.lerp(newest, Ease.smooth(since / 3.0)).normalize();
-                double back = Ease.smooth((since - GUN_HOLDS) / GUN_BACK);
-                aim = aim.lerp(rest, back).normalize();
+            PlanePath.Turret turret = state.turrets[gun];
+            Vec3 aim = turret.aim(t);
+            if (turret.revised() && state.drawn[gun] != null) {
+                // Where it was told to point came in late: it swings over from where it was drawn, smoothly.
+                Vec3 axis = aim.cross(state.drawn[gun]);
+                double angle = Math.atan2(axis.length(), aim.dot(state.drawn[gun]));
+                state.catching[gun] = axis.lengthSqr() < 1.0E-12 ? null : axis.normalize().scale(angle);
+                state.caughtFrom[gun] = t;
             }
+            if (state.catching[gun] != null) {
+                double left = state.catching[gun].length() * Math.exp(-(t - state.caughtFrom[gun]) / GUN_CATCHES_UP);
+                if (left < 1.0E-3) {
+                    state.catching[gun] = null;
+                } else {
+                    aim = Vectors.spin(aim, state.catching[gun].normalize(), left).normalize();
+                }
+            }
+            state.drawn[gun] = aim;
+            // Its up is carried along as it swings, and levels out with the plane again at its ease wherever that is
+            // clear (not while it points straight down).
+            Vec3 up = PlanePath.carried(state.up[gun] == null ? frame.up() : state.up[gun], aim);
+            Vec3 level = frame.up().subtract(aim.scale(frame.up().dot(aim)));
+            double clear = Mth.clamp((level.lengthSqr() - 0.05) / 0.2, 0.0, 1.0);
+            if (clear > 0.0) {
+                up = PlanePath.carried(up.lerp(level.normalize(), clear * (1.0 - Math.exp(-step / GUN_LEVELS))), aim);
+            }
+            state.up[gun] = up;
+            int fired = turret.lastFired(t);
+            double since = fired < 0 ? Double.MAX_VALUE : t - fired;
             // The barrels spin up as it fires and run down after.
-            double want = since < 8.0 ? BARREL_SPIN : 0.0;
-            turned[3 + gun] = Mth.lerp(1.0 - Math.exp(-step / (want > turned[3 + gun] ? 3.0 : BARREL_DIES)),
-                    turned[3 + gun], want);
-            turned[gun] += turned[3 + gun] * step;
-            ConstructPainter.Frame mount = ConstructPainter.Frame.of(pivot, aim, frame.up(), frame.scale());
+            double wantSpin = since < 8.0 ? BARREL_SPIN : 0.0;
+            state.spin[gun] = Mth.lerp(1.0 - Math.exp(-step / (wantSpin > state.spin[gun] ? 3.0 : BARREL_DIES)),
+                    state.spin[gun], wantSpin);
+            state.turned[gun] += state.spin[gun] * step;
+            ConstructPainter.Frame mount = ConstructPainter.Frame.of(pivot, aim, up, frame.scale());
             painter.shape(GUN, mount, 1.0, 1.0);
-            painter.shape(BARRELS, mount.turned(0.0, 0.0, 0.0, 0.0, 0.0, 1.0, turned[gun]), 1.0, 1.0);
+            painter.shape(BARRELS, mount.turned(0.0, 0.0, 0.0, 0.0, 0.0, 1.0, state.turned[gun]), 1.0, 1.0);
             if (since < 3.0) {
                 // The muzzle flashes with the round going out: a burst of light, a star of flame and a puff of light
                 // blown out ahead of it.
@@ -512,31 +807,11 @@ public final class PlanePainter {
                 Vec3 muzzle = mount.at(0.0, 0.0, AirStrike.GUN_LENGTH + 0.4);
                 painter.flare(muzzle, 3.4 * grown * (0.6 + 0.4 * flash), flash);
                 for (int k = 0; k < 5; k++) {
-                    Vec3 ray = Noise.direction((int) (t / 2.0), 211 + k).scale(0.55).add(aim);
+                    Vec3 ray = Noise.direction(fired, 211 + k).scale(0.55).add(aim);
                     painter.edge(muzzle, muzzle.add(ray.normalize().scale(3.6 * flash)), 0.3, flash);
                 }
                 painter.edge(muzzle, muzzle.add(aim.scale(5.5 * flash)), 0.55, 0.9 * flash);
             }
-        }
-    }
-
-    /** The two launchers: a missile on each rail, and the next one growing out of the light once it has fired. */
-    private static void launchers(LanternPainter painter, int owner, ConstructPainter.Frame frame, double grown,
-            float partialTick) {
-        for (int side = 0; side < 2; side++) {
-            double x = (side == 0 ? -1.0 : 1.0) * AirStrike.LAUNCHER_X;
-            double since = ClientConstructs.missileSince(owner, side, partialTick);
-            double load = since < 0.0 ? 1.0 : Ease.backOut((since - 2.0) / AirStrike.RELOAD_TICKS);
-            if (load <= 0.01) {
-                continue;
-            }
-            ConstructPainter.Frame rail = frame.moved(x, AirStrike.LAUNCHER_Y, AirStrike.LAUNCHER_Z);
-            ConstructPainter.Frame missile = new ConstructPainter.Frame(rail.center(), frame.right(), frame.up(),
-                    frame.forward(), frame.scale() * load * MISSILE_SCALE);
-            boolean growing = since >= 0.0 && since < AirStrike.RELOAD_TICKS + 2.0;
-            painter.glare(growing ? 0.6 * (1.0 - load) : 0.0);
-            painter.shape(MISSILE, missile, 1.0, 1.0);
-            painter.glare(0.0);
         }
     }
 
@@ -554,7 +829,7 @@ public final class PlanePainter {
             painter.flare(frame.at(side * 0.85, -2.3, 17.0), 1.3 * s, 0.7);
         }
         painter.flare(frame.at(0.0, 2.45, -22.75), (0.5 + 1.4 * tail) * s, 0.35 + 0.6 * tail);
-        painter.flare(frame.at(0.0, -2.75, 1.5), (0.4 + 2.2 * beacon) * s, 0.3 + 0.7 * beacon);
+        painter.flare(frame.at(0.0, -2.75, 7.0), (0.4 + 2.2 * beacon) * s, 0.3 + 0.7 * beacon);
         painter.flare(frame.at(0.0, 3.5, 1.5), (0.4 + 1.8 * beacon) * s, 0.3 + 0.7 * beacon);
         if (down > 0.0) {
             // Going down, the tips of its wings trail streaks of light.
@@ -572,7 +847,7 @@ public final class PlanePainter {
         if (power <= 0.01) {
             return;
         }
-        double failed = path.diveTick() - AirStrike.FAILING;
+        double failed = path.failTick();
         Vec3 back = frame.forward().scale(-1.0);
         double s = frame.scale();
         double[] xs = { -AirStrike.ENGINE_OUTER_X, -AirStrike.ENGINE_X, AirStrike.ENGINE_X, AirStrike.ENGINE_OUTER_X };
@@ -619,7 +894,7 @@ public final class PlanePainter {
      * of light and sparks follows the plane down.
      */
     private static void burning(LanternPainter painter, PlanePath path, ConstructPainter.Frame frame, double t) {
-        double failed = path.diveTick() - AirStrike.FAILING;
+        double failed = path.failTick();
         double after = t - failed;
         double s = frame.scale();
         Vec3 engine = frame.at(AirStrike.ENGINE_X, AirStrike.ENGINE_Y, 1.0);
@@ -664,10 +939,28 @@ public final class PlanePainter {
     public static void broken(LanternPainter painter, ConstructPayload plane, double clock, double since) {
         PlanePath path = path(plane);
         double t = Math.min(clock - since, path.crashTick());
+        double apart = since / BREAK_TICKS;
         ConstructPainter.Frame frame = frame(path, t, Math.max(grown(t), 1.0E-3));
         painter.glare(0.5 * Math.max(0.0, 1.0 - since / 6.0));
         painter.fling(AIR_FLING);
-        painter.shattered(BODY, frame, since / BREAK_TICKS, 1.2);
+        painter.shattered(BODY, frame, apart, 1.2);
+        partsBroken(painter, plane.owner(), path, frame, t, apart, 1.2);
+        // Its jets break up where they were too, with the missiles under their wings.
+        painter.fling(2.5);
+        for (int k = 0; k < PlanePath.JETS; k++) {
+            if (!path.hasJet(k) || t < path.jetFrom(k) || path.jetsFled(t) >= PlanePath.JET_GONE) {
+                continue;
+            }
+            Vec3[] axes = path.jetAxes(k, t);
+            ConstructPainter.Frame jet = ConstructPainter.Frame.of(path.jetAt(k, t), axes[0], axes[1],
+                    JET_SCALE * Math.max(path.jetGrown(k, t), 1.0E-3));
+            painter.shattered(JET, jet, apart, 1.2);
+            for (int side = -1; side <= 1; side += 2) {
+                painter.shattered(MISSILE, new ConstructPainter.Frame(jet.at(side * AirStrike.PYLON_X,
+                        AirStrike.PYLON_Y, AirStrike.PYLON_Z), jet.right(), jet.up(), jet.forward(),
+                        jet.scale() * SMALL_MISSILE_SCALE), apart, 1.2);
+            }
+        }
         painter.fling(1.0);
         painter.glare(0.0);
     }
@@ -678,13 +971,14 @@ public final class PlanePainter {
      *
      * @param since ticks since it struck the ground
      */
-    private static void crashed(LanternPainter painter, PlanePath path, double since) {
+    private static void crashed(LanternPainter painter, int owner, PlanePath path, double since) {
         double apart = since / BREAK_TICKS;
         if (apart < 1.0) {
             ConstructPainter.Frame frame = frame(path, path.crashTick(), 1.0);
             painter.glare(Math.max(0.0, 0.9 - since / 10.0));
             painter.fling(CRASH_FLING);
             painter.shattered(BODY, frame, apart, 1.4);
+            partsBroken(painter, owner, path, frame, path.crashTick(), apart, 1.4);
             painter.fling(1.0);
             painter.glare(0.0);
         }
@@ -831,91 +1125,336 @@ public final class PlanePainter {
         }
     }
 
+    // ---- The jets ----
+
+    /**
+     * The two jets: each grows out of a thread of the ring's light beside the plane, white-hot and cooling to green, and
+     * races round it, banking into its turns, its flames burning, the air streaming off its wingtips and a small missile
+     * under each wing (the next one growing out of the light once it has fired). Once the plane's engine bursts they
+     * break away: their flames roar out, a cone of mist forms round them as they break the sound barrier with a ring of
+     * light, and a moment later they are gone in a star of light, breaking into solid pieces.
+     */
+    private static void jets(LanternPainter painter, int owner, PlanePath path, double t, @Nullable Vec3 ring,
+            float partialTick) {
+        double fled = path.jetsFled(t);
+        for (int k = 0; k < PlanePath.JETS; k++) {
+            if (!path.hasJet(k) || t < path.jetFrom(k)) {
+                continue;
+            }
+            if (fled >= PlanePath.JET_GONE) {
+                gone(painter, path, k, fled - PlanePath.JET_GONE);
+                continue;
+            }
+            double since = t - path.jetFrom(k);
+            double grown = path.jetGrown(k, t);
+            Vec3 at = path.jetAt(k, t);
+            Vec3[] axes = path.jetAxes(k, t);
+            ConstructPainter.Frame frame = ConstructPainter.Frame.of(at, axes[0], axes[1],
+                    JET_SCALE * Math.max(grown, 1.0E-3));
+            if (since < PlanePath.JET_GROWS + 6.0) {
+                // The ring's light pours into it as it takes shape (the plane's own, with its maker out of sight).
+                double fade = 1.0 - Ease.smooth((since - PlanePath.JET_GROWS) / 6.0);
+                Vec3 from = ring != null ? ring : path.point(t, (k == 0 ? -1.0 : 1.0) * PlanePath.JET_WING, 3.2, 0.4);
+                painter.beamOfLight(from, at, fade, since, 1.3);
+            }
+            double speed = path.jetSpeed(k, t);
+            if (painter.visible(at, 12.0 + 2.0 * speed)) {
+                double hot = 0.65 * (1.0 - Ease.smooth(since / (PlanePath.JET_GROWS + 4.0)));
+                painter.glare(hot);
+                painter.ambient(GLOWS);
+                painter.shape(JET, frame, 1.0, 1.0);
+                pylons(painter, owner, path, k, frame, t, hot, partialTick);
+                painter.ambient(0.0);
+                painter.glare(0.0);
+            }
+            flames(painter, frame, speed, fled, grown);
+            if (fled > -4.0) {
+                soundBarrier(painter, path, k, frame, fled);
+            }
+        }
+    }
+
+    /**
+     * The small missile under each wing of a jet. One it fires drops off its pylon and falls away under it with its
+     * motor dead, the way the server moves it (see {@link PlanePath#fall}), until its motor fires (see
+     * {@link ClientConstructs#launch}); meanwhile the next one grows out of the light on the pylon, timed from when the
+     * last one was fired however soon that one struck.
+     */
+    private static void pylons(LanternPainter painter, int owner, PlanePath path, int k, ConstructPainter.Frame frame,
+            double t, double hot, float partialTick) {
+        for (int side = 0; side < 2; side++) {
+            int variant = AirStrike.JET_MISSILE + 2 * k + side;
+            int fired = ClientConstructs.launched(owner, variant);
+            ClientConstructs.Launch launch = fired < 0 ? null
+                    : ClientConstructs.launch(owner, variant, fired, partialTick);
+            double since = fired < 0 ? -1.0 : launch == null ? t - fired : launch.since();
+            if (since >= 0.0 && since <= (launch == null ? AirStrike.SMALL_IGNITES : launch.leaves())) {
+                Vec3[] state = falling(path.firedOff(k, side, fired), true, since);
+                painter.glare(0.0);
+                missile(painter, true, state[0], state[1], state[2], -1.0, -1.0);
+            }
+            double load = since < 0.0 ? 1.0 : Ease.backOut((since - 2.0) / AirStrike.RELOAD_TICKS);
+            if (load <= 0.01) {
+                continue;
+            }
+            Vec3 at = frame.at((side == 0 ? -1.0 : 1.0) * AirStrike.PYLON_X, AirStrike.PYLON_Y, AirStrike.PYLON_Z);
+            ConstructPainter.Frame missile = new ConstructPainter.Frame(at, frame.right(), frame.up(),
+                    frame.forward(), frame.scale() * load * SMALL_MISSILE_SCALE);
+            boolean growing = since >= 0.0 && since < AirStrike.RELOAD_TICKS + 2.0;
+            painter.glare(growing ? Math.max(hot, 0.6 * (1.0 - load)) : hot);
+            painter.ambient(GLOWS);
+            painter.shape(MISSILE, missile, 1.0, 1.0);
+        }
+        painter.glare(hot);
+        painter.ambient(GLOWS);
+    }
+
+    /**
+     * The flames out of a jet's two nozzles, longer the faster it goes and roaring out once it breaks away; the air
+     * streaming off its wingtips as it banks; and a long streak of light behind it once it races off.
+     */
+    private static void flames(LanternPainter painter, ConstructPainter.Frame frame, double speed, double fled,
+            double grown) {
+        double s = frame.scale();
+        Vec3 back = frame.forward().scale(-1.0);
+        double burn = (fled > 0.0 ? Math.min(1.0, 0.6 + fled / 6.0) : 0.55) * Math.min(1.0, grown);
+        double length = (3.0 + 1.6 * Math.min(speed, 12.0)) * s;
+        for (int side = -1; side <= 1; side += 2) {
+            painter.exhaust(frame.at(side * 0.55, 0.0, -6.5), back, length, 0.4 * s, burn);
+        }
+        double bank = Mth.clamp(1.0 - frame.up().y, 0.0, 1.0);
+        if (bank > 0.05 && fled < 0.0) {
+            for (int side = -1; side <= 1; side += 2) {
+                Vec3 tip = frame.at(side * 5.42, -0.2, -3.6);
+                painter.edge(tip, tip.add(back.scale((4.0 + 10.0 * bank) * s)), 0.07 * s, Math.min(0.7, 1.4 * bank));
+            }
+        }
+        if (fled > 0.0) {
+            Vec3 tail = frame.at(0.0, 0.0, -6.5);
+            double streak = Math.min(60.0, 2.5 * speed * Math.min(1.0, fled / 4.0));
+            painter.edge(tail, tail.add(back.scale(streak)), 0.5 * s, 0.7);
+            painter.edge(tail, tail.add(back.scale(streak * 0.5)), 1.1 * s, 0.35);
+        }
+    }
+
+    /**
+     * A jet breaking the sound barrier: a cone of mist builds round its body as it nears the speed of sound and is torn
+     * off it with a boom, a flash where it broke through and rings of light racing out from there.
+     *
+     * @param fled ticks since it broke away
+     */
+    private static void soundBarrier(LanternPainter painter, PlanePath path, int k, ConstructPainter.Frame frame,
+            double fled) {
+        double since = fled - PlanePath.JET_BOOM;
+        if (since < -4.0 || since > 12.0) {
+            return;
+        }
+        double s = frame.scale();
+        double mist = since < 0.0 ? Ease.smooth((since + 4.0) / 4.0) : 1.0 - Ease.smooth(since / 5.0);
+        if (mist > 0.01) {
+            for (int c = 0; c < 7; c++) {
+                double fade = mist * (1.0 - c / 8.0);
+                painter.circle(frame.at(0.0, 0.0, 2.4 - c * 0.95), frame.right(), frame.up(), (1.1 + c * 0.42) * s,
+                        0.06 * s, 0.9 * s, Colors.alpha(0.55 * fade), Colors.alpha(0.25 * fade));
+            }
+            painter.haze(frame.at(0.0, 0.0, -0.6), frame.right().scale(2.8 * s), frame.up().scale(2.8 * s),
+                    frame.forward().scale(3.6 * s), LanternPainter.HOT, 0.35 * mist);
+        }
+        if (since >= 0.0) {
+            double boom = path.failTick() + PlanePath.JET_BOOM;
+            Vec3 where = path.jetAt(k, boom);
+            Vec3[] across = Vectors.across(path.jetAxes(k, boom)[0]);
+            double ring = 1.0 - Math.pow(1.0 - Math.min(1.0, since / 9.0), 2.0);
+            double fade = 1.0 - since / 12.0;
+            painter.circle(where, across[0], across[1], 2.0 + 26.0 * ring, 0.35, 2.6, Colors.alpha(0.9 * fade),
+                    Colors.alpha(0.4 * fade));
+            painter.circle(where, across[0], across[1], 1.0 + 16.0 * ring, 0.2, 1.6, Colors.alpha(0.6 * fade),
+                    Colors.alpha(0.3 * fade));
+            painter.flare(where, (10.0 + 14.0 * ring) * fade, fade);
+        }
+    }
+
+    /**
+     * A jet that raced off is gone: it breaks into solid pieces in a star of light, and the pieces and the star fly on
+     * the way it went, slowing down, instead of stopping dead where it broke.
+     *
+     * @param since ticks since it went
+     */
+    private static void gone(LanternPainter painter, PlanePath path, int k, double since) {
+        double t = path.failTick() + PlanePath.JET_GONE;
+        Vec3 at = path.jetAt(k, t).add(path.jetVelocity(k, t).scale(JET_FLIES_ON
+                * (1.0 - Math.exp(-since / JET_FLIES_ON))));
+        if (since < JET_BREAKS) {
+            Vec3[] axes = path.jetAxes(k, t);
+            painter.glare(0.9 - 0.5 * since / JET_BREAKS);
+            painter.fling(2.5);
+            painter.shattered(JET, ConstructPainter.Frame.of(at, axes[0], axes[1], JET_SCALE), since / JET_BREAKS,
+                    1.4);
+            painter.fling(1.0);
+            painter.glare(0.0);
+        }
+        star(painter, at, since);
+    }
+
+    /**
+     * A star of light that flashes up sharp and bright and dies away, turning a little: four long spikes and four short
+     * ones, a flare and a ring widening round it. It grows with how far off it is, so it shows from afar too.
+     */
+    private static void star(LanternPainter painter, Vec3 at, double since) {
+        double life = 1.0 - since / STAR_TICKS;
+        if (life <= 0.0) {
+            return;
+        }
+        Vec3 view = at.subtract(painter.camera());
+        double far = view.length();
+        Vec3[] across = Vectors.across(far < 1.0E-6 ? new Vec3(0.0, 0.0, 1.0) : view.scale(1.0 / far));
+        double size = 3.0 + far * 0.045;
+        double pop = Ease.smooth(since / 1.5);
+        double shine = pop * life * life;
+        double turn = since * 0.04;
+        Vec3 a = across[0].scale(Math.cos(turn)).add(across[1].scale(Math.sin(turn)));
+        Vec3 b = across[0].scale(-Math.sin(turn)).add(across[1].scale(Math.cos(turn)));
+        double spike = size * 3.2 * pop * (0.4 + 0.6 * life);
+        for (Vec3 way : new Vec3[] { a, b }) {
+            painter.edge(at.subtract(way.scale(spike)), at.add(way.scale(spike)), size * 0.12 * shine, shine);
+        }
+        for (Vec3 way : new Vec3[] { a.add(b).normalize(), a.subtract(b).normalize() }) {
+            painter.edge(at.subtract(way.scale(spike * 0.4)), at.add(way.scale(spike * 0.4)), size * 0.07 * shine,
+                    0.8 * shine);
+        }
+        painter.flare(at, size * (1.2 + 1.4 * life), shine);
+        painter.circle(at, a, b, size * (0.6 + 2.2 * (1.0 - life)), 0.1 * size, 0.6 * size, Colors.alpha(0.7 * shine),
+                Colors.alpha(0.3 * shine));
+    }
+
     // ---- What it fires ----
 
     /**
-     * A homing missile of hard light on its way: it drops off its rail, its motor lights with a flash, and it streaks on
-     * trailing its own flame and a long, thinning streak of light.
+     * A missile of hard light, a big one out of the hatch or a jet's {@code small} one, its middle at {@code at}, its
+     * nose along {@code nose} and its roll given by {@code up} (carried along as it swings, so it never flips over). A
+     * big one falls with its motor dead until the motor bursts into life with a flash; a jet's small one lights its
+     * motor almost at once. Burning ({@code burning} ticks since its motor fired, below 0 before), it streaks on
+     * trailing its own flame and a long, thinning streak of light. Once it has struck ({@code broken} ticks ago, below
+     * 0 before) it bursts into solid pieces flung out from where it was.
      */
-    public static void missile(LanternPainter painter, Vec3 at, Vec3 way, double clock) {
-        Vec3 forward = way.lengthSqr() < 1.0E-6 ? new Vec3(0.0, -1.0, 0.0) : way.normalize();
-        ConstructPainter.Frame frame = ConstructPainter.Frame.of(at, forward, Vectors.UP, MISSILE_SCALE);
+    public static void missile(LanternPainter painter, boolean small, Vec3 at, Vec3 nose, Vec3 up, double burning,
+            double broken) {
+        double scale = small ? SMALL_MISSILE_SCALE : MISSILE_SCALE;
+        Vec3 forward = nose.lengthSqr() < 1.0E-6 ? new Vec3(0.0, -1.0, 0.0) : nose.normalize();
+        ConstructPainter.Frame frame = ConstructPainter.Frame.of(at, forward, up, scale);
+        if (broken >= 0.0) {
+            // Fast at first, then slowing: out of the blast's flash.
+            double apart = 1.0 - Math.pow(1.0 - Math.min(1.0, broken / MISSILE_BREAKS), 2.0);
+            if (apart < 1.0) {
+                painter.glare(Math.max(0.0, 0.8 - broken / 6.0));
+                painter.fling(small ? 1.6 : 2.6);
+                painter.shattered(MISSILE, frame, apart, 1.3);
+                painter.fling(1.0);
+                painter.glare(0.0);
+            }
+            return;
+        }
         painter.ambient(GLOWS);
         painter.shape(MISSILE, frame, 1.0, 1.15);
         painter.ambient(0.0);
-        Vec3 tail = frame.at(0.0, 0.0, MISSILE_TAIL);
-        double lit = Ease.smooth((clock - 2.0) / 3.0);
-        if (clock > 2.0 && clock < 5.0) {
-            // Its motor lights.
-            painter.flare(tail, 2.6 * (1.0 - (clock - 2.0) / 3.0) + 0.8, 1.0 - (clock - 2.0) / 3.0);
+        if (burning < 0.0) {
+            return;
         }
-        painter.exhaust(tail, forward.scale(-1.0), 5.0, 0.46, lit);
+        Vec3 tail = frame.at(0.0, 0.0, MISSILE_TAIL);
+        double lit = Ease.smooth(burning / 2.0);
+        if (burning < 4.0) {
+            // Its motor bursts into life.
+            double flash = 1.0 - burning / 4.0;
+            painter.flare(tail, (small ? 1.2 : 3.6) * flash + 0.6, flash);
+        }
+        painter.exhaust(tail, forward.scale(-1.0), small ? 2.6 : 6.0, small ? 0.2 : 0.5, lit);
         // A long streak of light behind it, thinning out.
         Vec3 last = tail;
         int streak = 9;
+        double step = small ? 1.1 : 1.9;
         for (int k = 1; k <= streak; k++) {
-            Vec3 next = tail.subtract(forward.scale(1.8 * k));
+            Vec3 next = tail.subtract(forward.scale(step * k));
             double fade = 1.0 - (double) k / (streak + 1);
-            painter.edge(last, next, 0.7 * fade, 0.75 * fade * lit);
+            painter.edge(last, next, (small ? 0.35 : 0.75) * fade, 0.75 * fade * lit);
             last = next;
         }
     }
 
     /**
-     * A round from a minigun: a solid slug of hard light with a long, bright tracer streak behind it, flying from the
-     * muzzle to where it strikes, and splashing there in a flash, a spray of sparks and a ripple of light.
+     * A round from a minigun: a solid slug of hard light with a long, bright tracer streak behind it, flying out of the
+     * muzzle of its gun as that pointed the tick it fired (see {@link PlanePath.Turret}) to where it strikes, and
+     * splashing there in a flash, a spray of sparks and a ripple of light. One that strikes nothing flies off into the
+     * air and breaks into solid crumbs out of reach.
+     *
+     * @param since ticks since it was fired, by the plane's clock (below 0: not yet)
      */
-    public static void bullet(LanternPainter painter, ConstructPayload round, double clock) {
-        Vec3 to = round.center();
-        double distance = round.charge();
-        Vec3 muzzle = to.add(round.facing().scale(distance));
-        double travel = Math.max(2.0, Math.ceil(distance / AirStrike.BULLET_SPEED));
-        if (clock < travel) {
-            double u = clock / travel;
-            Vec3 way = to.subtract(muzzle).normalize();
-            Vec3 head = muzzle.lerp(to, u);
-            painter.shape(SLUG, ConstructPainter.Frame.of(head, way, Vectors.UP, SLUG_SCALE), 1.0, 1.3);
-            Vec3 tail = head.subtract(way.scale(Math.min(9.0, distance * u)));
-            painter.edge(tail, head, 0.5, 1.0);
-            painter.edge(head.subtract(way.scale(Math.min(3.0, distance * u))), head, 0.9, 0.8);
-            painter.flare(head, 1.1, 0.65);
+    public static void bullet(LanternPainter painter, ConstructPayload round, double since) {
+        Guns guns = GUNS.get(round.owner());
+        int gun = round.variant();
+        if (since < 0.0 || guns == null || gun < 0 || gun > 1) {
             return;
         }
-        double after = clock - travel;
+        int fired = Math.round(round.charge());
+        Vec3 to = round.center();
+        Vec3 muzzle = guns.path.pivot(gun, fired).add(guns.turrets[gun].aim(fired).scale(AirStrike.GUN_LENGTH));
+        double distance = muzzle.distanceTo(to);
+        double travel = Math.max(1.0, round.size());
+        Vec3 way = distance < 1.0E-6 ? Vectors.UP.scale(-1.0) : to.subtract(muzzle).scale(1.0 / distance);
+        if (since < travel) {
+            double u = since / travel;
+            Vec3 head = muzzle.lerp(to, u);
+            painter.shape(SLUG, ConstructPainter.Frame.of(head, way, Vectors.UP, SLUG_SCALE), 1.0, 1.3);
+            Vec3 tail = head.subtract(way.scale(Math.min(7.0, distance * u)));
+            painter.edge(tail, head, 0.3, 1.0);
+            painter.edge(head.subtract(way.scale(Math.min(2.2, distance * u))), head, 0.55, 0.8);
+            painter.flare(head, 0.7, 0.6);
+            return;
+        }
+        double after = since - travel;
+        if (round.held()) {
+            if (after < SLUG_BREAKS) {
+                painter.shattered(SLUG, ConstructPainter.Frame.of(to, way, Vectors.UP, SLUG_SCALE),
+                        after / SLUG_BREAKS, 1.3);
+            }
+            return;
+        }
         if (after > 8.0) {
             return;
         }
         double fade = 1.0 - after / 8.0;
-        Vec3 hit = to.add(0.0, 0.2, 0.0);
-        painter.flare(hit, 0.8 + 2.2 * fade, fade);
+        Vec3 hit = to.add(0.0, 0.15, 0.0);
+        painter.flare(hit, 0.6 + 1.6 * fade, fade);
         painter.circle(to.add(0.0, 0.06, 0.0), new Vec3(1.0, 0.0, 0.0), new Vec3(0.0, 0.0, 1.0),
-                0.3 + 1.8 * (1.0 - fade), 0.08, 0.5, Colors.alpha(fade), Colors.alpha(0.5 * fade));
+                0.25 + 1.4 * (1.0 - fade), 0.06, 0.4, Colors.alpha(fade), Colors.alpha(0.5 * fade));
         if (after < 4.0) {
             double sparks = 1.0 - after / 4.0;
             for (int k = 0; k < 6; k++) {
-                Vec3 way = Noise.direction(round.id(), 261 + k);
-                way = new Vec3(way.x, Math.abs(way.y) + 0.35, way.z).normalize();
-                Vec3 from = hit.add(way.scale(0.4 + 1.6 * (1.0 - sparks)));
-                painter.edge(from, from.add(way.scale(0.9 * sparks)), 0.12, sparks);
+                Vec3 spark = Noise.direction(round.id(), 261 + k);
+                spark = new Vec3(spark.x, Math.abs(spark.y) + 0.35, spark.z).normalize();
+                Vec3 from = hit.add(spark.scale(0.3 + 1.3 * (1.0 - sparks)));
+                painter.edge(from, from.add(spark.scale(0.7 * sparks)), 0.09, sparks);
             }
         }
     }
 
-    /** How long a round stays on screen, from when it was fired: its flight and its splash, in ticks. */
+    /**
+     * How long a round stays on screen, from when it was fired: its flight and its splash, in ticks, and a few more for
+     * a round that is heard of late.
+     */
     public static int bulletTicks(ConstructPayload round) {
-        return (int) Math.ceil(Math.max(2.0, Math.ceil(round.charge() / AirStrike.BULLET_SPEED))) + 9;
+        return Math.round(round.size()) + 14;
     }
 
     /**
-     * The small blast of a missile, light and nothing else but the missile itself: the missile breaks into solid pieces
-     * flung out from where it struck, a white-hot flash, a fireball of light that swells and climbs as it burns out, a
-     * ring of light racing out over the ground and rays and sparks shooting out.
+     * The small blast of a missile, light and nothing else (the missile itself breaks into solid pieces on its own, see
+     * {@link #missile}): a white-hot flash, a fireball of light that swells and climbs as it burns out, a ring of light
+     * racing out over the ground and rays and sparks shooting out.
      *
-     * @param since ticks since it burst
+     * @param since ticks since it burst (below 0: not yet, its missile is still on its way)
      */
     public static void missileBlast(LanternPainter painter, ConstructPayload blast, double since) {
         double life = 1.0 - since / BLAST_TICKS;
-        if (life <= 0.0) {
+        if (since < 0.0 || life <= 0.0) {
             return;
         }
         Vec3 heart = blast.center();
@@ -926,16 +1465,6 @@ public final class PlanePainter {
         Vec3 east = new Vec3(1.0, 0.0, 0.0);
         Vec3 south = new Vec3(0.0, 0.0, 1.0);
         Vec3 up = Vectors.UP;
-        // The missile itself breaks into solid pieces, flung out from where it struck.
-        double apart = since / 16.0;
-        if (apart < 1.0) {
-            ConstructPainter.Frame frame = ConstructPainter.Frame.of(heart, blast.facing(), up, MISSILE_SCALE);
-            painter.glare(Math.max(0.0, 0.8 - since / 6.0));
-            painter.fling(2.2);
-            painter.shattered(MISSILE, frame, apart, 1.3);
-            painter.fling(1.0);
-            painter.glare(0.0);
-        }
         // The flash.
         double flash = Math.max(0.0, 1.0 - since / 5.0);
         if (flash > 0.0) {
@@ -994,7 +1523,7 @@ public final class PlanePainter {
      * How far this player's ring fist is thrown up high to call the plane, 0 to 1: straight up as he calls it, down
      * again once the plane has taken shape.
      */
-    static float raised(Entity player, float partialTick) {
+    public static float raised(Entity player, float partialTick) {
         float age = ClientConstructs.planeAge(player.getId(), partialTick);
         if (age < 0.0F) {
             return 0.0F;
@@ -1009,24 +1538,23 @@ public final class PlanePainter {
      * Keeps the drone of this plane where it is. {@code down} is how far it has plunged (0 to 1), or below 0 once it has
      * crashed: the drone stops.
      */
-    private static void sound(int id, Vec3 at, double down) {
+    private static void sound(int id, PlanePath path, double t, double down) {
         if (down < 0.0) {
             PlaneSound gone = SOUNDS.remove(id);
             if (gone != null) {
                 gone.stopAll();
             }
-            BARRELS_TURNED.remove(id);
             return;
         }
+        Vec3 at = path.at(t);
         PlaneSound sound = SOUNDS.get(id);
         if (sound == null || sound.stopped()) {
             // Drones of planes that are gone some other way (broken up in the air, out of reach) have stopped by now.
             SOUNDS.values().removeIf(PlaneSound::stopped);
-            BARRELS_TURNED.keySet().retainAll(SOUNDS.keySet());
             sound = new PlaneSound(at);
             SOUNDS.put(id, sound);
         }
-        sound.update(at, down);
+        sound.update(path, t, at, down);
     }
 
     /** The planes are gone (the world was left): so is their sound. */
@@ -1035,16 +1563,18 @@ public final class PlanePainter {
             sound.stopAll();
         }
         SOUNDS.clear();
-        BARRELS_TURNED.clear();
+        GUNS.clear();
     }
 
     /**
      * The sound of one plane: the deep, droning buzz of its four propellers and the rush of the air past it, following
-     * it; as it plunges the rush rises into a scream.
+     * it; as it plunges the rush rises into a scream. Its jets each whoosh by with a rush of their own, higher the faster
+     * they go.
      */
     private static final class PlaneSound {
         private final Loop drone;
         private final Loop wind;
+        private final Loop[] jets = new Loop[PlanePath.JETS];
 
         PlaneSound(Vec3 at) {
             this.drone = new Loop(SoundEvents.BEE_LOOP, at);
@@ -1053,10 +1583,27 @@ public final class PlanePainter {
             Minecraft.getInstance().getSoundManager().play(this.wind);
         }
 
-        void update(Vec3 at, double down) {
+        void update(PlanePath path, double t, Vec3 at, double down) {
             long seen = Minecraft.getInstance().level == null ? 0L : Minecraft.getInstance().level.getGameTime();
             this.drone.follow(at, seen, 7.0F, (float) (0.5 - 0.1 * down), 1.0F - (float) down * 0.5F);
             this.wind.follow(at, seen, (float) (2.0 + 5.0 * down), (float) (0.5 + 0.9 * down * down), 1.0F);
+            double fled = path.jetsFled(t);
+            for (int k = 0; k < PlanePath.JETS; k++) {
+                if (!path.hasJet(k) || t < path.jetFrom(k) || fled >= PlanePath.JET_GONE) {
+                    if (this.jets[k] != null) {
+                        this.jets[k].done = true;
+                    }
+                    continue;
+                }
+                Vec3 jet = path.jetAt(k, t);
+                if (this.jets[k] == null) {
+                    this.jets[k] = new Loop(SoundEvents.ELYTRA_FLYING, jet);
+                    Minecraft.getInstance().getSoundManager().play(this.jets[k]);
+                }
+                double speed = path.jetSpeed(k, t);
+                this.jets[k].follow(jet, seen, fled > 0.0 ? 7.0F : 4.0F, (float) Mth.clamp(1.1 + 0.05 * speed, 1.1, 2.0),
+                        1.0F);
+            }
         }
 
         boolean stopped() {
@@ -1066,6 +1613,11 @@ public final class PlanePainter {
         void stopAll() {
             this.drone.done = true;
             this.wind.done = true;
+            for (Loop jet : this.jets) {
+                if (jet != null) {
+                    jet.done = true;
+                }
+            }
         }
     }
 

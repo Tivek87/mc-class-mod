@@ -121,7 +121,7 @@ public final class ClientPayloadHandler {
             }
             ModConfig config = net.neoforged.fml.config.ModConfigs.getFileMap().get(payload.file());
             if (config != null && config.getType() == ModConfig.Type.SERVER) {
-                ConfigTracker.INSTANCE.acceptSyncedConfig(config, payload.contents());
+                ConfigTracker.acceptSyncedConfig(config, payload.contents());
                 StaminaClient.onConfigUpdated();
             }
         });

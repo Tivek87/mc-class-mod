@@ -22,12 +22,12 @@ import nl.tivek.multiversepowers.character.greenlantern.ability.AirStrike;
 import nl.tivek.multiversepowers.character.greenlantern.ability.Fear;
 import nl.tivek.multiversepowers.character.greenlantern.ability.Flight;
 import nl.tivek.multiversepowers.character.greenlantern.ability.GiantFist;
+import nl.tivek.multiversepowers.character.greenlantern.ability.GiantHands;
 import nl.tivek.multiversepowers.character.greenlantern.ability.LandingSlam;
 import nl.tivek.multiversepowers.character.greenlantern.ability.LightBeam;
 import nl.tivek.multiversepowers.character.greenlantern.ability.LightBolt;
 import nl.tivek.multiversepowers.character.greenlantern.ability.LightBubble;
 import nl.tivek.multiversepowers.character.greenlantern.ability.LightDome;
-import nl.tivek.multiversepowers.character.greenlantern.ability.LightFlare;
 import nl.tivek.multiversepowers.character.greenlantern.ability.LightShield;
 import nl.tivek.multiversepowers.character.greenlantern.ability.Recharge;
 import nl.tivek.multiversepowers.character.greenlantern.ability.RingScan;
@@ -110,8 +110,8 @@ public final class PowerRing {
             case "shockwave" -> Shockwave.use(player, level, ability);
             // A wave of the ring's light rolls out and marks every creature it passes.
             case "ring_scan" -> RingScan.use(player, level, ability);
-            // The ring fist thrown up high: the lantern takes shape over it and bursts out blinding.
-            case "light_flare" -> LightFlare.use(player, level, ability);
+            // He waves his ring hand this way and that: giant hands burst up out of the ground at his enemies.
+            case "giant_hands" -> GiantHands.use(player, level, ability);
             // The ultimate: a big gunship of hard light drones over the battlefield, fires and crashes in a blast.
             case "air_strike" -> AirStrike.use(player, level, ability);
             // A bubble of hard light round a creature, lifted up; again to smash it down, crouching to let it go.
@@ -138,7 +138,7 @@ public final class PowerRing {
         LandingSlam.clear();
         Arrival.clear();
         Fear.clear();
-        LightFlare.clear();
+        GiantHands.clear();
         AirStrike.clear();
         LightBubble.clear();
         SwordShield.clear();

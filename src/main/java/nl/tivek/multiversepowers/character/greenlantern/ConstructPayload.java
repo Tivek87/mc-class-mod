@@ -65,31 +65,31 @@ public record ConstructPayload(int id, int owner, Vec3 center, Vec3 facing, floa
     /** A {@link #SCAN} of the air strike's plane: it marks only the creatures out to hurt its maker. */
     public static final int SCAN_HOSTILE = 1;
     /**
-     * The ring's flare: light gathering at the ring held high, and bursting out blinding. {@code center} is the ring,
-     * {@code size} how far the flash reaches, and {@code age} how long ago the light started to gather. Not a
-     * construct, only light.
-     */
-    public static final int FLARE = 8;
-    /**
      * The air strike, Green Lantern's ultimate: a big hard-light gunship with four propellers high over the
      * battlefield, that drones on in a straight line and plunges down. It flies a path both sides work out alike from
      * how long ago it was called (see {@link PlanePath}): {@code center} is where it takes shape, {@code facing} the
      * way it flies, {@code size} how far below where it takes shape the ground of its dive is, {@code charge} how many
-     * ticks it attacks, {@code variant} how far through its dive it strikes the ground in hundredths, and {@code age}
-     * how long ago he called it.
+     * ticks it attacks, {@code variant} how far through its dive the first of its parts strikes the ground in
+     * hundredths, and {@code age} how long ago he called it.
      */
     public static final int PLANE = 9;
     /**
-     * A homing missile of hard light the plane fires. {@code center} is where it is, {@code facing} the way it flies,
-     * {@code variant} the launcher it came from (0 the left one, 1 the right one) and {@code age} how long ago it was
-     * fired.
+     * A homing missile of hard light of the air strike, every tick it flies: a big one out of the plane's hatch or a
+     * small one off a jet's wing. {@code center} is where its middle is (on the tick it strikes: where it was as its
+     * nose struck), {@code facing} the way its nose points, {@code size} the tick of the plane's clock it was let go
+     * on, {@code charge} how many ticks after that its motor fires, {@code variant}
+     * {@link nl.tivek.multiversepowers.character.greenlantern.ability.AirStrike#BIG_MISSILE} or
+     * {@link nl.tivek.multiversepowers.character.greenlantern.ability.AirStrike#JET_MISSILE} plus 2 for each jet
+     * before its own plus its pylon (0 the left one, 1 the right one), and {@code age} how long ago it was let go.
      */
     public static final int MISSILE = 10;
     /**
      * A round of hard light from one of the plane's miniguns, sent once as it is fired: clients fly it on by
-     * themselves. {@code center} is where it strikes, {@code facing} the way from there back to the muzzle,
-     * {@code charge} how far the muzzle is, {@code variant} the gun (0 the left one, 1 the right one) and {@code age} how
-     * long ago it was fired.
+     * themselves, out of the muzzle of its gun as the gun pointed then (see {@link PlanePath.Turret}). {@code center}
+     * is where it strikes, {@code facing} the way its gun is to point next (one long; it swings there as it does on
+     * the server), {@code size} how many ticks it flies, {@code charge} the tick of the plane's clock it was fired on,
+     * {@code held} true when it strikes nothing (it flies off into the air), {@code variant} the gun (0 the left one,
+     * 1 the right one) and {@code age} how long ago it was fired.
      */
     public static final int BULLET = 11;
     /**
@@ -110,9 +110,12 @@ public record ConstructPayload(int id, int owner, Vec3 center, Vec3 facing, floa
      */
     public static final int SWORD = 13;
     /**
-     * The small blast of one of the plane's missiles, sent once as it bursts: clients play it out by themselves.
-     * {@code center} is its heart, {@code facing} the way the missile came in, {@code size} how far it reaches and
-     * {@code age} how long ago it burst. Light, not a construct.
+     * The small blast of one of the air strike's missiles, sent once as it bursts: clients play it out by themselves,
+     * from the moment its missile gets there on their screen. {@code center} is its heart, {@code facing} the way the
+     * missile came in, {@code size} how far it reaches, {@code variant}
+     * {@link nl.tivek.multiversepowers.character.greenlantern.ability.AirStrike#BIG_BLAST} or
+     * {@link nl.tivek.multiversepowers.character.greenlantern.ability.AirStrike#SMALL_BLAST}, and {@code age} how long
+     * ago it burst. Light, not a construct: the missile itself breaks into solid pieces on its own.
      */
     public static final int BLAST = 14;
     /**
@@ -123,6 +126,19 @@ public record ConstructPayload(int id, int owner, Vec3 center, Vec3 facing, floa
      * {@code age} how long ago it struck. Light, not a construct.
      */
     public static final int POUND = 15;
+    /**
+     * One of the Giant Hands: a hand of hard light that bursts up out of the ground and strikes a creature (see
+     * {@link nl.tivek.multiversepowers.character.greenlantern.HandPose}), or a pair of hands out of portals of the
+     * ring's light that chop a giant axe down on it (see
+     * {@link nl.tivek.multiversepowers.character.greenlantern.HandDuo}). {@code center} is where it comes up out of
+     * the ground (for a pair: the ground where it was called), {@code facing} the flat way from there to the spot it
+     * reaches for (as long as it is far; for a pair: where its axe strikes), {@code size} how big it is,
+     * {@code variant} its move (for a pair also the way it is laid out, see
+     * {@link nl.tivek.multiversepowers.character.greenlantern.HandPose#axeVariant}), {@code charge} the entity id of
+     * the creature it holds in its fist (-1 for none, and always -1 for a pair) and {@code age} how long ago it was
+     * called.
+     */
+    public static final int HAND = 16;
     /** A giant fist that smashes down out of the sky, knuckles first. */
     public static final int SLAM_FIST = 0;
     /** Two giant open hands that clap together. */

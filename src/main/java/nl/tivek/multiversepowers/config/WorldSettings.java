@@ -11,6 +11,7 @@ import java.io.Reader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.storage.LevelResource;
@@ -107,9 +108,9 @@ public final class WorldSettings {
 
     /** Puts every number {@code from} has in {@code into}, where {@code into} has a setting of that name. */
     private static void keep(Config into, UnmodifiableConfig from) {
-        for (Map.Entry<String, Object> entry : into.valueMap().entrySet()) {
-            Object had = from.valueMap().get(entry.getKey());
-            if (entry.getValue() instanceof Config section) {
+        for (Config.Entry entry : into.entrySet()) {
+            Object had = from.getRaw(List.of(entry.getKey()));
+            if (entry.getRawValue() instanceof Config section) {
                 if (had instanceof UnmodifiableConfig oldSection) {
                     keep(section, oldSection);
                 }

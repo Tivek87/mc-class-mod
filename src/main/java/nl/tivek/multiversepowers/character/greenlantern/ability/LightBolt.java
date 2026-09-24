@@ -96,7 +96,7 @@ public final class LightBolt implements Effect {
 
     /** One bolt, as long as the ring hand is free, the ring can pay for it and the cooldown is over. */
     private static boolean shoot(ServerPlayer owner, ServerLevel level, CharacterAbility ability) {
-        if (Recharge.busy(owner) || GiantFist.holding(owner) || Flight.descending(owner) || LightFlare.up(owner)
+        if (Recharge.busy(owner) || GiantFist.holding(owner) || Flight.descending(owner) || GiantHands.waving(owner)
                 || AirStrike.calling(owner)) {
             return false;
         }

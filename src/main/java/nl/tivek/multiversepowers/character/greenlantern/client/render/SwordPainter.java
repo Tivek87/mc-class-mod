@@ -2,10 +2,12 @@ package nl.tivek.multiversepowers.character.greenlantern.client.render;
 
 import java.util.ArrayList;
 import java.util.List;
+import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.SwordArms;
 import nl.tivek.multiversepowers.engine.client.render.ConstructPainter;
 import nl.tivek.multiversepowers.engine.client.render.Mesh;
+import nl.tivek.multiversepowers.engine.math.Ease;
 import nl.tivek.multiversepowers.engine.math.Vectors;
 
 /**
@@ -21,8 +23,11 @@ import nl.tivek.multiversepowers.engine.math.Vectors;
  * light run out from the back of the boss.</li>
  * </ul>
  * Both grow out of the ring's light, white-hot at first: the sword out of the fist, hilt first and then the blade running
- * out to its point, the shield out of its middle, spreading sideways first. They break into solid pieces when they are
- * put away. A swung blade leaves a streak of light in the air behind it: light, not a construct.
+ * out to its point; the shield out of its boss, its body spreading out from there, then a bright edge running round it
+ * from the middle of its top down both sides with the rim solid behind it and the rivets popping up after it, the two
+ * ends meeting in a flash at its point, and last the pad, strap and grip closing on its back. They break into solid
+ * pieces when they are put away. A swung blade leaves a streak of light in the air behind it, and a blade banged on the
+ * rim of the shield throws sparks of light: light, not constructs.
  */
 public final class SwordPainter {
     /** Where the fist grips the shield, on its back: across it (towards its right) and behind its face, at scale 1. */
@@ -36,8 +41,43 @@ public final class SwordPainter {
     static final double BLADE_FROM = 0.2;
     /** The sword, its grip round the middle: x across its flat, y towards its top edge, z to its tip. */
     private static final ConstructPainter.Shape SWORD = ConstructPainter.Shape.of(sword());
-    /** The shield round its middle: x across it, y up, z out of its face. */
+    // How far the face of the shield bows out, and how thick its rim is.
+    private static final double BULGE = 0.07;
+    private static final double RIM_THICK = 0.034;
+    // The shield in parts (x across it, y up, z out of its face), so it can take shape part by part: its body, its
+    // boss, the pad, strap and grip on its back (round the grip), a rivet and where every rivet sits, and the rim: its
+    // points from the middle of its top round and back to it (that one is the fifth point of the outline), how far
+    // round it each is, and a piece of it for every stretch between two of them.
+    private static final Mesh[] BODY = body();
+    private static final Mesh[] BOSS = boss();
+    private static final Mesh[] BACK = back();
+    private static final Mesh RIVET = Mesh.ball(8, 5, 0.019, 1.5);
+    private static final Vec3[] RIVETS = rivets();
+    private static final int RIM_TOP = 4;
+    private static final Vec3[] RIM = rim();
+    private static final double[] RIM_ALONG = along(RIM);
+    private static final Mesh[] RIM_EDGES = edges(RIM);
+    /** The whole shield round its middle: x across it, y up, z out of its face. */
     private static final ConstructPainter.Shape SHIELD = ConstructPainter.Shape.of(shield());
+    private static final ConstructPainter.Shape SHIELD_BODY = ConstructPainter.Shape.of(BODY);
+    private static final ConstructPainter.Shape SHIELD_BOSS = ConstructPainter.Shape.of(BOSS);
+    private static final ConstructPainter.Shape SHIELD_BACK = ConstructPainter.Shape.of(BACK);
+    // How the shield takes shape, as parts of the way from the ring's light reaching it (0) to its strap closing (1):
+    // the boss forms, the body spreads out from it (a little too far, and back), a bright edge runs round from the
+    // middle of the top down both sides, leaving the rim behind it and the rivets popping up after it, the two meet at
+    // the point below in a flash, and last the pad, strap and grip close on its back.
+    private static final double BOSS_UNTIL = 0.2;
+    private static final double SPREAD_FROM = 0.06;
+    private static final double SPREAD_TOP = 0.56;
+    private static final double SPREAD_UNTIL = 0.76;
+    private static final double SPREAD_OVER = 1.06;
+    private static final double RIM_FROM = 0.4;
+    private static final double RIM_UNTIL = 0.88;
+    private static final double BACK_FROM = 0.82;
+    // How far round the rim a rivet takes to pop up once the edge has passed it (blocks at scale 1).
+    private static final double RIVET_POP = 0.15;
+    // How long the clang of the blade on the rim lasts, in ticks.
+    private static final double CLANG_TICKS = 4.0;
     // How far the pieces fly when they break up, next to how far pieces usually do.
     private static final double FLING = 1.3;
 
@@ -103,38 +143,33 @@ public final class SwordPainter {
         return outline;
     }
 
+    /** The whole shield, as it stands once it has taken shape: every part below, the rim all round. */
     private static Mesh[] shield() {
-        List<Mesh> parts = new ArrayList<>();
-        double bulge = 0.07;
-        double[] outline = outline(1.0);
-        // The body, bowed out to the front.
-        parts.add(Mesh.dish(5, -0.03, 0.03, bulge, 1.0, outline));
-        // The round rim all round it, and the raised border inside it.
-        parts.add(Mesh.tube(true, 6, 0.034, 1.4, ring(outline, 0.0)));
-        double[] inner = outline(0.8);
-        parts.add(Mesh.tube(true, 5, 0.013, 1.55, ring(inner, 0.03 + bulge * (1.0 - 0.64) + 0.006)));
-        // A ring of rivets between the rim and the border.
-        double[] rivets = outline(0.9);
-        int count = rivets.length / 2;
-        for (int i = 0; i < count; i += 2) {
-            parts.add(Mesh.ball(8, 5, 0.019, 1.5).moved(rivets[2 * i], rivets[2 * i + 1],
-                    0.03 + bulge * (1.0 - 0.81) + 0.004));
+        List<Mesh> parts = new ArrayList<>(List.of(BODY));
+        // The round rim all round it.
+        parts.add(Mesh.tube(true, 6, RIM_THICK, 1.4, ring(outline(1.0), 0.0)));
+        for (Vec3 rivet : RIVETS) {
+            parts.add(RIVET.moved(rivet.x, rivet.y, rivet.z));
         }
-        // The boss in its middle and the lantern emblem round it: a ring with a bar over and under it.
-        parts.add(Mesh.ball(14, 8, 0.1, 1.3).scaled(1.0, 1.0, 0.55).moved(0.0, 0.02, 0.095));
+        parts.addAll(List.of(BOSS));
+        for (Mesh part : BACK) {
+            parts.add(part.moved(GRIP_X, 0.0, 0.0));
+        }
+        return parts.toArray(Mesh[]::new);
+    }
+
+    /**
+     * The body of the shield: its face bowed out to the front, the raised border inside the rim, the lantern emblem
+     * round the boss (a ring with a bar over and under it), and on its back the ribs of light running out from the boss
+     * all round over the hollow.
+     */
+    private static Mesh[] body() {
+        List<Mesh> parts = new ArrayList<>();
+        parts.add(Mesh.dish(5, -0.03, 0.03, BULGE, 1.0, outline(1.0)));
+        parts.add(Mesh.tube(true, 5, 0.013, 1.55, ring(outline(0.8), 0.03 + BULGE * (1.0 - 0.64) + 0.006)));
         parts.add(Mesh.torus(28, 6, 0.2, 0.028, 1.75).alongZ().moved(0.0, 0.02, 0.095));
         parts.add(Mesh.box(-0.25, 0.235, 0.075, 0.25, 0.275, 0.105, 1.75));
         parts.add(Mesh.box(-0.25, -0.235, 0.075, 0.25, -0.195, 0.105, 1.75));
-        // On its back (hollow, as the body bows out to the front): the pad the forearm lies on, across the shield from
-        // the elbow on its left to the fist on its right, the strap over the forearm by the elbow, and the grip for the
-        // fist, square to the forearm.
-        parts.add(Mesh.box(-0.3, -0.06, 0.008, 0.06, 0.06, 0.036, 0.95));
-        parts.add(Mesh.tube(false, 6, 0.016, 1.3, new Vec3(-0.2, 0.085, 0.027), new Vec3(-0.2, 0.08, -0.05),
-                new Vec3(-0.2, -0.08, -0.05), new Vec3(-0.2, -0.085, 0.027)));
-        parts.add(Mesh.tube(false, 8, 0.02, 1.25, new Vec3(GRIP_X, 0.105, 0.032), new Vec3(GRIP_X, 0.09, GRIP_Z),
-                new Vec3(GRIP_X, -0.09, GRIP_Z), new Vec3(GRIP_X, -0.105, 0.032)));
-        // The back of the boss, with ribs of light running out from it all round over the hollow of the back.
-        parts.add(Mesh.torus(20, 5, 0.09, 0.018, 1.7).alongZ().moved(0.0, 0.02, 0.035));
         for (int k = 0; k < 8; k++) {
             double angle = Math.PI * 2.0 * (k + 0.5) / 8.0;
             double cos = Math.cos(angle);
@@ -143,6 +178,64 @@ public final class SwordPainter {
                     new Vec3(cos * 0.36, 0.02 + sin * 0.4, 0.004)));
         }
         return parts.toArray(Mesh[]::new);
+    }
+
+    /** The boss in the middle of the shield, and its back. */
+    private static Mesh[] boss() {
+        return new Mesh[] { Mesh.ball(14, 8, 0.1, 1.3).scaled(1.0, 1.0, 0.55).moved(0.0, 0.02, 0.095),
+                Mesh.torus(20, 5, 0.09, 0.018, 1.7).alongZ().moved(0.0, 0.02, 0.035) };
+    }
+
+    /**
+     * On its back (hollow, as the body bows out to the front), round the grip (at x 0 here): the pad the forearm lies
+     * on, across the shield from the elbow on its left to the fist on its right, the strap over the forearm by the
+     * elbow, and the grip for the fist, square to the forearm.
+     */
+    private static Mesh[] back() {
+        return new Mesh[] { Mesh.box(-0.3 - GRIP_X, -0.06, 0.008, 0.06 - GRIP_X, 0.06, 0.036, 0.95),
+                Mesh.tube(false, 6, 0.016, 1.3, new Vec3(-0.2 - GRIP_X, 0.085, 0.027),
+                        new Vec3(-0.2 - GRIP_X, 0.08, -0.05), new Vec3(-0.2 - GRIP_X, -0.08, -0.05),
+                        new Vec3(-0.2 - GRIP_X, -0.085, 0.027)),
+                Mesh.tube(false, 8, 0.02, 1.25, new Vec3(0.0, 0.105, 0.032), new Vec3(0.0, 0.09, GRIP_Z),
+                        new Vec3(0.0, -0.09, GRIP_Z), new Vec3(0.0, -0.105, 0.032)) };
+    }
+
+    /** Where the rivets sit, a ring of them between the rim and the border: by every other point of the outline. */
+    private static Vec3[] rivets() {
+        double[] outline = outline(0.9);
+        List<Vec3> rivets = new ArrayList<>();
+        for (int i = 0; i < outline.length / 2; i += 2) {
+            rivets.add(new Vec3(outline[2 * i], outline[2 * i + 1], 0.03 + BULGE * (1.0 - 0.81) + 0.004));
+        }
+        return rivets.toArray(Vec3[]::new);
+    }
+
+    /** The points of the rim, from the middle of the top round the shield and back to it. */
+    private static Vec3[] rim() {
+        Vec3[] ring = ring(outline(1.0), 0.0);
+        Vec3[] rim = new Vec3[ring.length + 1];
+        for (int i = 0; i <= ring.length; i++) {
+            rim[i] = ring[(RIM_TOP + i) % ring.length];
+        }
+        return rim;
+    }
+
+    /** How far round the rim every point of it is, from the middle of the top. */
+    private static double[] along(Vec3[] rim) {
+        double[] along = new double[rim.length];
+        for (int i = 1; i < rim.length; i++) {
+            along[i] = along[i - 1] + rim[i].distanceTo(rim[i - 1]);
+        }
+        return along;
+    }
+
+    /** The rim, a piece for every stretch of it between two points. */
+    private static Mesh[] edges(Vec3[] rim) {
+        Mesh[] edges = new Mesh[rim.length - 1];
+        for (int i = 0; i < edges.length; i++) {
+            edges[i] = Mesh.tube(false, 6, RIM_THICK, 1.4, rim[i], rim[i + 1]);
+        }
+        return edges;
     }
 
     /** The points of an outline as a closed ring at height {@code z} out of the shield's face. */
@@ -186,29 +279,150 @@ public final class SwordPainter {
         }
     }
 
-    /** The shield, its middle at {@code center}, its face towards {@code face} and its top towards {@code up}. */
+    /**
+     * The shield, its middle at {@code center}, its face towards {@code face} and its top towards {@code up}.
+     *
+     * @param grown how far it has taken shape out of the ring's light, 0 to 1 (see {@link #BOSS_UNTIL} and on)
+     * @param apart 0 while whole; above that it is breaking up, gone at 1
+     */
     public static void shield(LanternPainter painter, Vec3 center, Vec3 face, Vec3 up, double scale, double grown,
             double apart) {
-        ConstructPainter.Frame frame = frame(center, face, up, scale);
-        if (grown < 1.0 && apart <= 0.0) {
-            // Growing out of its middle, spreading sideways first.
-            double g = Math.max(grown, 1.0E-3);
-            frame = frame.stretched(Math.min(1.0, g * 1.6), g, Math.min(1.0, g * 1.6));
-        }
+        ConstructPainter.Frame whole = frame(center, face, up, scale);
+        double spread = spread(grown);
+        ConstructPainter.Frame frame = grown < 1.0 ? whole.stretched(spread, spread, 1.0) : whole;
         if (apart > 0.0) {
             painter.fling(FLING);
             painter.shattered(SHIELD, frame, apart, 1.2);
             painter.fling(1.0);
             return;
         }
-        if (grown <= 0.01) {
+        if (grown <= 0.0) {
+            return;
+        }
+        painter.ambient(0.12);
+        if (grown >= 1.0) {
+            painter.shape(SHIELD, frame, 1.0, 1.0);
+            painter.ambient(0.0);
             return;
         }
         painter.glare(0.75 * (1.0 - grown));
-        painter.ambient(0.12);
-        painter.shape(SHIELD, frame, 1.0, 1.0);
-        painter.ambient(0.0);
+        double boss = Ease.backOut(grown / BOSS_UNTIL);
+        painter.shape(SHIELD_BOSS, whole.stretched(boss, boss, boss), 1.0, 1.0);
+        if (grown > SPREAD_FROM) {
+            painter.shape(SHIELD_BODY, frame, 1.0, 1.0);
+        }
+        // The rim, behind the two ends of the bright edge running round from the middle of the top.
+        double half = RIM_ALONG[RIM_ALONG.length - 1] / 2.0;
+        double run = (grown - RIM_FROM) / (RIM_UNTIL - RIM_FROM);
+        double head = half * Mth.clamp(run, 0.0, 1.0);
+        if (head > 0.0) {
+            rim(painter, frame, head);
+        }
+        for (int i = 0; i < RIVETS.length; i++) {
+            double popped = Ease.backOut((half * run - rivetRound(i)) / RIVET_POP);
+            if (popped > 0.0) {
+                Vec3 at = RIVETS[i];
+                painter.mesh(RIVET, frame.moved(at.x, at.y, at.z).stretched(popped, popped, popped), 1.0, 1.0);
+            }
+        }
+        if (grown > BACK_FROM) {
+            double closed = Ease.backOut((grown - BACK_FROM) / (1.0 - BACK_FROM));
+            painter.shape(SHIELD_BACK, frame.moved(GRIP_X, 0.0, 0.0).stretched(closed, closed, closed), 1.0, 1.0);
+        }
         painter.glare(0.0);
+        painter.ambient(0.0);
+        // The light it takes shape out of: burning at the boss as it forms, running round as the two ends of the bright
+        // edge, and flashing where they meet below.
+        painter.flare(whole.at(0.0, 0.02, 0.1), 0.3 * scale * (1.0 - grown), Math.max(0.0, 1.0 - grown * 2.0));
+        if (run > 0.0 && run < 1.0) {
+            edgeLight(painter, frame, head, scale);
+            edgeLight(painter, frame, 2.0 * half - head, scale);
+        }
+        if (run >= 1.0) {
+            double flash = 1.0 - (grown - RIM_UNTIL) / (1.0 - RIM_UNTIL);
+            painter.flare(frame.at(0.0, -0.7, 0.0), 0.25 * scale * (1.5 - flash), flash);
+        }
+    }
+
+    /** How far the body of the shield has spread out from its boss, taking shape {@code grown} of the way. */
+    private static double spread(double grown) {
+        if (grown >= SPREAD_UNTIL) {
+            return 1.0;
+        }
+        if (grown >= SPREAD_TOP) {
+            return Ease.hermite(SPREAD_OVER, 0.0, 1.0, 0.0, (grown - SPREAD_TOP) / (SPREAD_UNTIL - SPREAD_TOP));
+        }
+        double u = Math.max(0.0, (grown - SPREAD_FROM) / (SPREAD_TOP - SPREAD_FROM));
+        return Math.max(1.0E-3, Ease.hermite(0.12, 2.4, SPREAD_OVER, 0.0, u));
+    }
+
+    /** How far round the rim (from the middle of its top, either way) rivet {@code i} sits. */
+    private static double rivetRound(int i) {
+        double round = RIM_ALONG[(2 * i - RIM_TOP + RIM.length - 1) % (RIM.length - 1)];
+        return Math.min(round, RIM_ALONG[RIM_ALONG.length - 1] - round);
+    }
+
+    /** The rim of the shield as far as {@code head} round from the middle of its top, both ways. */
+    private static void rim(LanternPainter painter, ConstructPainter.Frame frame, double head) {
+        double length = RIM_ALONG[RIM_ALONG.length - 1];
+        double tail = length - head;
+        for (int i = 0; i < RIM_EDGES.length; i++) {
+            double from = RIM_ALONG[i];
+            double to = RIM_ALONG[i + 1];
+            if (to <= head || from >= tail) {
+                painter.mesh(RIM_EDGES[i], frame, 1.0, 1.0);
+            } else if (from < head) {
+                painter.mesh(Mesh.tube(false, 6, RIM_THICK, 1.4, RIM[i], rimAt(head)), frame, 1.0, 1.0);
+            } else if (to > tail) {
+                painter.mesh(Mesh.tube(false, 6, RIM_THICK, 1.4, rimAt(tail), RIM[i + 1]), frame, 1.0, 1.0);
+            }
+        }
+    }
+
+    /** The point of the rim {@code round} round it from the middle of its top (in the shield's own blocks). */
+    private static Vec3 rimAt(double round) {
+        int i = 0;
+        while (i + 2 < RIM.length && RIM_ALONG[i + 1] < round) {
+            i++;
+        }
+        double stretch = Math.max(1.0E-6, RIM_ALONG[i + 1] - RIM_ALONG[i]);
+        return RIM[i].lerp(RIM[i + 1], Mth.clamp((round - RIM_ALONG[i]) / stretch, 0.0, 1.0));
+    }
+
+    /** One end of the bright edge running round the rim as the shield takes shape: a spark, and a streak behind it. */
+    private static void edgeLight(LanternPainter painter, ConstructPainter.Frame frame, double round, double scale) {
+        double length = RIM_ALONG[RIM_ALONG.length - 1];
+        double back = round <= length / 2.0 ? -1.0 : 1.0;
+        Vec3 head = rimAt(round);
+        Vec3 at = frame.at(head.x, head.y, head.z);
+        painter.flare(at, 0.12 * scale, 1.0);
+        Vec3 last = at;
+        for (int k = 1; k <= 4; k++) {
+            Vec3 point = rimAt(Mth.clamp(round + back * 0.07 * k, 0.0, length));
+            Vec3 next = frame.at(point.x, point.y, point.z);
+            painter.edge(last, next, 0.03 * scale, 1.0 - 0.22 * k);
+            last = next;
+        }
+    }
+
+    /**
+     * The clang of the blade on the rim of the shield, {@code since} ticks after it struck at {@code at}: a hot flash,
+     * and sparks of light spraying off it, along the rim ({@code along}) either way and up away from it ({@code off}).
+     * Light, gone in a few ticks.
+     */
+    public static void clang(LanternPainter painter, Vec3 at, Vec3 along, Vec3 off, double since, double scale) {
+        if (since < 0.0 || since > CLANG_TICKS) {
+            return;
+        }
+        double u = since / CLANG_TICKS;
+        double fade = (1.0 - u) * (1.0 - u);
+        painter.flare(at, 0.2 * scale * (1.0 + u), fade);
+        for (int k = 0; k < 7; k++) {
+            double angle = (k / 6.0 - 0.5) * 2.4;
+            Vec3 way = along.scale(Math.sin(angle)).add(off.scale(Math.cos(angle))).normalize();
+            double reach = scale * (0.08 + 0.3 * Math.sqrt(u)) * (0.7 + 0.075 * ((k * 3) % 5));
+            painter.edge(at.add(way.scale(reach * 0.5)), at.add(way.scale(reach)), 0.014 * scale, fade);
+        }
     }
 
     /**

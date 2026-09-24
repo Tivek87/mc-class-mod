@@ -214,47 +214,56 @@ public enum GameCharacter {
                     .was(12.0)
                     .setting("powerCost", 2.0, 0.0, 100.0, Unit.POWER, "Ring power one scan costs");
             // The ultimate: he throws his ring fist up at the sky and a big, slow gunship of hard light with four
-            // propellers takes shape high over the battlefield. It drones on in a straight line over the area he looked
-            // at, scans it for everything out to hurt him and fires its two miniguns and two missile launchers at that
-            // (with nothing marked they rake the ground along its way); then all at once it plunges down and crashes in a massive blast of green energy that blows a crater
-            // out of the ground (this damage in the middle, half of it at the edge).
-            this.add(abilities, AbilitySlot.ABILITY_7, "air_strike").cooldown(1800).damage(40.0)
+            // propellers takes shape high over the battlefield, with two jets that race round it. It drones on in a
+            // straight line over the area he looked at, scans it for everything out to hurt him and fires at that: its
+            // two miniguns (with nothing marked they rake the ground along its way), big homing missiles that drop out
+            // of the hatch in its belly, and the small homing missiles of its jets. Then an engine bursts, the jets race
+            // off, and it plunges down and crashes in a massive blast of green energy that blows a crater out of the
+            // ground (this damage in the middle, half of it at the edge).
+            this.add(abilities, AbilitySlot.ABILITY_7, "air_strike").cooldown(1800).damage(48.0).damageWas(40.0)
                     .setting("attackSeconds", 20.0, 2.0, 60.0, Unit.SECONDS,
-                            "How long the plane drones on and fires before it plunges down, in seconds")
+                            "How long the plane drones on and fires before it plunges down, in seconds; its engine"
+                                    + " bursts and its jets race off in the last 1.8 seconds of it")
                     .was(10.0)
                     .setting("scanBlocks", 84.0, 8.0, 160.0, Unit.BLOCKS,
                             "How far its sensor scans the ground round it for creatures to fire at, in blocks (the"
                                     + " Ring Scan reaches 56)")
                     .setting("powerCost", 20.0, 0.0, 100.0, Unit.POWER, "Ring power the air strike costs")
                     .group("guns", "The miniguns")
-                    .settingInt("gunTicks", 6, 2, 100, Unit.TICKS,
+                    .setting("gunTicks", 4.6, 1.0, 100.0, Unit.TICKS,
                             "Ticks between two rounds of one minigun; the two fire in turn, so together they fire"
                                     + " twice in that time (20 ticks = 1 second)")
+                    .was(6.0)
                     .setting("gunDamage", 3.0, 0.0, 2000.0, Unit.HALF_HEARTS,
                             "Damage of one round that strikes, in half hearts")
                     .setting("gunSpread", 2.4, 0.0, 12.0, Unit.BLOCKS,
                             "How far round what they aim at the rounds spread, in blocks: the wider, the fewer strike")
                     .group("missiles", "Homing missiles")
                     .settingInt("missileTicks", 40, 4, 400, Unit.TICKS,
-                            "Ticks between two missiles; the two launchers fire in turn (20 ticks = 1 second)")
+                            "Ticks between two missiles dropping out of the hatch in its belly (20 ticks = 1 second)")
                     .was(10.0)
-                    .setting("missileDamage", 8.0, 0.0, 2000.0, Unit.HALF_HEARTS,
-                            "Damage of a missile to the creature it finds, in half hearts; what else its small blast"
+                    .setting("missileDamage", 24.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                            "Damage of a missile to the creature it strikes, in half hearts; what else its blast"
                                     + " reaches takes less")
-                    .setting("hitChance", 0.9, 0.0, 1.0, Unit.CHANCE,
-                            "How often a missile finds its creature (0.9 = 90%); the others strike the ground a few"
-                                    + " blocks off")
-                    .was(0.65)
+                    .was(8.0)
                     .setting("missileCraterRadius", 2.2, 0.0, 6.0, Unit.BLOCKS,
                             "How wide the small crater a missile blows out of the ground is, from its middle, in blocks"
                                     + " (0 = none; the crash's block hardness applies here too)")
+                    .group("jets", "The jets")
+                    .settingInt("jetMissileTicks", 24, 4, 400, Unit.TICKS,
+                            "Ticks between two small missiles of one jet, fired at the creature out to hurt you nearest"
+                                    + " to it (20 ticks = 1 second)")
+                    .setting("jetMissileDamage", 5.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                            "Damage of a jet's small missile to the creature it strikes, in half hearts; what else its"
+                                    + " small blast reaches takes less")
                     .group("crash", "The crash")
-                    .setting("crashRadius", 14.0, 2.0, 40.0, Unit.BLOCKS,
+                    .setting("crashRadius", 16.0, 2.0, 40.0, Unit.BLOCKS,
                             "How far the blast of the crash reaches, in blocks")
-                    .was(12.0)
-                    .setting("craterRadius", 7.0, 0.0, 16.0, Unit.BLOCKS,
+                    .was(12.0, 14.0)
+                    .setting("craterRadius", 8.0, 0.0, 16.0, Unit.BLOCKS,
                             "How wide the crater the crash blows out of the ground is, from its middle, in blocks (0 ="
                                     + " no crater)")
+                    .was(7.0)
                     .setting("breakHardness", 3.0, -1.0, 100.0, Unit.HARDNESS,
                             "How hard a block may be for the crash to blow it away (dirt 0.5, stone 1.5, wood 2, iron"
                                     + " 5); -1 leaves the ground alone. Blocks that hold something, like chests, stay")
@@ -316,24 +325,23 @@ public enum GameCharacter {
                     .setting("chunkAheadSeconds", 8.0, 0.0, 30.0, Unit.SECONDS,
                             "How many seconds of flying ahead of a flyer the server makes the world ready as well, along"
                                     + " the way he flies and at the speed he flies (at most 512 blocks ahead)");
-            // The ring fist thrown up high: the lantern takes shape over it out of the ring's light, fills with light
-            // and bursts like a small sun, blinding and slowing everything that sees it; blinded creatures cannot find
-            // anyone for as long as it lasts. The creatures of the dark burn, are hurt (this damage), thrown back and
-            // flee.
-            this.add(abilities, AbilitySlot.ABILITY_10, "light_flare").cooldown(600).cooldownWas(300).damage(8.0)
-                    .setting("radiusBlocks", 14.0, 2.0, 32.0, Unit.BLOCKS,
-                            "How far the flash reaches, in blocks: only what can see the ring is struck")
-                    .was(12.0)
-                    .setting("blindSeconds", 12.5, 0.0, 60.0, Unit.SECONDS,
-                            "How long whatever the flash strikes is blinded, in seconds: a blinded creature loses"
-                                    + " whoever it was after and cannot find anyone further off than a few blocks")
-                    .was(4.0)
-                    .setting("stunSeconds", 12.5, 0.0, 60.0, Unit.SECONDS,
-                            "How long whatever the flash strikes is slowed down and weakened, in seconds: hard at"
-                                    + " first, then milder for the rest of it")
-                    .was(3.0)
-                    .setting("powerCost", 8.0, 0.0, 100.0, Unit.POWER, "Ring power one flash costs")
-                    .was(6.0);
+            // He waves his ring hand this way and that, and at every wave a giant hand of hard light bursts up out of
+            // the ground at one of the creatures out to hurt him round him: it smacks it away, grabs it and throws it,
+            // gives it the middle finger, slaps it flat against the ground, or pounds its fist down on it three times.
+            // A smack does this damage; the others more or less of it.
+            this.add(abilities, AbilitySlot.ABILITY_10, "giant_hands").cooldown(600).damage(12.0).damageWas(10.0)
+                    .setting("radiusBlocks", 20.0, 4.0, 48.0, Unit.BLOCKS,
+                            "How far round you the hands come up at creatures out to hurt you, every way, in blocks"
+                                    + " (20 = an area 40 blocks across)")
+                    .settingInt("hands", 6, 1, 30, Unit.COUNT,
+                            "How many hands come up, one after another (a pair with an axe counts as two): at most"
+                                    + " three at once, the next once the one before is halfway through")
+                    .was(8.0)
+                    .setting("knockback", 2.0, 0.0, 5.0, Unit.STRENGTH,
+                            "How hard the hands send a creature flying (a middle finger bursting out of the ground and"
+                                    + " the axe of a pair far harder)")
+                    .was(1.6)
+                    .setting("powerCost", 8.0, 0.0, 100.0, Unit.POWER, "Ring power the hands cost");
             // A bubble of hard light round the creature he looks at: the ring lifts it off the ground and holds it
             // there, unable to do anything. Press again to pound it into the ground: three slams, straight down, on his
             // left and on his right (the last one this damage, the two before it a third of it each; half of that to

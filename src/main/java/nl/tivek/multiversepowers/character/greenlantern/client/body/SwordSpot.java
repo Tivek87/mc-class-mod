@@ -15,8 +15,8 @@ import org.joml.Vector3f;
 /**
  * Where the hands of every Green Lantern with the sword and shield really are: measured each time his body is drawn
  * (see {@link GreenLanternSuitLayer}), so the sword sits in his fist and the shield on his forearm wherever his arms go,
- * also when he flies, crouches or turns. Next to the grip and the forearm it keeps how his whole body stands, to turn the
- * ways a pose gives (seen from his upper body) into ways in the world.
+ * also when he flies, crouches or turns. Next to the grip and the forearm it keeps how his whole body stands and where,
+ * to turn the ways and places a pose gives (seen from his upper body) into ways and places in the world.
  */
 final class SwordSpot {
     // A spot older than this is not trusted any more (his body went out of view).
@@ -24,9 +24,10 @@ final class SwordSpot {
 
     /**
      * How one body stood when it was drawn last: its own three ways out in the world (x to its left, y down, z back, as
-     * the game's models have them), the grip of its right fist, the outside of its left forearm, and when.
+     * the game's models have them), the grip of its right fist, the outside of its left forearm, when, where the model
+     * stands (the point of it just below its neck) and how big it is drawn.
      */
-    record Spot(Vec3 x, Vec3 y, Vec3 z, Vec3 grip, Vec3 mount, long when) {
+    record Spot(Vec3 x, Vec3 y, Vec3 z, Vec3 grip, Vec3 mount, long when, Vec3 origin, double scale) {
         /**
          * A way seen from his upper body (x to his right, y up, z ahead), with the upper body turned {@code twist} to
          * his right, as a way out in the world.
@@ -41,7 +42,18 @@ final class SwordSpot {
             double tz = -mx * sin + mz * cos;
             return this.x.scale(tx).add(this.y.scale(my)).add(this.z.scale(tz));
         }
+
+        /**
+         * A place seen from his body, in blocks from the middle of his chest at the height of the shoulders (x to his
+         * right, y up, z ahead, at the model's own size, see {@link SwordPoses#drawn}), as a place in the world.
+         */
+        Vec3 at(Vec3 place) {
+            return this.origin.add(this.world(place.subtract(0.0, SHOULDERS, 0.0), 0.0F).scale(this.scale));
+        }
     }
+
+    // How far below the point the model stands on its shoulders are, in blocks at its own size.
+    private static final double SHOULDERS = 2.0 / 16.0;
 
     private static final class Measured {
         Vec3 x = new Vec3(-1.0, 0.0, 0.0);
@@ -49,6 +61,8 @@ final class SwordSpot {
         Vec3 z = new Vec3(0.0, 0.0, -1.0);
         Vec3 grip = Vec3.ZERO;
         Vec3 mount = Vec3.ZERO;
+        Vec3 origin = Vec3.ZERO;
+        double scale = 1.0;
         long root = Long.MIN_VALUE / 2L;
         long right = Long.MIN_VALUE / 2L;
         long left = Long.MIN_VALUE / 2L;
@@ -66,6 +80,10 @@ final class SwordSpot {
         measured.x = way(matrix, 1.0F, 0.0F, 0.0F);
         measured.y = way(matrix, 0.0F, 1.0F, 0.0F);
         measured.z = way(matrix, 0.0F, 0.0F, 1.0F);
+        Vector3f origin = matrix.transformPosition(0.0F, 0.0F, 0.0F, new Vector3f());
+        measured.origin = Minecraft.getInstance().gameRenderer.getMainCamera().getPosition().add(origin.x, origin.y,
+                origin.z);
+        measured.scale = matrix.transformDirection(1.0F, 0.0F, 0.0F, new Vector3f()).length();
         measured.root = Util.getMillis();
     }
 
@@ -97,7 +115,8 @@ final class SwordSpot {
                 || now - measured.left > FRESH_MS) {
             return null;
         }
-        return new Spot(measured.x, measured.y, measured.z, measured.grip, measured.mount, measured.root);
+        return new Spot(measured.x, measured.y, measured.z, measured.grip, measured.mount, measured.root,
+                measured.origin, measured.scale);
     }
 
     /** Forgets everyone (you left the world). */
