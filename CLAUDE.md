@@ -11,7 +11,17 @@
 - The mod is English only: every in-game text lives in `en_us.json`, never add another language file.
 
 ## Engine
-- The engine (`ConstructPainter`, `Mesh` and what they draw with) may always be updated and extended on your own. Extensions or additions around the character itself (new abilities, new constructs, changes to how Green Lantern plays) always need the user's permission first.
+- The engine (everything in `engine/`: `ConstructPainter`, `Mesh`, `Material`, `Effects`, `Cooldowns` and the rest) may always be updated and extended on your own. Extensions or additions around the character itself (new abilities, new constructs, changes to how Green Lantern plays) always need the user's permission first.
+- Anything a second power could use belongs in `engine/`, and `engine/` never names a character, spell or class: content brings only what is its own. Colours go through a `Material`; a character's own shapes go in a painter subclass (Green Lantern: `LanternPainter`).
+- Lasting server work is an `Effect` started with `Effects.start` (never a tick loop of its own); cooldowns use `Cooldowns`; a character plugs in through `CharacterPowers`, a spell through its entry in `Spell`, so nothing switches on who is who. State kept per server is dropped in the one list in `MultiversePowers.onServerStopping`.
+- An engine optimisation must leave what is drawn exactly the same; check it with a checksum over the painter's layers before and after, not only by eye.
+
+## Code layout
+- Package `nl.tivek.multiversepowers`; the mod id stays `welcomescreen` (worlds, settings files, keys and saved data carry it).
+- `engine/`: `effect/` (Effect, Effects), `ability/` (Cooldowns), `entity/` (HeldMobs), `fx/` (ParticleFx), `target/` (Targeting), `math/` (Ease, Noise, Colors, Vectors), `client/render/` (ConstructPainter, Mesh, Material), `client/gui/`.
+- `character/`: the roster (`GameCharacter`), keys, cooldowns and the panel (`Characters`, `client/`), and one folder per character. `greenlantern/` holds the ring and its payloads, `ability/` (server), `client/` (state), `client/render/` (LanternPainter and every hard-light painter), `client/slam/` (the 32 slam constructs), `client/body/` (suit, ring, poses), `client/hud/`.
+- `spell/`, `classes/` (`ceremony/`: one file per group), `stamina/`, `config/`, `network/` (`ModNetwork` registers every payload; each payload class lives with its feature), `registry/`, `mixin/`.
+- Client-only code always sits in a package named `client`, so a dedicated server never loads it.
 
 ## Construct drawing
 - Player model arms: a `ModelPart` turns about x first, then about z, so an arm raised overhead (xRot near -π) spreads outward with the opposite zRot sign from a hanging arm (the raised right arm goes out with a negative zRot).
@@ -25,3 +35,6 @@
 - Before every run, tell the user in one line not to click or type in the game window. Outside input still happens: the test class sets the camera type and the look direction again every tick, and closes (and logs) any screen that opens by itself. Check the screenshots for interference (open screen, moved camera, F3/F1, a character switched off) before trusting them.
 - Test tools: run commands on the server thread with `server.getCommands().performPrefixedCommand(server.createCommandSourceStack(), ...)` (needs no cheats); a single press is `KeyMapping.click(key)` (`setDown` gives no click); point the mouse in a screen by setting `MouseHandler` `xpos`/`ypos` through reflection (the real cursor stays put); a `ServerTickEvent.Post` handler in the test class traces the server side per tick; `ClientCommandHandler.runCommand("name")` runs a client-only command; loop over a copy of `screen.children()` when a test changes a screen's widgets. Only one temporary test class may start at the title screen: move the others out before a run.
 - The server's `onGround()` of a player runs a tick ahead: every tick it moves him one step by itself, puts him back where his client says, but keeps whether that step hit ground. For "is he really standing" check for a collision just below his bounding box.
+- A temporary test class only runs while a flag file exists (e.g. `run/claude_engine_test.flag`) and deletes it at its start, so it never takes over a game the user starts himself.
+- The ability key Left Alt also fires on Alt+Tab (the game still sees the Alt): before trusting a shot of the Lantern Flare, check on the panel that it was not already on cooldown.
+- A refactor that must keep the game the same: run the same test on the original code too (`git archive HEAD` into the scratchpad, copy `run/options.txt` and `run/config` into its `run`, `gradlew runClient` there) and compare the screenshots pair by pair. The painter cannot start outside the game (NeoForge wants its loader), so checksum or time it inside a dev client, loading the old classes through a `URLClassLoader`.

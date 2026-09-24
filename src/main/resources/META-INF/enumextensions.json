@@ -5,7 +5,7 @@
       "name": "WELCOMESCREEN_LANTERN",
       "constructor": "(ZLnet/neoforged/neoforge/client/IArmPoseTransformer;)V",
       "parameters": {
-        "class": "nl/tivek/welcomescreen/client/character/lantern/LanternPose",
+        "class": "nl/tivek/multiversepowers/character/greenlantern/client/body/LanternPose",
         "field": "POSE"
       }
     }

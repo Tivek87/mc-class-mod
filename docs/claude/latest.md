@@ -1,13 +1,9 @@
 # Laatste sessie — 2026-09-24
 
-- **Vraag:** alle 16 wapens in het Construct Wheel zetten, alleen met hun naam (geen uitleg) en met mooie iconen die op het wapen lijken.
-- **Gedaan:**
-  - 15 placeholders vervangen door de wapens uit de lijst (`Construct`-enum; volgorde en netwerk-nummers gelijk). Ze doen nog niets (net als lege handen).
-  - Nieuwe `WeaponShapes`: 15 gedetailleerde hard-light 3D-modellen. `ConstructIcons` zet elk wapen in een eigen pose; paren als twee (vuistbots, gekruiste dolken/revolvers, SMG's rug aan rug). Armkanon en vlammenwerper hebben een klein lichtje (licht, geen construct).
-  - Wiel: alleen de naam voor de nieuwe wapens; lange namen breken af na " / ". Sword & Shield houdt zijn uitleg.
-  - Nederlands taalbestand verwijderd (mod alleen Engels); regel toegevoegd in project-CLAUDE.md.
-  - Getest in het spel (3 runs, screenshots groot en in het wiel, ook klein scherm); testklasse, testwereld en screenshots weer verwijderd; build slaagt.
-- **Bestanden:** Construct.java, ConstructIcons.java, WeaponShapes.java (nieuw), ConstructWheelScreen.java, ConstructHud.java, en_us.json, nl_nl.json (weg), CLAUDE.md, docs/POWERS.md, docs/GREEN_LANTERN.md, docs/PROJECT.md, docs/CHANGELOG.md.
-- **Vervolgvraag:** zijn de 3D-iconen echte modellen? Antwoord: ja, echte meshes in `WeaponShapes`, maar nu alleen als icoon gebruikt (wiel + hotbar-balk), nog niet in de hand of wereld.
-- **Commit + push:** gedaan op verzoek ("commit en push alles"), samen met het werk van de vorige sessie.
-- **Open:** Op het kleinste scherm overlapt de balk boven de hotbar met lange namen het abilities-paneel (bestond al met de lange uitleg van Sword & Shield). Wapens echt laten werken vraagt per wapen toestemming.
+- **Vraag:** engine uitbreiden/beter/sneller/georganiseerd; alle mappen/bestanden herindelen; QOL (chat in `docs/copilotchat.txt` = alleen voorbeelden). Keuzes user: package `nl.tivek.multiversepowers` (mod-id blijft `welcomescreen`), kleine bugfixes mogen, geen van de 4 voorgestelde QOL-extra's.
+- **Structuur:** 159 klassen naar feature-mappen (`engine/`, `character/{docock,greenlantern/{ability,client/{render,slam,body,hud}}}`, `spell/`, `classes/ceremony/`, `stamina/`, `config/`, `network/`, `registry/`, `mixin/`); payloads bij hun feature; `ClassEffects` (4408 r.) → 11 bestanden; mediabestanden hoofdmap → `docs/reference/`; `DisplayHelper` (ongebruikt) weg.
+- **Engine:** `engine/math` (11 dubbele helpers weg); `ConstructPainter` generiek met `Material` + publieke primitieven, GL-vormen in `LanternPainter`; `Effects` (één effect-runtime, crash van één effect legt echte server niet meer plat); `Cooldowns`; `CharacterPowers` + `Spell.cast` (geen switch per character/spreuk); `HeldMobs.addHolder`; centrale opruiming in `MultiversePowers.onServerStopping`; `/constructshockwave` naar GL; login-tekst naar `en_us.json`.
+- **Sneller:** painter-uitvoer bit-gelijk (checksum 300.600 hoekpunten), tekentijd gelijk (~1,9 ms/testscène), 49% minder afvalgeheugen (708→364 KB/scène) + geen `Vector3f` per hoekpunt meer bij tekenen.
+- **Getest:** build ok; dedicated server start (run-server daarna exact teruggezet); zelfde 64-shot test op oude én nieuwe code: 0 fouten, beelden gelijk (verschil alleen toeval). Testklasse/wereld/shots verwijderd.
+- **Regels:** CLAUDE.md: engine-regels + code-indeling + 3 testregels (vlagbestand, Left Alt, oud-vs-nieuw vergelijken).
+- **Open:** commit + push vragen. Vervolg-idee: client-kant (`ClientCharacter` invoer/HUD) ook via een per-character hook; 17 item-modellen in resources zonder geregistreerde items.

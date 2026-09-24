@@ -275,6 +275,8 @@
   "spell.welcomescreen.stellar_core": "Stellar Core",
   "spell.welcomescreen.stellar_core.desc": "Creates a 3D gyroscopic core of orbiting cosmic rings and a pulsating star. Draws enemies into its center before collapsing in a supernova burst.",
   "spell.welcomescreen.no_target": "No creature in your sights",
+  "spell.welcomescreen.welcome_tag": "[Magic]",
+  "spell.welcomescreen.welcome_tip": "Feel free to send me whatever you want! I can make simple spells within 3min. Think of something and let me know, and I'll try to make it ASAP!",
   "spell.welcomescreen.too_weak": "You are too weak to sacrifice blood!",
   "school.welcomescreen.earth": "Earth",
   "school.welcomescreen.air": "Air",

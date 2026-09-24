@@ -1,0 +1,88 @@
+package nl.tivek.multiversepowers.network;
+
+import net.neoforged.neoforge.network.handling.IPayloadContext;
+import nl.tivek.multiversepowers.character.CharacterLookPayload;
+import nl.tivek.multiversepowers.character.CharacterStatePayload;
+import nl.tivek.multiversepowers.character.client.ClientCharacter;
+import nl.tivek.multiversepowers.character.docock.ArmPayload;
+import nl.tivek.multiversepowers.character.docock.GrabStatePayload;
+import nl.tivek.multiversepowers.character.docock.PortalPayload;
+import nl.tivek.multiversepowers.character.docock.client.ClientArms;
+import nl.tivek.multiversepowers.character.docock.client.ClientGrabState;
+import nl.tivek.multiversepowers.character.greenlantern.ConstructPayload;
+import nl.tivek.multiversepowers.character.greenlantern.RingPayload;
+import nl.tivek.multiversepowers.character.greenlantern.client.ClientConstructs;
+import nl.tivek.multiversepowers.character.greenlantern.client.ClientLooks;
+import nl.tivek.multiversepowers.character.greenlantern.client.ClientRing;
+import nl.tivek.multiversepowers.classes.ClassSyncPayload;
+import nl.tivek.multiversepowers.classes.PlayerClass;
+import nl.tivek.multiversepowers.classes.client.ClientClassData;
+import nl.tivek.multiversepowers.classes.client.ClientWelcome;
+import nl.tivek.multiversepowers.spell.Spell;
+import nl.tivek.multiversepowers.spell.SpellCooldownPayload;
+import nl.tivek.multiversepowers.spell.VoidStatePayload;
+import nl.tivek.multiversepowers.spell.client.ClientSpellCooldowns;
+import nl.tivek.multiversepowers.spell.client.ClientVoidState;
+import nl.tivek.multiversepowers.stamina.StaminaCostPayload;
+import nl.tivek.multiversepowers.stamina.client.StaminaClient;
+
+/**
+ * Client-only side of the network handling. Never loaded on a dedicated server.
+ */
+public final class ClientPayloadHandler {
+    private ClientPayloadHandler() {
+    }
+
+    public static void handleOpenWelcome(IPayloadContext context) {
+        context.enqueueWork(ClientWelcome::requestWelcomeScreen);
+    }
+
+    public static void handleSpellCooldown(SpellCooldownPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> {
+            Spell spell = Spell.byId(payload.spellId());
+            if (spell != null) {
+                ClientSpellCooldowns.set(spell, payload.ticks());
+            }
+        });
+    }
+
+    public static void handleVoidState(VoidStatePayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> ClientVoidState.set(payload.ticks()));
+    }
+
+    public static void handleGrabState(GrabStatePayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> ClientGrabState.set(payload.holding(), payload.blocks()));
+    }
+
+    public static void handleArm(ArmPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> ClientArms.update(payload));
+    }
+
+    public static void handleCharacterState(CharacterStatePayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> ClientCharacter.set(payload));
+    }
+
+    public static void handleCharacterLook(CharacterLookPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> ClientLooks.update(payload));
+    }
+
+    public static void handleStaminaCost(StaminaCostPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> StaminaClient.use(payload.amount()));
+    }
+
+    public static void handlePortal(PortalPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> ClientArms.updatePortal(payload));
+    }
+
+    public static void handleConstruct(ConstructPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> ClientConstructs.update(payload));
+    }
+
+    public static void handleRing(RingPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> ClientRing.update(payload));
+    }
+
+    public static void handleClassSync(ClassSyncPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> ClientClassData.set(PlayerClass.byId(payload.classId())));
+    }
+}
