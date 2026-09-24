@@ -30,6 +30,7 @@ import nl.tivek.multiversepowers.character.greenlantern.client.ClientConstructs;
 import nl.tivek.multiversepowers.character.greenlantern.client.ClientRing;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.SuitGlow;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.SwordArms;
+import nl.tivek.multiversepowers.config.client.ClientSettings;
 import nl.tivek.multiversepowers.engine.math.Colors;
 import nl.tivek.multiversepowers.engine.math.Noise;
 import nl.tivek.multiversepowers.engine.math.Vectors;
@@ -183,9 +184,10 @@ public final class BeamCharge {
             return;
         }
         float time = player.tickCount + partialTick;
+        float shake = ClientSettings.cameraShake();
         float kick = age < KICK_TICKS ? KICK * (1.0F - age / KICK_TICKS) * (1.0F - age / KICK_TICKS) : 0.0F;
-        event.setPitch(event.getPitch() - kick + 0.18F * Mth.sin(time * 3.1F));
-        event.setYaw(event.getYaw() + 0.14F * Mth.sin(time * 2.3F + 1.0F));
+        event.setPitch(event.getPitch() + shake * (-kick + 0.18F * Mth.sin(time * 3.1F)));
+        event.setYaw(event.getYaw() + shake * 0.14F * Mth.sin(time * 2.3F + 1.0F));
     }
 
     @SubscribeEvent

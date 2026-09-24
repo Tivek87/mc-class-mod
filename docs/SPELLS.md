@@ -80,7 +80,7 @@ On impact: a flash, a ball of fire, a burning ring rolling over the ground, then
 |---|---|
 | Speed | starts at 22 blocks per second and speeds up to almost 40, straight where you look |
 | Damage | 5 (2.5 hearts), and the target burns for 5 seconds |
-| Fire | the spot it hits, plus about half of the 8 spots around it |
+| Fire | the spot it hits, plus about half of the 8 spots around it (not at another player's feet where players may not fight each other, and never in spawn protection) |
 | Lifetime | fizzles out after 5 seconds if it hits nothing |
 | Cooldown | 2 s |
 
@@ -99,7 +99,7 @@ a ring of sparks, flying pieces of the ground, and a smoking, crackling scorch m
 | Aiming | the creature or block you look at; a creature is followed while the spell charges |
 | Damage | normal lightning: 5 (2.5 hearts) and sets the target on fire |
 | Fire | also sets the ground on fire, on Normal and Hard difficulty |
-| You | your own lightning never hits you |
+| You | your own lightning never hits you; other players only where players may fight each other |
 | Cooldown | 8 s |
 
 ---
@@ -115,7 +115,7 @@ the ground. Every creature inside gets a green haze. At the end the cloud thins 
 | Range | 24 blocks, lands where you look |
 | Cloud | 3.5 blocks around the landing spot, 8 seconds |
 | Effect | Poison II for 3 seconds, renewed every half second while inside |
-| You | never poisoned by your own cloud |
+| You | never poisoned by your own cloud; other players only where players may fight each other, spectators never |
 | Cooldown | 12 s |
 
 ---
@@ -130,7 +130,7 @@ Every creature it reaches is thrown back and up with a puff of air.
 | Range | 8 blocks, in a wide cone in front of you (about 60 degrees to each side) |
 | Wave speed | 20 blocks per second; creatures are thrown the moment the wave reaches them |
 | Push | strongest up close, weaker further away; knockback resistance (like netherite armour) lowers it |
-| Hits | every living creature in the cone, players too; never you |
+| Hits | every living creature in the cone, never you; other players only where players may fight each other (PvP on, not in creative) |
 | Damage | none, only the push (and the fall afterwards) |
 | Cooldown | 5 s |
 
@@ -151,7 +151,7 @@ and you hear a low heartbeat. When it ends, you come back with a burst.
 | Speed | +50% |
 | Melee damage | +20% |
 | Marked | monsters and other players within 32 blocks glow for you, also through walls, with a purple mark above their head |
-| Ends early | when you die or log out |
+| Ends early | when you die or log out, or when something takes the invisibility away (milk, a flash of light) |
 | Cooldown | 30 s |
 
 Only you see the marks and the dark screen.

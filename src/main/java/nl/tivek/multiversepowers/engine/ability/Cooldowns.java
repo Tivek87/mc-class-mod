@@ -39,6 +39,26 @@ public final class Cooldowns<K> {
         this.readyAt.remove(player.getUUID());
     }
 
+    /**
+     * Forgets this player once none of his cooldowns runs any more; one that still runs is kept, so leaving and
+     * coming back (or dying) never makes a thing ready sooner.
+     */
+    public void forgetReady(ServerPlayer player) {
+        Map<K, int[]> perKey = this.readyAt.get(player.getUUID());
+        if (perKey == null) {
+            return;
+        }
+        int now = player.server.getTickCount();
+        for (int[] ready : perKey.values()) {
+            for (int tick : ready) {
+                if (tick > now) {
+                    return;
+                }
+            }
+        }
+        this.readyAt.remove(player.getUUID());
+    }
+
     /** Every cooldown of everyone is ready again (the server stops). */
     public void clear() {
         this.readyAt.clear();

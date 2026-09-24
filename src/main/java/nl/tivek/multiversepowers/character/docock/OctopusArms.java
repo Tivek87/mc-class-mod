@@ -62,6 +62,8 @@ public final class OctopusArms {
     // The legs simply step over anything this high.
     static final double STEP_BONUS = 1.0;
     private static final float BLOCK_STAMINA_PER_DAMAGE = 2.0F;
+    // How long a player the tentacles let fall without meaning to (see setDown) lands unhurt.
+    private static final int SET_DOWN_SAFE = 80;
 
     private static final Map<UUID, OctoRig> RIGS = new HashMap<>();
     // Per player: until which server tick a landing does not hurt (after a dash or an air slam).
@@ -87,7 +89,7 @@ public final class OctopusArms {
         if (old != null) {
             old.fold();
         }
-        OctoRig rig = new OctoRig(player);
+        OctoRig rig = new OctoRig(player, level);
         RIGS.put(player.getUUID(), rig);
         Effects.start(level, rig);
         modifier(player, Attributes.ENTITY_INTERACTION_RANGE, REACH_ID,
@@ -230,15 +232,21 @@ public final class OctopusArms {
 
     public static void clear() {
         for (OctoRig rig : RIGS.values().toArray(new OctoRig[0])) {
-            rig.shutDown();
+            rig.shutDown(rig.level());
         }
         RIGS.clear();
         SAFE_FALL.clear();
+        RobotArm.clear();
     }
 
     /** Called by a rig that has fully folded in or stopped. */
     static void removed(ServerPlayer player, OctoRig rig) {
-        RIGS.remove(player.getUUID(), rig);
+        // Only the player's current arms take their powers with them: an old pair that finishes folding
+        // in after you turned into Doctor Octopus again leaves the new pair alone.
+        if (!RIGS.remove(player.getUUID(), rig)) {
+            return;
+        }
+        SAFE_FALL.remove(player.getUUID());
         modifier(player, Attributes.ENTITY_INTERACTION_RANGE, REACH_ID,
                 0, AttributeModifier.Operation.ADD_VALUE, false);
         modifier(player, Attributes.BLOCK_INTERACTION_RANGE,
@@ -279,6 +287,17 @@ public final class OctopusArms {
     /** The next landing within {@code ticks} does not hurt. */
     static void safeFall(ServerPlayer player, int ticks) {
         SAFE_FALL.put(player.getUUID(), player.server.getTickCount() + ticks);
+    }
+
+    /**
+     * A player the tentacles let go of without throwing or slamming him: the arms fold in, the one holding
+     * him logs out or dies, or he may no longer be hurt. The fall from where he was held does not hurt him.
+     */
+    static void setDown(LivingEntity target) {
+        if (target instanceof ServerPlayer player && player.isAlive() && !player.isRemoved()) {
+            player.resetFallDistance();
+            safeFall(player, SET_DOWN_SAFE);
+        }
     }
 
     // ---- Events ----

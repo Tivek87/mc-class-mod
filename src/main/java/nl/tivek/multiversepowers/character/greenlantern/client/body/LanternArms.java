@@ -53,6 +53,13 @@ public final class LanternArms {
     private static final double POUND_LOW = -0.08;
     // How far out the hand comes while the ring gathers its light for the beam, once it is full: most of the way.
     private static final float CHARGE_REACH = 0.7F;
+    // Your own ring hand shooting bolts (see BoltArm), in blocks in front of your eyes: where it points from, straight
+    // ahead under the crosshair, how far each bolt kicks it (up and back towards you), and how quickly it comes up and
+    // goes down again, per second.
+    private static final Vector3f POINT = new Vector3f(0.36F, -0.24F, -1.3F);
+    private static final Vector3f POINT_KICK = new Vector3f(0.0F, 0.04F, 0.12F);
+    private static final float POINT_UP = 30.0F;
+    private static final float POINT_DOWN = 7.0F;
     // How high on the body the shoulder of the reaching arm sits, as a part of the body's height, and how
     // far it is out to the side, in blocks.
     private static final double SHOULDER_HEIGHT = 0.8;
@@ -70,9 +77,10 @@ public final class LanternArms {
     private static final Vector3f BRACE_REST = new Vector3f(-0.45F, -1.1F, -0.7F);
     private static final Vector3f BRACE_FROM = new Vector3f(-1.25F, -1.15F, 0.25F);
 
-    // How far your own ring hand reaches out along the beam in first person, and how far your other hand has come
-    // over to brace it, eased from frame to frame.
+    // How far your own ring hand reaches out along the beam in first person, how far it points for the bolts, and how
+    // far your other hand has come over to brace it, eased from frame to frame.
     private static float beam;
+    private static float point;
     private static float brace;
     private static long beamAt = Util.getMillis();
 
@@ -81,8 +89,8 @@ public final class LanternArms {
 
     /**
      * Whoever recharges, flies, holds up or pours out one of the ring's shapes, or holds a construct gets a pose of
-     * the mod's own; the game asks anew every frame. This comes last of all: a flight turns the whole body here and
-     * turns it back once it is drawn, so nothing may call the drawing off after this.
+     * the mod's own; the game asks anew every frame. This comes last of all, so what it works out is for a player who
+     * is really drawn.
      */
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public static void onRenderPlayer(RenderPlayerEvent.Pre event) {
@@ -118,11 +126,28 @@ public final class LanternArms {
         }
     }
 
-    /** The body a spinning cut or a flight turned is turned back once it is drawn, in the order they were turned. */
+    /** Once a player is drawn, the turns of his body for a flight or a spinning cut are done with. */
     @SubscribeEvent
     public static void onRenderPlayerPost(RenderPlayerEvent.Post event) {
         SwordArms.unspin(event);
         FlightPose.post(event);
+    }
+
+    /**
+     * While the game draws a player's model (see PlayerRendererMixin): his whole body turns with his flight, then round
+     * for a spinning cut. Only the model turns; his name over his head, drawn after it, stays upright.
+     *
+     * @param scale how much bigger or smaller than usual he is drawn: the game has scaled everything by it already
+     */
+    public static void turnBody(AbstractClientPlayer player, PoseStack pose, float scale) {
+        if (scale <= 0.0F) {
+            return;
+        }
+        // The turns are worked out in the world's own blocks, before his size.
+        pose.scale(1.0F / scale, 1.0F / scale, 1.0F / scale);
+        FlightPose.turnModel(player, pose);
+        SwordArms.turnModel(player, pose);
+        pose.scale(scale, scale, scale);
     }
 
     /**
@@ -197,7 +222,8 @@ public final class LanternArms {
         Vec3 down = new Vec3(0.0, -1.0, 0.0).add(forward.scale(0.25)).normalize();
         // A shield hangs on the other hand, so the ring hand stays where it is and only feeds it.
         ClientConstructs.Held held = ClientConstructs.heldBy(entity.getId(), false);
-        Vec3 way = down;
+        // Shooting bolts, the ring arm points where he aims.
+        Vec3 way = BoltArm.pointing(entity, partialTick) ? entity.getViewVector(partialTick) : down;
         if (held != null) {
             Vec3 out = held.center().subtract(shoulder);
             if (out.lengthSqr() > 1.0E-6) {
@@ -209,8 +235,8 @@ public final class LanternArms {
     }
 
     /**
-     * Your own right hand in first person while you hold a construct or pour out the beam: the game draws it
-     * resting at the bottom of your screen, so the mod draws it reaching out instead. During the take-off of a
+     * Your own right hand in first person while you shoot bolts, hold a construct or pour out the beam: the game draws
+     * it resting at the bottom of your screen, so the mod draws it reaching out instead. During the take-off of a
      * flight both your hands play that part (see {@link FlightPose#hands}).
      */
     @SubscribeEvent
@@ -251,29 +277,35 @@ public final class LanternArms {
      */
     private static float reach(LocalPlayer player) {
         long now = Util.getMillis();
-        float step = 1.0F - (float) Math.exp(-10.0 * Math.min(0.25, (now - beamAt) / 1000.0));
+        double seconds = Math.min(0.25, (now - beamAt) / 1000.0);
+        float step = 1.0F - (float) Math.exp(-10.0 * seconds);
         beamAt = now;
         beam = Mth.lerp(step, beam, ClientRing.has(player, RingPayload.BEAM) ? 1.0F : 0.0F);
         ClientConstructs.Held held = ClientConstructs.heldBy(player.getId(), false);
         float construct = held == null ? 0.0F : Mth.clamp(held.strength(), 0.0F, 1.0F);
         float partialTick = Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(false);
+        boolean pointing = BoltArm.pointing(player, partialTick);
+        point = Mth.lerp(1.0F - (float) Math.exp(-(pointing ? POINT_UP : POINT_DOWN) * seconds), point,
+                pointing ? 1.0F : 0.0F);
         brace = Mth.lerp(step, brace, BeamArm.brace(player, partialTick));
         float charge = Math.max(0.0F, BeamArm.gathering(player, partialTick)) * CHARGE_REACH;
-        return Math.max(Math.max(construct, beam), charge);
+        return Math.max(Math.max(construct, beam), Math.max(charge, point));
     }
 
     /**
      * Where your own right hand is in first person, in blocks in front of your eyes: where the game rests it,
-     * or out towards the construct you are holding, or along the beam (trembling and kicking with it), or thrown up
-     * high for a flare or to call an air strike.
+     * or pointing straight ahead while you shoot bolts (kicking with each one), or out towards the construct you are
+     * holding, or along the beam (trembling and kicking with it), or thrown up high for a flare or to call an air
+     * strike.
      */
     public static Vector3f handPoint(LocalPlayer player, float partialTick) {
         ClientConstructs.Held held = ClientConstructs.heldBy(player.getId(), false);
         float construct = held == null ? 0.0F : Mth.clamp(held.strength(), 0.0F, 1.0F);
         // Gathering light for the beam the hand comes out, the further the fuller the ring.
         float charge = Math.max(0.0F, BeamArm.gathering(player, partialTick)) * CHARGE_REACH;
-        Vector3f hand = new Vector3f(RechargeAnimation.HAND_RIGHT).lerp(REACH, Math.max(Math.max(construct, beam),
-                charge));
+        Vector3f hand = new Vector3f(RechargeAnimation.HAND_RIGHT)
+                .lerp(new Vector3f(POINT).add(new Vector3f(POINT_KICK).mul(BoltArm.kick(player, partialTick))), point)
+                .lerp(REACH, Math.max(Math.max(construct, beam), charge));
         // Pounding a bubble into the ground, the fist goes up and down with it: up as the ring swings it up high, and
         // down with every slam.
         if (held != null && held.smashing()) {

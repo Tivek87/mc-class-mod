@@ -151,6 +151,14 @@ public enum SwordMove {
         return this.hits;
     }
 
+    /**
+     * True while this move, {@code t} ticks in, swings the sword: a cut, a thrust or the flurry. The shield cannot block
+     * meanwhile; held up, it comes back once the move is over.
+     */
+    public boolean swings(double t) {
+        return (this.kind == Kind.ATTACK || this.kind == Kind.FLURRY) && t >= 0.0 && t < this.ticks;
+    }
+
     /** One of the sword's twelve moves at random, never {@code last} again. */
     public static SwordMove randomAttack(RandomSource random, @Nullable SwordMove last) {
         return pick(ATTACKS, random, last);

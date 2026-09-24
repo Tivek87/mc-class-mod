@@ -4,11 +4,13 @@
   "package": "nl.tivek.multiversepowers.mixin",
   "compatibilityLevel": "JAVA_21",
   "mixins": [
-    "EntityMixin"
+    "EntityMixin",
+    "MinecraftServerMixin"
   ],
   "client": [
     "MinecraftMixin",
-    "PlayerModelMixin"
+    "PlayerModelMixin",
+    "PlayerRendererMixin"
   ],
   "injectors": {
     "defaultRequire": 1

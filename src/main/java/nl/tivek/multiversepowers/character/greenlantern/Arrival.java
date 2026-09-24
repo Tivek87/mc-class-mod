@@ -29,7 +29,8 @@ import nl.tivek.multiversepowers.engine.fx.ParticleFx;
  * way down, to hang three blocks before your eyes. It scans you from head to toe and back, and speaks: you have the
  * ability to overcome great fear. It shapes your lantern out of its light, and the lantern flies into your left hand.
  * Then the ring flies onto the middle finger of your right hand, and the moment it is on, its light bursts out around
- * you in a shockwave that sends the creatures of the dark running (see {@link Fear}), and flares up around you. From
+ * you in a shockwave that sends the creatures of the dark running (see {@link Fear}), shoots up into the sky in a
+ * pillar of light and flares up around you. From
  * the ring the uniform spreads up your arm to the lantern on your chest, and from there over all of you; the mask over
  * your eyes comes last, your eyes light up, and the ring welcomes you to the Corps. Then you smack the ring into the
  * lantern, as you do to recharge, and it is done.
@@ -40,22 +41,22 @@ import nl.tivek.multiversepowers.engine.fx.ParticleFx;
  */
 public final class Arrival implements Effect {
     /** The ring sets off from where it showed up. */
-    public static final int SET_OFF = 16;
+    public static final int SET_OFF = 10;
     /** The ring hangs three blocks before your eyes: its flight in from where it showed up is over. */
-    public static final int APPROACH = 84;
+    public static final int APPROACH = 40;
     /** It scans you, from head to toe and back up, and has done so. */
-    public static final int SCAN = 86;
-    public static final int SCANNED = 120;
+    public static final int SCAN = 41;
+    public static final int SCANNED = 57;
     /** It starts to shape the lantern out of its light, and has finished it. */
-    public static final int LANTERN_FORM = 122;
-    public static final int LANTERN_FORMED = 140;
+    public static final int LANTERN_FORM = 58;
+    public static final int LANTERN_FORMED = 68;
     /** The lantern has flown into your left hand. */
-    public static final int LANTERN_CAUGHT = 156;
+    public static final int LANTERN_CAUGHT = 76;
     /** The ring sets off for your finger, and is on it: the shockwave, and the uniform starts to spread. */
-    public static final int RING_FLY = 160;
-    public static final int RING_ON = 174;
+    public static final int RING_FLY = 78;
+    public static final int RING_ON = 85;
     /** How long the uniform takes to spread over you, the mask included. */
-    public static final int SUIT_TICKS = 80;
+    public static final int SUIT_TICKS = 36;
     /** The uniform is complete, mask and all: your eyes light up. */
     public static final int DRESSED = RING_ON + SUIT_TICKS;
     /** You smack the ring into the lantern: the recharge that ends it all. */
@@ -64,6 +65,8 @@ public final class Arrival implements Effect {
     public static final int TICKS = RECHARGE + PowerRing.RECHARGE_TICKS;
     /** How far before your eyes the ring hangs, in blocks. */
     public static final double HOVER = 3.0;
+    /** How high the pillar of light shoots up as the ring slides on, in blocks. */
+    public static final double PILLAR_HIGH = 24.0;
     /** How far the shockwave of the ring reaches, and how long the creatures of the dark run from it, in ticks. */
     public static final double FEAR_RADIUS = 16.0;
     private static final int FEAR_TICKS = 200;
@@ -74,7 +77,7 @@ public final class Arrival implements Effect {
     private static final double LOW = 8.0;
     private static final double HIGH = 20.0;
     // The tick the ring, circling him, sweeps past behind him.
-    private static final int PASS = 52;
+    private static final int PASS = 25;
     // How far to either side of where you look it may show up, in degrees, so you see it coming.
     private static final double SPREAD = 50.0;
 
@@ -180,7 +183,7 @@ public final class Arrival implements Effect {
                 this.sound(level, SoundEvents.BEACON_AMBIENT, 1.4F, 2.0F);
                 this.sound(level, SoundEvents.CONDUIT_ATTACK_TARGET, 0.6F, 1.8F);
             }
-            case SCANNED - 8 -> {
+            case SCANNED - 4 -> {
                 this.sound(level, SoundEvents.AMETHYST_BLOCK_RESONATE, 1.2F, 1.0F);
                 this.say("arrival_chosen", this.owner.getName());
             }
@@ -203,9 +206,9 @@ public final class Arrival implements Effect {
             default -> {
                 // The uniform spreads: a chime every so often, higher every time; the mask comes on with its own.
                 int into = this.ticks - RING_ON;
-                if (into > 0 && into < SUIT_TICKS && into % 12 == 0) {
-                    this.sound(level, SoundEvents.AMETHYST_BLOCK_CHIME, 1.0F, 0.7F + 0.1F * into / 12.0F);
-                } else if (into == SUIT_TICKS - 6) {
+                if (into > 0 && into < SUIT_TICKS - 4 && into % 6 == 0) {
+                    this.sound(level, SoundEvents.AMETHYST_BLOCK_CHIME, 1.0F, 0.7F + 0.1F * into / 6.0F);
+                } else if (into == SUIT_TICKS - 4) {
                     this.sound(level, SoundEvents.BEACON_POWER_SELECT, 0.9F, 1.8F);
                 }
             }
@@ -221,18 +224,24 @@ public final class Arrival implements Effect {
     }
 
     /**
-     * The ring slides onto his finger: its light bursts out around him, a ring of it racing out over the ground, and
-     * the creatures of the dark close by are thrown back and run.
+     * The ring slides onto his finger: its light bursts out around him, a ring of it racing out over the ground and a
+     * pillar of it shooting up into the sky, and the creatures of the dark close by are thrown back and run.
      */
     private void ringOn(ServerLevel level) {
         Vec3 feet = this.owner.position();
         this.sound(level, SoundEvents.BEACON_ACTIVATE, 1.6F, 1.2F);
         this.sound(level, SoundEvents.WIND_CHARGE_BURST.value(), 1.4F, 0.6F);
         this.sound(level, SoundEvents.RESPAWN_ANCHOR_CHARGE, 1.2F, 1.4F);
+        this.sound(level, SoundEvents.LIGHTNING_BOLT_IMPACT, 0.9F, 1.5F);
         ParticleFx.sphereOut(level, ParticleFx.dust(PowerRing.BRIGHT, 1.6F),
                 this.owner.getEyePosition().subtract(0.0, 0.4, 0.0), 30, 0.35);
         ParticleFx.shockwave(level, ParticleFx.dust(PowerRing.GREEN, 2.0F), feet.add(0.0, 0.2, 0.0), 90, 1.4);
         ParticleFx.shockwave(level, ParticleFx.dust(PowerRing.PALE, 1.4F), feet.add(0.0, 0.4, 0.0), 60, 0.9);
+        // Two strands of light winding up round him along the pillar.
+        for (int k = 0; k < 2; k++) {
+            ParticleFx.helix(level, ParticleFx.dust(k == 0 ? PowerRing.BRIGHT : PowerRing.GREEN, 1.3F), feet, 0.7,
+                    PILLAR_HIGH * 0.5, 3.0, 48, Math.PI * k);
+        }
         Fear.strike(this.owner, level, FEAR_RADIUS, FEAR_TICKS, FEAR_PUSH);
     }
 

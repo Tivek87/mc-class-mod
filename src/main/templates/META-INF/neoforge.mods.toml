@@ -13,8 +13,8 @@ description='''
 ${mod_description}
 '''
 
-# Two small hooks into the game (see nl.tivek.multiversepowers.mixin): the creatures the ring's scan marked glow
-# through walls for its maker, in the colour of what they are to him.
+# A few small hooks into the game (see nl.tivek.multiversepowers.mixin): the creatures the ring's scan marked glow
+# through walls for its maker, in the colour of what they are to him, and every world gets its own world settings.
 [[mixins]]
 config="${mod_id}.mixins.json"
 

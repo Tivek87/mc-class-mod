@@ -37,9 +37,7 @@ import nl.tivek.multiversepowers.character.greenlantern.ability.LightFlare;
 import nl.tivek.multiversepowers.character.greenlantern.ability.LightShield;
 import nl.tivek.multiversepowers.character.greenlantern.ability.RingScan;
 import nl.tivek.multiversepowers.character.greenlantern.ability.SwordMove;
-import nl.tivek.multiversepowers.character.greenlantern.client.body.FlightPose;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.LanternArms;
-import nl.tivek.multiversepowers.character.greenlantern.client.body.Ring;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.RingSpot;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.SwordArms;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.BeamCharge;
@@ -49,7 +47,6 @@ import nl.tivek.multiversepowers.character.greenlantern.client.render.LanternPai
 import nl.tivek.multiversepowers.character.greenlantern.client.render.PlanePainter;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.RingSight;
 import nl.tivek.multiversepowers.character.greenlantern.client.slam.SlamPainter;
-import nl.tivek.multiversepowers.engine.client.render.ConstructPainter;
 import nl.tivek.multiversepowers.engine.math.Ease;
 import org.joml.Vector3f;
 
@@ -91,6 +88,10 @@ public final class ClientConstructs {
     private static final Map<Integer, Broken> BROKEN = new HashMap<>();
     // How long a plane that was let go takes to break up and be gone, in ticks.
     private static final int BROKEN_TICKS = 42;
+    // The client time each player's newest bolt left the ring, by the id of its owner (see boltAge), and how long that
+    // is kept, in ticks.
+    private static final Map<Integer, Double> BOLTS = new HashMap<>();
+    private static final int BOLT_MEMORY = 40;
     private static int clientTicks;
 
     /** A plane let go of in the air, breaking up. */
@@ -498,6 +499,15 @@ public final class ClientConstructs {
         return -1.0F;
     }
 
+    /**
+     * How many ticks ago this player's newest bolt left the ring (by the client's own clock), or -1 when none did
+     * lately: his ring arm points while he shoots.
+     */
+    public static float boltAge(int owner, float partialTick) {
+        Double shot = BOLTS.get(owner);
+        return shot == null ? -1.0F : (float) Math.max(0.0, clientTicks + partialTick - shot);
+    }
+
     /** Which construct this player's landing slam throws up, or -1 when he has none (yet). */
     static int slamVariant(int owner) {
         for (Track track : CONSTRUCTS.values()) {
@@ -594,6 +604,11 @@ public final class ClientConstructs {
         Track track = CONSTRUCTS.get(payload.id());
         if (track == null) {
             CONSTRUCTS.put(payload.id(), new Track(payload));
+            if (payload.shape() == ConstructPayload.BOLT) {
+                // Seen first on its way (it came into range late), it still left the ring as long ago as it has flown.
+                float partialTick = Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(false);
+                BOLTS.merge(payload.owner(), clientTicks + partialTick - (double) payload.age(), Math::max);
+            }
         } else {
             track.add(payload);
         }
@@ -617,6 +632,7 @@ public final class ClientConstructs {
             }
         }
         BROKEN.values().removeIf(broken -> clientTicks - broken.since() > BROKEN_TICKS);
+        BOLTS.values().removeIf(shot -> clientTicks - shot > BOLT_MEMORY);
     }
 
     /**
@@ -634,7 +650,7 @@ public final class ClientConstructs {
             if (now.shape() != ConstructPayload.BUBBLE || now.variant() == LightBubble.BREAKING) {
                 continue;
             }
-            Entity caught = minecraft.level.getEntity((int) now.charge());
+            Entity caught = minecraft.level.getEntity(LightBubble.caughtId(now.charge()));
             if (caught == null || caught == minecraft.player) {
                 continue;
             }
@@ -662,6 +678,7 @@ public final class ClientConstructs {
     public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
         CONSTRUCTS.clear();
         BROKEN.clear();
+        BOLTS.clear();
         RingSpot.clear();
         PlanePainter.clear();
     }
@@ -687,6 +704,11 @@ public final class ClientConstructs {
             ConstructPayload was = track.previous;
             ConstructPayload now = track.current;
             Entity owner = level.getEntity(now.owner());
+            // A fist held beside its owner is placed round him: with him not here (too far to be seen) there is
+            // nowhere to put it.
+            if (owner == null && now.held() && now.shape() == ConstructPayload.FIST) {
+                continue;
+            }
             Vec3 facing = was.facing().lerp(now.facing(), partialTick);
             if (facing.lengthSqr() < 1.0E-6) {
                 facing = now.facing();

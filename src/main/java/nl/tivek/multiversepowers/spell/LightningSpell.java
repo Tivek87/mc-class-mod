@@ -12,6 +12,7 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LightningBolt;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.engine.effect.Effect;
@@ -55,10 +56,10 @@ final class LightningSpell {
     }
 
     private static Effect strike(ServerPlayer caster, Targeting.Aim aim) {
-        // Where the bolt lands; follows the target during the charge, then stays put.
+        // Where the bolt lands; follows the target during the charge (until it leaves this dimension), then stays put.
         Vec3[] target = { aim.current() };
         return (level, age) -> {
-            if (age <= CHARGE) {
+            if (age <= CHARGE && (aim.entity() == null || aim.entity().level() == level)) {
                 target[0] = aim.current();
             }
             Vec3 at = target[0];
@@ -120,7 +121,11 @@ final class LightningSpell {
      * shockwave.
      */
     private static void hit(ServerLevel level, ServerPlayer caster, Vec3 at) {
-        LightningBolt bolt = EntityType.LIGHTNING_BOLT.create(level);
+        // Where the world does not run (the target was followed far away), only the light show plays: a bolt there
+        // would strike much later.
+        LightningBolt bolt = level.isPositionEntityTicking(BlockPos.containing(at))
+                ? EntityType.LIGHTNING_BOLT.create(level)
+                : null;
         if (bolt != null) {
             bolt.moveTo(at);
             bolt.setCause(caster);
@@ -133,7 +138,9 @@ final class LightningSpell {
         ParticleFx.shockwave(level, ParticleFx.dust(GLOW, 1.8F), at.add(0, 0.2, 0), 36, 0.65);
         ParticleFx.sphereOut(level, ParticleFx.dust(CYAN, 1.5F), at.add(0, 0.5, 0), 32, 0.5);
         ParticleFx.cloud(level, ParticleTypes.LARGE_SMOKE, at, 12, 0.5, 0.05);
-        BlockState ground = level.getBlockState(BlockPos.containing(at.x, at.y - 0.5, at.z));
+        // The ground is only looked at where it is loaded: reading it would load the chunk.
+        BlockPos below = BlockPos.containing(at.x, at.y - 0.5, at.z);
+        BlockState ground = level.isLoaded(below) ? level.getBlockState(below) : Blocks.AIR.defaultBlockState();
         if (!ground.isAir()) {
             ParticleFx.send(level, new BlockParticleOption(ParticleTypes.BLOCK, ground), at.x, at.y + 0.2, at.z,
                     40, 0.6, 0.2, 0.6, 0.3);

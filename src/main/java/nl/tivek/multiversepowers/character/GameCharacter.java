@@ -202,10 +202,7 @@ public enum GameCharacter {
                             "Extra ring power a second while you fly with the ram cone low along the ground or"
                                     + " scrape over it")
                     .setting("ramGroundBlocks", 1.5, 0.2, 6.0, Unit.BLOCKS,
-                            "How close above the ground the ram cone counts as scraping along it, in blocks")
-                    .setting("ramGroundShake", 1.0, 0.0, 3.0, Unit.STRENGTH,
-                            "How hard your view shakes while the ram cone scrapes along the ground (0 = not at"
-                                    + " all)");
+                            "How close above the ground the ram cone counts as scraping along it, in blocks");
             // The ring scans the area: a wave of its light rolls out through walls and all, and marks every creature
             // it passes for him, with its name and health, a while.
             this.add(abilities, AbilitySlot.ABILITY_6, "ring_scan").cooldown(160)
@@ -290,23 +287,35 @@ public enum GameCharacter {
                             "Seconds a full ring keeps you in the air: flying costs 100 divided by this a second,"
                                     + " and what you shoot or hold up while flying comes on top")
                     .was(15.0, 37.5)
-                    .setting("topSpeed", 19.25, 5.0, 150.0, Unit.BLOCKS_PER_SECOND,
+                    .setting("topSpeed", 9.625, 5.0, 150.0, Unit.BLOCKS_PER_SECOND,
                             "Top speed in blocks per second (an elytra with firework rockets does about 33)")
-                    .was(50.0, 35.0)
+                    .was(50.0, 35.0, 19.25)
                     .setting("startSpeed", 6.4, 1.0, 150.0, Unit.BLOCKS_PER_SECOND,
                             "Speed you set off at, in blocks per second: the longer you fly on, the faster you go, up"
                                     + " to the top speed")
                     .was(11.7)
-                    .setting("cruiseSpeed", 13.0, 1.0, 150.0, Unit.BLOCKS_PER_SECOND,
-                            "Cruising speed in blocks per second: flying on, you are up to it within a few seconds,"
-                                    + " and from there you keep gaining slowly, up to the top speed")
-                    .setting("cruiseSeconds", 3.0, 0.0, 60.0, Unit.SECONDS,
+                    .setting("cruiseSpeed", 8.0, 1.0, 150.0, Unit.BLOCKS_PER_SECOND,
+                            "Cruising speed in blocks per second: flying on, you are up to it within a moment, and"
+                                    + " from there you keep gaining, up to the top speed")
+                    .was(13.0)
+                    .setting("cruiseSeconds", 0.5, 0.0, 60.0, Unit.SECONDS,
                             "Seconds of flying on from the speed you set off at to the cruising speed (0 = straight"
                                     + " away)")
-                    .setting("speedUpSeconds", 30.0, 0.0, 300.0, Unit.SECONDS,
+                    .was(3.0)
+                    .setting("speedUpSeconds", 5.6, 0.0, 300.0, Unit.SECONDS,
                             "Seconds of flying on from the cruising speed to the top speed (0 = straight away);"
                                     + " letting go of forward loses the speed again in a few seconds")
-                    .was(12.0);
+                    .was(12.0, 30.0)
+                    // He flies faster than the game makes new land by itself: the server makes it ready around him and
+                    // ahead of him while he flies, so he never has to wait at the edge of what is there.
+                    .group("chunks", "The world ahead")
+                    .settingInt("chunkRadiusBlocks", 128, 0, 256, Unit.BLOCKS,
+                            "How far around a flyer the server makes the world ready while he flies (made, loaded and"
+                                    + " sent to him), in blocks, so he never flies into land that is not there yet;"
+                                    + " 0 = only ahead of him")
+                    .setting("chunkAheadSeconds", 8.0, 0.0, 30.0, Unit.SECONDS,
+                            "How many seconds of flying ahead of a flyer the server makes the world ready as well, along"
+                                    + " the way he flies and at the speed he flies (at most 512 blocks ahead)");
             // The ring fist thrown up high: the lantern takes shape over it out of the ring's light, fills with light
             // and bursts like a small sun, blinding and slowing everything that sees it; blinded creatures cannot find
             // anyone for as long as it lasts. The creatures of the dark burn, are hurt (this damage), thrown back and

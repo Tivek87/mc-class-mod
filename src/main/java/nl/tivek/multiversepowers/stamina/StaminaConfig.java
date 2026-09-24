@@ -13,7 +13,10 @@ public final class StaminaConfig {
 
     static {
         ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
-        builder.comment("Stamina System Configuration").push("stamina");
+        builder.comment("Stamina System Configuration",
+                "World settings: every world keeps its own copy of this file, in <world>/serverconfig/welcomescreen/,",
+                "and everyone who plays in that world plays by it. The copy in config/welcomescreen/ is what a new world",
+                "starts with.").push("stamina");
 
         MAX_STAMINA = builder.comment("Maximum / standard stamina (default: 100.0)")
                 .defineInRange("maxStamina", 100.0, 10.0, 1000.0);
@@ -41,27 +44,35 @@ public final class StaminaConfig {
     }
 
     public static float getMaxStamina() {
-        return MAX_STAMINA.get().floatValue();
+        return get(MAX_STAMINA).floatValue();
     }
 
     public static float getSprintDrain() {
-        return SPRINT_DRAIN.get().floatValue();
+        return get(SPRINT_DRAIN).floatValue();
     }
 
     public static float getJumpCost() {
-        return JUMP_COST.get().floatValue();
+        return get(JUMP_COST).floatValue();
     }
 
     public static float getRegenRate() {
-        return REGEN_RATE.get().floatValue();
+        return get(REGEN_RATE).floatValue();
     }
 
     public static int getRegenDelay() {
-        return REGEN_DELAY.get();
+        return get(REGEN_DELAY);
     }
 
     public static float getExhaustionThreshold() {
-        return EXHAUSTION_THRESHOLD.get().floatValue();
+        return get(EXHAUSTION_THRESHOLD).floatValue();
+    }
+
+    /**
+     * A setting from the world's file, or its default while no world is open (these are world settings, see
+     * ModConfigs: only a running world, or the server you are on, has them).
+     */
+    public static <T> T get(ModConfigSpec.ConfigValue<T> value) {
+        return SPEC.isLoaded() ? value.get() : value.getDefault();
     }
 }
 

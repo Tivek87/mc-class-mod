@@ -11,6 +11,7 @@ import nl.tivek.multiversepowers.classes.ceremony.Ceremonies;
 import nl.tivek.multiversepowers.config.ModConfigs;
 import nl.tivek.multiversepowers.engine.effect.Effects;
 import nl.tivek.multiversepowers.engine.entity.HeldMobs;
+import nl.tivek.multiversepowers.engine.fx.ParticleBatch;
 import nl.tivek.multiversepowers.network.ModNetwork;
 import nl.tivek.multiversepowers.registry.ModEffects;
 import nl.tivek.multiversepowers.registry.ModItems;
@@ -45,8 +46,9 @@ public class MultiversePowers {
      */
     private static void onServerStopping(ServerStoppingEvent event) {
         Effects.clear();
+        ParticleBatch.clear();
         Ceremonies.clear();
-        SpellCasting.clear();
+        SpellCasting.clear(event.getServer());
         Characters.clear();
         // Last: held mobs must not be saved with their AI switched off.
         HeldMobs.releaseAll();

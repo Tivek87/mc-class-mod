@@ -1,7 +1,9 @@
 package nl.tivek.multiversepowers.character.docock;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import javax.annotation.Nullable;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -15,10 +17,13 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
 import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.MoverType;
+import net.minecraft.world.entity.RelativeMovement;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.monster.Enemy;
@@ -111,6 +116,9 @@ final class OctoRig implements Effect {
     private static final double GRIP_REACH = 3.4;
     private static final double GRIP_MIN_APART = 1.9;
     private static final int GRIP_EVERY = 4;
+    // How far around your body a wall or a roof may be for the server to believe your client that you
+    // hold on to it: a little further than the client itself ever holds on from.
+    private static final double HOLD_REACH = 2.0;
     // How far out a climbing tentacle that holds nothing reaches, so the four keep their distance
     // even while they are still looking for a new grip.
     private static final double CLIMB_SPREAD = 2.0;
@@ -148,6 +156,13 @@ final class OctoRig implements Effect {
     private static final double SPIKE_SINK = 0.9;
     // How deep under the ground the spike starts before it shoots up.
     private static final double SPIKE_BURIED = 3.0;
+    // How long the glow on a marked creature lasts. It is topped up while the mark stands, so it goes
+    // out by itself soon after, and is never saved with the creature for good.
+    private static final int MARK_GLOW = 10;
+
+    // A key press that finds nothing to do starts no cooldown, so a client could send one every tick:
+    // the search behind it (aim rays, creatures around you) is then not run again for this many ticks.
+    private static final int SEARCH_AGAIN = 3;
 
     private enum Job {
         REST, STRIKE, REACH, HOLD, RISE, SMASH, PLANT, PORTAL, CARRY, BURROW
@@ -243,6 +258,8 @@ final class OctoRig implements Effect {
     }
 
     private final ServerPlayer caster;
+    // The level the arms live in (where they are ticked), even once the player has left it.
+    private final ServerLevel home;
     // The number of walking tentacles and marked creatures the client was last told about.
     private int syncedLegs;
     private int syncedMarks;
@@ -277,8 +294,12 @@ final class OctoRig implements Effect {
     private int slamAge;
     private boolean airSlam;
 
-    OctoRig(ServerPlayer caster) {
+    // Per ability: the tick its key last found nothing to do (see SEARCH_AGAIN).
+    private final Map<String, Integer> foundNothingAt = new HashMap<>();
+
+    OctoRig(ServerPlayer caster, ServerLevel home) {
         this.caster = caster;
+        this.home = home;
         for (int i = 0; i < this.arms.length; i++) {
             this.arms[i] = new Arm(i, this.mount(i));
         }
@@ -307,13 +328,19 @@ final class OctoRig implements Effect {
         return false;
     }
 
+    /** True when a tentacle holds this creature, or the Portal ability is carrying it. */
     boolean holds(Entity entity) {
         for (Arm arm : this.arms) {
             if (arm.held == entity) {
                 return true;
             }
         }
-        return false;
+        return this.portal != null && this.portal.holds(entity);
+    }
+
+    /** The level the arms live in. */
+    ServerLevel level() {
+        return this.home;
     }
 
     boolean justBlocked() {
@@ -367,8 +394,8 @@ final class OctoRig implements Effect {
         if (!this.folding) {
             this.folding = true;
             this.marks.clear();
-            this.dropLoads(this.caster.serverLevel());
-            this.letGo();
+            this.dropLoads(this.home);
+            this.letGo(true);
             this.setBlocking(false);
             this.endRampage();
             this.sound(this.caster.position(), SoundEvents.PISTON_CONTRACT, 1.0F, 0.6F);
@@ -383,18 +410,25 @@ final class OctoRig implements Effect {
         this.age = age;
         if (this.caster.isRemoved() || !this.caster.isAlive() || this.caster.level() != level
                 || this.caster.isSpectator()) {
-            this.shutDown();
+            this.shutDown(level);
             return false;
         }
-        // The tentacles carry the player through the air; the server must not see that as flying.
-        this.caster.connection.aboveGroundTickCount = 0;
+        // Holding on only works with something to hold on to, whatever the client says.
+        if (this.climbing && !this.nearSurface(level)) {
+            this.climbing = false;
+        }
+        // The tentacles carry the player through the air; the server must not see that as flying. Only
+        // while they really do, on the legs or on a wall: a dash or an air slam comes down by itself.
+        if (this.climbing || this.onLegs(level)) {
+            this.caster.connection.aboveGroundTickCount = 0;
+        }
         if (this.climbing) {
             this.caster.resetFallDistance();
         }
         if (this.folding) {
             this.unfold -= 1.0 / FOLD;
             if (this.unfold <= 0.0) {
-                this.shutDown();
+                this.shutDown(level);
                 return false;
             }
         } else {
@@ -426,11 +460,14 @@ final class OctoRig implements Effect {
         return true;
     }
 
-    /** Everything off and gone, at once. */
-    void shutDown() {
-        this.letGo();
+    /**
+     * Everything off and gone, at once.
+     *
+     * @param level the level the arms live in; after a dimension change the player is already elsewhere
+     */
+    void shutDown(ServerLevel level) {
+        this.letGo(true);
         this.dropMarks();
-        ServerLevel level = this.caster.serverLevel();
         this.dropLoads(level);
         if (this.portal != null) {
             this.portal.stop(level);
@@ -824,6 +861,12 @@ final class OctoRig implements Effect {
         }
     }
 
+    /** True while the walking tentacles really carry you: there is ground under you within their reach. */
+    private boolean onLegs(ServerLevel level) {
+        return this.legCount() > 0
+                && !level.noBlockCollision(this.caster, this.caster.getBoundingBox().expandTowards(0, -LEG_DROP, 0));
+    }
+
     private static double horizontal(Vec3 a, Vec3 b) {
         double dx = a.x - b.x;
         double dz = a.z - b.z;
@@ -1131,6 +1174,9 @@ final class OctoRig implements Effect {
 
     /** Every free tentacle hits the target you aim at (or the nearest enemy in front), in turns. */
     boolean multiStrike(ServerLevel level) {
+        if (this.searchedJustNow("multi_tentacle")) {
+            return false;
+        }
         double range = ability("multi_tentacle").value("rangeBlocks");
         LivingEntity target = Targeting.aimLiving(this.caster, level, range);
         if (target == null) {
@@ -1138,7 +1184,7 @@ final class OctoRig implements Effect {
         }
         if (target == null) {
             Targeting.noTarget(this.caster);
-            return false;
+            return this.foundNothing("multi_tentacle");
         }
         int delay = 0;
         for (Arm arm : this.arms) {
@@ -1148,7 +1194,7 @@ final class OctoRig implements Effect {
             }
         }
         if (delay == 0) {
-            return false;
+            return this.foundNothing("multi_tentacle");
         }
         this.sound(this.caster.position(), SoundEvents.PISTON_EXTEND, 1.0F, 1.3F);
         this.sound(this.caster.position(), SoundEvents.CHAIN_PLACE, 1.0F, 1.4F);
@@ -1248,6 +1294,9 @@ final class OctoRig implements Effect {
      * you let go (crouch + the same key).
      */
     boolean grab(ServerLevel level) {
+        if (this.searchedJustNow("grab")) {
+            return false;
+        }
         double range = ability("grab").value("rangeBlocks");
         Arm arm = this.freeArm();
         if (arm == null) {
@@ -1268,7 +1317,7 @@ final class OctoRig implements Effect {
         }
         if (wanted == null) {
             Targeting.noTarget(this.caster);
-            return false;
+            return this.foundNothing("grab");
         }
         this.reach(arm, wanted);
         this.caster.displayClientMessage(Component.translatable("octopus." + MultiversePowers.MODID + ".grabbing",
@@ -1324,7 +1373,7 @@ final class OctoRig implements Effect {
         if (!this.isHolding()) {
             return false;
         }
-        this.letGo();
+        this.letGo(false);
         this.sound(this.caster.position(), SoundEvents.PISTON_CONTRACT, 0.9F, 1.2F);
         this.caster.displayClientMessage(
                 Component.translatable("octopus." + MultiversePowers.MODID + ".let_go"), true);
@@ -1357,7 +1406,10 @@ final class OctoRig implements Effect {
     }
 
     private void seize(ServerLevel level, Arm arm, LivingEntity target) {
-        if (target instanceof Mob mob && !HeldMobs.hold(mob)) {
+        // Something else (another tentacle, another power) may have caught it while the claw was on its
+        // way: a creature or a player is only ever held once.
+        if (!mayHold(this.caster, target, level) || HeldMobs.isHeldByAnyone(target)
+                || (target instanceof Mob mob && !HeldMobs.hold(mob))) {
             this.toRest(arm);
             return;
         }
@@ -1383,8 +1435,8 @@ final class OctoRig implements Effect {
 
     /**
      * Held creatures are whipped along with where you look, hard enough to smash them into walls and
-     * into the ground. A tentacle never lets go by itself: only when the creature is gone, or when you
-     * let go, throw, or fold the arms in.
+     * into the ground. A tentacle never lets go by itself: only when the creature is gone or is a player
+     * you may no longer hurt, or when you let go, throw, or fold the arms in.
      */
     private void tickHold(ServerLevel level) {
         boolean before = this.hasThrowable();
@@ -1397,8 +1449,10 @@ final class OctoRig implements Effect {
                 continue;
             }
             arm.holdTicks++;
-            // Only a creature that is gone ends a hold; a tentacle never lets go by itself.
-            if (!target.isAlive() || target.isRemoved() || target.level() != level) {
+            // Only a creature that is gone ends a hold, or a player you may no longer hurt (who is then
+            // set down unhurt); a tentacle never lets go by itself.
+            if (!mayHold(this.caster, target, level)) {
+                OctopusArms.setDown(target);
                 this.letGo(arm);
                 continue;
             }
@@ -1482,16 +1536,42 @@ final class OctoRig implements Effect {
         target.setDeltaMovement(Vec3.ZERO);
         target.hurtMarked = true;
         if (target instanceof ServerPlayer player) {
-            player.connection.teleport(target.getX(), target.getY(), target.getZ(), player.getYRot(),
-                    player.getXRot());
-            player.connection.aboveGroundTickCount = 0;
+            holdAt(player, target.getX(), target.getY(), target.getZ());
         }
         return wanted.subtract(target.position().subtract(was));
     }
 
-    /** Lets go of everything held. */
-    void letGo() {
+    /**
+     * Tells a held player where the claw has him now. Only where he is: which way he looks stays his
+     * own, so he can still turn his head while he is carried, however slow his connection.
+     */
+    static void holdAt(ServerPlayer player, double x, double y, double z) {
+        player.connection.teleport(x, y, z, player.getYRot(), player.getXRot(), RelativeMovement.ROTATION);
+        player.connection.aboveGroundTickCount = 0;
+    }
+
+    /**
+     * True while a tentacle may keep hold of this creature: it is still alive and here, and a player only
+     * while you may still hurt him (not a spectator or in creative, PvP on, not on your team).
+     */
+    static boolean mayHold(ServerPlayer caster, LivingEntity target, ServerLevel level) {
+        if (!target.isAlive() || target.isRemoved() || target.level() != level || target.isSpectator()) {
+            return false;
+        }
+        return !(target instanceof Player other)
+                || (caster.server.isPvpAllowed() && !other.isCreative() && caster.canHarmPlayer(other));
+    }
+
+    /**
+     * Lets go of everything held.
+     *
+     * @param setDown true when the arms fold in or stop: a player they drop lands unhurt
+     */
+    private void letGo(boolean setDown) {
         for (Arm arm : this.arms) {
+            if (setDown && arm.held != null) {
+                OctopusArms.setDown(arm.held);
+            }
             this.letGo(arm);
         }
     }
@@ -1741,13 +1821,15 @@ final class OctoRig implements Effect {
      * @return true only when the strike really launches, so marking never starts the cooldown
      */
     boolean groundStrike(ServerLevel level) {
+        if (this.searchedJustNow("ground_strike")) {
+            return false;
+        }
         double range = ability("ground_strike").value("rangeBlocks");
         int room = this.freeArms();
         LivingEntity aimed = Targeting.aimLiving(this.caster, level, range);
         if (aimed != null && !this.marks.contains(aimed) && this.marks.size() < room) {
             this.marks.add(aimed);
-            // Marked creatures light up, so you can see who is on the list, walls or no walls.
-            aimed.setGlowingTag(true);
+            glow(aimed);
             Vec3 at = aimed.getBoundingBox().getCenter();
             ParticleFx.cloud(level, ParticleTypes.ELECTRIC_SPARK, at, 12, 0.35, 0.1);
             this.sound(at, SoundEvents.NOTE_BLOCK_BELL.value(), 0.6F, 1.9F);
@@ -1758,7 +1840,7 @@ final class OctoRig implements Effect {
         if (this.marks.isEmpty()) {
             this.caster.displayClientMessage(Component.translatable("octopus." + MultiversePowers.MODID
                     + (room == 0 ? ".busy" : ".strike.none")), true);
-            return false;
+            return this.foundNothing("ground_strike");
         }
         return this.launchStrike(level);
     }
@@ -1941,7 +2023,12 @@ final class OctoRig implements Effect {
     private void rumble(ServerLevel level, Arm arm, LivingEntity target) {
         double t = Math.min(1.0, (arm.age + 1.0) / Math.max(1, arm.digTravel));
         Vec3 at = arm.spot.lerp(target.position(), t);
-        double ground = Targeting.floorBelow(level, BlockPos.containing(at.x, at.y + 1.0, at.z));
+        BlockPos above = BlockPos.containing(at.x, at.y + 1.0, at.z);
+        // Only dust: never worth loading a chunk for.
+        if (!level.isLoaded(above)) {
+            return;
+        }
+        double ground = Targeting.floorBelow(level, above);
         this.groundBurst(level, new Vec3(at.x, ground, at.z), 4);
     }
 
@@ -1957,11 +2044,13 @@ final class OctoRig implements Effect {
 
     /** The spike bursts out under the creature and throws it up. */
     private void spikeHit(ServerLevel level, Arm arm, LivingEntity target) {
-        this.hurt(target, damageOf("ground_strike"), 0.0);
-        double up = ability("ground_strike").value("knockUp");
-        target.setDeltaMovement(target.getDeltaMovement().x, up, target.getDeltaMovement().z);
-        target.hurtMarked = true;
-        target.resetFallDistance();
+        // Only a hit that lands throws it up; a shield or a player you may not hurt stays where it is.
+        if (this.hurt(target, damageOf("ground_strike"), 0.0)) {
+            double up = ability("ground_strike").value("knockUp");
+            target.setDeltaMovement(target.getDeltaMovement().x, up, target.getDeltaMovement().z);
+            target.hurtMarked = true;
+            target.resetFallDistance();
+        }
         Vec3 at = target.getBoundingBox().getCenter();
         ParticleFx.cloud(level, ParticleTypes.CRIT, at, 18, 0.4, 0.4);
         ParticleFx.shockwave(level, ParticleTypes.LARGE_SMOKE, new Vec3(at.x, arm.digGround + 0.15, at.z), 24, 0.35);
@@ -1987,11 +2076,8 @@ final class OctoRig implements Effect {
                 .clip(new Vec3(arm.digAt.x, arm.digGround, arm.digAt.z), new Vec3(0, -1, 0)).send(level);
     }
 
-    /** Lets every mark go again and takes the glow back off them. */
+    /** Lets every mark go again; their glow goes out by itself (see glow). */
     private void dropMarks() {
-        for (LivingEntity target : this.marks) {
-            target.setGlowingTag(false);
-        }
         this.marks.clear();
     }
 
@@ -2001,20 +2087,30 @@ final class OctoRig implements Effect {
             return;
         }
         double range = ability("ground_strike").value("rangeBlocks") + 4.0;
-        this.marks.removeIf(target -> {
-            if (target.isAlive() && !target.isRemoved() && target.level() == level
-                    && target.distanceTo(this.caster) <= range) {
-                return false;
-            }
-            target.setGlowingTag(false);
-            return true;
-        });
+        this.marks.removeIf(target -> !target.isAlive() || target.isRemoved() || target.level() != level
+                || target.distanceTo(this.caster) > range);
+        for (LivingEntity target : this.marks) {
+            glow(target);
+        }
         if (this.age % 4 != 0) {
             return;
         }
         for (LivingEntity target : this.marks) {
             Vec3 at = target.getBoundingBox().getCenter();
             ParticleFx.cloud(level, ParticleTypes.ELECTRIC_SPARK, at, 2, target.getBbWidth() * 0.5 + 0.2, 0.01);
+        }
+    }
+
+    /**
+     * A marked creature lights up, so you can see who is on the list, walls or no walls. A short glow,
+     * topped up while the mark stands: it goes out by itself once nobody marks it any more, and two
+     * players marking the same creature never take each other's glow away. A longer glow of its own (a
+     * spectral arrow) already shows the mark and is left as it is.
+     */
+    private static void glow(LivingEntity target) {
+        MobEffectInstance glow = target.getEffect(MobEffects.GLOWING);
+        if (glow == null || glow.endsWithin(MARK_GLOW / 2)) {
+            target.addEffect(new MobEffectInstance(MobEffects.GLOWING, MARK_GLOW, 0, true, false, false));
         }
     }
 
@@ -2066,12 +2162,24 @@ final class OctoRig implements Effect {
 
     /** @param face the side of the surface the tentacles hold on to (its normal) */
     void setClimbing(boolean on, Direction face) {
-        on = on && !this.folding;
+        // The client says it holds on; the server only believes that with a wall or a roof within reach.
+        on = on && !this.folding && this.nearSurface(this.caster.serverLevel());
         if (on && !this.climbing) {
             this.sound(this.caster.position(), SoundEvents.CHAIN_PLACE, 0.8F, 1.1F);
         }
         this.climbing = on;
         this.climbFace = face;
+    }
+
+    /**
+     * True when there is a wall beside you or a roof above you close enough for the tentacles to hold on
+     * to. Any side counts: the client moves on round corners and on to roofs without saying so.
+     */
+    private boolean nearSurface(ServerLevel level) {
+        AABB box = this.caster.getBoundingBox();
+        AABB around = new AABB(box.minX - HOLD_REACH, box.minY, box.minZ - HOLD_REACH,
+                box.maxX + HOLD_REACH, box.maxY + HOLD_REACH, box.maxZ + HOLD_REACH);
+        return !level.noBlockCollision(this.caster, around);
     }
 
     // ---- Ground Slam ----
@@ -2214,7 +2322,7 @@ final class OctoRig implements Effect {
 
     /** One tentacle goes portal hunting; the other three keep doing their own work. */
     boolean startPortal(ServerLevel level) {
-        if (this.portal != null) {
+        if (this.portal != null || this.searchedJustNow("portal")) {
             return false;
         }
         Arm arm = this.freeArm();
@@ -2226,7 +2334,7 @@ final class OctoRig implements Effect {
         LivingEntity target = Targeting.aimLiving(this.caster, level, PortalRun.RANGE);
         if (target == null) {
             Targeting.noTarget(this.caster);
-            return false;
+            return this.foundNothing("portal");
         }
         this.portal = new PortalRun(this.caster, target);
         this.portalArm = arm.index;
@@ -2302,6 +2410,18 @@ final class OctoRig implements Effect {
 
     private void sound(Vec3 at, SoundEvent sound, float volume, float pitch) {
         this.caster.level().playSound(null, at.x, at.y, at.z, sound, SoundSource.PLAYERS, volume, pitch);
+    }
+
+    /** True when this ability's key found nothing to do a moment ago: it does not search again so soon. */
+    private boolean searchedJustNow(String ability) {
+        Integer at = this.foundNothingAt.get(ability);
+        return at != null && this.age - at < SEARCH_AGAIN;
+    }
+
+    /** Remembers that this ability's key found nothing to do (see searchedJustNow); always false. */
+    private boolean foundNothing(String ability) {
+        this.foundNothingAt.put(ability, this.age);
+        return false;
     }
 
     /** One of Doctor Octopus's abilities by name, with its numbers from his config file. */

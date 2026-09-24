@@ -50,6 +50,8 @@ import nl.tivek.multiversepowers.character.greenlantern.client.body.FlightPose;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.SuitGlow;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.LanternPainter;
 import nl.tivek.multiversepowers.character.greenlantern.client.slam.SlamPainter;
+import nl.tivek.multiversepowers.config.client.ClientSettings;
+import nl.tivek.multiversepowers.engine.client.world.ChunkEdge;
 import nl.tivek.multiversepowers.engine.math.Ease;
 
 /**
@@ -58,9 +60,9 @@ import nl.tivek.multiversepowers.engine.math.Ease;
  * <li><b>Taking off</b> (see {@link Flight#ARISE_TICKS}), with the flight key or by tapping jump twice: you stop
  * where you are while your fists come to your chest, then your arms sweep down along your sides and you rise a few
  * blocks, looking up, and from there you fly on without a break.</li>
- * <li><b>Flying</b>: hold forward and you pick up speed the way you look: within a few seconds you are up to a fast
- * cruising speed, and from there you keep gaining, slowly, until after half a minute more you reach the top speed;
- * let go and you glide to a hover. Jump and sneak rise and sink, left and right slide sideways. You carry your speed
+ * <li><b>Flying</b>: hold forward and you pick up speed the way you look: within a moment you are up to cruising
+ * speed, and from there you keep gaining until a few seconds later you reach the top speed; let go and you glide to a
+ * hover. Jump and sneak rise and sink, left and right slide sideways. You carry your speed
  * into every turn, so you swing through curves instead of snapping round.</li>
  * <li>The dome works as a brake chute: while it is up your speed is halved.</li>
  * <li>Walls and the ground stop you; knocks from a hit or a blast move you as they would anyone. Sink down onto
@@ -69,6 +71,9 @@ import nl.tivek.multiversepowers.engine.math.Ease;
  * and you come down on one knee with that fist smashed into the ground while the ring throws up a construct (see
  * LandingSlam). The shockwave key does that dive for you: straight down at full speed, into a slam.</li>
  * <li>An empty ring lets you sink down gently, with no more steering, until you touch ground.</li>
+ * <li>You never stop dead at the edge of the world your own game has: the server makes it ready round you and far
+ * ahead (see Flight), and should you still catch up with the edge, you slow down smoothly before it and fly on once
+ * the world is there (see {@link ChunkEdge}).</li>
  * </ul>
  * For everyone who flies, you included, this also keeps how fast they go and how they bank for their poses
  * (see {@link FlightPose}), draws the streak of light behind them at speed, throws up dust and spray where they
@@ -87,7 +92,7 @@ public final class ClientFlight {
     // up speed and lose it again, and how hard the brake bites.
     private static final double HOVER = 0.32;
     private static final double CLIMB = 0.38;
-    private static final double SPEED_UP = 0.085;
+    private static final double SPEED_UP = 0.119;
     private static final double SLOW_DOWN = 0.055;
     private static final double BRAKE = 0.13;
     // You pick up speed only while you fly at least this much of the top speed you have by now (less while you are
@@ -107,6 +112,8 @@ public final class ClientFlight {
     private static final int TRAIL = 12;
     // How far below a flyer the ground still throws up dust, in blocks.
     private static final double SKIM = 3.0;
+    // You slow down before the edge of the chunks your own game has, as far ahead as you fly in this many ticks.
+    private static final int EDGE_LOOK = 30;
 
     // ---- Your own flight ----
     private static boolean steering;
@@ -133,7 +140,7 @@ public final class ClientFlight {
 
     // ---- Your own landing slam ----
     // How much of your top speed you must fly into the ground with, and how much of that must go down, for a slam.
-    private static final double SLAM_SPEED = 0.45;
+    private static final double SLAM_SPEED = 0.9;
     private static final double SLAM_DOWN = 0.35;
     // Flying into the ground slower than a slam but still going down this fast, in blocks per tick, and looking at
     // least this far down, in degrees: you land.
@@ -141,8 +148,10 @@ public final class ClientFlight {
     private static final float DIVE_LOOK = 20.0F;
     // How many ticks before a slam a diving flyer starts to swing upright for it, fist cocked.
     private static final double BRACE_TICKS = 5.0;
-    // On a dive for a slam (the shockwave key): how much of the way to straight down at full speed you swing each tick.
+    // On a dive for a slam (the shockwave key): how much of the way to straight down at dive speed you swing each tick,
+    // and that speed in blocks per tick (the top speed instead, when that is set higher).
     private static final double DIVE_TURN = 0.4;
+    private static final double DIVE_SPEED = 19.25 / 20.0;
     /**
      * Ticks you stay down after a slam, crouched on your fist: you cannot move meanwhile. Counted at the pace the
      * constructs were made for, like {@link #slam}; only Green Lantern smashes his fist into the ground.
@@ -234,9 +243,9 @@ public final class ClientFlight {
     private static double topSpeed(LocalPlayer player) {
         double full = fullSpeed();
         double start = Math.min(full, flightSetting("startSpeed", 6.4) / 20.0);
-        double cruise = Mth.clamp(flightSetting("cruiseSpeed", 13.0) / 20.0, start, full);
+        double cruise = Mth.clamp(flightSetting("cruiseSpeed", 8.0) / 20.0, start, full);
         double quick = cruiseSeconds();
-        double slow = Math.max(0.0, flightSetting("speedUpSeconds", 30.0));
+        double slow = Math.max(0.0, flightSetting("speedUpSeconds", 5.6));
         double top;
         if (momentum < quick) {
             double u = momentum / quick;
@@ -253,7 +262,7 @@ public final class ClientFlight {
      * loses it all again in a few seconds; pushing against a wall keeps what you have.
      */
     private static void gainSpeed(LocalPlayer player, boolean forward) {
-        double total = cruiseSeconds() + Math.max(0.0, flightSetting("speedUpSeconds", 30.0));
+        double total = cruiseSeconds() + Math.max(0.0, flightSetting("speedUpSeconds", 5.6));
         if (!forward) {
             momentum = Math.max(0.0, momentum - total / (LOSE_SECONDS * 20.0));
             return;
@@ -267,12 +276,12 @@ public final class ClientFlight {
 
     /** How long flying on takes to get from the speed you set off at to the cruising speed, in seconds. */
     private static double cruiseSeconds() {
-        return Math.max(0.0, flightSetting("cruiseSeconds", 3.0));
+        return Math.max(0.0, flightSetting("cruiseSeconds", 0.5));
     }
 
     /** The top speed of a flight from the settings, in blocks per tick. */
     public static double fullSpeed() {
-        return flightSetting("topSpeed", 19.25) / 20.0;
+        return flightSetting("topSpeed", 9.625) / 20.0;
     }
 
     /** One of the flight's settings, or {@code fallback} while Green Lantern has no flight. */
@@ -379,8 +388,8 @@ public final class ClientFlight {
         } else if (t < ARISE) {
             velocity = arise(player, t, forward, strafe, up, down);
         } else if (onDive) {
-            // Straight down at full speed, swinging round into it out of whatever way you flew.
-            velocity = velocity.lerp(new Vec3(0.0, -fullSpeed(), 0.0), DIVE_TURN);
+            // Straight down at dive speed, swinging round into it out of whatever way you flew.
+            velocity = velocity.lerp(new Vec3(0.0, -Math.max(fullSpeed(), DIVE_SPEED), 0.0), DIVE_TURN);
         } else {
             gainSpeed(player, forward > 0.01F);
             velocity = steer(player, forward, strafe, up, down, 1.0);
@@ -402,6 +411,9 @@ public final class ClientFlight {
                 PacketDistributor.sendToServer(new AbilityActionPayload(flight.slot().ordinal(), true, 0));
             }
         }
+        // Never on into a chunk your own game does not have yet (it would stop you dead there until it comes in): you
+        // slow down smoothly before its edge instead, and fly on once it is there.
+        velocity = ChunkEdge.cap(player.level(), player.position(), velocity, EDGE_LOOK);
         player.setDeltaMovement(velocity);
         player.resetFallDistance();
         if (wind == null || wind.isStopped()) {
@@ -515,19 +527,22 @@ public final class ClientFlight {
     }
 
     /**
-     * Tapping jump twice takes off, as the flight key does: on the ground (the first tap jumps) or in the middle of a
-     * jump or a fall. Not while the game lets you fly by itself (creative), where the double tap is the game's own.
+     * Tapping jump twice works the flight key: on the ground (the first tap jumps) or in the middle of a jump or a fall
+     * it takes off, and in the air on the ring, once the take-off is over, it turns the flight off and you fall. Not
+     * while the game lets you fly by itself (creative), where the double tap is the game's own.
      */
     private static void doubleJump(Minecraft minecraft, LocalPlayer player) {
         boolean down = minecraft.options.keyJump.isDown();
         if (down && !jumpWasDown && minecraft.screen == null) {
-            boolean free = ClientCharacter.active() == GameCharacter.GREEN_LANTERN
-                    && ClientRing.flight(player, 0.0F) < 0.0F && ClientRing.arrival(player, 0.0F) < 0.0F
-                    && !player.getAbilities().mayfly && !player.isPassenger() && !player.isFallFlying()
-                    && !player.isSpectator();
+            boolean lantern = ClientCharacter.active() == GameCharacter.GREEN_LANTERN && !player.mayFly()
+                    && !player.isPassenger() && !player.isFallFlying() && !player.isSpectator();
+            float t = ClientRing.flight(player, 0.0F);
+            boolean free = lantern && t < 0.0F && ClientRing.arrival(player, 0.0F) < 0.0F;
+            // An empty ring letting you down cannot be turned off (the flight key cannot either).
+            boolean flying = lantern && t >= ARISE && !ClientRing.has(player, RingPayload.DESCENT);
             // No earlier tap is no double tap (and the gap is only counted once there is one: the sum would run over).
             int gap = lastJump == Integer.MIN_VALUE ? Integer.MAX_VALUE : player.tickCount - lastJump;
-            if (free && gap >= 0 && gap <= DOUBLE_JUMP) {
+            if ((free || flying) && gap >= 0 && gap <= DOUBLE_JUMP) {
                 lastJump = Integer.MIN_VALUE;
                 CharacterAbility flight = GameCharacter.GREEN_LANTERN.byName("flight");
                 if (flight != null) {
@@ -717,7 +732,7 @@ public final class ClientFlight {
 
     /**
      * How hard your view shakes because you fly with the ram cone low along the ground (see {@link Flight#scraping}):
-     * harder the faster you go, as hard as the setting {@code ramGroundShake} makes it; 0 when you do not.
+     * harder the faster you go, as hard as your own setting {@code ramGroundShake} makes it; 0 when you do not.
      */
     private static float scrapeShake(LocalPlayer player) {
         CharacterAbility shield = GameCharacter.GREEN_LANTERN.byName("light_shield");
@@ -726,7 +741,8 @@ public final class ClientFlight {
                 || !Flight.scraping(player, shield.value("ramGroundBlocks"))) {
             return 0.0F;
         }
-        return (float) (shield.value("ramGroundShake") * 0.55 * Mth.clamp(speed / fullSpeed(), 0.3, 1.0));
+        return (float) (ClientSettings.get(ClientSettings.RAM_GROUND_SHAKE) * 0.55
+                * Mth.clamp(speed / fullSpeed(), 0.3, 1.0));
     }
 
     /**
@@ -749,6 +765,7 @@ public final class ClientFlight {
         if (slammed >= 0.0F && slammed < 5.0F) {
             shake = Math.max(shake, 0.6F * (1.0F - slammed / 5.0F));
         }
+        shake *= ClientSettings.cameraShake();
         if (shake > 0.0F) {
             float time = player.tickCount + partialTick;
             event.setPitch(event.getPitch() + 1.8F * shake * Mth.sin(time * 2.9F));
@@ -775,8 +792,20 @@ public final class ClientFlight {
         event.setPitch(event.getPitch() - 9.0F * up);
     }
 
+    /**
+     * You respawned or went to another world, as a new player whose ticks count from zero again: a slam or a jump of the
+     * old one must not count for the new one, many ticks later.
+     */
+    @SubscribeEvent
+    public static void onClone(ClientPlayerNetworkEvent.Clone event) {
+        slamTick = Integer.MIN_VALUE;
+        lastJump = Integer.MIN_VALUE;
+    }
+
     @SubscribeEvent
     public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
+        slamTick = Integer.MIN_VALUE;
+        lastJump = Integer.MIN_VALUE;
         stop();
         velocity = Vec3.ZERO;
         velocityO = Vec3.ZERO;

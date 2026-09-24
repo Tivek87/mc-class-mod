@@ -7,7 +7,6 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
-import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.projectile.ProjectileUtil;
@@ -26,6 +25,7 @@ import nl.tivek.multiversepowers.character.greenlantern.PowerRing;
 import nl.tivek.multiversepowers.engine.effect.Effect;
 import nl.tivek.multiversepowers.engine.effect.Effects;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
+import nl.tivek.multiversepowers.engine.world.LoadedWorld;
 
 /**
  * The bolt: what the ring shoots when Green Lantern taps the button of the hand that attacks. A small bullet
@@ -117,7 +117,7 @@ public final class LightBolt implements Effect {
         LightBolt bolt = new LightBolt(owner, ability, from, aim(owner, level, from, ability.value("rangeBlocks")));
         Effects.start(level, bolt);
         bolt.send(level);
-        owner.swing(InteractionHand.MAIN_HAND, true);
+        // No swing of the arm: every client points it straight where he aims as the bolt leaves (see BoltArm).
         level.playSound(null, from.x, from.y, from.z, SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.PLAYERS, 0.6F,
                 1.8F);
         return true;
@@ -142,7 +142,7 @@ public final class LightBolt implements Effect {
     private static Vec3 aim(ServerPlayer owner, ServerLevel level, Vec3 from, double range) {
         Vec3 eye = owner.getEyePosition();
         Vec3 end = eye.add(owner.getLookAngle().scale(range));
-        BlockHitResult block = level.clip(new ClipContext(eye, end, ClipContext.Block.COLLIDER,
+        BlockHitResult block = LoadedWorld.clip(level, new ClipContext(eye, end, ClipContext.Block.COLLIDER,
                 ClipContext.Fluid.NONE, owner));
         Vec3 target = block.getType() == HitResult.Type.MISS ? end : block.getLocation();
         Vec3 way = target.subtract(from);
@@ -154,7 +154,7 @@ public final class LightBolt implements Effect {
         if (this.fade >= 0) {
             this.fade++;
             if (this.fade >= FADE_TICKS) {
-                PacketDistributor.sendToPlayersInDimension(level, ConstructPayload.remove(this.id));
+                ConstructPayload.sendRemove(level, this.id, this.center);
                 return false;
             }
             this.send(level);
@@ -194,7 +194,7 @@ public final class LightBolt implements Effect {
             this.center = target.getBoundingBox().getCenter();
             return true;
         }
-        BlockHitResult block = level.clip(new ClipContext(from, to, ClipContext.Block.COLLIDER,
+        BlockHitResult block = LoadedWorld.clip(level, new ClipContext(from, to, ClipContext.Block.COLLIDER,
                 ClipContext.Fluid.NONE, this.owner));
         if (block.getType() != HitResult.Type.MISS) {
             this.center = block.getLocation();

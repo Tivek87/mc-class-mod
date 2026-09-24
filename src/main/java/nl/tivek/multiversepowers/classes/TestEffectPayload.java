@@ -22,9 +22,10 @@ public record TestEffectPayload(String kind, String id, boolean showTitle) imple
     public static final CustomPacketPayload.Type<TestEffectPayload> TYPE = new CustomPacketPayload.Type<>(
             ResourceLocation.fromNamespaceAndPath(MultiversePowers.MODID, "test_effect"));
 
+    // The kind and the id are single short words: a much longer text from a client is refused before it is read.
     public static final StreamCodec<RegistryFriendlyByteBuf, TestEffectPayload> STREAM_CODEC = StreamCodec.composite(
-            ByteBufCodecs.STRING_UTF8, TestEffectPayload::kind,
-            ByteBufCodecs.STRING_UTF8, TestEffectPayload::id,
+            ByteBufCodecs.stringUtf8(64), TestEffectPayload::kind,
+            ByteBufCodecs.stringUtf8(64), TestEffectPayload::id,
             ByteBufCodecs.BOOL, TestEffectPayload::showTitle,
             TestEffectPayload::new);
 

@@ -24,6 +24,7 @@ import nl.tivek.multiversepowers.character.greenlantern.PowerRing;
 import nl.tivek.multiversepowers.engine.effect.Effect;
 import nl.tivek.multiversepowers.engine.effect.Effects;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
+import nl.tivek.multiversepowers.engine.world.LoadedWorld;
 
 /**
  * The beam: what the ring does when Green Lantern holds the button of the hand that attacks for a while. A
@@ -41,6 +42,10 @@ public final class LightBeam implements Effect {
 
     // A charge nobody finished or let go of is forgotten after this many ticks.
     private static final int CHARGE_FORGET = 100;
+    // How much of the whole gathering the server must have seen before the beam may start: half, since a server
+    // that falls behind counts fewer ticks than his own game did, and the network never brings two presses exactly as
+    // far apart as they were made.
+    private static final double GATHER_SEEN = 0.5;
 
     private static final Map<UUID, LightBeam> FIRING = new HashMap<>();
     // When each player's ring started gathering its light for the beam, as a server tick: he holds the attack button
@@ -79,8 +84,12 @@ public final class LightBeam implements Effect {
      */
     static boolean start(ServerPlayer owner, ServerLevel level, CharacterAbility ability) {
         // Whatever happens now, the gathering is over.
-        boolean charged = CHARGING.remove(owner.getUUID()) != null;
-        if (FIRING.containsKey(owner.getUUID()) || Recharge.busy(owner) || GiantFist.holding(owner)
+        Integer since = CHARGING.remove(owner.getUUID());
+        boolean charged = since != null;
+        // Only a ring that really gathered its light a good while pours it out: a game that says so at once is not
+        // believed.
+        boolean ready = charged && owner.server.getTickCount() - since >= ability.holdTicks() * GATHER_SEEN;
+        if (!ready || FIRING.containsKey(owner.getUUID()) || Recharge.busy(owner) || GiantFist.holding(owner)
                 || Flight.descending(owner) || LightFlare.up(owner) || AirStrike.calling(owner)) {
             if (charged) {
                 PowerRing.sync(owner);
@@ -177,7 +186,7 @@ public final class LightBeam implements Effect {
         if (this.fade >= 0) {
             this.fade++;
             if (this.fade >= FADE_TICKS) {
-                PacketDistributor.sendToPlayersInDimension(level, ConstructPayload.remove(this.id));
+                ConstructPayload.sendRemove(level, this.id, this.owner.position());
                 return false;
             }
             this.send(level);
@@ -209,7 +218,7 @@ public final class LightBeam implements Effect {
         Vec3 eye = this.owner.getEyePosition();
         this.facing = this.owner.getLookAngle();
         Vec3 far = eye.add(this.facing.scale(this.range));
-        BlockHitResult block = level.clip(new ClipContext(eye, far, ClipContext.Block.COLLIDER,
+        BlockHitResult block = LoadedWorld.clip(level, new ClipContext(eye, far, ClipContext.Block.COLLIDER,
                 ClipContext.Fluid.NONE, this.owner));
         boolean wall = block.getType() != HitResult.Type.MISS;
         this.end = wall ? block.getLocation() : far;

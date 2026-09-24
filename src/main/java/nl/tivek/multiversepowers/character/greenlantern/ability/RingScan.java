@@ -100,7 +100,7 @@ public final class RingScan implements Effect {
     public boolean tick(ServerLevel level, int tick) {
         this.age++;
         if (this.age > this.radius / SPEED + FADE || this.owner.level() != level) {
-            PacketDistributor.sendToPlayersInDimension(level, ConstructPayload.remove(this.id));
+            ConstructPayload.sendRemove(level, this.id, this.center);
             return false;
         }
         this.send(level);

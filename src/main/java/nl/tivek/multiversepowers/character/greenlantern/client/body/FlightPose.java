@@ -46,12 +46,14 @@ import org.joml.Vector3f;
  * low on one knee, the other leg forward, and smashes that fist into the ground in front of him, the other arm flung
  * out behind, until the construct has struck and he rises again. Dropping down to a slam without flying (the
  * shockwave key while he jumps or falls) he is upright with his fist cocked the whole way down.</li>
- * <li>On top of that, standing or flying: the ring hand points along the beam, trembling and kicking with it, the
- * other hand bracing its wrist (see {@link BeamArm}); both hands hold the dome open,
+ * <li>On top of that, standing or flying: the ring arm points straight where he aims while he shoots bolts, and goes
+ * down again after the last one (see {@link BoltArm}); the ring hand points along the beam, trembling and kicking
+ * with it, the other hand bracing its wrist (see {@link BeamArm}); both hands hold the dome open,
  * and in flight the shield hand goes out in front, fist first, into the ram cone.</li>
  * </ul>
- * The whole body is turned in {@link #pre}, before the game draws it; the limbs are set in {@link #pose}, which
- * the game calls while it poses the arms.
+ * How the whole body turns is worked out in {@link #pre}, before the game draws it, and turned while the game draws
+ * its model ({@link #turnModel}), so his name stays upright; the limbs are set in {@link #pose}, which the game calls
+ * while it poses the arms.
  */
 public final class FlightPose {
     // Part of the top speed at which the body lies fully along the way it flies.
@@ -62,6 +64,13 @@ public final class FlightPose {
     private static final float BLEND = 9.0F;
     // How far the ring arm comes up towards where he aims while the ring gathers light for the beam, once it is full.
     private static final float CHARGE_AIM = 0.8F;
+    // The ring arm with the bolts (see BoltArm): how quickly it comes up to point and goes down again, per second
+    // (quickly up, so a bolt leaves a hand that is already up), how far each bolt kicks it up, in radians, and how far
+    // it turns in towards the middle of his chest, so it points at what he aims at.
+    private static final float POINT_UP = 30.0F;
+    private static final float POINT_DOWN = 7.0F;
+    private static final float BOLT_KICK = 0.14F;
+    private static final float POINT_IN = 0.08F;
     // The ring arm with the beam (see BeamArm), in radians: how far it trembles at its hardest, how far the beam
     // breaking loose kicks it up, and how far it swings in towards the middle of his chest once the other hand braces
     // it. That hand then comes across (turned in towards the ring arm) and a little lower, under its wrist.
@@ -103,10 +112,11 @@ public final class FlightPose {
     private static final Vector3f ARM_FROM = new Vector3f(1.5F, -0.4F, 0.35F);
 
     private static final Map<Integer, Blend> BLENDS = new HashMap<>();
-    // The player being drawn right now, and whether his body was turned (so it is turned back afterwards).
+    // The player being drawn right now, and how his body turns while the game draws its model (null: it does not).
     @Nullable
     private static Frame frame;
-    private static boolean pushed;
+    @Nullable
+    private static BodyTurn body;
 
     private FlightPose() {
     }
@@ -116,24 +126,28 @@ public final class FlightPose {
         float fly;
         float beam;
         float brace;
+        float point;
         float dome;
         float ram;
         long last = Util.getMillis();
 
-        void toward(boolean flying, float beaming, float bracing, boolean domed, boolean ramming) {
+        void toward(boolean flying, float beaming, float bracing, boolean pointing, boolean domed, boolean ramming) {
             long now = Util.getMillis();
-            float step = 1.0F - (float) Math.exp(-BLEND * Math.min(0.25F, (now - this.last) / 1000.0F));
+            float seconds = Math.min(0.25F, (now - this.last) / 1000.0F);
+            float step = 1.0F - (float) Math.exp(-BLEND * seconds);
             this.last = now;
             this.fly = Mth.lerp(step, this.fly, flying ? 1.0F : 0.0F);
             this.beam = Mth.lerp(step, this.beam, beaming);
             this.brace = Mth.lerp(step, this.brace, bracing);
+            this.point = Mth.lerp(1.0F - (float) Math.exp(-(pointing ? POINT_UP : POINT_DOWN) * seconds), this.point,
+                    pointing ? 1.0F : 0.0F);
             this.dome = Mth.lerp(step, this.dome, domed ? 1.0F : 0.0F);
             this.ram = Mth.lerp(step, this.ram, ramming ? 1.0F : 0.0F);
         }
 
         boolean idle() {
-            return this.fly < 0.01F && this.beam < 0.01F && this.brace < 0.01F && this.dome < 0.01F
-                    && this.ram < 0.01F;
+            return this.fly < 0.01F && this.beam < 0.01F && this.brace < 0.01F && this.point < 0.01F
+                    && this.dome < 0.01F && this.ram < 0.01F;
         }
     }
 
@@ -155,6 +169,17 @@ public final class FlightPose {
     }
 
     /**
+     * How one player's whole body turns while its model is drawn (see {@link #turnModel}).
+     *
+     * @param dip   how far it dips, in blocks
+     * @param drop  how far his hips come down in a kneel, in blocks, and {@code lean} how far his body then leans
+     *              forward over them, in radians
+     */
+    private record BodyTurn(int entity, Vec3 pivot, float dip, Quaternionf turn, boolean kneel, float drop,
+            float lean, Vec3 left) {
+    }
+
+    /**
      * Before the game draws a player: works out his flight pose and turns his whole body with it.
      *
      * @return true when the mod poses his arms this frame
@@ -169,6 +194,8 @@ public final class FlightPose {
         float charge = BeamArm.gathering(player, partialTick);
         float aim = ClientRing.has(player, RingPayload.BEAM) ? 1.0F : CHARGE_AIM * Math.max(0.0F, charge);
         boolean beaming = aim > 0.0F;
+        // Shooting bolts, the ring arm points where he aims.
+        boolean pointing = BoltArm.pointing(player, partialTick);
         boolean domed = ClientRing.has(player, RingPayload.DOME);
         boolean ramming = flying && ClientRing.has(player, RingPayload.SHIELD);
         float land = motion == null || motion.sinceEnd >= LAND_TICKS ? 0.0F
@@ -185,15 +212,15 @@ public final class FlightPose {
         frame = null;
         Blend blend = BLENDS.get(player.getId());
         if (blend == null) {
-            if (!flying && !dropping && !beaming && !domed && !slamming && land <= 0.0F) {
+            if (!flying && !dropping && !beaming && !pointing && !domed && !slamming && land <= 0.0F) {
                 return false;
             }
             blend = new Blend();
             BLENDS.put(player.getId(), blend);
         }
-        blend.toward(flying, aim, beaming ? BeamArm.brace(player, partialTick) : 0.0F, domed, ramming);
+        blend.toward(flying, aim, beaming ? BeamArm.brace(player, partialTick) : 0.0F, pointing, domed, ramming);
         // Only forgotten once nothing is wanted any more and everything has blended back out.
-        if (!flying && !dropping && !beaming && !domed && !slamming && blend.idle() && land <= 0.0F) {
+        if (!flying && !dropping && !beaming && !pointing && !domed && !slamming && blend.idle() && land <= 0.0F) {
             BLENDS.remove(player.getId());
             return false;
         }
@@ -235,24 +262,13 @@ public final class FlightPose {
         frame = new Frame(player.getId(), t, fast, tilt, roll, land, ClientRing.has(player, RingPayload.DESCENT),
                 slamming ? slam : -1.0F, brace, player.tickCount + partialTick, blend, pivot, forward, left, turn,
                 kneel);
-        PoseStack pose = event.getPoseStack();
         float dip = dip(t, land);
         float lean = KNEEL_LEAN * kneel;
         float drop = kneel <= 0.0F ? 0.0F
                 : Math.max(0.0F, KNEEL_DROP - (player.isCrouching() ? CROUCH_DROP : 0.0F)) * kneel;
-        pushed = Math.abs(tilt) > 1.0E-3F || Math.abs(roll) > 1.0E-3F || dip > 1.0E-3F || kneel > 0.0F;
-        if (pushed) {
-            pose.pushPose();
-            pose.translate(pivot.x, pivot.y - dip, pivot.z);
-            pose.mulPose(turn);
-            pose.translate(-pivot.x, -pivot.y, -pivot.z);
-            if (kneel > 0.0F) {
-                // Down onto his knee, and his body leaning forward over his hips.
-                pose.translate(0.0F, HIP_HEIGHT - drop, 0.0F);
-                pose.mulPose(new Quaternionf().rotateAxis(lean, (float) left.x, 0.0F, (float) left.z));
-                pose.translate(0.0F, -HIP_HEIGHT, 0.0F);
-            }
-        }
+        // The body is turned while the game draws the model (see turnModel), so his name over his head stays upright.
+        body = Math.abs(tilt) > 1.0E-3F || Math.abs(roll) > 1.0E-3F || dip > 1.0E-3F || kneel > 0.0F
+                ? new BodyTurn(player.getId(), pivot, dip, turn, kneel > 0.0F, drop, lean, left) : null;
         PlayerModel<AbstractClientPlayer> model = event.getRenderer().getModel();
         model.leftArmPose = LanternPose.POSE.getValue();
         model.rightArmPose = LanternPose.POSE.getValue();
@@ -272,15 +288,34 @@ public final class FlightPose {
         return true;
     }
 
-    /** After the game drew the player: his body is turned back, and legs made short for a kneel are whole again. */
-    static void post(RenderPlayerEvent.Post event) {
-        if (pushed && frame != null && frame.entity() == event.getEntity().getId()) {
-            event.getPoseStack().popPose();
+    /**
+     * While the game draws the model of the player being drawn (see PlayerRendererMixin): his whole body turns with his
+     * flight, dips, and kneels with his body leaning over his hips. Only the model: his name over his head, drawn after
+     * it, stays upright.
+     */
+    static void turnModel(AbstractClientPlayer player, PoseStack pose) {
+        BodyTurn turn = body;
+        if (turn == null || turn.entity() != player.getId()) {
+            return;
         }
+        pose.translate(turn.pivot().x, turn.pivot().y - turn.dip(), turn.pivot().z);
+        pose.mulPose(turn.turn());
+        pose.translate(-turn.pivot().x, -turn.pivot().y, -turn.pivot().z);
+        if (turn.kneel()) {
+            // Down onto his knee, and his body leaning forward over his hips.
+            pose.translate(0.0F, HIP_HEIGHT - turn.drop(), 0.0F);
+            pose.mulPose(new Quaternionf().rotateAxis(turn.lean(), (float) turn.left().x, 0.0F,
+                    (float) turn.left().z));
+            pose.translate(0.0F, -HIP_HEIGHT, 0.0F);
+        }
+    }
+
+    /** After the game drew the player: legs made short for a kneel are whole again. */
+    static void post(RenderPlayerEvent.Post event) {
         PlayerModel<AbstractClientPlayer> model = event.getRenderer().getModel();
         model.rightLeg.yScale = 1.0F;
         model.leftLeg.yScale = 1.0F;
-        pushed = false;
+        body = null;
         frame = null;
     }
 
@@ -337,7 +372,14 @@ public final class FlightPose {
             float look = headLift(f);
             model.head.xRot = Mth.clamp(model.head.xRot + look * fly, -1.35F, 1.1F);
         }
-        // What the ring does with his hands comes on top.
+        // What the ring does with his hands comes on top. Shooting bolts, the ring arm points straight where he aims,
+        // so every bolt leaves the ring on his outstretched hand, and kicks up a little with each one.
+        if (right && blend.point > 0.0F) {
+            float kick = BOLT_KICK * BoltArm.kick(entity, partialTick);
+            limb.xRot = Mth.lerp(blend.point, limb.xRot, -Mth.HALF_PI + model.head.xRot - kick);
+            limb.yRot = Mth.lerp(blend.point, limb.yRot, model.head.yRot - POINT_IN);
+            limb.zRot = Mth.lerp(blend.point, limb.zRot, 0.0F);
+        }
         if (blend.beam > 0.0F) {
             beam(model, limb, right, blend, entity, partialTick, f.time());
         }
@@ -542,7 +584,7 @@ public final class FlightPose {
      */
     static Vec3 turned(LivingEntity entity, Vec3 point, float partialTick) {
         Frame f = frame;
-        if (f == null || f.entity() != entity.getId() || !pushed) {
+        if (f == null || f.entity() != entity.getId() || body == null) {
             return point;
         }
         Vec3 base = entity.getPosition(partialTick).add(f.pivot());
@@ -555,7 +597,7 @@ public final class FlightPose {
     /** A way in the world, as the upright body sees it: undoes the flight pose's turn. */
     static Vec3 untilted(LivingEntity entity, Vec3 way) {
         Frame f = frame;
-        if (f == null || f.entity() != entity.getId() || !pushed) {
+        if (f == null || f.entity() != entity.getId() || body == null) {
             return way;
         }
         Vector3f local = new Vector3f((float) way.x, (float) way.y, (float) way.z);
@@ -570,7 +612,7 @@ public final class FlightPose {
     @Nullable
     static Quaternionf bodyTurn(LivingEntity entity) {
         Frame f = frame;
-        if (f == null || f.entity() != entity.getId() || !pushed) {
+        if (f == null || f.entity() != entity.getId() || body == null) {
             return null;
         }
         return new Quaternionf().rotateAxis(f.roll(), 0.0F, 0.0F, -1.0F).rotateAxis(f.tilt(), 1.0F, 0.0F, 0.0F);
@@ -580,7 +622,7 @@ public final class FlightPose {
     public static void clear() {
         BLENDS.clear();
         frame = null;
-        pushed = false;
+        body = null;
     }
 
     // ---- First person ----

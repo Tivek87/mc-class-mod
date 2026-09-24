@@ -1,7 +1,9 @@
 package nl.tivek.multiversepowers.character.docock;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import javax.annotation.Nullable;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.server.level.ServerLevel;
@@ -18,8 +20,18 @@ import net.neoforged.neoforge.network.PacketDistributor;
  */
 public final class RobotArm {
     private static final double VIEW_RANGE = 128.0;
+    // Word that one is gone reaches a little further, to everyone who may still be drawing it.
+    private static final double GONE_RANGE = VIEW_RANGE + 32.0;
+    // An arm or portal that has not changed is not sent again every tick, only this often: well within
+    // the time after which a client stops drawing one it hears nothing about (see ClientArms).
+    private static final int RESEND = 4;
     private static final int MIN_POINTS = 12;
     private static int nextId;
+    // Per arm or portal: what was last sent, where it was, and on which server tick.
+    private static final Map<Integer, Sent> SENT = new HashMap<>();
+
+    private record Sent(CustomPacketPayload payload, Vec3 start, Vec3 end, int tick) {
+    }
 
     private RobotArm() {
     }
@@ -38,7 +50,7 @@ public final class RobotArm {
     }
 
     public static void remove(ServerLevel level, int id) {
-        PacketDistributor.sendToPlayersInDimension(level, ArmPayload.remove(id));
+        gone(level, id, ArmPayload.remove(id));
     }
 
     /** @param open 0 = shut, 1 = fully open (see PortalPayload) */
@@ -53,18 +65,43 @@ public final class RobotArm {
 
     private static void disc(ServerLevel level, int id, Vec3 center, Vec3 normal, double size, double open,
             int style) {
-        broadcast(level, center, center, new PortalPayload(id, center, normal.normalize(), (float) size,
+        broadcast(level, id, center, center, new PortalPayload(id, center, normal.normalize(), (float) size,
                 (float) open, style));
     }
 
     public static void removePortal(ServerLevel level, int id) {
-        PacketDistributor.sendToPlayersInDimension(level, PortalPayload.remove(id));
+        gone(level, id, PortalPayload.remove(id));
     }
 
-    private static void broadcast(ServerLevel level, Vec3 start, Vec3 end, CustomPacketPayload payload) {
-        double range = VIEW_RANGE * VIEW_RANGE;
+    /** Forgets everything that was sent (the server stops). */
+    public static void clear() {
+        SENT.clear();
+    }
+
+    /** Sends this tick's shape to the players near it, unless it is exactly what they already have. */
+    private static void broadcast(ServerLevel level, int id, Vec3 start, Vec3 end, CustomPacketPayload payload) {
+        int tick = level.getServer().getTickCount();
+        Sent last = SENT.get(id);
+        if (last != null && tick - last.tick() < RESEND && last.payload().equals(payload)) {
+            return;
+        }
+        SENT.put(id, new Sent(payload, start, end, tick));
+        send(level, start, end, VIEW_RANGE, payload);
+    }
+
+    /** Tells the players around where an arm or portal was last sent that it is gone. */
+    private static void gone(ServerLevel level, int id, CustomPacketPayload payload) {
+        Sent last = SENT.remove(id);
+        // One that was never sent is on no client, so there is nobody to tell.
+        if (last != null) {
+            send(level, last.start(), last.end(), GONE_RANGE, payload);
+        }
+    }
+
+    private static void send(ServerLevel level, Vec3 start, Vec3 end, double range, CustomPacketPayload payload) {
+        double rangeSqr = range * range;
         for (ServerPlayer player : level.players()) {
-            if (player.distanceToSqr(start) < range || player.distanceToSqr(end) < range) {
+            if (player.distanceToSqr(start) < rangeSqr || player.distanceToSqr(end) < rangeSqr) {
                 PacketDistributor.sendToPlayer(player, payload);
             }
         }
@@ -162,7 +199,7 @@ public final class RobotArm {
             // About three points per block: long arms keep their curves, short ones stay small.
             int count = Mth.clamp((int) (length(this.path) * 3) + 2, MIN_POINTS, ArmPayload.MAX_POINTS);
             List<Vec3> points = resample(this.path, count);
-            broadcast(level, points.get(0), points.get(points.size() - 1), new ArmPayload(this.id, points,
+            broadcast(level, this.id, points.get(0), points.get(points.size() - 1), new ArmPayload(this.id, points,
                     (float) this.claw, (float) this.thickness, this.anchorId, this.anchorPos,
                     this.anchorYaw, (float) this.anchorBlend, (float) this.tipOffset, this.heldId, this.cut,
                     this.clipPoint, this.clipNormal, this.lamps, (float) this.spike, (float) this.thrust,

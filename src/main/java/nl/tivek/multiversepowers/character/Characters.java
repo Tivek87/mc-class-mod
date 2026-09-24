@@ -10,6 +10,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.level.GameType;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
@@ -17,6 +18,7 @@ import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.engine.ability.Cooldowns;
+import nl.tivek.multiversepowers.engine.ability.Throttle;
 
 /**
  * Who every player is right now, and their cooldowns. The wheel sends which character a player wants
@@ -54,6 +56,8 @@ public final class Characters {
     private static final Map<UUID, GameCharacter> ACTIVE = new HashMap<>();
     // Per player, per character: when each ability slot is ready again.
     private static final Cooldowns<GameCharacter> COOLDOWNS = new Cooldowns<>(AbilitySlot.values().length);
+    // A pick from the wheel, at most this often per player: every change plays out for everyone round him.
+    private static final Throttle PICKS = new Throttle(10);
 
     private Characters() {
     }
@@ -62,6 +66,18 @@ public final class Characters {
     @Nullable
     public static GameCharacter of(ServerPlayer player) {
         return ACTIVE.get(player.getUUID());
+    }
+
+    /**
+     * A player's own game asks, from the wheel, to turn into {@code character} (see {@link #select}). Asking again too
+     * soon after the last change does nothing; his own game is told who he still is.
+     */
+    public static void pick(ServerPlayer player, @Nullable GameCharacter character) {
+        if (PICKS.allow(player)) {
+            select(player, character);
+        } else {
+            sync(player);
+        }
     }
 
     /**
@@ -122,6 +138,10 @@ public final class Characters {
      * key went down or up, and {@code data} carries anything extra the slot needs.
      */
     public static void action(ServerPlayer player, int slotIndex, boolean on, int data) {
+        // The dead and those who only watch do nothing (a key they still held is let go of with the character).
+        if (!player.isAlive() || player.isSpectator()) {
+            return;
+        }
         AbilitySlot slot = AbilitySlot.byIndex(slotIndex);
         GameCharacter character = ACTIVE.get(player.getUUID());
         if (slot == null || character == null) {
@@ -229,6 +249,7 @@ public final class Characters {
         }
         ACTIVE.clear();
         COOLDOWNS.clear();
+        PICKS.clear();
     }
 
     // ---- Events ----
@@ -259,14 +280,25 @@ public final class Characters {
         }
     }
 
-    /** You are yourself again: dying or logging out always takes the character off. */
+    /**
+     * You are yourself again: dying, logging out or becoming a spectator always takes the character off. Cooldowns
+     * that still run are kept, so coming back never makes an ability (the ultimate above all) ready sooner.
+     */
     private static void forget(ServerPlayer player) {
         GameCharacter character = ACTIVE.remove(player.getUUID());
         if (character != null) {
             leave(player, character);
             showLook(player, true);
         }
-        COOLDOWNS.forget(player);
+        COOLDOWNS.forgetReady(player);
         sync(player);
+    }
+
+    /** A player made a spectator only watches: the character comes off, as it does when he dies. */
+    @SubscribeEvent
+    public static void onGameMode(PlayerEvent.PlayerChangeGameModeEvent event) {
+        if (event.getNewGameMode() == GameType.SPECTATOR && event.getEntity() instanceof ServerPlayer player) {
+            forget(player);
+        }
     }
 }

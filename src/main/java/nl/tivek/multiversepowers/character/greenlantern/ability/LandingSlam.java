@@ -227,7 +227,7 @@ public final class LandingSlam implements Effect {
             }
         }
         if (this.age >= END_TICK * this.pace || this.owner.level() != level) {
-            PacketDistributor.sendToPlayersInDimension(level, ConstructPayload.remove(this.id));
+            ConstructPayload.sendRemove(level, this.id, this.center);
             RUNNING.remove(this.owner.getUUID(), this);
             return false;
         }
@@ -446,8 +446,8 @@ public final class LandingSlam implements Effect {
         BlockParticleOption bits = new BlockParticleOption(ParticleTypes.BLOCK, state);
         for (int i = 0; i < count; i++) {
             double angle = Math.PI * 2.0 * i / count;
-            level.sendParticles(bits, at.x + Math.cos(angle) * radius, at.y + 0.1, at.z + Math.sin(angle) * radius,
-                    2, 0.2, 0.1, 0.2, 0.15);
+            ParticleFx.sendNear(level, bits, at.x + Math.cos(angle) * radius, at.y + 0.1,
+                    at.z + Math.sin(angle) * radius, 2, 0.2, 0.1, 0.2, 0.15);
         }
     }
 

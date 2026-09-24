@@ -12,10 +12,12 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.engine.effect.Effects;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
+import nl.tivek.multiversepowers.engine.target.Targeting;
 
 /**
  * Wind Gust: air spirals up around you, then a curved wall of wind rolls forward. Creatures are thrown
@@ -53,7 +55,7 @@ final class WindGustSpell {
         Effects.start(level, (lvl, age) -> {
             double front = (age + 1) * WAVE_SPEED;
             drawWave(lvl, origin, look, front, age);
-            push(lvl, origin, look, front, hit);
+            push(lvl, origin, look, front, casterId, hit);
             if (age % 3 == 1) {
                 lvl.playSound(null, origin.x + look.x * front, origin.y + look.y * front, origin.z + look.z * front,
                         SoundEvents.BREEZE_IDLE_AIR, SoundSource.PLAYERS, 0.6F, 1.4F);
@@ -115,13 +117,18 @@ final class WindGustSpell {
         }
     }
 
-    /** Throws every creature the wave front passed this tick; each one only once. */
-    private static void push(ServerLevel level, Vec3 origin, Vec3 look, double front, Set<UUID> hit) {
+    /**
+     * Throws every creature the wave front passed this tick; each one only once, and another player only when the
+     * caster could hurt him (the fall afterwards has no attacker, so the game's own PvP rules never see it).
+     */
+    private static void push(ServerLevel level, Vec3 origin, Vec3 look, double front, UUID casterId, Set<UUID> hit) {
+        ServerPlayer caster = level.getServer().getPlayerList().getPlayer(casterId);
         double cone = Math.cos(Math.toRadians(HALF_ANGLE + 10));
         for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class,
                 new AABB(origin, origin).inflate(front + 1.0),
                 entity -> entity.isAlive() && !entity.isSpectator())) {
-            if (hit.contains(target.getUUID())) {
+            if (hit.contains(target.getUUID())
+                    || target instanceof Player player && (caster == null || !Targeting.isTargetable(caster, player))) {
                 continue;
             }
             Vec3 toTarget = target.getBoundingBox().getCenter().subtract(origin);

@@ -9,9 +9,12 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.SmallFireball;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.BaseFireBlock;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
@@ -46,14 +49,26 @@ final class FireballSpell {
         SmallFireball fireball = new SmallFireball(level, player, look) {
             @Override
             protected void onHitBlock(BlockHitResult result) {
-                super.onHitBlock(result);
-                spreadFire(this.level(), result.getBlockPos().relative(result.getDirection()), this.random);
+                BlockPos spot = result.getBlockPos().relative(result.getDirection());
+                if (this.mayInteract(this.level(), spot)) {
+                    super.onHitBlock(result);
+                } else {
+                    // Where the caster may not build (spawn protection) the block still feels the hit, but the
+                    // fireball's own fire is not lit.
+                    BlockState block = this.level().getBlockState(result.getBlockPos());
+                    block.onProjectileHit(this.level(), block, result, this);
+                }
+                spreadFire(this, spot);
             }
 
             @Override
             protected void onHitEntity(EntityHitResult result) {
+                // Asked before the hit: a player it kills is no longer one the caster may hit.
+                boolean burn = mayBurnAt(this, result.getEntity());
                 super.onHitEntity(result);
-                spreadFire(this.level(), result.getEntity().blockPosition(), this.random);
+                if (burn) {
+                    spreadFire(this, result.getEntity().blockPosition());
+                }
             }
 
             @Override
@@ -170,11 +185,25 @@ final class FireballSpell {
         };
     }
 
-    /** A small pile of fire: the spot itself and about half of the eight spots around it. */
-    private static void spreadFire(Level level, BlockPos center, RandomSource random) {
+    /**
+     * Fire is only left at the feet of a player the caster could hurt: the game already stops the hit itself when
+     * PvP is off, but not this fire.
+     */
+    private static boolean mayBurnAt(SmallFireball fireball, Entity hit) {
+        return !(hit instanceof Player player)
+                || fireball.getOwner() instanceof ServerPlayer caster && Targeting.isTargetable(caster, player);
+    }
+
+    /**
+     * A small pile of fire: the spot itself and about half of the eight spots around it, never where the caster may
+     * not build (spawn protection, outside the world border).
+     */
+    private static void spreadFire(SmallFireball fireball, BlockPos center) {
+        Level level = fireball.level();
         if (level.isClientSide) {
             return;
         }
+        RandomSource random = fireball.getRandom();
         for (int dx = -1; dx <= 1; dx++) {
             for (int dz = -1; dz <= 1; dz++) {
                 boolean middle = dx == 0 && dz == 0;
@@ -184,7 +213,7 @@ final class FireballSpell {
                 // Follow the ground one block up or down, so the pile also works on slopes.
                 for (int dy : new int[] {0, -1, 1}) {
                     BlockPos pos = center.offset(dx, dy, dz);
-                    if (BaseFireBlock.canBePlacedAt(level, pos, Direction.UP)) {
+                    if (BaseFireBlock.canBePlacedAt(level, pos, Direction.UP) && fireball.mayInteract(level, pos)) {
                         level.setBlockAndUpdate(pos, BaseFireBlock.getState(level, pos));
                         break;
                     }

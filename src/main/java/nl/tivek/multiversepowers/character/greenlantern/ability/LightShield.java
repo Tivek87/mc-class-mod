@@ -137,7 +137,7 @@ public final class LightShield implements Effect {
         if (this.closing >= 0) {
             this.closing++;
             if (this.closing >= OPEN_TICKS) {
-                PacketDistributor.sendToPlayersInDimension(level, ConstructPayload.remove(this.id));
+                ConstructPayload.sendRemove(level, this.id, this.owner.position());
                 return false;
             }
             this.send(level);

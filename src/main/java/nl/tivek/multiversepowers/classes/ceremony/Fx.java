@@ -1,6 +1,5 @@
 package nl.tivek.multiversepowers.classes.ceremony;
 
-import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.particles.BlockParticleOption;
 import net.minecraft.core.particles.DustColorTransitionOptions;
@@ -20,6 +19,7 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import nl.tivek.multiversepowers.classes.ceremony.Ceremonies.Ceremony;
 import nl.tivek.multiversepowers.classes.ceremony.Ceremonies.Mode;
+import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 import org.joml.Vector3f;
 
 final class Fx {
@@ -30,6 +30,7 @@ final class Fx {
     private final double z;
     private final double forwardX;
     private final double forwardZ;
+    private final BlockState ground;
     final int age;
     private final RandomSource random = RandomSource.create();
 
@@ -42,6 +43,7 @@ final class Fx {
         float rad = (float) Math.toRadians(ceremony.yaw);
         this.forwardX = -Math.sin(rad);
         this.forwardZ = Math.cos(rad);
+        this.ground = ceremony.ground;
         this.age = ceremony.age;
     }
 
@@ -95,9 +97,9 @@ final class Fx {
         return new DustColorTransitionOptions(color(fromRgb), color(toRgb), size);
     }
 
+    /** The block under the player, as read when the ceremony started (see {@link Ceremony#ground}). */
     BlockState ground() {
-        BlockState state = this.level.getBlockState(BlockPos.containing(this.x, this.y - 0.5, this.z));
-        return state.isAir() ? Blocks.DIRT.defaultBlockState() : state;
+        return this.ground.isAir() ? Blocks.DIRT.defaultBlockState() : this.ground;
     }
 
     // ---- Local frame (only used for shapes that are symmetric around the player) ----
@@ -130,20 +132,21 @@ final class Fx {
     }
 
     // ---- Primitives ----
+    // Each is the game's own sendParticles, sent together with the rest of the tick's particles (see ParticleFx).
 
     void at(ParticleOptions particle, double dx, double dy, double dz) {
-        this.level.sendParticles(particle, this.x + dx, this.y + dy, this.z + dz, 1, 0.0, 0.0, 0.0, 0.0);
+        ParticleFx.sendNear(this.level, particle, this.x + dx, this.y + dy, this.z + dz, 1, 0.0, 0.0, 0.0, 0.0);
     }
 
     /** One particle moving along (vx, vy, vz) * speed. */
     void fly(ParticleOptions particle, double dx, double dy, double dz,
                      double vx, double vy, double vz, double speed) {
-        this.level.sendParticles(particle, this.x + dx, this.y + dy, this.z + dz, 0, vx, vy, vz, speed);
+        ParticleFx.sendNear(this.level, particle, this.x + dx, this.y + dy, this.z + dz, 0, vx, vy, vz, speed);
     }
 
     void cloud(ParticleOptions particle, double dx, double dy, double dz, int count,
                        double spreadX, double spreadY, double spreadZ, double speed) {
-        this.level.sendParticles(particle, this.x + dx, this.y + dy, this.z + dz, count,
+        ParticleFx.sendNear(this.level, particle, this.x + dx, this.y + dy, this.z + dz, count,
                 spreadX, spreadY, spreadZ, speed);
     }
 

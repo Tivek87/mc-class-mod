@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
+import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ClientboundSetSubtitleTextPacket;
 import net.minecraft.network.protocol.game.ClientboundSetTitleTextPacket;
@@ -13,6 +14,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
@@ -74,6 +76,8 @@ private static final List<Ceremony> ACTIVE = new ArrayList<>();
         final double y;
         final double z;
         final float yaw;
+        // The block under the player, read once while he stands there: later its chunk may no longer be loaded.
+        final BlockState ground;
         int age;
 
         private Ceremony(ServerPlayer player, PlayerClass playerClass, Mode mode) {
@@ -90,6 +94,7 @@ private static final List<Ceremony> ACTIVE = new ArrayList<>();
             this.y = player.getY();
             this.z = player.getZ();
             this.yaw = player.getYRot();
+            this.ground = player.level().getBlockState(BlockPos.containing(this.x, this.y - 0.5, this.z));
         }
     }
 
@@ -99,22 +104,35 @@ private static final List<Ceremony> ACTIVE = new ArrayList<>();
     }
 
     public static void play(ServerPlayer player, PlayerClass playerClass, boolean firstTime) {
+        // Not stacked when a kill-and-respawn loop respawns him again before it is over.
+        if (!firstTime && isPlaying(player, LIGHT)) {
+            return;
+        }
         ACTIVE.add(new Ceremony(player, playerClass, firstTime ? GRAND : LIGHT));
     }
 
-    /** One-second death animation of the group, on the spot where the player is now. */
+    /** One-second death animation of the group, on the spot where the player is now. Not stacked either. */
     public static void playDeath(ServerPlayer player, ClassGroup group) {
-        ACTIVE.add(new Ceremony(player, null, group, DEATH));
+        if (!isPlaying(player, DEATH)) {
+            ACTIVE.add(new Ceremony(player, null, group, DEATH));
+        }
     }
 
     /** Level-up animation, the same for everyone. Not stacked when several levels come at once. */
     public static void playLevelUp(ServerPlayer player) {
+        if (!isPlaying(player, LEVEL_UP)) {
+            ACTIVE.add(new Ceremony(player, null, null, LEVEL_UP));
+        }
+    }
+
+    /** Whether this player already has an animation of this kind running. */
+    private static boolean isPlaying(ServerPlayer player, Mode mode) {
         for (Ceremony ceremony : ACTIVE) {
-            if (ceremony.mode == LEVEL_UP && ceremony.playerId.equals(player.getUUID())) {
-                return;
+            if (ceremony.mode == mode && ceremony.playerId.equals(player.getUUID())) {
+                return true;
             }
         }
-        ACTIVE.add(new Ceremony(player, null, null, LEVEL_UP));
+        return false;
     }
 
     @SubscribeEvent

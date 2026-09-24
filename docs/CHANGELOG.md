@@ -2,6 +2,80 @@
 
 What changed in the project, newest first.
 
+## [World and client settings, flying over new land, and ready for servers] - 2026-09-24
+
+### Added
+- **World settings and your own settings:** every number of the stamina bar and of every character is now a world
+  setting. Every world keeps its own (in its `serverconfig/welcomescreen` folder); the files in
+  `config/welcomescreen` are what a new world starts with. On a server everyone plays by the server's world
+  settings: your game gets them as you join, and again at once when they change on the server. Your own settings
+  (`config/welcomescreen/client.toml`) hold what only you see and feel: a new **camera shake** (how hard the
+  powers shake and jolt your view, 0 = never) and the ram cone's **scraping shake**, which moved there. In the
+  settings screen the world tabs can only be changed in a world of your own; the new *Your settings* tab always.
+- **Flying over new land:** while you fly, the world is made ready round you (128 blocks) and far ahead along the
+  way you fly (8 seconds of flying), so you no longer stop dead in the air at the edge of land that is not there
+  yet. Should the world still fall behind, you slow down smoothly before its edge and fly on once it is there.
+  Both distances are world settings of the flight.
+
+### Changed
+- **Light Bolt:** shooting, your ring arm comes straight up and points where you aim, so every bolt leaves the ring
+  on your outstretched hand (your own hand too, in first person); it kicks back a little with each bolt, stays up
+  while you keep shooting and goes down again a moment after the last one. Everyone else sees it too.
+- **Lighter on servers:** the particles of every power and ceremony reach each player in one packet per tick
+  instead of one per particle; the ring's power is told once a tick (to others every few ticks); Doctor Octopus's
+  arms and portals are only sent again when they move; a construct that is gone is only told to the players near
+  it; and what the powers send goes out together at the end of every tick.
+- **No more freezes from far away:** a power still at work where nobody is (an Air Strike you flew away from, a
+  portal's target that ran far off, a long beam, lightning following its target) no longer makes the server load
+  the world there.
+
+### Fixed
+- **Multiplayer:**
+  - Logging out or dying no longer makes a running cooldown ready (the ultimate above all); spell cooldowns show
+    right again after you log back in.
+  - Spectators can no longer use powers, and becoming one takes your character off.
+  - The Giant Fist and the Air Strike's crater no longer break blocks you could not break yourself (adventure
+    mode, spawn protection, land claimed with other mods).
+  - A player caught in a Light Bubble or held by Doctor Octopus is no longer kicked for flying, keeps looking
+    round freely, and can no longer be held by two powers at once; a flying Green Lantern who is caught stops
+    flying. Doctor Octopus lets go of a player who became a spectator or can no longer be hurt, and a player he
+    drops when he leaves or dies lands safely.
+  - With PvP off, Lightning Strike, the poison cloud, Wind Gust and the Fireball's fire no longer hurt other
+    players; the Fireball's fire no longer burns in spawn protection.
+  - Void Walk: a server that stops while you walk in the void no longer saves you silent and invisible for good;
+    milk or a flare that takes the invisibility away ends the walk; a potion's invisibility you had before comes
+    back afterwards.
+  - Ground Strike marks no longer leave creatures and players glowing for good, and a spike only throws what it
+    really hit. Picking Doctor Octopus again right after putting him away no longer breaks him.
+  - Dying while picking a class brings the welcome screen back instead of leaving you a spectator without a
+    class.
+  - Names over Green Lanterns who fly or spin with the sword stay upright for everyone else.
+  - After respawning or going to another dimension: no phantom landing slam any more, and your sword and shield
+    are put away on your screen too, as they already were on the server.
+  - Taking out the sword and shield no longer plays its sound twice for you.
+  - Someone who leaves your sight no longer comes back still in his flying pose.
+  - The Light Beam only starts once the ring really gathered its light, and a held fist of someone too far away is
+    no longer drawn in the wrong place.
+
+## [Snappier flight, a quicker arrival and no blocking mid-swing] - 2026-09-24
+
+### Added
+- **Tap jump twice in the air to stop flying:** once you are up, a quick double tap on jump turns your flight off
+  and you fall from there, just like pressing C in the air.
+
+### Changed
+- **Flight: half the top speed, and there sooner:** you set off at 6.4 blocks a second, are at a cruising 8 within
+  half a second and reach the top speed of 9.6 after about 6 seconds of flying on (it was 19.25, after more than
+  half a minute). Picking up speed goes 40% faster. The dive for a slam still goes 19.25 blocks a second, and a
+  landing slam by itself still needs about 8.7 blocks a second.
+- **The ring's arrival takes about half as long** (8 seconds instead of 15), with the same steps, only snappier: a
+  ring of light bursts out where it stops in the sky, it stops dead before your eyes with a flash, the scan sweeps
+  down and up trailing light, the lantern flashes as it is done, and as the ring slides on a pillar of light shoots
+  up out of you into the sky and your view jolts harder.
+- **Sword and shield:** you can no longer block while you attack. A cut, a thrust or the flurry lowers the shield
+  for as long as the move lasts; it comes back up by itself if you still hold right. The flurry keeps its own shield
+  before your chest.
+
 ## [Sword and shield remade, quicker flight and a harder Light Bubble] - 2026-09-24
 
 ### Added

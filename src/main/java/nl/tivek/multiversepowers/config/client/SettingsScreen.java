@@ -22,10 +22,11 @@ import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.engine.client.gui.DirtBackgroundScreen;
 
 /**
- * The settings of this mod in the game. A tab for every page (the stamina bar, and every character); on a page a part
- * for every ability that folds open and shut; a search box that looks through every page at once; and a bar at the
- * bottom that says what the number you point at does. Changes on every tab are kept until you save them, all at once,
- * into the same settings files you could open by hand; cancel throws them away.
+ * The settings of this mod in the game. A tab for every page (the world settings: the stamina bar and every character;
+ * then your own client settings); on a page a part for every ability that folds open and shut; a search box that looks
+ * through every page at once; and a bar at the bottom that says what the number you point at does. Changes on every tab
+ * are kept until you save them, all at once, into the same settings files you could open by hand (the world settings
+ * into the open world's own copy); cancel throws them away.
  */
 public class SettingsScreen extends DirtBackgroundScreen {
     private static final String PREFIX = "config." + MultiversePowers.MODID + ".";
@@ -346,20 +347,22 @@ public class SettingsScreen extends DirtBackgroundScreen {
         drawDivider(graphics, left - 2, top - 2, width + 4);
         Component line;
         int color;
+        SettingsPages.Page page = this.pages.get(this.tab);
+        boolean inWorld = this.minecraft != null && this.minecraft.level != null;
         if (this.pointed != null) {
             line = this.pointed.description().getString().isEmpty() ? this.pointed.label()
                     : this.pointed.description();
             color = TEXT_COLOR;
-        } else if (!this.pages.get(this.tab).editable()) {
+        } else if (page.world() && !page.editable()) {
+            // World settings belong to a world: someone else's server decides them, and with no world open there are
+            // none to change.
+            line = Component.translatable(PREFIX + (inWorld ? "server_decides" : "world_closed"));
+            color = NOTICE_COLOR;
+        } else if (!page.editable()) {
             line = Component.translatable(PREFIX + "locked");
             color = NOTICE_COLOR;
-        } else if (this.minecraft != null && this.minecraft.level != null
-                && !this.minecraft.hasSingleplayerServer()) {
-            // On someone else's server their own file decides; this only changes your own copy.
-            line = Component.translatable(PREFIX + "server_decides");
-            color = NOTICE_COLOR;
         } else {
-            line = Component.translatable(PREFIX + "help");
+            line = Component.translatable(PREFIX + (page.world() ? "world_help" : "client_help"));
             color = MUTED_COLOR;
         }
         List<FormattedCharSequence> lines = this.font.split(line, width);

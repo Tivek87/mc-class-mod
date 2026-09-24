@@ -5,6 +5,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.language.I18n;
 import net.minecraft.network.chat.Component;
 import net.neoforged.neoforge.common.ModConfigSpec;
@@ -13,14 +14,16 @@ import nl.tivek.multiversepowers.character.CharacterAbility;
 import nl.tivek.multiversepowers.character.CharacterConfig;
 import nl.tivek.multiversepowers.character.GameCharacter;
 import nl.tivek.multiversepowers.character.client.AbilityKeys;
+import nl.tivek.multiversepowers.config.ModConfigs;
 import nl.tivek.multiversepowers.config.Unit;
 import nl.tivek.multiversepowers.stamina.StaminaConfig;
 import nl.tivek.multiversepowers.stamina.client.StaminaClient;
 
 /**
- * What each settings page holds: the stamina bar, and one page per character with a part for every ability that
- * has numbers. Names and explanations come from the translations; a setting without one falls back to its name
- * in the file and the English explanation that stands next to it there.
+ * What each settings page holds: the world settings (the stamina bar, and one page per character with a part for every
+ * ability that has numbers) and your own client settings (see {@link ModConfigs}). Names and explanations come from the
+ * translations; a setting without one falls back to its name in the file and the English explanation that stands next
+ * to it there.
  */
 public final class SettingsPages {
     private static final String PREFIX = "config." + MultiversePowers.MODID + ".";
@@ -32,10 +35,13 @@ public final class SettingsPages {
      * One page.
      *
      * @param color    the colour of its title
-     * @param editable false while its settings file is not open yet, so nothing can be saved
+     * @param editable false while its settings can not be changed here, so nothing can be saved: a world page while no
+     *                 world of your own is open (see {@link #worldEditable})
+     * @param world    true for world settings, false for your own client settings
      * @param save     writes the page's settings file to disk
      */
-    public record Page(Component title, int color, List<Section> sections, boolean editable, Runnable save) {
+    public record Page(Component title, int color, List<Section> sections, boolean editable, boolean world,
+            Runnable save) {
     }
 
     /**
@@ -50,14 +56,24 @@ public final class SettingsPages {
     public record Group(@Nullable Component title, List<ConfigNumber> numbers) {
     }
 
-    /** Every page, in the order of the tabs: the stamina bar first, then every character. */
+    /** Every page, in the order of the tabs: the stamina bar first, then every character, then your own settings. */
     public static List<Page> all() {
         List<Page> pages = new ArrayList<>();
         pages.add(stamina());
         for (GameCharacter character : GameCharacter.values()) {
             pages.add(character(character));
         }
+        pages.add(client());
         return pages;
+    }
+
+    /**
+     * World settings are the world's own: they can only be changed in a world this game runs itself (singleplayer, or a
+     * LAN world you host), and are saved with that world. On someone else's server they are the server's, only shown;
+     * with no world open there are none.
+     */
+    public static boolean worldEditable(ModConfigSpec spec) {
+        return spec.isLoaded() && Minecraft.getInstance().hasSingleplayerServer();
     }
 
     /** The tab of this character's page (see {@link #all}). */
@@ -68,33 +84,41 @@ public final class SettingsPages {
     // ---- The stamina bar ----
 
     public static Page stamina() {
+        ModConfigSpec spec = StaminaConfig.SPEC;
         List<ConfigNumber> numbers = List.of(
-                fromSpec("maxStamina", StaminaConfig.MAX_STAMINA, Unit.STAMINA, 10.0),
-                fromSpec("sprintDrainPerTick", StaminaConfig.SPRINT_DRAIN, Unit.STAMINA_PER_TICK, 0.01),
-                fromSpec("jumpCost", StaminaConfig.JUMP_COST, Unit.STAMINA, 0.5),
-                fromSpec("regenPerTick", StaminaConfig.REGEN_RATE, Unit.STAMINA_PER_TICK, 0.05),
-                fromSpec("regenDelayTicks", StaminaConfig.REGEN_DELAY, Unit.TICKS, 5.0),
-                fromSpec("exhaustionRecoverThreshold", StaminaConfig.EXHAUSTION_THRESHOLD, Unit.STAMINA, 1.0));
+                fromSpec(spec, "stamina", "maxStamina", StaminaConfig.MAX_STAMINA, Unit.STAMINA, 10.0),
+                fromSpec(spec, "stamina", "sprintDrainPerTick", StaminaConfig.SPRINT_DRAIN, Unit.STAMINA_PER_TICK,
+                        0.01),
+                fromSpec(spec, "stamina", "jumpCost", StaminaConfig.JUMP_COST, Unit.STAMINA, 0.5),
+                fromSpec(spec, "stamina", "regenPerTick", StaminaConfig.REGEN_RATE, Unit.STAMINA_PER_TICK, 0.05),
+                fromSpec(spec, "stamina", "regenDelayTicks", StaminaConfig.REGEN_DELAY, Unit.TICKS, 5.0),
+                fromSpec(spec, "stamina", "exhaustionRecoverThreshold", StaminaConfig.EXHAUSTION_THRESHOLD,
+                        Unit.STAMINA, 1.0));
         Section section = new Section(Component.translatable(PREFIX + "stamina"), null,
                 List.of(new Group(null, numbers)));
-        return new Page(Component.translatable(PREFIX + "stamina"), 0xFFFF55, List.of(section),
-                StaminaConfig.SPEC.isLoaded(), () -> {
-                    StaminaConfig.SPEC.save();
+        return new Page(Component.translatable(PREFIX + "stamina"), 0xFFFF55, List.of(section), worldEditable(spec),
+                true, () -> {
+                    spec.save();
                     StaminaClient.onConfigUpdated();
                 });
     }
 
-    /** A stamina setting, with its limits and default read from the settings file's own description. */
-    private static ConfigNumber fromSpec(String key, ModConfigSpec.ConfigValue<? extends Number> value, Unit unit,
-            double step) {
+    /**
+     * A setting of its own file, with its limits and default read from the settings file's own description; named by
+     * the translations under {@code page}.
+     */
+    private static ConfigNumber fromSpec(ModConfigSpec spec, String page, String key,
+            ModConfigSpec.ConfigValue<? extends Number> value, Unit unit, double step) {
         ModConfigSpec.Range<?> range = value.getSpec().getRange();
         double min = range == null ? 0.0 : ((Number) range.getMin()).doubleValue();
         double max = range == null ? Double.MAX_VALUE : ((Number) range.getMax()).doubleValue();
         boolean whole = value instanceof ModConfigSpec.IntValue;
-        String path = PREFIX + "stamina." + key;
+        String path = PREFIX + page + "." + key;
+        // A file that is not open (world settings with no world open) shows what the mod has.
         return new ConfigNumber(Component.translatableWithFallback(path, key),
                 Component.translatableWithFallback(path + ".desc", ""), unit, min, max, step, whole,
-                value.getDefault().doubleValue(), () -> value.get().doubleValue(), number -> set(value, number));
+                value.getDefault().doubleValue(),
+                () -> (spec.isLoaded() ? value.get() : value.getDefault()).doubleValue(), number -> set(value, number));
     }
 
     @SuppressWarnings("unchecked")
@@ -140,7 +164,22 @@ public final class SettingsPages {
             }
         }
         return new Page(character.getDisplayName(), character.getColor(), sections,
-                CharacterConfig.canEdit(character), () -> CharacterConfig.save(character));
+                CharacterConfig.canEdit(character) && Minecraft.getInstance().hasSingleplayerServer(), true,
+                () -> CharacterConfig.save(character));
+    }
+
+    // ---- Your own settings ----
+
+    /** Your own client settings: what only you see and feel. */
+    public static Page client() {
+        ModConfigSpec spec = ClientSettings.SPEC;
+        List<ConfigNumber> numbers = List.of(
+                fromSpec(spec, "client", "cameraShake", ClientSettings.CAMERA_SHAKE, Unit.STRENGTH, 0.1),
+                fromSpec(spec, "client", "ramGroundShake", ClientSettings.RAM_GROUND_SHAKE, Unit.STRENGTH, 0.1));
+        Section view = new Section(Component.translatable(PREFIX + "client.view"), null,
+                List.of(new Group(null, numbers)));
+        return new Page(Component.translatable(PREFIX + "client"), 0x8FD3FF, List.of(view), spec.isLoaded(), false,
+                spec::save);
     }
 
     private static ConfigNumber cooldown(CharacterAbility ability) {

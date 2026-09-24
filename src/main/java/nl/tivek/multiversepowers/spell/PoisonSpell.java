@@ -13,6 +13,7 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.phys.AABB;
@@ -138,7 +139,9 @@ final class PoisonSpell {
         AABB box = new AABB(center, center).inflate(radius, 0, radius).expandTowards(0, 2.5, 0)
                 .expandTowards(0, -1, 0);
         for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, box, LivingEntity::isAlive)) {
-            if (target.getUUID().equals(owner)) {
+            // Never you or a spectator; another player only when you could hurt him yourself.
+            if (target.getUUID().equals(owner) || target.isSpectator()
+                    || target instanceof Player player && (caster == null || !Targeting.isTargetable(caster, player))) {
                 continue;
             }
             double dx = target.getX() - center.x;

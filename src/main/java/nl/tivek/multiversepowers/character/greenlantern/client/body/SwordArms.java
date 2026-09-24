@@ -11,6 +11,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.client.model.PlayerModel;
 import net.minecraft.client.model.geom.ModelPart;
+import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.client.player.Input;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -44,8 +45,10 @@ import nl.tivek.multiversepowers.character.greenlantern.ability.SwordMove;
 import nl.tivek.multiversepowers.character.greenlantern.ability.SwordShield;
 import nl.tivek.multiversepowers.character.greenlantern.client.ClientConstructs;
 import nl.tivek.multiversepowers.character.greenlantern.client.ClientRing;
+import nl.tivek.multiversepowers.character.greenlantern.client.ConstructChoice;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.LanternPainter;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.SwordPainter;
+import nl.tivek.multiversepowers.config.client.ClientSettings;
 import nl.tivek.multiversepowers.engine.math.Colors;
 import nl.tivek.multiversepowers.engine.math.Ease;
 import org.joml.Quaternionf;
@@ -160,8 +163,8 @@ public final class SwordArms {
     }
 
     private static final Map<Integer, Blend> BLENDS = new HashMap<>();
-    // The bodies turned round for the spinning cut while they are drawn, to turn back once they are.
-    private static final Map<Integer, Boolean> SPUN = new HashMap<>();
+    // The bodies turned round for the spinning cut while their model is drawn, by how far (see turnModel).
+    private static final Map<Integer, Float> SPUN = new HashMap<>();
     private static int clientTicks;
 
     /**
@@ -215,7 +218,9 @@ public final class SwordArms {
         }
         float step = Float.isNaN(blend.blockAt) ? 1.0F : Mth.clamp(now - blend.blockAt, 0.0F, 5.0F) / BLOCK_TICKS;
         blend.blockAt = now;
-        float want = state.blocking() && !state.charging() && state.broken() < 0.0F ? 1.0F : 0.0F;
+        // A cut, a thrust or the flurry lowers the shield for as long as the move lasts.
+        float want = state.blocking() && !state.charging() && state.broken() < 0.0F && !state.move().swings(state.t())
+                ? 1.0F : 0.0F;
         blend.block = want > blend.block ? Math.min(want, blend.block + step) : Math.max(want, blend.block - step);
         SwordPoses.Pose pose = earlier(blend, state, now, 0.0F);
         blend.now = pose;
@@ -473,7 +478,7 @@ public final class SwordArms {
             return;
         }
         float fade = 1.0F - since / KICK_TICKS;
-        float kick = kickHard * fade * fade;
+        float kick = kickHard * fade * fade * ClientSettings.cameraShake();
         event.setRoll(event.getRoll() + KICK_ROLL * kickRoll * kick);
         event.setPitch(event.getPitch() + KICK_DIP * kick);
     }
@@ -484,6 +489,15 @@ public final class SwordArms {
         BLENDS.clear();
         SPUN.clear();
         SwordSpot.clear();
+    }
+
+    /**
+     * You went to another world (or respawned): the server let go of your sword and shield, which never come along,
+     * so your own hands are empty again too.
+     */
+    @SubscribeEvent
+    public static void onClone(ClientPlayerNetworkEvent.Clone event) {
+        ConstructChoice.forget();
     }
 
     // ---- The charge: your own game runs you ----
@@ -573,16 +587,23 @@ public final class SwordArms {
         if (Math.abs(orbit) < 1.0E-3F) {
             return;
         }
-        event.getPoseStack().pushPose();
-        event.getPoseStack().mulPose(Axis.YP.rotation(orbit));
-        SPUN.put(event.getEntity().getId(), Boolean.TRUE);
+        SPUN.put(event.getEntity().getId(), orbit);
     }
 
-    /** A body turned round for the spinning cut is turned back once it is drawn. */
-    static void unspin(RenderPlayerEvent.Post event) {
-        if (SPUN.remove(event.getEntity().getId()) != null) {
-            event.getPoseStack().popPose();
+    /**
+     * While the game draws the model of the player being drawn (see PlayerRendererMixin): the body turns round for the
+     * spinning cut. Only the model: his name over his head, drawn after it, stays where it is.
+     */
+    static void turnModel(AbstractClientPlayer player, PoseStack pose) {
+        Float orbit = SPUN.get(player.getId());
+        if (orbit != null) {
+            pose.mulPose(Axis.YP.rotation(orbit));
         }
+    }
+
+    /** A body turned round for the spinning cut is done with once it is drawn. */
+    static void unspin(RenderPlayerEvent.Post event) {
+        SPUN.remove(event.getEntity().getId());
     }
 
     /**

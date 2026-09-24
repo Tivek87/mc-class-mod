@@ -14,8 +14,9 @@ public record CastSpellPayload(String spellId) implements CustomPacketPayload {
     public static final CustomPacketPayload.Type<CastSpellPayload> TYPE = new CustomPacketPayload.Type<>(
             ResourceLocation.fromNamespaceAndPath(MultiversePowers.MODID, "cast_spell"));
 
+    // A spell id is a single short word: a much longer text from a client is refused before it is read.
     public static final StreamCodec<RegistryFriendlyByteBuf, CastSpellPayload> STREAM_CODEC = StreamCodec.composite(
-            ByteBufCodecs.STRING_UTF8, CastSpellPayload::spellId, CastSpellPayload::new);
+            ByteBufCodecs.stringUtf8(64), CastSpellPayload::spellId, CastSpellPayload::new);
 
     @Override
     public CustomPacketPayload.Type<CastSpellPayload> type() {

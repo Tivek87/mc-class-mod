@@ -107,19 +107,21 @@ goes in his left hand.
 The ring makes Green Lantern's uniform over your own clothes.
 
 - **When you become Green Lantern, the ring comes for you, as it does for everyone it chooses.** It streaks down
-  out of the sky like a comet, a long trail of light behind it, somewhere 26 to 42 blocks away and high up, flares
-  up there and pulses a moment, sending out rings of light. Then it flies to you, circling you once on its way
-  down, and hangs in the air three blocks in front of you. It **scans you**: a band of light runs down you from
-  over your head to your feet and back up, fed by a fan of light out of the ring, and the ring speaks on your
-  action bar: *"(your name) of Earth, you have the ability to overcome great fear."* It shapes your lantern out
-  of its light; the lantern flies into your left hand and you catch it. Then the ring flies onto your finger, and
-  the moment it is on, a shockwave of light rolls out 16 blocks around you: the creatures of the dark in it (the
-  undead, the Warden, vexes, endermen and endermites) run from you for 10 seconds, and the ring's light flares up
-  round you in tongues of light. Meanwhile the uniform spreads over you, slowly, out of the ring: up your arm to
-  the lantern on your chest, from there over your whole body, and only once all of it is on, the mask over your
-  eyes. Your eyes light up behind it, a surge of light runs over the whole suit, and the ring says *"Welcome to
-  the Green Lantern Corps."* Last of all you hit the lantern with your ring fist and the ring fills up (the
-  recharge, see below). All of it takes about 15 seconds; until then the ring does nothing else. The uniform: the
+  out of the sky like a comet, a long trail of light behind it, somewhere 26 to 42 blocks away and high up, and
+  flares up there, a ring of light bursting out of it; it pulses a moment, sending out more. Then it flies to you,
+  circling you once on its way down, and stops dead in the air three blocks in front of you with a flash. It
+  **scans you**: a band of light sweeps down you from over your head to your feet and back up, trailing light,
+  fed by a fan of light out of the ring, and the ring speaks on your action bar: *"(your name) of Earth, you have
+  the ability to overcome great fear."* It shapes your lantern out of its light, with a flash as it is done; the
+  lantern flies into your left hand and you catch it. Then the ring flies onto your finger, and the moment it is
+  on, a shockwave of light rolls out 16 blocks around you: the creatures of the dark in it (the undead, the
+  Warden, vexes, endermen and endermites) run from you for 10 seconds, a pillar of light shoots up out of you into
+  the sky, your view jolts, and the ring's light flares up round you in tongues of light. Meanwhile the uniform
+  spreads over you out of the ring: up your arm to the lantern on your chest, from there over your whole body, and
+  only once all of it is on, the mask over your eyes. Your eyes light up behind it, a surge of light runs over the
+  whole suit, and the ring says *"Welcome to the Green Lantern Corps."* Last of all you hit the lantern with your
+  ring fist and the ring fills up (the recharge, see below). All of it takes about 8 seconds; until then the ring
+  does nothing else. The uniform: the
   green and black suit with the lantern on the chest, white gloves, and a green mask over your eyes. Your own
   face and hair stay.
 - The ring sits on top of the middle finger of your right hand, on the back of the hand, close to the
@@ -173,7 +175,7 @@ quick one, 2 seconds of holding for the lasting one.
 **Left click (the right hand attacks)**
 
 - **Tap — Light Bolt.** A small bullet of hard light (round, with a pointed nose and a streak of light behind
-  it) leaves your ring and flies exactly where the crosshair points. It bursts on the first creature or wall it meets. Your right hand punches forward with every shot.
+  it) leaves your ring and flies exactly where the crosshair points. It bursts on the first creature or wall it meets. Your ring arm comes straight up and points where you aim, so every bolt leaves the ring on your outstretched hand; it kicks back a little with each bolt, stays up while you keep shooting, and goes down again a moment after the last one. Everyone else sees it too, and in first person your own hand does the same.
   - **Damage:** 3 hearts per bolt. Every bolt lands, however quickly they follow each other.
   - **Power:** 0.16 per bolt.
   - **Every 0.3 seconds.** Click again as soon as it is ready; clicking faster does not shoot faster.
@@ -260,11 +262,11 @@ Green Lantern recharges his ring at his lantern, the power battery.
   in the middle of a jump or a fall (the double tap works there too; in creative the double tap stays the
   game's own flying).
 - **Flying:** hold **forward** and you fly the way you look. **You pick up speed quickly and then keep getting
-  faster the longer you fly on:** a flight starts at about **6.4 blocks a second** and within **3 seconds** you are
-  up to a fast cruising speed of **13 blocks a second**; from there you keep gaining, slowly, for **30 seconds**
-  more, until you reach the top speed of **19.25 blocks a second**, a good deal slower than an elytra with firework
-  rockets (about 33), and never more. Let go of forward and you glide to a hover and lose the speed you built up
-  again (all of it in 3 seconds); pushing against a wall keeps it.
+  faster the longer you fly on:** a flight starts at about **6.4 blocks a second** and within **half a second** you
+  are up to a cruising speed of **8 blocks a second**; from there you keep gaining for **about 6 seconds** more,
+  until you reach the top speed of **9.6 blocks a second**, a little slower than flying in creative, and never
+  more. Let go of forward and you glide to a hover and lose the speed you built up again (all of it in 3 seconds);
+  pushing against a wall keeps it.
   **Jump** rises, **sneak** sinks, left and right slide sideways, back drifts backwards. You carry your speed
   into every turn, so you swing through curves instead of snapping round. The world widens a little around
   you at speed.
@@ -273,9 +275,15 @@ Green Lantern recharges his ring at his lantern, the power battery.
   together; you bank into your turns, dive head first and climb head up, and your head keeps looking where
   you look. A streak of green light trails behind you at speed, and flying low throws up dust from the
   ground or spray from the water below.
+- **Flying over new land:** while you fly, the world is made ready round you (128 blocks) and far ahead along the
+  way you fly (8 seconds of flying), before you get there, so you no longer stop dead in the air at the edge of
+  land the game has not made yet. Should the world still not keep up (a slow computer, a very high top speed),
+  you slow down smoothly before its edge instead and fly on at full speed once it is there. Both distances are
+  world settings of the flight (*The world ahead*).
 - **Landing:** sink down onto the ground slowly and you land by yourself, or fly into it while looking down at
-  it and you land as well, whatever your speed; or press C again anywhere to stop flying (in the air you then
-  fall from there). Walls and the ground stop you; hits and blasts still knock you about.
+  it and you land as well, whatever your speed; or press C again anywhere to stop flying, or tap jump twice
+  quickly in the air (you then fall from there). Walls and the ground stop you; hits and blasts still knock you
+  about.
 - **Power:** a full ring keeps you up for **93.75 seconds**, so flying costs **1.07 power a second** (100
   divided by 93.75), from the moment you take off. You need at least **0.8 power** to take off. Everything you
   do while flying costs on top of that, so you run dry sooner. The panel shows how many seconds you have left.
@@ -283,7 +291,7 @@ Green Lantern recharges his ring at his lantern, the power battery.
   any more. You do not get hurt when you touch the ground. Recharge (on the way down or on the ground) to fly
   again.
 - **Landing slam (by itself; key X does it on purpose, see Shockwave):** dive into the ground fast (at least
-  about 9 blocks a second, nearly half your top speed, so fly on for a couple of seconds first) and your flight ends
+  about 8.7 blocks a second, nearly your top speed, so fly on for a few seconds first) and your flight ends
   in a
   hero's landing. Just before
   the ground you swing upright, feet first, ring
@@ -328,16 +336,19 @@ Green Lantern recharges his ring at his lantern, the power battery.
     else, see-through only from your own eyes), with your left fist out in front like a punch; ridges wind
     round it to its tip like the thread of a drill, and it turns as you fly. It still takes 70% off hits from
     ahead, and whatever you fly into is rammed away: a hard throw and **2 hearts plus 5.25 hearts for every
-    block per tick you fly** (about 7 hearts at top speed). The same creature can be rammed again after 0.6 seconds.
+    block per tick you fly** (about 4.5 hearts at top speed). The same creature can be rammed again after 0.6
+    seconds.
   - **Scraping:** fly with the ram cone low along the ground (less than 1.5 blocks above it) or slide over it,
     and it wears the cone down: **2 more power a second**, sparks fly off where it scrapes, it grinds, and your
-    view shakes, the harder the faster you go. All three are settings (Light Shield, the ram cone part).
+    view shakes, the harder the faster you go. The cost and the height are world settings (Light Shield, the
+    ram cone part); how hard your view shakes is one of your own settings.
   - **Hold right:** the dome works as a **brake chute**: your speed is halved for as long as you hold it.
 - A short cooldown of **1 second** after landing keeps you from taking off again straight away.
 
 | Flight | |
 |---|---|
-| Speed | starts at about 6.4 blocks a second, up to 19.25 after 30 seconds of flying forward |
+| Speed | starts at about 6.4 blocks a second, up to 9.6 after about 6 seconds of flying forward |
+| Stop in the air | C, or a double tap on jump |
 | Power | 1.07 a second (a full ring lasts 93.75 seconds), plus whatever you use meanwhile |
 | Take off | C or a double tap on jump; at least 0.8 power; not while recharging |
 | Ram (shield up) | 2 hearts + 5.25 hearts per block per tick of speed, strong knockback |
@@ -350,8 +361,8 @@ The landing slam whenever you want it: you smash your ring fist into the ground 
 the 32 giant constructs (a random one), which strikes and sends a shockwave over the ground.
 
 - **On the ground** it goes off at once: down on one knee, fist in the ground.
-- **Flying**, you dive straight down at full speed (your keys wait until you hit the ground) and slam where
-  you come down. Not during the take-off.
+- **Flying**, you dive straight down at 19.25 blocks a second, twice your top speed (your keys wait until you hit
+  the ground), and slam where you come down. Not during the take-off.
 - **Jumping or falling**, you drop straight down, upright with your fist cocked, and slam the moment you touch
   the ground. The ring breaks your fall: no fall damage, however high you were. In water nothing happens.
 - **Damage:** 6 hearts in the middle, half at the edge 5 blocks out; everything is thrown away.
@@ -521,7 +532,8 @@ arm, both as solid as every construct.
   it at once.
 - **Holding right (the shield):** you **block**: the shield comes up square before you, just below your line of
   sight, and stops **85%** of what comes from the front for as long as you hold it (costs a little power while it is
-  up). You can still cut with the sword behind it.
+  up). A cut, a thrust or the flurry lowers it for as long as the move lasts, so you cannot block while you
+  attack; it comes back up by itself if you still hold right. The flurry keeps its own shield before your chest.
 - **Clicking right:** you bend forward, lock the shield before you and **charge** straight ahead, very fast (16
   blocks a second). Everything in your way is rammed aside to the side it stood on, with one of **six** rams: the
   face punched straight out, swung out to your right, swung out to your left, driven up from under it (throws it into
@@ -848,10 +860,22 @@ The whole run takes about 12 seconds, longer when the creature runs.
 
 Every cooldown and every damage number on this page can be changed in two ways.
 
+There are two kinds of settings:
+
+- **World settings:** how the powers play (every number on this page, and the stamina bar). Every world keeps
+  its own: change them in one world and the others keep theirs. On a server everyone plays by the server's world
+  settings; your game gets them as you join, and again at once whenever they change on the server.
+- **Your settings:** what only you see and feel, in your own game, in every world and on every server:
+  - **Camera shake:** how hard the powers shake and jolt your view (a slam, crash or blast nearby, a sword blow,
+    the beam, the ring arriving): 1 as the mod makes it, 0 never, up to 2.
+  - **Scraping shake:** how hard your view shakes while you fly with the ram cone low along the ground.
+
 **In the game:** Mods > Multiverse Powers > Config (or `/stamina` in the chat).
 
-- **Tabs** along the top: the stamina bar, and every character. A dot after a tab's name means it has changes
-  that are not saved yet.
+- **Tabs** along the top: the stamina bar and every character (world settings), and *Your settings*. A dot after
+  a tab's name means it has changes that are not saved yet. The world settings can only be changed while a world
+  of your own is open (singleplayer, or a LAN world you host); on someone else's server you only see the server's,
+  and in the main menu there is no world to change.
 - **Every ability is a part you can fold open and shut:** click its title. The title says how many numbers are
   in it and which key or button it sits on. *Open all* and *Close all* fold the whole page at once.
 - **Search:** type in the box and the list shows every number of every tab whose name or explanation matches,
@@ -866,14 +890,18 @@ Every cooldown and every damage number on this page can be changed in two ways.
 A settings file that already exists keeps its own numbers, also when the mod changes its numbers in a new
 version. Press "Defaults" (or delete its file) to take the new ones.
 
-**By hand:** all the mod's settings live together in the `welcomescreen` folder inside the world's (or
-the server's) `config` folder:
+**By hand:** every world keeps its world settings in its own `serverconfig/welcomescreen` folder (a server in
+the folder of its world); the same files in the game's own `config/welcomescreen` folder are what a new world
+starts with. Your own settings are in `config/welcomescreen/client.toml`.
 
 | File | What is in it |
 |---|---|
-| `config/welcomescreen/doc_ock.toml` | Everything Doctor Octopus does |
-| `config/welcomescreen/green_lantern.toml` | Everything Green Lantern does |
-| `config/welcomescreen/stamina.toml` | The stamina bar, the same for everyone |
+| `<world>/serverconfig/welcomescreen/doc_ock.toml` | Everything Doctor Octopus does |
+| `<world>/serverconfig/welcomescreen/green_lantern.toml` | Everything Green Lantern does |
+| `<world>/serverconfig/welcomescreen/stamina.toml` | The stamina bar, the same for everyone in the world |
+| `config/welcomescreen/client.toml` | Your own settings |
+
+A server that changes a world settings file while it runs sends the new numbers to everyone playing at once.
 
 Every character has their own file, with one section per ability:
 

@@ -32,4 +32,13 @@ public final class ClassEvents {
     public static void onPlayerClone(PlayerEvent.Clone event) {
         ClassData.copy(event.getOriginal(), event.getEntity());
     }
+
+    // Dying while still picking a class (a /kill, say) closes the welcome screen: it comes back after the respawn.
+    @SubscribeEvent
+    public static void onPlayerRespawn(PlayerEvent.PlayerRespawnEvent event) {
+        if (event.getEntity() instanceof ServerPlayer serverPlayer && ClassData.getClass(serverPlayer) == null) {
+            ChoosingState.enter(serverPlayer);
+            PacketDistributor.sendToPlayer(serverPlayer, new OpenWelcomePayload());
+        }
+    }
 }

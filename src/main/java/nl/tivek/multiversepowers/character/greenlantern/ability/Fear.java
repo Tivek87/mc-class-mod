@@ -1,12 +1,13 @@
 package nl.tivek.multiversepowers.character.greenlantern.ability;
 
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.WeakHashMap;
 import javax.annotation.Nullable;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
@@ -53,8 +54,11 @@ public final class Fear {
 
     // Every frightened creature, by its id: what it runs from and until when.
     private static final Map<UUID, Afraid> AFRAID = new HashMap<>();
-    // The creatures that were given the goals below already; a creature keeps them for as long as it lives.
-    private static final Set<Integer> TAUGHT = new HashSet<>();
+    // The creatures that were given the goals below already; a creature keeps them for as long as it lives, and is
+    // forgotten here once it is gone.
+    private static final Set<Mob> TAUGHT = Collections.newSetFromMap(new WeakHashMap<>());
+    // A creature that found nowhere to run to tries again this many ticks later, not on every tick.
+    private static final int RETRY = 10;
 
     private Fear() {
     }
@@ -97,7 +101,7 @@ public final class Fear {
         AFRAID.put(mob.getUUID(), new Afraid(mob, from, until));
         forget(mob);
         // A creature that thinks with goals is taught to run, and to leave everyone alone, ahead of anything else.
-        if (mob instanceof PathfinderMob runner && TAUGHT.add(mob.getId())) {
+        if (mob instanceof PathfinderMob runner && TAUGHT.add(mob)) {
             runner.goalSelector.addGoal(-1, new Run(runner));
             runner.targetSelector.addGoal(-1, new LeaveAlone(runner));
         }
@@ -171,6 +175,8 @@ public final class Fear {
     /** A creature that thinks with goals: while afraid, it runs, ahead of anything else it would do. */
     private static final class Run extends Goal {
         private final PathfinderMob mob;
+        // The tick it last found nowhere to run to (see RETRY).
+        private int stuckAt = Integer.MIN_VALUE / 2;
 
         Run(PathfinderMob mob) {
             this.mob = mob;
@@ -189,7 +195,8 @@ public final class Fear {
 
         @Override
         public void tick() {
-            if (this.mob.getNavigation().isDone() || this.mob.tickCount % 20 == 0) {
+            boolean arrived = this.mob.getNavigation().isDone() && this.mob.tickCount - this.stuckAt >= RETRY;
+            if (arrived || this.mob.tickCount % 20 == 0) {
                 this.run();
             }
         }
@@ -207,8 +214,8 @@ public final class Fear {
         private void run() {
             Vec3 from = from(this.mob);
             Vec3 to = from == null ? null : away(this.mob, from);
-            if (to != null) {
-                this.mob.getNavigation().moveTo(to.x, to.y, to.z, RUN);
+            if (to == null || !this.mob.getNavigation().moveTo(to.x, to.y, to.z, RUN)) {
+                this.stuckAt = this.mob.tickCount;
             }
         }
     }

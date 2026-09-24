@@ -1,5 +1,10 @@
-package nl.tivek.multiversepowers.network;
+package nl.tivek.multiversepowers.network.client;
 
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientPacketListener;
+import net.minecraft.network.protocol.game.ClientboundLevelParticlesPacket;
+import net.neoforged.fml.config.ConfigTracker;
+import net.neoforged.fml.config.ModConfig;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import nl.tivek.multiversepowers.character.CharacterLookPayload;
 import nl.tivek.multiversepowers.character.CharacterStatePayload;
@@ -18,6 +23,9 @@ import nl.tivek.multiversepowers.classes.ClassSyncPayload;
 import nl.tivek.multiversepowers.classes.PlayerClass;
 import nl.tivek.multiversepowers.classes.client.ClientClassData;
 import nl.tivek.multiversepowers.classes.client.ClientWelcome;
+import nl.tivek.multiversepowers.config.ModConfigs;
+import nl.tivek.multiversepowers.config.WorldSettingsPayload;
+import nl.tivek.multiversepowers.engine.fx.ParticlesPayload;
 import nl.tivek.multiversepowers.spell.Spell;
 import nl.tivek.multiversepowers.spell.SpellCooldownPayload;
 import nl.tivek.multiversepowers.spell.VoidStatePayload;
@@ -84,5 +92,38 @@ public final class ClientPayloadHandler {
 
     public static void handleClassSync(ClassSyncPayload payload, IPayloadContext context) {
         context.enqueueWork(() -> ClientClassData.set(PlayerClass.byId(payload.classId())));
+    }
+
+    /** The particles of one tick, together: each shown exactly as the game shows its own particle packets. */
+    public static void handleParticles(ParticlesPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> {
+            ClientPacketListener connection = Minecraft.getInstance().getConnection();
+            if (connection == null) {
+                return;
+            }
+            for (ParticlesPayload.Entry entry : payload.entries()) {
+                connection.handleParticleEvent(new ClientboundLevelParticlesPacket(entry.options(), entry.force(),
+                        entry.x(), entry.y(), entry.z(), entry.dx(), entry.dy(), entry.dz(), entry.speed(),
+                        entry.count()));
+            }
+        });
+    }
+
+    /**
+     * The world's settings changed on the server while you are in it: your own game takes them over, as the game does
+     * by itself when you join. On your own server (singleplayer, or a LAN world you host) they are the same ones already.
+     * Only this mod's own world settings files are taken.
+     */
+    public static void handleWorldSettings(WorldSettingsPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> {
+            if (Minecraft.getInstance().isLocalServer() || !ModConfigs.worldFiles().containsKey(payload.file())) {
+                return;
+            }
+            ModConfig config = net.neoforged.fml.config.ModConfigs.getFileMap().get(payload.file());
+            if (config != null && config.getType() == ModConfig.Type.SERVER) {
+                ConfigTracker.INSTANCE.acceptSyncedConfig(config, payload.contents());
+                StaminaClient.onConfigUpdated();
+            }
+        });
     }
 }

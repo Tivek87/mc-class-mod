@@ -76,6 +76,10 @@ public final class ClientCharacter {
     private static final int[] COOLDOWNS = new int[AbilitySlot.values().length];
     // Which keys you hold down right now, so a start and a stop are sent exactly once.
     private static final boolean[] HELD = new boolean[AbilitySlot.values().length];
+    // Client ticks counted while the game runs (not paused), and the one on which the quick version of each mouse
+    // ability was last sent to the server, or MIN_VALUE.
+    private static int clock;
+    private static final int[] TAPPED = never(AbilitySlot.values().length);
     private static boolean climbing;
     // With the sword and shield: how many ticks the defend button has been down (-1 while it is up), and whether this
     // press ended a charge. Held this long, the shield comes up to block; let go sooner, and it was a click: a charge.
@@ -84,6 +88,12 @@ public final class ClientCharacter {
     private static boolean endedCharge;
 
     private ClientCharacter() {
+    }
+
+    private static int[] never(int size) {
+        int[] ticks = new int[size];
+        Arrays.fill(ticks, Integer.MIN_VALUE);
+        return ticks;
     }
 
     /** The server tells this client who they are and how their abilities stand. */
@@ -101,6 +111,7 @@ public final class ClientCharacter {
         // so the new character's own ability starts fresh when you keep the key down.
         if (character != before) {
             Arrays.fill(HELD, false);
+            Arrays.fill(TAPPED, Integer.MIN_VALUE);
             climbing = false;
             ClimbControl.stop();
             ConstructWheel.stop();
@@ -113,6 +124,18 @@ public final class ClientCharacter {
     @Nullable
     public static GameCharacter active() {
         return character;
+    }
+
+    /**
+     * How many ticks ago you last sent the quick version of this mouse ability to the server (with the part of a tick),
+     * or -1 when you did not lately: what your own arm does for it can start the moment you click, a round trip before
+     * the server's answer comes back.
+     */
+    public static float sinceTap(@Nullable CharacterAbility ability, float partialTick) {
+        if (ability == null || TAPPED[ability.slot().ordinal()] == Integer.MIN_VALUE) {
+            return -1.0F;
+        }
+        return clock - TAPPED[ability.slot().ordinal()] + partialTick;
     }
 
     /** True while tentacles (or whatever the character walks on) carry the player. */
@@ -139,6 +162,7 @@ public final class ClientCharacter {
             return;
         }
         if (!minecraft.isPaused()) {
+            clock++;
             for (int i = 0; i < COOLDOWNS.length; i++) {
                 COOLDOWNS[i] = Math.max(0, COOLDOWNS[i] - 1);
             }
@@ -284,6 +308,7 @@ public final class ClientCharacter {
             return;
         }
         send(index, true, data(player) | Characters.TAP);
+        TAPPED[index] = clock;
     }
 
     /** True while the mouse belongs to the character: no item in either hand. */
@@ -426,6 +451,7 @@ public final class ClientCharacter {
         MouseHold.reset();
         Arrays.fill(COOLDOWNS, 0);
         Arrays.fill(HELD, false);
+        Arrays.fill(TAPPED, Integer.MIN_VALUE);
     }
 
     // ---- HUD ----

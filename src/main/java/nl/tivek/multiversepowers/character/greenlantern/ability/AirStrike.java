@@ -3,9 +3,11 @@ package nl.tivek.multiversepowers.character.greenlantern.ability;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import javax.annotation.Nullable;
 import net.minecraft.core.BlockPos;
@@ -43,6 +45,8 @@ import nl.tivek.multiversepowers.engine.effect.Effect;
 import nl.tivek.multiversepowers.engine.effect.Effects;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 import nl.tivek.multiversepowers.engine.math.Noise;
+import nl.tivek.multiversepowers.engine.world.BlockRules;
+import nl.tivek.multiversepowers.engine.world.LoadedWorld;
 
 /**
  * Green Lantern's ultimate, the Air Strike. He throws his ring fist up at the sky and a pillar of light shoots out of
@@ -211,7 +215,7 @@ public final class AirStrike implements Effect {
     /** How high the plane may fly over him: as high as it goes, or less under a roof (less than LOWEST: no room). */
     private static double room(ServerLevel level, ServerPlayer owner) {
         Vec3 eye = owner.getEyePosition();
-        BlockHitResult hit = level.clip(new ClipContext(eye, eye.add(0.0, HEIGHT + 8.0, 0.0),
+        BlockHitResult hit = LoadedWorld.clip(level, new ClipContext(eye, eye.add(0.0, HEIGHT + 8.0, 0.0),
                 ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, owner));
         return hit.getType() == HitResult.Type.MISS ? HEIGHT : eye.distanceTo(hit.getLocation()) - 8.0;
     }
@@ -224,7 +228,7 @@ public final class AirStrike implements Effect {
     private static PlanePath plan(ServerLevel level, ServerPlayer owner, CharacterAbility ability, double height) {
         Vec3 eye = owner.getEyePosition();
         Vec3 look = owner.getLookAngle();
-        BlockHitResult hit = level.clip(new ClipContext(eye, eye.add(look.scale(LOOK_REACH)),
+        BlockHitResult hit = LoadedWorld.clip(level, new ClipContext(eye, eye.add(look.scale(LOOK_REACH)),
                 ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, owner));
         Vec3 way = new Vec3(look.x, 0.0, look.z);
         way = way.lengthSqr() < 1.0E-6 ? new Vec3(0.0, 0.0, 1.0) : way.normalize();
@@ -235,14 +239,14 @@ public final class AirStrike implements Effect {
         // right over him instead.
         double before = PlanePath.SPEED * (PlanePath.FORM * 0.5 + attack * 0.5);
         Vec3 start = new Vec3(middle.x, eye.y + height, middle.z).subtract(way.scale(before));
-        if (level.clip(new ClipContext(eye, start, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, owner))
-                .getType() != HitResult.Type.MISS) {
+        if (LoadedWorld.clip(level, new ClipContext(eye, start, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE,
+                owner)).getType() != HitResult.Type.MISS) {
             start = eye.add(0.0, height, 0.0);
         }
         // The dive ends on the ground under where a full one would end; if something stands in the way on the way down,
         // it strikes that instead.
         Vec3 ends = new PlanePath(start, way, height, attack, 1.0).diveEnd();
-        BlockHitResult under = level.clip(new ClipContext(ends, ends.subtract(0.0, HEIGHT * 3.0, 0.0),
+        BlockHitResult under = LoadedWorld.clip(level, new ClipContext(ends, ends.subtract(0.0, HEIGHT * 3.0, 0.0),
                 ClipContext.Block.COLLIDER, ClipContext.Fluid.ANY, CollisionContext.empty()));
         double drop = under.getType() == HitResult.Type.MISS ? height + 1.6 : start.y - under.getLocation().y;
         drop = Math.max(8.0, drop);
@@ -251,7 +255,7 @@ public final class AirStrike implements Effect {
         Vec3 last = PlanePath.diving(start, way, attack, drop, 0.0);
         for (int k = 1; k <= steps; k++) {
             Vec3 next = PlanePath.diving(start, way, attack, drop, (double) k / steps);
-            BlockHitResult strike = level.clip(new ClipContext(last, next, ClipContext.Block.COLLIDER,
+            BlockHitResult strike = LoadedWorld.clip(level, new ClipContext(last, next, ClipContext.Block.COLLIDER,
                     ClipContext.Fluid.ANY, CollisionContext.empty()));
             if (strike.getType() != HitResult.Type.MISS) {
                 double part = last.distanceTo(strike.getLocation()) / Math.max(1.0E-6, last.distanceTo(next));
@@ -468,7 +472,7 @@ public final class AirStrike implements Effect {
         Vec3 way = aim.subtract(pivot).normalize();
         Vec3 muzzle = pivot.add(way.scale(GUN_LENGTH));
         // It flies on past what it aimed at until it strikes the ground, or a roof on the way.
-        BlockHitResult block = level.clip(new ClipContext(muzzle, aim.add(way.scale(BULLET_ON)),
+        BlockHitResult block = LoadedWorld.clip(level, new ClipContext(muzzle, aim.add(way.scale(BULLET_ON)),
                 ClipContext.Block.COLLIDER, ClipContext.Fluid.ANY, CollisionContext.empty()));
         Vec3 to = block.getType() == HitResult.Type.MISS ? aim.add(way.scale(BULLET_ON)) : block.getLocation();
         double distance = muzzle.distanceTo(to);
@@ -525,7 +529,8 @@ public final class AirStrike implements Effect {
                 struck.hurt(level.damageSources().playerAttack(this.owner), (float) this.ability.value("gunDamage"));
                 ParticleFx.send(level, ParticleTypes.CRIT, at.x, at.y, at.z, 6, 0.15, 0.15, 0.15, 0.2);
             } else {
-                BlockState ground = level.getBlockState(BlockPos.containing(at.subtract(way.scale(-0.1))));
+                BlockPos spot = BlockPos.containing(at.subtract(way.scale(-0.1)));
+                BlockState ground = level.isLoaded(spot) ? level.getBlockState(spot) : Blocks.AIR.defaultBlockState();
                 if (!ground.isAir()) {
                     ParticleFx.send(level, new BlockParticleOption(ParticleTypes.BLOCK, ground), at.x, at.y + 0.1, at.z,
                             8, 0.15, 0.05, 0.15, 0.15);
@@ -592,7 +597,7 @@ public final class AirStrike implements Effect {
             AirStrike.this.blast(level, this.at, MISSILE_BLAST, AirStrike.this.ability.value("missileDamage"),
                     this.homing ? this.target : null, 0.9);
             // On a creature it bursts at its middle: the crater goes into the ground under it, if that is near.
-            BlockHitResult under = level.clip(new ClipContext(this.at.add(0.0, 0.3, 0.0),
+            BlockHitResult under = LoadedWorld.clip(level, new ClipContext(this.at.add(0.0, 0.3, 0.0),
                     this.at.subtract(0.0, MISSILE_GROUND, 0.0), ClipContext.Block.COLLIDER, ClipContext.Fluid.ANY,
                     CollisionContext.empty()));
             Vec3 ground = under.getType() == HitResult.Type.MISS ? null : under.getLocation();
@@ -747,12 +752,16 @@ public final class AirStrike implements Effect {
                         continue;
                     }
                     BlockPos pos = middle.offset(dx, dy, dz);
+                    // Where nobody has the world loaded (he flew off), nothing is blown away.
+                    if (!level.isLoaded(pos)) {
+                        continue;
+                    }
                     BlockState state = level.getBlockState(pos);
                     if (state.isAir() || state.hasBlockEntity() || !state.getFluidState().isEmpty()) {
                         continue;
                     }
                     float hardness = state.getDestroySpeed(level, pos);
-                    if (hardness < 0.0F || hardness > hardest || !level.mayInteract(this.owner, pos)) {
+                    if (hardness < 0.0F || hardness > hardest || !BlockRules.mayBreak(level, this.owner, pos, state)) {
                         continue;
                     }
                     blown.add(pos);
@@ -772,8 +781,9 @@ public final class AirStrike implements Effect {
             Collections.swap(hurled, i, random.nextInt(i + 1));
         }
         hurled = new ArrayList<>(hurled.subList(0, Math.min(hurled.size(), Math.max(0, debris))));
+        Set<BlockPos> flying = new HashSet<>(hurled);
         for (BlockPos pos : blown) {
-            if (!hurled.contains(pos)) {
+            if (!flying.contains(pos)) {
                 level.setBlock(pos, Blocks.AIR.defaultBlockState(), 3);
             }
         }
@@ -847,7 +857,7 @@ public final class AirStrike implements Effect {
     private Vec3 ground(ServerLevel level, Vec3 at) {
         double top = this.path.start().y + 4.0;
         Vec3 from = new Vec3(at.x, top, at.z);
-        BlockHitResult hit = level.clip(new ClipContext(from, from.subtract(0.0, HEIGHT * 3.0, 0.0),
+        BlockHitResult hit = LoadedWorld.clip(level, new ClipContext(from, from.subtract(0.0, HEIGHT * 3.0, 0.0),
                 ClipContext.Block.COLLIDER, ClipContext.Fluid.ANY, CollisionContext.empty()));
         return hit.getType() == HitResult.Type.MISS ? new Vec3(at.x, this.owner.getY(), at.z) : hit.getLocation();
     }

@@ -55,7 +55,7 @@ public final class SuitGlow {
     private static final float RISE = 10.0F;
     private static final float FALL = 2.5F;
     // How long the surge of light over a uniform just made complete by the ring's arrival lasts, in ticks.
-    private static final float SURGE_TICKS = 20.0F;
+    private static final float SURGE_TICKS = 14.0F;
     // How far the uniform lies over the body's own boxes, and how far above the uniform the lines lie, in pixels:
     // just clear of it, so they are never swallowed by it.
     private static final float SUIT = 0.3F;

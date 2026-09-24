@@ -20,13 +20,16 @@ import nl.tivek.multiversepowers.character.GameCharacter;
 import nl.tivek.multiversepowers.character.greenlantern.PowerRing;
 import nl.tivek.multiversepowers.engine.effect.Effect;
 import nl.tivek.multiversepowers.engine.effect.Effects;
+import nl.tivek.multiversepowers.engine.entity.HeldMobs;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
+import nl.tivek.multiversepowers.engine.world.ChunkPreloader;
 
 /**
  * Flight: Green Lantern brings his fists to his chest, throws his arms down along his sides and rises into the
  * air, and from there flies wherever he looks. His own game moves him (every client moves its own player); the
- * server makes the ring pay for every tick of it, keeps him from being hurt by a fall he never makes, and lets
- * his shield ram whatever he flies into.
+ * server makes the ring pay for every tick of it, keeps him from being hurt by a fall he never makes, lets
+ * his shield ram whatever he flies into, and makes the world ready round him and ahead of him (see
+ * {@link ChunkPreloader}), so he never waits at the edge of land the game has not made yet.
  *
  * <p>A full ring keeps him up for a set number of seconds; what he shoots or holds up meanwhile costs on top.
  * If the ring runs dry up there, its last light lets him sink down gently, until he recharges it at his lantern
@@ -48,13 +51,14 @@ public final class Flight implements Effect {
     // Ticks without any movement from his game before he counts as standing still in the air.
     private static final int STILL_TICKS = 2;
     // How much of his top speed of the last few ticks is kept each tick, and how much of his top speed the server
-    // must have seen before it believes a landing slam (his own game asks for it at 60%).
+    // must have seen before it believes a landing slam (his own game asks for it at 90%).
     private static final double PEAK_FADE = 0.85;
-    private static final double SLAM_CHECK = 0.35;
+    private static final double SLAM_CHECK = 0.7;
 
     private static final Map<UUID, Flight> FLYING = new HashMap<>();
 
     private final ServerPlayer owner;
+    private final CharacterAbility ability;
     private final float perTick;
     private int ticks;
     private boolean descending;
@@ -73,6 +77,7 @@ public final class Flight implements Effect {
 
     private Flight(ServerPlayer owner, CharacterAbility ability) {
         this.owner = owner;
+        this.ability = ability;
         this.perTick = (float) (PowerRing.MAX_POWER / (ability.value("fullRingSeconds") * 20.0));
         this.lastPos = owner.position();
     }
@@ -96,7 +101,7 @@ public final class Flight implements Effect {
             PowerRing.tell(owner, "busy_lantern");
             return false;
         }
-        if (owner.isPassenger() || owner.isSleeping() || owner.isFallFlying()) {
+        if (owner.isPassenger() || owner.isSleeping() || owner.isFallFlying() || HeldMobs.isHeldByAnyone(owner)) {
             return false;
         }
         if (PowerRing.power(owner) + 1.0E-4F < (float) ability.value("powerCost")) {
@@ -193,14 +198,21 @@ public final class Flight implements Effect {
         if (FLYING.get(this.owner.getUUID()) != this) {
             return false;
         }
-        // No longer Green Lantern, gone, or somewhere a ring cannot carry him: the flight is over at once.
+        // No longer Green Lantern, gone, somewhere a ring cannot carry him, or in the grip of another power (a claw, a
+        // bubble): the flight is over at once.
         if (!PowerRing.fuels(this.owner, level) || this.owner.isPassenger() || this.owner.isSleeping()
-                || this.owner.isSpectator()) {
+                || this.owner.isSpectator() || HeldMobs.isHeldByAnyone(this.owner)) {
             this.end();
             return false;
         }
         this.ticks++;
         this.track();
+        // He flies faster than the game makes new land by itself, and his own game would stop him dead at the edge of
+        // what it has: the world round him and far ahead along his way is made ready before he gets there.
+        if (this.ticks % ChunkPreloader.EVERY_TICKS == 1) {
+            ChunkPreloader.keep(this.owner, this.velocity, this.ability.value("chunkRadiusBlocks"),
+                    this.ability.value("chunkAheadSeconds"));
+        }
         // His own game keeps him up; the server must neither count a fall nor think he hangs in the air unlawfully.
         this.owner.resetFallDistance();
         this.owner.connection.aboveGroundTickCount = 0;
@@ -223,8 +235,8 @@ public final class Flight implements Effect {
         }
         if (this.dive && ++this.diveTicks > DIVE_MAX) {
             this.dive = false;
+            PowerRing.sync(this.owner);
         }
-        // Every tick this tells everyone the new power, and with it whether he dives.
         PowerRing.setPower(this.owner, power - this.perTick);
         this.ram(level);
         this.scrape(level);

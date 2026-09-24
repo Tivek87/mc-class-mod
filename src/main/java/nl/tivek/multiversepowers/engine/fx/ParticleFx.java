@@ -19,6 +19,8 @@ import org.joml.Vector3f;
  */
 public final class ParticleFx {
     private static final double VIEW_RANGE = 128.0;
+    // How far vanilla sends a particle that is not forced, in blocks.
+    private static final double NEAR_RANGE = 32.0;
     public static final RandomSource RANDOM = RandomSource.create();
 
     private ParticleFx() {
@@ -52,12 +54,29 @@ public final class ParticleFx {
 
     // ---- Primitives ----
 
-    /** Vanilla's sendParticles, but for every player within {@link #VIEW_RANGE}. */
+    /**
+     * Vanilla's sendParticles, but for every player within {@link #VIEW_RANGE}; sent to each of them together with the
+     * rest of this tick's particles (see {@link ParticleBatch}).
+     */
     public static void send(ServerLevel level, ParticleOptions particle, double x, double y, double z, int count,
             double dx, double dy, double dz, double speed) {
         for (ServerPlayer player : level.players()) {
             if (player.distanceToSqr(x, y, z) < VIEW_RANGE * VIEW_RANGE) {
-                level.sendParticles(player, particle, true, x, y, z, count, dx, dy, dz, speed);
+                ParticleBatch.add(player, particle, true, x, y, z, count, dx, dy, dz, speed);
+            }
+        }
+    }
+
+    /**
+     * Exactly vanilla's sendParticles (every player within 32 blocks of it, who then sees it as far as his own particle
+     * setting lets him), but sent together with the rest of this tick's particles (see {@link ParticleBatch}).
+     */
+    public static void sendNear(ServerLevel level, ParticleOptions particle, double x, double y, double z, int count,
+            double dx, double dy, double dz, double speed) {
+        Vec3 at = new Vec3(x, y, z);
+        for (ServerPlayer player : level.players()) {
+            if (player.blockPosition().closerToCenterThan(at, NEAR_RANGE)) {
+                ParticleBatch.add(player, particle, false, x, y, z, count, dx, dy, dz, speed);
             }
         }
     }

@@ -224,7 +224,7 @@ public final class LightFlare implements Effect {
                     8, 0.3, 0.05);
         }
         if (!dazed.isEmpty()) {
-            Effects.start(level, new Daze(this.owner, dazed, blind));
+            Effects.start(level, new Daze(dazed, blind));
         }
         ParticleFx.sphereOut(level, ParticleFx.dust(PowerRing.BRIGHT, 2.0F), at, 70, 0.7);
         ParticleFx.sphereOut(level, ParticleFx.dust(PowerRing.GREEN, 2.5F), at, 50, 0.45);
@@ -247,13 +247,11 @@ public final class LightFlare implements Effect {
         private static final double FEEL = 2.5;
         private static final int STUMBLE = 30;
 
-        private final ServerPlayer owner;
         private final List<Mob> mobs;
         private final int ticks;
         private int age;
 
-        Daze(ServerPlayer owner, List<Mob> mobs, int ticks) {
-            this.owner = owner;
+        Daze(List<Mob> mobs, int ticks) {
             this.mobs = mobs;
             this.ticks = ticks;
         }
@@ -284,8 +282,8 @@ public final class LightFlare implements Effect {
                     for (int k = 0; k < 3; k++) {
                         double a = angle + k * Math.PI * 2.0 / 3.0;
                         double r = mob.getBbWidth() * 0.5 + 0.2;
-                        level.sendParticles(ParticleFx.dust(PowerRing.PALE, 0.7F), head.x + Math.cos(a) * r, head.y,
-                                head.z + Math.sin(a) * r, 1, 0.0, 0.0, 0.0, 0.0);
+                        ParticleFx.sendNear(level, ParticleFx.dust(PowerRing.PALE, 0.7F), head.x + Math.cos(a) * r,
+                                head.y, head.z + Math.sin(a) * r, 1, 0.0, 0.0, 0.0, 0.0);
                     }
                 }
             }
@@ -301,7 +299,7 @@ public final class LightFlare implements Effect {
 
     private void end(ServerLevel level) {
         ACTIVE.remove(this.owner.getUUID(), this);
-        PacketDistributor.sendToPlayersInDimension(level, ConstructPayload.remove(this.id));
+        ConstructPayload.sendRemove(level, this.id, this.owner.position());
     }
 
     private void send(ServerLevel level) {

@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.Map;
 import javax.annotation.Nullable;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
@@ -199,6 +200,11 @@ public final class ClientRing {
                 ownCount = Math.min(HISTORY, ownCount + 1);
             }
             clientTicks++;
+            // Someone out of sight is forgotten: whatever his ring did then is over by the time you see him again,
+            // and the server tells you afresh as he comes into view, if he still has one.
+            int own = minecraft.player == null ? Integer.MIN_VALUE : minecraft.player.getId();
+            ClientLevel level = minecraft.level;
+            RINGS.keySet().removeIf(id -> id != own && level.getEntity(id) == null);
         }
     }
 

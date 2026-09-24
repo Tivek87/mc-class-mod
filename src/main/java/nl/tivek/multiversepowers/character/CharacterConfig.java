@@ -5,15 +5,15 @@ import java.util.HashMap;
 import java.util.Map;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
-import net.neoforged.fml.config.ModConfig;
 import net.neoforged.fml.event.config.ModConfigEvent;
 import net.neoforged.neoforge.common.ModConfigSpec;
+import net.neoforged.neoforge.server.ServerLifecycleHooks;
 import nl.tivek.multiversepowers.config.ModConfigs;
 
 /**
- * The settings of every character: one file per character, in the mod's own config folder (see
- * {@link ModConfigs}). Inside a file every ability has its own section with its cooldown, its damage
- * and its own settings:
+ * The settings of every character: one world settings file per character (see {@link ModConfigs}: every world keeps
+ * its own copy, and everyone in it plays by it). Inside a file every ability has its own section with its cooldown,
+ * its damage and its own settings:
  *
  * <pre>
  * [abilities.portal]
@@ -30,7 +30,7 @@ public final class CharacterConfig {
      * The version of the mod's defaults. Raise it whenever a default changes, and tell the setting what it was
      * before with {@link CharacterAbility#was}: files that still hold the old number then take the new one.
      */
-    private static final int DEFAULTS_VERSION = 8;
+    private static final int DEFAULTS_VERSION = 9;
 
     private static final Map<GameCharacter, ModConfigSpec> SPECS = new EnumMap<>(GameCharacter.class);
     private static final Map<GameCharacter, ModConfigSpec.IntValue> VERSIONS = new EnumMap<>(GameCharacter.class);
@@ -48,11 +48,10 @@ public final class CharacterConfig {
     private CharacterConfig() {
     }
 
-    /** Gives every character its own file in the mod's config folder. */
+    /** Gives every character its own world settings file (see {@link ModConfigs}). */
     public static void register(ModContainer container, IEventBus modEventBus) {
         for (Map.Entry<GameCharacter, ModConfigSpec> entry : SPECS.entrySet()) {
-            container.registerConfig(ModConfig.Type.COMMON, entry.getValue(),
-                    ModConfigs.file(entry.getKey().getId()));
+            ModConfigs.world(container, entry.getKey().getId(), entry.getValue());
         }
         modEventBus.addListener(ModConfigEvent.Loading.class, CharacterConfig::onLoad);
         modEventBus.addListener(ModConfigEvent.Reloading.class, CharacterConfig::onLoad);
@@ -66,8 +65,11 @@ public final class CharacterConfig {
                 .defineInRange("defaultsVersion", 0, 0, Integer.MAX_VALUE));
         builder.comment("The abilities of " + character.getId() + ", one section per ability.",
                 "Cooldowns are in ticks (20 ticks = 1 second), damage is in half hearts (an Iron Golem has 100),",
-                "ring power is out of the 100 a full ring holds. The same numbers can be changed in the game:",
-                "Mods > this mod > Config.")
+                "ring power is out of the 100 a full ring holds. The same numbers can be changed in the game, while a",
+                "world is open: Mods > this mod > Config.",
+                "World settings: every world keeps its own copy of this file, in <world>/serverconfig/welcomescreen/,",
+                "and everyone who plays in that world plays by it. The copy in config/welcomescreen/ is what a new world",
+                "starts with.")
                 .push("abilities");
         if (character.abilities().isEmpty()) {
             builder.comment("This character has no abilities yet.").define("none", true);
@@ -106,6 +108,11 @@ public final class CharacterConfig {
      * the new default, and the file remembers it is up to date.
      */
     private static void onLoad(ModConfigEvent event) {
+        // Only the server's own file is brought up to date: what another server sends is its business, and is only
+        // kept in memory here.
+        if (ServerLifecycleHooks.getCurrentServer() == null) {
+            return;
+        }
         for (Map.Entry<GameCharacter, ModConfigSpec> entry : SPECS.entrySet()) {
             ModConfigSpec spec = entry.getValue();
             if (event.getConfig().getSpec() != spec || !spec.isLoaded()) {

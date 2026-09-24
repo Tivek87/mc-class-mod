@@ -1,5 +1,8 @@
 package nl.tivek.multiversepowers.character.greenlantern;
 
+import java.util.Collections;
+import java.util.IdentityHashMap;
+import java.util.Set;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
@@ -30,6 +33,7 @@ import nl.tivek.multiversepowers.character.greenlantern.ability.Recharge;
 import nl.tivek.multiversepowers.character.greenlantern.ability.RingScan;
 import nl.tivek.multiversepowers.character.greenlantern.ability.Shockwave;
 import nl.tivek.multiversepowers.character.greenlantern.ability.SwordShield;
+import nl.tivek.multiversepowers.engine.effect.Effects;
 
 /**
  * Green Lantern's power ring. Everything it makes is hard light: green energy shaped by willpower, that
@@ -61,6 +65,16 @@ public final class PowerRing {
     private static final String POWER_KEY = MultiversePowers.MODID + ":ring_power";
 
     private static int nextId;
+    // Rings whose power changed this tick, and rings whose onlookers have not heard their latest power yet: told at the
+    // end of the tick, the onlookers once every few ticks (see sendChanged).
+    private static final Set<ServerPlayer> CHANGED = Collections.newSetFromMap(new IdentityHashMap<>());
+    private static final Set<ServerPlayer> UNSEEN = Collections.newSetFromMap(new IdentityHashMap<>());
+    private static final int ONLOOKERS_EVERY = 5;
+    private static int syncTicks;
+
+    static {
+        Effects.atTickEnd(PowerRing::sendChanged);
+    }
 
     private PowerRing() {
     }
@@ -111,6 +125,8 @@ public final class PowerRing {
 
     /** The server stops: forget every construct that was still held, every recharge, flight and slam. */
     public static void clear() {
+        CHANGED.clear();
+        UNSEEN.clear();
         GiantFist.clear();
         Recharge.clear();
         LightBolt.clear();
@@ -165,10 +181,14 @@ public final class PowerRing {
                 : MAX_POWER;
     }
 
-    /** Puts this much in the ring (never below empty or above full), and shows it. */
+    /**
+     * Puts this much in the ring (never below empty or above full), and shows it: its owner at the end of this tick,
+     * everyone who sees him a moment later (see {@link #sendChanged}).
+     */
     public static void setPower(ServerPlayer player, float power) {
         saved(player).putFloat(POWER_KEY, Mth.clamp(power, 0.0F, MAX_POWER));
-        sync(player);
+        CHANGED.add(player);
+        UNSEEN.add(player);
     }
 
     private static CompoundTag saved(ServerPlayer player) {
@@ -181,10 +201,38 @@ public final class PowerRing {
 
     // ---- Telling the clients ----
 
-    /** Tells this player and everyone who can see them how full their ring is and what they do with it. */
+    /** Tells this player and everyone who can see them how full their ring is and what they do with it, right now. */
     public static void sync(ServerPlayer player) {
+        CHANGED.remove(player);
+        UNSEEN.remove(player);
         if (!player.hasDisconnected()) {
             PacketDistributor.sendToPlayersTrackingEntityAndSelf(player, state(player));
+        }
+    }
+
+    /**
+     * The end of a tick: the owner of every ring whose power changed hears of it once, however often it changed (a
+     * flight, a shield and a scrape all drain it on the same tick), and everyone who sees him every few ticks: his
+     * glow does not need more. Whatever else the ring does is told the moment it happens (see {@link #sync}).
+     */
+    private static void sendChanged() {
+        if (CHANGED.isEmpty() && UNSEEN.isEmpty()) {
+            return;
+        }
+        boolean onlookers = ++syncTicks % ONLOOKERS_EVERY == 0;
+        for (ServerPlayer player : CHANGED) {
+            if (!player.hasDisconnected() && !(onlookers && UNSEEN.contains(player))) {
+                PacketDistributor.sendToPlayer(player, state(player));
+            }
+        }
+        CHANGED.clear();
+        if (onlookers) {
+            for (ServerPlayer player : UNSEEN) {
+                if (!player.hasDisconnected()) {
+                    PacketDistributor.sendToPlayersTrackingEntityAndSelf(player, state(player));
+                }
+            }
+            UNSEEN.clear();
         }
     }
 

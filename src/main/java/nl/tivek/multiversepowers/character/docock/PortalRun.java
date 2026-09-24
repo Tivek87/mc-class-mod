@@ -12,6 +12,7 @@ import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.level.ClipContext;
@@ -207,6 +208,11 @@ final class PortalRun {
         return this.phase != Phase.CLOSE;
     }
 
+    /** True while the claw has this creature. */
+    boolean holds(Entity entity) {
+        return this.held && this.target == entity;
+    }
+
     // ---- Ticking ----
 
     /**
@@ -254,7 +260,7 @@ final class PortalRun {
     }
 
     private void finish(ServerLevel level) {
-        this.releaseTarget();
+        this.releaseTarget(true);
         RobotArm.remove(level, this.farArm);
         this.gateA.remove(level);
         this.gateB.remove(level);
@@ -400,7 +406,9 @@ final class PortalRun {
     }
 
     private boolean grab(ServerLevel level) {
-        if (this.target instanceof Mob mob && !HeldMobs.hold(mob)) {
+        // Something else (a tentacle, another power) may have caught it during the hunt: a creature or a
+        // player is only ever held once.
+        if (HeldMobs.isHeldByAnyone(this.target) || (this.target instanceof Mob mob && !HeldMobs.hold(mob))) {
             return this.cancel();
         }
         this.held = true;
@@ -534,7 +542,7 @@ final class PortalRun {
     }
 
     private boolean cancel() {
-        this.releaseTarget();
+        this.releaseTarget(true);
         this.gateC.close();
         if (this.phase.ordinal() < Phase.DIVE.ordinal()) {
             this.spike = 0;
@@ -553,8 +561,16 @@ final class PortalRun {
 
     // ---- The creature ----
 
+    /**
+     * Gone, a player you may no longer hurt, or so far off before the claw has it (teleported away) that
+     * no portal of this ability could ever reach it: then the run is called off.
+     */
     private boolean targetValid(ServerLevel level) {
-        return this.target.isAlive() && !this.target.isRemoved() && this.target.level() == level;
+        if (!OctoRig.mayHold(this.caster, this.target, level)) {
+            return false;
+        }
+        double reach = MAX_FROM_CASTER + OctoRig.ability("portal").value("homingRangeBlocks");
+        return this.held || this.target.distanceToSqr(this.caster) <= reach * reach;
     }
 
     private void placeTarget(Vec3 center) {
@@ -570,8 +586,7 @@ final class PortalRun {
         double y = center.y - this.target.getBbHeight() / 2;
         Vec3 was = this.target.position();
         if (this.target instanceof ServerPlayer player) {
-            player.connection.teleport(center.x, y, center.z, player.getYRot(), player.getXRot());
-            player.connection.aboveGroundTickCount = 0;
+            OctoRig.holdAt(player, center.x, y, center.z);
         } else if (hard) {
             this.target.teleportTo(center.x, y, center.z);
             this.target.setDeltaMovement(Vec3.ZERO);
@@ -584,7 +599,8 @@ final class PortalRun {
         this.target.resetFallDistance();
     }
 
-    private void releaseTarget() {
+    /** @param midAir true when the run ends before the slam: a player dropped from up there lands unhurt */
+    private void releaseTarget(boolean midAir) {
         this.clamped = false;
         if (this.held) {
             this.held = false;
@@ -594,13 +610,16 @@ final class PortalRun {
             if (this.target instanceof Mob mob) {
                 HeldMobs.release(mob);
             }
+            if (midAir) {
+                OctopusArms.setDown(this.target);
+            }
         }
     }
 
     private void impact(ServerLevel level) {
         Vec3 at = new Vec3(this.gateC.center.x, this.groundC, this.gateC.center.z);
         DamageSource source = level.damageSources().playerAttack(this.caster);
-        this.releaseTarget();
+        this.releaseTarget(false);
         // Smashed dead: enough to get through any armour, but bosses can never be grabbed.
         this.target.invulnerableTime = 0;
         // Half the health of an Iron Golem by default; set it in the config file.
@@ -715,6 +734,9 @@ final class PortalRun {
             double distance = attempt == 0 ? 0.0 : 1.0 + ParticleFx.RANDOM.nextDouble() * (SKY_RADIUS - 1.0);
             double x = origin.x + Math.cos(angle) * distance;
             double z = origin.z + Math.sin(angle) * distance;
+            if (!loaded(level, x, z)) {
+                continue;
+            }
             double ground = Targeting.floorBelow(level, BlockPos.containing(x, origin.y + 3, z));
             Vec3 floor = new Vec3(x, ground, z);
             double room = this.room(level, floor);
@@ -814,7 +836,12 @@ final class PortalRun {
 
     private static boolean openSpace(ServerLevel level, Vec3 at) {
         BlockPos pos = BlockPos.containing(at);
-        return level.getBlockState(pos).getCollisionShape(level, pos).isEmpty();
+        return loaded(level, at.x, at.z) && level.getBlockState(pos).getCollisionShape(level, pos).isEmpty();
+    }
+
+    /** True when the chunk at this spot is loaded: looking for a place never loads (or makes) one. */
+    private static boolean loaded(ServerLevel level, double x, double z) {
+        return level.isLoaded(BlockPos.containing(x, level.getMinBuildHeight(), z));
     }
 
     /** One tech portal: opens slowly, and shrinks shut backwards when told to. */

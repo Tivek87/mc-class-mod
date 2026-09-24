@@ -37,6 +37,7 @@ import nl.tivek.multiversepowers.character.greenlantern.Arrival;
 import nl.tivek.multiversepowers.character.greenlantern.Construct;
 import nl.tivek.multiversepowers.character.greenlantern.ConstructPayload;
 import nl.tivek.multiversepowers.character.greenlantern.PowerRing;
+import nl.tivek.multiversepowers.engine.ability.Throttle;
 import nl.tivek.multiversepowers.engine.effect.Effect;
 import nl.tivek.multiversepowers.engine.effect.Effects;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
@@ -51,7 +52,7 @@ import nl.tivek.multiversepowers.engine.fx.ParticleFx;
  * <li><b>Left held 2 seconds:</b> the shield before his chest (it takes most of what comes from the front) and twelve
  * quick stabs all over the front.</li>
  * <li><b>Right held:</b> he blocks: the shield up before him takes most of what comes from the front, for as long as he
- * holds it. He can still cut and thrust behind it.</li>
+ * holds it. A cut, a thrust or the flurry lowers it for as long as the move lasts; it comes back up by itself after.</li>
  * <li><b>Right click:</b> bent forward behind the locked shield he charges straight ahead, and rams everyone in his way
  * aside with one of six rams and a light hit; running into a wall, clicking again or running out of time ends it, and he
  * slams the shield into the ground for a small shockwave.</li>
@@ -84,6 +85,8 @@ public final class SwordShield implements Effect {
     private static final double VIEW_RANGE = 96.0;
 
     private static final Map<UUID, SwordShield> HELD = new HashMap<>();
+    // The sound of taking the sword and shield out, for everyone round him, at most this often.
+    private static final Throttle PICK_SOUND = new Throttle(5);
 
     private final int id = PowerRing.newId();
     private final ServerPlayer owner;
@@ -114,11 +117,17 @@ public final class SwordShield implements Effect {
                 && player.isAlive() && !Arrival.busy(player);
         if (want && (now == null || now.breaking >= 0)) {
             SwordShield sword = new SwordShield(player);
-            // One that was still breaking up finishes that on its own.
+            // One that was still breaking up is gone at once: however fast they are taken out and put away, he never
+            // has more than the one he holds and the one breaking up.
+            if (now != null) {
+                now.breaking = Math.max(now.breaking, BREAK_TICKS - 1);
+            }
             HELD.put(player.getUUID(), sword);
             Effects.start(player.serverLevel(), sword);
-            sword.sound(SoundEvents.BEACON_POWER_SELECT, 0.8F, 1.6F);
-            sword.sound(SoundEvents.AMETHYST_BLOCK_CHIME, 1.0F, 0.9F);
+            if (PICK_SOUND.allow(player)) {
+                sword.soundForOthers(SoundEvents.BEACON_POWER_SELECT, 0.8F, 1.6F);
+                sword.soundForOthers(SoundEvents.AMETHYST_BLOCK_CHIME, 1.0F, 0.9F);
+            }
             sword.send(player.serverLevel());
         } else if (!want && now != null) {
             now.breakUp();
@@ -179,6 +188,7 @@ public final class SwordShield implements Effect {
     /** The server stops: nobody holds a sword any more. */
     public static void clear() {
         HELD.clear();
+        PICK_SOUND.clear();
     }
 
     /** The settings of the sword and shield: those of the Construct Wheel. */
@@ -219,6 +229,11 @@ public final class SwordShield implements Effect {
         }
         this.blocking = false;
         return true;
+    }
+
+    /** True while the shield is up to block: held up, and not lowered for a cut, a thrust or the flurry. */
+    private boolean shieldUp() {
+        return this.blocking && !this.move.swings(this.age - this.moveStart);
     }
 
     private boolean startFlurry() {
@@ -292,7 +307,7 @@ public final class SwordShield implements Effect {
         if (this.breaking >= 0) {
             this.breaking++;
             if (this.breaking >= BREAK_TICKS) {
-                PacketDistributor.sendToPlayersInDimension(level, ConstructPayload.remove(this.id));
+                ConstructPayload.sendRemove(level, this.id, this.owner.position());
                 HELD.remove(this.owner.getUUID(), this);
                 return false;
             }
@@ -306,7 +321,7 @@ public final class SwordShield implements Effect {
         }
         this.age++;
         int t = this.age - this.moveStart;
-        if (this.blocking) {
+        if (this.shieldUp()) {
             // Holding the shield up costs the ring a little all the while; an empty ring lets it drop.
             float cost = (float) wheel().value("blockPowerPerSecond") / 20.0F;
             float power = PowerRing.power(this.owner);
@@ -629,6 +644,12 @@ public final class SwordShield implements Effect {
                 SoundSource.PLAYERS, volume, pitch);
     }
 
+    /** A sound for everyone round him but himself: his own game played it already, the moment he picked. */
+    private void soundForOthers(SoundEvent sound, float volume, float pitch) {
+        this.owner.level().playSound(this.owner, this.owner.getX(), this.owner.getY() + 1.0, this.owner.getZ(), sound,
+                SoundSource.PLAYERS, volume, pitch);
+    }
+
     /**
      * A hit on someone holding the shield up before him: blocking it stops most of what comes from the front, the
      * flurry's guard a good part of it, the shield locked before him in a charge nearly all of it. Damage that goes
@@ -645,7 +666,8 @@ public final class SwordShield implements Effect {
             return;
         }
         boolean guarding = sword.flurry && sword.move == SwordMove.FLURRY;
-        if (!guarding && !sword.charging && !sword.blocking) {
+        boolean blocking = sword.shieldUp();
+        if (!guarding && !sword.charging && !blocking) {
             return;
         }
         Vec3 front = flat(player.getLookAngle());
@@ -656,7 +678,7 @@ public final class SwordShield implements Effect {
                 return;
             }
         }
-        float kept = sword.charging ? CHARGE_KEPT : sword.blocking ? (float) wheel().value("blockDamageKept")
+        float kept = sword.charging ? CHARGE_KEPT : blocking ? (float) wheel().value("blockDamageKept")
                 : (float) wheel().value("guardDamageKept");
         event.setAmount(event.getAmount() * kept);
         sword.sound(SoundEvents.SHIELD_BLOCK, 1.0F, 0.9F + 0.2F * player.getRandom().nextFloat());

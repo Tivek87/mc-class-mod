@@ -34,6 +34,8 @@ import nl.tivek.multiversepowers.character.greenlantern.PowerRing;
 import nl.tivek.multiversepowers.engine.effect.Effect;
 import nl.tivek.multiversepowers.engine.effect.Effects;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
+import nl.tivek.multiversepowers.engine.world.BlockRules;
+import nl.tivek.multiversepowers.engine.world.LoadedWorld;
 
 /**
  * Giant Fist: the ring makes a fist of hard light beside Green Lantern, on his right (the hand that
@@ -227,7 +229,7 @@ public final class GiantFist implements Effect {
             case FLY -> this.fly(level);
             case FADE -> {
                 if (this.phaseAge >= FADE_TICKS) {
-                    PacketDistributor.sendToPlayersInDimension(level, ConstructPayload.remove(this.id));
+                    ConstructPayload.sendRemove(level, this.id, this.center);
                     return false;
                 }
             }
@@ -483,7 +485,7 @@ public final class GiantFist implements Effect {
     private Vec3 aimedAt(ServerLevel level) {
         Vec3 eye = this.owner.getEyePosition();
         Vec3 end = eye.add(this.owner.getLookAngle().scale(this.range));
-        BlockHitResult block = level.clip(new ClipContext(eye, end, ClipContext.Block.COLLIDER,
+        BlockHitResult block = LoadedWorld.clip(level, new ClipContext(eye, end, ClipContext.Block.COLLIDER,
                 ClipContext.Fluid.NONE, this.owner));
         Vec3 target = block.getType() == HitResult.Type.MISS ? end : block.getLocation();
         AABB search = this.owner.getBoundingBox().expandTowards(target.subtract(eye)).inflate(1.0);
@@ -555,7 +557,7 @@ public final class GiantFist implements Effect {
                 return;
             }
             Vec3 middle = pos.getCenter();
-            if (closest(from, knuckles, middle).distanceToSqr(middle) > radius * radius) {
+            if (closest(from, knuckles, middle).distanceToSqr(middle) > radius * radius || !level.isLoaded(pos)) {
                 continue;
             }
             BlockState state = level.getBlockState(pos);
@@ -563,7 +565,8 @@ public final class GiantFist implements Effect {
                 continue;
             }
             float hardness = state.getDestroySpeed(level, pos);
-            if (hardness < 0.0F || hardness > this.breakHardness || !level.mayInteract(this.owner, pos)) {
+            if (hardness < 0.0F || hardness > this.breakHardness
+                    || !BlockRules.mayBreak(level, this.owner, pos, state)) {
                 continue;
             }
             level.destroyBlock(pos, true, this.owner);

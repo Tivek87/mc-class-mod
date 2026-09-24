@@ -1,6 +1,7 @@
 package nl.tivek.multiversepowers.classes.client;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.commands.Commands;
 import net.neoforged.api.distmarker.Dist;
@@ -20,6 +21,12 @@ public final class ClientWelcome {
 
     /** Called when the server says this player still has to pick a class. */
     public static void requestWelcomeScreen() {
+        // Already picking one: he died and came straight back without a death screen, which leaves this one open.
+        Screen screen = Minecraft.getInstance().screen;
+        if (screen instanceof WelcomeScreen || screen instanceof GroupSelectionScreen
+                || screen instanceof ClassSelectionScreen) {
+            return;
+        }
         welcomePending = true;
     }
 

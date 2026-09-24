@@ -5,7 +5,9 @@ import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.phys.Vec3;
+import net.neoforged.neoforge.network.PacketDistributor;
 import nl.tivek.multiversepowers.MultiversePowers;
 
 /**
@@ -35,6 +37,8 @@ public record ConstructPayload(int id, int owner, Vec3 center, Vec3 facing, floa
         float charge, boolean held, int shape, int variant, int age, @Nullable ConstructPath path)
         implements CustomPacketPayload {
     public static final int FIST = 0;
+    // How far round where a construct was its removal is told, in blocks: past the 128 its updates reach.
+    private static final double REMOVE_RANGE = 176.0;
     /** A small bullet of hard light, shot from the ring. */
     public static final int BOLT = 1;
     /** A round shield of hard light, held up in front of him. */
@@ -200,6 +204,15 @@ public record ConstructPayload(int id, int owner, Vec3 center, Vec3 facing, floa
 
     public static ConstructPayload remove(int id) {
         return new ConstructPayload(id, -1, Vec3.ZERO, new Vec3(0, 0, 1), 0.0F, -1.0F, 0.0F, false, FIST);
+    }
+
+    /**
+     * Tells everyone who could see this construct that it is gone at once: everyone round where it was, as far as its
+     * updates reach and a little more. Anyone further off lost it already, as a client does with a construct it
+     * hears nothing of for a while.
+     */
+    public static void sendRemove(ServerLevel level, int id, Vec3 near) {
+        PacketDistributor.sendToPlayersNear(level, null, near.x, near.y, near.z, REMOVE_RANGE, remove(id));
     }
 
     private void write(RegistryFriendlyByteBuf buf) {

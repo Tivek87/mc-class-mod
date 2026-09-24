@@ -101,6 +101,11 @@ public final class LightBubble implements Effect {
     // The creatures a bubble holds, by entity id: nothing they do can hurt anyone.
     private static final Map<Integer, LightBubble> TRAPPED = new HashMap<>();
 
+    static {
+        // What a bubble holds counts as held for every other power too: no claw takes it out of the bubble.
+        HeldMobs.addHolder(LightBubble::trapped);
+    }
+
     private final int id = PowerRing.newId();
     private final ServerPlayer owner;
     private final CharacterAbility ability;
@@ -170,7 +175,7 @@ public final class LightBubble implements Effect {
             return false;
         }
         if (target.getBbWidth() > WIDEST || target.getBbHeight() > TALLEST || target.getMaxHealth() > STRONGEST
-                || TRAPPED.containsKey(target.getId()) || HeldMobs.isHeld(target)) {
+                || TRAPPED.containsKey(target.getId()) || HeldMobs.isHeldByAnyone(target)) {
             PowerRing.tell(owner, "bubble_too_big");
             return false;
         }
@@ -254,7 +259,7 @@ public final class LightBubble implements Effect {
         this.age++;
         if (this.phase == BREAKING) {
             if (this.age - this.since >= BREAK_TICKS) {
-                PacketDistributor.sendToPlayersInDimension(level, ConstructPayload.remove(this.id));
+                ConstructPayload.sendRemove(level, this.id, this.center);
                 return false;
             }
             this.send(level);
@@ -300,7 +305,10 @@ public final class LightBubble implements Effect {
         this.target.setDeltaMovement(Vec3.ZERO);
         this.target.resetFallDistance();
         if (this.target instanceof ServerPlayer player) {
-            player.teleportTo(player.serverLevel(), x, y, z, player.getYRot(), player.getXRot());
+            // He keeps looking where he likes (only where he is is the bubble's), and a server that does not allow
+            // flying must not think he hangs in the air on his own.
+            player.teleportTo(x, y, z);
+            player.connection.aboveGroundTickCount = 0;
         } else {
             this.target.setPos(x, y, z);
         }
@@ -514,8 +522,21 @@ public final class LightBubble implements Effect {
         float grown = this.phase == BREAKING ? 1.0F : Math.min(1.0F, (float) this.age / FORM_TICKS);
         PacketDistributor.sendToPlayersNear(level, null, this.center.x, this.center.y, this.center.z, VIEW_RANGE,
                 new ConstructPayload(this.id, this.owner.getId(), this.center, this.facing, (float) this.radius,
-                        grown, this.phase == BREAKING ? this.age - this.since : this.target.getId(), this.phase != BREAKING,
-                        ConstructPayload.BUBBLE, this.phase, this.age, null));
+                        grown, this.phase == BREAKING ? this.age - this.since : caught(this.target.getId()),
+                        this.phase != BREAKING, ConstructPayload.BUBBLE, this.phase, this.age, null));
+    }
+
+    /**
+     * The creature a bubble holds, carried in its charge: the id's own bits, so every id comes through whole (a plain
+     * number would lose the last digits of the large ids of a server that has been up a long time).
+     */
+    public static float caught(int entityId) {
+        return Float.intBitsToFloat(entityId);
+    }
+
+    /** The id of the creature in a bubble, from its charge (see {@link #caught(int)}). */
+    public static int caughtId(float charge) {
+        return Float.floatToRawIntBits(charge);
     }
 
     private void sound(ServerLevel level, SoundEvent sound, float volume, float pitch) {

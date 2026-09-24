@@ -11,6 +11,7 @@ import net.minecraft.core.Holder;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.protocol.game.ClientboundSetEquipmentPacket;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
@@ -58,10 +59,27 @@ final class VoidWalkSpell {
     private static final int PALE = 0xD9B8FF;
     private static final int ABYSS = 0x0A0012;
 
-    // Players in the void right now, with whether they were already silent before.
-    private static final Map<UUID, Boolean> ACTIVE = new HashMap<>();
+    // Players in the void right now, with what they had before stepping in.
+    private static final Map<UUID, Walk> ACTIVE = new HashMap<>();
 
     private VoidWalkSpell() {
+    }
+
+    /** What a player had before stepping into the void, so leaving it undoes only what the void changed. */
+    private static final class Walk {
+        private final boolean wasSilent;
+        // An invisibility he already had (a potion) as it was then, and the server tick he stepped in on.
+        @Nullable
+        private final MobEffectInstance invisibility;
+        private final int since;
+        // Something he holds or wears changed this tick, so the game has just shown it to everyone again.
+        private boolean equipmentChanged;
+
+        private Walk(boolean wasSilent, @Nullable MobEffectInstance invisibility, int since) {
+            this.wasSilent = wasSilent;
+            this.invisibility = invisibility;
+            this.since = since;
+        }
     }
 
     static boolean isInVoid(@Nullable Entity entity) {
@@ -75,17 +93,19 @@ final class VoidWalkSpell {
         Vec3 at = player.position();
         Effects.start(level, explosion(at));
         enter(player, level);
-        Effects.start(level, (lvl, age) -> tick(player, lvl, age));
+        Effects.start(level, (lvl, age) -> tick(player, age));
         return true;
     }
 
     private static void enter(ServerPlayer player, ServerLevel level) {
-        ACTIVE.put(player.getUUID(), player.isSilent());
+        MobEffectInstance invisibility = player.getEffect(MobEffects.INVISIBILITY);
+        ACTIVE.put(player.getUUID(), new Walk(player.isSilent(),
+                invisibility == null ? null : new MobEffectInstance(invisibility), player.server.getTickCount()));
         player.setSilent(true);
         player.addEffect(new MobEffectInstance(MobEffects.INVISIBILITY, DURATION + 5, 0, false, false, true));
         addModifier(player, Attributes.MOVEMENT_SPEED, SPEED_ID, SPEED_BONUS);
         addModifier(player, Attributes.ATTACK_DAMAGE, DAMAGE_ID, DAMAGE_BONUS);
-        hideEquipment(player, level);
+        hideEquipment(player);
         // Everything that was hunting you loses you.
         for (Mob mob : level.getEntitiesOfClass(Mob.class, player.getBoundingBox().inflate(64),
                 mob -> mob.getTarget() == player)) {
@@ -94,16 +114,21 @@ final class VoidWalkSpell {
         PacketDistributor.sendToPlayer(player, new VoidStatePayload(DURATION));
     }
 
-    private static boolean tick(ServerPlayer player, ServerLevel level, int age) {
-        if (!isInVoid(player)) {
+    private static boolean tick(ServerPlayer player, int age) {
+        Walk walk = ACTIVE.get(player.getUUID());
+        if (walk == null) {
             return false;
         }
-        if (player.isRemoved() || !player.isAlive() || age >= DURATION) {
+        // Milk or a revealing light took the invisibility away: then you step out of the void altogether.
+        if (player.isRemoved() || !player.isAlive() || age >= DURATION || !player.hasEffect(MobEffects.INVISIBILITY)) {
             leave(player);
             return false;
         }
-        // Switching items would show them again, so keep telling everyone your hands are empty.
-        hideEquipment(player, player.serverLevel());
+        // Switching items showed them to everyone earlier this tick, so tell them again your hands are empty.
+        if (walk.equipmentChanged) {
+            walk.equipmentChanged = false;
+            hideEquipment(player);
+        }
         if (age % 10 == 0) {
             markEnemies(player);
         }
@@ -112,28 +137,57 @@ final class VoidWalkSpell {
 
     /** Back into the world: everything undone, with a burst where you reappear. */
     static void leave(ServerPlayer player) {
-        Boolean wasSilent = ACTIVE.remove(player.getUUID());
-        if (wasSilent == null) {
+        Walk walk = ACTIVE.remove(player.getUUID());
+        if (walk == null) {
             return;
         }
-        player.setSilent(wasSilent);
+        restore(player, walk);
+        if (player.isAlive()) {
+            Effects.start(player.serverLevel(), reappear(player.position()));
+        }
+    }
+
+    /**
+     * The server stops: whoever is still in the void is put back the way he was, without the burst, so he is not
+     * saved silent and invisible.
+     */
+    static void clear(MinecraftServer server) {
+        Map<UUID, Walk> walks = new HashMap<>(ACTIVE);
+        ACTIVE.clear();
+        walks.forEach((id, walk) -> {
+            ServerPlayer player = server.getPlayerList().getPlayer(id);
+            if (player != null) {
+                restore(player, walk);
+            }
+        });
+    }
+
+    /** Undoes only what stepping into the void changed, and shows everyone what you hold and wear again. */
+    private static void restore(ServerPlayer player, Walk walk) {
+        player.setSilent(walk.wasSilent);
         removeModifier(player, Attributes.MOVEMENT_SPEED, SPEED_ID);
         removeModifier(player, Attributes.ATTACK_DAMAGE, DAMAGE_ID);
-        player.removeEffect(MobEffects.INVISIBILITY);
-        ServerLevel level = player.serverLevel();
+        // The void's invisibility goes; one you already had (a potion) comes back with the time it had left. When milk
+        // or a revealing light already took it away, that one went with it.
+        if (player.hasEffect(MobEffects.INVISIBILITY)) {
+            player.removeEffect(MobEffects.INVISIBILITY);
+            MobEffectInstance before = walk.invisibility;
+            if (before != null) {
+                int left = before.getDuration() - (player.server.getTickCount() - walk.since);
+                if (before.isInfiniteDuration() || left > 0) {
+                    player.addEffect(new MobEffectInstance(before.getEffect(),
+                            before.isInfiniteDuration() ? MobEffectInstance.INFINITE_DURATION : left,
+                            before.getAmplifier(), before.isAmbient(), before.isVisible(), before.showIcon()));
+                }
+            }
+        }
         List<Pair<EquipmentSlot, ItemStack>> real = new ArrayList<>();
         for (EquipmentSlot slot : WORN) {
             real.add(Pair.of(slot, player.getItemBySlot(slot).copy()));
         }
-        level.getChunkSource().broadcast(player, new ClientboundSetEquipmentPacket(player.getId(), real));
+        player.serverLevel().getChunkSource().broadcast(player,
+                new ClientboundSetEquipmentPacket(player.getId(), real));
         PacketDistributor.sendToPlayer(player, new VoidStatePayload(0));
-        if (player.isAlive()) {
-            Effects.start(level, reappear(player.position()));
-        }
-    }
-
-    static void clear() {
-        ACTIVE.clear();
     }
 
     private static void addModifier(ServerPlayer player, Holder<Attribute> attribute, ResourceLocation id,
@@ -154,12 +208,37 @@ final class VoidWalkSpell {
     }
 
     /** Tells every other player you hold and wear nothing, so not even your armour floats in the air. */
-    private static void hideEquipment(ServerPlayer player, ServerLevel level) {
+    private static void hideEquipment(ServerPlayer player) {
+        player.serverLevel().getChunkSource().broadcast(player, emptyEquipment(player));
+    }
+
+    /**
+     * Someone comes close enough to see a player in the void: the game has just shown him everything that player
+     * holds and wears, so he is told the hands are empty as well.
+     */
+    static void seenBy(ServerPlayer player, ServerPlayer viewer) {
+        if (isInVoid(player)) {
+            viewer.connection.send(emptyEquipment(player));
+        }
+    }
+
+    /**
+     * Something a player in the void holds or wears changed: the game shows that to everyone, so it is hidden again
+     * at the end of the tick (see tick).
+     */
+    static void equipmentChanged(ServerPlayer player) {
+        Walk walk = ACTIVE.get(player.getUUID());
+        if (walk != null) {
+            walk.equipmentChanged = true;
+        }
+    }
+
+    private static ClientboundSetEquipmentPacket emptyEquipment(ServerPlayer player) {
         List<Pair<EquipmentSlot, ItemStack>> empty = new ArrayList<>();
         for (EquipmentSlot slot : WORN) {
             empty.add(Pair.of(slot, ItemStack.EMPTY));
         }
-        level.getChunkSource().broadcast(player, new ClientboundSetEquipmentPacket(player.getId(), empty));
+        return new ClientboundSetEquipmentPacket(player.getId(), empty);
     }
 
     static boolean isEnemy(Entity entity, Player caster) {

@@ -36,6 +36,9 @@ import nl.tivek.multiversepowers.classes.PlayerClass;
 import nl.tivek.multiversepowers.classes.SelectClassPayload;
 import nl.tivek.multiversepowers.classes.TestEffectPayload;
 import nl.tivek.multiversepowers.classes.ceremony.Ceremonies;
+import nl.tivek.multiversepowers.config.WorldSettingsPayload;
+import nl.tivek.multiversepowers.engine.fx.ParticlesPayload;
+import nl.tivek.multiversepowers.network.client.ClientPayloadHandler;
 import nl.tivek.multiversepowers.spell.CastSpellPayload;
 import nl.tivek.multiversepowers.spell.Spell;
 import nl.tivek.multiversepowers.spell.SpellCasting;
@@ -44,7 +47,7 @@ import nl.tivek.multiversepowers.spell.VoidStatePayload;
 import nl.tivek.multiversepowers.stamina.StaminaCostPayload;
 
 public final class ModNetwork {
-    private static final String VERSION = "15";
+    private static final String VERSION = "16";
 
     private ModNetwork() {
     }
@@ -77,6 +80,17 @@ public final class ModNetwork {
                 ModNetwork::onConstructPick);
         registrar.playToServer(ConstructHoldPayload.TYPE, ConstructHoldPayload.STREAM_CODEC,
                 ModNetwork::onConstructHold);
+        registrar.playToClient(WorldSettingsPayload.TYPE, WorldSettingsPayload.STREAM_CODEC,
+                ModNetwork::onWorldSettings);
+        registrar.playToClient(ParticlesPayload.TYPE, ParticlesPayload.STREAM_CODEC, ModNetwork::onParticles);
+    }
+
+    private static void onParticles(ParticlesPayload payload, IPayloadContext context) {
+        ClientPayloadHandler.handleParticles(payload, context);
+    }
+
+    private static void onWorldSettings(WorldSettingsPayload payload, IPayloadContext context) {
+        ClientPayloadHandler.handleWorldSettings(payload, context);
     }
 
     /** The construct wheel: Green Lantern took a construct out, or put his away. */
@@ -127,7 +141,7 @@ public final class ModNetwork {
     private static void onTransform(TransformPayload payload, IPayloadContext context) {
         context.enqueueWork(() -> {
             if (context.player() instanceof ServerPlayer serverPlayer) {
-                Characters.select(serverPlayer, GameCharacter.byId(payload.characterId()));
+                Characters.pick(serverPlayer, GameCharacter.byId(payload.characterId()));
             }
         });
     }
@@ -241,8 +255,8 @@ public final class ModNetwork {
 
             PlayerClass chosen = PlayerClass.byId(payload.classId());
             if (chosen == null) {
-                MultiversePowers.LOGGER.warn("Unknown class id '{}' from {}",
-                        payload.classId(), serverPlayer.getName().getString());
+                // What his game sent is not written to the log as it is: a changed game could fill the log with it.
+                MultiversePowers.LOGGER.warn("Unknown class id from {}", serverPlayer.getName().getString());
                 return;
             }
 
