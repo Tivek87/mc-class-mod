@@ -193,7 +193,7 @@ abstract class SwordFirstPerson extends SwordSeen {
 
     /**
      * Your own sword and shield in first person, in your hands (or the sword tossed up, flying before your eyes); while
-     * they take shape the ring's beam feeds the shield, and banged on its rim the blade throws sparks.
+     * they take shape the ring's beam feeds the shield, and banged on its face the blade throws sparks.
      */
     static void drawOwn(LanternPainter painter, LocalPlayer player, State state, SwordPoses.Pose pose,
             double apart, float now) {

@@ -64,10 +64,11 @@ public enum SwordMove {
      * The sword and shield take shape: the sword grows out of his fist as his hand comes up, and the shield out of the
      * ring's light on his forearm, from its boss outwards, until its strap closes. He dips his hand and flicks the
      * sword up into the air, where it turns over twice, reaches up to catch it and rides it down, brings it up before
-     * his eyes and turns it slowly from the one flat to the other while a gleam of light runs up its blade, and then
-     * bangs it twice on the rim of the shield. He can cut from the moment he has caught it.
+     * his eyes and turns it slowly from the one flat to the other while a gleam of light runs up its blade; then he
+     * braces the shield before him, its face still ahead, swings the sword out to his right and in flat across its face
+     * twice, and settles into his guard. He can cut from the moment he has caught it.
      */
-    EQUIP(Kind.EQUIP, 73, 34, 0.0, 0.0, 0, 0);
+    EQUIP(Kind.EQUIP, 78, 34, 0.0, 0.0, 0, 0);
 
     /** What a move is. */
     public enum Kind {
@@ -160,13 +161,13 @@ public enum SwordMove {
     }
 
     /**
-     * True while this move, {@code t} ticks in, swings the sword: a cut, a thrust or the flurry, or the bangs on the rim
-     * of the shield as they take shape (the shield is raised to meet them). The shield cannot block meanwhile; held up,
-     * it comes back once the move (or the bangs) is over.
+     * True while this move, {@code t} ticks in, swings the sword: a cut, a thrust or the flurry, or the bangs on the face
+     * of the shield as they take shape (from the moment the shield starts to come in for them until it is back in the
+     * guard). The shield cannot block meanwhile; held up, it comes back once the move (or the bangs) is over.
      */
     public boolean swings(double t) {
         if (this.kind == Kind.EQUIP) {
-            return t >= KNOCK - 4 && t < KNOCK_AGAIN + 3;
+            return t >= KNOCK - 11 && t < KNOCK_AGAIN + 10;
         }
         return (this.kind == Kind.ATTACK || this.kind == Kind.FLURRY) && t >= 0.0 && t < this.ticks;
     }

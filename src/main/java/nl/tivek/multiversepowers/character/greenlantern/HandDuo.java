@@ -241,7 +241,7 @@ public final class HandDuo extends HandDuoScript {
         Vec3 wrist = free[0];
         Vec3 up = free[1];
         Vec3 palm = free[2];
-        double held = Ease.smoother((t - GRAB + 8.0) / 8.0) * (1.0 - Ease.smoother((t - RELEASE) / 10.0));
+        double held = Ease.smoother((t - GRAB + 8.0) / 8.0) * (1.0 - Ease.smoother((t - RELEASE - LET_GO) / 5.0));
         if (held > 0.0) {
             // Turned the shortest way from how it is in the air to how it holds on, never flipping through.
             Vec3[] grip = grip(layout, right, t, axe, portal);
@@ -410,7 +410,9 @@ public final class HandDuo extends HandDuoScript {
      * A hand's fist exactly round the haft: the haft runs through FIST_HOLE along the hand's x, its thumb's side to the
      * head (the right hand's right is down the haft, the left hand's up it), its fingers pointing the way its forearm
      * comes from its portal, turned square to the haft, so the wrist bends least. Trembling after the blow, it turns a
-     * hair about the haft. Gives its wrist, the way its fingers point and its palm.
+     * hair about the haft. Coming down on the haft it stays a little off it until its fingers start to close (see
+     * HOLD_CLEAR); letting go, it drops off the haft and slides back off it along its fingers, so nothing of it passes
+     * through the haft on its way up (see DROP_OFF). Gives its wrist, the way its fingers point and its palm.
      */
     private static Vec3[] grip(Layout layout, boolean right, double t, Axe axe, Vec3 portal) {
         double scale = layout.scale();
@@ -418,6 +420,9 @@ public final class HandDuo extends HandDuoScript {
         Vec3 thumbSide = right ? axe.up().scale(-1.0) : axe.up();
         double shake = 0.07 * wobble(t - IMPACT - (right ? 0.0 : 0.3), 2.2, 0.35, 0.8)
                 * (1.0 - Ease.smoother((t - IMPACT - 8.0) / 4.0));
+        double off = (HOLD_CLEAR * (1.0 - Ease.smoother((t - GRAB + 6.0) / 4.0))
+                + DROP_OFF * Ease.smoother((t - RELEASE + 0.5) / 2.5)) * scale;
+        double back = SLIDE_OFF * Ease.smoother((t - RELEASE - 0.5) / 4.0) * scale;
         // The fingers point the way from the portal to the wrist, and the wrist hangs off the fist the way the fingers
         // point: going round this a few times settles them.
         Vec3 toward = hole.subtract(portal);
@@ -425,7 +430,8 @@ public final class HandDuo extends HandDuoScript {
         for (int i = 0; i < 4; i++) {
             Vec3 up = Vectors.spin(toward.subtract(axe.up().scale(toward.dot(axe.up()))).normalize(), axe.up(), shake);
             Vec3 palm = up.cross(thumbSide);
-            Vec3 wrist = hole.subtract(up.scale(FIST_HOLE.y * scale)).subtract(palm.scale(FIST_HOLE.z * scale));
+            Vec3 wrist = hole.subtract(up.scale(FIST_HOLE.y * scale + back))
+                    .subtract(palm.scale(FIST_HOLE.z * scale + off));
             fist = new Vec3[] { wrist, up, palm };
             toward = wrist.subtract(portal);
         }

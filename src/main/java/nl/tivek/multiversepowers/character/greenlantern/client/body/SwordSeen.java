@@ -165,8 +165,8 @@ abstract class SwordSeen extends SwordStates {
     /**
      * The sword and shield of someone seen from outside (you too, from behind), where his hands were drawn: the sword
      * in his fist (or flying over his head, tossed up), the shield on his forearm, the streak of a swung blade, the
-     * sparks of a bang on the rim, and the light of a slam. While they take shape the ring feeds the growing shield a
-     * beam of its light.
+     * sparks of a bang on the face of the shield, and the light of a slam. While they take shape the ring feeds the
+     * growing shield a beam of its light.
      */
     public static void draw(LanternPainter painter, Entity player, @Nullable Vec3 ring, float partialTick) {
         State state = state(player, partialTick);
@@ -185,8 +185,8 @@ abstract class SwordSeen extends SwordStates {
         float now = now(partialTick);
         float[] knock = watching(blend, state, now);
         if (knock != null) {
-            // Brought down right onto the rim of the shield at each bang (and off it over a moment when a move cuts
-            // that short).
+            // Swung right onto the face of the shield at each bang (and off it over a moment when a move cuts that
+            // short).
             Vec3 turn = SwordPoses.bodyKnockTurn(knock[0]).scale(knock[1]);
             bladeWay = SwordPoses.turnedBy(bladeWay, turn);
             edgeWay = SwordPoses.turnedBy(edgeWay, turn);
@@ -196,7 +196,7 @@ abstract class SwordSeen extends SwordStates {
         float onto = knock == null ? 0.0F : SwordPoses.bodyKnocking(knock[0]) * knock[1];
         if (onto > 0.0F) {
             // His arms are drawn a little off from where the pose works them out (the game's own swing of the arms as
-            // he walks, slim arms): the blade turns that much further, so it still comes down on the rim as drawn.
+            // he walks, slim arms): the blade turns that much further, so it still lands on the face as drawn.
             Vec3 aim = spot.world(SwordPoses.bodyStrike(pose)[1], 0.0F);
             Vec3 off = spot.mount().subtract(spot.at(SwordPoses.drawn(pose, false)))
                     .subtract(spot.grip().subtract(spot.at(SwordPoses.drawn(pose, true))));
@@ -280,7 +280,10 @@ abstract class SwordSeen extends SwordStates {
         return 1.0 - Ease.smooth((grown - 0.55) / 0.45);
     }
 
-    /** The sparks of the blade banged on the rim of the shield as they take shape, on the shield as it is drawn. */
+    /**
+     * The sparks of the blade banged on the face of the shield as they take shape, on the shield as it is drawn: they
+     * spray up off the face, along the blade lying on it either way.
+     */
     static void clang(LanternPainter painter, State state, Vec3 middle, Vec3 face, Vec3 top, double scale) {
         if (state.move() != SwordMove.EQUIP || state.t() < SwordMove.KNOCK) {
             return;
@@ -288,9 +291,9 @@ abstract class SwordSeen extends SwordStates {
         Vec3 ahead = face.normalize();
         Vec3 up = SwordPoses.square(top, ahead);
         Vec3 right = ahead.cross(up).normalize();
-        Vec3 at = SwordPoses.rim(middle, right, up, scale);
-        SwordPainter.clang(painter, at, right, up, state.t() - SwordMove.KNOCK, scale);
-        SwordPainter.clang(painter, at, right, up, state.t() - SwordMove.KNOCK_AGAIN, scale * 0.8);
+        Vec3 at = SwordPoses.onFace(middle, right, up, ahead, scale);
+        SwordPainter.clang(painter, at, right, ahead, state.t() - SwordMove.KNOCK, scale);
+        SwordPainter.clang(painter, at, right, ahead, state.t() - SwordMove.KNOCK_AGAIN, scale * 0.8);
     }
 
     /** Where a point along the blade was {@code ago} ticks back: {@code from} (in blocks at scale 1) out from the grip. */

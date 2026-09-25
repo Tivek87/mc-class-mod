@@ -33,7 +33,7 @@ abstract class SwordStates {
     // from the game's own arms), not from where they were then, in ticks.
     private static final float STALE = 10.0F;
     // How long the eyes (or the head seen from outside) take to come back from following the sword when a move or a
-    // break cuts taking them out short (or they are gone at once), and the blade seen from outside off the rim of the
+    // break cuts taking them out short (or they are gone at once), and the blade seen from outside off the face of the
     // shield, in ticks.
     static final float LOOK_BACK = 6.0F;
     // How far back in time the arms are looked at to tell how fast they move, in ticks.
@@ -241,7 +241,7 @@ abstract class SwordStates {
     /**
      * How far into taking them out the eyes (or the head seen from outside) follow the sword right now, and how much:
      * while he takes them out, and for a moment after a move or a break cut that short, as they come back. Null when
-     * they do not. The blade seen from outside comes off the rim of the shield the same way.
+     * they do not. The blade seen from outside comes off the face of the shield the same way.
      */
     @Nullable
     static float[] watching(Blend blend, State state, float now) {

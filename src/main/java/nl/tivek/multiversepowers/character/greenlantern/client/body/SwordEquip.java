@@ -10,7 +10,7 @@ import nl.tivek.multiversepowers.engine.math.Vectors;
 /**
  * Taking the sword and shield out (see {@link SwordPoses}), before your own eyes: how they grow out of the ring's
  * light, the keys of the hand, the wrist, the shield and the body, the tossed sword flying freely, and the blade banged
- * on the rim of the shield.
+ * on the face of the shield.
  */
 abstract class SwordEquip extends SwordKeys {
     // ---- The toss as they take shape ----
@@ -51,40 +51,53 @@ abstract class SwordEquip extends SwordKeys {
     private static final Vec3 LET_GO;
     private static final Vec3 CAUGHT_AT;
 
-    // ---- Looking the sword over, and banging it on the shield ----
+    // ---- Looking the sword over, and banging it on the face of the shield ----
 
     // The blade as he looks it over: across your view from low on the right to high on the left; and from when to when
-    // the wrist turns it over: a while after the catch, until a while before the first bang.
+    // the wrist turns it over: a while after the catch, until the fist swings out for the bangs.
     private static final Vec3 LOOKED_AT = new Vec3(-0.55, 0.74, -0.40).normalize();
     static final float INSPECT_FROM = SwordMove.CATCH + 8.0F;
-    static final float INSPECT_TO = SwordMove.KNOCK - 6.0F;
-    // Where on the rim of the shield the blade comes down (in the shield's own blocks at scale 1: on its arched top,
-    // left of the middle), how thick the rim is, how far along the blade it strikes and how far the edge is from the
-    // middle of the blade there (at scale 1).
-    private static final double RIM_X = -0.30;
-    private static final double RIM_Y = 0.52 + 0.04 * (1.0 - (RIM_X / 0.46) * (RIM_X / 0.46));
-    static final double RIM_THICK = 0.034;
-    private static final double STRIKE_AT = 1.05;
-    static final double BLADE_WIDE = 0.08;
-    // The blade as it comes down on the rim: lying across the top of the shield, its edge leading down onto it; and the
-    // way the blade turns as it comes down.
-    private static final Vec3 KNOCKING = new Vec3(-0.95, 0.05, -0.30).normalize();
-    static final Vec3 KNOCK_EDGE = square(new Vec3(0.0, -1.0, 0.25), KNOCKING);
-    private static final Vec3 CHOP = KNOCKING.cross(KNOCK_EDGE).normalize();
-    // The shield raised to meet the bangs: its middle, the way its face points and where its top is.
-    private static final Vec3 RAISED = new Vec3(-0.44, -0.44, -0.88);
-    private static final Vec3 RAISED_FACE = new Vec3(-0.32, 0.16, -1.0).normalize();
-    private static final Vec3 RAISED_TOP = square(new Vec3(0.05, 1.0, 0.18), RAISED_FACE);
-    // How far the fist is raised and the blade turned back up before the first bang and between the two (blocks and
-    // radians), how long each swing down takes (ticks), and how much of its speed the blade keeps as it bounces off.
-    private static final double WIND_UP = 0.17;
-    private static final double WIND_TURN = 0.6;
-    private static final double AGAIN_UP = 0.1;
-    private static final double AGAIN_TURN = 0.32;
-    private static final float WIND_TICKS = 2.5F;
+    static final float INSPECT_TO = SwordMove.KNOCK - 8.0F;
+    // The shield braced for the bangs: brought in a little before you at the height of its guard, its face still looking
+    // ahead (turned a touch towards the sword, so its front meets the blade); its middle, the way its face points and
+    // where its top is. And the moment it starts to come in, and is back in its guard after.
+    private static final Vec3 BRACED = new Vec3(-0.44, -0.50, -0.90);
+    private static final Vec3 BRACED_FACE = new Vec3(0.12, 0.06, -1.0).normalize();
+    private static final Vec3 BRACED_TOP = square(new Vec3(0.02, 1.0, 0.08), BRACED_FACE);
+    private static final float BRACE_FROM = INSPECT_TO - 3.0F;
+    private static final float BRACE_TO = SwordMove.KNOCK_AGAIN + 9.5F;
+    // Where on the face of the shield the blade strikes, in the shield's own blocks at scale 1: square across its middle,
+    // on the band between the upper bar of the emblem and the raised border; and how far the face stands out there.
+    private static final double FACE_X = 0.0;
+    private static final double FACE_Y = 0.36;
+    private static final double FACE_OUT = SwordPainter.faceOut(FACE_X, FACE_Y);
+    // How far along the blade it strikes the middle of the face, and how far the edge is from the middle of the blade
+    // at most along the part lying across the face (at scale 1).
+    private static final double STRIKE_AT = 0.9;
+    static final double BLADE_WIDE = 0.095;
+    // The blade as it strikes the face: lying flat across that band, from the fist beside the shield's right to its
+    // left, its edge leading into the face; and the way it turns about as it swings in: about the shield's top, leaned
+    // over this far (radians) towards the tip, so it swings in from high out ahead and comes down onto the face.
+    private static final Vec3 KNOCKING = BRACED_TOP.cross(BRACED_FACE).normalize();
+    static final Vec3 KNOCK_EDGE = BRACED_FACE.scale(-1.0);
+    private static final double SWING_LEAN = 0.35;
+    private static final Vec3 CHOP = BRACED_TOP.scale(Math.cos(SWING_LEAN)).add(KNOCKING.scale(Math.sin(SWING_LEAN)))
+            .normalize();
+    // Where the fist swings out to before a bang (to the right, a little up and ahead), how far it swings out and how
+    // far the blade turns out ahead before the first bang and between the two (blocks and radians), how long each
+    // swing in takes (ticks), and how much of its speed the blade keeps as it bounces off.
+    private static final Vec3 SWING_OUT = KNOCKING.scale(-1.0).add(BRACED_TOP.scale(0.35)).add(BRACED_FACE.scale(0.25))
+            .normalize();
+    private static final double WIND_OUT = 0.12;
+    private static final double WIND_TURN = 2.2;
+    private static final double AGAIN_OUT = 0.05;
+    private static final double AGAIN_TURN = 0.42;
+    private static final float WIND_TICKS = 3.0F;
     private static final float AGAIN_TICKS = 2.0F;
     private static final double BOUNCE = 0.33;
-    /** Where the blade strikes the rim of the shield before your eyes (the same at both bangs). */
+    // How long the blade rests on the face after the second bang before it goes back into the guard (ticks).
+    private static final float REST_TICKS = 1.8F;
+    /** Where the blade strikes the face of the shield before your eyes (the same at both bangs). */
     static final Vec3 STRUCK;
 
     static {
@@ -104,27 +117,37 @@ abstract class SwordEquip extends SwordKeys {
     /**
      * Taking them out, on four tracks of their own. The sword hand comes up out of the game's own resting pose while
      * the sword grows out of the fist, dips, and flicks the sword up into the air (see {@link #flight}); the fist
-     * follows through, sinks to wait under it, reaches up to meet it and rides it down as it catches it, then brings it
-     * up before your eyes, holds it there while the wrist turns it over, raises it and brings it down on the rim of the
-     * shield twice, bouncing off it each time. The wrist cocks back before the flick and snaps round with it, turns
-     * ahead to meet the spin of the sword as it catches it, is carried on by it and springs back. The shield comes up
-     * while it grows out of the ring's light, dips as its strap closes, swings back with the toss, gives with the
-     * catch, and rises to meet each bang and gives under it. The body leads all of it by a moment: it dips before the
-     * hand does, rises into the flick, leans back to watch the sword go up, gives with the catch, and turns into the
-     * bangs.
+     * follows through, sinks to wait under it, reaches up to meet it and rides it down as it catches it, and flows on
+     * up to bring it before your eyes, holds it there while the wrist turns it over, swings out to the right and swings
+     * the blade in flat across the face of the shield twice, bouncing off it each time; it rests on it a beat and swings
+     * back into the guard. The wrist cocks back before the flick and snaps round with it, turns ahead to meet the spin of
+     * the sword as it catches it, is carried on by it and springs back. The shield comes up while it grows out of the
+     * ring's light, dips as its strap closes, swings back with the toss and gives with the catch; for the bangs it comes
+     * in a little before you, its face still ahead, gives under each bang, and goes back into the guard. The body leads
+     * all of it by a moment: it dips before the hand does, rises into the flick, leans back to watch the sword go up,
+     * gives with the catch, and turns its shield side forward for the bangs, a little less into each: seen from outside
+     * that brings the fist (at the end of an arm that cannot bend) in level with the face of the shield.
      */
     private static void equip() {
         float toss = SwordMove.TOSS;
         float caught = SwordMove.CATCH;
         float knock = SwordMove.KNOCK;
         float again = SwordMove.KNOCK_AGAIN;
-        // Each swing down onto the rim speeds up evenly from where it hangs raised to the moment it strikes, the
-        // fastest there, and bounces off at a part of that speed.
+        // Each swing in onto the face speeds up evenly from where the fist hangs swung out to the moment it strikes,
+        // the fastest there, and bounces off at a part of that speed.
         Vec3 hit = contact();
-        Vec3 raised = hit.subtract(KNOCK_EDGE.scale(WIND_UP));
-        Vec3 lifted = hit.subtract(KNOCK_EDGE.scale(AGAIN_UP));
-        Vec3 strike = hit.subtract(raised).scale(2.0 / WIND_TICKS);
-        Vec3 strikeAgain = hit.subtract(lifted).scale(2.0 / AGAIN_TICKS);
+        Vec3 swungOut = hit.add(SWING_OUT.scale(WIND_OUT));
+        Vec3 swungAgain = hit.add(SWING_OUT.scale(AGAIN_OUT));
+        Vec3 strike = hit.subtract(swungOut).scale(2.0 / WIND_TICKS);
+        Vec3 strikeAgain = hit.subtract(swungAgain).scale(2.0 / AGAIN_TICKS);
+        // Resting on the face a beat after the second bang, and back in the guard: the fist goes back in one sweep,
+        // swinging out a little on the way, fastest halfway (half as fast again as it goes on average).
+        float rest = again + REST_TICKS;
+        Vec3 rested = hit.subtract(KNOCK_EDGE.scale(0.03));
+        Vec3 guarded = GUARD.hand().add(0.01, 0.03, 0.0);
+        Vec3 home = guarded.subtract(rested).scale(1.5 / (BRACE_TO - rest));
+        // The shield low while the blade is looked over, as it starts to come in for the bangs.
+        Key low = held(BRACE_FROM, -0.54, -0.61, -0.94, -0.50, 0.01, -1.0, 0.10, 1.0, 0.10);
         Track hand = new Track(0, Pose.BLADE, new Key[] {
                 at(4, false, 0.40, -0.44, -0.92),
                 at(8, false, 0.34, -0.47, -0.98),
@@ -135,16 +158,17 @@ abstract class SwordEquip extends SwordKeys {
                 at(caught - 5.0F, false, 0.29, -0.46, -1.21),
                 moving(at(caught, false, CAUGHT), 0, CAUGHT_AT, CAUGHT_AT),
                 at(caught + 2.5F, true, CAUGHT.add(CAUGHT_AT.scale(1.25))),
-                at(INSPECT_FROM - 2.5F, false, 0.24, -0.36, -0.92),
                 at(INSPECT_FROM, false, 0.21, -0.31, -0.84),
                 at((INSPECT_FROM + INSPECT_TO) / 2.0F, false, 0.19, -0.29, -0.82),
-                at(INSPECT_TO, false, 0.21, -0.30, -0.83),
-                at(knock - WIND_TICKS, true, raised),
+                at(INSPECT_TO, false, 0.22, -0.28, -0.83),
+                at(knock - WIND_TICKS, true, swungOut),
                 moving(at(knock, false, hit), 0, strike, strike.scale(-BOUNCE)),
-                at(again - AGAIN_TICKS, true, lifted),
+                at(again - AGAIN_TICKS, true, swungAgain),
                 moving(at(again, false, hit), 0, strikeAgain, strikeAgain.scale(-0.8 * BOUNCE)),
-                at(again + 1.8F, true, hit.subtract(KNOCK_EDGE.scale(0.03))),
-                at(again + 5.0F, false, 0.42, -0.43, -0.93) });
+                at(rest, true, rested),
+                moving(at((rest + BRACE_TO) / 2.0F, false, rested.lerp(guarded, 0.5).add(SWING_OUT.scale(0.04))), 0,
+                        home, home),
+                at(BRACE_TO, false, guarded) });
         Track shield = new Track(Pose.SHIELD_FROM, Pose.SHIELD_TO + 1, new Key[] {
                 held(3, -0.44, -0.56, -0.90, -0.40, 0.06, -1.0, 0.06, 1.0, 0.12),
                 held(7, -0.46, -0.53, -0.91, -0.43, 0.06, -1.0, 0.07, 1.0, 0.12),
@@ -156,13 +180,14 @@ abstract class SwordEquip extends SwordKeys {
                 held(caught + 1.0F, -0.51, -0.545, -0.925, -0.46, 0.03, -1.0, 0.08, 1.0, 0.10),
                 held(caught + 4.0F, -0.50, -0.53, -0.92, -0.45, 0.05, -1.0, 0.08, 1.0, 0.12),
                 held(INSPECT_FROM + 2.0F, -0.54, -0.62, -0.94, -0.50, 0.0, -1.0, 0.10, 1.0, 0.10),
-                held(INSPECT_TO - 1.0F, -0.54, -0.61, -0.94, -0.50, 0.01, -1.0, 0.10, 1.0, 0.10),
-                raised(knock - 3.0F, 0.0),
-                moving(raised(knock, 0.0), Pose.SHIELD_FROM, new Vec3(0.0, 0.012, 0.0), KNOCK_EDGE.scale(0.03)),
-                raised(knock + 1.8F, 1.0),
-                moving(raised(again, 0.0), Pose.SHIELD_FROM, new Vec3(0.0, 0.01, 0.0), KNOCK_EDGE.scale(0.022)),
-                raised(again + 1.8F, 0.75),
-                held(again + 5.0F, -0.47, -0.49, -0.92, -0.43, 0.07, -1.0, 0.07, 1.0, 0.13) });
+                low,
+                braced(knock - 3.0F, 0.0),
+                moving(braced(knock, 0.0), Pose.SHIELD_FROM, BRACED_FACE.scale(0.01), KNOCK_EDGE.scale(0.03)),
+                braced(knock + 1.8F, 1.0),
+                moving(braced(again, 0.0), Pose.SHIELD_FROM, BRACED_FACE.scale(0.008), KNOCK_EDGE.scale(0.022)),
+                braced(again + 1.8F, 0.75),
+                braced(again + 3.5F, 0.1),
+                held(BRACE_TO, -0.49, -0.50, -0.92, -0.44, 0.06, -1.0, 0.08, 1.0, 0.12) });
         Track body = new Track(Pose.BODY_FROM, Pose.SIZE, new Key[] {
                 arrived(leaning(4, 0, 0.04F)),
                 leaning(toss - 3.0F, 5, 0.12F),
@@ -173,11 +198,12 @@ abstract class SwordEquip extends SwordKeys {
                 leaning(caught + 5.0F, -2, 0.02F),
                 leaning(INSPECT_FROM + 2.0F, -7, -0.05F),
                 leaning(INSPECT_TO - 1.0F, -5, -0.04F),
-                leaning(knock - WIND_TICKS - 0.5F, 10, -0.02F),
-                leaning(knock - 0.5F, -13, 0.10F),
-                leaning(again - AGAIN_TICKS - 0.3F, -7, 0.06F),
-                leaning(again - 0.5F, -12, 0.09F),
-                leaning(again + 3.0F, -4, 0.05F) });
+                leaning(knock - WIND_TICKS - 0.5F, 30, -0.02F),
+                leaning(knock - 0.5F, 20, 0.10F),
+                leaning(again - AGAIN_TICKS - 0.3F, 24, 0.06F),
+                leaning(again - 0.5F, 20, 0.09F),
+                leaning(again + 3.0F, 12, 0.05F),
+                leaning(BRACE_TO - 1.0F, -1, 0.02F) });
         MOVES.put(SwordMove.EQUIP, new Track[] { hand, new Track(Pose.BLADE, Pose.SHIELD_FROM, equipWrist()), shield,
                 body });
     }
@@ -186,14 +212,15 @@ abstract class SwordEquip extends SwordKeys {
      * The wrist as they take shape: upright as the sword grows, cocked back before the flick and snapping round with
      * it, turned ahead to meet the spin of the sword as it comes down and carried on by it; then turning the blade
      * before your eyes from the one flat over its edge to the other, slowly at first and last while the blade swings a
-     * little towards you; raised, and brought down edge first on the rim twice.
+     * little towards you; turned out ahead, swung in edge first flat across the face of the shield twice, and turned
+     * back up into the guard.
      */
     private static Key[] equipWrist() {
         float toss = SwordMove.TOSS;
         float caught = SwordMove.CATCH;
         float knock = SwordMove.KNOCK;
         float again = SwordMove.KNOCK_AGAIN;
-        Key[] keys = new Key[22];
+        Key[] keys = new Key[25];
         int k = 0;
         keys[k++] = wrist(4, false, new Vec3(0.06, 0.98, -0.18), new Vec3(-1.0, 0.0, 0.0));
         keys[k++] = wrist(8, false, UPRIGHT, FLAT);
@@ -206,44 +233,83 @@ abstract class SwordEquip extends SwordKeys {
         keys[k++] = wrist(caught + 3.6F, false, tossTurn(-0.07, UPRIGHT), tossTurn(-0.07, FLAT));
         Vec3 up = new Vec3(0.0, 1.0, 0.0);
         Vec3 facing = square(LOOKED_AT.cross(new Vec3(0.0, 0.0, 1.0)), LOOKED_AT);
+        Vec3 blade = LOOKED_AT;
+        Vec3 edge = facing;
         for (int i = 0; i <= 6; i++) {
             double u = Ease.smoother(i / 6.0);
             double swing = 0.16 - 0.32 * u;
-            Vec3 blade = Vectors.spin(LOOKED_AT, up, swing);
-            Vec3 edge = Vectors.spin(square(Vectors.spin(facing, up, swing), blade), blade, Math.PI * u);
-            keys[k++] = wrist(Mth.lerp(i / 6.0F, INSPECT_FROM, INSPECT_TO), false, blade, edge);
+            blade = Vectors.spin(LOOKED_AT, up, swing);
+            edge = Vectors.spin(square(Vectors.spin(facing, up, swing), blade), blade, Math.PI * u);
+            keys[k++] = wrist(Mth.lerp(i / 6.0F, INSPECT_FROM, INSPECT_TO), i == 6, blade, edge);
         }
-        // Raised, and swung down onto the rim: evenly faster all the way, bouncing off it; lifted a little way and
-        // swung down again, a lighter bang.
-        Vec3 bladeDown = KNOCKING.subtract(chopped(KNOCKING, WIND_TURN)).scale(2.0 / WIND_TICKS);
-        Vec3 edgeDown = KNOCK_EDGE.subtract(chopped(KNOCK_EDGE, WIND_TURN)).scale(2.0 / WIND_TICKS);
-        Vec3 bladeAgain = KNOCKING.subtract(chopped(KNOCKING, AGAIN_TURN)).scale(2.0 / AGAIN_TICKS);
-        Vec3 edgeAgain = KNOCK_EDGE.subtract(chopped(KNOCK_EDGE, AGAIN_TURN)).scale(2.0 / AGAIN_TICKS);
-        keys[k++] = wrist(knock - WIND_TICKS, true, chopped(KNOCKING, WIND_TURN), chopped(KNOCK_EDGE, WIND_TURN));
-        keys[k++] = moving(wrist(knock, false, KNOCKING, KNOCK_EDGE), bladeDown, edgeDown, bladeDown.scale(-BOUNCE),
-                edgeDown.scale(-BOUNCE));
+        // Turned out ahead of the shield in one sweep from where he looked it over, and swung in flat onto its face:
+        // evenly faster all the way (halfway through the swing it has come a quarter of the way round, half as fast as
+        // it strikes), bouncing off it; swung out a little way and in again, a lighter bang; resting on it a beat, and
+        // turned back up into the guard in one sweep.
+        double fast = 2.0 * WIND_TURN / WIND_TICKS;
+        double fastAgain = 2.0 * AGAIN_TURN / AGAIN_TICKS;
+        float wound = knock - WIND_TICKS;
+        float rest = again + REST_TICKS;
+        Vec3[] windUp = { chopped(KNOCKING, WIND_TURN), chopped(KNOCK_EDGE, WIND_TURN) };
+        Vec3[] rested = { chopped(KNOCKING, 0.08), chopped(KNOCK_EDGE, 0.08) };
+        keys[k++] = sweeping((INSPECT_TO + wound) / 2.0F, new Vec3[] { blade, edge }, windUp, wound - INSPECT_TO);
+        keys[k++] = wrist(wound, true, windUp[0], windUp[1]);
+        keys[k++] = swinging(knock - WIND_TICKS / 2.0F, 0.75 * WIND_TURN, fast / 2.0, fast / 2.0);
+        keys[k++] = swinging(knock, 0.0, fast, -BOUNCE * fast);
         keys[k++] = wrist(again - AGAIN_TICKS, true, chopped(KNOCKING, AGAIN_TURN), chopped(KNOCK_EDGE, AGAIN_TURN));
-        keys[k++] = moving(wrist(again, false, KNOCKING, KNOCK_EDGE), bladeAgain, edgeAgain,
-                bladeAgain.scale(-0.8 * BOUNCE), edgeAgain.scale(-0.8 * BOUNCE));
-        keys[k++] = wrist(again + 1.8F, true, chopped(KNOCKING, 0.08), chopped(KNOCK_EDGE, 0.08));
-        keys[k] = wrist(again + 5.0F, false, GUARD.blade(), GUARD.edge());
+        keys[k++] = swinging(again, 0.0, fastAgain, -0.8 * BOUNCE * fastAgain);
+        keys[k++] = wrist(rest, true, rested[0], rested[1]);
+        keys[k++] = sweeping((rest + BRACE_TO) / 2.0F, rested, new Vec3[] { GUARD.blade(), GUARD.edge() },
+                BRACE_TO - rest);
+        keys[k] = wrist(BRACE_TO, false, GUARD.blade(), GUARD.edge());
         return keys;
     }
 
-    /** The blade (or its edge) as it lies on the rim at a bang, turned {@code angle} (radians) back up off it. */
+    /** The blade (or its edge) as it lies on the face at a bang, turned {@code angle} (radians) back out ahead off it. */
     private static Vec3 chopped(Vec3 way, double angle) {
         return Vectors.spin(way, CHOP, -angle);
     }
 
     /**
-     * A key of the shield raised to meet the bangs, and how far ({@code give}, 0 to 1) it has given under the blade:
-     * pushed down along the way the blade struck, and tipped away from it.
+     * A key of the wrist swinging in onto the face: the blade turned {@code angle} (radians) out ahead off it, reached
+     * swinging in {@code in} and left swinging in {@code out} radians per tick (below 0: swinging back out).
      */
-    private static Key raised(float tick, double give) {
-        Vec3 tipped = Vectors.spin(RAISED_FACE, RAISED_FACE.cross(RAISED_TOP).normalize(), -0.07 * give);
-        Vec3 middle = RAISED.add(KNOCK_EDGE.scale(0.035 * give));
-        return held(tick, middle.x, middle.y, middle.z, tipped.x, tipped.y, tipped.z, RAISED_TOP.x, RAISED_TOP.y,
-                RAISED_TOP.z);
+    private static Key swinging(float tick, double angle, double in, double out) {
+        return moving(wrist(tick, false, chopped(KNOCKING, angle), chopped(KNOCK_EDGE, angle)),
+                swing(KNOCKING, angle, in), swing(KNOCK_EDGE, angle, in), swing(KNOCKING, angle, out),
+                swing(KNOCK_EDGE, angle, out));
+    }
+
+    /** How fast the blade (or its edge) turned {@code angle} out off the face moves, swinging in {@code speed}. */
+    private static Vec3 swing(Vec3 way, double angle, double speed) {
+        return CHOP.cross(chopped(way, angle)).scale(speed);
+    }
+
+    /**
+     * A key of the wrist halfway through one sweep of {@code ticks} from standing as {@code from} to standing as
+     * {@code to} (the blade and its edge, on whichever edge is nearer): turned half of the shortest way round, and
+     * turning half as fast again as it does on average, so the sweep speeds up and slows down again smoothly.
+     */
+    private static Key sweeping(float tick, Vec3[] from, Vec3[] to, float ticks) {
+        Vec3 edge = to[1].dot(from[1]) < 0.0 ? to[1].scale(-1.0) : to[1];
+        Vec3[] a = Vectors.frame(from[0], from[1]);
+        Vec3 turn = Vectors.turn(a, Vectors.frame(to[0], edge));
+        Vec3 blade = Vectors.turned(a[0], turn.scale(0.5));
+        Vec3 halfway = Vectors.turned(a[1], turn.scale(0.5));
+        Vec3 spin = turn.scale(1.5 / ticks);
+        return moving(wrist(tick, false, blade, halfway), spin.cross(blade), spin.cross(halfway), spin.cross(blade),
+                spin.cross(halfway));
+    }
+
+    /**
+     * A key of the shield braced for the bangs, and how far ({@code give}, 0 to 1) it has given under the blade: pushed
+     * back along the way the blade struck, its top tipped back under it.
+     */
+    private static Key braced(float tick, double give) {
+        Vec3 tipped = Vectors.spin(BRACED_FACE, BRACED_FACE.cross(BRACED_TOP).normalize(), 0.07 * give);
+        Vec3 top = square(BRACED_TOP, tipped);
+        Vec3 middle = BRACED.add(KNOCK_EDGE.scale(0.035 * give));
+        return held(tick, middle.x, middle.y, middle.z, tipped.x, tipped.y, tipped.z, top.x, top.y, top.z);
     }
 
     // When the sword starts to grow out of the fist as they take shape, and how long it takes to grow, in ticks.
@@ -309,26 +375,25 @@ abstract class SwordEquip extends SwordKeys {
     // ---- Banging it on the shield ----
 
     /**
-     * Where the fist is as the blade comes down on the rim of the shield, before your eyes: the edge of the blade just
-     * touches the rim there, {@link #STRIKE_AT} along it.
+     * Where the fist is as the blade strikes the face of the shield, before your eyes: the edge of the blade just
+     * touches the face there, {@link #STRIKE_AT} along it.
      */
     private static Vec3 contact() {
-        double clear = RIM_THICK * OWN_SHIELD + BLADE_WIDE * OWN_SWORD;
-        return STRUCK.subtract(KNOCK_EDGE.scale(clear)).subtract(KNOCKING.scale(STRIKE_AT * OWN_SWORD));
+        return STRUCK.subtract(KNOCK_EDGE.scale(BLADE_WIDE * OWN_SWORD)).subtract(KNOCKING.scale(STRIKE_AT * OWN_SWORD));
     }
 
-    /** Where the blade strikes the rim of the shield before your eyes at a bang {@code t} ticks in. */
+    /** Where the blade strikes the face of the shield before your eyes at a bang {@code t} ticks in. */
     private static Vec3 struck(float t) {
-        Pose shield = Pose.of(raised(t, 0.0).numbers());
-        return rim(shield.shield(), shield.shieldRight(), shield.top(), OWN_SHIELD);
+        Pose shield = Pose.of(braced(t, 0.0).numbers());
+        return onFace(shield.shield(), shield.shieldRight(), shield.top(), shield.face(), OWN_SHIELD);
     }
 
     /**
-     * Where the blade strikes the rim of a shield of scale {@code scale} at a bang: {@code middle} is its middle,
-     * {@code right} and {@code top} its own right and top.
+     * Where the blade strikes the face of a shield of scale {@code scale} at a bang: {@code middle} is its middle,
+     * {@code right}, {@code top} and {@code face} its own right, top and the way its face points.
      */
-    static Vec3 rim(Vec3 middle, Vec3 right, Vec3 top, double scale) {
-        return middle.add(right.scale(RIM_X * scale)).add(top.scale(RIM_Y * scale));
+    static Vec3 onFace(Vec3 middle, Vec3 right, Vec3 top, Vec3 face, double scale) {
+        return middle.add(right.scale(FACE_X * scale)).add(top.scale(FACE_Y * scale)).add(face.scale(FACE_OUT * scale));
     }
 
     /**

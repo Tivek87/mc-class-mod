@@ -111,50 +111,69 @@ abstract class HandDuoScript extends HandDuoMotion {
     static final double HANDS_DOWN = 0.75;
     /** How much of a fist's turn with the haft its wrist takes, twisting, so its forearm need not take all of it. */
     static final double WRIST_SHARE = 0.5;
+    /**
+     * How far off the haft (along its palm, at scale 1) a hand stays as it comes down on it until its fingers start to
+     * close.
+     */
+    static final double HOLD_CLEAR = 1.2;
+    /**
+     * Letting go of the haft, at scale 1: how far a hand drops off it (away from its palm) and then slides back off it
+     * (along its fingers), and how many ticks after letting go it starts to leave the haft for its own way up.
+     */
+    static final double DROP_OFF = 2.2;
+    static final double SLIDE_OFF = 2.4;
+    static final double LET_GO = 2.5;
 
     // The hands' poses in the air (right hand; the left mirrors them): where the wrist is, which way the fingers point
     // and which way the palm faces. Not one long: they are straightened out where they are used.
     /** Hovering in front of its portal after coming out: palm down, fingers towards the caster and in. */
-    static final Vec3 HOVER = new Vec3(-2.9, 6.3, 1.6);
-    private static final Vec3 HOVER_UP = new Vec3(0.45, -0.15, -1.0);
+    static final Vec3 HOVER = new Vec3(-4.5, 6.3, 1.4);
+    private static final Vec3 HOVER_UP = new Vec3(0.22, -0.15, -1.0);
     private static final Vec3 HOVER_PALM = new Vec3(0.05, -1.0, 0.1);
     /** Raised to snap: fingers up and in, palm to the caster. */
-    private static final Vec3 SNAPPING = new Vec3(-2.7, 8.2, 1.6);
-    private static final Vec3 SNAPPING_UP = new Vec3(0.55, 1.0, -0.2);
+    private static final Vec3 SNAPPING = new Vec3(-3.7, 8.3, 1.5);
+    private static final Vec3 SNAPPING_UP = new Vec3(0.4, 1.0, -0.2);
     private static final Vec3 SNAPPING_PALM = new Vec3(0.25, 0.0, -1.0);
     /** Hanging relaxed while the other hand makes its sign. */
-    private static final Vec3 WATCHING = new Vec3(-3.1, 7.0, 1.8);
-    private static final Vec3 WATCHING_UP = new Vec3(0.55, 0.15, -1.0);
+    private static final Vec3 WATCHING = new Vec3(-4.1, 7.0, 1.6);
+    private static final Vec3 WATCHING_UP = new Vec3(0.3, 0.15, -1.0);
     private static final Vec3 WATCHING_PALM = new Vec3(0.15, -1.0, -0.1);
     /** Beside the middle, palm to the other hand, to roll round it. */
-    private static final Vec3 ROLLING = new Vec3(-1.8, 6.6, 1.4);
-    private static final Vec3 ROLLING_UP = new Vec3(0.7, 0.35, -1.0);
-    private static final Vec3 ROLLING_PALM = new Vec3(1.0, 0.0, 0.15);
+    private static final Vec3 ROLLING = new Vec3(-2.9, 6.9, 1.3);
+    private static final Vec3 ROLLING_UP = new Vec3(0.0, 0.55, -1.0);
+    private static final Vec3 ROLLING_PALM = new Vec3(1.0, 0.0, 0.0);
     /** Flung apart, palm up and fingers spread, as if conjuring. */
     private static final Vec3 CONJURING = new Vec3(-4.2, 7.9, 2.2);
     private static final Vec3 CONJURING_UP = new Vec3(0.3, 0.35, -1.0);
     private static final Vec3 CONJURING_PALM = new Vec3(0.05, 1.0, 0.35);
-    /** Reaching over the haft sliding out. */
-    private static final Vec3 REACHING = new Vec3(-3.8, 7.8, 6.8);
+    /** Reaching over the haft sliding out: the right hand passes high over the left on its way to the far grip. */
+    private static final Vec3 REACHING = new Vec3(-4.0, 9.5, 7.0);
     private static final Vec3 REACHING_UP = new Vec3(1.0, 0.15, 0.1);
     private static final Vec3 REACHING_PALM = new Vec3(0.15, -1.0, 0.0);
     private static final Vec3 LEFT_REACHING = new Vec3(3.8, 7.8, 3.4);
     private static final Vec3 LEFT_REACHING_UP = new Vec3(-1.0, 0.2, -0.45);
     private static final Vec3 LEFT_REACHING_PALM = new Vec3(-0.15, -1.0, 0.0);
     /** About where each hand closes on the haft (the grip itself is worked out from the axe). */
-    private static final Vec3 GRABBING = new Vec3(-3.1, 6.85, 7.9);
+    private static final Vec3 GRABBING = new Vec3(-3.1, 7.9, 7.9);
     private static final Vec3 GRABBING_UP = new Vec3(1.0, 0.1, 0.0);
     private static final Vec3 GRABBING_PALM = new Vec3(0.1, -1.0, 0.0);
-    private static final Vec3 LEFT_GRABBING = new Vec3(3.1, 6.85, 4.1);
-    /** About where each hand holds the haft once it is stuck in the ground. */
-    private static final Vec3 LETTING_GO = new Vec3(-3.1, 4.8, 2.4);
-    private static final Vec3 LETTING_GO_UP = new Vec3(1.0, 0.2, -0.3);
-    private static final Vec3 LETTING_GO_PALM = new Vec3(0.0, 0.8, -0.6);
-    private static final Vec3 LEFT_LETTING_GO = new Vec3(3.1, 7.3, 5.8);
-    private static final Vec3 LEFT_LETTING_GO_UP = new Vec3(-1.0, 0.1, 0.1);
-    private static final Vec3 LEFT_LETTING_GO_PALM = new Vec3(0.0, 0.8, -0.6);
-    /** Rising off the haft, turning to the caster (turned halfway from letting go to the thumbs up; see RISING_TURN). */
-    private static final Vec3 RISING = new Vec3(-3.3, 8.0, 1.8);
+    private static final Vec3 LEFT_GRABBING = new Vec3(3.1, 7.9, 4.1);
+    /**
+     * About where each hand is once it has let go of the haft stuck in the ground: dropped off it and slid back off it
+     * along its own forearm (see DROP_OFF), still turned as it held it.
+     */
+    private static final Vec3 LETTING_GO = new Vec3(-5.6, 3.4, 3.5);
+    private static final Vec3 LETTING_GO_UP = new Vec3(1.0, -0.08, 0.06);
+    private static final Vec3 LETTING_GO_PALM = new Vec3(0.1, 0.8, -0.59);
+    private static final Vec3 LEFT_LETTING_GO = new Vec3(5.6, 5.6, 6.6);
+    private static final Vec3 LEFT_LETTING_GO_UP = new Vec3(-1.0, -0.08, 0.06);
+    private static final Vec3 LEFT_LETTING_GO_PALM = new Vec3(-0.1, 0.8, -0.59);
+    /**
+     * Rising clear of the haft, closing into a fist and turning to the caster (turned halfway from letting go to the
+     * thumbs up; see RISING_TURN).
+     */
+    private static final Vec3 RISING = new Vec3(-5.0, 6.6, 2.4);
+    private static final Vec3 LEFT_RISING = new Vec3(5.0, 8.4, 3.2);
     /**
      * The thumbs up: a fist, its knuckles to the caster and in, tipped up so the thumb (which grows out of the hand at
      * a slant) points straight up; worked out from where the painter's thumb points when it is straight.
@@ -181,7 +200,7 @@ abstract class HandDuoScript extends HandDuoMotion {
     /** Loosely curled, as a hand still in its portal. */
     private static final double[] BALLED = digits(0.55, 0.6, 0.62, 0.66, 0.4, 0.3, 0.3, 0.32, 0.35, 0.1, 0.0);
     /** Relaxed. */
-    private static final double[] LOOSE = digits(0.2, 0.24, 0.28, 0.33, 0.15, 0.16, 0.18, 0.2, 0.24, 0.08, 0.45);
+    private static final double[] LOOSE = digits(0.2, 0.24, 0.28, 0.33, 0.3, 0.16, 0.18, 0.2, 0.24, 0.08, 0.45);
     /** Ready to snap: middle finger pressed to the thumb tip, index loosely out, ring and little finger curled. */
     private static final double[] SNAP_READY = digits(0.1, 0.595, 0.86, 0.9, 0.568, 0.08, 0.0, 0.25, 0.3, 0.0, 0.15);
     /** The middle finger slammed down into the palm. */
@@ -199,13 +218,18 @@ abstract class HandDuoScript extends HandDuoMotion {
             1.0);
     /** Open, to grab. */
     private static final double[] OPEN = digits(0.14, 0.14, 0.17, 0.2, 0.08, 0.06, 0.06, 0.08, 0.1, 0.0, 0.55);
+    /**
+     * The same for the left hand: its thumb, which points up the haft at the right hand's little finger, kept in, its
+     * tip bent back so it passes over the haft as the hand comes down on it.
+     */
+    private static final double[] LEFT_OPEN = with(OPEN, 4, 0.32, 9, -0.5);
     /** Closed round the haft, the thumb over the fingers: fitted to the painter's finger sizes round HAFT_RADIUS. */
     private static final double[] GRIPPING = digits(0.61, 0.695, 0.651, 0.483, 0.62, 0.158, 0.144, 0.158, 0.095, 0.05,
             0.0);
-    /** Let go, opened wide. */
-    private static final double[] RELEASED = digits(0.1, 0.1, 0.12, 0.15, 0.06, 0.04, 0.04, 0.06, 0.08, 0.0, 0.5);
-    /** A fist, the thumb still out. */
-    private static final double[] FIST = digits(1.0, 1.0, 1.0, 1.0, 0.06, 0.1, 0.1, 0.1, 0.1, 0.0, 0.0);
+    /** Let go: opened just enough to come off the haft. */
+    private static final double[] RELEASED = digits(0.3, 0.32, 0.34, 0.36, 0.34, 0.08, 0.08, 0.08, 0.08, 0.0, 0.2);
+    /** A fist, the thumb over the fingers. */
+    private static final double[] FIST = digits(1.0, 1.0, 1.0, 1.0, 0.55, 0.1, 0.1, 0.1, 0.1, 0.1, 0.0);
     /** A fist with the thumb straight up. */
     private static final double[] THUMB_STRAIGHT = digits(1.0, 1.0, 1.0, 1.0, 0.0, 0.1, 0.1, 0.1, 0.1, 0.0, 0.0);
     /** Trailing behind as the hand pulls back. */
@@ -241,8 +265,8 @@ abstract class HandDuoScript extends HandDuoMotion {
     static final Track LEFT = new Track(
             new Key(OUT, true, HOVER, HOVER_UP, HOVER_PALM).mirrored(),
             new Key(OUT + 8, false, HOVER.add(0.1, 0.2, -0.05), HOVER_UP, HOVER_PALM).mirrored(),
-            new Key(SNAP - 4, false, HOVER.add(0.35, 0.35, -0.15), new Vec3(0.6, 0.0, -1.0), HOVER_PALM).mirrored(),
-            new Key(SNAP + 2, false, HOVER.add(0.4, 0.5, -0.1), new Vec3(0.55, 0.15, -1.0), HOVER_PALM).mirrored(),
+            new Key(SNAP - 4, false, HOVER.add(0.35, 0.35, -0.15), new Vec3(0.38, 0.0, -1.0), HOVER_PALM).mirrored(),
+            new Key(SNAP + 2, false, HOVER.add(0.4, 0.5, -0.1), new Vec3(0.34, 0.15, -1.0), HOVER_PALM).mirrored(),
             new Key(OK - 1, true, SNAPPING.add(0.0, -0.1, 0.1), SNAPPING_UP, SNAPPING_PALM).mirrored(),
             new Key(OK + 13, true, SNAPPING.add(0.0, 0.0, 0.1), SNAPPING_UP, SNAPPING_PALM).mirrored(),
             new Key(ROLL_FROM + 1, true, ROLLING, ROLLING_UP, ROLLING_PALM).mirrored(),
@@ -253,7 +277,7 @@ abstract class HandDuoScript extends HandDuoMotion {
             new Key(GRAB, true, LEFT_GRABBING, GRABBING_UP.multiply(-1.0, 1.0, 1.0),
                     GRABBING_PALM.multiply(-1.0, 1.0, 1.0)),
             new Key(RELEASE, true, LEFT_LETTING_GO, LEFT_LETTING_GO_UP, LEFT_LETTING_GO_PALM),
-            new Key(RELEASE + 6, false, RISING.multiply(-1.0, 1.0, 1.0), LEFT_RISING_TURN[0], LEFT_RISING_TURN[1]),
+            new Key(RELEASE + 6, false, LEFT_RISING, LEFT_RISING_TURN[0], LEFT_RISING_TURN[1]),
             new Key(THUMBS, true, THUMB_UP, THUMB_UP_UP, THUMB_UP_PALM).mirrored(),
             new Key(RETRACT, true, THUMB_UP, THUMB_UP_UP, THUMB_UP_PALM).mirrored());
 
@@ -273,7 +297,7 @@ abstract class HandDuoScript extends HandDuoMotion {
             .to(OPEN, AXE_OPENS + 3, 7.0, SMOOTH, OPENING)
             .to(GRIPPING, GRAB - 3, 3.5, SMOOTH, CLOSING)
             .to(RELEASED, RELEASE - 1.5, 3.0, SMOOTH, OPENING)
-            .to(FIST, THUMBS - 3.5, 3.0, SMOOTH, QUICK_CLOSING)
+            .to(FIST, RELEASE + 2.5, 4.0, SMOOTH, QUICK_CLOSING)
             .to(THUMB_STRAIGHT, THUMBS - 1.5, 1.0, POP, TOGETHER)
             .twitch(THUMBS, 1.2, digits(0.05, 0.05, 0.05, 0.05, 0.0, 0.06, 0.06, 0.06, 0.06, -0.14, 0.0))
             .to(TRAILING, RETRACT + 1, 5.0, SMOOTH, OPENING);
@@ -287,10 +311,10 @@ abstract class HandDuoScript extends HandDuoMotion {
             .to(CRAWLING, OK + 15.4, 5.0, SMOOTH, OPENING)
             .wave(OK + 16.4, OK + 21.4, AXE_OPENS - 6.6, AXE_OPENS - 3.6, 1.35, 1.25, 0.3, 0.25, 0.15)
             .to(SPREAD_WIDE, AXE_OPENS - 4.6, 4.0, EARLY, QUICK_OPENING)
-            .to(OPEN, AXE_OPENS + 3.4, 7.0, SMOOTH, OPENING)
+            .to(LEFT_OPEN, AXE_OPENS + 3.4, 7.0, SMOOTH, OPENING)
             .to(GRIPPING, GRAB - 3, 3.5, SMOOTH, CLOSING)
             .to(RELEASED, RELEASE - 1.1, 3.0, SMOOTH, OPENING)
-            .to(FIST, THUMBS - 3.1, 3.0, SMOOTH, QUICK_CLOSING)
+            .to(FIST, RELEASE + 2.9, 4.0, SMOOTH, QUICK_CLOSING)
             .to(THUMB_STRAIGHT, THUMBS - 1.1, 1.0, POP, TOGETHER)
             .twitch(THUMBS + 0.4, 1.2, digits(0.05, 0.05, 0.05, 0.05, 0.0, 0.06, 0.06, 0.06, 0.06, -0.14, 0.0))
             .to(TRAILING, RETRACT + 1.4, 5.0, SMOOTH, OPENING);

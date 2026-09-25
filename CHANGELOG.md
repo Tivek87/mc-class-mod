@@ -3,6 +3,16 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.0.2-alpha] - 2026-09-25
+
+### Changed
+- **Giant Hands, the axe pair:** the two hands no longer pass through each other. Their fingers stay clear while they
+  wave, reach over each other and grab the haft, and letting go they drop off the haft instead of through it.
+- **Sword & Shield, taking them out:** the shield stays facing forward, braced before you, and the sword swings out to
+  your right and in flat across the face of the shield twice (the second bang lighter), then back into the guard in
+  one sweep. Every turn in between is smoother, and seen from outside the blade lands flat on the face too. The shield
+  cannot block during the bangs, a moment longer than before.
+
 ## [0.0.1-alpha] - 2026-09-25
 
 The first release with a version number: Green Lantern and Doctor Octopus, the classes, stamina and spells as

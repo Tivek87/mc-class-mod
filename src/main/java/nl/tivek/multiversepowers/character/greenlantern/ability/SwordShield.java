@@ -338,7 +338,7 @@ public final class SwordShield extends SwordShieldBlows {
     /**
      * The sounds of taking the sword and shield out that fall after {@code from} and up to {@code to} ticks in: the
      * strap of the shield closing round the forearm, the flick that tosses the sword, its whir each time it turns half
-     * over in the air, the catch, the gleam running up the blade, and two bangs on the rim of the shield, the second
+     * over in the air, the catch, the gleam running up the blade, and two bangs on the face of the shield, the second
      * lighter.
      */
     public static void equipSounds(float from, float to, Sounding sounding) {

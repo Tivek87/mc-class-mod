@@ -221,9 +221,9 @@ final class SwordPoses extends SwordEquip {
     private static final Vec3 BODY_LET_GO;
     private static final Vec3 BODY_CAUGHT;
     private static final double HANDOFF = 2.0;
-    // How far the blade seen from outside is turned so it strikes the rim of the shield at each bang (a way times its
-    // angle), and where on the rim it strikes the first time, from the middle of the chest; and how long it takes to
-    // turn onto the rim before the first bang and back off it after the second, in ticks.
+    // How far the blade seen from outside is turned so it strikes the face of the shield at each bang (a way times its
+    // angle), and where on the face it strikes the first time, from the middle of the chest; and how long it takes to
+    // turn onto the face before the first bang and back off it after the second, in ticks.
     private static final Vec3 BODY_KNOCK_TURN;
     private static final Vec3 BODY_KNOCK_AGAIN_TURN;
     static final Vec3 BODY_STRUCK;
@@ -281,7 +281,7 @@ final class SwordPoses extends SwordEquip {
 
     /**
      * A bang seen from outside, {@code t} ticks in: the turn (a way times its angle) that brings the blade, as it is
-     * drawn in the fist, onto the rim of the shield as it is drawn on the forearm, and where on the rim it strikes.
+     * drawn in the fist, onto the face of the shield as it is drawn on the forearm, and where on the face it strikes.
      */
     private static Vec3[] bodyKnock(float t) {
         Pose pose = at(SwordMove.EQUIP, t, 0.0F, REST, null);
@@ -290,7 +290,7 @@ final class SwordPoses extends SwordEquip {
     }
 
     /**
-     * Where the blade of a body seen from outside strikes the rim of the shield at a bang, for this pose, as the model
+     * Where the blade of a body seen from outside strikes the face of the shield at a bang, for this pose, as the model
      * draws the arms (from the middle of the chest, see {@link #drawn}); and the way from the fist to where the blade
      * has to lie to strike it there with its edge.
      */
@@ -301,16 +301,16 @@ final class SwordPoses extends SwordEquip {
         // The body's own ways are a mirror image of the world's, so its right is worked out the other way round.
         Vec3 right = top.cross(face).normalize();
         Vec3 middle = drawn(pose, false).add(face.scale(SHIELD_OUT));
-        Vec3 struck = rim(middle, right, top, SHIELD_SCALE);
-        // The edge that leads down onto the rim (the pose may hold the blade by its other edge: it looks the same).
+        Vec3 struck = onFace(middle, right, top, face, SHIELD_SCALE);
+        // The edge that leads into the face (the pose may hold the blade by its other edge: it looks the same).
         Vec3 edge = square(way(KNOCK_EDGE), way(pose.blade()));
-        Vec3 aim = struck.subtract(edge.scale(RIM_THICK * SHIELD_SCALE + BLADE_WIDE * SWORD_SCALE)).subtract(grip);
+        Vec3 aim = struck.subtract(edge.scale(BLADE_WIDE * SWORD_SCALE)).subtract(grip);
         return new Vec3[] { struck, aim };
     }
 
     /**
      * How far the blade seen from outside is turned (a way times its angle) {@code t} ticks into taking them out, so
-     * that it comes down right on the rim at each bang: all of it at the bangs, eased in and out round them.
+     * that it lands right on the face of the shield at each bang: all of it at the bangs, eased in and out round them.
      */
     static Vec3 bodyKnockTurn(float t) {
         float knock = SwordMove.KNOCK;
@@ -331,7 +331,7 @@ final class SwordPoses extends SwordEquip {
     }
 
     /**
-     * How much of the way onto the rim of the shield the blade seen from outside is turned {@code t} ticks into taking
+     * How much of the way onto the face of the shield the blade seen from outside is turned {@code t} ticks into taking
      * them out, 0 to 1 (see {@link #bodyKnockTurn}).
      */
     static float bodyKnocking(float t) {
@@ -347,7 +347,7 @@ final class SwordPoses extends SwordEquip {
     /**
      * How far your own eyes follow the sword while you take them out, {@code t} ticks in, as a turn up and a turn to
      * the right (radians): up after the tossed sword (a moment ahead of it, the way eyes lead), at the blade as you
-     * look it over, and a little at the rim of the shield as you bang it. {@code pose} is the pose right now.
+     * look it over, and down at the face of the shield as you bang it. {@code pose} is the pose right now.
      */
     static float[] look(float t, Pose pose) {
         float[] look = new float[2];
@@ -365,7 +365,7 @@ final class SwordPoses extends SwordEquip {
         double bang = Ease.smooth((t - (SwordMove.KNOCK - 5.0F)) / 4.0F)
                 * (1.0 - Ease.smooth((t - (SwordMove.KNOCK_AGAIN + 1.0F)) / 6.0F));
         if (bang > 0.0) {
-            glance(look, STRUCK, bang, 0.3, 0.3, 10.0);
+            glance(look, STRUCK, bang, 0.45, 0.3, 14.0);
         }
         return look;
     }
