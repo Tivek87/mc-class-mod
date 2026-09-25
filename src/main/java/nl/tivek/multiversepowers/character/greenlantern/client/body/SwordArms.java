@@ -98,8 +98,10 @@ public final class SwordArms {
     // How many earlier moments the streak of a swung blade reaches back over, and how far apart they are, in ticks.
     private static final int TRAIL = 10;
     private static final float TRAIL_STEP = 0.45F;
-    // How long ago the blade is looked back at to tell which way it sweeps (it leads with its edge), in ticks.
+    // How long ago the blade is looked back at to tell which way it sweeps (it leads with its edge), in ticks; and how
+    // long a move that cut taking them out short takes before its edge fully leads (taking them out, it never does).
     private static final float LEAD_STEP = 0.35F;
+    private static final float LEAD_IN = 3.0F;
     // How long the shield takes to come up to block, or to go back down, in ticks.
     private static final float BLOCK_TICKS = 1.8F;
     // A charge widens your view this much.
@@ -119,7 +121,8 @@ public final class SwordArms {
     // from the game's own arms), not from where they were then, in ticks.
     private static final float STALE = 10.0F;
     // How long the eyes (or the head seen from outside) take to come back from following the sword when a move or a
-    // break cuts taking them out short, in ticks.
+    // break cuts taking them out short (or they are gone at once), and the blade seen from outside off the rim of the
+    // shield, in ticks.
     private static final float LOOK_BACK = 6.0F;
     // How far back in time the arms are looked at to tell how fast they move, in ticks.
     private static final float SPEED_STEP = 0.05F;
@@ -165,11 +168,22 @@ public final class SwordArms {
     private static float kickAt = -100.0F;
     private static float kickRoll;
     private static float kickHard;
+    // How much your eyes follow the sword and a blow jolts your view (0 to 1): all of it while the sword and shield are
+    // drawn in your hands, easing in and out as they come and go there (see handsFree), and when that was worked out
+    // last (client ticks). How far your eyes followed the sword last (see ownLook), and, once the sword and shield were
+    // gone at once (see forget), from then on and from how far they come back.
+    private static float shown;
+    private static float shownAt = Float.NaN;
+    @Nullable
+    private static float[] looked;
+    @Nullable
+    private static float[] lookGone;
+    private static float lookGoneAt;
 
     /**
      * What one body's arms are doing: the move and when it began (client ticks), where the arms were as it began and
-     * how fast they moved then, when they were posed last, when the sword and shield began to break up, the move before
-     * (while the eyes come back from it) and how far its shield is up.
+     * how fast they moved then, when they were posed last, when the sword and shield began to break up and how long
+     * after they took shape that was, the move before (while the eyes come back from it) and how far its shield is up.
      */
     private static final class Blend {
         @Nullable
@@ -180,6 +194,7 @@ public final class SwordArms {
         float[] fromSpeed;
         float posedAt = Float.NaN;
         float brokeAt = Float.NaN;
+        float formed;
         @Nullable
         SwordMove before;
         float beforeStart;
@@ -240,8 +255,8 @@ public final class SwordArms {
                 || now - blend.brokeAt >= LOWER_FROM + LOWER_TICKS) {
             return null;
         }
-        return new State(blend.move, now - blend.start, now - blend.brokeAt + SwordMove.EQUIP.ticks(),
-                now - blend.brokeAt, new Vec3(0.0, 0.0, 1.0), false, false);
+        return new State(blend.move, now - blend.start, blend.formed + now - blend.brokeAt, now - blend.brokeAt,
+                new Vec3(0.0, 0.0, 1.0), false, false);
     }
 
     /**
@@ -284,6 +299,7 @@ public final class SwordArms {
             float broke = now - state.broken();
             if (Float.isNaN(blend.brokeAt) || Math.abs(blend.brokeAt - broke) > 1.5F) {
                 blend.brokeAt = broke;
+                blend.formed = formed(state);
             }
         } else {
             blend.brokeAt = Float.NaN;
@@ -320,7 +336,8 @@ public final class SwordArms {
 
     /**
      * The pose right now with the edge of the blade leading the way it sweeps (see {@link SwordPoses#led}); taking them
-     * out, the blade is turned exactly as the moves of the wrist say.
+     * out, the blade is turned exactly as the moves of the wrist say, and a move that cut that short only comes to lead
+     * with its edge over a moment, not all at once.
      */
     private static SwordPoses.Pose leading(Entity player, State state, float partialTick) {
         SwordPoses.Pose pose = pose(player, state, partialTick);
@@ -328,13 +345,25 @@ public final class SwordArms {
             return pose;
         }
         Blend blend = BLENDS.get(player.getId());
-        return SwordPoses.led(pose, earlier(blend, state, now(partialTick), LEAD_STEP));
+        float now = now(partialTick);
+        boolean cutShort = blend.before == SwordMove.EQUIP && !Float.isNaN(blend.switchedAt)
+                && blend.switchedAt - blend.beforeStart < SwordMove.EQUIP.ticks();
+        float amount = cutShort ? (float) Ease.smoother((now - blend.switchedAt) / LEAD_IN) : 1.0F;
+        return SwordPoses.led(pose, earlier(blend, state, now, LEAD_STEP), amount);
+    }
+
+    /**
+     * How many ticks after they began to take shape the sword and shield were as they began to break up (or are now,
+     * while whole): what had grown by then is all that breaks up.
+     */
+    private static float formed(State state) {
+        return state.broken() < 0.0F ? state.age() : state.age() - state.broken();
     }
 
     /**
      * How far into taking them out the eyes (or the head seen from outside) follow the sword right now, and how much:
      * while he takes them out, and for a moment after a move or a break cut that short, as they come back. Null when
-     * they do not.
+     * they do not. The blade seen from outside comes off the rim of the shield the same way.
      */
     @Nullable
     private static float[] watching(Blend blend, State state, float now) {
@@ -485,7 +514,13 @@ public final class SwordArms {
 
     /** They are gone at once, without breaking up: you are no longer Green Lantern, or left the world. */
     public static void forget() {
+        if (own != null && looked != null) {
+            // Your eyes still come back from following the sword, the way they do when it breaks up.
+            lookGone = looked;
+            lookGoneAt = now(Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(false));
+        }
         own = null;
+        looked = null;
         shards = null;
         drawn = null;
     }
@@ -632,34 +667,90 @@ public final class SwordArms {
 
     /**
      * Your own view in first person: while you take them out your eyes follow the sword (up after it as it flies, at
-     * the blade as you look it over, down at the shield as you bang it), and a blow that landed jolts it.
+     * the blade as you look it over, down at the shield as you bang it), and a blow that landed jolts it. Only while
+     * the sword and shield are drawn in your hands (see {@link #handsFree}), easing in and out as they come and go
+     * there; gone at once, your eyes still come back over a moment. Never over the top or under your feet.
      */
     @SubscribeEvent
     public static void onCameraAngles(ViewportEvent.ComputeCameraAngles event) {
         Minecraft minecraft = Minecraft.getInstance();
-        if (own == null || minecraft.player == null || event.getCamera().getEntity() != minecraft.player
-                || event.getCamera().isDetached()) {
+        LocalPlayer player = minecraft.player;
+        if (player == null || event.getCamera().getEntity() != player || event.getCamera().isDetached()) {
+            looked = null;
             return;
         }
         float partialTick = (float) event.getPartialTick();
-        float[] look = ownLook(minecraft.player, partialTick);
-        if (look != null) {
-            event.setPitch(event.getPitch() - look[0] * Mth.RAD_TO_DEG);
-            event.setYaw(event.getYaw() + look[1] * Mth.RAD_TO_DEG);
+        float now = now(partialTick);
+        float step = Float.isNaN(shownAt) ? 1.0F : Mth.clamp(now - shownAt, 0.0F, LOOK_BACK) / LOOK_BACK;
+        shownAt = now;
+        shown = own != null && handsFree(player) ? Math.min(1.0F, shown + step) : Math.max(0.0F, shown - step);
+        if (own == null) {
+            looked = null;
+            float[] gone = lookGone(now);
+            if (gone != null) {
+                turn(event, gone);
+            }
+            return;
         }
-        float since = now(partialTick) - kickAt;
+        float[] look = ownLook(player, partialTick);
+        looked = look;
+        if (look != null) {
+            turn(event, look);
+        }
+        float since = now - kickAt;
         if (since < 0.0F || since >= KICK_TICKS) {
             return;
         }
         float fade = 1.0F - since / KICK_TICKS;
-        float kick = kickHard * fade * fade * ClientSettings.cameraShake();
+        float kick = kickHard * fade * fade * ClientSettings.cameraShake() * (float) Ease.smooth(shown);
         event.setRoll(event.getRoll() + KICK_ROLL * kickRoll * kick);
-        event.setPitch(event.getPitch() + KICK_DIP * kick);
+        event.setPitch(Mth.clamp(event.getPitch() + KICK_DIP * kick, -90.0F, 90.0F));
+    }
+
+    /** Turns the view up and to the right by {@code look} (radians), never over the top or under your feet. */
+    private static void turn(ViewportEvent.ComputeCameraAngles event, float[] look) {
+        event.setPitch(event.getPitch() - lookUp(event.getPitch(), look[0]) * Mth.RAD_TO_DEG);
+        event.setYaw(event.getYaw() + look[1] * Mth.RAD_TO_DEG);
+    }
+
+    /**
+     * How far (radians) the view looking {@code pitch} (degrees, the game's own: up below 0) really turns up to follow
+     * the sword {@code up} radians: never past straight up or straight down.
+     */
+    private static float lookUp(float pitch, float up) {
+        return (pitch - Mth.clamp(pitch - up * Mth.RAD_TO_DEG, -90.0F, 90.0F)) * Mth.DEG_TO_RAD;
+    }
+
+    /**
+     * How far your eyes still follow the sword and shield that were gone at once (see {@link #forget}): coming back
+     * over a moment, the way they do when they break up. Null once they are back.
+     */
+    @Nullable
+    private static float[] lookGone(float now) {
+        float[] gone = lookGone;
+        if (gone == null) {
+            return null;
+        }
+        float back = 1.0F - (float) Ease.smooth((now - lookGoneAt) / LOOK_BACK);
+        if (back <= 0.0F) {
+            lookGone = null;
+            return null;
+        }
+        return new float[] { gone[0] * back, gone[1] * back };
+    }
+
+    /**
+     * True while your own sword and shield can be drawn in your hands in first person: nothing else is in them, and you
+     * are not invisible.
+     */
+    private static boolean handsFree(LocalPlayer player) {
+        return !player.isInvisible() && player.getMainHandItem().isEmpty() && player.getOffhandItem().isEmpty();
     }
 
     /**
      * How far your own eyes follow the sword right now, as a turn up and a turn to the right (radians), or null when
-     * they do not: as far as your camera shake setting lets them (never more than the mod makes it).
+     * they do not: as far as your camera shake setting lets them (never more than the mod makes it), and only while
+     * the sword and shield are drawn in your hands (see {@link #onCameraAngles}).
      */
     @Nullable
     private static float[] ownLook(LocalPlayer player, float partialTick) {
@@ -679,13 +770,17 @@ public final class SwordArms {
         float t = watching[0];
         SwordPoses.Pose pose = state.move() == SwordMove.EQUIP ? posed : taking(t, now);
         float[] look = SwordPoses.look(t, pose);
-        float amount = watching[1] * feel;
+        float amount = watching[1] * feel * (float) Ease.smooth(shown);
         return new float[] { look[0] * amount, look[1] * amount };
     }
 
     @SubscribeEvent
     public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
         own = null;
+        shown = 0.0F;
+        shownAt = Float.NaN;
+        looked = null;
+        lookGone = null;
         shards = null;
         drawn = null;
         BLENDS.clear();
@@ -909,14 +1004,29 @@ public final class SwordArms {
         }
         Vec3 bladeWay = SwordPoses.way(pose.blade());
         Vec3 edgeWay = SwordPoses.way(pose.edge());
-        if (state.move() == SwordMove.EQUIP) {
-            // Brought down right onto the rim of the shield at each bang.
-            Vec3 turn = SwordPoses.bodyKnockTurn(state.t());
+        Blend blend = BLENDS.get(player.getId());
+        float now = now(partialTick);
+        float[] knock = watching(blend, state, now);
+        if (knock != null) {
+            // Brought down right onto the rim of the shield at each bang (and off it over a moment when a move cuts
+            // that short).
+            Vec3 turn = SwordPoses.bodyKnockTurn(knock[0]).scale(knock[1]);
             bladeWay = SwordPoses.turnedBy(bladeWay, turn);
             edgeWay = SwordPoses.turnedBy(edgeWay, turn);
         }
         Vec3 forward = spot.world(bladeWay, 0.0F);
         Vec3 edge = spot.world(edgeWay, 0.0F);
+        float onto = knock == null ? 0.0F : SwordPoses.bodyKnocking(knock[0]) * knock[1];
+        if (onto > 0.0F) {
+            // His arms are drawn a little off from where the pose works them out (the game's own swing of the arms as
+            // he walks, slim arms): the blade turns that much further, so it still comes down on the rim as drawn.
+            Vec3 aim = spot.world(SwordPoses.bodyStrike(pose)[1], 0.0F);
+            Vec3 off = spot.mount().subtract(spot.at(SwordPoses.drawn(pose, false)))
+                    .subtract(spot.grip().subtract(spot.at(SwordPoses.drawn(pose, true))));
+            Vec3 turn = SwordPoses.turnOnto(aim, aim.add(off.scale(onto)));
+            forward = SwordPoses.turnedBy(forward, turn);
+            edge = SwordPoses.turnedBy(edge, turn);
+        }
         Vec3 grip = spot.grip();
         float flying = flying(state);
         if (flying >= 0.0F) {
@@ -940,14 +1050,14 @@ public final class SwordArms {
             edge = flight.edge();
         }
         SwordPainter.sword(painter, grip, forward, edge, SwordPoses.SWORD_SCALE,
-                SwordPoses.swordGrown(state.move(), state.age()), apart);
+                SwordPoses.swordGrown(state.move(), formed(state)), apart);
         if (apart <= 0.0) {
             gleam(painter, state, grip, forward, SwordPoses.SWORD_SCALE);
         }
         Vec3 face = spot.world(SwordPoses.way(pose.face()), 0.0F);
         Vec3 top = spot.world(SwordPoses.way(pose.top()), 0.0F);
         Vec3 middle = spot.mount().add(face.scale(SwordPoses.SHIELD_OUT));
-        double shieldGrown = SwordPoses.shieldGrown(state.move(), state.age());
+        double shieldGrown = SwordPoses.shieldGrown(state.move(), formed(state));
         SwordPainter.shield(painter, middle, face, top, SwordPoses.SHIELD_SCALE, shieldGrown, apart);
         if (apart > 0.0) {
             return;
@@ -958,8 +1068,6 @@ public final class SwordArms {
         clang(painter, state, middle, face, top, SwordPoses.SHIELD_SCALE);
         // Where the middle of his chest is: worked back from where his fist was drawn.
         Vec3 chest = spot.grip().subtract(spot.world(SwordPoses.body(pose.hand()), 0.0F));
-        Blend blend = BLENDS.get(player.getId());
-        float now = now(partialTick);
         trail(painter, state, (ago, from) -> {
             SwordPoses.Pose at = earlier(blend, state, now, ago);
             float turn = pose.orbit() - at.orbit();
@@ -1121,8 +1229,7 @@ public final class SwordArms {
     public static void onRenderHand(RenderHandEvent event) {
         Minecraft minecraft = Minecraft.getInstance();
         LocalPlayer player = minecraft.player;
-        if (player == null || own == null || player.isInvisible() || !player.getMainHandItem().isEmpty()
-                || !player.getOffhandItem().isEmpty()) {
+        if (player == null || own == null || !handsFree(player)) {
             return;
         }
         event.setCanceled(true);
@@ -1142,7 +1249,7 @@ public final class SwordArms {
         stack.pushPose();
         float[] look = ownLook(player, partialTick);
         if (look != null) {
-            stack.mulPose(Axis.XP.rotation(-look[0]));
+            stack.mulPose(Axis.XP.rotation(-lookUp(player.getViewXRot(partialTick), look[0])));
             stack.mulPose(Axis.YP.rotation(look[1]));
         }
         MultiBufferSource buffers = event.getMultiBufferSource();
@@ -1194,8 +1301,8 @@ public final class SwordArms {
             blade = flight.blade();
             edge = flight.edge();
         }
-        float swordGrown = SwordPoses.swordGrown(state.move(), state.age());
-        float shieldGrown = SwordPoses.shieldGrown(state.move(), state.age());
+        float swordGrown = SwordPoses.swordGrown(state.move(), formed(state));
+        float shieldGrown = SwordPoses.shieldGrown(state.move(), formed(state));
         SwordPainter.sword(painter, grip, blade, edge, SwordPoses.OWN_SWORD, swordGrown, apart);
         SwordPainter.shield(painter, pose.shield(), pose.face(), pose.top(), SwordPoses.OWN_SHIELD, shieldGrown, apart);
         if (apart > 0.0) {

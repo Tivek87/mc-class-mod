@@ -255,21 +255,23 @@ public final class SwordPainter {
      */
     public static void sword(LanternPainter painter, Vec3 grip, Vec3 forward, Vec3 edge, double scale, double grown,
             double apart) {
-        ConstructPainter.Frame frame = frame(grip, forward, edge, scale);
+        if (grown <= 0.01) {
+            return;
+        }
+        ConstructPainter.Frame whole = frame(grip, forward, edge, scale);
+        // Growing: the hilt takes its full width first, and the blade runs out of it to its point. Broken up while it
+        // grows, only what had grown flies apart.
+        double wide = Math.min(1.0, grown * 1.8);
+        ConstructPainter.Frame frame = grown < 1.0 ? whole.stretched(wide, wide, grown) : whole;
         if (apart > 0.0) {
             painter.fling(FLING);
             painter.shattered(SWORD, frame, apart, 1.2);
             painter.fling(1.0);
             return;
         }
-        if (grown <= 0.01) {
-            return;
-        }
-        // Growing: the hilt takes its full width first, and the blade runs out of it to its point.
-        double wide = Math.min(1.0, grown * 1.8);
         painter.glare(0.75 * (1.0 - grown));
         painter.ambient(0.12);
-        painter.shape(SWORD, grown < 1.0 ? frame.stretched(wide, wide, grown) : frame, 1.0, 1.0);
+        painter.shape(SWORD, frame, 1.0, 1.0);
         painter.ambient(0.0);
         painter.glare(0.0);
         if (grown < 1.0) {
@@ -287,16 +289,24 @@ public final class SwordPainter {
      */
     public static void shield(LanternPainter painter, Vec3 center, Vec3 face, Vec3 up, double scale, double grown,
             double apart) {
+        if (grown <= 0.0) {
+            return;
+        }
         ConstructPainter.Frame whole = frame(center, face, up, scale);
         double spread = spread(grown);
         ConstructPainter.Frame frame = grown < 1.0 ? whole.stretched(spread, spread, 1.0) : whole;
+        double half = RIM_ALONG[RIM_ALONG.length - 1] / 2.0;
+        double run = (grown - RIM_FROM) / (RIM_UNTIL - RIM_FROM);
+        double head = half * Mth.clamp(run, 0.0, 1.0);
         if (apart > 0.0) {
+            // Broken up while it takes shape, only what had formed flies apart.
             painter.fling(FLING);
-            painter.shattered(SHIELD, frame, apart, 1.2);
+            if (grown >= 1.0) {
+                painter.shattered(SHIELD, frame, apart, 1.2);
+            } else {
+                formed(whole, frame, grown, run, (shape, at, seed) -> painter.shattered(shape, at, apart, 1.2, seed));
+            }
             painter.fling(1.0);
-            return;
-        }
-        if (grown <= 0.0) {
             return;
         }
         painter.ambient(0.12);
@@ -306,29 +316,7 @@ public final class SwordPainter {
             return;
         }
         painter.glare(0.75 * (1.0 - grown));
-        double boss = Ease.backOut(grown / BOSS_UNTIL);
-        painter.shape(SHIELD_BOSS, whole.stretched(boss, boss, boss), 1.0, 1.0);
-        if (grown > SPREAD_FROM) {
-            painter.shape(SHIELD_BODY, frame, 1.0, 1.0);
-        }
-        // The rim, behind the two ends of the bright edge running round from the middle of the top.
-        double half = RIM_ALONG[RIM_ALONG.length - 1] / 2.0;
-        double run = (grown - RIM_FROM) / (RIM_UNTIL - RIM_FROM);
-        double head = half * Mth.clamp(run, 0.0, 1.0);
-        if (head > 0.0) {
-            rim(painter, frame, head);
-        }
-        for (int i = 0; i < RIVETS.length; i++) {
-            double popped = Ease.backOut((half * run - rivetRound(i)) / RIVET_POP);
-            if (popped > 0.0) {
-                Vec3 at = RIVETS[i];
-                painter.mesh(RIVET, frame.moved(at.x, at.y, at.z).stretched(popped, popped, popped), 1.0, 1.0);
-            }
-        }
-        if (grown > BACK_FROM) {
-            double closed = Ease.backOut((grown - BACK_FROM) / (1.0 - BACK_FROM));
-            painter.shape(SHIELD_BACK, frame.moved(GRIP_X, 0.0, 0.0).stretched(closed, closed, closed), 1.0, 1.0);
-        }
+        formed(whole, frame, grown, run, (shape, at, seed) -> painter.shape(shape, at, 1.0, 1.0));
         painter.glare(0.0);
         painter.ambient(0.0);
         // The light it takes shape out of: burning at the boss as it forms, running round as the two ends of the bright
@@ -341,6 +329,44 @@ public final class SwordPainter {
         if (run >= 1.0) {
             double flash = 1.0 - (grown - RIM_UNTIL) / (1.0 - RIM_UNTIL);
             painter.flare(frame.at(0.0, -0.7, 0.0), 0.25 * scale * (1.5 - flash), flash);
+        }
+    }
+
+    /** Something done with one part of a shield taking shape, at its own frame: drawn, or broken up. */
+    @FunctionalInterface
+    private interface Part {
+        void at(ConstructPainter.Shape shape, ConstructPainter.Frame frame, int seed);
+    }
+
+    /**
+     * Every part of a shield that has formed so far, taking shape {@code grown} of the way ({@code run} of the way the
+     * bright edge has run round its rim): the boss, the body spread out from it, the rim behind the two ends of the
+     * bright edge running round from the middle of the top, the rivets popped up after them, and the pad, strap and
+     * grip on its back. Each comes with a piece number of its own, for the way it flies off when it breaks up.
+     */
+    private static void formed(ConstructPainter.Frame whole, ConstructPainter.Frame frame, double grown, double run,
+            Part part) {
+        double boss = Ease.backOut(grown / BOSS_UNTIL);
+        part.at(SHIELD_BOSS, whole.stretched(boss, boss, boss), 0);
+        if (grown > SPREAD_FROM) {
+            part.at(SHIELD_BODY, frame, 8);
+        }
+        double half = RIM_ALONG[RIM_ALONG.length - 1] / 2.0;
+        double head = half * Mth.clamp(run, 0.0, 1.0);
+        if (head > 0.0) {
+            part.at(ConstructPainter.Shape.of(rim(head)), frame, 24);
+        }
+        for (int i = 0; i < RIVETS.length; i++) {
+            double popped = Ease.backOut((half * run - rivetRound(i)) / RIVET_POP);
+            if (popped > 0.0) {
+                Vec3 at = RIVETS[i];
+                part.at(ConstructPainter.Shape.of(RIVET), frame.moved(at.x, at.y, at.z).stretched(popped, popped,
+                        popped), 60 + i);
+            }
+        }
+        if (grown > BACK_FROM) {
+            double closed = Ease.backOut((grown - BACK_FROM) / (1.0 - BACK_FROM));
+            part.at(SHIELD_BACK, frame.moved(GRIP_X, 0.0, 0.0).stretched(closed, closed, closed), 90);
         }
     }
 
@@ -362,21 +388,23 @@ public final class SwordPainter {
         return Math.min(round, RIM_ALONG[RIM_ALONG.length - 1] - round);
     }
 
-    /** The rim of the shield as far as {@code head} round from the middle of its top, both ways. */
-    private static void rim(LanternPainter painter, ConstructPainter.Frame frame, double head) {
+    /** The pieces of the rim of the shield as far as {@code head} round from the middle of its top, both ways. */
+    private static Mesh[] rim(double head) {
         double length = RIM_ALONG[RIM_ALONG.length - 1];
         double tail = length - head;
+        List<Mesh> pieces = new ArrayList<>();
         for (int i = 0; i < RIM_EDGES.length; i++) {
             double from = RIM_ALONG[i];
             double to = RIM_ALONG[i + 1];
             if (to <= head || from >= tail) {
-                painter.mesh(RIM_EDGES[i], frame, 1.0, 1.0);
+                pieces.add(RIM_EDGES[i]);
             } else if (from < head) {
-                painter.mesh(Mesh.tube(false, 6, RIM_THICK, 1.4, RIM[i], rimAt(head)), frame, 1.0, 1.0);
+                pieces.add(Mesh.tube(false, 6, RIM_THICK, 1.4, RIM[i], rimAt(head)));
             } else if (to > tail) {
-                painter.mesh(Mesh.tube(false, 6, RIM_THICK, 1.4, rimAt(tail), RIM[i + 1]), frame, 1.0, 1.0);
+                pieces.add(Mesh.tube(false, 6, RIM_THICK, 1.4, rimAt(tail), RIM[i + 1]));
             }
         }
+        return pieces.toArray(Mesh[]::new);
     }
 
     /** The point of the rim {@code round} round it from the middle of its top (in the shield's own blocks). */

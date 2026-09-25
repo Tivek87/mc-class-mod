@@ -140,6 +140,9 @@ public final class AirStrike implements Effect {
     private static final double LOWEST = 21.0;
     private static final double LOOK_REACH = 32.0;
     private static final double LOOK_AHEAD = 16.0;
+    // How many times along one tick of its dive a part of the plane that is inside something looks again for where it
+    // comes out in the clear (see diveStrikes).
+    private static final int CLEAR_STEPS = 4;
     // How far above and below its sensor's line a creature may be to be marked, in blocks.
     private static final double SCAN_HIGH = 48.0;
     // Rounds: how far round the line of a round a creature still takes it, how far past what it aimed at a round flies
@@ -233,6 +236,10 @@ public final class AirStrike implements Effect {
             PowerRing.tell(owner, "busy_fist");
             return false;
         }
+        if (GiantHands.waving(owner)) {
+            // The ring hand waves a giant hand up: it does nothing else meanwhile.
+            return false;
+        }
         double height = room(level, owner);
         if (height < LOWEST) {
             PowerRing.tell(owner, "no_sky");
@@ -306,11 +313,8 @@ public final class AirStrike implements Effect {
         for (int k = 1; k <= steps && end >= 1.0; k++) {
             Vec3[] next = reaches(full, full.diveTick() + k);
             for (int p = 0; p < next.length; p++) {
-                BlockHitResult strike = LoadedWorld.clip(level, new ClipContext(last[p], next[p],
-                        ClipContext.Block.COLLIDER, ClipContext.Fluid.ANY, CollisionContext.empty()));
-                if (strike.getType() != HitResult.Type.MISS) {
-                    double part = last[p].distanceTo(strike.getLocation())
-                            / Math.max(1.0E-6, last[p].distanceTo(next[p]));
+                double part = diveStrikes(level, last[p], next[p]);
+                if (part >= 0.0) {
                     end = Math.min(end, (k - 1 + part) / steps);
                 }
             }
@@ -319,6 +323,27 @@ public final class AirStrike implements Effect {
         // Rounded down the way clients get it, so both work out the very same crash, and it strikes a hair before any
         // part would sink into the ground.
         return new PlanePath(start, way, drop, attack, Math.max(0.05, Math.floor(end * 100.0) / 100.0));
+    }
+
+    /**
+     * How far along its way from {@code from} to {@code to} a part of the diving plane strikes something (0 to 1), or
+     * -1 when it strikes nothing. A part already inside something (a wingtip through a treetop as it drones on)
+     * strikes only what it meets once it is out in the clear again, looked for from a little further on each time.
+     */
+    private static double diveStrikes(ServerLevel level, Vec3 from, Vec3 to) {
+        double length = Math.max(1.0E-6, from.distanceTo(to));
+        for (int s = 0; s < CLEAR_STEPS; s++) {
+            Vec3 start = from.lerp(to, (double) s / CLEAR_STEPS);
+            BlockHitResult strike = LoadedWorld.clip(level, new ClipContext(start, to, ClipContext.Block.COLLIDER,
+                    ClipContext.Fluid.ANY, CollisionContext.empty()));
+            if (strike.getType() == HitResult.Type.MISS) {
+                return -1.0;
+            }
+            if (!strike.isInside()) {
+                return from.distanceTo(strike.getLocation()) / length;
+            }
+        }
+        return -1.0;
     }
 
     /** The parts of the plane that reach out furthest (see {@link PlanePath#REACHES}) on tick {@code t}. */
@@ -353,10 +378,14 @@ public final class AirStrike implements Effect {
         if (ACTIVE.get(this.owner.getUUID()) != this) {
             return false;
         }
-        if (!PowerRing.fuels(this.owner, level) && !this.crashed) {
-            // His will no longer holds it: it breaks apart in the air (clients see to that when it is gone).
-            this.end(level);
-            return false;
+        if (!PowerRing.fuels(this.owner, level)) {
+            if (!this.crashed) {
+                // His will no longer holds it: it breaks apart in the air (clients see to that when it is gone).
+                this.end(level);
+                return false;
+            }
+            // Gone after the crash: what still flies breaks up where it is and hurts no one in his name.
+            this.dropFlying(level);
         }
         this.age++;
         double dive = this.path.diveTick();
@@ -740,9 +769,13 @@ public final class AirStrike implements Effect {
             if (this.target == null || !this.target.isAlive()) {
                 this.target = AirStrike.this.nearest(level, this.at, this.small ? JET_REACH * 1.3 : MISSILE_REACH);
             }
-            if (this.target == null && !this.small) {
-                // Nothing to find: it strikes the ground a way ahead of the plane.
+            if (this.target == null) {
+                // Nothing to find: it strikes the ground a way ahead of the plane (a jet's missile, of where it points).
                 Vec3 way = AirStrike.this.path.way();
+                Vec3 own = new Vec3(this.way.x, 0.0, this.way.z);
+                if (this.small && own.lengthSqr() > 1.0E-6) {
+                    way = own.normalize();
+                }
                 Vec3 right = way.cross(new Vec3(0.0, 1.0, 0.0)).normalize();
                 RandomSource random = AirStrike.this.owner.getRandom();
                 double ahead = Mth.lerp(random.nextDouble(), AHEAD_NEAR, AHEAD_FAR);
@@ -1230,16 +1263,20 @@ public final class AirStrike implements Effect {
     private void end(ServerLevel level) {
         ACTIVE.remove(this.owner.getUUID(), this);
         PacketDistributor.sendToPlayersInDimension(level, ConstructPayload.remove(this.id));
-        // Missiles still in flight break into solid pieces where they are (clients see to that when they are gone).
-        for (Missile missile : this.missiles) {
-            PacketDistributor.sendToPlayersInDimension(level, ConstructPayload.remove(missile.id));
-        }
+        this.dropFlying(level);
         for (Scan scan : this.scans) {
             PacketDistributor.sendToPlayersInDimension(level, ConstructPayload.remove(scan.id));
         }
+        this.scans.clear();
+    }
+
+    /** Missiles still in flight break into solid pieces where they are (clients see to that when they are gone). */
+    private void dropFlying(ServerLevel level) {
+        for (Missile missile : this.missiles) {
+            PacketDistributor.sendToPlayersInDimension(level, ConstructPayload.remove(missile.id));
+        }
         this.missiles.clear();
         this.bullets.clear();
-        this.scans.clear();
     }
 
     /** Where it flies, for clients to work it out by themselves (see {@link PlanePath}), and how long ago he called it. */

@@ -60,12 +60,14 @@ public record PlanePath(Vec3 start, Vec3 way, double drop, int attack, double en
     public static final double JET_WING = 24.0;
     /**
      * The parts of it that reach out furthest below it and to its sides, in blocks to its right, up and ahead of its
-     * middle: the tip of its nose, the sensor ball under it, the bottom of its belly, the tips of its wings and the
-     * lowest tips of its four propellers. Its dive ends as the first of them strikes the ground.
+     * middle: the tip of its nose, the sensor ball under it, the bottom of its belly, the tips of its wings, the
+     * lowest tips of its four propellers and the muzzles of its two miniguns (at rest, and pointing straight down).
+     * Its dive ends as the first of them strikes the ground.
      */
     public static final double[][] REACHES = { { 0.0, -0.55, 22.4 }, { 0.0, -3.8, 16.0 }, { 0.0, -2.62, 0.0 },
             { -28.0, 3.45, 0.4 }, { 28.0, 3.45, 0.4 }, { -16.4, -0.9, 8.6 }, { 16.4, -0.9, 8.6 },
-            { -8.6, -0.9, 8.6 }, { 8.6, -0.9, 8.6 } };
+            { -8.6, -0.9, 8.6 }, { 8.6, -0.9, 8.6 }, { -9.4, -5.3, 11.9 }, { 9.4, -5.3, 11.9 },
+            { -4.3, -8.5, 10.0 }, { 4.3, -8.5, 10.0 } };
     /**
      * A missile out of the hatch drops this fast (blocks per tick, down), falls with this much gravity and keeps this
      * much of its speed every tick while its motor is dead.

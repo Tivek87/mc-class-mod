@@ -305,6 +305,9 @@ public final class SwordShield implements Effect {
     @Override
     public boolean tick(ServerLevel level, int tick) {
         if (this.breaking >= 0) {
+            // Its clock runs on while it breaks up: everyone else's game keeps time by it (the pieces fly apart, and his
+            // arms lower, evenly).
+            this.age++;
             this.breaking++;
             if (this.breaking >= BREAK_TICKS) {
                 ConstructPayload.sendRemove(level, this.id, this.owner.position());

@@ -23,6 +23,7 @@ import nl.tivek.multiversepowers.character.greenlantern.Construct;
 import nl.tivek.multiversepowers.character.greenlantern.ConstructHoldPayload;
 import nl.tivek.multiversepowers.character.greenlantern.ConstructPayload;
 import nl.tivek.multiversepowers.character.greenlantern.ConstructPickPayload;
+import nl.tivek.multiversepowers.character.greenlantern.FlattenPayload;
 import nl.tivek.multiversepowers.character.greenlantern.RingPayload;
 import nl.tivek.multiversepowers.character.greenlantern.ability.LandingSlam;
 import nl.tivek.multiversepowers.character.greenlantern.ability.SwordShield;
@@ -67,6 +68,7 @@ public final class ModNetwork {
         registrar.playToClient(ArmPayload.TYPE, ArmPayload.STREAM_CODEC, ModNetwork::onArm);
         registrar.playToClient(PortalPayload.TYPE, PortalPayload.STREAM_CODEC, ModNetwork::onPortal);
         registrar.playToClient(ConstructPayload.TYPE, ConstructPayload.STREAM_CODEC, ModNetwork::onConstruct);
+        registrar.playToClient(FlattenPayload.TYPE, FlattenPayload.STREAM_CODEC, ModNetwork::onFlatten);
         registrar.playToClient(RingPayload.TYPE, RingPayload.STREAM_CODEC, ModNetwork::onRing);
         registrar.playToServer(AbilityActionPayload.TYPE, AbilityActionPayload.STREAM_CODEC,
                 ModNetwork::onAbilityAction);
@@ -156,6 +158,10 @@ public final class ModNetwork {
 
     private static void onConstruct(ConstructPayload payload, IPayloadContext context) {
         ClientPayloadHandler.handleConstruct(payload, context);
+    }
+
+    private static void onFlatten(FlattenPayload payload, IPayloadContext context) {
+        ClientPayloadHandler.handleFlatten(payload, context);
     }
 
     private static void onRing(RingPayload payload, IPayloadContext context) {

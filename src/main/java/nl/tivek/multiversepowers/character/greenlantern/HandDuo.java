@@ -131,6 +131,8 @@ public final class HandDuo {
     // When the chop starts (after a beat hanging at the top) and how much of the chop the hands take to come down.
     private static final double CHOP_FROM = RAISED + 1.5;
     private static final double HANDS_DOWN = 0.75;
+    /** How much of a fist's turn with the haft its wrist takes, twisting, so its forearm need not take all of it. */
+    private static final double WRIST_SHARE = 0.5;
 
     // The hands' poses in the air (right hand; the left mirrors them): where the wrist is, which way the fingers point
     // and which way the palm faces. Not one long: they are straightened out where they are used.
@@ -173,10 +175,8 @@ public final class HandDuo {
     private static final Vec3 LEFT_LETTING_GO = new Vec3(3.1, 7.3, 5.8);
     private static final Vec3 LEFT_LETTING_GO_UP = new Vec3(-1.0, 0.1, 0.1);
     private static final Vec3 LEFT_LETTING_GO_PALM = new Vec3(0.0, 0.8, -0.6);
-    /** Rising off the haft, turning to the caster. */
+    /** Rising off the haft, turning to the caster (turned halfway from letting go to the thumbs up; see RISING_TURN). */
     private static final Vec3 RISING = new Vec3(-3.3, 8.0, 1.8);
-    private static final Vec3 RISING_UP = new Vec3(0.4, 0.4, -1.0);
-    private static final Vec3 RISING_PALM = new Vec3(0.9, 0.0, 0.3);
     /**
      * The thumbs up: a fist, its knuckles to the caster and in, tipped up so the thumb (which grows out of the hand at
      * a slant) points straight up; worked out from where the painter's thumb points when it is straight.
@@ -184,6 +184,14 @@ public final class HandDuo {
     private static final Vec3 THUMB_UP = new Vec3(-3.6, 9.0, 0.4);
     private static final Vec3 THUMB_UP_UP = new Vec3(0.246, 0.668, -0.702);
     private static final Vec3 THUMB_UP_PALM = new Vec3(0.790, 0.282, 0.545);
+    /**
+     * Which way the fingers point and the palm faces as the hand rises off the haft: halfway round from letting go to
+     * the thumbs up, so it turns the whole way evenly.
+     */
+    private static final Vec3[] RISING_TURN = halfway(LETTING_GO_UP, LETTING_GO_PALM, THUMB_UP_UP, THUMB_UP_PALM);
+    // The same for the left hand, from its own way of letting go to the mirror image of the thumbs up.
+    private static final Vec3[] LEFT_RISING_TURN = halfway(LEFT_LETTING_GO_UP, LEFT_LETTING_GO_PALM,
+            THUMB_UP_UP.multiply(-1.0, 1.0, 1.0), THUMB_UP_PALM.multiply(-1.0, 1.0, 1.0));
 
     // Rolling round each other: how far each hand swings out from its place, and how far round they go (radians).
     private static final double ROLL_RADIUS = 1.4;
@@ -257,7 +265,7 @@ public final class HandDuo {
             new Key(GRAB - 7, false, REACHING, REACHING_UP, REACHING_PALM),
             new Key(GRAB, true, GRABBING, GRABBING_UP, GRABBING_PALM),
             new Key(RELEASE, true, LETTING_GO, LETTING_GO_UP, LETTING_GO_PALM),
-            new Key(RELEASE + 6, false, RISING, RISING_UP, RISING_PALM),
+            new Key(RELEASE + 6, false, RISING, RISING_TURN[0], RISING_TURN[1]),
             new Key(THUMBS, true, THUMB_UP, THUMB_UP_UP, THUMB_UP_PALM),
             new Key(RETRACT, true, THUMB_UP, THUMB_UP_UP, THUMB_UP_PALM));
 
@@ -276,7 +284,7 @@ public final class HandDuo {
             new Key(GRAB, true, LEFT_GRABBING, GRABBING_UP.multiply(-1.0, 1.0, 1.0),
                     GRABBING_PALM.multiply(-1.0, 1.0, 1.0)),
             new Key(RELEASE, true, LEFT_LETTING_GO, LEFT_LETTING_GO_UP, LEFT_LETTING_GO_PALM),
-            new Key(RELEASE + 6, false, RISING, RISING_UP, RISING_PALM).mirrored(),
+            new Key(RELEASE + 6, false, RISING.multiply(-1.0, 1.0, 1.0), LEFT_RISING_TURN[0], LEFT_RISING_TURN[1]),
             new Key(THUMBS, true, THUMB_UP, THUMB_UP_UP, THUMB_UP_PALM).mirrored(),
             new Key(RETRACT, true, THUMB_UP, THUMB_UP_UP, THUMB_UP_PALM).mirrored());
 
@@ -397,10 +405,21 @@ public final class HandDuo {
         return layout.point(layout.strike());
     }
 
+    /**
+     * Only the axe of the pair {@code t} ticks after it was called, just where {@link #at} puts it (axeEnd, axeUp and
+     * axeFace), without working out the hands: for what looks back at where the axe was a moment ago.
+     */
+    public static Axe axe(Vec3 base, int variant, Vec3 aim, double t, double scale) {
+        return axe(Layout.of(base, variant, aim, scale), t);
+    }
+
     // ---- The axe ----
 
-    /** Where the axe is: the end of its pommel, the way along its haft (pommel to head) and the way its edge faces. */
-    private record Axe(Vec3 end, Vec3 up, Vec3 face) {
+    /**
+     * Where the axe is: the end of its pommel, the way along its haft (pommel to head), the way its edge faces, and how
+     * far its haft is tipped up from level with its head away from the caster (radians, before it quivers).
+     */
+    public record Axe(Vec3 end, Vec3 up, Vec3 face, double tilt) {
     }
 
     /**
@@ -493,7 +512,7 @@ public final class HandDuo {
                 face = Vectors.spin(face, axis, quiver);
             }
         }
-        return new Axe(end, up, face);
+        return new Axe(end, up, face, tilt);
     }
 
     // ---- The hands ----
@@ -521,13 +540,35 @@ public final class HandDuo {
         Vec3 palm = free[2];
         double held = Ease.smoother((t - GRAB + 8.0) / 8.0) * (1.0 - Ease.smoother((t - RELEASE) / 10.0));
         if (held > 0.0) {
+            // Turned the shortest way from how it is in the air to how it holds on, never flipping through.
             Vec3[] grip = grip(layout, right, t, axe, portal);
             wrist = wrist.lerp(grip[0], held);
-            up = up.lerp(grip[1], held);
-            palm = palm.lerp(grip[2], held);
+            Vec3[] from = Vectors.frame(up, palm);
+            Vec3 turn = Vectors.turn(from, Vectors.frame(grip[1], grip[2])).scale(held);
+            up = Vectors.turned(from[0], turn);
+            palm = Vectors.turned(from[1], turn);
         }
         Vec3 arm = wrist.subtract(portal).normalize();
-        return new Hand(place(wrist, arm, up, palm, scale), arm, drag(right, t), held);
+        return new Hand(place(wrist, arm, up, palm, scale, twist(layout, t, axe, arm)), arm, drag(right, t), held);
+    }
+
+    /**
+     * How far a hand's wrist is twisted: how far the hand is turned round its forearm past the forearm itself (radians,
+     * by the right-hand rule about the way the forearm runs out of its portal). Holding the axe, a fist turns with its
+     * haft, well over half a turn from grabbing it to chopping, and its forearm comes in from the side, nearly along the
+     * line the haft swings round: a forearm that took all of that turn would corkscrew in its portal. So the wrist takes
+     * {@link #WRIST_SHARE} of it: as the hand turns over to reach for the haft its forearm already turns on ahead of
+     * it (the wrist twisted as far one way at the grab as the other way at the blow), as the axe swings the forearm
+     * takes only the rest of the turn, and once the hand lets go the wrist straightens out again.
+     */
+    private static double twist(Layout layout, double t, Axe axe, Vec3 arm) {
+        double wound = Ease.smoother((t - AXE_OPENS - 2.0) / (GRAB - 6.0 - AXE_OPENS - 2.0))
+                * (1.0 - Ease.smoother((t - RELEASE) / (THUMBS - RELEASE)));
+        if (wound <= 0.0) {
+            return 0.0;
+        }
+        double middle = (Math.PI + layout.lean()) * 0.5;
+        return wound * WRIST_SHARE * (axe.tilt() - middle) * arm.dot(layout.side());
     }
 
     /** The hand in the air (not in its portal, not holding on): its wrist, the way its fingers point, its palm. */
@@ -637,7 +678,7 @@ public final class HandDuo {
         double screw = (right ? 0.9 : -0.9) * (1.0 - Ease.smoother((t - ARRIVES) / (OUT - ARRIVES - 2.0)));
         up = Vectors.spin(up, arm, screw);
         palm = Vectors.spin(palm, arm, screw);
-        return new Hand(place(wrist, arm, up, palm, layout.scale()), arm, 0.0, 0.0);
+        return new Hand(place(wrist, arm, up, palm, layout.scale(), 0.0), arm, 0.0, 0.0);
     }
 
     /**
@@ -659,7 +700,7 @@ public final class HandDuo {
         Vec3 straight = last[2].subtract(arm.scale(last[2].dot(arm)));
         Vec3 up = last[1].lerp(arm, bend);
         Vec3 palm = last[2].lerp(straight, bend);
-        return new Hand(place(wrist, arm, up, palm, layout.scale()), arm, 0.0, 0.0);
+        return new Hand(place(wrist, arm, up, palm, layout.scale(), 0.0), arm, 0.0, 0.0);
     }
 
     /**
@@ -691,9 +732,10 @@ public final class HandDuo {
     /**
      * The place of a hand from its wrist, the way its forearm runs, the way its fingers point and its palm (these two
      * need not be one long nor square): straightened out, its right worked out so the frame is left-handed like every
-     * construct's, and its forearm's palm side the palm turned as little as can be to lie square to the forearm.
+     * construct's, and its forearm's palm side the palm turned as little as can be to lie square to the forearm, then
+     * turned back round the forearm by how far the wrist is twisted ({@code twist}, radians; see twist).
      */
-    private static HandPose.Place place(Vec3 wrist, Vec3 arm, Vec3 up, Vec3 palm, double scale) {
+    private static HandPose.Place place(Vec3 wrist, Vec3 arm, Vec3 up, Vec3 palm, double scale, double twist) {
         Vec3 u = up.normalize();
         Vec3 f = palm.subtract(u.scale(palm.dot(u))).normalize();
         Vec3 r = f.cross(u);
@@ -702,7 +744,22 @@ public final class HandDuo {
         double cos = u.dot(arm);
         Vec3 turned = f.scale(cos).add(axis.cross(f)).add(axis.scale(axis.dot(f) / (1.0 + cos)));
         Vec3 armForward = turned.subtract(arm.scale(turned.dot(arm))).normalize();
+        if (twist != 0.0) {
+            armForward = Vectors.spin(armForward, arm, -twist);
+        }
         return new HandPose.Place(wrist, arm, armForward, r, u, f, scale);
+    }
+
+    // ---- Turning a hand ----
+
+    /**
+     * A hand turned halfway the shortest way round from one way of standing (its fingers' way and palm) to another:
+     * its fingers' way and palm, straightened out.
+     */
+    private static Vec3[] halfway(Vec3 fromUp, Vec3 fromPalm, Vec3 toUp, Vec3 toPalm) {
+        Vec3[] from = Vectors.frame(fromUp, fromPalm);
+        Vec3 turn = Vectors.turn(from, Vectors.frame(toUp, toPalm)).scale(0.5);
+        return new Vec3[] { Vectors.turned(from[0], turn), Vectors.turned(from[1], turn) };
     }
 
     // ---- The portals ----
@@ -839,37 +896,56 @@ public final class HandDuo {
         }
     }
 
-    /** A hand's way through the air: from key to key smoothly, passing through each at an even speed. */
+    /**
+     * A hand's way through the air: from key to key smoothly, passing through each at an even speed. Its wrist moves
+     * along a smooth curve through the keys; the hand turns from each key's way of standing to the next the shortest
+     * way round (never flipping through, however far apart they are), gathering and losing its speed of turning as
+     * smoothly.
+     */
     private static final class Track {
         private final Key[] keys;
-        private final Vec3[][] speeds;
+        // How fast the wrist moves at each key, and at each key which way the fingers point and the palm faces
+        // (straightened out), how fast and about which way the hand turns there (radians a tick) and the turn to the
+        // next key (see Vectors.turn).
+        private final Vec3[] speeds;
+        private final Vec3[][] frames;
+        private final Vec3[] spins;
+        private final Vec3[] turns;
 
         Track(Key... keys) {
+            int n = keys.length;
             this.keys = keys;
-            this.speeds = new Vec3[keys.length][];
-            for (int i = 0; i < keys.length; i++) {
-                if (keys[i].still() || i == 0 || i == keys.length - 1) {
-                    this.speeds[i] = new Vec3[] { Vec3.ZERO, Vec3.ZERO, Vec3.ZERO };
+            this.speeds = new Vec3[n];
+            this.frames = new Vec3[n][];
+            this.spins = new Vec3[n];
+            this.turns = new Vec3[n];
+            for (int i = 0; i < n; i++) {
+                this.frames[i] = Vectors.frame(keys[i].up(), keys[i].palm());
+            }
+            for (int i = 0; i < n; i++) {
+                this.turns[i] = i + 1 < n ? Vectors.turn(this.frames[i], this.frames[i + 1]) : Vec3.ZERO;
+            }
+            for (int i = 0; i < n; i++) {
+                if (keys[i].still() || i == 0 || i == n - 1) {
+                    this.speeds[i] = Vec3.ZERO;
+                    this.spins[i] = Vec3.ZERO;
                 } else {
-                    Key before = keys[i - 1];
-                    Key after = keys[i + 1];
-                    double span = after.t() - before.t();
-                    this.speeds[i] = new Vec3[] { after.at().subtract(before.at()).scale(1.0 / span),
-                            after.up().subtract(before.up()).scale(1.0 / span),
-                            after.palm().subtract(before.palm()).scale(1.0 / span) };
+                    double span = keys[i + 1].t() - keys[i - 1].t();
+                    this.speeds[i] = keys[i + 1].at().subtract(keys[i - 1].at()).scale(1.0 / span);
+                    this.spins[i] = this.turns[i - 1].add(this.turns[i]).scale(1.0 / span);
                 }
             }
         }
 
-        /** Where it is at {@code t}: wrist, fingers' way, palm (in the pair's terms). */
+        /** Where it is at {@code t}: wrist, fingers' way, palm (in the pair's terms; the last two one long each). */
         Vec3[] at(double t) {
             Key[] k = this.keys;
             if (t <= k[0].t()) {
-                return new Vec3[] { k[0].at(), k[0].up(), k[0].palm() };
+                return new Vec3[] { k[0].at(), this.frames[0][0], this.frames[0][1] };
             }
             int last = k.length - 1;
             if (t >= k[last].t()) {
-                return new Vec3[] { k[last].at(), k[last].up(), k[last].palm() };
+                return new Vec3[] { k[last].at(), this.frames[last][0], this.frames[last][1] };
             }
             int i = 0;
             while (t >= k[i + 1].t()) {
@@ -877,11 +953,11 @@ public final class HandDuo {
             }
             Key a = k[i];
             Key b = k[i + 1];
-            Vec3[] va = this.speeds[i];
-            Vec3[] vb = this.speeds[i + 1];
-            return new Vec3[] { hermite(t, a.t(), a.at(), va[0], b.t(), b.at(), vb[0]),
-                    hermite(t, a.t(), a.up(), va[1], b.t(), b.up(), vb[1]),
-                    hermite(t, a.t(), a.palm(), va[2], b.t(), b.palm(), vb[2]) };
+            // How far it has turned from key a on its way to key b: a smooth curve from no turn at all to the whole
+            // turn, leaving and reaching each key turning as fast as it passes through it.
+            Vec3 turn = hermite(t, a.t(), Vec3.ZERO, this.spins[i], b.t(), this.turns[i], this.spins[i + 1]);
+            return new Vec3[] { hermite(t, a.t(), a.at(), this.speeds[i], b.t(), b.at(), this.speeds[i + 1]),
+                    Vectors.turned(this.frames[i][0], turn), Vectors.turned(this.frames[i][1], turn) };
         }
     }
 

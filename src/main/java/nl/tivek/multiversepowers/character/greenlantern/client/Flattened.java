@@ -39,8 +39,8 @@ public final class Flattened {
     private Flattened() {
     }
 
-    /** This creature has just been slapped flat. */
-    static void flatten(int entity) {
+    /** This creature has just been slapped flat (the server tells, see FlattenPayload). */
+    public static void flatten(int entity) {
         SQUASHED.put(entity, ticks);
     }
 

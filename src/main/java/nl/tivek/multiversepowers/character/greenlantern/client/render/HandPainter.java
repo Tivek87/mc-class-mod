@@ -58,6 +58,9 @@ public final class HandPainter {
     private static final ConstructPainter.Shape HAND = ConstructPainter.Shape.of(hand());
     /** The cuff round the wrist and the forearm. */
     private static final ConstructPainter.Shape ARM = ConstructPainter.Shape.of(arm());
+    /** The same apart, for a pair's hand, whose wrist may twist: the cuff alone, and the forearm without it. */
+    private static final ConstructPainter.Shape CUFF = ConstructPainter.Shape.of(cuff());
+    private static final ConstructPainter.Shape FOREARM = ConstructPainter.Shape.of(forearm());
     /** Each joint of each finger, standing up along y from its root, its knuckle round its root. */
     private static final ConstructPainter.Shape[][] FINGERS = fingers();
     /** The root joint of the middle finger of a left hand: bare, without the ring. */
@@ -83,6 +86,10 @@ public final class HandPainter {
     // portal.
     private static final double GROUND_SEAM = 0.7;
     private static final double PORTAL_SEAM = 1.0;
+    // How far over the top of the ground a hand (or the axe) coming out of it is cut off, in blocks: its seam of light
+    // then lies over the ground and shows however steeply it is looked down on, and the sliver of ground left under the
+    // cut is far too thin to see.
+    private static final double GROUND_CUT = 0.015;
     // How far round its middle a pair may reach while it is on screen, at scale 1: the axe's portal stands about 15
     // beyond it and the axe swung up over the top about 17 over it.
     private static final double PAIR_REACH = 26.0;
@@ -136,8 +143,19 @@ public final class HandPainter {
      * glowing ring round it like the rim of a gauntlet and glowing seams along it.
      */
     private static Mesh[] arm() {
+        List<Mesh> parts = new ArrayList<>(List.of(cuff()));
+        parts.addAll(List.of(forearm()));
+        return parts.toArray(Mesh[]::new);
+    }
+
+    /** The glowing cuff round the wrist. */
+    private static Mesh[] cuff() {
+        return new Mesh[] { Mesh.torus(24, 6, 1.12, 0.15, 1.7).scaled(1.2, 1.0, 0.76).moved(0.0, 0.12, 0.0) };
+    }
+
+    /** The forearm back from the wrist, its gauntlet ring and its seams. */
+    private static Mesh[] forearm() {
         List<Mesh> parts = new ArrayList<>();
-        parts.add(Mesh.torus(24, 6, 1.12, 0.15, 1.7).scaled(1.2, 1.0, 0.76).moved(0.0, 0.12, 0.0));
         parts.add(Mesh.lathe(18, 1.0, 0.0, -14.0, 1.55, -14.0, 1.62, -9.0, 1.55, -5.0, 1.3, -2.2, 1.12, -0.6, 1.06,
                 0.35, 0.0, 0.35).scaled(1.18, 1.0, 0.82));
         parts.add(Mesh.torus(24, 5, 1.36, 0.12, 1.6).scaled(1.18, 1.0, 0.82).moved(0.0, -2.0, 0.0));
@@ -379,8 +397,8 @@ public final class HandPainter {
         // White-hot as it bursts out of the ground, cooling to green; nothing of it shows under the ground.
         painter.glare(0.7 * (1.0 - Ease.smooth((clock - HandPose.ARRIVES) / 16.0)));
         painter.ambient(GLOWS);
-        painter.clip(new Vec3(base.x, base.y - 0.02, base.z), Vectors.UP, GROUND_SEAM);
-        drawHand(painter, pose, place, false, 1.0, -1.0, 0);
+        painter.clip(new Vec3(base.x, base.y + GROUND_CUT, base.z), Vectors.UP, GROUND_SEAM);
+        drawHand(painter, pose, place, false, 1.0, -1.0, 0, false);
         painter.noClip();
         painter.ambient(0.0);
         painter.glare(0.0);
@@ -391,20 +409,33 @@ public final class HandPainter {
      * The hand in this pose: its palm, back and forearm, each finger joint by joint, and the thumb. A left hand is the
      * mirror image of the right, and bare: it has no ring.
      *
-     * @param apart below 0 for the whole hand, else how far it has broken up into solid pieces, 0 to 1
-     * @param seed  the number its pieces start from as it breaks up
+     * @param apart  below 0 for the whole hand, else how far it has broken up into solid pieces, 0 to 1
+     * @param seed   the number its pieces start from as it breaks up
+     * @param twists true for a hand whose wrist may twist round its forearm (a pair's): its cuff turns halfway with
+     *               the hand, so the twist is shared between both sides of the cuff
      */
     private static void drawHand(LanternPainter painter, HandPose pose, HandPose.Place place, boolean left,
-            double bright, double apart, int seed) {
+            double bright, double apart, int seed, boolean twists) {
         ConstructPainter.Frame hand = handFrame(place, left);
-        // The forearm has a right of its own, square to its length, however the hand turns on the wrist.
-        Vec3 armRight = place.armForward().cross(place.arm());
-        armRight = armRight.lengthSqr() < 1.0E-8 ? place.right() : armRight.normalize();
-        ConstructPainter.Frame arm = new ConstructPainter.Frame(place.wrist(), left ? armRight.scale(-1.0) : armRight,
-                place.arm(), place.armForward(), place.scale());
         part(painter, HAND, hand, bright, apart, seed);
         // The forearm runs straight on back, however the wrist bends: down into the ground, or into its portal.
-        part(painter, ARM, arm, bright, apart, seed + 20);
+        if (twists) {
+            // Where the forearm's palm side would be if the wrist only bent: the hand's palm carried onto the forearm
+            // by the turn that takes the fingers' way onto the forearm's way (as HandDuo lays it). The cuff is turned
+            // round the forearm halfway from the forearm's palm side to there.
+            Vec3 u = place.up();
+            Vec3 f = place.forward();
+            Vec3 axis = u.cross(place.arm());
+            double cos = u.dot(place.arm());
+            Vec3 carried = f.scale(cos).add(axis.cross(f)).add(axis.scale(axis.dot(f) / (1.0 + cos)));
+            double twist = Math.atan2(place.arm().dot(place.armForward().cross(carried)),
+                    place.armForward().dot(carried));
+            Vec3 cuffForward = Vectors.spin(place.armForward(), place.arm(), twist * 0.5);
+            part(painter, FOREARM, armFrame(place, place.armForward(), left), bright, apart, seed + 20);
+            part(painter, CUFF, armFrame(place, cuffForward, left), bright, apart, seed + 30);
+        } else {
+            part(painter, ARM, armFrame(place, place.armForward(), left), bright, apart, seed + 20);
+        }
         for (int k = 0; k < 4; k++) {
             ConstructPainter.Frame[] joints = digit(hand, pose, k);
             for (int j = 0; j < 3; j++) {
@@ -416,6 +447,17 @@ public final class HandPainter {
         for (int j = 0; j < 3; j++) {
             part(painter, THUMBS[j], thumb[j], bright, apart, seed + 60 + j);
         }
+    }
+
+    /**
+     * The frame the forearm (or its cuff) is drawn in, its palm side facing {@code forward}: it has a right of its
+     * own, square to its length, however the hand turns on the wrist (a left hand's mirrored, as the hand's).
+     */
+    private static ConstructPainter.Frame armFrame(HandPose.Place place, Vec3 forward, boolean left) {
+        Vec3 armRight = forward.cross(place.arm());
+        armRight = armRight.lengthSqr() < 1.0E-8 ? place.right() : armRight.normalize();
+        return new ConstructPainter.Frame(place.wrist(), left ? armRight.scale(-1.0) : armRight, place.arm(), forward,
+                place.scale());
     }
 
     /** The frame a hand's own shapes are drawn in: a left hand's is the right hand's mirrored across its right. */
@@ -555,7 +597,9 @@ public final class HandPainter {
                     strength * (1.0 - Ease.smooth((clock - blow) / (swing * 0.6)))
                             * Ease.smooth((clock - (blow - swing * 0.5)) / 2.0));
         }
-        if (move == HandPose.SLAM) {
+        double slammed = clock - HandPose.SLAM_HITS;
+        if (move == HandPose.SLAM && slammed >= 0.0 && slammed <= shockwaveTicks(3) && strength > 0.01) {
+            // Only while its rings run out (see shockwave): where it landed is worked out for nothing else.
             HandPose.Place land = HandPose.at(hand.variant(), HandPose.SLAM_HITS, reach).place(base, facing, scale);
             Vec3 palm = land.at(HandPose.PALM);
             shockwave(painter, new Vec3(palm.x, base.y, palm.z), clock - HandPose.SLAM_HITS, 4.5 * scale, 3,
@@ -766,7 +810,7 @@ public final class HandPainter {
     /**
      * A portal of the ring's light, all of it light (see through it): a bright rim with arcs of light running round it,
      * fainter arcs turning the other way inside it and a soft halo outside it, arms of light swirling into its middle,
-     * a green haze filling it (on both sides, so an arm cut off in it reads as light) with a soft glow in its middle,
+     * a green haze filling it (on both sides, over the solid lid of an arm cut off in it) with a soft glow in its middle,
      * and sparks flung off its rim.
      *
      * @param spin ticks that turn it round
@@ -892,7 +936,7 @@ public final class HandPainter {
     private static void pairHand(LanternPainter painter, HandDuo.Portal portal, HandPose pose, HandPose.Place place,
             boolean left, double bright, double apart, int seed) {
         painter.clip(portal.center(), portal.normal(), PORTAL_SEAM);
-        drawHand(painter, pose, place, left, bright, apart, seed);
+        drawHand(painter, pose, place, left, bright, apart, seed, true);
         painter.noClip();
     }
 
@@ -919,7 +963,7 @@ public final class HandPainter {
         if (duo.axeCut) {
             painter.clip(duo.axePortal.center(), duo.axePortal.normal(), PORTAL_SEAM);
         } else {
-            painter.clip(new Vec3(base.x, base.y - 0.02, base.z), Vectors.UP, GROUND_SEAM);
+            painter.clip(new Vec3(base.x, base.y + GROUND_CUT, base.z), Vectors.UP, GROUND_SEAM);
         }
         part(painter, AXE, frame, apart < 0.0 ? 1.0 : 1.2, apart, AXE_PIECES);
         painter.noClip();
@@ -1083,10 +1127,11 @@ public final class HandPainter {
         Vec3[] in = new Vec3[count];
         Vec3[] out = new Vec3[count];
         for (int k = 0; k < count; k++) {
-            HandDuo past = HandDuo.at(base, variant, aim, clock - k * step, scale);
-            Vec3 head = past.axeEnd.add(past.axeUp.scale(HandDuo.HEAD_AT * scale));
-            in[k] = head.add(past.axeFace.scale(HandDuo.HAFT_RADIUS * 1.5 * scale));
-            out[k] = head.add(past.axeFace.scale(HandDuo.EDGE_OUT * scale));
+            // Only the axe of the pair as it was then: its hands need not be worked out for this.
+            HandDuo.Axe past = HandDuo.axe(base, variant, aim, clock - k * step, scale);
+            Vec3 head = past.end().add(past.up().scale(HandDuo.HEAD_AT * scale));
+            in[k] = head.add(past.face().scale(HandDuo.HAFT_RADIUS * 1.5 * scale));
+            out[k] = head.add(past.face().scale(HandDuo.EDGE_OUT * scale));
         }
         double[] alphas = new double[count - 1];
         for (int k = 0; k + 1 < count; k++) {
@@ -1177,8 +1222,8 @@ public final class HandPainter {
         painter.glare(0.5 * Math.max(0.0, 1.0 - since / 5.0));
         painter.ambient(GLOWS);
         painter.fling(1.8);
-        painter.clip(new Vec3(base.x, base.y - 0.02, base.z), Vectors.UP, GROUND_SEAM);
-        drawHand(painter, pose, place, false, 1.2, apart, 0);
+        painter.clip(new Vec3(base.x, base.y + GROUND_CUT, base.z), Vectors.UP, GROUND_SEAM);
+        drawHand(painter, pose, place, false, 1.2, apart, 0, false);
         painter.noClip();
         painter.fling(1.0);
         painter.ambient(0.0);

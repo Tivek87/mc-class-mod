@@ -1,9 +1,10 @@
-# Laatste sessie — 2026-09-25 (nacht, sessie 977b9b37)
+# Laatste sessie — 2026-09-25 (middag, sessie 58a06a7d)
 
-- **Vraag:** ongebruikte mod-files weg, Air Strike fixes, Lantern Flare → Giant Hands (video), zwaard/schild loadout, handen vloeiender + bijl-paar. Daarna: STOP, docs + vervolgprompt, commit + push (limiet bijna op).
-- **Gedaan:** audit (35 agents), 7 implementatie-agents (hands-motion, hands-duo, hands-painter, hands-server, plane, sword, cleanup): alles af en nagerekend met harnesses; `gradlew compileJava` OK.
-- **Opgeruimd:** 57 mod-files (oude item-assets, `registry/`, Cosmic Realm-dimensie), 208 dode lang-keys. CHANGELOG: sectie Removed.
-- **Afgebroken door STOP:** 6 reviews (geen bevindingen opgeslagen) en de in-game handen-test (spel nog niet gestart, niets achtergelaten).
-- **Files:** zie commits van 2026-09-25 (opruimen + Green Lantern WIP) en `docs/claude/vervolg-2026-09-25.md`.
-- **Volgende stap:** vervolgprompt in `docs/claude/vervolg-2026-09-25.md` (onderaan) plakken op het andere device: reviews → in-game tests → fixes → docs (ook GREEN_LANTERN.md) → commit-vraag.
-- **Let op:** `gunTicks` int→double in oude config, nieuwe `Track`-klok voor alle constructs, bijl-paar vuisten draaien ~200°.
+- **Vraag:** Giant Hands: standaard maar 1 hand per keer drukken. Keuze user: 1 hand per druk; het bijl-paar blijft, telt als 1 en komt alleen.
+- **Gedaan:** instelling `hands` standaard 6 → 1 (`.was(6.0)`, `CharacterConfig.DEFAULTS_VERSION` 12 → 13). Bijl-paar telt als 1 beurt, komt alleen als er geen hand staat, en er komt geen bij zolang het er is. "Nooit twee keer dezelfde beweging achter elkaar" geldt nu ook over twee keer drukken heen (`LAST_MOVES` per speler, leeg bij server-stop). Max 3 tegelijk blijft voor wie meer handen instelt.
+- **Bestanden:** `GiantHands.java`, `GameCharacter.java`, `CharacterConfig.java`; docs `GREEN_LANTERN.md`, `POWERS.md`, `CHANGELOG.md`.
+- **Getest:** in-game op een kopie van `New Worldtest`: config-bestand omgezet (`hands = 1`, versie 13); 12× drukken = 12× precies 1 hand (3× paar, alleen), nooit dezelfde beweging achter elkaar; met `hands` 6: 6 handen, max 3 tegelijk, paar alleen. 0 overtredingen, geen exceptions. WARN "green_lantern.toml is not correct. Correcting" = verwacht (commentaar van `hands` veranderd).
+- **Opgeruimd** (na ja van de user; de veiligheidscheck blokkeerde het eerst): test-klasse, wereldkopie `run/saves/claude_hands_test/`, screenshots. Daarna gecompileerd: OK.
+- **Commit:** "Green Lantern: review-fixes en één reuzenhand per druk" (samen met de WIP van vanochtend), push naar origin/master: ja van de user.
+- **Open:** cooldown (30 s) en kosten (8 power) zijn nog afgestemd op 6 handen; voorstel aan de user, niet gedaan.
+- **Bekend (van vanochtend):** `.was()`-waarden worden bij elke versie-ophoging opnieuw toegepast; `docs/reference/nanotech-ironman-suitup.mp4` niet mee-committen.

@@ -138,6 +138,9 @@ public class ConstructPainter {
     private static final double SEE_THROUGH_EDGE = 0.55;
     // How much wider the seam of light along a cut (see clip) is drawn than an edge, and its glow than an edge's glow.
     private static final double SEAM_WIDTH = 1.5;
+    // How near two ends of the lines a solid part was cut along lie (squared, in blocks) to join into one outline of its
+    // lid (see lid).
+    private static final double LID_JOIN = 1.0E-8;
     // The light on the solid mass (see light): what every side gets, what the sky adds from above, and what the sun
     // adds to the sides that face it, from high over one corner of the world.
     private static final double SKY_FLOOR = 0.42;
@@ -352,6 +355,13 @@ public class ConstructPainter {
     private final double[] cutOut = new double[18];
     private final double[] cutCross = new double[12];
     private final double[] cutEnds = new double[6];
+    // The lines the sides of the solid part being drawn were cut along, two ends each (see cut), and how many: the
+    // part is closed with a lid there once all its sides are drawn (see lid), so it is never seen hollow.
+    private double[] lidCuts = new double[6 * 32];
+    private int lidCount;
+    // Which outline each of those lines belongs to (the first line of it), and room to walk round one (see lid).
+    private int[] lidOutline = new int[32];
+    private int[] lidWaiting = new int[32];
 
     /**
      * A painter that draws everything, wherever it is.
@@ -881,6 +891,7 @@ public class ConstructPainter {
         double quiet = faint ? SEE_THROUGH_EDGE : 1.0;
         double fine = width * mesh.fine;
         this.nearFade = true;
+        this.lidCount = 0;
         for (int s = 0; s < count; s++) {
             double x = this.nx[s];
             double y = this.ny[s];
@@ -904,6 +915,9 @@ public class ConstructPainter {
             } else {
                 this.quadAt(sides, side[0], side[1], side[2], side[3], this.mass(light), body);
             }
+        }
+        if (this.clipping) {
+            this.lid(sides, body, bright);
         }
         int edge = Colors.alpha(EDGE * solid * quiet);
         int glowing = halo ? Colors.alpha(HALO * solid * quiet) : 0;
@@ -1211,6 +1225,7 @@ public class ConstructPainter {
         double mz = (at[2] + at[23]) * 0.5;
         double[] box = model[index];
         double fine = width * fine(box[3] - box[0], box[4] - box[1], box[5] - box[2]);
+        this.lidCount = 0;
         for (int[] side : SIDES) {
             int p0 = 3 * side[0];
             int p1 = 3 * side[1];
@@ -1237,6 +1252,9 @@ public class ConstructPainter {
             } else {
                 this.quadCorners(this.mass, side, rgb, body);
             }
+        }
+        if (this.clipping) {
+            this.lid(this.mass, body, ripple * bright);
         }
         int edge = Colors.alpha(EDGE * ripple * solid);
         int halo = glowing ? Colors.alpha(HALO * (1.0 + 0.4 * charge) * solid) : 0;
@@ -1418,8 +1436,10 @@ public class ConstructPainter {
      * From now on everything solid drawn (the sides and edges of box models, round parts and shapes, whole or breaking
      * up, and see-through ones) is cut off at a plane: only what lies on the side {@code normal} points to is drawn,
      * and where the plane cuts through a solid side a bright line runs along the cut, {@code seam} strong (0 = none),
-     * so a thing seems to come out of a surface of light. Light (edge, sheet, flare, circle, trail, haze...) is never
-     * cut, and neither are loose sides ({@link #side}, {@link #massQuad}). Lasts until {@link #noClip}.
+     * so a thing seems to come out of a surface of light; a solid part is closed with a lid of its own mass where it is
+     * cut (see lid), so from behind the plane it is never seen hollow. Light (edge, sheet, flare, circle, trail,
+     * haze...) is never cut, and neither are loose sides ({@link #side}, {@link #massQuad}). Lasts until
+     * {@link #noClip}.
      *
      * @param point  a point on the plane
      * @param normal the way to the side that is kept, any length (with no length at all nothing is cut)
@@ -1552,10 +1572,135 @@ public class ConstructPainter {
             this.putCut(layer, first + 1, rgb, alpha);
             this.putCut(layer, last, rgb, alpha);
         }
+        for (int c = 0; c + 1 < crossings; c += 2) {
+            this.lidCut(3 * c);
+        }
         if (this.seam > 0.0) {
             for (int c = 0; c + 1 < crossings; c += 2) {
                 this.seamLine(3 * c, fine, solid, halo);
             }
+        }
+    }
+
+    /** Keeps the line a side was cut along, from the crossing at {@code from} in {@link #cutCross}, for the lid. */
+    private void lidCut(int from) {
+        if (6 * (this.lidCount + 1) > this.lidCuts.length) {
+            this.lidCuts = Arrays.copyOf(this.lidCuts, this.lidCuts.length * 2);
+            this.lidOutline = new int[this.lidCuts.length / 6];
+            this.lidWaiting = new int[this.lidCuts.length / 6];
+        }
+        System.arraycopy(this.cutCross, from, this.lidCuts, 6 * this.lidCount, 6);
+        this.lidCount++;
+    }
+
+    /**
+     * Closes a solid part where the plane cut it (see clip) with a lid of its own mass, facing back into the plane, so
+     * from behind the plane it is seen solid, never hollow. The lines its sides were cut along join up into outlines (a
+     * part of more than one piece cuts into more than one): each is filled with a fan from its own middle to each of its
+     * lines.
+     *
+     * @param bright how brightly the part burns
+     */
+    private void lid(Layer layer, int alpha, double bright) {
+        int count = this.lidCount;
+        this.lidCount = 0;
+        if (count < 3 || alpha <= 0) {
+            return;
+        }
+        int[] outline = this.lidOutline;
+        Arrays.fill(outline, 0, count, -1);
+        double nx = -this.clipNormalX;
+        double ny = -this.clipNormalY;
+        double nz = -this.clipNormalZ;
+        double lit = light(nx, ny, nz) + this.ambient;
+        for (int first = 0; first < count; first++) {
+            if (outline[first] >= 0) {
+                continue;
+            }
+            int lines = this.joinOutline(first, count);
+            if (lines >= 3) {
+                this.fillOutline(layer, first, count, alpha, lit * bright);
+            }
+        }
+    }
+
+    /**
+     * Marks every line joined to line {@code first} (end to end, however far round) as one outline with it (see lid), and
+     * tells how many lines it has.
+     */
+    private int joinOutline(int first, int count) {
+        double[] cuts = this.lidCuts;
+        int[] outline = this.lidOutline;
+        int[] waiting = this.lidWaiting;
+        outline[first] = first;
+        waiting[0] = first;
+        int waits = 1;
+        int lines = 0;
+        while (waits > 0) {
+            int line = waiting[--waits];
+            lines++;
+            for (int other = 0; other < count; other++) {
+                if (outline[other] < 0 && this.touches(cuts, 6 * line, 6 * other)) {
+                    outline[other] = first;
+                    waiting[waits++] = other;
+                }
+            }
+        }
+        return lines;
+    }
+
+    /** True when an end of the line at {@code a} in {@code cuts} is (all but) an end of the line at {@code b}. */
+    private boolean touches(double[] cuts, int a, int b) {
+        for (int i = a; i <= a + 3; i += 3) {
+            for (int j = b; j <= b + 3; j += 3) {
+                if (sq(cuts[i] - cuts[j]) + sq(cuts[i + 1] - cuts[j + 1]) + sq(cuts[i + 2] - cuts[j + 2]) < LID_JOIN) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /** Fills the outline of line {@code first} (see lid) with a fan from its middle, lit {@code light}. */
+    private void fillOutline(Layer layer, int first, int count, int alpha, double light) {
+        double[] cuts = this.lidCuts;
+        int[] outline = this.lidOutline;
+        double cx = 0.0;
+        double cy = 0.0;
+        double cz = 0.0;
+        int ends = 0;
+        for (int line = 0; line < count; line++) {
+            if (outline[line] == first) {
+                int i = 6 * line;
+                cx += cuts[i] + cuts[i + 3];
+                cy += cuts[i + 1] + cuts[i + 4];
+                cz += cuts[i + 2] + cuts[i + 5];
+                ends += 2;
+            }
+        }
+        cx /= ends;
+        cy /= ends;
+        cz /= ends;
+        double ex = this.camera.x - cx;
+        double ey = this.camera.y - cy;
+        double ez = this.camera.z - cz;
+        double away = Math.sqrt(ex * ex + ey * ey + ez * ez);
+        double face = away < 1.0E-6 ? 1.0
+                : Math.abs(-this.clipNormalX * ex - this.clipNormalY * ey - this.clipNormalZ * ez) / away;
+        int rgb = this.mass(light * sheen(face));
+        int middle = this.faded(cx, cy, cz, alpha);
+        for (int line = 0; line < count; line++) {
+            if (outline[line] != first) {
+                continue;
+            }
+            int i = 6 * line;
+            // A triangle, as a quad with its last corner repeated.
+            this.put(layer, cx, cy, cz, rgb, middle);
+            this.put(layer, cuts[i], cuts[i + 1], cuts[i + 2], rgb, this.faded(cuts[i], cuts[i + 1], cuts[i + 2],
+                    alpha));
+            int end = this.faded(cuts[i + 3], cuts[i + 4], cuts[i + 5], alpha);
+            this.put(layer, cuts[i + 3], cuts[i + 4], cuts[i + 5], rgb, end);
+            this.put(layer, cuts[i + 3], cuts[i + 4], cuts[i + 5], rgb, end);
         }
     }
 

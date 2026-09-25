@@ -515,11 +515,12 @@ arm, both as solid as every construct.
   outside he holds the sword upright before his right hip and the shield before his left side.
 - **Taking them out:** your hands come up into view while the sword grows out of the ring's light in your fist,
   hilt first and then the blade running out to its point, and the shield grows on your forearm out of its middle,
-  fed by a beam from the ring. You dip your hand and toss the sword up into the air, where it wheels round twice with
-  a streak of light, catch it again, bring it up close before your eyes and turn it slowly from the one flat over its
-  edge to the other while a gleam of light runs up the blade, and bang it twice on the rim of the shield: then you
-  are ready. You can cut from the moment you have caught it. Putting them away (any other
-  slot, or empty hands), they break into solid pieces.
+  fed by a beam from the ring. You dip your hand and toss the sword up high over your head, where it wheels round
+  twice with a streak of light while your eyes follow it (a camera shake of 0 keeps your view still), catch it again,
+  bring it up close before your eyes and turn it slowly from the one flat over its edge to the other while a gleam of
+  light runs up the blade, and bang it twice on the rim of the shield (the shield stays there for it, even if you
+  hold the button to block): then you are ready. You can cut from the moment you have caught it. Putting them away
+  (any other slot, or empty hands), they break into solid pieces, only as far as they had grown.
 - **Left click (the sword):** one of **twelve** cuts and thrusts, a different one every click and never the same
   twice in a row: a cut across from the right, a backhand from the left, a cut down from high right, one from high
   left, a rising cut, an uppercut that throws into the air, a chop from over your head (the hardest), a quick stab,
@@ -629,9 +630,10 @@ Green Lantern's ultimate: a big, slow gunship of hard light high over the battle
   made in detail: Green Lantern's own right hand, with a forearm and a glowing gauntlet ring, a glowing cuff round the
   wrist, a palm with its pads and glowing creases, knuckles and glowing tendons and the lantern emblem on its back,
   four fingers of three joints each with a nail on every tip, a thumb, and the ring itself on its middle finger.
-- **Six hands** come up one after another, **never more than three at once**: the next one only comes once the one
-  before is halfway through what it does, and you wave your hand towards every one. Each does one of these to its
-  creature, never the same one twice in a row:
+- **One hand every time you press.** Set more hands in the settings and they come up one after another, **never
+  more than three at once**: the next one only comes once the one before is halfway through what it does, and you
+  wave your hand towards every one. Each does one of these to its creature, never the same one twice in a row (not
+  even from one press to the next):
   - **a smack:** it rises low beside the creature, winds up and sweeps its open palm through it, swatting it
     away from you (**6 hearts**);
   - **a grab and a throw:** it rises right in front of the creature, closes its fingers round it, lifts it high,
@@ -654,19 +656,22 @@ Green Lantern's ultimate: a big, slow gunship of hard light high over the battle
     the middle of the blow, half at its edge 6 blocks out, and everything there is **flung far away and up**, in a
     flash, with rings and cracks of light running out over the ground and the view of everyone close by shaking.
     They leave the axe stuck in the ground, rise and give you a **thumbs up**, and pull back into their portals,
-    which snap shut; a moment later the axe breaks into solid pieces. The pair **counts as two of the hands** (so
-    there are still never more than three at once), and only comes where there is open space round and above the
-    creature.
+    which snap shut; a moment later the axe breaks into solid pieces. The pair **counts as one hand** but comes
+    **alone**: only while no other hand is up, and none comes while it is. It only comes where there is open space
+    round and above the creature.
 - Every hand moves **smoothly and heavily, with life in its fingers**: they close and open one after another, it
   winds up before every blow and follows through after it, and while it waits it sways a little and its fingers
   drift. A hand stays where it came up, but turns slowly after the creature nearest to it and reaches for that one.
-  Its blows leave streaks of light in the air and rings of light running out over the ground. When it is done it
-  sinks back into the ground; if you stop being Green Lantern it breaks into solid pieces (a pair and its axe too).
-- With nothing out to hurt you nearby the ring tells you so and nothing happens.
+  Whatever it strikes always flies away from you, never at you. Its blows leave streaks of light in the air and rings
+  of light running out over the ground. When it is done it sinks back into the ground; if you stop being Green
+  Lantern it breaks into solid pieces (a pair and its axe too).
+- With nothing out to hurt you nearby the ring tells you so, nothing happens and nothing is spent. With more hands
+  set: when every creature left is still up in the air (sent flying by a hand), the hands still to come wait up to 4
+  seconds for one to land.
 - **Who gets hit:** only what is out to hurt you, and players where players may fight each other; never your own
   pets, villagers or animals, and never you.
-- **Power:** 8. **Cooldown:** 30 seconds. The damage, the reach, how many hands come and how hard they send
-  creatures flying are settings.
+- **Power:** 8. **Cooldown:** 30 seconds. The damage, the reach, how many hands come at every press (1
+  by default) and how hard they send creatures flying are settings.
 
 ### Light Bubble (key K)
 

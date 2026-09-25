@@ -160,10 +160,14 @@ public enum SwordMove {
     }
 
     /**
-     * True while this move, {@code t} ticks in, swings the sword: a cut, a thrust or the flurry. The shield cannot block
-     * meanwhile; held up, it comes back once the move is over.
+     * True while this move, {@code t} ticks in, swings the sword: a cut, a thrust or the flurry, or the bangs on the rim
+     * of the shield as they take shape (the shield is raised to meet them). The shield cannot block meanwhile; held up,
+     * it comes back once the move (or the bangs) is over.
      */
     public boolean swings(double t) {
+        if (this.kind == Kind.EQUIP) {
+            return t >= KNOCK - 4 && t < KNOCK_AGAIN + 3;
+        }
         return (this.kind == Kind.ATTACK || this.kind == Kind.FLURRY) && t >= 0.0 && t < this.ticks;
     }
 

@@ -5,15 +5,16 @@ What changed in the project, newest first.
 ## [Giant Hands, a new Air Strike and the sword thrown up] - 2026-09-24
 
 ### Added
-- **Giant Hands (Left Alt)**, in place of the Lantern Flare: wave your ring hand and giant hands of hard light rise
-  out of the ground one after another (six, at most three at once, the next once the one before is halfway) at the
-  enemies within 20 blocks of you. Each smacks its enemy away, grabs it and throws it, slaps it flat against the
-  ground (it lies squashed a moment and springs back), pounds it with the flat of its fist three times, or shoots up
-  right in front of it with its middle finger raised, launching it and everything round it far away and high up.
-  They stay where they came up, turn after the enemy nearest to them and sink back into the ground when they are
-  done. Or two of them come as a **pair** out of portals of the ring's light (counting as two hands): they snap
-  their fingers and make the OK sign, pull a **giant axe** of hard light out of a third portal, chop it down on the
-  enemy (18 hearts, flinging everything round it far away), leave it stuck in the ground and give you a thumbs up.
+- **Giant Hands (Left Alt)**, in place of the Lantern Flare: wave your ring hand and a giant hand of hard light
+  rises out of the ground at one of the enemies within 20 blocks of you (one every time you press; set more and
+  they come one after another, at most three at once, the next once the one before is halfway). Each smacks its
+  enemy away, grabs it and throws it, slaps it flat against the ground (it lies squashed a moment and springs
+  back), pounds it with the flat of its fist three times, or shoots up right in front of it with its middle finger
+  raised, launching it and everything round it far away and high up. They stay where they came up, turn after the
+  enemy nearest to them and sink back into the ground when they are done. Or two of them come as a **pair** out of
+  portals of the ring's light (counting as one hand, and only ever alone): they snap their fingers and make the OK
+  sign, pull a **giant axe** of hard light out of a third portal, chop it down on the enemy (18 hearts, flinging
+  everything round it far away), leave it stuck in the ground and give you a thumbs up.
 - **Air Strike jets:** two jets of hard light race round the gunship and fire small homing missiles at your
   enemies. When the gunship's engine bursts they break away, break the sound barrier with a thunderclap and a ring
   of light, and vanish in a star of light.
@@ -40,6 +41,8 @@ What changed in the project, newest first.
 ### Fixed
 - The rounds of the Air Strike's miniguns froze in the air, and the blasts of its missiles (and of a pounded Light
   Bubble) stopped halfway, leaving a missile stuck in the ground.
+- After going through a portal or respawning, the constructs of where you were (an Air Strike's gunship and its
+  drone) no longer stay behind on your screen for a few seconds.
 
 ## [World and client settings, flying over new land, and ready for servers] - 2026-09-24
 

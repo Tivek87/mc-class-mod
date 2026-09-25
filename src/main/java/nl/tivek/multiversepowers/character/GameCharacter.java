@@ -329,18 +329,18 @@ public enum GameCharacter {
             // the ground at one of the creatures out to hurt him round him: it smacks it away, grabs it and throws it,
             // gives it the middle finger, slaps it flat against the ground, or pounds its fist down on it three times.
             // A smack does this damage; the others more or less of it.
-            this.add(abilities, AbilitySlot.ABILITY_10, "giant_hands").cooldown(600).damage(12.0).damageWas(10.0)
+            this.add(abilities, AbilitySlot.ABILITY_10, "giant_hands").cooldown(600).damage(12.0)
                     .setting("radiusBlocks", 20.0, 4.0, 48.0, Unit.BLOCKS,
                             "How far round you the hands come up at creatures out to hurt you, every way, in blocks"
                                     + " (20 = an area 40 blocks across)")
-                    .settingInt("hands", 6, 1, 30, Unit.COUNT,
-                            "How many hands come up, one after another (a pair with an axe counts as two): at most"
-                                    + " three at once, the next once the one before is halfway through")
-                    .was(8.0)
+                    .settingInt("hands", 1, 1, 30, Unit.COUNT,
+                            "How many hands come up at every press, one after another: at most three at once, the next"
+                                    + " once the one before is halfway through (a pair with an axe counts as one, but"
+                                    + " only comes while no other hand is up, and none comes while it is)")
+                    .was(6.0)
                     .setting("knockback", 2.0, 0.0, 5.0, Unit.STRENGTH,
                             "How hard the hands send a creature flying (a middle finger bursting out of the ground and"
                                     + " the axe of a pair far harder)")
-                    .was(1.6)
                     .setting("powerCost", 8.0, 0.0, 100.0, Unit.POWER, "Ring power the hands cost");
             // A bubble of hard light round the creature he looks at: the ring lifts it off the ground and holds it
             // there, unable to do anything. Press again to pound it into the ground: three slams, straight down, on his

@@ -23,4 +23,84 @@ public final class Vectors {
         side = side.normalize();
         return new Vec3[] { side, side.cross(axis).normalize() };
     }
+
+    /**
+     * The way something stands, given by two of its directions ({@code first}, and {@code second} roughly square to
+     * it), straightened out: one long each and square to each other.
+     */
+    public static Vec3[] frame(Vec3 first, Vec3 second) {
+        Vec3 u = first.normalize();
+        return new Vec3[] { u, second.subtract(u.scale(second.dot(u))).normalize() };
+    }
+
+    /**
+     * The shortest turn that takes something standing as {@code from} to standing as {@code to} (both as frame gives
+     * them): the way it turns about (by the right-hand rule, as spin), as long as the angle it turns by (radians, 0 to
+     * pi).
+     */
+    public static Vec3 turn(Vec3[] from, Vec3[] to) {
+        Vec3 a2 = from[0].cross(from[1]);
+        Vec3 b2 = to[0].cross(to[1]);
+        // The turn as a matrix (rows, columns): what it takes each of from's three ways to.
+        double[][] m = new double[3][3];
+        Vec3[] a = { from[0], from[1], a2 };
+        Vec3[] b = { to[0], to[1], b2 };
+        for (int i = 0; i < 3; i++) {
+            double[] bi = { b[i].x, b[i].y, b[i].z };
+            double[] ai = { a[i].x, a[i].y, a[i].z };
+            for (int row = 0; row < 3; row++) {
+                for (int col = 0; col < 3; col++) {
+                    m[row][col] += bi[row] * ai[col];
+                }
+            }
+        }
+        // As a quaternion (w, x, y, z), worked out from its largest part so it holds up near a half turn.
+        double trace = m[0][0] + m[1][1] + m[2][2];
+        double w;
+        double x;
+        double y;
+        double z;
+        if (trace > 0.0) {
+            double s = 2.0 * Math.sqrt(trace + 1.0);
+            w = 0.25 * s;
+            x = (m[2][1] - m[1][2]) / s;
+            y = (m[0][2] - m[2][0]) / s;
+            z = (m[1][0] - m[0][1]) / s;
+        } else if (m[0][0] > m[1][1] && m[0][0] > m[2][2]) {
+            double s = 2.0 * Math.sqrt(Math.max(1.0E-12, 1.0 + m[0][0] - m[1][1] - m[2][2]));
+            w = (m[2][1] - m[1][2]) / s;
+            x = 0.25 * s;
+            y = (m[0][1] + m[1][0]) / s;
+            z = (m[0][2] + m[2][0]) / s;
+        } else if (m[1][1] > m[2][2]) {
+            double s = 2.0 * Math.sqrt(Math.max(1.0E-12, 1.0 + m[1][1] - m[0][0] - m[2][2]));
+            w = (m[0][2] - m[2][0]) / s;
+            x = (m[0][1] + m[1][0]) / s;
+            y = 0.25 * s;
+            z = (m[1][2] + m[2][1]) / s;
+        } else {
+            double s = 2.0 * Math.sqrt(Math.max(1.0E-12, 1.0 + m[2][2] - m[0][0] - m[1][1]));
+            w = (m[1][0] - m[0][1]) / s;
+            x = (m[0][2] + m[2][0]) / s;
+            y = (m[1][2] + m[2][1]) / s;
+            z = 0.25 * s;
+        }
+        if (w < 0.0) {
+            w = -w;
+            x = -x;
+            y = -y;
+            z = -z;
+        }
+        double sin = Math.sqrt(x * x + y * y + z * z);
+        if (sin < 1.0E-9) {
+            return Vec3.ZERO;
+        }
+        return new Vec3(x, y, z).scale(2.0 * Math.atan2(sin, w) / sin);
+    }
+
+    /** {@code v} turned by {@code turn}: about its way, by the right-hand rule, as far as it is long (radians). */
+    public static Vec3 turned(Vec3 v, Vec3 turn) {
+        double angle = turn.length();
+        return angle < 1.0E-9 ? v : spin(v, turn.scale(1.0 / angle), angle);
+    }
 }

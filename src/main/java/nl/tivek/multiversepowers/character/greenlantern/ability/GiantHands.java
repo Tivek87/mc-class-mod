@@ -40,6 +40,7 @@ import net.minecraft.world.phys.shapes.CollisionContext;
 import net.neoforged.neoforge.network.PacketDistributor;
 import nl.tivek.multiversepowers.character.CharacterAbility;
 import nl.tivek.multiversepowers.character.greenlantern.ConstructPayload;
+import nl.tivek.multiversepowers.character.greenlantern.FlattenPayload;
 import nl.tivek.multiversepowers.character.greenlantern.HandDuo;
 import nl.tivek.multiversepowers.character.greenlantern.HandPose;
 import nl.tivek.multiversepowers.character.greenlantern.PowerRing;
@@ -52,11 +53,12 @@ import nl.tivek.multiversepowers.engine.math.Vectors;
 import nl.tivek.multiversepowers.engine.world.LoadedWorld;
 
 /**
- * Giant Hands: Green Lantern waves his ring hand this way and that, and at every wave the ring's light shoots off to a
- * creature out to hurt him somewhere round him (within {@code radiusBlocks} every way, picked at random), and a giant
- * hand of hard light rises up out of the ground there in a cloud of dust. One after another, {@code hands} of them,
- * never more than three up at once (a pair counts as two) and the next only once the one before is halfway through,
- * each doing one of these to its creature (see {@link HandPose}):
+ * Giant Hands: Green Lantern waves his ring hand, and at every wave the ring's light shoots off to a creature out to
+ * hurt him somewhere round him (within {@code radiusBlocks} every way, picked at random), and a giant hand of hard light
+ * rises up out of the ground there in a cloud of dust. {@code hands} of them at every press (one by default), one after
+ * another, never more than three up at once and the next only once the one before is halfway through, each doing one
+ * of these to its creature, never what the one before it did, not even the last one of his press before (see
+ * {@link HandPose}):
  * <ul>
  * <li>a smack: its open palm sweeps through the creature and swats it away (the ability's damage);</li>
  * <li>a grab: it closes its fingers on the creature, lifts it high and throws it away (0.6 of the damage);</li>
@@ -70,8 +72,8 @@ import nl.tivek.multiversepowers.engine.world.LoadedWorld;
  * they roll round each other and a third portal lets out a giant axe of hard light; they grab it with both hands, heave
  * it up over the top and chop it down onto the creature (3 times the damage in the middle of the blow, half that at
  * its edge, and everything there flung far away and up), leave it stuck in the ground, give him a thumbs up and pull
- * back into their portals, and the axe breaks into pieces. It counts as two hands, and only comes where there is room
- * for it.</li>
+ * back into their portals, and the axe breaks into pieces. It counts as one hand but comes alone (only while no other
+ * hand is up, and none comes while it is), and only where there is room for it.</li>
  * </ul>
  * A hand stays where it came up, but turns after the creature nearest to it and reaches for that one, smoothly, as a
  * thing this big turns (a pair's axe only strikes a few blocks round where it was called). Whatever a hand hits flies
@@ -138,9 +140,19 @@ public final class GiantHands implements Effect {
     private static final double BURST_UP = 1.7;
     // How long a creature slapped flat stays slowed down, in ticks.
     private static final int FLAT_TICKS = 50;
+    // While no creature left is over ground a hand can come up out of (all thrown up in the air by the blows, or over a
+    // drop), how long the hands still to come wait for one to come down before no more come, and how often they look
+    // again meanwhile, in ticks.
+    private static final int WAIT_TICKS = 80;
+    private static final int LOOK_AGAIN = 5;
+    // How much of the way a blow flings a creature must at least lead away from him (1: straight away from him), so
+    // nothing a hand hits ever flies back at him.
+    private static final double LEAST_AWAY = 0.3;
     private static final double VIEW_RANGE = 128.0;
 
     private static final Map<UUID, GiantHands> ACTIVE = new HashMap<>();
+    // What the hand each player called last did, so the next never does it again, not even at his next press.
+    private static final Map<UUID, Integer> LAST_MOVES = new HashMap<>();
     // The creatures a hand holds right now, by entity id.
     private static final Map<Integer, Hand> GRABBED = new HashMap<>();
 
@@ -154,11 +166,13 @@ public final class GiantHands implements Effect {
     private final List<Hand> hands = new ArrayList<>();
     private final List<LivingEntity> targets;
     // The creatures no hand could come up at since the last one came (in the air, over a drop): tried again only once
-    // every other creature has had its turn.
+    // every other creature has had its turn (and when every one is, again a little later; see WAIT_TICKS).
     private final Set<LivingEntity> missed = new HashSet<>();
     private final int count;
     private int called;
-    private int lastMove = -1;
+    // How many ticks the next hand has been waiting for a creature it can come up at.
+    private int waited;
+    private int lastMove;
     // The hand he called last: his arm waves for it.
     @Nullable
     private Hand latest;
@@ -168,6 +182,7 @@ public final class GiantHands implements Effect {
         this.ability = ability;
         this.targets = targets;
         this.count = Math.max(1, ability.intValue("hands"));
+        this.lastMove = LAST_MOVES.getOrDefault(owner.getUUID(), -1);
     }
 
     /**
@@ -239,6 +254,7 @@ public final class GiantHands implements Effect {
             }
         }
         ACTIVE.clear();
+        LAST_MOVES.clear();
         GRABBED.clear();
     }
 
@@ -265,9 +281,17 @@ public final class GiantHands implements Effect {
         boolean fuels = PowerRing.fuels(this.owner, level);
         // While his ring fist is up calling an air strike's plane, the next hand waits.
         if (fuels && this.called < this.count && !AirStrike.calling(this.owner) && this.ready()) {
-            if (!this.call(level, TRIES)) {
-                // Nothing left that a hand can come up at: no more hands come.
+            int before = this.called;
+            boolean more = this.call(level, TRIES);
+            if (this.called > before) {
+                this.waited = 0;
+            } else if (++this.waited > WAIT_TICKS || !more && this.targets.isEmpty()) {
+                // Nothing a hand could come up at for so long, or no creature left at all: no more hands come.
                 this.called = this.count;
+            } else if (!more && this.waited % LOOK_AGAIN == 0) {
+                // Every creature left is in the air (thrown up by a blow) or over a drop: once in a while they all
+                // get another turn, as they may have come down again.
+                this.missed.clear();
             }
         }
         this.hands.removeIf(hand -> hand.tick(level, fuels));
@@ -279,37 +303,20 @@ public final class GiantHands implements Effect {
     }
 
     /**
-     * True when the next hand may be called: fewer than {@link #AT_ONCE} are up (a pair counts as two), and the one
-     * called last is halfway through what it does, and his arm is down from waving at it.
+     * True when the next hand may be called: fewer than {@link #AT_ONCE} are up and no pair (it is up alone), and the
+     * one called last is halfway through what it does, and his arm is down from waving at it.
      */
     private boolean ready() {
-        if (this.up() >= AT_ONCE) {
+        if (this.hands.size() >= AT_ONCE || this.hands.stream().anyMatch(hand -> hand.move == HandPose.AXE)) {
             return false;
         }
         Hand newest = this.latest;
         return newest == null || newest.t >= Math.max(WAVE_TICKS, HandPose.life(newest.variant) * NEXT_AFTER);
     }
 
-    /** How many hands are up now: a pair counts as two. */
-    private int up() {
-        int up = 0;
-        for (Hand hand : this.hands) {
-            up += weight(hand.move);
-        }
-        return up;
-    }
-
-    /** How many hands a move counts as: two for the pair with the axe, else one. */
-    private static int weight(int move) {
-        return move == HandPose.AXE ? 2 : 1;
-    }
-
-    /**
-     * True when the next call may be a pair: two of the hands are still to come, and with it there are no more than
-     * {@link #AT_ONCE} up.
-     */
+    /** True when the next call may be a pair: it comes alone, only while no other hand is up. */
     private boolean pairFits() {
-        return this.count - this.called >= 2 && this.up() + weight(HandPose.AXE) <= AT_ONCE;
+        return this.hands.isEmpty();
     }
 
     /**
@@ -361,9 +368,10 @@ public final class GiantHands implements Effect {
             }
             this.missed.clear();
             this.hands.add(hand);
-            this.called += weight(move);
+            this.called++;
             this.latest = hand;
             this.lastMove = move;
+            LAST_MOVES.put(this.owner.getUUID(), move);
             this.sound(level, this.owner.getEyePosition(), SoundEvents.PLAYER_ATTACK_SWEEP, 0.7F, 1.5F);
             this.sound(level, this.owner.getEyePosition(), SoundEvents.AMETHYST_BLOCK_CHIME, 1.0F, 1.2F);
             return true;
@@ -929,9 +937,13 @@ public final class GiantHands implements Effect {
                         continue;
                     }
                     this.hit(level, living, GiantHands.this.ability.getDamage() * 1.3, along, 0.0, 0.0);
+                    // The blow's own knockback would pop it up into the palm coming down: it stays pressed flat.
+                    living.setDeltaMovement(0.0, Math.min(0.0, living.getDeltaMovement().y), 0.0);
+                    living.hurtMarked = true;
                     living.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, FLAT_TICKS, 3),
                             GiantHands.this.owner);
                     this.pressed.add(living);
+                    FlattenPayload.send(living);
                 }
                 Vec3 palm = place.at(HandPose.PALM);
                 ParticleFx.shockwave(level, ParticleFx.dust(PowerRing.PALE, 1.6F), this.base.add(along.scale(3.0))
@@ -1206,15 +1218,16 @@ public final class GiantHands implements Effect {
         }
 
         /**
-         * Strikes a creature: hurt, and thrown the way {@code away} (flat) and up, as hard as the knockback setting says
-         * next to {@code out} and {@code up}.
+         * Strikes a creature: hurt, and thrown the way {@code away} (flat; never back towards him, see awayFromHim) and
+         * up, as hard as the knockback setting says next to {@code out} and {@code up}.
          */
         private void hit(ServerLevel level, LivingEntity living, double damage, Vec3 away, double out, double up) {
             living.invulnerableTime = 0;
             living.hurt(level.damageSources().playerAttack(GiantHands.this.owner), (float) damage);
             double knockback = GiantHands.this.ability.value("knockback");
             double resist = Mth.clamp(living.getAttributeValue(Attributes.KNOCKBACK_RESISTANCE), 0.0, 1.0);
-            Vec3 push = away.scale(out * knockback).add(0.0, up * Math.min(1.0, knockback), 0.0).scale(1.0 - resist);
+            Vec3 flung = GiantHands.this.awayFromHim(living, away);
+            Vec3 push = flung.scale(out * knockback).add(0.0, up * Math.min(1.0, knockback), 0.0).scale(1.0 - resist);
             if (push.lengthSqr() > 1.0E-6) {
                 living.setDeltaMovement(living.getDeltaMovement().add(push));
                 living.hasImpulse = true;
@@ -1234,9 +1247,29 @@ public final class GiantHands implements Effect {
             PacketDistributor.sendToPlayersNear(level, null, this.base.x, this.base.y, this.base.z, VIEW_RANGE,
                     new ConstructPayload(this.id, GiantHands.this.owner.getId(), this.base,
                             this.aim.subtract(this.base), (float) SCALE, 1.0F,
-                            this.held == null ? -1.0F : this.held.getId(), false, ConstructPayload.HAND, this.variant,
-                            this.t, null));
+                            this.held == null ? 0.0F : LightBubble.caught(this.held.getId()), this.held != null,
+                            ConstructPayload.HAND, this.variant, this.t, null));
         }
+    }
+
+    /**
+     * The flat way a blow along {@code way} (flat, one long, or none) flings this creature: that way as far as it can,
+     * but never back towards him. A hand that turned after its creature may swat or throw towards him; then the way is
+     * tipped out away from him just enough that at least {@link #LEAST_AWAY} of it leads away (a blow straight at him,
+     * or one with no way of its own, flings it straight away from him).
+     */
+    private Vec3 awayFromHim(LivingEntity living, Vec3 way) {
+        Vec3 off = new Vec3(living.getX() - this.owner.getX(), 0.0, living.getZ() - this.owner.getZ());
+        if (off.lengthSqr() < 1.0E-4) {
+            return way;
+        }
+        off = off.normalize();
+        double along = way.dot(off);
+        if (along >= LEAST_AWAY) {
+            return way;
+        }
+        Vec3 flung = way.add(off.scale(LEAST_AWAY - along));
+        return flung.lengthSqr() < 1.0E-6 ? off : flung.normalize();
     }
 
     /** The flat way a hand faces round its base, one long, for how far round it is turned (0: along +z). */

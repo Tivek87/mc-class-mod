@@ -14,13 +14,7 @@ import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.Mob;
-import net.minecraft.world.entity.OwnableEntity;
-import net.minecraft.world.entity.decoration.ArmorStand;
-import net.minecraft.world.entity.monster.Enemy;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.ClipContext;
-import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
@@ -69,6 +63,9 @@ public final class ClientConstructs {
     // A plane flies a path both sides work out alike: it stays this long without a word (a hitch of the server, or out
     // of its reach for a moment), in ticks.
     private static final int PLANE_KEEP = 100;
+    // A giant hand stays this long without a word (a hitch of the server) and then simply goes: it only breaks up when
+    // the server says it was let go.
+    private static final int HAND_KEEP = 60;
     // How a clock keeps time with the server's (see Track#retime): how far ahead of the last word it may be before the
     // server seems to run behind and where it is drifts later (at most this much, and this much of how far past that
     // it is, per tick); how far ahead is a hitch it gives up on; how hard it catches up (its pace, next to how far off
@@ -85,6 +82,10 @@ public final class ClientConstructs {
     private static final double PACE_CHANGE = 0.2;
     private static final double AHEAD = 6.0;
     private static final double AHEAD_OWN = 12.0;
+    // A fist or bolt on its way runs no further ahead than this, slowing down only over the last tick of it (its own
+    // pull): past it, it could fly on through what it struck.
+    private static final double AHEAD_PATH = 2.0;
+    private static final double AHEAD_PATH_PULL = 1.0;
     private static final double AHEAD_PULL = 0.3;
     // Updates waiting beyond this many are skipped, so a network hiccup never leaves one lagging behind.
     private static final int MAX_WAITING = 2;
@@ -179,8 +180,6 @@ public final class ClientConstructs {
         private final boolean once;
         // The age of the first update that told of the variant it has now: a Light Bubble's pound is timed from there.
         private int variantSince;
-        // A giant hand that slapped its palm down flat: what lay under it was squashed (see slapped).
-        private boolean struck;
 
         Track(ConstructPayload first) {
             this.previous = first;
@@ -190,7 +189,8 @@ public final class ClientConstructs {
             this.keep = first.shape() == ConstructPayload.BULLET ? PlanePainter.bulletTicks(first)
                     : first.shape() == ConstructPayload.BLAST ? PlanePainter.BLAST_TICKS + 8
                     : first.shape() == ConstructPayload.POUND ? BubblePainter.POUND_TICKS + 2
-                    : first.shape() == ConstructPayload.PLANE ? PLANE_KEEP : TIMEOUT;
+                    : first.shape() == ConstructPayload.PLANE ? PLANE_KEEP
+                    : first.shape() == ConstructPayload.HAND ? HAND_KEEP : TIMEOUT;
             this.once = sentOnce(first.shape());
             this.variantSince = first.age();
             this.time(first);
@@ -255,6 +255,8 @@ public final class ClientConstructs {
             this.shown += (clientTicks - this.shownAt) * this.pace;
             this.shownAt = clientTicks;
             if (this.flown != null && this.flown.ends < Double.POSITIVE_INFINITY) {
+                // Heard of no more: it eases back to the server's own pace (never stuck where a hitch had slowed it).
+                this.pace += Mth.clamp(1.0 - this.pace, -PACE_CHANGE, PACE_CHANGE);
                 return;
             }
             double lead = clientTicks - this.start - this.told;
@@ -271,8 +273,11 @@ public final class ClientConstructs {
             }
             double pace = Mth.clamp(1.0 + off * CATCH_UP, SLOWEST, FASTEST);
             pace = Mth.clamp(pace, this.pace - PACE_CHANGE, this.pace + PACE_CHANGE);
-            double ahead = ownPath(this.latest.shape()) ? AHEAD_OWN : AHEAD;
-            this.pace = Math.min(pace, Math.max(0.0, (this.told + ahead - this.shown) * AHEAD_PULL));
+            boolean own = ownPath(this.latest.shape());
+            boolean onItsWay = !own && this.path != null;
+            double ahead = own ? AHEAD_OWN : onItsWay ? AHEAD_PATH : AHEAD;
+            double pull = onItsWay ? AHEAD_PATH_PULL : AHEAD_PULL;
+            this.pace = Math.min(pace, Math.max(0.0, (this.told + ahead - this.shown) * pull));
         }
 
         /** Keeps the time of the plane it left: its clock is the plane's, less the tick it was let go on. */
@@ -452,7 +457,7 @@ public final class ClientConstructs {
                     }
                     float held = (now.variant() & SwordMove.BLOCKING) != 0 ? 0.5F : 0.3F;
                     yield switch (move.kind()) {
-                        case EQUIP -> t < 12.0 ? 0.9F : held;
+                        case EQUIP -> t < SwordMove.TOSS ? 0.9F : held;
                         case FLURRY, SLAM -> t < move.ticks() ? 0.85F : held;
                         default -> t < move.ticks() ? Math.max(0.6F, held) : held;
                     };
@@ -656,7 +661,13 @@ public final class ClientConstructs {
             double age = before == null ? last.age() : before.age() + part;
             this.spots.add(new Spot(age, last.at(), last.nose(), last.up()));
             this.ends = age + 1.0;
-            this.settle(was, drawn);
+            if (drawn < age) {
+                this.settle(was, drawn);
+            } else {
+                // Already drawn on past where it struck (into the ground, or through the creature): it breaks up where
+                // it really struck, in the flash of its blast.
+                this.offset = Vec3.ZERO;
+            }
         }
 
         /**
@@ -727,19 +738,17 @@ public final class ClientConstructs {
     }
 
     /**
-     * The giant hands this player called lately, for his ring arm: where the newest came up and how long ago he called
-     * it (by the client's own clock), and where the one before it came up (null when there is none).
+     * The giant hand this player called last, for his ring arm: where it came up and how long ago he called it (by the
+     * client's own clock).
      */
-    public record Wave(Vec3 newest, double clock, @Nullable Vec3 before) {
+    public record Wave(Vec3 newest, double clock) {
     }
 
     /** The giant hands this player is calling, or null when he calls none. */
     @Nullable
     public static Wave wave(int owner, float partialTick) {
         ConstructPayload newest = null;
-        ConstructPayload before = null;
         double newestClock = 0.0;
-        double beforeClock = 0.0;
         for (Track track : CONSTRUCTS.values()) {
             ConstructPayload hand = track.latest;
             if (hand.shape() != ConstructPayload.HAND || hand.owner() != owner) {
@@ -747,16 +756,11 @@ public final class ClientConstructs {
             }
             double clock = track.clock(partialTick);
             if (newest == null || clock < newestClock) {
-                before = newest;
-                beforeClock = newestClock;
                 newest = hand;
                 newestClock = clock;
-            } else if (before == null || clock < beforeClock) {
-                before = hand;
-                beforeClock = clock;
             }
         }
-        return newest == null ? null : new Wave(newest.center(), newestClock, before == null ? null : before.center());
+        return newest == null ? null : new Wave(newest.center(), newestClock);
     }
 
     /**
@@ -937,6 +941,8 @@ public final class ClientConstructs {
         if (track == null) {
             track = new Track(payload);
             CONSTRUCTS.put(payload.id(), track);
+            // Heard of again: whatever of it was breaking up is whole after all.
+            BROKEN_HANDS.remove(payload.id());
             fromAirStrike(track, payload);
             if (payload.shape() == ConstructPayload.BOLT) {
                 // Seen first on its way (it came into range late), it still left the ring as long ago as it has flown.
@@ -978,6 +984,9 @@ public final class ClientConstructs {
                 if (plane != null) {
                     track.start = clientTicks + partialTick - (plane.clock(partialTick) - payload.charge());
                     PlanePainter.fired(plane.latest, payload);
+                } else {
+                    // A round of a plane this client does not see: there is no gun for it to fly out of.
+                    CONSTRUCTS.remove(payload.id());
                 }
             }
             case ConstructPayload.BLAST -> {
@@ -1045,68 +1054,18 @@ public final class ClientConstructs {
             }
             if (track.timedOut()) {
                 tracks.remove();
-                // A plane not heard of a while is out of reach or the server hitches: it did not break up.
-                if (track.latest.shape() != ConstructPayload.PLANE) {
+                // A plane or giant hand not heard of a while is out of reach or the server hitches: it did not break up
+                // (the server says so when it does).
+                if (track.latest.shape() != ConstructPayload.PLANE && track.latest.shape() != ConstructPayload.HAND) {
                     letGo(track);
                 }
             } else {
                 track.advance();
-                slapped(minecraft.level, track);
             }
         }
         BROKEN.values().removeIf(broken -> clientTicks - broken.since() > BROKEN_TICKS);
         BROKEN_HANDS.values().removeIf(broken -> clientTicks - broken.since() > HandPainter.breakTicks());
         BOLTS.values().removeIf(shot -> clientTicks - shot > BOLT_MEMORY);
-    }
-
-    /**
-     * A giant hand slaps its palm down flat: every creature under it that the server presses against the ground (see
-     * pressed) is drawn squashed flat a moment (see {@link Flattened}).
-     */
-    private static void slapped(ClientLevel level, Track track) {
-        ConstructPayload hand = track.latest;
-        if (hand.shape() != ConstructPayload.HAND || HandPose.move(hand.variant()) != HandPose.SLAM || track.struck
-                || track.clock(0.0F) < HandPose.SLAM_HITS) {
-            return;
-        }
-        track.struck = true;
-        double scale = Math.max(0.1, hand.size());
-        double reach = Math.sqrt(hand.facing().x * hand.facing().x + hand.facing().z * hand.facing().z) / scale;
-        HandPose.Place place = HandPose.at(hand.variant(), HandPose.SLAM_HITS, reach).place(hand.center(),
-                hand.facing(), scale);
-        Vec3 along = new Vec3(place.up().x, 0.0, place.up().z);
-        along = along.lengthSqr() < 1.0E-6 ? new Vec3(0.0, 0.0, 1.0) : along.normalize();
-        Vec3 across = along.cross(new Vec3(0.0, 1.0, 0.0));
-        Entity owner = level.getEntity(hand.owner());
-        for (LivingEntity living : level.getEntitiesOfClass(LivingEntity.class,
-                new AABB(hand.center(), hand.center()).inflate(10.0 * scale),
-                living -> pressed(owner, hand.owner(), living))) {
-            Vec3 to = living.position().subtract(place.wrist());
-            double wide = 2.0 * scale + living.getBbWidth() * 0.5;
-            if (to.dot(along) >= -0.4 && to.dot(along) <= 6.6 * scale && Math.abs(to.dot(across)) <= wide
-                    && to.y <= 1.6 * scale && to.y >= -2.5) {
-                Flattened.flatten(living.getId());
-            }
-        }
-    }
-
-    /**
-     * Whether the server presses this creature flat under a giant hand (see GiantHands), as far as a client can tell:
-     * never the hand's maker, his pets, a spectator, an armor stand, a player in creative mode or one of his own team
-     * that it spares; a monster or another player always, and any other creature only while it is out to attack (the
-     * server strikes it only while it attacks the maker).
-     */
-    private static boolean pressed(@Nullable Entity owner, int ownerId, LivingEntity living) {
-        if (living.getId() == ownerId || !living.isAlive() || living.isSpectator() || living instanceof ArmorStand) {
-            return false;
-        }
-        if (living instanceof OwnableEntity pet && owner != null && owner.getUUID().equals(pet.getOwnerUUID())) {
-            return false;
-        }
-        if (living instanceof Player player) {
-            return !player.isCreative() && !(owner instanceof Player maker && !maker.canHarmPlayer(player));
-        }
-        return living instanceof Enemy || living instanceof Mob mob && mob.isAggressive();
     }
 
     /**
@@ -1144,10 +1103,11 @@ public final class ClientConstructs {
      */
     private static void held(Minecraft minecraft, Track track) {
         ConstructPayload hand = track.latest;
-        if (hand.charge() < 0.0F || minecraft.level == null || HandPose.move(hand.variant()) == HandPose.AXE) {
+        if (!hand.held() || minecraft.level == null || HandPose.move(hand.variant()) == HandPose.AXE) {
             return;
         }
-        Entity caught = minecraft.level.getEntity(Math.round(hand.charge()));
+        // The id comes whole in the charge's bits (see LightBubble#caught).
+        Entity caught = minecraft.level.getEntity(LightBubble.caughtId(hand.charge()));
         if (caught == null || caught == minecraft.player) {
             return;
         }
@@ -1183,6 +1143,19 @@ public final class ClientConstructs {
 
     @SubscribeEvent
     public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
+        forgetAll();
+    }
+
+    /**
+     * Into another dimension, or back to life: what was drawn where you were is gone (the server tells again of what
+     * is still round you).
+     */
+    @SubscribeEvent
+    public static void onClone(ClientPlayerNetworkEvent.Clone event) {
+        forgetAll();
+    }
+
+    private static void forgetAll() {
         CONSTRUCTS.clear();
         BROKEN.clear();
         BROKEN_HANDS.clear();

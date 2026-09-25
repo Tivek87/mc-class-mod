@@ -15,8 +15,10 @@ import nl.tivek.multiversepowers.character.docock.PortalPayload;
 import nl.tivek.multiversepowers.character.docock.client.ClientArms;
 import nl.tivek.multiversepowers.character.docock.client.ClientGrabState;
 import nl.tivek.multiversepowers.character.greenlantern.ConstructPayload;
+import nl.tivek.multiversepowers.character.greenlantern.FlattenPayload;
 import nl.tivek.multiversepowers.character.greenlantern.RingPayload;
 import nl.tivek.multiversepowers.character.greenlantern.client.ClientConstructs;
+import nl.tivek.multiversepowers.character.greenlantern.client.Flattened;
 import nl.tivek.multiversepowers.character.greenlantern.client.ClientLooks;
 import nl.tivek.multiversepowers.character.greenlantern.client.ClientRing;
 import nl.tivek.multiversepowers.classes.ClassSyncPayload;
@@ -84,6 +86,10 @@ public final class ClientPayloadHandler {
 
     public static void handleConstruct(ConstructPayload payload, IPayloadContext context) {
         context.enqueueWork(() -> ClientConstructs.update(payload));
+    }
+
+    public static void handleFlatten(FlattenPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> Flattened.flatten(payload.entity()));
     }
 
     public static void handleRing(RingPayload payload, IPayloadContext context) {

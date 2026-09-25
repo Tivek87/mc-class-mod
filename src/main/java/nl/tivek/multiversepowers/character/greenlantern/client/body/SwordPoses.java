@@ -270,10 +270,10 @@ final class SwordPoses {
     // ---- Looking the sword over, and banging it on the shield ----
 
     // The blade as he looks it over: across your view from low on the right to high on the left; and from when to when
-    // the wrist turns it over.
+    // the wrist turns it over: a while after the catch, until a while before the first bang.
     private static final Vec3 LOOKED_AT = new Vec3(-0.55, 0.74, -0.40).normalize();
-    private static final float INSPECT_FROM = 38.0F;
-    private static final float INSPECT_TO = 51.0F;
+    private static final float INSPECT_FROM = SwordMove.CATCH + 8.0F;
+    private static final float INSPECT_TO = SwordMove.KNOCK - 6.0F;
     // Where on the rim of the shield the blade comes down (in the shield's own blocks at scale 1: on its arched top,
     // left of the middle), how thick the rim is, how far along the blade it strikes and how far the edge is from the
     // middle of the blade there (at scale 1).
@@ -312,9 +312,7 @@ final class SwordPoses {
         // it, in the time between; the grip moves as the balance point does, less the turn of the blade about it.
         double time = SwordMove.CATCH - SwordMove.TOSS;
         double half = time / 2.0;
-        double climb = (CAUGHT.y - RELEASE.y) / time;
-        double b = 2.0 * half * climb - 2.0 * TOSS_HIGH;
-        FALL = (-b + Math.sqrt(Math.max(0.0, b * b - 4.0 * half * half * climb * climb))) / (2.0 * half * half);
+        FALL = fall(TOSS_HIGH, (CAUGHT.y - RELEASE.y) / time, time);
         THROWN = CAUGHT.subtract(RELEASE).scale(1.0 / time).add(0.0, FALL * half, 0.0);
         Vec3 turning = BLADE_TURN.scale(OWN_BALANCE);
         LET_GO = THROWN.subtract(turning);
@@ -488,56 +486,56 @@ final class SwordPoses {
         Track hand = new Track(0, Pose.BLADE, new Key[] {
                 at(4, false, 0.40, -0.44, -0.92),
                 at(8, false, 0.34, -0.47, -0.98),
-                at(10.5F, true, 0.33, -0.50, -1.08),
+                at(toss - 1.5F, true, 0.33, -0.50, -1.08),
                 moving(at(toss, false, RELEASE), 0, LET_GO, LET_GO),
                 at(toss + 2.5F, true, RELEASE.add(LET_GO.scale(1.3))),
-                at(19, false, 0.28, -0.44, -1.20),
-                at(25, false, 0.29, -0.46, -1.21),
+                at(toss + 7.0F, false, 0.28, -0.44, -1.20),
+                at(caught - 5.0F, false, 0.29, -0.46, -1.21),
                 moving(at(caught, false, CAUGHT), 0, CAUGHT_AT, CAUGHT_AT),
                 at(caught + 2.5F, true, CAUGHT.add(CAUGHT_AT.scale(1.25))),
-                at(35.5F, false, 0.24, -0.36, -0.92),
+                at(INSPECT_FROM - 2.5F, false, 0.24, -0.36, -0.92),
                 at(INSPECT_FROM, false, 0.21, -0.31, -0.84),
-                at(44.5F, false, 0.19, -0.29, -0.82),
+                at((INSPECT_FROM + INSPECT_TO) / 2.0F, false, 0.19, -0.29, -0.82),
                 at(INSPECT_TO, false, 0.21, -0.30, -0.83),
                 at(knock - WIND_TICKS, true, raised),
                 moving(at(knock, false, hit), 0, strike, strike.scale(-BOUNCE)),
                 at(again - AGAIN_TICKS, true, lifted),
                 moving(at(again, false, hit), 0, strikeAgain, strikeAgain.scale(-0.8 * BOUNCE)),
                 at(again + 1.8F, true, hit.subtract(KNOCK_EDGE.scale(0.03))),
-                at(66, false, 0.42, -0.43, -0.93) });
+                at(again + 5.0F, false, 0.42, -0.43, -0.93) });
         Track shield = new Track(Pose.SHIELD_FROM, Pose.SHIELD_TO + 1, new Key[] {
                 held(3, -0.44, -0.56, -0.90, -0.40, 0.06, -1.0, 0.06, 1.0, 0.12),
                 held(7, -0.46, -0.53, -0.91, -0.43, 0.06, -1.0, 0.07, 1.0, 0.12),
                 held(9, -0.47, -0.52, -0.92, -0.44, 0.06, -1.0, 0.08, 1.0, 0.12),
-                held(10.6F, -0.48, -0.57, -0.92, -0.45, -0.03, -1.0, 0.08, 1.0, 0.03),
-                held(12.5F, -0.50, -0.52, -0.93, -0.47, 0.06, -1.0, 0.08, 1.0, 0.13),
-                held(18, -0.50, -0.51, -0.92, -0.45, 0.05, -1.0, 0.08, 1.0, 0.12),
-                held(28, -0.50, -0.52, -0.92, -0.45, 0.05, -1.0, 0.08, 1.0, 0.12),
-                held(31, -0.51, -0.545, -0.925, -0.46, 0.03, -1.0, 0.08, 1.0, 0.10),
-                held(34, -0.50, -0.53, -0.92, -0.45, 0.05, -1.0, 0.08, 1.0, 0.12),
-                held(40, -0.54, -0.62, -0.94, -0.50, 0.0, -1.0, 0.10, 1.0, 0.10),
-                held(50, -0.54, -0.61, -0.94, -0.50, 0.01, -1.0, 0.10, 1.0, 0.10),
+                held(SwordMove.SHIELD_LOCK + 0.6F, -0.48, -0.57, -0.92, -0.45, -0.03, -1.0, 0.08, 1.0, 0.03),
+                held(toss + 0.5F, -0.50, -0.52, -0.93, -0.47, 0.06, -1.0, 0.08, 1.0, 0.13),
+                held(toss + 6.0F, -0.50, -0.51, -0.92, -0.45, 0.05, -1.0, 0.08, 1.0, 0.12),
+                held(caught - 2.0F, -0.50, -0.52, -0.92, -0.45, 0.05, -1.0, 0.08, 1.0, 0.12),
+                held(caught + 1.0F, -0.51, -0.545, -0.925, -0.46, 0.03, -1.0, 0.08, 1.0, 0.10),
+                held(caught + 4.0F, -0.50, -0.53, -0.92, -0.45, 0.05, -1.0, 0.08, 1.0, 0.12),
+                held(INSPECT_FROM + 2.0F, -0.54, -0.62, -0.94, -0.50, 0.0, -1.0, 0.10, 1.0, 0.10),
+                held(INSPECT_TO - 1.0F, -0.54, -0.61, -0.94, -0.50, 0.01, -1.0, 0.10, 1.0, 0.10),
                 raised(knock - 3.0F, 0.0),
                 moving(raised(knock, 0.0), Pose.SHIELD_FROM, new Vec3(0.0, 0.012, 0.0), KNOCK_EDGE.scale(0.03)),
                 raised(knock + 1.8F, 1.0),
                 moving(raised(again, 0.0), Pose.SHIELD_FROM, new Vec3(0.0, 0.01, 0.0), KNOCK_EDGE.scale(0.022)),
                 raised(again + 1.8F, 0.75),
-                held(66, -0.47, -0.49, -0.92, -0.43, 0.07, -1.0, 0.07, 1.0, 0.13) });
+                held(again + 5.0F, -0.47, -0.49, -0.92, -0.43, 0.07, -1.0, 0.07, 1.0, 0.13) });
         Track body = new Track(Pose.BODY_FROM, Pose.SIZE, new Key[] {
                 arrived(leaning(4, 0, 0.04F)),
-                leaning(9, 5, 0.12F),
-                leaning(11, -3, -0.02F),
-                leaning(16, -2, -0.10F),
-                leaning(27, 0, -0.06F),
-                leaning(31, 3, 0.09F),
-                leaning(35, -2, 0.02F),
-                leaning(40, -7, -0.05F),
-                leaning(50, -5, -0.04F),
+                leaning(toss - 3.0F, 5, 0.12F),
+                leaning(toss - 1.0F, -3, -0.02F),
+                leaning(toss + 4.0F, -2, -0.10F),
+                leaning(caught - 3.0F, 0, -0.06F),
+                leaning(caught + 1.0F, 3, 0.09F),
+                leaning(caught + 5.0F, -2, 0.02F),
+                leaning(INSPECT_FROM + 2.0F, -7, -0.05F),
+                leaning(INSPECT_TO - 1.0F, -5, -0.04F),
                 leaning(knock - WIND_TICKS - 0.5F, 10, -0.02F),
                 leaning(knock - 0.5F, -13, 0.10F),
                 leaning(again - AGAIN_TICKS - 0.3F, -7, 0.06F),
                 leaning(again - 0.5F, -12, 0.09F),
-                leaning(64, -4, 0.05F) });
+                leaning(again + 3.0F, -4, 0.05F) });
         MOVES.put(SwordMove.EQUIP, new Track[] { hand, new Track(Pose.BLADE, Pose.SHIELD_FROM, equipWrist()), shield,
                 body });
     }
@@ -557,7 +555,7 @@ final class SwordPoses {
         int k = 0;
         keys[k++] = wrist(4, false, new Vec3(0.06, 0.98, -0.18), new Vec3(-1.0, 0.0, 0.0));
         keys[k++] = wrist(8, false, UPRIGHT, FLAT);
-        keys[k++] = wrist(10.5F, true, tossTurn(-COCK, UPRIGHT), tossTurn(-COCK, FLAT));
+        keys[k++] = wrist(toss - 1.5F, true, tossTurn(-COCK, UPRIGHT), tossTurn(-COCK, FLAT));
         keys[k++] = moving(wrist(toss, false, UPRIGHT, FLAT), BLADE_TURN, EDGE_TURN, BLADE_TURN, EDGE_TURN);
         keys[k++] = wrist(toss + 2.5F, true, tossTurn(0.5, UPRIGHT), tossTurn(0.5, FLAT));
         keys[k++] = wrist(caught - 2.5F, true, tossTurn(-MEET, UPRIGHT), tossTurn(-MEET, FLAT));
@@ -586,7 +584,7 @@ final class SwordPoses {
         keys[k++] = moving(wrist(again, false, KNOCKING, KNOCK_EDGE), bladeAgain, edgeAgain,
                 bladeAgain.scale(-0.8 * BOUNCE), edgeAgain.scale(-0.8 * BOUNCE));
         keys[k++] = wrist(again + 1.8F, true, chopped(KNOCKING, 0.08), chopped(KNOCK_EDGE, 0.08));
-        keys[k] = wrist(66, false, GUARD.blade(), GUARD.edge());
+        keys[k] = wrist(again + 5.0F, false, GUARD.blade(), GUARD.edge());
         return keys;
     }
 
@@ -988,9 +986,13 @@ final class SwordPoses {
         return pose.shieldOf(BLOCK, amount);
     }
 
+    // When the sword starts to grow out of the fist as they take shape, and how long it takes to grow, in ticks.
+    private static final float SWORD_FROM = 1.0F;
+    private static final float SWORD_GROWS = 7.0F;
+
     /** How far the sword has grown out of the ring's light while they take shape, 0 to 1 (1 for every other move). */
     static float swordGrown(SwordMove move, float t) {
-        return move == SwordMove.EQUIP ? (float) Ease.smooth((t - 1.0F) / 7.0F) : 1.0F;
+        return move == SwordMove.EQUIP ? (float) Ease.smooth((t - SWORD_FROM) / SWORD_GROWS) : 1.0F;
     }
 
     /**
@@ -1019,6 +1021,16 @@ final class SwordPoses {
     /** The blade (or its edge) as the wrist has turned it {@code angle} (radians) along with the toss. */
     private static Vec3 tossTurn(double angle, Vec3 way) {
         return Vectors.spin(way, TOSS_AXIS, angle);
+    }
+
+    /**
+     * How fast a thrown thing falls (blocks per tick per tick) that rises {@code high} over where it leaves the hand and
+     * lands {@code time} ticks later, {@code climb} per tick higher than it left (on average).
+     */
+    private static double fall(double high, double climb, double time) {
+        double half = time / 2.0;
+        double b = 2.0 * half * climb - 2.0 * high;
+        return (-b + Math.sqrt(Math.max(0.0, b * b - 4.0 * half * half * climb * climb))) / (2.0 * half * half);
     }
 
     /**
@@ -1116,27 +1128,41 @@ final class SwordPoses {
         return drawnGrip(t + step).subtract(drawnGrip(t - step)).scale(0.5 / step);
     }
 
-    // The toss seen from outside, from the middle of the chest: how far the balance point is from the grip, where it
-    // leaves the drawn fist and how fast, and where it lands in it and how fast (worked out from how the fist is drawn
-    // then, so it leaves and lands at the speed the fist moves).
+    // The toss seen from outside, from the middle of the chest: how far the balance point is from the grip, and how high
+    // it rises over where it leaves the drawn fist (a real toss, well over his head: about as high as a thing thrown up
+    // rises in the time it flies). Worked out below: where it leaves the fist, how fast it flies off and how fast it
+    // falls, so it comes down right into the fist where it catches it; and how much faster than the grip of the sword
+    // flying freely the fist moves as it lets go and as it catches, which the grip takes along for a moment (ticks).
     private static final double BODY_BALANCE = BALANCE * SwordPainter.TIP * SWORD_SCALE;
+    private static final double BODY_TOSS_HIGH = 1.0;
     private static final Vec3 BODY_THROWN_FROM;
     private static final Vec3 BODY_THROWN;
-    private static final Vec3 BODY_LANDS;
-    private static final Vec3 BODY_LANDING;
+    private static final double BODY_FALL;
+    private static final Vec3 BODY_LET_GO;
+    private static final Vec3 BODY_CAUGHT;
+    private static final double HANDOFF = 2.0;
     // How far the blade seen from outside is turned so it strikes the rim of the shield at each bang (a way times its
-    // angle), and where on the rim it strikes the first time, from the middle of the chest.
+    // angle), and where on the rim it strikes the first time, from the middle of the chest; and how long it takes to
+    // turn onto the rim before the first bang and back off it after the second, in ticks.
     private static final Vec3 BODY_KNOCK_TURN;
     private static final Vec3 BODY_KNOCK_AGAIN_TURN;
     static final Vec3 BODY_STRUCK;
+    private static final float KNOCK_IN = 4.0F;
+    private static final float KNOCK_OUT = 5.0F;
 
     static {
+        // The balance point flies the curve a thrown thing flies, from where it leaves the fist to where it lands in
+        // it; the grip flying freely moves as the balance point does, less the turn of the blade about it.
+        double time = SwordMove.CATCH - SwordMove.TOSS;
         Vec3 spun = way(BLADE_TURN).scale(BODY_BALANCE);
         Vec3 standing = way(UPRIGHT).scale(BODY_BALANCE);
         BODY_THROWN_FROM = drawnGrip(SwordMove.TOSS).add(standing);
-        BODY_THROWN = drawnSpeed(SwordMove.TOSS).add(spun);
-        BODY_LANDS = drawnGrip(SwordMove.CATCH).add(standing);
-        BODY_LANDING = drawnSpeed(SwordMove.CATCH).add(spun);
+        Vec3 lands = drawnGrip(SwordMove.CATCH).add(standing);
+        BODY_FALL = fall(BODY_TOSS_HIGH, (lands.y - BODY_THROWN_FROM.y) / time, time);
+        BODY_THROWN = lands.subtract(BODY_THROWN_FROM).scale(1.0 / time).add(0.0, BODY_FALL * time / 2.0, 0.0);
+        BODY_LET_GO = drawnSpeed(SwordMove.TOSS).subtract(BODY_THROWN.subtract(spun));
+        BODY_CAUGHT = drawnSpeed(SwordMove.CATCH).subtract(BODY_THROWN.subtract(0.0, BODY_FALL * time, 0.0)
+                .subtract(spun));
         Vec3[] first = bodyKnock(SwordMove.KNOCK);
         BODY_KNOCK_TURN = first[0];
         BODY_STRUCK = first[1];
@@ -1145,26 +1171,32 @@ final class SwordPoses {
 
     /**
      * The tossed sword seen from outside, {@code t} ticks into taking them out, from the middle of the chest: its
-     * balance point leaves the drawn fist at the speed the fist moves, rises over his head and comes down into the fist
-     * at the speed it moves as it catches, turning over the same as before your own eyes. Past the catch it flies on.
+     * balance point flies freely from the drawn fist high over his head and falls back into the fist where it catches
+     * it, while it turns over the same as before your own eyes. Just after the fist lets go of it and just before it
+     * catches it again the grip still goes a little with the fist, so it leaves and lands at the speed the fist moves.
+     * Past the catch it flies on.
      */
     static Flight bodyFlight(float t) {
-        double length = SwordMove.CATCH - SwordMove.TOSS;
         double tau = t - SwordMove.TOSS;
-        double u = tau / length;
-        Vec3 balance;
-        if (u <= 1.0) {
-            balance = new Vec3(Ease.hermite(BODY_THROWN_FROM.x, BODY_THROWN.x * length, BODY_LANDS.x,
-                    BODY_LANDING.x * length, u), Ease.hermite(BODY_THROWN_FROM.y, BODY_THROWN.y * length, BODY_LANDS.y,
-                    BODY_LANDING.y * length, u), Ease.hermite(BODY_THROWN_FROM.z, BODY_THROWN.z * length,
-                    BODY_LANDS.z, BODY_LANDING.z * length, u));
-        } else {
-            double after = tau - length;
-            double fall = (BODY_THROWN.y - BODY_LANDING.y) / length;
-            balance = BODY_LANDS.add(BODY_LANDING.scale(after)).subtract(0.0, 0.5 * fall * after * after, 0.0);
-        }
+        Vec3 balance = BODY_THROWN_FROM.add(BODY_THROWN.scale(tau)).subtract(0.0, 0.5 * BODY_FALL * tau * tau, 0.0);
         Vec3 blade = way(tossTurn(SPIN * tau, UPRIGHT));
-        return new Flight(balance.subtract(blade.scale(BODY_BALANCE)), blade, way(tossTurn(SPIN * tau, FLAT)));
+        Vec3 grip = balance.subtract(blade.scale(BODY_BALANCE)).add(BODY_LET_GO.scale(handoff(tau)))
+                .subtract(BODY_CAUGHT.scale(handoff(SwordMove.CATCH - t)));
+        return new Flight(grip, blade, way(tossTurn(SPIN * tau, FLAT)));
+    }
+
+    /**
+     * How far the grip of the tossed sword seen from outside still goes along with the fist {@code since} ticks after
+     * the fist let go of it (or before it catches it), times the difference in speed: leaving (or landing) exactly as
+     * fast as the fist, then less and less, none after {@link #HANDOFF}. The other way round past the catch (a sword
+     * that broke up in the air flies on), so it flies on smoothly there too.
+     */
+    private static double handoff(double since) {
+        if (Math.abs(since) >= HANDOFF) {
+            return 0.0;
+        }
+        double left = 1.0 - Math.abs(since) / HANDOFF;
+        return since * left * left;
     }
 
     // ---- Banging it on the shield ----
@@ -1198,6 +1230,16 @@ final class SwordPoses {
      */
     private static Vec3[] bodyKnock(float t) {
         Pose pose = at(SwordMove.EQUIP, t, 0.0F, REST, null);
+        Vec3[] strike = bodyStrike(pose);
+        return new Vec3[] { turnOnto(way(pose.blade()), strike[1]), strike[0] };
+    }
+
+    /**
+     * Where the blade of a body seen from outside strikes the rim of the shield at a bang, for this pose, as the model
+     * draws the arms (from the middle of the chest, see {@link #drawn}); and the way from the fist to where the blade
+     * has to lie to strike it there with its edge.
+     */
+    static Vec3[] bodyStrike(Pose pose) {
         Vec3 grip = drawn(pose, true);
         Vec3 face = way(pose.face());
         Vec3 top = square(way(pose.top()), face);
@@ -1205,13 +1247,17 @@ final class SwordPoses {
         Vec3 right = top.cross(face).normalize();
         Vec3 middle = drawn(pose, false).add(face.scale(SHIELD_OUT));
         Vec3 struck = rim(middle, right, top, SHIELD_SCALE);
-        Vec3 blade = way(pose.blade());
         // The edge that leads down onto the rim (the pose may hold the blade by its other edge: it looks the same).
-        Vec3 edge = square(way(KNOCK_EDGE), blade);
+        Vec3 edge = square(way(KNOCK_EDGE), way(pose.blade()));
         Vec3 aim = struck.subtract(edge.scale(RIM_THICK * SHIELD_SCALE + BLADE_WIDE * SWORD_SCALE)).subtract(grip);
-        Vec3 axis = blade.cross(aim);
-        double angle = Math.atan2(axis.length(), blade.dot(aim));
-        return new Vec3[] { axis.lengthSqr() < 1.0E-12 ? Vec3.ZERO : axis.normalize().scale(angle), struck };
+        return new Vec3[] { struck, aim };
+    }
+
+    /** The turn (a way times its angle, radians) that brings the way {@code from} round onto the way {@code to}. */
+    static Vec3 turnOnto(Vec3 from, Vec3 to) {
+        Vec3 axis = from.cross(to);
+        double angle = Math.atan2(axis.length(), from.dot(to));
+        return axis.lengthSqr() < 1.0E-12 ? Vec3.ZERO : axis.normalize().scale(angle);
     }
 
     /**
@@ -1224,16 +1270,28 @@ final class SwordPoses {
         double first;
         double second;
         if (t <= knock) {
-            first = Ease.smooth((t - (knock - 4.0F)) / 4.0F);
+            first = Ease.smooth((t - (knock - KNOCK_IN)) / KNOCK_IN);
             second = 0.0;
         } else if (t <= again) {
             second = Ease.smooth((t - knock) / (again - knock));
             first = 1.0 - second;
         } else {
             first = 0.0;
-            second = 1.0 - Ease.smooth((t - again) / 5.0F);
+            second = 1.0 - Ease.smooth((t - again) / KNOCK_OUT);
         }
         return BODY_KNOCK_TURN.scale(first).add(BODY_KNOCK_AGAIN_TURN.scale(second));
+    }
+
+    /**
+     * How much of the way onto the rim of the shield the blade seen from outside is turned {@code t} ticks into taking
+     * them out, 0 to 1 (see {@link #bodyKnockTurn}).
+     */
+    static float bodyKnocking(float t) {
+        if (t <= SwordMove.KNOCK) {
+            return (float) Ease.smooth((t - (SwordMove.KNOCK - KNOCK_IN)) / KNOCK_IN);
+        }
+        return t <= SwordMove.KNOCK_AGAIN ? 1.0F
+                : (float) (1.0 - Ease.smooth((t - SwordMove.KNOCK_AGAIN) / KNOCK_OUT));
     }
 
     /** {@code way} turned by {@code turn} (a way times its angle, radians). */
@@ -1256,12 +1314,14 @@ final class SwordPoses {
         if (toss > 0.0) {
             glance(look, balance(t + LEAD), toss, 0.8, 0.35, 25.0);
         }
-        double inspect = Ease.smooth((t - 34.0F) / 5.0F) * (1.0 - Ease.smooth((t - 51.0F) / 5.0F));
+        double inspect = Ease.smooth((t - (INSPECT_FROM - 4.0F)) / 5.0F)
+                * (1.0 - Ease.smooth((t - INSPECT_TO) / 5.0F));
         if (inspect > 0.0) {
             glance(look, pose.hand().add(pose.blade().scale(0.55 * SwordPainter.TIP * OWN_SWORD)), inspect, 0.45,
                     0.45, 16.0);
         }
-        double bang = Ease.smooth((t - 52.0F) / 4.0F) * (1.0 - Ease.smooth((t - 62.0F) / 6.0F));
+        double bang = Ease.smooth((t - (SwordMove.KNOCK - 5.0F)) / 4.0F)
+                * (1.0 - Ease.smooth((t - (SwordMove.KNOCK_AGAIN + 1.0F)) / 6.0F));
         if (bang > 0.0) {
             glance(look, STRUCK, bang, 0.3, 0.3, 10.0);
         }
@@ -1311,8 +1371,10 @@ final class SwordPoses {
         float[] head = new float[3];
         double toss = Ease.smooth((t - (SwordMove.TOSS - 3.0F)) / 5.0F)
                 * (1.0 - Ease.smooth((t - (SwordMove.CATCH - 3.0F)) / 7.0F));
-        double inspect = Ease.smooth((t - 34.0F) / 5.0F) * (1.0 - Ease.smooth((t - 51.0F) / 5.0F));
-        double bang = Ease.smooth((t - 52.0F) / 4.0F) * (1.0 - Ease.smooth((t - 63.0F) / 6.0F));
+        double inspect = Ease.smooth((t - (INSPECT_FROM - 4.0F)) / 5.0F)
+                * (1.0 - Ease.smooth((t - INSPECT_TO) / 5.0F));
+        double bang = Ease.smooth((t - (SwordMove.KNOCK - 5.0F)) / 4.0F)
+                * (1.0 - Ease.smooth((t - (SwordMove.KNOCK_AGAIN + 2.0F)) / 6.0F));
         double weight = 0.0;
         if (toss > 0.0) {
             weight += watch(head, bodyBalance(t + LEAD), toss * 0.9);
@@ -1366,9 +1428,10 @@ final class SwordPoses {
     /**
      * The pose with the edge of the blade turned into the way the blade sweeps, the faster the more: a cut always leads
      * with its edge, whichever way it goes. Of the two edges the one nearer to where the keys put it leads, so the blade
-     * never flips over. {@code before} is the pose a moment earlier.
+     * never flips over. {@code before} is the pose a moment earlier; {@code amount} (0 to 1) is how much of that turn it
+     * takes.
      */
-    static Pose led(Pose now, Pose before) {
+    static Pose led(Pose now, Pose before, float amount) {
         Vec3 tip = now.hand().add(now.blade());
         Vec3 was = before.hand().add(before.blade());
         Vec3 sweep = tip.subtract(was);
@@ -1381,7 +1444,7 @@ final class SwordPoses {
         if (lead.dot(now.edge()) < 0.0) {
             lead = lead.scale(-1.0);
         }
-        double w = (float) Ease.smooth((float) (speed / 0.12));
+        double w = amount * (float) Ease.smooth((float) (speed / 0.12));
         return now.holding(now.blade(), square(now.edge().lerp(lead, w), now.blade()));
     }
 
