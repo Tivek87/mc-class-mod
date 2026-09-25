@@ -237,7 +237,6 @@ public final class AirStrike extends AirStrikeMissiles {
         }
         if (this.age == (int) dive) {
             this.sound(level, this.path.at(this.age), SoundEvents.WITHER_DEATH, 5.0F, 1.4F);
-            this.sound(level, this.path.at(this.age), SoundEvents.ELYTRA_FLYING, 8.0F, 0.6F);
         }
         this.flyMissiles(level);
         this.flyBullets(level);

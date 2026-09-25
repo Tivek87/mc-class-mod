@@ -16,14 +16,10 @@ final class PlaneSound {
     static final Map<Integer, PlaneSound> SOUNDS = new HashMap<>();
 
     private final Loop drone;
-    private final Loop wind;
-    private final Loop[] jets = new Loop[PlanePath.JETS];
 
     PlaneSound(Vec3 at) {
         this.drone = new Loop(SoundEvents.BEE_LOOP, at);
-        this.wind = new Loop(SoundEvents.ELYTRA_FLYING, at);
         Minecraft.getInstance().getSoundManager().play(this.drone);
-        Minecraft.getInstance().getSoundManager().play(this.wind);
     }
 
     static void sound(int id, PlanePath path, double t, double down) {
@@ -41,44 +37,20 @@ final class PlaneSound {
             sound = new PlaneSound(at);
             SOUNDS.put(id, sound);
         }
-        sound.update(path, t, at, down);
+        sound.update(at, down);
     }
 
-    void update(PlanePath path, double t, Vec3 at, double down) {
+    void update(Vec3 at, double down) {
         long seen = Minecraft.getInstance().level == null ? 0L : Minecraft.getInstance().level.getGameTime();
         this.drone.follow(at, seen, 7.0F, (float) (0.5 - 0.1 * down), 1.0F - (float) down * 0.5F);
-        this.wind.follow(at, seen, (float) (2.0 + 5.0 * down), (float) (0.5 + 0.9 * down * down), 1.0F);
-        double fled = path.jetsFled(t);
-        for (int k = 0; k < PlanePath.JETS; k++) {
-            if (!path.hasJet(k) || t < path.jetFrom(k) || fled >= PlanePath.JET_GONE) {
-                if (this.jets[k] != null) {
-                    this.jets[k].done = true;
-                }
-                continue;
-            }
-            Vec3 jet = path.jetAt(k, t);
-            if (this.jets[k] == null) {
-                this.jets[k] = new Loop(SoundEvents.ELYTRA_FLYING, jet);
-                Minecraft.getInstance().getSoundManager().play(this.jets[k]);
-            }
-            double speed = path.jetSpeed(k, t);
-            this.jets[k].follow(jet, seen, fled > 0.0 ? 7.0F : 4.0F, (float) Mth.clamp(1.1 + 0.05 * speed, 1.1, 2.0),
-                    1.0F);
-        }
     }
 
     boolean stopped() {
-        return this.drone.isStopped() && this.wind.isStopped();
+        return this.drone.isStopped();
     }
 
     void stopAll() {
         this.drone.done = true;
-        this.wind.done = true;
-        for (Loop jet : this.jets) {
-            if (jet != null) {
-                jet.done = true;
-            }
-        }
     }
 
     private static final class Loop extends AbstractTickableSoundInstance {
