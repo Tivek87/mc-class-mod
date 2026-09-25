@@ -11,20 +11,8 @@ import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.client.player.Input;
 import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.client.resources.sounds.AbstractTickableSoundInstance;
-import net.minecraft.client.resources.sounds.SoundInstance;
-import net.minecraft.core.BlockPos;
-import net.minecraft.core.particles.BlockParticleOption;
-import net.minecraft.core.particles.ParticleTypes;
-import net.minecraft.sounds.SoundEvents;
-import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.level.ClipContext;
-import net.minecraft.world.level.block.RenderShape;
-import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.phys.BlockHitResult;
-import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -40,7 +28,6 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.character.AbilityActionPayload;
 import nl.tivek.multiversepowers.character.CharacterAbility;
-import nl.tivek.multiversepowers.character.Characters;
 import nl.tivek.multiversepowers.character.GameCharacter;
 import nl.tivek.multiversepowers.character.client.ClientCharacter;
 import nl.tivek.multiversepowers.character.greenlantern.RingPayload;
@@ -53,6 +40,7 @@ import nl.tivek.multiversepowers.character.greenlantern.client.slam.SlamPainter;
 import nl.tivek.multiversepowers.config.client.ClientSettings;
 import nl.tivek.multiversepowers.engine.client.world.ChunkEdge;
 import nl.tivek.multiversepowers.engine.math.Ease;
+import static nl.tivek.multiversepowers.character.greenlantern.client.FlyerTracker.track;
 
 /**
  * Flying as Green Lantern, on this side. Every game moves its own player, so your own flight is steered here:
@@ -77,94 +65,13 @@ import nl.tivek.multiversepowers.engine.math.Ease;
  * </ul>
  * For everyone who flies, you included, this also keeps how fast they go and how they bank for their poses
  * (see {@link FlightPose}), draws the streak of light behind them at speed, throws up dust and spray where they
- * skim the ground or water, and plays the wind.
+ * skim the ground or water, and plays the wind. Your own steering is worked out in {@link FlightSteering}, which
+ * this builds on, and every flyer is followed from tick to tick by {@link FlyerTracker}.
  */
 @EventBusSubscriber(modid = MultiversePowers.MODID, value = Dist.CLIENT)
-public final class ClientFlight {
-    /** The take-off, in ticks: until here the fists come to the chest, then the arms sweep down and you rise. */
-    public static final float GATHER = 7.0F;
-    /** Until here the arms go down along the sides; the rise goes on to the end of the take-off. */
-    public static final float SWEEP = 13.0F;
-    /** The end of the take-off. */
-    public static final float ARISE = Flight.ARISE_TICKS;
-
-    // Your own steering, in blocks per tick: how fast you slide and rise while hovering, how quickly you pick
-    // up speed and lose it again, and how hard the brake bites.
-    private static final double HOVER = 0.32;
-    private static final double CLIMB = 0.38;
-    private static final double SPEED_UP = 0.119;
-    private static final double SLOW_DOWN = 0.055;
-    private static final double BRAKE = 0.13;
-    // You pick up speed only while you fly at least this much of the top speed you have by now (less while you are
-    // still getting up to the cruising speed, which goes quickly); letting go of forward loses all of it in this many
-    // seconds.
-    private static final double GAIN_FROM = 0.85;
-    private static final double GAIN_FROM_CRUISE = 0.55;
-    private static final double LOSE_SECONDS = 3.0;
-    // How fast you rise at the height of the take-off, and how fast an empty ring lets you sink.
-    private static final double RISE = 0.46;
-    private static final double SINK = 0.18;
-    // You land by yourself when you touch ground slower than this.
-    private static final double LAND_SPEED = 0.2;
+public final class ClientFlight extends FlightSteering {
     // Part of the top speed that counts as fast: the streak of light, the dust and the wind start around here.
     private static final double FAST = 0.51;
-    // How many ticks of the path behind a flyer the streak of light shows.
-    private static final int TRAIL = 12;
-    // How far below a flyer the ground still throws up dust, in blocks.
-    private static final double SKIM = 3.0;
-    // You slow down before the edge of the chunks your own game has, as far ahead as you fly in this many ticks.
-    private static final int EDGE_LOOK = 30;
-
-    // ---- Your own flight ----
-    private static boolean steering;
-    private static Vec3 velocity = Vec3.ZERO;
-    // Your speed one tick earlier, so what hangs on it can glide between two ticks instead of stepping.
-    private static Vec3 velocityO = Vec3.ZERO;
-    // What the game made of the speed you gave it, right after you moved: a wall stops one part of it, and any
-    // change after that and before the next tick is a knock from outside.
-    @Nullable
-    private static Vec3 afterMove;
-    // Whether the ground (or a ceiling) stopped you as you moved. The game adds its gravity after that, so the speed
-    // it leaves you with never shows it by itself.
-    private static boolean stoppedDown;
-    private static boolean stoppedUp;
-    private static boolean airborne;
-    private static boolean landing;
-    // How long you have flown on at speed, in seconds: up to the cruising speed and on to the top speed (see topSpeed).
-    private static double momentum;
-    @Nullable
-    private static WindSound wind;
-    // The speed you had when the ground stopped you last tick, or null when it did not.
-    @Nullable
-    private static Vec3 landedWith;
-
-    // ---- Your own landing slam ----
-    // How much of your top speed you must fly into the ground with, and how much of that must go down, for a slam.
-    private static final double SLAM_SPEED = 0.9;
-    private static final double SLAM_DOWN = 0.35;
-    // Flying into the ground slower than a slam but still going down this fast, in blocks per tick, and looking at
-    // least this far down, in degrees: you land.
-    private static final double DIVE_LAND = 0.15;
-    private static final float DIVE_LOOK = 20.0F;
-    // How many ticks before a slam a diving flyer starts to swing upright for it, fist cocked.
-    private static final double BRACE_TICKS = 5.0;
-    // On a dive for a slam (the shockwave key): how much of the way to straight down at dive speed you swing each tick,
-    // and that speed in blocks per tick (the top speed instead, when that is set higher).
-    private static final double DIVE_TURN = 0.4;
-    private static final double DIVE_SPEED = 19.25 / 20.0;
-    /**
-     * Ticks you stay down after a slam, crouched on your fist: you cannot move meanwhile. Counted at the pace the
-     * constructs were made for, like {@link #slam}; only Green Lantern smashes his fist into the ground.
-     */
-    static final int SLAM_ROOT = 17;
-    // The tick (of your own player) you last slammed into the ground, or MIN_VALUE.
-    private static int slamTick = Integer.MIN_VALUE;
-
-    // ---- Taking off with a double jump ----
-    // Two taps of jump at most this many ticks apart take off, as the flight key does.
-    private static final int DOUBLE_JUMP = 7;
-    private static boolean jumpWasDown;
-    private static int lastJump = Integer.MIN_VALUE;
 
     // ---- Everyone who flies, as seen ----
     private static final Map<Integer, Motion> MOTIONS = new HashMap<>();
@@ -183,7 +90,7 @@ public final class ClientFlight {
         float lastYaw = Float.NaN;
         /** Where the middle of the body was on the last ticks, newest first: the streak of light. */
         final ArrayDeque<Vec3> trail = new ArrayDeque<>();
-        /** How far the ground is below, in blocks (up to {@link #SKIM} and a bit). */
+        /** How far the ground is below, in blocks (up to {@link FlyerTracker#SKIM} and a bit). */
         double ground = 99.0;
         /** Ticks since the flight ended, for the landing; very large while the flight goes on. */
         public int sinceEnd = Integer.MAX_VALUE;
@@ -233,61 +140,6 @@ public final class ClientFlight {
         }
         Motion motion = MOTIONS.get(flyer.getId());
         return motion == null ? Vec3.ZERO : motion.velocityO.lerp(motion.velocity, partialTick);
-    }
-
-    /**
-     * Your own top speed right now, in blocks per tick: the speed you set off at, rising quickly to the cruising speed of
-     * the settings in the first seconds you fly on ({@code cruiseSeconds}), easing into it, and from there slowly on to
-     * the top speed over {@code speedUpSeconds} more (see {@link #gainSpeed}); halved while the dome brakes you.
-     */
-    private static double topSpeed(LocalPlayer player) {
-        double full = fullSpeed();
-        double start = Math.min(full, flightSetting("startSpeed", 6.4) / 20.0);
-        double cruise = Mth.clamp(flightSetting("cruiseSpeed", 8.0) / 20.0, start, full);
-        double quick = cruiseSeconds();
-        double slow = Math.max(0.0, flightSetting("speedUpSeconds", 5.6));
-        double top;
-        if (momentum < quick) {
-            double u = momentum / quick;
-            top = Mth.lerp(1.0 - (1.0 - u) * (1.0 - u), start, cruise);
-        } else {
-            top = slow <= 0.0 ? full : Mth.lerp(Math.min(1.0, (momentum - quick) / slow), cruise, full);
-        }
-        return ClientRing.has(player, RingPayload.DOME) ? top * 0.5 : top;
-    }
-
-    /**
-     * The longer you fly on, the faster you go: while you fly forward about as fast as you can go by now, the seconds
-     * count up, first to the cruising speed and then on to the top speed, and never further. Letting go of forward
-     * loses it all again in a few seconds; pushing against a wall keeps what you have.
-     */
-    private static void gainSpeed(LocalPlayer player, boolean forward) {
-        double total = cruiseSeconds() + Math.max(0.0, flightSetting("speedUpSeconds", 5.6));
-        if (!forward) {
-            momentum = Math.max(0.0, momentum - total / (LOSE_SECONDS * 20.0));
-            return;
-        }
-        double from = momentum < cruiseSeconds() ? GAIN_FROM_CRUISE : GAIN_FROM;
-        if (velocity.length() < topSpeed(player) * from) {
-            return;
-        }
-        momentum = Math.min(total, momentum + 1.0 / 20.0);
-    }
-
-    /** How long flying on takes to get from the speed you set off at to the cruising speed, in seconds. */
-    private static double cruiseSeconds() {
-        return Math.max(0.0, flightSetting("cruiseSeconds", 0.5));
-    }
-
-    /** The top speed of a flight from the settings, in blocks per tick. */
-    public static double fullSpeed() {
-        return flightSetting("topSpeed", 9.625) / 20.0;
-    }
-
-    /** One of the flight's settings, or {@code fallback} while Green Lantern has no flight. */
-    private static double flightSetting(String key, double fallback) {
-        CharacterAbility flight = GameCharacter.GREEN_LANTERN.byName("flight");
-        return flight == null ? fallback : flight.value(key);
     }
 
     /**
@@ -432,129 +284,6 @@ public final class ClientFlight {
         }
     }
 
-    /**
-     * Since the last tick: a wall or the ground that stopped part of your speed takes that part away, and a knock
-     * from outside (a hit, a blast) is added to it, as it would be for anyone.
-     */
-    private static void absorb(LocalPlayer player) {
-        Vec3 before = afterMove;
-        afterMove = null;
-        if (before == null) {
-            return;
-        }
-        boolean down = stoppedDown && velocity.y < -1.0E-3;
-        boolean up = stoppedUp && velocity.y > 1.0E-3;
-        if (down) {
-            landedWith = velocity;
-        }
-        Vec3 now = player.getDeltaMovement();
-        Vec3 knock = now.subtract(before);
-        double x = before.x == 0.0 && Math.abs(velocity.x) > 1.0E-3 ? 0.0 : velocity.x;
-        double y = down || up ? 0.0 : velocity.y;
-        double z = before.z == 0.0 && Math.abs(velocity.z) > 1.0E-3 ? 0.0 : velocity.z;
-        velocity = new Vec3(x, y, z);
-        if (knock.lengthSqr() > 1.0E-4) {
-            velocity = velocity.add(knock);
-        }
-    }
-
-    /**
-     * The take-off: first you stop where you are (even in the middle of a fall) while your fists come to your
-     * chest; then you shoot up and ease off at the top, and your own steering fades in towards the end, so the
-     * rise flows straight into the flight.
-     */
-    private static Vec3 arise(LocalPlayer player, float t, float forward, float strafe, boolean up, boolean down) {
-        if (t < GATHER) {
-            return velocity.scale(0.55);
-        }
-        double x = (t - GATHER) / (ARISE - GATHER);
-        double lift = RISE * (x < 0.15 ? x / 0.15 : Math.pow(1.0 - (x - 0.15) / 0.85, 1.2));
-        double control = Ease.smooth((t - SWEEP) / (ARISE - SWEEP));
-        Vec3 steered = control > 0.0 ? steer(player, forward, strafe, up, down, control) : Vec3.ZERO;
-        return new Vec3(steered.x * control, Math.max(lift, steered.y * control), steered.z * control);
-    }
-
-    /**
-     * Flying: forward picks up speed the way you look; without it you hover, sliding and rising with the other
-     * keys. Your speed swings round towards where you want to go instead of jumping there.
-     *
-     * @param grip how much of the steering you have yet, 0 to 1 (it fades in at the end of the take-off)
-     */
-    private static Vec3 steer(LocalPlayer player, float forward, float strafe, boolean up, boolean down,
-            double grip) {
-        double top = topSpeed(player);
-        Vec3 look = player.getLookAngle();
-        Vec3 flat = new Vec3(look.x, 0.0, look.z);
-        flat = flat.lengthSqr() < 1.0E-6 ? new Vec3(0.0, 0.0, 1.0) : flat.normalize();
-        Vec3 right = new Vec3(-flat.z, 0.0, flat.x);
-        double vertical = (up ? 1.0 : 0.0) - (down ? 1.0 : 0.0);
-        Vec3 target;
-        if (forward > 0.01F) {
-            target = look.scale(top * forward).add(right.scale(-strafe * top * 0.25))
-                    .add(0.0, vertical * top * 0.25, 0.0);
-        } else {
-            target = right.scale(-strafe * HOVER).add(flat.scale(forward * HOVER * 0.8))
-                    .add(0.0, vertical * CLIMB, 0.0);
-        }
-        double rate = target.lengthSqr() > velocity.lengthSqr() ? SPEED_UP : SLOW_DOWN;
-        if (ClientRing.has(player, RingPayload.DOME) && velocity.length() > top) {
-            rate = BRAKE;
-        }
-        return velocity.lerp(target, rate * grip);
-    }
-
-    /**
-     * You slam into the ground: you stop dead on your fist, and the server hears of it (it lands you and has the
-     * ring throw up a construct, see LandingSlam).
-     */
-    private static void slamDown(LocalPlayer player) {
-        landing = true;
-        slamTick = player.tickCount;
-        velocity = Vec3.ZERO;
-        player.setDeltaMovement(Vec3.ZERO);
-        CharacterAbility flight = GameCharacter.GREEN_LANTERN.byName("flight");
-        if (flight != null) {
-            PacketDistributor.sendToServer(new AbilityActionPayload(flight.slot().ordinal(), true, Characters.SLAM));
-        }
-    }
-
-    /** Your flight is over (you landed, turned it off, or are no longer Green Lantern): the game has you again. */
-    private static void stop() {
-        steering = false;
-        afterMove = null;
-        landing = false;
-        momentum = 0.0;
-    }
-
-    /**
-     * Tapping jump twice works the flight key: on the ground (the first tap jumps) or in the middle of a jump or a fall
-     * it takes off, and in the air on the ring, once the take-off is over, it turns the flight off and you fall. Not
-     * while the game lets you fly by itself (creative), where the double tap is the game's own.
-     */
-    private static void doubleJump(Minecraft minecraft, LocalPlayer player) {
-        boolean down = minecraft.options.keyJump.isDown();
-        if (down && !jumpWasDown && minecraft.screen == null) {
-            boolean lantern = ClientCharacter.active() == GameCharacter.GREEN_LANTERN && !player.mayFly()
-                    && !player.isPassenger() && !player.isFallFlying() && !player.isSpectator();
-            float t = ClientRing.flight(player, 0.0F);
-            boolean free = lantern && t < 0.0F && ClientRing.arrival(player, 0.0F) < 0.0F;
-            // An empty ring letting you down cannot be turned off (the flight key cannot either).
-            boolean flying = lantern && t >= ARISE && !ClientRing.has(player, RingPayload.DESCENT);
-            // No earlier tap is no double tap (and the gap is only counted once there is one: the sum would run over).
-            int gap = lastJump == Integer.MIN_VALUE ? Integer.MAX_VALUE : player.tickCount - lastJump;
-            if ((free || flying) && gap >= 0 && gap <= DOUBLE_JUMP) {
-                lastJump = Integer.MIN_VALUE;
-                CharacterAbility flight = GameCharacter.GREEN_LANTERN.byName("flight");
-                if (flight != null) {
-                    PacketDistributor.sendToServer(new AbilityActionPayload(flight.slot().ordinal(), true, 0));
-                }
-            } else {
-                lastJump = player.tickCount;
-            }
-        }
-        jumpWasDown = down;
-    }
-
     // ---- Everyone who flies, as seen ----
 
     @SubscribeEvent
@@ -587,98 +316,6 @@ public final class ClientFlight {
             Entity entity = level.getEntity(entry.getKey());
             if (entity == null || entry.getValue().sinceEnd > 40 && entry.getValue().sinceEnd != Integer.MAX_VALUE) {
                 all.remove();
-            }
-        }
-    }
-
-    /**
-     * One tick of how a flyer moves: speed, lean, the streak behind them and what they throw up below. Someone who
-     * drops down to a slam is followed too, for the streak and his cocked fist.
-     */
-    private static void track(ClientLevel level, AbstractClientPlayer player, Motion motion, boolean flying,
-            boolean dropping, boolean own) {
-        Vec3 moved = own ? velocity : new Vec3(player.getX() - player.xo, player.getY() - player.yo,
-                player.getZ() - player.zo);
-        motion.velocityO = motion.velocity;
-        motion.velocity = motion.velocity.lerp(moved, own ? 0.6 : 0.35);
-        float yaw = player.getYRot();
-        float turn = Float.isNaN(motion.lastYaw) ? 0.0F : Mth.wrapDegrees(yaw - motion.lastYaw);
-        motion.lastYaw = yaw;
-        double speed = motion.velocity.length();
-        // Turning at speed leans you into the curve, the way a bird banks.
-        float lean = flying ? Mth.clamp(turn * 0.045F * (float) Math.min(1.0, speed / fast()), -0.75F, 0.75F)
-                : 0.0F;
-        motion.bank = Mth.lerp(0.18F, motion.bank, lean);
-        if (flying) {
-            motion.flew = true;
-        }
-        if (flying || dropping) {
-            motion.sinceEnd = Integer.MAX_VALUE;
-        } else if (motion.sinceEnd == Integer.MAX_VALUE) {
-            motion.sinceEnd = 0;
-        } else {
-            motion.sinceEnd++;
-        }
-        Vec3 middle = player.position().add(0.0, player.getBbHeight() * 0.5, 0.0);
-        motion.trail.addFirst(middle);
-        while (motion.trail.size() > TRAIL) {
-            motion.trail.removeLast();
-        }
-        motion.ground = groundBelow(level, player);
-        if (flying && speed > fast() * 0.6) {
-            skim(level, player, motion, speed);
-        }
-        motion.braceO = motion.brace;
-        // Dropping, he is upright with his fist cocked all the way down.
-        float want = flying && diving(level, player, motion.velocity) || dropping ? 1.0F : 0.0F;
-        motion.brace = Mth.lerp(want > motion.brace ? 0.5F : 0.3F, motion.brace, want);
-    }
-
-    /**
-     * True when this flyer dives at slam speed and the ground is only a few ticks away along the way he goes: the
-     * moment to swing upright for the landing.
-     */
-    private static boolean diving(ClientLevel level, Entity player, Vec3 velocity) {
-        double speed = velocity.length();
-        if (speed < fullSpeed() * SLAM_SPEED || -velocity.y < speed * SLAM_DOWN
-                || ClientRing.has(player, RingPayload.DESCENT)) {
-            return false;
-        }
-        Vec3 from = player.position();
-        BlockHitResult hit = level.clip(new ClipContext(from, from.add(velocity.scale(BRACE_TICKS)),
-                ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, player));
-        return hit.getType() != HitResult.Type.MISS;
-    }
-
-    /** How far down the ground (or water) is below a flyer's feet, up to a little past {@link #SKIM}. */
-    private static double groundBelow(ClientLevel level, Entity player) {
-        Vec3 feet = player.position();
-        BlockHitResult hit = level.clip(new ClipContext(feet, feet.add(0.0, -SKIM - 1.0, 0.0),
-                ClipContext.Block.COLLIDER, ClipContext.Fluid.ANY, player));
-        return hit.getType() == HitResult.Type.MISS ? SKIM + 1.0 : feet.y - hit.getLocation().y;
-    }
-
-    /** Flying fast low over the ground throws up dust of what lies there; over water it throws up spray. */
-    private static void skim(ClientLevel level, Entity player, Motion motion, double speed) {
-        if (motion.ground > SKIM) {
-            return;
-        }
-        BlockPos below = BlockPos.containing(player.getX(), player.getY() - motion.ground - 0.2, player.getZ());
-        BlockState state = level.getBlockState(below);
-        double strength = (1.0 - motion.ground / SKIM) * Math.min(1.0, speed / (fullSpeed() * 1.15));
-        int count = (int) (1 + strength * 5);
-        double y = below.getY() + 1.05;
-        for (int i = 0; i < count; i++) {
-            double x = player.getX() + (level.random.nextDouble() - 0.5) * 1.6;
-            double z = player.getZ() + (level.random.nextDouble() - 0.5) * 1.6;
-            double out = 0.15 + 0.2 * strength;
-            if (!state.getFluidState().isEmpty()) {
-                level.addParticle(ParticleTypes.SPLASH, x, y, z, (level.random.nextDouble() - 0.5) * out, 0.25,
-                        (level.random.nextDouble() - 0.5) * out);
-                level.addParticle(ParticleTypes.BUBBLE_POP, x, y, z, 0.0, 0.05, 0.0);
-            } else if (state.getRenderShape() != RenderShape.INVISIBLE && !state.isAir()) {
-                level.addParticle(new BlockParticleOption(ParticleTypes.BLOCK, state), x, y, z,
-                        -motion.velocity.x * 0.3, 0.15 + 0.2 * strength, -motion.velocity.z * 0.3);
             }
         }
     }
@@ -818,32 +455,5 @@ public final class ClientFlight {
     /** The speed that counts as fast, in blocks per tick: about half the top speed. */
     static double fast() {
         return FAST * fullSpeed();
-    }
-
-    /** The wind of your own flight: louder and higher the faster you go, gone once you land. */
-    private static final class WindSound extends AbstractTickableSoundInstance {
-        private final LocalPlayer player;
-
-        WindSound(LocalPlayer player) {
-            super(SoundEvents.ELYTRA_FLYING, SoundSource.PLAYERS, SoundInstance.createUnseededRandom());
-            this.player = player;
-            this.looping = true;
-            this.delay = 0;
-            this.volume = 0.0F;
-        }
-
-        @Override
-        public void tick() {
-            if (this.player.isRemoved() || !steering) {
-                this.stop();
-                return;
-            }
-            this.x = this.player.getX();
-            this.y = this.player.getY();
-            this.z = this.player.getZ();
-            double speed = velocity.length() / fullSpeed();
-            this.volume = (float) Mth.clamp((speed - 0.17) * 0.8, 0.0, 0.85);
-            this.pitch = 0.9F + (float) Math.min(0.5, speed * 0.32);
-        }
     }
 }

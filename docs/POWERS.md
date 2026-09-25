@@ -422,7 +422,7 @@ off at what you aim at.
 - **It costs ring power:** 1.6 for the smallest fist, rising by about 0.2 for every half second of charging,
   to 3.2 for a full charge. The ring pays when the fist flies. If the ring runs out while you charge, the fist
   stops growing and you are told why.
-- **Crouch while you hold R** and the fist simply falls apart: no shot, no power and no cooldown.
+- **Crouching while you hold R changes nothing:** the fist keeps charging and flies when you let go.
 - **You steer it with your eyes: the middle of the fist stays right under your crosshair.** It charges beside
   you, so when you let go it glides from there onto the middle of your view, without turning, in a moment;
   from then on it stays exactly on your crosshair for its whole flight. Look aside, up or down and it goes

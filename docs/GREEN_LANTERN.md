@@ -95,7 +95,7 @@ Voor **alle** linksklik- (aanval) en rechtsklik-acties (verdediging) geldt een a
 - **Schade:** 6 harten bij een korte tik, tot 14 harten bij een volle lading.
 - **Kosten:** 1,6 power (tik) tot 3,2 power (volle lading). De ring betaalt pas als hij wordt afgevuurd.
 - **Cooldown:** 4 sec na het afvuren.
-- **Annuleren:** Bukken (crouch) tijdens het inhouden laat de vuist verdwijnen zonder schot, zonder kosten en zonder cooldown.
+- **Bukken:** Bukken (crouch) tijdens het inhouden verandert niets: de vuist laadt gewoon door.
 - **Let op:** Dit is een toets-ability (keybind) en gebruikt dus **geen** 2-seconde drempelwaarde.
 
 ---
