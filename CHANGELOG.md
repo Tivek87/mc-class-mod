@@ -3,6 +3,13 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.0.4-alpha] - 2026-09-25
+
+### Added
+- **Music:** the multiverse theme plays on a loop in the main menu, in place of Minecraft's menu music. In a world
+  the normal music plays. The music slider sets its volume, and the theme comes back when the slider goes up again
+  after being at 0.
+
 ## [0.0.3-alpha] - 2026-09-25
 
 ### Changed

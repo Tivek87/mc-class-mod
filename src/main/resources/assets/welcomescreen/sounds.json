@@ -1,0 +1,10 @@
+{
+  "music.multiverse_theme": {
+    "sounds": [
+      {
+        "name": "welcomescreen:music/multiverse_theme",
+        "stream": true
+      }
+    ]
+  }
+}

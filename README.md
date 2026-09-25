@@ -15,6 +15,8 @@ across the multiverse you can turn into.
   - **Green Lantern:** a power ring that shapes solid green hard light: a giant fist, flight, a construct wheel,
     shockwaves, giant hands, a light bubble and an air strike.
   - **Doctor Octopus:** four robot tentacles that walk, climb, grab, throw, strike the ground and open portals.
+- **Music:** the multiverse theme plays on a loop in the main menu, in place of Minecraft's menu music; the music slider
+  sets its volume.
 
 Everything each power does: [Characters and their powers](docs/POWERS.md).
 

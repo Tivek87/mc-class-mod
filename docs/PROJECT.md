@@ -3,7 +3,9 @@
 ## 1. What it is
 A Minecraft mod that adds classes, a stamina bar, spells, and characters from across the multiverse you can
 turn into. You pick a class before you start playing. The jar is `multiverse-powers-<version>.jar`; inside the
-game the mod's id is still `welcomescreen`, so worlds, settings and keys carry over.
+game the mod's id is still `welcomescreen`, so worlds, settings and keys carry over. Its own multiverse theme
+plays over and over in the main menu, in place of Minecraft's menu music; in a world the normal music plays. The
+music slider sets its volume.
 
 - [Classes and skill trees](CLASSES.md)
 - [Callings and Crowns](CALLINGS.md)
