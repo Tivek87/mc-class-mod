@@ -52,22 +52,20 @@ function Test-RemoteTag([string]$tag) {
     return [bool]$out
 }
 
-# The CHANGELOG section '## [<version>] - <date> - <title>' up to the next '## '.
+# The CHANGELOG section '## [<version>] - <date>' up to the next '## '.
 function Get-Notes([string]$version) {
     $lines = [IO.File]::ReadAllLines($Changelog, $Utf8)
     $start = -1
     for ($i = 0; $i -lt $lines.Length; $i++) {
         if ($lines[$i].StartsWith("## [$version]")) { $start = $i; break }
     }
-    if ($start -lt 0) { throw "No '## [$version] - <date> - <title>' section in CHANGELOG.md" }
+    if ($start -lt 0) { throw "No '## [$version] - <date>' section in CHANGELOG.md" }
     $end = $lines.Length
     for ($i = $start + 1; $i -lt $lines.Length; $i++) {
         if ($lines[$i].StartsWith('## ')) { $end = $i; break }
     }
-    $parts = $lines[$start] -split ' - ', 3
-    $title = if ($parts.Length -ge 3) { $parts[2].Trim() } else { '' }
     $body = ($lines[($start + 1)..($end - 1)] -join "`n").Trim()
-    return @{ Title = $title; Body = $body }
+    return $body
 }
 
 $version = Get-Prop 'mod_version'
@@ -85,7 +83,7 @@ if ($Step -eq 'prepare') {
     } else {
         Write-Host "mod_version $version has no release yet: kept"
     }
-    Write-Host "CHANGELOG heading needed: ## [$version] - $(Get-Date -Format yyyy-MM-dd) - <title>"
+    Write-Host "CHANGELOG heading needed: ## [$version] - $(Get-Date -Format yyyy-MM-dd)"
     exit 0
 }
 
@@ -113,13 +111,12 @@ Copy-Item $jar $Releases -Force
 Write-Host "Saved releases\$fileName-$version.jar"
 
 $notesFile = Join-Path ([IO.Path]::GetTempPath()) "release-notes-$version.md"
-$body = $notes.Body + "`n`n---`nMinecraft 1.21.1, NeoForge 21.1+. Put the jar in your ``mods`` folder."
+$body = $notes + "`n`n---`nMinecraft 1.21.1, NeoForge 21.1+. Put the jar in your ``mods`` folder."
 [IO.File]::WriteAllText($notesFile, $body, $Utf8)
-$title = if ($notes.Title) { "v$version - $($notes.Title)" } else { "v$version" }
+# The release is named after its version only, never a title.
 $sha = git -C $Root rev-parse HEAD
-$flags = @()
-if ($version -match '-(alpha|beta|rc)') { $flags += '--prerelease' }
-gh release create "v$version" $jar --target $sha --title $title --notes-file $notesFile @flags
+# A full release marked Latest (the green badge), also for -alpha: a pre-release gets no badge on the repo page.
+gh release create "v$version" $jar --target $sha --title "v$version" --notes-file $notesFile --latest
 if ($LASTEXITCODE -ne 0) { throw 'gh release create failed' }
 Remove-Item $notesFile
 

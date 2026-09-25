@@ -1,9 +1,9 @@
 # Changelog
 
-What changed in the project, newest first. Every release has its own section, `## [<version>] - <date> - <title>`;
+What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
-## [0.0.1-alpha] - 2026-09-25 - First numbered release
+## [0.0.1-alpha] - 2026-09-25
 
 The first release with a version number: Green Lantern and Doctor Octopus, the classes, stamina and spells as
 described in the docs.
