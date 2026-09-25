@@ -40,7 +40,6 @@ public final class GiantHands implements Effect {
     private static final int TRIES = 8;
     static final double GRAB_WIDE = 2.0;
     static final double GRAB_TALL = 3.2;
-    private static final int[] CHANCE = { 25, 22, 12, 22, 19, 24 };
     private static final double[] PAIR_TURNS = { 0.0, Math.PI * 0.5, -Math.PI * 0.5, Math.PI };
     private static final int WAIT_TICKS = 80;
     private static final int LOOK_AGAIN = 5;
@@ -57,6 +56,7 @@ public final class GiantHands implements Effect {
     final ServerPlayer owner;
     final CharacterAbility ability;
     private final List<GiantHand> hands = new ArrayList<>();
+    private final int[] made = new int[HandPose.MOVES];
     private final List<LivingEntity> targets;
     private final Set<LivingEntity> missed = new HashSet<>();
     private final int count;
@@ -197,6 +197,10 @@ public final class GiantHands implements Effect {
 
     private boolean call(ServerLevel level, int tries) {
         this.taken = null;
+        if (!this.anyLeft()) {
+            this.called = this.count;
+            return false;
+        }
         double reach = this.ability.value("radiusBlocks");
         this.targets.removeIf(living -> !living.isAlive() || living.level() != level
                 || !fair(this.owner, living) || Math.abs(living.getX() - this.owner.getX()) > reach + 4.0
@@ -219,10 +223,10 @@ public final class GiantHands implements Effect {
                 .thenComparingDouble(living -> living.distanceToSqr(this.owner)));
         for (LivingEntity target : turns.subList(0, Math.min(tries, turns.size()))) {
             int move = this.pick(target, true);
-            GiantHand hand = this.spawn(level, target, move);
+            GiantHand hand = move < 0 ? null : this.spawn(level, target, move);
             if (hand == null && move == HandPose.AXE) {
                 move = this.pick(target, false);
-                hand = this.spawn(level, target, move);
+                hand = move < 0 ? null : this.spawn(level, target, move);
             }
             if (hand == null) {
                 this.missed.add(target);
@@ -230,6 +234,7 @@ public final class GiantHands implements Effect {
             }
             this.missed.clear();
             this.hands.add(hand);
+            this.made[move]++;
             this.called++;
             this.since = 0;
             this.latest = hand;
@@ -243,30 +248,59 @@ public final class GiantHands implements Effect {
     }
 
     private int pick(LivingEntity target, boolean pair) {
-        RandomSource random = this.owner.getRandom();
+        int move = this.pick(target, pair, true);
+        return move >= 0 ? move : this.pick(target, pair, false);
+    }
+
+    private int pick(LivingEntity target, boolean pair, boolean fresh) {
         boolean grabbable = target.getBbWidth() <= GRAB_WIDE && target.getBbHeight() <= GRAB_TALL
                 && !HeldMobs.isHeldByAnyone(target) && !LightBubble.trapped(target);
-        int total = 0;
+        double[] chances = new double[HandPose.MOVES];
+        double total = 0.0;
         for (int move = 0; move < HandPose.MOVES; move++) {
-            if (this.may(move, grabbable, pair)) {
-                total += CHANCE[move];
+            if (this.may(move, grabbable, pair, fresh)) {
+                chances[move] = this.chance(move);
+                total += chances[move];
             }
         }
-        int roll = random.nextInt(total);
+        if (total <= 0.0) {
+            return -1;
+        }
+        double roll = this.owner.getRandom().nextDouble() * total;
+        int last = -1;
         for (int move = 0; move < HandPose.MOVES; move++) {
-            if (!this.may(move, grabbable, pair)) {
+            if (chances[move] <= 0.0) {
                 continue;
             }
-            roll -= CHANCE[move];
-            if (roll < 0) {
+            last = move;
+            roll -= chances[move];
+            if (roll < 0.0) {
                 return move;
             }
         }
-        return HandPose.SMACK;
+        return last;
     }
 
-    private boolean may(int move, boolean grabbable, boolean pair) {
-        return move != this.lastMove && (move != HandPose.GRAB || grabbable) && (move != HandPose.AXE || pair);
+    private boolean may(int move, boolean grabbable, boolean pair, boolean fresh) {
+        return (!fresh || move != this.lastMove) && this.made[move] < this.most(move)
+                && (move != HandPose.GRAB || grabbable) && (move != HandPose.AXE || pair);
+    }
+
+    private boolean anyLeft() {
+        for (int move = 0; move < HandPose.MOVES; move++) {
+            if (this.made[move] < this.most(move) && this.chance(move) > 0.0) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private double chance(int move) {
+        return Math.max(0.0, this.ability.value(HandPose.HANDS[move] + "Chance"));
+    }
+
+    private int most(int move) {
+        return this.ability.intValue(HandPose.HANDS[move] + "Most");
     }
 
     @Nullable

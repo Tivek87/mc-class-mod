@@ -1,7 +1,10 @@
 # Laatste sessie — 2026-09-25 (avond, 11)
 
-- **Vraag 1:** ideeën/suggesties naast "Report a bug". Gedaan + getest, commit 105d591, release v0.1.3-alpha.
-- **Vraag 2:** windgeluiden van de plane (Air Strike) weg (plane-wind, jets, duik-whoosh; motorbrom blijft). `PlaneSound` + `AirStrike`. Getest in-game via `PlaySoundEvent`-log: geen elytra-geluid meer.
-- **Vraag 3:** categorie weg uit Suggest an idea. `BugReporter.Category` weg, prioriteit weer volle breedte, lang-keys weg; `worker.js` negeert categorie (0.1.3-clients sturen hem nog, worden gewoon aangenomen), labels `idea` + `priority: …`; `bugs.ps1` zonder categorie. Relay gedeployd (5b3631cf). Docs: CLAUDE.md, README, PROJECT.md, CHANGELOG 0.1.4-alpha.
-- **Getest 3:** relay lokaal (4 gevallen incl. oud 0.1.3-idee met categorie) goed, bug-tekst byte-gelijk; in-game 427x240: één knop (Priority), idee verstuurd met labels idea + priority: high. Build schoon, testklasse/shots weg.
-- **Open:** GitHub-labels `category: …` bestaan nog (ongebruikt); weghalen alleen na ja.
+- **Eerder vandaag:** ideeën-knop (v0.1.3), wind van de plane weg + categorie weg uit ideeën (v0.1.4).
+- **Ideeën auto-sync:** de Windows-taak draait `bugs.ps1 sync` elke 5 min; die synct ook `bugs/ideas/` (log: "0 open, 0 ideas"). Niets aan veranderd.
+- **Giant Hands per hand:** `HandMoves.HANDS`; per hand Chance / Most / Damage / Knockback (`GameCharacter.hand`), `GiantHands` kiest gewogen, telt per druk (`made`), stopt als niets meer mag; `GiantHandBase.hit` vermenigvuldigt schade/terugslag. Labels en groepen in `en_us.json`.
+- **G-wiel:** linksboven "Faction: <naam>" (groen) of "none" (`PowerWheelScreen.faction`).
+- **Balans:** schild-charge 16 → 12 b/s; crash ×0.25 (`CRASH_SIZE` 1.5, bereik 24.1, krater 2.4, puin 40); miniguns `gunTicks` 3.72, `gunDamage` 1.575; jets `jetMissileTicks` 48, `jetMissileDamage` 2.5. `.was` + `DEFAULTS_VERSION` 17.
+- **Getest in-game:** handen: limiet pound 2 + slam 1 → precies zo en klaar; schade x1/x0.5/x0 → 11.8/5.9/0. Wiel: "none" en "Lanterns". Air Strike: 10.78 schoten/s (verwacht 10.75), kogel ~1.55, jet-raket ~2.45, krater 23 blokken. Jet-tempo niet gemeten (setting direct gebruikt). Build schoon, testklassen/werelden weg.
+- **Docs:** POWERS.md, GREEN_LANTERN.md, PROJECT.md, CHANGELOG 0.1.5-alpha.
+- **Open:** crash-geluiden niet verkleind (alleen beeld/bereik/krater); crash-schade (24 harten) ongewijzigd.

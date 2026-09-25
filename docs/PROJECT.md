@@ -139,6 +139,7 @@ powers go for.
 - **Hit something yellow 3 times** (you and your faction together) and it turns **red** for your whole faction,
   until 5 minutes after the last hit or until it dies. A player turned red this way also sees your faction as red.
 - Players only hurt each other where the world allows it (PvP).
+- **Hold G** (the power wheel) to see your faction in its top-left corner ("none" when you are in none).
 
 **The command `/faction`** (a faction is the same as a vanilla scoreboard team, so vanilla `/team` works on them too):
 

@@ -22,7 +22,7 @@ import nl.tivek.multiversepowers.engine.world.LoadedWorld;
 public final class AirStrike extends AirStrikeMissiles {
     public static final int CALL_TICKS = 34;
     public static final int BLAST_TICKS = 90;
-    public static final double CRASH_SIZE = 6.0;
+    public static final double CRASH_SIZE = 1.5;
     public static final int BIG_MISSILE = 0;
     public static final int JET_MISSILE = 2;
     public static final int BIG_BLAST = 0;

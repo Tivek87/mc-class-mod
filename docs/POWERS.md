@@ -539,7 +539,7 @@ arm, both as solid as every construct.
   sight, and stops **85%** of what comes from the front for as long as you hold it (costs a little power while it is
   up). A cut, a thrust or the flurry lowers it for as long as the move lasts, so you cannot block while you
   attack; it comes back up by itself if you still hold right. The flurry keeps its own shield before your chest.
-- **Clicking right:** you bend forward, lock the shield before you and **charge** straight ahead, very fast (16
+- **Clicking right:** you bend forward, lock the shield before you and **charge** straight ahead, very fast (12
   blocks a second). Everything in your way is rammed aside to the side it stood on, with one of **six** rams: the
   face punched straight out, swung out to your right, swung out to your left, driven up from under it (throws it into
   the air), its rim brought down on it (knocks it down and slows it a moment), or your shoulder turned into it behind
@@ -589,28 +589,28 @@ Green Lantern's ultimate: a big, slow gunship of hard light high over the battle
     it marked red, the one closest to you first.** With nothing red marked it holds fire: the guns stay quiet and
     the bomb bay stays shut.
   - **the two miniguns**, big six-barrelled guns hanging under either side of its body, swing smoothly round to
-    what they fire at and stay on it a while, firing in turn: together **2 rounds every 0.14 seconds**, their
+    what they fire at and stay on it a while, firing in turn: together **2 rounds every 0.19 seconds**, their
     barrels spinning, their muzzles flashing and slim glowing tracers streaking down. They aim where a creature on
     the move will be when the rounds get there. The rounds spread wide, so many miss, but there are a lot of them:
-    **2.25 hearts** for every round that strikes.
+    **0.8 hearts** for every round that strikes.
   - **homing missiles out of the belly:** every **2 seconds** the two doors of the bomb bay swing open, a big
     missile is lowered out and drops, and the doors swing shut behind it. It falls a way, and then, at a moment of
     its own, its motor bursts into life with a flash: it turns and streaks off at the marked red creature closest
     to you, trailing flame and light, and bursts on it for **12 hearts** (less for what else red its blast
     reaches). If that one is gone by then and nothing red is left, it strikes the ground along the way. Every
     missile that bursts near the ground blows a **small crater** in it and throws up blocks.
-  - **the jets** fire a small homing missile from under one wing and then the other, each about every **1.2
-    seconds**, at the marked red creature closest to you: **2.5 hearts** and a small blast. The pylon grows its
+  - **the jets** fire a small homing missile from under one wing and then the other, each about every **2.4
+    seconds**, at the marked red creature closest to you: **1.25 hearts** and a small blast. The pylon grows its
     next missile out of the light.
 - **Then it fails:** an engine bursts into flame and its propeller runs down. The gunship shudders, leans over to
   that side and fights to stay up, trailing fire and light, while its **jets break away**: their flames roar out,
   they race off faster and faster, a cone of mist forms round them and they **break the sound barrier** with a
   thunderclap and a ring of light, and a moment later they are gone in a **star of light**, breaking into solid
   pieces. Then the gunship's nose drops, slowly at first, and it plunges into the ground, rolling over, faster and
-  faster, in about three seconds. It strikes in a vast blast like a sun: a flash, a fireball rising on a stem of
+  faster, in about three seconds. It strikes in a blast like a small sun: a flash, a fireball rising on a stem of
   light and rolling into a mushroom cloud, a ring of light racing out round its middle, a shell of light and rings
   running out over the ground, and the plane breaks into solid pieces flung far. The view of everyone close by
-  shakes. The blast does **24 hearts** in the middle, half at its edge 96 blocks out, throws everything away, and
+  shakes. The blast does **24 hearts** in the middle, half at its edge 24 blocks out, throws everything away, and
   **blows a crater out of the ground**: its blocks are hurled up and away and come down all round it, and smoke
   and flames rise from it for a while after. Blocks that hold something (chests and the like), blocks harder than
   ores, and water stay.
@@ -669,6 +669,9 @@ Green Lantern's ultimate: a big, slow gunship of hard light high over the battle
   Hands **never come up inside each other**: a hand only comes where it has room, clear of every other hand (a pair
   and its axe too, and the hands of other players) for as long as they are up. With no room near one creature it
   goes for another, or waits until a hand is gone.
+- **Every kind of hand has its own settings** (smack, grab, middle finger, slap, pound, axe pair): how often it
+  comes compared with the others (0 = never), the most of it in one press, and its damage and knockback as a factor
+  of the usual. Out of the settings every kind still allowed is picked; when none is left, the press ends early.
   Whatever it strikes always flies away from you, never at you. Its blows leave streaks of light in the air and rings
   of light running out over the ground. When it is done it sinks back into the ground; if you stop being Green
   Lantern it breaks into solid pieces (a pair and its axe too).

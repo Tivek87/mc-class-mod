@@ -3,6 +3,23 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.1.5-alpha] - 2026-09-25
+
+### Added
+- **Giant Hands, settings per hand:** smack, grab, middle finger, slap, pound and axe pair each get a chance (how
+  often it comes compared with the others, 0 = never), the most of it in one press, and a damage and knockback
+  factor.
+- **Power wheel (hold G):** shows your faction in its top-left corner, or "none".
+
+### Changed
+- **Sword and shield, the charge:** runs at 12 blocks a second (was 16).
+- **Air Strike, the crash:** 75% smaller in everything: the blast (a quarter of its size), its reach (24 blocks,
+  was 96), the crater (2.4 blocks, was 9.7), the blocks hurled away (40, was 158) and the shaking round it.
+- **Air Strike, the miniguns:** fire 25% slower (2 rounds every 0.19 seconds, was 0.14) and a round does 0.8
+  hearts (was 2.25).
+- **Air Strike, the jets:** fire their small missiles half as often (about every 2.4 seconds, was 1.2) for 1.25
+  hearts (was 2.5).
+
 ## [0.1.4-alpha] - 2026-09-25
 
 ### Removed

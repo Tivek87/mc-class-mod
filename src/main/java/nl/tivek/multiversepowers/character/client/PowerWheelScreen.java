@@ -7,6 +7,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundEvents;
+import net.minecraft.world.scores.PlayerTeam;
 import net.neoforged.neoforge.network.PacketDistributor;
 import nl.tivek.multiversepowers.character.GameCharacter;
 import nl.tivek.multiversepowers.character.TransformPayload;
@@ -219,6 +220,15 @@ public class PowerWheelScreen extends PowerWheelLayout {
                 };
         guiGraphics.drawCenteredString(this.font, Component.translatable(KEY + hint,
                 AbilityKeys.SPELL_WHEEL.getTranslatedKeyMessage()), this.width / 2, this.height - 18, MUTED_COLOR);
+        this.faction(guiGraphics);
+    }
+
+    private void faction(GuiGraphics guiGraphics) {
+        PlayerTeam team = this.minecraft == null || this.minecraft.player == null ? null
+                : this.minecraft.player.getTeam();
+        Component name = team == null ? Component.translatable(KEY + "faction_none")
+                : team.getDisplayName().copy().withColor(ACTIVE_COLOR);
+        guiGraphics.drawString(this.font, Component.translatable(KEY + "faction", name), 8, 6, MUTED_COLOR);
     }
 
     private void heading(GuiGraphics guiGraphics, Component title, int color, int y) {

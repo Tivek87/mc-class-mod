@@ -220,8 +220,10 @@ abstract class GiantHandBase {
     void hit(ServerLevel level, LivingEntity living, double damage, Vec3 away, double out, double up) {
         // Hits in quick succession all land.
         living.invulnerableTime = 0;
-        living.hurt(level.damageSources().playerAttack(this.storm.owner), (float) damage);
-        double knockback = this.storm.ability.value("knockback");
+        String hand = HandPose.HANDS[this.move];
+        living.hurt(level.damageSources().playerAttack(this.storm.owner),
+                (float) (damage * this.storm.ability.value(hand + "Damage")));
+        double knockback = this.storm.ability.value("knockback") * this.storm.ability.value(hand + "Knockback");
         double resist = Mth.clamp(living.getAttributeValue(Attributes.KNOCKBACK_RESISTANCE), 0.0, 1.0);
         Vec3 flung = this.storm.awayFromHim(living, away);
         Vec3 push = flung.scale(out * knockback).add(0.0, up * Math.min(1.0, knockback), 0.0).scale(1.0 - resist);

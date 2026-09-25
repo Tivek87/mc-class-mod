@@ -12,6 +12,8 @@ abstract class HandMoves extends HandMotion {
     public static final int POUND = 4;
     public static final int AXE = 5;
     public static final int MOVES = 6;
+    // Setting names per move, in move order: smackChance, grabMost, fingerDamage, ...
+    public static final String[] HANDS = { "smack", "grab", "finger", "slam", "pound", "axe" };
     static final double SLOW = 1.6;
     private static final double ARRIVE = 4.0;
     static final int[] LIFE = { 50, 58, 56, 62, 76 };

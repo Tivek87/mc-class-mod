@@ -11,7 +11,7 @@ import net.neoforged.neoforge.server.ServerLifecycleHooks;
 import nl.tivek.multiversepowers.config.ModConfigs;
 
 public final class CharacterConfig {
-    private static final int DEFAULTS_VERSION = 16;
+    private static final int DEFAULTS_VERSION = 17;
 
     private static final Map<GameCharacter, ModConfigSpec> SPECS = new EnumMap<>(GameCharacter.class);
     private static final Map<GameCharacter, ModConfigSpec.IntValue> VERSIONS = new EnumMap<>(GameCharacter.class);

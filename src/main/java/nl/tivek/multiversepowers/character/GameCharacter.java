@@ -9,6 +9,7 @@ import net.minecraft.network.chat.Component;
 import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.character.docock.DocOckPowers;
 import nl.tivek.multiversepowers.character.greenlantern.GreenLanternPowers;
+import nl.tivek.multiversepowers.character.greenlantern.HandPose;
 import nl.tivek.multiversepowers.config.Unit;
 
 public enum GameCharacter {
@@ -109,9 +110,10 @@ public enum GameCharacter {
                                     + " right button): 0.15 = 15%, so it takes 85%")
                     .setting("blockPowerPerSecond", 0.08, 0.0, 20.0, Unit.POWER_PER_SECOND,
                             "Ring power holding the shield up to block costs a second")
-                    .setting("chargeSpeed", 16.0, 4.0, 40.0, Unit.BLOCKS_PER_SECOND,
+                    .setting("chargeSpeed", 12.0, 4.0, 40.0, Unit.BLOCKS_PER_SECOND,
                             "How fast the charge behind the shield runs (click the right button), in blocks per"
                                     + " second")
+                    .was(16.0)
                     .setting("chargeSeconds", 1.4, 0.3, 10.0, Unit.SECONDS,
                             "How long a charge runs at most, in seconds; a wall or a second click ends it sooner")
                     .was(3.0)
@@ -202,13 +204,13 @@ public enum GameCharacter {
                                     + " Ring Scan reaches 56)")
                     .setting("powerCost", 20.0, 0.0, 100.0, Unit.POWER, "Ring power the air strike costs")
                     .group("guns", "The miniguns")
-                    .setting("gunTicks", 2.79, 1.0, 100.0, Unit.TICKS,
+                    .setting("gunTicks", 3.72, 1.0, 100.0, Unit.TICKS,
                             "Ticks between two rounds of one minigun; the two fire in turn, so together they fire"
                                     + " twice in that time (20 ticks = 1 second)")
-                    .was(6.0, 4.6)
-                    .setting("gunDamage", 4.5, 0.0, 2000.0, Unit.HALF_HEARTS,
+                    .was(6.0, 4.6, 2.79)
+                    .setting("gunDamage", 1.575, 0.0, 2000.0, Unit.HALF_HEARTS,
                             "Damage of one round that strikes, in half hearts")
-                    .was(3.0)
+                    .was(3.0, 4.5)
                     .setting("gunSpread", 2.4, 0.0, 12.0, Unit.BLOCKS,
                             "How far round what they aim at the rounds spread, in blocks: the wider, the fewer strike")
                     .group("missiles", "Homing missiles")
@@ -223,26 +225,28 @@ public enum GameCharacter {
                             "How wide the small crater a missile blows out of the ground is, from its middle, in blocks"
                                     + " (0 = none; the crash's block hardness applies here too)")
                     .group("jets", "The jets")
-                    .settingInt("jetMissileTicks", 24, 4, 400, Unit.TICKS,
+                    .settingInt("jetMissileTicks", 48, 4, 400, Unit.TICKS,
                             "Ticks between two small missiles of one jet, fired at the creature out to hurt you nearest"
                                     + " to it (20 ticks = 1 second)")
-                    .setting("jetMissileDamage", 5.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                    .was(24.0)
+                    .setting("jetMissileDamage", 2.5, 0.0, 2000.0, Unit.HALF_HEARTS,
                             "Damage of a jet's small missile to the creature it strikes, in half hearts; what else its"
                                     + " small blast reaches takes less")
+                    .was(5.0)
                     .group("crash", "The crash")
-                    .setting("crashRadius", 96.4, 2.0, 200.0, Unit.BLOCKS,
+                    .setting("crashRadius", 24.1, 2.0, 200.0, Unit.BLOCKS,
                             "How far the blast of the crash reaches, in blocks")
-                    .was(12.0, 14.0, 16.0, 80.0)
-                    .setting("craterRadius", 9.7, 0.0, 16.0, Unit.BLOCKS,
+                    .was(12.0, 14.0, 16.0, 80.0, 96.4)
+                    .setting("craterRadius", 2.4, 0.0, 16.0, Unit.BLOCKS,
                             "How wide the crater the crash blows out of the ground is, from its middle, in blocks (0 ="
                                     + " no crater)")
-                    .was(7.0, 8.0)
+                    .was(7.0, 8.0, 9.7)
                     .setting("breakHardness", 3.0, -1.0, 100.0, Unit.HARDNESS,
                             "How hard a block may be for the crash to blow it away (dirt 0.5, stone 1.5, wood 2, iron"
                                     + " 5); -1 leaves the ground alone. Blocks that hold something, like chests, stay")
-                    .settingInt("debrisBlocks", 158, 0, 400, Unit.BLOCK_COUNT,
+                    .settingInt("debrisBlocks", 40, 0, 400, Unit.BLOCK_COUNT,
                             "How many of the crater's blocks are hurled up and away, to come down all round it")
-                    .was(40.0, 90.0);
+                    .was(90.0, 158.0);
             this.add(abilities, AbilitySlot.ABILITY_8, "shockwave").cooldown(100).damage(12.0)
                     .setting("radiusBlocks", 5.0, 1.0, 16.0, Unit.BLOCKS, "How far the shockwave reaches, in blocks")
                     .setting("knockback", 1.2, 0.0, 5.0, Unit.STRENGTH,
@@ -291,7 +295,8 @@ public enum GameCharacter {
                     .setting("chunkAheadSeconds", 8.0, 0.0, 30.0, Unit.SECONDS,
                             "How many seconds of flying ahead of a flyer the server makes the world ready as well, along"
                                     + " the way he flies and at the speed he flies (at most 512 blocks ahead)");
-            this.add(abilities, AbilitySlot.ABILITY_10, "giant_hands").cooldown(600).damage(12.0)
+            CharacterAbility hands = this.add(abilities, AbilitySlot.ABILITY_10, "giant_hands").cooldown(600)
+                    .damage(12.0)
                     .setting("radiusBlocks", 20.0, 4.0, 48.0, Unit.BLOCKS,
                             "How far round you the hands come up at creatures out to hurt you, every way, in blocks"
                                     + " (20 = an area 40 blocks across)")
@@ -308,6 +313,14 @@ public enum GameCharacter {
                             "How hard the hands send a creature flying (a middle finger bursting out of the ground and"
                                     + " the axe of a pair far harder)")
                     .setting("powerCost", 8.0, 0.0, 100.0, Unit.POWER, "Ring power the hands cost");
+            hand(hands, HandPose.SMACK, "Smack", 0.25, "a hand coming up beside a creature to swat it away");
+            hand(hands, HandPose.GRAB, "Grab and throw", 0.22,
+                    "a hand grabbing a creature and throwing it (only creatures small enough to hold)");
+            hand(hands, HandPose.FINGER, "Middle finger", 0.12, "a middle finger bursting out of the ground");
+            hand(hands, HandPose.SLAM, "Slap flat", 0.22, "a hand slapping down flat on a creature");
+            hand(hands, HandPose.POUND, "Pound", 0.19, "a fist pounding a creature again and again");
+            hand(hands, HandPose.AXE, "Pair with an axe", 0.24,
+                    "a pair of hands chopping down with an axe (only where there is room for it)");
             this.add(abilities, AbilitySlot.ABILITY_11, "light_bubble").cooldown(240).damage(12.0)
                     .crouch(CharacterAbility.Crouch.UNDO)
                     .setting("rangeBlocks", 24.0, 4.0, 64.0, Unit.BLOCKS,
@@ -356,6 +369,19 @@ public enum GameCharacter {
         CharacterAbility ability = new CharacterAbility(this, slot, id);
         abilities.put(slot, ability);
         return ability;
+    }
+
+    static void hand(CharacterAbility ability, int move, String title, double chance, String what) {
+        String hand = HandPose.HANDS[move];
+        ability.group("hand_" + hand, title)
+                .setting(hand + "Chance", chance, 0.0, 1.0, Unit.CHANCE,
+                        "How often " + what + " comes, weighed against the chances of the other hands (0 = never)")
+                .settingInt(hand + "Most", 30, 0, 30, Unit.COUNT,
+                        "The most of these hands in one press (0 = never, 30 = no limit)")
+                .setting(hand + "Damage", 1.0, 0.0, 10.0, Unit.STRENGTH,
+                        "Damage of " + what + ", times its usual damage (1 = as it is, 0 = none)")
+                .setting(hand + "Knockback", 1.0, 0.0, 10.0, Unit.STRENGTH,
+                        "How hard " + what + " sends a creature flying, times the usual knockback (1 = as it is)");
     }
 
     public String getId() {
