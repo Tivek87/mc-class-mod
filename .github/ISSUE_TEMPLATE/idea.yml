@@ -1,0 +1,21 @@
+name: Idea
+description: A new ability, character, spell or change to how something plays.
+labels: [enhancement]
+body:
+  - type: input
+    id: character
+    attributes:
+      label: Character, class or spell
+      placeholder: Green Lantern
+  - type: textarea
+    id: idea
+    attributes:
+      label: The idea
+      description: What should it do, which key, what does it look like?
+    validations:
+      required: true
+  - type: textarea
+    id: reference
+    attributes:
+      label: Reference
+      description: A link to a scene, image or video that shows it (optional).

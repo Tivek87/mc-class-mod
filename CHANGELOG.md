@@ -1,6 +1,20 @@
 # Changelog
 
-What changed in the project, newest first.
+What changed in the project, newest first. Every release has its own section, `## [<version>] - <date> - <title>`;
+the sections before 0.0.1-alpha came before versions were numbered.
+
+## [0.0.1-alpha] - 2026-09-25 - First numbered release
+
+The first release with a version number: Green Lantern and Doctor Octopus, the classes, stamina and spells as
+described in the docs.
+
+### Changed
+- **Giant Fist (R): crouching no longer cancels it.** Crouch while you hold R and the fist keeps charging; it
+  flies when you let go.
+- **Versions** now count up one step per release (0.0.1, 0.0.2 ... 0.1.0 ... 9.9.9); the jar is
+  `multiverse-powers-<version>.jar` and the newest 10 are on the Releases page.
+- **Code:** every source file over 600 lines was split into smaller files by what they do. The game plays and
+  looks exactly the same.
 
 ## [Giant Hands, a new Air Strike and the sword thrown up] - 2026-09-24
 

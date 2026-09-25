@@ -1,0 +1,29 @@
+# Checks that every push and pull request still builds, and keeps the jar as a download for a week.
+# Releases themselves are made locally with scripts/release.ps1.
+name: Build
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: gradle/actions/setup-gradle@v6
+      - run: chmod +x gradlew && ./gradlew build --console=plain
+      - uses: actions/upload-artifact@v7
+        with:
+          name: multiverse-powers-jar
+          path: build/libs/*.jar
+          retention-days: 7

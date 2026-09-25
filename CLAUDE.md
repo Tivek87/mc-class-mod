@@ -10,6 +10,11 @@
 ## Language
 - The mod is English only: every in-game text lives in `en_us.json`, never add another language file.
 
+## Repository
+- Always keep the project organised and optimised. The root holds only the build files, `README.md`, `CHANGELOG.md`, `CLAUDE.md` and the folders `src/`, `docs/`, `scripts/`, `.github/`, `gradle/`. A Java file past ~600 lines gets split by responsibility (a sub-package once a family of files forms); outdated notes move to `docs/archive/` (session notes to `docs/claude/archive/`).
+- Always safe to make public: nothing personal in tracked files or commits (no real names, e-mail addresses, local user paths, tokens, private chats). Commits use the repo's local noreply identity (`git config --local user.email`); clips from films or games stay local (`docs/reference/*.mp4` is ignored).
+- Every push is a release. Before the commit: `scripts/release.ps1 prepare` (raises `mod_version` one step: 0.0.1 .. 0.0.9, 0.1.0 .. 9.9.9, the `-alpha` suffix stays) and a `## [<version>] - <date> - <title>` section on top of `CHANGELOG.md`. After the push (same yes as the push): `scripts/release.ps1 publish` builds the jar, saves it in `releases/` (ignored) and on GitHub Releases, and keeps the newest 10 on both.
+
 ## Engine
 - The engine (everything in `engine/`: `ConstructPainter`, `Mesh`, `Material`, `Effects`, `Cooldowns` and the rest) may always be updated and extended on your own. Extensions or additions around the character itself (new abilities, new constructs, changes to how Green Lantern plays) always need the user's permission first.
 - Anything a second power could use belongs in `engine/`, and `engine/` never names a character, spell or class: content brings only what is its own. Colours go through a `Material`; a character's own shapes go in a painter subclass (Green Lantern: `LanternPainter`).
@@ -25,6 +30,7 @@
 - `character/`: the roster (`GameCharacter`), keys, cooldowns and the panel (`Characters`, `client/`), and one folder per character. `greenlantern/` holds the ring and its payloads, `ability/` (server), `client/` (state), `client/render/` (LanternPainter and every hard-light painter), `client/slam/` (the 32 slam constructs), `client/body/` (suit, ring, poses), `client/hud/`.
 - `spell/`, `classes/` (`ceremony/`: one file per group), `stamina/`, `config/` (world settings: `ModConfigs`, `WorldSettings`; `client/`: `ClientSettings` and the settings screen), `network/` (`ModNetwork` registers every payload; each payload class lives with its feature; `client/ClientPayloadHandler` handles the client-bound ones), `mixin/`.
 - Client-only code always sits in a package named `client`, so a dedicated server never loads it.
+- Big classes are split into a chain of package-private base classes in the same package, the public class on top (`ConstructPainter` → `PainterSolid` → `PainterCut` → `PainterLight` → `PainterCore`; `OctoRig` → `Rig*`; `SwordArms`/`SwordPoses` → `Sword*`; `AirStrike`, `HandDuo`, `HandPose`, `ClientConstructs`, `ClientFlight` likewise), or into helpers with a shared prefix (`Plane*`, `Hand*`, `Arrival*`, `Slam*`). New code goes in the layer it belongs to; callers keep using the top class.
 
 ## Construct drawing
 - Player model arms: a `ModelPart` turns about x first, then about z, so an arm raised overhead (xRot near -π) spreads outward with the opposite zRot sign from a hanging arm (the raised right arm goes out with a negative zRot).

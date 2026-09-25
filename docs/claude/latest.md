@@ -1,10 +1,7 @@
-# Laatste sessie — 2026-09-25 (middag, sessie 58a06a7d)
+# Laatste sessie — 2026-09-25 (middag)
 
-- **Vraag:** Giant Hands: standaard maar 1 hand per keer drukken. Keuze user: 1 hand per druk; het bijl-paar blijft, telt als 1 en komt alleen.
-- **Gedaan:** instelling `hands` standaard 6 → 1 (`.was(6.0)`, `CharacterConfig.DEFAULTS_VERSION` 12 → 13). Bijl-paar telt als 1 beurt, komt alleen als er geen hand staat, en er komt geen bij zolang het er is. "Nooit twee keer dezelfde beweging achter elkaar" geldt nu ook over twee keer drukken heen (`LAST_MOVES` per speler, leeg bij server-stop). Max 3 tegelijk blijft voor wie meer handen instelt.
-- **Bestanden:** `GiantHands.java`, `GameCharacter.java`, `CharacterConfig.java`; docs `GREEN_LANTERN.md`, `POWERS.md`, `CHANGELOG.md`.
-- **Getest:** in-game op een kopie van `New Worldtest`: config-bestand omgezet (`hands = 1`, versie 13); 12× drukken = 12× precies 1 hand (3× paar, alleen), nooit dezelfde beweging achter elkaar; met `hands` 6: 6 handen, max 3 tegelijk, paar alleen. 0 overtredingen, geen exceptions. WARN "green_lantern.toml is not correct. Correcting" = verwacht (commentaar van `hands` veranderd).
-- **Opgeruimd** (na ja van de user; de veiligheidscheck blokkeerde het eerst): test-klasse, wereldkopie `run/saves/claude_hands_test/`, screenshots. Daarna gecompileerd: OK.
-- **Commit:** "Green Lantern: review-fixes en één reuzenhand per druk" (samen met de WIP van vanochtend), push naar origin/master: ja van de user.
-- **Open:** cooldown (30 s) en kosten (8 power) zijn nog afgestemd op 6 handen; voorstel aan de user, niet gedaan.
-- **Bekend (van vanochtend):** `.was()`-waarden worden bij elke versie-ophoging opnieuw toegepast; `docs/reference/nanotech-ironman-suitup.mp4` niet mee-committen.
+- **Vraag:** Giant Fist niet meer annuleren met bukken; releases met versies (0.0.1-alpha, +1 per push, laatste 10 lokaal + GitHub); GitHub benutten; alle bestanden > 600 regels splitsen; root ordenen; repo altijd veilig om openbaar te maken.
+- **Gedaan:** bukken-annuleren uit `GiantFist.hold` weg. `mod_version=0.0.1-alpha`, `scripts/release.ps1` (`prepare`/`publish`, houdt 10). README, issue-sjablonen, build-workflow, 4 labels, issues #1 (Giant Hands balans) en #2 (`.was()`-bug). `CHANGELOG.md` naar root, oude notities naar `docs/archive/` en `docs/claude/archive/`. Referentievideo's uit git (lokaal nog aanwezig, nu ignored). Lokale git-identiteit = Tivek87 noreply. CLAUDE.md: sectie Repository + regel over gesplitste klassen.
+- **Split:** 25 bestanden via 7 agents in worktrees → grootste bestand nu 597 regels, alleen verplaatsing (basisklasse-ketens, prefix-helpers).
+- **Getest:** compile + `gradlew build` OK (jar `multiverse-powers-0.0.1-alpha.jar`). Regel-multiset oud vs nieuw: alleen constructors/kopregels/doorgeefmethodes. Zelfde in-game script op HEAD en nieuw: 41+41 shots, geen errors; vaste delen gelijk, rest verschilt door toeval. Testklasse, wereldkopie, screenshots en worktrees opgeruimd.
+- **Open:** commit + push + eerste release (vraag gesteld). Oude commits bevatten gmail- en schoolmail-adres: geschiedenis herschrijven + force push alleen na ja. Repo-beschrijving/topics en Projects vragen admin (`Tivek87`) of `gh auth refresh -s project`.
