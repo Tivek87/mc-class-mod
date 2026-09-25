@@ -625,16 +625,17 @@ Green Lantern's ultimate: a big, slow gunship of hard light high over the battle
 
 ### Giant Hands (key Left Alt)
 
-- **Press Left Alt.** You wave your ring hand out towards one of the creatures out to hurt you, somewhere within
-  **20 blocks** of you every way (an area 40 blocks across), picked at random: the ring's light shoots off to it, a
+- **Press Left Alt.** You wave your ring hand out towards the creature out to hurt you **nearest to you**, within
+  **20 blocks** of you every way (an area 40 blocks across): the ring's light shoots off to it, a
   ring of light glows on the ground there, the ground cracks open, and a **giant hand of hard light** rises up out
   of it in a cloud of dust, white-hot at first and cooling to green. Every hand is big (many times taller than you) and
   made in detail: Green Lantern's own right hand, with a forearm and a glowing gauntlet ring, a glowing cuff round the
   wrist, a palm with its pads and glowing creases, knuckles and glowing tendons and the lantern emblem on its back,
   four fingers of three joints each with a nail on every tip, a thumb, and the ring itself on its middle finger.
-- **One hand every time you press.** Set more hands in the settings and they come up one after another, **never
-  more than three at once**: the next one only comes once the one before is halfway through what it does, and you
-  wave your hand towards every one. Each does one of these to its creature, never the same one twice in a row (not
+- **4 to 8 hands every time you press** (how many is picked at random). They come up one after another, **one every
+  half second**, **never more than five at once** (the next one waits for one to go), and you wave your hand towards
+  every one. Every next hand goes for the creature nearest to you with the fewest hands on it, so they spread over
+  the creatures closest to you first. Each does one of these to its creature, never the same one twice in a row (not
   even from one press to the next):
   - **a smack:** it rises low beside the creature, winds up and sweeps its open palm through it, swatting it
     away from you (**6 hearts**);
@@ -642,8 +643,8 @@ Green Lantern's ultimate: a big, slow gunship of hard light high over the battle
     leans back and throws it away from you (**3.6 hearts**, and the fall);
   - **the middle finger:** it shoots up out of the ground right in front of the creature, middle finger first, in a
     blast of dust and a wide wave of light: the creature and everything round it is **launched far away and high up**
-    (**15 hearts**, and the fall). Then it stands there with the back of the hand to it and gives it the finger,
-    jabbing it at it, with a grumble and angry clouds over it;
+    (**15 hearts**, and the fall). It slows smoothly to a stand without bouncing, then stands still there with the back
+    of the hand to it and holds up the finger at it, with a grumble and angry clouds over it;
   - **a slap flat:** it rises straight up, cocks its wrist back and bends it over, slapping its open palm down
     flat on the creature: it is pressed flat against the ground (**7.8 hearts**, slowed down a while), lies there
     squashed like in a cartoon and springs back into shape;
@@ -658,22 +659,25 @@ Green Lantern's ultimate: a big, slow gunship of hard light high over the battle
     the middle of the blow, half at its edge 6 blocks out, and everything there is **flung far away and up**, in a
     flash, with rings and cracks of light running out over the ground and the view of everyone close by shaking.
     They leave the axe stuck in the ground, rise and give you a **thumbs up**, and pull back into their portals,
-    which snap shut; a moment later the axe breaks into solid pieces. The pair **counts as one hand** but comes
-    **alone**: only while no other hand is up, and none comes while it is. It only comes where there is open space
-    round and above the creature.
+    which snap shut; a moment later the axe breaks into solid pieces. The pair **counts as one hand**, and the other
+    hands keep coming while it is up. It only comes where there is open space round and above the creature.
 - Every hand moves **smoothly and heavily, with life in its fingers**: they close and open one after another, it
   winds up before every blow and follows through after it, and while it waits it sways a little and its fingers
   drift. A hand stays where it came up, but turns slowly after the creature nearest to it and reaches for that one.
+  Hands **never come up inside each other**: a hand only comes where it has room, clear of every other hand (a pair
+  and its axe too, and the hands of other players) for as long as they are up. With no room near one creature it
+  goes for another, or waits until a hand is gone.
   Whatever it strikes always flies away from you, never at you. Its blows leave streaks of light in the air and rings
   of light running out over the ground. When it is done it sinks back into the ground; if you stop being Green
   Lantern it breaks into solid pieces (a pair and its axe too).
-- With nothing out to hurt you nearby the ring tells you so, nothing happens and nothing is spent. With more hands
-  set: when every creature left is still up in the air (sent flying by a hand), the hands still to come wait up to 4
-  seconds for one to land.
+- With nothing out to hurt you nearby the ring tells you so, nothing happens and nothing is spent. When every
+  creature left is still up in the air (sent flying by a hand), the hands still to come wait up to 4 seconds for one
+  to land.
 - **Who gets hit:** only what is out to hurt you, and players where players may fight each other; never your own
   pets, villagers or animals, and never you.
-- **Power:** 8. **Cooldown:** 30 seconds. The damage, the reach, how many hands come at every press (1
-  by default) and how hard they send creatures flying are settings.
+- **Power:** 8. **Cooldown:** 30 seconds. The damage, the reach, the fewest and the most hands at every press (4
+  and 8 by default), the time between two hands (half a second by default) and how hard they send creatures flying
+  are settings.
 
 ### Light Bubble (key K)
 

@@ -69,16 +69,12 @@ abstract class HandMoves extends HandMotion {
             0.0, 42.0, 0.45, 0.0 };
     private static final double BURST_LENGTH = -3.294;
     private static final double FINGER_STANDS = 2.4;
-    private static final double[] FINGER_RISE = { 3.55, BURIED, 0.0, BURST_AT, BURST_LENGTH, 9.0, 5.95, 4.35, 0.0, 7.95,
-            1.85, 0.0, 9.9, 2.62, 0.0, UP_AT, FINGER_STANDS, 0.0 };
-    private static final double[] FINGER_TILT = { 3.55, -0.12, 0.0, BURST_AT, 0.0, 0.3, 6.0, 0.24, 0.0, 8.0, -0.1, 0.0,
-            9.9, 0.05, 0.0, UP_AT, 0.0, 0.0, 13.4, 0.0, 0.0, 17.6, 0.26, 0.0, 23.2, -0.14, 0.0, 29.4, 0.24, 0.0, 36.0,
-            0.1, 0.0, 41.0, 0.0, 0.0 };
+    // Burst speed times the beats to the next key stays under 3x the rise left, or that key overshoots and bounces.
+    private static final double[] FINGER_RISE = { 3.55, BURIED, 0.0, BURST_AT, BURST_LENGTH, 6.0, 7.3, 2.62, 0.0, UP_AT,
+            FINGER_STANDS, 0.0 };
+    private static final double[] FINGER_TILT = { 3.55, -0.2, 0.0, BURST_AT, -0.12, 0.08, 7.4, 0.0, 0.0, 14.0, 0.0, 0.0,
+            22.0, 0.05, 0.0, 30.0, -0.03, 0.0, 38.0, 0.0, 0.0 };
     private static final double[] FINGER_COCK = { UP_AT, 0.0, 0.0, 13.6, 0.1, 0.0, 36.0, 0.1, 0.0, 41.0, 0.0, 0.0 };
-    private static final double[] JAB = { -2.4, 0.0, 0.0, -1.1, -0.3, 0.0, -0.7, -0.28, 0.15, 0.0, 1.0, 0.0, 0.9, -0.25,
-            0.0, 1.9, 0.08, 0.0, 3.0, 0.0, 0.0 };
-    private static final double[] JAB_AT = { 15.2, 21.0, 27.2 };
-    private static final double[] JAB_HARD = { 1.0, 0.85, 1.2 };
     private static final double FIST_FROM = 4.4;
     private static final double SLAM_HIGH = 4.0;
     private static final double SLAM_LANDS = 0.95;
@@ -208,12 +204,6 @@ abstract class HandMoves extends HandMotion {
         this.length = Ease.keys(t, FINGER_RISE);
         this.twist = Math.PI + Ease.keys(t, FINGER_TILT);
         this.flex = Ease.keys(t, FINGER_COCK);
-        for (int k = 0; k < JAB_AT.length; k++) {
-            double jab = JAB_HARD[k] * Ease.keys(t - JAB_AT[k], JAB);
-            this.lean += 0.22 * jab;
-            this.flex -= 0.42 * jab;
-            this.length += 0.3 * jab;
-        }
         for (int k = 0; k < 4; k++) {
             if (k == 1) {
                 continue;

@@ -55,6 +55,8 @@ abstract class GiantHandBase {
     LivingEntity held;
     final List<LivingEntity> pressed = new ArrayList<>();
     int t;
+    @Nullable
+    GiantHandRoom room;
 
     GiantHandBase(GiantHands storm, int variant, Vec3 base, LivingEntity target) {
         this.storm = storm;

@@ -1,12 +1,11 @@
 package nl.tivek.multiversepowers.character.greenlantern.ability;
 
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 import javax.annotation.Nullable;
@@ -40,8 +39,7 @@ import nl.tivek.multiversepowers.engine.world.LoadedWorld;
 public final class GiantHands implements Effect {
     public static final double SCALE = 1.0;
     public static final int WAVE_TICKS = 18;
-    private static final int AT_ONCE = 3;
-    private static final double NEXT_AFTER = 0.5;
+    private static final int AT_ONCE = 5;
     private static final int TRIES = 8;
     static final double GRAB_WIDE = 2.0;
     static final double GRAB_TALL = 3.2;
@@ -65,9 +63,15 @@ public final class GiantHands implements Effect {
     private final List<LivingEntity> targets;
     private final Set<LivingEntity> missed = new HashSet<>();
     private final int count;
+    private final int every;
     private int called;
     private int waited;
+    private int stuck;
+    private int since;
     private int lastMove;
+    private boolean crowded;
+    @Nullable
+    private List<GiantHand> taken;
     @Nullable
     private GiantHand latest;
 
@@ -75,7 +79,10 @@ public final class GiantHands implements Effect {
         this.owner = owner;
         this.ability = ability;
         this.targets = targets;
-        this.count = Math.max(1, ability.intValue("hands"));
+        int fewest = Math.max(1, ability.intValue("fewestHands"));
+        int most = Math.max(fewest, ability.intValue("mostHands"));
+        this.count = fewest + owner.getRandom().nextInt(most - fewest + 1);
+        this.every = Math.max(1, ability.intValue("handTicks"));
         this.lastMove = LAST_MOVES.getOrDefault(owner.getUUID(), -1);
     }
 
@@ -110,7 +117,6 @@ public final class GiantHands implements Effect {
             PowerRing.tell(owner, "hands_none");
             return false;
         }
-        Collections.shuffle(found, new Random(owner.getRandom().nextLong()));
         GiantHands storm = new GiantHands(owner, ability, found);
         if (!storm.call(level, Integer.MAX_VALUE)) {
             PowerRing.tell(owner, "hands_none");
@@ -158,15 +164,20 @@ public final class GiantHands implements Effect {
             return false;
         }
         boolean fuels = PowerRing.fuels(this.owner, level);
+        this.since++;
         if (fuels && this.called < this.count && !AirStrike.calling(this.owner) && this.ready()) {
             int before = this.called;
             boolean more = this.call(level, TRIES);
+            // Waiting for room never gives up: the hands in the way always go in the end.
             if (this.called > before) {
                 this.waited = 0;
-            } else if (++this.waited > WAIT_TICKS || !more && this.targets.isEmpty()) {
+                this.stuck = 0;
+                this.crowded = false;
+            } else if (!this.crowded && ++this.stuck > WAIT_TICKS || !more && this.targets.isEmpty()) {
                 this.called = this.count;
-            } else if (!more && this.waited % LOOK_AGAIN == 0) {
+            } else if (!more && ++this.waited % LOOK_AGAIN == 0) {
                 this.missed.clear();
+                this.crowded = false;
             }
         }
         this.hands.removeIf(hand -> hand.tick(level, fuels));
@@ -178,18 +189,21 @@ public final class GiantHands implements Effect {
     }
 
     private boolean ready() {
-        if (this.hands.size() >= AT_ONCE || this.hands.stream().anyMatch(hand -> hand.move == HandPose.AXE)) {
-            return false;
-        }
-        GiantHand newest = this.latest;
-        return newest == null || newest.t >= Math.max(WAVE_TICKS, HandPose.life(newest.variant) * NEXT_AFTER);
+        return this.hands.size() < AT_ONCE && this.since >= this.every;
     }
 
-    private boolean pairFits() {
-        return this.hands.isEmpty();
+    private int handsOn(LivingEntity living) {
+        int on = 0;
+        for (GiantHand hand : this.hands) {
+            if (hand.target == living) {
+                on++;
+            }
+        }
+        return on;
     }
 
     private boolean call(ServerLevel level, int tries) {
+        this.taken = null;
         double reach = this.ability.value("radiusBlocks");
         this.targets.removeIf(living -> !living.isAlive() || living.level() != level
                 || !fair(this.owner, living) || Math.abs(living.getX() - this.owner.getX()) > reach + 4.0
@@ -203,18 +217,15 @@ public final class GiantHands implements Effect {
         }
         this.missed.retainAll(this.targets);
         List<LivingEntity> turns = new ArrayList<>();
-        for (boolean free : new boolean[] { true, false }) {
-            for (LivingEntity living : this.targets) {
-                if (!this.missed.contains(living)
-                        && this.hands.stream().noneMatch(hand -> hand.target == living) == free) {
-                    turns.add(living);
-                }
+        for (LivingEntity living : this.targets) {
+            if (!this.missed.contains(living)) {
+                turns.add(living);
             }
         }
+        turns.sort(Comparator.comparingInt(this::handsOn)
+                .thenComparingDouble(living -> living.distanceToSqr(this.owner)));
         for (LivingEntity target : turns.subList(0, Math.min(tries, turns.size()))) {
-            this.targets.remove(target);
-            this.targets.add(target);
-            int move = this.pick(target, this.pairFits());
+            int move = this.pick(target, true);
             GiantHand hand = this.spawn(level, target, move);
             if (hand == null && move == HandPose.AXE) {
                 move = this.pick(target, false);
@@ -227,6 +238,7 @@ public final class GiantHands implements Effect {
             this.missed.clear();
             this.hands.add(hand);
             this.called++;
+            this.since = 0;
             this.latest = hand;
             this.lastMove = move;
             LAST_MOVES.put(this.owner.getUUID(), move);
@@ -291,10 +303,38 @@ public final class GiantHands implements Effect {
             Vec3 spot = target.position().subtract(reach.scale(HandPose.spot(move) * SCALE));
             Vec3 base = this.ground(level, spot, target.getY());
             if (base != null) {
-                return new GiantHand(this, variant, base, target);
+                GiantHand hand = new GiantHand(this, variant, base, target);
+                if (this.fits(hand)) {
+                    return hand;
+                }
             }
         }
         return null;
+    }
+
+    private boolean fits(GiantHand hand) {
+        if (this.taken == null) {
+            this.taken = new ArrayList<>();
+            for (GiantHands storm : ACTIVE.values()) {
+                if (storm.owner.level() == this.owner.level()) {
+                    this.taken.addAll(storm.hands);
+                }
+            }
+        }
+        GiantHandRoom room = null;
+        for (GiantHand other : this.taken) {
+            if (!GiantHandRoom.near(hand, other)) {
+                continue;
+            }
+            if (room == null) {
+                room = GiantHandRoom.of(hand);
+            }
+            if (room.clashes(GiantHandRoom.of(other))) {
+                this.crowded = true;
+                return false;
+            }
+        }
+        return true;
     }
 
     @Nullable
@@ -329,7 +369,10 @@ public final class GiantHands implements Effect {
         for (double turn : PAIR_TURNS) {
             int variant = HandPose.axeVariant(Vectors.spin(away, Vectors.UP, turn));
             if (room(level, base, variant, aim)) {
-                return new GiantHand(this, variant, base, target);
+                GiantHand pair = new GiantHand(this, variant, base, target);
+                if (this.fits(pair)) {
+                    return pair;
+                }
             }
         }
         return null;

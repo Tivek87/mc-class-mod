@@ -221,13 +221,15 @@ abstract class TrackedConstructs {
         return LAUNCHES.getOrDefault(((long) owner << 8) | variant, -1);
     }
 
-    public record Wave(Vec3 newest, double clock) {
+    public record Wave(Vec3 newest, double clock, @Nullable Vec3 before, double beforeClock) {
     }
 
     @Nullable
     public static Wave wave(int owner, float partialTick) {
         ConstructPayload newest = null;
+        ConstructPayload before = null;
         double newestClock = 0.0;
+        double beforeClock = 0.0;
         for (Track track : CONSTRUCTS.values()) {
             ConstructPayload hand = track.latest;
             if (hand.shape() != ConstructPayload.HAND || hand.owner() != owner) {
@@ -235,11 +237,17 @@ abstract class TrackedConstructs {
             }
             double clock = track.clock(partialTick);
             if (newest == null || clock < newestClock) {
+                before = newest;
+                beforeClock = newestClock;
                 newest = hand;
                 newestClock = clock;
+            } else if (before == null || clock < beforeClock) {
+                before = hand;
+                beforeClock = clock;
             }
         }
-        return newest == null ? null : new Wave(newest.center(), newestClock);
+        return newest == null ? null
+                : new Wave(newest.center(), newestClock, before == null ? null : before.center(), beforeClock);
     }
 
     public static float planeAge(int owner, float partialTick) {

@@ -49,8 +49,12 @@ public final class HandsArm {
         if (wave == null) {
             return 0.0F;
         }
-        double clock = wave.clock();
-        return (float) (Ease.smooth(clock / RAISE) * (1.0 - Ease.smooth((clock - HOLD) / DOWN)));
+        // Hands called close together: the arm stays out from one wave into the next.
+        return (float) (1.0 - (1.0 - up(wave.clock())) * (1.0 - up(wave.beforeClock())));
+    }
+
+    private static double up(double clock) {
+        return Ease.smooth(clock / RAISE) * (1.0 - Ease.smooth((clock - HOLD) / DOWN));
     }
 
     private static double fling(double clock) {
@@ -59,7 +63,11 @@ public final class HandsArm {
     }
 
     private static Vec3 pointing(ClientConstructs.Wave wave, Vec3 from) {
-        return wave.newest().subtract(from);
+        Vec3 to = wave.newest().subtract(from);
+        if (wave.before() == null || up(wave.beforeClock()) <= 0.0) {
+            return to;
+        }
+        return wave.before().subtract(from).normalize().lerp(to.normalize(), Ease.smooth(wave.clock() / RAISE));
     }
 
     static void pose(HumanoidModel<?> model, LivingEntity entity, HumanoidArm arm) {

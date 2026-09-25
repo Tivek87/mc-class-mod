@@ -294,11 +294,15 @@ public enum GameCharacter {
                     .setting("radiusBlocks", 20.0, 4.0, 48.0, Unit.BLOCKS,
                             "How far round you the hands come up at creatures out to hurt you, every way, in blocks"
                                     + " (20 = an area 40 blocks across)")
-                    .settingInt("hands", 1, 1, 30, Unit.COUNT,
-                            "How many hands come up at every press, one after another: at most three at once, the next"
-                                    + " once the one before is halfway through (a pair with an axe counts as one, but"
-                                    + " only comes while no other hand is up, and none comes while it is)")
-                    .was(6.0)
+                    .settingInt("fewestHands", 4, 1, 30, Unit.COUNT,
+                            "The fewest hands that come up at every press: each press brings a number picked at random"
+                                    + " from this to mostHands, one after another, at most five at once (a pair with"
+                                    + " an axe counts as one)")
+                    .settingInt("mostHands", 8, 1, 30, Unit.COUNT,
+                            "The most hands that come up at every press")
+                    .settingInt("handTicks", 10, 1, 200, Unit.TICKS,
+                            "Ticks from one hand coming up to the next (20 ticks = 1 second); while five are up, the"
+                                    + " next waits for one to go")
                     .setting("knockback", 2.0, 0.0, 5.0, Unit.STRENGTH,
                             "How hard the hands send a creature flying (a middle finger bursting out of the ground and"
                                     + " the axe of a pair far harder)")

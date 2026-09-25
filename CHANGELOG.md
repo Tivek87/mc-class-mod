@@ -3,6 +3,25 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.1.0-alpha] - 2026-09-25
+
+### Added
+- **Giant Hands settings:** Fewest hands (4), Most hands (8) and Time between hands (half a second).
+
+### Changed
+- **Giant Hands:** 4 to 8 hands at every press, how many picked at random (was 1).
+- **Giant Hands:** a new hand every half second, up to five at once (was one every 2 to 3 seconds, three at once).
+- **Giant Hands:** every hand goes for the enemy nearest to you with the fewest hands on it (was a random enemy).
+- **Giant Hands, the axe pair:** counts as one hand and no longer holds the other hands back.
+- **Giant Hands:** your arm stays out while hands come up one after another, swinging from one to the next.
+- **Giant Hands:** hands never come up inside each other or the axe pair; with no room a hand goes for another enemy
+  or waits.
+- **Giant Hands, the middle finger:** rises and slows to a stand smoothly instead of bouncing, then holds the finger
+  up still (it no longer jabs it forward and back).
+
+### Removed
+- **Giant Hands setting:** Hands (replaced by Fewest hands and Most hands).
+
 ## [0.0.9-alpha] - 2026-09-25
 
 ### Changed
