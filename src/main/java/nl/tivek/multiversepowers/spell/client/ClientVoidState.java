@@ -13,14 +13,14 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.monster.Enemy;
-import net.minecraft.world.entity.player.Player;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import nl.tivek.multiversepowers.MultiversePowers;
+import nl.tivek.multiversepowers.faction.Standing;
+import nl.tivek.multiversepowers.faction.client.ClientStandings;
 
 @EventBusSubscriber(modid = MultiversePowers.MODID, value = Dist.CLIENT)
 public final class ClientVoidState {
@@ -96,8 +96,7 @@ public final class ClientVoidState {
         Set<Entity> seen = new HashSet<>();
         for (Entity entity : level.entitiesForRendering()) {
             if (entity == player || !entity.isAlive() || entity.isSpectator()
-                    || !(entity instanceof Enemy || entity instanceof Player)
-                    || entity.distanceTo(player) > MARK_RADIUS) {
+                    || ClientStandings.of(entity) != Standing.HOSTILE || entity.distanceTo(player) > MARK_RADIUS) {
                 continue;
             }
             if (!MARKED.contains(entity) && GlowFlag.isGlowing(entity)) {

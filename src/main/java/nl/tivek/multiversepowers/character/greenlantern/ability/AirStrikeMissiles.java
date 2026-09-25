@@ -1,8 +1,10 @@
 package nl.tivek.multiversepowers.character.greenlantern.ability;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 import javax.annotation.Nullable;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
@@ -51,6 +53,7 @@ abstract class AirStrikeMissiles extends AirStrikeGuns {
     private static final double AHEAD_WIDE = 10.0;
 
     private final List<Missile> missiles = new ArrayList<>();
+    private final Set<Integer> skipped = new HashSet<>();
     private final int[] jetPylons = new int[PlanePath.JETS];
 
     AirStrikeMissiles(ServerPlayer owner, CharacterAbility ability, PlanePath path) {
@@ -129,7 +132,7 @@ abstract class AirStrikeMissiles extends AirStrikeGuns {
             this.lit = true;
             this.speed = Math.max(0.4, this.falling.length());
             if (this.target == null || !this.target.isAlive()) {
-                this.target = AirStrikeMissiles.this.nearest(level, this.at,
+                this.target = AirStrikeMissiles.this.closestMarked(level, this.at,
                         this.small ? JET_REACH * 1.3 : MISSILE_REACH);
             }
             if (this.target == null) {
@@ -153,7 +156,7 @@ abstract class AirStrikeMissiles extends AirStrikeGuns {
 
         private void steer(ServerLevel level, int burning) {
             if (this.target != null && (!this.target.isAlive() || this.target.level() != level)) {
-                this.target = AirStrikeMissiles.this.nearest(level, this.at,
+                this.target = AirStrikeMissiles.this.closestMarked(level, this.at,
                         this.small ? JET_REACH * 1.3 : MISSILE_REACH);
                 if (this.target == null && this.aim == null && this.lastGoal != null) {
                     this.aim = AirStrikeMissiles.this.ground(level, this.lastGoal);
@@ -183,7 +186,7 @@ abstract class AirStrikeMissiles extends AirStrikeGuns {
             double nearest = Double.MAX_VALUE;
             Vec3 on = null;
             for (LivingEntity living : level.getEntitiesOfClass(LivingEntity.class,
-                    new AABB(tipWas, tipTo).inflate(1.5), AirStrikeMissiles.this::fair)) {
+                    new AABB(tipWas, tipTo).inflate(1.5), AirStrikeMissiles.this::hostile)) {
                 Vec3 at = living.getBoundingBox().inflate(this.small ? 0.35 : 0.6).clip(tipWas, tipTo).orElse(null);
                 if (at == null && living == this.target
                         && living.getBoundingBox().getCenter().distanceTo(tipTo) < (this.small ? 1.0 : 1.6)) {
@@ -273,7 +276,22 @@ abstract class AirStrikeMissiles extends AirStrikeGuns {
         return Vectors.spin(way, axis.normalize(), angle).normalize();
     }
 
-    void dropMissile(ServerLevel level) {
+    void bay(ServerLevel level, int every) {
+        int ahead = this.age + PlanePath.DROP_DECIDES;
+        if (this.path.releases(ahead, every)
+                && this.closestMarked(level, this.path.at(ahead), MISSILE_REACH) == null) {
+            this.skipped.add(ahead);
+        }
+        if (this.path.releases(this.age, every) && !this.skipped.contains(this.age)) {
+            this.dropMissile(level);
+        }
+    }
+
+    boolean skipsNext(int every) {
+        return this.skipped.contains(this.path.nextRelease(this.age, every));
+    }
+
+    private void dropMissile(ServerLevel level) {
         Vec3[] state = this.path.dropsOut(this.age);
         Vec3 at = state[0];
         double high = Math.max(4.0, at.y - this.ground(level, at).y);
@@ -285,7 +303,8 @@ abstract class AirStrikeMissiles extends AirStrikeGuns {
         latest = Mth.clamp(latest, 4, IGNITE_LATEST);
         int earliest = Math.min(IGNITE_EARLIEST, latest);
         int ignites = earliest + this.owner.getRandom().nextInt(latest - earliest + 1);
-        this.missiles.add(new Missile(state, false, BIG_MISSILE, ignites, null));
+        this.missiles.add(new Missile(state, false, BIG_MISSILE, ignites,
+                this.closestMarked(level, at, MISSILE_REACH)));
         this.sound(level, at, SoundEvents.IRON_TRAPDOOR_OPEN, 6.0F, 0.5F);
         this.sound(level, at, SoundEvents.BEACON_POWER_SELECT, 5.0F, 1.8F);
     }
@@ -314,7 +333,7 @@ abstract class AirStrikeMissiles extends AirStrikeGuns {
             if (fled >= 0.0 || aiming < 0 || aiming % every != 0) {
                 continue;
             }
-            LivingEntity target = this.nearest(level, at, JET_REACH);
+            LivingEntity target = this.closestMarked(level, at, JET_REACH);
             if (target == null) {
                 continue;
             }
@@ -324,21 +343,6 @@ abstract class AirStrikeMissiles extends AirStrikeGuns {
             this.missiles.add(new Missile(state, true, JET_MISSILE + 2 * k + pylon, SMALL_IGNITES, target));
             this.sound(level, state[0], SoundEvents.FIREWORK_ROCKET_SHOOT, 4.0F, 1.3F);
         }
-    }
-
-    @Nullable
-    private LivingEntity nearest(ServerLevel level, Vec3 at, double reach) {
-        LivingEntity best = null;
-        double bestDistance = reach * reach;
-        for (LivingEntity living : level.getEntitiesOfClass(LivingEntity.class, new AABB(at, at).inflate(reach),
-                this::hostile)) {
-            double distance = living.getBoundingBox().getCenter().distanceToSqr(at);
-            if (distance < bestDistance) {
-                bestDistance = distance;
-                best = living;
-            }
-        }
-        return best;
     }
 
     void flyMissiles(ServerLevel level) {

@@ -78,6 +78,9 @@ public final class ClientConstructs extends TrackedConstructs {
         } else {
             track.add(payload);
         }
+        if (payload.shape() == ConstructPayload.PLANE) {
+            PlanePainter.heard(payload);
+        }
         if (track.flown != null) {
             track.flown.add(payload,
                     track.clock(Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(false)) - 1.0);

@@ -23,6 +23,7 @@ import nl.tivek.multiversepowers.engine.effect.Effect;
 import nl.tivek.multiversepowers.engine.effect.Effects;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 import nl.tivek.multiversepowers.engine.target.Targeting;
+import nl.tivek.multiversepowers.faction.Factions;
 
 final class FireballSpell {
     private static final double SPEED = 1.1;
@@ -176,8 +177,11 @@ final class FireballSpell {
     }
 
     private static boolean mayBurnAt(SmallFireball fireball, Entity hit) {
-        return !(hit instanceof Player player)
-                || fireball.getOwner() instanceof ServerPlayer caster && Targeting.isTargetable(caster, player);
+        if (fireball.getOwner() instanceof ServerPlayer caster) {
+            return !Factions.friendly(caster, hit)
+                    && (!(hit instanceof Player player) || Targeting.isTargetable(caster, player));
+        }
+        return !(hit instanceof Player);
     }
 
     private static void spreadFire(SmallFireball fireball, BlockPos center) {

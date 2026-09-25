@@ -16,6 +16,7 @@ import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 import nl.tivek.multiversepowers.engine.target.Targeting;
+import nl.tivek.multiversepowers.faction.Factions;
 
 abstract class RigGround extends RigGrab {
     RigGround(ServerPlayer caster, ServerLevel home) {
@@ -380,7 +381,8 @@ abstract class RigGround extends RigGrab {
         Vec3 center = this.caster.position();
         for (LivingEntity living : level.getEntitiesOfClass(LivingEntity.class,
                 this.caster.getBoundingBox().inflate(radius, 3.0, radius),
-                entity -> !this.holds(entity) && Targeting.isTargetable(this.caster, entity))) {
+                entity -> !this.holds(entity) && Targeting.isTargetable(this.caster, entity)
+                        && Factions.hostile(this.caster, entity))) {
             Vec3 away = living.position().subtract(center);
             double distance = Math.sqrt(away.horizontalDistanceSqr());
             double strength = 1.0 - distance / radius;

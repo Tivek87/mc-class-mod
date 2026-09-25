@@ -20,6 +20,7 @@ import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.common.Tags;
 import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.engine.entity.HeldMobs;
+import nl.tivek.multiversepowers.faction.Factions;
 
 public final class Targeting {
     private static final double AIM_ASSIST = 0.5;
@@ -104,7 +105,7 @@ public final class Targeting {
     public static boolean isTargetable(ServerPlayer player, Entity entity) {
         if (entity == player || !(entity instanceof LivingEntity living) || !living.isAlive() || entity.isSpectator()
                 || entity instanceof ArmorStand || entity.getType().is(Tags.EntityTypes.BOSSES)
-                || HeldMobs.isHeldByAnyone(entity)) {
+                || HeldMobs.isHeldByAnyone(entity) || Factions.friendly(player, entity)) {
             return false;
         }
         if (entity instanceof Player other) {

@@ -22,7 +22,7 @@ import nl.tivek.multiversepowers.engine.world.LoadedWorld;
 public final class AirStrike extends AirStrikeMissiles {
     public static final int CALL_TICKS = 34;
     public static final int BLAST_TICKS = 90;
-    public static final double CRASH_SIZE = 5.0;
+    public static final double CRASH_SIZE = 6.0;
     public static final int BIG_MISSILE = 0;
     public static final int JET_MISSILE = 2;
     public static final int BIG_BLAST = 0;
@@ -226,10 +226,7 @@ public final class AirStrike extends AirStrikeMissiles {
                     this.fireGun(level);
                 }
             }
-            int missileEvery = Math.max(4, this.ability.intValue("missileTicks"));
-            if (this.path.releases(this.age, missileEvery)) {
-                this.dropMissile(level);
-            }
+            this.bay(level, this.missileEvery());
             this.jets(level);
         }
         if (this.age == (int) Math.round(this.path.failTick())) {
@@ -269,11 +266,17 @@ public final class AirStrike extends AirStrikeMissiles {
         this.scans.clear();
     }
 
+    private int missileEvery() {
+        return Math.max(4, this.ability.intValue("missileTicks"));
+    }
+
     private void send(ServerLevel level) {
         Vec3 at = this.path.at(Math.min(this.age, this.path.crashTick()));
+        int variant = (int) Math.round(this.path.end() * 100.0)
+                | (this.skipsNext(this.missileEvery()) ? PlanePath.SKIP_NEXT : 0);
         PacketDistributor.sendToPlayersNear(level, null, at.x, at.y, at.z, VIEW_RANGE,
                 new ConstructPayload(this.id, this.owner.getId(), this.path.start(), this.path.way(),
                         (float) this.path.drop(), 1.0F, (float) this.path.attack(), true, ConstructPayload.PLANE,
-                        (int) Math.round(this.path.end() * 100.0), this.age, null));
+                        variant, this.age, null));
     }
 }

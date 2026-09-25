@@ -7,9 +7,7 @@ import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.decoration.ArmorStand;
-import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.network.PacketDistributor;
@@ -19,6 +17,8 @@ import nl.tivek.multiversepowers.character.greenlantern.ConstructPayload;
 import nl.tivek.multiversepowers.character.greenlantern.PowerRing;
 import nl.tivek.multiversepowers.engine.effect.Effect;
 import nl.tivek.multiversepowers.engine.effect.Effects;
+import nl.tivek.multiversepowers.faction.Factions;
+import nl.tivek.multiversepowers.faction.Standing;
 
 public final class RingScan implements Effect {
     public static final double SPEED = 1.6;
@@ -64,21 +64,17 @@ public final class RingScan implements Effect {
     }
 
     private void report(ServerLevel level) {
-        int hostile = 0;
-        int other = 0;
+        int[] counts = new int[Standing.values().length];
         AABB area = new AABB(this.center, this.center).inflate(this.radius);
         for (LivingEntity living : level.getEntitiesOfClass(LivingEntity.class, area,
                 entity -> entity != this.owner && entity.isAlive() && !entity.isSpectator()
                         && !(entity instanceof ArmorStand)
                         && entity.distanceToSqr(this.center) <= (double) this.radius * this.radius)) {
-            if (living instanceof Enemy || living instanceof Mob mob && mob.getTarget() == this.owner) {
-                hostile++;
-            } else {
-                other++;
-            }
+            counts[Factions.standing(this.owner, living).ordinal()]++;
         }
-        this.owner.displayClientMessage(Component.translatable("ring." + MultiversePowers.MODID + ".scan", hostile,
-                other), true);
+        this.owner.displayClientMessage(Component.translatable("ring." + MultiversePowers.MODID + ".scan",
+                counts[Standing.HOSTILE.ordinal()], counts[Standing.NEUTRAL.ordinal()],
+                counts[Standing.FRIENDLY.ordinal()]), true);
     }
 
     @Override

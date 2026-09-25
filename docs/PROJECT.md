@@ -110,9 +110,46 @@ yourself. Every download is checked against the release page's checksum before i
 | Fire | Fireball | A blazing comet that bursts in fire, burns what it hits and leaves a small pile of fire. | until it hits | 2 s |
 | Fire | Fire Wall | A ring of fire around you for 2 seconds: it burns what touches it, sets it alight and throws it outward. You stay safe inside. | 3.5 blocks around you | 10 s |
 | Lightning | Lightning Strike | A rune circle and storm cloud charge up for 0.7 s, then a branching bolt strikes. Never hits you. | 40 blocks | 8 s |
-| Nature | Poison Area | A thrown vial that leaves a poison cloud for 8 seconds. Poisons everything inside except you. | 24 blocks | 12 s |
-| Air | Wind Gust | A wall of wind rolls forward and throws creatures back and up. | 8 blocks | 5 s |
-| Dark | Void Walk | 10 seconds invisible, silent and untargetable; 50% faster, 20% harder hits; your world turns black and nearby enemies are marked, even through walls. | around you | 30 s |
+| Nature | Poison Area | A thrown vial that leaves a poison cloud for 8 seconds. Poisons everything hostile (red) inside. | 24 blocks | 12 s |
+| Air | Wind Gust | A wall of wind rolls forward and throws hostile (red) creatures back and up. | 8 blocks | 5 s |
+| Dark | Void Walk | 10 seconds invisible, silent and untargetable; 50% faster, 20% harder hits; your world turns black and nearby hostile (red) ones are marked, even through walls. | around you | 30 s |
 
 - The four empty schools (Water, Holy, Ice, Blood) and Earth are in the table already, ready for the
   spells that go in them later.
+
+---
+
+## 6. Friend or foe: factions
+
+Everything alive is one of three colours to you. The Ring Scan and every mark show it, and it decides what your
+powers go for.
+
+| Colour | What | Examples |
+|---|---|---|
+| **Red** (hostile) | Monsters, creatures attacking you, players of an enemy faction, and anything your faction has turned hostile (see below) | zombies, an angry wolf, an enemy player |
+| **Yellow** (neutral) | Everything else | animals, villagers, golems, players of other factions |
+| **Green** (friendly) | Your faction, allied factions, and your and their pets | your teammate, your tamed wolf |
+
+- Homing, auto-aim and area hits (the Giant Hands, the Air Strike, the Light Bubble's slam, the landing slam,
+  Doctor Octopus's rampage and Ground Strike, the Poison Area and Wind Gust spells) only go for **red**.
+- What you aim at yourself (a punch, a sword, a bolt, the Giant Fist) also hits **yellow**.
+- **Green** is never hurt by you: not by your powers, not by your weapons.
+- **Hit something yellow 3 times** (you and your faction together) and it turns **red** for your whole faction,
+  until 5 minutes after the last hit or until it dies. A player turned red this way also sees your faction as red.
+- Players only hurt each other where the world allows it (PvP).
+
+**The command `/faction`** (a faction is the same as a vanilla scoreboard team, so vanilla `/team` works on them too):
+
+| Command | Who | What |
+|---|---|---|
+| `/faction create <name>` | operators | Makes a faction (its members cannot hurt each other). |
+| `/faction delete <faction>` | operators | Removes a faction. |
+| `/faction add <faction> <players>` | operators | Puts players in a faction. |
+| `/faction remove <players>` | operators | Takes players out of their faction. |
+| `/faction enemy <faction> <faction>` | operators | The two factions are red to each other. |
+| `/faction ally <faction> <faction>` | operators | The two factions are green to each other. |
+| `/faction neutral <faction> <faction>` | operators | Back to yellow. |
+| `/faction invite <player>` | members | Invites a player into your faction (for 5 minutes). |
+| `/faction join <faction>` | invited players | Joins the faction you were invited to (operators can join any). |
+| `/faction leave` | anyone | Leaves your faction. |
+| `/faction list` | anyone | Shows every faction with its members, allies and enemies. |

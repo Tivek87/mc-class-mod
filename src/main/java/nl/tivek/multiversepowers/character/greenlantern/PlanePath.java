@@ -1,5 +1,6 @@
 package nl.tivek.multiversepowers.character.greenlantern;
 
+import java.util.function.IntPredicate;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.character.greenlantern.ability.AirStrike;
@@ -14,6 +15,9 @@ public record PlanePath(Vec3 start, Vec3 way, double drop, int attack, double en
     public static final int MISSILE_FIRST = 20;
     public static final int HATCH_OPENS = 10;
     public static final int HATCH_CLOSES = 6;
+    public static final int DROP_DECIDES = 16;
+    // Set in a plane's variant (under it the crash point in hundredths): its next missile drop is skipped.
+    public static final int SKIP_NEXT = 128;
     private static final int HATCH_SWING = 6;
     private static final int LOWERING = 5;
     public static final int JETS = 2;
@@ -156,6 +160,12 @@ public record PlanePath(Vec3 start, Vec3 way, double drop, int attack, double en
         return since >= 0 && since % every == 0 && t < this.failTick();
     }
 
+    public int nextRelease(int t, int every) {
+        int first = FORM + MISSILE_FIRST;
+        int release = t <= first ? first : first + (int) Math.ceil((double) (t - first) / every) * every;
+        return release < this.failTick() ? release : -1;
+    }
+
     public int lastRelease(double t, int every) {
         int first = FORM + MISSILE_FIRST;
         if (t < first) {
@@ -165,14 +175,17 @@ public record PlanePath(Vec3 start, Vec3 way, double drop, int attack, double en
         return release >= first && release < this.failTick() ? release : -1;
     }
 
-    public double hatch(double t, int every) {
+    public double hatch(double t, int every, IntPredicate skips) {
         double open = 0.0;
         int first = Math.max(0,
                 (int) Math.floor((t - HATCH_CLOSES - HATCH_SWING - FORM - MISSILE_FIRST) / every));
         for (int n = first;; n++) {
-            double release = FORM + MISSILE_FIRST + (double) n * every;
+            int release = FORM + MISSILE_FIRST + n * every;
             if (release >= this.failTick() || release > t + HATCH_OPENS) {
                 break;
+            }
+            if (skips.test(release)) {
+                continue;
             }
             double d = t - release;
             double here = d < HATCH_SWING - HATCH_OPENS ? Ease.smooth((d + HATCH_OPENS) / HATCH_SWING)
@@ -182,10 +195,10 @@ public record PlanePath(Vec3 start, Vec3 way, double drop, int attack, double en
         return open;
     }
 
-    public double lowered(double t, int every) {
+    public double lowered(double t, int every, IntPredicate skips) {
         int n = Math.max(0, (int) Math.ceil((t - FORM - MISSILE_FIRST) / every));
-        double release = FORM + MISSILE_FIRST + (double) n * every;
-        if (release >= this.failTick() || release - t > HATCH_OPENS) {
+        int release = FORM + MISSILE_FIRST + n * every;
+        if (release >= this.failTick() || release - t > HATCH_OPENS || skips.test(release)) {
             return -1.0;
         }
         return Ease.smooth(1.0 - (release - t) / LOWERING);

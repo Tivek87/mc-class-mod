@@ -17,10 +17,6 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.Mob;
-import net.minecraft.world.entity.OwnableEntity;
-import net.minecraft.world.entity.monster.Enemy;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
@@ -35,6 +31,7 @@ import nl.tivek.multiversepowers.engine.effect.Effects;
 import nl.tivek.multiversepowers.engine.entity.HeldMobs;
 import nl.tivek.multiversepowers.engine.math.Vectors;
 import nl.tivek.multiversepowers.engine.world.LoadedWorld;
+import nl.tivek.multiversepowers.faction.Factions;
 
 public final class GiantHands implements Effect {
     public static final double SCALE = 1.0;
@@ -148,11 +145,7 @@ public final class GiantHands implements Effect {
     }
 
     static boolean fair(ServerPlayer owner, LivingEntity living) {
-        if (!PowerRing.canHit(owner, living) || living instanceof OwnableEntity pet && pet.getOwner() == owner) {
-            return false;
-        }
-        return living instanceof Enemy || living instanceof Player || living instanceof Mob mob
-                && mob.getTarget() == owner;
+        return PowerRing.canHit(owner, living) && Factions.hostile(owner, living);
     }
 
     @Override

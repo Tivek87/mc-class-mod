@@ -17,6 +17,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.engine.ability.Cooldowns;
 import nl.tivek.multiversepowers.engine.target.Targeting;
+import nl.tivek.multiversepowers.faction.Factions;
 
 @EventBusSubscriber(modid = MultiversePowers.MODID)
 public final class SpellCasting {
@@ -58,7 +59,7 @@ public final class SpellCasting {
             return;
         }
         Entity struck = event.getEntity();
-        if (struck.getUUID().equals(cause.getUUID())
+        if (struck.getUUID().equals(cause.getUUID()) || Factions.friendly(cause, struck)
                 || struck instanceof Player player && !Targeting.isTargetable(cause, player)) {
             event.setCanceled(true);
         }

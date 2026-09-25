@@ -14,12 +14,8 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.Mob;
-import net.minecraft.world.entity.OwnableEntity;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.item.FallingBlockEntity;
-import net.minecraft.world.entity.monster.Enemy;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
@@ -37,6 +33,7 @@ import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 import nl.tivek.multiversepowers.engine.math.Noise;
 import nl.tivek.multiversepowers.engine.world.BlockRules;
 import nl.tivek.multiversepowers.engine.world.LoadedWorld;
+import nl.tivek.multiversepowers.faction.Factions;
 import static nl.tivek.multiversepowers.character.greenlantern.ability.AirStrike.BLAST_TICKS;
 import static nl.tivek.multiversepowers.character.greenlantern.ability.AirStrike.CRASH_SIZE;
 import static nl.tivek.multiversepowers.character.greenlantern.ability.AirStrike.HEIGHT;
@@ -215,7 +212,7 @@ abstract class AirStrikeBlasts implements Effect {
     void blast(ServerLevel level, Vec3 at, double radius, double damage, @Nullable LivingEntity direct,
             double knockback) {
         AABB area = new AABB(at, at).inflate(radius + 1.0);
-        for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, area, this::fair)) {
+        for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, area, this::hostile)) {
             Vec3 middle = target.getBoundingBox().getCenter();
             double distance = middle.distanceTo(at);
             boolean hit = target == direct;
@@ -238,19 +235,8 @@ abstract class AirStrikeBlasts implements Effect {
         }
     }
 
-    boolean fair(LivingEntity living) {
-        if (!PowerRing.canHit(this.owner, living)) {
-            return false;
-        }
-        if (living instanceof OwnableEntity pet && pet.getOwner() == this.owner) {
-            return false;
-        }
-        return living instanceof Enemy || living instanceof Player
-                || living instanceof Mob mob && mob.getTarget() == this.owner;
-    }
-
     boolean hostile(LivingEntity living) {
-        return !(living instanceof Player) && this.fair(living);
+        return PowerRing.canHit(this.owner, living) && Factions.hostile(this.owner, living);
     }
 
     Vec3 ground(ServerLevel level, Vec3 at) {

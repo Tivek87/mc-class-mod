@@ -39,6 +39,7 @@ import nl.tivek.multiversepowers.classes.TestEffectPayload;
 import nl.tivek.multiversepowers.classes.ceremony.Ceremonies;
 import nl.tivek.multiversepowers.config.WorldSettingsPayload;
 import nl.tivek.multiversepowers.engine.fx.ParticlesPayload;
+import nl.tivek.multiversepowers.faction.StandingsPayload;
 import nl.tivek.multiversepowers.network.client.ClientPayloadHandler;
 import nl.tivek.multiversepowers.spell.CastSpellPayload;
 import nl.tivek.multiversepowers.spell.Spell;
@@ -48,7 +49,7 @@ import nl.tivek.multiversepowers.spell.VoidStatePayload;
 import nl.tivek.multiversepowers.stamina.StaminaCostPayload;
 
 public final class ModNetwork {
-    private static final String VERSION = "16";
+    private static final String VERSION = "17";
 
     private ModNetwork() {
     }
@@ -85,10 +86,15 @@ public final class ModNetwork {
         registrar.playToClient(WorldSettingsPayload.TYPE, WorldSettingsPayload.STREAM_CODEC,
                 ModNetwork::onWorldSettings);
         registrar.playToClient(ParticlesPayload.TYPE, ParticlesPayload.STREAM_CODEC, ModNetwork::onParticles);
+        registrar.playToClient(StandingsPayload.TYPE, StandingsPayload.STREAM_CODEC, ModNetwork::onStandings);
     }
 
     private static void onParticles(ParticlesPayload payload, IPayloadContext context) {
         ClientPayloadHandler.handleParticles(payload, context);
+    }
+
+    private static void onStandings(StandingsPayload payload, IPayloadContext context) {
+        ClientPayloadHandler.handleStandings(payload, context);
     }
 
     private static void onWorldSettings(WorldSettingsPayload payload, IPayloadContext context) {

@@ -22,6 +22,7 @@ import nl.tivek.multiversepowers.engine.effect.Effect;
 import nl.tivek.multiversepowers.engine.effect.Effects;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 import nl.tivek.multiversepowers.engine.target.Targeting;
+import nl.tivek.multiversepowers.faction.Factions;
 
 final class PoisonSpell {
     private static final double RANGE = 24.0;
@@ -133,8 +134,9 @@ final class PoisonSpell {
         AABB box = new AABB(center, center).inflate(radius, 0, radius).expandTowards(0, 2.5, 0)
                 .expandTowards(0, -1, 0);
         for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, box, LivingEntity::isAlive)) {
-            if (target.getUUID().equals(owner) || target.isSpectator()
-                    || target instanceof Player player && (caster == null || !Targeting.isTargetable(caster, player))) {
+            if (target.getUUID().equals(owner) || target.isSpectator() || caster == null
+                    || !Factions.hostile(caster, target)
+                    || target instanceof Player player && !Targeting.isTargetable(caster, player)) {
                 continue;
             }
             double dx = target.getX() - center.x;

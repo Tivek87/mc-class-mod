@@ -18,6 +18,7 @@ import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.engine.effect.Effects;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 import nl.tivek.multiversepowers.engine.target.Targeting;
+import nl.tivek.multiversepowers.faction.Factions;
 
 final class WindGustSpell {
     private static final double RANGE = 8.0;
@@ -116,8 +117,8 @@ final class WindGustSpell {
         for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class,
                 new AABB(origin, origin).inflate(front + 1.0),
                 entity -> entity.isAlive() && !entity.isSpectator())) {
-            if (hit.contains(target.getUUID())
-                    || target instanceof Player player && (caster == null || !Targeting.isTargetable(caster, player))) {
+            if (hit.contains(target.getUUID()) || caster == null || !Factions.hostile(caster, target)
+                    || target instanceof Player player && !Targeting.isTargetable(caster, player)) {
                 continue;
             }
             Vec3 toTarget = target.getBoundingBox().getCenter().subtract(origin);

@@ -264,9 +264,9 @@ Green Lantern recharges his ring at his lantern, the power battery.
   in the middle of a jump or a fall (the double tap works there too; in creative the double tap stays the
   game's own flying).
 - **Flying:** hold **forward** and you fly the way you look. **You pick up speed quickly and then keep getting
-  faster the longer you fly on:** a flight starts at about **4.2 blocks a second** and within **half a second** you
-  are up to a cruising speed of **5.2 blocks a second**; from there you keep gaining, until after **7.5 seconds**
-  you reach the top speed of **6.3 blocks a second**, slower than flying in creative, and never more. Let go of forward and you glide to a hover and lose the speed you built up again (all of it in 3 seconds);
+  faster the longer you fly on:** a flight starts at about **12 blocks a second** and within **half a second** you
+  are up to a cruising speed of **15 blocks a second**; from there you keep gaining, until after **7.5 seconds**
+  you reach the top speed of **18 blocks a second**, faster than flying in creative, and never more. Let go of forward and you glide to a hover and lose the speed you built up again (all of it in 3 seconds);
   pushing against a wall keeps it.
   **Jump** rises, **sneak** sinks, left and right slide sideways, back drifts backwards. You carry your speed
   into every turn, so you swing through curves instead of snapping round. The world widens a little around
@@ -292,7 +292,7 @@ Green Lantern recharges his ring at his lantern, the power battery.
   any more. You do not get hurt when you touch the ground. Recharge (on the way down or on the ground) to fly
   again.
 - **Landing slam (by itself; key X does it on purpose, see Shockwave):** dive into the ground fast (at least
-  about 5.6 blocks a second, nearly your top speed, so fly on for a few seconds first) and your flight ends
+  about 16 blocks a second, nearly your top speed, so fly on for a few seconds first) and your flight ends
   in a
   hero's landing. Just before
   the ground you swing upright, feet first, ring
@@ -348,7 +348,7 @@ Green Lantern recharges his ring at his lantern, the power battery.
 
 | Flight | |
 |---|---|
-| Speed | starts at about 4.2 blocks a second, up to 6.3 after 7.5 seconds of flying forward |
+| Speed | starts at about 12 blocks a second, up to 18 after 7.5 seconds of flying forward |
 | Stop in the air | C, or a double tap on jump |
 | Power | 1.07 a second (a full ring lasts 93.75 seconds), plus whatever you use meanwhile |
 | Take off | C or a double tap on jump; at least 0.8 power; not while recharging |
@@ -362,7 +362,7 @@ The landing slam whenever you want it: you smash your ring fist into the ground 
 the 32 giant constructs (a random one), which strikes and sends a shockwave over the ground.
 
 - **On the ground** it goes off at once: down on one knee, fist in the ground.
-- **Flying**, you dive straight down at 19.25 blocks a second, three times your top speed (your keys wait until you hit
+- **Flying**, you dive straight down at 19.25 blocks a second, faster than your top speed (your keys wait until you hit
   the ground), and slam where you come down. Not during the take-off.
 - **Jumping or falling**, you drop straight down, upright with your fist cocked, and slam the moment you touch
   the ground. The ring breaks your fall: no fall damage, however high you were. In water nothing happens.
@@ -558,10 +558,10 @@ The ring scans everything around you, the way it does in the comics ("Ring, scan
   walls and all, up to **56 blocks** away. Everyone around sees the wave go by.
 - Every creature it passes is **marked for you alone** for **21 seconds**: it glows, its whole outline shining
   clearly through walls, and a frame of light with marked corners stands round it, with its name and its health
-  over it. The colour says what it is to you: **red** for what is out to hurt you (monsters, and anything that
-  has turned on you), **green** for everything else. Each frame snaps in with a tick you can hear as the wave
-  reaches it.
-- The ring tells you on your action bar what it found: how many hostile and how many other lifeforms.
+  over it. The colour says what it is to you (see [Friend or foe](PROJECT.md#6-friend-or-foe-factions)):
+  **red** for hostile, **yellow** for neutral, **green** for friendly. Each frame snaps in with a tick you can hear
+  as the wave reaches it.
+- The ring tells you on your action bar what it found: how many hostile, neutral and friendly lifeforms.
 - **Power:** 2 per scan. **Cooldown:** 8 seconds.
 
 ### Air Strike (key Y, the ultimate)
@@ -584,23 +584,24 @@ Green Lantern's ultimate: a big, slow gunship of hard light high over the battle
   21 blocks of room above you the ring tells you so and nothing happens.
 - **For 20 seconds** it drones on and never stops firing:
   - **it scans:** its sensor shines a cone of light down onto the ground and a scan wave rolls out from under it,
-    like your Ring Scan but half as far again (**84 blocks**), and marks only what is out to hurt you (red, through
-    walls, for 21 seconds). It scans again every 5 seconds as it flies on. Its guns go for what it marked; with
-    nothing marked they rake the ground ahead of it along its way.
+    like your Ring Scan but half as far again (**84 blocks**), and marks only what is hostile to you (red, through
+    walls, for 21 seconds). It scans again every 5 seconds as it flies on. **Everything it fires goes only for what
+    it marked red, the one closest to you first.** With nothing red marked it holds fire: the guns stay quiet and
+    the bomb bay stays shut.
   - **the two miniguns**, big six-barrelled guns hanging under either side of its body, swing smoothly round to
     what they fire at and stay on it a while, firing in turn: together **2 rounds every 0.14 seconds**, their
     barrels spinning, their muzzles flashing and slim glowing tracers streaking down. They aim where a creature on
     the move will be when the rounds get there. The rounds spread wide, so many miss, but there are a lot of them:
-    **1.5 hearts** for every round that strikes.
+    **2.25 hearts** for every round that strikes.
   - **homing missiles out of the belly:** every **2 seconds** the two doors of the bomb bay swing open, a big
     missile is lowered out and drops, and the doors swing shut behind it. It falls a way, and then, at a moment of
-    its own, its motor bursts into life with a flash: it turns and streaks off at the creature out to hurt you
-    nearest to it, trailing flame and light, and bursts on it for **12 hearts** (less for what else its blast
-    reaches). With nothing to find it strikes the ground along the way. Every missile that bursts near the ground
-    blows a **small crater** in it and throws up blocks.
+    its own, its motor bursts into life with a flash: it turns and streaks off at the marked red creature closest
+    to you, trailing flame and light, and bursts on it for **12 hearts** (less for what else red its blast
+    reaches). If that one is gone by then and nothing red is left, it strikes the ground along the way. Every
+    missile that bursts near the ground blows a **small crater** in it and throws up blocks.
   - **the jets** fire a small homing missile from under one wing and then the other, each about every **1.2
-    seconds**, at the creature out to hurt you nearest to them: **2.5 hearts** and a small blast. The pylon grows
-    its next missile out of the light.
+    seconds**, at the marked red creature closest to you: **2.5 hearts** and a small blast. The pylon grows its
+    next missile out of the light.
 - **Then it fails:** an engine bursts into flame and its propeller runs down. The gunship shudders, leans over to
   that side and fights to stay up, trailing fire and light, while its **jets break away**: their flames roar out,
   they race off faster and faster, a cone of mist forms round them and they **break the sound barrier** with a
@@ -609,14 +610,14 @@ Green Lantern's ultimate: a big, slow gunship of hard light high over the battle
   faster, in about three seconds. It strikes in a vast blast like a sun: a flash, a fireball rising on a stem of
   light and rolling into a mushroom cloud, a ring of light racing out round its middle, a shell of light and rings
   running out over the ground, and the plane breaks into solid pieces flung far. The view of everyone close by
-  shakes. The blast does **24 hearts** in the middle, half at its edge 80 blocks out, throws everything away, and
+  shakes. The blast does **24 hearts** in the middle, half at its edge 96 blocks out, throws everything away, and
   **blows a crater out of the ground**: its blocks are hurled up and away and come down all round it, and smoke
   and flames rise from it for a while after. Blocks that hold something (chests and the like), blocks harder than
   ores, and water stay.
 - Only the blasts are see-through: the plane, its jets, its guns, its rounds and its missiles are all solid
   constructs.
-- **Who gets hit:** only what is out to hurt you (monsters, and anything that has turned on you) and, by the blasts,
-  players where players may fight each other; never your own pets, and never you.
+- **Who gets hit:** only what is red (hostile) to you; players only where players may fight each other. Never
+  anything green (your faction, allies, your pets), never anything yellow, and never you.
 - If you stop being Green Lantern before it crashes, the plane and its jets break apart in the air.
 - **Power:** 20. **Cooldown:** 90 seconds.
 - All of it is a setting: how long it attacks, how far it scans, the cost, the miniguns (how often, damage,
@@ -806,7 +807,7 @@ You choose how you walk. Press **C** to go round: on your own feet, on 2, on 3, 
 | Z | **Tentacle Dash** | The tentacles push off the ground and launch you **the way you are pressing**: forward, sideways or backwards, and much further than before. Standing still they throw you where you look. Costs 30 stamina. No fall damage on the landing. | 3 s |
 | B (hold) | **Block** | All four tentacles take their own corner in front of you behind a glowing energy shield. Hits from the front do 85% less damage, projectiles are stopped, and you get no knockback. You walk 40% slower, and it drains stamina, more for every hit caught. Out of stamina: the block drops. | - |
 | H | **Ground Slam** | With empty claws: the tentacles rise high and smash down around you. Everything within 6 blocks takes up to 3.5 hearts and is thrown back and up. In the air you dive down first and the slam is bigger (8 blocks, up to 5 hearts). No fall damage. | 8 s |
-| Y | **Octopus Rampage** (ultimate) | For 20 seconds: double attack speed, every lamp glows red, and all four tentacles attack enemies within 8 blocks by themselves (1.5 hearts per hit). | 90 s |
+| Y | **Octopus Rampage** (ultimate) | For 20 seconds: double attack speed, every lamp glows red, and all four tentacles attack hostile (red) creatures within 8 blocks by themselves (1.5 hearts per hit). | 90 s |
 | N | **Portal** | One tentacle goes hunting through three portals (see below). The others keep working. | 20 s |
 | Left Alt | **Ground Strike** | You mark creatures first, then the tentacles dive into the ground and come up underneath them (see below). | 10 s |
 

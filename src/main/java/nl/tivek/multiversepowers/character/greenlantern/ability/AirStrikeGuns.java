@@ -12,7 +12,6 @@ import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
-import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.ClipContext;
@@ -45,18 +44,11 @@ abstract class AirStrikeGuns extends AirStrikeBlasts {
     private static final double LEAD_REACH = 4.0;
     private static final double LEAD_FASTEST = 1.5;
     private static final double GUN_REACH = 150.0;
-    private static final int GUN_KEEPS = 40;
-    private static final double RAKE_NEAR = 6.0;
-    private static final double RAKE_FAR = 20.0;
-    private static final double RAKE_IN = 2.5;
-    private static final double RAKE_OUT = 9.0;
 
     final List<Bullet> bullets = new ArrayList<>();
     final List<Scan> scans = new ArrayList<>();
     private final Map<Integer, Integer> marked = new HashMap<>();
     private final PlanePath.Turret[] turrets;
-    private final LivingEntity[] gunTargets = new LivingEntity[2];
-    private final int[] gunKeeps = new int[2];
     double gunsOwe;
     private boolean leftGun;
 
@@ -124,24 +116,18 @@ abstract class AirStrikeGuns extends AirStrikeBlasts {
     }
 
     @Nullable
-    private LivingEntity pickMarked(ServerLevel level, Vec3 from, double reach, double side) {
-        Vec3 right = this.path.axes(this.age)[0];
-        RandomSource random = this.owner.getRandom();
+    LivingEntity closestMarked(ServerLevel level, Vec3 from, double reach) {
+        Vec3 you = this.owner.position();
         LivingEntity best = null;
-        double bestScore = Double.MAX_VALUE;
+        double nearest = Double.MAX_VALUE;
         for (int entity : this.marked.keySet()) {
             if (!(level.getEntity(entity) instanceof LivingEntity living) || !this.hostile(living)) {
                 continue;
             }
             Vec3 at = living.getBoundingBox().getCenter();
-            double distance = at.distanceTo(from);
-            if (distance > reach) {
-                continue;
-            }
-            double across = at.subtract(from).dot(right) * side;
-            double score = distance * (0.6 + 0.8 * random.nextDouble()) * (across >= -2.0 ? 1.0 : 2.5);
-            if (score < bestScore) {
-                bestScore = score;
+            double distance = at.distanceToSqr(you);
+            if (at.distanceToSqr(from) <= reach * reach && distance < nearest) {
+                nearest = distance;
                 best = living;
             }
         }
@@ -163,19 +149,14 @@ abstract class AirStrikeGuns extends AirStrikeBlasts {
     void fireGun(ServerLevel level) {
         this.leftGun = !this.leftGun;
         int gun = this.leftGun ? 0 : 1;
-        double side = this.leftGun ? -1.0 : 1.0;
         Vec3 pivot = this.path.pivot(gun, this.age);
+        LivingEntity target = this.closestMarked(level, pivot, GUN_REACH);
+        if (target == null) {
+            return;
+        }
         Vec3 barrel = this.turrets[gun].aim(this.age);
         Vec3 muzzle = pivot.add(barrel.scale(GUN_LENGTH));
-        LivingEntity target = this.gunTargets[gun];
-        if (target == null || this.age >= this.gunKeeps[gun] || !target.isAlive() || target.level() != level
-                || !this.marked.containsKey(target.getId()) || !this.hostile(target)
-                || target.getBoundingBox().getCenter().distanceTo(pivot) > GUN_REACH) {
-            target = this.pickMarked(level, pivot, GUN_REACH, side);
-            this.gunTargets[gun] = target;
-            this.gunKeeps[gun] = this.age + GUN_KEEPS;
-        }
-        Vec3 goal = target == null ? this.rake(level, side) : ahead(target, pivot).getCenter();
+        Vec3 goal = ahead(target, pivot).getCenter();
         Vec3 next = this.path.gunGoal(gun, this.age, goal);
         this.turrets[gun].fired(this.age, next);
         RandomSource random = this.owner.getRandom();
@@ -192,7 +173,7 @@ abstract class AirStrikeGuns extends AirStrikeBlasts {
         boolean air = block.getType() == HitResult.Type.MISS;
         boolean body = false;
         for (LivingEntity living : level.getEntitiesOfClass(LivingEntity.class,
-                new AABB(muzzle, to).inflate(LEAD_REACH), this::fair)) {
+                new AABB(muzzle, to).inflate(LEAD_REACH), this::hostile)) {
             Vec3 on = ahead(living, muzzle).inflate(BULLET_HIT).clip(muzzle, to).orElse(null);
             if (on != null) {
                 to = on;
@@ -211,15 +192,6 @@ abstract class AirStrikeGuns extends AirStrikeBlasts {
         this.sound(level, muzzle, SoundEvents.CHAIN_HIT, 6.0F, 0.6F);
     }
 
-    private Vec3 rake(ServerLevel level, double side) {
-        Vec3 way = this.path.way();
-        Vec3 right = way.cross(new Vec3(0.0, 1.0, 0.0)).normalize();
-        double phase = side > 0.0 ? 0.0 : 1.9;
-        double ahead = Mth.lerp(0.5 + 0.5 * Math.sin(this.age * 0.05 + phase), RAKE_NEAR, RAKE_FAR);
-        double across = side * Mth.lerp(0.5 + 0.5 * Math.sin(this.age * 0.13 + phase * 1.7), RAKE_IN, RAKE_OUT);
-        return this.ground(level, this.path.at(this.age).add(way.scale(ahead)).add(right.scale(across)));
-    }
-
     void flyBullets(ServerLevel level) {
         Iterator<Bullet> all = this.bullets.iterator();
         while (all.hasNext()) {
@@ -235,7 +207,7 @@ abstract class AirStrikeGuns extends AirStrikeBlasts {
             LivingEntity struck = null;
             double nearest = Double.MAX_VALUE;
             for (LivingEntity living : level.getEntitiesOfClass(LivingEntity.class,
-                    new AABB(from, end).inflate(1.0), this::fair)) {
+                    new AABB(from, end).inflate(1.0), this::hostile)) {
                 Vec3 on = living.getBoundingBox().inflate(BULLET_HIT).clip(from, end).orElse(null);
                 if (on != null && on.distanceToSqr(from) < nearest) {
                     nearest = on.distanceToSqr(from);

@@ -10,16 +10,14 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
-import net.minecraft.world.entity.monster.Enemy;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 import nl.tivek.multiversepowers.engine.target.Targeting;
+import nl.tivek.multiversepowers.faction.Factions;
 
 abstract class RigStrikes extends RigPoses {
     RigStrikes(ServerPlayer caster, ServerLevel home) {
@@ -115,9 +113,7 @@ abstract class RigStrikes extends RigPoses {
         for (LivingEntity living : level.getEntitiesOfClass(LivingEntity.class,
                 this.caster.getBoundingBox().inflate(range),
                 entity -> Targeting.isTargetable(this.caster, entity))) {
-            boolean threat = living instanceof Enemy || living instanceof Player
-                    || (living instanceof Mob mob && mob.getTarget() == this.caster)
-                    || living == this.caster.getLastHurtByMob();
+            boolean threat = Factions.hostile(this.caster, living);
             Vec3 center = living.getBoundingBox().getCenter();
             if (threat && center.distanceTo(eye) <= range
                     && Targeting.clearPath(level, eye, center, this.caster)) {
@@ -137,9 +133,7 @@ abstract class RigStrikes extends RigPoses {
         AABB box = this.caster.getBoundingBox().inflate(range);
         for (LivingEntity living : level.getEntitiesOfClass(LivingEntity.class, box,
                 entity -> Targeting.isTargetable(this.caster, entity))) {
-            boolean threat = living instanceof Enemy || living instanceof Player
-                    || (living instanceof Mob mob && mob.getTarget() == this.caster)
-                    || living == this.caster.getLastHurtByMob();
+            boolean threat = Factions.hostile(this.caster, living);
             Vec3 center = living.getBoundingBox().getCenter();
             double distance = center.distanceTo(eye);
             if (!threat || distance > range || (inFront && look.dot(center.subtract(eye).normalize()) < 0.5)

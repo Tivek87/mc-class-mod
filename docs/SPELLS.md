@@ -45,8 +45,8 @@ Good to know:
 | Fire | Fire Wall | A swirling ring of fire around you that burns and knocks back enemies | 3.5 block radius | 10 s |
 | Lightning | Lightning Strike | Charges up, then lightning strikes where you look | 40 blocks | 8 s |
 | Nature | Poison Area | A thrown vial that leaves a poison cloud | 24 blocks | 12 s |
-| Air | Wind Gust | A wall of wind that throws creatures back | 8 blocks in front of you | 5 s |
-| Dark | Void Walk | 10 s invisible, faster and stronger, enemies marked | around you | 30 s |
+| Air | Wind Gust | A wall of wind that throws hostile (red) creatures back | 8 blocks in front of you | 5 s |
+| Dark | Void Walk | 10 s invisible, faster and stronger, hostile (red) ones marked | around you | 30 s |
 
 ---
 
@@ -99,7 +99,7 @@ a ring of sparks, flying pieces of the ground, and a smoking, crackling scorch m
 | Aiming | the creature or block you look at; a creature is followed while the spell charges |
 | Damage | normal lightning: 5 (2.5 hearts) and sets the target on fire |
 | Fire | also sets the ground on fire, on Normal and Hard difficulty |
-| You | your own lightning never hits you; other players only where players may fight each other |
+| You | your own lightning never hits you or anything green (your faction, allies, pets); other players only where players may fight each other |
 | Cooldown | 8 s |
 
 ---
@@ -115,7 +115,7 @@ the ground. Every creature inside gets a green haze. At the end the cloud thins 
 | Range | 24 blocks, lands where you look |
 | Cloud | 3.5 blocks around the landing spot, 8 seconds |
 | Effect | Poison II for 3 seconds, renewed every half second while inside |
-| You | never poisoned by your own cloud; other players only where players may fight each other, spectators never |
+| Who | only hostile (red) ones; never you or anything green or yellow; other players only where players may fight each other, spectators never |
 | Cooldown | 12 s |
 
 ---
@@ -130,7 +130,7 @@ Every creature it reaches is thrown back and up with a puff of air.
 | Range | 8 blocks, in a wide cone in front of you (about 60 degrees to each side) |
 | Wave speed | 20 blocks per second; creatures are thrown the moment the wave reaches them |
 | Push | strongest up close, weaker further away; knockback resistance (like netherite armour) lowers it |
-| Hits | every living creature in the cone, never you; other players only where players may fight each other (PvP on, not in creative) |
+| Hits | every hostile (red) creature in the cone, never you; other players only where players may fight each other (PvP on, not in creative) |
 | Damage | none, only the push (and the fall afterwards) |
 | Cooldown | 5 s |
 
@@ -150,7 +150,7 @@ and you hear a low heartbeat. When it ends, you come back with a burst.
 | Untargetable | mobs lose track of you and cannot target you, even when you hit them |
 | Speed | +50% |
 | Melee damage | +20% |
-| Marked | monsters and other players within 32 blocks glow for you, also through walls, with a purple mark above their head |
+| Marked | everything hostile (red) to you within 32 blocks glows for you, also through walls, with a purple mark above their head |
 | Ends early | when you die or log out, or when something takes the invisibility away (milk, a flash of light) |
 | Cooldown | 30 s |
 

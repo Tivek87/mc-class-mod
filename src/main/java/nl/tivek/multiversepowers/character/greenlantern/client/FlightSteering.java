@@ -75,8 +75,8 @@ abstract class FlightSteering {
 
     private static double topSpeed(LocalPlayer player) {
         double full = fullSpeed();
-        double start = Math.min(full, flightSetting("startSpeed", 4.16) / 20.0);
-        double cruise = Mth.clamp(flightSetting("cruiseSpeed", 5.2) / 20.0, start, full);
+        double start = Math.min(full, flightSetting("startSpeed", 12.0) / 20.0);
+        double cruise = Mth.clamp(flightSetting("cruiseSpeed", 15.0) / 20.0, start, full);
         double quick = cruiseSeconds();
         double slow = Math.max(0.0, flightSetting("speedUpSeconds", 7.0));
         double top;
@@ -107,7 +107,7 @@ abstract class FlightSteering {
     }
 
     public static double fullSpeed() {
-        return flightSetting("topSpeed", 6.25625) / 20.0;
+        return flightSetting("topSpeed", 18.0) / 20.0;
     }
 
     private static double flightSetting(String key, double fallback) {

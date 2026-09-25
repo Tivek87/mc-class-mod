@@ -30,6 +30,7 @@ import nl.tivek.multiversepowers.character.greenlantern.PowerRing;
 import nl.tivek.multiversepowers.engine.effect.Effect;
 import nl.tivek.multiversepowers.engine.effect.Effects;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
+import nl.tivek.multiversepowers.faction.Factions;
 
 public final class LandingSlam implements Effect {
     public static final int FORM_TICKS = 6;
@@ -221,7 +222,7 @@ public final class LandingSlam implements Effect {
         Set<Integer> hit = new HashSet<>();
         AABB area = new AABB(this.center, this.center).inflate(this.radius, WAVE_HEIGHT, this.radius);
         for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, area,
-                entity -> PowerRing.canHit(this.owner, entity))) {
+                entity -> PowerRing.canHit(this.owner, entity) && Factions.hostile(this.owner, entity))) {
             Vec3 at = target.position();
             Vec3 away = new Vec3(at.x - this.center.x, 0.0, at.z - this.center.z);
             double distance = away.length();

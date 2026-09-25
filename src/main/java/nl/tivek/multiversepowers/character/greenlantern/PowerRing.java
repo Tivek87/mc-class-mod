@@ -34,6 +34,7 @@ import nl.tivek.multiversepowers.character.greenlantern.ability.RingScan;
 import nl.tivek.multiversepowers.character.greenlantern.ability.Shockwave;
 import nl.tivek.multiversepowers.character.greenlantern.ability.SwordShield;
 import nl.tivek.multiversepowers.engine.effect.Effects;
+import nl.tivek.multiversepowers.faction.Factions;
 
 public final class PowerRing {
     public static final float MAX_POWER = 100.0F;
@@ -116,7 +117,7 @@ public final class PowerRing {
 
     public static boolean canHit(ServerPlayer owner, Entity entity) {
         if (entity == owner || !(entity instanceof LivingEntity living) || !living.isAlive() || entity.isSpectator()
-                || entity instanceof ArmorStand) {
+                || entity instanceof ArmorStand || Factions.friendly(owner, entity)) {
             return false;
         }
         if (entity instanceof Player other) {

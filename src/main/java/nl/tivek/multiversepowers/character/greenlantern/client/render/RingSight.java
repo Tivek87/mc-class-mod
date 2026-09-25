@@ -25,9 +25,7 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.decoration.ArmorStand;
-import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
@@ -43,6 +41,8 @@ import nl.tivek.multiversepowers.character.greenlantern.client.ClientConstructs;
 import nl.tivek.multiversepowers.engine.math.Colors;
 import nl.tivek.multiversepowers.engine.math.Ease;
 import nl.tivek.multiversepowers.engine.math.Vectors;
+import nl.tivek.multiversepowers.faction.Standing;
+import nl.tivek.multiversepowers.faction.client.ClientStandings;
 import org.joml.Matrix4f;
 
 @EventBusSubscriber(modid = MultiversePowers.MODID, value = Dist.CLIENT)
@@ -56,8 +56,6 @@ public final class RingSight {
                     .setWriteMaskState(RenderStateShard.COLOR_WRITE)
                     .setCullState(RenderStateShard.NO_CULL)
                     .createCompositeState(false));
-    private static final int HOSTILE = 0xFF3A30;
-    private static final int FRIENDLY = 0x4CFF6E;
     private static final float SNAP = 5.0F;
     private static final float GONE = 10.0F;
     private static final float WAVE_FADE = 10.0F;
@@ -234,11 +232,11 @@ public final class RingSight {
     }
 
     private static int colour(LivingEntity living) {
-        return hostile(living) ? HOSTILE : FRIENDLY;
+        return ClientStandings.of(living).rgb();
     }
 
-    static boolean hostile(LivingEntity living) {
-        return living instanceof Enemy || living instanceof Mob mob && mob.isAggressive();
+    private static boolean hostile(LivingEntity living) {
+        return ClientStandings.of(living) == Standing.HOSTILE;
     }
 
     private static void corners(VertexConsumer buffer, Matrix4f matrix, Vec3 eye, AABB box, int rgb, float alpha) {

@@ -28,6 +28,8 @@ import nl.tivek.multiversepowers.classes.client.ClientWelcome;
 import nl.tivek.multiversepowers.config.ModConfigs;
 import nl.tivek.multiversepowers.config.WorldSettingsPayload;
 import nl.tivek.multiversepowers.engine.fx.ParticlesPayload;
+import nl.tivek.multiversepowers.faction.StandingsPayload;
+import nl.tivek.multiversepowers.faction.client.ClientStandings;
 import nl.tivek.multiversepowers.spell.Spell;
 import nl.tivek.multiversepowers.spell.SpellCooldownPayload;
 import nl.tivek.multiversepowers.spell.VoidStatePayload;
@@ -91,6 +93,10 @@ public final class ClientPayloadHandler {
 
     public static void handleRing(RingPayload payload, IPayloadContext context) {
         context.enqueueWork(() -> ClientRing.update(payload));
+    }
+
+    public static void handleStandings(StandingsPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> ClientStandings.update(payload));
     }
 
     public static void handleClassSync(ClassSyncPayload payload, IPayloadContext context) {

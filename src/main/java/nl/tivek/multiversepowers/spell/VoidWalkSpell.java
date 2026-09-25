@@ -26,8 +26,6 @@ import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
-import net.minecraft.world.entity.monster.Enemy;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.network.PacketDistributor;
@@ -35,6 +33,7 @@ import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.engine.effect.Effect;
 import nl.tivek.multiversepowers.engine.effect.Effects;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
+import nl.tivek.multiversepowers.faction.Factions;
 
 final class VoidWalkSpell {
     static final int DURATION = 200;
@@ -213,11 +212,8 @@ final class VoidWalkSpell {
         return new ClientboundSetEquipmentPacket(player.getId(), empty);
     }
 
-    static boolean isEnemy(Entity entity, Player caster) {
-        if (entity == caster || !entity.isAlive() || entity.isSpectator()) {
-            return false;
-        }
-        return entity instanceof Enemy || entity instanceof Player;
+    private static boolean isEnemy(Entity entity, ServerPlayer caster) {
+        return entity.isAlive() && !entity.isSpectator() && Factions.hostile(caster, entity);
     }
 
     private static void markEnemies(ServerPlayer caster) {

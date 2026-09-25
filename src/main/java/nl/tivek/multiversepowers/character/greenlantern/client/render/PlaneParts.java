@@ -1,5 +1,6 @@
 package nl.tivek.multiversepowers.character.greenlantern.client.render;
 
+import java.util.function.IntPredicate;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.character.CharacterAbility;
@@ -39,14 +40,15 @@ final class PlaneParts {
     private PlaneParts() {
     }
 
-    private static int missileEvery() {
+    static int missileEvery() {
         CharacterAbility strike = GameCharacter.GREEN_LANTERN.byName("air_strike");
         return Math.max(4, strike == null ? 40 : strike.intValue("missileTicks"));
     }
 
-    static void hatch(LanternPainter painter, PlanePath path, ConstructPainter.Frame frame, double t) {
+    static void hatch(LanternPainter painter, int owner, PlanePath path, ConstructPainter.Frame frame, double t) {
         int every = missileEvery();
-        double open = path.hatch(t, every);
+        IntPredicate skips = PlanePainter.skips(owner);
+        double open = path.hatch(t, every, skips);
         if (open > 0.0) {
             painter.shape(BAY_INSIDE, frame, 1.0, 1.0);
         }
@@ -59,7 +61,7 @@ final class PlaneParts {
             ConstructPainter.Frame door = side > 0 ? frame : frame.stretched(-1.0, 1.0, 1.0);
             painter.shape(BAY_DOOR, door.turned(hingeX, hingeY, 0.0, 0.0, 0.0, 1.0, swing), 1.0, 1.0);
         }
-        double lowered = path.lowered(t, every);
+        double lowered = path.lowered(t, every, skips);
         if (open > 0.0 && lowered >= 0.0) {
             double y = Mth.lerp(lowered, IN_BAY_Y, AirStrike.DROP_Y);
             ConstructPainter.Frame missile = new ConstructPainter.Frame(frame.at(0.0, y, AirStrike.BAY_Z),
@@ -70,13 +72,14 @@ final class PlaneParts {
 
     static void dropping(LanternPainter painter, int owner, PlanePath path, double t, float partialTick) {
         int every = missileEvery();
+        IntPredicate skips = PlanePainter.skips(owner);
         for (int release = path.lastRelease(t, every); release >= 0 && t - release <= AirStrike.IGNITE_LATEST + 2;
                 release -= every) {
             ClientConstructs.Launch launch = ClientConstructs.launch(owner, AirStrike.BIG_MISSILE, release,
                     partialTick);
             double since = launch == null ? t - release : launch.since();
             double until = launch == null ? EARLIEST_IGNITION : launch.leaves();
-            if (since >= 0.0 && since <= until) {
+            if (since >= 0.0 && since <= until && !skips.test(release)) {
                 Vec3[] state = falling(path.dropsOut(release), false, since);
                 missile(painter, false, state[0], state[1], state[2], -1.0, -1.0);
             }
@@ -152,7 +155,7 @@ final class PlaneParts {
         }
         double[] hull = hull(AirStrike.BAY_Z);
         double hinge = Math.toRadians(270.0 + BAY_HALF_ANGLE);
-        double swing = DOOR_OPEN * Ease.smoother(path.hatch(t, missileEvery()));
+        double swing = DOOR_OPEN * Ease.smoother(path.hatch(t, missileEvery(), PlanePainter.skips(owner)));
         for (int side = -1; side <= 1; side += 2) {
             ConstructPainter.Frame door = side > 0 ? frame : frame.stretched(-1.0, 1.0, 1.0);
             painter.shattered(BAY_DOOR, door.turned(hull[1] * Math.cos(hinge), hull[3] + hull[2] * Math.sin(hinge), 0.0,

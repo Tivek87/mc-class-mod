@@ -3,6 +3,35 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.1.2-alpha] - 2026-09-25
+
+### Added
+- **Factions:** everything alive is red (hostile), yellow (neutral) or green (friendly) to you; factions are
+  scoreboard teams and decide it between players.
+- **`/faction` command:** create, delete, add, remove, enemy, ally and neutral for operators; invite for members;
+  join (when invited), leave and list for everyone.
+- **Factions:** hitting something yellow 3 times (you and your faction together) turns it red for your faction
+  until 5 minutes after the last hit or its death; a player turned red this way sees your faction as red too.
+- **Factions:** green is never hurt by you, not by powers and not by weapons.
+
+### Changed
+- **Ring Scan:** marks in three colours (red, yellow, green) and counts hostile, neutral and friendly lifeforms.
+- **Homing and area powers** (Giant Hands, Air Strike, Light Bubble slam, landing slam, Octopus Rampage, Ground
+  Strike, Poison Area, Wind Gust, Void Walk marks) only go for red.
+- **Air Strike:** guns, missiles and jets only go for creatures its scan marked red, the one closest to you first;
+  with nothing red marked it holds fire and keeps its bomb bay shut.
+- **Air Strike, the miniguns:** 2.25 hearts per round that strikes (was 1.5).
+- **Flight:** much faster: sets off at 12 blocks a second (was 4.2), cruises at 15 (was 5.2) and reaches 18 at top
+  speed (was 6.3); climbing and sinking stay the same.
+- **Landing slam:** needs about 16 blocks a second when you dive in (was 5.6), still nearly your top speed.
+- **Air Strike, the crater:** blows 75% more blocks out of the ground: 9.7 blocks from its middle (was 8), with
+  158 blocks hurled away (was 90); the smoke and flames after it spread over the bigger crater.
+- **Air Strike, the crash:** the blast grows with the crater: six times its original size (was five times), and it
+  hurts everything up to 96 blocks away (was 80).
+
+### Removed
+- **Air Strike:** the miniguns no longer rake the ground when there is nothing to shoot at.
+
 ## [0.1.1-alpha] - 2026-09-25
 
 ### Changed

@@ -1,5 +1,10 @@
 package nl.tivek.multiversepowers.character.greenlantern.client.render;
 
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.IntPredicate;
 import javax.annotation.Nullable;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.Vec3;
@@ -50,12 +55,34 @@ public final class PlanePainter {
     private static final double SLUG_BREAKS = 4.0;
     static final double GLOWS = 0.3;
 
+    private static final Map<Integer, Skips> SKIPS = new HashMap<>();
+
+    private record Skips(int plane, Set<Integer> releases) {
+    }
+
     private PlanePainter() {
     }
 
     public static PlanePath path(ConstructPayload plane) {
         return new PlanePath(plane.center(), plane.facing(), plane.size(), Math.round(plane.charge()),
-                plane.variant() / 100.0);
+                (plane.variant() & (PlanePath.SKIP_NEXT - 1)) / 100.0);
+    }
+
+    public static void heard(ConstructPayload plane) {
+        Skips skips = SKIPS.get(plane.owner());
+        if (skips == null || skips.plane() != plane.id()) {
+            skips = new Skips(plane.id(), new HashSet<>());
+            SKIPS.put(plane.owner(), skips);
+        }
+        int next = path(plane).nextRelease(plane.age(), PlaneParts.missileEvery());
+        if ((plane.variant() & PlanePath.SKIP_NEXT) != 0 && next >= 0) {
+            skips.releases().add(next);
+        }
+    }
+
+    static IntPredicate skips(int owner) {
+        Skips skips = SKIPS.get(owner);
+        return skips == null ? release -> false : skips.releases()::contains;
     }
 
     public static void draw(LanternPainter painter, int id, ConstructPayload plane, double clock, @Nullable Vec3 ring,
@@ -113,7 +140,7 @@ public final class PlanePainter {
         painter.shape(BODY, frame, 1.0, 1.0 + 0.3 * flicker);
         propellers(painter, path, frame, t, grown);
         guns(painter, id, owner, path, frame, t, grown);
-        hatch(painter, path, frame, t);
+        hatch(painter, owner, path, frame, t);
         painter.ambient(0.0);
         painter.glare(0.0);
         lights(painter, frame, t, down);
@@ -326,5 +353,6 @@ public final class PlanePainter {
         }
         SOUNDS.clear();
         GUNS.clear();
+        SKIPS.clear();
     }
 }
