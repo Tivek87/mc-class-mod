@@ -30,9 +30,6 @@ scratch/
 # Built release jars (scripts/release.ps1 keeps the newest 10)
 releases/
 
-# Reference videos (clips from films and games): local only, never published
-docs/reference/*.mp4
-
 # Claude Code: local settings and agent worktrees
 .claude/settings.local.json
 .claude/worktrees/

@@ -3,6 +3,12 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.0.3-alpha] - 2026-09-25
+
+### Changed
+- **Repository:** audio and video files are part of the repository now, the reference clips in `docs/reference/`
+  too. The game itself is the same as in 0.0.2-alpha.
+
 ## [0.0.2-alpha] - 2026-09-25
 
 ### Changed
