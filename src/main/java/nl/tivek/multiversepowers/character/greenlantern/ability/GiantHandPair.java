@@ -101,7 +101,7 @@ abstract class GiantHandPair extends GiantHandBase {
             HandPose.Place[] both = { duo.leftPlace, duo.rightPlace };
             float[] notes = { 1.19F, 1.5F };
             for (int i = 0; i < both.length; i++) {
-                Vec3 thumb = both[i].at(HandDuo.FIST_HOLE).add(0.0, 2.4 * SCALE, 0.0);
+                Vec3 thumb = both[i].at(i == 0 ? HandDuo.THUMB_TIP.multiply(-1.0, 1.0, 1.0) : HandDuo.THUMB_TIP);
                 ParticleFx.cloud(level, ParticleTypes.HAPPY_VILLAGER, thumb, 8, 0.5, 0.0);
                 ParticleFx.sphereOut(level, ParticleFx.dust(PowerRing.BRIGHT, 1.0F), thumb, 10, 0.15);
                 this.storm.sound(level, thumb, SoundEvents.NOTE_BLOCK_BELL.value(), 1.6F, notes[i]);

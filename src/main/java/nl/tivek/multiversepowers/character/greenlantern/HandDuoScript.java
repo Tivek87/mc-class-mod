@@ -32,6 +32,7 @@ abstract class HandDuoScript extends HandDuoMotion {
     public static final Vec3 FIST_HOLE = new Vec3(0.0, 2.95, 1.05);
     public static final Vec3 SNAP_AT = new Vec3(-0.63, 2.97, 2.35);
     public static final Vec3 OK_AT = new Vec3(1.35, 3.14, 1.06);
+    public static final Vec3 THUMB_TIP = new Vec3(-4.14, 1.78, 1.17);
     public static final double REACH = 3.0;
 
     static final double GRIPS = (GRIP_LOW + GRIP_HIGH) * 0.5;
@@ -97,8 +98,8 @@ abstract class HandDuoScript extends HandDuoMotion {
     private static final Vec3 RISING = new Vec3(-5.0, 6.6, 2.4);
     private static final Vec3 LEFT_RISING = new Vec3(5.0, 8.4, 3.2);
     private static final Vec3 THUMB_UP = new Vec3(-3.6, 9.0, 0.4);
-    private static final Vec3 THUMB_UP_UP = new Vec3(0.246, 0.668, -0.702);
-    private static final Vec3 THUMB_UP_PALM = new Vec3(0.790, 0.282, 0.545);
+    private static final Vec3 THUMB_UP_UP = new Vec3(0.331, 0.0, -0.944);
+    private static final Vec3 THUMB_UP_PALM = new Vec3(0.912, 0.259, 0.319);
     private static final Vec3[] RISING_TURN = halfway(LETTING_GO_UP, LETTING_GO_PALM, THUMB_UP_UP, THUMB_UP_PALM);
     private static final Vec3[] LEFT_RISING_TURN = halfway(LEFT_LETTING_GO_UP, LEFT_LETTING_GO_PALM,
             THUMB_UP_UP.multiply(-1.0, 1.0, 1.0), THUMB_UP_PALM.multiply(-1.0, 1.0, 1.0));
@@ -124,7 +125,8 @@ abstract class HandDuoScript extends HandDuoMotion {
             0.0);
     private static final double[] RELEASED = digits(0.3, 0.32, 0.34, 0.36, 0.34, 0.08, 0.08, 0.08, 0.08, 0.0, 0.2);
     private static final double[] FIST = digits(1.0, 1.0, 1.0, 1.0, 0.55, 0.1, 0.1, 0.1, 0.1, 0.1, 0.0);
-    private static final double[] THUMB_STRAIGHT = digits(1.0, 1.0, 1.0, 1.0, 0.0, 0.1, 0.1, 0.1, 0.1, 0.0, 0.0);
+    private static final double[] THUMB_STRAIGHT = digits(1.0, 1.0, 1.0, 1.0, 0.0, 0.1, 0.1, 0.1, 0.1, 0.0, 0.0,
+            0.748);
     private static final double[] TRAILING = digits(0.16, 0.18, 0.2, 0.23, 0.1, 0.12, 0.12, 0.14, 0.16, 0.04, 0.3);
 
     private static final double[] OPENING = { 0.0, 0.7, 1.4, 2.1, 0.35 };

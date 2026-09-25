@@ -3,6 +3,12 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.0.9-alpha] - 2026-09-25
+
+### Changed
+- **Giant Hands:** the thumbs-up of the two hands from the portals now faces straight forward, thumbs straight up,
+  instead of tilting up at the sky; the sparkles sit on the thumb tips.
+
 ## [0.0.8-alpha] - 2026-09-25
 
 ### Added

@@ -1,6 +1,7 @@
 package nl.tivek.multiversepowers.character.greenlantern;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
@@ -8,8 +9,9 @@ import nl.tivek.multiversepowers.engine.math.Ease;
 import nl.tivek.multiversepowers.engine.math.Vectors;
 
 abstract class HandDuoMotion {
-    private static final int DIGITS = 11;
+    private static final int DIGITS = 12;
     private static final int SPREAD = 10;
+    private static final int THUMB_OUT = 11;
 
     private static final double HOOK_LAG = 0.5;
 
@@ -132,6 +134,7 @@ abstract class HandDuoMotion {
                 pose.hook[k] = d[5 + k] + free * 0.8;
             }
             pose.spread = d[SPREAD];
+            pose.thumbOut = d[THUMB_OUT];
             return pose;
         }
     }
@@ -147,7 +150,8 @@ abstract class HandDuoMotion {
                 if (this.by[i] == 0.0) {
                     continue;
                 }
-                double lag = i == SPREAD ? this.lags[1] : this.lags[i % 5] + (i >= 5 ? HOOK_LAG : 0.0);
+                double lag = i == SPREAD ? this.lags[1]
+                        : i == THUMB_OUT ? this.lags[4] : this.lags[i % 5] + (i >= 5 ? HOOK_LAG : 0.0);
                 double since = t - this.from - lag;
                 digits[i] += this.by[i] * step(this.curve, since / this.length, since);
             }
@@ -194,7 +198,7 @@ abstract class HandDuoMotion {
     }
 
     static double[] digits(double... values) {
-        return values;
+        return Arrays.copyOf(values, DIGITS);
     }
 
     static double[] with(double[] pose, double... changes) {

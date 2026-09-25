@@ -22,6 +22,7 @@ abstract class HandMotion {
     public double flex;
     public double sweep;
     public double spread;
+    public double thumbOut;
     public final double[] hook = new double[5];
 
     static double rise(double t, double to, double speed, double damping) {

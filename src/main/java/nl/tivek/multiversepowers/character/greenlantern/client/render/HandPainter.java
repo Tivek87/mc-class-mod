@@ -151,7 +151,8 @@ public final class HandPainter {
             double back = THUMB[j - 1];
             joint = joint.turned(0.0, back, 0.0, 1.0, 0.0, 0.0, Mth.lerp(thumb, 0.1, j == 1 ? 0.45 : 0.5)
                     + pose.hook[4] * THUMB_HOOKS[j - 1]).turned(0.0, back, 0.0, 0.0, 0.0, 1.0,
-                    Mth.lerp(thumb, 0.0, j == 1 ? -0.95 : -0.45)).moved(0.0, back, 0.0);
+                    Mth.lerp(thumb, 0.0, j == 1 ? -0.95 : -0.45) + (j == 1 ? pose.thumbOut : 0.0))
+                    .moved(0.0, back, 0.0);
             joints[j] = joint;
         }
         return joints;
