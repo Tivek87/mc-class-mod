@@ -3,6 +3,14 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.1.6-alpha] - 2026-09-25
+
+### Changed
+- **Flight:** half as fast: sets off at 6 blocks a second (was 12), cruises at 7.5 (was 15) and reaches its top
+  speed of 9 (was 18) after 4 seconds of flying forward (was 7.5).
+- **Flight, the dive:** straight down at 9.6 blocks a second (was 19.25), still just above your top speed.
+- **Landing slam:** needs about 8 blocks a second when you dive in (was 16), still nearly your top speed.
+
 ## [0.1.5-alpha] - 2026-09-25
 
 ### Added

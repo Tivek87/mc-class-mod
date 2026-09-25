@@ -62,7 +62,7 @@ abstract class FlightSteering {
     static final float DIVE_LOOK = 20.0F;
     static final double BRACE_TICKS = 5.0;
     static final double DIVE_TURN = 0.4;
-    static final double DIVE_SPEED = 19.25 / 20.0;
+    static final double DIVE_SPEED = 9.625 / 20.0;
     static final int SLAM_ROOT = 17;
     static int slamTick = Integer.MIN_VALUE;
 
@@ -75,10 +75,10 @@ abstract class FlightSteering {
 
     private static double topSpeed(LocalPlayer player) {
         double full = fullSpeed();
-        double start = Math.min(full, flightSetting("startSpeed", 12.0) / 20.0);
-        double cruise = Mth.clamp(flightSetting("cruiseSpeed", 15.0) / 20.0, start, full);
+        double start = Math.min(full, flightSetting("startSpeed", 6.0) / 20.0);
+        double cruise = Mth.clamp(flightSetting("cruiseSpeed", 7.5) / 20.0, start, full);
         double quick = cruiseSeconds();
-        double slow = Math.max(0.0, flightSetting("speedUpSeconds", 7.0));
+        double slow = Math.max(0.0, flightSetting("speedUpSeconds", 3.0));
         double top;
         if (momentum < quick) {
             double u = momentum / quick;
@@ -90,7 +90,7 @@ abstract class FlightSteering {
     }
 
     static void gainSpeed(LocalPlayer player, boolean forward) {
-        double total = cruiseSeconds() + Math.max(0.0, flightSetting("speedUpSeconds", 7.0));
+        double total = cruiseSeconds() + Math.max(0.0, flightSetting("speedUpSeconds", 3.0));
         if (!forward) {
             momentum = Math.max(0.0, momentum - total / (LOSE_SECONDS * 20.0));
             return;
@@ -107,7 +107,7 @@ abstract class FlightSteering {
     }
 
     public static double fullSpeed() {
-        return flightSetting("topSpeed", 18.0) / 20.0;
+        return flightSetting("topSpeed", 9.0) / 20.0;
     }
 
     private static double flightSetting(String key, double fallback) {

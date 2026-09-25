@@ -176,7 +176,7 @@ public enum GameCharacter {
                             "Damage of flying into a creature with the shield up, in half hearts, at the slowest"
                                     + " speed that rams")
                     .setting("ramDamagePerSpeed", 10.5, 0.0, 200.0, Unit.HALF_HEARTS_PER_SPEED,
-                            "Extra ram damage in half hearts for every block per tick you fly (about 0.9 at top"
+                            "Extra ram damage in half hearts for every block per tick you fly (about 0.45 at top"
                                     + " speed)")
                     .was(6.0)
                     .setting("ramKnockback", 1.4, 0.0, 6.0, Unit.STRENGTH,
@@ -268,25 +268,25 @@ public enum GameCharacter {
                             "Seconds a full ring keeps you in the air: flying costs 100 divided by this a second,"
                                     + " and what you shoot or hold up while flying comes on top")
                     .was(15.0, 37.5)
-                    .setting("topSpeed", 18.0, 5.0, 150.0, Unit.BLOCKS_PER_SECOND,
+                    .setting("topSpeed", 9.0, 5.0, 150.0, Unit.BLOCKS_PER_SECOND,
                             "Top speed in blocks per second (an elytra with firework rockets does about 33)")
-                    .was(50.0, 35.0, 19.25, 9.625, 6.25625)
-                    .setting("startSpeed", 12.0, 1.0, 150.0, Unit.BLOCKS_PER_SECOND,
+                    .was(50.0, 35.0, 19.25, 9.625, 6.25625, 18.0)
+                    .setting("startSpeed", 6.0, 1.0, 150.0, Unit.BLOCKS_PER_SECOND,
                             "Speed you set off at, in blocks per second: the longer you fly on, the faster you go, up"
                                     + " to the top speed")
-                    .was(11.7, 6.4, 4.16)
-                    .setting("cruiseSpeed", 15.0, 1.0, 150.0, Unit.BLOCKS_PER_SECOND,
+                    .was(11.7, 6.4, 4.16, 12.0)
+                    .setting("cruiseSpeed", 7.5, 1.0, 150.0, Unit.BLOCKS_PER_SECOND,
                             "Cruising speed in blocks per second: flying on, you are up to it within a moment, and"
                                     + " from there you keep gaining, up to the top speed")
-                    .was(13.0, 8.0, 5.2)
+                    .was(13.0, 8.0, 5.2, 15.0)
                     .setting("cruiseSeconds", 0.5, 0.0, 60.0, Unit.SECONDS,
                             "Seconds of flying on from the speed you set off at to the cruising speed (0 = straight"
                                     + " away)")
                     .was(3.0)
-                    .setting("speedUpSeconds", 7.0, 0.0, 300.0, Unit.SECONDS,
+                    .setting("speedUpSeconds", 3.0, 0.0, 300.0, Unit.SECONDS,
                             "Seconds of flying on from the cruising speed to the top speed (0 = straight away);"
                                     + " letting go of forward loses the speed again in a few seconds")
-                    .was(12.0, 30.0, 5.6)
+                    .was(12.0, 30.0, 5.6, 7.0)
                     .group("chunks", "The world ahead")
                     .settingInt("chunkRadiusBlocks", 128, 0, 256, Unit.BLOCKS,
                             "How far around a flyer the server makes the world ready while he flies (made, loaded and"

@@ -264,9 +264,9 @@ Green Lantern recharges his ring at his lantern, the power battery.
   in the middle of a jump or a fall (the double tap works there too; in creative the double tap stays the
   game's own flying).
 - **Flying:** hold **forward** and you fly the way you look. **You pick up speed quickly and then keep getting
-  faster the longer you fly on:** a flight starts at about **12 blocks a second** and within **half a second** you
-  are up to a cruising speed of **15 blocks a second**; from there you keep gaining, until after **7.5 seconds**
-  you reach the top speed of **18 blocks a second**, faster than flying in creative, and never more. Let go of forward and you glide to a hover and lose the speed you built up again (all of it in 3 seconds);
+  faster the longer you fly on:** a flight starts at about **6 blocks a second** and within **half a second** you
+  are up to a cruising speed of **7.5 blocks a second**; from there you keep gaining, until after **4 seconds**
+  you reach the top speed of **9 blocks a second**, a little slower than flying in creative, and never more. Let go of forward and you glide to a hover and lose the speed you built up again (all of it in 3 seconds);
   pushing against a wall keeps it.
   **Jump** rises, **sneak** sinks, left and right slide sideways, back drifts backwards. You carry your speed
   into every turn, so you swing through curves instead of snapping round. The world widens a little around
@@ -292,7 +292,7 @@ Green Lantern recharges his ring at his lantern, the power battery.
   any more. You do not get hurt when you touch the ground. Recharge (on the way down or on the ground) to fly
   again.
 - **Landing slam (by itself; key X does it on purpose, see Shockwave):** dive into the ground fast (at least
-  about 16 blocks a second, nearly your top speed, so fly on for a few seconds first) and your flight ends
+  about 8 blocks a second, nearly your top speed, so fly on for a few seconds first) and your flight ends
   in a
   hero's landing. Just before
   the ground you swing upright, feet first, ring
@@ -348,7 +348,7 @@ Green Lantern recharges his ring at his lantern, the power battery.
 
 | Flight | |
 |---|---|
-| Speed | starts at about 12 blocks a second, up to 18 after 7.5 seconds of flying forward |
+| Speed | starts at about 6 blocks a second, up to 9 after 4 seconds of flying forward |
 | Stop in the air | C, or a double tap on jump |
 | Power | 1.07 a second (a full ring lasts 93.75 seconds), plus whatever you use meanwhile |
 | Take off | C or a double tap on jump; at least 0.8 power; not while recharging |
@@ -362,7 +362,7 @@ The landing slam whenever you want it: you smash your ring fist into the ground 
 the 32 giant constructs (a random one), which strikes and sends a shockwave over the ground.
 
 - **On the ground** it goes off at once: down on one knee, fist in the ground.
-- **Flying**, you dive straight down at 19.25 blocks a second, faster than your top speed (your keys wait until you hit
+- **Flying**, you dive straight down at 9.6 blocks a second, faster than your top speed (your keys wait until you hit
   the ground), and slam where you come down. Not during the take-off.
 - **Jumping or falling**, you drop straight down, upright with your fist cocked, and slam the moment you touch
   the ground. The ring breaks your fall: no fall damage, however high you were. In water nothing happens.
