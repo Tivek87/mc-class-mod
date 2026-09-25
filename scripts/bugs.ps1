@@ -54,13 +54,9 @@ function Show-Files([string]$dir, [string]$heading, [string]$rule) {
     Write-Output $heading
     Write-Output $rule
     foreach ($file in $files) {
-        $lines = [IO.File]::ReadAllLines($file.FullName, $Utf8)
-        $title = ($lines | Select-Object -First 1) -replace '^# ', ''
-        $tags = ($file.Name -split '-')[1]
-        $category = $lines | Select-Object -First 6 | Where-Object { $_ -match '^- Category: (.+)$' } |
-            Select-Object -First 1
-        if ($category) { $tags += ', ' + ($category -replace '^- Category: ', '') }
-        Write-Output "- [$tags] #$(Get-IssueNumber $file) $title -> bugs/$(Split-Path -Leaf $dir)/$($file.Name)"
+        $title = ([IO.File]::ReadAllLines($file.FullName, $Utf8) | Select-Object -First 1) -replace '^# ', ''
+        $priority = ($file.Name -split '-')[1]
+        Write-Output "- [$priority] #$(Get-IssueNumber $file) $title -> bugs/$(Split-Path -Leaf $dir)/$($file.Name)"
     }
 }
 
@@ -80,15 +76,13 @@ function Sync-Issues([string]$issueLabel, [string]$dir, [int[]]$done) {
     foreach ($issue in $issues) {
         if ($done -contains $issue.number) { continue }
         $priority = 'medium'
-        $category = ''
         foreach ($tag in $issue.labels) {
             if ($tag.name -match '^priority: (high|medium|low)$') { $priority = $Matches[1] }
-            if ($tag.name -match '^category: (.+)$') { $category = "- Category: $($Matches[1])`n" }
         }
         $name = '{0}-{1}-{2}-{3}.md' -f $Ranks[$priority], $priority, $issue.number, (Get-Slug $issue.title)
         $wanted[$name] = $true
         $opened = ([datetime]$issue.createdAt).ToUniversalTime().ToString('yyyy-MM-dd HH:mm')
-        $text = "# $($issue.title)`n`n- Issue: #$($issue.number) $($issue.url)`n$category- Priority: $priority`n" +
+        $text = "# $($issue.title)`n`n- Issue: #$($issue.number) $($issue.url)`n- Priority: $priority`n" +
             "- Opened: $opened UTC`n`n$("$($issue.body)".Trim())`n"
         [IO.File]::WriteAllText((Join-Path $dir $name), $text, $Utf8)
     }
@@ -183,11 +177,7 @@ if ($Step -eq 'setup') {
                 @('priority: high', 'b60205', 'Player priority: high'),
                 @('priority: medium', 'fbca04', 'Player priority: medium'),
                 @('priority: low', '0e8a16', 'Player priority: low'),
-                @('idea', 'a2eeef', 'Sent from the in-game idea screen'),
-                @('category: new power', 'c5def5', 'Idea category: new power'),
-                @('category: new character', 'c5def5', 'Idea category: new character'),
-                @('category: change', 'c5def5', 'Idea category: change'),
-                @('category: other', 'c5def5', 'Idea category: other'))) {
+                @('idea', 'a2eeef', 'Sent from the in-game idea screen'))) {
             gh label create $label[0] -R $Repo --color $label[1] --description $label[2] --force | Out-Null
         }
 

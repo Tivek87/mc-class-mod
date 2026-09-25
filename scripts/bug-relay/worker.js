@@ -1,6 +1,5 @@
 const REPO = 'Tivek87/mc-class-mod';
 const PRIORITIES = ['low', 'medium', 'high'];
-const CATEGORIES = { power: 'New power', character: 'New character', change: 'Change', other: 'Other' };
 const PLAYER = /^[^\u0000-\u001f\u007f`|\\<>]{1,16}$/;
 const VERSION = /^[0-9A-Za-z.+-]{1,32}$/;
 const MAX_BODY = 8192;
@@ -25,9 +24,7 @@ export default {
 
     // Mod versions before ideas send no kind.
     const idea = report.kind === 'idea';
-    const labels = idea
-      ? ['idea', `category: ${CATEGORIES[report.category].toLowerCase()}`, `priority: ${report.priority}`]
-      : ['bug-report', `priority: ${report.priority}`];
+    const labels = [idea ? 'idea' : 'bug-report', `priority: ${report.priority}`];
     const response = await github(env, `/repos/${REPO}/issues`, {
       title: line(report.title),
       body: issueBody(report, idea),
@@ -64,9 +61,6 @@ function github(env, path, body) {
 function check(report) {
   if (typeof report !== 'object' || report === null) return 'not an object';
   if (report.kind !== undefined && report.kind !== 'bug' && report.kind !== 'idea') return 'kind';
-  if (report.kind === 'idea' && !(typeof report.category === 'string' && Object.hasOwn(CATEGORIES, report.category))) {
-    return 'category';
-  }
   if (typeof report.title !== 'string' || !line(report.title) || report.title.length > 80) return 'title';
   if (typeof report.description !== 'string' || !report.description.trim() || report.description.length > 2000) {
     return 'description';
@@ -87,17 +81,11 @@ function quiet(text) {
 }
 
 function issueBody(report, idea) {
-  const cells = [['Reporter (Minecraft)', `\`${report.username}\``]];
-  if (idea) cells.push(['Category', CATEGORIES[report.category]]);
-  cells.push(
-    ['Priority', report.priority[0].toUpperCase() + report.priority.slice(1)],
-    ['Mod', report.modVersion],
-    ['Minecraft', report.minecraftVersion],
-  );
+  const priority = report.priority[0].toUpperCase() + report.priority.slice(1);
   return [
-    `| ${cells.map((cell) => cell[0]).join(' | ')} |`,
-    `|${'---|'.repeat(cells.length)}`,
-    `| ${cells.map((cell) => cell[1]).join(' | ')} |`,
+    '| Reporter (Minecraft) | Priority | Mod | Minecraft |',
+    '|---|---|---|---|',
+    `| \`${report.username}\` | ${priority} | ${report.modVersion} | ${report.minecraftVersion} |`,
     '',
     idea ? '### Idea' : '### Description',
     '',

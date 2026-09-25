@@ -3,6 +3,13 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.1.4-alpha] - 2026-09-25
+
+### Removed
+- **Suggest an idea:** the category; an idea now has only a name, a description and a priority.
+- **Air Strike:** the wind sounds: the rush of air around the gunship, the whoosh of its jets and the whoosh as it
+  dives; its engine hum, guns, missiles and blasts stay.
+
 ## [0.1.3-alpha] - 2026-09-25
 
 ### Added

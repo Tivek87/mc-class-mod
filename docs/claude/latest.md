@@ -1,9 +1,7 @@
 # Laatste sessie — 2026-09-25 (avond, 11)
 
-- **Vraag:** naast "Report a bug" ook ideeën/suggesties van spelers. Keuzes gebruiker: eigen knop, categorie + prioriteit, Claude deployt de relay.
-- **Gedaan:** `BugReportScreen.bug/idea` (één scherm, `BugReporter.Kind` + `Category`), knop "Suggest an idea" in `UpdateManagerScreen` (What's new eigen rij, paneel 180 hoog), teksten in `en_us.json`.
-- **Relay:** `worker.js` kent `kind: idea` + `category`; labels `idea`, `category: …`, `priority: …`; oude versies (geen kind) blijven bug, bug-tekst byte-gelijk. Gedeployd (versie df0c47ae), labels op GitHub gemaakt.
-- **Script:** `bugs.ps1` sync ook naar `bugs/ideas/`, `fixed` werkt voor ideeën ("Added in v…"), nieuw `decline` (sluit als not planned). Bug gevonden+gefixt: `$bugs` overschreef `$Bugs` (PowerShell hoofdletterongevoelig) → log in map `0/`, map weg.
-- **Docs:** CLAUDE.md (Bug reports + layout), README, docs/PROJECT.md, CHANGELOG 0.1.3-alpha (prepare gedaan).
-- **Getest:** relay lokaal (8 gevallen, fake GitHub) goed; in-game op 427x240: beide schermen, verzenden idee + bug naar lokale relay, labels/tekst goed; live test-idee #6 → sync → fixed → decline (gesloten, not planned). `gradlew build` schoon. Testklasse/shots weg.
-- **Open:** commit + push + `release.ps1 publish` wachten op ja van gebruiker.
+- **Vraag 1:** ideeën/suggesties naast "Report a bug". Gedaan + getest, commit 105d591, release v0.1.3-alpha.
+- **Vraag 2:** windgeluiden van de plane (Air Strike) weg (plane-wind, jets, duik-whoosh; motorbrom blijft). `PlaneSound` + `AirStrike`. Getest in-game via `PlaySoundEvent`-log: geen elytra-geluid meer.
+- **Vraag 3:** categorie weg uit Suggest an idea. `BugReporter.Category` weg, prioriteit weer volle breedte, lang-keys weg; `worker.js` negeert categorie (0.1.3-clients sturen hem nog, worden gewoon aangenomen), labels `idea` + `priority: …`; `bugs.ps1` zonder categorie. Relay gedeployd (5b3631cf). Docs: CLAUDE.md, README, PROJECT.md, CHANGELOG 0.1.4-alpha.
+- **Getest 3:** relay lokaal (4 gevallen incl. oud 0.1.3-idee met categorie) goed, bug-tekst byte-gelijk; in-game 427x240: één knop (Priority), idee verstuurd met labels idea + priority: high. Build schoon, testklasse/shots weg.
+- **Open:** GitHub-labels `category: …` bestaan nog (ongebruikt); weghalen alleen na ja.

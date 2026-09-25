@@ -45,14 +45,6 @@ final class BugReporter {
         }
     }
 
-    enum Category {
-        POWER, CHARACTER, CHANGE, OTHER;
-
-        String id() {
-            return this.name().toLowerCase(Locale.ROOT);
-        }
-    }
-
     enum Kind {
         BUG(""), IDEA("idea.");
 
@@ -83,15 +75,11 @@ final class BugReporter {
         return Minecraft.getInstance().getUser().getName();
     }
 
-    static CompletableFuture<Result> send(Kind kind, String title, String description, Category category,
-            Priority priority) {
+    static CompletableFuture<Result> send(Kind kind, String title, String description, Priority priority) {
         JsonObject json = new JsonObject();
         json.addProperty("kind", kind.id());
         json.addProperty("title", title.strip());
         json.addProperty("description", description.strip());
-        if (kind == Kind.IDEA) {
-            json.addProperty("category", category.id());
-        }
         json.addProperty("priority", priority.id());
         json.addProperty("username", username());
         json.addProperty("modVersion", UpdateChecker.installed());

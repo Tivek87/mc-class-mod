@@ -22,8 +22,7 @@ across the multiverse you can turn into.
   later (installed when you close the game) or update and restart right away.
 - **Bug reports:** **Report a bug** in the update manager sends a bug with a name, a description and a priority. It
   becomes a public issue on this repository, with your Minecraft name.
-- **Ideas:** **Suggest an idea** (next to it) sends an idea the same way, with a category (new power, new character,
-  change or other) and a priority.
+- **Ideas:** **Suggest an idea** (next to it) sends an idea the same way, with a name, a description and a priority.
 
 Everything each power does: [Characters and their powers](docs/POWERS.md).
 

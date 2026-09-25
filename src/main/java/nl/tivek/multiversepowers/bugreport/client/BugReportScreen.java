@@ -25,7 +25,6 @@ public final class BugReportScreen extends DirtBackgroundScreen {
     private final BugReporter.Kind kind;
     private String name = "";
     private String description = "";
-    private BugReporter.Category category = BugReporter.Category.POWER;
     private BugReporter.Priority priority = BugReporter.Priority.MEDIUM;
     @Nullable
     private CompletableFuture<BugReporter.Result> pending;
@@ -78,21 +77,11 @@ public final class BugReportScreen extends DirtBackgroundScreen {
         descriptionBox.setValueListener(value -> this.description = value);
         this.addRenderableWidget(descriptionBox);
 
-        int priorityX = x;
-        if (this.kind == BugReporter.Kind.IDEA) {
-            this.addRenderableWidget(CycleButton.<BugReporter.Category>builder(
-                            value -> text("category." + value.id()))
-                    .withValues(BugReporter.Category.values())
-                    .withInitialValue(this.category)
-                    .create(x, this.top + 155, half, 20, text("category"), (button, value) -> this.category = value));
-            priorityX = x + half + 6;
-        }
         this.addRenderableWidget(CycleButton.<BugReporter.Priority>builder(
                         value -> text("priority." + value.id()).withColor(value.color))
                 .withValues(BugReporter.Priority.values())
                 .withInitialValue(this.priority)
-                .create(priorityX, this.top + 155, x + inner - priorityX, 20, text("priority"),
-                        (button, value) -> this.priority = value));
+                .create(x, this.top + 155, inner, 20, text("priority"), (button, value) -> this.priority = value));
 
         this.addRenderableWidget(Button.builder(text("back"), button -> this.onClose())
                 .bounds(x, this.top + 196, half, 20).build());
@@ -107,7 +96,7 @@ public final class BugReportScreen extends DirtBackgroundScreen {
             return;
         }
         this.result = null;
-        this.pending = BugReporter.send(this.kind, this.name, this.description, this.category, this.priority);
+        this.pending = BugReporter.send(this.kind, this.name, this.description, this.priority);
         this.refreshSend();
     }
 
@@ -119,7 +108,6 @@ public final class BugReportScreen extends DirtBackgroundScreen {
             if (this.result.outcome() == BugReporter.Outcome.SENT) {
                 this.name = "";
                 this.description = "";
-                this.category = BugReporter.Category.POWER;
                 this.priority = BugReporter.Priority.MEDIUM;
                 this.rebuildWidgets();
             }
