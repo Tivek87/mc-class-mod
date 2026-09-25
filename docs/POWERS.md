@@ -465,11 +465,11 @@ their own (see "Changing the numbers").
 ### Construct Wheel (key V)
 
 The ring can shape hard light into your hands. The wheel has sixteen slots: the first holds the **Sword &
-Shield** (see below); the other fifteen hold the weapons still to come, each with its name and picture but nothing
-to do yet: **Energy Whip**, **Brawler Gauntlets / Boxing Gloves**, **Dual Energy Daggers**, **Battleaxe**,
-**Two-handed War Hammer**, **Spear / Halberd**, **Heavy Chainsaw**, **Dual Revolvers / Hand Cannons**, **Sawed-off
-Shotgun**, **Dual Micro-SMGs**, **Arm Cannon / Mega Blaster**, **Rotary Grenade Launcher**, **Minigun**, **Rocket
-Launcher / RPG** and **Plasma Flamethrower**. Picking one of those changes nothing but the bar above your hotbar.
+Shield** and the last the **Plasma Flamethrower** (see below); the other fourteen hold the weapons still to come, each
+with its name and picture but nothing to do yet: **Energy Whip**, **Brawler Gauntlets / Boxing Gloves**, **Dual Energy
+Daggers**, **Battleaxe**, **Two-handed War Hammer**, **Spear / Halberd**, **Heavy Chainsaw**, **Dual Revolvers / Hand
+Cannons**, **Sawed-off Shotgun**, **Dual Micro-SMGs**, **Arm Cannon / Mega Blaster**, **Rotary Grenade Launcher**,
+**Minigun** and **Rocket Launcher / RPG**. Picking one of those changes nothing but the bar above your hotbar.
 
 - **Tap V** and nothing opens at all: you swap straight between empty hands and the last slot you had
   out. That is the quick one, for in a fight.
@@ -548,6 +548,53 @@ arm, both as solid as every construct.
   small shockwave (**3 hearts** in the middle, 3.5 blocks). Costs 2 power. Not while flying.
 - Everything is a setting under the Construct Wheel: the damage and reach of the sword, the flurry, the block, the
   charge, its rams and its slam.
+
+#### Plasma Flamethrower (slot 16)
+
+A heavy flamethrower of hard light: a pistol grip in your ring hand, a finned barrel with a flared nozzle and a pilot
+light under it, a round fuel tank under the front with a valve wheel at its back and a hose running up into the body,
+and a front grip under the tank for your other hand. The gun is as solid as every construct; the fire it throws is
+plasma, green with a white-hot heart.
+
+- **How you hold it:** in first person the gun lies low at the bottom right of your screen, its nozzle toward the
+  middle, your right fist on the pistol grip and your left hand on the front grip. Seen from outside he holds it
+  before his belly with both hands, his body turned a little behind it.
+- **Taking it out:** your hands come up into view while the gun grows out of the ring's light, piece by piece: the
+  grip in your fist, then the body, the tank swelling out of its middle, the barrel running forward, the cooling fins
+  popping on one after the other, the nozzle, the hose snaking from the tank into the body, the front grip and the
+  valve, each part white-hot when it forms and cooling to green. You hold it up turned sideways to look at it, your
+  left hand takes the front grip with a clack, then moves to the valve at the back of the tank and gives it a quarter
+  turn: a hiss, a glow runs from the tank through the hose into the gun and the fins light up one by one from back to
+  front. Your eyes go to the nozzle: two sparks, and the pilot light catches. You raise the gun and fire a short test
+  burst high into the air, a rolling fireball, with a kick; then you lower it to your hip while a wisp of smoke rises
+  from the nozzle. You can fire from the moment the pilot light burns. Putting it away (any other slot, or empty
+  hands), it breaks into solid pieces, only as far as it had grown. Everyone sees it; a camera shake of 0 keeps your
+  view still.
+- **Left click (sweep of flame):** you swing the nozzle from right to left and a wide fan of flame rolls out along
+  the whole arc, curling up as it goes; the next click sweeps back from left to right, so quick clicks flow into
+  each other. Everything in the arc takes **2 hearts** and is shoved the way the flame went, up to 5.5 blocks.
+  Costs 0.3 power.
+- **Holding left 2 seconds (inferno):** you brace and pour out a roaring stream of fire straight at your crosshair,
+  **10 blocks** far, for as long as you hold: it widens as it goes, licks upward and splashes on what it hits.
+  **1.5 hearts** to everything in it every 4 ticks. Costs 1 power a second. Letting go cuts the stream; the gun
+  vents a puff of smoke and its glowing fins cool down.
+- **Clicking right (wall of fire):** you bend forward and sweep the nozzle low over the ground in front of you,
+  laying a line of fire from right to left, and it bursts up into a **wall of fire** 3 blocks ahead of you,
+  5.5 blocks wide and 2.6 high, for **3 seconds**. Hostile creatures in it take **1.5 hearts** twice a second
+  (half as much again when it bursts up) and are thrown back out the side they came from, so they cannot walk
+  through it; arrows and other shots from hostiles burn up in it. It follows the ground and sinks away when it is
+  done. A new wall puts out the old one. Needs ground in front of you. Costs 3 power.
+- **Holding right 2 seconds (vortex):** you point the nozzle down and circle it, and the flames whirl up around you
+  into a **vortex of fire** 2.6 blocks wide and 3 blocks high for as long as you hold. It keeps **half** of every hit
+  from any side off you, burns up shots from hostiles that fly into it, and hostile creatures in it take
+  **1.5 hearts** twice a second and are flung round and out. Letting go blasts the vortex outward in a ring of fire
+  (**2.25 hearts**, reaches a third further, throws them away hard). Costs 1 power a second. From inside, the
+  flames stay faint so you can still see.
+- **Green afterburn:** everything the flames touch keeps burning with green flames for **3 seconds**, **1 heart**
+  a second; hitting it again keeps it burning. Water puts it out with a hiss. Blocks never catch fire.
+- One move at a time: the gun has one nozzle, so a sweep, the inferno, the wall and the vortex never overlap.
+- Everything is a setting under the Construct Wheel: the damage, reach and cost of the sweep, the inferno, the wall
+  and the vortex, and how long and how hard the afterburn burns.
 
 ### Ring Scan (key N)
 

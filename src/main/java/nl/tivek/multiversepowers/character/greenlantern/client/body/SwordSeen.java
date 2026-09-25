@@ -132,7 +132,7 @@ abstract class SwordSeen extends SwordStates {
 
     public static void draw(LanternPainter painter, Entity player, @Nullable Vec3 ring, float partialTick) {
         State state = state(player, partialTick);
-        SwordSpot.Spot spot = SwordSpot.of(player);
+        HandSpot.Spot spot = HandSpot.of(player);
         if (state == null || spot == null) {
             return;
         }

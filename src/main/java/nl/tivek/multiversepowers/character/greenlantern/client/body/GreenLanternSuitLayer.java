@@ -95,7 +95,7 @@ public final class GreenLanternSuitLayer extends RenderLayer<AbstractClientPlaye
         if (uniform == null) {
             return;
         }
-        SwordSpot.onRoot(player, poseStack);
+        HandSpot.onRoot(player, poseStack);
         PlayerModel<AbstractClientPlayer> suit = model(player);
         this.getParentModel().copyPropertiesTo(suit);
         suit.rightLeg.visible = knees == null;
@@ -126,11 +126,11 @@ public final class GreenLanternSuitLayer extends RenderLayer<AbstractClientPlaye
         suit.rightArm.translateAndRotate(poseStack);
         Ring.draw(poseStack, buffers, light, slim, uniform.ring(), ClientRing.charge(player), glow);
         RingSpot.onBody(player, poseStack, Ring.stone(slim));
-        SwordSpot.onArm(player, poseStack, true, slim);
+        HandSpot.onArm(player, poseStack, true, slim);
         poseStack.popPose();
         poseStack.pushPose();
         suit.leftArm.translateAndRotate(poseStack);
-        SwordSpot.onArm(player, poseStack, false, slim);
+        HandSpot.onArm(player, poseStack, false, slim);
         poseStack.popPose();
     }
 

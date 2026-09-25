@@ -12,7 +12,7 @@ import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 
-final class SwordSpot {
+final class HandSpot {
     private static final long FRESH_MS = 150L;
 
     record Spot(Vec3 x, Vec3 y, Vec3 z, Vec3 grip, Vec3 mount, long when, Vec3 origin, double scale) {
@@ -50,7 +50,7 @@ final class SwordSpot {
 
     private static final Map<Integer, Measured> BODIES = new HashMap<>();
 
-    private SwordSpot() {
+    private HandSpot() {
     }
 
     static void onRoot(Entity owner, PoseStack pose) {

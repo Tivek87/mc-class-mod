@@ -28,6 +28,7 @@ import nl.tivek.multiversepowers.character.client.MouseHold;
 import nl.tivek.multiversepowers.character.greenlantern.RingPayload;
 import nl.tivek.multiversepowers.character.greenlantern.client.ClientConstructs;
 import nl.tivek.multiversepowers.character.greenlantern.client.ClientRing;
+import nl.tivek.multiversepowers.character.greenlantern.client.body.FlameArms;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.SwordArms;
 import nl.tivek.multiversepowers.config.client.ClientSettings;
 import nl.tivek.multiversepowers.engine.math.Colors;
@@ -57,7 +58,8 @@ public final class BeamCharge {
         }
         if (player == Minecraft.getInstance().player) {
             // Sword and shield own the hold button then, not the beam charge
-            if (ClientCharacter.active() != GameCharacter.GREEN_LANTERN || SwordArms.holding()) {
+            if (ClientCharacter.active() != GameCharacter.GREEN_LANTERN || SwordArms.holding()
+                    || FlameArms.holding()) {
                 return -1.0F;
             }
             float progress = MouseHold.progress(bolt, partialTick);

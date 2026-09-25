@@ -77,6 +77,10 @@ public final class LanternArms {
             model.rightArmPose = pose;
             SwordArms.spin(event);
         }
+        if (FlameArms.posing(player, event.getPartialTick())) {
+            model.leftArmPose = pose;
+            model.rightArmPose = pose;
+        }
         if (CallArm.up(player, event.getPartialTick()) > 0.0F || ScanArm.out(player, event.getPartialTick()) > 0.0F
                 || HandsArm.out(player, event.getPartialTick()) > 0.0F) {
             model.rightArmPose = pose;
@@ -117,6 +121,7 @@ public final class LanternArms {
             return;
         }
         SwordArms.pose(model, entity, arm);
+        FlameArms.pose(model, entity, arm);
         ScanArm.pose(model, entity, arm);
         CallArm.pose(model, entity, arm);
         HandsArm.pose(model, entity, arm);

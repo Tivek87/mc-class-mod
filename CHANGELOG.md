@@ -3,6 +3,25 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.1.7-alpha] - 2026-09-26
+
+### Added
+- **Plasma Flamethrower (construct wheel, slot 16):** works now, with its own taking-out animation: the gun grows
+  out of the ring's light piece by piece, you turn its valve, light the pilot flame and fire a test burst.
+- **Flamethrower, left click:** a sweep of flame, right to left and back again (2 hearts, 5.5 blocks, 0.3 power).
+- **Flamethrower, hold left 2 seconds:** the inferno, a stream of fire 10 blocks long for as long as you hold
+  (1.5 hearts every 4 ticks, 1 power a second).
+- **Flamethrower, right click:** a wall of fire 3 blocks ahead for 3 seconds that throws hostiles back and burns up
+  their shots (3 power).
+- **Flamethrower, hold right 2 seconds:** a vortex of fire around you that keeps off half of every hit, hurts
+  hostiles in it and bursts outward when you let go (1 power a second).
+- **Green afterburn:** everything the flamethrower hits burns green for 3 seconds (1 heart a second).
+- **Settings:** the damage, reach and cost of all four flamethrower moves and the afterburn, under the Construct
+  Wheel.
+
+### Changed
+- **Plasma Flamethrower model:** a front grip under its tank and a valve wheel at its back, on the wheel too.
+
 ## [0.1.6-alpha] - 2026-09-25
 
 ### Changed

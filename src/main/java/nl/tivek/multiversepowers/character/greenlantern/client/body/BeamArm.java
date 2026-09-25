@@ -28,7 +28,7 @@ final class BeamArm {
         float charge = BeamCharge.charge(entity, partialTick);
         if (charge < 0.0F && entity == Minecraft.getInstance().player && !ClientRing.has(entity, RingPayload.BEAM)
                 && ClientRing.power(entity) > 0.0F && ClientCharacter.active() == GameCharacter.GREEN_LANTERN
-                && !SwordArms.holding()
+                && !SwordArms.holding() && !FlameArms.holding()
                 && MouseHold.progress(GameCharacter.GREEN_LANTERN.byName("light_bolt"), partialTick) >= 1.0F) {
             return 1.0F;
         }

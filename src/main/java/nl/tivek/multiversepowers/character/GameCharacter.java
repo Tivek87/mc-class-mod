@@ -127,7 +127,45 @@ public enum GameCharacter {
                             "Damage in the middle of the small shockwave that ends a charge, in half hearts; half at"
                                     + " its edge")
                     .setting("slamRadius", 3.5, 0.5, 10.0, Unit.BLOCKS,
-                            "How far that shockwave reaches, in blocks");
+                            "How far that shockwave reaches, in blocks")
+                    .group("flame_sweep", "Plasma Flamethrower: sweep (left click)")
+                    .setting("sweepDamage", 4.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                            "Damage of one sweep of flame to every creature it passes over, in half hearts")
+                    .setting("sweepReach", 5.5, 1.0, 12.0, Unit.BLOCKS, "How far the sweep of flame reaches, in blocks")
+                    .setting("sweepPowerCost", 0.3, 0.0, 100.0, Unit.POWER, "Ring power one sweep costs")
+                    .group("flame_inferno", "Plasma Flamethrower: inferno (hold left 2 seconds)")
+                    .setting("infernoDamage", 3.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                            "Damage the stream of fire does to everything in it, in half hearts, once every"
+                                    + " infernoTicks")
+                    .settingInt("infernoTicks", 4, 1, 40, Unit.TICKS, "Ticks between two hits of the stream")
+                    .setting("infernoRange", 10.0, 3.0, 32.0, Unit.BLOCKS,
+                            "How far the stream of fire reaches, in blocks")
+                    .setting("infernoPowerPerSecond", 1.0, 0.0, 100.0, Unit.POWER_PER_SECOND,
+                            "Ring power the stream of fire costs a second")
+                    .group("flame_wall", "Plasma Flamethrower: wall of fire (click right)")
+                    .setting("wallDamage", 3.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                            "Damage the wall of fire does to a creature in it, in half hearts, twice a second (half"
+                                    + " as much again when it bursts up)")
+                    .setting("wallSeconds", 3.0, 0.5, 30.0, Unit.SECONDS,
+                            "How long the wall of fire stands, in seconds")
+                    .setting("wallWidth", 5.5, 2.0, 16.0, Unit.BLOCKS, "How wide the wall of fire is, in blocks")
+                    .setting("wallPowerCost", 3.0, 0.0, 100.0, Unit.POWER, "Ring power one wall of fire costs")
+                    .group("flame_vortex", "Plasma Flamethrower: vortex (hold right 2 seconds)")
+                    .setting("vortexDamage", 3.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                            "Damage the vortex of fire does to every hostile creature in it, in half hearts, twice a"
+                                    + " second; the burst when you let go does half as much again")
+                    .setting("vortexRadius", 2.6, 1.0, 8.0, Unit.BLOCKS,
+                            "How far the vortex of fire reaches, in blocks")
+                    .setting("vortexDamageKept", 0.5, 0.0, 1.0, Unit.PART_KEPT,
+                            "Part of a hit from any side that still gets through the vortex (0.5 = 50%, so it takes"
+                                    + " 50%)")
+                    .setting("vortexPowerPerSecond", 1.0, 0.0, 100.0, Unit.POWER_PER_SECOND,
+                            "Ring power the vortex of fire costs a second")
+                    .group("flame_burn", "Plasma Flamethrower: green afterburn")
+                    .setting("burnSeconds", 3.0, 0.0, 30.0, Unit.SECONDS,
+                            "How long a creature the flames touched keeps burning green, in seconds (0 = not at all)")
+                    .setting("burnDamage", 2.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                            "Damage of the afterburn every second, in half hearts");
             this.add(abilities, AbilitySlot.ABILITY_3, "recharge").cooldown(60)
                     .setting("powerRestored", 50.0, 1.0, 100.0, Unit.POWER,
                             "How much power one touch of the lantern puts back in the ring (a full ring holds"

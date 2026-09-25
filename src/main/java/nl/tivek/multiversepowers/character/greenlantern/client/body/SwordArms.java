@@ -55,6 +55,10 @@ public final class SwordArms extends SwordFirstPerson {
         return own != null && own.broke < 0.0F;
     }
 
+    static boolean present() {
+        return own != null;
+    }
+
     public static boolean charging() {
         return own != null && own.charging;
     }
@@ -291,7 +295,7 @@ public final class SwordArms extends SwordFirstPerson {
         drawn = null;
         BLENDS.clear();
         SPUN.clear();
-        SwordSpot.clear();
+        HandSpot.clear();
     }
 
     @SubscribeEvent
@@ -360,11 +364,12 @@ public final class SwordArms extends SwordFirstPerson {
         }
     }
 
-    @SubscribeEvent(priority = EventPriority.LOW)
+    // Also when the flamethrower's hands took the event: while one construct breaks up and the other forms, both draw.
+    @SubscribeEvent(priority = EventPriority.LOW, receiveCanceled = true)
     public static void onRenderHand(RenderHandEvent event) {
         Minecraft minecraft = Minecraft.getInstance();
         LocalPlayer player = minecraft.player;
-        if (player == null || own == null || !handsFree(player)) {
+        if (player == null || own == null || !handsFree(player) || event.isCanceled() && !FlameArms.present()) {
             return;
         }
         event.setCanceled(true);
@@ -391,8 +396,12 @@ public final class SwordArms extends SwordFirstPerson {
         PlayerRenderer renderer = (PlayerRenderer) minecraft.getEntityRenderDispatcher().getRenderer(player);
         Vector3f shoulder = shoulder(OWN_SHOULDER_RIGHT, made.hand().subtract(SwordPoses.GUARD.hand()), orbit)
                 .lerp(RechargeAnimation.SHOULDER_RIGHT, rest);
-        arm(stack, buffers, event.getPackedLight(), player, renderer, 1.0F, pose.hand(), shoulder, rest);
-        if (rest < 1.0F) {
+        // Swapped for the flamethrower: its hands are already on their way up, only the pieces are left to fly.
+        boolean handsTaken = FlameArms.holding();
+        if (!handsTaken) {
+            arm(stack, buffers, event.getPackedLight(), player, renderer, 1.0F, pose.hand(), shoulder, rest);
+        }
+        if (rest < 1.0F && !handsTaken) {
             Vec3 moved = made.shieldGrip(SwordPoses.OWN_SHIELD)
                     .subtract(SwordPoses.GUARD.shieldGrip(SwordPoses.OWN_SHIELD));
             arm(stack, buffers, event.getPackedLight(), player, renderer, -1.0F, pose.shieldGrip(SwordPoses.OWN_SHIELD),

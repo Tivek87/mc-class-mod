@@ -13,6 +13,7 @@ import nl.tivek.multiversepowers.character.greenlantern.HandDuo;
 import nl.tivek.multiversepowers.character.greenlantern.HandPose;
 import nl.tivek.multiversepowers.character.greenlantern.PlanePath;
 import nl.tivek.multiversepowers.character.greenlantern.ability.AirStrike;
+import nl.tivek.multiversepowers.character.greenlantern.ability.FlameMove;
 import nl.tivek.multiversepowers.character.greenlantern.ability.LandingSlam;
 import nl.tivek.multiversepowers.character.greenlantern.ability.LightBubble;
 import nl.tivek.multiversepowers.character.greenlantern.ability.RingScan;
@@ -103,6 +104,43 @@ abstract class TrackedConstructs {
         return null;
     }
 
+    public record Flame(int id, int move, double moveStart, double clock, float broken) {
+    }
+
+    // Taken out again while the last one still breaks up: the whole one counts.
+    @Nullable
+    public static Flame flame(int owner, float partialTick) {
+        Track found = null;
+        for (Track track : CONSTRUCTS.values()) {
+            ConstructPayload flame = track.latest;
+            if (flame.shape() == ConstructPayload.FLAME && flame.owner() == owner
+                    && (found == null || flame.size() < 0.0F)) {
+                found = track;
+            }
+        }
+        if (found == null) {
+            return null;
+        }
+        ConstructPayload flame = found.latest;
+        double clock = found.clock(partialTick);
+        float broken = flame.size() < 0.0F ? -1.0F : (float) (flame.size() + Math.max(0.0, clock - flame.age()));
+        return new Flame(flame.id(), flame.variant(), flame.charge(), clock, broken);
+    }
+
+    public record Wall(Vec3 center, Vec3 normal, double width) {
+    }
+
+    @Nullable
+    public static Wall wall(int owner) {
+        for (Track track : CONSTRUCTS.values()) {
+            ConstructPayload wall = track.latest;
+            if (wall.shape() == ConstructPayload.FLAME_WALL && wall.owner() == owner && wall.solid() >= 1.0F) {
+                return new Wall(wall.center(), wall.facing(), wall.size());
+            }
+        }
+        return null;
+    }
+
     public static float bubbleAge(int owner, float partialTick) {
         for (Track track : CONSTRUCTS.values()) {
             ConstructPayload bubble = track.latest;
@@ -148,6 +186,18 @@ abstract class TrackedConstructs {
                         case FLURRY, SLAM -> t < move.ticks() ? 0.85F : held;
                         default -> t < move.ticks() ? Math.max(0.6F, held) : held;
                     };
+                }
+                case ConstructPayload.FLAME -> {
+                    FlameMove move = FlameMove.sent(now.variant());
+                    double t = track.clock(partialTick) - now.charge();
+                    if (now.size() >= 0.0F || move == null) {
+                        yield 0.0F;
+                    }
+                    if ((now.variant() & (FlameMove.FIRING | FlameMove.SWIRLING)) != 0) {
+                        yield 0.95F;
+                    }
+                    yield move == FlameMove.EQUIP ? (t < FlameMove.LEFT_GRAB ? 0.9F : 0.4F)
+                            : t < move.ticks() ? 0.7F : 0.35F;
                 }
                 case ConstructPayload.PLANE -> {
                     double clock = track.clock(partialTick);

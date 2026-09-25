@@ -7,6 +7,7 @@ import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.engine.math.Colors;
+import nl.tivek.multiversepowers.engine.math.Noise;
 import nl.tivek.multiversepowers.engine.math.Vectors;
 
 abstract class PainterLight extends PainterCore {
@@ -107,6 +108,68 @@ abstract class PainterLight extends PainterCore {
         this.put(layer, at.x + r0.x * size, at.y + r0.y * size, at.z + r0.z * size, rgb, 0);
         this.put(layer, at.x + r1.x * size, at.y + r1.y * size, at.z + r1.z * size, rgb, 0);
         this.put(layer, at.x, at.y, at.z, rgb, alpha);
+    }
+
+    public void glowTaper(Vec3 a, Vec3 b, double widthA, double widthB, int rgb, double alphaA, double alphaB) {
+        this.taper(this.glow, a, b, widthA, widthB, rgb, Colors.alpha(alphaA), Colors.alpha(alphaB));
+    }
+
+    public void lightTaper(Vec3 a, Vec3 b, double widthA, double widthB, int rgb, double alphaA, double alphaB) {
+        this.taper(this.light, a, b, widthA, widthB, rgb, Colors.alpha(alphaA), Colors.alpha(alphaB));
+    }
+
+    private void taper(Layer layer, Vec3 a, Vec3 b, double widthA, double widthB, int rgb, int alphaA,
+            int alphaB) {
+        if (alphaA <= 0 && alphaB <= 0) {
+            return;
+        }
+        Vec3 along = b.subtract(a);
+        Vec3 toEye = this.camera.subtract(a.add(b).scale(0.5));
+        Vec3 side = along.cross(toEye);
+        double length = side.length();
+        if (length < 1.0E-6) {
+            return;
+        }
+        Vec3 sa = side.scale(widthA * 0.5 / length);
+        Vec3 sb = side.scale(widthB * 0.5 / length);
+        int fadeA = this.faded(a.x, a.y, a.z, alphaA);
+        int fadeB = this.faded(b.x, b.y, b.z, alphaB);
+        for (int flip = -1; flip <= 1; flip += 2) {
+            this.put(layer, a.x, a.y, a.z, rgb, fadeA);
+            this.put(layer, b.x, b.y, b.z, rgb, fadeB);
+            this.put(layer, b.x + sb.x * flip, b.y + sb.y * flip, b.z + sb.z * flip, rgb, 0);
+            this.put(layer, a.x + sa.x * flip, a.y + sa.y * flip, a.z + sa.z * flip, rgb, 0);
+        }
+    }
+
+    public void glowDisc(Vec3 at, double radius, int rgb, double strength, double rough, int seed) {
+        this.disc(this.glow, at, radius, rgb, strength, rough, seed);
+    }
+
+    public void lightDisc(Vec3 at, double radius, int rgb, double strength, double rough, int seed) {
+        this.disc(this.light, at, radius, rgb, strength, rough, seed);
+    }
+
+    private void disc(Layer layer, Vec3 at, double radius, int rgb, double strength, double rough, int seed) {
+        int alpha = this.faded(at.x, at.y, at.z, Colors.alpha(strength));
+        Vec3 view = this.camera.subtract(at);
+        if (alpha <= 0 || radius <= 1.0E-4 || view.lengthSqr() < 1.0E-6) {
+            return;
+        }
+        Vec3[] across = Vectors.across(view.normalize());
+        int sides = 12;
+        double first = radius * (1.0 + rough * (Noise.of(seed, 0, 7) * 2.0 - 1.0));
+        Vec3 last = at.add(across[0].scale(first));
+        for (int i = 1; i <= sides; i++) {
+            double angle = Math.PI * 2 * i / sides;
+            double reach = i == sides ? first : radius * (1.0 + rough * (Noise.of(seed, i, 7) * 2.0 - 1.0));
+            Vec3 next = at.add(across[0].scale(Math.cos(angle) * reach)).add(across[1].scale(Math.sin(angle) * reach));
+            this.put(layer, at.x, at.y, at.z, rgb, alpha);
+            this.put(layer, last.x, last.y, last.z, rgb, 0);
+            this.put(layer, next.x, next.y, next.z, rgb, 0);
+            this.put(layer, at.x, at.y, at.z, rgb, alpha);
+            last = next;
+        }
     }
 
     public void band(Vec3 center, double radius, double strength) {

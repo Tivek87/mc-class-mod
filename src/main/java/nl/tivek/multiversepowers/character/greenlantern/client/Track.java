@@ -173,7 +173,8 @@ final class Track {
         return switch (shape) {
             case ConstructPayload.SLAM, ConstructPayload.SCAN, ConstructPayload.HAND, ConstructPayload.BEAM,
                     ConstructPayload.PLANE, ConstructPayload.MISSILE, ConstructPayload.BULLET, ConstructPayload.BLAST,
-                    ConstructPayload.BUBBLE, ConstructPayload.SWORD, ConstructPayload.POUND -> true;
+                    ConstructPayload.BUBBLE, ConstructPayload.SWORD, ConstructPayload.POUND, ConstructPayload.FLAME,
+                    ConstructPayload.FLAME_WALL -> true;
             default -> false;
         };
     }

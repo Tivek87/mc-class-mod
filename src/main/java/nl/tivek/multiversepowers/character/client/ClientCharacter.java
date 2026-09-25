@@ -30,12 +30,14 @@ import nl.tivek.multiversepowers.character.GameCharacter;
 import nl.tivek.multiversepowers.character.docock.client.ClimbControl;
 import nl.tivek.multiversepowers.character.docock.client.TentacleLegs;
 import nl.tivek.multiversepowers.character.greenlantern.RingPayload;
+import nl.tivek.multiversepowers.character.greenlantern.ability.FlameMove;
 import nl.tivek.multiversepowers.character.greenlantern.ability.Flight;
 import nl.tivek.multiversepowers.character.greenlantern.ability.SwordMove;
 import nl.tivek.multiversepowers.character.greenlantern.client.ClientConstructs;
 import nl.tivek.multiversepowers.character.greenlantern.client.ClientRing;
 import nl.tivek.multiversepowers.character.greenlantern.client.ConstructChoice;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.CallArm;
+import nl.tivek.multiversepowers.character.greenlantern.client.body.FlameArms;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.SwordArms;
 import nl.tivek.multiversepowers.character.greenlantern.client.hud.ConstructHud;
 import nl.tivek.multiversepowers.character.greenlantern.client.hud.ConstructWheel;
@@ -175,6 +177,9 @@ public final class ClientCharacter {
         MouseHold.Step step = MouseHold.tick(ability, free && key.isDown(), !free);
         if (SwordArms.holding()) {
             sword(player, ability, index, step, free && key.isDown());
+        } else if (FlameArms.holding()) {
+            defendDown = -1;
+            flame(player, ability, index, step);
         } else {
             defendDown = -1;
             switch (step) {
@@ -242,6 +247,37 @@ public final class ClientCharacter {
             }
         } else if (!endedCharge && SwordArms.charge(player)) {
             send(index, true, data(player) | Characters.TAP);
+        }
+    }
+
+    private static void flame(LocalPlayer player, CharacterAbility ability, int index, MouseHold.Step step) {
+        boolean attack = ability.mouseButton() == CharacterAbility.Mouse.LEFT;
+        switch (step) {
+            case TAP -> {
+                if (attack) {
+                    FlameMove sweep = FlameArms.sweep(player);
+                    if (sweep != null) {
+                        send(index, true, data(player) | Characters.TAP | sweep.ordinal() << Characters.MOVE_SHIFT);
+                    }
+                } else if (FlameArms.wall(player)) {
+                    send(index, true, data(player) | Characters.TAP);
+                }
+            }
+            case HOLD -> {
+                if (attack ? FlameArms.pour(player) : FlameArms.swirl(player)) {
+                    send(index, true, data(player) | Characters.HOLD);
+                }
+            }
+            case RELEASE, LET_GO -> {
+                if (attack) {
+                    FlameArms.stopPouring();
+                } else {
+                    FlameArms.stopSwirling();
+                }
+                send(index, false, data(player));
+            }
+            case NOTHING -> {
+            }
         }
     }
 

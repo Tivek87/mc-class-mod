@@ -262,51 +262,86 @@ final class GunShapes {
 
     static Mesh[] flamethrower() {
         List<Mesh> parts = new ArrayList<>();
-        parts.add(Mesh.sweep(1.0, SQUIRCLE, new double[] { -0.3, 0.048, 0.062, 0.0 },
+        for (Mesh[] part : flamethrowerParts()) {
+            parts.addAll(List.of(part));
+        }
+        return parts.toArray(Mesh[]::new);
+    }
+
+    // Plain points, not path(): GunShapes and WeaponShapes load each other, so this must not wait on WeaponShapes.
+    static final Vec3[] FLAME_HOSE = { new Vec3(0.04, -0.1, -0.08), new Vec3(0.1, -0.1, -0.14),
+            new Vec3(0.125, -0.02, -0.22), new Vec3(0.1, 0.06, -0.27), new Vec3(0.04, 0.08, -0.28) };
+    static final int FLAME_FINS = 7;
+
+    // Grip, body, barrel, the fins one by one, nozzle, pilot, tank, hose, front grip, valve: in that order.
+    static Mesh[][] flamethrowerParts() {
+        List<Mesh[]> groups = new ArrayList<>();
+        List<Mesh> grip = new ArrayList<>();
+        grip.add(leaning(grip(0.21, 0.046, 0.034, 0.95), 108.0, -0.055, -0.2));
+        grip.add(Mesh.tube(false, 6, 0.01, 1.2, path(0.0, -0.06, -0.1, 0.0, -0.11, -0.105, 0.0, -0.135, -0.14, 0.0,
+                -0.12, -0.175)));
+        grip.add(Mesh.tube(false, 5, 0.008, 1.5, path(0.0, -0.06, -0.135, 0.0, -0.085, -0.13, 0.0, -0.105, -0.142)));
+        groups.add(grip.toArray(Mesh[]::new));
+        List<Mesh> body = new ArrayList<>();
+        body.add(Mesh.sweep(1.0, SQUIRCLE, new double[] { -0.3, 0.048, 0.062, 0.0 },
                 new double[] { -0.28, 0.055, 0.075, 0.0 }, new double[] { 0.02, 0.055, 0.075, 0.0 },
                 new double[] { 0.06, 0.045, 0.06, 0.01 }));
         for (int k = 0; k < 4; k++) {
             double z = -0.24 + k * 0.06;
-            twice(parts, Mesh.box(0.052, 0.0, z, 0.059, 0.035, z + 0.04, 1.9));
+            twice(body, Mesh.box(0.052, 0.0, z, 0.059, 0.035, z + 0.04, 1.9));
         }
-        parts.add(rod(14, 0.03, -0.24, 0.0, 1.2).moved(0.0, 0.1, 0.0));
+        body.add(rod(14, 0.03, -0.24, 0.0, 1.2).moved(0.0, 0.1, 0.0));
         for (double z : new double[] { -0.2, -0.12, -0.04 }) {
-            parts.add(Mesh.torus(12, 4, 0.032, 0.006, 1.9).alongZ().moved(0.0, 0.1, z));
+            body.add(Mesh.torus(12, 4, 0.032, 0.006, 1.9).alongZ().moved(0.0, 0.1, z));
         }
-        parts.add(Mesh.box(-0.015, 0.06, -0.2, 0.015, 0.085, -0.17, 1.1));
-        parts.add(Mesh.box(-0.015, 0.06, -0.07, 0.015, 0.085, -0.04, 1.1));
-        parts.add(rod(12, 0.03, 0.05, 0.5, 1.0).moved(0.0, 0.02, 0.0));
-        for (int k = 0; k < 7; k++) {
+        body.add(Mesh.box(-0.015, 0.06, -0.2, 0.015, 0.085, -0.17, 1.1));
+        body.add(Mesh.box(-0.015, 0.06, -0.07, 0.015, 0.085, -0.04, 1.1));
+        groups.add(body.toArray(Mesh[]::new));
+        groups.add(new Mesh[] { rod(12, 0.03, 0.05, 0.5, 1.0).moved(0.0, 0.02, 0.0) });
+        for (int k = 0; k < FLAME_FINS; k++) {
             double z = 0.1 + k * 0.045;
-            parts.add(rod(20, 0.052, z, z + 0.012, 1.1).moved(0.0, 0.02, 0.0));
+            groups.add(new Mesh[] { rod(20, 0.052, z, z + 0.012, 1.1).moved(0.0, 0.02, 0.0) });
         }
-        parts.add(Mesh.lathe(18, 1.1, 0.0, 0.46, 0.035, 0.46, 0.05, 0.52, 0.062, 0.6, 0.065, 0.62, 0.045, 0.62, 0.04,
-                0.58, 0.0, 0.58).alongZ().moved(0.0, 0.02, 0.0));
-        parts.add(Mesh.torus(18, 4, 0.05, 0.007, 1.8).alongZ().moved(0.0, 0.02, 0.52));
-        parts.add(Mesh.ball(12, 8, 0.034, 2.3).moved(0.0, 0.02, 0.585));
-        parts.add(rod(8, 0.011, 0.38, 0.6, 1.2).moved(0.0, -0.035, 0.0));
-        parts.add(Mesh.ball(8, 5, 0.016, 2.1).moved(0.0, -0.035, 0.605));
-        parts.add(Mesh.box(-0.018, -0.06, 0.02, 0.018, -0.005, 0.2, 1.05));
-        parts.add(rod(18, 0.068, -0.06, 0.26, 1.0).moved(0.0, -0.115, 0.0));
+        groups.add(new Mesh[] {
+                Mesh.lathe(18, 1.1, 0.0, 0.46, 0.035, 0.46, 0.05, 0.52, 0.062, 0.6, 0.065, 0.62, 0.045, 0.62, 0.04,
+                        0.58, 0.0, 0.58).alongZ().moved(0.0, 0.02, 0.0),
+                Mesh.torus(18, 4, 0.05, 0.007, 1.8).alongZ().moved(0.0, 0.02, 0.52),
+                Mesh.ball(12, 8, 0.034, 2.3).moved(0.0, 0.02, 0.585) });
+        groups.add(new Mesh[] { rod(8, 0.011, 0.38, 0.6, 1.2).moved(0.0, -0.035, 0.0),
+                Mesh.ball(8, 5, 0.016, 2.1).moved(0.0, -0.035, 0.605) });
+        List<Mesh> tank = new ArrayList<>();
+        tank.add(Mesh.box(-0.018, -0.06, 0.02, 0.018, -0.005, 0.2, 1.05));
+        tank.add(rod(18, 0.068, -0.06, 0.26, 1.0).moved(0.0, -0.115, 0.0));
         for (double z : new double[] { -0.06, 0.26 }) {
-            parts.add(Mesh.ball(18, 10, 0.068, 1.0).scaled(1.0, 1.0, 0.7).moved(0.0, -0.115, z));
+            tank.add(Mesh.ball(18, 10, 0.068, 1.0).scaled(1.0, 1.0, 0.7).moved(0.0, -0.115, z));
         }
         for (double z : new double[] { -0.02, 0.22 }) {
-            parts.add(Mesh.torus(18, 5, 0.07, 0.009, 1.6).alongZ().moved(0.0, -0.115, z));
+            tank.add(Mesh.torus(18, 5, 0.07, 0.009, 1.6).alongZ().moved(0.0, -0.115, z));
         }
-        twice(parts, Mesh.box(0.062, -0.13, 0.02, 0.072, -0.1, 0.18, 2.0));
-        Vec3[] hose = path(0.04, -0.1, -0.08, 0.1, -0.1, -0.14, 0.125, -0.02, -0.22, 0.1, 0.06, -0.27, 0.04, 0.08,
-                -0.28);
-        parts.add(Mesh.tube(false, 7, 0.018, 1.15, hose));
-        for (int i = 1; i < hose.length - 1; i++) {
-            Vec3 along = hose[i + 1].subtract(hose[i - 1]);
-            parts.add(Mesh.torus(10, 4, 0.02, 0.005, 1.7).pointing(along.x, along.y, along.z)
-                    .moved(hose[i].x, hose[i].y, hose[i].z));
+        twice(tank, Mesh.box(0.062, -0.13, 0.02, 0.072, -0.1, 0.18, 2.0));
+        groups.add(tank.toArray(Mesh[]::new));
+        List<Mesh> hose = new ArrayList<>();
+        hose.add(Mesh.tube(false, 7, 0.018, 1.15, FLAME_HOSE));
+        for (int i = 1; i < FLAME_HOSE.length - 1; i++) {
+            hose.add(hoseRing(i));
         }
-        parts.add(leaning(grip(0.21, 0.046, 0.034, 0.95), 108.0, -0.055, -0.2));
-        parts.add(Mesh.tube(false, 6, 0.01, 1.2, path(0.0, -0.06, -0.1, 0.0, -0.11, -0.105, 0.0, -0.135, -0.14, 0.0,
-                -0.12, -0.175)));
-        parts.add(Mesh.tube(false, 5, 0.008, 1.5, path(0.0, -0.06, -0.135, 0.0, -0.085, -0.13, 0.0, -0.105, -0.142)));
-        return parts.toArray(Mesh[]::new);
+        groups.add(hose.toArray(Mesh[]::new));
+        groups.add(new Mesh[] { leaning(grip(0.13, 0.042, 0.032, 0.95), 100.0, -0.178, 0.23),
+                Mesh.torus(12, 4, 0.036, 0.007, 1.8).moved(0.0, -0.19, 0.228) });
+        List<Mesh> valve = new ArrayList<>();
+        valve.add(rod(8, 0.01, -0.14, -0.1, 1.2).moved(0.0, -0.115, 0.0));
+        valve.add(Mesh.torus(14, 4, 0.034, 0.007, 1.9).alongZ().moved(0.0, -0.115, -0.14));
+        for (int k = 0; k < 3; k++) {
+            valve.add(Mesh.box(-0.004, 0.0, -0.144, 0.004, 0.032, -0.136, 1.6).turned(0.0, 0.0, 1.0, 120.0 * k)
+                    .moved(0.0, -0.115, 0.0));
+        }
+        groups.add(valve.toArray(Mesh[]::new));
+        return groups.toArray(Mesh[][]::new);
+    }
+
+    static Mesh hoseRing(int i) {
+        Vec3 along = FLAME_HOSE[i + 1].subtract(FLAME_HOSE[i - 1]);
+        return Mesh.torus(10, 4, 0.02, 0.005, 1.7).pointing(along.x, along.y, along.z)
+                .moved(FLAME_HOSE[i].x, FLAME_HOSE[i].y, FLAME_HOSE[i].z);
     }
 }

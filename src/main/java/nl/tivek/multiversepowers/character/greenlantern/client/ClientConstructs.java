@@ -8,6 +8,7 @@ import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.AbstractClientPlayer;
+import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.Vec3;
@@ -23,10 +24,13 @@ import nl.tivek.multiversepowers.character.greenlantern.HandPose;
 import nl.tivek.multiversepowers.character.greenlantern.ability.AirStrike;
 import nl.tivek.multiversepowers.character.greenlantern.ability.LightBubble;
 import nl.tivek.multiversepowers.character.greenlantern.client.Flown.Spot;
+import nl.tivek.multiversepowers.character.greenlantern.client.body.FlameArms;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.RingSpot;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.SwordArms;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.BeamCharge;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.BubblePainter;
+import nl.tivek.multiversepowers.character.greenlantern.client.render.FirePainter;
+import nl.tivek.multiversepowers.character.greenlantern.client.render.FireStream;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.HandPainter;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.LanternPainter;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.PlanePainter;
@@ -265,7 +269,7 @@ public final class ClientConstructs extends TrackedConstructs {
         Minecraft minecraft = Minecraft.getInstance();
         ClientLevel level = minecraft.level;
         if (level == null || CONSTRUCTS.isEmpty() && BROKEN.isEmpty() && BROKEN_HANDS.isEmpty()
-                && !BeamCharge.any(level)) {
+                && !BeamCharge.any(level) && FireStream.out()) {
             return;
         }
         float partialTick = event.getPartialTick().getGameTimeDeltaPartialTick(false);
@@ -357,6 +361,25 @@ public final class ClientConstructs extends TrackedConstructs {
                         SwordArms.draw(painter, owner, ring, partialTick);
                     }
                 }
+                case ConstructPayload.FLAME -> {
+                    Flame shown = owner == null ? null : flame(owner.getId(), partialTick);
+                    if (shown == null || shown.id() != now.id()) {
+                        continue;
+                    }
+                    if (own && owner instanceof LocalPlayer player) {
+                        FlameArms.drawOwn(painter, player, camera, event.getProjectionMatrix(),
+                                event.getModelViewMatrix(), partialTick);
+                    } else if (owner != null) {
+                        FlameArms.draw(painter, owner, ring, partialTick);
+                    }
+                }
+                case ConstructPayload.FLAME_WALL -> FirePainter.wall(painter, level, now.center(), way, size, charge,
+                        track.clock(partialTick), solid);
+                case ConstructPayload.BURN -> {
+                    if (owner != null && !own) {
+                        FirePainter.burn(painter, owner.getPosition(partialTick), size, charge, solid, now.id());
+                    }
+                }
                 default -> painter.fist(center, way, size, solid, charge, now.held() && !onItsWay, ring);
             }
         }
@@ -374,6 +397,7 @@ public final class ClientConstructs extends TrackedConstructs {
                         partialTick);
             }
         }
+        FireStream.draw(painter, FireStream.now(partialTick));
         painter.finish(minecraft.renderBuffers().bufferSource());
     }
 

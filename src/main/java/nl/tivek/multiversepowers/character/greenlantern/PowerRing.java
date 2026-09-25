@@ -20,6 +20,7 @@ import nl.tivek.multiversepowers.character.Characters;
 import nl.tivek.multiversepowers.character.GameCharacter;
 import nl.tivek.multiversepowers.character.greenlantern.ability.AirStrike;
 import nl.tivek.multiversepowers.character.greenlantern.ability.Fear;
+import nl.tivek.multiversepowers.character.greenlantern.ability.Flamethrower;
 import nl.tivek.multiversepowers.character.greenlantern.ability.Flight;
 import nl.tivek.multiversepowers.character.greenlantern.ability.GiantFist;
 import nl.tivek.multiversepowers.character.greenlantern.ability.GiantHands;
@@ -76,8 +77,10 @@ public final class PowerRing {
             case "giant_fist" -> on ? GiantFist.launch(player, level, ability) : GiantFist.letGo(player);
             case "recharge" -> Recharge.recharge(player, level, ability);
             case "light_bolt" -> SwordShield.equipped(player) ? SwordShield.attack(player, level, on, data)
+                    : Flamethrower.equipped(player) ? Flamethrower.attack(player, level, on, data)
                     : LightBolt.use(player, level, ability, on, data);
             case "light_shield" -> SwordShield.equipped(player) ? SwordShield.defend(player, level, on, data)
+                    : Flamethrower.equipped(player) ? Flamethrower.defend(player, level, on, data)
                     : LightShield.use(player, level, ability, on, data);
             case "shockwave" -> Shockwave.use(player, level, ability);
             case "ring_scan" -> RingScan.use(player, level, ability);
@@ -108,6 +111,7 @@ public final class PowerRing {
         AirStrike.clear();
         LightBubble.clear();
         SwordShield.clear();
+        Flamethrower.clear();
     }
 
     public static boolean fuels(ServerPlayer player, ServerLevel level) {
