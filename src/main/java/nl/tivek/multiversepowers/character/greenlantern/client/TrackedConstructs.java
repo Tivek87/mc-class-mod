@@ -27,7 +27,7 @@ import static nl.tivek.multiversepowers.character.greenlantern.client.ConstructP
 abstract class TrackedConstructs {
     private static final double SHAKE_TICKS = 8.0;
     private static final double CRASH_SHAKE_TICKS = 30.0;
-    private static final double CRASH_SHAKE_RANGE = 140.0;
+    private static final double CRASH_SHAKE_RANGE = 140.0 * AirStrike.CRASH_SIZE;
     private static final double BLAST_SHAKE_TICKS = 10.0;
     private static final double BLAST_SHAKE_RANGE = 24.0;
     private static final double POUND_SHAKE_TICKS = 9.0;

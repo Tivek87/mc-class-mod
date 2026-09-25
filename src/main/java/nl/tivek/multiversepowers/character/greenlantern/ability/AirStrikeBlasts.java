@@ -38,6 +38,7 @@ import nl.tivek.multiversepowers.engine.math.Noise;
 import nl.tivek.multiversepowers.engine.world.BlockRules;
 import nl.tivek.multiversepowers.engine.world.LoadedWorld;
 import static nl.tivek.multiversepowers.character.greenlantern.ability.AirStrike.BLAST_TICKS;
+import static nl.tivek.multiversepowers.character.greenlantern.ability.AirStrike.CRASH_SIZE;
 import static nl.tivek.multiversepowers.character.greenlantern.ability.AirStrike.HEIGHT;
 
 abstract class AirStrikeBlasts implements Effect {
@@ -64,15 +65,24 @@ abstract class AirStrikeBlasts implements Effect {
                 CollisionContext.empty()));
         Vec3 ground = under.getType() == HitResult.Type.MISS ? at : under.getLocation();
         this.crater(level, ground, this.ability.value("craterRadius"), this.ability.intValue("debrisBlocks"));
-        ParticleFx.send(level, ParticleTypes.EXPLOSION_EMITTER, at.x, at.y + 1.5, at.z, 10, 4.0, 1.7, 4.0, 0.0);
-        ParticleFx.send(level, ParticleTypes.FLASH, at.x, at.y + 2.0, at.z, 2, 0.0, 0.0, 0.0, 0.0);
-        ParticleFx.send(level, ParticleTypes.LARGE_SMOKE, at.x, at.y + 2.0, at.z, 90, 4.6, 2.3, 4.6, 0.11);
-        ParticleFx.send(level, ParticleTypes.FLAME, at.x, at.y + 1.0, at.z, 100, 3.5, 1.2, 3.5, 0.38);
-        ParticleFx.send(level, ParticleTypes.LAVA, at.x, at.y + 0.5, at.z, 34, 2.9, 0.6, 2.9, 0.0);
-        ParticleFx.sphereOut(level, ParticleFx.dust(PowerRing.BRIGHT, 3.0F), at.add(0.0, 1.0, 0.0), 130, 1.45);
-        ParticleFx.sphereOut(level, ParticleFx.dust(PowerRing.GREEN, 3.5F), at.add(0.0, 1.0, 0.0), 100, 0.9);
-        ParticleFx.shockwave(level, ParticleFx.dust(PowerRing.GREEN, 2.5F), at.add(0.0, 0.3, 0.0), 170, 2.15);
-        ParticleFx.shockwave(level, ParticleFx.dust(PowerRing.PALE, 2.0F), at.add(0.0, 0.6, 0.0), 130, 1.5);
+        double s = CRASH_SIZE;
+        ParticleFx.send(level, ParticleTypes.EXPLOSION_EMITTER, at.x, at.y + 1.5 * s, at.z, (int) (10 * s), 4.0 * s,
+                1.7 * s, 4.0 * s, 0.0);
+        ParticleFx.send(level, ParticleTypes.FLASH, at.x, at.y + 2.0 * s, at.z, (int) (2 * s), 2.0 * s, 1.0 * s,
+                2.0 * s, 0.0);
+        ParticleFx.send(level, ParticleTypes.LARGE_SMOKE, at.x, at.y + 2.0 * s, at.z, (int) (90 * s), 4.6 * s, 2.3 * s,
+                4.6 * s, 0.11);
+        ParticleFx.send(level, ParticleTypes.FLAME, at.x, at.y + 1.0 * s, at.z, (int) (100 * s), 3.5 * s, 1.2 * s,
+                3.5 * s, 0.38);
+        ParticleFx.send(level, ParticleTypes.LAVA, at.x, at.y + 0.5 * s, at.z, (int) (34 * s), 2.9 * s, 0.6 * s,
+                2.9 * s, 0.0);
+        Vec3 heart = at.add(0.0, 1.0 * s, 0.0);
+        ParticleFx.sphereOut(level, ParticleFx.dust(PowerRing.BRIGHT, 3.0F), heart, (int) (130 * s), 1.45 * s);
+        ParticleFx.sphereOut(level, ParticleFx.dust(PowerRing.GREEN, 3.5F), heart, (int) (100 * s), 0.9 * s);
+        ParticleFx.shockwave(level, ParticleFx.dust(PowerRing.GREEN, 2.5F), at.add(0.0, 0.3 * s, 0.0),
+                (int) (170 * s), 2.15 * s);
+        ParticleFx.shockwave(level, ParticleFx.dust(PowerRing.PALE, 2.0F), at.add(0.0, 0.6 * s, 0.0),
+                (int) (130 * s), 1.5 * s);
         this.sound(level, at, SoundEvents.GENERIC_EXPLODE.value(), 10.0F, 0.45F);
         this.sound(level, at, SoundEvents.DRAGON_FIREBALL_EXPLODE, 8.0F, 0.5F);
         this.sound(level, at, SoundEvents.WARDEN_SONIC_BOOM, 8.0F, 0.5F);

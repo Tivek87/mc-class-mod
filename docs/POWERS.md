@@ -588,9 +588,10 @@ Green Lantern's ultimate: a big, slow gunship of hard light high over the battle
     walls, for 21 seconds). It scans again every 5 seconds as it flies on. Its guns go for what it marked; with
     nothing marked they rake the ground ahead of it along its way.
   - **the two miniguns**, big six-barrelled guns hanging under either side of its body, swing smoothly round to
-    what they fire at and stay on it a while, firing in turn: together **2 rounds every 0.23 seconds**, their
-    barrels spinning, their muzzles flashing and slim glowing tracers streaking down. The rounds spread wide, so many
-    miss, but there are a lot of them: **1.5 hearts** for every round that strikes.
+    what they fire at and stay on it a while, firing in turn: together **2 rounds every 0.14 seconds**, their
+    barrels spinning, their muzzles flashing and slim glowing tracers streaking down. They aim where a creature on
+    the move will be when the rounds get there. The rounds spread wide, so many miss, but there are a lot of them:
+    **1.5 hearts** for every round that strikes.
   - **homing missiles out of the belly:** every **2 seconds** the two doors of the bomb bay swing open, a big
     missile is lowered out and drops, and the doors swing shut behind it. It falls a way, and then, at a moment of
     its own, its motor bursts into life with a flash: it turns and streaks off at the creature out to hurt you
@@ -605,10 +606,10 @@ Green Lantern's ultimate: a big, slow gunship of hard light high over the battle
   they race off faster and faster, a cone of mist forms round them and they **break the sound barrier** with a
   thunderclap and a ring of light, and a moment later they are gone in a **star of light**, breaking into solid
   pieces. Then the gunship's nose drops, slowly at first, and it plunges into the ground, rolling over, faster and
-  faster, in about three seconds. It strikes in a blast like a small sun: a flash, a fireball rising on a stem of
+  faster, in about three seconds. It strikes in a vast blast like a sun: a flash, a fireball rising on a stem of
   light and rolling into a mushroom cloud, a ring of light racing out round its middle, a shell of light and rings
   running out over the ground, and the plane breaks into solid pieces flung far. The view of everyone close by
-  shakes. The blast does **24 hearts** in the middle, half at its edge 16 blocks out, throws everything away, and
+  shakes. The blast does **24 hearts** in the middle, half at its edge 80 blocks out, throws everything away, and
   **blows a crater out of the ground**: its blocks are hurled up and away and come down all round it, and smoke
   and flames rise from it for a while after. Blocks that hold something (chests and the like), blocks harder than
   ores, and water stay.

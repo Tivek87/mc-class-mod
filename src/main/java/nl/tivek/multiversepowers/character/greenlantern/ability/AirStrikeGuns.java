@@ -41,6 +41,9 @@ abstract class AirStrikeGuns extends AirStrikeBlasts {
     private static final double SCAN_HIGH = 48.0;
     private static final double BULLET_HIT = 0.3;
     private static final double BULLET_ON = 14.0;
+    private static final double BULLET_PAST = 2.0;
+    private static final double LEAD_REACH = 4.0;
+    private static final double LEAD_FASTEST = 1.5;
     private static final double GUN_REACH = 150.0;
     private static final int GUN_KEEPS = 40;
     private static final double RAKE_NEAR = 6.0;
@@ -145,7 +148,16 @@ abstract class AirStrikeGuns extends AirStrikeBlasts {
         return best;
     }
 
-    private record Bullet(Vec3 from, Vec3 to, int arrives, boolean air) {
+    private record Bullet(Vec3 from, Vec3 to, int arrives, boolean air, boolean body) {
+    }
+
+    private static AABB ahead(LivingEntity living, Vec3 from) {
+        AABB box = living.getBoundingBox();
+        Vec3 moved = new Vec3(living.getX() - living.xo, 0.0, living.getZ() - living.zo);
+        if (moved.lengthSqr() > LEAD_FASTEST * LEAD_FASTEST) {
+            return box;
+        }
+        return box.move(moved.scale(box.getCenter().distanceTo(from) / BULLET_SPEED));
     }
 
     void fireGun(ServerLevel level) {
@@ -163,7 +175,7 @@ abstract class AirStrikeGuns extends AirStrikeBlasts {
             this.gunTargets[gun] = target;
             this.gunKeeps[gun] = this.age + GUN_KEEPS;
         }
-        Vec3 goal = target == null ? this.rake(level, side) : target.getBoundingBox().getCenter();
+        Vec3 goal = target == null ? this.rake(level, side) : ahead(target, pivot).getCenter();
         Vec3 next = this.path.gunGoal(gun, this.age, goal);
         this.turrets[gun].fired(this.age, next);
         RandomSource random = this.owner.getRandom();
@@ -178,17 +190,19 @@ abstract class AirStrikeGuns extends AirStrikeBlasts {
                 ClipContext.Fluid.ANY, CollisionContext.empty()));
         Vec3 to = block.getType() == HitResult.Type.MISS ? end : block.getLocation();
         boolean air = block.getType() == HitResult.Type.MISS;
-        for (LivingEntity living : level.getEntitiesOfClass(LivingEntity.class, new AABB(muzzle, to).inflate(1.0),
-                this::fair)) {
-            Vec3 on = living.getBoundingBox().inflate(BULLET_HIT).clip(muzzle, to).orElse(null);
+        boolean body = false;
+        for (LivingEntity living : level.getEntitiesOfClass(LivingEntity.class,
+                new AABB(muzzle, to).inflate(LEAD_REACH), this::fair)) {
+            Vec3 on = ahead(living, muzzle).inflate(BULLET_HIT).clip(muzzle, to).orElse(null);
             if (on != null) {
                 to = on;
                 air = false;
+                body = true;
             }
         }
         double distance = muzzle.distanceTo(to);
         int travel = Math.max(2, (int) Math.ceil(distance / BULLET_SPEED));
-        this.bullets.add(new Bullet(muzzle, to, this.age + travel, air));
+        this.bullets.add(new Bullet(muzzle, to, this.age + travel, air, body));
         Vec3 middle = muzzle.lerp(to, 0.5);
         PacketDistributor.sendToPlayersNear(level, null, middle.x, middle.y, middle.z, VIEW_RANGE,
                 new ConstructPayload(PowerRing.newId(), this.owner.getId(), to, next, travel, 1.0F, this.age, air,
@@ -216,11 +230,13 @@ abstract class AirStrikeGuns extends AirStrikeBlasts {
             all.remove();
             Vec3 way = bullet.to().subtract(bullet.from()).normalize();
             Vec3 from = bullet.to().subtract(way.scale(BULLET_ON + 4.0));
+            // A round that struck a creature ends on its skin: check on through it, or the hit is lost.
+            Vec3 end = bullet.body() ? bullet.to().add(way.scale(BULLET_PAST)) : bullet.to();
             LivingEntity struck = null;
             double nearest = Double.MAX_VALUE;
             for (LivingEntity living : level.getEntitiesOfClass(LivingEntity.class,
-                    new AABB(from, bullet.to()).inflate(1.0), this::fair)) {
-                Vec3 on = living.getBoundingBox().inflate(BULLET_HIT).clip(from, bullet.to()).orElse(null);
+                    new AABB(from, end).inflate(1.0), this::fair)) {
+                Vec3 on = living.getBoundingBox().inflate(BULLET_HIT).clip(from, end).orElse(null);
                 if (on != null && on.distanceToSqr(from) < nearest) {
                     nearest = on.distanceToSqr(from);
                     struck = living;

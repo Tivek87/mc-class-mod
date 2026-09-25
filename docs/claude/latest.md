@@ -1,9 +1,8 @@
-# Laatste sessie — 2026-09-25 (avond, 9)
+# Laatste sessie — 2026-09-25 (avond, 10)
 
-- **Vraag 1:** Giant Hands: homing naar dichtste vijand, hand om de 0.5 s, max 5 tegelijk, willekeurig 4-8 per druk (instelbaar), config voor tijd tussen handen. Gedaan (`GiantHands`, `GameCharacter`, arm-fix in `HandsArm`/`TrackedConstructs`).
-- **Vraag 2:** handen niet in elkaar laten spawnen; middelvinger vloeiender, minder stuiteren.
-- **Gedaan 2:** nieuwe `GiantHandRoom` (ruimte per hand als bollen per tijdstap, ook bijl-paar met portalen en bijl; botsing alleen als beide tegelijk ergens zijn; cache per hand, opnieuw bij >0.25 blok verschuiving). `GiantHands.fits` checkt ook handen van andere spelers; wachten op ruimte telt niet mee voor opgeven (`crowded`/`stuck`). `HandMoves`: FINGER_RISE zonder overshoot, JAB zacht zonder terugslag, kleinere JAB_HARD en wiegen.
-- **Docs:** `POWERS.md`, `PROJECT.md`, `CHANGELOG.md` (0.1.0-alpha, nog niet uitgebracht), `en_us.json`, `gradle.properties` (prepare gedaan).
-- **Getest:** 5 in-game runs. Handen: 4-8, 0.5 s bij ruimte, max 5, geen overlap bij spawnen (verse controle), dichte groep wacht op ruimte (geen opgeven meer). Middelvinger: curve oud 4.20→1.87→2.62 (stuiter), nieuw 2.33→2.62→2.40 vloeiend; beelden bekeken. Rekentijd warm 0.1-0.5 ms per hand. Build schoon, testklasse/wereld/shots weg.
-- **Vraag 3:** middelvinger ging steeds hard op en neer (naar achter). Oorzaak: de 3 duwen (leunen + pols + omhoog). Gedaan: duwen weg (`JAB*` uit `HandMoves`), wiegen kleiner. Getest met 2 slimes (zoals gebruiker): houding staat stil (hoogte 2.35-2.55, leunen ±0.03), klok zonder haperen, beelden eerste persoon + opzij stil. Testklasse/wereld/shots weg; "New World (1)" is van de gebruiker.
-- **Open:** commit + push + publish wachten op ja gebruiker. Bug #5 "test" (low): gebruiker beslist of het issue dicht mag.
+- **Vraag:** Air Strike (The Plane): crash-explosie 5x groter, miniguns 65% sneller, kogels moeten echt schade doen. Keuze gebruiker: beeld + schadebereik 5x, krater blijft 8.
+- **Oorzaak kogels:** raak-check bij aankomst eindigde precies op de rand van de mob (`AABB.clip` telt het eindpunt niet mee) + lopende mobs waren al weg.
+- **Gedaan:** `AirStrike.CRASH_SIZE` 5 (beeld `PlaneCrash`, deeltjes `AirStrikeBlasts.crash`, schudbereik `TrackedConstructs`); `crashRadius` 16 → 80 (max 200), `gunTicks` 4.6 → 2.79, `.was(...)` + `DEFAULTS_VERSION` 15; `AirStrikeGuns`: voorhouden (`ahead`, niet bij teleport), check loopt 2 blokken door het lichaam.
+- **Docs:** `POWERS.md`, `GREEN_LANTERN.md`, `CHANGELOG.md` (0.1.1-alpha), `gradle.properties` (prepare gedaan).
+- **Getest:** 2 in-game runs (oud vs nieuw). Kogels 168 → 278 (+65%); gun-treffers 2 → 31 (31 van 33 raak bij afvuren); crash raakt probes op 30/60/75, niet 85. Beelden: explosie ~5x groter. Build schoon; testklasse/wereld/shots weg.
+- **Open:** commit + push + `release.ps1 publish` wacht op ja van gebruiker. Geen open bugs.

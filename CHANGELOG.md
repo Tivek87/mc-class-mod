@@ -3,6 +3,19 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.1.1-alpha] - 2026-09-25
+
+### Changed
+- **Air Strike, the crash:** the blast is five times as big: fireball, mushroom cloud, shell of light, rings, flames
+  and smoke, and the view shakes five times as far away.
+- **Air Strike, the crash:** hurts everything up to 80 blocks away (was 16); the crater stays the same size.
+- **Air Strike setting:** the crash's reach goes up to 200 blocks (was 40).
+- **Air Strike, the miniguns:** fire 65% faster, 2 rounds every 0.14 seconds (was every 0.23 seconds).
+- **Air Strike, the miniguns:** aim where a creature on the move will be when the rounds get there.
+
+### Fixed
+- **Air Strike, the miniguns:** rounds that strike a creature now always hurt it (almost none did).
+
 ## [0.1.0-alpha] - 2026-09-25
 
 ### Added

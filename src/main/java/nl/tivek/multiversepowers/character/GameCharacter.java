@@ -202,10 +202,10 @@ public enum GameCharacter {
                                     + " Ring Scan reaches 56)")
                     .setting("powerCost", 20.0, 0.0, 100.0, Unit.POWER, "Ring power the air strike costs")
                     .group("guns", "The miniguns")
-                    .setting("gunTicks", 4.6, 1.0, 100.0, Unit.TICKS,
+                    .setting("gunTicks", 2.79, 1.0, 100.0, Unit.TICKS,
                             "Ticks between two rounds of one minigun; the two fire in turn, so together they fire"
                                     + " twice in that time (20 ticks = 1 second)")
-                    .was(6.0)
+                    .was(6.0, 4.6)
                     .setting("gunDamage", 3.0, 0.0, 2000.0, Unit.HALF_HEARTS,
                             "Damage of one round that strikes, in half hearts")
                     .setting("gunSpread", 2.4, 0.0, 12.0, Unit.BLOCKS,
@@ -229,9 +229,9 @@ public enum GameCharacter {
                             "Damage of a jet's small missile to the creature it strikes, in half hearts; what else its"
                                     + " small blast reaches takes less")
                     .group("crash", "The crash")
-                    .setting("crashRadius", 16.0, 2.0, 40.0, Unit.BLOCKS,
+                    .setting("crashRadius", 80.0, 2.0, 200.0, Unit.BLOCKS,
                             "How far the blast of the crash reaches, in blocks")
-                    .was(12.0, 14.0)
+                    .was(12.0, 14.0, 16.0)
                     .setting("craterRadius", 8.0, 0.0, 16.0, Unit.BLOCKS,
                             "How wide the crater the crash blows out of the ground is, from its middle, in blocks (0 ="
                                     + " no crater)")
