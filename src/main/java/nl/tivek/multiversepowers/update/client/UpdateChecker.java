@@ -121,7 +121,7 @@ public final class UpdateChecker {
         }
     }
 
-    static String installed() {
+    public static String installed() {
         if (installed == null) {
             installed = ModList.get().getModContainerById(MultiversePowers.MODID)
                     .map(container -> container.getModInfo().getVersion().toString())

@@ -1,10 +1,9 @@
-# Laatste sessie — 2026-09-25 (avond, 4)
+# Laatste sessie — 2026-09-25 (avond, 6)
 
-- **Eerder vandaag:** in-game updater, release v0.0.6-alpha.
-- **Vraag:** comments weg (alleen kort waar echt nodig) + regel in CLAUDE.md; changelog-regel (kort, alles benoemd); vliegen: optrekken 75% sneller, top -35%, top na 7.5 s, niet meer vallen bij een hit; beam/bolt bruikbaar zolang 1 hand vrij is.
-- **Comments:** script strips alles (bytecode identiek, javap over 416 classes), 13 agents zetten ~200 korte comments terug; ook build.gradle, gradle.properties, release.ps1, shader, toml, cfg, build.yml.
-- **Vliegen:** `topSpeed` 6.25625, `startSpeed` 4.16, `cruiseSpeed` 5.2, `speedUpSeconds` 7.0 (+ `.was`, `DEFAULTS_VERSION` 14), `SPEED_UP` 0.20825. Hit-bug: serversnelheid van een vlieger stapelde zwaartekracht op (y -3.6/tick), een hit stuurde die naar de client -> neerstorten + slam. Fix: `Flight.tick` zet de serverbeweging gelijk aan de echte vlucht (behalve als er een knock wacht).
-- **Beam/bolt:** `LightBeam.handsFull` (server) + `ClientCharacter.handBusy` (client): alleen geblokkeerd als beide handen bezig zijn (opladen, opstijgen, vuist/zwaai/call + schild/dome). Giant Fist/Hands/Air Strike/Bubble stoppen de beam niet meer.
-- **Getest (in-game, 4 runs):** snelheid 4.25 -> 5.2 -> 6.2 op 7.5 s -> 6.256; hit met en zonder aanvaller: doorvliegen; beam met vuist ja, schild+vuist nee, schild ja (grond en lucht). Testklasse/wereld/shots verwijderd.
-- **Docs:** CLAUDE.md (Comments + changelog-regel), docs/POWERS.md, CHANGELOG 0.0.7-alpha, versie 0.0.7-alpha (`release.ps1 prepare` gedaan).
-- **Git:** gecommit, gepusht en gepubliceerd als release v0.0.7-alpha. Comment-agent voor de laatste 13 bestanden op verzoek gestopt (wat hij al had gezet blijft). Eerder open: blokkeren tijdens uitrusten Sword & Shield t46-t71.
+- **Vraag:** in-game bugrapport via de update manager (naam, beschrijving, prioriteit, MC-naam erbij) -> `bugs/` in de root, Claude leest en fixt op prioriteit. VPS-idee geschrapt: Cloudflare Worker.
+- **Gebouwd:** `bugreport/client/` (`BugReportScreen`, `BugReporter`, leest relay-adres uit `relay.txt`), knop "Report a bug" naast "What's new"; `scripts/bug-relay/` (worker.js + wrangler.jsonc, rate limit 3/min per IP); `scripts/bugs.ps1` (sync/fixed/close/schedule/setup); `release.ps1 publish` sluit gefixte issues; CLAUDE.md "Bug reports"; `.gitignore` `bugs/`; README, docs/PROJECT.md.
+- **Getest:** compile ok; sync met nep-GitHub ok; relay lokaal (wrangler dev + nep-GitHub): 201/400/404/405/429, @-pings onschadelijk; in-game test: alle schermstaten goed, ook klein venster. Testklasse/shots verwijderd.
+- **Let op:** Node 20 op deze PC -> wrangler vast op 4.86.0 (nieuwere willen Node 22), compatibility_date 2026-05-01.
+- **Setup run 1:** login ok, token staat als secret bij Cloudflare, deploy faalde: account had nog geen workers.dev-subdomein. Setup nu herstartbaar (slaat token over als secret bestaat, opent onboarding-pagina, vraagt y/n of het adres niks persoonlijks bevat, checkt labels van testmelding). Relay voegt labels achteraf toe als GitHub ze laat vallen (lokaal getest).
+- **Setup klaar:** subdomein `tivek87` (Cloudflare koos eerst iets van de e-mail, afgewezen), relay live op `https://mc-class-mod-bugs.tivek87.workers.dev/report`, `relay.txt` geschreven en in de jar; live test issue #3 met labels, gesloten; taak "mc-class-mod bug sync" elke 5 min (eerste run ok). `preview_urls: false`.
+- **Release:** 0.0.8-alpha, CHANGELOG-sectie; privacy-scan schoon; gecommit, gepusht en gepubliceerd op verzoek van de gebruiker.

@@ -118,4 +118,5 @@ $online | Select-Object -Skip $Keep | ForEach-Object {
     gh release delete $_.Tag --cleanup-tag --yes
     Write-Host "Deleted old GitHub release $($_.Tag)"
 }
+& (Join-Path $PSScriptRoot 'bugs.ps1') close $version
 Write-Host "Released v$version"

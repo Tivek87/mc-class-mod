@@ -3,6 +3,15 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.0.8-alpha] - 2026-09-25
+
+### Added
+- **Report a bug:** new button in the update manager, next to What's new. Give the bug a name, a description and
+  a priority (low, medium or high) and press Send; your Minecraft name and version go with it, and you get the
+  report's number. Reports become public issues on the mod's GitHub page.
+- **Bug reports for the makers:** a small online relay turns each report into a GitHub issue, and a script copies
+  the open ones into the project every five minutes, highest priority first.
+
 ## [0.0.7-alpha] - 2026-09-25
 
 ### Changed

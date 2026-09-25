@@ -10,6 +10,7 @@ import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import nl.tivek.multiversepowers.MultiversePowers;
+import nl.tivek.multiversepowers.bugreport.client.BugReportScreen;
 import nl.tivek.multiversepowers.engine.client.gui.DirtBackgroundScreen;
 import nl.tivek.multiversepowers.engine.client.gui.GuiShapes;
 
@@ -59,7 +60,10 @@ final class UpdateManagerScreen extends DirtBackgroundScreen {
         int half = (inner - 6) / 2;
         int y = this.top + 78;
         this.addRenderableWidget(Button.builder(text("whats_new"),
-                button -> this.minecraft.setScreen(new ChangelogScreen(this))).bounds(x, y, inner, 20).build());
+                button -> this.minecraft.setScreen(new ChangelogScreen(this))).bounds(x, y, half, 20).build());
+        this.addRenderableWidget(Button.builder(text("report"),
+                button -> this.minecraft.setScreen(new BugReportScreen(this)))
+                .bounds(x + half + 6, y, inner - half - 6, 20).build());
         if (this.release != null) {
             Release target = this.release;
             this.later = this.addRenderableWidget(Button.builder(text("later"),

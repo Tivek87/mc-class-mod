@@ -30,6 +30,11 @@ scratch/
 # Built release jars (scripts/release.ps1 keeps the newest 10)
 releases/
 
+# Bug reports synced from GitHub Issues (scripts/bugs.ps1); the relay's local wrangler files
+bugs/
+scripts/bug-relay/.wrangler/
+scripts/bug-relay/.dev.vars
+
 # Claude Code: local settings and agent worktrees
 .claude/settings.local.json
 .claude/worktrees/

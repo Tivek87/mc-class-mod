@@ -15,7 +15,9 @@ version, a status line, **What's new** (the notes of every newer version, laid o
 of the version you have, marked INSTALLED) and **Check now** when you are up to date. With an update: **Update later** (downloads now, and the new version is put in place when you close the
 game) and **Update & restart** (closes the game, saving your world, and starts it again on the new version). Launchers
 that cannot be restarted from the game (Prism Launcher, MultiMC) get **Update & close** instead: start the game again
-yourself. Every download is checked against the release page's checksum before it is used.
+yourself. Every download is checked against the release page's checksum before it is used. **Report a bug** (next to
+**What's new**) sends a bug or glitch straight to the mod's makers: give it a short name, a description and a priority
+(low, medium or high) and press **Send**; your Minecraft name and version go with it, and you get the report's number. Reports are public on the mod's GitHub page.
 
 - [Classes and skill trees](CLASSES.md)
 - [Callings and Crowns](CALLINGS.md)
