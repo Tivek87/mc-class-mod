@@ -1,5 +1,6 @@
 const REPO = 'Tivek87/mc-class-mod';
 const PRIORITIES = ['low', 'medium', 'high'];
+const CATEGORIES = { power: 'New power', character: 'New character', change: 'Change', other: 'Other' };
 const PLAYER = /^[^\u0000-\u001f\u007f`|\\<>]{1,16}$/;
 const VERSION = /^[0-9A-Za-z.+-]{1,32}$/;
 const MAX_BODY = 8192;
@@ -22,15 +23,23 @@ export default {
     const problem = check(report);
     if (problem) return answer(400, problem);
 
-    const labels = ['bug-report', `priority: ${report.priority}`];
-    const response = await github(env, `/repos/${REPO}/issues`, { title: line(report.title), body: issueBody(report), labels });
+    // Mod versions before ideas send no kind.
+    const idea = report.kind === 'idea';
+    const labels = idea
+      ? ['idea', `category: ${CATEGORIES[report.category].toLowerCase()}`, `priority: ${report.priority}`]
+      : ['bug-report', `priority: ${report.priority}`];
+    const response = await github(env, `/repos/${REPO}/issues`, {
+      title: line(report.title),
+      body: issueBody(report, idea),
+      labels,
+    });
     if (response.status !== 201) {
       console.log(`GitHub answered ${response.status}: ${(await response.text()).slice(0, 300)}`);
       return answer(502, 'github refused');
     }
     const issue = await response.json();
     // GitHub silently drops labels on create when the token may not set them there.
-    if (!issue.labels?.some((label) => label.name === 'bug-report')) {
+    if (!issue.labels?.some((label) => label.name === labels[0])) {
       const labelled = await github(env, `/repos/${REPO}/issues/${issue.number}/labels`, { labels });
       if (!labelled.ok) console.log(`Labels on #${issue.number} failed: ${labelled.status}`);
     }
@@ -54,6 +63,10 @@ function github(env, path, body) {
 
 function check(report) {
   if (typeof report !== 'object' || report === null) return 'not an object';
+  if (report.kind !== undefined && report.kind !== 'bug' && report.kind !== 'idea') return 'kind';
+  if (report.kind === 'idea' && !(typeof report.category === 'string' && Object.hasOwn(CATEGORIES, report.category))) {
+    return 'category';
+  }
   if (typeof report.title !== 'string' || !line(report.title) || report.title.length > 80) return 'title';
   if (typeof report.description !== 'string' || !report.description.trim() || report.description.length > 2000) {
     return 'description';
@@ -73,18 +86,24 @@ function quiet(text) {
   return text.replace(/@(?=[A-Za-z0-9-])/g, '@​');
 }
 
-function issueBody(report) {
-  const priority = report.priority[0].toUpperCase() + report.priority.slice(1);
+function issueBody(report, idea) {
+  const cells = [['Reporter (Minecraft)', `\`${report.username}\``]];
+  if (idea) cells.push(['Category', CATEGORIES[report.category]]);
+  cells.push(
+    ['Priority', report.priority[0].toUpperCase() + report.priority.slice(1)],
+    ['Mod', report.modVersion],
+    ['Minecraft', report.minecraftVersion],
+  );
   return [
-    '| Reporter (Minecraft) | Priority | Mod | Minecraft |',
-    '|---|---|---|---|',
-    `| \`${report.username}\` | ${priority} | ${report.modVersion} | ${report.minecraftVersion} |`,
+    `| ${cells.map((cell) => cell[0]).join(' | ')} |`,
+    `|${'---|'.repeat(cells.length)}`,
+    `| ${cells.map((cell) => cell[1]).join(' | ')} |`,
     '',
-    '### Description',
+    idea ? '### Idea' : '### Description',
     '',
     quiet(report.description.trim()),
     '',
-    '<sub>Sent from the in-game bug report screen.</sub>',
+    `<sub>Sent from the in-game ${idea ? 'idea' : 'bug report'} screen.</sub>`,
   ].join('\n');
 }
 

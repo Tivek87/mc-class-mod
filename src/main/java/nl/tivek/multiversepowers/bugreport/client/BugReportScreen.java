@@ -22,8 +22,10 @@ public final class BugReportScreen extends DirtBackgroundScreen {
 
     @Nullable
     private final Screen parent;
+    private final BugReporter.Kind kind;
     private String name = "";
     private String description = "";
+    private BugReporter.Category category = BugReporter.Category.POWER;
     private BugReporter.Priority priority = BugReporter.Priority.MEDIUM;
     @Nullable
     private CompletableFuture<BugReporter.Result> pending;
@@ -35,9 +37,18 @@ public final class BugReportScreen extends DirtBackgroundScreen {
     private int top;
     private int panelWidth;
 
-    public BugReportScreen(@Nullable Screen parent) {
-        super(text("title"));
+    private BugReportScreen(@Nullable Screen parent, BugReporter.Kind kind) {
+        super(text(kind.key("title")));
         this.parent = parent;
+        this.kind = kind;
+    }
+
+    public static BugReportScreen bug(@Nullable Screen parent) {
+        return new BugReportScreen(parent, BugReporter.Kind.BUG);
+    }
+
+    public static BugReportScreen idea(@Nullable Screen parent) {
+        return new BugReportScreen(parent, BugReporter.Kind.IDEA);
     }
 
     static MutableComponent text(String key, Object... args) {
@@ -55,23 +66,33 @@ public final class BugReportScreen extends DirtBackgroundScreen {
 
         EditBox nameBox = new EditBox(this.font, x, this.top + 40, inner, 20, text("name"));
         nameBox.setMaxLength(BugReporter.TITLE_MAX);
-        nameBox.setHint(text("name.hint"));
+        nameBox.setHint(text(this.kind.key("name.hint")));
         nameBox.setValue(this.name);
         nameBox.setResponder(value -> this.name = value);
         this.addRenderableWidget(nameBox);
 
         MultiLineEditBox descriptionBox = new MultiLineEditBox(this.font, x, this.top + 77, inner, 72,
-                text("description.hint"), text("description"));
+                text(this.kind.key("description.hint")), text("description"));
         descriptionBox.setCharacterLimit(BugReporter.DESCRIPTION_MAX);
         descriptionBox.setValue(this.description);
         descriptionBox.setValueListener(value -> this.description = value);
         this.addRenderableWidget(descriptionBox);
 
+        int priorityX = x;
+        if (this.kind == BugReporter.Kind.IDEA) {
+            this.addRenderableWidget(CycleButton.<BugReporter.Category>builder(
+                            value -> text("category." + value.id()))
+                    .withValues(BugReporter.Category.values())
+                    .withInitialValue(this.category)
+                    .create(x, this.top + 155, half, 20, text("category"), (button, value) -> this.category = value));
+            priorityX = x + half + 6;
+        }
         this.addRenderableWidget(CycleButton.<BugReporter.Priority>builder(
                         value -> text("priority." + value.id()).withColor(value.color))
                 .withValues(BugReporter.Priority.values())
                 .withInitialValue(this.priority)
-                .create(x, this.top + 155, inner, 20, text("priority"), (button, value) -> this.priority = value));
+                .create(priorityX, this.top + 155, x + inner - priorityX, 20, text("priority"),
+                        (button, value) -> this.priority = value));
 
         this.addRenderableWidget(Button.builder(text("back"), button -> this.onClose())
                 .bounds(x, this.top + 196, half, 20).build());
@@ -86,7 +107,7 @@ public final class BugReportScreen extends DirtBackgroundScreen {
             return;
         }
         this.result = null;
-        this.pending = BugReporter.send(this.name, this.description, this.priority);
+        this.pending = BugReporter.send(this.kind, this.name, this.description, this.category, this.priority);
         this.refreshSend();
     }
 
@@ -98,6 +119,7 @@ public final class BugReportScreen extends DirtBackgroundScreen {
             if (this.result.outcome() == BugReporter.Outcome.SENT) {
                 this.name = "";
                 this.description = "";
+                this.category = BugReporter.Category.POWER;
                 this.priority = BugReporter.Priority.MEDIUM;
                 this.rebuildWidgets();
             }
@@ -134,8 +156,9 @@ public final class BugReportScreen extends DirtBackgroundScreen {
             return;
         }
         switch (this.result.outcome()) {
-            case SENT -> graphics.drawString(this.font, text("sent", this.result.issue()), x, y, SENT_COLOR);
-            case LIMITED -> graphics.drawString(this.font, text("error.limited"), x, y, ERROR_COLOR);
+            case SENT -> graphics.drawString(this.font, text(this.kind.key("sent"), this.result.issue()), x, y,
+                    SENT_COLOR);
+            case LIMITED -> graphics.drawString(this.font, text(this.kind.key("error.limited")), x, y, ERROR_COLOR);
             case REJECTED -> graphics.drawString(this.font, text("error.rejected"), x, y, ERROR_COLOR);
             case FAILED -> graphics.drawString(this.font, text("error.network"), x, y, ERROR_COLOR);
         }

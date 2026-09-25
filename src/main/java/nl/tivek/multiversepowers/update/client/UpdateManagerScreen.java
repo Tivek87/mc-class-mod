@@ -52,7 +52,7 @@ final class UpdateManagerScreen extends DirtBackgroundScreen {
         this.now = null;
         this.check = null;
         this.panelWidth = Math.min(PANEL_WIDTH, this.width - 20);
-        this.panelHeight = 156;
+        this.panelHeight = 180;
         this.left = (this.width - this.panelWidth) / 2;
         this.top = Math.max(6, (this.height - this.panelHeight) / 2);
         int x = this.left + 10;
@@ -60,9 +60,12 @@ final class UpdateManagerScreen extends DirtBackgroundScreen {
         int half = (inner - 6) / 2;
         int y = this.top + 78;
         this.addRenderableWidget(Button.builder(text("whats_new"),
-                button -> this.minecraft.setScreen(new ChangelogScreen(this))).bounds(x, y, half, 20).build());
+                button -> this.minecraft.setScreen(new ChangelogScreen(this))).bounds(x, y, inner, 20).build());
+        y += 24;
         this.addRenderableWidget(Button.builder(text("report"),
-                button -> this.minecraft.setScreen(new BugReportScreen(this)))
+                button -> this.minecraft.setScreen(BugReportScreen.bug(this))).bounds(x, y, half, 20).build());
+        this.addRenderableWidget(Button.builder(text("idea"),
+                button -> this.minecraft.setScreen(BugReportScreen.idea(this)))
                 .bounds(x + half + 6, y, inner - half - 6, 20).build());
         if (this.release != null) {
             Release target = this.release;

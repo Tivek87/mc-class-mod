@@ -3,6 +3,16 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.1.3-alpha] - 2026-09-25
+
+### Added
+- **Suggest an idea:** new button in the update manager, next to Report a bug. Give your idea a name, a
+  description, a category (new power, new character, change or other) and a priority, and press Send; it goes to
+  the mod's makers the same way as a bug report.
+
+### Changed
+- **Update manager:** What's new now takes a full row; Report a bug and Suggest an idea sit together under it.
+
 ## [0.1.2-alpha] - 2026-09-25
 
 ### Added

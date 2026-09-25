@@ -1,17 +1,9 @@
-# Laatste sessie — 2026-09-25 (avond, 10)
+# Laatste sessie — 2026-09-25 (avond, 11)
 
-- **Vraag:** Air Strike (The Plane): crash-explosie 5x groter, miniguns 65% sneller, kogels moeten echt schade doen. Keuze gebruiker: beeld + schadebereik 5x, krater blijft 8.
-- **Oorzaak kogels:** raak-check bij aankomst eindigde precies op de rand van de mob (`AABB.clip` telt het eindpunt niet mee) + lopende mobs waren al weg.
-- **Gedaan:** `AirStrike.CRASH_SIZE` 5 (beeld `PlaneCrash`, deeltjes `AirStrikeBlasts.crash`, schudbereik `TrackedConstructs`); `crashRadius` 16 → 80 (max 200), `gunTicks` 4.6 → 2.79, `.was(...)` + `DEFAULTS_VERSION` 15; `AirStrikeGuns`: voorhouden (`ahead`, niet bij teleport), check loopt 2 blokken door het lichaam.
-- **Docs:** `POWERS.md`, `GREEN_LANTERN.md`, `CHANGELOG.md` (0.1.1-alpha), `gradle.properties` (prepare gedaan).
-- **Getest:** 2 in-game runs (oud vs nieuw). Kogels 168 → 278 (+65%); gun-treffers 2 → 31 (31 van 33 raak bij afvuren); crash raakt probes op 30/60/75, niet 85. Beelden: explosie ~5x groter. Build schoon; testklasse/wereld/shots weg.
-- **Release:** commit 6e12381 gepusht naar origin/master; `release.ps1 publish` gaf v0.1.1-alpha (Latest, geen pre-release, jar erbij; 10 releases, v0.0.1-alpha weg).
-- **Vraag 2:** vliegsnelheid +150%. Keuze gebruiker: x2.5, alleen vooruit (stijgen/zakken blijft).
-- **Vraag 3:** topsnelheid 18 b/s, rest daarop schalen. Gedaan: `startSpeed` 4.16 → 12, `cruiseSpeed` 5.2 → 15, `topSpeed` 6.25625 → 18 (zelfde verhouding, afgerond; `.was`, `DEFAULTS_VERSION` 16), fallbacks in `FlightSteering`, ram-uitleg 0.9; docs `POWERS.md`, `GREEN_LANTERN.md`, `CHANGELOG.md` (0.1.2-alpha, prepare gedaan).
-- **Getest 3:** in-game vlucht bij x 30000: 12 → 15 → 18 b/s, 11 s stabiel op 18, land vooraan geladen.
-- **Vraag 4:** plane-krater 75% meer blokken, rest mee schalen. Gedaan: `craterRadius` 8 → 9.7, `debrisBlocks` 90 → 158, `crashRadius` 80 → 96.4, `CRASH_SIZE` 5 → 6 (schaal ∛1.75 ≈ 1.205; krater iets ruimer door afronding van blokken). Docs 96 blokken, changelog.
-- **Getest 4:** `Crater` via reflectie op stenen platforms, 6 plekken: oud 4597 blokken weg, 9.64 → 1.718x, 9.7 → 1.751x. Beeld oud/nieuw naast elkaar bekeken. Crash-beeld op 6x niet opnieuw gefotografeerd (zelfde code als 5x). Build schoon, testklassen/werelden/shots weg.
-- **Vraag 5:** minigun +50% schade; plane/jets/raketten alleen op rood gemarkeerd, dichtst bij speler; factions (rood/geel/groen, `/faction`, 3-hits-regel). Keuzes: `/faction` op vanilla scoreboard-teams, OP + leden (invite/join), 3 hits = die ene rood voor je team tot 5 min na laatste hit (speler ziet jouw team ook rood), plane houdt vuur in zonder rood.
-- **Gedaan 5:** `gunDamage` 3 → 4.5; nieuw pakket `faction/` (Standing, Standings, Factions, FactionData, FactionCommand, StandingsPayload, client/ClientStandings); groen nooit geraakt (`canHit`/`isTargetable` + damage-event); homing/gebied alleen rood (Air Strike, Giant Hands, bubble-slam, landing slam, Doc Ock rampage/grond, Poison, Wind Gust, Void Walk); scan 3 kleuren; plane: `closestMarked`, geen harken, overgeslagen luik-drops via bit 128 in plane-variant. ModNetwork 17. Docs + CLAUDE.md-layout.
-- **Getest 5:** in-game: kleuren server+client, alle commando's (ook niet-OP invite/join/leave), koe/speler rood na 3 hits (wederzijds), geen schade op bondgenoot/teamgenoot; plane 0 schoten/raketten zonder rood, skips server = client, daarna 18 treffers op dichtste husk, 0 op verre; payload-codec heen en terug gelijk. Echte 2-speler-server niet getest.
-- **Open:** commit + push + publish 0.1.2-alpha wacht op ja. Geen open bugs.
+- **Vraag:** naast "Report a bug" ook ideeën/suggesties van spelers. Keuzes gebruiker: eigen knop, categorie + prioriteit, Claude deployt de relay.
+- **Gedaan:** `BugReportScreen.bug/idea` (één scherm, `BugReporter.Kind` + `Category`), knop "Suggest an idea" in `UpdateManagerScreen` (What's new eigen rij, paneel 180 hoog), teksten in `en_us.json`.
+- **Relay:** `worker.js` kent `kind: idea` + `category`; labels `idea`, `category: …`, `priority: …`; oude versies (geen kind) blijven bug, bug-tekst byte-gelijk. Gedeployd (versie df0c47ae), labels op GitHub gemaakt.
+- **Script:** `bugs.ps1` sync ook naar `bugs/ideas/`, `fixed` werkt voor ideeën ("Added in v…"), nieuw `decline` (sluit als not planned). Bug gevonden+gefixt: `$bugs` overschreef `$Bugs` (PowerShell hoofdletterongevoelig) → log in map `0/`, map weg.
+- **Docs:** CLAUDE.md (Bug reports + layout), README, docs/PROJECT.md, CHANGELOG 0.1.3-alpha (prepare gedaan).
+- **Getest:** relay lokaal (8 gevallen, fake GitHub) goed; in-game op 427x240: beide schermen, verzenden idee + bug naar lokale relay, labels/tekst goed; live test-idee #6 → sync → fixed → decline (gesloten, not planned). `gradlew build` schoon. Testklasse/shots weg.
+- **Open:** commit + push + `release.ps1 publish` wachten op ja van gebruiker.

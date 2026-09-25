@@ -22,6 +22,8 @@ across the multiverse you can turn into.
   later (installed when you close the game) or update and restart right away.
 - **Bug reports:** **Report a bug** in the update manager sends a bug with a name, a description and a priority. It
   becomes a public issue on this repository, with your Minecraft name.
+- **Ideas:** **Suggest an idea** (next to it) sends an idea the same way, with a category (new power, new character,
+  change or other) and a priority.
 
 Everything each power does: [Characters and their powers](docs/POWERS.md).
 
@@ -73,7 +75,7 @@ The jar lands in `build/libs/`. `./gradlew runClient` starts a test game, `./gra
 | `src/main/java/nl/tivek/multiversepowers/` | The mod. `engine/` holds what every power can use, `character/` one folder per character, plus `spell/`, `classes/`, `stamina/`, `config/`, `network/`. |
 | `src/main/resources/` | Textures, sounds, `en_us.json` (all in-game text) |
 | `docs/` | How everything plays, per topic |
-| `scripts/` | `release.ps1`: builds a release and keeps the newest 10. `bugs.ps1`: copies the open bug reports to `bugs/` (ignored). `bug-relay/`: the Cloudflare Worker that turns a report from the game into an issue |
+| `scripts/` | `release.ps1`: builds a release and keeps the newest 10. `bugs.ps1`: copies the open bug reports and ideas to `bugs/` (ignored). `bug-relay/`: the Cloudflare Worker that turns a report or idea from the game into an issue |
 
 ## License
 

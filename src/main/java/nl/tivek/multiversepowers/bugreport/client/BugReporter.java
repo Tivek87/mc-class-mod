@@ -45,6 +45,32 @@ final class BugReporter {
         }
     }
 
+    enum Category {
+        POWER, CHARACTER, CHANGE, OTHER;
+
+        String id() {
+            return this.name().toLowerCase(Locale.ROOT);
+        }
+    }
+
+    enum Kind {
+        BUG(""), IDEA("idea.");
+
+        private final String prefix;
+
+        Kind(String prefix) {
+            this.prefix = prefix;
+        }
+
+        String id() {
+            return this.name().toLowerCase(Locale.ROOT);
+        }
+
+        String key(String key) {
+            return this.prefix + key;
+        }
+    }
+
     enum Outcome { SENT, LIMITED, REJECTED, FAILED }
 
     record Result(Outcome outcome, int issue) {
@@ -57,10 +83,15 @@ final class BugReporter {
         return Minecraft.getInstance().getUser().getName();
     }
 
-    static CompletableFuture<Result> send(String title, String description, Priority priority) {
+    static CompletableFuture<Result> send(Kind kind, String title, String description, Category category,
+            Priority priority) {
         JsonObject json = new JsonObject();
+        json.addProperty("kind", kind.id());
         json.addProperty("title", title.strip());
         json.addProperty("description", description.strip());
+        if (kind == Kind.IDEA) {
+            json.addProperty("category", category.id());
+        }
         json.addProperty("priority", priority.id());
         json.addProperty("username", username());
         json.addProperty("modVersion", UpdateChecker.installed());
