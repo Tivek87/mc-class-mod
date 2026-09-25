@@ -7,6 +7,16 @@ game the mod's id is still `welcomescreen`, so worlds, settings and keys carry o
 plays over and over in the main menu, in place of Minecraft's menu music; in a world the normal music plays. The
 music slider sets its volume.
 
+The mod keeps itself up to date: a few seconds after the game starts, and then every five minutes, it looks on its
+release page for a newer version. When there is one you hear a pling and a small card slides in at the top right. In
+the game it shows for 15 seconds; on the title screen and in the pause menu it stays and you click it. The update key
+(**U**, change it under Controls) opens the update manager at any time in the game: the installed and the newest
+version, a status line, and **Check now** when you are up to date. With an update: **What's new** (every new version's
+notes, laid out by section), **Update later** (downloads now, and the new version is put in place when you close the
+game) and **Update & restart** (closes the game, saving your world, and starts it again on the new version). Launchers
+that cannot be restarted from the game (Prism Launcher, MultiMC) get **Update & close** instead: start the game again
+yourself. Every download is checked against the release page's checksum before it is used.
+
 - [Classes and skill trees](CLASSES.md)
 - [Callings and Crowns](CALLINGS.md)
 - [Characters and their powers](POWERS.md)

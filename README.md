@@ -17,6 +17,9 @@ across the multiverse you can turn into.
   - **Doctor Octopus:** four robot tentacles that walk, climb, grab, throw, strike the ground and open portals.
 - **Music:** the multiverse theme plays on a loop in the main menu, in place of Minecraft's menu music; the music slider
   sets its volume.
+- **Updates in the game:** the mod looks for a new release every five minutes. A new one comes with a pling and a popup;
+  click it in the menu, or press **U** (changeable under Controls) for the update manager: read what's new, then update
+  later (installed when you close the game) or update and restart right away.
 
 Everything each power does: [Characters and their powers](docs/POWERS.md).
 

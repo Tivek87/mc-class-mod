@@ -3,6 +3,17 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.0.5-alpha] - 2026-09-25
+
+### Added
+- **Updates in the game:** the mod looks for a new release when the game starts and every five minutes. A new one
+  comes with a pling and a small popup at the top right; click it in the menu, or press `U` in the game (changeable
+  under Controls) to open the update manager at any time. It shows the installed and the newest version, **What's new**
+  (every new version's notes), **Update later** (installed when you close the game) and **Update & restart** (saves,
+  closes and starts the game again on the new version; with Prism Launcher and MultiMC it closes and you start it
+  again yourself). Every download is checked against the release page's checksum. This version is the first with the
+  updater: from here on, updates can be installed from inside the game.
+
 ## [0.0.4-alpha] - 2026-09-25
 
 ### Added

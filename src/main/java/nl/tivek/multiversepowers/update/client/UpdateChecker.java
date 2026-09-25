@@ -1,0 +1,203 @@
+package nl.tivek.multiversepowers.update.client;
+
+import com.mojang.logging.LogUtils;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URLDecoder;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.util.Comparator;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import javax.annotation.Nullable;
+import net.minecraft.client.Minecraft;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.ModList;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.client.event.ClientTickEvent;
+import nl.tivek.multiversepowers.MultiversePowers;
+import org.slf4j.Logger;
+
+/**
+ * Looks on GitHub for a newer release of the mod: a few seconds after the game starts, then every five minutes.
+ *
+ * <p>Each look is one light question to the release page ("which release is the newest?"), which is not bound to
+ * GitHub's limit of 60 API questions an hour. Only when that names a version newer than the one running does it ask
+ * the API once for the release notes and the jar; then the popup comes with its sound ({@link UpdatePopup}).
+ */
+@EventBusSubscriber(modid = MultiversePowers.MODID, value = Dist.CLIENT)
+public final class UpdateChecker {
+    static final String REPO = "Tivek87/mc-class-mod";
+    static final String USER_AGENT = "multiverse-powers-updater";
+    private static final Logger LOGGER = LogUtils.getLogger();
+    private static final URI LATEST = URI.create("https://github.com/" + REPO + "/releases/latest");
+    private static final URI RELEASES = URI.create("https://api.github.com/repos/" + REPO + "/releases?per_page=30");
+    private static final String TAG_PATH = "/releases/tag/";
+    private static final long FIRST_CHECK_MS = 5_000L;
+    private static final long INTERVAL_MS = 5 * 60_000L;
+    private static final HttpClient HTTP = HttpClient.newBuilder()
+            .connectTimeout(Duration.ofSeconds(10))
+            .followRedirects(HttpClient.Redirect.NEVER)
+            .build();
+    private static final ExecutorService WORKER = Executors.newSingleThreadExecutor(runnable -> {
+        Thread thread = new Thread(runnable, "Multiverse Powers update check");
+        thread.setDaemon(true);
+        return thread;
+    });
+
+    /** The version running now; set on the first tick. */
+    @Nullable
+    private static String installed;
+    private static long nextCheck;
+    private static volatile boolean checking;
+    /** The newest tag already looked into, so the API is asked once per new release. */
+    @Nullable
+    private static volatile String seenTag;
+    /** Every release newer than the running one, newest first. */
+    private static List<Release> newer = List.of();
+    @Nullable
+    private static String announced;
+    /** When the last look finished (0 = none yet), and whether it failed (no internet, GitHub down). */
+    private static volatile long lastCheck;
+    private static volatile boolean lastFailed;
+
+    private UpdateChecker() {
+    }
+
+    static boolean checking() {
+        return checking;
+    }
+
+    static long lastCheck() {
+        return lastCheck;
+    }
+
+    static boolean lastFailed() {
+        return lastFailed;
+    }
+
+    /** Looks again on the next tick, and every five minutes from then on. */
+    static void checkNow() {
+        if (!checking) {
+            nextCheck = 1L;
+        }
+    }
+
+    /** The version of the mod that is running. */
+    static String installed() {
+        if (installed == null) {
+            installed = ModList.get().getModContainerById(MultiversePowers.MODID)
+                    .map(container -> container.getModInfo().getVersion().toString())
+                    .orElse("0");
+        }
+        return installed;
+    }
+
+    /** Every release newer than the running one, newest first; empty when the mod is up to date. */
+    static List<Release> newer() {
+        return newer;
+    }
+
+    /** The newest release, when it is newer than the running one. */
+    @Nullable
+    static Release latest() {
+        return newer.isEmpty() ? null : newer.get(0);
+    }
+
+    @SubscribeEvent
+    public static void onClientTick(ClientTickEvent.Post event) {
+        long now = System.currentTimeMillis();
+        if (nextCheck == 0L) {
+            installed();
+            UpdateInstaller.cleanUp();
+            nextCheck = now + FIRST_CHECK_MS;
+        }
+        if (!checking && now >= nextCheck) {
+            checking = true;
+            nextCheck = now + INTERVAL_MS;
+            WORKER.execute(UpdateChecker::check);
+        }
+    }
+
+    /** One look, on the worker thread; a failed look (no internet) just waits for the next one. */
+    private static void check() {
+        lastFailed = false;
+        try {
+            String tag = latestTag();
+            if (tag == null || tag.equals(seenTag)) {
+                return;
+            }
+            String running = installed();
+            if (Release.compare(tag, running) <= 0) {
+                seenTag = tag;
+                return;
+            }
+            List<Release> fresh = releases().stream()
+                    .filter(release -> Release.compare(release.version(), running) > 0)
+                    .sorted(Comparator.comparing(Release::version, Release::compare).reversed())
+                    .toList();
+            // A release whose jar is still uploading is looked at again next time.
+            if (fresh.isEmpty() || fresh.get(0).jar() == null) {
+                return;
+            }
+            seenTag = tag;
+            Minecraft.getInstance().execute(() -> found(fresh));
+        } catch (IOException | RuntimeException e) {
+            lastFailed = true;
+            LOGGER.debug("Update check failed", e);
+        } catch (InterruptedException e) {
+            lastFailed = true;
+            Thread.currentThread().interrupt();
+        } finally {
+            lastCheck = System.currentTimeMillis();
+            checking = false;
+        }
+    }
+
+    private static void found(List<Release> fresh) {
+        newer = fresh;
+        Release latest = fresh.get(0);
+        if (!latest.version().equals(announced)) {
+            announced = latest.version();
+            LOGGER.info("Multiverse Powers {} is out (running {})", latest.version(), installed());
+            UpdatePopup.announce(latest);
+        }
+    }
+
+    /** The newest release's tag, read from where the release page's "latest" link points. */
+    @Nullable
+    private static String latestTag() throws IOException, InterruptedException {
+        HttpRequest request = HttpRequest.newBuilder(LATEST)
+                .method("HEAD", HttpRequest.BodyPublishers.noBody())
+                .header("User-Agent", USER_AGENT)
+                .timeout(Duration.ofSeconds(15))
+                .build();
+        HttpResponse<Void> response = HTTP.send(request, HttpResponse.BodyHandlers.discarding());
+        String location = response.headers().firstValue("location").orElse("");
+        int at = location.indexOf(TAG_PATH);
+        if (response.statusCode() / 100 != 3 || at < 0) {
+            return null;
+        }
+        String tag = URLDecoder.decode(location.substring(at + TAG_PATH.length()), StandardCharsets.UTF_8);
+        return tag.isBlank() || tag.contains("/") ? null : tag;
+    }
+
+    private static List<Release> releases() throws IOException, InterruptedException {
+        HttpRequest request = HttpRequest.newBuilder(RELEASES)
+                .header("User-Agent", USER_AGENT)
+                .header("Accept", "application/vnd.github+json")
+                .header("X-GitHub-Api-Version", "2022-11-28")
+                .timeout(Duration.ofSeconds(20))
+                .build();
+        HttpResponse<String> response = HTTP.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() != 200) {
+            throw new IOException("GitHub answered " + response.statusCode());
+        }
+        return Release.parseList(response.body());
+    }
+}

@@ -10,6 +10,7 @@ import nl.tivek.multiversepowers.character.greenlantern.client.body.GreenLantern
 import nl.tivek.multiversepowers.config.ModConfigs;
 import nl.tivek.multiversepowers.config.client.ClientSettings;
 import nl.tivek.multiversepowers.config.client.SettingsScreen;
+import nl.tivek.multiversepowers.update.client.UpdatePopup;
 
 /**
  * Client-only start of the mod. Kept apart from MultiversePowers, because a dedicated server cannot
@@ -23,5 +24,6 @@ public final class MultiversePowersClient {
         container.registerExtensionPoint(IConfigScreenFactory.class,
                 (mod, parent) -> new SettingsScreen(parent));
         modEventBus.addListener(GreenLanternSuitLayer::onAddLayers);
+        modEventBus.addListener(UpdatePopup::onRegisterKeys);
     }
 }
