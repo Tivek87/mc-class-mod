@@ -3,6 +3,13 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.0.6-alpha] - 2026-09-25
+
+### Changed
+- **Update manager:** **What's new** is always there now, also when you are up to date: it shows the notes of the
+  version you have, marked INSTALLED. With an update, the new versions come first (the newest marked NEW) and the
+  version you have is at the bottom.
+
 ## [0.0.5-alpha] - 2026-09-25
 
 ### Added

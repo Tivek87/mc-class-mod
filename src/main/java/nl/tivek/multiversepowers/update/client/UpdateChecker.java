@@ -65,6 +65,10 @@ public final class UpdateChecker {
     /** When the last look finished (0 = none yet), and whether it failed (no internet, GitHub down). */
     private static volatile long lastCheck;
     private static volatile boolean lastFailed;
+    @Nullable
+    private static volatile List<Release> releases;
+    private static volatile boolean loadingReleases;
+    private static volatile boolean releasesFailed;
 
     private UpdateChecker() {
     }
@@ -79,6 +83,50 @@ public final class UpdateChecker {
 
     static boolean lastFailed() {
         return lastFailed;
+    }
+
+    /** Every release with its notes, newest first, once fetched; null until then. */
+    @Nullable
+    static List<Release> releasesIfLoaded() {
+        return releases;
+    }
+
+    static boolean releasesFailed() {
+        return releasesFailed;
+    }
+
+    /** The release that is running now, once the release list is fetched and it is on it. */
+    @Nullable
+    static Release installedRelease() {
+        List<Release> all = releases;
+        return all == null ? null
+                : all.stream().filter(release -> Release.compare(release.version(), installed()) == 0).findFirst().orElse(null);
+    }
+
+    /** Fetches the release list (with every version's notes) once, for the changelog; one API question a session. */
+    static void loadReleases() {
+        if (releases != null || loadingReleases) {
+            return;
+        }
+        loadingReleases = true;
+        releasesFailed = false;
+        WORKER.execute(() -> {
+            try {
+                releases = newestFirst(releases());
+            } catch (IOException | RuntimeException e) {
+                releasesFailed = true;
+                LOGGER.debug("Could not load the release notes", e);
+            } catch (InterruptedException e) {
+                releasesFailed = true;
+                Thread.currentThread().interrupt();
+            } finally {
+                loadingReleases = false;
+            }
+        });
+    }
+
+    private static List<Release> newestFirst(List<Release> list) {
+        return list.stream().sorted(Comparator.comparing(Release::version, Release::compare).reversed()).toList();
     }
 
     /** Looks again on the next tick, and every five minutes from then on. */
@@ -137,9 +185,10 @@ public final class UpdateChecker {
                 seenTag = tag;
                 return;
             }
-            List<Release> fresh = releases().stream()
+            List<Release> all = newestFirst(releases());
+            releases = all;
+            List<Release> fresh = all.stream()
                     .filter(release -> Release.compare(release.version(), running) > 0)
-                    .sorted(Comparator.comparing(Release::version, Release::compare).reversed())
                     .toList();
             // A release whose jar is still uploading is looked at again next time.
             if (fresh.isEmpty() || fresh.get(0).jar() == null) {

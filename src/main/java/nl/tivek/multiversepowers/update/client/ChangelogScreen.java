@@ -1,5 +1,6 @@
 package nl.tivek.multiversepowers.update.client;
 
+import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -25,6 +26,8 @@ final class ChangelogScreen extends DirtBackgroundScreen {
     private int left;
     private int panelWidth;
     private int panelBottom;
+    /** Whether the installed version's notes are in (or could not be found), so no more layouts are needed. */
+    private boolean complete;
 
     ChangelogScreen(Screen parent) {
         super(UpdateManagerScreen.text("changelog.title"));
@@ -36,12 +39,37 @@ final class ChangelogScreen extends DirtBackgroundScreen {
         this.panelWidth = Math.min(PANEL_WIDTH, this.width - 24);
         this.left = (this.width - this.panelWidth) / 2;
         this.panelBottom = Math.max(PANEL_TOP + 40, this.height - BOTTOM_SPACE);
-        this.blocks = ChangelogLayout.build(this.font, UpdateChecker.newer(),
+        UpdateChecker.loadReleases();
+        this.layout();
+        this.addRenderableWidget(Button.builder(UpdateManagerScreen.text("back"), button -> this.onClose())
+                .bounds(this.width / 2 - 60, this.height - 27, 120, 20).build());
+    }
+
+    /** The new versions, then the installed one; laid out again once its notes have arrived. */
+    private void layout() {
+        List<Release> shown = new ArrayList<>(UpdateChecker.newer());
+        Release installed = UpdateChecker.installedRelease();
+        Component note = null;
+        boolean loaded = UpdateChecker.releasesIfLoaded() != null;
+        if (installed != null) {
+            shown.add(installed);
+        } else if (loaded) {
+            note = UpdateManagerScreen.text("changelog.not_listed", "v" + UpdateChecker.installed());
+        } else {
+            note = UpdateManagerScreen.text(UpdateChecker.releasesFailed() ? "changelog.failed" : "changelog.loading");
+        }
+        this.complete = loaded || UpdateChecker.releasesFailed();
+        this.blocks = ChangelogLayout.build(this.font, shown, UpdateChecker.installed(), note,
                 this.panelWidth - 2 * PADDING - SCROLLBAR);
         this.contentHeight = this.blocks.stream().mapToInt(ChangelogLayout.Block::height).sum() + 2 * PADDING;
         this.scroll = Mth.clamp(this.scroll, 0.0, this.maxScroll());
-        this.addRenderableWidget(Button.builder(UpdateManagerScreen.text("back"), button -> this.onClose())
-                .bounds(this.width / 2 - 60, this.height - 27, 120, 20).build());
+    }
+
+    @Override
+    public void tick() {
+        if (!this.complete && (UpdateChecker.releasesIfLoaded() != null || UpdateChecker.releasesFailed())) {
+            this.layout();
+        }
     }
 
     private double maxScroll() {
@@ -53,8 +81,9 @@ final class ChangelogScreen extends DirtBackgroundScreen {
         super.renderBackground(graphics, mouseX, mouseY, partialTick);
         this.drawBigCenteredString(graphics, this.title, this.width / 2, 10, 1.5F, TEXT_COLOR);
         int count = UpdateChecker.newer().size();
-        Component since = UpdateManagerScreen.text(count == 1 ? "changelog.since_one" : "changelog.since_many",
-                count, "v" + UpdateChecker.installed());
+        Component since = count == 0 ? UpdateManagerScreen.text("changelog.up_to_date", "v" + UpdateChecker.installed())
+                : UpdateManagerScreen.text(count == 1 ? "changelog.since_one" : "changelog.since_many",
+                        count, "v" + UpdateChecker.installed());
         graphics.drawCenteredString(this.font, since, this.width / 2, 27, MUTED_COLOR);
         drawPanel(graphics, this.left, PANEL_TOP, this.panelWidth, this.panelBottom - PANEL_TOP, PANEL_BORDER);
     }

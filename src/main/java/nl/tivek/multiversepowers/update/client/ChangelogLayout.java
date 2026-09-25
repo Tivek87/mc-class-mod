@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import javax.annotation.Nullable;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -22,6 +23,7 @@ final class ChangelogLayout {
     static final int BODY = 0xD4D8DE;
     static final int MUTED = 0x8C95A3;
     private static final int CODE = 0x9AD7FF;
+    private static final int INSTALLED_CHIP = 0x9AA6B5;
     private static final int LINK = 0x7CC4FF;
     private static final int LINE = 10;
     private static final int BULLET_INDENT = 11;
@@ -38,16 +40,28 @@ final class ChangelogLayout {
     private ChangelogLayout() {
     }
 
-    /** The blocks for these releases, newest first, wrapped to {@code width}. */
-    static List<Block> build(Font font, List<Release> releases, int width) {
+    /**
+     * The blocks for these releases, newest first, wrapped to {@code width}: "NEW" on the newest when it is not the
+     * installed one, "INSTALLED" on the one running. A {@code note} (loading, failed) comes last, in grey.
+     */
+    static List<Block> build(Font font, List<Release> releases, String installed, @Nullable Component note, int width) {
         List<Block> blocks = new ArrayList<>();
         for (int i = 0; i < releases.size(); i++) {
             if (i > 0) {
                 blocks.add(divider(width));
             }
             Release release = releases.get(i);
-            blocks.add(header(font, release, i == 0, width));
+            boolean isInstalled = Release.compare(release.version(), installed) == 0;
+            Component chip = isInstalled ? UpdateManagerScreen.text("changelog.installed")
+                    : i == 0 ? UpdateManagerScreen.text("changelog.newest") : null;
+            blocks.add(header(font, release, chip, isInstalled ? INSTALLED_CHIP : UpdatePopup.ACCENT, width));
             notes(font, release.notes(), width, blocks);
+        }
+        if (note != null) {
+            if (!blocks.isEmpty()) {
+                blocks.add(divider(width));
+            }
+            blocks.add(text(font, note.copy().withColor(MUTED), 0, -1, width));
         }
         return blocks;
     }
@@ -143,11 +157,11 @@ final class ChangelogLayout {
         return out;
     }
 
-    /** The version, big, with "NEW" on the newest and the date on the right. */
-    private static Block header(Font font, Release release, boolean newest, int width) {
+    /** The version, big, with its label ("NEW", "INSTALLED") and the date on the right. */
+    private static Block header(Font font, Release release, @Nullable Component label, int chipColor, int width) {
         Component version = Component.literal("v" + release.version()).withStyle(ChatFormatting.BOLD);
         Component date = Component.literal(UpdateManagerScreen.DATE.format(release.published()));
-        Component chip = UpdateManagerScreen.text("changelog.newest").copy().withStyle(ChatFormatting.BOLD);
+        Component chip = label == null ? null : label.copy().withStyle(ChatFormatting.BOLD);
         return new Block() {
             @Override
             public int height() {
@@ -157,10 +171,9 @@ final class ChangelogLayout {
             @Override
             public void draw(GuiGraphics graphics, int x, int y) {
                 int versionWidth = (int) Math.ceil(font.width(version) * VERSION_SCALE);
-                if (newest) {
+                if (chip != null) {
                     int chipX = x + versionWidth + 7;
-                    GuiShapes.roundRect(graphics, chipX, y + 5, font.width(chip) + 8, 11, 3.0F,
-                            0xFF000000 | UpdatePopup.ACCENT);
+                    GuiShapes.roundRect(graphics, chipX, y + 5, font.width(chip) + 8, 11, 3.0F, 0xFF000000 | chipColor);
                     GuiShapes.flush(graphics);
                     graphics.drawString(font, chip, chipX + 4, y + 7, 0xFF0E2A1C, false);
                 }

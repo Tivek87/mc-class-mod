@@ -15,8 +15,8 @@ import nl.tivek.multiversepowers.engine.client.gui.GuiShapes;
 
 /**
  * The update manager, opened by the update key (U, see Controls) or the popup: the installed and the newest version,
- * one status line, and the buttons that fit. With an update: what's new, update later (installs when the game closes)
- * or update and restart. Without one: check now.
+ * one status line, and the buttons that fit. What's new always (the new versions, then the one you have); with an
+ * update: update later (installs when the game closes) or update and restart; without one: check now.
  */
 final class UpdateManagerScreen extends DirtBackgroundScreen {
     static final DateTimeFormatter DATE = DateTimeFormatter.ofPattern("d MMM yyyy", Locale.ENGLISH)
@@ -56,16 +56,17 @@ final class UpdateManagerScreen extends DirtBackgroundScreen {
         this.now = null;
         this.check = null;
         this.panelWidth = Math.min(PANEL_WIDTH, this.width - 20);
-        this.panelHeight = this.release == null ? 132 : 156;
+        this.panelHeight = 156;
         this.left = (this.width - this.panelWidth) / 2;
         this.top = Math.max(6, (this.height - this.panelHeight) / 2);
         int x = this.left + 10;
         int inner = this.panelWidth - 20;
         int half = (inner - 6) / 2;
         int y = this.top + 78;
+        // Also without an update: then it shows the notes of the version you have.
+        this.addRenderableWidget(Button.builder(text("whats_new"),
+                button -> this.minecraft.setScreen(new ChangelogScreen(this))).bounds(x, y, inner, 20).build());
         if (this.release != null) {
-            this.addRenderableWidget(Button.builder(text("whats_new"),
-                    button -> this.minecraft.setScreen(new ChangelogScreen(this))).bounds(x, y, inner, 20).build());
             Release target = this.release;
             this.later = this.addRenderableWidget(Button.builder(text("later"),
                     button -> UpdateInstaller.updateLater(target)).bounds(x, y + 24, half, 20).build());
@@ -74,12 +75,11 @@ final class UpdateManagerScreen extends DirtBackgroundScreen {
                     button -> UpdateInstaller.updateAndRestart(target))
                     .tooltip(Tooltip.create(text(restart ? "restart_now.tip" : "close_now.tip")))
                     .bounds(x + half + 6, y + 24, inner - half - 6, 20).build());
-            y += 48;
         } else {
             this.check = this.addRenderableWidget(Button.builder(text("check"), button -> UpdateChecker.checkNow())
-                    .bounds(x, y, inner, 20).build());
-            y += 24;
+                    .bounds(x, y + 24, inner, 20).build());
         }
+        y += 48;
         this.addRenderableWidget(Button.builder(text("close"), button -> this.onClose()).bounds(x, y, inner, 20).build());
         this.refreshButtons();
     }

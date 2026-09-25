@@ -11,8 +11,8 @@ The mod keeps itself up to date: a few seconds after the game starts, and then e
 release page for a newer version. When there is one you hear a pling and a small card slides in at the top right. In
 the game it shows for 15 seconds; on the title screen and in the pause menu it stays and you click it. The update key
 (**U**, change it under Controls) opens the update manager at any time in the game: the installed and the newest
-version, a status line, and **Check now** when you are up to date. With an update: **What's new** (every new version's
-notes, laid out by section), **Update later** (downloads now, and the new version is put in place when you close the
+version, a status line, **What's new** (the notes of every newer version, laid out by section, and under them the notes
+of the version you have, marked INSTALLED) and **Check now** when you are up to date. With an update: **Update later** (downloads now, and the new version is put in place when you close the
 game) and **Update & restart** (closes the game, saving your world, and starts it again on the new version). Launchers
 that cannot be restarted from the game (Prism Launcher, MultiMC) get **Update & close** instead: start the game again
 yourself. Every download is checked against the release page's checksum before it is used.
