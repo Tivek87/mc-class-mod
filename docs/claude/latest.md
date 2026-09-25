@@ -1,10 +1,10 @@
-# Laatste sessie — 2026-09-25 (avond, 3)
+# Laatste sessie — 2026-09-25 (avond, 4)
 
-- **Eerder vandaag:** theme alleen in hoofdmenu, release v0.0.4-alpha (`7c018d0`).
-- **Vraag:** in-game updatesysteem: elke 5 min checken, pling + popup, "Update later" (= installeren bij afsluiten) of "Update & restart", mooie changelog; daarna: manager altijd via aanpasbare toets, icoon weg, alles minimaler.
-- **Gedaan:** `update/client/`: `UpdateChecker` (302 van `releases/latest`, API alleen bij nieuwe tag), `UpdatePopup` (kaartje + toets U in Controls), `UpdateManagerScreen` (Installed/Newest/Status, Check now), `ChangelogScreen`/`ChangelogLayout` (markdown per versie), `UpdateInstaller` (download, SHA-256 + jar-check, plan-bestand), `UpdateHelper` (los Java-programma: wacht op exit, wisselt jar, start opnieuw via `java @argfile`), `Relaunch` (startcommando herbouwen; Prism/MultiMC → "Update & close").
-- **Getest (dev, 3 eind-tot-eind-runs):** popup + 2-tonige pling, klik, manager, changelog (3 versies, scroll), echte download v0.0.4 + checksum, jar-wissel in nep-modsmap, game herstart zichzelf; in de herstarte game: in-game popup, U zonder/met update, Check now, Update later → READY. Bugs gevonden en opgelost: relatief update-pad, `updater.jar` op slot door vorige helper (nu `updater-<pid>.jar`).
-- **Niet getest:** echte launchers (Minecraft Launcher, Modrinth, CurseForge); alleen dev-omgeving.
-- **Docs:** README, `docs/PROJECT.md`, CLAUDE.md (code layout `update/client/`).
-- **Daarna:** "What's new" ook zonder update: notes van je eigen versie (label INSTALLED), bij een update onderaan de nieuwe versies. Release-lijst 1x per sessie opgehaald (bij openen changelog of bij nieuwe tag), met "Loading"/"Could not load"/"not on the release page". In-game getest (manager up-to-date, laden, INSTALLED, NEW + INSTALLED). Gecommit en gepusht als release v0.0.6-alpha (eerste echte test van de updater vanaf v0.0.5).
-- **Git:** updater gecommit en gepusht als release v0.0.5-alpha. Pas vanaf v0.0.5 werkt het updaten; echte test = v0.0.5 → v0.0.6. Eerder open: blokkeren tijdens uitrusten Sword & Shield t46-t71.
+- **Eerder vandaag:** in-game updater, release v0.0.6-alpha.
+- **Vraag:** comments weg (alleen kort waar echt nodig) + regel in CLAUDE.md; changelog-regel (kort, alles benoemd); vliegen: optrekken 75% sneller, top -35%, top na 7.5 s, niet meer vallen bij een hit; beam/bolt bruikbaar zolang 1 hand vrij is.
+- **Comments:** script strips alles (bytecode identiek, javap over 416 classes), 13 agents zetten ~200 korte comments terug; ook build.gradle, gradle.properties, release.ps1, shader, toml, cfg, build.yml.
+- **Vliegen:** `topSpeed` 6.25625, `startSpeed` 4.16, `cruiseSpeed` 5.2, `speedUpSeconds` 7.0 (+ `.was`, `DEFAULTS_VERSION` 14), `SPEED_UP` 0.20825. Hit-bug: serversnelheid van een vlieger stapelde zwaartekracht op (y -3.6/tick), een hit stuurde die naar de client -> neerstorten + slam. Fix: `Flight.tick` zet de serverbeweging gelijk aan de echte vlucht (behalve als er een knock wacht).
+- **Beam/bolt:** `LightBeam.handsFull` (server) + `ClientCharacter.handBusy` (client): alleen geblokkeerd als beide handen bezig zijn (opladen, opstijgen, vuist/zwaai/call + schild/dome). Giant Fist/Hands/Air Strike/Bubble stoppen de beam niet meer.
+- **Getest (in-game, 4 runs):** snelheid 4.25 -> 5.2 -> 6.2 op 7.5 s -> 6.256; hit met en zonder aanvaller: doorvliegen; beam met vuist ja, schild+vuist nee, schild ja (grond en lucht). Testklasse/wereld/shots verwijderd.
+- **Docs:** CLAUDE.md (Comments + changelog-regel), docs/POWERS.md, CHANGELOG 0.0.7-alpha, versie 0.0.7-alpha (`release.ps1 prepare` gedaan).
+- **Git:** gecommit, gepusht en gepubliceerd als release v0.0.7-alpha. Comment-agent voor de laatste 13 bestanden op verzoek gestopt (wat hij al had gezet blijft). Eerder open: blokkeren tijdens uitrusten Sword & Shield t46-t71.

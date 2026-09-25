@@ -10,31 +10,11 @@ import net.neoforged.neoforge.common.ModConfigSpec;
 import net.neoforged.neoforge.server.ServerLifecycleHooks;
 import nl.tivek.multiversepowers.config.ModConfigs;
 
-/**
- * The settings of every character: one world settings file per character (see {@link ModConfigs}: every world keeps
- * its own copy, and everyone in it plays by it). Inside a file every ability has its own section with its cooldown,
- * its damage and its own settings:
- *
- * <pre>
- * [abilities.portal]
- *     cooldownTicks = 400
- *     damage = 50.0
- *     homingRangeBlocks = 30.0
- * </pre>
- *
- * Everything in the files is made from what the characters themselves say their abilities are (see
- * CharacterAbility), so a new character brings its own file and its own settings along by itself.
- */
 public final class CharacterConfig {
-    /**
-     * The version of the mod's defaults. Raise it whenever a default changes, and tell the setting what it was
-     * before with {@link CharacterAbility#was}: files that still hold the old number then take the new one.
-     */
-    private static final int DEFAULTS_VERSION = 13;
+    private static final int DEFAULTS_VERSION = 14;
 
     private static final Map<GameCharacter, ModConfigSpec> SPECS = new EnumMap<>(GameCharacter.class);
     private static final Map<GameCharacter, ModConfigSpec.IntValue> VERSIONS = new EnumMap<>(GameCharacter.class);
-    // Keyed by "doc_ock.portal", and by "doc_ock.portal.homingRangeBlocks" for the settings.
     private static final Map<String, ModConfigSpec.IntValue> COOLDOWNS = new HashMap<>();
     private static final Map<String, ModConfigSpec.DoubleValue> DAMAGE = new HashMap<>();
     private static final Map<String, ModConfigSpec.ConfigValue<? extends Number>> SETTINGS = new HashMap<>();
@@ -48,7 +28,6 @@ public final class CharacterConfig {
     private CharacterConfig() {
     }
 
-    /** Gives every character its own world settings file (see {@link ModConfigs}). */
     public static void register(ModContainer container, IEventBus modEventBus) {
         for (Map.Entry<GameCharacter, ModConfigSpec> entry : SPECS.entrySet()) {
             ModConfigs.world(container, entry.getKey().getId(), entry.getValue());
@@ -87,7 +66,6 @@ public final class CharacterConfig {
                         .defineInRange("damage", ability.defaultDamage(), 0.0, 2000.0));
             }
             for (CharacterAbility.Setting setting : ability.settings()) {
-                // Every part of the ability says which part it is: "[Light Beam (hold ...)] Damage ...".
                 String comment = setting.group() == null ? setting.comment()
                         : "[" + setting.group().title() + "] " + setting.comment();
                 SETTINGS.put(ability.path() + "." + setting.key(), setting.whole()
@@ -102,14 +80,8 @@ public final class CharacterConfig {
         return builder.build();
     }
 
-    /**
-     * A character's file has been read (or read again after it changed on disk). Once for every new version of
-     * the defaults: every setting that still holds one of its old defaults was never changed by hand, so it takes
-     * the new default, and the file remembers it is up to date.
-     */
     private static void onLoad(ModConfigEvent event) {
-        // Only the server's own file is brought up to date: what another server sends is its business, and is only
-        // kept in memory here.
+        // Only the server's own file is brought up to date; a client just keeps what the server sent it.
         if (ServerLifecycleHooks.getCurrentServer() == null) {
             return;
         }
@@ -158,25 +130,21 @@ public final class CharacterConfig {
         return false;
     }
 
-    /** True once this character's file has been read; before that the defaults are used. */
     private static boolean loaded(CharacterAbility ability) {
         ModConfigSpec spec = SPECS.get(ability.character());
         return spec != null && spec.isLoaded();
     }
 
-    /** The ability's cooldown in ticks, from its file. */
     public static int cooldown(CharacterAbility ability) {
         ModConfigSpec.IntValue value = COOLDOWNS.get(ability.path());
         return value == null || !loaded(ability) ? ability.defaultCooldown() : value.get();
     }
 
-    /** The ability's damage in half hearts, from its file. */
     public static double damage(CharacterAbility ability) {
         ModConfigSpec.DoubleValue value = DAMAGE.get(ability.path());
         return value == null || !loaded(ability) ? ability.defaultDamage() : value.get();
     }
 
-    /** One of the ability's own settings, from its file. */
     public static double value(CharacterAbility ability, String key) {
         ModConfigSpec.ConfigValue<? extends Number> value = SETTINGS.get(ability.path() + "." + key);
         if (value == null || !loaded(ability)) {
@@ -190,15 +158,11 @@ public final class CharacterConfig {
         return value.get().doubleValue();
     }
 
-    // ---- Changing it from the settings screen ----
-
-    /** True while this character's file can be written to (it has been read in). */
     public static boolean canEdit(GameCharacter character) {
         ModConfigSpec spec = SPECS.get(character);
         return spec != null && spec.isLoaded();
     }
 
-    /** Puts a new cooldown in the file, in ticks. Does nothing while the file is not read yet. */
     public static void setCooldown(CharacterAbility ability, int ticks) {
         ModConfigSpec.IntValue value = COOLDOWNS.get(ability.path());
         if (value != null && loaded(ability)) {
@@ -206,7 +170,6 @@ public final class CharacterConfig {
         }
     }
 
-    /** Puts a new damage in the file, in half hearts. */
     public static void setDamage(CharacterAbility ability, double halfHearts) {
         ModConfigSpec.DoubleValue value = DAMAGE.get(ability.path());
         if (value != null && loaded(ability)) {
@@ -214,7 +177,6 @@ public final class CharacterConfig {
         }
     }
 
-    /** Puts a new number in one of the ability's own settings. */
     @SuppressWarnings("unchecked")
     public static void setValue(CharacterAbility ability, String key, double number) {
         ModConfigSpec.ConfigValue<? extends Number> value = SETTINGS.get(ability.path() + "." + key);
@@ -228,7 +190,6 @@ public final class CharacterConfig {
         }
     }
 
-    /** Writes this character's file to disk, after changes from the settings screen. */
     public static void save(GameCharacter character) {
         ModConfigSpec spec = SPECS.get(character);
         if (spec != null && spec.isLoaded()) {

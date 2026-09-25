@@ -14,14 +14,6 @@ import net.neoforged.neoforge.client.event.ComputeFovModifierEvent;
 import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.character.docock.OctopusArms;
 
-/**
- * Keeps the view still while the tentacles change how fast you walk. Minecraft widens the view as
- * soon as a player's walking speed changes, the way a speed potion does. Block slows you down, so
- * without this the whole screen would stretch and shrink around you.
- *
- * <p>Here the view is worked out again as if the tentacles were not there: the speed itself still
- * changes, only the camera no longer reacts to it.
- */
 @EventBusSubscriber(modid = MultiversePowers.MODID, value = Dist.CLIENT)
 public final class TentacleFov {
     private TentacleFov() {
@@ -35,7 +27,7 @@ public final class TentacleFov {
         if (speed == null || walking <= 0.0F) {
             return;
         }
-        // How much of the current speed comes from the tentacles (1.0 = nothing of it).
+        // A multiplier, not a fraction: 1.0 means none of the speed is theirs.
         double fromTentacles = 1.0;
         for (ResourceLocation id : new ResourceLocation[] { OctopusArms.BLOCKING_ID }) {
             AttributeModifier modifier = speed.getModifier(id);
@@ -48,7 +40,7 @@ public final class TentacleFov {
         }
         double real = speed.getValue();
         double own = real / fromTentacles;
-        // Minecraft's own sum: (speed / walking speed + 1) / 2. Take out the tentacles' part of it.
+        // Mirrors vanilla's own FOV formula, to undo just the tentacles' part of it.
         float with = (float) (real / walking + 1.0) / 2.0F;
         float without = (float) (own / walking + 1.0) / 2.0F;
         if (with <= 0.0F || !Float.isFinite(with) || !Float.isFinite(without)) {

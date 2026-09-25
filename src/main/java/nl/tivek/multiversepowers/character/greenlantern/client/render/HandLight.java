@@ -9,18 +9,10 @@ import nl.tivek.multiversepowers.engine.math.Noise;
 import nl.tivek.multiversepowers.engine.math.Vectors;
 import static nl.tivek.multiversepowers.character.greenlantern.client.render.HandPainter.middleTip;
 
-/**
- * The light round one of the Giant Hands (see {@link HandPainter}): where it comes up out of the ground, and the
- * light its blows leave.
- */
 final class HandLight {
     private HandLight() {
     }
 
-    /**
-     * Where it comes up: a ring of light on the ground in a low haze of green light, and cracks running out from it as
-     * it bursts out, fading once it is out, and glowing faintly again as it sinks back in.
-     */
     static void ground(LanternPainter painter, int id, Vec3 base, double clock, int variant, double scale,
             double strength) {
         double arrives = HandPose.ARRIVES;
@@ -41,16 +33,13 @@ final class HandLight {
         painter.circle(at, east, south, wide * 0.6, 0.08, 0.7, Colors.alpha(0.6 * glow), Colors.alpha(0.3 * glow));
         if (burst > 0.01) {
             painter.flare(base.add(0.0, 0.4, 0.0), (1.5 + 2.5 * burst) * scale, burst);
-            // Its light glows in the dust it throws up.
             painter.haze(base.add(0.0, 0.7 * scale, 0.0), east.scale(3.2 * scale), Vectors.UP.scale(2.4 * scale),
                     south.scale(3.2 * scale), painter.material().glow(), 0.35 * burst);
-            // The ground cracks open round it.
             cracks(painter, id, at, 10, 2.2 * scale, Ease.smooth((clock - HandPose.ARRIVES + 1.5) / 6.0), burst,
                     0.08 * scale);
         }
     }
 
-    /** Cracks of light running out over the ground from {@code at}, each 1 to 2 times {@code length} long, grown. */
     static void cracks(LanternPainter painter, int seed, Vec3 at, int count, double length, double grow,
             double strength, double width) {
         for (int i = 0; i < count; i++) {
@@ -59,7 +48,6 @@ final class HandLight {
         }
     }
 
-    /** One crack of light running out over the ground from {@code at} the way {@code angle} points, in three bends. */
     static void crack(LanternPainter painter, int seed, int i, Vec3 at, double angle, double length,
             double grow, double strength, double width) {
         Vec3 from = at;
@@ -72,11 +60,6 @@ final class HandLight {
         }
     }
 
-    /**
-     * The light its blows leave: a streak through the air behind a swatting or throwing palm, a streak behind a middle
-     * finger shooting up, and rings running out over the ground where a palm or a fist lands or a middle finger bursts
-     * out.
-     */
     static void blows(LanternPainter painter, ConstructPayload hand, Vec3 facing, double clock, double scale,
             double strength) {
         Vec3 base = hand.center();
@@ -85,21 +68,18 @@ final class HandLight {
         double swing = HandPose.SWING_TICKS;
         int blow = move == HandPose.SMACK ? HandPose.SMACK_HITS : move == HandPose.GRAB ? HandPose.GRAB_THROWS : -1;
         if (blow >= 0 && clock > blow - swing * 0.5 && clock < blow + swing * 0.75) {
-            // Fading in as the swing starts and out after the blow, never popping in or out.
             streak(painter, hand.variant(), base, facing, reach, clock, scale,
                     strength * (1.0 - Ease.smooth((clock - blow) / (swing * 0.6)))
                             * Ease.smooth((clock - (blow - swing * 0.5)) / 2.0));
         }
         double slammed = clock - HandPose.SLAM_HITS;
         if (move == HandPose.SLAM && slammed >= 0.0 && slammed <= shockwaveTicks(3) && strength > 0.01) {
-            // Only while its rings run out (see shockwave): where it landed is worked out for nothing else.
             HandPose.Place land = HandPose.at(hand.variant(), HandPose.SLAM_HITS, reach).place(base, facing, scale);
             Vec3 palm = land.at(HandPose.PALM);
             shockwave(painter, new Vec3(palm.x, base.y, palm.z), clock - HandPose.SLAM_HITS, 4.5 * scale, 3,
                     strength);
         }
         if (move == HandPose.FINGER) {
-            // Bursting out it throws a wave of light out over the ground, wider than any blow.
             shockwave(painter, base, clock - HandPose.FINGER_BURSTS, 6.5 * scale, 4, strength);
             fingerStreak(painter, hand.variant(), base, facing, reach, clock, scale, strength);
         }
@@ -114,7 +94,6 @@ final class HandLight {
         }
     }
 
-    /** A streak of light behind a palm swinging through the air: from its wrist to its fingertips, over the last ticks. */
     private static void streak(LanternPainter painter, int variant, Vec3 base, Vec3 facing, double reach, double clock,
             double scale, double strength) {
         if (strength <= 0.01) {
@@ -137,10 +116,6 @@ final class HandLight {
         }
     }
 
-    /**
-     * The streak of light a middle finger leaves as it shoots up out of the ground: a ribbon of light along the path of
-     * its tip over the last few ticks, bright along its middle and soft at its sides, with a bright line down it.
-     */
     private static void fingerStreak(LanternPainter painter, int variant, Vec3 base, Vec3 facing, double reach,
             double clock, double scale, double fade) {
         double bursts = HandPose.FINGER_BURSTS;
@@ -177,12 +152,10 @@ final class HandLight {
         }
     }
 
-    /** How long a blow's rings of light run out over the ground (see shockwave), in ticks: until the last is out. */
     private static double shockwaveTicks(int rings) {
         return 12.0 + (rings - 1) * 2.5;
     }
 
-    /** Rings of light running out over the ground from where a blow landed, and a flash, {@code strength} strong. */
     static void shockwave(LanternPainter painter, Vec3 at, double since, double reach, int rings,
             double strength) {
         if (since < 0.0 || since > shockwaveTicks(rings) || strength <= 0.01) {

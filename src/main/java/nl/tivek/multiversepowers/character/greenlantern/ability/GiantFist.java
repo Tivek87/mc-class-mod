@@ -33,48 +33,21 @@ import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 import nl.tivek.multiversepowers.engine.world.BlockRules;
 import nl.tivek.multiversepowers.engine.world.LoadedWorld;
 
-/**
- * Giant Fist: the ring makes a fist of hard light beside Green Lantern, on his right (the hand that
- * attacks). While he keeps the key down the ring charges it: it grows slowly from one block across up to
- * nearly six (in about 4 seconds by default), and every half second of it costs power. It keeps to a spot
- * around him that has room for it: on his right, and when that would put it through a wall or the ground,
- * higher up, above his head or on his left, flowing smoothly from one spot to the next while it keeps
- * charging. When he lets go the ring pays for it and it flies: it glides in onto his line of sight without
- * turning, and from then on he steers it with his eyes, its middle always right under his crosshair, further out
- * every tick wherever he looks. It rams every creature in its way (each one once: a heavy hit that throws it
- * far, and the bigger the fist the harder it hits), smashes the soft blocks it touches and goes straight through
- * everything harder, until the end of its range. Then it falls apart into green light.
- */
 public final class GiantFist extends GiantFistSpots {
-    // The smallest fist, in blocks across: what a tap of the key gives.
     private static final double MIN_SIZE = 1.0;
-    // Ticks it takes to fade in beside you. There is no build-up to watch: it is simply there.
     private static final int APPEAR_TICKS = 3;
-    // The ring charges in steps of half a second, and every step costs power.
     private static final int STEP_TICKS = 10;
-    // Ticks between two hums while it charges.
     private static final int HUM_TICKS = 6;
-    // Ticks it takes to fall apart.
     private static final int FADE_TICKS = 6;
-    // Blocks per tick in flight, out along your line of sight. It flies on from your eyes, so however fast you go
-    // yourself, you never catch up with it.
     private static final double SPEED = 1.3;
-    // Once let go it glides in onto your line of sight (see ConstructPath) over this many times as far as it hung
-    // beside that line, and over at least MIN_JOIN blocks. What you aim at as you let go that is closer than that,
-    // it is on the line by the time it gets there, but it never takes less than NEAREST_JOIN blocks to get onto it.
     private static final double JOIN = 1.3;
     private static final double MIN_JOIN = 1.5;
     private static final double NEAREST_JOIN = 1.0;
-    // A creature is hit when it comes within half the fist's width, and this much more, of its middle line.
     private static final double HIT_MARGIN = 0.4;
-    // A creature that is hit flies this much upwards on top of the push.
     private static final double LIFT = 0.3;
-    // Anyone this close sees it.
     private static final double VIEW_RANGE = 128.0;
-    // How much of the way to a new spot it covers each tick: it flows there instead of jumping.
     private static final double FLOW = 0.3;
 
-    // The fist each Green Lantern charges right now, until they let go of the key.
     private static final Map<UUID, GiantFist> HELD = new HashMap<>();
 
     private enum Phase {
@@ -92,26 +65,16 @@ public final class GiantFist extends GiantFistSpots {
     private final int chargeTicks;
     private final float baseCost;
     private final float fullCost;
-    // Entity ids of everything it hit already: every creature is hit only once.
     private final Set<Integer> hit = new HashSet<>();
-    // How many blocks it smashed so far.
     private int broken;
     private Phase phase = Phase.HOLD;
     private int phaseAge;
-    // Ticks it has been charged: 0 = the smallest fist, chargeTicks = the biggest.
     private int charged;
-    // What letting go right now would cost; the ring pays it when the fist flies.
     private float pending;
-    // True once the ring could not pay for the next step, so that is said only once.
     private boolean drained;
-    // Where it hangs around your eyes: x to your right, y up, z ahead. It flows towards its spot.
     private Vec3 offset;
     private double travelled;
-    // The way it flies once let go: steered by your eyes (see ConstructPath). Clients get it too, and move the fist
-    // along it by themselves.
     private ConstructPath path;
-    // Where on your line of sight it was headed last tick, and the way that point moved since: what it hits is
-    // thrown that way, on ahead, or aside when you swing it round with your view.
     private Vec3 onSight;
     private Vec3 push;
 
@@ -133,10 +96,6 @@ public final class GiantFist extends GiantFistSpots {
         this.center = this.worldPoint(this.offset);
     }
 
-    /**
-     * The key goes down: the fist appears beside you at once, as long as the ring can pay for the smallest
-     * one and you are not recharging it.
-     */
     public static boolean launch(ServerPlayer owner, ServerLevel level, CharacterAbility ability) {
         if (Recharge.busy(owner)) {
             PowerRing.tell(owner, "busy_lantern");
@@ -147,9 +106,6 @@ public final class GiantFist extends GiantFistSpots {
             return false;
         }
         GiantFist fist = new GiantFist(owner, ability);
-        // The ring hand makes the fist: a beam it was pouring out stops.
-        LightBeam.stop(owner);
-        // A fist you still held (its key release got lost) lets go by itself: it sees it is not held any more.
         HELD.put(owner.getUUID(), fist);
         Effects.start(level, fist);
         owner.swing(InteractionHand.MAIN_HAND, true);
@@ -160,34 +116,25 @@ public final class GiantFist extends GiantFistSpots {
         return true;
     }
 
-    /**
-     * The key comes up: the fist flies off.
-     *
-     * @return true when there was a fist to let go of, so the cooldown starts now
-     */
     public static boolean letGo(ServerPlayer owner) {
         return HELD.remove(owner.getUUID()) != null;
     }
 
-    /** True while this player charges a fist. */
     static boolean holding(ServerPlayer owner) {
         return HELD.containsKey(owner.getUUID());
     }
 
-    /** What the fist this player charges would cost if they let go now; 0 when they charge none. */
     public static float pending(ServerPlayer owner) {
         GiantFist fist = HELD.get(owner.getUUID());
         return fist == null ? 0.0F : fist.pending;
     }
 
-    /** The server stops: nobody holds anything any more. */
     public static void clear() {
         HELD.clear();
     }
 
     @Override
     public boolean tick(ServerLevel level, int age) {
-        // Without the will behind it, a construct falls apart.
         if (this.phase != Phase.FADE && !PowerRing.fuels(this.owner, level)) {
             this.fall(level);
         }
@@ -206,10 +153,6 @@ public final class GiantFist extends GiantFistSpots {
         return true;
     }
 
-    /**
-     * As long as you hold the key it charges beside you, in the best spot around you that has room for it.
-     * Let go and it flies.
-     */
     private void hold(ServerLevel level) {
         boolean held = HELD.get(this.owner.getUUID()) == this;
         if (held) {
@@ -217,7 +160,6 @@ public final class GiantFist extends GiantFistSpots {
         }
         this.facing = this.heldFacing();
         double size = this.grownSize();
-        // Every other tick is plenty to look for room: the fist flows from spot to spot anyway.
         if (this.phaseAge % 2 == 1) {
             this.findRoom(level, size);
         }
@@ -228,7 +170,6 @@ public final class GiantFist extends GiantFistSpots {
         }
     }
 
-    /** One tick more charge, as long as the ring can pay for it: a hum that rises, and a chime once full. */
     private void charge(ServerLevel level) {
         if (this.charged >= this.chargeTicks) {
             return;
@@ -256,10 +197,6 @@ public final class GiantFist extends GiantFistSpots {
         }
     }
 
-    /**
-     * What the fist costs after this many ticks of charging: the base cost, and an equal share of the rest for
-     * every half second that is complete, so a full charge costs exactly the full cost.
-     */
     private float costAt(int ticks) {
         if (ticks >= this.chargeTicks) {
             return this.fullCost;
@@ -269,29 +206,17 @@ public final class GiantFist extends GiantFistSpots {
         return (float) (this.baseCost + (this.fullCost - this.baseCost) * done);
     }
 
-    /**
-     * Off it goes, under your crosshair: it charges beside you, but you steer it with your eyes. The ring pays for it
-     * now.
-     */
     private void shoot(ServerLevel level) {
         this.phase = Phase.FLY;
         this.phaseAge = 0;
         PowerRing.setPower(this.owner, PowerRing.power(this.owner) - this.costAt(this.charged));
         this.plan(level);
         this.owner.swing(InteractionHand.MAIN_HAND, true);
-        // A bigger fist sounds heavier.
         float deeper = (float) (0.3 * this.charge());
         this.sound(level, SoundEvents.BREEZE_SHOOT, 1.0F, 0.7F - deeper);
         this.sound(level, SoundEvents.MACE_SMASH_AIR, 1.0F, 0.8F - deeper);
     }
 
-    /**
-     * Works out the way it flies. It charges beside you, but the middle of the fist must go exactly where your
-     * crosshair points: so it glides in onto your line of sight over its first few blocks, and from then on stays on
-     * that line wherever you look, further out every tick. It points the way you look all the while, so it never
-     * turns aside; only when you look further up or down than it tips while you charge it, it tips the rest of the
-     * way as it glides in.
-     */
     private void plan(ServerLevel level) {
         ConstructPath.Sight sight = this.sight();
         Vec3 offset = sight.local(this.center);
@@ -306,12 +231,10 @@ public final class GiantFist extends GiantFistSpots {
         this.push = sight.forward();
     }
 
-    /** Your eyes and the way you look right now: the fist on its way stays on your line of sight. */
     private ConstructPath.Sight sight() {
         return ConstructPath.Sight.of(this.owner.getEyePosition(), this.owner.getYRot(), this.owner.getXRot());
     }
 
-    /** What you aim at: the creature in your sights, else the block, else the end of the range. */
     private Vec3 aimedAt(ServerLevel level) {
         Vec3 eye = this.owner.getEyePosition();
         Vec3 end = eye.add(this.owner.getLookAngle().scale(this.range));
@@ -324,10 +247,9 @@ public final class GiantFist extends GiantFistSpots {
         return entity != null ? entity.getEntity().getBoundingBox().getCenter() : target;
     }
 
-    /** Hard light: it smashes the soft blocks in its way and goes straight through everything else. */
     private void fly(ServerLevel level) {
         Vec3 from = this.center;
-        // Counted from the ticks it has flown, the way every client counts it too.
+        // Derived only from phaseAge, so clients replay the exact same path from their own copy.
         this.travelled = this.path.travelled(this.phaseAge);
         ConstructPath.Sight sight = this.sight();
         Vec3 to = this.path.along(this.travelled, sight);
@@ -347,7 +269,6 @@ public final class GiantFist extends GiantFistSpots {
         }
     }
 
-    /** Every creature the fist passed on its way from {@code from} to {@code to} takes the hit. */
     private void ram(ServerLevel level, Vec3 from, Vec3 to) {
         double size = this.grownSize();
         double radius = size * 0.5 + HIT_MARGIN;
@@ -367,12 +288,6 @@ public final class GiantFist extends GiantFistSpots {
         }
     }
 
-    /**
-     * The blocks the fist smashes on its way from {@code from} to {@code to}: everything soft enough that it
-     * touches breaks and drops what it would drop, up to {@code maxBlocksBroken} blocks for the whole flight.
-     * Harder blocks, blocks that hold something (chests and the like) and blocks its owner is not allowed to
-     * touch all stay where they are, and the fist goes straight through them.
-     */
     private void smash(ServerLevel level, Vec3 from, Vec3 to) {
         if (this.breakHardness < 0.0 || this.broken >= this.maxBroken) {
             return;
@@ -404,7 +319,6 @@ public final class GiantFist extends GiantFistSpots {
         }
     }
 
-    /** The point on the line from {@code a} to {@code b} that is closest to {@code p}. */
     private static Vec3 closest(Vec3 a, Vec3 b, Vec3 p) {
         Vec3 ab = b.subtract(a);
         double length = ab.lengthSqr();
@@ -412,21 +326,14 @@ public final class GiantFist extends GiantFistSpots {
         return a.add(ab.scale(t));
     }
 
-    /**
-     * A heavy hit that counts as your attack, and a push the way the fist goes: straight on, or aside when you swing it
-     * round.
-     */
     private void punch(ServerLevel level, LivingEntity target) {
-        // Hits in quick succession all land.
         target.invulnerableTime = 0;
         target.hurt(level.damageSources().playerAttack(this.owner), this.damage());
-        // Knockback resistance (netherite armour) still counts.
         double resist = Mth.clamp(target.getAttributeValue(Attributes.KNOCKBACK_RESISTANCE), 0.0, 1.0);
         target.setDeltaMovement(new Vec3(this.push.x * this.knockback,
                 Math.max(0.0, this.push.y * this.knockback) + LIFT, this.push.z * this.knockback)
                 .scale(1.0 - resist));
         target.hasImpulse = true;
-        // Players move themselves on their own client, so they have to be told about the push.
         target.hurtMarked = true;
         Vec3 at = target.getBoundingBox().getCenter();
         ParticleFx.sphereOut(level, ParticleFx.dust(PowerRing.BRIGHT, 1.2F), at, 16, 0.3);
@@ -435,41 +342,34 @@ public final class GiantFist extends GiantFistSpots {
         level.playSound(null, at.x, at.y, at.z, SoundEvents.MACE_SMASH_GROUND, SoundSource.PLAYERS, 0.7F, 1.4F);
     }
 
-    /** From now on it hits nothing and fades out, breaking up into green light. */
     private void fall(ServerLevel level) {
         boolean wasHeld = HELD.remove(this.owner.getUUID(), this);
         this.phase = Phase.FADE;
         this.phaseAge = 0;
         ParticleFx.sphereOut(level, ParticleFx.dust(PowerRing.GREEN, 1.2F), this.center, 24, 0.15);
         this.sound(level, SoundEvents.AMETHYST_CLUSTER_BREAK, 0.8F, 1.5F);
-        // Nothing is paid for a fist that never flew; the HUD stops showing what it would have cost.
         if (wasHeld) {
             PowerRing.sync(this.owner);
         }
     }
 
-    /** How far it is charged: 0 = not at all, 1 = as far as it goes. */
     private double charge() {
         return (double) this.charged / this.chargeTicks;
     }
 
-    /** How wide it is, in blocks: from {@link #MIN_SIZE} up to the biggest fist as it charges. */
     private double grownSize() {
         return MIN_SIZE + (this.maxSize - MIN_SIZE) * this.charge();
     }
 
-    /** What a hit does: the wider the fist, the harder, from the normal damage up to a full charge's. */
     private float damage() {
         return Mth.lerp((float) this.charge(), this.baseDamage, this.fullDamage);
     }
 
-    /** How wide it is drawn: it swells a little while it falls apart. */
     private float size() {
         float size = (float) this.grownSize();
         return this.phase == Phase.FADE ? size * (1.0F + 0.15F * this.phaseAge / FADE_TICKS) : size;
     }
 
-    /** How solid it is: it fades in beside you, and out again as it falls apart. */
     private float solid() {
         return switch (this.phase) {
             case HOLD -> Math.min(1.0F, (float) this.phaseAge / APPEAR_TICKS);
@@ -479,11 +379,8 @@ public final class GiantFist extends GiantFistSpots {
     }
 
     private void send(ServerLevel level) {
-        // While you hold it, where it hangs around your eyes goes out instead of a point in the world: every
-        // client hangs it on you itself, so it keeps up with you however fast you turn or fly.
+        // Held sends an eye-relative offset so clients hang it on their own copy of the player.
         boolean held = this.phase == Phase.HOLD;
-        // On its way it goes out with its path and how long it has flown: every client moves it along that path by
-        // its own clock (see ClientConstructs), so it glides instead of jumping from one update to the next.
         boolean flying = this.phase == Phase.FLY;
         PacketDistributor.sendToPlayersNear(level, null, this.center.x, this.center.y, this.center.z, VIEW_RANGE,
                 new ConstructPayload(this.id, this.owner.getId(), held ? this.offset : this.center, this.facing,

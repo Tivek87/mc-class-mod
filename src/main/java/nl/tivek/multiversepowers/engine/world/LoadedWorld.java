@@ -11,22 +11,13 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.VoxelShape;
 
-/**
- * Looking into the world only as far as it is loaded. On the server, the game's own look-ups load (or even make) a
- * chunk that is not loaded, there and then, and the whole server waits for it: a long ray, or a power still at work far
- * from its owner, can freeze everyone for a moment. What lies in chunks nobody has loaded, nobody sees; these treat it
- * as open air.
- */
 public final class LoadedWorld {
     private LoadedWorld() {
     }
 
-    /**
-     * The game's own {@link Level#clip}, except that the ray passes through chunks that are not loaded as if they were
-     * empty, instead of loading them.
-     */
     public static BlockHitResult clip(Level level, ClipContext context) {
         return BlockGetter.traverseBlocks(context.getFrom(), context.getTo(), context, (ray, pos) -> {
+            // Unloaded chunks count as air here, so a long ray can't freeze the server.
             if (!level.isLoaded(pos)) {
                 return null;
             }

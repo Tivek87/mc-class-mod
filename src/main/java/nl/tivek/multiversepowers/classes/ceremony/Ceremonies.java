@@ -28,22 +28,6 @@ import nl.tivek.multiversepowers.classes.PlayerClass;
 import static nl.tivek.multiversepowers.classes.ceremony.DeathAndLevelUp.death;
 import static nl.tivek.multiversepowers.classes.ceremony.DeathAndLevelUp.levelUp;
 
-/**
- * Class ceremonies. Every class has its own, completely different animation built around what
- * that class does (shield wall, heartbeat, arrow volley, storm cloud, greatsword from the sky...).
- *
- * Grand (first time): 200 ticks = 10 s, climax and class title on tick 150.
- * Light (every respawn): 50 ticks = 2.5 s, its own shorter animation that fits the class, no title.
- * Everything is centred on the player and happens all around them, never only in front.
- *
- * Also: a death animation per group (20 ticks = 1 s, where the player died) and one level-up
- * animation for everyone (50 ticks = 2.5 s, on a vanilla experience level-up).
- *
- * <p>This class runs them all: which animation plays, every tick of it, and the class title. The animations
- * themselves are one file per group ({@link WarriorCeremonies} up to {@link ForsakenCeremony}, and
- * {@link DeathAndLevelUp}), drawn with the particles and sounds of {@link Fx} and the floor drawings of
- * {@link Glyph}.
- */
 @EventBusSubscriber(modid = MultiversePowers.MODID)
 public final class Ceremonies {
     static final Mode GRAND = new Mode(200, true, 0.6F);
@@ -76,7 +60,6 @@ private static final List<Ceremony> ACTIVE = new ArrayList<>();
         final double y;
         final double z;
         final float yaw;
-        // The block under the player, read once while he stands there: later its chunk may no longer be loaded.
         final BlockState ground;
         int age;
 
@@ -94,6 +77,7 @@ private static final List<Ceremony> ACTIVE = new ArrayList<>();
             this.y = player.getY();
             this.z = player.getZ();
             this.yaw = player.getYRot();
+            // The block under the player, read once while he stands there: later its chunk may no longer be loaded.
             this.ground = player.level().getBlockState(BlockPos.containing(this.x, this.y - 0.5, this.z));
         }
     }
@@ -111,21 +95,18 @@ private static final List<Ceremony> ACTIVE = new ArrayList<>();
         ACTIVE.add(new Ceremony(player, playerClass, firstTime ? GRAND : LIGHT));
     }
 
-    /** One-second death animation of the group, on the spot where the player is now. Not stacked either. */
     public static void playDeath(ServerPlayer player, ClassGroup group) {
         if (!isPlaying(player, DEATH)) {
             ACTIVE.add(new Ceremony(player, null, group, DEATH));
         }
     }
 
-    /** Level-up animation, the same for everyone. Not stacked when several levels come at once. */
     public static void playLevelUp(ServerPlayer player) {
         if (!isPlaying(player, LEVEL_UP)) {
             ACTIVE.add(new Ceremony(player, null, null, LEVEL_UP));
         }
     }
 
-    /** Whether this player already has an animation of this kind running. */
     private static boolean isPlaying(ServerPlayer player, Mode mode) {
         for (Ceremony ceremony : ACTIVE) {
             if (ceremony.mode == mode && ceremony.playerId.equals(player.getUUID())) {
@@ -197,7 +178,6 @@ private static final List<Ceremony> ACTIVE = new ArrayList<>();
         }
     }
 
-    /** The server stops: every ceremony still playing is dropped. */
     public static void clear() {
         ACTIVE.clear();
     }

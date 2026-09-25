@@ -11,32 +11,19 @@ import nl.tivek.multiversepowers.engine.math.Noise;
 import nl.tivek.multiversepowers.engine.math.Vectors;
 import static nl.tivek.multiversepowers.character.greenlantern.client.render.ArrivalRing.acrossOf;
 
-/**
- * The light of the ring's arrival (see {@link ArrivalAnimation}): the rings of light it sends out, its scan, the
- * wave, the pillar and the aura as it slides on, and his eyes lighting up.
- */
 final class ArrivalLight {
-    // The scan: how far out the band of light round him is, in blocks, and how far over his head it starts.
     private static final double SCAN_RADIUS = 0.75;
     private static final double SCAN_TOP = 0.25;
-    // The ring's light flaring up round him as it slides on: how long, in ticks, and how many tongues of light.
     private static final float AURA_TICKS = 30.0F;
     private static final int AURA_TONGUES = 18;
-    // The pillar of light shooting up out of him as the ring slides on: how long it takes to shoot up, and how long it
-    // lasts, in ticks.
     private static final float PILLAR_RISE = 3.0F;
     private static final float PILLAR_TICKS = 16.0F;
-    // How long the ring's light takes to race out over the ground, and to sink away, in ticks.
     private static final float WAVE_TICKS = 10.0F;
     private static final float WAVE_FADE = 16.0F;
 
     private ArrivalLight() {
     }
 
-    /**
-     * The ring's light racing out over the ground from where he stands, as far as the creatures of the dark run from
-     * it: a low wall of hard light and a line of light at its foot, sinking away as it goes.
-     */
     static void wave(LanternPainter painter, Vec3 feet, float since) {
         if (since >= WAVE_FADE) {
             return;
@@ -59,10 +46,6 @@ final class ArrivalLight {
                 0.14 + 0.1 * fade, 1.0, Colors.alpha(fade), Colors.alpha(0.6 * fade));
     }
 
-    /**
-     * A ring of light racing out of {@code at}, square to {@code face}, {@code reach} blocks out at the end: {@code u}
-     * from 0 (just out) to 1 (gone).
-     */
     static void burst(LanternPainter painter, Vec3 at, Vec3 face, float u, double reach) {
         double out = 1.0 - (1.0 - u) * (1.0 - u);
         double fade = 1.0 - u;
@@ -72,10 +55,6 @@ final class ArrivalLight {
                 Colors.alpha(fade), Colors.alpha(0.5 * fade));
     }
 
-    /**
-     * The ring's light shooting up out of him into the sky as it slides on: a pillar of light that is up in a moment,
-     * then thins and dies down, with a wider sheath of light round its foot.
-     */
     static void pillar(LanternPainter painter, Vec3 feet, float since) {
         if (since < 0.0F || since >= PILLAR_TICKS) {
             return;
@@ -87,10 +66,6 @@ final class ArrivalLight {
         painter.edge(base, base.add(0.0, top * 0.35, 0.0), 1.1 * life, 0.4 * life);
     }
 
-    /**
-     * The ring scanning him: a band of light round him sweeping down from over his head to his feet and back up, two
-     * fainter ones trailing it, fed by a fan of light out of the ring.
-     */
     static void scan(LanternPainter painter, AbstractClientPlayer player, Vec3 ring, float a,
             float partialTick) {
         float u = (a - Arrival.SCAN) / (Arrival.SCANNED - Arrival.SCAN);
@@ -115,10 +90,6 @@ final class ArrivalLight {
         }
     }
 
-    /**
-     * The ring's light flaring up round him as it slides on: tongues of light licking up round him from his feet and
-     * a glowing ring of light at them, dying down.
-     */
     static void aura(LanternPainter painter, Vec3 feet, double height, float since) {
         if (since < 0.0F || since >= AURA_TICKS) {
             return;
@@ -139,7 +110,6 @@ final class ArrivalLight {
                 Colors.alpha(0.8 * life), Colors.alpha(0.4 * life));
     }
 
-    /** His eyes glowing behind the mask, {@code glow} from 0 (out) to 1 (as bright as they get). */
     static void eyes(LanternPainter painter, AbstractClientPlayer player, double glow, float partialTick) {
         if (glow <= 0.0) {
             return;

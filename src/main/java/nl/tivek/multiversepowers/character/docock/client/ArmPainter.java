@@ -27,15 +27,6 @@ import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
-/**
- * Draws the robot tentacles, the tech portals and the energy shield as real 3D models, built from
- * scaled block models: slim dark segments with thin steel rings, small swept-back spikes, and a
- * three-fingered claw with glowing lamps.
- *
- * <p>Every piece is turned with a frame that is carried smoothly along the tentacle (never recomputed
- * from a fixed "up"), so nothing flips or spins when one points straight up or down. Segments are
- * counted from the tip, so they slide along with the tentacle instead of jumping when it grows.
- */
 final class ArmPainter extends LineFrames {
     private static final BlockState BODY = Blocks.NETHERITE_BLOCK.defaultBlockState();
     private static final BlockState STEEL = Blocks.IRON_BLOCK.defaultBlockState();
@@ -44,13 +35,10 @@ final class ArmPainter extends LineFrames {
     private static final BlockState HOT = Blocks.SHROOMLIGHT.defaultBlockState();
     private static final BlockState DIM = Blocks.POLISHED_BLACKSTONE.defaultBlockState();
 
-    // Short, slim segments: the tentacle reads as one smooth tube instead of a row of boxes.
     private static final double SEGMENT = 0.3;
     private static final double BASE_WIDTH = 0.27;
     private static final double TIP_WIDTH = 0.13;
-    // Over this length before the tip, the tentacle thins from BASE_WIDTH to TIP_WIDTH.
     private static final double TAPER = 2.5;
-    // In first person, pieces this close to the eye are left out instead of filling the screen.
     private static final double NEAR_EYE = 0.55;
 
     private static final int ENERGY_CORE = 0xBFF6FF;
@@ -81,15 +69,10 @@ final class ArmPainter extends LineFrames {
         this.time = time;
     }
 
-    /**
-     * A glowing energy field, drawn after all solid pieces: {@code radius} wide along {@code side} and
-     * {@code radius2} across it.
-     */
     private record Glow(Vec3 base, Vec3 direction, Vec3 side, double radius, double radius2, int inner,
             int outer, double strength, double phase, boolean shield) {
     }
 
-    /** From now on, leave out everything past this plane (null: nothing). */
     void clip(@Nullable Vec3 point, Vec3 normal) {
         this.clipPoint = point;
         this.clipNormal = normal;
@@ -111,13 +94,6 @@ final class ArmPainter extends LineFrames {
         return Mth.lerp(t * t * (3 - 2 * t), TIP_WIDTH, BASE_WIDTH) * thickness;
     }
 
-    // ---- Pieces ----
-
-    /**
-     * One block model stretched into a bar: from {@code start}, {@code length} long along the unit
-     * vector {@code d}, {@code width} thick, its faces turned to {@code side} and then {@code roll}
-     * radians further around its own length.
-     */
     private void bar(BlockState state, Vec3 start, Vec3 d, Vec3 side, double length, double width, double roll,
             int light) {
         if (length < 1.0E-3 || width < 1.0E-3 || this.hidden(start.add(d.scale(length / 2)))) {
@@ -141,17 +117,10 @@ final class ArmPainter extends LineFrames {
         this.pose.popPose();
     }
 
-    /** A small cube centred on {@code at}. */
     private void cube(BlockState state, Vec3 at, Vec3 d, Vec3 side, double size, int light) {
         this.bar(state, at.subtract(d.scale(size / 2)), d, side, size, size, 0.0, light);
     }
 
-    // ---- Tentacles ----
-
-    /**
-     * Short segments that thin towards the tip, a steel ring every third joint, small swept-back spikes
-     * every fourth, and the claw when the tip is on this part of the tentacle.
-     */
     void arm(List<Vec3> points, @Nullable Vec3 reference, float claw, float thickness, float tipOffset,
             boolean rage, float spike, float thrust, List<ArmPayload.Carried> carried) {
         if (points.size() < 2) {
@@ -164,7 +133,7 @@ final class ArmPainter extends LineFrames {
         }
         double segment = SEGMENT * thickness;
         double end = length + tipOffset;
-        // Joints sit a whole number of segments back from the real tip (which may be past a portal).
+        // Counts back from the real tip so segments stay put as tipOffset changes.
         List<Double> joints = new ArrayList<>();
         joints.add(0.0);
         int far = (int) Math.ceil(end / segment) - 1;
@@ -190,13 +159,11 @@ final class ArmPainter extends LineFrames {
             Vec3 d = delta.scale(1.0 / span);
             Vec3 side = frames.sideAt((s0 + s1) / 2);
             double middle = (s0 + s1) / 2;
-            // Counted from the real tip, so each segment keeps its look while the tentacle moves.
             int id = (int) Math.floor((end - middle) / segment);
             double width = widthAt(end - middle, thickness);
             int light = this.light(a.lerp(b, 0.5));
             this.bar(BODY, a, d, side, span * 1.04, width, id * 0.35, light);
             if (Math.floorMod(id, 3) == 0) {
-                // A thin ring over the joint, so bends never show a gap.
                 double ring = 0.07 * thickness + width * 0.2;
                 this.bar(STEEL, a.subtract(d.scale(ring / 2)), d, side, ring, width * 1.18, 0.0, light);
             }
@@ -229,10 +196,6 @@ final class ArmPainter extends LineFrames {
         }
     }
 
-    /**
-     * The sharp point of the Portal ability: it slides out of the middle of the claw, between the
-     * three fingers, and ends in a needle.
-     */
     private void spike(Vec3 tip, Vec3 d, Vec3 side, double out, float thickness) {
         int light = this.light(tip);
         double length = (0.2 + 0.85 * out) * thickness;
@@ -242,11 +205,6 @@ final class ArmPainter extends LineFrames {
         this.cube(HOT, base.add(d.scale(length * 0.6)), d, side, 0.05 * thickness, LightTexture.FULL_BRIGHT);
     }
 
-    /**
-     * The thrusters of the Portal ability: two slim pods lie along the tentacle a little behind the
-     * claw, with a short flame licking backwards out of each. Small on purpose, so the tentacle keeps
-     * its own shape instead of turning into a bundle of glowing bars.
-     */
     private void thrusters(Vec3 tip, Vec3 d, Vec3 side, double out, float thickness) {
         Vec3 across = d.cross(side);
         Vec3 back = d.scale(-1);
@@ -256,7 +214,6 @@ final class ArmPainter extends LineFrames {
             Vec3 outward = across.scale(k);
             Vec3 root = tip.subtract(d.scale(1.05 * thickness))
                     .add(outward.scale((0.05 + 0.06 * grown) * thickness));
-            // The pod lies flat against the tentacle; only its nozzle sticks out at the back.
             this.bar(DIM, root, back, outward, 0.3 * thickness, 0.09 * thickness, 0.0, light);
             this.bar(STEEL, root.add(back.scale(0.3 * thickness)), back, outward, 0.05 * thickness,
                     0.11 * thickness, 0.0, light);
@@ -269,7 +226,6 @@ final class ArmPainter extends LineFrames {
         }
     }
 
-    /** The blocks a tentacle carries, each one whole, exactly as it stood in the world. */
     private void carried(Vec3 tip, List<ArmPayload.Carried> carried) {
         for (ArmPayload.Carried block : carried) {
             BlockState state = Block.stateById(block.state());
@@ -289,7 +245,6 @@ final class ArmPainter extends LineFrames {
         }
     }
 
-    /** A slim hub with a glowing eye, and three curved two-part fingers with a lamp at each knuckle. */
     private void claw(Vec3 tip, Vec3 d, Vec3 side, double open, float thickness, BlockState lamp) {
         Vec3 across = d.cross(side);
         int light = this.light(tip);
@@ -311,15 +266,6 @@ final class ArmPainter extends LineFrames {
         }
     }
 
-    // ---- Portals and shields ----
-
-    /**
-     * A tech portal, played from {@code open} (0 shut, 1 open): first the steel ring assembles, its
-     * segments flying in one after another while the ring turns; then clamps lock on and the lamps
-     * light up one by one; last the energy tears open, from a thin bright line to a full swirling
-     * field with a tunnel going back into it. A shield is only the energy: a dome of light in front of
-     * you. Closing plays it all backwards.
-     */
     void portal(Vec3 center, Vec3 normal, double size, double open, int style) {
         if (open <= 0.001 || size < 0.05) {
             return;
@@ -362,7 +308,6 @@ final class ArmPainter extends LineFrames {
             }
         }
         if (ring >= 1.0) {
-            // Toothed outer ring, turning the other way.
             for (int k = 0; k < 24; k++) {
                 Vec3 out = around(Vec3.ZERO, e1, e2, -this.time * 0.02 + Math.PI * 2 * k / 24, 1.0);
                 this.cube(STEEL, center.add(out.scale(size + frame * 0.6)), n, out, frame * 0.35, light);
@@ -379,7 +324,6 @@ final class ArmPainter extends LineFrames {
         int blink = (int) (this.time / 4);
         for (int k = 0; k < 6 && ring >= 0.95; k++) {
             Vec3 out = around(Vec3.ZERO, e1, e2, spin + k * Math.PI / 3 + Math.PI / 6, 1.0);
-            // Lit one by one while opening; once open they blink in turns.
             boolean lit = open >= 0.999 ? (k + blink) % 2 == 0 : lamps > (k + 1) / 6.5;
             for (int face = -1; face <= 1; face += 2) {
                 this.cube(lit ? HOT : DIM, center.add(out.scale(size)).add(n.scale(face * frame * 0.55)), n, out,
@@ -389,13 +333,11 @@ final class ArmPainter extends LineFrames {
         if (energy <= 0.0) {
             return;
         }
-        // Tears open as a thin line first, then widens into a disc; brightest while tearing.
         double wide = size * 0.97 * ease(Math.min(1.0, energy * 2.5));
         double tall = size * 0.97 * Math.max(0.04, ease(energy));
         double flash = 1.0 + 0.8 * (1.0 - energy);
-        // A tunnel of fainter, smaller fields behind it. Farthest first: glowing fields hide what is
-        // drawn behind them afterwards.
         double away = this.camera.subtract(center).dot(n) > 0.0 ? -1.0 : 1.0;
+        // Farthest first: later glow quads draw over earlier ones (no depth test).
         for (int layer = 3; layer >= 1; layer--) {
             double shrink = 1.0 - 0.2 * layer;
             this.glows.add(new Glow(center.add(n.scale(away * 0.22 * layer * size * 0.5)), n, e1, wide * shrink,
@@ -404,7 +346,6 @@ final class ArmPainter extends LineFrames {
         this.glows.add(new Glow(center, n, e1, wide, tall, ENERGY_CORE, ENERGY, flash, 0.0, false));
     }
 
-    /** The Block shield: a ring of light that flares open, with ripples running out of the middle. */
     private void shield(Vec3 center, Vec3 n, Vec3 e1, double size, double open) {
         double grown = ease(Mth.clamp(open, 0.0, 1.0));
         this.glows.add(new Glow(center, n, e1, size * grown, size * grown, SHIELD_CORE, SHIELD, 0.85 + 0.4 * grown,
@@ -419,9 +360,6 @@ final class ArmPainter extends LineFrames {
         return t * t * (3 - 2 * t);
     }
 
-    // ---- Glowing parts ----
-
-    /** Draws every energy field of this frame, glowing (added on top of what is behind). */
     void finish() {
         if (this.glows.isEmpty()) {
             return;
@@ -460,7 +398,6 @@ final class ArmPainter extends LineFrames {
         return glow.base.add(e1.scale(Math.cos(a) * r * glow.radius)).add(e2.scale(Math.sin(a) * r * glow.radius2));
     }
 
-    /** Portals: three spiral arms turning inwards. Shields: ripples running out of the middle. */
     private double pattern(Glow glow, double r, double a) {
         if (glow.shield) {
             return 0.5 + 0.5 * Math.sin(r * 14 - this.time * 0.5 + Math.sin(a * 3) * 0.6);
@@ -487,7 +424,6 @@ final class ArmPainter extends LineFrames {
         return r << 16 | g << 8 | b;
     }
 
-    /** One quad, drawn from both sides. */
     private void quad(VertexConsumer buffer, Matrix4f matrix, Vec3 p0, int c0, int a0, Vec3 p1, int c1, int a1,
             Vec3 p2, int c2, int a2, Vec3 p3, int c3, int a3) {
         if (this.hidden(p0.add(p1).add(p2).add(p3).scale(0.25))) {

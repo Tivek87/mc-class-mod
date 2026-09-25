@@ -18,10 +18,6 @@ import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.config.client.SettingsScreen;
 import nl.tivek.multiversepowers.stamina.StaminaConfig;
 
-/**
- * Client-side stamina system with in-game configurable stats.
- * When exhausted: sprinting and jumping are blocked until stamina recovers.
- */
 @EventBusSubscriber(modid = MultiversePowers.MODID, value = Dist.CLIENT)
 public final class StaminaClient {
     private static final float MAX_FORWARD_TIRED = 0.79F;
@@ -47,11 +43,6 @@ public final class StaminaClient {
         return exhausted;
     }
 
-    /**
-     * Spends {@code amount} stamina if there is that much (always fine in creative and spectator).
-     *
-     * @return false when too tired: nothing is spent
-     */
     public static boolean tryUse(float amount) {
         Minecraft minecraft = Minecraft.getInstance();
         LocalPlayer player = minecraft.player;
@@ -65,7 +56,6 @@ public final class StaminaClient {
         return true;
     }
 
-    /** Spends up to {@code amount} stamina; running out makes you exhausted as usual. */
     public static void use(float amount) {
         Minecraft minecraft = Minecraft.getInstance();
         LocalPlayer player = minecraft.player;
@@ -127,7 +117,6 @@ public final class StaminaClient {
             return;
         }
 
-        // Als je uitgeput bent: blokkeer sprinten direct
         if (exhausted && player.isSprinting()) {
             player.setSprinting(false);
         }
@@ -154,14 +143,12 @@ public final class StaminaClient {
 
         Input input = event.getInput();
         if (exhausted) {
-            // Blokkeer sprinten, maar laat normaal lopen toe
             player.setSprinting(false);
             if (input.forwardImpulse > MAX_FORWARD_TIRED) {
                 input.forwardImpulse = MAX_FORWARD_TIRED;
             }
         }
 
-        // Blokkeer springen als stamina op is of te laag voor een sprong
         boolean groundJump = input.jumping && !player.isInWater() && !player.isInLava() && !player.onClimbable();
         if (groundJump && (exhausted || stamina < StaminaConfig.getJumpCost())) {
             input.jumping = false;
@@ -177,7 +164,6 @@ public final class StaminaClient {
         }
     }
 
-    /** False in creative and spectator: no drain, no blocking, and no bar on screen. */
     static boolean usesStamina(Minecraft minecraft, LocalPlayer player) {
         if (player.isCreative() || player.isSpectator()) {
             return false;

@@ -25,21 +25,9 @@ import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.character.docock.ArmPayload;
 import nl.tivek.multiversepowers.character.docock.PortalPayload;
 
-/**
- * Keeps the robot arms and tech portals the server sends, and draws them (see ArmPainter) smoothly:
- * <ul>
- * <li>Updates are played back one per client tick and blended between, so updates that arrive
- * unevenly over the network still move evenly.</li>
- * <li>An arm's mount is glued to where this client draws its owner (in first person: exactly where
- * you are and where you look), so it never trails behind.</li>
- * <li>A mob in a claw is put exactly at the claw's tip each tick, so claw and mob move as one.</li>
- * </ul>
- */
 @EventBusSubscriber(modid = MultiversePowers.MODID, value = Dist.CLIENT)
 public final class ClientArms {
-    // An arm or portal the server stopped updating (out of range, or a lost packet) disappears.
     private static final int TIMEOUT = 10;
-    // Updates waiting beyond this many are skipped, so a network hiccup never leaves things lagging.
     private static final int MAX_WAITING = 2;
 
     private static final Map<Integer, Arm> ARMS = new HashMap<>();
@@ -49,7 +37,6 @@ public final class ClientArms {
     private ClientArms() {
     }
 
-    /** The server updates of one arm or portal, played back one per client tick. */
     private static class Track<T> {
         private final ArrayDeque<T> waiting = new ArrayDeque<>();
         protected T previous;
@@ -83,7 +70,6 @@ public final class ClientArms {
     }
 
     private static final class Arm extends Track<ArmPayload> {
-        // The previous shape with as many points as the current one, so the two can be blended.
         private List<Vec3> previousPoints;
 
         Arm(ArmPayload first) {
@@ -91,7 +77,6 @@ public final class ClientArms {
             this.previousPoints = first.points();
         }
 
-        /** @return true when the arm jumped (through a portal) and must not be blended */
         boolean step() {
             this.advance();
             boolean jumped = this.previous.cut() != this.current.cut();
@@ -129,7 +114,7 @@ public final class ClientArms {
         }
     }
 
-    // Before the world ticks: the held mob's new place must be set before it moves this tick.
+    // Runs before the world ticks, so the held mob's new spot is set in time.
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Pre event) {
         Minecraft minecraft = Minecraft.getInstance();
@@ -166,10 +151,6 @@ public final class ClientArms {
         PORTALS.clear();
     }
 
-    /**
-     * Puts the mob in the claw exactly at the tip, where it stays for this whole tick. Vanilla then
-     * draws it blended from its last place, just like the arm, so the two never drift apart.
-     */
     private static void hold(ClientLevel level, ArmPayload arm, boolean jumped) {
         if (arm.heldId() < 0) {
             return;
@@ -186,10 +167,8 @@ public final class ClientArms {
         entity.lerpTo(tip.x, y, tip.z, entity.getYRot(), entity.getXRot(), 1);
     }
 
-    /** Now and then a spark flying off a portal's ring. */
     private static void sparks(ClientLevel level, PortalPayload portal) {
         RandomSource random = level.random;
-        // Only once the energy is open; more while it tears open. Shields throw none.
         float chance = portal.style() != PortalPayload.STYLE_PORTAL || portal.open() < 0.55F ? 0.0F
                 : portal.open() < 0.999F ? 0.9F : 0.6F;
         if (random.nextFloat() >= chance) {
@@ -215,7 +194,6 @@ public final class ClientArms {
         if (level == null) {
             return;
         }
-        // The same blend between ticks that entities are drawn with.
         float partialTick = event.getPartialTick().getGameTimeDeltaPartialTick(false);
         float time = (float) (level.getGameTime() % 24000L) + partialTick;
         MultiBufferSource.BufferSource buffers = minecraft.renderBuffers().bufferSource();
@@ -243,9 +221,6 @@ public final class ClientArms {
         for (Track<PortalPayload> portal : PORTALS.values()) {
             PortalPayload was = portal.previous;
             PortalPayload now = portal.current;
-            // Where it is and which way it faces are blended between ticks as well, so a shield that
-            // follows your head moves as smoothly as you turn. A real jump (a portal that opens
-            // somewhere else) is too far to blend, so that one is simply drawn where it is now.
             boolean near = was.center().distanceToSqr(now.center()) < 16.0;
             Vec3 center = near ? was.center().lerp(now.center(), partialTick) : now.center();
             Vec3 normal = near ? was.normal().lerp(now.normal(), partialTick) : now.normal();
@@ -259,12 +234,6 @@ public final class ClientArms {
         buffers.endBatch();
     }
 
-    /**
-     * Moves the arm's points from where the server's copy of its owner stood to where this client
-     * draws the owner, turned along with the owner's yaw; fully at the mount, less towards the tip
-     * as much as the server asks. Returns the owner's right-hand side, which keeps the arm's pieces
-     * from rolling when the owner turns (null without an owner).
-     */
     @Nullable
     private static Vec3 anchor(ClientLevel level, ArmPayload before, ArmPayload now, List<Vec3> points,
             float partialTick) {
@@ -293,14 +262,12 @@ public final class ClientArms {
         return new Vec3(-Math.cos(radians), 0, -Math.sin(radians));
     }
 
-    /** {@code v} turned {@code angle} radians around the vertical axis, the way yaw turns. */
     private static Vec3 turn(Vec3 v, double angle) {
         double c = Math.cos(angle);
         double s = Math.sin(angle);
         return new Vec3(v.x * c - v.z * s, v.y, v.x * s + v.z * c);
     }
 
-    /** The same line with {@code count} evenly spaced points. */
     private static List<Vec3> sameCount(List<Vec3> points, int count) {
         if (points.size() == count) {
             return points;

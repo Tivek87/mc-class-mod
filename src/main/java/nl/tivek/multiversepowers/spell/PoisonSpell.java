@@ -23,10 +23,6 @@ import nl.tivek.multiversepowers.engine.effect.Effects;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 import nl.tivek.multiversepowers.engine.target.Targeting;
 
-/**
- * Poison Area: a glowing green vial arcs from your hand to the target and shatters, leaving a bubbling
- * poison cloud with a turning rune ring and low toxic fog. Everything inside is poisoned, except you.
- */
 final class PoisonSpell {
     private static final double RANGE = 24.0;
     private static final double RADIUS = 3.5;
@@ -93,11 +89,9 @@ final class PoisonSpell {
         level.playSound(null, at.x, at.y, at.z, SoundEvents.BREWING_STAND_BREW, SoundSource.PLAYERS, 1.0F, 0.6F);
     }
 
-    /** The lingering cloud: spreads out, bubbles and fumes, poisons on a pulse, then thins away. */
     private static Effect cloud(Vec3 center, UUID owner) {
         return (level, age) -> {
             double radius = RADIUS * Math.min(1.0, (age + 1.0) / SPREAD_TIME);
-            // 1 while active, thinning to 0 over the last FADE_TIME ticks.
             double density = Math.min(1.0, (DURATION - age) / (double) FADE_TIME);
             Vec3 ground = center.add(0, 0.1, 0);
 
@@ -139,7 +133,6 @@ final class PoisonSpell {
         AABB box = new AABB(center, center).inflate(radius, 0, radius).expandTowards(0, 2.5, 0)
                 .expandTowards(0, -1, 0);
         for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, box, LivingEntity::isAlive)) {
-            // Never you or a spectator; another player only when you could hurt him yourself.
             if (target.getUUID().equals(owner) || target.isSpectator()
                     || target instanceof Player player && (caster == null || !Targeting.isTargetable(caster, player))) {
                 continue;
@@ -148,7 +141,6 @@ final class PoisonSpell {
             double dz = target.getZ() - center.z;
             if (dx * dx + dz * dz <= radius * radius) {
                 target.addEffect(new MobEffectInstance(MobEffects.POISON, 60, 1), caster);
-                // A green haze around every creature that breathes it in.
                 ParticleFx.send(level, effect(BRIGHT), target.getX(), target.getY() + target.getBbHeight() * 0.6,
                         target.getZ(), 6, target.getBbWidth() * 0.5, target.getBbHeight() * 0.3,
                         target.getBbWidth() * 0.5, 0.0);
@@ -156,7 +148,6 @@ final class PoisonSpell {
         }
     }
 
-    /** A random point on the ground inside the circle, evenly spread. */
     private static Vec3 randomIn(Vec3 center, double radius) {
         double angle = ParticleFx.RANDOM.nextDouble() * Math.PI * 2;
         double distance = Math.sqrt(ParticleFx.RANDOM.nextDouble()) * radius;

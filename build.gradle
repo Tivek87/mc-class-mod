@@ -2,7 +2,6 @@ plugins {
     id 'java-library'
     id 'net.neoforged.moddev' version '2.0.147'
     id 'idea'
-    // ModDevGradle uses this to generate the Eclipse/VS Code classpath and run configurations.
     id 'eclipse'
 }
 
@@ -17,7 +16,6 @@ base {
     archivesName = mod_file_name
 }
 
-// Mojang ships Java 21 to end users in 1.21.1, so mods should target Java 21.
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 
 repositories {
@@ -26,7 +24,6 @@ repositories {
 neoForge {
     version = project.neo_version
 
-    // Lets the mod reset the server's anti-flying counter while the tentacles carry you.
     accessTransformers.from('src/main/resources/META-INF/accesstransformer.cfg')
 
     parchment {
@@ -39,7 +36,6 @@ neoForge {
             client()
         }
 
-        // Dedicated server for multiplayer tests (./gradlew runServer), in its own folder.
         server {
             server()
             gameDirectory = project.file('run-server')
@@ -61,7 +57,6 @@ neoForge {
 dependencies {
 }
 
-// Vult ${...} placeholders in src/main/templates in met waarden uit gradle.properties.
 var generateModMetadata = tasks.register("generateModMetadata", ProcessResources) {
     var replaceProperties = [
             minecraft_version      : minecraft_version,

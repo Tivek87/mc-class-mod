@@ -20,14 +20,6 @@ import nl.tivek.multiversepowers.engine.effect.Effects;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 import nl.tivek.multiversepowers.engine.target.Targeting;
 
-/**
- * Lightning Strike: sparks jump from your hand, a storm cloud gathers over the
- * target while a glowing
- * rune circle charges on the ground, then a branching bolt tears down with a
- * flash, a shockwave of
- * sparks and a crackling scorch mark. A creature you aimed at is followed while
- * the spell charges.
- */
 final class LightningSpell {
     private static final double RANGE = 40.0;
     private static final int CHARGE = 14;
@@ -56,7 +48,6 @@ final class LightningSpell {
     }
 
     private static Effect strike(ServerPlayer caster, Targeting.Aim aim) {
-        // Where the bolt lands; follows the target during the charge (until it leaves this dimension), then stays put.
         Vec3[] target = { aim.current() };
         return (level, age) -> {
             if (age <= CHARGE && (aim.entity() == null || aim.entity().level() == level)) {
@@ -74,10 +65,6 @@ final class LightningSpell {
         };
     }
 
-    /**
-     * The rune circle drawing itself, sparks rising, and the storm cloud gathering
-     * overhead.
-     */
     private static void charge(ServerLevel level, Vec3 at, int age) {
         double progress = (double) age / CHARGE;
         Vec3 ground = at.add(0, 0.1, 0);
@@ -86,7 +73,6 @@ final class LightningSpell {
             ParticleFx.ring(level, ParticleFx.dust(CYAN, 1.0F), ground, RUNE_RADIUS * 0.65, 32, -age * 0.1);
             ParticleFx.ring(level, ParticleFx.dust(WHITE, 0.8F), ground, RUNE_RADIUS * 0.35, 20, age * 0.12);
 
-            // Rotating electric rays
             for (int r = 0; r < 4; r++) {
                 double a = age * 0.05 + r * (Math.PI / 2.0);
                 Vec3 p = ground.add(Math.cos(a) * RUNE_RADIUS, 0, Math.sin(a) * RUNE_RADIUS);
@@ -105,7 +91,6 @@ final class LightningSpell {
         ParticleFx.send(level, ParticleFx.dust(STORM, 4.0F), sky.x, sky.y, sky.z, 10, cloudSize, 0.4, cloudSize, 0);
         ParticleFx.send(level, ParticleTypes.LARGE_SMOKE, sky.x, sky.y, sky.z, 4, cloudSize, 0.3, cloudSize, 0.01);
         if (age % 3 == 1) {
-            // Little electric flickers inside the cloud
             Vec3 a = sky.add(ParticleFx.spread(cloudSize), 0, ParticleFx.spread(cloudSize));
             Vec3 b = a.add(ParticleFx.spread(1.5), ParticleFx.spread(0.5), ParticleFx.spread(1.5));
             ParticleFx.zigzag(level, ParticleFx.dust(WHITE, 0.8F), a, b, 3, 0.3, 0.15);
@@ -116,13 +101,8 @@ final class LightningSpell {
         }
     }
 
-    /**
-     * The real bolt (for damage and fire) plus visual side bolts, flash and
-     * shockwave.
-     */
     private static void hit(ServerLevel level, ServerPlayer caster, Vec3 at) {
-        // Where the world does not run (the target was followed far away), only the light show plays: a bolt there
-        // would strike much later.
+        // Real bolt only where the chunk ticks; far away, just the light show plays.
         LightningBolt bolt = level.isPositionEntityTicking(BlockPos.containing(at))
                 ? EntityType.LIGHTNING_BOLT.create(level)
                 : null;
@@ -138,7 +118,7 @@ final class LightningSpell {
         ParticleFx.shockwave(level, ParticleFx.dust(GLOW, 1.8F), at.add(0, 0.2, 0), 36, 0.65);
         ParticleFx.sphereOut(level, ParticleFx.dust(CYAN, 1.5F), at.add(0, 0.5, 0), 32, 0.5);
         ParticleFx.cloud(level, ParticleTypes.LARGE_SMOKE, at, 12, 0.5, 0.05);
-        // The ground is only looked at where it is loaded: reading it would load the chunk.
+        // Ground read only where loaded, so this can't force a chunk to load.
         BlockPos below = BlockPos.containing(at.x, at.y - 0.5, at.z);
         BlockState ground = level.isLoaded(below) ? level.getBlockState(below) : Blocks.AIR.defaultBlockState();
         if (!ground.isAir()) {
@@ -149,10 +129,6 @@ final class LightningSpell {
         level.playSound(null, at.x, at.y, at.z, SoundEvents.TRIDENT_THUNDER.value(), SoundSource.PLAYERS, 2.0F, 1.0F);
     }
 
-    /**
-     * Flickering bolt for two more ticks, a spreading ring, then sparks and smoke
-     * from the scorch.
-     */
     private static void afterglow(ServerLevel level, Vec3 at, int t) {
         if (t <= 2) {
             drawBolt(level, at);
@@ -174,16 +150,12 @@ final class LightningSpell {
                     new Vec3(0, 1, 0), 0.04);
         }
         if (t <= 16) {
-            // The storm cloud breaks up.
             Vec3 sky = at.add(0, CLOUD_HEIGHT, 0);
             double size = 3.5 + t * 0.2;
             ParticleFx.send(level, ParticleFx.dust(STORM, 3.0F), sky.x, sky.y, sky.z, 4, size, 0.5, size, 0);
         }
     }
 
-    /**
-     * A jagged main bolt from the cloud to the ground, with a few side branches.
-     */
     private static void drawBolt(ServerLevel level, Vec3 at) {
         Vec3 top = at.add(ParticleFx.spread(1.0), CLOUD_HEIGHT, ParticleFx.spread(1.0));
         List<Vec3> path = jaggedPath(top, at, 18, 0.9);

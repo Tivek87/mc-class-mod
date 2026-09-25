@@ -1,19 +1,4 @@
-<#
-.SYNOPSIS
-    Builds and publishes a release of the mod: jar in releases/ and on GitHub Releases, the newest 10 of each kept.
-
-.DESCRIPTION
-    Every push is one release. Versions count up one step at a time, every digit 0-9:
-    0.0.1 .. 0.0.9, 0.1.0 .. 0.9.9, 1.0.0 .. 9.9.9. A suffix (-alpha, -beta) stays as it is.
-
-    Before the commit:  scripts/release.ps1 prepare
-        Raises mod_version in gradle.properties when the current version already has a release,
-        and prints the CHANGELOG heading the release needs.
-    After the push:     scripts/release.ps1 publish
-        Builds the jar, copies it to releases/, makes the GitHub release (tag v<version>, notes from the
-        CHANGELOG section of that version, the jar attached) and deletes every release past the newest 10,
-        locally and on GitHub (the tag with it).
-#>
+# Usage: release.ps1 prepare (before the commit) | publish (after the push).
 param(
     [Parameter(Mandatory = $true)]
     [ValidateSet('prepare', 'publish')]
@@ -52,7 +37,6 @@ function Test-RemoteTag([string]$tag) {
     return [bool]$out
 }
 
-# The CHANGELOG section '## [<version>] - <date>' up to the next '## '.
 function Get-Notes([string]$version) {
     $lines = [IO.File]::ReadAllLines($Changelog, $Utf8)
     $start = -1
@@ -87,7 +71,6 @@ if ($Step -eq 'prepare') {
     exit 0
 }
 
-# ---- publish ----
 if (Test-RemoteTag "v$version") { throw "v$version is already released: run 'prepare' before the commit" }
 if (git -C $Root status --porcelain --untracked-files=no) { throw 'Uncommitted changes: commit and push first' }
 git -C $Root fetch -q origin
@@ -113,14 +96,12 @@ Write-Host "Saved releases\$fileName-$version.jar"
 $notesFile = Join-Path ([IO.Path]::GetTempPath()) "release-notes-$version.md"
 $body = $notes + "`n`n---`nMinecraft 1.21.1, NeoForge 21.1+. Put the jar in your ``mods`` folder."
 [IO.File]::WriteAllText($notesFile, $body, $Utf8)
-# The release is named after its version only, never a title.
 $sha = git -C $Root rev-parse HEAD
-# A full release marked Latest (the green badge), also for -alpha: a pre-release gets no badge on the repo page.
+# No --prerelease, also for -alpha: only a Latest release gets the green badge.
 gh release create "v$version" $jar --target $sha --title "v$version" --notes-file $notesFile --latest
 if ($LASTEXITCODE -ne 0) { throw 'gh release create failed' }
 Remove-Item $notesFile
 
-# Only the newest $Keep stay: locally ...
 $local = Get-ChildItem $Releases -Filter "$fileName-*.jar" | ForEach-Object {
     $v = $_.BaseName.Substring($fileName.Length + 1)
     try { [pscustomobject]@{ File = $_; Number = (Split-Version $v).Number } } catch { $null }
@@ -130,7 +111,6 @@ $local | Select-Object -Skip $Keep | ForEach-Object {
     Write-Host "Deleted old releases\$($_.File.Name)"
 }
 
-# ... and on GitHub, with their tags.
 $online = gh release list --limit 200 --json tagName | ConvertFrom-Json | ForEach-Object {
     try { [pscustomobject]@{ Tag = $_.tagName; Number = (Split-Version $_.tagName.TrimStart('v')).Number } } catch { $null }
 } | Where-Object { $_ } | Sort-Object Number -Descending

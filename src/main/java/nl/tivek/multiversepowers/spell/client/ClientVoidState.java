@@ -22,10 +22,6 @@ import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import nl.tivek.multiversepowers.MultiversePowers;
 
-/**
- * The caster's own view while in the void: the world turns into dark silhouettes (a screen shader),
- * enemies nearby get a glowing outline through walls, and a slow heartbeat plays. Only this client.
- */
 @EventBusSubscriber(modid = MultiversePowers.MODID, value = Dist.CLIENT)
 public final class ClientVoidState {
     private static final ResourceLocation SHADER =
@@ -40,7 +36,6 @@ public final class ClientVoidState {
     @Nullable
     private static PostChain chain;
     private static boolean shaderFailed;
-    // Entities this client made glow, so exactly those are switched off again afterwards.
     private static final Set<Entity> MARKED = new HashSet<>();
 
     private ClientVoidState() {
@@ -87,14 +82,13 @@ public final class ClientVoidState {
         }
     }
 
-    /** Loads the void shader, and loads it again if something else (like spectating a mob) replaced it. */
     private static void ensureShader(GameRenderer renderer) {
         if (shaderFailed || chain != null && renderer.currentEffect() == chain) {
             return;
         }
         renderer.loadEffect(SHADER);
         chain = renderer.currentEffect();
-        // A broken shader (old graphics card, a resource pack) is logged once, not every tick.
+        // Once failed, stays failed: avoids retrying loadEffect every tick.
         shaderFailed = chain == null;
     }
 
@@ -106,7 +100,6 @@ public final class ClientVoidState {
                     || entity.distanceTo(player) > MARK_RADIUS) {
                 continue;
             }
-            // Leave creatures that already glow for another reason (a spectral arrow) alone.
             if (!MARKED.contains(entity) && GlowFlag.isGlowing(entity)) {
                 continue;
             }

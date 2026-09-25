@@ -17,17 +17,6 @@ import nl.tivek.multiversepowers.spell.Spell;
 import nl.tivek.multiversepowers.spell.client.ClientSpellCooldowns;
 import org.lwjgl.glfw.GLFW;
 
-/**
- * The power screen you get while you hold the wheel key: who you can turn into, and the spells you can cast.
- *
- * <p>The first page has two parts, with the same cards: the franchises the characters come from (Marvel, DC, Disney,
- * Warner Bros. and the rest, see {@link Roster}), and under them the schools of magic.
- *
- * <p>Nothing needs to be clicked. Keep the mouse still on a franchise or a school for a moment and it opens as a
- * page of its own, with its characters or its spells. Let the key go over a character to turn into them, or over a
- * spell to cast it; click a spell to read what it does. Characters that are not in the game yet say they are coming
- * soon, and the mouse passes over them. Resting on the back card, right-click or Escape goes back a page.
- */
 public class PowerWheelScreen extends PowerWheelLayout {
     @Override
     public void tick() {
@@ -50,10 +39,8 @@ public class PowerWheelScreen extends PowerWheelLayout {
         return key.getValue() != InputConstants.UNKNOWN.getValue() && InputConstants.isKeyDown(window, key.getValue());
     }
 
-    /** Letting the wheel key go does whatever the mouse is pointing at, and otherwise just closes. */
     private void handleRelease() {
         if (this.clickedToInspect) {
-            // The spell was clicked to read about it: letting go must not cast it.
             this.onClose();
             return;
         }
@@ -149,7 +136,6 @@ public class PowerWheelScreen extends PowerWheelLayout {
         this.click(0.9F);
     }
 
-    /** A new page: nothing on it is hovered or read yet, and it waits for the mouse to move (see stillX). */
     private void turned() {
         this.hovered = null;
         this.inspectedSpell = null;
@@ -169,7 +155,6 @@ public class PowerWheelScreen extends PowerWheelLayout {
         return String.format(Locale.ROOT, "%.1f", ticks / 20.0);
     }
 
-    /** Resting on a franchise or a school opens it; resting on the back card goes back. */
     private void followHover() {
         if (!this.waiting() || this.held() < 1.0) {
             return;
@@ -180,8 +165,6 @@ public class PowerWheelScreen extends PowerWheelLayout {
             default -> this.goBack();
         }
     }
-
-    // ---- Drawing ----
 
     @Override
     public void renderBackground(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
@@ -194,7 +177,6 @@ public class PowerWheelScreen extends PowerWheelLayout {
         this.cards = this.layout();
         this.updateHover(mouseX, mouseY);
         this.followHover();
-        // Following the mouse can open another page: lay that one out before it is drawn.
         this.cards = this.layout();
         if (this.hovered != null && this.cards.stream().noneMatch(card -> card.same(this.hovered))) {
             this.hovered = null;
@@ -214,7 +196,6 @@ public class PowerWheelScreen extends PowerWheelLayout {
                 this.heading(guiGraphics, school.getDisplayName(), 0xFF000000 | school.getColor(), PAGE_Y - 16);
             }
         }
-        // The shapes of every card first, then all the text on top of them.
         for (Card card : this.cards) {
             this.cardShape(guiGraphics, card);
         }
@@ -240,7 +221,6 @@ public class PowerWheelScreen extends PowerWheelLayout {
                 AbilityKeys.SPELL_WHEEL.getTranslatedKeyMessage()), this.width / 2, this.height - 18, MUTED_COLOR);
     }
 
-    /** A title in the middle, with a thin line out to either side of it. */
     private void heading(GuiGraphics guiGraphics, Component title, int color, int y) {
         int middle = this.width / 2;
         int half = Math.min(250, middle - 20);
@@ -250,7 +230,6 @@ public class PowerWheelScreen extends PowerWheelLayout {
         guiGraphics.drawCenteredString(this.font, title, middle, y, color);
     }
 
-    /** The colour a card is drawn in: its franchise, school, character or spell. */
     private int color(Card card) {
         return switch (card.kind()) {
             case FRANCHISE -> this.franchises[card.index()].getColor();
@@ -265,10 +244,6 @@ public class PowerWheelScreen extends PowerWheelLayout {
         };
     }
 
-    /**
-     * The body of a card: a rim in its colour (white while the mouse is on it), a colour strip on its left, and while
-     * the mouse rests on a card that opens by itself, a bar along its bottom that fills up until it does.
-     */
     private void cardShape(GuiGraphics guiGraphics, Card card) {
         boolean pickable = this.pickable(card);
         boolean hovered = card.same(this.hovered);
@@ -293,7 +268,6 @@ public class PowerWheelScreen extends PowerWheelLayout {
         }
     }
 
-    /** The name on a card, and the line under it. */
     private void cardText(GuiGraphics guiGraphics, Card card) {
         Component name;
         Component line;
@@ -353,7 +327,6 @@ public class PowerWheelScreen extends PowerWheelLayout {
         guiGraphics.drawString(this.font, this.fit(line, room), textX, card.y() + 15, lineColor);
     }
 
-    /** Text cut short with an ellipsis when it does not fit, so it never runs out of its card. */
     private Component fit(Component text, int width) {
         if (this.font.width(text) <= width) {
             return text;
@@ -362,7 +335,6 @@ public class PowerWheelScreen extends PowerWheelLayout {
         return Component.literal(cut + "…").withStyle(text.getStyle());
     }
 
-    /** The spell you clicked: its name, its cooldown and what it does, in a box at the bottom. */
     private void renderInspected(GuiGraphics guiGraphics, Spell spell) {
         int boxW = Math.min(350, this.width - 40);
         int boxH = 48;

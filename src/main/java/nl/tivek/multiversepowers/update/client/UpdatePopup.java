@@ -27,12 +27,6 @@ import nl.tivek.multiversepowers.character.client.AbilityKeys;
 import nl.tivek.multiversepowers.engine.client.gui.GuiShapes;
 import org.lwjgl.glfw.GLFW;
 
-/**
- * The "update available" popup: a plain card in the top right corner that slides in with a pling. In the game it shows
- * for a while; on the title screen and in the pause menu it stays until the update is dealt with, and a click opens
- * {@link UpdateManagerScreen}. The update key (U by default, changeable under Controls) opens that manager at any time
- * in the game, update or not.
- */
 @EventBusSubscriber(modid = MultiversePowers.MODID, value = Dist.CLIENT)
 public final class UpdatePopup {
     public static final KeyMapping OPEN_KEY = new KeyMapping("key." + MultiversePowers.MODID + ".open_update",
@@ -48,7 +42,6 @@ public final class UpdatePopup {
     private static final long SLIDE_MS = 350L;
     private static final long IN_GAME_MS = 15_000L;
     private static final long FADE_MS = 600L;
-    /** The second, higher note of the pling, this many ticks after the first. */
     private static final int SECOND_NOTE_TICKS = 3;
 
     @Nullable
@@ -56,18 +49,16 @@ public final class UpdatePopup {
     private static long shownAt;
     private static boolean hidden;
     private static int secondNote = -1;
-    /** How wide the card was last drawn, which is where a click lands on it. */
+    // Set by draw() and read by over() for hit-testing; draw must run first.
     private static int width = 160;
 
     private UpdatePopup() {
     }
 
-    /** Registered on the mod bus by the client start. */
     public static void onRegisterKeys(RegisterKeyMappingsEvent event) {
         event.register(OPEN_KEY);
     }
 
-    /** A new version came out: pling, and the card slides in. */
     static void announce(Release release) {
         shown = release;
         shownAt = System.currentTimeMillis();
@@ -76,7 +67,6 @@ public final class UpdatePopup {
         secondNote = SECOND_NOTE_TICKS;
     }
 
-    /** The update is dealt with (downloaded for later, or being installed): no more card. */
     static void hide() {
         hidden = true;
     }
@@ -149,7 +139,6 @@ public final class UpdatePopup {
         return mouseX >= x && mouseX < x + width && mouseY >= MARGIN && mouseY < MARGIN + HEIGHT;
     }
 
-    /** A plain dark card: "Update available", and under it the version in green with how to open it. */
     private static void draw(GuiGraphics graphics, Font font, int screenWidth, long age, float alpha, boolean hover,
             Component hint) {
         Component title = UpdateManagerScreen.text("popup.title");

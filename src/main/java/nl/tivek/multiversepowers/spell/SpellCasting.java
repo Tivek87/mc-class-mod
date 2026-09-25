@@ -18,15 +18,8 @@ import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.engine.ability.Cooldowns;
 import nl.tivek.multiversepowers.engine.target.Targeting;
 
-/**
- * Server side of the spells: checks the cooldown and casts the spell (what each one does is its own, see
- * {@link Spell#cast}). What a spell keeps going runs as an effect (see
- * {@link nl.tivek.multiversepowers.engine.effect.Effects}). Spells never break blocks; only the fireball and the
- * lightning strike can leave fire behind.
- */
 @EventBusSubscriber(modid = MultiversePowers.MODID)
 public final class SpellCasting {
-    // Per player: when each spell is ready again. A spell has one cooldown.
     private static final Cooldowns<Spell> COOLDOWNS = new Cooldowns<>(1);
 
     private SpellCasting() {
@@ -38,7 +31,7 @@ public final class SpellCasting {
         }
         int left = COOLDOWNS.left(player, spell, 0);
         if (left > 0) {
-            // The client thought it was ready; send the real time back.
+            // Client thought it was ready; correct it with the real time left.
             syncCooldown(player, spell, left);
             return;
         }
@@ -52,17 +45,14 @@ public final class SpellCasting {
         PacketDistributor.sendToPlayer(player, new SpellCooldownPayload(spell.getId(), ticks));
     }
 
-    /** The server stops: every spell ready again, and whoever walks in the void is saved as he was before it. */
     public static void clear(MinecraftServer server) {
         COOLDOWNS.clear();
         VoidWalkSpell.clear(server);
     }
 
-    // Your own lightning never hits you, even when you strike right next to yourself or respawned while it
-    // charged. Lightning has no attacker, so the game's own PvP rules never see it: another player is only hit
-    // when you could hurt him yourself.
     @SubscribeEvent
     public static void onStruckByLightning(EntityStruckByLightningEvent event) {
+        // Lightning has no attacker for vanilla's PvP checks, so this covers it by hand.
         ServerPlayer cause = event.getLightning().getCause();
         if (cause == null) {
             return;
@@ -74,7 +64,6 @@ public final class SpellCasting {
         }
     }
 
-    // Nothing can target a player who walks in the void.
     @SubscribeEvent
     public static void onChangeTarget(LivingChangeTargetEvent event) {
         if (VoidWalkSpell.isInVoid(event.getNewAboutToBeSetTarget())) {
@@ -82,7 +71,6 @@ public final class SpellCasting {
         }
     }
 
-    // Someone comes close enough to see a player who walks in the void: his hands and armour stay hidden from him too.
     @SubscribeEvent
     public static void onStartTracking(PlayerEvent.StartTracking event) {
         if (event.getTarget() instanceof ServerPlayer player && event.getEntity() instanceof ServerPlayer viewer) {
@@ -90,7 +78,6 @@ public final class SpellCasting {
         }
     }
 
-    // A player in the void picks up, switches or puts on something: the game shows it, so it is hidden again.
     @SubscribeEvent
     public static void onEquipmentChange(LivingEquipmentChangeEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
@@ -111,7 +98,6 @@ public final class SpellCasting {
             String key = "spell." + MultiversePowers.MODID + ".welcome_";
             player.sendSystemMessage(Component.translatable(key + "tag").withStyle(ChatFormatting.AQUA).append(" ")
                     .append(Component.translatable(key + "tip").withStyle(ChatFormatting.YELLOW)));
-            // The client forgot its cooldowns when it left, but the server kept them.
             for (Spell spell : Spell.values()) {
                 int left = COOLDOWNS.left(player, spell, 0);
                 if (left > 0) {

@@ -20,17 +20,8 @@ import nl.tivek.multiversepowers.character.greenlantern.PowerRing;
 import nl.tivek.multiversepowers.engine.effect.Effect;
 import nl.tivek.multiversepowers.engine.effect.Effects;
 
-/**
- * The ring scans the area around Green Lantern: a wave of its light rolls out from him through everything, walls and
- * all, as far as the setting {@code rangeBlocks}; every creature it passes is marked for him for {@code markSeconds}:
- * it glows through walls, red when it is out to hurt him and green otherwise, in a frame of light with its name and
- * health (see the client's RingSight). His action bar says what it found. Everyone around sees the wave go by, not what
- * it marked.
- */
 public final class RingScan implements Effect {
-    /** How fast the wave rolls out, in blocks per tick. */
     public static final double SPEED = 1.6;
-    /** How long the wave takes to die away once it reached its end, in ticks. */
     static final int FADE = 10;
     private static final double VIEW_RANGE = 96.0;
 
@@ -50,11 +41,6 @@ public final class RingScan implements Effect {
         this.marks = (float) ability.value("markSeconds");
     }
 
-    /**
-     * The scan key: the wave rolls out, as long as the ring is not busy at the lantern and can pay for it.
-     *
-     * @return true when it went out
-     */
     public static boolean use(ServerPlayer owner, ServerLevel level, CharacterAbility ability) {
         if (Recharge.busy(owner)) {
             PowerRing.tell(owner, "busy_lantern");
@@ -77,7 +63,6 @@ public final class RingScan implements Effect {
         return true;
     }
 
-    /** What the scan will find, on his action bar: how many creatures out to hurt him, and how many others. */
     private void report(ServerLevel level) {
         int hostile = 0;
         int other = 0;

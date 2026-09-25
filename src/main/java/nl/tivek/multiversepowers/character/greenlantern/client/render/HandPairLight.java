@@ -13,31 +13,20 @@ import static nl.tivek.multiversepowers.character.greenlantern.client.render.Han
 import static nl.tivek.multiversepowers.character.greenlantern.client.render.HandLight.shockwave;
 import static nl.tivek.multiversepowers.character.greenlantern.client.render.HandPainter.thumbTip;
 
-/**
- * The light of a pair of hands with an axe (see {@link HandPair}): the ring's light calling it, its three portals
- * and their flashes, and the light of what it does.
- */
 final class HandPairLight {
-    // How many ticks before its portal bursts open the ring's light shoots off to it.
     private static final double AXE_CALL = 5.0;
-    // When the side portals and the axe's portal are shut again (see shut).
     private static final double SIDES_SHUT = shut(false);
     private static final double AXE_SHUT = shut(true);
 
     private HandPairLight() {
     }
 
-    /**
-     * The light of what a pair does, {@code strength} strong (1, and less as it fades away when the pair breaks up):
-     * the snap, the OK sign, the grab, the streak of the chop, the blow and the thumbs up.
-     */
     static void lights(LanternPainter painter, int seed, Vec3 base, int variant, Vec3 aim, HandDuo duo,
             double clock, double scale, double strength) {
         snap(painter, duo, clock, scale, strength);
         double ok = strength * Ease.smooth((clock - HandDuo.OK + 1.5) / 2.5)
                 * (1.0 - Ease.smooth((clock - HandDuo.OK - 16.0) / 6.0));
         if (ok > 0.01) {
-            // The OK sign: a twinkle of light in its ring.
             twinkle(painter, duo.leftPlace.at(HandDuo.OK_AT), 0.8 * scale, ok, clock);
         }
         grab(painter, duo, clock, scale, strength);
@@ -46,16 +35,11 @@ final class HandPairLight {
         double thumbs = strength * Ease.smooth((clock - HandDuo.THUMBS + 1.0) / 2.5)
                 * (1.0 - Ease.smooth((clock - HandDuo.THUMBS - 11.0) / 5.0));
         if (thumbs > 0.01 && duo.handsThere) {
-            // The thumbs up: a twinkle of light at the tip of each thumb.
             twinkle(painter, thumbTip(duo.rightPose, duo.rightPlace, false), 0.9 * scale, thumbs, clock);
             twinkle(painter, thumbTip(duo.leftPose, duo.leftPlace, true), 0.9 * scale, thumbs, clock + 2.3);
         }
     }
 
-    /**
-     * The ring's light shooting off from the ring: to where the side portals burst open as the pair is called, and a
-     * little before the axe's portal bursts open, to it.
-     */
     static void calls(LanternPainter painter, HandDuo duo, double clock, Vec3 ring) {
         double arrives = HandDuo.ARRIVES;
         if (clock < arrives + 3.0) {
@@ -72,15 +56,6 @@ final class HandPairLight {
         }
     }
 
-    /**
-     * A portal of the ring's light, all of it light (see through it): a bright rim with arcs of light running round it,
-     * fainter arcs turning the other way inside it and a soft halo outside it, arms of light swirling into its middle,
-     * a green haze filling it (on both sides, over the solid lid of an arm cut off in it) with a soft glow in its middle,
-     * and sparks flung off its rim.
-     *
-     * @param spin ticks that turn it round
-     * @param keep how much of its size it keeps: 1, and less as it shrinks away when the pair breaks up
-     */
     static void portal(LanternPainter painter, HandDuo.Portal portal, int seed, double spin, double keep) {
         double full = portal.radius();
         double open = Math.max(0.0, portal.open() * keep);
@@ -99,7 +74,6 @@ final class HandPairLight {
                 Colors.alpha(0.3 * shown), Colors.alpha(0.25 * shown));
         arcs(painter, c, a, b, r, 3, 0.9, spin * 0.14 + seed, 0.2 * w, 0.9 * shown);
         arcs(painter, c, a, b, r * 0.82, 5, 0.5, -spin * 0.22 - seed, 0.09 * w, 0.6 * shown);
-        // Arms of light swirling into its middle.
         int arms = 5;
         int steps = 8;
         double turn = spin * 0.25 + seed * 1.7;
@@ -120,7 +94,6 @@ final class HandPairLight {
         painter.haze(c, a.scale(r * 0.95), n.scale(r * 0.22), b.scale(r * 0.95), painter.material().glow(),
                 0.28 * shown);
         painter.flare(c, r * 0.55, 0.3 * shown);
-        // Sparks flung off its rim the way it turns, each one flaring up and dying away again.
         for (int i = 0; i < 10; i++) {
             double period = 8.0 + 6.0 * Noise.of(seed, i, 1);
             double run = (spin + period * Noise.of(seed, i, 2)) / period;
@@ -135,7 +108,6 @@ final class HandPairLight {
         }
     }
 
-    /** Arcs of light running round a circle: {@code count} of them, each {@code length} radians long, tapering. */
     private static void arcs(LanternPainter painter, Vec3 c, Vec3 a, Vec3 b, double radius, int count, double length,
             double turn, double width, double strength) {
         int pieces = 5;
@@ -153,17 +125,12 @@ final class HandPairLight {
         }
     }
 
-    /** The flashes of the pair's three portals (see flashes), {@code strength} strong. */
     static void flashes(LanternPainter painter, HandDuo duo, double clock, double strength) {
         flashes(painter, duo.rightPortal, clock, HandDuo.ARRIVES, SIDES_SHUT, strength);
         flashes(painter, duo.leftPortal, clock, HandDuo.ARRIVES, SIDES_SHUT, strength);
         flashes(painter, duo.axePortal, clock, HandDuo.AXE_OPENS, AXE_SHUT, strength);
     }
 
-    /**
-     * The flashes of a portal: one as it bursts open, and a smaller one with a ring of light popping out of it as it
-     * snaps shut.
-     */
     static void flashes(LanternPainter painter, HandDuo.Portal portal, double clock, double opens,
             double shut, double strength) {
         double full = portal.radius();
@@ -181,10 +148,6 @@ final class HandPairLight {
         }
     }
 
-    /**
-     * When the portals of a pair are shut again, in ticks: the side portals once the hands have pulled back into them,
-     * the axe's portal once the axe's head is out of it. They open and shut alike wherever a pair is.
-     */
     private static double shut(boolean axe) {
         int variant = HandPose.axeVariant(new Vec3(0.0, 0.0, 1.0));
         double from = axe ? HandDuo.AXE_FREE : HandDuo.RETRACT;
@@ -197,7 +160,6 @@ final class HandPairLight {
         return axe ? HandDuo.AXE_FREE + 3.0 : HandDuo.HANDS_GONE;
     }
 
-    /** The snap: a sharp flash between the right hand's thumb and middle finger, a ring of light, sparks bursting. */
     private static void snap(LanternPainter painter, HandDuo duo, double clock, double scale, double strength) {
         double since = clock - HandDuo.SNAP;
         if (since < -0.4 || since > 8.0 || strength <= 0.01) {
@@ -224,7 +186,6 @@ final class HandPairLight {
         }
     }
 
-    /** The grab: a flash at each fist as it closes on the haft, and a ring of light running out round the haft. */
     private static void grab(LanternPainter painter, HandDuo duo, double clock, double scale, double strength) {
         double since = clock - HandDuo.GRAB;
         double flash = strength * Ease.smooth((since + 0.5) / 0.8) * (1.0 - Ease.smooth(since / 6.0));
@@ -241,10 +202,6 @@ final class HandPairLight {
         }
     }
 
-    /**
-     * The chop: a sheet of light behind the axe's blade over the last few ticks, from the middle of its head out to the
-     * middle of its edge, as bright as the blade is fast (so only the chop leaves one, not the slow raise).
-     */
     private static void chop(LanternPainter painter, Vec3 base, int variant, Vec3 aim, double clock, double scale,
             double strength) {
         double window = strength * Ease.smooth((clock - HandDuo.RAISED + 1.0) / 3.0)
@@ -257,7 +214,7 @@ final class HandPairLight {
         Vec3[] in = new Vec3[count];
         Vec3[] out = new Vec3[count];
         for (int k = 0; k < count; k++) {
-            // Only the axe of the pair as it was then: its hands need not be worked out for this.
+            // Uses the cheaper axe-only lookup; the hands aren't needed for this trail
             HandDuo.Axe past = HandDuo.axe(base, variant, aim, clock - k * step, scale);
             Vec3 head = past.end().add(past.up().scale(HandDuo.HEAD_AT * scale));
             in[k] = head.add(past.face().scale(HandDuo.HAFT_RADIUS * 1.5 * scale));
@@ -273,10 +230,6 @@ final class HandPairLight {
         }
     }
 
-    /**
-     * The blow: where the blade bites into the ground a big flare, four rings of light running out over the ground and
-     * cracks of light running out from it (the longest along the chop), glowing on faintly while the axe stays.
-     */
     private static void impact(LanternPainter painter, int seed, Vec3 base, int variant, Vec3 aim, double clock,
             double scale, double strength) {
         double since = clock - HandDuo.IMPACT;
@@ -304,7 +257,6 @@ final class HandPairLight {
         }
     }
 
-    /** A twinkle of light facing you: a soft flare, four long rays and four short ones turning the other way. */
     private static void twinkle(LanternPainter painter, Vec3 at, double size, double strength, double spin) {
         Vec3 view = painter.camera().subtract(at);
         if (view.lengthSqr() < 1.0E-6) {

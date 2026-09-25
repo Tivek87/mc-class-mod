@@ -7,9 +7,6 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import nl.tivek.multiversepowers.MultiversePowers;
 
-/**
- * Server tells the client which class this player has, so the client can show it.
- */
 public record ClassSyncPayload(String classId) implements CustomPacketPayload {
     public static final CustomPacketPayload.Type<ClassSyncPayload> TYPE = new CustomPacketPayload.Type<>(
             ResourceLocation.fromNamespaceAndPath(MultiversePowers.MODID, "class_sync"));

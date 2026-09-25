@@ -37,72 +37,25 @@ import nl.tivek.multiversepowers.engine.entity.HeldMobs;
 import nl.tivek.multiversepowers.engine.math.Vectors;
 import nl.tivek.multiversepowers.engine.world.LoadedWorld;
 
-/**
- * Giant Hands: Green Lantern waves his ring hand, and at every wave the ring's light shoots off to a creature out to
- * hurt him somewhere round him (within {@code radiusBlocks} every way, picked at random), and a giant hand of hard light
- * rises up out of the ground there in a cloud of dust. {@code hands} of them at every press (one by default), one after
- * another, never more than three up at once and the next only once the one before is halfway through, each doing one
- * of these to its creature, never what the one before it did, not even the last one of his press before (see
- * {@link HandPose}):
- * <ul>
- * <li>a smack: its open palm sweeps through the creature and swats it away (the ability's damage);</li>
- * <li>a grab: it closes its fingers on the creature, lifts it high and throws it away (0.6 of the damage);</li>
- * <li>the middle finger: it shoots up out of the ground right at the creature and launches it and everything round it
- * far away and high (2.5 of the damage), and then jabs the finger at it;</li>
- * <li>a slam: it slaps its open palm down flat on the creature and presses it flat against the ground (1.3 of the
- * damage, and slowed down a while);</li>
- * <li>a pound: it pounds the flat side of its fist down three times (0.55 of the damage every time);</li>
- * <li>a pair with an axe (see {@link HandDuo}): two portals of the ring's light burst open beyond the creature, and a
- * right hand (with the ring) and a left hand push out of them; the right snaps its fingers, the left makes the OK sign,
- * they roll round each other and a third portal lets out a giant axe of hard light; they grab it with both hands, heave
- * it up over the top and chop it down onto the creature (3 times the damage in the middle of the blow, half that at
- * its edge, and everything there flung far away and up), leave it stuck in the ground, give him a thumbs up and pull
- * back into their portals, and the axe breaks into pieces. It counts as one hand but comes alone (only while no other
- * hand is up, and none comes while it is), and only where there is room for it.</li>
- * </ul>
- * A hand stays where it came up, but turns after the creature nearest to it and reaches for that one, smoothly, as a
- * thing this big turns (a pair's axe only strikes a few blocks round where it was called). Whatever a hand hits flies
- * away from Green Lantern. Players are only struck where players may fight each other; his own pets, villagers and
- * animals never. Every hand sinks back into the ground when it is done (a pair pulls back into its portals); if he
- * stops being Green Lantern they break apart.
- */
 public final class GiantHands implements Effect {
-    /** How big the hands are, next to the size they are made at (see {@link HandPose}). */
     public static final double SCALE = 1.0;
-    /**
-     * How long his ring arm waves at every hand he calls, up and out and down again, in ticks: his ring hand does
-     * nothing else meanwhile, and the next hand only comes once it is down (his arm as it is drawn keeps to it too).
-     */
     public static final int WAVE_TICKS = 18;
-    // How many hands may be up at once, how far through its life the newest must be before the next is called, and how
-    // many creatures it tries in a tick to find one a hand can come up at.
     private static final int AT_ONCE = 3;
     private static final double NEXT_AFTER = 0.5;
     private static final int TRIES = 8;
-    // The biggest creature a hand can close its fingers round.
     static final double GRAB_WIDE = 2.0;
     static final double GRAB_TALL = 3.2;
-    // How often each move is picked, next to each other: smack, grab, middle finger, slam, pound, a pair with an axe.
     private static final int[] CHANCE = { 25, 22, 12, 22, 19, 24 };
-    // The ways a pair is laid out, turned from the way from him to its creature, tried in turn until one has room.
     private static final double[] PAIR_TURNS = { 0.0, Math.PI * 0.5, -Math.PI * 0.5, Math.PI };
-    // While no creature left is over ground a hand can come up out of (all thrown up in the air by the blows, or over a
-    // drop), how long the hands still to come wait for one to come down before no more come, and how often they look
-    // again meanwhile, in ticks.
     private static final int WAIT_TICKS = 80;
     private static final int LOOK_AGAIN = 5;
-    // How much of the way a blow flings a creature must at least lead away from him (1: straight away from him), so
-    // nothing a hand hits ever flies back at him.
     private static final double LEAST_AWAY = 0.3;
 
     private static final Map<UUID, GiantHands> ACTIVE = new HashMap<>();
-    // What the hand each player called last did, so the next never does it again, not even at his next press.
     private static final Map<UUID, Integer> LAST_MOVES = new HashMap<>();
-    // The creatures a hand holds right now, by entity id.
     static final Map<Integer, GiantHand> GRABBED = new HashMap<>();
 
     static {
-        // What a hand holds counts as held for every other power too.
         HeldMobs.addHolder(entity -> GRABBED.containsKey(entity.getId()));
     }
 
@@ -110,15 +63,11 @@ public final class GiantHands implements Effect {
     final CharacterAbility ability;
     private final List<GiantHand> hands = new ArrayList<>();
     private final List<LivingEntity> targets;
-    // The creatures no hand could come up at since the last one came (in the air, over a drop): tried again only once
-    // every other creature has had its turn (and when every one is, again a little later; see WAIT_TICKS).
     private final Set<LivingEntity> missed = new HashSet<>();
     private final int count;
     private int called;
-    // How many ticks the next hand has been waiting for a creature it can come up at.
     private int waited;
     private int lastMove;
-    // The hand he called last: his arm waves for it.
     @Nullable
     private GiantHand latest;
 
@@ -130,12 +79,6 @@ public final class GiantHands implements Effect {
         this.lastMove = LAST_MOVES.getOrDefault(owner.getUUID(), -1);
     }
 
-    /**
-     * The key: he waves his ring hand and the hands come, as long as the ring is free, can pay for it and there is a
-     * creature out to hurt him within reach that a hand can come up at (not only ones in the air or over a drop).
-     *
-     * @return true when it began
-     */
     public static boolean use(ServerPlayer owner, ServerLevel level, CharacterAbility ability) {
         if (ACTIVE.containsKey(owner.getUUID())) {
             return false;
@@ -169,14 +112,11 @@ public final class GiantHands implements Effect {
         }
         Collections.shuffle(found, new Random(owner.getRandom().nextLong()));
         GiantHands storm = new GiantHands(owner, ability, found);
-        // The first hand comes right away; where none can come up at any of them, nothing is spent.
         if (!storm.call(level, Integer.MAX_VALUE)) {
             PowerRing.tell(owner, "hands_none");
             return false;
         }
         PowerRing.setPower(owner, power - cost);
-        // The ring hand waves: the beam it pours out stops.
-        LightBeam.stop(owner);
         ACTIVE.put(owner.getUUID(), storm);
         Effects.start(level, storm);
         PowerRing.tell(owner, "hands");
@@ -185,13 +125,11 @@ public final class GiantHands implements Effect {
         return true;
     }
 
-    /** True while this player waves his ring hand to call a hand: the ring hand does nothing else meanwhile. */
     static boolean waving(ServerPlayer player) {
         GiantHands storm = ACTIVE.get(player.getUUID());
         return storm != null && storm.latest != null && storm.latest.t < WAVE_TICKS;
     }
 
-    /** The server stops: every creature a hand holds is let go (the mobs get their own will back). */
     public static void clear() {
         for (GiantHands storm : ACTIVE.values()) {
             for (GiantHand hand : storm.hands) {
@@ -203,10 +141,6 @@ public final class GiantHands implements Effect {
         GRABBED.clear();
     }
 
-    /**
-     * Who a hand may strike: a creature that is out to hurt him (a monster, or anything that has him as its target), or
-     * a player he may fight. Never his own pets, villagers or animals.
-     */
     static boolean fair(ServerPlayer owner, LivingEntity living) {
         if (!PowerRing.canHit(owner, living) || living instanceof OwnableEntity pet && pet.getOwner() == owner) {
             return false;
@@ -224,18 +158,14 @@ public final class GiantHands implements Effect {
             return false;
         }
         boolean fuels = PowerRing.fuels(this.owner, level);
-        // While his ring fist is up calling an air strike's plane, the next hand waits.
         if (fuels && this.called < this.count && !AirStrike.calling(this.owner) && this.ready()) {
             int before = this.called;
             boolean more = this.call(level, TRIES);
             if (this.called > before) {
                 this.waited = 0;
             } else if (++this.waited > WAIT_TICKS || !more && this.targets.isEmpty()) {
-                // Nothing a hand could come up at for so long, or no creature left at all: no more hands come.
                 this.called = this.count;
             } else if (!more && this.waited % LOOK_AGAIN == 0) {
-                // Every creature left is in the air (thrown up by a blow) or over a drop: once in a while they all
-                // get another turn, as they may have come down again.
                 this.missed.clear();
             }
         }
@@ -247,10 +177,6 @@ public final class GiantHands implements Effect {
         return true;
     }
 
-    /**
-     * True when the next hand may be called: fewer than {@link #AT_ONCE} are up and no pair (it is up alone), and the
-     * one called last is halfway through what it does, and his arm is down from waving at it.
-     */
     private boolean ready() {
         if (this.hands.size() >= AT_ONCE || this.hands.stream().anyMatch(hand -> hand.move == HandPose.AXE)) {
             return false;
@@ -259,26 +185,16 @@ public final class GiantHands implements Effect {
         return newest == null || newest.t >= Math.max(WAVE_TICKS, HandPose.life(newest.variant) * NEXT_AFTER);
     }
 
-    /** True when the next call may be a pair: it comes alone, only while no other hand is up. */
     private boolean pairFits() {
         return this.hands.isEmpty();
     }
 
-    /**
-     * He waves his ring hand towards the next creature, and a hand comes up there. Creatures no hand is busy with go
-     * first, so the hands are shared out; one no hand can come up at (in the air, over a drop) is passed over until
-     * every other one has had its turn.
-     *
-     * @param tries how many creatures it may try this time
-     * @return false when no hand came and there is no creature left to try: none can come up any more
-     */
     private boolean call(ServerLevel level, int tries) {
         double reach = this.ability.value("radiusBlocks");
         this.targets.removeIf(living -> !living.isAlive() || living.level() != level
                 || !fair(this.owner, living) || Math.abs(living.getX() - this.owner.getX()) > reach + 4.0
                 || Math.abs(living.getY() - this.owner.getY()) > reach + 4.0
                 || Math.abs(living.getZ() - this.owner.getZ()) > reach + 4.0);
-        // Creatures that came within reach since, or turned on him, get their turn too.
         for (LivingEntity living : level.getEntitiesOfClass(LivingEntity.class,
                 this.owner.getBoundingBox().inflate(reach), entity -> fair(this.owner, entity))) {
             if (!this.targets.contains(living)) {
@@ -286,7 +202,6 @@ public final class GiantHands implements Effect {
             }
         }
         this.missed.retainAll(this.targets);
-        // The ones no hand is busy with first, then the others, each in the order of their turns.
         List<LivingEntity> turns = new ArrayList<>();
         for (boolean free : new boolean[] { true, false }) {
             for (LivingEntity living : this.targets) {
@@ -297,13 +212,11 @@ public final class GiantHands implements Effect {
             }
         }
         for (LivingEntity target : turns.subList(0, Math.min(tries, turns.size()))) {
-            // The next time it comes last, so every creature has a turn.
             this.targets.remove(target);
             this.targets.add(target);
             int move = this.pick(target, this.pairFits());
             GiantHand hand = this.spawn(level, target, move);
             if (hand == null && move == HandPose.AXE) {
-                // No room for a pair there: a hand of its own instead.
                 move = this.pick(target, false);
                 hand = this.spawn(level, target, move);
             }
@@ -324,10 +237,6 @@ public final class GiantHands implements Effect {
         return turns.size() > tries;
     }
 
-    /**
-     * What the hand does to this creature: one of the moves at random, never the one before it twice in a row, and a
-     * pair only when {@code pair}.
-     */
     private int pick(LivingEntity target, boolean pair) {
         RandomSource random = this.owner.getRandom();
         boolean grabbable = target.getBbWidth() <= GRAB_WIDE && target.getBbHeight() <= GRAB_TALL
@@ -351,15 +260,10 @@ public final class GiantHands implements Effect {
         return HandPose.SMACK;
     }
 
-    /** True when this move may be picked: not the one before, a grab only for what fits in a fist, a pair if it may. */
     private boolean may(int move, boolean grabbable, boolean pair) {
         return move != this.lastMove && (move != HandPose.GRAB || grabbable) && (move != HandPose.AXE || pair);
     }
 
-    /**
-     * A hand for this creature: it comes up out of the ground so that what it does sends the creature away from him,
-     * on the ground under where it should come up (the other way round when a wall is in the way there).
-     */
     @Nullable
     private GiantHand spawn(ServerLevel level, LivingEntity target, int move) {
         Vec3 away = new Vec3(target.getX() - this.owner.getX(), 0.0, target.getZ() - this.owner.getZ());
@@ -373,13 +277,11 @@ public final class GiantHands implements Effect {
             Vec3 reach = away;
             int variant = move;
             if (move == HandPose.SMACK) {
-                // Beside it, sweeping its palm through it the way away from him.
                 reach = Vectors.spin(away, Vectors.UP, side * Math.PI * 0.5);
                 Vec3 right = reach.cross(Vectors.UP);
                 variant = right.dot(away) > 0.0 ? move : move + HandPose.MOVES;
             }
             if (attempt > 0) {
-                // A wall where it should come up: try the other side, then the ones across.
                 reach = Vectors.spin(reach, Vectors.UP, Math.PI * (attempt == 1 ? 1.0 : attempt == 2 ? 0.5 : -0.5));
                 if (move == HandPose.SMACK) {
                     Vec3 right = reach.cross(Vectors.UP);
@@ -395,10 +297,6 @@ public final class GiantHands implements Effect {
         return null;
     }
 
-    /**
-     * The top of the ground at this spot, near the height of the creature: null where it is solid all the way (inside a
-     * wall) or there is no ground at all.
-     */
     @Nullable
     private Vec3 ground(ServerLevel level, Vec3 spot, double near) {
         Vec3 from = new Vec3(spot.x, near + 3.0, spot.z);
@@ -406,7 +304,6 @@ public final class GiantHands implements Effect {
             return null;
         }
         if (solid(level, from)) {
-            // Under a low roof: look from just over the creature's feet instead.
             from = new Vec3(spot.x, near + 1.2, spot.z);
             if (solid(level, from)) {
                 return null;
@@ -422,11 +319,6 @@ public final class GiantHands implements Effect {
         return !level.getBlockState(pos).getCollisionShape(level, pos).isEmpty();
     }
 
-    /**
-     * A pair of hands with an axe for this creature: on the ground under it, laid out beyond it and facing him (the
-     * flat way from him to it is {@code away}), or turned a quarter one way, the other or half round when there is no
-     * room that way. Null when there is no room for it at all.
-     */
     @Nullable
     private GiantHand pairFor(ServerLevel level, LivingEntity target, Vec3 away) {
         Vec3 base = this.ground(level, target.position(), target.getY());
@@ -443,11 +335,6 @@ public final class GiantHands implements Effect {
         return null;
     }
 
-    /**
-     * True when a pair laid out this way has room: its three portals, both its wrists and the axe's head are all in the
-     * open as it comes out, grabs the axe, draws it free, holds it up and chops. Ground that is not loaded counts as no
-     * room: it is never loaded to look.
-     */
     private static boolean room(ServerLevel level, Vec3 base, int variant, Vec3 aim) {
         for (int t : new int[] { HandDuo.OUT, HandDuo.GRAB, HandDuo.AXE_FREE, HandDuo.RAISED, HandDuo.IMPACT }) {
             HandDuo duo = HandDuo.at(base, variant, aim, t, SCALE);
@@ -464,7 +351,6 @@ public final class GiantHands implements Effect {
         return true;
     }
 
-    /** True when this spot is loaded and nothing solid is there (over the top of the world counts as open). */
     private static boolean open(ServerLevel level, Vec3 at) {
         BlockPos pos = BlockPos.containing(at);
         if (pos.getY() >= level.getMaxBuildHeight()) {
@@ -473,12 +359,10 @@ public final class GiantHands implements Effect {
         return level.isLoaded(pos) && level.getBlockState(pos).getCollisionShape(level, pos).isEmpty();
     }
 
-    /** The middle of a pair's axe head, along its haft. */
     static Vec3 head(HandDuo duo) {
         return duo.axeEnd.add(duo.axeUp.scale(HandDuo.HEAD_AT * SCALE));
     }
 
-    /** A spot kept within the reach of a pair's axe round where the pair was called (flat): the axe strikes there. */
     static Vec3 inReach(Vec3 base, Vec3 spot) {
         double dx = spot.x - base.x;
         double dz = spot.z - base.z;
@@ -487,12 +371,6 @@ public final class GiantHands implements Effect {
         return flat <= reach ? spot : new Vec3(base.x + dx * reach / flat, spot.y, base.z + dz * reach / flat);
     }
 
-    /**
-     * The flat way a blow along {@code way} (flat, one long, or none) flings this creature: that way as far as it can,
-     * but never back towards him. A hand that turned after its creature may swat or throw towards him; then the way is
-     * tipped out away from him just enough that at least {@link #LEAST_AWAY} of it leads away (a blow straight at him,
-     * or one with no way of its own, flings it straight away from him).
-     */
     Vec3 awayFromHim(LivingEntity living, Vec3 way) {
         Vec3 off = new Vec3(living.getX() - this.owner.getX(), 0.0, living.getZ() - this.owner.getZ());
         if (off.lengthSqr() < 1.0E-4) {

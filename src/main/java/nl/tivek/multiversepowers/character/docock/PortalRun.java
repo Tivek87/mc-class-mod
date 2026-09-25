@@ -12,23 +12,13 @@ import nl.tivek.multiversepowers.engine.entity.HeldMobs;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 import nl.tivek.multiversepowers.engine.math.Ease;
 
-/**
- * The Portal ability of the Octopus Arms. One of your tentacles reaches into a portal that opens in
- * front of you, comes out of a second portal near the creature you aim at, chases it down, grabs it,
- * hauls it back through, and slams it out of a third portal high in the sky into the ground. Then it
- * comes back through the portals. Your other tentacles keep doing their own thing the whole time.
- */
 final class PortalRun extends PortalPlacing {
-    /** How far you may aim to start the ability. */
     static final double RANGE = 24.0;
 
     PortalRun(ServerPlayer caster, LivingEntity target) {
         super(caster, target);
     }
 
-    // ---- What the rig asks ----
-
-    /** Where the tentacle on the back should have its tip this tick. */
     Vec3 tip() {
         if (this.dived) {
             return this.portalA;
@@ -40,10 +30,6 @@ final class PortalRun extends PortalPlacing {
         return this.diveFrom.lerp(this.portalA, reach);
     }
 
-    /**
-     * Before the dive the tentacle hangs over your shoulder and looks around, swinging slowly from
-     * side to side, and steadies itself while the spike and the thrusters come out.
-     */
     private Vec3 searchPose() {
         Vec3 eye = this.caster.getEyePosition();
         Vec3 forward = RobotArm.forward(this.caster);
@@ -55,17 +41,14 @@ final class PortalRun extends PortalPlacing {
                 .add(0, 0.85 + 0.25 * Math.cos(t * 1.7) * calm, 0);
     }
 
-    /** How far the sharp point between the three claws is out (0 .. 1). */
     double spike() {
         return this.spike;
     }
 
-    /** How far the thrusters are out and burning (0 .. 1). */
     double thrust() {
         return this.thrust;
     }
 
-    /** How much tentacle lies beyond the portal, so its segments keep sliding along. */
     double tipOffset() {
         return this.dived ? Math.max(0.0, this.shown - PORTAL_DEPTH) : 0.0;
     }
@@ -74,13 +57,11 @@ final class PortalRun extends PortalPlacing {
         return this.tipOffset() > 0.01 ? -1.0 : this.clawOpen;
     }
 
-    /** The near part is cut off at portal A, so nothing pokes out the other side. */
     Vec3 clipPoint() {
         return this.portalA;
     }
 
     Vec3 clipNormal() {
-        // Only once the tentacle is really going into the portal is it cut off at the ring.
         return this.phase.ordinal() < Phase.DIVE.ordinal() ? Vec3.ZERO : this.look;
     }
 
@@ -88,27 +69,18 @@ final class PortalRun extends PortalPlacing {
         return this.phase == Phase.CLOSE && !this.gateA.isOpen() && !this.gateB.isOpen() && !this.gateC.isOpen();
     }
 
-    /** True once the tentacle is really on its way: its tip is then placed exactly, not glided. */
     boolean snap() {
         return this.phase.ordinal() >= Phase.DIVE.ordinal();
     }
 
-    /** True while the tentacle is still out in the world (it may not go back to resting yet). */
     boolean busy() {
         return this.phase != Phase.CLOSE;
     }
 
-    /** True while the claw has this creature. */
     boolean holds(Entity entity) {
         return this.held && this.target == entity;
     }
 
-    // ---- Ticking ----
-
-    /**
-     * @param armTip where the rig currently draws the tip of the tentacle doing this run
-     * @return false when everything is finished and cleaned up
-     */
     boolean tick(ServerLevel level, Vec3 armTip) {
         if (this.caster.isRemoved() || !this.caster.isAlive() || this.caster.level() != level) {
             this.finish(level);
@@ -139,7 +111,6 @@ final class PortalRun extends PortalPlacing {
         return true;
     }
 
-    /** Everything of this run gone at once (the arms are folding in). */
     void stop(ServerLevel level) {
         this.finish(level);
     }
@@ -157,12 +128,6 @@ final class PortalRun extends PortalPlacing {
         this.gateC.remove(level);
     }
 
-    // ---- Phases ----
-
-    /**
-     * One tentacle stops what it was doing and searches: the claw swings around, the eye scans, and
-     * the first portal starts building itself in front of you.
-     */
     private boolean search(ServerLevel level) {
         if (this.phaseAge == 0) {
             this.portalA = spotInFront(this.caster, this.look);
@@ -184,7 +149,6 @@ final class PortalRun extends PortalPlacing {
         return true;
     }
 
-    /** The sharp point slides out of the middle of the claw, between the three fingers. */
     private boolean spikeOut(ServerLevel level) {
         if (!this.targetValid(level)) {
             return this.cancel();
@@ -206,7 +170,6 @@ final class PortalRun extends PortalPlacing {
         return true;
     }
 
-    /** The thrusters fold out of the tentacle and light up; then it dives, boosting. */
     private boolean thrustersOut(ServerLevel level, Vec3 armTip) {
         if (!this.targetValid(level)) {
             return this.cancel();
@@ -223,7 +186,6 @@ final class PortalRun extends PortalPlacing {
                 sound(level, at, SoundEvents.BLAZE_SHOOT, 0.5F, 1.4F);
             }
         }
-        // Only really go once the thrusters burn and both portals stand open.
         if (this.phaseAge + 1 >= THRUST_TIME && this.gateA.ready() && this.gateB.ready()) {
             this.thrust = 1.0;
             this.diveFrom = armTip;
@@ -237,7 +199,6 @@ final class PortalRun extends PortalPlacing {
         return true;
     }
 
-    /** The tentacle shoots into the portal, faster and faster, and comes out of the second one. */
     private boolean dive(ServerLevel level) {
         if (!this.targetValid(level)) {
             return this.cancel();
@@ -262,10 +223,6 @@ final class PortalRun extends PortalPlacing {
         return true;
     }
 
-    /**
-     * Out of the second portal, curving after the creature wherever it runs. It only hunts within its
-     * own range (config: homingRangeBlocks, 30 by default); further than that it gives up and returns.
-     */
     private boolean hunt(ServerLevel level) {
         double homing = OctoRig.ability("portal").value("homingRangeBlocks");
         if (!this.targetValid(level) || this.phaseAge > MAX_HUNT || this.shown > MAX_TRAIL
@@ -277,8 +234,6 @@ final class PortalRun extends PortalPlacing {
         Vec3 toGoal = goal.subtract(tip);
         double distance = toGoal.length();
         Vec3 wanted = this.phaseAge < 3 || distance < 1.0E-4 ? this.gateB.normal : toGoal.scale(1.0 / distance);
-        // The nearer it gets, the harder it turns. With one steady turning speed it sails past the
-        // creature and then circles round it for ever without ever closing in.
         double steer = Math.min(1.0, Math.max(STEERING, STEERING + (1.0 - STEERING) * (1.0 - distance / 6.0)));
         this.velocity = this.velocity.scale(1.0 - steer).add(wanted.scale(steer)).normalize();
         Vec3 next = tip.add(this.velocity.scale(Math.min(HUNT_SPEED, Math.max(distance, 0.2))));
@@ -287,8 +242,6 @@ final class PortalRun extends PortalPlacing {
         if (this.phaseAge % 5 == 0) {
             sound(level, next, SoundEvents.CHAIN_STEP, 0.8F, 0.7F);
         }
-        // One step can take the claw straight past a small creature, so anything it passes within a
-        // step of counts as caught.
         if (next.distanceTo(goal) <= Math.max(HUNT_SPEED, this.target.getBbWidth() * 0.7 + 0.6)) {
             return this.grab(level);
         }
@@ -296,8 +249,6 @@ final class PortalRun extends PortalPlacing {
     }
 
     private boolean grab(ServerLevel level) {
-        // Something else (a tentacle, another power) may have caught it during the hunt: a creature or a
-        // player is only ever held once.
         if (HeldMobs.isHeldByAnyone(this.target) || (this.target instanceof Mob mob && !HeldMobs.hold(mob))) {
             return this.cancel();
         }
@@ -310,7 +261,6 @@ final class PortalRun extends PortalPlacing {
         return true;
     }
 
-    /** The claw closes around it. */
     private boolean grip(ServerLevel level) {
         if (!this.targetValid(level)) {
             return this.cancel();
@@ -331,7 +281,6 @@ final class PortalRun extends PortalPlacing {
         return true;
     }
 
-    /** Hauled back along its own track into the portal. */
     private boolean drag(ServerLevel level) {
         if (!this.targetValid(level) || this.phaseAge > MAX_DRAG) {
             return this.cancel();
@@ -356,8 +305,6 @@ final class PortalRun extends PortalPlacing {
         this.trail.add(c.add(0, PORTAL_DEPTH, 0));
         this.trail.add(new Vec3(c.x, this.groundC - 2.0, c.z));
         this.shown = PORTAL_DEPTH;
-        // Through the portal is the one real jump of the whole trick, so it is a hard teleport with a
-        // flash on both sides. Everything after it slides.
         this.placeTarget(c, true);
         ParticleFx.at(level, ParticleTypes.FLASH, this.gateB.center);
         ParticleFx.sphereOut(level, ParticleTypes.ELECTRIC_SPARK, this.gateB.center, 24, 0.4);
@@ -367,14 +314,12 @@ final class PortalRun extends PortalPlacing {
         this.next(Phase.SLAM);
     }
 
-    /** Straight down out of the sky portal, faster and faster, into the ground. */
     private boolean slam(ServerLevel level) {
         if (!this.targetValid(level)) {
             return this.cancel();
         }
         this.thrust = 1.0;
         if (this.phaseAge < SLAM_WAIT) {
-            // Hanging out of the sky portal for a moment, thrusters howling, before it fires down.
             this.placeTarget(this.farTip());
             Vec3 at = this.farTip();
             ParticleFx.cloud(level, ParticleTypes.FLAME, at, 3, 0.2, 0.04);
@@ -400,7 +345,6 @@ final class PortalRun extends PortalPlacing {
         return true;
     }
 
-    /** Slowly back into the portal it came out of; the thrusters die down and the point slides in. */
     private boolean retractOut(ServerLevel level) {
         this.clawOpen += (CLAW_OPEN - this.clawOpen) * 0.1;
         this.thrust = Math.max(0.0, this.thrust - 0.06);
@@ -418,7 +362,6 @@ final class PortalRun extends PortalPlacing {
         return true;
     }
 
-    /** Back out of the first portal; the tentacle is free again and goes back to its own work. */
     private boolean retractBack() {
         this.dived = false;
         this.thrust = Math.max(0.0, this.thrust - 0.08);

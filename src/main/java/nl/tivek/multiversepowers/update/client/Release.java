@@ -11,17 +11,13 @@ import java.util.List;
 import java.util.Locale;
 import javax.annotation.Nullable;
 
-/** One release of the mod on GitHub: its version, when it came out, its notes and the jar to download. */
 record Release(String version, Instant published, String notes, @Nullable Asset jar) {
-    /** Only jars from the mod's own release page are ever downloaded. */
     static final String DOWNLOAD_PREFIX = "https://github.com/" + UpdateChecker.REPO + "/releases/download/";
     private static final String JAR_PREFIX = "multiverse-powers-";
 
-    /** The jar of a release, with the SHA-256 checksum GitHub worked out for it. */
     record Asset(String name, URI url, long size, String sha256) {
     }
 
-    /** Every full release in a GitHub release list (drafts and pre-releases left out). */
     static List<Release> parseList(String json) {
         List<Release> releases = new ArrayList<>();
         JsonArray array = JsonParser.parseString(json).getAsJsonArray();
@@ -49,6 +45,7 @@ record Release(String version, Instant published, String notes, @Nullable Asset 
             String name = text(asset, "name");
             String url = text(asset, "browser_download_url");
             String digest = text(asset, "digest");
+            // Only accept a jar actually hosted on this mod's own release page.
             if (name != null && name.startsWith(JAR_PREFIX) && name.endsWith(".jar") && !name.contains("/")
                     && url != null && url.startsWith(DOWNLOAD_PREFIX)
                     && digest != null && digest.startsWith("sha256:")) {
@@ -72,10 +69,7 @@ record Release(String version, Instant published, String notes, @Nullable Asset 
         return tag.startsWith("v") || tag.startsWith("V") ? tag.substring(1) : tag;
     }
 
-    /**
-     * Which version is newer: below 0 when {@code a} is older, above 0 when newer. The numbers count ("0.0.10" is
-     * past "0.0.9"); with the same numbers a version without a suffix is past one with ("1.0.0" after "1.0.0-alpha").
-     */
+    // Numbers compare as numbers; no suffix beats any suffix (release > pre-release).
     static int compare(String a, String b) {
         String[] partsA = split(stripV(a));
         String[] partsB = split(stripV(b));

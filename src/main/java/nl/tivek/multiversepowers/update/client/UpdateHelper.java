@@ -12,14 +12,6 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
-/**
- * A small program of its own, started by {@link UpdateInstaller} from a copy of the mod's jar. It waits until the game
- * has closed (a running game keeps its jar locked), then puts the new jar in the mods folder in place of the old one
- * and, when the player chose "restart now", starts the game again. Only plain Java: no Minecraft in this process.
- *
- * <p>Arguments: the game's process id and the update folder. What to do it reads from the plan file in that folder
- * only once the game is gone, so the game can still change its mind (a newer version, "restart now" after "later").
- */
 public final class UpdateHelper {
     static final String PLAN = "plan.properties";
     static final String RELAUNCH = "relaunch.args";
@@ -57,8 +49,8 @@ public final class UpdateHelper {
         Files.deleteIfExists(relaunch);
     }
 
-    /** New jar in first, then the old one out; if the old one stays locked, the new one goes again, never both. */
     private static boolean swap(Path folder, Path oldJar, Path newJar, Path target) throws InterruptedException {
+        // New jar in first, old one out after: never end up with neither installed.
         if (!retry(folder, "put the new jar in place", () -> Files.move(newJar, target, StandardCopyOption.REPLACE_EXISTING))) {
             return false;
         }
@@ -78,7 +70,7 @@ public final class UpdateHelper {
                     .redirectError(ProcessBuilder.Redirect.DISCARD)
                     .start();
             log(folder, "started the game again (process " + game.pid() + ")");
-            // Java reads the argument file at its start; wait a little before it is removed, and see it keeps running.
+            // Wait a bit so the new process can read the argument file before it's deleted.
             if (game.waitFor(60, TimeUnit.SECONDS)) {
                 log(folder, "the restarted game closed after less than a minute, exit code " + game.exitValue());
             }
@@ -111,7 +103,6 @@ public final class UpdateHelper {
             Files.writeString(folder.resolve(LOG), LocalDateTime.now() + " " + line + System.lineSeparator(),
                     StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.APPEND);
         } catch (IOException ignored) {
-            // Nowhere else to report to.
         }
     }
 }

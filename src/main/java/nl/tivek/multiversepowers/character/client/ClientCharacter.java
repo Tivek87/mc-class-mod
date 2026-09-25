@@ -29,33 +29,23 @@ import nl.tivek.multiversepowers.character.Characters;
 import nl.tivek.multiversepowers.character.GameCharacter;
 import nl.tivek.multiversepowers.character.docock.client.ClimbControl;
 import nl.tivek.multiversepowers.character.docock.client.TentacleLegs;
+import nl.tivek.multiversepowers.character.greenlantern.RingPayload;
+import nl.tivek.multiversepowers.character.greenlantern.ability.Flight;
 import nl.tivek.multiversepowers.character.greenlantern.ability.SwordMove;
+import nl.tivek.multiversepowers.character.greenlantern.client.ClientConstructs;
 import nl.tivek.multiversepowers.character.greenlantern.client.ClientRing;
 import nl.tivek.multiversepowers.character.greenlantern.client.ConstructChoice;
+import nl.tivek.multiversepowers.character.greenlantern.client.body.CallArm;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.SwordArms;
 import nl.tivek.multiversepowers.character.greenlantern.client.hud.ConstructHud;
 import nl.tivek.multiversepowers.character.greenlantern.client.hud.ConstructWheel;
 import nl.tivek.multiversepowers.character.greenlantern.client.hud.ConstructWheelScreen;
 import nl.tivek.multiversepowers.stamina.client.StaminaClient;
 
-/**
- * The client side of being a character:
- * <ul>
- * <li>it sends the ability keys to the server (the same keys for everyone, see AbilitySlot) and keeps
- * the keys you hold down going;</li>
- * <li>while tentacles carry you, you stand in the air on them: they step over everything up to a
- * block high and they catch your falls;</li>
- * <li>Wall Climb (see ClimbControl);</li>
- * <li>Dash, Block and climbing spend stamina;</li>
- * <li>it shows who you are and your abilities with their keys and cooldowns, bottom right.</li>
- * </ul>
- */
 @EventBusSubscriber(modid = MultiversePowers.MODID, value = Dist.CLIENT)
 public final class ClientCharacter {
     private static final ResourceLocation LAYER_ID = ResourceLocation.fromNamespaceAndPath(MultiversePowers.MODID,
             "character_abilities");
-    // Settings an ability may have that this side needs: stamina is spent on the client, and an ability that
-    // costs ring power is not even started on a ring that is too low (the ability that recharges it is named).
     private static final String STAMINA_COST = "staminaCost";
     private static final String STAMINA_PER_TICK = "staminaPerTick";
     private static final String POWER_COST = "powerCost";
@@ -71,18 +61,12 @@ public final class ClientCharacter {
     private static GameCharacter character;
     private static int ultimate;
     private static int legs;
-    // How many creatures are marked for Doctor Octopus's Ground Strike.
     private static int marked;
     private static final int[] COOLDOWNS = new int[AbilitySlot.values().length];
-    // Which keys you hold down right now, so a start and a stop are sent exactly once.
     private static final boolean[] HELD = new boolean[AbilitySlot.values().length];
-    // Client ticks counted while the game runs (not paused), and the one on which the quick version of each mouse
-    // ability was last sent to the server, or MIN_VALUE.
     private static int clock;
     private static final int[] TAPPED = never(AbilitySlot.values().length);
     private static boolean climbing;
-    // With the sword and shield: how many ticks the defend button has been down (-1 while it is up), and whether this
-    // press ended a charge. Held this long, the shield comes up to block; let go sooner, and it was a click: a charge.
     private static final int BLOCK_AFTER = 5;
     private static int defendDown = -1;
     private static boolean endedCharge;
@@ -96,7 +80,6 @@ public final class ClientCharacter {
         return ticks;
     }
 
-    /** The server tells this client who they are and how their abilities stand. */
     public static void set(CharacterStatePayload payload) {
         GameCharacter[] all = GameCharacter.values();
         GameCharacter before = character;
@@ -107,8 +90,6 @@ public final class ClientCharacter {
         for (int i = 0; i < COOLDOWNS.length; i++) {
             COOLDOWNS[i] = i < payload.cooldowns().length ? payload.cooldowns()[i] : 0;
         }
-        // Turning into someone else starts with empty hands: keys you were holding down are forgotten,
-        // so the new character's own ability starts fresh when you keep the key down.
         if (character != before) {
             Arrays.fill(HELD, false);
             Arrays.fill(TAPPED, Integer.MIN_VALUE);
@@ -120,17 +101,11 @@ public final class ClientCharacter {
         }
     }
 
-    /** Who this client is right now, or null when they are just themselves. */
     @Nullable
     public static GameCharacter active() {
         return character;
     }
 
-    /**
-     * How many ticks ago you last sent the quick version of this mouse ability to the server (with the part of a tick),
-     * or -1 when you did not lately: what your own arm does for it can start the moment you click, a round trip before
-     * the server's answer comes back.
-     */
     public static float sinceTap(@Nullable CharacterAbility ability, float partialTick) {
         if (ability == null || TAPPED[ability.slot().ordinal()] == Integer.MIN_VALUE) {
             return -1.0F;
@@ -138,7 +113,6 @@ public final class ClientCharacter {
         return clock - TAPPED[ability.slot().ordinal()] + partialTick;
     }
 
-    /** True while tentacles (or whatever the character walks on) carry the player. */
     public static boolean carried() {
         return legs > 0;
     }
@@ -151,8 +125,6 @@ public final class ClientCharacter {
         player.displayClientMessage(Component.translatable("octopus." + MultiversePowers.MODID + "." + key, args),
                 true);
     }
-
-    // ---- Keys ----
 
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event) {
@@ -171,25 +143,20 @@ public final class ClientCharacter {
         GameCharacter now = character;
         for (AbilitySlot slot : AbilitySlot.values()) {
             CharacterAbility ability = now == null ? null : now.ability(slot);
-            // What the character always does on a mouse button, instead of on a key of its own.
             if (ability != null && ability.mouseButton() != CharacterAbility.Mouse.NONE) {
                 mouse(player, minecraft, ability, now);
                 continue;
             }
             KeyMapping key = AbilityKeys.of(slot);
-            // An ability this side does by itself: the construct wheel, which is still only a menu.
             if (ability != null && ability.isClientOnly()) {
                 ConstructWheel.tick(minecraft, key);
                 while (key.consumeClick()) {
-                    // Tapping and holding are told apart by ConstructWheel, not by the presses.
                 }
                 continue;
             }
-            // Whether a key is held down or pressed once is the ability's own business, not the key's.
             if (ability != null && ability.isHeld()) {
                 hold(player, ability, key, minecraft.screen == null);
                 while (key.consumeClick()) {
-                    // A key you hold down does nothing extra with its presses.
                 }
             } else {
                 while (key.consumeClick()) {
@@ -199,12 +166,6 @@ public final class ClientCharacter {
         }
     }
 
-    /**
-     * What the character always does on a mouse button, click or hold (see {@link MouseHold}): a tap does the
-     * quick version, holding the button long enough the hold version. It only takes the button over while both
-     * your hands are empty and the hand behind that button is not busy with an ability of its own; any other
-     * time the mouse keeps doing what it normally does, so you can still mine, build and eat.
-     */
     private static void mouse(LocalPlayer player, Minecraft minecraft, CharacterAbility ability,
             GameCharacter now) {
         KeyMapping key = AbilityKeys.of(ability);
@@ -221,26 +182,16 @@ public final class ClientCharacter {
                 case HOLD -> send(index, true, data(player) | Characters.HOLD);
                 case RELEASE, LET_GO -> send(index, false, data(player));
                 case NOTHING -> {
-                    // Still down and not held long enough yet, or up and nothing to tell.
                 }
             }
         }
         HELD[index] = MouseHold.holding(ability.mouseButton());
         if (ours) {
             while (key.consumeClick()) {
-                // The ring answers the button itself; the game must not swing or use anything as well.
             }
         }
     }
 
-    /**
-     * The mouse while you hold the sword and shield of the construct wheel. The attack button: a tap cuts or thrusts (a
-     * move picked at random, played at once and told to the server), holding it does the flurry and letting go ends it.
-     * The defend button: held a moment, the shield comes up to block until you let go; a click charges, and a click while
-     * you charge ends the charge.
-     *
-     * @param down whether the button is down and the mouse is the sword and shield's right now
-     */
     private static void sword(LocalPlayer player, CharacterAbility ability, int index, MouseHold.Step step,
             boolean down) {
         if (ability.mouseButton() == CharacterAbility.Mouse.LEFT) {
@@ -261,7 +212,6 @@ public final class ClientCharacter {
                     send(index, false, data(player));
                 }
                 case NOTHING -> {
-                    // Still down and not held long enough yet, or up and nothing to tell.
                 }
             }
             return;
@@ -269,7 +219,6 @@ public final class ClientCharacter {
         if (down) {
             if (defendDown < 0) {
                 defendDown = 0;
-                // A click while you charge ends the charge, and no new one comes of it.
                 endedCharge = SwordArms.charging();
                 if (endedCharge) {
                     SwordArms.endCharge();
@@ -296,7 +245,6 @@ public final class ClientCharacter {
         }
     }
 
-    /** The quick version of a mouse ability, as long as it is ready and the ring can pay for it. */
     private static void tap(LocalPlayer player, CharacterAbility ability) {
         int index = ability.slot().ordinal();
         if (COOLDOWNS[index] > 0) {
@@ -311,49 +259,46 @@ public final class ClientCharacter {
         TAPPED[index] = clock;
     }
 
-    /** True while the mouse belongs to the character: no item in either hand. */
     static boolean takesMouse(LocalPlayer player) {
         return player.getMainHandItem().isEmpty() && player.getOffhandItem().isEmpty();
     }
 
-    /**
-     * True while the hand behind this button is busy, so the button has to wait: recharging takes both hands, and
-     * an ability you hold a key down for (the Giant Fist) takes the hand that attacks. The hand that defends stays
-     * free for it, so a shield can go up while a fist charges.
-     */
     private static boolean handBusy(LocalPlayer player, GameCharacter now, CharacterAbility.Mouse button) {
         if (ClientRing.recharge(player, 1.0F) >= 0.0F) {
             return true;
         }
+        // The defend hand always stays free, so a shield can go up while a fist charges.
         if (button == CharacterAbility.Mouse.RIGHT) {
             return false;
         }
+        float flight = ClientRing.flight(player, 0.0F);
+        if (flight >= 0.0F && flight < Flight.ARISE_TICKS) {
+            return true;
+        }
+        boolean attackHand = ClientConstructs.wave(player.getId(), 1.0F) != null || CallArm.up(player, 1.0F) > 0.0F;
         for (AbilitySlot slot : AbilitySlot.values()) {
             CharacterAbility other = now.ability(slot);
             if (other != null && other.mouseButton() == CharacterAbility.Mouse.NONE && other.isHeld()
                     && !other.isClientOnly() && HELD[slot.ordinal()]) {
-                return true;
+                attackHand = true;
             }
         }
-        return false;
+        // One free hand is enough: the attack button waits only while the defend hand is busy too.
+        return attackHand && (ClientRing.has(player, RingPayload.SHIELD) || ClientRing.has(player, RingPayload.DOME));
     }
 
-    /** A key you hold down: it starts when you press it and stops the moment you let go. */
     private static void hold(LocalPlayer player, CharacterAbility ability, KeyMapping key, boolean inGame) {
         int index = ability.slot().ordinal();
         boolean want = key.isDown() && inGame && !StaminaClient.isExhausted();
-        // Still on cooldown: it starts by itself once it is ready, as long as you keep the key down.
         int left = COOLDOWNS[index];
         if (want && !HELD[index] && left > 0) {
             tell(player, "not_ready", ability.getDisplayName(), (left + 19) / 20);
             want = false;
         }
-        // An ability that costs ring power does not start on a ring that cannot pay for it.
         if (want && !HELD[index] && !canPay(player, ability)) {
             noPower(player, ability.character());
             want = false;
         }
-        // An ability that says it costs stamina per tick pays for itself while you hold it.
         if (want && ability.has(STAMINA_PER_TICK)) {
             StaminaClient.use((float) ability.value(STAMINA_PER_TICK));
         }
@@ -375,7 +320,6 @@ public final class ClientCharacter {
                     character.getDisplayName(), slot.getDisplayName()), true);
             return;
         }
-        // Only an ability that says crouching is its undo may be used while it is on cooldown.
         boolean undo = player.isShiftKeyDown() && ability.crouchDoes() == CharacterAbility.Crouch.UNDO;
         int left = COOLDOWNS[slot.ordinal()];
         if (left > 0 && !undo) {
@@ -390,17 +334,14 @@ public final class ClientCharacter {
         send(slot.ordinal(), true, data(player));
     }
 
-    /** What the server needs to know about the press itself: crouching can change what a key does. */
     private static int data(LocalPlayer player) {
         return player.isShiftKeyDown() ? Characters.SNEAKING : 0;
     }
 
-    /** True unless this ability costs ring power (see its "powerCost" setting) and the ring has too little. */
     private static boolean canPay(LocalPlayer player, CharacterAbility ability) {
         return !ability.has(POWER_COST) || ClientRing.power(player) + 1.0E-4F >= ability.value(POWER_COST);
     }
 
-    /** The ring is too low: says so, and which key recharges it. */
     private static void noPower(LocalPlayer player, GameCharacter character) {
         CharacterAbility recharge = character.byName(RECHARGE);
         player.displayClientMessage(recharge == null
@@ -409,12 +350,6 @@ public final class ClientCharacter {
                         AbilityKeys.of(recharge.slot()).getTranslatedKeyMessage()), true);
     }
 
-    // ---- Moving ----
-
-    /**
-     * Your own movement while you are carried: climbing a surface, or standing in the air on the
-     * tentacles. Decided here, before the player moves this tick.
-     */
     @SubscribeEvent
     public static void onPlayerTick(PlayerTickEvent.Pre event) {
         Minecraft minecraft = Minecraft.getInstance();
@@ -430,7 +365,6 @@ public final class ClientCharacter {
         if (onSurface) {
             return;
         }
-        // Only the character that walks on tentacles is ever carried; anything left over is dropped.
         if (active) {
             TentacleLegs.carry(player, legs);
         } else {
@@ -454,17 +388,13 @@ public final class ClientCharacter {
         Arrays.fill(TAPPED, Integer.MIN_VALUE);
     }
 
-    // ---- HUD ----
-
     static void onRegisterLayers(RegisterGuiLayersEvent event) {
         event.registerAboveAll(LAYER_ID, ClientCharacter::render);
     }
 
-    /** Who you are and what your keys do, in a small panel in the bottom right corner. */
     private static void render(GuiGraphics graphics, DeltaTracker deltaTracker) {
         Minecraft minecraft = Minecraft.getInstance();
         GameCharacter now = character;
-        // The construct wheel and the power screen are picked from on their own: nothing may sit under them.
         if (now == null || minecraft.player == null || minecraft.options.hideGui
                 || minecraft.screen instanceof ConstructWheelScreen || minecraft.screen instanceof PowerWheelScreen) {
             return;
@@ -498,7 +428,6 @@ public final class ClientCharacter {
                     .append(ability.getDisplayName()), left, y, cooldown > 0 ? GRAY : WHITE);
             Component status;
             int color;
-            // A character can say more about an ability that is running than "holding" (the shield is on, you fly).
             Component running = now == GameCharacter.GREEN_LANTERN ? ConstructHud.status(ability, minecraft.player)
                     : null;
             if (running != null) {
@@ -520,8 +449,6 @@ public final class ClientCharacter {
             graphics.drawString(font, status, right - font.width(status), y, color);
             y += line;
         }
-        // The line at the bottom: Green Lantern's ring power; how you are carried and what you have marked;
-        // else what this character can always do.
         String passive = "character." + MultiversePowers.MODID + "." + now.getId() + ".passive";
         CharacterAbility fist = now.byName("giant_fist");
         if (now == GameCharacter.GREEN_LANTERN) {

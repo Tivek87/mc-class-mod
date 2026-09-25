@@ -21,27 +21,15 @@ import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 import nl.tivek.multiversepowers.engine.target.Targeting;
 
-/**
- * The tentacles that hit: Tentacle Strike, Multi-Tentacle and Octopus Rampage, and whom they pick
- * to hit.
- */
 abstract class RigStrikes extends RigPoses {
     RigStrikes(ServerPlayer caster, ServerLevel home) {
         super(caster, home);
     }
 
-    // ---- Tentacle Strike and Multi-Tentacle ----
-
-    /**
-     * A melee hit: a free tentacle lashes out and the hit lands when its claw arrives.
-     *
-     * @return false when this hit is not taken over (it is then a normal hit)
-     */
     boolean meleeStrike(LivingEntity target) {
         if (this.delivering || this.folding || this.unfold < 1.0 || this.climbing) {
             return false;
         }
-        // Upper tentacles in turns; the legs join in only when both are busy.
         int[] order = this.nextArm++ % 2 == 0 ? new int[] { 0, 1, 2, 3 } : new int[] { 1, 0, 3, 2 };
         for (int i : order) {
             Arm arm = this.arms[i];
@@ -63,7 +51,6 @@ abstract class RigStrikes extends RigPoses {
         arm.struckAt = -1;
     }
 
-    /** Every free tentacle hits the target you aim at (or the nearest enemy in front), in turns. */
     boolean multiStrike(ServerLevel level) {
         if (this.searchedJustNow("multi_tentacle")) {
             return false;
@@ -96,7 +83,7 @@ abstract class RigStrikes extends RigPoses {
         Vec3 at = target.getBoundingBox().getCenter();
         switch (arm.hit) {
             case MELEE -> {
-                // The normal hit, with everything it brings: enchantments, crits, sweeping.
+                // Uses caster.attack() so enchantments, crits and sweep still apply.
                 this.delivering = true;
                 this.caster.attack(target);
                 this.delivering = false;
@@ -109,7 +96,6 @@ abstract class RigStrikes extends RigPoses {
         this.sound(at, SoundEvents.IRON_GOLEM_ATTACK, 0.6F, 1.4F);
     }
 
-    /** Damage that counts as your attack; hits in quick succession all land. */
     boolean hurt(LivingEntity target, float damage, double knockback) {
         DamageSource source = this.caster.serverLevel().damageSources().playerAttack(this.caster);
         target.invulnerableTime = 0;
@@ -123,11 +109,6 @@ abstract class RigStrikes extends RigPoses {
         return true;
     }
 
-    /**
-     * Every enemy around you worth grabbing, nearest first: monsters, other players you are allowed to
-     * hurt, anything that is after you, and whoever hit you last. Peaceful animals are left alone; you
-     * grab those by aiming at them.
-     */
     List<LivingEntity> threats(ServerLevel level, double range) {
         Vec3 eye = this.caster.getEyePosition();
         List<LivingEntity> found = new ArrayList<>();
@@ -147,10 +128,6 @@ abstract class RigStrikes extends RigPoses {
         return found;
     }
 
-    /**
-     * The nearest creature to hit: enemies, players you are allowed to hurt, anything after you, or
-     * whoever hit you last.
-     */
     @Nullable
     private LivingEntity nearest(ServerLevel level, double range, boolean inFront) {
         Vec3 eye = this.caster.getEyePosition();
@@ -177,9 +154,6 @@ abstract class RigStrikes extends RigPoses {
         return best;
     }
 
-    // ---- Octopus Rampage ----
-
-    /** For 10 seconds: double attack speed, and all four tentacles attack nearby enemies by themselves. */
     boolean rampage(ServerLevel level) {
         this.rampage = ability("rampage").intValue("durationTicks");
         OctopusArms.modifier(this.caster, Attributes.ATTACK_SPEED, OctopusArms.RAMPAGE_ID, 1.0,

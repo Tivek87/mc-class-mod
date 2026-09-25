@@ -12,21 +12,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 
-/**
- * Puts together the command that started this game, so the game can be started again after an update.
- *
- * <p>Java does not keep that command (on Windows not at all), so it is rebuilt from what Java still knows: its own
- * options, the class path, and the main class with the game's options. That works for every launcher that starts
- * Java itself (the Minecraft Launcher, Modrinth App, CurseForge, ATLauncher, GDLauncher). Prism Launcher and MultiMC
- * hand the game its options through a hidden pipe instead, so a copy of the command cannot start the game there.
- *
- * <p>The command holds the player's login token, so it is only ever written to the one file the new game reads at
- * its start, and never to a log.
- */
 final class Relaunch {
-    /** Main classes of launchers that pipe the game's options in, so a rebuilt command would hang. */
+    // These pipe options in rather than a command line; a rebuilt one would hang.
     private static final List<String> PIPED_LAUNCHERS = List.of("org.prismlauncher.", "org.multimc.");
-    /** How Java hands on the module options it was started with, and the option each one came from. */
     private static final Pattern MODULE_PROPERTY = Pattern.compile(
             "-Djdk\\.module\\.(path|upgrade\\.path|limitmods|addmods|addopens|addexports|addreads|patch|enable\\.native\\.access)(\\.\\d+)?=(.*)",
             Pattern.DOTALL);
@@ -34,17 +22,14 @@ final class Relaunch {
     private Relaunch() {
     }
 
-    /** Whether the game can be started again from here. */
     static boolean possible() {
         return arguments() != null && encoder().canEncode(String.join(" ", arguments()));
     }
 
-    /** The Java program that runs this game. */
     static String javaCommand() {
         return ProcessHandle.current().info().command().orElse(UpdateInstaller.javaProgram(false));
     }
 
-    /** Everything after the Java program itself, or null when this game cannot be started again from here. */
     @Nullable
     static List<String> arguments() {
         String command = System.getProperty("sun.java.command");
@@ -96,11 +81,6 @@ final class Relaunch {
         };
     }
 
-    /**
-     * The main class and the game's options, which Java keeps joined by spaces. The game's options come in pairs
-     * ({@code --gameDir <folder>}), so words after a value that do not start with {@code --} belong to that value:
-     * a folder like {@code My Pack} stays one option.
-     */
     static List<String> splitProgram(String command) {
         String[] words = command.split(" ", -1);
         List<String> program = new ArrayList<>();
@@ -122,10 +102,7 @@ final class Relaunch {
         return program;
     }
 
-    /**
-     * Writes the arguments as a Java argument file ({@code java @file}): one per line, each in quotes, with its
-     * backslashes and quotes escaped. Java reads the file in the system's own encoding.
-     */
+    // May hold the login token: write only here, never log it.
     static void writeArgumentFile(Path file, List<String> arguments) throws IOException {
         StringBuilder text = new StringBuilder();
         for (String argument : arguments) {

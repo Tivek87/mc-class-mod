@@ -47,8 +47,6 @@ final class Fx {
         this.age = ceremony.age;
     }
 
-    // ---- Timeline ----
-
     boolean grand() {
         return this.mode.grand();
     }
@@ -61,15 +59,12 @@ final class Fx {
         return this.age % interval == 0;
     }
 
-    /** 0..1 while {@code from <= age < to}, -1 otherwise. */
     double span(int from, int to) {
         if (this.age < from || this.age >= to) {
             return -1;
         }
         return (double) (this.age - from) / (to - from);
     }
-
-    // ---- Randomness ----
 
     double rand() {
         return this.random.nextDouble();
@@ -83,8 +78,6 @@ final class Fx {
         return this.random.nextDouble() < probability;
     }
 
-    // ---- Particle options ----
-
     private static Vector3f color(int rgb) {
         return new Vector3f(((rgb >> 16) & 0xFF) / 255.0F, ((rgb >> 8) & 0xFF) / 255.0F, (rgb & 0xFF) / 255.0F);
     }
@@ -97,12 +90,9 @@ final class Fx {
         return new DustColorTransitionOptions(color(fromRgb), color(toRgb), size);
     }
 
-    /** The block under the player, as read when the ceremony started (see {@link Ceremony#ground}). */
     BlockState ground() {
         return this.ground.isAir() ? Blocks.DIRT.defaultBlockState() : this.ground;
     }
-
-    // ---- Local frame (only used for shapes that are symmetric around the player) ----
 
     double lx(double forward, double right) {
         return this.forwardX * forward - this.forwardZ * right;
@@ -122,7 +112,6 @@ final class Fx {
                 this.lx(forward2, right2), up2, this.lz(forward2, right2), spacing, keep);
     }
 
-    /** Places a unit glyph point, scaled by {@code radius}, turned by {@code rot}, at height {@code dy}. */
     void glyphPoint(ParticleOptions particle, double ux, double uz, double radius, double dy, double rot) {
         double cos = Math.cos(rot);
         double sin = Math.sin(rot);
@@ -131,14 +120,11 @@ final class Fx {
         this.local(particle, forward, dy, right);
     }
 
-    // ---- Primitives ----
-    // Each is the game's own sendParticles, sent together with the rest of the tick's particles (see ParticleFx).
-
+    // Routed through ParticleFx so many calls per tick become one packet per player.
     void at(ParticleOptions particle, double dx, double dy, double dz) {
         ParticleFx.sendNear(this.level, particle, this.x + dx, this.y + dy, this.z + dz, 1, 0.0, 0.0, 0.0, 0.0);
     }
 
-    /** One particle moving along (vx, vy, vz) * speed. */
     void fly(ParticleOptions particle, double dx, double dy, double dz,
                      double vx, double vy, double vz, double speed) {
         ParticleFx.sendNear(this.level, particle, this.x + dx, this.y + dy, this.z + dz, 0, vx, vy, vz, speed);
@@ -167,7 +153,6 @@ final class Fx {
         }
     }
 
-    /** Flat ring around the player; {@code keep} below 1 randomly leaves points out to fade it. */
     void ring(ParticleOptions particle, double radius, double dy, double spacing, double keep) {
         this.ringAt(particle, 0, dy, 0, radius, spacing, keep);
     }
@@ -189,7 +174,6 @@ final class Fx {
         }
     }
 
-    /** Unit vectors u, v spanning the plane with normal (nx, ny, nz). */
     private static double[] basis(double nx, double ny, double nz) {
         double len = Math.sqrt(nx * nx + ny * ny + nz * nz);
         nx /= len;
@@ -211,7 +195,6 @@ final class Fx {
         return new double[] {ux, 0, uz, vx, vy, vz};
     }
 
-    /** Ring in any orientation: centre (cx, cy, cz), plane normal (nx, ny, nz), drawn from angle a1 to a2. */
     void ring3(ParticleOptions particle, double cx, double cy, double cz, double radius,
                        double nx, double ny, double nz, double a1, double a2, double spacing, double keep) {
         double[] b = basis(nx, ny, nz);
@@ -231,7 +214,6 @@ final class Fx {
         }
     }
 
-    /** Point on a ring3 at angle {@code a}: {x, y, z}. */
     static double[] ring3Point(double cx, double cy, double cz, double radius, double nx, double ny,
                                        double nz, double a) {
         double[] b = basis(nx, ny, nz);
@@ -240,10 +222,6 @@ final class Fx {
         return new double[] {cx + c * b[0] + s * b[3], cy + c * b[1] + s * b[4], cz + c * b[2] + s * b[5]};
     }
 
-    /**
-     * Line in an upright panel: panel centre (cx, cz) at floor level, sideways axis (tx, tz).
-     * {@code u} is sideways, {@code v} is height. Points under the floor are skipped.
-     */
     void panelLine(ParticleOptions particle, double cx, double cz, double tx, double tz,
                            double u1, double v1, double u2, double v2, double spacing, double keep) {
         double length = Math.hypot(u2 - u1, v2 - v1);
@@ -259,7 +237,6 @@ final class Fx {
         }
     }
 
-    /** Ellipse in an upright panel around (cu, cv), half sizes {@code w} and {@code h}. */
     void panelEllipse(ParticleOptions particle, double cx, double cz, double tx, double tz,
                               double cu, double cv, double w, double h, double from, double to,
                               double spacing, double keep) {
@@ -275,7 +252,6 @@ final class Fx {
         }
     }
 
-    /** Heater shield standing on a circle at {@code angle}, facing outward, bottom tip at {@code base}. */
     void shield(ParticleOptions edge, ParticleOptions cross, double angle, double dist, double base,
                         double scale, double keep) {
         double cx = Math.sin(angle) * dist;
@@ -292,7 +268,6 @@ final class Fx {
                 base + 0.7 * scale, 0.08, keep);
     }
 
-    /** Humanoid silhouette standing at (cx, cz), facing the player. */
     void figure(ParticleOptions particle, double cx, double cz, double keep) {
         double a = Math.atan2(cx, cz);
         double tx = Math.cos(a);
@@ -306,7 +281,6 @@ final class Fx {
         this.panelEllipse(particle, cx, cz, tx, tz, 0, 1.55, 0.17, 0.19, 0, 2.0 * Math.PI, 0.08, keep);
     }
 
-    /** Upright eye centred above the player, turned by {@code angle} so everyone around sees it. */
     void eye(ParticleOptions lid, ParticleOptions pupil, double up, double width, double open,
                      double angle) {
         double tx = Math.cos(angle);
@@ -319,7 +293,6 @@ final class Fx {
         }
     }
 
-    /** Vertical sword centred on the player. Guard at {@code guardY}; {@code dir} +1 blade up, -1 down. */
     void sword(ParticleOptions blade, ParticleOptions hilt, double guardY, int dir, double length,
                        double guardHalf, double width, double keep) {
         double tip = guardY + dir * length;
@@ -357,7 +330,6 @@ final class Fx {
         return new double[] {Math.cos(angle) * r, yy, Math.sin(angle) * r};
     }
 
-    /** Particles flying horizontally outward from the centre. */
     void radial(ParticleOptions particle, double dy, int count, double speed) {
         for (int i = 0; i < count; i++) {
             double angle = 2.0 * Math.PI * i / count;
@@ -365,7 +337,6 @@ final class Fx {
         }
     }
 
-    /** Particles flying horizontally inward from a ring. */
     void radialIn(ParticleOptions particle, double radius, double dy, int count, double speed) {
         for (int i = 0; i < count; i++) {
             double angle = 2.0 * Math.PI * i / count + this.spread(0.3);
@@ -392,7 +363,6 @@ final class Fx {
         }
     }
 
-    /** Lightning bolt: bright core with a coloured glow. */
     void bolt(int glowRgb, double x1, double y1, double z1, double x2, double y2, double z2) {
         int segments = Math.max(3, (int) Math.ceil(Math.abs(y1 - y2) / 0.6));
         this.zigzag(this.dust(0xFFFFFF, 1.0F), x1, y1, z1, x2, y2, z2, segments, 0.3, 0.07);
@@ -409,13 +379,11 @@ final class Fx {
                 dx, dy, dz, count, 0.15, 0.15, 0.15, speed);
     }
 
-    /** Chunks of the block under the player kicked up at (dx, dz). */
     void debrisAt(double dx, double dz, int count) {
         this.cloud(new BlockParticleOption(ParticleTypes.BLOCK, this.ground()), dx, 0.1, dz, count,
                 0.08, 0.03, 0.08, 0.12);
     }
 
-    /** Chunks of the block under the player kicked up anywhere inside {@code radius}. */
     void groundDebris(int count, double radius) {
         for (int i = 0; i < count; i++) {
             double angle = this.rand() * 2.0 * Math.PI;
@@ -424,7 +392,6 @@ final class Fx {
         }
     }
 
-    /** Two wings of light behind the player; {@code spread} 0..1 unfolds them. */
     void wings(ParticleOptions feather, ParticleOptions edge, double spread, double scale, double keep) {
         double span = 1.4 * spread * scale;
         int feathers = 16;
@@ -461,15 +428,12 @@ final class Fx {
 
     static final boolean ACC = true;
 
-    // Six shard colours representing the six groups The Forsaken is forged from.
     static final int[] FORSAKEN_SHARDS = {0xD8D8E0, 0x7FD46B, 0xE0B45A, 0xA88BE8, 0xF2E6A0, 0x5FD0C8};
 
-    /** 1 until {@code from}, then fading linearly to 0 at {@code to}. */
     static double fadeOut(int t, int from, int to) {
         return t < from ? 1 : Mth.clamp(1 - (t - from) / (double) (to - from), 0, 1);
     }
 
-    /** Stable pseudo random 0..1 for index {@code i}, so positions stay the same every tick. */
     static double hash(int i, int salt) {
         double v = Math.sin(i * 12.9898 + salt * 78.233) * 43758.5453;
         return v - Math.floor(v);

@@ -15,23 +15,15 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.SelectMusicEvent;
 import nl.tivek.multiversepowers.MultiversePowers;
 
-/**
- * The multiverse theme plays in the main menu in place of Minecraft's menu music, and starts again as soon as it
- * ends. In a world Minecraft's own music plays as always; the music slider sets the volume of both.
- */
 @EventBusSubscriber(modid = MultiversePowers.MODID, value = Dist.CLIENT)
 public final class ThemeMusic {
-    /** No wait before it starts or starts again, and it cuts off any other track that is still playing. */
+    // 0, 0, true: starts at once, no delay, and cuts any track still playing.
     private static final Music THEME = new Music(Holder.direct(SoundEvent.createVariableRangeEvent(
             ResourceLocation.fromNamespaceAndPath(MultiversePowers.MODID, "music.multiverse_theme"))), 0, 0, true);
 
     private ThemeMusic() {
     }
 
-    /**
-     * Only where Minecraft would play its menu music. Last in line and even after a cancel, so no other menu track
-     * outlasts it; silence asked for stays silent.
-     */
     @SubscribeEvent(priority = EventPriority.LOWEST, receiveCanceled = true)
     public static void onSelectMusic(SelectMusicEvent event) {
         if (event.getMusic() != null && event.getOriginalMusic() == Musics.MENU) {
@@ -39,10 +31,7 @@ public final class ThemeMusic {
         }
     }
 
-    /**
-     * A slider at 0 cuts the theme, but Minecraft keeps counting the cut track as playing and would never start it
-     * again; choosing no music while nothing can be heard lets it start afresh once the slider goes back up.
-     */
+    // Minecraft never restarts a track it still thinks is playing: go silent instead.
     private static boolean audible() {
         Options options = Minecraft.getInstance().options;
         return options.getSoundSourceVolume(SoundSource.MASTER) > 0.0F

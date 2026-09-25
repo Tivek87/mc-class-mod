@@ -13,26 +13,10 @@ import nl.tivek.multiversepowers.engine.client.render.ConstructPainter;
 import nl.tivek.multiversepowers.engine.client.render.Mesh;
 import nl.tivek.multiversepowers.engine.math.Vectors;
 
-/**
- * The pictures of the constructs, on the construct wheel and on the bar above your hotbar. Every construct is shown as
- * itself: its own hard-light model, solid and glowing like in the world, turning gently to and fro.
- * <ul>
- * <li>The sword and shield: the shield with its emblem towards you and the sword crossed behind it, its point up to the
- * right; only the shield turns.</li>
- * <li>The other weapons (see {@link WeaponShapes}): a long weapon lies across the picture from low at the left to high
- * at the right, a gun lies on its side with its muzzle to the right, tipped a little so you see its top. A pair (the
- * gloves, the daggers, the revolvers, the submachine guns) is shown as two, crossed or side by side. A shot charges in
- * the muzzle of the arm cannon and a pilot flame burns at the nozzle of the flamethrower: light, not construct.</li>
- * </ul>
- */
 public final class ConstructIcons {
-    // How far before the eye the models are set up to be drawn, in blocks, and how far out of the screen they come
-    // (above everything drawn flat).
     private static final double AWAY = 3.0;
     private static final float DEPTH = 400.0F;
-    // How many blocks across a picture is: a model this big fills it.
     private static final double ACROSS = 0.92;
-    // How far a picture turns to and fro, in radians, and how quickly (radians per tick).
     private static final double SWAY = 0.38;
     private static final double SWAY_SPEED = 0.045;
     private static final Vec3 UPRIGHT = new Vec3(0.0, 1.0, 0.0);
@@ -57,17 +41,11 @@ public final class ConstructIcons {
     private ConstructIcons() {
     }
 
-    /**
-     * The picture of {@code construct} with its middle at {@code x}, {@code y}, about {@code size} across. Empty hands
-     * have none.
-     *
-     * @param lit how far the mouse points at it, 0 to 1: it comes up a little bigger
-     */
     static void draw(GuiGraphics graphics, Construct construct, float x, float y, float size, float lit) {
         if (construct == Construct.NONE) {
             return;
         }
-        // Whatever flat was handed in before is drawn first, so the model lands on top of it.
+        // Flush the flat 2D drawing first, so the 3D model paints on top of it
         GuiShapes.flush(graphics);
         float time = (Util.getMillis() % 3_600_000L) / 50.0F;
         float scale = (float) (size * (1.0F + 0.1F * lit) / ACROSS);
@@ -103,7 +81,6 @@ public final class ConstructIcons {
                 place(painter, SMG, 0.2, 0.02, 0.0, way(15.0, 0.0), way(105.0, 10.0), 0.5, sway);
             }
             case ARM_CANNON -> {
-                // A shot charging in the muzzle.
                 ConstructPainter.Frame frame = place(painter, ARM_CANNON, 0.0, 0.0, 0.0, way(15.0, 38.0),
                         way(105.0, 5.0), 0.9, sway);
                 painter.flare(frame.at(0.0, 0.0, 0.35), 0.18 * frame.scale(), 0.85);
@@ -114,7 +91,6 @@ public final class ConstructIcons {
             case ROCKET_LAUNCHER -> place(painter, ROCKET_LAUNCHER, 0.0, 0.0, 0.0, way(30.0, 0.0), way(120.0, 10.0),
                     1.1, sway);
             case FLAMETHROWER -> {
-                // The pilot flame burning at the nozzle.
                 ConstructPainter.Frame frame = place(painter, FLAMETHROWER, 0.0, 0.0, 0.0, way(20.0, 0.0),
                         way(110.0, 10.0), 1.0, sway);
                 painter.flare(frame.at(0.0, 0.02, 0.63), 0.12 * frame.scale(), 0.8);
@@ -126,7 +102,6 @@ public final class ConstructIcons {
         pose.popPose();
     }
 
-    /** The sword and shield, as hard light: the shield turning to and fro, the sword crossed behind it. */
     private static void swordShield(LanternPainter painter, double sway) {
         Vec3 blade = new Vec3(0.67, 0.74, -0.08).normalize();
         Vec3 edge = new Vec3(-0.74, 0.67, 0.0);
@@ -136,14 +111,6 @@ public final class ConstructIcons {
                 new Vec3(0.0, 1.0, 0.0), 0.6, 1.0, 0.0);
     }
 
-    /**
-     * One model in the picture: the middle of its box at ({@code x}, {@code y}) and {@code depth} out of the screen, its
-     * length along {@code forward} and its top towards {@code up} (as seen on the screen: x to the right, y up, z out of
-     * it towards you), and {@code span} long. The whole picture turns by {@code sway} about the upright line through its
-     * middle.
-     *
-     * @return where the model was drawn, for light that goes with it
-     */
     private static ConstructPainter.Frame place(LanternPainter painter, Model model, double x, double y, double depth,
             Vec3 forward, Vec3 up, double span, double sway) {
         Vec3 at = Vectors.spin(new Vec3(x, y, depth), UPRIGHT, sway).add(0.0, 0.0, -AWAY);
@@ -159,14 +126,12 @@ public final class ConstructIcons {
         return frame;
     }
 
-    /** The way at {@code degrees} along the screen (0 = right, 90 = up), tipped {@code tip} degrees towards you. */
     private static Vec3 way(double degrees, double tip) {
         double along = Math.toRadians(degrees);
         double out = Math.toRadians(tip);
         return new Vec3(Math.cos(along) * Math.cos(out), Math.sin(along) * Math.cos(out), Math.sin(out));
     }
 
-    /** A model as a picture shows it: its shape, the middle of the box round it, and its longest way across. */
     private record Model(ConstructPainter.Shape shape, Vec3 middle, double length) {
         static Model of(ConstructPainter.Shape shape) {
             double[] low = { Double.MAX_VALUE, Double.MAX_VALUE, Double.MAX_VALUE };

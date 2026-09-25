@@ -5,10 +5,6 @@ import java.util.List;
 import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.util.Mth;
 
-/**
- * A floor drawing made of strokes in unit coordinates: x = right, z = forward, outer radius 1.
- * Strokes are traced in the order they were added.
- */
 final class Glyph {
     private final List<Stroke> strokes = new ArrayList<>();
     private double total;
@@ -33,7 +29,6 @@ final class Glyph {
         return this;
     }
 
-    /** Arc around (cx, cz); angle 0 points forward, positive turns to the right. */
     private Glyph arc(boolean accent, double cx, double cz, double radius, double from, double to) {
         int n = Math.max(4, (int) Math.ceil(Math.abs(to - from) / (Math.PI / 32)));
         double[] xz = new double[(n + 1) * 2];
@@ -59,7 +54,6 @@ final class Glyph {
         return this.path(accent, xz);
     }
 
-    /** Star polygon {n/k}; splits into several strokes when n and k share a divisor. */
     Glyph star(boolean accent, int n, int k, double radius, double rot) {
         int groups = gcd(n, k);
         int per = n / groups;
@@ -84,7 +78,6 @@ final class Glyph {
         return this;
     }
 
-    /** Rose curve r = cos(k * angle): 2k petals for even k. */
     Glyph rose(boolean accent, int k) {
         int n = 240;
         double[] xz = new double[(n + 1) * 2];
@@ -112,7 +105,6 @@ final class Glyph {
         return this.strokes.size() - 1;
     }
 
-    /** Unit point {x, z} at a fraction of the total pen length. */
     double[] point(double progress) {
         double at = Mth.clamp(progress, 0, 1) * this.total;
         for (Stroke stroke : this.strokes) {
@@ -135,7 +127,6 @@ final class Glyph {
         return new double[] {last.xs()[last.xs().length - 1], last.zs()[last.zs().length - 1]};
     }
 
-    /** Draws the part between two fractions of the pen length, one particle every {@code step} blocks. */
     void draw(Fx fx, ParticleOptions main, ParticleOptions accent, double radius, double dy, double rot,
                       double from, double to, double keep, double step) {
         double lo = from * this.total;

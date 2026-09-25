@@ -6,33 +6,16 @@ import net.minecraft.client.renderer.RenderType;
 import net.minecraft.util.Mth;
 import org.joml.Matrix4f;
 
-/**
- * Round shapes for the mod's own screens: discs, rings, slices of a ring and thick lines.
- *
- * <p>Minecraft's own drawing only does straight boxes, so everything here is cut into four-corner
- * pieces small enough that the edges read as round. Angles are in degrees, 0 points straight up and
- * they run clockwise, the way a clock does.
- *
- * <p>Everything is drawn into the same batch Minecraft uses for coloured boxes. Text is a different
- * batch and does not wait its turn, so call {@link #flush(GuiGraphics)} once you are done with the
- * shapes that have to sit under your text.
- */
 public final class GuiShapes {
-    /** How wide one piece of a round edge is, in degrees: smaller is rounder and costs more. */
     private static final float STEP_DEGREES = 5.0F;
 
     private GuiShapes() {
     }
 
-    /** Draws everything handed in so far, so what comes after it lands on top. */
     public static void flush(GuiGraphics graphics) {
         graphics.flush();
     }
 
-    /**
-     * One four-corner piece, its corners in order around its edge. Which way round they run does not
-     * matter: a piece wound the wrong way would be thrown away unseen, so it is turned around here.
-     */
     public static void quad(GuiGraphics graphics, float x0, float y0, float x1, float y1,
             float x2, float y2, float x3, float y3, int argb) {
         if ((argb >>> 24) == 0) {
@@ -40,6 +23,7 @@ public final class GuiShapes {
         }
         Matrix4f matrix = graphics.pose().last().pose();
         VertexConsumer buffer = graphics.bufferSource().getBuffer(RenderType.gui());
+        // RenderType.gui() culls back-facing quads; flip the winding so either input order shows.
         float turn = (x0 * y1 - x1 * y0) + (x1 * y2 - x2 * y1) + (x2 * y3 - x3 * y2) + (x3 * y0 - x0 * y3);
         if (turn > 0.0F) {
             buffer.addVertex(matrix, x3, y3, 0.0F).setColor(argb);
@@ -54,16 +38,11 @@ public final class GuiShapes {
         }
     }
 
-    /** A three-corner piece: the same thing with two corners in the same spot. */
     public static void triangle(GuiGraphics graphics, float x0, float y0, float x1, float y1,
             float x2, float y2, int argb) {
         quad(graphics, x0, y0, x1, y1, x2, y2, x2, y2, argb);
     }
 
-    /**
-     * A slice of a ring around ({@code cx}, {@code cy}): the band between {@code inner} and
-     * {@code outer} from {@code fromDegrees} clockwise to {@code toDegrees}.
-     */
     public static void arc(GuiGraphics graphics, float cx, float cy, float inner, float outer,
             float fromDegrees, float toDegrees, int argb) {
         if ((argb >>> 24) == 0 || outer <= inner) {
@@ -88,20 +67,14 @@ public final class GuiShapes {
         }
     }
 
-    /** A filled circle. */
     public static void disc(GuiGraphics graphics, float cx, float cy, float radius, int argb) {
         arc(graphics, cx, cy, 0.0F, radius, 0.0F, 360.0F, argb);
     }
 
-    /** A circle drawn as a line: {@code radius} is its middle, {@code width} how thick the line is. */
     public static void ring(GuiGraphics graphics, float cx, float cy, float radius, float width, int argb) {
         arc(graphics, cx, cy, radius - width * 0.5F, radius + width * 0.5F, 0.0F, 360.0F, argb);
     }
 
-    /**
-     * A thick line from one point to another. Both ends stick out by half its width, so lines that meet
-     * end to end join up without a notch.
-     */
     public static void stroke(GuiGraphics graphics, float x0, float y0, float x1, float y1,
             float width, int argb) {
         float dx = x1 - x0;
@@ -123,7 +96,6 @@ public final class GuiShapes {
                 bx - sideX, by - sideY, ax - sideX, ay - sideY, argb);
     }
 
-    /** A box with rounded corners, from its top left corner. */
     public static void roundRect(GuiGraphics graphics, float x, float y, float width, float height,
             float radius, int argb) {
         float r = Math.min(radius, Math.min(width, height) * 0.5F);
@@ -137,13 +109,11 @@ public final class GuiShapes {
         arc(graphics, x + r, y + r, 0.0F, r, 270.0F, 360.0F, argb);
     }
 
-    /** The same colour with another strength: 0 is see-through, 1 is solid. */
     public static int fade(int rgb, float alpha) {
         int a = Mth.clamp(Mth.floor(alpha * 255.0F + 0.5F), 0, 255);
         return a << 24 | rgb & 0xFFFFFF;
     }
 
-    /** A step between two colours: 0 gives {@code from}, 1 gives {@code to}. */
     public static int mix(int from, int to, float part) {
         float t = Mth.clamp(part, 0.0F, 1.0F);
         int r = Mth.lerpInt(t, from >> 16 & 0xFF, to >> 16 & 0xFF);

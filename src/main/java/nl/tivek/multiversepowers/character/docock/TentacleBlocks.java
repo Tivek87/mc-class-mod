@@ -31,17 +31,7 @@ import nl.tivek.multiversepowers.engine.effect.Effects;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 import nl.tivek.multiversepowers.engine.target.Targeting;
 
-/**
- * What the tentacles do with blocks: pick one up, pull a whole cluster or a small building out of the
- * world, put it back down somewhere else, or hurl it at whatever is in front of you.
- *
- * <p>A cluster is taken by walking from the block you aim at to the blocks touching it, so a wall, a
- * pillar or a little hut comes along in one piece, keeping every block exactly where it was relative
- * to the others. Blocks with something inside them (chests, furnaces) and unbreakable blocks are
- * always left alone, and nothing is taken where the player is not allowed to build.
- */
 final class TentacleBlocks {
-    /** How fast a thrown load flies. */
     static final double THROW_SPEED = 1.5;
     private static final int HIT_TIME = 60;
     private static final double HIT_RADIUS = 0.8;
@@ -49,34 +39,18 @@ final class TentacleBlocks {
     private TentacleBlocks() {
     }
 
-    /** One block of a load: where it sits relative to the first one, and what it is. */
     record Piece(BlockPos offset, BlockState state) {
     }
 
-    /** Everything one tentacle carries. */
     record Load(List<Piece> pieces) {
         int size() {
             return this.pieces.size();
         }
     }
 
-    /**
-     * What came of setting a load down.
-     *
-     * @param placed how many blocks really went into the world
-     * @param left   what did not fit and stays in the claw; null when everything was placed
-     */
     record Result(int placed, @Nullable Load left) {
     }
 
-    // ---- Picking up ----
-
-    /**
-     * Pulls the block the player aims at out of the world, with everything touching it when
-     * {@code cluster} is on.
-     *
-     * @return what the tentacle now carries, or null when there is nothing to take there
-     */
     @Nullable
     static Load pickUp(ServerLevel level, ServerPlayer player, boolean cluster, int max, double range) {
         BlockHitResult hit = aim(player, level, range);
@@ -118,7 +92,6 @@ final class TentacleBlocks {
         return new Load(List.copyOf(pieces));
     }
 
-    /** A block the tentacles may take: solid, breakable, nothing stored inside, and allowed here. */
     private static boolean canTake(ServerLevel level, ServerPlayer player, BlockPos pos) {
         if (level.isOutsideBuildHeight(pos) || !level.mayInteract(player, pos)) {
             return false;
@@ -129,12 +102,6 @@ final class TentacleBlocks {
                 && !state.getCollisionShape(level, pos).isEmpty();
     }
 
-    // ---- Putting down ----
-
-    /**
-     * Sets the load down where the player aims, keeping its shape. Blocks that do not fit there stay in
-     * the claw, so nothing is ever lost.
-     */
     static Result place(ServerLevel level, ServerPlayer player, Load load, double range) {
         BlockHitResult hit = aim(player, level, range);
         BlockPos origin;
@@ -166,9 +133,6 @@ final class TentacleBlocks {
         return new Result(placed, left.isEmpty() ? null : new Load(List.copyOf(left)));
     }
 
-    // ---- Throwing ----
-
-    /** Hurls the load away from {@code from} in {@code direction}; what it hits gets hurt. */
     static void hurl(ServerLevel level, ServerPlayer player, Load load, Vec3 from, Vec3 direction, float damage,
             double speed) {
         List<FallingBlockEntity> flying = new ArrayList<>();
@@ -176,12 +140,10 @@ final class TentacleBlocks {
             Vec3 at = from.add(piece.offset().getX(), piece.offset().getY(), piece.offset().getZ());
             BlockPos spawn = freeSpot(level, at);
             if (spawn == null) {
-                // Nowhere to let it go: hand the block over as an item instead of losing it.
                 Block.popResource(level, BlockPos.containing(at), new ItemStack(piece.state().getBlock()));
                 continue;
             }
-            // A falling block starts in the middle of the spot it is born in and is left right there.
-            // Moving it afterwards is what made thrown blocks jump across the screen once.
+            // Do not move it after spawn: that used to make thrown blocks visibly jump.
             FallingBlockEntity block = FallingBlockEntity.fall(level, spawn, piece.state());
             block.setDeltaMovement(direction.scale(speed)
                     .add(ParticleFx.spread(0.06), ParticleFx.spread(0.06), ParticleFx.spread(0.06)));
@@ -197,19 +159,16 @@ final class TentacleBlocks {
         Effects.start(level, hitting(player, flying, damage));
     }
 
-    /** Lets the load go where it is, slowly, so nothing is ever lost (the arms fold in). */
     static void drop(ServerLevel level, ServerPlayer player, Load load, Vec3 from) {
         hurl(level, player, load, from, new Vec3(0, -0.2, 0), 0.0F, 0.2);
     }
 
-    /** A block position the falling block may appear in: its own spot, else one right beside it. */
     @Nullable
     private static BlockPos freeSpot(ServerLevel level, Vec3 at) {
         BlockPos pos = BlockPos.containing(at);
         if (isFree(level, pos)) {
             return pos;
         }
-        // Its own spot is taken (it was pulled through a wall): the nearest open block around it.
         for (Direction side : Direction.values()) {
             BlockPos next = pos.relative(side);
             if (isFree(level, next)) {
@@ -223,7 +182,6 @@ final class TentacleBlocks {
         return !level.isOutsideBuildHeight(pos) && level.getBlockState(pos).canBeReplaced();
     }
 
-    /** The flying blocks hurt every creature they fly through, each one only once. */
     private static Effect hitting(ServerPlayer caster, List<FallingBlockEntity> flying, float damage) {
         Set<Entity> already = new HashSet<>();
         return (level, age) -> {
@@ -255,8 +213,6 @@ final class TentacleBlocks {
             return any;
         };
     }
-
-    // ---- Helpers ----
 
     private static BlockHitResult aim(ServerPlayer player, ServerLevel level, double range) {
         Vec3 eye = player.getEyePosition();

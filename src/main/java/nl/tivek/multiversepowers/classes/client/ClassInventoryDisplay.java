@@ -18,10 +18,6 @@ import net.neoforged.neoforge.client.event.ScreenEvent;
 import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.classes.PlayerClass;
 
-/**
- * Shows the player's class as a label above the inventory, so it can always be looked up.
- * Hovering the label shows what the class is about.
- */
 @EventBusSubscriber(modid = MultiversePowers.MODID, value = Dist.CLIENT)
 public final class ClassInventoryDisplay {
     private static final int SURVIVAL_OFFSET = 14;
@@ -81,7 +77,6 @@ public final class ClassInventoryDisplay {
         }
     }
 
-    /** Name, role, a line of story and the reminder that the class locks nothing. */
     private static List<FormattedCharSequence> tooltip(Font font, PlayerClass playerClass) {
         List<FormattedCharSequence> lines = new ArrayList<>();
         lines.add(playerClass.getDisplayName().copy().withColor(playerClass.getColor()).getVisualOrderText());

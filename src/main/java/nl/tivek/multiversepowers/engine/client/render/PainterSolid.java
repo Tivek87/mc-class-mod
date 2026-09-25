@@ -9,43 +9,23 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.engine.math.Colors;
 
-/**
- * The engine's painter (see {@link ConstructPainter}) drawing solid shapes, one part at a time: a box of a box model
- * whose corners are worked out, or a round part (see {@link Mesh}) whose corners and sides are, as solid sides lit
- * like a block with bright lines only where the shape ends as you look at it, cut off at a plane while asked to (see
- * {@link #clip}). What a box model needs worked out only once is kept here too.
- */
 abstract class PainterSolid extends PainterCut {
-    // How far outside a box an edge is looked at to see whether another box sits against it there, in blocks
-    // at scale 1.
     private static final double EDGE_OUT = 0.02;
-    // A part smaller than this (in blocks at scale 1, see fine) gets finer lines, down to FINEST times the usual.
     private static final double FINE_SIZE = 0.35;
     private static final double FINEST = 0.35;
-    // How strongly the outline of a see-through shape shows, next to that of a solid one.
     private static final double SEE_THROUGH_EDGE = 0.55;
-    // The four corners of each side of a box. A corner is three bits: 1 = far x, 2 = far y, 4 = far z.
     private static final int[][] SIDES = { { 0, 2, 6, 4 }, { 1, 5, 7, 3 }, { 0, 4, 5, 1 }, { 2, 3, 7, 6 },
             { 0, 1, 3, 2 }, { 4, 6, 7, 5 } };
 
-    /**
-     * What a box model needs worked out only once: for every edge of every box whether another box lies against it
-     * (see {@link #rim}), and a ball round the whole model, in its own blocks at scale 1, to skip it when it is out of
-     * view. Kept per model for as long as the model itself is kept.
-     */
     record ModelInfo(boolean[] covered, double x, double y, double z, double radius) {
     }
 
+    // Arrays have no equals/hashCode, so this caches by identity: the same model array must be reused, not rebuilt.
     private static final Map<double[][], ModelInfo> MODELS = new WeakHashMap<>();
-    // A model with fewer boxes than this is worked out on the spot: those are often made new every frame.
     private static final int CACHED_FROM = 4;
 
-    // The eight corners of the box drawn right now, as x, y, z of corner 0, then of corner 1 and so on (see
-    // corners), and the same corners moved a hair towards the camera for its edges.
     final double[] corner = new double[24];
     private final double[] liftedCorner = new double[24];
-    // Room to work a round part out in, used again for every part: its corners out in the world, the way its sides
-    // face, and which of them face the camera.
     double[] wx = new double[256];
     double[] wy = new double[256];
     double[] wz = new double[256];
@@ -53,16 +33,13 @@ abstract class PainterSolid extends PainterCut {
     double[] ny = new double[256];
     double[] nz = new double[256];
     private boolean[] facingCamera = new boolean[256];
-    // Above 0 while a see-through shape is drawn (see seeThrough): how strongly its sides show.
     double faint;
 
-    /** See the constructors of {@link ConstructPainter}. */
     PainterSolid(PoseStack pose, Vec3 camera, float time, @Nullable Frustum frustum, Material material,
             boolean hand) {
         super(pose, camera, time, frustum, material, hand);
     }
 
-    /** What is worked out once for a box model (see {@link ModelInfo}): kept for big ones, made anew for the rest. */
     static ModelInfo info(double[][] model) {
         if (model.length < CACHED_FROM) {
             return work(model);
@@ -75,10 +52,6 @@ abstract class PainterSolid extends PainterCut {
         return info;
     }
 
-    /**
-     * Works out, for every edge of every box, whether another box lies against it there (the middle of the edge, a hair
-     * outside the box, lies inside another box), and a ball round the whole model.
-     */
     private static ModelInfo work(double[][] model) {
         boolean[] covered = new boolean[model.length * 24];
         double[] low = { Double.MAX_VALUE, Double.MAX_VALUE, Double.MAX_VALUE };
@@ -122,7 +95,6 @@ abstract class PainterSolid extends PainterCut {
                 Math.sqrt(dx * dx + dy * dy + dz * dz) * 0.5);
     }
 
-    /** Makes the room to work out a part of this many corners and sides in. */
     void room(int points, int sides) {
         if (this.wx.length < points) {
             int size = Math.max(points, this.wx.length * 2);
@@ -139,16 +111,8 @@ abstract class PainterSolid extends PainterCut {
         }
     }
 
-    /**
-     * Draws a round part whose corners and sides have just been worked out into the room for it (see {@link #room}):
-     * solid sides lit like the sides of a box, and a bright line along every edge where its outline runs as you look at
-     * it (one side along it faces you and the other faces away), or where it has only one side.
-     *
-     * @param halo false to leave out the soft glow along its edges: far away it would only blur it
-     */
     void drawMesh(Mesh mesh, double width, double solid, double bright, boolean halo) {
         int count = mesh.sides.length;
-        // A see-through shape (see seeThrough) puts its sides with the light, faint, so they hide nothing.
         boolean faint = this.faint > 0.0;
         Layer sides = faint ? this.light : this.mass;
         int body = Colors.alpha(faint ? this.faint * solid : solid);
@@ -194,7 +158,6 @@ abstract class PainterSolid extends PainterCut {
             }
             int from = mesh.edgeFrom[e];
             int to = mesh.edgeTo[e];
-            // Both ends moved a hair towards the camera, so the line is not swallowed by the side it lies on.
             double ax = this.wx[from];
             double ay = this.wy[from];
             double az = this.wz[from];
@@ -202,7 +165,6 @@ abstract class PainterSolid extends PainterCut {
             double by = this.wy[to];
             double bz = this.wz[to];
             if (this.clipping) {
-                // Cut off at the plane (see clip) before it is lifted: the part behind it is not drawn.
                 if (!this.cutLine(ax, ay, az, bx, by, bz)) {
                     continue;
                 }
@@ -230,7 +192,6 @@ abstract class PainterSolid extends PainterCut {
             }
             this.line(this.light, ax, ay, az, bx, by, bz, EDGE_WIDTH * fine, this.material.edge(), edge);
             if (glowing > 0) {
-                // Round things have short edges: a glow wider than the edge is long would stick out at every corner.
                 double length = Math.sqrt(sq(bx - ax) + sq(by - ay) + sq(bz - az));
                 this.line(this.glow, ax, ay, az, bx, by, bz, Math.min(HALO_WIDTH * fine, 0.9 * length),
                         this.material.glow(),
@@ -240,27 +201,12 @@ abstract class PainterSolid extends PainterCut {
         this.nearFade = false;
     }
 
-    /**
-     * One box of the fist: solid green sides, lit like a block (the top brightest, the underside darkest).
-     * Only the edges where the shape really ends get a bright line (see {@link #rim}); lines over a side you
-     * are looking straight at would turn the mass into a cage of wire. The light ripples along the construct
-     * from back to front ({@code depth} is how far forward the box sits), harder the further it is charged.
-     *
-     * @param view   where the camera is, in the model's own space
-     * @param width  how thick its edges are drawn, as a scale
-     * @param solid  0 = gone, 1 = fully there; nothing else thins the mass out
-     * @param bright how brightly this box burns next to the rest of the fist
-     * @param charge how far the fist is charged: 0 = not at all, 1 = as far as it goes
-     */
     void box(double[][] model, ModelInfo info, int index, Vec3 view, double width, double solid,
             double bright, double depth, double charge, boolean glowing) {
-        // Worked out in plain numbers from its corners (see corners), step by step the way the same sums on vectors
-        // go, so it comes out exactly as it did with them: a box is drawn thousands of times a frame.
         double[] at = this.corner;
         Vec3 camera = this.camera;
         double ripple = 0.9 + (0.06 + 0.06 * charge) * Math.sin(this.time * 0.5 - depth * 4.0);
         int body = Colors.alpha(solid);
-        // Its middle, to tell which way a side faces.
         double mx = (at[0] + at[21]) * 0.5;
         double my = (at[1] + at[22]) * 0.5;
         double mz = (at[2] + at[23]) * 0.5;
@@ -271,7 +217,6 @@ abstract class PainterSolid extends PainterCut {
             int p0 = 3 * side[0];
             int p1 = 3 * side[1];
             int p2 = 3 * side[2];
-            // From the middle of the side to the eye, and the way the side faces (not one long).
             double ex = camera.x - (at[p0] + at[p2]) * 0.5;
             double ey = camera.y - (at[p0 + 1] + at[p2 + 1]) * 0.5;
             double ez = camera.z - (at[p0 + 2] + at[p2 + 2]) * 0.5;
@@ -299,7 +244,6 @@ abstract class PainterSolid extends PainterCut {
         }
         int edge = Colors.alpha(EDGE * ripple * solid);
         int halo = glowing ? Colors.alpha(HALO * (1.0 + 0.4 * charge) * solid) : 0;
-        // Every corner moved a hair towards the camera (see lifted), so an edge is not swallowed by its sides.
         double[] lifted = this.liftedCorner;
         double lift = 0.01 + 0.02 * fine;
         for (int i = 0; i < 24; i += 3) {
@@ -323,7 +267,6 @@ abstract class PainterSolid extends PainterCut {
                 int a = 3 * i;
                 int b = 3 * (i | bit);
                 if (this.clipping) {
-                    // Cut off at the plane (see clip) before it is lifted: the part behind it is not drawn.
                     if (this.cutLine(at[a], at[a + 1], at[a + 2], at[b], at[b + 1], at[b + 2])) {
                         double[] ends = this.cutEnds;
                         this.lift(ends, 0, lift);
@@ -343,7 +286,6 @@ abstract class PainterSolid extends PainterCut {
         }
     }
 
-    /** A side of a box whose corners were worked out into {@link #corner}, by their numbers. */
     private void quadCorners(Layer layer, int[] side, int rgb, int alpha) {
         if (alpha <= 0) {
             return;
@@ -355,24 +297,11 @@ abstract class PainterSolid extends PainterCut {
         }
     }
 
-    /**
-     * How thick the lines along a part are drawn, as a part of the usual: a small part (a knob, a coin, a spoke) gets
-     * finer lines, so its glow does not swallow it. It goes by the middle one of its three sizes, at scale 1.
-     */
     public static double fine(double x, double y, double z) {
         double middle = Math.max(Math.min(x, y), Math.min(Math.max(x, y), z));
         return Mth.clamp(middle / FINE_SIZE, FINEST, 1.0);
     }
 
-    /**
-     * Whether an edge of a box is worth a line of light. It is when the shape ends there as you look at it:
-     * one of the two sides that meet at the edge faces you and the other faces away. An edge with another
-     * box right against it is left out as well, because there the mass simply goes on (worked out once per model, see
-     * {@link ModelInfo}).
-     *
-     * @param corner the corner the edge starts at; {@code axis} is the way it runs (0 = x, 1 = y, 2 = z)
-     * @param view   where the camera is, in the model's own space
-     */
     private static boolean rim(double[][] model, ModelInfo info, int index, int corner, int axis, Vec3 view) {
         double[] box = model[index];
         int facing = 0;
@@ -388,12 +317,10 @@ abstract class PainterSolid extends PainterCut {
         return facing == 1 && !info.covered()[index * 24 + corner * 3 + axis];
     }
 
-    /** One of the three numbers of a point: 0 = x, 1 = y, 2 = z. */
     private static double axis(Vec3 point, int index) {
         return index == 0 ? point.x : index == 1 ? point.y : point.z;
     }
 
-    /** A side of a round part (see {@link #quadAt}), by the numbers of its corners, cut off at the plane (see cut). */
     private void cutAt(Layer layer, int[] side, int rgb, int alpha, double fine, double solid, boolean halo) {
         double[] in = this.cutIn;
         for (int k = 0; k < 4; k++) {
@@ -405,7 +332,6 @@ abstract class PainterSolid extends PainterCut {
         this.cut(layer, rgb, alpha, fine, solid, halo);
     }
 
-    /** A side of a box (see {@link #quadCorners}), by the numbers of its corners, cut off at the plane (see cut). */
     private void cutCorners(Layer layer, int[] side, int rgb, int alpha, double fine, double solid, boolean halo) {
         double[] at = this.corner;
         double[] in = this.cutIn;
@@ -418,7 +344,6 @@ abstract class PainterSolid extends PainterCut {
         this.cut(layer, rgb, alpha, fine, solid, halo);
     }
 
-    /** A quad of four corners worked out into the room for a part (see {@link #room}), by their numbers. */
     private void quadAt(Layer layer, int a, int b, int c, int d, int rgb, int alpha) {
         if (alpha <= 0) {
             return;

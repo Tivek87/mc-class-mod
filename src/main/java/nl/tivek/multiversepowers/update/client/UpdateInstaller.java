@@ -30,13 +30,6 @@ import net.neoforged.fml.ModList;
 import nl.tivek.multiversepowers.MultiversePowers;
 import org.slf4j.Logger;
 
-/**
- * Downloads a release's jar, checks it, and leaves the swap to {@link UpdateHelper}, which does it once the game has
- * closed ("Update later") or right away with a restart ("Update and restart now").
- *
- * <p>The jar must come from the mod's own release page, match the SHA-256 checksum GitHub lists for it, and hold the
- * mod itself; anything else is thrown away. All of it happens in {@code .multiverse-powers-update} in the game folder.
- */
 final class UpdateInstaller {
     enum State { IDLE, DOWNLOADING, READY, FAILED }
 
@@ -53,14 +46,12 @@ final class UpdateInstaller {
     private static volatile float progress;
     @Nullable
     private static Component error;
-    /** The release being downloaded, or downloaded and waiting for the game to close. */
     @Nullable
     private static Release target;
     @Nullable
     private static Path downloaded;
     private static boolean restartWanted;
     private static boolean helperStarted;
-    /** The mod's own jar; stays null in a development run, where the mod is a folder. */
     @Nullable
     private static Path modJar;
 
@@ -80,12 +71,10 @@ final class UpdateInstaller {
         return error;
     }
 
-    /** Whether that release is downloaded and will be put in place when the game closes. */
     static boolean scheduled(Release release) {
         return state == State.READY && target != null && target.version().equals(release.version());
     }
 
-    /** Whether the running mod is a jar that can be swapped (not in a development run). */
     static boolean canInstall() {
         return modJar() != null;
     }
@@ -101,17 +90,15 @@ final class UpdateInstaller {
         return modJar;
     }
 
-    /** Absolute: the helper runs from inside this folder, where a path relative to the game folder means nothing. */
+    // Absolute, since the helper runs elsewhere and a relative path means nothing.
     private static Path folder() {
         return Minecraft.getInstance().gameDirectory.toPath().resolve(FOLDER).toAbsolutePath().normalize();
     }
 
-    /** Downloads it now; the game keeps running, the new jar goes in when the game closes. */
     static void updateLater(Release release) {
         begin(release, false);
     }
 
-    /** Downloads it, then closes the game and starts it again with the new jar. */
     static void updateAndRestart(Release release) {
         begin(release, true);
     }
@@ -166,7 +153,6 @@ final class UpdateInstaller {
         finish();
     }
 
-    /** With "restart now": closes the game (which saves the world), the helper takes it from there. */
     private static void finish() {
         if (!restartWanted) {
             return;
@@ -250,7 +236,6 @@ final class UpdateInstaller {
         }
     }
 
-    /** What the helper does once the game is gone; written again whenever the plan changes. */
     private static void writePlan(boolean relaunch) throws IOException {
         Path oldJar = modJar();
         Properties plan = new Properties();
@@ -265,15 +250,12 @@ final class UpdateInstaller {
         }
     }
 
-    /**
-     * One helper per game session: it runs from a copy of this jar, so the jar itself can be swapped. The copy is named
-     * after this game's process, as the helper of the session before (which restarted this game) may still hold its own.
-     */
     private static void startHelper() throws IOException {
         if (helperStarted) {
             return;
         }
         Path folder = folder();
+        // Named by pid, so an earlier helper's own copy (still locked) isn't reused.
         Path helperJar = folder.resolve(HELPER_PREFIX + ProcessHandle.current().pid() + ".jar");
         Files.copy(modJar(), helperJar, StandardCopyOption.REPLACE_EXISTING);
         if (!holds(helperJar, UpdateHelper.class.getName().replace('.', '/') + ".class")) {
@@ -288,9 +270,9 @@ final class UpdateInstaller {
         helperStarted = true;
     }
 
-    /** The Java of this game; on Windows the windowless one for the helper, so no black window pops up. */
     static String javaProgram(boolean windowless) {
         Path bin = Path.of(System.getProperty("java.home"), "bin");
+        // javaw avoids a black console window for the background helper process.
         for (String name : windowless ? new String[] {"javaw.exe", "java.exe", "java"} : new String[] {"java.exe", "java"}) {
             if (Files.isRegularFile(bin.resolve(name))) {
                 return bin.resolve(name).toString();
@@ -299,7 +281,6 @@ final class UpdateInstaller {
         return "java";
     }
 
-    /** Clears what an earlier update left behind (the helper's log stays, for when something went wrong). */
     static void cleanUp() {
         Path folder = folder();
         if (!Files.isDirectory(folder)) {
@@ -311,7 +292,6 @@ final class UpdateInstaller {
                     try {
                         Files.deleteIfExists(file);
                     } catch (IOException ignored) {
-                        // Still in use by a helper that is just finishing; the next start clears it.
                     }
                 }
             }
@@ -320,7 +300,6 @@ final class UpdateInstaller {
         }
     }
 
-    /** A download that arrived but is not the mod's jar. */
     private static final class UpdateException extends IllegalStateException {
         private final Component reason;
 

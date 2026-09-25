@@ -25,30 +25,16 @@ import nl.tivek.multiversepowers.character.greenlantern.client.ClientRing;
 import nl.tivek.multiversepowers.engine.math.Ease;
 import org.joml.Vector3f;
 
-/**
- * Green Lantern's ring hand while he calls his Giant Hands (see {@link GiantHands}): at every hand he raises his arm
- * towards where it comes up, a quick wave up and out that sends the ring's light there, and lowers it again before the
- * next one. Seen from outside and in first person alike; calling an air strike's plane, the ring fist thrown up high
- * (see {@link CallArm}) goes over it.
- */
 @EventBusSubscriber(modid = MultiversePowers.MODID, value = Dist.CLIENT)
 public final class HandsArm {
-    // How long the arm takes to come up, how long it keeps pointing at the hand, and how long it takes to come down
-    // after that, in ticks: all of it as long as the server lets his ring hand wave.
     private static final float RAISE = 3.0F;
     private static final float DOWN = 8.0F;
     private static final float HOLD = GiantHands.WAVE_TICKS - DOWN;
-    // How long it takes to fling up and out as it waves, and back.
     private static final float FLING = 8.0F;
-    // Seen from outside: how far the arm flings up as it waves, in radians, and how far round from straight ahead it
-    // may point, either way, in radians.
     private static final float FLING_UP = 0.5F;
     private static final double WIDEST = Math.toRadians(115.0);
-    // Where the shoulder is on the body, as a part of its height and in blocks to the side.
     private static final double SHOULDER_HEIGHT = 0.8;
     private static final double SHOULDER_SIDE = 0.31;
-    // Your own ring hand in first person, in blocks in front of your eyes: where it points to straight ahead, how far it
-    // goes to the side and up or down, how far it flings up as it waves, and where the arm reaches in from.
     private static final Vector3f AHEAD = new Vector3f(0.18F, -0.12F, -0.86F);
     private static final float SIDEWAYS = 0.5F;
     private static final float UPWARDS = 0.32F;
@@ -58,10 +44,6 @@ public final class HandsArm {
     private HandsArm() {
     }
 
-    /**
-     * How far this player's ring arm is up to wave his hands on, 0 to 1: up, held and down again at every hand. The
-     * next hand only comes once it is down (see {@link GiantHands#WAVE_TICKS}), so it always starts from down.
-     */
     static float out(Entity player, float partialTick) {
         ClientConstructs.Wave wave = ClientConstructs.wave(player.getId(), partialTick);
         if (wave == null) {
@@ -71,24 +53,15 @@ public final class HandsArm {
         return (float) (Ease.smooth(clock / RAISE) * (1.0 - Ease.smooth((clock - HOLD) / DOWN)));
     }
 
-    /**
-     * How far the arm is flung up and out right now, 0 to 1 and back: a wave at every hand, quick up and settling
-     * back without a jolt.
-     */
     private static double fling(double clock) {
         double u = Mth.clamp(clock / FLING, 0.0, 1.0);
         return 6.75 * u * (1.0 - u) * (1.0 - u);
     }
 
-    /** The way the arm points, from {@code from}: towards the newest hand. */
     private static Vec3 pointing(ClientConstructs.Wave wave, Vec3 from) {
         return wave.newest().subtract(from);
     }
 
-    /**
-     * Seen from outside: the ring arm flung out towards the newest hand, low and far or high and near. The ring fist
-     * thrown up to call an air strike's plane (posed just before) goes over it, as far as it is up.
-     */
     static void pose(HumanoidModel<?> model, LivingEntity entity, HumanoidArm arm) {
         if (arm != HumanoidArm.RIGHT) {
             return;
@@ -110,7 +83,6 @@ public final class HandsArm {
             return;
         }
         way = way.normalize();
-        // Never round behind him: at most this far round to either side.
         double ahead = way.dot(forward);
         double side = way.dot(left);
         double round = Math.atan2(side, ahead);
@@ -129,10 +101,6 @@ public final class HandsArm {
         model.rightArm.zRot = Mth.lerp(out, model.rightArm.zRot, (float) Math.atan2(-x, y));
     }
 
-    /**
-     * Your own ring hand in first person, flung out towards every hand as you call it. While your ring fist is thrown
-     * up to call an air strike's plane, {@link CallArm} draws it (from where this one has it).
-     */
     @SubscribeEvent(priority = EventPriority.HIGH)
     public static void onRenderHand(RenderHandEvent event) {
         Minecraft minecraft = Minecraft.getInstance();
@@ -153,10 +121,6 @@ public final class HandsArm {
                 ARM_FROM);
     }
 
-    /**
-     * Where your own ring hand is in first person while you wave, in blocks in front of your eyes: from where the
-     * game rests it out towards the newest hand, as far as your arm is up; null while you do not wave.
-     */
     @Nullable
     static Vector3f hand(LocalPlayer player, float partialTick) {
         float out = out(player, partialTick);
@@ -169,7 +133,6 @@ public final class HandsArm {
         Vec3 look = new Vec3(camera.getLookVector());
         Vec3 up = new Vec3(camera.getUpVector());
         Vec3 left = new Vec3(camera.getLeftVector());
-        // How far round to the right and how far up it is from where you look, kept on your screen.
         double round = Math.atan2(-to.dot(left), to.dot(look));
         double high = Math.atan2(to.dot(up), Math.sqrt(sq(to.dot(left)) + sq(to.dot(look))));
         Vector3f hand = new Vector3f(AHEAD).add((float) (SIDEWAYS * Math.sin(Mth.clamp(round, -1.3, 1.3))),

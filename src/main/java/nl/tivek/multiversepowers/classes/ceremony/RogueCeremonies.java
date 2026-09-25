@@ -12,12 +12,10 @@ import static nl.tivek.multiversepowers.classes.ceremony.Fx.FLOOR;
 import static nl.tivek.multiversepowers.classes.ceremony.Fx.fadeOut;
 import static nl.tivek.multiversepowers.classes.ceremony.Fx.hash;
 
-/** The ceremonies of the Rogues: Assassin, Thief, Highwayman and Infiltrator. */
 final class RogueCeremonies {
     private RogueCeremonies() {
     }
 
-    /** X-shaped slash close to the player on the side at {@code angle}. */
     static void crossSlash(Fx fx, double angle, double dist, double y, double half) {
         double cx = Math.sin(angle) * dist;
         double cz = Math.cos(angle) * dist;
@@ -29,7 +27,6 @@ final class RogueCeremonies {
         }
     }
 
-    /** A shadow clone at {@code angle} that dashes into the player at tick {@code dash}. */
     static void shadowClone(Fx fx, double angle, double dist, int appear, int dash) {
         int t = fx.age();
         if (t < appear || t > dash + 3) {
@@ -75,10 +72,6 @@ final class RogueCeremonies {
         fx.at(eye, x - tx, 1.5, z - tz);
     }
 
-    /**
-     * Assassin: darkness closes in from far around you, eight shadow clones step out of it in two rings,
-     * they dash through you one by one, then you vanish in smoke and ink and eyes glint in the dark.
-     */
     static void assassinGrand(Fx fx) {
         int t = fx.age();
         ParticleOptions black = fx.dust(0x18181E, 2.5F);
@@ -119,7 +112,6 @@ final class RogueCeremonies {
         glintingEyes(fx, 154, 198);
     }
 
-    /** Assassin respawn: you blink between three points around you, slashing a triangle, then back with an X. */
     static void assassinLight(Fx fx) {
         int t = fx.age();
         ParticleOptions violet = fx.dust(0x9A3AD8, 1.1F);
@@ -164,13 +156,11 @@ final class RogueCeremonies {
         glintingEyes(fx, 20, 48);
     }
 
-    /** A spinning coin standing on its edge at (x, y, z). */
     static void coin(Fx fx, double x, double y, double z, double spin, double radius) {
         fx.ring3(fx.dust(0xF0C040, 0.9F), x, y, z, radius, Math.cos(spin), 0, Math.sin(spin), 0, 2 * Math.PI, 0.05,
                 1);
     }
 
-    /** Coin {@code i}: pops out of the ground, spins, then flies in an arc into the player's belt. */
     static void thiefCoin(Fx fx, int i, int pop, int hop, int flyStart, int flyTime, double minDist,
                                   double maxDist) {
         int t = fx.age();
@@ -226,10 +216,6 @@ final class RogueCeremonies {
         }
     }
 
-    /**
-     * Thief: twenty coins pop out of the ground around you and fly into your pocket, a padlock appears
-     * above you, you pick it click by click, it springs open and a fountain of gold and gems pours out.
-     */
     static void thiefGrand(Fx fx) {
         int t = fx.age();
         for (int i = 0; i < 20; i++) {
@@ -269,7 +255,6 @@ final class RogueCeremonies {
         }
     }
 
-    /** Thief respawn: a coin flips high over your head, you catch it, and five coins circle you. */
     static void thiefLight(Fx fx) {
         int t = fx.age();
         if (t < 18) {
@@ -298,7 +283,6 @@ final class RogueCeremonies {
         }
     }
 
-    /** Revolver cylinder hovering above the head: six chambers, {@code loaded} of them filled. */
     static void revolver(Fx fx, double y, double rot, int loaded, int fired, double keep) {
         ParticleOptions leather = fx.dust(0x8B5A30, 1.0F);
         ParticleOptions steel = fx.dust(0xB8B8C0, 0.9F);
@@ -326,10 +310,6 @@ final class RogueCeremonies {
         fx.sound(SoundEvents.CROSSBOW_SHOOT, 0.4F, 0.6F);
     }
 
-    /**
-     * Highwayman: a horse gallops two and a half laps around you, kicking up dust, a revolver loads chamber
-     * by chamber above your head, spins, and six shots fan out all around you, then gunsmoke rings rise.
-     */
     static void highwaymanGrand(Fx fx) {
         int t = fx.age();
         int step = t / 2;
@@ -384,7 +364,6 @@ final class RogueCeremonies {
         }
     }
 
-    /** Highwayman respawn: a whinny, then two pistol shots straight up into the air and rising smoke rings. */
     static void highwaymanLight(Fx fx) {
         int t = fx.age();
         if (t == 0) {
@@ -418,7 +397,6 @@ final class RogueCeremonies {
         fx.ring(fx.dust(0x40D8B0, 0.7F), 0.62, y - 0.04, 0.12, 0.6);
     }
 
-    /** Body turned into jittering pixels; {@code amount} 0..1 is how far they are displaced. */
     static void infiltratorGlitch(Fx fx, int count, double amount) {
         int[] colors = {0x40D8B0, 0x202830, 0x9AA8C0};
         for (int i = 0; i < count; i++) {
@@ -433,10 +411,6 @@ final class RogueCeremonies {
         }
     }
 
-    /**
-     * Infiltrator: a wide laser grid appears under you and a scanner sweeps over you three times,
-     * you glitch apart into pixels that scatter, then snap back together and a watching eye opens.
-     */
     static void infiltratorGrand(Fx fx) {
         int t = fx.age();
         if (t < 135 && fx.every(3)) {
@@ -496,7 +470,6 @@ final class RogueCeremonies {
         }
     }
 
-    /** Infiltrator respawn: a hologram of you builds up ring by ring from head to feet, flickers, and turns solid. */
     static void infiltratorLight(Fx fx) {
         int t = fx.age();
         ParticleOptions holo = fx.dust(0x40D8B0, 1.0F);

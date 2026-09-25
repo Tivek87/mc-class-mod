@@ -12,14 +12,9 @@ import nl.tivek.multiversepowers.config.client.ClientSettings;
 import nl.tivek.multiversepowers.config.client.SettingsScreen;
 import nl.tivek.multiversepowers.update.client.UpdatePopup;
 
-/**
- * Client-only start of the mod. Kept apart from MultiversePowers, because a dedicated server cannot
- * load anything that mentions screens.
- */
 @Mod(value = MultiversePowers.MODID, dist = Dist.CLIENT)
 public final class MultiversePowersClient {
     public MultiversePowersClient(ModContainer container, IEventBus modEventBus) {
-        // Your own settings, in your own game only (the world settings come with the world, see ModConfigs).
         container.registerConfig(ModConfig.Type.CLIENT, ClientSettings.SPEC, ModConfigs.file("client"));
         container.registerExtensionPoint(IConfigScreenFactory.class,
                 (mod, parent) -> new SettingsScreen(parent));

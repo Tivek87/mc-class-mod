@@ -21,20 +21,12 @@ import net.minecraft.util.Mth;
 import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.engine.client.gui.DirtBackgroundScreen;
 
-/**
- * The settings of this mod in the game. A tab for every page (the world settings: the stamina bar and every character;
- * then your own client settings); on a page a part for every ability that folds open and shut; a search box that looks
- * through every page at once; and a bar at the bottom that says what the number you point at does. Changes on every tab
- * are kept until you save them, all at once, into the same settings files you could open by hand (the world settings
- * into the open world's own copy); cancel throws them away.
- */
 public class SettingsScreen extends DirtBackgroundScreen {
     private static final String PREFIX = "config." + MultiversePowers.MODID + ".";
     private static final int MAX_WIDTH = 520;
     private static final int TABS_Y = 22;
     private static final int SEARCH_Y = 44;
     private static final int LIST_TOP = 64;
-    // Room below the list: the bar that explains, and the buttons.
     private static final int HELP_HEIGHT = 32;
     private static final int FOOTER = 30;
     private static final int CHANGED = 0xF2C84B;
@@ -42,11 +34,8 @@ public class SettingsScreen extends DirtBackgroundScreen {
     @Nullable
     private final Screen lastScreen;
     private final List<SettingsPages.Page> pages;
-    // Every number on every page, and the page it is on.
     private final Map<ConfigNumber, SettingsPages.Page> pageOf = new IdentityHashMap<>();
-    // What was changed and not saved yet: a number and its new value.
     private final Map<ConfigNumber, Double> edits = new IdentityHashMap<>();
-    // The parts that are folded shut, by page and part.
     private final Set<String> collapsed = new HashSet<>();
     private final List<Button> tabs = new ArrayList<>();
     private int tab;
@@ -56,18 +45,14 @@ public class SettingsScreen extends DirtBackgroundScreen {
     private ConfigNumber pointed;
     private int panelLeft;
     private int panelWidth;
-    // What to redo at the start of the next frame (see rebuildLater): the list, and whether to keep where it was
-    // scrolled to; or the whole screen, for another tab.
     private boolean rebuildLater;
     private boolean keepScrollLater;
     private boolean retabLater;
 
-    /** The settings, open on the first tab. */
     public SettingsScreen(@Nullable Screen lastScreen) {
         this(lastScreen, 0);
     }
 
-    /** The settings, open on this tab (see {@link SettingsPages#all}). */
     public SettingsScreen(@Nullable Screen lastScreen, int tab) {
         super(Component.translatable(PREFIX + "title"));
         this.lastScreen = lastScreen;
@@ -144,7 +129,6 @@ public class SettingsScreen extends DirtBackgroundScreen {
         this.rebuild(true);
     }
 
-    /** The list made anew for the tab, the search and what is folded shut; scrolled back where it was if asked. */
     private void rebuild(boolean keepScroll) {
         double scroll = this.list == null ? 0.0 : this.list.getScrollAmount();
         if (this.list != null) {
@@ -163,10 +147,6 @@ public class SettingsScreen extends DirtBackgroundScreen {
         }
     }
 
-    /**
-     * What the list shows: the parts of the page of the open tab, or, while something is searched for, every number of
-     * every page that matches it, under the name of its page and part.
-     */
     private List<SettingsList.Block> blocks() {
         List<SettingsList.Block> blocks = new ArrayList<>();
         String wanted = this.query.trim().toLowerCase(Locale.ROOT);
@@ -215,7 +195,6 @@ public class SettingsScreen extends DirtBackgroundScreen {
         return page + ":" + section;
     }
 
-    /** A part folded open or shut, by its title in the list. */
     void toggle(String key) {
         if (!this.collapsed.remove(key)) {
             this.collapsed.add(key);
@@ -229,16 +208,12 @@ public class SettingsScreen extends DirtBackgroundScreen {
         this.retabLater = true;
     }
 
-    /**
-     * The list made anew at the start of the next frame: a click or a key asks for it while the screen still goes
-     * through its buttons, which must not change under its hands.
-     */
+    // Deferred: a click still walks the widget list, which a rebuild now would change under it.
     private void rebuildLater(boolean keepScroll) {
         this.keepScrollLater = this.rebuildLater ? this.keepScrollLater && keepScroll : keepScroll;
         this.rebuildLater = true;
     }
 
-    /** The name on a tab: the open one stands out, and a dot shows a page with changes not saved yet. */
     private Component tabLabel(int index) {
         SettingsPages.Page page = this.pages.get(index);
         boolean changed = this.edits.keySet().stream().anyMatch(number -> this.pageOf.get(number) == page);
@@ -247,15 +222,11 @@ public class SettingsScreen extends DirtBackgroundScreen {
                 ChatFormatting.UNDERLINE) : label;
     }
 
-    // ---- The numbers, as changed on this screen ----
-
-    /** What a number is right now on this screen: changed and not saved yet, or what its file holds. */
     double value(ConfigNumber number) {
         Double edited = this.edits.get(number);
         return edited != null ? edited : number.clamp(number.stored().getAsDouble());
     }
 
-    /** A number changed on this screen: kept until it is saved, or forgotten when it is back to what the file has. */
     void set(ConfigNumber number, double value) {
         if (Math.abs(value - number.clamp(number.stored().getAsDouble())) < 1.0E-9) {
             this.edits.remove(number);
@@ -267,18 +238,15 @@ public class SettingsScreen extends DirtBackgroundScreen {
         }
     }
 
-    /** Whether this number can be changed: its page's settings file is open. */
     boolean editable(ConfigNumber number) {
         SettingsPages.Page page = this.pageOf.get(number);
         return page != null && page.editable();
     }
 
-    /** The number the mouse points at, for the bar that explains it. */
     void pointAt(@Nullable ConfigNumber number) {
         this.pointed = number;
     }
 
-    /** Every number in the list back to what the mod itself has; nothing is saved yet. */
     private void defaults() {
         for (ConfigNumber number : this.list.numbers()) {
             this.set(number, number.defaultValue());
@@ -286,7 +254,6 @@ public class SettingsScreen extends DirtBackgroundScreen {
         this.rebuildLater(true);
     }
 
-    /** Puts every change into its settings file and writes the files; the screen stays open. */
     private void apply() {
         Set<SettingsPages.Page> touched = new HashSet<>();
         for (Map.Entry<ConfigNumber, Double> edit : this.edits.entrySet()) {
@@ -303,12 +270,6 @@ public class SettingsScreen extends DirtBackgroundScreen {
         this.rebuildLater(true);
     }
 
-    // ---- Drawing ----
-
-    /**
-     * The background, the panel and its title. The game draws the background again at the start of every frame,
-     * before the buttons and the list, so everything that has to lie under them goes here.
-     */
     @Override
     public void renderBackground(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         if (this.minecraft != null && this.minecraft.level != null) {
@@ -325,20 +286,17 @@ public class SettingsScreen extends DirtBackgroundScreen {
         if (this.retabLater) {
             this.retabLater = false;
             this.rebuildLater = false;
-            // Another page: start at its top.
             this.list = null;
             this.rebuildWidgets();
         } else if (this.rebuildLater) {
             this.rebuildLater = false;
             this.rebuild(this.keepScrollLater);
         }
-        // The list says which number the mouse points at while it draws its rows; the bar below it tells about it.
         this.pointed = null;
         super.render(graphics, mouseX, mouseY, partialTick);
         this.renderHelp(graphics);
     }
 
-    /** The bar under the list: what the number pointed at does, or what to do here, and how much is not saved. */
     private void renderHelp(GuiGraphics graphics) {
         int center = this.width / 2;
         int left = this.panelLeft + 8;
@@ -354,8 +312,6 @@ public class SettingsScreen extends DirtBackgroundScreen {
                     : this.pointed.description();
             color = TEXT_COLOR;
         } else if (page.world() && !page.editable()) {
-            // World settings belong to a world: someone else's server decides them, and with no world open there are
-            // none to change.
             line = Component.translatable(PREFIX + (inWorld ? "server_decides" : "world_closed"));
             color = NOTICE_COLOR;
         } else if (!page.editable()) {

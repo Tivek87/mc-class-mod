@@ -17,24 +17,11 @@ import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 import nl.tivek.multiversepowers.engine.target.Targeting;
 
-/**
- * The tentacles against the ground: Ground Strike (into the ground at your feet, out of it under the
- * creatures you marked) and Ground Slam (smashing down around you).
- */
 abstract class RigGround extends RigGrab {
     RigGround(ServerPlayer caster, ServerLevel home) {
         super(caster, home);
     }
 
-    // ---- Ground Strike ----
-
-    /**
-     * The Ground Strike key. Looking at a creature marks it, up to one mark for every free tentacle;
-     * pressing while you aim at nothing (or with every tentacle already spoken for) launches the
-     * strike at everything you marked. Crouching drops the marks again.
-     *
-     * @return true only when the strike really launches, so marking never starts the cooldown
-     */
     boolean groundStrike(ServerLevel level) {
         if (this.searchedJustNow("ground_strike")) {
             return false;
@@ -60,7 +47,6 @@ abstract class RigGround extends RigGrab {
         return this.launchStrike(level);
     }
 
-    /** Crouch + the Ground Strike key: forget every mark, without a cooldown. */
     boolean clearMarks() {
         if (this.marks.isEmpty()) {
             return false;
@@ -72,7 +58,6 @@ abstract class RigGround extends RigGrab {
         return true;
     }
 
-    /** One tentacle per marked creature dives into the ground at your feet. */
     private boolean launchStrike(ServerLevel level) {
         int launched = 0;
         for (LivingEntity target : this.marks) {
@@ -96,7 +81,6 @@ abstract class RigGround extends RigGrab {
         return true;
     }
 
-    /** This tentacle starts digging: it picks its own hole in the ground beside you. */
     private void startDig(ServerLevel level, Arm arm, LivingEntity target) {
         arm.job = Job.BURROW;
         arm.age = 0;
@@ -115,33 +99,24 @@ abstract class RigGround extends RigGrab {
         arm.digTravel = TRAVEL_MIN + (int) (this.caster.distanceTo(target) * TRAVEL_PER_BLOCK);
     }
 
-    /**
-     * A digging tentacle, step by step: to its hole, into the ground, along under it, up out of the
-     * ground at the creature, back down, and back out of the hole.
-     */
     void tickDig(ServerLevel level, Arm arm) {
         LivingEntity target = arm.target;
         boolean gone = target == null || !target.isAlive() || target.isRemoved() || target.level() != level;
         if (gone && arm.dig == Dig.SHOW) {
-            // It never even went into the ground: simply put the tentacle back.
             this.toRest(arm);
             return;
         }
         if (gone && arm.dig.ordinal() < Dig.DOWN.ordinal()) {
-            // Whatever it was after is gone: come straight back instead of hanging in the ground.
             arm.dig = arm.risen > 0 ? Dig.DOWN : Dig.BACK;
             arm.age = 0;
         }
         switch (arm.dig) {
             case SHOW -> {
-                // First up in front of you, claw open and the spikes sliding out of the middle of it,
-                // so you and whatever is in front of you see the strike coming.
                 Vec3 show = this.caster.getEyePosition().add(this.forward().scale(2.0))
                         .add(this.right().scale(arm.side * (arm.upper ? 0.5 : 0.95)))
                         .add(0, arm.upper ? 0.3 : -0.35, 0);
                 arm.claw = 0.6;
                 arm.spike = Math.min(1.0, arm.spike + 1.0 / SHOW_TIME);
-                // Turned towards you, so you see the spikes come out of the front of the claw.
                 arm.aim = this.caster.getEyePosition().subtract(arm.tip);
                 this.glide(arm, show, 0.55, 0.9);
                 if (arm.age == 1) {
@@ -159,7 +134,6 @@ abstract class RigGround extends RigGrab {
                 arm.claw = 0.05;
                 arm.spike = Math.min(1.0, arm.spike + 1.0 / DIVE_TIME);
                 this.glide(arm, arm.spot, 0.55, 1.0);
-                // Once it is really at the hole, or after far too long (no ground under you at all).
                 if (arm.tip.distanceTo(arm.spot) < 0.5 || arm.age > DIVE_TIME * 4) {
                     arm.dig = Dig.SINK;
                     arm.age = 0;
@@ -178,7 +152,6 @@ abstract class RigGround extends RigGrab {
                 }
             }
             case UNDER -> {
-                // Everything of it is under the ground now; only the piece into the hole shows.
                 arm.tip = arm.spot.add(0, -SINK_DEPTH, 0);
                 arm.tipOffset = SINK_DEPTH;
                 if (!gone && this.age % 2 == 0) {
@@ -199,7 +172,6 @@ abstract class RigGround extends RigGrab {
                 double top = gone ? RISE_ABOVE
                         : target.getBoundingBox().getCenter().y - arm.digGround + RISE_ABOVE;
                 top = Math.max(1.4, top);
-                // Shoots up and eases into its highest point instead of stopping dead.
                 arm.risen += Math.min(RISE_SPEED, Math.max(0.35, (top - arm.risen) * 0.55));
                 if (!arm.digHit && !gone && arm.risen >= top - RISE_ABOVE) {
                     arm.digHit = true;
@@ -213,7 +185,6 @@ abstract class RigGround extends RigGrab {
             }
             case DOWN -> {
                 if (arm.age >= SPIKE_HOLD) {
-                    // Slides back into the ground, slowing down as it goes.
                     arm.risen -= Math.max(SPIKE_SINK * 0.3, arm.risen * 0.35);
                     if (arm.risen <= 0) {
                         arm.risen = 0;
@@ -234,12 +205,11 @@ abstract class RigGround extends RigGrab {
         this.drawSpike(level, arm);
     }
 
-    /** The ground shakes along the way while a tentacle travels underneath it. */
     private void rumble(ServerLevel level, Arm arm, LivingEntity target) {
         double t = Math.min(1.0, (arm.age + 1.0) / Math.max(1, arm.digTravel));
         Vec3 at = arm.spot.lerp(target.position(), t);
         BlockPos above = BlockPos.containing(at.x, at.y + 1.0, at.z);
-        // Only dust: never worth loading a chunk for.
+        // Skip when the chunk isn't loaded: never force one to load just for dust.
         if (!level.isLoaded(above)) {
             return;
         }
@@ -247,7 +217,6 @@ abstract class RigGround extends RigGrab {
         this.groundBurst(level, new Vec3(at.x, ground, at.z), 4);
     }
 
-    /** Dust and broken-block bits out of the ground at {@code at}. */
     private void groundBurst(ServerLevel level, Vec3 at, int count) {
         BlockState ground = level.getBlockState(BlockPos.containing(at.x, at.y - 0.5, at.z));
         if (!ground.isAir()) {
@@ -257,9 +226,7 @@ abstract class RigGround extends RigGrab {
         ParticleFx.cloud(level, ParticleTypes.POOF, at.add(0, 0.15, 0), Math.max(2, count / 4), 0.3, 0.05);
     }
 
-    /** The spike bursts out under the creature and throws it up. */
     private void spikeHit(ServerLevel level, Arm arm, LivingEntity target) {
-        // Only a hit that lands throws it up; a shield or a player you may not hurt stays where it is.
         if (this.hurt(target, damageOf("ground_strike"), 0.0)) {
             double up = ability("ground_strike").value("knockUp");
             target.setDeltaMovement(target.getDeltaMovement().x, up, target.getDeltaMovement().z);
@@ -273,7 +240,6 @@ abstract class RigGround extends RigGrab {
         this.sound(at, SoundEvents.IRON_GOLEM_ATTACK, 1.0F, 0.7F);
     }
 
-    /** The part that stands out of the ground, drawn as an arm of its own. */
     private void drawSpike(ServerLevel level, Arm arm) {
         if (arm.risen <= 0.01) {
             if (arm.farId >= 0) {
@@ -291,12 +257,10 @@ abstract class RigGround extends RigGrab {
                 .clip(new Vec3(arm.digAt.x, arm.digGround, arm.digAt.z), new Vec3(0, -1, 0)).send(level);
     }
 
-    /** Lets every mark go again; their glow goes out by itself (see glow). */
     void dropMarks() {
         this.marks.clear();
     }
 
-    /** Marked creatures glow; one that dies or walks out of range is forgotten. */
     void tickMarks(ServerLevel level) {
         if (this.marks.isEmpty()) {
             return;
@@ -316,12 +280,6 @@ abstract class RigGround extends RigGrab {
         }
     }
 
-    /**
-     * A marked creature lights up, so you can see who is on the list, walls or no walls. A short glow,
-     * topped up while the mark stands: it goes out by itself once nobody marks it any more, and two
-     * players marking the same creature never take each other's glow away. A longer glow of its own (a
-     * spectral arrow) already shows the mark and is left as it is.
-     */
     private static void glow(LivingEntity target) {
         MobEffectInstance glow = target.getEffect(MobEffects.GLOWING);
         if (glow == null || glow.endsWithin(MARK_GLOW / 2)) {
@@ -329,13 +287,6 @@ abstract class RigGround extends RigGrab {
         }
     }
 
-    // ---- Ground Slam ----
-
-    /**
-     * The Ground Slam key. While the tentacles hold creatures, every one of them drives its catch
-     * straight into the ground; with empty claws it is the slam around you. Crouching always gives the
-     * slam around you, so you can use it without letting your catch go.
-     */
     boolean heavy(ServerLevel level, boolean areaOnly) {
         if (this.isHolding() && !areaOnly) {
             this.heldSlam = HELD_SLAM_TIME;
@@ -352,7 +303,6 @@ abstract class RigGround extends RigGrab {
         return this.groundSlam(level);
     }
 
-    /** On the ground: the tentacles rise and smash down around you. In the air: you dive down first. */
     private boolean groundSlam(ServerLevel level) {
         if (this.slam != Slam.NONE) {
             return false;
@@ -423,7 +373,6 @@ abstract class RigGround extends RigGrab {
         this.sound(this.caster.position(), SoundEvents.PISTON_EXTEND, 1.2F, 0.4F);
     }
 
-    /** Everything around you is hurt and thrown back and up; closer means harder. */
     private void impact(ServerLevel level) {
         double radius = this.airSlam ? AIR_SLAM_RADIUS : SLAM_RADIUS;
         float damage = this.airSlam ? (float) ability("ground_slam").value("airDamage")

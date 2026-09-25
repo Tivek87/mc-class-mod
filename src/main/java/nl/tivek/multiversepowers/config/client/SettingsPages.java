@@ -14,49 +14,26 @@ import nl.tivek.multiversepowers.character.CharacterAbility;
 import nl.tivek.multiversepowers.character.CharacterConfig;
 import nl.tivek.multiversepowers.character.GameCharacter;
 import nl.tivek.multiversepowers.character.client.AbilityKeys;
-import nl.tivek.multiversepowers.config.ModConfigs;
 import nl.tivek.multiversepowers.config.Unit;
 import nl.tivek.multiversepowers.stamina.StaminaConfig;
 import nl.tivek.multiversepowers.stamina.client.StaminaClient;
 
-/**
- * What each settings page holds: the world settings (the stamina bar, and one page per character with a part for every
- * ability that has numbers) and your own client settings (see {@link ModConfigs}). Names and explanations come from the
- * translations; a setting without one falls back to its name in the file and the English explanation that stands next
- * to it there.
- */
 public final class SettingsPages {
     private static final String PREFIX = "config." + MultiversePowers.MODID + ".";
 
     private SettingsPages() {
     }
 
-    /**
-     * One page.
-     *
-     * @param color    the colour of its title
-     * @param editable false while its settings can not be changed here, so nothing can be saved: a world page while no
-     *                 world of your own is open (see {@link #worldEditable})
-     * @param world    true for world settings, false for your own client settings
-     * @param save     writes the page's settings file to disk
-     */
     public record Page(Component title, int color, List<Section> sections, boolean editable, boolean world,
             Runnable save) {
     }
 
-    /**
-     * A part of a page: one ability, or the stamina bar.
-     *
-     * @param hint which key or button it sits on, or null
-     */
     public record Section(Component title, @Nullable Component hint, List<Group> groups) {
     }
 
-    /** Numbers that belong together; the first group of a section usually has no title. */
     public record Group(@Nullable Component title, List<ConfigNumber> numbers) {
     }
 
-    /** Every page, in the order of the tabs: the stamina bar first, then every character, then your own settings. */
     public static List<Page> all() {
         List<Page> pages = new ArrayList<>();
         pages.add(stamina());
@@ -67,21 +44,13 @@ public final class SettingsPages {
         return pages;
     }
 
-    /**
-     * World settings are the world's own: they can only be changed in a world this game runs itself (singleplayer, or a
-     * LAN world you host), and are saved with that world. On someone else's server they are the server's, only shown;
-     * with no world open there are none.
-     */
     public static boolean worldEditable(ModConfigSpec spec) {
         return spec.isLoaded() && Minecraft.getInstance().hasSingleplayerServer();
     }
 
-    /** The tab of this character's page (see {@link #all}). */
     public static int tab(GameCharacter character) {
         return 1 + character.ordinal();
     }
-
-    // ---- The stamina bar ----
 
     public static Page stamina() {
         ModConfigSpec spec = StaminaConfig.SPEC;
@@ -103,10 +72,6 @@ public final class SettingsPages {
                 });
     }
 
-    /**
-     * A setting of its own file, with its limits and default read from the settings file's own description; named by
-     * the translations under {@code page}.
-     */
     private static ConfigNumber fromSpec(ModConfigSpec spec, String page, String key,
             ModConfigSpec.ConfigValue<? extends Number> value, Unit unit, double step) {
         ModConfigSpec.Range<?> range = value.getSpec().getRange();
@@ -114,7 +79,6 @@ public final class SettingsPages {
         double max = range == null ? Double.MAX_VALUE : ((Number) range.getMax()).doubleValue();
         boolean whole = value instanceof ModConfigSpec.IntValue;
         String path = PREFIX + page + "." + key;
-        // A file that is not open (world settings with no world open) shows what the mod has.
         return new ConfigNumber(Component.translatableWithFallback(path, key),
                 Component.translatableWithFallback(path + ".desc", ""), unit, min, max, step, whole,
                 value.getDefault().doubleValue(),
@@ -130,8 +94,6 @@ public final class SettingsPages {
         }
     }
 
-    // ---- A character ----
-
     public static Page character(GameCharacter character) {
         List<Section> sections = new ArrayList<>();
         for (CharacterAbility ability : character.abilities()) {
@@ -142,7 +104,6 @@ public final class SettingsPages {
             if (ability.usesDamage()) {
                 general.add(damage(ability));
             }
-            // The ability's own settings, together per part of it, in the order the ability lists them.
             Map<String, Group> parts = new LinkedHashMap<>();
             for (CharacterAbility.Setting setting : ability.settings()) {
                 CharacterAbility.Group part = setting.group();
@@ -168,9 +129,6 @@ public final class SettingsPages {
                 () -> CharacterConfig.save(character));
     }
 
-    // ---- Your own settings ----
-
-    /** Your own client settings: what only you see and feel. */
     public static Page client() {
         ModConfigSpec spec = ClientSettings.SPEC;
         List<ConfigNumber> numbers = List.of(
@@ -204,13 +162,11 @@ public final class SettingsPages {
                 () -> CharacterConfig.value(ability, key), number -> CharacterConfig.setValue(ability, key, number));
     }
 
-    /** This ability's own translation of {@code key}, or {@code fallback} when it has none. */
     private static Component label(CharacterAbility ability, String key, Component fallback) {
         String path = PREFIX + ability.path() + "." + key;
         return I18n.exists(path) ? Component.translatable(path) : fallback;
     }
 
-    /** Which key or mouse button the ability sits on, as it is bound right now. */
     private static Component hint(CharacterAbility ability) {
         return switch (ability.mouseButton()) {
             case LEFT -> Component.translatable(PREFIX + "mouse.left");
@@ -219,7 +175,6 @@ public final class SettingsPages {
         };
     }
 
-    /** How much - and + change a setting: a small step for small numbers, a bigger one for big numbers. */
     private static double step(CharacterAbility.Setting setting) {
         double size = Math.abs(setting.value());
         return switch (setting.unit()) {

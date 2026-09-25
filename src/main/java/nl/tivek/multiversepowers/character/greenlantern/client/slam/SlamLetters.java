@@ -4,15 +4,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-/**
- * The boxes of the cartoon landing-slam constructs (see {@link SlamCartoon}): raised letters made of pixels, lists of
- * boxes joined into one, and boxes turned to face every side.
- */
 final class SlamLetters {
     private SlamLetters() {
     }
 
-    /** Letters five pixels tall, row by row from the top: '#' is a pixel, anything else is empty. */
     private static final Map<Character, String[]> FONT = Map.of(
             '1', new String[] { ".#.", "##.", ".#.", ".#.", "###" },
             'T', new String[] { "###", ".#.", ".#.", ".#.", ".#." },
@@ -20,11 +15,6 @@ final class SlamLetters {
             'N', new String[] { "#..#", "##.#", "#.##", "#..#", "#..#" },
             ' ', new String[] { ".", ".", ".", ".", "." });
 
-    /**
-     * Raised letters made of pixels, standing up in the plane of x and y: {@code text} centred on x = 0 with its foot
-     * at y = {@code bottom}, each pixel {@code pixel} wide and sticking out from z = {@code back} to z = {@code front}.
-     * The letters run along +x, his right, so they read from left to right on a side that faces him (-z).
-     */
     static double[][] text(String text, double bottom, double pixel, double back, double front,
             double bright) {
         int width = -1;
@@ -46,7 +36,6 @@ final class SlamLetters {
                     while (to < line.length() && line.charAt(to) == '#' && !used[row][to]) {
                         to++;
                     }
-                    // As few boxes as it takes: a run of pixels goes on down as long as the rows below have it too.
                     int last = row;
                     while (last + 1 < glyph.length && filled(glyph[last + 1], used[last + 1], from, to)) {
                         last++;
@@ -67,7 +56,6 @@ final class SlamLetters {
         return boxes.toArray(double[][]::new);
     }
 
-    /** Whether a row of a letter has a pixel from {@code from} up to {@code to} that no box has taken yet. */
     private static boolean filled(String line, boolean[] used, int from, int to) {
         for (int i = from; i < to; i++) {
             if (line.charAt(i) != '#' || used[i]) {
@@ -77,7 +65,6 @@ final class SlamLetters {
         return true;
     }
 
-    /** Boxes one after the other in one list. */
     static double[][] join(double[][]... parts) {
         int count = 0;
         for (double[][] part : parts) {
@@ -93,10 +80,6 @@ final class SlamLetters {
         return all;
     }
 
-    /**
-     * Boxes four times over: as they are and turned a quarter, a half and three quarters round the y axis, so what
-     * is on the side facing him is on every side.
-     */
     static double[][] quarters(double[][] boxes) {
         double[][] all = new double[boxes.length * 4][];
         for (int b = 0; b < boxes.length; b++) {

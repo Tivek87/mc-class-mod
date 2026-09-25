@@ -10,12 +10,10 @@ import static nl.tivek.multiversepowers.classes.ceremony.Fx.FLOOR;
 import static nl.tivek.multiversepowers.classes.ceremony.Fx.fadeOut;
 import static nl.tivek.multiversepowers.classes.ceremony.Fx.hash;
 
-/** The ceremonies of the Rangers: Archer, Beastmaster, Trapper and Scout. */
 final class RangerCeremonies {
     private RangerCeremonies() {
     }
 
-    /** One arrow falling onto a spot and sticking there with a small target around it. */
     static void archerArrow(Fx fx, int i, int land, double minDist, double maxDist, int fadeFrom,
                                     int fadeTo) {
         int t = fx.age();
@@ -44,17 +42,12 @@ final class RangerCeremonies {
         }
     }
 
-    /** Big target on the floor around the player, rings alternating red and white. */
     static void archerTarget(Fx fx, int rings, double step, double keep) {
         for (int k = 1; k <= rings; k++) {
             fx.ring(fx.dust(k % 2 == 1 ? 0xD04040 : 0xF0F0F0, 1.3F), k * step, FLOOR, 0.1, keep);
         }
     }
 
-    /**
-     * Archer: you draw, twelve arrows shoot into the sky, thirty rain down around you onto small targets,
-     * then one golden arrow falls straight down and a huge target lights up.
-     */
     static void archerGrand(Fx fx) {
         int t = fx.age();
         if (t == 4) {
@@ -101,7 +94,6 @@ final class RangerCeremonies {
         }
     }
 
-    /** Archer respawn: eight arrows fly out from your chest in every direction and stick in the ground. */
     static void archerLight(Fx fx) {
         int t = fx.age();
         ParticleOptions straw = fx.dust(0xF0E0A0, 0.9F);
@@ -141,7 +133,6 @@ final class RangerCeremonies {
         }
     }
 
-    /** A footprint: 0 wolf, 1 bird, 2 deer, 3 bear. {@code heading} is the walking direction. */
     static void pawPrint(Fx fx, int type, double x, double z, double heading, double keep) {
         if (!fx.chance(keep)) {
             return;
@@ -180,7 +171,6 @@ final class RangerCeremonies {
         }
     }
 
-    /** Tracks of four animals walking in towards the player from four sides. */
     static void beastTracks(Fx fx, int steps, int first, int interval, double from, double to,
                                     double keep) {
         int t = fx.age();
@@ -204,7 +194,6 @@ final class RangerCeremonies {
         }
     }
 
-    /** A glowing spirit with a fading tail, circling the player. */
     static void spiritOrb(Fx fx, int rgb, double angle, double radius, double y, double dir, double keep) {
         if (!fx.chance(keep)) {
             return;
@@ -215,10 +204,6 @@ final class RangerCeremonies {
         }
     }
 
-    /**
-     * Beastmaster: tracks of a wolf, bird, deer and bear walk in from far around you, four animal spirits
-     * gather and run with you, then they leap into you with a howl.
-     */
     static void beastmasterGrand(Fx fx) {
         int t = fx.age();
         if (t < 130 && fx.every(2)) {
@@ -266,7 +251,6 @@ final class RangerCeremonies {
         }
     }
 
-    /** Beastmaster respawn: leaves whirl up around you in three strands, then a howl and hearts. */
     static void beastmasterLight(Fx fx) {
         int t = fx.age();
         if (t < 16) {
@@ -298,7 +282,6 @@ final class RangerCeremonies {
         }
     }
 
-    /** Two bear-trap jaws hinged left and right; {@code close} 0 lies flat, 1 is shut above the player. */
     static void trapJaws(Fx fx, double radius, double close, double keep) {
         ParticleOptions iron = fx.dust(0xA0A0A8, 1.1F);
         double phi = close * Math.PI / 2;
@@ -345,10 +328,6 @@ final class RangerCeremonies {
         }
     }
 
-    /**
-     * Trapper: a lasso spins over your head, drops and pulls tight round your feet, two rings of spikes pop up,
-     * tripwires stretch between them, then huge bear-trap jaws rise and snap shut over you.
-     */
     static void trapperGrand(Fx fx) {
         int t = fx.age();
         ParticleOptions rope = fx.dust(0x9B7B48, 1.1F);
@@ -411,7 +390,6 @@ final class RangerCeremonies {
         }
     }
 
-    /** Trapper respawn: a rope net drops over you from above and pulls tight. */
     static void trapperLight(Fx fx) {
         int t = fx.age();
         if (t >= 38) {
@@ -447,7 +425,6 @@ final class RangerCeremonies {
         }
     }
 
-    /** Whirlwind: rings of wind streaks, wider higher up. */
     static void scoutWind(Fx fx, int layers, double keep) {
         int t = fx.age();
         ParticleOptions wind = fx.dust(0xE8FAFF, 0.9F);
@@ -482,7 +459,6 @@ final class RangerCeremonies {
         }
     }
 
-    /** A hawk made of two flapping wings, flying tangent to a circle around the player. */
     static void hawk(Fx fx, double angle, double radius, double y, double keep) {
         if (!fx.chance(keep)) {
             return;
@@ -509,10 +485,6 @@ final class RangerCeremonies {
         }
     }
 
-    /**
-     * Scout: a tall whirlwind builds around you for seven seconds while a hawk spirals down from high above
-     * to your shoulder, then a gust bursts out and compass arrows point to all four sides.
-     */
     static void scoutGrand(Fx fx) {
         int t = fx.age();
         if (t < 170) {
@@ -545,7 +517,6 @@ final class RangerCeremonies {
         }
     }
 
-    /** Scout respawn: a green comet races two laps around you, then feathers and compass arrows. */
     static void scoutLight(Fx fx) {
         int t = fx.age();
         if (t == 0) {

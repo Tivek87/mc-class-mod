@@ -10,23 +10,14 @@ import nl.tivek.multiversepowers.engine.client.render.Mesh;
 import nl.tivek.multiversepowers.engine.math.Ease;
 import nl.tivek.multiversepowers.engine.math.Noise;
 
-/**
- * The money that bursts out of the cartoon landing slam's safe (see {@link SlamCartoon}): coins that bounce and skid,
- * notes that flutter down and gold bars that thud down, until it all sinks into the ground as the safe breaks up. In
- * blocks at scale 1, in the safe's own terms.
- */
 final class SlamMoney {
-    // How much money bursts out.
     private static final int COINS = 12;
     private static final int NOTES = 7;
     private static final int BARS = 2;
-    /** A coin lying flat round its middle, its face raised in the middle on both sides. */
     private static final Shape COIN = Shape.of(Mesh.lathe(12, 1.2, 0.0, -0.024, 0.07, -0.024, 0.08, -0.018, 0.115,
             -0.018, 0.125, -0.008, 0.125, 0.008, 0.115, 0.018, 0.08, 0.018, 0.07, 0.024, 0.0, 0.024));
-    /** A bank note lying flat round its middle, with a round seal in the middle. */
     private static final Shape NOTE = new Shape(new double[][] { { -0.18, -0.006, -0.085, 0.18, 0.006, 0.085, 1.05 } },
             Mesh.cylinder(8, 0.05, -0.012, 0.012, 1.3));
-    /** A gold bar lying round its middle, along x. */
     private static final Shape GOLD = Shape.of(bar());
 
     private SlamMoney() {
@@ -36,14 +27,9 @@ final class SlamMoney {
         return Mesh.prism(-0.075, 0.075, 1.2, -0.15, -0.045, 0.15, -0.045, 0.11, 0.045, -0.11, 0.045);
     }
 
-    /** Where a piece of money is, in the safe's own terms, and how it is turned: about which way, and how far. */
     private record Loot(Vec3 at, Vec3 axis, double angle) {
     }
 
-    /**
-     * The money bursting out of the open safe, one piece after the other, out through the door towards him and down
-     * onto the ground. Once the safe breaks up it all sinks into the ground.
-     */
     static void money(LanternPainter painter, Frame safe, Moment m) {
         double since = m.since() - 1.6;
         if (since <= 0.0) {
@@ -78,13 +64,11 @@ final class SlamMoney {
         }
     }
 
-    /** The way a piece of money tumbles about, in the safe's own terms. */
     private static Vec3 tumble(int k) {
         return new Vec3(Noise.of(k, 62, 0) - 0.5, Noise.of(k, 62, 1) - 0.5,
                 Noise.of(k, 62, 2) - 0.5).add(0.0, 0.0, 0.01).normalize();
     }
 
-    /** A coin: it flies in an arc, tumbling, lands flat, bounces once and skids on a little way. */
     private static Loot coin(int k, Vec3 start, Vec3 thrown, double dt) {
         double g = 0.03;
         double floor = 0.024;
@@ -103,7 +87,6 @@ final class SlamMoney {
         return new Loot(at, tumble(k), turn * land * (1.0 - Ease.smooth(after / hop)));
     }
 
-    /** A bank note: thrown out, it slows down in the air and flutters down, swaying, until it lies flat. */
     private static Loot note(int k, Vec3 start, Vec3 thrown, double dt) {
         double floor = 0.008;
         double phase = Noise.of(k, 64, 0) * Math.PI * 2.0;
@@ -123,13 +106,11 @@ final class SlamMoney {
         return new Loot(at, new Vec3(1.0, 0.0, 0.35).normalize(), flutter);
     }
 
-    /** How high a bank note is once it has flown for {@code s} ticks: first thrown, then sinking slowly. */
     private static double noteHeight(Vec3 start, Vec3 thrown, double s) {
         double spread = (1.0 - Math.exp(-0.2 * s)) / 0.2;
         return start.y + thrown.y * spread - 0.02 * (s - spread);
     }
 
-    /** A gold bar: heavy, it drops in a short arc, turning over slowly, and thuds down where it lands. */
     private static Loot gold(int k, Vec3 start, Vec3 thrown, double dt) {
         double g = 0.04;
         double floor = 0.045;

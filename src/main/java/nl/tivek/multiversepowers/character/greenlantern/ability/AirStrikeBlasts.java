@@ -40,11 +40,6 @@ import nl.tivek.multiversepowers.engine.world.LoadedWorld;
 import static nl.tivek.multiversepowers.character.greenlantern.ability.AirStrike.BLAST_TICKS;
 import static nl.tivek.multiversepowers.character.greenlantern.ability.AirStrike.HEIGHT;
 
-/**
- * What every part of the {@link AirStrike} shares: whose it is, its settings, its path and its clock, and who it may
- * hurt; and what it blows into the ground: the blasts of light, the craters they leave, and the crash itself. The guns
- * ({@link AirStrikeGuns}), the missiles ({@link AirStrikeMissiles}) and the air strike itself build on it.
- */
 abstract class AirStrikeBlasts implements Effect {
     private static final double CRASH_KNOCKBACK = 2.8;
     static final double VIEW_RANGE = 260.0;
@@ -60,17 +55,10 @@ abstract class AirStrikeBlasts implements Effect {
         this.path = path;
     }
 
-    // ---- The crash ----
-
-    /**
-     * It plunges into the ground: a massive blast of green energy that blows a crater out of the ground and hurls its
-     * blocks away, and the plane breaks into solid pieces.
-     */
     void crash(ServerLevel level) {
         Vec3 at = this.path.crash();
         double radius = this.ability.value("crashRadius");
         this.blast(level, at, radius, this.ability.getDamage(), null, CRASH_KNOCKBACK);
-        // It struck a hair before its part touched: the crater goes into the ground right under that.
         BlockHitResult under = LoadedWorld.clip(level, new ClipContext(at.add(0.0, 0.5, 0.0),
                 at.subtract(0.0, 6.0, 0.0), ClipContext.Block.COLLIDER, ClipContext.Fluid.ANY,
                 CollisionContext.empty()));
@@ -91,14 +79,9 @@ abstract class AirStrikeBlasts implements Effect {
         this.sound(level, at, SoundEvents.BEACON_DEACTIVATE, 6.0F, 0.5F);
         this.sound(level, at, SoundEvents.AMETHYST_CLUSTER_BREAK, 6.0F, 0.4F);
         this.sound(level, at, SoundEvents.LIGHTNING_BOLT_THUNDER, 8.0F, 0.6F);
-        // Heard wherever he stands: a rumble rolling out far over the land.
         this.sound(level, this.owner.getEyePosition(), SoundEvents.GENERIC_EXPLODE.value(), 1.6F, 0.35F);
     }
 
-    /**
-     * After the crash its crater smoulders while the blast dies down: columns of smoke climb out of it, fires lick at it
-     * and a haze of smoke hangs over it.
-     */
     void smoulder(ServerLevel level) {
         Vec3 at = this.path.crash();
         double fade = 1.0 - (this.age - this.path.crashTick()) / BLAST_TICKS;
@@ -122,13 +105,6 @@ abstract class AirStrikeBlasts implements Effect {
         }
     }
 
-    /**
-     * A crater of {@code radius}: a bowl blown out of the ground at {@code at}, rough at its rim. Up to {@code debris} of
-     * its blocks are hurled up and away and come down all round it; the rest are gone. Blocks harder than
-     * {@code breakHardness}, blocks that hold something (chests and the like) and blocks he may not touch there all
-     * stay; so does water. It is blown out a little at a time over the next few ticks, top first (see {@link Crater}),
-     * so the server never stalls on it.
-     */
     void crater(ServerLevel level, Vec3 at, double radius, int debris) {
         double hardest = this.ability.value("breakHardness");
         if (hardest < 0.0 || radius <= 0.0) {
@@ -140,15 +116,7 @@ abstract class AirStrikeBlasts implements Effect {
         }
     }
 
-    /**
-     * A crater being blown out of the ground: a bowl of {@code radius} round {@code at}, rough at its rim, reaching up
-     * over the ground too, through what stands on it. Each tick it gets through only so much of it, the top first, so
-     * however big it is the server never stalls on it. Of the blocks near the top of the bowl, where the blast tears
-     * the ground open, some are hurled up and away from all round it (up to {@code debris}); the rest are gone.
-     */
     private static final class Crater implements Effect {
-        // How much it may do in one tick: looking at a spot costs 1, one it may not blow away 3, blowing a block away
-        // 12 and hurling one 30.
         private static final int WORK = 2400;
         private final ServerPlayer owner;
         private final Vec3 at;
@@ -156,7 +124,6 @@ abstract class AirStrikeBlasts implements Effect {
         private final double hardest;
         private final double hurlChance;
         private final RandomSource random;
-        // Every spot of the bowl, the highest first (in a random order within each layer), and how far it has got.
         private final List<BlockPos> spots = new ArrayList<>();
         private int next;
         private int hurls;
@@ -167,7 +134,6 @@ abstract class AirStrikeBlasts implements Effect {
             this.hardest = hardest;
             this.random = owner.getRandom();
             this.hurls = Math.max(0, debris);
-            // About as many blocks lie in the top three layers of the bowl as in three discs as wide as it.
             this.hurlChance = Math.min(1.0, this.hurls / Math.max(1.0, 3.0 * Math.PI * radius * radius));
             double depth = radius * 0.62;
             BlockPos middle = BlockPos.containing(at.x, at.y - 0.5, at.z);
@@ -178,7 +144,6 @@ abstract class AirStrikeBlasts implements Effect {
                 double down = dy < 0 ? dy / depth : dy / (radius * 0.85);
                 for (int dx = -reach; dx <= reach; dx++) {
                     for (int dz = -reach; dz <= reach; dz++) {
-                        // Rough at its rim: every column reaches a little further or less far.
                         double rough = 1.0 + 0.2 * (Noise.of(middle.getX() + dx, middle.getZ() + dz, 17) - 0.5);
                         double out = (dx * dx + dz * dz) / (radius * radius) + down * down;
                         if (out <= rough * rough) {
@@ -198,7 +163,7 @@ abstract class AirStrikeBlasts implements Effect {
             while (this.next < this.spots.size() && work < WORK) {
                 BlockPos pos = this.spots.get(this.next++);
                 work++;
-                // Where nobody has the world loaded (he flew off), nothing is blown away.
+                // Where nobody has the world loaded (he flew off), skip it: never load chunks to blow them up.
                 if (!level.isLoaded(pos)) {
                     continue;
                 }
@@ -224,7 +189,6 @@ abstract class AirStrikeBlasts implements Effect {
             return this.next < this.spots.size();
         }
 
-        /** A block of the bowl hurled up and away from its middle, to come down somewhere round it. */
         private void hurl(ServerLevel level, BlockPos pos, BlockState state) {
             FallingBlockEntity block = FallingBlockEntity.fall(level, pos, state);
             block.dropItem = false;
@@ -238,11 +202,6 @@ abstract class AirStrikeBlasts implements Effect {
         }
     }
 
-    /**
-     * A blast of the ring's light at {@code at}: every creature within {@code radius} that is fair game is hurt, most
-     * in the middle (half at the edge), and thrown away from it. {@code direct}, when it is there, takes the full
-     * damage wherever it is: the creature a missile found.
-     */
     void blast(ServerLevel level, Vec3 at, double radius, double damage, @Nullable LivingEntity direct,
             double knockback) {
         AABB area = new AABB(at, at).inflate(radius + 1.0);
@@ -269,10 +228,6 @@ abstract class AirStrikeBlasts implements Effect {
         }
     }
 
-    /**
-     * Who the air strike may hurt: a creature that is out to hurt him (a monster, or anything that has him as its
-     * target), or a player he may fight. Never his own pets, villagers or animals.
-     */
     boolean fair(LivingEntity living) {
         if (!PowerRing.canHit(this.owner, living)) {
             return false;
@@ -284,15 +239,10 @@ abstract class AirStrikeBlasts implements Effect {
                 || living instanceof Mob mob && mob.getTarget() == this.owner;
     }
 
-    /** What its scan marks and its guns and missiles go for: a creature out to hurt him, never a player. */
     boolean hostile(LivingEntity living) {
         return !(living instanceof Player) && this.fair(living);
     }
 
-    /**
-     * The top of whatever lies at this spot, looked for from the height the plane flies at straight down: the ground,
-     * or a roof or a tree top standing on it. Where there is none, the spot at his own height.
-     */
     Vec3 ground(ServerLevel level, Vec3 at) {
         double top = this.path.start().y + 4.0;
         Vec3 from = new Vec3(at.x, top, at.z);

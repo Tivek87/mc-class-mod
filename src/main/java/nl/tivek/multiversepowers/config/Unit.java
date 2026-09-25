@@ -4,51 +4,28 @@ import java.math.BigDecimal;
 import net.minecraft.network.chat.Component;
 import nl.tivek.multiversepowers.MultiversePowers;
 
-/**
- * What a number in a settings file counts, so the settings screen can say what it means in plain words: 12 half
- * hearts is "6 hearts", 80 ticks is "4 s", 0.3 of a hit that gets through is "blocks 70%".
- */
 public enum Unit {
-    /** Damage, in half hearts. */
     HALF_HEARTS,
-    /** Extra damage in half hearts for every block per tick of speed. */
     HALF_HEARTS_PER_SPEED,
-    /** Time in ticks (20 ticks = 1 second). */
     TICKS,
-    /** Time in seconds. */
     SECONDS,
-    /** A distance in blocks. */
     BLOCKS,
-    /** A speed in blocks per tick. */
     BLOCKS_PER_TICK,
-    /** A speed in blocks per second. */
     BLOCKS_PER_SECOND,
-    /** Ring power (a full ring holds 100). */
     POWER,
-    /** Ring power a second. */
     POWER_PER_SECOND,
-    /** Seconds a full ring lasts while it drains: shown as what it costs a second. */
     RING_SECONDS,
-    /** The part of a hit that still gets through (0.3 = 30%): shown as how much is stopped. */
     PART_KEPT,
-    /** Stamina. */
     STAMINA,
-    /** Stamina a tick. */
     STAMINA_PER_TICK,
-    /** How hard a block may be (dirt 0.5, stone 1.5, wood 2, ores 3, iron 5): shown as the hardest that breaks. */
     HARDNESS,
-    /** A number of blocks. */
     BLOCK_COUNT,
-    /** A number of things (hands, blows): shown as it is. */
     COUNT,
-    /** A strength without a unit of its own (a push, a throw): shown as a factor. */
     STRENGTH,
-    /** A chance from 0 to 1: shown as a percentage. */
     CHANCE;
 
     private static final String PREFIX = "config." + MultiversePowers.MODID + ".unit.";
 
-    /** What {@code value} means, in plain words. */
     public Component describe(double value) {
         return switch (this) {
             case HALF_HEARTS -> value <= 0.0 ? key("no_damage") : key("hearts", number(value / 2.0));
@@ -72,7 +49,6 @@ public enum Unit {
         };
     }
 
-    /** The hardest common block that still breaks at this hardness. */
     private static String material(double hardness) {
         if (hardness >= 50.0) {
             return "material.obsidian";
@@ -96,7 +72,6 @@ public enum Unit {
         return Component.translatable(PREFIX + name, args);
     }
 
-    /** A number as short as it can be written: 2 instead of 2.00, 0.4 instead of 0.40, at most two decimals. */
     public static String number(double value) {
         return BigDecimal.valueOf(Math.round(value * 100.0) / 100.0).stripTrailingZeros().toPlainString();
     }

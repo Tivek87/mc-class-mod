@@ -42,23 +42,12 @@ import static nl.tivek.multiversepowers.character.greenlantern.client.ConstructP
 import static nl.tivek.multiversepowers.character.greenlantern.client.ConstructPlaces.where;
 import static nl.tivek.multiversepowers.character.greenlantern.client.Track.PLANE_KEEP;
 
-/**
- * Keeps the hard-light constructs the server sends and draws them (see ConstructPainter), blended between
- * ticks so they fly smoothly. Updates are played back one per client tick, so updates that arrive
- * unevenly over the network still move evenly. Each construct is kept as a {@link Track}; what the rest of the
- * client asks about them is answered in {@link TrackedConstructs}.
- */
 @EventBusSubscriber(modid = MultiversePowers.MODID, value = Dist.CLIENT)
 public final class ClientConstructs extends TrackedConstructs {
-    // Planes whose maker let go of them in the air: they break up where they were. By id: the last word about it, the
-    // clock it had then, and the client tick it was let go on.
     private static final Map<Integer, Broken> BROKEN = new HashMap<>();
-    // Giant hands whose maker let go of them before they were done: they break up where they were. By id, as above.
     private static final Map<Integer, Broken> BROKEN_HANDS = new HashMap<>();
-    // How long a plane that was let go takes to break up and be gone, in ticks.
     private static final int BROKEN_TICKS = 42;
 
-    /** A plane or giant hand let go of before it was done, breaking up. */
     private record Broken(ConstructPayload construct, double clock, int since) {
     }
 
@@ -69,7 +58,6 @@ public final class ClientConstructs extends TrackedConstructs {
         if (payload.solid() < 0.0F) {
             Track going = CONSTRUCTS.get(payload.id());
             if (going != null && going.flown != null) {
-                // A missile that struck (or was let go of) is seen to get there first, then breaks up (see missile).
                 going.flown.strikes(going.clock(Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(false))
                         - 1.0);
                 return;
@@ -81,11 +69,9 @@ public final class ClientConstructs extends TrackedConstructs {
         if (track == null) {
             track = new Track(payload);
             CONSTRUCTS.put(payload.id(), track);
-            // Heard of again: whatever of it was breaking up is whole after all.
             BROKEN_HANDS.remove(payload.id());
             fromAirStrike(track, payload);
             if (payload.shape() == ConstructPayload.BOLT) {
-                // Seen first on its way (it came into range late), it still left the ring as long ago as it has flown.
                 float partialTick = Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(false);
                 BOLTS.merge(payload.owner(), clientTicks + partialTick - (double) payload.age(), Math::max);
             }
@@ -98,12 +84,6 @@ public final class ClientConstructs extends TrackedConstructs {
         }
     }
 
-    /**
-     * Something new of an air strike: it keeps the time of its plane. A missile runs on the plane's clock (see
-     * Track#follow) and a round flies out as its gun fired it by that clock, so they leave the plane just where it is
-     * drawn; the gun swings to where the round says it is to point next; a missile's blast bursts as the missile gets
-     * there on your screen; and a new plane forgets when the last one's jets fired.
-     */
     private static void fromAirStrike(Track track, ConstructPayload payload) {
         float partialTick = Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(false);
         int owner = payload.owner();
@@ -125,7 +105,6 @@ public final class ClientConstructs extends TrackedConstructs {
                     track.start = clientTicks + partialTick - (plane.clock(partialTick) - payload.charge());
                     PlanePainter.fired(plane.latest, payload);
                 } else {
-                    // A round of a plane this client does not see: there is no gun for it to fly out of.
                     CONSTRUCTS.remove(payload.id());
                 }
             }
@@ -149,12 +128,10 @@ public final class ClientConstructs extends TrackedConstructs {
                 }
             }
             default -> {
-                // Nothing of an air strike.
             }
         }
     }
 
-    /** The track of this player's air strike's plane, or null when this client has none. */
     @Nullable
     private static Track planeOf(int owner) {
         for (Track track : CONSTRUCTS.values()) {
@@ -177,7 +154,6 @@ public final class ClientConstructs extends TrackedConstructs {
             Track track = tracks.next();
             track.retime();
             if (track.flown != null && track.flown.ends < Double.POSITIVE_INFINITY) {
-                // A missile that struck is gone once it has got there and broken up.
                 if (track.clock(0.0F) > track.flown.ends + PlanePainter.MISSILE_BREAKS + 1.0
                         || clientTicks - track.lastSeen > PLANE_KEEP) {
                     tracks.remove();
@@ -186,8 +162,6 @@ public final class ClientConstructs extends TrackedConstructs {
             }
             if (track.timedOut()) {
                 tracks.remove();
-                // A plane or giant hand not heard of a while is out of reach or the server hitches: it did not break up
-                // (the server says so when it does).
                 if (track.latest.shape() != ConstructPayload.PLANE && track.latest.shape() != ConstructPayload.HAND) {
                     letGo(track);
                 }
@@ -200,11 +174,6 @@ public final class ClientConstructs extends TrackedConstructs {
         BOLTS.values().removeIf(shot -> clientTicks - shot > BOLT_MEMORY);
     }
 
-    /**
-     * A creature caught in a Light Bubble stays right in its middle on your screen too, and one a giant hand holds right
-     * in its fist. The game itself only tells where it is every few ticks and glides it there, well behind a bubble that
-     * is smashed down or a hand that throws.
-     */
     @SubscribeEvent
     public static void onClientTickDone(ClientTickEvent.Post event) {
         Minecraft minecraft = Minecraft.getInstance();
@@ -229,16 +198,11 @@ public final class ClientConstructs extends TrackedConstructs {
         }
     }
 
-    /**
-     * What a giant hand holds sits in its fist, where the hand is by the client's own clock. A pair of hands with an
-     * axe never holds anything.
-     */
     private static void held(Minecraft minecraft, Track track) {
         ConstructPayload hand = track.latest;
         if (!hand.held() || minecraft.level == null || HandPose.move(hand.variant()) == HandPose.AXE) {
             return;
         }
-        // The id comes whole in the charge's bits (see LightBubble#caught).
         Entity caught = minecraft.level.getEntity(LightBubble.caughtId(hand.charge()));
         if (caught == null || caught == minecraft.player) {
             return;
@@ -251,11 +215,6 @@ public final class ClientConstructs extends TrackedConstructs {
         caught.setDeltaMovement(Vec3.ZERO);
     }
 
-    /**
-     * A construct is gone. A plane still in the air when it goes was let go of by its maker, and so was a giant hand
-     * that had not yet sunk back into the ground, or a pair of them whose axe had not yet broken up: they break into
-     * solid pieces where they were instead of simply vanishing, as every construct does.
-     */
     private static void letGo(@Nullable Track track) {
         if (track == null) {
             return;
@@ -278,10 +237,6 @@ public final class ClientConstructs extends TrackedConstructs {
         forgetAll();
     }
 
-    /**
-     * Into another dimension, or back to life: what was drawn where you were is gone (the server tells again of what
-     * is still round you).
-     */
     @SubscribeEvent
     public static void onClone(ClientPlayerNetworkEvent.Clone event) {
         forgetAll();
@@ -298,9 +253,9 @@ public final class ClientConstructs extends TrackedConstructs {
         Flattened.clear();
     }
 
-    // After water and glass: light never hides what is behind it, so it has to come after them.
     @SubscribeEvent
     public static void onRenderLevel(RenderLevelStageEvent event) {
+        // Must draw after water and glass, or light would be hidden behind them instead of showing through.
         if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_TRANSLUCENT_BLOCKS) {
             return;
         }
@@ -310,7 +265,6 @@ public final class ClientConstructs extends TrackedConstructs {
                 && !BeamCharge.any(level)) {
             return;
         }
-        // The same blend between ticks that entities are drawn with.
         float partialTick = event.getPartialTick().getGameTimeDeltaPartialTick(false);
         float time = (float) (level.getGameTime() % 24000L) + partialTick;
         Camera camera = event.getCamera();
@@ -320,8 +274,6 @@ public final class ClientConstructs extends TrackedConstructs {
             ConstructPayload was = track.previous;
             ConstructPayload now = track.current;
             Entity owner = level.getEntity(now.owner());
-            // A fist held beside its owner is placed round him: with him not here (too far to be seen) there is
-            // nowhere to put it.
             if (owner == null && now.held() && now.shape() == ConstructPayload.FIST) {
                 continue;
             }
@@ -334,10 +286,6 @@ public final class ClientConstructs extends TrackedConstructs {
             double solid = Mth.lerp(partialTick, was.solid(), now.solid());
             double charge = Mth.lerp(partialTick, was.charge(), now.charge());
             Vec3 center = where(was, now, owner, partialTick);
-            // A fist or bolt on its way glides along its path by the client's own clock; a fist stays on its owner's
-            // line of sight as he looks right now, so your own is always right under your crosshair. Once it stops
-            // (it hit something, or falls apart at the end of its way) a bolt stays where the server says it stopped,
-            // and a fist where it was drawn last.
             boolean onItsWay = track.path != null && !track.latest.held();
             if (onItsWay) {
                 on(track, owner, partialTick);
@@ -345,10 +293,7 @@ public final class ClientConstructs extends TrackedConstructs {
                 way = track.lastWay;
             }
             Vec3 ring = owner == null ? null : ringHand(minecraft, camera, owner, partialTick, event);
-            // Seen from your own eyes: not from behind, and not while the camera looks out of something else.
             boolean own = owner == minecraft.player && camera.getEntity() == owner && !camera.isDetached();
-            // What hangs on its owner is worked out here from how he stands right now, so it moves with him
-            // without dragging a tick behind, however fast he turns or flies.
             if (owner != null) {
                 switch (now.shape()) {
                     case ConstructPayload.SHIELD -> {
@@ -357,8 +302,6 @@ public final class ClientConstructs extends TrackedConstructs {
                     }
                     case ConstructPayload.RAM -> {
                         way = ramWay(owner, partialTick);
-                        // Seen from your own eyes it hangs in front of them, its open end just before the camera, so
-                        // none of its sides ever sweeps through your view; seen from outside it is round his body.
                         center = own ? owner.getEyePosition(partialTick).add(way.scale(RAM_OWN_AHEAD))
                                 : owner.getPosition(partialTick).add(0.0, owner.getBbHeight() * 0.5, 0.0);
                     }
@@ -371,7 +314,6 @@ public final class ClientConstructs extends TrackedConstructs {
                         }
                     }
                     default -> {
-                        // A bolt flies on by itself.
                     }
                 }
             }
@@ -384,7 +326,6 @@ public final class ClientConstructs extends TrackedConstructs {
                         owner == null ? null : owner.getPosition(partialTick));
                 case ConstructPayload.SCAN -> {
                     RingSight.wave(painter, now.center(), now.size(), track.clock(partialTick));
-                    // The ring he holds out shines while it reads (the plane's scans shine out of its own sensor).
                     if (ring != null && now.variant() != ConstructPayload.SCAN_HOSTILE) {
                         RingSight.ringLight(painter, ring, track.clock(partialTick), own);
                     }
@@ -404,14 +345,11 @@ public final class ClientConstructs extends TrackedConstructs {
                         sinceSent(track, partialTick));
                 case ConstructPayload.BLAST -> PlanePainter.missileBlast(painter, track.latest,
                         sinceSent(track, partialTick));
-                // Until it breaks up its charge is the creature inside, not a time. A pound is timed by the updates as
-                // they are drawn, so every slam squashes it the moment it is drawn on the ground.
                 case ConstructPayload.BUBBLE -> BubblePainter.draw(painter, now, center, solid,
                         was.variant() == LightBubble.BREAKING ? charge : 0.0, now.held(), track.clock(partialTick), ring,
                         now.age() - 1.0 + partialTick - track.variantSince, now.center().subtract(was.center()));
                 case ConstructPayload.POUND -> BubblePainter.pound(painter, track.latest, track.clock(partialTick));
                 case ConstructPayload.SWORD -> {
-                    // Your own in first person are drawn with your hands (see SwordArms).
                     if (owner != null && !own) {
                         SwordArms.draw(painter, owner, ring, partialTick);
                     }
@@ -427,7 +365,6 @@ public final class ClientConstructs extends TrackedConstructs {
             HandPainter.broken(painter, broken.construct(), broken.clock(),
                     clientTicks - broken.since() + partialTick);
         }
-        // The light every ring gathers for the beam.
         for (AbstractClientPlayer player : level.players()) {
             if (BeamCharge.charge(player, partialTick) >= 0.0F) {
                 BeamCharge.draw(painter, player, ringHand(minecraft, camera, player, partialTick, event), camera,
@@ -437,12 +374,6 @@ public final class ClientConstructs extends TrackedConstructs {
         painter.finish(minecraft.renderBuffers().bufferSource());
     }
 
-    /**
-     * A missile of an air strike on its way, drawn by its own clock (which keeps its plane's time) where it was on the
-     * ticks told of, smooth between them (see Flown), and breaking into solid pieces once it has got where it struck.
-     * While it still falls off the plane or a jet's wing with its motor dead, the plane draws it (see
-     * {@link PlanePainter}), from the very spot it hung.
-     */
     private static void missile(LanternPainter painter, Track track, float partialTick) {
         Flown flown = track.flown;
         if (flown == null || flown.spots.isEmpty()) {
@@ -458,8 +389,7 @@ public final class ClientConstructs extends TrackedConstructs {
                     last.up(), -1.0, since - flown.ends);
             return;
         }
-        // Sent on the tick it was let go of, it had already moved one tick on: drawn a tick later, so it leaves the
-        // plane from where it hung.
+        // Drawn a tick after it was sent, so it leaves the plane at the spot it hung a tick ago.
         Spot spot = flown.at(since - 1.0);
         PlanePainter.missile(painter, flown.small, spot.at().add(flown.off(since - 1.0)), spot.nose(), spot.up(),
                 since - flown.ignites, -1.0);

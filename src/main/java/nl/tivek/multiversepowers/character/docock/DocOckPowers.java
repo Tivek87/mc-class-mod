@@ -5,7 +5,6 @@ import nl.tivek.multiversepowers.character.CharacterAbility;
 import nl.tivek.multiversepowers.character.CharacterPowers;
 import nl.tivek.multiversepowers.character.Characters;
 
-/** Doctor Octopus for the character system: his four robot arms (see {@link OctopusArms}). */
 public final class DocOckPowers implements CharacterPowers {
     @Override
     public void enter(ServerPlayer player) {

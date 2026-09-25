@@ -5,30 +5,18 @@ import javax.annotation.Nullable;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 
-/**
- * Frames carried along a line of points, for the tentacles {@link ArmPainter} draws: the direction and
- * the side of every piece, turned as little as possible from one piece to the next.
- */
 abstract class LineFrames {
-    // ---- Frames along a line ----
-
-    /** {@code v} made square to the unit vector {@code d}; {@code null} when it lies along it. */
     @Nullable
     static Vec3 square(Vec3 v, Vec3 d) {
         Vec3 result = v.subtract(d.scale(v.dot(d)));
         return result.lengthSqr() < 1.0E-6 ? null : result.normalize();
     }
 
-    /** Any unit vector square to the unit vector {@code d}; always the same one for the same {@code d}. */
     static Vec3 anySquare(Vec3 d) {
         Vec3 result = square(new Vec3(0, 1, 0), d);
         return result != null ? result : square(new Vec3(1, 0, 0), d);
     }
 
-    /**
-     * Direction and side of every piece of the line, the side carried from piece to piece with as
-     * little turning as possible. {@code reference} sets the side at the mount (null: any).
-     */
     static final class Frames {
         final double[] at;
         final Vec3[] direction;
@@ -47,7 +35,7 @@ abstract class LineFrames {
                 this.at[i] = this.at[i - 1] + points.get(i - 1).distanceTo(points.get(i));
             }
             this.length = this.at[n - 1];
-            // Pieces of zero length borrow the direction of the next real one.
+            // Zero-length pieces borrow the next real direction, found scanning backward.
             for (int i = n - 2; i >= 0; i--) {
                 Vec3 delta = points.get(i + 1).subtract(points.get(i));
                 if (delta.lengthSqr() > 1.0E-10) {

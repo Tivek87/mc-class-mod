@@ -18,7 +18,6 @@ import static nl.tivek.multiversepowers.classes.ceremony.Fx.fadeOut;
 import static nl.tivek.multiversepowers.classes.ceremony.Fx.hash;
 import static nl.tivek.multiversepowers.classes.ceremony.Fx.lerpColor;
 
-/** The ceremonies of the Alchemists: Apothecary, Plague Doctor, Bombardier and Transmuter. */
 final class AlchemistCeremonies {
     private AlchemistCeremonies() {
     }
@@ -31,7 +30,6 @@ final class AlchemistCeremonies {
     static final Item[] INGREDIENTS = {Items.NETHER_WART, Items.GLOWSTONE_DUST, Items.SUGAR,
             Items.GHAST_TEAR, Items.BLAZE_POWDER, Items.GOLDEN_CARROT};
 
-    /** Apothecary rite: a bubbling pool, ingredients drop in, the brew spirals up into an orb that splashes. */
     static void apothecaryRite(Fx fx, double pool, int[] drops, int streamFrom, int peak, int end) {
         int t = fx.age();
         int landed = 0;
@@ -120,15 +118,10 @@ final class AlchemistCeremonies {
         }
     }
 
-    /**
-     * Apothecary: a wide pool bubbles at your feet, six ingredients drop in one by one and change its colour,
-     * the brew rises around you in three spiralling streams into an orb above your head that splashes.
-     */
     static void apothecaryGrand(Fx fx) {
         apothecaryRite(fx, 2.2, new int[] {10, 30, 50, 70, 90, 110}, 115, 150, 200);
     }
 
-    /** Apothecary respawn: you toss three potions around you, they splash and healing mist rises to you. */
     static void apothecaryLight(Fx fx) {
         int t = fx.age();
         int[] colors = {0x5FD0C8, 0xA8FF70, 0xFF70C0};
@@ -170,7 +163,6 @@ final class AlchemistCeremonies {
         }
     }
 
-    /** Plague doctor rite: toxic fog rolls in, flies buzz, a swinging censer, then a purifying blast. */
     static void plagueRite(Fx fx, double from, int fogEnd, int fliesFrom, int censerFrom, int peak, int end) {
         int t = fx.age();
         ParticleOptions fog = fx.dust(0x4A5A20, 3.2F);
@@ -231,15 +223,10 @@ final class AlchemistCeremonies {
         }
     }
 
-    /**
-     * Plague Doctor: thick toxic fog rolls in from far around you, a swarm of flies buzzes around you,
-     * then you swing a smoking censer until a purifying blast pushes the fog all the way back.
-     */
     static void plagueDoctorGrand(Fx fx) {
         plagueRite(fx, 3.4, 80, 30, 90, 150, 200);
     }
 
-    /** Plague Doctor respawn: herbal smoke rings rise off your head, herbs swirl, dead flies drop around you. */
     static void plagueDoctorLight(Fx fx) {
         int t = fx.age();
         if (t == 0) {
@@ -276,17 +263,12 @@ final class AlchemistCeremonies {
         }
     }
 
-    /** Point on the fuse spiral at fraction {@code s} (0 = outer end, 1 = at the feet). */
     static double[] fusePoint(double s, double radius, double turns) {
         double r = Mth.lerp(s, radius, 0.25);
         double a = s * turns * 2 * Math.PI;
         return new double[] {Math.sin(a) * r, Math.cos(a) * r};
     }
 
-    /**
-     * Bombardier: a long fuse spirals three times around you and burns slowly to your feet while firecrackers
-     * pop all around, you flash white like lit TNT, then a triple explosion over your head.
-     */
     static void bombardierGrand(Fx fx) {
         int t = fx.age();
         double radius = 2.8;
@@ -364,7 +346,6 @@ final class AlchemistCeremonies {
         }
     }
 
-    /** Bombardier respawn: you lob six small bombs out around you and they pop one after another. */
     static void bombardierLight(Fx fx) {
         int t = fx.age();
         for (int k = 0; k < 6; k++) {
@@ -394,10 +375,6 @@ final class AlchemistCeremonies {
         }
     }
 
-    /**
-     * Transmuter: three gyroscope rings trace themselves around you, spin faster and faster while elemental
-     * orbs ride them, turn from lead to copper to gold, collapse into you, and a golden alchemy seal glows below.
-     */
     static void transmuterGrand(Fx fx) {
         int t = fx.age();
         int traceEnd = 60;
@@ -452,7 +429,6 @@ final class AlchemistCeremonies {
         }
     }
 
-    /** Transmuter respawn: the ground under you turns to gold in a spreading circle, and gold springs up. */
     static void transmuterLight(Fx fx) {
         int t = fx.age();
         if (t == 0) {

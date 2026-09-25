@@ -9,27 +9,13 @@ import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.engine.math.Colors;
 import nl.tivek.multiversepowers.engine.math.Vectors;
 
-/**
- * The light the engine's painter draws (see {@link ConstructPainter}), next to its constructs: streaks behind a
- * flyer, jet flames, flares, rings of light and glowing haze. Light, not a construct: none of it hides anything, and
- * none of it is ever cut off at a plane (see {@link ConstructPainter#clip}).
- */
 abstract class PainterLight extends PainterCore {
-    /** See the constructors of {@link ConstructPainter}. */
     PainterLight(PoseStack pose, Vec3 camera, float time, @Nullable Frustum frustum, Material material,
             boolean hand) {
         super(pose, camera, time, frustum, material, hand);
     }
 
-    /**
-     * The streak of light a fast flyer leaves behind: a glowing ribbon along the way he came, fading out
-     * behind him.
-     *
-     * @param points where the middle of his body was on the last ticks, newest first
-     * @param own    true when it is your own and you look from your own eyes: the part at the camera is left out
-     */
     public void trail(Vec3 head, Collection<Vec3> points, double strength, boolean own) {
-        // Never longer than this, however fast he goes: a streak, not a rope across the sky.
         double reach = 7.0;
         double gone = 0.0;
         Vec3 last = head;
@@ -47,7 +33,6 @@ abstract class PainterLight extends PainterCore {
             gone += step;
             double t = gone / reach;
             double fade = strength * Math.pow(1.0 - t, 1.3);
-            // Close to the camera it is left out, so it never smears across your screen.
             if (this.camera.distanceTo(point) > (own ? 2.5 : 1.5)) {
                 this.line(this.glow, last, point, 0.32 * (1.0 - t0) + 0.05, this.material.glow(),
                         Colors.alpha(0.5 * fade));
@@ -61,17 +46,6 @@ abstract class PainterLight extends PainterCore {
         }
     }
 
-    /**
-     * The flame out of the back of a jet engine, a turbo booster or a rocket: a white-hot core inside a cone of bright
-     * light that flickers, a glow round all of it, bright rings standing in the flame (the shock diamonds of an
-     * afterburner) and a flare at the nozzle. Light, not a construct.
-     *
-     * @param from   the middle of the nozzle
-     * @param way    the way the flame blows out, one long
-     * @param length how long the flame is at full thrust, in blocks
-     * @param radius how wide the nozzle is, in blocks
-     * @param thrust 0 = out, 1 = full: the flame grows and brightens with it
-     */
     public void exhaust(Vec3 from, Vec3 way, double length, double radius, double thrust) {
         double power = Mth.clamp(thrust, 0.0, 1.0);
         if (power <= 0.01 || way.lengthSqr() < 1.0E-8 || !this.visible(from, length + radius * 4.0)) {
@@ -99,11 +73,6 @@ abstract class PainterLight extends PainterCore {
         this.flare(from, radius * 1.6 * (0.7 + 0.3 * power), 0.8 * power);
     }
 
-    /**
-     * A spark of light facing you: a soft glow, a bright heart and four short rays turning slowly.
-     *
-     * @param size how far its glow reaches, in blocks
-     */
     public void flare(Vec3 at, double size, double strength) {
         if (strength <= 0.0) {
             return;
@@ -130,7 +99,6 @@ abstract class PainterLight extends PainterCore {
         }
     }
 
-    /** One slice of a round glow: bright at {@code at}, fading out to its edge. */
     private void fan(Layer layer, Vec3 at, Vec3 r0, Vec3 r1, double size, int rgb, int alpha) {
         if (alpha <= 0) {
             return;
@@ -141,13 +109,11 @@ abstract class PainterLight extends PainterCore {
         this.put(layer, at.x, at.y, at.z, rgb, alpha);
     }
 
-    /** A ring of light lying flat around {@code center}, like a line of light round a waist. */
     public void band(Vec3 center, double radius, double strength) {
         this.circle(center, new Vec3(1, 0, 0), new Vec3(0, 0, 1), radius, 0.05, 0.3, Colors.alpha(0.95 * strength),
                 Colors.alpha(0.45 * strength));
     }
 
-    /** A ring of light around {@code center}, in the flat plane through the unit vectors {@code a} and {@code b}. */
     public void circle(Vec3 center, Vec3 a, Vec3 b, double radius, double width, double glowWidth, int edge,
             int halo) {
         int segments = 24;
@@ -161,12 +127,6 @@ abstract class PainterLight extends PainterCore {
         }
     }
 
-    /**
-     * A glowing haze filling an egg shape round {@code center}, with {@code a}, {@code b} and {@code c} its three
-     * half-axes: light added on top of whatever is behind it, strongest in its middle, where you look through the most of
-     * it, and fading out softly towards its rim. The fireball of a blast, a cloud of light. Light, not a construct: it
-     * hides nothing, and it is the one thing that may be see-through.
-     */
     public void haze(Vec3 center, Vec3 a, Vec3 b, Vec3 c, int rgb, double strength) {
         double reach = Math.max(a.length(), Math.max(b.length(), c.length()));
         if (strength <= 0.0 || reach <= 1.0E-3 || !this.visible(center, reach)) {

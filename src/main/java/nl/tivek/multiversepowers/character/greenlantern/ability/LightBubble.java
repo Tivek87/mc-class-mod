@@ -42,63 +42,31 @@ import nl.tivek.multiversepowers.engine.entity.HeldMobs;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 import nl.tivek.multiversepowers.engine.math.Ease;
 
-/**
- * The Light Bubble, Green Lantern's prison: a press of its key and the ring throws a bubble of hard light round the
- * creature he looks at, a solid cage of glowing struts, and lifts it off the ground. In there it can do nothing: it
- * cannot move and it cannot hurt anyone, for {@code holdSeconds}, and then the bubble bursts and lets it drop.
- * <ul>
- * <li>A second press pounds the creature into the ground in its bubble: the ring yanks the bubble up and slams it down,
- * then swings it up over its own height onto his left and slams it down there, and swings it over once more onto his
- * right for the hardest slam of all. Every slam hurts the creature (the last one the ability's full damage), throws up
- * the ground and sends out a shockwave that knocks away what stands round it; the last one breaks the bubble into solid
- * pieces.</li>
- * <li>Crouching and pressing the key lets it go without harm.</li>
- * </ul>
- * The cooldown only starts once the bubble is gone. Bosses and anything too big for it cannot be caught.
- */
 @EventBusSubscriber(modid = MultiversePowers.MODID)
 public final class LightBubble implements Effect {
-    /** How long the bubble takes to grow round its creature, in ticks. */
     public static final int FORM_TICKS = 8;
-    /** How long it takes to lift its creature off the ground, in ticks. */
     public static final int LIFT_TICKS = 20;
-    /** How long it takes to break up, in ticks, once it burst or struck. */
     public static final int BREAK_TICKS = 10;
-    /**
-     * What the bubble is doing, sent as its variant: holding its creature, being pounded into the ground, breaking up.
-     * The first update of a pound is sent on its first tick, so clients time the pound from that update.
-     */
     public static final int HOLDING = 0;
     public static final int SMASHING = 1;
     public static final int BREAKING = 2;
-    // The pound, slam by slam: how many ticks the bubble is swung up (quickly, hanging a moment at the top) and how many
-    // it takes to come down (faster and faster); between two slams it lies on the ground for a tick.
     private static final int[] RISE = { 5, 5, 6 };
     private static final int STRIKE = 3;
-    /** The ticks of the pound its slams strike the ground on; the last one breaks the bubble. */
     public static final int[] POUND = pound();
-    // How far over where it comes from each slam swings the bubble up, and how far the second and third throw it off to
-    // his left and to his right, in blocks.
     private static final double[] SWING = { 1.8, 2.6, 3.2 };
     private static final double SIDE = 1.8;
-    // What every slam before the last deals, of the ability's damage (the last deals all of it), and how far its
-    // shockwave reaches and throws, next to the last one's.
     private static final float EARLY_DAMAGE = 0.35F;
     private static final double EARLY_WAVE = 0.7;
     private static final double EARLY_THROW = 0.55;
-    // How far off the line of his look a creature may be and still be caught, in blocks.
     private static final double AIM = 0.6;
-    // The biggest creature a bubble holds (its width and height, in blocks), and how strong it may be.
     private static final double WIDEST = 3.0;
     private static final double TALLEST = 4.0;
     private static final double STRONGEST = 150.0;
-    // How much room the bubble leaves round its creature, and how much it bobs in the air, in blocks.
     private static final double ROOM = 0.45;
     private static final double BOB = 0.12;
     private static final double VIEW_RANGE = 128.0;
 
     private static final Map<UUID, LightBubble> ACTIVE = new HashMap<>();
-    // The creatures a bubble holds, by entity id: nothing they do can hurt anyone.
     private static final Map<Integer, LightBubble> TRAPPED = new HashMap<>();
 
     static {
@@ -116,8 +84,6 @@ public final class LightBubble implements Effect {
     private final Vec3 facing;
     private int age;
     private int phase = HOLDING;
-    // When the pound or the breaking up began, and where the bubble was then; for the pound, where each slam strikes
-    // the ground (the middle of the bubble as it lies there) and how high each swings it up.
     private int since;
     private Vec3 from;
     private Vec3[] slams = new Vec3[0];
@@ -136,12 +102,6 @@ public final class LightBubble implements Effect {
         this.from = this.center;
     }
 
-    /**
-     * The bubble's key: traps what he looks at, or smashes the bubble he already holds down onto the ground; crouching,
-     * it lets the creature go. It never starts the cooldown itself: that starts once the bubble is gone.
-     *
-     * @return always false, so the key starts no cooldown of its own
-     */
     public static boolean use(ServerPlayer owner, ServerLevel level, CharacterAbility ability, int data) {
         LightBubble held = ACTIVE.get(owner.getUUID());
         boolean crouching = (data & Characters.SNEAKING) != 0;
@@ -180,7 +140,6 @@ public final class LightBubble implements Effect {
             return false;
         }
         PowerRing.setPower(owner, power - cost);
-        LightBeam.stop(owner);
         LightBubble bubble = new LightBubble(owner, ability, target);
         if (target instanceof Mob mob) {
             HeldMobs.hold(mob);
@@ -196,10 +155,6 @@ public final class LightBubble implements Effect {
         return false;
     }
 
-    /**
-     * The creature he looks at: the first one along his line of sight within {@code range}, before any wall, that the
-     * ring may take. Never his own pets.
-     */
     @Nullable
     private static LivingEntity aim(ServerPlayer owner, ServerLevel level, double range) {
         Vec3 eye = owner.getEyePosition();
@@ -214,7 +169,6 @@ public final class LightBubble implements Effect {
                         && entity.isPickable() && !(living instanceof OwnableEntity pet && pet.getOwner() == owner),
                 eye.distanceToSqr(end));
         if (hit == null) {
-            // Aimed a hair off: the nearest creature close to his line of sight.
             LivingEntity best = null;
             double nearest = AIM * AIM;
             Vec3 way = end.subtract(eye);
@@ -235,17 +189,14 @@ public final class LightBubble implements Effect {
         return (LivingEntity) hit.getEntity();
     }
 
-    /** True while this creature sits in a bubble: it can do nothing. */
     public static boolean trapped(Entity entity) {
         return TRAPPED.containsKey(entity.getId());
     }
 
-    /** True while this player holds a creature in a bubble. */
     static boolean holding(ServerPlayer player) {
         return ACTIVE.containsKey(player.getUUID());
     }
 
-    /** The server stops: every creature is let go (the mobs get their own will back). */
     public static void clear() {
         for (LightBubble bubble : ACTIVE.values()) {
             bubble.free();
@@ -281,7 +232,6 @@ public final class LightBubble implements Effect {
                 }
             }
         } else {
-            // Lifted off the ground as it forms round its creature, bobbing a little in the air.
             double lift = this.ability.value("liftBlocks") * Ease.smooth((double) this.age / LIFT_TICKS);
             double bob = BOB * Math.sin(this.age * 0.15) * Ease.smooth((this.age - LIFT_TICKS) / 10.0);
             this.center = this.base.add(0.0, this.target.getBbHeight() * 0.5 + lift + bob, 0.0);
@@ -297,7 +247,6 @@ public final class LightBubble implements Effect {
         return true;
     }
 
-    /** Keeps its creature right in the middle of it, still. */
     private void hold() {
         double x = this.center.x;
         double y = this.center.y - this.target.getBbHeight() * 0.5;
@@ -305,8 +254,7 @@ public final class LightBubble implements Effect {
         this.target.setDeltaMovement(Vec3.ZERO);
         this.target.resetFallDistance();
         if (this.target instanceof ServerPlayer player) {
-            // He keeps looking where he likes (only where he is is the bubble's), and a server that does not allow
-            // flying must not think he hangs in the air on his own.
+            // A server that does not allow flying must not think he hangs in the air on his own.
             player.teleportTo(x, y, z);
             player.connection.aboveGroundTickCount = 0;
         } else {
@@ -314,10 +262,6 @@ public final class LightBubble implements Effect {
         }
     }
 
-    /**
-     * A second press: the pound. Where each slam will strike is worked out now: straight down below the bubble, then off
-     * to his left and to his right of that, never through a wall, and never swung up into a ceiling.
-     */
     private void smash(ServerLevel level) {
         this.phase = SMASHING;
         // It is sent as pounded from the next tick on, and that tick is the first of the pound (see POUND).
@@ -346,7 +290,6 @@ public final class LightBubble implements Effect {
         this.sound(level, SoundEvents.BEACON_POWER_SELECT, 1.0F, 1.9F);
     }
 
-    /** Where the bubble lies on the ground below {@code at}: sunk a little into it, as it strikes. */
     private Vec3 floorBelow(ServerLevel level, Vec3 at) {
         Vec3 below = at.subtract(0.0, this.radius + 24.0, 0.0);
         BlockHitResult ground = level.clip(new ClipContext(at, below, ClipContext.Block.COLLIDER,
@@ -355,10 +298,6 @@ public final class LightBubble implements Effect {
         return new Vec3(at.x, Math.min(at.y, floorY + this.radius * 0.8), at.z);
     }
 
-    /**
-     * Where the bubble lies on the ground {@code aside} of {@code base}: only as far as it gets before a wall, and on
-     * whatever ground is there, a step higher or lower.
-     */
     private Vec3 beside(ServerLevel level, Vec3 base, Vec3 aside) {
         Vec3 to = base.add(aside);
         BlockHitResult wall = level.clip(new ClipContext(base, to, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE,
@@ -370,11 +309,6 @@ public final class LightBubble implements Effect {
         return this.floorBelow(level, to.add(0.0, 0.5, 0.0));
     }
 
-    /**
-     * Where the bubble is {@code p} ticks into the pound: every slam swings it up out of where it lay, quickly and
-     * hanging a moment at the top, then drives it down faster and faster onto where it strikes, gliding sideways all
-     * the way; after a slam it lies on the ground for a tick.
-     */
     private Vec3 pounded(int p) {
         for (int k = 0; k < POUND.length; k++) {
             if (p > POUND[k]) {
@@ -401,7 +335,6 @@ public final class LightBubble implements Effect {
         return this.slams.length == 0 ? this.center : this.slams[this.slams.length - 1];
     }
 
-    /** The ticks of the pound its slams strike on, from how long each is swung up and driven down. */
     private static int[] pound() {
         int[] ticks = new int[RISE.length];
         int t = 0;
@@ -412,11 +345,6 @@ public final class LightBubble implements Effect {
         return ticks;
     }
 
-    /**
-     * Slam {@code k} of the pound strikes the ground: its creature is hurt (by the last one the full damage), the ground
-     * bursts up round it and a shockwave throws whatever stands round it away, hurting it half as much. The last slam is
-     * the hardest, and breaks the bubble into solid pieces.
-     */
     private void strike(ServerLevel level, int k) {
         boolean last = k == POUND.length - 1;
         float damage = this.ability.getDamage() * (last ? 1.0F : EARLY_DAMAGE);
@@ -454,10 +382,6 @@ public final class LightBubble implements Effect {
         }
     }
 
-    /**
-     * The ground bursts up where the bubble strikes: pillars of its own dust and chunks of it thrown up all round, the
-     * green of the shockwave running out over it, and the boom; the last slam louder and bigger than the others.
-     */
     private void burstUp(ServerLevel level, Vec3 at, double reach, boolean last) {
         BlockState ground = level.getBlockState(BlockPos.containing(at.subtract(0.0, 0.2, 0.0)));
         if (!ground.isAir()) {
@@ -487,7 +411,6 @@ public final class LightBubble implements Effect {
         }
     }
 
-    /** The bubble bursts by itself (its time is up), or he lets its creature go: it drops, unhurt. */
     private void burst(ServerLevel level, boolean timeUp) {
         if (this.phase == BREAKING) {
             return;
@@ -498,7 +421,6 @@ public final class LightBubble implements Effect {
         this.end(level);
     }
 
-    /** It breaks up: its creature is let go and his cooldown starts. */
     private void end(ServerLevel level) {
         this.phase = BREAKING;
         this.since = this.age;
@@ -509,7 +431,6 @@ public final class LightBubble implements Effect {
         }
     }
 
-    /** Its creature gets its own will back. */
     private void free() {
         TRAPPED.remove(this.target.getId(), this);
         if (this.target instanceof Mob mob) {
@@ -526,15 +447,10 @@ public final class LightBubble implements Effect {
                         this.phase != BREAKING, ConstructPayload.BUBBLE, this.phase, this.age, null));
     }
 
-    /**
-     * The creature a bubble holds, carried in its charge: the id's own bits, so every id comes through whole (a plain
-     * number would lose the last digits of the large ids of a server that has been up a long time).
-     */
     public static float caught(int entityId) {
         return Float.intBitsToFloat(entityId);
     }
 
-    /** The id of the creature in a bubble, from its charge (see {@link #caught(int)}). */
     public static int caughtId(float charge) {
         return Float.floatToRawIntBits(charge);
     }
@@ -543,7 +459,6 @@ public final class LightBubble implements Effect {
         level.playSound(null, this.center.x, this.center.y, this.center.z, sound, SoundSource.PLAYERS, volume, pitch);
     }
 
-    /** Nothing a creature in a bubble does can hurt anyone: not its bite, not its arrows. */
     @SubscribeEvent
     public static void onIncomingDamage(LivingIncomingDamageEvent event) {
         Entity attacker = event.getSource().getEntity();

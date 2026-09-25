@@ -7,14 +7,11 @@ modId="${mod_id}"
 version="${mod_version}"
 displayName="${mod_name}"
 authors="${mod_authors}"
-# Adds an arm pose (Green Lantern raising his lantern) to the game's own list; see that file.
 enumExtensions="META-INF/enumextensions.json"
 description='''
 ${mod_description}
 '''
 
-# A few small hooks into the game (see nl.tivek.multiversepowers.mixin): the creatures the ring's scan marked glow
-# through walls for its maker, in the colour of what they are to him, and every world gets its own world settings.
 [[mixins]]
 config="${mod_id}.mixins.json"
 

@@ -95,7 +95,6 @@ public final class ModNetwork {
         ClientPayloadHandler.handleWorldSettings(payload, context);
     }
 
-    /** The construct wheel: Green Lantern took a construct out, or put his away. */
     private static void onConstructHold(ConstructHoldPayload payload, IPayloadContext context) {
         context.enqueueWork(() -> {
             if (context.player() instanceof ServerPlayer serverPlayer) {
@@ -104,7 +103,6 @@ public final class ModNetwork {
         });
     }
 
-    /** The screen of /constructshockwave: a construct was picked. Players who may not cheat are told so. */
     private static void onConstructPick(ConstructPickPayload payload, IPayloadContext context) {
         context.enqueueWork(() -> {
             if (context.player() instanceof ServerPlayer serverPlayer
@@ -115,7 +113,6 @@ public final class ModNetwork {
         });
     }
 
-    /** An ability key, or the client telling that it is holding on to a wall. */
     private static void onAbilityAction(AbilityActionPayload payload, IPayloadContext context) {
         context.enqueueWork(() -> {
             if (!(context.player() instanceof ServerPlayer serverPlayer)) {
@@ -139,7 +136,6 @@ public final class ModNetwork {
         ClientPayloadHandler.handleCharacterLook(payload, context);
     }
 
-    /** The wheel: turn into this character, or (with an empty id) back into yourself. */
     private static void onTransform(TransformPayload payload, IPayloadContext context) {
         context.enqueueWork(() -> {
             if (context.player() instanceof ServerPlayer serverPlayer) {
@@ -201,10 +197,6 @@ public final class ModNetwork {
         ClientPayloadHandler.handleSpellCooldown(payload, context);
     }
 
-    /**
-     * Developers may test ceremonies: always in a development run, otherwise only operators
-     * (or a singleplayer world with cheats on), so normal players cannot spam them on a server.
-     */
     public static boolean mayTestEffects(ServerPlayer player) {
         return !FMLEnvironment.production || player.hasPermissions(2);
     }
@@ -235,7 +227,6 @@ public final class ModNetwork {
         });
     }
 
-    /** Tells the player's own client which class they have. */
     public static void syncClass(ServerPlayer player, PlayerClass playerClass) {
         PacketDistributor.sendToPlayer(player, new ClassSyncPayload(playerClass.getId()));
     }
@@ -244,7 +235,7 @@ public final class ModNetwork {
         ClientPayloadHandler.handleClassSync(payload, context);
     }
 
-    // Only ever called on a client, so ClientPayloadHandler is not loaded on a dedicated server.
+    // Client-only: keeps ClientPayloadHandler from loading on a dedicated server.
     private static void onOpenWelcome(OpenWelcomePayload payload, IPayloadContext context) {
         ClientPayloadHandler.handleOpenWelcome(context);
     }
@@ -254,14 +245,12 @@ public final class ModNetwork {
             if (!(context.player() instanceof ServerPlayer serverPlayer)) {
                 return;
             }
-            // Ignore a second choice: the loadout is handed out once per player.
             if (ClassData.hasClass(serverPlayer)) {
                 return;
             }
 
             PlayerClass chosen = PlayerClass.byId(payload.classId());
             if (chosen == null) {
-                // What his game sent is not written to the log as it is: a changed game could fill the log with it.
                 MultiversePowers.LOGGER.warn("Unknown class id from {}", serverPlayer.getName().getString());
                 return;
             }

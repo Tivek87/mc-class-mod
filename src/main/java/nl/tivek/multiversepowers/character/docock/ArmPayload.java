@@ -10,30 +10,6 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.MultiversePowers;
 
-/**
- * Server tells nearby clients where a robot arm of a spell is this tick, as a line of
- * points from its mount to its tip. Clients draw it as a real 3D arm. No points = the arm is gone.
- *
- * @param claw        how far the claw at the tip is open, in blocks; below 0 means no claw
- * @param thickness   1 for a normal arm, higher for a bigger one
- * @param anchorId    entity the arm is mounted on (-1: none); clients glue the mount to where they
- *                    draw that entity, so the arm never lags behind its owner
- * @param anchorPos   the anchor's position the server used for these points
- * @param anchorYaw   the anchor's yaw (degrees) the server used for these points
- * @param anchorBlend 0: the whole arm moves with the anchor; 1: only the mount does, the tip stays
- *                    where the server put it
- * @param tipOffset   how much more arm lies beyond the last point (hidden in a portal), in blocks;
- *                    keeps the segments sliding along instead of jumping
- * @param heldId      entity clamped in the claw (-1: none); clients put it exactly at the tip
- * @param cut         changes when the arm jumps (through a portal): clients then do not blend
- * @param clipPoint   with {@code clipNormal}: nothing on the side the normal points to is drawn
- * @param clipNormal  zero vector = no clipping
- * @param lamps       {@link #LAMPS_NORMAL}, or {@link #LAMPS_RAGE} for red-hot lamps
- * @param spike       0 = away, 1 = the sharp point between the claws is fully out
- * @param thrust      0 = away, 1 = the thrusters are fully out and burning
- * @param carried     blocks clamped in the claw: where each one sits relative to the tip, and what it
- *                    is (a block state id); empty when the claw carries no blocks
- */
 public record ArmPayload(int id, List<Vec3> points, float claw, float thickness, int anchorId,
         Vec3 anchorPos, float anchorYaw, float anchorBlend, float tipOffset, int heldId, int cut,
         Vec3 clipPoint, Vec3 clipNormal, int lamps, float spike, float thrust,
@@ -43,7 +19,6 @@ public record ArmPayload(int id, List<Vec3> points, float claw, float thickness,
     public static final int LAMPS_NORMAL = 0;
     public static final int LAMPS_RAGE = 1;
 
-    /** One block in the claw: {@code offset} from the tip, {@code state} from Block.getId. */
     public record Carried(Vec3 offset, int state) {
     }
 

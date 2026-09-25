@@ -6,9 +6,6 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import nl.tivek.multiversepowers.MultiversePowers;
 
-/**
- * Client picked a character in the wheel. An empty id means: change back to yourself.
- */
 public record TransformPayload(String characterId) implements CustomPacketPayload {
     private static final int MAX_LENGTH = 64;
 

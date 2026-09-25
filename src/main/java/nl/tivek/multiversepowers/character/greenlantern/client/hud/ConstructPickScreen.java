@@ -20,20 +20,13 @@ import nl.tivek.multiversepowers.character.greenlantern.ConstructPayload;
 import nl.tivek.multiversepowers.character.greenlantern.ConstructPickPayload;
 import nl.tivek.multiversepowers.engine.client.gui.DirtBackgroundScreen;
 
-/**
- * The screen of the command {@code /constructshockwave}: every landing-slam construct as a button, grouped by what it
- * does. Pick one, and a second later it strikes in front of you with its shockwave, whoever you are. The server only
- * lets players who may cheat; it says so when you may not.
- */
 @EventBusSubscriber(modid = MultiversePowers.MODID, value = Dist.CLIENT)
 public class ConstructPickScreen extends DirtBackgroundScreen {
     private static final String PREFIX = "screen." + MultiversePowers.MODID + ".construct_pick.";
-    /** The name of every construct in the language files, by its number (see {@link ConstructPayload#SLAM_FIST}). */
     static final String[] NAMES = { "fist", "hands", "fists", "hammer", "emblem", "anvil", "cymbals", "uppercut",
             "spikes", "boot", "weight", "sword", "rockets", "swatter", "lantern", "safe", "anchor", "mace", "barbell",
             "bell", "meteor", "palm", "gavel", "pickaxe", "trap", "book", "drum", "pillar", "tnt", "piano", "brick",
             "stamp" };
-    // The groups, and the constructs in each, in the order they are shown.
     private static final String[] GROUP_NAMES = { "drop", "clap", "ground", "swing", "other" };
     private static final int[][] GROUPS = {
             { ConstructPayload.SLAM_FIST, ConstructPayload.SLAM_HAMMER, ConstructPayload.SLAM_ANVIL,
@@ -56,11 +49,9 @@ public class ConstructPickScreen extends DirtBackgroundScreen {
     private static final int GAP = 4;
     private static final int GREEN = 0xFF6CFF8E;
 
-    /** A button, and where it sits in the list before it is scrolled. */
     private record Entry(Button button, int y) {
     }
 
-    /** A title over a group of buttons, and where it sits in the list. */
     private record Header(Component title, int y) {
     }
 
@@ -75,18 +66,16 @@ public class ConstructPickScreen extends DirtBackgroundScreen {
         super(Component.translatable(PREFIX + "title"));
     }
 
-    /** The command that opens this screen: {@code /constructshockwave}. */
     @SubscribeEvent
     public static void onRegisterClientCommands(RegisterClientCommandsEvent event) {
         event.getDispatcher().register(Commands.literal("constructshockwave").executes(context -> {
             Minecraft minecraft = Minecraft.getInstance();
-            // A command runs while the chat screen is still open, so switch screens afterwards.
+            // The chat screen is still open when the command runs; defer to swap it
             minecraft.tell(() -> minecraft.setScreen(new ConstructPickScreen()));
             return 1;
         }));
     }
 
-    /** The name of a construct, for the screen and the message once it is picked. */
     static Component name(int variant) {
         return Component.translatable("construct." + MultiversePowers.MODID + ".slam." + NAMES[variant]);
     }
@@ -137,7 +126,6 @@ public class ConstructPickScreen extends DirtBackgroundScreen {
         return Math.max(0, this.contentHeight - this.viewHeight());
     }
 
-    /** Puts every button where it is after scrolling; those outside the list are hidden. */
     private void layout() {
         int bottom = this.height - FOOTER;
         for (Entry entry : this.entries) {
@@ -147,7 +135,6 @@ public class ConstructPickScreen extends DirtBackgroundScreen {
         }
     }
 
-    /** Sends the pick to the server and closes: the construct comes a second later. */
     private void pick(int variant) {
         PacketDistributor.sendToServer(new ConstructPickPayload(variant));
         if (this.minecraft != null) {
@@ -166,7 +153,6 @@ public class ConstructPickScreen extends DirtBackgroundScreen {
     @Override
     public void renderBackground(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         if (this.minecraft != null && this.minecraft.level != null) {
-            // In the game: the world stays visible behind it, so you see where the construct will strike.
             this.renderTransparentBackground(graphics);
         } else {
             super.renderBackground(graphics, mouseX, mouseY, partialTick);
@@ -184,7 +170,6 @@ public class ConstructPickScreen extends DirtBackgroundScreen {
                 graphics.fill(end, y + 7, this.panelLeft + this.panelWidth - 8, y + 8, DIVIDER_COLOR);
             }
         }
-        // A scroll bar when not all of it fits.
         if (this.maxScroll() > 0) {
             int track = this.viewHeight();
             int bar = Math.max(12, track * track / this.contentHeight);

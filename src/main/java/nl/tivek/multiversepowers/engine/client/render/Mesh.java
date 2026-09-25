@@ -9,43 +9,25 @@ import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.engine.math.Noise;
 import nl.tivek.multiversepowers.engine.math.Vectors;
 
-/**
- * A solid shape of flat sides, for the parts of a construct that are round or slanted where boxes will not do: a
- * drum, a bell, a coin, a ring, a blade. It is measured in blocks at scale 1 (x to the right, y up, z ahead) like the
- * box models (see {@link ConstructPainter}), and drawn the same way: solid sides lit from above, and bright lines only
- * where its outline runs as you look at it. Every side goes round its outward face counter-clockwise. A mesh never
- * changes: moving, turning or stretching one gives a new one.
- */
 public final class Mesh {
-    /** Its corners. */
     public final Vec3[] points;
-    /** Its sides, four corners each (one with three corners repeats its last), round the outward face. */
     public final int[][] sides;
-    /** The way each side faces, outwards and one long; zero for a side without area. */
     public final Vec3[] normals;
-    /** The middle of each side. */
     final Vec3[] middles;
-    /** How brightly each side burns, next to the rest of the construct. */
     final double[] bright;
-    /** Every edge once: its two ends, and the side on either side of it (-1 when there is none). */
     final int[] edgeFrom;
     final int[] edgeTo;
     final int[] edgeLeft;
     final int[] edgeRight;
-    /** The middle of all its corners: where it flies out from when the construct breaks up. */
     final Vec3 middle;
-    /** How thick the lines along it are drawn, as a part of the usual (see {@link ConstructPainter#fine}). */
     final double fine;
-    /** Its corners as plain numbers, and the way each side faces: the painter draws from these. */
     public final double[] px;
     public final double[] py;
     public final double[] pz;
     final double[] nx;
     final double[] ny;
     final double[] nz;
-    /** How far ahead the middle of each side is: the light ripples along the construct by it. */
     final double[] middleZ;
-    /** A ball round all of it, to skip it when it is out of view: its middle and how far it reaches. */
     final double boundX;
     final double boundY;
     final double boundZ;
@@ -156,39 +138,22 @@ public final class Mesh {
         }
     }
 
-    // ---- Shapes ----
-
-    /**
-     * A shape turned round the y axis, the way wood is turned on a lathe: {@code profile} gives pairs of how far out
-     * and how high, with the outside on its right as it runs. Starting and ending on the axis (a radius of 0) closes it
-     * there, so a profile from the axis at the bottom, out, up and back in to the axis at the top makes a solid thing.
-     *
-     * @param sides how many sides it has all round
-     */
     public static Mesh lathe(int sides, double bright, double... profile) {
         return turning(sides, bright, false, profile);
     }
 
-    /**
-     * A ring turned round the y axis: like {@link #lathe}, but the profile goes all the way round (counter-clockwise,
-     * with x out to the right and y up) and never touches the axis, so there is a hole through the middle. A washer,
-     * a tyre, a hoop.
-     */
     public static Mesh ring(int sides, double bright, double... profile) {
         return turning(sides, bright, true, profile);
     }
 
-    /** A cylinder standing on y = {@code bottom} round the y axis. */
     public static Mesh cylinder(int sides, double radius, double bottom, double top, double bright) {
         return lathe(sides, bright, 0.0, bottom, radius, bottom, radius, top, 0.0, top);
     }
 
-    /** A cone or a cut-off cone round the y axis, {@code below} wide at the bottom and {@code above} at the top. */
     public static Mesh cone(int sides, double below, double above, double bottom, double top, double bright) {
         return lathe(sides, bright, 0.0, bottom, below, bottom, above, top, 0.0, top);
     }
 
-    /** A ball round the middle. */
     public static Mesh ball(int sides, int rings, double radius, double bright) {
         double[] profile = new double[(rings + 1) * 2];
         for (int i = 0; i <= rings; i++) {
@@ -199,10 +164,6 @@ public final class Mesh {
         return lathe(sides, bright, profile);
     }
 
-    /**
-     * A ring like a doughnut, lying flat round the y axis: {@code major} out to the middle of its body, which is
-     * {@code minor} thick either way.
-     */
     public static Mesh torus(int sides, int round, double major, double minor, double bright) {
         double[] profile = new double[round * 2];
         for (int i = 0; i < round; i++) {
@@ -213,10 +174,6 @@ public final class Mesh {
         return ring(sides, bright, profile);
     }
 
-    /**
-     * A flat outline stood out along z, from {@code back} to {@code front}: a blade, a fin, a wedge. The outline gives
-     * pairs of x and y counter-clockwise as seen from the front, and must be seen whole from its own middle.
-     */
     public static Mesh prism(double back, double front, double bright, double... outline) {
         int n = outline.length / 2;
         Builder builder = new Builder();
@@ -243,15 +200,10 @@ public final class Mesh {
         return builder.build();
     }
 
-    /** A box, as a mesh: for a box that has to be turned inside a shape. */
     public static Mesh box(double x0, double y0, double z0, double x1, double y1, double z1, double bright) {
         return prism(z0, z1, bright, x0, y0, x1, y0, x1, y1, x0, y1);
     }
 
-    /**
-     * A rough lump round the middle, like a rock: a ball whose corners stick out or sink in by up to {@code rough}
-     * times its radius, the same way every time for the same {@code seed}.
-     */
     public static Mesh lump(int sides, int rings, double radius, double rough, int seed, double bright) {
         Builder builder = new Builder();
         int[][] ring = new int[rings + 1][sides];
@@ -278,12 +230,6 @@ public final class Mesh {
         return builder.build();
     }
 
-    /**
-     * A round tube {@code radius} thick along a path of points: a chain link, the arm of an anchor, a spring, a wire.
-     * An open path gets its ends closed; a closed one runs from its last point back to its first, like a ring.
-     *
-     * @param round how many sides it has round its body
-     */
     public static Mesh tube(boolean closed, int round, double radius, double bright, Vec3... path) {
         int n = path.length;
         Builder builder = new Builder();
@@ -293,7 +239,6 @@ public final class Mesh {
             Vec3 before = path[closed ? (i - 1 + n) % n : Math.max(0, i - 1)];
             Vec3 after = path[closed ? (i + 1) % n : Math.min(n - 1, i + 1)];
             Vec3 along = after.subtract(before).normalize();
-            // Carry the way round the body on from point to point, so the tube does not twist.
             if (normal == null) {
                 normal = Math.abs(along.y) < 0.9 ? along.cross(new Vec3(0, 1, 0)) : along.cross(new Vec3(1, 0, 0));
             }
@@ -328,70 +273,27 @@ public final class Mesh {
         return builder.build();
     }
 
-    /**
-     * A body lofted along z through rings of an oval cross-section, the way the body of an aircraft, a missile or an
-     * engine is shaped. Every section gives, in this order, its z, its half width, its half height and how high its
-     * middle is; they run one way along z (either way). A section of no size ends the body there in a point; an end
-     * that is not a point is closed flat.
-     *
-     * @param round how many sides it has all round
-     */
     public static Mesh loft(int round, double bright, double[]... sections) {
         return MeshBodies.loft(round, bright, sections);
     }
 
-    /**
-     * A curved plate lying on a lofted body (see {@link #loft}), {@code thick} proud of it: a window, a door, a hatch, a
-     * band of plating round it. It covers the body's sections (given the same way as for {@link #loft}) only between two
-     * angles round it, counted the way the loft counts them: 0 along +x (its right side), a quarter turn on top (+y), half
-     * a turn on its left, three quarters underneath. Going all the way round (a whole turn) makes a ring round the body.
-     * It is closed all round, so it reads as a plate of its own with its outline lit where it runs.
-     *
-     * @param steps how many pieces it is cut into round the body
-     */
     public static Mesh panel(int steps, double bright, double from, double to, double thick, double[]... sections) {
         return MeshBodies.panel(steps, bright, from, to, thick, sections);
     }
 
-    /**
-     * A wing, a fin or a blade: a tapering panel out along x from its root at x = 0 to its tip at x = {@code span}. The
-     * root runs along z from {@code rootBack} to {@code rootFront}, the tip from {@code tipBack} to {@code tipFront} (a
-     * tip further back makes a swept wing), and the tip sits {@code rise} higher than the root. Its cross-section is a
-     * flattened diamond, thickest a third of the way back from its leading edge the way a real wing is:
-     * {@code rootThick} thick at the root and {@code tipThick} at the tip. Turn it a quarter about z for a fin that
-     * stands up, mirror it along x for the wing on the other side.
-     */
     public static Mesh wing(double span, double rootBack, double rootFront, double tipBack, double tipFront,
             double rise, double rootThick, double tipThick, double bright) {
         return MeshBodies.wing(span, rootBack, rootFront, tipBack, tipFront, rise, rootThick, tipThick, bright);
     }
 
-    /**
-     * A body swept along z through sections of the same outline, the way {@link #loft} does with ovals: a blade with
-     * flat faces and bevelled edges, a fuselage with a flat belly, a beam of any cross-section. {@code outline} gives
-     * pairs of x and y all round it, seen whole from its own middle; every section gives its z, how far the outline is
-     * stretched along x and along y, and how high its middle is. A section stretched to nothing ends the body there in a
-     * point; an end that is not a point is closed flat.
-     */
     public static Mesh sweep(double bright, double[] outline, double[]... sections) {
         return MeshBodies.sweep(bright, outline, sections);
     }
 
-    /**
-     * A curved plate: a flat outline filled in from its middle, {@code back} to {@code front} thick along z, and bowed
-     * out towards +z by {@code bulge} in its middle, less and less towards its rim, the way a shield or a hatch is. The
-     * outline gives pairs of x and y all round it, seen whole from its own middle.
-     *
-     * @param rings how many rings the face is cut into from its middle to its rim: the more, the rounder it bows
-     */
     public static Mesh dish(int rings, double back, double front, double bulge, double bright, double... outline) {
         return MeshBodies.dish(rings, back, front, bulge, bright, outline);
     }
 
-    /**
-     * Several shapes as one: drawn in one go, and skipped in one go when out of view. Where they meet they stay
-     * separate shapes, each with its own outline, so parts that touch still read as parts.
-     */
     public static Mesh merged(Mesh... parts) {
         Builder builder = new Builder();
         for (Mesh part : parts) {
@@ -434,9 +336,6 @@ public final class Mesh {
         return builder.build();
     }
 
-    // ---- Changes ----
-
-    /** The same shape, moved. */
     public Mesh moved(double x, double y, double z) {
         Vec3 by = new Vec3(x, y, z);
         Vec3[] moved = new Vec3[this.points.length];
@@ -446,7 +345,6 @@ public final class Mesh {
         return new Mesh(moved, this.sides, this.bright);
     }
 
-    /** The same shape, turned by {@code degrees} about the line through the origin along (x, y, z). */
     public Mesh turned(double x, double y, double z, double degrees) {
         Vec3 axis = new Vec3(x, y, z).normalize();
         double angle = Math.toRadians(degrees);
@@ -457,7 +355,6 @@ public final class Mesh {
         return new Mesh(turned, this.sides, this.bright);
     }
 
-    /** The same shape, stretched (or squashed) along x, y and z; mirrored when an odd number of them is negative. */
     public Mesh scaled(double x, double y, double z) {
         Vec3[] scaled = new Vec3[this.points.length];
         for (int i = 0; i < scaled.length; i++) {
@@ -466,7 +363,7 @@ public final class Mesh {
         if (x * y * z >= 0.0) {
             return new Mesh(scaled, this.sides, this.bright);
         }
-        // Mirrored, every side goes round the other way: turned back, so they still face outwards.
+        // A mirror flips winding; reverse each side so it still faces outward (see quad's culling).
         int[][] sides = new int[this.sides.length][];
         for (int s = 0; s < sides.length; s++) {
             int[] side = this.sides[s];
@@ -475,7 +372,6 @@ public final class Mesh {
         return new Mesh(scaled, sides, this.bright);
     }
 
-    /** The same shape, turned so that what stood up along y points along (x, y, z). */
     public Mesh pointing(double x, double y, double z) {
         Vec3 way = new Vec3(x, y, z).normalize();
         Vec3 axis = new Vec3(0, 1, 0).cross(way);
@@ -485,22 +381,18 @@ public final class Mesh {
         return this.turned(axis.x, axis.y, axis.z, Math.toDegrees(Math.acos(Math.max(-1.0, Math.min(1.0, way.y)))));
     }
 
-    /** The same shape, mirrored from right to left (its sides turned back so they still face outwards). */
     public Mesh mirrored() {
         return this.scaled(-1.0, 1.0, 1.0);
     }
 
-    /** The same shape, lying along x: what stood up along y now points along +x. */
     public Mesh alongX() {
         return this.turned(0.0, 0.0, 1.0, -90.0);
     }
 
-    /** The same shape, lying along z: what stood up along y now points along +z. */
     public Mesh alongZ() {
         return this.turned(1.0, 0.0, 0.0, 90.0);
     }
 
-    /** The same shape, burning this many times as brightly. */
     Mesh brighter(double factor) {
         double[] bright = new double[this.bright.length];
         for (int s = 0; s < bright.length; s++) {
@@ -509,7 +401,6 @@ public final class Mesh {
         return new Mesh(this.points, this.sides, bright);
     }
 
-    /** Puts a shape together side by side. */
     static final class Builder {
         private final List<Vec3> points = new ArrayList<>();
         private final List<int[]> sides = new ArrayList<>();
@@ -525,7 +416,6 @@ public final class Mesh {
             this.bright.add(brightness);
         }
 
-        /** A side of these corners in either order: the one that faces away from {@code inside}. */
         void outward(Vec3 inside, double brightness, int a, int b, int c, int d) {
             Vec3 pa = this.points.get(a);
             Vec3 pb = this.points.get(b);

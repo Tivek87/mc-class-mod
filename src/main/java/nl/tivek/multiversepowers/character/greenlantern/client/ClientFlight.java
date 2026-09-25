@@ -42,98 +42,50 @@ import nl.tivek.multiversepowers.engine.client.world.ChunkEdge;
 import nl.tivek.multiversepowers.engine.math.Ease;
 import static nl.tivek.multiversepowers.character.greenlantern.client.FlyerTracker.track;
 
-/**
- * Flying as Green Lantern, on this side. Every game moves its own player, so your own flight is steered here:
- * <ul>
- * <li><b>Taking off</b> (see {@link Flight#ARISE_TICKS}), with the flight key or by tapping jump twice: you stop
- * where you are while your fists come to your chest, then your arms sweep down along your sides and you rise a few
- * blocks, looking up, and from there you fly on without a break.</li>
- * <li><b>Flying</b>: hold forward and you pick up speed the way you look: within a moment you are up to cruising
- * speed, and from there you keep gaining until a few seconds later you reach the top speed; let go and you glide to a
- * hover. Jump and sneak rise and sink, left and right slide sideways. You carry your speed
- * into every turn, so you swing through curves instead of snapping round.</li>
- * <li>The dome works as a brake chute: while it is up your speed is halved.</li>
- * <li>Walls and the ground stop you; knocks from a hit or a blast move you as they would anyone. Sink down onto
- * the ground slowly and you land by yourself, and fly into it looking down and you land as well. Dive into it at full
- * speed and you land with a slam: just before the ground you swing upright, feet first, with your ring fist cocked,
- * and you come down on one knee with that fist smashed into the ground while the ring throws up a construct (see
- * LandingSlam). The shockwave key does that dive for you: straight down at full speed, into a slam.</li>
- * <li>An empty ring lets you sink down gently, with no more steering, until you touch ground.</li>
- * <li>You never stop dead at the edge of the world your own game has: the server makes it ready round you and far
- * ahead (see Flight), and should you still catch up with the edge, you slow down smoothly before it and fly on once
- * the world is there (see {@link ChunkEdge}).</li>
- * </ul>
- * For everyone who flies, you included, this also keeps how fast they go and how they bank for their poses
- * (see {@link FlightPose}), draws the streak of light behind them at speed, throws up dust and spray where they
- * skim the ground or water, and plays the wind. Your own steering is worked out in {@link FlightSteering}, which
- * this builds on, and every flyer is followed from tick to tick by {@link FlyerTracker}.
- */
 @EventBusSubscriber(modid = MultiversePowers.MODID, value = Dist.CLIENT)
 public final class ClientFlight extends FlightSteering {
-    // Part of the top speed that counts as fast: the streak of light, the dust and the wind start around here.
     private static final double FAST = 0.51;
 
-    // ---- Everyone who flies, as seen ----
     private static final Map<Integer, Motion> MOTIONS = new HashMap<>();
 
     private ClientFlight() {
     }
 
-    /** How one flyer moves, smoothed out, for the poses and the light around them. */
     public static final class Motion {
-        /** How fast and which way, in blocks per tick; and the same one tick earlier. */
         public Vec3 velocity = Vec3.ZERO;
         Vec3 velocityO = Vec3.ZERO;
-        /** Lean into a turn, in radians: positive leans to the right. */
         public float bank;
-        /** The way the body faced last tick, in degrees, to tell how fast it turns. */
         float lastYaw = Float.NaN;
-        /** Where the middle of the body was on the last ticks, newest first: the streak of light. */
         final ArrayDeque<Vec3> trail = new ArrayDeque<>();
-        /** How far the ground is below, in blocks (up to {@link FlyerTracker#SKIM} and a bit). */
         double ground = 99.0;
-        /** Ticks since the flight ended, for the landing; very large while the flight goes on. */
         public int sinceEnd = Integer.MAX_VALUE;
         boolean flew;
-        /** 0 to 1: how far he has swung upright for a slam into the ground just ahead; last tick and now. */
         float braceO;
         float brace;
     }
 
-    /**
-     * 0 to 1: how far this flyer has swung upright for a slam, feet first and ring fist cocked, because the ground
-     * is only a few ticks away along his dive at full speed.
-     */
     public static float brace(Entity player, float partialTick) {
         Motion motion = MOTIONS.get(player.getId());
         return motion == null ? 0.0F : Mth.lerp(partialTick, motion.braceO, motion.brace);
     }
 
-    /** How a flyer moves right now, or null for someone who does not fly (and has not just landed). */
     @Nullable
     public static Motion motion(Entity entity) {
         return MOTIONS.get(entity.getId());
     }
 
-    /**
-     * True while this player drops straight down to a slam: the shockwave key, used jumping or falling rather than
-     * flying. The ring drives him down, fist cocked.
-     */
     public static boolean dropping(Entity player) {
         return ClientRing.flight(player, 0.0F) < 0.0F && ClientRing.has(player, RingPayload.DIVE);
     }
 
-    /** Your own speed in blocks per tick while you steer yourself through the air; zero otherwise. */
     public static Vec3 ownVelocity() {
         return steering ? velocity : Vec3.ZERO;
     }
 
-    /** The same, but gliding from last tick's speed to this tick's, for what is drawn in between. */
     public static Vec3 ownVelocity(float partialTick) {
         return steering ? velocityO.lerp(velocity, partialTick) : Vec3.ZERO;
     }
 
-    /** How fast a flyer moves right now, gliding between two ticks; zero for someone who does not fly. */
     static Vec3 velocity(Entity flyer, float partialTick) {
         if (flyer == Minecraft.getInstance().player) {
             return ownVelocity(partialTick);
@@ -142,12 +94,6 @@ public final class ClientFlight extends FlightSteering {
         return motion == null ? Vec3.ZERO : motion.velocityO.lerp(motion.velocity, partialTick);
     }
 
-    /**
-     * How many ticks ago this player hit the ground with a landing slam (with the part of a tick), or -1 when he
-     * did not just now. Your own is known the moment you land; anyone else's once the server's construct arrives.
-     * Counted at the pace the constructs were made for, like the timeline of {@link LandingSlam}: your own at the pace
-     * of your own settings until the server's construct tells its own.
-     */
     public static float slam(Entity player, float partialTick) {
         float seen = ClientConstructs.slamAge(player.getId(), partialTick);
         Minecraft minecraft = Minecraft.getInstance();
@@ -162,12 +108,6 @@ public final class ClientFlight extends FlightSteering {
         return seen;
     }
 
-    // ---- Steering yourself ----
-
-    /**
-     * Your keys, right after the game read them and right before it moves you. While you fly the keys are yours:
-     * the game itself gets none of them (so it never walks, jumps or crouches), and your speed is set from them.
-     */
     @SubscribeEvent
     public static void onInput(MovementInputUpdateEvent event) {
         Minecraft minecraft = Minecraft.getInstance();
@@ -175,12 +115,9 @@ public final class ClientFlight extends FlightSteering {
             return;
         }
         velocityO = velocity;
-        // Dropping down to a slam and on the ground now: it is known the moment you touch it (the server throws up
-        // the construct).
         if (player.onGround() && dropping(player) && slam(player, 0.0F) < 0.0F) {
             slamTick = player.tickCount;
         }
-        // Right after a slam you stay down on your fist a moment: crouched, and going nowhere.
         float slammed = slam(player, 0.0F);
         if (slammed >= 0.0F && slammed < SLAM_ROOT && ClientCharacter.active() == GameCharacter.GREEN_LANTERN) {
             Input input = event.getInput();
@@ -190,8 +127,7 @@ public final class ClientFlight extends FlightSteering {
             input.shiftKeyDown = true;
             velocity = Vec3.ZERO;
             afterMove = null;
-            // No sliding on, but still falling: a slam that begins a moment before you touch down never leaves you
-            // hanging in the air.
+            // Keep sinking, not just zero: a slam starting a moment before touchdown must not hang in the air.
             player.setDeltaMovement(0.0, Math.min(0.0, player.getDeltaMovement().y), 0.0);
             return;
         }
@@ -222,17 +158,13 @@ public final class ClientFlight extends FlightSteering {
         Vec3 impact = landedWith;
         landedWith = null;
         boolean dove = false;
-        // On a dive for a slam (the shockwave key): your keys wait until you hit the ground.
         boolean onDive = t >= ARISE && ClientRing.has(player, RingPayload.DIVE)
                 && !ClientRing.has(player, RingPayload.DESCENT);
         if (impact != null && t >= ARISE && player.onGround() && !ClientRing.has(player, RingPayload.DESCENT)) {
-            // Flown into the ground at full speed, diving, or at the end of a dive for a slam: a slam instead of a
-            // landing.
             if (onDive || impact.length() >= fullSpeed() * SLAM_SPEED && -impact.y >= impact.length() * SLAM_DOWN) {
                 slamDown(player);
                 return;
             }
-            // Flown into it slower but on purpose, looking down at it: you land all the same.
             dove = -impact.y > DIVE_LAND && player.getXRot() > DIVE_LOOK;
         }
         if (ClientRing.has(player, RingPayload.DESCENT)) {
@@ -240,7 +172,6 @@ public final class ClientFlight extends FlightSteering {
         } else if (t < ARISE) {
             velocity = arise(player, t, forward, strafe, up, down);
         } else if (onDive) {
-            // Straight down at dive speed, swinging round into it out of whatever way you flew.
             velocity = velocity.lerp(new Vec3(0.0, -Math.max(fullSpeed(), DIVE_SPEED), 0.0), DIVE_TURN);
         } else {
             gainSpeed(player, forward > 0.01F);
@@ -250,11 +181,8 @@ public final class ClientFlight extends FlightSteering {
             airborne = true;
         }
         if (dove) {
-            // Down on your feet where you hit the ground, not sliding on over it.
             velocity = Vec3.ZERO;
         }
-        // Sinking down onto the ground slowly after the take-off, or flown into it: you land by yourself. A dive that
-        // starts on the ground slams into it on the next tick instead.
         if (!landing && !onDive && (dove || airborne && t > ARISE + 4.0F && player.onGround() && !up
                 && velocity.horizontalDistance() < LAND_SPEED && !ClientRing.has(player, RingPayload.DESCENT))) {
             landing = true;
@@ -263,8 +191,7 @@ public final class ClientFlight extends FlightSteering {
                 PacketDistributor.sendToServer(new AbilityActionPayload(flight.slot().ordinal(), true, 0));
             }
         }
-        // Never on into a chunk your own game does not have yet (it would stop you dead there until it comes in): you
-        // slow down smoothly before its edge instead, and fly on once it is there.
+        // Never fly into a chunk not yet loaded (it would stop you dead there): slow down before its edge instead.
         velocity = ChunkEdge.cap(player.level(), player.position(), velocity, EDGE_LOOK);
         player.setDeltaMovement(velocity);
         player.resetFallDistance();
@@ -274,7 +201,6 @@ public final class ClientFlight extends FlightSteering {
         }
     }
 
-    /** Right after the game moved you: what it made of your speed, to spot walls and knocks next tick. */
     @SubscribeEvent
     public static void onPlayerTick(PlayerTickEvent.Post event) {
         if (steering && event.getEntity() == Minecraft.getInstance().player) {
@@ -283,8 +209,6 @@ public final class ClientFlight extends FlightSteering {
             stoppedUp = event.getEntity().verticalCollision && !stoppedDown;
         }
     }
-
-    // ---- Everyone who flies, as seen ----
 
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event) {
@@ -309,7 +233,6 @@ public final class ClientFlight extends FlightSteering {
             }
             track(level, player, motion, flying, dropping, player == minecraft.player && steering);
         }
-        // A flyer that went out of sight, or landed a while ago, is forgotten.
         Iterator<Map.Entry<Integer, Motion>> all = MOTIONS.entrySet().iterator();
         while (all.hasNext()) {
             Map.Entry<Integer, Motion> entry = all.next();
@@ -320,9 +243,6 @@ public final class ClientFlight extends FlightSteering {
         }
     }
 
-    // ---- What you see and hear of it ----
-
-    /** The streak of hard light that trails behind every fast flyer. */
     @SubscribeEvent
     public static void onRenderLevel(RenderLevelStageEvent event) {
         if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_TRANSLUCENT_BLOCKS || MOTIONS.isEmpty()) {
@@ -356,7 +276,6 @@ public final class ClientFlight extends FlightSteering {
         }
     }
 
-    /** At speed the world widens a little around you, the way it does when you sprint. */
     @SubscribeEvent
     public static void onFov(ComputeFovModifierEvent event) {
         if (!steering || event.getPlayer() != Minecraft.getInstance().player) {
@@ -367,10 +286,6 @@ public final class ClientFlight extends FlightSteering {
         event.setNewFovModifier(event.getNewFovModifier() * (1.0F + 0.14F * (float) fast * effect));
     }
 
-    /**
-     * How hard your view shakes because you fly with the ram cone low along the ground (see {@link Flight#scraping}):
-     * harder the faster you go, as hard as your own setting {@code ramGroundShake} makes it; 0 when you do not.
-     */
     private static float scrapeShake(LocalPlayer player) {
         CharacterAbility shield = GameCharacter.GREEN_LANTERN.byName("light_shield");
         double speed = velocity.length();
@@ -382,12 +297,6 @@ public final class ClientFlight extends FlightSteering {
                 * Mth.clamp(speed / fullSpeed(), 0.3, 1.0));
     }
 
-    /**
-     * A landing slam shakes the view: your own landing a little, and the shockwave of any slam nearby hard. In first
-     * person your own slam also dips your view for a moment, down to your fist in the ground; then it looks up at the
-     * construct taking shape in the air before you and follows it down as it strikes (see {@link SlamPainter#look}).
-     * As you rise off the ground, your view tips up a little with the head of the body.
-     */
     @SubscribeEvent
     public static void onCameraAngles(ViewportEvent.ComputeCameraAngles event) {
         Minecraft minecraft = Minecraft.getInstance();
@@ -429,10 +338,6 @@ public final class ClientFlight extends FlightSteering {
         event.setPitch(event.getPitch() - 9.0F * up);
     }
 
-    /**
-     * You respawned or went to another world, as a new player whose ticks count from zero again: a slam or a jump of the
-     * old one must not count for the new one, many ticks later.
-     */
     @SubscribeEvent
     public static void onClone(ClientPlayerNetworkEvent.Clone event) {
         slamTick = Integer.MIN_VALUE;
@@ -452,7 +357,6 @@ public final class ClientFlight extends FlightSteering {
         SuitGlow.clear();
     }
 
-    /** The speed that counts as fast, in blocks per tick: about half the top speed. */
     static double fast() {
         return FAST * fullSpeed();
     }

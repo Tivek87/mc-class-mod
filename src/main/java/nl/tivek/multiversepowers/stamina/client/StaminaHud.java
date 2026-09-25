@@ -14,9 +14,6 @@ import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 import nl.tivek.multiversepowers.MultiversePowers;
 
-/**
- * Draws the stamina icons on the right, stacked on top of the hunger bar.
- */
 @Mod(value = MultiversePowers.MODID, dist = Dist.CLIENT)
 public final class StaminaHud {
     private static final ResourceLocation LAYER_ID =
@@ -40,7 +37,6 @@ public final class StaminaHud {
     }
 
     private static void onRegisterLayers(RegisterGuiLayersEvent event) {
-        // Stacked on the right side above the hunger bar (and above air bubbles when underwater)
         event.registerAbove(VanillaGuiLayers.AIR_LEVEL, LAYER_ID, StaminaHud::render);
     }
 
@@ -61,7 +57,7 @@ public final class StaminaHud {
         float fraction = maxStamina > 0.0F ? stamina / maxStamina : 1.0F;
         boolean exhausted = StaminaClient.isExhausted();
 
-        // 10 icons * 2 = 20 half-steps
+        // 20 = ICON_COUNT * 2 half-steps.
         int staminaPoints = Mth.ceil(fraction * 20.0F);
 
         boolean redFlash = exhausted && ((player.tickCount / 5) % 2 == 0);
@@ -69,12 +65,10 @@ public final class StaminaHud {
             graphics.setColor(1.0F, 0.35F, 0.35F, 1.0F);
         }
 
-        // Render from right to left, matching vanilla hunger bar alignment
         for (int i = 0; i < ICON_COUNT; i++) {
             int x = right - i * ICON_SPACING - ICON_SIZE;
             int y = top;
 
-            // Subtle shake when low stamina or exhausted (like vanilla low hunger)
             if (exhausted) {
                 if ((player.tickCount + i) % 3 == 0) {
                     y += 1;
@@ -85,10 +79,8 @@ public final class StaminaHud {
                 }
             }
 
-            // Draw empty container background
             graphics.blitSprite(SPRITE_EMPTY, x, y, ICON_SIZE, ICON_SIZE);
 
-            // Depletes from left to right (from center outward, matching vanilla hunger)
             int point = i * 2 + 1;
             if (point < staminaPoints) {
                 graphics.blitSprite(SPRITE_FULL, x, y, ICON_SIZE, ICON_SIZE);

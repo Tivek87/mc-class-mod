@@ -67,10 +67,6 @@ public final class StaminaConfig {
         return get(EXHAUSTION_THRESHOLD).floatValue();
     }
 
-    /**
-     * A setting from the world's file, or its default while no world is open (these are world settings, see
-     * ModConfigs: only a running world, or the server you are on, has them).
-     */
     public static <T> T get(ModConfigSpec.ConfigValue<T> value) {
         return SPEC.isLoaded() ? value.get() : value.getDefault();
     }

@@ -12,23 +12,12 @@ import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 import nl.tivek.multiversepowers.engine.math.Ease;
 import nl.tivek.multiversepowers.engine.target.Targeting;
 
-/**
- * How the tentacle tips move: gliding on a spring towards where their pose wants them, turning their
- * claws smoothly, kept apart from each other, and the walking tentacles stepping along under you.
- */
 abstract class RigMotion extends RigState {
     RigMotion(ServerPlayer caster, ServerLevel home) {
         super(caster, home);
     }
 
-    /**
-     * Keeps the four claws out of each other. Two tentacles that want the same piece of air are pushed
-     * apart along the line between them, so they never cross, sit inside one another, or look like one
-     * mirrored pair. A tentacle that must be exactly somewhere (holding, hitting, digging, a planted
-     * foot or a grip on a wall) is left alone.
-     */
     void spreadTips() {
-        // Twice, so a tentacle pushed away from one neighbour is still checked against the others.
         for (int pass = 0; pass < 2; pass++) {
             for (int i = 0; i < this.arms.length; i++) {
                 for (int j = i + 1; j < this.arms.length; j++) {
@@ -38,10 +27,6 @@ abstract class RigMotion extends RigState {
         }
     }
 
-    /**
-     * Turns every claw a little further towards the way it should be looking. Even a tentacle that
-     * suddenly looks back at you swings its last stretch over instead of flipping round.
-     */
     void tickAims() {
         for (Arm arm : this.arms) {
             Vec3 wanted = arm.aim.lengthSqr() > 1.0E-6 ? arm.aim.normalize() : this.naturalAim(arm);
@@ -54,14 +39,12 @@ abstract class RigMotion extends RigState {
         }
     }
 
-    /** The way a claw points when nothing asks it to look anywhere: on out of the bend of the arm. */
     private Vec3 naturalAim(Arm arm) {
         Vec3 mount = this.mount(arm.index);
         Vec3 out = arm.tip.subtract(this.elbow(arm, mount));
         return out.lengthSqr() < 1.0E-6 ? this.forward() : out.normalize();
     }
 
-    /** The bend just before the claw, when the tentacle is left to hang the way it likes. */
     Vec3 elbow(Arm arm, Vec3 mount) {
         double reach = mount.distanceTo(arm.tip);
         double bow = arm.upper ? Math.min(1.5, 0.35 + reach * 0.12) : Math.min(1.5, 0.9 + reach * 0.1);
@@ -77,9 +60,6 @@ abstract class RigMotion extends RigState {
         if (distance >= TIP_APART) {
             return;
         }
-        // Exactly on top of each other: split them left and right instead of dividing by nothing.
-        // Only part of the way each tick: they drift apart over a few ticks instead of snapping
-        // apart and shivering against one another.
         Vec3 push = distance < 1.0E-4
                 ? this.right().scale(TIP_APART * 0.3)
                 : between.scale((TIP_APART - distance) * 0.3 / distance);
@@ -87,18 +67,11 @@ abstract class RigMotion extends RigState {
         b.tip = b.tip.add(push);
     }
 
-    /** True when this tentacle may be nudged: it is not holding, hitting or standing on anything. */
     private static boolean mayBeNudged(Arm arm) {
         return (arm.job == Job.REST || arm.job == Job.CARRY) && !arm.leg && arm.grip == null
                 && arm.foot == null && arm.step < 0;
     }
 
-    /**
-     * Moves a tip towards where its pose wants it. Not a straight step every tick but a spring: the tip
-     * builds up speed, carries it, and eases off again, so it never starts or stops with a jerk and it
-     * swings through a turn instead of cornering. A pose that has to be exactly somewhere (an eagerness
-     * of 1, like a claw around a creature) is still set straight down, or what it holds would drift.
-     */
     void glide(Arm arm, Vec3 goal, double follow, double blendTo) {
         if (follow >= 0.999) {
             arm.speed = goal.subtract(arm.tip);
@@ -115,7 +88,6 @@ abstract class RigMotion extends RigState {
     }
 
     void toRest(Arm arm) {
-        // A tentacle that still carries blocks goes back to carrying them, not to resting.
         arm.job = arm.load != null ? Job.CARRY : Job.REST;
         arm.age = 0;
         arm.target = null;
@@ -126,24 +98,17 @@ abstract class RigMotion extends RigState {
         arm.spike = 0;
         arm.thrust = 0;
         arm.aim = Vec3.ZERO;
-        // Keep a little of the speed it had, so the next job carries on from the swing it was in
-        // instead of starting again from nothing.
         double fast = arm.speed.length();
         if (fast > 0.5) {
             arm.speed = arm.speed.scale(0.5 / fast);
         }
     }
 
-    /**
-     * The legs walk: each foot stays planted where it stands until the player has moved too far from
-     * it, then lifts and steps to a new spot a little ahead (one leg at a time). In the air they hang.
-     */
     void walk(ServerLevel level, Arm arm) {
         Vec3 wanted = this.footSpot(level, arm);
         if (wanted == null) {
             arm.foot = null;
             arm.step = -1;
-            // Each one hangs in a place of its own, or the four swing through each other in the air.
             Vec3 hang = this.mount(arm.index)
                     .add(this.right().scale(arm.side * (arm.upper ? 0.9 : 1.4)))
                     .add(0, arm.upper ? -1.15 : -1.95, 0)
@@ -156,7 +121,6 @@ abstract class RigMotion extends RigState {
         if (arm.step >= 0) {
             double t = (arm.step + 1.0) / STEP_TIME;
             Vec3 was = arm.tip;
-            // Lifts off and sets down with no speed at all, and swings over in a smooth arc between.
             arm.tip = arm.stepFrom.lerp(arm.stepTo, Ease.smoother(t)).add(0, Math.sin(Math.PI * t) * 0.55, 0);
             arm.speed = arm.tip.subtract(was);
             arm.step++;
@@ -169,7 +133,6 @@ abstract class RigMotion extends RigState {
         } else {
             double behind = arm.foot == null ? Double.MAX_VALUE
                     : Math.max(horizontal(arm.foot, wanted), Math.abs(arm.foot.y - wanted.y) * 1.3);
-            // Never all legs in the air at once: at most half of them step together.
             int stepping = 0;
             int legs = 0;
             for (Arm other : this.arms) {
@@ -192,20 +155,13 @@ abstract class RigMotion extends RigState {
         }
         arm.blend += Mth.clamp(1.0 - arm.blend, -0.12, 0.12);
         arm.claw += (0.4 - arm.claw) * 0.14;
-        // A foot stands on the ground, so its claw points straight down at it.
         arm.aim = new Vec3(0, -1, 0);
     }
 
-    /**
-     * Where a foot wants to stand: its own spot in the ring of legs around the player, a bit ahead
-     * when moving; null when the ground is too far below.
-     */
     @Nullable
     private Vec3 footSpot(ServerLevel level, Arm arm) {
         int legs = Math.max(1, this.legCount());
         Vec3 motion = this.caster.position().subtract(this.caster.xo, this.caster.yo, this.caster.zo);
-        // Every leg stands on the side of you it grows out of: shoulder legs a little ahead, hip legs
-        // a little behind. Two legs can then never swap sides and walk through each other.
         double ahead = (arm.upper ? 1.0 : -1.0) * (legs >= 3 ? 0.62 : 0.18);
         Vec3 around = this.right().scale(arm.side).add(this.forward().scale(ahead)).normalize();
         double reach = 4.0;
@@ -218,17 +174,11 @@ abstract class RigMotion extends RigState {
         return new Vec3(spot.x, ground, spot.z);
     }
 
-    /**
-     * Who walks and who is free. You pick how many tentacles carry you (Stance); the lowest ones that
-     * have nothing else to do take the job, so a tentacle that is holding something keeps holding it.
-     */
     void assignLegs() {
         int wanted = this.climbing || this.folding ? 0 : STANCES[this.stance];
         int slot = 0;
-        // From the hips up: the lower tentacles walk first, the shoulder ones stay free longest.
         for (int i = this.arms.length - 1; i >= 0; i--) {
             Arm arm = this.arms[i];
-            // Anything with a job of its own keeps it; a tentacle only walks when it is free.
             boolean canWalk = slot < wanted && arm.held == null && arm.load == null && arm.job == Job.REST;
             if (canWalk) {
                 arm.leg = true;
@@ -241,7 +191,6 @@ abstract class RigMotion extends RigState {
         }
     }
 
-    /** True while the walking tentacles really carry you: there is ground under you within their reach. */
     boolean onLegs(ServerLevel level) {
         return this.legCount() > 0
                 && !level.noBlockCollision(this.caster, this.caster.getBoundingBox().expandTowards(0, -LEG_DROP, 0));

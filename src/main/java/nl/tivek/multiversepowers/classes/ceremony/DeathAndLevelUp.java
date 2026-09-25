@@ -15,10 +15,6 @@ import static nl.tivek.multiversepowers.classes.ceremony.Fx.FORSAKEN_SHARDS;
 import static nl.tivek.multiversepowers.classes.ceremony.Fx.fadeOut;
 import static nl.tivek.multiversepowers.classes.ceremony.Fx.hash;
 
-/**
- * The death animation of every group (20 ticks, where the player died) and the level-up animation of everyone (50
- * ticks).
- */
 final class DeathAndLevelUp {
     private DeathAndLevelUp() {
     }
@@ -35,7 +31,6 @@ final class DeathAndLevelUp {
         };
     }
 
-    /** Warriors: the armour shatters, a sword falls over and clatters onto the ground. */
     static void deathWarriors(Fx fx) {
         int t = fx.age();
         ParticleOptions steel = fx.dust(0xC8D0E0, 1.2F);
@@ -67,7 +62,6 @@ final class DeathAndLevelUp {
         }
     }
 
-    /** Rangers: a green spirit rises out of the body in a swirl of leaves and feathers. */
     static void deathRangers(Fx fx) {
         int t = fx.age();
         if (t == 0) {
@@ -89,7 +83,6 @@ final class DeathAndLevelUp {
         }
     }
 
-    /** Rogues: gone in a puff of smoke and ink, a few coins left on the ground. */
     static void deathRogues(Fx fx) {
         int t = fx.age();
         if (t == 0) {
@@ -117,7 +110,6 @@ final class DeathAndLevelUp {
         }
     }
 
-    /** Mages: the magic collapses inward to one point, then the spell fizzles out in a burst of runes. */
     static void deathMages(Fx fx) {
         int t = fx.age();
         double w = fx.span(0, 8);
@@ -142,7 +134,6 @@ final class DeathAndLevelUp {
         }
     }
 
-    /** Faithful: the halo breaks, a column of soft light carries the soul upward. */
     static void deathFaithful(Fx fx) {
         int t = fx.age();
         if (t == 0) {
@@ -162,7 +153,6 @@ final class DeathAndLevelUp {
         }
     }
 
-    /** Alchemists: flasks shatter, coloured potion gas billows out. */
     static void deathAlchemists(Fx fx) {
         int t = fx.age();
         if (t == 0) {
@@ -188,7 +178,6 @@ final class DeathAndLevelUp {
         }
     }
 
-    /** The Forsaken: the body is pulled into a dark point, six coloured shards flee from it. */
     static void deathForsaken(Fx fx) {
         int t = fx.age();
         if (t == 0) {
@@ -218,10 +207,6 @@ final class DeathAndLevelUp {
 
     static final float[] LEVEL_NOTES = {1.0F, 1.26F, 1.5F, 1.68F, 2.0F};
 
-    /**
-     * Level up (the same for everyone): green and gold strands spiral up around you with a rising arpeggio,
-     * a burst of stars above your head, a ring at your feet, and a crown of stars that fades.
-     */
     static void levelUp(Fx fx) {
         int t = fx.age();
         ParticleOptions green = fx.dust(0x7FFF40, 1.2F);

@@ -25,22 +25,11 @@ import nl.tivek.multiversepowers.engine.entity.HeldMobs;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 import nl.tivek.multiversepowers.engine.target.Targeting;
 
-/**
- * The tentacles that hold things: Grab and Throw (creatures whipped along with your view, smashed
- * into walls and thrown), and the blocks they pick up, carry, set down and throw.
- */
 abstract class RigGrab extends RigStrikes {
     RigGrab(ServerPlayer caster, ServerLevel home) {
         super(caster, home);
     }
 
-    // ---- Grab and Throw ----
-
-    /**
-     * Grabs one creature: the one you aim at, or else the nearest enemy in front of you. One press is
-     * one tentacle, so you decide yourself how many you hold; nothing is ever grabbed by itself. Only
-     * you let go (crouch + the same key).
-     */
     boolean grab(ServerLevel level) {
         if (this.searchedJustNow("grab")) {
             return false;
@@ -55,7 +44,6 @@ abstract class RigGrab extends RigStrikes {
         LivingEntity wanted = Targeting.aimLiving(this.caster, level, range);
         if (wanted == null || this.targeted(wanted)) {
             wanted = null;
-            // Not aiming at anything: the nearest enemy no tentacle has yet.
             for (LivingEntity other : this.threats(level, Math.min(range, 12.0))) {
                 if (!this.targeted(other)) {
                     wanted = other;
@@ -75,7 +63,6 @@ abstract class RigGrab extends RigStrikes {
         return true;
     }
 
-    /** How many tentacles are holding a creature or on their way to one. */
     private int busyArms() {
         int busy = 0;
         for (Arm arm : this.arms) {
@@ -86,7 +73,6 @@ abstract class RigGrab extends RigStrikes {
         return busy;
     }
 
-    /** How many tentacles could take on a new job right now, legs that may lift off included. */
     int freeArms() {
         int free = 0;
         for (Arm arm : this.arms) {
@@ -94,11 +80,9 @@ abstract class RigGrab extends RigStrikes {
                 free++;
             }
         }
-        // Walking on three or four, every leg above the second may lift off for a job.
         return free + Math.max(0, this.legCount() - 2);
     }
 
-    /** This tentacle shoots out to that creature. */
     private void reach(Arm arm, LivingEntity target) {
         arm.job = Job.REACH;
         arm.age = 0;
@@ -106,7 +90,6 @@ abstract class RigGrab extends RigStrikes {
         arm.struckAt = -1;
     }
 
-    /** True when a tentacle is already reaching for this creature or holding it. */
     private boolean targeted(LivingEntity entity) {
         for (Arm arm : this.arms) {
             if (arm.held == entity || (arm.job == Job.REACH && arm.target == entity)) {
@@ -116,7 +99,6 @@ abstract class RigGrab extends RigStrikes {
         return false;
     }
 
-    /** Crouch + the grab key: lets go of everything the tentacles hold. */
     boolean letGoAll() {
         if (!this.isHolding()) {
             return false;
@@ -128,10 +110,6 @@ abstract class RigGrab extends RigStrikes {
         return true;
     }
 
-    /**
-     * A tentacle that can take on a job: a free one first (the shoulders before the hips). Walking on
-     * three or four, one leg lifts off to do the job, as long as two keep carrying you.
-     */
     @Nullable
     Arm freeArm() {
         for (int i : new int[] { 0, 1, 2, 3 }) {
@@ -154,8 +132,6 @@ abstract class RigGrab extends RigStrikes {
     }
 
     void seize(ServerLevel level, Arm arm, LivingEntity target) {
-        // Something else (another tentacle, another power) may have caught it while the claw was on its
-        // way: a creature or a player is only ever held once.
         if (!mayHold(this.caster, target, level) || HeldMobs.isHeldByAnyone(target)
                 || (target instanceof Mob mob && !HeldMobs.hold(mob))) {
             this.toRest(arm);
@@ -181,11 +157,6 @@ abstract class RigGrab extends RigStrikes {
         this.throwRequested = true;
     }
 
-    /**
-     * Held creatures are whipped along with where you look, hard enough to smash them into walls and
-     * into the ground. A tentacle never lets go by itself: only when the creature is gone or is a player
-     * you may no longer hurt, or when you let go, throw, or fold the arms in.
-     */
     void tickHold(ServerLevel level) {
         boolean before = this.hasThrowable();
         if (this.throwRequested) {
@@ -197,8 +168,6 @@ abstract class RigGrab extends RigStrikes {
                 continue;
             }
             arm.holdTicks++;
-            // Only a creature that is gone ends a hold, or a player you may no longer hurt (who is then
-            // set down unhurt); a tentacle never lets go by itself.
             if (!mayHold(this.caster, target, level)) {
                 OctopusArms.setDown(target);
                 this.letGo(arm);
@@ -213,7 +182,6 @@ abstract class RigGrab extends RigStrikes {
                 continue;
             }
             arm.holdDistance += (HOLD_DISTANCE - arm.holdDistance) * 0.08;
-            // Each tentacle holds its catch in its own spot, so several never sit inside each other.
             Vec3 goal = this.caster.getEyePosition().add(this.caster.getLookAngle().scale(arm.holdDistance))
                     .add(this.right().scale(arm.side * 0.85)).add(0, arm.upper ? 0.35 : -0.35, 0);
             Vec3 center = target.getBoundingBox().getCenter();
@@ -221,8 +189,6 @@ abstract class RigGrab extends RigStrikes {
             if (wanted.length() > MAX_SPEED) {
                 wanted = wanted.normalize().scale(MAX_SPEED);
             }
-            // Swinging your view whips it along; running it into a wall or the ground hurts it.
-            // Creatures and players are dragged exactly the same way.
             double smashSpeed = ability("grab").value("smashSpeed");
             if (arm.crashPause > 0) {
                 arm.crashPause--;
@@ -243,10 +209,6 @@ abstract class RigGrab extends RigStrikes {
         }
     }
 
-    /**
-     * Ground Slam with full claws: every tentacle drives what it holds straight into the ground (or
-     * into the wall right behind it) and lets the impact do the damage.
-     */
     private void slamHeld(ServerLevel level, Arm arm, LivingEntity target) {
         Vec3 center = target.getBoundingBox().getCenter();
         Vec3 step = new Vec3(0, -1.4, 0);
@@ -261,7 +223,6 @@ abstract class RigGrab extends RigStrikes {
         arm.claw = target.getBbWidth() * 0.5 + 0.25;
     }
 
-    /** Counts down the ground smash of everything the tentacles hold. */
     void tickHeldSlam() {
         if (this.heldSlam > 0) {
             this.heldSlam--;
@@ -271,13 +232,6 @@ abstract class RigGrab extends RigStrikes {
         }
     }
 
-    /**
-     * Moves what a tentacle holds by {@code wanted}, through the world, so it really bumps into blocks.
-     * A held player is pushed the same way and then told where they now are, so their own client
-     * cannot walk out of the claw.
-     *
-     * @return the part of the move that a block stopped
-     */
     private Vec3 drag(LivingEntity target, Vec3 wanted) {
         Vec3 was = target.position();
         target.move(MoverType.SELF, wanted);
@@ -289,19 +243,11 @@ abstract class RigGrab extends RigStrikes {
         return wanted.subtract(target.position().subtract(was));
     }
 
-    /**
-     * Tells a held player where the claw has him now. Only where he is: which way he looks stays his
-     * own, so he can still turn his head while he is carried, however slow his connection.
-     */
     static void holdAt(ServerPlayer player, double x, double y, double z) {
         player.connection.teleport(x, y, z, player.getYRot(), player.getXRot(), RelativeMovement.ROTATION);
         player.connection.aboveGroundTickCount = 0;
     }
 
-    /**
-     * True while a tentacle may keep hold of this creature: it is still alive and here, and a player only
-     * while you may still hurt him (not a spectator or in creative, PvP on, not on your team).
-     */
     static boolean mayHold(ServerPlayer caster, LivingEntity target, ServerLevel level) {
         if (!target.isAlive() || target.isRemoved() || target.level() != level || target.isSpectator()) {
             return false;
@@ -310,11 +256,6 @@ abstract class RigGrab extends RigStrikes {
                 || (caster.server.isPvpAllowed() && !other.isCreative() && caster.canHarmPlayer(other));
     }
 
-    /**
-     * Lets go of everything held.
-     *
-     * @param setDown true when the arms fold in or stop: a player they drop lands unhurt
-     */
     void letGo(boolean setDown) {
         for (Arm arm : this.arms) {
             if (setDown && arm.held != null) {
@@ -351,7 +292,6 @@ abstract class RigGrab extends RigStrikes {
         Effects.start(level, thrown(this.caster, target));
     }
 
-    /** A creature hit a block hard: damage by speed, and a crunch of that block's pieces. */
     private static void crash(ServerLevel level, ServerPlayer caster, LivingEntity target, Vec3 blocked) {
         double speed = blocked.length();
         float damage = (float) Math.min(damageOf("grab"), 2.0 + speed * 4.0);
@@ -360,7 +300,6 @@ abstract class RigGrab extends RigStrikes {
         smashFx(level, target, blocked);
     }
 
-    /** The dust, the sparks and the bang of a body hitting a block hard. */
     private static void smashFx(ServerLevel level, LivingEntity target, Vec3 blocked) {
         Vec3 center = target.getBoundingBox().getCenter();
         Vec3 contact = center.add(blocked.normalize().scale(target.getBbWidth() / 2 + 0.3));
@@ -376,7 +315,6 @@ abstract class RigGrab extends RigStrikes {
         level.playSound(null, center.x, center.y, center.z, SoundEvents.ANVIL_LAND, SoundSource.PLAYERS, 0.4F, 1.3F);
     }
 
-    /** After a throw: the first hard crash into a wall or the ground still hurts. */
     private static Effect thrown(ServerPlayer caster, LivingEntity target) {
         double[] lastSpeed = { THROW_SPEED };
         return (level, age) -> {
@@ -399,13 +337,6 @@ abstract class RigGrab extends RigStrikes {
         };
     }
 
-    // ---- Blocks and building ----
-
-    /**
-     * The blocks key: every press takes another block (or a whole cluster while crouching), so all four
-     * tentacles can carry something at once. Setting down is the right mouse button; only when every
-     * tentacle is full does the key set the first load down, so you are never stuck.
-     */
     boolean blockAction(ServerLevel level, boolean cluster) {
         Arm arm = this.freeArm();
         if (arm == null) {
@@ -427,10 +358,6 @@ abstract class RigGrab extends RigStrikes {
         return true;
     }
 
-    /**
-     * Sets down what the first carrying tentacle holds, in exactly the shape it was taken. Blocks that do
-     * not fit stay in the claw, so nothing is ever lost.
-     */
     boolean placeBlocks(ServerLevel level) {
         double range = BUILD_RANGE;
         for (Arm arm : this.arms) {
@@ -457,7 +384,6 @@ abstract class RigGrab extends RigStrikes {
         return false;
     }
 
-    /** Throws away everything the tentacles carry in blocks, at whatever you are looking at. */
     private boolean throwLoads(ServerLevel level) {
         boolean any = false;
         for (Arm arm : this.arms) {
@@ -476,7 +402,6 @@ abstract class RigGrab extends RigStrikes {
         return any;
     }
 
-    /** The arms fold in or stop: every load is set down instead of disappearing. */
     void dropLoads(ServerLevel level) {
         for (Arm arm : this.arms) {
             if (arm.load != null) {
@@ -486,7 +411,6 @@ abstract class RigGrab extends RigStrikes {
         }
     }
 
-    /** Keeps the client's "the attack button throws" state right after picking up or letting go. */
     private void afterCarryChange() {
         if (!this.caster.hasDisconnected()) {
             PacketDistributor.sendToPlayer(this.caster, new GrabStatePayload(this.hasThrowable(), this.hasLoad()));

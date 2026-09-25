@@ -31,62 +31,30 @@ import nl.tivek.multiversepowers.engine.effect.Effect;
 import nl.tivek.multiversepowers.engine.effect.Effects;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 
-/**
- * A landing at full speed, or the shockwave key (see {@link Shockwave}). Green Lantern smashes his ring fist into the
- * ground, and the ring throws up a huge construct in front of him that strikes the ground and sends a shockwave over
- * it. Which one is picked at random every time, out of {@link ConstructPayload#SLAM_KINDS}: things that drop out of
- * the sky (a fist, a hammer, an anvil, a boot, a ton weight, his lantern, a safe, an anchor, a spiked ball, a
- * barbell, a bell, a meteor, a slapping hand, a sword, a piano, a toy brick, a stamp, TNT), things that clap shut
- * (two hands, two fists, cymbals, a bear trap, a book), things that burst out of the ground (an uppercut, spikes, a
- * pillar that topples), things swung down (a fly swatter, a gavel, a pickaxe, drumsticks on a drum), the lantern
- * emblem falling flat, and a volley of rockets. Every creature the wave reaches is hurt (most near the middle) and
- * thrown away from it.
- *
- * <p>Clients play the construct from its age (see {@link ConstructPayload#SLAM}), so the timing below is shared. It is
- * counted at the pace the constructs were made for; a slam plays the setting {@code slowMotion} times as slowly, so
- * every one of these ticks lasts that many real ticks.
- */
 public final class LandingSlam implements Effect {
-    /** Ticks the construct takes to take shape, in the air before him where he can see it. */
     public static final int FORM_TICKS = 6;
-    /** The tick it has wound up (risen a little, like a fist drawn back) and sets off to strike. */
     public static final int HANG_TICKS = 9;
-    /** The tick it strikes and the shockwave goes out. */
     public static final int IMPACT_TICK = 13;
-    /** The tick it starts to break up into pieces (or sink away). */
     public static final int BURST_TICK = 30;
-    /** The tick it is all over, the wave included. */
     public static final int END_TICK = 46;
-    /** How far in front of him most constructs strike, in blocks. */
     public static final double AHEAD = 4.2;
-    /**
-     * Half the height of the lantern emblem, in blocks: it stands up in front of him and falls flat away from him, so
-     * the middle of where it lands (and of its wave) lies this much further out.
-     */
     public static final double EMBLEM_HALF = 2.4;
     private static final double VIEW_RANGE = 128.0;
-    // How high above and below the middle of the wave a creature can be and still be caught, in blocks.
     private static final double WAVE_HEIGHT = 2.5;
-    // A creature caught by the wave always flies up at least this much.
     private static final double LIFT = 0.35;
-    // The tick the TNT lands, before it blows up.
     private static final int TNT_LANDS = 9;
-    // Ticks between picking a construct with /constructshockwave and it taking shape.
     private static final int PICK_DELAY = 20;
 
-    // Everyone whose slam is still going: one at a time, so his pose follows the one construct.
     private static final Map<UUID, LandingSlam> RUNNING = new HashMap<>();
 
     private final int id = PowerRing.newId();
     private final ServerPlayer owner;
     private final int variant;
-    // Where it strikes.
     private final Vec3 center;
     private final Vec3 facing;
     private final double radius;
     private final float damage;
     private final double knockback;
-    // How slowly it plays (every tick of the timeline above lasts this many real ticks), and how big its construct is.
     private final double pace;
     private final double size;
     private int age;
@@ -103,12 +71,6 @@ public final class LandingSlam implements Effect {
         this.size = shockwave.value("constructScale");
     }
 
-    /**
-     * How far in front of him this construct strikes, in blocks: the big ones strike further out, so they never land
-     * on top of him, and all of them the further the bigger the constructs are.
-     *
-     * @param size how big the constructs are (the setting {@code constructScale})
-     */
     public static double ahead(int variant, double size) {
         double ahead = switch (variant) {
             case ConstructPayload.SLAM_EMBLEM -> AHEAD + EMBLEM_HALF;
@@ -120,12 +82,6 @@ public final class LandingSlam implements Effect {
         return ahead * size;
     }
 
-    /**
-     * He hits the ground: a random construct takes shape in front of him, as long as the ring can pay for it, is not
-     * busy at the lantern and has no slam of his going already.
-     *
-     * @return true when it came; false leaves it at a hard landing
-     */
     static boolean start(ServerPlayer owner, ServerLevel level, CharacterAbility shockwave) {
         float cost = (float) shockwave.value("powerCost");
         float power = PowerRing.power(owner);
@@ -137,12 +93,6 @@ public final class LandingSlam implements Effect {
         return true;
     }
 
-    /**
-     * The command {@code /constructshockwave}: a second after he picked it, this construct strikes in front of him,
-     * whoever he is, for free. Only for players who may cheat.
-     *
-     * @return false when he may not, or the variant does not exist
-     */
     public static boolean pick(ServerPlayer owner, int variant) {
         CharacterAbility shockwave = GameCharacter.GREEN_LANTERN.byName("shockwave");
         if (!owner.hasPermissions(2) || variant < 0 || variant >= ConstructPayload.SLAM_KINDS || shockwave == null) {
@@ -165,7 +115,6 @@ public final class LandingSlam implements Effect {
         return true;
     }
 
-    /** A construct takes shape in front of him: the one numbered {@code variant}. */
     private static void begin(ServerPlayer owner, ServerLevel level, CharacterAbility shockwave, int variant) {
         Vec3 look = owner.getLookAngle();
         Vec3 facing = new Vec3(look.x, 0.0, look.z);
@@ -175,7 +124,6 @@ public final class LandingSlam implements Effect {
         LandingSlam slam = new LandingSlam(owner, shockwave, variant, center, facing);
         RUNNING.put(owner.getUUID(), slam);
         Effects.start(level, slam);
-        // His fist hits the ground: a first, smaller thud before the construct's own.
         Vec3 fist = owner.position().add(facing.scale(0.5)).add(right(facing).scale(0.3));
         level.playSound(null, fist.x, fist.y, fist.z, SoundEvents.MACE_SMASH_GROUND, SoundSource.PLAYERS, 1.0F, 1.1F);
         dust(level, fist, 0.4, 14);
@@ -186,25 +134,18 @@ public final class LandingSlam implements Effect {
         slam.send(level);
     }
 
-    /** True while this player's slam is still going, from his fist hitting the ground until its wave has died out. */
     static boolean running(ServerPlayer player) {
         return RUNNING.containsKey(player.getUUID());
     }
 
-    /** The server stops: no slam is going any more. */
     public static void clear() {
         RUNNING.clear();
     }
 
-    /** His right, from the way he faces. */
     private static Vec3 right(Vec3 facing) {
         return facing.cross(new Vec3(0.0, 1.0, 0.0)).normalize();
     }
 
-    /**
-     * The top of the ground at this spot: found from a little above where he landed down to a few blocks below, so
-     * the construct strikes the ground and not the air over a slope or a ledge.
-     */
     private static Vec3 ground(ServerLevel level, ServerPlayer owner, Vec3 at) {
         double feet = owner.getY();
         Vec3 from = new Vec3(at.x, feet + 2.0, at.z);
@@ -217,7 +158,7 @@ public final class LandingSlam implements Effect {
     @Override
     public boolean tick(ServerLevel level, int tick) {
         this.age++;
-        // Every tick of the timeline that went by on this real tick: none, one, or more when it plays fast.
+        // Real ticks scaled by pace into timeline ticks: may skip or repeat a step, staying in sync with clients.
         int from = (int) Math.floor((this.age - 1) / this.pace) + 1;
         int to = (int) Math.floor(this.age / this.pace);
         for (int step = from; step <= to; step++) {
@@ -235,15 +176,9 @@ public final class LandingSlam implements Effect {
         return true;
     }
 
-    /**
-     * What some constructs do on their way to the strike: the ground rumbles, a fuse hisses, rockets come down.
-     *
-     * @param step the tick of the timeline (see {@link #IMPACT_TICK}) that just went by
-     */
     private void before(ServerLevel level, int step) {
         switch (this.variant) {
             case ConstructPayload.SLAM_UPPERCUT, ConstructPayload.SLAM_SPIKES, ConstructPayload.SLAM_PILLAR -> {
-                // Something pushes up from below: the ground shakes and bits of it jump.
                 if (step >= 2 && step < IMPACT_TICK && step % 2 == 0) {
                     dust(level, this.center, 0.6 + 0.1 * step, 10);
                     this.sound(level, SoundEvents.ROOTED_DIRT_BREAK, 0.8F, 0.5F + 0.05F * step);
@@ -257,7 +192,6 @@ public final class LandingSlam implements Effect {
                 }
             }
             case ConstructPayload.SLAM_ROCKETS -> {
-                // Five rockets, one after the other; the middle one is the strike itself.
                 int rocket = step - (IMPACT_TICK - 2);
                 if (rocket >= 0 && rocket < 5 && rocket != 2) {
                     Vec3 at = rocketTarget(this.center, this.facing, rocket);
@@ -268,15 +202,10 @@ public final class LandingSlam implements Effect {
                 }
             }
             default -> {
-                // Nothing on the way.
             }
         }
     }
 
-    /**
-     * Where each of the five rockets comes down: in the middle, left and right of it, beyond it and just short of
-     * it. Clients draw them on the same spots.
-     */
     public static Vec3 rocketTarget(Vec3 center, Vec3 facing, int rocket) {
         Vec3 right = right(facing);
         return switch (rocket) {
@@ -288,7 +217,6 @@ public final class LandingSlam implements Effect {
         };
     }
 
-    /** The construct strikes: the shockwave goes out over the ground. */
     private void impact(ServerLevel level) {
         Set<Integer> hit = new HashSet<>();
         AABB area = new AABB(this.center, this.center).inflate(this.radius, WAVE_HEIGHT, this.radius);
@@ -300,7 +228,6 @@ public final class LandingSlam implements Effect {
             if (distance > this.radius || !hit.add(target.getId())) {
                 continue;
             }
-            // Full force in the middle, half of it at the edge of the wave.
             double near = 1.0 - 0.5 * distance / this.radius;
             target.invulnerableTime = 0;
             target.hurt(level.damageSources().playerAttack(this.owner), (float) (this.damage * near));
@@ -313,7 +240,6 @@ public final class LandingSlam implements Effect {
             target.hurtMarked = true;
             ParticleFx.cloud(level, ParticleTypes.CRIT, target.getBoundingBox().getCenter(), 8, 0.3, 0.3);
         }
-        // Dust thrown up in a ring, the ground's own, and green light bursting out of the middle.
         dust(level, this.center, this.radius * 0.6, 40);
         dust(level, this.center, this.radius, 50);
         ParticleFx.sphereOut(level, ParticleFx.dust(PowerRing.BRIGHT, 1.8F), this.center.add(0.0, 0.5, 0.0), 40, 0.45);
@@ -323,7 +249,6 @@ public final class LandingSlam implements Effect {
         this.sounds(level);
     }
 
-    /** What the construct sounds like when it strikes, on top of the boom of the wave itself. */
     private void sounds(ServerLevel level) {
         this.sound(level, SoundEvents.MACE_SMASH_GROUND_HEAVY, 1.4F, 0.8F);
         this.sound(level, SoundEvents.GENERIC_EXPLODE.value(), 0.7F, 1.3F);
@@ -436,7 +361,6 @@ public final class LandingSlam implements Effect {
         level.playSound(null, this.center.x, this.center.y, this.center.z, sound, SoundSource.PLAYERS, volume, pitch);
     }
 
-    /** Bits of the ground itself flying up in a ring around {@code at}. */
     private static void dust(ServerLevel level, Vec3 at, double radius, int count) {
         BlockPos below = BlockPos.containing(at.x, at.y - 0.5, at.z);
         BlockState state = level.getBlockState(below);

@@ -19,15 +19,6 @@ import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 import nl.tivek.multiversepowers.engine.math.Ease;
 import nl.tivek.multiversepowers.engine.target.Targeting;
 
-/**
- * One player's four Octopus Arms while they are out. Two rise over the shoulders and do the grabbing,
- * striking and blocking; two walk on the ground like legs and carry the player above the ground.
- * Every tentacle works on its own, so several can be busy at the same time: two creatures held while
- * a third tentacle strikes, or the Portal ability running while the rest keeps walking.
- *
- * <p>Each tentacle has a tip that glides towards where its current job wants it, so every move blends
- * smoothly into the next.
- */
 final class OctoRig extends RigGround implements Effect {
     OctoRig(ServerPlayer caster, ServerLevel home) {
         super(caster, home);
@@ -46,8 +37,6 @@ final class OctoRig extends RigGround implements Effect {
         }
     }
 
-    // ---- Ticking ----
-
     @Override
     public boolean tick(ServerLevel level, int age) {
         this.age = age;
@@ -56,12 +45,10 @@ final class OctoRig extends RigGround implements Effect {
             this.shutDown(level);
             return false;
         }
-        // Holding on only works with something to hold on to, whatever the client says.
         if (this.climbing && !this.nearSurface(level)) {
             this.climbing = false;
         }
-        // The tentacles carry the player through the air; the server must not see that as flying. Only
-        // while they really do, on the legs or on a wall: a dash or an air slam comes down by itself.
+        // The tentacles carry the player through the air; the server must not see that as flying.
         if (this.climbing || this.onLegs(level)) {
             this.caster.connection.aboveGroundTickCount = 0;
         }
@@ -92,8 +79,6 @@ final class OctoRig extends RigGround implements Effect {
         this.tickLegSpeed();
         this.tickShield(level);
         this.draw(level);
-        // A tentacle that starts holding something stops walking. The player's own client lifts them up
-        // on the legs, so it has to hear about that at once, not only at the next key press.
         int legs = this.legCount();
         if (legs != this.syncedLegs || this.marks.size() != this.syncedMarks) {
             this.syncedLegs = legs;
@@ -103,11 +88,6 @@ final class OctoRig extends RigGround implements Effect {
         return true;
     }
 
-    /**
-     * Everything off and gone, at once.
-     *
-     * @param level the level the arms live in; after a dimension change the player is already elsewhere
-     */
     void shutDown(ServerLevel level) {
         this.letGo(true);
         this.dropMarks();
@@ -207,7 +187,6 @@ final class OctoRig extends RigGround implements Effect {
                 return;
             }
             case CARRY -> {
-                // Blocks in the claw: held out beside you, ready to place or to throw.
                 goal = this.carryPose(arm);
                 follow = 0.5;
                 blendTo = 0.2;
@@ -246,13 +225,11 @@ final class OctoRig extends RigGround implements Effect {
                 }
             }
             default -> {
-                // Resting: climbing, blocking, walking on the ground, or waving over the shoulder.
                 if (this.climbing) {
                     goal = this.climbPose(level, arm);
                     follow = 0.45;
                     blendTo = 0.35;
                     arm.claw = 0.18;
-                    // The claw bites into the surface it holds.
                     arm.aim = Vec3.atLowerCornerOf(this.climbFace.getNormal()).scale(-1);
                 } else if (arm.leg) {
                     this.walk(level, arm);
@@ -262,7 +239,6 @@ final class OctoRig extends RigGround implements Effect {
                     follow = 0.55;
                     blendTo = 0;
                     arm.claw = 0.1;
-                    // Claws turned on whatever is in front of you.
                     arm.aim = this.forward();
                 } else {
                     goal = this.restPose(arm);
@@ -277,19 +253,12 @@ final class OctoRig extends RigGround implements Effect {
                 }
             }
         }
-        // Reaching for something or holding it: the claw turns to look straight at it.
         if (job == Job.STRIKE || job == Job.REACH || job == Job.HOLD) {
             arm.aim = goal.subtract(arm.tip);
         }
         this.glide(arm, goal, follow, blendTo);
     }
 
-    // ---- Tentacle Dash ----
-
-    /**
-     * The tentacles push off the ground and launch you the way you are going: forward, sideways or
-     * backwards, whichever way you are pressing. Standing still, they throw you where you look.
-     */
     boolean dash(ServerLevel level) {
         Vec3 input = this.forward().scale(this.caster.zza).subtract(this.right().scale(this.caster.xxa));
         Vec3 way = input.lengthSqr() > 1.0E-4 ? input.normalize() : this.caster.getLookAngle();
@@ -316,10 +285,6 @@ final class OctoRig extends RigGround implements Effect {
         return true;
     }
 
-    /**
-     * Running on the tentacles: they take far longer strides than your own legs, so running on them is
-     * quicker than running on foot. Only while they really carry you.
-     */
     private void tickLegSpeed() {
         boolean running = this.legCount() > 0 && this.caster.isSprinting() && !this.climbing;
         if (running == this.legsRunning) {
@@ -330,13 +295,6 @@ final class OctoRig extends RigGround implements Effect {
                 AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL, running);
     }
 
-    // ---- Stance ----
-
-    /**
-     * Walk on your own feet, or on 2, 3 or 4 tentacles. Every tentacle that is not walking is free for
-     * grabbing, fighting and building, so on your feet all four are free. Crouching goes back a step
-     * instead of forward.
-     */
     boolean cycleStance(boolean back) {
         this.stance = Math.floorMod(this.stance + (back ? -1 : 1), STANCES.length);
         int legs = STANCES[this.stance];
@@ -350,8 +308,6 @@ final class OctoRig extends RigGround implements Effect {
         return true;
     }
 
-    // ---- Block ----
-
     void setBlocking(boolean on) {
         on = on && !this.folding;
         if (on == this.blocking) {
@@ -364,7 +320,6 @@ final class OctoRig extends RigGround implements Effect {
                 on ? 1.4F : 0.9F);
     }
 
-    /** The energy shield in front of you: flares open while you block, and fades when you stop. */
     private void tickShield(ServerLevel level) {
         double wanted = this.isBlocking() ? 1.0 : 0.0;
         this.shieldOpen += Mth.clamp(wanted - this.shieldOpen, -1.0 / SHIELD_TIME, 1.0 / SHIELD_TIME);
@@ -383,7 +338,6 @@ final class OctoRig extends RigGround implements Effect {
         RobotArm.shield(level, this.shieldId, center, look, SHIELD_SIZE, Ease.smoother(this.shieldOpen));
     }
 
-    /** A hit was caught: sparks and a clang on the tentacles. */
     void blocked(ServerLevel level, Vec3 from) {
         this.lastBlocked = this.age;
         Vec3 eye = this.caster.getEyePosition();
@@ -394,11 +348,7 @@ final class OctoRig extends RigGround implements Effect {
         this.sound(at, SoundEvents.ANVIL_LAND, 0.5F, 1.7F);
     }
 
-    // ---- Wall Climb ----
-
-    /** @param face the side of the surface the tentacles hold on to (its normal) */
     void setClimbing(boolean on, Direction face) {
-        // The client says it holds on; the server only believes that with a wall or a roof within reach.
         on = on && !this.folding && this.nearSurface(this.caster.serverLevel());
         if (on && !this.climbing) {
             this.sound(this.caster.position(), SoundEvents.CHAIN_PLACE, 0.8F, 1.1F);
@@ -407,10 +357,6 @@ final class OctoRig extends RigGround implements Effect {
         this.climbFace = face;
     }
 
-    /**
-     * True when there is a wall beside you or a roof above you close enough for the tentacles to hold on
-     * to. Any side counts: the client moves on round corners and on to roofs without saying so.
-     */
     private boolean nearSurface(ServerLevel level) {
         AABB box = this.caster.getBoundingBox();
         AABB around = new AABB(box.minX - HOLD_REACH, box.minY, box.minZ - HOLD_REACH,
@@ -418,9 +364,6 @@ final class OctoRig extends RigGround implements Effect {
         return !level.noBlockCollision(this.caster, around);
     }
 
-    // ---- Portal ----
-
-    /** One tentacle goes portal hunting; the other three keep doing their own work. */
     boolean startPortal(ServerLevel level) {
         if (this.portal != null || this.searchedJustNow("portal")) {
             return false;
@@ -451,7 +394,6 @@ final class OctoRig extends RigGround implements Effect {
         }
         Arm arm = this.arms[this.portalArm];
         boolean running = run.tick(level, arm.tip);
-        // The tentacle is free again as soon as it is back out of the portal, while the portals close.
         if (arm.job == Job.PORTAL && !run.busy()) {
             this.toRest(arm);
         }

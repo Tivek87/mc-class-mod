@@ -4,16 +4,10 @@ import java.util.Arrays;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.engine.client.render.Mesh.Builder;
 
-/**
- * The shapes of {@link Mesh} built up along z section by section, the way the body of an aircraft, a missile or an
- * engine is shaped, and the wings, panels and curved plates that go with them. {@link Mesh} hands them out: see there
- * for what each one makes.
- */
 final class MeshBodies {
     private MeshBodies() {
     }
 
-    /** See {@link Mesh#loft}. */
     static Mesh loft(int round, double bright, double[]... sections) {
         int n = sections.length;
         Builder builder = new Builder();
@@ -56,7 +50,6 @@ final class MeshBodies {
         return builder.build();
     }
 
-    /** See {@link Mesh#panel}. */
     static Mesh panel(int steps, double bright, double from, double to, double thick, double[]... sections) {
         int n = sections.length;
         Builder builder = new Builder();
@@ -79,21 +72,18 @@ final class MeshBodies {
             double[] b = sections[i + 1];
             Vec3 axis = new Vec3(0.0, (a[3] + b[3]) * 0.5, (a[0] + b[0]) * 0.5);
             for (int j = 0; j < steps; j++) {
-                // Its face looks away from the body's axis; its underside towards it.
                 builder.outward(axis, bright, outer[i][j], outer[i][j + 1], outer[i + 1][j + 1], outer[i + 1][j]);
                 double angle = from + (to - from) * (j + 0.5) / steps;
                 double far = 4.0 * Math.max(a[1] + b[1], a[2] + b[2]);
                 Vec3 beyond = axis.add(Math.cos(angle) * far, Math.sin(angle) * far, 0.0);
                 builder.outward(beyond, bright, inner[i][j], inner[i][j + 1], inner[i + 1][j + 1], inner[i + 1][j]);
             }
-            // Its two long edges, where it starts and where it ends round the body.
             for (int end = 0; end < 2; end++) {
                 int j = end == 0 ? 0 : steps;
                 Vec3 inside = axis.add(Math.cos(middleAngle) * a[1], Math.sin(middleAngle) * a[2], 0.0);
                 builder.outward(inside, bright, inner[i][j], outer[i][j], outer[i + 1][j], inner[i + 1][j]);
             }
         }
-        // Its two short edges, at its first and last section.
         for (int end = 0; end < 2; end++) {
             int i = end == 0 ? 0 : n - 1;
             Vec3 inside = new Vec3(0.0, sections[i][3], middleZ);
@@ -104,7 +94,6 @@ final class MeshBodies {
         return builder.build();
     }
 
-    /** See {@link Mesh#wing}. */
     static Mesh wing(double span, double rootBack, double rootFront, double tipBack, double tipFront,
             double rise, double rootThick, double tipThick, double bright) {
         Builder builder = new Builder();
@@ -120,7 +109,6 @@ final class MeshBodies {
         return builder.build();
     }
 
-    /** See {@link Mesh#sweep}. */
     static Mesh sweep(double bright, double[] outline, double[]... sections) {
         int round = outline.length / 2;
         int n = sections.length;
@@ -163,7 +151,6 @@ final class MeshBodies {
         return builder.build();
     }
 
-    /** See {@link Mesh#dish}. */
     static Mesh dish(int rings, double back, double front, double bulge, double bright, double... outline) {
         int n = outline.length / 2;
         double cx = 0.0;
@@ -214,7 +201,6 @@ final class MeshBodies {
         return builder.build();
     }
 
-    /** The four corners round one section of a wing: its leading edge, its top, its trailing edge, its bottom. */
     private static int[] section(Builder builder, double x, double y, double back, double front, double thick) {
         double crest = front - (front - back) * 0.35;
         return new int[] { builder.point(x, y, front), builder.point(x, y + thick * 0.5, crest),

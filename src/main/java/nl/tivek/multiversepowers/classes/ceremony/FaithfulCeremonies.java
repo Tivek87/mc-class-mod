@@ -11,14 +11,12 @@ import static nl.tivek.multiversepowers.classes.ceremony.Fx.MAIN;
 import static nl.tivek.multiversepowers.classes.ceremony.Fx.fadeOut;
 import static nl.tivek.multiversepowers.classes.ceremony.Fx.lerpColor;
 
-/** The ceremonies of the Faithful: Cleric, Paladin, Inquisitor and Monk. */
 final class FaithfulCeremonies {
     private FaithfulCeremonies() {
     }
 
     static final Glyph INQUISITOR_BRAND = new Glyph().polygon(MAIN, 3, 1.0, 0).circle(ACC, 0.5);
 
-    /** Four glowing streaks from the sky down onto the player; only the moving front is placed (end rods linger). */
     static void lightBeam(Fx fx, int from, int to, double top) {
         int t = fx.age();
         double q = fx.span(from, to);
@@ -38,10 +36,6 @@ final class FaithfulCeremonies {
 
     static final float[] CLERIC_MELODY = {1.0F, 1.26F, 1.5F, 1.33F, 1.68F, 1.5F, 1.26F, 1.5F, 1.68F, 2.0F};
 
-    /**
-     * Cleric: heaven opens high above you, a beam of light comes down, ten healing ripples roll out to a
-     * little melody while hearts and feathers of light drift down, then a halo forms with a bell.
-     */
     static void clericGrand(Fx fx) {
         int t = fx.age();
         ParticleOptions gold = fx.dust(0xFFC830, 1.2F);
@@ -98,7 +92,6 @@ final class FaithfulCeremonies {
         }
     }
 
-    /** Cleric respawn: six small pillars of light rise around you one by one, a warm wave and a halo. */
     static void clericLight(Fx fx) {
         int t = fx.age();
         for (int k = 0; k < 6; k++) {
@@ -130,7 +123,6 @@ final class FaithfulCeremonies {
         }
     }
 
-    /** Four arms of light spreading over the floor from the player, with flared ends. */
     static void holyCross(Fx fx, double len, double keep) {
         ParticleOptions gold = fx.dust(0xF2D060, 1.2F);
         for (int k = 0; k < 4; k++) {
@@ -143,10 +135,6 @@ final class FaithfulCeremonies {
         }
     }
 
-    /**
-     * Paladin: a giant greatsword of light slowly descends point-first from high in the sky and plants itself
-     * through you, a cross of light spreads over the ground and glows, the sword dissolves and wings unfold.
-     */
     static void paladinGrand(Fx fx) {
         int t = fx.age();
         int land = 80;
@@ -201,7 +189,6 @@ final class FaithfulCeremonies {
         }
     }
 
-    /** Paladin respawn: a golden dome of light builds up around you, pulses, and shatters into light. */
     static void paladinLight(Fx fx) {
         int t = fx.age();
         ParticleOptions gold = fx.dust(0xF2D060, 1.0F);
@@ -248,7 +235,6 @@ final class FaithfulCeremonies {
         }
     }
 
-    /** Inquisitor rite: a burning triangle is branded, a wall of fire rises, it collapses into a pillar. */
     static void inquisitorRite(Fx fx, double brand, int brandEnd, double wallRadius, int wallFrom,
                                        double wallHeight, int peak, int end) {
         int t = fx.age();
@@ -327,10 +313,6 @@ final class FaithfulCeremonies {
         }
     }
 
-    /**
-     * Inquisitor: a large burning triangle is branded around you, embers rain down while a tall wall of fire
-     * rises, the eye of judgement watches, then the fire collapses into a pillar and ash falls.
-     */
     static void inquisitorGrand(Fx fx) {
         int t = fx.age();
         inquisitorRite(fx, 2.4, 60, 1.8, 60, 3.0, 150, 200);
@@ -341,7 +323,6 @@ final class FaithfulCeremonies {
         }
     }
 
-    /** Inquisitor respawn: a spiral of fire runs down around you from head to feet and brands a triangle. */
     static void inquisitorLight(Fx fx) {
         int t = fx.age();
         if (t < 16) {
@@ -375,7 +356,6 @@ final class FaithfulCeremonies {
 
     static final float[] MONK_NOTES = {0.9F, 1.0F, 1.12F, 1.35F, 1.5F, 1.8F, 1.5F, 1.35F};
 
-    /** One lotus petal on the floor, pointing outward at {@code angle}; {@code grow} 0..1 unfolds it. */
     static void lotusPetal(Fx fx, double angle, double grow, double length, int rgb, double keep) {
         ParticleOptions edge = fx.dust(rgb, 1.0F);
         double dx = Math.sin(angle);
@@ -395,7 +375,6 @@ final class FaithfulCeremonies {
         }
     }
 
-    /** Horizontal yin-yang. */
     static void yinYang(Fx fx, double y, double radius, double rot) {
         ParticleOptions white = fx.dust(0xFFFFFF, 1.0F);
         ParticleOptions orange = fx.dust(0xF2A640, 1.0F);
@@ -409,10 +388,6 @@ final class FaithfulCeremonies {
         fx.at(fx.dust(0xFFFFFF, 1.6F), -cx, y, -cz);
     }
 
-    /**
-     * Monk: five calm breaths swell a sphere of light, a double lotus opens petal by petal around you,
-     * a yin-yang rises from the floor to your chest, then a palm strike rolls out like a temple gong.
-     */
     static void monkGrand(Fx fx) {
         int t = fx.age();
         if (t < 100 && fx.every(2)) {
@@ -468,7 +443,6 @@ final class FaithfulCeremonies {
         }
     }
 
-    /** Monk respawn: two chi orbs spiral up around your body from feet to head, then a calm pulse. */
     static void monkLight(Fx fx) {
         int t = fx.age();
         if (t < 16) {

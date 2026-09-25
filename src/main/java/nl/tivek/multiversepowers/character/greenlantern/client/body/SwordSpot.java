@@ -12,29 +12,14 @@ import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 
-/**
- * Where the hands of every Green Lantern with the sword and shield really are: measured each time his body is drawn
- * (see {@link GreenLanternSuitLayer}), so the sword sits in his fist and the shield on his forearm wherever his arms go,
- * also when he flies, crouches or turns. Next to the grip and the forearm it keeps how his whole body stands and where,
- * to turn the ways and places a pose gives (seen from his upper body) into ways and places in the world.
- */
 final class SwordSpot {
-    // A spot older than this is not trusted any more (his body went out of view).
     private static final long FRESH_MS = 150L;
 
-    /**
-     * How one body stood when it was drawn last: its own three ways out in the world (x to its left, y down, z back, as
-     * the game's models have them), the grip of its right fist, the outside of its left forearm, when, where the model
-     * stands (the point of it just below its neck) and how big it is drawn.
-     */
     record Spot(Vec3 x, Vec3 y, Vec3 z, Vec3 grip, Vec3 mount, long when, Vec3 origin, double scale) {
-        /**
-         * A way seen from his upper body (x to his right, y up, z ahead), with the upper body turned {@code twist} to
-         * his right, as a way out in the world.
-         */
         Vec3 world(Vec3 way, float twist) {
             double cos = Mth.cos(twist);
             double sin = Mth.sin(twist);
+            // the model's own axes are mirrored (left/down/back) from the pose's (right/up/ahead)
             double mx = -way.x;
             double my = -way.y;
             double mz = -way.z;
@@ -43,16 +28,11 @@ final class SwordSpot {
             return this.x.scale(tx).add(this.y.scale(my)).add(this.z.scale(tz));
         }
 
-        /**
-         * A place seen from his body, in blocks from the middle of his chest at the height of the shoulders (x to his
-         * right, y up, z ahead, at the model's own size, see {@link SwordPoses#drawn}), as a place in the world.
-         */
         Vec3 at(Vec3 place) {
             return this.origin.add(this.world(place.subtract(0.0, SHOULDERS, 0.0), 0.0F).scale(this.scale));
         }
     }
 
-    // How far below the point the model stands on its shoulders are, in blocks at its own size.
     private static final double SHOULDERS = 2.0 / 16.0;
 
     private static final class Measured {
@@ -73,7 +53,6 @@ final class SwordSpot {
     private SwordSpot() {
     }
 
-    /** His body is about to be drawn: {@code pose} stands on the model as a whole. */
     static void onRoot(Entity owner, PoseStack pose) {
         Matrix4f matrix = pose.last().pose();
         Measured measured = BODIES.computeIfAbsent(owner.getId(), id -> new Measured());
@@ -87,10 +66,6 @@ final class SwordSpot {
         measured.root = Util.getMillis();
     }
 
-    /**
-     * One of his arms was just posed for drawing: {@code pose} stands on it. For the right arm this keeps the grip of the
-     * fist, for the left one the outside of the forearm, where the shield sits.
-     */
     static void onArm(Entity owner, PoseStack pose, boolean right, boolean slim) {
         Measured measured = BODIES.computeIfAbsent(owner.getId(), id -> new Measured());
         Vector3f local = right ? new Vector3f((slim ? -0.5F : -1.0F) / 16.0F, 9.4F / 16.0F, 0.0F)
@@ -106,7 +81,6 @@ final class SwordSpot {
         }
     }
 
-    /** Where this body stood when it was drawn last, or null when it was not drawn lately. */
     @Nullable
     static Spot of(Entity owner) {
         Measured measured = BODIES.get(owner.getId());
@@ -119,7 +93,6 @@ final class SwordSpot {
                 measured.origin, measured.scale);
     }
 
-    /** Forgets everyone (you left the world). */
     static void clear() {
         BODIES.clear();
     }

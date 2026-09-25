@@ -7,16 +7,10 @@ import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.engine.math.Ease;
 import nl.tivek.multiversepowers.engine.math.Vectors;
 
-/**
- * How the hands of the pair with the axe move (see {@link HandDuo}): each hand's way through the air from key to
- * key, its fingers' changes of pose with ripples and twitches on top, and the curves they all move along.
- */
 abstract class HandDuoMotion {
-    // The fingers: curl of index, middle, ring, little finger and thumb, then the hook of each, then the spread.
     private static final int DIGITS = 11;
     private static final int SPREAD = 10;
 
-    /** How far behind its finger's root the two outer joints of a finger follow, in ticks. */
     private static final double HOOK_LAG = 0.5;
 
     static final int SMOOTH = 0;
@@ -24,40 +18,21 @@ abstract class HandDuoMotion {
     static final int EARLY = 2;
     static final int POP = 3;
 
-    // ---- Turning a hand ----
-
-    /**
-     * A hand turned halfway the shortest way round from one way of standing (its fingers' way and palm) to another:
-     * its fingers' way and palm, straightened out.
-     */
     static Vec3[] halfway(Vec3 fromUp, Vec3 fromPalm, Vec3 toUp, Vec3 toPalm) {
         Vec3[] from = Vectors.frame(fromUp, fromPalm);
         Vec3 turn = Vectors.turn(from, Vectors.frame(toUp, toPalm)).scale(0.5);
         return new Vec3[] { Vectors.turned(from[0], turn), Vectors.turned(from[1], turn) };
     }
 
-    // ---- The keys of the hands in the air ----
-
-    /** A moment of a hand in the air: where its wrist is, which ways its fingers and palm point; still: at rest. */
     record Key(double t, boolean still, Vec3 at, Vec3 up, Vec3 palm) {
-        /** The same for the other hand. */
         Key mirrored() {
             return new Key(this.t, this.still, this.at.multiply(-1.0, 1.0, 1.0), this.up.multiply(-1.0, 1.0, 1.0),
                     this.palm.multiply(-1.0, 1.0, 1.0));
         }
     }
 
-    /**
-     * A hand's way through the air: from key to key smoothly, passing through each at an even speed. Its wrist moves
-     * along a smooth curve through the keys; the hand turns from each key's way of standing to the next the shortest
-     * way round (never flipping through, however far apart they are), gathering and losing its speed of turning as
-     * smoothly.
-     */
     static final class Track {
         private final Key[] keys;
-        // How fast the wrist moves at each key, and at each key which way the fingers point and the palm faces
-        // (straightened out), how fast and about which way the hand turns there (radians a tick) and the turn to the
-        // next key (see Vectors.turn).
         private final Vec3[] speeds;
         private final Vec3[][] frames;
         private final Vec3[] spins;
@@ -88,7 +63,6 @@ abstract class HandDuoMotion {
             }
         }
 
-        /** Where it is at {@code t}: wrist, fingers' way, palm (in the pair's terms; the last two one long each). */
         Vec3[] at(double t) {
             Key[] k = this.keys;
             if (t <= k[0].t()) {
@@ -104,20 +78,12 @@ abstract class HandDuoMotion {
             }
             Key a = k[i];
             Key b = k[i + 1];
-            // How far it has turned from key a on its way to key b: a smooth curve from no turn at all to the whole
-            // turn, leaving and reaching each key turning as fast as it passes through it.
             Vec3 turn = hermite(t, a.t(), Vec3.ZERO, this.spins[i], b.t(), this.turns[i], this.spins[i + 1]);
             return new Vec3[] { hermite(t, a.t(), a.at(), this.speeds[i], b.t(), b.at(), this.speeds[i + 1]),
                     Vectors.turned(this.frames[i][0], turn), Vectors.turned(this.frames[i][1], turn) };
         }
     }
 
-    // ---- The fingers ----
-
-    /**
-     * How the fingers of a hand move: from a first pose, each change of pose after another, finger after finger (each
-     * change adds its difference smoothly, so changes may overlap), with ripples and twitches on top.
-     */
     static final class Fingers {
         private final double[] first;
         private final List<Part> parts = new ArrayList<>();
@@ -128,10 +94,6 @@ abstract class HandDuoMotion {
             this.last = first;
         }
 
-        /**
-         * Change to {@code pose}, starting at {@code from} and taking {@code length} ticks, each finger (index, middle,
-         * ring, little finger, thumb) {@code lags} ticks late, the outer joints of each a little later still.
-         */
         Fingers to(double[] pose, double from, double length, int curve, double[] lags) {
             double[] by = new double[DIGITS];
             for (int i = 0; i < DIGITS; i++) {
@@ -142,30 +104,22 @@ abstract class HandDuoMotion {
             return this;
         }
 
-        /**
-         * Waves running through the fingers (index first), growing from {@code a} to {@code b} and dying away from
-         * {@code c} to {@code d}: {@code speed} radians a tick, {@code step} radians from one finger to the next, how
-         * far each curl and hook swings, and how far the thumb's curl swings.
-         */
         Fingers wave(double a, double b, double c, double d, double speed, double step, double curl, double hook,
                 double thumb) {
             this.parts.add(new Wave(a, b, c, d, speed, step, curl, hook, thumb));
             return this;
         }
 
-        /** Middle finger and thumb pressed together, trembling a hair, from {@code from} to {@code to}. */
         Fingers tremble(double from, double to, double speed, double size) {
             this.parts.add(new Tremble(from, to, speed, size));
             return this;
         }
 
-        /** A twitch of the fingers at {@code at}, peaking {@code rise} ticks later and dying away. */
         Fingers twitch(double at, double rise, double[] size) {
             this.parts.add(new Twitch(at, rise, size));
             return this;
         }
 
-        /** The fingers at {@code t}, dragged by how the hand moves ({@code drag}) unless it holds on ({@code held}). */
         HandPose pose(double t, double drag, double held) {
             double[] d = this.first.clone();
             for (Part part : this.parts) {
@@ -182,12 +136,10 @@ abstract class HandDuoMotion {
         }
     }
 
-    /** Something the fingers do, added onto their pose. */
     private interface Part {
         void add(double t, double[] digits);
     }
 
-    /** A change of pose (see {@link Fingers#to}). */
     private record Change(double[] by, double from, double length, int curve, double[] lags) implements Part {
         @Override
         public void add(double t, double[] digits) {
@@ -202,7 +154,6 @@ abstract class HandDuoMotion {
         }
     }
 
-    /** Waves running through the fingers (see {@link Fingers#wave}). */
     private record Wave(double a, double b, double c, double d, double speed, double step, double curl, double hook,
             double thumb) implements Part {
         @Override
@@ -220,7 +171,6 @@ abstract class HandDuoMotion {
         }
     }
 
-    /** The middle finger and thumb pressing on each other (see {@link Fingers#tremble}). */
     private record Tremble(double from, double to, double speed, double size) implements Part {
         @Override
         public void add(double t, double[] digits) {
@@ -230,7 +180,6 @@ abstract class HandDuoMotion {
         }
     }
 
-    /** A twitch of the fingers (see {@link Fingers#twitch}). */
     private record Twitch(double at, double rise, double[] size) implements Part {
         @Override
         public void add(double t, double[] digits) {
@@ -244,12 +193,10 @@ abstract class HandDuoMotion {
         }
     }
 
-    /** A pose of the fingers: curl of index, middle, ring, little finger and thumb, their hooks, the spread. */
     static double[] digits(double... values) {
         return values;
     }
 
-    /** A pose of the fingers with some of its numbers (index, value, index, value...) changed. */
     static double[] with(double[] pose, double... changes) {
         double[] out = pose.clone();
         for (int i = 0; i + 1 < changes.length; i += 2) {
@@ -258,9 +205,6 @@ abstract class HandDuoMotion {
         return out;
     }
 
-    // ---- Curves ----
-
-    /** How far through a change of shape {@code curve} is at {@code u} (0 before, 1 after; {@code since} in ticks). */
     private static double step(int curve, double u, double since) {
         return switch (curve) {
             case LATE -> late(u);
@@ -270,30 +214,25 @@ abstract class HandDuoMotion {
         };
     }
 
-    /** 0 to 1, speeding up most of the way and stopping short: a slam. */
     static double late(double u) {
         double c = Mth.clamp(u, 0.0, 1.0);
         return c * c * c * (4.0 - 3.0 * c);
     }
 
-    /** 0 to 1, fast at first and settling slowly: a fling. */
     static double early(double u) {
         return 1.0 - late(1.0 - u);
     }
 
-    /** 0 to 1 for the chop: slow over the top, ever faster, then stopped short as the blade bites. */
     static double chop(double u) {
         double c = Mth.clamp(u, 0.0, 1.0);
         double c4 = c * c * c * c;
         return c4 * c * (6.0 - 5.0 * c);
     }
 
-    /** 0 before a, growing to 1 by b, 1 until c, dying back to 0 by d. */
     static double window(double t, double a, double b, double c, double d) {
         return Ease.smoother((t - a) / (b - a)) * (1.0 - Ease.smoother((t - c) / (d - c)));
     }
 
-    /** A jolt at u = 0: rises from nothing to 1 at {@code rise}, then dies away. */
     static double kick(double u, double rise) {
         if (u <= 0.0) {
             return 0.0;
@@ -302,7 +241,6 @@ abstract class HandDuoMotion {
         return x * x * Math.exp(2.0 * (1.0 - x));
     }
 
-    /** A wobble starting at u = 0: {@code speed} radians a tick, dying away, grown in over {@code ramp} ticks. */
     static double wobble(double u, double speed, double decay, double ramp) {
         if (u <= 0.0) {
             return 0.0;
@@ -310,7 +248,6 @@ abstract class HandDuoMotion {
         return Math.sin(speed * u) * Math.exp(-decay * u) * Ease.smoother(u / ramp);
     }
 
-    /** A cubic from {@code a} at {@code ta} (moving {@code va} a tick) to {@code b} at {@code tb} (at {@code vb}). */
     static double hermite(double t, double ta, double a, double va, double tb, double b, double vb) {
         double span = tb - ta;
         return Ease.hermite(a, va * span, b, vb * span, (t - ta) / span);

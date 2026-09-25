@@ -8,9 +8,6 @@ import net.minecraft.network.chat.Component;
 import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.engine.client.gui.DirtBackgroundScreen;
 
-/**
- * First screen after joining: greets the player by name and sends them on to the class picker.
- */
 public class WelcomeScreen extends DirtBackgroundScreen {
     private static final int PANEL_HEIGHT = 74;
     private static final int BUTTON_WIDTH = 200;
@@ -63,7 +60,6 @@ public class WelcomeScreen extends DirtBackgroundScreen {
                 this.noticeTop(), this.noticeWidth(), NOTICE_LINES);
     }
 
-    // Panel, notice and buttons as one block, centred on the screen.
     private int panelTop() {
         int buttonsHeight = 2 * BUTTON_HEIGHT + BUTTON_GAP;
         int total = PANEL_HEIGHT + SECTION_GAP + this.noticeHeight() + SECTION_GAP + buttonsHeight;

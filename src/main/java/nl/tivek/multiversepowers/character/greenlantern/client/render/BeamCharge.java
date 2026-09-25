@@ -28,30 +28,16 @@ import nl.tivek.multiversepowers.character.client.MouseHold;
 import nl.tivek.multiversepowers.character.greenlantern.RingPayload;
 import nl.tivek.multiversepowers.character.greenlantern.client.ClientConstructs;
 import nl.tivek.multiversepowers.character.greenlantern.client.ClientRing;
-import nl.tivek.multiversepowers.character.greenlantern.client.body.SuitGlow;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.SwordArms;
 import nl.tivek.multiversepowers.config.client.ClientSettings;
 import nl.tivek.multiversepowers.engine.math.Colors;
 import nl.tivek.multiversepowers.engine.math.Noise;
 import nl.tivek.multiversepowers.engine.math.Vectors;
 
-/**
- * The ring gathering its light for the beam, while he holds the attack button on its way there (see
- * {@link MouseHold}). The energy runs out of the core on his chest, down the ring arm into the ring and then over the
- * whole suit, a little further the longer he holds (drawn by {@link SuitGlow}); specks of light stream into the ring
- * from all round, faster and faster; a ball of light swells in his fist with two rings of light turning round it, and
- * at the end sparks crackle off it. A whine rises with it. When the beam breaks loose your own view kicks back, and
- * trembles a little for as long as it pours. Light, not a construct.
- *
- * <p>Your own charge follows your own button; anyone else's the server's word (see {@link ClientRing#charging}).
- */
 @EventBusSubscriber(modid = MultiversePowers.MODID, value = Dist.CLIENT)
 public final class BeamCharge {
-    // How long after the button should have brought the beam anyone else's charge is still shown, in ticks.
     private static final float SLACK = 10.0F;
-    // How much smaller all of it is drawn around your own ring in first person, where it hangs right before your eyes.
     private static final double OWN_SCALE = 0.3;
-    // How hard your view kicks back as the beam breaks loose, in degrees, and for how many ticks.
     private static final float KICK = 3.0F;
     private static final float KICK_TICKS = 6.0F;
 
@@ -61,7 +47,6 @@ public final class BeamCharge {
     private BeamCharge() {
     }
 
-    /** How far this player's ring has gathered its light for the beam, 0 to 1, or -1 while it gathers none. */
     public static float charge(Entity player, float partialTick) {
         if (ClientRing.has(player, RingPayload.BEAM) || ClientRing.power(player) <= 0.0F) {
             return -1.0F;
@@ -71,7 +56,7 @@ public final class BeamCharge {
             return -1.0F;
         }
         if (player == Minecraft.getInstance().player) {
-            // With the sword and shield in your hands the button is theirs: holding it leads to the flurry instead.
+            // Sword and shield own the hold button then, not the beam charge
             if (ClientCharacter.active() != GameCharacter.GREEN_LANTERN || SwordArms.holding()) {
                 return -1.0F;
             }
@@ -85,7 +70,6 @@ public final class BeamCharge {
         return Math.min(1.0F, ticks / bolt.holdTicks());
     }
 
-    /** True while anyone's ring in this level gathers its light for the beam. */
     public static boolean any(ClientLevel level) {
         float partialTick = Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(false);
         for (AbstractClientPlayer player : level.players()) {
@@ -96,7 +80,6 @@ public final class BeamCharge {
         return false;
     }
 
-    /** The light gathering in one player's ring, at {@code ring}. */
     public static void draw(LanternPainter painter, Entity player, Vec3 ring, Camera camera, float partialTick) {
         float charge = charge(player, partialTick);
         if (charge < 0.0F) {
@@ -110,9 +93,7 @@ public final class BeamCharge {
         Vec3 side = Math.abs(axis.y) < 0.95 ? axis.cross(Vectors.UP).normalize()
                 : axis.cross(new Vec3(1.0, 0.0, 0.0)).normalize();
         Vec3 other = side.cross(axis).normalize();
-        // The ball of light swelling in his fist.
         painter.flare(ring, (0.06 + 0.42 * c * c) * scale, 0.4 + 0.6 * c);
-        // Two rings of light turning round it, faster and faster, tipped like the rings of a gyroscope.
         double spin = time * (0.12 + 0.6 * c);
         double radius = (0.14 + 0.14 * c) * scale;
         for (int k = 0; k < 2; k++) {
@@ -122,7 +103,6 @@ public final class BeamCharge {
             painter.circle(ring, a, b, radius, 0.012 * scale, 0.06 * scale, Colors.alpha(0.35 + 0.6 * c),
                     Colors.alpha(0.2 + 0.35 * c));
         }
-        // Specks of light streaming into the ring from all round, more and faster the fuller it gets, winding in.
         int specks = 6 + (int) (18 * c);
         double period = 12.0 - 7.0 * c;
         for (int k = 0; k < specks; k++) {
@@ -135,7 +115,6 @@ public final class BeamCharge {
             Vec3 tail = ring.add(Vectors.spin(way, axis, 1.5 * cycle - 0.3).scale(far + 0.25 * scale));
             painter.edge(tail, head, 0.025 * scale, (0.3 + 0.7 * cycle) * (0.4 + 0.6 * c));
         }
-        // Nearly full: sparks crackle off it, new ones every other tick.
         if (c > 0.6) {
             int flick = (int) (time / 2.0);
             double crackle = (c - 0.6) / 0.4;
@@ -160,7 +139,6 @@ public final class BeamCharge {
             return;
         }
         clientTicks++;
-        // A whine rises with every charge.
         for (AbstractClientPlayer player : level.players()) {
             if (charge(player, 0.0F) >= 0.0F && !SOUNDS.containsKey(player.getId())) {
                 ChargeSound sound = new ChargeSound(player);
@@ -171,7 +149,6 @@ public final class BeamCharge {
         SOUNDS.values().removeIf(ChargeSound::isStopped);
     }
 
-    /** Your own beam breaking loose kicks your view back, and it trembles a little for as long as the beam pours. */
     @SubscribeEvent
     public static void onCameraAngles(ViewportEvent.ComputeCameraAngles event) {
         LocalPlayer player = Minecraft.getInstance().player;
@@ -195,7 +172,6 @@ public final class BeamCharge {
         SOUNDS.clear();
     }
 
-    /** The whine of one charge: higher and louder the fuller the ring gets, gone the moment the charge ends. */
     private static final class ChargeSound extends AbstractTickableSoundInstance {
         private final Entity player;
 

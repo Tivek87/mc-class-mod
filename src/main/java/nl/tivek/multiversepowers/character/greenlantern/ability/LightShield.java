@@ -24,29 +24,12 @@ import nl.tivek.multiversepowers.engine.effect.Effect;
 import nl.tivek.multiversepowers.engine.effect.Effects;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 
-/**
- * The shield: what the ring does when Green Lantern taps the button of the hand that defends. A round pane of
- * hard light stands in front of him, in the way he looks, and takes most of every hit that comes from the
- * front; the next tap puts it away again. It drinks a little ring power every second and falls apart when the
- * ring runs dry. While he flies it becomes a pointed cone out in front of him, that still blocks what comes at
- * him from ahead and rams whatever he flies into (see {@link Flight}).
- *
- * <p>Holding the button raises the dome instead (see {@link LightDome}); the shield waits under it until the
- * dome comes down again.
- *
- * <p>Hits that go straight through armour anyway (poison, falling, drowning) go through the shield as well:
- * hard light stops what comes flying at you, not what is already inside you. So do arrows that pierce.
- */
 @EventBusSubscriber(modid = MultiversePowers.MODID)
 public final class LightShield implements Effect {
-    // How wide the pane is, in blocks, and how far in front of his eyes it hangs. Clients work out that same
-    // spot for their own shield, so it follows the way they look without a tick of lag.
     private static final float SIZE = 1.7F;
     public static final double AHEAD = 0.85;
     private static final double VIEW_RANGE = 128.0;
-    // A hit is caught when it comes from in front of him: straight ahead is 1, straight behind is -1.
     private static final double FRONT = 0.1;
-    // How long it takes to fold out and to fall apart, in ticks.
     private static final int OPEN_TICKS = 3;
 
     private static final Map<UUID, LightShield> UP = new HashMap<>();
@@ -66,12 +49,6 @@ public final class LightShield implements Effect {
         this.perTick = (float) (ability.value("powerPerSecond") / 20.0);
     }
 
-    /**
-     * The button of the hand that defends: a tap puts the shield up or away again, holding it raises the dome,
-     * and letting go of a held button lets the dome down.
-     *
-     * @return true when something changed
-     */
     public static boolean use(ServerPlayer owner, ServerLevel level, CharacterAbility ability, boolean on, int data) {
         if (!on) {
             return LightDome.lower(owner);
@@ -105,12 +82,10 @@ public final class LightShield implements Effect {
         return true;
     }
 
-    /** True while this player has the shield up (under the dome as well). */
     public static boolean up(ServerPlayer player) {
         return UP.containsKey(player.getUUID());
     }
 
-    /** Something hit the shield or was rammed by it: its light flares. */
     static void flash(ServerPlayer player) {
         LightShield shield = UP.get(player.getUUID());
         if (shield != null) {
@@ -118,7 +93,6 @@ public final class LightShield implements Effect {
         }
     }
 
-    /** The shield is put away: tapped away, taken over by the lantern, or the ring gave out. */
     static void stop(ServerPlayer player) {
         LightShield shield = UP.remove(player.getUUID());
         if (shield != null) {
@@ -127,7 +101,6 @@ public final class LightShield implements Effect {
         }
     }
 
-    /** The server stops: every shield is gone. */
     public static void clear() {
         UP.clear();
     }
@@ -151,7 +124,6 @@ public final class LightShield implements Effect {
             this.drop(level, false);
             return true;
         }
-        // Under the dome the shield folds away and costs nothing; it comes back out once the dome is gone.
         boolean domed = LightDome.up(this.owner);
         if (!domed) {
             float power = PowerRing.power(this.owner);
@@ -167,7 +139,6 @@ public final class LightShield implements Effect {
         return true;
     }
 
-    /** It comes down: either the ring ran dry or its owner is gone. */
     private void drop(ServerLevel level, boolean empty) {
         UP.remove(this.owner.getUUID(), this);
         this.closing = 0;
@@ -178,7 +149,6 @@ public final class LightShield implements Effect {
         PowerRing.sync(this.owner);
     }
 
-    /** A hit lands on it: the light flares where it was struck. */
     private void struck(ServerLevel level, float blocked) {
         this.flash = OPEN_TICKS;
         Vec3 at = this.point();
@@ -188,7 +158,6 @@ public final class LightShield implements Effect {
                 0.9F);
     }
 
-    /** Where it stands: in front of his eyes in the way he looks, or out in front of him in the way he flies. */
     private Vec3 point() {
         if (Flight.flying(this.owner)) {
             return this.owner.getBoundingBox().getCenter().add(Flight.heading(this.owner).scale(1.1));
@@ -196,7 +165,6 @@ public final class LightShield implements Effect {
         return this.owner.getEyePosition().add(this.owner.getLookAngle().scale(AHEAD));
     }
 
-    /** The way it faces: where he looks, or where he flies. */
     private Vec3 front() {
         return Flight.flying(this.owner) ? Flight.heading(this.owner) : this.owner.getLookAngle();
     }
@@ -211,16 +179,11 @@ public final class LightShield implements Effect {
                         Flight.flying(this.owner) ? ConstructPayload.RAM : ConstructPayload.SHIELD));
     }
 
-    /**
-     * Whether a hit gets through hard light no matter how it comes: what goes through armour (poison, falling,
-     * drowning, the void), and an arrow that pierces.
-     */
     static boolean goesThrough(DamageSource source) {
         return source.is(DamageTypeTags.BYPASSES_ARMOR) || source.is(DamageTypeTags.BYPASSES_INVULNERABILITY)
                 || source.getDirectEntity() instanceof AbstractArrow arrow && arrow.getPierceLevel() > 0;
     }
 
-    /** Every hit on a player who holds the shield up, as long as it comes at him from the front. */
     @SubscribeEvent
     public static void onIncomingDamage(LivingIncomingDamageEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) {

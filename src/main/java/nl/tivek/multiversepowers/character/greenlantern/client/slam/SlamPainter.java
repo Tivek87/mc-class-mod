@@ -12,64 +12,19 @@ import nl.tivek.multiversepowers.engine.math.Ease;
 import nl.tivek.multiversepowers.engine.math.Noise;
 import nl.tivek.multiversepowers.engine.math.Vectors;
 
-/**
- * The constructs of a landing slam (see {@link LandingSlam}), solid like every construct (see
- * {@link ConstructPainter}): each one grows out of the ring's light, fed by a beam from his ring, strikes at
- * {@link LandingSlam#IMPACT_TICK} and in the end breaks into solid pieces that fly apart (or sinks back into the
- * ground); it never fades out. Meanwhile his own fist has cracked the ground where it smashed into it, and the
- * shockwave runs out over the ground as a low ring of hard light. The constructs are drawn in these classes:
- * <ul>
- * <li>{@link SlamHands}: the fist out of the sky, two hands that clap, two fists that bump, the uppercut and the
- * slapping hand;</li>
- * <li>{@link SlamDrops}: dropped out of the sky: a war hammer, a boot, his lantern, an anchor on its chain, a spiked
- * ball, a barbell, a bell, a meteor streaking in, a sword, and a volley of rockets;</li>
- * <li>{@link SlamCartoon}: the cartoon ones: a safe, a piano, an anvil, a ton weight, TNT, a toy brick and a
- * stamp;</li>
- * <li>{@link SlamStrikes}: clapped shut or swung down: cymbals, a bear trap, a book, a fly swatter, a pickaxe, a
- * gavel on its block, drumsticks on a drum;</li>
- * <li>{@link SlamRisers}: out of the ground: two rings of spikes, a pillar that topples over, and the lantern emblem
- * falling flat on its face.</li>
- * </ul>
- * Every construct is timed in ticks at the pace it was made for and measured at the size it was made at; the server
- * says how slowly a slam plays and how big its construct is (see {@link #pace} and {@link #size}).
- */
 public final class SlamPainter {
     static final Vec3 UP = Vectors.UP;
     static final Vec3 DOWN = new Vec3(0.0, -1.0, 0.0);
-    // How high over the ground the ones that drop take shape, in blocks (their foot, at scale 1): in the air before
-    // him, where he can see them; and how far they rise from there as they wind up to strike.
     static final double HANG = 2.6;
     static final double RISE = 0.7;
-    // How long a construct takes to break up, in ticks.
     private static final double BREAK_TICKS = 8.0;
-    // How far the ones that clap shut are turned towards him, in radians: seen straight from behind, two things that
-    // meet side on would show only their thin edges.
     private static final double FACING_HIM = Math.toRadians(35.0);
-    // How long the shockwave takes to run out, and to sink away, in ticks.
     private static final double WAVE_TICKS = 12.0;
     private static final double WAVE_FADE = 16.0;
 
     private SlamPainter() {
     }
 
-    /**
-     * Where one slam is at one moment, the same for every construct.
-     *
-     * @param ground  where it strikes
-     * @param forward the way he faced, flat
-     * @param right   his right
-     * @param him     where he is (his feet)
-     * @param t       ticks since he landed, at the pace the constructs were made for (see {@link #pace})
-     * @param size    how big the constructs are, next to the size they were made at (1 = that size)
-     * @param grow    0 to 1 (a hair over on the way): how far it has taken shape
-     * @param windup  0 to 1: how far it has wound up after taking shape, hanging in the air; it stays 1 as it strikes
-     * @param go      0 to 1: how far it is on its way from its wound-up hang to striking
-     * @param fall    the same, but slowly at first and faster and faster, like a real fall
-     * @param since   ticks since it struck (below 0 before)
-     * @param flash   1 the moment it strikes, dying down over a few ticks
-     * @param apart   0 to 1: how far it has broken up at the end
-     * @param burst   the tick it starts to break up
-     */
     record Moment(Vec3 ground, Vec3 forward, Vec3 right, Vec3 him, double t, double size, double grow,
             double windup, double go, double fall, double since, double flash, double apart, double burst) {
         boolean struck() {
@@ -80,39 +35,23 @@ public final class SlamPainter {
             return 1.0 + 0.5 * this.flash;
         }
 
-        /** A frame standing on the ground where it strikes, facing the way he faced, at this scale. */
         ConstructPainter.Frame standing(double scale) {
             return new ConstructPainter.Frame(this.ground, this.right, UP, this.forward, scale);
         }
 
-        /** A construct's own scale, made as big as constructs are and as far as it has taken shape. */
         double scale(double scale) {
             return scale * this.size * this.grow;
         }
     }
 
-    /**
-     * How slowly a slam plays, from what the server said about it: 1 at the pace its constructs were made for, 1.5
-     * half again as slow. Every construct is timed in ticks at that first pace, so the clock is divided by this.
-     */
     public static double pace(ConstructPayload slam) {
         return slam.charge() > 0.0F ? slam.charge() : 1.0;
     }
 
-    /** How big a slam's construct is, from what the server said about it: 1 at the size it was made at. */
     static double size(ConstructPayload slam) {
         return slam.solid() > 0.0F ? slam.solid() : 1.0;
     }
 
-    /**
-     * One landing slam.
-     *
-     * @param slam what the server said about it: where it strikes, the way its maker faced, how far the wave goes
-     *             and which construct it is
-     * @param clock ticks since he landed, by the client's own clock
-     * @param ring  where its maker's ring is, or null when he is out of sight
-     * @param him   where its maker is, or null when he is out of sight
-     */
     public static void draw(LanternPainter painter, ConstructPayload slam, double clock, @Nullable Vec3 ring,
             @Nullable Vec3 him) {
         Vec3 ground = slam.center();
@@ -133,12 +72,9 @@ public final class SlamPainter {
         Moment m = new Moment(ground, forward, right, feet, t, size, backOut(t / LandingSlam.FORM_TICKS), windup, go,
                 go * go, since, flash, apart, burst);
         if (apart < 1.0) {
-            // Fresh out of the ring it is white-hot and cools to green as it takes shape; the moment it strikes it
-            // flares up once more.
             painter.glare(Math.max(0.75 * flash, 0.55 * (1.0 - Ease.smooth(t / LandingSlam.FORM_TICKS))));
             Vec3 anchor = construct(painter, slam.variant(), m);
             painter.glare(0.0);
-            // The ring feeds it while it takes shape and comes down, and lets go once it has struck.
             if (ring != null && t < LandingSlam.IMPACT_TICK + 2.0) {
                 painter.beam(ring, anchor, m.struck() ? 0.5 : 1.0, 2.0);
             }
@@ -152,7 +88,6 @@ public final class SlamPainter {
         }
     }
 
-    /** True for the constructs that drop onto the ground from where they took shape in the air. */
     static boolean drops(int variant) {
         return switch (variant) {
             case ConstructPayload.SLAM_FIST, ConstructPayload.SLAM_HAMMER, ConstructPayload.SLAM_ANVIL,
@@ -165,11 +100,6 @@ public final class SlamPainter {
         };
     }
 
-    /**
-     * How far your own view looks up from where you look, in degrees, while this construct hangs in the air before
-     * you: enough to see all of a big one that drops, a little for the ones that clap shut in the air, nothing for
-     * the ones that come out of the ground. It follows the construct back down as it strikes.
-     */
     public static float look(int variant) {
         if (drops(variant)) {
             return 15.0F;
@@ -183,12 +113,6 @@ public final class SlamPainter {
         };
     }
 
-    /**
-     * While a construct drops, lines of light streak out above it, longer the faster it goes: the air it tears
-     * through. Light, not a construct.
-     *
-     * @param top the top of the construct, where the ring's beam meets it
-     */
     private static void streaks(LanternPainter painter, Vec3 top, Moment m) {
         if (m.struck() || m.go() <= 0.0) {
             return;
@@ -205,10 +129,7 @@ public final class SlamPainter {
         }
     }
 
-    /**
-     * The tick a construct starts to break up: later for the ones that have more to show once they struck, such as a
-     * safe spilling its money, but always so that it is gone before the server ends the slam.
-     */
+    // Must always land before LandingSlam.END_TICK, when the server ends the slam.
     private static double burst(int variant) {
         return switch (variant) {
             case ConstructPayload.SLAM_SAFE -> LandingSlam.END_TICK - BREAK_TICKS - 1.0;
@@ -217,7 +138,6 @@ public final class SlamPainter {
         };
     }
 
-    /** Draws the construct itself, and gives where the ring's beam feeds it. */
     private static Vec3 construct(LanternPainter painter, int variant, Moment m) {
         return switch (variant) {
             case ConstructPayload.SLAM_HANDS -> SlamHands.hands(painter, m);
@@ -255,17 +175,10 @@ public final class SlamPainter {
         };
     }
 
-    // ---- Shared ----
-
-    /**
-     * A way flat along the ground turned towards him by {@link #FACING_HIM}: things that clap shut do so along this
-     * instead of straight across in front of him, so he sees their faces come together, not only their edges.
-     */
     static Vec3 facingHim(Vec3 way) {
         return Vectors.spin(way, UP, FACING_HIM);
     }
 
-    /** A shape, whole while it lasts and breaking into solid pieces at the end. */
     static void piece(LanternPainter painter, double[][] model, ConstructPainter.Frame frame, Moment m) {
         if (m.apart() > 0.0) {
             painter.shattered(model, frame, m.apart(), m.bright());
@@ -274,7 +187,6 @@ public final class SlamPainter {
         }
     }
 
-    /** A shape of boxes and round parts, whole while it lasts and breaking into solid pieces at the end. */
     static void piece(LanternPainter painter, ConstructPainter.Shape shape, ConstructPainter.Frame frame,
             Moment m) {
         if (m.apart() > 0.0) {
@@ -284,12 +196,6 @@ public final class SlamPainter {
         }
     }
 
-    /**
-     * 0 until {@code since} reaches 0, then on to 1 like something on a spring: fast, a little past it, back and a few
-     * smaller wobbles until it rests. A door that flies open, a lid that springs up.
-     *
-     * @param rate how fast it swings, in radians a tick; the bigger, the snappier
-     */
     static double spring(double since, double rate) {
         if (since <= 0.0) {
             return 0.0;
@@ -297,10 +203,6 @@ public final class SlamPainter {
         return 1.0 - Math.exp(-0.45 * rate * since) * Math.cos(rate * since);
     }
 
-    /**
-     * Like {@link #spring}, but for something that flies up against a stop: it never goes past 1, but bounces back off
-     * it a few times, each time less.
-     */
     static double bounce(double since, double rate) {
         if (since <= 0.0) {
             return 0.0;
@@ -308,22 +210,12 @@ public final class SlamPainter {
         return 1.0 - Math.abs(Math.exp(-0.45 * rate * since) * Math.cos(rate * since));
     }
 
-    /**
-     * A frame for a loose part of a construct at a point of {@code base}'s model (x, y, z), turned by {@code angle}
-     * about {@code axis} (a way in the world): a coin tumbling out of a safe, a link of a falling chain.
-     */
     static ConstructPainter.Frame loose(ConstructPainter.Frame base, Vec3 at, Vec3 axis, double angle) {
         return new ConstructPainter.Frame(base.at(at.x, at.y, at.z), Vectors.spin(base.right(), axis, angle),
                 Vectors.spin(base.up(), axis, angle), Vectors.spin(base.forward(), axis, angle),
                 base.scale());
     }
 
-    /**
-     * The frame of something that just landed hard, squashed down and bulging out, springing back up a little too far
-     * and settling again, the way a cartoon lands. Its middle has to be where it stands on the ground.
-     *
-     * @param amount how far it squashes at most: 0.2 is a fifth of its height
-     */
     static ConstructPainter.Frame squashed(ConstructPainter.Frame frame, Moment m, double amount) {
         if (!m.struck() || m.since() > 12.0) {
             return frame;
@@ -334,13 +226,6 @@ public final class SlamPainter {
         return frame.stretched(wide, tall, wide);
     }
 
-    /**
-     * Sparks thrown out of {@code at} when something strikes: short bright streaks flying out and up, dropping as they
-     * go and burning out. Light, not a construct.
-     *
-     * @param since ticks since it struck
-     * @param speed how far they fly a tick, in blocks
-     */
     static void sparks(LanternPainter painter, Vec3 at, double since, int count, double speed, int seed) {
         if (since < 0.0 || since > 7.0) {
             return;
@@ -357,26 +242,19 @@ public final class SlamPainter {
         }
     }
 
-    /**
-     * How high the foot of a shape that drops is over the ground: it hangs where it took shape, rises a little as it
-     * winds up, and then drops, faster and faster, onto the ground.
-     */
     static double drop(Moment m) {
         return (HANG + RISE * m.windup()) * m.size() * (1.0 - m.fall());
     }
 
-    /** Where a dropped shape is: upright over where it strikes, as high as its fall has got. */
     static ConstructPainter.Frame dropped(Moment m, double scale, double foot, Vec3 axis, double tumble) {
         double s = m.scale(scale);
         double height = drop(m) + foot * s - (m.struck() ? 0.12 * s : 0.0);
-        // It tips back a little as it winds up, and swings round straight on the way down.
         double angle = tumble * (1.0 - m.go()) - 0.12 * m.windup() * (1.0 - m.go());
         return new ConstructPainter.Frame(m.ground().add(0.0, height, 0.0),
                 Vectors.spin(m.right(), axis, angle), Vectors.spin(UP, axis, angle),
                 Vectors.spin(m.forward(), axis, angle), s);
     }
 
-    /** While something drops, a ring of light on the ground shows where it will strike. */
     static void marker(LanternPainter painter, Moment m, double size) {
         if (m.struck() || m.t() < 1.0) {
             return;
@@ -387,7 +265,6 @@ public final class SlamPainter {
                 Colors.alpha(0.4 * pulse));
     }
 
-    /** After the strike, what struck still shivers a moment: a small shake that dies away. */
     static double vibrate(Moment m, double size) {
         if (m.since() <= 0.0) {
             return 0.0;
@@ -395,16 +272,11 @@ public final class SlamPainter {
         return size * Math.abs(Math.sin(m.since() * 2.6)) * Math.max(0.0, 1.0 - m.since() / 10.0);
     }
 
-    /** 0 to 1 with a hair of overshoot on the way, like something snapping into shape. */
     public static double backOut(double x) {
         double c = Mth.clamp(x, 0.0, 1.0) - 1.0;
         return 1.0 + 2.2 * c * c * c + 1.2 * c * c;
     }
 
-    /**
-     * Where his own fist smashed into the ground, beside him: cracks of light running out from it over the ground,
-     * and chunks thrown up.
-     */
     private static void fistImpact(LanternPainter painter, Moment m) {
         Vec3 at = m.him().add(m.forward().scale(0.5)).add(m.right().scale(0.3));
         if (m.t() < 20.0) {
@@ -413,10 +285,6 @@ public final class SlamPainter {
         rubble(painter, at, 0.0, m.t(), 7, 0.16, 0.24, 1);
     }
 
-    /**
-     * Cracks of light running out over the ground from {@code at}, jagged, some longer than others. They are light in
-     * the ground, not a construct, so they may die down.
-     */
     static void cracks(LanternPainter painter, Vec3 at, double reach, double strength, int seed) {
         if (strength <= 0.0) {
             return;
@@ -436,12 +304,6 @@ public final class SlamPainter {
         }
     }
 
-    /**
-     * Before something bursts up out of the ground: light glows up out of it, harder and faster the closer the moment
-     * comes, and shafts of light shoot up out of its cracks, flickering. Light, not a construct.
-     *
-     * @param reach how far round {@code at} the shafts come up, in blocks
-     */
     static void buildUp(LanternPainter painter, Vec3 at, double reach, Moment m, int seed) {
         if (m.struck()) {
             return;
@@ -459,10 +321,6 @@ public final class SlamPainter {
         }
     }
 
-    /**
-     * Chunks of hard light thrown up out of the ground at {@code at} from tick {@code from}: they fly up and out,
-     * tumbling, and fall back into the ground.
-     */
     static void rubble(LanternPainter painter, Vec3 at, double from, double t, int count, double size,
             double speed, int seed) {
         double age = t - from;
@@ -482,10 +340,6 @@ public final class SlamPainter {
         }
     }
 
-    /**
-     * The shockwave: a low ring of solid hard light racing out over the ground to the edge of its reach and sinking
-     * away as it goes, with a line of light at its foot and a flash where it struck.
-     */
     private static void wave(LanternPainter painter, Moment m, double reach) {
         double since = m.since();
         if (since >= WAVE_FADE) {

@@ -6,9 +6,6 @@ import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.ItemStack;
 import nl.tivek.multiversepowers.classes.ceremony.Ceremonies;
 
-/**
- * Puts a class loadout on a player and fires the matching spawn effect.
- */
 public final class ClassGear {
     private ClassGear() {
     }

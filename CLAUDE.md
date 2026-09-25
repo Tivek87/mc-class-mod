@@ -14,6 +14,10 @@
 - Always keep the project organised and optimised. The root holds only the build files, `README.md`, `CHANGELOG.md`, `CLAUDE.md` and the folders `src/`, `docs/`, `scripts/`, `.github/`, `gradle/`. A Java file past ~600 lines gets split by responsibility (a sub-package once a family of files forms); outdated notes move to `docs/archive/` (session notes to `docs/claude/archive/`).
 - Always safe to make public: nothing personal in tracked files or commits (no real names, e-mail addresses, local user paths, tokens, private chats). Commits use the repo's local noreply identity (`git config --local user.email`); audio and video files (the reference clips in `docs/reference/` too) are committed like every other file, never ignored (GitHub refuses a file over 100 MB).
 - Every push is a release. Before the commit: `scripts/release.ps1 prepare` (raises `mod_version` one step: 0.0.1 .. 0.0.9, 0.1.0 .. 9.9.9, the `-alpha` suffix stays) and a `## [<version>] - <date>` section on top of `CHANGELOG.md`. After the push (same yes as the push): `scripts/release.ps1 publish` builds the jar, saves it in `releases/` (ignored) and on GitHub Releases, and keeps the newest 10 on both. A release is named only `v<version>` (never a title after it) and is a full release marked Latest (the green badge), not a pre-release.
+- Changelogs (`CHANGELOG.md`, and so the GitHub release notes made from it) are short and simple but name every change: everything added, changed, replaced and removed, one short line each.
+
+## Comments
+- No comments by default. Only where one is badly needed (a hidden engine quirk, a constraint or a convention the code cannot show): one short, simple `//` line saying why. No Javadoc, no comments that repeat the code.
 
 ## Engine
 - The engine (everything in `engine/`: `ConstructPainter`, `Mesh`, `Material`, `Effects`, `Cooldowns` and the rest) may always be updated and extended on your own. Extensions or additions around the character itself (new abilities, new constructs, changes to how Green Lantern plays) always need the user's permission first.

@@ -12,7 +12,6 @@ import static nl.tivek.multiversepowers.classes.ceremony.Fx.MAIN;
 import static nl.tivek.multiversepowers.classes.ceremony.Fx.fadeOut;
 import static nl.tivek.multiversepowers.classes.ceremony.Fx.hash;
 
-/** The ceremonies of the Mages: Wizard, Sorcerer, Warlock and Necromancer. */
 final class MageCeremonies {
     private MageCeremonies() {
     }
@@ -20,11 +19,6 @@ final class MageCeremonies {
     static final Glyph WIZARD_SIGIL = new Glyph().circle(MAIN, 1.0).circle(MAIN, 0.89)
             .star(ACC, 5, 2, 0.89, 0).circle(ACC, 0.34).rays(MAIN, 24, 0.89, 1.0, 0);
 
-    /**
-     * Wizard: a huge thin magic circle is traced line by line (outer circle, second circle, pentagram,
-     * inner ring, runes), runes pour into it while a second circle turns around your waist, then the
-     * whole circle lifts up to your head as a crown and bursts into stars.
-     */
     static void wizardGrand(Fx fx) {
         int t = fx.age();
         double radius = 3.0;
@@ -113,7 +107,6 @@ final class MageCeremonies {
         }
     }
 
-    /** Wizard respawn: three rune rings orbit you, spiralling up to your head, and burst into stars. */
     static void wizardLight(Fx fx) {
         int t = fx.age();
         int[] colors = {0x4A8CFF, 0xF0C850, 0xA070FF};
@@ -154,7 +147,6 @@ final class MageCeremonies {
         }
     }
 
-    /** Storm cloud hovering above the player. */
     static void stormCloud(Fx fx, double y, double radius, int count) {
         for (int i = 0; i < count; i++) {
             double a = fx.rand() * 2 * Math.PI;
@@ -168,7 +160,6 @@ final class MageCeremonies {
         }
     }
 
-    /** A lightning strike from the cloud onto a fixed spot, flickering for three ticks, leaving a scorch mark. */
     static void sorcererStrike(Fx fx, int i, int at, double cloudY, double minDist, double maxDist,
                                        int scorchEnd) {
         int t = fx.age();
@@ -198,10 +189,6 @@ final class MageCeremonies {
                 Math.sin(a2) * 0.45, 0.3 + fx.rand() * 1.4, Math.cos(a2) * 0.45, 3, 0.1, 0.1);
     }
 
-    /**
-     * Sorcerer: a wide storm cloud gathers above you, twelve bolts strike the ground around you, static
-     * crawls over your body, then six bolts hit a ring around you at once and the last one hits you.
-     */
     static void sorcererGrand(Fx fx) {
         int t = fx.age();
         if (t < 185) {
@@ -241,7 +228,6 @@ final class MageCeremonies {
         }
     }
 
-    /** Sorcerer respawn: ball lightning grows in your hands, rises over your head and fires bolts all around. */
     static void sorcererLight(Fx fx) {
         int t = fx.age();
         double y = t < 14 ? 1.2 : Mth.lerp(Math.min(1, (t - 14) / 4.0), 1.2, 2.6);
@@ -275,7 +261,6 @@ final class MageCeremonies {
         }
     }
 
-    /** Warlock rite: five soul candles, a pact seal between them, chains to the chest that shatter. */
     static void warlockRite(Fx fx, double radius, int candleStep, int sealFrom, int sealTo, int chainFrom,
                                     int peak, int eyeFrom, int end) {
         int t = fx.age();
@@ -367,10 +352,6 @@ final class MageCeremonies {
         }
     }
 
-    /**
-     * Warlock: five soul candles light up one by one far around you, a pact seal links them, chains rise
-     * from the candles and pull tight on your chest while a great eye opens above you, then they shatter.
-     */
     static void warlockGrand(Fx fx) {
         if (fx.age() == 0) {
             fx.sound(SoundEvents.EVOKER_PREPARE_SUMMON, 0.6F, 0.8F);
@@ -378,7 +359,6 @@ final class MageCeremonies {
         warlockRite(fx, 2.2, 8, 44, 90, 80, 150, 110, 200);
     }
 
-    /** Warlock respawn: soul fire spirals up around you and a seven-pointed pact seal flares above your head. */
     static void warlockLight(Fx fx) {
         int t = fx.age();
         if (t == 0) {
@@ -416,7 +396,6 @@ final class MageCeremonies {
         }
     }
 
-    /** Skull outline above the player, slowly turning so everyone sees it. */
     static void skull(Fx fx, double y, double keep, double jaw) {
         double angle = fx.age() * 0.06;
         double tx = Math.cos(angle);
@@ -434,7 +413,6 @@ final class MageCeremonies {
         fx.panelLine(bone, 0, 0, tx, tz, 0.12, y - 0.32 - jaw, 0.18, y - 0.2 - jaw, 0.04, keep);
     }
 
-    /** Grave outlines around the player, souls spiralling from them into the chest. */
     static void necroGraves(Fx fx, int graves, double dist, double offset, int drawEnd, int handFrom,
                                     int soulFrom, int soulTo, double soulSpeed, int fadeFrom, int fadeTo) {
         int t = fx.age();
@@ -498,10 +476,6 @@ final class MageCeremonies {
         }
     }
 
-    /**
-     * Necromancer: six graves crack open in a wide ring, bony hands claw up, souls spiral out of them into you,
-     * soul mist rises, a skull forms above your head and screams.
-     */
     static void necromancerGrand(Fx fx) {
         int t = fx.age();
         necroGraves(fx, 6, 2.4, 0, 30, 40, 60, 145, 0.03, 165, 195);
@@ -534,7 +508,6 @@ final class MageCeremonies {
         }
     }
 
-    /** Necromancer respawn: bones burst out of the ground in a ring and whirl up into a vortex of souls. */
     static void necromancerLight(Fx fx) {
         int t = fx.age();
         ParticleOptions bone = fx.dust(0xE8E8D0, 1.1F);

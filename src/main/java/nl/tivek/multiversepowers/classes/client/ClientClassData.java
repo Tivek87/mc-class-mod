@@ -3,9 +3,6 @@ package nl.tivek.multiversepowers.classes.client;
 import javax.annotation.Nullable;
 import nl.tivek.multiversepowers.classes.PlayerClass;
 
-/**
- * The local player's class as the server last told us, for showing it on screen.
- */
 public final class ClientClassData {
     @Nullable
     private static PlayerClass current;

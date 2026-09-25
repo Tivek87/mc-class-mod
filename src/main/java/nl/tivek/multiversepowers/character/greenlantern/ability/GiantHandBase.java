@@ -26,44 +26,24 @@ import static nl.tivek.multiversepowers.character.greenlantern.ability.GiantHand
 import static nl.tivek.multiversepowers.character.greenlantern.ability.GiantHands.fair;
 import static nl.tivek.multiversepowers.character.greenlantern.ability.GiantHands.inReach;
 
-/**
- * What every hand of the Giant Hands keeps and does, whatever its move (see {@link GiantHand}): where it came up
- * and what it reaches for, turning after the creature nearest to it, throwing up dust, striking creatures and
- * telling the players near it where it is.
- */
 abstract class GiantHandBase {
-    // How far round its base a hand looks for the creature nearest to it, and how much nearer another must be than
-    // the one it is after before it turns to that one instead (so it never flickers between two), in blocks.
     private static final double HOMING = 10.0;
     private static final double SWITCH = 1.5;
-    // A hand turns round its base after its creature as a thing this big turns: never faster than TURN radians a tick,
-    // gathering or losing no more than TURN_GATHER of that speed a tick, and easing in over the last stretch (EASE:
-    // the part of what is left it turns in a tick there). The spot it reaches for stays at least NEAREST of how far
-    // from its base it came up (and never nearer than NEAREST_LEAST blocks), so a creature that runs past close by or
-    // right over it never swings it round.
     private static final double TURN = 0.07;
     private static final double TURN_GATHER = 0.01;
     private static final double EASE = 0.2;
     private static final double NEAREST = 0.6;
     private static final double NEAREST_LEAST = 1.2;
-    // How the spot a hand reaches for moves in and out along the way it faces, and how a pair's spot follows its
-    // creature over the ground: never faster than FOLLOW blocks a tick, gathering or losing no more than GATHER of that
-    // speed a tick; a pair's is pulled after it as by a spring (how hard, next to how far off it is), braked just
-    // enough never to run past it.
     private static final double FOLLOW = 0.3;
     private static final double GATHER = 0.05;
     private static final double SPRING = 0.08;
     private static final double VIEW_RANGE = 128.0;
 
-    // The Giant Hands that called it: who it strikes for, and with what.
     final GiantHands storm;
     private final int id = PowerRing.newId();
     final int variant;
     final int move;
     final Vec3 base;
-    // The spot on the ground it reaches for, and the creature it is after. A hand keeps that spot as the way it
-    // faces round its base (radians, see way) and how far out along it (blocks), each with how much it changed the
-    // last tick; a pair moves it over the ground instead, by drift a tick.
     Vec3 aim;
     private double facing;
     private double turn;
@@ -73,7 +53,6 @@ abstract class GiantHandBase {
     LivingEntity target;
     @Nullable
     LivingEntity held;
-    // What a slam presses flat.
     final List<LivingEntity> pressed = new ArrayList<>();
     int t;
 
@@ -92,7 +71,6 @@ abstract class GiantHandBase {
         }
     }
 
-    /** How the hand stands now, out in the world. */
     HandPose.Place place() {
         return this.pose(this.t).place(this.base, this.aim.subtract(this.base), SCALE);
     }
@@ -101,20 +79,11 @@ abstract class GiantHandBase {
         return HandPose.at(this.variant, t, this.reach());
     }
 
-    /** How far off along the ground the spot it reaches for is, at the size the hand is made at. */
     private double reach() {
         Vec3 to = this.aim.subtract(this.base);
         return Math.sqrt(to.x * to.x + to.z * to.z) / SCALE;
     }
 
-    /**
-     * It turns after the creature nearest to it (see {@link #after}), smoothly, as a thing this big turns: a hand
-     * turns round its base towards it, gathering speed, gliding and slowing down in time to stop right facing it,
-     * and reaches in or out to how far off it is. The nearer that creature is to its base the slower it turns
-     * after it, so one that runs past close by or right over it never swings it round. With no creature left, or
-     * while it strikes or holds something, it goes after nothing and glides to a stop. A pair's spot is pulled
-     * over the ground after its creature instead (see {@link #homeSpot}).
-     */
     void home(ServerLevel level) {
         if (this.move == HandPose.AXE) {
             this.homeSpot(level);
@@ -134,7 +103,6 @@ abstract class GiantHandBase {
             if (off * this.turn < 0.0 && Math.abs(off) > Math.PI * 0.75) {
                 off += Math.copySign(Math.PI * 2.0, this.turn);
             }
-            // Close by its base the way to it means little: the closer, the slower it turns after it.
             most = TURN * Ease.smooth(far / near);
             wanted = Math.max(near, far);
         }
@@ -149,11 +117,6 @@ abstract class GiantHandBase {
         this.aim = this.base.add(way(this.facing).scale(this.out));
     }
 
-    /**
-     * A pair's spot on the ground is pulled after its creature as by a spring braked just enough never to run past
-     * it: it gathers speed, glides and slows down as it gets there, and with no creature left it glides to a stop.
-     * From the moment its axe goes up, the spot it strikes stays put.
-     */
     private void homeSpot(ServerLevel level) {
         if (HandPose.locked(this.variant, this.t)) {
             this.drift = Vec3.ZERO;
@@ -172,15 +135,10 @@ abstract class GiantHandBase {
             drift = drift.scale(FOLLOW / speed);
         }
         Vec3 next = this.within(this.aim.add(drift));
-        // How far it really moved: what a pair's reach held back is not kept for the next tick.
         this.drift = next.subtract(this.aim);
         this.aim = next;
     }
 
-    /**
-     * The creature it turns after: the one nearest to its base within its reach, but it keeps to the one it is
-     * after until another is {@link #SWITCH} nearer, so it never flickers between two; null for none.
-     */
     @Nullable
     private LivingEntity after(ServerLevel level) {
         double reach = HOMING * SCALE;
@@ -203,12 +161,10 @@ abstract class GiantHandBase {
         return nearest;
     }
 
-    /** How near its base the spot a hand reaches for may come, in blocks. */
     private double nearest() {
         return Math.max(NEAREST_LEAST, NEAREST * HandPose.spot(this.move)) * SCALE;
     }
 
-    /** For a pair, the spot kept within its axe's reach round where it was called; for a hand, as it is. */
     private Vec3 within(Vec3 spot) {
         return this.move == HandPose.AXE ? inReach(this.base, spot) : spot;
     }
@@ -219,7 +175,6 @@ abstract class GiantHandBase {
         return Math.sqrt(dx * dx + dz * dz);
     }
 
-    /** Bits of the ground and dust thrown up round its base. */
     void dust(ServerLevel level, int count) {
         BlockPos under = BlockPos.containing(this.base.x, this.base.y - 0.5, this.base.z);
         BlockState ground = level.isLoaded(under) ? level.getBlockState(under) : null;
@@ -231,7 +186,6 @@ abstract class GiantHandBase {
                 0.4, 1.3, 0.05);
     }
 
-    /** It lets go of what it holds, if anything: a mob gets its own will back. */
     void letGo() {
         if (this.held != null) {
             GRABBED.remove(this.held.getId(), this);
@@ -242,12 +196,10 @@ abstract class GiantHandBase {
         }
     }
 
-    /** Bits of the ground and dust thrown up where a blow lands. */
     void dustAt(ServerLevel level, Vec3 at, int count) {
         this.dustAt(level, at, count, 1.0);
     }
 
-    /** Bits of the ground and dust thrown up where a blow lands, {@code wide} blocks every way round it. */
     void dustAt(ServerLevel level, Vec3 at, int count, double wide) {
         BlockPos under = BlockPos.containing(at.x, at.y - 0.5, at.z);
         BlockState ground = level.isLoaded(under) ? level.getBlockState(under) : null;
@@ -258,17 +210,13 @@ abstract class GiantHandBase {
         ParticleFx.send(level, ParticleTypes.CLOUD, at.x, at.y + 0.3, at.z, count / 3, wide, 0.2, wide, 0.06);
     }
 
-    /** Every fair creature within {@code range} of its base. */
     List<LivingEntity> near(ServerLevel level, double range) {
         return level.getEntitiesOfClass(LivingEntity.class, new AABB(this.base, this.base).inflate(range * SCALE),
                 entity -> fair(this.storm.owner, entity));
     }
 
-    /**
-     * Strikes a creature: hurt, and thrown the way {@code away} (flat; never back towards him, see awayFromHim) and
-     * up, as hard as the knockback setting says next to {@code out} and {@code up}.
-     */
     void hit(ServerLevel level, LivingEntity living, double damage, Vec3 away, double out, double up) {
+        // Hits in quick succession all land.
         living.invulnerableTime = 0;
         living.hurt(level.damageSources().playerAttack(this.storm.owner), (float) damage);
         double knockback = this.storm.ability.value("knockback");
@@ -278,13 +226,13 @@ abstract class GiantHandBase {
         if (push.lengthSqr() > 1.0E-6) {
             living.setDeltaMovement(living.getDeltaMovement().add(push));
             living.hasImpulse = true;
+            // Players move themselves on their own client, so they have to be told about the push.
             living.hurtMarked = true;
         }
         ParticleFx.cloud(level, ParticleFx.dust(PowerRing.BRIGHT, 1.1F), living.getBoundingBox().getCenter(), 8,
                 0.3, 0.05);
     }
 
-    /** It is done, or broken off: it lets go of what it holds and is gone. */
     void end(ServerLevel level) {
         this.letGo();
         ConstructPayload.sendRemove(level, this.id, this.base);
@@ -298,16 +246,10 @@ abstract class GiantHandBase {
                         ConstructPayload.HAND, this.variant, this.t, null));
     }
 
-    /** The flat way a hand faces round its base, one long, for how far round it is turned (0: along +z). */
     private static Vec3 way(double facing) {
         return new Vec3(Math.sin(facing), 0.0, Math.cos(facing));
     }
 
-    /**
-     * A speed after one more tick of going after something {@code off} away: as fast as it may (never over
-     * {@code most} a tick) without running past it, slowing down in time and easing in over the last stretch
-     * ({@link #EASE}), and never gathering or losing more than {@code gather} of speed a tick.
-     */
     private static double follow(double speed, double off, double gather, double most) {
         double far = Math.abs(off);
         double want = Math.copySign(Math.min(most, Math.min(Math.sqrt(1.6 * gather * far), EASE * far)), off);

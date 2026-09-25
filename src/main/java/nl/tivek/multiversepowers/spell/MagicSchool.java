@@ -7,9 +7,6 @@ import javax.annotation.Nullable;
 import net.minecraft.network.chat.Component;
 import nl.tivek.multiversepowers.MultiversePowers;
 
-/**
- * The 10 schools of magic. Every spell belongs to one of these schools.
- */
 public enum MagicSchool {
     EARTH("earth", 0x8B5A2B),
     AIR("air", 0xDDEEF2),
@@ -47,7 +44,6 @@ public enum MagicSchool {
         return Component.translatable("school." + MultiversePowers.MODID + "." + this.id);
     }
 
-    /** Returns all spells that belong to this school. */
     public List<Spell> getSpells() {
         List<Spell> list = new ArrayList<>();
         for (Spell spell : Spell.values()) {

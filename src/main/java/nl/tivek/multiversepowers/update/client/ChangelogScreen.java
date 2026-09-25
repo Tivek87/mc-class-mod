@@ -10,7 +10,6 @@ import net.minecraft.util.Mth;
 import nl.tivek.multiversepowers.engine.client.gui.DirtBackgroundScreen;
 import org.lwjgl.glfw.GLFW;
 
-/** Every version newer than the one running, with its notes laid out by {@link ChangelogLayout}; scrolls. */
 final class ChangelogScreen extends DirtBackgroundScreen {
     private static final int PANEL_WIDTH = 340;
     private static final int PANEL_TOP = 44;
@@ -26,7 +25,6 @@ final class ChangelogScreen extends DirtBackgroundScreen {
     private int left;
     private int panelWidth;
     private int panelBottom;
-    /** Whether the installed version's notes are in (or could not be found), so no more layouts are needed. */
     private boolean complete;
 
     ChangelogScreen(Screen parent) {
@@ -45,7 +43,6 @@ final class ChangelogScreen extends DirtBackgroundScreen {
                 .bounds(this.width / 2 - 60, this.height - 27, 120, 20).build());
     }
 
-    /** The new versions, then the installed one; laid out again once its notes have arrived. */
     private void layout() {
         List<Release> shown = new ArrayList<>(UpdateChecker.newer());
         Release installed = UpdateChecker.installedRelease();

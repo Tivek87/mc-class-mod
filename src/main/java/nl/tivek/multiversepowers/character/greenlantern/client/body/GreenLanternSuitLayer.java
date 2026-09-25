@@ -23,16 +23,9 @@ import nl.tivek.multiversepowers.character.greenlantern.client.ClientRing;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.ArrivalAnimation;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.BeamCharge;
 
-/**
- * Green Lantern's uniform, made by the ring over whatever you wear: the green and black suit, white gloves,
- * and the mask over your eyes. Your own face and hair stay. It sits just outside the skin's own outer layer,
- * so a jacket or sleeves of the skin never poke through; armour still goes over it.
- */
 public final class GreenLanternSuitLayer extends RenderLayer<AbstractClientPlayer, PlayerModel<AbstractClientPlayer>> {
     public static final ResourceLocation TEXTURE = ResourceLocation.fromNamespaceAndPath(MultiversePowers.MODID,
             "textures/entity/green_lantern_suit.png");
-    // Just outside the skin's own outer layer (0.25). The mask is on the hat part, which is 0.5 bigger
-    // again: just outside the skin's own hat.
     private static final CubeDeformation FIT = new CubeDeformation(0.3F);
 
     private static PlayerModel<AbstractClientPlayer> wide;
@@ -42,7 +35,6 @@ public final class GreenLanternSuitLayer extends RenderLayer<AbstractClientPlaye
         super(parent);
     }
 
-    /** Puts the uniform on the renderer of every kind of player skin (wide and slim arms). */
     public static void onAddLayers(EntityRenderersEvent.AddLayers event) {
         for (PlayerSkin.Model model : event.getSkins()) {
             EntityRenderer<? extends Player> renderer = event.getSkin(model);
@@ -52,7 +44,6 @@ public final class GreenLanternSuitLayer extends RenderLayer<AbstractClientPlaye
         }
     }
 
-    /** The uniform's model for this player's arms (wide or slim), made the first time it is needed. */
     public static PlayerModel<AbstractClientPlayer> model(AbstractClientPlayer player) {
         if (player.getSkin().model() == PlayerSkin.Model.SLIM) {
             if (slim == null) {
@@ -69,7 +60,6 @@ public final class GreenLanternSuitLayer extends RenderLayer<AbstractClientPlaye
     private static PlayerModel<AbstractClientPlayer> build(boolean slimArms) {
         PlayerModel<AbstractClientPlayer> model = new PlayerModel<>(
                 LayerDefinition.create(PlayerModel.createMesh(FIT, slimArms), 64, 64).bakeRoot(), slimArms);
-        // Only the suit and the mask; your own head stays your own.
         model.setAllVisible(false);
         model.hat.visible = true;
         model.body.visible = true;
@@ -87,8 +77,6 @@ public final class GreenLanternSuitLayer extends RenderLayer<AbstractClientPlaye
         if (player.isInvisible()) {
             return;
         }
-        // Recharging: the lantern hangs from the left hand, which the arm pose has raised. While the ring dresses him
-        // he holds it there already, from the moment it flew into his hand.
         float recharge = ClientRing.recharge(player, partialTick);
         boolean slim = player.getSkin().model() == PlayerSkin.Model.SLIM;
         if (recharge >= 0.0F) {
@@ -99,8 +87,6 @@ public final class GreenLanternSuitLayer extends RenderLayer<AbstractClientPlaye
                     ArrivalAnimation.lanternGlow(player, partialTick), 0.0F, FlightPose.bodyTurn(player));
         }
         int overlay = LivingEntityRenderer.getOverlayCoords(player, 0.0F);
-        // Kneeling in the landing of a slam his legs bend at the knee, which the game's straight legs cannot: they are
-        // hidden (see FlightPose) and drawn here in two halves, his own and the uniform's.
         float[] knees = FlightPose.knees(player);
         if (knees != null) {
             KneelLegs.skin(poseStack, buffers, light, overlay, player, this.getParentModel(), knees);
@@ -109,8 +95,6 @@ public final class GreenLanternSuitLayer extends RenderLayer<AbstractClientPlaye
         if (uniform == null) {
             return;
         }
-        // How the body stands as a whole, for the sword and shield of the construct wheel (see SwordSpot): only a Green
-        // Lantern holds those.
         SwordSpot.onRoot(player, poseStack);
         PlayerModel<AbstractClientPlayer> suit = model(player);
         this.getParentModel().copyPropertiesTo(suit);
@@ -123,8 +107,6 @@ public final class GreenLanternSuitLayer extends RenderLayer<AbstractClientPlaye
                 KneelLegs.suit(poseStack, cloth, light, overlay, suit, knees, FIT);
             }
         } else {
-            // Only as far as it has got, each part from where it starts, with a seam of light along its edge; the
-            // lantern on the chest flares as the uniform bursts out of it.
             SuitSpread spread = new SuitSpread(buffers.getBuffer(RenderType.entityCutoutNoCull(TEXTURE)));
             spread.render(suit.rightArm, uniform.armField(), poseStack, light, overlay);
             spread.render(suit.body, uniform.torsoField(), poseStack, light, overlay);
@@ -137,7 +119,6 @@ public final class GreenLanternSuitLayer extends RenderLayer<AbstractClientPlaye
         }
         suit.rightLeg.visible = true;
         suit.leftLeg.visible = true;
-        // While the ring works the uniform lights up, most of all down the right arm into the ring.
         float glow = uniform.complete() ? SuitGlow.level(player, partialTick) : 0.0F;
         SuitGlow.body(poseStack, buffers, suit, slim, glow, ageInTicks, knees != null,
                 BeamCharge.charge(player, partialTick));

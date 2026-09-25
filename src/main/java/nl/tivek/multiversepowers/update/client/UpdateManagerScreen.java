@@ -13,11 +13,6 @@ import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.engine.client.gui.DirtBackgroundScreen;
 import nl.tivek.multiversepowers.engine.client.gui.GuiShapes;
 
-/**
- * The update manager, opened by the update key (U, see Controls) or the popup: the installed and the newest version,
- * one status line, and the buttons that fit. What's new always (the new versions, then the one you have); with an
- * update: update later (installs when the game closes) or update and restart; without one: check now.
- */
 final class UpdateManagerScreen extends DirtBackgroundScreen {
     static final DateTimeFormatter DATE = DateTimeFormatter.ofPattern("d MMM yyyy", Locale.ENGLISH)
             .withZone(ZoneId.systemDefault());
@@ -63,7 +58,6 @@ final class UpdateManagerScreen extends DirtBackgroundScreen {
         int inner = this.panelWidth - 20;
         int half = (inner - 6) / 2;
         int y = this.top + 78;
-        // Also without an update: then it shows the notes of the version you have.
         this.addRenderableWidget(Button.builder(text("whats_new"),
                 button -> this.minecraft.setScreen(new ChangelogScreen(this))).bounds(x, y, inner, 20).build());
         if (this.release != null) {
@@ -123,7 +117,6 @@ final class UpdateManagerScreen extends DirtBackgroundScreen {
         this.status(graphics, x, right, y + 2 * ROW);
     }
 
-    /** One line of the table: a grey label on the left, its value on the right. */
     private void row(GuiGraphics graphics, String label, Component value, int color, int x, int right, int y) {
         graphics.drawString(this.font, text("row." + label), x, y, MUTED_COLOR);
         graphics.drawString(this.font, value, right - this.font.width(value), y, color);

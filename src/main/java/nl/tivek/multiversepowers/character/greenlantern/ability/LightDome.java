@@ -20,18 +20,10 @@ import nl.tivek.multiversepowers.engine.effect.Effect;
 import nl.tivek.multiversepowers.engine.effect.Effects;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 
-/**
- * The dome: what the ring does when Green Lantern holds the button of the hand that defends for a while. The
- * shield opens out into a dome of hard light all around him, that takes part of every hit from any side, for as
- * long as he keeps the button down. It covers more than the shield and holds less. While he flies it catches the
- * wind like a brake chute, and his own game halves his speed.
- */
 @EventBusSubscriber(modid = MultiversePowers.MODID)
 public final class LightDome implements Effect {
-    // How wide the dome is, in blocks: it has to hold the whole of him.
     private static final float SIZE = 3.1F;
     private static final double VIEW_RANGE = 128.0;
-    // How long it takes to open out, and to fall apart, in ticks.
     private static final int OPEN_TICKS = 5;
 
     private static final Map<UUID, LightDome> UP = new HashMap<>();
@@ -51,11 +43,6 @@ public final class LightDome implements Effect {
         this.perTick = (float) (ability.value("domePowerPerSecond") / 20.0);
     }
 
-    /**
-     * The button has been held long enough: the dome goes up.
-     *
-     * @return true when it went up
-     */
     static boolean raise(ServerPlayer owner, ServerLevel level, CharacterAbility ability) {
         if (UP.containsKey(owner.getUUID()) || Recharge.busy(owner) || Flight.descending(owner)) {
             return false;
@@ -76,11 +63,6 @@ public final class LightDome implements Effect {
         return true;
     }
 
-    /**
-     * The button comes up: the dome comes down.
-     *
-     * @return true when there was a dome
-     */
     static boolean lower(ServerPlayer owner) {
         LightDome dome = UP.remove(owner.getUUID());
         if (dome == null) {
@@ -93,12 +75,10 @@ public final class LightDome implements Effect {
         return true;
     }
 
-    /** True while this player holds the dome up. */
     public static boolean up(ServerPlayer player) {
         return UP.containsKey(player.getUUID());
     }
 
-    /** The server stops: every dome is gone. */
     public static void clear() {
         UP.clear();
     }
@@ -148,7 +128,6 @@ public final class LightDome implements Effect {
                         this.flash > 0 ? 1.0F : 0.0F, true, ConstructPayload.DOME));
     }
 
-    /** Every hit on a player under the dome, from whatever side it comes. */
     @SubscribeEvent
     public static void onIncomingDamage(LivingIncomingDamageEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) {
@@ -164,7 +143,6 @@ public final class LightDome implements Effect {
         ServerLevel level = player.serverLevel();
         Vec3 from = event.getSource().getSourcePosition();
         Vec3 middle = dome.middle();
-        // The light flares on the side the hit came from.
         Vec3 at = from == null || from.distanceToSqr(middle) < 1.0E-4 ? middle
                 : middle.add(from.subtract(middle).normalize().scale(SIZE * 0.5));
         ParticleFx.sphereOut(level, ParticleFx.dust(PowerRing.GREEN, 1.3F), at, 10 + (int) Math.min(16.0F, before),

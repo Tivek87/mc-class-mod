@@ -14,11 +14,6 @@ import nl.tivek.multiversepowers.classes.ClassGroup;
 import nl.tivek.multiversepowers.classes.PlayerClass;
 import nl.tivek.multiversepowers.engine.client.gui.DirtBackgroundScreen;
 
-/**
- * Step one of choosing: the six groups in a list, with The Forsaken set apart below them.
- * The panel on the right explains the group under the cursor (or the last one looked at),
- * so it is never empty; clicking a card opens that group's classes.
- */
 public class GroupSelectionScreen extends DirtBackgroundScreen {
     private static final int MARGIN = 8;
     private static final int HEADER_HEIGHT = 30;
@@ -39,7 +34,6 @@ public class GroupSelectionScreen extends DirtBackgroundScreen {
     private final Screen lastScreen;
     private final Map<ClassCardWidget, ClassGroup> cards = new LinkedHashMap<>();
 
-    // The group the panel explains. Starts on the first group and follows the cursor.
     private ClassGroup shown = ClassGroup.WARRIORS;
 
     private int headerTop;
@@ -83,7 +77,6 @@ public class GroupSelectionScreen extends DirtBackgroundScreen {
             this.addCard(group, listLeft, y, listWidth);
             y += CARD_HEIGHT + CARD_GAP;
         }
-        // The Forsaken stands outside every group, so he is set apart from the list.
         this.addCard(ClassGroup.FORSAKEN, listLeft, y - CARD_GAP + FORSAKEN_GAP, listWidth);
 
         this.addRenderableWidget(Button.builder(
@@ -120,7 +113,6 @@ public class GroupSelectionScreen extends DirtBackgroundScreen {
                 this.contentWidth, NOTICE_LINES);
     }
 
-    /** Name, story, where the power comes from, why to pick it, and every class with its role. */
     private void renderPanel(GuiGraphics guiGraphics, ClassGroup group) {
         drawPanel(guiGraphics, this.panelLeft, this.panelTop, this.panelWidth, this.panelHeight,
                 0xFF000000 | group.getColor());
@@ -154,7 +146,6 @@ public class GroupSelectionScreen extends DirtBackgroundScreen {
         }
     }
 
-    /** The hovered card, or else the keyboard-focused one. */
     @Nullable
     private ClassGroup activeGroup() {
         for (Map.Entry<ClassCardWidget, ClassGroup> entry : this.cards.entrySet()) {

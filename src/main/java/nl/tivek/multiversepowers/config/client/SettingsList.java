@@ -21,16 +21,9 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
 import nl.tivek.multiversepowers.MultiversePowers;
 
-/**
- * The scrolling list of the settings screen: a title for every part (an ability, or the stamina bar) that folds open
- * and shut when you click it, a smaller title for every piece of it (the beam, the dome), and a row for every number.
- * A row has the number's name, - and + around a box you can type in (with shift held, - and + go ten steps), a button
- * that puts it back to the mod's own number once you changed it, and what the number means in plain words.
- */
 final class SettingsList extends ContainerObjectSelectionList<SettingsList.Row> {
     static final int ROW_HEIGHT = 20;
     private static final String PREFIX = "config." + MultiversePowers.MODID + ".";
-    // What may be typed in a box: a number, possibly negative, with a point.
     private static final Pattern NUMBER = Pattern.compile("-?[0-9]*\\.?[0-9]*");
     private static final int TEXT = 0xFFFFFF;
     private static final int CHANGED = 0xF2C84B;
@@ -40,13 +33,6 @@ final class SettingsList extends ContainerObjectSelectionList<SettingsList.Row> 
     private static final int LINE = 0x40FFFFFF;
     private static final int HOVER = 0x18FFFFFF;
 
-    /**
-     * One part of the list: its title, the key or button it sits on, its colour, and its numbers in groups.
-     *
-     * @param key         what it is called when it folds open or shut
-     * @param collapsible whether clicking its title folds it (not while searching)
-     * @param collapsed   whether it is folded shut: then only its title shows
-     */
     record Block(String key, Component title, @Nullable Component hint, int color, boolean collapsible,
             boolean collapsed, List<SettingsPages.Group> groups) {
         int count() {
@@ -83,7 +69,6 @@ final class SettingsList extends ContainerObjectSelectionList<SettingsList.Row> 
         }
     }
 
-    /** Every number that shows in the list right now. */
     List<ConfigNumber> numbers() {
         return this.numbers;
     }
@@ -109,7 +94,6 @@ final class SettingsList extends ContainerObjectSelectionList<SettingsList.Row> 
         graphics.fill(this.getX(), this.getBottom(), this.getRight(), this.getBottom() + 1, LINE);
     }
 
-    /** {@code text} cut down to {@code width} pixels, with dots where it was cut. */
     private static FormattedCharSequence fit(Font font, Component text, int width) {
         if (font.width(text) <= width) {
             return text.getVisualOrderText();
@@ -121,10 +105,6 @@ final class SettingsList extends ContainerObjectSelectionList<SettingsList.Row> 
     abstract static class Row extends ContainerObjectSelectionList.Entry<Row> {
     }
 
-    /**
-     * The title of a part, with how many numbers it holds and the key it sits on at the right. Click it to fold the
-     * part open or shut.
-     */
     private final class TitleRow extends Row {
         private final Block block;
         private final Component title;
@@ -175,7 +155,6 @@ final class SettingsList extends ContainerObjectSelectionList<SettingsList.Row> 
         }
     }
 
-    /** The title of one piece of a part, like "Light Beam (hold 2 s)", with a thin line after it. */
     private final class GroupRow extends Row {
         private final Component title;
 
@@ -207,7 +186,6 @@ final class SettingsList extends ContainerObjectSelectionList<SettingsList.Row> 
         }
     }
 
-    /** One number: its name, - [box] +, the button to put it back, and what it means. */
     private final class NumberRow extends Row {
         private final ConfigNumber number;
         private final Button minus;
@@ -262,7 +240,6 @@ final class SettingsList extends ContainerObjectSelectionList<SettingsList.Row> 
             SettingsList.this.screen.set(this.number, this.value);
         }
 
-        /** One step up or down; ten with shift held. */
         private void nudge(int way) {
             int steps = Screen.hasShiftDown() ? 10 : 1;
             double next = Math.round((this.value + way * steps * this.number.step()) * 1000.0) / 1000.0;
@@ -308,7 +285,6 @@ final class SettingsList extends ContainerObjectSelectionList<SettingsList.Row> 
             }
         }
 
-        /** What the number does, what the mod itself has, and how far it may go. */
         private List<FormattedCharSequence> tooltip(Font font) {
             List<FormattedCharSequence> lines = new ArrayList<>();
             lines.add(this.number.label().copy().withStyle(ChatFormatting.WHITE).getVisualOrderText());

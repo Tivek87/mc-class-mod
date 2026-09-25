@@ -24,27 +24,17 @@ import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.character.CharacterAbility;
 import nl.tivek.multiversepowers.character.GameCharacter;
-import nl.tivek.multiversepowers.character.greenlantern.Construct;
 import nl.tivek.multiversepowers.character.greenlantern.PowerRing;
 import nl.tivek.multiversepowers.engine.effect.Effect;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 
-/**
- * The blows of the {@link SwordShield}: its cuts and thrusts, the stabs of the flurry, and the charge with its rams and
- * the slam of the shield that ends it; with what they need of it: whose it is, the move under way and its clock.
- */
 abstract class SwordShieldBlows implements Effect {
-    // How high up his body the moves strike from, as a part of his height.
     private static final double CHEST = 0.62;
-    // A creature this close is struck whatever the arc; one further above or below his chest than this is out of reach.
     private static final double CLOSE = 0.9;
     private static final double TALL = 2.2;
-    // How far to his sides a charge shoves creatures aside, in blocks, and how far ahead of him it looks for them.
     private static final double CHARGE_WIDE = 1.3;
     private static final double CHARGE_AHEAD = 1.4;
-    // How far ahead of him the shield strikes the ground when a charge ends.
     private static final double SLAM_AHEAD = 1.3;
-    // How close to the line of a stab of the flurry a creature has to be to be struck, in blocks.
     private static final double STAB_WIDE = 0.45;
 
     final ServerPlayer owner;
@@ -61,12 +51,10 @@ abstract class SwordShieldBlows implements Effect {
         this.owner = owner;
     }
 
-    /** The settings of the sword and shield: those of the Construct Wheel. */
     static CharacterAbility wheel() {
         return GameCharacter.GREEN_LANTERN.byName("construct_wheel");
     }
 
-    /** The charge ends (he let go, or ran into a wall): he slams the shield into the ground before him. */
     boolean stopCharge() {
         if (!this.charging) {
             return false;
@@ -77,10 +65,6 @@ abstract class SwordShieldBlows implements Effect {
         return true;
     }
 
-    /**
-     * A cut or a thrust lands: everything fair game in its arc and within its reach, not behind a wall, is struck and
-     * thrown the way the move goes. The end of a charge slams the shield into the ground instead.
-     */
     void strike(ServerLevel level) {
         CharacterAbility wheel = wheel();
         if (this.move.kind() == SwordMove.Kind.SLAM) {
@@ -127,10 +111,6 @@ abstract class SwordShieldBlows implements Effect {
         ParticleFx.cloud(level, ParticleFx.dust(PowerRing.BRIGHT, 0.8F), front, 5, 0.3, 0.05);
     }
 
-    /**
-     * Throws a creature a cut or thrust struck the way the move goes: a cut across sweeps it aside, an uppercut throws
-     * it up, a chop from above knocks it down, anything else straight away.
-     */
     private static void push(LivingEntity target, SwordMove move, Vec3 look, Vec3 right, Vec3 to, double strength) {
         Vec3 away = new Vec3(to.x, 0.0, to.z);
         away = away.lengthSqr() < 1.0E-4 ? look : away.normalize();
@@ -149,12 +129,6 @@ abstract class SwordShieldBlows implements Effect {
         target.hurtMarked = true;
     }
 
-    /**
-     * Throws a creature in the way of a charge off to the side of him it stood on ({@code side} 1 for his right, -1 for
-     * his left), the way the ram he threw at it goes: a punch of the shield sends it ahead and aside, a sweep flings it
-     * far aside, from under it throws it up, the rim from above knocks it down and slows it, and a shoulder behind the
-     * shield bowls it over hardest.
-     */
     private static void ram(LivingEntity target, SwordMove ram, Vec3 way, Vec3 right, double side, double strength) {
         Vec3 aside = right.scale(side);
         Vec3 push = switch (ram) {
@@ -173,7 +147,6 @@ abstract class SwordShieldBlows implements Effect {
         }
     }
 
-    /** One stab of the flurry: straight along its own way, striking the first few creatures along it. */
     void stab(ServerLevel level, int k) {
         CharacterAbility wheel = wheel();
         double[] turn = SwordMove.stab(k);
@@ -199,14 +172,10 @@ abstract class SwordShieldBlows implements Effect {
                 1.4F + 0.05F * k);
     }
 
-    /**
-     * A tick of the charge: whoever stands in his way is rammed aside to the side of him it stood on, with one of the
-     * shield's six rams (see {@link #ram}) and a light hit. Clients play the ram from the move it sets.
-     */
     void charge(ServerLevel level, int t) {
         CharacterAbility wheel = wheel();
         if (t >= Math.round(wheel.value("chargeSeconds") * 20.0) + 4) {
-            // His own game stops it by itself; this only makes sure a charge never runs on for ever.
+            // Fallback only: the game normally stops the charge itself before this ever fires.
             this.stopCharge();
             return;
         }
@@ -248,10 +217,6 @@ abstract class SwordShieldBlows implements Effect {
         }
     }
 
-    /**
-     * The end of a charge: the shield slammed into the ground before him. A small shockwave runs out over the ground:
-     * what stands in it is hurt (most in the middle) and thrown away.
-     */
     private void slam(ServerLevel level, CharacterAbility wheel) {
         Vec3 at = this.owner.position().add(flat(this.owner.getLookAngle()).scale(SLAM_AHEAD));
         double radius = wheel.value("slamRadius");
@@ -285,15 +250,11 @@ abstract class SwordShieldBlows implements Effect {
         this.sound(SoundEvents.AMETHYST_CLUSTER_BREAK, 1.1F, 0.9F);
     }
 
-    /**
-     * Who the sword and shield may strike: anything the ring may hurt, but never his own pets.
-     */
     private boolean fair(LivingEntity living) {
         return PowerRing.canHit(this.owner, living)
                 && !(living instanceof OwnableEntity pet && pet.getOwner() == this.owner);
     }
 
-    /** The way flat along the ground, one long. */
     static Vec3 flat(Vec3 way) {
         Vec3 flat = new Vec3(way.x, 0.0, way.z);
         return flat.lengthSqr() < 1.0E-6 ? new Vec3(0.0, 0.0, 1.0) : flat.normalize();

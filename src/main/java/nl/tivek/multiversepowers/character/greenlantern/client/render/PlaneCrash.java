@@ -3,7 +3,6 @@ package nl.tivek.multiversepowers.character.greenlantern.client.render;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.character.greenlantern.PlanePath;
 import nl.tivek.multiversepowers.character.greenlantern.ability.AirStrike;
-import nl.tivek.multiversepowers.character.greenlantern.client.ClientConstructs;
 import nl.tivek.multiversepowers.engine.client.render.ConstructPainter;
 import nl.tivek.multiversepowers.engine.math.Colors;
 import nl.tivek.multiversepowers.engine.math.Ease;
@@ -15,13 +14,7 @@ import static nl.tivek.multiversepowers.character.greenlantern.client.render.Pla
 import static nl.tivek.multiversepowers.character.greenlantern.client.render.PlaneParts.partsBroken;
 import static nl.tivek.multiversepowers.character.greenlantern.client.render.PlaneShapes.BODY;
 
-/**
- * The plane's crash (see {@link PlanePainter}): it breaks into solid pieces flung far, and a blast like a small sun
- * goes up.
- */
 final class PlaneCrash {
-    // The blast of the crash: how far its shell of light races out, how high its fireball climbs, how big it gets, and how
-    // far the ring of light round its middle races out.
     private static final double SHELL = 46.0;
     private static final double FIREBALL_HIGH = 40.0;
     private static final double FIREBALL = 18.5;
@@ -30,12 +23,6 @@ final class PlaneCrash {
     private PlaneCrash() {
     }
 
-    /**
-     * The crash: the plane breaks into solid pieces flung far out from where it struck, and a blast like a small sun goes
-     * up (see {@link #blast}). Views close by shake with it (see {@link ClientConstructs#shake}).
-     *
-     * @param since ticks since it struck the ground
-     */
     static void crashed(LanternPainter painter, int owner, PlanePath path, double since) {
         double apart = since / BREAK_TICKS;
         if (apart < 1.0) {
@@ -50,13 +37,6 @@ final class PlaneCrash {
         blast(painter, path.crash(), since);
     }
 
-    /**
-     * The blast of the crash, light and nothing else, the only part of the air strike that is see-through: a flash, a
-     * fireball rising on a stem of light and rolling into a mushroom cloud, a ring of light racing out round its middle,
-     * a shell of light racing out, rings running out over the ground and rays shooting out of it.
-     *
-     * @param since ticks since the plane struck
-     */
     private static void blast(LanternPainter painter, Vec3 ground, double since) {
         double life = Math.max(0.0, 1.0 - since / AirStrike.BLAST_TICKS);
         if (life <= 0.0) {
@@ -65,7 +45,6 @@ final class PlaneCrash {
         Vec3 east = new Vec3(1.0, 0.0, 0.0);
         Vec3 south = new Vec3(0.0, 0.0, 1.0);
         Vec3 up = Vectors.UP;
-        // The flash, blinding for a moment: a ball of white light bursting out.
         double flash = Math.max(0.0, 1.0 - since / 10.0);
         painter.flare(ground.add(0.0, 3.0, 0.0), 6.0 + 40.0 * flash * flash, Math.min(1.0, 0.4 + flash));
         if (flash > 0.0) {
@@ -73,8 +52,6 @@ final class PlaneCrash {
             painter.haze(ground.add(0.0, 2.0, 0.0), east.scale(burst), up.scale(burst * 0.8), south.scale(burst),
                     LanternPainter.HOT, 0.8 * flash);
         }
-        // The fireball: it swells fast, then climbs slowly on its stem, burning down as it goes; a white-hot heart in a
-        // glowing green cloud.
         double swell = 1.0 - Math.pow(1.0 - Math.min(1.0, since / 22.0), 3.0);
         double climb = 1.0 - Math.pow(1.0 - Math.min(1.0, since / 70.0), 2.0);
         double radius = 2.5 + FIREBALL * swell;
@@ -84,7 +61,6 @@ final class PlaneCrash {
                 0.55 * life);
         painter.haze(ball, east.scale(radius * 0.62), up.scale(radius * 0.58), south.scale(radius * 0.62),
                 LanternPainter.HOT, 0.6 * heat * life);
-        // Its cap spreads into a mushroom as it climbs, and the dust of the blast surges out low over the ground.
         if (since > 6.0) {
             double cap = Ease.smooth((since - 6.0) / 30.0);
             double wide = radius * (1.25 + 0.55 * cap);
@@ -110,7 +86,6 @@ final class PlaneCrash {
             painter.circle(ball, across, up, radius, 0.2, 1.8, shell, haze);
         }
         painter.flare(ball, radius * 1.9, 0.55 * life);
-        // Its cap rolls: a ring of rolling light round its lower half, turning over and over.
         if (since > 6.0) {
             double cap = Ease.smooth((since - 6.0) / 24.0);
             double around = radius * (1.05 + 0.35 * cap);
@@ -127,7 +102,6 @@ final class PlaneCrash {
                         Colors.alpha(0.7 * cap * life), Colors.alpha(0.3 * cap * life));
             }
         }
-        // The stem of light it climbs on, and a skirt of light round its foot.
         Vec3 foot = ground.add(0.0, 0.3, 0.0);
         Vec3 top = ball.subtract(0.0, radius * 0.7, 0.0);
         if (top.y > foot.y + 1.0) {
@@ -140,14 +114,12 @@ final class PlaneCrash {
                 painter.circle(foot.add(0.0, 0.4 + k * 0.8, 0.0), east, south, skirt, 0.2, 1.6, shell, haze);
             }
         }
-        // A ring of light races out round its middle, the way a cloud rings the stem of a great blast.
         if (since > 3.0 && since < 40.0) {
             double ring = 1.0 - Math.pow(1.0 - Math.min(1.0, (since - 3.0) / 30.0), 2.0);
             double fade = (1.0 - Ease.smooth((since - 22.0) / 18.0)) * life;
             painter.circle(ground.add(0.0, FIREBALL_HIGH * 0.45, 0.0), east, south, 4.0 + COLLAR * ring, 0.3, 3.0,
                     Colors.alpha(0.8 * fade), Colors.alpha(0.35 * fade));
         }
-        // A shell of light racing out: rings round it at five heights, and four more over its top.
         double out = 1.0 - Math.pow(1.0 - Math.min(1.0, since / 16.0), 3.0);
         double dome = Math.max(0.5, SHELL * out);
         double domeFade = life * (1.0 - Ease.smooth((since - 14.0) / 20.0));
@@ -163,7 +135,6 @@ final class PlaneCrash {
             Vec3 across = new Vec3(Math.cos(turn), 0.0, Math.sin(turn));
             painter.circle(ground, across, up, dome * 0.97, 0.18, 1.6, domeEdge, domeHaze);
         }
-        // Rings running out over the ground one after the other.
         for (int k = 0; k < 5; k++) {
             double ring = since - k * 6.0;
             if (ring < 0.0) {
@@ -174,7 +145,6 @@ final class PlaneCrash {
             painter.circle(ground.add(0.0, 0.2, 0.0), east, south, 3.0 + (SHELL + 8.0) * wave, 0.35, 2.0,
                     Colors.alpha(fade), Colors.alpha(0.5 * fade));
         }
-        // Rays of light shooting out of it.
         if (since < 30.0) {
             double rays = 1.0 - since / 30.0;
             Vec3 heart = ground.add(0.0, 2.0, 0.0);

@@ -7,9 +7,6 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import nl.tivek.multiversepowers.MultiversePowers;
 
-/**
- * Server tells the client how many ticks a spell is still on cooldown, so the wheel can show it.
- */
 public record SpellCooldownPayload(String spellId, int ticks) implements CustomPacketPayload {
     public static final CustomPacketPayload.Type<SpellCooldownPayload> TYPE = new CustomPacketPayload.Type<>(
             ResourceLocation.fromNamespaceAndPath(MultiversePowers.MODID, "spell_cooldown"));

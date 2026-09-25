@@ -6,9 +6,6 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import nl.tivek.multiversepowers.MultiversePowers;
 
-/**
- * Server tells the client: this player has no class yet, show the welcome screen.
- */
 public record OpenWelcomePayload() implements CustomPacketPayload {
     public static final CustomPacketPayload.Type<OpenWelcomePayload> TYPE = new CustomPacketPayload.Type<>(
             ResourceLocation.fromNamespaceAndPath(MultiversePowers.MODID, "open_welcome"));

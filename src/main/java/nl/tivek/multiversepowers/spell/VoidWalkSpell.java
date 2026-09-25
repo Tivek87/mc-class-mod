@@ -36,14 +36,8 @@ import nl.tivek.multiversepowers.engine.effect.Effect;
 import nl.tivek.multiversepowers.engine.effect.Effects;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 
-/**
- * Void Walk: a dark implosion swallows you and you step into the void for 10 seconds. Nobody can
- * see or hear you and no creature can target you; you run faster and hit a little harder, and every
- * enemy around you is marked. Your own client turns the world into black silhouettes meanwhile.
- */
 final class VoidWalkSpell {
     static final int DURATION = 200;
-    /** Enemies (hostile mobs and other players) this close are marked for the caster. */
     static final double MARK_RADIUS = 32.0;
     private static final double SPEED_BONUS = 0.5;
     private static final double DAMAGE_BONUS = 0.2;
@@ -59,20 +53,16 @@ final class VoidWalkSpell {
     private static final int PALE = 0xD9B8FF;
     private static final int ABYSS = 0x0A0012;
 
-    // Players in the void right now, with what they had before stepping in.
     private static final Map<UUID, Walk> ACTIVE = new HashMap<>();
 
     private VoidWalkSpell() {
     }
 
-    /** What a player had before stepping into the void, so leaving it undoes only what the void changed. */
     private static final class Walk {
         private final boolean wasSilent;
-        // An invisibility he already had (a potion) as it was then, and the server tick he stepped in on.
         @Nullable
         private final MobEffectInstance invisibility;
         private final int since;
-        // Something he holds or wears changed this tick, so the game has just shown it to everyone again.
         private boolean equipmentChanged;
 
         private Walk(boolean wasSilent, @Nullable MobEffectInstance invisibility, int since) {
@@ -106,7 +96,6 @@ final class VoidWalkSpell {
         addModifier(player, Attributes.MOVEMENT_SPEED, SPEED_ID, SPEED_BONUS);
         addModifier(player, Attributes.ATTACK_DAMAGE, DAMAGE_ID, DAMAGE_BONUS);
         hideEquipment(player);
-        // Everything that was hunting you loses you.
         for (Mob mob : level.getEntitiesOfClass(Mob.class, player.getBoundingBox().inflate(64),
                 mob -> mob.getTarget() == player)) {
             mob.setTarget(null);
@@ -119,12 +108,11 @@ final class VoidWalkSpell {
         if (walk == null) {
             return false;
         }
-        // Milk or a revealing light took the invisibility away: then you step out of the void altogether.
+        // Milk or a light removing invisibility also ends the void walk early.
         if (player.isRemoved() || !player.isAlive() || age >= DURATION || !player.hasEffect(MobEffects.INVISIBILITY)) {
             leave(player);
             return false;
         }
-        // Switching items showed them to everyone earlier this tick, so tell them again your hands are empty.
         if (walk.equipmentChanged) {
             walk.equipmentChanged = false;
             hideEquipment(player);
@@ -135,7 +123,6 @@ final class VoidWalkSpell {
         return true;
     }
 
-    /** Back into the world: everything undone, with a burst where you reappear. */
     static void leave(ServerPlayer player) {
         Walk walk = ACTIVE.remove(player.getUUID());
         if (walk == null) {
@@ -147,10 +134,6 @@ final class VoidWalkSpell {
         }
     }
 
-    /**
-     * The server stops: whoever is still in the void is put back the way he was, without the burst, so he is not
-     * saved silent and invisible.
-     */
     static void clear(MinecraftServer server) {
         Map<UUID, Walk> walks = new HashMap<>(ACTIVE);
         ACTIVE.clear();
@@ -162,13 +145,11 @@ final class VoidWalkSpell {
         });
     }
 
-    /** Undoes only what stepping into the void changed, and shows everyone what you hold and wear again. */
     private static void restore(ServerPlayer player, Walk walk) {
         player.setSilent(walk.wasSilent);
         removeModifier(player, Attributes.MOVEMENT_SPEED, SPEED_ID);
         removeModifier(player, Attributes.ATTACK_DAMAGE, DAMAGE_ID);
-        // The void's invisibility goes; one you already had (a potion) comes back with the time it had left. When milk
-        // or a revealing light already took it away, that one went with it.
+        // Restore any earlier invisibility potion with its time left, if still there.
         if (player.hasEffect(MobEffects.INVISIBILITY)) {
             player.removeEffect(MobEffects.INVISIBILITY);
             MobEffectInstance before = walk.invisibility;
@@ -207,25 +188,16 @@ final class VoidWalkSpell {
         }
     }
 
-    /** Tells every other player you hold and wear nothing, so not even your armour floats in the air. */
     private static void hideEquipment(ServerPlayer player) {
         player.serverLevel().getChunkSource().broadcast(player, emptyEquipment(player));
     }
 
-    /**
-     * Someone comes close enough to see a player in the void: the game has just shown him everything that player
-     * holds and wears, so he is told the hands are empty as well.
-     */
     static void seenBy(ServerPlayer player, ServerPlayer viewer) {
         if (isInVoid(player)) {
             viewer.connection.send(emptyEquipment(player));
         }
     }
 
-    /**
-     * Something a player in the void holds or wears changed: the game shows that to everyone, so it is hidden again
-     * at the end of the tick (see tick).
-     */
     static void equipmentChanged(ServerPlayer player) {
         Walk walk = ACTIVE.get(player.getUUID());
         if (walk != null) {
@@ -248,7 +220,6 @@ final class VoidWalkSpell {
         return entity instanceof Enemy || entity instanceof Player;
     }
 
-    /** A purple mark above every enemy's head that only the caster can see. */
     private static void markEnemies(ServerPlayer caster) {
         ServerLevel level = caster.serverLevel();
         for (LivingEntity enemy : level.getEntitiesOfClass(LivingEntity.class,
@@ -264,7 +235,6 @@ final class VoidWalkSpell {
         }
     }
 
-    /** The dark explosion when you step into the void: ink and portal matter blasting out, a ring of night. */
     private static Effect explosion(Vec3 feet) {
         Vec3 core = feet.add(0, 1.0, 0);
         return (level, age) -> {
@@ -298,7 +268,6 @@ final class VoidWalkSpell {
         };
     }
 
-    /** Coming back: the void tears open for a moment and lets you out. */
     private static Effect reappear(Vec3 feet) {
         Vec3 core = feet.add(0, 1.0, 0);
         return (level, age) -> {

@@ -13,13 +13,6 @@ import nl.tivek.multiversepowers.character.AbilitySlot;
 import nl.tivek.multiversepowers.character.CharacterAbility;
 import org.lwjgl.glfw.GLFW;
 
-/**
- * The mod's own category in Options &gt; Controls: the wheel key (G by default) and one key per
- * ability slot, all changeable there.
- *
- * <p>A key is only a number, never a kind of ability: R is "ability 1", V is "ability 2", and so on.
- * What that ability is depends purely on the character you are.
- */
 @Mod(value = MultiversePowers.MODID, dist = Dist.CLIENT)
 public final class AbilityKeys {
     public static final String CATEGORY = "key.categories." + MultiversePowers.MODID;
@@ -31,7 +24,6 @@ public final class AbilityKeys {
             GLFW.GLFW_KEY_G,
             CATEGORY);
 
-    /** One key per ability slot, in order: ability 1 up to ability 11. */
     public static final KeyMapping[] SLOTS = {
             key(AbilitySlot.ABILITY_1, GLFW.GLFW_KEY_R),
             key(AbilitySlot.ABILITY_2, GLFW.GLFW_KEY_V),
@@ -50,15 +42,10 @@ public final class AbilityKeys {
         modEventBus.addListener(ClientCharacter::onRegisterLayers);
     }
 
-    /** The key of one slot. */
     public static KeyMapping of(AbilitySlot slot) {
         return SLOTS[slot.ordinal()];
     }
 
-    /**
-     * The key one ability listens to: its own slot key, or the mouse button it hangs on instead (see
-     * {@link CharacterAbility#mouseButton()}).
-     */
     public static KeyMapping of(CharacterAbility ability) {
         Minecraft minecraft = Minecraft.getInstance();
         return switch (ability.mouseButton()) {
@@ -68,10 +55,6 @@ public final class AbilityKeys {
         };
     }
 
-    /**
-     * Whether that key is held down right now, also while one of the mod's own screens is open (a key
-     * mapping itself stops answering then), and also when it was bound to a mouse button.
-     */
     public static boolean isDown(KeyMapping key) {
         long window = Minecraft.getInstance().getWindow().getWindow();
         InputConstants.Key bound = key.getKey();

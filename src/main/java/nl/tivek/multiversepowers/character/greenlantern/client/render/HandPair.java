@@ -25,26 +25,15 @@ import static nl.tivek.multiversepowers.character.greenlantern.client.render.Han
 import static nl.tivek.multiversepowers.character.greenlantern.client.render.HandShapes.BLADE_STEPS;
 import static nl.tivek.multiversepowers.character.greenlantern.client.render.HandShapes.BLADE_TOWARDS;
 
-/**
- * A pair of hands with an axe (see {@link HandPainter} and {@link HandDuo}): both hands, each cut off at its own
- * portal, and the axe with the cracks of light in it; whole, or breaking up.
- */
 final class HandPair {
-    // How far round its middle a pair may reach while it is on screen, at scale 1: the axe's portal stands about 15
-    // beyond it and the axe swung up over the top about 17 over it.
     private static final double PAIR_REACH = 26.0;
-    // The numbers the pieces of the pair's left hand and axe start from as they break up, so no two pieces of the pair
-    // fly off alike (a hand's own pieces count up to about 60 from its own start).
+    // Kept above a hand's own ~60 piece IDs so break patterns don't repeat
     private static final int LEFT_PIECES = 100;
     private static final int AXE_PIECES = 200;
 
     private HandPair() {
     }
 
-    /**
-     * A pair of hands with an axe: the ring's light shooting off to where its portals open, the three portals, both
-     * hands each cut off at its own portal, the axe and all the light of what they do.
-     */
     static void pair(LanternPainter painter, ConstructPayload hand, Vec3 facing, double clock,
             @Nullable Vec3 ring, double scale) {
         Vec3 base = hand.center();
@@ -63,7 +52,6 @@ final class HandPair {
         portal(painter, duo.leftPortal, seed + 1, clock, 1.0);
         portal(painter, duo.axePortal, seed + 2, clock, 1.0);
         if (duo.handsThere) {
-            // White-hot as they push out of their portals, cooling to green, and warming up again as they pull back.
             double retract = Math.max(1.0, HandDuo.HANDS_GONE - HandDuo.RETRACT);
             painter.glare(Math.max(0.7 * (1.0 - Ease.smooth((clock - HandDuo.ARRIVES) / 16.0)),
                     0.35 * Ease.smooth((clock - HandDuo.RETRACT) / retract)));
@@ -87,7 +75,6 @@ final class HandPair {
         lights(painter, seed, base, variant, aim, duo, clock, scale, 1.0);
     }
 
-    /** One hand of the pair, cut off where it comes out of its portal (see drawHand). */
     private static void pairHand(LanternPainter painter, HandDuo.Portal portal, HandPose pose, HandPose.Place place,
             boolean left, double bright, double apart, int seed) {
         painter.clip(portal.center(), portal.normal(), PORTAL_SEAM);
@@ -95,10 +82,6 @@ final class HandPair {
         painter.noClip();
     }
 
-    /**
-     * How white-hot the axe glows: as it comes out of its portal, in a flash as it bites into the ground, and more and
-     * more as the light cracks it before it breaks.
-     */
     private static double axeGlare(double clock, double breaking) {
         double out = 0.6 * (1.0 - Ease.smooth((clock - HandDuo.AXE_OPENS) / 14.0));
         double bite = 0.45 * Ease.smooth((clock - HandDuo.IMPACT + 0.5) / 0.5)
@@ -107,12 +90,6 @@ final class HandPair {
         return Math.max(out, Math.max(bite, cracked));
     }
 
-    /**
-     * The axe, solid: cut off where it comes out of its portal while it still does, and never showing under the ground
-     * (where its blade bites in, a seam of light runs round it).
-     *
-     * @param apart below 0 whole, else how far it has broken up into solid pieces, 0 to 1
-     */
     private static void axe(LanternPainter painter, HandDuo duo, Vec3 base, ConstructPainter.Frame frame,
             double apart) {
         if (duo.axeCut) {
@@ -124,21 +101,12 @@ final class HandPair {
         painter.noClip();
     }
 
-    /**
-     * How far the cracks of light in the axe left in the ground have grown, 0 to 1, growing from {@code from} to
-     * {@code to} of the time from a little after its blow until it breaks.
-     */
     private static double crackGrowth(double clock, double from, double to) {
         double start = HandDuo.IMPACT + 2.0;
         double span = Math.max(4.0, HandDuo.AXE_BREAKS - start);
         return Ease.smooth((clock - start - from * span) / ((to - from) * span));
     }
 
-    /**
-     * Cracks of light creeping through the axe left in the ground: over both flats of its blade from its edge in
-     * towards the socket, and then up its haft from the socket towards the pommel. They glow brighter as they grow,
-     * flicker, and die away as it breaks up.
-     */
     private static void axeCracks(LanternPainter painter, ConstructPainter.Frame frame, int seed, double clock,
             double breaking) {
         double strength = Ease.smooth((clock - HandDuo.IMPACT - 2.0) / 3.0) * (1.0 - Ease.smooth(breaking * 3.0));
@@ -183,13 +151,11 @@ final class HandPair {
         }
     }
 
-    /** How thick the axe's blade is either way at a point (y from the middle of its head, z out from its haft). */
     private static double flat(double y, double z) {
         for (int step = BLADE_STEPS.length - 1; step > 0; step--) {
             double[] towards = BLADE_TOWARDS[step];
             double share = BLADE_SHARES[step];
-            // Inside this step's outline: the point, pushed back out from where the step is drawn in towards, lies
-            // inside the whole blade's.
+            // Undo this step's inward scaling first, to test against the full outline
             if (inside(BLADE, towards[0] + (y - towards[0]) / share, towards[1] + (z - towards[1]) / share)) {
                 return BLADE_STEPS[step];
             }
@@ -197,7 +163,6 @@ final class HandPair {
         return BLADE_STEPS[0];
     }
 
-    /** Whether a point lies inside an outline of pairs of numbers. */
     private static boolean inside(double[] outline, double x, double y) {
         boolean in = false;
         int n = outline.length / 2;
@@ -213,7 +178,6 @@ final class HandPair {
         return in;
     }
 
-    /** A line of light along a path of points, drawn as far as {@code grow} (0 to 1) of it, thinning as it runs. */
     private static void grown(LanternPainter painter, Vec3[] path, double grow, double width, double strength) {
         double reach = grow * (path.length - 1);
         for (int i = 0; i + 1 < path.length && i < reach; i++) {
@@ -222,10 +186,6 @@ final class HandPair {
         }
     }
 
-    /**
-     * A pair its maker let go of: both hands, still cut off at their portals, and the axe break up (see broken), the
-     * portals shrink shut, flashing as they go, and what light the pair was making dies away where it was.
-     */
     static void brokenPair(LanternPainter painter, ConstructPayload hand, double clock, double since,
             double apart, double scale) {
         Vec3 base = hand.center();

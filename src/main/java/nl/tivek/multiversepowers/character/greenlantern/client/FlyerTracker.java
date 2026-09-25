@@ -22,25 +22,16 @@ import static nl.tivek.multiversepowers.character.greenlantern.client.FlightStee
 import static nl.tivek.multiversepowers.character.greenlantern.client.FlightSteering.fullSpeed;
 import static nl.tivek.multiversepowers.character.greenlantern.client.FlightSteering.velocity;
 
-/**
- * How every flyer moves, as seen (see {@link ClientFlight}), one tick at a time: speed, lean, the streak behind them,
- * what they throw up below and how far they have swung upright for a slam.
- */
 final class FlyerTracker {
-    // How many ticks of the path behind a flyer the streak of light shows.
     private static final int TRAIL = 12;
-    // How far below a flyer the ground still throws up dust, in blocks.
     private static final double SKIM = 3.0;
 
     private FlyerTracker() {
     }
 
-    /**
-     * One tick of how a flyer moves: speed, lean, the streak behind them and what they throw up below. Someone who
-     * drops down to a slam is followed too, for the streak and his cocked fist.
-     */
     static void track(ClientLevel level, AbstractClientPlayer player, Motion motion, boolean flying,
             boolean dropping, boolean own) {
+        // Your own real flight velocity; other players send no velocity, so it is guessed from position deltas.
         Vec3 moved = own ? velocity : new Vec3(player.getX() - player.xo, player.getY() - player.yo,
                 player.getZ() - player.zo);
         motion.velocityO = motion.velocity;
@@ -49,7 +40,6 @@ final class FlyerTracker {
         float turn = Float.isNaN(motion.lastYaw) ? 0.0F : Mth.wrapDegrees(yaw - motion.lastYaw);
         motion.lastYaw = yaw;
         double speed = motion.velocity.length();
-        // Turning at speed leans you into the curve, the way a bird banks.
         float lean = flying ? Mth.clamp(turn * 0.045F * (float) Math.min(1.0, speed / fast()), -0.75F, 0.75F)
                 : 0.0F;
         motion.bank = Mth.lerp(0.18F, motion.bank, lean);
@@ -73,15 +63,10 @@ final class FlyerTracker {
             skim(level, player, motion, speed);
         }
         motion.braceO = motion.brace;
-        // Dropping, he is upright with his fist cocked all the way down.
         float want = flying && diving(level, player, motion.velocity) || dropping ? 1.0F : 0.0F;
         motion.brace = Mth.lerp(want > motion.brace ? 0.5F : 0.3F, motion.brace, want);
     }
 
-    /**
-     * True when this flyer dives at slam speed and the ground is only a few ticks away along the way he goes: the
-     * moment to swing upright for the landing.
-     */
     private static boolean diving(ClientLevel level, Entity player, Vec3 velocity) {
         double speed = velocity.length();
         if (speed < fullSpeed() * SLAM_SPEED || -velocity.y < speed * SLAM_DOWN
@@ -94,7 +79,6 @@ final class FlyerTracker {
         return hit.getType() != HitResult.Type.MISS;
     }
 
-    /** How far down the ground (or water) is below a flyer's feet, up to a little past {@link #SKIM}. */
     private static double groundBelow(ClientLevel level, Entity player) {
         Vec3 feet = player.position();
         BlockHitResult hit = level.clip(new ClipContext(feet, feet.add(0.0, -SKIM - 1.0, 0.0),
@@ -102,7 +86,6 @@ final class FlyerTracker {
         return hit.getType() == HitResult.Type.MISS ? SKIM + 1.0 : feet.y - hit.getLocation().y;
     }
 
-    /** Flying fast low over the ground throws up dust of what lies there; over water it throws up spray. */
     private static void skim(ClientLevel level, Entity player, Motion motion, double speed) {
         if (motion.ground > SKIM) {
             return;

@@ -1,14 +1,11 @@
 #version 150
 
-// The void walker's view: the world as dark silhouettes with violet edges, a heavy vignette and
-// a slow pulse. Glowing outlines of marked enemies (pure white on screen) stay bright, in red.
-
 uniform sampler2D DiffuseSampler;
 
 in vec2 texCoord;
 in vec2 oneTexel;
 
-// Time runs 0..1 once per second; Intensity fades the whole look in and out (0 = normal view).
+// Time: 0..1 each second. Intensity: 0 = normal view, 1 = full effect.
 uniform float Time;
 uniform float Intensity;
 
@@ -26,7 +23,6 @@ void main() {
     vec3 color = texture(DiffuseSampler, texCoord).rgb;
     float light = luma(color);
 
-    // Sobel edge detection: where brightness changes sharply, draw a violet line.
     float tl = lumaAt(vec2(-1.0, -1.0));
     float t  = lumaAt(vec2( 0.0, -1.0));
     float tr = lumaAt(vec2( 1.0, -1.0));
@@ -42,7 +38,7 @@ void main() {
     vec3 shadow = vec3(0.04, 0.015, 0.08) + vec3(0.16, 0.10, 0.24) * pow(light, 1.6);
     vec3 voidColor = shadow + vec3(0.62, 0.38, 1.0) * edge;
 
-    // Marked enemies: their glowing outline is drawn pure white, keep it bright and turn it red.
+    // Pure white = a marked enemy's glow outline: keep it bright.
     float mark = smoothstep(0.97, 0.995, min(min(color.r, color.g), color.b));
     voidColor = mix(voidColor, vec3(1.0, 0.3, 0.35), mark);
 

@@ -12,13 +12,7 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.character.greenlantern.PlanePath;
 
-/**
- * The sound of one plane: the deep, droning buzz of its four propellers and the rush of the air past it, following
- * it; as it plunges the rush rises into a scream. Its jets each whoosh by with a rush of their own, higher the faster
- * they go.
- */
 final class PlaneSound {
-    // The drone of every plane in the air, by the id of its construct.
     static final Map<Integer, PlaneSound> SOUNDS = new HashMap<>();
 
     private final Loop drone;
@@ -32,10 +26,6 @@ final class PlaneSound {
         Minecraft.getInstance().getSoundManager().play(this.wind);
     }
 
-    /**
-     * Keeps the drone of this plane where it is. {@code down} is how far it has plunged (0 to 1), or below 0 once it has
-     * crashed: the drone stops.
-     */
     static void sound(int id, PlanePath path, double t, double down) {
         if (down < 0.0) {
             PlaneSound gone = SOUNDS.remove(id);
@@ -47,7 +37,6 @@ final class PlaneSound {
         Vec3 at = path.at(t);
         PlaneSound sound = SOUNDS.get(id);
         if (sound == null || sound.stopped()) {
-            // Drones of planes that are gone some other way (broken up in the air, out of reach) have stopped by now.
             SOUNDS.values().removeIf(PlaneSound::stopped);
             sound = new PlaneSound(at);
             SOUNDS.put(id, sound);
@@ -92,7 +81,6 @@ final class PlaneSound {
         }
     }
 
-    /** One looping sound that follows a plane about. */
     private static final class Loop extends AbstractTickableSoundInstance {
         private Vec3 at;
         private long seen;

@@ -7,10 +7,6 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import nl.tivek.multiversepowers.MultiversePowers;
 
-/**
- * Server tells the caster they entered the void for this many ticks (0 = they left it), so their
- * own client can switch to the void view and mark creatures around them.
- */
 public record VoidStatePayload(int ticks) implements CustomPacketPayload {
     public static final CustomPacketPayload.Type<VoidStatePayload> TYPE = new CustomPacketPayload.Type<>(
             ResourceLocation.fromNamespaceAndPath(MultiversePowers.MODID, "void_state"));

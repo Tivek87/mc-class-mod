@@ -19,27 +19,9 @@ import nl.tivek.multiversepowers.character.greenlantern.client.ConstructChoice;
 import nl.tivek.multiversepowers.engine.client.gui.GuiShapes;
 import org.lwjgl.glfw.GLFW;
 
-/**
- * The wheel of hard-light constructs you get while you hold the construct key.
- *
- * <p>How it is used: hold the key, flick the mouse towards the slot you want, let the key go. It is the
- * direction that picks, not the distance, so a short flick is enough and the mouse may run off the edge
- * of the screen. Letting go in the middle puts whatever you hold away again. The scroll wheel steps from
- * slot to slot for whoever prefers that, a left-click picks straight away, and Escape or a right-click
- * closes without changing anything. Only tapping the key never gets this far: that swaps on the spot
- * (see {@link ConstructWheel}).
- *
- * <p>The wheel fills almost the whole height of the screen. Every slice shows its construct as its own hard-light model
- * (see {@link ConstructIcons}). What the mouse points at is written in its middle: its name, and what it does for a
- * construct that already does something. A thin plate along the top of the screen
- * (never over the wheel) says how a construct's mouse buttons work and what to do. Every construct uses the mouse the
- * same way: left click attacks, from the right hand (where the ring is); right click defends, from the left hand.
- * Picking one takes it out (see {@link ConstructChoice}) and shows it above your hotbar.
- */
 public class ConstructWheelScreen extends Screen {
     private static final String KEY = "screen." + MultiversePowers.MODID + ".construct_wheel.";
 
-    /** The green of the ring's light, its bright middle, and the dark green the wheel is filled with. */
     private static final int GREEN = 0x3CE86A;
     private static final int BRIGHT = 0xCFFFDC;
     private static final int DEEP = 0x0B2E18;
@@ -49,29 +31,18 @@ public class ConstructWheelScreen extends Screen {
     private static final int MUTED = 0xFF7E9B88;
     private static final int FAINT = 0xFF5A6E61;
 
-    /** How big the wheel gets at most, and the least it shrinks to on the smallest screens. */
     private static final float OUTER_MAX = 170.0F;
     private static final float OUTER_MIN = 28.0F;
-    /** The plate along the top: its padding, the height of a line, and how far it keeps from the edge. */
     private static final float BAR_PAD = 4.0F;
     private static final int BAR_LINE = 11;
     private static final float EDGE = 5.0F;
-    /** How far the dark disc behind the wheel reaches past it. */
     private static final float DISC = 10.0F;
-    /** The hole in the middle, and the button inside that hole, both as a part of the ring outside them. */
     private static final float INNER_SHARE = 0.58F;
     private static final float HUB_SHARE = 0.86F;
-    /** How much of the button's width the writing in it may use. */
     private static final float HUB_TEXT = 0.8F;
-    /** The gap between two slices, in degrees. */
     private static final float GAP_DEGREES = 1.6F;
-    /** How much further out a slice reaches while the mouse points at it. */
     private static final float HOVER_GROW = 7.0F;
 
-    /**
-     * How quickly the wheel swings open and a slice lights up, in seconds: this is how long each takes to
-     * get most of the way there, so it never snaps and never drags.
-     */
     private static final float OPEN_TIME = 0.075F;
     private static final float HOVER_TIME = 0.05F;
 
@@ -79,15 +50,12 @@ public class ConstructWheelScreen extends Screen {
     private final List<Construct> wheel = Construct.WHEEL;
     private final float[] lit = new float[Construct.WHEEL.size()];
 
-    /** Which slice the mouse points at, or -1 for the middle (no construct). */
     private int pointed = -1;
-    /** Where the mouse was last frame, so a mouse standing still never overrules the scroll wheel. */
     private double lastMouseX = Double.NaN;
     private double lastMouseY = Double.NaN;
     private float hubLit;
     private float open;
     private long lastFrame = Util.getMillis();
-    /** True once the key was really seen held down: only then does letting it go pick something. */
     private boolean armed;
     private boolean picked;
 
@@ -96,19 +64,12 @@ public class ConstructWheelScreen extends Screen {
         this.key = key;
     }
 
-    // ---- What the key does ----
-
     @Override
     public void tick() {
         super.tick();
         this.closeIfLetGo();
     }
 
-    /**
-     * Holding the key and letting it go picks; a tap too short to be seen leaves the wheel standing.
-     *
-     * @return true when this closed the wheel
-     */
     private boolean closeIfLetGo() {
         if (this.picked) {
             return true;
@@ -124,7 +85,6 @@ public class ConstructWheelScreen extends Screen {
         return true;
     }
 
-    /** Takes out whatever the mouse points at; the middle puts your construct away. */
     private void pick() {
         this.picked = true;
         ConstructChoice.take(this.pointed < 0 ? Construct.NONE : this.wheel.get(this.pointed));
@@ -153,10 +113,6 @@ public class ConstructWheelScreen extends Screen {
         return super.mouseReleased(mouseX, mouseY, button);
     }
 
-    /**
-     * The scroll wheel steps from slot to slot, for when flicking the mouse is awkward. Scrolling past
-     * the last slot comes back round to the middle, so you can reach "nothing" this way too.
-     */
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
         if (scrollY == 0.0) {
@@ -164,7 +120,7 @@ public class ConstructWheelScreen extends Screen {
         }
         int slots = this.wheel.size();
         int step = scrollY > 0.0 ? 1 : -1;
-        // The middle counts as one more place in the row, just before the first slot.
+        // Shift by one so the middle slot (-1) wraps into the cycle cleanly
         int was = this.pointed + 1;
         this.point(Math.floorMod(was + step, slots + 1) - 1);
         return true;
@@ -175,17 +131,10 @@ public class ConstructWheelScreen extends Screen {
         return false;
     }
 
-    // ---- Where everything sits ----
-
-    /** How tall the plate along the top is: two lines. */
     private static float bar() {
         return BAR_PAD * 2.0F + BAR_LINE * 2;
     }
 
-    /**
-     * Half the height of the wheel: as big as fits below the plate at the top, with the dark disc behind it clear
-     * of the edges too, under a limit.
-     */
     private float outer() {
         float high = (this.height - bar() - EDGE * 2.0F) * 0.5F - DISC;
         float wide = this.width * 0.5F - DISC - EDGE;
@@ -196,25 +145,16 @@ public class ConstructWheelScreen extends Screen {
         return this.width * 0.5F;
     }
 
-    /** The middle of the wheel: halfway down the room below the plate, so a little below the middle of the screen. */
     private float middleY() {
         return (this.height + bar()) * 0.5F;
     }
 
-    /** The middle of slice number {@code index}, in degrees clockwise from straight up. */
     private float slice(int index) {
         return 360.0F / this.wheel.size() * index;
     }
 
-    /**
-     * Which slice the mouse points at. Only the direction counts, so a flick of the mouse is enough and
-     * it does not matter how far it went; close to the middle nothing is pointed at. The direction is taken
-     * from the middle of the screen, where the mouse stands when the wheel opens, so a flick straight to the
-     * right picks the slice straight to the right even though the wheel sits a little lower.
-     */
     private void followMouse(double mouseX, double mouseY) {
-        // A mouse that has not moved says nothing: that leaves a slot picked with the scroll wheel alone
-        // until you really move the mouse again.
+        // Skip when unmoved, so scroll-wheel picks aren't overridden every frame
         if (mouseX == this.lastMouseX && mouseY == this.lastMouseY) {
             return;
         }
@@ -232,7 +172,6 @@ public class ConstructWheelScreen extends Screen {
         this.point(Mth.floor(((degrees + 360.0 + step * 0.5) % 360.0) / step) % this.wheel.size());
     }
 
-    /** Points at a slot ({@code -1} is the middle), with a tick you can hear when it changes. */
     private void point(int slot) {
         if (slot == this.pointed) {
             return;
@@ -243,8 +182,6 @@ public class ConstructWheelScreen extends Screen {
                     slot < 0 ? 1.1F : 1.5F, 0.18F));
         }
     }
-
-    // ---- Drawing ----
 
     @Override
     public void renderBackground(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
@@ -267,7 +204,6 @@ public class ConstructWheelScreen extends Screen {
         float inner = outer * INNER_SHARE;
         float hub = inner * HUB_SHARE;
 
-        // A soft dark disc so the wheel reads over any world behind it.
         GuiShapes.disc(graphics, middleX, middleY, outer + DISC, GuiShapes.fade(0x000000, 0.34F * this.open));
         this.renderSlices(graphics, middleX, middleY, inner, outer);
         this.renderHub(graphics, middleX, middleY, hub);
@@ -278,7 +214,6 @@ public class ConstructWheelScreen extends Screen {
         this.renderBar(graphics);
     }
 
-    /** Moves every glow one frame further towards where it should be, so nothing jumps. */
     private void breathe() {
         long now = Util.getMillis();
         float seconds = Math.min(0.1F, (now - this.lastFrame) / 1000.0F);
@@ -306,7 +241,6 @@ public class ConstructWheelScreen extends Screen {
             int fill = GuiShapes.mix(DEEP, GREEN, glow * 0.45F);
             GuiShapes.arc(graphics, middleX, middleY, inner, edge,
                     from, to, GuiShapes.fade(fill, (0.62F + 0.3F * glow) * this.open));
-            // A bright rim on the outside, strongest on the slice the mouse points at.
             GuiShapes.arc(graphics, middleX, middleY, edge - 1.6F, edge,
                     from, to, GuiShapes.fade(GuiShapes.mix(GREEN, BRIGHT, glow), (0.4F + 0.6F * glow) * this.open));
 
@@ -314,10 +248,8 @@ public class ConstructWheelScreen extends Screen {
             float angle = this.slice(i) * Mth.DEG_TO_RAD;
             float iconX = middleX + Mth.sin(angle) * radius;
             float iconY = middleY - Mth.cos(angle) * radius;
-            // Every construct is its own model, as big as the slice allows.
             float iconSize = (edge - inner) * 0.74F * (0.86F + 0.14F * this.open);
             ConstructIcons.draw(graphics, construct, iconX, iconY, iconSize, glow);
-            // A dot marks the one you already have out.
             if (construct == held) {
                 GuiShapes.disc(graphics, middleX + Mth.sin(angle) * (inner + 4.0F),
                         middleY - Mth.cos(angle) * (inner + 4.0F), 1.8F, GuiShapes.fade(BRIGHT, this.open));
@@ -325,10 +257,6 @@ public class ConstructWheelScreen extends Screen {
         }
     }
 
-    /**
-     * The button in the middle: empty hands, only the ring. It is dark, with a faint ring of the ring's light
-     * behind the writing, so the name of what the mouse points at reads clearly on it.
-     */
     private void renderHub(GuiGraphics graphics, float middleX, float middleY, float hub) {
         float glow = this.hubLit;
         GuiShapes.disc(graphics, middleX, middleY, hub,
@@ -339,7 +267,6 @@ public class ConstructWheelScreen extends Screen {
                 GuiShapes.fade(GREEN, (0.14F + 0.2F * glow) * this.open));
     }
 
-    /** A little wedge that shows which way the mouse is pointing. */
     private void renderPointer(GuiGraphics graphics, float middleX, float middleY, float hub, float inner) {
         if (this.pointed < 0) {
             return;
@@ -349,15 +276,10 @@ public class ConstructWheelScreen extends Screen {
                 GuiShapes.fade(BRIGHT, 0.8F * this.open));
     }
 
-    /**
-     * What the mouse points at, in the middle of the wheel: its name, and under it what it does when it has a line for
-     * that. A long name breaks over two lines; both are made smaller when they would not fit in the button.
-     */
     private void renderName(GuiGraphics graphics, float middleX, float middleY, float hub) {
         Construct construct = this.pointed < 0 ? Construct.NONE : this.wheel.get(this.pointed);
         float room = hub * 2.0F * HUB_TEXT;
         Lines name = this.fitName(construct.getDisplayName(), room);
-        // What it does, broken over as many lines as it needs at a size that fits, never more than three.
         Component description = construct.getDescription();
         Lines about = description == null ? new Lines(List.of(), 1.0F)
                 : this.fit(description.copy().withStyle(ChatFormatting.ITALIC), room, 0.8F, 3);
@@ -368,7 +290,6 @@ public class ConstructWheelScreen extends Screen {
         this.renderLines(graphics, about, middleX, y + name.height(this.font) + 3.0F, MUTED & 0xFFFFFF | alpha);
     }
 
-    /** Text broken over lines, and the scale it is written at. */
     private record Lines(List<FormattedCharSequence> lines, float scale) {
         float step(Font font) {
             return (font.lineHeight + 1) * this.scale;
@@ -379,10 +300,6 @@ public class ConstructWheelScreen extends Screen {
         }
     }
 
-    /**
-     * A name on one line when it fits. A longer one is broken over two: right after its slash when it has one ("Spear /"
-     * over "Halberd"), or else wherever it has to be.
-     */
     private Lines fitName(Component name, float room) {
         String text = name.getString();
         int slash = text.indexOf(" / ");
@@ -396,17 +313,12 @@ public class ConstructWheelScreen extends Screen {
         return new Lines(lines, Math.min(1.0F, room / widest));
     }
 
-    /**
-     * {@code text} broken over at most {@code lines} lines of {@code room} wide, at {@code scale} or as much smaller as
-     * it takes to fit (never below half, unless a single word is wider than the room).
-     */
     private Lines fit(Component text, float room, float scale, int lines) {
         List<FormattedCharSequence> split = this.font.split(text, (int) (room / scale));
         while (split.size() > lines && scale > 0.5F) {
             scale -= 0.1F;
             split = this.font.split(text, (int) (room / scale));
         }
-        // A single word wider than the room is shrunk until it fits on its own.
         int widest = 1;
         for (FormattedCharSequence line : split) {
             widest = Math.max(widest, this.font.width(line));
@@ -414,7 +326,6 @@ public class ConstructWheelScreen extends Screen {
         return new Lines(split.subList(0, Math.min(lines, split.size())), Math.min(scale, room / widest));
     }
 
-    /** The lines centred on {@code middleX}, the first at {@code y}. */
     private void renderLines(GuiGraphics graphics, Lines text, float middleX, float y, int colour) {
         for (FormattedCharSequence line : text.lines()) {
             graphics.pose().pushPose();
@@ -426,15 +337,10 @@ public class ConstructWheelScreen extends Screen {
         }
     }
 
-    /**
-     * A thin plate along the top of the screen: how a construct's mouse buttons work (left click attacks from the
-     * right hand, right click defends from the left hand) and what to do. It never reaches the wheel.
-     */
     private void renderBar(GuiGraphics graphics) {
         Construct construct = this.pointed < 0 ? Construct.NONE : this.wheel.get(this.pointed);
         int middle = this.width / 2;
         float widest = this.width - EDGE * 2.0F;
-        // Empty hands work as they always do; the line stays, empty, so the plate does not jump.
         Component controls = Component.empty();
         if (construct != Construct.NONE) {
             controls = Component.translatable(KEY + "controls");

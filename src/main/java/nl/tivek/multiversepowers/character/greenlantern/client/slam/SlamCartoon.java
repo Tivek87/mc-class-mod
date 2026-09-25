@@ -17,32 +17,19 @@ import static nl.tivek.multiversepowers.character.greenlantern.client.slam.SlamL
 import static nl.tivek.multiversepowers.character.greenlantern.client.slam.SlamMoney.bar;
 import static nl.tivek.multiversepowers.character.greenlantern.client.slam.SlamMoney.money;
 
-/**
- * The landing-slam constructs that drop on you in a cartoon (see {@link SlamPainter}): a safe that bursts open and
- * spills its money, a piano whose lids fly open, an anvil, a ton weight, a bundle of TNT whose fuse burns down, a toy
- * brick and a rubber stamp. Unless it says otherwise a shape stands on y = 0 and faces -z, the way towards Green
- * Lantern, with x to his right; in blocks at scale 1.
- */
 final class SlamCartoon {
     private SlamCartoon() {
     }
 
-    // ---- The safe ----
-
     private static final double SAFE_SCALE = 1.45;
-    // The line the door turns about: straight up through here.
     private static final double HINGE_X = -0.64;
     private static final double HINGE_Z = -0.76;
-    // Where the wheel on the door has its middle.
     private static final double WHEEL_X = 0.14;
     private static final double WHEEL_Y = 0.66;
     private static final double WHEEL_Z = -0.83;
-    // How far the door flies open.
     private static final double DOOR_OPEN = Math.toRadians(105.0);
 
-    /** The safe, open at the front: its walls, the darker lining inside, a shelf, and the money that stays in it. */
     private static final Shape SAFE = new Shape(new double[][] {
-            // The walls (back, left, right, top, bottom), a rim round its top and round its foot
             { -0.80, 0.14, 0.50, 0.80, 1.74, 0.70, 0.95 },
             { -0.80, 0.14, -0.70, -0.62, 1.74, 0.50, 0.95 },
             { 0.62, 0.14, -0.70, 0.80, 1.74, 0.50, 0.95 },
@@ -50,10 +37,8 @@ final class SlamCartoon {
             { -0.62, 0.14, -0.70, 0.62, 0.32, 0.50, 0.95 },
             { -0.85, 1.74, -0.75, 0.85, 1.83, 0.75, 1.05 },
             { -0.85, 0.07, -0.75, 0.85, 0.15, 0.75, 1.0 },
-            // Steel strips down its front corners
             { -0.87, 0.15, -0.77, -0.75, 1.74, -0.65, 1.1 },
             { 0.75, 0.15, -0.77, 0.87, 1.74, -0.65, 1.1 },
-            // Inside: the lining, a shelf, and stacks of notes with a band round each
             { -0.62, 0.32, 0.46, 0.62, 1.56, 0.50, 0.55 },
             { -0.62, 0.32, -0.62, -0.58, 1.56, 0.46, 0.6 },
             { 0.58, 0.32, -0.62, 0.62, 1.56, 0.46, 0.6 },
@@ -66,12 +51,10 @@ final class SlamCartoon {
             { 0.26, 0.345, -0.11, 0.30, 0.495, 0.37, 1.3 },
             { -0.44, 0.97, -0.05, -0.08, 1.11, 0.40, 1.05 },
             { -0.28, 0.965, -0.06, -0.24, 1.115, 0.41, 1.3 } },
-            // Round feet, the hinges of the door, and two gold bars on the shelf
             foot(-0.66, -0.56), foot(0.66, -0.56), foot(-0.66, 0.56), foot(0.66, 0.56),
             Mesh.cylinder(10, 0.05, 0.0, 0.20, 1.2).moved(HINGE_X, 0.46, HINGE_Z),
             Mesh.cylinder(10, 0.05, 0.0, 0.20, 1.2).moved(HINGE_X, 1.24, HINGE_Z),
             bar().moved(0.26, 1.015, 0.05), bar().moved(0.26, 1.105, 0.05));
-    /** The door, shut: a thick slab with a raised panel, a name plate, and a dial with marks round it. */
     private static final Shape DOOR = new Shape(new double[][] {
             { -0.62, 0.32, -0.80, 0.62, 1.56, -0.70, 1.0 },
             { -0.50, 0.44, -0.83, 0.50, 1.44, -0.80, 1.07 },
@@ -79,13 +62,8 @@ final class SlamCartoon {
             Mesh.lathe(16, 1.1, 0.0, 0.0, 0.18, 0.0, 0.18, 0.025, 0.15, 0.05, 0.05, 0.05, 0.05, 0.10, 0.03, 0.12, 0.0,
                     0.12).turned(1.0, 0.0, 0.0, -90.0).moved(0.14, 1.06, -0.83),
             mark(0), mark(45), mark(90), mark(135), mark(180), mark(225), mark(270), mark(315));
-    /**
-     * The wheel that opens the door: three spokes through a hub with knobs on their ends, round its own middle and
-     * sticking out along -z.
-     */
     private static final Shape WHEEL = Shape.of(Mesh.cylinder(12, 0.07, 0.0, 0.10, 1.1).turned(1.0, 0.0, 0.0, -90.0),
             spoke(0), spoke(60), spoke(120), knob(0), knob(60), knob(120), knob(180), knob(240), knob(300));
-    /** The bolts that lock the door, out of its edge into the frame. */
     private static final Shape BOLTS = Shape.of(bolt(0.55), bolt(0.94), bolt(1.33));
 
     private static Mesh foot(double x, double z) {
@@ -109,11 +87,6 @@ final class SlamCartoon {
         return Mesh.cylinder(10, 0.055, 0.0, 0.14, 1.15).alongX().moved(0.60, y, -0.75);
     }
 
-    /**
-     * A safe: it drops and lands with a thud that squashes it a moment; the wheel on its door spins and the bolts shoot
-     * back, and the door flies open on its hinges and swings to and fro. Money bursts out: coins that bounce and skid,
-     * notes that flutter down, and gold bars that thud down; it all sinks into the ground as the safe breaks up.
-     */
     static Vec3 safe(LanternPainter painter, Moment m) {
         Frame base = SlamPainter.dropped(m, SAFE_SCALE, 0.0, m.forward(), 0.5);
         Frame body = SlamPainter.squashed(base, m, 0.12);
@@ -134,46 +107,35 @@ final class SlamCartoon {
         return body.at(0.0, 1.83, 0.0);
     }
 
-    // ---- The piano ----
-
     private static final double PIANO_SCALE = 1.4;
     private static final int WHITE_KEYS = 14;
     private static final double KEY_WIDTH = 0.15;
-    // The white keys a black key sits after, over two octaves.
     private static final int[] BLACK_AFTER = { 0, 1, 3, 4, 5, 7, 8, 10, 11, 12 };
 
-    /** An upright piano, its keyboard towards him; its lids and keys are drawn on their own, so they can move. */
     private static final Shape PIANO = new Shape(new double[][] {
-            // The case, its cheeks and the arms either side of the keys
             { -1.12, 0.10, -0.30, 1.12, 2.00, 0.45, 0.95 },
             { -1.24, 0.00, -0.50, -1.12, 2.02, 0.47, 1.0 },
             { 1.12, 0.00, -0.50, 1.24, 2.02, 0.47, 1.0 },
             { -1.24, 0.94, -0.98, -1.10, 1.28, -0.50, 1.0 },
             { 1.10, 0.94, -0.98, 1.24, 1.28, -0.50, 1.0 },
-            // The panel under the keys with a raised panel on it, the key bed and the strip in front of the keys
             { -1.12, 0.10, -0.44, 1.12, 0.94, -0.30, 1.0 },
             { -0.92, 0.24, -0.47, 0.92, 0.80, -0.44, 1.08 },
             { -1.10, 0.94, -0.98, 1.10, 1.10, -0.44, 0.95 },
             { -1.10, 0.98, -1.01, 1.10, 1.10, -0.98, 1.12 },
-            // The board behind the keys, and the panel above them with two raised panels
             { -1.12, 1.10, -0.50, 1.12, 1.30, -0.40, 0.95 },
             { -1.12, 1.30, -0.40, 1.12, 1.96, -0.30, 1.0 },
             { -1.00, 1.42, -0.43, -0.06, 1.86, -0.40, 1.08 },
             { 0.06, 1.42, -0.43, 1.00, 1.86, -0.40, 1.08 },
-            // Toe blocks, the pedal box and the three pedals
             { -1.24, 0.00, -0.98, -1.10, 0.10, -0.50, 1.0 },
             { 1.10, 0.00, -0.98, 1.24, 0.10, -0.50, 1.0 },
             { -0.42, 0.00, -0.50, 0.42, 0.14, -0.44, 0.95 },
             { -0.30, 0.05, -0.66, -0.20, 0.10, -0.50, 1.25 },
             { -0.05, 0.05, -0.66, 0.05, 0.10, -0.50, 1.25 },
             { 0.20, 0.05, -0.66, 0.30, 0.10, -0.50, 1.25 } },
-            // Two turned legs under the arms
             leg(-1.17), leg(1.17));
-    /** The lid on top, with a bright lip along its front; it turns up about its back edge. */
     private static final Shape PIANO_LID = new Shape(new double[][] {
             { -1.27, 2.02, -0.49, 1.27, 2.09, 0.50, 1.05 },
             { -1.27, 2.00, -0.54, 1.27, 2.09, -0.49, 1.15 } });
-    /** The cover over the keys, with a name strip on it; it flips up about its back edge. */
     private static final Shape FALLBOARD = new Shape(new double[][] {
             { -1.09, 1.23, -0.97, 1.09, 1.29, -0.50, 1.02 },
             { -0.24, 1.29, -0.90, 0.24, 1.305, -0.84, 1.3 } });
@@ -185,11 +147,6 @@ final class SlamCartoon {
                 0.88, 0.065, 0.94, 0.0, 0.94).moved(x, 0.0, -0.86);
     }
 
-    /**
-     * An upright piano: it drops, tumbling a little, and lands with a crash that squashes it a moment. Its lid flies up
-     * and swings on its hinge, the cover over the keys flips up and bangs against the case, the keys jump up and down,
-     * and notes of light float up out of it.
-     */
     static Vec3 piano(LanternPainter painter, Moment m) {
         Frame body = SlamPainter.squashed(SlamPainter.dropped(m, PIANO_SCALE, 0.0, m.right(), 0.3), m, 0.1);
         SlamPainter.marker(painter, m, PIANO_SCALE);
@@ -220,39 +177,25 @@ final class SlamCartoon {
         return body.at(0.0, 2.1, 0.0);
     }
 
-    /** How far a key is pressed down by the crash, at scale 1: every key jumps once, each at its own moment. */
     private static double keyDip(int key, double since) {
         double when = 0.3 + 3.5 * Noise.of(key, 66, 0);
         return 0.035 * Math.max(0.0, 1.0 - Math.abs(since - when) / 0.8);
     }
 
-    // ---- The anvil ----
-
     private static final double ANVIL_SCALE = 1.9;
 
-    /** A blacksmith's anvil standing on its base, the horn towards +x. */
     private static final Shape ANVIL = new Shape(new double[][] {
-            // The foot and a step on it
             { -0.78, 0.00, -0.52, 0.78, 0.10, 0.52, 0.95 },
             { -0.68, 0.10, -0.44, 0.68, 0.24, 0.44, 1.0 },
-            // The body under the face, the hard face plate on it and the heel at the back
             { -0.80, 0.86, -0.34, 0.70, 1.16, 0.34, 1.05 },
             { -0.82, 1.16, -0.36, 0.72, 1.22, 0.36, 1.15 },
             { -1.02, 0.96, -0.24, -0.80, 1.20, 0.24, 1.0 },
-            // The square hole in the face, dark
             { -0.72, 1.22, -0.07, -0.58, 1.228, 0.07, 0.35 } },
-            // The waist, narrowing from the foot and widening again under the face
             frustum(0.50, 0.26, 0.24, 0.55, 0.70), frustum(0.26, 0.50, 0.55, 0.86, 0.70),
-            // The horn, round and pointed, and the round hole
             Mesh.cone(12, 0.24, 0.02, 0.0, 0.78, 1.05).alongX().scaled(1.0, 0.85, 1.0).moved(0.70, 1.02, 0.0),
             Mesh.cylinder(8, 0.045, 1.22, 1.228, 0.35).moved(-0.40, 0.0, 0.0),
-            // A small emblem on its front
             Mesh.torus(14, 6, 0.075, 0.022, 1.3).turned(1.0, 0.0, 0.0, 90.0).moved(0.0, 1.01, -0.35));
 
-    /**
-     * An anvil: it drops, lands with a thud that squashes it, sparks fly off its foot, and it hops once more before it
-     * settles.
-     */
     static Vec3 anvil(LanternPainter painter, Moment m) {
         Frame base = SlamPainter.dropped(m, ANVIL_SCALE, 0.0, m.right(), 0.0);
         double since = m.since();
@@ -265,36 +208,26 @@ final class SlamCartoon {
         return body.at(0.0, 1.22, 0.0);
     }
 
-    /**
-     * A cut-off pyramid standing up along y with four flat sides facing x and z: {@code below} and {@code above} are
-     * half as wide along x at its bottom and top, and {@code deep} times that along z.
-     */
     private static Mesh frustum(double below, double above, double bottom, double top, double deep) {
         double corner = Math.sqrt(2.0);
         return Mesh.lathe(4, 1.0, 0.0, bottom, below * corner, bottom, above * corner, top, 0.0, top)
                 .turned(0.0, 1.0, 0.0, 45.0).scaled(1.0, 1.0, deep);
     }
 
-    // ---- The ton weight ----
-
     private static final double WEIGHT_SCALE = 1.6;
-    // How far the front of the weight leans back, and where the label on it turns about.
     private static final double WEIGHT_LEAN = Math.toDegrees(Math.atan2(0.92 * 0.70 - 0.62 * 0.70, 1.14));
     private static final double LABEL_Y = 0.70;
     private static final double LABEL_Z = -(0.92 - (0.92 - 0.62) * (LABEL_Y - 0.16) / 1.14) * 0.70;
 
-    /** A cartoon weight: a plinth, a body narrowing upwards, a cap and a ring to lift it by. */
     private static final Shape WEIGHT = new Shape(new double[][] {
             { -1.00, 0.00, -0.70, 1.00, 0.16, 0.70, 1.0 },
             { -0.66, 1.30, -0.46, 0.66, 1.40, 0.46, 1.05 } },
             frustum(0.92, 0.62, 0.16, 1.30, 0.70),
             Mesh.torus(18, 8, 0.36, 0.08, 1.1).turned(1.0, 0.0, 0.0, 90.0).moved(0.0, 1.70, 0.0));
-    /** The label on its front with "1 TON" raised on it, upright; it is turned back to lie on the leaning front. */
     private static final Shape LABEL = new Shape(join(
             new double[][] { { -0.60, 0.42, LABEL_Z - 0.03, 0.60, 0.98, LABEL_Z + 0.01, 1.1 } },
             text("1 TON", 0.55, 0.06, LABEL_Z - 0.06, LABEL_Z - 0.03, 1.35)));
 
-    /** A ton weight: it drops, lands with a heavy thud that squashes it flat a moment, and settles. */
     static Vec3 weight(LanternPainter painter, Moment m) {
         Frame body = SlamPainter.squashed(SlamPainter.dropped(m, WEIGHT_SCALE, 0.0, m.right(), 0.0), m, 0.22);
         SlamPainter.marker(painter, m, WEIGHT_SCALE);
@@ -304,16 +237,13 @@ final class SlamCartoon {
         return body.at(0.0, 2.14, 0.0);
     }
 
-    // ---- The TNT ----
-
     private static final double TNT_SCALE = 1.6;
-    // The tick it lands, on the server too, and the points its fuse runs through, from the top of the block.
+    // Must match LandingSlam.TNT_LANDS on the server, or the fuse and the drop would disagree.
     private static final double TNT_LANDS = 9.0;
     private static final Vec3[] FUSE = { new Vec3(0.0, 1.50, 0.0), new Vec3(0.0, 1.62, 0.02),
             new Vec3(0.03, 1.72, 0.05), new Vec3(0.08, 1.80, 0.06), new Vec3(0.14, 1.85, 0.04),
             new Vec3(0.20, 1.87, 0.0) };
 
-    /** A bundle of sixteen sticks of dynamite, a paper band round it with "TNT" on every side. */
     private static final Shape TNT = new Shape(join(
             new double[][] { { -0.77, 0.48, -0.77, 0.77, 1.02, 0.77, 1.0 } },
             quarters(text("TNT", 0.57, 0.08, -0.81, -0.77, 1.35))), sticks());
@@ -328,13 +258,8 @@ final class SlamCartoon {
         return sticks;
     }
 
-    /**
-     * A block of TNT: it drops, lands with a bounce, swells and flashes while its fuse burns down, and blows apart as
-     * it strikes.
-     */
     static Vec3 tnt(LanternPainter painter, Moment m) {
         double s = m.scale(TNT_SCALE);
-        // It drops early, straight out of where it took shape, so its fuse has time to burn down on the ground.
         double go = Mth.clamp((m.t() - LandingSlam.FORM_TICKS) / (TNT_LANDS - LandingSlam.FORM_TICKS), 0.0, 1.0);
         double height = SlamPainter.HANG * m.size() * (1.0 - go * go);
         double sitting = m.t() - TNT_LANDS;
@@ -355,7 +280,6 @@ final class SlamCartoon {
         }
         SlamPainter.marker(painter, m, TNT_SCALE);
         painter.shape(TNT, frame, 1.0, 1.0 + blink);
-        // The fuse burns down from its end, piece by piece, a spark at the end.
         double left = (1.0 - Mth.clamp((m.t() - TNT_LANDS + 1.0) / (LandingSlam.IMPACT_TICK - TNT_LANDS + 1.0),
                 0.0, 0.95)) * (FUSE.length - 1);
         int whole = (int) left;
@@ -373,25 +297,19 @@ final class SlamCartoon {
         return frame.at(0.0, 0.75, 0.0);
     }
 
-    /** A round rod from {@code a} to {@code b}. */
     private static Mesh rod(Vec3 a, Vec3 b, double radius) {
         Vec3 way = b.subtract(a);
         return Mesh.cylinder(6, radius, 0.0, way.length(), 1.1).pointing(way.x, way.y, way.z).moved(a.x, a.y, a.z);
     }
 
-    // ---- The toy brick ----
-
     private static final double BRICK_SCALE = 1.5;
 
-    /** A toy brick: a hollow shell with three tubes inside it and eight studs on top. */
     private static final Shape BRICK = new Shape(new double[][] {
-            // The four walls and the top between them
             { -1.60, 0.00, -0.80, 1.60, 0.96, -0.70, 1.0 },
             { -1.60, 0.00, 0.70, 1.60, 0.96, 0.80, 1.0 },
             { -1.60, 0.00, -0.70, -1.50, 0.96, 0.70, 1.0 },
             { 1.50, 0.00, -0.70, 1.60, 0.96, 0.70, 1.0 },
             { -1.50, 0.78, -0.70, 1.50, 0.96, 0.70, 1.0 },
-            // The inside, darker
             { -1.50, 0.76, -0.70, 1.50, 0.78, 0.70, 0.55 } },
             tube(-0.8), tube(0.0), tube(0.8),
             stud(-1.2, -0.4), stud(-0.4, -0.4), stud(0.4, -0.4), stud(1.2, -0.4),
@@ -406,7 +324,6 @@ final class SlamCartoon {
                 .moved(x, 0.0, z);
     }
 
-    /** A toy brick: it drops, tumbling a little, lands with a squash and bounces a few times, lower every time. */
     static Vec3 brick(LanternPainter painter, Moment m) {
         Frame base = SlamPainter.dropped(m, BRICK_SCALE, 0.0, m.forward(), 0.7);
         double since = m.since();
@@ -417,18 +334,11 @@ final class SlamCartoon {
         return body.at(0.0, 1.16, 0.0);
     }
 
-    // ---- The stamp ----
-
     private static final double STAMP_SCALE = 1.5;
 
-    /**
-     * A rubber stamp: the lantern emblem raised under its rubber, the mount with a bevel round its top, and a turned
-     * wooden handle with a band round its neck.
-     */
     private static final Shape STAMP = new Shape(new double[][] {
             { -1.10, 0.06, -0.80, 1.10, 0.20, 0.80, 1.2 },
             { -1.00, 0.20, -0.72, 1.00, 0.50, 0.72, 0.95 },
-            // The bars of the emblem, under the rubber
             { -0.55, 0.00, -0.68, 0.55, 0.06, -0.56, 1.25 },
             { -0.55, 0.00, 0.56, 0.55, 0.06, 0.68, 1.25 } },
             Mesh.ring(20, 1.25, 0.30, 0.0, 0.46, 0.0, 0.46, 0.06, 0.30, 0.06),
@@ -437,10 +347,6 @@ final class SlamCartoon {
                     0.48, 1.65, 0.42, 1.85, 0.25, 1.98, 0.0, 2.02),
             Mesh.torus(14, 6, 0.17, 0.035, 1.25).moved(0.0, 0.95, 0.0));
 
-    /**
-     * A rubber stamp: it drops and stamps the ground, rocks a little as it presses down, lifts again, and leaves the
-     * lantern emblem glowing in the ground where it stood.
-     */
     static Vec3 stamp(LanternPainter painter, Moment m) {
         double since = m.since();
         double lift = m.struck() ? 1.1 * Ease.smooth((since - 1.5) / 5.0) : 0.0;
@@ -457,7 +363,6 @@ final class SlamCartoon {
         return body.at(0.0, 2.02, 0.0);
     }
 
-    /** The lantern emblem lying in the ground, as a stamp leaves it: a ring with a bar above and below it. */
     private static void print(LanternPainter painter, Vec3 at, Vec3 right, Vec3 forward, double size,
             double strength) {
         if (strength <= 0.0) {
@@ -474,12 +379,6 @@ final class SlamCartoon {
         }
     }
 
-    // ---- Shared ----
-
-    /**
-     * A note of music drawn in light, facing the camera: a round head, a stem up from it and a flag. Light, not a
-     * construct, so it fades.
-     */
     private static void note(LanternPainter painter, Vec3 at, double size, double strength) {
         Vec3 view = painter.camera().subtract(at);
         Vec3 side = view.cross(SlamPainter.UP);

@@ -28,45 +28,28 @@ import static nl.tivek.multiversepowers.character.greenlantern.client.render.Pla
 import static nl.tivek.multiversepowers.character.greenlantern.client.render.PlaneShapes.PROP_RADIUS;
 import static nl.tivek.multiversepowers.character.greenlantern.client.render.PlaneShapes.hull;
 
-/**
- * The plane in flight (see {@link PlanePainter}): its bomb bay and the missiles dropping out of it, its propellers,
- * its lights, the flames of its engines, its scan and the engine that bursts; and its moving parts breaking up with
- * it.
- */
 final class PlaneParts {
-    // How fast the propellers turn at full speed, in radians per tick, and how long the one that bursts takes to run
-    // down, in ticks.
     private static final double PROP_SPIN = 0.55;
     private static final double PROP_DIES = 12.0;
-    // How far to its right the hubs of its four propellers are: the left outer one, the left inner one, the right inner
-    // one (the one that bursts) and the right outer one.
     private static final double[] ENGINES = { -AirStrike.ENGINE_OUTER_X, -AirStrike.ENGINE_X, AirStrike.ENGINE_X,
             AirStrike.ENGINE_OUTER_X };
-    // A big missile's motor fires this many ticks after it dropped at the earliest: until then it only falls.
     private static final int EARLIEST_IGNITION = 4;
-    // Where a missile waits in the bay, how high in the body, before it is lowered out.
     private static final double IN_BAY_Y = -1.95;
 
     private PlaneParts() {
     }
 
-    /** How many ticks there are between two missiles out of the hatch, as the world's settings have it. */
     private static int missileEvery() {
         CharacterAbility strike = GameCharacter.GREEN_LANTERN.byName("air_strike");
         return Math.max(4, strike == null ? 40 : strike.intValue("missileTicks"));
     }
 
-    /**
-     * The bomb bay: its two doors swing open on their hinges (and the dark hollow behind them shows) before a missile
-     * drops, the missile is lowered out of it, and the doors swing shut again once it is clear.
-     */
     static void hatch(LanternPainter painter, PlanePath path, ConstructPainter.Frame frame, double t) {
         int every = missileEvery();
         double open = path.hatch(t, every);
         if (open > 0.0) {
             painter.shape(BAY_INSIDE, frame, 1.0, 1.0);
         }
-        // Each door turns about its hinge, where it meets the body, outwards and down.
         double[] hull = hull(AirStrike.BAY_Z);
         double hinge = Math.toRadians(270.0 + BAY_HALF_ANGLE);
         double hingeX = hull[1] * Math.cos(hinge);
@@ -85,11 +68,6 @@ final class PlaneParts {
         }
     }
 
-    /**
-     * The big missiles that just dropped out of the hatch, falling away under the plane with their motors dead, the way
-     * the server moves them (see {@link PlanePath#fall}), from the very spot they hung in the hatch: until each one's
-     * motor fires or it strikes, when it is drawn as a missile of its own (see {@link ClientConstructs#launch}).
-     */
     static void dropping(LanternPainter painter, int owner, PlanePath path, double t, float partialTick) {
         int every = missileEvery();
         for (int release = path.lastRelease(t, every); release >= 0 && t - release <= AirStrike.IGNITE_LATEST + 2;
@@ -108,13 +86,11 @@ final class PlaneParts {
         }
     }
 
-    /**
-     * A missile let go of {@code since} ticks ago, still falling with its motor dead (see {@link PlanePath#fall}), from
-     * how it was let go: {where it is, its nose, its up}, smooth between the ticks.
-     */
     static Vec3[] falling(Vec3[] released, boolean small, double since) {
         int ticks = (int) Math.floor(Math.max(0.0, since));
         Vec3[] state = released;
+        // fall() is a step function (drag and gravity applied once per tick), so it must be replayed tick by
+        // tick, not computed directly for an arbitrary "since".
         for (int k = 0; k < ticks; k++) {
             state = PlanePath.fall(state, small);
         }
@@ -124,10 +100,6 @@ final class PlaneParts {
         return new Vec3[] { state[0].lerp(next[0], u), nose, PlanePath.carried(state[3].lerp(next[3], u), nose) };
     }
 
-    /**
-     * The four propellers, spinning up as it takes shape. The one that bursts runs down and stands still; the others
-     * roar on into the ground.
-     */
     static void propellers(LanternPainter painter, PlanePath path, ConstructPainter.Frame frame, double t,
             double grown) {
         double failed = path.failTick();
@@ -138,7 +110,6 @@ final class PlaneParts {
             }
             ConstructPainter.Frame hub = frame.moved(ENGINES[e], AirStrike.ENGINE_Y, AirStrike.ENGINE_Z);
             painter.shape(PROPELLER, hub.turned(0.0, 0.0, 0.0, 0.0, 0.0, 1.0, propeller(path, e, t)), 1.0, 1.0);
-            // Turning fast, the air round its blades shimmers: a faint ring of light where their tips run.
             double blur = Mth.clamp(speed / PROP_SPIN, 0.0, 1.0) * grown;
             if (blur > 0.05) {
                 Vec3 middle = hub.at(0.0, 0.0, 0.62);
@@ -149,16 +120,10 @@ final class PlaneParts {
         }
     }
 
-    /** How far the propellers have turned {@code t} ticks after the call, in radians. */
     private static double spun(double t) {
         return PROP_SPIN * Math.max(0.0, t - GROW_FROM) * Ease.smooth((t - GROW_FROM) / 40.0);
     }
 
-    /**
-     * How far propeller {@code e} (see {@link #ENGINES}) is turned about its hub {@code t} ticks after the call, in
-     * radians: the one that bursts runs down after the burst and stands still, and the left ones turn the other way
-     * round, as they would on a real plane.
-     */
     private static double propeller(PlanePath path, int e, double t) {
         double failed = path.failTick();
         double spun = spun(t);
@@ -168,10 +133,6 @@ final class PlaneParts {
         return (e < 2 ? -spun : spun) + e * 0.7;
     }
 
-    /**
-     * The plane's own moving parts breaking up with it (see {@link ConstructPainter#shattered}), as they were when it
-     * broke: its propellers, its miniguns as they pointed, and the doors of its hatch.
-     */
     static void partsBroken(LanternPainter painter, int owner, PlanePath path, ConstructPainter.Frame frame,
             double t, double apart, double bright) {
         for (int e = 0; e < ENGINES.length; e++) {
@@ -199,10 +160,6 @@ final class PlaneParts {
         }
     }
 
-    /**
-     * Lights on its wingtips and tail blinking in turn, beacons on its back and belly flashing, its landing lights
-     * burning, and a faint glow on the tips of its wings.
-     */
     static void lights(LanternPainter painter, ConstructPainter.Frame frame, double t, double down) {
         double blink = Math.max(0.0, 1.0 - Mth.frac(t / 30.0) * 6.0);
         double tail = Math.max(0.0, 1.0 - Mth.frac(t / 30.0 + 0.5) * 6.0);
@@ -216,7 +173,6 @@ final class PlaneParts {
         painter.flare(frame.at(0.0, -2.75, 7.0), (0.4 + 2.2 * beacon) * s, 0.3 + 0.7 * beacon);
         painter.flare(frame.at(0.0, 3.5, 1.5), (0.4 + 1.8 * beacon) * s, 0.3 + 0.7 * beacon);
         if (down > 0.0) {
-            // Going down, the tips of its wings trail streaks of light.
             for (int side = -1; side <= 1; side += 2) {
                 Vec3 tip = frame.at(side * 28.0, 3.45, 0.4);
                 painter.edge(tip, tip.subtract(frame.forward().scale(8.0 * down * s)), 0.3 * s, 0.6 * down);
@@ -224,7 +180,6 @@ final class PlaneParts {
         }
     }
 
-    /** Every engine breathes a faint flame of light out of its exhaust stack; the one that burst only burns. */
     static void engines(LanternPainter painter, PlanePath path, ConstructPainter.Frame frame, double t,
             double grown) {
         double power = 0.55 * Ease.smooth((t - GROW_FROM - 10.0) / 20.0) * Math.min(1.0, grown);
@@ -244,10 +199,6 @@ final class PlaneParts {
         }
     }
 
-    /**
-     * While its sensor scans, a cone of light shines out of the ball under its nose down onto the ground, where the wave
-     * of the scan rolls out.
-     */
     static void scanCone(LanternPainter painter, int owner, ConstructPainter.Frame frame, float partialTick) {
         Vec3 sensor = frame.at(0.0, AirStrike.SENSOR_Y, AirStrike.SENSOR_Z);
         for (ClientConstructs.Scan scan : ClientConstructs.scans(partialTick)) {
@@ -273,10 +224,6 @@ final class PlaneParts {
         }
     }
 
-    /**
-     * An engine bursts: a flash and a spray of sparks, and from then on flames of light blow back out of it and a trail
-     * of light and sparks follows the plane down.
-     */
     static void burning(LanternPainter painter, PlanePath path, ConstructPainter.Frame frame, double t) {
         double failed = path.failTick();
         double after = t - failed;
@@ -297,7 +244,6 @@ final class PlaneParts {
                 flicker);
         painter.exhaust(frame.at(AirStrike.ENGINE_X, AirStrike.ENGINE_Y + 0.9, 3.0), back, 5.0 * s, 0.8 * s,
                 0.6 * flicker);
-        // Its trail: light and sparks along where the burning engine was on the last ticks.
         Vec3 last = path.point(t, AirStrike.ENGINE_X, AirStrike.ENGINE_Y, -4.0);
         for (int k = 1; k <= 12; k++) {
             double then = Math.max(failed, t - 2.0 * k);

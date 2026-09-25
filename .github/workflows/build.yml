@@ -1,5 +1,3 @@
-# Checks that every push and pull request still builds, and keeps the jar as a download for a week.
-# Releases themselves are made locally with scripts/release.ps1.
 name: Build
 
 on:

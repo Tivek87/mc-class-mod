@@ -14,11 +14,6 @@ import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.util.FormattedCharSequence;
 import nl.tivek.multiversepowers.engine.client.gui.GuiShapes;
 
-/**
- * Lays out release notes, written in the Markdown of the release page, as blocks for {@link ChangelogScreen}: a
- * header per version, a coloured label per section ("Added", "Changed", "Fixed"), bullets with their bold lead, and
- * {@code code} in its own colour. The install line under the notes' rule ({@code ---}) is for the web page only.
- */
 final class ChangelogLayout {
     static final int BODY = 0xD4D8DE;
     static final int MUTED = 0x8C95A3;
@@ -30,7 +25,6 @@ final class ChangelogLayout {
     private static final float VERSION_SCALE = 1.4F;
     private static final Pattern INLINE = Pattern.compile("\\*\\*(.+?)\\*\\*|`([^`]+)`|\\[([^\\]]+)]\\([^)]*\\)");
 
-    /** One piece of the page, drawn from its top left corner. */
     interface Block {
         int height();
 
@@ -40,10 +34,6 @@ final class ChangelogLayout {
     private ChangelogLayout() {
     }
 
-    /**
-     * The blocks for these releases, newest first, wrapped to {@code width}: "NEW" on the newest when it is not the
-     * installed one, "INSTALLED" on the one running. A {@code note} (loading, failed) comes last, in grey.
-     */
     static List<Block> build(Font font, List<Release> releases, String installed, @Nullable Component note, int width) {
         List<Block> blocks = new ArrayList<>();
         for (int i = 0; i < releases.size(); i++) {
@@ -118,7 +108,6 @@ final class ChangelogLayout {
         return false;
     }
 
-    /** The colour of a section, by its name. */
     private static int colorOf(String heading) {
         String name = heading.toLowerCase(Locale.ROOT);
         if (name.startsWith("add") || name.startsWith("new")) {
@@ -133,7 +122,6 @@ final class ChangelogLayout {
         return 0xF2C84B;
     }
 
-    /** Bold, {@code code} and links, the rest in the body colour. */
     static Component inline(String text) {
         MutableComponent out = Component.empty();
         Matcher match = INLINE.matcher(text);
@@ -157,7 +145,6 @@ final class ChangelogLayout {
         return out;
     }
 
-    /** The version, big, with its label ("NEW", "INSTALLED") and the date on the right. */
     private static Block header(Font font, Release release, @Nullable Component label, int chipColor, int width) {
         Component version = Component.literal("v" + release.version()).withStyle(ChatFormatting.BOLD);
         Component date = Component.literal(UpdateManagerScreen.DATE.format(release.published()));
@@ -187,7 +174,6 @@ final class ChangelogLayout {
         };
     }
 
-    /** A section's name as a coloured label. */
     private static Block label(Font font, String heading, int color) {
         Component text = Component.literal(heading.toUpperCase(Locale.ROOT)).withStyle(ChatFormatting.BOLD);
         return new Block() {
@@ -206,7 +192,6 @@ final class ChangelogLayout {
         };
     }
 
-    /** Wrapped text; with a bullet colour ({@code bullet >= 0}) a dot before the first line. */
     private static Block text(Font font, Component text, int indent, int bullet, int width) {
         List<FormattedCharSequence> lines = font.split(text, width - indent);
         return new Block() {

@@ -17,45 +17,30 @@ import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 import static nl.tivek.multiversepowers.character.greenlantern.ability.GiantHands.SCALE;
 import static nl.tivek.multiversepowers.character.greenlantern.ability.GiantHands.head;
 
-/**
- * What a pair of hands with an axe (see {@link HandDuo}) does on the server as a {@link GiantHand}: what is heard
- * and seen at each moment of it, and its axe's blow.
- */
 abstract class GiantHandPair extends GiantHandBase {
-    // A pair's axe chopped into the ground: how far round the middle of its blade it strikes, flat, in blocks, what
-    // share of the damage that does in the middle and at the edge, and how hard it throws, away and up (next to the
-    // knockback setting).
     private static final double AXE_REACH = 6.0;
     private static final double AXE_MIDDLE = 3.0;
     private static final double AXE_EDGE = 1.5;
     private static final double AXE_OUT = 2.4;
     private static final double AXE_UP = 1.4;
-    // How many ticks before its blow the axe is heard coming down.
     private static final int CHOP_HEARD = 5;
 
     GiantHandPair(GiantHands storm, int variant, Vec3 base, LivingEntity target) {
         super(storm, variant, base, target);
     }
 
-    /** Where the pair and its axe are now (see {@link HandDuo}). */
     private HandDuo duo() {
         return HandDuo.at(this.base, this.variant, this.aim, this.t, SCALE);
     }
 
-    /**
-     * The pair with the axe: what is heard and seen at each moment of it (see {@link HandDuo}); its blow is
-     * {@link #chop}.
-     */
     void pair(ServerLevel level) {
         int t = this.t;
         if (t == HandDuo.ARRIVES) {
-            // The ring's light reaches its spot: the two side portals burst open.
             HandDuo duo = this.duo();
             this.opens(level, duo.leftPortal, 1.5F);
             this.opens(level, duo.rightPortal, 1.7F);
         }
         if (t == HandDuo.OUT) {
-            // Both hands are all the way out, and hang there humming.
             HandDuo duo = this.duo();
             for (HandPose.Place hand : List.of(duo.leftPlace, duo.rightPlace)) {
                 Vec3 wrist = hand.wrist();
@@ -64,7 +49,6 @@ abstract class GiantHandPair extends GiantHandBase {
             }
         }
         if (t == HandDuo.SNAP) {
-            // The right hand snaps its fingers: a crisp click and sparks between thumb and middle finger.
             Vec3 snap = this.duo().rightPlace.at(HandDuo.SNAP_AT);
             ParticleFx.sphereOut(level, ParticleTypes.ELECTRIC_SPARK, snap, 12, 0.3);
             ParticleFx.sphereOut(level, ParticleFx.dust(PowerRing.BRIGHT, 1.0F), snap, 14, 0.22);
@@ -72,7 +56,6 @@ abstract class GiantHandPair extends GiantHandBase {
             this.storm.sound(level, snap, SoundEvents.AMETHYST_BLOCK_CHIME, 1.8F, 1.5F);
         }
         if (t == HandDuo.OK) {
-            // The left hand makes the OK sign: a bright ding and a sparkle in the ring of thumb and finger.
             Vec3 ok = this.duo().leftPlace.at(HandDuo.OK_AT);
             ParticleFx.cloud(level, ParticleTypes.END_ROD, ok, 6, 0.2, 0.02);
             ParticleFx.sphereOut(level, ParticleFx.dust(PowerRing.BRIGHT, 0.9F), ok, 12, 0.12);
@@ -80,11 +63,9 @@ abstract class GiantHandPair extends GiantHandBase {
             this.storm.sound(level, ok, SoundEvents.AMETHYST_BLOCK_CHIME, 1.4F, 1.9F);
         }
         if (t == HandDuo.AXE_OPENS) {
-            // The hands fling apart and the third portal bursts open beyond them.
             this.opens(level, this.duo().axePortal, 0.8F);
         }
         if (t == HandDuo.GRAB) {
-            // Both fists close on the haft with a heavy clank.
             HandDuo duo = this.duo();
             for (double along : new double[] { HandDuo.GRIP_LOW, HandDuo.GRIP_HIGH }) {
                 Vec3 grip = duo.axeEnd.add(duo.axeUp.scale(along * SCALE));
@@ -95,7 +76,6 @@ abstract class GiantHandPair extends GiantHandBase {
             this.storm.sound(level, middle, SoundEvents.ANVIL_PLACE, 1.4F, 0.6F);
         }
         if (t == HandDuo.AXE_FREE) {
-            // Its head comes free with a ring of steel, and its portal snaps shut behind it.
             HandDuo duo = this.duo();
             Vec3 head = head(duo);
             this.shuts(level, duo.axePortal, 1.2F);
@@ -103,14 +83,12 @@ abstract class GiantHandPair extends GiantHandBase {
             this.storm.sound(level, head, SoundEvents.AMETHYST_BLOCK_HIT, 1.6F, 0.7F);
         }
         if (t == HandDuo.RAISED) {
-            // Heaved up over the top: it hangs there a beat, humming with its weight.
             Vec3 head = head(this.duo());
             ParticleFx.cloud(level, ParticleFx.dust(PowerRing.PALE, 1.2F), head, 10, 0.8, 0.02);
             this.storm.sound(level, head, SoundEvents.ENDER_DRAGON_FLAP, 1.8F, 0.6F);
             this.storm.sound(level, head, SoundEvents.AMETHYST_BLOCK_RESONATE, 2.0F, 0.5F);
         }
         if (t == Math.max(HandDuo.RAISED + 1, HandDuo.IMPACT - CHOP_HEARD)) {
-            // It comes down.
             Vec3 head = head(this.duo());
             this.storm.sound(level, head, SoundEvents.PLAYER_ATTACK_SWEEP, 2.4F, 0.5F);
             this.storm.sound(level, head, SoundEvents.ENDER_DRAGON_FLAP, 2.0F, 0.9F);
@@ -119,7 +97,6 @@ abstract class GiantHandPair extends GiantHandBase {
             this.chop(level);
         }
         if (t == HandDuo.THUMBS) {
-            // Both hands give him a thumbs up: a cheerful ding, two notes, and a twinkle over each thumb.
             HandDuo duo = this.duo();
             HandPose.Place[] both = { duo.leftPlace, duo.rightPlace };
             float[] notes = { 1.19F, 1.5F };
@@ -133,13 +110,11 @@ abstract class GiantHandPair extends GiantHandBase {
             this.storm.sound(level, between, SoundEvents.PLAYER_LEVELUP, 0.6F, 1.4F);
         }
         if (t == HandDuo.RETRACT) {
-            // They pull back into their portals.
             HandDuo duo = this.duo();
             this.storm.sound(level, duo.leftPlace.wrist(), SoundEvents.ENDER_DRAGON_FLAP, 1.2F, 1.6F);
             this.storm.sound(level, duo.rightPlace.wrist(), SoundEvents.ENDER_DRAGON_FLAP, 1.2F, 1.7F);
         }
         if (t == HandDuo.HANDS_GONE) {
-            // The hands are gone and their portals pop shut.
             HandDuo duo = this.duo();
             this.shuts(level, duo.leftPortal, 1.6F);
             this.shuts(level, duo.rightPortal, 1.8F);
@@ -149,7 +124,6 @@ abstract class GiantHandPair extends GiantHandBase {
         }
     }
 
-    /** A portal of the ring's light bursting open: light flung off its rim, a hum, a whoosh and a chime. */
     private void opens(ServerLevel level, HandDuo.Portal portal, float pitch) {
         Vec3 middle = portal.center();
         this.rim(level, portal, false);
@@ -159,7 +133,6 @@ abstract class GiantHandPair extends GiantHandBase {
         this.storm.sound(level, middle, SoundEvents.AMETHYST_BLOCK_CHIME, 1.6F, pitch * 0.7F);
     }
 
-    /** A portal of the ring's light snapping shut: its light sucked in off its rim, and a pop. */
     private void shuts(ServerLevel level, HandDuo.Portal portal, float pitch) {
         Vec3 middle = portal.center();
         this.rim(level, portal, true);
@@ -168,7 +141,6 @@ abstract class GiantHandPair extends GiantHandBase {
         this.storm.sound(level, middle, SoundEvents.BEACON_DEACTIVATE, 1.2F, pitch);
     }
 
-    /** Light flung off the rim of a portal at its full size: out as it bursts open, in as it snaps shut. */
     private void rim(ServerLevel level, HandDuo.Portal portal, boolean in) {
         ParticleOptions light = ParticleFx.dust(PowerRing.BRIGHT, 1.3F);
         int points = Math.max(12, (int) Math.round(portal.radius() * 10.0));
@@ -180,14 +152,9 @@ abstract class GiantHandPair extends GiantHandBase {
         }
     }
 
-    /**
-     * The axe's blow: everything fair round where the middle of its blade bites into the ground is hurt, three
-     * times the damage right there and half that at the edge of the blow, and flung far away from it and up.
-     */
     private void chop(ServerLevel level) {
         Vec3 edge = HandDuo.strike(this.base, this.variant, this.aim, SCALE);
         Vec3 middle = new Vec3(edge.x, this.base.y, edge.z);
-        // Right in the middle: straight away from him (the way the pair is laid out may be turned to find room).
         Vec3 ahead = new Vec3(middle.x - this.storm.owner.getX(), 0.0,
                 middle.z - this.storm.owner.getZ());
         ahead = ahead.lengthSqr() < 1.0E-4 ? HandPose.axeWay(this.variant) : ahead.normalize();
@@ -215,7 +182,6 @@ abstract class GiantHandPair extends GiantHandBase {
         ParticleFx.shockwave(level, ParticleFx.dust(PowerRing.PALE, 2.0F), low, 64, 1.1);
         ParticleFx.shockwave(level, ParticleFx.dust(PowerRing.BRIGHT, 1.5F), low, 40, 0.6);
         ParticleFx.sphereOut(level, ParticleFx.dust(PowerRing.BRIGHT, 1.6F), middle.add(0.0, 1.2, 0.0), 30, 0.5);
-        // Cracks of light running out over the ground from the blade.
         ParticleOptions crack = ParticleFx.dust(PowerRing.BRIGHT, 1.1F);
         for (int i = 0; i < 6; i++) {
             double angle = Math.PI * 2.0 * (i + 0.2 + ParticleFx.RANDOM.nextDouble() * 0.6) / 6.0;
@@ -230,7 +196,6 @@ abstract class GiantHandPair extends GiantHandBase {
         this.storm.sound(level, middle, SoundEvents.ROOTED_DIRT_BREAK, 2.4F, 0.4F);
     }
 
-    /** The axe left in the ground breaks into solid pieces: chips of hard light fly, and the ground crumbles. */
     private void breakAxe(ServerLevel level) {
         HandDuo duo = this.duo();
         ParticleOptions chips = new BlockParticleOption(ParticleTypes.BLOCK,

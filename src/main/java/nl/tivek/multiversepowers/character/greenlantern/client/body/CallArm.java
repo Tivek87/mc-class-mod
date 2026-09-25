@@ -17,33 +17,23 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RenderHandEvent;
 import nl.tivek.multiversepowers.MultiversePowers;
-import nl.tivek.multiversepowers.character.greenlantern.ability.AirStrike;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.PlanePainter;
 import org.joml.Vector3f;
 
-/**
- * Green Lantern's ring fist thrown straight up at the sky to call the plane of his air strike (see {@link AirStrike}):
- * seen from outside the arm straight up over his head, and in first person the fist at the top right of your screen.
- */
 @EventBusSubscriber(modid = MultiversePowers.MODID, value = Dist.CLIENT)
 public final class CallArm {
-    // Your ring fist in first person, thrown up high: top right of your screen, the arm rising to it from below.
     static final Vector3f UP_HIGH = new Vector3f(0.42F, 0.24F, -0.78F);
     private static final Vector3f ARM_FROM = new Vector3f(0.75F, -1.1F, -0.15F);
-    // Seen from outside: the arm up high, tipped a little forward and out to the side, so the fist stands clear of
-    // the head.
     private static final float RAISED = -2.75F;
     private static final float RAISED_OUT = -0.4F;
 
     private CallArm() {
     }
 
-    /** How far this player's ring fist is thrown up high to call an air strike's plane, 0 to 1. */
     public static float up(Entity player, float partialTick) {
         return PlanePainter.raised(player, partialTick);
     }
 
-    /** Seen from outside: the ring arm thrown straight up, the fist high over his head. */
     static void pose(HumanoidModel<?> model, LivingEntity entity, HumanoidArm arm) {
         if (arm != HumanoidArm.RIGHT) {
             return;
@@ -57,10 +47,6 @@ public final class CallArm {
         model.rightArm.zRot = Mth.lerp(up, model.rightArm.zRot, RAISED_OUT);
     }
 
-    /**
-     * Your own ring fist in first person, thrown up high to call the plane: before anything else would draw your hand.
-     * Waving at a giant hand meanwhile, it goes up from where that wave has it (see {@link HandsArm}).
-     */
     @SubscribeEvent(priority = EventPriority.HIGH)
     public static void onRenderHand(RenderHandEvent event) {
         Minecraft minecraft = Minecraft.getInstance();

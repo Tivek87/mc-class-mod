@@ -6,7 +6,6 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import nl.tivek.multiversepowers.MultiversePowers;
 
-/** Server tells a player to spend stamina (a hit taken while blocking). Stamina itself lives on the client. */
 public record StaminaCostPayload(float amount) implements CustomPacketPayload {
     public static final CustomPacketPayload.Type<StaminaCostPayload> TYPE = new CustomPacketPayload.Type<>(
             ResourceLocation.fromNamespaceAndPath(MultiversePowers.MODID, "stamina_cost"));

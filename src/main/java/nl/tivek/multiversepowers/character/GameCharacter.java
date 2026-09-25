@@ -11,16 +11,7 @@ import nl.tivek.multiversepowers.character.docock.DocOckPowers;
 import nl.tivek.multiversepowers.character.greenlantern.GreenLanternPowers;
 import nl.tivek.multiversepowers.config.Unit;
 
-/**
- * Everyone you can turn into from the wheel (hold G). Picking a character changes you into them; the
- * ability keys stay the same and simply do that character's abilities (see {@link AbilitySlot}).
- *
- * <p>Adding a character is one entry here with its abilities, and its {@link CharacterPowers} (what its own code
- * does on the server); the wheel, the key handling, the cooldowns, the HUD and the config sections follow by
- * themselves.
- */
 public enum GameCharacter {
-    /** Doctor Octopus: four robot tentacles on your back. */
     DOC_OCK("doc_ock", 0xA8AEB8, new DocOckPowers()) {
         @Override
         void fill(Map<AbilitySlot, CharacterAbility> abilities) {
@@ -56,7 +47,6 @@ public enum GameCharacter {
             this.add(abilities, AbilitySlot.ABILITY_7, "rampage").cooldown(1800).damage(3.0)
                     .settingInt("durationTicks", 400, 20, 6000, Unit.TICKS,
                             "How long the rampage lasts, in ticks (20 ticks = 1 second)");
-            // Kept free on purpose: the next ability goes here.
             this.add(abilities, AbilitySlot.ABILITY_8, "placeholder");
             this.add(abilities, AbilitySlot.ABILITY_9, "stance").cooldown(6)
                     .crouch(CharacterAbility.Crouch.ALTERNATE);
@@ -66,16 +56,12 @@ public enum GameCharacter {
                             "How far you can mark a creature, and how far a tentacle travels under the ground")
                     .setting("knockUp", 0.55, 0.0, 3.0, Unit.STRENGTH,
                             "How hard the spike throws what it hits into the air");
-            // Kept free as well; its own id because the config has one section per id.
             this.add(abilities, AbilitySlot.ABILITY_11, "placeholder_2");
         }
     },
-    /** Green Lantern: a power ring that shapes green hard light into whatever he wills. */
     GREEN_LANTERN("green_lantern", 0x3CE86A, new GreenLanternPowers()) {
         @Override
         void fill(Map<AbilitySlot, CharacterAbility> abilities) {
-            // His right hand attacks and his left hand defends: the ring sits on his right middle finger, the
-            // fist charges on his right, and the lantern goes in his left hand.
             this.add(abilities, AbilitySlot.ABILITY_1, "giant_fist").held().cooldown(80).damage(12.0)
                     .group("hit", "The hit")
                     .setting("fullChargeDamage", 28.0, 0.0, 2000.0, Unit.HALF_HEARTS,
@@ -106,8 +92,6 @@ public enum GameCharacter {
                                     + " never break")
                     .settingInt("maxBlocksBroken", 150, 0, 4000, Unit.BLOCK_COUNT,
                             "How many blocks one fist can smash at most before it only pushes through");
-            // Hold the key for the wheel of hard-light weapons; your own game tells the server what you pick. Its first
-            // construct is a sword and a shield: the mouse is theirs while you hold them (see SwordShield).
             this.add(abilities, AbilitySlot.ABILITY_2, "construct_wheel").held().clientOnly()
                     .group("sword", "Sword (left click)")
                     .setting("swordDamage", 8.0, 0.0, 2000.0, Unit.HALF_HEARTS,
@@ -142,13 +126,10 @@ public enum GameCharacter {
                                     + " its edge")
                     .setting("slamRadius", 3.5, 0.5, 10.0, Unit.BLOCKS,
                             "How far that shockwave reaches, in blocks");
-            // Hold the lantern up and smack the ring against it: the ring drinks part of its light.
             this.add(abilities, AbilitySlot.ABILITY_3, "recharge").cooldown(60)
                     .setting("powerRestored", 50.0, 1.0, 100.0, Unit.POWER,
                             "How much power one touch of the lantern puts back in the ring (a full ring holds"
                                     + " 100)");
-            // What the ring always does, on the mouse: the right hand attacks (left click) and the left hand
-            // defends (right click). A tap does the quick version; holding the button 2 seconds the lasting one.
             this.add(abilities, AbilitySlot.ABILITY_4, "light_bolt").held().mouse(CharacterAbility.Mouse.LEFT)
                     .holdVersion(40, CharacterAbility.Tap.PRESS).damage(6.0)
                     .group("bolt", "Light Bolt (tap the button)")
@@ -203,8 +184,6 @@ public enum GameCharacter {
                                     + " scrape over it")
                     .setting("ramGroundBlocks", 1.5, 0.2, 6.0, Unit.BLOCKS,
                             "How close above the ground the ram cone counts as scraping along it, in blocks");
-            // The ring scans the area: a wave of its light rolls out through walls and all, and marks every creature
-            // it passes for him, with its name and health, a while.
             this.add(abilities, AbilitySlot.ABILITY_6, "ring_scan").cooldown(160)
                     .setting("rangeBlocks", 56.0, 8.0, 128.0, Unit.BLOCKS,
                             "How far the scan reaches, through walls and all, in blocks")
@@ -213,13 +192,6 @@ public enum GameCharacter {
                             "How long every creature the scan passed stays marked for you, in seconds")
                     .was(12.0)
                     .setting("powerCost", 2.0, 0.0, 100.0, Unit.POWER, "Ring power one scan costs");
-            // The ultimate: he throws his ring fist up at the sky and a big, slow gunship of hard light with four
-            // propellers takes shape high over the battlefield, with two jets that race round it. It drones on in a
-            // straight line over the area he looked at, scans it for everything out to hurt him and fires at that: its
-            // two miniguns (with nothing marked they rake the ground along its way), big homing missiles that drop out
-            // of the hatch in its belly, and the small homing missiles of its jets. Then an engine bursts, the jets race
-            // off, and it plunges down and crashes in a massive blast of green energy that blows a crater out of the
-            // ground (this damage in the middle, half of it at the edge).
             this.add(abilities, AbilitySlot.ABILITY_7, "air_strike").cooldown(1800).damage(48.0).damageWas(40.0)
                     .setting("attackSeconds", 20.0, 2.0, 60.0, Unit.SECONDS,
                             "How long the plane drones on and fires before it plunges down, in seconds; its engine"
@@ -270,9 +242,6 @@ public enum GameCharacter {
                     .settingInt("debrisBlocks", 90, 0, 400, Unit.BLOCK_COUNT,
                             "How many of the crater's blocks are hurled up and away, to come down all round it")
                     .was(40.0);
-            // Smash the ring fist into the ground: the ring throws up a construct in front of him that strikes and
-            // sends a shockwave over it. In the air he dives down to the ground first. Flying into the ground at full
-            // speed does the same by itself, with these same numbers.
             this.add(abilities, AbilitySlot.ABILITY_8, "shockwave").cooldown(100).damage(12.0)
                     .setting("radiusBlocks", 5.0, 1.0, 16.0, Unit.BLOCKS, "How far the shockwave reaches, in blocks")
                     .setting("knockback", 1.2, 0.0, 5.0, Unit.STRENGTH,
@@ -287,8 +256,6 @@ public enum GameCharacter {
                     .setting("slowMotion", 1.5, 0.5, 4.0, Unit.STRENGTH,
                             "How slowly the constructs play: 1 = the old pace, 1.5 = half again as slow, 2 = twice"
                                     + " as slow. The shockwave strikes that much later too");
-            // Fly: fists to the chest, arms down along the sides and up you go. The ring pays for every second of
-            // it, so a full ring lasts a set time in the air.
             this.add(abilities, AbilitySlot.ABILITY_9, "flight").cooldown(20)
                     .setting("powerCost", 0.8, 0.0, 100.0, Unit.POWER, "Ring power you need at least to take off")
                     .was(5.0, 2.0)
@@ -296,27 +263,25 @@ public enum GameCharacter {
                             "Seconds a full ring keeps you in the air: flying costs 100 divided by this a second,"
                                     + " and what you shoot or hold up while flying comes on top")
                     .was(15.0, 37.5)
-                    .setting("topSpeed", 9.625, 5.0, 150.0, Unit.BLOCKS_PER_SECOND,
+                    .setting("topSpeed", 6.25625, 5.0, 150.0, Unit.BLOCKS_PER_SECOND,
                             "Top speed in blocks per second (an elytra with firework rockets does about 33)")
-                    .was(50.0, 35.0, 19.25)
-                    .setting("startSpeed", 6.4, 1.0, 150.0, Unit.BLOCKS_PER_SECOND,
+                    .was(50.0, 35.0, 19.25, 9.625)
+                    .setting("startSpeed", 4.16, 1.0, 150.0, Unit.BLOCKS_PER_SECOND,
                             "Speed you set off at, in blocks per second: the longer you fly on, the faster you go, up"
                                     + " to the top speed")
-                    .was(11.7)
-                    .setting("cruiseSpeed", 8.0, 1.0, 150.0, Unit.BLOCKS_PER_SECOND,
+                    .was(11.7, 6.4)
+                    .setting("cruiseSpeed", 5.2, 1.0, 150.0, Unit.BLOCKS_PER_SECOND,
                             "Cruising speed in blocks per second: flying on, you are up to it within a moment, and"
                                     + " from there you keep gaining, up to the top speed")
-                    .was(13.0)
+                    .was(13.0, 8.0)
                     .setting("cruiseSeconds", 0.5, 0.0, 60.0, Unit.SECONDS,
                             "Seconds of flying on from the speed you set off at to the cruising speed (0 = straight"
                                     + " away)")
                     .was(3.0)
-                    .setting("speedUpSeconds", 5.6, 0.0, 300.0, Unit.SECONDS,
+                    .setting("speedUpSeconds", 7.0, 0.0, 300.0, Unit.SECONDS,
                             "Seconds of flying on from the cruising speed to the top speed (0 = straight away);"
                                     + " letting go of forward loses the speed again in a few seconds")
-                    .was(12.0, 30.0)
-                    // He flies faster than the game makes new land by itself: the server makes it ready around him and
-                    // ahead of him while he flies, so he never has to wait at the edge of what is there.
+                    .was(12.0, 30.0, 5.6)
                     .group("chunks", "The world ahead")
                     .settingInt("chunkRadiusBlocks", 128, 0, 256, Unit.BLOCKS,
                             "How far around a flyer the server makes the world ready while he flies (made, loaded and"
@@ -325,10 +290,6 @@ public enum GameCharacter {
                     .setting("chunkAheadSeconds", 8.0, 0.0, 30.0, Unit.SECONDS,
                             "How many seconds of flying ahead of a flyer the server makes the world ready as well, along"
                                     + " the way he flies and at the speed he flies (at most 512 blocks ahead)");
-            // He waves his ring hand this way and that, and at every wave a giant hand of hard light bursts up out of
-            // the ground at one of the creatures out to hurt him round him: it smacks it away, grabs it and throws it,
-            // gives it the middle finger, slaps it flat against the ground, or pounds its fist down on it three times.
-            // A smack does this damage; the others more or less of it.
             this.add(abilities, AbilitySlot.ABILITY_10, "giant_hands").cooldown(600).damage(12.0)
                     .setting("radiusBlocks", 20.0, 4.0, 48.0, Unit.BLOCKS,
                             "How far round you the hands come up at creatures out to hurt you, every way, in blocks"
@@ -342,10 +303,6 @@ public enum GameCharacter {
                             "How hard the hands send a creature flying (a middle finger bursting out of the ground and"
                                     + " the axe of a pair far harder)")
                     .setting("powerCost", 8.0, 0.0, 100.0, Unit.POWER, "Ring power the hands cost");
-            // A bubble of hard light round the creature he looks at: the ring lifts it off the ground and holds it
-            // there, unable to do anything. Press again to pound it into the ground: three slams, straight down, on his
-            // left and on his right (the last one this damage, the two before it a third of it each; half of that to
-            // what stands round it); crouch and press to let it go. The cooldown starts once it is gone.
             this.add(abilities, AbilitySlot.ABILITY_11, "light_bubble").cooldown(240).damage(12.0)
                     .crouch(CharacterAbility.Crouch.UNDO)
                     .setting("rangeBlocks", 24.0, 4.0, 64.0, Unit.BLOCKS,
@@ -375,8 +332,7 @@ public enum GameCharacter {
         this.powers = powers;
     }
 
-    // Enum constants cannot use their own fields in their constructor, so the abilities are filled in
-    // right after all constants exist.
+    // Enum constants cannot use their own fields in their constructor, so abilities are filled in here instead.
     static {
         for (GameCharacter character : values()) {
             character.fill(character.abilities);
@@ -391,7 +347,6 @@ public enum GameCharacter {
 
     abstract void fill(Map<AbilitySlot, CharacterAbility> abilities);
 
-    /** Puts a new ability in a slot and hands it back, so its numbers can be described right after. */
     CharacterAbility add(Map<AbilitySlot, CharacterAbility> abilities, AbilitySlot slot, String id) {
         CharacterAbility ability = new CharacterAbility(this, slot, id);
         abilities.put(slot, ability);
@@ -402,12 +357,10 @@ public enum GameCharacter {
         return this.id;
     }
 
-    /** The colour of this character in the wheel and the HUD. */
     public int getColor() {
         return this.color;
     }
 
-    /** What this character's own code does on the server: becoming them, their abilities, and so on. */
     public CharacterPowers powers() {
         return this.powers;
     }
@@ -416,18 +369,15 @@ public enum GameCharacter {
         return Component.translatable("character." + MultiversePowers.MODID + "." + this.id);
     }
 
-    /** What this character does with that key, or null when they have nothing in that slot. */
     @Nullable
     public CharacterAbility ability(AbilitySlot slot) {
         return this.abilities.get(slot);
     }
 
-    /** Every ability this character has, in slot order. */
     public List<CharacterAbility> abilities() {
         return this.ordered;
     }
 
-    /** One of this character's abilities by its own name ("portal"), or null when they have no such thing. */
     @Nullable
     public CharacterAbility byName(String id) {
         for (CharacterAbility ability : this.ordered) {

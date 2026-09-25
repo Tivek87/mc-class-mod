@@ -26,30 +26,17 @@ import nl.tivek.multiversepowers.engine.effect.Effects;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 import nl.tivek.multiversepowers.engine.world.LoadedWorld;
 
-/**
- * The beam: what the ring does when Green Lantern holds the button of the hand that attacks for a while. A
- * steady beam of hard light pours out of the ring, straight where the crosshair points, and keeps hurting
- * everything in it, all the way through a row of creatures, up to the first wall. It costs ring power every
- * second and stops when he lets go or the ring runs dry. While he flies he can sweep it over the ground below
- * him.
- */
 public final class LightBeam implements Effect {
     private static final double VIEW_RANGE = 128.0;
-    // How far off its middle line a creature can be and still be in the beam, in blocks.
     private static final double REACH = 0.35;
-    // How long it takes to die down once he lets go, in ticks.
     private static final int FADE_TICKS = 3;
 
-    // A charge nobody finished or let go of is forgotten after this many ticks.
     private static final int CHARGE_FORGET = 100;
-    // How much of the whole gathering the server must have seen before the beam may start: half, since a server
-    // that falls behind counts fewer ticks than his own game did, and the network never brings two presses exactly as
-    // far apart as they were made.
+    // How much of the gathering the server must have seen: it falls behind and can count fewer ticks than his own
+    // game did, and the network never brings two presses exactly as far apart as they were made.
     private static final double GATHER_SEEN = 0.5;
 
     private static final Map<UUID, LightBeam> FIRING = new HashMap<>();
-    // When each player's ring started gathering its light for the beam, as a server tick: he holds the attack button
-    // on its way to the beam, and everyone sees the light run down his arm into the ring.
     private static final Map<UUID, Integer> CHARGING = new HashMap<>();
 
     private final int id;
@@ -77,20 +64,11 @@ public final class LightBeam implements Effect {
         this.end = owner.getEyePosition();
     }
 
-    /**
-     * The button has been held long enough: the beam starts pouring out of the ring.
-     *
-     * @return true when it started
-     */
     static boolean start(ServerPlayer owner, ServerLevel level, CharacterAbility ability) {
-        // Whatever happens now, the gathering is over.
         Integer since = CHARGING.remove(owner.getUUID());
         boolean charged = since != null;
-        // Only a ring that really gathered its light a good while pours it out: a game that says so at once is not
-        // believed.
         boolean ready = charged && owner.server.getTickCount() - since >= ability.holdTicks() * GATHER_SEEN;
-        if (!ready || FIRING.containsKey(owner.getUUID()) || Recharge.busy(owner) || GiantFist.holding(owner)
-                || Flight.descending(owner) || GiantHands.waving(owner) || AirStrike.calling(owner)) {
+        if (!ready || FIRING.containsKey(owner.getUUID()) || handsFull(owner) || Flight.descending(owner)) {
             if (charged) {
                 PowerRing.sync(owner);
             }
@@ -111,7 +89,6 @@ public final class LightBeam implements Effect {
                 SoundSource.PLAYERS, 0.8F, 1.9F);
         level.playSound(null, owner.getX(), owner.getEyeY(), owner.getZ(), SoundEvents.BEACON_POWER_SELECT,
                 SoundSource.PLAYERS, 0.8F, 1.8F);
-        // All the light it gathered breaks loose at once.
         level.playSound(null, owner.getX(), owner.getEyeY(), owner.getZ(), SoundEvents.WARDEN_SONIC_BOOM,
                 SoundSource.PLAYERS, 0.45F, 1.7F);
         level.playSound(null, owner.getX(), owner.getEyeY(), owner.getZ(), SoundEvents.FIREWORK_ROCKET_BLAST,
@@ -122,10 +99,6 @@ public final class LightBeam implements Effect {
         return true;
     }
 
-    /**
-     * He pressed the attack button: the ring starts gathering its light, in case he holds the button for the beam.
-     * Letting go before that ({@link #stop}) or the beam starting ({@link #start}) ends it.
-     */
     static void charge(ServerPlayer owner) {
         if (FIRING.containsKey(owner.getUUID()) || CHARGING.containsKey(owner.getUUID())) {
             return;
@@ -134,10 +107,6 @@ public final class LightBeam implements Effect {
         PowerRing.sync(owner);
     }
 
-    /**
-     * How many ticks ago this player's ring started gathering its light for the beam, or -1 when it gathers none. One
-     * that has gone on far longer than the button needs is forgotten.
-     */
     public static int charging(ServerPlayer player) {
         Integer since = CHARGING.get(player.getUUID());
         if (since == null) {
@@ -151,15 +120,9 @@ public final class LightBeam implements Effect {
         return Math.max(0, ticks);
     }
 
-    /**
-     * The button comes up, or something else takes the ring hand: the beam dies down.
-     *
-     * @return true when there was a beam
-     */
     static boolean stop(ServerPlayer owner) {
         LightBeam beam = FIRING.remove(owner.getUUID());
         if (beam == null) {
-            // Let go before the beam came: the light it gathered dies away again.
             if (CHARGING.remove(owner.getUUID()) != null) {
                 PowerRing.sync(owner);
             }
@@ -170,12 +133,19 @@ public final class LightBeam implements Effect {
         return true;
     }
 
-    /** True while the beam pours out of this player's ring. */
     public static boolean firing(ServerPlayer player) {
         return FIRING.containsKey(player.getUUID());
     }
 
-    /** The server stops: no beam is left. */
+    // Bolt and beam leave the ring whenever at least one hand is free.
+    static boolean handsFull(ServerPlayer player) {
+        if (Recharge.busy(player) || Flight.flying(player) && Flight.ticks(player) < Flight.ARISE_TICKS) {
+            return true;
+        }
+        boolean ringHand = GiantFist.holding(player) || GiantHands.waving(player) || AirStrike.calling(player);
+        return ringHand && (LightShield.up(player) || LightDome.up(player));
+    }
+
     public static void clear() {
         FIRING.clear();
         CHARGING.clear();
@@ -197,8 +167,8 @@ public final class LightBeam implements Effect {
             return true;
         }
         float power = PowerRing.power(this.owner);
-        if (!PowerRing.fuels(this.owner, level) || Recharge.busy(this.owner) || GiantFist.holding(this.owner)
-                || Flight.descending(this.owner) || power <= 0.0F) {
+        if (!PowerRing.fuels(this.owner, level) || handsFull(this.owner) || Flight.descending(this.owner)
+                || power <= 0.0F) {
             if (power <= 0.0F) {
                 PowerRing.tell(this.owner, "no_power");
             }
@@ -213,7 +183,6 @@ public final class LightBeam implements Effect {
         return true;
     }
 
-    /** Straight out along the crosshair, up to the first wall: everything in it is hurt every few ticks. */
     private void shine(ServerLevel level) {
         Vec3 eye = this.owner.getEyePosition();
         this.facing = this.owner.getLookAngle();
@@ -229,26 +198,23 @@ public final class LightBeam implements Effect {
                 if (target.getBoundingBox().inflate(REACH).clip(eye, this.end).isEmpty()) {
                     continue;
                 }
-                // Every hit of the beam lands, however quickly they follow each other.
+                // Vanilla invulnerability after a hit would otherwise swallow the beam's next, rapid tick.
                 target.invulnerableTime = 0;
                 target.hurt(level.damageSources().playerAttack(this.owner), this.damage);
-                // The light drives what it hits back, a little with every hit.
                 double resist = Mth.clamp(target.getAttributeValue(Attributes.KNOCKBACK_RESISTANCE), 0.0, 1.0);
                 Vec3 shove = new Vec3(this.facing.x, 0.0, this.facing.z).scale(this.push * (1.0 - resist));
                 target.setDeltaMovement(target.getDeltaMovement().add(shove.x, 0.04 * this.push, shove.z));
                 target.hasImpulse = true;
-                // Players move themselves on their own client, so they have to be told about the push.
+                // A player moves himself on his own client, so the push has to be told to him, unlike a mob's.
                 target.hurtMarked = true;
                 Vec3 at = target.getBoundingBox().getCenter();
                 ParticleFx.cloud(level, ParticleFx.dust(PowerRing.BRIGHT, 1.1F), at, 5, 0.25, 0.0);
                 ParticleFx.cloud(level, ParticleTypes.CRIT, at, 4, 0.3, 0.2);
             }
         }
-        // Where it strikes a wall the light splashes off it.
         if (wall && this.age % 2 == 0) {
             ParticleFx.cloud(level, ParticleFx.dust(PowerRing.GREEN, 1.6F), this.end, 5, 0.25, 0.0);
             ParticleFx.cloud(level, ParticleFx.dust(PowerRing.BRIGHT, 0.9F), this.end, 3, 0.15, 0.0);
-            // Sparks spray back off the wall.
             Vec3 back = this.facing.scale(-1.0);
             for (int i = 0; i < 2; i++) {
                 Vec3 way = back.add(ParticleFx.spread(0.9), ParticleFx.spread(0.9) + 0.3,

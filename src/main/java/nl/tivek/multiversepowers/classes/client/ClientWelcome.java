@@ -19,7 +19,6 @@ public final class ClientWelcome {
     private ClientWelcome() {
     }
 
-    /** Called when the server says this player still has to pick a class. */
     public static void requestWelcomeScreen() {
         // Already picking one: he died and came straight back without a death screen, which leaves this one open.
         Screen screen = Minecraft.getInstance().screen;
@@ -30,7 +29,6 @@ public final class ClientWelcome {
         welcomePending = true;
     }
 
-    /** /classfx opens the developer menu that plays any class's start ceremony. */
     @SubscribeEvent
     public static void onRegisterClientCommands(RegisterClientCommandsEvent event) {
         event.getDispatcher().register(Commands.literal("classfx").executes(context -> {
@@ -55,7 +53,6 @@ public final class ClientWelcome {
 
         Minecraft minecraft = Minecraft.getInstance();
         LocalPlayer player = minecraft.player;
-        // Wait until the world is actually loaded and the loading screen is gone.
         if (player == null || minecraft.level == null || minecraft.screen != null) {
             return;
         }

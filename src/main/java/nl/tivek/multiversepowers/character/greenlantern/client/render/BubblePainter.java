@@ -18,41 +18,21 @@ import nl.tivek.multiversepowers.engine.math.Ease;
 import nl.tivek.multiversepowers.engine.math.Noise;
 import nl.tivek.multiversepowers.engine.math.Vectors;
 
-/**
- * The Light Bubble as everyone sees it (see {@link LightBubble}): a ball-shaped cage of hard light round the creature
- * the ring caught, its struts running in triangles over it like the frame of a geodesic dome, with a knot of light
- * where they meet. It is as solid as every construct; you see the creature through the gaps between its struts. It
- * grows round its creature out of the ring's light, white-hot at first, turns slowly while the ring holds it up by a
- * beam of its light, and a band of light sweeps over it now and then. Pounded into the ground it streaks through the
- * air, stretched long as it is driven down, squashes flat against the ground at every slam and springs back, flaring
- * up; every slam sends a shockwave of light over the ground with cracks of light shooting out of it (see
- * {@link #pound}). Bursting or at the last slam it breaks into solid pieces, panel by panel.
- */
 public final class BubblePainter {
-    /** How long the shockwave of one slam of a pound plays, in ticks. */
     public static final int POUND_TICKS = 16;
-    // How thick its struts are and how big the knots where they meet, next to its radius.
     private static final double STRUT = 0.055;
     private static final double KNOT = 0.085;
-    // How far its pieces fly when it breaks up, next to how far pieces usually do.
     private static final double FLING = 1.8;
-    // How flat a slam squashes it (a part of its height), how quickly it springs back and how often it wobbles on the
-    // way; and how long it is stretched at most as it is driven down, and at which speed (blocks per tick) that is.
     private static final double SQUASH = 0.42;
     private static final double SQUASH_DAMP = 0.55;
     private static final double SQUASH_WOBBLE = 1.3;
     private static final double STRETCH = 0.28;
     private static final double STRETCH_SPEED = 2.2;
-    /** The cage round a ball of radius 1: twenty panels of struts, each flying off on its own when it breaks. */
     private static final ConstructPainter.Shape CAGE = ConstructPainter.Shape.of(cage());
 
     private BubblePainter() {
     }
 
-    /**
-     * The cage: an icosahedron with every triangle cut into four, pushed out onto the ball, so its struts run in small
-     * triangles all over it. Each of the twenty big triangles is a panel of its own.
-     */
     private static Mesh[] cage() {
         double p = (1.0 + Math.sqrt(5.0)) * 0.5;
         List<Vec3> points = new ArrayList<>(List.of(new Vec3(-1, p, 0), new Vec3(1, p, 0), new Vec3(-1, -p, 0),
@@ -93,7 +73,6 @@ public final class BubblePainter {
         return panels;
     }
 
-    /** The point halfway along an edge, pushed out onto the ball: made once for the two triangles that share it. */
     private static int middle(List<Vec3> points, Map<Long, Integer> middles, int a, int b) {
         long key = (long) Math.min(a, b) << 32 | Math.max(a, b);
         Integer known = middles.get(key);
@@ -105,23 +84,11 @@ public final class BubblePainter {
         return points.size() - 1;
     }
 
-    /**
-     * One bubble.
-     *
-     * @param solid  how far it has grown round its creature, 0 to 1
-     * @param broken how many ticks ago it began to break up (only while it breaks up)
-     * @param held   true while the ring still holds it up by a beam of its light
-     * @param clock  ticks since it caught its creature, by the client's own clock
-     * @param ring   where the ring of its maker is, or null when he is out of sight
-     * @param pound  ticks into the pound, as drawn (only while it is pounded)
-     * @param motion how far it moved over the last tick, in blocks
-     */
     public static void draw(LanternPainter painter, ConstructPayload bubble, Vec3 center, double solid, double broken,
             boolean held, double clock, @Nullable Vec3 ring, double pound, Vec3 motion) {
         double radius = bubble.size();
         Vec3 flat = new Vec3(bubble.facing().x, 0.0, bubble.facing().z);
         flat = flat.lengthSqr() < 1.0E-6 ? new Vec3(0.0, 0.0, 1.0) : flat.normalize();
-        // Pounded: squashed flat by the last slam and springing back, or stretched long as it is driven down.
         double squash = 0.0;
         double flash = 0.0;
         if (bubble.variant() == LightBubble.SMASHING) {
@@ -158,11 +125,9 @@ public final class BubblePainter {
         double grown = Ease.backOut(solid);
         ConstructPainter.Frame shape = new ConstructPainter.Frame(frame.center(), frame.right(), frame.up(),
                 frame.forward(), radius * (0.15 + 0.85 * grown));
-        // White-hot as it grows out of the ring's light, and breathing a little in its glow after; flaring up at a slam.
         painter.glare(Math.max(0.7 * (1.0 - Mth.clamp(solid, 0.0, 1.0)), 0.65 * flash));
         painter.shape(CAGE, shape, 1.0, 1.0 + 0.12 * Math.sin(painter.time() * 0.2) + 0.6 * flash);
         painter.glare(0.0);
-        // A soft light in it, and now and then a band of light sweeping over it from its top to its bottom.
         painter.flare(center, radius * 0.85, 0.16 * grown);
         double sweep = Mth.frac(painter.time() / 44.0) * 3.0 - 1.0;
         if (Math.abs(sweep) < 1.0) {
@@ -173,7 +138,6 @@ public final class BubblePainter {
         }
         double speed = motion.length();
         if (bubble.variant() == LightBubble.SMASHING && speed > 0.15) {
-            // Streaking through the air: lines of light trailing behind it from all round its edge.
             Vec3 way = motion.scale(1.0 / speed);
             Vec3[] across = Vectors.across(way);
             double length = Math.min(radius * 3.0, speed * 2.2);
@@ -186,7 +150,6 @@ public final class BubblePainter {
                         0.06 * radius, 0.85 * strength);
             }
         }
-        // The ring holds it up by a beam of its light, from the ring to where the bubble is nearest to it.
         if (ring != null && held) {
             Vec3 toRing = ring.subtract(center);
             if (toRing.lengthSqr() > radius * radius) {
@@ -196,18 +159,10 @@ public final class BubblePainter {
         }
     }
 
-    /** True for the last slam of a pound: the hardest. */
     public static boolean last(ConstructPayload pound) {
         return pound.variant() >= LightBubble.POUND.length - 1;
     }
 
-    /**
-     * One slam of a pound (see {@link LightBubble}) where it struck the ground: a flash, rings of light running out over
-     * the ground as far as its shockwave reaches, and jagged cracks of light shooting out of it in a star and fading;
-     * the last slam's are bigger and brighter, with a burst of light up out of the ground. Light, not a construct.
-     *
-     * @param since ticks since it struck
-     */
     public static void pound(LanternPainter painter, ConstructPayload pound, double since) {
         if (since < 0.0 || since > POUND_TICKS) {
             return;

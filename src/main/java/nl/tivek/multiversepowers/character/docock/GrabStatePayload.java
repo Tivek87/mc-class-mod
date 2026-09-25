@@ -7,13 +7,6 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import nl.tivek.multiversepowers.MultiversePowers;
 
-/**
- * Server tells the player what the tentacles have in their claws, so the mouse can do something else
- * than usual: a left click throws what they hold, and a right click puts blocks back down.
- *
- * @param holding a creature or blocks: a left click throws it instead of attacking
- * @param blocks  blocks only: a right click puts them down instead of using your item
- */
 public record GrabStatePayload(boolean holding, boolean blocks) implements CustomPacketPayload {
     public static final CustomPacketPayload.Type<GrabStatePayload> TYPE = new CustomPacketPayload.Type<>(
             ResourceLocation.fromNamespaceAndPath(MultiversePowers.MODID, "grab_state"));

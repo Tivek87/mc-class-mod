@@ -32,32 +32,17 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import nl.tivek.multiversepowers.MultiversePowers;
 
-/**
- * The creatures of the dark fear the ring's light. When it bursts out around its bearer (the moment the ring slides
- * onto his finger), every one of them close by is thrown back and runs from him for a while: it forgets whoever it was
- * after and cannot pick anyone new, until the fear wears off.
- *
- * <p>Which creatures count is a tag of their own, {@code welcomescreen:fears_the_light}: the undead (zombies,
- * skeletons and the like), the warden, vexes and endermen. A data pack can change it.
- */
 @EventBusSubscriber(modid = MultiversePowers.MODID)
 public final class Fear {
-    /** The creatures that run from the ring's light. */
     public static final TagKey<EntityType<?>> FEARS_THE_LIGHT = TagKey.create(Registries.ENTITY_TYPE,
             ResourceLocation.fromNamespaceAndPath(MultiversePowers.MODID, "fears_the_light"));
-    // How fast a frightened creature runs, as a part of its own speed, and how far it looks for somewhere to run to.
     private static final double RUN = 1.45;
     private static final int RUN_BLOCKS = 16;
     private static final int RUN_HEIGHT = 7;
-    // How often a creature that runs on its own brain (a warden) is sent somewhere new, in ticks.
     private static final int RETHINK = 15;
 
-    // Every frightened creature, by its id: what it runs from and until when.
     private static final Map<UUID, Afraid> AFRAID = new HashMap<>();
-    // The creatures that were given the goals below already; a creature keeps them for as long as it lives, and is
-    // forgotten here once it is gone.
     private static final Set<Mob> TAUGHT = Collections.newSetFromMap(new WeakHashMap<>());
-    // A creature that found nowhere to run to tries again this many ticks later, not on every tick.
     private static final int RETRY = 10;
 
     private Fear() {
@@ -66,12 +51,6 @@ public final class Fear {
     private record Afraid(Mob mob, Vec3 from, long until) {
     }
 
-    /**
-     * The light bursts out around {@code owner}: every creature of the dark within {@code radius} blocks is thrown
-     * back, harder the closer it stood, and runs from him for {@code ticks}.
-     *
-     * @return how many creatures it frightened
-     */
     public static int strike(ServerPlayer owner, ServerLevel level, double radius, int ticks, double push) {
         Vec3 at = owner.position();
         AABB area = owner.getBoundingBox().inflate(radius, radius * 0.5, radius);
@@ -96,18 +75,15 @@ public final class Fear {
         return count;
     }
 
-    /** This creature runs from {@code from} until the level's clock reaches {@code until}. */
     static void frighten(Mob mob, Vec3 from, long until) {
         AFRAID.put(mob.getUUID(), new Afraid(mob, from, until));
         forget(mob);
-        // A creature that thinks with goals is taught to run, and to leave everyone alone, ahead of anything else.
         if (mob instanceof PathfinderMob runner && TAUGHT.add(mob)) {
             runner.goalSelector.addGoal(-1, new Run(runner));
             runner.targetSelector.addGoal(-1, new LeaveAlone(runner));
         }
     }
 
-    /** True while this creature runs from the ring's light. */
     static boolean afraid(Mob mob) {
         Afraid afraid = AFRAID.get(mob.getUUID());
         return afraid != null && afraid.mob() == mob && mob.level().getGameTime() < afraid.until();
@@ -119,7 +95,6 @@ public final class Fear {
         return afraid == null ? null : afraid.from();
     }
 
-    /** It lets go of whoever it was after, and stops being angry at anyone. */
     private static void forget(Mob mob) {
         mob.setTarget(null);
         mob.getBrain().eraseMemory(MemoryModuleType.ATTACK_TARGET);
@@ -129,22 +104,16 @@ public final class Fear {
         }
     }
 
-    /** Somewhere away from {@code from}, for this creature to run to; null when there is nowhere. */
     @Nullable
     private static Vec3 away(PathfinderMob mob, Vec3 from) {
         return DefaultRandomPos.getPosAway(mob, RUN_BLOCKS, RUN_HEIGHT, from);
     }
 
-    /** The server stops: nobody is afraid any more. */
     public static void clear() {
         AFRAID.clear();
         TAUGHT.clear();
     }
 
-    /**
-     * Every tick: fear wears off, and creatures that think with a brain instead of goals (the warden) are told again
-     * to forget whoever they were after and to run.
-     */
     @SubscribeEvent
     public static void onServerTick(ServerTickEvent.Post event) {
         if (AFRAID.isEmpty()) {
@@ -158,6 +127,7 @@ public final class Fear {
                 all.remove();
                 continue;
             }
+            // The warden thinks by itself, not with goals, so it must be told to forget every tick.
             forget(mob);
             if (!mob.getBrain().hasMemoryValue(MemoryModuleType.WALK_TARGET) || mob.tickCount % RETHINK == 0) {
                 if (mob instanceof PathfinderMob runner
@@ -172,10 +142,8 @@ public final class Fear {
         }
     }
 
-    /** A creature that thinks with goals: while afraid, it runs, ahead of anything else it would do. */
     private static final class Run extends Goal {
         private final PathfinderMob mob;
-        // The tick it last found nowhere to run to (see RETRY).
         private int stuckAt = Integer.MIN_VALUE / 2;
 
         Run(PathfinderMob mob) {
@@ -220,7 +188,6 @@ public final class Fear {
         }
     }
 
-    /** A creature that thinks with goals: while afraid, it picks nobody to go after. */
     private static final class LeaveAlone extends Goal {
         private final PathfinderMob mob;
 

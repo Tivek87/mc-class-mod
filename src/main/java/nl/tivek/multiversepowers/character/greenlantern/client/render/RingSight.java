@@ -45,17 +45,8 @@ import nl.tivek.multiversepowers.engine.math.Ease;
 import nl.tivek.multiversepowers.engine.math.Vectors;
 import org.joml.Matrix4f;
 
-/**
- * What the ring's scan shows (see {@link RingScan}). Everyone sees its wave roll out: a band of light spreading out
- * from where it set out, a curtain of light under and over it, through walls and all. Only its maker sees what it
- * found: every creature it passed glows, its whole outline drawn through walls and everything (see {@link ScanGlow}),
- * and gets a frame of light round it, its corners marked, with its name and its health over it, for as long as the
- * scan said. The frame snaps in from wide as the wave reaches it, with a tick you can hear. Its colour says what it is
- * to you: red for what is out to hurt you (a monster, or anything angry with you), green for everything else.
- */
 @EventBusSubscriber(modid = MultiversePowers.MODID, value = Dist.CLIENT)
 public final class RingSight {
-    /** The frames of light: seen through everything, never hiding anything. */
     private static final RenderType MARKS = RenderType.create("welcomescreen_scan_marks",
             DefaultVertexFormat.POSITION_COLOR, VertexFormat.Mode.QUADS, 4096, false, true,
             RenderType.CompositeState.builder()
@@ -67,31 +58,23 @@ public final class RingSight {
                     .createCompositeState(false));
     private static final int HOSTILE = 0xFF3A30;
     private static final int FRIENDLY = 0x4CFF6E;
-    // How long a frame takes to snap in, and to die away at the end, in ticks; how long the wave dies away.
     private static final float SNAP = 5.0F;
     private static final float GONE = 10.0F;
     private static final float WAVE_FADE = 10.0F;
-    // How many new marks may tick at once, so a crowded place does not rattle.
     private static final int TICKS_AT_ONCE = 3;
-    // How far above and below the ground under it the air strike's plane marks creatures, in blocks (as the server).
+    // Must match the plane's scan height on the server (AirStrike), or marking would disagree with hits.
     private static final double PLANE_SCAN_HIGH = 48.0;
 
-    /** One creature the scan marked: from when, until when, in client ticks. */
     private record Mark(int from, int until) {
     }
 
     private static final Map<Integer, Mark> MARKED = new HashMap<>();
-    // Which scans have marked which creatures already, so a creature is marked once per scan.
     private static final Map<Integer, Set<Integer>> SEEN = new HashMap<>();
     private static int clientTicks;
 
     private RingSight() {
     }
 
-    /**
-     * The wave of a scan, as everyone sees it: a band of light round where it set out, as far as it has rolled, with a
-     * curtain of light under and over it, dying away once it reached its end. Light, not a construct.
-     */
     public static void wave(LanternPainter painter, Vec3 center, double radius, double clock) {
         double reached = Math.min(radius, RingScan.SPEED * clock);
         double fade = 1.0 - Mth.clamp((clock - radius / RingScan.SPEED) / WAVE_FADE, 0.0, 1.0);
@@ -114,12 +97,6 @@ public final class RingSight {
         }
     }
 
-    /**
-     * The ring he holds out while it scans: it shines, pulsing as it reads, and a ring of light bursts out of it as the
-     * wave sets off. Light, not a construct.
-     *
-     * @param own true for your own ring in first person: kept small, so it never covers your view
-     */
     public static void ringLight(LanternPainter painter, Vec3 ring, double clock, boolean own) {
         double strength = Ease.smooth(clock / 4.0) * (1.0 - Ease.smooth((clock - 30.0) / 8.0));
         if (strength <= 0.0) {
@@ -141,8 +118,6 @@ public final class RingSight {
         }
     }
 
-    // ---- Marking ----
-
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event) {
         Minecraft minecraft = Minecraft.getInstance();
@@ -162,8 +137,6 @@ public final class RingSight {
                 continue;
             }
             Set<Integer> seen = SEEN.computeIfAbsent(scan.id(), id -> new HashSet<>());
-            // The plane's scans roll out over the ground under it and only mark what is out to hurt you, as far above
-            // and below as the plane's own guns look.
             double high = scan.hostileOnly() ? PLANE_SCAN_HIGH : scan.reached();
             AABB area = new AABB(scan.center(), scan.center()).inflate(scan.reached(), high, scan.reached());
             for (LivingEntity living : level.getEntitiesOfClass(LivingEntity.class, area,
@@ -187,7 +160,6 @@ public final class RingSight {
         SEEN.keySet().retainAll(going);
     }
 
-    /** Every creature still marked glows through walls in its colour; one whose mark has run out stops. */
     private static void glow(ClientLevel level) {
         Map<Integer, Integer> glowing = new HashMap<>();
         for (Map.Entry<Integer, Mark> entry : MARKED.entrySet()) {
@@ -205,8 +177,6 @@ public final class RingSight {
         SEEN.clear();
         ScanGlow.clear();
     }
-
-    // ---- Drawing the marks ----
 
     @SubscribeEvent
     public static void onRenderLevel(RenderLevelStageEvent event) {
@@ -226,8 +196,6 @@ public final class RingSight {
         VertexConsumer buffer = buffers.getBuffer(MARKS);
         Matrix4f matrix = pose.last().pose();
         float now = clientTicks + partialTick;
-        // The frames first, all in one go, and only then the names: writing text takes buffers of its own, which
-        // would end the frames' buffer halfway.
         List<Label> labels = new ArrayList<>();
         for (Map.Entry<Integer, Mark> entry : MARKED.entrySet()) {
             Entity entity = level.getEntity(entry.getKey());
@@ -240,7 +208,6 @@ public final class RingSight {
             if (strength <= 0.0F) {
                 continue;
             }
-            // Snapping in from wide as the wave reaches it.
             float snap = Mth.clamp(age / SNAP, 0.0F, 1.0F);
             double widen = 1.0 + 0.6 * (1.0 - snap) * (1.0 - snap);
             AABB box = living.getBoundingBox().move(living.getPosition(partialTick).subtract(living.position()));
@@ -251,7 +218,6 @@ public final class RingSight {
             float alpha = strength * (0.75F + 0.25F * (1.0F - snap));
             corners(buffer, matrix, eye, box, rgb, alpha);
             if (age < SNAP * 2.0F) {
-                // A ping of light as it is found.
                 float ping = 1.0F - age / (SNAP * 2.0F);
                 corners(buffer, matrix, eye, box.inflate(0.4 * (1.0 - ping)), 0xFFFFFF, 0.6F * ping * strength);
             }
@@ -264,24 +230,17 @@ public final class RingSight {
         buffers.endBatch();
     }
 
-    /** A name to write over a frame, once all the frames are drawn. */
     private record Label(LivingEntity living, Vec3 at, int rgb, float strength) {
     }
 
-    /**
-     * What colour a creature's frame and glow are: what it is to you. Red for what is out to hurt you (a monster, or
-     * anything that has turned on you, like an angry wolf or golem), green for everything else.
-     */
     private static int colour(LivingEntity living) {
         return hostile(living) ? HOSTILE : FRIENDLY;
     }
 
-    /** True for a creature out to hurt you: a monster, or one that is angry (its game says it is aggressive). */
     static boolean hostile(LivingEntity living) {
         return living instanceof Enemy || living instanceof Mob mob && mob.isAggressive();
     }
 
-    /** The eight corners of a box marked with short lines of light, three at each corner along its edges. */
     private static void corners(VertexConsumer buffer, Matrix4f matrix, Vec3 eye, AABB box, int rgb, float alpha) {
         double[] xs = { box.minX, box.maxX };
         double[] ys = { box.minY, box.maxY };
@@ -300,7 +259,6 @@ public final class RingSight {
         }
     }
 
-    /** A line of light from {@code a} to {@code b} that faces the camera, a few pixels wide however far it is. */
     private static void line(VertexConsumer buffer, Matrix4f matrix, Vec3 eye, Vec3 a, Vec3 b, int rgb, float alpha) {
         Vec3 middle = a.add(b).scale(0.5);
         Vec3 side = b.subtract(a).cross(eye.subtract(middle));
@@ -326,7 +284,6 @@ public final class RingSight {
                 .setColor(r, g, b, alpha);
     }
 
-    /** The creature's name and health over its frame, turned to you, seen through walls. */
     private static void label(PoseStack pose, MultiBufferSource buffers, Vec3 eye, Camera camera, LivingEntity living,
             Vec3 at, int rgb, float strength) {
         Minecraft minecraft = Minecraft.getInstance();

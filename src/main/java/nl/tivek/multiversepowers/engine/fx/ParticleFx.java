@@ -10,39 +10,25 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Vector3f;
 
-/**
- * Particle drawing helpers for the spells. Everything is sent from the server,
- * so every player
- * nearby sees the same thing. Particles are sent up to {@link #VIEW_RANGE}
- * blocks away, further than
- * vanilla's 32, because a lightning bolt starts high in the sky.
- */
 public final class ParticleFx {
     private static final double VIEW_RANGE = 128.0;
-    // How far vanilla sends a particle that is not forced, in blocks.
     private static final double NEAR_RANGE = 32.0;
     public static final RandomSource RANDOM = RandomSource.create();
 
     private ParticleFx() {
     }
 
-    // ---- Particle options ----
-
     public static Vector3f color(int rgb) {
         return new Vector3f(((rgb >> 16) & 0xFF) / 255.0F, ((rgb >> 8) & 0xFF) / 255.0F, (rgb & 0xFF) / 255.0F);
     }
 
-    /** Coloured dust; size goes up to 4. */
     public static ParticleOptions dust(int rgb, float size) {
         return new DustParticleOptions(color(rgb), Mth.clamp(size, 0.01F, 4.0F));
     }
 
-    /** Dust that changes colour while it fades. */
     public static ParticleOptions fade(int fromRgb, int toRgb, float size) {
         return new DustColorTransitionOptions(color(fromRgb), color(toRgb), Mth.clamp(size, 0.01F, 4.0F));
     }
-
-    // ---- Randomness ----
 
     public static double spread(double range) {
         return (RANDOM.nextDouble() * 2.0 - 1.0) * range;
@@ -52,12 +38,6 @@ public final class ParticleFx {
         return RANDOM.nextDouble() < probability;
     }
 
-    // ---- Primitives ----
-
-    /**
-     * Vanilla's sendParticles, but for every player within {@link #VIEW_RANGE}; sent to each of them together with the
-     * rest of this tick's particles (see {@link ParticleBatch}).
-     */
     public static void send(ServerLevel level, ParticleOptions particle, double x, double y, double z, int count,
             double dx, double dy, double dz, double speed) {
         for (ServerPlayer player : level.players()) {
@@ -67,10 +47,6 @@ public final class ParticleFx {
         }
     }
 
-    /**
-     * Exactly vanilla's sendParticles (every player within 32 blocks of it, who then sees it as far as his own particle
-     * setting lets him), but sent together with the rest of this tick's particles (see {@link ParticleBatch}).
-     */
     public static void sendNear(ServerLevel level, ParticleOptions particle, double x, double y, double z, int count,
             double dx, double dy, double dz, double speed) {
         Vec3 at = new Vec3(x, y, z);
@@ -85,7 +61,6 @@ public final class ParticleFx {
         send(level, particle, pos.x, pos.y, pos.z, 1, 0, 0, 0, 0);
     }
 
-    /** One particle moving along {@code direction} * speed. */
     public static void fly(ServerLevel level, ParticleOptions particle, Vec3 pos, Vec3 direction, double speed) {
         send(level, particle, pos.x, pos.y, pos.z, 0, direction.x, direction.y, direction.z, speed);
     }
@@ -103,10 +78,6 @@ public final class ParticleFx {
         }
     }
 
-    /**
-     * A flat ring on the ground (or at any height), {@code rotation} turns where
-     * the points sit.
-     */
     public static void ring(ServerLevel level, ParticleOptions particle, Vec3 center, double radius, int points,
             double rotation) {
         for (int i = 0; i < points; i++) {
@@ -115,7 +86,6 @@ public final class ParticleFx {
         }
     }
 
-    /** Particles flying flat outward from the centre, like a shockwave. */
     public static void shockwave(ServerLevel level, ParticleOptions particle, Vec3 center, int points, double speed) {
         for (int i = 0; i < points; i++) {
             double angle = Math.PI * 2 * i / points + spread(0.1);
@@ -123,7 +93,6 @@ public final class ParticleFx {
         }
     }
 
-    /** Particles flying outward in every direction, evenly spread over a sphere. */
     public static void sphereOut(ServerLevel level, ParticleOptions particle, Vec3 center, int count, double speed) {
         for (int i = 0; i < count; i++) {
             double y = 1.0 - 2.0 * (i + 0.5) / count;
@@ -133,10 +102,6 @@ public final class ParticleFx {
         }
     }
 
-    /**
-     * Points on the surface of a sphere, turned by {@code rotation} so it seems to
-     * spin.
-     */
     public static void sphere(ServerLevel level, ParticleOptions particle, Vec3 center, double radius, int count,
             double rotation) {
         for (int i = 0; i < count; i++) {
@@ -147,7 +112,6 @@ public final class ParticleFx {
         }
     }
 
-    /** A jagged line, like a crack or an electric arc. */
     public static void zigzag(ServerLevel level, ParticleOptions particle, Vec3 from, Vec3 to, int segments,
             double jitter, double spacing) {
         Vec3 previous = from;
@@ -162,10 +126,6 @@ public final class ParticleFx {
         }
     }
 
-    // ---- A flat disc facing a direction, for magic circles in front of the caster
-    // ----
-
-    /** Two unit vectors at right angles to {@code normal} and to each other. */
     public static Vec3[] basis(Vec3 normal) {
         Vec3 up = Math.abs(normal.y) > 0.95 ? new Vec3(1, 0, 0) : new Vec3(0, 1, 0);
         Vec3 u = normal.cross(up).normalize();
@@ -173,7 +133,6 @@ public final class ParticleFx {
         return new Vec3[] { u, v };
     }
 
-    /** A circle standing upright, facing {@code normal}. */
     public static void disc(ServerLevel level, ParticleOptions particle, Vec3 center, Vec3 normal, double radius,
             int points, double rotation) {
         Vec3[] b = basis(normal);
@@ -184,10 +143,6 @@ public final class ParticleFx {
         }
     }
 
-    /**
-     * A star polygon (for example 5 points, skipping 2) inside a circle facing
-     * {@code normal}.
-     */
     public static void discStar(ServerLevel level, ParticleOptions particle, Vec3 center, Vec3 normal, double radius,
             int points, int skip, double rotation, double spacing) {
         Vec3[] b = basis(normal);
@@ -200,13 +155,11 @@ public final class ParticleFx {
         }
     }
 
-    /** A star polygon lying flat on the ground. */
     public static void groundStar(ServerLevel level, ParticleOptions particle, Vec3 center, double radius, int points,
             int skip, double rotation, double spacing) {
         discStar(level, particle, center, new Vec3(0, 1, 0), radius, points, skip, rotation, spacing);
     }
 
-    /** A swirling vertical helix / corkscrew of particles. */
     public static void helix(ServerLevel level, ParticleOptions particle, Vec3 base, double radius, double height,
             double turns, int points, double rotation) {
         for (int i = 0; i <= points; i++) {
@@ -217,16 +170,11 @@ public final class ParticleFx {
         }
     }
 
-    /**
-     * An intricate magic circle on the ground with concentric rings and radial
-     * spokes.
-     */
     public static void magicCircle(ServerLevel level, ParticleOptions primary, ParticleOptions secondary,
             Vec3 center, double radius, double rotation) {
         ring(level, primary, center, radius, 36, rotation);
         ring(level, secondary, center, radius * 0.7, 24, -rotation * 0.8);
         ring(level, primary, center, radius * 0.35, 16, rotation * 1.2);
-        // 6 radial spokes
         for (int i = 0; i < 6; i++) {
             double angle = rotation + (Math.PI * 2 * i / 6.0);
             Vec3 outer = center.add(Math.cos(angle) * radius, 0, Math.sin(angle) * radius);
@@ -235,7 +183,6 @@ public final class ParticleFx {
         }
     }
 
-    /** Particles being sucked violently inward from the perimeter to the centre. */
     public static void implosion(ServerLevel level, ParticleOptions particle, Vec3 center, double radius, int count,
             double speed) {
         for (int i = 0; i < count; i++) {

@@ -36,74 +36,30 @@ import static nl.tivek.multiversepowers.character.greenlantern.client.body.Fligh
 import static nl.tivek.multiversepowers.character.greenlantern.client.body.FlightLimbs.legs;
 import static nl.tivek.multiversepowers.character.greenlantern.client.body.FlightLimbs.slam;
 
-/**
- * How Green Lantern's body moves while the ring works, seen from outside: the take-off, the flight itself, and
- * what his arms do with the shapes he holds up or pours out, all blended into each other so one flows into the
- * next.
- * <ul>
- * <li><b>Take-off</b>: a small dip with both fists brought to the chest, then the arms sweep down along the sides,
- * the head goes up and he rises.</li>
- * <li><b>Hovering</b>: upright, arms a little out, legs hanging loose and drifting.</li>
- * <li><b>Flying</b>: the faster he goes the more his body lines up with the way he flies, arms back along his
- * sides and legs together, like the pictures. He banks into his turns and leans into sideways slides, dives head
- * first and climbs head up, and his head keeps looking where he looks.</li>
- * <li>An empty ring lets him sink with his arms up; landing is a short dip, and a landing at full speed a slam, the
- * way heroes land: just before the ground he swings upright, feet first, ring fist cocked high; then he comes down
- * low on one knee, the other leg forward, and smashes that fist into the ground in front of him, the other arm flung
- * out behind, until the construct has struck and he rises again. Dropping down to a slam without flying (the
- * shockwave key while he jumps or falls) he is upright with his fist cocked the whole way down.</li>
- * <li>On top of that, standing or flying: the ring arm points straight where he aims while he shoots bolts, and goes
- * down again after the last one (see {@link BoltArm}); the ring hand points along the beam, trembling and kicking
- * with it, the other hand bracing its wrist (see {@link BeamArm}); both hands hold the dome open,
- * and in flight the shield hand goes out in front, fist first, into the ram cone.</li>
- * </ul>
- * How the whole body turns is worked out in {@link #pre}, before the game draws it, and turned while the game draws
- * its model ({@link #turnModel}), so his name stays upright; the limbs are set in {@link #pose}, which the game calls
- * while it poses the arms.
- */
 public final class FlightPose {
-    // Part of the top speed at which the body lies fully along the way it flies.
     private static final double LINED_UP = 0.74;
-    // How long a landing dip lasts, in ticks.
     private static final int LAND_TICKS = 8;
-    // How quickly the arms blend from one thing to the next, per second.
     private static final float BLEND = 9.0F;
-    // How far the ring arm comes up towards where he aims while the ring gathers light for the beam, once it is full.
     private static final float CHARGE_AIM = 0.8F;
-    // The ring arm with the bolts (see BoltArm): how quickly it comes up to point and goes down again, per second
-    // (quickly up, so a bolt leaves a hand that is already up), how far each bolt kicks it up, in radians, and how far
-    // it turns in towards the middle of his chest, so it points at what he aims at.
     private static final float POINT_UP = 30.0F;
     private static final float POINT_DOWN = 7.0F;
     private static final float BOLT_KICK = 0.14F;
     private static final float POINT_IN = 0.08F;
-    // How long the pose of a landing slam lasts, in ticks; your own fist shows in first person this long.
     private static final float SLAM_TICKS = 23.0F;
     private static final float SLAM_HAND_TICKS = 21.0F;
-    // The tick of a slam he starts to rise again from his knee, and how long that takes.
     private static final float KNEEL_HOLD = 15.0F;
     private static final float KNEEL_RISE = 7.0F;
-    // The landing on one knee: how far his hips come down, in blocks (from 0.7 to under 0.4, so the right knee is on
-    // the ground), and how far his body leans forward over them, in radians.
     private static final float KNEEL_DROP = 0.32F;
     static final float KNEEL_LEAN = 1.0F;
-    // What the crouch he is in already lowers his body by, in blocks: the rest of the drop is ours.
     private static final float CROUCH_DROP = 0.125F;
-    // How far each knee bends: the right shin lies back along the ground, the left one stands straight down to the
-    // foot planted in front of him.
     private static final float DOWN_KNEE = 1.52F;
     private static final float STEP_KNEE = 1.4F;
-    // How high his hips are over his feet, in blocks: 12 pixels of the model, which the game draws a little smaller
-    // for players.
     private static final float HIP_HEIGHT = 12.0F * 0.9375F / 16.0F;
-    // Your own ring fist in first person, in blocks in front of your eyes: cocked high on the right before a slam, and
-    // smashed into the ground in front of you (low on your screen, while your view dips down to it).
     private static final Vector3f COCKED = new Vector3f(0.55F, 0.42F, -0.72F);
     private static final Vector3f PLANTED = new Vector3f(0.18F, -0.95F, -0.9F);
     private static final Vector3f ARM_FROM = new Vector3f(1.5F, -0.4F, 0.35F);
 
     private static final Map<Integer, Blend> BLENDS = new HashMap<>();
-    // The player being drawn right now, and how his body turns while the game draws its model (null: it does not).
     @Nullable
     private static Frame frame;
     @Nullable
@@ -112,7 +68,6 @@ public final class FlightPose {
     private FlightPose() {
     }
 
-    /** How far each of the arm shapes has come in for one player, eased from frame to frame. */
     static final class Blend {
         float fly;
         float beam;
@@ -142,50 +97,24 @@ public final class FlightPose {
         }
     }
 
-    /**
-     * Everything one frame of one player needs.
-     *
-     * @param t      ticks since he took off, or -1 when he does not fly
-     * @param fast   0 hovering, 1 flying fully lined up
-     * @param tilt   how far the body tips forward, in radians (a quarter turn lies flat)
-     * @param roll   how far it leans sideways, in radians: positive to his right
-     * @param land   0 to 1: the dip of a landing
-     * @param slam   ticks since he landed with a slam, or -1
-     * @param brace  0 to 1: how far he has swung upright for a slam just ahead
-     * @param time   ticks, for everything that sways
-     */
     record Frame(int entity, float t, float fast, float tilt, float roll, float land, boolean sinking,
             float slam, float brace, float time, Blend blend, Vec3 pivot, Vec3 forward, Vec3 left, Quaternionf turn,
             float kneel) {
     }
 
-    /**
-     * How one player's whole body turns while its model is drawn (see {@link #turnModel}).
-     *
-     * @param dip   how far it dips, in blocks
-     * @param drop  how far his hips come down in a kneel, in blocks, and {@code lean} how far his body then leans
-     *              forward over them, in radians
-     */
     private record BodyTurn(int entity, Vec3 pivot, float dip, Quaternionf turn, boolean kneel, float drop,
             float lean, Vec3 left) {
     }
 
-    /**
-     * Before the game draws a player: works out his flight pose and turns his whole body with it.
-     *
-     * @return true when the mod poses his arms this frame
-     */
     static boolean pre(RenderPlayerEvent.Pre event) {
         Player player = event.getEntity();
         float partialTick = event.getPartialTick();
         float t = ClientRing.flight(player, partialTick);
         ClientFlight.Motion motion = ClientFlight.motion(player);
         boolean flying = t >= 0.0F;
-        // Gathering light for the beam, the ring arm already comes up towards where he aims.
         float charge = BeamArm.gathering(player, partialTick);
         float aim = ClientRing.has(player, RingPayload.BEAM) ? 1.0F : CHARGE_AIM * Math.max(0.0F, charge);
         boolean beaming = aim > 0.0F;
-        // Shooting bolts, the ring arm points where he aims.
         boolean pointing = BoltArm.pointing(player, partialTick);
         boolean domed = ClientRing.has(player, RingPayload.DOME);
         boolean ramming = flying && ClientRing.has(player, RingPayload.SHIELD);
@@ -193,11 +122,9 @@ public final class FlightPose {
                 : Mth.sin((motion.sinceEnd + partialTick) / LAND_TICKS * Mth.PI);
         float slam = ClientFlight.slam(player, partialTick);
         boolean slamming = slam >= 0.0F && slam < SLAM_TICKS;
-        // Dropping down to a slam he is upright, fist cocked, the whole way down.
         boolean dropping = ClientFlight.dropping(player);
         float brace = flying || dropping ? ClientFlight.brace(player, partialTick) : 0.0F;
         if (slamming) {
-            // A slam has a landing of its own.
             land = 0.0F;
         }
         frame = null;
@@ -210,7 +137,6 @@ public final class FlightPose {
             BLENDS.put(player.getId(), blend);
         }
         blend.toward(flying, aim, beaming ? BeamArm.brace(player, partialTick) : 0.0F, pointing, domed, ramming);
-        // Only forgotten once nothing is wanted any more and everything has blended back out.
         if (!flying && !dropping && !beaming && !pointing && !domed && !slamming && blend.idle() && land <= 0.0F) {
             BLENDS.remove(player.getId());
             return false;
@@ -229,19 +155,16 @@ public final class FlightPose {
             double lined = LINED_UP * ClientFlight.fullSpeed();
             double slow = 0.19 * lined;
             fast = (float) Ease.smooth((speed - slow) / (lined - slow));
-            // Hovering he only leans a little into where he drifts; fast, his body lies along the way he flies.
             float drift = (float) Mth.clamp(ahead * 1.1, -0.3, 0.45);
             float along = (float) Math.atan2(Math.max(ahead, 0.0), v.y);
             tilt = Mth.lerp(fast, drift, along);
             roll = motion.bank + (float) Mth.clamp(side * 0.8, -0.4, 0.4) * (1.0F - 0.5F * fast);
-            // The take-off itself stays upright; the lean fades in as he flies on.
             if (t < ClientFlight.ARISE) {
                 float in = (float) Ease.smooth((t - ClientFlight.SWEEP) / (ClientFlight.ARISE - ClientFlight.SWEEP));
                 tilt *= in;
                 roll *= in;
                 fast *= in;
             }
-            // Swinging upright for a slam into the ground just ahead: he comes down feet first.
             tilt *= 1.0F - brace;
             roll *= 1.0F - brace;
             fast *= 1.0F - brace;
@@ -257,7 +180,7 @@ public final class FlightPose {
         float lean = KNEEL_LEAN * kneel;
         float drop = kneel <= 0.0F ? 0.0F
                 : Math.max(0.0F, KNEEL_DROP - (player.isCrouching() ? CROUCH_DROP : 0.0F)) * kneel;
-        // The body is turned while the game draws the model (see turnModel), so his name over his head stays upright.
+        // Kept here for turnModel, not applied now: the model turns before the name tag is drawn, which must not.
         body = Math.abs(tilt) > 1.0E-3F || Math.abs(roll) > 1.0E-3F || dip > 1.0E-3F || kneel > 0.0F
                 ? new BodyTurn(player.getId(), pivot, dip, turn, kneel > 0.0F, drop, lean, left) : null;
         PlayerModel<AbstractClientPlayer> model = event.getRenderer().getModel();
@@ -267,8 +190,8 @@ public final class FlightPose {
             model.crouching = false;
         }
         if (kneel > 0.0F) {
-            // His legs bend at the knee now, which the game's legs cannot: they are drawn in two halves instead (see
-            // KneelLegs). Armour copies the legs as they are, so it shrinks to the upper half with them.
+            // The game's legs cannot bend at the knee: hidden here and drawn in two halves instead (see
+            // KneelLegs). Armour copies these legs, so it shrinks to the upper half along with them.
             model.rightLeg.visible = false;
             model.leftLeg.visible = false;
             model.rightPants.visible = false;
@@ -279,11 +202,6 @@ public final class FlightPose {
         return true;
     }
 
-    /**
-     * While the game draws the model of the player being drawn (see PlayerRendererMixin): his whole body turns with his
-     * flight, dips, and kneels with his body leaning over his hips. Only the model: his name over his head, drawn after
-     * it, stays upright.
-     */
     static void turnModel(AbstractClientPlayer player, PoseStack pose) {
         BodyTurn turn = body;
         if (turn == null || turn.entity() != player.getId()) {
@@ -293,7 +211,6 @@ public final class FlightPose {
         pose.mulPose(turn.turn());
         pose.translate(-turn.pivot().x, -turn.pivot().y, -turn.pivot().z);
         if (turn.kneel()) {
-            // Down onto his knee, and his body leaning forward over his hips.
             pose.translate(0.0F, HIP_HEIGHT - turn.drop(), 0.0F);
             pose.mulPose(new Quaternionf().rotateAxis(turn.lean(), (float) turn.left().x, 0.0F,
                     (float) turn.left().z));
@@ -301,7 +218,6 @@ public final class FlightPose {
         }
     }
 
-    /** After the game drew the player: legs made short for a kneel are whole again. */
     static void post(RenderPlayerEvent.Post event) {
         PlayerModel<AbstractClientPlayer> model = event.getRenderer().getModel();
         model.rightLeg.yScale = 1.0F;
@@ -310,10 +226,6 @@ public final class FlightPose {
         frame = null;
     }
 
-    /**
-     * How far this player's knees bend right now, right and left, in radians, while he kneels in the landing of a slam;
-     * null while he does not, and his legs are the game's own straight ones.
-     */
     @Nullable
     static float[] knees(LivingEntity entity) {
         Frame f = frame;
@@ -323,7 +235,6 @@ public final class FlightPose {
         return new float[] { DOWN_KNEE * f.kneel(), STEP_KNEE * f.kneel() };
     }
 
-    /** How far the body dips: a small crouch as the fists come to the chest, and as he lands. */
     private static float dip(float t, float land) {
         float gather = t < 0.0F ? 0.0F
                 : (float) (Ease.smooth(t / ClientFlight.GATHER)
@@ -331,15 +242,10 @@ public final class FlightPose {
         return 0.12F * gather + 0.14F * land;
     }
 
-    /** True when this player's arms are posed here this frame. */
     static boolean posing(LivingEntity entity) {
         return frame != null && frame.entity() == entity.getId();
     }
 
-    /**
-     * One arm (and the head and legs along with it) while the game poses the model: the flight pose, and on top
-     * of it whatever the ring makes him do with his hands.
-     */
     static void pose(HumanoidModel<?> model, LivingEntity entity, HumanoidArm arm) {
         Frame f = frame;
         if (f == null || f.entity() != entity.getId()) {
@@ -350,7 +256,6 @@ public final class FlightPose {
         boolean right = arm == HumanoidArm.RIGHT;
         ModelPart limb = right ? model.rightArm : model.leftArm;
         float side = right ? 1.0F : -1.0F;
-        // The head keeps looking where he looks, however the body lies.
         float pitch = entity.getViewXRot(partialTick) * Mth.DEG_TO_RAD;
         model.head.xRot = Mth.clamp(pitch - f.tilt(), -1.35F, 1.1F);
         if (blend.fly > 0.0F) {
@@ -363,8 +268,6 @@ public final class FlightPose {
             float look = headLift(f);
             model.head.xRot = Mth.clamp(model.head.xRot + look * fly, -1.35F, 1.1F);
         }
-        // What the ring does with his hands comes on top. Shooting bolts, the ring arm points straight where he aims,
-        // so every bolt leaves the ring on his outstretched hand, and kicks up a little with each one.
         if (right && blend.point > 0.0F) {
             float kick = BOLT_KICK * BoltArm.kick(entity, partialTick);
             limb.xRot = Mth.lerp(blend.point, limb.xRot, -Mth.HALF_PI + model.head.xRot - kick);
@@ -375,13 +278,11 @@ public final class FlightPose {
             beam(model, limb, right, blend, entity, partialTick, f.time());
         }
         if (!right && blend.ram > 0.0F) {
-            // Superman's punch: the fist goes out in front along the way he flies, into the tip of the cone.
             limb.xRot = Mth.lerp(blend.ram, limb.xRot, -2.95F);
             limb.yRot = Mth.lerp(blend.ram, limb.yRot, 0.12F);
             limb.zRot = Mth.lerp(blend.ram, limb.zRot, -0.05F);
         }
         if (blend.dome > 0.0F) {
-            // Both hands hold the dome open, palms out.
             limb.xRot = Mth.lerp(blend.dome, limb.xRot, -0.55F);
             limb.yRot = Mth.lerp(blend.dome, limb.yRot, 0.0F);
             limb.zRot = Mth.lerp(blend.dome, limb.zRot, side * 1.2F);
@@ -394,15 +295,10 @@ public final class FlightPose {
         }
     }
 
-    /** 0 to 1: how far down he is in the landing of a slam: straight down on impact, a hold, and up again. */
     private static float kneel(float age) {
         return (float) (Ease.smooth(age / 1.0) * (1.0 - Ease.smooth((age - KNEEL_HOLD) / KNEEL_RISE)));
     }
 
-    /**
-     * A point on someone's body as it really is drawn this frame: turned with the flight pose. Used to aim an arm
-     * at something (see {@link LanternArms}): the arm has to reach from where its shoulder really is.
-     */
     static Vec3 turned(LivingEntity entity, Vec3 point, float partialTick) {
         Frame f = frame;
         if (f == null || f.entity() != entity.getId() || body == null) {
@@ -415,7 +311,6 @@ public final class FlightPose {
         return base.add(local.x, local.y, local.z);
     }
 
-    /** A way in the world, as the upright body sees it: undoes the flight pose's turn. */
     static Vec3 untilted(LivingEntity entity, Vec3 way) {
         Frame f = frame;
         if (f == null || f.entity() != entity.getId() || body == null) {
@@ -426,33 +321,22 @@ public final class FlightPose {
         return new Vec3(local.x, local.y, local.z);
     }
 
-    /**
-     * How the flight pose turns this player's body, in the model's own directions (x to the left, y down, -z
-     * ahead), or null when it is not turned. Undoing it keeps something he holds upright in the world.
-     */
     @Nullable
     static Quaternionf bodyTurn(LivingEntity entity) {
         Frame f = frame;
         if (f == null || f.entity() != entity.getId() || body == null) {
             return null;
         }
+        // Model's own axes: x to the left, y down, -z ahead.
         return new Quaternionf().rotateAxis(f.roll(), 0.0F, 0.0F, -1.0F).rotateAxis(f.tilt(), 1.0F, 0.0F, 0.0F);
     }
 
-    /** Forgets everyone (you left the world). */
     public static void clear() {
         BLENDS.clear();
         frame = null;
         body = null;
     }
 
-    // ---- First person ----
-
-    /**
-     * Your own hands in first person: during the take-off both fists come up to your chest at the bottom of your
-     * screen, then sweep down and out of sight as you rise; diving into a slam your ring fist comes up cocked high on
-     * the right, and on the landing it smashes into the ground in front of you (see {@link #slamHand}).
-     */
     static boolean hands(RenderHandEvent event) {
         Minecraft minecraft = Minecraft.getInstance();
         LocalPlayer player = minecraft.player;
@@ -502,11 +386,6 @@ public final class FlightPose {
         return true;
     }
 
-    /**
-     * Your own landing slam: your ring fist comes down out of its cocked position on the right and smashes into the
-     * ground in front of you, right where the cracks run out from (whichever way you look, while your view dips down
-     * to it); it shudders from the blow, stays there while the construct strikes, and comes back.
-     */
     private static void slamHand(RenderHandEvent event, LocalPlayer player, float age) {
         event.setCanceled(true);
         if (event.getHand() != InteractionHand.MAIN_HAND) {
@@ -523,11 +402,6 @@ public final class FlightPose {
                 renderer, 1.0F, hand, ARM_FROM);
     }
 
-    /**
-     * Where your fist is in the ground in first person, in blocks in front of your eyes: the spot beside you where the
-     * slam's cracks run out from, seen from your camera as it is turned right now. It is kept on your screen: looking
-     * too far up, it shows at the bottom edge instead, and behind your eyes it stays low on your screen.
-     */
     private static Vector3f planted(Minecraft minecraft, LocalPlayer player, float partialTick) {
         Vec3 facing = ClientConstructs.slamFacing(player.getId());
         if (facing == null) {

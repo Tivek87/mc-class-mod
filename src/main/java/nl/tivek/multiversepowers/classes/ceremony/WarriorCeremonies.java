@@ -11,17 +11,12 @@ import static nl.tivek.multiversepowers.classes.ceremony.Fx.FLOOR;
 import static nl.tivek.multiversepowers.classes.ceremony.Fx.MAIN;
 import static nl.tivek.multiversepowers.classes.ceremony.Fx.fadeOut;
 
-/** The ceremonies of the Warriors: Knight, Berserker, Halberdier and Duelist. */
 final class WarriorCeremonies {
     private WarriorCeremonies() {
     }
 
     static final Glyph DUELIST_ROSE = new Glyph().rose(MAIN, 4);
 
-    /**
-     * Knight: eight shields rise one by one around you, a gold ring is traced under them, they circle faster,
-     * climb to chest height, slam shut into a shield wall, are thrown outward, and you raise a sword of light.
-     */
     static void knightGrand(Fx fx) {
         int t = fx.age();
         ParticleOptions steel = fx.dust(0xC8D0E0, 1.1F);
@@ -99,7 +94,6 @@ final class WarriorCeremonies {
         }
     }
 
-    /** A straight sword from bottom (bx, by, bz) along unit direction (dx, dy, dz), guard across (tx, tz). */
     static void knightBlade(Fx fx, double bx, double by, double bz, double dx, double dy, double dz,
                                     double tx, double tz, double len, double keep) {
         ParticleOptions steel = fx.dust(0xC8D0E0, 1.1F);
@@ -115,7 +109,6 @@ final class WarriorCeremonies {
         }
     }
 
-    /** Knight respawn: four swords burst up out of the ground around you, clash, and fall outward. */
     static void knightLight(Fx fx) {
         int t = fx.age();
         if (t < 40) {
@@ -187,10 +180,6 @@ final class WarriorCeremonies {
 
     static final int[] BERSERKER_BEATS = {0, 24, 44, 62, 78, 92, 104, 114, 122, 129, 135, 140, 144, 147};
 
-    /**
-     * Berserker: a heartbeat speeds up for seven seconds, red pulses and cracks spread over the ground,
-     * rocks lift and blood mist rises, then a roar blows fire out of every crack.
-     */
     static void berserkerGrand(Fx fx) {
         int t = fx.age();
         ParticleOptions blood = fx.dust(0xB01818, 1.5F);
@@ -247,7 +236,6 @@ final class WarriorCeremonies {
         }
     }
 
-    /** Berserker respawn: you slam the ground, debris flies out, then three wild axe sweeps around you. */
     static void berserkerLight(Fx fx) {
         int t = fx.age();
         ParticleOptions blood = fx.dust(0xB01818, 1.4F);
@@ -289,7 +277,6 @@ final class WarriorCeremonies {
         }
     }
 
-    /** A halberd lying flat at height {@code y}, centred on the player, turned by {@code angle}. */
     static void halberd(Fx fx, double angle, double y, double len, double reveal, double keep) {
         ParticleOptions wood = fx.dust(0x8B6B40, 1.0F);
         ParticleOptions steel = fx.dust(0xD0D8E8, 1.1F);
@@ -320,16 +307,14 @@ final class WarriorCeremonies {
             return 0.04 * t + 0.8 * Math.pow(t, 3) / (3.0 * 140 * 140);
         }
         if (t <= 150) {
+            // 42.93 = the t<=140 formula at t=140; keep in sync so the angle stays continuous.
             return 42.93 + 0.84 * (t - 140);
         }
         int s = Math.min(t - 150, 25);
+        // 51.33 = the previous segment's value at t=150; keep in sync too.
         return 51.33 + 0.5 * s - 0.01 * s * s;
     }
 
-    /**
-     * Halberdier: a halberd forms and spins around you faster and faster, its blade leaving a trail and
-     * carving a circle, it rises overhead, then slams down flat with a 360 degree sweep and shockwave.
-     */
     static void halberdierGrand(Fx fx) {
         int t = fx.age();
         double len = 2.0;
@@ -383,7 +368,6 @@ final class WarriorCeremonies {
         }
     }
 
-    /** Halberdier respawn: four halberds rise around you, lean in to meet above your head and clash. */
     static void halberdierLight(Fx fx) {
         int t = fx.age();
         if (t >= 36) {
@@ -436,7 +420,6 @@ final class WarriorCeremonies {
 
     static final int[] DUELIST_ORDER = {0, 3, 6, 1, 4, 7, 2, 5};
 
-    /** One rapier thrust from the chest outward, visible for ten ticks. */
     static void thrust(Fx fx, double angle, int start, double reach, int index) {
         int t = fx.age();
         double w = fx.span(start, start + 10);
@@ -453,10 +436,6 @@ final class WarriorCeremonies {
         }
     }
 
-    /**
-     * Duelist: a big rose is drawn on the floor, two rounds of eight thrusts form a sixteen-pointed star,
-     * the rapier twirls around you, then a flourish of light and cherry petals.
-     */
     static void duelistGrand(Fx fx) {
         int t = fx.age();
         ParticleOptions crimson = fx.dust(0xD02848, 0.8F);
@@ -514,7 +493,6 @@ final class WarriorCeremonies {
         }
     }
 
-    /** Duelist respawn: a small rose spins up from your feet to above your head and bursts into petals. */
     static void duelistLight(Fx fx) {
         int t = fx.age();
         if (t == 0) {

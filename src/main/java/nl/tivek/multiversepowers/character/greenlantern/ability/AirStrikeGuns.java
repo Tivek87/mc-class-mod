@@ -37,22 +37,12 @@ import static nl.tivek.multiversepowers.character.greenlantern.ability.AirStrike
 import static nl.tivek.multiversepowers.character.greenlantern.ability.AirStrike.SENSOR_Y;
 import static nl.tivek.multiversepowers.character.greenlantern.ability.AirStrike.SENSOR_Z;
 
-/**
- * The plane's sensor and its two miniguns: the scans that mark the creatures out to hurt him, and the rounds the guns
- * fire at them (or rake the ground with while nothing is marked). Part of the {@link AirStrike}.
- */
 abstract class AirStrikeGuns extends AirStrikeBlasts {
-    // How far above and below its sensor's line a creature may be to be marked, in blocks.
     private static final double SCAN_HIGH = 48.0;
-    // Rounds: how far round the line of a round a creature still takes it, how far past what it aimed at a round flies
-    // on to the ground, and how far the guns reach.
     private static final double BULLET_HIT = 0.3;
     private static final double BULLET_ON = 14.0;
     private static final double GUN_REACH = 150.0;
-    // How long a gun keeps firing at the creature it picked before it looks again, in ticks.
     private static final int GUN_KEEPS = 40;
-    // Where the guns rake the ground when nothing is marked: how far ahead of the spot under the plane, between these
-    // two, and how far to its side, between these two.
     private static final double RAKE_NEAR = 6.0;
     private static final double RAKE_FAR = 20.0;
     private static final double RAKE_IN = 2.5;
@@ -60,14 +50,10 @@ abstract class AirStrikeGuns extends AirStrikeBlasts {
 
     final List<Bullet> bullets = new ArrayList<>();
     final List<Scan> scans = new ArrayList<>();
-    // The creatures its scans marked for him, by entity id, with the tick their mark runs out on.
     private final Map<Integer, Integer> marked = new HashMap<>();
-    // How each minigun swings (0 the left one, 1 the right one), worked out as every client works it out.
     private final PlanePath.Turret[] turrets;
-    // What each minigun fires at and until when it keeps on that one.
     private final LivingEntity[] gunTargets = new LivingEntity[2];
     private final int[] gunKeeps = new int[2];
-    // The rounds the guns still owe: they fire as many per tick as their pace comes to, a whole one at a time.
     double gunsOwe;
     private boolean leftGun;
 
@@ -76,9 +62,6 @@ abstract class AirStrikeGuns extends AirStrikeBlasts {
         this.turrets = new PlanePath.Turret[] { new PlanePath.Turret(path, 0), new PlanePath.Turret(path, 1) };
     }
 
-    // ---- The scan ----
-
-    /** One scan of its sensor rolling out over the ground: every creature out to hurt him it passes gets marked. */
     final class Scan {
         final int id = PowerRing.newId();
         private final Vec3 center;
@@ -91,7 +74,6 @@ abstract class AirStrikeGuns extends AirStrikeBlasts {
             this.radius = radius;
         }
 
-        /** Rolls on; true once it is done. */
         boolean step(ServerLevel level) {
             int since = AirStrikeGuns.this.age - this.began;
             double reached = Math.min(this.radius, RingScan.SPEED * since);
@@ -119,13 +101,11 @@ abstract class AirStrikeGuns extends AirStrikeBlasts {
         }
     }
 
-    /** How long what its scan marks stays marked: as long as the Ring Scan marks what it finds. */
     private static int markTicks() {
         CharacterAbility scan = GameCharacter.GREEN_LANTERN.byName("ring_scan");
         return (int) Math.round((scan == null ? 21.0 : scan.value("markSeconds")) * 20.0);
     }
 
-    /** Its sensor scans the ground right under it, with a sound everyone near can hear. */
     void scan(ServerLevel level) {
         Vec3 sensor = this.path.point(this.age, 0.0, SENSOR_Y, SENSOR_Z);
         Vec3 center = this.ground(level, sensor);
@@ -140,12 +120,6 @@ abstract class AirStrikeGuns extends AirStrikeBlasts {
         this.marked.values().removeIf(until -> until < this.age);
     }
 
-    /**
-     * One of the creatures its scans marked, within {@code reach} of {@code from}: from the side of the plane the gun
-     * is on first (though it can still swing round under the body), nearer ones more often. Null when there is none.
-     *
-     * @param side 1 for its right side, -1 for its left
-     */
     @Nullable
     private LivingEntity pickMarked(ServerLevel level, Vec3 from, double reach, double side) {
         Vec3 right = this.path.axes(this.age)[0];
@@ -162,7 +136,6 @@ abstract class AirStrikeGuns extends AirStrikeBlasts {
                 continue;
             }
             double across = at.subtract(from).dot(right) * side;
-            // A little chance in it, so a crowd is shared out instead of the nearest one taking everything.
             double score = distance * (0.6 + 0.8 * random.nextDouble()) * (across >= -2.0 ? 1.0 : 2.5);
             if (score < bestScore) {
                 bestScore = score;
@@ -172,22 +145,9 @@ abstract class AirStrikeGuns extends AirStrikeBlasts {
         return best;
     }
 
-    // ---- The miniguns ----
-
-    /**
-     * One round on its way from a minigun to where it strikes, the tick it gets there, and whether it strikes nothing
-     * at all (it flies off into the air).
-     */
     private record Bullet(Vec3 from, Vec3 to, int arrives, boolean air) {
     }
 
-    /**
-     * A round from one minigun and then the other, out of its barrel the way it points right now (see
-     * {@link PlanePath.Turret}), spread wide round that. Every round also tells the gun where to swing to next: to a
-     * creature its scan marked when one is in reach, and otherwise to the ground along its way (see {@link #rake}). A
-     * gun keeps on the creature it picked a while, so it swings round to it once and stays on it, its rounds walking
-     * onto it as it swings, instead of jumping from one to the next.
-     */
     void fireGun(ServerLevel level) {
         this.leftGun = !this.leftGun;
         int gun = this.leftGun ? 0 : 1;
@@ -206,8 +166,6 @@ abstract class AirStrikeGuns extends AirStrikeBlasts {
         Vec3 goal = target == null ? this.rake(level, side) : target.getBoundingBox().getCenter();
         Vec3 next = this.path.gunGoal(gun, this.age, goal);
         this.turrets[gun].fired(this.age, next);
-        // Low accuracy: the rounds spread wide round where the barrel points, as far round as gunSpread blocks out at
-        // what it fires at.
         RandomSource random = this.owner.getRandom();
         double spread = this.ability.value("gunSpread");
         double angle = random.nextDouble() * Math.PI * 2.0;
@@ -215,8 +173,6 @@ abstract class AirStrikeGuns extends AirStrikeBlasts {
         Vec3[] across = Vectors.across(barrel);
         Vec3 way = barrel.scale(Math.max(8.0, goal.distanceTo(muzzle))).add(across[0].scale(Math.cos(angle) * off))
                 .add(across[1].scale(Math.sin(angle) * off)).normalize();
-        // It flies on until it strikes the ground, a roof or a creature on the way; with none of those in reach it
-        // flies off into the air.
         Vec3 end = muzzle.add(way.scale(GUN_REACH));
         BlockHitResult block = LoadedWorld.clip(level, new ClipContext(muzzle, end, ClipContext.Block.COLLIDER,
                 ClipContext.Fluid.ANY, CollisionContext.empty()));
@@ -241,12 +197,6 @@ abstract class AirStrikeGuns extends AirStrikeBlasts {
         this.sound(level, muzzle, SoundEvents.CHAIN_HIT, 6.0F, 0.6F);
     }
 
-    /**
-     * Where a gun with nothing marked to fire at rakes the ground: ahead of the plane on its own side, the spot walking
-     * to and fro across its way and nearer and further, so its rounds stitch lines over the ground as it drones on.
-     *
-     * @param side 1 for its right side, -1 for its left
-     */
     private Vec3 rake(ServerLevel level, double side) {
         Vec3 way = this.path.way();
         Vec3 right = way.cross(new Vec3(0.0, 1.0, 0.0)).normalize();
@@ -256,7 +206,6 @@ abstract class AirStrikeGuns extends AirStrikeBlasts {
         return this.ground(level, this.path.at(this.age).add(way.scale(ahead)).add(right.scale(across)));
     }
 
-    /** Rounds that get where they were going strike: the first creature along their last stretch takes the hit. */
     void flyBullets(ServerLevel level) {
         Iterator<Bullet> all = this.bullets.iterator();
         while (all.hasNext()) {
@@ -284,7 +233,6 @@ abstract class AirStrikeGuns extends AirStrikeBlasts {
                 struck.hurt(level.damageSources().playerAttack(this.owner), (float) this.ability.value("gunDamage"));
                 ParticleFx.send(level, ParticleTypes.CRIT, at.x, at.y, at.z, 6, 0.15, 0.15, 0.15, 0.2);
             } else if (bullet.air()) {
-                // It struck nothing: it flies off into the air, with nothing to splash on.
                 continue;
             } else {
                 BlockPos spot = BlockPos.containing(at.subtract(way.scale(-0.1)));

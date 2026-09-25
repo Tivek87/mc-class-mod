@@ -3,9 +3,6 @@ package nl.tivek.multiversepowers.classes;
 import net.minecraft.network.chat.Component;
 import nl.tivek.multiversepowers.MultiversePowers;
 
-/**
- * Every class a player can pick when first entering a world: four per group, plus The Forsaken.
- */
 public enum PlayerClass {
     KNIGHT("knight", ClassGroup.WARRIORS),
     BERSERKER("berserker", ClassGroup.WARRIORS),
@@ -55,7 +52,6 @@ public enum PlayerClass {
         return this.group;
     }
 
-    /** Theme colour used for the card border and the class name. */
     public int getColor() {
         return this.group.getColor();
     }
@@ -64,17 +60,14 @@ public enum PlayerClass {
         return Component.translatable(key(""));
     }
 
-    /** Short role, shown on the card, e.g. "Tank · melee". */
     public Component getTagline() {
         return Component.translatable(key(".tagline"));
     }
 
-    /** One line of story: who this class is. */
     public Component getLore() {
         return Component.translatable(key(".lore"));
     }
 
-    /** What its power actually does. */
     public Component getSpecial() {
         return Component.translatable(key(".special"));
     }
@@ -87,7 +80,6 @@ public enum PlayerClass {
         return Component.translatable(key(".weak"));
     }
 
-    /** Why a player would pick this class over another one. */
     public Component getPick() {
         return Component.translatable(key(".pick"));
     }

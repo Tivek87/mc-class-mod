@@ -16,27 +16,14 @@ import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.engine.fx.ParticleBatch;
 
-/**
- * Runs every {@link Effect} of every power: spells, the abilities of every character, anything that goes on for a
- * while. Each one is ticked once every server tick, in the order they were started, until it says it is done. An
- * effect lives in the level it was started in; once that level is gone, so is the effect.
- *
- * <p>What the powers send at the end of a tick goes out to every player together once they are all done, and their
- * particles in one packet per player (see {@link ParticleBatch}).
- */
 @EventBusSubscriber(modid = MultiversePowers.MODID)
 public final class Effects {
     private static final List<Running> ACTIVE = new ArrayList<>();
-    // What powers gather over a tick and send once at its end (see atTickEnd).
     private static final List<Runnable> AT_TICK_END = new CopyOnWriteArrayList<>();
 
     private Effects() {
     }
 
-    /**
-     * Something a power gathers over a tick (a value that changes on every tick, told once instead of on every change)
-     * and sends at the end of it, together with everything else that tick sends.
-     */
     public static void atTickEnd(Runnable send) {
         AT_TICK_END.add(send);
     }
@@ -53,30 +40,20 @@ public final class Effects {
         }
     }
 
-    /** Starts an effect in this level; its first tick runs on the next server tick. */
     public static void start(ServerLevel level, Effect effect) {
         ACTIVE.add(new Running(level.dimension(), effect));
     }
 
-    /** Forgets every effect that is still running (the server stops). */
     public static void clear() {
         ACTIVE.clear();
     }
 
-    /**
-     * The start of a server tick: the particles gathered since the end of the last one (a key a player pressed in
-     * between) go out now (see {@link ParticleBatch}).
-     */
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onTickStart(ServerTickEvent.Pre event) {
         ParticleBatch.flush();
     }
 
-    /**
-     * Before everything else at the end of a tick: whatever the powers send from here on waits, and goes out to every
-     * player together once they are all done ({@link #onTickDone}), the way the game sends everything of its own in a
-     * tick, instead of in a network write of its own for every packet.
-     */
+    // HIGHEST here, LOWEST on onTickDone: everything else must run and queue its packets in between.
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onTickEnding(ServerTickEvent.Post event) {
         for (ServerPlayer player : event.getServer().getPlayerList().getPlayers()) {
@@ -84,10 +61,6 @@ public final class Effects {
         }
     }
 
-    /**
-     * After everything else at the end of a tick: what the powers gathered over it (see {@link #atTickEnd}), this
-     * tick's particles, and all that waited, go out.
-     */
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public static void onTickDone(ServerTickEvent.Post event) {
         for (Runnable send : AT_TICK_END) {
@@ -105,8 +78,7 @@ public final class Effects {
             return;
         }
         MinecraftServer server = event.getServer();
-        // The ones running now; an effect may start new ones while it ticks (the poison vial turns into the cloud),
-        // and those begin on the next tick.
+        // Snapshot: an effect may start another while it ticks, which must not run until next tick.
         Running[] current = ACTIVE.toArray(new Running[0]);
         for (Running running : current) {
             ServerLevel level = server.getLevel(running.dimension);
@@ -116,10 +88,6 @@ public final class Effects {
         ACTIVE.removeIf(running -> running.done);
     }
 
-    /**
-     * One tick of one effect. One that breaks is stopped on its own, with the error in the log, so it cannot take the
-     * whole server down with it; while developing it still crashes, so the error is never missed.
-     */
     private static boolean tick(Running running, ServerLevel level) {
         if (!FMLEnvironment.production) {
             return running.effect.tick(level, running.age);

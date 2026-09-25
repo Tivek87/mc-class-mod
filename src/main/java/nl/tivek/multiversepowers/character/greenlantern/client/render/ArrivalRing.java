@@ -22,13 +22,7 @@ import static nl.tivek.multiversepowers.character.greenlantern.client.render.Arr
 import static nl.tivek.multiversepowers.character.greenlantern.client.render.ArrivalAnimation.STREAK_HIGH;
 import static nl.tivek.multiversepowers.character.greenlantern.client.render.ArrivalAnimation.STREAK_TICKS;
 
-/**
- * The ring itself on its way in (see {@link ArrivalAnimation}): where it is and how big, and drawing it out in the
- * world.
- */
 final class ArrivalRing {
-    // The ring out in the world: a silver band round its middle, its setting on the outside and the stone in it, a
-    // band one long across; drawn bigger than on a finger, so it can be seen from far off.
     private static final Mesh BAND = Mesh.torus(20, 8, 1.0, 0.24, 1.0);
     private static final Mesh SETTING = Mesh.box(1.12, -0.3, -0.3, 1.42, 0.3, 0.3, 1.0);
     private static final Mesh STONE = Mesh.ball(10, 6, 0.26, 1.0).moved(1.5, 0.0, 0.0);
@@ -39,13 +33,8 @@ final class ArrivalRing {
     private ArrivalRing() {
     }
 
-    /**
-     * Where the ring is on its way: streaking down out of the sky to where it shows up, circling him once from there
-     * down to before his eyes, and from there onto his finger.
-     */
     static Vec3 ringAt(Vec3 from, Vec3 eye, Vec3 hover, Vec3 finger, float a) {
         if (a < STREAK_TICKS) {
-            // Out of the sky over the far side of where it shows up, slowing down to a stop.
             Vec3 out = new Vec3(from.x - eye.x, 0.0, from.z - eye.z);
             Vec3 sky = (out.lengthSqr() < 1.0E-6 ? Vectors.UP : out.normalize().scale(0.5)
                     .add(Vectors.UP)).normalize();
@@ -57,7 +46,6 @@ final class ArrivalRing {
         }
         if (a < ARRIVES) {
             double t = Ease.smooth((a - SET_OFF) / (ARRIVES - SET_OFF));
-            // Round him once on the way, closing in fast and then circling closer, coming down as it goes.
             Vec3 start = from.subtract(eye);
             Vec3 end = hover.subtract(eye);
             double startAngle = Math.atan2(start.z, start.x);
@@ -78,7 +66,6 @@ final class ArrivalRing {
         return hover.lerp(finger, t).add(0.0, 0.25 * Math.sin(Math.PI * t), 0.0);
     }
 
-    /** How big the ring is at this moment, across in blocks: big far off, a ring's size once it reaches the hand. */
     static double ringSize(float a, boolean own) {
         if (a < ARRIVES) {
             return Mth.lerp(Ease.smooth((a - SET_OFF) / (ARRIVES - SET_OFF)), FAR_SIZE, HOVER_SIZE);
@@ -87,10 +74,6 @@ final class ArrivalRing {
         return Mth.lerp(t * t, HOVER_SIZE, own ? OWN_FINGER_SIZE : FINGER_SIZE);
     }
 
-    /**
-     * Draws the ring out in the world at {@code at}, {@code size} blocks across, its face to {@code face}, turned
-     * {@code spin} about the way up: a silver band, the dark setting and the green stone, which glows by itself.
-     */
     static void ring(RenderLevelStageEvent event, MultiBufferSource.BufferSource buffers, Vec3 at, Vec3 face,
             double spin, double size) {
         Vec3 axis = Vectors.spin(face, Vectors.UP, spin);
@@ -99,13 +82,12 @@ final class ArrivalRing {
         Vec3 camera = event.getCamera().getPosition();
         VertexConsumer buffer = buffers.getBuffer(Ring.BAND);
         double scale = size * 0.5;
-        // The band lies round its own y: here that is the way it faces.
+        // The torus's own y is reused here as the ring's facing axis
         mesh(buffer, matrix, camera, BAND, at, across[0], axis, across[1], scale, SILVER, true);
         mesh(buffer, matrix, camera, SETTING, at, across[0], axis, across[1], scale, SETTING_COLOR, true);
         mesh(buffer, matrix, camera, STONE, at, across[0], axis, across[1], scale, STONE_COLOR, false);
     }
 
-    /** One round part of the ring, out in the world. */
     private static void mesh(VertexConsumer buffer, Matrix4f matrix, Vec3 camera, Mesh mesh, Vec3 at, Vec3 x, Vec3 y,
             Vec3 z, double scale, int rgb, boolean lit) {
         for (int s = 0; s < mesh.sides.length; s++) {
@@ -124,7 +106,6 @@ final class ArrivalRing {
         }
     }
 
-    /** Two ways square to {@code axis} and to each other. */
     static Vec3[] acrossOf(Vec3 axis) {
         Vec3 side = Math.abs(axis.y) < 0.95 ? axis.cross(Vectors.UP) : axis.cross(new Vec3(1.0, 0.0, 0.0));
         side = side.normalize();

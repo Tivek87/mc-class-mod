@@ -24,13 +24,8 @@ import nl.tivek.multiversepowers.engine.effect.Effects;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 import nl.tivek.multiversepowers.engine.target.Targeting;
 
-/**
- * Fireball: a flaming circle flares up at your hand, a blazing comet with a spiralling flame trail
- * flies where you look, and bursts in a ball of fire with a burning shockwave and a small pile of fire.
- */
 final class FireballSpell {
     private static final double SPEED = 1.1;
-    // The fireball fizzles out after this many ticks if it hits nothing.
     private static final int MAX_FLIGHT = 100;
     private static final int IMPACT_DURATION = 40;
 
@@ -50,11 +45,10 @@ final class FireballSpell {
             @Override
             protected void onHitBlock(BlockHitResult result) {
                 BlockPos spot = result.getBlockPos().relative(result.getDirection());
+                // Spawn protection: the block still feels the hit, but no fire is lit there.
                 if (this.mayInteract(this.level(), spot)) {
                     super.onHitBlock(result);
                 } else {
-                    // Where the caster may not build (spawn protection) the block still feels the hit, but the
-                    // fireball's own fire is not lit.
                     BlockState block = this.level().getBlockState(result.getBlockPos());
                     block.onProjectileHit(this.level(), block, result, this);
                 }
@@ -63,7 +57,7 @@ final class FireballSpell {
 
             @Override
             protected void onHitEntity(EntityHitResult result) {
-                // Asked before the hit: a player it kills is no longer one the caster may hit.
+                // Check before the hit: a kill would make the victim untargetable afterward.
                 boolean burn = mayBurnAt(this, result.getEntity());
                 super.onHitEntity(result);
                 if (burn) {
@@ -92,7 +86,6 @@ final class FireballSpell {
         return true;
     }
 
-    /** A spinning ring of fire with a five-pointed star at the hand, shrinking away in a few ticks. */
     private static Effect castCircle(Vec3 hand, Vec3 look) {
         return (level, age) -> {
             double size = 0.75 * (1.0 - age / 7.0);
@@ -108,7 +101,6 @@ final class FireballSpell {
         };
     }
 
-    /** The comet around the fireball: a glowing core, a double flame spiral and a smoke tail. */
     private static Effect trail(SmallFireball fireball) {
         return (level, age) -> {
             if (!fireball.isAlive()) {
@@ -130,7 +122,6 @@ final class FireballSpell {
                 ParticleFx.at(level, ParticleFx.fade(FLAME, EMBER, 1.5F),
                         center.add(ParticleFx.spread(0.4), ParticleFx.spread(0.4), ParticleFx.spread(0.4)));
             }
-            // Two flame strands winding around the flight path, a little behind the ball.
             Vec3[] b = ParticleFx.basis(direction);
             for (int strand = 0; strand < 2; strand++) {
                 for (int step = 0; step < 3; step++) {
@@ -153,7 +144,6 @@ final class FireballSpell {
         };
     }
 
-    /** Ball of fire, a burning shockwave rolling outward, then embers and smoke drifting up. */
     private static Effect impact(Vec3 at) {
         return (level, age) -> {
             if (age == 0) {
@@ -185,19 +175,11 @@ final class FireballSpell {
         };
     }
 
-    /**
-     * Fire is only left at the feet of a player the caster could hurt: the game already stops the hit itself when
-     * PvP is off, but not this fire.
-     */
     private static boolean mayBurnAt(SmallFireball fireball, Entity hit) {
         return !(hit instanceof Player player)
                 || fireball.getOwner() instanceof ServerPlayer caster && Targeting.isTargetable(caster, player);
     }
 
-    /**
-     * A small pile of fire: the spot itself and about half of the eight spots around it, never where the caster may
-     * not build (spawn protection, outside the world border).
-     */
     private static void spreadFire(SmallFireball fireball, BlockPos center) {
         Level level = fireball.level();
         if (level.isClientSide) {
@@ -210,7 +192,6 @@ final class FireballSpell {
                 if (!middle && random.nextFloat() > 0.5F) {
                     continue;
                 }
-                // Follow the ground one block up or down, so the pile also works on slopes.
                 for (int dy : new int[] {0, -1, 1}) {
                     BlockPos pos = center.offset(dx, dy, dz);
                     if (BaseFireBlock.canBePlacedAt(level, pos, Direction.UP) && fireball.mayInteract(level, pos)) {

@@ -23,62 +23,30 @@ import nl.tivek.multiversepowers.engine.effect.Effect;
 import nl.tivek.multiversepowers.engine.effect.Effects;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 
-/**
- * Becoming Green Lantern: the ring comes for you, as it comes for everyone it chooses. It streaks down out of the sky
- * like a comet somewhere 26 to 42 blocks away, flares up there and pulses, then flies to you, circling you once on its
- * way down, to hang three blocks before your eyes. It scans you from head to toe and back, and speaks: you have the
- * ability to overcome great fear. It shapes your lantern out of its light, and the lantern flies into your left hand.
- * Then the ring flies onto the middle finger of your right hand, and the moment it is on, its light bursts out around
- * you in a shockwave that sends the creatures of the dark running (see {@link Fear}), shoots up into the sky in a
- * pillar of light and flares up around you. From
- * the ring the uniform spreads up your arm to the lantern on your chest, and from there over all of you; the mask over
- * your eyes comes last, your eyes light up, and the ring welcomes you to the Corps. Then you smack the ring into the
- * lantern, as you do to recharge, and it is done.
- *
- * <p>Every client plays it along the same timeline, from how long ago it began (see
- * {@link nl.tivek.multiversepowers.character.greenlantern.RingPayload}); the ticks
- * below are that timeline. Until it is over the ring does nothing else.
- */
 public final class Arrival implements Effect {
-    /** The ring sets off from where it showed up. */
     public static final int SET_OFF = 10;
-    /** The ring hangs three blocks before your eyes: its flight in from where it showed up is over. */
     public static final int APPROACH = 40;
-    /** It scans you, from head to toe and back up, and has done so. */
     public static final int SCAN = 41;
     public static final int SCANNED = 57;
-    /** It starts to shape the lantern out of its light, and has finished it. */
     public static final int LANTERN_FORM = 58;
     public static final int LANTERN_FORMED = 68;
-    /** The lantern has flown into your left hand. */
     public static final int LANTERN_CAUGHT = 76;
-    /** The ring sets off for your finger, and is on it: the shockwave, and the uniform starts to spread. */
     public static final int RING_FLY = 78;
     public static final int RING_ON = 85;
-    /** How long the uniform takes to spread over you, the mask included. */
     public static final int SUIT_TICKS = 36;
-    /** The uniform is complete, mask and all: your eyes light up. */
     public static final int DRESSED = RING_ON + SUIT_TICKS;
-    /** You smack the ring into the lantern: the recharge that ends it all. */
     public static final int RECHARGE = DRESSED + 2;
-    /** It is over. */
     public static final int TICKS = RECHARGE + PowerRing.RECHARGE_TICKS;
-    /** How far before your eyes the ring hangs, in blocks. */
     public static final double HOVER = 3.0;
-    /** How high the pillar of light shoots up as the ring slides on, in blocks. */
     public static final double PILLAR_HIGH = 24.0;
-    /** How far the shockwave of the ring reaches, and how long the creatures of the dark run from it, in ticks. */
     public static final double FEAR_RADIUS = 16.0;
     private static final int FEAR_TICKS = 200;
     private static final double FEAR_PUSH = 0.9;
-    // How far away the ring shows up, in blocks, and how high over your eyes.
     private static final double NEAR = 26.0;
     private static final double FAR = 42.0;
     private static final double LOW = 8.0;
     private static final double HIGH = 20.0;
-    // The tick the ring, circling him, sweeps past behind him.
     private static final int PASS = 25;
-    // How far to either side of where you look it may show up, in degrees, so you see it coming.
     private static final double SPREAD = 50.0;
 
     private static final Map<UUID, Arrival> ACTIVE = new HashMap<>();
@@ -92,7 +60,6 @@ public final class Arrival implements Effect {
         this.from = from;
     }
 
-    /** He has just become Green Lantern: the ring sets out for him. */
     public static void begin(ServerPlayer owner) {
         ServerLevel level = owner.serverLevel();
         Arrival arrival = new Arrival(owner, start(owner, level));
@@ -103,41 +70,31 @@ public final class Arrival implements Effect {
         PowerRing.sync(owner);
     }
 
-    /** He is no longer Green Lantern (or gone): whatever of the arrival was still to come, does not. */
     public static void end(ServerPlayer owner) {
         if (ACTIVE.remove(owner.getUUID()) != null) {
             PowerRing.sync(owner);
         }
     }
 
-    /** True while the ring is still on its way to him or dressing him: it makes nothing else yet. */
     public static boolean busy(ServerPlayer player) {
         return ACTIVE.containsKey(player.getUUID());
     }
 
-    /** How many ticks ago this player's ring set out for him, or -1 when it is not on its way. */
     static int ticks(ServerPlayer player) {
         Arrival arrival = ACTIVE.get(player.getUUID());
         return arrival == null ? -1 : arrival.ticks;
     }
 
-    /** Where this player's ring showed up, or null when it is not on its way. */
     @Nullable
     static Vec3 from(ServerPlayer player) {
         Arrival arrival = ACTIVE.get(player.getUUID());
         return arrival == null ? null : arrival.from;
     }
 
-    /** The server stops: no ring is on its way any more. */
     static void clear() {
         ACTIVE.clear();
     }
 
-    /**
-     * Where the ring shows up: 26 to 42 blocks away, somewhat ahead of where he looks and high over his eyes, where
-     * nothing is in between, so he sees it. Where every way is closed off (a cave) it shows up as far away as it
-     * can.
-     */
     private static Vec3 start(ServerPlayer owner, ServerLevel level) {
         RandomSource random = owner.getRandom();
         Vec3 eye = owner.getEyePosition();
@@ -204,7 +161,6 @@ public final class Arrival implements Effect {
             }
             case RECHARGE -> Recharge.arrive(this.owner, level);
             default -> {
-                // The uniform spreads: a chime every so often, higher every time; the mask comes on with its own.
                 int into = this.ticks - RING_ON;
                 if (into > 0 && into < SUIT_TICKS - 4 && into % 6 == 0) {
                     this.sound(level, SoundEvents.AMETHYST_BLOCK_CHIME, 1.0F, 0.7F + 0.1F * into / 6.0F);
@@ -223,10 +179,6 @@ public final class Arrival implements Effect {
         return true;
     }
 
-    /**
-     * The ring slides onto his finger: its light bursts out around him, a ring of it racing out over the ground and a
-     * pillar of it shooting up into the sky, and the creatures of the dark close by are thrown back and run.
-     */
     private void ringOn(ServerLevel level) {
         Vec3 feet = this.owner.position();
         this.sound(level, SoundEvents.BEACON_ACTIVATE, 1.6F, 1.2F);
@@ -237,7 +189,6 @@ public final class Arrival implements Effect {
                 this.owner.getEyePosition().subtract(0.0, 0.4, 0.0), 30, 0.35);
         ParticleFx.shockwave(level, ParticleFx.dust(PowerRing.GREEN, 2.0F), feet.add(0.0, 0.2, 0.0), 90, 1.4);
         ParticleFx.shockwave(level, ParticleFx.dust(PowerRing.PALE, 1.4F), feet.add(0.0, 0.4, 0.0), 60, 0.9);
-        // Two strands of light winding up round him along the pillar.
         for (int k = 0; k < 2; k++) {
             ParticleFx.helix(level, ParticleFx.dust(k == 0 ? PowerRing.BRIGHT : PowerRing.GREEN, 1.3F), feet, 0.7,
                     PILLAR_HIGH * 0.5, 3.0, 48, Math.PI * k);
@@ -245,7 +196,6 @@ public final class Arrival implements Effect {
         Fear.strike(this.owner, level, FEAR_RADIUS, FEAR_TICKS, FEAR_PUSH);
     }
 
-    /** The ring speaks to him, in its own green, over his hotbar. */
     private void say(String key, Object... args) {
         this.owner.displayClientMessage(Component.translatable("ring." + MultiversePowers.MODID + "." + key, args)
                 .withColor(PowerRing.GREEN), true);

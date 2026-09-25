@@ -13,21 +13,13 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.network.PacketDistributor;
 
-/**
- * Server side of the robot arms and tech portals (Iron Tentacle, Portal Grab): each tick a spell
- * works out the shape of its arms and portals and sends it here; nearby clients draw them as 3D
- * models (see ClientArms).
- */
 public final class RobotArm {
     private static final double VIEW_RANGE = 128.0;
-    // Word that one is gone reaches a little further, to everyone who may still be drawing it.
     private static final double GONE_RANGE = VIEW_RANGE + 32.0;
-    // An arm or portal that has not changed is not sent again every tick, only this often: well within
-    // the time after which a client stops drawing one it hears nothing about (see ClientArms).
+    // Must stay well under ClientArms.TIMEOUT or idle arms would vanish.
     private static final int RESEND = 4;
     private static final int MIN_POINTS = 12;
     private static int nextId;
-    // Per arm or portal: what was last sent, where it was, and on which server tick.
     private static final Map<Integer, Sent> SENT = new HashMap<>();
 
     private record Sent(CustomPacketPayload payload, Vec3 start, Vec3 end, int tick) {
@@ -36,15 +28,11 @@ public final class RobotArm {
     private RobotArm() {
     }
 
-    /**
-     * A fresh id for one arm or portal; send it every tick, and remove it when done.
-     */
     public static int newId() {
         nextId++;
         return nextId;
     }
 
-    /** Starts describing arm {@code id} for this tick; finish with {@link Shape#send}. */
     public static Shape arm(int id, List<Vec3> path) {
         return new Shape(id, path);
     }
@@ -53,12 +41,10 @@ public final class RobotArm {
         gone(level, id, ArmPayload.remove(id));
     }
 
-    /** @param open 0 = shut, 1 = fully open (see PortalPayload) */
     public static void portal(ServerLevel level, int id, Vec3 center, Vec3 normal, double size, double open) {
         disc(level, id, center, normal, size, open, PortalPayload.STYLE_PORTAL);
     }
 
-    /** A glowing energy shield, without a ring around it. */
     public static void shield(ServerLevel level, int id, Vec3 center, Vec3 normal, double size, double open) {
         disc(level, id, center, normal, size, open, PortalPayload.STYLE_SHIELD);
     }
@@ -73,12 +59,10 @@ public final class RobotArm {
         gone(level, id, PortalPayload.remove(id));
     }
 
-    /** Forgets everything that was sent (the server stops). */
     public static void clear() {
         SENT.clear();
     }
 
-    /** Sends this tick's shape to the players near it, unless it is exactly what they already have. */
     private static void broadcast(ServerLevel level, int id, Vec3 start, Vec3 end, CustomPacketPayload payload) {
         int tick = level.getServer().getTickCount();
         Sent last = SENT.get(id);
@@ -89,10 +73,8 @@ public final class RobotArm {
         send(level, start, end, VIEW_RANGE, payload);
     }
 
-    /** Tells the players around where an arm or portal was last sent that it is gone. */
     private static void gone(ServerLevel level, int id, CustomPacketPayload payload) {
         Sent last = SENT.remove(id);
-        // One that was never sent is on no client, so there is nobody to tell.
         if (last != null) {
             send(level, last.start(), last.end(), GONE_RANGE, payload);
         }
@@ -107,7 +89,6 @@ public final class RobotArm {
         }
     }
 
-    /** One tick's shape of one arm. See {@link ArmPayload} for what each part means. */
     public static final class Shape {
         private final int id;
         private final List<Vec3> path;
@@ -132,7 +113,6 @@ public final class RobotArm {
             this.path = path;
         }
 
-        /** How wide the claw is open in blocks; below 0 for no claw. */
         public Shape claw(double open) {
             this.claw = open;
             return this;
@@ -143,7 +123,6 @@ public final class RobotArm {
             return this;
         }
 
-        /** Mounted on {@code player}; {@code blend} 0 = moves along whole, 1 = the tip stays put. */
         public Shape anchor(ServerPlayer player, double blend) {
             this.anchorId = player.getId();
             this.anchorPos = player.position();
@@ -167,7 +146,6 @@ public final class RobotArm {
             return this;
         }
 
-        /** Nothing past the plane through {@code point}, on the side {@code normal} points to, is drawn. */
         public Shape clip(Vec3 point, Vec3 normal) {
             this.clipPoint = point;
             this.clipNormal = normal.normalize();
@@ -179,14 +157,12 @@ public final class RobotArm {
             return this;
         }
 
-        /** The Portal ability's tools at the tip: the sharp point, and the thrusters. */
         public Shape tools(double spike, double thrust) {
             this.spike = spike;
             this.thrust = thrust;
             return this;
         }
 
-        /** Blocks clamped in the claw, each one offset from the tip. */
         public Shape carrying(List<ArmPayload.Carried> carried) {
             this.carried = carried;
             return this;
@@ -196,7 +172,6 @@ public final class RobotArm {
             if (this.path.isEmpty()) {
                 return;
             }
-            // About three points per block: long arms keep their curves, short ones stay small.
             int count = Mth.clamp((int) (length(this.path) * 3) + 2, MIN_POINTS, ArmPayload.MAX_POINTS);
             List<Vec3> points = resample(this.path, count);
             broadcast(level, this.id, points.get(0), points.get(points.size() - 1), new ArmPayload(this.id, points,
@@ -207,11 +182,6 @@ public final class RobotArm {
         }
     }
 
-    /**
-     * The same line with exactly {@code count} evenly spaced points, so the client
-     * can smoothly blend
-     * one tick's shape into the next.
-     */
     public static List<Vec3> resample(List<Vec3> path, int count) {
         List<Vec3> result = new ArrayList<>(count);
         double total = 0;
@@ -241,10 +211,6 @@ public final class RobotArm {
         return result;
     }
 
-    /**
-     * Points on a smooth curve from {@code a} to {@code b}, bent towards the two
-     * control points.
-     */
     public static List<Vec3> curve(Vec3 a, Vec3 c1, Vec3 c2, Vec3 b, int steps) {
         List<Vec3> points = new ArrayList<>(steps + 1);
         for (int i = 0; i <= steps; i++) {
@@ -264,10 +230,6 @@ public final class RobotArm {
         return total;
     }
 
-    /**
-     * The first part of a line, {@code length} blocks long (the whole line if it is
-     * shorter).
-     */
     public static List<Vec3> firstPart(List<Vec3> path, double length) {
         List<Vec3> result = new ArrayList<>();
         result.add(path.get(0));
@@ -284,16 +246,11 @@ public final class RobotArm {
         return result;
     }
 
-    /**
-     * Flat sideways (right-hand) direction of a player, for placing arms on their
-     * back.
-     */
     public static Vec3 right(ServerPlayer player) {
         Vec3 forward = forward(player);
         return new Vec3(-forward.z, 0, forward.x);
     }
 
-    /** Flat forward direction of a player. */
     public static Vec3 forward(ServerPlayer player) {
         float yaw = (float) Math.toRadians(player.getYRot());
         return new Vec3(-Math.sin(yaw), 0, Math.cos(yaw));

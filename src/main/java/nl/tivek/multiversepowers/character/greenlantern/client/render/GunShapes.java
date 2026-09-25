@@ -12,19 +12,10 @@ import static nl.tivek.multiversepowers.character.greenlantern.client.render.Wea
 import static nl.tivek.multiversepowers.character.greenlantern.client.render.WeaponShapes.rod;
 import static nl.tivek.multiversepowers.character.greenlantern.client.render.WeaponShapes.twice;
 
-/**
- * The guns among the weapons on the construct wheel (see {@link WeaponShapes}, which also has the parts they are
- * built of), measured the same way.
- */
 final class GunShapes {
     private GunShapes() {
     }
 
-    /**
-     * A heavy revolver, a hand cannon: a long barrel with a vented rib, a full underlug, a front sight and a glowing
-     * muzzle; a fluted cylinder with its chambers; the frame round it with the hammer; a trigger in its guard; and a
-     * grip with the lantern emblem on both sides.
-     */
     static Mesh[] revolver() {
         List<Mesh> parts = new ArrayList<>();
         double bore = 0.06;
@@ -63,11 +54,6 @@ final class GunShapes {
         return parts.toArray(Mesh[]::new);
     }
 
-    /**
-     * A sawed-off double-barrelled shotgun: two short, fat barrels side by side with ribs, a bead and glowing muzzles; a
-     * fore-end under them; the break action with its hinge pin, raised side plates, top lever and two hammers; two
-     * triggers in their guard; and the stock sawn off behind its wrist, flaring out to the cut, which glows.
-     */
     static Mesh[] shotgun() {
         List<Mesh> parts = new ArrayList<>();
         for (int side = -1; side <= 1; side += 2) {
@@ -100,11 +86,6 @@ final class GunShapes {
         return parts.toArray(Mesh[]::new);
     }
 
-    /**
-     * A micro submachine gun: a boxy receiver with a toothed rail, sights, a charging knob, a glowing ejection port and
-     * the lantern emblem; a short threaded barrel; a trigger in its guard; and the magazine running through the grip,
-     * with a glowing window and base plate.
-     */
     static Mesh[] smg() {
         List<Mesh> parts = new ArrayList<>();
         parts.add(Mesh.box(-0.045, -0.02, -0.2, 0.045, 0.1, 0.14, 1.0));
@@ -138,11 +119,6 @@ final class GunShapes {
         return parts.toArray(Mesh[]::new);
     }
 
-    /**
-     * An arm cannon, a mega blaster: a big round barrel you put your forearm in, with a rim round its opening, bands,
-     * vents on top, the lantern emblem on both sides and a power cell underneath; its muzzle hollow, with a core of light
-     * burning deep inside.
-     */
     static Mesh[] armCannon() {
         List<Mesh> parts = new ArrayList<>();
         parts.add(Mesh.lathe(24, 1.0, 0.0, -0.42, 0.16, -0.42, 0.2, -0.395, 0.215, -0.34, 0.215, -0.08, 0.2, -0.04, 0.14,
@@ -169,11 +145,6 @@ final class GunShapes {
         return parts.toArray(Mesh[]::new);
     }
 
-    /**
-     * A rotary grenade launcher: a revolving drum of six chambers with a band round it; a short fat barrel with a
-     * glowing muzzle, bands, a toothed rail and a ladder sight on top; the frame in front of and behind the drum, a rail
-     * underneath with a foregrip; a pistol grip with its trigger; and a skeleton stock.
-     */
     static Mesh[] grenadeLauncher() {
         List<Mesh> parts = new ArrayList<>();
         double drum = -0.02;
@@ -221,11 +192,6 @@ final class GunShapes {
         return parts.toArray(Mesh[]::new);
     }
 
-    /**
-     * A minigun: six barrels round a spindle with glowing muzzles, held by two clamps; the rotor housing with bands; the
-     * housing behind it with the motor on its side, a carry handle over the top and two spade grips with a bar between
-     * them; and the ammunition chute curving away underneath.
-     */
     static Mesh[] minigun() {
         List<Mesh> parts = new ArrayList<>();
         for (int k = 0; k < 6; k++) {
@@ -265,11 +231,6 @@ final class GunShapes {
         return parts.toArray(Mesh[]::new);
     }
 
-    /**
-     * A rocket launcher, an RPG: a long tube with a heat shield and a flared, hollow venturi behind; the warhead on its
-     * front with a glowing band and fuze; an optic sight on its side and iron sights on top; a pistol grip with its
-     * trigger and a front grip.
-     */
     static Mesh[] rocketLauncher() {
         List<Mesh> parts = new ArrayList<>();
         parts.add(rod(14, 0.042, -0.5, 0.27, 1.0));
@@ -299,12 +260,6 @@ final class GunShapes {
         return parts.toArray(Mesh[]::new);
     }
 
-    /**
-     * A plasma flamethrower: a body with glowing vents and a plasma cell on top; a barrel with cooling fins ending in a
-     * flared, hollow nozzle with plasma burning in it and an igniter under it; the fuel tank slung underneath with a
-     * glowing window and a ribbed hose looping up from it along the side into the body; and a pistol grip with its
-     * trigger.
-     */
     static Mesh[] flamethrower() {
         List<Mesh> parts = new ArrayList<>();
         parts.add(Mesh.sweep(1.0, SQUIRCLE, new double[] { -0.3, 0.048, 0.062, 0.0 },

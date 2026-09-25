@@ -21,19 +21,13 @@ import net.neoforged.neoforge.common.Tags;
 import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.engine.entity.HeldMobs;
 
-/**
- * Works out where a player is aiming a spell.
- */
 public final class Targeting {
-    // How far next to a mob the crosshair may be and still grab it.
     private static final double AIM_ASSIST = 0.5;
 
     private Targeting() {
     }
 
-    /** What a spell is aimed at: always a point, and the creature there when one was aimed at. */
     public record Aim(Vec3 point, @Nullable LivingEntity entity) {
-        /** The creature's current position while it lives, else the fixed point. */
         public Vec3 current() {
             return this.entity != null && this.entity.isAlive() ? this.entity.position() : this.point;
         }
@@ -53,10 +47,6 @@ public final class Targeting {
         return new Aim(point, null);
     }
 
-    /**
-     * Where the player is aiming, on the ground: a living entity in the line of sight, else the block
-     * looked at, else the point at full range. Always dropped down to the first solid floor below.
-     */
     public static Vec3 aimPoint(ServerPlayer player, ServerLevel level, double range) {
         Vec3 eye = player.getEyePosition();
         Vec3 end = eye.add(player.getLookAngle().scale(range));
@@ -78,7 +68,6 @@ public final class Targeting {
         return new Vec3(target.x, floorBelow(level, start), target.z);
     }
 
-    /** Y of the first solid floor at or below {@code start}, looking at most 32 blocks down. */
     public static double floorBelow(ServerLevel level, BlockPos start) {
         BlockPos pos = start;
         for (int i = 0; i < 32 && pos.getY() > level.getMinBuildHeight(); i++) {
@@ -91,11 +80,6 @@ public final class Targeting {
         return start.getY();
     }
 
-    /**
-     * The creature the player is aiming at within {@code range}, not behind a wall. The aim is a
-     * little forgiving: the crosshair only has to come near it. Mobs and players both count; see
-     * {@link #isTargetable}.
-     */
     @Nullable
     public static LivingEntity aimLiving(ServerPlayer player, ServerLevel level, double range) {
         Vec3 eye = player.getEyePosition();
@@ -117,10 +101,6 @@ public final class Targeting {
         return best;
     }
 
-    /**
-     * A creature the player may grab or hit with a spell: alive, not an armour stand, not a boss, not
-     * already held, and a player only when PvP is allowed and they are not in creative or spectator.
-     */
     public static boolean isTargetable(ServerPlayer player, Entity entity) {
         if (entity == player || !(entity instanceof LivingEntity living) || !living.isAlive() || entity.isSpectator()
                 || entity instanceof ArmorStand || entity.getType().is(Tags.EntityTypes.BOSSES)
@@ -133,18 +113,15 @@ public final class Targeting {
         return true;
     }
 
-    /** True when no block stands between the two points. */
     public static boolean clearPath(ServerLevel level, Vec3 from, Vec3 to, Entity viewer) {
         return level.clip(new ClipContext(from, to, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, viewer))
                 .getType() == HitResult.Type.MISS;
     }
 
-    /** Tells the player on their action bar that the spell found nothing to grab. */
     public static void noTarget(ServerPlayer player) {
         player.displayClientMessage(Component.translatable("spell." + MultiversePowers.MODID + ".no_target"), true);
     }
 
-    /** Where the caster's casting hand roughly is: in front of the chest, a little to the right. */
     public static Vec3 handPoint(ServerPlayer player) {
         Vec3 look = player.getLookAngle();
         Vec3 right = new Vec3(-look.z, 0, look.x);

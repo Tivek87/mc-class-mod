@@ -9,7 +9,6 @@ import static nl.tivek.multiversepowers.classes.ceremony.Fx.FLOOR;
 import static nl.tivek.multiversepowers.classes.ceremony.Fx.FORSAKEN_SHARDS;
 import static nl.tivek.multiversepowers.classes.ceremony.Fx.hash;
 
-/** The ceremony of The Forsaken. */
 final class ForsakenCeremony {
     private ForsakenCeremony() {
     }
@@ -24,10 +23,6 @@ final class ForsakenCeremony {
     static final int[] FORSAKEN_BEATS = {0, 20, 38, 54, 68, 80, 90, 99, 107, 114, 120, 125, 129, 133, 136,
             139, 142, 145, 147};
 
-    /**
-     * Forsaken: a dark shell slowly closes around you from far away while your heartbeat speeds up, cracks of
-     * light spread over it, six shards in the group colours glow inside, it trembles and shatters with a sonic boom.
-     */
     static void forsakenGrand(Fx fx) {
         int t = fx.age();
         double cy = 1.0;
@@ -112,7 +107,6 @@ final class ForsakenCeremony {
         }
     }
 
-    /** Forsaken respawn: six shards in the group colours spiral in and slam into you with a dark pulse. */
     static void forsakenLight(Fx fx) {
         int t = fx.age();
         if (t == 0) {
@@ -154,7 +148,6 @@ final class ForsakenCeremony {
         }
     }
 
-    /** Six crack paths over a sphere, as {latitude, longitude} points, the same every run. */
     static double[][][] forsakenCracks() {
         double[][][] cracks = new double[6][14][2];
         for (int c = 0; c < 6; c++) {

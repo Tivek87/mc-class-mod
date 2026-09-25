@@ -3,6 +3,23 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.0.7-alpha] - 2026-09-25
+
+### Changed
+- **Flight:** top speed 35% lower: 6.3 blocks a second (was 9.6). Start 4.2, cruising 5.2.
+- **Flight:** top speed after 7.5 seconds of flying on (was about 6).
+- **Flight:** you pick up speed 75% faster.
+- **Bolt and beam:** work as long as one hand is free, also while the ring hand charges the Giant Fist, waves up
+  a giant hand or calls the air strike. Blocked only when both hands are busy: shield or dome up as well,
+  recharging, the take-off.
+- **Giant Fist, Giant Hands, Air Strike, Light Bubble:** no longer stop a beam you are pouring out.
+
+### Fixed
+- **Flight:** a hit no longer drops you out of the sky: you keep flying.
+
+### Removed
+- **Code:** nearly all comments; a few short ones stay where they are needed.
+
 ## [0.0.6-alpha] - 2026-09-25
 
 ### Changed

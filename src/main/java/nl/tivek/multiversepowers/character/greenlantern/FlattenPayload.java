@@ -8,12 +8,6 @@ import net.minecraft.world.entity.LivingEntity;
 import net.neoforged.neoforge.network.PacketDistributor;
 import nl.tivek.multiversepowers.MultiversePowers;
 
-/**
- * Server tells every client that sees it that a giant hand just slapped this creature flat against the ground, so each
- * draws it squashed a moment: the very creatures the server pressed, never a guess of the client's own.
- *
- * @param entity entity id of the creature
- */
 public record FlattenPayload(int entity) implements CustomPacketPayload {
     public static final CustomPacketPayload.Type<FlattenPayload> TYPE = new CustomPacketPayload.Type<>(
             ResourceLocation.fromNamespaceAndPath(MultiversePowers.MODID, "flatten"));
@@ -21,7 +15,6 @@ public record FlattenPayload(int entity) implements CustomPacketPayload {
     public static final StreamCodec<RegistryFriendlyByteBuf, FlattenPayload> STREAM_CODEC = CustomPacketPayload
             .codec(FlattenPayload::write, FlattenPayload::read);
 
-    /** Tells everyone who sees this creature (a player too) that it was slapped flat. */
     public static void send(LivingEntity living) {
         PacketDistributor.sendToPlayersTrackingEntityAndSelf(living, new FlattenPayload(living.getId()));
     }

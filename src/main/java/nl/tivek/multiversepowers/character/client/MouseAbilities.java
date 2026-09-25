@@ -13,19 +13,11 @@ import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.character.CharacterAbility;
 import nl.tivek.multiversepowers.character.GameCharacter;
 
-/**
- * Keeps the game's own mouse out of the way of a character that always does something of its own with it
- * (see {@link CharacterAbility#mouseButton()}). While such a character has both hands empty, clicking does
- * not mine, hit, place or use anything any more: that button belongs to the character.
- *
- * <p>Pick anything up and the mouse goes back to normal at once, so you can still build, dig and eat.
- */
 @EventBusSubscriber(modid = MultiversePowers.MODID, value = Dist.CLIENT)
 public final class MouseAbilities {
     private MouseAbilities() {
     }
 
-    /** True while this button belongs to the character you are, and not to the game. */
     private static boolean ours(CharacterAbility.Mouse button, @Nullable Entity who) {
         LocalPlayer player = Minecraft.getInstance().player;
         GameCharacter now = ClientCharacter.active();
@@ -42,7 +34,6 @@ public final class MouseAbilities {
         return false;
     }
 
-    /** A click of the mouse: the character answers it, so the game may not. */
     @SubscribeEvent
     public static void onClick(InputEvent.InteractionKeyMappingTriggered event) {
         CharacterAbility.Mouse button = event.isAttack() ? CharacterAbility.Mouse.LEFT
@@ -53,7 +44,6 @@ public final class MouseAbilities {
         }
     }
 
-    /** Holding the left button down keeps digging by itself, whatever became of the click: stop that too. */
     @SubscribeEvent
     public static void onLeftClickBlock(PlayerInteractEvent.LeftClickBlock event) {
         if (ours(CharacterAbility.Mouse.LEFT, event.getEntity())) {

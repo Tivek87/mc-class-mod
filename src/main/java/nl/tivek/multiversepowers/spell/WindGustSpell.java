@@ -19,14 +19,10 @@ import nl.tivek.multiversepowers.engine.effect.Effects;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 import nl.tivek.multiversepowers.engine.target.Targeting;
 
-/**
- * Wind Gust: air spirals up around you, then a curved wall of wind rolls forward. Creatures are thrown
- * back and up the moment the wave reaches them, harder the closer they stand.
- */
 final class WindGustSpell {
     private static final double RANGE = 8.0;
     private static final double WAVE_SPEED = 1.0;
-    // Half the width of the wave, in degrees to each side of where you look.
+    // Degrees, not radians: used with Math.toRadians below.
     private static final double HALF_ANGLE = 50.0;
     private static final double STRENGTH = 2.2;
     private static final double LIFT = 0.55;
@@ -65,7 +61,6 @@ final class WindGustSpell {
         return true;
     }
 
-    /** Two strands of wind spiralling up around the caster. */
     private static void swirl(ServerLevel level, Vec3 feet) {
         for (int strand = 0; strand < 2; strand++) {
             for (int i = 0; i < 24; i++) {
@@ -83,10 +78,8 @@ final class WindGustSpell {
         ParticleFx.shockwave(level, ParticleTypes.CLOUD, feet.add(0, 0.1, 0), 20, 0.25);
     }
 
-    /** The curved front of the wave at distance {@code front}, with wind streaks just behind it. */
     private static void drawWave(ServerLevel level, Vec3 origin, Vec3 look, double front, int age) {
         Vec3[] b = ParticleFx.basis(look);
-        // More points further out, so the wave stays just as dense while it widens.
         int rows = 3;
         int columns = 9 + (int) front;
         ParticleOptions wall = ParticleFx.fade(WIND, PALE, 1.3F);
@@ -117,10 +110,6 @@ final class WindGustSpell {
         }
     }
 
-    /**
-     * Throws every creature the wave front passed this tick; each one only once, and another player only when the
-     * caster could hurt him (the fall afterwards has no attacker, so the game's own PvP rules never see it).
-     */
     private static void push(ServerLevel level, Vec3 origin, Vec3 look, double front, UUID casterId, Set<UUID> hit) {
         ServerPlayer caster = level.getServer().getPlayerList().getPlayer(casterId);
         double cone = Math.cos(Math.toRadians(HALF_ANGLE + 10));
@@ -138,7 +127,6 @@ final class WindGustSpell {
                 continue;
             }
             hit.add(target.getUUID());
-            // Closer targets fly further; knockback resistance (such as netherite armour) still counts.
             double resist = Mth.clamp(target.getAttributeValue(Attributes.KNOCKBACK_RESISTANCE), 0, 1);
             double strength = STRENGTH * (1.0 - distance / RANGE * 0.6) * (1.0 - resist);
             Vec3 flat = new Vec3(toTarget.x, 0, toTarget.z);
@@ -146,7 +134,7 @@ final class WindGustSpell {
             target.setDeltaMovement(target.getDeltaMovement()
                     .add(direction.x * strength, LIFT * (1.0 - resist), direction.z * strength));
             target.hasImpulse = true;
-            // Players move themselves on their own client, so they have to be told about the push.
+            // Players move themselves client-side; this flag tells them about the push.
             target.hurtMarked = true;
             Vec3 center = target.getBoundingBox().getCenter();
             ParticleFx.cloud(level, ParticleTypes.CLOUD, center, 10, 0.3, 0.12);

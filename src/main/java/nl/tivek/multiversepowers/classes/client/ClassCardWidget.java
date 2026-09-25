@@ -11,10 +11,6 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
 import nl.tivek.multiversepowers.engine.client.gui.DirtBackgroundScreen;
 
-/**
- * One clickable card on the picker screens: a name in the theme colour, optionally with a short
- * tagline under it. Used for both groups and classes. Works with mouse and keyboard, like a button.
- */
 public class ClassCardWidget extends AbstractButton {
     private static final int NAME_Y = 6;
     private static final int TAGLINE_Y = 18;
@@ -58,7 +54,6 @@ public class ClassCardWidget extends AbstractButton {
 
         int centerX = this.getX() + this.width / 2;
         int textWidth = this.width - 2 * TEXT_PADDING;
-        // Without a tagline the name sits in the vertical middle of the card.
         int nameY = this.tagline == null ? (this.height - font.lineHeight) / 2 + 1 : NAME_Y;
         guiGraphics.drawCenteredString(font, firstLine(font, this.getMessage(), textWidth), centerX,
                 this.getY() + nameY, 0xFF000000 | this.color);
@@ -68,7 +63,6 @@ public class ClassCardWidget extends AbstractButton {
         }
     }
 
-    /** Cuts text that is wider than the card, so it never spills over the border. */
     private static FormattedCharSequence firstLine(Font font, Component text, int width) {
         List<FormattedCharSequence> lines = font.split(text, width);
         return lines.isEmpty() ? FormattedCharSequence.EMPTY : lines.get(0);

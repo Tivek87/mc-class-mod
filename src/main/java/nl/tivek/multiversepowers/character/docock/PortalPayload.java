@@ -7,16 +7,6 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.MultiversePowers;
 
-/**
- * Server tells nearby clients where a tech portal, or an energy shield, of a spell is this tick and how far it is open.
- * Clients draw it as a 3D steel ring with a glowing energy field, and play its opening from
- * {@code open}: the ring assembles, the lamps light up one by one, the energy tears open.
- *
- * @param normal the side the portal faces; things come out of it this way
- * @param style  {@link #STYLE_PORTAL} or {@link #STYLE_SHIELD}
- * @param size   radius when fully open, in blocks
- * @param open   0 = shut, 1 = fully open; the same way back while closing. Below 0 = the portal is gone
- */
 public record PortalPayload(int id, Vec3 center, Vec3 normal, float size, float open, int style)
         implements CustomPacketPayload {
     public static final int STYLE_PORTAL = 0;

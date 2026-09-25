@@ -20,28 +20,16 @@ import static nl.tivek.multiversepowers.character.greenlantern.client.render.Arr
 import static nl.tivek.multiversepowers.character.greenlantern.client.render.ArrivalLight.eyes;
 import static nl.tivek.multiversepowers.character.greenlantern.client.render.ArrivalRing.ring;
 
-/**
- * The ring leaving as the uniform comes off (see {@link ArrivalAnimation}): the uniform's light streaming back into
- * it, and its flight off up into the sky.
- */
 final class ArrivalDeparture {
-    // The ring leaving, as parts of its flight off: it has risen over his head, and sets off up into the sky. And how
-    // high it flies, and how far ahead of him, in blocks.
     private static final float RISEN = 0.25F;
     static final float LAUNCH = 0.45F;
     private static final double AWAY_HIGH = 60.0;
     private static final double AWAY_AHEAD = 30.0;
-    // How many specks of the uniform's light stream off him into the ring while it draws back.
     private static final int SPECKS = 26;
 
     private ArrivalDeparture() {
     }
 
-    /**
-     * One player taking the uniform off: the glow of his eyes goes out and specks of the uniform's light stream off
-     * him into the ring while it draws back; then the ring leaves him, up over his head, where it hangs a moment,
-     * turning, and sends out a last ring of light, and off up into the sky in a spiral, until it is a twinkle high up.
-     */
     static void departing(RenderLevelStageEvent event, LanternPainter painter,
             MultiBufferSource.BufferSource buffers, AbstractClientPlayer player, float d, float partialTick) {
         boolean own = player == Minecraft.getInstance().player && !event.getCamera().isDetached();
@@ -59,13 +47,11 @@ final class ArrivalDeparture {
         Vec3 at = departAt(finger, above, ahead, e);
         double size = Mth.lerp(Ease.smooth(e / RISEN), own ? OWN_FINGER_SIZE : FINGER_SIZE, HOVER_SIZE);
         if (e >= RISEN && e < LAUNCH) {
-            // Hanging over his head a moment: a last ring of light out of it.
             float wave = (e - RISEN) / (LAUNCH - RISEN);
             painter.circle(at, new Vec3(1.0, 0.0, 0.0), new Vec3(0.0, 0.0, 1.0), 0.2 + 2.6 * wave, 0.05, 0.3,
                     Colors.alpha(0.9 * (1.0 - wave)), Colors.alpha(0.45 * (1.0 - wave)));
         }
         if (e >= LAUNCH) {
-            // A long streak of light behind it on its way up.
             Vec3 last = at;
             for (int k = 1; k <= TRAIL; k++) {
                 Vec3 next = departAt(finger, above, ahead, Math.max(LAUNCH, e - 0.012F * k));
@@ -80,7 +66,6 @@ final class ArrivalDeparture {
             ring(event, buffers, at, face, d * (e < LAUNCH ? 0.2 : 0.5), size);
             painter.flare(at, 0.35 + 0.25 * Mth.sin(d * 0.8F) + 1.2 * Math.max(0.0, e - LAUNCH), 0.9);
         } else {
-            // Gone in a twinkle high up.
             double twinkle = (1.0F - e) / 0.04F;
             painter.flare(at, 5.0 * twinkle, twinkle);
             painter.edge(at.add(-3.0 * twinkle, 0.0, 0.0), at.add(3.0 * twinkle, 0.0, 0.0), 0.15, twinkle);
@@ -88,7 +73,6 @@ final class ArrivalDeparture {
         }
     }
 
-    /** Where the ring is as it leaves: {@code e} from 0 (on his finger) to 1 (gone high up in the sky). */
     private static Vec3 departAt(Vec3 finger, Vec3 above, Vec3 ahead, float e) {
         if (e < RISEN) {
             return finger.lerp(above, Ease.smooth(e / RISEN));
@@ -105,7 +89,6 @@ final class ArrivalDeparture {
                 .add(side.scale(swirl * Math.cos(turn))).add(ahead.scale(swirl * Math.sin(turn)));
     }
 
-    /** Specks of the uniform's light streaming off him into the ring while it draws back, most of all halfway. */
     private static void specks(LanternPainter painter, AbstractClientPlayer player, Vec3 finger, float d,
             float partialTick) {
         double strength = Math.sin(Math.PI * d / ClientLooks.UNDRESS_TICKS);

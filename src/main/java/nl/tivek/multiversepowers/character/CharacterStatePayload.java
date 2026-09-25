@@ -7,19 +7,6 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import nl.tivek.multiversepowers.MultiversePowers;
 
-/**
- * Server tells a player which character they are right now, the cooldown left on every ability slot,
- * and the few things the client needs to move along with (see the fields). Sent whenever any of it
- * changes, so the HUD and the client-side movement always match the server.
- *
- * @param character  index in GameCharacter, or -1 when the player is nobody special
- * @param cooldowns  ticks left per AbilitySlot, in slot order
- * @param ultimate   ticks left of the character's big ability (Doctor Octopus: Rampage, Green Lantern: the Air
- *                   Strike); 0 when off
- * @param stance     how the character stands or moves, as its own client understands it (Doctor Octopus: how many
- *                   tentacles he walks on, 0 = his own feet); see {@link CharacterPowers#stance}
- * @param marks      how many creatures the player has marked (Doctor Octopus: for the next Ground Strike)
- */
 public record CharacterStatePayload(int character, int[] cooldowns, int ultimate, int stance, int marks)
         implements CustomPacketPayload {
     private static final int MAX_SLOTS = 32;

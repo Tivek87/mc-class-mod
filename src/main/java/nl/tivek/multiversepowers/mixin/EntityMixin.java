@@ -7,10 +7,6 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-/**
- * A creature the ring's scan marked for you glows in the colour of what it is to you: red when it is out to hurt you,
- * green otherwise (see {@link ScanGlow}). The game colours a glowing outline by this; only in your own game.
- */
 @Mixin(Entity.class)
 public abstract class EntityMixin {
     @Inject(method = "getTeamColor", at = @At("HEAD"), cancellable = true)

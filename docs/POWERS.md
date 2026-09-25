@@ -168,8 +168,10 @@ The ring makes Green Lantern's uniform over your own clothes.
 
 With both hands empty the mouse belongs to the ring, and the game's own left and right click do nothing:
 you cannot mine, hit, place or use anything. Pick anything up and the mouse works as it always did.
-Recharging takes both hands, so the mouse waits for it; while you charge the Giant Fist only left click
-waits, so you can still put up a shield. Every button works by **click or hold** (see above): a tap for the
+Recharging takes both hands, so the mouse waits for it. Left click needs just one free hand: bolts and the
+beam still come out of the ring while your ring hand charges the Giant Fist, waves up a giant hand or calls the
+air strike. It only waits while your other hand is busy too (shield or dome up), and during the take-off.
+Every button works by **click or hold** (see above): a tap for the
 quick one, 2 seconds of holding for the lasting one.
 
 **Left click (the right hand attacks)**
@@ -262,10 +264,9 @@ Green Lantern recharges his ring at his lantern, the power battery.
   in the middle of a jump or a fall (the double tap works there too; in creative the double tap stays the
   game's own flying).
 - **Flying:** hold **forward** and you fly the way you look. **You pick up speed quickly and then keep getting
-  faster the longer you fly on:** a flight starts at about **6.4 blocks a second** and within **half a second** you
-  are up to a cruising speed of **8 blocks a second**; from there you keep gaining for **about 6 seconds** more,
-  until you reach the top speed of **9.6 blocks a second**, a little slower than flying in creative, and never
-  more. Let go of forward and you glide to a hover and lose the speed you built up again (all of it in 3 seconds);
+  faster the longer you fly on:** a flight starts at about **4.2 blocks a second** and within **half a second** you
+  are up to a cruising speed of **5.2 blocks a second**; from there you keep gaining, until after **7.5 seconds**
+  you reach the top speed of **6.3 blocks a second**, slower than flying in creative, and never more. Let go of forward and you glide to a hover and lose the speed you built up again (all of it in 3 seconds);
   pushing against a wall keeps it.
   **Jump** rises, **sneak** sinks, left and right slide sideways, back drifts backwards. You carry your speed
   into every turn, so you swing through curves instead of snapping round. The world widens a little around
@@ -282,8 +283,8 @@ Green Lantern recharges his ring at his lantern, the power battery.
   world settings of the flight (*The world ahead*).
 - **Landing:** sink down onto the ground slowly and you land by yourself, or fly into it while looking down at
   it and you land as well, whatever your speed; or press C again anywhere to stop flying, or tap jump twice
-  quickly in the air (you then fall from there). Walls and the ground stop you; hits and blasts still knock you
-  about.
+  quickly in the air (you then fall from there). Walls and the ground stop you; hits and blasts knock you
+  about, but you keep flying.
 - **Power:** a full ring keeps you up for **93.75 seconds**, so flying costs **1.07 power a second** (100
   divided by 93.75), from the moment you take off. You need at least **0.8 power** to take off. Everything you
   do while flying costs on top of that, so you run dry sooner. The panel shows how many seconds you have left.
@@ -291,7 +292,7 @@ Green Lantern recharges his ring at his lantern, the power battery.
   any more. You do not get hurt when you touch the ground. Recharge (on the way down or on the ground) to fly
   again.
 - **Landing slam (by itself; key X does it on purpose, see Shockwave):** dive into the ground fast (at least
-  about 8.7 blocks a second, nearly your top speed, so fly on for a few seconds first) and your flight ends
+  about 5.6 blocks a second, nearly your top speed, so fly on for a few seconds first) and your flight ends
   in a
   hero's landing. Just before
   the ground you swing upright, feet first, ring
@@ -336,7 +337,7 @@ Green Lantern recharges his ring at his lantern, the power battery.
     else, see-through only from your own eyes), with your left fist out in front like a punch; ridges wind
     round it to its tip like the thread of a drill, and it turns as you fly. It still takes 70% off hits from
     ahead, and whatever you fly into is rammed away: a hard throw and **2 hearts plus 5.25 hearts for every
-    block per tick you fly** (about 4.5 hearts at top speed). The same creature can be rammed again after 0.6
+    block per tick you fly** (about 3.6 hearts at top speed). The same creature can be rammed again after 0.6
     seconds.
   - **Scraping:** fly with the ram cone low along the ground (less than 1.5 blocks above it) or slide over it,
     and it wears the cone down: **2 more power a second**, sparks fly off where it scrapes, it grinds, and your
@@ -347,7 +348,7 @@ Green Lantern recharges his ring at his lantern, the power battery.
 
 | Flight | |
 |---|---|
-| Speed | starts at about 6.4 blocks a second, up to 9.6 after about 6 seconds of flying forward |
+| Speed | starts at about 4.2 blocks a second, up to 6.3 after 7.5 seconds of flying forward |
 | Stop in the air | C, or a double tap on jump |
 | Power | 1.07 a second (a full ring lasts 93.75 seconds), plus whatever you use meanwhile |
 | Take off | C or a double tap on jump; at least 0.8 power; not while recharging |
@@ -361,7 +362,7 @@ The landing slam whenever you want it: you smash your ring fist into the ground 
 the 32 giant constructs (a random one), which strikes and sends a shockwave over the ground.
 
 - **On the ground** it goes off at once: down on one knee, fist in the ground.
-- **Flying**, you dive straight down at 19.25 blocks a second, twice your top speed (your keys wait until you hit
+- **Flying**, you dive straight down at 19.25 blocks a second, three times your top speed (your keys wait until you hit
   the ground), and slam where you come down. Not during the take-off.
 - **Jumping or falling**, you drop straight down, upright with your fist cocked, and slam the moment you touch
   the ground. The ring breaks your fall: no fall damage, however high you were. In water nothing happens.
@@ -441,8 +442,9 @@ off at what you aim at.
 - After 32 blocks it falls apart by itself.
 - Stop being Green Lantern (die, log out, change dimension or pick someone else) and the fist falls apart
   at once, without costing anything.
-- You cannot start a fist while you recharge the ring. Starting one stops the beam: your ring hand makes the
-  fist now. A shield or dome you hold up with the other hand stays.
+- You cannot start a fist while you recharge the ring. A beam you are pouring out goes on while the fist
+  charges, unless your other hand holds a shield or dome up: then both hands are busy and the beam stops. A
+  shield or dome you hold up stays.
 - Who can be hit by the ring's light (fist, bolts, beam, ram): every creature, bosses too, but no armour
   stands, and other players only where players may fight each other.
 

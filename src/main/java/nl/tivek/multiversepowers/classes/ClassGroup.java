@@ -5,10 +5,6 @@ import java.util.List;
 import net.minecraft.network.chat.Component;
 import nl.tivek.multiversepowers.MultiversePowers;
 
-/**
- * The first step of choosing: where a class gets its power from. The Forsaken stands outside
- * the six real groups, but is picked the same way so every class is reachable.
- */
 public enum ClassGroup {
     WARRIORS("warriors", 0xD8D8E0),
     RANGERS("rangers", 0x7FD46B),
@@ -30,7 +26,6 @@ public enum ClassGroup {
         return this.id;
     }
 
-    /** Theme colour shared by the group and all of its classes. */
     public int getColor() {
         return this.color;
     }
@@ -43,22 +38,18 @@ public enum ClassGroup {
         return Component.translatable(key(".tagline"));
     }
 
-    /** One line of story: what kind of people this group is. */
     public Component getLore() {
         return Component.translatable(key(".lore"));
     }
 
-    /** Where the group's power comes from and how it plays. */
     public Component getPower() {
         return Component.translatable(key(".power"));
     }
 
-    /** Why a player would pick this group over another one. */
     public Component getPick() {
         return Component.translatable(key(".pick"));
     }
 
-    /** The classes of this group, in the order the docs list them. */
     public List<PlayerClass> getClasses() {
         List<PlayerClass> classes = new ArrayList<>();
         for (PlayerClass playerClass : PlayerClass.values()) {

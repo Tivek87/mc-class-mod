@@ -9,12 +9,6 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.FormattedCharSequence;
 import nl.tivek.multiversepowers.MultiversePowers;
 
-/**
- * Base screen with the classic opaque dirt background, plus the shared panel and title styling.
- *
- * <p>Vanilla's own menu background is only 25% black, so the world would stay visible behind it.
- * This draws a solid base first and tiles the dirt block texture over it instead.
- */
 public abstract class DirtBackgroundScreen extends Screen {
     public static final int PANEL_FILL = 0xB0000000;
     public static final int PANEL_BORDER = 0xFF4A4438;
@@ -44,17 +38,14 @@ public abstract class DirtBackgroundScreen extends Screen {
                 BACKGROUND_TILE, BACKGROUND_TILE);
         guiGraphics.setColor(1.0F, 1.0F, 1.0F, 1.0F);
 
-        // Darker towards the bottom, so the buttons stand out from the pattern.
         guiGraphics.fillGradient(0, this.height / 2, this.width, this.height, VIGNETTE_TOP, VIGNETTE_BOTTOM);
     }
 
-    /** A dark rounded-looking panel with a one pixel border. */
     protected static void drawPanel(GuiGraphics guiGraphics, int x, int y, int width, int height, int borderColor) {
         guiGraphics.fill(x, y, x + width, y + height, PANEL_FILL);
         guiGraphics.renderOutline(x, y, width, height, borderColor);
     }
 
-    /** Draws text centred and enlarged, for screen titles. */
     protected void drawBigCenteredString(GuiGraphics guiGraphics, Component text, int centerX, int y, float scale, int color) {
         guiGraphics.pose().pushPose();
         guiGraphics.pose().translate(centerX, y, 0.0F);
@@ -63,12 +54,6 @@ public abstract class DirtBackgroundScreen extends Screen {
         guiGraphics.pose().popPose();
     }
 
-    /**
-     * Draws text left-aligned and wrapped to {@code width}. Stops at {@code maxLines}, and never
-     * draws a line that would pass {@code bottom}, so a panel can never overflow.
-     *
-     * @return the y just below the last drawn line
-     */
     protected int drawWrappedLeft(GuiGraphics guiGraphics, Component text, int x, int y, int width,
                                   int maxLines, int bottom, int color) {
         List<FormattedCharSequence> lines = this.font.split(text, width);
@@ -81,7 +66,6 @@ public abstract class DirtBackgroundScreen extends Screen {
         return y;
     }
 
-    /** "Label: text", with only the label in the given colour. */
     protected static Component labeled(Component label, Component text, int labelColor) {
         return Component.empty()
                 .append(label.copy().withColor(labelColor))
@@ -89,22 +73,16 @@ public abstract class DirtBackgroundScreen extends Screen {
                 .append(text);
     }
 
-    /** A thin horizontal line that separates sections inside a panel. */
     protected static void drawDivider(GuiGraphics guiGraphics, int x, int y, int width) {
         guiGraphics.fill(x, y, x + width, y + 1, DIVIDER_COLOR);
     }
 
-    /** How tall {@link #drawNotice} will draw, so layouts can reserve the space up front. */
     protected int noticeHeight(@Nullable Component heading, Component body, int width, int maxLines) {
         int lines = Math.min(maxLines, this.font.split(body, width - 2 * NOTICE_PADDING).size());
         int headingLines = heading == null ? 0 : 1;
         return (headingLines + lines) * this.lineHeight() + 2 * NOTICE_PADDING - 1;
     }
 
-    /**
-     * A gold-bordered box for things every player must read, such as "your class locks nothing".
-     * Centred text; with a heading, the heading is gold and the body white, without it the body is gold.
-     */
     protected void drawNotice(GuiGraphics guiGraphics, @Nullable Component heading, Component body,
                               int x, int y, int width, int maxLines) {
         int height = this.noticeHeight(heading, body, width, maxLines);

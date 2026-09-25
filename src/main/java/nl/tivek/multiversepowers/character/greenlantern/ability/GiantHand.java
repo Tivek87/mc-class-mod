@@ -23,26 +23,17 @@ import static nl.tivek.multiversepowers.character.greenlantern.ability.GiantHand
 import static nl.tivek.multiversepowers.character.greenlantern.ability.GiantHands.GRAB_WIDE;
 import static nl.tivek.multiversepowers.character.greenlantern.ability.GiantHands.SCALE;
 
-/**
- * One hand of hard light (or a pair of them with an axe), from the moment the ring's light shoots off to its spot
- * until it has sunk away. What every hand keeps and how it turns after its creature is in {@link GiantHandBase},
- * what a pair does in {@link GiantHandPair}.
- */
 final class GiantHand extends GiantHandPair {
-    // A middle finger bursting out of the ground: how far round where it comes up it launches what is there, flat, in
-    // blocks, what share of the damage that does, and how hard it throws, away and up (next to the knockback setting).
     private static final double BURST_REACH = 4.5;
     private static final double BURST_DAMAGE = 2.5;
     private static final double BURST_OUT = 1.8;
     private static final double BURST_UP = 1.7;
-    // How long a creature slapped flat stays slowed down, in ticks.
     private static final int FLAT_TICKS = 50;
 
     GiantHand(GiantHands storm, int variant, Vec3 base, LivingEntity target) {
         super(storm, variant, base, target);
     }
 
-    /** One tick; true once it is done. */
     boolean tick(ServerLevel level, boolean fuels) {
         this.t++;
         if (!fuels) {
@@ -83,7 +74,6 @@ final class GiantHand extends GiantHandPair {
             }
         }
         if (this.t == HandPose.sinks(this.variant) && this.move != HandPose.AXE) {
-            // It sinks back into the ground.
             this.storm.sound(level, this.base, SoundEvents.ROOTED_DIRT_BREAK, 1.2F, 0.6F);
             this.dust(level, 12);
         }
@@ -95,7 +85,6 @@ final class GiantHand extends GiantHandPair {
         return false;
     }
 
-    /** It bursts up out of the ground in a cloud of dust and bits of the ground. */
     private void burstOut(ServerLevel level) {
         this.dust(level, 36);
         ParticleFx.send(level, ParticleTypes.CAMPFIRE_COSY_SMOKE, this.base.x, this.base.y + 0.4, this.base.z, 5,
@@ -106,10 +95,6 @@ final class GiantHand extends GiantHandPair {
         this.storm.sound(level, this.base, SoundEvents.BEACON_POWER_SELECT, 1.2F, 1.7F);
     }
 
-    /**
-     * The middle finger bursting out of the ground, its fist right behind it: everything fair round it is launched
-     * far away from it and high up.
-     */
     private void burst(ServerLevel level) {
         Vec3 ahead = this.aim.subtract(this.base);
         ahead = new Vec3(ahead.x, 0.0, ahead.z);
@@ -139,9 +124,6 @@ final class GiantHand extends GiantHandPair {
         this.storm.sound(level, fist, SoundEvents.ROOTED_DIRT_BREAK, 2.4F, 0.4F);
     }
 
-    /**
-     * The smack: everything fair its palm sweeps through is swatted away the way the palm goes, and a little up.
-     */
     private void smack(ServerLevel level) {
         List<Vec3> path = new ArrayList<>();
         double from = this.t - HandPose.SWING_TICKS * 0.6;
@@ -166,10 +148,6 @@ final class GiantHand extends GiantHandPair {
         ParticleFx.sphereOut(level, ParticleFx.dust(PowerRing.BRIGHT, 1.3F), palm, 16, 0.3);
     }
 
-    /**
-     * The grab: its fingers close on its creature (if it is still there, before the palm), it holds it in its fist as
-     * it lifts it, and lets go as it throws, flinging it away from him.
-     */
     private void grab(ServerLevel level) {
         HandPose.Place place = this.place();
         Vec3 grip = place.at(HandPose.GRIP);
@@ -205,7 +183,6 @@ final class GiantHand extends GiantHandPair {
             this.hold(grip);
             return;
         }
-        // Thrown: away from him, the way the hand swings, and up.
         LivingEntity thrown = this.held;
         this.letGo();
         Vec3 away = this.aim.subtract(this.base);
@@ -216,7 +193,6 @@ final class GiantHand extends GiantHandPair {
         this.storm.sound(level, grip, SoundEvents.ENDER_DRAGON_FLAP, 1.4F, 1.2F);
     }
 
-    /** Keeps what it holds in its fist, still. */
     private void hold(Vec3 grip) {
         LivingEntity living = this.held;
         double y = grip.y - living.getBbHeight() * 0.5;
@@ -230,10 +206,6 @@ final class GiantHand extends GiantHandPair {
         }
     }
 
-    /**
-     * The slam: everything fair under its hand as it lands flat is struck, pressed flat against the ground and slowed
-     * down; while the hand presses down it stays there.
-     */
     private void slam(ServerLevel level) {
         if (this.t == HandPose.SLAM_HITS) {
             HandPose.Place place = this.place();
@@ -274,7 +246,6 @@ final class GiantHand extends GiantHandPair {
         }
     }
 
-    /** One blow of a pound: everything fair round where the flat of its fist strikes the ground is knocked up. */
     private void pound(ServerLevel level) {
         Vec3 strike = this.place().at(HandPose.FIST);
         double reach = 2.8 * SCALE;
@@ -294,7 +265,6 @@ final class GiantHand extends GiantHandPair {
         this.storm.sound(level, strike, SoundEvents.GENERIC_EXPLODE.value(), 1.2F, 1.6F);
     }
 
-    /** How far {@code point} is from the nearest point of a path of points. */
     private static double distance(List<Vec3> path, Vec3 point) {
         double best = Double.MAX_VALUE;
         for (int i = 0; i + 1 < path.size(); i++) {

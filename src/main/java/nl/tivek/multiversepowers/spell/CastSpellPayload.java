@@ -7,14 +7,11 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import nl.tivek.multiversepowers.MultiversePowers;
 
-/**
- * Client asks the server to cast a spell picked from the spell wheel.
- */
 public record CastSpellPayload(String spellId) implements CustomPacketPayload {
     public static final CustomPacketPayload.Type<CastSpellPayload> TYPE = new CustomPacketPayload.Type<>(
             ResourceLocation.fromNamespaceAndPath(MultiversePowers.MODID, "cast_spell"));
 
-    // A spell id is a single short word: a much longer text from a client is refused before it is read.
+    // Spell id is one short word; a longer string is refused before it's read.
     public static final StreamCodec<RegistryFriendlyByteBuf, CastSpellPayload> STREAM_CODEC = StreamCodec.composite(
             ByteBufCodecs.stringUtf8(64), CastSpellPayload::spellId, CastSpellPayload::new);
 

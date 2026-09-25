@@ -19,11 +19,6 @@ import nl.tivek.multiversepowers.classes.PlayerClass;
 import nl.tivek.multiversepowers.classes.SelectClassPayload;
 import nl.tivek.multiversepowers.engine.client.gui.DirtBackgroundScreen;
 
-/**
- * Step two of choosing: the classes of one group in a list, with a panel on the right that
- * explains the class under the cursor (or the picked one): its role, its power, its strong and
- * weak sides and why you would pick it. Clicking a card picks it; starting needs a pick.
- */
 public class ClassSelectionScreen extends DirtBackgroundScreen {
     private static final int MARGIN = 8;
     private static final int HEADER_HEIGHT = 32;
@@ -56,7 +51,6 @@ public class ClassSelectionScreen extends DirtBackgroundScreen {
     private PlayerClass selected;
     @Nullable
     private Button confirmButton;
-    // The class the panel explains when nothing is hovered or picked: the last one looked at.
     private PlayerClass lastShown;
 
     private int headerTop;
@@ -81,7 +75,6 @@ public class ClassSelectionScreen extends DirtBackgroundScreen {
         this.cards.clear();
 
         List<PlayerClass> classes = this.group.getClasses();
-        // A group with a single class (The Forsaken) has nothing to choose between.
         if (classes.size() == 1) {
             this.selected = classes.get(0);
         }
@@ -159,11 +152,6 @@ public class ClassSelectionScreen extends DirtBackgroundScreen {
         this.renderPanel(guiGraphics, mouseX, mouseY);
     }
 
-    /**
-     * The class under the cursor, or else the picked one, or else the last one looked at.
-     * Top: name, role and a line of story. Middle: why to pick it, then what it does, what it is
-     * good at and bad at. Bottom: what it starts with.
-     */
     private void renderPanel(GuiGraphics guiGraphics, int mouseX, int mouseY) {
         PlayerClass shown = this.hoveredClass();
         if (shown == null) {
@@ -203,7 +191,6 @@ public class ClassSelectionScreen extends DirtBackgroundScreen {
         this.renderStartingItems(guiGraphics, shown, x, itemsTop, mouseX, mouseY);
     }
 
-    /** One row: "You start with:" followed by the item icons, with a tooltip on hover. */
     private void renderStartingItems(GuiGraphics guiGraphics, PlayerClass playerClass, int left, int top,
                                      int mouseX, int mouseY) {
         List<ItemStack> items = ClassLoadouts.build(playerClass).allItems();

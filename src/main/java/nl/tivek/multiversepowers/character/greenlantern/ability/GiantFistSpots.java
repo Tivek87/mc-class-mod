@@ -13,28 +13,16 @@ import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.engine.effect.Effect;
 
-/**
- * Where the {@link GiantFist} hangs while he charges it: the spots around him it may take, which of them has room for
- * it, and the way it points meanwhile; with whose it is and where it is right now.
- */
 abstract class GiantFistSpots implements Effect {
-    // Its shape, as parts of how wide it is: how tall, from its middle to the front of the knuckles, and
-    // from its middle to the back of the wrist (the forearm behind that is only a fading trail of light).
     private static final double HEIGHT = 0.65;
     static final double FRONT = 0.5;
     private static final double BACK = 0.7;
-    // While you charge it, it only tips this far up or down with your view, so it keeps to its spot.
     static final float MAX_HELD_PITCH = 25.0F;
-    // A better spot that came free must stay free this many ticks before the fist moves back to it, so it
-    // does not dart to and fro along a wall.
     private static final int RETURN_TICKS = 10;
-    // How deep a block may poke into the fist before it is in the way: the fist's edges are only light.
     private static final double ROOM = 0.3;
-    // Counting blocks in the way stops here; more than this is simply "very much in the way".
     private static final int MAX_COUNT = 4096;
     private static final Vec3 UP = new Vec3(0.0, 1.0, 0.0);
 
-    /** The spots around you where it can charge, the best one first. */
     private enum Spot {
         RIGHT, RIGHT_HIGH, ABOVE, LEFT, LEFT_HIGH
     }
@@ -43,7 +31,6 @@ abstract class GiantFistSpots implements Effect {
 
     final ServerPlayer owner;
     Spot spot = Spot.RIGHT;
-    // How long a better spot has been free (see RETURN_TICKS), in checks.
     private int waiting;
     Vec3 center;
     Vec3 facing;
@@ -52,20 +39,13 @@ abstract class GiantFistSpots implements Effect {
         this.owner = owner;
     }
 
-    /** The way it points while you charge it: where you look, but tipped no further than MAX_HELD_PITCH. */
     Vec3 heldFacing() {
         return Vec3.directionFromRotation(Mth.clamp(this.owner.getXRot(), -MAX_HELD_PITCH, MAX_HELD_PITCH),
                 this.owner.getYRot());
     }
 
-    /**
-     * Where a spot is for a fist this wide, around your eyes (x to your right, y up, z ahead). Beside you it
-     * stands on the ground rather than sinking into it; the high spots hang from the height of your head up,
-     * and above your head it floats a little ahead, so you still see it.
-     */
     Vec3 spotOffset(Spot spot, double size) {
         double half = HEIGHT * size * 0.5;
-        // Far enough out and ahead that even its forearm stays clear of your eyes.
         double side = 1.0 + 0.62 * size;
         double ahead = 2.3 + 0.1 * size;
         double low = Math.max(-0.35, 0.2 - this.owner.getEyeHeight() + half);
@@ -79,7 +59,6 @@ abstract class GiantFistSpots implements Effect {
         };
     }
 
-    /** A point around your eyes out in the world (x to your right, y up, z ahead); it turns along with you. */
     Vec3 worldPoint(Vec3 local) {
         Vec3 ahead = Vec3.directionFromRotation(0.0F, this.owner.getYRot());
         Vec3 right = new Vec3(-ahead.z, 0.0, ahead.x);
@@ -87,11 +66,6 @@ abstract class GiantFistSpots implements Effect {
                 .add(ahead.scale(local.z));
     }
 
-    /**
-     * Picks the spot to charge in: the first one in {@link Spot}'s order with no block in the way, or else the
-     * one with the fewest. A spot that is in the way is left at once; a better one that came free is only
-     * taken back once it stays free a moment.
-     */
     void findRoom(ServerLevel level, double size) {
         int best = 0;
         int bestCount = Integer.MAX_VALUE;
@@ -121,10 +95,6 @@ abstract class GiantFistSpots implements Effect {
         this.sound(level, SoundEvents.PHANTOM_FLAP, 0.5F, 1.4F);
     }
 
-    /**
-     * How many solid blocks the fist would be in at that spot, counting no further than {@code limit}. Air and
-     * everything you can walk through never count, and a block has to poke into it a little ({@link #ROOM}).
-     */
     private int blocksIn(ServerLevel level, Spot spot, double size, int limit) {
         Vec3 forward = this.facing;
         Vec3 right = forward.cross(UP);
@@ -133,7 +103,6 @@ abstract class GiantFistSpots implements Effect {
         double halfWidth = size * 0.5 + 0.5 - ROOM;
         double halfHeight = HEIGHT * size * 0.5 + 0.5 - ROOM;
         double halfDepth = (FRONT + BACK) * size * 0.5 + 0.5 - ROOM;
-        // The fist reaches further back (to its wrist) than forward (to its knuckles).
         Vec3 middle = this.worldPoint(this.spotOffset(spot, size)).add(forward.scale((FRONT - BACK) * size * 0.5));
         double reachX = Math.abs(right.x) * halfWidth + Math.abs(up.x) * halfHeight + Math.abs(forward.x) * halfDepth;
         double reachY = Math.abs(right.y) * halfWidth + Math.abs(up.y) * halfHeight + Math.abs(forward.y) * halfDepth;
@@ -154,7 +123,6 @@ abstract class GiantFistSpots implements Effect {
                 }
                 for (int sectionY = minY >> 4; sectionY <= maxY >> 4; sectionY++) {
                     LevelChunkSection section = chunk.getSection(chunk.getSectionIndexFromSectionY(sectionY));
-                    // Most of the room around you is open air: whole sections of it are skipped at once.
                     if (section.hasOnlyAir()) {
                         continue;
                     }

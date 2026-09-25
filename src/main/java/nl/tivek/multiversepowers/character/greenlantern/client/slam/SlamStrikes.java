@@ -11,23 +11,12 @@ import nl.tivek.multiversepowers.engine.math.Colors;
 import nl.tivek.multiversepowers.engine.math.Ease;
 import nl.tivek.multiversepowers.engine.math.Vectors;
 
-/**
- * The landing-slam constructs that clap shut or are swung down (see {@link SlamPainter}): two cymbals, a bear trap, a
- * book, a fly swatter, a pickaxe, a judge's gavel on its block and drumsticks on a drum. Unless it says otherwise a
- * shape stands on y = 0 and faces -z, the way towards Green Lantern, with x to his right; in blocks at scale 1.
- */
 final class SlamStrikes {
     private SlamStrikes() {
     }
 
-    // ---- The cymbals ----
-
     private static final double CYMBAL_SCALE = 1.9;
 
-    /**
-     * A cymbal round its middle, its hollow side towards +y: a thin dish with a bell in its middle, two grooves turned
-     * into it, and a knob and a strap on the back of the bell.
-     */
     private static final Shape CYMBAL = Shape.of(
             Mesh.lathe(32, 1.0, 0.0, -0.26, 0.12, -0.26, 0.24, -0.22, 0.27, -0.13, 0.60, -0.07, 1.0, -0.01, 1.0, 0.01,
                     0.60, -0.05, 0.27, -0.11, 0.22, -0.18, 0.0, -0.20),
@@ -36,10 +25,6 @@ final class SlamStrikes {
             Mesh.cylinder(8, 0.05, -0.34, -0.25, 1.1),
             Mesh.box(-0.25, -0.40, -0.04, 0.25, -0.34, 0.04, 1.05));
 
-    /**
-     * Two cymbals that swing in from either side and crash together in front of him: they bounce a little apart,
-     * wobble as they ring, and rings of sound run out from between them.
-     */
     static Vec3 cymbals(LanternPainter painter, Moment m) {
         double s = m.scale(CYMBAL_SCALE);
         Vec3 meet = m.ground().add(0.0, 1.9 * m.size(), 0.0);
@@ -68,14 +53,8 @@ final class SlamStrikes {
         return meet;
     }
 
-    // ---- The bear trap ----
-
     private static final double TRAP_SCALE = 1.6;
 
-    /**
-     * The base of a bear trap along x: a plate, the round pan in its middle that sets it off, a coiled spring at
-     * either end, and a chain to a stake in the ground.
-     */
     private static final Shape TRAP_BASE = new Shape(new double[][] {
             { -1.45, 0.00, -0.40, 1.45, 0.10, 0.40, 1.0 },
             { 1.98, 0.00, -0.16, 2.12, 0.28, 0.16, 1.1 },
@@ -86,12 +65,9 @@ final class SlamStrikes {
             chainLink(0, true), chainLink(1, false), chainLink(2, true), chainLink(3, false),
             Mesh.torus(12, 5, 0.12, 0.03, 1.2).alongZ().moved(-3.58, 0.17, 0.0),
             Mesh.cylinder(8, 0.06, 0.0, 0.06, 1.1).moved(-3.58, 0.0, 0.0));
-    /** One jaw of the trap, shut: an arch up from its hinge along x, its teeth pointing -z. */
     private static final Shape JAW_A = jaw(new double[] { -1.05, -0.63, -0.21, 0.21, 0.63, 1.05 });
-    /** The other jaw: its teeth in between those of the first, so they bite into each other. */
     private static final Shape JAW_B = jaw(new double[] { -0.84, -0.42, 0.0, 0.42, 0.84 });
 
-    /** A coiled spring from the end of the plate outwards, along {@code side} x. */
     private static Vec3[] coil(double side) {
         int pieces = 32;
         Vec3[] points = new Vec3[pieces + 1];
@@ -103,7 +79,6 @@ final class SlamStrikes {
         return points;
     }
 
-    /** A link of the chain that runs out along -x from the plate, lying flat or standing on its edge. */
     private static Mesh chainLink(int k, boolean flat) {
         Mesh link = SlamDrops.link().turned(0.0, 0.0, 1.0, 90.0);
         return (flat ? link.turned(1.0, 0.0, 0.0, 90.0).moved(0.0, 0.04, 0.0) : link.moved(0.0, 0.15, 0.0))
@@ -129,10 +104,6 @@ final class SlamStrikes {
         return Shape.of(meshes);
     }
 
-    /**
-     * A bear trap: its jaws lie open flat on the ground, then snap up and shut, their teeth biting into each other,
-     * and the whole trap and its chain rattle a moment.
-     */
     static Vec3 trap(LanternPainter painter, Moment m) {
         double s = m.scale(TRAP_SCALE);
         Vec3 ground = m.ground();
@@ -157,40 +128,29 @@ final class SlamStrikes {
         return ground.add(0.0, 0.3 * s, 0.0);
     }
 
-    // ---- The book ----
-
     private static final double BOOK_SCALE = 1.3;
-    // How far either cover sits from the middle of the spine, at scale 1.
     private static final double COVER_OUT = 0.34;
 
-    /** A cover of the book, open from its spine along x: the board, corners, the emblem outside, the pages on +z. */
     private static final Shape COVER_POS = cover(1.0);
-    /** The other cover: the pages on its -z side. */
     private static final Shape COVER_NEG = cover(-1.0);
-    /** The spine of the book, standing along y: round at the back, with raised bands across it. */
     private static final Shape SPINE = Shape.of(
             Mesh.cylinder(16, 0.42, -1.45, 1.45, 1.05).scaled(1.0, 1.0, 0.35),
             spineBand(-1.05), spineBand(-0.35), spineBand(0.35), spineBand(1.05));
-    /** A loose page, flipping over from one cover to the other while the book is open. */
     private static final Shape PAGE = new Shape(new double[][] { { 0.06, -1.30, -0.012, 1.90, 1.30, 0.012, 1.3 } });
 
-    /** A cover with its pages on its {@code side} z. */
     private static Shape cover(double side) {
         double board0 = side > 0.0 ? 0.0 : -0.08;
         double out = side > 0.0 ? -0.012 : 0.012;
         double[][] boxes = {
                 { 0.00, -1.40, board0, 2.00, 1.40, board0 + 0.08, 1.0 },
                 pages(side, 0.08, 0.34, 1.2),
-                // Metal corners on its outer edge
                 { 1.80, 1.20, board0 - 0.01, 2.02, 1.42, board0 + 0.09, 1.25 },
                 { 1.80, -1.42, board0 - 0.01, 2.02, -1.20, board0 + 0.09, 1.25 },
-                // The bars of the emblem on the outside
                 { 0.62, 0.50, Math.min(out, out * 3.0), 1.38, 0.60, Math.max(out, out * 3.0), 1.35 },
                 { 0.62, -0.60, Math.min(out, out * 3.0), 1.38, -0.50, Math.max(out, out * 3.0), 1.35 } };
         return new Shape(boxes, Mesh.torus(18, 6, 0.30, 0.045, 1.35).alongZ().moved(1.0, 0.0, out * 2.0));
     }
 
-    /** The block of pages on a cover, from {@code near} to {@code far} out from it on its {@code side}. */
     private static double[] pages(double side, double near, double far, double bright) {
         return side > 0.0 ? new double[] { 0.06, -1.32, near, 1.92, 1.32, far, bright }
                 : new double[] { 0.06, -1.32, -far, 1.92, 1.32, -near, bright };
@@ -200,10 +160,6 @@ final class SlamStrikes {
         return Mesh.torus(16, 4, 0.42, 0.03, 1.3).scaled(1.0, 1.0, 0.35).moved(0.0, y, 0.0);
     }
 
-    /**
-     * A giant book standing in the air ahead of him, spread open towards him. Its pages flip over as it opens wide,
-     * then it slams shut: the covers swing in and clap together, and it shivers a moment.
-     */
     static Vec3 book(LanternPainter painter, Moment m) {
         double s = m.scale(BOOK_SCALE);
         Vec3 r = SlamPainter.facingHim(m.right());
@@ -220,7 +176,6 @@ final class SlamStrikes {
                 up.cross(coverB), s), m);
         SlamPainter.piece(painter, SPINE, new Frame(spine, r, up, f, s), m);
         if (!m.struck()) {
-            // Three pages flip over from one cover to the other, one after the other.
             for (int i = 0; i < 3; i++) {
                 double p = Ease.smooth((m.t() - 4.5 - 1.5 * i) / 1.6);
                 if (p <= 0.0 || p >= 1.0) {
@@ -235,25 +190,16 @@ final class SlamStrikes {
         return spine;
     }
 
-    // ---- The fly swatter ----
-
-    // Half the width of the swatter's head, and how far its corners are cut off, at scale 1.
     private static final double SWATTER_HALF = 1.6;
     private static final double SWATTER_CUT = 0.45;
 
-    /**
-     * The head of a fly swatter round its middle, flat across x and y: an eight-sided plate, a grid of bars over both
-     * faces, a round rim, and a neck at its near edge (-y) where the handle goes in.
-     */
     private static final Shape SWATTER = swatter();
-    /** The grip at the end of the handle: wraps round it and a loop to hang it by, down along -y from its end. */
     private static final Shape GRIP = Shape.of(
             Mesh.torus(10, 4, 0.11, 0.025, 1.2).moved(0.0, 0.10, 0.0),
             Mesh.torus(10, 4, 0.11, 0.025, 1.2).moved(0.0, 0.24, 0.0),
             Mesh.torus(10, 4, 0.11, 0.025, 1.2).moved(0.0, 0.38, 0.0),
             Mesh.torus(10, 4, 0.11, 0.025, 1.2).moved(0.0, 0.52, 0.0),
             Mesh.torus(12, 5, 0.12, 0.03, 1.15).alongZ().moved(0.0, -0.16, 0.0));
-    /** The handle: a round rod from y = 0 to y = 1, stretched to its length. */
     private static final Shape HANDLE = Shape.of(Mesh.cylinder(10, 0.1, 0.0, 1.0, 0.95));
 
     private static Shape swatter() {
@@ -280,20 +226,13 @@ final class SlamStrikes {
         return new Shape(boxes, Mesh.prism(-0.05, 0.05, 0.95, outline), Mesh.tube(true, 6, 0.08, 1.15, rim));
     }
 
-    /**
-     * The fly swatter: it stands up on the end of its handle beyond where it strikes, its face towards him, leans back
-     * a little as it winds up, and swings down flat onto the ground before him with a slap; it bounces up once and
-     * slaps down again.
-     */
     static Vec3 swatter(LanternPainter painter, Moment m) {
         double g = m.scale(0.8);
         Vec3 plate = m.ground().add(0.0, 0.12 * g, 0.0);
         Vec3 near = plate.add(m.forward().scale((SWATTER_HALF + 0.45) * g));
-        // The end of the handle, beyond the head: the whole swatter turns about it.
         Vec3 pivot = near.add(m.forward().scale(1.8 * g));
         double since = m.since();
         double bounce = m.struck() ? 16.0 * Math.abs(Math.sin(1.1 * since)) * Math.exp(-0.45 * since) : 0.0;
-        // Up on its end is a quarter turn back from lying flat; it leans on past that as it winds up.
         double swing = -Math.toRadians((95.0 + 18.0 * m.windup()) * (1.0 - m.fall()) + bounce
                 + 6.0 * SlamPainter.vibrate(m, 1.0));
         Vec3 axis = m.right();
@@ -311,19 +250,10 @@ final class SlamStrikes {
         return pivot.add(dir.scale(0.5));
     }
 
-    // ---- The pickaxe ----
-
-    // The arms of the head: from the socket out and down, through these points (x out, y up the handle).
     private static final double[][] ARM = { { 0.15, 3.00 }, { 0.95, 3.10 }, { 1.35, 2.45 } };
-    // How far the point sticks out past the end of the arm.
     private static final double POINT = 0.32;
-    /** Where the point of the pickaxe's front arm is: x out along the arm, y up the handle. */
     private static final double[] PICK_TIP = tip();
 
-    /**
-     * A pickaxe: the handle up along y from its end, with a wrapped grip and a knob, and the head across its top: a
-     * socket, and an arm curving down either way to a point.
-     */
     private static final Shape PICKAXE = new Shape(new double[][] {
             { -0.27, 2.72, -0.27, 0.27, 3.26, 0.27, 1.05 },
             { -0.20, 3.26, -0.20, 0.20, 3.34, 0.20, 1.15 } },
@@ -336,7 +266,6 @@ final class SlamStrikes {
         return Mesh.torus(10, 4, 0.145, 0.03, 1.15).moved(0.0, y, 0.0);
     }
 
-    /** The arm curving out along {@code side} x, through {@link #ARM}. */
     private static Vec3[] arm(double side) {
         int pieces = 10;
         Vec3[] points = new Vec3[pieces + 1];
@@ -350,7 +279,6 @@ final class SlamStrikes {
         return points;
     }
 
-    /** The way the arm runs out at its end, one long, for {@code side} x. */
     private static Vec3 outward(double side) {
         return new Vec3(side * (ARM[2][0] - ARM[1][0]), ARM[2][1] - ARM[1][1], 0.0).normalize();
     }
@@ -366,18 +294,12 @@ final class SlamStrikes {
         return new double[] { ARM[2][0] + way.x * POINT, ARM[2][1] + way.y * POINT };
     }
 
-    /**
-     * A pickaxe: it stands up on the end of its handle on the ground to his right of where it strikes, its head high,
-     * tips back away as it winds up, and swings over across in front of him, its point biting into the ground where
-     * it strikes with sparks; it stays stuck there, quivering. It swings across his view, so he sees all of it.
-     */
     static Vec3 pickaxe(LanternPainter painter, Moment m) {
         Vec3 over = m.right().scale(-1.0);
         Vec3 pivot = m.ground().add(m.right().scale(3.9 * m.size())).add(0.0, 0.2 * m.size(), 0.0);
         Vec3 to = m.ground().subtract(0.0, 0.25, 0.0).subtract(pivot);
         double tip = Math.sqrt(PICK_TIP[0] * PICK_TIP[0] + PICK_TIP[1] * PICK_TIP[1]);
         double s = Math.max(0.5, to.length() / tip);
-        // Angles in the upright plane across his view, from straight up (0) over towards where it strikes.
         double strike = Math.atan2(to.dot(over), to.y) - Math.atan2(PICK_TIP[0], PICK_TIP[1]);
         double quiver = m.struck() ? Math.toRadians(3.0) * Math.sin(3.0 * m.since()) * Math.exp(-0.3 * m.since())
                 : 0.0;
@@ -391,21 +313,13 @@ final class SlamStrikes {
         return frame.at(0.0, 0.3, 0.0);
     }
 
-    // ---- The gavel ----
-
     private static final double GAVEL_SCALE = 1.75;
-    // How far along the gavel's handle its end lies from the middle of its head.
     private static final double GAVEL_REACH = 2.58;
 
-    /** The round block a gavel strikes, with a bright ring set into its top. */
     private static final Shape SOUND_BLOCK = Shape.of(
             Mesh.lathe(24, 1.0, 0.0, 0.0, 1.20, 0.0, 1.26, 0.06, 1.26, 0.28, 1.18, 0.34, 1.05, 0.36, 1.05, 0.42, 0.0,
                     0.42),
             Mesh.torus(24, 4, 0.75, 0.02, 1.35).moved(0.0, 0.425, 0.0));
-    /**
-     * A judge's gavel: a turned head along x round its middle, with rings round both faces and bands round it, and a
-     * turned handle up along y.
-     */
     private static final Shape GAVEL = Shape.of(
             Mesh.lathe(20, 1.0, 0.0, -0.90, 0.30, -0.90, 0.36, -0.85, 0.36, -0.76, 0.31, -0.72, 0.29, -0.30, 0.33,
                     -0.24, 0.33, 0.24, 0.29, 0.30, 0.31, 0.72, 0.36, 0.76, 0.36, 0.85, 0.30, 0.90, 0.0, 0.90).alongX(),
@@ -415,15 +329,10 @@ final class SlamStrikes {
                     0.11, 2.62, 0.0, 2.66),
             Mesh.torus(10, 4, 0.105, 0.02, 1.25).moved(0.0, 0.34, 0.0));
 
-    /**
-     * A judge's gavel: its block stands on the ground, and the gavel swings down from high up and strikes it; it
-     * lifts once more and knocks again, like a judge calling for order.
-     */
     static Vec3 gavel(LanternPainter painter, Moment m) {
         double s = m.scale(GAVEL_SCALE);
         SlamPainter.piece(painter, SOUND_BLOCK, new Frame(m.ground(), m.right(), SlamPainter.UP, m.forward(), s), m);
         double reach = GAVEL_REACH * s;
-        // It turns about the end of its handle, beyond the block.
         Vec3 pivot = m.ground().add(m.forward().scale(reach)).add(0.0, 0.72 * s, 0.0);
         double since = m.since();
         double again = since > 1.4 && since < 4.0 ? Math.sin(Math.PI * (since - 1.4) / 2.6) : 0.0;
@@ -432,7 +341,6 @@ final class SlamStrikes {
         Vec3 up = out.scale(-1.0);
         SlamPainter.piece(painter, GAVEL, new Frame(pivot.add(out.scale(reach)), m.right(), up, up.cross(m.right()),
                 s), m);
-        // The second knock rings out over the block.
         double ring = since - 4.0;
         if (ring > 0.0 && ring < 6.0) {
             double fade = 1.0 - ring / 6.0;
@@ -443,19 +351,13 @@ final class SlamStrikes {
         return pivot;
     }
 
-    // ---- The drum ----
-
     private static final double DRUM_SCALE = 1.5;
-    // How high the drum's head is, and how far along a drumstick the middle of its ball lies.
     private static final double DRUM_TOP = 1.46;
     private static final double STICK_REACH = 2.53;
 
-    /** A drum: a round shell, a hoop round its top and its foot, tension rods and lugs round its side. */
     private static final Shape DRUM = Shape.of(drum());
-    /** The drumhead, on its own so it can give under the sticks, with a bright ring on it. */
     private static final Shape HEAD = Shape.of(Mesh.cylinder(24, 0.97, 1.38, 1.44, 1.3),
             Mesh.torus(24, 4, 0.40, 0.015, 1.45).moved(0.0, 1.445, 0.0));
-    /** A drumstick up along y from its end, thinning towards a ball at its tip, with a wrapped grip. */
     private static final Shape STICK = Shape.of(
             Mesh.lathe(10, 1.0, 0.0, 0.0, 0.075, 0.0, 0.075, 0.30, 0.065, 1.40, 0.045, 2.30, 0.03, 2.43, 0.0, 2.44),
             Mesh.ball(8, 5, 0.085, 1.2).moved(0.0, STICK_REACH, 0.0),
@@ -477,10 +379,6 @@ final class SlamStrikes {
         return meshes;
     }
 
-    /**
-     * A drum standing on the ground, and two drumsticks that come down on its head together; then they bounce on it in
-     * a drum roll, the head giving under every blow and rings running out over it.
-     */
     static Vec3 drum(LanternPainter painter, Moment m) {
         double s = m.scale(DRUM_SCALE);
         Vec3 ground = m.ground();
@@ -499,7 +397,6 @@ final class SlamStrikes {
             Vec3 strike = tip.subtract(pivot);
             double length = strike.length();
             strike = strike.scale(1.0 / length);
-            // After the blow the sticks bounce on the head one after the other: a drum roll.
             double bounce = m.struck() ? 0.35 * Math.abs(Math.sin(2.4 * since + (k + 1) * 0.8)) * roll : 0.0;
             Vec3 dir = raised.lerp(strike, m.fall()).lerp(raised, bounce).normalize();
             Vec3 side = r.subtract(dir.scale(r.dot(dir))).normalize();

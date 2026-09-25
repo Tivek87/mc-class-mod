@@ -2,46 +2,33 @@ package nl.tivek.multiversepowers.engine.math;
 
 import net.minecraft.world.phys.Vec3;
 
-/** Directions in the world: turning them, and laying things out around them. */
 public final class Vectors {
-    /** Straight up. */
     public static final Vec3 UP = new Vec3(0, 1, 0);
 
     private Vectors() {
     }
 
-    /** {@code v} turned by {@code angle} (radians) around the unit vector {@code axis}. */
     public static Vec3 spin(Vec3 v, Vec3 axis, double angle) {
         double cos = Math.cos(angle);
         double sin = Math.sin(angle);
         return v.scale(cos).add(axis.cross(v).scale(sin)).add(axis.scale(axis.dot(v) * (1.0 - cos)));
     }
 
-    /** Two directions square to {@code axis} and to each other, to lay things out around it. */
     public static Vec3[] across(Vec3 axis) {
         Vec3 side = Math.abs(axis.y) < 0.95 ? axis.cross(UP) : axis.cross(new Vec3(1, 0, 0));
         side = side.normalize();
         return new Vec3[] { side, side.cross(axis).normalize() };
     }
 
-    /**
-     * The way something stands, given by two of its directions ({@code first}, and {@code second} roughly square to
-     * it), straightened out: one long each and square to each other.
-     */
     public static Vec3[] frame(Vec3 first, Vec3 second) {
         Vec3 u = first.normalize();
         return new Vec3[] { u, second.subtract(u.scale(second.dot(u))).normalize() };
     }
 
-    /**
-     * The shortest turn that takes something standing as {@code from} to standing as {@code to} (both as frame gives
-     * them): the way it turns about (by the right-hand rule, as spin), as long as the angle it turns by (radians, 0 to
-     * pi).
-     */
     public static Vec3 turn(Vec3[] from, Vec3[] to) {
         Vec3 a2 = from[0].cross(from[1]);
         Vec3 b2 = to[0].cross(to[1]);
-        // The turn as a matrix (rows, columns): what it takes each of from's three ways to.
+        // The turn as a rotation matrix: what it takes each of from's axes to.
         double[][] m = new double[3][3];
         Vec3[] a = { from[0], from[1], a2 };
         Vec3[] b = { to[0], to[1], b2 };
@@ -54,7 +41,7 @@ public final class Vectors {
                 }
             }
         }
-        // As a quaternion (w, x, y, z), worked out from its largest part so it holds up near a half turn.
+        // Quaternion from the matrix's largest term, so it stays accurate near a half turn.
         double trace = m[0][0] + m[1][1] + m[2][2];
         double w;
         double x;
@@ -98,7 +85,6 @@ public final class Vectors {
         return new Vec3(x, y, z).scale(2.0 * Math.atan2(sin, w) / sin);
     }
 
-    /** {@code v} turned by {@code turn}: about its way, by the right-hand rule, as far as it is long (radians). */
     public static Vec3 turned(Vec3 v, Vec3 turn) {
         double angle = turn.length();
         return angle < 1.0E-9 ? v : spin(v, turn.scale(1.0 / angle), angle);

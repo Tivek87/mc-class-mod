@@ -8,10 +8,6 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-/**
- * A creature the ring's scan marked for you glows: the game draws its outline through walls and everything, as it does
- * for one hit by a spectral arrow, but only for you (see {@link ScanGlow}).
- */
 @Mixin(Minecraft.class)
 public abstract class MinecraftMixin {
     @Inject(method = "shouldEntityAppearGlowing", at = @At("HEAD"), cancellable = true)

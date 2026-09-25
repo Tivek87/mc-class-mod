@@ -16,12 +16,7 @@ import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 
-/**
- * The state of one Portal run (see {@link PortalRun}): its timing and sizes, its phase, the three
- * portals it opens and the far part of the tentacle.
- */
 abstract class PortalState {
-    // Everything is deliberately unhurried, so you can follow the whole trick with your eyes.
     static final int SEARCH_TIME = 34;
     static final int SPIKE_TIME = 16;
     static final int THRUST_TIME = 18;
@@ -40,7 +35,6 @@ abstract class PortalState {
     static final double DRAG_SPEED = 0.95;
     static final double SLAM_SPEED = 1.2;
     static final double SLAM_ACCEL = 0.25;
-    // Never so fast that a watching client has to jump the creature instead of sliding it down.
     static final double SLAM_MAX = 2.4;
     static final double OUT_SPEED = 0.55;
     static final double CANCEL_OUT_SPEED = 1.2;
@@ -53,9 +47,7 @@ abstract class PortalState {
     static final double SKY_HEIGHT = 26.0;
     static final double MIN_SKY = 7.0;
     static final double SKY_RADIUS = 10.0;
-    // Nothing of this ability may ever open further than this from the player who started it.
     static final double MAX_FROM_CASTER = 28.0;
-    // How far a tentacle starts behind the portal it comes out of, so no gap shows at the ring.
     static final double PORTAL_DEPTH = 0.3;
     static final double CLAW_OPEN = 0.7;
 
@@ -64,10 +56,7 @@ abstract class PortalState {
     static final int HEAT = 0xFF8A3A;
     static final Vec3 DOWN = new Vec3(0, -1, 0);
 
-    /**
-     * What the tentacle is doing right now. It looks around first, then the sharp point slides out
-     * between its claws, then the thrusters fold out and light up; only then does it dive.
-     */
+    // Declared in order: several checks compare phases by ordinal (before/after DIVE).
     enum Phase {
         SEARCH, SPIKE, THRUST, DIVE, HUNT, GRIP, DRAG, SLAM, RETRACT_OUT, RETRACT_BACK, CLOSE
     }
@@ -79,15 +68,12 @@ abstract class PortalState {
     final Gate gateA = new Gate(RADIUS_A, PORTAL_OPEN);
     final Gate gateB = new Gate(RADIUS_B, PORTAL_OPEN);
     final Gate gateC = new Gate(RADIUS_C, SKY_OPEN);
-    // The far part of the tentacle: out of portal B or C, with its own id. The near part is the arm on
-    // the player's back, which the rig draws.
     final int farArm = RobotArm.newId();
     final List<Vec3> trail = new ArrayList<>();
     boolean farShown;
 
     Phase phase = Phase.SEARCH;
     int phaseAge = -1;
-    // How far the sharp point and the thrusters are out (0 .. 1), for the client to draw.
     double spike;
     double thrust;
     boolean dived;
@@ -112,7 +98,6 @@ abstract class PortalState {
         this.portalA = spotInFront(caster, this.look);
     }
 
-    /** Right in front of the player, or closer when a wall is in the way. */
     static Vec3 spotInFront(ServerPlayer caster, Vec3 look) {
         Vec3 eye = caster.getEyePosition();
         BlockHitResult wall = caster.level().clip(new ClipContext(eye, eye.add(look.scale(PORTAL_A_DISTANCE)),
@@ -122,13 +107,10 @@ abstract class PortalState {
         return eye.add(look.scale(distance)).add(0, -0.2, 0);
     }
 
-    // ---- Helpers ----
-
     static void sound(ServerLevel level, Vec3 at, SoundEvent sound, float volume, float pitch) {
         level.playSound(null, at.x, at.y, at.z, sound, SoundSource.PLAYERS, volume, pitch);
     }
 
-    /** One tech portal: opens slowly, and shrinks shut backwards when told to. */
     static final class Gate {
         private final int id = RobotArm.newId();
         private final double size;
@@ -157,7 +139,6 @@ abstract class PortalState {
             return this.age >= 0 && !this.gone;
         }
 
-        /** Open far enough to go through: the energy field is (almost) all there. */
         boolean ready() {
             return this.isOpen() && this.closing < 0 && this.age >= this.openTime * 0.9;
         }
@@ -194,7 +175,6 @@ abstract class PortalState {
             RobotArm.portal(level, this.id, this.center, this.normal, this.size, open);
         }
 
-        /** Clanks while the ring assembles, a ticking lamp at a time, and a surge when the energy opens. */
         private void openSounds(ServerLevel level) {
             if (this.age > this.openTime) {
                 return;

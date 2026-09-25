@@ -36,9 +36,6 @@ import nl.tivek.multiversepowers.spell.client.ClientVoidState;
 import nl.tivek.multiversepowers.stamina.StaminaCostPayload;
 import nl.tivek.multiversepowers.stamina.client.StaminaClient;
 
-/**
- * Client-only side of the network handling. Never loaded on a dedicated server.
- */
 public final class ClientPayloadHandler {
     private ClientPayloadHandler() {
     }
@@ -100,7 +97,6 @@ public final class ClientPayloadHandler {
         context.enqueueWork(() -> ClientClassData.set(PlayerClass.byId(payload.classId())));
     }
 
-    /** The particles of one tick, together: each shown exactly as the game shows its own particle packets. */
     public static void handleParticles(ParticlesPayload payload, IPayloadContext context) {
         context.enqueueWork(() -> {
             ClientPacketListener connection = Minecraft.getInstance().getConnection();
@@ -115,11 +111,6 @@ public final class ClientPayloadHandler {
         });
     }
 
-    /**
-     * The world's settings changed on the server while you are in it: your own game takes them over, as the game does
-     * by itself when you join. On your own server (singleplayer, or a LAN world you host) they are the same ones already.
-     * Only this mod's own world settings files are taken.
-     */
     public static void handleWorldSettings(WorldSettingsPayload payload, IPayloadContext context) {
         context.enqueueWork(() -> {
             if (Minecraft.getInstance().isLocalServer() || !ModConfigs.worldFiles().containsKey(payload.file())) {

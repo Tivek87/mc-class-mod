@@ -10,11 +10,6 @@ import nl.tivek.multiversepowers.classes.PlayerClass;
 import nl.tivek.multiversepowers.classes.TestEffectPayload;
 import nl.tivek.multiversepowers.engine.client.gui.DirtBackgroundScreen;
 
-/**
- * Developer tool, opened with /classfx: plays the start ceremony of any class, the death animation
- * of any group, or the level-up animation on the spot, whatever class the player has.
- * Picking a button closes the screen so the effect is visible.
- */
 public class EffectTestScreen extends DirtBackgroundScreen {
     private static final int COLUMNS = 5;
     private static final int MAX_BUTTON_WIDTH = 92;
@@ -28,7 +23,6 @@ public class EffectTestScreen extends DirtBackgroundScreen {
     private static final int LABEL_HEIGHT = 12;
     private static final int LEVEL_UP_COLOR = 0x7FFF40;
 
-    // Remembered while the game runs, so testing the same mode again is one click.
     private static boolean showTitle = true;
 
     private int headerTop;
@@ -78,7 +72,6 @@ public class EffectTestScreen extends DirtBackgroundScreen {
                     .build());
         }
 
-        // Death animation per group, and the level-up animation that is the same for everyone.
         this.extraLabelTop = gridTop + gridHeight + 2 * GAP;
         int extraLeft = (this.width - extraWidth) / 2;
         int extraTop = this.extraLabelTop + LABEL_HEIGHT;

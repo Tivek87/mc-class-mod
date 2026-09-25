@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import net.minecraft.world.phys.Vec3;
-import nl.tivek.multiversepowers.character.greenlantern.client.hud.ConstructIcons;
 import nl.tivek.multiversepowers.engine.client.render.ConstructPainter;
 import nl.tivek.multiversepowers.engine.client.render.Mesh;
 import static nl.tivek.multiversepowers.character.greenlantern.client.render.GunShapes.armCannon;
@@ -16,16 +15,7 @@ import static nl.tivek.multiversepowers.character.greenlantern.client.render.Gun
 import static nl.tivek.multiversepowers.character.greenlantern.client.render.GunShapes.shotgun;
 import static nl.tivek.multiversepowers.character.greenlantern.client.render.GunShapes.smg;
 
-/**
- * The hard-light models of the weapons on the construct wheel besides the sword and shield (see {@link SwordPainter}):
- * solid like every construct, with their details (edges, bores, grooves, the lantern emblem) picked out in brighter
- * light. For now they are the pictures on the wheel and on the bar above your hotbar (see {@link ConstructIcons}).
- *
- * <p>Every model is measured in blocks at scale 1: z along its length (from the grip to the end that does the work), y
- * up (the top of a gun, the edge of a blade) and x across. A glove is a right hand, palm down, its knuckles along z.
- */
 public final class WeaponShapes {
-    /** A square with well rounded corners, for bodies and grips; and a blade bevelled off to both edges. */
     static final double[] SQUIRCLE = squircle(16);
     private static final double[] BLADE = { 0.0, 1.0, -0.35, 0.72, -1.0, 0.25, -1.0, -0.25, -0.35, -0.72, 0.0, -1.0,
             0.35, -0.72, 1.0, -0.25, 1.0, 0.25, 0.35, 0.72 };
@@ -34,7 +24,6 @@ public final class WeaponShapes {
 
     public static final ConstructPainter.Shape WHIP = ConstructPainter.Shape.of(whip());
     public static final ConstructPainter.Shape GLOVE = ConstructPainter.Shape.of(glove());
-    /** The left glove: the right one mirrored. */
     public static final ConstructPainter.Shape LEFT_GLOVE = mirrored(GLOVE);
     public static final ConstructPainter.Shape DAGGER = ConstructPainter.Shape.of(dagger());
     public static final ConstructPainter.Shape BATTLEAXE = ConstructPainter.Shape.of(battleaxe());
@@ -53,12 +42,6 @@ public final class WeaponShapes {
     private WeaponShapes() {
     }
 
-    // ---- The melee weapons ----
-
-    /**
-     * The energy whip: a handle with a pommel and its gem, a cord wound round the grip and a collar; out of that the lash
-     * curls up and round into a spiral, thinner and thinner, knotted where it narrows, with a cracker at its tip.
-     */
     private static Mesh[] whip() {
         List<Mesh> parts = new ArrayList<>();
         parts.add(Mesh.ball(14, 8, 0.062, 1.2).scaled(1.0, 1.0, 0.85).moved(0.0, 0.0, -0.37));
@@ -95,11 +78,6 @@ public final class WeaponShapes {
         return parts.toArray(Mesh[]::new);
     }
 
-    /**
-     * A boxing glove: the padded fist with a roll of padding bulging over the knuckles and a row of studs in it, the
-     * thumb laid along its side, and a long cuff round the wrist with a strap and its buckle, the lantern emblem on both
-     * sides and a rim round its opening.
-     */
     private static Mesh[] glove() {
         List<Mesh> parts = new ArrayList<>();
         parts.add(Mesh.ball(20, 14, 1.0, 1.0).scaled(0.2, 0.21, 0.24).moved(0.0, 0.02, 0.12));
@@ -121,10 +99,6 @@ public final class WeaponShapes {
         return parts.toArray(Mesh[]::new);
     }
 
-    /**
-     * An energy dagger: a straight blade bevelled to both edges with a glowing channel and a ring of light on each face,
-     * a crossguard curving towards the blade with a knob at either end, a wrapped grip and a pommel with a gem.
-     */
     private static Mesh[] dagger() {
         List<Mesh> parts = new ArrayList<>();
         parts.add(Mesh.sweep(1.15, BLADE, new double[] { 0.05, 0.02, 0.068, 0.0 },
@@ -147,10 +121,6 @@ public final class WeaponShapes {
         return parts.toArray(Mesh[]::new);
     }
 
-    /**
-     * A double-bitted battleaxe: a long haft with a wound grip, bands and a pommel; a socket with bands; two crescent
-     * bits with a raised cheek, rivets and a glowing edge; and a spike on top.
-     */
     private static Mesh[] battleaxe() {
         List<Mesh> parts = new ArrayList<>();
         parts.add(rod(12, 0.034, -0.92, 0.52, 0.95));
@@ -180,11 +150,6 @@ public final class WeaponShapes {
         return parts.toArray(Mesh[]::new);
     }
 
-    /**
-     * A two-handed war hammer: a long haft with a long wound grip, bands and a pommel; a big eight-sided head with a
-     * flared, glowing face at either end, a raised plate in its middle with the lantern emblem on both sides, and a
-     * point on top.
-     */
     private static Mesh[] warHammer() {
         List<Mesh> parts = new ArrayList<>();
         parts.add(rod(12, 0.036, -0.88, 0.4, 0.95));
@@ -210,11 +175,6 @@ public final class WeaponShapes {
         return parts.toArray(Mesh[]::new);
     }
 
-    /**
-     * A halberd: a long pole with a wound grip and a spike at its foot; a socket with bands and langets; a leaf-shaped
-     * spear point with a glowing rib; a broad axe blade on one side with a raised cheek, rivets and a glowing edge; and a
-     * hooked beak on the other.
-     */
     private static Mesh[] halberd() {
         List<Mesh> parts = new ArrayList<>();
         parts.add(rod(12, 0.03, -1.05, 0.62, 0.95));
@@ -250,11 +210,6 @@ public final class WeaponShapes {
         return parts.toArray(Mesh[]::new);
     }
 
-    /**
-     * A heavy chainsaw: the engine housing with cooling fins, a fuel cap and the starter on its side; a loop handle
-     * behind with its trigger and a wrap handle over the top in front with the hand guard; and the long guide bar with a
-     * glowing groove, bolts, the sprocket at its nose and the chain running all round it, its cutters standing out.
-     */
     private static Mesh[] chainsaw() {
         List<Mesh> parts = new ArrayList<>();
         parts.add(Mesh.sweep(0.95, SQUIRCLE, new double[] { -0.4, 0.1, 0.12, 0.0 },
@@ -274,7 +229,6 @@ public final class WeaponShapes {
         parts.add(Mesh.tube(false, 7, 0.022, 1.1, path(0.14, -0.13, -0.03, 0.155, 0.06, -0.03, 0.13, 0.23, -0.03, 0.05,
                 0.29, -0.03, -0.05, 0.29, -0.03, -0.13, 0.23, -0.03, -0.155, 0.06, -0.03, -0.14, -0.1, -0.03)));
         parts.add(Mesh.box(-0.11, 0.08, 0.035, 0.11, 0.34, 0.055, 1.2));
-        // The bar, drawn flat in its own plane and stood on edge along z.
         List<Double> bar = new ArrayList<>(List.of(-0.05, -0.075, 0.85, -0.055));
         for (int t = -60; t <= 60; t += 30) {
             bar.add(0.85 + 0.055 * Math.cos(Math.toRadians(t)));
@@ -288,7 +242,6 @@ public final class WeaponShapes {
             parts.add(Mesh.cylinder(10, 0.016, -0.024, 0.024, 1.6).alongX().moved(0.0, -0.02, z));
         }
         twice(parts, Mesh.torus(12, 4, 0.03, 0.007, 1.8).alongX().moved(0.019, -0.02, 0.85));
-        // The chain: a band all round the bar, and its cutters standing out of it, every other one to the other side.
         List<Vec3> chain = new ArrayList<>(List.of(new Vec3(0.0, -0.103, -0.05), new Vec3(0.0, -0.093, 0.4),
                 new Vec3(0.0, -0.083, 0.85)));
         for (int t = -60; t <= 60; t += 20) {
@@ -311,50 +264,34 @@ public final class WeaponShapes {
         return parts.toArray(Mesh[]::new);
     }
 
-    /** One cutter of the chain at {@code y}, {@code z}, standing out towards {@code degrees} (0 = up, 90 = ahead). */
     private static Mesh cutter(int index, double y, double z, double degrees) {
         return Mesh.box(-0.013, 0.0, -0.018, 0.013, 0.026, 0.018, 1.5).turned(1.0, 0.0, 0.0, degrees)
                 .moved(index % 2 == 0 ? 0.006 : -0.006, y, z);
     }
 
 
-    // ---- Parts ----
-
-    /** A rod along z from {@code from} to {@code to}. */
     static Mesh rod(int sides, double radius, double from, double to, double bright) {
         return Mesh.cylinder(sides, radius, from, to, bright).alongZ();
     }
 
-    /** A thin ring round the z axis at {@code z}: a band round a haft, a barrel or a grip. */
     static Mesh band(double major, double minor, double z, double bright) {
         return Mesh.torus(16, 5, major, minor, bright).alongZ().moved(0.0, 0.0, z);
     }
 
-    /** A grip along z from 0 to {@code length}: {@code depth} from its middle to front and back, {@code thick} across. */
     static Mesh grip(double length, double depth, double thick, double bright) {
         return Mesh.sweep(bright, SQUIRCLE, new double[] { 0.0, thick, depth, 0.0 },
                 new double[] { length * 0.5, thick * 1.08, depth * 1.08, 0.0 },
                 new double[] { length, thick, depth * 0.96, 0.0 });
     }
 
-    /**
-     * A part built along z, leant over about x by {@code degrees} (so +z comes to point down and back for a grip,
-     * between 90 and 180) and moved to where it hangs from, at {@code y}, {@code z}.
-     */
     static Mesh leaning(Mesh part, double degrees, double y, double z) {
         return part.turned(1.0, 0.0, 0.0, degrees).moved(0.0, y, z);
     }
 
-    /**
-     * A flat plate {@code thick} thick either way across x: a blade, a bit, a beak. Its outline gives pairs of how far
-     * out along y and where along z, counter-clockwise as seen from +x, and must be seen whole from its own middle.
-     */
     private static Mesh plate(double thick, double bright, double... outline) {
-        // Drawn as a prism flat in x and y, then turned so its x lies along y, its y along z and its depth along x.
         return Mesh.prism(-thick, thick, bright, outline).turned(1.0, 1.0, 1.0, 120.0);
     }
 
-    /** An outline drawn in towards (or out from) the point ({@code x}, {@code y}), to {@code share} of its size. */
     private static double[] resized(double[] outline, double x, double y, double share) {
         double[] resized = new double[outline.length];
         for (int i = 0; i < outline.length; i += 2) {
@@ -364,7 +301,6 @@ public final class WeaponShapes {
         return resized;
     }
 
-    /** A cord wound round the z axis, {@code radius} out, from {@code from} to {@code to}. */
     private static Vec3[] helix(double radius, double from, double to, double turns) {
         int count = (int) Math.ceil(turns * 10.0) + 1;
         Vec3[] points = new Vec3[count];
@@ -376,7 +312,6 @@ public final class WeaponShapes {
         return points;
     }
 
-    /** Points given as x, y, z after each other. */
     static Vec3[] path(double... xyz) {
         Vec3[] points = new Vec3[xyz.length / 3];
         for (int i = 0; i < points.length; i++) {
@@ -385,7 +320,6 @@ public final class WeaponShapes {
         return points;
     }
 
-    /** Adds a part and its mirror image on the other side (across x). */
     static void twice(List<Mesh> parts, Mesh part) {
         parts.add(part);
         parts.add(part.mirrored());
@@ -399,7 +333,6 @@ public final class WeaponShapes {
         return ConstructPainter.Shape.of(meshes);
     }
 
-    /** A square with rounded corners, {@code points} round, one across either way. */
     private static double[] squircle(int points) {
         double[] outline = new double[points * 2];
         for (int i = 0; i < points; i++) {

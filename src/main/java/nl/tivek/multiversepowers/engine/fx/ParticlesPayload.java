@@ -13,15 +13,8 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import nl.tivek.multiversepowers.MultiversePowers;
 
-/**
- * The particles the powers sent one player during one tick, together in one packet (see {@link ParticleBatch}) instead
- * of one packet each. Every particle holds exactly what the game's own particle packet holds, and the player's game
- * shows it exactly as it would show that one.
- */
 public record ParticlesPayload(List<Entry> entries) implements CustomPacketPayload {
-    /** The most particles in one packet: a tick with more sends more packets. */
     public static final int MAX_ENTRIES = 8192;
-    // The most kinds of particle one packet may name.
     private static final int MAX_KINDS = 1024;
 
     public static final CustomPacketPayload.Type<ParticlesPayload> TYPE = new CustomPacketPayload.Type<>(
@@ -30,18 +23,10 @@ public record ParticlesPayload(List<Entry> entries) implements CustomPacketPaylo
     public static final StreamCodec<RegistryFriendlyByteBuf, ParticlesPayload> STREAM_CODEC = StreamCodec.of(
             ParticlesPayload::write, ParticlesPayload::read);
 
-    /**
-     * One particle packet's worth: what the game's own particle packet holds.
-     *
-     * @param force  shown however far away and whatever the player's particle setting (the game's "long distance")
-     * @param count  0 for one particle flying along (dx, dy, dz) at {@code speed}; otherwise that many, spread round
-     *               the spot by (dx, dy, dz)
-     */
     public record Entry(ParticleOptions options, boolean force, double x, double y, double z, float dx, float dy,
             float dz, float speed, int count) {
     }
 
-    // The particles of a tick share a handful of kinds: every kind is written once, and every particle names its kind.
     private static void write(RegistryFriendlyByteBuf buffer, ParticlesPayload payload) {
         Map<ParticleOptions, Integer> index = new IdentityHashMap<>();
         List<ParticleOptions> kinds = new ArrayList<>();
