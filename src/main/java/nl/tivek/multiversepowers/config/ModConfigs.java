@@ -21,6 +21,7 @@ public final class ModConfigs {
     }
 
     public static void register(ModContainer container, IEventBus modEventBus) {
+        world(container, "general", PowerRules.SPEC);
         world(container, "stamina", StaminaConfig.SPEC);
         CharacterConfig.register(container, modEventBus);
         modEventBus.addListener(ModConfigEvent.Reloading.class, WorldSettings::onReload);

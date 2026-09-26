@@ -17,8 +17,9 @@ import nl.tivek.multiversepowers.engine.math.Vectors;
 // The lash of a player's whip in the world: flung by its move, hanging and lying on the ground when slack, and
 // wound round a creature by the lasso.
 final class WhipLine {
-    static final int SEGMENTS = 24;
-    private static final int LINE = 10;
+    // Enough pieces for the loops of a curled lash to read round.
+    static final int SEGMENTS = 48;
+    private static final int LINE = 20;
     private static final double LIFT = 0.03;
     private static final double TURNS = 3.0;
     private static final Vec3 DOWN = new Vec3(0.0, -1.0, 0.0);

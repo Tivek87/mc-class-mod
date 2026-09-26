@@ -13,8 +13,7 @@ import static nl.tivek.multiversepowers.character.greenlantern.client.body.Fligh
 final class FlightLimbs {
     private static final float BEAM_TREMBLE = 0.05F;
     private static final float BEAM_KICK = 0.42F;
-    private static final float BRACE_IN = 0.2F;
-    private static final float BRACE_ACROSS = 0.72F;
+    private static final float BRACE_ACROSS = 0.88F;
     private static final float BRACE_DROP = 0.14F;
     private static final float DOWN_THIGH = 0.05F;
     private static final float STEP_THIGH = -1.4F;
@@ -32,7 +31,7 @@ final class FlightLimbs {
         float turn = model.head.yRot + tremble * BeamArm.shake(time, 1);
         if (right) {
             limb.xRot = Mth.lerp(blend.beam, limb.xRot, -Mth.HALF_PI + lift);
-            limb.yRot = Mth.lerp(blend.beam, limb.yRot, -0.08F - BRACE_IN * blend.brace + turn);
+            limb.yRot = Mth.lerp(blend.beam, limb.yRot, turn);
             limb.zRot = Mth.lerp(blend.beam, limb.zRot, 0.0F);
         } else if (blend.brace > 0.0F) {
             limb.xRot = Mth.lerp(blend.brace, limb.xRot, -Mth.HALF_PI + BRACE_DROP + lift);

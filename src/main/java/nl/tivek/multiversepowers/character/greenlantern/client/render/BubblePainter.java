@@ -1,11 +1,7 @@
 package nl.tivek.multiversepowers.character.greenlantern.client.render;
 
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import javax.annotation.Nullable;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
@@ -20,8 +16,10 @@ import nl.tivek.multiversepowers.engine.math.Vectors;
 
 public final class BubblePainter {
     public static final int POUND_TICKS = 16;
-    private static final double STRUT = 0.055;
-    private static final double KNOT = 0.085;
+    private static final int BARS = 14;
+    private static final double BAR = 0.04;
+    private static final double BAR_RING = 0.9;
+    private static final double HOOP = 0.035;
     private static final double FLING = 1.8;
     private static final double SQUASH = 0.42;
     private static final double SQUASH_DAMP = 0.55;
@@ -33,55 +31,30 @@ public final class BubblePainter {
     private BubblePainter() {
     }
 
+    // A prison cage in the frame's unit size: floor plate, domed roof with a ring to hold it by, upright bars and
+    // two hoops. Every bar is its own piece, so it breaks into solid bars.
     private static Mesh[] cage() {
-        double p = (1.0 + Math.sqrt(5.0)) * 0.5;
-        List<Vec3> points = new ArrayList<>(List.of(new Vec3(-1, p, 0), new Vec3(1, p, 0), new Vec3(-1, -p, 0),
-                new Vec3(1, -p, 0), new Vec3(0, -1, p), new Vec3(0, 1, p), new Vec3(0, -1, -p), new Vec3(0, 1, -p),
-                new Vec3(p, 0, -1), new Vec3(p, 0, 1), new Vec3(-p, 0, -1), new Vec3(-p, 0, 1)));
-        points.replaceAll(Vec3::normalize);
-        int[][] faces = { { 0, 11, 5 }, { 0, 5, 1 }, { 0, 1, 7 }, { 0, 7, 10 }, { 0, 10, 11 }, { 1, 5, 9 },
-                { 5, 11, 4 }, { 11, 10, 2 }, { 10, 7, 6 }, { 7, 1, 8 }, { 3, 9, 4 }, { 3, 4, 2 }, { 3, 2, 6 },
-                { 3, 6, 8 }, { 3, 8, 9 }, { 4, 9, 5 }, { 2, 4, 11 }, { 6, 2, 10 }, { 8, 6, 7 }, { 9, 8, 1 } };
-        Map<Long, Integer> middles = new HashMap<>();
-        Set<Long> edges = new HashSet<>();
-        Set<Integer> knots = new HashSet<>();
-        Mesh[] panels = new Mesh[faces.length];
-        for (int f = 0; f < faces.length; f++) {
-            int a = faces[f][0];
-            int b = faces[f][1];
-            int c = faces[f][2];
-            int ab = middle(points, middles, a, b);
-            int bc = middle(points, middles, b, c);
-            int ca = middle(points, middles, c, a);
-            int[][] struts = { { a, ab }, { ab, b }, { b, bc }, { bc, c }, { c, ca }, { ca, a }, { ab, bc },
-                    { bc, ca }, { ca, ab } };
-            List<Mesh> parts = new ArrayList<>();
-            for (int[] strut : struts) {
-                long key = (long) Math.min(strut[0], strut[1]) << 32 | Math.max(strut[0], strut[1]);
-                if (edges.add(key)) {
-                    parts.add(Mesh.tube(false, 6, STRUT, 1.15, points.get(strut[0]), points.get(strut[1])));
-                }
-            }
-            for (int knot : new int[] { a, b, c, ab, bc, ca }) {
-                if (knots.add(knot)) {
-                    Vec3 at = points.get(knot);
-                    parts.add(Mesh.ball(8, 5, KNOT, 1.45).moved(at.x, at.y, at.z));
-                }
-            }
-            panels[f] = Mesh.merged(parts.toArray(Mesh[]::new));
+        List<Mesh> pieces = new ArrayList<>();
+        pieces.add(Mesh.lathe(24, 1.0, 0.0, -1.0, BAR_RING + 0.06, -1.0, BAR_RING + 0.1, -0.94,
+                BAR_RING + 0.06, -0.87, 0.0, -0.87));
+        pieces.add(Mesh.lathe(24, 1.0, 0.0, 0.87, BAR_RING + 0.06, 0.87, BAR_RING + 0.1, 0.93,
+                BAR_RING - 0.05, 1.02, 0.6, 1.1, 0.3, 1.15, 0.0, 1.17));
+        pieces.add(Mesh.merged(Mesh.cylinder(8, 0.05, 1.12, 1.26, 1.2),
+                Mesh.torus(16, 8, 0.15, 0.04, 1.45).turned(1.0, 0.0, 0.0, 90.0).moved(0.0, 1.4, 0.0)));
+        for (double y : new double[] { -0.4, 0.4 }) {
+            pieces.add(Mesh.torus(32, 6, BAR_RING, HOOP, 1.3).moved(0.0, y, 0.0));
         }
-        return panels;
+        for (int i = 0; i < BARS; i++) {
+            double angle = Math.PI * 2.0 * i / BARS;
+            double x = Math.cos(angle) * BAR_RING;
+            double z = Math.sin(angle) * BAR_RING;
+            pieces.add(Mesh.tube(false, 6, BAR, 1.15, new Vec3(x, -0.9, z), new Vec3(x, 0.9, z)));
+        }
+        return pieces.toArray(Mesh[]::new);
     }
 
-    private static int middle(List<Vec3> points, Map<Long, Integer> middles, int a, int b) {
-        long key = (long) Math.min(a, b) << 32 | Math.max(a, b);
-        Integer known = middles.get(key);
-        if (known != null) {
-            return known;
-        }
-        points.add(points.get(a).add(points.get(b)).normalize());
-        middles.put(key, points.size() - 1);
-        return points.size() - 1;
+    public static Vec3 handle(Vec3 center, double radius, double grown) {
+        return center.add(0.0, 1.55 * radius * grown, 0.0);
     }
 
     public static void draw(LanternPainter painter, ConstructPayload bubble, Vec3 center, double solid, double broken,
@@ -104,8 +77,7 @@ public final class BubblePainter {
             squash -= STRETCH * Math.min(1.0, down / STRETCH_SPEED);
             center = center.subtract(0.0, radius * 0.5 * Math.max(0.0, squash), 0.0);
         }
-        ConstructPainter.Frame frame = ConstructPainter.Frame.of(center, flat, Vectors.UP, radius)
-                .turned(0.0, 0.0, 0.0, 0.0, 1.0, 0.0, clock * 0.012);
+        ConstructPainter.Frame frame = ConstructPainter.Frame.of(center, flat, Vectors.UP, radius);
         if (squash != 0.0) {
             double wide = 1.0 + squash * 0.6;
             frame = frame.stretched(wide, 1.0 - squash, wide);
@@ -151,10 +123,9 @@ public final class BubblePainter {
             }
         }
         if (ring != null && held) {
-            Vec3 toRing = ring.subtract(center);
-            if (toRing.lengthSqr() > radius * radius) {
-                painter.beam(ring, center.add(toRing.normalize().scale(radius * grown)), Mth.clamp(solid * 2.0, 0.0,
-                        1.0), Math.min(1.4, radius));
+            Vec3 hook = handle(center, radius, grown);
+            if (ring.distanceToSqr(hook) > 0.25) {
+                painter.beam(ring, hook, Mth.clamp(solid * 2.0, 0.0, 1.0), Math.min(1.4, radius));
             }
         }
     }

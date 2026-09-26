@@ -3,6 +3,38 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.2.4-alpha] - 2026-09-26
+
+### Added
+- **Light Beam stages:** the longer you hold, the bigger it gets: wider and stronger at 5 seconds, raging at 10,
+  full power at 20. Damage climbs to x3, power cost to x8 (0.8 up to 6.4 a second), each stage flares, roars and
+  crackles with more lightning.
+- **Light Beam slows you:** the stronger the beam, the slower you walk (85% down to 30%); your speed comes back
+  when it stops.
+- **Light Cage, dragging:** once lifted, the cage follows where you look and stops against walls.
+- **Config: Client or Server first:** the config menu asks which you want; Server can only be changed by the host
+  of the world or an operator on a server, checked again by the server.
+- **Server settings, Power rules:** damage multiplier, cooldown multiplier and whether powers break blocks.
+- **Client settings:** menu theme on or off, how often to look for updates, how long the update note stays in game.
+- **Settings:** beam stage damage, cost and walking speed.
+
+### Changed
+- **Light Bubble is now the Light Cage:** a real prison cage of hard light (floor plate, bars, hoops, domed roof with
+  a ring the beam holds it by) instead of the bubble; it breaks into solid bars.
+- **Light Cage:** never lets go by itself any more; it holds until you pound it, let it go or the creature dies.
+- **Energy Whip:** at rest the lash hangs curled up in loops below the handle; every attack unrolls it and it winds
+  back up after.
+- **Energy Whip, taking it out:** the lash now winds out of the handle into a coil, unrolls with a flick, twirls, cracks
+  and is pulled back into its coil.
+- **Light Bolt and Light Beam:** your arm points dead straight ahead along your view, in first and third person.
+- **Update note:** bigger, with your version and the new one.
+
+### Removed
+- **Light Bubble setting "Held for"** (the cage no longer lets go by itself).
+
+### Fixed
+- **Update and restart (Modrinth App):** the game now really starts again after the update closes it.
+
 ## [0.2.3-alpha] - 2026-09-26
 
 ### Added

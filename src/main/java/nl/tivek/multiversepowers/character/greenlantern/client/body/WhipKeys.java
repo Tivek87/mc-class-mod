@@ -21,7 +21,7 @@ abstract class WhipKeys extends WhipCurves {
             0.12F);
     static final Pose REST = rest(pose(RechargeAnimation.HAND_RIGHT.x(), RechargeAnimation.HAND_RIGHT.y(),
             RechargeAnimation.HAND_RIGHT.z(), 0.05, -1.0, 0.1, -0.46, -1.3, -0.84, 0.0F, 0.0F, 0.0F, 0.0F));
-    // The guard in a loose stance: feet apart, knees soft, the lash on the ground beside the right foot.
+    // The guard in a loose stance: feet apart, knees soft, the lash curled up below the handle.
     static final Pose READY = stance(GUARD, 0.06F, 0.28F);
     private static final Pose WHIRLING = stance(pose(0.28, 0.08, -0.4, 0.2, 0.9, -0.4, -0.72, -0.5, -0.3, 0.85F, 5.0F,
             -0.05F, 0.1F), 0.15F, 0.5F);
@@ -41,17 +41,17 @@ abstract class WhipKeys extends WhipCurves {
         return WhipAttacks.beat(tick);
     }
 
-    // The handle grows in the fist and tips down while the lash pours out and coils on the ground; a flick lifts it,
-    // it twirls overhead, and is thrown forward over the top for the crack.
+    // The handle grows in the fist and the lash winds out of it into a coil; a flick unrolls it, it twirls overhead,
+    // is thrown forward over the top for the crack and pulled back into its coil.
     private static void equip() {
         MOVES.put(WhipMove.EQUIP, WhipAttacks.keys(WhipMove.EQUIP,
                 beat(3).grip(0.3, -0.45, -0.7).handle(0.2, 0.05, -0.98).twist(5).lean(0.0).step(0.0).squat(0.02),
                 beat(WhipMove.FORMED).stop().grip(0.28, -0.42, -0.7).handle(0.2, 0.0, -0.98).twist(6).lean(0.0)
                         .step(0.0).squat(0.02),
-                beat(11).grip(0.34, -0.4, -0.72).handle(0.15, -0.7, -0.7).twist(8).lean(0.04).step(0.05),
-                beat(WhipMove.POURED).stop().grip(0.36, -0.42, -0.74).handle(0.12, -0.78, -0.62).twist(10).lean(0.08)
+                beat(11).grip(0.34, -0.38, -0.74).handle(0.15, -0.5, -0.85).twist(8).lean(0.04).step(0.05),
+                beat(WhipMove.POURED).stop().grip(0.34, -0.36, -0.76).handle(0.12, -0.55, -0.83).twist(10).lean(0.06)
                         .step(0.08),
-                beat(23.5F).grip(0.37, -0.5, -0.72).handle(0.1, -0.85, -0.52).twist(10).lean(0.1).step(0.08)
+                beat(23.5F).grip(0.36, -0.42, -0.74).handle(0.1, -0.62, -0.78).twist(10).lean(0.08).step(0.08)
                         .squat(0.1),
                 beat(26).grip(0.4, -0.28, -0.66).twist(14).lean(0.0).step(0.1).squat(0.06),
                 beat(29).grip(0.36, -0.05, -0.52).twist(12).lean(-0.05).step(0.1).squat(0.08),
@@ -145,7 +145,7 @@ abstract class WhipKeys extends WhipCurves {
         return Pose.of(n);
     }
 
-    // The resting lash hangs to the ground and sways a little; the flick runs down it to the tip.
+    // The resting lash hangs curled below the handle and sways a little; the flick runs down it to the tip.
     static float[] idleLash(float time, float amount) {
         float[] lash = WhipMove.REST.clone();
         if (amount <= 0.0F) {

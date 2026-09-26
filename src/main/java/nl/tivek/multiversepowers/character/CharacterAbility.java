@@ -5,6 +5,7 @@ import java.util.List;
 import javax.annotation.Nullable;
 import net.minecraft.network.chat.Component;
 import nl.tivek.multiversepowers.MultiversePowers;
+import nl.tivek.multiversepowers.config.PowerRules;
 import nl.tivek.multiversepowers.config.Unit;
 
 public final class CharacterAbility {
@@ -202,19 +203,26 @@ public final class CharacterAbility {
     }
 
     public int getCooldown() {
-        return CharacterConfig.cooldown(this);
+        return (int) Math.round(CharacterConfig.cooldown(this) * PowerRules.cooldowns());
     }
 
     public float getDamage() {
-        return (float) CharacterConfig.damage(this);
+        return (float) (CharacterConfig.damage(this) * PowerRules.damage());
     }
 
     public double value(String key) {
-        return CharacterConfig.value(this, key);
+        double value = CharacterConfig.value(this, key);
+        for (Setting setting : this.settings) {
+            if (setting.key().equals(key)) {
+                return setting.unit() == Unit.HALF_HEARTS || setting.unit() == Unit.HALF_HEARTS_PER_SPEED
+                        ? value * PowerRules.damage() : value;
+            }
+        }
+        return value;
     }
 
     public int intValue(String key) {
-        return (int) Math.round(CharacterConfig.value(this, key));
+        return (int) Math.round(this.value(key));
     }
 
     public Component getDisplayName() {

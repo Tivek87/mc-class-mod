@@ -63,7 +63,7 @@ long cooldown; while it goes, the panel's title turns red and counts down.
 | X | Ability 8 | *(free)* | Shockwave |
 | C | Ability 9 | Feet or Tentacles | Flight |
 | Left Alt | Ability 10 | Ground Strike | Giant Hands |
-| K | Ability 11 | *(free)* | Light Bubble |
+| K | Ability 11 | *(free)* | Light Cage |
 
 - Every key can be changed in Options > Controls, under "Multiverse Powers".
 - A panel in the bottom right shows who you are and what each key does right now, with its cooldown.
@@ -179,7 +179,7 @@ quick one, 2 seconds of holding for the lasting one.
 **Left click (the right hand attacks)**
 
 - **Tap — Light Bolt.** A small bullet of hard light (round, with a pointed nose and a streak of light behind
-  it) leaves your ring and flies exactly where the crosshair points. It bursts on the first creature or wall it meets. Your ring arm comes straight up and points where you aim, so every bolt leaves the ring on your outstretched hand; it kicks back a little with each bolt, stays up while you keep shooting, and goes down again a moment after the last one. Everyone else sees it too, and in first person your own hand does the same.
+  it) leaves your ring and flies exactly where the crosshair points. It bursts on the first creature or wall it meets. Your ring arm comes up dead straight ahead, along your view, so every bolt leaves the ring on your outstretched hand; it kicks back a little with each bolt, stays up while you keep shooting, and goes down again a moment after the last one. Everyone else sees it too, and in first person your own hand does the same.
   - **Damage:** 3 hearts per bolt. Every bolt lands, however quickly they follow each other.
   - **Power:** 0.16 per bolt.
   - **Every 0.3 seconds.** Click again as soon as it is ready; clicking faster does not shoot faster.
@@ -205,7 +205,18 @@ quick one, 2 seconds of holding for the lasting one.
     drives what it hits back a little.
   - **Damage:** 2.5 hearts, 4 times a second, to everything in it (10 hearts a second).
   - **Power:** 0.8 per second.
-  - Let go, run the ring dry or start a Giant Fist and it dies down.
+  - **It grows the longer you hold** (counted from the press): at **5 seconds** it gets wider and stronger, at
+    **10** it rages, at **20** it reaches full power. Each stage flares at the ring, roars louder and says so
+    above the hotbar; the beam gets thicker, hits a wider line, drives harder and crackles with more and more
+    lightning. The heavier the beam, the slower you walk.
+
+    | Stage | Held | Damage | Power | Walking speed |
+    |---|---|---|---|---|
+    | 1 | 2 s | x1 (10 hearts/s) | 0.8/s | 85% |
+    | 2 | 5 s | x1.44 | 1.6/s | 67% |
+    | 3 | 10 s | x2.08 | 3.2/s | 48% |
+    | 4 | 20 s | x3 (30 hearts/s) | 6.4/s | 30% |
+  - Let go, run the ring dry or start a Giant Fist and it dies down; your walking speed comes back at once.
 
 **Right click (the left hand defends)**
 
@@ -234,7 +245,7 @@ quick one, 2 seconds of holding for the lasting one.
 | | Damage | Power | Other |
 |---|---|---|---|
 | Light Bolt (tap left) | 3 hearts | 0.16 per bolt | one every 0.3 s, 48 blocks |
-| Light Beam (hold left) | 2.5 hearts, 4x a second | 0.8 a second | goes through creatures, 40 blocks |
+| Light Beam (hold left) | 2.5 hearts, 4x a second, up to x3 | 0.8 a second, up to 6.4 | goes through creatures, 40 blocks, grows at 5/10/20 s |
 | Light Shield (tap right) | - | 0.08 a second | 70% off hits from the front |
 | Light Dome (hold right) | - | 0.24 a second | 40% off hits from every side |
 
@@ -500,8 +511,8 @@ Cannons**, **Sawed-off Shotgun**, **Dual Micro-SMGs**, **Arm Cannon / Mega Blast
   "The same keys for everyone"):
   - **Left click (attack):** a tap does a quick attack (a slash, a thrust, a smash); holding it 2 seconds
     does a lasting heavy attack for as long as you hold (a whirlwind, a barrage of thrusts).
-  - **Right click (defence):** a tap does a quick block or parry; holding it 2 seconds raises a stronger,
-    lasting defence (a barricade, a fortress stance).
+  - **Right click (free):** a second move of the weapon's own: a quick block or parry, a lasso, a wall of fire;
+    holding it 2 seconds does a stronger, lasting one (a barricade, a spinning shield, a vortex).
   - **At the same time:** just like with empty hands, attack and defence can be clicked or held together.
   - Holding a weapon that does nothing yet does exactly what empty hands do: bolts and the beam on left click, the
     shield and the dome on right click.
@@ -567,20 +578,21 @@ shield's disc are light.
 
 - **A living lash:** every bit of the lash goes where the whip was flung a moment before, the further along the
   later, so every flick of the wrist runs down it like a wave, and where the wave rolls out of the tip and pulls the
-  lash straight it **cracks**: a flash, a cone of shock rings and sparks, and a bang. Slack, it hangs down and its end
-  lies on the ground in a curve; it trails after you as you walk, sways a little, and now and then your wrist gives it
-  a lazy flick that runs down to the tip.
+  lash straight it **cracks**: a flash, a cone of shock rings and sparks, and a bang. **At rest it is curled up:** the
+  lash hangs from the handle wound in loops beside each other, like a coiled whip; it sways a little and now and then
+  your wrist gives it a lazy flick. **Every attack unrolls it:** the coil opens from the handle out to the tip as the
+  lash is flung, and once the move is done it winds back up into its coil.
 - **How you hold it:** in first person the handle sits in your right fist at the bottom right of your screen, tilted
-  up and forward, and the lash bends down out of it. Seen from outside he holds the handle low before his right hip
-  with the lash beside his right foot, feet a little apart and knees soft, breathing and shifting his weight. In
+  up and forward, with the coil hanging from its end. Seen from outside he holds the handle low before his right hip
+  with the coil below it, feet a little apart and knees soft, breathing and shifting his weight. In
   first person your hands move less and further off, so an arm never fills your view; the lash itself moves in full
   and really goes behind and round creatures (what would pass right by your eyes is left out there).
 - **Taking it out:** your fist comes up and the handle grows out of it both ways, white-hot and cooling to green. The
-  handle tips down and the lash pours out of it like liquid light, white-hot at its end, and falls in coils on the
-  ground before you while your eyes follow it down. A flick of the wrist lifts it off the ground in a wave, you raise
-  your arm and twirl it round over your head (your eyes go up with it), bring it round behind you and throw it
-  forward over the top: **crack**, with a flash, shock rings and a small jolt of your view. Then it drops and lies
-  ready. About 3 seconds; you can attack from halfway. Putting it away, handle and lash break into solid pieces.
+  lash winds out of the handle like liquid light, white-hot at its end, loop by loop into a coil below your fist while
+  your eyes follow it. A flick of the wrist unrolls the coil in a wave, you raise your arm and twirl it round over
+  your head (your eyes go up with it), bring it round behind you and throw it forward over the top: **crack**, with a
+  flash, shock rings and a small jolt of your view. Then you pull it back and it winds up into its coil again, ready.
+  About 3 seconds; you can attack from halfway. Putting it away, handle and lash break into solid pieces.
 - **Left click (a lash):** one of **twelve**, a different one every click and never the same twice in a row: a
   forehand (flat from right to left), a backhand (left to right), an overhead crack (up over your shoulder, behind
   you, over the top and down before you: the hardest, and it slows), a sidearm throw (low from the right, rolling out
@@ -799,29 +811,31 @@ Green Lantern's ultimate: a big, slow gunship of hard light high over the battle
   and 8 by default), the time between two hands (half a second by default) and how hard they send creatures flying
   are settings.
 
-### Light Bubble (key K)
+### Light Cage (key K)
 
-The ring's prison, straight out of the comics: a bubble of hard light round your enemy.
+The ring's prison, straight out of the comics: a cage of hard light round your enemy.
 
-- **Press K** while you look at a creature (up to 24 blocks away): you reach out with your ring fist and a bubble
-  grows round it out of the ring's light, white-hot at first: a solid cage of glowing struts in triangles, like a
-  ball-shaped dome, a knot of light where they meet, so you still see the creature inside. The ring lifts it
-  **3 blocks** off the ground and holds it there by a beam of its light, turning slowly, a band of light sweeping
-  over it now and then.
-- **In the bubble it can do nothing** for **6 seconds**: it cannot move, and nothing it does hurts anyone. Then
-  the bubble bursts and lets it drop.
+- **Press K** while you look at a creature (up to 24 blocks away): you reach out with your ring fist and a cage
+  grows round it out of the ring's light, white-hot at first: a real prison cage, solid, with a round floor plate,
+  fourteen upright bars, two hoops round them and a domed roof with a ring on top, so you still see the creature
+  between the bars. The ring lifts it **3 blocks** off the ground and holds it by a beam of light to the ring on
+  its roof, a band of light sweeping over it now and then.
+- **Drag it:** once lifted the cage follows where you look, at the same distance, gliding after your aim; walls and
+  the ground stop it, so the creature is never pushed into a block.
+- **In the cage it can do nothing**: it cannot move, and nothing it does hurts anyone. The cage never lets go by
+  itself; it holds until you pound it, let it go, or the creature dies.
 - **Press K again** to **pound it into the ground**, three times, harder each time, your fist going up and down
-  with it: the ring yanks the bubble up and slams it straight down, swings it up over its own height and slams it
-  down on your left, and swings it over once more for the hardest slam of all on your right. The bubble is stretched
+  with it: the ring yanks the cage up and slams it straight down, swings it up over its own height and slams it
+  down on your left, and swings it over once more for the hardest slam of all on your right. The cage is stretched
   long as it is driven down and squashes flat against the ground at every slam, flaring up; the ground bursts up
   round it in pillars of dust and flying chunks, a shockwave of light with jagged cracks of light runs out over the
   ground, and the view of everyone close by shakes. The first two slams do **2 hearts** each to the creature in it,
   the last **6 hearts**; every shockwave throws what stands round it away and hurts it half as much (the last one
-  4.5 blocks, the others less far). The last slam breaks the bubble into solid pieces. All of it takes about a
+  4.5 blocks, the others less far). The last slam breaks the cage into solid bars. All of it takes about a
   second and a half.
 - **Crouch and press K** to let it go without harm.
-- Bosses (the Wither, the Ender Dragon, the Warden) and creatures too big for a bubble cannot be caught.
-- **Power:** 4. **Cooldown:** 12 seconds, counted from when the bubble is gone.
+- Bosses (the Wither, the Ender Dragon, the Warden) and creatures too big for a cage cannot be caught.
+- **Power:** 4. **Cooldown:** 12 seconds, counted from when the cage is gone.
 
 ---
 
@@ -1038,20 +1052,27 @@ Every cooldown and every damage number on this page can be changed in two ways.
 
 There are two kinds of settings:
 
-- **World settings:** how the powers play (every number on this page, and the stamina bar). Every world keeps
-  its own: change them in one world and the others keep theirs. On a server everyone plays by the server's world
+- **Server settings:** how the powers play (every number on this page, and the stamina bar). Every world keeps
+  its own: change them in one world and the others keep theirs. On a server everyone plays by the server's
   settings; your game gets them as you join, and again at once whenever they change on the server.
-- **Your settings:** what only you see and feel, in your own game, in every world and on every server:
+  - **Power rules** for every power at once: a **damage multiplier** (every damage number of every ability), a
+    **cooldown multiplier** (every cooldown), and whether **powers break blocks** at all.
+- **Client settings:** what only you see, hear and feel, in your own game, in every world and on every server:
   - **Camera shake:** how hard the powers shake and jolt your view (a slam, crash or blast nearby, a sword blow,
     the beam, the ring arriving): 1 as the mod makes it, 0 never, up to 2.
   - **Scraping shake:** how hard your view shakes while you fly with the ram cone low along the ground.
+  - **Menu theme:** the multiverse theme in the main menu, or the game's own menu music.
+  - **Look for updates:** how often the game looks for a new version (minutes, 0 = never), and **Update note in
+    game:** how long the note about a new version stays on screen while you play.
 
-**In the game:** Mods > Multiverse Powers > Config (or `/stamina` in the chat).
+**In the game:** Mods > Multiverse Powers > Config (or `/stamina` in the chat, which opens the stamina bar). You first
+pick **Client** or **Server**.
 
-- **Tabs** along the top: the stamina bar and every character (world settings), and *Your settings*. A dot after
-  a tab's name means it has changes that are not saved yet. The world settings can only be changed while a world
-  of your own is open (singleplayer, or a LAN world you host); on someone else's server you only see the server's,
-  and in the main menu there is no world to change.
+- **Server** can only be changed by the **host** of the world (singleplayer, or a LAN world you host) or an
+  **operator** on a server (permission level 2 or more); the server checks this again for every change. Anyone else
+  sees the numbers read only. In the main menu there is no world, so nothing to change.
+- **Tabs** along the top: *Power rules*, the stamina bar and every character for Server; one page for Client. A dot
+  after a tab's name means it has changes that are not saved yet.
 - **Every ability is a part you can fold open and shut:** click its title. The title says how many numbers are
   in it and which key or button it sits on. *Open all* and *Close all* fold the whole page at once.
 - **Search:** type in the box and the list shows every number of every tab whose name or explanation matches,
@@ -1072,6 +1093,7 @@ starts with. Your own settings are in `config/welcomescreen/client.toml`.
 
 | File | What is in it |
 |---|---|
+| `<world>/serverconfig/welcomescreen/general.toml` | The power rules: damage and cooldown multipliers, breaking blocks |
 | `<world>/serverconfig/welcomescreen/doc_ock.toml` | Everything Doctor Octopus does |
 | `<world>/serverconfig/welcomescreen/green_lantern.toml` | Everything Green Lantern does |
 | `<world>/serverconfig/welcomescreen/stamina.toml` | The stamina bar, the same for everyone in the world |

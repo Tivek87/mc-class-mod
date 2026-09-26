@@ -18,7 +18,9 @@ import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.util.Mth;
+import net.neoforged.neoforge.network.PacketDistributor;
 import nl.tivek.multiversepowers.MultiversePowers;
+import nl.tivek.multiversepowers.config.WorldSettingsEditPayload;
 import nl.tivek.multiversepowers.engine.client.gui.DirtBackgroundScreen;
 
 public class SettingsScreen extends DirtBackgroundScreen {
@@ -49,14 +51,12 @@ public class SettingsScreen extends DirtBackgroundScreen {
     private boolean keepScrollLater;
     private boolean retabLater;
 
-    public SettingsScreen(@Nullable Screen lastScreen) {
-        this(lastScreen, 0);
-    }
+    public enum Kind { CLIENT, SERVER }
 
-    public SettingsScreen(@Nullable Screen lastScreen, int tab) {
-        super(Component.translatable(PREFIX + "title"));
+    public SettingsScreen(@Nullable Screen lastScreen, Kind kind, int tab) {
+        super(Component.translatable(PREFIX + "title." + kind.name().toLowerCase(Locale.ROOT)));
         this.lastScreen = lastScreen;
-        this.pages = SettingsPages.all();
+        this.pages = kind == Kind.CLIENT ? SettingsPages.clientPages() : SettingsPages.serverPages();
         this.tab = Mth.clamp(tab, 0, this.pages.size() - 1);
         for (SettingsPages.Page page : this.pages) {
             for (SettingsPages.Section section : page.sections()) {
@@ -256,15 +256,27 @@ public class SettingsScreen extends DirtBackgroundScreen {
 
     private void apply() {
         Set<SettingsPages.Page> touched = new HashSet<>();
+        List<WorldSettingsEditPayload.Entry> sent = new ArrayList<>();
+        boolean remote = this.minecraft == null || !this.minecraft.hasSingleplayerServer();
         for (Map.Entry<ConfigNumber, Double> edit : this.edits.entrySet()) {
-            SettingsPages.Page page = this.pageOf.get(edit.getKey());
-            if (page != null && page.editable()) {
-                edit.getKey().store().accept(edit.getValue());
+            ConfigNumber number = edit.getKey();
+            SettingsPages.Page page = this.pageOf.get(number);
+            if (page == null || !page.editable()) {
+                continue;
+            }
+            number.store().accept(edit.getValue());
+            // The server owns its files: it saves them and sends everyone the new copy.
+            if (page.world() && remote) {
+                sent.add(new WorldSettingsEditPayload.Entry(number.file(), number.path(), edit.getValue()));
+            } else {
                 touched.add(page);
             }
         }
         for (SettingsPages.Page page : touched) {
             page.save().run();
+        }
+        if (!sent.isEmpty()) {
+            PacketDistributor.sendToServer(new WorldSettingsEditPayload(sent));
         }
         this.edits.clear();
         this.rebuildLater(true);

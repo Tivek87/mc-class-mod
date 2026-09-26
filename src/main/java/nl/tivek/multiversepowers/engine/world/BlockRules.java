@@ -6,6 +6,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.level.BlockEvent;
+import nl.tivek.multiversepowers.config.PowerRules;
 
 public final class BlockRules {
     private BlockRules() {
@@ -13,7 +14,7 @@ public final class BlockRules {
 
     // Mirrors vanilla's own break checks, so a power never breaks what its owner could not.
     public static boolean mayBreak(ServerLevel level, ServerPlayer player, BlockPos pos, BlockState state) {
-        if (!level.mayInteract(player, pos)
+        if (!PowerRules.breakBlocks() || !level.mayInteract(player, pos)
                 || player.blockActionRestricted(level, pos, player.gameMode.getGameModeForPlayer())) {
             return false;
         }

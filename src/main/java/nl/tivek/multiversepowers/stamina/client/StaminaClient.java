@@ -15,6 +15,7 @@ import net.neoforged.neoforge.client.event.MovementInputUpdateEvent;
 import net.neoforged.neoforge.client.event.RegisterClientCommandsEvent;
 import net.neoforged.neoforge.event.entity.living.LivingEvent;
 import nl.tivek.multiversepowers.MultiversePowers;
+import nl.tivek.multiversepowers.config.client.SettingsPages;
 import nl.tivek.multiversepowers.config.client.SettingsScreen;
 import nl.tivek.multiversepowers.stamina.StaminaConfig;
 
@@ -80,13 +81,15 @@ public final class StaminaClient {
                 Commands.literal("stamina")
                         .executes(ctx -> {
                             Minecraft mc = Minecraft.getInstance();
-                            mc.tell(() -> mc.setScreen(new SettingsScreen(null, 0)));
+                            mc.tell(() -> mc.setScreen(new SettingsScreen(null, SettingsScreen.Kind.SERVER,
+                                    SettingsPages.STAMINA_TAB)));
                             return 1;
                         })
                         .then(Commands.literal("config")
                                 .executes(ctx -> {
                                     Minecraft mc = Minecraft.getInstance();
-                                    mc.tell(() -> mc.setScreen(new SettingsScreen(null, 0)));
+                                    mc.tell(() -> mc.setScreen(new SettingsScreen(null, SettingsScreen.Kind.SERVER,
+                                            SettingsPages.STAMINA_TAB)));
                                     return 1;
                                 }))
         );

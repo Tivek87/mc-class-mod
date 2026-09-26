@@ -56,7 +56,7 @@ Voor **alle** linksklik- (aanval) en rechtsklik-acties (verdediging) geldt een a
 ### Left Click (Aanval)
 - **Click / Tap (Light Bolt):**
   - **Actie:** Schiet een compacte bolt af: een rond kogeltje van hard licht met een punt, met een lichtstreep erachter.
-  - **Arm:** bij het schieten komt je ringarm recht omhoog en wijst waar je richt, zodat elke bolt echt uit de ring op je gestrekte hand komt; bij elk schot slaat hij een klein beetje terug, hij blijft omhoog zolang je blijft schieten (of de knop vasthoudt voor de laser) en zakt een moment na het laatste schot weer. Anderen zien het ook; in first person doet je eigen hand hetzelfde.
+  - **Arm:** bij het schieten komt je ringarm kaarsrecht naar voren, langs je kijkrichting, zodat elke bolt echt uit de ring op je gestrekte hand komt; bij elk schot slaat hij een klein beetje terug, hij blijft omhoog zolang je blijft schieten (of de knop vasthoudt voor de laser) en zakt een moment na het laatste schot weer. Anderen zien het ook; in first person doet je eigen hand hetzelfde.
   - **Schade:** 3 harten per schot.
   - **Kosten:** 0,16 power per schot.
   - **Cooldown:** 0,3 sec tussen losse schoten.
@@ -67,9 +67,10 @@ Voor **alle** linksklik- (aanval) en rechtsklik-acties (verdediging) geldt een a
   - **Werking:** Blijft ononderbroken vuren zolang je linksklik inhoudt na de drempel van 2 seconden.
   - **Schade:** 2,5 harten per 0,25 sec (10 harten per seconde) aan alles in het pad van de laser: dwars door een hele rij wezens, tot de eerste muur, max 40 blokken.
   - **Kosten:** 0,8 power per seconde.
-  - **Stopt:** Zodra je linksklik loslaat, de ring leeg is of je een Giant Fist begint.
+  - **Groeit hoe langer je vasthoudt** (vanaf de klik): 2 sec activatie, 5 sec breder en sterker, 10 sec razend, 20 sec volle kracht. Schade x1 / x1,44 / x2,08 / x3, kosten 0,8 / 1,6 / 3,2 / 6,4 per sec, loopsnelheid 85% / 67% / 48% / 30%. Elke fase flitst, brult harder en krijgt meer bliksem.
+  - **Stopt:** Zodra je linksklik loslaat, de ring leeg is of je een Giant Fist begint; je loopsnelheid komt meteen terug.
 
-### Right Click (Verdediging)
+### Right Click (Verdediging; rechtsklik is vrij, voor wapens soms een tweede aanval)
 - **Click / Tap (Light Shield, aan/uit):**
   - **Actie:** Een tik zet een klein rond schild van hard licht voor je in je kijkrichting, vastgehouden door je linkerhand. Het blijft staan tot je nog een keer tikt. Anderen zien het solid; alleen in je eigen first-person-beeld kijk je erdoorheen (je ziet dan de omtrek en een zachte gloed).
   - **Uiterlijk:** licht bol, met een ronde verhoogde rand, een groef in de voorkant, klinknagels die langzaam ronddraaien, het lantaarn-embleem in het midden en een handgreep achterop. Een inslag stuurt een rimpel van licht over de voorkant, en af en toe glijdt er een glans overheen.

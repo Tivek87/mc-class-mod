@@ -22,6 +22,7 @@ import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.character.greenlantern.ConstructPayload;
 import nl.tivek.multiversepowers.character.greenlantern.HandPose;
 import nl.tivek.multiversepowers.character.greenlantern.ability.AirStrike;
+import nl.tivek.multiversepowers.character.greenlantern.ability.LightBeam;
 import nl.tivek.multiversepowers.character.greenlantern.ability.LightBubble;
 import nl.tivek.multiversepowers.character.greenlantern.ability.WhipSnare;
 import nl.tivek.multiversepowers.character.greenlantern.client.Flown.Spot;
@@ -360,8 +361,10 @@ public final class ClientConstructs extends TrackedConstructs {
                         partialTick), track.clock(partialTick), ring);
                 case ConstructPayload.BEAM -> {
                     if (ring != null && owner != null) {
+                        int stage = Mth.clamp(now.variant(), 0, LightBeam.STAGE_THICK.length - 1);
                         painter.beamOfLight(ring, beamEnd(level, owner, way, now, partialTick), solid,
-                                track.clock(partialTick), 1.0);
+                                track.clock(partialTick), LightBeam.STAGE_THICK[stage],
+                                (double) stage / (LightBeam.STAGE_THICK.length - 1));
                     }
                 }
                 case ConstructPayload.PLANE -> PlanePainter.draw(painter, now.id(), track.latest,

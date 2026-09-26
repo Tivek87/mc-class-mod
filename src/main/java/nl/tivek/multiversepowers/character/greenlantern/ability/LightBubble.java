@@ -1,6 +1,7 @@
 package nl.tivek.multiversepowers.character.greenlantern.ability;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import javax.annotation.Nullable;
@@ -65,6 +66,10 @@ public final class LightBubble implements Effect {
     private static final double STRONGEST = 150.0;
     private static final double ROOM = 0.45;
     private static final double BOB = 0.12;
+    private static final double DRAG_EASE = 0.3;
+    private static final double DRAG_FASTEST = 0.9;
+    private static final double DRAG_NEAREST = 2.5;
+    private static final double DRAG_ROOM = 0.15;
     private static final double VIEW_RANGE = 128.0;
 
     private static final Map<UUID, LightBubble> ACTIVE = new HashMap<>();
@@ -81,8 +86,9 @@ public final class LightBubble implements Effect {
     private final LivingEntity target;
     private final Vec3 base;
     private final double radius;
-    private final int holdTicks;
     private final Vec3 facing;
+    private double reach = -1.0;
+    private Vec3 offset = Vec3.ZERO;
     private int age;
     private int phase = HOLDING;
     private int since;
@@ -97,7 +103,6 @@ public final class LightBubble implements Effect {
         this.target = target;
         this.base = target.position();
         this.radius = Math.max(target.getBbWidth(), target.getBbHeight()) * 0.5 + ROOM;
-        this.holdTicks = Math.max(20, (int) Math.round(ability.value("holdSeconds") * 20.0));
         this.facing = owner.getLookAngle();
         this.center = target.getBoundingBox().getCenter();
         this.from = this.center;
@@ -108,7 +113,7 @@ public final class LightBubble implements Effect {
         boolean crouching = (data & Characters.SNEAKING) != 0;
         if (held != null) {
             if (crouching) {
-                held.burst(level, false);
+                held.burst(level);
             } else if (held.phase == HOLDING && held.age >= FORM_TICKS) {
                 held.smash(level);
             }
@@ -218,8 +223,8 @@ public final class LightBubble implements Effect {
             return true;
         }
         if (!PowerRing.fuels(this.owner, level) || !this.target.isAlive() || this.target.level() != level
-                || this.target.isRemoved()) {
-            this.burst(level, false);
+                || this.target.isRemoved() || this.owner.level() != level) {
+            this.burst(level);
             this.send(level);
             return true;
         }
@@ -233,19 +238,39 @@ public final class LightBubble implements Effect {
                 }
             }
         } else {
-            double lift = this.ability.value("liftBlocks") * Ease.smooth((double) this.age / LIFT_TICKS);
-            double bob = BOB * Math.sin(this.age * 0.15) * Ease.smooth((this.age - LIFT_TICKS) / 10.0);
-            this.center = this.base.add(0.0, this.target.getBbHeight() * 0.5 + lift + bob, 0.0);
+            if (this.age <= LIFT_TICKS) {
+                double lift = this.ability.value("liftBlocks") * Ease.smooth((double) this.age / LIFT_TICKS);
+                this.center = this.base.add(0.0, this.target.getBbHeight() * 0.5 + lift, 0.0);
+            } else {
+                this.drag(level);
+            }
             this.hold();
             if (this.age % 20 == 0) {
                 ParticleFx.sphere(level, ParticleFx.dust(PowerRing.BRIGHT, 0.9F), this.center, this.radius, 6, 0.0);
             }
-            if (this.age >= this.holdTicks) {
-                this.burst(level, true);
-            }
         }
         this.send(level);
         return true;
+    }
+
+    // The cage follows where its owner looks, kept where it hung against the aim once lifted, and stops at walls.
+    private void drag(ServerLevel level) {
+        Vec3 eye = this.owner.getEyePosition();
+        if (this.reach < 0.0) {
+            this.reach = Mth.clamp(eye.distanceTo(this.center), DRAG_NEAREST, this.ability.value("rangeBlocks"));
+            this.offset = this.center.subtract(eye.add(this.owner.getLookAngle().scale(this.reach)));
+        }
+        double bob = BOB * Math.sin(this.age * 0.15) * Ease.smooth((this.age - LIFT_TICKS) / 10.0);
+        Vec3 want = eye.add(this.owner.getLookAngle().scale(this.reach)).add(this.offset).add(0.0, bob, 0.0);
+        Vec3 step = want.subtract(this.center).scale(DRAG_EASE);
+        if (step.length() > DRAG_FASTEST) {
+            step = step.normalize().scale(DRAG_FASTEST);
+        }
+        double bottom = this.center.y - this.target.getBbHeight() * 0.5;
+        AABB body = this.target.getDimensions(this.target.getPose()).makeBoundingBox(this.center.x, bottom,
+                this.center.z).inflate(DRAG_ROOM);
+        Vec3 free = Entity.collideBoundingBox(null, step, body, level, List.of());
+        this.center = this.center.add(free);
     }
 
     private void hold() {
@@ -412,12 +437,12 @@ public final class LightBubble implements Effect {
         }
     }
 
-    private void burst(ServerLevel level, boolean timeUp) {
+    private void burst(ServerLevel level) {
         if (this.phase == BREAKING) {
             return;
         }
         ParticleFx.sphereOut(level, ParticleFx.dust(PowerRing.BRIGHT, 1.3F), this.center, 22, 0.25);
-        this.sound(level, SoundEvents.AMETHYST_CLUSTER_BREAK, 1.1F, timeUp ? 1.0F : 1.3F);
+        this.sound(level, SoundEvents.AMETHYST_CLUSTER_BREAK, 1.1F, 1.3F);
         this.sound(level, SoundEvents.BUBBLE_COLUMN_BUBBLE_POP, 1.4F, 0.8F);
         this.end(level);
     }

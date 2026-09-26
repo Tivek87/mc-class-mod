@@ -15,6 +15,9 @@ import javax.annotation.Nullable;
 final class Relaunch {
     // These pipe options in rather than a command line; a rebuilt one would hang.
     private static final List<String> PIPED_LAUNCHERS = List.of("org.prismlauncher.", "org.multimc.");
+    // The Modrinth App's wrapper waits for a call from the app, which is gone by then: start its main class directly.
+    private static final String MODRINTH_WRAPPER = "com.modrinth.theseus.MinecraftLaunch";
+    private static final String MODRINTH_IPC = "-Dmodrinth.internal.";
     private static final Pattern MODULE_PROPERTY = Pattern.compile(
             "-Djdk\\.module\\.(path|upgrade\\.path|limitmods|addmods|addopens|addexports|addreads|patch|enable\\.native\\.access)(\\.\\d+)?=(.*)",
             Pattern.DOTALL);
@@ -37,6 +40,12 @@ final class Relaunch {
             return null;
         }
         List<String> program = splitProgram(command.strip());
+        if (program.get(0).equals(MODRINTH_WRAPPER)) {
+            if (program.size() < 2) {
+                return null;
+            }
+            program.remove(0);
+        }
         String mainClass = program.get(0);
         if (mainClass.endsWith(".jar") || PIPED_LAUNCHERS.stream().anyMatch(mainClass::startsWith)) {
             return null;
@@ -44,7 +53,7 @@ final class Relaunch {
         List<String> arguments = new ArrayList<>();
         for (String option : ManagementFactory.getRuntimeMXBean().getInputArguments()) {
             if (option.startsWith("-Djava.class.path=") || option.startsWith("-Dsun.java.command=")
-                    || option.startsWith("-Dsun.java.launcher")) {
+                    || option.startsWith("-Dsun.java.launcher") || option.startsWith(MODRINTH_IPC)) {
                 continue;
             }
             if (option.startsWith("-Djdk.module.")) {

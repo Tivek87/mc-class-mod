@@ -14,6 +14,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.SelectMusicEvent;
 import nl.tivek.multiversepowers.MultiversePowers;
+import nl.tivek.multiversepowers.config.client.ClientSettings;
 
 @EventBusSubscriber(modid = MultiversePowers.MODID, value = Dist.CLIENT)
 public final class ThemeMusic {
@@ -26,7 +27,7 @@ public final class ThemeMusic {
 
     @SubscribeEvent(priority = EventPriority.LOWEST, receiveCanceled = true)
     public static void onSelectMusic(SelectMusicEvent event) {
-        if (event.getMusic() != null && event.getOriginalMusic() == Musics.MENU) {
+        if (event.getMusic() != null && event.getOriginalMusic() == Musics.MENU && ClientSettings.themeMusic()) {
             event.setMusic(audible() ? THEME : null);
         }
     }

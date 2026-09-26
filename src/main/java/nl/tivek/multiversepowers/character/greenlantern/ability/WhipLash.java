@@ -17,7 +17,8 @@ public final class WhipLash {
     public static final int LEVEL = 4;
     public static final int WAVE = 5;
     public static final int COIL = 6;
-    public static final int SIZE = 7;
+    public static final int CURL = 7;
+    public static final int SIZE = 8;
     // Ticks a flick takes to run from the handle to the tip of the whole whip.
     public static final double TRAVEL = 2.0;
     private static final double GRIP_BLOCKS = 0.42;
@@ -25,6 +26,8 @@ public final class WhipLash {
     private static final double WAVE_BLOCKS = 1.5;
     private static final double WAVE_SPEED = 0.85;
     private static final double COIL_RADIUS = 0.5;
+    private static final double CURL_RADIUS = 0.18;
+    private static final double CURL_SPREAD = 0.07 / (Math.PI * 2.0 * CURL_RADIUS);
     private static final Vec3 DOWN = new Vec3(0.0, -1.0, 0.0);
 
     @FunctionalInterface
@@ -77,6 +80,7 @@ public final class WhipLash {
         double step = total / segments;
         Vec3 heading = null;
         Vec3 hang = lie == null ? DOWN : lie.hang();
+        double curled = 0.0;
         for (int i = 0; i < segments; i++) {
             double s = (i + 0.5) * step;
             float[] aim = aims.at(t - TRAVEL * s / length);
@@ -97,7 +101,18 @@ public final class WhipLash {
                         * Math.min(1.0, s / GRIP_BLOCKS);
                 way = Vectors.spin(way, axis.normalize(), angle);
             }
-            Vec3 next = points[i].add(way.scale(step));
+            // Curled, the lash winds round the look's right in loops beside each other, like a coiled whip; less
+            // curl widens the loops until the lash runs straight.
+            double curl = Mth.clamp(aim[CURL], 0.0F, 1.0F) * smooth((s - 0.5 * GRIP_BLOCKS) / GRIP_BLOCKS);
+            Vec3 spread = Vec3.ZERO;
+            if (curl > 1.0E-4) {
+                curled += curl * step / CURL_RADIUS;
+                way = Vectors.spin(way, look.right(), curled);
+                spread = look.right().scale(curl * CURL_SPREAD * step);
+            } else if (curled != 0.0) {
+                way = Vectors.spin(way, look.right(), curled);
+            }
+            Vec3 next = points[i].add(way.scale(step)).add(spread);
             if (lie != null && next.y < lie.ground()) {
                 heading = lying(heading, way, lie, aim[COIL] * step / COIL_RADIUS, i);
                 next = new Vec3(points[i].x + heading.x * step, lie.ground(), points[i].z + heading.z * step);

@@ -21,6 +21,7 @@ import net.neoforged.fml.ModList;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import nl.tivek.multiversepowers.MultiversePowers;
+import nl.tivek.multiversepowers.config.client.ClientSettings;
 import org.slf4j.Logger;
 
 @EventBusSubscriber(modid = MultiversePowers.MODID, value = Dist.CLIENT)
@@ -32,7 +33,6 @@ public final class UpdateChecker {
     private static final URI RELEASES = URI.create("https://api.github.com/repos/" + REPO + "/releases?per_page=30");
     private static final String TAG_PATH = "/releases/tag/";
     private static final long FIRST_CHECK_MS = 5_000L;
-    private static final long INTERVAL_MS = 5 * 60_000L;
     private static final HttpClient HTTP = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(10))
             .followRedirects(HttpClient.Redirect.NEVER)
@@ -147,9 +147,10 @@ public final class UpdateChecker {
             UpdateInstaller.cleanUp();
             nextCheck = now + FIRST_CHECK_MS;
         }
-        if (!checking && now >= nextCheck) {
+        long interval = ClientSettings.updateCheckMs();
+        if (!checking && interval > 0L && now >= nextCheck) {
             checking = true;
-            nextCheck = now + INTERVAL_MS;
+            nextCheck = now + interval;
             WORKER.execute(UpdateChecker::check);
         }
     }

@@ -17,7 +17,6 @@ final class WhipPoses extends WhipKeys {
     private static final Vec3 BODY_GUARD = new Vec3(0.3, -0.56, 0.26);
     private static final Vec3 BODY_SHIFT = BODY_GUARD.subtract(GUARD.grip().multiply(BODY_SCALE));
     private static final Vec3 EYES = new Vec3(0.0, 0.41, 0.12);
-    private static final Vec3 COIL = new Vec3(0.38, -1.5, -1.5);
     private static final Map<WhipMove, Float> ENDS = new EnumMap<>(WhipMove.class);
 
     static {
@@ -121,8 +120,8 @@ final class WhipPoses extends WhipKeys {
         return FlameBody.legs(pose.squat(), pose.step(), pose.kneel(), pose.wide(), pose.hop(), ours);
     }
 
-    // Where the eyes go while the whip is made: to the fist as the handle grows, down to the coils as the lash
-    // pours out, up to the twirl overhead.
+    // Where the eyes go while the whip is made: to the fist as the handle grows, to the coil winding out below it,
+    // up to the twirl overhead.
     static float[] look(float t, Pose pose) {
         float[] look = new float[2];
         double forming = window(t, 1.0F, 3.0F, WhipMove.FORMED, 4.0F);
@@ -131,7 +130,7 @@ final class WhipPoses extends WhipKeys {
         }
         double pouring = window(t, WhipMove.FORMED + 1.0F, 4.0F, WhipMove.POURED + 1.0F, 4.0F);
         if (pouring > 0.0) {
-            glance(look, COIL, pouring, 0.5, 0.3, 24.0);
+            glance(look, pose.grip().add(pose.handle().scale(0.45)), pouring, 0.5, 0.3, 24.0);
         }
         double up = window(t, WhipMove.TWIRL - 5.0F, 5.0F, WhipMove.THROW - 1.0F, 3.0F);
         if (up > 0.0) {
@@ -149,7 +148,7 @@ final class WhipPoses extends WhipKeys {
         }
         double pouring = window(t, WhipMove.FORMED + 1.0F, 4.0F, WhipMove.POURED + 1.0F, 4.0F);
         if (pouring > 0.0) {
-            weight += watch(head, new Vec3(0.35, -1.55, 1.1), pouring * 0.85);
+            weight += watch(head, fist(pose).add(0.0, -0.35, 0.0), pouring * 0.85);
         }
         double up = window(t, WhipMove.TWIRL - 5.0F, 5.0F, WhipMove.THROW - 1.0F, 3.0F);
         if (up > 0.0) {

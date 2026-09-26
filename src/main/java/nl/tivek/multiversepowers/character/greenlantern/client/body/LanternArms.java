@@ -207,10 +207,10 @@ public final class LanternArms {
         MultiBufferSource buffers = event.getMultiBufferSource();
         PlayerRenderer renderer = (PlayerRenderer) minecraft.getEntityRenderDispatcher().getRenderer(player);
         Vector3f hand = handPoint(player, event.getPartialTick());
-        RechargeAnimation.arm(pose, buffers, event.getPackedLight(), player, renderer, 1.0F, hand,
-                RechargeAnimation.SHOULDER_RIGHT);
+        Vector3f from = shoulderFor(player, hand, event.getPartialTick());
+        RechargeAnimation.arm(pose, buffers, event.getPackedLight(), player, renderer, 1.0F, hand, from);
         if (brace > 0.01F) {
-            Vector3f wrist = new Vector3f(RechargeAnimation.SHOULDER_RIGHT).sub(hand).normalize().mul(WRIST_BACK)
+            Vector3f wrist = new Vector3f(from).sub(hand).normalize().mul(WRIST_BACK)
                     .add(hand).add(UNDER_WRIST);
             Vector3f grip = new Vector3f(BRACE_REST).lerp(wrist, (float) Ease.smooth(brace));
             RechargeAnimation.arm(pose, buffers, event.getPackedLight(), player, renderer, -1.0F, grip, BRACE_FROM);
@@ -232,6 +232,16 @@ public final class LanternArms {
         brace = Mth.lerp(step, brace, BeamArm.brace(player, partialTick));
         float charge = Math.max(0.0F, BeamArm.gathering(player, partialTick)) * CHARGE_REACH;
         return Math.max(Math.max(construct, beam), Math.max(charge, point));
+    }
+
+    // Bolt and beam: the arm lies exactly along the view, dead straight ahead, wherever the hand is.
+    private static Vector3f shoulderFor(LocalPlayer player, Vector3f hand, float partialTick) {
+        ClientConstructs.Held held = ClientConstructs.heldBy(player.getId(), false);
+        float construct = held == null ? 0.0F : Mth.clamp(held.strength(), 0.0F, 1.0F);
+        float aim = Math.max(Math.max(point, beam), Math.max(0.0F, BeamArm.gathering(player, partialTick)));
+        float straight = Mth.clamp(aim, 0.0F, 1.0F) * (1.0F - construct);
+        Vector3f behind = new Vector3f(hand).add(0.0F, 0.0F, 1.0F);
+        return new Vector3f(RechargeAnimation.SHOULDER_RIGHT).lerp(behind, straight);
     }
 
     public static Vector3f handPoint(LocalPlayer player, float partialTick) {

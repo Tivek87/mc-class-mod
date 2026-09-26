@@ -220,7 +220,14 @@ public enum GameCharacter {
                     .was(5.0, 2.0)
                     .setting("beamRangeBlocks", 40.0, 4.0, 128.0, Unit.BLOCKS, "How far the beam reaches, in blocks")
                     .setting("beamKnockback", 0.25, 0.0, 3.0, Unit.STRENGTH,
-                            "How hard every hit of the beam drives what it hits back (0 = not at all)");
+                            "How hard every hit of the beam drives what it hits back (0 = not at all)")
+                    .setting("beamTopDamage", 3.0, 1.0, 20.0, Unit.STRENGTH,
+                            "Held longer, the beam grows in stages (5, 10 and 20 seconds): at the last its damage is"
+                                    + " this many times the first; the stages between climb to it")
+                    .setting("beamTopCost", 8.0, 1.0, 50.0, Unit.STRENGTH,
+                            "At the beam's last stage its ring power cost is this many times the first")
+                    .setting("beamTopWalk", 0.3, 0.0, 1.0, Unit.PART_KEPT,
+                            "Part of your walking speed left at the beam's last stage; the first stage keeps 85%");
             this.add(abilities, AbilitySlot.ABILITY_5, "light_shield").held().mouse(CharacterAbility.Mouse.RIGHT)
                     .holdVersion(40, CharacterAbility.Tap.RELEASE)
                     .group("shield", "Light Shield (tap the button)")
@@ -393,10 +400,9 @@ public enum GameCharacter {
                     .crouch(CharacterAbility.Crouch.UNDO)
                     .setting("rangeBlocks", 24.0, 4.0, 64.0, Unit.BLOCKS,
                             "How far away a creature can be caught in a bubble, in blocks")
-                    .setting("holdSeconds", 6.0, 1.0, 30.0, Unit.SECONDS,
-                            "How long a bubble holds its creature before it bursts by itself, in seconds")
                     .setting("liftBlocks", 3.0, 0.0, 10.0, Unit.BLOCKS,
-                            "How high a bubble lifts its creature off the ground, in blocks")
+                            "How high the cage first lifts its creature off the ground, in blocks; after that it"
+                                    + " follows where you look until you smash it or let it go")
                     .setting("slamRadius", 4.5, 0.0, 10.0, Unit.BLOCKS,
                             "How far the shockwave of the last slam of a pound reaches, in blocks (the slams before it"
                                     + " reach less far): what else stands in it is thrown away and takes half the"

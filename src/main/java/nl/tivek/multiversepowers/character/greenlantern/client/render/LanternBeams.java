@@ -82,6 +82,11 @@ abstract class LanternBeams extends ConstructPainter {
     }
 
     public void beamOfLight(Vec3 from, Vec3 target, double solid, double age, double thick) {
+        this.beamOfLight(from, target, solid, age, thick, 0.0);
+    }
+
+    // fury 0..1: how wild the beam runs; the held Light Beam climbs to 1 at its last stage.
+    public void beamOfLight(Vec3 from, Vec3 target, double solid, double age, double thick, double fury) {
         double strength = Mth.clamp(solid, 0.0, 1.0);
         double full = from.distanceTo(target);
         if (strength <= 0.0 || full < 0.05) {
@@ -92,10 +97,13 @@ abstract class LanternBeams extends ConstructPainter {
         double out = Mth.clamp(age / BEAM_SHOOT, 0.0, 1.0);
         Vec3 to = from.lerp(target, 1.0 - (1.0 - out) * (1.0 - out));
         double length = from.distanceTo(to);
-        double flicker = 0.9 + 0.1 * Math.sin(this.time() * 2.7) * Math.sin(this.time() * 1.3 + 1.0);
+        double flicker = 0.9 - 0.1 * fury + (0.1 + 0.25 * fury) * Math.sin(this.time() * (2.7 + 3.0 * fury))
+                * Math.sin(this.time() * 1.3 + 1.0);
         int steps = Mth.clamp((int) (length / 0.5), 10, 90);
         Vec3 last = from;
         Vec3[] strands = { from, from, from };
+        Vec3 jag = from;
+        int crackle = (int) (this.time() * (1.0 + fury));
         for (int i = 1; i <= steps && length > 0.02; i++) {
             double t = Math.pow((double) i / steps, 1.3);
             Vec3 next = from.lerp(to, t);
@@ -112,6 +120,18 @@ abstract class LanternBeams extends ConstructPainter {
                 if (away > 2.5) {
                     this.glowLine(last, next, 1.7 * near * breath, GREEN, Colors.alpha(0.14 * strength));
                 }
+                if (fury > 0.0) {
+                    this.glowLine(last, next, 2.6 * near * breath, GREEN, Colors.alpha(0.12 * fury * strength));
+                }
+            }
+            if (fury > 0.0) {
+                double swing = 0.35 * near * fury;
+                Vec3 wild = next.add(across[0].scale((Noise.of(crackle, i, 41) - 0.5) * 2.0 * swing))
+                        .add(across[1].scale((Noise.of(crackle, i, 42) - 0.5) * 2.0 * swing));
+                if (i > 1 && away >= BEAM_NEAR) {
+                    this.lightLine(jag, wild, 0.03 * near, HOT, Colors.alpha(fury * strength));
+                }
+                jag = wild;
             }
             for (int k = 0; k < 3; k++) {
                 double turn = along * 2.4 + this.time() * 0.8 + k * Math.PI * 2.0 / 3.0;
@@ -138,16 +158,17 @@ abstract class LanternBeams extends ConstructPainter {
                     Colors.alpha(0.75 * strength), Colors.alpha(0.35 * strength));
         }
         int flick = (int) (this.time() / 2.0);
-        for (int k = 0; k < 5; k++) {
+        double arc = thick * (1.0 + 1.5 * fury);
+        for (int k = 0; k < 5 + (int) Math.round(25.0 * fury); k++) {
             Vec3 base = from.add(axis.scale(Noise.of(flick, k, 21) * length));
             if (this.camera().distanceTo(base) < 1.4) {
                 continue;
             }
             double angle = Noise.of(flick, k, 22) * Math.PI * 2.0;
             Vec3 side = across[0].scale(Math.cos(angle)).add(across[1].scale(Math.sin(angle)));
-            Vec3 middle = base.add(side.scale(0.25 * thick)).add(axis.scale(0.15 * thick));
-            Vec3 tip = base.add(side.scale((0.45 + 0.3 * Noise.of(flick, k, 23)) * thick))
-                    .subtract(axis.scale(0.1 * thick));
+            Vec3 middle = base.add(side.scale(0.25 * arc)).add(axis.scale(0.15 * arc));
+            Vec3 tip = base.add(side.scale((0.45 + 0.3 * Noise.of(flick, k, 23)) * arc))
+                    .subtract(axis.scale(0.1 * arc));
             this.edge(base, middle, 0.03 * thick, 0.9 * strength);
             this.edge(middle, tip, 0.025 * thick, 0.7 * strength);
         }

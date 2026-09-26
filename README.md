@@ -13,7 +13,7 @@ across the multiverse you can turn into.
 - **Spells:** fifteen schools of magic, cast from the wheel (hold **G**). See [Spells](docs/SPELLS.md).
 - **Characters:** turn into a character from the wheel and use its powers on eleven ability keys.
   - **Green Lantern:** a power ring that shapes solid green hard light: a giant fist, flight, a construct wheel,
-    shockwaves, giant hands, a light bubble and an air strike.
+    shockwaves, giant hands, a light cage and an air strike.
   - **Doctor Octopus:** four robot tentacles that walk, climb, grab, throw, strike the ground and open portals.
 - **Music:** the multiverse theme plays on a loop in the main menu, in place of Minecraft's menu music; the music slider
   sets its volume.
@@ -51,8 +51,10 @@ key does right now and its cooldown.
 ## Settings
 
 Every character's numbers (damage, cooldowns, costs) can be changed in the game: *Mods > Multiverse Powers >
-Config*. They are world settings: each world keeps its own in `<world>/serverconfig/welcomescreen/`, and a server
-sends its own to everyone who plays on it. What only you see (screen shake) is in `config/welcomescreen/client.toml`.
+Config*, where you first pick *Client* or *Server*. Server settings belong to a world: each world keeps its own in
+`<world>/serverconfig/welcomescreen/`, a server sends its own to everyone who plays on it, and only the host or an
+operator may change them. What only you see and hear (screen shake, menu music, update checks) is in
+`config/welcomescreen/client.toml`.
 
 ## Versions
 

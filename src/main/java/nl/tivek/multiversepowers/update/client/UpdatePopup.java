@@ -24,6 +24,7 @@ import net.neoforged.neoforge.client.event.ScreenEvent;
 import net.neoforged.neoforge.client.settings.KeyConflictContext;
 import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.character.client.AbilityKeys;
+import nl.tivek.multiversepowers.config.client.ClientSettings;
 import nl.tivek.multiversepowers.engine.client.gui.GuiShapes;
 import org.lwjgl.glfw.GLFW;
 
@@ -33,14 +34,15 @@ public final class UpdatePopup {
             KeyConflictContext.IN_GAME, InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_U, AbilityKeys.CATEGORY);
 
     static final int ACCENT = 0x6EE7A0;
-    private static final int HEIGHT = 27;
-    private static final int MARGIN = 6;
-    private static final int PADDING = 8;
+    private static final int HEIGHT = 46;
+    private static final int MARGIN = 8;
+    private static final int PADDING = 12;
+    private static final int MIN_WIDTH = 200;
+    private static final int STRIPE = 3;
     private static final int FILL = 0xEE12161C;
     private static final int FILL_HOVER = 0xEE1C2430;
     private static final int MUTED = 0xA8B0BC;
     private static final long SLIDE_MS = 350L;
-    private static final long IN_GAME_MS = 15_000L;
     private static final long FADE_MS = 600L;
     private static final int SECOND_NOTE_TICKS = 3;
 
@@ -92,10 +94,11 @@ public final class UpdatePopup {
     public static void onRenderGui(RenderGuiEvent.Post event) {
         Minecraft minecraft = Minecraft.getInstance();
         long age = System.currentTimeMillis() - shownAt;
-        if (!active() || minecraft.screen != null || minecraft.options.hideGui || age > IN_GAME_MS) {
+        long shownFor = ClientSettings.updatePopupMs();
+        if (!active() || minecraft.screen != null || minecraft.options.hideGui || age > shownFor) {
             return;
         }
-        float fade = Mth.clamp((IN_GAME_MS - age) / (float) FADE_MS, 0.0F, 1.0F);
+        float fade = Mth.clamp((shownFor - age) / (float) FADE_MS, 0.0F, 1.0F);
         Component hint = Component.translatable("screen." + MultiversePowers.MODID + ".update.popup.key",
                 OPEN_KEY.getTranslatedKeyMessage().copy().withStyle(ChatFormatting.WHITE));
         draw(event.getGuiGraphics(), minecraft.font, event.getGuiGraphics().guiWidth(), age, fade, false, hint);
@@ -142,19 +145,24 @@ public final class UpdatePopup {
     private static void draw(GuiGraphics graphics, Font font, int screenWidth, long age, float alpha, boolean hover,
             Component hint) {
         Component title = UpdateManagerScreen.text("popup.title");
-        Component line = Component.empty()
-                .append(Component.literal("v" + shown.version()).withColor(ACCENT))
-                .append(Component.literal("  ·  ").withColor(MUTED))
-                .append(hint.copy().withColor(MUTED));
-        width = Math.max(font.width(title), font.width(line)) + 2 * PADDING;
+        Component versions = Component.empty()
+                .append(Component.literal("v" + UpdateChecker.installed()).withColor(MUTED))
+                .append(Component.literal("  →  ").withColor(MUTED))
+                .append(Component.literal("v" + shown.version()).withColor(ACCENT));
+        Component line = hint.copy().withColor(MUTED);
+        width = Math.max(MIN_WIDTH, Math.max(font.width(title), Math.max(font.width(versions), font.width(line)))
+                + 2 * PADDING);
         float slide = 1.0F - Mth.clamp(age / (float) SLIDE_MS, 0.0F, 1.0F);
         float x = screenWidth - width - MARGIN + slide * slide * (width + MARGIN);
         int fill = hover ? FILL_HOVER : FILL;
-        GuiShapes.roundRect(graphics, x, MARGIN, width, HEIGHT, 4.0F, GuiShapes.fade(fill, alpha * (fill >>> 24) / 255.0F));
+        GuiShapes.roundRect(graphics, x, MARGIN, width, HEIGHT, 5.0F, GuiShapes.fade(fill, alpha * (fill >>> 24) / 255.0F));
+        GuiShapes.roundRect(graphics, x + 4, MARGIN + 6, STRIPE, HEIGHT - 12, 1.5F,
+                GuiShapes.fade(0xFF000000 | ACCENT, alpha));
         GuiShapes.flush(graphics);
 
         int textAlpha = Mth.clamp((int) (alpha * 255.0F), 4, 255) << 24;
-        graphics.drawString(font, title, (int) x + PADDING, MARGIN + 5, textAlpha | 0xFFFFFF, false);
-        graphics.drawString(font, line, (int) x + PADDING, MARGIN + 15, textAlpha | MUTED, false);
+        graphics.drawString(font, title, (int) x + PADDING, MARGIN + 7, textAlpha | 0xFFFFFF, false);
+        graphics.drawString(font, versions, (int) x + PADDING, MARGIN + 19, textAlpha | MUTED, false);
+        graphics.drawString(font, line, (int) x + PADDING, MARGIN + 31, textAlpha | MUTED, false);
     }
 }

@@ -39,6 +39,8 @@ import nl.tivek.multiversepowers.classes.PlayerClass;
 import nl.tivek.multiversepowers.classes.SelectClassPayload;
 import nl.tivek.multiversepowers.classes.TestEffectPayload;
 import nl.tivek.multiversepowers.classes.ceremony.Ceremonies;
+import nl.tivek.multiversepowers.config.WorldSettings;
+import nl.tivek.multiversepowers.config.WorldSettingsEditPayload;
 import nl.tivek.multiversepowers.config.WorldSettingsPayload;
 import nl.tivek.multiversepowers.engine.fx.ParticlesPayload;
 import nl.tivek.multiversepowers.faction.StandingsPayload;
@@ -52,7 +54,7 @@ import nl.tivek.multiversepowers.spell.VoidStatePayload;
 import nl.tivek.multiversepowers.stamina.StaminaCostPayload;
 
 public final class ModNetwork {
-    private static final String VERSION = "17";
+    private static final String VERSION = "18";
 
     private ModNetwork() {
     }
@@ -89,6 +91,8 @@ public final class ModNetwork {
                 ModNetwork::onConstructHold);
         registrar.playToClient(WorldSettingsPayload.TYPE, WorldSettingsPayload.STREAM_CODEC,
                 ModNetwork::onWorldSettings);
+        registrar.playToServer(WorldSettingsEditPayload.TYPE, WorldSettingsEditPayload.STREAM_CODEC,
+                ModNetwork::onWorldSettingsEdit);
         registrar.playToClient(ParticlesPayload.TYPE, ParticlesPayload.STREAM_CODEC, ModNetwork::onParticles);
         registrar.playToClient(StandingsPayload.TYPE, StandingsPayload.STREAM_CODEC, ModNetwork::onStandings);
     }
@@ -103,6 +107,14 @@ public final class ModNetwork {
 
     private static void onWorldSettings(WorldSettingsPayload payload, IPayloadContext context) {
         ClientPayloadHandler.handleWorldSettings(payload, context);
+    }
+
+    private static void onWorldSettingsEdit(WorldSettingsEditPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> {
+            if (context.player() instanceof ServerPlayer serverPlayer) {
+                WorldSettings.edit(serverPlayer, payload.entries());
+            }
+        });
     }
 
     private static void onConstructHold(ConstructHoldPayload payload, IPayloadContext context) {

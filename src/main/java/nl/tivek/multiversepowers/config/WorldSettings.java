@@ -11,9 +11,13 @@ import java.io.Reader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.storage.LevelResource;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.fml.event.config.ModConfigEvent;
@@ -110,6 +114,46 @@ public final class WorldSettings {
         }
         // Saved from the settings screen or seen changing on disk: either way not on the server's own thread.
         server.execute(() -> send(config));
+    }
+
+    public static boolean mayEdit(ServerPlayer player) {
+        return player.server.isSingleplayerOwner(player.getGameProfile()) || player.hasPermissions(2);
+    }
+
+    public static void edit(ServerPlayer player, List<WorldSettingsEditPayload.Entry> entries) {
+        if (!mayEdit(player)) {
+            player.displayClientMessage(Component.translatable("config." + MultiversePowers.MODID + ".denied"), false);
+            return;
+        }
+        Set<String> changed = new LinkedHashSet<>();
+        for (WorldSettingsEditPayload.Entry entry : entries) {
+            ModConfigSpec spec = ModConfigs.worldFiles().get(entry.file());
+            if (spec == null || !spec.isLoaded() || !(spec.getSpec().get(entry.path()) instanceof ModConfigSpec.ValueSpec rule)) {
+                continue;
+            }
+            Object value = spec.getValues().get(entry.path());
+            if (value instanceof ModConfigSpec.IntValue whole) {
+                int number = (int) Math.round(entry.value());
+                if (rule.test(number)) {
+                    whole.set(number);
+                    changed.add(entry.file());
+                }
+            } else if (value instanceof ModConfigSpec.DoubleValue decimal && Double.isFinite(entry.value())
+                    && rule.test(entry.value())) {
+                decimal.set(entry.value());
+                changed.add(entry.file());
+            }
+        }
+        for (String file : changed) {
+            ModConfigs.worldFiles().get(file).save();
+            ModConfig config = net.neoforged.fml.config.ModConfigs.getFileMap().get(file);
+            if (config != null) {
+                send(config);
+            }
+        }
+        if (!changed.isEmpty()) {
+            MultiversePowers.LOGGER.info("{} changed the world settings in {}", player.getGameProfile().getName(), changed);
+        }
     }
 
     private static void send(ModConfig config) {

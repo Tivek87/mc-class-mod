@@ -22,7 +22,9 @@ public enum Unit {
     BLOCK_COUNT,
     COUNT,
     STRENGTH,
-    CHANCE;
+    CHANCE,
+    SWITCH,
+    MINUTES;
 
     private static final String PREFIX = "config." + MultiversePowers.MODID + ".unit.";
 
@@ -46,6 +48,8 @@ public enum Unit {
             case COUNT -> key("count", number(value));
             case STRENGTH -> key("factor", number(value));
             case CHANCE -> key("chance", number(Math.round(value * 100.0)));
+            case SWITCH -> key(value >= 0.5 ? "on" : "off");
+            case MINUTES -> value <= 0.0 ? key("never") : key("minutes", number(value));
         };
     }
 

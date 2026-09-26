@@ -45,7 +45,7 @@ final class BeamArm {
 
     static float tremble(LivingEntity entity, float partialTick) {
         if (ClientRing.has(entity, RingPayload.BEAM)) {
-            return POUR_TREMBLE;
+            return POUR_TREMBLE * (1.0F + 0.6F * ClientConstructs.beamStage(entity.getId()));
         }
         float charge = gathering(entity, partialTick);
         return charge <= 0.0F ? 0.0F : CHARGE_TREMBLE * charge * charge;

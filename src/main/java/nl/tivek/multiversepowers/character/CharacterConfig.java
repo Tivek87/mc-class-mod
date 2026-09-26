@@ -2,6 +2,7 @@ package nl.tivek.multiversepowers.character;
 
 import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
@@ -156,6 +157,10 @@ public final class CharacterConfig {
             throw new IllegalArgumentException(ability.path() + " has no setting named " + key);
         }
         return value.get().doubleValue();
+    }
+
+    public static List<String> path(CharacterAbility ability, String key) {
+        return List.of("abilities", ability.id(), key);
     }
 
     public static boolean canEdit(GameCharacter character) {

@@ -12,13 +12,14 @@ import nl.tivek.multiversepowers.engine.math.Keyframes;
 // Every move of the energy whip and the way its lash is flung through it (see WhipLash), in degrees from the look.
 public enum WhipMove {
     EQUIP(Kind.EQUIP, 62, 34, null,
-            k(0, true, 20, -50, 0, 0, 1, 0, 1), k(8, true, 20, -50, 0, 0, 1, 0, 1),
-            k(15, false, 18, -55, 0, 0.55, 1, 0.2, 1), k(22, true, 15, -55, 0, 1, 1, 0.12, 1),
-            k(25, false, 25, -20, 0.35, 1, 1, 0.35, 0.5), k(29, false, 55, 12, 0.8, 1, 1, 0.22, 0),
+            curled(0, true, 20, -50, 0, 0, 1, 0, 0, 1), curled(8, true, 20, -50, 0, 0, 1, 0, 0, 1),
+            curled(15, false, 16, -52, 0, 0.55, 1, 0.1, 0, 1), curled(22, true, 14, -50, 0, 1, 1, 0.08, 0, 1),
+            curled(25, false, 25, -20, 0.35, 1, 1, 0.3, 0, 0.55), curled(29, false, 55, 12, 0.8, 1, 1, 0.22, 0, 0),
             k(31, false, 60, 14, 1, 1, 1, 0.08, 0), k(34, false, -30, 10, 1, 1, 1, 0, 0),
             k(37, false, -120, 10, 1, 1, 1, 0, 0), k(40, false, -190, 22, 1, 1, 1, 0, 0),
             k(42.5F, false, -182, 110, 1, 1, 0.5, 0, 0), k(44, true, -180, 186, 1, 1.05, 0, 0, 0),
-            k(47, true, -180, 200, 0.8, 1, 0.2, 0, 0), k(52, false, -178, 225, 0.2, 1, 0.8, 0, 0.2)),
+            k(47, true, -180, 200, 0.8, 1, 0.2, 0, 0), curled(51, false, -178, 208, 0.3, 1, 0.6, 0, 0, 0.35),
+            curled(55, false, -172, 216, 0.1, 1, 1, 0, 0.35, 0.85), curled(58, true, -168, 220, 0, 1, 1, 0, 0.35, 1)),
     FOREHAND(Kind.ATTACK, 18, 13, strike(1.0, 0.25, 0.6, 0.15, 0).window(6, 12),
             k(3, false, 100, 6, 0.9, 0.3), k(4.5F, true, 118, 5, 1, 0.3), k(8.5F, false, -95, -2, 1, 0.3),
             k(10.5F, true, -128, -6, 0.85, 0.3), k(14, false, -70, -35, 0.2, 0.6)),
@@ -106,7 +107,8 @@ public enum WhipMove {
     public static final int SPINNING = 64;
     private static final int MOVE_BITS = 31;
 
-    public static final float[] REST = aim(12, -40, 0, 1, 1, 0, 0.35);
+    // At rest the lash hangs curled up in loops below the handle.
+    public static final float[] REST = aim(12, -40, 0, 1, 1, 0, 0.35, 1);
 
     private static final WhipMove[] ATTACKS = { FOREHAND, BACKHAND, OVERHEAD, SIDEARM, RISING, CLEAVE, REVERSE_CLEAVE,
             FIGURE_EIGHT, LEG_SWEEP, SPIN, SNAP, COWBOY };
@@ -305,22 +307,27 @@ public enum WhipMove {
     }
 
     public static float[] aim(double yaw, double pitch, double taut, double reach, double level, double wave,
-            double coil) {
+            double coil, double curl) {
         return new float[] { (float) Math.toRadians(yaw), (float) Math.toRadians(pitch), (float) taut, (float) reach,
-                (float) level, (float) wave, (float) coil };
+                (float) level, (float) wave, (float) coil, (float) curl };
     }
 
     private static float[] raw(float yaw, float pitch, float taut, float reach, float level, float wave, float coil) {
-        return new float[] { yaw, pitch, taut, reach, level, wave, coil };
+        return new float[] { yaw, pitch, taut, reach, level, wave, coil, 0.0F };
     }
 
     private static Keyframes.Key k(float tick, boolean stop, double yaw, double pitch, double taut, double level) {
-        return new Keyframes.Key(tick, stop, aim(yaw, pitch, taut, 1.0, level, 0.0, 0.0));
+        return new Keyframes.Key(tick, stop, aim(yaw, pitch, taut, 1.0, level, 0.0, 0.0, 0.0));
     }
 
     private static Keyframes.Key k(float tick, boolean stop, double yaw, double pitch, double taut, double reach,
             double level, double wave, double coil) {
-        return new Keyframes.Key(tick, stop, aim(yaw, pitch, taut, reach, level, wave, coil));
+        return new Keyframes.Key(tick, stop, aim(yaw, pitch, taut, reach, level, wave, coil, 0.0));
+    }
+
+    private static Keyframes.Key curled(float tick, boolean stop, double yaw, double pitch, double taut, double reach,
+            double level, double wave, double coil, double curl) {
+        return new Keyframes.Key(tick, stop, aim(yaw, pitch, taut, reach, level, wave, coil, curl));
     }
 
     private static Strikes strike(double power, double away, double side, double lift, int slow) {
