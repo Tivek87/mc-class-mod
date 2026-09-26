@@ -37,9 +37,21 @@ public final class FlamePainter {
     private static final float[][] GROWS = grows();
     private static final ConstructPainter.Shape[] PARTS = parts();
 
-    public record Glow(double fill, double heat, double pilot, double spark, double muzzle, double valve) {
+    // Charge: how near the inferno is to overheating, 0 to 1, shown on the gauge along the body.
+    public record Glow(double fill, double heat, double pilot, double spark, double muzzle, double valve,
+            double charge) {
         public static final Glow READY = new Glow(1.0, 0.0, 1.0, 0.0, 0.0, 0.0);
+
+        public Glow(double fill, double heat, double pilot, double spark, double muzzle, double valve) {
+            this(fill, heat, pilot, spark, muzzle, valve, 0.0);
+        }
     }
+
+    private static final int GAUGE_BARS = 8;
+    private static final double GAUGE_FROM = -0.26;
+    private static final double GAUGE_TO = -0.02;
+    private static final double GAUGE_Y = 0.048;
+    private static final double GAUGE_X = 0.066;
 
     private FlamePainter() {
     }
@@ -147,6 +159,32 @@ public final class FlamePainter {
             }
         }
         lights(painter, frame, glow);
+        gauge(painter, frame, glow.charge());
+    }
+
+    // A row of bars of light along both sides of the body: they fill as the inferno heads for overheating, the last
+    // ones flashing when it is close, and drain again as the gun cools.
+    private static void gauge(LanternPainter painter, ConstructPainter.Frame frame, double charge) {
+        double scale = frame.scale();
+        double step = (GAUGE_TO - GAUGE_FROM) / GAUGE_BARS;
+        double blink = charge > 0.8 ? 0.55 + 0.45 * Math.sin(painter.time() * 2.2) : 1.0;
+        for (double side : new double[] { -GAUGE_X, GAUGE_X }) {
+            for (int k = 0; k < GAUGE_BARS; k++) {
+                double lit = Mth.clamp(charge * GAUGE_BARS - k, 0.0, 1.0);
+                double z = GAUGE_FROM + step * (k + 0.15);
+                Vec3 a = frame.at(side, GAUGE_Y, z);
+                Vec3 b = frame.at(side, GAUGE_Y, z + step * 0.7);
+                // An unlit bar still shows faintly, so the gauge reads even when it is empty.
+                painter.lightLine(a, b, 0.02 * scale, FirePainter.HOT, Colors.alpha(0.18));
+                if (lit <= 0.01) {
+                    continue;
+                }
+                boolean late = k >= GAUGE_BARS - 2;
+                double on = lit * (late ? blink : 1.0);
+                painter.lightLine(a, b, 0.022 * scale, late ? FirePainter.CORE : FirePainter.HOT, Colors.alpha(on));
+                painter.glowLine(a, b, 0.06 * scale, FirePainter.FLAME, Colors.alpha(0.6 * on));
+            }
+        }
     }
 
     private static ConstructPainter.Frame part(ConstructPainter.Frame frame, int p, double grown, double valve) {

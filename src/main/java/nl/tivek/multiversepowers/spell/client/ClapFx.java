@@ -23,7 +23,7 @@ final class ClapFx {
     static final double HALF_ANGLE = 0.8;
     static final int BURSTS = ClapPayload.BUBBLE_BURSTS;
     private static final int FLASH = 8;
-    private static final double BUBBLE_SIZE = 1.5;
+    private static final double BUBBLE_SIZE = 1.275;
     private static final double BLUR = 0.35;
     private static final int STREAKS = 110;
     private static final int FROZEN = 45;
