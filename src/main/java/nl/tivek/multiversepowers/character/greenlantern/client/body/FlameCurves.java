@@ -11,23 +11,49 @@ abstract class FlameCurves {
     static final double OWN_GUN = 0.7;
     static final double GUN_SCALE = 0.92;
 
-    // View space, as the sword's: x right, y up, -z ahead. The body turns (twist), leans and steps only when seen.
+    // View space, as the sword's: x right, y up, -z ahead. The body turns (twist), leans and steps only when seen;
+    // orbit turns the whole body round to the left, as in the spin.
     record Pose(Vec3 grip, Vec3 muzzle, Vec3 top, Vec3 left, float leftOn, float leftValve, float twist, float lean,
-            float step, float sweep, float rest) {
-        static final int SIZE = 19;
+            float step, float sweep, float rest, float orbit) {
+        static final int SIZE = 20;
+        static final int ORBIT = 19;
 
         float[] numbers() {
             return new float[] { (float) this.grip.x, (float) this.grip.y, (float) this.grip.z, (float) this.muzzle.x,
                     (float) this.muzzle.y, (float) this.muzzle.z, (float) this.top.x, (float) this.top.y,
                     (float) this.top.z, (float) this.left.x, (float) this.left.y, (float) this.left.z, this.leftOn,
-                    this.leftValve, this.twist, this.lean, this.step, this.sweep, this.rest };
+                    this.leftValve, this.twist, this.lean, this.step, this.sweep, this.rest, this.orbit };
         }
 
         static Pose of(float[] n) {
             Vec3 muzzle = unit(new Vec3(n[3], n[4], n[5]), new Vec3(0.0, 0.0, -1.0));
             Vec3 top = square(new Vec3(n[6], n[7], n[8]), muzzle);
             return new Pose(new Vec3(n[0], n[1], n[2]), muzzle, top, new Vec3(n[9], n[10], n[11]),
-                    Mth.clamp(n[12], 0.0F, 1.0F), Mth.clamp(n[13], 0.0F, 1.0F), n[14], n[15], n[16], n[17], n[18]);
+                    Mth.clamp(n[12], 0.0F, 1.0F), Mth.clamp(n[13], 0.0F, 1.0F), n[14], n[15], n[16], n[17], n[18],
+                    n[ORBIT]);
+        }
+
+        Pose orbiting(float orbit) {
+            float[] n = this.numbers();
+            n[ORBIT] = orbit;
+            return of(n);
+        }
+
+        // The same pose with the orbit taken off one whole turn at a time, so the next move does not unwind it.
+        Pose unwound() {
+            float turns = Math.round(this.orbit / Mth.TWO_PI);
+            return turns == 0.0F ? this : this.orbiting(this.orbit - turns * Mth.TWO_PI);
+        }
+
+        // In first person the view stays put while the body turns: the hands and the gun go round the eyes.
+        Pose orbited() {
+            if (Math.abs(this.orbit) < 1.0E-4F) {
+                return this;
+            }
+            double angle = -this.orbit;
+            return new Pose(yawed(this.grip, angle), yawed(this.muzzle, angle), yawed(this.top, angle),
+                    yawed(this.left, angle), this.leftOn, this.leftValve, this.twist, this.lean, this.step, this.sweep,
+                    this.rest, 0.0F);
         }
 
         Pose mix(Pose to, float t) {
@@ -67,7 +93,7 @@ abstract class FlameCurves {
             float step) {
         return Pose.of(new float[] { (float) gx, (float) gy, (float) gz, (float) mx, (float) my, (float) mz,
                 (float) tx, (float) ty, (float) tz, (float) lx, (float) ly, (float) lz, leftOn, leftValve,
-                twist * Mth.DEG_TO_RAD, lean, step, 0.0F, 0.0F });
+                twist * Mth.DEG_TO_RAD, lean, step, 0.0F, 0.0F, 0.0F });
     }
 
     static Keyframes.Key key(float tick, boolean stop, Pose pose) {

@@ -1,8 +1,12 @@
 package nl.tivek.multiversepowers.character.greenlantern.client.body;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.EnumMap;
+import java.util.List;
 import java.util.Map;
 import net.minecraft.util.Mth;
+import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.character.greenlantern.ability.FlameMove;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.FirePainter;
 import nl.tivek.multiversepowers.engine.math.Ease;
@@ -29,8 +33,7 @@ abstract class FlameKeys extends FlameCurves {
 
     static {
         equip();
-        sweep(FlameMove.SWEEP, 1.0);
-        sweep(FlameMove.SWEEP_BACK, -1.0);
+        attacks();
         MOVES.put(FlameMove.VENT, new Keyframes.Key[] {
                 key(2, false, pose(0.42, -0.47, -0.77, -0.06, 0.14, -0.99, 0.04, 1.0, -0.1, -0.3, -0.6, -0.8, 1.0F,
                         0.0F, 26.0F, 0.12F, 0.3F)),
@@ -105,26 +108,109 @@ abstract class FlameKeys extends FlameCurves {
                 key(FlameMove.EQUIP.ticks(), false, GUARD) });
     }
 
-    private static void sweep(FlameMove move, double side) {
-        float arc = (float) Math.toRadians(FlameMove.SWEEP_ARC);
-        float s = (float) side;
-        MOVES.put(move, new Keyframes.Key[] {
-                key(2, true, turned(pose(0.42 + 0.05 * side, -0.49, -0.83, -0.10, 0.05, -1.0, 0.05, 1.0, 0.03, -0.3,
-                        -0.6, -0.8, 1.0F, 0.0F, 30.0F + 22.0F * s, 0.12F, 0.2F), s * arc * 1.06F)),
-                key(FlameMove.SPRAY_FROM, false, turned(pose(0.42 + 0.05 * side, -0.49, -0.84, -0.10, 0.04, -1.0,
-                        0.05, 1.0, 0.03, -0.3, -0.6, -0.8, 1.0F, 0.0F, 30.0F + 20.0F * s, 0.14F, 0.25F), s * arc)),
-                key((FlameMove.SPRAY_FROM + FlameMove.SPRAY_TO) / 2.0F, false, turned(pose(0.42, -0.48, -0.87,
-                        -0.10, 0.04, -1.0, 0.05, 1.0, 0.03, -0.3, -0.6, -0.8, 1.0F, 0.0F, 30.0F, 0.18F, 0.3F), 0.0F)),
-                key(FlameMove.SPRAY_TO, false, turned(pose(0.42 - 0.05 * side, -0.49, -0.84, -0.10, 0.04, -1.0, 0.05,
-                        1.0, 0.03, -0.3, -0.6, -0.8, 1.0F, 0.0F, 30.0F - 20.0F * s, 0.15F, 0.25F), -s * arc)),
-                key(10.5F, true, turned(pose(0.42 - 0.06 * side, -0.50, -0.83, -0.10, 0.02, -1.0, 0.05, 1.0, 0.03,
-                        -0.3, -0.6, -0.8, 1.0F, 0.0F, 30.0F - 24.0F * s, 0.12F, 0.2F), -s * arc * 1.1F)) });
+    // Each attack: its wind-up, the body along every stroke (the nozzle follows the stroke's own path), and its
+    // follow-through. Keys give degrees right and up, the fist's shift, and twist, lean and step on top of the aim's.
+    private static void attacks() {
+        attack(FlameMove.SWEEP, new Body(0.0, 0.0, 0.0, 0.0F, 0.16F, 0.28F),
+                at(2, true, 58, 0, 0.0, 0.01, 0.03, 2, 0.12F, 0.2F, 0),
+                at(10.5F, true, -60, 0, 0.0, -0.01, 0.03, -4, 0.12F, 0.2F, 0));
+        attack(FlameMove.SWEEP_BACK, new Body(0.0, 0.0, 0.0, 0.0F, 0.16F, 0.28F),
+                at(2, true, -58, 0, 0.0, 0.01, 0.03, -2, 0.12F, 0.2F, 0),
+                at(10.5F, true, 60, 0, 0.0, -0.01, 0.03, 4, 0.12F, 0.2F, 0));
+        attack(FlameMove.RISING, new Body(0.0, 0.0, 0.0, 0.0F, 0.12F, 0.35F),
+                at(2, true, -52, -34, -0.02, -0.03, 0.0, 0, 0.28F, 0.3F, 0),
+                at(10.5F, true, 52, 40, 0.02, 0.03, 0.02, 4, -0.05F, 0.25F, 0));
+        attack(FlameMove.CHOP, new Body(0.0, 0.0, 0.0, 0.0F, 0.2F, 0.35F),
+                at(2, true, 52, 40, 0.02, 0.04, 0.03, 6, -0.08F, 0.2F, 0),
+                at(10.5F, true, -52, -36, 0.0, -0.02, -0.02, -4, 0.35F, 0.35F, 0));
+        attack(FlameMove.GEYSER, new Body(0.0, 0.0, -0.02, 0.0F, 0.15F, 0.4F),
+                at(2.5F, true, 0, -58, -0.03, -0.02, -0.04, -6, 0.42F, 0.35F, 0),
+                at(10.5F, true, 0, 48, 0.0, 0.05, 0.03, -4, -0.18F, 0.3F, 0));
+        attack(FlameMove.OVERHEAD, new Body(0.0, 0.02, -0.02, -4.0F, 0.25F, 0.45F),
+                at(2.5F, false, 10, 55, -0.08, 0.12, 0.18, -10, -0.15F, 0.15F, 0),
+                at(5, true, 8, 80, -0.12, 0.2, 0.26, -14, -0.25F, 0.1F, 0),
+                at(11.5F, true, -4, -46, 0.0, -0.03, -0.06, -2, 0.55F, 0.55F, 0),
+                at(14, false, -2, -20, 0.0, -0.01, -0.03, 0, 0.3F, 0.35F, 0));
+        attack(FlameMove.JAB, new Body(0.0, 0.0, -0.08, 2.0F, 0.22F, 0.35F),
+                at(1.2F, true, 0, 2, 0.0, 0.0, 0.06, 4, 0.0F, 0.1F, 0),
+                at(5.5F, true, 0, 6, 0.0, 0.01, 0.02, 2, 0.1F, 0.25F, 0));
+        attack(FlameMove.LUNGE, new Body(0.0, 0.0, -0.1, 0.0F, 0.4F, 0.95F),
+                at(2.5F, true, 0, -2, -0.02, -0.01, 0.08, 8, -0.05F, 0.0F, 0),
+                at(11.5F, true, 0, 0, 0.0, 0.0, -0.06, 0, 0.3F, 0.8F, 0));
+        attack(FlameMove.LOW_SWEEP, new Body(0.0, -0.08, 0.0, 0.0F, 0.55F, 0.65F),
+                at(2.5F, true, 78, -30, 0.02, -0.08, 0.0, 6, 0.55F, 0.6F, 0),
+                at(11.5F, true, -80, -26, 0.0, -0.07, 0.0, -4, 0.5F, 0.6F, 0));
+        attack(FlameMove.SPIN, new Body(0.0, 0.0, 0.0, 0.0F, 0.22F, 0.4F),
+                at(2.5F, true, 30, -4, 0.03, 0.0, 0.0, 10, 0.15F, 0.3F, -25),
+                at(15.5F, true, SPIN_HELD - 10, -6, 0.0, 0.0, 0.0, 0, 0.15F, 0.3F, 380));
+        attack(FlameMove.CROSS, new Body(0.0, 0.0, 0.0, 0.0F, 0.18F, 0.3F),
+                at(2, true, -55, 38, -0.02, 0.04, 0.03, -4, -0.05F, 0.2F, 0),
+                at(8, true, 55, 38, 0.02, 0.05, 0.03, 4, -0.05F, 0.3F, 0),
+                at(14.5F, true, -55, -30, 0.0, -0.02, -0.02, -4, 0.3F, 0.35F, 0));
+        attack(FlameMove.SPIRAL, new Body(0.0, 0.0, -0.05, 0.0F, 0.25F, 0.4F),
+                at(2, true, 26, -4, 0.0, 0.0, 0.04, 2, 0.1F, 0.2F, 0),
+                at(13.5F, true, 8, 6, 0.0, 0.0, 0.0, 0, 0.15F, 0.3F, 0));
     }
 
-    private static Pose turned(Pose pose, float sweep) {
-        float[] n = pose.numbers();
-        n[17] = sweep;
+    // In the spin the gun stays out a little to the right while the whole body turns round.
+    static final double SPIN_HELD = 20.0;
+
+    private record Body(double dx, double dy, double dz, float twist, float lean, float step) {
+    }
+
+    private static void attack(FlameMove move, Body body, Keyframes.Key... around) {
+        List<Keyframes.Key> keys = new ArrayList<>(List.of(around));
+        boolean spin = move == FlameMove.SPIN;
+        for (FlameMove.Stroke stroke : move.strokes()) {
+            float length = stroke.to() - stroke.from();
+            int parts = length >= 6.0F ? 4 : 2;
+            for (int i = 0; i <= parts; i++) {
+                float tick = stroke.from() + length * i / parts;
+                FlameMove.Aim aim = stroke.aim(tick);
+                double yaw = spin ? SPIN_HELD : aim.yaw();
+                double orbit = spin ? SPIN_HELD - aim.yaw() : 0.0;
+                keys.add(at(tick, false, yaw, aim.pitch(), body.dx(), body.dy(), body.dz(), body.twist(), body.lean(),
+                        body.step(), orbit));
+            }
+        }
+        keys.sort(Comparator.comparingDouble(Keyframes.Key::tick));
+        MOVES.put(move, keys.toArray(Keyframes.Key[]::new));
+    }
+
+    private static Keyframes.Key at(float tick, boolean stop, double yaw, double pitch, double dx, double dy,
+            double dz, double twist, float lean, float step, double orbit) {
+        return key(tick, stop, aimed(yaw, pitch, dx, dy, dz, twist, lean, step, orbit));
+    }
+
+    // The guard, aimed: the fist follows the nozzle a little, the body turns with it and bends over to aim low.
+    static Pose aimed(double yaw, double pitch, double dx, double dy, double dz, double twist, float lean, float step,
+            double orbit) {
+        float[] n = GUARD.numbers();
+        double raise = Math.toRadians(pitch);
+        Vec3 muzzle = pitched(GUARD.muzzle(), raise);
+        Vec3 top = pitched(GUARD.top(), raise);
+        n[0] += (float) (0.0009 * yaw + dx);
+        n[1] += (float) (0.0022 * pitch + dy);
+        n[2] += (float) (0.0012 * pitch + dz);
+        n[3] = (float) muzzle.x;
+        n[4] = (float) muzzle.y;
+        n[5] = (float) muzzle.z;
+        n[6] = (float) top.x;
+        n[7] = (float) top.y;
+        n[8] = (float) top.z;
+        n[14] = (float) Math.toRadians(30.0 + 0.36 * yaw + twist);
+        n[15] = lean - 0.004F * (float) pitch;
+        n[16] = step;
+        n[17] = (float) Math.toRadians(yaw);
+        n[Pose.ORBIT] = (float) Math.toRadians(orbit);
         return Pose.of(n);
+    }
+
+    // A view-space way raised by the angle (radians) about the view's right.
+    static Vec3 pitched(Vec3 way, double angle) {
+        double cos = Math.cos(angle);
+        double sin = Math.sin(angle);
+        return new Vec3(way.x, way.y * cos - way.z * sin, way.y * sin + way.z * cos);
     }
 
     private static Pose rest(Pose pose) {

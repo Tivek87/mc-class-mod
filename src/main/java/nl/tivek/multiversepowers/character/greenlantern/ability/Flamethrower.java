@@ -85,8 +85,8 @@ public final class Flamethrower extends FlameHits {
             return false;
         }
         FlameMove asked = FlameMove.byIndex(data >> Characters.MOVE_SHIFT);
-        return gun.begin(asked != null && asked.kind() == FlameMove.Kind.SWEEP ? asked
-                : FlameMove.sweepAfter(gun.move));
+        return gun.begin(asked != null && asked.kind() == FlameMove.Kind.ATTACK ? asked
+                : FlameMove.randomAttack(player.getRandom(), gun.move));
     }
 
     public static boolean defend(ServerPlayer player, ServerLevel level, boolean on, int data) {
@@ -142,15 +142,40 @@ public final class Flamethrower extends FlameHits {
         this.swept.clear();
     }
 
-    private boolean begin(FlameMove sweep) {
+    private boolean begin(FlameMove attack) {
         if (!this.free() || !this.pay("sweepPowerCost")) {
             return false;
         }
-        this.start(sweep);
-        this.sound(SoundEvents.FIRECHARGE_USE, 0.8F, 1.1F + 0.2F * this.owner.getRandom().nextFloat());
-        this.sound(SoundEvents.BLAZE_SHOOT, 0.45F, 1.5F);
-        this.sound(SoundEvents.PLAYER_ATTACK_SWEEP, 0.5F, 0.8F);
+        this.start(attack);
+        this.sound(SoundEvents.PLAYER_ATTACK_SWEEP, 0.5F, 0.8F + 0.25F * (float) (1.35 - attack.power()));
         return true;
+    }
+
+    private void sprayed(ServerLevel level, int t) {
+        for (FlameMove.Stroke stroke : this.move.strokes()) {
+            if (t == (int) Math.ceil(stroke.from())) {
+                this.swept.clear();
+                float heavy = (float) this.move.power();
+                float tone = 1.0F + 0.4F * (1.0F - heavy) + 0.15F * this.owner.getRandom().nextFloat();
+                switch (this.move.fire()) {
+                    case BALL -> {
+                        this.sound(SoundEvents.FIRECHARGE_USE, 1.0F, 0.9F);
+                        this.sound(SoundEvents.GENERIC_EXPLODE.value(), 0.35F, 1.8F);
+                    }
+                    case JET -> {
+                        this.sound(SoundEvents.BLAZE_SHOOT, 0.8F, 0.7F);
+                        this.sound(SoundEvents.FIRECHARGE_USE, 0.8F, 0.8F);
+                    }
+                    case FAN -> {
+                        this.sound(SoundEvents.FIRECHARGE_USE, 0.8F, tone);
+                        this.sound(SoundEvents.BLAZE_SHOOT, 0.45F * heavy, 1.5F - 0.3F * (heavy - 1.0F));
+                    }
+                }
+            }
+            if (t > stroke.from() && t <= stroke.to() + 2) {
+                this.spray(level, stroke, t);
+            }
+        }
     }
 
     private boolean startPouring() {
@@ -233,11 +258,7 @@ public final class Flamethrower extends FlameHits {
         int t = this.age - this.moveStart;
         switch (this.move.kind()) {
             case EQUIP -> equipSounds(t - 1, t, this::soundForOthers);
-            case SWEEP -> {
-                if (t > FlameMove.SPRAY_FROM && t <= FlameMove.SPRAY_TO + 2) {
-                    this.sweep(level, t);
-                }
-            }
+            case ATTACK -> this.sprayed(level, t);
             case INFERNO -> {
                 if (!this.drain("infernoPowerPerSecond")) {
                     this.stopPouring();

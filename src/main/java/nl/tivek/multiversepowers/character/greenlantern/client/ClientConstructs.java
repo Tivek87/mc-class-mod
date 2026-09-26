@@ -269,7 +269,7 @@ public final class ClientConstructs extends TrackedConstructs {
         Minecraft minecraft = Minecraft.getInstance();
         ClientLevel level = minecraft.level;
         if (level == null || CONSTRUCTS.isEmpty() && BROKEN.isEmpty() && BROKEN_HANDS.isEmpty()
-                && !BeamCharge.any(level) && FireStream.out()) {
+                && !BeamCharge.any(level) && FireStream.out() && !Jetpacks.any()) {
             return;
         }
         float partialTick = event.getPartialTick().getGameTimeDeltaPartialTick(false);
@@ -394,6 +394,11 @@ public final class ClientConstructs extends TrackedConstructs {
         for (AbstractClientPlayer player : level.players()) {
             if (BeamCharge.charge(player, partialTick) >= 0.0F) {
                 BeamCharge.draw(painter, player, ringHand(minecraft, camera, player, partialTick, event), camera,
+                        partialTick);
+            }
+            if (Jetpacks.has(player)) {
+                boolean own = player == minecraft.player && camera.getEntity() == player && !camera.isDetached();
+                Jetpacks.draw(painter, player, ringHand(minecraft, camera, player, partialTick, event), own,
                         partialTick);
             }
         }

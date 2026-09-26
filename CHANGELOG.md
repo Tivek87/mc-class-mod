@@ -3,6 +3,23 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.1.8-alpha] - 2026-09-26
+
+### Added
+- **Green Lantern's arrival, the ring's voice:** the ring speaks to you while it comes for you, fading in at the
+  start and out at the end; only then, and players near you hear it too.
+- **Flight, jetpack:** when you pick up speed and lie down into your flight, the ring shoots a ball of light onto
+  your back and a hard-light jetpack grows there, green flames roaring from its nozzles (long at speed, small when
+  you hover); it breaks into solid pieces when you land or stop flying.
+- **Flamethrower, left click:** twelve flame attacks, a different one every click, each flowing into the next:
+  sweep, sweep back, rising sweep, chop, geyser, overhead whip, fireball burst, lunge jet, low sweep, spin, cross
+  and corkscrew.
+
+### Changed
+- **Green Lantern's arrival:** plays exactly 2 seconds slower (about 10 seconds instead of 8), every part the same.
+- **Flamethrower, left click:** the sweep and the sweep back are now two of the twelve attacks, picked at random
+  instead of taking turns; each attack does its own damage and reach against the sweep settings.
+
 ## [0.1.7-alpha] - 2026-09-26
 
 ### Added

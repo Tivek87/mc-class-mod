@@ -69,7 +69,7 @@ public final class FlameArms extends FlameFirstPerson {
         if (!ready() || !canPay(player, wheel().value("sweepPowerCost"))) {
             return null;
         }
-        FlameMove move = FlameMove.sweepAfter(own.lastSweep);
+        FlameMove move = FlameMove.randomAttack(player.getRandom(), own.lastSweep);
         own.lastSweep = move;
         begin(move);
         return move;

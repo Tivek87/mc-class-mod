@@ -132,6 +132,10 @@ public final class GreenLanternSuitLayer extends RenderLayer<AbstractClientPlaye
         suit.leftArm.translateAndRotate(poseStack);
         HandSpot.onArm(player, poseStack, false, slim);
         poseStack.popPose();
+        poseStack.pushPose();
+        suit.body.translateAndRotate(poseStack);
+        BackSpot.onBody(player, poseStack);
+        poseStack.popPose();
     }
 
 }

@@ -106,6 +106,26 @@ public final class FlightPose {
             float lean, Vec3 left) {
     }
 
+    // How flat he lies in flight, from 0 upright to 1 flat out, the same as his pose shows it.
+    public static float lying(Player player, float partialTick) {
+        float t = ClientRing.flight(player, partialTick);
+        ClientFlight.Motion motion = ClientFlight.motion(player);
+        if (t < 0.0F || motion == null || ClientRing.has(player, RingPayload.DESCENT)) {
+            return 0.0F;
+        }
+        float fast = lying(motion.velocity.length());
+        if (t < ClientFlight.ARISE) {
+            fast *= (float) Ease.smooth((t - ClientFlight.SWEEP) / (ClientFlight.ARISE - ClientFlight.SWEEP));
+        }
+        return fast * (1.0F - ClientFlight.brace(player, partialTick));
+    }
+
+    private static float lying(double speed) {
+        double lined = LINED_UP * ClientFlight.fullSpeed();
+        double slow = 0.19 * lined;
+        return (float) Ease.smooth((speed - slow) / (lined - slow));
+    }
+
     static boolean pre(RenderPlayerEvent.Pre event) {
         Player player = event.getEntity();
         float partialTick = event.getPartialTick();
@@ -152,9 +172,7 @@ public final class FlightPose {
             double ahead = v.dot(forward);
             double side = -v.dot(left);
             double speed = v.length();
-            double lined = LINED_UP * ClientFlight.fullSpeed();
-            double slow = 0.19 * lined;
-            fast = (float) Ease.smooth((speed - slow) / (lined - slow));
+            fast = lying(speed);
             float drift = (float) Mth.clamp(ahead * 1.1, -0.3, 0.45);
             float along = (float) Math.atan2(Math.max(ahead, 0.0), v.y);
             tilt = Mth.lerp(fast, drift, along);

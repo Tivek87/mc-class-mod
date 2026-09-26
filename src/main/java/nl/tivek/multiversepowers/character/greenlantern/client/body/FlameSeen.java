@@ -1,15 +1,21 @@
 package nl.tivek.multiversepowers.character.greenlantern.client.body;
 
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.math.Axis;
+import java.util.HashMap;
+import java.util.Map;
 import javax.annotation.Nullable;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.client.model.PlayerModel;
 import net.minecraft.client.model.geom.ModelPart;
+import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.Vec3;
+import net.neoforged.neoforge.client.event.RenderPlayerEvent;
 import nl.tivek.multiversepowers.character.greenlantern.ability.FlameMove;
 import nl.tivek.multiversepowers.character.greenlantern.ability.FlameWall;
 import nl.tivek.multiversepowers.character.greenlantern.ability.Flamethrower;
@@ -22,6 +28,8 @@ import nl.tivek.multiversepowers.engine.client.render.ConstructPainter;
 import nl.tivek.multiversepowers.engine.math.Ease;
 
 abstract class FlameSeen extends FlameStates {
+    private static final Map<Integer, Float> SPUN = new HashMap<>();
+
     static boolean posing(Entity player, float partialTick) {
         return state(player, partialTick) != null;
     }
@@ -134,10 +142,16 @@ abstract class FlameSeen extends FlameStates {
         float t = state.t();
         Vec3 look = player.getViewVector(partialTick);
         switch (move.kind()) {
-            case SWEEP -> {
-                if (FlameMove.spraying(move, t)) {
-                    FireStream.feed(player, FireStream.Kind.SWEEP, nozzle, turned(look,
-                            FlameMove.sweepYaw(move, t)), now);
+            case ATTACK -> {
+                FlameMove.Aim aim = move.aim(t);
+                if (aim != null) {
+                    FireStream.Kind kind = switch (move.fire()) {
+                        case FAN -> FireStream.Kind.SWEEP;
+                        case BALL -> FireStream.Kind.BLAST;
+                        case JET -> FireStream.Kind.STREAM;
+                    };
+                    double speed = move.fire() == FlameMove.Fire.FAN ? kind.speed * move.reach() : kind.speed;
+                    FireStream.feed(player, kind, nozzle, FlameMove.way(look, aim), now, speed);
                 }
             }
             case INFERNO -> {
@@ -223,15 +237,26 @@ abstract class FlameSeen extends FlameStates {
         }
     }
 
-    // A world way turned right by the degrees about the world's up.
-    static Vec3 turned(Vec3 look, double degrees) {
-        double angle = Math.toRadians(degrees);
-        Vec3 flat = new Vec3(look.x, 0.0, look.z);
-        if (flat.lengthSqr() < 1.0E-8) {
-            return look;
+    // The spin turns the whole body round: stored before the model is drawn, used as it is turned.
+    static void spin(RenderPlayerEvent.Pre event) {
+        State state = state(event.getEntity(), event.getPartialTick());
+        if (state == null) {
+            return;
         }
-        Vec3 right = new Vec3(-flat.z, 0.0, flat.x).normalize().scale(flat.length());
-        Vec3 swung = flat.scale(Math.cos(angle)).add(right.scale(Math.sin(angle)));
-        return new Vec3(swung.x, look.y, swung.z);
+        float orbit = pose(event.getEntity(), state, event.getPartialTick()).orbit();
+        if (Math.abs(orbit) >= 1.0E-3F) {
+            SPUN.put(event.getEntity().getId(), orbit);
+        }
+    }
+
+    static void turnModel(AbstractClientPlayer player, PoseStack pose) {
+        Float orbit = SPUN.get(player.getId());
+        if (orbit != null) {
+            pose.mulPose(Axis.YP.rotation(orbit));
+        }
+    }
+
+    static void unspin(RenderPlayerEvent.Post event) {
+        SPUN.remove(event.getEntity().getId());
     }
 }

@@ -50,7 +50,9 @@ abstract class FlameFirstPerson extends FlameSeen {
         if (state == null) {
             return;
         }
-        FlameCurves.Pose pose = pose(player, state, partialTick);
+        FlameCurves.Pose made = pose(player, state, partialTick);
+        FlameCurves.Pose pose = made.orbited();
+        float orbit = made.orbit();
         float rest = Mth.clamp(pose.rest(), 0.0F, 1.0F);
         PoseStack stack = event.getPoseStack();
         stack.pushPose();
@@ -62,7 +64,7 @@ abstract class FlameFirstPerson extends FlameSeen {
         MultiBufferSource buffers = event.getMultiBufferSource();
         PlayerRenderer renderer = (PlayerRenderer) minecraft.getEntityRenderDispatcher().getRenderer(player);
         Vector3f rightShoulder = SwordFirstPerson.shoulder(SwordFirstPerson.OWN_SHOULDER_RIGHT,
-                pose.grip().subtract(FlameKeys.GUARD.grip()), 0.0F).lerp(RechargeAnimation.SHOULDER_RIGHT, rest);
+                made.grip().subtract(FlameKeys.GUARD.grip()), orbit).lerp(RechargeAnimation.SHOULDER_RIGHT, rest);
         boolean handsTaken = state.broken() >= 0.0F && SwordArms.holding();
         if (!handsTaken) {
             SwordFirstPerson.arm(stack, buffers, event.getPackedLight(), player, renderer, 1.0F, pose.grip(),
@@ -71,8 +73,9 @@ abstract class FlameFirstPerson extends FlameSeen {
         if (rest < 1.0F && !handsTaken) {
             Vec3 left = pose.leftHand(FlameKeys.VIEW_SWEEP, FlameCurves.OWN_GUN);
             Vec3 guard = FlameKeys.GUARD.leftHand(FlameKeys.VIEW_SWEEP, FlameCurves.OWN_GUN);
+            Vec3 moved = made.leftHand(FlameKeys.VIEW_SWEEP, FlameCurves.OWN_GUN).subtract(guard);
             SwordFirstPerson.arm(stack, buffers, event.getPackedLight(), player, renderer, -1.0F, left,
-                    SwordFirstPerson.shoulder(SwordFirstPerson.OWN_SHOULDER_LEFT, left.subtract(guard), 0.0F), 0.0F);
+                    SwordFirstPerson.shoulder(SwordFirstPerson.OWN_SHOULDER_LEFT, moved, orbit), 0.0F);
         }
         LanternPainter painter = LanternPainter.hand(stack, player.tickCount + partialTick);
         float now = now(partialTick);
@@ -129,8 +132,10 @@ abstract class FlameFirstPerson extends FlameSeen {
             look[0] += glance[0] * watching[1];
             look[1] += glance[1] * watching[1];
         }
-        if (state.move().kind() == FlameMove.Kind.SWEEP) {
-            look[1] += pose(player, state, partialTick).sweep() * SWEEP_LOOK;
+        if (state.move().kind() == FlameMove.Kind.ATTACK) {
+            FlameCurves.Pose pose = pose(player, state, partialTick);
+            look[1] += pose.sweep() * SWEEP_LOOK;
+            look[0] += (float) (Math.asin(pose.muzzle().y) - Math.asin(FlameKeys.GUARD.muzzle().y)) * SWEEP_LOOK;
         }
         float amount = feel * (float) Ease.smooth(shown);
         return new float[] { look[0] * amount, look[1] * amount };
@@ -150,9 +155,12 @@ abstract class FlameFirstPerson extends FlameSeen {
         mine.felt = t;
         float at = mine.start + t;
         switch (mine.move.kind()) {
-            case SWEEP -> {
-                if (t == FlameMove.SPRAY_FROM) {
-                    kick(at, 0.5F, mine.move == FlameMove.SWEEP ? -1.0F : 1.0F);
+            case ATTACK -> {
+                for (FlameMove.Stroke stroke : mine.move.strokes()) {
+                    if (t == (int) Math.ceil(stroke.from())) {
+                        double turn = stroke.aim(stroke.to()).yaw() - stroke.aim(stroke.from()).yaw();
+                        kick(at, 0.25F + 0.25F * (float) mine.move.power(), (float) Math.signum(turn));
+                    }
                 }
             }
             case INFERNO -> {

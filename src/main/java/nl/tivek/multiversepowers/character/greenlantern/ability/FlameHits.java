@@ -29,9 +29,8 @@ import nl.tivek.multiversepowers.faction.Factions;
 
 abstract class FlameHits implements Effect {
     private static final double CHEST = 0.62;
-    private static final double TALL = 1.8;
     private static final double CLOSE = 1.0;
-    private static final double SWEEP_SLACK = 8.0;
+    private static final int SAMPLES = 8;
     private static final double STREAM_NEAR = 0.35;
     private static final double STREAM_FAR = 1.45;
     private static final double VORTEX_TALL = 3.4;
@@ -51,17 +50,22 @@ abstract class FlameHits implements Effect {
         return GameCharacter.GREEN_LANTERN.byName("construct_wheel");
     }
 
-    void sweep(ServerLevel level, int t) {
+    // Everything the flame passed over in the last two ticks: the aim swept from one way to the next, and the fire
+    // reaches a little beside and above it, more for a big target.
+    void spray(ServerLevel level, FlameMove.Stroke stroke, int t) {
         CharacterAbility wheel = wheel();
-        double a = FlameMove.sweepYaw(this.move, t - 2.0);
-        double b = FlameMove.sweepYaw(this.move, t);
-        double low = Math.min(a, b) - SWEEP_SLACK;
-        double high = Math.max(a, b) + SWEEP_SLACK;
+        FlameMove.Fire fire = this.move.fire();
+        double was = Mth.clamp(t - 2.0, stroke.from(), stroke.to());
+        double now = Mth.clamp((double) t, stroke.from(), stroke.to());
+        Vec3 look = this.owner.getLookAngle();
+        Vec3[] ways = new Vec3[SAMPLES];
+        for (int s = 0; s < SAMPLES; s++) {
+            ways[s] = FlameMove.way(look, stroke.aim(Mth.lerp(s / (SAMPLES - 1.0), was, now)));
+        }
+        double turning = Math.signum(stroke.aim(now).yaw() - stroke.aim(was).yaw());
         Vec3 origin = this.owner.position().add(0.0, this.owner.getBbHeight() * CHEST, 0.0);
-        Vec3 look = flat(this.owner.getLookAngle());
-        Vec3 right = new Vec3(-look.z, 0.0, look.x);
-        double reach = wheel.value("sweepReach");
-        double side = this.move == FlameMove.SWEEP_BACK ? 1.0 : -1.0;
+        Vec3 ahead = flat(look);
+        double reach = wheel.value("sweepReach") * this.move.reach();
         int struck = 0;
         for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, new AABB(origin, origin)
                 .inflate(reach + 1.5), this::fair)) {
@@ -70,12 +74,12 @@ abstract class FlameHits implements Effect {
             }
             Vec3 middle = target.getBoundingBox().getCenter();
             Vec3 to = middle.subtract(origin);
+            double far = to.length();
             double flat = Math.sqrt(to.x * to.x + to.z * to.z) - target.getBbWidth() * 0.5;
-            if (flat > reach || Math.abs(to.y) > TALL + target.getBbHeight() * 0.5) {
+            if (far - target.getBbWidth() * 0.5 > reach) {
                 continue;
             }
-            double angle = Math.toDegrees(Math.atan2(to.dot(right), to.dot(look)));
-            if (flat > CLOSE && (angle < low || angle > high)) {
+            if (flat > CLOSE && !inFlame(ways, to, fire, target, far)) {
                 continue;
             }
             if (this.blocked(level, origin, middle)) {
@@ -83,10 +87,12 @@ abstract class FlameHits implements Effect {
             }
             this.swept.add(target.getId());
             target.invulnerableTime = 0;
-            target.hurt(level.damageSources().playerAttack(this.owner), (float) wheel.value("sweepDamage"));
+            target.hurt(level.damageSources().playerAttack(this.owner),
+                    (float) (wheel.value("sweepDamage") * this.move.power()));
             Vec3 away = new Vec3(to.x, 0.0, to.z);
-            away = away.lengthSqr() < 1.0E-4 ? look : away.normalize();
-            shove(target, away.scale(0.6).add(right.scale(side * 0.5)), 0.45, 0.12);
+            away = away.lengthSqr() < 1.0E-4 ? ahead : away.normalize();
+            Vec3 along = new Vec3(-away.z, 0.0, away.x).scale(turning);
+            shove(target, away.scale(this.move.away()).add(along.scale(this.move.side())), 1.0, this.move.lift());
             FlameBurn.ignite(level, target);
             ParticleFx.cloud(level, ParticleFx.fade(0xE4FFEA, PowerRing.GREEN, 1.2F), middle, 8, 0.3, 0.06);
             struck++;
@@ -189,6 +195,29 @@ abstract class FlameHits implements Effect {
         }
         ParticleFx.cloud(level, ParticleFx.dust(0xD8FFE2, 1.0F), spot, 6, 0.15, 0.05);
         level.playSound(null, spot.x, spot.y, spot.z, SoundEvents.FIRE_EXTINGUISH, SoundSource.PLAYERS, 0.5F, 1.6F);
+    }
+
+    // Within the fire round one of the ways the aim took: an oval, wider for a bigger or nearer target.
+    private static boolean inFlame(Vec3[] ways, Vec3 to, FlameMove.Fire fire, LivingEntity target, double far) {
+        double wide = fire.across + Math.toDegrees(Math.atan2(target.getBbWidth() * 0.5, Math.max(0.5, far)));
+        double tall = fire.high + Math.toDegrees(Math.atan2(target.getBbHeight() * 0.5, Math.max(0.5, far)));
+        Vec3 dir = to.normalize();
+        for (Vec3 way : ways) {
+            Vec3 aim = way.normalize();
+            double ahead = dir.dot(aim);
+            if (ahead <= 0.0) {
+                continue;
+            }
+            Vec3 side = aim.cross(new Vec3(0.0, 1.0, 0.0));
+            side = side.lengthSqr() < 1.0E-6 ? new Vec3(1.0, 0.0, 0.0) : side.normalize();
+            Vec3 up = side.cross(aim);
+            double across = Math.toDegrees(Math.atan2(dir.dot(side), ahead)) / wide;
+            double high = Math.toDegrees(Math.atan2(dir.dot(up), ahead)) / tall;
+            if (across * across + high * high <= 1.0) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private boolean blocked(ServerLevel level, Vec3 from, Vec3 to) {

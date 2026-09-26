@@ -6,5 +6,13 @@
         "stream": true
       }
     ]
+  },
+  "ring.arrival_speech": {
+    "subtitle": "subtitles.welcomescreen.ring.arrival_speech",
+    "sounds": [
+      {
+        "name": "welcomescreen:ring/arrival_speech"
+      }
+    ]
   }
 }

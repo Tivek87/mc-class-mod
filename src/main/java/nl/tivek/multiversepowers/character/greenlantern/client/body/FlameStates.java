@@ -129,7 +129,7 @@ abstract class FlameStates {
                 blend.before = blend.move;
                 blend.beforeStart = blend.start;
                 blend.switchedAt = start;
-                blend.from = then;
+                blend.from = then.unwound();
                 blend.fromSpeed = speed;
             }
             blend.move = state.move();
@@ -161,7 +161,7 @@ abstract class FlameStates {
             return pose;
         }
         float lower = (float) Ease.smooth((now - blend.brokeAt - LOWER_FROM) / LOWER_TICKS);
-        return lower <= 0.0F ? pose : pose.mix(FlameKeys.REST, lower);
+        return lower <= 0.0F ? pose : pose.unwound().mix(FlameKeys.REST, lower);
     }
 
     static float heat(Entity player) {

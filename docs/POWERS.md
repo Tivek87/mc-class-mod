@@ -120,8 +120,10 @@ The ring makes Green Lantern's uniform over your own clothes.
   spreads over you out of the ring: up your arm to the lantern on your chest, from there over your whole body, and
   only once all of it is on, the mask over your eyes. Your eyes light up behind it, a surge of light runs over the
   whole suit, and the ring says *"Welcome to the Green Lantern Corps."* Last of all you hit the lantern with your
-  ring fist and the ring fills up (the recharge, see below). All of it takes about 8 seconds; until then the ring
-  does nothing else. The uniform: the
+  ring fist and the ring fills up (the recharge, see below). All of it plays out slowly and takes about 10 seconds,
+  and all that time the ring speaks to you in its own voice, fading in as it comes and fading out at the end; you
+  hear it only then, and anyone near you hears it too, fainter further off. Until it is done the ring does nothing
+  else. The uniform: the
   green and black suit with the lantern on the chest, white gloves, and a green mask over your eyes. Your own
   face and hair stay.
 - The ring sits on top of the middle finger of your right hand, on the back of the hand, close to the
@@ -276,6 +278,13 @@ Green Lantern recharges his ring at his lantern, the power battery.
   together; you bank into your turns, dive head first and climb head up, and your head keeps looking where
   you look. A streak of green light trails behind you at speed, and flying low throws up dust from the
   ground or spray from the water below.
+- **The jetpack:** the moment you pick up speed and lie down into your flight, the ring shoots a ball of green
+  light round onto your back, and there a jetpack of hard light grows out of it, piece by piece: a back plate,
+  two tanks with bands round them, a nozzle under each, fins on their sides and a strap across your chest, each
+  part white-hot as it forms and cooling to green. Two sparks, and green plasma flames roar out of the nozzles
+  down past your feet, as if it is what drives you: long and loud at full speed, a small flame while you hover.
+  It stays on your back until you land or stop flying, then breaks into solid pieces. Everyone sees it; in first
+  person you only see the ball leave your ring.
 - **Flying over new land:** while you fly, the world is made ready round you (128 blocks) and far ahead along the
   way you fly (8 seconds of flying), before you get there, so you no longer stop dead in the air at the edge of
   land the game has not made yet. Should the world still not keep up (a slow computer, a very high top speed),
@@ -570,10 +579,17 @@ plasma, green with a white-hot heart.
   from the nozzle. You can fire from the moment the pilot light burns. Putting it away (any other slot, or empty
   hands), it breaks into solid pieces, only as far as it had grown. Everyone sees it; a camera shake of 0 keeps your
   view still.
-- **Left click (sweep of flame):** you swing the nozzle from right to left and a wide fan of flame rolls out along
-  the whole arc, curling up as it goes; the next click sweeps back from left to right, so quick clicks flow into
-  each other. Everything in the arc takes **2 hearts** and is shoved the way the flame went, up to 5.5 blocks.
-  Costs 0.3 power.
+- **Left click (flame attacks):** one of **twelve** moves, a different one every click and never the same twice in
+  a row: a sweep of flame from right to left, one back from left to right, a sweep rising from low left to high
+  right, one chopping down from high right to low left, a geyser (the nozzle at the ground before you, then
+  flicked up: it throws what it hits into the air), a whip of fire from over your head down onto the ground (the
+  hardest), a quick fireball burst straight ahead, a lunge with a step forward and a long narrow jet (it reaches
+  furthest, 7.5 blocks), a low sweep along the ground at the legs, a whole turn of your body with a ring of fire
+  all round you, two quick diagonal sweeps crossing in an X, and a corkscrew of flame spiralling forward. Every
+  move winds up, sprays and follows through; your body turns, bends and steps into it, and each one starts from
+  where the last one left your arms, so they flow into each other. The flame follows the nozzle exactly, and
+  everything it passes over takes **2 hearts** (the quick ones a little less, the heavy ones more; the X hits
+  twice) and is shoved the way the flame went, up to 5.5 blocks. Costs 0.3 power.
 - **Holding left 2 seconds (inferno):** you brace and pour out a roaring stream of fire straight at your crosshair,
   **10 blocks** far, for as long as you hold: it widens as it goes, licks upward and splashes on what it hits.
   **1.5 hearts** to everything in it every 4 ticks. Costs 1 power a second. Letting go cuts the stream; the gun

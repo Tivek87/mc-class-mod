@@ -37,6 +37,8 @@ public final class Arrival implements Effect {
     public static final int DRESSED = RING_ON + SUIT_TICKS;
     public static final int RECHARGE = DRESSED + 2;
     public static final int TICKS = RECHARGE + PowerRing.RECHARGE_TICKS;
+    // The timeline above plays slower, exactly 2 seconds longer, so the ring's speech fits it.
+    public static final int PLAYED_TICKS = TICKS + 40;
     public static final double HOVER = 3.0;
     public static final double PILLAR_HIGH = 24.0;
     public static final double FEAR_RADIUS = 16.0;
@@ -95,6 +97,10 @@ public final class Arrival implements Effect {
         ACTIVE.clear();
     }
 
+    public static float moment(float played) {
+        return played * TICKS / PLAYED_TICKS;
+    }
+
     private static Vec3 start(ServerPlayer owner, ServerLevel level) {
         RandomSource random = owner.getRandom();
         Vec3 eye = owner.getEyePosition();
@@ -129,7 +135,22 @@ public final class Arrival implements Effect {
             return false;
         }
         this.ticks++;
-        switch (this.ticks) {
+        int moment = this.ticks * TICKS / PLAYED_TICKS;
+        if (moment != (this.ticks - 1) * TICKS / PLAYED_TICKS) {
+            this.cue(level, moment);
+        }
+        if (this.ticks % 20 == 0) {
+            PowerRing.sync(this.owner);
+        }
+        if (this.ticks >= PLAYED_TICKS) {
+            end(this.owner);
+            return false;
+        }
+        return true;
+    }
+
+    private void cue(ServerLevel level, int moment) {
+        switch (moment) {
             case SET_OFF -> this.sound(level, SoundEvents.TRIDENT_RIPTIDE_2, 0.8F, 1.3F);
             case PASS -> this.sound(level, SoundEvents.TRIDENT_RIPTIDE_1, 0.7F, 1.7F);
             case APPROACH -> {
@@ -161,7 +182,7 @@ public final class Arrival implements Effect {
             }
             case RECHARGE -> Recharge.arrive(this.owner, level);
             default -> {
-                int into = this.ticks - RING_ON;
+                int into = moment - RING_ON;
                 if (into > 0 && into < SUIT_TICKS - 4 && into % 6 == 0) {
                     this.sound(level, SoundEvents.AMETHYST_BLOCK_CHIME, 1.0F, 0.7F + 0.1F * into / 6.0F);
                 } else if (into == SUIT_TICKS - 4) {
@@ -169,14 +190,6 @@ public final class Arrival implements Effect {
                 }
             }
         }
-        if (this.ticks % 20 == 0) {
-            PowerRing.sync(this.owner);
-        }
-        if (this.ticks >= TICKS) {
-            end(this.owner);
-            return false;
-        }
-        return true;
     }
 
     private void ringOn(ServerLevel level) {

@@ -13,6 +13,7 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.character.CharacterAbility;
 import nl.tivek.multiversepowers.character.GameCharacter;
+import nl.tivek.multiversepowers.character.greenlantern.Arrival;
 import nl.tivek.multiversepowers.character.greenlantern.PowerRing;
 import nl.tivek.multiversepowers.engine.effect.Effect;
 import nl.tivek.multiversepowers.engine.effect.Effects;
@@ -23,11 +24,15 @@ public final class Recharge implements Effect {
 
     private final ServerPlayer owner;
     private final float restore;
+    private final int made;
+    private final int played;
     private int ticks;
 
-    private Recharge(ServerPlayer owner, float restore) {
+    private Recharge(ServerPlayer owner, float restore, int made, int played) {
         this.owner = owner;
         this.restore = restore;
+        this.made = made;
+        this.played = played;
     }
 
     public static boolean recharge(ServerPlayer owner, ServerLevel level, CharacterAbility ability) {
@@ -52,7 +57,7 @@ public final class Recharge implements Effect {
         LightBeam.stop(owner);
         LightShield.stop(owner);
         LightDome.lower(owner);
-        Recharge lantern = new Recharge(owner, (float) ability.value("powerRestored"));
+        Recharge lantern = new Recharge(owner, (float) ability.value("powerRestored"), 1, 1);
         ACTIVE.put(owner.getUUID(), lantern);
         Effects.start(level, lantern);
         lantern.sound(level, SoundEvents.BEACON_POWER_SELECT, 0.8F, 0.8F);
@@ -66,7 +71,9 @@ public final class Recharge implements Effect {
         if (busy(owner) || ability == null) {
             return;
         }
-        Recharge lantern = new Recharge(owner, (float) ability.value("powerRestored"));
+        // Part of the arrival, so it plays at the arrival's slower pace.
+        Recharge lantern = new Recharge(owner, (float) ability.value("powerRestored"), Arrival.TICKS,
+                Arrival.PLAYED_TICKS);
         ACTIVE.put(owner.getUUID(), lantern);
         Effects.start(level, lantern);
         lantern.sound(level, SoundEvents.BEACON_POWER_SELECT, 0.8F, 0.8F);
@@ -96,13 +103,15 @@ public final class Recharge implements Effect {
             return false;
         }
         this.ticks++;
-        if (this.ticks == PowerRing.RECHARGE_HIT) {
-            this.hit(level);
-        } else if (this.ticks > PowerRing.RECHARGE_HIT && this.ticks < PowerRing.RECHARGE_BACK
-                && this.ticks % 2 == 0) {
-            this.rays(level);
+        int moment = this.ticks * this.made / this.played;
+        if (moment != (this.ticks - 1) * this.made / this.played) {
+            if (moment == PowerRing.RECHARGE_HIT) {
+                this.hit(level);
+            } else if (moment > PowerRing.RECHARGE_HIT && moment < PowerRing.RECHARGE_BACK && moment % 2 == 0) {
+                this.rays(level);
+            }
         }
-        if (this.ticks >= PowerRing.RECHARGE_TICKS) {
+        if (moment >= PowerRing.RECHARGE_TICKS) {
             this.stop();
             return false;
         }

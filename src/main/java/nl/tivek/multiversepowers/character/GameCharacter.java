@@ -128,11 +128,14 @@ public enum GameCharacter {
                                     + " its edge")
                     .setting("slamRadius", 3.5, 0.5, 10.0, Unit.BLOCKS,
                             "How far that shockwave reaches, in blocks")
-                    .group("flame_sweep", "Plasma Flamethrower: sweep (left click)")
+                    .group("flame_sweep", "Plasma Flamethrower: flame attacks (left click)")
                     .setting("sweepDamage", 4.0, 0.0, 2000.0, Unit.HALF_HEARTS,
-                            "Damage of one sweep of flame to every creature it passes over, in half hearts")
-                    .setting("sweepReach", 5.5, 1.0, 12.0, Unit.BLOCKS, "How far the sweep of flame reaches, in blocks")
-                    .setting("sweepPowerCost", 0.3, 0.0, 100.0, Unit.POWER, "Ring power one sweep costs")
+                            "Damage of one flame attack to every creature it passes over, in half hearts (the quick "
+                                    + "ones a little less, the heavy ones more)")
+                    .setting("sweepReach", 5.5, 1.0, 12.0, Unit.BLOCKS,
+                            "How far the flame attacks reach, in blocks (the lunge further, the geyser, burst and "
+                                    + "spin less)")
+                    .setting("sweepPowerCost", 0.3, 0.0, 100.0, Unit.POWER, "Ring power one flame attack costs")
                     .group("flame_inferno", "Plasma Flamethrower: inferno (hold left 2 seconds)")
                     .setting("infernoDamage", 3.0, 0.0, 2000.0, Unit.HALF_HEARTS,
                             "Damage the stream of fire does to everything in it, in half hearts, once every"

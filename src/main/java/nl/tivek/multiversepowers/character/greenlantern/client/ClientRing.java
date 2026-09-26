@@ -82,7 +82,7 @@ public final class ClientRing {
             return -1.0F;
         }
         float ticks = clientTicks - state.came() + partialTick;
-        return ticks < Arrival.TICKS + SLACK ? Math.max(0.0F, ticks) : -1.0F;
+        return ticks < Arrival.PLAYED_TICKS + SLACK ? Arrival.moment(Math.max(0.0F, ticks)) : -1.0F;
     }
 
     @Nullable
@@ -135,6 +135,12 @@ public final class ClientRing {
     }
 
     public static float recharge(Entity player, float partialTick) {
+        // The arrival's own recharge keeps to the arrival's slower clock.
+        float arrival = arrival(player, partialTick);
+        if (arrival >= Arrival.RECHARGE) {
+            float t = arrival - Arrival.RECHARGE;
+            return t < PowerRing.RECHARGE_TICKS ? t : -1.0F;
+        }
         State state = RINGS.get(player.getId());
         if (state == null || !state.recharging()) {
             return -1.0F;

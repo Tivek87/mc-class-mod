@@ -30,9 +30,32 @@ final class FlamePoses extends FlameKeys {
                 Keyframes.Key[] keys = MOVES.get(move);
                 float end = keys == null ? 0.0F : Keyframes.end(keys) + SETTLE;
                 Pose rest = idle(time, (float) Ease.smoother((t - end) / IDLE_IN));
-                yield keys == null ? rest : keyed(keys, t, from, fromSpeed, rest, SETTLE);
+                if (move == FlameMove.SPIN) {
+                    rest = rest.orbiting(Mth.TWO_PI);
+                }
+                yield keys == null ? rest : along(move, t, keyed(keys, t, from, fromSpeed, rest, SETTLE));
             }
         };
+    }
+
+    // While a stroke sprays the nozzle points just where its flame goes; the keys at both ends of it agree.
+    private static Pose along(FlameMove move, float t, Pose pose) {
+        FlameMove.Aim aim = move.aim(t);
+        if (aim == null) {
+            return pose;
+        }
+        float[] n = pose.numbers();
+        double raise = Math.toRadians(aim.pitch());
+        Vec3 muzzle = pitched(GUARD.muzzle(), raise);
+        Vec3 top = pitched(GUARD.top(), raise);
+        n[3] = (float) muzzle.x;
+        n[4] = (float) muzzle.y;
+        n[5] = (float) muzzle.z;
+        n[6] = (float) top.x;
+        n[7] = (float) top.y;
+        n[8] = (float) top.z;
+        n[17] = (float) Math.toRadians(aim.yaw()) + pose.orbit();
+        return Pose.of(n);
     }
 
     static Vec3 body(Vec3 view) {
@@ -94,8 +117,8 @@ final class FlamePoses extends FlameKeys {
                 double valve = Ease.smooth((t - FlameMove.VALVE + 1.5) / 2.5) * Math.PI * 0.5;
                 yield new FlamePainter.Glow(fill, heat, pilot, spark, test, valve);
             }
-            case SWEEP -> new FlamePainter.Glow(1.0, heat, 1.0, 0.0, FlameMove.spraying(move, t) ? 1.0
-                    : flash(t - FlameMove.SPRAY_TO), Math.PI * 0.5);
+            case ATTACK -> new FlamePainter.Glow(1.0, heat, 1.0, 0.0, move.spraying(t) ? 1.0
+                    : flash(move.sinceSpray(t)), Math.PI * 0.5);
             case INFERNO -> new FlamePainter.Glow(1.0, heat, 1.0, 0.0, firing && t >= FlameMove.BRACE - 1 ? 1.0
                     : 0.4, Math.PI * 0.5);
             case WALL -> new FlamePainter.Glow(1.0, heat, 1.0, 0.0, t >= FlameMove.LAY_FROM
@@ -111,7 +134,7 @@ final class FlamePoses extends FlameKeys {
         return switch (move.kind()) {
             case INFERNO -> firing ? 1.0F : 0.0F;
             case VORTEX -> swirling ? 0.7F : 0.0F;
-            case SWEEP -> FlameMove.spraying(move, t) ? 0.6F : 0.0F;
+            case ATTACK -> move.spraying(t) ? 0.6F * (float) move.power() : 0.0F;
             case EQUIP -> t >= FlameMove.TEST && t < FlameMove.HISS ? 0.8F : 0.0F;
             case WALL -> t >= FlameMove.LAY_FROM && t < FlameMove.LAY_TO ? 0.6F : 0.0F;
             case BURST -> t < 4.0F ? 0.9F : 0.0F;
