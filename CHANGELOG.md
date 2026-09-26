@@ -3,6 +3,11 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.2.0-alpha] - 2026-09-26
+
+### Changed
+- **Releases:** old versions now stay on the Releases page; only the makers' own folder keeps just the newest 10.
+
 ## [0.1.9-alpha] - 2026-09-26
 
 ### Added

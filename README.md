@@ -56,8 +56,8 @@ sends its own to everyone who plays on it. What only you see (screen shake) is i
 
 ## Versions
 
-Every update is one step higher: `0.0.1`, `0.0.2` ... `0.0.9`, `0.1.0` ... `9.9.9`. The newest 10 versions stay
-on the [Releases](https://github.com/Tivek87/mc-class-mod/releases) page. What changed: [CHANGELOG.md](CHANGELOG.md).
+Every update is one step higher: `0.0.1`, `0.0.2` ... `0.0.9`, `0.1.0` ... `9.9.9`. Every version from `0.1.0` on
+stays on the [Releases](https://github.com/Tivek87/mc-class-mod/releases) page. What changed: [CHANGELOG.md](CHANGELOG.md).
 
 ## Building from source
 
@@ -76,7 +76,7 @@ The jar lands in `build/libs/`. `./gradlew runClient` starts a test game, `./gra
 | `src/main/java/nl/tivek/multiversepowers/` | The mod. `engine/` holds what every power can use, `character/` one folder per character, plus `spell/`, `classes/`, `stamina/`, `config/`, `network/`. |
 | `src/main/resources/` | Textures, sounds, `en_us.json` (all in-game text) |
 | `docs/` | How everything plays, per topic |
-| `scripts/` | `release.ps1`: builds a release and keeps the newest 10. `bugs.ps1`: copies the open bug reports and ideas to `bugs/` (ignored). `bug-relay/`: the Cloudflare Worker that turns a report or idea from the game into an issue |
+| `scripts/` | `release.ps1`: builds a release and keeps the newest 10 jars in `releases/` (ignored). `bugs.ps1`: copies the open bug reports and ideas to `bugs/` (ignored). `bug-relay/`: the Cloudflare Worker that turns a report or idea from the game into an issue |
 
 ## License
 

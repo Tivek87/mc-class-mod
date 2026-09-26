@@ -110,13 +110,5 @@ $local | Select-Object -Skip $Keep | ForEach-Object {
     Remove-Item $_.File.FullName
     Write-Host "Deleted old releases\$($_.File.Name)"
 }
-
-$online = gh release list --limit 200 --json tagName | ConvertFrom-Json | ForEach-Object {
-    try { [pscustomobject]@{ Tag = $_.tagName; Number = (Split-Version $_.tagName.TrimStart('v')).Number } } catch { $null }
-} | Where-Object { $_ } | Sort-Object Number -Descending
-$online | Select-Object -Skip $Keep | ForEach-Object {
-    gh release delete $_.Tag --cleanup-tag --yes
-    Write-Host "Deleted old GitHub release $($_.Tag)"
-}
 & (Join-Path $PSScriptRoot 'bugs.ps1') close $version
 Write-Host "Released v$version"
