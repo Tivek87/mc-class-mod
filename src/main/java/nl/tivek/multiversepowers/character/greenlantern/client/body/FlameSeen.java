@@ -105,8 +105,9 @@ abstract class FlameSeen extends FlameStates {
         model.body.setRotation(torso.bend(), torso.twist(), -torso.roll());
         model.head.setPos((float) neck.x, (float) neck.y, (float) neck.z);
         shoulders(model, torso);
-        FlameBody.Legs legs = FlameBody.legs(pose, ours);
-        float hold = ours * Mth.clamp(Math.max(Math.max(pose.squat(), pose.kneel()), 2.0F * Math.max(
+        float stand = ours * standing(entity, partialTick);
+        FlameBody.Legs legs = FlameBody.legs(pose, stand);
+        float hold = stand * Mth.clamp(Math.max(Math.max(pose.squat(), pose.kneel()), 2.0F * Math.max(
                 Math.abs(pose.step()), pose.wide())), 0.0F, 1.0F);
         legs(model.rightLeg, hold, legs.rightThigh(), legs.spread(), FlameBody.hip(true), ours);
         legs(model.leftLeg, hold, legs.leftThigh(), -legs.spread(), FlameBody.hip(false), ours);
@@ -116,6 +117,11 @@ abstract class FlameSeen extends FlameStates {
         model.leftSleeve.copyFrom(model.leftArm);
         model.rightPants.copyFrom(model.rightLeg);
         model.leftPants.copyFrom(model.leftLeg);
+    }
+
+    // Walking takes the legs back: the stance only shows while standing still, so the feet never slide.
+    private static float standing(LivingEntity entity, float partialTick) {
+        return 1.0F - (float) Ease.smooth(Math.min(1.0F, entity.walkAnimation.speed(partialTick) * 3.0F));
     }
 
     private static void legs(ModelPart leg, float hold, float thigh, float spread, Vec3 hip, float ours) {
@@ -259,7 +265,7 @@ abstract class FlameSeen extends FlameStates {
         }
         FlameCurves.Pose pose = pose(event.getEntity(), state, event.getPartialTick());
         float ours = 1.0F - Mth.clamp(pose.rest(), 0.0F, 1.0F);
-        FlameBody.Legs legs = FlameBody.legs(pose, ours);
+        FlameBody.Legs legs = FlameBody.legs(pose, ours * standing(event.getEntity(), event.getPartialTick()));
         boolean bent = FlameBody.bent(legs) && !event.getEntity().isInvisible();
         if (Math.abs(pose.orbit()) >= 1.0E-3F || Math.abs(legs.drop()) >= 1.0E-3F || bent) {
             TURNED.put(event.getEntity().getId(), new Turned(pose.orbit(), legs.drop(), bent ? FlameBody.knees(legs)

@@ -570,7 +570,8 @@ something; a ring of light pulses out of the nozzle while it fires.
 - **How you hold it:** in first person the gun lies low at the bottom right of your screen, its nozzle toward the
   middle, your right fist on the pistol grip and your left hand on the front grip. Seen from outside he holds it
   before his belly with both hands, his body turned a little behind it, feet apart and knees soft, never quite
-  still: he breathes and his weight drifts from foot to foot.
+  still: he breathes and his weight drifts from foot to foot. When he walks, also while firing, his legs walk as
+  normal and only his body turns with the gun.
 - **Taking it out:** your hands come up into view while the gun grows out of the ring's light, piece by piece: the
   grip in your fist, then the body, the tank swelling out of its middle, the barrel running forward, the cooling fins
   popping on one after the other, the nozzle, the hose snaking from the tank into the body, the front grip and the

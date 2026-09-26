@@ -17,7 +17,8 @@ the sections before 0.0.1-alpha came before versions were numbered.
   cast while falling.
 - **Void Walk:** your first melee hit out of the void does 50% more, blinds and slows, and ends the walk; faint
   wisps where your feet fall and a warning two seconds before it ends.
-- **Flamethrower, stance:** feet apart, knees soft, breathing and shifting weight; the knees really bend.
+- **Flamethrower, stance:** feet apart, knees soft, breathing and shifting weight; the knees really bend. When
+  you walk, your legs walk as normal, also while firing.
 
 ### Changed
 - **Plasma Flamethrower:** 30% bigger, the front grip a little further back.
