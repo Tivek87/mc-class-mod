@@ -24,6 +24,7 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import nl.tivek.multiversepowers.character.CharacterAbility;
 import nl.tivek.multiversepowers.character.greenlantern.HandDuo;
+import nl.tivek.multiversepowers.character.greenlantern.HandGroup;
 import nl.tivek.multiversepowers.character.greenlantern.HandPose;
 import nl.tivek.multiversepowers.character.greenlantern.PowerRing;
 import nl.tivek.multiversepowers.engine.effect.Effect;
@@ -45,9 +46,18 @@ public final class GiantHands implements Effect {
     private static final int LOOK_AGAIN = 5;
     private static final double LEAST_AWAY = 0.3;
     // Hands that may come out of a wall next to the creature instead of the ground, and how often when one is there.
-    private static final Set<Integer> WALLED = Set.of(HandPose.RAGDOLL, HandPose.RINGBEAM, HandPose.SCOOP);
-    private static final double WALL_CHANCE = 0.75;
-    private static final double WALL_NEAR = 3.5;
+    private static final Set<Integer> WALLED = Set.of(HandPose.SMACK, HandPose.GRAB, HandPose.FINGER, HandPose.SLAM,
+            HandPose.POUND, HandPose.SNAP, HandPose.RAKE, HandPose.RAGDOLL, HandPose.RINGBEAM, HandPose.SCOOP,
+            HandPose.EYE, HandPose.MEGAPHONE);
+    // Hands that act from afar and so may stand higher or lower than the creature.
+    private static final Set<Integer> FAR = Set.of(HandPose.RINGBEAM, HandPose.EYE, HandPose.MEGAPHONE);
+    private static final double WALL_CHANCE = 0.6;
+    private static final double WALL_NEAR = 4.5;
+    private static final int GROUND_TURNS = 8;
+    // How far above the creature a hand out of a wall stands at most, so low walls serve too.
+    private static final double WALL_HIGH = 4.0;
+    // How far out of its ground or wall a hand looks for its creature from.
+    private static final double SEES_FROM = 1.5;
     // How likely the ragdoll's throw is followed by a hand out of a portal catching the creature in the air.
     private static final double CATCH_CHANCE = 0.5;
 
@@ -293,7 +303,8 @@ public final class GiantHands implements Effect {
 
     private boolean may(int move, boolean grabbable, boolean pair, boolean fresh) {
         boolean holds = move == HandPose.GRAB || move == HandPose.PINCH || move == HandPose.DRAG
-                || move == HandPose.RAGDOLL || move == HandPose.SWALLOW || move == HandPose.RINGHOLD;
+                || move == HandPose.RAGDOLL || move == HandPose.SWALLOW || move == HandPose.RINGHOLD
+                || move == HandPose.EYE;
         return HandPose.pickable(move) && (!fresh || move != this.lastMove) && this.made[move] < this.most(move)
                 && (!holds || grabbable) && (move != HandPose.AXE || pair);
     }
@@ -333,32 +344,41 @@ public final class GiantHands implements Effect {
                 return walled;
             }
         }
-        double side = random.nextBoolean() ? 1.0 : -1.0;
-        for (int attempt = 0; attempt < 4; attempt++) {
-            // A scoop comes up on the far side and tosses the creature over itself, away from the caster; a ring beam
-            // stands off to one side and fires across.
-            Vec3 reach = move == HandPose.SCOOP ? away.scale(-1.0)
-                    : move == HandPose.RINGBEAM ? Vectors.spin(away, Vectors.UP, side * Math.PI * 0.5) : away;
+        GiantHand grounded = this.groundHand(level, target, move, extra, away);
+        if (grounded != null || !WALLED.contains(move)) {
+            return grounded;
+        }
+        // No room on the ground: a wall next to it will do, whatever the chance said.
+        return this.wallHand(level, target, move, extra);
+    }
+
+    // The first spot round the creature where the ground is level and the whole move stays clear of blocks: the way
+    // the move likes best first, then turned further and further round.
+    @Nullable
+    private GiantHand groundHand(ServerLevel level, LivingEntity target, int move, int extra, Vec3 away) {
+        double side = this.owner.getRandom().nextBoolean() ? 1.0 : -1.0;
+        // A scoop and the evil eye come up on the far side, facing the caster's way; a ring beam and a megaphone stand
+        // off to one side and fire across.
+        Vec3 liked = move == HandPose.SCOOP || move == HandPose.EYE ? away.scale(-1.0)
+                : move == HandPose.RINGBEAM || move == HandPose.MEGAPHONE || move == HandPose.SMACK
+                        ? Vectors.spin(away, Vectors.UP, side * Math.PI * 0.5) : away;
+        for (int k = 0; k < GROUND_TURNS; k++) {
+            int step = (k + 1) / 2;
+            double turn = (k % 2 == 1 ? side : -side) * step * Math.PI * 2.0 / GROUND_TURNS;
+            Vec3 reach = Vectors.spin(liked, Vectors.UP, turn);
             int variant = HandPose.variant(move, move == HandPose.SNAP && side < 0.0, false, extra);
             if (move == HandPose.SMACK) {
-                reach = Vectors.spin(away, Vectors.UP, side * Math.PI * 0.5);
-                Vec3 right = reach.cross(Vectors.UP);
-                variant = right.dot(away) > 0.0 ? move : move + HandPose.MOVES;
-            }
-            if (attempt > 0) {
-                reach = Vectors.spin(reach, Vectors.UP, Math.PI * (attempt == 1 ? 1.0 : attempt == 2 ? 0.5 : -0.5));
-                if (move == HandPose.SMACK) {
-                    Vec3 right = reach.cross(Vectors.UP);
-                    variant = right.dot(away) > 0.0 ? move : move + HandPose.MOVES;
-                }
+                variant = reach.cross(Vectors.UP).dot(away) > 0.0 ? move : move + HandPose.MOVES;
             }
             Vec3 spot = target.position().subtract(reach.scale(HandPose.spot(move) * SCALE));
             Vec3 base = GiantHandSpots.ground(level, spot, target.getY());
-            if (base != null) {
-                GiantHand hand = new GiantHand(this, variant, base, target);
-                if (this.fits(hand)) {
-                    return hand;
-                }
+            if (base == null || !GiantHandSpots.standing(level, base, target.getY(), FAR.contains(move))
+                    || !GiantHandSpots.sees(level, base.add(0.0, SEES_FROM, 0.0), target)) {
+                continue;
+            }
+            GiantHand hand = new GiantHand(this, variant, base, target);
+            if (GiantHandSpots.clear(level, hand) && this.fits(hand)) {
+                return hand;
             }
         }
         return null;
@@ -408,17 +428,18 @@ public final class GiantHands implements Effect {
                 continue;
             }
             Vec3 out = Vec3.atLowerCornerOf(hit.getDirection().getNormal());
-            Vec3 base = hit.getLocation().add(0.0, HandPose.spot(move) * SCALE, 0.0);
+            double high = Math.min(HandPose.spot(move), WALL_HIGH) * SCALE;
+            Vec3 base = hit.getLocation().add(0.0, high, 0.0);
             boolean wall = true;
-            for (double up = 0.0; up <= HandPose.spot(move) * SCALE + 1.0 && wall; up += 1.0) {
+            for (double up = 0.0; up <= high + 1.0 && wall; up += 1.0) {
                 Vec3 at = hit.getLocation().add(0.0, up, 0.0);
                 wall = GiantHandSpots.solid(level, at.subtract(out.scale(0.3))) && open(level, at.add(out.scale(0.7)));
             }
-            if (!wall) {
+            if (!wall || !GiantHandSpots.sees(level, base.add(out.scale(SEES_FROM)), target)) {
                 continue;
             }
             GiantHand hand = new GiantHand(this, HandPose.variant(move, false, true, extra), base, target, out);
-            if (this.fits(hand)) {
+            if (GiantHandSpots.clear(level, hand) && this.fits(hand)) {
                 best = hand;
                 nearest = far;
             }
@@ -459,7 +480,7 @@ public final class GiantHands implements Effect {
             Vec3 base = portalFor(target, move, facing);
             if (GiantHandSpots.portalRoom(level, target, move, base, facing)) {
                 GiantHand hand = new GiantHand(this, move, base, target, facing);
-                if (this.fits(hand)) {
+                if ((HandGroup.is(move) || GiantHandSpots.clear(level, hand)) && this.fits(hand)) {
                     return hand;
                 }
             }

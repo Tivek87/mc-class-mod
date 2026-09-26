@@ -80,12 +80,14 @@ public final class HandPainter {
         painter.ambient(GLOWS);
         cut(painter, base, portal, root);
         drawHand(painter, pose, place, false, 1.0, -1.0, 0, false);
+        HandMarvelLight.parts(painter, variant, pose, place, clock, 1.0, -1.0);
         painter.noClip();
         painter.ambient(0.0);
         painter.glare(0.0);
         blows(painter, hand, facing, clock, scale, 1.0);
         HandTrickLight.blows(painter, variant, base, facing, clock, scale, 1.0);
         HandFeatLight.blows(painter, variant, base, facing, clock, scale, 1.0);
+        HandMarvelLight.blows(painter, hand.id(), variant, pose, place, clock, ring, 1.0);
     }
 
     // A hand out of the ground or a wall is cut at its surface, one out of a portal at the portal.
@@ -158,7 +160,7 @@ public final class HandPainter {
                 place.scale());
     }
 
-    private static ConstructPainter.Frame handFrame(HandPose.Place place, boolean left) {
+    static ConstructPainter.Frame handFrame(HandPose.Place place, boolean left) {
         return new ConstructPainter.Frame(place.wrist(), left ? place.right().scale(-1.0) : place.right(), place.up(),
                 place.forward(), place.scale());
     }
@@ -214,6 +216,12 @@ public final class HandPainter {
         return digit(handFrame(place, left), pose, 4)[2].at(0.0, THUMB[2] + THUMB_THICK[2] * 0.9, 0.0);
     }
 
+    // The tip of finger k (0 index to 3 little finger, 4 the thumb), as drawn.
+    static Vec3 fingerTip(HandPose pose, HandPose.Place place, int k) {
+        return k == 4 ? thumbTip(pose, place, false)
+                : digit(handFrame(place, false), pose, k)[2].at(0.0, JOINTS[k][2], 0.0);
+    }
+
     static Vec3 indexTip(HandPose pose, HandPose.Place place, boolean left) {
         return digit(handFrame(place, left), pose, 0)[2].at(0.0, JOINTS[0][2], 0.0);
     }
@@ -261,11 +269,13 @@ public final class HandPainter {
         blows(painter, hand, facing, clock, scale, fade);
         HandTrickLight.blows(painter, hand.variant(), base, facing, clock, scale, fade);
         HandFeatLight.blows(painter, hand.variant(), base, facing, clock, scale, fade);
+        HandMarvelLight.blows(painter, hand.id(), hand.variant(), pose, place, clock, null, fade);
         painter.glare(0.5 * Math.max(0.0, 1.0 - since / 5.0));
         painter.ambient(GLOWS);
         painter.fling(1.8);
         cut(painter, base, portal, root);
         drawHand(painter, pose, place, false, 1.2, apart, 0, false);
+        HandMarvelLight.parts(painter, hand.variant(), pose, place, clock, 1.2, apart);
         painter.noClip();
         painter.fling(1.0);
         painter.ambient(0.0);

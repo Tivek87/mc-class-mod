@@ -8,6 +8,7 @@
     "MinecraftServerMixin"
   ],
   "client": [
+    "LivingEntityRendererMixin",
     "MinecraftMixin",
     "PlayerModelMixin",
     "PlayerRendererMixin"

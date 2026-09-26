@@ -17,9 +17,77 @@ import static nl.tivek.multiversepowers.character.greenlantern.ability.GiantHand
 import static nl.tivek.multiversepowers.character.greenlantern.ability.GiantHands.head;
 import static nl.tivek.multiversepowers.character.greenlantern.ability.GiantHands.open;
 
-// Where a hand can stand: the ground under a spot, and whether there is room for a portal hand or an axe pair.
+// Where a hand can stand: the ground under a spot, and whether there is room for a hand, a portal hand or an axe pair.
 final class GiantHandSpots {
+    // Points of the hand checked for blocks, in its own frame: palm, its edges, knuckles, fingers and the forearm.
+    private static final Vec3[] BODY = { HandPose.PALM, new Vec3(-1.3, 1.5, 0.0), new Vec3(1.3, 1.5, 0.0),
+            new Vec3(0.0, 3.1, 0.0), new Vec3(-1.0, 4.6, 0.2), new Vec3(0.9, 4.3, 0.2), new Vec3(0.0, -2.0, 0.0),
+            new Vec3(0.0, -4.5, 0.0) };
+    private static final int EVERY = 3;
+    // Only what is out of the ground, wall or portal counts: below its surface a hand is not there.
+    private static final double OUT = 0.35;
+    private static final double LEVEL_WIDE = 1.4;
+    private static final double LEVEL_OFF = 0.6;
+    // How much higher or lower than the creature's feet a hand may stand: most reach it from its own ground.
+    private static final double RISE_NEAR = 1.6;
+    private static final double RISE_FAR = 4.0;
+
     private GiantHandSpots() {
+    }
+
+    // The whole move stays in open air: every few ticks of its life, each point of the hand out of its surface.
+    static boolean clear(ServerLevel level, GiantHandBase hand) {
+        Vec3 facing = hand.aim.subtract(hand.base);
+        HandDuo.Portal portal = HandPose.portal(hand.variant) ? HandPose.portalOf(hand.variant, hand.base, facing,
+                HandPose.firstAct(hand.variant), SCALE) : null;
+        Vec3 surface = portal == null ? hand.base : portal.center();
+        Vec3 out = portal == null ? HandPose.rootNormal(hand.variant, facing) : portal.normal();
+        int until = HandPose.sinks(hand.variant);
+        for (int t = HandPose.ARRIVES; t <= until; t += EVERY) {
+            if (!clearAt(level, hand, t, facing, surface, out)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    // The same at one moment, for a hand that turns after its creature.
+    static boolean clearAt(ServerLevel level, GiantHandBase hand, int t, Vec3 facing, Vec3 surface, Vec3 out) {
+        HandPose.Place place = hand.pose(t).place(hand.base, facing, SCALE);
+        for (Vec3 local : BODY) {
+            Vec3 at = place.at(local);
+            if (at.subtract(surface).dot(out) > OUT && !open(level, at)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    // Nothing solid between a hand and its creature: no hand reaches, shoots or strings through a wall.
+    static boolean sees(ServerLevel level, Vec3 from, LivingEntity target) {
+        Vec3 middle = target.getBoundingBox().getCenter();
+        return LoadedWorld.clip(level, new ClipContext(from, middle, ClipContext.Block.COLLIDER,
+                ClipContext.Fluid.NONE, CollisionContext.empty())).getType() == HitResult.Type.MISS;
+    }
+
+    // Level ground all round a hand out of the ground, so it never stands half over a drop or half in a slope, and
+    // not too far above or below the creature it reaches for.
+    static boolean standing(ServerLevel level, Vec3 base, double feet, boolean far) {
+        if (Math.abs(base.y - feet) > (far ? RISE_FAR : RISE_NEAR) || !open(level, base.add(0.0, 0.5, 0.0))
+                || !open(level, base.add(0.0, 1.5, 0.0))) {
+            return false;
+        }
+        for (int k = 0; k < 4; k++) {
+            double angle = Math.PI * 0.5 * k + Math.PI * 0.25;
+            Vec3 side = base.add(Math.sin(angle) * LEVEL_WIDE, 0.0, Math.cos(angle) * LEVEL_WIDE);
+            BlockHitResult hit = LoadedWorld.clip(level, new ClipContext(side.add(0.0, LEVEL_OFF + 0.4, 0.0),
+                    side.subtract(0.0, LEVEL_OFF, 0.0), ClipContext.Block.COLLIDER, ClipContext.Fluid.ANY,
+                    CollisionContext.empty()));
+            if (hit.getType() == HitResult.Type.MISS || Math.abs(hit.getLocation().y - base.y) > LEVEL_OFF) {
+                return false;
+            }
+        }
+        return true;
     }
 
     @Nullable

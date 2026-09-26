@@ -32,10 +32,17 @@ the sections before 0.0.1-alpha came before versions were numbered.
 - **Giant Hands, swallow:** a hand pulls the creature into a portal in the ground; it falls out of one in the sky.
 - **Giant Hands, ring beam:** a fist fires a beam of light from its ring.
 - **Giant Hands, scoop:** a hand scoops the creature up and tosses it high over itself.
-- **Giant Hands out of walls:** the ragdoll slam, the ring beam and the scoop come out of a wall right beside the
-  creature instead of the ground; a ragdoll slam out of a wall slams it into the wall.
-- **Settings:** each of the fifteen new hands has its own chance, most per press, damage and knockback.
-- **Plasma Flamethrower, gauge:** bars of light along the gun fill as the inferno heads for overheating.
+- **Giant Hands, evil eye:** a hand with an eye in its palm strings up three creatures near you like puppets, lifts
+  them into the air, turns them to statues of hard light and shatters them.
+- **Giant Hands, megaphone:** a hand grabs a megaphone of hard light and blares three shockwaves; whatever they catch
+  clasps its ears and bursts in a small green blast.
+- **Giant Hands out of walls:** the smack, grab, middle finger, slap, pound, finger snap, claw rake, ragdoll slam,
+  ring beam, scoop, evil eye and megaphone come out of a wall beside the creature instead of the ground; a ragdoll
+  slam out of a wall slams it into the wall.
+- **Settings:** each of the seventeen new hands has its own chance, most per press, damage and knockback.
+- **Plasma Flamethrower, gauge:** ten big cells of light on top of the gun (and a row along its sides) fill as the
+  inferno heads for overheating, blinking faster near the end.
+- **Plasma Flamethrower:** holding a button towards the inferno or the vortex lights the gun's fins one by one.
 - **Plasma Flamethrower:** the inferno stream grows wilder the closer it gets to overheating: wider, whiter at heart,
   more sparks, sputtering at the end.
 
@@ -44,7 +51,12 @@ the sections before 0.0.1-alpha came before versions were numbered.
   your aim.
 - **Thunder Clap:** the bubble of stopped time is about 75% smaller and a little blurrier, still swelling out of your
   hands.
-- **Thunder Clap:** after the bubble a cloud of blue thunder sparks bursts out where you aimed.
+- **Thunder Clap:** everything comes at once out of the point where your hands meet: the flash, the sparks, the bubble
+  and a cloud of blue thunder sparks that streams to where you aimed; in your own view it starts right between your
+  own hands.
+- **Giant Hands:** a hand only comes up on level ground, near its creature's height, where its whole move stays in
+  open air and nothing solid stands between it and the creature; it tries every side before it gives up.
+- **Giant Hands:** a hand turning after its creature stops instead of swinging into a wall.
 - **Jetpack:** sits higher on your back and is 15% bigger.
 - **Factions:** one hit on something neutral (yellow) turns it hostile (red) at once (was three hits).
 - **Energy Whip:** the lash is 10 blocks long (was 4.5): every lash, the whirlwind and the lasso reach further; the
@@ -63,9 +75,12 @@ the sections before 0.0.1-alpha came before versions were numbered.
 ### Removed
 - **Construct bar:** the bar above the hotbar with the icon and name of the construct you hold and what it does.
 - **Thunder Clap:** the rings of light on the ground.
+- **Plasma Flamethrower:** the inferno and vortex hold rings round the crosshair (shown on the gun now).
 
 ### Fixed
 - **Thunder Clap** could not be aimed up or down, only straight ahead (bug report).
+- **Giant Hands** came up in odd spots: half over a drop, half inside a slope, behind walls, and passing through
+  walls or the ground.
 - **Neutral and passive creatures** can be hit by your powers; one hit makes them hostile, so every power goes for them
   after that (bug report).
 

@@ -447,7 +447,10 @@ abstract class GiantHandTricks extends GiantHandPair {
     }
 
     void hold(Vec3 grip) {
-        LivingEntity living = this.held;
+        hold(this.held, grip);
+    }
+
+    static void hold(LivingEntity living, Vec3 grip) {
         double y = grip.y - living.getBbHeight() * 0.5;
         living.setDeltaMovement(Vec3.ZERO);
         living.resetFallDistance();

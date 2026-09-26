@@ -59,6 +59,13 @@ abstract class GiantHandBase {
     int t;
     @Nullable
     GiantHandRoom room;
+    @Nullable
+    private HandPose.Place placed;
+    private int placedAt = -1;
+    @Nullable
+    private Vec3 placedBase;
+    @Nullable
+    private Vec3 placedAim;
 
     GiantHandBase(GiantHands storm, int variant, Vec3 base, LivingEntity target) {
         this.storm = storm;
@@ -83,8 +90,20 @@ abstract class GiantHandBase {
         this.aim = base.add(way(this.facing).scale(this.out));
     }
 
+    // Worked out once a tick: a move asks for it several times, and base and aim are only ever replaced, not changed.
     HandPose.Place place() {
-        return this.pose(this.t).place(this.base, this.aim.subtract(this.base), SCALE);
+        if (this.placed == null || this.placedAt != this.t || this.placedBase != this.base
+                || this.placedAim != this.aim) {
+            this.placed = this.pose(this.t).place(this.base, this.aim.subtract(this.base), SCALE);
+            this.placedAt = this.t;
+            this.placedBase = this.base;
+            this.placedAim = this.aim;
+        }
+        return this.placed;
+    }
+
+    int id() {
+        return this.id;
     }
 
     HandPose pose(double t) {
@@ -123,14 +142,27 @@ abstract class GiantHandBase {
             wanted = Math.max(near, far);
         }
         this.turn = follow(this.turn, off, TURN_GATHER, most);
-        this.facing = Math.IEEEremainder(this.facing + this.turn, Math.PI * 2.0);
         this.outSpeed = follow(this.outSpeed, wanted - this.out, GATHER, FOLLOW);
-        this.out += this.outSpeed;
-        if (this.out < near) {
-            this.out = near;
+        if (this.turn == 0.0 && this.outSpeed == 0.0) {
+            return;
+        }
+        double facing = Math.IEEEremainder(this.facing + this.turn, Math.PI * 2.0);
+        double out = Math.max(near, this.out + this.outSpeed);
+        Vec3 aim = this.base.add(way(facing).scale(out));
+        // Turning after the creature never swings the hand into a wall: it waits there instead.
+        Vec3 root = HandPose.rootNormal(this.variant, aim.subtract(this.base));
+        if (!GiantHandSpots.clearAt(level, this, this.t + 1, aim.subtract(this.base), this.base, root)
+                || !GiantHandSpots.clearAt(level, this, this.t + 4, aim.subtract(this.base), this.base, root)) {
+            this.turn = 0.0;
+            this.outSpeed = 0.0;
+            return;
+        }
+        this.facing = facing;
+        if (out <= near) {
             this.outSpeed = Math.max(0.0, this.outSpeed);
         }
-        this.aim = this.base.add(way(this.facing).scale(this.out));
+        this.out = out;
+        this.aim = aim;
     }
 
     private void homeSpot(ServerLevel level) {

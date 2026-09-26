@@ -666,13 +666,17 @@ something; a ring of light pulses out of the nozzle while it fires.
   the other, and follow through; each sweep starts from where the last one left your arms, so they flow into each
   other. The flame follows the nozzle exactly, and everything it passes over takes **2 hearts** and is shoved the
   way the flame went, up to 5.5 blocks. Costs 0.3 power.
+- **Holding a button towards the inferno or the vortex** shows on the gun itself, not on your screen: its seven fins
+  light up one after the other, glowing wider, until the stream or the vortex starts.
 - **Holding left 2 seconds (inferno):** you brace and pour out a roaring stream of fire straight at your crosshair,
   **10 blocks** far, for as long as you hold: it widens as it goes, licks upward and splashes on what it hits.
   **1.5 hearts** to everything in it every 4 ticks. Costs 1 power a second. Letting go cuts the stream; the gun
   vents a puff of smoke and its glowing fins cool down. The longer you pour, the wilder the stream: it grows
   wider, its heart burns whiter, it throws off more sparks, and in the last seconds it sputters and flares. A
-  **gauge** of eight bars of light along both sides of the gun fills as the stream heads for overheating, the last
-  two flashing near the end, and drains again while the gun cools.
+  **gauge** of ten big cells of light wrapped round the top of the gun, where your eye falls when you hold it (and a
+  row along both sides, so others see it too), fills as the stream heads for overheating: green, then pale, then
+  white-hot, blinking faster and faster over the last three cells with a warning flare at its end, and drains again
+  while the gun cools.
   Pour for **15 seconds** without letting go and the gun
   **overheats**: the stream dies with a hiss, the gun jolts up, you tip it aside while your left hand opens its
   valve and it vents a hissing jet of steam, and nothing fires for **2 seconds** until the valve shuts and the
@@ -850,11 +854,23 @@ Green Lantern's ultimate: a big, slow gunship of hard light high over the battle
     its knuckles down at it; the **ring** gathers light, trembling, and **fires a beam of light** across for half a
     second (**2.1 hearts** every 4 ticks to everything in it);
   - **a scoop:** a hand comes up low on the far side of the creature, palm up, slides under it and **tosses it high
-    over itself**, away from you (**3 hearts**, and the fall).
-- **Ground or wall:** the ragdoll slam, the ring beam and the scoop come out of a **wall** instead of the ground when
-  the creature stands right by one (most of the time): the wall cracks open round the hand, which moves as it would
-  out of the ground with the wall as its ground, so a ragdoll slam out of a wall **slams the creature into the
-  wall**. The other new hands come through portals.
+    over itself**, away from you (**3 hearts**, and the fall);
+  - **an evil eye:** a hand rises high on the far side of the creature, its palm to you, with an **eye** of hard light
+    shut in its palm. The eye opens and **strings of light** shoot from the fingertips to **three creatures** near
+    you (picked at random from the nearest). Working its fingers like a puppeteer, the hand **lifts them up to
+    3 blocks** into the air, swaying on their strings; the eye goes wild, its white-hot pupil darting about, and a
+    beam from it turns each one into a **statue of solid green hard light**. The hand clenches into a fist and the
+    statues **shatter** into pieces (**10.8 hearts** each). Only creatures small enough to hold;
+  - **a megaphone:** a hand rises 12 blocks off to the side of the creature, and a **megaphone** of hard light grows
+    out of its ring's light into its fist. It raises it, points it at the creature and **blares three shockwaves**:
+    rings of sound race out of the horn with a roar, and everything they catch (**0.7 hearts** a blare) **clasps its
+    ears** and shakes, until it **bursts** in a small green blast (**6 hearts**). The megaphone then breaks into
+    solid pieces.
+- **Ground or wall:** the smack, the grab, the middle finger, the slap, the pound, the finger snap, the claw rake, the
+  ragdoll slam, the ring beam, the scoop, the evil eye and the megaphone come out of a **wall** instead of the ground
+  when the creature stands by one (more than half the time, and always when the ground round it has no room): the
+  wall cracks open round the hand, which moves as it would out of the ground with the wall as its ground, so a
+  ragdoll slam out of a wall **slams the creature into the wall**. The other hands come through portals.
   - **the axe pair:** the ring's light shoots off and **two portals** of it burst open in the air on either side of
     the creature and beyond it. A giant right hand (with the ring) and a left hand (without one) push out of them,
     fingers first, and hover there, their fingers rippling up and down. The right hand **snaps its fingers**, the
@@ -872,9 +888,13 @@ Green Lantern's ultimate: a big, slow gunship of hard light high over the battle
   Hands **never come up inside each other**: a hand only comes where it has room, clear of every other hand (a pair
   and its axe too, and the hands of other players) for as long as they are up. With no room near one creature it
   goes for another, or waits until a hand is gone.
+- Hands **never pass through blocks**: a hand out of the ground only comes up on level ground, never half over a drop
+  or half in a slope, never far above or below its creature, and only where its whole move stays in open air and
+  nothing solid stands between it and the creature; it tries every side of the creature, and a wall next to it,
+  before it gives up. Turning after its creature, a hand stops rather than swing into a wall.
 - **Every kind of hand has its own settings** (smack, grab, middle finger, slap, pound, flick, pinch, finger snap,
   poke, hammer fist, claw rake, portal drag, ragdoll slam, ring blast, clap, finger gun, scissors, swallow, ring
-  beam, scoop, axe pair; the catch goes by the ragdoll slam's): how often it
+  beam, scoop, evil eye, megaphone, axe pair; the catch goes by the ragdoll slam's): how often it
   comes compared with the others (0 = never), the most of it in one press, and its damage and knockback as a factor
   of the usual. Out of the settings every kind still allowed is picked; when none is left, the press ends early.
   Whatever it strikes always flies away from you, never at you. Its blows leave streaks of light in the air and rings

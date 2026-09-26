@@ -1,0 +1,303 @@
+package nl.tivek.multiversepowers.character.greenlantern.client;
+
+import com.mojang.blaze3d.vertex.PoseStack;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import net.minecraft.client.Camera;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.model.EntityModel;
+import net.minecraft.client.model.HumanoidModel;
+import net.minecraft.client.model.PlayerModel;
+import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.util.Mth;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
+import net.neoforged.neoforge.client.event.ClientTickEvent;
+import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
+import net.neoforged.neoforge.client.event.RenderLivingEvent;
+import nl.tivek.multiversepowers.MultiversePowers;
+import nl.tivek.multiversepowers.character.greenlantern.HandPose;
+import nl.tivek.multiversepowers.character.greenlantern.HandVictimPayload;
+import nl.tivek.multiversepowers.character.greenlantern.client.render.LanternPainter;
+import nl.tivek.multiversepowers.engine.client.render.ConstructPainter;
+import nl.tivek.multiversepowers.engine.client.render.TintedBuffers;
+import nl.tivek.multiversepowers.engine.math.Colors;
+import nl.tivek.multiversepowers.engine.math.Ease;
+import nl.tivek.multiversepowers.engine.math.Noise;
+import nl.tivek.multiversepowers.engine.math.Vectors;
+
+// What the evil eye and the megaphone do to a creature, as everyone sees it: strung up, a statue of hard light that
+// shatters; clasping its ears, trembling, bursting in a small green blast.
+@EventBusSubscriber(modid = MultiversePowers.MODID, value = Dist.CLIENT)
+public final class HandVictims {
+    private static final int STATUE = 0x4FE872;
+    private static final int KEEP = 100;
+    private static final int STATUE_MOST = HandPose.EYE_SHATTERS - HandPose.EYE_STONE + 10;
+    private static final int DEAF_MOST = HandPose.POPS - HandPose.BLARES[0] + 10;
+    private static final double SHARDS = 16.0;
+    private static final double POP_TICKS = 12.0;
+    private static final double EARS_IN = 3.0;
+    private static final double EARS_UP = -2.55;
+    private static final double EARS_IN_TURN = 0.45;
+    private static final double TREMBLE = 0.035;
+
+    private static final class Victim {
+        int hand;
+        int puppet = -1;
+        int statue = -1;
+        int shatter = -1;
+        int deaf = -1;
+        int pop = -1;
+        AABB box;
+        int latest;
+    }
+
+    private static final Map<Integer, Victim> VICTIMS = new HashMap<>();
+    private static final Set<Integer> PUSHED = new HashSet<>();
+    private static int ticks;
+    private static boolean redrawing;
+
+    private HandVictims() {
+    }
+
+    public static void mark(int entity, int hand, int kind) {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.level == null) {
+            return;
+        }
+        Victim victim = VICTIMS.computeIfAbsent(entity, id -> new Victim());
+        victim.hand = hand;
+        victim.latest = ticks;
+        Entity living = minecraft.level.getEntity(entity);
+        if (living != null) {
+            victim.box = living.getBoundingBox();
+        }
+        switch (kind) {
+            case HandVictimPayload.PUPPET -> victim.puppet = ticks;
+            case HandVictimPayload.STATUE -> victim.statue = ticks;
+            case HandVictimPayload.SHATTER -> victim.shatter = ticks;
+            case HandVictimPayload.DEAF -> victim.deaf = ticks;
+            case HandVictimPayload.POP -> victim.pop = ticks;
+            default -> {
+            }
+        }
+    }
+
+    // The creatures a hand has on its strings, in the order they were strung.
+    public static List<Entity> puppets(int hand) {
+        List<Entity> strung = new ArrayList<>();
+        ClientLevel level = Minecraft.getInstance().level;
+        if (level == null) {
+            return strung;
+        }
+        VICTIMS.entrySet().stream().filter(entry -> entry.getValue().hand == hand && entry.getValue().puppet >= 0
+                && entry.getValue().shatter < 0).sorted((a, b) -> Integer.compare(a.getValue().puppet,
+                        b.getValue().puppet)).forEach(entry -> {
+                            Entity entity = level.getEntity(entry.getKey());
+                            if (entity != null) {
+                                strung.add(entity);
+                            }
+                        });
+        return strung;
+    }
+
+    public static double since(int mark, float partialTick) {
+        return mark < 0 ? -1.0 : ticks - mark + partialTick;
+    }
+
+    // Both end by themselves too, should the hand that did it be gone before it shatters or bursts them.
+    private static boolean statue(Victim victim) {
+        return victim.statue >= 0 && victim.shatter < 0 && ticks - victim.statue < STATUE_MOST;
+    }
+
+    private static boolean deaf(Victim victim) {
+        return victim.deaf >= 0 && victim.pop < 0 && ticks - victim.deaf < DEAF_MOST;
+    }
+
+    // Called once the model has taken its own pose: a deafened creature clasps its ears and shakes its head.
+    public static void ears(EntityModel<?> model, LivingEntity entity, float partialTick) {
+        Victim victim = VICTIMS.get(entity.getId());
+        if (victim == null || !deaf(victim) || !(model instanceof HumanoidModel<?> humanoid)) {
+            return;
+        }
+        double since = since(victim.deaf, partialTick);
+        float on = (float) Ease.smooth(since / EARS_IN);
+        float shake = (float) Math.sin(since * 2.3);
+        humanoid.rightArm.xRot = Mth.lerp(on, humanoid.rightArm.xRot, (float) EARS_UP + 0.08F * shake);
+        humanoid.rightArm.yRot = Mth.lerp(on, humanoid.rightArm.yRot, 0.0F);
+        humanoid.rightArm.zRot = Mth.lerp(on, humanoid.rightArm.zRot, (float) EARS_IN_TURN);
+        humanoid.leftArm.xRot = Mth.lerp(on, humanoid.leftArm.xRot, (float) EARS_UP - 0.08F * shake);
+        humanoid.leftArm.yRot = Mth.lerp(on, humanoid.leftArm.yRot, 0.0F);
+        humanoid.leftArm.zRot = Mth.lerp(on, humanoid.leftArm.zRot, (float) -EARS_IN_TURN);
+        humanoid.head.yRot += on * 0.35F * (float) Math.sin(since * 1.7);
+        humanoid.head.xRot = Mth.lerp(on, humanoid.head.xRot, 0.35F);
+        humanoid.hat.copyFrom(humanoid.head);
+        if (humanoid instanceof PlayerModel<?> player) {
+            player.rightSleeve.copyFrom(player.rightArm);
+            player.leftSleeve.copyFrom(player.leftArm);
+        }
+    }
+
+    @SubscribeEvent
+    public static void onClientTick(ClientTickEvent.Post event) {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.level == null || minecraft.isPaused() || VICTIMS.isEmpty()) {
+            return;
+        }
+        ticks++;
+        VICTIMS.entrySet().removeIf(entry -> {
+            Victim victim = entry.getValue();
+            Entity entity = minecraft.level.getEntity(entry.getKey());
+            if (entity != null && !entity.isRemoved()) {
+                victim.box = entity.getBoundingBox();
+            }
+            return ticks - victim.latest > KEEP;
+        });
+    }
+
+    @SubscribeEvent
+    public static void onRenderLiving(RenderLivingEvent.Pre<?, ?> event) {
+        LivingEntity entity = event.getEntity();
+        Victim victim = VICTIMS.get(entity.getId());
+        if (victim == null || redrawing) {
+            return;
+        }
+        // Shattered or burst to death: only the pieces are left, not a falling body.
+        if (entity.isDeadOrDying() && (victim.shatter >= 0 || victim.pop >= 0)) {
+            event.setCanceled(true);
+            return;
+        }
+        if (statue(victim)) {
+            event.setCanceled(true);
+            redrawing = true;
+            try {
+                redraw(event, entity);
+            } finally {
+                redrawing = false;
+            }
+            return;
+        }
+        if (deaf(victim)) {
+            double since = since(victim.deaf, event.getPartialTick());
+            double on = Ease.smooth(since / EARS_IN);
+            PoseStack pose = event.getPoseStack();
+            pose.pushPose();
+            double time = entity.tickCount + event.getPartialTick();
+            pose.translate(on * TREMBLE * Math.sin(time * 5.1), 0.0, on * TREMBLE * Math.cos(time * 4.3));
+            PUSHED.add(entity.getId());
+        }
+    }
+
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    private static void redraw(RenderLivingEvent.Pre event, LivingEntity entity) {
+        float partialTick = event.getPartialTick();
+        float yaw = Mth.lerp(partialTick, entity.yRotO, entity.getYRot());
+        event.getRenderer().render(entity, yaw, partialTick, event.getPoseStack(),
+                new TintedBuffers(event.getMultiBufferSource(), STATUE), event.getPackedLight());
+    }
+
+    @SubscribeEvent
+    public static void onRenderLivingPost(RenderLivingEvent.Post<?, ?> event) {
+        if (PUSHED.remove(event.getEntity().getId())) {
+            event.getPoseStack().popPose();
+        }
+    }
+
+    @SubscribeEvent
+    public static void onRenderLevel(RenderLevelStageEvent event) {
+        if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_TRANSLUCENT_BLOCKS || VICTIMS.isEmpty()) {
+            return;
+        }
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.level == null) {
+            return;
+        }
+        float partialTick = event.getPartialTick().getGameTimeDeltaPartialTick(false);
+        Camera camera = event.getCamera();
+        LanternPainter painter = new LanternPainter(event.getPoseStack(), camera.getPosition(),
+                (float) (minecraft.level.getGameTime() % 24000L) + partialTick, event.getFrustum());
+        for (Map.Entry<Integer, Victim> entry : VICTIMS.entrySet()) {
+            Victim victim = entry.getValue();
+            if (victim.box == null) {
+                continue;
+            }
+            int seed = entry.getKey();
+            if (statue(victim)) {
+                glow(painter, victim.box, since(victim.statue, partialTick));
+            }
+            double shattered = since(victim.shatter, partialTick);
+            if (shattered >= 0.0 && shattered < SHARDS) {
+                shatter(painter, victim.box, shattered / SHARDS, seed);
+            }
+            double popped = since(victim.pop, partialTick);
+            if (popped >= 0.0 && popped < POP_TICKS) {
+                pop(painter, victim.box, popped, seed);
+            }
+        }
+        painter.finish(minecraft.renderBuffers().bufferSource());
+    }
+
+    // The statue's bright edge: a flash as it turns, then a faint light round it.
+    private static void glow(LanternPainter painter, AABB box, double since) {
+        Vec3 middle = box.getCenter();
+        double flash = 1.0 - Ease.smooth(since / 6.0);
+        painter.flare(middle, (0.6 + 1.6 * flash) * Math.max(box.getXsize(), box.getYsize()), 0.25 + 0.75 * flash);
+    }
+
+    // The statue breaks into solid pieces of its own size, flying off and falling.
+    private static void shatter(LanternPainter painter, AABB box, double apart, int seed) {
+        Vec3 middle = box.getCenter();
+        double wide = box.getXsize() * 0.5;
+        double high = box.getYsize() * 0.5;
+        double deep = box.getZsize() * 0.5;
+        double[][] pieces = new double[18][];
+        for (int k = 0; k < pieces.length; k++) {
+            double x = (k % 2 - 0.5) * wide;
+            double y = ((k / 2) % 3 - 1.0) * high * 0.66;
+            double z = ((k / 6) % 3 - 1.0) * deep * 0.66;
+            double size = 0.18 + 0.12 * Noise.of(seed, k, 3);
+            pieces[k] = new double[] { x - size, y - size, z - size, x + size, y + size, z + size, 1.1 };
+        }
+        ConstructPainter.Frame frame = new ConstructPainter.Frame(middle, new Vec3(1.0, 0.0, 0.0), Vectors.UP,
+                new Vec3(0.0, 0.0, 1.0), 1.0);
+        painter.fling(1.4);
+        painter.shattered(new ConstructPainter.Shape(pieces), frame, apart, 1.2, seed);
+        painter.fling(1.0);
+        if (apart < 0.25) {
+            painter.flare(middle, 3.0 * (1.0 - apart / 0.25), 1.0);
+        }
+    }
+
+    // A small green blast: a flash, a ring of light and sparks flung out.
+    private static void pop(LanternPainter painter, AABB box, double since, int seed) {
+        Vec3 middle = box.getCenter();
+        double u = since / POP_TICKS;
+        double fade = (1.0 - u) * (1.0 - u);
+        painter.flare(middle, 2.4 * (1.0 - u) + 0.4, fade);
+        painter.glowDisc(middle, 0.6 + 1.8 * Ease.smooth(u * 1.5), 0x5CFF7A, 0.7 * fade, 0.3, seed);
+        for (int k = 0; k < 10; k++) {
+            Vec3 way = Noise.direction(seed * 13 + k, 5);
+            double far = 0.3 + 1.6 * Ease.smooth(Math.min(1.0, u * 1.6)) * (0.6 + 0.4 * Noise.of(seed, k, 6));
+            Vec3 head = middle.add(way.scale(far));
+            painter.edge(middle.add(way.scale(far * 0.6)), head, 0.06, fade);
+        }
+        painter.circle(middle, new Vec3(1.0, 0.0, 0.0), new Vec3(0.0, 0.0, 1.0), 0.4 + 2.2 * Ease.smooth(u), 0.08,
+                0.5, Colors.alpha(0.9 * fade), Colors.alpha(0.4 * fade));
+    }
+
+    @SubscribeEvent
+    public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
+        VICTIMS.clear();
+        PUSHED.clear();
+    }
+}

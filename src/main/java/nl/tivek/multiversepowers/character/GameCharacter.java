@@ -439,6 +439,11 @@ public enum GameCharacter {
                     "a fist out of the ground or a wall firing a beam of light from its ring");
             hand(hands, HandPose.SCOOP, "Scoop", 0.16,
                     "a hand out of the ground or a wall scooping a creature up and tossing it high");
+            hand(hands, HandPose.EYE, "Evil eye", 0.14,
+                    "a hand with an eye in its palm that strings up three creatures near you like puppets, turns them"
+                            + " to statues of hard light and shatters them (only creatures small enough to hold)");
+            hand(hands, HandPose.MEGAPHONE, "Megaphone", 0.16,
+                    "a hand blaring shockwaves through a megaphone: whatever they catch clasps its ears and bursts");
             hand(hands, HandPose.AXE, "Pair with an axe", 0.24,
                     "a pair of hands chopping down with an axe (only where there is room for it)");
             hands.group("revolver", "Western Revolver Assembly (hold the button 2 seconds)")

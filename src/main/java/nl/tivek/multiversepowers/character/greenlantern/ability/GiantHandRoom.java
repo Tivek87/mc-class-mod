@@ -18,7 +18,7 @@ final class GiantHandRoom {
     private static final double HAFT = 0.8;
     private static final double ARM_STEP = 2.0;
     private static final double[] REACH = { 16.0, 11.0, 6.0, 10.0, 13.0, 14.0, 12.0, 9.0, 14.0, 10.0, 16.0, 34.0,
-            12.0, 8.0, 10.0, 12.0, 16.0, 14.0, 8.0, 14.0, 12.0, 22.0 };
+            12.0, 8.0, 10.0, 12.0, 16.0, 14.0, 8.0, 14.0, 12.0, 12.0, 14.0, 22.0 };
     private static final double[] ALONG = { 0.0, 2.1, 4.2, 6.0 };
     private static final double[] PAIR_ALONG = { 0.0, 2.1, 4.2 };
     private static final double[] HAFT_AT = { 1.0, 4.5, 8.0 };
