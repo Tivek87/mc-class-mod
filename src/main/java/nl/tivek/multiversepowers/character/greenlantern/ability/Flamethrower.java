@@ -157,20 +157,8 @@ public final class Flamethrower extends FlameHits {
                 this.swept.clear();
                 float heavy = (float) this.move.power();
                 float tone = 1.0F + 0.4F * (1.0F - heavy) + 0.15F * this.owner.getRandom().nextFloat();
-                switch (this.move.fire()) {
-                    case BALL -> {
-                        this.sound(SoundEvents.FIRECHARGE_USE, 1.0F, 0.9F);
-                        this.sound(SoundEvents.GENERIC_EXPLODE.value(), 0.35F, 1.8F);
-                    }
-                    case JET -> {
-                        this.sound(SoundEvents.BLAZE_SHOOT, 0.8F, 0.7F);
-                        this.sound(SoundEvents.FIRECHARGE_USE, 0.8F, 0.8F);
-                    }
-                    case FAN -> {
-                        this.sound(SoundEvents.FIRECHARGE_USE, 0.8F, tone);
-                        this.sound(SoundEvents.BLAZE_SHOOT, 0.45F * heavy, 1.5F - 0.3F * (heavy - 1.0F));
-                    }
-                }
+                this.sound(SoundEvents.FIRECHARGE_USE, 0.8F, tone);
+                this.sound(SoundEvents.BLAZE_SHOOT, 0.45F * heavy, 1.5F - 0.3F * (heavy - 1.0F));
             }
             if (t > stroke.from() && t <= stroke.to() + 2) {
                 this.spray(level, stroke, t);

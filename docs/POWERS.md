@@ -563,11 +563,14 @@ arm, both as solid as every construct.
 A heavy flamethrower of hard light: a pistol grip in your ring hand, a finned barrel with a flared nozzle and a pilot
 light under it, a round fuel tank under the front with a valve wheel at its back and a hose running up into the body,
 and a front grip under the tank for your other hand. The gun is as solid as every construct; the fire it throws is
-plasma, green with a white-hot heart.
+plasma, green with a white-hot heart: boiling, flickering balls of flame round a bright core wound with two threads
+of plasma, sparks flying off it, smoke rising from its end, and fire that spreads and licks up where it hits
+something; a ring of light pulses out of the nozzle while it fires.
 
 - **How you hold it:** in first person the gun lies low at the bottom right of your screen, its nozzle toward the
   middle, your right fist on the pistol grip and your left hand on the front grip. Seen from outside he holds it
-  before his belly with both hands, his body turned a little behind it.
+  before his belly with both hands, his body turned a little behind it, feet apart and knees soft, never quite
+  still: he breathes and his weight drifts from foot to foot.
 - **Taking it out:** your hands come up into view while the gun grows out of the ring's light, piece by piece: the
   grip in your fist, then the body, the tank swelling out of its middle, the barrel running forward, the cooling fins
   popping on one after the other, the nozzle, the hose snaking from the tank into the body, the front grip and the
@@ -579,17 +582,12 @@ plasma, green with a white-hot heart.
   from the nozzle. You can fire from the moment the pilot light burns. Putting it away (any other slot, or empty
   hands), it breaks into solid pieces, only as far as it had grown. Everyone sees it; a camera shake of 0 keeps your
   view still.
-- **Left click (flame attacks):** one of **twelve** moves, a different one every click and never the same twice in
-  a row: a sweep of flame from right to left, one back from left to right, a sweep rising from low left to high
-  right, one chopping down from high right to low left, a geyser (the nozzle at the ground before you, then
-  flicked up: it throws what it hits into the air), a whip of fire from over your head down onto the ground (the
-  hardest), a quick fireball burst straight ahead, a lunge with a step forward and a long narrow jet (it reaches
-  furthest, 7.5 blocks), a low sweep along the ground at the legs, a whole turn of your body with a ring of fire
-  all round you, two quick diagonal sweeps crossing in an X, and a corkscrew of flame spiralling forward. Every
-  move winds up, sprays and follows through; your body turns, bends and steps into it, and each one starts from
-  where the last one left your arms, so they flow into each other. The flame follows the nozzle exactly, and
-  everything it passes over takes **2 hearts** (the quick ones a little less, the heavy ones more; the X hits
-  twice) and is shoved the way the flame went, up to 5.5 blocks. Costs 0.3 power.
+- **Left click (sweep of flame):** a wide, level sweep of flame from right to left, and the next click back
+  from left to right, 82 degrees to each side of where you look. You gather first, turning the gun out to the
+  side, then sweep it across from the hip while your body turns with it and your weight moves from one foot to
+  the other, and follow through; each sweep starts from where the last one left your arms, so they flow into each
+  other. The flame follows the nozzle exactly, and everything it passes over takes **2 hearts** and is shoved the
+  way the flame went, up to 5.5 blocks. Costs 0.3 power.
 - **Holding left 2 seconds (inferno):** you brace and pour out a roaring stream of fire straight at your crosshair,
   **10 blocks** far, for as long as you hold: it widens as it goes, licks upward and splashes on what it hits.
   **1.5 hearts** to everything in it every 4 ticks. Costs 1 power a second. Letting go cuts the stream; the gun

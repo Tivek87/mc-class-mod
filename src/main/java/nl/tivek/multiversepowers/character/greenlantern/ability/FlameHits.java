@@ -54,7 +54,6 @@ abstract class FlameHits implements Effect {
     // reaches a little beside and above it, more for a big target.
     void spray(ServerLevel level, FlameMove.Stroke stroke, int t) {
         CharacterAbility wheel = wheel();
-        FlameMove.Fire fire = this.move.fire();
         double was = Mth.clamp(t - 2.0, stroke.from(), stroke.to());
         double now = Mth.clamp((double) t, stroke.from(), stroke.to());
         Vec3 look = this.owner.getLookAngle();
@@ -79,7 +78,7 @@ abstract class FlameHits implements Effect {
             if (far - target.getBbWidth() * 0.5 > reach) {
                 continue;
             }
-            if (flat > CLOSE && !inFlame(ways, to, fire, target, far)) {
+            if (flat > CLOSE && !inFlame(ways, to, target, far)) {
                 continue;
             }
             if (this.blocked(level, origin, middle)) {
@@ -198,9 +197,9 @@ abstract class FlameHits implements Effect {
     }
 
     // Within the fire round one of the ways the aim took: an oval, wider for a bigger or nearer target.
-    private static boolean inFlame(Vec3[] ways, Vec3 to, FlameMove.Fire fire, LivingEntity target, double far) {
-        double wide = fire.across + Math.toDegrees(Math.atan2(target.getBbWidth() * 0.5, Math.max(0.5, far)));
-        double tall = fire.high + Math.toDegrees(Math.atan2(target.getBbHeight() * 0.5, Math.max(0.5, far)));
+    private static boolean inFlame(Vec3[] ways, Vec3 to, LivingEntity target, double far) {
+        double wide = FlameMove.ACROSS + Math.toDegrees(Math.atan2(target.getBbWidth() * 0.5, Math.max(0.5, far)));
+        double tall = FlameMove.HIGH + Math.toDegrees(Math.atan2(target.getBbHeight() * 0.5, Math.max(0.5, far)));
         Vec3 dir = to.normalize();
         for (Vec3 way : ways) {
             Vec3 aim = way.normalize();

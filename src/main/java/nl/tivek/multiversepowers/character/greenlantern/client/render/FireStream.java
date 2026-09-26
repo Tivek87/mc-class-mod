@@ -16,9 +16,9 @@ import nl.tivek.multiversepowers.engine.math.Noise;
 
 public final class FireStream {
     public enum Kind {
-        STREAM(1.3, 11.0, 0.22, 0.9, 5.5, 0.25, 0.6, 0.07),
-        SWEEP(0.95, 8.0, 0.2, 0.55, 5.0, 0.3, 0.7, 0.1),
-        BLAST(0.55, 16.0, 0.26, 1.4, 4.0, 0.5, 0.55, 0.2),
+        STREAM(1.3, 11.0, 0.27, 0.9, 5.5, 0.2, 0.6, 0.07),
+        SWEEP(0.95, 8.5, 0.26, 0.55, 5.0, 0.22, 0.7, 0.12),
+        BLAST(0.55, 16.0, 0.34, 1.4, 4.0, 0.4, 0.55, 0.2),
         LAY(0.9, 5.0, 0.16, 0.15, 3.0, 0.4, 0.8, 0.0),
         FEED(0.5, 6.0, 0.18, 0.1, 3.5, 0.45, 0.8, 0.05),
         SMOKE(0.05, 22.0, 0.1, 0.9, 5.0, 1.5, 1.0, 0.3);
@@ -45,7 +45,7 @@ public final class FireStream {
         }
     }
 
-    private static final int MOST = 160;
+    private static final int MOST = 240;
     private static final Map<Integer, FireStream> STREAMS = new HashMap<>();
     private static int seeds;
 
@@ -162,6 +162,7 @@ public final class FireStream {
         Vec3 previousAt = null;
         double previousWide = 0.0;
         double previousAlpha = 0.0;
+        double previousPhase = 0.0;
         for (int i = order.size() - 1; i >= 0; i--) {
             Puff puff = order.get(i);
             double age = now - puff.born;
@@ -170,35 +171,54 @@ public final class FireStream {
             }
             double u = age / puff.kind.life;
             Vec3 at = puff.at(age);
-            double radius = puff.radius(age);
+            double time = painter.time();
+            double radius = puff.radius(age) * (1.0 + 0.1 * Math.sin(time * 2.3 + puff.seed * 1.7));
             double alpha = Math.min(1.0, u / 0.08) * Math.pow(1.0 - u, 1.2) * puff.kind.bright;
             if (puff.kind == Kind.SMOKE) {
                 FirePainter.smoke(painter, at, radius, Math.sin(Math.PI * u), puff.seed);
                 continue;
             }
             double heat = Math.pow(1.0 - u, 0.8);
-            if (u > 0.6 && Noise.of(puff.seed, 1, 1) < 0.3) {
-                FirePainter.smoke(painter, at.add(0.0, radius * 0.7, 0.0), radius * 0.7, (u - 0.6) * 1.5,
-                        puff.seed + 5);
+            if (u > 0.5 && Noise.of(puff.seed, 1, 1) < 0.5) {
+                double rise = (u - 0.5) * 2.0;
+                FirePainter.smoke(painter, at.add(0.0, radius * (0.6 + 0.8 * rise), 0.0), radius * (0.7 + 0.5 * rise),
+                        Math.sin(Math.PI * rise) * 1.2, puff.seed + 5);
             }
             FirePainter.ball(painter, at, radius, heat, alpha, puff.seed);
-            if (u > 0.2 && u < 0.85 && puff.seed % 3 == 0) {
+            if (u > 0.15 && u < 0.85 && puff.seed % 3 == 0) {
                 Vec3 lick = puff.way.scale(0.5).add(0.0, 1.0, 0.0).normalize();
-                FirePainter.tongue(painter, at, lick, radius * 1.4, radius * 0.75, alpha * 0.9, puff.seed,
-                        painter.time());
+                FirePainter.tongue(painter, at, lick, radius * 1.5, radius * 0.75, alpha * 0.9, puff.seed, time);
             }
-            double core = radius * 0.35 * (1.0 - u);
+            if (puff.travel(u) > puff.reach && u < 0.8) {
+                FirePainter.splash(painter, at, radius * 0.8, alpha, puff.seed);
+            }
+            this.embers(painter, puff, at, radius, u, alpha);
+            double core = radius * 0.3 * (1.0 - u);
+            double phase = time * 1.7 + puff.seed * 0.9;
             if (previous != null && previous.kind == puff.kind && previous.burst == puff.burst
                     && Math.abs(previous.born - puff.born) < puff.kind.every * 1.6 && u < 0.6) {
-                painter.lightTaper(previousAt, at, previousWide, core, FirePainter.CORE,
-                        0.7 * previousAlpha, 0.7 * alpha * (1.0 - u));
-                painter.glowTaper(previousAt, at, previousWide * 3.0, core * 3.0, FirePainter.FLAME,
-                        0.35 * previousAlpha, 0.35 * alpha);
+                FirePainter.core(painter, previousAt, at, previousWide, core, previousAlpha, alpha * (1.0 - u),
+                        previousPhase, phase);
             }
             previous = puff;
             previousAt = at;
             previousWide = core;
             previousAlpha = alpha * (1.0 - u);
+            previousPhase = phase;
+        }
+    }
+
+    // Sparks thrown off the flame: they fly out, float up and burn out before it does.
+    private void embers(LanternPainter painter, Puff puff, Vec3 at, double radius, double u, double alpha) {
+        if (u < 0.12 || puff.seed % 2 != 0) {
+            return;
+        }
+        for (int k = 0; k < 2; k++) {
+            Vec3 out = Noise.direction(puff.seed, 40 + k);
+            double fly = radius * (0.8 + 2.2 * u) * (0.6 + 0.8 * Noise.of(puff.seed, k, 41));
+            Vec3 spark = at.add(out.scale(fly)).add(0.0, 0.7 * u * u, 0.0);
+            Vec3 way = out.scale(0.1).add(0.0, 0.1, 0.0).scale(1.0 - 0.6 * u);
+            FirePainter.ember(painter, spark, way, 1.3 * alpha * (1.0 - u));
         }
     }
 

@@ -326,8 +326,8 @@ final class GunShapes {
             hose.add(hoseRing(i));
         }
         groups.add(hose.toArray(Mesh[]::new));
-        groups.add(new Mesh[] { leaning(grip(0.13, 0.042, 0.032, 0.95), 100.0, -0.178, 0.23),
-                Mesh.torus(12, 4, 0.036, 0.007, 1.8).moved(0.0, -0.19, 0.228) });
+        groups.add(new Mesh[] { leaning(grip(0.13, 0.042, 0.032, 0.95), 100.0, -0.178, 0.12),
+                Mesh.torus(12, 4, 0.036, 0.007, 1.8).moved(0.0, -0.19, 0.118) });
         List<Mesh> valve = new ArrayList<>();
         valve.add(rod(8, 0.01, -0.14, -0.1, 1.2).moved(0.0, -0.115, 0.0));
         valve.add(Mesh.torus(14, 4, 0.034, 0.007, 1.9).alongZ().moved(0.0, -0.115, -0.14));

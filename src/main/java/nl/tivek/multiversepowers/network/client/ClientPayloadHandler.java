@@ -32,9 +32,11 @@ import nl.tivek.multiversepowers.faction.StandingsPayload;
 import nl.tivek.multiversepowers.faction.client.ClientStandings;
 import nl.tivek.multiversepowers.spell.Spell;
 import nl.tivek.multiversepowers.spell.SpellCooldownPayload;
+import nl.tivek.multiversepowers.spell.SpellFxPayload;
 import nl.tivek.multiversepowers.spell.VoidStatePayload;
 import nl.tivek.multiversepowers.spell.client.ClientSpellCooldowns;
 import nl.tivek.multiversepowers.spell.client.ClientVoidState;
+import nl.tivek.multiversepowers.spell.client.SpellFx;
 import nl.tivek.multiversepowers.stamina.StaminaCostPayload;
 import nl.tivek.multiversepowers.stamina.client.StaminaClient;
 
@@ -53,6 +55,10 @@ public final class ClientPayloadHandler {
                 ClientSpellCooldowns.set(spell, payload.ticks());
             }
         });
+    }
+
+    public static void handleSpellFx(SpellFxPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> SpellFx.add(payload));
     }
 
     public static void handleVoidState(VoidStatePayload payload, IPayloadContext context) {

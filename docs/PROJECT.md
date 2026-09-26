@@ -112,12 +112,12 @@ title as it is on GitHub now; sending a fourth drops the oldest.
 
 | School | Spell | What it does | Range | Cooldown |
 |---|---|---|---|---|
-| Fire | Fireball | A blazing comet that bursts in fire, burns what it hits and leaves a small pile of fire. | until it hits | 2 s |
+| Fire | Fireball | A blazing comet that bursts in fire: burns what it hits, hurts, lights and throws back hostile (red) ones within 2.5 blocks, and leaves a small pile of fire. Water puts it out. | until it hits | 2 s |
 | Fire | Fire Wall | A ring of fire around you for 2 seconds: it burns what touches it, sets it alight and throws it outward. You stay safe inside. | 3.5 blocks around you | 10 s |
-| Lightning | Lightning Strike | A rune circle and storm cloud charge up for 0.7 s, then a branching bolt strikes. Never hits you. | 40 blocks | 8 s |
-| Nature | Poison Area | A thrown vial that leaves a poison cloud for 8 seconds. Poisons everything hostile (red) inside. | 24 blocks | 12 s |
-| Air | Wind Gust | A wall of wind rolls forward and throws hostile (red) creatures back and up. | 8 blocks | 5 s |
-| Dark | Void Walk | 10 seconds invisible, silent and untargetable; 50% faster, 20% harder hits; your world turns black and nearby hostile (red) ones are marked, even through walls. | around you | 30 s |
+| Lightning | Lightning Strike | A rune circle and storm cloud charge up for 0.7 s, then a branching bolt strikes, stuns hostile (red) ones close by and leaps on to up to 3 more (5 in the rain). Never hits you. | 40 blocks | 8 s |
+| Nature | Poison Area | A thrown vial that leaves a bubbling poison cloud for 8 seconds. Slows and poisons everything hostile (red) inside, harder the longer it stays. | 24 blocks | 12 s |
+| Air | Wind Gust | A wall of wind rolls forward and throws hostile (red) creatures back and up, turns their shots round and blows loose items away; cast while falling, it catches you. | 8 blocks | 5 s |
+| Dark | Void Walk | 10 seconds invisible, silent and untargetable; 50% faster; the first melee hit out of it does 50% more, blinds and slows, and ends it; your world turns black and nearby hostile (red) ones are marked, even through walls. | around you | 30 s |
 
 - The four empty schools (Water, Holy, Ice, Blood) and Earth are in the table already, ready for the
   spells that go in them later.

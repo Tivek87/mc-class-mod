@@ -19,7 +19,9 @@ public final class FirePainter {
     static final int FLAME = 0x4CF070;
     static final int DEEP = 0x14A83A;
     static final int SMOKE = 0xB4C8BA;
+    static final int ASH = 0x6E7F73;
     private static final double WALL_STEP = 0.34;
+    private static final int LOBES = 3;
     private static final int VORTEX_RIBBONS = 6;
     private static final int VORTEX_STEPS = 10;
     private static final double VORTEX_TWIST = 1.7;
@@ -39,20 +41,102 @@ public final class FirePainter {
             return;
         }
         float hot = (float) Mth.clamp(heat, 0.0, 1.0);
-        painter.glowDisc(at, radius * 1.4, Colors.mix(DEEP, FLAME, hot), 0.5 * strength, 0.25, seed);
-        painter.lightDisc(at, radius, Colors.mix(FLAME, HOT, hot), strength * (0.3 + 0.35 * hot), 0.35, seed + 1);
-        if (hot > 0.2F) {
-            painter.glowDisc(at, radius * 0.5, Colors.mix(HOT, CORE, hot), 0.6 * strength * hot, 0.2, seed + 2);
+        double time = painter.time();
+        int boil = (int) (time * 0.8);
+        painter.glowDisc(at, radius * 1.5, Colors.mix(DEEP, FLAME, hot * 0.7F), 0.24 * strength, 0.3, seed + boil);
+        // Three lobes that roll round each other and flicker: the ball boils instead of sitting still.
+        for (int k = 0; k < LOBES; k++) {
+            double phase = time * 0.9 + k * 2.1 + seed * 0.37;
+            Vec3 off = Noise.direction(seed, k + 11).scale(radius * 0.34 * (0.6 + 0.4 * Math.sin(phase)));
+            double wide = radius * (0.6 + 0.16 * Math.sin(time * 1.3 + k + seed * 0.7));
+            painter.lightDisc(at.add(off), wide, Colors.mix(FLAME, HOT, hot * 0.85F), strength * (0.16 + 0.2 * hot),
+                    0.42, seed + 3 * k + boil);
         }
+        if (hot > 0.35F) {
+            painter.glowDisc(at, radius * 0.5, Colors.mix(HOT, CORE, hot), 0.42 * strength * hot, 0.22, seed + 2);
+        }
+    }
+
+    // The flame's own heart: a white-hot line wrapped in green, with two threads of plasma winding round it.
+    public static void core(LanternPainter painter, Vec3 a, Vec3 b, double wideA, double wideB, double alphaA,
+            double alphaB, double phaseA, double phaseB) {
+        // Right past the eye a stroke of light would cross the whole view: it thins out as the eye comes close.
+        double near = near(painter, a.add(b).scale(0.5));
+        alphaA *= near;
+        alphaB *= near;
+        if (alphaA <= 0.01 && alphaB <= 0.01) {
+            return;
+        }
+        painter.glowTaper(a, b, wideA * 3.6, wideB * 3.6, FLAME, 0.14 * alphaA, 0.14 * alphaB);
+        painter.lightTaper(a, b, wideA * 1.7, wideB * 1.7, FLAME, 0.35 * alphaA, 0.35 * alphaB);
+        painter.lightTaper(a, b, wideA * 0.7, wideB * 0.7, HOT, 0.6 * alphaA, 0.6 * alphaB);
+        Vec3 along = b.subtract(a);
+        if (along.lengthSqr() < 1.0E-8) {
+            return;
+        }
+        Vec3[] across = Vectors.across(along.normalize());
+        for (int k = 0; k < 2; k++) {
+            double turn = k * Math.PI;
+            Vec3 ta = a.add(across[0].scale(Math.cos(phaseA + turn) * wideA * 1.6))
+                    .add(across[1].scale(Math.sin(phaseA + turn) * wideA * 1.6));
+            Vec3 tb = b.add(across[0].scale(Math.cos(phaseB + turn) * wideB * 1.6))
+                    .add(across[1].scale(Math.sin(phaseB + turn) * wideB * 1.6));
+            painter.lightTaper(ta, tb, wideA * 0.35, wideB * 0.35, HOT, 0.5 * alphaA, 0.5 * alphaB);
+            painter.glowTaper(ta, tb, wideA * 1.1, wideB * 1.1, FLAME, 0.14 * alphaA, 0.14 * alphaB);
+        }
+    }
+
+    private static double near(LanternPainter painter, Vec3 at) {
+        return Ease.smooth((painter.camera().distanceTo(at) - 0.6) / 2.5);
+    }
+
+    // Where the plasma leaves the nozzle: a flash, a ring of light pulsing out and short hot spikes.
+    public static void muzzle(LanternPainter painter, Vec3 nozzle, Vec3 forward, Vec3 up, double size,
+            double strength) {
+        if (strength <= 0.01) {
+            return;
+        }
+        double time = painter.time();
+        Vec3 side = forward.cross(up).normalize();
+        double pulse = (time * 0.6) % 1.0;
+        painter.circle(nozzle.add(forward.scale(size * (0.4 + 2.2 * pulse))), side, up, size * (0.9 + 1.4 * pulse),
+                size * 0.12, size * 0.6, Colors.alpha(0.8 * strength * (1.0 - pulse)),
+                Colors.alpha(0.35 * strength * (1.0 - pulse)));
+        painter.flare(nozzle.add(forward.scale(size * 0.6)), size * 1.6, 0.45 * strength);
+        for (int k = 0; k < 5; k++) {
+            int seed = (int) (time * 4.0) * 7 + k;
+            Vec3 way = forward.add(Noise.direction(seed, 3).scale(0.35)).normalize();
+            double length = size * (2.5 + 3.0 * Noise.of(seed, k, 2));
+            painter.lightTaper(nozzle, nozzle.add(way.scale(length)), size * 0.5, 0.0, CORE, 0.75 * strength, 0.0);
+            painter.glowTaper(nozzle, nozzle.add(way.scale(length)), size * 1.4, 0.0, FLAME, 0.4 * strength, 0.0);
+        }
+    }
+
+    // Fire that hit something spreads out over it and licks upward.
+    public static void splash(LanternPainter painter, Vec3 at, double radius, double strength, int seed) {
+        if (strength <= 0.01) {
+            return;
+        }
+        double time = painter.time();
+        for (int k = 0; k < 3; k++) {
+            Vec3 off = Noise.direction(seed, k + 21).multiply(1.0, 0.2, 1.0).scale(radius * 0.8);
+            tongue(painter, at.add(off), Vectors.UP, radius * (1.1 + 0.5 * Noise.of(seed, k, 4)), radius * 0.55,
+                    strength * 0.8, seed * 5 + k, time * 1.2);
+        }
+        painter.glowDisc(at, radius * 1.3, FLAME, 0.35 * strength, 0.35, seed + (int) (time * 0.8));
     }
 
     public static void smoke(LanternPainter painter, Vec3 at, double radius, double strength, int seed) {
         if (strength > 0.01 && painter.visible(at, radius)) {
-            painter.lightDisc(at, radius, SMOKE, 0.14 * strength, 0.3, seed);
+            int boil = (int) (painter.time() * 0.4);
+            painter.lightDisc(at, radius, SMOKE, 0.12 * strength, 0.35, seed + boil);
+            painter.lightDisc(at.add(Noise.direction(seed, 31).scale(radius * 0.35)), radius * 0.7, ASH,
+                    0.1 * strength, 0.4, seed + 7 + boil);
         }
     }
 
     public static void ember(LanternPainter painter, Vec3 at, Vec3 way, double strength) {
+        strength *= near(painter, at);
         if (strength <= 0.01) {
             return;
         }
@@ -61,6 +145,13 @@ public final class FirePainter {
     }
 
     public static void tongue(LanternPainter painter, Vec3 base, Vec3 up, double height, double width,
+            double strength, int seed, double time) {
+        lick(painter, base, up, height, width, strength * near(painter, base.add(up.scale(height * 0.5))), seed,
+                time);
+    }
+
+    // A tongue of flame; the pilot light burns in the hand, close to the eye, so it is drawn without the fade.
+    private static void lick(LanternPainter painter, Vec3 base, Vec3 up, double height, double width,
             double strength, int seed, double time) {
         if (strength <= 0.01 || height <= 0.01 || !painter.visible(base.add(up.scale(height * 0.5)), height)) {
             return;
@@ -100,7 +191,7 @@ public final class FirePainter {
         }
         Vec3 lean = forward.scale(0.75).add(up.scale(0.45)).normalize();
         double flicker = 0.85 + 0.15 * Math.sin(time * 2.1) * Math.sin(time * 1.3 + 0.7);
-        tongue(painter, tip, lean, size * 2.2 * flicker, size * 0.9, strength, 91, time * 1.6);
+        lick(painter, tip, lean, size * 2.2 * flicker, size * 0.9, strength, 91, time * 1.6);
         painter.glowDisc(tip, size * 1.2, FLAME, 0.6 * strength, 0.2, (int) (time * 3.0));
     }
 

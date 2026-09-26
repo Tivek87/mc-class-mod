@@ -46,6 +46,7 @@ import nl.tivek.multiversepowers.spell.CastSpellPayload;
 import nl.tivek.multiversepowers.spell.Spell;
 import nl.tivek.multiversepowers.spell.SpellCasting;
 import nl.tivek.multiversepowers.spell.SpellCooldownPayload;
+import nl.tivek.multiversepowers.spell.SpellFxPayload;
 import nl.tivek.multiversepowers.spell.VoidStatePayload;
 import nl.tivek.multiversepowers.stamina.StaminaCostPayload;
 
@@ -65,6 +66,7 @@ public final class ModNetwork {
         registrar.playToClient(SpellCooldownPayload.TYPE, SpellCooldownPayload.STREAM_CODEC,
                 ModNetwork::onSpellCooldown);
         registrar.playToClient(VoidStatePayload.TYPE, VoidStatePayload.STREAM_CODEC, ModNetwork::onVoidState);
+        registrar.playToClient(SpellFxPayload.TYPE, SpellFxPayload.STREAM_CODEC, ModNetwork::onSpellFx);
         registrar.playToClient(GrabStatePayload.TYPE, GrabStatePayload.STREAM_CODEC, ModNetwork::onGrabState);
         registrar.playToServer(ThrowGrabPayload.TYPE, ThrowGrabPayload.STREAM_CODEC, ModNetwork::onThrowGrab);
         registrar.playToClient(ArmPayload.TYPE, ArmPayload.STREAM_CODEC, ModNetwork::onArm);
@@ -187,6 +189,10 @@ public final class ModNetwork {
                 OctopusArms.throwHeld(serverPlayer);
             }
         });
+    }
+
+    private static void onSpellFx(SpellFxPayload payload, IPayloadContext context) {
+        ClientPayloadHandler.handleSpellFx(payload, context);
     }
 
     private static void onVoidState(VoidStatePayload payload, IPayloadContext context) {

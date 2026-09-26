@@ -2,19 +2,29 @@ package nl.tivek.multiversepowers.spell;
 
 import java.util.ArrayList;
 import java.util.List;
+import javax.annotation.Nullable;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.BlockParticleOption;
-import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.damagesource.DamageTypes;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.Difficulty;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LightningBolt;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.level.GameRules;
+import net.minecraft.world.level.block.BaseFireBlock;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
+import net.neoforged.neoforge.event.EventHooks;
 import nl.tivek.multiversepowers.engine.effect.Effect;
 import nl.tivek.multiversepowers.engine.effect.Effects;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
@@ -26,12 +36,16 @@ final class LightningSpell {
     private static final int DURATION = CHARGE + 30;
     private static final double RUNE_RADIUS = 2.2;
     private static final double CLOUD_HEIGHT = 18.0;
+    private static final double SHOCK_RADIUS = 3.0;
+    private static final int SHOCKED = 30;
+    private static final double CHAIN_REACH = 6.0;
+    private static final float CHAIN_DAMAGE = 4.0F;
+    private static final int CHAIN = 3;
+    // Rain carries the charge further.
+    private static final int STORM_CHAIN = 5;
+    private static final int CHAIN_EVERY = 2;
 
     private static final int GLOW = 0x00D2FF;
-    private static final int CYAN = 0x48DBFB;
-    private static final int WHITE = 0xF4FBFF;
-    private static final int DEEP = 0x0984E3;
-    private static final int STORM = 0x1E272E;
 
     private LightningSpell() {
     }
@@ -43,12 +57,15 @@ final class LightningSpell {
         ParticleFx.zigzag(level, ParticleFx.dust(GLOW, 0.6F), hand, hand.add(0, 1.6, 0), 5, 0.25, 0.1);
         level.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.BEACON_POWER_SELECT,
                 SoundSource.PLAYERS, 1.0F, 1.8F);
+        SpellFxPayload.send(level, SpellFxPayload.STORM, aim.current(), aim.current(), -1, CHARGE);
         Effects.start(level, strike(player, aim));
         return true;
     }
 
     private static Effect strike(ServerPlayer caster, Targeting.Aim aim) {
         Vec3[] target = { aim.current() };
+        List<LivingEntity> struck = new ArrayList<>();
+        Vec3[] from = new Vec3[1];
         return (level, age) -> {
             if (age <= CHARGE && (aim.entity() == null || aim.entity().level() == level)) {
                 target[0] = aim.current();
@@ -58,43 +75,82 @@ final class LightningSpell {
                 charge(level, at, age);
             } else if (age == CHARGE) {
                 hit(level, caster, at);
+                shock(level, caster, at, struck);
+                from[0] = at.add(0, 0.6, 0);
             } else {
                 afterglow(level, at, age - CHARGE);
+                int hop = age - CHARGE;
+                int most = level.isRainingAt(BlockPos.containing(at)) ? STORM_CHAIN : CHAIN;
+                if (hop % CHAIN_EVERY == 0 && hop / CHAIN_EVERY <= most && from[0] != null) {
+                    from[0] = chain(level, caster, from[0], struck);
+                }
             }
             return age < DURATION;
         };
     }
 
-    private static void charge(ServerLevel level, Vec3 at, int age) {
-        double progress = (double) age / CHARGE;
-        Vec3 ground = at.add(0, 0.1, 0);
-        if (age % 2 == 0) {
-            ParticleFx.ring(level, ParticleFx.dust(GLOW, 1.2F), ground, RUNE_RADIUS, 48, age * 0.08);
-            ParticleFx.ring(level, ParticleFx.dust(CYAN, 1.0F), ground, RUNE_RADIUS * 0.65, 32, -age * 0.1);
-            ParticleFx.ring(level, ParticleFx.dust(WHITE, 0.8F), ground, RUNE_RADIUS * 0.35, 20, age * 0.12);
-
-            for (int r = 0; r < 4; r++) {
-                double a = age * 0.05 + r * (Math.PI / 2.0);
-                Vec3 p = ground.add(Math.cos(a) * RUNE_RADIUS, 0, Math.sin(a) * RUNE_RADIUS);
-                ParticleFx.line(level, ParticleFx.dust(CYAN, 0.7F), ground, p, 0.5);
+    // Everything hostile close round the strike is shocked stiff for a moment.
+    private static void shock(ServerLevel level, ServerPlayer caster, Vec3 at, List<LivingEntity> struck) {
+        for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, new AABB(at, at).inflate(SHOCK_RADIUS),
+                entity -> SpellTargets.hits(caster, entity))) {
+            if (target.distanceToSqr(at) <= SHOCK_RADIUS * SHOCK_RADIUS) {
+                struck.add(target);
+                target.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, SHOCKED, 2), caster);
+                ParticleFx.send(level, ParticleTypes.ELECTRIC_SPARK, target.getX(), target.getY()
+                        + target.getBbHeight() * 0.5, target.getZ(), 10, target.getBbWidth() * 0.5,
+                        target.getBbHeight() * 0.4, target.getBbWidth() * 0.5, 0.1);
             }
         }
-        int sparks = 3 + (int) (progress * 8);
-        for (int i = 0; i < sparks; i++) {
-            double angle = ParticleFx.RANDOM.nextDouble() * Math.PI * 2;
-            double distance = Math.sqrt(ParticleFx.RANDOM.nextDouble()) * RUNE_RADIUS;
-            ParticleFx.fly(level, ParticleTypes.ELECTRIC_SPARK,
-                    ground.add(Math.cos(angle) * distance, 0, Math.sin(angle) * distance), new Vec3(0, 1, 0), 0.35);
+    }
+
+    // The bolt leaps on to the nearest hostile it has not touched yet; null once there is none left in reach.
+    @Nullable
+    private static Vec3 chain(ServerLevel level, ServerPlayer caster, Vec3 from, List<LivingEntity> struck) {
+        LivingEntity next = null;
+        double best = CHAIN_REACH * CHAIN_REACH;
+        for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, new AABB(from, from).inflate(
+                CHAIN_REACH), entity -> SpellTargets.hits(caster, entity) && !struck.contains(entity))) {
+            Vec3 middle = target.getBoundingBox().getCenter();
+            double far = middle.distanceToSqr(from);
+            if (far < best && Targeting.clearPath(level, from, middle, caster)) {
+                best = far;
+                next = target;
+            }
         }
-        Vec3 sky = at.add(0, CLOUD_HEIGHT, 0);
-        double cloudSize = 1.2 + progress * 2.8;
-        ParticleFx.send(level, ParticleFx.dust(STORM, 4.0F), sky.x, sky.y, sky.z, 10, cloudSize, 0.4, cloudSize, 0);
-        ParticleFx.send(level, ParticleTypes.LARGE_SMOKE, sky.x, sky.y, sky.z, 4, cloudSize, 0.3, cloudSize, 0.01);
-        if (age % 3 == 1) {
-            Vec3 a = sky.add(ParticleFx.spread(cloudSize), 0, ParticleFx.spread(cloudSize));
-            Vec3 b = a.add(ParticleFx.spread(1.5), ParticleFx.spread(0.5), ParticleFx.spread(1.5));
-            ParticleFx.zigzag(level, ParticleFx.dust(WHITE, 0.8F), a, b, 3, 0.3, 0.15);
-            ParticleFx.zigzag(level, ParticleFx.dust(CYAN, 1.2F), a, b, 3, 0.2, 0.2);
+        if (next == null) {
+            return null;
+        }
+        struck.add(next);
+        Vec3 to = next.getBoundingBox().getCenter();
+        SpellFxPayload.send(level, SpellFxPayload.ARC, from, to, -1, 0);
+        ParticleFx.cloud(level, ParticleTypes.ELECTRIC_SPARK, to, 14, 0.3, 0.2);
+        ParticleFx.at(level, ParticleTypes.FLASH, to);
+        next.hurt(level.damageSources().source(DamageTypes.LIGHTNING_BOLT, caster), CHAIN_DAMAGE);
+        next.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, SHOCKED, 2), caster);
+        level.playSound(null, to.x, to.y, to.z, SoundEvents.LIGHTNING_BOLT_IMPACT, SoundSource.PLAYERS, 0.8F,
+                1.5F + ParticleFx.RANDOM.nextFloat() * 0.3F);
+        level.playSound(null, to.x, to.y, to.z, SoundEvents.TRIDENT_HIT, SoundSource.PLAYERS, 0.6F, 1.8F);
+        return to;
+    }
+
+    private static void charge(ServerLevel level, Vec3 at, int age) {
+        double progress = (double) age / CHARGE;
+        if (age == 0) {
+            level.playSound(null, at.x, at.y, at.z, SoundEvents.LIGHTNING_BOLT_THUNDER, SoundSource.PLAYERS, 0.35F,
+                    0.55F);
+        }
+        if (age % 3 == 0) {
+            level.playSound(null, at.x, at.y, at.z, SoundEvents.AMETHYST_BLOCK_RESONATE, SoundSource.PLAYERS,
+                    0.3F + 0.4F * (float) progress, 1.2F + 0.8F * (float) progress);
+        }
+        // Loose static crawls over whatever stands under the cloud: a warning of what comes.
+        if (age % 2 == 1) {
+            for (LivingEntity near : level.getEntitiesOfClass(LivingEntity.class, new AABB(at, at).inflate(
+                    RUNE_RADIUS))) {
+                ParticleFx.send(level, ParticleTypes.ELECTRIC_SPARK, near.getX(), near.getY() + near.getBbHeight()
+                        * 0.5, near.getZ(), 2, near.getBbWidth() * 0.4, near.getBbHeight() * 0.4, near.getBbWidth()
+                        * 0.4, 0.02);
+            }
         }
         if (age == CHARGE / 2) {
             level.playSound(null, at.x, at.y, at.z, SoundEvents.BEACON_ACTIVATE, SoundSource.PLAYERS, 0.9F, 2.0F);
@@ -102,21 +158,25 @@ final class LightningSpell {
     }
 
     private static void hit(ServerLevel level, ServerPlayer caster, Vec3 at) {
-        // Real bolt only where the chunk ticks; far away, just the light show plays.
-        LightningBolt bolt = level.isPositionEntityTicking(BlockPos.containing(at))
-                ? EntityType.LIGHTNING_BOLT.create(level)
-                : null;
+        // The game's own bolt is never spawned, so only our drawn one shows; it still strikes through the game's
+        // own hit, so creepers charge, the struck burn and everything else lightning does still happens.
+        LightningBolt bolt = EntityType.LIGHTNING_BOLT.create(level);
         if (bolt != null) {
             bolt.moveTo(at);
             bolt.setCause(caster);
-            level.addFreshEntity(bolt);
+            for (Entity struck : level.getEntities((Entity) null, new AABB(at.x - 3.0, at.y - 3.0, at.z - 3.0,
+                    at.x + 3.0, at.y + 9.0, at.z + 3.0), Entity::isAlive)) {
+                if (!EventHooks.onEntityStruckByLightning(struck, bolt)) {
+                    struck.thunderHit(level, bolt);
+                }
+            }
+            ignite(level, BlockPos.containing(at));
         }
 
-        drawBolt(level, at);
+        Vec3 top = at.add(ParticleFx.spread(1.5), CLOUD_HEIGHT, ParticleFx.spread(1.5));
+        SpellFxPayload.send(level, SpellFxPayload.BOLT, top, at, -1, 0);
         ParticleFx.at(level, ParticleTypes.FLASH, at.add(0, 0.5, 0));
         ParticleFx.shockwave(level, ParticleTypes.ELECTRIC_SPARK, at.add(0, 0.2, 0), 56, 0.85);
-        ParticleFx.shockwave(level, ParticleFx.dust(GLOW, 1.8F), at.add(0, 0.2, 0), 36, 0.65);
-        ParticleFx.sphereOut(level, ParticleFx.dust(CYAN, 1.5F), at.add(0, 0.5, 0), 32, 0.5);
         ParticleFx.cloud(level, ParticleTypes.LARGE_SMOKE, at, 12, 0.5, 0.05);
         // Ground read only where loaded, so this can't force a chunk to load.
         BlockPos below = BlockPos.containing(at.x, at.y - 0.5, at.z);
@@ -129,61 +189,31 @@ final class LightningSpell {
         level.playSound(null, at.x, at.y, at.z, SoundEvents.TRIDENT_THUNDER.value(), SoundSource.PLAYERS, 2.0F, 1.0F);
     }
 
+    // Fire where it strikes and round it, as the game's own lightning lights it.
+    private static void ignite(ServerLevel level, BlockPos pos) {
+        if (!level.getGameRules().getBoolean(GameRules.RULE_DOFIRETICK)
+                || level.getDifficulty() != Difficulty.NORMAL && level.getDifficulty() != Difficulty.HARD) {
+            return;
+        }
+        for (int i = 0; i < 5; i++) {
+            BlockPos spot = i == 0 ? pos : pos.offset(level.getRandom().nextInt(3) - 1, level.getRandom().nextInt(3)
+                    - 1, level.getRandom().nextInt(3) - 1);
+            BlockState fire = BaseFireBlock.getState(level, spot);
+            if (level.isLoaded(spot) && level.getBlockState(spot).isAir() && fire.canSurvive(level, spot)) {
+                level.setBlockAndUpdate(spot, fire);
+            }
+        }
+    }
+
     private static void afterglow(ServerLevel level, Vec3 at, int t) {
-        if (t <= 2) {
-            drawBolt(level, at);
-        }
-        if (t <= 8) {
-            ParticleOptions ring = ParticleFx.fade(WHITE, DEEP, 1.3F - t * 0.1F);
-            ParticleFx.ring(level, ring, at.add(0, 0.15, 0), 0.6 + t * 0.45, 20 + t * 4, t * 0.3);
-        }
         double fade = 1.0 - t / 30.0;
         if (ParticleFx.chance(fade)) {
             ParticleFx.fly(level, ParticleTypes.ELECTRIC_SPARK,
                     at.add(ParticleFx.spread(1.2), 0.1, ParticleFx.spread(1.2)), new Vec3(0, 1, 0), 0.15);
         }
         if (t % 4 == 0 && ParticleFx.chance(fade)) {
-            Vec3 a = at.add(ParticleFx.spread(1.0), 0.1, ParticleFx.spread(1.0));
-            Vec3 b = at.add(ParticleFx.spread(1.0), 0.3, ParticleFx.spread(1.0));
-            ParticleFx.zigzag(level, ParticleFx.dust(GLOW, 0.5F), a, b, 3, 0.2, 0.08);
             ParticleFx.fly(level, ParticleTypes.SMOKE, at.add(ParticleFx.spread(0.6), 0.2, ParticleFx.spread(0.6)),
                     new Vec3(0, 1, 0), 0.04);
         }
-        if (t <= 16) {
-            Vec3 sky = at.add(0, CLOUD_HEIGHT, 0);
-            double size = 3.5 + t * 0.2;
-            ParticleFx.send(level, ParticleFx.dust(STORM, 3.0F), sky.x, sky.y, sky.z, 4, size, 0.5, size, 0);
-        }
-    }
-
-    private static void drawBolt(ServerLevel level, Vec3 at) {
-        Vec3 top = at.add(ParticleFx.spread(1.0), CLOUD_HEIGHT, ParticleFx.spread(1.0));
-        List<Vec3> path = jaggedPath(top, at, 18, 0.9);
-        ParticleOptions core = ParticleFx.dust(WHITE, 0.9F);
-        ParticleOptions glow = ParticleFx.dust(GLOW, 1.8F);
-        for (int i = 1; i < path.size(); i++) {
-            ParticleFx.line(level, core, path.get(i - 1), path.get(i), 0.2);
-            ParticleFx.line(level, glow, path.get(i - 1), path.get(i), 0.35);
-        }
-        for (int branch = 0; branch < 3; branch++) {
-            Vec3 start = path.get(2 + ParticleFx.RANDOM.nextInt(path.size() - 5));
-            Vec3 end = start.add(ParticleFx.spread(3.5), -2.0 - ParticleFx.RANDOM.nextDouble() * 3.0,
-                    ParticleFx.spread(3.5));
-            List<Vec3> side = jaggedPath(start, end, 5, 0.5);
-            for (int i = 1; i < side.size(); i++) {
-                ParticleFx.line(level, ParticleFx.dust(GLOW, 0.9F), side.get(i - 1), side.get(i), 0.25);
-            }
-        }
-    }
-
-    private static List<Vec3> jaggedPath(Vec3 from, Vec3 to, int segments, double jitter) {
-        List<Vec3> points = new ArrayList<>();
-        points.add(from);
-        for (int i = 1; i < segments; i++) {
-            Vec3 p = from.lerp(to, (double) i / segments);
-            points.add(p.add(ParticleFx.spread(jitter), ParticleFx.spread(jitter * 0.3), ParticleFx.spread(jitter)));
-        }
-        points.add(to);
-        return points;
     }
 }

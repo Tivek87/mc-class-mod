@@ -3,6 +3,36 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.2.1-alpha] - 2026-09-26
+
+### Added
+- **Spells, drawn effects:** every spell now has its own drawn effect on top of its particles: a boiling fireball
+  with streaming flames and a trail of heat, a rune and storm cloud with a leader and three lightning strokes, a
+  tumbling glass vial and a churning poison cloud, a rolling crescent of wind, and a sphere of nothing for the void.
+- **Fireball:** the burst hurts, lights and knocks back every hostile (red) creature within 2.5 blocks; water puts
+  the fireball out with a hiss.
+- **Lightning Strike:** stuns hostile ones near the strike, then leaps on to up to 3 more (5 in the rain).
+- **Poison Area:** slows everything hostile inside; after 2 seconds inside the poison gets stronger.
+- **Wind Gust:** turns hostile shots round, blows loose items away, puts out your flames and catches you when
+  cast while falling.
+- **Void Walk:** your first melee hit out of the void does 50% more, blinds and slows, and ends the walk; faint
+  wisps where your feet fall and a warning two seconds before it ends.
+- **Flamethrower, stance:** feet apart, knees soft, breathing and shifting weight; the knees really bend.
+
+### Changed
+- **Plasma Flamethrower:** 30% bigger, the front grip a little further back.
+- **Flamethrower, left click:** a wide level sweep, right to left and back again, 50% further to each side;
+  it gathers first and flows into the next, so it no longer snaps into the sweep.
+- **Flamethrower, flames:** boiling, flickering flame round a bright core with threads of plasma, sparks, rising
+  smoke, fire that splashes where it hits and a pulsing ring at the nozzle.
+- **Lightning Strike:** the game's own bolt is no longer drawn, only the spell's own; it still hits the same.
+- **Spells:** richer sounds for all five.
+
+### Removed
+- **Flamethrower, left click:** the other ten attacks (rising sweep, chop, geyser, overhead, fireball burst,
+  lunge, low sweep, spin, cross, corkscrew).
+- **Void Walk:** the 20% melee bonus for the whole walk (replaced by the ambush).
+
 ## [0.2.0-alpha] - 2026-09-26
 
 ### Changed

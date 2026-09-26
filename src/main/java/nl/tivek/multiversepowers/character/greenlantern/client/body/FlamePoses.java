@@ -9,14 +9,11 @@ import nl.tivek.multiversepowers.engine.math.Ease;
 import nl.tivek.multiversepowers.engine.math.Keyframes;
 
 final class FlamePoses extends FlameKeys {
-    private static final Vec3 FIST = new Vec3(-1.0, 9.4, 0.0);
-    private static final Vec3 LEFT_FIST = new Vec3(1.0, 9.4, 0.0);
-    private static final double PIVOT_ACROSS = 5.0;
-    private static final double PIVOT_DOWN = 2.0;
-    private static final double BEND_DOWN = 3.2;
+    // From the first-person view to the body: the view's reach is squeezed onto the body's.
+    private static final Vec3 BODY_SCALE = new Vec3(0.65, 1.12, -0.9);
     // Where the guard's fist sits on the body: the gun held low before the belly, the body turned behind it.
     private static final Vec3 BODY_GUARD = new Vec3(0.02, -0.42, 0.24);
-    private static final Vec3 BODY_SHIFT = BODY_GUARD.subtract(SwordPoses.body(GUARD.grip()));
+    private static final Vec3 BODY_SHIFT = BODY_GUARD.subtract(GUARD.grip().multiply(BODY_SCALE));
     private static final Vec3 EYES = new Vec3(0.0, 0.41, 0.12);
 
     private FlamePoses() {
@@ -30,9 +27,6 @@ final class FlamePoses extends FlameKeys {
                 Keyframes.Key[] keys = MOVES.get(move);
                 float end = keys == null ? 0.0F : Keyframes.end(keys) + SETTLE;
                 Pose rest = idle(time, (float) Ease.smoother((t - end) / IDLE_IN));
-                if (move == FlameMove.SPIN) {
-                    rest = rest.orbiting(Mth.TWO_PI);
-                }
                 yield keys == null ? rest : along(move, t, keyed(keys, t, from, fromSpeed, rest, SETTLE));
             }
         };
@@ -59,43 +53,26 @@ final class FlamePoses extends FlameKeys {
     }
 
     static Vec3 body(Vec3 view) {
-        return SwordPoses.body(view).add(BODY_SHIFT);
+        return view.multiply(BODY_SCALE).add(BODY_SHIFT);
     }
 
-    static float[] aim(Vec3 target, float twist, float lean, boolean right) {
-        float tilt = SwordPoses.TILT * Mth.clamp(lean, -0.35F, 1.0F);
-        Vec3 bent = SwordPoses.unbent(SwordPoses.unturned(target, twist), tilt);
-        Vec3 reach = bent.subtract(right ? SwordPoses.SHOULDER : -SwordPoses.SHOULDER, 0.0, 0.0);
-        reach = reach.lengthSqr() < 1.0E-6 ? new Vec3(0.0, -1.0, 0.0) : reach.normalize();
-        float pitch = (float) Math.asin(Mth.clamp(reach.y, -1.0, 1.0));
-        float yaw = (float) Mth.atan2(reach.x, reach.z);
-        return new float[] { -(Mth.HALF_PI + pitch), yaw + twist };
+    // A view-space way as a body-space one.
+    static Vec3 way(Vec3 view) {
+        return new Vec3(view.x, view.y, -view.z);
     }
 
-    static Vec3 hand(Vec3 target, float twist, float lean, boolean right) {
-        float[] aim = aim(target, twist, lean, right);
-        float bend = Mth.clamp(lean, -0.35F, 1.0F);
-        double xRot = aim[0] + SwordPoses.TILT * bend;
-        double yRot = aim[1];
-        Vec3 local = right ? FIST : LEFT_FIST;
-        double cx = Math.cos(xRot);
-        double sx = Math.sin(xRot);
-        Vec3 bent = new Vec3(local.x, local.y * cx - local.z * sx, local.y * sx + local.z * cx);
-        double cy = Math.cos(yRot);
-        double sy = Math.sin(yRot);
-        Vec3 turned = new Vec3(bent.x * cy + bent.z * sy, bent.y, -bent.x * sy + bent.z * cy);
-        double side = right ? -1.0 : 1.0;
-        Vec3 pivot = new Vec3(side * Math.cos(twist) * PIVOT_ACROSS, PIVOT_DOWN + BEND_DOWN * Math.max(0.0F, bend),
-                -side * Math.sin(twist) * PIVOT_ACROSS);
-        Vec3 model = pivot.add(turned).scale(1.0 / 16.0);
-        return new Vec3(-model.x, PIVOT_DOWN / 16.0 - model.y, -model.z);
+    // The right fist where the body's arm really puts it, in body space.
+    static Vec3 fist(Pose pose) {
+        FlameBody.Torso torso = FlameBody.torso(pose, 1.0F);
+        Vec3 shoulder = torso.shoulder(true);
+        float[] rot = FlameBody.reach(shoulder, FlameBody.model(body(pose.grip())), torso.twist());
+        return FlameBody.body(FlameBody.fist(shoulder, rot, true));
     }
 
     // The gun hangs from the right fist, so the left hand finds the front grip from there.
-    static Vec3 leftTarget(Pose pose) {
-        Vec3 fist = hand(body(pose.grip()), pose.twist(), pose.lean(), true);
-        Vec3 ahead = SwordPoses.way(pose.aim(1.0));
-        Vec3 up = square(SwordPoses.way(pose.up(1.0)), ahead);
+    static Vec3 leftTarget(Pose pose, Vec3 fist) {
+        Vec3 ahead = way(pose.aim(1.0));
+        Vec3 up = square(way(pose.up(1.0)), ahead);
         Vec3 fore = spot(fist, ahead, up, FlamePainter.FORE);
         Vec3 valve = spot(fist, ahead, up, FlamePainter.VALVE);
         return body(pose.left()).lerp(fore.lerp(valve, pose.leftValve()), pose.leftOn());
@@ -187,9 +164,9 @@ final class FlamePoses extends FlameKeys {
                 * (1.0 - Ease.smooth((t - (FlameMove.PILOT + 2.0)) / 4.0));
         double up = Ease.smooth((t - (FlameMove.TEST - 3.0)) / 4.0)
                 * (1.0 - Ease.smooth((t - (FlameMove.TEST + FlameMove.TEST_TICKS + 2.0)) / 6.0));
-        Vec3 fist = hand(body(pose.grip()), pose.twist(), pose.lean(), true);
-        Vec3 ahead = SwordPoses.way(pose.aim(1.0));
-        Vec3 top = square(SwordPoses.way(pose.up(1.0)), ahead);
+        Vec3 fist = fist(pose);
+        Vec3 ahead = way(pose.aim(1.0));
+        Vec3 top = square(way(pose.up(1.0)), ahead);
         double weight = 0.0;
         if (forming > 0.0) {
             weight += watch(head, spot(fist, ahead, top, FlamePainter.TANK), forming * 0.8);

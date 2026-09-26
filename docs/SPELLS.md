@@ -41,12 +41,12 @@ Good to know:
 
 | School | Spell | In short | Range | Cooldown |
 |---|---|---|---|---|
-| Fire | Fireball | A burning comet that explodes and leaves a small fire | flies until it hits, up to 5 s | 2 s |
+| Fire | Fireball | A burning comet that bursts, burns and throws back what is round it, and leaves a small fire | flies until it hits, up to 5 s | 2 s |
 | Fire | Fire Wall | A swirling ring of fire around you that burns and knocks back enemies | 3.5 block radius | 10 s |
-| Lightning | Lightning Strike | Charges up, then lightning strikes where you look | 40 blocks | 8 s |
-| Nature | Poison Area | A thrown vial that leaves a poison cloud | 24 blocks | 12 s |
-| Air | Wind Gust | A wall of wind that throws hostile (red) creatures back | 8 blocks in front of you | 5 s |
-| Dark | Void Walk | 10 s invisible, faster and stronger, hostile (red) ones marked | around you | 30 s |
+| Lightning | Lightning Strike | Charges up, then lightning strikes where you look and leaps on to more foes | 40 blocks | 8 s |
+| Nature | Poison Area | A thrown vial that leaves a slowing poison cloud | 24 blocks | 12 s |
+| Air | Wind Gust | A wall of wind that throws hostile (red) creatures back and turns their shots round | 8 blocks in front of you | 5 s |
+| Dark | Void Walk | 10 s invisible and faster, hostile (red) ones marked, the first blow out of it an ambush | around you | 30 s |
 
 ---
 
@@ -72,25 +72,35 @@ for 4 seconds, and receives a powerful outward knockback impulse. The caster is 
 
 ## Fireball
 
-**What you see:** a spinning ring of fire with a five-pointed star flares up at your hand. A blazing comet
-flies out: a glowing core, two flame strands spiralling around it, a smoke tail and dripping lava.
-On impact: a flash, a ball of fire, a burning ring rolling over the ground, then embers and smoke.
+**What you see:** sparks gather in your palm and catch with a click, and a spinning ring of fire with a
+five-pointed star flares up at your hand. A blazing ball of fire flies out, crackling: a white-hot heart in
+boiling lobes of yellow and orange, six flames streaming and waving off its back, a trail of heat fading from
+yellow to smoky red, and dripping lava. On impact: a flash, a ball of fire swelling and rolling up, a ring of heat
+racing over the ground, flames licking up in a circle, a scorched ring, then embers and a dark cloud of smoke
+climbing on its own column. In water it goes out
+with a hiss and a burst of steam.
 
 | | |
 |---|---|
-| Speed | starts at 22 blocks per second and speeds up to almost 40, straight where you look |
-| Damage | 5 (2.5 hearts), and the target burns for 5 seconds |
+| Speed | starts at 25 blocks per second and speeds up, straight where you look |
+| Damage | 5 (2.5 hearts) to what it hits, and the target burns for 5 seconds |
+| Burst | every hostile (red) creature within 2.5 blocks of the impact takes up to 4 (2 hearts, less further off), burns for 3 seconds and is knocked away |
 | Fire | the spot it hits, plus about half of the 8 spots around it (not at another player's feet where players may not fight each other, and never in spawn protection) |
-| Lifetime | fizzles out after 5 seconds if it hits nothing |
+| Lifetime | fizzles out after 4.5 seconds if it hits nothing, or at once in water |
 | Cooldown | 2 s |
 
 ---
 
 ## Lightning Strike
 
-**What you see:** sparks jump from your hand. On the target, a glowing rune circle draws itself on the ground
-and a dark storm cloud gathers overhead. Then a jagged bolt with side branches tears down, with a flash,
-a ring of sparks, flying pieces of the ground, and a smoking, crackling scorch mark.
+**What you see:** sparks jump from your hand. On the target a rune draws itself on the ground (three turning
+rings, then spokes and glyphs), a dark storm cloud of rolling puffs gathers overhead with a far rumble, lit from
+inside by flickers, and static crawls over the rune and everything standing on it, humming higher and higher. Just
+before it breaks, a thin thread of light joins the ground to the cloud. Then a faint leader feels its way down,
+and three blinding strokes blaze up it one after the other, each along a new jagged path with side branches: the
+sky flashes, a dome of plasma swells over the strike, a ring races out over the ground, pieces of the ground fly,
+and a scorched patch is left with glowing cracks that cool. From there the bolt leaps on in crackling arcs from
+one foe to the next. It is the spell's own lightning: the game's normal bolt is never drawn.
 
 | | |
 |---|---|
@@ -98,6 +108,8 @@ a ring of sparks, flying pieces of the ground, and a smoking, crackling scorch m
 | Charge time | 0.7 s before the bolt strikes |
 | Aiming | the creature or block you look at; a creature is followed while the spell charges |
 | Damage | normal lightning: 5 (2.5 hearts) and sets the target on fire |
+| Shock | hostile (red) creatures within 3 blocks of the strike are slowed hard for 1.5 seconds |
+| Chain | then the bolt leaps to the nearest hostile creature it has not touched, within 6 blocks, every 0.1 s: up to 3, or 5 when it rains there. 4 damage (2 hearts) each, and slowed like the shock |
 | Fire | also sets the ground on fire, on Normal and Hard difficulty |
 | You | your own lightning never hits you or anything green (your faction, allies, pets); other players only where players may fight each other |
 | Cooldown | 8 s |
@@ -106,15 +118,18 @@ a ring of sparks, flying pieces of the ground, and a smoking, crackling scorch m
 
 ## Poison Area
 
-**What you see:** you throw a glowing green vial in an arc. It shatters in slime and glass shards.
-A poison cloud spreads out: low toxic fog, rising bubbles, a turning ring and a five-pointed rune star on
-the ground. Every creature inside gets a green haze. At the end the cloud thins away.
+**What you see:** you throw a glass vial of glowing poison that tumbles through the air in an arc, dripping a
+thin green trail. It shatters in slime and glass shards with a squelch. A poison cloud spreads out: a glowing ring
+and a five-pointed rune star on the ground, a green haze over it all, heavy fog rolling round low over the ground,
+slow tendrils of gas winding up round the middle and bubbles welling up out of the muck, swelling and popping;
+now and then the muck belches up a thick puff of gas, and it bubbles and brews. Every creature
+inside gets a green haze. At the end the cloud sighs out and thins away.
 
 | | |
 |---|---|
 | Range | 24 blocks, lands where you look |
 | Cloud | 3.5 blocks around the landing spot, 8 seconds |
-| Effect | Poison II for 3 seconds, renewed every half second while inside |
+| Effect | Poison I for 3 seconds and Slowness I, renewed every half second while inside; after 2 seconds inside the poison turns to Poison II |
 | Who | only hostile (red) ones; never you or anything green or yellow; other players only where players may fight each other, spectators never |
 | Cooldown | 12 s |
 
@@ -122,8 +137,9 @@ the ground. Every creature inside gets a green haze. At the end the cloud thins 
 
 ## Wind Gust
 
-**What you see:** wind spirals up around you, then a curved wall of wind rolls forward with streaks and gusts.
-Every creature it reaches is thrown back and up with a puff of air.
+**What you see:** three ribbons of wind wind up round your feet and fly off, then a crescent of air rolls
+forward in layers, bowed in the middle and curling as it goes, with streaks racing through it and gusts, with the
+whoosh of a breeze. Every creature it reaches is thrown back and up with a puff of air.
 
 | | |
 |---|---|
@@ -131,16 +147,22 @@ Every creature it reaches is thrown back and up with a puff of air.
 | Wave speed | 20 blocks per second; creatures are thrown the moment the wave reaches them |
 | Push | strongest up close, weaker further away; knockback resistance (like netherite armour) lowers it |
 | Hits | every hostile (red) creature in the cone, never you; other players only where players may fight each other (PvP on, not in creative) |
-| Damage | none, only the push (and the fall afterwards) |
+| Damage | none, only the push (and the fall afterwards); it blows out the flames on what it throws |
+| Shots | arrows and other shots from hostile (red) ones flying in the cone are turned round, straight where you look, and become yours |
+| Loose things | dropped items and experience orbs in the cone are blown away |
+| You | it blows out your own flames; cast while falling, it catches you: no fall damage and 1 second of slow falling |
 | Cooldown | 5 s |
 
 ---
 
 ## Void Walk
 
-**What you see:** a dark explosion of ink and void matter swallows you. For 10 seconds you are gone.
+**What you see:** light is sucked in toward you in violet streaks round a darkening heart, then a sphere of nothing
+bursts out, black with a violet rim, shards of darkness flying off it and a ring racing out over the ground, in an
+explosion of ink and void matter that swallows you. For 10 seconds you are gone.
 Your own screen turns into black silhouettes with violet edges, with a dark border and a slow pulse,
-and you hear a low heartbeat. When it ends, you come back with a burst.
+and you hear a low heartbeat. When it ends, you come back with a burst: the sphere of nothing shrinks away round you. An ambush tears the
+air where the blow lands: three claws of darkness edged with violet.
 
 | | |
 |---|---|
@@ -149,12 +171,13 @@ and you hear a low heartbeat. When it ends, you come back with a burst.
 | Silent | your footsteps and other sounds make no noise |
 | Untargetable | mobs lose track of you and cannot target you, even when you hit them |
 | Speed | +50% |
-| Melee damage | +20% |
+| Ambush | your first melee hit out of the void does 50% more and leaves the victim blind and slowed for 2 seconds; it also ends the walk |
 | Marked | everything hostile (red) to you within 32 blocks glows for you, also through walls, with a purple mark above their head |
-| Ends early | when you die or log out, or when something takes the invisibility away (milk, a flash of light) |
+| Ends early | when you strike, die or log out, or when something takes the invisibility away (milk, a flash of light) |
 | Cooldown | 30 s |
 
-Only you see the marks and the dark screen.
+Only you see the marks, the dark screen and the faint wisps where your feet fall; two seconds before the end a
+soft tone warns you.
 
 ---
 

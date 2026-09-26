@@ -28,10 +28,12 @@ import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
+import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.engine.effect.Effect;
 import nl.tivek.multiversepowers.engine.effect.Effects;
+import nl.tivek.multiversepowers.engine.fx.ParticleBatch;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 import nl.tivek.multiversepowers.faction.Factions;
 
@@ -39,12 +41,11 @@ final class VoidWalkSpell {
     static final int DURATION = 200;
     static final double MARK_RADIUS = 32.0;
     private static final double SPEED_BONUS = 0.5;
-    private static final double DAMAGE_BONUS = 0.2;
+    private static final float AMBUSH = 1.5F;
+    private static final int DAZED = 40;
 
     private static final ResourceLocation SPEED_ID =
             ResourceLocation.fromNamespaceAndPath(MultiversePowers.MODID, "void_walk_speed");
-    private static final ResourceLocation DAMAGE_ID =
-            ResourceLocation.fromNamespaceAndPath(MultiversePowers.MODID, "void_walk_damage");
     private static final EquipmentSlot[] WORN = {EquipmentSlot.MAINHAND, EquipmentSlot.OFFHAND,
             EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET};
 
@@ -80,6 +81,8 @@ final class VoidWalkSpell {
             return false;
         }
         Vec3 at = player.position();
+        ParticleFx.implosion(level, ParticleTypes.PORTAL, at.add(0, 1.0, 0), 3.0, 50, 0.6);
+        SpellFxPayload.send(level, SpellFxPayload.VOID_IN, at, at, -1, 0);
         Effects.start(level, explosion(at));
         enter(player, level);
         Effects.start(level, (lvl, age) -> tick(player, age));
@@ -93,7 +96,6 @@ final class VoidWalkSpell {
         player.setSilent(true);
         player.addEffect(new MobEffectInstance(MobEffects.INVISIBILITY, DURATION + 5, 0, false, false, true));
         addModifier(player, Attributes.MOVEMENT_SPEED, SPEED_ID, SPEED_BONUS);
-        addModifier(player, Attributes.ATTACK_DAMAGE, DAMAGE_ID, DAMAGE_BONUS);
         hideEquipment(player);
         for (Mob mob : level.getEntitiesOfClass(Mob.class, player.getBoundingBox().inflate(64),
                 mob -> mob.getTarget() == player)) {
@@ -119,7 +121,40 @@ final class VoidWalkSpell {
         if (age % 10 == 0) {
             markEnemies(player);
         }
+        whispers(player, age);
         return true;
+    }
+
+    // Only the walker sees faint wisps where the feet fall, and hears a warning two seconds before it ends.
+    private static void whispers(ServerPlayer player, int age) {
+        if (age == DURATION - 40) {
+            player.playNotifySound(SoundEvents.BEACON_DEACTIVATE, SoundSource.PLAYERS, 0.5F, 1.6F);
+        }
+        if (age % 3 == 0 && player.getDeltaMovement().horizontalDistanceSqr() > 1.0E-3) {
+            ParticleBatch.add(player, ParticleTypes.REVERSE_PORTAL, false, player.getX(), player.getY() + 0.1,
+                    player.getZ(), 2, 0.15, 0.02, 0.15, 0.01);
+        }
+    }
+
+    // The first blow struck out of the void lands harder and leaves the victim reeling; it also pulls the walker out.
+    static void ambush(LivingIncomingDamageEvent event) {
+        if (!(event.getSource().getEntity() instanceof ServerPlayer player) || event.getSource().getDirectEntity()
+                != player || !isInVoid(player) || event.getEntity() == player) {
+            return;
+        }
+        LivingEntity victim = event.getEntity();
+        event.setAmount(event.getAmount() * AMBUSH);
+        victim.addEffect(new MobEffectInstance(MobEffects.BLINDNESS, DAZED, 0), player);
+        victim.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, DAZED, 1), player);
+        ServerLevel level = player.serverLevel();
+        Vec3 hit = victim.getBoundingBox().getCenter();
+        SpellFxPayload.send(level, SpellFxPayload.AMBUSH, hit, player.getEyePosition(), -1, 0);
+        ParticleFx.sphereOut(level, ParticleTypes.REVERSE_PORTAL, hit, 30, 0.3);
+        ParticleFx.cloud(level, ParticleTypes.SQUID_INK, hit, 10, 0.3, 0.05);
+        ParticleFx.cloud(level, ParticleFx.dust(VIOLET, 1.4F), hit, 14, 0.4, 0.0);
+        level.playSound(null, hit.x, hit.y, hit.z, SoundEvents.PHANTOM_BITE, SoundSource.PLAYERS, 1.0F, 0.6F);
+        level.playSound(null, hit.x, hit.y, hit.z, SoundEvents.ENDERMAN_SCREAM, SoundSource.PLAYERS, 0.4F, 1.6F);
+        leave(player);
     }
 
     static void leave(ServerPlayer player) {
@@ -129,6 +164,8 @@ final class VoidWalkSpell {
         }
         restore(player, walk);
         if (player.isAlive()) {
+            SpellFxPayload.send(player.serverLevel(), SpellFxPayload.VOID_OUT, player.position(), player.position(),
+                    -1, 0);
             Effects.start(player.serverLevel(), reappear(player.position()));
         }
     }
@@ -147,7 +184,6 @@ final class VoidWalkSpell {
     private static void restore(ServerPlayer player, Walk walk) {
         player.setSilent(walk.wasSilent);
         removeModifier(player, Attributes.MOVEMENT_SPEED, SPEED_ID);
-        removeModifier(player, Attributes.ATTACK_DAMAGE, DAMAGE_ID);
         // Restore any earlier invisibility potion with its time left, if still there.
         if (player.hasEffect(MobEffects.INVISIBILITY)) {
             player.removeEffect(MobEffects.INVISIBILITY);
@@ -249,6 +285,8 @@ final class VoidWalkSpell {
                         0.5F, 1.6F);
                 level.playSound(null, feet.x, feet.y, feet.z, SoundEvents.BEACON_DEACTIVATE, SoundSource.PLAYERS,
                         1.0F, 0.6F);
+                level.playSound(null, feet.x, feet.y, feet.z, SoundEvents.RESPAWN_ANCHOR_DEPLETE.value(),
+                        SoundSource.PLAYERS, 0.8F, 0.7F);
             }
             if (age <= 10) {
                 double radius = 0.6 + age * 0.5;
@@ -268,6 +306,8 @@ final class VoidWalkSpell {
         Vec3 core = feet.add(0, 1.0, 0);
         return (level, age) -> {
             if (age == 0) {
+                ParticleFx.at(level, ParticleTypes.FLASH, core);
+                ParticleFx.implosion(level, ParticleTypes.PORTAL, core, 2.0, 30, 0.4);
                 ParticleFx.sphereOut(level, ParticleTypes.REVERSE_PORTAL, core, 40, 0.35);
                 ParticleFx.cloud(level, ParticleTypes.SQUID_INK, core, 16, 0.4, 0.05);
                 ParticleFx.sphere(level, ParticleFx.dust(VIOLET, 1.4F), core, 0.9, 24, 0);

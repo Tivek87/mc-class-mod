@@ -88,6 +88,9 @@ public final class GreenLanternSuitLayer extends RenderLayer<AbstractClientPlaye
         }
         int overlay = LivingEntityRenderer.getOverlayCoords(player, 0.0F);
         float[] knees = FlightPose.knees(player);
+        if (knees == null) {
+            knees = FlameArms.knees(player);
+        }
         if (knees != null) {
             KneelLegs.skin(poseStack, buffers, light, overlay, player, this.getParentModel(), knees);
         }

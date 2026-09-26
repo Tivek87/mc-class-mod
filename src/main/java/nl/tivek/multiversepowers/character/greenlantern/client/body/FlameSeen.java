@@ -28,7 +28,11 @@ import nl.tivek.multiversepowers.engine.client.render.ConstructPainter;
 import nl.tivek.multiversepowers.engine.math.Ease;
 
 abstract class FlameSeen extends FlameStates {
-    private static final Map<Integer, Float> SPUN = new HashMap<>();
+    private static final float MODEL_PIXEL = 0.9375F / 16.0F;
+    private static final Map<Integer, Turned> TURNED = new HashMap<>();
+
+    private record Turned(float orbit, float drop, @Nullable float[] knees) {
+    }
 
     static boolean posing(Entity player, float partialTick) {
         return state(player, partialTick) != null;
@@ -46,19 +50,32 @@ abstract class FlameSeen extends FlameStates {
             return;
         }
         boolean right = arm == HumanoidArm.RIGHT;
-        float twist = pose.twist();
-        Vec3 target = right ? FlamePoses.body(pose.grip()) : FlamePoses.leftTarget(pose);
-        float[] aim = FlamePoses.aim(target, twist, pose.lean(), right);
+        FlameBody.Torso torso = FlameBody.torso(pose, ours);
+        float[][] arms = arms(pose, torso);
+        float[] aim = right ? arms[0] : arms[1];
         ModelPart limb = right ? model.rightArm : model.leftArm;
         float sway = limb.xRot * 0.1F;
         limb.xRot = Mth.lerp(ours, limb.xRot, aim[0] + sway);
         limb.yRot = Mth.lerp(ours, limb.yRot, aim[1]);
         limb.zRot = Mth.lerp(ours, limb.zRot, 0.0F);
-        model.body.yRot = twist * ours;
-        model.rightArm.z = Mth.sin(twist) * 5.0F * ours;
-        model.rightArm.x = Mth.lerp(ours, -5.0F, -Mth.cos(twist) * 5.0F);
-        model.leftArm.z = -Mth.sin(twist) * 5.0F * ours;
-        model.leftArm.x = Mth.lerp(ours, 5.0F, Mth.cos(twist) * 5.0F);
+        shoulders(model, torso);
+    }
+
+    // Both arms, right then left: the right fist to the grip, the left hand to wherever it goes from there.
+    static float[][] arms(FlameCurves.Pose pose, FlameBody.Torso torso) {
+        Vec3 shoulder = torso.shoulder(true);
+        float[] right = FlameBody.reach(shoulder, FlameBody.model(FlamePoses.body(pose.grip())), torso.twist());
+        Vec3 fist = FlameBody.body(FlameBody.fist(shoulder, right, true));
+        float[] left = FlameBody.reach(torso.shoulder(false), FlameBody.model(FlamePoses.leftTarget(pose, fist)),
+                torso.twist());
+        return new float[][] { right, left };
+    }
+
+    private static void shoulders(HumanoidModel<?> model, FlameBody.Torso torso) {
+        Vec3 right = torso.shoulder(true);
+        Vec3 left = torso.shoulder(false);
+        model.rightArm.setPos((float) right.x, (float) right.y, (float) right.z);
+        model.leftArm.setPos((float) left.x, (float) left.y, (float) left.z);
     }
 
     public static void lean(PlayerModel<?> model, LivingEntity entity) {
@@ -72,6 +89,9 @@ abstract class FlameSeen extends FlameStates {
         }
         FlameCurves.Pose pose = pose(entity, state, partialTick);
         float ours = 1.0F - Mth.clamp(pose.rest(), 0.0F, 1.0F);
+        if (ours <= 0.0F) {
+            return;
+        }
         float[] watching = watching(BLENDS.get(entity.getId()), state, now(partialTick));
         if (watching != null) {
             float[] head = FlamePoses.head(watching[0], pose);
@@ -79,33 +99,31 @@ abstract class FlameSeen extends FlameStates {
             model.head.xRot = Mth.lerp(follow, model.head.xRot, head[0]);
             model.head.yRot = Mth.lerp(follow, model.head.yRot, head[1]);
         }
-        float lean = Mth.clamp(pose.lean(), -0.35F, 1.0F) * ours;
-        float down = Math.max(0.0F, lean);
-        float tilt = SwordPoses.TILT * lean;
-        model.body.xRot += tilt;
-        model.body.y += 3.2F * down;
-        model.head.y += 4.2F * down;
-        model.rightArm.y += 3.2F * down;
-        model.leftArm.y += 3.2F * down;
-        model.rightArm.xRot += tilt;
-        model.leftArm.xRot += tilt;
-        model.rightLeg.z += 3.9F * down;
-        model.leftLeg.z += 3.9F * down;
-        model.rightLeg.y += 0.2F * down;
-        model.leftLeg.y += 0.2F * down;
-        float step = Mth.clamp(pose.step(), 0.0F, 1.0F) * ours;
-        if (step > 0.0F) {
-            model.rightLeg.xRot = Mth.lerp(step, model.rightLeg.xRot, 0.45F);
-            model.leftLeg.xRot = Mth.lerp(step, model.leftLeg.xRot, -0.5F);
-            model.leftLeg.zRot = Mth.lerp(step, model.leftLeg.zRot, -0.08F);
-            model.rightLeg.zRot = Mth.lerp(step, model.rightLeg.zRot, 0.1F);
-        }
+        FlameBody.Torso torso = FlameBody.torso(pose, ours);
+        Vec3 neck = torso.neck();
+        model.body.setPos((float) neck.x, (float) neck.y, (float) neck.z);
+        model.body.setRotation(torso.bend(), torso.twist(), -torso.roll());
+        model.head.setPos((float) neck.x, (float) neck.y, (float) neck.z);
+        shoulders(model, torso);
+        FlameBody.Legs legs = FlameBody.legs(pose, ours);
+        float hold = ours * Mth.clamp(Math.max(Math.max(pose.squat(), pose.kneel()), 2.0F * Math.max(
+                Math.abs(pose.step()), pose.wide())), 0.0F, 1.0F);
+        legs(model.rightLeg, hold, legs.rightThigh(), legs.spread(), FlameBody.hip(true), ours);
+        legs(model.leftLeg, hold, legs.leftThigh(), -legs.spread(), FlameBody.hip(false), ours);
         model.hat.copyFrom(model.head);
         model.jacket.copyFrom(model.body);
         model.rightSleeve.copyFrom(model.rightArm);
         model.leftSleeve.copyFrom(model.leftArm);
         model.rightPants.copyFrom(model.rightLeg);
         model.leftPants.copyFrom(model.leftLeg);
+    }
+
+    private static void legs(ModelPart leg, float hold, float thigh, float spread, Vec3 hip, float ours) {
+        leg.xRot = Mth.lerp(hold, leg.xRot, thigh);
+        leg.yRot = Mth.lerp(hold, leg.yRot, 0.0F);
+        leg.zRot = Mth.lerp(hold, leg.zRot, spread);
+        leg.setPos(Mth.lerp(ours, leg.x, (float) hip.x), Mth.lerp(ours, leg.y, (float) hip.y),
+                Mth.lerp(ours, leg.z, (float) hip.z));
     }
 
     public static void draw(LanternPainter painter, Entity player, @Nullable Vec3 ring, float partialTick) {
@@ -119,8 +137,8 @@ abstract class FlameSeen extends FlameStates {
         if (apart >= 1.0) {
             return;
         }
-        Vec3 forward = spot.world(SwordPoses.way(pose.aim(1.0)), 0.0F);
-        Vec3 up = spot.world(SwordPoses.way(pose.up(1.0)), 0.0F);
+        Vec3 forward = spot.world(FlamePoses.way(pose.aim(1.0)), 0.0F);
+        Vec3 up = spot.world(FlamePoses.way(pose.up(1.0)), 0.0F);
         ConstructPainter.Frame gun = FlamePainter.held(spot.grip(), forward, up, FlameCurves.GUN_SCALE);
         FlamePainter.gun(painter, gun, formed(state), FlamePoses.glow(state.move(), state.t(), heat(player),
                 state.firing()), apart, ring);
@@ -145,13 +163,8 @@ abstract class FlameSeen extends FlameStates {
             case ATTACK -> {
                 FlameMove.Aim aim = move.aim(t);
                 if (aim != null) {
-                    FireStream.Kind kind = switch (move.fire()) {
-                        case FAN -> FireStream.Kind.SWEEP;
-                        case BALL -> FireStream.Kind.BLAST;
-                        case JET -> FireStream.Kind.STREAM;
-                    };
-                    double speed = move.fire() == FlameMove.Fire.FAN ? kind.speed * move.reach() : kind.speed;
-                    FireStream.feed(player, kind, nozzle, FlameMove.way(look, aim), now, speed);
+                    FireStream.feed(player, FireStream.Kind.SWEEP, nozzle, FlameMove.way(look, aim), now,
+                            FireStream.Kind.SWEEP.speed * move.reach());
                 }
             }
             case INFERNO -> {
@@ -237,26 +250,48 @@ abstract class FlameSeen extends FlameStates {
         }
     }
 
-    // The spin turns the whole body round: stored before the model is drawn, used as it is turned.
+    // The spin turns the whole body round and bent knees sink it: stored before the model is drawn, used as it is
+    // turned and as its legs are drawn.
     static void spin(RenderPlayerEvent.Pre event) {
         State state = state(event.getEntity(), event.getPartialTick());
         if (state == null) {
             return;
         }
-        float orbit = pose(event.getEntity(), state, event.getPartialTick()).orbit();
-        if (Math.abs(orbit) >= 1.0E-3F) {
-            SPUN.put(event.getEntity().getId(), orbit);
+        FlameCurves.Pose pose = pose(event.getEntity(), state, event.getPartialTick());
+        float ours = 1.0F - Mth.clamp(pose.rest(), 0.0F, 1.0F);
+        FlameBody.Legs legs = FlameBody.legs(pose, ours);
+        boolean bent = FlameBody.bent(legs) && !event.getEntity().isInvisible();
+        if (Math.abs(pose.orbit()) >= 1.0E-3F || Math.abs(legs.drop()) >= 1.0E-3F || bent) {
+            TURNED.put(event.getEntity().getId(), new Turned(pose.orbit(), legs.drop(), bent ? FlameBody.knees(legs)
+                    : null));
+        }
+        if (bent) {
+            // The game's legs cannot bend at the knee: hidden here and drawn in two halves instead (see KneelLegs).
+            PlayerModel<AbstractClientPlayer> model = event.getRenderer().getModel();
+            model.rightLeg.visible = false;
+            model.leftLeg.visible = false;
+            model.rightPants.visible = false;
+            model.leftPants.visible = false;
+            model.rightLeg.yScale = 0.5F;
+            model.leftLeg.yScale = 0.5F;
         }
     }
 
     static void turnModel(AbstractClientPlayer player, PoseStack pose) {
-        Float orbit = SPUN.get(player.getId());
-        if (orbit != null) {
-            pose.mulPose(Axis.YP.rotation(orbit));
+        Turned turned = TURNED.get(player.getId());
+        if (turned != null) {
+            pose.translate(0.0F, -turned.drop() * MODEL_PIXEL, 0.0F);
+            pose.mulPose(Axis.YP.rotation(turned.orbit()));
         }
     }
 
+    @Nullable
+    static float[] knees(LivingEntity entity) {
+        Turned turned = TURNED.get(entity.getId());
+        return turned == null ? null : turned.knees();
+    }
+
     static void unspin(RenderPlayerEvent.Post event) {
-        SPUN.remove(event.getEntity().getId());
+        TURNED.remove(event.getEntity().getId());
     }
 }

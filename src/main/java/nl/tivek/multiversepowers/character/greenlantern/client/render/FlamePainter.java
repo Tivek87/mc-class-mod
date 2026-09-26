@@ -12,7 +12,7 @@ import nl.tivek.multiversepowers.engine.math.Ease;
 
 public final class FlamePainter {
     public static final Vec3 GRIP = new Vec3(0.0, -0.155, -0.232);
-    public static final Vec3 FORE = new Vec3(0.0, -0.245, 0.22);
+    public static final Vec3 FORE = new Vec3(0.0, -0.245, 0.11);
     public static final Vec3 NOZZLE = new Vec3(0.0, 0.02, 0.63);
     public static final Vec3 PILOT = new Vec3(0.0, -0.035, 0.62);
     public static final Vec3 VALVE = new Vec3(0.0, -0.115, -0.15);
@@ -56,7 +56,7 @@ public final class FlamePainter {
         anchors[PILOT_PART] = new Vec3(0.0, -0.035, 0.38);
         anchors[TANK_PART] = TANK;
         anchors[HOSE_PART] = Vec3.ZERO;
-        anchors[FORE_PART] = new Vec3(0.0, -0.178, 0.23);
+        anchors[FORE_PART] = new Vec3(0.0, -0.178, 0.12);
         anchors[VALVE_PART] = new Vec3(0.0, -0.115, -0.12);
         return anchors;
     }
@@ -242,6 +242,7 @@ public final class FlamePainter {
             Vec3 nozzle = frame.at(NOZZLE.x, NOZZLE.y, NOZZLE.z);
             FirePainter.ball(painter, nozzle.add(forward.scale(0.05 * scale)), 0.12 * scale * (0.8 + 0.4
                     * glow.muzzle()), 1.0, glow.muzzle(), (int) (painter.time() * 5.0));
+            FirePainter.muzzle(painter, nozzle, forward, up, 0.07 * scale, glow.muzzle());
         }
     }
 }

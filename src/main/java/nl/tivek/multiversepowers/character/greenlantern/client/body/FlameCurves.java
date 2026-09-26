@@ -8,21 +8,30 @@ import nl.tivek.multiversepowers.engine.client.render.ConstructPainter;
 import nl.tivek.multiversepowers.engine.math.Keyframes;
 
 abstract class FlameCurves {
-    static final double OWN_GUN = 0.7;
-    static final double GUN_SCALE = 0.92;
+    static final double OWN_GUN = 0.91;
+    static final double GUN_SCALE = 1.2;
 
-    // View space, as the sword's: x right, y up, -z ahead. The body turns (twist), leans and steps only when seen;
-    // orbit turns the whole body round to the left, as in the spin.
+    // View space: x right, y up, -z ahead. The body only shows when seen: twist turns it, lean bends it forward at the
+    // hips (back when negative), roll tips it to the right, squat bends both knees, kneel drops onto the right knee,
+    // step puts the left foot forward (the right when negative), wide spreads the feet and hop lifts it off the
+    // ground. Orbit turns the whole body round to the left, as in the spin.
     record Pose(Vec3 grip, Vec3 muzzle, Vec3 top, Vec3 left, float leftOn, float leftValve, float twist, float lean,
-            float step, float sweep, float rest, float orbit) {
-        static final int SIZE = 20;
+            float step, float sweep, float rest, float orbit, float roll, float squat, float kneel, float wide,
+            float hop) {
+        static final int SIZE = 25;
         static final int ORBIT = 19;
+        static final int ROLL = 20;
+        static final int SQUAT = 21;
+        static final int KNEEL = 22;
+        static final int WIDE = 23;
+        static final int HOP = 24;
 
         float[] numbers() {
             return new float[] { (float) this.grip.x, (float) this.grip.y, (float) this.grip.z, (float) this.muzzle.x,
                     (float) this.muzzle.y, (float) this.muzzle.z, (float) this.top.x, (float) this.top.y,
                     (float) this.top.z, (float) this.left.x, (float) this.left.y, (float) this.left.z, this.leftOn,
-                    this.leftValve, this.twist, this.lean, this.step, this.sweep, this.rest, this.orbit };
+                    this.leftValve, this.twist, this.lean, this.step, this.sweep, this.rest, this.orbit, this.roll,
+                    this.squat, this.kneel, this.wide, this.hop };
         }
 
         static Pose of(float[] n) {
@@ -30,7 +39,7 @@ abstract class FlameCurves {
             Vec3 top = square(new Vec3(n[6], n[7], n[8]), muzzle);
             return new Pose(new Vec3(n[0], n[1], n[2]), muzzle, top, new Vec3(n[9], n[10], n[11]),
                     Mth.clamp(n[12], 0.0F, 1.0F), Mth.clamp(n[13], 0.0F, 1.0F), n[14], n[15], n[16], n[17], n[18],
-                    n[ORBIT]);
+                    n[ORBIT], n[ROLL], n[SQUAT], n[KNEEL], n[WIDE], n[HOP]);
         }
 
         Pose orbiting(float orbit) {
@@ -53,7 +62,7 @@ abstract class FlameCurves {
             double angle = -this.orbit;
             return new Pose(yawed(this.grip, angle), yawed(this.muzzle, angle), yawed(this.top, angle),
                     yawed(this.left, angle), this.leftOn, this.leftValve, this.twist, this.lean, this.step, this.sweep,
-                    this.rest, 0.0F);
+                    this.rest, 0.0F, this.roll, this.squat, this.kneel, this.wide, this.hop);
         }
 
         Pose mix(Pose to, float t) {
@@ -93,7 +102,7 @@ abstract class FlameCurves {
             float step) {
         return Pose.of(new float[] { (float) gx, (float) gy, (float) gz, (float) mx, (float) my, (float) mz,
                 (float) tx, (float) ty, (float) tz, (float) lx, (float) ly, (float) lz, leftOn, leftValve,
-                twist * Mth.DEG_TO_RAD, lean, step, 0.0F, 0.0F, 0.0F });
+                twist * Mth.DEG_TO_RAD, lean, step, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F });
     }
 
     static Keyframes.Key key(float tick, boolean stop, Pose pose) {
