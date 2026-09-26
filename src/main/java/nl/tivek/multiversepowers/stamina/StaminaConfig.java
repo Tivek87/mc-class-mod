@@ -1,6 +1,7 @@
 package nl.tivek.multiversepowers.stamina;
 
 import net.neoforged.neoforge.common.ModConfigSpec;
+import nl.tivek.multiversepowers.config.ModConfigs;
 
 public final class StaminaConfig {
     public static final ModConfigSpec SPEC;
@@ -13,7 +14,7 @@ public final class StaminaConfig {
 
     static {
         ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
-        builder.comment("Stamina System Configuration",
+        builder.comment(ModConfigs.WIP, "Stamina System Configuration",
                 "World settings: every world keeps its own copy of this file, in <world>/serverconfig/welcomescreen/,",
                 "and everyone who plays in that world plays by it. The copy in config/welcomescreen/ is what a new world",
                 "starts with.").push("stamina");

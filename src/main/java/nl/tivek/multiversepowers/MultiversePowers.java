@@ -23,6 +23,8 @@ public class MultiversePowers {
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public MultiversePowers(IEventBus modEventBus, ModContainer modContainer) {
+        LOGGER.warn("==================== UNFINISHED / WORK IN PROGRESS ====================");
+        LOGGER.warn("Multiverse Powers is still being built: things may change, break or be missing.");
         modEventBus.addListener(ModNetwork::register);
         ModConfigs.register(modContainer, modEventBus);
         NeoForge.EVENT_BUS.addListener(MultiversePowers::onServerStopping);

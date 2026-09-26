@@ -37,7 +37,7 @@ public final class FlamePainter {
     private static final float[][] GROWS = grows();
     private static final ConstructPainter.Shape[] PARTS = parts();
 
-    // Charge: how near the inferno is to overheating, 0 to 1, shown on the gauge on the back of the body. Prime: how
+    // Charge: how near the inferno is to overheating, 0 to 1, shown by the heat gauge on the HUD (HeatBar). Prime: how
     // far a held button is on its way to the inferno or the vortex, shown by the fins lighting one by one.
     public record Glow(double fill, double heat, double pilot, double spark, double muzzle, double valve,
             double charge, double prime) {
@@ -56,17 +56,6 @@ public final class FlamePainter {
             return new Glow(this.fill, this.heat, this.pilot, this.spark, this.muzzle, this.valve, this.charge, prime);
         }
     }
-
-    private static final int GAUGE_CELLS = 10;
-    // A ring of cells on the back of the body, the face you see when you hold the gun, filling round like a clock.
-    private static final Vec3 DIAL = new Vec3(0.0, 0.0, -0.306);
-    private static final double DIAL_RADIUS = 0.04;
-    private static final int DIAL_STEPS = 3;
-    // A row of the same cells along both sides, so others see it too.
-    private static final double GAUGE_FROM = -0.27;
-    private static final double GAUGE_TO = 0.02;
-    private static final double SIDE_Y = 0.048;
-    private static final double SIDE_X = 0.066;
 
     private FlamePainter() {
     }
@@ -174,53 +163,6 @@ public final class FlamePainter {
             }
         }
         lights(painter, frame, glow);
-        gauge(painter, frame, glow.charge());
-    }
-
-    // Ten cells, pale, then white-hot, lit one after another as the inferno heads for overheating: round the dial on
-    // the back and along both sides. The last three blink faster the closer it gets, the dial's middle
-    // glows ever hotter, and it all drains again as the gun cools.
-    private static void gauge(LanternPainter painter, ConstructPainter.Frame frame, double charge) {
-        double scale = frame.scale();
-        double step = (GAUGE_TO - GAUGE_FROM) / GAUGE_CELLS;
-        double blink = charge > 0.7 ? 0.5 + 0.5 * Math.sin(painter.time() * (1.5 + 3.0 * charge)) : 1.0;
-        for (int k = 0; k < GAUGE_CELLS; k++) {
-            double lit = Mth.clamp(charge * GAUGE_CELLS - k, 0.0, 1.0);
-            int rgb = k < GAUGE_CELLS / 2 ? FirePainter.HOT : FirePainter.CORE;
-            double on = lit * (k >= GAUGE_CELLS - 3 ? blink : 1.0);
-            // An unlit cell still shows faintly, so the gauge reads even when it is empty.
-            double shown = Math.max(0.25, on);
-            double width = (on > 0.01 ? 0.02 : 0.012) * scale;
-            Vec3 last = null;
-            for (int s = 0; s <= DIAL_STEPS; s++) {
-                double angle = Math.PI * 2.0 * (k + 0.1 + 0.8 * s / DIAL_STEPS) / GAUGE_CELLS;
-                Vec3 at = frame.at(DIAL.x + Math.sin(angle) * DIAL_RADIUS, DIAL.y + Math.cos(angle) * DIAL_RADIUS,
-                        DIAL.z);
-                if (last != null) {
-                    painter.lightLine(last, at, width, rgb, Colors.alpha(shown));
-                    if (on > 0.01) {
-                        painter.glowLine(last, at, 0.04 * scale, FirePainter.FLAME, Colors.alpha(0.7 * on));
-                    }
-                }
-                last = at;
-            }
-            double z0 = GAUGE_FROM + step * (k + 0.12);
-            double z1 = z0 + step * 0.76;
-            for (double side = -1.0; side <= 1.0; side += 2.0) {
-                Vec3 a = frame.at(side * SIDE_X, SIDE_Y, z0);
-                Vec3 b = frame.at(side * SIDE_X, SIDE_Y, z1);
-                painter.lightLine(a, b, width * 2.5, rgb, Colors.alpha(shown));
-                if (on > 0.01) {
-                    painter.glowLine(a, b, 0.07 * scale, FirePainter.FLAME, Colors.alpha(0.5 * on));
-                }
-            }
-        }
-        Vec3 middle = frame.at(DIAL.x, DIAL.y, DIAL.z);
-        painter.glowDisc(middle, (0.012 + 0.018 * charge) * scale, charge > 0.7 ? FirePainter.CORE
-                : FirePainter.HOT, (0.25 + 0.6 * charge) * blink, 0.1, 7);
-        if (charge > 0.7) {
-            painter.flare(middle, 0.08 * scale, (charge - 0.7) / 0.3 * blink);
-        }
     }
 
     private static ConstructPainter.Frame part(ConstructPainter.Frame frame, int p, double grown, double valve) {

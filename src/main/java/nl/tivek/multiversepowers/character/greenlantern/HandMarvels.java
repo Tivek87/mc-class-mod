@@ -9,9 +9,9 @@ abstract class HandMarvels extends HandFeats {
     private static final double MARVEL_KICK = 7.5;
     private static final double MARVEL_CALM = 0.32;
 
-    // Evil eye: up with an eye shut in its palm; the eye opens, strings of light shoot from the fingertips to three
-    // creatures, the hand works them up into the air like puppets, the eye goes wild and turns them to statues of hard
-    // light, and the hand clenches: the statues shatter.
+    // Evil eye, two hands at once: one up with an eye shut in its palm, one beside it as the puppeteer. The eye opens,
+    // strings of light shoot from the puppeteer's fingertips to three creatures, it works them up into the air like
+    // puppets, the eye goes wild and turns them to statues of hard light, and both hands clench: the statues shatter.
     static final double EYE_OPEN = 9.0;
     private static final double STRINGS_AT = 11.0;
     private static final double CRAZY_AT = 23.0;
@@ -31,6 +31,9 @@ abstract class HandMarvels extends HandFeats {
     public static final double EYE_SIZE = 0.78;
     // Held high, so the eye looks down over the puppets instead of hiding behind them.
     private static final double EYE_HIGH = 4.4;
+    private static final double PUPPETEER_HIGH = 5.2;
+    // The puppeteer's wrist bent forward, palm down over the creatures like a hand over a marionette.
+    private static final double PUPPETEER_BEND = 1.25;
 
     // Megaphone: up out of the ground, a megaphone grows out of the ring's light into its hand; it grips it, aims it
     // and blares three shockwaves; whatever they catch clasps its ears and bursts. The megaphone then breaks apart.
@@ -69,6 +72,11 @@ abstract class HandMarvels extends HandFeats {
                 * Math.max(0.15, blink);
     }
 
+    // How taut the puppeteer holds its strings at tick t, 0 slack to 1 working them.
+    public static double puppetPull(double t) {
+        return window(t / SLOW, STRINGS_AT, STRINGS_AT + 2.0, SHATTER_AT - 1.0, SHATTER_AT + 0.5);
+    }
+
     // How wild the eye is at tick t: its pupil darting, the eye trembling and glaring.
     public static double eyeWild(double t) {
         double beat = t / SLOW;
@@ -80,20 +88,42 @@ abstract class HandMarvels extends HandFeats {
         return Ease.smoother((t / SLOW - HORN_FORMS) / (HORN_GRIPS - HORN_FORMS));
     }
 
+    // The eye's hand holds still, palm to the creatures, fingers spread round the eye, quivering once it goes wild.
     void eye(double t) {
-        double pulling = window(t, STRINGS_AT, STRINGS_AT + 2.0, SHATTER_AT - 1.0, SHATTER_AT + 0.5);
+        double staring = window(t, STRINGS_AT, STRINGS_AT + 2.0, SHATTER_AT - 1.0, SHATTER_AT + 0.5);
         double wild = window(t, CRAZY_AT, CRAZY_AT + 1.0, STONE_AT + 0.5, STONE_AT + 3.0);
+        this.length = rise(t, EYE_HIGH, 1.0, 0.6) + 0.3 * staring;
+        this.lean = 0.1 + 0.2 * staring + wild * 0.03 * Math.sin(t * 7.3);
+        this.flex = -0.3 * staring + 0.4 * Ease.recoil(t - SHATTER_AT, 1.0, MARVEL_KICK, MARVEL_CALM);
+        this.twist = corkscrew(t, 0.5) + 0.05 * staring * Math.sin(t * 0.45) + wild * 0.04 * Math.sin(t * 9.1);
+        unfurl(t, 0.08, 0.06, 0.15, 1.0);
+        for (int k = 0; k < 5; k++) {
+            this.curl[k] += wild * 0.08 * Math.sin(t * 6.1 + k * 1.7);
+        }
+        this.spread = Mth.lerp(staring, this.spread, 1.0);
+        cascade(t, SHATTER_AT - 0.7, 0.7, true, 1.0, 0.1, 0.9);
+        this.spread = Mth.lerp(Ease.smoother((t - SHATTER_AT + 0.7) / 0.9), this.spread, 0.0);
+        cascade(t, SHATTER_AT + 5.0, 3.0, false, 0.35, 0.25, 0.45);
+        this.spread = Mth.lerp(Ease.smoother((t - SHATTER_AT - 5.0) / 3.0), this.spread, 0.5);
+        breathe(t, 0.5 * window(t, 6.0, 8.0, STRINGS_AT, STRINGS_AT + 2.0));
+        this.sink(t, SINK[EYE], LIFE[EYE], 1.0, true);
+    }
+
+    // The puppeteer rises beside the eye, bends its wrist over the creatures and works the strings: each finger dips
+    // in turn, the thumb against them, the whole hand jerking up as it lifts them; it clenches as they shatter.
+    void puppeteer(double t) {
+        double pulling = window(t, STRINGS_AT, STRINGS_AT + 2.0, SHATTER_AT - 1.0, SHATTER_AT + 0.5);
+        double over = window(t, EYE_OPEN - 2.0, STRINGS_AT, SHATTER_AT + 1.0, SHATTER_AT + 4.0);
         double lifting = Ease.smoother((t - STRINGS_AT) / 4.0) * (1.0 - Ease.smoother((t - SHATTER_AT - 2.0) / 5.0));
-        this.length = rise(t, EYE_HIGH, 1.0, 0.6) + 0.7 * lifting;
-        this.lean = 0.1 + 0.3 * pulling + wild * 0.03 * Math.sin(t * 7.3);
-        this.flex = -0.35 * pulling + 0.16 * pulling * Math.sin(t * 0.9) + 0.4 * Ease.recoil(t - SHATTER_AT, 1.0,
-                MARVEL_KICK, MARVEL_CALM);
-        this.twist = corkscrew(t, 0.5) + 0.1 * pulling * Math.sin(t * 0.55 + 0.4) + wild * 0.04 * Math.sin(t * 9.1);
+        this.length = rise(t, PUPPETEER_HIGH, 1.0, 0.6) + 0.8 * lifting + 0.25 * pulling * Math.sin(t * 0.9);
+        this.lean = 0.15 + 0.2 * pulling;
+        this.flex = PUPPETEER_BEND * Ease.smoother(over) + 0.18 * pulling * Math.sin(t * 0.9)
+                + 0.4 * Ease.recoil(t - SHATTER_AT, 1.0, MARVEL_KICK, MARVEL_CALM);
+        this.twist = corkscrew(t, 0.5) + 0.1 * pulling * Math.sin(t * 0.55 + 0.4);
         unfurl(t, 0.12, 0.1, 0.2, 1.0);
-        // Working the strings: each finger dips in turn, the thumb against them.
         for (int k = 0; k < 4; k++) {
-            this.curl[k] += pulling * 0.28 * (0.5 + 0.5 * Math.sin(t * 1.3 - k * 0.9));
-            this.hook[k] += pulling * 0.2 * (0.5 + 0.5 * Math.sin(t * 1.3 - k * 0.9 + 0.6));
+            this.curl[k] += pulling * 0.32 * (0.5 + 0.5 * Math.sin(t * 1.3 - k * 0.9));
+            this.hook[k] += pulling * 0.24 * (0.5 + 0.5 * Math.sin(t * 1.3 - k * 0.9 + 0.6));
         }
         this.curl[4] += pulling * 0.2 * (0.5 + 0.5 * Math.sin(t * 1.3 + 1.5));
         cascade(t, SHATTER_AT - 0.7, 0.7, true, 1.0, 0.1, 0.9);
@@ -101,7 +131,7 @@ abstract class HandMarvels extends HandFeats {
         cascade(t, SHATTER_AT + 5.0, 3.0, false, 0.35, 0.25, 0.45);
         this.spread = Mth.lerp(Ease.smoother((t - SHATTER_AT - 5.0) / 3.0), this.spread, 0.5);
         breathe(t, 0.5 * window(t, 6.0, 8.0, STRINGS_AT, STRINGS_AT + 2.0));
-        this.sink(t, SINK[EYE], LIFE[EYE], 1.0, true);
+        this.sink(t, SINK[PUPPETEER], LIFE[PUPPETEER], 1.0, true);
     }
 
     // The wrist bends so the horn points at the creature's middle, reach away over the ground the hand stands on.

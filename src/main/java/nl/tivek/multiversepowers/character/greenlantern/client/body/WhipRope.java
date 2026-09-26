@@ -2,8 +2,10 @@ package nl.tivek.multiversepowers.character.greenlantern.client.body;
 
 import java.util.HashMap;
 import java.util.Map;
+import javax.annotation.Nullable;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
+import nl.tivek.multiversepowers.character.greenlantern.ability.WhipLash;
 import nl.tivek.multiversepowers.engine.math.Ease;
 
 // The lash as it is drawn: a rope of pieces that keep their length. Where the lash is taut or wound up the rope keeps
@@ -25,6 +27,10 @@ final class WhipRope {
     private static final double REEL = 3.0;
     // The most speed a piece keeps of its own, in blocks per tick: after a crack the lash drops, it never flails.
     private static final double LOOSE_SPEED = 4.0;
+    // The most a piece may bend from the one before it: a rope bends in curves and loops, it never folds into zigzags.
+    private static final double MOST_BEND = Math.toRadians(70.0);
+    private static final double COS_BEND = Math.cos(MOST_BEND);
+    private static final double SIN_BEND = Math.sin(MOST_BEND);
     // A handle that jumps this far between two frames (a teleport, another view) takes a fresh rope.
     private static final double LOST = 2.5;
     private static final float GONE_AFTER = 40.0F;
@@ -100,12 +106,49 @@ final class WhipRope {
             this.points[i] = far > most ? follow.add(off.scale(most / far)) : pulled;
         }
         this.aimed = target.clone();
-        // Out from the handle every piece gets back the length the shape gives it.
+        // Out from the handle every piece gets back the length the shape gives it. Where the lash is held it takes the
+        // shape's own way, so a taut or wound lash never lags into folds; nowhere may it bend sharper than a rope.
+        Vec3 last = null;
         for (int i = 1; i < n; i++) {
-            this.points[i] = placed(this.points[i - 1], this.points[i].subtract(this.points[i - 1]),
-                    this.before[i].subtract(this.before[i - 1]), target[i].distanceTo(target[i - 1]), ground);
+            Vec3 way = this.points[i].subtract(this.points[i - 1]);
+            double hold = Mth.clamp(firm[i], 0.0F, 1.0F) * kept(target, i, ground);
+            if (hold > 0.0) {
+                Vec3 shaped = aim[i].subtract(aim[i - 1]);
+                way = WhipLash.mix(unit(way, shaped), unit(shaped, way), hold);
+            }
+            way = bent(last, way);
+            this.points[i] = placed(this.points[i - 1], way, this.before[i].subtract(this.before[i - 1]),
+                    target[i].distanceTo(target[i - 1]), ground, last);
+            Vec3 laid = this.points[i].subtract(this.points[i - 1]);
+            last = laid.lengthSqr() < 1.0E-12 ? last : laid.normalize();
         }
         return this.points.clone();
+    }
+
+    private static Vec3 unit(Vec3 way, Vec3 otherwise) {
+        double length = way.length();
+        if (length > 1.0E-9) {
+            return way.scale(1.0 / length);
+        }
+        double other = otherwise.length();
+        return other > 1.0E-9 ? otherwise.scale(1.0 / other) : new Vec3(0.0, -1.0, 0.0);
+    }
+
+    // The way turned back towards the piece before it where it bends sharper than MOST_BEND.
+    private static Vec3 bent(@Nullable Vec3 before, Vec3 way) {
+        if (before == null || way.lengthSqr() < 1.0E-12) {
+            return way;
+        }
+        Vec3 to = way.normalize();
+        double dot = before.dot(to);
+        if (dot >= COS_BEND) {
+            return way;
+        }
+        Vec3 side = to.subtract(before.scale(dot));
+        if (side.lengthSqr() < 1.0E-8) {
+            side = before.cross(Math.abs(before.y) < 0.9 ? new Vec3(0.0, 1.0, 0.0) : new Vec3(1.0, 0.0, 0.0));
+        }
+        return before.scale(COS_BEND).add(side.normalize().scale(SIN_BEND));
     }
 
     // How firmly a piece keeps to the shape: fully above the ground, not at all where the shape dives steeply into it
@@ -121,19 +164,20 @@ final class WhipRope {
     }
 
     // The shape, but where it runs into the ground it lies on it instead, every piece as long as in the shape.
-    private static Vec3[] laid(Vec3[] target, Vec3[] rope, double ground) {
+    static Vec3[] laid(Vec3[] target, Vec3[] rope, double ground) {
         Vec3[] out = new Vec3[target.length];
         out[0] = target[0];
         for (int i = 1; i < target.length; i++) {
             Vec3 way = target[i].subtract(target[i - 1]);
-            out[i] = placed(out[i - 1], way, rope[i].subtract(rope[i - 1]), way.length(), ground);
+            out[i] = placed(out[i - 1], way, rope[i].subtract(rope[i - 1]), way.length(), ground, null);
         }
         return out;
     }
 
     // The piece from `from` along `way`; one that would sink into the ground lies flat on it, the way it points
-    // mixed with the way it lay before.
-    private static Vec3 placed(Vec3 from, Vec3 way, Vec3 before, double length, double ground) {
+    // mixed with the way it lay before, and bending no sharper there than MOST_BEND from the piece behind it.
+    private static Vec3 placed(Vec3 from, Vec3 way, Vec3 before, double length, double ground,
+            @Nullable Vec3 last) {
         double far = way.length();
         Vec3 end = far > 1.0E-6 ? from.add(way.scale(length / far)) : from;
         if (end.y >= ground) {
@@ -143,6 +187,11 @@ final class WhipRope {
         double flat = Math.sqrt(Math.max(0.0, length * length - drop * drop));
         double x = way.x + LEAN * before.x;
         double z = way.z + LEAN * before.z;
+        if (last != null && last.x * last.x + last.z * last.z > 1.0E-8) {
+            Vec3 flatWay = bent(new Vec3(last.x, 0.0, last.z).normalize(), new Vec3(x, 0.0, z));
+            x = flatWay.x;
+            z = flatWay.z;
+        }
         double size = Math.sqrt(x * x + z * z);
         return size < 1.0E-9 ? new Vec3(end.x, ground, end.z)
                 : new Vec3(from.x + x * flat / size, ground, from.z + z * flat / size);

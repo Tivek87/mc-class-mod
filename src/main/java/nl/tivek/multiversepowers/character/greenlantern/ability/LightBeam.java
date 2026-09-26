@@ -74,6 +74,8 @@ public final class LightBeam implements Effect {
     private double push;
     private int stage = -1;
     private int age;
+    private int grown;
+    private boolean locked;
     private int fade = -1;
     private Vec3 facing;
     private double length;
@@ -248,6 +250,35 @@ public final class LightBeam implements Effect {
         return true;
     }
 
+    public static boolean lock(ServerPlayer owner) {
+        LightBeam beam = FIRING.get(owner.getUUID());
+        if (beam == null || beam.fade >= 0) {
+            PowerRing.tell(owner, "beam_lock_idle");
+            return false;
+        }
+        beam.locked = !beam.locked;
+        Vec3 eye = owner.getEyePosition();
+        owner.level().playSound(null, eye.x, eye.y, eye.z, beam.locked ? SoundEvents.IRON_TRAPDOOR_CLOSE
+                : SoundEvents.IRON_TRAPDOOR_OPEN, SoundSource.PLAYERS, 0.6F, 1.6F);
+        owner.level().playSound(null, eye.x, eye.y, eye.z, SoundEvents.BEACON_POWER_SELECT, SoundSource.PLAYERS,
+                0.5F, beam.locked ? 0.8F : 1.6F);
+        PowerRing.tell(owner, beam.locked ? "beam_locked" : "beam_unlocked", beam.stage + 1);
+        return true;
+    }
+
+    // The stage clock rides in the payload's charge, negative while the stage is locked (see beamClock on the client).
+    public static float clockSent(int grown, boolean locked) {
+        return locked ? -1.0F - grown : grown;
+    }
+
+    public static boolean lockedIn(float sent) {
+        return sent < 0.0F;
+    }
+
+    public static float clockOf(float sent) {
+        return sent < 0.0F ? -1.0F - sent : sent;
+    }
+
     public static boolean firing(ServerPlayer player) {
         return FIRING.containsKey(player.getUUID());
     }
@@ -294,7 +325,10 @@ public final class LightBeam implements Effect {
         }
         PowerRing.setPower(this.owner, power - this.perTick);
         this.age++;
-        int stage = this.stageAt(this.age);
+        if (!this.locked) {
+            this.grown++;
+        }
+        int stage = this.stageAt(this.grown);
         if (stage != this.stage) {
             this.grow(stage);
             this.stageUp(level);
@@ -412,7 +446,7 @@ public final class LightBeam implements Effect {
         float solid = this.fade < 0 ? 1.0F : 1.0F - (float) this.fade / FADE_TICKS;
         PacketDistributor.sendToPlayersNear(level, null, this.owner.getX(), this.owner.getEyeY(), this.owner.getZ(),
                 VIEW_RANGE, new ConstructPayload(this.id, this.owner.getId(), this.end, this.facing,
-                        (float) this.length, solid, 0.0F, true, ConstructPayload.BEAM, Math.max(0, this.stage),
-                        this.age, null));
+                        (float) this.length, solid, clockSent(this.grown, this.locked), true, ConstructPayload.BEAM,
+                        Math.max(0, this.stage), this.age, null));
     }
 }

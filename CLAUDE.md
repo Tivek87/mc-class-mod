@@ -51,6 +51,8 @@
 - A `ConstructPainter.Frame` built as (right = forward × UP, UP, forward) is left-handed; `Frame.turned()` corrects the angle for that, so reason in the model's own axes: about +x by +φ lifts the -z edge up, about +y by +θ moves +x towards -z. Round parts are a `Mesh` (lathe, torus, tube), angular parts boxes. Timelines count in ticks at the pace the constructs were made for (`SlamPainter.pace`), sizes at scale 1 times `Moment.size`.
 - What the player must read on a held construct (a gauge) goes on the face turned to the first-person camera, the back of a gun, not its top: seen along the barrel the top is a sliver. A gauge in a colour close to the construct's green does not read; light it pale to white.
 - A new Giant Hands move goes before `AXE`, and every per-move array gets an entry: `HandMoves` `HANDS`/`LIFE`/`SINK`, `HandPose` `SPOT`, `GiantHandRoom` `REACH`; one too short crashes the server tick.
+- Every client puts a hand's held creature at its fingers (`ClientConstructs.held`): a hand that holds it anywhere else (chains, drag, swallow) is listed there, or it snaps into the fist on screen only.
+- Constructs are drawn after water, so one in or behind water is invisible while its light still shows: hand spots treat water as closed (`GiantHandPlaces.open`).
 
 ## In-game tests
 - Automated test: temporary client `@EventBusSubscriber` that opens a copy of a world (`createWorldOpenFlows().openWorld(...)`), sends commands, holds keys with `KeyMapping.setDown`, takes `Screenshot.grab` shots and ends with `mc.stop()`. Afterwards delete the class, the world copy and the screenshots.

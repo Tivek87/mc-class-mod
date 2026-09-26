@@ -17,6 +17,7 @@ import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import nl.tivek.multiversepowers.character.greenlantern.HandGroup;
+import nl.tivek.multiversepowers.character.greenlantern.HandVictimPayload;
 import nl.tivek.multiversepowers.character.greenlantern.HandPose;
 import nl.tivek.multiversepowers.character.greenlantern.PowerRing;
 import nl.tivek.multiversepowers.engine.entity.HeldMobs;
@@ -232,7 +233,7 @@ abstract class GiantHandFeats extends GiantHandTricks {
         }
     }
 
-    private void take(LivingEntity living) {
+    void take(LivingEntity living) {
         this.held = living;
         GRABBED.put(living.getId(), this);
         if (living instanceof Mob mob) {
@@ -240,7 +241,7 @@ abstract class GiantHandFeats extends GiantHandTricks {
         }
     }
 
-    private boolean holdable(LivingEntity living) {
+    boolean holdable(LivingEntity living) {
         return living.getBbWidth() <= GRAB_WIDE && living.getBbHeight() <= GRAB_TALL
                 && !HeldMobs.isHeldByAnyone(living) && !LightBubble.trapped(living);
     }
@@ -262,6 +263,7 @@ abstract class GiantHandFeats extends GiantHandTricks {
             }
             if (caught != null) {
                 this.take(caught);
+                HandVictimPayload.send(caught, this.id(), HandVictimPayload.SPREAD);
             }
             this.storm.sound(level, middle, SoundEvents.ARMOR_EQUIP_NETHERITE.value(), 2.0F, 0.6F);
             this.storm.sound(level, middle, SoundEvents.AMETHYST_BLOCK_PLACE, 2.0F, 0.7F);

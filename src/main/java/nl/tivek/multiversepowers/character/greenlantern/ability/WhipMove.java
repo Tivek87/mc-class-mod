@@ -192,7 +192,8 @@ public enum WhipMove {
     }
 
     private static float[] whirl(double t) {
-        return raw((float) whirlYaw(t), (float) WHIRL_PITCH, (float) Ease.smooth(t / 5.0), 1.0F, 1.0F, 0.0F, 0.0F);
+        return raw((float) whirlYaw(t), (float) WHIRL_PITCH, (float) Ease.smooth(t / 5.0), 1.0F, 1.0F, 0.0F, 0.0F,
+                1.0F);
     }
 
     // Let go, the lash goes on round until it is behind, faster or slower as it needs, and is thrown over the top.
@@ -207,18 +208,18 @@ public enum WhipMove {
         if (t <= CRACK_TURN) {
             double rise = Ease.smooth(t / CRACK_TURN);
             return raw((float) yaw, (float) Mth.lerp(rise, WHIRL_PITCH, Math.toRadians(35.0)), 1.0F, 1.0F, 1.0F,
-                    0.0F, 0.0F);
+                    0.0F, 0.0F, 1.0F);
         }
         double u = Math.min(1.0, (t - CRACK_TURN) / (CRACK_THROW - CRACK_TURN));
         double thrown = Ease.smooth(u);
         if (t <= CRACK_THROW) {
             return raw((float) yaw, (float) Math.toRadians(Mth.lerp(thrown, 35.0, 186.0)), 1.0F, 1.05F,
-                    (float) (1.0 - thrown), 0.0F, 0.0F);
+                    (float) (1.0 - thrown), 0.0F, 0.0F, (float) (1.0 - thrown));
         }
         double after = t - CRACK_THROW;
         double drop = Ease.smooth(after / 8.0);
         return raw((float) yaw, (float) Math.toRadians(186.0 + 36.0 * drop), (float) (1.0 - 0.9 * drop), 1.0F,
-                (float) (0.7 * drop), 0.0F, 0.0F);
+                (float) (0.7 * drop), 0.0F, 0.0F, 0.0F);
     }
 
     public static double spinTurn(double t) {
@@ -227,23 +228,25 @@ public enum WhipMove {
     }
 
     private static float[] spin(double t) {
-        return spinning(spinTurn(t), SPIN_REACH, (float) Ease.smooth(t / 3.0));
+        return spinning(spinTurn(t), SPIN_REACH, (float) Ease.smooth(t / 3.0), 1.0F);
     }
 
     private static float[] spinEnd(double t, double released) {
         double slow = Math.min(t, 8.0);
         double turn = released + SPIN_TURN * (slow - slow * slow / 16.0);
         double drop = Ease.smooth(t / 9.0);
-        float[] aim = spinning(turn, (float) Mth.lerp(drop, SPIN_REACH, 1.0), (float) (1.0 - drop));
+        float[] aim = spinning(turn, (float) Mth.lerp(drop, SPIN_REACH, 1.0), (float) (1.0 - drop),
+                (float) (1.0 - drop));
         aim[WhipLash.PITCH] -= (float) (drop * Math.toRadians(40.0));
         return aim;
     }
 
     // Round the look like a propeller: the lash on a wide cone about the way ahead.
-    private static float[] spinning(double turn, float reach, float taut) {
+    private static float[] spinning(double turn, float reach, float taut, float steady) {
         Vec3 way = new Vec3(Math.sin(SPIN_CONE) * Math.cos(turn), Math.sin(SPIN_CONE) * Math.sin(turn),
                 Math.cos(SPIN_CONE));
-        return raw((float) Math.atan2(way.x, way.z), (float) Math.asin(way.y), taut, reach, 0.0F, 0.0F, 0.0F);
+        return raw((float) Math.atan2(way.x, way.z), (float) Math.asin(way.y), taut, reach, 0.0F, 0.0F, 0.0F,
+                steady);
     }
 
     // The moments the tip snaps: as a real whip does, where the flick has run out to the tip and the lash
@@ -309,11 +312,12 @@ public enum WhipMove {
     public static float[] aim(double yaw, double pitch, double taut, double reach, double level, double wave,
             double coil, double curl) {
         return new float[] { (float) Math.toRadians(yaw), (float) Math.toRadians(pitch), (float) taut, (float) reach,
-                (float) level, (float) wave, (float) coil, (float) curl };
+                (float) level, (float) wave, (float) coil, (float) curl, 0.0F };
     }
 
-    private static float[] raw(float yaw, float pitch, float taut, float reach, float level, float wave, float coil) {
-        return new float[] { yaw, pitch, taut, reach, level, wave, coil, 0.0F };
+    private static float[] raw(float yaw, float pitch, float taut, float reach, float level, float wave, float coil,
+            float steady) {
+        return new float[] { yaw, pitch, taut, reach, level, wave, coil, 0.0F, steady };
     }
 
     private static Keyframes.Key k(float tick, boolean stop, double yaw, double pitch, double taut, double level) {

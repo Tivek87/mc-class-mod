@@ -217,11 +217,11 @@ public final class ClientConstructs extends TrackedConstructs {
 
     private static void held(Minecraft minecraft, Track track) {
         ConstructPayload hand = track.latest;
-        // A dragged, slammed or swallowed creature goes where the server puts it (kept clear of the ground), not at
-        // the fingers.
+        // A dragged, slammed, swallowed or chained creature goes where the server puts it (kept clear of the ground),
+        // not at the fingers.
         int move = HandPose.move(hand.variant());
         if (!hand.held() || minecraft.level == null || move == HandPose.AXE || move == HandPose.DRAG
-                || move == HandPose.RAGDOLL || move == HandPose.SWALLOW) {
+                || move == HandPose.RAGDOLL || move == HandPose.SWALLOW || move == HandPose.RINGCHAINS) {
             return;
         }
         Entity caught = minecraft.level.getEntity(LightBubble.caughtId(hand.charge()));

@@ -216,8 +216,6 @@ final class GunShapes {
         }
         body.add(Mesh.box(-0.015, 0.06, -0.2, 0.015, 0.085, -0.17, 1.1));
         body.add(Mesh.box(-0.015, 0.06, -0.07, 0.015, 0.085, -0.04, 1.1));
-        // The rim of the heat gauge on the back (FlamePainter.gauge).
-        body.add(Mesh.torus(24, 5, 0.052, 0.007, 1.7).alongZ().moved(0.0, 0.0, -0.303));
         groups.add(body.toArray(Mesh[]::new));
         groups.add(new Mesh[] { rod(12, 0.03, 0.05, 0.5, 1.0).moved(0.0, 0.02, 0.0) });
         for (int k = 0; k < FLAME_FINS; k++) {

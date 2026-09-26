@@ -60,6 +60,7 @@ public final class SwordShield extends SwordShieldBlows {
             HELD.put(player.getUUID(), sword);
             Effects.start(player.serverLevel(), sword);
             if (PICK_SOUND.allow(player)) {
+                PowerRing.say(player, "equip_weapon");
                 sword.soundForOthers(SoundEvents.BEACON_POWER_SELECT, 0.8F, 1.6F);
                 sword.soundForOthers(SoundEvents.AMETHYST_BLOCK_CHIME, 1.0F, 0.9F);
             }

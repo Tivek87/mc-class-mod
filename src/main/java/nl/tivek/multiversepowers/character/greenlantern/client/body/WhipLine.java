@@ -58,9 +58,11 @@ final class WhipLine {
         return below.getType() == HitResult.Type.MISS ? feet.y - 16.0 : below.getLocation().y;
     }
 
-    // The lash at a moment t of the current move (the time of the world passes with it for ripples).
+    // The lash at a moment t of the current move (the time of the world passes with it for ripples), lying on the
+    // ground where it runs into it, as the rope does: its streak and cracks never show under the ground.
     static Vec3[] at(Entity player, WhipStates.Blend blend, WhipStates.State state, Hold hold, float t, float time) {
-        return build(player, blend, state, hold, t, time, false).points();
+        Vec3[] points = build(player, blend, state, hold, t, time, false).points();
+        return WhipRope.laid(points, points, hold.ground());
     }
 
     // The same with how firmly each point keeps its place, for the rope that draws it.
@@ -87,7 +89,7 @@ final class WhipLine {
         if (wound <= 0.0) {
             return new Shape(loose, firm);
         }
-        Vec3[] coil = coiled(hold.root(), target, middle, t);
+        Vec3[] coil = coiled(hold.root(), target, middle, t, hold.length());
         Vec3[] out = new Vec3[coil.length];
         for (int i = 0; i < coil.length; i++) {
             out[i] = loose[i].lerp(coil[i], wound);
@@ -104,9 +106,10 @@ final class WhipLine {
     private static float[] firm(WhipLash.Aims aims, float t, double wound) {
         float[] firm = new float[SEGMENTS + 1];
         firm[0] = 1.0F;
-        double reach = Math.max(0.0, aims.at(t)[WhipLash.REACH]);
+        float[] now = aims.at(t);
+        double reach = Math.max(0.0, now[WhipLash.REACH]);
         for (int i = 0; i < SEGMENTS; i++) {
-            float[] aim = aims.at(t - WhipLash.TRAVEL * reach * (i + 0.5) / SEGMENTS);
+            float[] aim = aims.at(t + WhipLash.lag(reach * (i + 0.5) / SEGMENTS, now[WhipLash.STEADY], t));
             float coiled = Mth.clamp(Mth.clamp(aim[WhipLash.CURL], 0.0F, 1.0F) * SEGMENTS - i, 0.0F, 1.0F);
             float held = Math.max(Mth.clamp(aim[WhipLash.TAUT], 0.0F, 1.0F), coiled);
             firm[i + 1] = (float) Math.max(held, wound);
@@ -142,8 +145,9 @@ final class WhipLine {
         return out;
     }
 
-    // From the hand straight to the creature, then round it three times from the top down, tightening as it winds.
-    private static Vec3[] coiled(Vec3 root, Entity target, Vec3 middle, float t) {
+    // From the hand straight to the creature, then round it up to three times from the top down, tightening as it
+    // winds: only as often as the lash has length left, so it never stretches.
+    private static Vec3[] coiled(Vec3 root, Entity target, Vec3 middle, float t, double length) {
         double wrap = Ease.smooth((t - WhipMove.LASSO_REACH) / (double) (WhipMove.LASSO_WRAPPED
                 - WhipMove.LASSO_REACH));
         double radius = target.getBbWidth() * 0.5 + 0.1;
@@ -151,9 +155,11 @@ final class WhipLine {
         double high = target.getBbHeight();
         Vec3 in = new Vec3(root.x - middle.x, 0.0, root.z - middle.z);
         double start = in.lengthSqr() < 1.0E-6 ? 0.0 : Math.atan2(in.z, in.x);
-        double turns = Math.max(0.05, TURNS * wrap);
         Vec3[] points = new Vec3[SEGMENTS + 1];
         Vec3 entry = round(middle, start, 0.0, radius * tight, high);
+        double left = length - root.distanceTo(entry);
+        double most = Mth.clamp(left / (Math.PI * 2.0 * radius), 1.0, TURNS);
+        double turns = Math.max(0.05, most * wrap);
         double sag = t < WhipMove.LASSO_HAUL ? 0.08 : 0.015;
         double far = root.distanceTo(entry);
         for (int i = 0; i <= LINE; i++) {

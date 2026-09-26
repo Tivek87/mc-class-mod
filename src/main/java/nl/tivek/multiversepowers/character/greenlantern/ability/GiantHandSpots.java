@@ -26,6 +26,7 @@ final class GiantHandSpots {
     private static final int EVERY = 3;
     // Only what is out of the ground, wall or portal counts: below its surface a hand is not there.
     private static final double OUT = 0.35;
+    private static final double FLOOR = 0.25;
     private static final double LEVEL_WIDE = 1.4;
     private static final double LEVEL_OFF = 0.6;
     // How much higher or lower than the creature's feet a hand may stand: most reach it from its own ground.
@@ -35,7 +36,8 @@ final class GiantHandSpots {
     private GiantHandSpots() {
     }
 
-    // The whole move stays in open air: every few ticks of its life, each point of the hand out of its surface.
+    // The whole move stays in open air: every few ticks of its life, each point of the hand out of its surface. A hand
+    // out of a portal may still press, pinch or scrape into the ground its creature stands on: that is its work.
     static boolean clear(ServerLevel level, GiantHandBase hand) {
         Vec3 facing = hand.aim.subtract(hand.base);
         HandDuo.Portal portal = HandPose.portal(hand.variant) ? HandPose.portalOf(hand.variant, hand.base, facing,
@@ -43,8 +45,9 @@ final class GiantHandSpots {
         Vec3 surface = portal == null ? hand.base : portal.center();
         Vec3 out = portal == null ? HandPose.rootNormal(hand.variant, facing) : portal.normal();
         int until = HandPose.sinks(hand.variant);
+        double floor = portal == null ? Double.NEGATIVE_INFINITY : hand.target.getY() + FLOOR;
         for (int t = HandPose.ARRIVES; t <= until; t += EVERY) {
-            if (!clearAt(level, hand, t, facing, surface, out)) {
+            if (!clearAt(level, hand, t, facing, surface, out, floor)) {
                 return false;
             }
         }
@@ -52,11 +55,12 @@ final class GiantHandSpots {
     }
 
     // The same at one moment, for a hand that turns after its creature.
-    static boolean clearAt(ServerLevel level, GiantHandBase hand, int t, Vec3 facing, Vec3 surface, Vec3 out) {
+    static boolean clearAt(ServerLevel level, GiantHandBase hand, int t, Vec3 facing, Vec3 surface, Vec3 out,
+            double floor) {
         HandPose.Place place = hand.pose(t).place(hand.base, facing, SCALE);
         for (Vec3 local : BODY) {
             Vec3 at = place.at(local);
-            if (at.subtract(surface).dot(out) > OUT && !open(level, at)) {
+            if (at.subtract(surface).dot(out) > OUT && at.y > floor && !open(level, at)) {
                 return false;
             }
         }

@@ -10,7 +10,7 @@ public final class PowerRules {
 
     static {
         ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
-        builder.comment("Rules for every power in this world, whatever character uses it.",
+        builder.comment(ModConfigs.WIP, "Rules for every power in this world, whatever character uses it.",
                 "World settings: every world keeps its own copy of this file, in <world>/serverconfig/welcomescreen/.",
                 "The same numbers can be changed in the game: Mods > this mod > Config > Server.").push("powers");
         DAMAGE = builder.comment("Multiplies every damage number of every ability (1 = as set per ability, 0 = no"

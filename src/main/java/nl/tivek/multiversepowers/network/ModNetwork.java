@@ -44,6 +44,7 @@ import nl.tivek.multiversepowers.config.WorldSettings;
 import nl.tivek.multiversepowers.config.WorldSettingsEditPayload;
 import nl.tivek.multiversepowers.config.WorldSettingsPayload;
 import nl.tivek.multiversepowers.engine.fx.ParticlesPayload;
+import nl.tivek.multiversepowers.engine.fx.VoicePayload;
 import nl.tivek.multiversepowers.faction.StandingsPayload;
 import nl.tivek.multiversepowers.network.client.ClientPayloadHandler;
 import nl.tivek.multiversepowers.spell.CastSpellPayload;
@@ -99,10 +100,15 @@ public final class ModNetwork {
                 ModNetwork::onWorldSettingsEdit);
         registrar.playToClient(ParticlesPayload.TYPE, ParticlesPayload.STREAM_CODEC, ModNetwork::onParticles);
         registrar.playToClient(StandingsPayload.TYPE, StandingsPayload.STREAM_CODEC, ModNetwork::onStandings);
+        registrar.playToClient(VoicePayload.TYPE, VoicePayload.STREAM_CODEC, ModNetwork::onVoice);
     }
 
     private static void onParticles(ParticlesPayload payload, IPayloadContext context) {
         ClientPayloadHandler.handleParticles(payload, context);
+    }
+
+    private static void onVoice(VoicePayload payload, IPayloadContext context) {
+        ClientPayloadHandler.handleVoice(payload, context);
     }
 
     private static void onStandings(StandingsPayload payload, IPayloadContext context) {

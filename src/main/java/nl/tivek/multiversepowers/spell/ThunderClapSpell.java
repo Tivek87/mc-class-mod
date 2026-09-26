@@ -24,7 +24,6 @@ import nl.tivek.multiversepowers.engine.world.LoadedWorld;
 
 final class ThunderClapSpell {
     private static final int MEET = ClapPayload.HANDS_MEET;
-    private static final int BURSTS = ClapPayload.BUBBLE_BURSTS;
     // ClapFx draws the blast in the same cone, reach and pace.
     private static final double RADIUS = 9.0;
     private static final double HALF_ANGLE = 0.8;
@@ -75,10 +74,7 @@ final class ThunderClapSpell {
             if (caster != null && front < RADIUS + WAVE_SPEED) {
                 push(lvl, caster, eye[0], ahead[0], Math.min(front, RADIUS), hit);
             }
-            if (t == BURSTS) {
-                burst(lvl, hands(eye[0], ahead[0]));
-            }
-            return t < BURSTS;
+            return front < RADIUS + WAVE_SPEED;
         });
         return true;
     }
@@ -144,13 +140,6 @@ final class ThunderClapSpell {
                 0.8F);
         level.playSound(null, clap.x, clap.y, clap.z, SoundEvents.TRIDENT_THUNDER.value(), SoundSource.PLAYERS, 1.5F,
                 1.2F);
-    }
-
-    // The bubble of stopped time at the hands tears open.
-    private static void burst(ServerLevel level, Vec3 at) {
-        level.playSound(null, at.x, at.y, at.z, SoundEvents.GLASS_BREAK, SoundSource.PLAYERS, 1.4F, 0.6F);
-        level.playSound(null, at.x, at.y, at.z, SoundEvents.LIGHTNING_BOLT_IMPACT, SoundSource.PLAYERS, 1.6F, 1.5F);
-        level.playSound(null, at.x, at.y, at.z, SoundEvents.FIREWORK_ROCKET_TWINKLE, SoundSource.PLAYERS, 1.6F, 1.2F);
     }
 
     // Only what stands in the cone the caster aims is hit; the cone starts a step behind him so it covers his sides.

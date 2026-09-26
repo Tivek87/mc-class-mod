@@ -386,12 +386,16 @@ public enum GameCharacter {
                     .setting("radiusBlocks", 20.0, 4.0, 48.0, Unit.BLOCKS,
                             "How far round you the hands come up at creatures out to hurt you, every way, in blocks"
                                     + " (20 = an area 40 blocks across)")
-                    .settingInt("fewestHands", 4, 1, 30, Unit.COUNT,
-                            "The fewest hands that come up at every press: each press brings a number picked at random"
-                                    + " from this to mostHands, one after another, at most five at once (a pair with"
-                                    + " an axe counts as one)")
-                    .settingInt("mostHands", 8, 1, 30, Unit.COUNT,
-                            "The most hands that come up at every press")
+                    .settingInt("fewestHands", 1, 1, 2, Unit.COUNT,
+                            "TEMPORARY, for now at most 2 while the hands are being reworked: the fewest hands that"
+                                    + " come up at every press; each press brings a number picked at random from this"
+                                    + " to mostHands, one after another (the evil eye with its puppeteer and a pair"
+                                    + " with an axe count as one)")
+                    .was(4.0)
+                    .settingInt("mostHands", 1, 1, 2, Unit.COUNT,
+                            "TEMPORARY, for now at most 2 while the hands are being reworked: the most hands that"
+                                    + " come up at every press")
+                    .was(8.0)
                     .settingInt("handTicks", 10, 1, 200, Unit.TICKS,
                             "Ticks from one hand coming up to the next (20 ticks = 1 second); while five are up, the"
                                     + " next waits for one to go")
@@ -440,10 +444,17 @@ public enum GameCharacter {
             hand(hands, HandPose.SCOOP, "Scoop", 0.16,
                     "a hand out of the ground or a wall scooping a creature up and tossing it high");
             hand(hands, HandPose.EYE, "Evil eye", 0.14,
-                    "a hand with an eye in its palm that strings up three creatures near you like puppets, turns them"
-                            + " to statues of hard light and shatters them (only creatures small enough to hold)");
+                    "two hands at once, one with an eye in its palm and a puppeteer that strings up three creatures"
+                            + " near you like puppets, which the eye turns to statues of hard light that shatter (only"
+                            + " creatures small enough to hold)");
             hand(hands, HandPose.MEGAPHONE, "Megaphone", 0.16,
                     "a hand blaring shockwaves through a megaphone: whatever they catch clasps its ears and bursts");
+            hand(hands, HandPose.RINGHAMMER, "Ring hammer", HAND_CHANCE,
+                    "a fist out of the ground whose ring grows a hammer of hard light that it smashes down on a"
+                            + " creature, quaking the ground round it");
+            hand(hands, HandPose.RINGCHAINS, "Ring chains", HAND_CHANCE,
+                    "a hand whose ring shoots chains of hard light round a creature, yanks it into its fist, squeezes"
+                            + " it and hurls it away (only creatures small enough to hold)");
             hand(hands, HandPose.AXE, "Pair with an axe", 0.24,
                     "a pair of hands chopping down with an axe (only where there is room for it)");
             hands.group("revolver", "Western Revolver Assembly (hold the button 2 seconds)")
@@ -480,8 +491,11 @@ public enum GameCharacter {
                                     + " damage")
                     .was(3.5)
                     .setting("powerCost", 4.0, 0.0, 100.0, Unit.POWER, "Ring power catching a creature costs");
+            this.add(abilities, AbilitySlot.ABILITY_12, "beam_lock").cooldown(4);
         }
     };
+
+    private static final double HAND_CHANCE = 0.2;
 
     private final String id;
     private final int color;
@@ -517,11 +531,13 @@ public enum GameCharacter {
         return ability;
     }
 
-    static void hand(CharacterAbility ability, int move, String title, double chance, String what) {
+    // Every hand is as likely as every other; oldChance is the chance it had before, for config files that kept it.
+    static void hand(CharacterAbility ability, int move, String title, double oldChance, String what) {
         String hand = HandPose.HANDS[move];
         ability.group("hand_" + hand, title)
-                .setting(hand + "Chance", chance, 0.0, 1.0, Unit.CHANCE,
+                .setting(hand + "Chance", HAND_CHANCE, 0.0, 1.0, Unit.CHANCE,
                         "How often " + what + " comes, weighed against the chances of the other hands (0 = never)")
+                .was(oldChance)
                 .settingInt(hand + "Most", 30, 0, 30, Unit.COUNT,
                         "The most of these hands in one press (0 = never, 30 = no limit)")
                 .setting(hand + "Damage", 1.0, 0.0, 10.0, Unit.STRENGTH,

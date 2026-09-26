@@ -12,7 +12,8 @@ import nl.tivek.multiversepowers.engine.math.Keyframes;
 // The body through each of the twelve lashes: every beat puts the fist somewhere and the body in a stance, and the
 // handle points where the lash is flung a tick later, so the wrist always leads the lash.
 final class WhipAttacks {
-    static final float LEAD = 1.0F;
+    // The wrist turns a tick before the lash leaves the handle, which itself runs ahead (WhipLash.AHEAD).
+    static final float LEAD = 1.0F + (float) WhipLash.AHEAD;
 
     private WhipAttacks() {
     }

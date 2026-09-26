@@ -6,6 +6,7 @@ import java.util.Set;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.Mth;
@@ -37,6 +38,7 @@ import nl.tivek.multiversepowers.character.greenlantern.ability.RingScan;
 import nl.tivek.multiversepowers.character.greenlantern.ability.Shockwave;
 import nl.tivek.multiversepowers.character.greenlantern.ability.SwordShield;
 import nl.tivek.multiversepowers.engine.effect.Effects;
+import nl.tivek.multiversepowers.engine.fx.Voices;
 import nl.tivek.multiversepowers.faction.Factions;
 
 public final class PowerRing {
@@ -92,6 +94,7 @@ public final class PowerRing {
                     : GiantHands.use(player, level, ability);
             case "air_strike" -> AirStrike.use(player, level, ability);
             case "light_bubble" -> LightBubble.use(player, level, ability, data);
+            case "beam_lock" -> on && LightBeam.lock(player);
             case "flight" -> on && ((data & Characters.SLAM) != 0 ? Flight.slam(player, level, ability)
                     : Flight.toggle(player, level, ability));
             default -> false;
@@ -202,6 +205,10 @@ public final class PowerRing {
                 | (Flight.diving(player) || Shockwave.dropping(player) ? RingPayload.DIVE : 0);
         return new RingPayload(player.getId(), power(player), GiantFist.pending(player), Recharge.ticks(player),
                 Flight.ticks(player), state, Arrival.ticks(player), Arrival.from(player), LightBeam.charging(player));
+    }
+
+    public static void say(ServerPlayer player, String line) {
+        Voices.say(player, ResourceLocation.fromNamespaceAndPath(MultiversePowers.MODID, "ring." + line));
     }
 
     public static void tell(ServerPlayer player, String key, Object... args) {

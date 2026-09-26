@@ -369,6 +369,39 @@ public class ConstructPainter extends PainterSolid {
         }
     }
 
+    // The same links along a path of points, grown (0 to 1) as far along it from its start.
+    public void chain(Vec3[] path, double link, double solid, double bright, double grown, double apart) {
+        if (path.length < 2 || solid <= 0.0 || grown <= 0.0 || apart >= 1.0) {
+            return;
+        }
+        double[] at = new double[path.length];
+        for (int i = 1; i < path.length; i++) {
+            at[i] = at[i - 1] + path[i].distanceTo(path[i - 1]);
+        }
+        double reach = at[path.length - 1] * Mth.clamp(grown, 0.0, 1.0);
+        double step = link * CHAIN_STEP;
+        Vec3 last = path[0];
+        int piece = 1;
+        int k = 1;
+        for (double d = step; d <= reach + 1.0E-6; d += step, k++) {
+            while (piece < path.length - 1 && at[piece] < d) {
+                piece++;
+            }
+            double span = at[piece] - at[piece - 1];
+            Vec3 point = span < 1.0E-9 ? path[piece] : path[piece - 1].lerp(path[piece], (d - at[piece - 1]) / span);
+            Vec3 along = point.subtract(last);
+            Vec3 side = along.cross(Vectors.UP);
+            Vec3 up = k % 2 == 0 || side.lengthSqr() < 1.0E-8 ? Vectors.UP : side;
+            Frame frame = Frame.of(last.add(point).scale(0.5), along, up, link);
+            if (apart > 0.0) {
+                this.shatteredMesh(LINK, frame, k, apart, bright);
+            } else {
+                this.mesh(LINK, frame, solid, bright);
+            }
+            last = point;
+        }
+    }
+
     public void fling(double amount) {
         this.fling = Math.max(0.0, amount);
     }

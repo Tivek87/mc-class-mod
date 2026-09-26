@@ -29,7 +29,9 @@ import nl.tivek.multiversepowers.classes.client.ClientClassData;
 import nl.tivek.multiversepowers.classes.client.ClientWelcome;
 import nl.tivek.multiversepowers.config.ModConfigs;
 import nl.tivek.multiversepowers.config.WorldSettingsPayload;
+import nl.tivek.multiversepowers.engine.client.fx.VoiceLine;
 import nl.tivek.multiversepowers.engine.fx.ParticlesPayload;
+import nl.tivek.multiversepowers.engine.fx.VoicePayload;
 import nl.tivek.multiversepowers.faction.StandingsPayload;
 import nl.tivek.multiversepowers.faction.client.ClientStandings;
 import nl.tivek.multiversepowers.spell.Spell;
@@ -107,6 +109,10 @@ public final class ClientPayloadHandler {
 
     public static void handleHandVictim(HandVictimPayload payload, IPayloadContext context) {
         context.enqueueWork(() -> HandVictims.mark(payload.entity(), payload.hand(), payload.kind()));
+    }
+
+    public static void handleVoice(VoicePayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> VoiceLine.say(payload.speaker(), payload.sound()));
     }
 
     public static void handleRing(RingPayload payload, IPayloadContext context) {

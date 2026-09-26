@@ -4,9 +4,9 @@ import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.engine.math.Ease;
 import nl.tivek.multiversepowers.engine.math.Vectors;
 
-public final class HandPose extends HandMarvels {
+public final class HandPose extends HandRings {
     private static final double[] SPOT = { 5.8, 1.25, 2.2, 2.9, 5.0, 0.0, 0.0, 3.0, 0.0, 0.0, 6.0, 0.0, 1.25, 0.0,
-            0.0, 0.0, 0.0, 0.0, 0.0, 10.0, 4.2, 6.0, 12.0 };
+            0.0, 0.0, 0.0, 0.0, 0.0, 10.0, 4.2, 6.0, 12.0, 5.0, 7.0, 12.0 };
     private static final int TAPS = 10;
     private static final double TAP = 0.35;
     private static final double[] WRIST_WEIGHTS = remembered(2.4, 0.45);
@@ -61,13 +61,14 @@ public final class HandPose extends HandMarvels {
                 : ticks(SINK[move]);
     }
 
-    // The catch hand belongs to the ragdoll: it is never picked by itself and goes by the ragdoll's settings.
+    // The catch hand belongs to the ragdoll and the puppeteer to the evil eye: never picked by themselves, they go by
+    // the settings of the hand they come with.
     public static boolean pickable(int move) {
-        return move != CATCH;
+        return move != CATCH && move != PUPPETEER;
     }
 
     public static int settingsOf(int move) {
-        return move == CATCH ? RAGDOLL : move;
+        return move == CATCH ? RAGDOLL : move == PUPPETEER ? EYE : move;
     }
 
     public static int axeVariant(Vec3 way) {
@@ -98,7 +99,9 @@ public final class HandPose extends HandMarvels {
             case RAGDOLL -> beat >= CATCH_BEAT - 2.0;
             case RINGBEAM -> beat >= RINGBEAM_CHARGE;
             case SCOOP -> beat >= SCOOP_AT - 4.0;
-            case EYE -> beat >= EYE_OPEN;
+            case EYE, PUPPETEER -> beat >= EYE_OPEN;
+            case RINGHAMMER -> t >= HAMMER_FORMED;
+            case RINGCHAINS -> t >= CHAINS_SHOOT - 4;
             case MEGAPHONE -> beat >= HORN_AIM;
             case AXE -> t >= HandDuo.LOCKED_FROM;
             case POUND -> {
@@ -184,6 +187,9 @@ public final class HandPose extends HandMarvels {
             case RINGBEAM -> pose.ringBeam(t);
             case SCOOP -> pose.scoop(t);
             case EYE -> pose.eye(t);
+            case PUPPETEER -> pose.puppeteer(t);
+            case RINGHAMMER -> pose.ringHammer(t, reach);
+            case RINGCHAINS -> pose.ringChains(t);
             case MEGAPHONE -> pose.megaphone(t, reach);
             case SMACK -> pose.smack(t, side, reach);
             case GRAB -> pose.grab(t);

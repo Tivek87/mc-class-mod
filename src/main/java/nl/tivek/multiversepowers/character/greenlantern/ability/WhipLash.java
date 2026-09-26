@@ -18,9 +18,14 @@ public final class WhipLash {
     public static final int WAVE = 5;
     public static final int COIL = 6;
     public static final int CURL = 7;
-    public static final int SIZE = 8;
+    // 1 while the lash goes steadily round (whirl, spin): it then trails the handle by TRAVEL alone, not in a loop.
+    public static final int STEADY = 8;
+    public static final int SIZE = 9;
     // Ticks a flick takes to run from the handle to the tip of the whole whip.
     public static final double TRAVEL = 2.0;
+    // The handle end runs this many ticks ahead of the keyframes: a flick then takes TRAVEL + AHEAD to run down the
+    // lash, so it rolls out in a loop instead of swinging round stiff as a pole, while the tip keeps its timing.
+    public static final double AHEAD = 3.5;
     private static final double GRIP_BLOCKS = 0.42;
     private static final double DROOP_BLOCKS = 0.6;
     private static final double WAVE_BLOCKS = 1.5;
@@ -79,12 +84,13 @@ public final class WhipLash {
             return points;
         }
         double step = total / segments;
+        double steady = aims.at(t)[STEADY];
         Vec3 down = hang == null ? DOWN : hang.down();
         double curled = 0.0;
         double coiled = 0.0;
         for (int i = 0; i < segments; i++) {
             double s = (i + 0.5) * step;
-            float[] aim = aims.at(t - TRAVEL * s / length);
+            float[] aim = aims.at(t + lag(s / length, steady, t));
             Vec3 way = way(aim, look);
             if (handle != null) {
                 way = mix(handle, way, smooth(s / GRIP_BLOCKS));
@@ -125,6 +131,13 @@ public final class WhipLash {
                     .add(look.right().scale(curl * CURL_SPREAD * inside * step));
         }
         return points;
+    }
+
+    // How far from now the lash at this share of the whole whip shows its aim. The handle's lead grows from nothing as
+    // a move starts, so the lash flows out of the last move instead of jumping into this one.
+    public static double lag(double share, double steady, double t) {
+        double ahead = Math.min(AHEAD * (1.0 - Mth.clamp(steady, 0.0, 1.0)), Math.max(0.0, t));
+        return ahead - (TRAVEL + ahead) * share;
     }
 
     public static Vec3 mix(Vec3 a, Vec3 b, double w) {

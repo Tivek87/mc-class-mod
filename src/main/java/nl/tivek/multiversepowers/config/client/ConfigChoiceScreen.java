@@ -10,6 +10,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
 import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.engine.client.gui.DirtBackgroundScreen;
+import nl.tivek.multiversepowers.engine.client.gui.WipTag;
 
 public class ConfigChoiceScreen extends DirtBackgroundScreen {
     private static final String PREFIX = "config." + MultiversePowers.MODID + ".choice.";
@@ -68,6 +69,7 @@ public class ConfigChoiceScreen extends DirtBackgroundScreen {
         int right = Math.max(this.clientX, this.serverX) + CARD_WIDTH + 10;
         drawPanel(graphics, left, 8, right - left, this.serverTop() + CARD_HEIGHT + 48 - 8, PANEL_BORDER);
         this.drawBigCenteredString(graphics, this.title, this.width / 2, 16, 1.3F, 0xFFFFD255);
+        WipTag.chip(graphics, this.font, this.width / 2 + (int) Math.ceil(this.font.width(this.title) * 0.65F) + 6, 15);
         graphics.drawCenteredString(this.font, Component.translatable(PREFIX + "pick"), this.width / 2, 30,
                 MUTED_COLOR);
     }

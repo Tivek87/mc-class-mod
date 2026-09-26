@@ -24,6 +24,7 @@ import nl.tivek.multiversepowers.character.client.ClientCharacter;
 import nl.tivek.multiversepowers.character.client.MouseHold;
 import nl.tivek.multiversepowers.character.greenlantern.PowerRing;
 import nl.tivek.multiversepowers.character.greenlantern.RingPayload;
+import nl.tivek.multiversepowers.character.greenlantern.ability.LightBeam;
 import nl.tivek.multiversepowers.character.greenlantern.client.ClientConstructs;
 import nl.tivek.multiversepowers.character.greenlantern.client.ClientRing;
 import nl.tivek.multiversepowers.character.greenlantern.client.ConstructChoice;
@@ -95,15 +96,17 @@ public final class ConstructHud {
     }
 
     private static void renderHold(GuiGraphics graphics, float partialTick) {
-        // The flamethrower shows a held button on the gun itself (FlamePainter), not round the crosshair.
-        if (FlameArms.holding()) {
-            return;
-        }
         Minecraft minecraft = Minecraft.getInstance();
         float middleX = graphics.guiWidth() * 0.5F;
         float middleY = graphics.guiHeight() * 0.5F;
         long now = Util.getMillis();
         List<Runnable> labels = new ArrayList<>();
+        // The flamethrower shows a held button on the gun's fins (FlamePainter) and only its heat here.
+        if (FlameArms.holding()) {
+            HeatGauge.render(graphics, middleX, middleY, partialTick, labels);
+            labels.forEach(Runnable::run);
+            return;
+        }
         boolean drawn = false;
         for (CharacterAbility ability : GameCharacter.GREEN_LANTERN.abilities()) {
             // Sword and shield block the instant it's held; there's no fill to show
@@ -113,7 +116,7 @@ public final class ConstructHud {
             }
             boolean right = ability.mouseButton() == CharacterAbility.Mouse.LEFT;
             if (ability.id().equals("light_bolt") && !SwordArms.holding() && !WhipArms.holding()) {
-                drawn |= BeamBar.render(graphics, minecraft.player, ability, middleX, middleY, partialTick, labels);
+                drawn |= BeamGauge.render(graphics, minecraft.player, ability, middleX, middleY, partialTick, labels);
                 continue;
             }
             int button = right ? 0 : 1;
@@ -264,6 +267,9 @@ public final class ConstructHud {
                     : ClientRing.flight(player, 0.0F) >= 0.0F ? Component.translatable(prefix + "flying") : null;
             case "light_bubble" -> ClientConstructs.bubbleAge(player.getId(), 0.0F) >= 0.0F
                     ? Component.translatable(prefix + "trapped") : null;
+            case "beam_lock" -> ClientRing.has(player, RingPayload.BEAM)
+                    && LightBeam.lockedIn(ClientConstructs.beamClock(player.getId()))
+                    ? Component.translatable(prefix + "locked") : null;
             default -> null;
         };
     }

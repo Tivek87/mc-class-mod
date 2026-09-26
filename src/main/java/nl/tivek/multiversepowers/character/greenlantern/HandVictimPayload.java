@@ -16,6 +16,10 @@ public record HandVictimPayload(int entity, int hand, int kind) implements Custo
     public static final int SHATTER = 2;
     public static final int DEAF = 3;
     public static final int POP = 4;
+    // The evil eye glaring at a puppet its partner holds: marks the eye, not the hand that holds it.
+    public static final int GLARE = 5;
+    // Held spread-eagled by the four hands of the ring blast until it goes off.
+    public static final int SPREAD = 6;
 
     public static final CustomPacketPayload.Type<HandVictimPayload> TYPE = new CustomPacketPayload.Type<>(
             ResourceLocation.fromNamespaceAndPath(MultiversePowers.MODID, "hand_victim"));

@@ -13,6 +13,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.util.FormattedCharSequence;
 import nl.tivek.multiversepowers.engine.client.gui.GuiShapes;
+import nl.tivek.multiversepowers.engine.client.gui.WipTag;
 
 final class ChangelogLayout {
     static final int BODY = 0xD4D8DE;
@@ -36,6 +37,7 @@ final class ChangelogLayout {
 
     static List<Block> build(Font font, List<Release> releases, String installed, @Nullable Component note, int width) {
         List<Block> blocks = new ArrayList<>();
+        blocks.add(wip(font, width));
         for (int i = 0; i < releases.size(); i++) {
             if (i > 0) {
                 blocks.add(divider(width));
@@ -118,6 +120,8 @@ final class ChangelogLayout {
             return 0xFF7B7B;
         } else if (name.startsWith("chang") || name.startsWith("improv")) {
             return 0x7CC4FF;
+        } else if (name.startsWith("unfinished") || name.startsWith("wip")) {
+            return WipTag.AMBER;
         }
         return 0xF2C84B;
     }
@@ -209,6 +213,21 @@ final class ChangelogLayout {
                 for (int i = 0; i < lines.size(); i++) {
                     graphics.drawString(font, lines.get(i), x + indent, y + i * LINE, 0xFF000000 | BODY, false);
                 }
+            }
+        };
+    }
+
+    private static Block wip(Font font, int width) {
+        int height = WipTag.bannerHeight(font, width);
+        return new Block() {
+            @Override
+            public int height() {
+                return height + 8;
+            }
+
+            @Override
+            public void draw(GuiGraphics graphics, int x, int y) {
+                WipTag.banner(graphics, font, x, y, width);
             }
         };
     }

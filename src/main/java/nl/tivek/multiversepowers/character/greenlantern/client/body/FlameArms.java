@@ -46,6 +46,17 @@ public final class FlameArms extends FlameFirstPerson {
         return own != null;
     }
 
+    // How near the own inferno is to overheating, 0 to 1, draining again while the gun vents; -1 without a gun.
+    public static float overcharge(float partialTick) {
+        State state = holding() ? state(Minecraft.getInstance().player, partialTick) : null;
+        return state == null ? -1.0F
+                : (float) FlamePoses.glow(state.move(), state.t(), 0.0F, state.firing()).charge();
+    }
+
+    public static boolean overheated() {
+        return holding() && own.move == FlameMove.OVERHEAT;
+    }
+
     private static boolean ready() {
         Own mine = own;
         return mine != null && mine.broke < 0.0F && !mine.firing && !mine.swirling

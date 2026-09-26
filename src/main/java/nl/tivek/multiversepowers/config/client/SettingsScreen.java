@@ -22,6 +22,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.config.WorldSettingsEditPayload;
 import nl.tivek.multiversepowers.engine.client.gui.DirtBackgroundScreen;
+import nl.tivek.multiversepowers.engine.client.gui.WipTag;
 
 public class SettingsScreen extends DirtBackgroundScreen {
     private static final String PREFIX = "config." + MultiversePowers.MODID + ".";
@@ -291,6 +292,7 @@ public class SettingsScreen extends DirtBackgroundScreen {
         }
         drawPanel(graphics, this.panelLeft, 4, this.panelWidth, this.height - 8, PANEL_BORDER);
         this.drawBigCenteredString(graphics, this.title, this.width / 2, 8, 1.1F, 0xFFFFD255);
+        WipTag.chip(graphics, this.font, this.width / 2 + (int) Math.ceil(this.font.width(this.title) * 0.55F) + 6, 6);
     }
 
     @Override

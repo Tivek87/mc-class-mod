@@ -17,8 +17,6 @@ public record ClapPayload(int entity) implements CustomPacketPayload {
 
     // Ticks after the cast when the hands meet; the server's boom and the client's arms both use it.
     public static final int HANDS_MEET = 12;
-    // Ticks after the clap when the bubble of stopped time bursts where it was aimed.
-    public static final int BUBBLE_BURSTS = 13;
 
     static void send(ServerPlayer player) {
         PacketDistributor.sendToPlayersTrackingEntityAndSelf(player, new ClapPayload(player.getId()));

@@ -33,12 +33,14 @@ import org.joml.Vector3f;
 @EventBusSubscriber(modid = MultiversePowers.MODID, value = Dist.CLIENT)
 public final class LanternArms {
     private static final Vector3f REACH = new Vector3f(0.5F, -0.22F, -1.25F);
+    // Bolt and beam hold the hand closer, so the straight arm's upper end lies behind the camera even at a wide FOV.
+    private static final Vector3f BEAM_REACH = new Vector3f(0.45F, -0.28F, -0.8F);
     private static final Vector3f SMASH = new Vector3f(0.36F, -0.72F, -0.95F);
     private static final Vector3f POUND_UP = new Vector3f(0.42F, 0.02F, -1.05F);
     private static final double POUND_HIGH = 0.5;
     private static final double POUND_LOW = -0.08;
     private static final float CHARGE_REACH = 0.7F;
-    private static final Vector3f POINT = new Vector3f(0.36F, -0.24F, -1.3F);
+    private static final Vector3f POINT = new Vector3f(0.38F, -0.26F, -0.85F);
     // Kicks push the hand straight back along the arm, never up, so the arm stays dead straight.
     private static final Vector3f POINT_KICK = new Vector3f(0.0F, 0.0F, 0.12F);
     private static final float POINT_UP = 30.0F;
@@ -52,6 +54,7 @@ public final class LanternArms {
     private static final Vector3f UNDER_WRIST = new Vector3f(-0.03F, -0.075F, 0.0F);
     private static final Vector3f BRACE_REST = new Vector3f(-0.45F, -1.1F, -0.7F);
     private static final Vector3f BRACE_FROM = new Vector3f(-1.25F, -1.15F, 0.25F);
+    private static final Vector3f ARM_BACK = new Vector3f(0.12F, -0.38F, 1.0F);
 
     private static float beam;
     private static float point;
@@ -235,14 +238,18 @@ public final class LanternArms {
         return Math.max(Math.max(construct, beam), Math.max(charge, point));
     }
 
-    // Bolt and beam: the arm lies exactly along the view, dead straight ahead, wherever the hand is.
+    // Bolt and beam: a dead straight arm running back and down into the shoulder, so its cut-off end stays unseen.
     private static Vector3f shoulderFor(LocalPlayer player, Vector3f hand, float partialTick) {
         ClientConstructs.Held held = ClientConstructs.heldBy(player.getId(), false);
         float construct = held == null ? 0.0F : Mth.clamp(held.strength(), 0.0F, 1.0F);
         float aim = Math.max(Math.max(point, beam), Math.max(0.0F, BeamArm.gathering(player, partialTick)));
         float straight = Mth.clamp(aim, 0.0F, 1.0F) * (1.0F - construct);
-        Vector3f behind = new Vector3f(hand).add(0.0F, 0.0F, 1.0F);
+        Vector3f behind = new Vector3f(hand).add(ARM_BACK);
         return new Vector3f(RechargeAnimation.SHOULDER_RIGHT).lerp(behind, straight);
+    }
+
+    private static Vector3f reachFor(float construct, float beaming) {
+        return new Vector3f(REACH).lerp(BEAM_REACH, beaming / Math.max(1.0E-4F, beaming + construct));
     }
 
     public static Vector3f handPoint(LocalPlayer player, float partialTick) {
@@ -251,7 +258,7 @@ public final class LanternArms {
         float charge = Math.max(0.0F, BeamArm.gathering(player, partialTick)) * CHARGE_REACH;
         Vector3f hand = new Vector3f(RechargeAnimation.HAND_RIGHT)
                 .lerp(new Vector3f(POINT).add(new Vector3f(POINT_KICK).mul(BoltArm.kick(player, partialTick))), point)
-                .lerp(REACH, Math.max(Math.max(construct, beam), charge));
+                .lerp(reachFor(construct, Math.max(beam, charge)), Math.max(Math.max(construct, beam), charge));
         if (held != null && held.smashing()) {
             Vec3 to = held.center().subtract(player.getEyePosition(partialTick));
             double pitch = Math.atan2(to.y, Math.max(0.5, to.horizontalDistance()));

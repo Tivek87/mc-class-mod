@@ -59,6 +59,7 @@ public final class EnergyWhip extends WhipHits {
             HELD.put(player.getUUID(), whip);
             Effects.start(player.serverLevel(), whip);
             if (PICK_SOUND.allow(player)) {
+                PowerRing.say(player, "equip_weapon");
                 whip.soundForOthers(SoundEvents.BEACON_POWER_SELECT, 0.8F, 1.5F);
                 whip.soundForOthers(SoundEvents.AMETHYST_BLOCK_CHIME, 1.0F, 1.0F);
             }

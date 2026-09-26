@@ -56,6 +56,7 @@ public final class Flamethrower extends FlameHits {
             HELD.put(player.getUUID(), gun);
             Effects.start(player.serverLevel(), gun);
             if (PICK_SOUND.allow(player)) {
+                PowerRing.say(player, "equip_weapon");
                 gun.soundForOthers(SoundEvents.BEACON_POWER_SELECT, 0.8F, 1.4F);
                 gun.soundForOthers(SoundEvents.AMETHYST_BLOCK_CHIME, 1.0F, 0.8F);
             }

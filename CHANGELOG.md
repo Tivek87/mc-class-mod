@@ -5,7 +5,18 @@ the sections before 0.0.1-alpha came before versions were numbered.
 
 ## [0.2.9-alpha] - 2026-09-26
 
+**UNFINISHED / WORK IN PROGRESS:** the mod is still being built; things may change, break or be missing.
+
 ### Added
+- **Unfinished tag:** an UNFINISHED / WIP banner on the changelog screen, a tag on the settings screens, a line at the
+  top of every config file and a warning in the game log.
+- **Light Beam, Beam Lock (middle click):** locks the beam at the stage it has reached; click again to let it grow.
+- **Ring voice:** the ring speaks when you take a weapon out of the Construct Wheel, when you take off and when you
+  call the Giant Hands.
+- **Giant Hands, ring hammer:** a hammer of hard light grows out of a fist's ring and is smashed down on the creature,
+  quaking the ground round it.
+- **Giant Hands, ring chains:** a fist's ring shoots chains of hard light round the creature, yanks it into the fist,
+  squeezes it and hurls it away.
 - **Plasma Flamethrower, overheat:** pouring the inferno for 15 seconds without letting go overheats the gun: the
   stream dies with a hiss, the gun vents steam while your left hand opens its valve, and nothing fires for 2 seconds.
 - **Setting:** how long the inferno can pour before it overheats (15 seconds).
@@ -24,24 +35,26 @@ the sections before 0.0.1-alpha came before versions were numbered.
 - **Giant Hands, ragdoll slam:** a hand slams the creature down 2 to 5 times, each to its own side, swings it faster
   and faster and flings it far; half the time a fist out of a portal catches it in the air and squeezes it up to
   3 seconds.
-- **Giant Hands, ring blast:** four hands out of portals hold the creature spread out, a fifth sets its ring on it and
-  the ring charges and blasts it away.
+- **Giant Hands, ring blast:** four hands out of portals hold the creature spread out in an X, a fifth sets its ring
+  on it and the ring charges and blasts it away.
 - **Giant Hands, clap:** two hands out of portals clap the creature between them.
 - **Giant Hands, finger gun:** a hand out of a portal fires three bolts of light from its finger.
 - **Giant Hands, scissors:** a hand out of a portal snips the creature twice.
 - **Giant Hands, swallow:** a hand pulls the creature into a portal in the ground; it falls out of one in the sky.
 - **Giant Hands, ring beam:** a fist fires a beam of light from its ring.
 - **Giant Hands, scoop:** a hand scoops the creature up and tosses it high over itself.
-- **Giant Hands, evil eye:** a hand with an eye in its palm strings up three creatures near you like puppets, lifts
-  them into the air, turns them to statues of hard light and shatters them.
+- **Giant Hands, evil eye:** two hands at once, an eye in a palm and a puppeteer: the puppeteer strings up three
+  creatures near you like marionettes and lifts them into the air, the eye turns them to statues of hard light and
+  they shatter; the view shakes and the screen flashes for everyone close by.
 - **Giant Hands, megaphone:** a hand grabs a megaphone of hard light and blares three shockwaves; whatever they catch
   clasps its ears and bursts in a small green blast.
 - **Giant Hands out of walls:** the smack, grab, middle finger, slap, pound, finger snap, claw rake, ragdoll slam,
-  ring beam, scoop, evil eye and megaphone come out of a wall beside the creature instead of the ground; a ragdoll
+  ring beam, scoop, evil eye with its puppeteer and megaphone come out of a wall beside the creature instead of the
+  ground; a ragdoll
   slam out of a wall slams it into the wall.
-- **Settings:** each of the seventeen new hands has its own chance, most per press, damage and knockback.
-- **Plasma Flamethrower, gauge:** ten big cells of light on top of the gun (and a row along its sides) fill as the
-  inferno heads for overheating, blinking faster near the end.
+- **Settings:** each of the nineteen new hands has its own chance, most per press, damage and knockback.
+- **Plasma Flamethrower, heat gauge:** ten cells on an arc beside the crosshair, green to red, fill as the inferno
+  heads for overheating, with HEAT and a percentage in big letters, and OVERHEATED while the gun vents.
 - **Plasma Flamethrower:** holding a button towards the inferno or the vortex lights the gun's fins one by one.
 - **Plasma Flamethrower:** the inferno stream grows wilder the closer it gets to overheating: wider, whiter at heart,
   more sparks, sputtering at the end.
@@ -49,11 +62,18 @@ the sections before 0.0.1-alpha came before versions were numbered.
 ### Changed
 - **Thunder Clap:** goes where your crosshair points, up and down too, not only straight ahead; your arms follow
   your aim.
-- **Thunder Clap:** the bubble of stopped time is about 75% smaller and a little blurrier, still swelling out of your
-  hands.
-- **Thunder Clap:** everything comes at once out of the point where your hands meet: the flash, the sparks, the bubble
-  and a cloud of blue thunder sparks that streams to where you aimed; in your own view it starts right between your
-  own hands.
+- **Thunder Clap:** in your own view it starts right between your own hands.
+- **Giant Hands:** for now one hand at every press (settings allow 2 at most, temporary while the hands are reworked).
+- **Giant Hands:** every kind of hand is as likely as every other.
+- **Giant Hands:** no hand out of a portal reaches out of or through you.
+- **Giant Hands:** a hand never comes up in water or reaches through it.
+- **Giant Hands:** finding a wall to come out of is lighter on the server.
+- **Light Beam:** the stage gauge is bigger, with numbered stages and the stage and time to the next in big letters.
+- **Light Beam:** your own beam is see-through close to you, like your own shield.
+- **Light Beam and Light Bolt:** your arm is held closer, so you never look into it.
+- **Ring voice:** the ring's speech comes from the player it belongs to, and one line cuts the one before short.
+- **Energy Whip:** a lash swung up and over rolls out in a loop instead of swinging round stiff as a pole.
+- **Energy Whip:** the lasso winds round a creature only as often as the lash has length left.
 - **Giant Hands:** a hand only comes up on level ground, near its creature's height, where its whole move stays in
   open air and nothing solid stands between it and the creature; it tries every side before it gives up.
 - **Giant Hands:** a hand turning after its creature stops instead of swinging into a wall.
@@ -74,13 +94,15 @@ the sections before 0.0.1-alpha came before versions were numbered.
 
 ### Removed
 - **Construct bar:** the bar above the hotbar with the icon and name of the construct you hold and what it does.
-- **Thunder Clap:** the rings of light on the ground.
-- **Plasma Flamethrower:** the inferno and vortex hold rings round the crosshair (shown on the gun now).
+- **Plasma Flamethrower:** the inferno and vortex hold rings round the crosshair (shown on the gun's fins now).
 
 ### Fixed
 - **Thunder Clap** could not be aimed up or down, only straight ahead (bug report).
 - **Giant Hands** came up in odd spots: half over a drop, half inside a slope, behind walls, and passing through
   walls or the ground.
+- **Giant Hands:** a hand in or behind water was invisible, only its light showing.
+- **Energy Whip:** the lash stood up as a stiff pole after a crack, folded into zigzags, stretched round a lassoed
+  creature, and its streak and cracks showed under the ground.
 - **Neutral and passive creatures** can be hit by your powers; one hit makes them hostile, so every power goes for them
   after that (bug report).
 

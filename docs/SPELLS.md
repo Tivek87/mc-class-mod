@@ -44,7 +44,7 @@ Good to know:
 | Fire | Fireball | A burning comet that bursts, burns and throws back what is round it, and leaves a small fire | flies until it hits, up to 5 s | 2 s |
 | Fire | Fire Wall | A swirling ring of fire around you that burns and knocks back enemies | 3.5 block radius | 10 s |
 | Lightning | Lightning Strike | Charges up, then lightning strikes where you look and leaps on to more foes | 40 blocks | 8 s |
-| Lightning | Thunder Clap | You clap your hands: thunder, a small bubble of bent light where time slows and a stream of sparks to where you aim, all at once out of your hands | 9 blocks where you aim | 10 s |
+| Lightning | Thunder Clap | You clap your hands: thunder, and a bubble of bent light where time all but stands still rolls out of your hands where you aim, sparks crawling inside it | 9 blocks where you aim | 10 s |
 | Nature | Poison Area | A thrown vial that leaves a slowing poison cloud | 24 blocks | 12 s |
 | Air | Wind Gust | A wall of wind that throws hostile (red) creatures back and turns their shots round | 8 blocks in front of you | 5 s |
 | Dark | Void Walk | 10 s invisible and faster, hostile (red) ones marked, the first blow out of it an ambush | around you | 30 s |
@@ -121,15 +121,14 @@ one foe to the next. It is the spell's own lightning: the game's normal bolt is 
 
 **What you see:** you throw your arms wide and your head back while sparks build in your hands, then slam
 them together in front of your chest, your arms pointing where you look. Everything goes where your crosshair
-points, up and down too, never behind you. Everything comes **at once, out of the one point where your hands
-meet**: a blinding blue-white light flares between them, thunder cracks, a spray of short white and blue thunder
-sparks shoots out, a small bubble in which time all but stands still swells out of your hands the way you aim
-with sparks flung into it and frozen there, and a cloud of blue thunder sparks streams from your hands to the
-spot you aimed at (the creature under your crosshair, else the block, else 9 blocks ahead), slows there and hangs
-glittering in the air. Everything behind the bubble is seen as through a magnifying glass: swollen in the middle,
-squeezed, smeared and a little blurred towards its bright rim, with coloured fringes; as it fades it breaks with a
-crack of glass at your hands. In your own view it all starts right between your own hands. A wall of mist rolls
-forward and hangs as a haze. No ground is torn up, no lightning and no bolts, only sparks.
+points, up and down too, never behind you: a blinding blue-white light flares between your hands, thunder cracks
+and a bubble in which time all but stands still swells out of your hands and rolls ahead with the shock the way you
+aim. Everything behind it is seen as through a ball of glass: swollen in the middle, squeezed and smeared out towards
+its bright rim, with coloured fringes and ripples running through it. The spray of short white and blue thunder
+sparks crawls slowly inside the bubble and only flies on at full speed once it has passed. In your own view it all
+starts right between your own hands. Rings of light ripple out over the ground ahead, the first with a swirl turning
+in it, and a wall of mist rolls forward and hangs as a haze. No ground is torn up, no lightning and no bolts, only
+sparks.
 Everyone close by feels it: the screen flashes and the view shakes, less the further away you are.
 
 | | |

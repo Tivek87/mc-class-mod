@@ -381,6 +381,17 @@ abstract class TrackedConstructs {
         return 0;
     }
 
+    // The beam's stage clock as the server sent it (LightBeam.clockSent), or NaN without a beam.
+    public static float beamClock(int owner) {
+        for (Track track : CONSTRUCTS.values()) {
+            if (track.latest.shape() == ConstructPayload.BEAM && track.latest.owner() == owner
+                    && track.latest.solid() >= 1.0F) {
+                return track.latest.charge();
+            }
+        }
+        return Float.NaN;
+    }
+
     // Ticks since the beam reached the stage it is at, or -1 without a beam.
     public static float beamStageAge(int owner, float partialTick) {
         for (Track track : CONSTRUCTS.values()) {

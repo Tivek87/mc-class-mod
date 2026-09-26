@@ -129,12 +129,13 @@ public final class HandGroup {
             Vec3 toward = side.scale(-across);
             Vec3 palmAt = center.add(side.scale(across * gap)).add(0.0, 0.3 + across * rub, 0.0);
             HandPose pose = fingers(0.05 + 0.1 * shut, 0.0, 0.3, 0.3);
-            HandPose.Place hidden = frame(portal.subtract(toward.scale(4.0 * CLAP_SCALE)), toward, Vectors.UP,
-                    toward, CLAP_SCALE);
-            HandPose.Place there = frame(palmAt, toward, Vectors.UP, toward, CLAP_SCALE);
-            Vec3 wrist = there.wrist().subtract(Vectors.UP.scale(PALM.y * CLAP_SCALE))
-                    .subtract(toward.scale(PALM.z * CLAP_SCALE));
-            HandPose.Place place = frame(hidden.wrist().lerp(wrist, out), toward, Vectors.UP, toward, CLAP_SCALE);
+            Vec3 wrist = palmAt.subtract(Vectors.UP.scale(PALM.y * CLAP_SCALE)).subtract(toward.scale(PALM.z
+                    * CLAP_SCALE));
+            Vec3 hidden = portal.subtract(toward.scale(4.0 * CLAP_SCALE));
+            // The forearm lies level out of the portal, the wrist bent back so the palm faces the creature: the
+            // forearm's own palm side faces down, never along the arm itself (that folds it flat).
+            HandPose.Place place = frame(hidden.lerp(wrist, out), toward, Vectors.UP.scale(-1.0), Vectors.UP, toward,
+                    CLAP_SCALE);
             subs.add(new Sub(pose, place, portalAt(portal, toward, PORTAL * CLAP_SCALE * 1.2, open), across < 0.0));
         }
         return subs;
@@ -155,8 +156,12 @@ public final class HandGroup {
     }
 
     private static HandPose.Place frame(Vec3 wrist, Vec3 arm, Vec3 up, Vec3 palm, double scale) {
+        return frame(wrist, arm, palm, up, palm, scale);
+    }
+
+    private static HandPose.Place frame(Vec3 wrist, Vec3 arm, Vec3 armForward, Vec3 up, Vec3 palm, double scale) {
         Vec3 right = palm.cross(up).normalize();
-        return new HandPose.Place(wrist, arm, palm, right, up, palm, scale);
+        return new HandPose.Place(wrist, arm, armForward, right, up, palm, scale);
     }
 
     private static Vec3 square(Vec3 want, Vec3 up) {

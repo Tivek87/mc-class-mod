@@ -151,8 +151,10 @@ abstract class GiantHandBase {
         Vec3 aim = this.base.add(way(facing).scale(out));
         // Turning after the creature never swings the hand into a wall: it waits there instead.
         Vec3 root = HandPose.rootNormal(this.variant, aim.subtract(this.base));
-        if (!GiantHandSpots.clearAt(level, this, this.t + 1, aim.subtract(this.base), this.base, root)
-                || !GiantHandSpots.clearAt(level, this, this.t + 4, aim.subtract(this.base), this.base, root)) {
+        Vec3 reach = aim.subtract(this.base);
+        double floor = Double.NEGATIVE_INFINITY;
+        if (!GiantHandSpots.clearAt(level, this, this.t + 1, reach, this.base, root, floor)
+                || !GiantHandSpots.clearAt(level, this, this.t + 4, reach, this.base, root, floor)) {
             this.turn = 0.0;
             this.outSpeed = 0.0;
             return;

@@ -64,7 +64,7 @@ long cooldown; while it goes, the panel's title turns red and counts down.
 | C | Ability 9 | Feet or Tentacles | Flight |
 | Left Alt | Ability 10 | Ground Strike | Giant Hands |
 | K | Ability 11 | *(free)* | Light Cage |
-| Middle click | Ability 12 | *(free)* | *(free)* |
+| Middle click | Ability 12 | *(free)* | Beam Lock |
 
 - Every key can be changed in Options > Controls, under "Multiverse Powers".
 - A panel in the bottom right shows who you are and what each key does right now, with its cooldown.
@@ -125,7 +125,8 @@ The ring makes Green Lantern's uniform over your own clothes.
   whole suit, and the ring says *"Welcome to the Green Lantern Corps."* Last of all you hit the lantern with your
   ring fist and the ring fills up (the recharge, see below). All of it plays out slowly and takes about 10 seconds,
   and all that time the ring speaks to you in its own voice, fading in as it comes and fading out at the end; you
-  hear it only then, and anyone near you hears it too, fainter further off. Until it is done the ring does nothing
+  hear it only then, and anyone near you hears it too, coming from where you stand, fainter further off. Until it is
+  done the ring does nothing
   else. The uniform: the
   green and black suit with the lantern on the chest, white gloves, and a green mask over your eyes. Your own
   face and hair stay.
@@ -147,6 +148,9 @@ The ring makes Green Lantern's uniform over your own clothes.
   sending out a last ring of light; then it spirals off up into the sky, a long streak of light behind it, until
   it is a twinkle high up and gone. About 5 seconds in all.
 - Everyone around you sees it, also players who come into view later.
+- **The ring speaks** in its own voice when you take a weapon out of the Construct Wheel, when you take off into
+  the air and when you call the Giant Hands. Its voice comes from you: anyone near hears it from where you stand,
+  fainter further off. It says one thing at a time: a new line cuts the one before short.
 
 ### The ring's power
 
@@ -204,10 +208,11 @@ quick one, 2 seconds of holding for the lasting one.
   - **It grows through five stages** the longer you hold (counted from the press): the first comes with the beam
     after 2 seconds, then a new one every 2 seconds, up to the fifth at **10 seconds**. Each stage sends a wave
     of light racing down the beam and a shock ring out of your fist, flares at the ring, roars louder, jolts your
-    view and says so above the hotbar. The hold bar next to your crosshair shows it: five pieces, each a little
-    thicker than the one before; the first fills while you hold, the others while the beam grows, and at the
-    fifth the whole bar throbs. The stronger the beam, the harder it hits, the further it reaches and drives, the
-    more it costs and the slower you walk.
+    view and says so above the hotbar. A big gauge right of your crosshair shows it: five numbered pieces on an
+    arc, each a little thicker than the one before; the first fills while you hold, the others while the beam
+    grows. Left of the crosshair big letters say which stage it is at (**STAGE 3/5**) and how long until the next;
+    at the fifth they read **MAX POWER** and the whole gauge throbs. The stronger the beam, the harder it hits, the
+    further it reaches and drives, the more it costs and the slower you walk.
     - **Stage 1:** a thin, concentrated ray: a white-hot core in a tight green glow, two strands winding round it.
     - **Stage 2:** wider, with rings of light running down it and a first crackle.
     - **Stage 3:** raging: a thick, breathing glow, surges racing along it, a ring of energy turning round your
@@ -228,6 +233,11 @@ quick one, 2 seconds of holding for the lasting one.
     | 4 | 8 s | x2.28 | 58 blocks | x2.5 | 3.16/s | 44% |
     | 5 | 10 s | x3 (30 hearts/s) | 64 blocks | x3 | 5/s, fixed | 30% |
   - Let go, run the ring dry or start a Giant Fist and it dies down; your walking speed comes back at once.
+  - **Beam Lock (middle click):** click it while the beam pours and it stays at the stage it has reached: it stops
+    growing, the gauge shows a padlock and **LOCKED**, and the ring says so. Click again and it grows on from
+    there. Clicked before the beam is out, the ring tells you to fire it first.
+  - **Your own beam is see-through close to you**, like your own shield: faint as glass right in front of you,
+    growing solid further out, so it never hides what you aim at. Others see it at full strength.
 
 **Right click (the left hand defends)**
 
@@ -586,12 +596,15 @@ along it and a small tuft at the tip. The whip is as solid as every construct; o
 crack, the whirlwind's ring and glow and the spinning shield's disc are light.
 
 - **A living lash:** every bit of the lash goes where the whip was flung a moment before, the further along the
-  later, so every flick of the wrist runs down it like a wave, and where the wave rolls out of the tip and pulls the
-  lash straight it **cracks**: a flash, a cone of shock rings and sparks, and a bang. **At rest it is curled up:** the
+  later, so every flick of the wrist runs down it like a wave: a lash swung up and over **rolls out in a loop**, never
+  swinging round stiff as a pole, and where the loop rolls out of the tip and pulls the lash straight it **cracks**: a
+  flash, a cone of shock rings and sparks, and a bang. **At rest it is curled up:** the
   lash hangs below the handle wound in loops beside each other, like a coiled whip; it sways a little and now and then
   your wrist gives it a lazy flick. **Every attack unrolls it:** the lash pays out of the coil as it is flung. Once
   the move is done the slack lash drops, lies on the ground at its full length and is reeled back in, winding up into
-  its coil from the handle out. It moves as one rope that keeps its length: it never jumps, stretches or shrinks.
+  its coil from the handle out. It moves as one rope that keeps its length: it never jumps, stretches or shrinks,
+  and it bends in curves and loops but never folds up into zigzags, however fast you turn. Its streak and its cracks
+  lie on the ground where the lash does, never under it.
 - **How you hold it:** in first person the handle sits in your right fist at the bottom right of your screen, tilted
   up and forward, with the coil hanging from its end. Seen from outside he holds the handle low before his right hip
   with the coil below it, feet a little apart and knees soft, breathing and shifting his weight. In
@@ -621,9 +634,10 @@ crack, the whirlwind's ring and glow and the spinning shield's disc are light.
   go:** the lash goes on round until it is behind you and is thrown forward over the top for one hard crack:
   **5 hearts**.
 - **Clicking right (lasso):** you swing the lash up over your shoulder and throw it at the creature you aim at, up to
-  **10 blocks** away (the whole length of the lash). It cracks as it arrives, flows into **three** coils round the
-  creature from the top down and pulls tight with a flash: it is caught. Your left hand takes hold of the lash, you
-  lean back and yank: it flies to you in an arc and **smacks down at your feet** with a ring of light and dust:
+  **10 blocks** away (the whole length of the lash). It cracks as it arrives, flows into up to **three** coils round
+  the creature from the top down (as many as the lash has length left for, so it never stretches) and pulls tight
+  with a flash: it is caught. Your left hand takes hold of the lash, you lean back and yank: it flies to you in an arc
+  and **smacks down at your feet** with a ring of light and dust:
   **3 hearts** and slowed for **2 seconds**. Then the lash unwinds and goes back to its full length and its coil.
   Costs 2 power, only when it catches something; a miss just cracks in the air. Creatures too big or too strong (as
   for the light bubble) cannot be caught; with a wall in the way it lands before the wall.
@@ -673,10 +687,10 @@ something; a ring of light pulses out of the nozzle while it fires.
   **1.5 hearts** to everything in it every 4 ticks. Costs 1 power a second. Letting go cuts the stream; the gun
   vents a puff of smoke and its glowing fins cool down. The longer you pour, the wilder the stream: it grows
   wider, its heart burns whiter, it throws off more sparks, and in the last seconds it sputters and flares. A
-  **gauge** of ten big cells of light wrapped round the top of the gun, where your eye falls when you hold it (and a
-  row along both sides, so others see it too), fills as the stream heads for overheating: green, then pale, then
-  white-hot, blinking faster and faster over the last three cells with a warning flare at its end, and drains again
-  while the gun cools.
+  **heat gauge** right of your crosshair, like the beam's, fills as the stream heads for overheating: ten cells on
+  an arc going from green through yellow and orange to red, the last three blinking faster and faster, with
+  **HEAT 60%** in big letters left of the crosshair (and "let go to cool it" once it runs hot). When the gun
+  overheats the whole gauge turns red and reads **OVERHEATED**, and it drains again while the gun vents.
   Pour for **15 seconds** without letting go and the gun
   **overheats**: the stream dies with a hiss, the gun jolts up, you tip it aside while your left hand opens its
   valve and it vents a hissing jet of steam, and nothing fires for **2 seconds** until the valve shuts and the
@@ -784,9 +798,10 @@ Green Lantern's ultimate: a big, slow gunship of hard light high over the battle
   made in detail: Green Lantern's own right hand, with a forearm and a glowing gauntlet ring, a glowing cuff round the
   wrist, a palm with its pads and glowing creases, knuckles and glowing tendons and the lantern emblem on its back,
   four fingers of three joints each with a nail on every tip, a thumb, and the ring itself on its middle finger.
-- **4 to 8 hands every time you press** (how many is picked at random). They come up one after another, **one every
-  half second**, **never more than five at once** (the next one waits for one to go), and you wave your hand towards
-  every one. Every next hand goes for the creature nearest to you with the fewest hands on it, so they spread over
+- **For now, one hand every time you press** (temporary, while the hands are being reworked: the settings allow 2 at
+  most). With more than one they come up one after another, **one every half second**, and you wave your hand
+  towards every one. Every kind of hand is **as likely as every other**. Every next hand goes for the creature nearest
+  to you with the fewest hands on it, so they spread over
   the creatures closest to you first. Each does one of these to its creature, never the same one twice in a row (not
   even from one press to the next):
   - **a smack:** it rises low beside the creature, winds up and sweeps its open palm through it, swatting it
@@ -814,7 +829,8 @@ Green Lantern's ultimate: a big, slow gunship of hard light high over the battle
     finger while light gathers between them, then **snaps its fingers**: a flash and rings of light burst out
     every way and over the ground, and every creature within **7 blocks** is **dazed** (**2.7 hearts** close by,
     less further out, slowed right down for 3 seconds and weakened for 6);
-  - **a poke:** a **portal** opens beside the creature and a hand reaches out level, one finger out. It pokes the
+  - **a poke:** a **portal** opens beside the creature, on your side of it or off to one side but never behind it, and
+    never where the hand would reach out of or through you. A hand reaches out level, one finger out. It pokes the
     creature, pokes it again a little further (**1.8 hearts** each, a small shove), draws right back and gives it
     one hard last poke that sends it flying (**4.8 hearts**), each with a flash and a ring of light at the fingertip;
   - **a hammer fist:** a **portal** opens high over the creature and a fist comes down out of it, draws up
@@ -835,11 +851,13 @@ Green Lantern's ultimate: a big, slow gunship of hard light high over the battle
     time, as it falls, a **portal** opens under it and a hand shoots up, closes into a **fist round it** and squeezes
     (**0.9 hearts** every half second), letting go after 3 seconds at most. Only creatures small enough to hold;
   - **a ring blast:** four **portals** open round the creature and four smaller hands grab it by its arms and legs
-    and hold it up, spread out; a fifth hand comes out of a portal before it and **sets its ring** on its chest. The
+    and hold it up, spread out in an **X**, arms up and legs apart, struggling; a fifth hand comes out of a portal
+    before it and **sets its ring** on its chest. The
     ring gathers light, spinning and flickering ever faster, then **blasts**: a flash, rings and shards of light,
     and the creature is thrown far away (**14.4 hearts**); everything within 5 blocks takes **3.6 hearts**. Only
     creatures small enough to hold;
-  - **a clap:** two **portals** open on either side of the creature, two big hands come out, draw apart and **clap
+  - **a clap:** two **portals** open on either side of the creature, two big hands come out on level forearms, draw
+    apart and **clap
     it between their palms** (**9.6 hearts**, slowed down 2 seconds), with a flash and a ring of shock that throws
     everything else within 5 blocks off (**1.9 hearts**);
   - **a finger gun:** a hand out of a **portal** points a finger gun at the creature and **fires three bolts of
@@ -855,19 +873,36 @@ Green Lantern's ultimate: a big, slow gunship of hard light high over the battle
     second (**2.1 hearts** every 4 ticks to everything in it);
   - **a scoop:** a hand comes up low on the far side of the creature, palm up, slides under it and **tosses it high
     over itself**, away from you (**3 hearts**, and the fall);
-  - **an evil eye:** a hand rises high on the far side of the creature, its palm to you, with an **eye** of hard light
-    shut in its palm. The eye opens and **strings of light** shoot from the fingertips to **three creatures** near
-    you (picked at random from the nearest). Working its fingers like a puppeteer, the hand **lifts them up to
-    3 blocks** into the air, swaying on their strings; the eye goes wild, its white-hot pupil darting about, and a
-    beam from it turns each one into a **statue of solid green hard light**. The hand clenches into a fist and the
-    statues **shatter** into pieces (**10.8 hearts** each). Only creatures small enough to hold;
+  - **an evil eye:** **two hands** rise together. One stands high on the far side of the creature, its palm to you,
+    with an **eye** of hard light shut in its palm; the other, the **puppeteer**, rises beside it and bends its wrist
+    over the creatures like a hand over a marionette. The eye opens with a flash and a ring of light, and the
+    puppeteer shoots **three strings of light** from its fingertips to each of **three creatures** near you (picked
+    at random from the nearest): to its head and both its hands. Working its fingers, it **lifts them up to
+    3 blocks** into the air; they hang limp like marionettes, arms pulled up, legs dangling, heads hanging, while
+    the strings sag, pull taut and tremble with light running down them. The eye goes wild, its pupil darting, and
+    beams of light sweep over them; a beam from it turns each one into a **statue of solid green hard light**
+    frozen as it hung. Both hands clench into fists and the statues **shatter** into pieces (**10.8 hearts** each)
+    as a last ring bursts out of the eye. Everyone close by feels it: the view shakes as the eye goes wild, as the
+    statues form and hardest as they shatter, and the screen flashes. The two count as one hand. Only creatures
+    small enough to hold;
   - **a megaphone:** a hand rises 12 blocks off to the side of the creature, and a **megaphone** of hard light grows
     out of its ring's light into its fist. It raises it, points it at the creature and **blares three shockwaves**:
     rings of sound race out of the horn with a roar, and everything they catch (**0.7 hearts** a blare) **clasps its
     ears** and shakes, until it **bursts** in a small green blast (**6 hearts**). The megaphone then breaks into
-    solid pieces.
+    solid pieces;
+  - **a ring hammer:** a fist rises 7 blocks off to the side of the creature and turns side on; its ring lights up
+    and a **hammer of hard light** pours out of it, the haft first, then the head swelling on its end. The fist
+    swings it back up over itself and **smashes it down** on the creature with a streak of light behind the head:
+    **13.2 hearts** and thrown up for what stands under it, and the ground **quakes** round it in rings of light and
+    flying cracks (**4.2 hearts** at most out to 5.5 blocks, less further off, everything thrown away). The hammer
+    then breaks into solid pieces;
+  - **a ring chains:** a fist rises 12 blocks off to the side of the creature and points its ring at it; the ring
+    charges and **shoots chains of hard light**, link by link, to the creature. They **wind round it** and hold it,
+    and the fist **yanks it through the air** into its grip, squeezes it twice (**2.1 hearts** each) as the chains
+    break into solid links, and **hurls it away** from you (**6 hearts**). Only creatures small enough to hold.
 - **Ground or wall:** the smack, the grab, the middle finger, the slap, the pound, the finger snap, the claw rake, the
-  ragdoll slam, the ring beam, the scoop, the evil eye and the megaphone come out of a **wall** instead of the ground
+  ragdoll slam, the ring beam, the scoop, the evil eye (with its puppeteer) and the megaphone come out of a **wall**
+  instead of the ground
   when the creature stands by one (more than half the time, and always when the ground round it has no room): the
   wall cracks open round the hand, which moves as it would out of the ground with the wall as its ground, so a
   ragdoll slam out of a wall **slams the creature into the wall**. The other hands come through portals.
@@ -891,10 +926,13 @@ Green Lantern's ultimate: a big, slow gunship of hard light high over the battle
 - Hands **never pass through blocks**: a hand out of the ground only comes up on level ground, never half over a drop
   or half in a slope, never far above or below its creature, and only where its whole move stays in open air and
   nothing solid stands between it and the creature; it tries every side of the creature, and a wall next to it,
-  before it gives up. Turning after its creature, a hand stops rather than swing into a wall.
+  before it gives up. Turning after its creature, a hand stops rather than swing into a wall. A hand never comes up
+  in water or reaches through it (water would hide it), and a hand out of a portal may still press, pinch or scrape
+  into the ground the creature stands on.
 - **Every kind of hand has its own settings** (smack, grab, middle finger, slap, pound, flick, pinch, finger snap,
   poke, hammer fist, claw rake, portal drag, ragdoll slam, ring blast, clap, finger gun, scissors, swallow, ring
-  beam, scoop, evil eye, megaphone, axe pair; the catch goes by the ragdoll slam's): how often it
+  beam, scoop, evil eye, megaphone, ring hammer, ring chains, axe pair; the catch goes by the ragdoll slam's, the
+  puppeteer by the evil eye's): how often it
   comes compared with the others (0 = never), the most of it in one press, and its damage and knockback as a factor
   of the usual. Out of the settings every kind still allowed is picked; when none is left, the press ends early.
   Whatever it strikes always flies away from you, never at you. Its blows leave streaks of light in the air and rings
@@ -905,8 +943,9 @@ Green Lantern's ultimate: a big, slow gunship of hard light high over the battle
   to land.
 - **Who gets hit:** only what is out to hurt you, and players where players may fight each other; never your own
   pets, villagers or animals, and never you.
-- **Power:** 8. **Cooldown:** 30 seconds. The damage, the reach, the fewest and the most hands at every press (4
-  and 8 by default), the time between two hands (half a second by default) and how hard they send creatures flying
+- **Power:** 8. **Cooldown:** 30 seconds. The damage, the reach, the fewest and the most hands at every press (1
+  and 1 by default, 2 at most for now), the time between two hands (half a second by default) and how hard they send
+  creatures flying
   are settings.
 
 ### Western Revolver Assembly (hold Left Alt for 2 seconds)

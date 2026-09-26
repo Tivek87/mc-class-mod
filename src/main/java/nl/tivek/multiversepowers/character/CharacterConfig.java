@@ -12,7 +12,7 @@ import net.neoforged.neoforge.server.ServerLifecycleHooks;
 import nl.tivek.multiversepowers.config.ModConfigs;
 
 public final class CharacterConfig {
-    private static final int DEFAULTS_VERSION = 20;
+    private static final int DEFAULTS_VERSION = 21;
 
     private static final Map<GameCharacter, ModConfigSpec> SPECS = new EnumMap<>(GameCharacter.class);
     private static final Map<GameCharacter, ModConfigSpec.IntValue> VERSIONS = new EnumMap<>(GameCharacter.class);
@@ -39,9 +39,10 @@ public final class CharacterConfig {
 
     private static ModConfigSpec build(GameCharacter character) {
         ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
-        VERSIONS.put(character, builder.comment("Kept up to date by the mod, leave it as it is: which of the mod's"
-                + " defaults this file has taken over. A setting you never changed follows the mod when its default"
-                + " changes; one you did change stays yours.")
+        VERSIONS.put(character, builder.comment(ModConfigs.WIP,
+                "Kept up to date by the mod, leave it as it is: which of the mod's defaults this file has taken over."
+                        + " A setting you never changed follows the mod when its default changes; one you did change"
+                        + " stays yours.")
                 .defineInRange("defaultsVersion", 0, 0, Integer.MAX_VALUE));
         builder.comment("The abilities of " + character.getId() + ", one section per ability.",
                 "Cooldowns are in ticks (20 ticks = 1 second), damage is in half hearts (an Iron Golem has 100),",
@@ -114,7 +115,7 @@ public final class CharacterConfig {
                 for (CharacterAbility.Setting setting : ability.settings()) {
                     ModConfigSpec.ConfigValue<? extends Number> value = SETTINGS.get(ability.path() + "."
                             + setting.key());
-                    if (value != null && wasDefault(value.get().doubleValue(), setting.was())) {
+                    if (value != null && wasDefault(value.get().doubleValue(), clamped(setting))) {
                         setValue(ability, setting.key(), setting.value());
                     }
                 }
@@ -123,6 +124,16 @@ public final class CharacterConfig {
             spec.save();
             return;
         }
+    }
+
+    // The loader has already pulled a value outside a narrowed range back onto its edge: an old default out there
+    // shows up at that edge.
+    private static double[] clamped(CharacterAbility.Setting setting) {
+        double[] was = new double[setting.was().length];
+        for (int i = 0; i < was.length; i++) {
+            was[i] = Math.max(setting.min(), Math.min(setting.max(), setting.was()[i]));
+        }
+        return was;
     }
 
     private static boolean wasDefault(double value, double[] oldDefaults) {

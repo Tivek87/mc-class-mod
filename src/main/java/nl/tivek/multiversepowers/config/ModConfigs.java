@@ -14,6 +14,8 @@ import nl.tivek.multiversepowers.stamina.StaminaConfig;
 
 public final class ModConfigs {
     public static final String FOLDER = MultiversePowers.MODID;
+    public static final String WIP = "!!! UNFINISHED / WORK IN PROGRESS !!! This mod is still being built: settings may"
+            + " still change, break or be missing.";
 
     private static final Map<String, ModConfigSpec> WORLD = new LinkedHashMap<>();
 

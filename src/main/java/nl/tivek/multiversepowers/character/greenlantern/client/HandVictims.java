@@ -26,9 +26,12 @@ import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import net.neoforged.neoforge.client.event.RenderLivingEvent;
 import nl.tivek.multiversepowers.MultiversePowers;
+import nl.tivek.multiversepowers.character.greenlantern.HandGroup;
 import nl.tivek.multiversepowers.character.greenlantern.HandPose;
 import nl.tivek.multiversepowers.character.greenlantern.HandVictimPayload;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.LanternPainter;
+import nl.tivek.multiversepowers.engine.client.fx.CameraShake;
+import nl.tivek.multiversepowers.engine.client.fx.ScreenFlash;
 import nl.tivek.multiversepowers.engine.client.render.ConstructPainter;
 import nl.tivek.multiversepowers.engine.client.render.TintedBuffers;
 import nl.tivek.multiversepowers.engine.math.Colors;
@@ -44,6 +47,13 @@ public final class HandVictims {
     private static final int KEEP = 100;
     private static final int STATUE_MOST = HandPose.EYE_SHATTERS - HandPose.EYE_STONE + 10;
     private static final int DEAF_MOST = HandPose.POPS - HandPose.BLARES[0] + 10;
+    private static final int SPREAD_MOST = HandGroup.RING_BLASTS - HandGroup.HOLD_GRABS + 1;
+    private static final double SPREAD_IN = 3.0;
+    private static final int PUPPET_MOST = HandPose.EYE_SHATTERS - HandPose.EYE_STRINGS + 10;
+    private static final double MARIONETTE_IN = 4.0;
+    private static final double FELT = 32.0;
+    private static final float SPREAD_ARMS = 2.35F;
+    private static final float SPREAD_LEGS = 0.5F;
     private static final double SHARDS = 16.0;
     private static final double POP_TICKS = 12.0;
     private static final double EARS_IN = 3.0;
@@ -53,10 +63,12 @@ public final class HandVictims {
 
     private static final class Victim {
         int hand;
+        int eye = -1;
         int puppet = -1;
         int statue = -1;
         int shatter = -1;
         int deaf = -1;
+        int spread = -1;
         int pop = -1;
         AABB box;
         int latest;
@@ -65,6 +77,7 @@ public final class HandVictims {
     private static final Map<Integer, Victim> VICTIMS = new HashMap<>();
     private static final Set<Integer> PUSHED = new HashSet<>();
     private static int ticks;
+    private static int feltAt = -1;
     private static boolean redrawing;
 
     private HandVictims() {
@@ -76,31 +89,47 @@ public final class HandVictims {
             return;
         }
         Victim victim = VICTIMS.computeIfAbsent(entity, id -> new Victim());
-        victim.hand = hand;
+        if (kind == HandVictimPayload.GLARE) {
+            victim.eye = hand;
+        } else {
+            victim.hand = hand;
+        }
         victim.latest = ticks;
         Entity living = minecraft.level.getEntity(entity);
         if (living != null) {
             victim.box = living.getBoundingBox();
+            felt(minecraft, living.position(), kind, victim.puppet < 0);
         }
         switch (kind) {
             case HandVictimPayload.PUPPET -> victim.puppet = ticks;
             case HandVictimPayload.STATUE -> victim.statue = ticks;
             case HandVictimPayload.SHATTER -> victim.shatter = ticks;
             case HandVictimPayload.DEAF -> victim.deaf = ticks;
+            case HandVictimPayload.SPREAD -> victim.spread = ticks;
             case HandVictimPayload.POP -> victim.pop = ticks;
             default -> {
             }
         }
     }
 
+    // The puppets an evil eye glares at, in the order they were strung.
+    public static List<Entity> glaredAt(int eye) {
+        return strung(eye, true);
+    }
+
     // The creatures a hand has on its strings, in the order they were strung.
     public static List<Entity> puppets(int hand) {
+        return strung(hand, false);
+    }
+
+    private static List<Entity> strung(int hand, boolean eye) {
         List<Entity> strung = new ArrayList<>();
         ClientLevel level = Minecraft.getInstance().level;
         if (level == null) {
             return strung;
         }
-        VICTIMS.entrySet().stream().filter(entry -> entry.getValue().hand == hand && entry.getValue().puppet >= 0
+        VICTIMS.entrySet().stream().filter(entry -> (eye ? entry.getValue().eye : entry.getValue().hand) == hand
+                && entry.getValue().puppet >= 0
                 && entry.getValue().shatter < 0).sorted((a, b) -> Integer.compare(a.getValue().puppet,
                         b.getValue().puppet)).forEach(entry -> {
                             Entity entity = level.getEntity(entry.getKey());
@@ -109,6 +138,35 @@ public final class HandVictims {
                             }
                         });
         return strung;
+    }
+
+    // The evil eye's big moments are felt by everyone close: the view shakes, and at the worst the screen flashes.
+    private static void felt(Minecraft minecraft, Vec3 at, int kind, boolean first) {
+        float shake = switch (kind) {
+            case HandVictimPayload.PUPPET -> first ? 0.8F : 0.0F;
+            case HandVictimPayload.GLARE -> 1.4F;
+            case HandVictimPayload.STATUE -> 2.0F;
+            case HandVictimPayload.SHATTER -> 4.0F;
+            default -> 0.0F;
+        };
+        if (shake <= 0.0F || feltAt == ticks) {
+            return;
+        }
+        feltAt = ticks;
+        double near = 1.0 - minecraft.gameRenderer.getMainCamera().getPosition().distanceTo(at) / FELT;
+        if (near <= 0.0) {
+            return;
+        }
+        CameraShake.add((float) (shake * near * near), kind == HandVictimPayload.SHATTER ? 14 : 8);
+        if (kind == HandVictimPayload.SHATTER || kind == HandVictimPayload.STATUE) {
+            ScreenFlash.add(0xD8FFE0, (float) ((kind == HandVictimPayload.SHATTER ? 0.5 : 0.25) * near), 8);
+        }
+    }
+
+    // A creature's box where it is drawn this frame.
+    public static AABB box(Entity entity) {
+        float partialTick = Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(false);
+        return entity.getBoundingBox().move(entity.getPosition(partialTick).subtract(entity.position()));
     }
 
     public static double since(int mark, float partialTick) {
@@ -120,17 +178,85 @@ public final class HandVictims {
         return victim.statue >= 0 && victim.shatter < 0 && ticks - victim.statue < STATUE_MOST;
     }
 
+    private static boolean puppet(Victim victim) {
+        return victim.puppet >= 0 && victim.shatter < 0 && ticks - victim.puppet < PUPPET_MOST;
+    }
+
     private static boolean deaf(Victim victim) {
         return victim.deaf >= 0 && victim.pop < 0 && ticks - victim.deaf < DEAF_MOST;
     }
 
-    // Called once the model has taken its own pose: a deafened creature clasps its ears and shakes its head.
-    public static void ears(EntityModel<?> model, LivingEntity entity, float partialTick) {
+    private static boolean spread(Victim victim) {
+        return victim.spread >= 0 && ticks - victim.spread < SPREAD_MOST;
+    }
+
+    // Called once the model has taken its own pose: held by the ring blast's four hands a creature is spread out in an
+    // X, struggling; a deafened one clasps its ears and shakes its head.
+    public static void pose(EntityModel<?> model, LivingEntity entity, float partialTick) {
         Victim victim = VICTIMS.get(entity.getId());
-        if (victim == null || !deaf(victim) || !(model instanceof HumanoidModel<?> humanoid)) {
+        if (victim == null || !(model instanceof HumanoidModel<?> humanoid)) {
             return;
         }
-        double since = since(victim.deaf, partialTick);
+        if (spread(victim)) {
+            spreadOut(humanoid, since(victim.spread, partialTick));
+        } else if (puppet(victim)) {
+            // A statue keeps the pose it was caught in.
+            double since = victim.statue >= 0 ? victim.statue - victim.puppet : since(victim.puppet, partialTick);
+            marionette(humanoid, since, entity.getId());
+        } else if (deaf(victim)) {
+            ears(humanoid, since(victim.deaf, partialTick));
+        }
+        humanoid.hat.copyFrom(humanoid.head);
+        if (humanoid instanceof PlayerModel<?> player) {
+            player.rightSleeve.copyFrom(player.rightArm);
+            player.leftSleeve.copyFrom(player.leftArm);
+            player.rightPants.copyFrom(player.rightLeg);
+            player.leftPants.copyFrom(player.leftLeg);
+        }
+    }
+
+    private static void spreadOut(HumanoidModel<?> humanoid, double since) {
+        float on = (float) Ease.smooth(since / SPREAD_IN);
+        float struggle = (float) Math.sin(since * 1.9);
+        float kick = (float) Math.sin(since * 2.6 + 1.0);
+        humanoid.rightArm.xRot = Mth.lerp(on, humanoid.rightArm.xRot, 0.08F * struggle);
+        humanoid.rightArm.yRot = Mth.lerp(on, humanoid.rightArm.yRot, 0.0F);
+        humanoid.rightArm.zRot = Mth.lerp(on, humanoid.rightArm.zRot, SPREAD_ARMS + 0.06F * struggle);
+        humanoid.leftArm.xRot = Mth.lerp(on, humanoid.leftArm.xRot, -0.08F * struggle);
+        humanoid.leftArm.yRot = Mth.lerp(on, humanoid.leftArm.yRot, 0.0F);
+        humanoid.leftArm.zRot = Mth.lerp(on, humanoid.leftArm.zRot, -SPREAD_ARMS + 0.06F * struggle);
+        humanoid.rightLeg.xRot = Mth.lerp(on, humanoid.rightLeg.xRot, 0.1F * kick);
+        humanoid.rightLeg.yRot = Mth.lerp(on, humanoid.rightLeg.yRot, 0.0F);
+        humanoid.rightLeg.zRot = Mth.lerp(on, humanoid.rightLeg.zRot, SPREAD_LEGS + 0.05F * kick);
+        humanoid.leftLeg.xRot = Mth.lerp(on, humanoid.leftLeg.xRot, -0.1F * kick);
+        humanoid.leftLeg.yRot = Mth.lerp(on, humanoid.leftLeg.yRot, 0.0F);
+        humanoid.leftLeg.zRot = Mth.lerp(on, humanoid.leftLeg.zRot, -SPREAD_LEGS - 0.05F * kick);
+        humanoid.head.xRot = Mth.lerp(on, humanoid.head.xRot, -0.25F + 0.1F * struggle);
+        humanoid.head.yRot += on * 0.3F * kick;
+    }
+
+    // Hung on strings: arms pulled up and flopping, legs dangling and kicking, the head hanging.
+    private static void marionette(HumanoidModel<?> humanoid, double since, int seed) {
+        float on = (float) Ease.smooth(since / MARIONETTE_IN);
+        double phase = seed * 1.7;
+        float flop = (float) Math.sin(since * 0.7 + phase);
+        float jerk = (float) Math.sin(since * 1.3 + phase * 0.5);
+        float dangle = (float) Math.sin(since * 0.6 + phase);
+        humanoid.rightArm.xRot = Mth.lerp(on, humanoid.rightArm.xRot, -2.0F + 0.4F * flop);
+        humanoid.rightArm.yRot = Mth.lerp(on, humanoid.rightArm.yRot, 0.0F);
+        humanoid.rightArm.zRot = Mth.lerp(on, humanoid.rightArm.zRot, 0.35F + 0.15F * jerk);
+        humanoid.leftArm.xRot = Mth.lerp(on, humanoid.leftArm.xRot, -2.0F - 0.4F * jerk);
+        humanoid.leftArm.yRot = Mth.lerp(on, humanoid.leftArm.yRot, 0.0F);
+        humanoid.leftArm.zRot = Mth.lerp(on, humanoid.leftArm.zRot, -0.35F - 0.15F * flop);
+        humanoid.rightLeg.xRot = Mth.lerp(on, humanoid.rightLeg.xRot, 0.35F * dangle);
+        humanoid.rightLeg.zRot = Mth.lerp(on, humanoid.rightLeg.zRot, 0.1F);
+        humanoid.leftLeg.xRot = Mth.lerp(on, humanoid.leftLeg.xRot, -0.35F * dangle);
+        humanoid.leftLeg.zRot = Mth.lerp(on, humanoid.leftLeg.zRot, -0.1F);
+        humanoid.head.xRot = Mth.lerp(on, humanoid.head.xRot, 0.45F + 0.1F * flop);
+        humanoid.head.yRot += on * 0.25F * jerk;
+    }
+
+    private static void ears(HumanoidModel<?> humanoid, double since) {
         float on = (float) Ease.smooth(since / EARS_IN);
         float shake = (float) Math.sin(since * 2.3);
         humanoid.rightArm.xRot = Mth.lerp(on, humanoid.rightArm.xRot, (float) EARS_UP + 0.08F * shake);
@@ -141,11 +267,6 @@ public final class HandVictims {
         humanoid.leftArm.zRot = Mth.lerp(on, humanoid.leftArm.zRot, (float) -EARS_IN_TURN);
         humanoid.head.yRot += on * 0.35F * (float) Math.sin(since * 1.7);
         humanoid.head.xRot = Mth.lerp(on, humanoid.head.xRot, 0.35F);
-        humanoid.hat.copyFrom(humanoid.head);
-        if (humanoid instanceof PlayerModel<?> player) {
-            player.rightSleeve.copyFrom(player.rightArm);
-            player.leftSleeve.copyFrom(player.leftArm);
-        }
     }
 
     @SubscribeEvent

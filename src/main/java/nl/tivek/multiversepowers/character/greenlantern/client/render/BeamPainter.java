@@ -70,11 +70,13 @@ public final class BeamPainter {
         private final boolean arrived;
         // Looking down your own beam every ring round it circles your view, so they stay faint there.
         private final double rings;
+        private final boolean own;
 
         Pass(LanternPainter painter, Vec3 from, Vec3 target, double full, double strength, double age, int stage,
                 double stageAge, boolean own) {
             this.painter = painter;
             this.rings = own ? 0.4 : 1.0;
+            this.own = own;
             this.from = from;
             this.axis = target.subtract(from).scale(1.0 / full);
             this.across = Vectors.across(this.axis);
@@ -101,6 +103,11 @@ public final class BeamPainter {
 
         private double away(Vec3 at) {
             return this.painter.camera().distanceTo(at);
+        }
+
+        // Your own beam, looked along, is faint as glass close by, like your own shield, and grows solid further out.
+        private double see(double away) {
+            return this.own ? 0.25 + 0.75 * Ease.smooth((away - 3.0) / 9.0) : 1.0;
         }
 
         // Close to the camera the beam thins, so your own beam never fills your view.
@@ -153,26 +160,27 @@ public final class BeamPainter {
                 double near = now.near;
                 double surge = now.surge;
                 boolean seen = away >= NEAR;
+                double s = this.strength * this.see(away);
                 if (seen) {
                     this.painter.lightTaper(last, next, 0.09 * was.near * this.flicker * (1.0 + 0.5 * was.surge),
-                            0.09 * near * this.flicker * (1.0 + 0.5 * surge), HOT, this.strength, this.strength);
+                            0.09 * near * this.flicker * (1.0 + 0.5 * surge), HOT, s, s);
                     this.painter.lightTaper(last, next, 0.24 * was.near * this.flicker, 0.24 * near * this.flicker,
-                            BRIGHT, (0.6 + 0.3 * was.surge) * this.strength, (0.6 + 0.3 * surge) * this.strength);
+                            BRIGHT, (0.6 + 0.3 * was.surge) * s, (0.6 + 0.3 * surge) * s);
                     this.painter.glowTaper(last, next, halo * was.near * was.breath, halo * near * now.breath, GREEN,
-                            (0.45 + 0.25 * was.surge) * this.strength, (0.45 + 0.25 * surge) * this.strength);
+                            (0.45 + 0.25 * was.surge) * s, (0.45 + 0.25 * surge) * s);
                     double far = Mth.clamp((away - 2.0) / 2.0, 0.0, 1.0);
                     if (this.stage >= 1 && far > 0.0) {
-                        double alpha = (0.07 + 0.07 * this.rise) * far * this.strength;
+                        double alpha = (0.07 + 0.07 * this.rise) * far * s;
                         this.painter.glowTaper(last, next, 1.5 * was.near * was.breath, 1.5 * near * now.breath, GREEN,
                                 alpha, alpha);
                     }
                     if (this.stage >= 3 && far > 0.0) {
-                        double alpha = (0.05 + 0.05 * this.rise) * far * this.strength;
+                        double alpha = (0.05 + 0.05 * this.rise) * far * s;
                         this.painter.glowTaper(last, next, 2.1 * was.near * was.throb, 2.1 * near * now.throb, GREEN,
                                 alpha, alpha);
                     }
                     if (this.stage == LightBeam.LAST && far > 0.0) {
-                        double alpha = 0.05 * far * this.strength;
+                        double alpha = 0.05 * far * s;
                         this.painter.glowTaper(last, next, 2.8 * was.near * was.throb, 2.8 * near * now.throb, BRIGHT,
                                 alpha, alpha);
                     }
@@ -183,7 +191,8 @@ public final class BeamPainter {
                     Vec3 wild = next.add(this.across[0].scale((Noise.of(crackle, i, 41) - 0.5) * 2.0 * swing))
                             .add(this.across[1].scale((Noise.of(crackle, i, 42) - 0.5) * 2.0 * swing));
                     if (i > 1 && seen) {
-                        this.painter.lightLine(jag, wild, 0.03 * near, HOT, Colors.alpha(this.fury * this.strength));
+                        this.painter.lightLine(jag, wild, 0.03 * near, HOT, Colors.alpha(this.fury * this.strength
+                                * this.see(away)));
                     }
                     jag = wild;
                 }
@@ -194,7 +203,7 @@ public final class BeamPainter {
                     Vec3 strand = next.add(this.round(turn).scale(radius));
                     if (i > 1 && seen) {
                         this.painter.lightLine(twists[k], strand, 0.035 * near, BRIGHT,
-                                Colors.alpha((0.5 + 0.2 * this.rise) * this.strength));
+                                Colors.alpha((0.5 + 0.2 * this.rise) * this.strength * this.see(away)));
                     }
                     twists[k] = strand;
                 }
@@ -218,7 +227,8 @@ public final class BeamPainter {
                 double near = this.near(away) * this.wobble(d);
                 double swell = 0.5 + 0.5 * Math.sin(d * 0.9 - this.time * 0.3);
                 this.painter.circle(at, this.across[0], this.across[1], (0.26 + 0.08 * swell) * near, 0.03 * near,
-                        0.16 * near, Colors.alpha(0.75 * this.strength), Colors.alpha(0.35 * this.strength));
+                        0.16 * near, Colors.alpha(0.75 * this.strength * this.see(away)),
+                        Colors.alpha(0.35 * this.strength * this.see(away)));
             }
         }
 
@@ -250,7 +260,8 @@ public final class BeamPainter {
             }
             double near = Mth.clamp(away / 1.2, 0.22, 1.0);
             // A ring you look through from close by stays faint too, so it never walls off the view.
-            double alpha = shown * this.rings * Mth.clamp((away - 1.0) / (radius * near + 1.5), 0.25, 1.0);
+            double alpha = shown * this.rings * this.see(away)
+                    * Mth.clamp((away - 1.0) / (radius * near + 1.5), 0.25, 1.0);
             Vec3 tipped = this.axis.scale(Math.cos(tilt)).add(this.round(spin * 0.5).scale(Math.sin(tilt)));
             Vec3[] plane = Vectors.across(tipped.normalize());
             double width = 0.05 * this.thick * near;
@@ -285,8 +296,9 @@ public final class BeamPainter {
                 Vec3 middle = base.add(side.scale(0.25 * arc)).add(this.axis.scale(0.15 * arc));
                 Vec3 tip = base.add(side.scale((0.45 + 0.3 * Noise.of(flick, k, 23)) * arc))
                         .subtract(this.axis.scale(0.1 * arc));
-                this.painter.edge(base, middle, 0.03 * this.thick, 0.9 * this.strength);
-                this.painter.edge(middle, tip, 0.025 * this.thick, 0.7 * this.strength);
+                double see = this.see(this.away(base));
+                this.painter.edge(base, middle, 0.03 * this.thick, 0.9 * this.strength * see);
+                this.painter.edge(middle, tip, 0.025 * this.thick, 0.7 * this.strength * see);
             }
         }
 
@@ -303,6 +315,7 @@ public final class BeamPainter {
                 if (this.away(last) < 2.0) {
                     continue;
                 }
+                double see = this.see(this.away(last));
                 int kinks = 8;
                 for (int j = 1; j <= kinks; j++) {
                     double u = (double) j / kinks;
@@ -310,8 +323,8 @@ public final class BeamPainter {
                     Vec3 jitter = Noise.direction(flick * 7 + k, 65 + j).scale(0.3 * this.thick * bow);
                     Vec3 next = this.from.add(this.axis.scale(start + span * u)).add(side.scale(bow * reach))
                             .add(j == kinks ? Vec3.ZERO : jitter);
-                    this.painter.edge(last, next, 0.035 * this.thick, this.strength);
-                    this.painter.glowLine(last, next, 0.2 * this.thick, GREEN, Colors.alpha(0.3 * this.strength));
+                    this.painter.edge(last, next, 0.035 * this.thick, this.strength * see);
+                    this.painter.glowLine(last, next, 0.2 * this.thick, GREEN, Colors.alpha(0.3 * this.strength * see));
                     last = next;
                 }
             }
@@ -327,9 +340,11 @@ public final class BeamPainter {
             if (d < this.length) {
                 Vec3 a = this.from.add(this.axis.scale(Math.max(0.0, d - 2.0)));
                 Vec3 b = this.from.add(this.axis.scale(Math.min(this.length, d + 2.0)));
-                double near = this.near(this.away(a.add(b).scale(0.5)));
-                this.painter.glowLine(a, b, 2.4 * near, BRIGHT, Colors.alpha(0.6 * left * this.strength));
-                this.painter.lightLine(a, b, 0.35 * near, HOT, Colors.alpha(left * this.strength));
+                double away = this.away(a.add(b).scale(0.5));
+                double near = this.near(away);
+                double see = this.see(away);
+                this.painter.glowLine(a, b, 2.4 * near, BRIGHT, Colors.alpha(0.6 * left * this.strength * see));
+                this.painter.lightLine(a, b, 0.35 * near, HOT, Colors.alpha(left * this.strength * see));
             }
             double muzzle = Mth.clamp(this.away(this.from) / 0.5, 0.6, 3.0);
             Vec3 at = this.from.add(this.axis.scale(0.1 * muzzle));

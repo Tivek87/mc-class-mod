@@ -1,6 +1,7 @@
 package nl.tivek.multiversepowers.config.client;
 
 import net.neoforged.neoforge.common.ModConfigSpec;
+import nl.tivek.multiversepowers.config.ModConfigs;
 
 public final class ClientSettings {
     public static final ModConfigSpec SPEC;
@@ -12,7 +13,7 @@ public final class ClientSettings {
 
     static {
         ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
-        builder.comment("Your own settings: only what you see and feel, in your own game, whatever world or server you"
+        builder.comment(ModConfigs.WIP, "Your own settings: only what you see and feel, in your own game, whatever world or server you"
                 + " play on.", "The same numbers can be changed in the game: Mods > this mod > Config.").push("view");
         CAMERA_SHAKE = builder.comment("How hard your view shakes and jolts from the powers: a landing slam, a crash or"
                 + " a blast nearby, a blow of the sword, the beam breaking loose, the ring arriving (1 = as the mod makes"

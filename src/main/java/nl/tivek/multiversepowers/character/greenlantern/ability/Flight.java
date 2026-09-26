@@ -84,6 +84,7 @@ public final class Flight implements Effect {
         FLYING.put(owner.getUUID(), flight);
         Effects.start(level, flight);
         owner.resetFallDistance();
+        PowerRing.say(owner, "flight");
         flight.sound(level, SoundEvents.BEACON_POWER_SELECT, 0.9F, 1.5F);
         flight.sound(level, SoundEvents.AMETHYST_BLOCK_RESONATE, 1.0F, 0.8F);
         PowerRing.sync(owner);

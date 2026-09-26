@@ -14,5 +14,29 @@
         "name": "welcomescreen:ring/arrival_speech"
       }
     ]
+  },
+  "ring.equip_weapon": {
+    "subtitle": "subtitles.welcomescreen.ring.equip_weapon",
+    "sounds": [
+      {
+        "name": "welcomescreen:ring/equip_weapon"
+      }
+    ]
+  },
+  "ring.flight": {
+    "subtitle": "subtitles.welcomescreen.ring.flight",
+    "sounds": [
+      {
+        "name": "welcomescreen:ring/flight"
+      }
+    ]
+  },
+  "ring.giant_hands": {
+    "subtitle": "subtitles.welcomescreen.ring.giant_hands",
+    "sounds": [
+      {
+        "name": "welcomescreen:ring/giant_hands"
+      }
+    ]
   }
 }

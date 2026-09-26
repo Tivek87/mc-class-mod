@@ -19,6 +19,6 @@ public abstract class LivingEntityRendererMixin {
                             + "FFFFF)V", shift = At.Shift.AFTER))
     private void welcomescreen$pose(LivingEntity entity, float yaw, float partialTick, PoseStack pose,
             MultiBufferSource buffers, int light, CallbackInfo info) {
-        HandVictims.ears(((LivingEntityRenderer<?, ?>) (Object) this).getModel(), entity, partialTick);
+        HandVictims.pose(((LivingEntityRenderer<?, ?>) (Object) this).getModel(), entity, partialTick);
     }
 }

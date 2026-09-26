@@ -7,6 +7,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
+import javax.annotation.Nullable;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
@@ -44,6 +45,9 @@ abstract class GiantHandMarvels extends GiantHandFeats {
 
     private final List<Puppet> puppets = new ArrayList<>();
     private final Set<LivingEntity> deafened = new LinkedHashSet<>();
+    // The evil eye's puppeteer, up beside it: the strings run from its fingers.
+    @Nullable
+    GiantHandMarvels partner;
 
     GiantHandMarvels(GiantHands storm, int variant, Vec3 base, LivingEntity target) {
         super(storm, variant, base, target);
@@ -57,6 +61,7 @@ abstract class GiantHandMarvels extends GiantHandFeats {
     void feat(ServerLevel level) {
         switch (this.move) {
             case HandPose.EYE -> this.eye(level);
+            case HandPose.PUPPETEER -> this.puppeteer(level);
             case HandPose.MEGAPHONE -> this.megaphone(level);
             default -> super.feat(level);
         }
@@ -78,16 +83,39 @@ abstract class GiantHandMarvels extends GiantHandFeats {
         return this.place().at(HandPose.EYE_POINT);
     }
 
+    private int strings() {
+        return this.partner != null ? this.partner.id() : this.id();
+    }
+
+    private void puppeteer(ServerLevel level) {
+        Vec3 palm = this.place().at(new Vec3(0.0, 2.0, 0.0));
+        if (this.t == HandPose.EYE_STRINGS) {
+            this.storm.sound(level, palm, SoundEvents.CROSSBOW_SHOOT, 1.6F, 0.6F);
+            this.storm.sound(level, palm, SoundEvents.BEACON_POWER_SELECT, 1.0F, 1.4F);
+        }
+        if (this.t > HandPose.EYE_STRINGS && this.t < HandPose.EYE_STONE && (this.t - HandPose.EYE_STRINGS) % 6 == 0) {
+            this.storm.sound(level, palm, SoundEvents.LEASH_KNOT_PLACE, 0.9F, 0.8F + 0.1F * (this.t % 4));
+        }
+    }
+
     private void eye(ServerLevel level) {
         if (this.t == HandPose.EYE_OPENS) {
             Vec3 eye = this.eyeAt();
             this.storm.sound(level, eye, SoundEvents.ENDER_EYE_DEATH, 2.0F, 0.5F);
             this.storm.sound(level, eye, SoundEvents.BEACON_ACTIVATE, 1.4F, 0.6F);
+            this.storm.sound(level, eye, SoundEvents.WARDEN_SONIC_CHARGE, 1.6F, 0.8F);
+            ParticleFx.sphereOut(level, ParticleFx.dust(PowerRing.BRIGHT, 1.5F), eye, 30, 0.5);
+        }
+        if (this.t > HandPose.EYE_STRINGS && this.t < HandPose.EYE_STONE && (this.t - HandPose.EYE_STRINGS) % 10 == 0) {
+            this.storm.sound(level, this.eyeAt(), SoundEvents.WARDEN_HEARTBEAT, 2.0F, 0.8F);
         }
         if (this.t == HandPose.EYE_STRINGS) {
             this.string(level);
         }
         if (this.t == HandPose.EYE_CRAZY) {
+            for (Puppet puppet : this.puppets) {
+                HandVictimPayload.send(puppet.living(), this.id(), HandVictimPayload.GLARE);
+            }
             Vec3 eye = this.eyeAt();
             this.storm.sound(level, eye, SoundEvents.ELDER_GUARDIAN_CURSE, 1.2F, 1.4F);
             this.storm.sound(level, eye, SoundEvents.AMETHYST_BLOCK_RESONATE, 2.0F, 0.5F);
@@ -107,7 +135,7 @@ abstract class GiantHandMarvels extends GiantHandFeats {
         }
         if (this.t == HandPose.EYE_STONE) {
             for (Puppet puppet : this.puppets) {
-                HandVictimPayload.send(puppet.living(), this.id(), HandVictimPayload.STATUE);
+                HandVictimPayload.send(puppet.living(), this.strings(), HandVictimPayload.STATUE);
                 Vec3 at = puppet.living().getBoundingBox().getCenter();
                 ParticleFx.cloud(level, ParticleFx.dust(PowerRing.BRIGHT, 1.4F), at, 16, 0.4, 0.02);
                 this.storm.sound(level, at, SoundEvents.DEEPSLATE_PLACE, 1.6F, 0.6F);
@@ -140,11 +168,10 @@ abstract class GiantHandMarvels extends GiantHandFeats {
             }
             this.puppets.add(new Puppet(living, living.position(), this.room(level, living), HandPose.puppetStart(k),
                     k));
-            HandVictimPayload.send(living, this.id(), HandVictimPayload.PUPPET);
+            HandVictimPayload.send(living, this.strings(), HandVictimPayload.PUPPET);
             this.storm.sound(level, living.getEyePosition(), SoundEvents.LEASH_KNOT_PLACE, 1.6F, 0.7F);
             k++;
         }
-        this.storm.sound(level, this.eyeAt(), SoundEvents.CROSSBOW_SHOOT, 1.6F, 0.6F);
     }
 
     // How high a creature can be lifted before its head meets a ceiling.
@@ -174,7 +201,7 @@ abstract class GiantHandMarvels extends GiantHandFeats {
         for (Puppet puppet : this.puppets) {
             LivingEntity living = puppet.living();
             Vec3 at = living.getBoundingBox().getCenter();
-            HandVictimPayload.send(living, this.id(), HandVictimPayload.SHATTER);
+            HandVictimPayload.send(living, this.strings(), HandVictimPayload.SHATTER);
             this.hit(level, living, this.storm.ability.getDamage() * SHATTER_DAMAGE, Vec3.ZERO, 0.0, 0.0);
             ParticleFx.sphereOut(level, ParticleFx.dust(PowerRing.BRIGHT, 1.5F), at, 30, 0.45);
             ParticleFx.cloud(level, ParticleTypes.END_ROD, at, 8, 0.4, 0.15);
@@ -183,7 +210,10 @@ abstract class GiantHandMarvels extends GiantHandFeats {
             this.storm.sound(level, at, SoundEvents.DEEPSLATE_BREAK, 1.6F, 0.7F);
         }
         this.letGo();
-        this.storm.sound(level, this.eyeAt(), SoundEvents.PLAYER_ATTACK_CRIT, 1.6F, 0.5F);
+        Vec3 eye = this.eyeAt();
+        this.storm.sound(level, eye, SoundEvents.PLAYER_ATTACK_CRIT, 1.6F, 0.5F);
+        this.storm.sound(level, eye, SoundEvents.WARDEN_SONIC_BOOM, 1.4F, 1.2F);
+        ParticleFx.shockwave(level, ParticleFx.dust(PowerRing.PALE, 1.6F), eye, 36, 0.6);
     }
 
     private void megaphone(ServerLevel level) {
