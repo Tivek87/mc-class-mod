@@ -78,8 +78,18 @@ final class Particles {
                 }
             }
             case SpellFxPayload.CLAP -> {
-                Vec3 feet = fx.said.to();
-                Vec3 ahead = ClapFx.facing(from, feet);
+                Vec3 feet = ClapFx.feet(fx.said);
+                Vec3 aim = fx.said.to();
+                Vec3 ahead = ClapFx.facing(from, aim);
+                Vec3 aimed = ClapFx.aimed(from, aim);
+                if (age >= ClapFx.BURSTS && age < ClapFx.BURSTS + 1.0) {
+                    for (int k = 0; k < 36; k++) {
+                        Vec3 way = new Vec3(random.nextGaussian(), random.nextGaussian(), random.nextGaussian())
+                                .normalize().scale(0.2 + random.nextDouble() * 0.5);
+                        level.addParticle(k % 2 == 0 ? ParticleTypes.ELECTRIC_SPARK : SWARM, aim.x, aim.y, aim.z,
+                                way.x, way.y, way.z);
+                    }
+                }
                 if (age < 1.0) {
                     ClapFx.felt(feet);
                     level.addParticle(ParticleTypes.FLASH, from.x, from.y, from.z, 0.0, 0.0, 0.0);
@@ -91,7 +101,7 @@ final class Particles {
                 }
                 if (age < 5.0) {
                     for (int k = 0; k < 40; k++) {
-                        Vec3 way = ClapFx.within(ahead, random.nextDouble())
+                        Vec3 way = ClapFx.within(aimed, random.nextDouble())
                                 .add(0.0, (random.nextDouble() - 0.35) * 0.6, 0.0).normalize()
                                 .scale(0.4 + random.nextDouble() * 0.8);
                         level.addParticle(k % 3 == 0 ? ParticleTypes.ELECTRIC_SPARK : SWARM, from.x, from.y, from.z,

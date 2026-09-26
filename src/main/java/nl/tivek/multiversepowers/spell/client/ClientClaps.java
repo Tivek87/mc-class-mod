@@ -86,16 +86,18 @@ public final class ClientClaps {
         }
         float up = raised(age);
         float turn = Mth.lerp(open(age), SHUT_TURN, OPEN_TURN);
-        model.rightArm.xRot = Mth.lerp(up, model.rightArm.xRot, ARM_FORWARD);
+        float pitch = model.head.xRot;
+        float forward = ARM_FORWARD + Mth.clamp(pitch, -1.2F, 1.0F);
+        model.rightArm.xRot = Mth.lerp(up, model.rightArm.xRot, forward);
         model.rightArm.yRot = Mth.lerp(up, model.rightArm.yRot, turn);
         model.rightArm.zRot = Mth.lerp(up, model.rightArm.zRot, 0.0F);
-        model.leftArm.xRot = Mth.lerp(up, model.leftArm.xRot, ARM_FORWARD);
+        model.leftArm.xRot = Mth.lerp(up, model.leftArm.xRot, forward);
         model.leftArm.yRot = Mth.lerp(up, model.leftArm.yRot, -turn);
         model.leftArm.zRot = Mth.lerp(up, model.leftArm.zRot, 0.0F);
         model.rightSleeve.copyFrom(model.rightArm);
         model.leftSleeve.copyFrom(model.leftArm);
         float back = up * open(age);
-        model.head.xRot = Mth.lerp(back, model.head.xRot, HEAD_BACK);
+        model.head.xRot = Mth.lerp(back, pitch, Math.max(-1.4F, pitch + HEAD_BACK));
         model.hat.copyFrom(model.head);
     }
 

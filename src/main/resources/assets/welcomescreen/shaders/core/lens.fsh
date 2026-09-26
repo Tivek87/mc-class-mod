@@ -1,7 +1,7 @@
 #version 150
 
 // A bubble of bent light: what lies behind it is seen as through a ball of glass, swollen in the middle, squeezed and
-// smeared out towards the rim, with coloured fringes and a bright rim line.
+// smeared out towards the rim, with coloured fringes and a bright rim line. Rupture blurs and smears it further.
 
 uniform sampler2D SceneSampler;
 uniform sampler2D DepthSampler;
@@ -10,6 +10,7 @@ uniform mat4 InverseProjection;
 uniform vec3 Center;
 uniform float Radius;
 uniform float Strength;
+uniform float Rupture;
 uniform float Clock;
 uniform vec3 Tint;
 
@@ -51,16 +52,23 @@ void main() {
     // Ripples run out through the glass.
     float wave = sin(off * 20.0 - Clock * 0.6);
     bend *= 1.0 + 0.12 * wave * Strength;
-    float smear = 0.4 * Strength * off;
+    float torn = Rupture * Strength;
+    // The picture's own size of the bubble, in screen units.
+    vec2 size = vec2(Projection[0][0], Projection[1][1]) * 0.5 * apparent;
+    float smear = (0.4 + 0.3 * torn) * Strength * off;
+    float blur = 0.12 * torn;
     vec3 seen = vec3(0.0);
-    for (int i = 0; i < 8; i++) {
-        vec2 at = uv - bend * (1.0 + smear * float(i) / 7.0);
-        vec2 fringe = bend * 0.1 * off;
+    for (int i = 0; i < 12; i++) {
+        float k = float(i);
+        float turn = k * 2.39996 + Clock * 0.3;
+        vec2 disc = vec2(cos(turn), sin(turn)) * sqrt((k + 0.5) / 12.0) * size * blur;
+        vec2 at = uv - bend * (1.0 + smear * k / 11.0) + disc;
+        vec2 fringe = bend * (0.1 * off + 0.15 * torn);
         seen.r += texture(SceneSampler, at - fringe).r;
         seen.g += texture(SceneSampler, at).g;
         seen.b += texture(SceneSampler, at + fringe).b;
     }
-    seen /= 8.0;
+    seen /= 12.0;
     float grey = dot(seen, vec3(0.299, 0.587, 0.114));
     seen = mix(seen, grey * Tint * 1.1, 0.18 * Strength);
     seen *= mix(vec3(1.0), Tint, 0.2 * Strength);

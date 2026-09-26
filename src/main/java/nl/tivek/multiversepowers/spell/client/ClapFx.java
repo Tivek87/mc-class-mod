@@ -7,28 +7,28 @@ import nl.tivek.multiversepowers.engine.client.fx.ScreenFlash;
 import nl.tivek.multiversepowers.engine.client.render.ConstructPainter;
 import nl.tivek.multiversepowers.engine.client.render.Lens;
 import nl.tivek.multiversepowers.engine.client.render.Material;
-import nl.tivek.multiversepowers.engine.math.Colors;
 import nl.tivek.multiversepowers.engine.math.Ease;
 import nl.tivek.multiversepowers.engine.math.Noise;
 import nl.tivek.multiversepowers.engine.math.Vectors;
+import nl.tivek.multiversepowers.spell.ClapPayload;
+import nl.tivek.multiversepowers.spell.SpellFxPayload;
 
-// The thunder clap, blasting forward out of the hands: a blinding light between them, a bubble of bent light in which
-// time all but stands still rolling ahead with the shock, a spray of thunder sparks crawling inside it, rings rippling
-// out over the ground and a wall of mist rolling out.
+// The thunder clap, blasting out of the hands the way the caster aims: a blinding light between them, a spray of thunder
+// sparks, a small bubble of bent, slightly blurred light in which time all but stands still swelling out of the hands
+// with sparks frozen in it, then a cloud of thunder sparks bursting out where he aimed, and a wall of mist rolling out.
 final class ClapFx {
-    static final int LIFE = 46;
+    static final int LIFE = 50;
     // The same reach and cone as the hits in ThunderClapSpell.
     static final double REACH = 9.0;
     static final double HALF_ANGLE = 0.8;
+    static final int BURSTS = ClapPayload.BUBBLE_BURSTS;
     private static final int FLASH = 8;
-    private static final int BUBBLE = 18;
-    private static final double BUBBLE_SIZE = 5.0;
-    // How fast time runs for the sparks while the bubble holds them.
-    private static final double SLOWED = 0.35;
-    private static final int STREAKS = 190;
+    private static final double BUBBLE_SIZE = 1.5;
+    private static final double BLUR = 0.35;
+    private static final int STREAKS = 110;
+    private static final int FROZEN = 45;
+    private static final int SPRAY = 300;
     private static final int PUFFS = 30;
-    private static final int RIPPLES = 3;
-    private static final double RIPPLE_TICKS = 22.0;
     private static final double SHAKE_REACH = 32.0;
     private static final double FLASH_REACH = 20.0;
 
@@ -42,15 +42,27 @@ final class ClapFx {
     private ClapFx() {
     }
 
-    // Which way the blast goes: from the caster's feet towards his hands.
-    static Vec3 facing(Vec3 hands, Vec3 feet) {
-        Vec3 flat = new Vec3(hands.x - feet.x, 0.0, hands.z - feet.z);
+    // The caster's feet: the hands' height over them rides along in hundredths of a block.
+    static Vec3 feet(SpellFxPayload said) {
+        return said.from().subtract(0.0, said.ticks() / 100.0, 0.0);
+    }
+
+    // Which way the blast goes over the ground: from the hands towards where it was aimed.
+    static Vec3 facing(Vec3 hands, Vec3 aim) {
+        Vec3 flat = new Vec3(aim.x - hands.x, 0.0, aim.z - hands.z);
         return flat.lengthSqr() < 1.0E-6 ? new Vec3(0.0, 0.0, 1.0) : flat.normalize();
     }
 
-    // A direction inside the blast's cone, picked by a noise value from 0 to 1.
-    static Vec3 within(Vec3 facing, double pick) {
-        return Vectors.spin(facing, Vectors.UP, (pick * 2.0 - 1.0) * HALF_ANGLE);
+    static Vec3 aimed(Vec3 hands, Vec3 aim) {
+        Vec3 way = aim.subtract(hands);
+        return way.lengthSqr() < 1.0E-6 ? new Vec3(0.0, 0.0, 1.0) : way.normalize();
+    }
+
+    // A direction inside the blast's cone, picked by a noise value from 0 to 1: turned about the aim's own up.
+    static Vec3 within(Vec3 ahead, double pick) {
+        Vec3 side = ahead.cross(Vectors.UP);
+        Vec3 up = side.lengthSqr() < 1.0E-6 ? new Vec3(1.0, 0.0, 0.0) : side.normalize().cross(ahead);
+        return Vectors.spin(ahead, up, (pick * 2.0 - 1.0) * HALF_ANGLE);
     }
 
     // The first tick of a clap: every player feels it by how close they are.
@@ -67,19 +79,17 @@ final class ClapFx {
         }
     }
 
-    static void draw(ConstructPainter painter, Vec3 hands, Vec3 feet, double age, int seed) {
-        Vec3 ahead = facing(hands, feet);
+    static void draw(ConstructPainter painter, SpellFxPayload said, double age, int seed) {
+        Vec3 hands = said.from();
+        Vec3 aim = said.to();
+        Vec3 feet = feet(said);
+        Vec3 ahead = aimed(hands, aim);
         painter.material(LIGHT);
         light(painter, hands, age, seed);
-        bubble(painter, hands, ahead, age);
+        bubble(painter, hands, ahead, age, seed);
         streaks(painter, hands, ahead, age, seed);
-        ripples(painter, feet, ahead, age, seed);
-        dust(painter, feet, ahead, age, seed);
-    }
-
-    // Time for what the bubble holds: it crawls while the bubble stands and runs on at full pace once it is gone.
-    private static double slowed(double age) {
-        return age < BUBBLE ? age * SLOWED : BUBBLE * SLOWED + (age - BUBBLE);
+        burst(painter, aim, age - BURSTS, seed);
+        dust(painter, feet, facing(hands, aim), age, seed);
     }
 
     private static void light(ConstructPainter painter, Vec3 hands, double age, int seed) {
@@ -92,31 +102,83 @@ final class ClapFx {
         painter.glowDisc(hands, 1.4 * on, WHITE, on, 0.1, seed + 1);
     }
 
-    // The bubble swells out of the hands and rolls ahead with the shock, the world behind it bent as through a lens,
-    // until it is spent. Without the lens shader it is drawn as a clear shell with a bright rim.
-    private static void bubble(ConstructPainter painter, Vec3 hands, Vec3 ahead, double age) {
-        if (age >= BUBBLE) {
+    // The bubble swells out of the hands the way they aim, the world behind it bent and a little blurred as through a
+    // magnifying glass, sparks frozen inside, until it is spent. Without the lens shader it is drawn as a clear shell
+    // with a bright rim.
+    private static void bubble(ConstructPainter painter, Vec3 hands, Vec3 ahead, double age, int seed) {
+        if (age >= BURSTS) {
             return;
         }
-        double u = age / BUBBLE;
-        double radius = 0.5 + (BUBBLE_SIZE - 0.5) * (1.0 - (1.0 - u) * (1.0 - u) * (1.0 - u));
-        double on = Ease.smooth(age / 1.5) * (1.0 - Ease.smooth((u - 0.45) / 0.55));
+        double u = age / BURSTS;
+        double radius = 0.3 + (BUBBLE_SIZE - 0.3) * (1.0 - (1.0 - u) * (1.0 - u) * (1.0 - u));
+        double on = Ease.smooth(age / 1.5) * (1.0 - Ease.smooth((u - 0.6) / 0.4));
         Vec3 center = hands.add(ahead.scale(radius * 0.8));
         if (Lens.available()) {
-            Lens.bubble(center, radius, on, PALE);
+            Lens.bubble(center, radius, on, PALE, BLUR);
             painter.shell(center, radius * 1.01, PALE, 0.15 * on);
         } else {
             painter.shell(center, radius, PALE, 0.9 * on);
             painter.shell(center, radius * 0.94, ICE, 0.35 * on);
         }
+        frozen(painter, center, radius, age, on, seed);
     }
 
-    // Thunder sparks: short bright streaks sprayed forward out of the clap, fast at first, slowing and dropping; while
-    // the bubble holds them they hang almost still.
+    // Sparks caught in the bubble: hanging all but still, flickering, crawling a hair's breadth a tick.
+    private static void frozen(ConstructPainter painter, Vec3 center, double radius, double age, double on, int seed) {
+        for (int k = 0; k < FROZEN; k++) {
+            double born = 1.0 + 4.0 * Noise.of(seed, k, 61);
+            if (age < born) {
+                continue;
+            }
+            Vec3 at = center.add(Noise.direction(seed * 31 + k, 62).scale(radius * 0.85
+                    * Math.cbrt(Noise.of(seed, k, 63))));
+            Vec3 way = Noise.direction(seed * 31 + k, 64);
+            double crawl = 0.004 * (age - born);
+            Vec3 head = at.add(way.scale(0.07 + 0.12 * Noise.of(seed, k, 65) + crawl));
+            Vec3 tail = at.subtract(way.scale(crawl));
+            double flicker = 0.55 + 0.45 * Math.sin(age * (1.5 + 2.0 * Noise.of(seed, k, 66)) + k);
+            double alpha = on * flicker * Ease.smooth((age - born) / 1.5);
+            painter.glowTaper(tail, head, 0.04, 0.08, k % 3 == 0 ? BLUE : ICE, 0.2 * alpha, 0.5 * alpha);
+            painter.lightTaper(tail, head, 0.01, 0.025, WHITE, 0.3 * alpha, 0.95 * alpha);
+        }
+    }
+
+    // The burst where the clap was aimed: a flash and a cloud of thunder sparks flung out every way, slowing fast and
+    // then hanging and drifting down as a glittering haze.
+    private static void burst(ConstructPainter painter, Vec3 at, double since, int seed) {
+        if (since < 0.0) {
+            return;
+        }
+        if (since < 4.0) {
+            double on = 1.0 - since / 4.0;
+            painter.flare(at, 2.2 * on, on);
+            painter.glowDisc(at, 2.4 * on, ICE, 0.6 * on, 0.25, seed + 3);
+        }
+        for (int k = 0; k < SPRAY; k++) {
+            double t = since - 1.5 * Noise.of(seed, k, 71);
+            double life = 14.0 + 22.0 * Noise.of(seed, k, 72);
+            if (t < 0.0 || t > life) {
+                continue;
+            }
+            Vec3 way = Noise.direction(seed * 17 + k, 73);
+            double speed = 0.35 + 0.9 * Noise.of(seed, k, 74);
+            double slow = Math.exp(-0.3 * t);
+            double gone = speed * (1.0 - slow) / 0.3;
+            Vec3 head = at.add(way.scale(BUBBLE_SIZE * 0.5 + gone)).add(0.0, -0.004 * t * t, 0.0);
+            Vec3 tail = head.subtract(way.scale(Math.min(gone, 0.08 + 0.5 * speed * slow)));
+            double fade = 1.0 - t / life;
+            double twinkle = t > 8.0 ? 0.6 + 0.4 * Math.sin(t * (2.0 + 3.0 * Noise.of(seed, k, 75)) + k) : 1.0;
+            double alpha = fade * twinkle;
+            boolean blue = k % 3 == 0;
+            painter.glowTaper(tail, head, 0.06, 0.14, blue ? BLUE : ICE, 0.18 * alpha, 0.6 * alpha);
+            painter.lightTaper(tail, head, 0.014, 0.036, blue ? PALE : WHITE, 0.25 * alpha, alpha);
+        }
+    }
+
+    // Thunder sparks: short bright streaks sprayed forward out of the clap, fast at first, slowing and dropping.
     private static void streaks(ConstructPainter painter, Vec3 hands, Vec3 ahead, double age, int seed) {
-        double held = slowed(age);
         for (int k = 0; k < STREAKS; k++) {
-            double t = held - 3.0 * SLOWED * Noise.of(seed, k, 41);
+            double t = age - Noise.of(seed, k, 41);
             double life = 8.0 + 10.0 * Noise.of(seed, k, 42);
             if (t < 0.0 || t > life) {
                 continue;
@@ -154,47 +216,6 @@ final class ClapFx {
             double burst = 1.0 - age / 6.0;
             painter.lightDisc(feet.add(ahead.scale(1.5 + age)).add(0.0, 0.8, 0.0), 1.5 + age * 0.9, WHITE,
                     0.45 * burst, 0.3, seed + 99);
-        }
-    }
-
-    // Rings of light ripple out over the ground ahead, one after another, with a swirl turning in the first.
-    private static void ripples(ConstructPainter painter, Vec3 feet, Vec3 ahead, double age, int seed) {
-        Vec3 side = ahead.cross(Vectors.UP).normalize();
-        Vec3 ground = feet.add(0.0, 0.06, 0.0);
-        for (int k = 0; k < RIPPLES; k++) {
-            double t = age - 2.5 * k;
-            if (t < 0.0 || t > RIPPLE_TICKS) {
-                continue;
-            }
-            double u = t / RIPPLE_TICKS;
-            double grow = 1.0 - (1.0 - u) * (1.0 - u);
-            double fade = (1.0 - u) * (1.0 - u);
-            Vec3 at = ground.add(ahead.scale(1.8 + 2.4 * k + 1.5 * grow));
-            double radius = 0.3 + (1.8 + 0.8 * k) * grow;
-            painter.circle(at, ahead, side, radius, 0.035, 0.3, Colors.alpha(0.9 * fade),
-                    Colors.alpha(0.45 * fade));
-            painter.circle(at, ahead, side, radius * 0.62, 0.02, 0.18, Colors.alpha(0.5 * fade),
-                    Colors.alpha(0.25 * fade));
-            if (k == 0) {
-                swirl(painter, at, ahead, side, radius * 0.95, t, fade, seed);
-            }
-        }
-    }
-
-    private static void swirl(ConstructPainter painter, Vec3 at, Vec3 ahead, Vec3 side, double radius, double t,
-            double fade, int seed) {
-        double turn = 0.12 * t + Noise.of(seed, 0, 51) * Math.PI * 2.0;
-        for (int arm = 0; arm < 2; arm++) {
-            Vec3 last = at;
-            for (int i = 1; i <= 16; i++) {
-                double s = i / 16.0;
-                double angle = turn + arm * Math.PI + s * Math.PI * 2.2;
-                Vec3 next = at.add(ahead.scale(Math.cos(angle) * radius * s))
-                        .add(side.scale(Math.sin(angle) * radius * s));
-                painter.lightLine(last, next, 0.03, PALE, Colors.alpha(0.8 * fade * s));
-                painter.glowLine(last, next, 0.2, ICE, Colors.alpha(0.35 * fade * s));
-                last = next;
-            }
         }
     }
 }

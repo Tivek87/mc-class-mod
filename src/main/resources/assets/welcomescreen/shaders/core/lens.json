@@ -11,6 +11,7 @@
         { "name": "Center", "type": "float", "count": 3, "values": [ 0.0, 0.0, -4.0 ] },
         { "name": "Radius", "type": "float", "count": 1, "values": [ 1.0 ] },
         { "name": "Strength", "type": "float", "count": 1, "values": [ 1.0 ] },
+        { "name": "Rupture", "type": "float", "count": 1, "values": [ 0.0 ] },
         { "name": "Clock", "type": "float", "count": 1, "values": [ 0.0 ] },
         { "name": "Tint", "type": "float", "count": 3, "values": [ 0.75, 0.9, 1.0 ] }
     ]

@@ -39,7 +39,7 @@ public final class Lens {
     @Nullable
     private static RenderTarget copy;
 
-    private record Bubble(Vec3 center, double radius, float strength, int tint) {
+    private record Bubble(Vec3 center, double radius, float strength, int tint, float rupture) {
     }
 
     private Lens() {
@@ -49,9 +49,11 @@ public final class Lens {
         return shader != null;
     }
 
-    public static void bubble(Vec3 center, double radius, double strength, int tint) {
+    // Rupture from 0 to 1: how far what is seen through it is blurred and smeared.
+    public static void bubble(Vec3 center, double radius, double strength, int tint, double rupture) {
         if (shader != null && radius > 0.01 && strength > 0.001 && BUBBLES.size() < MOST) {
-            BUBBLES.add(new Bubble(center, radius, (float) Math.min(1.0, strength), tint));
+            BUBBLES.add(new Bubble(center, radius, (float) Math.min(1.0, strength), tint,
+                    (float) Math.max(0.0, Math.min(1.0, rupture))));
         }
     }
 
@@ -113,6 +115,7 @@ public final class Lens {
             lens.safeGetUniform("Center").set(center.x, center.y, center.z);
             lens.safeGetUniform("Radius").set((float) bubble.radius);
             lens.safeGetUniform("Strength").set(bubble.strength);
+            lens.safeGetUniform("Rupture").set(bubble.rupture);
             lens.safeGetUniform("Tint").set(((bubble.tint >> 16) & 0xFF) / 255.0F, ((bubble.tint >> 8) & 0xFF) / 255.0F,
                     (bubble.tint & 0xFF) / 255.0F);
             BufferBuilder quad = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION);

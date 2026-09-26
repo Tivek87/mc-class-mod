@@ -8,15 +8,24 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.util.Mth;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.projectile.ProjectileUtil;
+import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.EntityHitResult;
+import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.engine.effect.Effects;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
+import nl.tivek.multiversepowers.engine.math.Vectors;
+import nl.tivek.multiversepowers.engine.world.LoadedWorld;
 
 final class ThunderClapSpell {
     private static final int MEET = ClapPayload.HANDS_MEET;
-    // ClapFx draws the blast in the same cone and reach.
+    private static final int BURSTS = ClapPayload.BUBBLE_BURSTS;
+    // ClapFx draws the blast in the same cone, reach and pace.
     private static final double RADIUS = 9.0;
     private static final double HALF_ANGLE = 0.8;
     private static final double CONE_BACK = 1.0;
@@ -24,6 +33,7 @@ final class ThunderClapSpell {
     private static final float DAMAGE = 5.0F;
     private static final double STRENGTH = 1.6;
     private static final double LIFT = 0.45;
+    private static final double OFF_WALL = 0.3;
 
     private static final int GLOW = 0x00D2FF;
 
@@ -38,13 +48,17 @@ final class ThunderClapSpell {
         Set<UUID> hit = new HashSet<>();
         hit.add(casterId);
         Vec3[] feet = { player.position() };
-        Vec3[] ahead = { flatLook(player) };
+        Vec3[] eye = { player.getEyePosition() };
+        Vec3[] ahead = { player.getLookAngle() };
+        Vec3[] aim = { aimed(level, player) };
         Effects.start(level, (lvl, age) -> {
             ServerPlayer caster = lvl.getServer().getPlayerList().getPlayer(casterId);
             boolean here = caster != null && caster.level() == lvl;
             if (here && age <= MEET) {
                 feet[0] = caster.position();
-                ahead[0] = flatLook(caster);
+                eye[0] = caster.getEyePosition();
+                ahead[0] = caster.getLookAngle();
+                aim[0] = aimed(lvl, caster);
             }
             if (age < MEET) {
                 if (here) {
@@ -54,33 +68,54 @@ final class ThunderClapSpell {
             }
             int t = age - MEET;
             if (t == 0) {
-                boom(lvl, feet[0].add(0.0, (here ? caster.getEyeHeight() : 1.6) - 0.3, 0.0).add(ahead[0].scale(0.6)),
-                        feet[0]);
+                boom(lvl, hands(eye[0], ahead[0]), aim[0], feet[0]);
             }
             double front = (t + 1) * WAVE_SPEED;
-            if (caster != null) {
-                push(lvl, caster, feet[0], ahead[0], Math.min(front, RADIUS), hit);
+            if (caster != null && front < RADIUS + WAVE_SPEED) {
+                push(lvl, caster, eye[0], ahead[0], Math.min(front, RADIUS), hit);
             }
-            return front < RADIUS + WAVE_SPEED;
+            if (t == BURSTS) {
+                burst(lvl, aim[0]);
+            }
+            return t < BURSTS;
         });
         return true;
     }
 
-    private static Vec3 flatLook(ServerPlayer player) {
-        Vec3 look = player.getLookAngle();
-        Vec3 flat = new Vec3(look.x, 0, look.z);
-        return flat.lengthSqr() < 1.0E-4 ? new Vec3(0, 0, 1) : flat.normalize();
+    // Where the hands meet: a little ahead of the eyes, the way he looks.
+    private static Vec3 hands(Vec3 eye, Vec3 look) {
+        return eye.add(look.scale(0.6)).add(0.0, -0.3, 0.0);
     }
 
-    private static Vec3 clapPoint(ServerPlayer player) {
-        return player.getEyePosition().add(flatLook(player).scale(0.6)).add(0, -0.3, 0);
+    // What the crosshair points at within reach: the middle of a creature, else a block, else the end of the reach.
+    private static Vec3 aimed(ServerLevel level, ServerPlayer player) {
+        Vec3 eye = player.getEyePosition();
+        Vec3 look = player.getLookAngle();
+        Vec3 end = eye.add(look.scale(RADIUS));
+        BlockHitResult block = LoadedWorld.clip(level, new ClipContext(eye, end, ClipContext.Block.COLLIDER,
+                ClipContext.Fluid.NONE, player));
+        Vec3 stop = block.getType() == HitResult.Type.MISS ? end : block.getLocation();
+        EntityHitResult entity = ProjectileUtil.getEntityHitResult(player, eye, stop,
+                new AABB(eye, stop).inflate(1.0),
+                target -> target instanceof LivingEntity && target.isPickable() && !target.isSpectator(),
+                eye.distanceToSqr(stop));
+        if (entity != null) {
+            return entity.getEntity().getBoundingBox().getCenter();
+        }
+        return block.getType() == HitResult.Type.MISS ? stop
+                : stop.subtract(look.scale(Math.min(OFF_WALL, eye.distanceTo(stop) * 0.5)));
+    }
+
+    private static Vec3 side(Vec3 look) {
+        Vec3 right = look.cross(Vectors.UP);
+        return right.lengthSqr() < 1.0E-6 ? new Vec3(1.0, 0.0, 0.0) : right.normalize();
     }
 
     // Static builds in the spread hands while the arms are drawn back, stronger the closer the clap comes.
     private static void gather(ServerLevel level, ServerPlayer player, int age) {
-        Vec3 forward = flatLook(player);
-        Vec3 right = new Vec3(-forward.z, 0, forward.x);
-        Vec3 clap = clapPoint(player);
+        Vec3 forward = player.getLookAngle();
+        Vec3 right = side(forward);
+        Vec3 clap = hands(player.getEyePosition(), forward);
         double snap = Math.max(0.0, (age - (MEET - 2)) / 2.0);
         double spread = Math.min(1.0, age / 5.0) * (1.0 - snap * snap);
         int sparks = 1 + age / 3;
@@ -95,8 +130,10 @@ final class ThunderClapSpell {
         }
     }
 
-    private static void boom(ServerLevel level, Vec3 clap, Vec3 feet) {
-        SpellFxPayload.send(level, SpellFxPayload.CLAP, clap, feet, -1, 0);
+    // The hands' height over the feet rides along in hundredths of a block, so ClapFx finds the ground.
+    private static void boom(ServerLevel level, Vec3 clap, Vec3 aim, Vec3 feet) {
+        int drop = (int) Math.round(Math.max(0.0, clap.y - feet.y) * 100.0);
+        SpellFxPayload.send(level, SpellFxPayload.CLAP, clap, aim, -1, drop);
         level.playSound(null, clap.x, clap.y, clap.z, SoundEvents.BREEZE_WIND_CHARGE_BURST.value(),
                 SoundSource.PLAYERS, 2.0F, 0.55F);
         level.playSound(null, clap.x, clap.y, clap.z, SoundEvents.LIGHTNING_BOLT_THUNDER, SoundSource.PLAYERS, 3.0F,
@@ -107,26 +144,43 @@ final class ThunderClapSpell {
                 1.2F);
     }
 
-    // Only what stands in the cone ahead is hit; the cone starts a step behind the caster so it covers his sides.
-    private static void push(ServerLevel level, ServerPlayer caster, Vec3 feet, Vec3 ahead, double front,
+    // The bubble of stopped time tears open where it was aimed and lets its sparks fly.
+    private static void burst(ServerLevel level, Vec3 at) {
+        level.playSound(null, at.x, at.y, at.z, SoundEvents.GLASS_BREAK, SoundSource.PLAYERS, 1.4F, 0.6F);
+        level.playSound(null, at.x, at.y, at.z, SoundEvents.LIGHTNING_BOLT_IMPACT, SoundSource.PLAYERS, 1.6F, 1.5F);
+        level.playSound(null, at.x, at.y, at.z, SoundEvents.FIREWORK_ROCKET_TWINKLE, SoundSource.PLAYERS, 1.6F, 1.2F);
+    }
+
+    // Only what stands in the cone the caster aims is hit; the cone starts a step behind him so it covers his sides.
+    private static void push(ServerLevel level, ServerPlayer caster, Vec3 eye, Vec3 ahead, double front,
             Set<UUID> hit) {
-        Vec3 origin = feet.subtract(ahead.scale(CONE_BACK));
+        Vec3 origin = eye.subtract(ahead.scale(CONE_BACK));
         double cone = Math.cos(HALF_ANGLE);
         for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class,
-                new AABB(feet, feet).inflate(front + 1.0, 3.0, front + 1.0),
+                new AABB(eye, eye).inflate(front + 2.0),
                 entity -> SpellTargets.hits(caster, entity) && !hit.contains(entity.getUUID()))) {
-            Vec3 away = new Vec3(target.getX() - origin.x, 0, target.getZ() - origin.z);
-            double distance = Math.sqrt((target.getX() - feet.x) * (target.getX() - feet.x)
-                    + (target.getZ() - feet.z) * (target.getZ() - feet.z));
+            Vec3 near = nearest(target.getBoundingBox(), origin, ahead);
+            Vec3 away = near.subtract(origin);
+            double distance = near.distanceTo(eye);
             if (distance > front || away.lengthSqr() < 1.0E-6 || away.normalize().dot(ahead) < cone) {
                 continue;
             }
             hit.add(target.getUUID());
-            double near = 1.0 - 0.5 * distance / RADIUS;
+            Vec3 way = away.normalize();
+            double close = 1.0 - 0.5 * distance / RADIUS;
             target.invulnerableTime = 0;
-            target.hurt(level.damageSources().playerAttack(caster), (float) (DAMAGE * near));
-            SpellTargets.push(target, away.normalize(), STRENGTH * (0.5 + 0.5 * near), LIFT);
+            target.hurt(level.damageSources().playerAttack(caster), (float) (DAMAGE * close));
+            SpellTargets.push(target, way, STRENGTH * (0.5 + 0.5 * close),
+                    LIFT + Math.max(0.0, way.y) * STRENGTH * 0.5);
             ParticleFx.cloud(level, ParticleTypes.ELECTRIC_SPARK, target.getBoundingBox().getCenter(), 14, 0.35, 0.2);
         }
+    }
+
+    // The point of a box closest to the cone's middle line.
+    private static Vec3 nearest(AABB box, Vec3 origin, Vec3 ahead) {
+        Vec3 middle = box.getCenter();
+        Vec3 onLine = origin.add(ahead.scale(Math.max(0.0, middle.subtract(origin).dot(ahead))));
+        return new Vec3(Mth.clamp(onLine.x, box.minX, box.maxX), Mth.clamp(onLine.y, box.minY, box.maxY),
+                Mth.clamp(onLine.z, box.minZ, box.maxZ));
     }
 }
