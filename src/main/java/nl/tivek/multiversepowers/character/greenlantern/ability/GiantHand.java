@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.Mth;
 import net.minecraft.world.effect.MobEffectInstance;
@@ -23,7 +22,7 @@ import static nl.tivek.multiversepowers.character.greenlantern.ability.GiantHand
 import static nl.tivek.multiversepowers.character.greenlantern.ability.GiantHands.GRAB_WIDE;
 import static nl.tivek.multiversepowers.character.greenlantern.ability.GiantHands.SCALE;
 
-final class GiantHand extends GiantHandPair {
+final class GiantHand extends GiantHandTricks {
     private static final double BURST_REACH = 4.5;
     private static final double BURST_DAMAGE = 2.5;
     private static final double BURST_OUT = 1.8;
@@ -34,6 +33,10 @@ final class GiantHand extends GiantHandPair {
         super(storm, variant, base, target);
     }
 
+    GiantHand(GiantHands storm, int variant, Vec3 base, LivingEntity target, Vec3 facing) {
+        super(storm, variant, base, target, facing);
+    }
+
     boolean tick(ServerLevel level, boolean fuels) {
         this.t++;
         if (!fuels) {
@@ -41,7 +44,8 @@ final class GiantHand extends GiantHandPair {
             return true;
         }
         this.home(level);
-        if (this.t == HandPose.ARRIVES && this.move != HandPose.AXE) {
+        boolean ground = this.move != HandPose.AXE && !HandPose.portal(this.variant);
+        if (this.t == HandPose.ARRIVES && ground) {
             this.burstOut(level);
         }
         switch (this.move) {
@@ -65,6 +69,8 @@ final class GiantHand extends GiantHandPair {
             }
             case HandPose.SLAM -> this.slam(level);
             case HandPose.AXE -> this.pair(level);
+            case HandPose.FLICK, HandPose.PINCH, HandPose.SNAP, HandPose.POKE, HandPose.HAMMER, HandPose.RAKE,
+                    HandPose.DRAG -> this.trick(level);
             default -> {
                 for (int hit : HandPose.POUND_HITS) {
                     if (this.t == hit) {
@@ -73,7 +79,7 @@ final class GiantHand extends GiantHandPair {
                 }
             }
         }
-        if (this.t == HandPose.sinks(this.variant) && this.move != HandPose.AXE) {
+        if (this.t == HandPose.sinks(this.variant) && ground) {
             this.storm.sound(level, this.base, SoundEvents.ROOTED_DIRT_BREAK, 1.2F, 0.6F);
             this.dust(level, 12);
         }
@@ -191,19 +197,6 @@ final class GiantHand extends GiantHandPair {
         this.hit(level, thrown, this.storm.ability.getDamage() * 0.6, away, 1.0, 0.9);
         this.storm.sound(level, grip, SoundEvents.PLAYER_ATTACK_SWEEP, 2.0F, 0.5F);
         this.storm.sound(level, grip, SoundEvents.ENDER_DRAGON_FLAP, 1.4F, 1.2F);
-    }
-
-    private void hold(Vec3 grip) {
-        LivingEntity living = this.held;
-        double y = grip.y - living.getBbHeight() * 0.5;
-        living.setDeltaMovement(Vec3.ZERO);
-        living.resetFallDistance();
-        if (living instanceof ServerPlayer player) {
-            player.teleportTo(grip.x, y, grip.z);
-            player.connection.aboveGroundTickCount = 0;
-        } else {
-            living.setPos(grip.x, y, grip.z);
-        }
     }
 
     private void slam(ServerLevel level) {

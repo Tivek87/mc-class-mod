@@ -248,7 +248,9 @@ public final class Flamethrower extends FlameHits {
             case EQUIP -> equipSounds(t - 1, t, this::soundForOthers);
             case ATTACK -> this.sprayed(level, t);
             case INFERNO -> {
-                if (!this.drain("infernoPowerPerSecond")) {
+                if (t >= FlameMove.overheatsAfter(wheel())) {
+                    this.overheat();
+                } else if (!this.drain("infernoPowerPerSecond")) {
                     this.stopPouring();
                 } else {
                     int every = Math.max(1, (int) wheel().value("infernoTicks"));
@@ -296,11 +298,35 @@ public final class Flamethrower extends FlameHits {
                     }
                 }
             }
+            case OVERHEAT -> this.venting(t);
             case VENT -> {
             }
         }
         this.send(level);
         return true;
+    }
+
+    private void overheat() {
+        this.pouring = false;
+        this.start(FlameMove.OVERHEAT);
+        this.sound(SoundEvents.LAVA_EXTINGUISH, 1.2F, 0.6F);
+        this.sound(SoundEvents.FIRE_EXTINGUISH, 1.0F, 0.5F);
+        this.sound(SoundEvents.IRON_TRAPDOOR_OPEN, 0.7F, 0.6F);
+        PowerRing.tell(this.owner, "flame_overheat");
+    }
+
+    private void venting(int t) {
+        if (t >= FlameMove.STEAM_FROM && t < FlameMove.STEAM_TO && t % 6 == FlameMove.STEAM_FROM % 6) {
+            this.sound(SoundEvents.LAVA_EXTINGUISH, 0.7F, 0.9F + 0.03F * t);
+        }
+        if (t == FlameMove.STEAM_TO) {
+            this.sound(SoundEvents.LEVER_CLICK, 0.7F, 1.2F);
+            this.sound(SoundEvents.IRON_TRAPDOOR_CLOSE, 0.4F, 1.6F);
+        }
+        if (t == FlameMove.RELIGHT) {
+            this.sound(SoundEvents.FLINTANDSTEEL_USE, 0.8F, 1.4F);
+            this.sound(SoundEvents.FIRECHARGE_USE, 0.4F, 1.7F);
+        }
     }
 
     @FunctionalInterface

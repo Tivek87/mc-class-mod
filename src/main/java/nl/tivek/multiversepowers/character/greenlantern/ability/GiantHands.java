@@ -47,7 +47,7 @@ public final class GiantHands implements Effect {
 
     private static final Map<UUID, GiantHands> ACTIVE = new HashMap<>();
     private static final Map<UUID, Integer> LAST_MOVES = new HashMap<>();
-    static final Map<Integer, GiantHand> GRABBED = new HashMap<>();
+    static final Map<Integer, GiantHandBase> GRABBED = new HashMap<>();
 
     static {
         HeldMobs.addHolder(entity -> GRABBED.containsKey(entity.getId()));
@@ -282,8 +282,9 @@ public final class GiantHands implements Effect {
     }
 
     private boolean may(int move, boolean grabbable, boolean pair, boolean fresh) {
-        return (!fresh || move != this.lastMove) && this.made[move] < this.most(move)
-                && (move != HandPose.GRAB || grabbable) && (move != HandPose.AXE || pair);
+        boolean holds = move == HandPose.GRAB || move == HandPose.PINCH || move == HandPose.DRAG;
+        return (!fresh || move != this.lastMove) && this.made[move] < this.most(move) && (!holds || grabbable)
+                && (move != HandPose.AXE || pair);
     }
 
     private boolean anyLeft() {
@@ -310,11 +311,14 @@ public final class GiantHands implements Effect {
         if (move == HandPose.AXE) {
             return this.pairFor(level, target, away);
         }
+        if (HandPose.portal(move)) {
+            return this.portalHand(level, target, move, away);
+        }
         RandomSource random = this.owner.getRandom();
         double side = random.nextBoolean() ? 1.0 : -1.0;
         for (int attempt = 0; attempt < 4; attempt++) {
             Vec3 reach = away;
-            int variant = move;
+            int variant = move == HandPose.SNAP && side < 0.0 ? move + HandPose.MOVES : move;
             if (move == HandPose.SMACK) {
                 reach = Vectors.spin(away, Vectors.UP, side * Math.PI * 0.5);
                 Vec3 right = reach.cross(Vectors.UP);
@@ -403,6 +407,67 @@ public final class GiantHands implements Effect {
             }
         }
         return null;
+    }
+
+    // A portal opens beside the creature for a flick (on the caster's side, so it flies away from him) or over it for
+    // a pinch; failing that, turned the other ways round it.
+    @Nullable
+    private GiantHand portalHand(ServerLevel level, LivingEntity target, int move, Vec3 away) {
+        // A drag reaches back from the far side, so the creature is dragged away from the caster, never at him.
+        boolean drag = move == HandPose.DRAG;
+        for (double turn : PAIR_TURNS) {
+            if (drag && turn == Math.PI) {
+                continue;
+            }
+            Vec3 facing = Vectors.spin(drag ? away.scale(-1.0) : away, Vectors.UP, turn);
+            Vec3 base = portalFor(target, move, facing);
+            if (portalRoom(level, target, move, base, facing)) {
+                GiantHand hand = new GiantHand(this, move, base, target, facing);
+                if (this.fits(hand)) {
+                    return hand;
+                }
+            }
+        }
+        return null;
+    }
+
+    static Vec3 portalFor(LivingEntity target, int variant, Vec3 facing) {
+        Vec3 spot = HandPose.move(variant) == HandPose.HAMMER ? target.position()
+                : target.getBoundingBox().getCenter();
+        return spot.subtract(HandPose.workOffset(variant, facing, SCALE));
+    }
+
+    // Open air all the way: the portal, the line the hand reaches along, and for a pinch the height it lifts to.
+    private static boolean portalRoom(ServerLevel level, LivingEntity target, int move, Vec3 base, Vec3 facing) {
+        Vec3 middle = target.getBoundingBox().getCenter();
+        if (!open(level, base) || !level.isLoaded(BlockPos.containing(base))) {
+            return false;
+        }
+        HandPose.Place place = HandPose.at(move, HandPose.firstAct(move), 0.0).place(base, facing, SCALE);
+        Vec3 wrist = place.wrist();
+        for (int k = 1; k <= 4; k++) {
+            if (!open(level, base.lerp(wrist, k / 4.0)) || !open(level, wrist.lerp(middle, k / 4.0))) {
+                return false;
+            }
+        }
+        if (move == HandPose.PINCH) {
+            for (double up = 1.0; up <= HandPose.PINCH_LIFT; up += 1.0) {
+                if (!open(level, middle.add(0.0, up, 0.0))) {
+                    return false;
+                }
+            }
+        }
+        if (move == HandPose.DRAG) {
+            // The drag needs a clear run away from the caster for the portal and the creature both.
+            Vec3 away = new Vec3(-facing.x, 0.0, -facing.z).normalize();
+            Vec3 feet = target.position().add(0.0, 0.6, 0.0);
+            for (double far = 2.0; far <= HandPose.DRAG_DISTANCE; far += 2.0) {
+                if (!open(level, base.add(away.scale(far))) || !open(level, feet.add(away.scale(far)))) {
+                    return false;
+                }
+            }
+        }
+        return open(level, place.at(new Vec3(0.0, 3.0, 0.0)));
     }
 
     private static boolean room(ServerLevel level, Vec3 base, int variant, Vec3 aim) {

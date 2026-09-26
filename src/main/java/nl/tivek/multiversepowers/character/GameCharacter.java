@@ -145,6 +145,9 @@ public enum GameCharacter {
                             "How far the stream of fire reaches, in blocks")
                     .setting("infernoPowerPerSecond", 1.0, 0.0, 100.0, Unit.POWER_PER_SECOND,
                             "Ring power the stream of fire costs a second")
+                    .setting("infernoOverheatSeconds", 15.0, 1.0, 120.0, Unit.SECONDS,
+                            "How long the stream of fire can pour without stopping before the gun overheats: it"
+                                    + " then vents its steam and cannot fire for 2 seconds")
                     .group("flame_wall", "Plasma Flamethrower: wall of fire (click right)")
                     .setting("wallDamage", 3.0, 0.0, 2000.0, Unit.HALF_HEARTS,
                             "Damage the wall of fire does to a creature in it, in half hearts, twice a second (half"
@@ -402,6 +405,22 @@ public enum GameCharacter {
             hand(hands, HandPose.FINGER, "Middle finger", 0.12, "a middle finger bursting out of the ground");
             hand(hands, HandPose.SLAM, "Slap flat", 0.22, "a hand slapping down flat on a creature");
             hand(hands, HandPose.POUND, "Pound", 0.19, "a fist pounding a creature again and again");
+            hand(hands, HandPose.FLICK, "Flick", 0.2,
+                    "a hand reaching out of a portal to flick a creature far away");
+            hand(hands, HandPose.PINCH, "Pinch and drop", 0.18,
+                    "a hand reaching down out of a portal to pinch a creature, lift it high and drop it (only"
+                            + " creatures small enough to hold)");
+            hand(hands, HandPose.SNAP, "Finger snap", 0.18,
+                    "a finger snap whose ring of light dazes every creature round it");
+            hand(hands, HandPose.POKE, "Poke", 0.18,
+                    "a hand reaching out of a portal to poke a creature twice and then poke it flying");
+            hand(hands, HandPose.HAMMER, "Hammer fist", 0.18,
+                    "a fist hammering down out of a portal overhead, pressing a creature into the ground");
+            hand(hands, HandPose.RAKE, "Claw rake", 0.18,
+                    "a hand raking its claws down through a creature and along the ground");
+            hand(hands, HandPose.DRAG, "Portal drag", 0.16,
+                    "a hand out of a portal that grabs a creature and races off, scraping it over the ground (only"
+                            + " creatures small enough to hold)");
             hand(hands, HandPose.AXE, "Pair with an axe", 0.24,
                     "a pair of hands chopping down with an axe (only where there is room for it)");
             hands.group("revolver", "Western Revolver Assembly (hold the button 2 seconds)")

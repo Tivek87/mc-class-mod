@@ -4,6 +4,7 @@ import javax.annotation.Nullable;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.phys.Vec3;
+import nl.tivek.multiversepowers.character.CharacterAbility;
 import nl.tivek.multiversepowers.engine.math.Ease;
 import nl.tivek.multiversepowers.engine.math.Vectors;
 
@@ -18,10 +19,12 @@ public enum FlameMove {
     VENT(Kind.VENT, 16, 6),
     WALL(Kind.WALL, 22, 16),
     VORTEX(Kind.VORTEX, 100000, 100000),
-    BURST(Kind.BURST, 14, 8);
+    BURST(Kind.BURST, 14, 8),
+    // The inferno ran too long: the stream dies with a hiss, the gun vents its steam and nothing fires till it is cool.
+    OVERHEAT(Kind.OVERHEAT, 40, 40);
 
     public enum Kind {
-        EQUIP, ATTACK, INFERNO, VENT, WALL, VORTEX, BURST
+        EQUIP, ATTACK, INFERNO, VENT, WALL, VORTEX, BURST, OVERHEAT
     }
 
     // How wide the flame reaches beside and above its aim (degrees).
@@ -60,6 +63,9 @@ public enum FlameMove {
     public static final int LAY_TO = 11;
     public static final int SPIN_UP = 8;
     public static final int BLAST = 2;
+    public static final int STEAM_FROM = 3;
+    public static final int STEAM_TO = 27;
+    public static final int RELIGHT = 33;
 
     public static final int FIRING = 32;
     public static final int SWIRLING = 64;
@@ -160,6 +166,11 @@ public enum FlameMove {
             }
         }
         return since;
+    }
+
+    // Ticks the inferno may pour before the gun overheats.
+    public static int overheatsAfter(CharacterAbility wheel) {
+        return Math.max(1, (int) Math.round(wheel.value("infernoOverheatSeconds") * 20.0));
     }
 
     @Nullable

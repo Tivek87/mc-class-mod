@@ -39,6 +39,17 @@ abstract class FlameKeys extends FlameCurves {
                 key(6, true, pose(0.43, -0.54, -0.85, -0.10, -0.14, -0.98, 0.05, 1.0, 0.1, -0.3, -0.6, -0.8, 1.0F,
                         0.0F, 30.0F, 0.06F, 0.15F)),
                 key(11, false, READY) });
+        // Overheated: a jolt up, then the gun tipped away to the right to vent while the left hand opens the valve.
+        MOVES.put(FlameMove.OVERHEAT, new Keyframes.Key[] {
+                key(2, true, pose(0.42, -0.42, -0.72, -0.04, 0.32, -0.95, 0.01, 0.95, 0.32, -0.3, -0.6, -0.8, 1.0F,
+                        0.0F, 22.0F, 0.2F, 0.35F)),
+                key(FlameMove.STEAM_FROM + 3, false, pose(0.48, -0.56, -0.8, 0.42, -0.3, -0.86, 0.13, 0.95, -0.27,
+                        -0.3, -0.6, -0.8, 1.0F, 1.0F, 40.0F, 0.1F, 0.25F)),
+                key(FlameMove.STEAM_TO - 3, false, pose(0.47, -0.57, -0.81, 0.4, -0.33, -0.85, 0.14, 0.94, -0.3,
+                        -0.3, -0.6, -0.8, 1.0F, 1.0F, 38.0F, 0.08F, 0.2F)),
+                key(FlameMove.STEAM_TO + 1, true, pose(0.44, -0.53, -0.83, 0.12, -0.12, -0.98, 0.01, 0.99, -0.12,
+                        -0.3, -0.6, -0.8, 1.0F, 0.0F, 30.0F, 0.06F, 0.15F)),
+                key(FlameMove.RELIGHT + 4, false, READY) });
         MOVES.put(FlameMove.WALL, new Keyframes.Key[] {
                 key(3, true, pose(0.46, -0.53, -0.81, 0.45, -0.62, -0.64, 0.0, 0.7, -0.7, -0.3, -0.6, -0.8, 1.0F, 0.0F,
                         45.0F, 0.35F, 0.3F)),

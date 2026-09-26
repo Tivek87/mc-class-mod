@@ -489,10 +489,11 @@ abstract class TrackedConstructs {
             ticks = AXE_SHAKE_TICKS;
             hard = AXE_SHAKE;
             near = 1.0 - from.distanceTo(strike) / AXE_SHAKE_RANGE;
-        } else if (move == HandPose.FINGER) {
-            since = clock - HandPose.FINGER_BURSTS;
+        } else if (move == HandPose.FINGER || move == HandPose.SNAP || move == HandPose.HAMMER) {
+            since = clock - (move == HandPose.FINGER ? HandPose.FINGER_BURSTS
+                    : move == HandPose.SNAP ? HandPose.SNAP_HITS : HandPose.HAMMER_HITS);
             ticks = FINGER_SHAKE_TICKS;
-            hard = FINGER_SHAKE;
+            hard = FINGER_SHAKE * (move == HandPose.SNAP ? 0.6 : 1.0);
             near = 1.0 - from.distanceTo(hand.center()) / FINGER_SHAKE_RANGE;
         } else {
             return 0.0F;

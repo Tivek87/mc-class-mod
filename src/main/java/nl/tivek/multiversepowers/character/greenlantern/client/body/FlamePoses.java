@@ -104,6 +104,12 @@ final class FlamePoses extends FlameKeys {
             case BURST -> new FlamePainter.Glow(1.0, heat, 1.0, 0.0, flash((t - FlameMove.BLAST) * 0.6),
                     Math.PI * 0.5);
             case VENT -> new FlamePainter.Glow(1.0, heat, Ease.smooth((t - 4.0) / 6.0), 0.0, 0.0, Math.PI * 0.5);
+            case OVERHEAT -> {
+                double valve = Ease.smooth((t - FlameMove.STEAM_FROM) / 3.0)
+                        - Ease.smooth((t - (FlameMove.STEAM_TO - 1.0)) / 3.0);
+                yield new FlamePainter.Glow(1.0, heat, Ease.smooth((t - FlameMove.RELIGHT) / 2.0),
+                        flash(t - FlameMove.RELIGHT + 1.0), 0.0, Math.PI * (0.5 + 1.5 * valve));
+            }
         };
     }
 
@@ -116,6 +122,7 @@ final class FlamePoses extends FlameKeys {
             case WALL -> t >= FlameMove.LAY_FROM && t < FlameMove.LAY_TO ? 0.6F : 0.0F;
             case BURST -> t < 4.0F ? 0.9F : 0.0F;
             case VENT -> 0.0F;
+            case OVERHEAT -> t < FlameMove.STEAM_FROM + 6 ? 1.0F : 0.0F;
         };
     }
 

@@ -5,7 +5,33 @@ the sections before 0.0.1-alpha came before versions were numbered.
 
 ## [0.2.9-alpha] - 2026-09-26
 
+### Added
+- **Plasma Flamethrower, overheat:** pouring the inferno for 15 seconds without letting go overheats the gun: the
+  stream dies with a hiss, the gun vents steam while your left hand opens its valve, and nothing fires for 2 seconds.
+- **Setting:** how long the inferno can pour before it overheats (15 seconds).
+- **Giant Hands, flick:** a hand reaches level out of a portal beside the creature and flicks it far away with its
+  middle finger.
+- **Giant Hands, pinch and drop:** a hand reaches down out of a portal over the creature, pinches it between thumb
+  and finger, lifts it 9 blocks and drops it.
+- **Giant Hands, finger snap:** a hand rises beside the creature and snaps its fingers: rings of light daze every
+  creature within 7 blocks (slowed and weakened for a few seconds).
+- **Giant Hands, poke:** a hand out of a portal pokes the creature twice and then pokes it flying.
+- **Giant Hands, hammer fist:** a fist hammers down out of a portal overhead, presses the creature into the ground and
+  throws everything round it away.
+- **Giant Hands, claw rake:** a hand rakes its claws down through the creature and leaves three glowing furrows.
+- **Giant Hands, portal drag:** a hand out of a portal grabs the creature and the portal races off, scraping it
+  24 blocks over the ground.
+- **Settings:** each of the seven new hands has its own chance, most per press, damage and knockback.
+- **Plasma Flamethrower:** the inferno stream grows wilder the closer it gets to overheating: wider, whiter at heart,
+  more sparks, sputtering at the end.
+
 ### Changed
+- **Thunder Clap:** goes where your crosshair points, up and down too, not only straight ahead; your arms follow
+  your aim.
+- **Thunder Clap:** the bubble of stopped time is 70% smaller and a little blurrier, still swelling out of your hands.
+- **Thunder Clap:** after the bubble a cloud of blue thunder sparks bursts out where you aimed.
+- **Jetpack:** sits higher on your back and is 15% bigger.
+- **Factions:** one hit on something neutral (yellow) turns it hostile (red) at once (was three hits).
 - **Energy Whip:** the lash is 10 blocks long (was 4.5): every lash, the whirlwind and the lasso reach further; the
   spinning shield keeps its size.
 - **Energy Whip:** the lash moves as one rope that keeps its length: it no longer jumps, stretches or shrinks.
@@ -21,6 +47,12 @@ the sections before 0.0.1-alpha came before versions were numbered.
 
 ### Removed
 - **Construct bar:** the bar above the hotbar with the icon and name of the construct you hold and what it does.
+- **Thunder Clap:** the rings of light on the ground.
+
+### Fixed
+- **Thunder Clap** could not be aimed up or down, only straight ahead (bug report).
+- **Neutral and passive creatures** can be hit by your powers; one hit makes them hostile, so every power goes for them
+  after that (bug report).
 
 ## [0.2.8-alpha] - 2026-09-26
 

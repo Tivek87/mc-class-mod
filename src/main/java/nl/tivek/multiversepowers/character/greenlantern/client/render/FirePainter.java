@@ -20,6 +20,7 @@ public final class FirePainter {
     static final int DEEP = 0x14A83A;
     static final int SMOKE = 0xB4C8BA;
     static final int ASH = 0x6E7F73;
+    static final int STEAM = 0xE8F4EE;
     private static final double WALL_STEP = 0.34;
     private static final int LOBES = 3;
     private static final int VORTEX_RIBBONS = 6;
@@ -132,6 +133,16 @@ public final class FirePainter {
             painter.lightDisc(at, radius, SMOKE, 0.12 * strength, 0.35, seed + boil);
             painter.lightDisc(at.add(Noise.direction(seed, 31).scale(radius * 0.35)), radius * 0.7, ASH,
                     0.1 * strength, 0.4, seed + 7 + boil);
+        }
+    }
+
+    // Steam blown off an overheated gun: denser and whiter than smoke.
+    public static void steam(LanternPainter painter, Vec3 at, double radius, double strength, int seed) {
+        if (strength > 0.01 && painter.visible(at, radius)) {
+            int boil = (int) (painter.time() * 0.6);
+            painter.lightDisc(at, radius, STEAM, 0.42 * strength, 0.3, seed + boil);
+            painter.lightDisc(at.add(Noise.direction(seed, 33).scale(radius * 0.3)), radius * 0.6, CORE,
+                    0.26 * strength, 0.35, seed + 9 + boil);
         }
     }
 

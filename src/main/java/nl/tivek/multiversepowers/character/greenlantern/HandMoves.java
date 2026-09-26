@@ -10,14 +10,22 @@ abstract class HandMoves extends HandMotion {
     public static final int FINGER = 2;
     public static final int SLAM = 3;
     public static final int POUND = 4;
-    public static final int AXE = 5;
-    public static final int MOVES = 6;
+    public static final int FLICK = 5;
+    public static final int PINCH = 6;
+    public static final int SNAP = 7;
+    public static final int POKE = 8;
+    public static final int HAMMER = 9;
+    public static final int RAKE = 10;
+    public static final int DRAG = 11;
+    public static final int AXE = 12;
+    public static final int MOVES = 13;
     // Setting names per move, in move order: smackChance, grabMost, fingerDamage, ...
-    public static final String[] HANDS = { "smack", "grab", "finger", "slam", "pound", "axe" };
+    public static final String[] HANDS = { "smack", "grab", "finger", "slam", "pound", "flick", "pinch", "snap",
+            "poke", "hammer", "rake", "drag", "axe" };
     static final double SLOW = 1.6;
     private static final double ARRIVE = 4.0;
-    static final int[] LIFE = { 50, 58, 56, 62, 76 };
-    static final int[] SINK = { 36, 44, 42, 47, 62 };
+    static final int[] LIFE = { 50, 58, 56, 62, 76, 50, 60, 52, 52, 50, 56, 54 };
+    static final int[] SINK = { 36, 44, 42, 47, 62, 36, 46, 38, 39, 36, 42, 40 };
     private static final double SMACK_BEAT = 19.0;
     static final double CATCH_BEAT = 13.0;
     private static final double THROW_BEAT = 33.0;
@@ -117,7 +125,8 @@ abstract class HandMoves extends HandMotion {
             case GRAB -> new double[] { CATCH_AT, THROW_AT };
             case FINGER -> new double[] { BURST_AT, UP_AT };
             case SLAM -> new double[] { SLAM_AT };
-            default -> POUND_AT;
+            case POUND -> POUND_AT;
+            default -> new double[0];
         };
     }
 

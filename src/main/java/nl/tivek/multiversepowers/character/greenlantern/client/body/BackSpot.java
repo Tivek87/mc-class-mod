@@ -14,8 +14,8 @@ import org.joml.Vector3f;
 
 public final class BackSpot {
     private static final long FRESH_MS = 150L;
-    // The middle of the back on the suit, in the torso's own space: y runs down, +z out of the back.
-    private static final Vector3f BACK = new Vector3f(0.0F, 6.0F / 16.0F, 2.3F / 16.0F);
+    // High on the back of the suit, in the torso's own space: y runs down, +z out of the back.
+    private static final Vector3f BACK = new Vector3f(0.0F, 4.5F / 16.0F, 2.3F / 16.0F);
 
     private record Seen(ConstructPainter.Frame frame, long when) {
     }

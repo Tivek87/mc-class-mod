@@ -21,7 +21,8 @@ public final class FireStream {
         BLAST(0.55, 16.0, 0.34, 1.4, 4.0, 0.4, 0.55, 0.2),
         LAY(0.9, 5.0, 0.16, 0.15, 3.0, 0.4, 0.8, 0.0),
         FEED(0.5, 6.0, 0.18, 0.1, 3.5, 0.45, 0.8, 0.05),
-        SMOKE(0.05, 22.0, 0.1, 0.9, 5.0, 1.5, 1.0, 0.3);
+        SMOKE(0.05, 22.0, 0.1, 0.9, 5.0, 1.5, 1.0, 0.3),
+        STEAM(0.55, 12.0, 0.1, 0.8, 7.0, 0.5, 1.0, 0.18);
 
         public final double speed;
         public final double life;
@@ -58,8 +59,11 @@ public final class FireStream {
         final double reach;
         final int seed;
         final int burst;
+        // How far the inferno was on its way to overheating when this puff left the nozzle, 0 to 1.
+        final double charge;
 
-        Puff(Kind kind, Vec3 start, Vec3 way, double speed, double born, double reach, int burst) {
+        Puff(Kind kind, Vec3 start, Vec3 way, double speed, double born, double reach, int burst, double charge) {
+            this.charge = charge;
             this.kind = kind;
             this.start = start;
             this.seed = seeds++;
@@ -106,6 +110,10 @@ public final class FireStream {
     }
 
     public static void feed(Entity owner, Kind kind, Vec3 from, Vec3 way, double now, double speed) {
+        feed(owner, kind, from, way, now, speed, 0.0);
+    }
+
+    public static void feed(Entity owner, Kind kind, Vec3 from, Vec3 way, double now, double speed, double charge) {
         if (way.lengthSqr() < 1.0E-8) {
             return;
         }
@@ -123,7 +131,7 @@ public final class FireStream {
         for (double at = last + kind.every; at <= now + 1.0E-6; at += kind.every) {
             double share = (at - last) / Math.max(1.0E-6, now - last);
             Vec3 start = was == null ? from : was.lerp(from, Math.min(1.0, share));
-            stream.puffs.add(new Puff(kind, start, dir, speed, at, reach, burst));
+            stream.puffs.add(new Puff(kind, start, dir, speed, at, reach, burst, charge));
             stream.lastEmit.put(kind, at);
         }
         stream.lastFrom.put(kind, from);
@@ -172,13 +180,21 @@ public final class FireStream {
             double u = age / puff.kind.life;
             Vec3 at = puff.at(age);
             double time = painter.time();
-            double radius = puff.radius(age) * (1.0 + 0.1 * Math.sin(time * 2.3 + puff.seed * 1.7));
+            double charge = puff.charge;
+            // Close to overheating the stream grows wild: bigger, whiter at heart, sputtering.
+            double sputter = Math.max(0.0, charge - 0.7) / 0.3;
+            double radius = puff.radius(age) * (1.0 + 0.1 * Math.sin(time * 2.3 + puff.seed * 1.7))
+                    * (1.0 + 0.4 * charge + 0.18 * sputter * Math.sin(time * 9.0 + puff.seed * 2.3));
             double alpha = Math.min(1.0, u / 0.08) * Math.pow(1.0 - u, 1.2) * puff.kind.bright;
             if (puff.kind == Kind.SMOKE) {
                 FirePainter.smoke(painter, at, radius, Math.sin(Math.PI * u), puff.seed);
                 continue;
             }
-            double heat = Math.pow(1.0 - u, 0.8);
+            if (puff.kind == Kind.STEAM) {
+                FirePainter.steam(painter, at, radius, (1.0 - u) * Math.min(1.0, u / 0.08), puff.seed);
+                continue;
+            }
+            double heat = Math.min(1.0, Math.pow(1.0 - u, 0.8) * (1.0 + 0.8 * charge));
             if (u > 0.5 && Noise.of(puff.seed, 1, 1) < 0.5) {
                 double rise = (u - 0.5) * 2.0;
                 FirePainter.smoke(painter, at.add(0.0, radius * (0.6 + 0.8 * rise), 0.0), radius * (0.7 + 0.5 * rise),
@@ -193,7 +209,7 @@ public final class FireStream {
                 FirePainter.splash(painter, at, radius * 0.8, alpha, puff.seed);
             }
             this.embers(painter, puff, at, radius, u, alpha);
-            double core = radius * 0.3 * (1.0 - u);
+            double core = radius * 0.3 * (1.0 - u) * (1.0 + 0.8 * charge);
             double phase = time * 1.7 + puff.seed * 0.9;
             if (previous != null && previous.kind == puff.kind && previous.burst == puff.burst
                     && Math.abs(previous.born - puff.born) < puff.kind.every * 1.6 && u < 0.6) {
@@ -210,10 +226,11 @@ public final class FireStream {
 
     // Sparks thrown off the flame: they fly out, float up and burn out before it does.
     private void embers(LanternPainter painter, Puff puff, Vec3 at, double radius, double u, double alpha) {
-        if (u < 0.12 || puff.seed % 2 != 0) {
+        if (u < 0.12 || puff.seed % 2 != 0 && puff.charge < 0.5) {
             return;
         }
-        for (int k = 0; k < 2; k++) {
+        int count = 2 + (int) Math.round(3.0 * puff.charge);
+        for (int k = 0; k < count; k++) {
             Vec3 out = Noise.direction(puff.seed, 40 + k);
             double fly = radius * (0.8 + 2.2 * u) * (0.6 + 0.8 * Noise.of(puff.seed, k, 41));
             Vec3 spark = at.add(out.scale(fly)).add(0.0, 0.7 * u * u, 0.0);

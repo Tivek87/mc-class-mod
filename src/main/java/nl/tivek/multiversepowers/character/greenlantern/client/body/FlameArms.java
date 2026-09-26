@@ -201,6 +201,12 @@ public final class FlameArms extends FlameFirstPerson {
     // The server stops a stream or vortex by itself when the ring runs dry: the own hands follow it then. Until it
     // has told of the stream at all (a slow connection), only a long wait counts as a no.
     private static void follow(Own mine, ClientConstructs.Flame told, float now) {
+        if (mine.firing && (FlameMove.sent(told.move()) == FlameMove.OVERHEAT
+                || now - mine.start >= FlameMove.overheatsAfter(wheel()))) {
+            mine.firing = false;
+            begin(FlameMove.OVERHEAT);
+            return;
+        }
         boolean going = (told.move() & (mine.firing ? FlameMove.FIRING : FlameMove.SWIRLING)) != 0;
         if (!mine.firing && !mine.swirling) {
             mine.confirmed = false;

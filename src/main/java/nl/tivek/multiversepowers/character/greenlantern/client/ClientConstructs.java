@@ -216,7 +216,9 @@ public final class ClientConstructs extends TrackedConstructs {
 
     private static void held(Minecraft minecraft, Track track) {
         ConstructPayload hand = track.latest;
-        if (!hand.held() || minecraft.level == null || HandPose.move(hand.variant()) == HandPose.AXE) {
+        // A dragged creature is kept on the ground by the server, not at the fingers.
+        int move = HandPose.move(hand.variant());
+        if (!hand.held() || minecraft.level == null || move == HandPose.AXE || move == HandPose.DRAG) {
             return;
         }
         Entity caught = minecraft.level.getEntity(LightBubble.caughtId(hand.charge()));
@@ -226,7 +228,7 @@ public final class ClientConstructs extends TrackedConstructs {
         double scale = Math.max(0.1, hand.size());
         double reach = Math.sqrt(hand.facing().x * hand.facing().x + hand.facing().z * hand.facing().z) / scale;
         Vec3 grip = HandPose.at(hand.variant(), track.clock(1.0F), reach).place(hand.center(), hand.facing(), scale)
-                .at(HandPose.GRIP);
+                .at(HandPose.grip(hand.variant()));
         caught.setPos(grip.x, grip.y - caught.getBbHeight() * 0.5, grip.z);
         caught.setDeltaMovement(Vec3.ZERO);
     }
@@ -365,8 +367,8 @@ public final class ClientConstructs extends TrackedConstructs {
                         RingSight.ringLight(painter, ring, track.clock(partialTick), own);
                     }
                 }
-                case ConstructPayload.HAND -> HandPainter.draw(painter, track.latest, was.facing().lerp(now.facing(),
-                        partialTick), track.clock(partialTick), ring);
+                case ConstructPayload.HAND -> HandPainter.draw(painter, track.latest, center,
+                        was.facing().lerp(now.facing(), partialTick), track.clock(partialTick), ring);
                 case ConstructPayload.REVOLVER -> RevolverPainter.draw(painter, track.latest,
                         was.facing().lerp(now.facing(), partialTick), track.clock(partialTick), ring);
                 case ConstructPayload.BEAM -> {

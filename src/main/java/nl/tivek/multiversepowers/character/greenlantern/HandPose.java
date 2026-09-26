@@ -4,8 +4,8 @@ import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.engine.math.Ease;
 import nl.tivek.multiversepowers.engine.math.Vectors;
 
-public final class HandPose extends HandMoves {
-    private static final double[] SPOT = { 5.8, 1.25, 2.2, 2.9, 5.0 };
+public final class HandPose extends HandTricks {
+    private static final double[] SPOT = { 5.8, 1.25, 2.2, 2.9, 5.0, 0.0, 0.0, 3.0, 0.0, 0.0, 6.0, 0.0 };
     private static final int TAPS = 10;
     private static final double TAP = 0.35;
     private static final double[] WRIST_WEIGHTS = remembered(2.4, 0.45);
@@ -56,6 +56,10 @@ public final class HandPose extends HandMoves {
             case SMACK -> beat >= 17.0;
             case GRAB -> beat >= CATCH_BEAT - 2.0;
             case SLAM -> beat >= 20.0;
+            case SNAP -> beat >= SNAP_AT - 3.0;
+            case RAKE -> beat >= RAKE_AT - 3.0;
+            // A portal hand stays turned the way it came; its portal follows the creature instead.
+            case FLICK, PINCH, POKE, HAMMER, DRAG -> true;
             case AXE -> t >= HandDuo.LOCKED_FROM;
             case POUND -> {
                 for (double hit : POUND_BEATS) {
@@ -134,6 +138,13 @@ public final class HandPose extends HandMoves {
             case GRAB -> pose.grab(t);
             case FINGER -> pose.finger(t);
             case SLAM -> pose.slam(t);
+            case FLICK -> pose.flick(t);
+            case PINCH -> pose.pinch(t);
+            case SNAP -> pose.snap(t, side);
+            case POKE -> pose.poke(t);
+            case HAMMER -> pose.hammer(t);
+            case RAKE -> pose.rake(t);
+            case DRAG -> pose.drag(t);
             default -> pose.pound(t, reach);
         }
         return pose;

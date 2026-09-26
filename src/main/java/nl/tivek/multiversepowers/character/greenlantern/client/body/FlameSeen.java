@@ -177,8 +177,10 @@ abstract class FlameSeen extends FlameStates {
                 if (state.firing() && t >= FlameMove.BRACE) {
                     double range = wheel().value("infernoRange");
                     Vec3 aim = player.getEyePosition(partialTick).add(look.scale(range));
+                    double charge = Mth.clamp((t - FlameMove.BRACE)
+                            / Math.max(1.0, FlameMove.overheatsAfter(wheel()) - FlameMove.BRACE), 0.0, 1.0);
                     FireStream.feed(player, FireStream.Kind.STREAM, nozzle, aim.subtract(nozzle), now,
-                            FireStream.Kind.STREAM.speed * range / 10.0);
+                            FireStream.Kind.STREAM.speed * range / 10.0, charge);
                 }
             }
             case EQUIP -> {
@@ -190,6 +192,14 @@ abstract class FlameSeen extends FlameStates {
             }
             case VENT -> {
                 if (t < 10.0F) {
+                    FireStream.feed(player, FireStream.Kind.SMOKE, nozzle, muzzle.add(0.0, 1.5, 0.0), now);
+                }
+            }
+            case OVERHEAT -> {
+                if (t >= FlameMove.STEAM_FROM && t < FlameMove.STEAM_TO) {
+                    FireStream.feed(player, FireStream.Kind.STEAM, nozzle, muzzle.add(0.0, 0.25, 0.0), now);
+                }
+                if (t < FlameMove.STEAM_TO + 8) {
                     FireStream.feed(player, FireStream.Kind.SMOKE, nozzle, muzzle.add(0.0, 1.5, 0.0), now);
                 }
             }

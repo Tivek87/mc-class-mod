@@ -38,12 +38,14 @@ abstract class GiantHandBase {
     private static final double GATHER = 0.05;
     private static final double SPRING = 0.08;
     private static final double VIEW_RANGE = 128.0;
+    private static final int PORTAL_SETTLES = 6;
 
     final GiantHands storm;
     private final int id = PowerRing.newId();
     final int variant;
     final int move;
-    final Vec3 base;
+    // Only a portal hand's base moves: its portal glides after the creature until the hand is committed.
+    Vec3 base;
     Vec3 aim;
     private double facing;
     private double turn;
@@ -73,6 +75,14 @@ abstract class GiantHandBase {
         }
     }
 
+    // A portal hand faces the way it is given, not towards the creature: its portal is placed round that.
+    GiantHandBase(GiantHands storm, int variant, Vec3 base, LivingEntity target, Vec3 facing) {
+        this(storm, variant, base, target);
+        this.facing = Math.atan2(facing.x, facing.z);
+        this.out = this.nearest();
+        this.aim = base.add(way(this.facing).scale(this.out));
+    }
+
     HandPose.Place place() {
         return this.pose(this.t).place(this.base, this.aim.subtract(this.base), SCALE);
     }
@@ -89,6 +99,10 @@ abstract class GiantHandBase {
     void home(ServerLevel level) {
         if (this.move == HandPose.AXE) {
             this.homeSpot(level);
+            return;
+        }
+        if (HandPose.portal(this.variant)) {
+            this.homePortal(level);
             return;
         }
         LivingEntity after = HandPose.locked(this.variant, this.t) ? null : this.after(level);
@@ -139,6 +153,39 @@ abstract class GiantHandBase {
         Vec3 next = this.within(this.aim.add(drift));
         this.drift = next.subtract(this.aim);
         this.aim = next;
+    }
+
+    // The portal glides after the creature, the hand still turned the same way, until the moment it acts draws near.
+    private void homePortal(ServerLevel level) {
+        int stops = HandPose.firstAct(this.variant) - PORTAL_SETTLES;
+        if (this.t >= stops || this.held != null) {
+            this.drift = Vec3.ZERO;
+            return;
+        }
+        LivingEntity after = this.after(level);
+        if (after == null) {
+            return;
+        }
+        Vec3 want = GiantHands.portalFor(after, this.variant, way(this.facing));
+        Vec3 pull = want.subtract(this.base).scale(SPRING).subtract(this.drift.scale(2.0 * Math.sqrt(SPRING)));
+        double hard = pull.length();
+        if (hard > GATHER) {
+            pull = pull.scale(GATHER / hard);
+        }
+        Vec3 drift = this.drift.add(pull);
+        double speed = drift.length();
+        if (speed > FOLLOW) {
+            drift = drift.scale(FOLLOW / speed);
+        }
+        Vec3 next = this.base.add(drift);
+        if (!GiantHands.open(level, next)) {
+            this.drift = Vec3.ZERO;
+            return;
+        }
+        this.drift = drift;
+        this.base = next;
+        this.aim = this.base.add(way(this.facing).scale(this.out));
+        this.room = null;
     }
 
     @Nullable

@@ -6,6 +6,7 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.character.greenlantern.HandDuo;
 import nl.tivek.multiversepowers.character.greenlantern.HandPose;
+import nl.tivek.multiversepowers.engine.math.Vectors;
 import static nl.tivek.multiversepowers.character.greenlantern.ability.GiantHands.SCALE;
 
 final class GiantHandRoom {
@@ -16,7 +17,8 @@ final class GiantHandRoom {
     private static final double HAND = 1.8;
     private static final double HAFT = 0.8;
     private static final double ARM_STEP = 2.0;
-    private static final double[] REACH = { 16.0, 11.0, 6.0, 10.0, 13.0, 22.0 };
+    private static final double[] REACH = { 16.0, 11.0, 6.0, 10.0, 13.0, 14.0, 12.0, 9.0, 14.0, 10.0, 16.0, 34.0,
+            22.0 };
     private static final double[] ALONG = { 0.0, 2.1, 4.2, 6.0 };
     private static final double[] PAIR_ALONG = { 0.0, 2.1, 4.2 };
     private static final double[] HAFT_AT = { 1.0, 4.5, 8.0 };
@@ -133,8 +135,10 @@ final class GiantHandRoom {
     }
 
     private void add(List<Ball> balls, Vec3 at, double radius) {
-        // Below the ground a hand is still hidden: only what has come up takes room.
-        if (at.y >= this.hand.base.y - 0.5) {
+        // Below the ground or behind its portal a hand is still hidden: only what has come out takes room.
+        Vec3 out = HandPose.portal(this.hand.variant) ? HandPose.portalOf(this.hand.variant, this.hand.base,
+                this.aim.subtract(this.hand.base), 0.0, SCALE).normal() : Vectors.UP;
+        if (at.subtract(this.hand.base).dot(out) >= -0.5) {
             balls.add(new Ball(at, radius));
         }
     }

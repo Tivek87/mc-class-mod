@@ -10,7 +10,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.scores.PlayerTeam;
 
 public final class Standings {
-    public static final int GRUDGE_HITS = 3;
+    public static final int GRUDGE_HITS = 1;
     public static final long GRUDGE_TICKS = 6000L;
 
     public enum Relation {

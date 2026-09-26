@@ -41,9 +41,9 @@ public final class HandPainter {
     private HandPainter() {
     }
 
-    public static void draw(LanternPainter painter, ConstructPayload hand, Vec3 facing, double clock,
+    // Base is where the hand stands this frame: a portal hand's portal can glide between ticks.
+    public static void draw(LanternPainter painter, ConstructPayload hand, Vec3 base, Vec3 facing, double clock,
             @Nullable Vec3 ring) {
-        Vec3 base = hand.center();
         int variant = hand.variant();
         double scale = Math.max(0.1, hand.size());
         if (HandPose.move(variant) == HandPose.AXE) {
@@ -53,7 +53,13 @@ public final class HandPainter {
         double reach = Math.sqrt(facing.x * facing.x + facing.z * facing.z) / scale;
         HandPose pose = HandPose.at(variant, clock, reach);
         HandPose.Place place = pose.place(base, facing, scale);
-        ground(painter, hand.id(), base, clock, variant, scale, 1.0);
+        HandDuo.Portal portal = HandPose.portal(variant) ? HandPose.portalOf(variant, base, facing, clock, scale)
+                : null;
+        if (portal == null) {
+            ground(painter, hand.id(), base, clock, variant, scale, 1.0);
+        } else {
+            HandTrickLight.portal(painter, hand.id(), portal, variant, clock, 1.0);
+        }
         if (ring != null && clock < HandPose.ARRIVES + 3.0) {
             double u = Ease.smooth(clock / HandPose.ARRIVES);
             double fade = 1.0 - Ease.smooth((clock - HandPose.ARRIVES) / 3.0);
@@ -64,12 +70,22 @@ public final class HandPainter {
         }
         painter.glare(0.7 * (1.0 - Ease.smooth((clock - HandPose.ARRIVES) / 16.0)));
         painter.ambient(GLOWS);
-        painter.clip(new Vec3(base.x, base.y + GROUND_CUT, base.z), Vectors.UP, GROUND_SEAM);
+        cut(painter, base, portal);
         drawHand(painter, pose, place, false, 1.0, -1.0, 0, false);
         painter.noClip();
         painter.ambient(0.0);
         painter.glare(0.0);
         blows(painter, hand, facing, clock, scale, 1.0);
+        HandTrickLight.blows(painter, variant, base, facing, clock, scale, 1.0);
+    }
+
+    // A hand out of the ground is cut at the ground, one out of a portal at the portal.
+    private static void cut(LanternPainter painter, Vec3 base, @Nullable HandDuo.Portal portal) {
+        if (portal == null) {
+            painter.clip(new Vec3(base.x, base.y + GROUND_CUT, base.z), Vectors.UP, GROUND_SEAM);
+        } else {
+            painter.clip(portal.center(), portal.normal(), PORTAL_SEAM);
+        }
     }
 
     static void drawHand(LanternPainter painter, HandPose pose, HandPose.Place place, boolean left,
@@ -214,12 +230,19 @@ public final class HandPainter {
         HandPose pose = HandPose.at(hand.variant(), clock, reach);
         HandPose.Place place = pose.place(base, facing, scale);
         double fade = 1.0 - Ease.smooth(since / 6.0);
-        ground(painter, hand.id(), base, clock, hand.variant(), scale, fade);
+        HandDuo.Portal portal = HandPose.portal(hand.variant())
+                ? HandPose.portalOf(hand.variant(), base, facing, clock, scale) : null;
+        if (portal == null) {
+            ground(painter, hand.id(), base, clock, hand.variant(), scale, fade);
+        } else {
+            HandTrickLight.portal(painter, hand.id(), portal, hand.variant(), clock, fade);
+        }
         blows(painter, hand, facing, clock, scale, fade);
+        HandTrickLight.blows(painter, hand.variant(), base, facing, clock, scale, fade);
         painter.glare(0.5 * Math.max(0.0, 1.0 - since / 5.0));
         painter.ambient(GLOWS);
         painter.fling(1.8);
-        painter.clip(new Vec3(base.x, base.y + GROUND_CUT, base.z), Vectors.UP, GROUND_SEAM);
+        cut(painter, base, portal);
         drawHand(painter, pose, place, false, 1.2, apart, 0, false);
         painter.noClip();
         painter.fling(1.0);

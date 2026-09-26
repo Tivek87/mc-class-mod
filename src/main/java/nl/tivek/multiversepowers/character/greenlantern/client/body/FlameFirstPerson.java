@@ -178,6 +178,11 @@ abstract class FlameFirstPerson extends FlameSeen {
                     kick(at, 1.4F, -1.0F);
                 }
             }
+            case OVERHEAT -> {
+                if (t == 0) {
+                    kick(at, 1.0F, -1.0F);
+                }
+            }
             default -> {
             }
         }

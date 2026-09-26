@@ -669,7 +669,12 @@ something; a ring of light pulses out of the nozzle while it fires.
 - **Holding left 2 seconds (inferno):** you brace and pour out a roaring stream of fire straight at your crosshair,
   **10 blocks** far, for as long as you hold: it widens as it goes, licks upward and splashes on what it hits.
   **1.5 hearts** to everything in it every 4 ticks. Costs 1 power a second. Letting go cuts the stream; the gun
-  vents a puff of smoke and its glowing fins cool down.
+  vents a puff of smoke and its glowing fins cool down. The longer you pour, the wilder the stream: it grows
+  wider, its heart burns whiter, it throws off more sparks, and in the last seconds it sputters and flares.
+  Pour for **15 seconds** without letting go and the gun
+  **overheats**: the stream dies with a hiss, the gun jolts up, you tip it aside while your left hand opens its
+  valve and it vents a hissing jet of steam, and nothing fires for **2 seconds** until the valve shuts and the
+  pilot flame sparks back to life.
 - **Clicking right (wall of fire):** you bend forward and sweep the nozzle low over the ground in front of you,
   laying a line of fire from right to left, and it bursts up into a **wall of fire** 3 blocks ahead of you,
   5.5 blocks wide and 2.6 high, for **3 seconds**. Hostile creatures in it take **1.5 hearts** twice a second
@@ -791,6 +796,33 @@ Green Lantern's ultimate: a big, slow gunship of hard light high over the battle
     squashed like in a cartoon and springs back into shape;
   - **a pound:** it rises as a fist and pounds the flat of it down on the ground three times, each time on the
     creature nearest to it (**3.3 hearts** a blow, and knocked up);
+  - **a flick:** a **portal** of the ring's light opens in the air beside the creature, on your side of it. A hand
+    reaches out of it level, palm down, and hooks its middle finger behind its thumb; the portal glides after the
+    creature while the finger strains and its nail glows, then the finger **flicks** out like at a bug on a table
+    and the creature is **flung far away** from you (**4.8 hearts**), leaving a smear of light and a ring of shock
+    behind it. The hand pulls back into its portal, which snaps shut;
+  - **a pinch and drop:** a **portal** opens in the air high over the creature and a hand reaches down out of it,
+    thumb and finger spread wide. It **pinches** the creature between them (**2.1 hearts**), lifts it **9 blocks**
+    up, dangling, and lets go: it drops to the ground (and takes the fall). Only creatures small enough to hold;
+  - **a finger snap:** it rises beside the creature with its palm turned aside and its thumb pressed to its middle
+    finger while light gathers between them, then **snaps its fingers**: a flash and rings of light burst out
+    every way and over the ground, and every creature within **7 blocks** is **dazed** (**2.7 hearts** close by,
+    less further out, slowed right down for 3 seconds and weakened for 6);
+  - **a poke:** a **portal** opens beside the creature and a hand reaches out level, one finger out. It pokes the
+    creature, pokes it again a little further (**1.8 hearts** each, a small shove), draws right back and gives it
+    one hard last poke that sends it flying (**4.8 hearts**), each with a flash and a ring of light at the fingertip;
+  - **a hammer fist:** a **portal** opens high over the creature and a fist comes down out of it, draws up
+    trembling while it glows, then **hammers down** on the creature: it is pressed into the ground (**8.4 hearts**,
+    squashed flat and slowed down a while), everything within 5.5 blocks is thrown away (**2.4 hearts**), with
+    rings and cracks of light over the ground and the view shaking; it grinds a moment and lifts back into its
+    portal;
+  - **a claw rake:** it rises before the creature with its fingers hooked into claws, rears back and **rakes** them
+    down through the creature and along the ground (**6.6 hearts**, thrown away), leaving three glowing furrows
+    that burn out slowly;
+  - **a portal drag:** a **portal** opens on the far side of the creature and a hand reaches back out of it,
+    snatches the creature, and the portal **races off** away from you, **24 blocks**, scraping the creature over
+    the ground behind it in a trail of dust and sparks (**0.7 hearts** every 4 ticks), then flings it on
+    (**3 hearts**). It stops early at a wall. Only creatures small enough to hold;
   - **the axe pair:** the ring's light shoots off and **two portals** of it burst open in the air on either side of
     the creature and beyond it. A giant right hand (with the ring) and a left hand (without one) push out of them,
     fingers first, and hover there, their fingers rippling up and down. The right hand **snaps its fingers**, the
@@ -808,7 +840,8 @@ Green Lantern's ultimate: a big, slow gunship of hard light high over the battle
   Hands **never come up inside each other**: a hand only comes where it has room, clear of every other hand (a pair
   and its axe too, and the hands of other players) for as long as they are up. With no room near one creature it
   goes for another, or waits until a hand is gone.
-- **Every kind of hand has its own settings** (smack, grab, middle finger, slap, pound, axe pair): how often it
+- **Every kind of hand has its own settings** (smack, grab, middle finger, slap, pound, flick, pinch, finger snap,
+  poke, hammer fist, claw rake, portal drag, axe pair): how often it
   comes compared with the others (0 = never), the most of it in one press, and its damage and knockback as a factor
   of the usual. Out of the settings every kind still allowed is picked; when none is left, the press ends early.
   Whatever it strikes always flies away from you, never at you. Its blows leave streaks of light in the air and rings

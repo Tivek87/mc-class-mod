@@ -33,6 +33,7 @@ public final class Jetpacks {
     // Lying this flat he has picked up speed, and the ring puts the jetpack on.
     private static final float LIES = 0.5F;
     private static final float THRUST_FOLLOWS = 0.3F;
+    private static final double SIZE = 1.15;
     private static final Map<Integer, Pack> PACKS = new HashMap<>();
     private static int clientTicks;
 
@@ -86,6 +87,8 @@ public final class Jetpacks {
             }
             return;
         }
+        back = new ConstructPainter.Frame(back.center(), back.right(), back.up(), back.forward(),
+                back.scale() * SIZE);
         double apart = broken < 0.0F ? 0.0 : Math.max(1.0E-3, broken / JetpackPainter.BREAK_TICKS);
         if (apart >= 1.0) {
             return;

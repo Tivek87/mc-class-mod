@@ -29,6 +29,10 @@ abstract class GiantHandPair extends GiantHandBase {
         super(storm, variant, base, target);
     }
 
+    GiantHandPair(GiantHands storm, int variant, Vec3 base, LivingEntity target, Vec3 facing) {
+        super(storm, variant, base, target, facing);
+    }
+
     private HandDuo duo() {
         return HandDuo.at(this.base, this.variant, this.aim, this.t, SCALE);
     }
@@ -124,7 +128,7 @@ abstract class GiantHandPair extends GiantHandBase {
         }
     }
 
-    private void opens(ServerLevel level, HandDuo.Portal portal, float pitch) {
+    void opens(ServerLevel level, HandDuo.Portal portal, float pitch) {
         Vec3 middle = portal.center();
         this.rim(level, portal, false);
         ParticleFx.cloud(level, ParticleTypes.END_ROD, middle, 8, portal.radius() * 0.3, 0.06);
@@ -133,7 +137,7 @@ abstract class GiantHandPair extends GiantHandBase {
         this.storm.sound(level, middle, SoundEvents.AMETHYST_BLOCK_CHIME, 1.6F, pitch * 0.7F);
     }
 
-    private void shuts(ServerLevel level, HandDuo.Portal portal, float pitch) {
+    void shuts(ServerLevel level, HandDuo.Portal portal, float pitch) {
         Vec3 middle = portal.center();
         this.rim(level, portal, true);
         ParticleFx.cloud(level, ParticleFx.dust(PowerRing.BRIGHT, 1.2F), middle, 8, 0.3, 0.05);
