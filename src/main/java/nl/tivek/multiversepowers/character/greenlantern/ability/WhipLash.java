@@ -27,7 +27,8 @@ public final class WhipLash {
     private static final double WAVE_SPEED = 0.85;
     private static final double COIL_RADIUS = 0.5;
     private static final double CURL_RADIUS = 0.18;
-    private static final double CURL_SPREAD = 0.07 / (Math.PI * 2.0 * CURL_RADIUS);
+    private static final double CURL_SPREAD = 0.035 / (Math.PI * 2.0 * CURL_RADIUS);
+    private static final double QUARTER = Math.PI * 0.5;
     private static final Vec3 DOWN = new Vec3(0.0, -1.0, 0.0);
 
     @FunctionalInterface
@@ -48,9 +49,9 @@ public final class WhipLash {
         }
     }
 
-    // How a slack lash lies: the ground it rests on, the way it hangs, the way it lies down along the ground, and the
-    // time for its ripples. The server leaves it out: its whip hangs in the air.
-    public record Lie(double ground, Vec3 hang, Vec3 lie, double time) {
+    // How a slack lash hangs, and the time for its ripples. The server leaves it out: its whip hangs straight down and
+    // never ripples. The ground is left to whoever draws the lash.
+    public record Hang(Vec3 down, double time) {
     }
 
     private WhipLash() {
@@ -67,7 +68,7 @@ public final class WhipLash {
     }
 
     public static Vec3[] shape(Vec3 root, @Nullable Vec3 handle, Look look, double length, Aims aims, double t,
-            int segments, @Nullable Lie lie) {
+            int segments, @Nullable Hang hang) {
         Vec3[] points = new Vec3[segments + 1];
         points[0] = root;
         double total = length * Math.max(0.0, aims.at(t)[REACH]);
@@ -78,9 +79,9 @@ public final class WhipLash {
             return points;
         }
         double step = total / segments;
-        Vec3 heading = null;
-        Vec3 hang = lie == null ? DOWN : lie.hang();
+        Vec3 down = hang == null ? DOWN : hang.down();
         double curled = 0.0;
+        double coiled = 0.0;
         for (int i = 0; i < segments; i++) {
             double s = (i + 0.5) * step;
             float[] aim = aims.at(t - TRAVEL * s / length);
@@ -90,51 +91,40 @@ public final class WhipLash {
             }
             double slack = 1.0 - Mth.clamp(aim[TAUT], 0.0F, 1.0F);
             if (slack > 0.0) {
-                way = mix(way, hang, slack * Math.min(1.0, s / DROOP_BLOCKS));
+                way = mix(way, down, slack * Math.min(1.0, s / DROOP_BLOCKS));
+                // A slack lash winds slowly round as it drops, so where it comes to lie it lies in a loose curl.
+                coiled += Mth.clamp(aim[COIL], 0.0F, 1.0F) * slack * step / COIL_RADIUS;
             }
-            if (lie != null && Math.abs(aim[WAVE]) > 1.0E-4) {
+            if (coiled != 0.0) {
+                way = Vectors.spin(way, Vectors.UP, coiled);
+            }
+            if (hang != null && Math.abs(aim[WAVE]) > 1.0E-4) {
                 Vec3 axis = way.cross(Vectors.UP);
                 if (axis.lengthSqr() < 1.0E-6) {
                     axis = look.right();
                 }
-                double angle = aim[WAVE] * Math.sin(Math.PI * 2.0 * s / WAVE_BLOCKS - lie.time() * WAVE_SPEED)
+                double angle = aim[WAVE] * Math.sin(Math.PI * 2.0 * s / WAVE_BLOCKS - hang.time() * WAVE_SPEED)
                         * Math.min(1.0, s / GRIP_BLOCKS);
                 way = Vectors.spin(way, axis.normalize(), angle);
             }
-            // Curled, the lash winds round the look's right in loops beside each other, like a coiled whip; less
-            // curl widens the loops until the lash runs straight.
-            double curl = Mth.clamp(aim[CURL], 0.0F, 1.0F) * smooth((s - 0.5 * GRIP_BLOCKS) / GRIP_BLOCKS);
-            Vec3 spread = Vec3.ZERO;
-            if (curl > 1.0E-4) {
-                curled += curl * step / CURL_RADIUS;
-                way = Vectors.spin(way, look.right(), curled);
-                spread = look.right().scale(curl * CURL_SPREAD * step);
-            } else if (curled != 0.0) {
-                way = Vectors.spin(way, look.right(), curled);
+            // Curled, the lash is wound from the handle out in tight loops beside each other round the look's right,
+            // like a coiled whip, as far as the curl goes; the rest runs on from the last loop its own way. So the
+            // lash winds up and pays out like a real one and its end is reeled in, never swung round. The coil first
+            // bends a quarter turn to level and then winds turning down, so it hangs below the handle.
+            // Only turned, never mixed: a mix of two opposite ways flips over and throws the whole lash round.
+            double inside = Mth.clamp(Mth.clamp(aim[CURL], 0.0F, 1.0F) * segments - i, 0.0, 1.0);
+            if (inside <= 0.0) {
+                points[i + 1] = points[i].add(way.scale(step));
+                continue;
             }
-            Vec3 next = points[i].add(way.scale(step)).add(spread);
-            if (lie != null && next.y < lie.ground()) {
-                heading = lying(heading, way, lie, aim[COIL] * step / COIL_RADIUS, i);
-                next = new Vec3(points[i].x + heading.x * step, lie.ground(), points[i].z + heading.z * step);
-            } else {
-                heading = null;
-            }
-            points[i + 1] = next;
+            double bend = smooth((s - 0.5 * GRIP_BLOCKS) / (0.5 * GRIP_BLOCKS));
+            double curl = smooth((s - GRIP_BLOCKS) / GRIP_BLOCKS);
+            curled += curl * inside * step / CURL_RADIUS;
+            Vec3 wound = Vectors.spin(way, look.right(), QUARTER * bend - curled);
+            points[i + 1] = points[i].add(wound.scale(inside * step)).add(way.scale((1.0 - inside) * step))
+                    .add(look.right().scale(curl * CURL_SPREAD * inside * step));
         }
         return points;
-    }
-
-    // On the ground the lash goes on the way it came down, or the lie when it came straight down, and a coil curls
-    // it round a little more with every step.
-    private static Vec3 lying(@Nullable Vec3 heading, Vec3 way, Lie lie, double curl, int i) {
-        Vec3 dir = heading;
-        if (dir == null) {
-            Vec3 flat = new Vec3(way.x, 0.0, way.z);
-            double along = flat.length();
-            dir = along < 1.0E-4 ? lie.lie() : mix(lie.lie(), flat.scale(1.0 / along), Math.min(1.0, along * 3.0));
-        }
-        double turn = curl + 0.05 * Math.sin(i * 0.9 + 1.7);
-        return Vectors.spin(dir, Vectors.UP, turn);
     }
 
     public static Vec3 mix(Vec3 a, Vec3 b, double w) {

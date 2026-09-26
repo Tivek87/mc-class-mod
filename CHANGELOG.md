@@ -3,6 +3,25 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.2.9-alpha] - 2026-09-26
+
+### Changed
+- **Energy Whip:** the lash is 10 blocks long (was 4.5): every lash, the whirlwind and the lasso reach further; the
+  spinning shield keeps its size.
+- **Energy Whip:** the lash moves as one rope that keeps its length: it no longer jumps, stretches or shrinks.
+- **Energy Whip:** after a lash the slack whip drops, lies on the ground at its full length and is reeled back in,
+  winding into its coil from the handle out; it no longer swings round while it curls up.
+- **Energy Whip:** an attack pays the lash out of its coil.
+- **Energy Whip:** at rest the coil hangs below the handle.
+- **Energy Whip, whirlwind:** the lash between your hand and the ring of light glows, with a streak along it, so it no
+  longer goes missing.
+- **Energy Whip, lasso:** the lash flows into its coils round the creature without a jump and gets its full length
+  back afterwards.
+- **Setting:** whip length is 10 blocks by default (was 4.5), up to 16.
+
+### Removed
+- **Construct bar:** the bar above the hotbar with the icon and name of the construct you hold and what it does.
+
 ## [0.2.8-alpha] - 2026-09-26
 
 ### Added

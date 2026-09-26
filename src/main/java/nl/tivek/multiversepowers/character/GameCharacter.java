@@ -173,7 +173,9 @@ public enum GameCharacter {
                     .setting("whipDamage", 7.0, 0.0, 2000.0, Unit.HALF_HEARTS,
                             "Damage of one lash, in half hearts; the heavy ones do more, the quick ones less, and a"
                                     + " crack of the tip 30% more")
-                    .setting("whipLength", 4.5, 2.0, 8.0, Unit.BLOCKS, "How long the lash is, in blocks")
+                    .setting("whipLength", 10.0, 2.0, 16.0, Unit.BLOCKS,
+                            "How long the lash is, in blocks: how far the lashes and the whirlwind reach")
+                    .was(4.5)
                     .group("whip_whirl", "Energy Whip: whirlwind (hold left 2 seconds)")
                     .setting("whirlDamage", 3.0, 0.0, 2000.0, Unit.HALF_HEARTS,
                             "Damage the whirling lash does to every hostile creature round you, in half hearts, five"

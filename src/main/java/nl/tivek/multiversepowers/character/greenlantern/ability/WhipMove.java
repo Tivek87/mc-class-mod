@@ -65,10 +65,9 @@ public enum WhipMove {
     WHIRL(Kind.WHIRL, 100000, 100000, null),
     WHIRL_CRACK(Kind.WHIRL_CRACK, 22, 16, strike(1.0, 0.8, 0.0, 0.3, 0).window(10, 16)),
     LASSO(Kind.LASSO, 36, 30, null,
-            k(2, false, 25, 70, 0.85, 0), k(4, true, 15, 150, 1, 0), k(6.5F, false, 5, 70, 1, 1.4, 0, 0, 0),
-            k(8, true, 0, 0, 1, 2.2, 0, 0, 0), k(11, true, 0, -4, 1, 2.2, 0, 0, 0),
-            k(16, false, 0, -8, 0.8, 1.6, 0, 0, 0), k(23, false, 5, -30, 0.4, 1.0, 0.4, 0, 0),
-            k(28, false, 10, -40, 0.1, 1.0, 0.8, 0, 0.3)),
+            k(2, false, 25, 70, 0.85, 0), k(4, true, 15, 150, 1, 0), k(6.5F, false, 5, 70, 1, 0),
+            k(8, true, 0, 0, 1, 0), k(11, true, 0, -4, 1, 0), k(16, false, 0, -8, 0.8, 0),
+            k(23, false, 5, -30, 0.4, 1.0, 0.4, 0, 0), k(28, false, 10, -40, 0.1, 1.0, 0.8, 0, 0.3)),
     SPIN_SHIELD(Kind.SPIN, 100000, 100000, null),
     SPIN_END(Kind.SPIN_END, 12, 7, null);
 
@@ -95,7 +94,8 @@ public enum WhipMove {
     public static final int SPIN_GUARD = 3;
     public static final double SPIN_TURN = Math.toRadians(-50.0);
     public static final double SPIN_CONE = Math.toRadians(72.0);
-    public static final float SPIN_REACH = 0.4F;
+    // A share of the whole whip: 1.8 blocks of a lash of 10.
+    public static final float SPIN_REACH = 0.18F;
 
     public static final int LASSO_REACH = 8;
     public static final int LASSO_WRAPPED = 14;

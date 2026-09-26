@@ -501,7 +501,7 @@ The ring can shape hard light into your hands. The wheel has ten slots: the firs
 Shield**, the second the **Energy Whip** and the last the **Plasma Flamethrower** (see below); the other seven hold
 the weapons still to come, each with its name and picture but nothing to do yet: **Battleaxe**, **Heavy Chainsaw**,
 **Dual Revolvers / Hand Cannons**, **Sawed-off Shotgun**, **Arm Cannon / Mega Blaster**, **Minigun** and **Rocket
-Launcher / RPG**. Picking one of those changes nothing but the bar above your hotbar.
+Launcher / RPG**. Picking one of those changes nothing yet.
 
 - **Tap V** and nothing opens at all: you swap straight between empty hands and the last slot you had
   out. That is the quick one, for in a fight.
@@ -517,8 +517,7 @@ Launcher / RPG**. Picking one of those changes nothing but the bar above your ho
 - **The middle of the wheel** says what you point at: its name (a long one on two lines, broken after its slash),
   and for one that already works what it does. A plate along the top of the
   screen says how the mouse buttons work and what to do. Neither ever covers a slot: on a small screen the
-  wheel gets smaller and the writing shorter. The bar above your hotbar and the panel with your abilities are
-  hidden while the wheel is open.
+  wheel gets smaller and the writing shorter. The panel with your abilities is hidden while the wheel is open.
 - **Every construct will use the mouse the same way**, with the same **click or hold** as empty hands (see
   "The same keys for everyone"):
   - **Left click (attack):** a tap does a quick attack (a slash, a thrust, a smash); holding it 2 seconds
@@ -528,14 +527,12 @@ Launcher / RPG**. Picking one of those changes nothing but the bar above your ho
   - **At the same time:** just like with empty hands, attack and defence can be clicked or held together.
   - Holding a weapon that does nothing yet does exactly what empty hands do: bolts and the beam on left click, the
     shield and the dome on right click.
-- **Let go of V** and the wheel closes: green light flares out of your crosshair and the bar above your
-  hotbar shows what you now hold, with its picture. You can also just click a slot while the wheel is open.
+- **Let go of V** and the wheel closes: green light flares out of your crosshair and what you picked takes shape
+  in your hands. You can also just click a slot while the wheel is open.
 - **The middle is empty hands**, written out as *Nothing — default: no construct, just your ring*. Let go
   there and whatever you held is gone again.
 - **A dot on a slot** means that is the one you already have out.
 - Escape or a right-click closes the wheel without changing anything.
-- Empty hands are normal, so nothing is shown above your hotbar then. The bar only appears once you are
-  holding a slot.
 - The wheel does not pause the game. Everyone around you sees what you take out.
 
 #### Sword & Shield (slot 1)
@@ -584,16 +581,17 @@ arm, both as solid as every construct.
 #### Energy Whip (slot 2)
 
 A whip of hard light: a handle with a round pommel, a wrapped grip, two bands and a ferrule, and out of it a long lash
-(**4.5 blocks**) that grows thinner towards its end, with glowing bands along it and a small tuft at the tip. The whip
-is as solid as every construct; only the streak behind a fast lash, the crack, the whirlwind's ring and the spinning
-shield's disc are light.
+(**10 blocks**: how far every lash and the whirlwind reach) that grows thinner towards its end, with glowing bands
+along it and a small tuft at the tip. The whip is as solid as every construct; only the streak behind a fast lash, the
+crack, the whirlwind's ring and glow and the spinning shield's disc are light.
 
 - **A living lash:** every bit of the lash goes where the whip was flung a moment before, the further along the
   later, so every flick of the wrist runs down it like a wave, and where the wave rolls out of the tip and pulls the
   lash straight it **cracks**: a flash, a cone of shock rings and sparks, and a bang. **At rest it is curled up:** the
-  lash hangs from the handle wound in loops beside each other, like a coiled whip; it sways a little and now and then
-  your wrist gives it a lazy flick. **Every attack unrolls it:** the coil opens from the handle out to the tip as the
-  lash is flung, and once the move is done it winds back up into its coil.
+  lash hangs below the handle wound in loops beside each other, like a coiled whip; it sways a little and now and then
+  your wrist gives it a lazy flick. **Every attack unrolls it:** the lash pays out of the coil as it is flung. Once
+  the move is done the slack lash drops, lies on the ground at its full length and is reeled back in, winding up into
+  its coil from the handle out. It moves as one rope that keeps its length: it never jumps, stretches or shrinks.
 - **How you hold it:** in first person the handle sits in your right fist at the bottom right of your screen, tilted
   up and forward, with the coil hanging from its end. Seen from outside he holds the handle low before his right hip
   with the coil below it, feet a little apart and knees soft, breathing and shifting his weight. In
@@ -603,7 +601,8 @@ shield's disc are light.
   lash winds out of the handle like liquid light, white-hot at its end, loop by loop into a coil below your fist while
   your eyes follow it. A flick of the wrist unrolls the coil in a wave, you raise your arm and twirl it round over
   your head (your eyes go up with it), bring it round behind you and throw it forward over the top: **crack**, with a
-  flash, shock rings and a small jolt of your view. Then you pull it back and it winds up into its coil again, ready.
+  flash, shock rings and a small jolt of your view. Then it drops, you reel it back in and it winds up into its coil
+  again, ready.
   About 3 seconds; you can attack from halfway. Putting it away, handle and lash break into solid pieces.
 - **Left click (a lash):** one of **twelve**, a different one every click and never the same twice in a row: a
   forehand (flat from right to left), a backhand (left to right), an overhead crack (up over your shoulder, behind
@@ -616,17 +615,18 @@ shield's disc are light.
   lash. What the lash passes through takes **3.5 hearts** (the heavy lashes more, the quick ones less), **30% more**
   from the tip, and is knocked the way the lash was going. A lash that lands jolts your view a little.
 - **Holding left 2 seconds (whirlwind):** your arm goes up and you whirl the lash round over your head, almost twice a
-  second, its end sloping down to chest height, with a ring of light where the tip goes and your other arm out for
-  balance. Every hostile creature it reaches round you takes **1.5 hearts** five times a second and is knocked away
-  and aside. Costs 1 power a second. **Letting go:** the lash goes on round until it is behind you and is thrown
-  forward over the top for one hard crack: **5 hearts**.
+  second, its end sloping down towards the ground, with a ring of light where the tip goes, a glow and a streak of
+  light along the whole lash from your hand out, and your other arm out for balance. Every hostile creature it reaches
+  round you takes **1.5 hearts** five times a second and is knocked away and aside. Costs 1 power a second. **Letting
+  go:** the lash goes on round until it is behind you and is thrown forward over the top for one hard crack:
+  **5 hearts**.
 - **Clicking right (lasso):** you swing the lash up over your shoulder and throw it at the creature you aim at, up to
-  **10 blocks** away (the lash grows as long as it needs). It cracks as it arrives, winds **three times** round the
+  **10 blocks** away (the whole length of the lash). It cracks as it arrives, flows into **three** coils round the
   creature from the top down and pulls tight with a flash: it is caught. Your left hand takes hold of the lash, you
   lean back and yank: it flies to you in an arc and **smacks down at your feet** with a ring of light and dust:
-  **3 hearts** and slowed for **2 seconds**. Then the lash unwinds. Costs 2 power, only when it catches something; a
-  miss just cracks in the air. Creatures too big or too strong (as for the light bubble) cannot be caught; with a wall
-  in the way it lands before the wall.
+  **3 hearts** and slowed for **2 seconds**. Then the lash unwinds and goes back to its full length and its coil.
+  Costs 2 power, only when it catches something; a miss just cracks in the air. Creatures too big or too strong (as
+  for the light bubble) cannot be caught; with a wall in the way it lands before the wall.
 - **Holding right 2 seconds (spinning shield):** you put your arm out and spin the lash, made shorter, before you
   like a propeller: a disc of light with a bright rim (faint in your own view, so you see through it). Arrows and
   other shots from hostile creatures that come from the front bounce off it and fly back, now yours, and you take

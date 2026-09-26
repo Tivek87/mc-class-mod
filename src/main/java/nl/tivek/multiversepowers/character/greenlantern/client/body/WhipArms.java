@@ -214,6 +214,7 @@ public final class WhipArms extends WhipFirstPerson {
             shards = null;
         }
         BLENDS.keySet().removeIf(id -> minecraft.level.getEntity(id) == null);
+        WhipRope.forgetOld(now(0.0F));
     }
 
     // The server stops a whirl or spin by itself when the ring runs dry: the own hands follow it then. Until it has
@@ -299,6 +300,7 @@ public final class WhipArms extends WhipFirstPerson {
         shown = 0.0F;
         shownAt = Float.NaN;
         BLENDS.clear();
+        WhipRope.clear();
     }
 
     // Also when the sword's or flamethrower's hands took the event: while one construct breaks up and the other

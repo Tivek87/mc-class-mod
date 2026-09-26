@@ -173,7 +173,8 @@ abstract class WhipSeen extends WhipStates {
         float time = time(partialTick);
         WhipLine.Hold hold = WhipLine.hold(player, root, handle.normalize(), partialTick, time);
         float t = state.t();
-        Vec3[] points = WhipLine.at(player, blend, state, hold, t, time);
+        Vec3[] points = WhipRope.follow(player.getId(), WhipLine.shape(player, blend, state, hold, t, time),
+                hold.ground(), now(partialTick));
         Vec3 normal = hold.look().right();
         double hot = state.move() == WhipMove.EQUIP ? 1.0 - Ease.smooth((formed(state) - WhipMove.FORMED)
                 / (WhipMove.POURED + 4.0 - WhipMove.FORMED)) : 0.0;
@@ -190,6 +191,7 @@ abstract class WhipSeen extends WhipStates {
             double spun = move == WhipMove.WHIRL ? Ease.smooth(t / WhipMove.WHIRL_UP) : 1.0 - Ease.smooth(t / 8.0);
             double radius = Math.sqrt((tip.x - root.x) * (tip.x - root.x) + (tip.z - root.z) * (tip.z - root.z));
             WhipPainter.ring(painter, new Vec3(root.x, tip.y, root.z), radius, 0.8 * spun);
+            WhipPainter.glow(painter, points, 0.8 * spun, own ? painter.camera() : null);
         }
         if (move == WhipMove.SPIN_SHIELD || move == WhipMove.SPIN_END && t < 6.0F) {
             double spun = move == WhipMove.SPIN_SHIELD ? Ease.smooth(t / WhipMove.SPIN_UP) : 1.0 - Ease.smooth(t / 6.0);
@@ -220,10 +222,12 @@ abstract class WhipSeen extends WhipStates {
         }
         List<Vec3> tips = new ArrayList<>(TRAIL);
         List<Vec3> roots = new ArrayList<>(TRAIL);
+        // Whirling, the streak fills the whole sweep from near the hand, or the lash between hand and ring is lost.
+        double from = move.kind() == WhipMove.Kind.WHIRL || move.kind() == WhipMove.Kind.WHIRL_CRACK ? 0.12 : 0.8;
         for (int k = 0; k < TRAIL; k++) {
             Vec3[] at = WhipLine.at(player, blend, state, hold, t - k * TRAIL_STEP, time - k * TRAIL_STEP);
             tips.add(at[at.length - 1]);
-            roots.add(at[(int) (at.length * 0.8)]);
+            roots.add(at[(int) (at.length * from)]);
         }
         double speed = tips.get(0).distanceTo(tips.get(1)) / TRAIL_STEP / Math.max(0.5, hold.length());
         WhipPainter.trail(painter, tips, roots, 0.7 * (speed - 0.2) / 0.5);

@@ -14,18 +14,24 @@ import nl.tivek.multiversepowers.character.greenlantern.client.ClientConstructs;
 import nl.tivek.multiversepowers.engine.math.Ease;
 import nl.tivek.multiversepowers.engine.math.Vectors;
 
-// The lash of a player's whip in the world: flung by its move, hanging and lying on the ground when slack, and
-// wound round a creature by the lasso.
+// The lash of a player's whip in the world as it is meant to go: flung by its move, drooping when slack and wound
+// round a creature by the lasso. The rope that draws it (see WhipRope) keeps to it as firmly as the lash is taut.
 final class WhipLine {
     // Enough pieces for the loops of a curled lash to read round.
-    static final int SEGMENTS = 48;
-    private static final int LINE = 20;
+    static final int SEGMENTS = 72;
+    private static final int LINE = 30;
+    private static final double WIND_IN = 2.0;
     private static final double LIFT = 0.03;
     private static final double TURNS = 3.0;
     private static final Vec3 DOWN = new Vec3(0.0, -1.0, 0.0);
 
-    // What a lash is drawn from: the end of the handle and its way, where its owner looks and how it lies.
-    record Hold(Vec3 root, Vec3 handle, WhipLash.Look look, double length, WhipLash.Lie lie) {
+    // What a lash is drawn from: the end of the handle and its way, where its owner looks, how it hangs and the ground
+    // under it.
+    record Hold(Vec3 root, Vec3 handle, WhipLash.Look look, double length, WhipLash.Hang hang, double ground) {
+    }
+
+    // The lash's points, and how firmly each keeps its place: 1 taut or wound up, 0 slack.
+    record Shape(Vec3[] points, @Nullable float[] firm) {
     }
 
     private WhipLine() {
@@ -39,10 +45,8 @@ final class WhipLine {
         Vec3 sway = look.right().scale(0.06 * Mth.sin(time * 0.071F)).add(look.flat().scale(0.05 * Mth.sin(time
                 * 0.053F + 1.0F)));
         Vec3 hang = DOWN.add(drag.scale(-2.5)).add(sway).normalize();
-        Vec3 lie = look.flat().scale(0.55).add(look.right().scale(0.7)).subtract(drag.scale(8.0));
-        lie = lie.lengthSqr() < 1.0E-6 ? look.right() : new Vec3(lie.x, 0.0, lie.z).normalize();
         double length = WhipStates.wheel().value("whipLength");
-        return new Hold(root, handle, look, length, new WhipLash.Lie(ground(player, feet) + LIFT, hang, lie, time));
+        return new Hold(root, handle, look, length, new WhipLash.Hang(hang, time), ground(player, feet) + LIFT);
     }
 
     private static double ground(Entity player, Vec3 feet) {
@@ -56,39 +60,64 @@ final class WhipLine {
 
     // The lash at a moment t of the current move (the time of the world passes with it for ripples).
     static Vec3[] at(Entity player, WhipStates.Blend blend, WhipStates.State state, Hold hold, float t, float time) {
+        return build(player, blend, state, hold, t, time, false).points();
+    }
+
+    // The same with how firmly each point keeps its place, for the rope that draws it.
+    static Shape shape(Entity player, WhipStates.Blend blend, WhipStates.State state, Hold hold, float t,
+            float time) {
+        return build(player, blend, state, hold, t, time, true);
+    }
+
+    private static Shape build(Entity player, WhipStates.Blend blend, WhipStates.State state, Hold hold, float t,
+            float time, boolean firmed) {
         WhipLash.Aims aims = moment -> WhipStates.lashAt(blend, (float) moment, time, state.before());
-        if (state.move() != WhipMove.LASSO) {
-            return WhipLash.shape(hold.root(), hold.handle(), hold.look(), hold.length(), aims, t, SEGMENTS,
-                    hold.lie());
-        }
-        Entity target = caught(player);
+        Entity target = state.move() == WhipMove.LASSO ? caught(player) : null;
         if (target == null) {
-            return WhipLash.shape(hold.root(), hold.handle(), hold.look(), hold.length(), aims, t, SEGMENTS,
-                    hold.lie());
+            return new Shape(lash(hold, aims, t), firmed ? firm(aims, t, 0.0) : null);
         }
         float partialTick = Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(false);
         Vec3 middle = target.getPosition(partialTick).add(0.0, target.getBbHeight() * 0.55, 0.0);
         WhipLash.Aims thrown = moment -> toward(aims.at(moment), hold, middle, (float) moment);
-        Vec3[] loose = WhipLash.shape(hold.root(), hold.handle(), hold.look(), hold.length(), thrown, t, SEGMENTS,
-                hold.lie());
-        if (t < WhipMove.LASSO_REACH) {
-            return loose;
+        Vec3[] loose = lash(hold, thrown, t);
+        // The lash flows into its coils as it reaches the creature and out of them once it is let go, never jumps.
+        double wound = Ease.smooth((t - (WhipMove.LASSO_REACH - WIND_IN)) / (2.0 * WIND_IN))
+                * (1.0 - Ease.smooth((t - WhipMove.LASSO_LAND) / 5.0));
+        float[] firm = firmed ? firm(thrown, t, wound) : null;
+        if (wound <= 0.0) {
+            return new Shape(loose, firm);
         }
         Vec3[] coil = coiled(hold.root(), target, middle, t);
-        double unwound = Ease.smooth((t - WhipMove.LASSO_LAND) / 5.0);
-        if (unwound <= 0.0) {
-            return coil;
-        }
         Vec3[] out = new Vec3[coil.length];
         for (int i = 0; i < coil.length; i++) {
-            out[i] = coil[i].lerp(loose[i], unwound);
+            out[i] = loose[i].lerp(coil[i], wound);
         }
-        return out;
+        return new Shape(out, firm);
     }
 
-    // While it is thrown, the lash turns from its own path to the creature, and grows as long as it needs.
+    private static Vec3[] lash(Hold hold, WhipLash.Aims aims, float t) {
+        return WhipLash.shape(hold.root(), hold.handle(), hold.look(), hold.length(), aims, t, SEGMENTS, hold.hang());
+    }
+
+    // Each point is as firm as the lash is taut at the moment that point shows, and fully firm where it is wound in
+    // the coil (see WhipLash.shape) or round a creature.
+    private static float[] firm(WhipLash.Aims aims, float t, double wound) {
+        float[] firm = new float[SEGMENTS + 1];
+        firm[0] = 1.0F;
+        double reach = Math.max(0.0, aims.at(t)[WhipLash.REACH]);
+        for (int i = 0; i < SEGMENTS; i++) {
+            float[] aim = aims.at(t - WhipLash.TRAVEL * reach * (i + 0.5) / SEGMENTS);
+            float coiled = Mth.clamp(Mth.clamp(aim[WhipLash.CURL], 0.0F, 1.0F) * SEGMENTS - i, 0.0F, 1.0F);
+            float held = Math.max(Mth.clamp(aim[WhipLash.TAUT], 0.0F, 1.0F), coiled);
+            firm[i + 1] = (float) Math.max(held, wound);
+        }
+        return firm;
+    }
+
+    // While it is thrown, the lash turns from its own path to the creature and takes the length it needs; once the
+    // creature lies at the owner's feet it goes back to its own path.
     private static float[] toward(float[] aim, Hold hold, Vec3 middle, float t) {
-        double w = Ease.smooth((t - 4.5) / 3.0);
+        double w = Ease.smooth((t - 4.5) / 3.0) * (1.0 - Ease.smooth((t - WhipMove.LASSO_LAND - 3.0) / 8.0));
         if (w <= 0.0) {
             return aim;
         }

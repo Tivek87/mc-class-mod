@@ -240,6 +240,23 @@ public final class WhipPainter {
         SwordPainter.trail(painter, tips, roots, Mth.clamp(strength, 0.0, 1.0));
     }
 
+    // Light along the whole lash, so one going round too fast to follow still shows from the hand out.
+    public static void glow(LanternPainter painter, Vec3[] points, double strength, @Nullable Vec3 eye) {
+        if (strength <= 0.01) {
+            return;
+        }
+        for (int i = 1; i < points.length; i++) {
+            if (!clear(points[i - 1], eye) || !clear(points[i], eye)) {
+                continue;
+            }
+            double u = (double) i / (points.length - 1);
+            painter.glowLine(points[i - 1], points[i], 0.24 - 0.12 * u, LanternPainter.GREEN,
+                    Colors.alpha(0.45 * strength));
+            painter.lightLine(points[i - 1], points[i], 0.05 - 0.025 * u, LanternPainter.BRIGHT,
+                    Colors.alpha(0.75 * strength));
+        }
+    }
+
     // The whirl: a ring of light where the tip goes round.
     public static void ring(LanternPainter painter, Vec3 center, double radius, double strength) {
         if (strength <= 0.01) {

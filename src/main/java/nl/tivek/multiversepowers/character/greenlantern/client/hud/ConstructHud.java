@@ -4,14 +4,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import javax.annotation.Nullable;
-import net.minecraft.ChatFormatting;
 import net.minecraft.Util;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Player;
@@ -24,7 +22,6 @@ import nl.tivek.multiversepowers.character.CharacterAbility;
 import nl.tivek.multiversepowers.character.GameCharacter;
 import nl.tivek.multiversepowers.character.client.ClientCharacter;
 import nl.tivek.multiversepowers.character.client.MouseHold;
-import nl.tivek.multiversepowers.character.greenlantern.Construct;
 import nl.tivek.multiversepowers.character.greenlantern.PowerRing;
 import nl.tivek.multiversepowers.character.greenlantern.RingPayload;
 import nl.tivek.multiversepowers.character.greenlantern.client.ClientConstructs;
@@ -58,10 +55,6 @@ public final class ConstructHud {
     private static final float STRIPE_GAP = 3.0F;
     private static final float STRIPE_WIDTH = 1.2F;
 
-    private static final int BAR_UP = 72;
-    private static final int BAR_HEIGHT = 17;
-    private static final int ICON_ROOM = 15;
-    private static final int PADDING = 7;
     private static final float FLASH_RADIUS = 44.0F;
     private static final float HOLD_INNER = 13.0F;
     private static final float HOLD_OUTER = 17.5F;
@@ -96,13 +89,9 @@ public final class ConstructHud {
         if (minecraft.screen instanceof ConstructWheelScreen) {
             return;
         }
-        Construct held = ConstructChoice.held();
         renderFlash(graphics, ConstructChoice.since());
         renderHold(graphics, deltaTracker.getGameTimeDeltaPartialTick(false));
         renderKeyHold(graphics, deltaTracker.getGameTimeDeltaPartialTick(false));
-        if (held != Construct.NONE) {
-            renderBar(graphics, minecraft.font, held);
-        }
     }
 
     private static void renderHold(GuiGraphics graphics, float partialTick) {
@@ -412,32 +401,5 @@ public final class ConstructHud {
         GuiShapes.ring(graphics, middleX, middleY, 5.0F + FLASH_RADIUS * eased * 0.78F,
                 1.0F + 5.0F * (1.0F - eased), GuiShapes.fade(GREEN, 0.4F * (1.0F - part)));
         GuiShapes.flush(graphics);
-    }
-
-    private static void renderBar(GuiGraphics graphics, Font font, Construct held) {
-        MutableComponent name = held.getDisplayName().copy();
-        Component description = held.getDescription();
-        MutableComponent about = description == null ? null : description.copy().withStyle(ChatFormatting.ITALIC);
-        int nameWidth = font.width(name);
-        int aboutWidth = about == null ? 0 : 6 + font.width(about);
-        int width = PADDING + ICON_ROOM + 5 + nameWidth + aboutWidth + PADDING;
-
-        float left = (graphics.guiWidth() - width) * 0.5F;
-        float top = graphics.guiHeight() - BAR_UP - BAR_HEIGHT * 0.5F;
-        GuiShapes.roundRect(graphics, left, top, width, BAR_HEIGHT, BAR_HEIGHT * 0.5F,
-                GuiShapes.fade(0x04140A, 0.62F));
-        GuiShapes.arc(graphics, left + BAR_HEIGHT * 0.5F, top + BAR_HEIGHT * 0.5F,
-                BAR_HEIGHT * 0.5F - 1.0F, BAR_HEIGHT * 0.5F, 90.0F, 270.0F, GuiShapes.fade(GREEN, 0.5F));
-        float iconX = left + PADDING + ICON_ROOM * 0.5F;
-        float iconY = top + BAR_HEIGHT * 0.5F;
-        ConstructIcons.draw(graphics, held, iconX, iconY, ICON_ROOM * 1.35F, 0.0F);
-        GuiShapes.flush(graphics);
-
-        int textX = Mth.floor(left) + PADDING + ICON_ROOM + 5;
-        int textY = Mth.floor(top) + (BAR_HEIGHT - font.lineHeight) / 2 + 1;
-        graphics.drawString(font, name, textX, textY, TEXT, false);
-        if (about != null) {
-            graphics.drawString(font, about, textX + nameWidth + 6, textY, MUTED, false);
-        }
     }
 }
