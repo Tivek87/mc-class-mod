@@ -95,6 +95,10 @@ public final class ConstructHud {
     }
 
     private static void renderHold(GuiGraphics graphics, float partialTick) {
+        // The flamethrower shows a held button on the gun itself (FlamePainter), not round the crosshair.
+        if (FlameArms.holding()) {
+            return;
+        }
         Minecraft minecraft = Minecraft.getInstance();
         float middleX = graphics.guiWidth() * 0.5F;
         float middleY = graphics.guiHeight() * 0.5F;
@@ -108,8 +112,7 @@ public final class ConstructHud {
                 continue;
             }
             boolean right = ability.mouseButton() == CharacterAbility.Mouse.LEFT;
-            if (ability.id().equals("light_bolt") && !SwordArms.holding() && !FlameArms.holding()
-                    && !WhipArms.holding()) {
+            if (ability.id().equals("light_bolt") && !SwordArms.holding() && !WhipArms.holding()) {
                 drawn |= BeamBar.render(graphics, minecraft.player, ability, middleX, middleY, partialTick, labels);
                 continue;
             }
@@ -222,10 +225,6 @@ public final class ConstructHud {
         String prefix = "screen." + MultiversePowers.MODID + ".hold.";
         if (SwordArms.holding()) {
             return Component.translatable(prefix + "flurry");
-        }
-        if (FlameArms.holding()) {
-            return Component.translatable(prefix + (ability.mouseButton() == CharacterAbility.Mouse.LEFT ? "inferno"
-                    : "vortex"));
         }
         if (WhipArms.holding()) {
             return Component.translatable(prefix + (ability.mouseButton() == CharacterAbility.Mouse.LEFT ? "whirlwind"

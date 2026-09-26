@@ -11,6 +11,9 @@ import net.minecraft.client.renderer.entity.player.PlayerRenderer;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.client.event.RenderHandEvent;
+import nl.tivek.multiversepowers.character.CharacterAbility;
+import nl.tivek.multiversepowers.character.GameCharacter;
+import nl.tivek.multiversepowers.character.client.MouseHold;
 import nl.tivek.multiversepowers.character.greenlantern.ability.FlameMove;
 import nl.tivek.multiversepowers.character.greenlantern.ability.Flamethrower;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.FlamePainter;
@@ -88,7 +91,7 @@ abstract class FlameFirstPerson extends FlameSeen {
         if (apart < 1.0) {
             ConstructPainter.Frame gun = pose.gun(FlameKeys.VIEW_SWEEP, FlameCurves.OWN_GUN);
             FlamePainter.gun(painter, gun, formed(state), FlamePoses.glow(state.move(), state.t(), heat(player),
-                    state.firing()), apart, pose.grip().add(0.0, 0.03, -0.02));
+                    state.firing()).primed(prime(partialTick)), apart, pose.grip().add(0.0, 0.03, -0.02));
             if (apart <= 0.0) {
                 drawn = gun;
                 Vec3 nozzle = FlamePainter.NOZZLE;
@@ -98,6 +101,20 @@ abstract class FlameFirstPerson extends FlameSeen {
         }
         painter.finish(minecraft.renderBuffers().bufferSource());
         stack.popPose();
+    }
+
+    // A button held towards the inferno or the vortex, 0 until it shows, shown on the gun instead of on the screen.
+    private static double prime(float partialTick) {
+        double prime = 0.0;
+        for (CharacterAbility ability : GameCharacter.GREEN_LANTERN.abilities()) {
+            if (ability.mouseButton() != CharacterAbility.Mouse.NONE) {
+                float progress = MouseHold.progress(ability, partialTick);
+                if (progress < 1.0F) {
+                    prime = Math.max(prime, Mth.clamp((progress - 0.1) / 0.9, 0.0, 1.0));
+                }
+            }
+        }
+        return prime;
     }
 
     public static void drawOwn(LanternPainter painter, LocalPlayer player, Camera camera, Matrix4f projection,
