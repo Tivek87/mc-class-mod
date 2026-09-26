@@ -114,12 +114,14 @@ public final class Characters {
         }
         boolean letGo = ability.isHeld() && !on;
         boolean undo = (data & SNEAKING) != 0 && ability.crouchDoes() == CharacterAbility.Crouch.UNDO;
-        if (COOLDOWNS.left(player, character, slot.ordinal()) > 0 && !letGo && !undo) {
+        // A key's hold version keeps a cooldown of its own; the slot's belongs to the tap.
+        boolean ownCooldown = !ability.isHeld() && ability.holdTicks() > 0 && (data & HOLD) != 0;
+        if (COOLDOWNS.left(player, character, slot.ordinal()) > 0 && !letGo && !undo && !ownCooldown) {
             sync(player);
             return;
         }
         boolean used = character.powers().use(player, ability, on, data);
-        boolean done = (!ability.isHeld() || letGo) && !undo;
+        boolean done = (!ability.isHeld() || letGo) && !undo && !ownCooldown;
         if (used && ability.getCooldown() > 0 && done) {
             COOLDOWNS.start(player, character, slot.ordinal(), ability.getCooldown());
         }

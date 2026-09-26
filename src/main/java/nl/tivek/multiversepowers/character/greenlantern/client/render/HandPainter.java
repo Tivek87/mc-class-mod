@@ -4,6 +4,7 @@ import javax.annotation.Nullable;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.character.greenlantern.ConstructPayload;
+import nl.tivek.multiversepowers.character.greenlantern.HandDuo;
 import nl.tivek.multiversepowers.character.greenlantern.HandPose;
 import nl.tivek.multiversepowers.engine.client.render.ConstructPainter;
 import nl.tivek.multiversepowers.engine.math.Ease;
@@ -75,6 +76,24 @@ public final class HandPainter {
             double bright, double apart, int seed, boolean twists) {
         ConstructPainter.Frame hand = handFrame(place, left);
         part(painter, HAND, hand, bright, apart, seed);
+        arm(painter, place, left, bright, apart, seed, twists);
+        digits(painter, pose, hand, left, bright, apart, seed);
+    }
+
+    // A hand reaching into another portal: its arm is cut by the portal it came from, the hand itself by the other.
+    static void drawHandCut(LanternPainter painter, HandPose pose, HandPose.Place place, boolean left,
+            double bright, double apart, int seed, HandDuo.Portal from, HandDuo.Portal into) {
+        painter.clip(from.center(), from.normal(), PORTAL_SEAM);
+        arm(painter, place, left, bright, apart, seed, true);
+        painter.clip(into.center(), into.normal(), PORTAL_SEAM);
+        ConstructPainter.Frame hand = handFrame(place, left);
+        part(painter, HAND, hand, bright, apart, seed);
+        digits(painter, pose, hand, left, bright, apart, seed);
+        painter.noClip();
+    }
+
+    private static void arm(LanternPainter painter, HandPose.Place place, boolean left, double bright, double apart,
+            int seed, boolean twists) {
         if (twists) {
             // Carries the palm's forward vector across the wrist bend for the cuff twist
             Vec3 u = place.up();
@@ -90,6 +109,10 @@ public final class HandPainter {
         } else {
             part(painter, ARM, armFrame(place, place.armForward(), left), bright, apart, seed + 20);
         }
+    }
+
+    private static void digits(LanternPainter painter, HandPose pose, ConstructPainter.Frame hand, boolean left,
+            double bright, double apart, int seed) {
         for (int k = 0; k < 4; k++) {
             ConstructPainter.Frame[] joints = digit(hand, pose, k);
             for (int j = 0; j < 3; j++) {
@@ -164,6 +187,15 @@ public final class HandPainter {
 
     static Vec3 thumbTip(HandPose pose, HandPose.Place place, boolean left) {
         return digit(handFrame(place, left), pose, 4)[2].at(0.0, THUMB[2] + THUMB_THICK[2] * 0.9, 0.0);
+    }
+
+    static Vec3 indexTip(HandPose pose, HandPose.Place place, boolean left) {
+        return digit(handFrame(place, left), pose, 0)[2].at(0.0, JOINTS[0][2], 0.0);
+    }
+
+    static Vec3 thumbWay(HandPose pose, HandPose.Place place, boolean left) {
+        ConstructPainter.Frame tip = digit(handFrame(place, left), pose, 4)[2];
+        return tip.up().normalize();
     }
 
     public static void broken(LanternPainter painter, ConstructPayload hand, double clock, double since) {

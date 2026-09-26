@@ -261,4 +261,28 @@ abstract class HandDuoMotion {
         return new Vec3(hermite(t, ta, a.x, va.x, tb, b.x, vb.x), hermite(t, ta, a.y, va.y, tb, b.y, vb.y),
                 hermite(t, ta, a.z, va.z, tb, b.z, vb.z));
     }
+
+    static HandPose.Place place(Vec3 wrist, Vec3 arm, Vec3 up, Vec3 palm, double scale, double twist) {
+        Vec3 u = up.normalize();
+        Vec3 f = palm.subtract(u.scale(palm.dot(u))).normalize();
+        Vec3 r = f.cross(u);
+        Vec3 axis = u.cross(arm);
+        double cos = u.dot(arm);
+        Vec3 turned = f.scale(cos).add(axis.cross(f)).add(axis.scale(axis.dot(f) / (1.0 + cos)));
+        Vec3 armForward = turned.subtract(arm.scale(turned.dot(arm))).normalize();
+        if (twist != 0.0) {
+            armForward = Vectors.spin(armForward, arm, -twist);
+        }
+        return new HandPose.Place(wrist, arm, armForward, r, u, f, scale);
+    }
+
+    static double shut(double u) {
+        if (u <= 0.0) {
+            return 1.0;
+        }
+        if (u < 0.35) {
+            return 1.0 + 0.06 * Ease.smoother(u / 0.35);
+        }
+        return 1.06 * (1.0 - Ease.smoother((u - 0.35) / 0.65));
+    }
 }

@@ -21,6 +21,7 @@ import nl.tivek.multiversepowers.character.greenlantern.ability.SwordMove;
 import nl.tivek.multiversepowers.character.greenlantern.ability.WhipMove;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.BubblePainter;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.PlanePainter;
+import nl.tivek.multiversepowers.character.greenlantern.client.render.RevolverPainter;
 import nl.tivek.multiversepowers.character.greenlantern.client.slam.SlamPainter;
 import nl.tivek.multiversepowers.engine.math.Ease;
 import static nl.tivek.multiversepowers.character.greenlantern.client.ConstructPlaces.hung;
@@ -202,7 +203,7 @@ abstract class TrackedConstructs {
                     yield now.variant() == ConstructPayload.SCAN_HOSTILE ? 0.0F
                             : (float) (0.95 * (1.0 - Ease.smooth((rolled - 0.6) / 0.6)));
                 }
-                case ConstructPayload.HAND -> (float) (0.9
+                case ConstructPayload.HAND, ConstructPayload.REVOLVER -> (float) (0.9
                         * (1.0 - Ease.smooth((track.clock(partialTick) - 8.0) / 8.0)));
                 case ConstructPayload.BUBBLE -> now.variant() == LightBubble.SMASHING ? 1.0F
                         : now.variant() == LightBubble.HOLDING ? 0.8F : 0.0F;
@@ -332,7 +333,8 @@ abstract class TrackedConstructs {
         double beforeClock = 0.0;
         for (Track track : CONSTRUCTS.values()) {
             ConstructPayload hand = track.latest;
-            if (hand.shape() != ConstructPayload.HAND || hand.owner() != owner) {
+            if (hand.shape() != ConstructPayload.HAND && hand.shape() != ConstructPayload.REVOLVER
+                    || hand.owner() != owner) {
                 continue;
             }
             double clock = track.clock(partialTick);
@@ -438,6 +440,10 @@ abstract class TrackedConstructs {
             }
             if (slam.shape() == ConstructPayload.HAND) {
                 most = Math.max(most, handShake(track, from, partialTick));
+                continue;
+            }
+            if (slam.shape() == ConstructPayload.REVOLVER) {
+                most = Math.max(most, RevolverPainter.shake(slam, track.clock(partialTick), from));
                 continue;
             }
             if (slam.shape() != ConstructPayload.SLAM) {

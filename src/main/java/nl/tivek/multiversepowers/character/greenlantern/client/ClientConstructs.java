@@ -37,6 +37,7 @@ import nl.tivek.multiversepowers.character.greenlantern.client.render.FireStream
 import nl.tivek.multiversepowers.character.greenlantern.client.render.HandPainter;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.LanternPainter;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.PlanePainter;
+import nl.tivek.multiversepowers.character.greenlantern.client.render.RevolverPainter;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.RingSight;
 import nl.tivek.multiversepowers.character.greenlantern.client.slam.SlamPainter;
 import static nl.tivek.multiversepowers.character.greenlantern.client.ConstructPlaces.RAM_OWN_AHEAD;
@@ -172,7 +173,8 @@ public final class ClientConstructs extends TrackedConstructs {
             }
             if (track.timedOut()) {
                 tracks.remove();
-                if (track.latest.shape() != ConstructPayload.PLANE && track.latest.shape() != ConstructPayload.HAND) {
+                if (track.latest.shape() != ConstructPayload.PLANE && track.latest.shape() != ConstructPayload.HAND
+                        && track.latest.shape() != ConstructPayload.REVOLVER) {
                     letGo(track);
                 }
             } else {
@@ -250,6 +252,12 @@ public final class ClientConstructs extends TrackedConstructs {
         double clock = track.clock(partialTick);
         if (track.latest.shape() == ConstructPayload.HAND) {
             if (clock < HandPose.sinks(track.latest.variant()) && clock > HandPose.ARRIVES) {
+                BROKEN_HANDS.put(track.latest.id(), new Broken(track.latest, clock, clientTicks));
+            }
+            return;
+        }
+        if (track.latest.shape() == ConstructPayload.REVOLVER) {
+            if (RevolverPainter.breaks(clock)) {
                 BROKEN_HANDS.put(track.latest.id(), new Broken(track.latest, clock, clientTicks));
             }
             return;
@@ -359,6 +367,8 @@ public final class ClientConstructs extends TrackedConstructs {
                 }
                 case ConstructPayload.HAND -> HandPainter.draw(painter, track.latest, was.facing().lerp(now.facing(),
                         partialTick), track.clock(partialTick), ring);
+                case ConstructPayload.REVOLVER -> RevolverPainter.draw(painter, track.latest,
+                        was.facing().lerp(now.facing(), partialTick), track.clock(partialTick), ring);
                 case ConstructPayload.BEAM -> {
                     if (ring != null && owner != null) {
                         int stage = Mth.clamp(now.variant(), 0, LightBeam.STAGE_THICK.length - 1);
@@ -424,8 +434,12 @@ public final class ClientConstructs extends TrackedConstructs {
             PlanePainter.broken(painter, broken.construct(), broken.clock() + since, since);
         }
         for (Broken broken : BROKEN_HANDS.values()) {
-            HandPainter.broken(painter, broken.construct(), broken.clock(),
-                    clientTicks - broken.since() + partialTick);
+            double since = clientTicks - broken.since() + partialTick;
+            if (broken.construct().shape() == ConstructPayload.REVOLVER) {
+                RevolverPainter.broken(painter, broken.construct(), broken.clock(), since);
+            } else {
+                HandPainter.broken(painter, broken.construct(), broken.clock(), since);
+            }
         }
         for (AbstractClientPlayer player : level.players()) {
             if (BeamCharge.charge(player, partialTick) >= 0.0F) {

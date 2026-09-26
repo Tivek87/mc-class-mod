@@ -421,7 +421,7 @@ public final class GiantHands implements Effect {
         return true;
     }
 
-    private static boolean open(ServerLevel level, Vec3 at) {
+    static boolean open(ServerLevel level, Vec3 at) {
         BlockPos pos = BlockPos.containing(at);
         if (pos.getY() >= level.getMaxBuildHeight()) {
             return true;

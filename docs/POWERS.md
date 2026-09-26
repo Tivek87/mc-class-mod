@@ -754,7 +754,7 @@ Green Lantern's ultimate: a big, slow gunship of hard light high over the battle
 
 ### Giant Hands (key Left Alt)
 
-- **Press Left Alt.** You wave your ring hand out towards the creature out to hurt you **nearest to you**, within
+- **Tap Left Alt** (the hands come the moment you let go; held down for 2 seconds, the key calls the Western Revolver Assembly below instead). You wave your ring hand out towards the creature out to hurt you **nearest to you**, within
   **20 blocks** of you every way (an area 40 blocks across): the ring's light shoots off to it, a
   ring of light glows on the ground there, the ground cracks open, and a **giant hand of hard light** rises up out
   of it in a cloud of dust, white-hot at first and cooling to green. Every hand is big (many times taller than you) and
@@ -810,6 +810,41 @@ Green Lantern's ultimate: a big, slow gunship of hard light high over the battle
 - **Power:** 8. **Cooldown:** 30 seconds. The damage, the reach, the fewest and the most hands at every press (4
   and 8 by default), the time between two hands (half a second by default) and how hard they send creatures flying
   are settings.
+
+### Western Revolver Assembly (hold Left Alt for 2 seconds)
+
+- **Hold Left Alt.** A ring round your crosshair fills up in 2 seconds; when it is full the show starts (let go
+  sooner and you get the ordinary Giant Hands). It takes place on the ground about **14 blocks in front of you** (closer
+  where there is no room) and you are free to move while it plays.
+- **The arrival and the hat.** Two portals burst open on either side and a giant right hand (with the ring) and a
+  left hand push out of them and warm up, rolling their wrists and rippling their fingers. Each hand stays in its
+  own portal, which glides along behind its wrist like a sleeve. A third portal opens above them; the right hand
+  dips in and pulls out a **green hard-light cowboy hat** with a sheriff's star, shows it off and sets it on the
+  knuckles of the left hand's fist, with a tap on the crown. The left hand balances it and swings proudly from side
+  to side to a banjo tune.
+- **Finger guns.** The left hand makes a finger gun (the hat hops onto its thumb) and fires **five quick pew-pews**:
+  the thumb drops like a hammer and a small bolt of light flies at a creature out to hurt you each time, spread over
+  the nearest ones, with sparks. It blows the "smoke" off its fingertip, flicks the hat up, catches it on its palm and
+  throws it back into the top portal like a frisbee.
+- **The assembly.** The right hand dips into the portal and flicks out a handful of floating parts (barrel, hammer,
+  trigger guard); the left hand dives in like an arcade claw machine and pulls out the rest (frame, grip, the
+  cylinder). They drift in a row in front of the hands while both hands snap and point, and the parts fly together
+  one after another with metal clacks into **one giant hard-light revolver**, which turns round to be taken.
+- **Loading and firing.** The right hand takes the grip, holds the gun muzzle up and flicks the cylinder open; the
+  left hand rubs up six glowing heavy bullets and sweeps them in, they fly into the chambers one by one and the
+  cylinder snaps shut with a click and a spin. While the left hand leans back tapping a finger, the right hand fires
+  **six heavy shots** at creatures out to hurt you, cocking the hammer before each, with a big kick, a muzzle flash
+  and a streak of light: each shot **tears through everything in its line**. Then it clicks empty twice.
+- **Pistol whip and goodbye.** It spins the revolver half a turn round its finger, grabs the barrel and **slams the
+  grip into the ground three times**, each harder, with a shockwave, cracks of light and the view shaking. It tosses
+  the gun over its shoulder back into the top portal, which snaps shut with a flash. Both hands wipe the "sweat" off
+  their knuckles, hang limp and tired, give each other a high five, tip an imaginary hat and sink back into their
+  portals.
+- **Damage** (defaults, all settings): each pew-pew **1 heart**, each revolver shot **8 hearts**, each slam **6 hearts**
+  in the middle of its shockwave (half at its edge), and creatures are knocked away. Only what is out to hurt you is
+  hit; with nothing nearby, the finger gun and the revolver fire into the air and the ground in front instead.
+- **Power:** 25. **Cooldown:** 60 seconds, **its own**: using it leaves the ordinary Giant Hands ready, and the
+  ordinary hands leave it ready. With no room in front of you, the ring tells you so and nothing is spent.
 
 ### Light Cage (key K)
 

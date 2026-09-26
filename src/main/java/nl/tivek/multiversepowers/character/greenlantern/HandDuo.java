@@ -313,20 +313,6 @@ public final class HandDuo extends HandDuoScript {
         return fist;
     }
 
-    private static HandPose.Place place(Vec3 wrist, Vec3 arm, Vec3 up, Vec3 palm, double scale, double twist) {
-        Vec3 u = up.normalize();
-        Vec3 f = palm.subtract(u.scale(palm.dot(u))).normalize();
-        Vec3 r = f.cross(u);
-        Vec3 axis = u.cross(arm);
-        double cos = u.dot(arm);
-        Vec3 turned = f.scale(cos).add(axis.cross(f)).add(axis.scale(axis.dot(f) / (1.0 + cos)));
-        Vec3 armForward = turned.subtract(arm.scale(turned.dot(arm))).normalize();
-        if (twist != 0.0) {
-            armForward = Vectors.spin(armForward, arm, -twist);
-        }
-        return new HandPose.Place(wrist, arm, armForward, r, u, f, scale);
-    }
-
     private static Vec3 portal(boolean right) {
         return right ? RIGHT_PORTAL : RIGHT_PORTAL.multiply(-1.0, 1.0, 1.0);
     }
@@ -352,15 +338,5 @@ public final class HandDuo extends HandDuoScript {
         Vec3 a = layout.side();
         double open = Ease.spring(t - AXE_OPENS, 0.9, 0.62) * shut((t - AXE_FREE) / 3.5);
         return new Portal(layout.point(AXE_PORTAL), normal, a, normal.cross(a), AXE_RADIUS * layout.scale(), open);
-    }
-
-    private static double shut(double u) {
-        if (u <= 0.0) {
-            return 1.0;
-        }
-        if (u < 0.35) {
-            return 1.0 + 0.06 * Ease.smoother(u / 0.35);
-        }
-        return 1.06 * (1.0 - Ease.smoother((u - 0.35) / 0.65));
     }
 }

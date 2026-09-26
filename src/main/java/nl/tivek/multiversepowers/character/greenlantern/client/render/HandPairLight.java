@@ -257,7 +257,7 @@ final class HandPairLight {
         }
     }
 
-    private static void twinkle(LanternPainter painter, Vec3 at, double size, double strength, double spin) {
+    static void twinkle(LanternPainter painter, Vec3 at, double size, double strength, double spin) {
         Vec3 view = painter.camera().subtract(at);
         if (view.lengthSqr() < 1.0E-6) {
             return;

@@ -32,6 +32,7 @@ import nl.tivek.multiversepowers.character.greenlantern.ability.LightBubble;
 import nl.tivek.multiversepowers.character.greenlantern.ability.LightDome;
 import nl.tivek.multiversepowers.character.greenlantern.ability.LightShield;
 import nl.tivek.multiversepowers.character.greenlantern.ability.Recharge;
+import nl.tivek.multiversepowers.character.greenlantern.ability.RevolverAssembly;
 import nl.tivek.multiversepowers.character.greenlantern.ability.RingScan;
 import nl.tivek.multiversepowers.character.greenlantern.ability.Shockwave;
 import nl.tivek.multiversepowers.character.greenlantern.ability.SwordShield;
@@ -87,7 +88,8 @@ public final class PowerRing {
                     : LightShield.use(player, level, ability, on, data);
             case "shockwave" -> Shockwave.use(player, level, ability);
             case "ring_scan" -> RingScan.use(player, level, ability);
-            case "giant_hands" -> GiantHands.use(player, level, ability);
+            case "giant_hands" -> (data & Characters.HOLD) != 0 ? RevolverAssembly.use(player, level, ability)
+                    : GiantHands.use(player, level, ability);
             case "air_strike" -> AirStrike.use(player, level, ability);
             case "light_bubble" -> LightBubble.use(player, level, ability, data);
             case "flight" -> on && ((data & Characters.SLAM) != 0 ? Flight.slam(player, level, ability)
@@ -111,6 +113,7 @@ public final class PowerRing {
         Arrival.clear();
         Fear.clear();
         GiantHands.clear();
+        RevolverAssembly.clear();
         AirStrike.clear();
         LightBubble.clear();
         SwordShield.clear();
@@ -201,7 +204,8 @@ public final class PowerRing {
                 Flight.ticks(player), state, Arrival.ticks(player), Arrival.from(player), LightBeam.charging(player));
     }
 
-    public static void tell(ServerPlayer player, String key) {
-        player.displayClientMessage(Component.translatable("ring." + MultiversePowers.MODID + "." + key), true);
+    public static void tell(ServerPlayer player, String key, Object... args) {
+        player.displayClientMessage(Component.translatable("ring." + MultiversePowers.MODID + "." + key, args),
+                true);
     }
 }

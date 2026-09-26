@@ -3,6 +3,20 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.2.5-alpha] - 2026-09-26
+
+### Added
+- **Western Revolver Assembly (unfinished, work in progress):** hold Left Alt for 2 seconds for a show of two giant
+  hands: a cowboy hat, five finger-gun pews, a claw-machine grab, a revolver built from its parts, loading, six shots
+  that tear through everything, three grip slams with shockwaves and a high-five goodbye. Animations are still being
+  polished.
+- **Hold ring:** a ring round the crosshair fills while you hold Left Alt, showing when the revolver show starts.
+- **Settings:** revolver power cost, cooldown, distance, reach, damage of pews, shots and slams, knockback.
+
+### Changed
+- **Giant Hands:** now come when you let go of Left Alt (a short tap), so a long hold can call the revolver show.
+- **Giant Hands and the revolver show:** each has its own cooldown.
+
 ## [0.2.4-alpha] - 2026-09-26
 
 ### Added

@@ -371,7 +371,7 @@ public enum GameCharacter {
                             "How many seconds of flying ahead of a flyer the server makes the world ready as well, along"
                                     + " the way he flies and at the speed he flies (at most 512 blocks ahead)");
             CharacterAbility hands = this.add(abilities, AbilitySlot.ABILITY_10, "giant_hands").cooldown(600)
-                    .damage(12.0)
+                    .holdVersion(40, CharacterAbility.Tap.RELEASE).damage(12.0)
                     .setting("radiusBlocks", 20.0, 4.0, 48.0, Unit.BLOCKS,
                             "How far round you the hands come up at creatures out to hurt you, every way, in blocks"
                                     + " (20 = an area 40 blocks across)")
@@ -396,6 +396,27 @@ public enum GameCharacter {
             hand(hands, HandPose.POUND, "Pound", 0.19, "a fist pounding a creature again and again");
             hand(hands, HandPose.AXE, "Pair with an axe", 0.24,
                     "a pair of hands chopping down with an axe (only where there is room for it)");
+            hands.group("revolver", "Western Revolver Assembly (hold the button 2 seconds)")
+                    .setting("revolverPowerCost", 25.0, 0.0, 100.0, Unit.POWER,
+                            "Ring power the Western Revolver Assembly costs")
+                    .settingInt("revolverCooldown", 1200, 0, 12000, Unit.TICKS,
+                            "Ticks before the revolver show can be called again (20 ticks = 1 second); it has a"
+                                    + " cooldown of its own, apart from the hands of a tap")
+                    .setting("revolverStageBlocks", 14.0, 6.0, 40.0, Unit.BLOCKS,
+                            "How far in front of you the show takes place, in blocks (closer where there is no"
+                                    + " room)")
+                    .setting("revolverRadius", 28.0, 4.0, 64.0, Unit.BLOCKS,
+                            "How far round the show the hands look for creatures out to hurt you, in blocks")
+                    .setting("revolverPewDamage", 2.0, 0.0, 100.0, Unit.HALF_HEARTS,
+                            "Damage of each of the five little bolts of the finger gun, in half hearts")
+                    .setting("revolverShotDamage", 16.0, 0.0, 200.0, Unit.HALF_HEARTS,
+                            "Damage of each of the six revolver shots, in half hearts; a shot tears through"
+                                    + " everything in its line")
+                    .setting("revolverSlamDamage", 12.0, 0.0, 200.0, Unit.HALF_HEARTS,
+                            "Damage of each of the three grip slams in the middle of their shockwave, in half hearts"
+                                    + " (half that at the edge)")
+                    .setting("revolverKnockback", 1.0, 0.0, 5.0, Unit.STRENGTH,
+                            "How hard the shots and slams send a creature flying");
             this.add(abilities, AbilitySlot.ABILITY_11, "light_bubble").cooldown(240).damage(12.0)
                     .crouch(CharacterAbility.Crouch.UNDO)
                     .setting("rangeBlocks", 24.0, 4.0, 64.0, Unit.BLOCKS,

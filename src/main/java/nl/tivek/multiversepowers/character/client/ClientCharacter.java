@@ -70,6 +70,7 @@ public final class ClientCharacter {
     private static final boolean[] HELD = new boolean[AbilitySlot.values().length];
     private static int clock;
     private static final int[] TAPPED = never(AbilitySlot.values().length);
+    private static final int[] KEY_DOWN = up(AbilitySlot.values().length);
     private static boolean climbing;
     private static final int BLOCK_AFTER = 5;
     private static int defendDown = -1;
@@ -81,6 +82,12 @@ public final class ClientCharacter {
     private static int[] never(int size) {
         int[] ticks = new int[size];
         Arrays.fill(ticks, Integer.MIN_VALUE);
+        return ticks;
+    }
+
+    private static int[] up(int size) {
+        int[] ticks = new int[size];
+        Arrays.fill(ticks, -1);
         return ticks;
     }
 
@@ -97,6 +104,7 @@ public final class ClientCharacter {
         if (character != before) {
             Arrays.fill(HELD, false);
             Arrays.fill(TAPPED, Integer.MIN_VALUE);
+            Arrays.fill(KEY_DOWN, -1);
             climbing = false;
             ClimbControl.stop();
             ConstructWheel.stop();
@@ -162,6 +170,12 @@ public final class ClientCharacter {
                 hold(player, ability, key, minecraft.screen == null);
                 while (key.consumeClick()) {
                 }
+            } else if (ability != null && ability.holdTicks() > 0) {
+                boolean clicked = false;
+                while (key.consumeClick()) {
+                    clicked = true;
+                }
+                tapOrHold(player, ability, key.isDown(), clicked, minecraft.screen == null);
             } else {
                 while (key.consumeClick()) {
                     press(player, slot);
@@ -377,6 +391,37 @@ public final class ClientCharacter {
         if (want != HELD[index]) {
             HELD[index] = want;
             send(index, want, data(player));
+        }
+    }
+
+    public static float keyHoldProgress(CharacterAbility ability, float partialTick) {
+        int down = KEY_DOWN[ability.slot().ordinal()];
+        if (down < 0 || ability.holdTicks() <= 0) {
+            return -1.0F;
+        }
+        return down >= ability.holdTicks() ? 1.0F : Math.min(1.0F, (down + partialTick) / ability.holdTicks());
+    }
+
+    // A key with a hold version: letting go before its hold time is a tap, holding on for it the other move.
+    private static void tapOrHold(LocalPlayer player, CharacterAbility ability, boolean down, boolean clicked,
+            boolean inGame) {
+        int index = ability.slot().ordinal();
+        if (!inGame) {
+            KEY_DOWN[index] = -1;
+            return;
+        }
+        if (down) {
+            if (KEY_DOWN[index] < 0) {
+                KEY_DOWN[index] = 0;
+            } else if (KEY_DOWN[index] < ability.holdTicks() && ++KEY_DOWN[index] >= ability.holdTicks()) {
+                send(index, true, data(player) | Characters.HOLD);
+            }
+            return;
+        }
+        int held = KEY_DOWN[index];
+        KEY_DOWN[index] = -1;
+        if (held >= 0 ? held < ability.holdTicks() : clicked) {
+            press(player, ability.slot());
         }
     }
 

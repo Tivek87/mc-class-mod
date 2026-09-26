@@ -68,6 +68,10 @@ public final class ConstructHud {
     private static final float HOLD_SHOWN = 0.1F;
     private static final float HOLD_FLASH_MS = 350.0F;
     private static final long[] FULL_AT = new long[2];
+    private static final float KEY_INNER = 21.0F;
+    private static final float KEY_OUTER = 24.0F;
+    private static final float KEY_KEPT_MS = 400.0F;
+    private static long keyFullAt;
     private static float shown = -1.0F;
     private static float trail;
     private static long trailWaits;
@@ -95,6 +99,7 @@ public final class ConstructHud {
         Construct held = ConstructChoice.held();
         renderFlash(graphics, ConstructChoice.since());
         renderHold(graphics, deltaTracker.getGameTimeDeltaPartialTick(false));
+        renderKeyHold(graphics, deltaTracker.getGameTimeDeltaPartialTick(false));
         if (held != Construct.NONE) {
             renderBar(graphics, minecraft.font, held);
         }
@@ -166,6 +171,57 @@ public final class ConstructHud {
             GuiShapes.flush(graphics);
         }
         labels.forEach(Runnable::run);
+    }
+
+    // A key held for its hold version fills a whole ring round the crosshair, outside the two button arcs.
+    private static void renderKeyHold(GuiGraphics graphics, float partialTick) {
+        Minecraft minecraft = Minecraft.getInstance();
+        long now = Util.getMillis();
+        for (CharacterAbility ability : GameCharacter.GREEN_LANTERN.abilities()) {
+            if (ability.mouseButton() != CharacterAbility.Mouse.NONE || ability.isHeld() || ability.holdTicks() <= 0) {
+                continue;
+            }
+            float progress = ClientCharacter.keyHoldProgress(ability, partialTick);
+            if (progress < 1.0F) {
+                keyFullAt = 0L;
+            } else if (keyFullAt == 0L) {
+                keyFullAt = now;
+            }
+            float gone = keyFullAt == 0L ? 0.0F : Mth.clamp((now - keyFullAt - KEY_KEPT_MS) / HOLD_FLASH_MS, 0.0F, 1.0F);
+            if (progress < HOLD_SHOWN || gone >= 1.0F) {
+                continue;
+            }
+            float middleX = graphics.guiWidth() * 0.5F;
+            float middleY = graphics.guiHeight() * 0.5F;
+            float appear = Mth.clamp((progress - HOLD_SHOWN) * 8.0F, 0.0F, 1.0F) * (1.0F - gone);
+            float filling = Mth.clamp((progress - HOLD_SHOWN) / (1.0F - HOLD_SHOWN), 0.0F, 1.0F);
+            GuiShapes.arc(graphics, middleX, middleY, KEY_INNER - 1.0F, KEY_OUTER + 1.0F, 0.0F, 360.0F,
+                    GuiShapes.fade(0x000000, 0.45F * appear));
+            GuiShapes.arc(graphics, middleX, middleY, KEY_INNER, KEY_OUTER, 0.0F, 360.0F,
+                    GuiShapes.fade(0x0E3A1E, 0.8F * appear));
+            float end = 360.0F * filling;
+            if (progress >= 1.0F) {
+                GuiShapes.arc(graphics, middleX, middleY, KEY_INNER - 0.5F, KEY_OUTER + 0.5F, 0.0F, 360.0F,
+                        GuiShapes.fade(BRIGHT, appear));
+                float flash = (now - keyFullAt) / HOLD_FLASH_MS;
+                if (flash < 1.0F) {
+                    float out = KEY_OUTER + 10.0F * flash;
+                    GuiShapes.arc(graphics, middleX, middleY, out - 2.0F, out, 0.0F, 360.0F,
+                            GuiShapes.fade(0xE6FFEC, 1.0F - flash));
+                }
+            } else {
+                GuiShapes.arc(graphics, middleX, middleY, KEY_INNER, KEY_OUTER, 0.0F, end,
+                        GuiShapes.fade(GuiShapes.mix(GREEN, BRIGHT, filling), 0.95F * appear));
+                GuiShapes.arc(graphics, middleX, middleY, KEY_INNER - 1.0F, KEY_OUTER + 1.0F, Math.max(0.0F,
+                        end - 4.0F), end, GuiShapes.fade(0xE6FFEC, appear));
+            }
+            GuiShapes.flush(graphics);
+            Component name = Component.translatable("screen." + MultiversePowers.MODID + ".hold." + ability.id());
+            int width = minecraft.font.width(name);
+            int color = GuiShapes.mix(GREEN, progress >= 1.0F ? 0xFFFFFF : BRIGHT, filling);
+            graphics.drawString(minecraft.font, name, Mth.floor(middleX - width * 0.5F),
+                    Mth.floor(middleY + KEY_OUTER + 4.0F), (int) (255 * appear) << 24 | color);
+        }
     }
 
     private static Component holdName(CharacterAbility ability, @Nullable Player player) {
