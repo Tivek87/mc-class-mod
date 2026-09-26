@@ -10,11 +10,9 @@ import java.nio.file.StandardOpenOption;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.Properties;
-import java.util.concurrent.TimeUnit;
 
 public final class UpdateHelper {
     static final String PLAN = "plan.properties";
-    static final String RELAUNCH = "relaunch.args";
     static final String LOG = "update.log";
     private static final int TRIES = 120;
     private static final long TRY_PAUSE_MS = 500L;
@@ -40,13 +38,8 @@ public final class UpdateHelper {
             plan.load(reader);
         }
         Files.deleteIfExists(planFile);
-        boolean installed = swap(folder, Path.of(plan.getProperty("old")), Path.of(plan.getProperty("new")),
+        swap(folder, Path.of(plan.getProperty("old")), Path.of(plan.getProperty("new")),
                 Path.of(plan.getProperty("target")));
-        Path relaunch = folder.resolve(RELAUNCH);
-        if (installed && "true".equals(plan.getProperty("relaunch")) && Files.exists(relaunch)) {
-            start(folder, plan.getProperty("java"), relaunch, Path.of(plan.getProperty("workdir")));
-        }
-        Files.deleteIfExists(relaunch);
     }
 
     private static boolean swap(Path folder, Path oldJar, Path newJar, Path target) throws InterruptedException {
@@ -60,23 +53,6 @@ public final class UpdateHelper {
         }
         retry(folder, "take the new jar out again", () -> Files.deleteIfExists(target));
         return false;
-    }
-
-    private static void start(Path folder, String java, Path arguments, Path workdir) {
-        try {
-            Process game = new ProcessBuilder(java, "@" + arguments)
-                    .directory(workdir.toFile())
-                    .redirectOutput(ProcessBuilder.Redirect.DISCARD)
-                    .redirectError(ProcessBuilder.Redirect.DISCARD)
-                    .start();
-            log(folder, "started the game again (process " + game.pid() + ")");
-            // Wait a bit so the new process can read the argument file before it's deleted.
-            if (game.waitFor(60, TimeUnit.SECONDS)) {
-                log(folder, "the restarted game closed after less than a minute, exit code " + game.exitValue());
-            }
-        } catch (IOException | InterruptedException e) {
-            log(folder, "could not start the game again: " + e);
-        }
     }
 
     private interface Step {

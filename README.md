@@ -19,7 +19,7 @@ across the multiverse you can turn into.
   sets its volume.
 - **Updates in the game:** the mod looks for a new release every five minutes. A new one comes with a pling and a popup;
   click it in the menu, or press **U** (changeable under Controls) for the update manager: read what's new, then update
-  later (installed when you close the game) or update and restart right away.
+  later (installed when you close the game) or update now (the game quits, then start it again yourself).
 - **Bug reports:** **Report a bug** in the update manager sends a bug with a name, a description and a priority. It
   becomes a public issue on this repository, with your Minecraft name. What you type is kept until you send it, also
   when you leave the screen, die or close the game; **Sent** shows your last 3 reports with their status on GitHub.

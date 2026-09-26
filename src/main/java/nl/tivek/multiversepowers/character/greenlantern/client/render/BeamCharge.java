@@ -166,8 +166,16 @@ public final class BeamCharge {
         float time = player.tickCount + partialTick;
         float shake = ClientSettings.cameraShake();
         float kick = age < KICK_TICKS ? KICK * (1.0F - age / KICK_TICKS) * (1.0F - age / KICK_TICKS) : 0.0F;
-        event.setPitch(event.getPitch() + shake * (-kick + 0.18F * Mth.sin(time * 3.1F)));
-        event.setYaw(event.getYaw() + shake * 0.14F * Mth.sin(time * 2.3F + 1.0F));
+        // Every stage shakes the view harder, and each new one gives it a jolt of its own.
+        int stage = ClientConstructs.beamStage(player.getId());
+        float since = ClientConstructs.beamStageAge(player.getId(), partialTick);
+        if (stage > 0 && since >= 0.0F && since < KICK_TICKS) {
+            float left = 1.0F - since / KICK_TICKS;
+            kick = Math.max(kick, (0.8F + 0.5F * stage) * left * left);
+        }
+        float sway = 1.0F + 0.7F * stage;
+        event.setPitch(event.getPitch() + shake * (-kick + 0.18F * sway * Mth.sin(time * 3.1F)));
+        event.setYaw(event.getYaw() + shake * 0.14F * sway * Mth.sin(time * 2.3F + 1.0F));
     }
 
     @SubscribeEvent

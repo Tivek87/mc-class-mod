@@ -71,10 +71,8 @@ final class UpdateManagerScreen extends DirtBackgroundScreen {
             Release target = this.release;
             this.later = this.addRenderableWidget(Button.builder(text("later"),
                     button -> UpdateInstaller.updateLater(target)).bounds(x, y + 24, half, 20).build());
-            boolean restart = Relaunch.possible();
-            this.now = this.addRenderableWidget(Button.builder(text(restart ? "restart_now" : "close_now"),
-                    button -> UpdateInstaller.updateAndRestart(target))
-                    .tooltip(Tooltip.create(text(restart ? "restart_now.tip" : "close_now.tip")))
+            this.now = this.addRenderableWidget(Button.builder(text("now"), button -> UpdateInstaller.updateNow(target))
+                    .tooltip(Tooltip.create(text("now.tip")))
                     .bounds(x + half + 6, y + 24, inner - half - 6, 20).build());
         } else {
             this.check = this.addRenderableWidget(Button.builder(text("check"), button -> UpdateChecker.checkNow())

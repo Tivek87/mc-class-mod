@@ -3,6 +3,42 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.2.8-alpha] - 2026-09-26
+
+### Added
+- **Light Beam, five stages:** the beam grows every 2 seconds you hold it, up to stage 5 at 10 seconds. Each stage
+  looks bigger and wilder: a thin, concentrated ray at stage 1, a massive, unstable super-beam at stage 5 with energy
+  rings, lightning whipping out of it and heavy sparks.
+- **Light Beam:** reach grows with the stage, 40 up to 64 blocks (player idea).
+- **Light Beam:** a new stage sends a wave of light down the beam, a shock ring out of your fist and jolts your view.
+- **Light Beam hold bar:** five pieces next to the crosshair; the first fills while you hold, the rest while the beam
+  grows, with the stage shown beside it.
+- **Setting:** beam cost and beam reach at stage 5.
+- **Thunder Clap:** a bubble of bent light where time slows, rolling ahead with the shock: the world behind it looks
+  as through a magnifying glass. Sparks crawl slowly inside it.
+- **Thunder Clap:** rings of light ripple over the ground ahead, the first with a swirl in it.
+
+### Changed
+- **Light Beam:** stages at 2, 4, 6, 8 and 10 seconds (was 2, 5, 10 and 20); damage and push grow up to x3 at stage 5.
+- **Light Beam:** stage 5 costs a fixed 5 power a second for as long as you hold it; the stages before climb to it.
+- **Light Beam:** your arm points dead straight ahead, never up: no more swing at the start, the kick goes straight
+  back.
+- **Light Beam:** one hand at stages 1 to 3; your other hand comes in to steady it from stage 4.
+- **Light Beam:** its sparks and specks fly beyond your fist, no longer into your own view.
+- **Light Bolt:** the arm kicks straight back, no longer up.
+- **Flight:** half as fast: starts at 3 blocks a second, cruises at 3.75, tops out at 4.5; hovering and climbing slow
+  down with it.
+- **Flight, ram cone:** still rams from half your top speed and hits as hard at top speed as before.
+- **Update manager:** "Update now (quits)" replaces "Update & restart": the game saves and quits, the update is put
+  in place, and you start the game again yourself.
+
+### Removed
+- **Construct Wheel:** Brawler Gauntlets / Boxing Gloves, Dual Energy Daggers, Two-handed War Hammer, Spear /
+  Halberd, Dual Micro-SMGs and Rotary Grenade Launcher.
+- **Thunder Clap:** the chunks and slabs of ground and the ground bits it threw up (green on grass).
+- **Setting:** the beam's last-stage cost as a multiple of the first.
+- **Updates:** the automatic restart after an update.
+
 ## [0.2.7-alpha] - 2026-09-26
 
 ### Changed

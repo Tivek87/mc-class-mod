@@ -1,39 +1,34 @@
 package nl.tivek.multiversepowers.spell.client;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.core.BlockPos;
-import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.material.MapColor;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.engine.client.fx.CameraShake;
 import nl.tivek.multiversepowers.engine.client.fx.ScreenFlash;
 import nl.tivek.multiversepowers.engine.client.render.ConstructPainter;
+import nl.tivek.multiversepowers.engine.client.render.Lens;
 import nl.tivek.multiversepowers.engine.client.render.Material;
 import nl.tivek.multiversepowers.engine.math.Colors;
 import nl.tivek.multiversepowers.engine.math.Ease;
 import nl.tivek.multiversepowers.engine.math.Noise;
 import nl.tivek.multiversepowers.engine.math.Vectors;
 
-// The thunder clap, blasting forward out of the hands: a blinding light between them, a clear shock bubble bursting
-// ahead, a spray of thunder sparks, slabs of ground heaving up, chunks flung away and a wall of mist rolling out.
+// The thunder clap, blasting forward out of the hands: a blinding light between them, a bubble of bent light in which
+// time all but stands still rolling ahead with the shock, a spray of thunder sparks crawling inside it, rings rippling
+// out over the ground and a wall of mist rolling out.
 final class ClapFx {
     static final int LIFE = 46;
     // The same reach and cone as the hits in ThunderClapSpell.
     static final double REACH = 9.0;
     static final double HALF_ANGLE = 0.8;
     private static final int FLASH = 8;
-    private static final int BUBBLE = 6;
-    private static final double BUBBLE_SIZE = 3.6;
-    private static final int STREAKS = 150;
-    private static final int CHUNKS = 22;
+    private static final int BUBBLE = 18;
+    private static final double BUBBLE_SIZE = 5.0;
+    // How fast time runs for the sparks while the bubble holds them.
+    private static final double SLOWED = 0.35;
+    private static final int STREAKS = 190;
     private static final int PUFFS = 30;
-    private static final int SLABS = 5;
-    private static final double GRAVITY = 0.07;
-    private static final double SLAB_HEIGHT = 1.2;
-    private static final double SLABS_SINK = 24.0;
-    private static final double SLABS_GONE = 38.0;
-    private static final double[][] SLAB = { { -0.5, -0.3, -0.18, 0.5, SLAB_HEIGHT, 0.18, 1.0 } };
+    private static final int RIPPLES = 3;
+    private static final double RIPPLE_TICKS = 22.0;
     private static final double SHAKE_REACH = 32.0;
     private static final double FLASH_REACH = 20.0;
 
@@ -42,7 +37,6 @@ final class ClapFx {
     private static final int ICE = 0x8FD3FF;
     private static final int BLUE = 0x3FA2FF;
     private static final int DUST = 0xC9D6E0;
-    private static final int STONE = 0x5E5A55;
     private static final Material LIGHT = new Material(0x8FD3FF, 0xDDF3FF, 0x3FA2FF, 0xF4FBFF);
 
     private ClapFx() {
@@ -79,12 +73,13 @@ final class ClapFx {
         light(painter, hands, age, seed);
         bubble(painter, hands, ahead, age);
         streaks(painter, hands, ahead, age, seed);
+        ripples(painter, feet, ahead, age, seed);
         dust(painter, feet, ahead, age, seed);
-        int rock = Colors.mix(ground(feet), STONE, 0.45F);
-        painter.material(new Material(rock, Colors.shade(rock, 0.7), 0x000000, WHITE));
-        chunks(painter, feet, ahead, age, seed);
-        slabs(painter, feet, ahead, age, seed);
-        painter.material(LIGHT);
+    }
+
+    // Time for what the bubble holds: it crawls while the bubble stands and runs on at full pace once it is gone.
+    private static double slowed(double age) {
+        return age < BUBBLE ? age * SLOWED : BUBBLE * SLOWED + (age - BUBBLE);
     }
 
     private static void light(ConstructPainter painter, Vec3 hands, double age, int seed) {
@@ -97,23 +92,31 @@ final class ClapFx {
         painter.glowDisc(hands, 1.4 * on, WHITE, on, 0.1, seed + 1);
     }
 
-    // A clear sphere with a bright rim swells out of the hands and bulges ahead, then is gone.
+    // The bubble swells out of the hands and rolls ahead with the shock, the world behind it bent as through a lens,
+    // until it is spent. Without the lens shader it is drawn as a clear shell with a bright rim.
     private static void bubble(ConstructPainter painter, Vec3 hands, Vec3 ahead, double age) {
         if (age >= BUBBLE) {
             return;
         }
         double u = age / BUBBLE;
-        double radius = 0.4 + (BUBBLE_SIZE - 0.4) * (1.0 - (1.0 - u) * (1.0 - u));
-        double on = 1.0 - Ease.smooth(u);
-        Vec3 center = hands.add(ahead.scale(radius * 0.75));
-        painter.shell(center, radius, PALE, 0.9 * on);
-        painter.shell(center, radius * 0.94, ICE, 0.35 * on);
+        double radius = 0.5 + (BUBBLE_SIZE - 0.5) * (1.0 - (1.0 - u) * (1.0 - u) * (1.0 - u));
+        double on = Ease.smooth(age / 1.5) * (1.0 - Ease.smooth((u - 0.45) / 0.55));
+        Vec3 center = hands.add(ahead.scale(radius * 0.8));
+        if (Lens.available()) {
+            Lens.bubble(center, radius, on, PALE);
+            painter.shell(center, radius * 1.01, PALE, 0.15 * on);
+        } else {
+            painter.shell(center, radius, PALE, 0.9 * on);
+            painter.shell(center, radius * 0.94, ICE, 0.35 * on);
+        }
     }
 
-    // Thunder sparks: short bright streaks sprayed forward out of the clap, fast at first, slowing and dropping.
+    // Thunder sparks: short bright streaks sprayed forward out of the clap, fast at first, slowing and dropping; while
+    // the bubble holds them they hang almost still.
     private static void streaks(ConstructPainter painter, Vec3 hands, Vec3 ahead, double age, int seed) {
+        double held = slowed(age);
         for (int k = 0; k < STREAKS; k++) {
-            double t = age - 3.0 * Noise.of(seed, k, 41);
+            double t = held - 3.0 * SLOWED * Noise.of(seed, k, 41);
             double life = 8.0 + 10.0 * Noise.of(seed, k, 42);
             if (t < 0.0 || t > life) {
                 continue;
@@ -138,7 +141,6 @@ final class ClapFx {
         if (left <= 0.0) {
             return;
         }
-        int tint = Colors.mix(DUST, ground(feet), 0.25F);
         double rolled = Ease.smooth(Math.min(1.0, age / 10.0));
         for (int k = 0; k < PUFFS; k++) {
             Vec3 way = within(ahead, Noise.of(seed, k, 11));
@@ -146,7 +148,7 @@ final class ClapFx {
             double rise = 0.3 + 1.5 * Noise.of(seed, k, 13) * rolled + age * 0.02;
             Vec3 at = feet.add(way.scale(reach)).add(0.0, rise, 0.0);
             double size = 0.7 + 1.5 * rolled + age * 0.04;
-            painter.lightDisc(at, size, tint, 0.45 * left * left, 0.35, seed + k);
+            painter.lightDisc(at, size, DUST, 0.45 * left * left, 0.35, seed + k);
         }
         if (age < 6.0) {
             double burst = 1.0 - age / 6.0;
@@ -155,54 +157,44 @@ final class ClapFx {
         }
     }
 
-    // Chunks torn out of the ground ahead, flung forward and up; they land, lie a moment and shrink away.
-    private static void chunks(ConstructPainter painter, Vec3 feet, Vec3 ahead, double age, int seed) {
-        for (int k = 0; k < CHUNKS; k++) {
-            Vec3 way = within(ahead, Noise.of(seed, k, 21));
-            double start = 1.0 + 2.0 * Noise.of(seed, k, 22);
-            double speed = 0.35 + 0.45 * Noise.of(seed, k, 23);
-            double up = 0.25 + 0.4 * Noise.of(seed, k, 24);
-            double t = Math.min(age, 2.0 * up / GRAVITY);
-            double out = start + speed * t;
-            double height = Math.max(0.0, up * t - 0.5 * GRAVITY * t * t);
-            double size = (0.12 + 0.2 * Noise.of(seed, k, 25)) * (1.0 - Ease.smooth((age - (LIFE - 10)) / 10.0));
-            if (size <= 0.0) {
+    // Rings of light ripple out over the ground ahead, one after another, with a swirl turning in the first.
+    private static void ripples(ConstructPainter painter, Vec3 feet, Vec3 ahead, double age, int seed) {
+        Vec3 side = ahead.cross(Vectors.UP).normalize();
+        Vec3 ground = feet.add(0.0, 0.06, 0.0);
+        for (int k = 0; k < RIPPLES; k++) {
+            double t = age - 2.5 * k;
+            if (t < 0.0 || t > RIPPLE_TICKS) {
                 continue;
             }
-            Vec3 at = feet.add(way.scale(out)).add(0.0, height + size * 0.5, 0.0);
-            painter.chunk(at, size, Noise.direction(seed, k + 40), t * (0.3 + 0.4 * Noise.of(seed, k, 26)), 0.9);
+            double u = t / RIPPLE_TICKS;
+            double grow = 1.0 - (1.0 - u) * (1.0 - u);
+            double fade = (1.0 - u) * (1.0 - u);
+            Vec3 at = ground.add(ahead.scale(1.8 + 2.4 * k + 1.5 * grow));
+            double radius = 0.3 + (1.8 + 0.8 * k) * grow;
+            painter.circle(at, ahead, side, radius, 0.035, 0.3, Colors.alpha(0.9 * fade),
+                    Colors.alpha(0.45 * fade));
+            painter.circle(at, ahead, side, radius * 0.62, 0.02, 0.18, Colors.alpha(0.5 * fade),
+                    Colors.alpha(0.25 * fade));
+            if (k == 0) {
+                swirl(painter, at, ahead, side, radius * 0.95, t, fade, seed);
+            }
         }
     }
 
-    // Slabs of ground heave up in a fan ahead, tipped away by the blast; they stand a moment, then sink back.
-    private static void slabs(ConstructPainter painter, Vec3 feet, Vec3 ahead, double age, int seed) {
-        if (age >= SLABS_GONE) {
-            return;
+    private static void swirl(ConstructPainter painter, Vec3 at, Vec3 ahead, Vec3 side, double radius, double t,
+            double fade, int seed) {
+        double turn = 0.12 * t + Noise.of(seed, 0, 51) * Math.PI * 2.0;
+        for (int arm = 0; arm < 2; arm++) {
+            Vec3 last = at;
+            for (int i = 1; i <= 16; i++) {
+                double s = i / 16.0;
+                double angle = turn + arm * Math.PI + s * Math.PI * 2.2;
+                Vec3 next = at.add(ahead.scale(Math.cos(angle) * radius * s))
+                        .add(side.scale(Math.sin(angle) * radius * s));
+                painter.lightLine(last, next, 0.03, PALE, Colors.alpha(0.8 * fade * s));
+                painter.glowLine(last, next, 0.2, ICE, Colors.alpha(0.35 * fade * s));
+                last = next;
+            }
         }
-        double up = Ease.smooth(age / 3.0) * (1.0 - Ease.smooth((age - SLABS_SINK) / (SLABS_GONE - SLABS_SINK)));
-        if (up <= 0.0) {
-            return;
-        }
-        for (int k = 0; k < SLABS; k++) {
-            Vec3 out = within(ahead, (k + 0.3 + 0.4 * Noise.of(seed, k, 31)) / SLABS);
-            double reach = 2.2 + 2.6 * Noise.of(seed, k, 32);
-            double size = 0.6 + 0.5 * Noise.of(seed, k, 33);
-            double tilt = 0.35 + 0.45 * Noise.of(seed, k, 34);
-            Vec3 stand = Vectors.UP.scale(Math.cos(tilt)).add(out.scale(Math.sin(tilt)));
-            Vec3 face = out.scale(Math.cos(tilt)).subtract(Vectors.UP.scale(Math.sin(tilt)));
-            Vec3 base = feet.add(out.scale(reach)).subtract(stand.scale(SLAB_HEIGHT * size * (1.0 - up)));
-            painter.model(SLAB, new ConstructPainter.Frame(base, face.cross(stand), stand, face, size), 1.0, 0.9);
-        }
-    }
-
-    private static int ground(Vec3 feet) {
-        ClientLevel level = Minecraft.getInstance().level;
-        if (level == null) {
-            return DUST;
-        }
-        BlockPos below = BlockPos.containing(feet.x, feet.y - 0.2, feet.z);
-        BlockState state = level.getBlockState(below);
-        MapColor color = state.getMapColor(level, below);
-        return state.isAir() || color == MapColor.NONE ? DUST : color.col;
     }
 }

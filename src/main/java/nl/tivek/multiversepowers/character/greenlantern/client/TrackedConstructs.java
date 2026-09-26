@@ -380,6 +380,17 @@ abstract class TrackedConstructs {
         return 0;
     }
 
+    // Ticks since the beam reached the stage it is at, or -1 without a beam.
+    public static float beamStageAge(int owner, float partialTick) {
+        for (Track track : CONSTRUCTS.values()) {
+            if (track.latest.shape() == ConstructPayload.BEAM && track.latest.owner() == owner
+                    && track.latest.solid() >= 1.0F) {
+                return (float) Math.max(0.0, track.clock(partialTick) - track.variantSince);
+            }
+        }
+        return -1.0F;
+    }
+
     public static float boltAge(int owner, float partialTick) {
         Double shot = BOLTS.get(owner);
         return shot == null ? -1.0F : (float) Math.max(0.0, clientTicks + partialTick - shot);

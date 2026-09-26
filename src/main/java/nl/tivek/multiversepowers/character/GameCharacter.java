@@ -222,10 +222,15 @@ public enum GameCharacter {
                     .setting("beamKnockback", 0.25, 0.0, 3.0, Unit.STRENGTH,
                             "How hard every hit of the beam drives what it hits back (0 = not at all)")
                     .setting("beamTopDamage", 3.0, 1.0, 20.0, Unit.STRENGTH,
-                            "Held longer, the beam grows in stages (5, 10 and 20 seconds): at the last its damage is"
-                                    + " this many times the first; the stages between climb to it")
-                    .setting("beamTopCost", 8.0, 1.0, 50.0, Unit.STRENGTH,
-                            "At the beam's last stage its ring power cost is this many times the first")
+                            "Held longer, the beam grows through five stages (the first once it fires, then at 4, 6, 8"
+                                    + " and 10 seconds of holding): at the fifth its damage is this many times the"
+                                    + " first; the stages between climb to it, and so does its push")
+                    .setting("beamTopPowerPerSecond", 5.0, 0.0, 100.0, Unit.POWER_PER_SECOND,
+                            "Ring power the beam costs a second at its fifth stage, the same for as long as you hold"
+                                    + " it there; the stages before climb to it from beamPowerPerSecond")
+                    .setting("beamTopRangeBlocks", 64.0, 4.0, 128.0, Unit.BLOCKS,
+                            "How far the beam reaches at its fifth stage, in blocks; the stages before climb to it"
+                                    + " from beamRangeBlocks")
                     .setting("beamTopWalk", 0.3, 0.0, 1.0, Unit.PART_KEPT,
                             "Part of your walking speed left at the beam's last stage; the first stage keeps 85%");
             this.add(abilities, AbilitySlot.ABILITY_5, "light_shield").held().mouse(CharacterAbility.Mouse.RIGHT)
@@ -250,10 +255,10 @@ public enum GameCharacter {
                     .setting("ramDamage", 4.0, 0.0, 2000.0, Unit.HALF_HEARTS,
                             "Damage of flying into a creature with the shield up, in half hearts, at the slowest"
                                     + " speed that rams")
-                    .setting("ramDamagePerSpeed", 10.5, 0.0, 200.0, Unit.HALF_HEARTS_PER_SPEED,
-                            "Extra ram damage in half hearts for every block per tick you fly (about 0.45 at top"
+                    .setting("ramDamagePerSpeed", 21.0, 0.0, 200.0, Unit.HALF_HEARTS_PER_SPEED,
+                            "Extra ram damage in half hearts for every block per tick you fly (about 0.225 at top"
                                     + " speed)")
-                    .was(6.0)
+                    .was(6.0, 10.5)
                     .setting("ramKnockback", 1.4, 0.0, 6.0, Unit.STRENGTH,
                             "How hard a ram throws a creature away; the faster you fly, the further it goes")
                     .setting("ramGroundPowerPerSecond", 2.0, 0.0, 50.0, Unit.POWER_PER_SECOND,
@@ -343,17 +348,18 @@ public enum GameCharacter {
                             "Seconds a full ring keeps you in the air: flying costs 100 divided by this a second,"
                                     + " and what you shoot or hold up while flying comes on top")
                     .was(15.0, 37.5)
-                    .setting("topSpeed", 9.0, 5.0, 150.0, Unit.BLOCKS_PER_SECOND,
-                            "Top speed in blocks per second (an elytra with firework rockets does about 33)")
-                    .was(50.0, 35.0, 19.25, 9.625, 6.25625, 18.0)
-                    .setting("startSpeed", 6.0, 1.0, 150.0, Unit.BLOCKS_PER_SECOND,
+                    .setting("topSpeed", 4.5, 1.0, 150.0, Unit.BLOCKS_PER_SECOND,
+                            "Top speed in blocks per second (an elytra with firework rockets does about 33); hovering"
+                                    + " and climbing without flying forward go at a part of it")
+                    .was(50.0, 35.0, 19.25, 9.625, 6.25625, 18.0, 9.0)
+                    .setting("startSpeed", 3.0, 1.0, 150.0, Unit.BLOCKS_PER_SECOND,
                             "Speed you set off at, in blocks per second: the longer you fly on, the faster you go, up"
                                     + " to the top speed")
-                    .was(11.7, 6.4, 4.16, 12.0)
-                    .setting("cruiseSpeed", 7.5, 1.0, 150.0, Unit.BLOCKS_PER_SECOND,
+                    .was(11.7, 6.4, 4.16, 12.0, 6.0)
+                    .setting("cruiseSpeed", 3.75, 1.0, 150.0, Unit.BLOCKS_PER_SECOND,
                             "Cruising speed in blocks per second: flying on, you are up to it within a moment, and"
                                     + " from there you keep gaining, up to the top speed")
-                    .was(13.0, 8.0, 5.2, 15.0)
+                    .was(13.0, 8.0, 5.2, 15.0, 7.5)
                     .setting("cruiseSeconds", 0.5, 0.0, 60.0, Unit.SECONDS,
                             "Seconds of flying on from the speed you set off at to the cruising speed (0 = straight"
                                     + " away)")

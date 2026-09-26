@@ -24,8 +24,9 @@ abstract class FlightSteering {
     public static final float SWEEP = 13.0F;
     public static final float ARISE = Flight.ARISE_TICKS;
 
-    private static final double HOVER = 0.32;
-    private static final double CLIMB = 0.38;
+    // Parts of the top speed, so hovering and climbing slow down along with it.
+    private static final double HOVER = 0.71;
+    private static final double CLIMB = 0.845;
     private static final double SPEED_UP = 0.20825;
     private static final double SLOW_DOWN = 0.055;
     private static final double BRAKE = 0.13;
@@ -75,8 +76,8 @@ abstract class FlightSteering {
 
     private static double topSpeed(LocalPlayer player) {
         double full = fullSpeed();
-        double start = Math.min(full, flightSetting("startSpeed", 6.0) / 20.0);
-        double cruise = Mth.clamp(flightSetting("cruiseSpeed", 7.5) / 20.0, start, full);
+        double start = Math.min(full, flightSetting("startSpeed", 3.0) / 20.0);
+        double cruise = Mth.clamp(flightSetting("cruiseSpeed", 3.75) / 20.0, start, full);
         double quick = cruiseSeconds();
         double slow = Math.max(0.0, flightSetting("speedUpSeconds", 3.0));
         double top;
@@ -107,7 +108,7 @@ abstract class FlightSteering {
     }
 
     public static double fullSpeed() {
-        return flightSetting("topSpeed", 9.0) / 20.0;
+        return flightSetting("topSpeed", 4.5) / 20.0;
     }
 
     private static double flightSetting(String key, double fallback) {
@@ -161,8 +162,9 @@ abstract class FlightSteering {
             target = look.scale(top * forward).add(right.scale(-strafe * top * 0.25))
                     .add(0.0, vertical * top * 0.25, 0.0);
         } else {
-            target = right.scale(-strafe * HOVER).add(flat.scale(forward * HOVER * 0.8))
-                    .add(0.0, vertical * CLIMB, 0.0);
+            double full = fullSpeed();
+            target = right.scale(-strafe * HOVER * full).add(flat.scale(forward * HOVER * 0.8 * full))
+                    .add(0.0, vertical * CLIMB * full, 0.0);
         }
         double rate = target.lengthSqr() > velocity.lengthSqr() ? SPEED_UP : SLOW_DOWN;
         if (ClientRing.has(player, RingPayload.DOME) && velocity.length() > top) {

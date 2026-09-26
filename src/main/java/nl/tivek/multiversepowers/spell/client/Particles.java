@@ -1,13 +1,10 @@
 package nl.tivek.multiversepowers.spell.client;
 
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.core.BlockPos;
-import net.minecraft.core.particles.BlockParticleOption;
 import net.minecraft.core.particles.DustParticleOptions;
 import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.util.RandomSource;
-import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Vector3f;
 import nl.tivek.multiversepowers.spell.SpellFxPayload;
@@ -86,17 +83,6 @@ final class Particles {
                 if (age < 1.0) {
                     ClapFx.felt(feet);
                     level.addParticle(ParticleTypes.FLASH, from.x, from.y, from.z, 0.0, 0.0, 0.0);
-                    BlockPos below = BlockPos.containing(feet.x, feet.y - 0.2, feet.z);
-                    BlockState ground = level.getBlockState(below);
-                    ParticleOptions bits = ground.isAir() ? ParticleTypes.POOF
-                            : new BlockParticleOption(ParticleTypes.BLOCK, ground);
-                    for (int k = 0; k < 80; k++) {
-                        Vec3 way = ClapFx.within(ahead, random.nextDouble());
-                        Vec3 at = feet.add(way.scale(1.0 + random.nextDouble() * 2.5));
-                        double out = 0.4 + random.nextDouble() * 0.9;
-                        level.addParticle(bits, at.x, feet.y + 0.2, at.z, way.x * out, 0.2 + random.nextDouble() * 0.5,
-                                way.z * out);
-                    }
                     for (int k = 0; k < 24; k++) {
                         Vec3 way = ClapFx.within(ahead, k / 23.0);
                         level.addParticle(ParticleTypes.CLOUD, feet.x + way.x, feet.y + 0.3, feet.z + way.z,

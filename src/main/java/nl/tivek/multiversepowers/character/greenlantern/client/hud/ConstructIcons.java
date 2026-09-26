@@ -22,18 +22,11 @@ public final class ConstructIcons {
     private static final Vec3 UPRIGHT = new Vec3(0.0, 1.0, 0.0);
 
     private static final Model WHIP = Model.of(WeaponShapes.WHIP);
-    private static final Model GLOVE = Model.of(WeaponShapes.GLOVE);
-    private static final Model LEFT_GLOVE = Model.of(WeaponShapes.LEFT_GLOVE);
-    private static final Model DAGGER = Model.of(WeaponShapes.DAGGER);
     private static final Model BATTLEAXE = Model.of(WeaponShapes.BATTLEAXE);
-    private static final Model WAR_HAMMER = Model.of(WeaponShapes.WAR_HAMMER);
-    private static final Model HALBERD = Model.of(WeaponShapes.HALBERD);
     private static final Model CHAINSAW = Model.of(WeaponShapes.CHAINSAW);
     private static final Model REVOLVER = Model.of(WeaponShapes.REVOLVER);
     private static final Model SHOTGUN = Model.of(WeaponShapes.SHOTGUN);
-    private static final Model SMG = Model.of(WeaponShapes.SMG);
     private static final Model ARM_CANNON = Model.of(WeaponShapes.ARM_CANNON);
-    private static final Model GRENADE_LAUNCHER = Model.of(WeaponShapes.GRENADE_LAUNCHER);
     private static final Model MINIGUN = Model.of(WeaponShapes.MINIGUN);
     private static final Model ROCKET_LAUNCHER = Model.of(WeaponShapes.ROCKET_LAUNCHER);
     private static final Model FLAMETHROWER = Model.of(WeaponShapes.FLAMETHROWER);
@@ -59,34 +52,18 @@ public final class ConstructIcons {
         switch (construct) {
             case SWORD_SHIELD -> swordShield(painter, sway);
             case ENERGY_WHIP -> place(painter, WHIP, 0.0, 0.0, 0.0, way(20.0, 0.0), way(110.0, 0.0), 1.0, sway);
-            case GAUNTLETS -> {
-                place(painter, GLOVE, 0.17, -0.05, -0.05, way(150.0, 10.0), way(60.0, 0.0), 0.56, sway);
-                place(painter, LEFT_GLOVE, -0.17, -0.05, 0.0, way(30.0, 10.0), way(120.0, 0.0), 0.56, sway);
-            }
-            case DAGGERS -> {
-                place(painter, DAGGER, 0.0, 0.0, -0.05, way(128.0, 0.0), way(218.0, 0.0), 0.95, sway);
-                place(painter, DAGGER, 0.0, 0.0, 0.0, way(52.0, 0.0), way(142.0, 0.0), 0.95, sway);
-            }
             case BATTLEAXE -> place(painter, BATTLEAXE, 0.0, 0.0, 0.0, way(50.0, 0.0), way(140.0, 0.0), 0.95, sway);
-            case WAR_HAMMER -> place(painter, WAR_HAMMER, 0.0, 0.0, 0.0, way(50.0, 0.0), way(140.0, 0.0), 0.97, sway);
-            case HALBERD -> place(painter, HALBERD, 0.0, 0.0, 0.0, way(50.0, 0.0), way(140.0, 0.0), 1.04, sway);
             case CHAINSAW -> place(painter, CHAINSAW, 0.0, 0.0, 0.0, way(18.0, 0.0), way(108.0, 18.0), 1.0, sway);
             case REVOLVERS -> {
                 place(painter, REVOLVER, -0.02, 0.06, -0.05, way(140.0, 0.0), way(50.0, 0.0), 0.78, sway);
                 place(painter, REVOLVER, 0.02, 0.06, 0.0, way(40.0, 0.0), way(130.0, 0.0), 0.78, sway);
             }
             case SHOTGUN -> place(painter, SHOTGUN, 0.0, 0.0, 0.0, way(15.0, 12.0), way(105.0, 45.0), 0.98, sway);
-            case SMGS -> {
-                place(painter, SMG, -0.2, 0.02, -0.02, way(165.0, 0.0), way(75.0, 10.0), 0.5, sway);
-                place(painter, SMG, 0.2, 0.02, 0.0, way(15.0, 0.0), way(105.0, 10.0), 0.5, sway);
-            }
             case ARM_CANNON -> {
                 ConstructPainter.Frame frame = place(painter, ARM_CANNON, 0.0, 0.0, 0.0, way(15.0, 38.0),
                         way(105.0, 5.0), 0.9, sway);
                 painter.flare(frame.at(0.0, 0.0, 0.35), 0.18 * frame.scale(), 0.85);
             }
-            case GRENADE_LAUNCHER -> place(painter, GRENADE_LAUNCHER, 0.0, 0.0, 0.0, way(15.0, 0.0), way(105.0, 12.0),
-                    1.02, sway);
             case MINIGUN -> place(painter, MINIGUN, 0.0, 0.0, 0.0, way(20.0, 10.0), way(110.0, 12.0), 1.05, sway);
             case ROCKET_LAUNCHER -> place(painter, ROCKET_LAUNCHER, 0.0, 0.0, 0.0, way(30.0, 0.0), way(120.0, 10.0),
                     1.1, sway);

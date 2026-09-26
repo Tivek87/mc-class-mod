@@ -3,6 +3,7 @@ package nl.tivek.multiversepowers.character.greenlantern.ability;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import net.minecraft.core.particles.BlockParticleOption;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
@@ -10,12 +11,12 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
-import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.level.ClipContext;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
@@ -28,6 +29,7 @@ import nl.tivek.multiversepowers.character.greenlantern.PowerRing;
 import nl.tivek.multiversepowers.engine.effect.Effect;
 import nl.tivek.multiversepowers.engine.effect.Effects;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
+import nl.tivek.multiversepowers.engine.math.Vectors;
 import nl.tivek.multiversepowers.engine.world.LoadedWorld;
 
 public final class LightBeam implements Effect {
@@ -43,26 +45,32 @@ public final class LightBeam implements Effect {
     private static final Map<UUID, LightBeam> FIRING = new HashMap<>();
     private static final Map<UUID, Integer> CHARGING = new HashMap<>();
 
-    // The beam grows at these seconds of holding the button, counted from the press.
-    private static final int[] STAGE_SECONDS = { 5, 10, 20 };
-    public static final float[] STAGE_THICK = { 1.0F, 1.45F, 2.0F, 2.8F };
+    // The beam grows at these seconds of holding the button, counted from the press; its first stage comes with the
+    // beam itself, once the button has been held for its hold time.
+    private static final int[] STAGE_SECONDS = { 4, 6, 8, 10 };
+    public static final int STAGES = STAGE_SECONDS.length + 1;
+    public static final int LAST = STAGES - 1;
+    public static final float[] STAGE_THICK = { 0.5F, 0.85F, 1.3F, 1.95F, 2.9F };
+    // Heavy particles only this far out along the beam, never right before its owner's eyes.
+    private static final double SHED_FROM = 4.0;
     private static final double FIRST_WALK = 0.85;
     private static final ResourceLocation SLOW = ResourceLocation.fromNamespaceAndPath(MultiversePowers.MODID,
             "beam_slow");
 
     private final int id;
     private final ServerPlayer owner;
+    private final CharacterAbility ability;
     private final float baseDamage;
     private final int every;
-    private final float basePerTick;
-    private final double range;
+    private final double basePerTick;
     private final double basePush;
     private final double topDamage;
-    private final double topCost;
+    private final double topPerTick;
     private final double topWalk;
     private final int[] stageAges = new int[STAGE_SECONDS.length];
     private float damage;
     private float perTick;
+    private double range;
     private double push;
     private int stage = -1;
     private int age;
@@ -74,20 +82,30 @@ public final class LightBeam implements Effect {
     private LightBeam(ServerPlayer owner, CharacterAbility ability) {
         this.id = PowerRing.newId();
         this.owner = owner;
+        this.ability = ability;
         this.baseDamage = (float) ability.value("beamDamage");
         this.every = Math.max(1, ability.intValue("beamTicks"));
-        this.basePerTick = (float) (ability.value("beamPowerPerSecond") / 20.0);
-        this.range = ability.value("beamRangeBlocks");
+        this.basePerTick = ability.value("beamPowerPerSecond") / 20.0;
         this.basePush = ability.value("beamKnockback");
         this.topDamage = ability.value("beamTopDamage");
-        this.topCost = ability.value("beamTopCost");
+        this.topPerTick = ability.value("beamTopPowerPerSecond") / 20.0;
         this.topWalk = ability.value("beamTopWalk");
         for (int i = 0; i < STAGE_SECONDS.length; i++) {
-            this.stageAges[i] = Math.max(1, STAGE_SECONDS[i] * 20 - ability.holdTicks());
+            this.stageAges[i] = Math.max(1, stageFrom(i + 1, ability.holdTicks()) - ability.holdTicks());
         }
         this.facing = owner.getLookAngle();
         this.end = owner.getEyePosition();
         this.grow(0);
+    }
+
+    // Ticks from the press to where a stage begins.
+    public static int stageFrom(int stage, int holdTicks) {
+        return stage <= 0 ? holdTicks : STAGE_SECONDS[Math.min(stage, STAGE_SECONDS.length) - 1] * 20;
+    }
+
+    public static double range(CharacterAbility ability, int stage) {
+        return Mth.lerp((double) Mth.clamp(stage, 0, LAST) / LAST, ability.value("beamRangeBlocks"),
+                ability.value("beamTopRangeBlocks"));
     }
 
     private int stageAt(int age) {
@@ -100,9 +118,13 @@ public final class LightBeam implements Effect {
 
     private void grow(int stage) {
         this.stage = stage;
-        double climb = (double) stage / STAGE_SECONDS.length;
+        double climb = (double) stage / LAST;
         this.damage = (float) (this.baseDamage * Math.pow(this.topDamage, climb));
-        this.perTick = (float) (this.basePerTick * Math.pow(this.topCost, climb));
+        // The last stage drains its own fixed amount a second; the stages before climb towards it.
+        boolean scaled = this.basePerTick > 0.0 && this.topPerTick > 0.0 && stage < LAST;
+        this.perTick = (float) (scaled ? this.basePerTick * Math.pow(this.topPerTick / this.basePerTick, climb)
+                : Mth.lerp(climb, this.basePerTick, this.topPerTick));
+        this.range = range(this.ability, stage);
         this.push = this.basePush * (1.0 + 0.5 * stage);
         double walk = Mth.lerp(climb, FIRST_WALK, Math.min(FIRST_WALK, this.topWalk));
         AttributeInstance speed = this.owner.getAttribute(Attributes.MOVEMENT_SPEED);
@@ -122,18 +144,39 @@ public final class LightBeam implements Effect {
 
     private void stageUp(ServerLevel level) {
         Vec3 eye = this.owner.getEyePosition();
-        float pitch = 1.4F - 0.25F * this.stage;
+        float rise = (float) this.stage / LAST;
         level.playSound(null, eye.x, eye.y, eye.z, SoundEvents.BEACON_POWER_SELECT, SoundSource.PLAYERS,
-                0.9F + 0.2F * this.stage, pitch);
+                0.9F + 0.4F * rise, 1.4F - 0.7F * rise);
         level.playSound(null, eye.x, eye.y, eye.z, SoundEvents.WARDEN_SONIC_BOOM, SoundSource.PLAYERS,
-                0.35F + 0.2F * this.stage, 1.8F - 0.3F * this.stage);
-        if (this.stage == STAGE_SECONDS.length) {
+                0.35F + 0.65F * rise, 1.8F - 1.0F * rise);
+        if (this.stage >= LAST - 1) {
             level.playSound(null, eye.x, eye.y, eye.z, SoundEvents.LIGHTNING_BOLT_THUNDER, SoundSource.PLAYERS,
-                    0.7F, 1.6F);
+                    this.stage == LAST ? 1.2F : 0.6F, this.stage == LAST ? 0.9F : 1.6F);
         }
-        Vec3 ring = eye.add(this.facing.scale(0.9));
-        ParticleFx.sphereOut(level, ParticleFx.dust(PowerRing.BRIGHT, 1.3F + 0.3F * this.stage), ring,
-                20 + 16 * this.stage, 0.3 + 0.15 * this.stage);
+        if (this.stage == LAST) {
+            level.playSound(null, eye.x, eye.y, eye.z, SoundEvents.GENERIC_EXPLODE.value(), SoundSource.PLAYERS, 0.9F,
+                    0.55F);
+            level.playSound(null, eye.x, eye.y, eye.z, SoundEvents.TRIDENT_THUNDER.value(), SoundSource.PLAYERS, 1.0F,
+                    0.8F);
+        }
+        // Out of the beam a little ahead of the ring and flying off sideways, so none of it flies into your own eyes.
+        Vec3 ring = eye.add(this.facing.scale(2.5));
+        Vec3[] across = Vectors.across(this.facing);
+        int spokes = 16 + 8 * this.stage;
+        for (int i = 0; i < spokes; i++) {
+            double angle = Math.PI * 2.0 * i / spokes;
+            Vec3 out = across[0].scale(Math.cos(angle)).add(across[1].scale(Math.sin(angle)));
+            ParticleFx.fly(level, ParticleFx.dust(PowerRing.GREEN, 1.0F + 0.15F * this.stage), ring, out,
+                    0.35 + 0.2 * this.stage);
+        }
+        if (this.stage >= 2) {
+            // The surge of a new stage runs down the whole beam.
+            for (double d = SHED_FROM; d < this.length; d += 2.5 - 0.3 * this.stage) {
+                Vec3 at = eye.add(this.facing.scale(d));
+                ParticleFx.cloud(level, ParticleFx.dust(PowerRing.BRIGHT, 0.8F + 0.1F * this.stage), at,
+                        this.stage, 0.2 * STAGE_THICK[this.stage], 0.05);
+            }
+        }
         PowerRing.tell(this.owner, "beam_stage." + (this.stage + 1));
     }
 
@@ -157,7 +200,6 @@ public final class LightBeam implements Effect {
         LightBeam beam = new LightBeam(owner, ability);
         FIRING.put(owner.getUUID(), beam);
         Effects.start(level, beam);
-        owner.swing(InteractionHand.MAIN_HAND, true);
         level.playSound(null, owner.getX(), owner.getEyeY(), owner.getZ(), SoundEvents.GUARDIAN_ATTACK,
                 SoundSource.PLAYERS, 0.8F, 1.9F);
         level.playSound(null, owner.getX(), owner.getEyeY(), owner.getZ(), SoundEvents.BEACON_POWER_SELECT,
@@ -271,7 +313,8 @@ public final class LightBeam implements Effect {
         boolean wall = block.getType() != HitResult.Type.MISS;
         this.end = wall ? block.getLocation() : far;
         this.length = eye.distanceTo(this.end);
-        double reach = REACH * STAGE_THICK[this.stage];
+        float thick = STAGE_THICK[this.stage];
+        double reach = REACH * Math.max(1.0F, thick);
         if (this.age % this.every == 1 || this.every == 1) {
             for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, new AABB(eye, this.end)
                     .inflate(reach + 1.0), entity -> PowerRing.canHit(this.owner, entity))) {
@@ -288,25 +331,80 @@ public final class LightBeam implements Effect {
                 // A player moves himself on his own client, so the push has to be told to him, unlike a mob's.
                 target.hurtMarked = true;
                 Vec3 at = target.getBoundingBox().getCenter();
-                ParticleFx.cloud(level, ParticleFx.dust(PowerRing.BRIGHT, 1.1F), at, 5, 0.25, 0.0);
-                ParticleFx.cloud(level, ParticleTypes.CRIT, at, 4, 0.3, 0.2);
+                ParticleFx.cloud(level, ParticleFx.dust(PowerRing.BRIGHT, 1.1F + 0.1F * this.stage), at,
+                        5 + 3 * this.stage, 0.25 + 0.1 * this.stage, 0.0);
+                ParticleFx.cloud(level, ParticleTypes.CRIT, at, 4 + 2 * this.stage, 0.3, 0.2 + 0.1 * this.stage);
             }
         }
         if (wall && this.age % 2 == 0) {
-            float thick = STAGE_THICK[this.stage];
             ParticleFx.cloud(level, ParticleFx.dust(PowerRing.GREEN, 1.6F), this.end, (int) (5 * thick), 0.25 * thick,
                     0.0);
             ParticleFx.cloud(level, ParticleFx.dust(PowerRing.BRIGHT, 0.9F), this.end, (int) (3 * thick),
                     0.15 * thick, 0.0);
             Vec3 back = this.facing.scale(-1.0);
-            for (int i = 0; i < 2 + 2 * this.stage; i++) {
+            for (int i = 0; i < 2 + 3 * this.stage; i++) {
                 Vec3 way = back.add(ParticleFx.spread(0.9), ParticleFx.spread(0.9) + 0.3,
                         ParticleFx.spread(0.9)).normalize();
-                ParticleFx.fly(level, ParticleTypes.END_ROD, this.end.add(back.scale(0.1)), way, 0.25);
+                ParticleFx.fly(level, ParticleTypes.END_ROD, this.end.add(back.scale(0.1)), way,
+                        0.25 + 0.06 * this.stage);
+            }
+            if (this.stage >= 2) {
+                BlockState hit = level.getBlockState(block.getBlockPos());
+                if (!hit.isAir()) {
+                    ParticleFx.send(level, new BlockParticleOption(ParticleTypes.BLOCK, hit), this.end.x, this.end.y,
+                            this.end.z, 3 * this.stage, 0.2 * thick, 0.2 * thick, 0.2 * thick, 0.25);
+                }
+            }
+            if (this.stage == LAST && this.age % 8 == 0) {
+                ParticleFx.send(level, ParticleTypes.EXPLOSION, this.end.x, this.end.y, this.end.z, 1, 0.4, 0.4, 0.4,
+                        0.0);
             }
         }
+        if (this.stage >= 2 && this.age % 2 == 1) {
+            this.shed(level, eye, thick);
+        }
+        this.hum(level, eye);
+    }
+
+    // The stronger stages shed heavy sparks and flecks of light all along the beam.
+    private void shed(ServerLevel level, Vec3 eye, float thick) {
+        if (this.length <= SHED_FROM) {
+            return;
+        }
+        Vec3[] across = Vectors.across(this.facing);
+        int count = 3 * (this.stage - 1);
+        for (int i = 0; i < count; i++) {
+            double d = SHED_FROM + ParticleFx.RANDOM.nextDouble() * (this.length - SHED_FROM);
+            double angle = ParticleFx.RANDOM.nextDouble() * Math.PI * 2.0;
+            Vec3 out = across[0].scale(Math.cos(angle)).add(across[1].scale(Math.sin(angle)));
+            Vec3 at = eye.add(this.facing.scale(d)).add(out.scale(0.25 * thick));
+            ParticleFx.fly(level, this.stage == LAST && i % 2 == 0 ? ParticleTypes.ELECTRIC_SPARK
+                    : ParticleFx.dust(PowerRing.BRIGHT, 0.6F + 0.15F * this.stage), at, out,
+                    0.08 + 0.05 * this.stage);
+        }
+        if (this.stage >= LAST - 1) {
+            for (int i = 0; i < this.stage; i++) {
+                double d = SHED_FROM + ParticleFx.RANDOM.nextDouble() * (this.length - SHED_FROM);
+                Vec3 at = eye.add(this.facing.scale(d));
+                ParticleFx.fly(level, ParticleTypes.END_ROD, at, this.facing.add(ParticleFx.spread(0.6),
+                        ParticleFx.spread(0.6), ParticleFx.spread(0.6)).normalize(), 0.15);
+            }
+        }
+    }
+
+    private void hum(ServerLevel level, Vec3 eye) {
         if (this.age % 12 == 1) {
-            level.playSound(null, eye.x, eye.y, eye.z, SoundEvents.BEACON_AMBIENT, SoundSource.PLAYERS, 0.9F, 1.9F);
+            level.playSound(null, eye.x, eye.y, eye.z, SoundEvents.BEACON_AMBIENT, SoundSource.PLAYERS,
+                    0.9F + 0.25F * this.stage, 1.9F - 0.3F * this.stage);
+        }
+        if (this.stage >= 2 && this.age % 20 == 7) {
+            level.playSound(null, eye.x, eye.y, eye.z, SoundEvents.BEACON_POWER_SELECT, SoundSource.PLAYERS,
+                    0.3F + 0.15F * this.stage, 0.5F + 0.1F * this.stage);
+        }
+        if (this.stage == LAST && this.age % 16 == 3) {
+            // Unstable at full power: it crackles now and then.
+            level.playSound(null, eye.x, eye.y, eye.z, SoundEvents.LIGHTNING_BOLT_IMPACT, SoundSource.PLAYERS, 0.45F,
+                    1.4F + 0.4F * ParticleFx.RANDOM.nextFloat());
         }
     }
 

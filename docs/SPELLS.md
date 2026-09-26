@@ -44,7 +44,7 @@ Good to know:
 | Fire | Fireball | A burning comet that bursts, burns and throws back what is round it, and leaves a small fire | flies until it hits, up to 5 s | 2 s |
 | Fire | Fire Wall | A swirling ring of fire around you that burns and knocks back enemies | 3.5 block radius | 10 s |
 | Lightning | Lightning Strike | Charges up, then lightning strikes where you look and leaps on to more foes | 40 blocks | 8 s |
-| Lightning | Thunder Clap | You clap your hands: thunder, a shock bubble and a blast of sparks that tears up the ground ahead | 9 blocks in front of you | 10 s |
+| Lightning | Thunder Clap | You clap your hands: thunder, a bubble of bent light where time slows, and a blast of sparks | 9 blocks in front of you | 10 s |
 | Nature | Poison Area | A thrown vial that leaves a slowing poison cloud | 24 blocks | 12 s |
 | Air | Wind Gust | A wall of wind that throws hostile (red) creatures back and turns their shots round | 8 blocks in front of you | 5 s |
 | Dark | Void Walk | 10 s invisible and faster, hostile (red) ones marked, the first blow out of it an ambush | around you | 30 s |
@@ -120,11 +120,14 @@ one foe to the next. It is the spell's own lightning: the game's normal bolt is 
 ## Thunder Clap
 
 **What you see:** you throw your arms wide and your head back while sparks build in your hands, then slam
-them together in front of your chest. Everything goes forward, never behind you: a clear bubble with a
-bright rim bursts ahead out of your hands, a blinding blue-white light flares between them and thunder
-cracks. A spray of short white and blue thunder sparks shoots ahead, slabs of ground heave up in a fan in
-front of you, chunks of ground fly off and a wall of mist rolls forward and hangs as a haze. The slabs sink
-back after a moment. No lightning and no bolts, only sparks.
+them together in front of your chest. Everything goes forward, never behind you: a blinding blue-white
+light flares between them, thunder cracks and a bubble in which time all but stands still swells out of your
+hands and rolls ahead with the shock. Everything behind it is seen as through a ball of glass: swollen in the
+middle, squeezed and smeared out towards its bright rim, with coloured fringes and ripples running through it.
+The spray of short white and blue thunder sparks crawls slowly inside the bubble and only flies on at full
+speed once it has passed. Rings of light ripple out over the ground ahead, the first with a swirl turning in
+it, and a wall of mist rolls forward and hangs as a haze. No ground is torn up, no lightning and no bolts,
+only sparks.
 Everyone close by feels it: the screen flashes and the view shakes, less the further away you are.
 
 | | |

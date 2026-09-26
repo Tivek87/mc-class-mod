@@ -119,6 +119,11 @@ public final class ConstructHud {
                 continue;
             }
             boolean right = ability.mouseButton() == CharacterAbility.Mouse.LEFT;
+            if (ability.id().equals("light_bolt") && !SwordArms.holding() && !FlameArms.holding()
+                    && !WhipArms.holding()) {
+                drawn |= BeamBar.render(graphics, minecraft.player, ability, middleX, middleY, partialTick, labels);
+                continue;
+            }
             int button = right ? 0 : 1;
             float progress = MouseHold.progress(ability, partialTick);
             if (progress < 1.0F) {

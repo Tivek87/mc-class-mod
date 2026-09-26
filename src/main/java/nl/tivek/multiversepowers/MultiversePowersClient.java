@@ -10,6 +10,7 @@ import nl.tivek.multiversepowers.character.greenlantern.client.body.GreenLantern
 import nl.tivek.multiversepowers.config.ModConfigs;
 import nl.tivek.multiversepowers.config.client.ClientSettings;
 import nl.tivek.multiversepowers.config.client.ConfigChoiceScreen;
+import nl.tivek.multiversepowers.engine.client.render.Lens;
 import nl.tivek.multiversepowers.update.client.UpdatePopup;
 
 @Mod(value = MultiversePowers.MODID, dist = Dist.CLIENT)
@@ -20,5 +21,6 @@ public final class MultiversePowersClient {
                 (mod, parent) -> new ConfigChoiceScreen(parent));
         modEventBus.addListener(GreenLanternSuitLayer::onAddLayers);
         modEventBus.addListener(UpdatePopup::onRegisterKeys);
+        modEventBus.addListener(Lens::onRegisterShaders);
     }
 }

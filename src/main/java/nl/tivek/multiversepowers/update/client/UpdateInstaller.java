@@ -17,7 +17,6 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.util.HexFormat;
-import java.util.List;
 import java.util.Locale;
 import java.util.Properties;
 import java.util.concurrent.CompletableFuture;
@@ -50,7 +49,7 @@ final class UpdateInstaller {
     private static Release target;
     @Nullable
     private static Path downloaded;
-    private static boolean restartWanted;
+    private static boolean closeWanted;
     private static boolean helperStarted;
     @Nullable
     private static Path modJar;
@@ -99,26 +98,27 @@ final class UpdateInstaller {
         begin(release, false);
     }
 
-    static void updateAndRestart(Release release) {
+    // Closes the game once the update is in; it is installed after that, and started again by the player.
+    static void updateNow(Release release) {
         begin(release, true);
     }
 
-    private static void begin(Release release, boolean restart) {
+    private static void begin(Release release, boolean close) {
         if (!canInstall() || release.jar() == null) {
             return;
         }
         boolean same = target != null && target.version().equals(release.version());
         if (same && state == State.DOWNLOADING) {
-            restartWanted |= restart;
+            closeWanted |= close;
             return;
         }
         if (same && state == State.READY) {
-            restartWanted |= restart;
+            closeWanted |= close;
             finish();
             return;
         }
         target = release;
-        restartWanted = restart;
+        closeWanted = close;
         error = null;
         progress = 0.0F;
         state = State.DOWNLOADING;
@@ -140,7 +140,7 @@ final class UpdateInstaller {
         }
         downloaded = jar;
         try {
-            writePlan(false);
+            writePlan();
             startHelper();
         } catch (IOException e) {
             LOGGER.warn("Could not prepare the update", e);
@@ -154,24 +154,12 @@ final class UpdateInstaller {
     }
 
     private static void finish() {
-        if (!restartWanted) {
+        if (!closeWanted) {
             return;
-        }
-        boolean relaunch = false;
-        List<String> arguments = Relaunch.possible() ? Relaunch.arguments() : null;
-        try {
-            if (arguments != null) {
-                Relaunch.writeArgumentFile(folder().resolve(UpdateHelper.RELAUNCH), arguments);
-                relaunch = true;
-            }
-            writePlan(relaunch);
-        } catch (IOException e) {
-            LOGGER.warn("Could not prepare the restart", e);
-            relaunch = false;
         }
         Minecraft minecraft = Minecraft.getInstance();
         minecraft.setScreen(new GenericMessageScreen(Component.translatable("screen." + MultiversePowers.MODID
-                + (relaunch ? ".update.restarting" : ".update.closing"))));
+                + ".update.closing")));
         minecraft.stop();
     }
 
@@ -236,15 +224,12 @@ final class UpdateInstaller {
         }
     }
 
-    private static void writePlan(boolean relaunch) throws IOException {
+    private static void writePlan() throws IOException {
         Path oldJar = modJar();
         Properties plan = new Properties();
         plan.setProperty("old", oldJar.toString());
         plan.setProperty("new", downloaded.toString());
         plan.setProperty("target", oldJar.resolveSibling(target.jar().name()).toString());
-        plan.setProperty("relaunch", Boolean.toString(relaunch));
-        plan.setProperty("java", Relaunch.javaCommand());
-        plan.setProperty("workdir", Path.of(System.getProperty("user.dir")).toAbsolutePath().toString());
         try (Writer writer = Files.newBufferedWriter(folder().resolve(UpdateHelper.PLAN), StandardCharsets.UTF_8)) {
             plan.store(writer, "Multiverse Powers update");
         }

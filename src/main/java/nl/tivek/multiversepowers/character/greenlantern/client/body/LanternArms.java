@@ -39,13 +39,14 @@ public final class LanternArms {
     private static final double POUND_LOW = -0.08;
     private static final float CHARGE_REACH = 0.7F;
     private static final Vector3f POINT = new Vector3f(0.36F, -0.24F, -1.3F);
-    private static final Vector3f POINT_KICK = new Vector3f(0.0F, 0.04F, 0.12F);
+    // Kicks push the hand straight back along the arm, never up, so the arm stays dead straight.
+    private static final Vector3f POINT_KICK = new Vector3f(0.0F, 0.0F, 0.12F);
     private static final float POINT_UP = 30.0F;
     private static final float POINT_DOWN = 7.0F;
     private static final double SHOULDER_HEIGHT = 0.8;
     private static final double SHOULDER_SIDE = 0.31;
     private static final double ARM = 0.68;
-    private static final Vector3f HAND_KICK = new Vector3f(0.0F, 0.09F, 0.2F);
+    private static final Vector3f HAND_KICK = new Vector3f(0.0F, 0.0F, 0.2F);
     private static final float HAND_TREMBLE = 0.018F;
     private static final float WRIST_BACK = 0.17F;
     private static final Vector3f UNDER_WRIST = new Vector3f(-0.03F, -0.075F, 0.0F);

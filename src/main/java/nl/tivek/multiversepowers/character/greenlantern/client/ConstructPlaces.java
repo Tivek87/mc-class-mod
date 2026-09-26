@@ -16,6 +16,7 @@ import nl.tivek.multiversepowers.character.CharacterAbility;
 import nl.tivek.multiversepowers.character.GameCharacter;
 import nl.tivek.multiversepowers.character.greenlantern.ConstructPath;
 import nl.tivek.multiversepowers.character.greenlantern.ConstructPayload;
+import nl.tivek.multiversepowers.character.greenlantern.ability.LightBeam;
 import nl.tivek.multiversepowers.character.greenlantern.ability.LightShield;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.LanternArms;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.RingSpot;
@@ -97,7 +98,7 @@ final class ConstructPlaces {
         Vec3 eye = owner.getEyePosition(partialTick);
         if (owner == Minecraft.getInstance().player) {
             CharacterAbility bolt = GameCharacter.GREEN_LANTERN.byName("light_bolt");
-            double range = bolt == null ? 40.0 : bolt.value("beamRangeBlocks");
+            double range = bolt == null ? 40.0 : LightBeam.range(bolt, now.variant());
             Vec3 far = eye.add(way.scale(range));
             BlockHitResult hit = level.clip(new ClipContext(eye, far, ClipContext.Block.COLLIDER,
                     ClipContext.Fluid.NONE, owner));

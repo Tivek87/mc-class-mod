@@ -11,8 +11,9 @@ import nl.tivek.multiversepowers.engine.math.Ease;
 import static nl.tivek.multiversepowers.character.greenlantern.client.body.FlightPose.KNEEL_LEAN;
 
 final class FlightLimbs {
-    private static final float BEAM_TREMBLE = 0.05F;
-    private static final float BEAM_KICK = 0.42F;
+    // In model pixels: how far the shoulder shakes, and how far a kick pushes the whole arm back.
+    private static final float BEAM_TREMBLE = 0.45F;
+    private static final float BEAM_KICK = 1.4F;
     private static final float BRACE_ACROSS = 0.88F;
     private static final float BRACE_DROP = 0.14F;
     private static final float DOWN_THIGH = 0.05F;
@@ -23,21 +24,30 @@ final class FlightLimbs {
     private FlightLimbs() {
     }
 
+    // The arm lies dead along the view: the kick and the trembling move it, they never tip it.
     static void beam(HumanoidModel<?> model, ModelPart limb, boolean right, Blend blend, LivingEntity entity,
             float partialTick, float time) {
         float tremble = BEAM_TREMBLE * BeamArm.tremble(entity, partialTick);
-        float lift = model.head.xRot - BEAM_KICK * BeamArm.kick(entity, partialTick)
-                + tremble * BeamArm.shake(time, 0);
-        float turn = model.head.yRot + tremble * BeamArm.shake(time, 1);
+        float lift = model.head.xRot;
+        float turn = model.head.yRot;
+        float back = BEAM_KICK * BeamArm.kick(entity, partialTick);
         if (right) {
             limb.xRot = Mth.lerp(blend.beam, limb.xRot, -Mth.HALF_PI + lift);
             limb.yRot = Mth.lerp(blend.beam, limb.yRot, turn);
             limb.zRot = Mth.lerp(blend.beam, limb.zRot, 0.0F);
+            shift(limb, blend.beam, back, tremble, time);
         } else if (blend.brace > 0.0F) {
             limb.xRot = Mth.lerp(blend.brace, limb.xRot, -Mth.HALF_PI + BRACE_DROP + lift);
             limb.yRot = Mth.lerp(blend.brace, limb.yRot, BRACE_ACROSS + turn);
             limb.zRot = Mth.lerp(blend.brace, limb.zRot, 0.0F);
+            shift(limb, blend.brace, back, tremble, time);
         }
+    }
+
+    // Only x and z: the game sets the arm's height again after the pose.
+    static void shift(ModelPart limb, float weight, float back, float tremble, float time) {
+        limb.x += weight * tremble * BeamArm.shake(time, 1);
+        limb.z += weight * (back + tremble * BeamArm.shake(time, 0));
     }
 
     static void brace(HumanoidModel<?> model, ModelPart limb, boolean right, float weight) {

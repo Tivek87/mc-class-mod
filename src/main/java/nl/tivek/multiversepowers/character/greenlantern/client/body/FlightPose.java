@@ -43,7 +43,7 @@ public final class FlightPose {
     private static final float CHARGE_AIM = 0.8F;
     private static final float POINT_UP = 30.0F;
     private static final float POINT_DOWN = 7.0F;
-    private static final float BOLT_KICK = 0.14F;
+    private static final float BOLT_KICK = 0.9F;
     private static final float SLAM_TICKS = 23.0F;
     private static final float SLAM_HAND_TICKS = 21.0F;
     private static final float KNEEL_HOLD = 15.0F;
@@ -286,10 +286,10 @@ public final class FlightPose {
             model.head.xRot = Mth.clamp(model.head.xRot + look * fly, -1.35F, 1.1F);
         }
         if (right && blend.point > 0.0F) {
-            float kick = BOLT_KICK * BoltArm.kick(entity, partialTick);
-            limb.xRot = Mth.lerp(blend.point, limb.xRot, -Mth.HALF_PI + model.head.xRot - kick);
+            limb.xRot = Mth.lerp(blend.point, limb.xRot, -Mth.HALF_PI + model.head.xRot);
             limb.yRot = Mth.lerp(blend.point, limb.yRot, model.head.yRot);
             limb.zRot = Mth.lerp(blend.point, limb.zRot, 0.0F);
+            FlightLimbs.shift(limb, blend.point, BOLT_KICK * BoltArm.kick(entity, partialTick), 0.0F, 0.0F);
         }
         if (blend.beam > 0.0F) {
             beam(model, limb, right, blend, entity, partialTick, f.time());

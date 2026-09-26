@@ -10,7 +10,6 @@ import nl.tivek.multiversepowers.character.greenlantern.RingPayload;
 import nl.tivek.multiversepowers.character.greenlantern.client.ClientConstructs;
 import nl.tivek.multiversepowers.character.greenlantern.client.ClientRing;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.BeamCharge;
-import nl.tivek.multiversepowers.engine.math.Ease;
 
 final class BeamArm {
     private static final float KICK_TICKS = 12.0F;
@@ -18,8 +17,8 @@ final class BeamArm {
     private static final float KICK_SWING = 0.72F;
     private static final float CHARGE_TREMBLE = 1.0F;
     private static final float POUR_TREMBLE = 0.45F;
-    private static final float BRACE_FROM = 0.2F;
-    private static final float BRACE_AT = 0.65F;
+    // One hand holds the beam through its first three stages; from the fourth the other comes in to steady it.
+    private static final int BRACE_STAGE = 3;
 
     private BeamArm() {
     }
@@ -64,10 +63,7 @@ final class BeamArm {
         if (ClientConstructs.heldBy(entity.getId(), true) != null) {
             return 0.0F;
         }
-        if (ClientRing.has(entity, RingPayload.BEAM)) {
-            return 1.0F;
-        }
-        float charge = gathering(entity, partialTick);
-        return charge <= 0.0F ? 0.0F : (float) Ease.smooth((charge - BRACE_FROM) / (BRACE_AT - BRACE_FROM));
+        return ClientRing.has(entity, RingPayload.BEAM) && ClientConstructs.beamStage(entity.getId()) >= BRACE_STAGE
+                ? 1.0F : 0.0F;
     }
 }

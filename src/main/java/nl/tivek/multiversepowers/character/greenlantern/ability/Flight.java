@@ -26,8 +26,10 @@ import nl.tivek.multiversepowers.engine.world.ChunkPreloader;
 
 public final class Flight implements Effect {
     public static final int ARISE_TICKS = 24;
-    private static final double RAM_SPEED = 0.22;
-    public static final double SCRAPE_SPEED = 0.11;
+    // Parts of the top speed, so ramming and scraping keep working whatever the top speed is set to.
+    private static final double RAM_PART = 0.49;
+    public static final double SCRAPE_PART = 0.245;
+    private static final double RAM_PUSH = 0.36;
     private static final int RAM_AGAIN = 12;
     private static final int DESCENT_MAX = 2400;
     private static final int DIVE_MAX = 300;
@@ -127,8 +129,14 @@ public final class Flight implements Effect {
     }
 
     static Vec3 heading(ServerPlayer player) {
+        Flight flight = FLYING.get(player.getUUID());
         Vec3 moving = velocity(player);
-        return moving.lengthSqr() > RAM_SPEED * RAM_SPEED * 0.25 ? moving.normalize() : player.getLookAngle();
+        double slowest = flight == null ? 0.0 : RAM_PART * flight.top() * 0.5;
+        return flight != null && moving.lengthSqr() > slowest * slowest ? moving.normalize() : player.getLookAngle();
+    }
+
+    private double top() {
+        return this.ability.value("topSpeed") / 20.0;
     }
 
     static void recharged(ServerPlayer player, ServerLevel level) {
@@ -204,7 +212,7 @@ public final class Flight implements Effect {
 
     private void scrape(ServerLevel level) {
         CharacterAbility shield = GameCharacter.GREEN_LANTERN.byName("light_shield");
-        if (shield == null || this.velocity.length() < SCRAPE_SPEED || !LightShield.up(this.owner)
+        if (shield == null || this.velocity.length() < SCRAPE_PART * this.top() || !LightShield.up(this.owner)
                 || !scraping(this.owner, shield.value("ramGroundBlocks"))) {
             return;
         }
@@ -237,8 +245,7 @@ public final class Flight implements Effect {
         if (flight == null || flight.descending || flight.ticks < ARISE_TICKS) {
             return false;
         }
-        double top = ability.value("topSpeed") / 20.0;
-        boolean fast = flight.dive || flight.peak >= top * SLAM_CHECK;
+        boolean fast = flight.dive || flight.peak >= flight.top() * SLAM_CHECK;
         flight.end();
         owner.setDeltaMovement(Vec3.ZERO);
         owner.hurtMarked = true;
@@ -254,7 +261,7 @@ public final class Flight implements Effect {
     private void ram(ServerLevel level) {
         double speed = this.velocity.length();
         CharacterAbility shield = GameCharacter.GREEN_LANTERN.byName("light_shield");
-        if (speed < RAM_SPEED || shield == null || !LightShield.up(this.owner)) {
+        if (speed < RAM_PART * this.top() || shield == null || !LightShield.up(this.owner)) {
             return;
         }
         Vec3 way = this.velocity.scale(1.0 / speed);
@@ -274,7 +281,7 @@ public final class Flight implements Effect {
             target.hurt(level.damageSources().playerAttack(this.owner),
                     (float) (shield.value("ramDamage") + shield.value("ramDamagePerSpeed") * speed));
             double resist = Mth.clamp(target.getAttributeValue(Attributes.KNOCKBACK_RESISTANCE), 0.0, 1.0);
-            double push = shield.value("ramKnockback") + speed * 0.8;
+            double push = shield.value("ramKnockback") + RAM_PUSH * speed / this.top();
             target.setDeltaMovement(new Vec3(way.x * push, Math.max(0.35, way.y * push + 0.35), way.z * push)
                     .scale(1.0 - resist));
             target.hasImpulse = true;

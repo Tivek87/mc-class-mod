@@ -194,31 +194,39 @@ quick one, 2 seconds of holding for the lasting one.
     it runs out of the lantern on your chest down your right arm into the ring, the arm glowing brighter and
     brighter and coming up to aim, and then over the rest of the suit. Specks of light stream into the ring from
     all around, a ball of light swells in your fist with two rings of light spinning round it, sparks crackle
-    off it near the end, and a whine rises. Your arm trembles with it, the harder the fuller the ring gets, and
-    your left hand comes over to grip your right wrist and brace it (unless it holds something or a shield).
+    off it near the end, and a whine rises. Your arm trembles with it, the harder the fuller the ring gets.
     Let go early and it dies away again. Everyone around sees it.
   - **Then it breaks loose:** it shoots out of the ring in a blink with a flash and a ring of light bursting
-    out of your fist; your arm kicks up and back, swings a little past and settles, and your view kicks back.
-    While it pours your arm holds steady against it with a fine tremble, your left hand still bracing it. It
-    roars on as a white-hot core in a thick, breathing glow of
-    green, with surges of light racing along it, three strands winding round it, rings of light running down
-    it and sparks crackling off its sides. Where it strikes it splashes: a hot flare, ripples running out and
-    sparks spraying back. Your view trembles a little while it pours.
-  - It goes **through a whole row of creatures** and stops at the first wall, up to 40 blocks away. Every hit
-    drives what it hits back a little.
-  - **Damage:** 2.5 hearts, 4 times a second, to everything in it (10 hearts a second).
-  - **Power:** 0.8 per second.
-  - **It grows the longer you hold** (counted from the press): at **5 seconds** it gets wider and stronger, at
-    **10** it rages, at **20** it reaches full power. Each stage flares at the ring, roars louder and says so
-    above the hotbar; the beam gets thicker, hits a wider line, drives harder and crackles with more and more
-    lightning. The heavier the beam, the slower you walk.
+    out of your fist; your arm kicks straight back along itself and your view kicks back. Your arm always points
+    dead straight ahead along the beam, never up. Where it strikes it splashes: a hot flare, ripples running out
+    and sparks spraying back. Your view trembles while it pours.
+  - It goes **through a whole row of creatures** and stops at the first wall. Every hit drives what it hits back.
+  - **It grows through five stages** the longer you hold (counted from the press): the first comes with the beam
+    after 2 seconds, then a new one every 2 seconds, up to the fifth at **10 seconds**. Each stage sends a wave
+    of light racing down the beam and a shock ring out of your fist, flares at the ring, roars louder, jolts your
+    view and says so above the hotbar. The hold bar next to your crosshair shows it: five pieces, each a little
+    thicker than the one before; the first fills while you hold, the others while the beam grows, and at the
+    fifth the whole bar throbs. The stronger the beam, the harder it hits, the further it reaches and drives, the
+    more it costs and the slower you walk.
+    - **Stage 1:** a thin, concentrated ray: a white-hot core in a tight green glow, two strands winding round it.
+    - **Stage 2:** wider, with rings of light running down it and a first crackle.
+    - **Stage 3:** raging: a thick, breathing glow, surges racing along it, a ring of energy turning round your
+      fist and another just ahead of it, forks of light crackling off its sides, a glowing splash where it strikes.
+    - **Stage 4:** your left hand comes over to grip your right wrist and steady it: both hands now. Big energy
+      bands race down the beam, it starts to bulge and pinch, and bolts whip out of it and back in.
+    - **Stage 5:** a massive, unstable super-beam: an outer blaze round it, four bands racing down it, three rings
+      of energy focusing it ahead of your fist, bolts whipping out all along it, heavy sparks and flecks of light
+      shed from its whole length, a huge flare with shock rings where it strikes, blasts there now and then, and
+      a thunderclap when it gets there. From here it costs the same **5 power a second** for as long as you hold
+      it.
 
-    | Stage | Held | Damage | Power | Walking speed |
-    |---|---|---|---|---|
-    | 1 | 2 s | x1 (10 hearts/s) | 0.8/s | 85% |
-    | 2 | 5 s | x1.44 | 1.6/s | 67% |
-    | 3 | 10 s | x2.08 | 3.2/s | 48% |
-    | 4 | 20 s | x3 (30 hearts/s) | 6.4/s | 30% |
+    | Stage | Held | Damage | Reach | Push | Power | Walking speed |
+    |---|---|---|---|---|---|---|
+    | 1 | 2 s | x1 (10 hearts/s) | 40 blocks | x1 | 0.8/s | 85% |
+    | 2 | 4 s | x1.32 | 46 blocks | x1.5 | 1.26/s | 71% |
+    | 3 | 6 s | x1.73 | 52 blocks | x2 | 2/s | 58% |
+    | 4 | 8 s | x2.28 | 58 blocks | x2.5 | 3.16/s | 44% |
+    | 5 | 10 s | x3 (30 hearts/s) | 64 blocks | x3 | 5/s, fixed | 30% |
   - Let go, run the ring dry or start a Giant Fist and it dies down; your walking speed comes back at once.
 
 **Right click (the left hand defends)**
@@ -248,7 +256,7 @@ quick one, 2 seconds of holding for the lasting one.
 | | Damage | Power | Other |
 |---|---|---|---|
 | Light Bolt (tap left) | 3 hearts | 0.16 per bolt | one every 0.3 s, 48 blocks |
-| Light Beam (hold left) | 2.5 hearts, 4x a second, up to x3 | 0.8 a second, up to 6.4 | goes through creatures, 40 blocks, grows at 5/10/20 s |
+| Light Beam (hold left) | 2.5 hearts, 4x a second, up to x3 | 0.8 a second, up to 5 | goes through creatures, 40 up to 64 blocks, five stages, the last at 10 s |
 | Light Shield (tap right) | - | 0.08 a second | 70% off hits from the front |
 | Light Dome (hold right) | - | 0.24 a second | 40% off hits from every side |
 
@@ -280,9 +288,11 @@ Green Lantern recharges his ring at his lantern, the power battery.
   in the middle of a jump or a fall (the double tap works there too; in creative the double tap stays the
   game's own flying).
 - **Flying:** hold **forward** and you fly the way you look. **You pick up speed quickly and then keep getting
-  faster the longer you fly on:** a flight starts at about **6 blocks a second** and within **half a second** you
-  are up to a cruising speed of **7.5 blocks a second**; from there you keep gaining, until after **4 seconds**
-  you reach the top speed of **9 blocks a second**, a little slower than flying in creative, and never more. Let go of forward and you glide to a hover and lose the speed you built up again (all of it in 3 seconds);
+  faster the longer you fly on:** a flight starts at about **3 blocks a second** and within **half a second** you
+  are up to a cruising speed of **3.75 blocks a second**; from there you keep gaining, until after **4 seconds**
+  you reach the top speed of **4.5 blocks a second**, about as fast as walking, calm and easy to steer, and never
+  more. Hovering and climbing go at a part of that speed. Let go of forward and you glide to a hover and lose the
+  speed you built up again (all of it in 3 seconds);
   pushing against a wall keeps it.
   **Jump** rises, **sneak** sinks, left and right slide sideways, back drifts backwards. You carry your speed
   into every turn, so you swing through curves instead of snapping round. The world widens a little around
@@ -315,7 +325,7 @@ Green Lantern recharges his ring at his lantern, the power battery.
   any more. You do not get hurt when you touch the ground. Recharge (on the way down or on the ground) to fly
   again.
 - **Landing slam (by itself; key X does it on purpose, see Shockwave):** dive into the ground fast (at least
-  about 8 blocks a second, nearly your top speed, so fly on for a few seconds first) and your flight ends
+  about 4 blocks a second, nearly your top speed, so fly on for a few seconds first) and your flight ends
   in a
   hero's landing. Just before
   the ground you swing upright, feet first, ring
@@ -371,11 +381,11 @@ Green Lantern recharges his ring at his lantern, the power battery.
 
 | Flight | |
 |---|---|
-| Speed | starts at about 6 blocks a second, up to 9 after 4 seconds of flying forward |
+| Speed | starts at about 3 blocks a second, up to 4.5 after 4 seconds of flying forward |
 | Stop in the air | C, or a double tap on jump |
 | Power | 1.07 a second (a full ring lasts 93.75 seconds), plus whatever you use meanwhile |
 | Take off | C or a double tap on jump; at least 0.8 power; not while recharging |
-| Ram (shield up) | 2 hearts + 5.25 hearts per block per tick of speed, strong knockback |
+| Ram (shield up) | 2 hearts + 10.5 hearts per block per tick of speed, strong knockback |
 | Scraping (ram cone low along the ground) | 2 more power a second, your view shakes |
 | Brake (dome up) | half speed |
 
@@ -487,20 +497,19 @@ their own (see "Changing the numbers").
 
 ### Construct Wheel (key V)
 
-The ring can shape hard light into your hands. The wheel has sixteen slots: the first holds the **Sword &
-Shield**, the second the **Energy Whip** and the last the **Plasma Flamethrower** (see below); the other thirteen hold
-the weapons still to come, each with its name and picture but nothing to do yet: **Brawler Gauntlets / Boxing
-Gloves**, **Dual Energy Daggers**, **Battleaxe**, **Two-handed War Hammer**, **Spear / Halberd**, **Heavy Chainsaw**, **Dual Revolvers / Hand
-Cannons**, **Sawed-off Shotgun**, **Dual Micro-SMGs**, **Arm Cannon / Mega Blaster**, **Rotary Grenade Launcher**,
-**Minigun** and **Rocket Launcher / RPG**. Picking one of those changes nothing but the bar above your hotbar.
+The ring can shape hard light into your hands. The wheel has ten slots: the first holds the **Sword &
+Shield**, the second the **Energy Whip** and the last the **Plasma Flamethrower** (see below); the other seven hold
+the weapons still to come, each with its name and picture but nothing to do yet: **Battleaxe**, **Heavy Chainsaw**,
+**Dual Revolvers / Hand Cannons**, **Sawed-off Shotgun**, **Arm Cannon / Mega Blaster**, **Minigun** and **Rocket
+Launcher / RPG**. Picking one of those changes nothing but the bar above your hotbar.
 
 - **Tap V** and nothing opens at all: you swap straight between empty hands and the last slot you had
   out. That is the quick one, for in a fight.
-- **Hold V** a moment longer and the wheel opens around your crosshair, big: sixteen slots in a circle and empty
+- **Hold V** a moment longer and the wheel opens around your crosshair, big: ten slots in a circle and empty
   hands in the middle. Every slot shows its weapon as its own small hard-light model, solid and glowing, turning
   gently to and fro: the shield with the sword crossed behind it, a long weapon lying from low at the left to high at
-  the right, a gun on its side with its muzzle to the right; a pair (gloves bumping fists, crossed daggers, crossed
-  revolvers, two submachine guns back to back) as two. A shot charges in the muzzle of the arm cannon and a pilot flame
+  the right, a gun on its side with its muzzle to the right; the pair of revolvers as two, crossed. A shot charges
+  in the muzzle of the arm cannon and a pilot flame
   burns at the nozzle of the flamethrower.
 - **Flick the mouse** towards the slot you want. Only the direction counts, not how far you move, so a
   short flick is enough and it does not matter if the mouse runs off the edge of your screen. The slot
@@ -626,7 +635,7 @@ shield's disc are light.
 - Everything is a setting under the Construct Wheel: the damage and length of the whip, the whirlwind (damage, crack,
   cost), the lasso (reach, damage, how long it slows, cost) and the spinning shield (protection, cost).
 
-#### Plasma Flamethrower (slot 16)
+#### Plasma Flamethrower (slot 10)
 
 A heavy flamethrower of hard light: a pistol grip in your ring hand, a finned barrel with a flared nozzle and a pilot
 light under it, a round fuel tank under the front with a valve wheel at its back and a hose running up into the body,

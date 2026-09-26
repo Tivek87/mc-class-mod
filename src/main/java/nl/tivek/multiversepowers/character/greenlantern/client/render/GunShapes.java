@@ -86,39 +86,6 @@ final class GunShapes {
         return parts.toArray(Mesh[]::new);
     }
 
-    static Mesh[] smg() {
-        List<Mesh> parts = new ArrayList<>();
-        parts.add(Mesh.box(-0.045, -0.02, -0.2, 0.045, 0.1, 0.14, 1.0));
-        parts.add(Mesh.box(-0.02, 0.1, -0.17, 0.02, 0.112, 0.1, 1.2));
-        for (int k = 0; k < 8; k++) {
-            double z = -0.16 + k * 0.034;
-            parts.add(Mesh.box(-0.026, 0.112, z, 0.026, 0.122, z + 0.012, 1.45));
-        }
-        parts.add(Mesh.box(-0.03, 0.1, -0.2, 0.03, 0.145, -0.185, 1.3));
-        parts.add(Mesh.box(-0.008, 0.1, 0.11, 0.008, 0.14, 0.13, 1.5));
-        parts.add(Mesh.cylinder(10, 0.013, 0.045, 0.075, 1.5).alongX().moved(0.0, 0.06, 0.02));
-        parts.add(Mesh.box(0.044, 0.035, -0.02, 0.049, 0.075, 0.07, 1.9));
-        parts.add(Mesh.torus(12, 4, 0.022, 0.006, 1.9).alongX().moved(0.046, 0.04, -0.12));
-        parts.add(Mesh.box(0.044, 0.068, -0.15, 0.049, 0.075, -0.09, 1.9));
-        parts.add(Mesh.box(0.044, 0.005, -0.15, 0.049, 0.012, -0.09, 1.9));
-        parts.add(rod(12, 0.03, 0.14, 0.17, 1.2).moved(0.0, 0.055, 0.0));
-        parts.add(rod(10, 0.019, 0.17, 0.3, 1.0).moved(0.0, 0.055, 0.0));
-        for (double z : new double[] { 0.2, 0.225, 0.25, 0.275 }) {
-            parts.add(Mesh.torus(10, 4, 0.02, 0.004, 1.4).alongZ().moved(0.0, 0.055, z));
-        }
-        parts.add(Mesh.torus(12, 4, 0.013, 0.005, 1.9).alongZ().moved(0.0, 0.055, 0.3));
-        parts.add(leaning(grip(0.19, 0.046, 0.036, 0.95), 104.0, -0.02, -0.02));
-        parts.add(leaning(Mesh.sweep(1.0, SQUIRCLE, new double[] { 0.19, 0.028, 0.036, 0.0 },
-                new double[] { 0.36, 0.028, 0.036, 0.0 }), 104.0, -0.02, -0.02));
-        parts.add(leaning(Mesh.sweep(1.7, SQUIRCLE, new double[] { 0.36, 0.034, 0.043, 0.0 },
-                new double[] { 0.385, 0.034, 0.043, 0.0 }), 104.0, -0.02, -0.02));
-        twice(parts, leaning(Mesh.box(0.026, -0.01, 0.22, 0.031, 0.01, 0.33, 1.9), 104.0, -0.02, -0.02));
-        parts.add(Mesh.tube(false, 6, 0.01, 1.2, path(0.0, -0.02, 0.11, 0.0, -0.075, 0.105, 0.0, -0.1, 0.075, 0.0, -0.1,
-                0.04, 0.0, -0.075, 0.02)));
-        parts.add(Mesh.tube(false, 5, 0.008, 1.5, path(0.0, -0.02, 0.06, 0.0, -0.045, 0.065, 0.0, -0.065, 0.055)));
-        return parts.toArray(Mesh[]::new);
-    }
-
     static Mesh[] armCannon() {
         List<Mesh> parts = new ArrayList<>();
         parts.add(Mesh.lathe(24, 1.0, 0.0, -0.42, 0.16, -0.42, 0.2, -0.395, 0.215, -0.34, 0.215, -0.08, 0.2, -0.04, 0.14,
@@ -142,53 +109,6 @@ final class GunShapes {
         for (double z : new double[] { -0.32, -0.21, -0.1 }) {
             parts.add(Mesh.torus(12, 4, 0.047, 0.008, 1.8).alongZ().moved(0.0, -0.22, z));
         }
-        return parts.toArray(Mesh[]::new);
-    }
-
-    static Mesh[] grenadeLauncher() {
-        List<Mesh> parts = new ArrayList<>();
-        double drum = -0.02;
-        double bore = drum + 0.09;
-        for (int k = 0; k < 6; k++) {
-            double angle = Math.toRadians(90.0 + 60.0 * k);
-            double x = Math.cos(angle) * 0.09;
-            double y = drum + Math.sin(angle) * 0.09;
-            parts.add(rod(14, 0.05, -0.13, 0.13, 1.0).moved(x, y, 0.0));
-            if (k > 0) {
-                parts.add(Mesh.torus(12, 4, 0.034, 0.007, 1.8).alongZ().moved(x, y, 0.131));
-            }
-        }
-        parts.add(rod(12, 0.05, -0.14, 0.14, 1.1).moved(0.0, drum, 0.0));
-        parts.add(rod(24, 0.152, -0.155, -0.13, 1.05).moved(0.0, drum, 0.0));
-        parts.add(Mesh.torus(24, 5, 0.142, 0.008, 1.7).alongZ().moved(0.0, drum, 0.0));
-        parts.add(rod(16, 0.05, 0.13, 0.5, 1.0).moved(0.0, bore, 0.0));
-        parts.add(Mesh.torus(16, 5, 0.04, 0.01, 1.9).alongZ().moved(0.0, bore, 0.5));
-        for (double z : new double[] { 0.3, 0.45 }) {
-            parts.add(Mesh.torus(16, 4, 0.052, 0.008, 1.6).alongZ().moved(0.0, bore, z));
-        }
-        parts.add(Mesh.box(-0.024, bore + 0.045, 0.0, 0.024, bore + 0.062, 0.46, 1.15));
-        for (int k = 0; k < 11; k++) {
-            double z = 0.02 + k * 0.04;
-            parts.add(Mesh.box(-0.03, bore + 0.062, z, 0.03, bore + 0.072, z + 0.015, 1.45));
-        }
-        twice(parts, Mesh.box(0.017, bore + 0.07, 0.04, 0.025, bore + 0.13, 0.05, 1.3));
-        parts.add(Mesh.box(-0.025, bore + 0.12, 0.04, 0.025, bore + 0.13, 0.05, 1.6));
-        parts.add(Mesh.box(-0.05, drum - 0.17, 0.13, 0.05, bore + 0.045, 0.2, 1.05));
-        parts.add(Mesh.box(-0.03, drum - 0.19, 0.13, 0.03, drum - 0.15, 0.44, 1.05));
-        parts.add(Mesh.cylinder(12, 0.028, drum - 0.38, drum - 0.19, 1.0).moved(0.0, 0.0, 0.34));
-        for (double y : new double[] { drum - 0.25, drum - 0.3, drum - 0.35 }) {
-            parts.add(Mesh.torus(12, 4, 0.03, 0.006, 1.4).moved(0.0, y, 0.34));
-        }
-        parts.add(Mesh.box(-0.05, drum - 0.13, -0.27, 0.05, bore + 0.045, -0.155, 1.0));
-        parts.add(rod(10, 0.014, -0.155, 0.13, 1.3).moved(0.0, drum - 0.16, 0.0));
-        parts.add(leaning(grip(0.22, 0.048, 0.034, 0.95), 108.0, drum - 0.13, -0.25));
-        parts.add(Mesh.tube(false, 6, 0.01, 1.2, path(0.0, drum - 0.13, -0.16, 0.0, drum - 0.2, -0.17, 0.0, drum - 0.215,
-                -0.205, 0.0, drum - 0.2, -0.23)));
-        parts.add(Mesh.tube(false, 5, 0.008, 1.5, path(0.0, drum - 0.13, -0.195, 0.0, drum - 0.16, -0.19, 0.0,
-                drum - 0.185, -0.2)));
-        parts.add(Mesh.tube(false, 6, 0.016, 1.1, path(0.0, bore, -0.27, 0.0, bore - 0.01, -0.54)));
-        parts.add(Mesh.tube(false, 6, 0.016, 1.1, path(0.0, drum - 0.1, -0.27, 0.0, drum - 0.17, -0.54)));
-        parts.add(Mesh.box(-0.035, drum - 0.21, -0.575, 0.035, bore + 0.03, -0.535, 1.2));
         return parts.toArray(Mesh[]::new);
     }
 
