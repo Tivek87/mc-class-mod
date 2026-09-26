@@ -44,7 +44,7 @@ Good to know:
 | Fire | Fireball | A burning comet that bursts, burns and throws back what is round it, and leaves a small fire | flies until it hits, up to 5 s | 2 s |
 | Fire | Fire Wall | A swirling ring of fire around you that burns and knocks back enemies | 3.5 block radius | 10 s |
 | Lightning | Lightning Strike | Charges up, then lightning strikes where you look and leaps on to more foes | 40 blocks | 8 s |
-| Lightning | Thunder Clap | You clap your hands: thunder and a shockwave of sparks around you | 9 blocks around you | 10 s |
+| Lightning | Thunder Clap | You clap your hands: thunder, a shock bubble and a blast of sparks that tears up the ground ahead | 9 blocks in front of you | 10 s |
 | Nature | Poison Area | A thrown vial that leaves a slowing poison cloud | 24 blocks | 12 s |
 | Air | Wind Gust | A wall of wind that throws hostile (red) creatures back and turns their shots round | 8 blocks in front of you | 5 s |
 | Dark | Void Walk | 10 s invisible and faster, hostile (red) ones marked, the first blow out of it an ambush | around you | 30 s |
@@ -119,15 +119,18 @@ one foe to the next. It is the spell's own lightning: the game's normal bolt is 
 
 ## Thunder Clap
 
-**What you see:** you spread your arms, sparks crackle between your hands, and you clap them together in
-front of you. A flash and a burst of sparks jump from your hands, you hear thunder, and a wide ring of
-sparks and small lightning arcs rolls over the ground around you. Sparkles stay in the air for a moment
-afterwards. No lightning bolt falls.
+**What you see:** you throw your arms wide and your head back while sparks build in your hands, then slam
+them together in front of your chest. Everything goes forward, never behind you: a clear bubble with a
+bright rim bursts ahead out of your hands, a blinding blue-white light flares between them and thunder
+cracks. A spray of short white and blue thunder sparks shoots ahead, slabs of ground heave up in a fan in
+front of you, chunks of ground fly off and a wall of mist rolls forward and hangs as a haze. The slabs sink
+back after a moment. No lightning and no bolts, only sparks.
+Everyone close by feels it: the screen flashes and the view shakes, less the further away you are.
 
 | | |
 |---|---|
-| Area | a circle of 9 blocks around you |
-| Timing | the clap comes 0.3 s after casting; the ring rolls out at 22 blocks per second |
+| Area | a cone in front of you, 9 blocks long and about 90 degrees wide |
+| Timing | the clap comes 0.6 s after casting; the blast reaches the end in 0.2 s |
 | Damage | 5 (2.5 hearts) close to you, down to half at the edge |
 | Push | every creature it hits is thrown away from you and up; knockback resistance lowers it |
 | Hits | only hostile (red) creatures, never you; other players only where players may fight each other |

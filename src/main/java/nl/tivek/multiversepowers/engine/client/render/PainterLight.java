@@ -191,12 +191,25 @@ abstract class PainterLight extends PainterCore {
     }
 
     public void haze(Vec3 center, Vec3 a, Vec3 b, Vec3 c, int rgb, double strength) {
+        this.ellipsoid(this.glow, center, a, b, c, rgb, strength, 9, 16, false);
+    }
+
+    // A see-through bubble: clear where it faces you and bright round its rim, like a shock front bending the light;
+    // the rim is drawn both lit over and glowing, so it shows against a bright sky too.
+    public void shell(Vec3 center, double radius, int rgb, double strength) {
+        Vec3 a = new Vec3(radius, 0.0, 0.0);
+        Vec3 b = new Vec3(0.0, radius, 0.0);
+        Vec3 c = new Vec3(0.0, 0.0, radius);
+        this.ellipsoid(this.light, center, a, b, c, rgb, 0.6 * strength, 14, 28, true);
+        this.ellipsoid(this.glow, center, a, b, c, rgb, strength, 14, 28, true);
+    }
+
+    private void ellipsoid(Layer layer, Vec3 center, Vec3 a, Vec3 b, Vec3 c, int rgb, double strength, int rings,
+            int slices, boolean rim) {
         double reach = Math.max(a.length(), Math.max(b.length(), c.length()));
         if (strength <= 0.0 || reach <= 1.0E-3 || !this.visible(center, reach)) {
             return;
         }
-        int rings = 9;
-        int slices = 16;
         Vec3[][] points = new Vec3[rings + 1][slices + 1];
         int[][] alphas = new int[rings + 1][slices + 1];
         for (int i = 0; i <= rings; i++) {
@@ -211,7 +224,7 @@ abstract class PainterLight extends PainterCore {
                 double away = toEye.length();
                 double length = out.length();
                 double facing = away < 1.0E-6 || length < 1.0E-9 ? 1.0 : Math.abs(out.dot(toEye)) / (length * away);
-                alphas[i][j] = Colors.alpha(strength * Math.pow(facing, 1.6));
+                alphas[i][j] = Colors.alpha(strength * (rim ? Math.pow(1.0 - facing, 3.0) : Math.pow(facing, 1.6)));
             }
         }
         for (int i = 0; i < rings; i++) {
@@ -220,10 +233,10 @@ abstract class PainterLight extends PainterCore {
                 Vec3 p1 = points[i + 1][j];
                 Vec3 p2 = points[i + 1][j + 1];
                 Vec3 p3 = points[i][j + 1];
-                this.put(this.glow, p0.x, p0.y, p0.z, rgb, alphas[i][j]);
-                this.put(this.glow, p1.x, p1.y, p1.z, rgb, alphas[i + 1][j]);
-                this.put(this.glow, p2.x, p2.y, p2.z, rgb, alphas[i + 1][j + 1]);
-                this.put(this.glow, p3.x, p3.y, p3.z, rgb, alphas[i][j + 1]);
+                this.put(layer, p0.x, p0.y, p0.z, rgb, alphas[i][j]);
+                this.put(layer, p1.x, p1.y, p1.z, rgb, alphas[i + 1][j]);
+                this.put(layer, p2.x, p2.y, p2.z, rgb, alphas[i + 1][j + 1]);
+                this.put(layer, p3.x, p3.y, p3.z, rgb, alphas[i][j + 1]);
             }
         }
     }

@@ -3,6 +3,21 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.2.7-alpha] - 2026-09-26
+
+### Changed
+- **Thunder Clap:** remade 1 on 1 after Thor's thunder clap in God of War Ragnarök. Arms wide and head back,
+  then a clap that blasts forward only: a clear shock bubble, a blinding flash, a spray of thunder sparks,
+  slabs of ground heaving up, flying chunks and a rolling wall of mist. No lightning bolts or arcs.
+- **Thunder Clap:** hits only in a cone in front of you (9 blocks, about 90 degrees wide); the clap comes after
+  0.6 s instead of 0.3 s.
+
+### Added
+- **Screen flash and camera shake** when a Thunder Clap goes off near you (the camera shake setting scales it).
+
+### Removed
+- **Thunder Clap:** the glowing ring around you and the lightning arcs.
+
 ## [0.2.6-alpha] - 2026-09-26
 
 ### Added

@@ -16,7 +16,7 @@ public record ClapPayload(int entity) implements CustomPacketPayload {
             .codec(ClapPayload::write, ClapPayload::read);
 
     // Ticks after the cast when the hands meet; the server's boom and the client's arms both use it.
-    public static final int HANDS_MEET = 6;
+    public static final int HANDS_MEET = 12;
 
     static void send(ServerPlayer player) {
         PacketDistributor.sendToPlayersTrackingEntityAndSelf(player, new ClapPayload(player.getId()));

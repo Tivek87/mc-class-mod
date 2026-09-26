@@ -13,9 +13,6 @@ import nl.tivek.multiversepowers.engine.math.Noise;
 final class StormFx {
     static final int BOLT = 32;
     static final int ARC = 9;
-    static final int CLAP = 26;
-    static final double CLAP_REACH = 9.0;
-    private static final double CLAP_SPEED = 1.1;
     static final double CLOUD = 18.0;
     private static final double RUNE = 2.2;
     private static final int WHITE = 0xF4FBFF;
@@ -194,44 +191,6 @@ final class StormFx {
         jag(painter, from, to, parts, 0.7, 0.05, 0.5 * on, shape + 7);
         if (age < 3.0) {
             painter.flare(to, 0.9 * (1.0 - age / 3.0), 1.0 - age / 3.0);
-        }
-    }
-
-    // The thunder clap: a flash between the hands, arcs leaping out of them, and a crackling ring rolling over the
-    // ground round the caster, as far and as fast as the hits in ThunderClapSpell.
-    static void clap(ConstructPainter painter, Vec3 hands, Vec3 feet, double age, int seed) {
-        double time = painter.time();
-        painter.material(SPARK);
-        if (age < 5.0) {
-            double flash = 1.0 - age / 5.0;
-            painter.flare(hands, 2.2 * flash, flash);
-            painter.glowDisc(hands, 3.0 * flash, CYAN, 0.5 * flash, 0.2, seed);
-        }
-        if (age < 7.0) {
-            double on = 1.0 - age / 7.0;
-            int shape = seed + (int) (age * 2.0);
-            for (int k = 0; k < 8; k++) {
-                Vec3 end = hands.add(Noise.direction(seed, k).multiply(2.6, 1.4, 2.6));
-                jag(painter, hands, end, 5, 0.35, 0.05, on, shape + k * 5);
-            }
-        }
-        double rolled = CLAP_REACH / CLAP_SPEED;
-        double ring = age < rolled ? 1.0 : 1.0 - (age - rolled) / 6.0;
-        if (ring <= 0.0) {
-            return;
-        }
-        Vec3 floor = feet.add(0.0, 0.08, 0.0);
-        double radius = Math.min(CLAP_REACH, (age + 1.0) * CLAP_SPEED);
-        painter.circle(floor, EAST, SOUTH, radius, 0.12, 0.7, Colors.alpha(0.95 * ring), Colors.alpha(0.5 * ring));
-        arcOnGround(painter, floor, Math.max(0.2, radius - 0.5), time * 0.1, 1.0, 0.05, 0.35, 0.6 * ring);
-        painter.glowDisc(floor.add(0.0, 0.1, 0.0), radius, CYAN, 0.12 * ring, 0.2, seed);
-        int flick = (int) (time * 2.0);
-        double inner = Math.max(0.3, radius - 1.6);
-        for (int k = 0; k < 6; k++) {
-            double angle = Noise.of(seed, flick + k * 7, 1) * Math.PI * 2.0;
-            Vec3 a = floor.add(Math.cos(angle) * inner, 0.0, Math.sin(angle) * inner);
-            Vec3 b = floor.add(Math.cos(angle) * radius, 0.35, Math.sin(angle) * radius);
-            jag(painter, a, b, 3, 0.25, 0.05, ring, seed + flick + k);
         }
     }
 

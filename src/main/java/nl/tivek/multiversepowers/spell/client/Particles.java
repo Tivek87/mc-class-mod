@@ -1,14 +1,21 @@
 package nl.tivek.multiversepowers.spell.client;
 
 import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.BlockParticleOption;
+import net.minecraft.core.particles.DustParticleOptions;
 import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
+import org.joml.Vector3f;
 import nl.tivek.multiversepowers.spell.SpellFxPayload;
 
 // Particles every game makes for itself round a drawn spell effect, so none of them cross the network.
 final class Particles {
+    private static final ParticleOptions SWARM = new DustParticleOptions(new Vector3f(0.25F, 0.55F, 1.0F), 0.45F);
+
     private Particles() {
     }
 
@@ -75,24 +82,42 @@ final class Particles {
             }
             case SpellFxPayload.CLAP -> {
                 Vec3 feet = fx.said.to();
+                Vec3 ahead = ClapFx.facing(from, feet);
                 if (age < 1.0) {
+                    ClapFx.felt(feet);
                     level.addParticle(ParticleTypes.FLASH, from.x, from.y, from.z, 0.0, 0.0, 0.0);
-                    for (int k = 0; k < 60; k++) {
-                        puff(level, random, ParticleTypes.ELECTRIC_SPARK, from, 0.3, 0.7);
+                    BlockPos below = BlockPos.containing(feet.x, feet.y - 0.2, feet.z);
+                    BlockState ground = level.getBlockState(below);
+                    ParticleOptions bits = ground.isAir() ? ParticleTypes.POOF
+                            : new BlockParticleOption(ParticleTypes.BLOCK, ground);
+                    for (int k = 0; k < 80; k++) {
+                        Vec3 way = ClapFx.within(ahead, random.nextDouble());
+                        Vec3 at = feet.add(way.scale(1.0 + random.nextDouble() * 2.5));
+                        double out = 0.4 + random.nextDouble() * 0.9;
+                        level.addParticle(bits, at.x, feet.y + 0.2, at.z, way.x * out, 0.2 + random.nextDouble() * 0.5,
+                                way.z * out);
                     }
                     for (int k = 0; k < 24; k++) {
-                        double angle = Math.PI * 2.0 * k / 24.0;
-                        level.addParticle(ParticleTypes.CLOUD, feet.x, feet.y + 0.2, feet.z, Math.cos(angle) * 0.5,
-                                0.0, Math.sin(angle) * 0.5);
+                        Vec3 way = ClapFx.within(ahead, k / 23.0);
+                        level.addParticle(ParticleTypes.CLOUD, feet.x + way.x, feet.y + 0.3, feet.z + way.z,
+                                way.x * 0.9, 0.03, way.z * 0.9);
                     }
                 }
-                int sparkles = (int) (10.0 * (1.0 - age / StormFx.CLAP)) + 1;
-                for (int k = 0; k < sparkles; k++) {
-                    double angle = random.nextDouble() * Math.PI * 2.0;
-                    double reach = Math.sqrt(random.nextDouble()) * StormFx.CLAP_REACH;
-                    level.addParticle(ParticleTypes.ELECTRIC_SPARK, feet.x + Math.cos(angle) * reach,
-                            feet.y + 0.1 + random.nextDouble() * 1.5, feet.z + Math.sin(angle) * reach, 0.0, 0.08,
-                            0.0);
+                if (age < 5.0) {
+                    for (int k = 0; k < 40; k++) {
+                        Vec3 way = ClapFx.within(ahead, random.nextDouble())
+                                .add(0.0, (random.nextDouble() - 0.35) * 0.6, 0.0).normalize()
+                                .scale(0.4 + random.nextDouble() * 0.8);
+                        level.addParticle(k % 3 == 0 ? ParticleTypes.ELECTRIC_SPARK : SWARM, from.x, from.y, from.z,
+                                way.x, way.y, way.z);
+                    }
+                }
+                int glints = (int) (8.0 * (1.0 - age / ClapFx.LIFE)) + 1;
+                for (int k = 0; k < glints; k++) {
+                    Vec3 at = feet.add(ClapFx.within(ahead, random.nextDouble())
+                            .scale(1.0 + Math.sqrt(random.nextDouble()) * ClapFx.REACH));
+                    level.addParticle(ParticleTypes.ELECTRIC_SPARK, at.x, at.y + 0.1 + random.nextDouble() * 1.5, at.z,
+                            0.0, 0.05, 0.0);
                 }
             }
             case SpellFxPayload.VOID_IN, SpellFxPayload.VOID_OUT -> {

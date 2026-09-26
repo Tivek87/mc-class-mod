@@ -81,7 +81,7 @@ public final class SpellFx {
             case SpellFxPayload.VOID_IN -> VoidFx.IN;
             case SpellFxPayload.VOID_OUT -> VoidFx.OUT;
             case SpellFxPayload.AMBUSH -> VoidFx.STRIKE;
-            case SpellFxPayload.CLAP -> StormFx.CLAP;
+            case SpellFxPayload.CLAP -> ClapFx.LIFE;
             default -> 0;
         };
     }
@@ -159,7 +159,7 @@ public final class SpellFx {
                 case SpellFxPayload.VOID_IN -> VoidFx.enter(painter, fx.said.from(), age, fx.seed());
                 case SpellFxPayload.VOID_OUT -> VoidFx.leave(painter, fx.said.from(), age, fx.seed());
                 case SpellFxPayload.AMBUSH -> VoidFx.strike(painter, fx.said.from(), fx.said.to(), age, fx.seed());
-                case SpellFxPayload.CLAP -> StormFx.clap(painter, fx.said.from(), fx.said.to(), age, fx.seed());
+                case SpellFxPayload.CLAP -> ClapFx.draw(painter, fx.said.from(), fx.said.to(), age, fx.seed());
                 default -> {
                 }
             }

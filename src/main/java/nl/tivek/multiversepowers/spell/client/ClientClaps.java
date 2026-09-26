@@ -25,17 +25,19 @@ import org.joml.Vector3f;
 public final class ClientClaps {
     // The server's effect takes its first step a tick after the cast.
     private static final float MEET = ClapPayload.HANDS_MEET + 1.0F;
+    private static final float OPENED = 5.0F;
     private static final float WIDE = MEET - 2.0F;
-    private static final float RAISED = 3.0F;
-    private static final float HOLD = MEET + 4.0F;
-    private static final float END = HOLD + 6.0F;
+    private static final float RAISED = 4.0F;
+    private static final float HOLD = MEET + 9.0F;
+    private static final float END = HOLD + 7.0F;
 
     private static final float ARM_FORWARD = -1.4F;
-    private static final float OPEN_TURN = 0.85F;
+    private static final float OPEN_TURN = 1.25F;
     private static final float SHUT_TURN = -0.3F;
+    private static final float HEAD_BACK = -0.6F;
 
     private static final Vector3f CLAP = new Vector3f(0.05F, -0.1F, -0.75F);
-    private static final Vector3f SPREAD = new Vector3f(0.6F, -0.08F, -0.64F);
+    private static final Vector3f SPREAD = new Vector3f(0.78F, -0.02F, -0.52F);
     private static final Vector3f ARM_FROM = new Vector3f(0.75F, -1.1F, -0.15F);
 
     private static final Int2LongMap STARTED = new Int2LongOpenHashMap();
@@ -71,7 +73,7 @@ public final class ClientClaps {
 
     private static float open(float age) {
         if (age < WIDE) {
-            return (float) Ease.smooth(age / WIDE);
+            return (float) Ease.smooth(age / OPENED);
         }
         float shut = Math.min(1.0F, (age - WIDE) / (MEET - WIDE));
         return 1.0F - shut * shut;
@@ -92,6 +94,9 @@ public final class ClientClaps {
         model.leftArm.zRot = Mth.lerp(up, model.leftArm.zRot, 0.0F);
         model.rightSleeve.copyFrom(model.rightArm);
         model.leftSleeve.copyFrom(model.leftArm);
+        float back = up * open(age);
+        model.head.xRot = Mth.lerp(back, model.head.xRot, HEAD_BACK);
+        model.hat.copyFrom(model.head);
     }
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)

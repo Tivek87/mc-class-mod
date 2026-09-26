@@ -8,7 +8,6 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
-import net.minecraft.world.damagesource.DamageTypes;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
@@ -17,15 +16,16 @@ import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 
 final class ThunderClapSpell {
     private static final int MEET = ClapPayload.HANDS_MEET;
-    // StormFx.clap draws the ring at the same size and pace.
+    // ClapFx draws the blast in the same cone and reach.
     private static final double RADIUS = 9.0;
-    private static final double WAVE_SPEED = 1.1;
+    private static final double HALF_ANGLE = 0.8;
+    private static final double CONE_BACK = 1.0;
+    private static final double WAVE_SPEED = 2.25;
     private static final float DAMAGE = 5.0F;
     private static final double STRENGTH = 1.6;
     private static final double LIFT = 0.45;
 
     private static final int GLOW = 0x00D2FF;
-    private static final int WHITE = 0xF4FBFF;
 
     private ThunderClapSpell() {
     }
@@ -37,24 +37,29 @@ final class ThunderClapSpell {
                 SoundSource.PLAYERS, 0.8F, 2.0F);
         Set<UUID> hit = new HashSet<>();
         hit.add(casterId);
-        Vec3[] center = { player.position() };
+        Vec3[] feet = { player.position() };
+        Vec3[] ahead = { flatLook(player) };
         Effects.start(level, (lvl, age) -> {
             ServerPlayer caster = lvl.getServer().getPlayerList().getPlayer(casterId);
+            boolean here = caster != null && caster.level() == lvl;
+            if (here && age <= MEET) {
+                feet[0] = caster.position();
+                ahead[0] = flatLook(caster);
+            }
             if (age < MEET) {
-                if (caster != null && caster.level() == lvl) {
-                    center[0] = caster.position();
+                if (here) {
                     gather(lvl, caster, age);
                 }
                 return true;
             }
             int t = age - MEET;
             if (t == 0) {
-                boom(lvl, caster != null && caster.level() == lvl ? clapPoint(caster) : center[0].add(0, 1.2, 0),
-                        center[0]);
+                boom(lvl, feet[0].add(0.0, (here ? caster.getEyeHeight() : 1.6) - 0.3, 0.0).add(ahead[0].scale(0.6)),
+                        feet[0]);
             }
             double front = (t + 1) * WAVE_SPEED;
             if (caster != null) {
-                push(lvl, caster, center[0], Math.min(front, RADIUS), hit);
+                push(lvl, caster, feet[0], ahead[0], Math.min(front, RADIUS), hit);
             }
             return front < RADIUS + WAVE_SPEED;
         });
@@ -71,24 +76,29 @@ final class ThunderClapSpell {
         return player.getEyePosition().add(flatLook(player).scale(0.6)).add(0, -0.3, 0);
     }
 
+    // Static builds in the spread hands while the arms are drawn back, stronger the closer the clap comes.
     private static void gather(ServerLevel level, ServerPlayer player, int age) {
         Vec3 forward = flatLook(player);
         Vec3 right = new Vec3(-forward.z, 0, forward.x);
         Vec3 clap = clapPoint(player);
-        double apart = 0.1 + 0.35 * Math.sin(Math.PI * age / MEET);
+        double snap = Math.max(0.0, (age - (MEET - 2)) / 2.0);
+        double spread = Math.min(1.0, age / 5.0) * (1.0 - snap * snap);
+        int sparks = 1 + age / 3;
         for (int side = -1; side <= 1; side += 2) {
-            Vec3 hand = clap.add(right.scale(side * apart));
-            ParticleFx.cloud(level, ParticleTypes.ELECTRIC_SPARK, hand, 3, 0.08, 0.05);
-            ParticleFx.at(level, ParticleFx.dust(GLOW, 0.5F), hand);
+            Vec3 hand = clap.add(forward.scale(-0.35 * spread)).add(right.scale(side * (0.06 + 0.8 * spread)));
+            ParticleFx.cloud(level, ParticleTypes.ELECTRIC_SPARK, hand, sparks, 0.1, 0.06);
+            ParticleFx.at(level, ParticleFx.dust(GLOW, 0.4F + 0.05F * age), hand);
         }
-        if (age % 2 == 0) {
-            ParticleFx.zigzag(level, ParticleFx.dust(WHITE, 0.4F), clap.add(right.scale(-apart)),
-                    clap.add(right.scale(apart)), 3, 0.08, 0.05);
+        if (age == MEET - 3) {
+            level.playSound(null, clap.x, clap.y, clap.z, SoundEvents.TRIDENT_RIPTIDE_1.value(), SoundSource.PLAYERS,
+                    0.7F, 1.6F);
         }
     }
 
     private static void boom(ServerLevel level, Vec3 clap, Vec3 feet) {
         SpellFxPayload.send(level, SpellFxPayload.CLAP, clap, feet, -1, 0);
+        level.playSound(null, clap.x, clap.y, clap.z, SoundEvents.BREEZE_WIND_CHARGE_BURST.value(),
+                SoundSource.PLAYERS, 2.0F, 0.55F);
         level.playSound(null, clap.x, clap.y, clap.z, SoundEvents.LIGHTNING_BOLT_THUNDER, SoundSource.PLAYERS, 3.0F,
                 1.0F);
         level.playSound(null, clap.x, clap.y, clap.z, SoundEvents.LIGHTNING_BOLT_IMPACT, SoundSource.PLAYERS, 2.0F,
@@ -97,25 +107,26 @@ final class ThunderClapSpell {
                 1.2F);
     }
 
-    private static void push(ServerLevel level, ServerPlayer caster, Vec3 center, double front, Set<UUID> hit) {
+    // Only what stands in the cone ahead is hit; the cone starts a step behind the caster so it covers his sides.
+    private static void push(ServerLevel level, ServerPlayer caster, Vec3 feet, Vec3 ahead, double front,
+            Set<UUID> hit) {
+        Vec3 origin = feet.subtract(ahead.scale(CONE_BACK));
+        double cone = Math.cos(HALF_ANGLE);
         for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class,
-                new AABB(center, center).inflate(front + 1.0, 3.0, front + 1.0),
+                new AABB(feet, feet).inflate(front + 1.0, 3.0, front + 1.0),
                 entity -> SpellTargets.hits(caster, entity) && !hit.contains(entity.getUUID()))) {
-            Vec3 away = new Vec3(target.getX() - center.x, 0, target.getZ() - center.z);
-            double distance = away.length();
-            if (distance > front) {
+            Vec3 away = new Vec3(target.getX() - origin.x, 0, target.getZ() - origin.z);
+            double distance = Math.sqrt((target.getX() - feet.x) * (target.getX() - feet.x)
+                    + (target.getZ() - feet.z) * (target.getZ() - feet.z));
+            if (distance > front || away.lengthSqr() < 1.0E-6 || away.normalize().dot(ahead) < cone) {
                 continue;
             }
             hit.add(target.getUUID());
             double near = 1.0 - 0.5 * distance / RADIUS;
             target.invulnerableTime = 0;
-            target.hurt(level.damageSources().source(DamageTypes.LIGHTNING_BOLT, caster), (float) (DAMAGE * near));
-            Vec3 way = distance < 1.0E-3 ? flatLook(caster) : away.scale(1.0 / distance);
-            SpellTargets.push(target, way, STRENGTH * (0.5 + 0.5 * near), LIFT);
-            Vec3 body = target.getBoundingBox().getCenter();
-            ParticleFx.cloud(level, ParticleTypes.ELECTRIC_SPARK, body, 14, 0.35, 0.2);
-            ParticleFx.zigzag(level, ParticleFx.dust(WHITE, 0.5F), body.add(0, 0.6, 0), body.add(0, -0.6, 0), 3,
-                    0.2, 0.08);
+            target.hurt(level.damageSources().playerAttack(caster), (float) (DAMAGE * near));
+            SpellTargets.push(target, away.normalize(), STRENGTH * (0.5 + 0.5 * near), LIFT);
+            ParticleFx.cloud(level, ParticleTypes.ELECTRIC_SPARK, target.getBoundingBox().getCenter(), 14, 0.35, 0.2);
         }
     }
 }
