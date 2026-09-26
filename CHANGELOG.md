@@ -3,6 +3,12 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.2.2-alpha] - 2026-09-26
+
+### Fixed
+- **Flamethrower:** walking while you fire no longer slides you over the ground with bent knees; your legs walk
+  as normal and the stance only shows while you stand still.
+
 ## [0.2.1-alpha] - 2026-09-26
 
 ### Added
@@ -17,8 +23,7 @@ the sections before 0.0.1-alpha came before versions were numbered.
   cast while falling.
 - **Void Walk:** your first melee hit out of the void does 50% more, blinds and slows, and ends the walk; faint
   wisps where your feet fall and a warning two seconds before it ends.
-- **Flamethrower, stance:** feet apart, knees soft, breathing and shifting weight; the knees really bend. When
-  you walk, your legs walk as normal, also while firing.
+- **Flamethrower, stance:** feet apart, knees soft, breathing and shifting weight; the knees really bend.
 
 ### Changed
 - **Plasma Flamethrower:** 30% bigger, the front grip a little further back.

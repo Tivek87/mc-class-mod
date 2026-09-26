@@ -8,5 +8,5 @@
 - **Niet getest:** multiplayer (payload alleen in singleplayer); void-effect zoals anderen het zien (eigen scherm is void-beeld).
 - **Daarna:** bliksemgenerator en grotere wolk gebouwd, op verzoek allebei weer teruggedraaid: bliksem is weer de eerste eigen VFX (voorloper + 3 inslagen, kleine wolk op 18 hoog).
 - **Commit `e51d146` gepusht** (publish afgebroken door gebruiker). Daarna: tijdens vuren gleden de benen bij lopen → stand vervaagt nu met de loopsnelheid (`FlameSeen.standing`), benen lopen normaal; getest in-game (lopen + vegen, zijaanzicht).
-- **Release:** fix gecommit + gepusht, `v0.2.1-alpha` gepubliceerd (bevat alles van deze sessie).
+- **Release:** `v0.2.1-alpha` bleek al gepubliceerd van `e51d146` (de afgebroken publish liep toch door). Beenfix daarom als `v0.2.2-alpha` (commit `07e90df` + release-commit).
 - **Open:** `docs/reference/nanotech-ironman-skin.png` staat nog untracked (niet van deze sessie). `docs/reference/nanotech-ironman-skin.png` staat nog untracked (niet van deze sessie). Pose-kanalen kneel/hop/orbit bestaan nog maar worden nu niet gebruikt.
