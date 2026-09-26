@@ -35,6 +35,8 @@ public record ConstructPayload(int id, int owner, Vec3 center, Vec3 facing, floa
     public static final int FLAME = 17;
     public static final int FLAME_WALL = 18;
     public static final int BURN = 19;
+    public static final int WHIP = 20;
+    public static final int WHIP_SNARE = 21;
     public static final int SLAM_FIST = 0;
     public static final int SLAM_HANDS = 1;
     public static final int SLAM_FISTS = 2;

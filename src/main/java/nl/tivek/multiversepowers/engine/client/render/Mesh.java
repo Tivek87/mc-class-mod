@@ -273,6 +273,55 @@ public final class Mesh {
         return builder.build();
     }
 
+    // An open tube whose thickness changes along the path; its round starts square to the given normal and is carried
+    // along from there, so a path that moves from one frame to the next does not make the tube twist.
+    public static Mesh taper(int round, double bright, Vec3 normal, double[] radius, Vec3... path) {
+        int n = path.length;
+        Builder builder = new Builder();
+        int[][] ring = new int[n][round];
+        Vec3 across = normal;
+        for (int i = 0; i < n; i++) {
+            Vec3 along = path[Math.min(n - 1, i + 1)].subtract(path[Math.max(0, i - 1)]);
+            along = along.lengthSqr() < 1.0E-12 ? new Vec3(0.0, 1.0, 0.0) : along.normalize();
+            Vec3 square = across.subtract(along.scale(across.dot(along)));
+            if (square.lengthSqr() < 1.0E-10) {
+                square = Math.abs(along.y) < 0.9 ? along.cross(new Vec3(0, 1, 0)) : along.cross(new Vec3(1, 0, 0));
+            }
+            across = square.normalize();
+            Vec3 side = along.cross(across);
+            if (radius[i] <= 1.0E-9) {
+                Arrays.fill(ring[i], builder.point(path[i].x, path[i].y, path[i].z));
+                continue;
+            }
+            for (int j = 0; j < round; j++) {
+                double angle = Math.PI * 2.0 * j / round;
+                Vec3 at = path[i].add(across.scale(Math.cos(angle) * radius[i]))
+                        .add(side.scale(Math.sin(angle) * radius[i]));
+                ring[i][j] = builder.point(at.x, at.y, at.z);
+            }
+        }
+        for (int i = 0; i + 1 < n; i++) {
+            Vec3 axis = path[i].add(path[i + 1]).scale(0.5);
+            for (int j = 0; j < round; j++) {
+                int k = (j + 1) % round;
+                builder.outward(axis, bright, ring[i][j], ring[i][k], ring[i + 1][k], ring[i + 1][j]);
+            }
+        }
+        for (int end = 0; end < 2; end++) {
+            int i = end == 0 ? 0 : n - 1;
+            if (radius[i] <= 1.0E-9 || n < 2) {
+                continue;
+            }
+            Vec3 inside = path[i].lerp(path[end == 0 ? 1 : n - 2], 0.01);
+            int middle = builder.point(path[i].x, path[i].y, path[i].z);
+            for (int j = 0; j < round; j++) {
+                builder.outward(inside, bright, middle, ring[i][j], ring[i][(j + 1) % round],
+                        ring[i][(j + 1) % round]);
+            }
+        }
+        return builder.build();
+    }
+
     public static Mesh loft(int round, double bright, double[]... sections) {
         return MeshBodies.loft(round, bright, sections);
     }

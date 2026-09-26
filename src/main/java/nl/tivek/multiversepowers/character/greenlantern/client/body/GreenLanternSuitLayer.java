@@ -91,6 +91,9 @@ public final class GreenLanternSuitLayer extends RenderLayer<AbstractClientPlaye
         if (knees == null) {
             knees = FlameArms.knees(player);
         }
+        if (knees == null) {
+            knees = WhipArms.knees(player);
+        }
         if (knees != null) {
             KneelLegs.skin(poseStack, buffers, light, overlay, player, this.getParentModel(), knees);
         }

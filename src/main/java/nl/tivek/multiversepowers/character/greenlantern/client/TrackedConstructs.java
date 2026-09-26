@@ -18,6 +18,7 @@ import nl.tivek.multiversepowers.character.greenlantern.ability.LandingSlam;
 import nl.tivek.multiversepowers.character.greenlantern.ability.LightBubble;
 import nl.tivek.multiversepowers.character.greenlantern.ability.RingScan;
 import nl.tivek.multiversepowers.character.greenlantern.ability.SwordMove;
+import nl.tivek.multiversepowers.character.greenlantern.ability.WhipMove;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.BubblePainter;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.PlanePainter;
 import nl.tivek.multiversepowers.character.greenlantern.client.slam.SlamPainter;
@@ -127,6 +128,40 @@ abstract class TrackedConstructs {
         return new Flame(flame.id(), flame.variant(), flame.charge(), clock, broken);
     }
 
+    public record Whip(int id, int move, double moveStart, double clock, float broken) {
+    }
+
+    // Taken out again while the last one still breaks up: the whole one counts.
+    @Nullable
+    public static Whip whip(int owner, float partialTick) {
+        Track found = null;
+        for (Track track : CONSTRUCTS.values()) {
+            ConstructPayload whip = track.latest;
+            if (whip.shape() == ConstructPayload.WHIP && whip.owner() == owner
+                    && (found == null || whip.size() < 0.0F)) {
+                found = track;
+            }
+        }
+        if (found == null) {
+            return null;
+        }
+        ConstructPayload whip = found.latest;
+        double clock = found.clock(partialTick);
+        float broken = whip.size() < 0.0F ? -1.0F : (float) (whip.size() + Math.max(0.0, clock - whip.age()));
+        return new Whip(whip.id(), whip.variant(), whip.charge(), clock, broken);
+    }
+
+    // The creature a lasso holds, or -1.
+    public static int snared(int owner) {
+        for (Track track : CONSTRUCTS.values()) {
+            ConstructPayload snare = track.latest;
+            if (snare.shape() == ConstructPayload.WHIP_SNARE && snare.owner() == owner) {
+                return LightBubble.caughtId(snare.charge());
+            }
+        }
+        return -1;
+    }
+
     public record Wall(Vec3 center, Vec3 normal, double width) {
     }
 
@@ -198,6 +233,21 @@ abstract class TrackedConstructs {
                     }
                     yield move == FlameMove.EQUIP ? (t < FlameMove.LEFT_GRAB ? 0.9F : 0.4F)
                             : t < move.ticks() ? 0.7F : 0.35F;
+                }
+                case ConstructPayload.WHIP -> {
+                    WhipMove move = WhipMove.sent(now.variant());
+                    double t = track.clock(partialTick) - now.charge();
+                    if (now.size() >= 0.0F || move == null) {
+                        yield 0.0F;
+                    }
+                    if ((now.variant() & (WhipMove.WHIRLING | WhipMove.SPINNING)) != 0) {
+                        yield 0.9F;
+                    }
+                    yield switch (move.kind()) {
+                        case EQUIP -> t < WhipMove.POURED ? 0.9F : t < WhipMove.THROW + 8 ? 0.6F : 0.3F;
+                        case LASSO -> t < WhipMove.LASSO_LAND + 4 ? 0.85F : 0.3F;
+                        default -> t < move.ticks() ? 0.65F : 0.3F;
+                    };
                 }
                 case ConstructPayload.PLANE -> {
                     double clock = track.clock(partialTick);

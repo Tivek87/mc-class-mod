@@ -65,7 +65,7 @@ abstract class FlameFirstPerson extends FlameSeen {
         PlayerRenderer renderer = (PlayerRenderer) minecraft.getEntityRenderDispatcher().getRenderer(player);
         Vector3f rightShoulder = SwordFirstPerson.shoulder(SwordFirstPerson.OWN_SHOULDER_RIGHT,
                 made.grip().subtract(FlameKeys.GUARD.grip()), orbit).lerp(RechargeAnimation.SHOULDER_RIGHT, rest);
-        boolean handsTaken = state.broken() >= 0.0F && SwordArms.holding();
+        boolean handsTaken = state.broken() >= 0.0F && (SwordArms.holding() || WhipArms.holding());
         if (!handsTaken) {
             SwordFirstPerson.arm(stack, buffers, event.getPackedLight(), player, renderer, 1.0F, pose.grip(),
                     rightShoulder, rest);

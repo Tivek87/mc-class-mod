@@ -33,12 +33,14 @@ import nl.tivek.multiversepowers.character.greenlantern.RingPayload;
 import nl.tivek.multiversepowers.character.greenlantern.ability.FlameMove;
 import nl.tivek.multiversepowers.character.greenlantern.ability.Flight;
 import nl.tivek.multiversepowers.character.greenlantern.ability.SwordMove;
+import nl.tivek.multiversepowers.character.greenlantern.ability.WhipMove;
 import nl.tivek.multiversepowers.character.greenlantern.client.ClientConstructs;
 import nl.tivek.multiversepowers.character.greenlantern.client.ClientRing;
 import nl.tivek.multiversepowers.character.greenlantern.client.ConstructChoice;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.CallArm;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.FlameArms;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.SwordArms;
+import nl.tivek.multiversepowers.character.greenlantern.client.body.WhipArms;
 import nl.tivek.multiversepowers.character.greenlantern.client.hud.ConstructHud;
 import nl.tivek.multiversepowers.character.greenlantern.client.hud.ConstructWheel;
 import nl.tivek.multiversepowers.character.greenlantern.client.hud.ConstructWheelScreen;
@@ -180,6 +182,9 @@ public final class ClientCharacter {
         } else if (FlameArms.holding()) {
             defendDown = -1;
             flame(player, ability, index, step);
+        } else if (WhipArms.holding()) {
+            defendDown = -1;
+            whip(player, ability, index, step);
         } else {
             defendDown = -1;
             switch (step) {
@@ -273,6 +278,37 @@ public final class ClientCharacter {
                     FlameArms.stopPouring();
                 } else {
                     FlameArms.stopSwirling();
+                }
+                send(index, false, data(player));
+            }
+            case NOTHING -> {
+            }
+        }
+    }
+
+    private static void whip(LocalPlayer player, CharacterAbility ability, int index, MouseHold.Step step) {
+        boolean attack = ability.mouseButton() == CharacterAbility.Mouse.LEFT;
+        switch (step) {
+            case TAP -> {
+                if (attack) {
+                    WhipMove lash = WhipArms.lash(player);
+                    if (lash != null) {
+                        send(index, true, data(player) | Characters.TAP | lash.ordinal() << Characters.MOVE_SHIFT);
+                    }
+                } else if (WhipArms.lasso(player)) {
+                    send(index, true, data(player) | Characters.TAP);
+                }
+            }
+            case HOLD -> {
+                if (attack ? WhipArms.whirl(player) : WhipArms.spin(player)) {
+                    send(index, true, data(player) | Characters.HOLD);
+                }
+            }
+            case RELEASE, LET_GO -> {
+                if (attack) {
+                    WhipArms.stopWhirl();
+                } else {
+                    WhipArms.stopSpin();
                 }
                 send(index, false, data(player));
             }

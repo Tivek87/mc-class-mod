@@ -25,6 +25,7 @@ import nl.tivek.multiversepowers.character.greenlantern.ConstructPayload;
 import nl.tivek.multiversepowers.character.greenlantern.ConstructPickPayload;
 import nl.tivek.multiversepowers.character.greenlantern.FlattenPayload;
 import nl.tivek.multiversepowers.character.greenlantern.RingPayload;
+import nl.tivek.multiversepowers.character.greenlantern.ability.EnergyWhip;
 import nl.tivek.multiversepowers.character.greenlantern.ability.Flamethrower;
 import nl.tivek.multiversepowers.character.greenlantern.ability.LandingSlam;
 import nl.tivek.multiversepowers.character.greenlantern.ability.SwordShield;
@@ -110,6 +111,7 @@ public final class ModNetwork {
                 Construct construct = Construct.byIndex(payload.construct());
                 SwordShield.hold(serverPlayer, construct);
                 Flamethrower.hold(serverPlayer, construct);
+                EnergyWhip.hold(serverPlayer, construct);
             }
         });
     }

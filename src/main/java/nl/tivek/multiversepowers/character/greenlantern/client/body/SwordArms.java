@@ -364,12 +364,14 @@ public final class SwordArms extends SwordFirstPerson {
         }
     }
 
-    // Also when the flamethrower's hands took the event: while one construct breaks up and the other forms, both draw.
+    // Also when the flamethrower's or whip's hands took the event: while one construct breaks up and the other forms,
+    // both draw.
     @SubscribeEvent(priority = EventPriority.LOW, receiveCanceled = true)
     public static void onRenderHand(RenderHandEvent event) {
         Minecraft minecraft = Minecraft.getInstance();
         LocalPlayer player = minecraft.player;
-        if (player == null || own == null || !handsFree(player) || event.isCanceled() && !FlameArms.present()) {
+        if (player == null || own == null || !handsFree(player)
+                || event.isCanceled() && !FlameArms.present() && !WhipArms.present()) {
             return;
         }
         event.setCanceled(true);
@@ -396,8 +398,8 @@ public final class SwordArms extends SwordFirstPerson {
         PlayerRenderer renderer = (PlayerRenderer) minecraft.getEntityRenderDispatcher().getRenderer(player);
         Vector3f shoulder = shoulder(OWN_SHOULDER_RIGHT, made.hand().subtract(SwordPoses.GUARD.hand()), orbit)
                 .lerp(RechargeAnimation.SHOULDER_RIGHT, rest);
-        // Swapped for the flamethrower: its hands are already on their way up, only the pieces are left to fly.
-        boolean handsTaken = FlameArms.holding();
+        // Swapped for the flamethrower or whip: its hands are already on their way up, only the pieces are left to fly.
+        boolean handsTaken = FlameArms.holding() || WhipArms.holding();
         if (!handsTaken) {
             arm(stack, buffers, event.getPackedLight(), player, renderer, 1.0F, pose.hand(), shoulder, rest);
         }

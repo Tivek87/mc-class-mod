@@ -33,6 +33,7 @@ import nl.tivek.multiversepowers.character.greenlantern.client.ConstructChoice;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.RechargeAnimation;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.FlameArms;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.SwordArms;
+import nl.tivek.multiversepowers.character.greenlantern.client.body.WhipArms;
 import nl.tivek.multiversepowers.config.Unit;
 import nl.tivek.multiversepowers.engine.client.gui.GuiShapes;
 
@@ -176,6 +177,10 @@ public final class ConstructHud {
             return Component.translatable(prefix + (ability.mouseButton() == CharacterAbility.Mouse.LEFT ? "inferno"
                     : "vortex"));
         }
+        if (WhipArms.holding()) {
+            return Component.translatable(prefix + (ability.mouseButton() == CharacterAbility.Mouse.LEFT ? "whirlwind"
+                    : "spinning_shield"));
+        }
         if (ability.mouseButton() == CharacterAbility.Mouse.LEFT) {
             return Component.translatable(prefix + "beam");
         }
@@ -193,6 +198,10 @@ public final class ConstructHud {
         if (FlameArms.holding() && ability.mouseButton() != CharacterAbility.Mouse.NONE) {
             return Component.translatable(prefix + (ability.mouseButton() == CharacterAbility.Mouse.LEFT ? "flames"
                     : "fire_wall"));
+        }
+        if (WhipArms.holding() && ability.mouseButton() != CharacterAbility.Mouse.NONE) {
+            return Component.translatable(prefix + (ability.mouseButton() == CharacterAbility.Mouse.LEFT ? "whip"
+                    : "lasso"));
         }
         return switch (ability.id()) {
             case "light_bolt" -> ClientRing.has(player, RingPayload.BEAM)

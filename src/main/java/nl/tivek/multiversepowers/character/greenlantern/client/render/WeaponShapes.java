@@ -42,15 +42,16 @@ public final class WeaponShapes {
     private WeaponShapes() {
     }
 
+    // The whip's handle along +z: the pommel at -0.42, the lash leaves the ferrule at +0.1.
+    public static Mesh[] whipHandle() {
+        return new Mesh[] { Mesh.ball(14, 8, 0.062, 1.2).scaled(1.0, 1.0, 0.85).moved(0.0, 0.0, -0.37),
+                Mesh.ball(10, 6, 0.026, 2.0).moved(0.0, 0.0, -0.42), rod(12, 0.042, -0.34, 0.0, 0.95),
+                Mesh.tube(false, 5, 0.01, 1.35, helix(0.046, -0.32, -0.02, 6.0)), band(0.05, 0.014, -0.33, 1.5),
+                Mesh.cone(14, 0.058, 0.026, 0.0, 0.1, 1.2).alongZ(), band(0.058, 0.014, 0.004, 1.6) };
+    }
+
     private static Mesh[] whip() {
-        List<Mesh> parts = new ArrayList<>();
-        parts.add(Mesh.ball(14, 8, 0.062, 1.2).scaled(1.0, 1.0, 0.85).moved(0.0, 0.0, -0.37));
-        parts.add(Mesh.ball(10, 6, 0.026, 2.0).moved(0.0, 0.0, -0.42));
-        parts.add(rod(12, 0.042, -0.34, 0.0, 0.95));
-        parts.add(Mesh.tube(false, 5, 0.01, 1.35, helix(0.046, -0.32, -0.02, 6.0)));
-        parts.add(band(0.05, 0.014, -0.33, 1.5));
-        parts.add(Mesh.cone(14, 0.058, 0.026, 0.0, 0.1, 1.2).alongZ());
-        parts.add(band(0.058, 0.014, 0.004, 1.6));
+        List<Mesh> parts = new ArrayList<>(List.of(whipHandle()));
         int count = 49;
         Vec3[] lash = new Vec3[count];
         for (int i = 0; i < count; i++) {

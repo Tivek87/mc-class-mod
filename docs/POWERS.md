@@ -474,9 +474,9 @@ their own (see "Changing the numbers").
 ### Construct Wheel (key V)
 
 The ring can shape hard light into your hands. The wheel has sixteen slots: the first holds the **Sword &
-Shield** and the last the **Plasma Flamethrower** (see below); the other fourteen hold the weapons still to come, each
-with its name and picture but nothing to do yet: **Energy Whip**, **Brawler Gauntlets / Boxing Gloves**, **Dual Energy
-Daggers**, **Battleaxe**, **Two-handed War Hammer**, **Spear / Halberd**, **Heavy Chainsaw**, **Dual Revolvers / Hand
+Shield**, the second the **Energy Whip** and the last the **Plasma Flamethrower** (see below); the other thirteen hold
+the weapons still to come, each with its name and picture but nothing to do yet: **Brawler Gauntlets / Boxing
+Gloves**, **Dual Energy Daggers**, **Battleaxe**, **Two-handed War Hammer**, **Spear / Halberd**, **Heavy Chainsaw**, **Dual Revolvers / Hand
 Cannons**, **Sawed-off Shotgun**, **Dual Micro-SMGs**, **Arm Cannon / Mega Blaster**, **Rotary Grenade Launcher**,
 **Minigun** and **Rocket Launcher / RPG**. Picking one of those changes nothing but the bar above your hotbar.
 
@@ -557,6 +557,59 @@ arm, both as solid as every construct.
   small shockwave (**3 hearts** in the middle, 3.5 blocks). Costs 2 power. Not while flying.
 - Everything is a setting under the Construct Wheel: the damage and reach of the sword, the flurry, the block, the
   charge, its rams and its slam.
+
+#### Energy Whip (slot 2)
+
+A whip of hard light: a handle with a round pommel, a wrapped grip, two bands and a ferrule, and out of it a long lash
+(**4.5 blocks**) that grows thinner towards its end, with glowing bands along it and a small tuft at the tip. The whip
+is as solid as every construct; only the streak behind a fast lash, the crack, the whirlwind's ring and the spinning
+shield's disc are light.
+
+- **A living lash:** every bit of the lash goes where the whip was flung a moment before, the further along the
+  later, so every flick of the wrist runs down it like a wave, and where the wave rolls out of the tip and pulls the
+  lash straight it **cracks**: a flash, a cone of shock rings and sparks, and a bang. Slack, it hangs down and its end
+  lies on the ground in a curve; it trails after you as you walk, sways a little, and now and then your wrist gives it
+  a lazy flick that runs down to the tip.
+- **How you hold it:** in first person the handle sits in your right fist at the bottom right of your screen, tilted
+  up and forward, and the lash bends down out of it. Seen from outside he holds the handle low before his right hip
+  with the lash beside his right foot, feet a little apart and knees soft, breathing and shifting his weight. In
+  first person your hands move less and further off, so an arm never fills your view; the lash itself moves in full
+  and really goes behind and round creatures (what would pass right by your eyes is left out there).
+- **Taking it out:** your fist comes up and the handle grows out of it both ways, white-hot and cooling to green. The
+  handle tips down and the lash pours out of it like liquid light, white-hot at its end, and falls in coils on the
+  ground before you while your eyes follow it down. A flick of the wrist lifts it off the ground in a wave, you raise
+  your arm and twirl it round over your head (your eyes go up with it), bring it round behind you and throw it
+  forward over the top: **crack**, with a flash, shock rings and a small jolt of your view. Then it drops and lies
+  ready. About 3 seconds; you can attack from halfway. Putting it away, handle and lash break into solid pieces.
+- **Left click (a lash):** one of **twelve**, a different one every click and never the same twice in a row: a
+  forehand (flat from right to left), a backhand (left to right), an overhead crack (up over your shoulder, behind
+  you, over the top and down before you: the hardest, and it slows), a sidearm throw (low from the right, rolling out
+  straight ahead; reaches further), a rising lash (low right to high left: throws into the air), a cut down from high
+  right, one from high left, a figure of eight (two lashes), a leg sweep (down on bent knees, skimming the ground:
+  trips and slows), a spinning lash (a whole turn of your body that passes everything round you), a wrist snap (quick,
+  straight ahead at eye height; reaches further) and a cowboy crack (twirled over your head, then thrown over the top).
+  Every lash has its own movement of the body: you turn, bend, step and sink into it, and your wrist always leads the
+  lash. What the lash passes through takes **3.5 hearts** (the heavy lashes more, the quick ones less), **30% more**
+  from the tip, and is knocked the way the lash was going. A lash that lands jolts your view a little.
+- **Holding left 2 seconds (whirlwind):** your arm goes up and you whirl the lash round over your head, almost twice a
+  second, its end sloping down to chest height, with a ring of light where the tip goes and your other arm out for
+  balance. Every hostile creature it reaches round you takes **1.5 hearts** five times a second and is knocked away
+  and aside. Costs 1 power a second. **Letting go:** the lash goes on round until it is behind you and is thrown
+  forward over the top for one hard crack: **5 hearts**.
+- **Clicking right (lasso):** you swing the lash up over your shoulder and throw it at the creature you aim at, up to
+  **10 blocks** away (the lash grows as long as it needs). It cracks as it arrives, winds **three times** round the
+  creature from the top down and pulls tight with a flash: it is caught. Your left hand takes hold of the lash, you
+  lean back and yank: it flies to you in an arc and **smacks down at your feet** with a ring of light and dust:
+  **3 hearts** and slowed for **2 seconds**. Then the lash unwinds. Costs 2 power, only when it catches something; a
+  miss just cracks in the air. Creatures too big or too strong (as for the light bubble) cannot be caught; with a wall
+  in the way it lands before the wall.
+- **Holding right 2 seconds (spinning shield):** you put your arm out and spin the lash, made shorter, before you
+  like a propeller: a disc of light with a bright rim (faint in your own view, so you see through it). Arrows and
+  other shots from hostile creatures that come from the front bounce off it and fly back, now yours, and you take
+  **60% less** from the front. Costs 0.3 power a second. Letting go, the lash spins down and drops.
+- One move at a time: lashes, whirlwind, lasso and spinning shield never run together.
+- Everything is a setting under the Construct Wheel: the damage and length of the whip, the whirlwind (damage, crack,
+  cost), the lasso (reach, damage, how long it slows, cost) and the spinning shield (protection, cost).
 
 #### Plasma Flamethrower (slot 16)
 

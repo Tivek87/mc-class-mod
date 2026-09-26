@@ -168,7 +168,34 @@ public enum GameCharacter {
                     .setting("burnSeconds", 3.0, 0.0, 30.0, Unit.SECONDS,
                             "How long a creature the flames touched keeps burning green, in seconds (0 = not at all)")
                     .setting("burnDamage", 2.0, 0.0, 2000.0, Unit.HALF_HEARTS,
-                            "Damage of the afterburn every second, in half hearts");
+                            "Damage of the afterburn every second, in half hearts")
+                    .group("whip", "Energy Whip: lashes (left click)")
+                    .setting("whipDamage", 7.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                            "Damage of one lash, in half hearts; the heavy ones do more, the quick ones less, and a"
+                                    + " crack of the tip 30% more")
+                    .setting("whipLength", 4.5, 2.0, 8.0, Unit.BLOCKS, "How long the lash is, in blocks")
+                    .group("whip_whirl", "Energy Whip: whirlwind (hold left 2 seconds)")
+                    .setting("whirlDamage", 3.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                            "Damage the whirling lash does to every hostile creature round you, in half hearts, five"
+                                    + " times a second")
+                    .setting("whirlCrackDamage", 10.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                            "Damage of the hard crack ahead when you let go, in half hearts")
+                    .setting("whirlPowerPerSecond", 1.0, 0.0, 100.0, Unit.POWER_PER_SECOND,
+                            "Ring power the whirlwind costs a second")
+                    .group("whip_lasso", "Energy Whip: lasso (click right)")
+                    .setting("lassoRange", 10.0, 3.0, 24.0, Unit.BLOCKS, "How far the lasso reaches, in blocks")
+                    .setting("lassoDamage", 6.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                            "Damage when the caught creature smacks down at your feet, in half hearts")
+                    .setting("lassoSlowSeconds", 2.0, 0.0, 30.0, Unit.SECONDS,
+                            "How long it stays slowed after that, in seconds")
+                    .setting("lassoPowerCost", 2.0, 0.0, 100.0, Unit.POWER,
+                            "Ring power one lasso costs when it catches something")
+                    .group("whip_spin", "Energy Whip: spinning shield (hold right 2 seconds)")
+                    .setting("spinDamageKept", 0.4, 0.0, 1.0, Unit.PART_KEPT,
+                            "Part of a hit from the front that still gets through the spinning lash (0.4 = 40%, so it"
+                                    + " takes 60%)")
+                    .setting("spinPowerPerSecond", 0.3, 0.0, 20.0, Unit.POWER_PER_SECOND,
+                            "Ring power the spinning shield costs a second");
             this.add(abilities, AbilitySlot.ABILITY_3, "recharge").cooldown(60)
                     .setting("powerRestored", 50.0, 1.0, 100.0, Unit.POWER,
                             "How much power one touch of the lantern puts back in the ring (a full ring holds"

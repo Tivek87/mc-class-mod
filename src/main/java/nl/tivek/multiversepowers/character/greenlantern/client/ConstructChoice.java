@@ -9,6 +9,7 @@ import nl.tivek.multiversepowers.character.greenlantern.Construct;
 import nl.tivek.multiversepowers.character.greenlantern.ConstructHoldPayload;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.FlameArms;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.SwordArms;
+import nl.tivek.multiversepowers.character.greenlantern.client.body.WhipArms;
 
 public final class ConstructChoice {
     public static final long FLASH_MS = 420L;
@@ -36,6 +37,7 @@ public final class ConstructChoice {
         PacketDistributor.sendToServer(new ConstructHoldPayload(construct.ordinal()));
         SwordArms.picked(construct);
         FlameArms.picked(construct);
+        WhipArms.picked(construct);
         Minecraft minecraft = Minecraft.getInstance();
         if (construct == Construct.NONE) {
             minecraft.getSoundManager().play(
@@ -58,6 +60,7 @@ public final class ConstructChoice {
         changedAt = Long.MIN_VALUE / 2L;
         SwordArms.forget();
         FlameArms.forget();
+        WhipArms.forget();
     }
 
     public static long since() {

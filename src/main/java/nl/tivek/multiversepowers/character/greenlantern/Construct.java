@@ -50,7 +50,7 @@ public enum Construct {
     }
 
     public boolean made() {
-        return this == NONE || this == SWORD_SHIELD || this == FLAMETHROWER;
+        return this == NONE || this == SWORD_SHIELD || this == ENERGY_WHIP || this == FLAMETHROWER;
     }
 
     public Component getDisplayName() {

@@ -3,9 +3,10 @@ package nl.tivek.multiversepowers.character.greenlantern.client.body;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 
-// The flamethrower's own body: the torso bends, turns and tips at the hips, the knees bend (drawn by KneelLegs) and
-// the whole model sinks until the lowest foot or knee is on the ground. Model space: pixels, y down, -z ahead, +x to
-// the player's left. Body space: blocks, x right, y up from the shoulders, z ahead.
+// The body of a construct that moves the whole player (the flamethrower, the whip): the torso bends, turns and tips
+// at the hips, the knees bend (drawn by KneelLegs) and the whole model sinks until the lowest foot or knee is on the
+// ground. Model space: pixels, y down, -z ahead, +x to the player's left. Body space: blocks, x right, y up from the
+// shoulders, z ahead.
 final class FlameBody {
     static final float BEND = 0.5F;
     private static final double THIGH = 6.0;
@@ -41,32 +42,40 @@ final class FlameBody {
     }
 
     static Torso torso(FlameCurves.Pose pose, float ours) {
-        return new Torso(BEND * Mth.clamp(pose.lean(), -0.35F, 1.0F) * ours, pose.twist() * ours,
-                Mth.clamp(pose.roll(), -0.6F, 0.6F) * ours);
+        return torso(pose.lean(), pose.twist(), pose.roll(), ours);
+    }
+
+    static Torso torso(float lean, float twist, float roll, float ours) {
+        return new Torso(BEND * Mth.clamp(lean, -0.35F, 1.0F) * ours, twist * ours,
+                Mth.clamp(roll, -0.6F, 0.6F) * ours);
     }
 
     static Legs legs(FlameCurves.Pose pose, float ours) {
-        double squat = Mth.clamp(pose.squat(), 0.0F, 1.0F) * SQUAT_THIGH;
-        double step = Mth.clamp(pose.step(), -1.0F, 1.0F);
+        return legs(pose.squat(), pose.step(), pose.kneel(), pose.wide(), pose.hop(), ours);
+    }
+
+    static Legs legs(float squatting, float stepping, float kneeling, float wide, float hop, float ours) {
+        double squat = Mth.clamp(squatting, 0.0F, 1.0F) * SQUAT_THIGH;
+        double step = Mth.clamp(stepping, -1.0F, 1.0F);
         double front = Math.max(0.0, step);
         double back = Math.max(0.0, -step);
         double rightThigh = -squat + 0.42 * front - 0.52 * back;
         double rightKnee = 2.0 * squat + 0.12 * front + 0.28 * back;
         double leftThigh = -squat - 0.52 * front + 0.42 * back;
         double leftKnee = 2.0 * squat + 0.28 * front + 0.12 * back;
-        double kneel = Mth.clamp(pose.kneel(), 0.0F, 1.0F);
+        double kneel = Mth.clamp(kneeling, 0.0F, 1.0F);
         rightThigh = Mth.lerp(kneel, rightThigh, -0.05);
         rightKnee = Mth.lerp(kneel, rightKnee, 1.62);
         leftThigh = Mth.lerp(kneel, leftThigh, -1.55);
         leftKnee = Mth.lerp(kneel, leftKnee, 1.55);
-        double spread = SPREAD * Mth.clamp(pose.wide(), 0.0F, 1.0F);
+        double spread = SPREAD * Mth.clamp(wide, 0.0F, 1.0F);
         float rt = (float) (rightThigh * ours);
         float rk = (float) (rightKnee * ours);
         float lt = (float) (leftThigh * ours);
         float lk = (float) (leftKnee * ours);
         float sp = (float) (spread * ours);
         double reach = Math.max(low(rt, rk), low(lt, lk)) * Math.cos(sp);
-        return new Legs(rt, rk, lt, lk, sp, (float) (LEG - reach - Math.max(0.0F, pose.hop()) * 16.0 * ours));
+        return new Legs(rt, rk, lt, lk, sp, (float) (LEG - reach - Math.max(0.0F, hop) * 16.0 * ours));
     }
 
     // How far below the hip a leg reaches: its knee or its foot, whichever is lower.

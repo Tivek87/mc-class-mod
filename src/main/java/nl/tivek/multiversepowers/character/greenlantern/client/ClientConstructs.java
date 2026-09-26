@@ -23,10 +23,12 @@ import nl.tivek.multiversepowers.character.greenlantern.ConstructPayload;
 import nl.tivek.multiversepowers.character.greenlantern.HandPose;
 import nl.tivek.multiversepowers.character.greenlantern.ability.AirStrike;
 import nl.tivek.multiversepowers.character.greenlantern.ability.LightBubble;
+import nl.tivek.multiversepowers.character.greenlantern.ability.WhipSnare;
 import nl.tivek.multiversepowers.character.greenlantern.client.Flown.Spot;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.FlameArms;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.RingSpot;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.SwordArms;
+import nl.tivek.multiversepowers.character.greenlantern.client.body.WhipArms;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.BeamCharge;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.BubblePainter;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.FirePainter;
@@ -193,6 +195,10 @@ public final class ClientConstructs extends TrackedConstructs {
                 held(minecraft, track);
                 continue;
             }
+            if (now.shape() == ConstructPayload.WHIP_SNARE) {
+                snared(minecraft, now);
+                continue;
+            }
             if (now.shape() != ConstructPayload.BUBBLE || now.variant() == LightBubble.BREAKING) {
                 continue;
             }
@@ -219,6 +225,19 @@ public final class ClientConstructs extends TrackedConstructs {
         Vec3 grip = HandPose.at(hand.variant(), track.clock(1.0F), reach).place(hand.center(), hand.facing(), scale)
                 .at(HandPose.GRIP);
         caught.setPos(grip.x, grip.y - caught.getBbHeight() * 0.5, grip.z);
+        caught.setDeltaMovement(Vec3.ZERO);
+    }
+
+    // A creature the lasso holds or hauls goes where the server says, every tick, or it would jump along.
+    private static void snared(Minecraft minecraft, ConstructPayload snare) {
+        if (minecraft.level == null || snare.variant() != WhipSnare.BOUND && snare.variant() != WhipSnare.HAULING) {
+            return;
+        }
+        Entity caught = minecraft.level.getEntity(LightBubble.caughtId(snare.charge()));
+        if (caught == null || caught == minecraft.player) {
+            return;
+        }
+        caught.setPos(snare.center().x, snare.center().y - caught.getBbHeight() * 0.5, snare.center().z);
         caught.setDeltaMovement(Vec3.ZERO);
     }
 
@@ -372,6 +391,20 @@ public final class ClientConstructs extends TrackedConstructs {
                     } else if (owner != null) {
                         FlameArms.draw(painter, owner, ring, partialTick);
                     }
+                }
+                case ConstructPayload.WHIP -> {
+                    Whip shown = owner == null ? null : whip(owner.getId(), partialTick);
+                    if (shown == null || shown.id() != now.id()) {
+                        continue;
+                    }
+                    if (own && owner instanceof LocalPlayer player) {
+                        WhipArms.drawOwn(painter, player, camera, event.getProjectionMatrix(),
+                                event.getModelViewMatrix(), partialTick);
+                    } else if (owner != null) {
+                        WhipArms.draw(painter, owner, ring, partialTick);
+                    }
+                }
+                case ConstructPayload.WHIP_SNARE -> {
                 }
                 case ConstructPayload.FLAME_WALL -> FirePainter.wall(painter, level, now.center(), way, size, charge,
                         track.clock(partialTick), solid);

@@ -3,6 +3,25 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.2.3-alpha] - 2026-09-26
+
+### Added
+- **Energy Whip (Construct Wheel, slot 2):** a solid hard-light whip, a handle in your fist and a 4.5-block lash
+  that tapers to a tuft at the tip; every flick runs down the lash as a wave and cracks at the tip with a flash and
+  shock rings. Slack, it hangs, lies on the ground and trails after you.
+- **Energy Whip, taking it out:** the handle grows out of your fist, the lash pours out and coils on the ground,
+  rises in a wave, twirls over your head and is thrown forward for a crack.
+- **Energy Whip, left click:** 12 different lashes, each with its own body movement: forehand, backhand, overhead
+  crack, sidearm throw, rising lash, two diagonal cuts, figure of eight, leg sweep, spinning lash, wrist snap and
+  cowboy crack. The tip hits 30% harder.
+- **Energy Whip, hold left:** whirlwind over your head that hits every hostile creature around you; letting go
+  throws one hard crack ahead.
+- **Energy Whip, click right:** lasso: winds three times round the creature you aim at, your left hand grabs the
+  lash and you yank it down at your feet (damage, slowed).
+- **Energy Whip, hold right:** spinning shield before you that turns shots from the front back and stops 60% of
+  hits from the front.
+- **Settings:** damage and length of the whip, and the whirlwind, lasso and spinning shield.
+
 ## [0.2.2-alpha] - 2026-09-26
 
 ### Fixed

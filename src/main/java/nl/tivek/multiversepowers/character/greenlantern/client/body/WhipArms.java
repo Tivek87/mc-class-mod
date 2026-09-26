@@ -1,14 +1,20 @@
 package nl.tivek.multiversepowers.character.greenlantern.client.body;
 
+import java.util.Optional;
 import javax.annotation.Nullable;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.level.ClipContext;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.HitResult;
+import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -21,21 +27,19 @@ import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import net.neoforged.neoforge.client.event.ViewportEvent;
 import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.character.greenlantern.Construct;
-import nl.tivek.multiversepowers.character.greenlantern.ability.FlameMove;
-import nl.tivek.multiversepowers.character.greenlantern.ability.FlameWall;
-import nl.tivek.multiversepowers.character.greenlantern.ability.Flamethrower;
+import nl.tivek.multiversepowers.character.greenlantern.ability.EnergyWhip;
+import nl.tivek.multiversepowers.character.greenlantern.ability.WhipMove;
 import nl.tivek.multiversepowers.character.greenlantern.client.ClientConstructs;
 import nl.tivek.multiversepowers.character.greenlantern.client.ClientRing;
-import nl.tivek.multiversepowers.character.greenlantern.client.render.FireStream;
-import nl.tivek.multiversepowers.character.greenlantern.client.render.FlameSound;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.LanternPainter;
 
 @EventBusSubscriber(modid = MultiversePowers.MODID, value = Dist.CLIENT)
-public final class FlameArms extends FlameFirstPerson {
+public final class WhipArms extends WhipFirstPerson {
     private static final float FOLLOW_AFTER = 10.0F;
     private static final float REFUSED_AFTER = 40.0F;
+    private static final double AIM_WIDE = 0.6;
 
-    private FlameArms() {
+    private WhipArms() {
     }
 
     public static boolean holding() {
@@ -48,15 +52,16 @@ public final class FlameArms extends FlameFirstPerson {
 
     private static boolean ready() {
         Own mine = own;
-        return mine != null && mine.broke < 0.0F && !mine.firing && !mine.swirling
+        return mine != null && mine.broke < 0.0F && !mine.whirling && !mine.spinning
                 && now(0.0F) - mine.start >= mine.move.ready();
     }
 
-    private static void begin(FlameMove move) {
+    private static void begin(WhipMove move, double before) {
         if (own != null) {
             own.move = move;
             own.start = now(Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(false));
             own.felt = -1;
+            own.before = before;
         }
     }
 
@@ -65,74 +70,92 @@ public final class FlameArms extends FlameFirstPerson {
     }
 
     @Nullable
-    public static FlameMove sweep(LocalPlayer player) {
-        if (!ready() || !canPay(player, wheel().value("sweepPowerCost"))) {
+    public static WhipMove lash(LocalPlayer player) {
+        if (!ready()) {
             return null;
         }
-        FlameMove move = FlameMove.randomAttack(player.getRandom(), own.lastSweep);
-        own.lastSweep = move;
-        begin(move);
+        WhipMove move = WhipMove.randomAttack(player.getRandom(), own.lastAttack);
+        own.lastAttack = move;
+        begin(move, 0.0);
         return move;
     }
 
-    public static boolean pour(LocalPlayer player) {
-        if (!ready() || !canPay(player, wheel().value("infernoPowerPerSecond") / 20.0)) {
+    public static boolean whirl(LocalPlayer player) {
+        if (!ready() || !canPay(player, wheel().value("whirlPowerPerSecond") / 20.0)) {
             return false;
         }
-        begin(FlameMove.INFERNO);
-        own.firing = true;
+        begin(WhipMove.WHIRL, 0.0);
+        own.whirling = true;
         own.confirmed = false;
         return true;
     }
 
-    public static boolean stopPouring() {
+    public static void stopWhirl() {
         Own mine = own;
-        if (mine == null || !mine.firing) {
-            return false;
+        if (mine != null && mine.whirling) {
+            mine.whirling = false;
+            begin(WhipMove.WHIRL_CRACK, now(0.0F) - mine.start);
         }
-        mine.firing = false;
-        begin(FlameMove.VENT);
-        return true;
     }
 
-    public static boolean swirl(LocalPlayer player) {
-        if (!ready() || !canPay(player, wheel().value("vortexPowerPerSecond") / 20.0)) {
+    public static boolean spin(LocalPlayer player) {
+        if (!ready() || !canPay(player, wheel().value("spinPowerPerSecond") / 20.0)) {
             return false;
         }
-        begin(FlameMove.VORTEX);
-        own.swirling = true;
+        begin(WhipMove.SPIN_SHIELD, 0.0);
+        own.spinning = true;
         own.confirmed = false;
         return true;
     }
 
-    public static boolean stopSwirling() {
+    public static void stopSpin() {
         Own mine = own;
-        if (mine == null || !mine.swirling) {
+        if (mine != null && mine.spinning) {
+            mine.spinning = false;
+            begin(WhipMove.SPIN_END, now(0.0F) - mine.start);
+        }
+    }
+
+    public static boolean lasso(LocalPlayer player) {
+        if (!ready()) {
             return false;
         }
-        mine.swirling = false;
-        begin(FlameMove.BURST);
+        int aimed = aimed(player, wheel().value("lassoRange"));
+        if (aimed >= 0 && !canPay(player, wheel().value("lassoPowerCost"))) {
+            return false;
+        }
+        begin(WhipMove.LASSO, 0.0);
+        own.aimed = aimed;
         return true;
     }
 
-    public static boolean wall(LocalPlayer player) {
-        if (!ready() || !canPay(player, wheel().value("wallPowerCost"))) {
-            return false;
+    // The creature under the crosshair the lasso will fly at, as this game sees it; the server has the last word.
+    private static int aimed(LocalPlayer player, double range) {
+        Vec3 eye = player.getEyePosition();
+        Vec3 end = eye.add(player.getLookAngle().scale(range));
+        BlockHitResult wall = player.level().clip(new ClipContext(eye, end, ClipContext.Block.COLLIDER,
+                ClipContext.Fluid.NONE, player));
+        if (wall.getType() != HitResult.Type.MISS) {
+            end = wall.getLocation();
         }
-        if (FlameWall.base(player.level(), player, player.getLookAngle()) == null) {
-            player.displayClientMessage(Component.translatable("ring." + MultiversePowers.MODID + ".wall_no_ground"),
-                    true);
-            return false;
+        Entity best = null;
+        double nearest = Double.MAX_VALUE;
+        for (Entity entity : player.level().getEntities(player, new AABB(eye, end).inflate(AIM_WIDE + 1.0),
+                entity -> entity instanceof LivingEntity && entity.isAlive() && !entity.isSpectator())) {
+            Optional<Vec3> hit = entity.getBoundingBox().inflate(AIM_WIDE).clip(eye, end);
+            if (hit.isPresent() && eye.distanceToSqr(hit.get()) < nearest) {
+                nearest = eye.distanceToSqr(hit.get());
+                best = entity;
+            }
         }
-        begin(FlameMove.WALL);
-        return true;
+        return best == null ? -1 : best.getId();
     }
 
     public static void picked(Construct construct) {
         float now = now(Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(false));
-        if (construct == Construct.FLAMETHROWER) {
+        if (construct == Construct.ENERGY_WHIP) {
             if (own == null || own.broke >= 0.0F) {
-                if (own != null && drawn != null && now - own.broke < Flamethrower.BREAK_TICKS) {
+                if (own != null && drawn != null && now - own.broke < EnergyWhip.BREAK_TICKS) {
                     shards = drawn;
                     shardsSince = own.broke;
                 }
@@ -142,8 +165,8 @@ public final class FlameArms extends FlameFirstPerson {
             }
         } else if (own != null && own.broke < 0.0F) {
             own.broke = now;
-            own.firing = false;
-            own.swirling = false;
+            own.whirling = false;
+            own.spinning = false;
         }
     }
 
@@ -151,8 +174,8 @@ public final class FlameArms extends FlameFirstPerson {
         own = null;
         drawn = null;
         shards = null;
-        NOZZLE.forget();
-        FURTHER.forget();
+        ROOT.forget();
+        ALONG.forget();
     }
 
     @SubscribeEvent
@@ -166,7 +189,7 @@ public final class FlameArms extends FlameFirstPerson {
         LocalPlayer player = minecraft.player;
         if (mine != null && player != null) {
             float now = now(0.0F);
-            ClientConstructs.Flame told = ClientConstructs.flame(player.getId(), 0.0F);
+            ClientConstructs.Whip told = ClientConstructs.whip(player.getId(), 0.0F);
             if (told != null && mine.track < 0 && told.broken() < 0.0F && mine.broke < 0.0F) {
                 mine.track = told.id();
             }
@@ -178,34 +201,29 @@ public final class FlameArms extends FlameFirstPerson {
                 own = null;
             } else if (ours && told.broken() >= 0.0F && mine.broke < 0.0F) {
                 mine.broke = now;
-                mine.firing = false;
-                mine.swirling = false;
+                mine.whirling = false;
+                mine.spinning = false;
             } else if (ours) {
                 follow(mine, told, now);
             }
-            if (own != null && mine.broke < 0.0F && mine.move != FlameMove.EQUIP) {
+            if (own != null && mine.broke < 0.0F && mine.move != WhipMove.EQUIP) {
                 feel(mine, now);
             }
         }
-        if (shards != null && now(0.0F) - shardsSince >= Flamethrower.BREAK_TICKS) {
+        if (shards != null && now(0.0F) - shardsSince >= EnergyWhip.BREAK_TICKS) {
             shards = null;
-        }
-        for (AbstractClientPlayer other : minecraft.level.players()) {
-            State state = state(other, 0.0F);
-            FlameSound.keep(other, state != null && state.firing() && state.t() >= FlameMove.BRACE - 1,
-                    state != null && state.swirling());
         }
         BLENDS.keySet().removeIf(id -> minecraft.level.getEntity(id) == null);
     }
 
-    // The server stops a stream or vortex by itself when the ring runs dry: the own hands follow it then. Until it
-    // has told of the stream at all (a slow connection), only a long wait counts as a no.
-    private static void follow(Own mine, ClientConstructs.Flame told, float now) {
-        boolean going = (told.move() & (mine.firing ? FlameMove.FIRING : FlameMove.SWIRLING)) != 0;
-        if (!mine.firing && !mine.swirling) {
+    // The server stops a whirl or spin by itself when the ring runs dry: the own hands follow it then. Until it has
+    // told of the whirl at all (a slow connection), only a long wait counts as a no.
+    private static void follow(Own mine, ClientConstructs.Whip told, float now) {
+        if (!mine.whirling && !mine.spinning) {
             mine.confirmed = false;
             return;
         }
+        boolean going = (told.move() & (mine.whirling ? WhipMove.WHIRLING : WhipMove.SPINNING)) != 0;
         if (going) {
             mine.confirmed = true;
             return;
@@ -213,12 +231,10 @@ public final class FlameArms extends FlameFirstPerson {
         if (now - mine.start < (mine.confirmed ? FOLLOW_AFTER : REFUSED_AFTER)) {
             return;
         }
-        if (mine.firing) {
-            mine.firing = false;
-            begin(FlameMove.VENT);
+        if (mine.whirling) {
+            stopWhirl();
         } else {
-            mine.swirling = false;
-            begin(FlameMove.BURST);
+            stopSpin();
         }
     }
 
@@ -230,7 +246,7 @@ public final class FlameArms extends FlameFirstPerson {
         if (mine == null || player == null || minecraft.level == null || minecraft.isPaused()) {
             return;
         }
-        if (mine.move != FlameMove.EQUIP || mine.broke >= 0.0F) {
+        if (mine.move != WhipMove.EQUIP || mine.broke >= 0.0F) {
             mine.heard = Float.POSITIVE_INFINITY;
             return;
         }
@@ -240,13 +256,14 @@ public final class FlameArms extends FlameFirstPerson {
         if (!(t > was)) {
             return;
         }
-        Flamethrower.equipSounds(was, t, (sound, volume, pitch) -> minecraft.level.playLocalSound(player.getX(),
+        EnergyWhip.equipSounds(was, t, (sound, volume, pitch) -> minecraft.level.playLocalSound(player.getX(),
                 player.getY() + 1.0, player.getZ(), sound, SoundSource.PLAYERS, volume, pitch, false));
-        float[][] beats = { { FlameMove.LEFT_GRAB, 0.3F }, { FlameMove.VALVE, 0.2F }, { FlameMove.PILOT, 0.2F },
-                { FlameMove.TEST, 1.0F } };
+        WhipMove.Crack[] cracks = WhipMove.EQUIP.cracks();
+        float[][] beats = { { WhipMove.FORMED, 0.25F }, { WhipMove.RISE, 0.2F },
+                { cracks.length > 0 ? cracks[0].tick() : WhipMove.THROW + 4, 1.0F } };
         for (float[] beat : beats) {
             if (was < beat[0] && t >= beat[0]) {
-                kick(mine.start + beat[0], beat[1], beat[0] == FlameMove.TEST ? 1.0F : -1.0F);
+                kick(mine.start + beat[0], beat[1], beat[1] >= 1.0F ? 1.0F : -1.0F);
             }
         }
     }
@@ -282,17 +299,15 @@ public final class FlameArms extends FlameFirstPerson {
         shown = 0.0F;
         shownAt = Float.NaN;
         BLENDS.clear();
-        FireStream.clear();
-        FlameSound.clear();
     }
 
-    // Also when the sword's or whip's hands took the event: while one construct breaks up and the other forms, both
-    // draw.
+    // Also when the sword's or flamethrower's hands took the event: while one construct breaks up and the other
+    // forms, both draw.
     @SubscribeEvent(priority = EventPriority.LOW, receiveCanceled = true)
     public static void onRenderHand(RenderHandEvent event) {
         LocalPlayer player = Minecraft.getInstance().player;
         if (player == null || own == null || !SwordFirstPerson.handsFree(player)
-                || event.isCanceled() && !SwordArms.present() && !WhipArms.present()) {
+                || event.isCanceled() && !SwordArms.present() && !FlameArms.present()) {
             return;
         }
         event.setCanceled(true);
@@ -301,21 +316,25 @@ public final class FlameArms extends FlameFirstPerson {
         }
     }
 
+    // Before the server has told of the whip, the own game draws it by itself.
     @SubscribeEvent
     public static void onRenderLevel(RenderLevelStageEvent event) {
         Minecraft minecraft = Minecraft.getInstance();
         LocalPlayer player = minecraft.player;
         Camera camera = event.getCamera();
         if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_TRANSLUCENT_BLOCKS || own == null || player == null
-                || minecraft.level == null || camera.getEntity() == player && !camera.isDetached()
-                || ClientConstructs.flame(player.getId(), 0.0F) != null) {
+                || minecraft.level == null || ClientConstructs.whip(player.getId(), 0.0F) != null) {
             return;
         }
         float partialTick = event.getPartialTick().getGameTimeDeltaPartialTick(false);
         LanternPainter painter = new LanternPainter(event.getPoseStack(), camera.getPosition(), time(partialTick),
                 event.getFrustum());
-        draw(painter, player, RingSpot.of(player, camera, event.getProjectionMatrix(), event.getModelViewMatrix()),
-                partialTick);
+        if (camera.getEntity() == player && !camera.isDetached()) {
+            drawOwn(painter, player, camera, event.getProjectionMatrix(), event.getModelViewMatrix(), partialTick);
+        } else {
+            draw(painter, player, RingSpot.of(player, camera, event.getProjectionMatrix(), event.getModelViewMatrix()),
+                    partialTick);
+        }
         painter.finish(minecraft.renderBuffers().bufferSource());
     }
 }
