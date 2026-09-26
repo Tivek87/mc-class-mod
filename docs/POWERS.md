@@ -852,14 +852,12 @@ Green Lantern's ultimate: a big, slow gunship of hard light high over the battle
     (**0.9 hearts** every half second), letting go after 3 seconds at most. Only creatures small enough to hold;
   - **a ring blast:** four **portals** open round the creature and four smaller hands grab it by its arms and legs
     and hold it up, spread out in an **X**, arms up and legs apart, struggling; a fifth hand comes out of a portal
-    before it and **sets its ring** on its chest. The
-    ring gathers light, spinning and flickering ever faster, then **blasts**: a flash, rings and shards of light,
-    and the creature is thrown far away (**14.4 hearts**); everything within 5 blocks takes **3.6 hearts**. Only
-    creatures small enough to hold;
+    before it and **sets its ring** on its chest. The ring gathers light, spinning and flickering ever faster, then
+    **blasts**: a flash, rings and shards of light, and the creature is thrown far away (**14.4 hearts**);
+    everything within 5 blocks takes **3.6 hearts**. Only creatures small enough to hold;
   - **a clap:** two **portals** open on either side of the creature, two big hands come out on level forearms, draw
-    apart and **clap
-    it between their palms** (**9.6 hearts**, slowed down 2 seconds), with a flash and a ring of shock that throws
-    everything else within 5 blocks off (**1.9 hearts**);
+    apart and **clap it between their palms** (**9.6 hearts**, slowed down 2 seconds), with a flash and a ring of
+    shock that throws everything else within 5 blocks off (**1.9 hearts**);
   - **a finger gun:** a hand out of a **portal** points a finger gun at the creature and **fires three bolts of
     light**, bang, bang, bang, each with a kick and the thumb dropping like a hammer (**3 hearts** a bolt, to the
     first creature in its line), then blows the smoke off;
@@ -902,10 +900,10 @@ Green Lantern's ultimate: a big, slow gunship of hard light high over the battle
     break into solid links, and **hurls it away** from you (**6 hearts**). Only creatures small enough to hold.
 - **Ground or wall:** the smack, the grab, the middle finger, the slap, the pound, the finger snap, the claw rake, the
   ragdoll slam, the ring beam, the scoop, the evil eye (with its puppeteer) and the megaphone come out of a **wall**
-  instead of the ground
-  when the creature stands by one (more than half the time, and always when the ground round it has no room): the
-  wall cracks open round the hand, which moves as it would out of the ground with the wall as its ground, so a
-  ragdoll slam out of a wall **slams the creature into the wall**. The other hands come through portals.
+  instead of the ground when the creature stands by one (more than half the time, and always when the ground round
+  it has no room): the wall cracks open round the hand, which moves as it would out of the ground with the wall as
+  its ground, so a ragdoll slam out of a wall **slams the creature into the wall**. The other hands come through
+  portals.
   - **the axe pair:** the ring's light shoots off and **two portals** of it burst open in the air on either side of
     the creature and beyond it. A giant right hand (with the ring) and a left hand (without one) push out of them,
     fingers first, and hover there, their fingers rippling up and down. The right hand **snaps its fingers**, the
@@ -932,9 +930,9 @@ Green Lantern's ultimate: a big, slow gunship of hard light high over the battle
 - **Every kind of hand has its own settings** (smack, grab, middle finger, slap, pound, flick, pinch, finger snap,
   poke, hammer fist, claw rake, portal drag, ragdoll slam, ring blast, clap, finger gun, scissors, swallow, ring
   beam, scoop, evil eye, megaphone, ring hammer, ring chains, axe pair; the catch goes by the ragdoll slam's, the
-  puppeteer by the evil eye's): how often it
-  comes compared with the others (0 = never), the most of it in one press, and its damage and knockback as a factor
-  of the usual. Out of the settings every kind still allowed is picked; when none is left, the press ends early.
+  puppeteer by the evil eye's): how often it comes compared with the others (0 = never; by default every kind is as
+  likely as every other), the most of it in one press, and its damage and knockback as a factor of the usual. Out of the
+  settings every kind still allowed is picked; when none is left, the press ends early.
   Whatever it strikes always flies away from you, never at you. Its blows leave streaks of light in the air and rings
   of light running out over the ground. When it is done it sinks back into the ground; if you stop being Green
   Lantern it breaks into solid pieces (a pair and its axe too).

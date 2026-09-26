@@ -3,7 +3,7 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
-## [0.2.9-alpha] - 2026-09-26
+## [0.2.9-alpha] - 2026-09-27
 
 **UNFINISHED / WORK IN PROGRESS:** the mod is still being built; things may change, break or be missing.
 
@@ -50,14 +50,14 @@ the sections before 0.0.1-alpha came before versions were numbered.
   clasps its ears and bursts in a small green blast.
 - **Giant Hands out of walls:** the smack, grab, middle finger, slap, pound, finger snap, claw rake, ragdoll slam,
   ring beam, scoop, evil eye with its puppeteer and megaphone come out of a wall beside the creature instead of the
-  ground; a ragdoll
-  slam out of a wall slams it into the wall.
+  ground; a ragdoll slam out of a wall slams it into the wall.
 - **Settings:** each of the nineteen new hands has its own chance, most per press, damage and knockback.
 - **Plasma Flamethrower, heat gauge:** ten cells on an arc beside the crosshair, green to red, fill as the inferno
   heads for overheating, with HEAT and a percentage in big letters, and OVERHEATED while the gun vents.
 - **Plasma Flamethrower:** holding a button towards the inferno or the vortex lights the gun's fins one by one.
 - **Plasma Flamethrower:** the inferno stream grows wilder the closer it gets to overheating: wider, whiter at heart,
   more sparks, sputtering at the end.
+- **Repository:** the Green Lantern reference sounds (construct wheel, flight, giant hands) in `docs/reference/`.
 
 ### Changed
 - **Thunder Clap:** goes where your crosshair points, up and down too, not only straight ahead; your arms follow
@@ -66,7 +66,6 @@ the sections before 0.0.1-alpha came before versions were numbered.
 - **Giant Hands:** for now one hand at every press (settings allow 2 at most, temporary while the hands are reworked).
 - **Giant Hands:** every kind of hand is as likely as every other.
 - **Giant Hands:** no hand out of a portal reaches out of or through you.
-- **Giant Hands:** a hand never comes up in water or reaches through it.
 - **Giant Hands:** finding a wall to come out of is lighter on the server.
 - **Light Beam:** the stage gauge is bigger, with numbered stages and the stage and time to the next in big letters.
 - **Light Beam:** your own beam is see-through close to you, like your own shield.
@@ -91,6 +90,11 @@ the sections before 0.0.1-alpha came before versions were numbered.
 - **Energy Whip, lasso:** the lash flows into its coils round the creature without a jump and gets its full length
   back afterwards.
 - **Setting:** whip length is 10 blocks by default (was 4.5), up to 16.
+- **Settings:** every hand's section says whether it comes out of the ground or a wall, or through portals.
+- **Code:** the Giant Hands' search for a spot is a file of its own, so the Giant Hands stay under 600 lines a file;
+  powers share new pieces for voice lines heard from their speaker and chains of hard light along any path.
+- **Rules for the makers:** notes on in-game tests (step timers, per-frame motion numbers), gauges players must read,
+  the lists every new Giant Hand needs, creatures a hand holds away from its fingers, and water hiding constructs.
 
 ### Removed
 - **Construct bar:** the bar above the hotbar with the icon and name of the construct you hold and what it does.
