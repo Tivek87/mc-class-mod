@@ -1,10 +1,9 @@
-# Laatste sessie — 2026-09-26 (nacht, deel 2)
+# Laatste sessie — 2026-09-26 (nacht, deel 3)
 
-- **Vraag:** (1) spawn-animatie exact 2,0 s trager + speech (`docs/reference/green-lantern-spawn-speech.ogg`) met 0,7 s fade in/uit; (2) jetpack bij snel vliegen (idee #9); (3) 12 vloeiende linksklik-aanvallen voor de Plasma Flamethrower.
-- **Keuzes gebruiker:** hele spawn gelijkmatig trager; jetpack blijft tot landen/stoppen; 12 = linksklik-aanvallen zoals het zwaard.
-- **Spawn:** één klok `Arrival.moment()` (159 → 199 ticks, ook de oplaad aan het eind via `Recharge` made/played + `ClientRing.recharge`). `ArrivalSpeech` (stereo ogg met ingebakken fades in `sounds/ring/`, VOICE, zachter op afstand, 0,7 s fade bij afbreken).
-- **Jetpack:** `Jetpacks` (client-staat uit `FlightPose.lying`), `JetpackPainter` (bal uit ring, groeien, vlammen, breken), `BackSpot` (rug-frame uit de pak-laag), tekenen in `ClientConstructs`.
-- **Flamethrower:** `FlameMove` kreeg 12 aanvallen met strokes/paden (server + client delen `way()`), `FlameHits.spray` (ovaal rond het pad), per-stroke geluid/kick; `FlameKeys.attacks()` + pad-override in `FlamePoses.along`; `orbit` in `Pose` voor het rondje (derde persoon `turnModel`, eerste persoon `orbited`); `ScreenSpot` achter-de-camera-fallback.
-- **Getest in-game (5 rondes):** spawn 199 ticks, alle geluiden op juiste momenten, speech 10,4 s + fade bij afbreken; jetpack vormt/vlamt/breekt; alle 12 aanvallen raken goed (volgorde, schade ×power, rondje 6/6, kruis 2×), ketting vloeiend, eerste persoon ok. Run 3 verstoord door Alt+Tab (Giant Hands). `gradlew build` OK.
-- **Docs:** POWERS.md, GREEN_LANTERN.md, CHANGELOG (0.1.8-alpha), en_us (hint + subtitle), instellingteksten. Regel toegevoegd (CLAUDE.md, Alt+Tab in tests).
-- **Open:** commit + push + release wachten op ja. Idee #9 was al gesloten op GitHub (completed, zonder commentaar). Ideeën #10 en #11 wachten op ja/nee. Multiplayer niet apart getest (zelfde codepad als derde persoon).
+- **Vraag:** bug-/idee-formulier: tekst bewaren bij doodgaan of weggaan; laatste 3 verstuurde bugs en 3 ideeën zien, 4e duwt de oudste weg.
+- **Keuzes gebruiker:** knop **Sent** in het formulier; status live van GitHub; concept op schijf; na dood alleen tekst bewaren (niet vanzelf heropenen).
+- **Gedaan:** `ReportStore` (concept + laatste 3 per soort in `config/welcomescreen/reports.json`; opslaan bij sluiten/dood/afsluiten en elke seconde tijdens typen; versturen loopt door als je weggaat), `SentReportsScreen` (naam, prioriteit, #, datum, status, GitHub-titel op max 2 regels), `BugReporter.status` (GitHub API, 5 min vers, 60 s pauze na fout, onzichtbare tekens weg), knoppen Back | Sent (n) | Send. `UpdateChecker.REPO` public.
+- **Ook:** `scripts/bugs.ps1 sync` faalde in Windows PowerShell 5.1 (JSON-lijst als één object) → gefixt. `pwsh` staat niet op deze pc: `bugs.ps1 schedule` werkt hier niet, er is geen sync-taak.
+- **Getest in-game (2 runs, nep-relay, geen echte issues):** concept na Esc, na herstart, autosave zonder weggaan, mislukte verzending, dood (/kill) → tekst terug na respawn; 4 bugs/4 ideeën → 3 blijven; weggaan en bewerken tijdens versturen; status + lange titels van GitHub; kleinste GUI 427x240. `gradlew build` OK. Laatste opschoning (`priority()`-helper, regex `\p{Cf}`) alleen gecompileerd + jshell-check.
+- **Docs:** README, PROJECT.md, CLAUDE.md (code-indeling), CHANGELOG 0.1.9-alpha, en_us; `release.ps1 prepare` → 0.1.9-alpha.
+- **Open:** commit + push + release wachten op ja. `docs/reference/nanotech-ironman-skin.png` (niet van deze sessie) staat untracked. Oud: teller "0/2000" valt half onder de Priority-knop. Geen open bugs/ideeën. Multiplayer niet apart getest (zelfde codepad als dood in singleplayer).

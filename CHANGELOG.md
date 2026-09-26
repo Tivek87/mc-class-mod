@@ -3,6 +3,20 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.1.9-alpha] - 2026-09-26
+
+### Added
+- **Report a bug, Suggest an idea:** new **Sent** button: your last 3 reports (or ideas) with their number, date and
+  status on GitHub (open, fixed or added, not planned); sending a fourth drops the oldest.
+
+### Changed
+- **Report a bug, Suggest an idea:** what you type is kept until you send it, also when you leave the screen, die or
+  close the game.
+
+### Fixed
+- **Bug reports for the makers:** the script that copies open reports and ideas no longer fails in Windows
+  PowerShell 5.1.
+
 ## [0.1.8-alpha] - 2026-09-26
 
 ### Added

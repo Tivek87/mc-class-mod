@@ -1,5 +1,6 @@
 package nl.tivek.multiversepowers.bugreport.client;
 
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
@@ -13,6 +14,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Locale;
 import java.util.concurrent.CompletableFuture;
+import java.util.regex.Pattern;
 import net.minecraft.SharedConstants;
 import net.minecraft.client.Minecraft;
 import nl.tivek.multiversepowers.update.client.UpdateChecker;
@@ -25,6 +27,9 @@ final class BugReporter {
     private static final String RELAY_FILE = "relay.txt";
     private static final String RELAY_PROPERTY = "welcomescreen.bugrelay";
     private static final String USER_AGENT = "multiverse-powers-bug-report";
+    private static final String ISSUES = "https://api.github.com/repos/" + UpdateChecker.REPO + "/issues/";
+    // Minecraft's font draws invisible marks as dashed boxes: the relay's zero-width space after @, emoji selectors.
+    private static final Pattern INVISIBLE = Pattern.compile("[\\p{Cf}\\uFE00-\\uFE0F]");
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final HttpClient HTTP = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(10))
@@ -65,7 +70,18 @@ final class BugReporter {
 
     enum Outcome { SENT, LIMITED, REJECTED, FAILED }
 
+    enum State {
+        OPEN, DONE, DECLINED, DUPLICATE, CLOSED, GONE;
+
+        String id() {
+            return this.name().toLowerCase(Locale.ROOT);
+        }
+    }
+
     record Result(Outcome outcome, int issue) {
+    }
+
+    record Status(State state, String title) {
     }
 
     private BugReporter() {
@@ -109,6 +125,44 @@ final class BugReporter {
         } catch (IOException e) {
             return "";
         }
+    }
+
+    static CompletableFuture<Status> status(int issue) {
+        HttpRequest request = HttpRequest.newBuilder(URI.create(ISSUES + issue))
+                .header("Accept", "application/vnd.github+json")
+                .header("X-GitHub-Api-Version", "2022-11-28")
+                .header("User-Agent", USER_AGENT)
+                .timeout(Duration.ofSeconds(20))
+                .build();
+        return HTTP.sendAsync(request, HttpResponse.BodyHandlers.ofString()).thenApply(BugReporter::statusOf);
+    }
+
+    private static Status statusOf(HttpResponse<String> response) {
+        return switch (response.statusCode()) {
+            case 200 -> {
+                JsonObject issue = JsonParser.parseString(response.body()).getAsJsonObject();
+                yield new Status(state(issue), INVISIBLE.matcher(string(issue, "title")).replaceAll("").strip());
+            }
+            case 404, 410 -> new Status(State.GONE, "");
+            default -> throw new IllegalStateException("GitHub answered " + response.statusCode());
+        };
+    }
+
+    private static State state(JsonObject issue) {
+        if (!"closed".equals(string(issue, "state"))) {
+            return State.OPEN;
+        }
+        return switch (string(issue, "state_reason")) {
+            case "completed" -> State.DONE;
+            case "not_planned" -> State.DECLINED;
+            case "duplicate" -> State.DUPLICATE;
+            default -> State.CLOSED;
+        };
+    }
+
+    static String string(JsonObject json, String key) {
+        JsonElement value = json.get(key);
+        return value == null || value.isJsonNull() ? "" : value.getAsString();
     }
 
     private static Result result(HttpResponse<String> response) {

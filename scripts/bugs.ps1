@@ -70,7 +70,8 @@ function Show-Open([string]$when) {
 function Sync-Issues([string]$issueLabel, [string]$dir, [int[]]$done) {
     $json = gh issue list -R $Repo --label $issueLabel --state open --limit 200 --json number,title,body,labels,createdAt,url
     if ($LASTEXITCODE -ne 0) { throw 'gh issue list failed' }
-    $issues = @($json | ConvertFrom-Json)
+    # Windows PowerShell 5.1 passes a JSON array on as one object: unroll it.
+    $issues = @($json | ConvertFrom-Json | ForEach-Object { $_ })
     New-Item -ItemType Directory -Force $dir | Out-Null
     $wanted = @{}
     foreach ($issue in $issues) {

@@ -25,7 +25,7 @@ import org.slf4j.Logger;
 
 @EventBusSubscriber(modid = MultiversePowers.MODID, value = Dist.CLIENT)
 public final class UpdateChecker {
-    static final String REPO = "Tivek87/mc-class-mod";
+    public static final String REPO = "Tivek87/mc-class-mod";
     static final String USER_AGENT = "multiverse-powers-updater";
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final URI LATEST = URI.create("https://github.com/" + REPO + "/releases/latest");

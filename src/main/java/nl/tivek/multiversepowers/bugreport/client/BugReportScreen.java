@@ -1,6 +1,5 @@
 package nl.tivek.multiversepowers.bugreport.client;
 
-import java.util.concurrent.CompletableFuture;
 import javax.annotation.Nullable;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -15,21 +14,16 @@ import nl.tivek.multiversepowers.engine.client.gui.DirtBackgroundScreen;
 import nl.tivek.multiversepowers.update.client.UpdateChecker;
 
 public final class BugReportScreen extends DirtBackgroundScreen {
-    private static final int PANEL_WIDTH = 300;
-    private static final int PANEL_HEIGHT = 226;
-    private static final int SENT_COLOR = 0x6EE7A0;
-    private static final int ERROR_COLOR = 0xFF7B7B;
+    static final int PANEL_WIDTH = 300;
+    static final int PANEL_HEIGHT = 226;
+    static final int SENT_COLOR = 0x6EE7A0;
+    static final int ERROR_COLOR = 0xFF7B7B;
 
     @Nullable
     private final Screen parent;
     private final BugReporter.Kind kind;
-    private String name = "";
-    private String description = "";
-    private BugReporter.Priority priority = BugReporter.Priority.MEDIUM;
     @Nullable
-    private CompletableFuture<BugReporter.Result> pending;
-    @Nullable
-    private BugReporter.Result result;
+    private BugReporter.Result shown;
     @Nullable
     private Button send;
     private int left;
@@ -40,6 +34,7 @@ public final class BugReportScreen extends DirtBackgroundScreen {
         super(text(kind.key("title")));
         this.parent = parent;
         this.kind = kind;
+        this.shown = ReportStore.result(kind);
     }
 
     public static BugReportScreen bug(@Nullable Screen parent) {
@@ -61,63 +56,61 @@ public final class BugReportScreen extends DirtBackgroundScreen {
         this.top = Math.max(6, (this.height - PANEL_HEIGHT) / 2);
         int x = this.left + 10;
         int inner = this.panelWidth - 20;
-        int half = (inner - 6) / 2;
+        int third = (inner - 12) / 3;
+        ReportStore.Draft draft = this.draft();
 
         EditBox nameBox = new EditBox(this.font, x, this.top + 40, inner, 20, text("name"));
         nameBox.setMaxLength(BugReporter.TITLE_MAX);
         nameBox.setHint(text(this.kind.key("name.hint")));
-        nameBox.setValue(this.name);
-        nameBox.setResponder(value -> this.name = value);
+        nameBox.setValue(draft.name());
+        nameBox.setResponder(value -> ReportStore.draft(this.kind, this.draft().withName(value)));
         this.addRenderableWidget(nameBox);
 
         MultiLineEditBox descriptionBox = new MultiLineEditBox(this.font, x, this.top + 77, inner, 72,
                 text(this.kind.key("description.hint")), text("description"));
         descriptionBox.setCharacterLimit(BugReporter.DESCRIPTION_MAX);
-        descriptionBox.setValue(this.description);
-        descriptionBox.setValueListener(value -> this.description = value);
+        descriptionBox.setValue(draft.description());
+        descriptionBox.setValueListener(value -> ReportStore.draft(this.kind, this.draft().withDescription(value)));
         this.addRenderableWidget(descriptionBox);
 
         this.addRenderableWidget(CycleButton.<BugReporter.Priority>builder(
                         value -> text("priority." + value.id()).withColor(value.color))
                 .withValues(BugReporter.Priority.values())
-                .withInitialValue(this.priority)
-                .create(x, this.top + 155, inner, 20, text("priority"), (button, value) -> this.priority = value));
+                .withInitialValue(draft.priority())
+                .create(x, this.top + 155, inner, 20, text("priority"),
+                        (button, value) -> ReportStore.draft(this.kind, this.draft().withPriority(value))));
 
         this.addRenderableWidget(Button.builder(text("back"), button -> this.onClose())
-                .bounds(x, this.top + 196, half, 20).build());
-        this.send = this.addRenderableWidget(Button.builder(text("send"), button -> this.send())
-                .bounds(x + half + 6, this.top + 196, inner - half - 6, 20).build());
+                .bounds(x, this.top + 196, third, 20).build());
+        this.addRenderableWidget(Button.builder(text("history", ReportStore.sent(this.kind).size()),
+                        button -> this.minecraft.setScreen(new SentReportsScreen(this, this.kind)))
+                .bounds(x + third + 6, this.top + 196, third, 20).build());
+        this.send = this.addRenderableWidget(Button.builder(text("send"), button -> ReportStore.send(this.kind))
+                .bounds(x + 2 * (third + 6), this.top + 196, inner - 2 * (third + 6), 20).build());
         this.setInitialFocus(nameBox);
         this.refreshSend();
     }
 
-    private void send() {
-        if (this.pending != null || this.name.isBlank() || this.description.isBlank()) {
-            return;
-        }
-        this.result = null;
-        this.pending = BugReporter.send(this.kind, this.name, this.description, this.priority);
-        this.refreshSend();
+    private ReportStore.Draft draft() {
+        return ReportStore.draft(this.kind);
     }
 
     @Override
     public void tick() {
-        if (this.pending != null && this.pending.isDone()) {
-            this.result = this.pending.join();
-            this.pending = null;
-            if (this.result.outcome() == BugReporter.Outcome.SENT) {
-                this.name = "";
-                this.description = "";
-                this.priority = BugReporter.Priority.MEDIUM;
+        BugReporter.Result result = ReportStore.result(this.kind);
+        if (result != this.shown) {
+            this.shown = result;
+            if (result != null && result.outcome() == BugReporter.Outcome.SENT) {
                 this.rebuildWidgets();
             }
         }
+        ReportStore.tick();
         this.refreshSend();
     }
 
     private void refreshSend() {
         if (this.send != null) {
-            this.send.active = this.pending == null && !this.name.isBlank() && !this.description.isBlank();
+            this.send.active = !ReportStore.sending(this.kind) && this.draft().ready();
         }
     }
 
@@ -134,18 +127,18 @@ public final class BugReportScreen extends DirtBackgroundScreen {
     }
 
     private void drawStatus(GuiGraphics graphics, int x, int y) {
-        if (this.pending != null) {
+        if (ReportStore.sending(this.kind)) {
             graphics.drawString(this.font, text("sending"), x, y, TEXT_COLOR);
             return;
         }
-        if (this.result == null) {
+        BugReporter.Result result = ReportStore.result(this.kind);
+        if (result == null) {
             Component as = text("as", BugReporter.username(), UpdateChecker.installed());
             graphics.drawString(this.font, as, x, y, MUTED_COLOR);
             return;
         }
-        switch (this.result.outcome()) {
-            case SENT -> graphics.drawString(this.font, text(this.kind.key("sent"), this.result.issue()), x, y,
-                    SENT_COLOR);
+        switch (result.outcome()) {
+            case SENT -> graphics.drawString(this.font, text(this.kind.key("sent"), result.issue()), x, y, SENT_COLOR);
             case LIMITED -> graphics.drawString(this.font, text(this.kind.key("error.limited")), x, y, ERROR_COLOR);
             case REJECTED -> graphics.drawString(this.font, text("error.rejected"), x, y, ERROR_COLOR);
             case FAILED -> graphics.drawString(this.font, text("error.network"), x, y, ERROR_COLOR);
@@ -155,6 +148,11 @@ public final class BugReportScreen extends DirtBackgroundScreen {
     @Override
     public boolean shouldCloseOnEsc() {
         return true;
+    }
+
+    @Override
+    public void removed() {
+        ReportStore.closed(this.kind);
     }
 
     @Override

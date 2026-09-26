@@ -19,7 +19,10 @@ yourself. Every download is checked against the release page's checksum before i
 **What's new**) sends a bug or glitch straight to the mod's makers: give it a short name, a description and a priority
 (low, medium or high) and press **Send**; your Minecraft name and version go with it, and you get the report's number.
 **Suggest an idea** (next to **Report a bug**) works the same way for your own ideas: a short name, a description and
-a priority. Reports and ideas are public on the mod's GitHub page.
+a priority. Reports and ideas are public on the mod's GitHub page. What you type stays until you send it, also when
+you leave the screen, die or close the game. **Sent** (between **Back** and **Send**) lists your last 3 reports or
+ideas, newest first: name, priority, number, date, the status on GitHub (open, fixed or added, not planned) and the
+title as it is on GitHub now; sending a fourth drops the oldest.
 
 - [Classes and skill trees](CLASSES.md)
 - [Callings and Crowns](CALLINGS.md)

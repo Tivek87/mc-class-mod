@@ -21,8 +21,10 @@ across the multiverse you can turn into.
   click it in the menu, or press **U** (changeable under Controls) for the update manager: read what's new, then update
   later (installed when you close the game) or update and restart right away.
 - **Bug reports:** **Report a bug** in the update manager sends a bug with a name, a description and a priority. It
-  becomes a public issue on this repository, with your Minecraft name.
-- **Ideas:** **Suggest an idea** (next to it) sends an idea the same way, with a name, a description and a priority.
+  becomes a public issue on this repository, with your Minecraft name. What you type is kept until you send it, also
+  when you leave the screen, die or close the game; **Sent** shows your last 3 reports with their status on GitHub.
+- **Ideas:** **Suggest an idea** (next to it) sends an idea the same way, with a name, a description and a priority,
+  and keeps your text and your last 3 ideas the same way.
 
 Everything each power does: [Characters and their powers](docs/POWERS.md).
 
