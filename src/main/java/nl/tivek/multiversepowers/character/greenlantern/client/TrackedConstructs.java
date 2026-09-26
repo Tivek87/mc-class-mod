@@ -10,6 +10,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.character.greenlantern.ConstructPayload;
 import nl.tivek.multiversepowers.character.greenlantern.HandDuo;
+import nl.tivek.multiversepowers.character.greenlantern.HandGroup;
 import nl.tivek.multiversepowers.character.greenlantern.HandPose;
 import nl.tivek.multiversepowers.character.greenlantern.PlanePath;
 import nl.tivek.multiversepowers.character.greenlantern.ability.AirStrike;
@@ -489,11 +490,17 @@ abstract class TrackedConstructs {
             ticks = AXE_SHAKE_TICKS;
             hard = AXE_SHAKE;
             near = 1.0 - from.distanceTo(strike) / AXE_SHAKE_RANGE;
-        } else if (move == HandPose.FINGER || move == HandPose.SNAP || move == HandPose.HAMMER) {
-            since = clock - (move == HandPose.FINGER ? HandPose.FINGER_BURSTS
-                    : move == HandPose.SNAP ? HandPose.SNAP_HITS : HandPose.HAMMER_HITS);
+        } else if (move == HandPose.FINGER || move == HandPose.SNAP || move == HandPose.HAMMER
+                || move == HandPose.RINGHOLD || move == HandPose.CLAP) {
+            since = clock - switch (move) {
+                case HandPose.FINGER -> HandPose.FINGER_BURSTS;
+                case HandPose.SNAP -> HandPose.SNAP_HITS;
+                case HandPose.RINGHOLD -> HandGroup.RING_BLASTS;
+                case HandPose.CLAP -> HandGroup.CLAP_HITS;
+                default -> HandPose.HAMMER_HITS;
+            };
             ticks = FINGER_SHAKE_TICKS;
-            hard = FINGER_SHAKE * (move == HandPose.SNAP ? 0.6 : 1.0);
+            hard = FINGER_SHAKE * (move == HandPose.SNAP || move == HandPose.CLAP ? 0.6 : 1.0);
             near = 1.0 - from.distanceTo(hand.center()) / FINGER_SHAKE_RANGE;
         } else {
             return 0.0F;

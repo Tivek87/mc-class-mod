@@ -21,14 +21,29 @@ the sections before 0.0.1-alpha came before versions were numbered.
 - **Giant Hands, claw rake:** a hand rakes its claws down through the creature and leaves three glowing furrows.
 - **Giant Hands, portal drag:** a hand out of a portal grabs the creature and the portal races off, scraping it
   24 blocks over the ground.
-- **Settings:** each of the seven new hands has its own chance, most per press, damage and knockback.
+- **Giant Hands, ragdoll slam:** a hand slams the creature down 2 to 5 times, each to its own side, swings it faster
+  and faster and flings it far; half the time a fist out of a portal catches it in the air and squeezes it up to
+  3 seconds.
+- **Giant Hands, ring blast:** four hands out of portals hold the creature spread out, a fifth sets its ring on it and
+  the ring charges and blasts it away.
+- **Giant Hands, clap:** two hands out of portals clap the creature between them.
+- **Giant Hands, finger gun:** a hand out of a portal fires three bolts of light from its finger.
+- **Giant Hands, scissors:** a hand out of a portal snips the creature twice.
+- **Giant Hands, swallow:** a hand pulls the creature into a portal in the ground; it falls out of one in the sky.
+- **Giant Hands, ring beam:** a fist fires a beam of light from its ring.
+- **Giant Hands, scoop:** a hand scoops the creature up and tosses it high over itself.
+- **Giant Hands out of walls:** the ragdoll slam, the ring beam and the scoop come out of a wall right beside the
+  creature instead of the ground; a ragdoll slam out of a wall slams it into the wall.
+- **Settings:** each of the fifteen new hands has its own chance, most per press, damage and knockback.
+- **Plasma Flamethrower, gauge:** bars of light along the gun fill as the inferno heads for overheating.
 - **Plasma Flamethrower:** the inferno stream grows wilder the closer it gets to overheating: wider, whiter at heart,
   more sparks, sputtering at the end.
 
 ### Changed
 - **Thunder Clap:** goes where your crosshair points, up and down too, not only straight ahead; your arms follow
   your aim.
-- **Thunder Clap:** the bubble of stopped time is 70% smaller and a little blurrier, still swelling out of your hands.
+- **Thunder Clap:** the bubble of stopped time is about 75% smaller and a little blurrier, still swelling out of your
+  hands.
 - **Thunder Clap:** after the bubble a cloud of blue thunder sparks bursts out where you aimed.
 - **Jetpack:** sits higher on your back and is 15% bigger.
 - **Factions:** one hit on something neutral (yellow) turns it hostile (red) at once (was three hits).

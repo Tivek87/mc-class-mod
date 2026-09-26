@@ -5,8 +5,8 @@ import java.util.List;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.character.greenlantern.HandDuo;
+import nl.tivek.multiversepowers.character.greenlantern.HandGroup;
 import nl.tivek.multiversepowers.character.greenlantern.HandPose;
-import nl.tivek.multiversepowers.engine.math.Vectors;
 import static nl.tivek.multiversepowers.character.greenlantern.ability.GiantHands.SCALE;
 
 final class GiantHandRoom {
@@ -18,7 +18,7 @@ final class GiantHandRoom {
     private static final double HAFT = 0.8;
     private static final double ARM_STEP = 2.0;
     private static final double[] REACH = { 16.0, 11.0, 6.0, 10.0, 13.0, 14.0, 12.0, 9.0, 14.0, 10.0, 16.0, 34.0,
-            22.0 };
+            12.0, 8.0, 10.0, 12.0, 16.0, 14.0, 8.0, 14.0, 12.0, 22.0 };
     private static final double[] ALONG = { 0.0, 2.1, 4.2, 6.0 };
     private static final double[] PAIR_ALONG = { 0.0, 2.1, 4.2 };
     private static final double[] HAFT_AT = { 1.0, 4.5, 8.0 };
@@ -39,6 +39,17 @@ final class GiantHandRoom {
         if (hand.move == HandPose.AXE) {
             for (int t = hand.t; t <= HandDuo.LIFE; t += PAIR_STEP) {
                 this.pair(t, HandDuo.at(hand.base, hand.variant, hand.aim, t, SCALE));
+            }
+        } else if (HandGroup.is(hand.variant)) {
+            for (int t = hand.t; t <= HandPose.life(hand.variant); t += PAIR_STEP) {
+                List<Ball> balls = new ArrayList<>();
+                for (HandGroup.Sub sub : HandGroup.at(hand.variant, hand.base, hand.aim.subtract(hand.base), t)) {
+                    balls.add(new Ball(sub.place().at(new Vec3(0.0, 2.0, 0.0)), HAND * sub.place().scale()));
+                    if (sub.portal().open() > 0.0) {
+                        balls.add(new Ball(sub.portal().center(), sub.portal().radius()));
+                    }
+                }
+                this.keep(t, balls);
             }
         } else {
             Vec3 reach = hand.aim.subtract(hand.base);
@@ -137,7 +148,8 @@ final class GiantHandRoom {
     private void add(List<Ball> balls, Vec3 at, double radius) {
         // Below the ground or behind its portal a hand is still hidden: only what has come out takes room.
         Vec3 out = HandPose.portal(this.hand.variant) ? HandPose.portalOf(this.hand.variant, this.hand.base,
-                this.aim.subtract(this.hand.base), 0.0, SCALE).normal() : Vectors.UP;
+                this.aim.subtract(this.hand.base), 0.0, SCALE).normal()
+                : HandPose.rootNormal(this.hand.variant, this.aim.subtract(this.hand.base));
         if (at.subtract(this.hand.base).dot(out) >= -0.5) {
             balls.add(new Ball(at, radius));
         }

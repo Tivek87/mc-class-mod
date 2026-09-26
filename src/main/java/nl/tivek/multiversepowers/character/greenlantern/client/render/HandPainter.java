@@ -5,6 +5,7 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.character.greenlantern.ConstructPayload;
 import nl.tivek.multiversepowers.character.greenlantern.HandDuo;
+import nl.tivek.multiversepowers.character.greenlantern.HandGroup;
 import nl.tivek.multiversepowers.character.greenlantern.HandPose;
 import nl.tivek.multiversepowers.engine.client.render.ConstructPainter;
 import nl.tivek.multiversepowers.engine.math.Ease;
@@ -50,12 +51,19 @@ public final class HandPainter {
             pair(painter, hand, facing, clock, ring, scale);
             return;
         }
+        if (HandGroup.is(variant)) {
+            HandGroupPainter.draw(painter, hand.id(), variant, base, facing, clock, ring, 1.0, -1.0);
+            return;
+        }
         double reach = Math.sqrt(facing.x * facing.x + facing.z * facing.z) / scale;
         HandPose pose = HandPose.at(variant, clock, reach);
         HandPose.Place place = pose.place(base, facing, scale);
         HandDuo.Portal portal = HandPose.portal(variant) ? HandPose.portalOf(variant, base, facing, clock, scale)
                 : null;
-        if (portal == null) {
+        Vec3 root = HandPose.rootNormal(variant, facing);
+        if (portal == null && HandPose.wall(variant)) {
+            HandFeatLight.wallBurst(painter, hand.id(), base, root, clock, variant, scale, 1.0);
+        } else if (portal == null) {
             ground(painter, hand.id(), base, clock, variant, scale, 1.0);
         } else {
             HandTrickLight.portal(painter, hand.id(), portal, variant, clock, 1.0);
@@ -70,19 +78,20 @@ public final class HandPainter {
         }
         painter.glare(0.7 * (1.0 - Ease.smooth((clock - HandPose.ARRIVES) / 16.0)));
         painter.ambient(GLOWS);
-        cut(painter, base, portal);
+        cut(painter, base, portal, root);
         drawHand(painter, pose, place, false, 1.0, -1.0, 0, false);
         painter.noClip();
         painter.ambient(0.0);
         painter.glare(0.0);
         blows(painter, hand, facing, clock, scale, 1.0);
         HandTrickLight.blows(painter, variant, base, facing, clock, scale, 1.0);
+        HandFeatLight.blows(painter, variant, base, facing, clock, scale, 1.0);
     }
 
-    // A hand out of the ground is cut at the ground, one out of a portal at the portal.
-    private static void cut(LanternPainter painter, Vec3 base, @Nullable HandDuo.Portal portal) {
+    // A hand out of the ground or a wall is cut at its surface, one out of a portal at the portal.
+    private static void cut(LanternPainter painter, Vec3 base, @Nullable HandDuo.Portal portal, Vec3 root) {
         if (portal == null) {
-            painter.clip(new Vec3(base.x, base.y + GROUND_CUT, base.z), Vectors.UP, GROUND_SEAM);
+            painter.clip(base.add(root.scale(GROUND_CUT)), root, GROUND_SEAM);
         } else {
             painter.clip(portal.center(), portal.normal(), PORTAL_SEAM);
         }
@@ -209,6 +218,11 @@ public final class HandPainter {
         return digit(handFrame(place, left), pose, 0)[2].at(0.0, JOINTS[0][2], 0.0);
     }
 
+    // The gem of the ring on the middle finger, as drawn.
+    static Vec3 ringGem(HandPose pose, HandPose.Place place) {
+        return digit(handFrame(place, false), pose, 1)[0].at(0.0, 0.62, -0.5);
+    }
+
     static Vec3 thumbWay(HandPose pose, HandPose.Place place, boolean left) {
         ConstructPainter.Frame tip = digit(handFrame(place, left), pose, 4)[2];
         return tip.up().normalize();
@@ -226,23 +240,31 @@ public final class HandPainter {
             brokenPair(painter, hand, clock, since, apart, scale);
             return;
         }
+        double fade = 1.0 - Ease.smooth(since / 6.0);
+        if (HandGroup.is(hand.variant())) {
+            HandGroupPainter.draw(painter, hand.id(), hand.variant(), base, facing, clock, null, fade, apart);
+            return;
+        }
         double reach = Math.sqrt(facing.x * facing.x + facing.z * facing.z) / scale;
         HandPose pose = HandPose.at(hand.variant(), clock, reach);
         HandPose.Place place = pose.place(base, facing, scale);
-        double fade = 1.0 - Ease.smooth(since / 6.0);
         HandDuo.Portal portal = HandPose.portal(hand.variant())
                 ? HandPose.portalOf(hand.variant(), base, facing, clock, scale) : null;
-        if (portal == null) {
+        Vec3 root = HandPose.rootNormal(hand.variant(), facing);
+        if (portal == null && HandPose.wall(hand.variant())) {
+            HandFeatLight.wallBurst(painter, hand.id(), base, root, clock, hand.variant(), scale, fade);
+        } else if (portal == null) {
             ground(painter, hand.id(), base, clock, hand.variant(), scale, fade);
         } else {
             HandTrickLight.portal(painter, hand.id(), portal, hand.variant(), clock, fade);
         }
         blows(painter, hand, facing, clock, scale, fade);
         HandTrickLight.blows(painter, hand.variant(), base, facing, clock, scale, fade);
+        HandFeatLight.blows(painter, hand.variant(), base, facing, clock, scale, fade);
         painter.glare(0.5 * Math.max(0.0, 1.0 - since / 5.0));
         painter.ambient(GLOWS);
         painter.fling(1.8);
-        cut(painter, base, portal);
+        cut(painter, base, portal, root);
         drawHand(painter, pose, place, false, 1.2, apart, 0, false);
         painter.noClip();
         painter.fling(1.0);

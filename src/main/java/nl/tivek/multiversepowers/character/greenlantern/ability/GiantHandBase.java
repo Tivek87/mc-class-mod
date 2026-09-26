@@ -157,6 +157,16 @@ abstract class GiantHandBase {
 
     // The portal glides after the creature, the hand still turned the same way, until the moment it acts draws near.
     private void homePortal(ServerLevel level) {
+        // The catch keeps right under its falling creature until the moment it closes on it.
+        if (this.move == HandPose.CATCH) {
+            if (this.t < HandPose.CATCH_CATCHES && this.held == null && this.target.isAlive()) {
+                Vec3 next = GiantHands.portalFor(this.target, this.variant, way(this.facing));
+                this.aim = this.aim.add(next.subtract(this.base));
+                this.base = next;
+                this.room = null;
+            }
+            return;
+        }
         int stops = HandPose.firstAct(this.variant) - PORTAL_SETTLES;
         if (this.t >= stops || this.held != null) {
             this.drift = Vec3.ZERO;
@@ -225,7 +235,9 @@ abstract class GiantHandBase {
     }
 
     void dust(ServerLevel level, int count) {
-        BlockPos under = BlockPos.containing(this.base.x, this.base.y - 0.5, this.base.z);
+        // The block the hand broke out of: under it, or behind it in a wall.
+        BlockPos under = BlockPos.containing(this.base.subtract(HandPose.rootNormal(this.variant,
+                this.aim.subtract(this.base)).scale(0.5)));
         BlockState ground = level.isLoaded(under) ? level.getBlockState(under) : null;
         if (ground != null && !ground.isAir()) {
             ParticleFx.send(level, new BlockParticleOption(ParticleTypes.BLOCK, ground), this.base.x,
@@ -267,7 +279,7 @@ abstract class GiantHandBase {
     void hit(ServerLevel level, LivingEntity living, double damage, Vec3 away, double out, double up) {
         // Hits in quick succession all land.
         living.invulnerableTime = 0;
-        String hand = HandPose.HANDS[this.move];
+        String hand = HandPose.HANDS[HandPose.settingsOf(this.move)];
         living.hurt(level.damageSources().playerAttack(this.storm.owner),
                 (float) (damage * this.storm.ability.value(hand + "Damage")));
         double knockback = this.storm.ability.value("knockback") * this.storm.ability.value(hand + "Knockback");

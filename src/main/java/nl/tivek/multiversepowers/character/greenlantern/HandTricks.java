@@ -76,7 +76,15 @@ abstract class HandTricks extends HandMoves {
 
     public static boolean portal(int variant) {
         int move = HandPose.move(variant);
-        return move == FLICK || move == PINCH || move == POKE || move == HAMMER || move == DRAG;
+        return move == FLICK || move == PINCH || move == POKE || move == HAMMER || move == DRAG
+                || move == HandPose.CATCH || move == HandPose.FINGERGUN || move == HandPose.SCISSORS
+                || move == HandPose.SWALLOW || HandGroup.is(variant);
+    }
+
+    // A portal under the hand, lying flat, that it comes up out of.
+    public static boolean rising(int variant) {
+        int move = HandPose.move(variant);
+        return move == HandPose.CATCH || move == HandPose.SWALLOW;
     }
 
     // How far the drag's portal has flown off by this tick: slow to start, then racing, easing out at the release.
@@ -97,6 +105,12 @@ abstract class HandTricks extends HandMoves {
             case POKE -> POKE_HITS[0];
             case HAMMER -> HAMMER_HITS;
             case DRAG -> DRAG_CATCHES;
+            case HandPose.CATCH -> HandPose.CATCH_CATCHES;
+            case HandPose.RINGHOLD -> HandGroup.HOLD_GRABS;
+            case HandPose.CLAP -> HandGroup.CLAP_HITS;
+            case HandPose.FINGERGUN -> HandPose.GUN_SHOTS[0];
+            case HandPose.SCISSORS -> HandPose.SNIPS[0];
+            case HandPose.SWALLOW -> HandPose.SWALLOW_CATCHES;
             default -> FLICK_HITS;
         };
     }
@@ -111,8 +125,9 @@ abstract class HandTricks extends HandMoves {
     public static HandDuo.Portal portalOf(int variant, Vec3 base, Vec3 facing, double t, double scale) {
         Vec3 flat = new Vec3(facing.x, 0.0, facing.z);
         flat = flat.lengthSqr() < 1.0E-8 ? new Vec3(0.0, 0.0, 1.0) : flat.normalize();
-        Vec3 normal = overhead(variant) ? Vectors.UP.scale(-1.0) : flat;
-        Vec3 a = overhead(variant) ? flat : Vectors.UP;
+        boolean flatDown = overhead(variant) || rising(variant);
+        Vec3 normal = overhead(variant) ? Vectors.UP.scale(-1.0) : rising(variant) ? Vectors.UP : flat;
+        Vec3 a = flatDown ? flat : Vectors.UP;
         double beat = t / SLOW;
         double life = LIFE[HandPose.move(variant)];
         double open = Ease.smoother((beat - 0.5) / (PORTAL_OPENS - 0.5))
@@ -124,18 +139,27 @@ abstract class HandTricks extends HandMoves {
     // for the hammer its feet.
     public static Vec3 workOffset(int variant, Vec3 facing, double scale) {
         int move = HandPose.move(variant);
+        if (HandGroup.is(variant)) {
+            return Vec3.ZERO;
+        }
         double beat = switch (move) {
             case PINCH -> PINCH_AT;
             case POKE -> POKE_AT[0];
             case HAMMER -> HAMMER_AT;
             case DRAG -> DRAG_AT;
+            case HandPose.CATCH -> HandPose.CATCH_AT;
+            case HandPose.FINGERGUN -> HandPose.GUN_SHOTS[0] / SLOW;
+            case HandPose.SCISSORS -> HandPose.SNIPS[0] / SLOW;
+            case HandPose.SWALLOW -> GRAB_CATCHES / SLOW;
             default -> FLICK_AT - 1.0;
         };
         Vec3 point = switch (move) {
             case PINCH -> PINCH_GRIP;
-            case DRAG -> GRIP;
+            case DRAG, HandPose.CATCH, HandPose.SWALLOW -> GRIP;
             case POKE -> POKE_POINT;
             case HAMMER -> HAMMER_POINT;
+            case HandPose.FINGERGUN -> HandPose.gunAim();
+            case HandPose.SCISSORS -> HandPose.SNIP_POINT;
             default -> FLICK_POINT;
         };
         return HandPose.at(variant, beat * SLOW, 0.0).place(Vec3.ZERO, facing, scale).at(point);
@@ -309,7 +333,7 @@ abstract class HandTricks extends HandMoves {
         this.sink(t, SINK[DRAG], LIFE[DRAG], 1.0, true);
     }
 
-    private void set(double t, double from, double beats, double[] curls, double[] hooks, double thumb,
+    void set(double t, double from, double beats, double[] curls, double[] hooks, double thumb,
             double thumbOut, double spread) {
         double u = Ease.smoother((t - from) / beats);
         for (int k = 0; k < 4; k++) {

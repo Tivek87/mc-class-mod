@@ -421,6 +421,24 @@ public enum GameCharacter {
             hand(hands, HandPose.DRAG, "Portal drag", 0.16,
                     "a hand out of a portal that grabs a creature and races off, scraping it over the ground (only"
                             + " creatures small enough to hold)");
+            hand(hands, HandPose.RAGDOLL, "Ragdoll slam", 0.16,
+                    "a hand out of the ground or a wall that slams a creature down 2 to 5 times and flings it far,"
+                            + " sometimes caught in the air by a fist out of a portal (only creatures small enough to"
+                            + " hold)");
+            hand(hands, HandPose.RINGHOLD, "Ring blast", 0.14,
+                    "four hands out of portals holding a creature spread out while a fifth sets its ring on it and"
+                            + " blasts it away (only creatures small enough to hold)");
+            hand(hands, HandPose.CLAP, "Clap", 0.16, "two hands out of portals clapping a creature between them");
+            hand(hands, HandPose.FINGERGUN, "Finger gun", 0.16,
+                    "a hand out of a portal shooting three bolts of light from its finger");
+            hand(hands, HandPose.SCISSORS, "Scissors", 0.16, "a hand out of a portal snipping a creature twice");
+            hand(hands, HandPose.SWALLOW, "Swallow", 0.14,
+                    "a hand pulling a creature down into a portal in the ground, out of which it falls from the sky"
+                            + " (only creatures small enough to hold)");
+            hand(hands, HandPose.RINGBEAM, "Ring beam", 0.16,
+                    "a fist out of the ground or a wall firing a beam of light from its ring");
+            hand(hands, HandPose.SCOOP, "Scoop", 0.16,
+                    "a hand out of the ground or a wall scooping a creature up and tossing it high");
             hand(hands, HandPose.AXE, "Pair with an axe", 0.24,
                     "a pair of hands chopping down with an axe (only where there is room for it)");
             hands.group("revolver", "Western Revolver Assembly (hold the button 2 seconds)")

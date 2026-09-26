@@ -17,15 +17,26 @@ abstract class HandMoves extends HandMotion {
     public static final int HAMMER = 9;
     public static final int RAKE = 10;
     public static final int DRAG = 11;
-    public static final int AXE = 12;
-    public static final int MOVES = 13;
+    public static final int RAGDOLL = 12;
+    public static final int CATCH = 13;
+    public static final int RINGHOLD = 14;
+    public static final int CLAP = 15;
+    public static final int FINGERGUN = 16;
+    public static final int SCISSORS = 17;
+    public static final int SWALLOW = 18;
+    public static final int RINGBEAM = 19;
+    public static final int SCOOP = 20;
+    public static final int AXE = 21;
+    public static final int MOVES = 22;
     // Setting names per move, in move order: smackChance, grabMost, fingerDamage, ...
     public static final String[] HANDS = { "smack", "grab", "finger", "slam", "pound", "flick", "pinch", "snap",
-            "poke", "hammer", "rake", "drag", "axe" };
+            "poke", "hammer", "rake", "drag", "ragdoll", "catch", "ringhold", "clap", "fingergun", "scissors",
+            "swallow", "ringbeam", "scoop", "axe" };
     static final double SLOW = 1.6;
     private static final double ARRIVE = 4.0;
-    static final int[] LIFE = { 50, 58, 56, 62, 76, 50, 60, 52, 52, 50, 56, 54 };
-    static final int[] SINK = { 36, 44, 42, 47, 62, 36, 46, 38, 39, 36, 42, 40 };
+    // The ragdoll's own length hangs on its number of slams: see ragdollEnds.
+    static final int[] LIFE = { 50, 58, 56, 62, 76, 50, 60, 52, 52, 50, 56, 54, 80, 52, 50, 42, 44, 42, 34, 44, 38 };
+    static final int[] SINK = { 36, 44, 42, 47, 62, 36, 46, 38, 39, 36, 42, 40, 60, 44, 40, 34, 32, 30, 17, 32, 26 };
     private static final double SMACK_BEAT = 19.0;
     static final double CATCH_BEAT = 13.0;
     private static final double THROW_BEAT = 33.0;

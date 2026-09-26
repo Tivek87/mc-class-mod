@@ -44,6 +44,12 @@ public final class GiantHands implements Effect {
     private static final int WAIT_TICKS = 80;
     private static final int LOOK_AGAIN = 5;
     private static final double LEAST_AWAY = 0.3;
+    // Hands that may come out of a wall next to the creature instead of the ground, and how often when one is there.
+    private static final Set<Integer> WALLED = Set.of(HandPose.RAGDOLL, HandPose.RINGBEAM, HandPose.SCOOP);
+    private static final double WALL_CHANCE = 0.75;
+    private static final double WALL_NEAR = 3.5;
+    // How likely the ragdoll's throw is followed by a hand out of a portal catching the creature in the air.
+    private static final double CATCH_CHANCE = 0.5;
 
     private static final Map<UUID, GiantHands> ACTIVE = new HashMap<>();
     private static final Map<UUID, Integer> LAST_MOVES = new HashMap<>();
@@ -56,6 +62,8 @@ public final class GiantHands implements Effect {
     final ServerPlayer owner;
     final CharacterAbility ability;
     private final List<GiantHand> hands = new ArrayList<>();
+    // Hands a hand calls up itself while the others are being ticked (the ragdoll's catch).
+    private final List<GiantHand> coming = new ArrayList<>();
     private final int[] made = new int[HandPose.MOVES];
     private final List<LivingEntity> targets;
     private final Set<LivingEntity> missed = new HashSet<>();
@@ -174,6 +182,8 @@ public final class GiantHands implements Effect {
             }
         }
         this.hands.removeIf(hand -> hand.tick(level, fuels));
+        this.hands.addAll(this.coming);
+        this.coming.clear();
         if (this.hands.isEmpty() && (this.called >= this.count || !fuels)) {
             ACTIVE.remove(this.owner.getUUID(), this);
             return false;
@@ -282,14 +292,15 @@ public final class GiantHands implements Effect {
     }
 
     private boolean may(int move, boolean grabbable, boolean pair, boolean fresh) {
-        boolean holds = move == HandPose.GRAB || move == HandPose.PINCH || move == HandPose.DRAG;
-        return (!fresh || move != this.lastMove) && this.made[move] < this.most(move) && (!holds || grabbable)
-                && (move != HandPose.AXE || pair);
+        boolean holds = move == HandPose.GRAB || move == HandPose.PINCH || move == HandPose.DRAG
+                || move == HandPose.RAGDOLL || move == HandPose.SWALLOW || move == HandPose.RINGHOLD;
+        return HandPose.pickable(move) && (!fresh || move != this.lastMove) && this.made[move] < this.most(move)
+                && (!holds || grabbable) && (move != HandPose.AXE || pair);
     }
 
     private boolean anyLeft() {
         for (int move = 0; move < HandPose.MOVES; move++) {
-            if (this.made[move] < this.most(move) && this.chance(move) > 0.0) {
+            if (HandPose.pickable(move) && this.made[move] < this.most(move) && this.chance(move) > 0.0) {
                 return true;
             }
         }
@@ -315,10 +326,20 @@ public final class GiantHands implements Effect {
             return this.portalHand(level, target, move, away);
         }
         RandomSource random = this.owner.getRandom();
+        int extra = move == HandPose.RAGDOLL ? random.nextInt(4) | random.nextInt(1024) << 2 : 0;
+        if (WALLED.contains(move) && random.nextDouble() < WALL_CHANCE) {
+            GiantHand walled = this.wallHand(level, target, move, extra);
+            if (walled != null) {
+                return walled;
+            }
+        }
         double side = random.nextBoolean() ? 1.0 : -1.0;
         for (int attempt = 0; attempt < 4; attempt++) {
-            Vec3 reach = away;
-            int variant = move == HandPose.SNAP && side < 0.0 ? move + HandPose.MOVES : move;
+            // A scoop comes up on the far side and tosses the creature over itself, away from the caster; a ring beam
+            // stands off to one side and fires across.
+            Vec3 reach = move == HandPose.SCOOP ? away.scale(-1.0)
+                    : move == HandPose.RINGBEAM ? Vectors.spin(away, Vectors.UP, side * Math.PI * 0.5) : away;
+            int variant = HandPose.variant(move, move == HandPose.SNAP && side < 0.0, false, extra);
             if (move == HandPose.SMACK) {
                 reach = Vectors.spin(away, Vectors.UP, side * Math.PI * 0.5);
                 Vec3 right = reach.cross(Vectors.UP);
@@ -332,7 +353,7 @@ public final class GiantHands implements Effect {
                 }
             }
             Vec3 spot = target.position().subtract(reach.scale(HandPose.spot(move) * SCALE));
-            Vec3 base = this.ground(level, spot, target.getY());
+            Vec3 base = GiantHandSpots.ground(level, spot, target.getY());
             if (base != null) {
                 GiantHand hand = new GiantHand(this, variant, base, target);
                 if (this.fits(hand)) {
@@ -368,38 +389,53 @@ public final class GiantHands implements Effect {
         return true;
     }
 
+    // A wall right beside the creature: the hand comes out of it instead of the ground, the wall as its ground, so it
+    // stands spot above the creature on the wall as it would stand spot away from it on the ground.
     @Nullable
-    private Vec3 ground(ServerLevel level, Vec3 spot, double near) {
-        Vec3 from = new Vec3(spot.x, near + 3.0, spot.z);
-        if (!level.isLoaded(BlockPos.containing(from))) {
-            return null;
-        }
-        if (solid(level, from)) {
-            from = new Vec3(spot.x, near + 1.2, spot.z);
-            if (solid(level, from)) {
-                return null;
+    private GiantHand wallHand(ServerLevel level, LivingEntity target, int move, int extra) {
+        Vec3 middle = target.getBoundingBox().getCenter();
+        GiantHand best = null;
+        double nearest = WALL_NEAR;
+        for (int k = 0; k < 8; k++) {
+            Vec3 way = Vectors.spin(new Vec3(0.0, 0.0, 1.0), Vectors.UP, k * Math.PI * 0.25);
+            BlockHitResult hit = LoadedWorld.clip(level, new ClipContext(middle, middle.add(way.scale(WALL_NEAR)),
+                    ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, CollisionContext.empty()));
+            if (hit.getType() == HitResult.Type.MISS || hit.getDirection().getAxis().isVertical()) {
+                continue;
+            }
+            double far = hit.getLocation().distanceTo(middle);
+            if (far >= nearest) {
+                continue;
+            }
+            Vec3 out = Vec3.atLowerCornerOf(hit.getDirection().getNormal());
+            Vec3 base = hit.getLocation().add(0.0, HandPose.spot(move) * SCALE, 0.0);
+            boolean wall = true;
+            for (double up = 0.0; up <= HandPose.spot(move) * SCALE + 1.0 && wall; up += 1.0) {
+                Vec3 at = hit.getLocation().add(0.0, up, 0.0);
+                wall = GiantHandSpots.solid(level, at.subtract(out.scale(0.3))) && open(level, at.add(out.scale(0.7)));
+            }
+            if (!wall) {
+                continue;
+            }
+            GiantHand hand = new GiantHand(this, HandPose.variant(move, false, true, extra), base, target, out);
+            if (this.fits(hand)) {
+                best = hand;
+                nearest = far;
             }
         }
-        BlockHitResult hit = LoadedWorld.clip(level, new ClipContext(from, from.subtract(0.0, 9.0, 0.0),
-                ClipContext.Block.COLLIDER, ClipContext.Fluid.ANY, CollisionContext.empty()));
-        return hit.getType() == HitResult.Type.MISS ? null : hit.getLocation();
-    }
-
-    private static boolean solid(ServerLevel level, Vec3 at) {
-        BlockPos pos = BlockPos.containing(at);
-        return !level.getBlockState(pos).getCollisionShape(level, pos).isEmpty();
+        return best;
     }
 
     @Nullable
     private GiantHand pairFor(ServerLevel level, LivingEntity target, Vec3 away) {
-        Vec3 base = this.ground(level, target.position(), target.getY());
+        Vec3 base = GiantHandSpots.ground(level, target.position(), target.getY());
         if (base == null) {
             return null;
         }
         Vec3 aim = inReach(base, new Vec3(target.getX(), base.y, target.getZ()));
         for (double turn : PAIR_TURNS) {
             int variant = HandPose.axeVariant(Vectors.spin(away, Vectors.UP, turn));
-            if (room(level, base, variant, aim)) {
+            if (GiantHandSpots.room(level, base, variant, aim)) {
                 GiantHand pair = new GiantHand(this, variant, base, target);
                 if (this.fits(pair)) {
                     return pair;
@@ -421,7 +457,7 @@ public final class GiantHands implements Effect {
             }
             Vec3 facing = Vectors.spin(drag ? away.scale(-1.0) : away, Vectors.UP, turn);
             Vec3 base = portalFor(target, move, facing);
-            if (portalRoom(level, target, move, base, facing)) {
+            if (GiantHandSpots.portalRoom(level, target, move, base, facing)) {
                 GiantHand hand = new GiantHand(this, move, base, target, facing);
                 if (this.fits(hand)) {
                     return hand;
@@ -432,58 +468,24 @@ public final class GiantHands implements Effect {
     }
 
     static Vec3 portalFor(LivingEntity target, int variant, Vec3 facing) {
-        Vec3 spot = HandPose.move(variant) == HandPose.HAMMER ? target.position()
-                : target.getBoundingBox().getCenter();
-        return spot.subtract(HandPose.workOffset(variant, facing, SCALE));
+        int move = HandPose.move(variant);
+        Vec3 spot = move == HandPose.HAMMER ? target.position() : target.getBoundingBox().getCenter();
+        Vec3 base = spot.subtract(HandPose.workOffset(variant, facing, SCALE));
+        // The swallow's portal lies on the ground the creature stands on.
+        return move == HandPose.SWALLOW ? new Vec3(base.x, target.getY() + 0.05, base.z) : base;
     }
 
-    // Open air all the way: the portal, the line the hand reaches along, and for a pinch the height it lifts to.
-    private static boolean portalRoom(ServerLevel level, LivingEntity target, int move, Vec3 base, Vec3 facing) {
-        Vec3 middle = target.getBoundingBox().getCenter();
-        if (!open(level, base) || !level.isLoaded(BlockPos.containing(base))) {
-            return false;
+    // The ragdoll's throw: half the time a hand out of a portal comes up under the falling creature and catches it.
+    void catchFalling(ServerLevel level, LivingEntity living) {
+        if (this.owner.getRandom().nextDouble() >= CATCH_CHANCE || !living.isAlive()) {
+            return;
         }
-        HandPose.Place place = HandPose.at(move, HandPose.firstAct(move), 0.0).place(base, facing, SCALE);
-        Vec3 wrist = place.wrist();
-        for (int k = 1; k <= 4; k++) {
-            if (!open(level, base.lerp(wrist, k / 4.0)) || !open(level, wrist.lerp(middle, k / 4.0))) {
-                return false;
-            }
+        Vec3 away = new Vec3(living.getX() - this.owner.getX(), 0.0, living.getZ() - this.owner.getZ());
+        away = away.lengthSqr() < 1.0E-4 ? new Vec3(0.0, 0.0, 1.0) : away.normalize();
+        Vec3 base = portalFor(living, HandPose.CATCH, away);
+        if (open(level, base)) {
+            this.coming.add(new GiantHand(this, HandPose.CATCH, base, living, away));
         }
-        if (move == HandPose.PINCH) {
-            for (double up = 1.0; up <= HandPose.PINCH_LIFT; up += 1.0) {
-                if (!open(level, middle.add(0.0, up, 0.0))) {
-                    return false;
-                }
-            }
-        }
-        if (move == HandPose.DRAG) {
-            // The drag needs a clear run away from the caster for the portal and the creature both.
-            Vec3 away = new Vec3(-facing.x, 0.0, -facing.z).normalize();
-            Vec3 feet = target.position().add(0.0, 0.6, 0.0);
-            for (double far = 2.0; far <= HandPose.DRAG_DISTANCE; far += 2.0) {
-                if (!open(level, base.add(away.scale(far))) || !open(level, feet.add(away.scale(far)))) {
-                    return false;
-                }
-            }
-        }
-        return open(level, place.at(new Vec3(0.0, 3.0, 0.0)));
-    }
-
-    private static boolean room(ServerLevel level, Vec3 base, int variant, Vec3 aim) {
-        for (int t : new int[] { HandDuo.OUT, HandDuo.GRAB, HandDuo.AXE_FREE, HandDuo.RAISED, HandDuo.IMPACT }) {
-            HandDuo duo = HandDuo.at(base, variant, aim, t, SCALE);
-            if (!open(level, duo.leftPortal.center()) || !open(level, duo.rightPortal.center())
-                    || !open(level, duo.axePortal.center()) || !open(level, duo.leftPlace.wrist())
-                    || !open(level, duo.rightPlace.wrist())) {
-                return false;
-            }
-            // The head only counts once it is out of its portal: behind it, it is not there yet.
-            if (duo.axeThere && !duo.axeCut && !open(level, head(duo))) {
-                return false;
-            }
-        }
-        return true;
     }
 
     static boolean open(ServerLevel level, Vec3 at) {

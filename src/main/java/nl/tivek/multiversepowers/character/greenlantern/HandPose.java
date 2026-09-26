@@ -4,8 +4,9 @@ import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.engine.math.Ease;
 import nl.tivek.multiversepowers.engine.math.Vectors;
 
-public final class HandPose extends HandTricks {
-    private static final double[] SPOT = { 5.8, 1.25, 2.2, 2.9, 5.0, 0.0, 0.0, 3.0, 0.0, 0.0, 6.0, 0.0 };
+public final class HandPose extends HandFeats {
+    private static final double[] SPOT = { 5.8, 1.25, 2.2, 2.9, 5.0, 0.0, 0.0, 3.0, 0.0, 0.0, 6.0, 0.0, 1.25, 0.0,
+            0.0, 0.0, 0.0, 0.0, 0.0, 10.0, 4.2 };
     private static final int TAPS = 10;
     private static final double TAP = 0.35;
     private static final double[] WRIST_WEIGHTS = remembered(2.4, 0.45);
@@ -17,6 +18,8 @@ public final class HandPose extends HandTricks {
     private static final double[] TRAIL = { 1.0, 0.9, 1.0, 1.15 };
     private static final double ONTO = 1.6;
 
+    private boolean wallRoot;
+
     HandPose() {
     }
 
@@ -24,18 +27,47 @@ public final class HandPose extends HandTricks {
         return Math.floorMod(variant, MOVES);
     }
 
+    // Apart from the axe pair, a variant is its move plus MOVES times a code: bit 0 mirrors the hand, bit 1 roots it
+    // in a wall instead of the ground, the bits above are the move's own (a ragdoll's slams).
+    private static int code(int variant) {
+        return Math.floorDiv(variant, MOVES);
+    }
+
+    public static int variant(int move, boolean mirrored, boolean wall, int extra) {
+        return move + MOVES * ((mirrored ? 1 : 0) | (wall ? 2 : 0) | extra << 2);
+    }
+
     public static double side(int variant) {
-        return variant >= MOVES ? -1.0 : 1.0;
+        return move(variant) != AXE && (code(variant) & 1) == 1 ? -1.0 : 1.0;
+    }
+
+    public static boolean wall(int variant) {
+        return move(variant) != AXE && (code(variant) & 2) != 0;
+    }
+
+    public static int extra(int variant) {
+        return move(variant) == AXE ? 0 : code(variant) >> 2;
     }
 
     public static int life(int variant) {
         int move = move(variant);
-        return move == AXE ? HandDuo.LIFE : ticks(LIFE[move]);
+        return move == AXE ? HandDuo.LIFE : move == RAGDOLL ? ticks(ragdollEnds(extra(variant)))
+                : ticks(LIFE[move]);
     }
 
     public static int sinks(int variant) {
         int move = move(variant);
-        return move == AXE ? HandDuo.AXE_BREAKS : ticks(SINK[move]);
+        return move == AXE ? HandDuo.AXE_BREAKS : move == RAGDOLL ? ticks(ragdollSinks(extra(variant)))
+                : ticks(SINK[move]);
+    }
+
+    // The catch hand belongs to the ragdoll: it is never picked by itself and goes by the ragdoll's settings.
+    public static boolean pickable(int move) {
+        return move != CATCH;
+    }
+
+    public static int settingsOf(int move) {
+        return move == CATCH ? RAGDOLL : move;
     }
 
     public static int axeVariant(Vec3 way) {
@@ -52,6 +84,9 @@ public final class HandPose extends HandTricks {
 
     public static boolean locked(int variant, double t) {
         double beat = t / SLOW;
+        if (wall(variant)) {
+            return true;
+        }
         return switch (move(variant)) {
             case SMACK -> beat >= 17.0;
             case GRAB -> beat >= CATCH_BEAT - 2.0;
@@ -59,7 +94,10 @@ public final class HandPose extends HandTricks {
             case SNAP -> beat >= SNAP_AT - 3.0;
             case RAKE -> beat >= RAKE_AT - 3.0;
             // A portal hand stays turned the way it came; its portal follows the creature instead.
-            case FLICK, PINCH, POKE, HAMMER, DRAG -> true;
+            case FLICK, PINCH, POKE, HAMMER, DRAG, CATCH, RINGHOLD, CLAP, FINGERGUN, SCISSORS, SWALLOW -> true;
+            case RAGDOLL -> beat >= CATCH_BEAT - 2.0;
+            case RINGBEAM -> beat >= RINGBEAM_CHARGE;
+            case SCOOP -> beat >= SCOOP_AT - 4.0;
             case AXE -> t >= HandDuo.LOCKED_FROM;
             case POUND -> {
                 for (double hit : POUND_BEATS) {
@@ -86,13 +124,14 @@ public final class HandPose extends HandTricks {
         }
         double side = side(variant);
         double beat = t / SLOW;
-        HandPose pose = moving(move, side, beat, reach);
+        HandPose pose = moving(variant, side, beat, reach);
         for (double blow : blows(move)) {
             double near = Ease.bump((beat - blow) / ONTO);
             if (near > 0.0) {
-                pose.onto(near, moving(move, side, blow, reach), struck(move, side, blow, reach));
+                pose.onto(near, moving(variant, side, blow, reach), struck(move, side, blow, reach));
             }
         }
+        pose.wallRoot = wall(variant);
         return pose;
     }
 
@@ -104,14 +143,15 @@ public final class HandPose extends HandTricks {
         this.sweep += near * (blow.sweep - there.sweep);
     }
 
-    private static HandPose moving(int move, double side, double t, double reach) {
-        HandPose pose = shaped(move, side, t, reach);
+    private static HandPose moving(int variant, double side, double t, double reach) {
+        int move = move(variant);
+        HandPose pose = shaped(variant, side, t, reach);
         Vec3 ahead = new Vec3(0.0, 0.0, 1.0);
         Vec3[] now = pose.axes(ahead);
         Vec3 arm = Vec3.ZERO;
         Vec3 hand = Vec3.ZERO;
         for (int k = 1; k <= TAPS; k++) {
-            Vec3[] then = shaped(move, side, t - k * TAP, reach).axes(ahead);
+            Vec3[] then = shaped(variant, side, t - k * TAP, reach).axes(ahead);
             arm = arm.add(then[0].scale(WRIST_WEIGHTS[k]));
             hand = hand.add(then[3].scale(FINGER_WEIGHTS[k]));
         }
@@ -130,10 +170,17 @@ public final class HandPose extends HandTricks {
         return pose;
     }
 
-    private static HandPose shaped(int move, double side, double t, double reach) {
+    private static HandPose shaped(int variant, double side, double t, double reach) {
         HandPose pose = new HandPose();
         pose.length = BURIED;
-        switch (move) {
+        switch (move(variant)) {
+            case RAGDOLL -> pose.ragdoll(t, extra(variant), wall(variant));
+            case CATCH -> pose.catchHand(t);
+            case FINGERGUN -> pose.fingerGun(t);
+            case SCISSORS -> pose.scissors(t);
+            case SWALLOW -> pose.swallow(t);
+            case RINGBEAM -> pose.ringBeam(t);
+            case SCOOP -> pose.scoop(t);
             case SMACK -> pose.smack(t, side, reach);
             case GRAB -> pose.grab(t);
             case FINGER -> pose.finger(t);
@@ -171,12 +218,29 @@ public final class HandPose extends HandTricks {
         }
     }
 
+    // A hand out of a wall moves exactly as one out of the ground, the whole of it tipped over so the wall is its
+    // ground: its up becomes the wall's outward way (reach), leaning towards reach becomes leaning down.
     public Place place(Vec3 base, Vec3 reach, double scale) {
         Vec3 flat = new Vec3(reach.x, 0.0, reach.z);
         flat = flat.lengthSqr() < 1.0E-8 ? new Vec3(0.0, 0.0, 1.0) : flat.normalize();
         Vec3[] axes = this.axes(flat);
+        if (this.wallRoot) {
+            Vec3 axis = Vectors.UP.cross(flat).normalize();
+            for (int k = 0; k < axes.length; k++) {
+                axes[k] = Vectors.spin(axes[k], axis, Math.PI * 0.5);
+            }
+        }
         return new Place(base.add(axes[0].scale(this.length * scale)), axes[0], axes[1], axes[2], axes[3], axes[4],
                 scale);
+    }
+
+    // The way out of the ground or wall a hand stands in.
+    public static Vec3 rootNormal(int variant, Vec3 reach) {
+        if (!wall(variant)) {
+            return Vectors.UP;
+        }
+        Vec3 flat = new Vec3(reach.x, 0.0, reach.z);
+        return flat.lengthSqr() < 1.0E-8 ? new Vec3(0.0, 0.0, 1.0) : flat.normalize();
     }
 
     private Vec3[] axes(Vec3 flat) {

@@ -84,8 +84,7 @@ abstract class GiantHandTricks extends GiantHandPair {
             case HandPose.HAMMER -> this.hammer(level);
             case HandPose.RAKE -> this.rake(level);
             case HandPose.DRAG -> this.drag(level);
-            default -> {
-            }
+            default -> this.feat(level);
         }
         if (HandPose.portal(this.variant)) {
             if (this.t == PORTAL_OPENS) {
@@ -96,6 +95,8 @@ abstract class GiantHandTricks extends GiantHandPair {
             }
         }
     }
+
+    abstract void feat(ServerLevel level);
 
     private HandDuo.Portal portal() {
         return HandPose.portalOf(this.variant, this.base, this.aim.subtract(this.base), this.t, SCALE);
@@ -225,7 +226,7 @@ abstract class GiantHandTricks extends GiantHandPair {
     // Only a small shove, never the hop the blow's own knockback gives.
     private void shove(LivingEntity living, Vec3 way, double amount) {
         double shove = amount * this.storm.ability.value("knockback")
-                * this.storm.ability.value(HandPose.HANDS[this.move] + "Knockback");
+                * this.storm.ability.value(HandPose.HANDS[HandPose.settingsOf(this.move)] + "Knockback");
         living.setDeltaMovement(way.x * shove, Math.min(0.0, living.getDeltaMovement().y), way.z * shove);
         living.hurtMarked = true;
     }
@@ -394,7 +395,7 @@ abstract class GiantHandTricks extends GiantHandPair {
         this.storm.sound(level, grip, SoundEvents.AMETHYST_BLOCK_CHIME, 1.6F, 1.4F);
     }
 
-    private void snatch(ServerLevel level, Vec3 grip) {
+    void snatch(ServerLevel level, Vec3 grip) {
         LivingEntity caught = null;
         double best = DRAG_REACH * SCALE;
         for (LivingEntity living : this.near(level, 12.0)) {
@@ -419,7 +420,7 @@ abstract class GiantHandTricks extends GiantHandPair {
     }
 
     // Held at the fingers, but never below the ground it is dragged over.
-    private void holdOnGround(ServerLevel level, Vec3 grip) {
+    void holdOnGround(ServerLevel level, Vec3 grip) {
         LivingEntity living = this.held;
         BlockHitResult under = LoadedWorld.clip(level, new ClipContext(grip.add(0.0, 1.0, 0.0),
                 grip.subtract(0.0, 4.0, 0.0), ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE,

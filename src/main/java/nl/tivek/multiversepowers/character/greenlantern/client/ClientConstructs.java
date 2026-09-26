@@ -20,6 +20,7 @@ import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.character.greenlantern.ConstructPayload;
+import nl.tivek.multiversepowers.character.greenlantern.HandGroup;
 import nl.tivek.multiversepowers.character.greenlantern.HandPose;
 import nl.tivek.multiversepowers.character.greenlantern.ability.AirStrike;
 import nl.tivek.multiversepowers.character.greenlantern.ability.LightBubble;
@@ -216,9 +217,11 @@ public final class ClientConstructs extends TrackedConstructs {
 
     private static void held(Minecraft minecraft, Track track) {
         ConstructPayload hand = track.latest;
-        // A dragged creature is kept on the ground by the server, not at the fingers.
+        // A dragged, slammed or swallowed creature goes where the server puts it (kept clear of the ground), not at
+        // the fingers.
         int move = HandPose.move(hand.variant());
-        if (!hand.held() || minecraft.level == null || move == HandPose.AXE || move == HandPose.DRAG) {
+        if (!hand.held() || minecraft.level == null || move == HandPose.AXE || move == HandPose.DRAG
+                || move == HandPose.RAGDOLL || move == HandPose.SWALLOW) {
             return;
         }
         Entity caught = minecraft.level.getEntity(LightBubble.caughtId(hand.charge()));
@@ -227,8 +230,9 @@ public final class ClientConstructs extends TrackedConstructs {
         }
         double scale = Math.max(0.1, hand.size());
         double reach = Math.sqrt(hand.facing().x * hand.facing().x + hand.facing().z * hand.facing().z) / scale;
-        Vec3 grip = HandPose.at(hand.variant(), track.clock(1.0F), reach).place(hand.center(), hand.facing(), scale)
-                .at(HandPose.grip(hand.variant()));
+        Vec3 grip = HandGroup.is(hand.variant()) ? HandGroup.held(hand.center(), track.clock(1.0F))
+                : HandPose.at(hand.variant(), track.clock(1.0F), reach).place(hand.center(), hand.facing(), scale)
+                        .at(HandPose.grip(hand.variant()));
         caught.setPos(grip.x, grip.y - caught.getBbHeight() * 0.5, grip.z);
         caught.setDeltaMovement(Vec3.ZERO);
     }
