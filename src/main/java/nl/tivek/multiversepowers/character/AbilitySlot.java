@@ -15,7 +15,8 @@ public enum AbilitySlot {
     ABILITY_8,
     ABILITY_9,
     ABILITY_10,
-    ABILITY_11;
+    ABILITY_11,
+    ABILITY_12;
 
     public int number() {
         return this.ordinal() + 1;

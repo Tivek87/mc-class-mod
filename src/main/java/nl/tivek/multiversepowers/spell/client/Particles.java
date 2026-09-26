@@ -73,6 +73,28 @@ final class Particles {
                     }
                 }
             }
+            case SpellFxPayload.CLAP -> {
+                Vec3 feet = fx.said.to();
+                if (age < 1.0) {
+                    level.addParticle(ParticleTypes.FLASH, from.x, from.y, from.z, 0.0, 0.0, 0.0);
+                    for (int k = 0; k < 60; k++) {
+                        puff(level, random, ParticleTypes.ELECTRIC_SPARK, from, 0.3, 0.7);
+                    }
+                    for (int k = 0; k < 24; k++) {
+                        double angle = Math.PI * 2.0 * k / 24.0;
+                        level.addParticle(ParticleTypes.CLOUD, feet.x, feet.y + 0.2, feet.z, Math.cos(angle) * 0.5,
+                                0.0, Math.sin(angle) * 0.5);
+                    }
+                }
+                int sparkles = (int) (10.0 * (1.0 - age / StormFx.CLAP)) + 1;
+                for (int k = 0; k < sparkles; k++) {
+                    double angle = random.nextDouble() * Math.PI * 2.0;
+                    double reach = Math.sqrt(random.nextDouble()) * StormFx.CLAP_REACH;
+                    level.addParticle(ParticleTypes.ELECTRIC_SPARK, feet.x + Math.cos(angle) * reach,
+                            feet.y + 0.1 + random.nextDouble() * 1.5, feet.z + Math.sin(angle) * reach, 0.0, 0.08,
+                            0.0);
+                }
+            }
             case SpellFxPayload.VOID_IN, SpellFxPayload.VOID_OUT -> {
                 if (age < 10.0) {
                     for (int k = 0; k < 6; k++) {

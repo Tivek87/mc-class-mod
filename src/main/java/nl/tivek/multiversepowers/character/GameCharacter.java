@@ -451,9 +451,10 @@ public enum GameCharacter {
             character.fill(character.abilities);
             for (AbilitySlot slot : AbilitySlot.values()) {
                 CharacterAbility ability = character.abilities.get(slot);
-                if (ability != null) {
-                    character.ordered.add(ability);
+                if (ability == null) {
+                    ability = character.add(character.abilities, slot, "free_" + slot.getId()).placeholder();
                 }
+                character.ordered.add(ability);
             }
         }
     }

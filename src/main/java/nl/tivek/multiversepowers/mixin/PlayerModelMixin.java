@@ -5,6 +5,7 @@ import net.minecraft.world.entity.LivingEntity;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.FlameArms;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.SwordArms;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.WhipArms;
+import nl.tivek.multiversepowers.spell.client.ClientClaps;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -18,5 +19,6 @@ public abstract class PlayerModelMixin {
         SwordArms.lean((PlayerModel<?>) (Object) this, entity);
         FlameArms.lean((PlayerModel<?>) (Object) this, entity);
         WhipArms.lean((PlayerModel<?>) (Object) this, entity);
+        ClientClaps.pose((PlayerModel<?>) (Object) this, entity);
     }
 }

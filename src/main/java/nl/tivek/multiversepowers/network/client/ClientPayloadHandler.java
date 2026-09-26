@@ -31,9 +31,11 @@ import nl.tivek.multiversepowers.engine.fx.ParticlesPayload;
 import nl.tivek.multiversepowers.faction.StandingsPayload;
 import nl.tivek.multiversepowers.faction.client.ClientStandings;
 import nl.tivek.multiversepowers.spell.Spell;
+import nl.tivek.multiversepowers.spell.ClapPayload;
 import nl.tivek.multiversepowers.spell.SpellCooldownPayload;
 import nl.tivek.multiversepowers.spell.SpellFxPayload;
 import nl.tivek.multiversepowers.spell.VoidStatePayload;
+import nl.tivek.multiversepowers.spell.client.ClientClaps;
 import nl.tivek.multiversepowers.spell.client.ClientSpellCooldowns;
 import nl.tivek.multiversepowers.spell.client.ClientVoidState;
 import nl.tivek.multiversepowers.spell.client.SpellFx;
@@ -63,6 +65,10 @@ public final class ClientPayloadHandler {
 
     public static void handleVoidState(VoidStatePayload payload, IPayloadContext context) {
         context.enqueueWork(() -> ClientVoidState.set(payload.ticks()));
+    }
+
+    public static void handleClap(ClapPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> ClientClaps.clap(payload.entity()));
     }
 
     public static void handleGrabState(GrabStatePayload payload, IPayloadContext context) {

@@ -3,6 +3,20 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.2.6-alpha] - 2026-09-26
+
+### Added
+- **Thunder Clap (Lightning spell):** you clap your hands with a crack of thunder, sparks burst from them and a
+  glowing shockwave rolls 9 blocks around you, hurting and throwing back hostile creatures. No lightning bolt.
+- **Ability 12:** a new ability key, middle click by default. A key a character has nothing on shows as
+  "Placeholder" on the panel.
+
+### Changed
+- **Middle click:** stays pick block while your character has nothing on it; an ability there takes it over.
+- **Keys shared with vanilla keys** (middle click, X, C): no "nothing on this key" message when they have
+  nothing to do.
+- **Thor** moved from Marvel to Other on the power wheel.
+
 ## [0.2.5-alpha] - 2026-09-26
 
 ### Added

@@ -14,7 +14,7 @@ Back to the [overview](PROJECT.md). Turning into a character and their abilities
 1. **Hold G.** The screen opens. At the top are the franchises of the characters you can turn into (see
    [Characters and their powers](POWERS.md)); under them, the schools of magic, as the same kind of cards.
 2. **The 15 schools of magic**, five cards across, three rows deep. The ones that hold spells come first
-   (Air, Fire, Darkness, Lightning, Nature); the ones still being filled say "Coming soon" (Earth, Water,
+   (Air, Fire, Darkness, Lightning, Nature; Lightning holds two); the ones still being filled say "Coming soon" (Earth, Water,
    Holy, Ice, Blood, Metal, Gravity, Time, Illusion, Cosmic).
 3. **Rest on a school.** Keep the mouse still on a school card for **0.38 seconds** and that school opens
    as a page of its own: the same kind of cards, one for every spell in it. A bar fills along the bottom
@@ -44,6 +44,7 @@ Good to know:
 | Fire | Fireball | A burning comet that bursts, burns and throws back what is round it, and leaves a small fire | flies until it hits, up to 5 s | 2 s |
 | Fire | Fire Wall | A swirling ring of fire around you that burns and knocks back enemies | 3.5 block radius | 10 s |
 | Lightning | Lightning Strike | Charges up, then lightning strikes where you look and leaps on to more foes | 40 blocks | 8 s |
+| Lightning | Thunder Clap | You clap your hands: thunder and a shockwave of sparks around you | 9 blocks around you | 10 s |
 | Nature | Poison Area | A thrown vial that leaves a slowing poison cloud | 24 blocks | 12 s |
 | Air | Wind Gust | A wall of wind that throws hostile (red) creatures back and turns their shots round | 8 blocks in front of you | 5 s |
 | Dark | Void Walk | 10 s invisible and faster, hostile (red) ones marked, the first blow out of it an ambush | around you | 30 s |
@@ -113,6 +114,25 @@ one foe to the next. It is the spell's own lightning: the game's normal bolt is 
 | Fire | also sets the ground on fire, on Normal and Hard difficulty |
 | You | your own lightning never hits you or anything green (your faction, allies, pets); other players only where players may fight each other |
 | Cooldown | 8 s |
+
+---
+
+## Thunder Clap
+
+**What you see:** you spread your arms, sparks crackle between your hands, and you clap them together in
+front of you. A flash and a burst of sparks jump from your hands, you hear thunder, and a wide ring of
+sparks and small lightning arcs rolls over the ground around you. Sparkles stay in the air for a moment
+afterwards. No lightning bolt falls.
+
+| | |
+|---|---|
+| Area | a circle of 9 blocks around you |
+| Timing | the clap comes 0.3 s after casting; the ring rolls out at 22 blocks per second |
+| Damage | 5 (2.5 hearts) close to you, down to half at the edge |
+| Push | every creature it hits is thrown away from you and up; knockback resistance lowers it |
+| Hits | only hostile (red) creatures, never you; other players only where players may fight each other |
+| Fire | none |
+| Cooldown | 10 s |
 
 ---
 

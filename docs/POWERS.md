@@ -27,11 +27,11 @@ Back to the [overview](PROJECT.md). The plain spells anyone can cast are in [Spe
 
 | Franchise | Characters |
 |---|---|
-| Marvel | **Doctor Octopus**, Mysterio, Doctor Strange, Doctor Doom, Thanos, Loki, Iron Man, Magneto, Galactus, Thor, Spider-Man, The Hulk, Venom, Wolverine, Silver Surfer, The Sentry |
+| Marvel | **Doctor Octopus**, Mysterio, Doctor Strange, Doctor Doom, Thanos, Loki, Iron Man, Magneto, Galactus, Spider-Man, The Hulk, Venom, Wolverine, Silver Surfer, The Sentry |
 | DC | **Green Lantern**, The Flash, Black Adam, Doctor Manhattan, Darkseid, Doctor Fate |
 | Disney | Bill Cipher (Gravity Falls), Darth Vader (Star Wars, Lucasfilm) |
 | Warner Bros. | Rick Sanchez (Rick and Morty, Adult Swim) |
-| Other | The Terminator (StudioCanal, Skydance), Spawn (Image Comics) |
+| Other | Thor (Marvel, God of War), The Terminator (StudioCanal, Skydance), Spawn (Image Comics) |
 
 The ones in bold can be played; the rest are coming.
 
@@ -46,7 +46,7 @@ Good to know:
 
 ## The same keys for everyone
 
-There are eleven ability keys and they are only **numbered**: ability 1 up to ability 11. A key is never a
+There are twelve ability keys and they are only **numbered**: ability 1 up to ability 12. A key is never a
 kind of ability, so every character is free to put anything on any number. Learn the keys once; what
 they do depends purely on who you are. **Y is always the character's ultimate**: its biggest power, with a
 long cooldown; while it goes, the panel's title turns red and counts down.
@@ -64,10 +64,13 @@ long cooldown; while it goes, the panel's title turns red and counts down.
 | C | Ability 9 | Feet or Tentacles | Flight |
 | Left Alt | Ability 10 | Ground Strike | Giant Hands |
 | K | Ability 11 | *(free)* | Light Cage |
+| Middle click | Ability 12 | *(free)* | *(free)* |
 
 - Every key can be changed in Options > Controls, under "Multiverse Powers".
 - A panel in the bottom right shows who you are and what each key does right now, with its cooldown.
-- A key your character has nothing on says so and does nothing.
+- A key your character has nothing on shows as **Placeholder** on the panel, says so and does nothing.
+- Middle click is also pick block. While your character has nothing on it, middle click just picks blocks
+  and stays quiet; once a character has an ability there, the ability wins.
 - **A character can also sit on the mouse.** Green Lantern does: left click shoots, right click puts up a
   shield. The panel shows those as `[Left Button]` and `[Right Button]`. They only take the mouse over
   while both your hands are empty and the hand behind that button is free; any other time the mouse does
@@ -85,7 +88,7 @@ long cooldown; while it goes, the panel's title turns red and counts down.
 | H (Ground Slam) | The slam **around you**, also when your claws are full, so you keep what you hold. |
 | C (Feet or Tentacles) | Steps **back** through the stances instead of forward. |
 | Left Alt (Ground Strike) | **Undoes it**: every creature you marked is let go. Free, even on cooldown. |
-| V, Z, B, N, Y, K | Nothing different. |
+| V, Z, B, N, Y, K, middle click | Nothing different. |
 
 ---
 

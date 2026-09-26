@@ -127,6 +127,9 @@ public final class SettingsPages {
     public static Page character(GameCharacter character) {
         List<Section> sections = new ArrayList<>();
         for (CharacterAbility ability : character.abilities()) {
+            if (ability.isPlaceholder()) {
+                continue;
+            }
             List<ConfigNumber> general = new ArrayList<>();
             if (ability.usesCooldown()) {
                 general.add(cooldown(ability));

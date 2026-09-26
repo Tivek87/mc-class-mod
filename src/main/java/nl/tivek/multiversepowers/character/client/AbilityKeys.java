@@ -35,7 +35,8 @@ public final class AbilityKeys {
             key(AbilitySlot.ABILITY_8, GLFW.GLFW_KEY_X),
             key(AbilitySlot.ABILITY_9, GLFW.GLFW_KEY_C),
             key(AbilitySlot.ABILITY_10, GLFW.GLFW_KEY_LEFT_ALT),
-            key(AbilitySlot.ABILITY_11, GLFW.GLFW_KEY_K) };
+            key(AbilitySlot.ABILITY_11, GLFW.GLFW_KEY_K),
+            key(AbilitySlot.ABILITY_12, InputConstants.Type.MOUSE, GLFW.GLFW_MOUSE_BUTTON_MIDDLE) };
 
     public AbilityKeys(IEventBus modEventBus) {
         modEventBus.addListener(AbilityKeys::onRegisterKeys);
@@ -65,9 +66,23 @@ public final class AbilityKeys {
                 && InputConstants.isKeyDown(window, bound.getValue());
     }
 
+    // True when a vanilla key (pick block on the middle button, a hotbar key) sits on the same button.
+    public static boolean sharesGameKey(KeyMapping key) {
+        for (KeyMapping other : Minecraft.getInstance().options.keyMappings) {
+            if (other != key && !other.getCategory().equals(CATEGORY) && other.same(key)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private static KeyMapping key(AbilitySlot slot, int defaultKey) {
+        return key(slot, InputConstants.Type.KEYSYM, defaultKey);
+    }
+
+    private static KeyMapping key(AbilitySlot slot, InputConstants.Type type, int defaultKey) {
         return new KeyMapping("key." + MultiversePowers.MODID + ".ability_" + slot.getId(),
-                KeyConflictContext.IN_GAME, InputConstants.Type.KEYSYM, defaultKey, CATEGORY);
+                KeyConflictContext.IN_GAME, type, defaultKey, CATEGORY);
     }
 
     private static void onRegisterKeys(RegisterKeyMappingsEvent event) {

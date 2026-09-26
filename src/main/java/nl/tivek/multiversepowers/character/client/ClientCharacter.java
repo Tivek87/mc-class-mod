@@ -426,15 +426,20 @@ public final class ClientCharacter {
     }
 
     private static void press(LocalPlayer player, AbilitySlot slot) {
+        boolean quiet = AbilityKeys.sharesGameKey(AbilityKeys.of(slot));
         if (character == null) {
-            player.displayClientMessage(
-                    Component.translatable("character." + MultiversePowers.MODID + ".none"), true);
+            if (!quiet) {
+                player.displayClientMessage(
+                        Component.translatable("character." + MultiversePowers.MODID + ".none"), true);
+            }
             return;
         }
         CharacterAbility ability = character.ability(slot);
-        if (ability == null) {
-            player.displayClientMessage(Component.translatable("character." + MultiversePowers.MODID + ".empty",
-                    character.getDisplayName(), slot.getDisplayName()), true);
+        if (ability == null || ability.isPlaceholder()) {
+            if (!quiet) {
+                player.displayClientMessage(Component.translatable("character." + MultiversePowers.MODID
+                        + ".empty", character.getDisplayName(), slot.getDisplayName()), true);
+            }
             return;
         }
         boolean undo = player.isShiftKeyDown() && ability.crouchDoes() == CharacterAbility.Crouch.UNDO;

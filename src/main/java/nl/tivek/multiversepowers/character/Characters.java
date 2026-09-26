@@ -105,11 +105,7 @@ public final class Characters {
             return;
         }
         CharacterAbility ability = character.ability(slot);
-        if (ability == null) {
-            if (on) {
-                player.displayClientMessage(Component.translatable("character." + MultiversePowers.MODID + ".empty",
-                        character.getDisplayName(), slot.getDisplayName()), true);
-            }
+        if (ability == null || ability.isPlaceholder()) {
             return;
         }
         boolean letGo = ability.isHeld() && !on;

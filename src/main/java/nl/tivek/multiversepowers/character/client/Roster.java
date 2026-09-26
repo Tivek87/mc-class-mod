@@ -64,7 +64,7 @@ public final class Roster {
             new Entry("flash", Franchise.DC),
             new Entry("magneto", Franchise.MARVEL),
             new Entry("galactus", Franchise.MARVEL),
-            new Entry("thor", Franchise.MARVEL),
+            new Entry("thor", Franchise.OTHER),
             new Entry("spider_man", Franchise.MARVEL),
             new Entry("hulk", Franchise.MARVEL),
             new Entry("venom", Franchise.MARVEL),

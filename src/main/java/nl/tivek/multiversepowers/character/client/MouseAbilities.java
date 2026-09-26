@@ -1,6 +1,7 @@
 package nl.tivek.multiversepowers.character.client;
 
 import javax.annotation.Nullable;
+import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.world.entity.Entity;
@@ -42,6 +43,25 @@ public final class MouseAbilities {
             event.setSwingHand(false);
             event.setCanceled(true);
         }
+        if (event.isPickBlock() && takesPickBlock()) {
+            event.setCanceled(true);
+        }
+    }
+
+    // An ability on the same button as pick block wins; a placeholder leaves pick block alone.
+    private static boolean takesPickBlock() {
+        GameCharacter now = ClientCharacter.active();
+        if (now == null) {
+            return false;
+        }
+        KeyMapping pick = Minecraft.getInstance().options.keyPickItem;
+        for (CharacterAbility ability : now.abilities()) {
+            if (!ability.isPlaceholder() && ability.mouseButton() == CharacterAbility.Mouse.NONE
+                    && AbilityKeys.of(ability.slot()).same(pick)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @SubscribeEvent

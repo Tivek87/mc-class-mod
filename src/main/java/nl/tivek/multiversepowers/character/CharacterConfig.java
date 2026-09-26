@@ -55,6 +55,9 @@ public final class CharacterConfig {
             builder.comment("This character has no abilities yet.").define("none", true);
         }
         for (CharacterAbility ability : character.abilities()) {
+            if (ability.isPlaceholder()) {
+                continue;
+            }
             builder.comment("Ability " + ability.slot().number()
                     + ": the key \"Ability " + ability.slot().number() + "\" in Options > Controls")
                     .push(ability.id());

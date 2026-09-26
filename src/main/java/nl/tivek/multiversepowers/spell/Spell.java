@@ -11,6 +11,7 @@ public enum Spell {
     FIREBALL("fireball", MagicSchool.FIRE, 40, 0xFF8A2A, FireballSpell::cast),
     VOID_WALK("void_walk", MagicSchool.DARK, 600, 0x9B5CFF, VoidWalkSpell::cast),
     LIGHTNING_STRIKE("lightning_strike", MagicSchool.LIGHTNING, 160, 0x48DBFB, LightningSpell::cast),
+    THUNDER_CLAP("thunder_clap", MagicSchool.LIGHTNING, 200, 0x9FE8FF, ThunderClapSpell::cast),
     POISON_AREA("poison_area", MagicSchool.NATURE, 240, 0x7FD46B, PoisonSpell::cast);
 
     @FunctionalInterface

@@ -48,6 +48,7 @@ import nl.tivek.multiversepowers.network.client.ClientPayloadHandler;
 import nl.tivek.multiversepowers.spell.CastSpellPayload;
 import nl.tivek.multiversepowers.spell.Spell;
 import nl.tivek.multiversepowers.spell.SpellCasting;
+import nl.tivek.multiversepowers.spell.ClapPayload;
 import nl.tivek.multiversepowers.spell.SpellCooldownPayload;
 import nl.tivek.multiversepowers.spell.SpellFxPayload;
 import nl.tivek.multiversepowers.spell.VoidStatePayload;
@@ -70,6 +71,7 @@ public final class ModNetwork {
                 ModNetwork::onSpellCooldown);
         registrar.playToClient(VoidStatePayload.TYPE, VoidStatePayload.STREAM_CODEC, ModNetwork::onVoidState);
         registrar.playToClient(SpellFxPayload.TYPE, SpellFxPayload.STREAM_CODEC, ModNetwork::onSpellFx);
+        registrar.playToClient(ClapPayload.TYPE, ClapPayload.STREAM_CODEC, ModNetwork::onClap);
         registrar.playToClient(GrabStatePayload.TYPE, GrabStatePayload.STREAM_CODEC, ModNetwork::onGrabState);
         registrar.playToServer(ThrowGrabPayload.TYPE, ThrowGrabPayload.STREAM_CODEC, ModNetwork::onThrowGrab);
         registrar.playToClient(ArmPayload.TYPE, ArmPayload.STREAM_CODEC, ModNetwork::onArm);
@@ -211,6 +213,10 @@ public final class ModNetwork {
 
     private static void onVoidState(VoidStatePayload payload, IPayloadContext context) {
         ClientPayloadHandler.handleVoidState(payload, context);
+    }
+
+    private static void onClap(ClapPayload payload, IPayloadContext context) {
+        ClientPayloadHandler.handleClap(payload, context);
     }
 
     private static void onCastSpell(CastSpellPayload payload, IPayloadContext context) {

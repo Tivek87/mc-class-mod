@@ -24,6 +24,7 @@ public record SpellFxPayload(int kind, Vec3 from, Vec3 to, int entity, int seed,
     public static final int VOID_IN = 8;
     public static final int VOID_OUT = 9;
     public static final int AMBUSH = 10;
+    public static final int CLAP = 11;
 
     private static final double VIEW_RANGE = 128.0;
 

@@ -47,6 +47,7 @@ public final class CharacterAbility {
     private boolean usesDamage;
     private boolean held;
     private boolean clientOnly;
+    private boolean placeholder;
     private Crouch crouch = Crouch.SAME;
     private Mouse mouse = Mouse.NONE;
     private int holdTicks;
@@ -88,6 +89,15 @@ public final class CharacterAbility {
     public CharacterAbility clientOnly() {
         this.clientOnly = true;
         return this;
+    }
+
+    CharacterAbility placeholder() {
+        this.placeholder = true;
+        return this;
+    }
+
+    public boolean isPlaceholder() {
+        return this.placeholder;
     }
 
     public CharacterAbility crouch(Crouch crouch) {
@@ -226,6 +236,9 @@ public final class CharacterAbility {
     }
 
     public Component getDisplayName() {
+        if (this.placeholder) {
+            return Component.translatable("ability." + MultiversePowers.MODID + ".placeholder");
+        }
         return Component.translatable("ability." + MultiversePowers.MODID + "." + this.character.getId() + "."
                 + this.id);
     }
