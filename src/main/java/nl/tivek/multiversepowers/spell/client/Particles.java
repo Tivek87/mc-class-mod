@@ -82,15 +82,15 @@ final class Particles {
                 Vec3 aim = fx.said.to();
                 Vec3 ahead = ClapFx.facing(from, aim);
                 Vec3 aimed = ClapFx.aimed(from, aim);
-                if (age >= ClapFx.BURSTS && age < ClapFx.BURSTS + 1.0) {
+                if (age < 1.0) {
+                    // Thrown from the hands towards the aim: a spark drifts about 25 times its first speed.
+                    Vec3 reach = aim.subtract(from).scale(1.0 / 25.0);
                     for (int k = 0; k < 36; k++) {
-                        Vec3 way = new Vec3(random.nextGaussian(), random.nextGaussian(), random.nextGaussian())
-                                .normalize().scale(0.2 + random.nextDouble() * 0.5);
-                        level.addParticle(k % 2 == 0 ? ParticleTypes.ELECTRIC_SPARK : SWARM, aim.x, aim.y, aim.z,
+                        Vec3 way = reach.scale(0.6 + random.nextDouble() * 0.5).add(random.nextGaussian() * 0.04,
+                                random.nextGaussian() * 0.04, random.nextGaussian() * 0.04);
+                        level.addParticle(k % 2 == 0 ? ParticleTypes.ELECTRIC_SPARK : SWARM, from.x, from.y, from.z,
                                 way.x, way.y, way.z);
                     }
-                }
-                if (age < 1.0) {
                     ClapFx.felt(feet);
                     level.addParticle(ParticleTypes.FLASH, from.x, from.y, from.z, 0.0, 0.0, 0.0);
                     for (int k = 0; k < 24; k++) {

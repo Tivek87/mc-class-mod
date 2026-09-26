@@ -43,6 +43,7 @@ final class ThunderClapSpell {
     static boolean cast(ServerPlayer player, ServerLevel level) {
         ClapPayload.send(player);
         UUID casterId = player.getUUID();
+        int casterEntity = player.getId();
         level.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.BEACON_POWER_SELECT,
                 SoundSource.PLAYERS, 0.8F, 2.0F);
         Set<UUID> hit = new HashSet<>();
@@ -68,14 +69,14 @@ final class ThunderClapSpell {
             }
             int t = age - MEET;
             if (t == 0) {
-                boom(lvl, hands(eye[0], ahead[0]), aim[0], feet[0]);
+                boom(lvl, casterEntity, hands(eye[0], ahead[0]), aim[0], feet[0]);
             }
             double front = (t + 1) * WAVE_SPEED;
             if (caster != null && front < RADIUS + WAVE_SPEED) {
                 push(lvl, caster, eye[0], ahead[0], Math.min(front, RADIUS), hit);
             }
             if (t == BURSTS) {
-                burst(lvl, aim[0]);
+                burst(lvl, hands(eye[0], ahead[0]));
             }
             return t < BURSTS;
         });
@@ -130,10 +131,11 @@ final class ThunderClapSpell {
         }
     }
 
-    // The hands' height over the feet rides along in hundredths of a block, so ClapFx finds the ground.
-    private static void boom(ServerLevel level, Vec3 clap, Vec3 aim, Vec3 feet) {
+    // The hands' height over the feet rides along in hundredths of a block, so ClapFx finds the ground; the caster
+    // rides along so the caster's own screen can start it at the first-person hands.
+    private static void boom(ServerLevel level, int caster, Vec3 clap, Vec3 aim, Vec3 feet) {
         int drop = (int) Math.round(Math.max(0.0, clap.y - feet.y) * 100.0);
-        SpellFxPayload.send(level, SpellFxPayload.CLAP, clap, aim, -1, drop);
+        SpellFxPayload.send(level, SpellFxPayload.CLAP, clap, aim, caster, drop);
         level.playSound(null, clap.x, clap.y, clap.z, SoundEvents.BREEZE_WIND_CHARGE_BURST.value(),
                 SoundSource.PLAYERS, 2.0F, 0.55F);
         level.playSound(null, clap.x, clap.y, clap.z, SoundEvents.LIGHTNING_BOLT_THUNDER, SoundSource.PLAYERS, 3.0F,
@@ -144,7 +146,7 @@ final class ThunderClapSpell {
                 1.2F);
     }
 
-    // The bubble of stopped time tears open where it was aimed and lets its sparks fly.
+    // The bubble of stopped time at the hands tears open.
     private static void burst(ServerLevel level, Vec3 at) {
         level.playSound(null, at.x, at.y, at.z, SoundEvents.GLASS_BREAK, SoundSource.PLAYERS, 1.4F, 0.6F);
         level.playSound(null, at.x, at.y, at.z, SoundEvents.LIGHTNING_BOLT_IMPACT, SoundSource.PLAYERS, 1.6F, 1.5F);

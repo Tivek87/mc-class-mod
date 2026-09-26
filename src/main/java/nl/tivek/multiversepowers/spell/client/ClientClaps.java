@@ -36,7 +36,7 @@ public final class ClientClaps {
     private static final float SHUT_TURN = -0.3F;
     private static final float HEAD_BACK = -0.6F;
 
-    private static final Vector3f CLAP = new Vector3f(0.05F, -0.1F, -0.75F);
+    static final Vector3f CLAP = new Vector3f(0.05F, -0.1F, -0.75F);
     private static final Vector3f SPREAD = new Vector3f(0.78F, -0.02F, -0.52F);
     private static final Vector3f ARM_FROM = new Vector3f(0.75F, -1.1F, -0.15F);
 

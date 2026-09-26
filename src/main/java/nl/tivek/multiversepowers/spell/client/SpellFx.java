@@ -66,7 +66,8 @@ public final class SpellFx {
         if (LIVE.size() >= MOST) {
             LIVE.remove(0);
         }
-        LIVE.add(new Fx(payload, level.getGameTime()));
+        LIVE.add(new Fx(payload.kind() == SpellFxPayload.CLAP ? ClapFx.seen(payload) : payload,
+                level.getGameTime()));
     }
 
     private static int life(Fx fx) {
