@@ -170,6 +170,16 @@ public final class SettingsPages {
                                 Unit.STRENGTH, 0.1),
                         fromSpec(spec, file, "client", "mechCinematic", ClientSettings.MECH_CINEMATIC, Unit.SWITCH,
                                 1.0)))));
+        Section bodies = new Section(Component.translatable(PREFIX + "client.bodies"), null, List.of(new Group(null,
+                List.of(fromSpec(spec, file, "client", "ragdolls", ClientSettings.RAGDOLLS, Unit.SWITCH, 1.0),
+                        fromSpec(spec, file, "client", "ragdollMost", ClientSettings.RAGDOLL_MOST, Unit.COUNT, 1.0),
+                        fromSpec(spec, file, "client", "corpseSeconds", ClientSettings.CORPSE_SECONDS, Unit.SECONDS,
+                                1.0),
+                        fromSpec(spec, file, "client", "ragdollReach", ClientSettings.RAGDOLL_REACH, Unit.BLOCKS,
+                                4.0),
+                        fromSpec(spec, file, "client", "footPlanting", ClientSettings.FOOT_PLANTING, Unit.SWITCH,
+                                1.0),
+                        fromSpec(spec, file, "client", "capeCloth", ClientSettings.CAPE_CLOTH, Unit.SWITCH, 1.0)))));
         Section sound = new Section(Component.translatable(PREFIX + "client.sound"), null, List.of(new Group(null,
                 List.of(fromSpec(spec, file, "client", "themeMusic", ClientSettings.THEME_MUSIC, Unit.SWITCH, 1.0)))));
         Section updates = new Section(Component.translatable(PREFIX + "client.updates"), null, List.of(new Group(null,
@@ -177,7 +187,7 @@ public final class SettingsPages {
                                 Unit.MINUTES, 1.0),
                         fromSpec(spec, file, "client", "updatePopupSeconds", ClientSettings.UPDATE_POPUP,
                                 Unit.SECONDS, 1.0)))));
-        return new Page(Component.translatable(PREFIX + "client"), 0x8FD3FF, List.of(view, sound, updates),
+        return new Page(Component.translatable(PREFIX + "client"), 0x8FD3FF, List.of(view, bodies, sound, updates),
                 spec.isLoaded(), false, spec::save);
     }
 

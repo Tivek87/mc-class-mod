@@ -5,11 +5,11 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.sounds.SoundEvents;
 import net.neoforged.neoforge.network.PacketDistributor;
-import nl.tivek.multiversepowers.character.greenlantern.Construct;
-import nl.tivek.multiversepowers.character.greenlantern.ConstructHoldPayload;
-import nl.tivek.multiversepowers.character.greenlantern.client.body.FlameArms;
-import nl.tivek.multiversepowers.character.greenlantern.client.body.SwordArms;
-import nl.tivek.multiversepowers.character.greenlantern.client.body.WhipArms;
+import nl.tivek.multiversepowers.character.greenlantern.client.body.flame.FlameArms;
+import nl.tivek.multiversepowers.character.greenlantern.client.body.sword.SwordArms;
+import nl.tivek.multiversepowers.character.greenlantern.client.body.whip.WhipArms;
+import nl.tivek.multiversepowers.character.greenlantern.construct.Construct;
+import nl.tivek.multiversepowers.character.greenlantern.construct.ConstructHoldPayload;
 
 public final class ConstructChoice {
     public static final long FLASH_MS = 420L;

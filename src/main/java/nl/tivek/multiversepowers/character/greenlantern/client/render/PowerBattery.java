@@ -4,7 +4,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.util.Mth;
-import nl.tivek.multiversepowers.character.greenlantern.client.body.Ring;
+import nl.tivek.multiversepowers.character.greenlantern.client.body.suit.Ring;
 import nl.tivek.multiversepowers.engine.math.Colors;
 import org.joml.Matrix4f;
 

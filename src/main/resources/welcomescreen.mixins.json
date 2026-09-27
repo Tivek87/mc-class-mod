@@ -9,9 +9,15 @@
     "ServerGamePacketListenerMixin"
   ],
   "client": [
+    "AgeableHierarchicalModelAccess",
+    "AgeableListModelAccess",
     "CameraMixin",
+    "CapeLayerMixin",
+    "EntityShadowMixin",
+    "LivingEntityPoofMixin",
     "LivingEntityRendererMixin",
     "MinecraftMixin",
+    "ModelRenderMixin",
     "PlayerModelMixin",
     "PlayerRendererMixin"
   ],

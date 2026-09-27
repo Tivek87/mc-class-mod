@@ -2,8 +2,8 @@ package nl.tivek.multiversepowers.character.greenlantern.client.mech;
 
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
-import nl.tivek.multiversepowers.character.greenlantern.MechScript;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.LanternPainter;
+import nl.tivek.multiversepowers.character.greenlantern.mech.MechScript;
 import nl.tivek.multiversepowers.engine.client.render.ConstructPainter.Frame;
 import nl.tivek.multiversepowers.engine.math.Vectors;
 

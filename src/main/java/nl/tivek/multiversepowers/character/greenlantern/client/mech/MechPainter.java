@@ -6,10 +6,10 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
-import nl.tivek.multiversepowers.character.greenlantern.ConstructPayload;
-import nl.tivek.multiversepowers.character.greenlantern.MechMoves;
-import nl.tivek.multiversepowers.character.greenlantern.MechScript;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.LanternPainter;
+import nl.tivek.multiversepowers.character.greenlantern.construct.ConstructPayload;
+import nl.tivek.multiversepowers.character.greenlantern.mech.MechMoves;
+import nl.tivek.multiversepowers.character.greenlantern.mech.MechScript;
 import nl.tivek.multiversepowers.engine.client.render.ConstructPainter.Frame;
 import nl.tivek.multiversepowers.engine.client.render.ConstructPainter.Shape;
 import nl.tivek.multiversepowers.engine.client.render.Material;
@@ -25,8 +25,6 @@ public final class MechPainter {
     private static final double FLING = 2.0;
     private static final double REACH = 20.0;
     private static final int PIECES = 40;
-    private static final double[] BENDS = { 0.95, 1.1, 0.85 };
-    private static final double[] SPREADS = { -0.2, -0.06, 0.08, 0.22 };
     private static final double STOMP_SHAKE = 0.75;
     private static final double STEP_SHAKE = 0.3;
     private static final double CLAP_SHAKE = 0.7;
@@ -245,27 +243,16 @@ public final class MechPainter {
 
     private static void fingers(LanternPainter painter, Frame hand, MechMoves.Arm arm, boolean right, double apart,
             int seed) {
-        double flip = right ? 1.0 : -1.0;
+        Frame[] bones = MechHandRig.frames(hand, arm, right);
         for (int k = 0; k < 4; k++) {
-            Frame joint = hand.moved(flip * MechArmShapes.FINGER_X[k], MechArmShapes.KNUCKLES, 0.0)
-                    .turned(0.0, 0.0, 0.0, 0.0, 0.0, 1.0, flip * SPREADS[k] * arm.spread());
             for (int j = 0; j < 3; j++) {
-                joint = joint.turned(0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.08 + arm.curl() * BENDS[j] * 1.45);
                 Shape segment = right ? MechArmShapes.FINGERS[k][j] : MechArmShapes.FINGERS_LEFT[k][j];
-                MechParts.draw(painter, segment, joint, 1.0, apart, seed + k * 3 + j);
-                joint = joint.moved(0.0, MechArmShapes.FINGER_LENGTHS[k][j], 0.0);
+                MechParts.draw(painter, segment, bones[MechHandRig.bone(k, j)], 1.0, apart, seed + k * 3 + j);
             }
         }
-        Vec3 root = MechArmShapes.THUMB_ROOT;
-        Frame thumb = hand.moved(flip * root.x, root.y, root.z).turned(0.0, 0.0, 0.0, 0.0, 0.0, 1.0,
-                flip * (-0.85 + 0.45 * arm.curl())).turned(0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.35 + 0.5 * arm.curl());
         for (int j = 0; j < 3; j++) {
-            if (j > 0) {
-                thumb = thumb.turned(0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.12 + arm.curl() * 0.7);
-            }
-            MechParts.draw(painter, right ? MechArmShapes.THUMB[j] : MechArmShapes.THUMB_LEFT[j], thumb, 1.0, apart,
-                    seed + 20 + j);
-            thumb = thumb.moved(0.0, MechArmShapes.THUMB_LENGTHS[j], 0.0);
+            MechParts.draw(painter, right ? MechArmShapes.THUMB[j] : MechArmShapes.THUMB_LEFT[j],
+                    bones[MechHandRig.bone(4, j)], 1.0, apart, seed + 20 + j);
         }
     }
 

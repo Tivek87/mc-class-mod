@@ -5,6 +5,11 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import nl.tivek.multiversepowers.MultiversePowers;
+import nl.tivek.multiversepowers.spell.air.WindGustSpell;
+import nl.tivek.multiversepowers.spell.dark.VoidWalkSpell;
+import nl.tivek.multiversepowers.spell.fire.FireballSpell;
+import nl.tivek.multiversepowers.spell.lightning.LightningSpell;
+import nl.tivek.multiversepowers.spell.nature.PoisonSpell;
 
 public enum Spell {
     WIND_GUST("wind_gust", MagicSchool.AIR, 100, 0xDDEEF2, WindGustSpell::cast),

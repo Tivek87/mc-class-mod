@@ -1,7 +1,7 @@
 package nl.tivek.multiversepowers.mixin;
 
 import net.minecraft.world.entity.Entity;
-import nl.tivek.multiversepowers.character.greenlantern.ability.ScanGlow;
+import nl.tivek.multiversepowers.character.greenlantern.ability.ring.ScanGlow;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;

@@ -3,6 +3,38 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.3.5-alpha] - 2026-09-27
+
+**UNFINISHED / WORK IN PROGRESS:** the mod is still being built; things may change, break or be missing.
+
+### Added
+- **Limp bodies:** creatures go limp as they die, are thrown or are held: they fall, tumble with real weight and hang
+  from what holds them; a body stays where it fell, then sinks into the ground. Wool and saddles go along.
+- **Burnt to ash:** a creature killed by a fireball, the lightning spell or Green Lantern's beam of light chars,
+  crumbles and blows away as ash.
+- **Feet on the ground:** creatures rest their feet on the ground they stand on; a foot never sinks into a step and a
+  spider's legs reach down to it.
+- **Capes of cloth:** players' capes hang, trail and swing as they run and turn, and fold against their back.
+- **Clapped:** a creature caught between Green Lantern's clapping hands is pressed thin and shakes.
+- **Blades stop:** a held blade stops against a wall or a raised shield with a spark, seen from outside; your own
+  first-person view stays as it was.
+- **Settings (Bodies):** Limp bodies, Most at once, Body stays, Limp up to, Feet on the ground, Capes of cloth.
+- **Resource packs and modpacks:** tags for creatures that never go limp or fall stiff, and files for how limp each
+  kind goes.
+
+### Changed
+- **Construct hands:** the fingers of the Giant Hands, the mech's hands and the landing-slam hands bend only as far as
+  a real hand can, rest on the palm, lie beside each other and stop on the skin of a creature they hold.
+- **Giant Hands:** a hand never passes into the blocks around it: near a wall it leans back and straightens its wrist in
+  time, smoothly, without jumps. Leaves give way to it.
+- **Doc Ock:** his tentacles fold in beside walls and under low roofs, only step where they can reach, and bend around
+  blocks instead of going through them.
+- **Poses:** a pose a power gives a creature fades in and out, and its arms never cut through its body.
+- **Wind gust, poison cloud and lightning shock:** they no longer hit through walls.
+- **Sword:** its landing light no longer jitters.
+- **Developer notes:** the code is sorted into folders per character and power, with a new engine for bones, physics
+  and cloth.
+
 ## [0.3.4-alpha] - 2026-09-27
 
 **UNFINISHED / WORK IN PROGRESS:** the mod is still being built; things may change, break or be missing.

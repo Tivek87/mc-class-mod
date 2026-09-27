@@ -9,26 +9,27 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.Vec3;
-import nl.tivek.multiversepowers.character.greenlantern.ConstructPayload;
-import nl.tivek.multiversepowers.character.greenlantern.ExpressScript;
-import nl.tivek.multiversepowers.character.greenlantern.HandDuo;
-import nl.tivek.multiversepowers.character.greenlantern.HandGroup;
-import nl.tivek.multiversepowers.character.greenlantern.HandPose;
-import nl.tivek.multiversepowers.character.greenlantern.MechScript;
-import nl.tivek.multiversepowers.character.greenlantern.PlanePath;
-import nl.tivek.multiversepowers.character.greenlantern.ability.AirStrike;
-import nl.tivek.multiversepowers.character.greenlantern.ability.FlameMove;
-import nl.tivek.multiversepowers.character.greenlantern.ability.LandingSlam;
-import nl.tivek.multiversepowers.character.greenlantern.ability.LightBubble;
-import nl.tivek.multiversepowers.character.greenlantern.ability.RingScan;
-import nl.tivek.multiversepowers.character.greenlantern.ability.SwordMove;
-import nl.tivek.multiversepowers.character.greenlantern.ability.WhipMove;
-import nl.tivek.multiversepowers.character.greenlantern.client.render.BubblePainter;
-import nl.tivek.multiversepowers.character.greenlantern.client.render.ExpressPainter;
+import nl.tivek.multiversepowers.character.greenlantern.ability.airstrike.AirStrike;
+import nl.tivek.multiversepowers.character.greenlantern.ability.flame.FlameMove;
+import nl.tivek.multiversepowers.character.greenlantern.ability.light.LightBubble;
+import nl.tivek.multiversepowers.character.greenlantern.ability.ring.RingScan;
+import nl.tivek.multiversepowers.character.greenlantern.ability.slam.LandingSlam;
+import nl.tivek.multiversepowers.character.greenlantern.ability.sword.SwordMove;
+import nl.tivek.multiversepowers.character.greenlantern.ability.whip.WhipMove;
+import nl.tivek.multiversepowers.character.greenlantern.client.flight.Flown;
 import nl.tivek.multiversepowers.character.greenlantern.client.mech.MechPainter;
-import nl.tivek.multiversepowers.character.greenlantern.client.render.PlanePainter;
-import nl.tivek.multiversepowers.character.greenlantern.client.render.RevolverPainter;
+import nl.tivek.multiversepowers.character.greenlantern.client.render.BubblePainter;
+import nl.tivek.multiversepowers.character.greenlantern.client.render.express.ExpressPainter;
+import nl.tivek.multiversepowers.character.greenlantern.client.render.plane.PlanePainter;
+import nl.tivek.multiversepowers.character.greenlantern.client.render.revolver.RevolverPainter;
 import nl.tivek.multiversepowers.character.greenlantern.client.slam.SlamPainter;
+import nl.tivek.multiversepowers.character.greenlantern.construct.ConstructPayload;
+import nl.tivek.multiversepowers.character.greenlantern.duo.HandDuo;
+import nl.tivek.multiversepowers.character.greenlantern.express.ExpressScript;
+import nl.tivek.multiversepowers.character.greenlantern.hand.HandGroup;
+import nl.tivek.multiversepowers.character.greenlantern.hand.HandPose;
+import nl.tivek.multiversepowers.character.greenlantern.mech.MechScript;
+import nl.tivek.multiversepowers.character.greenlantern.plane.PlanePath;
 import nl.tivek.multiversepowers.engine.math.Ease;
 import static nl.tivek.multiversepowers.character.greenlantern.client.ConstructPlaces.pane;
 
@@ -267,7 +268,7 @@ abstract class TrackedConstructs {
         return most;
     }
 
-    static float slamAge(int owner, float partialTick) {
+    public static float slamAge(int owner, float partialTick) {
         for (Track track : CONSTRUCTS.values()) {
             if (track.latest.shape() == ConstructPayload.SLAM && track.latest.owner() == owner) {
                 return (float) (track.clock(partialTick) / SlamPainter.pace(track.latest));
@@ -409,7 +410,7 @@ abstract class TrackedConstructs {
         return shot == null ? -1.0F : (float) Math.max(0.0, clientTicks + partialTick - shot);
     }
 
-    static int slamVariant(int owner) {
+    public static int slamVariant(int owner) {
         for (Track track : CONSTRUCTS.values()) {
             if (track.latest.shape() == ConstructPayload.SLAM && track.latest.owner() == owner) {
                 return track.latest.variant();
@@ -428,7 +429,7 @@ abstract class TrackedConstructs {
         return null;
     }
 
-    static float shake(Vec3 from, float partialTick) {
+    public static float shake(Vec3 from, float partialTick) {
         float most = 0.0F;
         for (Track track : CONSTRUCTS.values()) {
             ConstructPayload slam = track.latest;
@@ -534,6 +535,24 @@ abstract class TrackedConstructs {
     }
 
     // A mech its owner stands in: where it stands, how far it has come, and how far it has broken up (below 0: not).
+    // A creature between clapping palms: the level line the palms close along, and how far into the clap it is.
+    public record Clap(Vec3 across, double t) {
+    }
+
+    @Nullable
+    public static Clap clapped(int entity, float partialTick) {
+        for (Track track : CONSTRUCTS.values()) {
+            ConstructPayload hand = track.latest;
+            if (hand.shape() == ConstructPayload.HAND && HandPose.move(hand.variant()) == HandPose.CLAP && hand.held()
+                    && LightBubble.caughtId(hand.charge()) == entity) {
+                Vec3 ahead = new Vec3(hand.facing().x, 0.0, hand.facing().z);
+                ahead = ahead.lengthSqr() < 1.0E-8 ? new Vec3(0.0, 0.0, 1.0) : ahead.normalize();
+                return new Clap(new Vec3(-ahead.z, 0.0, ahead.x), track.clock(partialTick));
+            }
+        }
+        return null;
+    }
+
     public record Piloted(int id, MechScript.Stage stage, double t, double broke) {
         public Vec3 feet() {
             return this.stage.point(this.broke >= 0.0 ? MechScript.lowered(this.broke)

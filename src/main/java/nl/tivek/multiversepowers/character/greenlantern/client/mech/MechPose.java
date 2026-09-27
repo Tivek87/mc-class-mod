@@ -2,7 +2,7 @@ package nl.tivek.multiversepowers.character.greenlantern.client.mech;
 
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
-import nl.tivek.multiversepowers.character.greenlantern.MechScript;
+import nl.tivek.multiversepowers.character.greenlantern.mech.MechScript;
 
 // How a walking mech stands at one moment: its spot on the ground, its swaying body, where its feet are, how its arms
 // swing and what its pilot's hands do. Feet are in the world, index 0 the right one.

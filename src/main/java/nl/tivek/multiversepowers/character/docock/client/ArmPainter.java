@@ -21,7 +21,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.client.model.data.ModelData;
 import nl.tivek.multiversepowers.character.docock.ArmPayload;
-import nl.tivek.multiversepowers.character.docock.PortalPayload;
+import nl.tivek.multiversepowers.character.docock.portal.PortalPayload;
 import org.joml.Matrix3f;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
@@ -35,7 +35,7 @@ final class ArmPainter extends LineFrames {
     private static final BlockState HOT = Blocks.SHROOMLIGHT.defaultBlockState();
     private static final BlockState DIM = Blocks.POLISHED_BLACKSTONE.defaultBlockState();
 
-    private static final double SEGMENT = 0.3;
+    static final double SEGMENT = 0.3;
     private static final double BASE_WIDTH = 0.27;
     private static final double TIP_WIDTH = 0.13;
     private static final double TAPER = 2.5;
@@ -87,6 +87,11 @@ final class ArmPainter extends LineFrames {
 
     private int light(Vec3 at) {
         return LevelRenderer.getLightColor(this.level, BlockPos.containing(at));
+    }
+
+    // How far the arm's bars reach out from its line, at their widest.
+    static double girth(float thickness) {
+        return BASE_WIDTH * thickness * 0.72;
     }
 
     private static double widthAt(double fromTip, double thickness) {

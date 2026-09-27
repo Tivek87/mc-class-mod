@@ -5,12 +5,15 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.network.PacketDistributor;
 import nl.tivek.multiversepowers.MultiversePowers;
 
 @EventBusSubscriber(modid = MultiversePowers.MODID)
@@ -50,6 +53,7 @@ public final class HeldMobs {
         mob.getPersistentData().putBoolean(SAVED_TAG, mob.isNoAi());
         mob.setNoAi(true);
         mob.setDeltaMovement(Vec3.ZERO);
+        tell(mob, true);
         return true;
     }
 
@@ -59,6 +63,21 @@ public final class HeldMobs {
             mob.setNoAi(wasNoAi);
             mob.getPersistentData().remove(SAVED_TAG);
             mob.resetFallDistance();
+            tell(mob, false);
+        }
+    }
+
+    private static void tell(Mob mob, boolean held) {
+        if (!mob.level().isClientSide()) {
+            PacketDistributor.sendToPlayersTrackingEntity(mob, new HeldPayload(mob.getId(), held));
+        }
+    }
+
+    @SubscribeEvent
+    public static void onStartTracking(PlayerEvent.StartTracking event) {
+        if (event.getTarget() instanceof Mob mob && HELD.containsKey(mob)
+                && event.getEntity() instanceof ServerPlayer player) {
+            PacketDistributor.sendToPlayer(player, new HeldPayload(mob.getId(), true));
         }
     }
 

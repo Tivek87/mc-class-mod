@@ -30,6 +30,7 @@ import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.character.CharacterAbility;
 import nl.tivek.multiversepowers.character.Characters;
 import nl.tivek.multiversepowers.character.GameCharacter;
+import nl.tivek.multiversepowers.character.docock.rig.OctoRig;
 import nl.tivek.multiversepowers.engine.effect.Effects;
 import nl.tivek.multiversepowers.engine.entity.HeldMobs;
 import nl.tivek.multiversepowers.stamina.StaminaCostPayload;
@@ -39,9 +40,9 @@ public final class OctopusArms {
     static final ResourceLocation REACH_ID = id("tentacle_reach");
     static final ResourceLocation BLOCK_REACH_ID = id("tentacle_block_reach");
     public static final ResourceLocation BLOCKING_ID = id("tentacle_block_slow");
-    static final ResourceLocation RAMPAGE_ID = id("octopus_rampage");
+    public static final ResourceLocation RAMPAGE_ID = id("octopus_rampage");
     static final ResourceLocation STEP_ID = id("tentacle_step");
-    static final ResourceLocation LEG_RUN_ID = id("tentacle_run");
+    public static final ResourceLocation LEG_RUN_ID = id("tentacle_run");
     // Normal reach is 3 blocks for hitting and 4.5 for blocks.
     static final double REACH_BONUS = 4.5;
     static final double BLOCK_REACH_BONUS = 2.0;
@@ -194,7 +195,7 @@ public final class OctopusArms {
         RobotArm.clear();
     }
 
-    static void removed(ServerPlayer player, OctoRig rig) {
+    public static void removed(ServerPlayer player, OctoRig rig) {
         // Only the player's current arms take their powers with them: an old pair that finishes
         // folding in after you turned into Doctor Octopus again leaves the new pair alone.
         if (!RIGS.remove(player.getUUID(), rig)) {
@@ -216,7 +217,7 @@ public final class OctopusArms {
         sync(player);
     }
 
-    static void modifier(ServerPlayer player, Holder<Attribute> attribute, ResourceLocation id, double amount,
+    public static void modifier(ServerPlayer player, Holder<Attribute> attribute, ResourceLocation id, double amount,
             AttributeModifier.Operation operation, boolean on) {
         AttributeInstance instance = player.getAttribute(attribute);
         if (instance == null) {
@@ -229,17 +230,17 @@ public final class OctopusArms {
         }
     }
 
-    static void sync(ServerPlayer player) {
+    public static void sync(ServerPlayer player) {
         if (!player.hasDisconnected()) {
             Characters.sync(player);
         }
     }
 
-    static void safeFall(ServerPlayer player, int ticks) {
+    public static void safeFall(ServerPlayer player, int ticks) {
         SAFE_FALL.put(player.getUUID(), player.server.getTickCount() + ticks);
     }
 
-    static void setDown(LivingEntity target) {
+    public static void setDown(LivingEntity target) {
         if (target instanceof ServerPlayer player && player.isAlive() && !player.isRemoved()) {
             player.resetFallDistance();
             safeFall(player, SET_DOWN_SAFE);

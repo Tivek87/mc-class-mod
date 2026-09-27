@@ -11,8 +11,8 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RenderLivingEvent;
 import nl.tivek.multiversepowers.MultiversePowers;
-import nl.tivek.multiversepowers.character.greenlantern.MechScript;
 import nl.tivek.multiversepowers.character.greenlantern.client.ClientConstructs;
+import nl.tivek.multiversepowers.character.greenlantern.mech.MechScript;
 
 // The creature under the mech's blows, as every client draws it: pressed flat under the foot and the head, squeezed
 // thin and lifted by the clap. The server only keeps it on its spot.

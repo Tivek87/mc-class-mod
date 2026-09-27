@@ -17,21 +17,21 @@ import nl.tivek.multiversepowers.character.TransformPayload;
 import nl.tivek.multiversepowers.character.docock.ArmPayload;
 import nl.tivek.multiversepowers.character.docock.GrabStatePayload;
 import nl.tivek.multiversepowers.character.docock.OctopusArms;
-import nl.tivek.multiversepowers.character.docock.PortalPayload;
 import nl.tivek.multiversepowers.character.docock.ThrowGrabPayload;
-import nl.tivek.multiversepowers.character.greenlantern.Construct;
-import nl.tivek.multiversepowers.character.greenlantern.ConstructHoldPayload;
-import nl.tivek.multiversepowers.character.greenlantern.ConstructPayload;
-import nl.tivek.multiversepowers.character.greenlantern.ConstructPickPayload;
-import nl.tivek.multiversepowers.character.greenlantern.FlattenPayload;
-import nl.tivek.multiversepowers.character.greenlantern.HandVictimPayload;
-import nl.tivek.multiversepowers.character.greenlantern.MechDrivePayload;
+import nl.tivek.multiversepowers.character.docock.portal.PortalPayload;
 import nl.tivek.multiversepowers.character.greenlantern.RingPayload;
-import nl.tivek.multiversepowers.character.greenlantern.ability.EnergyWhip;
-import nl.tivek.multiversepowers.character.greenlantern.ability.Flamethrower;
-import nl.tivek.multiversepowers.character.greenlantern.ability.LandingSlam;
-import nl.tivek.multiversepowers.character.greenlantern.ability.MechAssembly;
-import nl.tivek.multiversepowers.character.greenlantern.ability.SwordShield;
+import nl.tivek.multiversepowers.character.greenlantern.ability.flame.Flamethrower;
+import nl.tivek.multiversepowers.character.greenlantern.ability.mech.MechAssembly;
+import nl.tivek.multiversepowers.character.greenlantern.ability.slam.LandingSlam;
+import nl.tivek.multiversepowers.character.greenlantern.ability.sword.SwordShield;
+import nl.tivek.multiversepowers.character.greenlantern.ability.whip.EnergyWhip;
+import nl.tivek.multiversepowers.character.greenlantern.construct.Construct;
+import nl.tivek.multiversepowers.character.greenlantern.construct.ConstructHoldPayload;
+import nl.tivek.multiversepowers.character.greenlantern.construct.ConstructPayload;
+import nl.tivek.multiversepowers.character.greenlantern.construct.ConstructPickPayload;
+import nl.tivek.multiversepowers.character.greenlantern.construct.FlattenPayload;
+import nl.tivek.multiversepowers.character.greenlantern.hand.HandVictimPayload;
+import nl.tivek.multiversepowers.character.greenlantern.mech.MechDrivePayload;
 import nl.tivek.multiversepowers.classes.ChoosingState;
 import nl.tivek.multiversepowers.classes.ClassData;
 import nl.tivek.multiversepowers.classes.ClassGear;
@@ -45,21 +45,23 @@ import nl.tivek.multiversepowers.classes.ceremony.Ceremonies;
 import nl.tivek.multiversepowers.config.WorldSettings;
 import nl.tivek.multiversepowers.config.WorldSettingsEditPayload;
 import nl.tivek.multiversepowers.config.WorldSettingsPayload;
+import nl.tivek.multiversepowers.engine.entity.DeathStylePayload;
+import nl.tivek.multiversepowers.engine.entity.HeldPayload;
 import nl.tivek.multiversepowers.engine.fx.ParticlesPayload;
 import nl.tivek.multiversepowers.engine.fx.VoicePayload;
 import nl.tivek.multiversepowers.faction.StandingsPayload;
 import nl.tivek.multiversepowers.network.client.ClientPayloadHandler;
 import nl.tivek.multiversepowers.spell.CastSpellPayload;
+import nl.tivek.multiversepowers.spell.ClapPayload;
 import nl.tivek.multiversepowers.spell.Spell;
 import nl.tivek.multiversepowers.spell.SpellCasting;
-import nl.tivek.multiversepowers.spell.ClapPayload;
 import nl.tivek.multiversepowers.spell.SpellCooldownPayload;
 import nl.tivek.multiversepowers.spell.SpellFxPayload;
-import nl.tivek.multiversepowers.spell.VoidStatePayload;
+import nl.tivek.multiversepowers.spell.dark.VoidStatePayload;
 import nl.tivek.multiversepowers.stamina.StaminaCostPayload;
 
 public final class ModNetwork {
-    private static final String VERSION = "18";
+    private static final String VERSION = "19";
 
     private ModNetwork() {
     }
@@ -82,6 +84,8 @@ public final class ModNetwork {
         registrar.playToClient(PortalPayload.TYPE, PortalPayload.STREAM_CODEC, ModNetwork::onPortal);
         registrar.playToClient(ConstructPayload.TYPE, ConstructPayload.STREAM_CODEC, ModNetwork::onConstruct);
         registrar.playToClient(FlattenPayload.TYPE, FlattenPayload.STREAM_CODEC, ModNetwork::onFlatten);
+        registrar.playToClient(HeldPayload.TYPE, HeldPayload.STREAM_CODEC, ModNetwork::onHeld);
+        registrar.playToClient(DeathStylePayload.TYPE, DeathStylePayload.STREAM_CODEC, ModNetwork::onDeathStyle);
         registrar.playToClient(HandVictimPayload.TYPE, HandVictimPayload.STREAM_CODEC, ModNetwork::onHandVictim);
         registrar.playToClient(RingPayload.TYPE, RingPayload.STREAM_CODEC, ModNetwork::onRing);
         registrar.playToServer(AbilityActionPayload.TYPE, AbilityActionPayload.STREAM_CODEC,
@@ -204,6 +208,14 @@ public final class ModNetwork {
 
     private static void onFlatten(FlattenPayload payload, IPayloadContext context) {
         ClientPayloadHandler.handleFlatten(payload, context);
+    }
+
+    private static void onHeld(HeldPayload payload, IPayloadContext context) {
+        ClientPayloadHandler.handleHeld(payload, context);
+    }
+
+    private static void onDeathStyle(DeathStylePayload payload, IPayloadContext context) {
+        ClientPayloadHandler.handleDeathStyle(payload, context);
     }
 
     private static void onHandVictim(HandVictimPayload payload, IPayloadContext context) {

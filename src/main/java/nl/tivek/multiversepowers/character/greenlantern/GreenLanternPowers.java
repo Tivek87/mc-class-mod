@@ -3,7 +3,7 @@ package nl.tivek.multiversepowers.character.greenlantern;
 import net.minecraft.server.level.ServerPlayer;
 import nl.tivek.multiversepowers.character.CharacterAbility;
 import nl.tivek.multiversepowers.character.CharacterPowers;
-import nl.tivek.multiversepowers.character.greenlantern.ability.AirStrike;
+import nl.tivek.multiversepowers.character.greenlantern.ability.airstrike.AirStrike;
 
 public final class GreenLanternPowers implements CharacterPowers {
     @Override

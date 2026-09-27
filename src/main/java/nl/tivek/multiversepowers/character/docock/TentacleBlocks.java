@@ -31,28 +31,28 @@ import nl.tivek.multiversepowers.engine.effect.Effects;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 import nl.tivek.multiversepowers.engine.target.Targeting;
 
-final class TentacleBlocks {
-    static final double THROW_SPEED = 1.5;
+public final class TentacleBlocks {
+    public static final double THROW_SPEED = 1.5;
     private static final int HIT_TIME = 60;
     private static final double HIT_RADIUS = 0.8;
 
     private TentacleBlocks() {
     }
 
-    record Piece(BlockPos offset, BlockState state) {
+    public record Piece(BlockPos offset, BlockState state) {
     }
 
-    record Load(List<Piece> pieces) {
-        int size() {
+    public record Load(List<Piece> pieces) {
+        public int size() {
             return this.pieces.size();
         }
     }
 
-    record Result(int placed, @Nullable Load left) {
+    public record Result(int placed, @Nullable Load left) {
     }
 
     @Nullable
-    static Load pickUp(ServerLevel level, ServerPlayer player, boolean cluster, int max, double range) {
+    public static Load pickUp(ServerLevel level, ServerPlayer player, boolean cluster, int max, double range) {
         BlockHitResult hit = aim(player, level, range);
         if (hit.getType() == HitResult.Type.MISS) {
             return null;
@@ -102,7 +102,7 @@ final class TentacleBlocks {
                 && !state.getCollisionShape(level, pos).isEmpty();
     }
 
-    static Result place(ServerLevel level, ServerPlayer player, Load load, double range) {
+    public static Result place(ServerLevel level, ServerPlayer player, Load load, double range) {
         BlockHitResult hit = aim(player, level, range);
         BlockPos origin;
         if (hit.getType() == HitResult.Type.MISS) {
@@ -133,7 +133,7 @@ final class TentacleBlocks {
         return new Result(placed, left.isEmpty() ? null : new Load(List.copyOf(left)));
     }
 
-    static void hurl(ServerLevel level, ServerPlayer player, Load load, Vec3 from, Vec3 direction, float damage,
+    public static void hurl(ServerLevel level, ServerPlayer player, Load load, Vec3 from, Vec3 direction, float damage,
             double speed) {
         List<FallingBlockEntity> flying = new ArrayList<>();
         for (Piece piece : load.pieces()) {
@@ -159,7 +159,7 @@ final class TentacleBlocks {
         Effects.start(level, hitting(player, flying, damage));
     }
 
-    static void drop(ServerLevel level, ServerPlayer player, Load load, Vec3 from) {
+    public static void drop(ServerLevel level, ServerPlayer player, Load load, Vec3 from) {
         hurl(level, player, load, from, new Vec3(0, -0.2, 0), 0.0F, 0.2);
     }
 

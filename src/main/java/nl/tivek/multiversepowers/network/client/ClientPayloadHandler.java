@@ -11,18 +11,18 @@ import nl.tivek.multiversepowers.character.CharacterStatePayload;
 import nl.tivek.multiversepowers.character.client.ClientCharacter;
 import nl.tivek.multiversepowers.character.docock.ArmPayload;
 import nl.tivek.multiversepowers.character.docock.GrabStatePayload;
-import nl.tivek.multiversepowers.character.docock.PortalPayload;
 import nl.tivek.multiversepowers.character.docock.client.ClientArms;
 import nl.tivek.multiversepowers.character.docock.client.ClientGrabState;
-import nl.tivek.multiversepowers.character.greenlantern.ConstructPayload;
-import nl.tivek.multiversepowers.character.greenlantern.FlattenPayload;
-import nl.tivek.multiversepowers.character.greenlantern.HandVictimPayload;
+import nl.tivek.multiversepowers.character.docock.portal.PortalPayload;
 import nl.tivek.multiversepowers.character.greenlantern.RingPayload;
 import nl.tivek.multiversepowers.character.greenlantern.client.ClientConstructs;
-import nl.tivek.multiversepowers.character.greenlantern.client.Flattened;
-import nl.tivek.multiversepowers.character.greenlantern.client.HandVictims;
 import nl.tivek.multiversepowers.character.greenlantern.client.ClientLooks;
 import nl.tivek.multiversepowers.character.greenlantern.client.ClientRing;
+import nl.tivek.multiversepowers.character.greenlantern.client.victim.Flattened;
+import nl.tivek.multiversepowers.character.greenlantern.client.victim.HandVictims;
+import nl.tivek.multiversepowers.character.greenlantern.construct.ConstructPayload;
+import nl.tivek.multiversepowers.character.greenlantern.construct.FlattenPayload;
+import nl.tivek.multiversepowers.character.greenlantern.hand.HandVictimPayload;
 import nl.tivek.multiversepowers.classes.ClassSyncPayload;
 import nl.tivek.multiversepowers.classes.PlayerClass;
 import nl.tivek.multiversepowers.classes.client.ClientClassData;
@@ -30,19 +30,24 @@ import nl.tivek.multiversepowers.classes.client.ClientWelcome;
 import nl.tivek.multiversepowers.config.ModConfigs;
 import nl.tivek.multiversepowers.config.WorldSettingsPayload;
 import nl.tivek.multiversepowers.engine.client.fx.VoiceLine;
+import nl.tivek.multiversepowers.engine.client.ragdoll.Ashes;
+import nl.tivek.multiversepowers.engine.client.ragdoll.Ragdolls;
+import nl.tivek.multiversepowers.engine.entity.DeathStylePayload;
+import nl.tivek.multiversepowers.engine.entity.DeathStyles;
+import nl.tivek.multiversepowers.engine.entity.HeldPayload;
 import nl.tivek.multiversepowers.engine.fx.ParticlesPayload;
 import nl.tivek.multiversepowers.engine.fx.VoicePayload;
 import nl.tivek.multiversepowers.faction.StandingsPayload;
 import nl.tivek.multiversepowers.faction.client.ClientStandings;
-import nl.tivek.multiversepowers.spell.Spell;
 import nl.tivek.multiversepowers.spell.ClapPayload;
+import nl.tivek.multiversepowers.spell.Spell;
 import nl.tivek.multiversepowers.spell.SpellCooldownPayload;
 import nl.tivek.multiversepowers.spell.SpellFxPayload;
-import nl.tivek.multiversepowers.spell.VoidStatePayload;
 import nl.tivek.multiversepowers.spell.client.ClientClaps;
 import nl.tivek.multiversepowers.spell.client.ClientSpellCooldowns;
-import nl.tivek.multiversepowers.spell.client.ClientVoidState;
 import nl.tivek.multiversepowers.spell.client.SpellFx;
+import nl.tivek.multiversepowers.spell.dark.VoidStatePayload;
+import nl.tivek.multiversepowers.spell.dark.client.ClientVoidState;
 import nl.tivek.multiversepowers.stamina.StaminaCostPayload;
 import nl.tivek.multiversepowers.stamina.client.StaminaClient;
 
@@ -105,6 +110,16 @@ public final class ClientPayloadHandler {
 
     public static void handleFlatten(FlattenPayload payload, IPayloadContext context) {
         context.enqueueWork(() -> Flattened.flatten(payload.entity()));
+    }
+
+    public static void handleHeld(HeldPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> Ragdolls.held(payload.entity(), payload.held()));
+    }
+
+    public static void handleDeathStyle(DeathStylePayload payload, IPayloadContext context) {
+        if (payload.style() == DeathStyles.Style.ASH.ordinal()) {
+            context.enqueueWork(() -> Ashes.burn(payload.entity()));
+        }
     }
 
     public static void handleHandVictim(HandVictimPayload payload, IPayloadContext context) {

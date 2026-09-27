@@ -23,7 +23,8 @@ import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.character.docock.ArmPayload;
-import nl.tivek.multiversepowers.character.docock.PortalPayload;
+import nl.tivek.multiversepowers.character.docock.portal.PortalPayload;
+import nl.tivek.multiversepowers.engine.client.world.PathClear;
 
 @EventBusSubscriber(modid = MultiversePowers.MODID, value = Dist.CLIENT)
 public final class ClientArms {
@@ -210,7 +211,10 @@ public final class ClientArms {
             float claw = before.claw() < 0.0F || now.claw() < 0.0F ? now.claw()
                     : Mth.lerp(partialTick, before.claw(), now.claw());
             painter.clip(now.clips() ? now.clipPoint() : null, now.clipNormal());
-            painter.arm(points, reference, claw, now.thickness(),
+            // An arm meant to go in (digging, through a portal) is drawn as it comes; any other bends round blocks.
+            List<Vec3> drawn = now.clips() ? points : PathClear.clear(level, points, ArmPainter.girth(now.thickness()),
+                    ArmPainter.SEGMENT * now.thickness());
+            painter.arm(drawn, reference, claw, now.thickness(),
                     Mth.lerp(partialTick, before.tipOffset(), now.tipOffset()),
                     now.lamps() == ArmPayload.LAMPS_RAGE,
                     Mth.lerp(partialTick, before.spike(), now.spike()),

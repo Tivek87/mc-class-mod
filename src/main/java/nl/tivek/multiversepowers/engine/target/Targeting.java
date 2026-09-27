@@ -17,6 +17,7 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.phys.shapes.CollisionContext;
 import net.neoforged.neoforge.common.Tags;
 import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.engine.entity.HeldMobs;
@@ -117,6 +118,12 @@ public final class Targeting {
     public static boolean clearPath(ServerLevel level, Vec3 from, Vec3 to, Entity viewer) {
         return level.clip(new ClipContext(from, to, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, viewer))
                 .getType() == HitResult.Type.MISS;
+    }
+
+    // The same with nobody looking (a cloud, a blast whose caster may be gone): only blocks stand in the way.
+    public static boolean clearPath(ServerLevel level, Vec3 from, Vec3 to) {
+        return level.clip(new ClipContext(from, to, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE,
+                CollisionContext.empty())).getType() == HitResult.Type.MISS;
     }
 
     public static void noTarget(ServerPlayer player) {

@@ -12,7 +12,7 @@ import net.minecraft.world.entity.player.Player;
 import nl.tivek.multiversepowers.character.CharacterAbility;
 import nl.tivek.multiversepowers.character.client.MouseHold;
 import nl.tivek.multiversepowers.character.greenlantern.RingPayload;
-import nl.tivek.multiversepowers.character.greenlantern.ability.LightBeam;
+import nl.tivek.multiversepowers.character.greenlantern.ability.light.LightBeam;
 import nl.tivek.multiversepowers.character.greenlantern.client.ClientConstructs;
 import nl.tivek.multiversepowers.character.greenlantern.client.ClientRing;
 import nl.tivek.multiversepowers.engine.client.gui.GuiShapes;

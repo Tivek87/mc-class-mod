@@ -6,7 +6,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
-import nl.tivek.multiversepowers.character.greenlantern.client.body.FlameArms;
+import nl.tivek.multiversepowers.character.greenlantern.client.body.flame.FlameArms;
 import nl.tivek.multiversepowers.engine.client.gui.GuiShapes;
 
 // The flamethrower's heat: ten cells filling as the inferno pours towards overheating, green to yellow to red, the

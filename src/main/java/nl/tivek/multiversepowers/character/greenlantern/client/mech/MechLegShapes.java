@@ -3,7 +3,7 @@ package nl.tivek.multiversepowers.character.greenlantern.client.mech;
 import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.world.phys.Vec3;
-import nl.tivek.multiversepowers.character.greenlantern.MechScript;
+import nl.tivek.multiversepowers.character.greenlantern.mech.MechScript;
 import nl.tivek.multiversepowers.engine.client.render.ConstructPainter.Shape;
 import nl.tivek.multiversepowers.engine.client.render.Mesh;
 import nl.tivek.multiversepowers.engine.client.render.Surface;

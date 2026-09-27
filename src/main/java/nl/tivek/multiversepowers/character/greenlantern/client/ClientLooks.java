@@ -29,11 +29,11 @@ import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.character.CharacterLookPayload;
 import nl.tivek.multiversepowers.character.GameCharacter;
 import nl.tivek.multiversepowers.character.greenlantern.Arrival;
-import nl.tivek.multiversepowers.character.greenlantern.client.body.GreenLanternSuitLayer;
-import nl.tivek.multiversepowers.character.greenlantern.client.body.Ring;
-import nl.tivek.multiversepowers.character.greenlantern.client.body.RingSpot;
-import nl.tivek.multiversepowers.character.greenlantern.client.body.SuitGlow;
-import nl.tivek.multiversepowers.character.greenlantern.client.body.SuitSpread;
+import nl.tivek.multiversepowers.character.greenlantern.client.body.spot.RingSpot;
+import nl.tivek.multiversepowers.character.greenlantern.client.body.suit.GreenLanternSuitLayer;
+import nl.tivek.multiversepowers.character.greenlantern.client.body.suit.Ring;
+import nl.tivek.multiversepowers.character.greenlantern.client.body.suit.SuitGlow;
+import nl.tivek.multiversepowers.character.greenlantern.client.body.suit.SuitSpread;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.BeamCharge;
 import nl.tivek.multiversepowers.engine.math.Ease;
 

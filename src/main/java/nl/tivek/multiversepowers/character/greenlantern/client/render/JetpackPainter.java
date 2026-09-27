@@ -1,6 +1,7 @@
 package nl.tivek.multiversepowers.character.greenlantern.client.render;
 
 import net.minecraft.world.phys.Vec3;
+import nl.tivek.multiversepowers.character.greenlantern.client.render.fire.FirePainter;
 import nl.tivek.multiversepowers.engine.client.render.ConstructPainter;
 import nl.tivek.multiversepowers.engine.client.render.Mesh;
 import nl.tivek.multiversepowers.engine.math.Ease;

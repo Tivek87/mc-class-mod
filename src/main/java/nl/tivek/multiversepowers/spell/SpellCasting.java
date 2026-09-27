@@ -19,6 +19,7 @@ import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.engine.ability.Cooldowns;
 import nl.tivek.multiversepowers.engine.target.Targeting;
 import nl.tivek.multiversepowers.faction.Factions;
+import nl.tivek.multiversepowers.spell.dark.VoidWalkSpell;
 
 @EventBusSubscriber(modid = MultiversePowers.MODID)
 public final class SpellCasting {

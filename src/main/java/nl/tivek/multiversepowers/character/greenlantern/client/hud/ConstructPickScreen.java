@@ -16,8 +16,8 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RegisterClientCommandsEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 import nl.tivek.multiversepowers.MultiversePowers;
-import nl.tivek.multiversepowers.character.greenlantern.ConstructPayload;
-import nl.tivek.multiversepowers.character.greenlantern.ConstructPickPayload;
+import nl.tivek.multiversepowers.character.greenlantern.construct.ConstructPayload;
+import nl.tivek.multiversepowers.character.greenlantern.construct.ConstructPickPayload;
 import nl.tivek.multiversepowers.engine.client.gui.DirtBackgroundScreen;
 
 @EventBusSubscriber(modid = MultiversePowers.MODID, value = Dist.CLIENT)

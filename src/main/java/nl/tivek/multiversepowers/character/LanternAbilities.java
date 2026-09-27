@@ -1,7 +1,7 @@
 package nl.tivek.multiversepowers.character;
 
 import java.util.Map;
-import nl.tivek.multiversepowers.character.greenlantern.HandPose;
+import nl.tivek.multiversepowers.character.greenlantern.hand.HandPose;
 import nl.tivek.multiversepowers.config.Unit;
 
 // Green Lantern's abilities, key by key, with every setting they have.

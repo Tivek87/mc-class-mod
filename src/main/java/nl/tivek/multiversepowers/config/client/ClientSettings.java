@@ -11,6 +11,12 @@ public final class ClientSettings {
     public static final ModConfigSpec.IntValue THEME_MUSIC;
     public static final ModConfigSpec.IntValue UPDATE_CHECK;
     public static final ModConfigSpec.DoubleValue UPDATE_POPUP;
+    public static final ModConfigSpec.IntValue RAGDOLLS;
+    public static final ModConfigSpec.IntValue RAGDOLL_MOST;
+    public static final ModConfigSpec.DoubleValue CORPSE_SECONDS;
+    public static final ModConfigSpec.IntValue RAGDOLL_REACH;
+    public static final ModConfigSpec.IntValue FOOT_PLANTING;
+    public static final ModConfigSpec.IntValue CAPE_CLOTH;
 
     static {
         ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
@@ -26,6 +32,24 @@ public final class ClientSettings {
         MECH_CINEMATIC = builder.comment("Film your own mech while it builds itself, shot after shot like a movie,"
                 + " before you look out of its cockpit (1 = yes, 0 = keep your own view)")
                 .defineInRange("mechCinematic", 1, 0, 1);
+        builder.pop();
+        builder.push("bodies");
+        RAGDOLLS = builder.comment("Creatures go limp: they fall, tumble and hang from what holds them, and a body"
+                + " stays where it fell before it sinks away (1 = yes, 0 = as in the plain game)")
+                .defineInRange("ragdolls", 1, 0, 1);
+        RAGDOLL_MOST = builder.comment("How many limp creatures and bodies there may be at once; the furthest go first")
+                .defineInRange("ragdollMost", 24, 1, 64);
+        CORPSE_SECONDS = builder.comment("How long a body stays where it fell before it sinks into the ground, in"
+                + " seconds")
+                .defineInRange("corpseSeconds", 10.0, 0.0, 120.0);
+        RAGDOLL_REACH = builder.comment("How far away a creature may be and still go limp, in blocks")
+                .defineInRange("ragdollReach", 48, 8, 128);
+        FOOT_PLANTING = builder.comment("Feet rest on the ground they stand on: a foot never sinks into a step, and a"
+                + " spider's legs reach down to the ground (1 = yes, 0 = as in the plain game)")
+                .defineInRange("footPlanting", 1, 0, 1);
+        CAPE_CLOTH = builder.comment("Capes are cloth: they hang, trail and swing as players run and turn, and fold"
+                + " against their back and legs (1 = yes, 0 = the game's stiff cape)")
+                .defineInRange("capeCloth", 1, 0, 1);
         builder.pop();
         builder.push("sound");
         THEME_MUSIC = builder.comment("Play the multiverse theme in the main menu (1 = yes, 0 = the game's own menu music)")
@@ -70,5 +94,17 @@ public final class ClientSettings {
 
     public static boolean mechCinematic() {
         return get(MECH_CINEMATIC) != 0;
+    }
+
+    public static boolean ragdolls() {
+        return get(RAGDOLLS) != 0;
+    }
+
+    public static boolean footPlanting() {
+        return get(FOOT_PLANTING) != 0;
+    }
+
+    public static boolean capeCloth() {
+        return get(CAPE_CLOTH) != 0;
     }
 }

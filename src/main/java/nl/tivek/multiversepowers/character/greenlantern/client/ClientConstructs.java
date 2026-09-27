@@ -19,18 +19,18 @@ import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import nl.tivek.multiversepowers.MultiversePowers;
-import nl.tivek.multiversepowers.character.greenlantern.ConstructPayload;
-import nl.tivek.multiversepowers.character.greenlantern.HandGroup;
-import nl.tivek.multiversepowers.character.greenlantern.HandPose;
-import nl.tivek.multiversepowers.character.greenlantern.MechScript;
-import nl.tivek.multiversepowers.character.greenlantern.ability.AirStrike;
-import nl.tivek.multiversepowers.character.greenlantern.ability.LightBubble;
-import nl.tivek.multiversepowers.character.greenlantern.ability.WhipSnare;
-import nl.tivek.multiversepowers.character.greenlantern.client.Flown.Spot;
-import nl.tivek.multiversepowers.character.greenlantern.client.body.FlameArms;
-import nl.tivek.multiversepowers.character.greenlantern.client.body.RingSpot;
-import nl.tivek.multiversepowers.character.greenlantern.client.body.SwordArms;
-import nl.tivek.multiversepowers.character.greenlantern.client.body.WhipArms;
+import nl.tivek.multiversepowers.character.greenlantern.ability.airstrike.AirStrike;
+import nl.tivek.multiversepowers.character.greenlantern.ability.light.LightBubble;
+import nl.tivek.multiversepowers.character.greenlantern.ability.whip.WhipSnare;
+import nl.tivek.multiversepowers.character.greenlantern.client.body.flame.FlameArms;
+import nl.tivek.multiversepowers.character.greenlantern.client.body.spot.RingSpot;
+import nl.tivek.multiversepowers.character.greenlantern.client.body.sword.SwordArms;
+import nl.tivek.multiversepowers.character.greenlantern.client.body.whip.WhipArms;
+import nl.tivek.multiversepowers.character.greenlantern.client.express.ExpressSounds;
+import nl.tivek.multiversepowers.character.greenlantern.client.express.ExpressTrails;
+import nl.tivek.multiversepowers.character.greenlantern.client.flight.Flown.Spot;
+import nl.tivek.multiversepowers.character.greenlantern.client.flight.Flown;
+import nl.tivek.multiversepowers.character.greenlantern.client.flight.Jetpacks;
 import nl.tivek.multiversepowers.character.greenlantern.client.mech.MechDrive;
 import nl.tivek.multiversepowers.character.greenlantern.client.mech.MechPainter;
 import nl.tivek.multiversepowers.character.greenlantern.client.mech.MechPose;
@@ -38,15 +38,20 @@ import nl.tivek.multiversepowers.character.greenlantern.client.mech.MechWalk;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.BeamCharge;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.BeamPainter;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.BubblePainter;
-import nl.tivek.multiversepowers.character.greenlantern.client.render.ExpressPainter;
-import nl.tivek.multiversepowers.character.greenlantern.client.render.FirePainter;
-import nl.tivek.multiversepowers.character.greenlantern.client.render.FireStream;
-import nl.tivek.multiversepowers.character.greenlantern.client.render.HandPainter;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.LanternPainter;
-import nl.tivek.multiversepowers.character.greenlantern.client.render.PlanePainter;
-import nl.tivek.multiversepowers.character.greenlantern.client.render.RevolverPainter;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.RingSight;
+import nl.tivek.multiversepowers.character.greenlantern.client.render.express.ExpressPainter;
+import nl.tivek.multiversepowers.character.greenlantern.client.render.fire.FirePainter;
+import nl.tivek.multiversepowers.character.greenlantern.client.render.fire.FireStream;
+import nl.tivek.multiversepowers.character.greenlantern.client.render.hand.HandPainter;
+import nl.tivek.multiversepowers.character.greenlantern.client.render.plane.PlanePainter;
+import nl.tivek.multiversepowers.character.greenlantern.client.render.revolver.RevolverPainter;
 import nl.tivek.multiversepowers.character.greenlantern.client.slam.SlamPainter;
+import nl.tivek.multiversepowers.character.greenlantern.client.victim.Flattened;
+import nl.tivek.multiversepowers.character.greenlantern.construct.ConstructPayload;
+import nl.tivek.multiversepowers.character.greenlantern.hand.HandGroup;
+import nl.tivek.multiversepowers.character.greenlantern.hand.HandPose;
+import nl.tivek.multiversepowers.character.greenlantern.mech.MechScript;
 import static nl.tivek.multiversepowers.character.greenlantern.client.ConstructPlaces.RAM_OWN_AHEAD;
 import static nl.tivek.multiversepowers.character.greenlantern.client.ConstructPlaces.beamEnd;
 import static nl.tivek.multiversepowers.character.greenlantern.client.ConstructPlaces.on;
@@ -253,13 +258,17 @@ public final class ClientConstructs extends TrackedConstructs {
         }
     }
 
+    // A dragged, slammed, swallowed or chained creature goes where the server puts it (kept clear of the ground), not
+    // at the fingers.
+    public static boolean atFingers(int move) {
+        return move != HandPose.AXE && move != HandPose.DRAG && move != HandPose.RAGDOLL && move != HandPose.SWALLOW
+                && move != HandPose.RINGCHAINS;
+    }
+
     private static void held(Minecraft minecraft, Track track) {
         ConstructPayload hand = track.latest;
-        // A dragged, slammed, swallowed or chained creature goes where the server puts it (kept clear of the ground),
-        // not at the fingers.
         int move = HandPose.move(hand.variant());
-        if (!hand.held() || minecraft.level == null || move == HandPose.AXE || move == HandPose.DRAG
-                || move == HandPose.RAGDOLL || move == HandPose.SWALLOW || move == HandPose.RINGCHAINS) {
+        if (!hand.held() || minecraft.level == null || !atFingers(move)) {
             return;
         }
         Entity caught = minecraft.level.getEntity(LightBubble.caughtId(hand.charge()));

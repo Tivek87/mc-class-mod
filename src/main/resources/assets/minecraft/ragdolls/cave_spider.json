@@ -1,0 +1,14 @@
+{
+  "parts": {
+    "head": { "swing": 25, "twist": 15 },
+    "body0": { "swing": 20, "twist": 10 },
+    "right_hind_leg": { "swing": 55, "twist": 10 },
+    "left_hind_leg": { "swing": 55, "twist": 10 },
+    "right_middle_hind_leg": { "swing": 55, "twist": 10 },
+    "left_middle_hind_leg": { "swing": 55, "twist": 10 },
+    "right_middle_front_leg": { "swing": 55, "twist": 10 },
+    "left_middle_front_leg": { "swing": 55, "twist": 10 },
+    "right_front_leg": { "swing": 55, "twist": 10 },
+    "left_front_leg": { "swing": 55, "twist": 10 }
+  }
+}

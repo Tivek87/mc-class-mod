@@ -14,8 +14,8 @@ import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.util.Mth;
 import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.character.client.AbilityKeys;
-import nl.tivek.multiversepowers.character.greenlantern.Construct;
 import nl.tivek.multiversepowers.character.greenlantern.client.ConstructChoice;
+import nl.tivek.multiversepowers.character.greenlantern.construct.Construct;
 import nl.tivek.multiversepowers.engine.client.gui.GuiShapes;
 import org.lwjgl.glfw.GLFW;
 

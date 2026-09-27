@@ -2,7 +2,7 @@ package nl.tivek.multiversepowers.character.greenlantern.client.slam;
 
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
-import nl.tivek.multiversepowers.character.greenlantern.ability.LandingSlam;
+import nl.tivek.multiversepowers.character.greenlantern.ability.slam.LandingSlam;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.LanternPainter;
 import nl.tivek.multiversepowers.character.greenlantern.client.slam.SlamPainter.Moment;
 import nl.tivek.multiversepowers.engine.client.render.ConstructPainter.Frame;

@@ -8,11 +8,11 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
-import net.minecraft.world.phys.shapes.VoxelShape;
 import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.phys.shapes.VoxelShape;
 import net.neoforged.neoforge.network.PacketDistributor;
-import nl.tivek.multiversepowers.character.greenlantern.MechDrivePayload;
-import nl.tivek.multiversepowers.character.greenlantern.MechScript;
+import nl.tivek.multiversepowers.character.greenlantern.mech.MechDrivePayload;
+import nl.tivek.multiversepowers.character.greenlantern.mech.MechScript;
 
 // The pilot walks their own mech in their own game, as a player walks, and tells the server where it went: W and S
 // walk it on and back, A and D turn it, as its two levers do. It climbs no more than a step it can take, never

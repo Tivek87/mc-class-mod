@@ -11,7 +11,7 @@ import nl.tivek.multiversepowers.engine.math.Colors;
 import nl.tivek.multiversepowers.engine.math.Noise;
 import nl.tivek.multiversepowers.engine.math.Vectors;
 
-abstract class LanternBeams extends ConstructPainter {
+public abstract class LanternBeams extends ConstructPainter {
     public static final int GREEN = 0x3CE86A;
     public static final int BRIGHT = 0x6CFF8E;
     public static final int HOT = 0xE4FFEA;

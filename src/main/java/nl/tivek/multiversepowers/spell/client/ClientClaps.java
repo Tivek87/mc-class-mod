@@ -79,10 +79,10 @@ public final class ClientClaps {
         return 1.0F - shut * shut;
     }
 
-    public static void pose(PlayerModel<?> model, Entity entity) {
+    public static boolean pose(PlayerModel<?> model, Entity entity) {
         float age = age(entity, Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(false));
         if (age < 0.0F) {
-            return;
+            return false;
         }
         float up = raised(age);
         float turn = Mth.lerp(open(age), SHUT_TURN, OPEN_TURN);
@@ -99,6 +99,7 @@ public final class ClientClaps {
         float back = up * open(age);
         model.head.xRot = Mth.lerp(back, pitch, Math.max(-1.4F, pitch + HEAD_BACK));
         model.hat.copyFrom(model.head);
+        return true;
     }
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)

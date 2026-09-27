@@ -38,3 +38,6 @@ scripts/bug-relay/.dev.vars
 # Claude Code: local settings and agent worktrees
 .claude/settings.local.json
 .claude/worktrees/
+
+# A private chat kept as notes: never public
+docs/copilot chat bonesxragdoll and systems.txt

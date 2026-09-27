@@ -5,10 +5,11 @@ import javax.annotation.Nullable;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
-import nl.tivek.multiversepowers.character.greenlantern.ConstructPath;
-import nl.tivek.multiversepowers.character.greenlantern.ConstructPayload;
+import nl.tivek.multiversepowers.character.greenlantern.client.flight.Flown;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.BubblePainter;
-import nl.tivek.multiversepowers.character.greenlantern.client.render.PlanePainter;
+import nl.tivek.multiversepowers.character.greenlantern.client.render.plane.PlanePainter;
+import nl.tivek.multiversepowers.character.greenlantern.construct.ConstructPath;
+import nl.tivek.multiversepowers.character.greenlantern.construct.ConstructPayload;
 import static nl.tivek.multiversepowers.character.greenlantern.client.TrackedConstructs.clientTicks;
 
 final class Track {

@@ -2,22 +2,19 @@ package nl.tivek.multiversepowers.character.greenlantern.client.mech;
 
 import java.util.ArrayList;
 import java.util.List;
-import net.minecraft.world.phys.Vec3;
-import nl.tivek.multiversepowers.character.greenlantern.MechScript;
+import nl.tivek.multiversepowers.character.greenlantern.mech.MechScript;
 import nl.tivek.multiversepowers.engine.client.render.ConstructPainter.Shape;
 import nl.tivek.multiversepowers.engine.client.render.Mesh;
 import nl.tivek.multiversepowers.engine.client.render.Surface;
+import static nl.tivek.multiversepowers.character.greenlantern.client.mech.MechHandRig.FINGER_LENGTHS;
+import static nl.tivek.multiversepowers.character.greenlantern.client.mech.MechHandRig.FINGER_X;
+import static nl.tivek.multiversepowers.character.greenlantern.client.mech.MechHandRig.THUMB_LENGTHS;
 
 // The right arm (the left one is its mirror). The upper arm runs up its y from the shoulder joint to the elbow, x
 // outwards; the forearm and hand run up y from the elbow to the finger tips, the palm facing z, the thumb at x.
 final class MechArmShapes {
     static final double WRIST = MechScript.FOREARM;
     static final double KNUCKLES = WRIST + 1.24;
-    static final double[] FINGER_X = { 0.47, 0.16, -0.16, -0.47 };
-    static final double[][] FINGER_LENGTHS = { { 0.5, 0.42, 0.36 }, { 0.55, 0.45, 0.38 }, { 0.5, 0.42, 0.36 },
-            { 0.42, 0.36, 0.3 } };
-    static final Vec3 THUMB_ROOT = new Vec3(0.62, WRIST + 0.36, 0.1);
-    static final double[] THUMB_LENGTHS = { 0.5, 0.42, 0.34 };
 
     static final Shape UPPER = Shape.of(upper());
     static final Shape UPPER_LEFT = MechParts.mirrored(UPPER);

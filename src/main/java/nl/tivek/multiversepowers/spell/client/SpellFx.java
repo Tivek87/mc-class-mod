@@ -19,6 +19,11 @@ import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.engine.client.render.ConstructPainter;
 import nl.tivek.multiversepowers.engine.client.render.Material;
 import nl.tivek.multiversepowers.spell.SpellFxPayload;
+import nl.tivek.multiversepowers.spell.air.client.WindFx;
+import nl.tivek.multiversepowers.spell.dark.client.VoidFx;
+import nl.tivek.multiversepowers.spell.fire.client.FireFx;
+import nl.tivek.multiversepowers.spell.lightning.client.StormFx;
+import nl.tivek.multiversepowers.spell.nature.client.PoisonFx;
 
 // Every spell effect the server told of, drawn each frame until it is over.
 @EventBusSubscriber(modid = MultiversePowers.MODID, value = Dist.CLIENT)
@@ -28,12 +33,12 @@ public final class SpellFx {
     private static final int LOST_AFTER = 3;
     private static final Material PLAIN = new Material(0xFFFFFF, 0xFFFFFF, 0xFFFFFF, 0xFFFFFF);
 
-    static final class Fx {
+    public static final class Fx {
         final SpellFxPayload said;
         final double born;
-        final ArrayDeque<Vec3> trail = new ArrayDeque<>();
-        Vec3 at;
-        Vec3 was;
+        public final ArrayDeque<Vec3> trail = new ArrayDeque<>();
+        public Vec3 at;
+        public Vec3 was;
         int lost;
         boolean over;
 
@@ -48,7 +53,7 @@ public final class SpellFx {
             return this.said.kind();
         }
 
-        int seed() {
+        public int seed() {
             return this.said.seed();
         }
     }

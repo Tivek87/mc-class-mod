@@ -2,7 +2,7 @@ package nl.tivek.multiversepowers.character.greenlantern.client.slam;
 
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
-import nl.tivek.multiversepowers.character.greenlantern.ability.LandingSlam;
+import nl.tivek.multiversepowers.character.greenlantern.ability.slam.LandingSlam;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.LanternPainter;
 import nl.tivek.multiversepowers.character.greenlantern.client.slam.SlamPainter.Moment;
 import nl.tivek.multiversepowers.engine.client.render.ConstructPainter.Frame;
@@ -39,12 +39,6 @@ final class SlamHands {
             knuckle(0.30), knuckle(0.10), knuckle(-0.10), knuckle(-0.29),
             Mesh.torus(16, 6, 0.30, 0.06, 1.25).scaled(0.55, 1.0, 1.0).moved(0.0, -0.96, 0.0),
             Mesh.cylinder(12, 0.30, -1.45, -0.96, 0.9).scaled(0.5, 1.0, 1.0));
-    private static final double[][] FINGERS = {
-            { 0.30, 0.085, 0.36, 0.24, 0.20 },
-            { 0.10, 0.088, 0.40, 0.27, 0.21 },
-            { -0.10, 0.085, 0.37, 0.25, 0.20 },
-            { -0.29, 0.075, 0.29, 0.20, 0.17 } };
-    private static final double[] THUMB = { 0.10, 0.26, 0.22, 0.18 };
     private static final Shape[][] BONES = bones();
     private static final Shape HAND_RING = Shape.of(Mesh.torus(12, 5, 0.105, 0.025, 1.25).moved(0.0, 0.16, 0.0),
             Mesh.ball(10, 6, 0.06, 1.6).scaled(0.6, 1.0, 1.0).moved(0.13, 0.16, 0.0));
@@ -56,9 +50,9 @@ final class SlamHands {
     private static Shape[][] bones() {
         Shape[][] bones = new Shape[5][3];
         for (int f = 0; f < 5; f++) {
-            double r = f < 4 ? FINGERS[f][1] : THUMB[0];
+            double r = SlamHandRig.thickness(f);
             for (int b = 0; b < 3; b++) {
-                double length = f < 4 ? FINGERS[f][2 + b] : THUMB[1 + b];
+                double length = SlamHandRig.length(f, b);
                 double thick = r * (1.0 - 0.06 * b);
                 Mesh bone = Mesh.lathe(10, 1.0, 0.0, -0.01, thick * 0.75, -0.01, thick, thick * 0.35, thick,
                         length - thick * 0.35, thick * 0.75, length + 0.01, 0.0, length + 0.01).scaled(0.9, 1.0, 1.0);
@@ -75,23 +69,14 @@ final class SlamHands {
 
     private static void hand(LanternPainter painter, Frame frame, Moment m, double[] curl, boolean ring) {
         SlamPainter.piece(painter, PALM, frame, m);
+        Frame[] bones = SlamHandRig.frames(frame, curl);
         for (int f = 0; f < 5; f++) {
-            Frame joint;
-            if (f < 4) {
-                joint = frame.moved(0.0, 0.30, FINGERS[f][0]);
-            } else {
-                joint = frame.moved(-0.04, -0.22, 0.40).turned(0.0, 0.0, 0.0, 1.0, 0.0, 0.0, Math.toRadians(40.0))
-                        .turned(0.0, 0.0, 0.0, 0.0, 0.0, 1.0, Math.toRadians(15.0));
-            }
             for (int b = 0; b < 3; b++) {
-                // Bending towards the palm, -x, turns about z; the middle joint bends furthest.
-                joint = joint.turned(0.0, 0.0, 0.0, 0.0, 0.0, 1.0, curl[f] * (b == 1 ? 1.2 : 0.9));
-                SlamPainter.piece(painter, BONES[f][b], joint, m);
+                Frame bone = bones[SlamHandRig.bone(f, b)];
+                SlamPainter.piece(painter, BONES[f][b], bone, m);
                 if (ring && f == 1 && b == 0) {
-                    SlamPainter.piece(painter, HAND_RING, joint, m);
+                    SlamPainter.piece(painter, HAND_RING, bone, m);
                 }
-                double length = f < 4 ? FINGERS[f][2 + b] : THUMB[1 + b];
-                joint = joint.moved(0.0, length, 0.0);
             }
         }
     }

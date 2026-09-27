@@ -1,7 +1,13 @@
-# Laatste sessie — 2026-09-27
+# Laatste sessie
 
-- **Vraag:** alles committen en pushen (na release v0.3.3-alpha: walking mech, langere Emerald Express, Thor, Dracula/Odin).
-- **Gedaan:** twee testregels in `CLAUDE.md` (Green Lantern-test wacht ~450 ticks na select; construct-shots via tijdelijke `Cinematic`-regisseur), versie 0.3.4-alpha, CHANGELOG-sectie, commit, push, release.
-- **Bestanden:** `CLAUDE.md`, `CHANGELOG.md`, `gradle.properties`, `docs/claude/latest.md`.
-- **Bewust niet in git:** `docs/copilot chat bonesxragdoll.txt` (projectregel: geen chats in de repo).
-- **Open:** ideeën #24 (NPC-companions) en #25 (volume voicelines) wachten op ja/nee.
+- Datum: 2026-09-27 (avond).
+- Vraag: "commit en push alles, doe daarna verder niks".
+- Gedaan: alles van de botten/ragdoll/physics-bouw (fase 1 t/m 12 + ronde 2) in één commit
+  'Bones, ragdolls and block-safe hands', gepusht naar origin/master en uitgebracht als v0.3.5-alpha
+  (`scripts/release.ps1 prepare` + `CHANGELOG.md`-blok vooraf, `publish` na de push).
+- Vooraf gecontroleerd: `gradlew build` groen (68 unit tests), geen namen/e-mails/lokale paden/tokens in de bestanden,
+  privé chat-bestand staat in `.gitignore`, geen gemengde regeleinden, geen testklassen of testwerelden meer.
+- Bestanden: heel `src/` van deze bouw, `build.gradle`, `gradle.properties`, `CHANGELOG.md`, `CLAUDE.md`, `.gitignore`,
+  `docs/claude/vervolg-2026-09-27.md` (overdracht, §1.1 is leidend), dit bestand.
+- Open (user wilde nu niets meer): vragen 1-4 uit de vorige beurt (altijd raken / hand-plek, tentakel om doelwit
+  wikkelen, mech-stamp, as-dood krachten); daarna bugs #30 (hoog), #28, #27, #29; ideeën #24/#25 wachten op ja/nee.
