@@ -316,6 +316,13 @@ abstract class GiantHandBase {
         String hand = HandPose.HANDS[HandPose.settingsOf(this.move)];
         living.hurt(level.damageSources().playerAttack(this.storm.owner),
                 (float) (damage * this.storm.ability.value(hand + "Damage")));
+        this.push(living, away, out, up);
+        ParticleFx.cloud(level, ParticleFx.dust(PowerRing.BRIGHT, 1.1F), living.getBoundingBox().getCenter(), 8,
+                0.3, 0.05);
+    }
+
+    void push(LivingEntity living, Vec3 away, double out, double up) {
+        String hand = HandPose.HANDS[HandPose.settingsOf(this.move)];
         double knockback = this.storm.ability.value("knockback") * this.storm.ability.value(hand + "Knockback");
         double resist = Mth.clamp(living.getAttributeValue(Attributes.KNOCKBACK_RESISTANCE), 0.0, 1.0);
         Vec3 flung = this.storm.awayFromHim(living, away);
@@ -326,8 +333,6 @@ abstract class GiantHandBase {
             // Players move themselves on their own client, so they have to be told about the push.
             living.hurtMarked = true;
         }
-        ParticleFx.cloud(level, ParticleFx.dust(PowerRing.BRIGHT, 1.1F), living.getBoundingBox().getCenter(), 8,
-                0.3, 0.05);
     }
 
     void end(ServerLevel level) {

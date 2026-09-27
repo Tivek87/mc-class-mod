@@ -39,8 +39,8 @@ import nl.tivek.multiversepowers.engine.math.Ease;
 import nl.tivek.multiversepowers.engine.math.Noise;
 import nl.tivek.multiversepowers.engine.math.Vectors;
 
-// What the evil eye and the megaphone do to a creature, as everyone sees it: strung up, a statue of hard light that
-// shatters; clasping its ears, trembling, bursting in a small green blast.
+// What the evil eye, the megaphone and the tear do to a creature, as everyone sees it: strung up, a statue of hard
+// light that shatters; clasping its ears, trembling, bursting in a small green blast; drawn out and torn in two.
 @EventBusSubscriber(modid = MultiversePowers.MODID, value = Dist.CLIENT)
 public final class HandVictims {
     private static final int STATUE = 0x4FE872;
@@ -50,6 +50,8 @@ public final class HandVictims {
     private static final int SPREAD_MOST = HandGroup.RING_BLASTS - HandGroup.HOLD_GRABS + 1;
     private static final double SPREAD_IN = 3.0;
     private static final int PUPPET_MOST = HandPose.EYE_SHATTERS - HandPose.EYE_STRINGS + 10;
+    private static final int STRETCH_MOST = HandGroup.TEARS - HandGroup.TEAR_GRABS + 2;
+    private static final int TORN_MOST = 40;
     private static final double MARIONETTE_IN = 4.0;
     private static final double FELT = 32.0;
     private static final float SPREAD_ARMS = 2.35F;
@@ -70,6 +72,11 @@ public final class HandVictims {
         int deaf = -1;
         int spread = -1;
         int pop = -1;
+        int stretch = -1;
+        int split = -1;
+        Vec3 anchor;
+        double ground;
+        double tall;
         AABB box;
         int latest;
     }
@@ -107,6 +114,15 @@ public final class HandVictims {
             case HandVictimPayload.DEAF -> victim.deaf = ticks;
             case HandVictimPayload.SPREAD -> victim.spread = ticks;
             case HandVictimPayload.POP -> victim.pop = ticks;
+            case HandVictimPayload.STRETCH -> victim.stretch = ticks;
+            case HandVictimPayload.SPLIT -> {
+                victim.split = ticks;
+                if (living != null) {
+                    victim.anchor = living.getBoundingBox().getCenter();
+                    victim.ground = HandVictimTears.groundBelow(minecraft.level, victim.anchor);
+                    victim.tall = living.getBbHeight();
+                }
+            }
             default -> {
             }
         }
@@ -190,14 +206,25 @@ public final class HandVictims {
         return victim.spread >= 0 && ticks - victim.spread < SPREAD_MOST;
     }
 
+    private static boolean stretched(Victim victim) {
+        return victim.stretch >= 0 && victim.split < 0 && ticks - victim.stretch < STRETCH_MOST;
+    }
+
+    private static boolean torn(Victim victim) {
+        return victim.split >= 0 && victim.anchor != null && ticks - victim.split < TORN_MOST;
+    }
+
     // Called once the model has taken its own pose: held by the ring blast's four hands a creature is spread out in an
-    // X, struggling; a deafened one clasps its ears and shakes its head.
+    // X, struggling; drawn out by the tear, an I; a deafened one clasps its ears and shakes its head.
     public static void pose(EntityModel<?> model, LivingEntity entity, float partialTick) {
         Victim victim = VICTIMS.get(entity.getId());
         if (victim == null || !(model instanceof HumanoidModel<?> humanoid)) {
             return;
         }
-        if (spread(victim)) {
+        if (torn(victim) || stretched(victim)) {
+            HandVictimTears.drawnOut(humanoid, victim.stretch < 0 ? HandVictimTears.DRAWN_IN
+                    : since(victim.stretch, partialTick), torn(victim));
+        } else if (spread(victim)) {
             spreadOut(humanoid, since(victim.spread, partialTick));
         } else if (puppet(victim)) {
             // A statue keeps the pose it was caught in.
@@ -298,17 +325,27 @@ public final class HandVictims {
             event.setCanceled(true);
             return;
         }
-        if (statue(victim)) {
+        if (statue(victim) || torn(victim)) {
             event.setCanceled(true);
             redrawing = true;
             try {
-                redraw(event, entity);
+                if (torn(victim)) {
+                    HandVictimTears.torn(event, entity, victim.anchor, victim.ground, victim.tall,
+                            since(victim.split, event.getPartialTick()), entity.getId());
+                } else {
+                    redraw(event, entity);
+                }
             } finally {
                 redrawing = false;
             }
             return;
         }
-        if (deaf(victim)) {
+        if (stretched(victim)) {
+            PoseStack pose = event.getPoseStack();
+            pose.pushPose();
+            HandVictimTears.stretch(pose, entity.getBbHeight(), since(victim.stretch, event.getPartialTick()));
+            PUSHED.add(entity.getId());
+        } else if (deaf(victim)) {
             double since = since(victim.deaf, event.getPartialTick());
             double on = Ease.smooth(since / EARS_IN);
             PoseStack pose = event.getPoseStack();
@@ -359,6 +396,10 @@ public final class HandVictims {
             double shattered = since(victim.shatter, partialTick);
             if (shattered >= 0.0 && shattered < SHARDS) {
                 shatter(painter, victim.box, shattered / SHARDS, seed);
+            }
+            if (torn(victim)) {
+                HandVictimTears.light(painter, victim.anchor, victim.ground, victim.tall,
+                        since(victim.split, partialTick), seed);
             }
             double popped = since(victim.pop, partialTick);
             if (popped >= 0.0 && popped < POP_TICKS) {

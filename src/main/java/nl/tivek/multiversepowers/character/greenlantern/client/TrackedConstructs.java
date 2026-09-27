@@ -502,12 +502,13 @@ abstract class TrackedConstructs {
             hard = AXE_SHAKE;
             near = 1.0 - from.distanceTo(strike) / AXE_SHAKE_RANGE;
         } else if (move == HandPose.FINGER || move == HandPose.SNAP || move == HandPose.HAMMER
-                || move == HandPose.RINGHOLD || move == HandPose.CLAP) {
+                || move == HandPose.RINGHOLD || move == HandPose.CLAP || move == HandPose.TEAR) {
             since = clock - switch (move) {
                 case HandPose.FINGER -> HandPose.FINGER_BURSTS;
                 case HandPose.SNAP -> HandPose.SNAP_HITS;
                 case HandPose.RINGHOLD -> HandGroup.RING_BLASTS;
                 case HandPose.CLAP -> HandGroup.CLAP_HITS;
+                case HandPose.TEAR -> HandGroup.TEARS;
                 default -> HandPose.HAMMER_HITS;
             };
             ticks = FINGER_SHAKE_TICKS;

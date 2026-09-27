@@ -27,6 +27,7 @@ final class GiantHandSpots {
     // Only what is out of the ground, wall or portal counts: below its surface a hand is not there.
     private static final double OUT = 0.35;
     private static final double FLOOR = 0.25;
+    private static final double TEAR_ROOM = 5.0;
     private static final double LEVEL_WIDE = 1.4;
     private static final double LEVEL_OFF = 0.6;
     // How much higher or lower than the creature's feet a hand may stand: most reach it from its own ground.
@@ -123,9 +124,23 @@ final class GiantHandSpots {
             return false;
         }
         if (HandGroup.is(move)) {
-            for (int t : new int[] { HandPose.firstAct(move), HandGroup.RING_PRESSES }) {
+            for (int t : HandGroup.roomAt(move)) {
                 for (HandGroup.Sub sub : HandGroup.at(move, base, facing, t)) {
-                    if (!open(level, sub.portal().center()) || !open(level, sub.place().wrist())) {
+                    HandDuo.Portal portal = sub.portal();
+                    // A wrist still behind its portal (the tear's, in the ground) needs no room.
+                    boolean out = sub.place().wrist().subtract(portal.center()).dot(portal.normal()) > 0.0;
+                    if (!open(level, portal.center()) || out && !open(level, sub.place().wrist())) {
+                        return false;
+                    }
+                }
+            }
+            if (HandPose.move(move) == HandPose.TEAR) {
+                // Ground for the lower portal, and room overhead for the creature to be drawn out and the upper hand.
+                if (!solid(level, base.subtract(0.0, target.getBbHeight() * 0.5 + 0.3, 0.0))) {
+                    return false;
+                }
+                for (double up = 1.0; up <= TEAR_ROOM; up += 1.0) {
+                    if (!open(level, middle.add(0.0, up, 0.0))) {
                         return false;
                     }
                 }

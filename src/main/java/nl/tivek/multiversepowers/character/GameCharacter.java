@@ -455,6 +455,10 @@ public enum GameCharacter {
             hand(hands, HandPose.RINGCHAINS, "Ring chains", HAND_CHANCE,
                     "a hand whose ring shoots chains of hard light round a creature, yanks it into its fist, squeezes"
                             + " it and hurls it away (only creatures small enough to hold)");
+            hand(hands, HandPose.TEAR, "Tear apart", HAND_CHANCE,
+                    "two hands out of portals, one overhead and one in the ground, drawing a creature out by its hands"
+                            + " and feet and pulling it apart, a jerk at a time, until it tears in two (only creatures"
+                            + " small enough to hold)");
             hand(hands, HandPose.AXE, "Pair with an axe", 0.24,
                     "a pair of hands chopping down with an axe (only where there is room for it)");
             hands.group("revolver", "Western Revolver Assembly (hold the button 2 seconds)")

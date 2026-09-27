@@ -897,7 +897,14 @@ Green Lantern's ultimate: a big, slow gunship of hard light high over the battle
   - **a ring chains:** a fist rises 12 blocks off to the side of the creature and points its ring at it; the ring
     charges and **shoots chains of hard light**, link by link, to the creature. They **wind round it** and hold it,
     and the fist **yanks it through the air** into its grip, squeezes it twice (**2.1 hearts** each) as the chains
-    break into solid links, and **hurls it away** from you (**6 hearts**). Only creatures small enough to hold.
+    break into solid links, and **hurls it away** from you (**6 hearts**). Only creatures small enough to hold;
+  - **a tear:** two **portals** open, one high over the creature and one on the ground under it. A hand reaches down
+    out of the upper one and grabs its **hands**, a hand reaches up out of the lower one and grabs its **feet**, and
+    they lift it and hold it drawn out straight in an **I**: arms up, head thrown back, struggling. Then they **pull
+    it apart**, a jerk at a time (**0.7 hearts** each), light crackling round it and a seam of light glowing round
+    its middle, stretching it longer and longer, until they **tear it in two** at its middle (**18 hearts**) in a
+    flash and a ring of light. Each half goes with its hand, the cut glowing green, then falls and tips over; a
+    creature that lives through it is hurled down and away. Only creatures small enough to hold.
 - **Ground or wall:** the smack, the grab, the middle finger, the slap, the pound, the finger snap, the claw rake, the
   ragdoll slam, the ring beam, the scoop, the evil eye (with its puppeteer) and the megaphone come out of a **wall**
   instead of the ground when the creature stands by one (more than half the time, and always when the ground round
@@ -929,7 +936,7 @@ Green Lantern's ultimate: a big, slow gunship of hard light high over the battle
   into the ground the creature stands on.
 - **Every kind of hand has its own settings** (smack, grab, middle finger, slap, pound, flick, pinch, finger snap,
   poke, hammer fist, claw rake, portal drag, ragdoll slam, ring blast, clap, finger gun, scissors, swallow, ring
-  beam, scoop, evil eye, megaphone, ring hammer, ring chains, axe pair; the catch goes by the ragdoll slam's, the
+  beam, scoop, evil eye, megaphone, ring hammer, ring chains, tear, axe pair; the catch goes by the ragdoll slam's, the
   puppeteer by the evil eye's): how often it comes compared with the others (0 = never; by default every kind is as
   likely as every other), the most of it in one press, and its damage and knockback as a factor of the usual. Out of the
   settings every kind still allowed is picked; when none is left, the press ends early.

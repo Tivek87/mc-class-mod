@@ -230,7 +230,7 @@ public final class ClientConstructs extends TrackedConstructs {
         }
         double scale = Math.max(0.1, hand.size());
         double reach = Math.sqrt(hand.facing().x * hand.facing().x + hand.facing().z * hand.facing().z) / scale;
-        Vec3 grip = HandGroup.is(hand.variant()) ? HandGroup.held(hand.center(), track.clock(1.0F))
+        Vec3 grip = HandGroup.is(hand.variant()) ? HandGroup.heldAt(hand.variant(), hand.center(), track.clock(1.0F))
                 : HandPose.at(hand.variant(), track.clock(1.0F), reach).place(hand.center(), hand.facing(), scale)
                         .at(HandPose.grip(hand.variant()));
         caught.setPos(grip.x, grip.y - caught.getBbHeight() * 0.5, grip.z);

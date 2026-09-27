@@ -34,6 +34,28 @@ public final class HandGroup {
     public static final int CLAP_HITS = ticks(CLAP_AT);
     private static final double CLAP_SCALE = 0.8;
     private static final double CLAP_WIDE = 6.5;
+    // Tear apart, in beats: a hand out of a portal overhead grips the creature's hands above its head, one out of a
+    // portal in the ground its feet; they draw it out, a jerk at a time, until it tears in two.
+    private static final double TEAR_REACH = 3.0;
+    private static final double TEAR_GRAB = 10.0;
+    private static final double TEAR_PULL = 12.0;
+    private static final double TEAR_STEP = 7.0;
+    private static final double TEAR_AT = 40.0;
+    private static final double TEAR_BACK = 43.0;
+    private static final double TEAR_GONE = 51.0;
+    public static final int TEAR_GRABS = ticks(TEAR_GRAB);
+    public static final int TEAR_PULLS = ticks(TEAR_PULL);
+    public static final int TEAR_PULL_EVERY = ticks(TEAR_STEP);
+    public static final int TEARS = ticks(TEAR_AT);
+    public static final int TEAR_LETS_GO = ticks(TEAR_BACK + 0.5);
+    // How long the creature is drawn out just before it tears, as a share of its own height.
+    public static final double TEAR_LONGEST = 1.6;
+    private static final double TEAR_SCALE = 0.6;
+    private static final double TEAR_LIFT = 1.3;
+    // Its raised hands above its middle, as a share of its height.
+    public static final double TEAR_ARMS = 0.66;
+    private static final double TEAR_YANK = 1.2;
+    private static final double TEAR_TALL = 1.95;
     private static final Vec3 GRIP = new Vec3(0.0, 3.05, 1.25);
     private static final Vec3 PALM = new Vec3(0.0, 1.55, 0.55);
     private static final double PORTAL = 2.6;
@@ -50,7 +72,63 @@ public final class HandGroup {
 
     public static boolean is(int variant) {
         int move = HandPose.move(variant);
-        return move == HandPose.RINGHOLD || move == HandPose.CLAP;
+        return move == HandPose.RINGHOLD || move == HandPose.CLAP || move == HandPose.TEAR;
+    }
+
+    // The creature's height rides in the tear's variant, in tenths of a block, so both sides agree where its ends are.
+    public static int tearCode(double height) {
+        return Mth.clamp((int) Math.round(height * 10.0), 1, 63);
+    }
+
+    public static double tearTall(int variant) {
+        int code = HandPose.extra(variant);
+        return code <= 0 ? TEAR_TALL : code / 10.0;
+    }
+
+    // How hard the tear's hands pull, 0 to 1: from the first jerk until it tears.
+    public static double tearStrain(double t) {
+        double beat = t / SLOW;
+        return HandMotion.window(beat, TEAR_PULL, TEAR_PULL + 1.0, TEAR_AT, TEAR_AT + 0.5);
+    }
+
+    // Where the tear's hands hold the creature at tick t: by its raised hands (top) or by its feet, drawn apart as it
+    // stretches and yanked further apart as it tears.
+    public static Vec3 tearGrip(boolean top, double tall, Vec3 held, double t) {
+        double beat = t / SLOW;
+        double stretch = tearStretch(t);
+        double shake = 0.04 * tearStrain(t) * Math.sin(beat * 11.0);
+        double yank = Ease.smoother((beat - TEAR_AT) / 1.2);
+        return top ? held.add(0.0, TEAR_ARMS * tall * stretch + TEAR_YANK * yank + shake, 0.0)
+                : held.subtract(0.0, (0.5 * tall - 0.1) * stretch + 0.6 * yank - shake, 0.0);
+    }
+
+    // How long the held creature is drawn out at tick t, as a share of its height: a jerk every few beats, each
+    // pulling it a little further, until it tears.
+    public static double tearStretch(double t) {
+        double beat = t / SLOW;
+        if (beat <= TEAR_PULL) {
+            return 1.0;
+        }
+        double steps = (TEAR_AT - TEAR_PULL) / TEAR_STEP;
+        double done = Math.min(steps, (beat - TEAR_PULL) / TEAR_STEP);
+        double pulled = (Math.floor(done) + Ease.smooth(Math.min(1.0, (done - Math.floor(done)) * 2.5))) / steps;
+        return 1.0 + (TEAR_LONGEST - 1.0) * Math.min(1.0, pulled);
+    }
+
+    // Where the torn creature's middle is: lifted off the ground once the hands have it.
+    public static Vec3 tearHeld(Vec3 center, double t) {
+        return center.add(0.0, TEAR_LIFT * Ease.smoother((t / SLOW - TEAR_GRAB) / 4.0), 0.0);
+    }
+
+    // Where a group holds its creature at tick t.
+    public static Vec3 heldAt(int variant, Vec3 center, double t) {
+        return HandPose.move(variant) == HandPose.TEAR ? tearHeld(center, t) : held(center, t);
+    }
+
+    // The moments a group must have room at before it comes.
+    public static int[] roomAt(int variant) {
+        return HandPose.move(variant) == HandPose.TEAR ? new int[] { TEAR_GRABS, TEARS }
+                : new int[] { HandPose.firstAct(variant), RING_PRESSES };
     }
 
     private static Vec3 flat(Vec3 facing) {
@@ -69,7 +147,38 @@ public final class HandGroup {
     }
 
     public static List<Sub> at(int variant, Vec3 center, Vec3 facing, double t) {
-        return HandPose.move(variant) == HandPose.CLAP ? clap(center, facing, t) : ringHold(center, facing, t);
+        return switch (HandPose.move(variant)) {
+            case HandPose.CLAP -> clap(center, facing, t);
+            case HandPose.TEAR -> tear(variant, center, facing, t);
+            default -> ringHold(center, facing, t);
+        };
+    }
+
+    // Both hands come from behind the creature, palms to the caster, fingers curled round it: one reaching down out of
+    // its portal overhead, one up out of its portal in the ground.
+    private static List<Sub> tear(int variant, Vec3 center, Vec3 facing, double t) {
+        double beat = t / SLOW;
+        double tall = tearTall(variant);
+        Vec3 held = tearHeld(center, t);
+        double strain = tearStrain(t);
+        double reach = Ease.smoother((beat - TEAR_REACH) / 6.0) * (1.0 - Ease.smoother((beat - TEAR_BACK) / 6.0));
+        double open = Ease.smoother((beat - 0.5) / 2.5) * (1.0 - Ease.smoother((beat - TEAR_GONE) / 3.0));
+        double grabbed = Ease.smoother((beat - TEAR_GRAB + 1.0) / 1.4)
+                * (1.0 - Ease.smoother((beat - TEAR_BACK) / 1.5));
+        Vec3 top = tearGrip(true, tall, held, t);
+        Vec3 bottom = tearGrip(false, tall, held, t);
+        Vec3 overhead = center.add(0.0, TEAR_LIFT + TEAR_ARMS * tall * TEAR_LONGEST + 2.6, 0.0);
+        Vec3 ground = center.subtract(0.0, 0.5 * tall - 0.05, 0.0);
+        Vec3 down = Vectors.UP.scale(-1.0);
+        Vec3 palm = square(flat(facing).scale(-1.0), Vectors.UP);
+        HandPose pose = fingers(0.72 * grabbed + 0.05 * strain * Math.sin(beat * 9.0), 0.22 * grabbed,
+                0.2 + 0.52 * grabbed, 0.9 - 0.85 * grabbed);
+        List<Sub> subs = new ArrayList<>();
+        subs.add(new Sub(pose, reaching(overhead, top, down, palm, GRIP, reach, TEAR_SCALE),
+                portalAt(overhead, down, PORTAL * TEAR_SCALE * 1.1, open), false));
+        subs.add(new Sub(pose, reaching(ground, bottom, Vectors.UP, palm, GRIP, reach, TEAR_SCALE),
+                portalAt(ground, Vectors.UP, PORTAL * TEAR_SCALE * 1.1, open), true));
+        return subs;
     }
 
     private static List<Sub> ringHold(Vec3 center, Vec3 facing, double t) {

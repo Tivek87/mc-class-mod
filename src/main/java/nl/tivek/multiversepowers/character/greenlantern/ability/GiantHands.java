@@ -298,7 +298,7 @@ public final class GiantHands extends GiantHandPlaces implements Effect {
     private boolean may(int move, boolean grabbable, boolean pair, boolean fresh) {
         boolean holds = move == HandPose.GRAB || move == HandPose.PINCH || move == HandPose.DRAG
                 || move == HandPose.RAGDOLL || move == HandPose.SWALLOW || move == HandPose.RINGHOLD
-                || move == HandPose.EYE || move == HandPose.RINGCHAINS;
+                || move == HandPose.EYE || move == HandPose.RINGCHAINS || move == HandPose.TEAR;
         return HandPose.pickable(move) && (!fresh || move != this.lastMove) && this.made[move] < this.most(move)
                 && (!holds || grabbable) && (move != HandPose.AXE || pair);
     }

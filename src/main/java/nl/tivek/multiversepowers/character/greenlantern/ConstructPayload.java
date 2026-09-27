@@ -105,7 +105,7 @@ public record ConstructPayload(int id, int owner, Vec3 center, Vec3 facing, floa
         buf.writeFloat(this.charge);
         buf.writeBoolean(this.held);
         buf.writeByte(this.shape);
-        buf.writeByte(this.variant);
+        buf.writeVarInt(this.variant);
         buf.writeVarInt(this.age);
         buf.writeBoolean(this.path != null);
         if (this.path != null) {
@@ -123,7 +123,7 @@ public record ConstructPayload(int id, int owner, Vec3 center, Vec3 facing, floa
         float charge = buf.readFloat();
         boolean held = buf.readBoolean();
         int shape = buf.readByte();
-        int variant = buf.readByte();
+        int variant = buf.readVarInt();
         int age = buf.readVarInt();
         ConstructPath path = buf.readBoolean() ? ConstructPath.read(buf) : null;
         return new ConstructPayload(id, owner, center, facing, size, solid, charge, held, shape, variant, age, path);

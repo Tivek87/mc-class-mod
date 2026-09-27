@@ -3,6 +3,27 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.3.0-alpha] - 2026-09-27
+
+**UNFINISHED / WORK IN PROGRESS:** the mod is still being built; things may change, break or be missing.
+
+### Added
+- **Giant Hands, tear apart:** a hand out of a portal overhead grabs a creature's hands, one out of a portal in the
+  ground its feet; they lift it, hold it drawn out in an I and pull it apart, a jerk at a time, until it tears in two.
+  Each half goes with its hand, its cut glowing green, then falls and tips over; a creature that lives through it is
+  hurled down and away.
+- **Settings:** the tear's chance, most per press, damage and knockback.
+- **Repository:** a new reference clip, `docs/reference/mech-robot-ultimate.mp4`.
+
+### Changed
+- **Code:** powers share a new piece that draws a model cut through at a plane, the cut filled in one colour.
+- **Rules for the makers:** notes on cropping test screenshots, the knockback a hit adds by itself, and hand
+  variants sent as whole numbers.
+
+### Fixed
+- **Giant Hands:** the ragdoll slam, and the axe pair in most directions, showed up as the wrong hand (or only its
+  portal) on screen, because the kind of hand was sent to the game in too small a number.
+
 ## [0.2.9-alpha] - 2026-09-27
 
 **UNFINISHED / WORK IN PROGRESS:** the mod is still being built; things may change, break or be missing.

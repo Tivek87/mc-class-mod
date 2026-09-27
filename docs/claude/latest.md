@@ -1,7 +1,11 @@
 # Laatste sessie — 2026-09-27
 
-- **Vraag (1):** handen even zeldzaam? (nee); whip fixen; rest afmaken; stemmen 3D en niet door elkaar; prik-hand, onzichtbare handen, clap-armen; X-pose ring blast; 2 nieuwe ring-handen; beam doorzichtig; gelijke kansen; oog/poppenspeler mooier. Commit `14bd1de`.
-- **Vraag (2):** alles committen en pushen, ALLE changes in de log.
-- **Gedaan (2):** alle 11 commits sinds v0.2.8-alpha nagelopen (berichten, instellingen, taalbestand, docs) tegen de changelog; ontbrekend toegevoegd: instellingen-labels grond/muur/portaal, Code, Repository (referentiegeluiden), regels voor de makers; dubbele water-regel weg, afbrekingen netjes, datum 2026-09-27. GREEN_LANTERN.md (NL) bijgewerkt: boze oog + poppenspeler, megafoon, ringhamer, ringkettingen, muurlijst, water, 1 hand per keer, gelijke kans. POWERS.md regelafbrekingen netjes.
-- **Release:** `scripts/release.ps1 prepare` (0.2.9-alpha bleef, nog niet uitgebracht), commit, push, `scripts/release.ps1 publish` → v0.2.9-alpha.
-- **Open:** niets; volgende push = volgende release (prepare verhoogt dan naar 0.3.0-alpha).
+- **Vraag (1-5):** eerdere vragen (whip, handen, release v0.2.9-alpha, config-namen, lijst nieuwe handen) afgerond.
+- **Vraag (6):** nieuwe Giant Hand "Tear apart": hand uit portaal boven grijpt de handen, hand uit portaal in de grond de voeten; wezen opgetild, uitgerekt in I-pose, 5 rukken (0,7 hart), scheurt bij het midden (18 harten). Helften = het echte model in tweeën, groen dicht snijvlak, gaan mee met de handen, vallen en kiepen om. Overlever wordt omlaag en weg gesmeten.
+  - Server: `GiantHandTears` (nieuw), `HandGroup` (tear-geometrie), `GiantHandSpots` (ruimte + grond), `GiantHandBase.push`.
+  - Client: `HandVictimTears` (nieuw: I-pose, stretch, helften), `HandGroupPainter.tear` (licht), engine `ClippedBuffers` (nieuw: model knippen op een vlak).
+  - Bug gefixt: `ConstructPayload` stuurde `variant` als byte → ragdoll-slam en bijl (13/16 richtingen) kwamen als verkeerde hand aan. Nu VarInt.
+  - Getest in-game (husk zij/speler-zicht, creeper): klopt. `gradlew build` OK. Testklasse, wereld en shots weg.
+  - Docs: POWERS, GREEN_LANTERN, PROJECT, CHANGELOG `[0.3.0-alpha]`; CLAUDE.md: 3 regels aangescherpt.
+- **Vraag (7):** "commit en push alles": versie 0.3.0-alpha, alles gecommit (ook `docs/reference/mech-robot-ultimate.mp4`), gepusht, release v0.3.0-alpha.
+- **Open voorstellen:** CLAUDE.md-zin "singleplayer encodeert niet" klopt niet; `GameCharacter.java` 597 regels (bijna splitsen); settings-namen "Portal drag"/"Pair with an axe".

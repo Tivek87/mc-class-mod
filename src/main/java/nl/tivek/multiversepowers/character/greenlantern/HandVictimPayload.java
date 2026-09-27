@@ -20,6 +20,9 @@ public record HandVictimPayload(int entity, int hand, int kind) implements Custo
     public static final int GLARE = 5;
     // Held spread-eagled by the four hands of the ring blast until it goes off.
     public static final int SPREAD = 6;
+    // Drawn out between the two hands of the tear, and torn in two by them.
+    public static final int STRETCH = 7;
+    public static final int SPLIT = 8;
 
     public static final CustomPacketPayload.Type<HandVictimPayload> TYPE = new CustomPacketPayload.Type<>(
             ResourceLocation.fromNamespaceAndPath(MultiversePowers.MODID, "hand_victim"));

@@ -265,9 +265,11 @@ abstract class GiantHandPlaces {
                 continue;
             }
             Vec3 facing = Vectors.spin(drag ? away.scale(-1.0) : away, Vectors.UP, turn);
-            Vec3 base = portalFor(target, move, facing);
-            if (this.clearOfOwner(base, target) && GiantHandSpots.portalRoom(level, target, move, base, facing)) {
-                GiantHand hand = new GiantHand(this.storm(), move, base, target, facing);
+            int variant = move == HandPose.TEAR
+                    ? HandPose.variant(move, false, false, HandGroup.tearCode(target.getBbHeight())) : move;
+            Vec3 base = portalFor(target, variant, facing);
+            if (this.clearOfOwner(base, target) && GiantHandSpots.portalRoom(level, target, variant, base, facing)) {
+                GiantHand hand = new GiantHand(this.storm(), variant, base, target, facing);
                 if ((HandGroup.is(move) || GiantHandSpots.clear(level, hand)) && this.fits(hand)) {
                     return hand;
                 }
