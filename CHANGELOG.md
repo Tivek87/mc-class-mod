@@ -3,6 +3,45 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.3.3-alpha] - 2026-09-27
+
+**UNFINISHED / WORK IN PROGRESS:** the mod is still being built; things may change, break or be missing.
+
+### Added
+- **Thor:** a playable character in the Other tab; becoming him, a harmless bolt of lightning strikes you and static
+  crawls over you.
+- **Thunderclap (Thor):** hold left click for 0.75 seconds to clap your hands in a thunderclap.
+- **Thunderclap gauge:** a small ring round the crosshair charges while you hold, pops with a flash and bolts when
+  full, counts the cooldown and glints when it is ready again.
+- **Dracula and Odin:** on the Other tab of the character wheel (coming soon).
+- **Walking mech:** once built, W and S walk the Hard-Light Mech and A and D turn it, with a full walk: planted
+  feet, bending knees, a bobbing and swaying body, swinging arms, thumping footfalls with dust and a ring of light.
+- **Mech terrain:** it climbs steps and slopes up to 3 blocks, wades through trees and plants and walks on water.
+- **Mech cockpit:** you sit on a seat behind a console, push and pull two levers as you walk and turn, and press
+  its buttons when you stand still; others see you do it.
+- **Mech third person:** the camera stands back behind and above the whole mech.
+- **Mech sounds:** a heavy step for every footfall.
+- **Express coaches:** four western coaches with lit windows and an observation car with tail lamps behind the
+  tender: the train is about 88 blocks long now.
+- **Express sounds:** a three-chime steam whistle, an engine bell, wheels clattering over the rail joints, a rumble
+  that follows the train, a toot for every new target, and crashes as the coaches come down.
+- **Express animation:** coaches rock as they run, puffs of light hang behind the stack, the coaches jackknife when
+  it derails and burst one after another after the boiler.
+
+### Changed
+- **Mech head:** a heavy, solid knight's helmet with a thick brow, glowing eye slits, a masked face with a grille,
+  cheek guards, a fin and swept-back horns, in place of the egg-shaped one.
+- **Mech cockpit window:** a round port of green glass in a thick flange of blocks, in place of the arched window
+  of keystones; the pilot sits further back in the chest.
+- **Mech clap:** the hands now meet palm flat on palm with the fingers side by side, instead of crossing.
+- **Express chuffs:** new, punchier chuff sounds.
+- **Express run:** it runs up to 220 blocks (was 110), always until its last coach is out of the portal.
+- **Thunder Clap bubble:** 20% smaller and shows for a shorter time.
+- **Character panel:** empty keys are no longer listed.
+
+### Removed
+- **Thunder Clap spell:** gone from the Lightning school; it is Thor's Thunderclap now.
+
 ## [0.3.2-alpha] - 2026-09-27
 
 **UNFINISHED / WORK IN PROGRESS:** the mod is still being built; things may change, break or be missing.

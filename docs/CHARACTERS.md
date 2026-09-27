@@ -1,6 +1,6 @@
-# Multiverse Personages (1 t/m 27)
+# Multiverse Personages (1 t/m 29)
 
-Dit document bevat de lore, achtergrond en belangrijkste krachten van de 27 personages uit het multiversum. Dit zijn hun officiële krachten uit de strips, films en verhalen, zonder vertaling naar Minecraft-spells of spelmechanieken.
+Dit document bevat de lore, achtergrond en belangrijkste krachten van de 29 personages uit het multiversum. Dit zijn hun officiële krachten uit de strips, films en verhalen, zonder vertaling naar Minecraft-spells of spelmechanieken.
 
 ---
 
@@ -384,3 +384,29 @@ Dit document bevat de lore, achtergrond en belangrijkste krachten van de 27 pers
   - Astrale projectie, vliegen via de *Cloak of Destiny*, telekinese en toekomstvoorspelling.
   - Bovenmenselijke kracht en onkwetsbaarheid wanneer doordrenkt met de magische essentie van Nabu.
 
+---
+
+### 28. Dracula (Graaf Dracula)
+- **Franchise:** Overig (Bram Stoker, *Dracula*, 1897; talloze films en strips)
+- **Wie hij is:** De eerste en beroemdste vampier: een eeuwenoude Transsylvaanse edelman die van het bloed van de levenden leeft.
+- **Lore & Achtergrond:** Graaf Dracula woont in een vervallen kasteel hoog in de Karpaten. Eeuwen geleden was hij een krijgsheer; door een verbond met duistere machten werd hij een ondode die niet kan sterven zolang hij bloed drinkt. Hij reist naar Engeland om zijn vloek te verspreiden, en wordt opgejaagd door Abraham Van Helsing en zijn gezellen. Hij is sluw, hoffelijk en wreed, en kan zich overdag niet vrij bewegen.
+- **Belangrijkste krachten & gaven:**
+  - Bovenmenselijke kracht, snelheid en een lichaam dat geneest zolang hij bloed drinkt.
+  - Gedaanteverwisseling: in een vleermuis, een wolf, mist of stof.
+  - Macht over nachtdieren: wolven, ratten en zwermen vleermuizen.
+  - Hypnotiserende blik en gedachtenbeheersing over zijn slachtoffers.
+  - Klimt als een hagedis langs muren en beheerst storm en mist.
+  - Zwakheden: zonlicht, knoflook, gewijde voorwerpen en een staak door het hart.
+
+---
+
+### 29. Odin (Allvader)
+- **Franchise:** Overig (Noorse mythologie; Marvel Comics, *Thor*)
+- **Wie hij is:** De Allvader, koning van Asgard en vader van Thor: de wijste en machtigste van de Noorse goden.
+- **Lore & Achtergrond:** Odin offerde een oog aan de bron van Mimir voor alle wijsheid en hing negen dagen aan de wereldboom Yggdrasil om de runen te leren. Vanaf zijn troon Hlidskjalf overziet hij de negen werelden, met zijn raven Huginn en Muninn die hem alles vertellen en zijn achtbenige paard Sleipnir. Hij heerst over Asgard, verzamelt de dapperste gevallen krijgers in Walhalla voor Ragnarok, en weet dat hij daar door de wolf Fenrir verslonden zal worden.
+- **Belangrijkste krachten & gaven:**
+  - De *Odinskracht*: een bijna onbegrensde kosmische energie voor stralen, schilden, genezing en scheppen.
+  - *Gungnir*: een speer die nooit mist en altijd terugkeert.
+  - Grote wijsheid, runenmagie en blikken in de toekomst.
+  - Gedaanteverwisseling en reizen tussen de negen werelden.
+  - Goddelijke kracht en een bijna eeuwig leven; de *Odinsslaap* om zijn krachten te herstellen.

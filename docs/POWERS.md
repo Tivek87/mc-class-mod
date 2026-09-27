@@ -31,7 +31,7 @@ Back to the [overview](PROJECT.md). The plain spells anyone can cast are in [Spe
 | DC | **Green Lantern**, The Flash, Black Adam, Doctor Manhattan, Darkseid, Doctor Fate |
 | Disney | Bill Cipher (Gravity Falls), Darth Vader (Star Wars, Lucasfilm) |
 | Warner Bros. | Rick Sanchez (Rick and Morty, Adult Swim) |
-| Other | Thor (Marvel, God of War), The Terminator (StudioCanal, Skydance), Spawn (Image Comics) |
+| Other | **Thor** (Marvel, God of War), The Terminator (StudioCanal, Skydance), Spawn (Image Comics), Dracula (Bram Stoker), Odin (Norse myth, Marvel) |
 
 The ones in bold can be played; the rest are coming.
 
@@ -51,24 +51,25 @@ kind of ability, so every character is free to put anything on any number. Learn
 they do depends purely on who you are. **Y is always the character's ultimate**: its biggest power, with a
 long cooldown; while it goes, the panel's title turns red and counts down.
 
-| Key | Ability | Doctor Octopus | Green Lantern |
-|---|---|---|---|
-| R | Ability 1 | Grab | Emerald Express |
-| V | Ability 2 | Multi-Tentacle | Construct Wheel |
-| Z | Ability 3 | Tentacle Dash | Recharge |
-| B (hold) | Ability 4 | Block | Light Bolt *(left click)* |
-| H | Ability 5 | Ground Slam | Light Shield *(right click)* |
-| N | Ability 6 | Portal | Ring Scan |
-| Y | Ability 7 | Octopus Rampage *(ultimate)* | Air Strike *(ultimate; hold: Mech Assembly)* |
-| X | Ability 8 | *(free)* | Shockwave |
-| C | Ability 9 | Feet or Tentacles | Flight |
-| Left Alt | Ability 10 | Ground Strike | Giant Hands |
-| K | Ability 11 | *(free)* | Light Cage |
-| Middle click | Ability 12 | *(free)* | Beam Lock |
+| Key | Ability | Doctor Octopus | Green Lantern | Thor |
+|---|---|---|---|---|
+| R | Ability 1 | Grab | Emerald Express | Thunderclap *(hold left click)* |
+| V | Ability 2 | Multi-Tentacle | Construct Wheel | |
+| Z | Ability 3 | Tentacle Dash | Recharge | |
+| B (hold) | Ability 4 | Block | Light Bolt *(left click)* | |
+| H | Ability 5 | Ground Slam | Light Shield *(right click)* | |
+| N | Ability 6 | Portal | Ring Scan | |
+| Y | Ability 7 | Octopus Rampage *(ultimate)* | Air Strike *(ultimate; hold: Mech Assembly)* | |
+| X | Ability 8 | *(free)* | Shockwave | |
+| C | Ability 9 | Feet or Tentacles | Flight | |
+| Left Alt | Ability 10 | Ground Strike | Giant Hands | |
+| K | Ability 11 | *(free)* | Light Cage | |
+| Middle click | Ability 12 | *(free)* | Beam Lock | |
 
 - Every key can be changed in Options > Controls, under "Multiverse Powers".
 - A panel in the bottom right shows who you are and what each key does right now, with its cooldown.
-- A key your character has nothing on shows as **Placeholder** on the panel, says so and does nothing.
+- Keys your character has nothing on are left off the panel and do nothing; the two Doctor Octopus keeps free for
+  later powers show as **Placeholder**.
 - Middle click is also pick block. While your character has nothing on it, middle click just picks blocks
   and stays quiet; once a character has an ability there, the ability wins.
 - **A character can also sit on the mouse.** Green Lantern does: left click shoots, right click puts up a
@@ -431,34 +432,49 @@ still going, it waits for you to try again.
 
 ### Emerald Express (key R)
 
-Press R and the ring calls up a giant western steam engine of hard light, which charges out beside you and rams
-every creature out to hurt you, one after another, until its brakes lock up, it jumps the rails, crashes onto its
-side and its boiler blows up.
+Press R and the ring calls up a giant western steam train of hard light, engine, tender and four coaches, which
+charges out beside you and rams every creature out to hurt you, one after another, until its brakes lock up, it
+jumps the rails, crashes onto its side with the coaches piling up behind it, and its boiler blows up.
 
 - **The portal:** at once a big ring of light opens on your right, a beam of your ring's light running into it.
-  Steam blasts out of it with a loud hiss, and you hear the engine get going: a heavy chuff... chuff...
-  chuff that comes ever faster, while the ground shakes a little under you.
+  Steam blasts out of it with a loud hiss, a three-chime steam whistle wails, the engine bell clangs, and you hear
+  the engine get going: a heavy chuff... chuff... chuff that comes ever faster, while the ground shakes a little
+  under you.
 - **The engine:** a 4-4-0 like the ones of the old west, 23 blocks long with its tender and taller than a house,
   all of solid green hard light: a cowcatcher with its slats, a headlamp throwing a beam of light ahead, a big
   balloon smokestack, the smokebox with its round door and your lantern emblem on it, the boiler with its bands,
   domes and bell, handrails and running boards, two cylinders, the cab with its windows and roof and the glow of
   the fire inside, and a tender stacked with logs, the emblem on its sides. Its four big driving wheels turn with
   their side rods and main rods pumping, the crossheads sliding, just like the real thing.
+- **The coaches:** behind the tender run **four coaches** of the old west, each on two bogies, with a row of lit
+  windows down both sides, panelled walls, your emblem on a medallion in the middle, a raised clerestory roof and an
+  open platform with steps and railings at each end. The last is an observation car: an open railed platform at the
+  back, a round drumhead with your emblem and two tail lamps. Couplings link them. The whole train is about
+  **88 blocks** long, and every car rocks gently to its own beat as it runs.
+- **Sounds:** besides the chuffs, the whistle and the bell, the wheels clatter over the rail joints under every
+  bogie that rolls past you, a low rumble rides along the train, and it gives a short toot each time it sets off
+  after a new creature.
 - **It thunders out of the portal** nose first and gathers speed to about 19 blocks a second. The stack puffs
-  steam with every chuff and steam jets out of its cylinders as it gets going.
+  steam with every chuff, and the puffs of light it throws hang in the air behind it, rising and thinning; steam
+  jets out of its cylinders as it gets going. The coaches follow it out of the portal, which stays open until the
+  last one is through.
 - **Rails of light** grow out of the light right in front of its wheels, and break up again behind the tender:
-  it lays its own track wherever it goes, over hills, across water and even through the air.
-- **It hunts:** once the whole train is out of the portal it turns towards the nearest creature out to hurt you
-  (within 24 blocks, ahead of it first) and runs it down. Every creature it rams takes **10 hearts** and is
-  thrown far aside; then it goes after the next one. It rams **6** at most, and runs **110 blocks** at most. Hard
-  light goes through walls, trees and houses without breaking a block.
-- **Derailed:** when nothing is left to ram (or it has rammed its six, or run its 110 blocks) its brakes lock with
-  a piercing screech and sparks shower off its wheels. It loses its balance, tips over onto the side it was
-  leaning to and slams down, then slides along the ground on its side in a shower of sparks until it stops.
+  it lays its own track wherever it goes, over hills, across water and even through the air, and the whole train
+  runs along it.
+- **It hunts:** once the engine and its tender are out of the portal it turns towards the nearest creature out to
+  hurt you (within 24 blocks, ahead of it first) and runs it down. Every creature it rams takes **10 hearts** and is
+  thrown far aside; then it goes after the next one. It rams **6** at most, and runs **220 blocks** at most, but
+  always until its last coach is out of the portal. Hard light goes through walls, trees and houses without
+  breaking a block.
+- **Derailed:** when nothing is left to ram (or it has rammed its six, or run its 220 blocks) its brakes lock with
+  a piercing screech, the whistle wails and sparks shower off the wheels of every car. The engine loses its
+  balance, tips over onto the side it was leaning to and slams down, then slides along the ground on its side in a
+  shower of sparks until it stops. The coaches jackknife behind it: one after another each tips over the other way
+  from the one before and crashes down askew, throwing up earth and light.
 - **The boiler blast:** lying there, it hisses as a huge cloud of steam and smoke builds up round its boiler, which
   swells and cracks with light, faster and brighter... until it blows up with a massive bang and a shockwave:
-  **15 hearts** in the middle, half of it at the edge **7 blocks** out, and everything in it is thrown away. The
-  pieces fly apart and dissolve into green light at once.
+  **15 hearts** in the middle, half of it at the edge **7 blocks** out, and everything in it is thrown away. Then
+  the coaches burst one after another down the train. The pieces fly apart and dissolve into green light at once.
 - **Who it hits:** only creatures out to hurt you (the red ones, see "Who is red, yellow and green"), both the
   rams and the blast.
 - Stop being Green Lantern (die, log out, change dimension or pick someone else) and the train simply breaks up
@@ -467,7 +483,7 @@ side and its boiler blows up.
 | | |
 |---|---|
 | Ram | 10 hearts to every creature out to hurt you in its way, thrown far aside |
-| Hunting | the nearest creature out to hurt you within 24 blocks, 6 at most, 110 blocks at most |
+| Hunting | the nearest creature out to hurt you within 24 blocks, 6 at most, 220 blocks at most |
 | Boiler blast | 15 hearts in the middle, half at the edge 7 blocks out |
 | Power | 6 |
 | Cooldown | 12 s |
@@ -766,8 +782,10 @@ Green Lantern's ultimate: a big, slow gunship of hard light high over the battle
   that creature on its spot the whole time; with no such creature it rises round you. It needs ground under it.
 - **The look.** Like the one in Green Lantern's super move: every part is round and covered in hundreds of raised
   tiles of deep green hard light, each with a glowing rim. Slim tall shins on clawed feet, square-cut thighs, a
-  barrel chest with a tall arched window, domed shoulders with horns, big gauntlet forearms with three-jointed
-  fingers, and a tall egg-shaped helmet with a pointed face plate, a crest over the top and two thin horns.
+  barrel chest with a round port of see-through green glass in a thick flange of blocks, domed shoulders with
+  horns, big gauntlet forearms with three-jointed fingers, and a heavy knight's helmet of big solid plates: a thick
+  brow jutting over two glowing eye slits, a faceted mask with a grille for a mouth down to a pointed chin, cheek
+  guards, a tall fin over the crown and two horns swept back from the temples.
 - **Filmed like a movie.** While it builds (about 10 seconds) your camera films it shot by shot: side on as the
   foot comes down, from above as the hands clap, close on the chest, low as the head falls, beside the crater as it
   tumbles back up, close on the chest again as it locks on. Then it hands you the view from the cockpit. Your own
@@ -777,19 +795,32 @@ Green Lantern's ultimate: a big, slow gunship of hard light high over the battle
   spikes and a ring of dust. The second foot comes down beside it. Then both step off and stand apart.
 - **The leap.** You leap up to where the chest will be and hang there in a blinding light, inside a bubble of
   see-through light, while the mech builds up from its feet behind a fizzing, crackling edge: knees, thighs, hips.
-  A big ring of your lantern's light stands behind the chest while it builds.
+  A big ring of your lantern's light stands behind the chest while it builds. The bubble shrinks away as the glass
+  of the port forms in the closed chest.
 - **The hands.** Two giant tiled forearms with open hands come spinning in out of the sky and reach down to the
-  creature. Your own arms spread and the hands spread wide round it; you swing your arms in and the hands **clap it**
-  between them from both sides (**3 hearts**, a star of light) and squeeze it.
+  creature. Your own arms spread and the hands spread wide round it, palms facing; you swing your arms in and the
+  hands **clap it** between them from both sides, palm flat on palm with the fingers side by side (**3 hearts**, a
+  star of light), and squeeze it.
 - **The chest.** The hands let go and rise while the barrel of the chest, the shoulder armour and the upper arms
-  build round you and lock onto the forearms. You **stand in the chest**, looking out through an arched window in a
-  rim of keystones, a control stick in each hand. Everyone sees you standing in there.
+  build round you and lock onto the forearms. A seat, a console with buttons and two levers grow in the cockpit
+  deep in the chest; you **sit down**, take a lever in each hand and look out through the round port of green
+  glass. Everyone sees you sitting in there.
 - **The head.** A helmet forms high in the sky above the creature out of a swirl of light shards, spinning, falls
   like a meteor and **crashes it into the ground** (**5 hearts**, a crater of light with cracks and flying earth).
   It tumbles head over heels back up out of the crater, over the mech and down onto its shoulders, locking on with a
-  hard **CLACK**, and the mech spreads its arms wide.
-- **Built:** the creature is let go and the arch round the window glows and breathes. For now the mech does nothing
-  more (this is still being built). You cannot move, fly or use your other powers while you are in it.
+  hard **CLACK**, and the mech spreads its arms wide, its eyes flaring.
+- **Built:** the creature is let go, the eyes glow and the rim round the glass breathes with light.
+- **Walking.** Now you walk it: **W** walks it forward, **S** backs it up, **A** and **D** turn it on the spot. It
+  gets going and slows down with its weight. Each foot stays planted where it came down until its turn to step:
+  the heel lifts, the leg swings through with the knee bent and the foot comes down with a thump that shakes the
+  ground, throws up dust and spreads a ring of light. The body bobs, sways over the leg it stands on and twists
+  with the stride, the arms swing against the legs, and turning on the spot it steps round on its feet. It climbs
+  steps and slopes up to 3 blocks, wades through trees and plants, walks over water, and stops at walls and cliffs.
+- **In the cockpit.** You push and pull the two levers as you walk and turn: both forward to walk, one forward and
+  one back to turn. Standing still you reach over to the console now and then and press a button, which lights up.
+  In first person you see your own hands on the levers through the glass; in third person the camera stands back
+  behind and above the whole mech, so it never blocks your view.
+- **Walking is all it does:** you cannot fly, jump or use your other powers while you are in it.
 - **Leaving it:** hold Y for 2 seconds again (the ring round your crosshair says *Leave the mech*): the mech breaks
   into solid pieces that dissolve into light, and you float gently down to the ground. Die, log out or stop being
   Green Lantern and it breaks up as well.
@@ -1230,6 +1261,31 @@ The whole run takes about 12 seconds, longer when the creature runs.
   is let go.
 - A mob that was being held when its area unloaded (or the game closed) gets its normal behaviour back
   the next time it loads.
+
+---
+
+## Thor
+
+The god of thunder, from the Other franchise. For now he has one power; more will come.
+
+- **Becoming Thor:** a bolt of lightning strikes you out of the sky with a crack of thunder (it does no harm and
+  lights no fire), a flash of blue light spreads round your feet, and static keeps crawling over you for about two
+  seconds.
+
+### Thunderclap (hold left click for 0.75 seconds)
+
+- **Hold the attack button** with empty hands. A small ring round your crosshair charges up from the top in blue,
+  crackling at its tip; after **0.75 seconds** it is full and pops with a white flash and little bolts leaping out,
+  and Thor claps: he throws his arms wide as static builds in his hands, then slams them together in front of his
+  chest. Let go sooner and nothing happens.
+- **The clap:** a blinding blue-white light flares between the hands, thunder cracks, and a bubble in which time all
+  but stands still swells out of the hands and rolls ahead the way you aim, sparks crawling slowly inside it; rings
+  of light ripple over the ground and a wall of mist rolls forward. The bubble is **4 blocks** across at most and
+  gone again after about **0.6 seconds**.
+- **What it hits:** creatures out to hurt you in a cone where you aim, **9 blocks** long and about 90 degrees wide:
+  **2.5 hearts** close to you, down to half at the edge, and each is thrown away from you and up.
+- **Cooldown:** 10 seconds. While it cools down a thin blue arc round the crosshair counts the wait, and a glint
+  runs round the ring the moment it is ready again. Its cooldown and damage are settings.
 
 ---
 
