@@ -1,0 +1,471 @@
+package nl.tivek.multiversepowers.character;
+
+import java.util.Map;
+import nl.tivek.multiversepowers.character.greenlantern.HandPose;
+import nl.tivek.multiversepowers.config.Unit;
+
+// Green Lantern's abilities, key by key, with every setting they have.
+final class LanternAbilities {
+    private static final double HAND_CHANCE = 0.2;
+
+    private LanternAbilities() {
+    }
+
+    static void fill(GameCharacter lantern, Map<AbilitySlot, CharacterAbility> abilities) {
+        lantern.add(abilities, AbilitySlot.ABILITY_1, "emerald_express").cooldown(240).damage(20.0)
+                .group("express_run", "The run")
+                .setting("knockback", 2.2, 0.0, 6.0, Unit.STRENGTH,
+                        "How hard the train throws what it rams, and what its boiler blast catches")
+                .setting("rangeBlocks", 24.0, 4.0, 64.0, Unit.BLOCKS,
+                        "How far from the train it looks for the next creature out to hurt you, in blocks")
+                .settingInt("mostRams", 6, 1, 30, Unit.COUNT,
+                        "How many creatures the train rams at most, one after another, before it brakes")
+                .setting("runBlocks", 110.0, 20.0, 400.0, Unit.BLOCKS,
+                        "How far the train runs at most before its brakes lock up and it leaves the rails, in"
+                                + " blocks")
+                .group("express_blast", "The boiler blast")
+                .setting("blastDamage", 30.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                        "Damage of the boiler blast in its middle, in half hearts; half of it at its edge")
+                .setting("blastRadius", 7.0, 1.0, 24.0, Unit.BLOCKS, "How far the boiler blast reaches, in blocks")
+                .group("express_power", "Ring power")
+                .setting("powerCost", 6.0, 0.0, 100.0, Unit.POWER,
+                        "Ring power the Emerald Express costs (a full ring holds 100)");
+        lantern.add(abilities, AbilitySlot.ABILITY_2, "construct_wheel").held().clientOnly()
+                .group("sword", "Sword (left click)")
+                .setting("swordDamage", 8.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                        "Damage of one cut or thrust, in half hearts; the heavy ones do more, the quick ones less")
+                .setting("swordReach", 3.2, 1.0, 8.0, Unit.BLOCKS, "How far the sword reaches, in blocks")
+                .setting("flurryDamage", 4.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                        "Damage of every one of the twelve stabs of the flurry (hold 2 seconds), in half hearts")
+                .setting("flurryPowerCost", 2.0, 0.0, 100.0, Unit.POWER, "Ring power one flurry costs")
+                .setting("guardDamageKept", 0.4, 0.0, 1.0, Unit.PART_KEPT,
+                        "Part of a hit from the front that still gets through the shield held before the chest"
+                                + " during the flurry (0.4 = 40%, so it takes 60%)")
+                .group("wheel_shield", "Shield (right button)")
+                .setting("blockDamageKept", 0.15, 0.0, 1.0, Unit.PART_KEPT,
+                        "Part of a hit from the front that still gets through the shield while you block (hold the"
+                                + " right button): 0.15 = 15%, so it takes 85%")
+                .setting("blockPowerPerSecond", 0.08, 0.0, 20.0, Unit.POWER_PER_SECOND,
+                        "Ring power holding the shield up to block costs a second")
+                .setting("chargeSpeed", 12.0, 4.0, 40.0, Unit.BLOCKS_PER_SECOND,
+                        "How fast the charge behind the shield runs (click the right button), in blocks per"
+                                + " second")
+                .was(16.0)
+                .setting("chargeSeconds", 1.4, 0.3, 10.0, Unit.SECONDS,
+                        "How long a charge runs at most, in seconds; a wall or a second click ends it sooner")
+                .was(3.0)
+                .setting("chargeDamage", 3.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                        "Damage of a ram of the shield to every creature in the way of a charge, in half hearts;"
+                                + " the heavier rams do a little more")
+                .setting("bashKnockback", 1.4, 0.0, 5.0, Unit.STRENGTH,
+                        "How hard a ram of the shield throws what stands in the way of a charge aside")
+                .setting("chargePowerCost", 2.0, 0.0, 100.0, Unit.POWER, "Ring power one charge costs")
+                .setting("slamDamage", 6.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                        "Damage in the middle of the small shockwave that ends a charge, in half hearts; half at"
+                                + " its edge")
+                .setting("slamRadius", 3.5, 0.5, 10.0, Unit.BLOCKS,
+                        "How far that shockwave reaches, in blocks")
+                .group("flame_sweep", "Plasma Flamethrower: flame attacks (left click)")
+                .setting("sweepDamage", 4.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                        "Damage of one flame attack to every creature it passes over, in half hearts (the quick "
+                                + "ones a little less, the heavy ones more)")
+                .setting("sweepReach", 5.5, 1.0, 12.0, Unit.BLOCKS,
+                        "How far the flame attacks reach, in blocks (the lunge further, the geyser, burst and "
+                                + "spin less)")
+                .setting("sweepPowerCost", 0.3, 0.0, 100.0, Unit.POWER, "Ring power one flame attack costs")
+                .group("flame_inferno", "Plasma Flamethrower: inferno (hold left 2 seconds)")
+                .setting("infernoDamage", 3.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                        "Damage the stream of fire does to everything in it, in half hearts, once every"
+                                + " infernoTicks")
+                .settingInt("infernoTicks", 4, 1, 40, Unit.TICKS, "Ticks between two hits of the stream")
+                .setting("infernoRange", 10.0, 3.0, 32.0, Unit.BLOCKS,
+                        "How far the stream of fire reaches, in blocks")
+                .setting("infernoPowerPerSecond", 1.0, 0.0, 100.0, Unit.POWER_PER_SECOND,
+                        "Ring power the stream of fire costs a second")
+                .setting("infernoOverheatSeconds", 15.0, 1.0, 120.0, Unit.SECONDS,
+                        "How long the stream of fire can pour without stopping before the gun overheats: it"
+                                + " then vents its steam and cannot fire for 2 seconds")
+                .group("flame_wall", "Plasma Flamethrower: wall of fire (click right)")
+                .setting("wallDamage", 3.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                        "Damage the wall of fire does to a creature in it, in half hearts, twice a second (half"
+                                + " as much again when it bursts up)")
+                .setting("wallSeconds", 3.0, 0.5, 30.0, Unit.SECONDS,
+                        "How long the wall of fire stands, in seconds")
+                .setting("wallWidth", 5.5, 2.0, 16.0, Unit.BLOCKS, "How wide the wall of fire is, in blocks")
+                .setting("wallPowerCost", 3.0, 0.0, 100.0, Unit.POWER, "Ring power one wall of fire costs")
+                .group("flame_vortex", "Plasma Flamethrower: vortex (hold right 2 seconds)")
+                .setting("vortexDamage", 3.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                        "Damage the vortex of fire does to every hostile creature in it, in half hearts, twice a"
+                                + " second; the burst when you let go does half as much again")
+                .setting("vortexRadius", 2.6, 1.0, 8.0, Unit.BLOCKS,
+                        "How far the vortex of fire reaches, in blocks")
+                .setting("vortexDamageKept", 0.5, 0.0, 1.0, Unit.PART_KEPT,
+                        "Part of a hit from any side that still gets through the vortex (0.5 = 50%, so it takes"
+                                + " 50%)")
+                .setting("vortexPowerPerSecond", 1.0, 0.0, 100.0, Unit.POWER_PER_SECOND,
+                        "Ring power the vortex of fire costs a second")
+                .group("flame_burn", "Plasma Flamethrower: green afterburn")
+                .setting("burnSeconds", 3.0, 0.0, 30.0, Unit.SECONDS,
+                        "How long a creature the flames touched keeps burning green, in seconds (0 = not at all)")
+                .setting("burnDamage", 2.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                        "Damage of the afterburn every second, in half hearts")
+                .group("whip", "Energy Whip: lashes (left click)")
+                .setting("whipDamage", 7.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                        "Damage of one lash, in half hearts; the heavy ones do more, the quick ones less, and a"
+                                + " crack of the tip 30% more")
+                .setting("whipLength", 10.0, 2.0, 16.0, Unit.BLOCKS,
+                        "How long the lash is, in blocks: how far the lashes and the whirlwind reach")
+                .was(4.5)
+                .group("whip_whirl", "Energy Whip: whirlwind (hold left 2 seconds)")
+                .setting("whirlDamage", 3.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                        "Damage the whirling lash does to every hostile creature round you, in half hearts, five"
+                                + " times a second")
+                .setting("whirlCrackDamage", 10.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                        "Damage of the hard crack ahead when you let go, in half hearts")
+                .setting("whirlPowerPerSecond", 1.0, 0.0, 100.0, Unit.POWER_PER_SECOND,
+                        "Ring power the whirlwind costs a second")
+                .group("whip_lasso", "Energy Whip: lasso (click right)")
+                .setting("lassoRange", 10.0, 3.0, 24.0, Unit.BLOCKS, "How far the lasso reaches, in blocks")
+                .setting("lassoDamage", 6.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                        "Damage when the caught creature smacks down at your feet, in half hearts")
+                .setting("lassoSlowSeconds", 2.0, 0.0, 30.0, Unit.SECONDS,
+                        "How long it stays slowed after that, in seconds")
+                .setting("lassoPowerCost", 2.0, 0.0, 100.0, Unit.POWER,
+                        "Ring power one lasso costs when it catches something")
+                .group("whip_spin", "Energy Whip: spinning shield (hold right 2 seconds)")
+                .setting("spinDamageKept", 0.4, 0.0, 1.0, Unit.PART_KEPT,
+                        "Part of a hit from the front that still gets through the spinning lash (0.4 = 40%, so it"
+                                + " takes 60%)")
+                .setting("spinPowerPerSecond", 0.3, 0.0, 20.0, Unit.POWER_PER_SECOND,
+                        "Ring power the spinning shield costs a second");
+        lantern.add(abilities, AbilitySlot.ABILITY_3, "recharge").cooldown(60)
+                .setting("powerRestored", 50.0, 1.0, 100.0, Unit.POWER,
+                        "How much power one touch of the lantern puts back in the ring (a full ring holds"
+                                + " 100)");
+        lantern.add(abilities, AbilitySlot.ABILITY_4, "light_bolt").held().mouse(CharacterAbility.Mouse.LEFT)
+                .holdVersion(40, CharacterAbility.Tap.PRESS).damage(6.0)
+                .group("bolt", "Light Bolt (tap the button)")
+                .settingInt("shotTicks", 6, 1, 100, Unit.TICKS,
+                        "Ticks before the next bolt can be shot (20 ticks = 1 second)")
+                .setting("powerCost", 0.16, 0.0, 100.0, Unit.POWER, "Ring power one bolt costs")
+                .was(1.0, 0.4)
+                .setting("speedBlocks", 2.4, 0.5, 10.0, Unit.BLOCKS_PER_TICK,
+                        "How far a bolt flies per tick, in blocks; while you fly, your own speed comes on top")
+                .setting("rangeBlocks", 48.0, 4.0, 128.0, Unit.BLOCKS,
+                        "How far a bolt flies before it fades, in blocks")
+                .group("beam", "Light Beam (hold the button 2 seconds)")
+                .setting("beamDamage", 5.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                        "Damage the beam does to everything in it, in half hearts, once every beamTicks")
+                .settingInt("beamTicks", 5, 1, 40, Unit.TICKS, "Ticks between two hits of the beam")
+                .setting("beamPowerPerSecond", 0.8, 0.0, 100.0, Unit.POWER_PER_SECOND,
+                        "Ring power the beam costs a second")
+                .was(5.0, 2.0)
+                .setting("beamRangeBlocks", 40.0, 4.0, 128.0, Unit.BLOCKS, "How far the beam reaches, in blocks")
+                .setting("beamKnockback", 0.25, 0.0, 3.0, Unit.STRENGTH,
+                        "How hard every hit of the beam drives what it hits back (0 = not at all)")
+                .setting("beamTopDamage", 3.0, 1.0, 20.0, Unit.STRENGTH,
+                        "Held longer, the beam grows through five stages (the first once it fires, then at 4, 6, 8"
+                                + " and 10 seconds of holding): at the fifth its damage is this many times the"
+                                + " first; the stages between climb to it, and so does its push")
+                .setting("beamTopPowerPerSecond", 5.0, 0.0, 100.0, Unit.POWER_PER_SECOND,
+                        "Ring power the beam costs a second at its fifth stage, the same for as long as you hold"
+                                + " it there; the stages before climb to it from beamPowerPerSecond")
+                .setting("beamTopRangeBlocks", 64.0, 4.0, 128.0, Unit.BLOCKS,
+                        "How far the beam reaches at its fifth stage, in blocks; the stages before climb to it"
+                                + " from beamRangeBlocks")
+                .setting("beamTopWalk", 0.3, 0.0, 1.0, Unit.PART_KEPT,
+                        "Part of your walking speed left at the beam's last stage; the first stage keeps 85%");
+        lantern.add(abilities, AbilitySlot.ABILITY_5, "light_shield").held().mouse(CharacterAbility.Mouse.RIGHT)
+                .holdVersion(40, CharacterAbility.Tap.RELEASE)
+                .group("shield", "Light Shield (tap the button)")
+                .setting("damageKept", 0.3, 0.0, 1.0, Unit.PART_KEPT,
+                        "Part of a hit from the front that still gets through the shield (0.3 = 30%, so it"
+                                + " takes 70%). Damage that goes straight through armour, and arrows that pierce,"
+                                + " are not stopped")
+                .was(0.35)
+                .setting("powerPerSecond", 0.08, 0.0, 20.0, Unit.POWER_PER_SECOND,
+                        "Ring power the shield costs a second while it is up")
+                .was(0.5, 0.2)
+                .group("dome", "Light Dome (hold the button 2 seconds)")
+                .setting("domeDamageKept", 0.6, 0.0, 1.0, Unit.PART_KEPT,
+                        "Part of a hit from any side that still gets through the dome: 0.6 = 60%, so it takes"
+                                + " 40%")
+                .setting("domePowerPerSecond", 0.24, 0.0, 20.0, Unit.POWER_PER_SECOND,
+                        "Ring power the dome costs a second")
+                .was(1.5, 0.6)
+                .group("ram", "Ram cone (the shield while you fly)")
+                .setting("ramDamage", 4.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                        "Damage of flying into a creature with the shield up, in half hearts, at the slowest"
+                                + " speed that rams")
+                .setting("ramDamagePerSpeed", 52.5, 0.0, 200.0, Unit.HALF_HEARTS_PER_SPEED,
+                        "Extra ram damage in half hearts for every block per tick you fly (about 0.09 at top"
+                                + " speed)")
+                .was(6.0, 10.5, 21.0)
+                .setting("ramKnockback", 1.4, 0.0, 6.0, Unit.STRENGTH,
+                        "How hard a ram throws a creature away; the faster you fly, the further it goes")
+                .setting("ramGroundPowerPerSecond", 2.0, 0.0, 50.0, Unit.POWER_PER_SECOND,
+                        "Extra ring power a second while you fly with the ram cone low along the ground or"
+                                + " scrape over it")
+                .setting("ramGroundBlocks", 1.5, 0.2, 6.0, Unit.BLOCKS,
+                        "How close above the ground the ram cone counts as scraping along it, in blocks");
+        lantern.add(abilities, AbilitySlot.ABILITY_6, "ring_scan").cooldown(160)
+                .setting("rangeBlocks", 56.0, 8.0, 128.0, Unit.BLOCKS,
+                        "How far the scan reaches, through walls and all, in blocks")
+                .was(32.0)
+                .setting("markSeconds", 21.0, 2.0, 120.0, Unit.SECONDS,
+                        "How long every creature the scan passed stays marked for you, in seconds")
+                .was(12.0)
+                .setting("powerCost", 2.0, 0.0, 100.0, Unit.POWER, "Ring power one scan costs");
+        lantern.add(abilities, AbilitySlot.ABILITY_7, "air_strike").cooldown(1800).damage(48.0).damageWas(40.0)
+                .holdVersion(40, CharacterAbility.Tap.RELEASE)
+                .setting("attackSeconds", 20.0, 2.0, 60.0, Unit.SECONDS,
+                        "How long the plane drones on and fires before it plunges down, in seconds; its engine"
+                                + " bursts and its jets race off in the last 1.8 seconds of it")
+                .was(10.0)
+                .setting("scanBlocks", 84.0, 8.0, 160.0, Unit.BLOCKS,
+                        "How far its sensor scans the ground round it for creatures to fire at, in blocks (the"
+                                + " Ring Scan reaches 56)")
+                .setting("powerCost", 20.0, 0.0, 100.0, Unit.POWER, "Ring power the air strike costs")
+                .group("guns", "The miniguns")
+                .setting("gunTicks", 3.72, 1.0, 100.0, Unit.TICKS,
+                        "Ticks between two rounds of one minigun; the two fire in turn, so together they fire"
+                                + " twice in that time (20 ticks = 1 second)")
+                .was(6.0, 4.6, 2.79)
+                .setting("gunDamage", 1.575, 0.0, 2000.0, Unit.HALF_HEARTS,
+                        "Damage of one round that strikes, in half hearts")
+                .was(3.0, 4.5)
+                .setting("gunSpread", 2.4, 0.0, 12.0, Unit.BLOCKS,
+                        "How far round what they aim at the rounds spread, in blocks: the wider, the fewer strike")
+                .group("missiles", "Homing missiles")
+                .settingInt("missileTicks", 40, 4, 400, Unit.TICKS,
+                        "Ticks between two missiles dropping out of the hatch in its belly (20 ticks = 1 second)")
+                .was(10.0)
+                .setting("missileDamage", 24.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                        "Damage of a missile to the creature it strikes, in half hearts; what else its blast"
+                                + " reaches takes less")
+                .was(8.0)
+                .setting("missileCraterRadius", 2.2, 0.0, 6.0, Unit.BLOCKS,
+                        "How wide the small crater a missile blows out of the ground is, from its middle, in blocks"
+                                + " (0 = none; the crash's block hardness applies here too)")
+                .group("jets", "The jets")
+                .settingInt("jetMissileTicks", 48, 4, 400, Unit.TICKS,
+                        "Ticks between two small missiles of one jet, fired at the creature out to hurt you nearest"
+                                + " to it (20 ticks = 1 second)")
+                .was(24.0)
+                .setting("jetMissileDamage", 2.5, 0.0, 2000.0, Unit.HALF_HEARTS,
+                        "Damage of a jet's small missile to the creature it strikes, in half hearts; what else its"
+                                + " small blast reaches takes less")
+                .was(5.0)
+                .group("crash", "The crash")
+                .setting("crashRadius", 24.1, 2.0, 200.0, Unit.BLOCKS,
+                        "How far the blast of the crash reaches, in blocks")
+                .was(12.0, 14.0, 16.0, 80.0, 96.4)
+                .setting("craterRadius", 2.4, 0.0, 16.0, Unit.BLOCKS,
+                        "How wide the crater the crash blows out of the ground is, from its middle, in blocks (0 ="
+                                + " no crater)")
+                .was(7.0, 8.0, 9.7)
+                .setting("breakHardness", 3.0, -1.0, 100.0, Unit.HARDNESS,
+                        "How hard a block may be for the crash to blow it away (dirt 0.5, stone 1.5, wood 2, iron"
+                                + " 5); -1 leaves the ground alone. Blocks that hold something, like chests, stay")
+                .settingInt("debrisBlocks", 40, 0, 400, Unit.BLOCK_COUNT,
+                        "How many of the crater's blocks are hurled up and away, to come down all round it")
+                .was(90.0, 158.0)
+                .group("mech", "Hard-Light Mech Assembly (hold the button 2 seconds)")
+                .setting("mechPowerCost", 25.0, 0.0, 100.0, Unit.POWER,
+                        "Ring power building the mech costs")
+                .settingInt("mechCooldown", 1800, 0, 72000, Unit.TICKS,
+                        "Ticks before the mech can be built again (20 ticks = 1 second); it has a cooldown of its"
+                                + " own, apart from the air strike of a tap")
+                .setting("mechReach", 12.0, 2.0, 32.0, Unit.BLOCKS,
+                        "How far in front of you the mech looks for the creature out to hurt you that it builds"
+                                + " itself over, in blocks")
+                .setting("mechStompDamage", 8.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                        "Damage of the giant foot stomping that creature, in half hearts; what else stands round the"
+                                + " foot takes up to half")
+                .setting("mechClapDamage", 6.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                        "Damage of the hands' clap to that creature, in half hearts; what else stands round it takes"
+                                + " up to half")
+                .setting("mechHeadDamage", 10.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                        "Damage of the head crashing down on that creature like a meteor, in half hearts; what else"
+                                + " stands round it takes up to half");
+        lantern.add(abilities, AbilitySlot.ABILITY_8, "shockwave").cooldown(100).damage(12.0)
+                .setting("radiusBlocks", 5.0, 1.0, 16.0, Unit.BLOCKS, "How far the shockwave reaches, in blocks")
+                .setting("knockback", 1.2, 0.0, 5.0, Unit.STRENGTH,
+                        "How hard the shockwave throws creatures away from where it strikes")
+                .setting("powerCost", 1.6, 0.0, 100.0, Unit.POWER,
+                        "Ring power one shockwave costs, also the one of a landing at full speed; without it you"
+                                + " just land")
+                .group("constructs", "The constructs")
+                .setting("constructScale", 1.35, 0.5, 3.0, Unit.STRENGTH,
+                        "How big the constructs are: 1 = the size they were made at, 1.35 = 35% bigger. The"
+                                + " bigger they are, the further in front of you they strike")
+                .setting("slowMotion", 1.5, 0.5, 4.0, Unit.STRENGTH,
+                        "How slowly the constructs play: 1 = the old pace, 1.5 = half again as slow, 2 = twice"
+                                + " as slow. The shockwave strikes that much later too");
+        lantern.add(abilities, AbilitySlot.ABILITY_9, "flight").cooldown(20)
+                .setting("powerCost", 0.8, 0.0, 100.0, Unit.POWER, "Ring power you need at least to take off")
+                .was(5.0, 2.0)
+                .setting("fullRingSeconds", 93.75, 1.0, 600.0, Unit.RING_SECONDS,
+                        "Seconds a full ring keeps you in the air: flying costs 100 divided by this a second,"
+                                + " and what you shoot or hold up while flying comes on top")
+                .was(15.0, 37.5)
+                .setting("topSpeed", 1.8, 1.0, 150.0, Unit.BLOCKS_PER_SECOND,
+                        "Top speed in blocks per second (an elytra with firework rockets does about 33); hovering"
+                                + " and climbing without flying forward go at a part of it")
+                .was(50.0, 35.0, 19.25, 9.625, 6.25625, 18.0, 9.0, 4.5)
+                .setting("startSpeed", 1.2, 1.0, 150.0, Unit.BLOCKS_PER_SECOND,
+                        "Speed you set off at, in blocks per second: the longer you fly on, the faster you go, up"
+                                + " to the top speed")
+                .was(11.7, 6.4, 4.16, 12.0, 6.0, 3.0)
+                .setting("cruiseSpeed", 1.5, 1.0, 150.0, Unit.BLOCKS_PER_SECOND,
+                        "Cruising speed in blocks per second: flying on, you are up to it within a moment, and"
+                                + " from there you keep gaining, up to the top speed")
+                .was(13.0, 8.0, 5.2, 15.0, 7.5, 3.75)
+                .setting("cruiseSeconds", 0.5, 0.0, 60.0, Unit.SECONDS,
+                        "Seconds of flying on from the speed you set off at to the cruising speed (0 = straight"
+                                + " away)")
+                .was(3.0)
+                .setting("speedUpSeconds", 3.0, 0.0, 300.0, Unit.SECONDS,
+                        "Seconds of flying on from the cruising speed to the top speed (0 = straight away);"
+                                + " letting go of forward loses the speed again in a few seconds")
+                .was(12.0, 30.0, 5.6, 7.0)
+                .group("chunks", "The world ahead")
+                .settingInt("chunkRadiusBlocks", 128, 0, 256, Unit.BLOCKS,
+                        "How far around a flyer the server makes the world ready while he flies (made, loaded and"
+                                + " sent to him), in blocks, so he never flies into land that is not there yet;"
+                                + " 0 = only ahead of him")
+                .setting("chunkAheadSeconds", 8.0, 0.0, 30.0, Unit.SECONDS,
+                        "How many seconds of flying ahead of a flyer the server makes the world ready as well, along"
+                                + " the way he flies and at the speed he flies (at most 512 blocks ahead)");
+        CharacterAbility hands = lantern.add(abilities, AbilitySlot.ABILITY_10, "giant_hands").cooldown(600)
+                .holdVersion(40, CharacterAbility.Tap.RELEASE).damage(12.0)
+                .setting("radiusBlocks", 20.0, 4.0, 48.0, Unit.BLOCKS,
+                        "How far round you the hands come up at creatures out to hurt you, every way, in blocks"
+                                + " (20 = an area 40 blocks across)")
+                .settingInt("fewestHands", 1, 1, 2, Unit.COUNT,
+                        "TEMPORARY, for now at most 2 while the hands are being reworked: the fewest hands that"
+                                + " come up at every press; each press brings a number picked at random from this"
+                                + " to mostHands, one after another (the evil eye with its puppeteer and a pair"
+                                + " with an axe count as one)")
+                .was(4.0)
+                .settingInt("mostHands", 1, 1, 2, Unit.COUNT,
+                        "TEMPORARY, for now at most 2 while the hands are being reworked: the most hands that"
+                                + " come up at every press")
+                .was(8.0)
+                .settingInt("handTicks", 10, 1, 200, Unit.TICKS,
+                        "Ticks from one hand coming up to the next (20 ticks = 1 second); while five are up, the"
+                                + " next waits for one to go")
+                .setting("knockback", 2.0, 0.0, 5.0, Unit.STRENGTH,
+                        "How hard the hands send a creature flying (a middle finger bursting out of the ground and"
+                                + " the axe of a pair far harder)")
+                .setting("powerCost", 8.0, 0.0, 100.0, Unit.POWER, "Ring power the hands cost");
+        hand(hands, HandPose.SMACK, "Smack", 0.25, "a hand coming up beside a creature to swat it away");
+        hand(hands, HandPose.GRAB, "Grab and throw", 0.22,
+                "a hand grabbing a creature and throwing it (only creatures small enough to hold)");
+        hand(hands, HandPose.FINGER, "Middle finger", 0.12, "a middle finger bursting out of the ground");
+        hand(hands, HandPose.SLAM, "Slap flat", 0.22, "a hand slapping down flat on a creature");
+        hand(hands, HandPose.POUND, "Pound", 0.19, "a fist pounding a creature again and again");
+        hand(hands, HandPose.FLICK, "Flick", 0.2,
+                "a hand reaching out of a portal to flick a creature far away");
+        hand(hands, HandPose.PINCH, "Pinch and drop", 0.18,
+                "a hand reaching down out of a portal to pinch a creature, lift it high and drop it (only"
+                        + " creatures small enough to hold)");
+        hand(hands, HandPose.SNAP, "Finger snap", 0.18,
+                "a finger snap whose ring of light dazes every creature round it");
+        hand(hands, HandPose.POKE, "Poke", 0.18,
+                "a hand reaching out of a portal to poke a creature twice and then poke it flying");
+        hand(hands, HandPose.HAMMER, "Hammer fist", 0.18,
+                "a fist hammering down out of a portal overhead, pressing a creature into the ground");
+        hand(hands, HandPose.RAKE, "Claw rake", 0.18,
+                "a hand raking its claws down through a creature and along the ground");
+        hand(hands, HandPose.DRAG, "Portal drag", 0.16,
+                "a hand out of a portal that grabs a creature and races off, scraping it over the ground (only"
+                        + " creatures small enough to hold)");
+        hand(hands, HandPose.RAGDOLL, "Ragdoll slam", 0.16,
+                "a hand out of the ground or a wall that slams a creature down 2 to 5 times and flings it far,"
+                        + " sometimes caught in the air by a fist out of a portal (only creatures small enough to"
+                        + " hold)");
+        hand(hands, HandPose.RINGHOLD, "Ring blast", 0.14,
+                "four hands out of portals holding a creature spread out while a fifth sets its ring on it and"
+                        + " blasts it away (only creatures small enough to hold)");
+        hand(hands, HandPose.CLAP, "Clap", 0.16, "two hands out of portals clapping a creature between them");
+        hand(hands, HandPose.FINGERGUN, "Finger gun", 0.16,
+                "a hand out of a portal shooting three bolts of light from its finger");
+        hand(hands, HandPose.SCISSORS, "Scissors", 0.16, "a hand out of a portal snipping a creature twice");
+        hand(hands, HandPose.SWALLOW, "Swallow", 0.14,
+                "a hand pulling a creature down into a portal in the ground, out of which it falls from the sky"
+                        + " (only creatures small enough to hold)");
+        hand(hands, HandPose.RINGBEAM, "Ring beam", 0.16,
+                "a fist out of the ground or a wall firing a beam of light from its ring");
+        hand(hands, HandPose.SCOOP, "Scoop", 0.16,
+                "a hand out of the ground or a wall scooping a creature up and tossing it high");
+        hand(hands, HandPose.EYE, "Evil eye", 0.14,
+                "two hands at once, one with an eye in its palm and a puppeteer that strings up three creatures"
+                        + " near you like puppets, which the eye turns to statues of hard light that shatter (only"
+                        + " creatures small enough to hold)");
+        hand(hands, HandPose.MEGAPHONE, "Megaphone", 0.16,
+                "a hand blaring shockwaves through a megaphone: whatever they catch clasps its ears and bursts");
+        hand(hands, HandPose.RINGHAMMER, "Ring hammer", HAND_CHANCE,
+                "a fist out of the ground whose ring grows a hammer of hard light that it smashes down on a"
+                        + " creature, quaking the ground round it");
+        hand(hands, HandPose.RINGCHAINS, "Ring chains", HAND_CHANCE,
+                "a hand whose ring shoots chains of hard light round a creature, yanks it into its fist, squeezes"
+                        + " it and hurls it away (only creatures small enough to hold)");
+        hand(hands, HandPose.TEAR, "Tear apart", HAND_CHANCE,
+                "two hands out of portals, one overhead and one in the ground, drawing a creature out by its hands"
+                        + " and feet and pulling it apart, a jerk at a time, until it tears in two (only creatures"
+                        + " small enough to hold)");
+        hand(hands, HandPose.AXE, "Pair with an axe", 0.24,
+                "a pair of hands chopping down with an axe (only where there is room for it)");
+        hands.group("revolver", "Western Revolver Assembly (hold the button 2 seconds)")
+                .setting("revolverPowerCost", 25.0, 0.0, 100.0, Unit.POWER,
+                        "Ring power the Western Revolver Assembly costs")
+                .settingInt("revolverCooldown", 1200, 0, 12000, Unit.TICKS,
+                        "Ticks before the revolver show can be called again (20 ticks = 1 second); it has a"
+                                + " cooldown of its own, apart from the hands of a tap")
+                .setting("revolverStageBlocks", 14.0, 6.0, 40.0, Unit.BLOCKS,
+                        "How far in front of you the show takes place, in blocks (closer where there is no"
+                                + " room)")
+                .setting("revolverRadius", 28.0, 4.0, 64.0, Unit.BLOCKS,
+                        "How far round the show the hands look for creatures out to hurt you, in blocks")
+                .setting("revolverPewDamage", 2.0, 0.0, 100.0, Unit.HALF_HEARTS,
+                        "Damage of each of the five little bolts of the finger gun, in half hearts")
+                .setting("revolverShotDamage", 16.0, 0.0, 200.0, Unit.HALF_HEARTS,
+                        "Damage of each of the six revolver shots, in half hearts; a shot tears through"
+                                + " everything in its line")
+                .setting("revolverSlamDamage", 12.0, 0.0, 200.0, Unit.HALF_HEARTS,
+                        "Damage of each of the three grip slams in the middle of their shockwave, in half hearts"
+                                + " (half that at the edge)")
+                .setting("revolverKnockback", 1.0, 0.0, 5.0, Unit.STRENGTH,
+                        "How hard the shots and slams send a creature flying");
+        lantern.add(abilities, AbilitySlot.ABILITY_11, "light_bubble").cooldown(240).damage(12.0)
+                .crouch(CharacterAbility.Crouch.UNDO)
+                .setting("rangeBlocks", 24.0, 4.0, 64.0, Unit.BLOCKS,
+                        "How far away a creature can be caught in a bubble, in blocks")
+                .setting("liftBlocks", 3.0, 0.0, 10.0, Unit.BLOCKS,
+                        "How high the cage first lifts its creature off the ground, in blocks; after that it"
+                                + " follows where you look until you smash it or let it go")
+                .setting("slamRadius", 4.5, 0.0, 10.0, Unit.BLOCKS,
+                        "How far the shockwave of the last slam of a pound reaches, in blocks (the slams before it"
+                                + " reach less far): what else stands in it is thrown away and takes half the"
+                                + " damage")
+                .was(3.5)
+                .setting("powerCost", 4.0, 0.0, 100.0, Unit.POWER, "Ring power catching a creature costs");
+        lantern.add(abilities, AbilitySlot.ABILITY_12, "beam_lock").cooldown(4);
+    }
+
+    // Every hand is as likely as every other; oldChance is the chance it had before, for config files that kept it.
+    static void hand(CharacterAbility ability, int move, String title, double oldChance, String what) {
+        String hand = HandPose.HANDS[move];
+        ability.group("hand_" + hand, title)
+                .setting(hand + "Chance", HAND_CHANCE, 0.0, 1.0, Unit.CHANCE,
+                        "How often " + what + " comes, weighed against the chances of the other hands (0 = never)")
+                .was(oldChance)
+                .settingInt(hand + "Most", 30, 0, 30, Unit.COUNT,
+                        "The most of these hands in one press (0 = never, 30 = no limit)")
+                .setting(hand + "Damage", 1.0, 0.0, 10.0, Unit.STRENGTH,
+                        "Damage of " + what + ", times its usual damage (1 = as it is, 0 = none)")
+                .setting(hand + "Knockback", 1.0, 0.0, 10.0, Unit.STRENGTH,
+                        "How hard " + what + " sends a creature flying, times the usual knockback (1 = as it is)");
+    }
+}

@@ -14,6 +14,7 @@ abstract class PainterSolid extends PainterCut {
     private static final double FINE_SIZE = 0.35;
     private static final double FINEST = 0.35;
     private static final double SEE_THROUGH_EDGE = 0.55;
+    private static final double CREASE_GLOW = 0.5;
     private static final int[][] SIDES = { { 0, 2, 6, 4 }, { 1, 5, 7, 3 }, { 0, 4, 5, 1 }, { 2, 3, 7, 6 },
             { 0, 1, 3, 2 }, { 4, 6, 7, 5 } };
 
@@ -34,6 +35,7 @@ abstract class PainterSolid extends PainterCut {
     double[] nz = new double[256];
     private boolean[] facingCamera = new boolean[256];
     double faint;
+    double creases;
 
     PainterSolid(PoseStack pose, Vec3 camera, float time, @Nullable Frustum frustum, Material material,
             boolean hand) {
@@ -118,6 +120,8 @@ abstract class PainterSolid extends PainterCut {
         int body = Colors.alpha(faint ? this.faint * solid : solid);
         double quiet = faint ? SEE_THROUGH_EDGE : 1.0;
         double fine = width * mesh.fine;
+        // A skin's sides facing away lie behind the body it covers, unless a cut or a see-through look opens it.
+        boolean hidden = mesh.skin && !faint && !this.clipping;
         this.nearFade = true;
         this.lidCount = 0;
         for (int s = 0; s < count; s++) {
@@ -134,14 +138,25 @@ abstract class PainterSolid extends PainterCut {
             double vz = this.camera.z - (this.wz[side[0]] + this.wz[side[2]]) * 0.5;
             double look = x * vx + y * vy + z * vz;
             this.facingCamera[s] = look > 0.0;
+            if (hidden && look <= 0.0) {
+                continue;
+            }
             double away = Math.sqrt(vx * vx + vy * vy + vz * vz);
             double face = away < 1.0E-6 ? 1.0 : Math.abs(look) / away;
             double ripple = 0.9 + 0.06 * Math.sin(this.time * 0.5 - mesh.middleZ[s] * 4.0);
             double light = (light(x, y, z) + this.ambient) * sheen(face) * ripple * bright * mesh.bright[s];
+            int rgb = this.mass(light);
+            if (mesh.glow != null && mesh.glow[s] > 0.0) {
+                double glow = mesh.glow[s];
+                rgb = Colors.mix(rgb, this.material.edge(), (float) glow);
+                if (glow > 1.0) {
+                    rgb = Colors.mix(rgb, this.material.hot(), (float) (glow - 1.0));
+                }
+            }
             if (this.clipping) {
-                this.cutAt(sides, side, this.mass(light), body, fine, solid * quiet, halo);
+                this.cutAt(sides, side, rgb, body, fine, solid * quiet, halo);
             } else {
-                this.quadAt(sides, side[0], side[1], side[2], side[3], this.mass(light), body);
+                this.quadAt(sides, side[0], side[1], side[2], side[3], rgb, body);
             }
         }
         if (this.clipping) {
@@ -149,12 +164,21 @@ abstract class PainterSolid extends PainterCut {
         }
         int edge = Colors.alpha(EDGE * solid * quiet);
         int glowing = halo ? Colors.alpha(HALO * solid * quiet) : 0;
+        int creaseEdge = Colors.alpha(EDGE * solid * quiet * this.creases);
+        int creaseGlow = halo ? Colors.alpha(HALO * solid * quiet * this.creases * CREASE_GLOW) : 0;
         double lift = 0.01 + 0.02 * fine;
         for (int e = 0; e < mesh.edgeFrom.length; e++) {
             int left = mesh.edgeLeft[e];
             int right = mesh.edgeRight[e];
-            if (left >= 0 && right >= 0 && this.facingCamera[left] == this.facingCamera[right]) {
+            boolean crease = false;
+            if (right < 0 && mesh.skin) {
                 continue;
+            }
+            if (left >= 0 && right >= 0 && this.facingCamera[left] == this.facingCamera[right]) {
+                if (mesh.skin || this.creases <= 0.0 || !this.facingCamera[left] || !mesh.edgeCrease[e]) {
+                    continue;
+                }
+                crease = true;
             }
             int from = mesh.edgeFrom[e];
             int to = mesh.edgeTo[e];
@@ -190,12 +214,13 @@ abstract class PainterSolid extends PainterCut {
                 by += (this.camera.y - by) * k;
                 bz += (this.camera.z - bz) * k;
             }
-            this.line(this.light, ax, ay, az, bx, by, bz, EDGE_WIDTH * fine, this.material.edge(), edge);
-            if (glowing > 0) {
+            this.line(this.light, ax, ay, az, bx, by, bz, EDGE_WIDTH * fine, this.material.edge(),
+                    crease ? creaseEdge : edge);
+            int aura = crease ? creaseGlow : glowing;
+            if (aura > 0) {
                 double length = Math.sqrt(sq(bx - ax) + sq(by - ay) + sq(bz - az));
                 this.line(this.glow, ax, ay, az, bx, by, bz, Math.min(HALO_WIDTH * fine, 0.9 * length),
-                        this.material.glow(),
-                        glowing);
+                        this.material.glow(), aura);
             }
         }
         this.nearFade = false;
@@ -258,12 +283,17 @@ abstract class PainterSolid extends PainterCut {
         }
         int edgeRgb = this.material.edge();
         int glowRgb = this.material.glow();
+        int creaseEdge = Colors.alpha(EDGE * ripple * solid * this.creases);
+        int creaseHalo = glowing ? Colors.alpha(HALO * solid * this.creases * CREASE_GLOW) : 0;
         for (int i = 0; i < 8; i++) {
             for (int axis = 0; axis < 3; axis++) {
                 int bit = 1 << axis;
-                if ((i & bit) != 0 || !rim(model, info, index, i, axis, view)) {
+                int seen = (i & bit) != 0 ? 0 : rim(model, info, index, i, axis, view);
+                if (seen == 0 || seen == 2 && this.creases <= 0.0) {
                     continue;
                 }
+                int lineAlpha = seen == 2 ? creaseEdge : edge;
+                int haloAlpha = seen == 2 ? creaseHalo : halo;
                 int a = 3 * i;
                 int b = 3 * (i | bit);
                 if (this.clipping) {
@@ -272,18 +302,23 @@ abstract class PainterSolid extends PainterCut {
                         this.lift(ends, 0, lift);
                         this.lift(ends, 3, lift);
                         this.line(this.light, ends[0], ends[1], ends[2], ends[3], ends[4], ends[5],
-                                EDGE_WIDTH * fine, edgeRgb, edge);
+                                EDGE_WIDTH * fine, edgeRgb, lineAlpha);
                         this.line(this.glow, ends[0], ends[1], ends[2], ends[3], ends[4], ends[5],
-                                HALO_WIDTH * fine, glowRgb, halo);
+                                HALO_WIDTH * fine, glowRgb, haloAlpha);
                     }
                     continue;
                 }
                 this.line(this.light, lifted[a], lifted[a + 1], lifted[a + 2], lifted[b], lifted[b + 1],
-                        lifted[b + 2], EDGE_WIDTH * fine, edgeRgb, edge);
+                        lifted[b + 2], EDGE_WIDTH * fine, edgeRgb, lineAlpha);
                 this.line(this.glow, lifted[a], lifted[a + 1], lifted[a + 2], lifted[b], lifted[b + 1],
-                        lifted[b + 2], HALO_WIDTH * fine, glowRgb, halo);
+                        lifted[b + 2], HALO_WIDTH * fine, glowRgb, haloAlpha);
             }
         }
+    }
+
+    // How much of the model's creases, the edges between two sides you see both of, to draw (0 = only outlines).
+    public void creases(double strength) {
+        this.creases = Math.max(0.0, strength);
     }
 
     private void quadCorners(Layer layer, int[] side, int rgb, int alpha) {
@@ -302,7 +337,8 @@ abstract class PainterSolid extends PainterCut {
         return Mth.clamp(middle / FINE_SIZE, FINEST, 1.0);
     }
 
-    private static boolean rim(double[][] model, ModelInfo info, int index, int corner, int axis, Vec3 view) {
+    // 1 for an outline (one of its two sides faces you), 2 for a crease (both do), 0 for neither or hidden inside.
+    private static int rim(double[][] model, ModelInfo info, int index, int corner, int axis, Vec3 view) {
         double[] box = model[index];
         int facing = 0;
         for (int other = 0; other < 3; other++) {
@@ -314,7 +350,7 @@ abstract class PainterSolid extends PainterCut {
                 facing++;
             }
         }
-        return facing == 1 && !info.covered()[index * 24 + corner * 3 + axis];
+        return info.covered()[index * 24 + corner * 3 + axis] ? 0 : facing;
     }
 
     private static double axis(Vec3 point, int index) {

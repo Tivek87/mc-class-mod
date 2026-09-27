@@ -30,6 +30,7 @@ import nl.tivek.multiversepowers.character.greenlantern.client.body.FlameArms;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.RingSpot;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.SwordArms;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.WhipArms;
+import nl.tivek.multiversepowers.character.greenlantern.client.mech.MechPainter;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.BeamCharge;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.BeamPainter;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.BubblePainter;
@@ -38,7 +39,6 @@ import nl.tivek.multiversepowers.character.greenlantern.client.render.FirePainte
 import nl.tivek.multiversepowers.character.greenlantern.client.render.FireStream;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.HandPainter;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.LanternPainter;
-import nl.tivek.multiversepowers.character.greenlantern.client.render.MechPainter;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.PlanePainter;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.RevolverPainter;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.RingSight;

@@ -7,6 +7,7 @@ public final class ClientSettings {
     public static final ModConfigSpec SPEC;
     public static final ModConfigSpec.DoubleValue CAMERA_SHAKE;
     public static final ModConfigSpec.DoubleValue RAM_GROUND_SHAKE;
+    public static final ModConfigSpec.IntValue MECH_CINEMATIC;
     public static final ModConfigSpec.IntValue THEME_MUSIC;
     public static final ModConfigSpec.IntValue UPDATE_CHECK;
     public static final ModConfigSpec.DoubleValue UPDATE_POPUP;
@@ -22,6 +23,9 @@ public final class ClientSettings {
         RAM_GROUND_SHAKE = builder.comment("How hard your view shakes while you fly with the ram cone low along the"
                 + " ground (0 = not at all); the camera shake above scales it too")
                 .defineInRange("ramGroundShake", 1.0, 0.0, 3.0);
+        MECH_CINEMATIC = builder.comment("Film your own mech while it builds itself, shot after shot like a movie,"
+                + " before you look out of its cockpit (1 = yes, 0 = keep your own view)")
+                .defineInRange("mechCinematic", 1, 0, 1);
         builder.pop();
         builder.push("sound");
         THEME_MUSIC = builder.comment("Play the multiverse theme in the main menu (1 = yes, 0 = the game's own menu music)")
@@ -62,5 +66,9 @@ public final class ClientSettings {
 
     public static float cameraShake() {
         return (float) get(CAMERA_SHAKE);
+    }
+
+    public static boolean mechCinematic() {
+        return get(MECH_CINEMATIC) != 0;
     }
 }

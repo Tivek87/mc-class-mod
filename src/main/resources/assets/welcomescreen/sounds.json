@@ -109,11 +109,35 @@
       }
     ]
   },
-  "mech.drill": {
-    "subtitle": "subtitles.welcomescreen.mech.drill",
+  "mech.build": {
+    "subtitle": "subtitles.welcomescreen.mech.build",
     "sounds": [
       {
-        "name": "welcomescreen:mech/drill"
+        "name": "welcomescreen:mech/build"
+      }
+    ]
+  },
+  "mech.whoosh": {
+    "subtitle": "subtitles.welcomescreen.mech.whoosh",
+    "sounds": [
+      {
+        "name": "welcomescreen:mech/whoosh"
+      }
+    ]
+  },
+  "mech.crash": {
+    "subtitle": "subtitles.welcomescreen.mech.crash",
+    "sounds": [
+      {
+        "name": "welcomescreen:mech/crash"
+      }
+    ]
+  },
+  "mech.surge": {
+    "subtitle": "subtitles.welcomescreen.mech.surge",
+    "sounds": [
+      {
+        "name": "welcomescreen:mech/surge"
       }
     ]
   }

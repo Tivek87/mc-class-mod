@@ -3,6 +3,38 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.3.2-alpha] - 2026-09-27
+
+**UNFINISHED / WORK IN PROGRESS:** the mod is still being built; things may change, break or be missing.
+
+### Added
+- **Mech film:** while your mech builds, your camera films it shot by shot like Green Lantern's super move, then
+  hands you the view from the cockpit; the new client setting *Film my mech* turns it off.
+- **Mech target:** the mech builds itself over the nearest creature out to hurt you in front of you (up to 12
+  blocks) and holds it on its spot until it is done.
+- **Sounds:** a crackling build, swooshes, the head's crash and a power surge for the mech.
+- **Settings:** the mech's reach, stomp damage (4 hearts) and head crash damage (5 hearts).
+- **Mech light ring:** a big ring of the lantern's light stands behind the mech's chest while it builds.
+- **Quick first mech:** the mech's parts are made ready in the background when the game starts, so the first mech
+  no longer makes the game stutter.
+
+### Changed
+- **Hard-Light Mech Assembly:** rebuilt beat for beat after the reference clip: a giant foot drops out of the sky
+  onto the creature, the mech builds up from its feet behind a fizzing edge while you leap into a bubble of light
+  in its chest, two flying forearms spin in and clap the creature from both sides as you swing your own arms, and
+  its head forms spinning out of a swirl of light shards, falls like a meteor onto the creature, tumbles head over
+  heels back up and locks onto its shoulders while the mech spreads its arms wide.
+- **The mech's look:** every part is now round and covered in hundreds of raised tiles with glowing rims, like the
+  clip's, in a deeper green: slim tall shins on clawed feet, square-cut thighs, a barrel chest with a tall arched
+  window of keystones, domed shoulders with horns, big gauntlet forearms and three-jointed fingers.
+- **The mech's head:** a tall egg-shaped helmet with a pointed face plate, a crest over the top and two thin horns.
+- **The mech's pilot:** stands in the chest with a control stick in each hand instead of sitting with levers.
+- **Clap damage:** now hits the held creature whole; what stands round it takes up to half.
+- **Rules for the makers:** the mech's pilot stands in a see-through bubble behind its window.
+
+### Removed
+- **The mech's drill:** its head no longer drills into the ground; the drill damage setting and sound are gone.
+
 ## [0.3.1-alpha] - 2026-09-27
 
 **UNFINISHED / WORK IN PROGRESS:** the mod is still being built; things may change, break or be missing.

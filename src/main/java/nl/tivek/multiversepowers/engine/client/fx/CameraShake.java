@@ -42,11 +42,21 @@ public final class CameraShake {
         if (strength <= 0.0F) {
             return;
         }
-        float time = clock + (float) event.getPartialTick();
-        float now = Math.max(0.0F, strength - fade * (float) event.getPartialTick());
-        event.setPitch(event.getPitch() + now * Mth.sin(time * 3.7F));
-        event.setYaw(event.getYaw() + 0.8F * now * Mth.sin(time * 4.3F + 1.3F));
-        event.setRoll(event.getRoll() + 0.6F * now * Mth.sin(time * 2.9F + 2.1F));
+        float[] jolt = jolt((float) event.getPartialTick());
+        event.setYaw(event.getYaw() + jolt[0]);
+        event.setPitch(event.getPitch() + jolt[1]);
+        event.setRoll(event.getRoll() + jolt[2]);
+    }
+
+    // The shake's turn right now, in degrees: yaw, pitch and roll.
+    public static float[] jolt(float partialTick) {
+        if (strength <= 0.0F) {
+            return new float[3];
+        }
+        float time = clock + partialTick;
+        float now = Math.max(0.0F, strength - fade * partialTick);
+        return new float[] { 0.8F * now * Mth.sin(time * 4.3F + 1.3F), now * Mth.sin(time * 3.7F),
+                0.6F * now * Mth.sin(time * 2.9F + 2.1F) };
     }
 
     @SubscribeEvent

@@ -25,7 +25,7 @@ import nl.tivek.multiversepowers.character.greenlantern.ability.SwordMove;
 import nl.tivek.multiversepowers.character.greenlantern.ability.WhipMove;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.BubblePainter;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.ExpressPainter;
-import nl.tivek.multiversepowers.character.greenlantern.client.render.MechPainter;
+import nl.tivek.multiversepowers.character.greenlantern.client.mech.MechPainter;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.PlanePainter;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.RevolverPainter;
 import nl.tivek.multiversepowers.character.greenlantern.client.slam.SlamPainter;
@@ -533,16 +533,11 @@ abstract class TrackedConstructs {
         return (float) (hard * fade * fade * Math.min(1.0, near * 1.2));
     }
 
-    // A mech its owner sits in: where it stands, how far it has come, and how far it has broken up (below 0: not).
-    public record Piloted(MechScript.Stage stage, double t, double startY, double broke) {
-        public Vec3 seat() {
-            return this.stage.point(0.0, this.broke >= 0.0 ? MechScript.lowered(this.broke)
-                    : MechScript.seatHeight(this.startY, this.t), 0.0);
-        }
-
-        public double sit() {
-            return this.broke >= 0.0 ? 1.0 - Ease.smooth(this.broke / 6.0)
-                    : Ease.smooth((this.t - MechScript.SIT_FROM) / (MechScript.SIT_TO - MechScript.SIT_FROM));
+    // A mech its owner stands in: where it stands, how far it has come, and how far it has broken up (below 0: not).
+    public record Piloted(MechScript.Stage stage, double t, double broke) {
+        public Vec3 feet() {
+            return this.stage.point(this.broke >= 0.0 ? MechScript.lowered(this.broke)
+                    : MechScript.pilot(this.stage, this.t));
         }
     }
 
@@ -553,11 +548,23 @@ abstract class TrackedConstructs {
             if (now.shape() != ConstructPayload.MECH || now.owner() != owner) {
                 continue;
             }
-            boolean breaking = now.variant() == MechScript.BREAKING;
+            boolean breaking = MechScript.breaking(now.variant());
             double broke = breaking ? Mth.lerp(partialTick, Math.max(0.0F, track.previous.charge()), now.charge())
                     : -1.0;
-            return new Piloted(MechScript.Stage.of(now.center(), now.facing()),
-                    breaking ? now.age() : track.clock(partialTick), now.size(), broke);
+            return new Piloted(MechScript.Stage.of(now), breaking ? now.age() : track.clock(partialTick), broke);
+        }
+        return null;
+    }
+
+    // The creature a building mech holds under its blows, and how far that build has come.
+    @Nullable
+    public static Piloted mechVictim(int entity, float partialTick) {
+        for (Track track : CONSTRUCTS.values()) {
+            ConstructPayload now = track.current;
+            if (now.shape() == ConstructPayload.MECH && !MechScript.breaking(now.variant())
+                    && MechScript.target(now.variant()) == entity) {
+                return new Piloted(MechScript.Stage.of(now), track.clock(partialTick), -1.0);
+            }
         }
         return null;
     }

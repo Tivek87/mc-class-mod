@@ -3,96 +3,89 @@ package nl.tivek.multiversepowers.character.greenlantern;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.engine.math.Ease;
-import nl.tivek.multiversepowers.engine.math.Vectors;
 
-// Places in blocks round the ground spot under the pilot: x to the mech's right, y up, z ahead.
+// The mech's build in ticks, timed on docs/reference/mech-robot-ultimate.mp4 (20 ticks = 30 frames of the clip). Places
+// are in blocks round its ground spot: x to its right, y up, z ahead, towards the target it builds itself over.
 public final class MechScript {
     public static final int BUILDING = 0;
     public static final int BREAKING = 1;
 
-    public static final int LIFT_END = 16;
-    public static final int BOOT_FORM = 6;
-    public static final int BOOT_GAP = 4;
-    public static final int FORM_TICKS = 8;
-    public static final int[] STOMPS = { 22, 26 };
-    public static final int DROP_TICKS = 4;
-    public static final int[] STEPS = { 40, 48, 56, 64 };
+    public static final int FOOT_FORM = 0;
+    public static final int FOOT_DROP = 8;
+    public static final int STOMP = 11;
+    public static final int FOOT2_FORM = 12;
+    public static final int FOOT2_DROP = 19;
+    public static final int STOMP2 = 22;
+    public static final int[] STEPS = { 34, 39 };
     public static final int STEP_TICKS = 8;
-    public static final int[] SHINS = { 66, 68 };
-    public static final int[] KNEES = { 76, 78 };
-    public static final int[] THIGHS = { 80, 82 };
-    public static final int HIPS = 90;
-    public static final int HIPS_LOCK = 96;
-    public static final int ARMS_FORM = 96;
-    public static final int SWING = 104;
-    public static final int CLAP = 112;
-    public static final int FLY = 116;
-    public static final int APEX = 128;
-    public static final int TORSO = 124;
-    public static final int TORSO_TICKS = 12;
-    public static final int SHOULDERS = 128;
-    public static final int GLASS = 134;
-    public static final int SIT_FROM = 124;
-    public static final int SIT_TO = 136;
-    public static final int ARMS_LOCK = 140;
-    public static final int HEAD_FORM = 150;
-    public static final int HEAD_AHEAD = 156;
-    public static final int DRILL = 162;
-    public static final int IMPACT = 168;
-    public static final int GRIND = 174;
-    public static final int HEAD_BACK = 186;
-    public static final int CLACK = 194;
-    public static final int DONE = 200;
+    public static final int LEAP = 30;
+    public static final int ABOARD = 50;
+    public static final int THIGHS = 48;
+    public static final int HIPS = 54;
+    public static final int CORE = 57;
+    public static final int FORM_TICKS = 8;
+    public static final int ARMS_FORM = 58;
+    public static final int ARMS_IN = 63;
+    public static final int SPREAD = 75;
+    public static final int SWING = 81;
+    public static final int CLAP = 86;
+    public static final int RELEASE = 97;
+    public static final int RISE = 103;
+    public static final int ARMOR = 100;
+    public static final int SHOULDERS = 104;
+    public static final int UPPER_ARMS = 108;
+    public static final int ELBOWS = 118;
+    public static final int STICKS = 118;
+    public static final int HEAD_FORM = 132;
+    public static final int HEAD_DROP = 144;
+    public static final int CRASH = 149;
+    public static final int HEAD_RISE = 157;
+    public static final int HEAD_LIFT = 162;
+    public static final int HEAD_LAND = 170;
+    public static final int LOCK = 176;
+    public static final int DONE = 188;
+    public static final int SETTLED = 200;
     public static final int BREAK_TICKS = 14;
 
-    public static final double SEAT_Y = 5.75;
-    public static final Vec3 GRIP = new Vec3(0.4, 6.98, 0.6);
-    public static final Vec3 CLAP_AT = new Vec3(0.0, 6.9, 4.6);
-    public static final Vec3 DRILL_AT = new Vec3(0.0, 0.0, 5.2);
-    public static final Vec3 NECK = new Vec3(0.0, 9.35, -0.1);
-    public static final double ARM_SCALE = 1.3;
-    public static final double LEG_WIDTH = 1.3;
-    public static final double FOOT_SCALE = 1.2;
-    public static final double PALM_ALONG = 2.55 * ARM_SCALE;
-    public static final double PALM_OUT = 0.2 * ARM_SCALE;
+    public static final double TARGET_AHEAD = 3.8;
+    public static final Vec3 ANKLE = new Vec3(2.05, 0.95, 0.05);
+    public static final Vec3 KNEE = new Vec3(2.05, 3.0, 0.3);
+    public static final Vec3 HIP = new Vec3(1.5, 4.85, -0.05);
+    public static final Vec3 SHOULDER = new Vec3(3.2, 8.2, 0.0);
+    public static final double UPPER_ARM = 1.9;
+    public static final double FOREARM = 2.3;
+    public static final double PALM_ALONG = FOREARM + 0.62;
+    public static final Vec3 COCKPIT = new Vec3(0.0, 6.0, 1.35);
+    public static final Vec3 STICK = new Vec3(0.45, 6.85, 1.72);
+    public static final Vec3 NECK = new Vec3(0.0, 9.1, 0.75);
+    public static final double HEAD_SCALE = 1.65;
+    public static final double HEAD_UP = 0.62 * HEAD_SCALE;
 
-    private static final Vec3[] FOOT_PATH = { new Vec3(4.2, 0.0, 2.2), new Vec3(2.8, 0.0, 1.1),
-            new Vec3(1.35, 0.0, 0.1) };
-    private static final Vec3[] LEFT_FOOT_PATH = { new Vec3(-4.2, 0.0, 2.6), new Vec3(-2.8, 0.0, 1.3),
-            new Vec3(-1.35, 0.0, 0.1) };
-    private static final double DROP_HEIGHT = 3.2;
-    private static final double STEP_HEIGHT = 1.1;
-    private static final double STEP_TOE_IN = 0.18;
+    private static final double FOOT_HIGH = 9.0;
+    private static final Vec3 FOOT_ON = new Vec3(0.35, 0.0, 0.0);
+    private static final Vec3 FOOT2_ON = new Vec3(-1.25, 0.0, -0.3);
+    private static final double STEP_HEIGHT = 1.3;
+    private static final double LEAP_RISE = 2.4;
+    private static final double HEAD_HIGH = 13.5;
+    private static final Vec3 HEAD_ABOVE = new Vec3(0.0, 13.6, 0.9);
+    private static final double HEAD_SINK = 0.5;
+    private static final double HEAD_LIFT_HIGH = 2.6;
+    private static final double HEAD_FORM_SPIN = Math.PI * 3.0;
+    private static final double HEAD_RISE_SPIN = -Math.PI * 2.0;
+    private static final double HEAD_FLIP = -Math.PI * 2.0;
 
-    public static final Vec3 ANKLE = new Vec3(1.35, 0.95, -0.15);
-    public static final Vec3 KNEE = new Vec3(1.35, 3.1, 0.25);
-    public static final Vec3 HIP = new Vec3(1.2, 5.0, -0.05);
-    public static final Vec3 SHOULDER = new Vec3(2.3, 7.85, -0.05);
-    public static final Vec3 ELBOW = new Vec3(3.1, 6.35, 0.25);
-
-    private static final Vec3 ARM_FROM = new Vec3(6.9, 6.3, 1.4);
-    private static final Vec3 ARM_FROM_WAY = new Vec3(-0.3, 0.25, 1.0).normalize();
-    private static final Vec3 CLAP_WAY = new Vec3(0.0, 0.15, 1.0).normalize();
-    private static final Vec3 ARM_APEX = new Vec3(3.6, 10.6, 1.2);
-    private static final Vec3 APEX_WAY = new Vec3(0.2, 1.0, 0.2).normalize();
-    public static final Vec3 ARM_WAY = new Vec3(0.75, 0.35, 0.55).normalize();
-    private static final Vec3 PALM_REST = new Vec3(-0.35, -0.1, 0.93);
-    private static final int FLY_TURNS = 3;
-
-    private static final Vec3 HEAD_FROM = new Vec3(0.0, 13.0, -0.1);
-    private static final Vec3 HEAD_OVER = new Vec3(0.0, 13.6, 5.2);
-    private static final Vec3 HEAD_DOWN = new Vec3(0.0, 0.55, 5.2);
-    private static final Vec3 HEAD_DEEP = new Vec3(0.0, 0.35, 5.2);
-    private static final Vec3 HEAD_HIGH = new Vec3(0.0, 11.6, -0.1);
-    private static final double[] SPIN_KEYS = { 150, 0.15, 156, 0.5, 162, 1.3, 168, 1.8, 174, 1.8, 180, 1.2, 186, 0.6,
-            194, 0.0 };
-    private static final double SPIN_RESIDUE = spinRaw(CLACK) % (Math.PI * 2.0);
-
-    public record Stage(Vec3 base, Vec3 ahead, Vec3 right) {
-        public static Stage of(Vec3 base, Vec3 facing) {
-            Vec3 flat = new Vec3(facing.x, 0.0, facing.z);
+    // Where the mech stands and faces, how high the target's feet are and where its pilot set off from.
+    public record Stage(Vec3 base, Vec3 ahead, Vec3 right, double targetY, double pilotY, double pilotZ) {
+        public static Stage of(Vec3 base, Vec3 toTarget, double pilotY, double pilotZ) {
+            Vec3 flat = new Vec3(toTarget.x, 0.0, toTarget.z);
             Vec3 ahead = flat.lengthSqr() < 1.0E-8 ? new Vec3(0.0, 0.0, 1.0) : flat.normalize();
-            return new Stage(base, ahead, new Vec3(-ahead.z, 0.0, ahead.x));
+            return new Stage(base, ahead, new Vec3(-ahead.z, 0.0, ahead.x), toTarget.y, pilotY, pilotZ);
+        }
+
+        // Read back from what the server sends (see MechAssembly.send).
+        public static Stage of(ConstructPayload mech) {
+            boolean building = !breaking(mech.variant());
+            return of(mech.center(), mech.facing(), building ? mech.charge() : COCKPIT.y, mech.size());
         }
 
         public Vec3 point(Vec3 local) {
@@ -106,184 +99,183 @@ public final class MechScript {
         public Vec3 dir(Vec3 local) {
             return this.right.scale(local.x).add(0.0, local.y, 0.0).add(this.ahead.scale(local.z));
         }
+
+        public Vec3 local(Vec3 world) {
+            Vec3 way = world.subtract(this.base);
+            return new Vec3(way.dot(this.right), way.y, way.dot(this.ahead));
+        }
+
+        public Vec3 target() {
+            return new Vec3(0.0, this.targetY, TARGET_AHEAD);
+        }
+
+        public Vec3 pilotFrom() {
+            return new Vec3(0.0, this.pilotY, this.pilotZ);
+        }
     }
 
-    // A foot turns (yaw) in radians, to the right.
-    public record Foot(Vec3 at, double yaw, double grown) {
-    }
-
-    public record Arm(Vec3 elbow, Vec3 way, Vec3 palm, double curl, double grown) {
+    // A creature under the mech's blows: how high it still stands (1 = all), how thin the clap has pressed it across
+    // and how far it hangs above the spot of its feet.
+    public record Victim(double high, double narrow, double lift) {
     }
 
     private MechScript() {
     }
 
-    public static double seatHeight(double startY, double t) {
-        return Mth.lerp(Ease.smoother(t / LIFT_END), startY, SEAT_Y);
+    // The variant sent with the mech: bit 0 whether it breaks up, the rest the target's entity id plus one.
+    public static int variant(boolean breaking, int target) {
+        return (target + 1) << 1 | (breaking ? BREAKING : BUILDING);
     }
 
-    public static double lowered(double since) {
-        return SEAT_Y * (1.0 - Ease.smoother(since / BREAK_TICKS));
+    public static boolean breaking(int variant) {
+        return (variant & 1) == BREAKING;
+    }
+
+    public static int target(int variant) {
+        return (variant >>> 1) - 1;
     }
 
     public static double grown(double t, double from) {
         return Mth.clamp((t - from) / FORM_TICKS, 0.0, 1.0);
     }
 
-    public static Foot foot(boolean right, double t) {
-        int i = right ? 0 : 1;
-        Vec3[] path = right ? FOOT_PATH : LEFT_FOOT_PATH;
-        double form = BOOT_FORM + i * BOOT_GAP;
-        double grown = grown(t, form);
-        double stomp = STOMPS[i];
+    // The ankle of a lower leg as it drops out of the sky onto the target and then steps back under the mech.
+    public static Vec3 ankle(boolean right, Stage stage, double t) {
+        Vec3 stance = right ? ANKLE : mirror(ANKLE);
+        Vec3 on = stage.target().add(right ? FOOT_ON : FOOT2_ON).add(0.0, ANKLE.y, 0.0);
+        double drop = right ? FOOT_DROP : FOOT2_DROP;
+        double stomp = right ? STOMP : STOMP2;
+        if (t < drop) {
+            return on.add(0.0, FOOT_HIGH, 0.0);
+        }
         if (t < stomp) {
-            double u = Mth.clamp((t - (stomp - DROP_TICKS)) / DROP_TICKS, 0.0, 1.0);
-            return new Foot(path[0].add(0.0, DROP_HEIGHT * (1.0 - u * u), 0.0), 0.0, grown);
+            double u = (t - drop) / (stomp - drop);
+            return on.add(0.0, FOOT_HIGH * (1.0 - u * u), 0.0);
         }
-        int step = 0;
-        for (int k = i; k < STEPS.length; k += 2) {
-            double end = STEPS[k];
-            if (t < end - STEP_TICKS) {
-                break;
-            }
-            if (t < end) {
-                double u = (t - (end - STEP_TICKS)) / STEP_TICKS;
-                Vec3 from = path[step];
-                Vec3 to = path[step + 1];
-                Vec3 at = from.lerp(to, Ease.smooth(u)).add(0.0, STEP_HEIGHT * Math.sin(Math.PI * u), 0.0);
-                double toe = (right ? -1.0 : 1.0) * STEP_TOE_IN * Math.sin(Math.PI * u);
-                return new Foot(at, toe, 1.0);
-            }
-            step++;
+        double lift = STEPS[right ? 0 : 1];
+        if (t < lift) {
+            return on;
         }
-        return new Foot(path[step], 0.0, 1.0);
+        double u = Mth.clamp((t - lift) / STEP_TICKS, 0.0, 1.0);
+        return on.lerp(stance, Ease.smooth(u)).add(0.0, STEP_HEIGHT * Math.sin(Math.PI * u), 0.0);
     }
 
-    // How far a foot has come down onto the ground, for the stomps and steps (negative before it lands).
+    // How long ago a foot came down, for the stomps and the steps (negative before it did).
     public static double landed(boolean right, double t) {
-        int i = right ? 0 : 1;
-        double since = t - STOMPS[i];
-        for (int k = i; k < STEPS.length; k += 2) {
-            if (t >= STEPS[k]) {
-                since = t - STEPS[k];
-            }
-        }
-        return since;
+        double stomp = right ? STOMP : STOMP2;
+        double step = STEPS[right ? 0 : 1] + STEP_TICKS;
+        return t >= step ? t - step : t - stomp;
     }
 
-    public static Arm arm(boolean right, double t) {
-        Arm arm = rightArm(t);
-        if (right) {
-            return arm;
-        }
-        return new Arm(mirror(arm.elbow()), mirror(arm.way()), mirror(arm.palm()), arm.curl(), arm.grown());
+    public static boolean stomping(boolean right, double t) {
+        return t < STEPS[right ? 0 : 1] + STEP_TICKS;
     }
 
-    private static Vec3 mirror(Vec3 v) {
-        return new Vec3(-v.x, v.y, v.z);
+    // Where the pilot stands, by the soles of their feet: still at first, then a leap up into the cockpit.
+    public static Vec3 pilot(Stage stage, double t) {
+        Vec3 from = stage.pilotFrom();
+        if (t < LEAP) {
+            return from;
+        }
+        if (t < ABOARD) {
+            double u = (t - LEAP) / (ABOARD - LEAP);
+            Vec3 at = from.lerp(COCKPIT, Ease.smoother(u));
+            return at.add(0.0, LEAP_RISE * Math.sin(Math.PI * Math.pow(u, 0.8)), 0.0);
+        }
+        return COCKPIT;
     }
 
-    private static Arm rightArm(double t) {
-        double grown = grown(t, ARMS_FORM);
-        Vec3 clapElbow = CLAP_AT.add(PALM_OUT * 2.0, 0.0, 0.0).subtract(CLAP_WAY.scale(PALM_ALONG));
-        Vec3 inward = new Vec3(-1.0, 0.0, 0.0);
-        if (t < SWING) {
-            return new Arm(ARM_FROM, ARM_FROM_WAY, square(inward, ARM_FROM_WAY), 0.05, grown);
-        }
-        if (t < CLAP) {
-            double u = Math.pow((t - SWING) / (CLAP - SWING), 2.2);
-            Vec3 way = ARM_FROM_WAY.lerp(CLAP_WAY, u).normalize();
-            Vec3 elbow = ARM_FROM.lerp(clapElbow, u).add(0.0, 0.6 * Math.sin(Math.PI * u), 0.0);
-            return new Arm(elbow, way, square(inward, way), 0.05 * (1.0 - u), 1.0);
-        }
-        if (t < FLY) {
-            double bounce = 0.14 * Math.sin(Math.PI * (t - CLAP) / (FLY - CLAP));
-            return new Arm(clapElbow.add(bounce, 0.0, 0.0), CLAP_WAY, square(inward, CLAP_WAY), 0.0, 1.0);
-        }
-        if (t < ARMS_LOCK) {
-            double u = (t - FLY) / (ARMS_LOCK - FLY);
-            double split = (double) (APEX - FLY) / (ARMS_LOCK - FLY);
-            Vec3 elbow;
-            Vec3 way;
-            if (u < split) {
-                double v = Ease.smooth(u / split);
-                elbow = hermite(clapElbow, new Vec3(3.0, 6.0, 0.0), ARM_APEX, new Vec3(0.0, 2.0, -2.0), v);
-                way = CLAP_WAY.lerp(APEX_WAY, v).normalize();
-            } else {
-                double v = Ease.smooth((u - split) / (1.0 - split));
-                elbow = hermite(ARM_APEX, new Vec3(0.0, 2.0, -2.0), ELBOW, new Vec3(-1.0, -4.0, 0.0), v);
-                way = APEX_WAY.lerp(ARM_WAY, v).normalize();
-            }
-            double spin = FLY_TURNS * Math.PI * 2.0 * (1.0 - Math.pow(1.0 - u, 2.0));
-            Vec3 facing = inward.lerp(PALM_REST, Ease.smooth(u)).normalize();
-            Vec3 palm = Vectors.spin(square(facing, way), way, spin);
-            double curl = 0.55 * Math.sin(Math.PI * Mth.clamp(u * 1.2, 0.0, 1.0));
-            return new Arm(elbow, way, palm, curl, 1.0);
-        }
-        double settle = Ease.recoil(t - ARMS_LOCK, 0.08, 0.9, 0.35);
-        Vec3 way = Vectors.spin(ARM_WAY, new Vec3(0.0, 0.0, 1.0), settle).normalize();
-        return new Arm(ELBOW, way, square(PALM_REST, way), 0.18, 1.0);
+    // The pilot floating back down to the ground while the mech breaks up round them.
+    public static Vec3 lowered(double since) {
+        return COCKPIT.scale(1.0 - Ease.smoother(since / BREAK_TICKS));
     }
 
-    private static Vec3 square(Vec3 palm, Vec3 way) {
-        Vec3 flat = palm.subtract(way.scale(palm.dot(way)));
-        return flat.lengthSqr() < 1.0E-8 ? Vectors.across(way)[0] : flat.normalize();
+    // The head's middle: made high above the target, dropped onto it, hauled back up and set onto the neck.
+    public static Vec3 head(Stage stage, double t) {
+        Vec3 target = stage.target();
+        Vec3 high = target.add(0.0, HEAD_HIGH, 0.0);
+        Vec3 sunk = target.add(0.0, HEAD_UP - HEAD_SINK, 0.0);
+        Vec3 neck = NECK.add(0.0, HEAD_UP, 0.0);
+        if (t < HEAD_DROP) {
+            return high.add(0.0, 0.25 * Math.sin((t - HEAD_FORM) * 0.25), 0.0);
+        }
+        if (t < CRASH) {
+            double u = (t - HEAD_DROP) / (CRASH - HEAD_DROP);
+            return high.lerp(sunk.add(0.0, HEAD_SINK, 0.0), u * u);
+        }
+        if (t < CRASH + 3.0) {
+            return sunk.add(0.0, HEAD_SINK * (1.0 - Ease.smooth((t - CRASH) / 3.0)), 0.0);
+        }
+        if (t < HEAD_RISE) {
+            return sunk;
+        }
+        Vec3 lifted = sunk.add(0.0, HEAD_LIFT_HIGH, 0.0);
+        if (t < HEAD_LIFT) {
+            return sunk.lerp(lifted, Ease.smooth((t - HEAD_RISE) / (HEAD_LIFT - HEAD_RISE)));
+        }
+        if (t < HEAD_LAND) {
+            double u = (t - HEAD_LIFT) / (HEAD_LAND - HEAD_LIFT);
+            return new Vec3(Ease.hermite(lifted.x, 0.0, HEAD_ABOVE.x, 0.0, Ease.smooth(u)),
+                    Ease.hermite(lifted.y, 16.0, HEAD_ABOVE.y, 0.0, u),
+                    Ease.hermite(lifted.z, 0.0, HEAD_ABOVE.z, -2.0, Ease.smooth(u)));
+        }
+        if (t < LOCK) {
+            double u = (t - HEAD_LAND) / (LOCK - HEAD_LAND);
+            return HEAD_ABOVE.lerp(neck, u * u);
+        }
+        return neck.add(0.0, -0.08 * Ease.recoil(t - LOCK, 1.0, 1.1, 0.35), 0.0);
     }
 
-    private static Vec3 hermite(Vec3 a, Vec3 speedA, Vec3 b, Vec3 speedB, double u) {
-        return new Vec3(Ease.hermite(a.x, speedA.x, b.x, speedB.x, u), Ease.hermite(a.y, speedA.y, b.y, speedB.y, u),
-                Ease.hermite(a.z, speedA.z, b.z, speedB.z, u));
+    // How the head is turned, in radians: about the upright, then tipped over about its own x, then rolled about its
+    // own z. It spins fast as it forms and slows to face down at the target, lies tipped in the crater, and tumbles
+    // head over heels on its way up and back down onto the neck, landing upright and facing ahead.
+    public record Turn(double yaw, double pitch, double roll) {
     }
 
-    public static Vec3 head(double t) {
-        if (t < HEAD_AHEAD) {
-            return HEAD_FROM;
+    public static Turn headTurn(double t) {
+        if (t < HEAD_DROP) {
+            double left = 1.0 - Mth.clamp((t - HEAD_FORM) / (HEAD_DROP - HEAD_FORM), 0.0, 1.0);
+            return new Turn(HEAD_FORM_SPIN * left * left, 0.0, 0.0);
         }
-        if (t < DRILL) {
-            return hermite(HEAD_FROM, new Vec3(0.0, 2.0, 0.0), HEAD_OVER, new Vec3(0.0, 0.0, 3.0),
-                    Ease.smooth((t - HEAD_AHEAD) / (DRILL - HEAD_AHEAD)));
+        if (t < CRASH) {
+            return new Turn(0.0, 0.25 * Ease.smooth((t - HEAD_DROP) / (CRASH - HEAD_DROP)), 0.0);
         }
-        if (t < IMPACT) {
-            double u = (t - DRILL) / (IMPACT - DRILL);
-            return HEAD_OVER.lerp(HEAD_DOWN, u * u);
+        if (t < HEAD_RISE) {
+            double settle = Ease.smooth((t - CRASH) / 3.0);
+            return new Turn(0.0, 0.25 - 0.1 * settle, 0.3 * settle);
         }
-        if (t < GRIND) {
-            return HEAD_DOWN.lerp(HEAD_DEEP, Ease.smooth((t - IMPACT) / (GRIND - IMPACT)));
-        }
-        if (t < HEAD_BACK) {
-            return hermite(HEAD_DEEP, new Vec3(0.0, 12.0, 0.0), HEAD_HIGH, new Vec3(0.0, 0.0, -6.0),
-                    Ease.smooth((t - GRIND) / (HEAD_BACK - GRIND)));
-        }
-        if (t < CLACK) {
-            double u = (t - HEAD_BACK) / (CLACK - HEAD_BACK);
-            return HEAD_HIGH.lerp(NECK, 1.0 - (1.0 - u) * (1.0 - u) * (1.0 - u));
-        }
-        return NECK.add(0.0, -0.06 * Ease.recoil(t - CLACK, 1.0, 1.0, 0.4), 0.0);
+        double u = Mth.clamp((t - HEAD_RISE) / (LOCK - HEAD_RISE), 0.0, 1.0);
+        double left = 1.0 - Ease.smoother(u);
+        return new Turn(HEAD_RISE_SPIN * left, 0.15 * left + HEAD_FLIP * left, 0.3 * left);
     }
 
-    // The head spins like a drill; it slows to a stop facing ahead just as it locks onto the neck.
-    public static double headSpin(double t) {
-        double raw = spinRaw(Math.min(t, CLACK));
-        return raw - SPIN_RESIDUE * Ease.smooth((t - (CLACK - 16.0)) / 16.0);
-    }
-
-    private static double spinRaw(double t) {
-        double angle = 0.0;
-        for (int k = 0; k + 3 < SPIN_KEYS.length; k += 2) {
-            double from = SPIN_KEYS[k];
-            double to = SPIN_KEYS[k + 2];
-            if (t <= from) {
-                break;
-            }
-            double end = Math.min(t, to);
-            double rateFrom = SPIN_KEYS[k + 1];
-            double rateTo = Mth.lerp((end - from) / (to - from), rateFrom, SPIN_KEYS[k + 3]);
-            angle += (rateFrom + rateTo) * 0.5 * (end - from);
+    public static Victim victim(double t) {
+        double high = 1.0;
+        if (t >= STOMP && t < STEPS[0] + STEP_TICKS) {
+            double lift = t - STEPS[0];
+            high = lift > 0.0 ? Mth.lerp(Ease.backOut(lift / STEP_TICKS), 0.18, 1.0)
+                    : Mth.lerp(Ease.smooth((t - STOMP) / 2.0), 1.0, 0.18);
         }
-        return angle;
+        if (t >= CRASH) {
+            double up = t - DONE;
+            high = up < 0.0 ? Mth.lerp(Ease.smooth((t - CRASH) / 2.0), 1.0, 0.22)
+                    : Mth.lerp(Ease.backOut(up / 9.0), 0.22, 1.0);
+        }
+        double narrow = 1.0;
+        double lift = 0.0;
+        if (t >= CLAP && t < RELEASE + 4.0) {
+            double in = Ease.smooth((t - CLAP) / 1.5) * (1.0 - Ease.smooth((t - RELEASE) / 4.0));
+            narrow = 1.0 - 0.55 * in;
+            lift = 0.35 * in * Ease.smooth((t - CLAP) / 6.0);
+        }
+        return new Victim(high, narrow, lift);
     }
 
     public static float working(double t) {
         return t < DONE ? 0.9F : 0.0F;
+    }
+
+    public static Vec3 mirror(Vec3 local) {
+        return new Vec3(-local.x, local.y, local.z);
     }
 }

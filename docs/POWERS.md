@@ -760,35 +760,44 @@ Green Lantern's ultimate: a big, slow gunship of hard light high over the battle
 
 ### Hard-Light Mech Assembly (hold Y for 2 seconds)
 
-- **Hold Y.** A ring round your crosshair fills up in 2 seconds; when it is full the ring builds a giant mech of hard
-  light round you, piece by piece, over about ten seconds (let go sooner and you get the ordinary Air Strike). It
-  stands on the ground under you, so you need ground at most 12 blocks below you.
-- **Hover and lock.** You rise up to the height of the mech's chest and hang there, still, arms spread. You cannot
-  move, fly or use your other powers while you are in it.
-- **The feet.** A beam of your ring's light runs out to either side and two heavy armoured boots grow out of it in
-  the air, a green emblem on each ankle. They **stomp down** one after the other, shaking the ground, and walk
-  heavily in, step by step, until they stand right under you.
-- **The legs.** Shins grow up out of the boots, the knee caps snap on with a click, the thighs build up on top and
-  the hips lock onto them with a clack.
-- **The arms.** Two giant armoured forearms with open hands grow out of the light on either side of you, swing in
-  and **clap together** in front of you with a thunderous bang and a small shockwave (**3 hearts** in the middle,
-  half at its edge 3.5 blocks out). Straight after the clap they spin and fly up, tumbling round and round.
-- **The torso and the cockpit.** Just before the arms get there, the torso, the heavy shoulder armour and the upper
-  arms grow up round you. You now **sit inside the chest**, in a seat, with a **lever in each hand**, and you look
-  out through a round window of see-through hard light set in the lantern emblem on its chest. Everyone else sees
-  you sitting in there. The spinning arms then **click into their joints**.
-- **The head.** A head forms high above the mech, spinning like a drill. It swings out in front, then **drills
-  straight down into the ground** with brute force: a shockwave (**5 hearts** in the middle, half at its edge 4.5
-  blocks out), cracks of light and flying earth. It spins back up out of the ground and screws down onto the neck,
-  locking in place with a hard mechanical **CLACK**.
-- **Built:** the ring round the window glows and breathes, the visor and the exhausts on its back shine. For now
-  the mech does nothing more (this is still being built).
+- **Hold Y.** A ring round your crosshair fills up in 2 seconds; when it is full your ring builds a giant mech of
+  hard light, beat for beat like Green Lantern's own super move (let go sooner and you get the ordinary Air Strike).
+  It builds itself over the **nearest creature out to hurt you in front of you**, up to 12 blocks away, and holds
+  that creature on its spot the whole time; with no such creature it rises round you. It needs ground under it.
+- **The look.** Like the one in Green Lantern's super move: every part is round and covered in hundreds of raised
+  tiles of deep green hard light, each with a glowing rim. Slim tall shins on clawed feet, square-cut thighs, a
+  barrel chest with a tall arched window, domed shoulders with horns, big gauntlet forearms with three-jointed
+  fingers, and a tall egg-shaped helmet with a pointed face plate, a crest over the top and two thin horns.
+- **Filmed like a movie.** While it builds (about 10 seconds) your camera films it shot by shot: side on as the
+  foot comes down, from above as the hands clap, close on the chest, low as the head falls, beside the crater as it
+  tumbles back up, close on the chest again as it locks on. Then it hands you the view from the cockpit. Your own
+  setting *Film my mech* turns this off.
+- **The foot.** A giant armoured lower leg grows out of your ring's light high above the creature and **stomps it
+  flat** (**4 hearts**; what else stands round the foot takes up to half and is thrown back), with a burst of white
+  spikes and a ring of dust. The second foot comes down beside it. Then both step off and stand apart.
+- **The leap.** You leap up to where the chest will be and hang there in a blinding light, inside a bubble of
+  see-through light, while the mech builds up from its feet behind a fizzing, crackling edge: knees, thighs, hips.
+  A big ring of your lantern's light stands behind the chest while it builds.
+- **The hands.** Two giant tiled forearms with open hands come spinning in out of the sky and reach down to the
+  creature. Your own arms spread and the hands spread wide round it; you swing your arms in and the hands **clap it**
+  between them from both sides (**3 hearts**, a star of light) and squeeze it.
+- **The chest.** The hands let go and rise while the barrel of the chest, the shoulder armour and the upper arms
+  build round you and lock onto the forearms. You **stand in the chest**, looking out through an arched window in a
+  rim of keystones, a control stick in each hand. Everyone sees you standing in there.
+- **The head.** A helmet forms high in the sky above the creature out of a swirl of light shards, spinning, falls
+  like a meteor and **crashes it into the ground** (**5 hearts**, a crater of light with cracks and flying earth).
+  It tumbles head over heels back up out of the crater, over the mech and down onto its shoulders, locking on with a
+  hard **CLACK**, and the mech spreads its arms wide.
+- **Built:** the creature is let go and the arch round the window glows and breathes. For now the mech does nothing
+  more (this is still being built). You cannot move, fly or use your other powers while you are in it.
 - **Leaving it:** hold Y for 2 seconds again (the ring round your crosshair says *Leave the mech*): the mech breaks
   into solid pieces that dissolve into light, and you float gently down to the ground. Die, log out or stop being
   Green Lantern and it breaks up as well.
-- **Who gets hit:** only what is out to hurt you, by the clap and the drill.
+- **Who gets hit:** only what is out to hurt you: the held creature takes each blow whole, anything else near the
+  foot, the clap or the crater takes less.
 - **Power:** 25. **Cooldown:** 90 seconds, **its own**: building the mech leaves the Air Strike ready, and the Air
-  Strike leaves the mech ready. Its cost, cooldown and both damages are settings (Air Strike, the mech part).
+  Strike leaves the mech ready. Its cost, cooldown, reach and the three damages are settings (Air Strike, the mech
+  part).
 
 ### Giant Hands (key Left Alt)
 

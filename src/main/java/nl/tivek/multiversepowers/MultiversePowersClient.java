@@ -7,6 +7,7 @@ import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.GreenLanternSuitLayer;
+import nl.tivek.multiversepowers.character.greenlantern.client.mech.MechPainter;
 import nl.tivek.multiversepowers.config.ModConfigs;
 import nl.tivek.multiversepowers.config.client.ClientSettings;
 import nl.tivek.multiversepowers.config.client.ConfigChoiceScreen;
@@ -22,5 +23,6 @@ public final class MultiversePowersClient {
         modEventBus.addListener(GreenLanternSuitLayer::onAddLayers);
         modEventBus.addListener(UpdatePopup::onRegisterKeys);
         modEventBus.addListener(Lens::onRegisterShaders);
+        modEventBus.addListener(MechPainter::onClientSetup);
     }
 }

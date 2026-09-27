@@ -201,6 +201,111 @@ final class MeshBodies {
         return builder.build();
     }
 
+    static Mesh bevel(double x0, double y0, double z0, double x1, double y1, double z1, double cut, double bright) {
+        double b = Math.max(1.0E-4, Math.min(cut, 0.45 * Math.min(x1 - x0, Math.min(y1 - y0, z1 - z0))));
+        Builder builder = new Builder();
+        // Each corner splits into three points, one on each face that meets there.
+        int[][][][] p = new int[2][2][2][3];
+        for (int i = 0; i < 2; i++) {
+            for (int j = 0; j < 2; j++) {
+                for (int k = 0; k < 2; k++) {
+                    double x = i == 0 ? x0 : x1;
+                    double y = j == 0 ? y0 : y1;
+                    double z = k == 0 ? z0 : z1;
+                    double dx = i == 0 ? b : -b;
+                    double dy = j == 0 ? b : -b;
+                    double dz = k == 0 ? b : -b;
+                    p[i][j][k][0] = builder.point(x, y + dy, z + dz);
+                    p[i][j][k][1] = builder.point(x + dx, y, z + dz);
+                    p[i][j][k][2] = builder.point(x + dx, y + dy, z);
+                }
+            }
+        }
+        Vec3 inside = new Vec3((x0 + x1) * 0.5, (y0 + y1) * 0.5, (z0 + z1) * 0.5);
+        for (int s = 0; s < 2; s++) {
+            builder.outward(inside, bright, p[s][0][0][0], p[s][1][0][0], p[s][1][1][0], p[s][0][1][0]);
+            builder.outward(inside, bright, p[0][s][0][1], p[1][s][0][1], p[1][s][1][1], p[0][s][1][1]);
+            builder.outward(inside, bright, p[0][0][s][2], p[1][0][s][2], p[1][1][s][2], p[0][1][s][2]);
+        }
+        for (int a = 0; a < 2; a++) {
+            for (int c = 0; c < 2; c++) {
+                builder.outward(inside, bright, p[a][c][0][0], p[a][c][1][0], p[a][c][1][1], p[a][c][0][1]);
+                builder.outward(inside, bright, p[a][0][c][0], p[a][1][c][0], p[a][1][c][2], p[a][0][c][2]);
+                builder.outward(inside, bright, p[0][a][c][1], p[1][a][c][1], p[1][a][c][2], p[0][a][c][2]);
+            }
+        }
+        for (int i = 0; i < 2; i++) {
+            for (int j = 0; j < 2; j++) {
+                for (int k = 0; k < 2; k++) {
+                    int[] c = p[i][j][k];
+                    builder.outward(inside, bright, c[0], c[1], c[2], c[2]);
+                }
+            }
+        }
+        return builder.build();
+    }
+
+    static Mesh plate(double back, double front, double cut, boolean both, double bright, double... outline) {
+        int n = outline.length / 2;
+        double b = Math.max(1.0E-4, Math.min(cut, (both ? 0.45 : 0.9) * (front - back)));
+        double area = 0.0;
+        for (int i = 0; i < n; i++) {
+            int j = (i + 1) % n;
+            area += outline[2 * i] * outline[2 * j + 1] - outline[2 * j] * outline[2 * i + 1];
+        }
+        double turn = area >= 0.0 ? 1.0 : -1.0;
+        double[] inset = new double[outline.length];
+        for (int i = 0; i < n; i++) {
+            int before = (i - 1 + n) % n;
+            int after = (i + 1) % n;
+            double[] n1 = inward(outline, before, i, turn);
+            double[] n2 = inward(outline, i, after, turn);
+            double join = Math.max(0.2, 1.0 + n1[0] * n2[0] + n1[1] * n2[1]);
+            inset[2 * i] = outline[2 * i] + b * (n1[0] + n2[0]) / join;
+            inset[2 * i + 1] = outline[2 * i + 1] + b * (n1[1] + n2[1]) / join;
+        }
+        Builder builder = new Builder();
+        int[] rear = new int[n];
+        int[] rearRim = new int[n];
+        int[] rim = new int[n];
+        int[] face = new int[n];
+        double cx = 0.0;
+        double cy = 0.0;
+        for (int i = 0; i < n; i++) {
+            rear[i] = both ? builder.point(inset[2 * i], inset[2 * i + 1], back)
+                    : builder.point(outline[2 * i], outline[2 * i + 1], back);
+            rearRim[i] = both ? builder.point(outline[2 * i], outline[2 * i + 1], back + b) : rear[i];
+            rim[i] = builder.point(outline[2 * i], outline[2 * i + 1], front - b);
+            face[i] = builder.point(inset[2 * i], inset[2 * i + 1], front);
+            cx += outline[2 * i] / n;
+            cy += outline[2 * i + 1] / n;
+        }
+        int rearMiddle = builder.point(cx, cy, back);
+        int faceMiddle = builder.point(cx, cy, front);
+        Vec3 inside = new Vec3(cx, cy, (back + front) * 0.5);
+        for (int i = 0; i < n; i++) {
+            int j = (i + 1) % n;
+            builder.outward(inside, bright, rearMiddle, rear[i], rear[j], rear[j]);
+            if (both) {
+                builder.outward(inside, bright, rear[i], rear[j], rearRim[j], rearRim[i]);
+            }
+            builder.outward(inside, bright, rearRim[i], rearRim[j], rim[j], rim[i]);
+            builder.outward(inside, bright, rim[i], rim[j], face[j], face[i]);
+            builder.outward(inside, bright, faceMiddle, face[i], face[j], face[j]);
+        }
+        return builder.build();
+    }
+
+    private static double[] inward(double[] outline, int from, int to, double turn) {
+        double dx = outline[2 * to] - outline[2 * from];
+        double dy = outline[2 * to + 1] - outline[2 * from + 1];
+        double length = Math.sqrt(dx * dx + dy * dy);
+        if (length < 1.0E-9) {
+            return new double[] { 0.0, 0.0 };
+        }
+        return new double[] { -dy / length * turn, dx / length * turn };
+    }
+
     private static int[] section(Builder builder, double x, double y, double back, double front, double thick) {
         double crest = front - (front - back) * 0.35;
         return new int[] { builder.point(x, y, front), builder.point(x, y + thick * 0.5, crest),

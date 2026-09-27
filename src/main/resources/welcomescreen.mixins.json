@@ -8,6 +8,7 @@
     "MinecraftServerMixin"
   ],
   "client": [
+    "CameraMixin",
     "LivingEntityRendererMixin",
     "MinecraftMixin",
     "PlayerModelMixin",

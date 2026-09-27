@@ -12,6 +12,8 @@ import nl.tivek.multiversepowers.engine.math.Vectors;
 
 public class LanternPainter extends LanternBeams {
     public static final Material HARD_LIGHT = new Material(0x4BEF78, 0x6CFF8E, 0x3CE86A, 0xE4FFEA);
+    // The mech's deeper, purer green, as in its clip: dark glassy sides under rims of lime light.
+    public static final Material MECH_LIGHT = new Material(0x36DA4C, 0x86FF74, 0x2EE646, 0xEAFFE2);
     public static final int MASS_GREEN = 0x4BEF78;
     private static final double BOLT_BEAM = 6.0;
 

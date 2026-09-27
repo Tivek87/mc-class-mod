@@ -5,20 +5,29 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import javax.annotation.Nullable;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.engine.math.Noise;
 import nl.tivek.multiversepowers.engine.math.Vectors;
 
 public final class Mesh {
+    private static final double CREASE = 0.9;
+
     public final Vec3[] points;
     public final int[][] sides;
     public final Vec3[] normals;
     final Vec3[] middles;
     final double[] bright;
+    // How far each side lights up towards the edge colour whatever light falls on it; null when none does.
+    @Nullable
+    final double[] glow;
+    // A skin laid over a closed body: its open edges rest on that body and its sides facing away are hidden behind it.
+    final boolean skin;
     final int[] edgeFrom;
     final int[] edgeTo;
     final int[] edgeLeft;
     final int[] edgeRight;
+    final boolean[] edgeCrease;
     final Vec3 middle;
     final double fine;
     public final double[] px;
@@ -33,10 +42,19 @@ public final class Mesh {
     final double boundZ;
     final double boundRadius;
 
-    private Mesh(Vec3[] points, int[][] sides, double[] bright) {
+    // The tiles laid over a Surface: so many cells across and along it, the gap between tiles, how high they stand,
+    // how wide their bevelled rims are, how often cells join into bigger tiles (0 to 1), how far their rims light up
+    // (to 1 the edge colour, past 1 on towards white) and the seed of their pattern.
+    public record Tiles(int across, int along, double gap, double rise, double cut, double merge, double glow,
+            int seed) {
+    }
+
+    private Mesh(Vec3[] points, int[][] sides, double[] bright, @Nullable double[] glow, boolean skin) {
         this.points = points;
         this.sides = sides;
         this.bright = bright;
+        this.glow = glow;
+        this.skin = skin;
         this.normals = new Vec3[sides.length];
         this.middles = new Vec3[sides.length];
         Map<Long, Integer> known = new HashMap<>();
@@ -90,12 +108,14 @@ public final class Mesh {
         this.edgeTo = new int[edges.size()];
         this.edgeLeft = new int[edges.size()];
         this.edgeRight = new int[edges.size()];
+        this.edgeCrease = new boolean[edges.size()];
         for (int e = 0; e < edges.size(); e++) {
             int[] edge = edges.get(e);
             this.edgeFrom[e] = edge[0];
             this.edgeTo[e] = edge[1];
             this.edgeLeft[e] = edge[2];
             this.edgeRight[e] = edge[3];
+            this.edgeCrease[e] = edge[3] >= 0 && this.normals[edge[2]].dot(this.normals[edge[3]]) < CREASE;
         }
         Vec3 all = Vec3.ZERO;
         Vec3 low = new Vec3(Double.MAX_VALUE, Double.MAX_VALUE, Double.MAX_VALUE);
@@ -202,6 +222,22 @@ public final class Mesh {
 
     public static Mesh box(double x0, double y0, double z0, double x1, double y1, double z1, double bright) {
         return prism(z0, z1, bright, x0, y0, x1, y0, x1, y1, x0, y1);
+    }
+
+    // A box with every edge cut off at 45 degrees, the cut this wide along each face.
+    public static Mesh bevel(double x0, double y0, double z0, double x1, double y1, double z1, double cut,
+            double bright) {
+        return MeshBodies.bevel(x0, y0, z0, x1, y1, z1, cut, bright);
+    }
+
+    // A flat convex outline (x, y pairs) raised from back to front along z, its front rim cut off at 45 degrees.
+    public static Mesh plate(double back, double front, double cut, double bright, double... outline) {
+        return MeshBodies.plate(back, front, cut, false, bright, outline);
+    }
+
+    // The same with both rims cut off, for a part seen from either side.
+    public static Mesh slab(double back, double front, double cut, double bright, double... outline) {
+        return MeshBodies.plate(back, front, cut, true, bright, outline);
     }
 
     public static Mesh lump(int sides, int rings, double radius, double rough, int seed, double bright) {
@@ -345,17 +381,36 @@ public final class Mesh {
 
     public static Mesh merged(Mesh... parts) {
         Builder builder = new Builder();
+        builder.skin = parts.length > 0;
         for (Mesh part : parts) {
             int base = builder.points.size();
+            builder.skin &= part.skin;
             for (Vec3 point : part.points) {
                 builder.point(point.x, point.y, point.z);
             }
             for (int s = 0; s < part.sides.length; s++) {
                 int[] side = part.sides[s];
-                builder.side(base + side[0], base + side[1], base + side[2], base + side[3], part.bright[s]);
+                builder.side(base + side[0], base + side[1], base + side[2], base + side[3], part.bright[s],
+                        part.glow == null ? 0.0 : part.glow[s]);
             }
         }
         return builder.build();
+    }
+
+    // A surface covered in tiles standing on it, each with a glowing bevelled rim, over the surface itself (see Tiles);
+    // round when u goes all the way round. The surface must be closed or hidden where it is open.
+    public static Mesh tiled(Surface surface, boolean round, Tiles tiles, double bright) {
+        return MeshTiles.build(surface, round, true, tiles, bright);
+    }
+
+    // Only the tiles, for a surface that another part already covers.
+    public static Mesh tiles(Surface surface, boolean round, Tiles tiles, double bright) {
+        return MeshTiles.build(surface, round, false, tiles, bright);
+    }
+
+    // The surface as a sheet so thick, grown inwards from it, with its open ends closed.
+    public static Mesh sheet(Surface surface, boolean round, int across, int along, double thick, double bright) {
+        return MeshTiles.sheet(surface, round, across, along, thick, bright);
     }
 
     private static Mesh turning(int sides, double bright, boolean loop, double[] profile) {
@@ -391,7 +446,7 @@ public final class Mesh {
         for (int i = 0; i < moved.length; i++) {
             moved[i] = this.points[i].add(by);
         }
-        return new Mesh(moved, this.sides, this.bright);
+        return new Mesh(moved, this.sides, this.bright, this.glow, this.skin);
     }
 
     public Mesh turned(double x, double y, double z, double degrees) {
@@ -401,7 +456,7 @@ public final class Mesh {
         for (int i = 0; i < turned.length; i++) {
             turned[i] = Vectors.spin(this.points[i], axis, angle);
         }
-        return new Mesh(turned, this.sides, this.bright);
+        return new Mesh(turned, this.sides, this.bright, this.glow, this.skin);
     }
 
     public Mesh scaled(double x, double y, double z) {
@@ -410,7 +465,7 @@ public final class Mesh {
             scaled[i] = this.points[i].multiply(x, y, z);
         }
         if (x * y * z >= 0.0) {
-            return new Mesh(scaled, this.sides, this.bright);
+            return new Mesh(scaled, this.sides, this.bright, this.glow, this.skin);
         }
         // A mirror flips winding; reverse each side so it still faces outward (see quad's culling).
         int[][] sides = new int[this.sides.length][];
@@ -418,7 +473,7 @@ public final class Mesh {
             int[] side = this.sides[s];
             sides[s] = new int[] { side[3], side[2], side[1], side[0] };
         }
-        return new Mesh(scaled, sides, this.bright);
+        return new Mesh(scaled, sides, this.bright, this.glow, this.skin);
     }
 
     public Mesh pointing(double x, double y, double z) {
@@ -447,25 +502,47 @@ public final class Mesh {
         for (int s = 0; s < bright.length; s++) {
             bright[s] = this.bright[s] * factor;
         }
-        return new Mesh(this.points, this.sides, bright);
+        return new Mesh(this.points, this.sides, bright, this.glow, this.skin);
     }
 
     static final class Builder {
         private final List<Vec3> points = new ArrayList<>();
         private final List<int[]> sides = new ArrayList<>();
         private final List<Double> bright = new ArrayList<>();
+        private final List<Double> glow = new ArrayList<>();
+        private boolean glowing;
+        boolean skin;
 
         int point(double x, double y, double z) {
             this.points.add(new Vec3(x, y, z));
             return this.points.size() - 1;
         }
 
+        int point(Vec3 at) {
+            this.points.add(at);
+            return this.points.size() - 1;
+        }
+
+        Vec3 at(int point) {
+            return this.points.get(point);
+        }
+
         void side(int a, int b, int c, int d, double brightness) {
+            this.side(a, b, c, d, brightness, 0.0);
+        }
+
+        void side(int a, int b, int c, int d, double brightness, double glow) {
             this.sides.add(new int[] { a, b, c, d });
             this.bright.add(brightness);
+            this.glow.add(glow);
+            this.glowing |= glow > 0.0;
         }
 
         void outward(Vec3 inside, double brightness, int a, int b, int c, int d) {
+            this.outward(inside, brightness, 0.0, a, b, c, d);
+        }
+
+        void outward(Vec3 inside, double brightness, double glow, int a, int b, int c, int d) {
             Vec3 pa = this.points.get(a);
             Vec3 pb = this.points.get(b);
             Vec3 pc = this.points.get(c);
@@ -473,18 +550,23 @@ public final class Mesh {
             Vec3 normal = pc.subtract(pa).cross(pd.subtract(pb));
             Vec3 middle = pa.add(pb).add(pc).add(pd).scale(0.25);
             if (normal.dot(middle.subtract(inside)) >= 0.0) {
-                this.side(a, b, c, d, brightness);
+                this.side(a, b, c, d, brightness, glow);
             } else {
-                this.side(d, c, b, a, brightness);
+                this.side(d, c, b, a, brightness, glow);
             }
         }
 
         Mesh build() {
             double[] bright = new double[this.bright.size()];
+            double[] glow = this.glowing ? new double[bright.length] : null;
             for (int i = 0; i < bright.length; i++) {
                 bright[i] = this.bright.get(i);
+                if (glow != null) {
+                    glow[i] = this.glow.get(i);
+                }
             }
-            return new Mesh(this.points.toArray(Vec3[]::new), this.sides.toArray(int[][]::new), bright);
+            return new Mesh(this.points.toArray(Vec3[]::new), this.sides.toArray(int[][]::new), bright, glow,
+                    this.skin);
         }
     }
 }

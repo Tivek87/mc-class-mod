@@ -167,7 +167,9 @@ public final class SettingsPages {
         Section view = new Section(Component.translatable(PREFIX + "client.view"), null, List.of(new Group(null,
                 List.of(fromSpec(spec, file, "client", "cameraShake", ClientSettings.CAMERA_SHAKE, Unit.STRENGTH, 0.1),
                         fromSpec(spec, file, "client", "ramGroundShake", ClientSettings.RAM_GROUND_SHAKE,
-                                Unit.STRENGTH, 0.1)))));
+                                Unit.STRENGTH, 0.1),
+                        fromSpec(spec, file, "client", "mechCinematic", ClientSettings.MECH_CINEMATIC, Unit.SWITCH,
+                                1.0)))));
         Section sound = new Section(Component.translatable(PREFIX + "client.sound"), null, List.of(new Group(null,
                 List.of(fromSpec(spec, file, "client", "themeMusic", ClientSettings.THEME_MUSIC, Unit.SWITCH, 1.0)))));
         Section updates = new Section(Component.translatable(PREFIX + "client.updates"), null, List.of(new Group(null,
