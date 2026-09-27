@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import javax.annotation.Nullable;
+import net.minecraft.core.BlockPos;
 import net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -34,6 +35,8 @@ public final class MechAssembly implements Effect {
     private static final double GROUND_BELOW = 12.0;
     private static final double GROUND_ABOVE = 3.0;
     private static final int VICTIM_AFTER = 10;
+    private static final double MOST_STRIDE = 1.0;
+    private static final double MOST_CLIMB = 3.0;
 
     private static final Map<UUID, MechAssembly> ACTIVE = new HashMap<>();
     private static final Cooldowns<String> COOLDOWNS = new Cooldowns<>(1);
@@ -41,10 +44,11 @@ public final class MechAssembly implements Effect {
     private final ServerPlayer owner;
     private final CharacterAbility ability;
     private final int id = PowerRing.newId();
-    private final MechScript.Stage stage;
+    private MechScript.Stage stage;
     private final MechTarget target;
     private final int victim;
     private int t;
+    private int drivenAt = -1;
     private int breaking = -1;
 
     private MechAssembly(ServerPlayer owner, CharacterAbility ability, MechScript.Stage stage,
@@ -152,6 +156,26 @@ public final class MechAssembly implements Effect {
         return hit.getType() == HitResult.Type.MISS ? null : hit.getLocation().y;
     }
 
+    // The pilot's own game walks the mech (see MechDrive); a step further than it could have walked since the last one
+    // is not taken.
+    public static void drive(ServerPlayer player, Vec3 base, float yaw) {
+        MechAssembly mech = ACTIVE.get(player.getUUID());
+        if (mech == null || mech.breaking >= 0 || mech.t < MechScript.SETTLED || !Float.isFinite(yaw)
+                || !Double.isFinite(base.x) || !Double.isFinite(base.y) || !Double.isFinite(base.z)) {
+            return;
+        }
+        Vec3 was = mech.stage.base();
+        double dx = base.x - was.x;
+        double dz = base.z - was.z;
+        double reach = MOST_STRIDE * Math.max(1, mech.drivenAt < 0 ? 1 : mech.t - mech.drivenAt);
+        if (dx * dx + dz * dz > reach * reach || Math.abs(base.y - was.y) > MOST_CLIMB * reach
+                || !player.serverLevel().isLoaded(BlockPos.containing(base))) {
+            return;
+        }
+        mech.stage = MechScript.Stage.facing(base, yaw);
+        mech.drivenAt = mech.t;
+    }
+
     public static boolean piloting(ServerPlayer player) {
         return ACTIVE.containsKey(player.getUUID());
     }
@@ -190,7 +214,8 @@ public final class MechAssembly implements Effect {
         } else {
             this.target.release();
         }
-        this.hold(this.stage.point(MechScript.pilot(this.stage, this.t)), this.t <= MechScript.ABOARD);
+        this.hold(this.stage.point(MechScript.pilot(this.stage, this.t)), this.t <= MechScript.ABOARD
+                || this.t >= MechScript.SETTLED);
         this.send(level);
         return true;
     }

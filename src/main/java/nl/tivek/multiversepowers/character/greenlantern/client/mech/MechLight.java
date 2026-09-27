@@ -6,6 +6,7 @@ import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.character.greenlantern.MechMoves;
 import nl.tivek.multiversepowers.character.greenlantern.MechScript;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.LanternPainter;
+import nl.tivek.multiversepowers.engine.client.render.ConstructPainter.Frame;
 import nl.tivek.multiversepowers.engine.math.Colors;
 import nl.tivek.multiversepowers.engine.math.Ease;
 import nl.tivek.multiversepowers.engine.math.Noise;
@@ -27,7 +28,27 @@ final class MechLight {
     private MechLight() {
     }
 
-    static void lights(LanternPainter painter, MechScript.Stage stage, double t, @Nullable Vec3 ring, boolean own) {
+    static void lights(LanternPainter painter, MechPose pose, int id, double t, @Nullable Vec3 ring, boolean own,
+            float partialTick) {
+        MechScript.Stage stage = pose.stage();
+        MechScript.Stage torso = pose.torso();
+        boolean walking = t >= MechScript.SETTLED;
+        if (walking) {
+            steps(painter, id, partialTick);
+        }
+        if (t >= MechScript.HEAD_FORM + 3.0) {
+            eyes(painter, MechPainter.head(pose, t, -1.0, walking), t);
+        }
+        if (t >= MechScript.GRIP) {
+            console(painter, pose, t, own);
+        }
+        core(painter, torso, t, own);
+        if (t >= MechScript.DONE - 6.0) {
+            idle(painter, torso, t, own);
+        }
+        if (walking) {
+            return;
+        }
         if (ring != null) {
             calls(painter, stage, t, ring);
         }
@@ -41,7 +62,6 @@ final class MechLight {
             }
             ring(painter, ground, landed, MechScript.stomping(right, t) ? (right ? 4.0 : 2.8) : 1.8);
         }
-        core(painter, stage, t, own);
         halo(painter, stage, t);
         clap(painter, stage, t);
         head(painter, stage, t);
@@ -54,8 +74,43 @@ final class MechLight {
             MechMoves.Arm arm = MechMoves.arm(side == 0, stage, t);
             flash(painter, stage.point(arm.elbow()), t - MechScript.ELBOWS, 1.4);
         }
-        if (t >= MechScript.DONE - 6.0) {
-            idle(painter, stage, t, own);
+    }
+
+    // A ring of light spreads round each foot as it comes down.
+    private static void steps(LanternPainter painter, int id, float partialTick) {
+        for (int side = 0; side < 2; side++) {
+            double since = MechWalk.landed(id, side, partialTick);
+            if (since >= 0.0 && since < 10.0) {
+                Vec3 ground = MechWalk.planted(id, side).subtract(0.0, MechScript.ANKLE.y - 0.06, 0.0);
+                ring(painter, ground, since, 2.2);
+            }
+        }
+    }
+
+    // The eye slits under the brow.
+    private static void eyes(LanternPainter painter, Frame head, double t) {
+        double on = Ease.smooth((t - MechScript.HEAD_FORM - 3.0) / 6.0);
+        double flash = 1.0 + 1.5 * Math.max(0.0, 1.0 - Math.abs(t - MechScript.LOCK - 2.0) / 5.0);
+        double breath = 0.85 + 0.15 * Math.sin(t * 0.21);
+        for (int side = -1; side <= 1; side += 2) {
+            Vec3 inner = head.at(side * MechHeadShapes.EYE_X[0], MechHeadShapes.EYE_Y - 0.035,
+                    MechHeadShapes.EYE_Z);
+            Vec3 outer = head.at(side * MechHeadShapes.EYE_X[1], MechHeadShapes.EYE_Y + 0.03,
+                    MechHeadShapes.EYE_Z - 0.04);
+            double strength = Math.min(1.0, on * breath * flash);
+            painter.lightLine(inner, outer, 0.07, LanternPainter.HOT, Colors.alpha(0.95 * strength));
+            painter.glowLine(inner, outer, 0.35, LanternPainter.GREEN, Colors.alpha(0.5 * strength));
+        }
+    }
+
+    // The console's buttons glow; the one being pressed flares.
+    private static void console(LanternPainter painter, MechPose pose, double t, boolean own) {
+        double on = Ease.smooth((t - MechScript.GRIP) / 6.0);
+        for (int k = 0; k < MechScript.BUTTONS.length; k++) {
+            Vec3 at = pose.torso().point(MechScript.BUTTONS[k].add(0.0, 0.05, 0.0));
+            double blink = 0.55 + 0.45 * Math.sin(t * (0.3 + 0.07 * k) + k * 1.7);
+            double pressed = pose.button == k ? pose.press : 0.0;
+            painter.flare(at, 0.06 + 0.1 * pressed, on * (own ? 0.5 : 0.8) * Math.max(blink, pressed));
         }
     }
 
@@ -229,7 +284,7 @@ final class MechLight {
         double closed = Ease.smooth((t - MechScript.ARMOR - 6.0) / 12.0);
         double pulse = 0.85 + 0.15 * Math.sin(t * 0.45);
         Vec3 heart = stage.point(MechScript.COCKPIT.add(0.0, 1.25, 0.1));
-        double strength = on * pulse * Mth.lerp(closed, dim, own ? 0.15 : 0.45);
+        double strength = on * pulse * Mth.lerp(closed, dim, own ? 0.0 : 0.45);
         painter.flare(heart, Mth.lerp(closed, 1.9, 0.9), strength);
         painter.glowDisc(heart, Mth.lerp(closed, 2.6, 1.2), LanternPainter.GREEN, 0.4 * strength, 0.15, 3);
     }
@@ -344,18 +399,13 @@ final class MechLight {
         }
     }
 
+    // The rim round the glass glows and breathes once the mech stands ready.
     private static void idle(LanternPainter painter, MechScript.Stage stage, double t, boolean own) {
         double on = Ease.smooth((t - (MechScript.DONE - 6.0)) / 6.0);
         double breath = 0.7 + 0.3 * Math.sin(t * 0.12);
-        Vec3 window = stage.point(0.0, MechBodyShapes.WINDOW_Y, MechBodyShapes.WINDOW_Z + 0.02);
-        for (int k = 0; k < 12; k++) {
-            double a0 = Math.PI * k / 12.0;
-            double a1 = Math.PI * (k + 1) / 12.0;
-            double r = MechBodyShapes.WINDOW_IN;
-            Vec3 from = window.add(stage.right().scale(Math.cos(a0) * r)).add(0.0, Math.sin(a0) * r, 0.0);
-            Vec3 to = window.add(stage.right().scale(Math.cos(a1) * r)).add(0.0, Math.sin(a1) * r, 0.0);
-            painter.lightLine(from, to, 0.05, LanternPainter.BRIGHT, Colors.alpha((own ? 0.25 : 0.8) * on * breath));
-            painter.glowLine(from, to, own ? 0.15 : 0.45, LanternPainter.GREEN, Colors.alpha(0.4 * on * breath));
-        }
+        Vec3 port = stage.point(0.0, MechBodyShapes.PORT_Y, MechBodyShapes.GLASS_Z + 0.02);
+        painter.circle(port, stage.right(), stage.up(), MechBodyShapes.PORT_IN + 0.02, own ? 0.03 : 0.06,
+                own ? 0.15 : 0.45, Colors.alpha((own ? 0.25 : 0.85) * on * breath),
+                Colors.alpha(0.4 * on * breath));
     }
 }

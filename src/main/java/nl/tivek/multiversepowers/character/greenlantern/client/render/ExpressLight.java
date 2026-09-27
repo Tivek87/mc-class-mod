@@ -20,6 +20,7 @@ final class ExpressLight {
     private static final int CRACKS = 9;
     private static final int SPECKS = 70;
     private static final double BEAM_REACH = 9.0;
+    private static final int PUFFS = 7;
 
     private ExpressLight() {
     }
@@ -36,7 +37,7 @@ final class ExpressLight {
         double slide = since(trail, SLIDE, age);
         double steam = since(trail, STEAM, age);
         if (brake < 0.0 && age > ExpressScript.ROLLS && o > ExpressScript.FUNNEL_BACK * s) {
-            chuff(painter, engine, o, s);
+            chuff(painter, trail, engine, o, s);
         }
         if (brake >= 0.0 && slide < 0.0) {
             for (double z : new double[] { ExpressShapes.FRONT_DRIVER, ExpressShapes.REAR_DRIVER }) {
@@ -54,6 +55,50 @@ final class ExpressLight {
         }
         if (pressure > 0.0) {
             cracks(painter, engine, s, age, pressure);
+        }
+    }
+
+    // Lamplight in the coaches' windows, the tail lamps, and sparks off their wheels as the brakes lock and off their
+    // sides as they scrape along on them.
+    static void coaches(LanternPainter painter, ExpressTrails.Trail trail, Frame[] coaches, double[] burst, double s,
+            double age, int side, double tip, double slide) {
+        double brake = since(trail, BRAKE, age);
+        for (int k = 0; k < coaches.length; k++) {
+            if (burst[k] >= 0.0) {
+                continue;
+            }
+            Frame coach = coaches[k];
+            for (int flank = -1; flank <= 1; flank += 2) {
+                for (int w = 0; w < ExpressCoaches.WINDOWS.length; w++) {
+                    double flicker = 0.8 + 0.2 * Math.sin(age * 0.6 + k * 2.1 + w * 1.3 + flank);
+                    Vec3 pane = coach.at(flank * 1.32, ExpressCoaches.WINDOW_Y, ExpressCoaches.WINDOWS[w]);
+                    painter.flare(pane, 0.22 * s, 0.32 * flicker);
+                }
+            }
+            if (k == coaches.length - 1) {
+                for (int flank = -1; flank <= 1; flank += 2) {
+                    Vec3 lamp = coach.at(flank * ExpressCoaches.TAIL_LAMP.x, ExpressCoaches.TAIL_LAMP.y,
+                            ExpressCoaches.TAIL_LAMP.z);
+                    painter.flare(lamp, 0.35 * s, 0.85 + 0.15 * Math.sin(age * 0.8));
+                }
+                Vec3 drum = coach.at(ExpressCoaches.DRUMHEAD.x, ExpressCoaches.DRUMHEAD.y,
+                        ExpressCoaches.DRUMHEAD.z - 0.1);
+                painter.glowDisc(drum, 0.8 * s, LanternBeams.GREEN, 0.3, 0.2, k);
+            }
+            if (brake >= 0.0 && slide < 0.0) {
+                for (double z : new double[] { ExpressScript.COACH_BOGIE, -ExpressScript.COACH_BOGIE }) {
+                    sparks(painter, coach, ExpressShapes.RAIL, z, s, age, 3, k * 31 + (int) z);
+                    sparks(painter, coach, -ExpressShapes.RAIL, z, s, age, 3, k * 31 + (int) z + 7);
+                }
+            }
+            if (slide >= 0.0 && since(trail, STEAM, age) < 0.0) {
+                double fading = 1.0 - Ease.smooth((slide - 10.0 - k * 2.0) / 8.0);
+                int zig = k % 2 == 0 ? -side : side;
+                for (double z : new double[] { 3.5, 0.0, -3.5 }) {
+                    sparks(painter, coach, zig * ExpressScript.PIVOT_OUT, z, s, age, (int) Math.round(5 * fading),
+                            k * 17 + (int) z);
+                }
+            }
         }
     }
 
@@ -78,7 +123,7 @@ final class ExpressLight {
         painter.glowDisc(engine.at(0.0, 2.9, -7.2), 1.1 * s, LanternBeams.GREEN, 0.3 * flicker, 0.4, 5);
     }
 
-    private static void chuff(LanternPainter painter, Frame engine, double o, double s) {
+    private static void chuff(LanternPainter painter, ExpressTrails.Trail trail, Frame engine, double o, double s) {
         double since = Mth.frac(o / ExpressScript.CHUFF_BLOCKS);
         double pulse = Math.exp(-5.0 * since);
         Vec3 top = engine.at(ExpressShapes.FUNNEL_TOP.x, ExpressShapes.FUNNEL_TOP.y + 0.25 + 0.9 * since,
@@ -87,6 +132,20 @@ final class ExpressLight {
                 (int) (o / ExpressScript.CHUFF_BLOCKS));
         painter.flare(engine.at(ExpressShapes.FUNNEL_TOP.x, ExpressShapes.FUNNEL_TOP.y, ExpressShapes.FUNNEL_TOP.z),
                 0.35 * s, 0.4 * pulse);
+        // The puffs of the last few beats hang in the air where the funnel threw them, rising, swelling and thinning.
+        int beat = (int) Math.floor(o / ExpressScript.CHUFF_BLOCKS);
+        for (int k = 1; k <= PUFFS; k++) {
+            double thrown = (beat - k + 1) * ExpressScript.CHUFF_BLOCKS;
+            double age = (o - thrown) / ExpressScript.CHUFF_BLOCKS;
+            if (thrown < ExpressScript.FUNNEL_BACK * s) {
+                break;
+            }
+            double left = 1.0 - age / (PUFFS + 1.0);
+            Vec3 at = trail.at(thrown - ExpressScript.FUNNEL_BACK * s)
+                    .add(0.0, (ExpressShapes.FUNNEL_TOP.y + 0.6 + 0.55 * age) * s, 0.0);
+            painter.glowDisc(at, (0.8 + 0.35 * age) * s, LanternBeams.GREEN, 0.28 * left * left, 0.45,
+                    beat - k);
+        }
     }
 
     private static void sparks(LanternPainter painter, Frame car, double x, double z, double s, double age,

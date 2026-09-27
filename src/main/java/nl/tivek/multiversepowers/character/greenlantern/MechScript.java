@@ -3,6 +3,7 @@ package nl.tivek.multiversepowers.character.greenlantern;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.engine.math.Ease;
+import nl.tivek.multiversepowers.engine.math.Vectors;
 
 // The mech's build in ticks, timed on docs/reference/mech-robot-ultimate.mp4 (20 ticks = 30 frames of the clip). Places
 // are in blocks round its ground spot: x to its right, y up, z ahead, towards the target it builds itself over.
@@ -55,8 +56,16 @@ public final class MechScript {
     public static final double UPPER_ARM = 1.9;
     public static final double FOREARM = 2.3;
     public static final double PALM_ALONG = FOREARM + 0.62;
-    public static final Vec3 COCKPIT = new Vec3(0.0, 6.0, 1.35);
-    public static final Vec3 STICK = new Vec3(0.45, 6.85, 1.72);
+    public static final Vec3 COCKPIT = new Vec3(0.0, 6.0, 0.45);
+    // The pilot sits: the seat is at their hips, a Minecraft body's 0.75 above its feet.
+    public static final double SEAT = 0.72;
+    public static final int SIT = 112;
+    public static final int GRIP = 124;
+    public static final Vec3 LEVER = new Vec3(0.36, 6.62, 1.08);
+    public static final double LEVER_LENGTH = 0.62;
+    public static final double LEVER_THROW = 0.42;
+    public static final Vec3[] BUTTONS = { new Vec3(0.44, 6.99, 1.33), new Vec3(0.15, 7.02, 1.38),
+            new Vec3(-0.15, 7.02, 1.38), new Vec3(-0.44, 6.99, 1.33) };
     public static final Vec3 NECK = new Vec3(0.0, 9.1, 0.75);
     public static final double HEAD_SCALE = 1.65;
     public static final double HEAD_UP = 0.62 * HEAD_SCALE;
@@ -74,12 +83,36 @@ public final class MechScript {
     private static final double HEAD_RISE_SPIN = -Math.PI * 2.0;
     private static final double HEAD_FLIP = -Math.PI * 2.0;
 
-    // Where the mech stands and faces, how high the target's feet are and where its pilot set off from.
-    public record Stage(Vec3 base, Vec3 ahead, Vec3 right, double targetY, double pilotY, double pilotZ) {
+    // Where the mech stands and faces, how high the target's feet are and where its pilot set off from. Its axes stay
+    // upright on the ground; a turned copy (see turned) carries the swaying body of a walking mech.
+    public record Stage(Vec3 base, Vec3 ahead, Vec3 right, Vec3 up, double targetY, double pilotY, double pilotZ) {
         public static Stage of(Vec3 base, Vec3 toTarget, double pilotY, double pilotZ) {
             Vec3 flat = new Vec3(toTarget.x, 0.0, toTarget.z);
             Vec3 ahead = flat.lengthSqr() < 1.0E-8 ? new Vec3(0.0, 0.0, 1.0) : flat.normalize();
-            return new Stage(base, ahead, new Vec3(-ahead.z, 0.0, ahead.x), toTarget.y, pilotY, pilotZ);
+            return new Stage(base, ahead, new Vec3(-ahead.z, 0.0, ahead.x), Vectors.UP, toTarget.y, pilotY, pilotZ);
+        }
+
+        public static Stage facing(Vec3 base, float yaw) {
+            double radians = Math.toRadians(yaw);
+            return of(base, new Vec3(-Math.sin(radians), 0.0, Math.cos(radians)), COCKPIT.y, COCKPIT.z);
+        }
+
+        // Moved by shift along its own axes and turned round pivot (both its own places): about up by yaw (towards
+        // its left), then about right by pitch (its front up), then about ahead by roll (its right side down).
+        public Stage turned(Vec3 pivot, Vec3 shift, double yaw, double pitch, double roll) {
+            Vec3 r = Vectors.spin(this.right, this.up, yaw);
+            Vec3 a = Vectors.spin(this.ahead, this.up, yaw);
+            Vec3 u = Vectors.spin(this.up, r, pitch);
+            a = Vectors.spin(a, r, pitch);
+            r = Vectors.spin(r, a, roll);
+            u = Vectors.spin(u, a, roll);
+            Vec3 at = this.point(pivot.add(shift));
+            Vec3 base = at.subtract(r.scale(pivot.x)).subtract(u.scale(pivot.y)).subtract(a.scale(pivot.z));
+            return new Stage(base, a, r, u, this.targetY, this.pilotY, this.pilotZ);
+        }
+
+        public float yaw() {
+            return (float) Math.toDegrees(Math.atan2(-this.ahead.x, this.ahead.z));
         }
 
         // Read back from what the server sends (see MechAssembly.send).
@@ -93,16 +126,16 @@ public final class MechScript {
         }
 
         public Vec3 point(double x, double y, double z) {
-            return this.base.add(this.right.scale(x)).add(0.0, y, 0.0).add(this.ahead.scale(z));
+            return this.base.add(this.right.scale(x)).add(this.up.scale(y)).add(this.ahead.scale(z));
         }
 
         public Vec3 dir(Vec3 local) {
-            return this.right.scale(local.x).add(0.0, local.y, 0.0).add(this.ahead.scale(local.z));
+            return this.right.scale(local.x).add(this.up.scale(local.y)).add(this.ahead.scale(local.z));
         }
 
         public Vec3 local(Vec3 world) {
             Vec3 way = world.subtract(this.base);
-            return new Vec3(way.dot(this.right), way.y, way.dot(this.ahead));
+            return new Vec3(way.dot(this.right), way.dot(this.up), way.dot(this.ahead));
         }
 
         public Vec3 target() {

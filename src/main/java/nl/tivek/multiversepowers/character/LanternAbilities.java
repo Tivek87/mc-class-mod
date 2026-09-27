@@ -20,9 +20,10 @@ final class LanternAbilities {
                         "How far from the train it looks for the next creature out to hurt you, in blocks")
                 .settingInt("mostRams", 6, 1, 30, Unit.COUNT,
                         "How many creatures the train rams at most, one after another, before it brakes")
-                .setting("runBlocks", 110.0, 20.0, 400.0, Unit.BLOCKS,
+                .setting("runBlocks", 220.0, 20.0, 600.0, Unit.BLOCKS,
                         "How far the train runs at most before its brakes lock up and it leaves the rails, in"
-                                + " blocks")
+                                + " blocks; it always runs until its last coach is out of the portal")
+                .was(110.0)
                 .group("express_blast", "The boiler blast")
                 .setting("blastDamage", 30.0, 0.0, 2000.0, Unit.HALF_HEARTS,
                         "Damage of the boiler blast in its middle, in half hearts; half of it at its edge")

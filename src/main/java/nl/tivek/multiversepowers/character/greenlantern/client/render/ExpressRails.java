@@ -42,7 +42,7 @@ final class ExpressRails {
         if (derailed) {
             edge = Math.min(edge, trail.derailedAt() + BEYOND_DERAIL * s);
         }
-        double tail = o - ExpressScript.LENGTH * s - 0.6 * s;
+        double tail = o - ExpressScript.TRAIN_LENGTH * s - 0.6 * s;
         int first = Mth.floor((tail - CRUMBLE * s) / STEP);
         int last = Mth.floor(edge / STEP) - 1;
         for (int k = first; k <= last; k++) {

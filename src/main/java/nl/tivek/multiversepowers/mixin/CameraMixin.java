@@ -5,6 +5,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.engine.client.fx.CameraShake;
+import nl.tivek.multiversepowers.engine.client.fx.ChaseCamera;
 import nl.tivek.multiversepowers.engine.client.fx.Cinematic;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -29,6 +30,12 @@ public abstract class CameraMixin {
             float partialTick, CallbackInfo info) {
         Cinematic.Shot shot = Cinematic.shot(partialTick);
         if (shot == null) {
+            if (detached) {
+                Vec3 eye = ChaseCamera.eye(new Vec3(((Camera) (Object) this).getLookVector()), partialTick);
+                if (eye != null) {
+                    this.setPosition(eye);
+                }
+            }
             return;
         }
         float[] jolt = CameraShake.jolt(partialTick);

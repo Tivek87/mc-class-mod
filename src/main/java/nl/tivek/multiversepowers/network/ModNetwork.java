@@ -25,10 +25,12 @@ import nl.tivek.multiversepowers.character.greenlantern.ConstructPayload;
 import nl.tivek.multiversepowers.character.greenlantern.ConstructPickPayload;
 import nl.tivek.multiversepowers.character.greenlantern.FlattenPayload;
 import nl.tivek.multiversepowers.character.greenlantern.HandVictimPayload;
+import nl.tivek.multiversepowers.character.greenlantern.MechDrivePayload;
 import nl.tivek.multiversepowers.character.greenlantern.RingPayload;
 import nl.tivek.multiversepowers.character.greenlantern.ability.EnergyWhip;
 import nl.tivek.multiversepowers.character.greenlantern.ability.Flamethrower;
 import nl.tivek.multiversepowers.character.greenlantern.ability.LandingSlam;
+import nl.tivek.multiversepowers.character.greenlantern.ability.MechAssembly;
 import nl.tivek.multiversepowers.character.greenlantern.ability.SwordShield;
 import nl.tivek.multiversepowers.classes.ChoosingState;
 import nl.tivek.multiversepowers.classes.ClassData;
@@ -89,6 +91,7 @@ public final class ModNetwork {
         registrar.playToClient(CharacterLookPayload.TYPE, CharacterLookPayload.STREAM_CODEC,
                 ModNetwork::onCharacterLook);
         registrar.playToServer(TransformPayload.TYPE, TransformPayload.STREAM_CODEC, ModNetwork::onTransform);
+        registrar.playToServer(MechDrivePayload.TYPE, MechDrivePayload.STREAM_CODEC, ModNetwork::onMechDrive);
         registrar.playToClient(StaminaCostPayload.TYPE, StaminaCostPayload.STREAM_CODEC, ModNetwork::onStaminaCost);
         registrar.playToServer(ConstructPickPayload.TYPE, ConstructPickPayload.STREAM_CODEC,
                 ModNetwork::onConstructPick);
@@ -175,6 +178,14 @@ public final class ModNetwork {
         context.enqueueWork(() -> {
             if (context.player() instanceof ServerPlayer serverPlayer) {
                 Characters.pick(serverPlayer, GameCharacter.byId(payload.characterId()));
+            }
+        });
+    }
+
+    private static void onMechDrive(MechDrivePayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> {
+            if (context.player() instanceof ServerPlayer serverPlayer) {
+                MechAssembly.drive(serverPlayer, payload.base(), payload.yaw());
             }
         });
     }

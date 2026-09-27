@@ -85,11 +85,68 @@
       }
     ]
   },
+  "express.whistle": {
+    "subtitle": "subtitles.welcomescreen.express.whistle",
+    "sounds": [
+      {
+        "name": "welcomescreen:express/whistle"
+      }
+    ]
+  },
+  "express.toot": {
+    "subtitle": "subtitles.welcomescreen.express.toot",
+    "sounds": [
+      {
+        "name": "welcomescreen:express/toot"
+      }
+    ]
+  },
+  "express.bell": {
+    "subtitle": "subtitles.welcomescreen.express.bell",
+    "sounds": [
+      {
+        "name": "welcomescreen:express/bell"
+      }
+    ]
+  },
+  "express.crash": {
+    "subtitle": "subtitles.welcomescreen.express.crash",
+    "sounds": [
+      {
+        "name": "welcomescreen:express/crash"
+      }
+    ]
+  },
+  "express.clack": {
+    "subtitle": "subtitles.welcomescreen.express.clack",
+    "sounds": [
+      {
+        "name": "welcomescreen:express/clack"
+      }
+    ]
+  },
+  "express.rumble": {
+    "subtitle": "subtitles.welcomescreen.express.rumble",
+    "sounds": [
+      {
+        "name": "welcomescreen:express/rumble",
+        "stream": true
+      }
+    ]
+  },
   "mech.stomp": {
     "subtitle": "subtitles.welcomescreen.mech.stomp",
     "sounds": [
       {
         "name": "welcomescreen:mech/stomp"
+      }
+    ]
+  },
+  "mech.step": {
+    "subtitle": "subtitles.welcomescreen.mech.step",
+    "sounds": [
+      {
+        "name": "welcomescreen:mech/step"
       }
     ]
   },

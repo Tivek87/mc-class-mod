@@ -1,5 +1,6 @@
 package nl.tivek.multiversepowers.character.greenlantern.ability;
 
+import java.util.ArrayDeque;
 import java.util.HashSet;
 import java.util.Set;
 import javax.annotation.Nullable;
@@ -28,6 +29,7 @@ import static nl.tivek.multiversepowers.character.greenlantern.ExpressScript.LEN
 import static nl.tivek.multiversepowers.character.greenlantern.ExpressScript.RAIL_LIFT;
 import static nl.tivek.multiversepowers.character.greenlantern.ExpressScript.SCALE;
 import static nl.tivek.multiversepowers.character.greenlantern.ExpressScript.TOP_SPEED;
+import static nl.tivek.multiversepowers.character.greenlantern.ExpressScript.TRAIN_LENGTH;
 
 abstract class ExpressRoute implements Effect {
     private static final double MAX_TURN = 0.075;
@@ -42,6 +44,7 @@ abstract class ExpressRoute implements Effect {
     private static final double LOOK_UP = 1.3;
     private static final double LOOK_DOWN = 14.0;
     private static final double AHEAD_BIAS = 10.0;
+    private static final double KEEP = (TRAIN_LENGTH + 4.0) * SCALE;
 
     final ServerPlayer owner;
     final CharacterAbility ability;
@@ -57,12 +60,34 @@ abstract class ExpressRoute implements Effect {
     @Nullable
     private LivingEntity target;
     private int chasing;
+    // Where the nose has been, by how far it had come: the rest of the train runs along it.
+    private final ArrayDeque<double[]> trail = new ArrayDeque<>();
+    boolean newTarget;
 
     ExpressRoute(ServerPlayer owner, CharacterAbility ability, Vec3 head, Vec3 way) {
         this.owner = owner;
         this.ability = ability;
         this.head = head;
         this.way = way;
+        this.trail.add(new double[] { head.x, head.y, head.z, this.odometer });
+    }
+
+    // A point on the rails so far back from the nose; before the train has run that far, straight back from its start.
+    Vec3 along(double back) {
+        double wanted = this.odometer - back;
+        double[] before = null;
+        for (double[] point : this.trail) {
+            if (point[3] >= wanted) {
+                if (before == null) {
+                    return new Vec3(point[0], point[1], point[2]).subtract(this.way.scale(point[3] - wanted));
+                }
+                double t = (wanted - before[3]) / Math.max(1.0E-9, point[3] - before[3]);
+                return new Vec3(Mth.lerp(t, before[0], point[0]), Mth.lerp(t, before[1], point[1]),
+                        Mth.lerp(t, before[2], point[2]));
+            }
+            before = point;
+        }
+        return this.head;
     }
 
     Vec3 right() {
@@ -85,6 +110,10 @@ abstract class ExpressRoute implements Effect {
         Vec3 was = this.head;
         this.head = new Vec3(x, y, z);
         this.odometer += this.head.distanceTo(was);
+        this.trail.add(new double[] { this.head.x, this.head.y, this.head.z, this.odometer });
+        while (this.trail.size() > 2 && this.trail.peekFirst()[3] < this.odometer - KEEP) {
+            this.trail.removeFirst();
+        }
         return true;
     }
 
@@ -115,6 +144,7 @@ abstract class ExpressRoute implements Effect {
         if (this.target == null) {
             this.target = this.pick(level);
             this.chasing = 0;
+            this.newTarget = this.target != null;
         }
         if (this.target == null) {
             this.turning *= 0.8;

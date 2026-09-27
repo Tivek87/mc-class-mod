@@ -34,6 +34,20 @@ public final class ExpressScript {
     public static final double TENDER_BACK = 17.2;
     public static final double TENDER_MIDDLE = 15.0;
     public static final double LENGTH = 18.5;
+    // Behind the tender run the coaches, the last one an observation car; each on two bogies round its middle.
+    public static final int COACHES = 4;
+    public static final double COACH_LENGTH = 12.4;
+    public static final double COUPLING = 0.9;
+    public static final double COACH_BOGIE = 4.3;
+    public static final double TRAIN_LENGTH = TENDER_BACK + COUPLING + COACHES * (COACH_LENGTH + COUPLING)
+            - COUPLING;
+    // Each coach tips over this much later than the one before it, and bursts this much later when the boiler goes.
+    public static final double COACH_LAG = 2.5;
+    public static final double COACH_BURST = 1.5;
+    // The whistle blows as it comes out, when it sets off after a new creature, and as the brakes lock.
+    public static final int WHISTLE_AT = 3;
+    public static final int BELL_TICKS = 60;
+    public static final int BELL_EVERY = 11;
     public static final double DRIVER_RADIUS = 1.2;
     public static final double LEAD_RADIUS = 0.55;
     public static final double TENDER_WHEEL = 0.5;
@@ -72,6 +86,15 @@ public final class ExpressScript {
 
     public static int variant(int phase, int side, int rams) {
         return phase | (side > 0 ? FALLS_RIGHT : 0) | rams << RAM_SHIFT;
+    }
+
+    // How far back from the nose a coach's front end is, in model blocks.
+    public static double coachFront(int coach) {
+        return TENDER_BACK + COUPLING + coach * (COACH_LENGTH + COUPLING);
+    }
+
+    public static double coachMiddle(int coach) {
+        return coachFront(coach) + COACH_LENGTH * 0.5;
     }
 
     public static double speedAt(double sinceRolling) {

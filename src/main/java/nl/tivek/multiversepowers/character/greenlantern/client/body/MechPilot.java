@@ -1,5 +1,6 @@
 package nl.tivek.multiversepowers.character.greenlantern.client.body;
 
+import javax.annotation.Nullable;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.PlayerModel;
@@ -23,6 +24,9 @@ import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.character.greenlantern.MechMoves;
 import nl.tivek.multiversepowers.character.greenlantern.MechScript;
 import nl.tivek.multiversepowers.character.greenlantern.client.ClientConstructs;
+import nl.tivek.multiversepowers.character.greenlantern.client.mech.MechDrive;
+import nl.tivek.multiversepowers.character.greenlantern.client.mech.MechPose;
+import nl.tivek.multiversepowers.character.greenlantern.client.mech.MechWalk;
 import nl.tivek.multiversepowers.engine.client.fx.Cinematic;
 import nl.tivek.multiversepowers.engine.client.render.FirstPersonArm;
 import nl.tivek.multiversepowers.engine.math.Ease;
@@ -37,6 +41,13 @@ public final class MechPilot {
     private static final float ARM_DOWN = 0.55F;
     private static final float ARM_BACK = 0.5F;
     private static final double IDLE = MechScript.SETTLED + 20.0;
+    private static final float SIT_LEGS = 1.41F;
+    private static final float SIT_SPREAD = 0.2F;
+    private static final double SHOULDER_X = 0.3125;
+    private static final double SHOULDER_Y = 1.375;
+    private static final double BUTTON_TOP = 0.08;
+    private static final double BUTTON_PUSH = 0.05;
+    private static final int DRIVE_AFTER = 2;
 
     private MechPilot() {
     }
@@ -48,9 +59,11 @@ public final class MechPilot {
             return;
         }
         double t = pilot.broke() >= 0.0 ? IDLE : pilot.t();
+        MechPose walk = walking(pilot, partialTick);
         for (int side = 0; side < 2; side++) {
             boolean right = side == 0;
-            float[] turn = reach(MechMoves.pilotArm(right, t).way());
+            Vec3 way = walk != null ? toHand(walk, right ? 1 : -1) : MechMoves.pilotArm(right, t).way();
+            float[] turn = reach(way);
             ModelPart arm = right ? model.rightArm : model.leftArm;
             arm.xRot = turn[0];
             arm.yRot = 0.0F;
@@ -58,11 +71,12 @@ public final class MechPilot {
         }
         float leap = (float) (Ease.smooth((t - MechScript.LEAP) / 4.0)
                 * (1.0 - Ease.smooth((t - MechScript.ABOARD + 6.0) / 6.0)));
-        float stance = t < MechScript.LEAP ? 0.14F : 0.06F;
-        model.rightLeg.xRot = -0.95F * leap;
-        model.leftLeg.xRot = -0.3F * leap;
-        model.rightLeg.yRot = 0.0F;
-        model.leftLeg.yRot = 0.0F;
+        float sit = pilot.broke() >= 0.0 ? 0.0F : (float) Ease.smooth((t - MechScript.SIT) / 6.0);
+        float stance = (t < MechScript.LEAP ? 0.14F : 0.06F) * (1.0F - sit);
+        model.rightLeg.xRot = -0.95F * leap - SIT_LEGS * sit;
+        model.leftLeg.xRot = -0.3F * leap - SIT_LEGS * sit;
+        model.rightLeg.yRot = SIT_SPREAD * sit;
+        model.leftLeg.yRot = -SIT_SPREAD * sit;
         model.rightLeg.zRot = stance;
         model.leftLeg.zRot = -stance;
         model.body.xRot = 0.0F;
@@ -80,6 +94,31 @@ public final class MechPilot {
         return new float[] { (float) Math.asin(Mth.clamp(-way.z, -1.0, 1.0)), (float) Math.atan2(way.x, -way.y) };
     }
 
+    @Nullable
+    private static MechPose walking(ClientConstructs.Piloted pilot, float partialTick) {
+        return pilot.t() >= MechScript.SETTLED && pilot.broke() < 0.0 ? MechWalk.pose(pilot.id(), partialTick) : null;
+    }
+
+    // Where a hand is (side 1 right, -1 left): on its lever, or on its way to a button and pressing it.
+    private static Vec3 hand(MechPose pose, int side) {
+        Vec3 grip = pose.grip(side);
+        int button = pose.button(side);
+        if (button < 0) {
+            return grip;
+        }
+        double press = pose.press();
+        Vec3 top = pose.torso().point(MechScript.BUTTONS[button].add(0.0, BUTTON_TOP, 0.0));
+        Vec3 at = grip.lerp(top, Ease.smooth(Math.min(1.0, press / 0.8)));
+        return at.subtract(pose.torso().up().scale(BUTTON_PUSH * Math.max(0.0, press - 0.8) / 0.2));
+    }
+
+    // Which way a seated pilot's arm points to reach its hand, in the mech's places with x outwards for either arm.
+    private static Vec3 toHand(MechPose pose, int side) {
+        Vec3 shoulder = MechScript.COCKPIT.add(side * SHOULDER_X, SHOULDER_Y, 0.0);
+        Vec3 way = pose.torso().local(hand(pose, side)).subtract(shoulder);
+        return new Vec3(way.x * side, way.y, way.z).normalize();
+    }
+
     @SubscribeEvent
     public static void onRenderPlayer(RenderPlayerEvent.Pre event) {
         Player player = event.getEntity();
@@ -87,8 +126,8 @@ public final class MechPilot {
         if (pilot == null) {
             return;
         }
-        Vec3 ahead = pilot.stage().ahead();
-        float yaw = (float) Math.toDegrees(Math.atan2(-ahead.x, ahead.z));
+        MechPose walk = walking(pilot, event.getPartialTick());
+        float yaw = walk != null ? walk.torso().yaw() : pilot.stage().yaw();
         player.yBodyRot = yaw;
         player.yBodyRotO = yaw;
     }
@@ -101,14 +140,29 @@ public final class MechPilot {
         }
         ClientConstructs.Piloted pilot = ClientConstructs.piloted(player.getId(), 0.0F);
         if (pilot == null) {
+            MechDrive.forget();
             return;
         }
         Input input = event.getInput();
+        Vec3 feet = pilot.feet();
+        if (pilot.broke() < 0.0 && pilot.t() >= MechScript.SETTLED + DRIVE_AFTER) {
+            MechDrive.drive(player, pilot.id(), pilot.stage(), input);
+            MechWalk.step(pilot.id(), MechDrive.stage(pilot.id()));
+            MechPose walk = MechWalk.latest(pilot.id());
+            if (walk != null) {
+                feet = walk.seat();
+            }
+        } else {
+            MechDrive.forget();
+        }
         input.forwardImpulse = 0.0F;
         input.leftImpulse = 0.0F;
         input.jumping = false;
         input.shiftKeyDown = false;
-        Vec3 feet = pilot.feet();
+        input.up = false;
+        input.down = false;
+        input.left = false;
+        input.right = false;
         player.setPos(feet.x, feet.y, feet.z);
         player.setDeltaMovement(Vec3.ZERO);
         player.resetFallDistance();
@@ -130,15 +184,17 @@ public final class MechPilot {
             return;
         }
         double t = pilot.broke() >= 0.0 ? IDLE : pilot.t();
+        MechPose walk = walking(pilot, event.getPartialTick());
         Camera camera = minecraft.gameRenderer.getMainCamera();
-        // Hands draw with a fixed 70 degree view; stretched by this, they meet the sticks the world draws.
+        // Hands draw with a fixed 70 degree view; stretched by this, they meet the levers the world draws.
         double stretch = Math.tan(Math.toRadians(35.0)) / Math.tan(Math.toRadians(minecraft.options.fov().get() * 0.5));
         PlayerRenderer renderer = (PlayerRenderer) minecraft.getEntityRenderDispatcher().getRenderer(player);
         for (int side = -1; side <= 1; side += 2) {
-            if (MechMoves.pilotArm(side > 0, t).onStick() < 0.5) {
+            if (walk == null && MechMoves.pilotArm(side > 0, t).onStick() < 0.5) {
                 continue;
             }
-            Vec3 grip = pilot.stage().point(side * MechScript.STICK.x, MechScript.STICK.y, MechScript.STICK.z);
+            Vec3 grip = walk != null ? hand(walk, side) : pilot.stage().point(side * MechScript.LEVER.x,
+                    MechScript.LEVER.y + MechScript.LEVER_LENGTH, MechScript.LEVER.z);
             Vector3f hand = seen(camera, grip, stretch);
             if (hand.z() > -HAND_AHEAD) {
                 continue;

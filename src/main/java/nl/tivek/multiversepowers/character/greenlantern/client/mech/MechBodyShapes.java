@@ -8,31 +8,46 @@ import nl.tivek.multiversepowers.engine.client.render.ConstructPainter.Shape;
 import nl.tivek.multiversepowers.engine.client.render.Mesh;
 import nl.tivek.multiversepowers.engine.client.render.Surface;
 
-// The trunk round the mech's ground spot, x to its right, y up, z ahead: the pilot stands in an open cockpit in the
-// chest behind an arch of keystones, inside a bubble of see-through light, as in the clip.
+// The trunk round the mech's ground spot, x to its right, y up, z ahead: the pilot sits in a cockpit deep in the chest,
+// looking out through a round port of see-through green glass set in a thick flange of blocks, as in the clip.
 final class MechBodyShapes {
-    static final double WINDOW_Y = 7.55;
-    static final double WINDOW_IN = 0.88;
-    static final double WINDOW_OUT = 1.34;
-    static final double WINDOW_BACK = 1.82;
-    static final double WINDOW_Z = 2.26;
-    static final Vec3 CORE = new Vec3(0.0, WINDOW_Y, 1.0);
+    static final double PORT_Y = 7.55;
+    static final double PORT_IN = 1.05;
+    static final double PORT_OUT = 1.62;
+    static final double PORT_BACK = 1.0;
+    static final double PORT_FRONT = 2.0;
+    static final double GLASS_Z = 1.86;
+    static final double GLASS_BULGE = 0.27;
+    static final Vec3 CORE = new Vec3(0.0, PORT_Y, 1.0);
     static final double CORE_RADIUS = 1.35;
     static final double CHEST_TOP = 9.3;
     private static final double FLOOR = MechScript.COCKPIT.y;
-    // Half the turn the window takes out of the front of the chest.
-    private static final double OPEN = 0.07;
+    private static final double CABIN_BACK = -0.32;
+    private static final double CABIN_SIDE = 1.3;
+    private static final double CABIN_TOP = 9.0;
+    private static final double HOLE_WIDE = 1.1;
+    private static final double HOLE_HIGH = 1.15;
+    private static final int RIM_BLOCKS = 18;
     private static final Surface CHEST_SKIN = Surface.loft(MechParts.at(5.85, 1.45, 1.12, 0.0, 2.6),
             MechParts.at(6.3, 1.98, 1.45, 0.05, 2.8), MechParts.at(7.1, 2.34, 1.7, 0.08, 3.0),
             MechParts.at(8.0, 2.5, 1.78, 0.05, 3.0), MechParts.at(8.65, 2.34, 1.62, 0.0, 2.8),
             MechParts.at(9.1, 1.8, 1.28, -0.05, 2.6), MechParts.at(CHEST_TOP, 0.0, 0.0, -0.08, 2.0));
 
+    // Half the turn the port takes out of the front of the chest.
+    private static final double OPEN = open();
+
     static final Shape PELVIS = Shape.of(pelvis());
     static final Shape WAIST = Shape.of(waist());
     static final Shape CHEST = Shape.of(chest());
-    static final Shape ARCH = Shape.of(arch());
+    static final Shape RIM = Shape.of(rim());
+    static final Shape GLASS = Shape.of(glass());
     static final Shape BUBBLE = Shape.of(Mesh.ball(28, 16, CORE_RADIUS, 1.0));
-    static final Shape STICK = Shape.of(stick());
+    static final Shape CABIN = Shape.of(cabin());
+    static final Shape WALLS = Shape.of(walls());
+    static final Shape SEAT = Shape.of(seat());
+    static final Shape CONSOLE = Shape.of(console());
+    static final Shape LEVER = Shape.of(lever());
+    static final Shape BUTTON = Shape.of(Mesh.bevel(-0.07, -0.035, -0.06, 0.07, 0.035, 0.06, 0.02, 1.0));
     static final Shape SHOULDER = Shape.of(shoulder());
     static final Shape SHOULDER_LEFT = MechParts.mirrored(SHOULDER);
 
@@ -66,11 +81,28 @@ final class MechBodyShapes {
                 Mesh.bevel(-0.1, 5.35, 0.95, 0.1, 6.0, 1.14, 0.03, 1.35) };
     }
 
-    // The barrel of the chest round the cockpit, open in front for the window, closed above and below it.
+    // How far round from the front of the chest its surface is HOLE_WIDE out to the side, at the port's height.
+    private static double open() {
+        double v = MechParts.along(CHEST_SKIN, PORT_Y);
+        double low = 0.0;
+        double high = 0.2;
+        boolean rightwards = Math.abs(CHEST_SKIN.at(0.3, v).x) > Math.abs(CHEST_SKIN.at(0.25, v).x);
+        for (int k = 0; k < 40; k++) {
+            double middle = (low + high) * 0.5;
+            if (Math.abs(CHEST_SKIN.at(0.25 + (rightwards ? middle : -middle), v).x) < HOLE_WIDE) {
+                low = middle;
+            } else {
+                high = middle;
+            }
+        }
+        return (low + high) * 0.5;
+    }
+
+    // The barrel of the chest round the cockpit, open in front for the port, closed above and below it.
     private static Mesh[] chest() {
         Surface chest = CHEST_SKIN;
-        double floor = MechParts.along(chest, FLOOR);
-        double brow = MechParts.along(chest, WINDOW_Y + WINDOW_IN + 0.12);
+        double floor = MechParts.along(chest, PORT_Y - HOLE_HIGH);
+        double brow = MechParts.along(chest, PORT_Y + HOLE_HIGH);
         List<Mesh> m = new ArrayList<>();
         m.addAll(List.of(MechParts.plated(MechParts.part(chest, 0.25 + OPEN, 1.25 - OPEN, 0.0, 1.0), 22, 9, 61,
                 0.34, 1.0)));
@@ -85,44 +117,97 @@ final class MechBodyShapes {
                 pecTop), 2, 3, 64, 0.14, 1.06)));
         m.addAll(List.of(MechParts.plated(MechParts.part(outside, 0.25 - OPEN - 0.1, 0.25 - OPEN - 0.01, pecLow,
                 pecTop), 2, 3, 65, 0.14, 1.06)));
-        Surface wall = (u, v) -> new Vec3(1.05 - 2.1 * u, FLOOR + 0.05 + 2.2 * v, 0.42);
-        m.addAll(List.of(MechParts.plated(wall, 3, 4, 66, 0.2, 0.82)));
-        m.add(Mesh.bevel(-1.16, FLOOR - 0.25, 0.25, 1.16, FLOOR, 2.0, 0.04, 0.85));
         m.add(Mesh.torus(24, 4, 0.78, 0.07, 1.3).moved(0.0, CHEST_TOP - 0.12, -0.02));
         return m.toArray(Mesh[]::new);
     }
 
-    // Keystones round the round top of the window and down its sides, like the rim of the clip's cockpit.
-    private static Mesh[] arch() {
+    // The port's flange: a ring of heavy blocks round the glass, every other one standing a little further out.
+    private static Mesh[] rim() {
         List<Mesh> m = new ArrayList<>();
-        int stones = 9;
-        double gap = 0.03;
-        for (int k = 0; k < stones; k++) {
-            double a0 = Math.PI * k / stones + gap;
-            double a1 = Math.PI * (k + 1) / stones - gap;
-            double out = k == stones / 2 ? WINDOW_OUT + 0.14 : WINDOW_OUT;
-            m.add(Mesh.slab(WINDOW_BACK, WINDOW_Z + (k == stones / 2 ? 0.08 : 0.0), 0.1,
-                    k == stones / 2 ? 1.25 : 1.1, Math.cos(a0) * WINDOW_IN, WINDOW_Y + Math.sin(a0) * WINDOW_IN,
-                    Math.cos(a0) * out, WINDOW_Y + Math.sin(a0) * out, Math.cos(a1) * out,
-                    WINDOW_Y + Math.sin(a1) * out, Math.cos(a1) * WINDOW_IN, WINDOW_Y + Math.sin(a1) * WINDOW_IN));
+        double gap = 0.012;
+        for (int k = 0; k < RIM_BLOCKS; k++) {
+            double a0 = Math.PI * 2.0 * k / RIM_BLOCKS + gap;
+            double a1 = Math.PI * 2.0 * (k + 1) / RIM_BLOCKS - gap;
+            double out = k % 2 == 0 ? PORT_OUT : PORT_OUT - 0.08;
+            double front = k % 2 == 0 ? PORT_FRONT + 0.08 : PORT_FRONT;
+            m.add(Mesh.slab(PORT_BACK, front, 0.08, k % 2 == 0 ? 1.12 : 1.0, Math.cos(a0) * PORT_IN,
+                    PORT_Y + Math.sin(a0) * PORT_IN, Math.cos(a0) * out, PORT_Y + Math.sin(a0) * out,
+                    Math.cos(a1) * out, PORT_Y + Math.sin(a1) * out, Math.cos(a1) * PORT_IN,
+                    PORT_Y + Math.sin(a1) * PORT_IN));
         }
-        int posts = 3;
-        double post = (WINDOW_Y - FLOOR) / posts;
-        for (int k = 0; k < posts; k++) {
-            double y0 = FLOOR + k * post;
-            MechParts.pair(m, Mesh.bevel(WINDOW_IN, y0 + 0.02, WINDOW_BACK, WINDOW_OUT, y0 + post - 0.02, WINDOW_Z,
-                    0.09, 1.1));
+        m.add(Mesh.torus(36, 4, PORT_IN + 0.02, 0.06, 1.35).alongZ().moved(0.0, PORT_Y, GLASS_Z));
+        m.add(Mesh.torus(36, 4, PORT_OUT - 0.02, 0.05, 1.2).alongZ().moved(0.0, PORT_Y, PORT_FRONT + 0.02));
+        for (int k = 0; k < 4; k++) {
+            double a = Math.PI * 0.5 * k + Math.PI * 0.25;
+            double r = (PORT_IN + PORT_OUT) * 0.5;
+            m.add(MechParts.disc(0.1, PORT_FRONT + 0.08, 0.05, 1.4).turned(0.0, 1.0, 0.0, -90.0)
+                    .moved(Math.cos(a) * r, PORT_Y + Math.sin(a) * r, 0.0));
         }
-        m.add(Mesh.bevel(-WINDOW_OUT - 0.05, FLOOR - 0.3, WINDOW_BACK - 0.1, WINDOW_OUT + 0.05, FLOOR, WINDOW_Z + 0.06,
-                0.09, 1.15));
         return m.toArray(Mesh[]::new);
     }
 
-    // One control stick, round its foot on the cockpit floor.
-    private static Mesh[] stick() {
-        return new Mesh[] { Mesh.bevel(-0.12, 0.0, -0.12, 0.12, 0.1, 0.12, 0.03, 1.0),
-                Mesh.cylinder(8, 0.045, 0.1, 0.78, 1.25), Mesh.cylinder(10, 0.07, 0.72, 0.92, 1.1),
-                Mesh.ball(8, 5, 0.06, 1.7).moved(0.0, 0.95, 0.0) };
+    // The glass: a shallow dome bulging out of the port.
+    private static Mesh[] glass() {
+        int rings = 8;
+        double sphere = (PORT_IN * PORT_IN + GLASS_BULGE * GLASS_BULGE) / (2.0 * GLASS_BULGE);
+        double[] profile = new double[(rings + 1) * 2];
+        for (int i = 0; i <= rings; i++) {
+            double r = PORT_IN * i / rings;
+            profile[2 * i] = r;
+            profile[2 * i + 1] = Math.sqrt(sphere * sphere - r * r) - (sphere - GLASS_BULGE);
+        }
+        return new Mesh[] { Mesh.lathe(40, 1.0, profile).alongZ() };
+    }
+
+    // The cockpit's back and floor, which close the chest behind the pilot.
+    private static Mesh[] cabin() {
+        List<Mesh> m = new ArrayList<>();
+        Surface wall = (u, v) -> new Vec3(CABIN_SIDE - 2.0 * CABIN_SIDE * u, FLOOR + 0.02 + (CABIN_TOP - FLOOR) * v,
+                CABIN_BACK);
+        m.addAll(List.of(MechParts.plated(wall, 3, 4, 66, 0.2, 0.82)));
+        m.add(Mesh.bevel(-CABIN_SIDE, FLOOR - 0.25, CABIN_BACK, CABIN_SIDE, FLOOR, PORT_BACK + 0.4, 0.04, 0.85));
+        return m.toArray(Mesh[]::new);
+    }
+
+    // Its sides and roof: seen through the glass from outside, never from the pilot's own seat.
+    private static Mesh[] walls() {
+        List<Mesh> m = new ArrayList<>();
+        MechParts.pair(m, Mesh.slab(CABIN_BACK, PORT_BACK + 0.2, 0.04, 0.8, CABIN_SIDE - 0.08, FLOOR,
+                CABIN_SIDE, FLOOR, CABIN_SIDE, CABIN_TOP, CABIN_SIDE - 0.08, CABIN_TOP));
+        m.add(Mesh.bevel(-CABIN_SIDE, CABIN_TOP - 0.08, CABIN_BACK, CABIN_SIDE, CABIN_TOP, PORT_BACK + 0.2, 0.03,
+                0.8));
+        return m.toArray(Mesh[]::new);
+    }
+
+    // The pilot's seat, with a high back and a rest for the feet, round the cockpit's floor spot.
+    private static Mesh[] seat() {
+        double s = MechScript.SEAT - 0.12;
+        List<Mesh> m = new ArrayList<>();
+        m.add(Mesh.bevel(-0.34, s - 0.22, 0.18, 0.34, s, 0.95, 0.05, 1.0));
+        m.add(Mesh.bevel(-0.12, 0.0, 0.4, 0.12, s - 0.22, 0.7, 0.03, 0.9));
+        m.add(MechParts.side(-0.36, 0.36, 0.05, 1.05, 0.08, s, 0.26, s, 0.24, s + 1.3, 0.1, s + 1.34));
+        m.add(Mesh.bevel(-0.2, s + 1.36, 0.08, 0.2, s + 1.62, 0.24, 0.04, 1.05));
+        MechParts.pair(m, Mesh.bevel(0.28, s + 0.02, 0.2, 0.4, s + 0.3, 0.8, 0.03, 1.1));
+        m.add(Mesh.bevel(-0.3, 0.2, 1.1, 0.3, 0.34, 1.34, 0.03, 1.0));
+        return m.toArray(Mesh[]::new);
+    }
+
+    // The console before the seat: a sloping desk under the glass with the levers' slots in its back.
+    private static Mesh[] console() {
+        List<Mesh> m = new ArrayList<>();
+        double f = FLOOR;
+        m.add(MechParts.side(-0.58, 0.58, 0.05, 0.95, 1.14, f, 1.56, f, 1.56, f + 0.96, 1.26, f + 1.0, 1.14, f + 0.86));
+        MechParts.pair(m, Mesh.bevel(0.26, f + 0.52, 1.0, 0.46, f + 0.66, 1.16, 0.02, 1.15));
+        m.add(Mesh.bevel(-0.5, f + 0.9, 1.22, 0.5, f + 0.94, 1.3, 0.01, 1.4));
+        return m.toArray(Mesh[]::new);
+    }
+
+    // One lever round its pivot: a rod up y with a grip on top.
+    private static Mesh[] lever() {
+        double l = MechScript.LEVER_LENGTH;
+        return new Mesh[] { MechParts.hub(0.06, -0.08, 0.08, 1.1), Mesh.cylinder(8, 0.035, 0.0, l - 0.08, 1.2),
+                Mesh.cylinder(10, 0.06, l - 0.14, l + 0.04, 1.05), Mesh.ball(8, 5, 0.055, 1.6).moved(0.0, l + 0.05,
+                        0.0) };
     }
 
     // The right pauldron: a tiled dome tipped outwards over the shoulder, two tiers under it and a horn on top.

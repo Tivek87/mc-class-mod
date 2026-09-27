@@ -26,6 +26,8 @@ public final class ExpressPainter {
     private static final double SLAM_SHAKE = 0.75;
     private static final double BOOM_SHAKE = 1.0;
     private static final double RUMBLE = 0.14;
+    private static final double ROCK = 0.018;
+    private static final double JACKKNIFE = 0.26;
 
     public record Gate(Vec3 center, Vec3 normal, double radius, double open, double shuts) {
     }
@@ -45,13 +47,31 @@ public final class ExpressPainter {
         int side = ExpressScript.side(now.variant());
         boolean quiet = ExpressScript.quiet(now.variant());
         double tip = since(trail, TIP, age);
+        double slide = since(trail, ExpressScript.SLIDE, age);
         double boom = since(trail, BOOM, age);
         double apart = boom < 0.0 ? -1.0 : Mth.clamp(boom / ExpressScript.BOOM_TICKS, 0.0, 1.0);
-        Frame engine = car(trail, o - ExpressScript.BOGIE * s, o - ExpressScript.DRIVER * s, s, false, side, tip);
+        double pace = tip >= 0.0 ? 0.0 : Mth.clamp((now.charge() - was.charge()) / ExpressScript.TOP_SPEED, 0.0, 1.0);
+        Frame engine = car(trail, o - ExpressScript.BOGIE * s, o - ExpressScript.DRIVER * s, s, false, side, tip,
+                0.0, rock(age, 0, pace) * 0.4);
         Frame tender = car(trail, o - ExpressScript.TENDER_FRONT * s, o - ExpressScript.TENDER_BACK * s, s, true, side,
-                tip - ExpressScript.TENDER_LAG);
-        Vec3 middle = engine.at(0.0, ExpressShapes.BOILER_AXIS, -5.0);
-        if (!painter.visible(middle, (ExpressScript.LENGTH * 0.7 + 4.0) * s)) {
+                tip - ExpressScript.TENDER_LAG, 0.0, rock(age, 1, pace) * 0.7);
+        Frame[] coaches = new Frame[ExpressScript.COACHES];
+        double[] burst = new double[ExpressScript.COACHES];
+        boolean left = apart < 1.0;
+        for (int k = 0; k < coaches.length; k++) {
+            // They jackknife as they come off: each lies the other way from the one before, turned askew.
+            int zig = k % 2 == 0 ? -side : side;
+            double askew = slide < 0.0 ? 0.0 : zig * JACKKNIFE * Ease.smooth(slide / 12.0) * (1.0 + 0.25 * k);
+            double middle = ExpressScript.coachMiddle(k);
+            coaches[k] = car(trail, o - (middle - ExpressScript.COACH_BOGIE) * s,
+                    o - (middle + ExpressScript.COACH_BOGIE) * s, s, true, zig,
+                    tip - ExpressScript.TENDER_LAG - (k + 1) * ExpressScript.COACH_LAG, askew, rock(age, k + 2, pace));
+            burst[k] = boom < 0.0 ? -1.0 : Mth.clamp((boom - (k + 1) * ExpressScript.COACH_BURST)
+                    / ExpressScript.BOOM_TICKS, 0.0, 1.0);
+            left |= burst[k] < 1.0;
+        }
+        Vec3 middle = trail.at(o - ExpressScript.TRAIN_LENGTH * 0.5 * s);
+        if (!painter.visible(middle, (ExpressScript.TRAIN_LENGTH * 0.6 + 6.0) * s)) {
             return;
         }
         double steam = since(trail, STEAM, age);
@@ -62,32 +82,49 @@ public final class ExpressPainter {
         }
         painter.ambient(GLOWS);
         ExpressRails.draw(painter, trail, o, s, age, apart);
-        if (apart >= 1.0) {
+        if (!left) {
             painter.ambient(0.0);
             painter.noClip();
             ExpressLight.boom(painter, trail, engine, age, s, quiet);
             return;
         }
         painter.fling(FLING);
-        cars(painter, engine, tender, o, s, apart, pressure, age);
+        if (apart < 1.0) {
+            cars(painter, engine, tender, o, s, apart, pressure, age);
+        }
+        coaches(painter, tender, coaches, burst, o, s, tip < 0.0);
         painter.fling(1.0);
         painter.ambient(0.0);
         if (clipped) {
             painter.noClip();
         }
-        ExpressLight.lights(painter, trail, engine, tender, o, s, age, side, tip, pressure, apart);
+        if (apart < 1.0) {
+            ExpressLight.lights(painter, trail, engine, tender, o, s, age, side, tip, pressure, apart);
+        }
+        ExpressLight.coaches(painter, trail, coaches, burst, s, age, side, tip, slide);
         if (apart >= 0.0) {
             ExpressLight.boom(painter, trail, engine, age, s, quiet);
         }
     }
 
+    // A gentle rocking from side to side as it runs, each car to its own beat.
+    private static double rock(double age, int car, double pace) {
+        return ROCK * pace * (Math.sin(age * 0.37 + car * 1.7) + 0.4 * Math.sin(age * 0.91 + car * 0.6));
+    }
+
     private static Frame car(ExpressTrails.Trail trail, double front, double back, double s, boolean middle,
-            int side, double tipSince) {
+            int side, double tipSince, double askew, double rocking) {
         Vec3 a = trail.at(front);
         Vec3 b = trail.at(back);
         Vec3 way = a.subtract(b);
         Frame frame = Frame.of(middle ? a.add(b).scale(0.5) : a, way.lengthSqr() < 1.0E-10 ? new Vec3(0.0, 0.0, 1.0)
                 : way, Vectors.UP, s);
+        if (askew != 0.0) {
+            frame = frame.turned(0.0, 0.0, 0.0, 0.0, 1.0, 0.0, askew);
+        }
+        if (rocking != 0.0) {
+            frame = frame.turned(0.0, 0.0, 0.0, 0.0, 0.0, 1.0, rocking);
+        }
         double roll = ExpressScript.roll(tipSince);
         if (roll <= 0.0) {
             return frame;
@@ -138,6 +175,42 @@ public final class ExpressPainter {
                     .turned(0.0, 0.0, 0.0, 1.0, 0.0, 0.0, -Math.atan2(rise, reach)), 1.0, apart, seed += 20);
             HandPainter.part(painter, ExpressShapes.CROSSHEAD, engine.moved(flank * ExpressShapes.CROSSHEAD_X, AXLE,
                     pinZ + reach), 1.0, apart, seed += 20);
+        }
+    }
+
+    private static void coaches(LanternPainter painter, Frame tender, Frame[] coaches, double[] burst, double o,
+            double s, boolean coupled) {
+        double turn = o / (ExpressShapes.TENDER_AXLE * s);
+        Frame before = tender;
+        double behind = ExpressScript.TENDER_BACK - ExpressScript.TENDER_MIDDLE;
+        for (int k = 0; k < coaches.length; k++) {
+            Frame coach = coaches[k];
+            double apart = burst[k];
+            int seed = PIECES * (20 + 12 * k);
+            if (apart < 1.0) {
+                boolean last = k == coaches.length - 1;
+                HandPainter.part(painter, last ? ExpressCoaches.OBSERVATION : ExpressCoaches.COACH, coach, 1.0, apart,
+                        seed);
+                for (int flank = -1; flank <= 1; flank += 2) {
+                    boolean right = flank > 0;
+                    for (double z : ExpressCoaches.AXLES) {
+                        wheel(painter, right ? ExpressShapes.TENDER_WHEEL : ExpressShapes.TENDER_WHEEL_LEFT, coach,
+                                flank * RAIL, ExpressShapes.TENDER_AXLE, z, turn + z, apart, seed += 7);
+                    }
+                }
+                if (coupled && apart < 0.0) {
+                    Vec3 from = before.at(0.0, 1.1, -behind);
+                    Vec3 to = coach.at(0.0, 1.1, ExpressCoaches.END);
+                    Vec3 way = to.subtract(from);
+                    double length = way.length();
+                    if (length > 1.0E-3 && length < ExpressScript.COUPLING * s * 3.0) {
+                        painter.shape(ExpressCoaches.COUPLER, Frame.of(from, way, Vectors.UP, s)
+                                .stretched(1.0, 1.0, length / s), 1.0, 1.0);
+                    }
+                }
+            }
+            before = coach;
+            behind = ExpressCoaches.END;
         }
     }
 

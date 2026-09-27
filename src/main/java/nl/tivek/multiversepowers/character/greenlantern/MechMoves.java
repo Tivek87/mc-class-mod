@@ -11,13 +11,16 @@ import nl.tivek.multiversepowers.engine.math.Vectors;
 public final class MechMoves {
     private static final double CLAP_HIGH = 1.25;
     private static final double CLAP_OUT = 0.5;
-    private static final Vec3 CLAP_WAY = new Vec3(-0.62, -0.08, 0.78).normalize();
+    private static final Vec3 CLAP_WAY = new Vec3(0.0, 0.12, 1.0).normalize();
     private static final double SQUEEZE_LIFT = 0.3;
     private static final double SWING_PULL = 2.2;
     private static final double SPIN = Math.PI * 3.0;
     private static final int SPUN = 72;
-    private static final Vec3 STICK_WAY = MechScript.STICK.subtract(MechScript.COCKPIT).subtract(0.3125, 1.375, 0.0)
-            .normalize();
+    private static final double WALK_SWING = 0.3;
+    private static final double WALK_BEND = 0.22;
+    private static final Vec3 WALK_HANG = new Vec3(0.06, -0.94, 0.34).normalize();
+    private static final Vec3 LEVER_WAY = MechScript.LEVER.add(0.0, MechScript.LEVER_LENGTH, 0.0)
+            .subtract(MechScript.COCKPIT).subtract(0.3125, 1.375, 0.0).normalize();
     private static final Vec3 RAISED = new Vec3(0.55, 0.72, 0.4).normalize();
     private static final Keyframes.Key[] LOOSE;
     private static final Keyframes.Key[] SET;
@@ -48,10 +51,8 @@ public final class MechMoves {
                         1.0, 0.0),
                 loose(72, false, new Vec3(3.4, 3.0, 1.2), new Vec3(-0.1, -0.3, 0.95), new Vec3(-0.9, 0.0, -0.1),
                         0.25, 0.7, 1.0),
-                loose(75, true, new Vec3(4.3, 2.2, 0.9), new Vec3(-0.5, -0.05, 0.86), new Vec3(-0.85, 0.05, -0.5),
-                        0.05, 1.0, 1.0),
-                loose(81, true, new Vec3(4.6, 2.1, 0.8), new Vec3(-0.55, -0.05, 0.83), new Vec3(-0.85, 0.05, -0.5),
-                        0.0, 1.0, 1.0),
+                loose(75, true, new Vec3(4.2, 1.5, 1.05), new Vec3(0.08, 0.12, 1.0), inward, 0.05, 1.0, 1.0),
+                loose(81, true, new Vec3(4.7, 1.6, 0.95), new Vec3(0.12, 0.14, 1.0), inward, 0.0, 1.0, 1.0),
                 loose(MechScript.CLAP, true, clapElbow, CLAP_WAY, inward, 0.0, 0.2, 1.0),
                 loose(92, false, clapElbow.add(0.0, SQUEEZE_LIFT, 0.0), CLAP_WAY, inward, 0.3, 0.1, 1.0),
                 loose(MechScript.RELEASE, true, clapElbow.add(0.0, SQUEEZE_LIFT, 0.0), CLAP_WAY, inward, 0.3, 0.1,
@@ -169,6 +170,26 @@ public final class MechMoves {
         return new Arm(elbow, way, square(new Vec3(v[6], v[7], v[8]), way), v[9], v[10], 1.0);
     }
 
+    // A walking mech's arm, swinging from the shoulder against its legs: swing 1 has the right arm forward and the
+    // left one back. The further it walks (walking 0 to 1) the lower its forearm hangs; it bends up a little as it
+    // swings forward.
+    public static Arm walking(boolean right, double t, double swing, double walking) {
+        Arm set = set(right, Math.max(t, MechScript.SETTLED));
+        double angle = WALK_SWING * (right ? swing : -swing);
+        Vec3 across = new Vec3(1.0, 0.0, 0.0);
+        Vec3 elbow = MechScript.SHOULDER.add(Vectors.spin(set.elbow().subtract(MechScript.SHOULDER), across, -angle));
+        double bend = angle + WALK_BEND * Math.max(0.0, angle) / WALK_SWING;
+        Vec3 hang = set.way().lerp(WALK_HANG, Mth.clamp(walking, 0.0, 1.0)).normalize();
+        Vec3 palm = square(set.palm(), hang);
+        Arm arm = new Arm(elbow, Vectors.spin(hang, across, -bend), Vectors.spin(palm, across, -bend), set.curl(),
+                set.spread(), 1.0);
+        if (right) {
+            return arm;
+        }
+        return new Arm(MechScript.mirror(arm.elbow()), MechScript.mirror(arm.way()), MechScript.mirror(arm.palm()),
+                arm.curl(), arm.spread(), arm.upper());
+    }
+
     public static double upper(double t) {
         return Mth.clamp((t - MechScript.UPPER_ARMS) / (MechScript.ELBOWS - MechScript.UPPER_ARMS), 0.0, 1.0);
     }
@@ -180,8 +201,8 @@ public final class MechMoves {
 
     public static PilotArm pilotArm(boolean right, double t) {
         float[] v = Keyframes.at(PILOT, (float) t);
-        double onStick = Ease.smooth((t - 128.0) / 6.0);
-        Vec3 way = new Vec3(v[0], v[1], v[2]).normalize().lerp(STICK_WAY, onStick).normalize();
+        double onStick = Ease.smooth((t - MechScript.GRIP) / 6.0);
+        Vec3 way = new Vec3(v[0], v[1], v[2]).normalize().lerp(LEVER_WAY, onStick).normalize();
         if (right && t > MechScript.LOCK - 2) {
             // He throws up his right arm with the mech's.
             double raised = Ease.smooth((t - (MechScript.LOCK - 2)) / 5.0) * (1.0 - Ease.smooth((t - 188.0) / 6.0));

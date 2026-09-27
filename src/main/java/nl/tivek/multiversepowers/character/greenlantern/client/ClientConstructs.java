@@ -22,6 +22,7 @@ import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.character.greenlantern.ConstructPayload;
 import nl.tivek.multiversepowers.character.greenlantern.HandGroup;
 import nl.tivek.multiversepowers.character.greenlantern.HandPose;
+import nl.tivek.multiversepowers.character.greenlantern.MechScript;
 import nl.tivek.multiversepowers.character.greenlantern.ability.AirStrike;
 import nl.tivek.multiversepowers.character.greenlantern.ability.LightBubble;
 import nl.tivek.multiversepowers.character.greenlantern.ability.WhipSnare;
@@ -30,7 +31,10 @@ import nl.tivek.multiversepowers.character.greenlantern.client.body.FlameArms;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.RingSpot;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.SwordArms;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.WhipArms;
+import nl.tivek.multiversepowers.character.greenlantern.client.mech.MechDrive;
 import nl.tivek.multiversepowers.character.greenlantern.client.mech.MechPainter;
+import nl.tivek.multiversepowers.character.greenlantern.client.mech.MechPose;
+import nl.tivek.multiversepowers.character.greenlantern.client.mech.MechWalk;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.BeamCharge;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.BeamPainter;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.BubblePainter;
@@ -199,6 +203,14 @@ public final class ClientConstructs extends TrackedConstructs {
         }
         for (Track track : CONSTRUCTS.values()) {
             ConstructPayload now = track.current;
+            if (now.shape() == ConstructPayload.MECH) {
+                walk(minecraft, track);
+                continue;
+            }
+            if (now.shape() == ConstructPayload.EXPRESS) {
+                ExpressSounds.tick(minecraft, track.previous, now);
+                continue;
+            }
             if (now.shape() == ConstructPayload.HAND) {
                 held(minecraft, track);
                 continue;
@@ -216,6 +228,28 @@ public final class ClientConstructs extends TrackedConstructs {
             }
             caught.setPos(now.center().x, now.center().y - caught.getBbHeight() * 0.5, now.center().z);
             caught.setDeltaMovement(Vec3.ZERO);
+        }
+    }
+
+    // A built mech walks on every client from where the server puts it; its own pilot's walks from their own game.
+    private static void walk(Minecraft minecraft, Track track) {
+        ConstructPayload mech = track.current;
+        if (MechScript.breaking(mech.variant())) {
+            MechWalk.stop(mech.id());
+            return;
+        }
+        if (track.clock(0.0F) < MechScript.SETTLED) {
+            return;
+        }
+        boolean mine = minecraft.player != null && minecraft.player.getId() == mech.owner();
+        MechScript.Stage own = mine ? MechDrive.stage(mech.id()) : null;
+        MechWalk.step(mech.id(), own != null ? own : MechScript.Stage.of(mech));
+        MechPose pose = MechWalk.latest(mech.id());
+        Entity pilot = minecraft.level == null ? null : minecraft.level.getEntity(mech.owner());
+        if (!mine && pose != null && pilot != null) {
+            // Someone else's pilot sits on the seat as this game walks the mech, not a step behind it.
+            Vec3 seat = pose.seat();
+            pilot.setPos(seat.x, seat.y, seat.z);
         }
     }
 
@@ -274,9 +308,11 @@ public final class ClientConstructs extends TrackedConstructs {
         }
         if (track.latest.shape() == ConstructPayload.EXPRESS) {
             ExpressTrails.forget(track.latest.id());
+            ExpressSounds.forget(track.latest.id());
             return;
         }
         if (track.latest.shape() == ConstructPayload.MECH) {
+            MechWalk.stop(track.latest.id());
             if (MechPainter.breaks(track.latest, clock)) {
                 BROKEN_HANDS.put(track.latest.id(), new Broken(track.latest, clock, clientTicks));
             }
@@ -307,6 +343,7 @@ public final class ClientConstructs extends TrackedConstructs {
         PlanePainter.clear();
         Flattened.clear();
         ExpressTrails.clear();
+        ExpressSounds.clear();
     }
 
     @SubscribeEvent

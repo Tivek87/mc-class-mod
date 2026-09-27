@@ -12,7 +12,7 @@ import nl.tivek.multiversepowers.character.greenlantern.ExpressScript;
 
 public final class ExpressTrails {
     private static final Map<Integer, Trail> TRAILS = new HashMap<>();
-    private static final double KEEP = (ExpressScript.LENGTH + 8.0) * ExpressScript.SCALE;
+    private static final double KEEP = (ExpressScript.TRAIN_LENGTH + 8.0) * ExpressScript.SCALE;
 
     private ExpressTrails() {
     }

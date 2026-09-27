@@ -2,6 +2,7 @@ package nl.tivek.multiversepowers.character.greenlantern.client.mech;
 
 import com.mojang.logging.LogUtils;
 import javax.annotation.Nullable;
+import net.minecraft.client.Minecraft;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
@@ -19,16 +20,13 @@ import org.slf4j.Logger;
 public final class MechPainter {
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final double GLOWS = 0.22;
-    private static final double CREASES = 0.7;
+    static final double CREASES = 0.7;
     private static final double SEAM = 1.0;
     private static final double FLING = 2.0;
     private static final double REACH = 20.0;
     private static final int PIECES = 40;
     private static final double[] BENDS = { 0.95, 1.1, 0.85 };
     private static final double[] SPREADS = { -0.2, -0.06, 0.08, 0.22 };
-    private static final Vec3 DOWN = new Vec3(0.0, -1.0, 0.0);
-    private static final double BUBBLE_FAINT = 0.12;
-    private static final double BUBBLE_FAINT_OWN = 0.05;
     private static final double STOMP_SHAKE = 0.75;
     private static final double STEP_SHAKE = 0.3;
     private static final double CLAP_SHAKE = 0.7;
@@ -55,12 +53,14 @@ public final class MechPainter {
         double t = breaking ? now.age() : clock;
         double apart = breaking ? Mth.clamp(Mth.lerp(partialTick, Math.max(0.0F, was.charge()), now.charge())
                 / MechScript.BREAK_TICKS, 0.0, 1.0) : -1.0;
-        if (!painter.visible(stage.point(0.0, 7.0, MechScript.TARGET_AHEAD * 0.5), REACH)) {
+        MechPose walk = MechWalk.pose(now.id(), partialTick);
+        MechPose pose = walk != null && (breaking || t >= MechScript.SETTLED) ? walk : scripted(stage, t);
+        if (!painter.visible(pose.stage().point(0.0, 7.0, MechScript.TARGET_AHEAD * 0.5), REACH)) {
             return;
         }
-        parts(painter, stage, t, apart, own);
+        parts(painter, pose, t, apart, own, walk != null && pose == walk);
         if (apart < 0.0) {
-            MechLight.lights(painter, stage, t, ring, own);
+            MechLight.lights(painter, pose, now.id(), t, ring, own, partialTick);
         }
     }
 
@@ -71,11 +71,23 @@ public final class MechPainter {
     public static void broken(LanternPainter painter, ConstructPayload mech, double clock, double since) {
         double apart = since / MechScript.BREAK_TICKS;
         if (apart < 1.0) {
-            parts(painter, MechScript.Stage.of(mech), clock, apart, false);
+            MechPose walk = MechWalk.pose(mech.id(), 0.0F);
+            parts(painter, walk != null ? walk : scripted(MechScript.Stage.of(mech), clock), clock, apart, false,
+                    walk != null);
         }
     }
 
-    private static void parts(LanternPainter painter, MechScript.Stage stage, double t, double apart, boolean own) {
+    // The mech as its build places it: upright on its ground spot, the feet where the stomps and steps put them.
+    private static MechPose scripted(MechScript.Stage stage, double t) {
+        MechPose pose = new MechPose(stage);
+        for (int side = 0; side < 2; side++) {
+            pose.ankle[side] = stage.point(MechScript.ankle(side == 0, stage, t));
+        }
+        return pose;
+    }
+
+    private static void parts(LanternPainter painter, MechPose pose, double t, double apart, boolean own,
+            boolean walking) {
         Material was = painter.material();
         painter.material(LanternPainter.MECH_LIGHT);
         painter.ambient(GLOWS);
@@ -84,13 +96,17 @@ public final class MechPainter {
         for (int side = 0; side < 2; side++) {
             boolean right = side == 0;
             int seed = side * PIECES * 20;
-            lowerLeg(painter, stage, right, t, apart, seed);
-            upperLeg(painter, stage, right, t, apart, seed + PIECES);
-            arm(painter, stage, right, t, apart, seed + PIECES * 3);
-            shoulder(painter, stage, right, t, apart, seed + PIECES * 8);
+            if (walking) {
+                MechLegs.leg(painter, pose, right, apart, seed);
+            } else {
+                lowerLeg(painter, pose.stage(), pose.ankle[side], right, t, apart, seed);
+                upperLeg(painter, pose.stage(), right, t, apart, seed + PIECES);
+            }
+            arm(painter, pose, right, t, apart, seed + PIECES * 3, walking);
+            shoulder(painter, pose.torso(), right, t, apart, seed + PIECES * 8);
         }
-        body(painter, stage, t, apart, own);
-        head(painter, stage, t, apart);
+        body(painter, pose, t, apart, own);
+        head(painter, pose, t, apart, walking);
         painter.creases(0.0);
         painter.fling(1.0);
         painter.ambient(0.0);
@@ -108,25 +124,24 @@ public final class MechPainter {
         return new Frame(from, ahead.cross(up).normalize(), up, ahead, 1.0);
     }
 
-    private static Frame body(MechScript.Stage stage) {
-        return Frame.of(stage.base(), stage.ahead(), Vectors.UP, 1.0);
+    static Frame body(MechScript.Stage stage) {
+        return Frame.of(stage.base(), stage.ahead(), stage.up(), 1.0);
     }
 
     // Grows up out of the light: only what lies below the rising plane shows, cut with a bright seam.
-    private static void rising(LanternPainter painter, MechScript.Stage stage, double from, double to, double grown,
+    static void rising(LanternPainter painter, MechScript.Stage stage, double from, double to, double grown,
             double apart) {
         if (grown < 1.0 && apart < 0.0) {
-            painter.clip(stage.point(0.0, Mth.lerp(Ease.smooth(grown), from, to), 0.0), DOWN, SEAM);
+            painter.clip(stage.point(0.0, Mth.lerp(Ease.smooth(grown), from, to), 0.0), stage.up().scale(-1.0), SEAM);
         }
     }
 
-    private static void lowerLeg(LanternPainter painter, MechScript.Stage stage, boolean right, double t,
+    private static void lowerLeg(LanternPainter painter, MechScript.Stage stage, Vec3 ankle, boolean right, double t,
             double apart, int seed) {
         double form = right ? MechScript.FOOT_FORM : MechScript.FOOT2_FORM;
         if (t < form) {
             return;
         }
-        Vec3 ankle = stage.point(MechScript.ankle(right, stage, t));
         Frame foot = Frame.of(ankle, stage.ahead(), Vectors.UP, 1.0);
         Frame shin = limb(ankle, stage.dir(side(MechScript.KNEE.subtract(MechScript.ANKLE), right)).normalize(),
                 stage.ahead());
@@ -158,41 +173,23 @@ public final class MechPainter {
         painter.noClip();
     }
 
-    private static void body(LanternPainter painter, MechScript.Stage stage, double t, double apart, boolean own) {
-        Frame body = body(stage);
+    private static void body(LanternPainter painter, MechPose pose, double t, double apart, boolean own) {
+        MechScript.Stage torso = pose.torso();
+        Frame body = body(torso);
         if (t >= MechScript.HIPS) {
-            rising(painter, stage, 4.2, 6.15, Mth.clamp((t - MechScript.HIPS) / 6.0, 0.0, 1.0), apart);
+            rising(painter, torso, 4.2, 6.15, Mth.clamp((t - MechScript.HIPS) / 6.0, 0.0, 1.0), apart);
             MechParts.draw(painter, MechBodyShapes.PELVIS, body, 1.0, apart, PIECES * 50);
             MechParts.draw(painter, MechBodyShapes.WAIST, body, 1.0, apart, PIECES * 51);
             painter.noClip();
         }
         if (t >= MechScript.ARMOR) {
-            rising(painter, stage, 5.6, MechBodyShapes.CHEST_TOP + 0.3,
+            rising(painter, torso, 5.6, MechBodyShapes.CHEST_TOP + 0.3,
                     Mth.clamp((t - MechScript.ARMOR) / 16.0, 0.0, 1.0), apart);
             MechParts.draw(painter, MechBodyShapes.CHEST, body, 1.0, apart, PIECES * 52);
-            MechParts.draw(painter, MechBodyShapes.ARCH, body, 1.0, apart, PIECES * 54);
+            MechParts.draw(painter, MechBodyShapes.RIM, body, 1.0, apart, PIECES * 54);
             painter.noClip();
         }
-        if (t >= MechScript.STICKS) {
-            double grown = Mth.clamp((t - MechScript.STICKS) / 6.0, 0.0, 1.0);
-            for (int side = -1; side <= 1; side += 2) {
-                Vec3 foot = stage.point(side * MechScript.STICK.x, MechScript.COCKPIT.y, MechScript.STICK.z);
-                if (grown < 1.0 && apart < 0.0) {
-                    painter.clip(foot.add(0.0, grown, 0.0), DOWN, SEAM * 0.6);
-                }
-                MechParts.draw(painter, MechBodyShapes.STICK, Frame.of(foot, stage.ahead(), Vectors.UP, 1.0), 1.0,
-                        apart, PIECES * 55 + side);
-                painter.noClip();
-            }
-        }
-        if (t >= MechScript.CORE && apart < 0.0) {
-            double grown = Ease.backOut(Mth.clamp((t - MechScript.CORE) / MechScript.FORM_TICKS, 0.0, 1.0));
-            Frame bubble = Frame.of(stage.point(MechBodyShapes.CORE), stage.ahead(), Vectors.UP, Math.max(0.02,
-                    grown));
-            painter.creases(0.0);
-            painter.seeThrough(MechBodyShapes.BUBBLE, bubble, own ? BUBBLE_FAINT_OWN : BUBBLE_FAINT, 1.25);
-            painter.creases(CREASES);
-        }
+        MechCockpit.draw(painter, pose, body, t, apart, own, PIECES * 56);
     }
 
     private static void shoulder(LanternPainter painter, MechScript.Stage stage, boolean right, double t,
@@ -211,12 +208,14 @@ public final class MechPainter {
         painter.noClip();
     }
 
-    private static void arm(LanternPainter painter, MechScript.Stage stage, boolean right, double t, double apart,
-            int seed) {
+    private static void arm(LanternPainter painter, MechPose pose, boolean right, double t, double apart, int seed,
+            boolean walking) {
         if (t < MechScript.ARMS_FORM) {
             return;
         }
-        MechMoves.Arm arm = MechMoves.arm(right, stage, t);
+        MechScript.Stage stage = pose.torso();
+        MechMoves.Arm arm = walking ? MechMoves.walking(right, t, pose.swing, pose.walking)
+                : MechMoves.arm(right, stage, t);
         Frame hand = Frame.of(stage.point(arm.elbow()), stage.dir(arm.palm()), stage.dir(arm.way()), 1.0);
         double grown = Mth.clamp((t - MechScript.ARMS_FORM) / (MechScript.ARMS_IN - MechScript.ARMS_FORM), 0.0, 1.0);
         if (grown < 1.0 && apart < 0.0) {
@@ -270,21 +269,36 @@ public final class MechPainter {
         }
     }
 
-    private static void head(LanternPainter painter, MechScript.Stage stage, double t, double apart) {
+    private static void head(LanternPainter painter, MechPose pose, double t, double apart, boolean walking) {
         if (t < MechScript.HEAD_FORM) {
             return;
         }
-        double grown = apart >= 0.0 ? 1.0 : Ease.backOut(Mth.clamp((t - MechScript.HEAD_FORM) / 4.0, 0.0, 1.0));
-        MechScript.Turn turn = MechScript.headTurn(t);
-        Frame frame = Frame.of(stage.point(MechScript.head(stage, t)), stage.ahead(), Vectors.UP,
-                MechScript.HEAD_SCALE * Math.max(0.05, grown)).turned(0.0, 0.0, 0.0, 0.0, 1.0, 0.0, turn.yaw())
-                .turned(0.0, 0.0, 0.0, 1.0, 0.0, 0.0, turn.pitch()).turned(0.0, 0.0, 0.0, 0.0, 0.0, 1.0, turn.roll());
+        Frame frame = head(pose, t, apart, walking);
         MechParts.draw(painter, MechHeadShapes.HEAD, frame, 1.0, apart, PIECES * 60);
+    }
+
+    // The head's frame round its middle: dropped and tumbled by the build, then riding the body's neck.
+    static Frame head(MechPose pose, double t, double apart, boolean walking) {
+        MechScript.Stage stage = pose.torso();
+        double grown = apart >= 0.0 ? 1.0 : Ease.backOut(Mth.clamp((t - MechScript.HEAD_FORM) / 4.0, 0.0, 1.0));
+        MechScript.Turn turn = walking ? new MechScript.Turn(pose.headYaw, pose.headPitch, 0.0)
+                : MechScript.headTurn(t);
+        Vec3 at = walking ? stage.point(MechScript.NECK.add(0.0, MechScript.HEAD_UP, 0.0))
+                : stage.point(MechScript.head(stage, t));
+        return Frame.of(at, stage.ahead(), stage.up(), MechScript.HEAD_SCALE * Math.max(0.05, grown))
+                .turned(0.0, 0.0, 0.0, 0.0, 1.0, 0.0, turn.yaw()).turned(0.0, 0.0, 0.0, 1.0, 0.0, 0.0, turn.pitch())
+                .turned(0.0, 0.0, 0.0, 0.0, 0.0, 1.0, turn.roll());
     }
 
     public static float shake(ConstructPayload mech, double clock, Vec3 from) {
         if (MechScript.breaking(mech.variant())) {
             return 0.0F;
+        }
+        if (clock >= MechScript.SETTLED) {
+            Minecraft minecraft = Minecraft.getInstance();
+            boolean inside = minecraft.player != null && minecraft.player.getId() == mech.owner();
+            return (float) MechWalk.shake(mech.id(), from, minecraft.getTimer().getGameTimeDeltaPartialTick(false),
+                    inside);
         }
         MechScript.Stage stage = MechScript.Stage.of(mech);
         double near = 1.0 - from.distanceTo(stage.point(0.0, 3.0, MechScript.TARGET_AHEAD * 0.5)) / SHAKE_RANGE;

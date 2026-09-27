@@ -13,6 +13,7 @@ import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.character.greenlantern.MechScript;
 import nl.tivek.multiversepowers.character.greenlantern.client.ClientConstructs;
 import nl.tivek.multiversepowers.config.client.ClientSettings;
+import nl.tivek.multiversepowers.engine.client.fx.ChaseCamera;
 import nl.tivek.multiversepowers.engine.client.fx.Cinematic;
 import nl.tivek.multiversepowers.engine.math.Ease;
 
@@ -25,12 +26,31 @@ public final class MechCamera {
     private static final double EYE = 1.62;
     private static final float COCKPIT_PITCH = 6.0F;
     private static final double FOV = 70.0;
+    private static final Vec3 CHASE_PIVOT = new Vec3(0.0, 11.5, 0.0);
+    private static final double CHASE_DISTANCE = 14.0;
 
     static {
         Cinematic.add(MechCamera::shot);
+        ChaseCamera.add(MechCamera::chase);
     }
 
     private MechCamera() {
+    }
+
+    // In third person the pilot's camera circles the whole mech from above its head, not their own body in its chest.
+    @Nullable
+    private static ChaseCamera.Rig chase(float partialTick) {
+        LocalPlayer player = Minecraft.getInstance().player;
+        if (player == null) {
+            return null;
+        }
+        ClientConstructs.Piloted pilot = ClientConstructs.piloted(player.getId(), partialTick);
+        if (pilot == null) {
+            return null;
+        }
+        MechPose walk = MechWalk.pose(pilot.id(), partialTick);
+        MechScript.Stage stage = walk != null ? walk.stage() : pilot.stage();
+        return new ChaseCamera.Rig(stage.point(CHASE_PIVOT), CHASE_DISTANCE);
     }
 
     @Nullable

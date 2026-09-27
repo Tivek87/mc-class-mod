@@ -534,7 +534,7 @@ abstract class TrackedConstructs {
     }
 
     // A mech its owner stands in: where it stands, how far it has come, and how far it has broken up (below 0: not).
-    public record Piloted(MechScript.Stage stage, double t, double broke) {
+    public record Piloted(int id, MechScript.Stage stage, double t, double broke) {
         public Vec3 feet() {
             return this.stage.point(this.broke >= 0.0 ? MechScript.lowered(this.broke)
                     : MechScript.pilot(this.stage, this.t));
@@ -551,7 +551,8 @@ abstract class TrackedConstructs {
             boolean breaking = MechScript.breaking(now.variant());
             double broke = breaking ? Mth.lerp(partialTick, Math.max(0.0F, track.previous.charge()), now.charge())
                     : -1.0;
-            return new Piloted(MechScript.Stage.of(now), breaking ? now.age() : track.clock(partialTick), broke);
+            return new Piloted(now.id(), MechScript.Stage.of(now), breaking ? now.age() : track.clock(partialTick),
+                    broke);
         }
         return null;
     }
@@ -563,7 +564,7 @@ abstract class TrackedConstructs {
             ConstructPayload now = track.current;
             if (now.shape() == ConstructPayload.MECH && !MechScript.breaking(now.variant())
                     && MechScript.target(now.variant()) == entity) {
-                return new Piloted(MechScript.Stage.of(now), track.clock(partialTick), -1.0);
+                return new Piloted(now.id(), MechScript.Stage.of(now), track.clock(partialTick), -1.0);
             }
         }
         return null;
