@@ -61,7 +61,8 @@ final class Track {
                 : first.shape() == ConstructPayload.BLAST ? PlanePainter.BLAST_TICKS + 8
                 : first.shape() == ConstructPayload.POUND ? BubblePainter.POUND_TICKS + 2
                 : first.shape() == ConstructPayload.PLANE ? PLANE_KEEP
-                : first.shape() == ConstructPayload.HAND || first.shape() == ConstructPayload.REVOLVER ? HAND_KEEP
+                : first.shape() == ConstructPayload.HAND || first.shape() == ConstructPayload.REVOLVER
+                        || first.shape() == ConstructPayload.MECH ? HAND_KEEP
                 : TIMEOUT;
         this.once = sentOnce(first.shape());
         this.variantSince = first.age();
@@ -175,7 +176,7 @@ final class Track {
             case ConstructPayload.SLAM, ConstructPayload.SCAN, ConstructPayload.HAND, ConstructPayload.BEAM,
                     ConstructPayload.PLANE, ConstructPayload.MISSILE, ConstructPayload.BULLET, ConstructPayload.BLAST,
                     ConstructPayload.BUBBLE, ConstructPayload.SWORD, ConstructPayload.POUND, ConstructPayload.FLAME,
-                    ConstructPayload.FLAME_WALL, ConstructPayload.REVOLVER -> true;
+                    ConstructPayload.FLAME_WALL, ConstructPayload.REVOLVER, ConstructPayload.MECH -> true;
             default -> false;
         };
     }

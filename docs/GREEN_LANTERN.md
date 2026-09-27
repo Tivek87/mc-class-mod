@@ -33,7 +33,6 @@
 - **De ring gloeit bij elke ability:** een bolt of een zwaardslag een beetje, een scan, een bel of het schild meer, en de Luchtaanval het felst: vanaf het oproepen tot het vliegtuig neergestort is.
 - **Paneel:** een balk met de power en het getal ernaast, met streepjes op een kwart, de helft en driekwart. Niets knippert:
   - Betaalt de ring iets, dan zakt de balk meteen en blijft wat eraf ging nog even als gouden stuk staan, dat daarna wegloopt. Opladen laat de balk omhoog glijden.
-  - Tijdens het opladen van de Giant Fist is wat hij gaat kosten een vast, gestreept stuk aan het eind van de balk, met een wit streepje waar je uitkomt (`100 -2.2`).
   - Loopt de ring vanzelf leeg (vliegen, schild, koepel, laser), dan staat er in goud hoe snel (`97 -0.08/s`), en in de lucht hoeveel seconden vliegen er nog over zijn (`90 -1.07/s 85s`).
 
 ---
@@ -47,7 +46,7 @@ Voor **alle** linksklik- (aanval) en rechtsklik-acties (verdediging) geldt een a
   - Zowel **standaard** (lege handen / alleen de ring).
   - Als in **Construct Mode** (elk hard-licht wapen uit het Construct Wheel).
 - **Gelijktijdig gebruik (Aanval + Verdediging):** Je kunt verdediging (rechtsklik) klikken of inhouden *terwijl* je aanvalt (linksklik). Ze kunnen allebei **exact tegelijkertijd** actief zijn (bijv. bolts of de laser afvuren terwijl je het schild of de krachtveld-koepel omhoog houdt).
-- **Uitzondering:** Werkt **niet** op keybinds (zoals R voor Giant Fist, Z voor Recharge of V voor het wiel); die hebben hun eigen besturingslogica.
+- **Uitzondering:** Werkt **niet** op keybinds (zoals Z voor Recharge of V voor het wiel); die hebben hun eigen besturingslogica.
 
 ---
 
@@ -74,7 +73,7 @@ Voor **alle** linksklik- (aanval) en rechtsklik-acties (verdediging) geldt een a
     - **Stage 4:** je linkerhand pakt je rechterpols om hem te steunen: nu met twee handen. Grote energiebanden razen door de straal, hij begint te zwellen en te knijpen, bliksemuithalen slaan eruit en weer terug.
     - **Stage 5:** massieve, instabiele superstraal: een buitengloed, vier energiebanden, drie focusringen voor je vuist, bliksem langs de hele straal, zware vonken en lichtsnippers, een enorme inslag met schokringen en af en toe explosies, en een donderslag bij het bereiken. Vanaf hier kost hij vast **5 power per seconde** zolang je hem vasthoudt.
   - **Per stage:** schade x1 / x1,32 / x1,73 / x2,28 / x3 (10 tot 30 harten per seconde), bereik 40 / 46 / 52 / 58 / 64 blokken, terugduw x1 / x1,5 / x2 / x2,5 / x3, kosten 0,8 / 1,26 / 2 / 3,16 / 5 per sec, loopsnelheid 85% / 71% / 58% / 44% / 30%.
-  - **Stopt:** Zodra je linksklik loslaat, de ring leeg is of je een Giant Fist begint; je loopsnelheid komt meteen terug.
+  - **Stopt:** Zodra je linksklik loslaat of de ring leeg is; je loopsnelheid komt meteen terug.
 
 ### Right Click (Verdediging; rechtsklik is vrij, voor wapens soms een tweede aanval)
 - **Click / Tap (Light Shield, aan/uit):**
@@ -91,19 +90,18 @@ Voor **alle** linksklik- (aanval) en rechtsklik-acties (verdediging) geldt een a
 
 ---
 
-## 5. Giant Fist (toets R)
+## 5. Emerald Express (toets R)
 
-- **Actie:** Een grote vuist van groen licht verschijnt rechts naast je en laadt op zolang je R inhoudt.
-- **Opladen:** Groeit langzaam zolang je R inhoudt. Wijkt zelf soepel uit naar boven of links als een muur of de grond in de weg zit.
-- **Afvuren:** Laat R los om de vuist af te vuren. Gaat dwars door muren heen en raakt alle vijanden op zijn pad.
-- **Richten (stuurbaar):** De vuist blijft zijn hele vlucht precies onder je crosshair. Bij het loslaten glijdt hij vanaf rechts naast je naar het midden van je beeld zonder te draaien, en daarna volgt hij je blik: kijk je opzij of omlaag, dan gaat hij mee.
-- **Uiterlijk:** Je ring zit aan de middelvinger van de vuist (de ring met zijn edelsteen), en de duim heeft een nagel.
-- **Grootte:** Tot 5,7 blokken breed bij een volle lading.
-- **Schade:** 6 harten bij een korte tik, tot 14 harten bij een volle lading.
-- **Kosten:** 1,6 power (tik) tot 3,2 power (volle lading). De ring betaalt pas als hij wordt afgevuurd.
-- **Cooldown:** 4 sec na het afvuren.
-- **Bukken:** Bukken (crouch) tijdens het inhouden verandert niets: de vuist laadt gewoon door.
-- **Let op:** Dit is een toets-ability (keybind) en gebruikt dus **geen** 2-seconde drempelwaarde.
+- **Actie:** Druk R: rechts naast je gaat meteen een groot portaal van licht open, met een straal uit je ring erheen. Er blaast sissend stoom uit, en je hoort een ouderwetse stoomtrein op gang komen: zware stoten (tsjoek... tsjoek...) die steeds sneller gaan, terwijl de grond licht meetrilt.
+- **De trein:** een reusachtige western-stoomlocomotief (4-4-0) met tender van massief groen hard licht, 23 blokken lang en hoger dan een huis: koevanger, koplamp met een lichtbundel, ballonschoorsteen, rookkastdeur met je lantaarn-embleem, ketel met banden, domes en bel, leuningen, cilinders, cabine met ramen en het vuur binnenin, en een tender vol blokken hout met het embleem op de zijkant. De grote drijfwielen draaien met hun koppel- en drijfstangen mee.
+- **Uit het portaal:** hij dendert neus eerst naar buiten en trekt op tot ongeveer 19 blokken per sec; de schoorsteen stoot bij elke slag stoom uit en de cilinders blazen stoom opzij bij het optrekken.
+- **Rails van licht:** vlak voor de wielen groeien rails uit het licht, en achter de tender breken ze weer af. Over heuvels, water en zelfs door de lucht.
+- **Jagen:** zodra de hele trein uit het portaal is, stuurt hij op het dichtstbijzijnde wezen dat jou kwaad wil (binnen 24 blokken, liefst vóór hem) en ramt het: **10 harten** en ver weggeslingerd. Dan het volgende, tot **6** stuks en hooguit **110 blokken**. Hard licht gaat door muren en huizen heen zonder blokken te breken.
+- **Ontsporen:** is er niets meer te rammen, dan blokkeren de remmen met een schril gepiep en een vonkenregen. Hij verliest zijn evenwicht, kantelt op de kant waar hij naar helde, slaat op de grond en schuift op zijn zij in een regen van vonken tot stilstand.
+- **Ketelexplosie:** stil liggend bouwt zich sissend een enorme wolk stoom en rook op; de ketel zwelt op en scheurt vol licht, steeds sneller... tot hij met een enorme klap en schokgolf ontploft: **15 harten** in het midden, de helft aan de rand op **7 blokken**, en alles wordt weggeslingerd. De brokstukken lossen meteen op in groen licht.
+- **Wie wordt geraakt:** alleen wat jou kwaad wil (rood), bij het rammen en bij de explosie.
+- **Kosten:** 6 power. **Cooldown:** 12 sec. Alle getallen zijn instellingen.
+- Stop je met Green Lantern zijn, dan valt de trein onschuldig uiteen in licht.
 
 ---
 
@@ -156,7 +154,7 @@ Voor **alle** linksklik- (aanval) en rechtsklik-acties (verdediging) geldt een a
 - **Actie:** De lantaarn verschijnt in je linkerhand en je slaat er met je rechtervuist op.
 - **Effect:** Groen licht schiet uit de voorkant en vult de ring bij (50 power per slag, tot 100).
 - **Duur:** Duurt minder dan 2 seconden.
-- **Cooldown:** 3 sec. Kan niet tijdens het opladen van de Giant Fist.
+- **Cooldown:** 3 sec.
 - **Ook in de lucht**, na het opstijgen: je blijft vliegen. De lantaarn hangt rechtop aan je hand hoe je lichaam ook ligt, in first person schudt hij in de wind, en de klap stuurt ringen van licht rond je vliegrichting. Opladen terwijl je met een lege ring zakt laat je weer vliegen.
 - **Deeltjes:** helemaal groen, en ze vliegen niet ver (een uitbarsting voor de lantaarn).
 
@@ -165,7 +163,7 @@ Voor **alle** linksklik- (aanval) en rechtsklik-acties (verdediging) geldt een a
 ## 8. Vliegen (toets C, ability 9)
 
 - **Opstijgen:** met C, of door **twee keer snel op spatie** te tikken (op de grond, midden in een sprong of een val; in creative blijft dubbeltikken het vliegen van het spel zelf). Beide vuisten naar je borst met een kleine dip, dan zwaaien je armen omlaag langs je zij, je hoofd gaat omhoog en je stijgt een paar blokken, met een lichtflits aan je voeten. Daarna vlieg je zonder pauze door. Duurt iets meer dan 1 sec en vangt je ook op midden in een val.
-- **Vliegen:** Vooruit inhouden = vliegen in je kijkrichting. **Je komt snel op gang en gaat daarna steeds sneller hoe langer je doorvliegt:** je start op ongeveer **3 blokken per sec**, zit binnen **een halve sec** op een kruissnelheid van **3,75 blokken per sec** en wint daarna nog **3 seconden** snelheid, tot de top van **4,5 blokken per sec** (na 4 seconden, ongeveer wandeltempo: rustig en goed te sturen), en nooit meer. Zweven en stijgen gaan op een deel van die snelheid. Vooruit loslaten = uitglijden tot zweven, en de opgebouwde snelheid zakt langzaam weer weg (helemaal in 3 sec); tegen een muur duwen houdt hem vast. Springen = stijgen, bukken = zakken, links/rechts = opzij, achteruit = terugdrijven. Je neemt je snelheid mee in bochten. Begin-, kruis- en topsnelheid en beide opbouwtijden zijn instellingen.
+- **Vliegen:** Vooruit inhouden = vliegen in je kijkrichting. **Je komt snel op gang en gaat daarna steeds sneller hoe langer je doorvliegt:** je start op ongeveer **1,2 blokken per sec**, zit binnen **een halve sec** op een kruissnelheid van **1,5 blokken per sec** en wint daarna nog **3 seconden** snelheid, tot de top van **1,8 blokken per sec** (na 4 seconden, langzamer dan lopen: rustig en strak te sturen), en nooit meer. Zweven en stijgen gaan op een deel van die snelheid. Vooruit loslaten = uitglijden tot zweven, en de opgebouwde snelheid zakt langzaam weer weg (helemaal in 3 sec); tegen een muur duwen houdt hem vast. Springen = stijgen, bukken = zakken, links/rechts = opzij, achteruit = terugdrijven. Je neemt je snelheid mee in bochten. Begin-, kruis- en topsnelheid en beide opbouwtijden zijn instellingen.
 - **Animatie:** Zwevend sta je rechtop met armen iets uit. Hoe sneller, hoe meer je lichaam langs je vliegrichting ligt (armen langs je zij, benen bij elkaar); je helt over in bochten, duikt met je hoofd voorop en klimt met je hoofd omhoog. Een streep groen licht achter je bij hoge snelheid; laag vliegen blaast stof of water op.
 - **Jetpack:** zodra je snelheid maakt en gaat liggen in je vlucht, schiet de ring een bal groen licht om je heen op je rug, en daar groeit er stuk voor stuk een jetpack van hard licht uit: een rugplaat, twee tanks met banden, onder elke tank een straalbuis, vinnen aan de zijkant en een band over je borst, elk deel witheet als het vormt en afkoelend naar groen. Twee vonken, en groene plasmavlammen brullen uit de straalbuizen langs je voeten naar achteren, alsof hij je voortstuwt: lang en luid op volle snelheid, een klein vlammetje als je zweeft. Hij blijft op je rug tot je landt of stopt met vliegen, en breekt dan in solid stukken. Iedereen ziet hem; in first person zie je alleen de bal je ring verlaten.
 - **Kosten:** Opstijgen minstens **0,8 power**. Vliegen kost **1,07 power per sec** (100 / 93,75): een volle ring houdt je **max 93,75 sec** (ruim anderhalve minuut) in de lucht. Alles wat je tijdens het vliegen doet kost daar bovenop.
@@ -173,7 +171,7 @@ Voor **alle** linksklik- (aanval) en rechtsklik-acties (verdediging) geldt een a
 - **Landen:** Rustig op de grond zakken = vanzelf landen, of C nog een keer, of in de lucht **twee keer snel op spatie** (je valt dan vanaf daar). Daarna 1 sec cooldown.
 - **Ring leeg in de lucht:** Je zakt langzaam omlaag met je armen omhoog, zonder sturen, en landt zonder schade. Opladen onderweg laat je weer vliegen.
 - **Landen door een duik:** vlieg je de grond in terwijl je naar beneden kijkt, dan stop je automatisch met vliegen, ook als je niet volle snelheid gaat.
-- **Landingsklap (automatisch; met X doe je hem zelf, zie 9):** duik je snel de grond in (minstens ongeveer 4 blokken per sec, bijna je topsnelheid, dus eerst een paar seconden doorvliegen), dan stopt de vlucht met een superhelden-landing. Vlak voor de grond draai je rechtop, voeten eerst, ringvuist hoog geheven; dan kom je laag op één knie en ram je die vuist de grond in, die rondom openscheurt en brokken opgooit, je andere arm naar achteren. In first person knikt je blik even omlaag naar je vuist in de grond, en kijkt dan omhoog naar het construct dat zich in de lucht voor je vormt en volgt het omlaag als het inslaat. De ring maakt een reuzenconstruct dat een schokgolf geeft (schade en terugslag rondom, standaard 6 harten in het midden, 5 blokken ver, kost 1,6 power; zonder genoeg power land je alleen hard). Elke keer willekeurig één van **32**:
+- **Landingsklap (automatisch; met X doe je hem zelf, zie 9):** duik je snel de grond in (minstens ongeveer 1,6 blokken per sec, bijna je topsnelheid, dus eerst een paar seconden doorvliegen), dan stopt de vlucht met een superhelden-landing. Vlak voor de grond draai je rechtop, voeten eerst, ringvuist hoog geheven; dan kom je laag op één knie en ram je die vuist de grond in, die rondom openscheurt en brokken opgooit, je andere arm naar achteren. In first person knikt je blik even omlaag naar je vuist in de grond, en kijkt dan omhoog naar het construct dat zich in de lucht voor je vormt en volgt het omlaag als het inslaat. De ring maakt een reuzenconstruct dat een schokgolf geeft (schade en terugslag rondom, standaard 6 harten in het midden, 5 blokken ver, kost 1,6 power; zonder genoeg power land je alleen hard). Elke keer willekeurig één van **32**:
   - *Uit de lucht:* vuist, strijdhamer, aambeeld, laars, gewicht van 1 ton, je eigen lantaarn, kluis, anker aan een ketting, stekelbal, halter, klok die luidt, slaande hand, zwaard dat blijft staan, piano, speelgoedsteen, stempel die het embleem in de grond drukt, blok TNT dat ontploft, brandende meteoor.
   - *Dichtklappend:* twee handen, twee vuisten, bekkens, berenklem, boek.
   - *Uit de grond:* uppercut (de grond scheurt en rommelt eerst, dan barsten vuist en arm eruit), twee ringen pieken, een pilaar die omhoog schiet en omvalt.
@@ -200,7 +198,7 @@ Voor **alle** linksklik- (aanval) en rechtsklik-acties (verdediging) geldt een a
 - **Schade:** 6 harten in het midden, de helft aan de rand, 5 blokken ver; alles wordt weggeslingerd.
 - **Kosten:** 1,6 power, betaald als de klap valt; zonder genoeg power land je alleen hard.
 - **Cooldown:** 5 sec, vanaf het indrukken.
-- **Kan niet** tijdens het opladen van de ring of het laden van de Giant Fist, en niet terwijl je vorige klap nog bezig is.
+- **Kan niet** tijdens het opladen van de ring, en niet terwijl je vorige klap nog bezig is.
 - **Instellingen:** schade, bereik, terugslag en kosten gelden ook voor de landingsklap bij het vliegen (één set, onder Schokgolf). Onder *De constructs* staan ook **Grootte van de constructs** (standaard 1,35) en **Slowmotion** (standaard 1,5: anderhalf keer zo traag; ook de schokgolf komt dan zoveel later).
 - **Paneel:** op weg naar beneden staat er `duikt` achter de toets.
 
@@ -226,7 +224,7 @@ Voor **alle** linksklik- (aanval) en rechtsklik-acties (verdediging) geldt een a
 ## 12. Luchtaanval (toets Y, ability 7: de ultimate)
 
 - **Y is altijd de ultimate** van een personage (bij Doctor Octopus de razernij).
-- **Actie:** Je steekt je ringvuist naar de hemel en een dikke pilaar van licht schiet uit de ring. Hoog in de lucht, ongeveer **55 blokken**, groeit uit dat licht een **groot, langzaam vliegtuig met vier propellers**: eerst witheet, dan groen. Een solid construct van hard licht, nooit een echt vliegtuig, en heel gedetailleerd: een lange ronde romp met een gloeiende voorruit, rijen raampjes, deuren en een laadklep onder de staart, een hoge vleugel met kleppen, vier motoren met grote vierbladige propellers die draaien, een hoge staartvin met het lantaarn-embleem, een minigun aan elke kant, een bommenluik met twee deuren in zijn buik en een sensorbol onder de neus. Een dunne draad licht verbindt hem met je ring, en ring en pak gloeien fel zolang hij vliegt. Je actiebalk roept "LUCHTAANVAL!" en de titel van het paneel wordt rood en telt af.
+- **Actie:** Tik Y (hij gaat af als je loslaat; 2 sec vasthouden geeft de mech, zie hieronder). Je steekt je ringvuist naar de hemel en een dikke pilaar van licht schiet uit de ring. Hoog in de lucht, ongeveer **55 blokken**, groeit uit dat licht een **groot, langzaam vliegtuig met vier propellers**: eerst witheet, dan groen. Een solid construct van hard licht, nooit een echt vliegtuig, en heel gedetailleerd: een lange ronde romp met een gloeiende voorruit, rijen raampjes, deuren en een laadklep onder de staart, een hoge vleugel met kleppen, vier motoren met grote vierbladige propellers die draaien, een hoge staartvin met het lantaarn-embleem, een minigun aan elke kant, een bommenluik met twee deuren in zijn buik en een sensorbol onder de neus. Een dunne draad licht verbindt hem met je ring, en ring en pak gloeien fel zolang hij vliegt. Je actiebalk roept "LUCHTAANVAL!" en de titel van het paneel wordt rood en telt af.
 - **Zijn jets:** even later groeien onder zijn vleugels uit draden ringlicht **twee straaljagers van hard licht**, elk met een bolle cockpit, gloeiende vleugels, twee staarten, twee vlammende uitlaten en een kleine raket onder elke vleugel. Ze maken zich los en racen snel rond het vliegtuig, hellend in hun bochten, één hoog en één laag.
 - **Zijn route:** hij vliegt **recht in één lijn** in de richting waarin je keek, langzaam, en komt halverwege precies over de plek waar je naar keek (tot 32 blokken ver, of 16 blokken voor je). Er moet open lucht zijn: met minder dan 21 blokken ruimte boven je zegt de ring dat, en gebeurt er niets.
 - **20 sec** lang vliegt hij door en vuurt hij onafgebroken:
@@ -240,6 +238,21 @@ Voor **alle** linksklik- (aanval) en rechtsklik-acties (verdediging) geldt een a
 - Stop je met Green Lantern zijn voordat hij neerstort, dan breken het vliegtuig en zijn jets in de lucht uit elkaar, en raketten in de lucht ook.
 - **Kosten:** 20 power. **Cooldown:** 90 sec.
 - **Instellingen:** aanvalstijd, scanbereik, kosten, de miniguns (hoe vaak, schade, spreiding), de raketten (hoe vaak, schade, grootte van hun kraters), de raketten van de jets (hoe vaak, schade) en de crash (schade, bereik, kratergrootte, hoe hard een blok mag zijn, hoeveel blokken wegvliegen; hardheid -1 laat de grond heel).
+
+---
+
+### Hard-Light Mech (Y 2 sec vasthouden)
+
+- **Actie:** Houd Y vast: een ring rond je crosshair vult zich in 2 sec, en dan bouwt de ring in ongeveer 10 sec stuk voor stuk een reusachtige mech van hard licht om je heen (eerder loslaten = de gewone Luchtaanval). Er moet grond onder je zijn, hooguit 12 blokken lager.
+- **Zweven:** je stijgt op tot de hoogte van de borst van de mech en hangt daar stil, armen gespreid. Bewegen, vliegen en je andere krachten gaan niet zolang je erin zit.
+- **Voeten:** stralen uit je ring naar links en rechts; daar groeien twee zware laarzen (met een groen embleem op de enkel) die neerstampen en stap voor stap tot recht onder je lopen.
+- **Benen:** de schenen groeien uit de laarzen omhoog, de kniekappen klikken erop, de dijen bouwen verder en de heupen klikken vast.
+- **Armen:** twee reuzenonderarmen met open handen verschijnen naast je en maken voor je één enorme **handklap**: een harde knal en een kleine schokgolf (**3 harten** in het midden, de helft aan de rand op 3,5 blokken). Meteen daarna tollen ze draaiend omhoog.
+- **Romp en cockpit:** vlak voordat de armen er zijn, groeien de romp, het zware schouderpantser en de bovenarmen om je heen. Je **zit nu in de borst**, op een stoel, met in elke hand een **hendel**, en kijkt naar buiten door een rond raam van doorzichtig hard licht in het lantaarn-embleem op de borst. Anderen zien je daar zitten. Dan **klikken de tollende armen vast** in hun gewrichten.
+- **Hoofd:** boven de mech verschijnt het hoofd, draaiend als een boor. Het zwenkt naar voren en **boort loodrecht de grond in**: schokgolf (**5 harten** in het midden, de helft aan de rand op 4,5 blokken), scheuren van licht en opspattende aarde. Dan draait het weer omhoog en schroeft zich met een harde **KLAK** vast op de nek.
+- **Klaar:** de ring rond het raam gloeit en ademt, het vizier en de uitlaten op de rug lichten op. Verder doet de mech nog niets (wordt nog gebouwd).
+- **Eruit:** houd Y opnieuw 2 sec vast (de ring zegt *Leave the mech*): de mech breekt in harde stukken die in licht oplossen, en je zweeft rustig naar de grond. Ook bij doodgaan, uitloggen of stoppen met Green Lantern.
+- **Kosten:** 25 power. **Cooldown:** 90 sec, **eigen**: los van de Luchtaanval. Kosten, cooldown en beide schades zijn instellingen.
 
 ---
 

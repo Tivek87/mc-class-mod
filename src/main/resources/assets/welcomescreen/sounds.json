@@ -38,5 +38,83 @@
         "name": "welcomescreen:ring/giant_hands"
       }
     ]
+  },
+  "express.chuff": {
+    "subtitle": "subtitles.welcomescreen.express.chuff",
+    "sounds": [
+      {
+        "name": "welcomescreen:express/chuff1"
+      },
+      {
+        "name": "welcomescreen:express/chuff2"
+      },
+      {
+        "name": "welcomescreen:express/chuff3"
+      }
+    ]
+  },
+  "express.hiss": {
+    "subtitle": "subtitles.welcomescreen.express.hiss",
+    "sounds": [
+      {
+        "name": "welcomescreen:express/hiss"
+      }
+    ]
+  },
+  "express.brakes": {
+    "subtitle": "subtitles.welcomescreen.express.brakes",
+    "sounds": [
+      {
+        "name": "welcomescreen:express/brakes"
+      }
+    ]
+  },
+  "express.scrape": {
+    "subtitle": "subtitles.welcomescreen.express.scrape",
+    "sounds": [
+      {
+        "name": "welcomescreen:express/scrape"
+      }
+    ]
+  },
+  "express.boom": {
+    "subtitle": "subtitles.welcomescreen.express.boom",
+    "sounds": [
+      {
+        "name": "welcomescreen:express/boom"
+      }
+    ]
+  },
+  "mech.stomp": {
+    "subtitle": "subtitles.welcomescreen.mech.stomp",
+    "sounds": [
+      {
+        "name": "welcomescreen:mech/stomp"
+      }
+    ]
+  },
+  "mech.clap": {
+    "subtitle": "subtitles.welcomescreen.mech.clap",
+    "sounds": [
+      {
+        "name": "welcomescreen:mech/clap"
+      }
+    ]
+  },
+  "mech.clack": {
+    "subtitle": "subtitles.welcomescreen.mech.clack",
+    "sounds": [
+      {
+        "name": "welcomescreen:mech/clack"
+      }
+    ]
+  },
+  "mech.drill": {
+    "subtitle": "subtitles.welcomescreen.mech.drill",
+    "sounds": [
+      {
+        "name": "welcomescreen:mech/drill"
+      }
+    ]
   }
 }

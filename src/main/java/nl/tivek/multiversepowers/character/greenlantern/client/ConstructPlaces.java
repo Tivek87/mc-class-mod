@@ -4,7 +4,6 @@ import javax.annotation.Nullable;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.ClipContext;
@@ -31,13 +30,6 @@ final class ConstructPlaces {
     static final double RAM_OWN_AHEAD = 0.85;
 
     private ConstructPlaces() {
-    }
-
-    static Vec3 hung(Entity owner, Vec3 spot, float partialTick) {
-        Vec3 ahead = Vec3.directionFromRotation(0.0F, owner.getViewYRot(partialTick));
-        Vec3 right = new Vec3(-ahead.z, 0.0, ahead.x);
-        return owner.getEyePosition(partialTick).add(right.scale(spot.x)).add(0.0, spot.y, 0.0)
-                .add(ahead.scale(spot.z));
     }
 
     static Vec3 pane(Entity owner, float partialTick) {
@@ -69,17 +61,8 @@ final class ConstructPlaces {
         }
     }
 
-    static Vec3 where(ConstructPayload was, ConstructPayload now, @Nullable Entity owner, float partialTick) {
-        if (now.held() && now.shape() == ConstructPayload.FIST) {
-            Vec3 spot = was.held() ? was.center().lerp(now.center(), partialTick) : now.center();
-            return owner == null ? now.center() : hung(owner, spot, partialTick);
-        }
+    static Vec3 where(ConstructPayload was, ConstructPayload now, float partialTick) {
         return was.center().lerp(now.center(), partialTick);
-    }
-
-    static Vec3 heldFacing(Entity owner, float partialTick) {
-        return Vec3.directionFromRotation(Mth.clamp(owner.getViewXRot(partialTick), -25.0F, 25.0F),
-                owner.getViewYRot(partialTick));
     }
 
     static Vec3 ramWay(Entity owner, float partialTick) {

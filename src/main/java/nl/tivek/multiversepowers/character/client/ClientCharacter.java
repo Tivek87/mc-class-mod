@@ -572,10 +572,10 @@ public final class ClientCharacter {
             y += line;
         }
         String passive = "character." + MultiversePowers.MODID + "." + now.getId() + ".passive";
-        CharacterAbility fist = now.byName("giant_fist");
+        CharacterAbility train = now.byName("emerald_express");
         if (now == GameCharacter.GREEN_LANTERN) {
             ConstructHud.renderPower(graphics, font, minecraft.player, left, right, y + 2,
-                    fist == null || !fist.has(POWER_COST) ? 0.0F : (float) fist.value(POWER_COST));
+                    train == null || !train.has(POWER_COST) ? 0.0F : (float) train.value(POWER_COST));
         } else if (legs > 0 || marked > 0) {
             MutableComponent status = Component.translatable(prefix + (legs > 0 ? "on_legs" : "on_feet"), legs);
             if (marked > 0) {

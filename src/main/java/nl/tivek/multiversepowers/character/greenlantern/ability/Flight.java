@@ -140,6 +140,13 @@ public final class Flight implements Effect {
         return this.ability.value("topSpeed") / 20.0;
     }
 
+    static void stop(ServerPlayer player) {
+        Flight flight = FLYING.get(player.getUUID());
+        if (flight != null) {
+            flight.end();
+        }
+    }
+
     static void recharged(ServerPlayer player, ServerLevel level) {
         Flight flight = FLYING.get(player.getUUID());
         if (flight == null || !flight.descending) {

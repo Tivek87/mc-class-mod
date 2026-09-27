@@ -288,7 +288,7 @@ public final class LightBeam implements Effect {
         if (Recharge.busy(player) || Flight.flying(player) && Flight.ticks(player) < Flight.ARISE_TICKS) {
             return true;
         }
-        boolean ringHand = GiantFist.holding(player) || GiantHands.waving(player) || AirStrike.calling(player);
+        boolean ringHand = GiantHands.waving(player) || AirStrike.calling(player);
         return ringHand && (LightShield.up(player) || LightDome.up(player));
     }
 

@@ -8,14 +8,11 @@ import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.engine.client.render.Material;
 import nl.tivek.multiversepowers.engine.client.render.Mesh;
 import nl.tivek.multiversepowers.engine.math.Colors;
-import nl.tivek.multiversepowers.engine.math.Noise;
 import nl.tivek.multiversepowers.engine.math.Vectors;
 
 public class LanternPainter extends LanternBeams {
     public static final Material HARD_LIGHT = new Material(0x4BEF78, 0x6CFF8E, 0x3CE86A, 0xE4FFEA);
     public static final int MASS_GREEN = 0x4BEF78;
-    private static final double MODEL_WIDTH = 1.23;
-    private static final int SPECKS = 12;
     private static final double BOLT_BEAM = 6.0;
 
     private static final double[][] FIST = {
@@ -47,7 +44,6 @@ public class LanternPainter extends LanternBeams {
             { -0.38, -0.27, -0.72, 0.38, 0.25, -0.42, 0.9 },
             { -0.44, -0.33, -0.86, 0.44, 0.31, -0.72, 1.2 },
             { -0.34, -0.25, -1.25, 0.34, 0.23, -0.86, 0.6 } };
-    private static final double BACK = -1.25;
     public static final Shape FIST_RING = new Shape(new double[][] { { -0.285, 0.28, 0.36, -0.005, 0.31, 0.44, 1.2 } },
             Mesh.cylinder(10, 0.08, 0.30, 0.335, 1.3).moved(-0.145, 0.0, 0.40),
             Mesh.ball(10, 6, 0.065, 1.6).scaled(1.0, 0.6, 1.0).moved(-0.145, 0.34, 0.40));
@@ -86,27 +82,6 @@ public class LanternPainter extends LanternBeams {
 
     public static LanternPainter hand(PoseStack pose, float time) {
         return new LanternPainter(pose, time);
-    }
-
-    public void fist(Vec3 center, Vec3 facing, double size, double solid, double charge, boolean held,
-            @Nullable Vec3 ring) {
-        Vec3 right = facing.cross(Vectors.UP);
-        right = right.lengthSqr() < 1.0E-4 ? new Vec3(1, 0, 0) : right.normalize();
-        Frame frame = new Frame(center, right, right.cross(facing), facing, size / MODEL_WIDTH);
-        double strength = Mth.clamp(solid, 0.0, 1.0);
-        double grown = held ? Mth.clamp(charge, 0.0, 1.0) : 0.0;
-        boolean full = grown >= 0.99;
-        double throb = full ? 0.85 + 0.25 * Math.sin(this.time() * 0.6) : 1.0;
-        this.chargedModel(FIST, frame, strength, throb, grown);
-        this.shape(FIST_RING, frame, strength, throb);
-        if (ring == null) {
-            return;
-        }
-        Vec3 end = frame.at(0.0, 0.0, BACK);
-        this.beam(ring, end, strength, frame.scale());
-        if (held && !full) {
-            this.feed(frame);
-        }
     }
 
     public void bolt(Vec3 center, Vec3 facing, double size, double solid, @Nullable Vec3 ring) {
@@ -183,28 +158,6 @@ public class LanternPainter extends LanternBeams {
             rivets[i] = Mesh.ball(6, 4, 0.035, 1.4).moved(0.84 * Math.cos(angle), 0.84 * Math.sin(angle), 0.065);
         }
         return rivets;
-    }
-
-    private void feed(Frame frame) {
-        for (int k = 0; k < SPECKS; k++) {
-            double cycle = this.time() / 14.0 + Noise.of(k, 11, 0);
-            int round = Mth.floor(cycle);
-            double[] box = FIST[(int) (Noise.of(k, round, 1) * FIST.length)];
-            Vec3 target = frame.at(Mth.lerp(Noise.of(k, round, 2), box[0], box[3]),
-                    Mth.lerp(Noise.of(k, round, 3), box[1], box[4]), Mth.lerp(Noise.of(k, round, 4), box[2], box[5]));
-            this.speck(target, Noise.direction(k, round), frame.forward(), frame.scale() * 0.8, cycle - round,
-                    frame.scale());
-        }
-    }
-
-    private void speck(Vec3 target, Vec3 direction, Vec3 axis, double distance, double t, double scale) {
-        double before = Math.max(0.0, t - 0.12);
-        Vec3 at = target.add(Vectors.spin(direction, axis, 2.0 * t).scale(distance * (1.0 - t) * (1.0 - t)));
-        Vec3 tail = target.add(Vectors.spin(direction, axis, 2.0 * before)
-                .scale(distance * (1.0 - before) * (1.0 - before)));
-        double fade = Math.min(1.0, t * 4.0);
-        this.lightLine(tail, at, 0.025 * scale, BRIGHT, Colors.alpha(0.9 * fade));
-        this.glowLine(tail, at, 0.1 * scale, GREEN, Colors.alpha(0.5 * fade));
     }
 
     public void dome(Vec3 center, double size, double solid, double flash, boolean inside) {

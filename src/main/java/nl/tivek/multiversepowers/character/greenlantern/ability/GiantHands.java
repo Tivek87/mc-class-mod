@@ -83,10 +83,6 @@ public final class GiantHands extends GiantHandPlaces implements Effect {
             PowerRing.tell(owner, "busy_lantern");
             return false;
         }
-        if (GiantFist.holding(owner)) {
-            PowerRing.tell(owner, "busy_fist");
-            return false;
-        }
         if (AirStrike.calling(owner)) {
             return false;
         }

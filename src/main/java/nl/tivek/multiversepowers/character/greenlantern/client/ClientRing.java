@@ -34,8 +34,7 @@ public final class ClientRing {
     private ClientRing() {
     }
 
-    private record State(float power, float pending, int since, int took, int state, int came, @Nullable Vec3 from,
-            int charged) {
+    private record State(float power, int since, int took, int state, int came, @Nullable Vec3 from, int charged) {
         boolean recharging() {
             return this.since != Integer.MIN_VALUE && clientTicks - this.since < PowerRing.RECHARGE_TICKS + SLACK;
         }
@@ -66,8 +65,8 @@ public final class ClientRing {
             charged = old != null && old.charged() != Integer.MIN_VALUE && Math.abs(old.charged() - told) <= RESYNC
                     ? old.charged() : told;
         }
-        RINGS.put(payload.entity(), new State(payload.power(), payload.pending(), since, took, payload.state(), came,
-                payload.from(), charged));
+        RINGS.put(payload.entity(), new State(payload.power(), since, took, payload.state(), came, payload.from(),
+                charged));
     }
 
     public static float charging(Entity player, float partialTick) {
@@ -127,11 +126,6 @@ public final class ClientRing {
     public static float power(Entity player) {
         State state = RINGS.get(player.getId());
         return state == null ? PowerRing.MAX_POWER : state.power();
-    }
-
-    public static float pending(Entity player) {
-        State state = RINGS.get(player.getId());
-        return state == null ? 0.0F : state.pending();
     }
 
     public static float recharge(Entity player, float partialTick) {

@@ -20,11 +20,11 @@ import nl.tivek.multiversepowers.character.CharacterAbility;
 import nl.tivek.multiversepowers.character.Characters;
 import nl.tivek.multiversepowers.character.GameCharacter;
 import nl.tivek.multiversepowers.character.greenlantern.ability.AirStrike;
+import nl.tivek.multiversepowers.character.greenlantern.ability.EmeraldExpress;
 import nl.tivek.multiversepowers.character.greenlantern.ability.EnergyWhip;
 import nl.tivek.multiversepowers.character.greenlantern.ability.Fear;
 import nl.tivek.multiversepowers.character.greenlantern.ability.Flamethrower;
 import nl.tivek.multiversepowers.character.greenlantern.ability.Flight;
-import nl.tivek.multiversepowers.character.greenlantern.ability.GiantFist;
 import nl.tivek.multiversepowers.character.greenlantern.ability.GiantHands;
 import nl.tivek.multiversepowers.character.greenlantern.ability.LandingSlam;
 import nl.tivek.multiversepowers.character.greenlantern.ability.LightBeam;
@@ -32,6 +32,7 @@ import nl.tivek.multiversepowers.character.greenlantern.ability.LightBolt;
 import nl.tivek.multiversepowers.character.greenlantern.ability.LightBubble;
 import nl.tivek.multiversepowers.character.greenlantern.ability.LightDome;
 import nl.tivek.multiversepowers.character.greenlantern.ability.LightShield;
+import nl.tivek.multiversepowers.character.greenlantern.ability.MechAssembly;
 import nl.tivek.multiversepowers.character.greenlantern.ability.Recharge;
 import nl.tivek.multiversepowers.character.greenlantern.ability.RevolverAssembly;
 import nl.tivek.multiversepowers.character.greenlantern.ability.RingScan;
@@ -77,8 +78,13 @@ public final class PowerRing {
             }
             return false;
         }
+        boolean mech = ability.id().equals("air_strike") && (data & Characters.HOLD) != 0;
+        if (on && !mech && MechAssembly.piloting(player)) {
+            tell(player, "mech_busy");
+            return false;
+        }
         return switch (ability.id()) {
-            case "giant_fist" -> on ? GiantFist.launch(player, level, ability) : GiantFist.letGo(player);
+            case "emerald_express" -> on && EmeraldExpress.use(player, level, ability);
             case "recharge" -> Recharge.recharge(player, level, ability);
             case "light_bolt" -> SwordShield.equipped(player) ? SwordShield.attack(player, level, on, data)
                     : Flamethrower.equipped(player) ? Flamethrower.attack(player, level, on, data)
@@ -92,7 +98,7 @@ public final class PowerRing {
             case "ring_scan" -> RingScan.use(player, level, ability);
             case "giant_hands" -> (data & Characters.HOLD) != 0 ? RevolverAssembly.use(player, level, ability)
                     : GiantHands.use(player, level, ability);
-            case "air_strike" -> AirStrike.use(player, level, ability);
+            case "air_strike" -> mech ? MechAssembly.use(player, level, ability) : AirStrike.use(player, level, ability);
             case "light_bubble" -> LightBubble.use(player, level, ability, data);
             case "beam_lock" -> on && LightBeam.lock(player);
             case "flight" -> on && ((data & Characters.SLAM) != 0 ? Flight.slam(player, level, ability)
@@ -104,7 +110,8 @@ public final class PowerRing {
     public static void clear() {
         CHANGED.clear();
         UNSEEN.clear();
-        GiantFist.clear();
+        EmeraldExpress.clear();
+        MechAssembly.clear();
         Recharge.clear();
         LightBolt.clear();
         LightBeam.clear();
@@ -203,8 +210,8 @@ public final class PowerRing {
                 | (LightBeam.firing(player) ? RingPayload.BEAM : 0)
                 | (Flight.descending(player) ? RingPayload.DESCENT : 0)
                 | (Flight.diving(player) || Shockwave.dropping(player) ? RingPayload.DIVE : 0);
-        return new RingPayload(player.getId(), power(player), GiantFist.pending(player), Recharge.ticks(player),
-                Flight.ticks(player), state, Arrival.ticks(player), Arrival.from(player), LightBeam.charging(player));
+        return new RingPayload(player.getId(), power(player), Recharge.ticks(player), Flight.ticks(player), state,
+                Arrival.ticks(player), Arrival.from(player), LightBeam.charging(player));
     }
 
     public static void say(ServerPlayer player, String line) {

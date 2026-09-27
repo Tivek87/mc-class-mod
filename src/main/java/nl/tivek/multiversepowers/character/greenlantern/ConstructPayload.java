@@ -13,7 +13,7 @@ import nl.tivek.multiversepowers.MultiversePowers;
 public record ConstructPayload(int id, int owner, Vec3 center, Vec3 facing, float size, float solid,
         float charge, boolean held, int shape, int variant, int age, @Nullable ConstructPath path)
         implements CustomPacketPayload {
-    public static final int FIST = 0;
+    public static final int EXPRESS = 0;
     // Reaches past the ~128 update range so nobody nearby misses the removal.
     private static final double REMOVE_RANGE = 176.0;
     public static final int BOLT = 1;
@@ -38,6 +38,8 @@ public record ConstructPayload(int id, int owner, Vec3 center, Vec3 facing, floa
     public static final int WHIP = 20;
     public static final int WHIP_SNARE = 21;
     public static final int REVOLVER = 22;
+    public static final int EXPRESS_PORTAL = 23;
+    public static final int MECH = 24;
     public static final int SLAM_FIST = 0;
     public static final int SLAM_HANDS = 1;
     public static final int SLAM_FISTS = 2;
@@ -84,7 +86,7 @@ public record ConstructPayload(int id, int owner, Vec3 center, Vec3 facing, floa
     }
 
     public static ConstructPayload remove(int id) {
-        return new ConstructPayload(id, -1, Vec3.ZERO, new Vec3(0, 0, 1), 0.0F, -1.0F, 0.0F, false, FIST);
+        return new ConstructPayload(id, -1, Vec3.ZERO, new Vec3(0, 0, 1), 0.0F, -1.0F, 0.0F, false, EXPRESS);
     }
 
     public static void sendRemove(ServerLevel level, int id, Vec3 near) {

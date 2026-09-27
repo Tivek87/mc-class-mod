@@ -75,10 +75,6 @@ public final class AirStrike extends AirStrikeMissiles {
             PowerRing.tell(owner, "busy_lantern");
             return false;
         }
-        if (GiantFist.holding(owner)) {
-            PowerRing.tell(owner, "busy_fist");
-            return false;
-        }
         if (GiantHands.waving(owner)) {
             return false;
         }

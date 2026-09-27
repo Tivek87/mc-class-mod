@@ -53,13 +53,13 @@ long cooldown; while it goes, the panel's title turns red and counts down.
 
 | Key | Ability | Doctor Octopus | Green Lantern |
 |---|---|---|---|
-| R | Ability 1 | Grab | Giant Fist |
+| R | Ability 1 | Grab | Emerald Express |
 | V | Ability 2 | Multi-Tentacle | Construct Wheel |
 | Z | Ability 3 | Tentacle Dash | Recharge |
 | B (hold) | Ability 4 | Block | Light Bolt *(left click)* |
 | H | Ability 5 | Ground Slam | Light Shield *(right click)* |
 | N | Ability 6 | Portal | Ring Scan |
-| Y | Ability 7 | Octopus Rampage *(ultimate)* | Air Strike *(ultimate)* |
+| Y | Ability 7 | Octopus Rampage *(ultimate)* | Air Strike *(ultimate; hold: Mech Assembly)* |
 | X | Ability 8 | *(free)* | Shockwave |
 | C | Ability 9 | Feet or Tentacles | Flight |
 | Left Alt | Ability 10 | Ground Strike | Giant Hands |
@@ -78,8 +78,8 @@ long cooldown; while it goes, the panel's title turns red and counts down.
 - **Click or hold.** Every ability on the mouse has two sides: a **tap** of the button does the quick one,
   and **holding it for 2 seconds** does a stronger, lasting one for as long as you keep holding. While you
   hold, an arc beside your crosshair fills up (on the right for left click, on the left for right click); once
-  it is full, the lasting one starts. A quick tap never shows it. Keys that you hold down anyway (the Giant
-  Fist, the Construct Wheel) keep their own way of working.
+  it is full, the lasting one starts. A quick tap never shows it. Keys that you hold down anyway (the Construct
+  Wheel) keep their own way of working.
 - **Crouching + a key** is decided by that ability itself, not by the key:
 
 | Crouching + | Doctor Octopus does |
@@ -96,14 +96,14 @@ long cooldown; while it goes, the panel's title turns red and counts down.
 
 Green Lantern's power ring turns willpower into hard light: solid shapes of green light that only last
 while he keeps them going. His mouse always does something: bolts and a beam on left click, a shield and a
-dome on right click. On top of that he has the Giant Fist, his lantern to recharge the ring, flight, the
+dome on right click. On top of that he has the Emerald Express, his lantern to recharge the ring, flight, the
 shockwave, the wheel you pick a weapon from (its first weapon is a sword and shield), the Ring Scan, the Giant
-Hands, the Light Bubble and his ultimate, the Air Strike. Every key is his now. Every ability has a move of his
+Hands, the Light Bubble and his ultimate, the Air Strike (held: the Hard-Light Mech). Every key is his now. Every ability has a move of his
 own that goes with it, seen from outside and in first person.
 
 His hands work the way the game's own buttons do: the **right hand attacks** (left click) and the **left hand
-defends** (right click). The ring sits on his right hand, the Giant Fist charges on his right, and the lantern
-goes in his left hand.
+defends** (right click). The ring sits on his right hand, the Emerald Express comes out of a portal on his right,
+and the lantern goes in his left hand.
 
 ### The uniform
 
@@ -140,7 +140,7 @@ The ring makes Green Lantern's uniform over your own clothes.
   suit, with pulses running outwards: the thickest and fastest over your right shoulder and down your right arm
   into the ring, and the rest over the chest and the back, down the flanks, the other arm and the legs, and up
   the back of the head. The ring's light flares out around its
-  stone. The harder the ring works, the brighter all of it: a little for the shield, more for a fist or a
+  stone. The harder the ring works, the brighter all of it: a little for the shield, more for a portal or a
   bolt, a lot for flying, the dome and the beam. You see it on your own arms in first person too.
 - When you change back it goes the other way round: the glow of your eyes goes out and the mask goes first, then
   the uniform draws back over your legs, your body and down your arm into the ring, specks of its light streaming
@@ -160,11 +160,9 @@ The ring makes Green Lantern's uniform over your own clothes.
   quarter, half and three quarters. Nothing on it blinks:
   - When the ring pays for something, the bar drops at once and what it paid stays behind it for a moment as
     a gold piece that then runs out, so you see how big every cost was. Recharging makes the bar glide up.
-  - While you charge the Giant Fist, the part it is going to cost is a steady striped piece at the end of the
-    bar, with a white line where the ring will end up, and the number shows it as well (for example `100 -2.2`).
   - While the ring drains by itself (flying, the shield, the dome, the beam) it says in gold how fast
     (`97 -0.08/s`), and in the air also how many seconds of flight that leaves (`90 -1.07/s 85s`).
-- Once the ring cannot pay for the smallest fist, the bar turns red and the Giant Fist says **no power**.
+- Once the ring cannot pay for the Emerald Express, the bar turns red and the Emerald Express says **no power**.
   Pressing R then tells you which key recharges the ring.
 - What is left in the ring stays with you: also while you are someone else, and after dying or logging out.
   Changing character never fills it up.
@@ -178,8 +176,7 @@ The ring makes Green Lantern's uniform over your own clothes.
 With both hands empty the mouse belongs to the ring, and the game's own left and right click do nothing:
 you cannot mine, hit, place or use anything. Pick anything up and the mouse works as it always did.
 Recharging takes both hands, so the mouse waits for it. Left click needs just one free hand: bolts and the
-beam still come out of the ring while your ring hand charges the Giant Fist, waves up a giant hand or calls the
-air strike. It only waits while your other hand is busy too (shield or dome up), and during the take-off.
+beam still come out of the ring while your ring hand waves up a giant hand or calls the air strike. It only waits while your other hand is busy too (shield or dome up), and during the take-off.
 Every button works by **click or hold** (see above): a tap for the
 quick one, 2 seconds of holding for the lasting one.
 
@@ -232,7 +229,7 @@ quick one, 2 seconds of holding for the lasting one.
     | 3 | 6 s | x1.73 | 52 blocks | x2 | 2/s | 58% |
     | 4 | 8 s | x2.28 | 58 blocks | x2.5 | 3.16/s | 44% |
     | 5 | 10 s | x3 (30 hearts/s) | 64 blocks | x3 | 5/s, fixed | 30% |
-  - Let go, run the ring dry or start a Giant Fist and it dies down; your walking speed comes back at once.
+  - Let go or run the ring dry and it dies down; your walking speed comes back at once.
   - **Beam Lock (middle click):** click it while the beam pours and it stays at the stage it has reached: it stops
     growing, the gauge shows a padlock and **LOCKED**, and the ring says so. Click again and it grows on from
     there. Clicked before the beam is out, the ring tells you to fire it first.
@@ -284,8 +281,7 @@ Green Lantern recharges his ring at his lantern, the power battery.
 - Everyone around you sees it: the lantern in your hand, the fist smacking it and the blast of light.
 - You can recharge whenever the ring is not full, once every **3 seconds**. The light hurts nobody and
   breaks no blocks.
-- While you recharge, the ring makes nothing else: a shield, dome or beam you had going stops. While you
-  charge a fist you cannot recharge: let go of the fist first.
+- While you recharge, the ring makes nothing else: a shield, dome or beam you had going stops.
 - **In the air too**, once the take-off is over: you keep flying while you do it. The lantern hangs upright
   from your hand however your body lies, the wind shakes it in first person, and the hit sends rings of light
   out around the way you fly. Recharging while an empty ring lets you sink makes you fly again.
@@ -298,10 +294,10 @@ Green Lantern recharges his ring at his lantern, the power battery.
   in the middle of a jump or a fall (the double tap works there too; in creative the double tap stays the
   game's own flying).
 - **Flying:** hold **forward** and you fly the way you look. **You pick up speed quickly and then keep getting
-  faster the longer you fly on:** a flight starts at about **3 blocks a second** and within **half a second** you
-  are up to a cruising speed of **3.75 blocks a second**; from there you keep gaining, until after **4 seconds**
-  you reach the top speed of **4.5 blocks a second**, about as fast as walking, calm and easy to steer, and never
-  more. Hovering and climbing go at a part of that speed. Let go of forward and you glide to a hover and lose the
+  faster the longer you fly on:** a flight starts at about **1.2 blocks a second** and within **half a second** you
+  are up to a cruising speed of **1.5 blocks a second**; from there you keep gaining, until after **4 seconds**
+  you reach the top speed of **1.8 blocks a second**, slower than walking, calm and tightly under control, and
+  never more. Hovering and climbing go at a part of that speed. Let go of forward and you glide to a hover and lose the
   speed you built up again (all of it in 3 seconds);
   pushing against a wall keeps it.
   **Jump** rises, **sneak** sinks, left and right slide sideways, back drifts backwards. You carry your speed
@@ -335,7 +331,7 @@ Green Lantern recharges his ring at his lantern, the power battery.
   any more. You do not get hurt when you touch the ground. Recharge (on the way down or on the ground) to fly
   again.
 - **Landing slam (by itself; key X does it on purpose, see Shockwave):** dive into the ground fast (at least
-  about 4 blocks a second, nearly your top speed, so fly on for a few seconds first) and your flight ends
+  about 1.6 blocks a second, nearly your top speed, so fly on for a few seconds first) and your flight ends
   in a
   hero's landing. Just before
   the ground you swing upright, feet first, ring
@@ -379,8 +375,8 @@ Green Lantern recharges his ring at his lantern, the power battery.
   - **Tap right:** the shield becomes a pointed, streamlined **ram cone** out in front of you (solid to everyone
     else, see-through only from your own eyes), with your left fist out in front like a punch; ridges wind
     round it to its tip like the thread of a drill, and it turns as you fly. It still takes 70% off hits from
-    ahead, and whatever you fly into is rammed away: a hard throw and **2 hearts plus 5.25 hearts for every
-    block per tick you fly** (about 3.6 hearts at top speed). The same creature can be rammed again after 0.6
+    ahead, and whatever you fly into is rammed away: a hard throw and **2 hearts plus 26.25 hearts for every
+    block per tick you fly** (about 4.4 hearts at top speed). The same creature can be rammed again after 0.6
     seconds.
   - **Scraping:** fly with the ram cone low along the ground (less than 1.5 blocks above it) or slide over it,
     and it wears the cone down: **2 more power a second**, sparks fly off where it scrapes, it grinds, and your
@@ -391,11 +387,11 @@ Green Lantern recharges his ring at his lantern, the power battery.
 
 | Flight | |
 |---|---|
-| Speed | starts at about 3 blocks a second, up to 4.5 after 4 seconds of flying forward |
+| Speed | starts at about 1.2 blocks a second, up to 1.8 after 4 seconds of flying forward |
 | Stop in the air | C, or a double tap on jump |
 | Power | 1.07 a second (a full ring lasts 93.75 seconds), plus whatever you use meanwhile |
 | Take off | C or a double tap on jump; at least 0.8 power; not while recharging |
-| Ram (shield up) | 2 hearts + 10.5 hearts per block per tick of speed, strong knockback |
+| Ram (shield up) | 2 hearts + 26.25 hearts per block per tick of speed, strong knockback |
 | Scraping (ram cone low along the ground) | 2 more power a second, your view shakes |
 | Brake (dome up) | half speed |
 
@@ -412,7 +408,7 @@ the 32 giant constructs (a random one), which strikes and sends a shockwave over
 - **Damage:** 6 hearts in the middle, half at the edge 5 blocks out; everything is thrown away.
 - **Power:** 1.6, paid when the slam lands; without it you just land hard.
 - **Cooldown:** 5 seconds, from when you press X.
-- Not while you recharge or charge the Giant Fist, and not while your last slam is still going.
+- Not while you recharge, and not while your last slam is still going.
 - Its damage, reach, push and cost count for the landing slam of a flight as well: one set of numbers, under
   Shockwave in the settings. Under *The constructs* you also set **how big** the constructs are (1.35 by
   default) and **how slowly** they play (1.5 by default; the shockwave strikes that much later too).
@@ -433,77 +429,50 @@ you, shockwave and all. Anyone can use it, whatever character they are, but only
 operator); without, the server tells you so. It costs no power and has no cooldown; while your last slam is
 still going, it waits for you to try again.
 
-### Giant Fist (key R)
+### Emerald Express (key R)
 
-The ring makes a fist of green light beside you, on your right. Hold R to charge it; let go and it shoots
-off at what you aim at.
+Press R and the ring calls up a giant western steam engine of hard light, which charges out beside you and rams
+every creature out to hurt you, one after another, until its brakes lock up, it jumps the rails, crashes onto its
+side and its boiler blows up.
 
-- It simply appears, with no build-up and no ring of light around it. **Your right arm reaches out to it**
-  while you hold it, and a beam of light runs out of the stone of your ring into it: a white-hot thread
-  leaving the stone with a spark on it, swelling to a cord of green light at the fist, with light running
-  down it and two fine strands winding around it. It leaves exactly from the stone, in first person as
-  well. That beam stays there as long as the fist does, in flight as well: the light always hangs on the
-  ring that wills it.
-- **It hangs on you.** However fast you turn, walk or fly, the fist stays in its spot beside you and never
-  lags behind.
-- **It is solid.** Hard light is a thing, not a haze: green sides that catch the light like blocks do, and
-  a glow around it. You cannot see through it, and it hides its own far side. It is shaped like a real fist:
-  four fingers each curled in two bones with the tips tucked into the palm, the thumb folded over the front
-  of the first two fingers with a nail on it, knuckles and tendons standing out on the back of the hand, a
-  cuff at the wrist, and your ring with its gem on the middle finger.
-- **Lines only where it ends.** A bright line runs along the edges where the shape stops against what is
-  behind it; over the sides you are looking at there is nothing, so it reads as mass and not as wire.
-- **It charges slowly.** A tap of R gives a fist one block across. Keep holding R and it grows, until after
-  **4.1 seconds** it is **5.7 blocks** across. While it charges, light runs down the beam into it,
-  specks land all over it and a hum rises; a chime tells you it is fully charged, and it throbs until you
-  let go.
-- **It stays on your right,** a little ahead of you: a small one at the height of your chest, a big one
-  standing on the ground. As it grows it moves further out, so it never fills your screen.
-- **It finds room by itself.** When it would go through a wall, the ground or anything else solid, it flows
-  smoothly to another spot and keeps charging there: first higher up on your right, then above your head,
-  then on your left. Once its first spot has been free again for a moment, it goes back there. If there is
-  no room anywhere, it takes the spot where the least is in its way.
-- **It costs ring power:** 1.6 for the smallest fist, rising by about 0.2 for every half second of charging,
-  to 3.2 for a full charge. The ring pays when the fist flies. If the ring runs out while you charge, the fist
-  stops growing and you are told why.
-- **Crouching while you hold R changes nothing:** the fist keeps charging and flies when you let go.
-- **You steer it with your eyes: the middle of the fist stays right under your crosshair.** It charges beside
-  you, so when you let go it glides from there onto the middle of your view, without turning, in a moment;
-  from then on it stays exactly on your crosshair for its whole flight. Look aside, up or down and it goes
-  along, so you can steer it round a corner or down onto something. Something closer than where it would reach
-  the middle of your view, it glides in onto right there.
-- It flies along with you: while you fly yourself you never catch up with it.
-- Every creature in its way takes a heavy hit and is thrown far, the way the fist flies. It keeps going
-  after a hit, so it can knock down a whole row; each creature is hit only once.
-- **A bigger fist hits harder**, and over a wider area: 6 hearts with a tap, growing with its width up to
-  14 hearts for a full charge.
-- **It smashes its way through soft blocks:** dirt, sand, stone, wood, glass and leaves break and drop what
-  they would drop when you mine them. Iron, diamond, obsidian and bedrock hold, chests and other blocks
-  that keep something in them are left alone, and the fist goes straight through all of those, so it also
-  hits creatures behind a wall or under the floor. One fist smashes at most 150 blocks, so it punches a
-  hole instead of clearing the landscape.
-- After 32 blocks it falls apart by itself.
-- Stop being Green Lantern (die, log out, change dimension or pick someone else) and the fist falls apart
-  at once, without costing anything.
-- You cannot start a fist while you recharge the ring. A beam you are pouring out goes on while the fist
-  charges, unless your other hand holds a shield or dome up: then both hands are busy and the beam stops. A
-  shield or dome you hold up stays.
-- Who can be hit by the ring's light (fist, bolts, beam, ram): every creature, bosses too, but no armour
-  stands, and other players only where players may fight each other.
+- **The portal:** at once a big ring of light opens on your right, a beam of your ring's light running into it.
+  Steam blasts out of it with a loud hiss, and you hear the engine get going: a heavy chuff... chuff...
+  chuff that comes ever faster, while the ground shakes a little under you.
+- **The engine:** a 4-4-0 like the ones of the old west, 23 blocks long with its tender and taller than a house,
+  all of solid green hard light: a cowcatcher with its slats, a headlamp throwing a beam of light ahead, a big
+  balloon smokestack, the smokebox with its round door and your lantern emblem on it, the boiler with its bands,
+  domes and bell, handrails and running boards, two cylinders, the cab with its windows and roof and the glow of
+  the fire inside, and a tender stacked with logs, the emblem on its sides. Its four big driving wheels turn with
+  their side rods and main rods pumping, the crossheads sliding, just like the real thing.
+- **It thunders out of the portal** nose first and gathers speed to about 19 blocks a second. The stack puffs
+  steam with every chuff and steam jets out of its cylinders as it gets going.
+- **Rails of light** grow out of the light right in front of its wheels, and break up again behind the tender:
+  it lays its own track wherever it goes, over hills, across water and even through the air.
+- **It hunts:** once the whole train is out of the portal it turns towards the nearest creature out to hurt you
+  (within 24 blocks, ahead of it first) and runs it down. Every creature it rams takes **10 hearts** and is
+  thrown far aside; then it goes after the next one. It rams **6** at most, and runs **110 blocks** at most. Hard
+  light goes through walls, trees and houses without breaking a block.
+- **Derailed:** when nothing is left to ram (or it has rammed its six, or run its 110 blocks) its brakes lock with
+  a piercing screech and sparks shower off its wheels. It loses its balance, tips over onto the side it was
+  leaning to and slams down, then slides along the ground on its side in a shower of sparks until it stops.
+- **The boiler blast:** lying there, it hisses as a huge cloud of steam and smoke builds up round its boiler, which
+  swells and cracks with light, faster and brighter... until it blows up with a massive bang and a shockwave:
+  **15 hearts** in the middle, half of it at the edge **7 blocks** out, and everything in it is thrown away. The
+  pieces fly apart and dissolve into green light at once.
+- **Who it hits:** only creatures out to hurt you (the red ones, see "Who is red, yellow and green"), both the
+  rams and the blast.
+- Stop being Green Lantern (die, log out, change dimension or pick someone else) and the train simply breaks up
+  into light, harmlessly.
 
 | | |
 |---|---|
-| Damage | 6 hearts with a tap, up to 14 hearts for a full charge, to every creature it hits |
-| Range | 32 blocks |
-| Size | 1 block across with a tap; up to 5.7 blocks after 4.1 seconds of charging |
-| Power | 1.6 for a tap, up to 3.2 for a full charge (about 0.2 per half second) |
-| Blocks | Everything up to the hardness of wood, at most 150 blocks per fist |
-| Cooldown | 4 s, counted from when you let go of R |
+| Ram | 10 hearts to every creature out to hurt you in its way, thrown far aside |
+| Hunting | the nearest creature out to hurt you within 24 blocks, 6 at most, 110 blocks at most |
+| Boiler blast | 15 hearts in the middle, half at the edge 7 blocks out |
+| Power | 6 |
+| Cooldown | 12 s |
 
-If you press R while it is still cooling down, it tells you how long it has left. Keep R down and the
-fist starts by itself once it is ready. Its biggest size, the damage of a full charge, the charging time,
-both power costs, how hard a block may be for it to smash and how many blocks it may smash are settings of
-their own (see "Changing the numbers").
+All of these numbers are settings of their own (see "Changing the numbers").
 
 ### Construct Wheel (key V)
 
@@ -732,7 +701,7 @@ The ring scans everything around you, the way it does in the comics ("Ring, scan
 
 Green Lantern's ultimate: a big, slow gunship of hard light high over the battlefield, with two jets.
 
-- **Press Y.** You throw your ring fist up at the sky and a thick pillar of light shoots out of the ring. High in
+- **Tap Y** (it goes when you let go; hold it 2 seconds for the mech, see below). You throw your ring fist up at the sky and a thick pillar of light shoots out of the ring. High in
   the sky, about **55 blocks** up, a **big gunship with four propellers** grows out of its light, white-hot at first
   and cooling to green. It is a solid construct of hard light, never a real aircraft,
   and made in detail: a long round body with a glowing windscreen, rows of windows, doors and a cargo ramp under
@@ -788,6 +757,38 @@ Green Lantern's ultimate: a big, slow gunship of hard light high over the battle
   spread), the missiles (how often, damage, the size of their craters), the jets' missiles (how often, damage) and
   the crash (damage, reach, the size of the crater, how hard a block may be to be blown away, how many blocks are
   hurled; a hardness of -1 leaves the ground alone).
+
+### Hard-Light Mech Assembly (hold Y for 2 seconds)
+
+- **Hold Y.** A ring round your crosshair fills up in 2 seconds; when it is full the ring builds a giant mech of hard
+  light round you, piece by piece, over about ten seconds (let go sooner and you get the ordinary Air Strike). It
+  stands on the ground under you, so you need ground at most 12 blocks below you.
+- **Hover and lock.** You rise up to the height of the mech's chest and hang there, still, arms spread. You cannot
+  move, fly or use your other powers while you are in it.
+- **The feet.** A beam of your ring's light runs out to either side and two heavy armoured boots grow out of it in
+  the air, a green emblem on each ankle. They **stomp down** one after the other, shaking the ground, and walk
+  heavily in, step by step, until they stand right under you.
+- **The legs.** Shins grow up out of the boots, the knee caps snap on with a click, the thighs build up on top and
+  the hips lock onto them with a clack.
+- **The arms.** Two giant armoured forearms with open hands grow out of the light on either side of you, swing in
+  and **clap together** in front of you with a thunderous bang and a small shockwave (**3 hearts** in the middle,
+  half at its edge 3.5 blocks out). Straight after the clap they spin and fly up, tumbling round and round.
+- **The torso and the cockpit.** Just before the arms get there, the torso, the heavy shoulder armour and the upper
+  arms grow up round you. You now **sit inside the chest**, in a seat, with a **lever in each hand**, and you look
+  out through a round window of see-through hard light set in the lantern emblem on its chest. Everyone else sees
+  you sitting in there. The spinning arms then **click into their joints**.
+- **The head.** A head forms high above the mech, spinning like a drill. It swings out in front, then **drills
+  straight down into the ground** with brute force: a shockwave (**5 hearts** in the middle, half at its edge 4.5
+  blocks out), cracks of light and flying earth. It spins back up out of the ground and screws down onto the neck,
+  locking in place with a hard mechanical **CLACK**.
+- **Built:** the ring round the window glows and breathes, the visor and the exhausts on its back shine. For now
+  the mech does nothing more (this is still being built).
+- **Leaving it:** hold Y for 2 seconds again (the ring round your crosshair says *Leave the mech*): the mech breaks
+  into solid pieces that dissolve into light, and you float gently down to the ground. Die, log out or stop being
+  Green Lantern and it breaks up as well.
+- **Who gets hit:** only what is out to hurt you, by the clap and the drill.
+- **Power:** 25. **Cooldown:** 90 seconds, **its own**: building the mech leaves the Air Strike ready, and the Air
+  Strike leaves the mech ready. Its cost, cooldown and both damages are settings (Air Strike, the mech part).
 
 ### Giant Hands (key Left Alt)
 
@@ -1294,5 +1295,5 @@ Every character has their own file, with one section per ability:
   each with a comment saying what it does.
 - On a server the server's files decide what an ability does (cooldown, damage, range, ring power). Only
   the stamina an ability costs is read from your own copy of the file, because stamina is counted on your
-  own screen; your own copy also decides when your panel says the ring is too low for a Giant Fist.
+  own screen; your own copy also decides when your panel says the ring is too low for the Emerald Express.
 - A new character brings a new file along by itself.

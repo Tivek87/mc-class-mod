@@ -63,36 +63,24 @@ public enum GameCharacter {
     GREEN_LANTERN("green_lantern", 0x3CE86A, new GreenLanternPowers()) {
         @Override
         void fill(Map<AbilitySlot, CharacterAbility> abilities) {
-            this.add(abilities, AbilitySlot.ABILITY_1, "giant_fist").held().cooldown(80).damage(12.0)
-                    .group("hit", "The hit")
-                    .setting("fullChargeDamage", 28.0, 0.0, 2000.0, Unit.HALF_HEARTS,
-                            "Damage of a fully charged fist, in half hearts; a smaller one does less, in step with"
-                                    + " its width, down to the normal damage for a tap")
-                    .was(14.0)
-                    .setting("knockback", 1.6, 0.0, 5.0, Unit.STRENGTH, "How hard the fist throws what it hits")
-                    .setting("rangeBlocks", 32.0, 4.0, 64.0, Unit.BLOCKS,
-                            "How far the fist flies before it falls apart, in blocks")
-                    .group("size", "Size and charging")
-                    .setting("maxSize", 5.7, 1.0, 32.0, Unit.BLOCKS,
-                            "How wide the fist gets when you charge it all the way, in blocks (a tap gives 1)")
-                    .was(8.8)
-                    .setting("chargeSeconds", 4.1, 0.5, 20.0, Unit.SECONDS,
-                            "Seconds of holding the key before the fist is as big as it gets")
-                    .group("power", "Ring power")
-                    .setting("powerCost", 1.6, 0.0, 100.0, Unit.POWER,
-                            "Ring power the smallest fist costs (a full ring holds 100)")
-                    .was(10.0, 4.0)
-                    .setting("fullChargePowerCost", 3.2, 0.0, 100.0, Unit.POWER,
-                            "Ring power a fully charged fist costs: every half second of charging adds an"
-                                    + " equal share of the difference")
-                    .was(20.0, 11.0, 8.0)
-                    .group("blocks", "Smashing blocks")
-                    .setting("breakHardness", 3.0, -1.0, 100.0, Unit.HARDNESS,
-                            "How hard a block may be for the fist to smash it (dirt 0.5, stone 1.5, wood 2,"
-                                    + " iron 5); -1 smashes nothing. Blocks that hold something, like chests,"
-                                    + " never break")
-                    .settingInt("maxBlocksBroken", 150, 0, 4000, Unit.BLOCK_COUNT,
-                            "How many blocks one fist can smash at most before it only pushes through");
+            this.add(abilities, AbilitySlot.ABILITY_1, "emerald_express").cooldown(240).damage(20.0)
+                    .group("express_run", "The run")
+                    .setting("knockback", 2.2, 0.0, 6.0, Unit.STRENGTH,
+                            "How hard the train throws what it rams, and what its boiler blast catches")
+                    .setting("rangeBlocks", 24.0, 4.0, 64.0, Unit.BLOCKS,
+                            "How far from the train it looks for the next creature out to hurt you, in blocks")
+                    .settingInt("mostRams", 6, 1, 30, Unit.COUNT,
+                            "How many creatures the train rams at most, one after another, before it brakes")
+                    .setting("runBlocks", 110.0, 20.0, 400.0, Unit.BLOCKS,
+                            "How far the train runs at most before its brakes lock up and it leaves the rails, in"
+                                    + " blocks")
+                    .group("express_blast", "The boiler blast")
+                    .setting("blastDamage", 30.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                            "Damage of the boiler blast in its middle, in half hearts; half of it at its edge")
+                    .setting("blastRadius", 7.0, 1.0, 24.0, Unit.BLOCKS, "How far the boiler blast reaches, in blocks")
+                    .group("express_power", "Ring power")
+                    .setting("powerCost", 6.0, 0.0, 100.0, Unit.POWER,
+                            "Ring power the Emerald Express costs (a full ring holds 100)");
             this.add(abilities, AbilitySlot.ABILITY_2, "construct_wheel").held().clientOnly()
                     .group("sword", "Sword (left click)")
                     .setting("swordDamage", 8.0, 0.0, 2000.0, Unit.HALF_HEARTS,
@@ -260,10 +248,10 @@ public enum GameCharacter {
                     .setting("ramDamage", 4.0, 0.0, 2000.0, Unit.HALF_HEARTS,
                             "Damage of flying into a creature with the shield up, in half hearts, at the slowest"
                                     + " speed that rams")
-                    .setting("ramDamagePerSpeed", 21.0, 0.0, 200.0, Unit.HALF_HEARTS_PER_SPEED,
-                            "Extra ram damage in half hearts for every block per tick you fly (about 0.225 at top"
+                    .setting("ramDamagePerSpeed", 52.5, 0.0, 200.0, Unit.HALF_HEARTS_PER_SPEED,
+                            "Extra ram damage in half hearts for every block per tick you fly (about 0.09 at top"
                                     + " speed)")
-                    .was(6.0, 10.5)
+                    .was(6.0, 10.5, 21.0)
                     .setting("ramKnockback", 1.4, 0.0, 6.0, Unit.STRENGTH,
                             "How hard a ram throws a creature away; the faster you fly, the further it goes")
                     .setting("ramGroundPowerPerSecond", 2.0, 0.0, 50.0, Unit.POWER_PER_SECOND,
@@ -280,6 +268,7 @@ public enum GameCharacter {
                     .was(12.0)
                     .setting("powerCost", 2.0, 0.0, 100.0, Unit.POWER, "Ring power one scan costs");
             this.add(abilities, AbilitySlot.ABILITY_7, "air_strike").cooldown(1800).damage(48.0).damageWas(40.0)
+                    .holdVersion(40, CharacterAbility.Tap.RELEASE)
                     .setting("attackSeconds", 20.0, 2.0, 60.0, Unit.SECONDS,
                             "How long the plane drones on and fires before it plunges down, in seconds; its engine"
                                     + " bursts and its jets race off in the last 1.8 seconds of it")
@@ -331,7 +320,19 @@ public enum GameCharacter {
                                     + " 5); -1 leaves the ground alone. Blocks that hold something, like chests, stay")
                     .settingInt("debrisBlocks", 40, 0, 400, Unit.BLOCK_COUNT,
                             "How many of the crater's blocks are hurled up and away, to come down all round it")
-                    .was(90.0, 158.0);
+                    .was(90.0, 158.0)
+                    .group("mech", "Hard-Light Mech Assembly (hold the button 2 seconds)")
+                    .setting("mechPowerCost", 25.0, 0.0, 100.0, Unit.POWER,
+                            "Ring power building the mech costs")
+                    .settingInt("mechCooldown", 1800, 0, 72000, Unit.TICKS,
+                            "Ticks before the mech can be built again (20 ticks = 1 second); it has a cooldown of its"
+                                    + " own, apart from the air strike of a tap")
+                    .setting("mechClapDamage", 6.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                            "Damage of the small shockwave of the hands' clap in its middle, in half hearts; half of"
+                                    + " it at its edge")
+                    .setting("mechDrillDamage", 10.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                            "Damage of the shockwave where the head drills into the ground, in its middle, in half"
+                                    + " hearts; half of it at its edge");
             this.add(abilities, AbilitySlot.ABILITY_8, "shockwave").cooldown(100).damage(12.0)
                     .setting("radiusBlocks", 5.0, 1.0, 16.0, Unit.BLOCKS, "How far the shockwave reaches, in blocks")
                     .setting("knockback", 1.2, 0.0, 5.0, Unit.STRENGTH,
@@ -353,18 +354,18 @@ public enum GameCharacter {
                             "Seconds a full ring keeps you in the air: flying costs 100 divided by this a second,"
                                     + " and what you shoot or hold up while flying comes on top")
                     .was(15.0, 37.5)
-                    .setting("topSpeed", 4.5, 1.0, 150.0, Unit.BLOCKS_PER_SECOND,
+                    .setting("topSpeed", 1.8, 1.0, 150.0, Unit.BLOCKS_PER_SECOND,
                             "Top speed in blocks per second (an elytra with firework rockets does about 33); hovering"
                                     + " and climbing without flying forward go at a part of it")
-                    .was(50.0, 35.0, 19.25, 9.625, 6.25625, 18.0, 9.0)
-                    .setting("startSpeed", 3.0, 1.0, 150.0, Unit.BLOCKS_PER_SECOND,
+                    .was(50.0, 35.0, 19.25, 9.625, 6.25625, 18.0, 9.0, 4.5)
+                    .setting("startSpeed", 1.2, 1.0, 150.0, Unit.BLOCKS_PER_SECOND,
                             "Speed you set off at, in blocks per second: the longer you fly on, the faster you go, up"
                                     + " to the top speed")
-                    .was(11.7, 6.4, 4.16, 12.0, 6.0)
-                    .setting("cruiseSpeed", 3.75, 1.0, 150.0, Unit.BLOCKS_PER_SECOND,
+                    .was(11.7, 6.4, 4.16, 12.0, 6.0, 3.0)
+                    .setting("cruiseSpeed", 1.5, 1.0, 150.0, Unit.BLOCKS_PER_SECOND,
                             "Cruising speed in blocks per second: flying on, you are up to it within a moment, and"
                                     + " from there you keep gaining, up to the top speed")
-                    .was(13.0, 8.0, 5.2, 15.0, 7.5)
+                    .was(13.0, 8.0, 5.2, 15.0, 7.5, 3.75)
                     .setting("cruiseSeconds", 0.5, 0.0, 60.0, Unit.SECONDS,
                             "Seconds of flying on from the speed you set off at to the cruising speed (0 = straight"
                                     + " away)")

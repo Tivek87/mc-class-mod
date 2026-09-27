@@ -6,12 +6,15 @@ import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
 import net.minecraft.client.Minecraft;
+import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.character.greenlantern.ConstructPayload;
+import nl.tivek.multiversepowers.character.greenlantern.ExpressScript;
 import nl.tivek.multiversepowers.character.greenlantern.HandDuo;
 import nl.tivek.multiversepowers.character.greenlantern.HandGroup;
 import nl.tivek.multiversepowers.character.greenlantern.HandPose;
+import nl.tivek.multiversepowers.character.greenlantern.MechScript;
 import nl.tivek.multiversepowers.character.greenlantern.PlanePath;
 import nl.tivek.multiversepowers.character.greenlantern.ability.AirStrike;
 import nl.tivek.multiversepowers.character.greenlantern.ability.FlameMove;
@@ -21,11 +24,12 @@ import nl.tivek.multiversepowers.character.greenlantern.ability.RingScan;
 import nl.tivek.multiversepowers.character.greenlantern.ability.SwordMove;
 import nl.tivek.multiversepowers.character.greenlantern.ability.WhipMove;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.BubblePainter;
+import nl.tivek.multiversepowers.character.greenlantern.client.render.ExpressPainter;
+import nl.tivek.multiversepowers.character.greenlantern.client.render.MechPainter;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.PlanePainter;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.RevolverPainter;
 import nl.tivek.multiversepowers.character.greenlantern.client.slam.SlamPainter;
 import nl.tivek.multiversepowers.engine.math.Ease;
-import static nl.tivek.multiversepowers.character.greenlantern.client.ConstructPlaces.hung;
 import static nl.tivek.multiversepowers.character.greenlantern.client.ConstructPlaces.pane;
 
 abstract class TrackedConstructs {
@@ -73,10 +77,6 @@ abstract class TrackedConstructs {
             ConstructPayload now = track.current;
             if (now.owner() != owner || !now.held()) {
                 continue;
-            }
-            if (now.shape() == ConstructPayload.FIST && !defends) {
-                Vec3 center = entity == null ? now.center() : hung(entity, now.center(), partialTick);
-                return new Held(center, now.solid(), now.shape(), false);
             }
             if (now.shape() == ConstructPayload.BUBBLE && !defends) {
                 return new Held(track.previous.center().lerp(now.center(), partialTick),
@@ -197,7 +197,8 @@ abstract class TrackedConstructs {
                 continue;
             }
             float here = switch (now.shape()) {
-                case ConstructPayload.FIST -> now.held() ? 0.6F + 0.4F * now.charge() : 0.5F;
+                case ConstructPayload.EXPRESS_PORTAL -> now.age() < ExpressScript.OPEN_TICKS + 6 ? 0.9F : 0.0F;
+                case ConstructPayload.MECH -> MechScript.working(track.clock(partialTick));
                 case ConstructPayload.BOLT -> 0.7F;
                 case ConstructPayload.SCAN -> {
                     double rolled = track.clock(partialTick) * RingScan.SPEED / Math.max(1.0, now.size());
@@ -469,6 +470,14 @@ abstract class TrackedConstructs {
                 most = Math.max(most, RevolverPainter.shake(slam, track.clock(partialTick), from));
                 continue;
             }
+            if (slam.shape() == ConstructPayload.EXPRESS) {
+                most = Math.max(most, ExpressPainter.shake(slam, track.clock(partialTick), from));
+                continue;
+            }
+            if (slam.shape() == ConstructPayload.MECH) {
+                most = Math.max(most, MechPainter.shake(slam, track.clock(partialTick), from));
+                continue;
+            }
             if (slam.shape() != ConstructPayload.SLAM) {
                 continue;
             }
@@ -522,6 +531,45 @@ abstract class TrackedConstructs {
         }
         double fade = 1.0 - since / ticks;
         return (float) (hard * fade * fade * Math.min(1.0, near * 1.2));
+    }
+
+    // A mech its owner sits in: where it stands, how far it has come, and how far it has broken up (below 0: not).
+    public record Piloted(MechScript.Stage stage, double t, double startY, double broke) {
+        public Vec3 seat() {
+            return this.stage.point(0.0, this.broke >= 0.0 ? MechScript.lowered(this.broke)
+                    : MechScript.seatHeight(this.startY, this.t), 0.0);
+        }
+
+        public double sit() {
+            return this.broke >= 0.0 ? 1.0 - Ease.smooth(this.broke / 6.0)
+                    : Ease.smooth((this.t - MechScript.SIT_FROM) / (MechScript.SIT_TO - MechScript.SIT_FROM));
+        }
+    }
+
+    @Nullable
+    public static Piloted piloted(int owner, float partialTick) {
+        for (Track track : CONSTRUCTS.values()) {
+            ConstructPayload now = track.current;
+            if (now.shape() != ConstructPayload.MECH || now.owner() != owner) {
+                continue;
+            }
+            boolean breaking = now.variant() == MechScript.BREAKING;
+            double broke = breaking ? Mth.lerp(partialTick, Math.max(0.0F, track.previous.charge()), now.charge())
+                    : -1.0;
+            return new Piloted(MechScript.Stage.of(now.center(), now.facing()),
+                    breaking ? now.age() : track.clock(partialTick), now.size(), broke);
+        }
+        return null;
+    }
+
+    @Nullable
+    static ExpressPainter.Gate expressGate(int owner, float partialTick) {
+        for (Track track : CONSTRUCTS.values()) {
+            if (track.current.shape() == ConstructPayload.EXPRESS_PORTAL && track.current.owner() == owner) {
+                return ExpressPainter.gateOf(track.previous, track.current, partialTick);
+            }
+        }
+        return null;
     }
 
     static double sinceSent(Track track, float partialTick) {

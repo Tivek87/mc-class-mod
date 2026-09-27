@@ -39,10 +39,6 @@ public final class Recharge implements Effect {
         if (busy(owner)) {
             return false;
         }
-        if (GiantFist.holding(owner)) {
-            PowerRing.tell(owner, "busy_fist");
-            return false;
-        }
         // In the air it works too, but not during the take-off: both fists are busy lifting him then.
         int flying = Flight.ticks(owner);
         if (flying >= 0 && flying < Flight.ARISE_TICKS) {

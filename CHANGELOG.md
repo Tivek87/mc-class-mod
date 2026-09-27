@@ -3,6 +3,41 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.3.1-alpha] - 2026-09-27
+
+**UNFINISHED / WORK IN PROGRESS:** the mod is still being built; things may change, break or be missing.
+
+### Added
+- **Emerald Express (key R):** a portal of light opens beside you, steam blasts out and a giant western steam engine
+  of hard light thunders out, chugging ever faster, on rails of light that grow in front of its wheels and break up
+  behind it. It rams the creatures out to hurt you one after another (10 hearts each, thrown far), then its brakes
+  screech, it tips over, slides on its side in a shower of sparks, builds up a cloud of steam and its boiler blows
+  up (15 hearts in the middle); the pieces dissolve into light.
+- **Hard-Light Mech Assembly (hold Y for 2 seconds):** you rise and hang still while a giant mech builds round you:
+  boots stomp in and walk under you, legs build up and click together, two giant hands clap in front of you with a
+  small shockwave and spin up into the shoulders as the torso forms; you sit in its chest with a lever in each
+  hand, looking out through a window of see-through hard light; its head drills into the ground (a shockwave) and
+  locks onto the neck with a clack. It does nothing more yet; hold Y again to leave it (it breaks apart and you
+  float down).
+- **Sounds:** steam chugs, hissing steam, screeching brakes, scraping metal and the boiler blast for the train;
+  stomps, a clap, clacks and a drill for the mech.
+- **Settings:** the train's ram damage, knockback, search reach, most rams, longest run, blast damage and reach, and
+  cost; the mech's cost, cooldown, clap damage and drill damage.
+
+### Changed
+- **Flight:** 2.5 times slower in every direction: it sets off at 1.2 blocks a second, cruises at 1.5 and tops out
+  at 1.8; sideways, backwards, climbing and sinking slow down just as much. The ram cone still hits as hard at top
+  speed, and landing works at the same share of your speed.
+- **Air Strike:** goes off when you let go of Y; held for 2 seconds, Y builds the mech instead.
+- **Ring power bar:** no longer shows what a charging fist is going to cost.
+- **Rules for the makers:** the mech's cockpit glass is the one more construct that is see-through.
+
+### Removed
+- **Giant Fist:** replaced by the Emerald Express, with its settings and messages.
+
+### Fixed
+- **Flight:** flying backwards, sideways and upwards was far too fast (bug report).
+
 ## [0.3.0-alpha] - 2026-09-27
 
 **UNFINISHED / WORK IN PROGRESS:** the mod is still being built; things may change, break or be missing.

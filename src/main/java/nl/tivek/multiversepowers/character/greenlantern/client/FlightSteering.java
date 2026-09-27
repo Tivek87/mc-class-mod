@@ -35,7 +35,7 @@ abstract class FlightSteering {
     private static final double LOSE_SECONDS = 3.0;
     private static final double RISE = 0.46;
     static final double SINK = 0.18;
-    static final double LAND_SPEED = 0.2;
+    static final double LAND_SPEED = 0.08;
     // How many ticks ahead you slow down before the edge of loaded chunks.
     static final int EDGE_LOOK = 30;
 
@@ -59,7 +59,7 @@ abstract class FlightSteering {
 
     static final double SLAM_SPEED = 0.9;
     static final double SLAM_DOWN = 0.35;
-    static final double DIVE_LAND = 0.15;
+    static final double DIVE_LAND = 0.06;
     static final float DIVE_LOOK = 20.0F;
     static final double BRACE_TICKS = 5.0;
     static final double DIVE_TURN = 0.4;
@@ -76,8 +76,8 @@ abstract class FlightSteering {
 
     private static double topSpeed(LocalPlayer player) {
         double full = fullSpeed();
-        double start = Math.min(full, flightSetting("startSpeed", 3.0) / 20.0);
-        double cruise = Mth.clamp(flightSetting("cruiseSpeed", 3.75) / 20.0, start, full);
+        double start = Math.min(full, flightSetting("startSpeed", 1.2) / 20.0);
+        double cruise = Mth.clamp(flightSetting("cruiseSpeed", 1.5) / 20.0, start, full);
         double quick = cruiseSeconds();
         double slow = Math.max(0.0, flightSetting("speedUpSeconds", 3.0));
         double top;
@@ -108,7 +108,7 @@ abstract class FlightSteering {
     }
 
     public static double fullSpeed() {
-        return flightSetting("topSpeed", 4.5) / 20.0;
+        return flightSetting("topSpeed", 1.8) / 20.0;
     }
 
     private static double flightSetting(String key, double fallback) {

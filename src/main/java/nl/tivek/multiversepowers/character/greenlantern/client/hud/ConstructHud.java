@@ -43,7 +43,6 @@ public final class ConstructHud {
     private static final int BRIGHT = 0xCFFFDC;
     private static final int TEXT = 0xFFE8FFEE;
     private static final int MUTED = 0xFF8FA898;
-    private static final int PENDING = 0xFFCFFFDC;
     private static final int LOW = 0xFFFF5A3A;
     private static final int PAID = 0xF2D98A;
     private static final int FLASH = 0xE8FFEE;
@@ -53,8 +52,6 @@ public final class ConstructHud {
     private static final float RISE_RATE = 9.0F;
     private static final long TRAIL_WAIT_MS = 450L;
     private static final float TRAIL_RATE = 5.0F;
-    private static final float STRIPE_GAP = 3.0F;
-    private static final float STRIPE_WIDTH = 1.2F;
 
     private static final float FLASH_RADIUS = 44.0F;
     private static final float HOLD_INNER = 13.0F;
@@ -216,7 +213,10 @@ public final class ConstructHud {
                         end - 4.0F), end, GuiShapes.fade(0xE6FFEC, appear));
             }
             GuiShapes.flush(graphics);
-            Component name = Component.translatable("screen." + MultiversePowers.MODID + ".hold." + ability.id());
+            String key = "screen." + MultiversePowers.MODID + ".hold." + ability.id();
+            boolean leaves = ability.id().equals("air_strike") && minecraft.player != null
+                    && ClientConstructs.piloted(minecraft.player.getId(), partialTick) != null;
+            Component name = Component.translatable(leaves ? key + ".leave" : key);
             int width = minecraft.font.width(name);
             int color = GuiShapes.mix(GREEN, progress >= 1.0F ? 0xFFFFFF : BRIGHT, filling);
             graphics.drawString(minecraft.font, name, Mth.floor(middleX - width * 0.5F),
@@ -283,7 +283,6 @@ public final class ConstructHud {
     public static void renderPower(GuiGraphics graphics, Font font, Player player, int left, int right, int y,
             float lowAt) {
         float power = ClientRing.power(player);
-        float pending = Math.min(ClientRing.pending(player), power);
         boolean low = power + 1.0E-4F < lowAt;
         boolean flying = ClientRing.flight(player, 0.0F) >= 0.0F;
         boolean steady = flying || ClientRing.has(player, RingPayload.SHIELD)
@@ -291,13 +290,9 @@ public final class ConstructHud {
         float drain = steady ? ClientRing.drain() : 0.0F;
         String number = String.format(Locale.ROOT, "%.0f", power);
         String goes = "";
-        int goesColor = PENDING;
         String time = "";
-        if (pending > 0.0F) {
-            goes = String.format(Locale.ROOT, " -%.1f", pending);
-        } else if (drain >= MIN_DRAIN) {
+        if (drain >= MIN_DRAIN) {
             goes = " -" + Unit.number(drain) + "/s";
-            goesColor = 0xFF000000 | PAID;
             if (flying) {
                 time = " " + (int) Math.ceil(power / drain) + "s";
             }
@@ -308,7 +303,7 @@ public final class ConstructHud {
         graphics.drawString(font, label, left, y, MUTED, false);
         int x = right - amountWidth;
         x = graphics.drawString(font, number, x, y, low ? LOW : TEXT, false);
-        x = graphics.drawString(font, goes, x, y, goesColor, false);
+        x = graphics.drawString(font, goes, x, y, 0xFF000000 | PAID, false);
         graphics.drawString(font, time, x, y, MUTED, false);
 
         float barLeft = left + labelWidth + 5.0F;
@@ -321,7 +316,6 @@ public final class ConstructHud {
         float radius = BAR_THICK * 0.5F;
         float nowX = barLeft + barWidth * Mth.clamp(shown / PowerRing.MAX_POWER, 0.0F, 1.0F);
         float trailX = barLeft + barWidth * Mth.clamp(trail / PowerRing.MAX_POWER, 0.0F, 1.0F);
-        float afterX = Math.max(barLeft, nowX - barWidth * pending / PowerRing.MAX_POWER);
         GuiShapes.roundRect(graphics, barLeft - 1.0F, barTop - 1.0F, barWidth + 2.0F, BAR_THICK + 2.0F, radius + 1.0F,
                 GuiShapes.fade(0x000000, 0.45F));
         GuiShapes.roundRect(graphics, barLeft, barTop, barWidth, BAR_THICK, radius, GuiShapes.fade(0x0B2E18, 0.95F));
@@ -329,26 +323,16 @@ public final class ConstructHud {
             GuiShapes.roundRect(graphics, barLeft, barTop, trailX - barLeft, BAR_THICK, radius,
                     GuiShapes.fade(PAID, 0.9F));
         }
-        boolean costs = nowX - afterX > 0.3F;
-        if (costs) {
+        if (nowX - barLeft > 0.3F) {
             GuiShapes.roundRect(graphics, barLeft, barTop, nowX - barLeft, BAR_THICK, radius,
-                    GuiShapes.fade(BRIGHT, 0.95F));
-        }
-        if (afterX - barLeft > 0.3F) {
-            GuiShapes.roundRect(graphics, barLeft, barTop, afterX - barLeft, BAR_THICK, radius,
                     GuiShapes.fade(low ? 0xFF5A3A : GREEN, 1.0F));
-            GuiShapes.roundRect(graphics, barLeft + 1.0F, barTop + 0.6F, Math.max(0.0F, afterX - barLeft - 2.0F),
+            GuiShapes.roundRect(graphics, barLeft + 1.0F, barTop + 0.6F, Math.max(0.0F, nowX - barLeft - 2.0F),
                     BAR_THICK * 0.3F, BAR_THICK * 0.15F, GuiShapes.fade(0xFFFFFF, 0.25F));
         }
         for (int quarter = 1; quarter < 4; quarter++) {
             float markX = barLeft + barWidth * quarter / 4.0F;
             GuiShapes.quad(graphics, markX - 0.25F, barTop + 1.0F, markX + 0.25F, barTop + 1.0F, markX + 0.25F,
                     barTop + BAR_THICK - 1.0F, markX - 0.25F, barTop + BAR_THICK - 1.0F, GuiShapes.fade(0x000000, 0.3F));
-        }
-        if (costs) {
-            stripes(graphics, afterX, barTop, nowX - radius * 0.5F);
-            GuiShapes.quad(graphics, afterX - 0.5F, barTop - 1.0F, afterX + 0.5F, barTop - 1.0F, afterX + 0.5F,
-                    barTop + BAR_THICK + 1.0F, afterX - 0.5F, barTop + BAR_THICK + 1.0F, GuiShapes.fade(0xFFFFFF, 0.95F));
         }
         GuiShapes.flush(graphics);
     }
@@ -376,21 +360,6 @@ public final class ConstructHud {
             trail += (shown - trail) * (1.0F - (float) Math.exp(-TRAIL_RATE * seconds));
         }
         trail = Math.max(trail, shown);
-    }
-
-    private static void stripes(GuiGraphics graphics, float from, float top, float to) {
-        if (to - from < 0.5F) {
-            return;
-        }
-        GuiShapes.flush(graphics);
-        graphics.enableScissor(Mth.floor(from), Mth.floor(top), Mth.ceil(to), Mth.ceil(top + BAR_THICK));
-        int color = GuiShapes.fade(GREEN, 0.55F);
-        for (float x = from - BAR_THICK; x < to; x += STRIPE_GAP) {
-            GuiShapes.quad(graphics, x, top + BAR_THICK, x + STRIPE_WIDTH, top + BAR_THICK,
-                    x + STRIPE_WIDTH + BAR_THICK, top, x + BAR_THICK, top, color);
-        }
-        GuiShapes.flush(graphics);
-        graphics.disableScissor();
     }
 
     private static void renderFlash(GuiGraphics graphics, long since) {

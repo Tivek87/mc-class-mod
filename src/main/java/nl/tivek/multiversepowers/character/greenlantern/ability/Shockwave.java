@@ -39,10 +39,6 @@ public final class Shockwave implements Effect {
             PowerRing.tell(owner, "busy_lantern");
             return false;
         }
-        if (GiantFist.holding(owner)) {
-            PowerRing.tell(owner, "busy_fist");
-            return false;
-        }
         if (LandingSlam.running(owner) || dropping(owner) || Flight.diving(owner) || owner.isPassenger()
                 || owner.isSleeping() || owner.isFallFlying()) {
             return false;

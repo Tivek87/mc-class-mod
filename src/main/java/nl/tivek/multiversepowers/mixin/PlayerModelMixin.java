@@ -3,6 +3,7 @@ package nl.tivek.multiversepowers.mixin;
 import net.minecraft.client.model.PlayerModel;
 import net.minecraft.world.entity.LivingEntity;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.FlameArms;
+import nl.tivek.multiversepowers.character.greenlantern.client.body.MechPilot;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.SwordArms;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.WhipArms;
 import nl.tivek.multiversepowers.spell.client.ClientClaps;
@@ -20,5 +21,6 @@ public abstract class PlayerModelMixin {
         FlameArms.lean((PlayerModel<?>) (Object) this, entity);
         WhipArms.lean((PlayerModel<?>) (Object) this, entity);
         ClientClaps.pose((PlayerModel<?>) (Object) this, entity);
+        MechPilot.pose((PlayerModel<?>) (Object) this, entity);
     }
 }

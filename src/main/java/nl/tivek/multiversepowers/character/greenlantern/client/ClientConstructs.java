@@ -33,17 +33,18 @@ import nl.tivek.multiversepowers.character.greenlantern.client.body.WhipArms;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.BeamCharge;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.BeamPainter;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.BubblePainter;
+import nl.tivek.multiversepowers.character.greenlantern.client.render.ExpressPainter;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.FirePainter;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.FireStream;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.HandPainter;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.LanternPainter;
+import nl.tivek.multiversepowers.character.greenlantern.client.render.MechPainter;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.PlanePainter;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.RevolverPainter;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.RingSight;
 import nl.tivek.multiversepowers.character.greenlantern.client.slam.SlamPainter;
 import static nl.tivek.multiversepowers.character.greenlantern.client.ConstructPlaces.RAM_OWN_AHEAD;
 import static nl.tivek.multiversepowers.character.greenlantern.client.ConstructPlaces.beamEnd;
-import static nl.tivek.multiversepowers.character.greenlantern.client.ConstructPlaces.heldFacing;
 import static nl.tivek.multiversepowers.character.greenlantern.client.ConstructPlaces.on;
 import static nl.tivek.multiversepowers.character.greenlantern.client.ConstructPlaces.pane;
 import static nl.tivek.multiversepowers.character.greenlantern.client.ConstructPlaces.ramWay;
@@ -73,6 +74,9 @@ public final class ClientConstructs extends TrackedConstructs {
             }
             letGo(CONSTRUCTS.remove(payload.id()));
             return;
+        }
+        if (payload.shape() == ConstructPayload.EXPRESS) {
+            ExpressTrails.heard(payload);
         }
         Track track = CONSTRUCTS.get(payload.id());
         if (track == null) {
@@ -268,6 +272,16 @@ public final class ClientConstructs extends TrackedConstructs {
             }
             return;
         }
+        if (track.latest.shape() == ConstructPayload.EXPRESS) {
+            ExpressTrails.forget(track.latest.id());
+            return;
+        }
+        if (track.latest.shape() == ConstructPayload.MECH) {
+            if (MechPainter.breaks(track.latest, clock)) {
+                BROKEN_HANDS.put(track.latest.id(), new Broken(track.latest, clock, clientTicks));
+            }
+            return;
+        }
         if (track.latest.shape() == ConstructPayload.PLANE && clock < PlanePainter.path(track.latest).crashTick()) {
             BROKEN.put(track.latest.id(), new Broken(track.latest, clock, clientTicks));
         }
@@ -292,6 +306,7 @@ public final class ClientConstructs extends TrackedConstructs {
         RingSpot.clear();
         PlanePainter.clear();
         Flattened.clear();
+        ExpressTrails.clear();
     }
 
     @SubscribeEvent
@@ -315,9 +330,6 @@ public final class ClientConstructs extends TrackedConstructs {
             ConstructPayload was = track.previous;
             ConstructPayload now = track.current;
             Entity owner = level.getEntity(now.owner());
-            if (owner == null && now.held() && now.shape() == ConstructPayload.FIST) {
-                continue;
-            }
             Vec3 facing = was.facing().lerp(now.facing(), partialTick);
             if (facing.lengthSqr() < 1.0E-6) {
                 facing = now.facing();
@@ -326,7 +338,7 @@ public final class ClientConstructs extends TrackedConstructs {
             double size = Mth.lerp(partialTick, was.size(), now.size());
             double solid = Mth.lerp(partialTick, was.solid(), now.solid());
             double charge = Mth.lerp(partialTick, was.charge(), now.charge());
-            Vec3 center = where(was, now, owner, partialTick);
+            Vec3 center = where(was, now, partialTick);
             boolean onItsWay = track.path != null && !track.latest.held();
             if (onItsWay) {
                 on(track, owner, partialTick);
@@ -349,11 +361,6 @@ public final class ClientConstructs extends TrackedConstructs {
                     case ConstructPayload.DOME -> center = owner.getPosition(partialTick)
                             .add(0.0, owner.getBbHeight() * 0.5, 0.0);
                     case ConstructPayload.BEAM -> way = owner.getViewVector(partialTick);
-                    case ConstructPayload.FIST -> {
-                        if (now.held() && !onItsWay) {
-                            way = heldFacing(owner, partialTick);
-                        }
-                    }
                     default -> {
                     }
                 }
@@ -431,7 +438,13 @@ public final class ClientConstructs extends TrackedConstructs {
                         FirePainter.burn(painter, owner.getPosition(partialTick), size, charge, solid, now.id());
                     }
                 }
-                default -> painter.fist(center, way, size, solid, charge, now.held() && !onItsWay, ring);
+                case ConstructPayload.EXPRESS -> ExpressPainter.draw(painter, was, now, partialTick,
+                        expressGate(now.owner(), partialTick));
+                case ConstructPayload.EXPRESS_PORTAL -> ExpressPainter.gate(painter, was, now, partialTick, ring);
+                case ConstructPayload.MECH -> MechPainter.draw(painter, was, now, track.clock(partialTick),
+                        partialTick, ring, own);
+                default -> {
+                }
             }
         }
         for (Broken broken : BROKEN.values()) {
@@ -442,6 +455,8 @@ public final class ClientConstructs extends TrackedConstructs {
             double since = clientTicks - broken.since() + partialTick;
             if (broken.construct().shape() == ConstructPayload.REVOLVER) {
                 RevolverPainter.broken(painter, broken.construct(), broken.clock(), since);
+            } else if (broken.construct().shape() == ConstructPayload.MECH) {
+                MechPainter.broken(painter, broken.construct(), broken.clock(), since);
             } else {
                 HandPainter.broken(painter, broken.construct(), broken.clock(), since);
             }

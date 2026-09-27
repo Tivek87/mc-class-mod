@@ -12,8 +12,8 @@ across the multiverse you can turn into.
 - **Stamina:** sprinting and jumping cost stamina; standing still or walking refills it.
 - **Spells:** fifteen schools of magic, cast from the wheel (hold **G**). See [Spells](docs/SPELLS.md).
 - **Characters:** turn into a character from the wheel and use its powers on eleven ability keys.
-  - **Green Lantern:** a power ring that shapes solid green hard light: a giant fist, flight, a construct wheel,
-    shockwaves, giant hands, a light cage and an air strike.
+  - **Green Lantern:** a power ring that shapes solid green hard light: a steam train, flight, a construct wheel,
+    shockwaves, giant hands, a light cage, an air strike and a mech.
   - **Doctor Octopus:** four robot tentacles that walk, climb, grab, throw, strike the ground and open portals.
 - **Music:** the multiverse theme plays on a loop in the main menu, in place of Minecraft's menu music; the music slider
   sets its volume.
