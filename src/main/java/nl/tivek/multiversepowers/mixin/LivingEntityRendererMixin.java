@@ -5,7 +5,9 @@ import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.entity.LivingEntityRenderer;
 import net.minecraft.world.entity.LivingEntity;
 import nl.tivek.multiversepowers.engine.client.pose.Poses;
+import nl.tivek.multiversepowers.engine.client.ragdoll.Ashes;
 import nl.tivek.multiversepowers.engine.client.ragdoll.Ragdolls;
+import nl.tivek.multiversepowers.engine.client.rig.BoneView;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -23,5 +25,7 @@ public abstract class LivingEntityRendererMixin {
         LivingEntityRenderer<?, ?> renderer = (LivingEntityRenderer<?, ?>) (Object) this;
         Poses.apply(Poses.Stage.CREATURE, renderer.getModel(), entity, partialTick, pose.last().pose());
         Ragdolls.pose(renderer.getModel(), entity, partialTick, pose);
+        BoneView.model(renderer.getModel(), pose.last().pose());
+        Ashes.shape(renderer.getModel(), entity, partialTick, pose.last().pose());
     }
 }

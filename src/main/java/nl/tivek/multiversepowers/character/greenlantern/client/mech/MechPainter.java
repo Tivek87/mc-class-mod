@@ -13,6 +13,7 @@ import nl.tivek.multiversepowers.character.greenlantern.mech.MechScript;
 import nl.tivek.multiversepowers.engine.client.render.ConstructPainter.Frame;
 import nl.tivek.multiversepowers.engine.client.render.ConstructPainter.Shape;
 import nl.tivek.multiversepowers.engine.client.render.Material;
+import nl.tivek.multiversepowers.engine.client.rig.BoneView;
 import nl.tivek.multiversepowers.engine.math.Ease;
 import nl.tivek.multiversepowers.engine.math.Vectors;
 import org.slf4j.Logger;
@@ -58,7 +59,7 @@ public final class MechPainter {
         }
         parts(painter, pose, t, apart, own, walk != null && pose == walk);
         if (apart < 0.0) {
-            MechLight.lights(painter, pose, now.id(), t, ring, own, partialTick);
+            MechLight.lights(painter, pose, t, ring, own);
         }
     }
 
@@ -105,10 +106,29 @@ public final class MechPainter {
         }
         body(painter, pose, t, apart, own);
         head(painter, pose, t, apart, walking);
+        spine(pose, t, apart, walking);
         painter.creases(0.0);
         painter.fling(1.0);
         painter.ambient(0.0);
         painter.material(was);
+    }
+
+    // For the developer's view: hips and shoulders off the spine, the spine from the pelvis to the chest, the neck.
+    private static void spine(MechPose pose, double t, double apart, boolean walking) {
+        if (!BoneView.shown() || t < MechScript.HIPS) {
+            return;
+        }
+        MechScript.Stage torso = pose.torso();
+        Vec3 pelvis = torso.point(0.0, MechScript.HIP.y, 0.0);
+        Vec3 chest = torso.point(0.0, MechScript.SHOULDER.y, 0.0);
+        BoneView.bone(pelvis, chest, BoneView.CONSTRUCT);
+        for (int s = 0; s < 2; s++) {
+            BoneView.bone(pelvis, torso.point(side(MechScript.HIP, s == 0)), BoneView.CONSTRUCT);
+            BoneView.bone(chest, torso.point(side(MechScript.SHOULDER, s == 0)), BoneView.CONSTRUCT);
+        }
+        if (t >= MechScript.HEAD_FORM) {
+            BoneView.bone(chest, head(pose, t, apart, walking).center(), BoneView.CONSTRUCT);
+        }
     }
 
     static Vec3 side(Vec3 local, boolean right) {
@@ -153,6 +173,9 @@ public final class MechPainter {
         MechParts.draw(painter, right ? MechLegShapes.SHIN_PART : MechLegShapes.SHIN_LEFT, shin, 1.0, apart,
                 seed + 20);
         painter.noClip();
+        if (BoneView.shown()) {
+            BoneView.bone(stage.point(side(MechScript.KNEE, right)), ankle, BoneView.CONSTRUCT);
+        }
     }
 
     private static void upperLeg(LanternPainter painter, MechScript.Stage stage, boolean right, double t,
@@ -169,6 +192,9 @@ public final class MechPainter {
         MechParts.draw(painter, right ? MechLegShapes.THIGH_PART : MechLegShapes.THIGH_LEFT,
                 limb(knee, hip.subtract(knee).normalize(), stage.ahead()), 1.0, apart, seed + 10);
         painter.noClip();
+        if (BoneView.shown()) {
+            BoneView.bone(hip, knee, BoneView.CONSTRUCT);
+        }
     }
 
     private static void body(LanternPainter painter, MechPose pose, double t, double apart, boolean own) {
@@ -224,6 +250,12 @@ public final class MechPainter {
         MechParts.draw(painter, right ? MechArmShapes.FOREARM : MechArmShapes.FOREARM_LEFT, hand, 1.0, apart, seed);
         fingers(painter, hand, arm, right, apart, seed + 10);
         painter.noClip();
+        if (BoneView.shown()) {
+            BoneView.bone(hand.center(), hand.at(0.0, MechArmShapes.WRIST, 0.0), BoneView.CONSTRUCT);
+            if (arm.upper() > 0.0) {
+                BoneView.bone(stage.point(side(MechScript.SHOULDER, right)), hand.center(), BoneView.CONSTRUCT);
+            }
+        }
         if (arm.upper() > 0.0) {
             Vec3 shoulder = stage.point(side(MechScript.SHOULDER, right));
             Vec3 elbow = stage.point(arm.elbow());
@@ -253,6 +285,15 @@ public final class MechPainter {
         for (int j = 0; j < 3; j++) {
             MechParts.draw(painter, right ? MechArmShapes.THUMB[j] : MechArmShapes.THUMB_LEFT[j],
                     bones[MechHandRig.bone(4, j)], 1.0, apart, seed + 20 + j);
+        }
+        if (BoneView.shown()) {
+            Vec3 wrist = hand.at(0.0, MechArmShapes.WRIST, 0.0);
+            for (int k = 0; k < 5; k++) {
+                BoneView.bone(wrist, bones[MechHandRig.bone(k, 0)].center(), BoneView.CONSTRUCT);
+                for (int j = 0; j < 3; j++) {
+                    BoneView.bone(bones[MechHandRig.bone(k, j)], MechHandRig.length(k, j), BoneView.CONSTRUCT);
+                }
+            }
         }
     }
 

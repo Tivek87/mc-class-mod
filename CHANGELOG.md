@@ -3,6 +3,30 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.3.6-alpha] - 2026-09-27
+
+**UNFINISHED / WORK IN PROGRESS:** the mod is still being built; things may change, break or be missing.
+
+### Added
+- **Developer section (power wheel):** for the host of a world or an operator, a Bones switch that shows the bones of
+  every creature (yourself too, in third person), the Giant Hands, the slam hands, the mech and Doc Ock's tentacles.
+- **DreamWorks tab (power wheel):** Megamind, General Kai, Po, Jack Frost and Merlin (coming soon).
+- **Blasts throw bodies:** TNT, creepers and every other explosion throw limp creatures and bodies away from the blast,
+  small light ones far and big heavy ones little; a wall shields them, and a creature a blast hits hard goes limp and
+  flies.
+- **Doc Ock:** a tentacle holding a creature winds round its body.
+
+### Changed
+- **Limp bodies:** they fall as fast as the game's own creatures do.
+- **Burnt to ash:** a creature keeps its size and stands as it burns: it glows red hot, chars black, turns to grey ash
+  and then falls apart all at once into ash in its own shape, instead of sinking into a heap.
+- **Giant Hands:** a hand keeps following its creature as it strikes, so one that moves on is still hit; a hand out of
+  a wall reaches further or less far after it.
+
+### Removed
+- **Mech:** the ring of light and the ring of dust and debris at each footstep, and the small rings of light as it
+  steps while it builds itself (its big stomps stay).
+
 ## [0.3.5-alpha] - 2026-09-27
 
 **UNFINISHED / WORK IN PROGRESS:** the mod is still being built; things may change, break or be missing.

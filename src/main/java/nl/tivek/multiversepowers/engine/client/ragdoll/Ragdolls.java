@@ -2,6 +2,7 @@ package nl.tivek.multiversepowers.engine.client.ragdoll;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.logging.LogUtils;
+import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import it.unimi.dsi.fastutil.objects.ObjectIterator;
@@ -29,8 +30,11 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ambient.Bat;
 import net.minecraft.world.entity.animal.FlyingAnimal;
+import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.phys.shapes.CollisionContext;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -62,6 +66,12 @@ public final class Ragdolls {
     private static final double TOSSED = 0.6;
     // A creature bigger than this (width squared times height) is too heavy for a blow to throw it limp.
     private static final double HEAVY = 3.5;
+    // A blast pushing a creature this hard (blocks a tick, as the game counts a blast's push) sends it flying limp.
+    private static final double BLOWN = 0.25;
+    // How long a blast is remembered: a creature it kills goes limp a tick or two later and is thrown then.
+    private static final int BLAST_TICKS = 3;
+    // A blast's middle is often still in the blocks it breaks: what shields a body is looked for from this far out.
+    private static final double BLAST_CORE = 0.8;
     private static final double FASTEST = 40.0;
     // A body that dies standing still tips over sideways as it goes limp (a stiff one falls as one piece), turning
     // this fast (radians per second); one knocked away harder than CALM falls the way it was knocked.
@@ -85,6 +95,8 @@ public final class Ragdolls {
     private static final List<Ragdoll> CORPSES = new ArrayList<>();
     private static final IntOpenHashSet HELD = new IntOpenHashSet();
     private static final IntOpenHashSet THROWN_NOW = new IntOpenHashSet();
+    private static final Int2IntOpenHashMap BLOWN_AT = new Int2IntOpenHashMap();
+    private static final List<Blast> BLASTS = new ArrayList<>();
     private static final IntOpenHashSet FAILED = new IntOpenHashSet();
     private static final Set<Class<?>> UNFIT = new HashSet<>();
     private static final List<Predicate<Entity>> CLAIMS = new ArrayList<>();
@@ -102,6 +114,64 @@ public final class Ragdolls {
     private static int deathTime = -1;
 
     private Ragdolls() {
+    }
+
+    private record Blast(Vec3 center, double power, int tick) {
+    }
+
+    // A blast of the given power at center, as the game counts an explosion's power (TNT is 4, it reaches twice that
+    // in blocks): limp creatures and bodies near are thrown away from it, and creatures it pushes hard enough go limp
+    // and fly.
+    public static void blast(Vec3 center, double power) {
+        ClientLevel level = Minecraft.getInstance().level;
+        if (level == null || power <= 0.0 || !ClientSettings.ragdolls()) {
+            return;
+        }
+        BLASTS.add(new Blast(center, power, ticks));
+        for (Ragdoll doll : LIVE.values()) {
+            if (doll.state != Ragdoll.State.HELD) {
+                doll.blast(center, power, seen(level, center, doll.coreAt(1.0)), RANDOM);
+            }
+        }
+        for (Ragdoll doll : CORPSES) {
+            if (doll.sunk < 0) {
+                doll.blast(center, power, seen(level, center, doll.coreAt(1.0)), RANDOM);
+            }
+        }
+        double reach = power * 2.0;
+        for (Entity entity : level.getEntities((Entity) null, new AABB(center, center).inflate(reach),
+                entity -> entity instanceof Mob)) {
+            Mob mob = (Mob) entity;
+            Vec3 middle = mob.getBoundingBox().getCenter();
+            double near = 1.0 - middle.distanceTo(center) / reach;
+            if (mob.isAlive() && !LIVE.containsKey(mob.getId()) && near * seen(level, center, middle) >= BLOWN
+                    && mayFly(mob)) {
+                BLOWN_AT.put(mob.getId(), ticks);
+            }
+        }
+    }
+
+    // How much of a blast reaches what stands at `to`: nothing past a wall, a little round its corner.
+    private static double seen(ClientLevel level, Vec3 center, Vec3 to) {
+        Vec3 way = to.subtract(center);
+        double far = way.length();
+        if (far <= BLAST_CORE) {
+            return 1.0;
+        }
+        Vec3 from = center.add(way.scale(BLAST_CORE / far));
+        int clear = 0;
+        for (int k = -1; k <= 1; k++) {
+            Vec3 aim = to.add(0.0, k * 0.4, 0.0);
+            if (level.clip(new ClipContext(from, aim, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE,
+                    CollisionContext.empty())).getType() == HitResult.Type.MISS) {
+                clear++;
+            }
+        }
+        return clear == 0 ? 0.1 : clear / 3.0;
+    }
+
+    private static boolean blown(int entity) {
+        return BLOWN_AT.containsKey(entity) && ticks - BLOWN_AT.get(entity) <= BLAST_TICKS;
     }
 
     private static TagKey<EntityType<?>> tag(String name) {
@@ -211,9 +281,20 @@ public final class Ragdolls {
             return null;
         }
         boolean stiff = entity.getType().is(STIFF) || profile.stiff();
-        Vec3 velocity = velocity(entity);
+        // A creature a blast just hit is thrown by the blast itself (by its weight), not by the push the game gave it.
+        boolean blasted = false;
+        for (Blast blast : BLASTS) {
+            blasted |= state != Ragdoll.State.HELD
+                    && entity.getBoundingBox().getCenter().distanceTo(blast.center()) < blast.power() * 2.0;
+        }
+        Vec3 velocity = blasted ? Vec3.ZERO : velocity(entity);
         Ragdoll doll = Ragdoll.build(entity, model, parts, new Matrix4f(drawn), camera, partialTick, state, stiff,
                 profile, velocity);
+        if (blasted && entity.level() instanceof ClientLevel level) {
+            for (Blast blast : BLASTS) {
+                doll.blast(blast.center(), blast.power(), seen(level, blast.center(), doll.coreAt(1.0)), RANDOM);
+            }
+        }
         if (state == Ragdoll.State.DEAD) {
             doll.dead = ticks;
             // Its flames would stand on where it stood, not on the body.
@@ -224,7 +305,7 @@ public final class Ragdolls {
             double side = RANDOM.nextBoolean() ? 1.0 : -1.0;
             double ax = -Math.sin(yaw) * side;
             double az = Math.cos(yaw) * side;
-            if (velocity.horizontalDistance() < CALM) {
+            if (velocity.horizontalDistance() < CALM && !blasted) {
                 double spin = stiff ? TOPPLE_STIFF : TOPPLE;
                 doll.tip(ax * spin, 0.0, az * spin, entity.getPosition(partialTick));
             }
@@ -244,7 +325,7 @@ public final class Ragdolls {
         if (HELD.contains(entity.getId())) {
             return Ragdoll.State.HELD;
         }
-        return THROWN_NOW.contains(entity.getId()) ? Ragdoll.State.FLYING : null;
+        return THROWN_NOW.contains(entity.getId()) || blown(entity.getId()) ? Ragdoll.State.FLYING : null;
     }
 
     private static boolean claimed(Entity entity) {
@@ -289,6 +370,11 @@ public final class Ragdolls {
         if (push.horizontalDistanceSqr() <= THROWN * THROWN && push.y <= TOSSED) {
             return false;
         }
+        return mayFly(mob);
+    }
+
+    // Not one that flies by itself, rides or is ridden, swims, or is too heavy.
+    private static boolean mayFly(Mob mob) {
         return !mob.isNoGravity() && !mob.isPassenger() && !mob.isVehicle() && !mob.isInWater() && !mob.isInLava()
                 && !(mob instanceof FlyingMob) && !(mob instanceof FlyingAnimal) && !(mob instanceof Bat)
                 && mob.getBbWidth() * mob.getBbWidth() * mob.getBbHeight() <= HEAVY;
@@ -358,6 +444,8 @@ public final class Ragdolls {
         }
         ticks++;
         THROWN_NOW.clear();
+        BLASTS.removeIf(blast -> ticks - blast.tick() > BLAST_TICKS);
+        BLOWN_AT.int2IntEntrySet().removeIf(entry -> ticks - entry.getIntValue() > BLAST_TICKS);
         if (!ClientSettings.ragdolls()) {
             if (!LIVE.isEmpty() || !CORPSES.isEmpty()) {
                 clear();
@@ -441,7 +529,7 @@ public final class Ragdolls {
                 doll.still++;
             } else {
                 doll.still = 0;
-                if (entity instanceof Mob mob && thrown(mob)) {
+                if (entity instanceof Mob mob && (thrown(mob) || blown(mob.getId()))) {
                     doll.ending = false;
                 }
             }
@@ -582,6 +670,8 @@ public final class Ragdolls {
         LIVE.clear();
         CORPSES.clear();
         THROWN_NOW.clear();
+        BLASTS.clear();
+        BLOWN_AT.clear();
         FAILED.clear();
     }
 }

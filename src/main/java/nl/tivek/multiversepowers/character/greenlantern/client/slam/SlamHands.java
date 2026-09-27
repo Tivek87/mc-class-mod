@@ -8,6 +8,7 @@ import nl.tivek.multiversepowers.character.greenlantern.client.slam.SlamPainter.
 import nl.tivek.multiversepowers.engine.client.render.ConstructPainter.Frame;
 import nl.tivek.multiversepowers.engine.client.render.ConstructPainter.Shape;
 import nl.tivek.multiversepowers.engine.client.render.Mesh;
+import nl.tivek.multiversepowers.engine.client.rig.BoneView;
 import nl.tivek.multiversepowers.engine.math.Colors;
 import nl.tivek.multiversepowers.engine.math.Ease;
 
@@ -76,6 +77,14 @@ final class SlamHands {
                 SlamPainter.piece(painter, BONES[f][b], bone, m);
                 if (ring && f == 1 && b == 0) {
                     SlamPainter.piece(painter, HAND_RING, bone, m);
+                }
+            }
+        }
+        if (BoneView.shown()) {
+            for (int f = 0; f < 5; f++) {
+                BoneView.bone(frame.center(), bones[SlamHandRig.bone(f, 0)].center(), BoneView.CONSTRUCT);
+                for (int b = 0; b < 3; b++) {
+                    BoneView.bone(bones[SlamHandRig.bone(f, b)], SlamHandRig.length(f, b), BoneView.CONSTRUCT);
                 }
             }
         }

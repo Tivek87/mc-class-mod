@@ -8,9 +8,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.particles.BlockParticleOption;
-import net.minecraft.core.particles.DustParticleOptions;
-import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -26,11 +23,9 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import nl.tivek.multiversepowers.MultiversePowers;
-import nl.tivek.multiversepowers.character.greenlantern.PowerRing;
 import nl.tivek.multiversepowers.character.greenlantern.mech.MechScript;
 import nl.tivek.multiversepowers.engine.fx.Sounds;
 import nl.tivek.multiversepowers.engine.math.Ease;
-import org.joml.Vector3f;
 
 // A built mech's walk, worked out on every client from where it stands tick by tick: each foot stays where it came
 // down until its turn to swing, lands where the body will be over it, and the body bobs, sways and twists above the
@@ -191,17 +186,6 @@ public final class MechWalk {
             most = Math.max(most, (inside ? 0.22 : 0.4) * fade * fade * Math.min(1.0, near * 1.3));
         }
         return most;
-    }
-
-    // How long ago a foot of a mech came down, for the ring of light round it (negative: not lately).
-    static double landed(int id, int side, float partialTick) {
-        MechWalk walk = WALKS.get(id);
-        return walk == null ? -1.0 : ticks - walk.legs[side].landed + partialTick - 1.0;
-    }
-
-    static Vec3 planted(int id, int side) {
-        MechWalk walk = WALKS.get(id);
-        return walk == null ? Vec3.ZERO : walk.legs[side].planted;
     }
 
     private void tick(ClientLevel level, MechScript.Stage stage) {
@@ -380,21 +364,5 @@ public final class MechWalk {
         level.playLocalSound(ground.x, ground.y, ground.z, STEP, SoundSource.PLAYERS, 1.6F * loud, pitch, false);
         level.playLocalSound(ground.x, ground.y, ground.z, SoundEvents.IRON_GOLEM_STEP, SoundSource.PLAYERS,
                 1.4F * loud, 0.5F, false);
-        BlockState block = level.getBlockState(BlockPos.containing(ground.x, ground.y - 0.2, ground.z));
-        for (int k = 0; k < 18; k++) {
-            double angle = Math.PI * 2.0 * k / 18.0;
-            Vec3 way = new Vec3(Math.cos(angle), 0.0, Math.sin(angle));
-            Vec3 at = ground.add(way.scale(1.0 + 0.4 * level.random.nextDouble())).add(0.0, 0.1, 0.0);
-            if (!block.isAir()) {
-                level.addParticle(new BlockParticleOption(ParticleTypes.BLOCK, block), at.x, at.y, at.z,
-                        way.x * 0.25, 0.12 + 0.1 * level.random.nextDouble(), way.z * 0.25);
-            }
-            if (k % 3 == 0) {
-                level.addParticle(new DustParticleOptions(new Vector3f(
-                        (PowerRing.GREEN >> 16 & 255) / 255.0F, (PowerRing.GREEN >> 8 & 255) / 255.0F,
-                        (PowerRing.GREEN & 255) / 255.0F), 1.6F), at.x, at.y + 0.2, at.z, way.x * 0.1, 0.05,
-                        way.z * 0.1);
-            }
-        }
     }
 }

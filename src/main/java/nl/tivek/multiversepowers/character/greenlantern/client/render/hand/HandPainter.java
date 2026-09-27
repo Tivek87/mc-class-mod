@@ -13,6 +13,7 @@ import nl.tivek.multiversepowers.character.greenlantern.duo.HandDuo;
 import nl.tivek.multiversepowers.character.greenlantern.hand.HandGroup;
 import nl.tivek.multiversepowers.character.greenlantern.hand.HandPose;
 import nl.tivek.multiversepowers.engine.client.render.ConstructPainter;
+import nl.tivek.multiversepowers.engine.client.rig.BoneView;
 import nl.tivek.multiversepowers.engine.math.Ease;
 import nl.tivek.multiversepowers.engine.math.Vectors;
 import static nl.tivek.multiversepowers.character.greenlantern.client.render.hand.HandLight.blows;
@@ -131,6 +132,7 @@ public final class HandPainter {
         part(painter, HAND, hand, bright, apart, seed);
         arm(painter, place, left, bright, apart, seed, twists);
         digits(painter, pose, hand, left, bright, apart, seed, held);
+        bones(pose, place, hand, held);
     }
 
     // A hand reaching into another portal: its arm is cut by the portal it came from, the hand itself by the other.
@@ -143,6 +145,27 @@ public final class HandPainter {
         part(painter, HAND, hand, bright, apart, seed);
         digits(painter, pose, hand, left, bright, apart, seed, null);
         painter.noClip();
+        bones(pose, place, hand, null);
+    }
+
+    // For the developer's view: the forearm down to where it stands, a bone from the wrist to each finger's root and
+    // every finger bone.
+    private static void bones(HandPose pose, HandPose.Place place, ConstructPainter.Frame hand,
+            @Nullable HandRig.Held held) {
+        if (!BoneView.shown()) {
+            return;
+        }
+        Vec3 wrist = place.wrist();
+        if (pose.length > 0.0) {
+            BoneView.bone(wrist.subtract(place.arm().scale(pose.length * place.scale())), wrist, BoneView.CONSTRUCT);
+        }
+        ConstructPainter.Frame[] bones = HandRig.frames(hand, pose, held);
+        for (int k = 0; k < 5; k++) {
+            BoneView.bone(wrist, bones[HandRig.bone(k, 0)].center(), BoneView.CONSTRUCT);
+            for (int j = 0; j < 3; j++) {
+                BoneView.bone(bones[HandRig.bone(k, j)], k < 4 ? JOINTS[k][j] : THUMB[j], BoneView.CONSTRUCT);
+            }
+        }
     }
 
     private static void arm(LanternPainter painter, HandPose.Place place, boolean left, double bright, double apart,

@@ -8,6 +8,7 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.character.GameCharacter;
+import nl.tivek.multiversepowers.engine.client.rig.BoneView;
 import nl.tivek.multiversepowers.spell.MagicSchool;
 import nl.tivek.multiversepowers.spell.Spell;
 
@@ -17,6 +18,8 @@ abstract class PowerWheelLayout extends Screen {
     private static final long HOLD_MS = 381L;
 
     private static final int COLS = 5;
+    // The first page holds three sections, so it lays its cards six to a row to fit a small screen.
+    private static final int HOME_COLS = 6;
     static final int CARD_H = 26;
     private static final int GAP_X = 6;
     static final int GAP_Y = 8;
@@ -25,8 +28,11 @@ abstract class PowerWheelLayout extends Screen {
     private static final int CARD_W_WIDE = 116;
     static final float RADIUS = 3.0F;
     static final int FRANCHISE_Y = 26;
-    static final int SCHOOL_Y = 86;
+    // From the bottom of one section's cards to the top of the next one's, room for its heading.
+    private static final int SECTION = 34;
     static final int PAGE_Y = 36;
+    static final String[] TOOLS = { "bones" };
+    static final int TOOL_COLOR = 0xFF9F43;
 
     static final int DIM = 0x88000000;
     static final int CARD_FILL = 0xE0141418;
@@ -51,7 +57,8 @@ abstract class PowerWheelLayout extends Screen {
         SCHOOL,
         BACK,
         CHARACTER,
-        SPELL
+        SPELL,
+        TOOL
     }
 
     record Card(Kind kind, int index, int x, int y, int w) {
@@ -65,6 +72,8 @@ abstract class PowerWheelLayout extends Screen {
 
     Page page = Page.HOME;
     int opened;
+    int schoolY;
+    int toolY;
     List<Card> cards = List.of();
     @Nullable
     Card hovered;
@@ -108,14 +117,20 @@ abstract class PowerWheelLayout extends Screen {
     List<Card> layout() {
         List<Card> cards = new ArrayList<>();
         if (this.page == Page.HOME) {
-            int cardW = this.cardWidth(COLS, CARD_W_MAX);
-            this.grid(cards, slots(null, Kind.FRANCHISE, this.franchises.length), FRANCHISE_Y, cardW);
-            this.grid(cards, slots(null, Kind.SCHOOL, this.schools.length), SCHOOL_Y, cardW);
+            int cardW = this.cardWidth(HOME_COLS, CARD_W_MAX, HOME_COLS);
+            int bottom = this.grid(cards, slots(null, Kind.FRANCHISE, this.franchises.length), FRANCHISE_Y, cardW,
+                    HOME_COLS);
+            this.schoolY = bottom + SECTION;
+            bottom = this.grid(cards, slots(null, Kind.SCHOOL, this.schools.length), this.schoolY, cardW, HOME_COLS);
+            this.toolY = bottom + SECTION;
+            if (BoneView.allowed()) {
+                this.grid(cards, slots(null, Kind.TOOL, TOOLS.length), this.toolY, cardW, HOME_COLS);
+            }
         } else {
             List<Card> slots = this.page == Page.FRANCHISE
                     ? slots(Kind.BACK, Kind.CHARACTER, this.roster().size())
                     : slots(Kind.BACK, Kind.SPELL, this.spells().size());
-            this.grid(cards, slots, PAGE_Y, this.cardWidth(slots.size(), CARD_W_WIDE));
+            this.grid(cards, slots, PAGE_Y, this.cardWidth(slots.size(), CARD_W_WIDE, COLS), COLS);
         }
         return cards;
     }
@@ -131,21 +146,24 @@ abstract class PowerWheelLayout extends Screen {
         return slots;
     }
 
-    private int cardWidth(int count, int widest) {
-        int cols = Math.min(COLS, Math.max(1, count));
+    private int cardWidth(int count, int widest, int most) {
+        int cols = Math.min(most, Math.max(1, count));
         int fits = (this.width - 40 - (cols - 1) * GAP_X) / cols;
         return Math.max(CARD_W_MIN, Math.min(widest, fits));
     }
 
-    private void grid(List<Card> cards, List<Card> slots, int top, int cardW) {
+    // Lays the cards out in rows under top and returns where the last row ends.
+    private int grid(List<Card> cards, List<Card> slots, int top, int cardW, int cols) {
         for (int i = 0; i < slots.size(); i++) {
-            int row = i / COLS;
-            int inRow = Math.min(COLS, slots.size() - row * COLS);
+            int row = i / cols;
+            int inRow = Math.min(cols, slots.size() - row * cols);
             int rowWidth = inRow * cardW + (inRow - 1) * GAP_X;
-            int x = (this.width - rowWidth) / 2 + (i % COLS) * (cardW + GAP_X);
+            int x = (this.width - rowWidth) / 2 + (i % cols) * (cardW + GAP_X);
             Card slot = slots.get(i);
             cards.add(new Card(slot.kind(), slot.index(), x, top + row * (CARD_H + GAP_Y), cardW));
         }
+        int rows = (slots.size() + cols - 1) / cols;
+        return top + rows * (CARD_H + GAP_Y) - GAP_Y;
     }
 
     boolean pickable(Card card) {

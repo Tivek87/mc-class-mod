@@ -24,6 +24,7 @@ import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.character.docock.ArmPayload;
 import nl.tivek.multiversepowers.character.docock.portal.PortalPayload;
+import nl.tivek.multiversepowers.engine.client.rig.BoneView;
 import nl.tivek.multiversepowers.engine.client.world.PathClear;
 
 @EventBusSubscriber(modid = MultiversePowers.MODID, value = Dist.CLIENT)
@@ -212,8 +213,12 @@ public final class ClientArms {
                     : Mth.lerp(partialTick, before.claw(), now.claw());
             painter.clip(now.clips() ? now.clipPoint() : null, now.clipNormal());
             // An arm meant to go in (digging, through a portal) is drawn as it comes; any other bends round blocks.
-            List<Vec3> drawn = now.clips() ? points : PathClear.clear(level, points, ArmPainter.girth(now.thickness()),
+            List<Vec3> wound = TentacleWrap.around(level, now, points, ArmPainter.girth(now.thickness()));
+            List<Vec3> drawn = now.clips() ? wound : PathClear.clear(level, wound, ArmPainter.girth(now.thickness()),
                     ArmPainter.SEGMENT * now.thickness());
+            if (BoneView.shown()) {
+                BoneView.chain(drawn, BoneView.CONSTRUCT);
+            }
             painter.arm(drawn, reference, claw, now.thickness(),
                     Mth.lerp(partialTick, before.tipOffset(), now.tipOffset()),
                     now.lamps() == ArmPayload.LAMPS_RAGE,

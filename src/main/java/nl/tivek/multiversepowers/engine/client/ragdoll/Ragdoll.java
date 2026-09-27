@@ -39,6 +39,17 @@ final class Ragdoll {
     // How much of the gap to where a thrown creature really is its body closes each tick, flying on by the speed the
     // server gave it in between (where a thrown creature is drawn only catches up every few ticks, in jolts).
     private static final double CATCH_UP = 0.35;
+    // As the game's own creatures fall: 0.08 blocks a tick faster every tick.
+    private static final double GRAVITY = -32.0;
+    // How hard a blast throws a body, per unit of face turned to it per unit of mass, in blocks per second at its
+    // middle: a zombie a blast of 4 (TNT) goes off 2 blocks from flies off at about 15 blocks a second, as it would
+    // in the game.
+    private static final double BLAST = 490.0;
+    // A blast throws up as well as away, and sets each part turning a little its own way.
+    private static final double LIFT = 0.35;
+    private static final double SPIN = 0.25;
+    // How much faster or slower than its body a part may be thrown (a part nearer the blast flies first).
+    private static final double UNEVEN = 0.5;
 
     // Scratch for drawing, which only ever happens on the render thread.
     private static final Matrix4f FRAME = new Matrix4f();
@@ -92,6 +103,7 @@ final class Ragdoll {
         this.core = core;
         this.state = state;
         this.hold = new Pin(core, 0.0, 0.0, 0.0, 0.0);
+        this.world.gravity = GRAVITY;
         this.was = new double[parts.size() * 7];
         this.now = new double[parts.size() * 7];
         int count = parts.size();
@@ -392,6 +404,56 @@ final class Ragdoll {
         if (far > 1.0E-8) {
             this.world.wake();
         }
+    }
+
+    // Thrown by a blast of the given power at center (it reaches twice its power in blocks, as the game counts it),
+    // seen: how much of the body the blast reaches past walls (0 to 1). How far the whole body flies goes by its face
+    // to its weight, so small light creatures fly far and big heavy ones hardly; each part flies by how near it is.
+    void blast(Vec3 center, double power, double seen, RandomSource random) {
+        double reach = power * 2.0;
+        double[] at = new double[7];
+        double[] v = new double[6];
+        double face = 0.0;
+        double mass = 0.0;
+        for (int i = 0; i < this.parts.size(); i++) {
+            int b = this.body[i];
+            double hx = this.world.half(b, 0);
+            double hy = this.world.half(b, 1);
+            double hz = this.world.half(b, 2);
+            face += 2.0 * (hx * hy + hy * hz + hx * hz);
+            mass += this.world.mass(b);
+        }
+        this.world.pose(this.body[this.core], at);
+        double middle = 1.0 - Math.sqrt(sq(at[0] - center.x) + sq(at[1] - center.y) + sq(at[2] - center.z)) / reach;
+        if (middle <= 0.0 || mass <= 0.0) {
+            return;
+        }
+        double push = BLAST * middle * seen * face / mass;
+        for (int i = 0; i < this.parts.size(); i++) {
+            int b = this.body[i];
+            this.world.pose(b, at);
+            double dx = at[0] - center.x;
+            double dy = at[1] - center.y;
+            double dz = at[2] - center.z;
+            double d = Math.sqrt(dx * dx + dy * dy + dz * dz);
+            if (d < 1.0E-4) {
+                dx = 0.0;
+                dy = 1.0;
+                dz = 0.0;
+                d = 1.0;
+            }
+            double near = Math.max(0.0, 1.0 - d / reach);
+            double own = push * Math.max(1.0 - UNEVEN, Math.min(1.0 + UNEVEN, near / middle));
+            this.world.velocity(b, v);
+            this.world.velocity(b, v[0] + dx / d * own, v[1] + (dy / d + LIFT) * own, v[2] + dz / d * own,
+                    v[3] + random.nextGaussian() * own * SPIN, v[4] + random.nextGaussian() * own * SPIN,
+                    v[5] + random.nextGaussian() * own * SPIN);
+        }
+        this.world.wake();
+    }
+
+    private static double sq(double a) {
+        return a * a;
     }
 
     void die(int tick) {

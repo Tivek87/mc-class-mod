@@ -13,6 +13,7 @@
     "AgeableListModelAccess",
     "CameraMixin",
     "CapeLayerMixin",
+    "ClientPacketListenerMixin",
     "EntityShadowMixin",
     "LivingEntityPoofMixin",
     "LivingEntityRendererMixin",

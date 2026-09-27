@@ -15,6 +15,7 @@ public final class Roster {
         DC("dc", 0x2F8DFF),
         DISNEY("disney", 0x9D8CFF),
         WARNER_BROS("warner_bros", 0xD9B44A),
+        DREAMWORKS("dreamworks", 0x4FD1C5),
         OTHER("other", 0xA8AEB8);
 
         private final String id;
@@ -80,7 +81,12 @@ public final class Roster {
             new Entry("darkseid", Franchise.DC),
             new Entry("doctor_fate", Franchise.DC),
             new Entry("dracula", Franchise.OTHER),
-            new Entry("odin", Franchise.OTHER));
+            new Entry("odin", Franchise.OTHER),
+            new Entry("megamind", Franchise.DREAMWORKS),
+            new Entry("general_kai", Franchise.DREAMWORKS),
+            new Entry("po", Franchise.DREAMWORKS),
+            new Entry("jack_frost", Franchise.DREAMWORKS),
+            new Entry("merlin", Franchise.DREAMWORKS));
 
     private static final Map<Franchise, List<Entry>> BY_FRANCHISE = new EnumMap<>(Franchise.class);
 

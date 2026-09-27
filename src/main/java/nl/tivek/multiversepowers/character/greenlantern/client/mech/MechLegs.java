@@ -5,6 +5,7 @@ import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.LanternPainter;
 import nl.tivek.multiversepowers.character.greenlantern.mech.MechScript;
 import nl.tivek.multiversepowers.engine.client.render.ConstructPainter.Frame;
+import nl.tivek.multiversepowers.engine.client.rig.BoneView;
 import nl.tivek.multiversepowers.engine.math.Vectors;
 
 // A walking mech's legs: each foot where its walk put it, the knee bent forward between the ankle and the hip.
@@ -28,6 +29,11 @@ final class MechLegs {
                 MechPainter.limb(knee, shin.add(thigh).normalize(), toes), 1.0, apart, seed + 40);
         MechParts.draw(painter, right ? MechLegShapes.THIGH_PART : MechLegShapes.THIGH_LEFT,
                 MechPainter.limb(knee, thigh, pose.torso().ahead()), 1.0, apart, seed + 50);
+        if (BoneView.shown()) {
+            BoneView.bone(hip, knee, BoneView.CONSTRUCT);
+            BoneView.bone(knee, ankle, BoneView.CONSTRUCT);
+            BoneView.bone(ankle, foot.at(0.0, 0.0, 1.4), BoneView.CONSTRUCT);
+        }
     }
 
     // The knee two fixed lengths from the ankle and the hip, bent towards forward.

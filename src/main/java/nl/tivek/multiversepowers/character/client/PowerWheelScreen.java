@@ -12,6 +12,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import nl.tivek.multiversepowers.character.GameCharacter;
 import nl.tivek.multiversepowers.character.TransformPayload;
 import nl.tivek.multiversepowers.engine.client.gui.GuiShapes;
+import nl.tivek.multiversepowers.engine.client.rig.BoneView;
 import nl.tivek.multiversepowers.spell.CastSpellPayload;
 import nl.tivek.multiversepowers.spell.MagicSchool;
 import nl.tivek.multiversepowers.spell.Spell;
@@ -52,6 +53,9 @@ public class PowerWheelScreen extends PowerWheelLayout {
         } else if (spell != null) {
             this.castSpell(spell);
         } else {
+            if (this.hovered != null && this.hovered.kind() == Kind.TOOL) {
+                this.use(this.hovered.index());
+            }
             this.onClose();
         }
     }
@@ -82,6 +86,12 @@ public class PowerWheelScreen extends PowerWheelLayout {
             }
             if (this.hovered.kind() == Kind.BACK) {
                 this.goBack();
+                return true;
+            }
+            if (this.hovered.kind() == Kind.TOOL) {
+                this.use(this.hovered.index());
+                this.click(1.1F);
+                this.onClose();
                 return true;
             }
         } else if (button == GLFW.GLFW_MOUSE_BUTTON_RIGHT) {
@@ -122,6 +132,17 @@ public class PowerWheelScreen extends PowerWheelLayout {
             }
         }
         this.onClose();
+    }
+
+    // A developer's tool switched on or off.
+    private void use(int tool) {
+        if (TOOLS[tool].equals("bones")) {
+            BoneView.toggle();
+        }
+    }
+
+    private static boolean switchedOn(int tool) {
+        return TOOLS[tool].equals("bones") && BoneView.on();
     }
 
     private void open(Page page, int index) {
@@ -186,7 +207,10 @@ public class PowerWheelScreen extends PowerWheelLayout {
         switch (this.page) {
             case HOME -> {
                 this.heading(guiGraphics, Component.translatable(KEY + "characters"), MUTED_COLOR, FRANCHISE_Y - 14);
-                this.heading(guiGraphics, Component.translatable(KEY + "schools"), MUTED_COLOR, SCHOOL_Y - 14);
+                this.heading(guiGraphics, Component.translatable(KEY + "schools"), MUTED_COLOR, this.schoolY - 14);
+                if (BoneView.allowed()) {
+                    this.heading(guiGraphics, Component.translatable(KEY + "developer"), MUTED_COLOR, this.toolY - 14);
+                }
             }
             case FRANCHISE -> {
                 Roster.Franchise franchise = this.franchises[this.opened];
@@ -251,6 +275,7 @@ public class PowerWheelScreen extends PowerWheelLayout {
                 yield character != null ? character.getColor() : entry.franchise().getColor();
             }
             case SPELL -> this.spells().get(card.index()).getColor();
+            case TOOL -> TOOL_COLOR;
         };
     }
 
@@ -328,6 +353,12 @@ public class PowerWheelScreen extends PowerWheelLayout {
                 line = left > 0 ? Component.translatable(KEY + "cooldown", seconds(left))
                         : Component.translatable(KEY + "ready");
                 lineColor = left > 0 ? COOLDOWN_COLOR : ACTIVE_COLOR;
+            }
+            case TOOL -> {
+                boolean on = switchedOn(card.index());
+                name = Component.translatable(KEY + "tool." + TOOLS[card.index()]);
+                line = Component.translatable(KEY + (on ? "tool_on" : "tool_off"));
+                lineColor = on ? ACTIVE_COLOR : MUTED_COLOR;
             }
             default -> throw new IllegalStateException();
         }

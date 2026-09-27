@@ -28,14 +28,10 @@ final class MechLight {
     private MechLight() {
     }
 
-    static void lights(LanternPainter painter, MechPose pose, int id, double t, @Nullable Vec3 ring, boolean own,
-            float partialTick) {
+    static void lights(LanternPainter painter, MechPose pose, double t, @Nullable Vec3 ring, boolean own) {
         MechScript.Stage stage = pose.stage();
         MechScript.Stage torso = pose.torso();
         boolean walking = t >= MechScript.SETTLED;
-        if (walking) {
-            steps(painter, id, partialTick);
-        }
         if (t >= MechScript.HEAD_FORM + 3.0) {
             eyes(painter, MechPainter.head(pose, t, -1.0, walking), t);
         }
@@ -59,8 +55,8 @@ final class MechLight {
             Vec3 ground = stage.point(MechScript.ankle(right, stage, t)).subtract(0.0, MechScript.ANKLE.y, 0.0);
             if (MechScript.stomping(right, t)) {
                 burst(painter, ground.add(0.0, 0.5, 0.0), landed, right ? 1.0 : 0.6, side * 97);
+                ring(painter, ground, landed, right ? 4.0 : 2.8);
             }
-            ring(painter, ground, landed, MechScript.stomping(right, t) ? (right ? 4.0 : 2.8) : 1.8);
         }
         halo(painter, stage, t);
         clap(painter, stage, t);
@@ -73,17 +69,6 @@ final class MechLight {
         for (int side = 0; side < 2; side++) {
             MechMoves.Arm arm = MechMoves.arm(side == 0, stage, t);
             flash(painter, stage.point(arm.elbow()), t - MechScript.ELBOWS, 1.4);
-        }
-    }
-
-    // A ring of light spreads round each foot as it comes down.
-    private static void steps(LanternPainter painter, int id, float partialTick) {
-        for (int side = 0; side < 2; side++) {
-            double since = MechWalk.landed(id, side, partialTick);
-            if (since >= 0.0 && since < 10.0) {
-                Vec3 ground = MechWalk.planted(id, side).subtract(0.0, MechScript.ANKLE.y - 0.06, 0.0);
-                ring(painter, ground, since, 2.2);
-            }
         }
     }
 

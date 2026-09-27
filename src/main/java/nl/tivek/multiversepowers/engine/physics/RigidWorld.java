@@ -156,6 +156,11 @@ public final class RigidWorld {
         return this.half[b * 3 + axis];
     }
 
+    // 0 for a body that never moves.
+    public double mass(int b) {
+        return this.invMass[b] > 0.0 ? 1.0 / this.invMass[b] : 0.0;
+    }
+
     // A point given in body b's own axes, in the world.
     public void point(int b, double lx, double ly, double lz, double[] out) {
         Quat.rotate(this.q, b * 4, lx, ly, lz, out, 0);

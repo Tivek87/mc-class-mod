@@ -38,6 +38,9 @@ abstract class GiantHandBase {
     private static final double FOLLOW = 0.3;
     private static final double GATHER = 0.05;
     private static final double SPRING = 0.08;
+    // Even as it strikes a hand keeps turning after its creature, this much as fast and never to another one, so a
+    // creature that moves on is still hit.
+    private static final double LATE = 0.5;
     private static final double VIEW_RANGE = 128.0;
     private static final int PORTAL_SETTLES = 6;
 
@@ -125,7 +128,8 @@ abstract class GiantHandBase {
             this.homePortal(level);
             return;
         }
-        LivingEntity after = HandPose.locked(this.variant, this.t) ? null : this.after(level);
+        boolean locked = HandPose.locked(this.variant, this.t);
+        LivingEntity after = locked ? this.kept(level) : this.after(level);
         double near = this.nearest();
         double off = 0.0;
         double most = TURN;
@@ -134,16 +138,18 @@ abstract class GiantHandBase {
             double dx = after.getX() - this.base.x;
             double dz = after.getZ() - this.base.z;
             double far = Math.sqrt(dx * dx + dz * dz);
-            off = Math.IEEEremainder(Math.atan2(dx, dz) - this.facing, Math.PI * 2.0);
+            // A hand out of a wall stays square to its wall: it only reaches further or less far.
+            off = HandPose.wall(this.variant) ? 0.0
+                    : Math.IEEEremainder(Math.atan2(dx, dz) - this.facing, Math.PI * 2.0);
             // Nearly behind it: it goes on round the way it already turns, never back and forth.
             if (off * this.turn < 0.0 && Math.abs(off) > Math.PI * 0.75) {
                 off += Math.copySign(Math.PI * 2.0, this.turn);
             }
-            most = TURN * Ease.smooth(far / near);
+            most = TURN * Ease.smooth(far / near) * (locked ? LATE : 1.0);
             wanted = Math.max(near, far);
         }
         this.turn = follow(this.turn, off, TURN_GATHER, most);
-        this.outSpeed = follow(this.outSpeed, wanted - this.out, GATHER, FOLLOW);
+        this.outSpeed = follow(this.outSpeed, wanted - this.out, GATHER, locked ? FOLLOW * LATE : FOLLOW);
         if (this.turn == 0.0 && this.outSpeed == 0.0) {
             return;
         }
@@ -236,10 +242,8 @@ abstract class GiantHandBase {
     @Nullable
     private LivingEntity after(ServerLevel level) {
         double reach = HOMING * SCALE;
-        boolean keeps = this.target.isAlive() && this.target.level() == level
-                && fair(this.storm.owner, this.target) && this.flat(this.target) <= reach;
-        LivingEntity nearest = keeps ? this.target : null;
-        double best = keeps ? this.flat(this.target) - SWITCH * SCALE : reach;
+        LivingEntity nearest = this.kept(level);
+        double best = nearest != null ? this.flat(nearest) - SWITCH * SCALE : reach;
         for (LivingEntity living : level.getEntitiesOfClass(LivingEntity.class,
                 new AABB(this.base, this.base).inflate(reach, reach * 0.6, reach),
                 entity -> fair(this.storm.owner, entity))) {
@@ -253,6 +257,13 @@ abstract class GiantHandBase {
             this.target = nearest;
         }
         return nearest;
+    }
+
+    // Its own creature, while it is still there to reach for.
+    @Nullable
+    private LivingEntity kept(ServerLevel level) {
+        return this.target.isAlive() && this.target.level() == level && fair(this.storm.owner, this.target)
+                && this.flat(this.target) <= HOMING * SCALE ? this.target : null;
     }
 
     private double nearest() {
