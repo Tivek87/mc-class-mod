@@ -124,6 +124,10 @@ public final class Characters {
         sync(player);
     }
 
+    public static int cooldownLeft(ServerPlayer player, CharacterAbility ability) {
+        return COOLDOWNS.left(player, ability.character(), ability.slot().ordinal());
+    }
+
     public static void startCooldown(ServerPlayer player, CharacterAbility ability) {
         if (ability.getCooldown() <= 0 || ACTIVE.get(player.getUUID()) != ability.character()) {
             return;

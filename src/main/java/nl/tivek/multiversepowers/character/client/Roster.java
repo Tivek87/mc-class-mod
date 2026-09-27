@@ -78,7 +78,9 @@ public final class Roster {
             new Entry("doctor_manhattan", Franchise.DC),
             new Entry("sentry", Franchise.MARVEL),
             new Entry("darkseid", Franchise.DC),
-            new Entry("doctor_fate", Franchise.DC));
+            new Entry("doctor_fate", Franchise.DC),
+            new Entry("dracula", Franchise.OTHER),
+            new Entry("odin", Franchise.OTHER));
 
     private static final Map<Franchise, List<Entry>> BY_FRANCHISE = new EnumMap<>(Franchise.class);
 

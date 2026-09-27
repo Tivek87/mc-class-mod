@@ -43,7 +43,7 @@ public record SpellFxPayload(int kind, Vec3 from, Vec3 to, int entity, int seed,
             buf -> new SpellFxPayload(buf.readVarInt(), buf.readVec3(), buf.readVec3(), buf.readVarInt() - 1,
                     buf.readInt(), buf.readVarInt()));
 
-    static void send(ServerLevel level, int kind, Vec3 from, Vec3 to, int entity, int ticks) {
+    public static void send(ServerLevel level, int kind, Vec3 from, Vec3 to, int entity, int ticks) {
         SpellFxPayload fx = new SpellFxPayload(kind, from, to, entity, level.getRandom().nextInt(), ticks);
         PacketDistributor.sendToPlayersNear(level, null, from.x, from.y, from.z, VIEW_RANGE, fx);
     }

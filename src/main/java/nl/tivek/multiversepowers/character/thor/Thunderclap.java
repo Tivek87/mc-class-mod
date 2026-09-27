@@ -1,4 +1,4 @@
-package nl.tivek.multiversepowers.spell;
+package nl.tivek.multiversepowers.character.thor;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -21,25 +21,29 @@ import nl.tivek.multiversepowers.engine.effect.Effects;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 import nl.tivek.multiversepowers.engine.math.Vectors;
 import nl.tivek.multiversepowers.engine.world.LoadedWorld;
+import nl.tivek.multiversepowers.spell.ClapPayload;
+import nl.tivek.multiversepowers.spell.SpellFxPayload;
+import nl.tivek.multiversepowers.spell.SpellTargets;
 
-final class ThunderClapSpell {
+// Thor claps his hands with a crack of thunder: static builds between them as they draw apart, and when they meet a
+// shockwave rolls out the way he looks, hurting and throwing what wants to hurt him. ClapFx draws it.
+final class Thunderclap {
     private static final int MEET = ClapPayload.HANDS_MEET;
     // ClapFx draws the blast in the same cone, reach and pace.
     private static final double RADIUS = 9.0;
     private static final double HALF_ANGLE = 0.8;
     private static final double CONE_BACK = 1.0;
     private static final double WAVE_SPEED = 2.25;
-    private static final float DAMAGE = 5.0F;
     private static final double STRENGTH = 1.6;
     private static final double LIFT = 0.45;
     private static final double OFF_WALL = 0.3;
 
     private static final int GLOW = 0x00D2FF;
 
-    private ThunderClapSpell() {
+    private Thunderclap() {
     }
 
-    static boolean cast(ServerPlayer player, ServerLevel level) {
+    static boolean cast(ServerPlayer player, ServerLevel level, float damage) {
         ClapPayload.send(player);
         UUID casterId = player.getUUID();
         int casterEntity = player.getId();
@@ -72,7 +76,7 @@ final class ThunderClapSpell {
             }
             double front = (t + 1) * WAVE_SPEED;
             if (caster != null && front < RADIUS + WAVE_SPEED) {
-                push(lvl, caster, eye[0], ahead[0], Math.min(front, RADIUS), hit);
+                push(lvl, caster, eye[0], ahead[0], Math.min(front, RADIUS), hit, damage);
             }
             return front < RADIUS + WAVE_SPEED;
         });
@@ -144,7 +148,7 @@ final class ThunderClapSpell {
 
     // Only what stands in the cone the caster aims is hit; the cone starts a step behind him so it covers his sides.
     private static void push(ServerLevel level, ServerPlayer caster, Vec3 eye, Vec3 ahead, double front,
-            Set<UUID> hit) {
+            Set<UUID> hit, float damage) {
         Vec3 origin = eye.subtract(ahead.scale(CONE_BACK));
         double cone = Math.cos(HALF_ANGLE);
         for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class,
@@ -160,7 +164,7 @@ final class ThunderClapSpell {
             Vec3 way = away.normalize();
             double close = 1.0 - 0.5 * distance / RADIUS;
             target.invulnerableTime = 0;
-            target.hurt(level.damageSources().playerAttack(caster), (float) (DAMAGE * close));
+            target.hurt(level.damageSources().playerAttack(caster), (float) (damage * close));
             SpellTargets.push(target, way, STRENGTH * (0.5 + 0.5 * close),
                     LIFT + Math.max(0.0, way.y) * STRENGTH * 0.5);
             ParticleFx.cloud(level, ParticleTypes.ELECTRIC_SPARK, target.getBoundingBox().getCenter(), 14, 0.35, 0.2);

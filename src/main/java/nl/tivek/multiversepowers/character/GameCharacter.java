@@ -9,6 +9,7 @@ import net.minecraft.network.chat.Component;
 import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.character.docock.DocOckPowers;
 import nl.tivek.multiversepowers.character.greenlantern.GreenLanternPowers;
+import nl.tivek.multiversepowers.character.thor.ThorPowers;
 import nl.tivek.multiversepowers.config.Unit;
 
 public enum GameCharacter {
@@ -63,6 +64,13 @@ public enum GameCharacter {
         @Override
         void fill(Map<AbilitySlot, CharacterAbility> abilities) {
             LanternAbilities.fill(this, abilities);
+        }
+    },
+    THOR("thor", 0x6FC8FF, new ThorPowers()) {
+        @Override
+        void fill(Map<AbilitySlot, CharacterAbility> abilities) {
+            this.add(abilities, AbilitySlot.ABILITY_1, "thunderclap").mouse(CharacterAbility.Mouse.LEFT)
+                    .holdVersion(ThorPowers.CLAP_HOLD, CharacterAbility.Tap.RELEASE).cooldown(200).damage(5.0);
         }
     };
 

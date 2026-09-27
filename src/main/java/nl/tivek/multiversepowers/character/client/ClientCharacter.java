@@ -394,6 +394,10 @@ public final class ClientCharacter {
         }
     }
 
+    public static int cooldownLeft(AbilitySlot slot) {
+        return COOLDOWNS[slot.ordinal()];
+    }
+
     public static float keyHoldProgress(CharacterAbility ability, float partialTick) {
         int down = KEY_DOWN[ability.slot().ordinal()];
         if (down < 0 || ability.holdTicks() <= 0) {
@@ -524,7 +528,7 @@ public final class ClientCharacter {
         Font font = minecraft.font;
         String prefix = "screen." + MultiversePowers.MODID + ".character.";
         int line = font.lineHeight + 2;
-        int rows = Math.max(1, now.abilities().size());
+        int rows = Math.max(1, (int) now.abilities().stream().filter(ability -> !ability.isPlaceholder()).count());
         int width = 168;
         int height = line * (rows + 2) + 4;
         int right = graphics.guiWidth() - 4;
@@ -543,6 +547,9 @@ public final class ClientCharacter {
             y += line;
         }
         for (CharacterAbility ability : now.abilities()) {
+            if (ability.isPlaceholder()) {
+                continue;
+            }
             AbilitySlot slot = ability.slot();
             Component key = AbilityKeys.of(ability).getTranslatedKeyMessage();
             int cooldown = COOLDOWNS[slot.ordinal()];
