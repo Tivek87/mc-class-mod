@@ -102,6 +102,65 @@ public final class ModelParts {
         OTHER
     }
 
+    // Where a long arm or leg bends, a knee or an elbow, in pixels of its own frame: the axis it runs along, the cut
+    // across it halfway (farSign +1 when its far end lies at the high side of that axis), the knee's middle, the axis
+    // it turns about there and how far: from min to max radians, its far half bending the way the limb folds.
+    public record Bend(int axis, float at, float farSign, float[] knee, float[] hinge, double min, double max) {
+    }
+
+    // A limb must be this much longer than it is thick, and this long in pixels, to have a knee.
+    private static final float SLENDER = 2.0F;
+    private static final float LONG = 7.0F;
+
+    @Nullable
+    public static Bend bend(Part part) {
+        // A limb with parts of its own on it (a foot, a hoof) stays whole: only its own cubes could be drawn bent.
+        if (part.role() != Role.ARM && part.role() != Role.LEG || !part.part().children.isEmpty()) {
+            return null;
+        }
+        float[] b = part.bounds();
+        int axis = 0;
+        for (int a = 1; a < 3; a++) {
+            if (b[a + 3] - b[a] > b[axis + 3] - b[axis]) {
+                axis = a;
+            }
+        }
+        float length = b[axis + 3] - b[axis];
+        float thick = 0.0F;
+        for (int a = 0; a < 3; a++) {
+            if (a != axis) {
+                thick = Math.max(thick, b[a + 3] - b[a]);
+            }
+        }
+        if (length < LONG || length < SLENDER * thick) {
+            return null;
+        }
+        float farSign = Math.abs(b[axis + 3]) >= Math.abs(b[axis]) ? 1.0F : -1.0F;
+        float at = (b[axis] + b[axis + 3]) * 0.5F;
+        float[] knee = { (b[0] + b[3]) * 0.5F, (b[1] + b[4]) * 0.5F, (b[2] + b[5]) * 0.5F };
+        knee[axis] = at;
+        float[] bone = new float[3];
+        bone[axis] = farSign;
+        float[] toward = new float[3];
+        double min;
+        double max;
+        if (axis == 1) {
+            // Hanging down (model y points down): legs fold back, arms and a four-legged creature's hind legs forward.
+            boolean forward = part.role() == Role.ARM || part.name().contains("hind");
+            toward[2] = forward ? -1.0F : 1.0F;
+            min = -0.08;
+            max = part.role() == Role.ARM ? 2.5 : 2.3;
+        } else {
+            // Standing out sideways (a spider's legs): they fold down.
+            toward[1] = 1.0F;
+            min = -0.5;
+            max = 1.7;
+        }
+        float[] hinge = { bone[1] * toward[2] - bone[2] * toward[1], bone[2] * toward[0] - bone[0] * toward[2],
+                bone[0] * toward[1] - bone[1] * toward[0] };
+        return new Bend(axis, at, farSign, knee, hinge, min, max);
+    }
+
     private ModelParts() {
     }
 

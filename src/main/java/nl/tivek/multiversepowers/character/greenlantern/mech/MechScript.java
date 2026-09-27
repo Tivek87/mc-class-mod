@@ -53,6 +53,8 @@ public final class MechScript {
     public static final Vec3 ANKLE = new Vec3(2.05, 0.95, 0.05);
     public static final Vec3 KNEE = new Vec3(2.05, 3.0, 0.3);
     public static final Vec3 HIP = new Vec3(1.5, 4.85, -0.05);
+    // Where the upper body turns on the hips.
+    public static final Vec3 WAIST = new Vec3(0.0, HIP.y, 0.0);
     public static final Vec3 SHOULDER = new Vec3(3.2, 8.2, 0.0);
     public static final double UPPER_ARM = 1.9;
     public static final double FOREARM = 2.3;
@@ -206,6 +208,16 @@ public final class MechScript {
     }
 
     // Where the pilot stands, by the soles of their feet: still at first, then a leap up into the cockpit.
+    // A built mech's body turns on its hips to face where its pilot looks (a yaw as the game counts it), all the way
+    // round if need be, while its legs catch up: how far, in radians as Stage.turned takes them.
+    public static double turnTo(Stage legs, float look) {
+        return -Math.toRadians(Mth.wrapDegrees(look - legs.yaw()));
+    }
+
+    public static Stage upper(Stage hips, double turn) {
+        return turn == 0.0 ? hips : hips.turned(WAIST, Vec3.ZERO, turn, 0.0, 0.0);
+    }
+
     public static Vec3 pilot(Stage stage, double t) {
         Vec3 from = stage.pilotFrom();
         if (t < LEAP) {

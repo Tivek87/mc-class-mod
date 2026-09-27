@@ -1,11 +1,13 @@
 package nl.tivek.multiversepowers.engine.client.render;
 
+import com.mojang.blaze3d.vertex.ByteBufferBuilder;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
+import com.mojang.blaze3d.vertex.MeshData;
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.blaze3d.vertex.VertexFormat;
+import java.lang.ref.Cleaner;
+import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
-import java.util.Arrays;
 import javax.annotation.Nullable;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderStateShard;
@@ -18,6 +20,7 @@ import nl.tivek.multiversepowers.engine.math.Colors;
 import nl.tivek.multiversepowers.engine.math.Ease;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
+import org.lwjgl.system.MemoryUtil;
 
 abstract class PainterCore {
     private static final RenderType LIGHT = RenderType.create("welcomescreen_hard_light",
@@ -65,6 +68,8 @@ abstract class PainterCore {
 
     private static final double NEAR_GONE = 0.2;
     private static final double NEAR_CLEAR = 0.75;
+    // Past this from the eye nothing fades, with room for the edges lifted towards it.
+    static final double FADE_REACH = NEAR_CLEAR + 1.0;
     protected static final double EDGE = 0.95;
     protected static final double HALO = 0.28;
     static final double EDGE_WIDTH = 0.035;
@@ -77,25 +82,36 @@ abstract class PainterCore {
 
     private static final double TINY = 0.012;
 
+    // Vertices go straight into memory as they are painted, the bytes a BufferBuilder would write: a big construct has
+    // hundreds of thousands, and a BufferBuilder's checks on each, or a copy of them all, cost more than the rest.
     static final class Layer {
-        private float[] at = new float[3 * 1024];
-        private int[] color = new int[1024];
+        private final ByteBufferBuilder bytes = new ByteBufferBuilder(1 << 16);
         private int count;
 
-        void add(double x, double y, double z, int rgb, int alpha) {
-            if (this.count == this.color.length) {
-                this.at = Arrays.copyOf(this.at, this.at.length * 2);
-                this.color = Arrays.copyOf(this.color, this.color.length * 2);
-            }
-            int i = this.count++;
-            this.at[3 * i] = (float) x;
-            this.at[3 * i + 1] = (float) y;
-            this.at[3 * i + 2] = (float) z;
-            this.color[i] = alpha << 24 | rgb & 0xFFFFFF;
+        Layer() {
+            ByteBufferBuilder owned = this.bytes;
+            // A painter dropped before it finished never hands its layers back: their memory goes with them.
+            FREE.register(this, owned::close);
+        }
+
+        // (x, y, z) from the camera, where the view's matrix puts it.
+        void add(Matrix4f matrix, Vector3f vertex, double x, double y, double z, int rgb, int alpha) {
+            matrix.transformPosition((float) x, (float) y, (float) z, vertex);
+            long p = this.bytes.reserve(VERTEX_BYTES);
+            MemoryUtil.memPutFloat(p, vertex.x);
+            MemoryUtil.memPutFloat(p + 4L, vertex.y);
+            MemoryUtil.memPutFloat(p + 8L, vertex.z);
+            MemoryUtil.memPutByte(p + 12L, (byte) (rgb >> 16));
+            MemoryUtil.memPutByte(p + 13L, (byte) (rgb >> 8));
+            MemoryUtil.memPutByte(p + 14L, (byte) rgb);
+            MemoryUtil.memPutByte(p + 15L, (byte) alpha);
+            this.count++;
         }
     }
 
+    private static final Cleaner FREE = Cleaner.create();
     private static final ArrayDeque<Layer> SPARE = new ArrayDeque<>();
+    private static final int VERTEX_BYTES = 16;
 
     private static Layer take() {
         Layer layer = SPARE.poll();
@@ -116,6 +132,7 @@ abstract class PainterCore {
     boolean nearFade;
     private double glare;
     double ambient;
+    boolean waiting;
 
     PainterCore(PoseStack pose, Vec3 camera, float time, @Nullable Frustum frustum, Material material, boolean hand) {
         this.matrix = pose.last().pose();
@@ -135,24 +152,24 @@ abstract class PainterCore {
     }
 
     public void finish(MultiBufferSource.BufferSource buffers) {
+        if (this.waiting) {
+            this.settle();
+        }
         this.draw(buffers, MASS, this.mass);
         this.draw(buffers, this.hand ? HAND_LIGHT : LIGHT, this.light);
         this.draw(buffers, this.hand ? HAND_GLOW : GLOW, this.glow);
     }
 
     private void draw(MultiBufferSource.BufferSource buffers, RenderType type, Layer layer) {
-        if (layer.count > 0) {
-            VertexConsumer buffer = buffers.getBuffer(type);
-            float[] at = layer.at;
-            int[] color = layer.color;
-            Vector3f vertex = this.vertex;
-            for (int i = 0; i < layer.count; i++) {
-                int argb = color[i];
-                this.matrix.transformPosition(at[3 * i], at[3 * i + 1], at[3 * i + 2], vertex);
-                buffer.addVertex(vertex.x, vertex.y, vertex.z).setColor(argb >> 16 & 0xFF, argb >> 8 & 0xFF,
-                        argb & 0xFF, argb >>> 24);
+        int count = layer.count;
+        if (count > 0) {
+            buffers.endLastBatch();
+            ByteBufferBuilder.Result written = layer.bytes.build();
+            if (written != null) {
+                VertexFormat.Mode mode = type.mode();
+                type.draw(new MeshData(written, new MeshData.DrawState(type.format(), count, mode.indexCount(count),
+                        mode, VertexFormat.IndexType.least(count))));
             }
-            buffers.endBatch(type);
         }
         layer.count = 0;
         SPARE.push(layer);
@@ -317,7 +334,61 @@ abstract class PainterCore {
     }
 
     void put(Layer layer, double x, double y, double z, int rgb, int alpha) {
-        layer.add(x - this.camera.x, y - this.camera.y, z - this.camera.z, rgb, alpha);
+        if (this.waiting) {
+            this.settle();
+        }
+        layer.add(this.matrix, this.vertex, x - this.camera.x, y - this.camera.y, z - this.camera.z, rgb, alpha);
+    }
+
+    // Shapes held back to be worked out together (see ConstructPainter.batch) go down before anything drawn after
+    // them.
+    void settle() {
+    }
+
+    // What decides how a shape is drawn, beyond the shape itself, kept for a painter on another thread to take up.
+    void saveState(double[] state) {
+        state[0] = this.glare;
+        state[1] = this.ambient;
+    }
+
+    void loadState(double[] state) {
+        this.glare = state[0];
+        this.ambient = state[1];
+    }
+
+    Matrix4f matrix() {
+        return this.matrix;
+    }
+
+    @Nullable
+    Frustum frustum() {
+        return this.frustum;
+    }
+
+    boolean hand() {
+        return this.hand;
+    }
+
+    // Another painter's layers joined on after this one's, and that painter's layers handed back.
+    void append(PainterCore other) {
+        appendLayer(this.mass, other.mass);
+        appendLayer(this.light, other.light);
+        appendLayer(this.glow, other.glow);
+        SPARE.push(other.mass);
+        SPARE.push(other.light);
+        SPARE.push(other.glow);
+    }
+
+    private static void appendLayer(Layer to, Layer from) {
+        ByteBufferBuilder.Result written = from.count == 0 ? null : from.bytes.build();
+        if (written != null) {
+            ByteBuffer bytes = written.byteBuffer();
+            int length = bytes.remaining();
+            MemoryUtil.memCopy(MemoryUtil.memAddress(bytes), to.bytes.reserve(length), length);
+            to.count += from.count;
+            written.close();
+        }
+        from.count = 0;
     }
 
     int faded(double x, double y, double z, int alpha) {

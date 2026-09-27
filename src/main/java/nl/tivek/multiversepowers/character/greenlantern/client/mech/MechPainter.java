@@ -89,6 +89,7 @@ public final class MechPainter {
             boolean walking) {
         Material was = painter.material();
         painter.material(LanternPainter.MECH_LIGHT);
+        painter.batch();
         painter.ambient(GLOWS);
         painter.fling(FLING);
         painter.creases(CREASES);
@@ -107,6 +108,7 @@ public final class MechPainter {
         body(painter, pose, t, apart, own);
         head(painter, pose, t, apart, walking);
         spine(pose, t, apart, walking);
+        painter.flush();
         painter.creases(0.0);
         painter.fling(1.0);
         painter.ambient(0.0);
@@ -119,11 +121,11 @@ public final class MechPainter {
             return;
         }
         MechScript.Stage torso = pose.torso();
-        Vec3 pelvis = torso.point(0.0, MechScript.HIP.y, 0.0);
+        Vec3 pelvis = pose.hips().point(MechScript.WAIST);
         Vec3 chest = torso.point(0.0, MechScript.SHOULDER.y, 0.0);
         BoneView.bone(pelvis, chest, BoneView.CONSTRUCT);
         for (int s = 0; s < 2; s++) {
-            BoneView.bone(pelvis, torso.point(side(MechScript.HIP, s == 0)), BoneView.CONSTRUCT);
+            BoneView.bone(pelvis, pose.hips().point(side(MechScript.HIP, s == 0)), BoneView.CONSTRUCT);
             BoneView.bone(chest, torso.point(side(MechScript.SHOULDER, s == 0)), BoneView.CONSTRUCT);
         }
         if (t >= MechScript.HEAD_FORM) {
@@ -202,7 +204,7 @@ public final class MechPainter {
         Frame body = body(torso);
         if (t >= MechScript.HIPS) {
             rising(painter, torso, 4.2, 6.15, Mth.clamp((t - MechScript.HIPS) / 6.0, 0.0, 1.0), apart);
-            MechParts.draw(painter, MechBodyShapes.PELVIS, body, 1.0, apart, PIECES * 50);
+            MechParts.draw(painter, MechBodyShapes.PELVIS, body(pose.hips()), 1.0, apart, PIECES * 50);
             MechParts.draw(painter, MechBodyShapes.WAIST, body, 1.0, apart, PIECES * 51);
             painter.noClip();
         }

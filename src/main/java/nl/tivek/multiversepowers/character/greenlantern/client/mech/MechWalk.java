@@ -6,6 +6,7 @@ import java.util.Map;
 import javax.annotation.Nullable;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.sounds.SoundEvent;
@@ -50,6 +51,8 @@ public final class MechWalk {
     private static final double LEAN = 0.05;
     private static final double BRACE = 2.5;
     private static final double LEVER_PACE = 0.25;
+    // How much of the way to where its pilot looks someone else's mech turns its torso each tick.
+    private static final double TORSO_FOLLOW = 0.5;
     private static final int IDLE_BEFORE = 20;
     private static final int PRESS_EVERY = 46;
     private static final int PRESS_TICKS = 18;
@@ -83,8 +86,11 @@ public final class MechWalk {
     private MechPose was;
     private MechPose now;
     private int ticked = Integer.MIN_VALUE;
+    private int pilot = -1;
+    private double torsoTurn;
     private double phase;
     private double speed;
+    private double side;
     private double turn;
     private double brace;
     private double walking;
@@ -127,7 +133,7 @@ public final class MechWalk {
     }
 
     // Moves a mech's walk on to where it stands this tick; a second call in the same tick does nothing.
-    public static void step(int id, MechScript.Stage stage) {
+    public static void step(int id, MechScript.Stage stage, int pilot, float look) {
         ClientLevel level = Minecraft.getInstance().level;
         if (level == null) {
             return;
@@ -137,6 +143,8 @@ public final class MechWalk {
             return;
         }
         walk.ticked = ticks;
+        walk.pilot = pilot;
+        walk.face(stage, look);
         walk.tick(level, stage);
     }
 
@@ -149,7 +157,26 @@ public final class MechWalk {
         }
         // A walk not yet moved on this tick shows where it got to last.
         double u = walk.ticked == ticks ? partialTick : 1.0;
-        return MechPose.between(walk.was, walk.now, u);
+        MechPose pose = MechPose.between(walk.was, walk.now, u);
+        LocalPlayer player = Minecraft.getInstance().player;
+        if (player != null && player.getId() == walk.pilot) {
+            // The pilot's own torso turns with their view frame by frame, so its cockpit never lags behind it.
+            pose.turn = MechScript.turnTo(pose.stage, player.getViewYRot(partialTick));
+            pose.torso = MechScript.upper(pose.hips, pose.turn);
+        }
+        return pose;
+    }
+
+    // The torso turns towards where its pilot looks: their own at once, anyone else's smoothly as their looks arrive.
+    private void face(MechScript.Stage stage, float look) {
+        if (Float.isNaN(look)) {
+            return;
+        }
+        LocalPlayer player = Minecraft.getInstance().player;
+        double want = MechScript.turnTo(stage, look);
+        double follow = player != null && player.getId() == this.pilot ? 1.0 : TORSO_FOLLOW;
+        this.torsoTurn = Math.IEEEremainder(this.torsoTurn + Math.IEEEremainder(want - this.torsoTurn, Math.PI * 2.0)
+                * follow, Math.PI * 2.0);
     }
 
     @Nullable
@@ -195,14 +222,16 @@ public final class MechWalk {
             return;
         }
         double forward = moved.dot(stage.ahead());
+        double aside = moved.dot(stage.right());
         Vec3 across = this.last.ahead().cross(stage.ahead());
         double angle = Math.atan2(across.y, this.last.ahead().dot(stage.ahead()));
         double before = this.speed;
         this.speed = Mth.lerp(0.4, this.speed, forward);
+        this.side = Mth.lerp(0.4, this.side, aside);
         this.turn = Mth.lerp(0.4, this.turn, angle);
         this.brace = Mth.lerp(0.25, this.brace, this.speed - before);
         this.last = stage;
-        double effort = Math.abs(forward) + TURN_ARC * Math.abs(angle);
+        double effort = Math.sqrt(forward * forward + aside * aside) + TURN_ARC * Math.abs(angle);
         boolean moving = effort > 2.0E-3;
         boolean busy = this.legs[0].swinging || this.legs[1].swinging || this.away(stage, 0) || this.away(stage, 1);
         double rate = moving ? Math.max(effort / CYCLE, SLOWEST) : busy ? SETTLE : 0.0;
@@ -243,7 +272,8 @@ public final class MechWalk {
         double u = done ? 1.0 : into / SWING;
         double left = rate > 0.0 ? ((1.0 - u) * SWING + (1.0 - SWING) * 0.5) / rate : 0.0;
         double ahead = Mth.clamp(this.speed * left, -CYCLE * 0.45, CYCLE * 0.45);
-        MechScript.Stage then = stage.turned(Vec3.ZERO, new Vec3(0.0, 0.0, ahead),
+        double across = Mth.clamp(this.side * left, -CYCLE * 0.3, CYCLE * 0.3);
+        MechScript.Stage then = stage.turned(Vec3.ZERO, new Vec3(across, 0.0, ahead),
                 Mth.clamp(this.turn * left, -0.9, 0.9), 0.0, 0.0);
         Vec3 target = home(then, side);
         Double ground = ground(level, target, stage.base().y);
@@ -293,7 +323,9 @@ public final class MechWalk {
         double twist = TWIST * w * Math.sin(2.0 * Math.PI * (p + 0.04));
         double pitch = -LEAN * this.speed / MechDrive.WALK + Mth.clamp(BRACE * this.brace, -0.05, 0.05);
         double low = -CROUCH * Ease.smooth(this.crouch) + bob + this.settleY * 0.6;
-        pose.torso = stage.turned(HIPS, new Vec3(sway, low, 0.0), twist, pitch, roll);
+        pose.hips = stage.turned(HIPS, new Vec3(sway, low, 0.0), twist, pitch, roll);
+        pose.turn = this.torsoTurn;
+        pose.torso = MechScript.upper(pose.hips, this.torsoTurn);
         pose.walking = w;
         pose.swing = -Math.sin(2.0 * Math.PI * (p + 0.04)) * w;
         pose.headYaw = 0.6 * twist;

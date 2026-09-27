@@ -18,6 +18,7 @@
     "LivingEntityPoofMixin",
     "LivingEntityRendererMixin",
     "MinecraftMixin",
+    "ModelPartMixin",
     "ModelRenderMixin",
     "PlayerModelMixin",
     "PlayerRendererMixin"

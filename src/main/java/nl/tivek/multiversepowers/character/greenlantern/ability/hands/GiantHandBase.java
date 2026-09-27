@@ -18,6 +18,8 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import nl.tivek.multiversepowers.character.greenlantern.PowerRing;
 import nl.tivek.multiversepowers.character.greenlantern.ability.light.LightBubble;
 import nl.tivek.multiversepowers.character.greenlantern.construct.ConstructPayload;
+import nl.tivek.multiversepowers.character.greenlantern.duo.HandDuo;
+import nl.tivek.multiversepowers.character.greenlantern.hand.HandGroup;
 import nl.tivek.multiversepowers.character.greenlantern.hand.HandPose;
 import nl.tivek.multiversepowers.engine.entity.HeldMobs;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
@@ -43,6 +45,19 @@ abstract class GiantHandBase {
     private static final double LATE = 0.5;
     private static final double VIEW_RANGE = 128.0;
     private static final int PORTAL_SETTLES = 6;
+    // Where a hand is solid enough to shove a creature: over its palm and the roots of its fingers (in its own frame,
+    // each this far round), and along its forearm down to where it stands, or as far out of a portal as it reaches.
+    private static final Vec3[] SOLID = { new Vec3(-1.1, 0.7, 0.0), new Vec3(0.0, 0.7, 0.0), new Vec3(1.1, 0.7, 0.0),
+            new Vec3(-1.1, 1.9, 0.0), new Vec3(0.0, 1.9, 0.0), new Vec3(1.1, 1.9, 0.0), new Vec3(-1.1, 3.0, 0.0),
+            new Vec3(0.0, 3.0, 0.0), new Vec3(1.1, 3.0, 0.0), new Vec3(-0.7, 3.8, 0.0), new Vec3(0.7, 3.8, 0.0) };
+    private static final double SOLID_RADIUS = 0.75;
+    private static final double FOREARM_RADIUS = 1.3;
+    private static final double FOREARM_STEP = 1.2;
+    private static final double FOREARM_MOST = 9.0;
+    // How far round the line from its wrist to its elbow any of a hand reaches.
+    private static final double REACH_ROUND = 4.5;
+    // At most this far a creature is moved out of a hand in one tick.
+    private static final double SHOVE = 0.45;
 
     final GiantHands storm;
     private final int id = PowerRing.newId();
@@ -345,6 +360,68 @@ abstract class GiantHandBase {
             // Players move themselves on their own client, so they have to be told about the push.
             living.hurtMarked = true;
         }
+    }
+
+    // A creature standing where the hand or its forearm is (not the one it goes for or holds, nor its caster) is shoved
+    // out of the way, as a solid hand would, instead of the hand passing through it.
+    void shove(ServerLevel level) {
+        if (this.t < HandPose.ARRIVES || this.move == HandPose.AXE || HandGroup.is(this.variant)) {
+            return;
+        }
+        HandPose.Place place = this.place();
+        Vec3 facing = this.aim.subtract(this.base);
+        HandDuo.Portal portal = HandPose.portal(this.variant) ? HandPose.portalOf(this.variant, this.base, facing,
+                this.t, SCALE) : null;
+        Vec3 surface = portal == null ? this.base : portal.center();
+        Vec3 out = portal == null ? HandPose.rootNormal(this.variant, facing) : portal.normal();
+        List<Vec3> solid = new ArrayList<>();
+        List<Double> radius = new ArrayList<>();
+        for (Vec3 local : SOLID) {
+            solid.add(place.at(local));
+            radius.add(SOLID_RADIUS * SCALE);
+        }
+        Vec3 wrist = place.wrist();
+        Vec3 elbow = portal == null ? this.base : wrist.subtract(place.arm().scale(FOREARM_MOST * SCALE));
+        double arm = wrist.distanceTo(elbow);
+        for (double along = 0.0; along < arm; along += FOREARM_STEP * SCALE) {
+            solid.add(wrist.lerp(elbow, along / arm));
+            radius.add(FOREARM_RADIUS * SCALE);
+        }
+        AABB room = new AABB(wrist, elbow).inflate(REACH_ROUND * SCALE);
+        for (LivingEntity living : level.getEntitiesOfClass(LivingEntity.class, room, this::shoved)) {
+            AABB box = living.getBoundingBox();
+            Vec3 middle = box.getCenter();
+            Vec3 way = null;
+            double deepest = 0.0;
+            for (int i = 0; i < solid.size(); i++) {
+                Vec3 at = solid.get(i);
+                if (at.subtract(surface).dot(out) <= 0.0) {
+                    continue;
+                }
+                Vec3 near = new Vec3(Mth.clamp(at.x, box.minX, box.maxX), Mth.clamp(at.y, box.minY, box.maxY),
+                        Mth.clamp(at.z, box.minZ, box.maxZ));
+                double far = near.distanceTo(at);
+                double depth = radius.get(i) - far;
+                if (depth > deepest) {
+                    deepest = depth;
+                    way = far > 1.0E-4 ? near.subtract(at).scale(1.0 / far) : middle.subtract(at);
+                }
+            }
+            if (way == null) {
+                continue;
+            }
+            // Mostly aside: a hand shoves a creature out of its way, it does not throw it up.
+            Vec3 flat = new Vec3(way.x, Mth.clamp(way.y, -0.2, 0.3), way.z);
+            flat = flat.lengthSqr() < 1.0E-8 ? out : flat.normalize();
+            living.setDeltaMovement(living.getDeltaMovement().scale(0.5).add(flat.scale(Math.min(deepest, SHOVE))));
+            living.hasImpulse = true;
+            living.hurtMarked = true;
+        }
+    }
+
+    private boolean shoved(LivingEntity living) {
+        return living != this.storm.owner && living != this.target && living != this.held && living.isAlive()
+                && living.isPushable() && !GRABBED.containsKey(living.getId());
     }
 
     void end(ServerLevel level) {

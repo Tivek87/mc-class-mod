@@ -36,6 +36,8 @@ abstract class PainterSolid extends PainterCut {
     private boolean[] facingCamera = new boolean[256];
     double faint;
     double creases;
+    // Set just before a mesh is drawn when all of it lies too far from the eye to fade: no point needs its distance.
+    boolean farFromEye;
 
     PainterSolid(PoseStack pose, Vec3 camera, float time, @Nullable Frustum frustum, Material material,
             boolean hand) {
@@ -97,6 +99,20 @@ abstract class PainterSolid extends PainterCut {
                 Math.sqrt(dx * dx + dy * dy + dz * dz) * 0.5);
     }
 
+    @Override
+    void saveState(double[] state) {
+        super.saveState(state);
+        state[10] = this.faint;
+        state[11] = this.creases;
+    }
+
+    @Override
+    void loadState(double[] state) {
+        super.loadState(state);
+        this.faint = state[10];
+        this.creases = state[11];
+    }
+
     void room(int points, int sides) {
         if (this.wx.length < points) {
             int size = Math.max(points, this.wx.length * 2);
@@ -122,7 +138,8 @@ abstract class PainterSolid extends PainterCut {
         double fine = width * mesh.fine;
         // A skin's sides facing away lie behind the body it covers, unless a cut or a see-through look opens it.
         boolean hidden = mesh.skin && !faint && !this.clipping;
-        this.nearFade = true;
+        this.nearFade = !this.farFromEye;
+        this.farFromEye = false;
         this.lidCount = 0;
         for (int s = 0; s < count; s++) {
             double x = this.nx[s];

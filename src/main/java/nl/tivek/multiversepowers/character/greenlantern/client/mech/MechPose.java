@@ -8,7 +8,10 @@ import nl.tivek.multiversepowers.character.greenlantern.mech.MechScript;
 // swing and what its pilot's hands do. Feet are in the world, index 0 the right one.
 public final class MechPose {
     MechScript.Stage stage;
+    // The hips ride the legs; the torso above them turns on the waist by `turn` to face where its pilot looks.
+    MechScript.Stage hips;
     MechScript.Stage torso;
+    double turn;
     final Vec3[] ankle = new Vec3[2];
     final Vec3[] toes = new Vec3[2];
     final double[] tip = new double[2];
@@ -23,6 +26,7 @@ public final class MechPose {
 
     MechPose(MechScript.Stage stage) {
         this.stage = stage;
+        this.hips = stage;
         this.torso = stage;
         for (int side = 0; side < 2; side++) {
             this.ankle[side] = stage.point(MechPainter.side(MechScript.ANKLE, side == 0));
@@ -32,7 +36,9 @@ public final class MechPose {
 
     MechPose copy() {
         MechPose pose = new MechPose(this.stage);
+        pose.hips = this.hips;
         pose.torso = this.torso;
+        pose.turn = this.turn;
         for (int side = 0; side < 2; side++) {
             pose.ankle[side] = this.ankle[side];
             pose.toes[side] = this.toes[side];
@@ -52,7 +58,9 @@ public final class MechPose {
     static MechPose between(MechPose from, MechPose to, double u) {
         MechPose pose = to.copy();
         pose.stage = between(from.stage, to.stage, u);
-        pose.torso = between(from.torso, to.torso, u);
+        pose.hips = between(from.hips, to.hips, u);
+        pose.turn = from.turn + Math.IEEEremainder(to.turn - from.turn, Math.PI * 2.0) * u;
+        pose.torso = MechScript.upper(pose.hips, pose.turn);
         for (int side = 0; side < 2; side++) {
             pose.ankle[side] = from.ankle[side].lerp(to.ankle[side], u);
             pose.toes[side] = from.toes[side].lerp(to.toes[side], u).normalize();
@@ -78,6 +86,10 @@ public final class MechPose {
 
     public MechScript.Stage stage() {
         return this.stage;
+    }
+
+    public MechScript.Stage hips() {
+        return this.hips;
     }
 
     public MechScript.Stage torso() {

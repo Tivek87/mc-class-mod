@@ -54,6 +54,32 @@ abstract class PainterCut extends PainterLight {
         this.clipping = false;
     }
 
+    @Override
+    void saveState(double[] state) {
+        super.saveState(state);
+        state[2] = this.clipping ? 1.0 : 0.0;
+        state[3] = this.clipX;
+        state[4] = this.clipY;
+        state[5] = this.clipZ;
+        state[6] = this.clipNormalX;
+        state[7] = this.clipNormalY;
+        state[8] = this.clipNormalZ;
+        state[9] = this.seam;
+    }
+
+    @Override
+    void loadState(double[] state) {
+        super.loadState(state);
+        this.clipping = state[2] != 0.0;
+        this.clipX = state[3];
+        this.clipY = state[4];
+        this.clipZ = state[5];
+        this.clipNormalX = state[6];
+        this.clipNormalY = state[7];
+        this.clipNormalZ = state[8];
+        this.seam = state[9];
+    }
+
     double ahead(double x, double y, double z) {
         return (x - this.clipX) * this.clipNormalX + (y - this.clipY) * this.clipNormalY
                 + (z - this.clipZ) * this.clipNormalZ;

@@ -24,6 +24,8 @@ final class HandStop {
     private static final double MOVED = 0.5;
     private static final long FORGET = 100L;
     private static final double FREE = Double.POSITIVE_INFINITY;
+    // Points counted at most when weighing two poses that both touch blocks.
+    private static final int MANY = 400;
     // Points are looked at this far out from the surface, so a block's corner cannot slip in between them.
     private static final double MARGIN = 0.12;
     private static final double[] PALM = palm(1.62, 3.2, 0.52, -0.55, 4);
@@ -169,7 +171,7 @@ final class HandStop {
     }
 
     // How far this pose may go, from 0 (held back all the way) to 1 (as it moves), with arm, hand and fingers clear:
-    // FREE when it is clear as it is, or when even held back all the way it would not be.
+    // FREE when it is clear as it is, or when held back all the way leaves no less of it in blocks.
     private static double most(Level level, HandPose pose, Vec3 base, Vec3 facing, double scale, Vec3 root) {
         double lean = pose.lean;
         double flex = pose.flex;
@@ -179,8 +181,12 @@ final class HandStop {
                 return FREE;
             }
             hold(pose, lean, flex, 0.0);
-            if (hits(level, pose, base, facing, scale, root, 1) > 0) {
-                return FREE;
+            int back = hits(level, pose, base, facing, scale, root, MANY);
+            if (back > 0) {
+                // Even held back all the way it touches blocks: then all the way back if that leaves less of it in.
+                pose.lean = lean;
+                pose.flex = flex;
+                return hits(level, pose, base, facing, scale, root, back + 1) > back ? 0.0 : FREE;
             }
             double low = 0.0;
             double high = 1.0;

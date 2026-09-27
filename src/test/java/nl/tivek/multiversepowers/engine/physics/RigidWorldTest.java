@@ -134,6 +134,83 @@ class RigidWorldTest {
         assertTrue(worst <= 0.4 + 0.06, "swing stayed within its cone, at most " + worst);
     }
 
+    // A thigh hanging from a fixed hip and a shin on a knee that turns about x, bending the shin back (+z) only.
+    private static int[] leg(RigidWorld world) {
+        int hip = world.add(0.0, 0.2, 0.2, 0.2);
+        world.place(hip, 0.0, 6.0, 0.0, 0.0, 0.0, 0.0, 1.0);
+        int thigh = world.add(1.0, 0.12, 0.3, 0.12);
+        world.place(thigh, 0.0, 5.5, 0.0, 0.0, 0.0, 0.0, 1.0);
+        int shin = world.add(1.0, 0.12, 0.3, 0.12);
+        world.place(shin, 0.0, 4.9, 0.0, 0.0, 0.0, 0.0, 1.0);
+        world.add(new BallJoint(hip, new double[] { 0.0, -0.2, 0.0 }, new double[] { 0.0, -1.0, 0.0 },
+                new double[] { 1.0, 0.0, 0.0 }, thigh, new double[] { 0.0, 0.3, 0.0 }, new double[] { 0.0, -1.0, 0.0 },
+                new double[] { 1.0, 0.0, 0.0 }, 1.2, -0.4, 0.4));
+        double[] hinge = { -1.0, 0.0, 0.0 };
+        double[] bone = { 0.0, -1.0, 0.0 };
+        world.add(new HingeJoint(thigh, new double[] { 0.0, -0.3, 0.0 }, hinge, bone, shin,
+                new double[] { 0.0, 0.3, 0.0 }, hinge, bone, -0.05, 2.3));
+        return new int[] { hip, thigh, shin };
+    }
+
+    // The shin's bend about the thigh's hinge, and how far its hinge has left the thigh's.
+    private static double[] bend(RigidWorld world, int thigh, int shin) {
+        double[] a = new double[3];
+        double[] b = new double[3];
+        double[] n = new double[3];
+        double[] m = new double[3];
+        Quat.rotate(world.q, thigh * 4, 0.0, -1.0, 0.0, a, 0);
+        Quat.rotate(world.q, shin * 4, 0.0, -1.0, 0.0, b, 0);
+        Quat.rotate(world.q, thigh * 4, -1.0, 0.0, 0.0, n, 0);
+        Quat.rotate(world.q, shin * 4, -1.0, 0.0, 0.0, m, 0);
+        double sin = (a[1] * b[2] - a[2] * b[1]) * n[0] + (a[2] * b[0] - a[0] * b[2]) * n[1]
+                + (a[0] * b[1] - a[1] * b[0]) * n[2];
+        double cos = a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+        double off = Math.acos(Math.max(-1.0, Math.min(1.0, n[0] * m[0] + n[1] * m[1] + n[2] * m[2])));
+        return new double[] { Math.atan2(sin, cos), off };
+    }
+
+    @Test
+    void aHingeBendsOneWayOnlyAndStaysWhole() {
+        RigidWorld world = new RigidWorld();
+        int[] leg = leg(world);
+        Random random = new Random(7);
+        double[] a = new double[3];
+        double[] b = new double[3];
+        double least = 0.0;
+        double most = 0.0;
+        for (int i = 0; i < 200; i++) {
+            if (i % 10 == 0) {
+                world.velocity(leg[2], random.nextGaussian() * 6.0, random.nextGaussian() * 6.0,
+                        random.nextGaussian() * 6.0, random.nextGaussian() * 10.0, random.nextGaussian() * 10.0,
+                        random.nextGaussian() * 10.0);
+            }
+            world.step(TICK, SUBSTEPS, Blocks.NONE);
+            world.point(leg[1], 0.0, -0.3, 0.0, a);
+            world.point(leg[2], 0.0, 0.3, 0.0, b);
+            double gap = Math.sqrt((a[0] - b[0]) * (a[0] - b[0]) + (a[1] - b[1]) * (a[1] - b[1])
+                    + (a[2] - b[2]) * (a[2] - b[2]));
+            assertTrue(gap < 0.03, "tick " + i + " knee gap " + gap);
+            double[] now = bend(world, leg[1], leg[2]);
+            assertTrue(now[1] < 0.15, "tick " + i + " hinge off its axis by " + now[1]);
+            least = Math.min(least, now[0]);
+            most = Math.max(most, now[0]);
+        }
+        assertTrue(least >= -0.05 - 0.06, "never bent the wrong way, at most " + least);
+        assertTrue(most <= 2.3 + 0.06, "never past its range, at most " + most);
+        assertTrue(most > 0.3, "it did bend, up to " + most);
+    }
+
+    @Test
+    void aShinKickedBackBendsTheKneeBackwards() {
+        RigidWorld world = new RigidWorld();
+        int[] leg = leg(world);
+        // The shin's foot kicked towards +z turns the shin back about the knee.
+        world.velocity(leg[2], 0.0, 0.0, 3.0, 0.0, 0.0, 0.0);
+        world.step(TICK, SUBSTEPS, Blocks.NONE);
+        world.step(TICK, SUBSTEPS, Blocks.NONE);
+        assertTrue(bend(world, leg[1], leg[2])[0] > 0.05, "bent back: " + bend(world, leg[1], leg[2])[0]);
+    }
+
     @Test
     void aBallJointHoldsItsTwist() {
         RigidWorld world = new RigidWorld();

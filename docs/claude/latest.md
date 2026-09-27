@@ -1,14 +1,14 @@
 # Laatste sessie
 
-- Datum: 2026-09-27 (avond).
-- Vraag: developer-sectie in het power wheel met botten-weergave (alle wezens, jezelf, handen, mech), DreamWorks-tab
-  (Megamind, General Kai, Po, Jack Frost, Merlin), ragdolls die op explosies/gewicht reageren; antwoorden: altijd
-  raken (zelf kiezen), tentakel wikkelen ja, mech-voet geen schade en geen schokgolfjes, as-dood mooier; daarna
-  commit, push en release.
-- Gedaan: `BoneView` (host/operator), DreamWorks in `Roster`, `Ragdolls.blast` + `ClientPacketListenerMixin`,
-  ragdoll-zwaartekracht -32, `TentacleWrap`, mech-stap-ringen weg, `Ashes` herbouwd met `ShadedBuffers`, Giant Hands
-  volgen hun doel tijdens de slag (`GiantHandBase`). Release v0.3.6-alpha.
-- Getest: `gradlew build` groen (68 unit tests); in-game: menu, botten, wikkel, TNT (lijken 0,000 diep na landing),
-  as-reeks, Giant Hands 3/3 raak; mech-wijziging alleen gecompileerd (alleen effecten weggehaald).
-- Open: bugs #30 (hoog), #28, #27, #29; ideeën #24/#25 wachten op ja/nee; zie §1.1 "Nog open" in
-  `docs/claude/vervolg-2026-09-27.md`.
+- Datum: 2026-09-28 (nacht).
+- Vraag: meer botten (2 per arm/been, 1 hoofd, 1 romp), hand- en mech-botten zichtbaar, mech veel te zwaar, Giant Hands
+  niet meer door blokken/wezens, mech-torso 360° mee met de crosshair (benen draaien bij).
+- Gedaan: ragdolls hebben knie en elleboog (`HingeJoint`, `BentParts` + `ModelPartMixin`, AT-regels); bone view 2
+  botten per ledemaat, breedte schaalt met afstand, constructs in magenta. Mech: vertices direct in native geheugen,
+  geen fade-wortel ver van het oog, onderdelen parallel via `ShapeBatch` (CRC-bewezen identiek): tekentijd 8,0 → 1,5–2,4
+  ms. Mech-bovenlijf draait op de heupen naar de blik, benen halen in, A/D stappen opzij. Giant Hands duwen wezens
+  opzij (`GiantHandBase.shove`), `HandStop` houdt ook terug als volledig terughouden minder in blokken steekt.
+- Getest: JUnit (HingeJoint), build groen, in-game runs (ragdolls, hands, mech meten/draaien) + rooktest.
+- Bestanden: engine render/physics/model/ragdoll/rig, mech (Drive/Walk/Pose/Painter/Legs/Script/Assembly), hands
+  (GiantHand/Base, HandStop), docs POWERS/GREEN_LANTERN/PROJECT, CLAUDE.md (codekaart + testregels).
+- Open: niets gecommit (wacht op ja). Bugs #30, #28, #27, #29 en ideeën #24/#25/#31 staan nog open.

@@ -17,7 +17,7 @@ final class MechLegs {
         int side = right ? 0 : 1;
         Vec3 ankle = pose.ankle[side];
         Vec3 toes = pose.toes[side];
-        Vec3 hip = pose.torso().point(MechPainter.side(MechScript.HIP, right));
+        Vec3 hip = pose.hips().point(MechPainter.side(MechScript.HIP, right));
         Vec3 knee = knee(ankle, hip, toes);
         Vec3 shin = knee.subtract(ankle).normalize();
         Vec3 thigh = hip.subtract(knee).normalize();
@@ -28,7 +28,7 @@ final class MechLegs {
         MechParts.draw(painter, right ? MechLegShapes.KNEE : MechLegShapes.KNEE_LEFT,
                 MechPainter.limb(knee, shin.add(thigh).normalize(), toes), 1.0, apart, seed + 40);
         MechParts.draw(painter, right ? MechLegShapes.THIGH_PART : MechLegShapes.THIGH_LEFT,
-                MechPainter.limb(knee, thigh, pose.torso().ahead()), 1.0, apart, seed + 50);
+                MechPainter.limb(knee, thigh, pose.hips().ahead()), 1.0, apart, seed + 50);
         if (BoneView.shown()) {
             BoneView.bone(hip, knee, BoneView.CONSTRUCT);
             BoneView.bone(knee, ankle, BoneView.CONSTRUCT);

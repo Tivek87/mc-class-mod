@@ -47,6 +47,7 @@ import net.neoforged.neoforge.common.util.TriState;
 import net.neoforged.neoforge.event.entity.EntityLeaveLevelEvent;
 import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.config.client.ClientSettings;
+import nl.tivek.multiversepowers.engine.client.model.BentParts;
 import nl.tivek.multiversepowers.engine.client.model.ModelParts;
 import nl.tivek.multiversepowers.engine.client.render.EntityPass;
 import org.joml.Matrix4f;
@@ -652,6 +653,7 @@ public final class Ragdolls {
             return;
         }
         RESTORE.undo();
+        BentParts.clear();
         if (deathTime >= 0) {
             drawing.entity.deathTime = deathTime;
         }

@@ -15,11 +15,17 @@ import nl.tivek.multiversepowers.character.greenlantern.mech.MechDrivePayload;
 import nl.tivek.multiversepowers.character.greenlantern.mech.MechScript;
 
 // The pilot walks their own mech in their own game, as a player walks, and tells the server where it went: W and S
-// walk it on and back, A and D turn it, as its two levers do. It climbs no more than a step it can take, never
-// walks off a drop too deep to see the bottom of, and stops where its cockpit would run into blocks.
+// walk it on and back, A and D step it aside, and its legs turn after where the pilot looks. It climbs no more than a
+// step it can take, never walks off a drop too deep to see the bottom of, and stops where its cockpit would run into
+// blocks.
 public final class MechDrive {
     public static final double WALK = 0.2;
     public static final double TURN = Math.toRadians(3.0);
+    private static final double TURN_DEGREES = 3.0;
+    // How much of the way still to turn the legs take on each tick, and how near they count as there.
+    private static final double TURN_GAIN = 0.12;
+    private static final double SETTLED_DEGREES = 1.5;
+    private static final double SIDESTEP = 0.1;
     private static final double BACK = 0.11;
     private static final double SPEED_UP = 0.012;
     private static final double SLOW_DOWN = 0.024;
@@ -35,6 +41,7 @@ public final class MechDrive {
     private static Vec3 base = Vec3.ZERO;
     private static float yaw;
     private static double speed;
+    private static double side;
     private static double turn;
     private static double fall;
 
@@ -56,26 +63,30 @@ public final class MechDrive {
             base = server.base();
             yaw = server.yaw();
             speed = 0.0;
+            side = 0.0;
             turn = 0.0;
             fall = 0.0;
         }
         double want = input.forwardImpulse > 0.01F ? WALK : input.forwardImpulse < -0.01F ? -BACK : 0.0;
         speed += Mth.clamp(want - speed, -SLOW_DOWN, SPEED_UP);
-        turn += Mth.clamp(input.leftImpulse * TURN - turn, -TURN_UP, TURN_UP);
-        float degrees = (float) Math.toDegrees(turn);
-        yaw = Mth.wrapDegrees(yaw - degrees);
-        player.setYRot(player.getYRot() - degrees);
-        player.setYHeadRot(player.getYHeadRot() - degrees);
+        side += Mth.clamp(input.leftImpulse * SIDESTEP - side, -SLOW_DOWN, SPEED_UP);
+        // The legs turn after where the pilot looks, no faster than they can; the torso above already faces there.
+        double behind = Mth.wrapDegrees(player.getYRot() - yaw);
+        double wanted = Math.abs(behind) < SETTLED_DEGREES ? 0.0 : Mth.clamp(behind * TURN_GAIN, -TURN_DEGREES,
+                TURN_DEGREES);
+        turn += Mth.clamp(-Math.toRadians(wanted) - turn, -TURN_UP, TURN_UP);
+        yaw = Mth.wrapDegrees(yaw - (float) Math.toDegrees(turn));
         MechScript.Stage stage = MechScript.Stage.facing(base, yaw);
         ClientLevel level = player.clientLevel;
-        Vec3 next = base.add(stage.ahead().scale(speed));
+        Vec3 step = stage.ahead().scale(speed).subtract(stage.right().scale(side));
+        Vec3 next = base.add(step);
         Double ground = MechWalk.ground(level, next, base.y);
-        if (Math.abs(speed) > MOVED) {
-            Double front = MechWalk.ground(level, next.add(stage.ahead().scale(Math.signum(speed) * LOOK_AHEAD)),
-                    base.y);
+        if (step.lengthSqr() > MOVED * MOVED) {
+            Double front = MechWalk.ground(level, next.add(step.normalize().scale(LOOK_AHEAD)), base.y);
             if (ground == null || ground - base.y > STEP_UP || front != null && front - base.y > STEP_UP
                     || !clear(player, next)) {
                 speed = 0.0;
+                side = 0.0;
                 next = base;
                 ground = MechWalk.ground(level, base, base.y);
             }
@@ -90,7 +101,7 @@ public final class MechDrive {
         }
         Vec3 was = base;
         base = new Vec3(next.x, y, next.z);
-        if (base.distanceToSqr(was) > MOVED * MOVED || Math.abs(degrees) > 1.0E-4F) {
+        if (base.distanceToSqr(was) > MOVED * MOVED || Math.abs(turn) > 1.0E-6) {
             PacketDistributor.sendToServer(new MechDrivePayload(base, yaw));
         }
     }

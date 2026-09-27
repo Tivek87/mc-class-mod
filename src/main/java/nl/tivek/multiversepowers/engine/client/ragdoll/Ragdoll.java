@@ -1,16 +1,20 @@
 package nl.tivek.multiversepowers.engine.client.ragdoll;
 
+import java.util.Arrays;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
+import javax.annotation.Nullable;
 import net.minecraft.client.model.EntityModel;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.Vec3;
+import nl.tivek.multiversepowers.engine.client.model.BentParts;
 import nl.tivek.multiversepowers.engine.client.model.ModelParts;
 import nl.tivek.multiversepowers.engine.physics.BallJoint;
 import nl.tivek.multiversepowers.engine.physics.Blocks;
+import nl.tivek.multiversepowers.engine.physics.HingeJoint;
 import nl.tivek.multiversepowers.engine.physics.Pin;
 import nl.tivek.multiversepowers.engine.physics.Quat;
 import nl.tivek.multiversepowers.engine.physics.RigidWorld;
@@ -18,6 +22,7 @@ import nl.tivek.multiversepowers.engine.physics.SelfContact;
 import org.joml.Matrix3d;
 import org.joml.Matrix4f;
 import org.joml.Quaterniond;
+import org.joml.Quaternionf;
 import org.joml.Vector3d;
 import org.joml.Vector3f;
 
@@ -63,12 +68,16 @@ final class Ragdoll {
     private static final Vector3d MIDDLE = new Vector3d();
     private static final Vector3f ORIGIN = new Vector3f();
     private static final Matrix3d ROTATION = new Matrix3d();
+    private static final Quaternionf BENT = new Quaternionf();
 
     final LivingEntity entity;
     final EntityModel<?> model;
     final List<ModelParts.Part> parts;
     final RigidWorld world = new RigidWorld();
+    // Each part's body; a long arm or leg is two, its near half in `body` and its far half past the knee in `lower`.
     private final int[] body;
+    private final int[] lower;
+    private final ModelParts.Bend[] bends;
     private final double[] center;
     // Every part it moves, the parts that copy them too, and where each sits in the copies layers draw.
     private final ModelPart[] moved;
@@ -94,18 +103,25 @@ final class Ragdoll {
     private final double[] scratch = new double[7];
 
     private Ragdoll(LivingEntity entity, EntityModel<?> model, List<ModelParts.Part> parts, int[] body,
-            double[] center, int core, State state) {
+            ModelParts.Bend[] bends, double[] center, int core, State state) {
         this.entity = entity;
         this.model = model;
         this.parts = parts;
         this.body = body;
+        this.bends = bends;
+        this.lower = new int[parts.size()];
+        Arrays.fill(this.lower, -1);
         this.center = center;
         this.core = core;
         this.state = state;
         this.hold = new Pin(core, 0.0, 0.0, 0.0, 0.0);
         this.world.gravity = GRAVITY;
-        this.was = new double[parts.size() * 7];
-        this.now = new double[parts.size() * 7];
+        int bodies = parts.size();
+        for (ModelParts.Bend bend : bends) {
+            bodies += bend != null ? 1 : 0;
+        }
+        this.was = new double[bodies * 7];
+        this.now = new double[bodies * 7];
         int count = parts.size();
         for (ModelParts.Part part : parts) {
             count += part.followers().size();
@@ -143,31 +159,65 @@ final class Ragdoll {
                 biggest = volume;
             }
         }
-        Ragdoll ragdoll = new Ragdoll(entity, model, parts, body, center, core, state);
+        ModelParts.Bend[] bends = new ModelParts.Bend[n];
+        for (int i = 0; i < n && !stiff; i++) {
+            bends[i] = i == core ? null : ModelParts.bend(parts.get(i));
+        }
+        Ragdoll ragdoll = new Ragdoll(entity, model, parts, body, bends, center, core, state);
         RigidWorld world = ragdoll.world;
         world.friction = 0.8;
         world.angularDamping = 1.6;
         Quaterniond turn = new Quaterniond();
         double[] vel = { velocity.x, velocity.y, velocity.z };
+        double[][] kneeHang = new double[n][];
+        float[][][] halves = new float[n][][];
         for (int i = 0; i < n; i++) {
             ModelParts.Part part = parts.get(i);
             Matrix4f frame = ModelParts.frame(model, drawn, part, new Matrix4f());
             frames[i] = frame;
+            ModelParts.Bend bend = bends[i];
             float[] b = part.bounds();
-            center[i * 3] = (b[0] + b[3]) / 32.0;
-            center[i * 3 + 1] = (b[1] + b[4]) / 32.0;
-            center[i * 3 + 2] = (b[2] + b[5]) / 32.0;
+            float[] near = b;
+            float[] far = null;
+            if (bend != null) {
+                near = b.clone();
+                far = b.clone();
+                int a = bend.axis();
+                near[bend.farSign() > 0.0F ? a + 3 : a] = bend.at();
+                far[bend.farSign() > 0.0F ? a : a + 3] = bend.at();
+            }
+            center[i * 3] = (near[0] + near[3]) / 32.0;
+            center[i * 3 + 1] = (near[1] + near[4]) / 32.0;
+            center[i * 3 + 2] = (near[2] + near[5]) / 32.0;
             double scale = scaleOf(frame);
-            double hx = Math.max(0.02, (b[3] - b[0]) / 32.0 * scale);
-            double hy = Math.max(0.02, (b[4] - b[1]) / 32.0 * scale);
-            double hz = Math.max(0.02, (b[5] - b[2]) / 32.0 * scale);
             double heft = heft(part.role()) * profile.part(part.name()).mass().orElse(1.0);
-            body[i] = world.add(DENSITY * heft * 8.0 * hx * hy * hz, hx, hy, hz);
-            Vector3f c = frame.transformPosition(new Vector3f((float) center[i * 3], (float) center[i * 3 + 1],
-                    (float) center[i * 3 + 2]), new Vector3f());
             rotationOf(frame, turn);
-            world.place(body[i], c.x + camera.x, c.y + camera.y, c.z + camera.z, turn.x, turn.y, turn.z, turn.w);
-            world.velocity(body[i], vel[0], vel[1], vel[2], 0.0, 0.0, 0.0);
+            body[i] = ragdoll.box(frame, near, scale, heft, camera, turn, vel);
+            halves[i] = far == null ? null : new float[][] { near, far };
+        }
+        // The far halves after every part's own body, so a part's index stays its body's.
+        for (int i = 0; i < n; i++) {
+            if (halves[i] != null) {
+                ModelParts.Bend bend = bends[i];
+                float[] near = halves[i][0];
+                float[] far = halves[i][1];
+                double scale = scaleOf(frames[i]);
+                double heft = heft(parts.get(i).role()) * profile.part(parts.get(i).name()).mass().orElse(1.0);
+                rotationOf(frames[i], turn);
+                ragdoll.lower[i] = ragdoll.box(frames[i], far, scale, heft, camera, turn, vel);
+                double[] anchorA = new double[3];
+                double[] anchorB = new double[3];
+                for (int k = 0; k < 3; k++) {
+                    anchorA[k] = (bend.knee()[k] - (near[k] + near[k + 3]) * 0.5) / 16.0 * scale;
+                    anchorB[k] = (bend.knee()[k] - (far[k] + far[k + 3]) * 0.5) / 16.0 * scale;
+                }
+                double[] hinge = { bend.hinge()[0], bend.hinge()[1], bend.hinge()[2] };
+                double[] bone = new double[3];
+                bone[bend.axis()] = bend.farSign();
+                world.add(new HingeJoint(body[i], anchorA, hinge, bone, ragdoll.lower[i], anchorB, hinge, bone,
+                        bend.min(), bend.max()));
+                kneeHang[i] = anchorB;
+            }
         }
         double[] pivot = new double[3];
         double[] away = new double[3];
@@ -235,7 +285,7 @@ final class Ragdoll {
                     twist));
             hangs[i] = bLocal.clone();
             if (!stiff && role != ModelParts.Role.HEAD) {
-                ragdoll.keepOut(i, hangs[i], body[core]);
+                ragdoll.apart(i, hangs[i], kneeHang[i], core);
             }
         }
         // A pair of legs side by side stays apart; four legs stand too far from each other to meet.
@@ -250,7 +300,7 @@ final class Ragdoll {
             }
         }
         if (!stiff && legs == 2) {
-            ragdoll.keepOut(lastLeg, hangs[lastLeg], body[firstLeg]);
+            ragdoll.apart(lastLeg, hangs[lastLeg], kneeHang[lastLeg], firstLeg);
         }
         // Arms keep out of the legs and the head, legs out of the head, and the head out of the trunk.
         for (int i = 0; i < n && !stiff; i++) {
@@ -263,11 +313,11 @@ final class Ragdoll {
                 boolean apart = role == ModelParts.Role.ARM && (other == ModelParts.Role.LEG
                         || other == ModelParts.Role.HEAD) || role == ModelParts.Role.LEG && other == ModelParts.Role.HEAD;
                 if (j != i && j != core && apart) {
-                    ragdoll.keepOut(i, hangs[i], body[j]);
+                    ragdoll.apart(i, hangs[i], kneeHang[i], j);
                 }
             }
             if (role == ModelParts.Role.HEAD) {
-                ragdoll.keepOut(i, hangs[i], body[core]);
+                ragdoll.apart(i, hangs[i], kneeHang[i], core);
             }
         }
         world.add(ragdoll.hold);
@@ -285,6 +335,20 @@ final class Ragdoll {
         return ragdoll;
     }
 
+    // One body for the box b (pixels, in the part's frame) of a part drawn in `frame`, placed and moving with it.
+    private int box(Matrix4f frame, float[] b, double scale, double heft, Vec3 camera, Quaterniond turn,
+            double[] vel) {
+        double hx = Math.max(0.02, (b[3] - b[0]) / 32.0 * scale);
+        double hy = Math.max(0.02, (b[4] - b[1]) / 32.0 * scale);
+        double hz = Math.max(0.02, (b[5] - b[2]) / 32.0 * scale);
+        int made = this.world.add(DENSITY * heft * 8.0 * hx * hy * hz, hx, hy, hz);
+        Vector3f c = frame.transformPosition(new Vector3f((b[0] + b[3]) / 32.0F, (b[1] + b[4]) / 32.0F,
+                (b[2] + b[5]) / 32.0F), new Vector3f());
+        this.world.place(made, c.x + camera.x, c.y + camera.y, c.z + camera.z, turn.x, turn.y, turn.z, turn.w);
+        this.world.velocity(made, vel[0], vel[1], vel[2], 0.0, 0.0, 0.0);
+        return made;
+    }
+
     // A block head is mostly air and a trunk mostly flesh: weighed by volume alone, a held creature would hang by its
     // head.
     private static double heft(ModelParts.Role role) {
@@ -296,9 +360,21 @@ final class Ragdoll {
         };
     }
 
+    // Part i (both halves of a bent limb) kept out of part j (both its halves as well).
+    private void apart(int i, double[] hang, @Nullable double[] kneeHang, int j) {
+        for (int to : new int[] { this.body[j], this.lower[j] }) {
+            if (to < 0) {
+                continue;
+            }
+            this.keepOut(this.body[i], hang, to);
+            if (this.lower[i] >= 0) {
+                this.keepOut(this.lower[i], kneeHang, to);
+            }
+        }
+    }
+
     // A limb's far part (its capsule along its longest side, away from where it hangs) kept out of another body.
-    private void keepOut(int part, double[] hang, int other) {
-        int b = this.body[part];
+    private void keepOut(int b, double[] hang, int other) {
         int longest = 0;
         for (int a = 1; a < 3; a++) {
             if (this.world.half(b, a) > this.world.half(b, longest)) {
@@ -347,13 +423,13 @@ final class Ragdoll {
     void tip(double wx, double wy, double wz, Vec3 pivot) {
         double[] v = new double[6];
         double[] at = new double[7];
-        for (int i = 0; i < this.parts.size(); i++) {
-            this.world.velocity(this.body[i], v);
-            this.world.pose(this.body[i], at);
+        for (int i = 0; i < this.world.count(); i++) {
+            this.world.velocity(i, v);
+            this.world.pose(i, at);
             double rx = at[0] - pivot.x;
             double ry = at[1] - pivot.y;
             double rz = at[2] - pivot.z;
-            this.world.velocity(this.body[i], v[0] + wy * rz - wz * ry, v[1] + wz * rx - wx * rz,
+            this.world.velocity(i, v[0] + wy * rz - wz * ry, v[1] + wz * rx - wx * rz,
                     v[2] + wx * ry - wy * rx, v[3] + wx, v[4] + wy, v[5] + wz);
         }
     }
@@ -362,14 +438,14 @@ final class Ragdoll {
     // differently: legs standing straight under a body would hold it up like a table's.
     void giveWay(RandomSource random, double ax, double az, double speed) {
         double[] v = new double[6];
-        for (int i = 0; i < this.parts.size(); i++) {
-            if (i == this.core) {
+        for (int i = 0; i < this.world.count(); i++) {
+            if (i == this.body[this.core]) {
                 continue;
             }
             double along = speed * (0.7 + 0.6 * random.nextDouble());
             double across = speed * 0.25 * random.nextGaussian();
-            this.world.velocity(this.body[i], v);
-            this.world.velocity(this.body[i], v[0], v[1], v[2], v[3] + ax * along - az * across, v[4],
+            this.world.velocity(i, v);
+            this.world.velocity(i, v[0], v[1], v[2], v[3] + ax * along - az * across, v[4],
                     v[5] + az * along + ax * across);
         }
     }
@@ -415,8 +491,7 @@ final class Ragdoll {
         double[] v = new double[6];
         double face = 0.0;
         double mass = 0.0;
-        for (int i = 0; i < this.parts.size(); i++) {
-            int b = this.body[i];
+        for (int b = 0; b < this.world.count(); b++) {
             double hx = this.world.half(b, 0);
             double hy = this.world.half(b, 1);
             double hz = this.world.half(b, 2);
@@ -429,8 +504,7 @@ final class Ragdoll {
             return;
         }
         double push = BLAST * middle * seen * face / mass;
-        for (int i = 0; i < this.parts.size(); i++) {
-            int b = this.body[i];
+        for (int b = 0; b < this.world.count(); b++) {
             this.world.pose(b, at);
             double dx = at[0] - center.x;
             double dy = at[1] - center.y;
@@ -477,8 +551,8 @@ final class Ragdoll {
     }
 
     private void remember(double[] into) {
-        for (int i = 0; i < this.parts.size(); i++) {
-            this.world.pose(this.body[i], this.scratch);
+        for (int i = 0; i < this.world.count(); i++) {
+            this.world.pose(i, this.scratch);
             System.arraycopy(this.scratch, 0, into, i * 7, 7);
         }
     }
@@ -540,6 +614,22 @@ final class Ragdoll {
                 restore.keep(followers.get(k));
                 followers.get(k).copyFrom(target);
             }
+            if (this.lower[i] >= 0) {
+                // The far half's turn seen from the near half: how far the knee or elbow is bent.
+                int l = this.lower[i] * 7;
+                B.set(this.was[l + 3], this.was[l + 4], this.was[l + 5], this.was[l + 6]);
+                MIXED.set(this.now[l + 3], this.now[l + 4], this.now[l + 5], this.now[l + 6]);
+                B.slerp(MIXED, t);
+                MIXED.set(A).conjugate().mul(B);
+                if (w < 1.0) {
+                    MIXED.set(B.identity().slerp(MIXED, w));
+                }
+                BENT.set((float) MIXED.x, (float) MIXED.y, (float) MIXED.z, (float) MIXED.w);
+                BentParts.bend(target, this.bends[i], BENT);
+                for (int k = 0; k < followers.size(); k++) {
+                    BentParts.bend(followers.get(k), this.bends[i], BENT);
+                }
+            }
         }
     }
 
@@ -557,6 +647,7 @@ final class Ragdoll {
             if (to[i] != null && to[i] != this.moved[i]) {
                 restore.keep(to[i]);
                 to[i].copyFrom(this.moved[i]);
+                BentParts.same(this.moved[i], to[i]);
             }
         }
     }

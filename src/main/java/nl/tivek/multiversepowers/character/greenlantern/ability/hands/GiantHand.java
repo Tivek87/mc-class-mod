@@ -45,6 +45,7 @@ final class GiantHand extends GiantHandTears {
             return true;
         }
         this.home(level);
+        this.shove(level);
         boolean ground = this.move != HandPose.AXE && !HandPose.portal(this.variant);
         if (this.t == HandPose.ARRIVES && ground) {
             this.burstOut(level);

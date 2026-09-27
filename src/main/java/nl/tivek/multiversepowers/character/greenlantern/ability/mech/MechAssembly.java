@@ -222,8 +222,10 @@ public final class MechAssembly implements Effect {
         } else {
             this.target.release();
         }
-        this.hold(this.stage.point(MechScript.pilot(this.stage, this.t)), this.t <= MechScript.ABOARD
-                || this.t >= MechScript.SETTLED);
+        boolean settled = this.t >= MechScript.SETTLED;
+        MechScript.Stage body = settled ? MechScript.upper(this.stage, MechScript.turnTo(this.stage,
+                this.owner.getYHeadRot())) : this.stage;
+        this.hold(body.point(MechScript.pilot(this.stage, this.t)), this.t <= MechScript.ABOARD || settled);
         this.send(level);
         return true;
     }

@@ -3,6 +3,26 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.3.7-alpha] - 2026-09-28
+
+**UNFINISHED / WORK IN PROGRESS:** the mod is still being built; things may change, break or be missing.
+
+### Added
+- **Knees and elbows:** limp bodies bend at the knee and the elbow; every arm and leg now has two bones.
+- **Hard-Light Mech:** its body turns on its hips to wherever you look, all the way round if you look behind you,
+  and its legs turn after it.
+- **Giant Hands:** creatures standing in a hand's or forearm's way are shoved aside instead of the hand passing
+  through them.
+
+### Changed
+- **Hard-Light Mech:** A and D step it to the side instead of turning it.
+- **Hard-Light Mech:** draws about three times faster, so the game keeps a far higher frame rate while one stands in
+  view; it looks exactly the same.
+- **Bones switch:** bones stay a few pixels wide far away, and the bones of the Giant Hands, the mech and other
+  constructs are magenta, so they show on the green light.
+- **Giant Hands:** a hand that cannot get clear of a wall leans back anyway when that keeps more of it out of the
+  blocks.
+
 ## [0.3.6-alpha] - 2026-09-27
 
 **UNFINISHED / WORK IN PROGRESS:** the mod is still being built; things may change, break or be missing.

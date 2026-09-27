@@ -18,9 +18,11 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import nl.tivek.multiversepowers.MultiversePowers;
+import nl.tivek.multiversepowers.engine.client.model.BentParts;
 import nl.tivek.multiversepowers.engine.client.model.ModelParts;
 import nl.tivek.multiversepowers.engine.client.render.ConstructPainter;
 import nl.tivek.multiversepowers.engine.client.render.EntityPass;
+import org.joml.Matrix3f;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 
@@ -29,7 +31,8 @@ import org.joml.Vector3f;
 @EventBusSubscriber(modid = MultiversePowers.MODID, value = Dist.CLIENT)
 public final class BoneView {
     public static final int CREATURE = 0xFFE066;
-    public static final int CONSTRUCT = 0x66F0FF;
+    // Magenta: it stands out on the green light constructs are made of.
+    public static final int CONSTRUCT = 0xFF3CF0;
     private static final int JOINT = 0xFF4A4A;
     private static final RenderType LINES = RenderType.create("welcomescreen_bones", DefaultVertexFormat.POSITION_COLOR,
             VertexFormat.Mode.QUADS, 4096, false, true, RenderType.CompositeState.builder()
@@ -39,12 +42,16 @@ public final class BoneView {
                     .setWriteMaskState(RenderStateShard.COLOR_WRITE)
                     .setCullState(RenderStateShard.NO_CULL)
                     .createCompositeState(false));
-    // Half the width of a bone and of a joint's dot, in blocks.
+    // Half the width of a bone and of a joint's dot, in blocks, and per block away from the eye: far off (a mech, a
+    // Giant Hand) they keep a few pixels wide instead of thinning out of sight.
     private static final double WIDTH = 0.012;
     private static final double DOT = 0.03;
+    private static final double WIDTH_AWAY = 0.0022;
+    private static final double DOT_AWAY = 0.0045;
     private static final int MOST = 20000;
     private static final Matrix4f FRAME = new Matrix4f();
     private static final Vector3f POINT = new Vector3f();
+    private static final Vector3f BENT = new Vector3f();
     private static final float[] END = new float[3];
     private static boolean on;
     private static double[] bones = new double[7 * 512];
@@ -120,6 +127,25 @@ public final class BoneView {
             double ax = camera.x + POINT.x;
             double ay = camera.y + POINT.y;
             double az = camera.z + POINT.z;
+            ModelParts.Bend bend = ModelParts.bend(part);
+            if (bend != null) {
+                // An arm or a leg is two bones, joined at its elbow or knee and bent as a limp body bends it.
+                float[] knee = bend.knee();
+                FRAME.transformPosition(knee[0] / 16.0F, knee[1] / 16.0F, knee[2] / 16.0F, POINT);
+                double kx = camera.x + POINT.x;
+                double ky = camera.y + POINT.y;
+                double kz = camera.z + POINT.z;
+                add(ax, ay, az, kx, ky, kz, CREATURE);
+                Matrix3f turn = BentParts.turn(part.part());
+                BENT.set(end[0] - knee[0], end[1] - knee[1], end[2] - knee[2]);
+                if (turn != null) {
+                    turn.transform(BENT);
+                }
+                BENT.add(knee[0], knee[1], knee[2]);
+                FRAME.transformPosition(BENT.x / 16.0F, BENT.y / 16.0F, BENT.z / 16.0F, POINT);
+                add(kx, ky, kz, camera.x + POINT.x, camera.y + POINT.y, camera.z + POINT.z, CREATURE);
+                continue;
+            }
             FRAME.transformPosition(end[0] / 16.0F, end[1] / 16.0F, end[2] / 16.0F, POINT);
             add(ax, ay, az, camera.x + POINT.x, camera.y + POINT.y, camera.z + POINT.z, CREATURE);
         }
@@ -190,7 +216,8 @@ public final class BoneView {
         if (length < 1.0E-6F) {
             return;
         }
-        float scale = (float) WIDTH / length;
+        float away = (float) Math.sqrt(mx * mx + my * my + mz * mz);
+        float scale = (float) Math.max(WIDTH, away * WIDTH_AWAY) / length;
         sx *= scale;
         sy *= scale;
         sz *= scale;
@@ -205,7 +232,7 @@ public final class BoneView {
 
     private static void dot(VertexConsumer buffer, Matrix4f matrix, float x, float y, float z, Vector3f left,
             Vector3f up) {
-        float d = (float) DOT;
+        float d = (float) Math.max(DOT, Math.sqrt(x * x + y * y + z * z) * DOT_AWAY);
         int r = JOINT >> 16 & 0xFF;
         int g = JOINT >> 8 & 0xFF;
         int b = JOINT & 0xFF;

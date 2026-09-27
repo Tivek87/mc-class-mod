@@ -80,6 +80,7 @@ public class ConstructPainter extends PainterSolid {
     }
 
     private double fling = 1.0;
+    private final ShapeBatch batch = new ShapeBatch();
 
     public ConstructPainter(PoseStack pose, Vec3 camera, float time, Material material) {
         this(pose, camera, time, null, material);
@@ -217,7 +218,55 @@ public class ConstructPainter extends PainterSolid {
         return at > 0.0 ? way.subtract(toEye.scale(1.6 * at)).normalize() : way;
     }
 
+    // From here until flush(), shapes built only of meshes are held back and then worked out on every core at once,
+    // each into layers of its own, joined in the order they were drawn: the bytes come out as if drawn one by one.
+    public void batch() {
+        this.batch.open();
+    }
+
+    public void flush() {
+        this.settle();
+        this.batch.close();
+    }
+
+    @Override
+    void settle() {
+        this.waiting = false;
+        this.batch.run(this);
+    }
+
+    @Override
+    void saveState(double[] state) {
+        super.saveState(state);
+        state[12] = this.fling;
+    }
+
+    @Override
+    void loadState(double[] state) {
+        super.loadState(state);
+        this.fling = state[12];
+    }
+
+    // A painter drawing where this one does, for another thread.
+    ConstructPainter worker() {
+        PoseStack pose = new PoseStack();
+        pose.last().pose().set(this.matrix());
+        return new ConstructPainter(pose, this.camera, this.time, this.frustum(), this.material, this.hand());
+    }
+
+    private boolean held(Shape shape, ShapeBatch.Kind kind, Frame frame, double a, double b, int seed) {
+        if (!this.batch.open || shape.boxes().length > 0) {
+            return false;
+        }
+        this.batch.hold(this, kind, shape, frame, a, b, seed);
+        this.waiting = true;
+        return true;
+    }
+
     public void shape(Shape shape, Frame frame, double solid, double bright) {
+        if (this.held(shape, ShapeBatch.Kind.WHOLE, frame, solid, bright, 0)) {
+            return;
+        }
         if (shape.boxes().length > 0) {
             this.model(shape.boxes(), frame, solid, bright);
         }
@@ -231,6 +280,9 @@ public class ConstructPainter extends PainterSolid {
     }
 
     public void shattered(Shape shape, Frame frame, double apart, double bright, int seed) {
+        if (this.held(shape, ShapeBatch.Kind.SHATTERED, frame, apart, bright, seed)) {
+            return;
+        }
         if (shape.boxes().length > 0) {
             this.shattered(shape.boxes(), frame, apart, bright, seed);
         }
@@ -287,6 +339,7 @@ public class ConstructPainter extends PainterSolid {
             this.ny[k] = y * to;
             this.nz[k] = z * to;
         }
+        this.farFromEye = middle.distanceTo(this.camera) - reach > FADE_REACH;
         this.drawMesh(mesh, Math.min(scale, WIDTH_CAP), strength, bright, !this.tiny(middle, reach));
         if (clipped) {
             this.clipping = true;
@@ -337,6 +390,9 @@ public class ConstructPainter extends PainterSolid {
     }
 
     public void seeThrough(Shape shape, Frame frame, double faint, double bright) {
+        if (this.held(shape, ShapeBatch.Kind.SEE_THROUGH, frame, faint, bright, 0)) {
+            return;
+        }
         this.faint = Math.max(1.0E-3, faint);
         for (Mesh mesh : shape.meshes()) {
             this.mesh(mesh, frame, 1.0, bright);

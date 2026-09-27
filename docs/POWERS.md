@@ -810,8 +810,9 @@ Green Lantern's ultimate: a big, slow gunship of hard light high over the battle
   It tumbles head over heels back up out of the crater, over the mech and down onto its shoulders, locking on with a
   hard **CLACK**, and the mech spreads its arms wide, its eyes flaring.
 - **Built:** the creature is let go, the eyes glow and the rim round the glass breathes with light.
-- **Walking.** Now you walk it: **W** walks it forward, **S** backs it up, **A** and **D** turn it on the spot. It
-  gets going and slows down with its weight. Each foot stays planted where it came down until its turn to step:
+- **Walking.** Now you walk it: **W** walks it forward, **S** backs it up, **A** and **D** step it to the side. Its
+  body always faces where you look: it turns on its hips, all the way round if you look behind you, and its legs
+  turn after it as fast as they can. It gets going and slows down with its weight. Each foot stays planted where it came down until its turn to step:
   the heel lifts, the leg swings through with the knee bent and the foot comes down with a thump that shakes the
   ground, throws up dust and spreads a ring of light. The body bobs, sways over the leg it stands on and twists
   with the stride, the arms swing against the legs, and turning on the spot it steps round on its feet. It climbs
