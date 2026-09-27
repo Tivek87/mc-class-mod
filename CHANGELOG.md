@@ -3,6 +3,14 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.3.4-alpha] - 2026-09-27
+
+**UNFINISHED / WORK IN PROGRESS:** the mod is still being built; things may change, break or be missing.
+
+### Changed
+- **Developer notes:** two new rules for in-game tests (when a Green Lantern test may use a power, how to film
+  constructs); nothing changes in the game.
+
 ## [0.3.3-alpha] - 2026-09-27
 
 **UNFINISHED / WORK IN PROGRESS:** the mod is still being built; things may change, break or be missing.
