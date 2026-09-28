@@ -1,15 +1,16 @@
 # Laatste sessie
 
 - Datum: 2026-09-28.
-- Vraag: config kleiner (client ~15, server terug naar ~0.3.8), mech-lamp weg, mech sneller rennen, torso verder
-  draaien, "Locked" bij vaste keybinds, Thor: combo (24 hand + 4 trappen) op links klik, thunderclap op links vast
-  0.75 s (achterover, armen wijd, klap, bliksemvonken, donder ver weg); bug #34 (iedereen raken behalve eigen team).
-- Gedaan: alles gebouwd (ThorBlow/ThorBlows/ThorCombo/ThorBlowKeys/ThorBlowPoses/ThorFists, FirstPersonLeg,
-  ClientClaps wind-up, ClapFx vonken, Factions.mayHit, Targeting.mayStrike); SpellRules, MechLamp, Spotlight,
-  ModSounds weg. Gebruiker zette mech-rennen zelf op de sprint-toets (MechDrive).
-- Build + unit tests groen. In-game testrun draaide (t7), maar screenshots en log NIET nagekeken: Thor-houdingen,
-  eerste-persoon, klap en keyframes ongetest. Op verzoek meteen commit/push/release v0.4.0-alpha ("nog lang niet
-  af, heel buggy").
-- Open: screenshots-test opnieuw draaien en houdingen/timing afstellen; POWERS.md, PROJECT.md en CLAUDE.md
-  beschrijven nog oude Thor-knoppen, mech-lamp, instellingen en de oude factie-regel (bijwerken); bug #34 nog open
-  op GitHub (niet in-game getest); ideeen #24/#25/#31/#32/#33 later.
+- Vraag: doorgaan na v0.4.0-alpha (half af): Thor-combo, klap, mech en de rest in de game nakijken en afmaken.
+- Gedaan: testruns met screenshots. Gevonden en gerepareerd: stoten bleven bij het gezicht (handdoel draaide mee met
+  de romp; nu gericht vooruit, stoten langer), vuisten en trap-been in eigen zicht te laag, lunge liep door het
+  doel heen (superman punch sprong erop), ellebogen iets verder bereik, combo herhaalt minder.
+- Nagekeken en goed: combo kiest steeds andere klappen en raakt, klap-opbouw + slag + vonken, mech lopen 0,2 en
+  rennen (sprint) 0,76 blok/tick, benen stappen pas mee boven 55 graden, "Locked" in Controls, korte instellingen,
+  klap raakt nu ook een dorpeling (bug #34, gemarkeerd als opgelost).
+- Docs bijgewerkt: POWERS.md, PROJECT.md, SPELLS.md, CLAUDE.md (Thor-knoppen, geen lamp, instellingen, wie geraakt
+  wordt); CHANGELOG sectie 0.4.1-alpha klaar.
+- Bestanden: ThorPoses, ThorCombo, ThorBlowKeys, ThorBlow, docs, CHANGELOG. Testklasse, testwerelden en shots weg.
+- Build + unit tests groen.
+- Open: commit + push + release 0.4.1-alpha (wacht op ja). Niet getest: een getemd dier (groen) en een echte
+  multiplayer-server met teams. Ideeen #24/#25/#31/#32/#33 later.

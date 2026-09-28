@@ -3,6 +3,22 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.4.1-alpha] - 2026-09-28
+
+**UNFINISHED / WORK IN PROGRESS:** the mod is still being built; things may change, break or be missing.
+
+### Fixed
+- **Thor: Thunder Fists:** straight punches, hooks and palm strikes now reach out ahead of him instead of stopping
+  at his face; his fists aim where he faces, not where his twisting chest points.
+- **Thor: Thunder Fists (first person):** your fists land at the crosshair, and a kick's leg comes up into view
+  instead of staying under the hotbar.
+- **Thor: Thunder Fists:** a blow that carries him forward stops short of what he aims at; the superman punch no
+  longer leaps him onto it.
+
+### Changed
+- **Thor: Thunder Fists:** the elbows reach a little further (2.4 blocks), and the combo remembers its last five
+  blows so it repeats itself less.
+
 ## [0.4.0-alpha] - 2026-09-28
 
 **FAR FROM FINISHED AND VERY BUGGY:** this version is work saved half way. Much of it is not tested yet; expect

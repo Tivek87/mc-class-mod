@@ -45,7 +45,7 @@ Good to know:
 | Fire | Fire Wall | A swirling ring of fire around you that burns and knocks back enemies | 3.5 block radius | 10 s |
 | Lightning | Lightning Strike | Charges up, then lightning strikes where you look and leaps on to more foes | 40 blocks | 8 s |
 | Nature | Poison Area | A thrown vial that leaves a slowing poison cloud | 24 blocks | 12 s |
-| Air | Wind Gust | A wall of wind that throws hostile (red) creatures back and turns their shots round | 8 blocks in front of you | 5 s |
+| Air | Wind Gust | A wall of wind that throws creatures back and turns their shots round | 8 blocks in front of you | 5 s |
 | Dark | Void Walk | 10 s invisible and faster, hostile (red) ones marked, the first blow out of it an ambush | around you | 30 s |
 
 ---
@@ -84,7 +84,7 @@ with a hiss and a burst of steam.
 |---|---|
 | Speed | starts at 25 blocks per second and speeds up, straight where you look |
 | Damage | 5 (2.5 hearts) to what it hits, and the target burns for 5 seconds |
-| Burst | every hostile (red) creature within 2.5 blocks of the impact takes up to 4 (2 hearts, less further off), burns for 3 seconds and is knocked away |
+| Burst | every creature within 2.5 blocks of the impact takes up to 4 (2 hearts, less further off), burns for 3 seconds and is knocked away |
 | Fire | the spot it hits, plus about half of the 8 spots around it (not at another player's feet where players may not fight each other, and never in spawn protection) |
 | Lifetime | fizzles out after 4.5 seconds if it hits nothing, or at once in water |
 | Cooldown | 2 s |
@@ -108,10 +108,10 @@ one foe to the next. It is the spell's own lightning: the game's normal bolt is 
 | Charge time | 0.7 s before the bolt strikes |
 | Aiming | the creature or block you look at; a creature is followed while the spell charges |
 | Damage | normal lightning: 5 (2.5 hearts) and sets the target on fire |
-| Shock | hostile (red) creatures within 3 blocks of the strike are slowed hard for 1.5 seconds |
-| Chain | then the bolt leaps to the nearest hostile creature it has not touched, within 6 blocks, every 0.1 s: up to 3, or 5 when it rains there. 4 damage (2 hearts) each, and slowed like the shock |
+| Shock | creatures within 3 blocks of the strike are slowed hard for 1.5 seconds |
+| Chain | then the bolt leaps to the nearest creature it has not touched, within 6 blocks, every 0.1 s: up to 3, or 5 when it rains there. 4 damage (2 hearts) each, and slowed like the shock |
 | Fire | also sets the ground on fire, on Normal and Hard difficulty |
-| You | your own lightning never hits you or anything green (your faction, allies, pets); other players only where players may fight each other |
+| You | your own lightning never hits you or players of your own faction; other players only where players may fight each other |
 | Cooldown | 8 s |
 
 ---
@@ -130,7 +130,7 @@ inside gets a green haze. At the end the cloud sighs out and thins away.
 | Range | 24 blocks, lands where you look |
 | Cloud | 3.5 blocks around the landing spot, 8 seconds |
 | Effect | Poison I for 3 seconds and Slowness I, renewed every half second while inside; after 2 seconds inside the poison turns to Poison II |
-| Who | only hostile (red) ones; never you or anything green or yellow; other players only where players may fight each other, spectators never |
+| Who | every creature inside, red, yellow or green; never you or players of your own faction; other players only where players may fight each other, spectators never |
 | Cooldown | 12 s |
 
 ---
@@ -146,9 +146,9 @@ whoosh of a breeze. Every creature it reaches is thrown back and up with a puff 
 | Range | 8 blocks, in a wide cone in front of you (about 60 degrees to each side) |
 | Wave speed | 20 blocks per second; creatures are thrown the moment the wave reaches them |
 | Push | strongest up close, weaker further away; knockback resistance (like netherite armour) lowers it |
-| Hits | every hostile (red) creature in the cone, never you; other players only where players may fight each other (PvP on, not in creative) |
+| Hits | every creature in the cone, never you or players of your own faction; other players only where players may fight each other (PvP on, not in creative) |
 | Damage | none, only the push (and the fall afterwards); it blows out the flames on what it throws |
-| Shots | arrows and other shots from hostile (red) ones flying in the cone are turned round, straight where you look, and become yours |
+| Shots | arrows and other shots from anyone but you and your own faction flying in the cone are turned round, straight where you look, and become yours |
 | Loose things | dropped items and experience orbs in the cone are blown away |
 | You | it blows out your own flames; cast while falling, it catches you: no fall damage and 1 second of slow falling |
 | Cooldown | 5 s |

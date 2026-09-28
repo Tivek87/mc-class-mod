@@ -31,6 +31,7 @@ public final class ThorPoses {
     private static final Quaternionf LEAN = new Quaternionf();
     private static final Quaternionf WAIST = new Quaternionf();
     private static final Quaternionf CHEST = new Quaternionf();
+    private static final Quaternionf AIM = new Quaternionf();
     private static final Vector3f NECK = new Vector3f();
     private static final Vector3f HIPS = new Vector3f();
 
@@ -50,6 +51,8 @@ public final class ThorPoses {
         final Vector3f[] hands = { new Vector3f(), new Vector3f() };
         final float[] handWeight = new float[2];
         final boolean[] rootHands = new boolean[2];
+        // A hand aimed ahead of him, not of his chest: it leans with the chest but does not turn with it.
+        final boolean[] aimedHands = new boolean[2];
         // The way an elbow bends out, where a move says (its own weight, over the arm's usual way).
         final Vector3f[] poles = { new Vector3f(), new Vector3f() };
         final float[] poleWeight = new float[2];
@@ -65,6 +68,7 @@ public final class ThorPoses {
             this.handWeight[0] = this.handWeight[1] = 0.0F;
             this.poleWeight[0] = this.poleWeight[1] = 0.0F;
             this.rootHands[0] = this.rootHands[1] = false;
+            this.aimedHands[0] = this.aimedHands[1] = false;
             this.airborne = false;
             this.weight = 0.0F;
         }
@@ -161,7 +165,9 @@ public final class ThorPoses {
                 continue;
             }
             Vector3f target = new Vector3f(mix.hands[side]);
-            if (!mix.rootHands[side]) {
+            if (mix.aimedHands[side]) {
+                AIM.rotationX(mix.pitch + mix.waist).transform(target).add(NECK);
+            } else if (!mix.rootHands[side]) {
                 CHEST.transform(target).add(NECK);
             }
             hand.lerp(target, w);
@@ -189,6 +195,8 @@ public final class ThorPoses {
         mix.roll += pose.roll * w;
         for (int side = 0; side < 2; side++) {
             Vector3f hand = pose.hand[side];
+            // Aimed ahead only where the blow has most of the hand, not while its guard fades under another move.
+            mix.aimedHands[side] = w >= mix.handWeight[side];
             mix.hand(side, hand.x, hand.y, hand.z, w, false);
             mix.pole(side, pose.pole[side], w);
         }

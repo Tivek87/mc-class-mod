@@ -38,7 +38,15 @@ public final class ThorCombo {
     private static final int CHAIN = 12;
     // A waiting click is kept this long at most.
     private static final int WAITS = 10;
-    private static final int REMEMBERED = 3;
+    private static final int REMEMBERED = 5;
+    // Closer than this (blocks from his eyes to its box) a blow carries him no further forward.
+    private static final double CLOSE = 1.2;
+    // How far a push of one block a tick carries him before friction stops it: on the ground, and in the short hop of a
+    // leap. With nothing aimed at he goes at most FREE_ROOM.
+    private static final double CARRY_ON_GROUND = 2.2;
+    private static final double CARRY_LEAPING = 6.0;
+    private static final double FREE_ROOM = 2.0;
+    private static final double HOP = 0.2;
     private static final double LOOK_REACH = 4.5;
     // The wind-up shows once the button has been held this share of its hold.
     private static final float CHARGE_SHOWN = 0.2F;
@@ -94,7 +102,7 @@ public final class ThorCombo {
             RECENT.removeLast();
         }
         ClientThor.predictBlow(player, blow.ordinal());
-        lunge(player, blow);
+        lunge(player, blow, target);
         boolean heavy = blow.kick() || blow.finisher();
         player.level().playLocalSound(player.getX(), player.getEyeY(), player.getZ(),
                 heavy ? SoundEvents.PLAYER_ATTACK_SWEEP : SoundEvents.PLAYER_ATTACK_NODAMAGE, SoundSource.PLAYERS,
@@ -104,19 +112,23 @@ public final class ThorCombo {
         return blow;
     }
 
-    // Some blows carry him forward into them; a leap (the superman punch) off the ground as well.
-    private static void lunge(LocalPlayer player, ThorBlow blow) {
+    // Some blows carry him forward into them; a leap (the superman punch) off the ground as well. Never further than
+    // the room left before the target: up close he stays where he stands instead of running into it.
+    private static void lunge(LocalPlayer player, ThorBlow blow, @Nullable LivingEntity target) {
         if (blow.lunge() <= 0.0 || !player.onGround()) {
             return;
         }
         Vec3 look = player.getLookAngle();
         Vec3 flat = new Vec3(look.x, 0.0, look.z);
-        if (flat.lengthSqr() < 1.0E-6) {
+        boolean leap = blow == ThorBlow.SUPERMAN_PUNCH;
+        double room = target == null ? FREE_ROOM
+                : Math.sqrt(target.getBoundingBox().distanceToSqr(player.getEyePosition())) - CLOSE;
+        if (flat.lengthSqr() < 1.0E-6 || room <= 0.0) {
             return;
         }
-        flat = flat.normalize().scale(blow.lunge());
-        double hop = blow == ThorBlow.SUPERMAN_PUNCH ? 0.32 : 0.0;
-        player.setDeltaMovement(player.getDeltaMovement().add(flat.x, hop, flat.z));
+        double speed = Math.min(blow.lunge(), room / (leap ? CARRY_LEAPING : CARRY_ON_GROUND));
+        flat = flat.normalize().scale(speed);
+        player.setDeltaMovement(player.getDeltaMovement().add(flat.x, leap ? HOP : 0.0, flat.z));
     }
 
     // The creature the look passes closest by within a blow's reach, if any.

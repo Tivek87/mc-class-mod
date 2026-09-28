@@ -55,14 +55,14 @@ long cooldown; while it goes, the panel's title turns red and counts down.
 
 | Key | Ability | Doctor Octopus | Green Lantern | Thor |
 |---|---|---|---|---|
-| R | Ability 1 | Grab | Emerald Express | Thunderclap *(hold right click)* |
-| V | Ability 2 | Multi-Tentacle | Construct Wheel | Dash *(right click)* |
-| Z | Ability 3 | Tentacle Dash | Recharge | Super Jump *(double space)* |
-| B (hold) | Ability 4 | Block | Light Bolt *(left click)* | Flight *(hold space)* |
-| H | Ability 5 | Ground Slam | Light Shield *(right click)* | Air Blink *(right click, flying)* |
-| N | Ability 6 | Portal | Ring Scan | Grab-Dash Dive *(hold right, flying)* |
-| Y | Ability 7 | Octopus Rampage *(ultimate)* | Air Strike *(ultimate; hold: Mech Assembly)* | Lightning Speed *(hold scroll wheel, flying)* |
-| X | Ability 8 | *(free)* | Shockwave | |
+| R | Ability 1 | Grab | Emerald Express | Thunder Fists *(left click)* |
+| V | Ability 2 | Multi-Tentacle | Construct Wheel | Thunderclap *(hold left click)* |
+| Z | Ability 3 | Tentacle Dash | Recharge | Dash *(right click)* |
+| B (hold) | Ability 4 | Block | Light Bolt *(left click)* | Super Jump *(double space)* |
+| H | Ability 5 | Ground Slam | Light Shield *(right click)* | Flight *(hold space)* |
+| N | Ability 6 | Portal | Ring Scan | Air Blink *(right click, flying)* |
+| Y | Ability 7 | Octopus Rampage *(ultimate)* | Air Strike *(ultimate; hold: Mech Assembly)* | Grab-Dash Dive *(hold right, flying)* |
+| X | Ability 8 | *(free)* | Shockwave | Lightning Speed *(hold scroll wheel, flying)* |
 | C | Ability 9 | Feet or Tentacles | Flight *(double space)* | |
 | Left Alt | Ability 10 | Ground Strike | Giant Hands | |
 | K | Ability 11 | *(free)* | Light Cage | |
@@ -80,8 +80,8 @@ long cooldown; while it goes, the panel's title turns red and counts down.
 
 The mouse buttons and space do more than one thing: a click, a hold, a double press. Controls lists them all:
 **left click, left hold, right click, right hold, scroll wheel click, scroll wheel hold, double space and hold
-space**. Left, right and space follow the game's own attack, use and jump keys and are shown greyed out: they
-cannot be changed there. The **scroll wheel click and hold can**: put either on any key or button you like (on the
+space**. Left, right and space follow the game's own attack, use and jump keys and are shown greyed out with
+**Locked** beside them: they cannot be changed there. The **scroll wheel click and hold can**: put either on any key or button you like (on the
 same one, as they come, a click and a hold tell themselves apart). A power with a click and a hold on the same
 button waits until you let go to know which you meant. The panel shows a hold as **Hold ...** and a double press
 as **Double ...**, and greys out a power that only works on the ground while you fly, or the other way round.
@@ -489,14 +489,14 @@ jumps the rails, crashes onto its side with the coaches piling up behind it, and
   swells and cracks with light, faster and brighter... until it blows up with a massive bang and a shockwave:
   **15 hearts** in the middle, half of it at the edge **7 blocks** out, and everything in it is thrown away. Then
   the coaches burst one after another down the train. The pieces fly apart and dissolve into green light at once.
-- **Who it hits:** only creatures out to hurt you (the red ones, see "Who is red, yellow and green"), both the
-  rams and the blast.
+- **Who it hits:** it only hunts creatures out to hurt you (the red ones, see "Who is red, yellow and green"), but
+  its rams and its blast hit whatever is in the way, friend or not; only players of your own team are spared.
 - Stop being Green Lantern (die, log out, change dimension or pick someone else) and the train simply breaks up
   into light, harmlessly.
 
 | | |
 |---|---|
-| Ram | 10 hearts to every creature out to hurt you in its way, thrown far aside |
+| Ram | 10 hearts to every creature in its way, thrown far aside |
 | Hunting | the nearest creature out to hurt you within 24 blocks, 6 at most, 220 blocks at most |
 | Boiler blast | 15 hearts in the middle, half at the edge 7 blocks out |
 | Power | 6 |
@@ -782,8 +782,9 @@ Green Lantern's ultimate: a big, slow gunship of hard light high over the battle
   ores, and water stay.
 - Only the blasts are see-through: the plane, its jets, its guns, its rounds and its missiles are all solid
   constructs.
-- **Who gets hit:** only what is red (hostile) to you; players only where players may fight each other. Never
-  anything green (your faction, allies, your pets), never anything yellow, and never you.
+- **Who gets hit:** it marks and aims at only what is red (hostile) to you, but its rounds, missiles and blasts hit
+  whatever they strike, red, yellow or green; players only where players may fight each other and never those of
+  your own team, and never you.
 - If you stop being Green Lantern before it crashes, the plane and its jets break apart in the air.
 - **Power:** 20. **Cooldown:** 90 seconds.
 - All of it is a setting: how long it attacks, how far it scans, the cost, the miniguns (how often, damage,
@@ -828,9 +829,10 @@ Green Lantern's ultimate: a big, slow gunship of hard light high over the battle
   hard **CLACK**, and the mech spreads its arms wide, its eyes flaring.
 - **Built:** the creature is let go, the eyes glow and the rim round the glass breathes with light.
 - **Walking.** Now you walk it: **W** walks it forward, **S** backs it up, **A** and **D** step it to the side; hold
-  **Shift** with W and it **runs**: longer strides, the knees higher, the body leaning in and the arms pumping. Its
-  body follows where you look: the torso swings round on its hips with weight, overshooting a little and settling,
-  all the way round if you look behind you, and the legs step after it; the head turns and tilts to look where you
+  your **sprint key** with W and it **runs**, nearly four times as fast: much longer strides, the knees higher, the
+  body leaning in and the arms pumping. A note above the hotbar says so as you take over. Its body follows where you
+  look: the torso swings round on its hips with weight, overshooting a little and settling; standing still, the legs
+  only step round once you look more than about 55 degrees aside, then all the way; the head turns and tilts to look where you
   look before the body catches up. It gets going and slows down with its weight. Each foot stays planted where it came down until its turn to step:
   the heel lifts, the leg swings through with the knee bent and the foot comes down with a thump that shakes the
   ground, throws up dust and spreads a ring of light. The body bobs, sways over the leg it stands on and twists
@@ -840,16 +842,13 @@ Green Lantern's ultimate: a big, slow gunship of hard light high over the battle
   one back to turn. Standing still you reach over to the console now and then and press a button, which lights up.
   In first person you look out through the round glass port in its chest, with a clear view ahead; in third person the camera stands back
   behind and above the whole mech, so it never blocks your view.
-- **The chest lamp:** a lamp on the upper left of its chest, beside the port, swivels to where the mech looks. In
-  the dark it switches on by itself: a beam of pale light and a patch of light on the ground and walls ahead,
-  following every step and wall. Each player chooses in their own settings whether it shines never, in the dark or
-  always, how bright and how far. From the cockpit you see only where it lands, not the beam across your view.
 - **Walking is all it does:** you cannot fly, jump or use your other powers while you are in it.
 - **Leaving it:** hold Y for 2 seconds again (the ring round your crosshair says *Leave the mech*): the mech breaks
   into solid pieces that dissolve into light, and you float gently down to the ground. Die, log out or stop being
   Green Lantern and it breaks up as well.
-- **Who gets hit:** only what is out to hurt you: the held creature takes each blow whole, anything else near the
-  foot, the clap or the crater takes less.
+- **Who gets hit:** it builds itself over a creature out to hurt you, but its blows hit whatever stands near: the
+  held creature takes each blow whole, anything else near the foot, the clap or the crater takes less (players of
+  your own team excepted).
 - **Power:** 25. **Cooldown:** 90 seconds, **its own**: building the mech leaves the Air Strike ready, and the Air
   Strike leaves the mech ready. Its cost, cooldown, reach and the three damages are settings (Air Strike, the mech
   part).
@@ -1011,8 +1010,9 @@ Green Lantern's ultimate: a big, slow gunship of hard light high over the battle
 - With nothing out to hurt you nearby the ring tells you so, nothing happens and nothing is spent. When every
   creature left is still up in the air (sent flying by a hand), the hands still to come wait up to 4 seconds for one
   to land.
-- **Who gets hit:** only what is out to hurt you, and players where players may fight each other; never your own
-  pets, villagers or animals, and never you.
+- **Who gets hit:** the hands only go after what is out to hurt you, but a blow lands on whatever it strikes: pets,
+  villagers and animals too, and players where players may fight each other, never those of your own team and never
+  you.
 - **Power:** 8. **Cooldown:** 30 seconds. The damage, the reach, the fewest and the most hands at every press (1
   and 1 by default, 2 at most for now), the time between two hands (half a second by default) and how hard they send
   creatures flying
@@ -1048,8 +1048,8 @@ Green Lantern's ultimate: a big, slow gunship of hard light high over the battle
   their knuckles, hang limp and tired, give each other a high five, tip an imaginary hat and sink back into their
   portals.
 - **Damage** (defaults, all settings): each pew-pew **1 heart**, each revolver shot **8 hearts**, each slam **6 hearts**
-  in the middle of its shockwave (half at its edge), and creatures are knocked away. Only what is out to hurt you is
-  hit; with nothing nearby, the finger gun and the revolver fire into the air and the ground in front instead.
+  in the middle of its shockwave (half at its edge), and creatures are knocked away. It aims only at what is out to
+  hurt you, but its shots and slams hit whatever they strike; with nothing nearby, the finger gun and the revolver fire into the air and the ground in front instead.
 - **Power:** 25. **Cooldown:** 60 seconds, **its own**: using it leaves the ordinary Giant Hands ready, and the
   ordinary hands leave it ready. With no room in front of you, the ring tells you so and nothing is spent.
 
@@ -1290,15 +1290,36 @@ The whole run takes about 12 seconds, longer when the creature runs.
 
 ## Thor
 
-The god of thunder, from the Other franchise. Everything he does sits on the mouse and space: on the ground right
-click dashes and holding it claps; double space jumps high and holding space flies; in flight the same buttons blink,
-dive and speed up. Left click is a plain punch.
+The god of thunder, from the Other franchise. Everything he does sits on the mouse and space: on the ground left
+click fights with his fists and feet and holding it claps; right click dashes; double space jumps high and holding
+space flies; in flight right click blinks and dives and the scroll wheel speeds him up.
 
 - **Becoming Thor:** a bolt of lightning strikes you out of the sky with a crack of thunder (it does no harm and
   lights no fire), a flash of blue light spreads round your feet, and static keeps crawling over you for about two
   seconds.
 - **The axe:** until Mjolnir is made, an axe stands in for it. It hangs from his belt on his left hip; in flight
   his left hand holds it out ahead of him, as if it pulled him along.
+
+### Thunder Fists (left click)
+
+- **Click left** with empty hands, on the ground: every click throws the next blow of a combo, and the blows flow
+  into each other, each one starting where the last one ends. There are **24 hand blows** (jab, cross, hooks and
+  uppercuts with both hands, an overhand, a backfist, a hammer fist, three elbows, palm strikes, body shots, a knife
+  hand, a shovel hook, a lead straight, a haymaker, a spinning backfist, a superman punch, a double hammer fist and a
+  crackling thunder punch) and **4 kicks** (front kick, roundhouse, side kick and spinning back kick).
+- **How the next blow is picked:** the hands take turns like a boxer's; up close he throws the short blows (elbows,
+  hooks, uppercuts), further off the long ones; looking down, or at something small, he goes low; looking up he goes
+  for uppercuts; running, he throws the straight or front kick. Now and then a kick comes in, and once the combo has
+  built up (four blows or more) the big finishers join, which end the combo: after one the next click starts a new
+  combo.
+- **Feel:** a click that comes while a blow is still going waits for it, so clicking fast never skips a blow. Some
+  blows carry him a step forward, but never into what he aims at. Between blows, and for about two seconds after the
+  last, he keeps both fists up in his guard. You see your own fists and, for a kick, your leg in first person, and
+  your view jolts a little as a blow lands.
+- **Hits:** what stands within reach where you look (2.4 to 3.6 blocks, by blow); the sweeping blows (the double
+  palm, spinning backfist, double hammer fist, haymaker and roundhouse) hit everything they sweep through. **2 hearts**
+  a blow, from a bit less for a jab to over double for the thunder punch. Jabs keep what they hit close, the
+  finishers throw it away. The damage is a setting.
 
 ### Dash (right click)
 
@@ -1329,20 +1350,21 @@ dive and speed up. Left click is a plain punch.
   ends his flight; holding the scroll wheel flies him at **lightning speed** (48 blocks a second) while you hold it.
 - His speed and lightning speed are settings.
 
-### Thunderclap (hold right click for 0.75 seconds)
+### Thunderclap (hold left click for 0.75 seconds)
 
-- **Hold right** with empty hands, on the ground. A small ring round your crosshair charges up from the top in blue,
-  crackling at its tip; after **0.75 seconds** it is full and pops with a white flash and little bolts leaping out,
-  and Thor claps: he sets his feet wide and low, throws his chest open with his arms drawn wide as static builds in
-  his hands, then drives forward over his knees and slams them together in front of his chest. Let go sooner and he
-  dashes instead.
-- **The clap:** a blinding blue-white light flares between the hands, thunder cracks, and a bubble in which time all
-  but stands still swells out of the hands and rolls ahead the way you aim, sparks crawling slowly inside it; rings
-  of light ripple out along the aim and a wall of mist rolls the same way, up or down as well. The bubble is
-  **4 blocks** across at most and
-  gone again after about **0.6 seconds**.
-- **What it hits:** creatures out to hurt you in a cone where you aim, **9 blocks** long and about 90 degrees wide:
-  **2.5 hearts** close to you, down to half at the edge, and each is thrown away from you and up.
+- **Hold left** with empty hands, on the ground. While you hold it Thor winds up: he sets his feet wide and low,
+  leans back and flings his arms wide, static crackling louder and thicker in his hands (everyone near sees and hears
+  it). A small ring round your crosshair charges up from the top in blue, crackling at its tip; after **0.75
+  seconds** it is full and pops with a white flash and little bolts leaping out, and he claps: he drives forward over
+  his knees and slams his hands together in front of his chest, very hard. Let go sooner and it was a blow of his
+  combo instead.
+- **The clap:** a blinding blue-white light flares between the hands, thunder cracks close by and rolls on in the
+  distance, and a bubble in which time all but stands still swells out of the hands and rolls ahead the way you aim,
+  sparks crawling slowly inside it; short forked sparks of lightning crackle through the shockwave as it rolls out
+  (no bolt comes down from the sky); rings of light ripple out along the aim and a wall of mist rolls the same way,
+  up or down as well. The bubble is **4 blocks** across at most and gone again after about **0.6 seconds**.
+- **What it hits:** everything in a cone where you aim, **9 blocks** long and about 90 degrees wide: **2.5 hearts**
+  close to you, down to half at the edge, and each is thrown away from you and up.
 - **Cooldown:** 10 seconds. While it cools down a thin blue arc round the crosshair counts the wait, and a glint
   runs round the ring the moment it is ready again. Its cooldown and damage are settings.
 
@@ -1357,34 +1379,18 @@ There are two kinds of settings:
 - **Server settings:** how the powers play (every number on this page, and the stamina bar). Every world keeps
   its own: change them in one world and the others keep theirs. On a server everyone plays by the server's
   settings; your game gets them as you join, and again at once whenever they change on the server.
-  - **Power rules** for every power at once: a **damage multiplier**, a **cooldown multiplier**, a **power cost
-    multiplier** (what every power costs of the ring; a full ring's flight lasts as much shorter), whether **powers
-    break blocks**, whether **powers hurt players** (where the server allows PvP), the **effect range** (how far away
-    players still see the powers' particles) and how long a thrown creature stays **knocked down**.
+  - **Power rules** for every power at once: a **damage multiplier**, a **cooldown multiplier** (spells follow both
+    too) and whether **powers break blocks**.
   - **Characters and spells:** each character, and spells, can be switched off for the world; whoever is a
     character that gets switched off turns back into themselves.
-  - **Every character's page** holds its abilities' numbers, now also Thor's (the thunderclap's reach, width, wave
-    speed, push and lift; the dash, jump, flight, blink and dive, and how hard a hit must be to knock him out of the
-    sky) and more of Doctor Octopus's (throw speed, slam reach on the ground and from the air, how long the portal
-    tentacles hunt and drag, the rampage's reach and pace). The mech's blows got their reach and strength.
-  - **Spells** (their own page): every spell's cooldown, and the fireball's speed, blast damage and burning; the
-    lightning strike's reach, jumps and slow; the poison vial's reach; the void walk's ambush, daze and speed; the
-    wind gust's push and lift.
+  - **Every character's page** holds its abilities' numbers.
 - **Client settings:** what only you see, hear and feel, in your own game, in every world and on every server:
-  - **View:** camera shake, scraping shake, mech step shake, screen flashes, how far your view widens at speed,
-    how far it dips with a slam or a take-off, filming your own mech, the mech camera's distance, and the **mech
-    lamp** (never, in the dark or always; its brightness and reach).
-  - **Effects & particles:** how many particles the powers throw up, how strong the glow and the flares are,
-    whether blasts bend the view like a lens, and how much detail the biggest effects have (low, medium, full).
-  - **Bodies:** limp bodies on or off, how many at once, how far away, how long a body stays and how long a thrown
-    creature lies before it gets up, whether blasts throw bodies, how finely a fall is worked out, burning to ash,
-    feet on the ground, and capes of cloth (on or off, how finely, how far away).
-  - **Sound:** the menu theme, the mod's own sounds, the sounds of flight, the hums of lasting powers, the mech's
-    footsteps and the wheels' clicks.
-  - **On screen:** the ability panel (and its size), the power bar, the hold rings round the crosshair, the gauges,
-    the stamina bar and the ring scan's marks.
-  - **Performance:** how far away constructs are still drawn, and how many processor cores may work out big
-    constructs at once.
+  - **View:** camera shake, scraping shake, screen flashes and filming your own mech.
+  - **Effects & particles:** how many particles the powers throw up, and how much detail the biggest effects have
+    (low, medium, full).
+  - **Bodies:** limp bodies on or off, how many at once, how far away, how long a body stays, feet on the ground,
+    and capes of cloth.
+  - **Sound:** the menu theme.
   - **Updates:** how often the game looks for a new version, and how long the note about one stays on screen.
 
 **In the game:** Mods > Multiverse Powers > Config (or `/stamina` in the chat, which opens the stamina bar). You first
@@ -1395,8 +1401,7 @@ pick **Client** or **Server**.
   `serverconfig/welcomescreen/` folder (only that file can change the list). Operators are not owners unless listed.
   The server checks this again for every change. Anyone else sees the numbers read only. In the main menu there is
   no world, so nothing to change.
-- **Tabs** along the top: *Power rules*, the stamina bar, every character and the spells for Server; one page for
-  Client. A dot
+- **Tabs** along the top: *Power rules*, the stamina bar and every character for Server; one page for Client. A dot
   after a tab's name means it has changes that are not saved yet.
 - **Every ability is a part you can fold open and shut:** click its title. The title says how many numbers are
   in it and which key or button it sits on. *Open all* and *Close all* fold the whole page at once.
