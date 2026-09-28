@@ -9,7 +9,8 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import nl.tivek.multiversepowers.MultiversePowers;
 
 // What Thor is doing, for every game that sees him: whether he flies, floats after a super jump, flies at lightning
-// speed or carries someone, and the move he just started (a dash, a jump, a blink, a dive, a slam) with what it needs.
+// speed, carries someone or winds up a thunderclap, and the move he just started (a dash, a jump, a blink, a dive, a
+// slam, a blow) with what it needs.
 public record ThorStatePayload(int entity, int flags, int move, int arg) implements CustomPacketPayload {
     public static final CustomPacketPayload.Type<ThorStatePayload> TYPE = new CustomPacketPayload.Type<>(
             ResourceLocation.fromNamespaceAndPath(MultiversePowers.MODID, "thor_state"));
@@ -21,6 +22,7 @@ public record ThorStatePayload(int entity, int flags, int move, int arg) impleme
     public static final int FLOATING = 2;
     public static final int LIGHTNING = 4;
     public static final int CARRYING = 8;
+    public static final int CHARGING = 16;
 
     // The move carried along: only when one starts, else NONE (a change of flags alone).
     public static final int NONE = 0;
@@ -31,6 +33,8 @@ public record ThorStatePayload(int entity, int flags, int move, int arg) impleme
     public static final int SLAM = 5;
     public static final int TAKE_OFF = 6;
     public static final int TOUCH_DOWN = 7;
+    // A blow of his combo: the arg is which (ThorBlow).
+    public static final int BLOW = 8;
 
     public static void send(ServerPlayer player, int flags, int move, int arg) {
         PacketDistributor.sendToPlayersTrackingEntityAndSelf(player,

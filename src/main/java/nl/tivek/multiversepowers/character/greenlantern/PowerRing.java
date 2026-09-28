@@ -38,7 +38,6 @@ import nl.tivek.multiversepowers.character.greenlantern.ability.slam.LandingSlam
 import nl.tivek.multiversepowers.character.greenlantern.ability.slam.Shockwave;
 import nl.tivek.multiversepowers.character.greenlantern.ability.sword.SwordShield;
 import nl.tivek.multiversepowers.character.greenlantern.ability.whip.EnergyWhip;
-import nl.tivek.multiversepowers.config.PowerRules;
 import nl.tivek.multiversepowers.engine.effect.Effects;
 import nl.tivek.multiversepowers.engine.fx.Voices;
 import nl.tivek.multiversepowers.faction.Factions;
@@ -139,12 +138,11 @@ public final class PowerRing {
 
     public static boolean canHit(ServerPlayer owner, Entity entity) {
         if (entity == owner || !(entity instanceof LivingEntity living) || !living.isAlive() || entity.isSpectator()
-                || entity instanceof ArmorStand || Factions.friendly(owner, entity)) {
+                || entity instanceof ArmorStand || !Factions.mayHit(owner, entity)) {
             return false;
         }
         if (entity instanceof Player other) {
-            return owner.server.isPvpAllowed() && PowerRules.hurtPlayers() && !other.isCreative()
-                    && owner.canHarmPlayer(other);
+            return owner.server.isPvpAllowed() && !other.isCreative() && owner.canHarmPlayer(other);
         }
         return true;
     }

@@ -15,6 +15,7 @@ import net.neoforged.neoforge.client.event.ClientTickEvent;
 import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.character.thor.ThorStatePayload;
 import nl.tivek.multiversepowers.engine.math.Vectors;
+import nl.tivek.multiversepowers.spell.client.ClientClaps;
 
 // What every Thor in sight is doing, as his server tells it (and, for your own, as your game already did it): whether
 // he flies, floats or carries someone, and the move he last started and when.
@@ -29,6 +30,12 @@ public final class ClientThor {
         // The move this game started itself, and when: the server's word of the same move is not taken twice.
         int predicted = ThorStatePayload.NONE;
         int predictedAt;
+        // His last two blows (ThorBlow) and when they started, so one flows into the next; kept apart from the move
+        // so a blow never cuts a dash or a landing short.
+        int blow = -1;
+        int blowStart;
+        int lastBlow = -1;
+        int lastBlowStart;
 
         public boolean has(int flag) {
             return (this.flags & flag) != 0;
@@ -46,9 +53,19 @@ public final class ClientThor {
         public float age(float partialTick) {
             return ticks - this.start + partialTick;
         }
+
+        float blowAge(float partialTick) {
+            return ticks - this.blowStart + partialTick;
+        }
+
+        float lastBlowAge(float partialTick) {
+            return ticks - this.lastBlowStart + partialTick;
+        }
     }
 
     private static final int ECHO = 10;
+    // A Thor who has thrown a blow this recently is kept in view, fists up, though nothing else goes on.
+    static final int GUARD = 60;
     private static final Int2ObjectOpenHashMap<View> VIEWS = new Int2ObjectOpenHashMap<>();
     private static int ticks;
 
@@ -69,8 +86,16 @@ public final class ClientThor {
         View view = VIEWS.computeIfAbsent(payload.entity(), id -> new View());
         Minecraft minecraft = Minecraft.getInstance();
         boolean own = minecraft.player != null && minecraft.player.getId() == payload.entity();
+        // Your own wind-up is shown by your own game, the moment you hold the button.
+        if (!own && view.has(ThorStatePayload.CHARGING) != ((payload.flags() & ThorStatePayload.CHARGING) != 0)) {
+            ClientClaps.charging(payload.entity(), !view.has(ThorStatePayload.CHARGING));
+        }
         view.flags = payload.flags();
-        if (payload.move() != ThorStatePayload.NONE) {
+        if (payload.move() == ThorStatePayload.BLOW) {
+            if (!own) {
+                blow(view, payload.arg());
+            }
+        } else if (payload.move() != ThorStatePayload.NONE) {
             boolean echo = own && view.predicted == payload.move() && ticks - view.predictedAt <= ECHO;
             if (!echo) {
                 start(view, payload.move(), payload.arg());
@@ -82,9 +107,25 @@ public final class ClientThor {
         if (own) {
             ThorMotion.told(view);
         }
-        if (view.flags == 0 && view.move == ThorStatePayload.NONE) {
+        if (view.flags == 0 && view.move == ThorStatePayload.NONE && (view.blow < 0 || ticks - view.blowStart > GUARD)) {
             VIEWS.remove(payload.entity());
         }
+    }
+
+    // A blow your own game threw: shown at once, the server's word of it is not taken again.
+    static void predictBlow(Entity entity, int index) {
+        blow(VIEWS.computeIfAbsent(entity.getId(), id -> new View()), index);
+    }
+
+    private static void blow(View view, int index) {
+        view.lastBlow = view.blow;
+        view.lastBlowStart = view.blowStart;
+        view.blow = index;
+        view.blowStart = ticks;
+    }
+
+    static int ticks() {
+        return ticks;
     }
 
     // Your own game started a move: shown at once, without waiting for the server.

@@ -334,7 +334,7 @@ abstract class GiantHandBase {
 
     List<LivingEntity> near(ServerLevel level, double range) {
         return level.getEntitiesOfClass(LivingEntity.class, new AABB(this.base, this.base).inflate(range * SCALE),
-                entity -> fair(this.storm.owner, entity));
+                entity -> PowerRing.canHit(this.storm.owner, entity));
     }
 
     void hit(ServerLevel level, LivingEntity living, double damage, Vec3 away, double out, double up) {

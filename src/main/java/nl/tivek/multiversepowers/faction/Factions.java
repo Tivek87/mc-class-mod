@@ -22,7 +22,6 @@ import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 import nl.tivek.multiversepowers.MultiversePowers;
-import nl.tivek.multiversepowers.config.PowerRules;
 
 @EventBusSubscriber(modid = MultiversePowers.MODID)
 public final class Factions {
@@ -75,14 +74,17 @@ public final class Factions {
     }
 
     public static boolean hostile(ServerPlayer viewer, Entity entity) {
-        if (entity instanceof Player && !PowerRules.hurtPlayers()) {
-            return false;
-        }
         return standing(viewer, entity) == Standing.HOSTILE;
     }
 
-    public static boolean friendly(ServerPlayer viewer, Entity entity) {
-        return standing(viewer, entity) == Standing.FRIENDLY;
+    // Anyone may be hit, whatever their standing, but never by yourself and never a player of your own team.
+    public static boolean mayHit(ServerPlayer attacker, Entity target) {
+        return target != attacker && !sameTeam(attacker, target);
+    }
+
+    private static boolean sameTeam(Player player, Entity other) {
+        PlayerTeam team = player.getTeam();
+        return team != null && other instanceof Player them && them.getTeam() == team;
     }
 
     static String key(Player player) {
@@ -104,7 +106,7 @@ public final class Factions {
     public static void onIncomingDamage(LivingIncomingDamageEvent event) {
         LivingEntity victim = event.getEntity();
         if (event.getSource().getEntity() instanceof ServerPlayer attacker && attacker != victim
-                && friendly(attacker, victim)) {
+                && sameTeam(attacker, victim)) {
             event.setCanceled(true);
         }
     }

@@ -3,7 +3,6 @@ package nl.tivek.multiversepowers.spell.client;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.phys.Vec3;
-import nl.tivek.multiversepowers.character.GameCharacter;
 import nl.tivek.multiversepowers.config.client.ClientSettings;
 import nl.tivek.multiversepowers.engine.client.fx.CameraShake;
 import nl.tivek.multiversepowers.engine.client.fx.ScreenFlash;
@@ -19,10 +18,13 @@ import org.joml.Vector3f;
 
 // The thunder clap, blasting out of the hands the way the caster aims: a blinding light between them, a bubble of
 // bent light in which time all but stands still rolling ahead with the shock, a spray of thunder sparks crawling
-// inside it, rings rippling out over the ground and a wall of mist rolling out.
+// inside it, forked lightning sparks crackling through the wave as it rolls (never a bolt from the sky), rings
+// rippling out over the ground and a wall of mist rolling out.
 final class ClapFx {
     static final int LIFE = 46;
     // The same reach and cone as the hits in Thunderclap.
+    static final double REACH = 9.0;
+    static final double HALF_ANGLE = 0.8;
     private static final int FLASH = 8;
     private static final int BUBBLE = 12;
     private static final double BUBBLE_SIZE = 4.0;
@@ -34,6 +36,10 @@ final class ClapFx {
     private static final double RIPPLE_TICKS = 22.0;
     private static final double SHAKE_REACH = 32.0;
     private static final double FLASH_REACH = 20.0;
+    // The lightning sparks: how many at once, for how long, and how fast the wave they ride rolls (as Thunderclap).
+    private static final int ARCS = 14;
+    private static final double ARC_TICKS = 12.0;
+    private static final double WAVE = 2.25;
 
     private static final int WHITE = 0xF4FBFF;
     private static final int PALE = 0xBFE8FF;
@@ -73,17 +79,8 @@ final class ClapFx {
     }
 
     // A direction inside the blast's cone, picked by a noise value from 0 to 1: turned about the aim's own up.
-    // The thunderclap as the world settings have it, so the blast drawn covers what it hits.
-    static double reach() {
-        return GameCharacter.THOR.byName("thunderclap").value("radiusBlocks");
-    }
-
-    static double halfAngle() {
-        return Math.toRadians(GameCharacter.THOR.byName("thunderclap").value("halfAngleDegrees"));
-    }
-
     static Vec3 within(Vec3 ahead, double pick) {
-        return Vectors.spin(ahead, across(ahead).cross(ahead), (pick * 2.0 - 1.0) * halfAngle());
+        return Vectors.spin(ahead, across(ahead).cross(ahead), (pick * 2.0 - 1.0) * HALF_ANGLE);
     }
 
     // The first tick of a clap: every player feels it by how close they are.
@@ -107,6 +104,7 @@ final class ClapFx {
         light(painter, hands, age, seed);
         bubble(painter, hands, ahead, age);
         streaks(painter, hands, ahead, age, seed);
+        arcs(painter, hands, ahead, age, seed);
         ripples(painter, hands, ahead, age, seed);
         dust(painter, hands, ahead, age, seed);
     }
@@ -176,6 +174,53 @@ final class ClapFx {
         }
     }
 
+    // Lightning sparks: short forked arcs crackling in the wave as it rolls out, each struck anew somewhere else every
+    // tick, fewer and fainter as the wave spends itself.
+    private static void arcs(ConstructPainter painter, Vec3 hands, Vec3 ahead, double age, int seed) {
+        if (age >= ARC_TICKS) {
+            return;
+        }
+        double left = 1.0 - age / ARC_TICKS;
+        double front = Math.min(REACH, (age + 1.0) * WAVE);
+        int tick = (int) age;
+        int step = ClientSettings.detailStep();
+        for (int k = 0; k < ARCS; k += step) {
+            int s = seed * 31 + tick * 97 + k;
+            if (Noise.of(s, k, 61) > 0.35 + 0.6 * left) {
+                continue;
+            }
+            Vec3 way = within(ahead, Noise.of(s, k, 63));
+            double along = 0.8 + (front - 0.8) * (0.35 + 0.65 * Noise.of(s, k, 62));
+            Vec3 start = hands.add(way.scale(along)).add(0.0, (Noise.of(s, k, 64) - 0.5) * 1.4, 0.0);
+            Vec3 dir = new Vec3(Noise.of(s, k, 65) - 0.5, Noise.of(s, k, 66) - 0.5, Noise.of(s, k, 67) - 0.5);
+            dir = dir.lengthSqr() < 1.0E-4 ? way : dir.normalize();
+            jagged(painter, start, dir, 0.7 + 1.5 * Noise.of(s, k, 68), 5, s, left, true);
+        }
+    }
+
+    // One crackling arc: a line broken into kinks, now and then forking half way.
+    private static void jagged(ConstructPainter painter, Vec3 from, Vec3 dir, double length, int kinks, int seed,
+            double fade, boolean fork) {
+        Vec3 side = across(dir);
+        Vec3 up = side.cross(dir).normalize();
+        double kink = length / kinks * 0.9;
+        Vec3 last = from;
+        for (int i = 1; i <= kinks; i++) {
+            Vec3 next = from.add(dir.scale(length * i / kinks));
+            if (i < kinks) {
+                next = next.add(side.scale((Noise.of(seed, i, 71) - 0.5) * kink))
+                        .add(up.scale((Noise.of(seed, i, 72) - 0.5) * kink));
+            }
+            painter.lightLine(last, next, 0.03, WHITE, Colors.alpha(0.95 * fade));
+            painter.glowLine(last, next, 0.22, BLUE, Colors.alpha(0.45 * fade));
+            if (fork && i == kinks / 2 && Noise.of(seed, i, 73) < 0.6) {
+                Vec3 off = dir.add(side.scale(Noise.of(seed, i, 74) - 0.5)).add(up.scale(0.6)).normalize();
+                jagged(painter, next, off, length * 0.45, 3, seed + 7, fade * 0.8, false);
+            }
+            last = next;
+        }
+    }
+
     // The mist wall: puffs rolling out of the hands the way they aim, swelling, then hanging and thinning as a haze.
     private static void dust(ConstructPainter painter, Vec3 hands, Vec3 ahead, double age, int seed) {
         double left = 1.0 - age / LIFE;
@@ -186,7 +231,7 @@ final class ClapFx {
         int every = ClientSettings.detailStep();
         for (int k = 0; k < PUFFS; k += every) {
             Vec3 way = within(ahead, Noise.of(seed, k, 11));
-            double reach = 1.0 + reach() * (0.2 + 0.85 * Noise.of(seed, k, 12)) * rolled;
+            double reach = 1.0 + REACH * (0.2 + 0.85 * Noise.of(seed, k, 12)) * rolled;
             double drift = (Noise.of(seed, k, 13) - 0.5) * 1.2 * rolled + age * 0.02;
             Vec3 at = hands.add(way.scale(reach)).add(0.0, drift, 0.0);
             double size = 0.7 + 1.5 * rolled + age * 0.04;

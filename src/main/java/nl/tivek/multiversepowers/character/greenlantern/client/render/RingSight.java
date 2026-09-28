@@ -38,7 +38,6 @@ import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.character.greenlantern.ability.ring.RingScan;
 import nl.tivek.multiversepowers.character.greenlantern.ability.ring.ScanGlow;
 import nl.tivek.multiversepowers.character.greenlantern.client.ClientConstructs;
-import nl.tivek.multiversepowers.config.client.ClientSettings;
 import nl.tivek.multiversepowers.engine.math.Colors;
 import nl.tivek.multiversepowers.engine.math.Ease;
 import nl.tivek.multiversepowers.engine.math.Vectors;
@@ -179,8 +178,7 @@ public final class RingSight {
 
     @SubscribeEvent
     public static void onRenderLevel(RenderLevelStageEvent event) {
-        if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_WEATHER || MARKED.isEmpty()
-                || !ClientSettings.on(ClientSettings.RING_SIGHT)) {
+        if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_WEATHER || MARKED.isEmpty()) {
             return;
         }
         Minecraft minecraft = Minecraft.getInstance();

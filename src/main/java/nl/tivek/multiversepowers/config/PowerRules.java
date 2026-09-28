@@ -12,10 +12,6 @@ public final class PowerRules {
     public static final ModConfigSpec.DoubleValue DAMAGE;
     public static final ModConfigSpec.DoubleValue COOLDOWNS;
     public static final ModConfigSpec.IntValue BREAK_BLOCKS;
-    public static final ModConfigSpec.DoubleValue POWER_COST;
-    public static final ModConfigSpec.IntValue HURT_PLAYERS;
-    public static final ModConfigSpec.DoubleValue EFFECT_RANGE;
-    public static final ModConfigSpec.DoubleValue KNOCKDOWN;
     public static final ModConfigSpec.IntValue SPELLS;
     public static final ModConfigSpec.ConfigValue<List<? extends String>> OWNERS;
     // The characters' ids (GameCharacter's own, which this file cannot load before its settings exist).
@@ -35,18 +31,6 @@ public final class PowerRules {
                 .defineInRange("cooldownMultiplier", 1.0, 0.0, 10.0);
         BREAK_BLOCKS = builder.comment("Whether powers may break blocks (1 = yes, 0 = never)")
                 .defineInRange("breakBlocks", 1, 0, 1);
-        POWER_COST = builder.comment("Multiplies what every power costs of the ring's power (1 = as set per ability,"
-                + " 0 = free; a full ring's flight lasts as much shorter)")
-                .defineInRange("powerCostMultiplier", 1.0, 0.0, 10.0);
-        HURT_PLAYERS = builder.comment("Whether powers may hurt other players, where the server allows PvP at all"
-                + " (1 = yes, 0 = never)")
-                .defineInRange("hurtPlayers", 1, 0, 1);
-        EFFECT_RANGE = builder.comment("Multiplies how far away players still see the powers' particles (1 = 128"
-                + " blocks for big effects, 32 for small ones)")
-                .defineInRange("effectRangeMultiplier", 1.0, 0.25, 3.0);
-        KNOCKDOWN = builder.comment("How long a creature thrown by a power stays down after it lands before it moves"
-                + " again, in seconds (0 = it gets up at once)")
-                .defineInRange("knockdownSeconds", 3.75, 0.0, 15.0);
         builder.pop();
         builder.comment("Which characters and spells can be chosen in this world. One switched off is taken away from"
                 + " whoever is it.").push("characters");
@@ -74,28 +58,8 @@ public final class PowerRules {
         return SPEC.isLoaded() ? DAMAGE.get() : DAMAGE.getDefault();
     }
 
-    private static double get(ModConfigSpec.DoubleValue value) {
-        return SPEC.isLoaded() ? value.get() : value.getDefault();
-    }
-
     private static int get(ModConfigSpec.IntValue value) {
         return SPEC.isLoaded() ? value.get() : value.getDefault();
-    }
-
-    public static double powerCost() {
-        return get(POWER_COST);
-    }
-
-    public static boolean hurtPlayers() {
-        return get(HURT_PLAYERS) != 0;
-    }
-
-    public static double effectRange() {
-        return get(EFFECT_RANGE);
-    }
-
-    public static int knockdownTicks() {
-        return (int) Math.round(get(KNOCKDOWN) * 20.0);
     }
 
     public static boolean spells() {

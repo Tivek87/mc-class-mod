@@ -18,7 +18,6 @@ import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import nl.tivek.multiversepowers.character.greenlantern.PowerRing;
-import nl.tivek.multiversepowers.character.greenlantern.ability.hands.GiantHands;
 import nl.tivek.multiversepowers.character.greenlantern.duo.HandDuo;
 import nl.tivek.multiversepowers.character.greenlantern.duo.RevolverDuo;
 import nl.tivek.multiversepowers.character.greenlantern.duo.RevolverGun;
@@ -246,7 +245,7 @@ final class RevolverBeats {
         }
         double damage = show.ability.value("revolverShotDamage");
         for (LivingEntity living : level.getEntitiesOfClass(LivingEntity.class,
-                new AABB(muzzle, end).inflate(SHOT_WIDE + 1.0), entity -> GiantHands.fair(show.owner, entity))) {
+                new AABB(muzzle, end).inflate(SHOT_WIDE + 1.0), entity -> PowerRing.canHit(show.owner, entity))) {
             AABB box = living.getBoundingBox().inflate(SHOT_WIDE);
             if (box.contains(muzzle) || box.clip(muzzle, end).isPresent()) {
                 hit(show, level, living, damage, way, 0.9, 0.25);
@@ -293,7 +292,7 @@ final class RevolverBeats {
         double reach = SLAM_REACH * show.stage.scale() * (1.0 + 0.15 * i);
         double damage = show.ability.value("revolverSlamDamage");
         for (LivingEntity living : level.getEntitiesOfClass(LivingEntity.class,
-                new AABB(ground, ground).inflate(reach + 2.0), entity -> GiantHands.fair(show.owner, entity))) {
+                new AABB(ground, ground).inflate(reach + 2.0), entity -> PowerRing.canHit(show.owner, entity))) {
             Vec3 to = living.position().subtract(ground);
             Vec3 flat = new Vec3(to.x, 0.0, to.z);
             double out = flat.length();

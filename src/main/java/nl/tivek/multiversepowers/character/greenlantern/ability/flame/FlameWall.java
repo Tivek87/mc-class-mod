@@ -25,7 +25,6 @@ import nl.tivek.multiversepowers.character.greenlantern.construct.ConstructPaylo
 import nl.tivek.multiversepowers.engine.effect.Effect;
 import nl.tivek.multiversepowers.engine.effect.Effects;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
-import nl.tivek.multiversepowers.faction.Factions;
 
 public final class FlameWall implements Effect {
     public static final int LAY_TICKS = FlameMove.LAY_TO - FlameMove.LAY_FROM;
@@ -138,7 +137,7 @@ public final class FlameWall implements Effect {
             ParticleFx.line(level, ParticleFx.dust(0xE4FFEA, 1.6F), this.center.add(this.along.scale(-half))
                     .add(0.0, 1.2, 0.0), this.center.add(this.along.scale(half)).add(0.0, 1.2, 0.0), 0.3);
         }
-        for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, zone, this::hostile)) {
+        for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, zone, this::fair)) {
             Vec3 rel = target.position().subtract(this.center);
             double d = rel.dot(this.normal);
             double s = rel.dot(this.along);
@@ -184,8 +183,8 @@ public final class FlameWall implements Effect {
         }
     }
 
-    private boolean hostile(LivingEntity living) {
-        return PowerRing.canHit(this.owner, living) && Factions.hostile(this.owner, living);
+    private boolean fair(LivingEntity living) {
+        return PowerRing.canHit(this.owner, living);
     }
 
     private void send(ServerLevel level) {

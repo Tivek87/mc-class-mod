@@ -286,8 +286,7 @@ public final class ClientFlight extends FlightSteering {
         }
         double fast = Mth.clamp(velocity.length() / fullSpeed(), 0.0, 1.0);
         float effect = Minecraft.getInstance().options.fovEffectScale().get().floatValue();
-        float wide = 0.14F * ClientSettings.factor(ClientSettings.SPEED_FOV);
-        event.setNewFovModifier(event.getNewFovModifier() * (1.0F + wide * (float) fast * effect));
+        event.setNewFovModifier(event.getNewFovModifier() * (1.0F + 0.14F * (float) fast * effect));
     }
 
     private static float scrapeShake(LocalPlayer player) {
@@ -333,15 +332,14 @@ public final class ClientFlight extends FlightSteering {
             float up = (float) (Ease.smooth((slammed - 3.0) / 3.0)
                     * (1.0 - Ease.smooth((slammed - LandingSlam.HANG_TICKS)
                     / (LandingSlam.IMPACT_TICK - LandingSlam.HANG_TICKS))));
-            float tilt = ClientSettings.factor(ClientSettings.VIEW_TILT);
-            event.setPitch(event.getPitch() + (20.0F * dip - look * up) * tilt);
+            event.setPitch(event.getPitch() + 20.0F * dip - look * up);
         }
         float t = ClientRing.flight(player, partialTick);
         if (t < GATHER || t > ARISE + 6.0F) {
             return;
         }
         float up = (float) Math.sin(Math.PI * Mth.clamp((t - GATHER) / (ARISE + 6.0F - GATHER), 0.0F, 1.0F));
-        event.setPitch(event.getPitch() - 9.0F * up * ClientSettings.factor(ClientSettings.VIEW_TILT));
+        event.setPitch(event.getPitch() - 9.0F * up);
     }
 
     @SubscribeEvent

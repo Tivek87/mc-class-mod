@@ -22,9 +22,7 @@ import nl.tivek.multiversepowers.engine.effect.Effects;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 import nl.tivek.multiversepowers.engine.target.Targeting;
 import nl.tivek.multiversepowers.faction.Factions;
-import nl.tivek.multiversepowers.spell.Spell;
 import nl.tivek.multiversepowers.spell.SpellFxPayload;
-import nl.tivek.multiversepowers.spell.SpellRules;
 import nl.tivek.multiversepowers.spell.SpellTargets;
 
 public final class WindGustSpell {
@@ -32,6 +30,8 @@ public final class WindGustSpell {
     private static final double WAVE_SPEED = 1.0;
     // Degrees, not radians: used with Math.toRadians below.
     private static final double HALF_ANGLE = 50.0;
+    private static final double STRENGTH = 2.2;
+    private static final double LIFT = 0.55;
     private static final int CUSHION = 20;
 
     private static final int WIND = 0xE8F4F8;
@@ -140,10 +140,10 @@ public final class WindGustSpell {
                 continue;
             }
             hit.add(target.getUUID());
-            double strength = SpellRules.value(Spell.WIND_GUST, "strength") * (1.0 - distance / RANGE * 0.6);
+            double strength = STRENGTH * (1.0 - distance / RANGE * 0.6);
             Vec3 flat = new Vec3(toTarget.x, 0, toTarget.z);
             Vec3 direction = flat.lengthSqr() < 1.0E-4 ? new Vec3(look.x, 0, look.z).normalize() : flat.normalize();
-            SpellTargets.push(target, direction, strength, SpellRules.value(Spell.WIND_GUST, "lift"));
+            SpellTargets.push(target, direction, strength, LIFT);
             if (target.isOnFire()) {
                 target.clearFire();
             }
@@ -172,7 +172,7 @@ public final class WindGustSpell {
             }
             if (thing instanceof Projectile shot) {
                 Entity shooter = shot.getOwner();
-                if (caster == null || shooter == caster || shooter != null && !Factions.hostile(caster, shooter)
+                if (caster == null || shooter == caster || shooter != null && !Factions.mayHit(caster, shooter)
                         || shot.getDeltaMovement().lengthSqr() < 0.04) {
                     continue;
                 }

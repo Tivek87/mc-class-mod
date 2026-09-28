@@ -142,7 +142,7 @@ public abstract class FlameHits implements Effect {
         double radius = wheel.value("vortexRadius") * (blast ? 1.35 : 1.0);
         Vec3 at = this.owner.position();
         for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, new AABB(at, at).inflate(radius
-                + 1.0, VORTEX_TALL, radius + 1.0), this::hostile)) {
+                + 1.0, VORTEX_TALL, radius + 1.0), this::fair)) {
             Vec3 to = target.position().subtract(at);
             double flat = Math.sqrt(to.x * to.x + to.z * to.z);
             if (flat > radius + target.getBbWidth() * 0.5 || to.y < -1.5 || to.y > VORTEX_TALL) {
@@ -176,10 +176,11 @@ public abstract class FlameHits implements Effect {
         }
     }
 
-    // Only what hostiles shoot, or what nobody shot, burns up, and only while it flies: arrows in the ground stay.
+    // What anyone but the owner's own team shot, or what nobody shot, burns up, and only while it flies: arrows in the
+    // ground stay.
     public static boolean burnsUp(ServerPlayer owner, Projectile shot) {
         Entity shooter = shot.getOwner();
-        return shooter != owner && (shooter == null || Factions.hostile(owner, shooter))
+        return shooter != owner && (shooter == null || Factions.mayHit(owner, shooter))
                 && shot.getDeltaMovement().lengthSqr() > FLYING * FLYING;
     }
 
@@ -236,10 +237,6 @@ public abstract class FlameHits implements Effect {
     private boolean fair(LivingEntity living) {
         return PowerRing.canHit(this.owner, living)
                 && !(living instanceof OwnableEntity pet && pet.getOwner() == this.owner);
-    }
-
-    private boolean hostile(LivingEntity living) {
-        return this.fair(living) && Factions.hostile(this.owner, living);
     }
 
     static Vec3 flat(Vec3 way) {

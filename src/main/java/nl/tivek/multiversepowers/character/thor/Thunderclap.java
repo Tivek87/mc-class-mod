@@ -17,7 +17,6 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
-import nl.tivek.multiversepowers.character.GameCharacter;
 import nl.tivek.multiversepowers.engine.effect.Effects;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 import nl.tivek.multiversepowers.engine.math.Vectors;
@@ -26,11 +25,21 @@ import nl.tivek.multiversepowers.spell.ClapPayload;
 import nl.tivek.multiversepowers.spell.SpellFxPayload;
 import nl.tivek.multiversepowers.spell.SpellTargets;
 
-// Thor claps his hands with a crack of thunder: static builds between them as they draw apart, and when they meet a
-// shockwave rolls out the way he looks, hurting and throwing what wants to hurt him. ClapFx draws it.
+// Thor winds up while the button is held, leaning back with his arms flung wide (his game shows it, and ThorMoves tells
+// the others), then slams his hands together with a crack of thunder: static crackles in them as they meet, a
+// shockwave full of lightning sparks rolls out the way he looks, hurting and throwing what stands in it, and thunder
+// rolls on in the distance after it. ClapFx draws it.
 final class Thunderclap {
     private static final int MEET = ClapPayload.HANDS_MEET;
+    // Ticks after the clap when its thunder rolls in from afar.
+    private static final int DISTANT = 9;
+    // ClapFx draws the blast in the same cone, reach and pace.
+    private static final double RADIUS = 9.0;
+    private static final double HALF_ANGLE = 0.8;
     private static final double CONE_BACK = 1.0;
+    private static final double WAVE_SPEED = 2.25;
+    private static final double STRENGTH = 1.6;
+    private static final double LIFT = 0.45;
     private static final double OFF_WALL = 0.3;
 
     private static final int GLOW = 0x00D2FF;
@@ -39,6 +48,7 @@ final class Thunderclap {
     }
 
     static boolean cast(ServerPlayer player, ServerLevel level, float damage) {
+        ThorMoves.charging(player, false);
         ClapPayload.send(player);
         UUID casterId = player.getUUID();
         int casterEntity = player.getId();
@@ -69,11 +79,16 @@ final class Thunderclap {
             if (t == 0) {
                 boom(lvl, casterEntity, hands(eye[0], ahead[0]), aim[0], feet[0]);
             }
-            double front = (t + 1) * setting("waveSpeed");
-            if (caster != null && front < setting("radiusBlocks") + setting("waveSpeed")) {
-                push(lvl, caster, eye[0], ahead[0], Math.min(front, setting("radiusBlocks")), hit, damage);
+            if (t == DISTANT) {
+                Vec3 far = feet[0];
+                lvl.playSound(null, far.x, far.y, far.z, SoundEvents.LIGHTNING_BOLT_THUNDER, SoundSource.WEATHER, 2.0F,
+                        0.6F);
             }
-            return front < setting("radiusBlocks") + setting("waveSpeed");
+            double front = (t + 1) * WAVE_SPEED;
+            if (caster != null && front < RADIUS + WAVE_SPEED) {
+                push(lvl, caster, eye[0], ahead[0], Math.min(front, RADIUS), hit, damage);
+            }
+            return t < DISTANT || front < RADIUS + WAVE_SPEED;
         });
         return true;
     }
@@ -87,7 +102,7 @@ final class Thunderclap {
     private static Vec3 aimed(ServerLevel level, ServerPlayer player) {
         Vec3 eye = player.getEyePosition();
         Vec3 look = player.getLookAngle();
-        Vec3 end = eye.add(look.scale(setting("radiusBlocks")));
+        Vec3 end = eye.add(look.scale(RADIUS));
         BlockHitResult block = LoadedWorld.clip(level, new ClipContext(eye, end, ClipContext.Block.COLLIDER,
                 ClipContext.Fluid.NONE, player));
         Vec3 stop = block.getType() == HitResult.Type.MISS ? end : block.getLocation();
@@ -107,20 +122,19 @@ final class Thunderclap {
         return right.lengthSqr() < 1.0E-6 ? new Vec3(1.0, 0.0, 0.0) : right.normalize();
     }
 
-    // Static builds in the spread hands while the arms are drawn back, stronger the closer the clap comes.
+    // Static crackles in the hands as they slam together from wide apart.
     private static void gather(ServerLevel level, ServerPlayer player, int age) {
         Vec3 forward = player.getLookAngle();
         Vec3 right = side(forward);
         Vec3 clap = hands(player.getEyePosition(), forward);
-        double snap = Math.max(0.0, (age - (MEET - 2)) / 2.0);
-        double spread = Math.min(1.0, age / 5.0) * (1.0 - snap * snap);
-        int sparks = 1 + age / 3;
+        double shut = (age + 1.0) / MEET;
+        double spread = 1.0 - shut * shut;
         for (int side = -1; side <= 1; side += 2) {
-            Vec3 hand = clap.add(forward.scale(-0.35 * spread)).add(right.scale(side * (0.06 + 0.8 * spread)));
-            ParticleFx.cloud(level, ParticleTypes.ELECTRIC_SPARK, hand, sparks, 0.1, 0.06);
-            ParticleFx.at(level, ParticleFx.dust(GLOW, 0.4F + 0.05F * age), hand);
+            Vec3 hand = clap.add(forward.scale(-0.5 * spread)).add(right.scale(side * (0.06 + 1.1 * spread)));
+            ParticleFx.cloud(level, ParticleTypes.ELECTRIC_SPARK, hand, 4, 0.12, 0.08);
+            ParticleFx.at(level, ParticleFx.dust(GLOW, 0.9F), hand);
         }
-        if (age == MEET - 3) {
+        if (age == 0) {
             level.playSound(null, clap.x, clap.y, clap.z, SoundEvents.TRIDENT_RIPTIDE_1.value(), SoundSource.PLAYERS,
                     0.7F, 1.6F);
         }
@@ -134,9 +148,9 @@ final class Thunderclap {
         level.playSound(null, clap.x, clap.y, clap.z, SoundEvents.BREEZE_WIND_CHARGE_BURST.value(),
                 SoundSource.PLAYERS, 2.0F, 0.55F);
         level.playSound(null, clap.x, clap.y, clap.z, SoundEvents.LIGHTNING_BOLT_THUNDER, SoundSource.PLAYERS, 3.0F,
-                1.0F);
-        level.playSound(null, clap.x, clap.y, clap.z, SoundEvents.LIGHTNING_BOLT_IMPACT, SoundSource.PLAYERS, 2.0F,
                 0.8F);
+        level.playSound(null, clap.x, clap.y, clap.z, SoundEvents.LIGHTNING_BOLT_IMPACT, SoundSource.PLAYERS, 2.0F,
+                1.1F);
         level.playSound(null, clap.x, clap.y, clap.z, SoundEvents.TRIDENT_THUNDER.value(), SoundSource.PLAYERS, 1.5F,
                 1.2F);
     }
@@ -145,7 +159,7 @@ final class Thunderclap {
     private static void push(ServerLevel level, ServerPlayer caster, Vec3 eye, Vec3 ahead, double front,
             Set<UUID> hit, float damage) {
         Vec3 origin = eye.subtract(ahead.scale(CONE_BACK));
-        double cone = Math.cos(Math.toRadians(setting("halfAngleDegrees")));
+        double cone = Math.cos(HALF_ANGLE);
         for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class,
                 new AABB(eye, eye).inflate(front + 2.0),
                 entity -> SpellTargets.hits(caster, entity) && !hit.contains(entity.getUUID()))) {
@@ -157,11 +171,11 @@ final class Thunderclap {
             }
             hit.add(target.getUUID());
             Vec3 way = away.normalize();
-            double close = 1.0 - 0.5 * distance / setting("radiusBlocks");
+            double close = 1.0 - 0.5 * distance / RADIUS;
             target.invulnerableTime = 0;
             target.hurt(level.damageSources().playerAttack(caster), (float) (damage * close));
-            SpellTargets.push(target, way, setting("push") * (0.5 + 0.5 * close),
-                    setting("lift") + Math.max(0.0, way.y) * setting("push") * 0.5);
+            SpellTargets.push(target, way, STRENGTH * (0.5 + 0.5 * close),
+                    LIFT + Math.max(0.0, way.y) * STRENGTH * 0.5);
             ParticleFx.cloud(level, ParticleTypes.ELECTRIC_SPARK, target.getBoundingBox().getCenter(), 14, 0.35, 0.2);
         }
     }
@@ -172,10 +186,5 @@ final class Thunderclap {
         Vec3 onLine = origin.add(ahead.scale(Math.max(0.0, middle.subtract(origin).dot(ahead))));
         return new Vec3(Mth.clamp(onLine.x, box.minX, box.maxX), Mth.clamp(onLine.y, box.minY, box.maxY),
                 Mth.clamp(onLine.z, box.minZ, box.maxZ));
-    }
-
-    // ClapFx draws the blast in the same cone and reach.
-    private static double setting(String key) {
-        return GameCharacter.THOR.byName("thunderclap").value(key);
     }
 }

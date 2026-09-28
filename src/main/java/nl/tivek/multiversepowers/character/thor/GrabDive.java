@@ -14,7 +14,6 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-import nl.tivek.multiversepowers.character.GameCharacter;
 import nl.tivek.multiversepowers.engine.effect.Effects;
 import nl.tivek.multiversepowers.engine.entity.HeldMobs;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
@@ -25,6 +24,10 @@ import nl.tivek.multiversepowers.spell.SpellTargets;
 // The grab-dash dive: in flight Thor dives at what he aims at, grabs it on the way and drives it into the ground,
 // where the slam ends his flight. Aimed at nothing, he dives at the ground he looks at and slams there.
 final class GrabDive {
+    private static final double REACH = 32.0;
+    private static final double GRAB = 2.2;
+    private static final int LONGEST = 80;
+    private static final double SLAM_RADIUS = 4.5;
 
     private final ThorMoves moves;
     private final float damage;
@@ -46,7 +49,7 @@ final class GrabDive {
             return false;
         }
         ServerLevel level = player.serverLevel();
-        LivingEntity target = Targeting.aimLiving(player, level, setting("reachBlocks"));
+        LivingEntity target = Targeting.aimLiving(player, level, REACH);
         GrabDive dive = new GrabDive(moves, target, damage);
         moves.dive = dive;
         moves.sync(ThorStatePayload.DIVE, target == null ? 0 : target.getId() + 1);
@@ -65,7 +68,7 @@ final class GrabDive {
             return false;
         }
         ServerPlayer owner = this.moves.owner();
-        if (++this.age > setting("carryTicks") || !owner.isAlive() || owner.level() != level) {
+        if (++this.age > LONGEST || !owner.isAlive() || owner.level() != level) {
             this.end();
             return false;
         }
@@ -79,8 +82,7 @@ final class GrabDive {
             return true;
         }
         if (!this.carried) {
-            double apart = owner.getBoundingBox().getCenter().distanceTo(held.getBoundingBox().getCenter());
-            if (apart < setting("grabBlocks")) {
+            if (owner.getBoundingBox().getCenter().distanceTo(held.getBoundingBox().getCenter()) < GRAB) {
                 this.grab(level, owner, held);
             }
             return true;
@@ -131,18 +133,17 @@ final class GrabDive {
             hit.add(held);
         }
         for (LivingEntity near : level.getEntitiesOfClass(LivingEntity.class, new AABB(center, center)
-                .inflate(setting("slamRadiusBlocks")),
-                entity -> Targeting.isTargetable(owner, entity) && !hit.contains(entity))) {
+                .inflate(SLAM_RADIUS), entity -> Targeting.isTargetable(owner, entity) && !hit.contains(entity))) {
             Vec3 away = near.position().subtract(center);
             double far = away.length();
-            if (far > setting("slamRadiusBlocks")) {
+            if (far > SLAM_RADIUS) {
                 continue;
             }
             near.invulnerableTime = 0;
             near.hurt(level.damageSources().playerAttack(owner), this.damage * (float) (0.6 - 0.3 * far
-                    / setting("slamRadiusBlocks")));
+                    / SLAM_RADIUS));
             Vec3 way = far < 1.0E-3 ? new Vec3(1.0, 0.0, 0.0) : new Vec3(away.x, 0.0, away.z).normalize();
-            SpellTargets.push(near, way, 1.2 * (1.0 - 0.5 * far / setting("slamRadiusBlocks")), 0.5);
+            SpellTargets.push(near, way, 1.2 * (1.0 - 0.5 * far / SLAM_RADIUS), 0.5);
         }
         LightningBolt bolt = EntityType.LIGHTNING_BOLT.create(level);
         if (bolt != null) {
@@ -181,9 +182,5 @@ final class GrabDive {
             this.moves.dive = null;
             this.moves.sync(ThorStatePayload.NONE, 0);
         }
-    }
-
-    private static double setting(String key) {
-        return GameCharacter.THOR.byName("grab_dash_dive").value(key);
     }
 }

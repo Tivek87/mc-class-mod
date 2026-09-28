@@ -11,7 +11,6 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.character.greenlantern.plane.PlanePath;
-import nl.tivek.multiversepowers.config.client.ClientSettings;
 
 final class PlaneSound {
     static final Map<Integer, PlaneSound> SOUNDS = new HashMap<>();
@@ -92,8 +91,7 @@ final class PlaneSound {
             this.x = this.at.x;
             this.y = this.at.y;
             this.z = this.at.z;
-            this.volume = Mth.lerp(0.08F, this.volume, this.loud * this.share
-                    * ClientSettings.factor(ClientSettings.POWER_HUM));
+            this.volume = Mth.lerp(0.08F, this.volume, this.loud * this.share);
             this.pitch = Mth.lerp(0.1F, this.pitch, this.tone);
         }
     }

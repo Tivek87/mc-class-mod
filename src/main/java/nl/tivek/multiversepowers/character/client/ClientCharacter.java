@@ -40,7 +40,6 @@ import nl.tivek.multiversepowers.character.greenlantern.client.ConstructChoice;
 import nl.tivek.multiversepowers.character.greenlantern.client.hud.ConstructHud;
 import nl.tivek.multiversepowers.character.greenlantern.client.hud.ConstructWheel;
 import nl.tivek.multiversepowers.character.greenlantern.client.hud.ConstructWheelScreen;
-import nl.tivek.multiversepowers.config.client.ClientSettings;
 import nl.tivek.multiversepowers.stamina.client.StaminaClient;
 
 @EventBusSubscriber(modid = MultiversePowers.MODID, value = Dist.CLIENT)
@@ -423,21 +422,9 @@ public final class ClientCharacter {
         Minecraft minecraft = Minecraft.getInstance();
         GameCharacter now = character;
         if (now == null || minecraft.player == null || minecraft.options.hideGui
-                || minecraft.screen instanceof ConstructWheelScreen || minecraft.screen instanceof PowerWheelScreen
-                || !ClientSettings.on(ClientSettings.ABILITY_PANEL)) {
+                || minecraft.screen instanceof ConstructWheelScreen || minecraft.screen instanceof PowerWheelScreen) {
             return;
         }
-        // Scaled round the bottom right corner it stands in.
-        float scale = ClientSettings.factor(ClientSettings.PANEL_SCALE);
-        graphics.pose().pushPose();
-        graphics.pose().translate(graphics.guiWidth(), graphics.guiHeight(), 0.0F);
-        graphics.pose().scale(scale, scale, 1.0F);
-        graphics.pose().translate(-graphics.guiWidth(), -graphics.guiHeight(), 0.0F);
-        panel(graphics, minecraft, now);
-        graphics.pose().popPose();
-    }
-
-    private static void panel(GuiGraphics graphics, Minecraft minecraft, GameCharacter now) {
         Font font = minecraft.font;
         String prefix = "screen." + MultiversePowers.MODID + ".character.";
         int line = font.lineHeight + 2;
@@ -498,7 +485,7 @@ public final class ClientCharacter {
         }
         String passive = "character." + MultiversePowers.MODID + "." + now.getId() + ".passive";
         CharacterAbility train = now.byName("emerald_express");
-        if (now == GameCharacter.GREEN_LANTERN && ClientSettings.on(ClientSettings.POWER_BAR)) {
+        if (now == GameCharacter.GREEN_LANTERN) {
             ConstructHud.renderPower(graphics, font, minecraft.player, left, right, y + 2,
                     train == null || !train.has(POWER_COST) ? 0.0F : (float) train.value(POWER_COST));
         } else if (legs > 0 || marked > 0) {

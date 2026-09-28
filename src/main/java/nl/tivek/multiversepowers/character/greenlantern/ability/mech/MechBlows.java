@@ -16,7 +16,6 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.character.CharacterAbility;
 import nl.tivek.multiversepowers.character.greenlantern.PowerRing;
-import nl.tivek.multiversepowers.character.greenlantern.ability.hands.GiantHands;
 import nl.tivek.multiversepowers.character.greenlantern.mech.MechMoves;
 import nl.tivek.multiversepowers.character.greenlantern.mech.MechScript;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
@@ -31,6 +30,9 @@ final class MechBlows {
     private static final SoundEvent WHOOSH = Sounds.of("mech.whoosh");
     private static final SoundEvent CRASH = Sounds.of("mech.crash");
     private static final SoundEvent SURGE = Sounds.of("mech.surge");
+    private static final double STOMP_RADIUS = 3.0;
+    private static final double CLAP_RADIUS = 3.0;
+    private static final double CRASH_RADIUS = 4.5;
     private static final double STOMP_PUSH = 1.0;
     private static final double CLAP_PUSH = 1.1;
     private static final double CRASH_PUSH = 1.5;
@@ -49,14 +51,12 @@ final class MechBlows {
             case MechScript.STOMP -> {
                 stomp(level, foot.subtract(0.0, MechScript.ANKLE.y, 0.0), true);
                 target.hit(level, owner, ability.value("mechStompDamage"));
-                blast(level, owner, target, foot, ability.value("mechStompReach"),
-                        ability.value("mechStompDamage") * 0.5, STOMP_PUSH * ability.value("mechPush"));
+                blast(level, owner, target, foot, STOMP_RADIUS, ability.value("mechStompDamage") * 0.5, STOMP_PUSH);
             }
             case MechScript.FOOT2_FORM -> build(level, footLeft, 1.4F);
             case MechScript.STOMP2 -> {
                 stomp(level, footLeft.subtract(0.0, MechScript.ANKLE.y, 0.0), false);
-                blast(level, owner, target, footLeft, ability.value("mechStompReach") * 0.8, 0.0,
-                        STOMP_PUSH * 0.7 * ability.value("mechPush"));
+                blast(level, owner, target, footLeft, STOMP_RADIUS * 0.8, 0.0, STOMP_PUSH * 0.7);
             }
             case MechScript.LEAP -> Sounds.play(level, stage.point(MechScript.pilot(stage, t)), WHOOSH, 1.6F, 1.35F);
             case MechScript.THIGHS -> {
@@ -81,9 +81,8 @@ final class MechBlows {
             case MechScript.CLAP -> {
                 clap(level, stage.point(stage.target().add(0.0, 1.25, 0.0)));
                 target.hit(level, owner, ability.value("mechClapDamage"));
-                blast(level, owner, target, stage.point(stage.target().add(0.0, 1.25, 0.0)),
-                        ability.value("mechClapReach"), ability.value("mechClapDamage") * 0.5,
-                        CLAP_PUSH * ability.value("mechPush"));
+                blast(level, owner, target, stage.point(stage.target().add(0.0, 1.25, 0.0)), CLAP_RADIUS,
+                        ability.value("mechClapDamage") * 0.5, CLAP_PUSH);
             }
             case MechScript.ARMOR -> build(level, stage.point(0.0, 7.0, 0.0), 0.7F);
             case MechScript.SHOULDERS + 12 -> {
@@ -107,8 +106,7 @@ final class MechBlows {
                 Vec3 at = stage.point(stage.target());
                 crash(level, at);
                 target.hit(level, owner, ability.value("mechHeadDamage"));
-                blast(level, owner, target, at, ability.value("mechHeadReach"), ability.value("mechHeadDamage") * 0.5,
-                        CRASH_PUSH * ability.value("mechPush"));
+                blast(level, owner, target, at, CRASH_RADIUS, ability.value("mechHeadDamage") * 0.5, CRASH_PUSH);
             }
             case MechScript.HEAD_RISE -> Sounds.play(level, stage.point(stage.target()), WHOOSH, 3.0F, 0.85F);
             case MechScript.LOCK -> {
@@ -202,7 +200,7 @@ final class MechBlows {
             double damage, double push) {
         LivingEntity held = target.creature();
         for (LivingEntity living : level.getEntitiesOfClass(LivingEntity.class, new AABB(at, at).inflate(radius),
-                entity -> entity != held && GiantHands.fair(owner, entity))) {
+                entity -> entity != held && PowerRing.canHit(owner, entity))) {
             Vec3 to = living.getBoundingBox().getCenter().subtract(at);
             double far = to.length();
             if (far > radius) {

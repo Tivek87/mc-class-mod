@@ -18,8 +18,6 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.LivingDamageEvent;
 import net.neoforged.neoforge.event.entity.living.LivingFallEvent;
 import nl.tivek.multiversepowers.MultiversePowers;
-import nl.tivek.multiversepowers.character.CharacterConfig;
-import nl.tivek.multiversepowers.character.GameCharacter;
 import nl.tivek.multiversepowers.engine.effect.Effects;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 import nl.tivek.multiversepowers.engine.world.LoadedWorld;
@@ -35,8 +33,13 @@ public final class ThorMoves {
     static final int FLOAT_TICKS = 50;
     private static final int CUSHION = 10;
     private static final int LONGEST_JUMP = 400;
+    // A hit this hard (half hearts) knocks him out of the sky.
+    private static final float STUN = 5.0F;
     // Standing this long in flight lands him, if his game never said so.
     private static final int GROUNDED = 12;
+    // A thunderclap wound up this long without going off (its button's letting go lost) stops showing.
+    private static final int CHARGE_LONGEST = 40;
+    static final double BLINK = 15.0;
 
     private static final Map<UUID, ThorMoves> ALL = new HashMap<>();
 
@@ -50,6 +53,8 @@ public final class ThorMoves {
     private int floatAge = -1;
     private double lastY;
     private int cushion;
+    private boolean charging;
+    private int chargeAge;
     @Nullable
     GrabDive dive;
 
@@ -92,7 +97,19 @@ public final class ThorMoves {
         flags |= this.floatAge >= 0 && this.floatAge < FLOAT_TICKS ? ThorStatePayload.FLOATING : 0;
         flags |= this.lightning ? ThorStatePayload.LIGHTNING : 0;
         flags |= this.dive != null && this.dive.carrying() ? ThorStatePayload.CARRYING : 0;
+        flags |= this.charging ? ThorStatePayload.CHARGING : 0;
         return flags;
+    }
+
+    // His game says he winds up a thunderclap, or lets go of it before it went off; the clap itself ends it too.
+    static void charging(ServerPlayer player, boolean on) {
+        ThorMoves moves = on ? of(player) : find(player);
+        if (moves == null || moves.charging == on) {
+            return;
+        }
+        moves.charging = on;
+        moves.chargeAge = 0;
+        moves.sync(ThorStatePayload.NONE, 0);
     }
 
     static int flags(ServerPlayer player) {
@@ -227,7 +244,7 @@ public final class ThorMoves {
     // Where a blink from `from` along the look ends: half a block short of the first block in the way.
     static Vec3 blinkEnd(ServerLevel level, ServerPlayer player, Vec3 from) {
         Vec3 look = player.getLookAngle();
-        Vec3 end = from.add(look.scale(GameCharacter.THOR.byName("air_blink").value("distanceBlocks")));
+        Vec3 end = from.add(look.scale(BLINK));
         HitResult hit = LoadedWorld.clip(level, new ClipContext(from, end, ClipContext.Block.COLLIDER,
                 ClipContext.Fluid.NONE, player));
         if (hit.getType() == HitResult.Type.MISS) {
@@ -282,7 +299,11 @@ public final class ThorMoves {
             this.cushion--;
             player.resetFallDistance();
         }
-        if (!this.flying && !this.jumping && this.cushion <= 0 && this.dive == null) {
+        if (this.charging && ++this.chargeAge > CHARGE_LONGEST) {
+            this.charging = false;
+            this.sync(ThorStatePayload.NONE, 0);
+        }
+        if (!this.flying && !this.jumping && this.cushion <= 0 && this.dive == null && !this.charging) {
             ALL.remove(player.getUUID(), this);
             return false;
         }
@@ -299,11 +320,12 @@ public final class ThorMoves {
     static void leave(ServerPlayer player) {
         ThorMoves moves = find(player);
         if (moves != null) {
-            boolean shown = moves.flying || moves.jumping;
+            boolean shown = moves.flying || moves.jumping || moves.charging;
             moves.stop();
             moves.flying = false;
             moves.jumping = false;
             moves.lightning = false;
+            moves.charging = false;
             if (shown) {
                 ThorStatePayload.send(player, 0, ThorStatePayload.NONE, 0);
             }
@@ -333,17 +355,12 @@ public final class ThorMoves {
 
     @SubscribeEvent
     public static void onHurt(LivingDamageEvent.Post event) {
-        if (event.getEntity() instanceof ServerPlayer player && event.getNewDamage() >= stun() && flying(player)) {
+        if (event.getEntity() instanceof ServerPlayer player && event.getNewDamage() >= STUN && flying(player)) {
             land(player, false);
         }
     }
 
     ServerPlayer owner() {
         return this.owner;
-    }
-
-    // Taken as set, not by the damage multiplier: it is how hard a hit on him must be.
-    private static double stun() {
-        return CharacterConfig.value(GameCharacter.THOR.byName("flight"), "stunDamage");
     }
 }

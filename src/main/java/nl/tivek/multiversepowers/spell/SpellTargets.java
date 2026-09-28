@@ -15,10 +15,10 @@ public final class SpellTargets {
     private SpellTargets() {
     }
 
-    // Area spells only touch what is hostile to the caster, and players only where they may be hurt.
+    // Area spells touch everything but their caster's own team, and players only where they may be hurt.
     public static boolean hits(@Nullable ServerPlayer caster, Entity entity) {
         return caster != null && entity != caster && entity.isAlive() && !entity.isSpectator()
-                && Factions.hostile(caster, entity)
+                && Factions.mayHit(caster, entity)
                 && !(entity instanceof Player player && !Targeting.isTargetable(caster, player));
     }
 

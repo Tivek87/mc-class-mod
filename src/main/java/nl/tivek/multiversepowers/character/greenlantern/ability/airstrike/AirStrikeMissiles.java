@@ -186,7 +186,7 @@ abstract class AirStrikeMissiles extends AirStrikeGuns {
             double nearest = Double.MAX_VALUE;
             Vec3 on = null;
             for (LivingEntity living : level.getEntitiesOfClass(LivingEntity.class,
-                    new AABB(tipWas, tipTo).inflate(1.5), AirStrikeMissiles.this::hostile)) {
+                    new AABB(tipWas, tipTo).inflate(1.5), AirStrikeMissiles.this::hits)) {
                 Vec3 at = living.getBoundingBox().inflate(this.small ? 0.35 : 0.6).clip(tipWas, tipTo).orElse(null);
                 if (at == null && living == this.target
                         && living.getBoundingBox().getCenter().distanceTo(tipTo) < (this.small ? 1.0 : 1.6)) {

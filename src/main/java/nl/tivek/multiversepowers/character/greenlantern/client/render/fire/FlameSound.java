@@ -9,7 +9,6 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
-import nl.tivek.multiversepowers.config.client.ClientSettings;
 
 public final class FlameSound extends AbstractTickableSoundInstance {
     private static final Map<Integer, FlameSound> ROARS = new HashMap<>();
@@ -71,8 +70,7 @@ public final class FlameSound extends AbstractTickableSoundInstance {
         this.x = this.owner.getX();
         this.y = this.owner.getEyeY();
         this.z = this.owner.getZ();
-        float loud = this.on ? (this.swirl ? SWIRL_LOUD : STREAM_LOUD) * ClientSettings.factor(ClientSettings.POWER_HUM)
-                : 0.0F;
+        float loud = this.on ? (this.swirl ? SWIRL_LOUD : STREAM_LOUD) : 0.0F;
         this.volume = Mth.lerp(this.on ? 0.35F : 0.25F, this.volume, loud);
         float tone = this.swirl ? SWIRL_TONE + 0.05F * Mth.sin(this.owner.tickCount * 0.42F) : STREAM_TONE;
         this.pitch = Mth.lerp(0.2F, this.pitch, tone);

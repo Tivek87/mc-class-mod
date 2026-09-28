@@ -19,7 +19,6 @@ import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.network.PacketDistributor;
 import nl.tivek.multiversepowers.character.CharacterAbility;
 import nl.tivek.multiversepowers.character.greenlantern.PowerRing;
-import nl.tivek.multiversepowers.character.greenlantern.ability.hands.GiantHands;
 import nl.tivek.multiversepowers.character.greenlantern.ability.ring.Recharge;
 import nl.tivek.multiversepowers.character.greenlantern.construct.ConstructPayload;
 import nl.tivek.multiversepowers.character.greenlantern.express.ExpressScript;
@@ -314,7 +313,7 @@ public final class EmeraldExpress extends ExpressRoute {
         double damage = this.ability.value("blastDamage");
         double push = this.ability.value("knockback");
         for (LivingEntity living : level.getEntitiesOfClass(LivingEntity.class, new AABB(at, at).inflate(radius),
-                entity -> GiantHands.fair(this.owner, entity))) {
+                entity -> PowerRing.canHit(this.owner, entity))) {
             Vec3 to = living.getBoundingBox().getCenter().subtract(at);
             double far = to.length();
             if (far > radius) {

@@ -3,6 +3,41 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.4.0-alpha] - 2026-09-28
+
+**FAR FROM FINISHED AND VERY BUGGY:** this version is work saved half way. Much of it is not tested yet; expect
+things to look wrong, feel wrong or break.
+
+### Added
+- **Thor: Thunder Fists** (left click): a combo of 24 hand blows and 4 kicks. Every click picks the next blow so
+  the combo flows: the other hand next, short blows up close, long ones further off, low blows down low, now and
+  then a kick, and the big finishers once the combo has built up. A click during a blow waits for it.
+- **Thor:** his fists stay up in a guard between blows; in first person you see both fists, and your leg in a kick.
+- **Thor: Thunderclap wind-up:** while left click is held he leans back with his arms flung wide and static
+  crackling in his hands (others see it too), then slams his hands together.
+- **Thunderclap:** lightning sparks crackle through its shockwave, and thunder rolls in from the distance after it.
+- **Hard-Light Mech:** a note tells how to walk and run it when you take control.
+- **Controls:** the fixed power gestures say "Locked" in the key binds list.
+
+### Changed
+- **Thor: Thunderclap** is holding left click now (was holding right click); right click only dashes.
+- **Hard-Light Mech:** running (the sprint key with W) is almost four times walking speed, with longer strides.
+- **Hard-Light Mech:** its torso turns further (55 degrees, was 38) before its legs step round after it.
+- **Factions (#34):** every power and attack can hit anyone, friends and neutrals too; only players of the same
+  team cannot hurt each other. Powers that pick their own targets still pick enemies.
+- **Settings:** back to a short list: 15 client settings; the world settings keep the damage and cooldown
+  multipliers, block breaking, the switches for every character and for spells, and the owners list.
+- **Thor's combo damage** is a world setting of its own.
+
+### Removed
+- **Hard-Light Mech:** the chest lamp.
+- **Client settings:** mech step shake, speed view, view dips, mech camera distance, the mech lamp, glow, flares,
+  lens bending, lie time, blasts throwing bodies, fall detail, burning to ash, cape detail and reach, the sound
+  sliders, the on-screen switches, construct draw distance and processor cores.
+- **World settings:** power cost multiplier, powers hurt players (the server's own PvP setting decides), effect
+  range, knockdown time, the per-move numbers of Thor, Doctor Octopus and the mech added in 0.3.9, and the spells
+  page.
+
 ## [0.3.9-alpha] - 2026-09-28
 
 **UNFINISHED / WORK IN PROGRESS:** the mod is still being built; things may change, break or be missing.

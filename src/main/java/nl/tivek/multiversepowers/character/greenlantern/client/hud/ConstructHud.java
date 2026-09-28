@@ -33,7 +33,6 @@ import nl.tivek.multiversepowers.character.greenlantern.client.body.pose.Recharg
 import nl.tivek.multiversepowers.character.greenlantern.client.body.sword.SwordArms;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.whip.WhipArms;
 import nl.tivek.multiversepowers.config.Unit;
-import nl.tivek.multiversepowers.config.client.ClientSettings;
 import nl.tivek.multiversepowers.engine.client.gui.GuiShapes;
 
 @Mod(value = MultiversePowers.MODID, dist = Dist.CLIENT)
@@ -89,10 +88,8 @@ public final class ConstructHud {
             return;
         }
         renderFlash(graphics, ConstructChoice.since());
-        if (ClientSettings.on(ClientSettings.HOLD_RINGS)) {
-            renderHold(graphics, deltaTracker.getGameTimeDeltaPartialTick(false));
-            renderKeyHold(graphics, deltaTracker.getGameTimeDeltaPartialTick(false));
-        }
+        renderHold(graphics, deltaTracker.getGameTimeDeltaPartialTick(false));
+        renderKeyHold(graphics, deltaTracker.getGameTimeDeltaPartialTick(false));
     }
 
     private static void renderHold(GuiGraphics graphics, float partialTick) {
@@ -103,9 +100,6 @@ public final class ConstructHud {
         List<Runnable> labels = new ArrayList<>();
         // The flamethrower shows a held button on the gun's fins (FlamePainter) and only its heat here.
         if (FlameArms.holding()) {
-            if (!ClientSettings.on(ClientSettings.GAUGES)) {
-                return;
-            }
             HeatGauge.render(graphics, middleX, middleY, partialTick, labels);
             labels.forEach(Runnable::run);
             return;
@@ -119,9 +113,6 @@ public final class ConstructHud {
             }
             boolean right = ability.input() == CharacterAbility.Input.LEFT;
             if (ability.id().equals("light_bolt") && !SwordArms.holding() && !WhipArms.holding()) {
-                if (!ClientSettings.on(ClientSettings.GAUGES)) {
-                    continue;
-                }
                 drawn |= BeamGauge.render(graphics, minecraft.player, ability, middleX, middleY, partialTick, labels);
                 continue;
             }

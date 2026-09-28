@@ -25,22 +25,26 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.event.EventHooks;
+import nl.tivek.multiversepowers.config.PowerRules;
 import nl.tivek.multiversepowers.engine.effect.Effect;
 import nl.tivek.multiversepowers.engine.effect.Effects;
 import nl.tivek.multiversepowers.engine.entity.DeathStyles;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 import nl.tivek.multiversepowers.engine.target.Targeting;
-import nl.tivek.multiversepowers.spell.Spell;
 import nl.tivek.multiversepowers.spell.SpellFxPayload;
-import nl.tivek.multiversepowers.spell.SpellRules;
 import nl.tivek.multiversepowers.spell.SpellTargets;
 
 public final class LightningSpell {
+    private static final double RANGE = 40.0;
     private static final int CHARGE = 14;
     private static final int DURATION = CHARGE + 30;
     private static final double RUNE_RADIUS = 2.2;
     private static final double CLOUD_HEIGHT = 18.0;
     private static final double SHOCK_RADIUS = 3.0;
+    private static final int SHOCKED = 30;
+    private static final double CHAIN_REACH = 6.0;
+    private static final float CHAIN_DAMAGE = 4.0F;
+    private static final int CHAIN = 3;
     // Rain carries the charge further.
     private static final int STORM_CHAIN = 5;
     private static final int CHAIN_EVERY = 2;
@@ -51,7 +55,7 @@ public final class LightningSpell {
     }
 
     public static boolean cast(ServerPlayer player, ServerLevel level) {
-        Targeting.Aim aim = Targeting.aim(player, level, SpellRules.value(Spell.LIGHTNING_STRIKE, "rangeBlocks"));
+        Targeting.Aim aim = Targeting.aim(player, level, RANGE);
         Vec3 hand = Targeting.handPoint(player);
         ParticleFx.cloud(level, ParticleTypes.ELECTRIC_SPARK, hand, 16, 0.2, 0.25);
         ParticleFx.zigzag(level, ParticleFx.dust(GLOW, 0.6F), hand, hand.add(0, 1.6, 0), 5, 0.25, 0.1);
@@ -80,7 +84,7 @@ public final class LightningSpell {
             } else {
                 afterglow(level, at, age - CHARGE);
                 int hop = age - CHARGE;
-                int most = level.isRainingAt(BlockPos.containing(at)) ? STORM_CHAIN : (int) SpellRules.value(Spell.LIGHTNING_STRIKE, "chains");
+                int most = level.isRainingAt(BlockPos.containing(at)) ? STORM_CHAIN : CHAIN;
                 if (hop % CHAIN_EVERY == 0 && hop / CHAIN_EVERY <= most && from[0] != null) {
                     from[0] = chain(level, caster, from[0], struck);
                 }
@@ -96,7 +100,7 @@ public final class LightningSpell {
             if (target.distanceToSqr(at) <= SHOCK_RADIUS * SHOCK_RADIUS
                     && Targeting.clearPath(level, at.add(0.0, 0.5, 0.0), target.getBoundingBox().getCenter())) {
                 struck.add(target);
-                target.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, (int) SpellRules.value(Spell.LIGHTNING_STRIKE, "shockedTicks"), 2), caster);
+                target.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, SHOCKED, 2), caster);
                 ParticleFx.send(level, ParticleTypes.ELECTRIC_SPARK, target.getX(), target.getY()
                         + target.getBbHeight() * 0.5, target.getZ(), 10, target.getBbWidth() * 0.5,
                         target.getBbHeight() * 0.4, target.getBbWidth() * 0.5, 0.1);
@@ -108,9 +112,9 @@ public final class LightningSpell {
     @Nullable
     private static Vec3 chain(ServerLevel level, ServerPlayer caster, Vec3 from, List<LivingEntity> struck) {
         LivingEntity next = null;
-        double best = SpellRules.value(Spell.LIGHTNING_STRIKE, "chainReachBlocks") * SpellRules.value(Spell.LIGHTNING_STRIKE, "chainReachBlocks");
+        double best = CHAIN_REACH * CHAIN_REACH;
         for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, new AABB(from, from).inflate(
-                SpellRules.value(Spell.LIGHTNING_STRIKE, "chainReachBlocks")), entity -> SpellTargets.hits(caster, entity) && !struck.contains(entity))) {
+                CHAIN_REACH), entity -> SpellTargets.hits(caster, entity) && !struck.contains(entity))) {
             Vec3 middle = target.getBoundingBox().getCenter();
             double far = middle.distanceToSqr(from);
             if (far < best && Targeting.clearPath(level, from, middle, caster)) {
@@ -127,8 +131,9 @@ public final class LightningSpell {
         ParticleFx.cloud(level, ParticleTypes.ELECTRIC_SPARK, to, 14, 0.3, 0.2);
         ParticleFx.at(level, ParticleTypes.FLASH, to);
         DeathStyles.mark(next, DeathStyles.Style.ASH);
-        next.hurt(level.damageSources().source(DamageTypes.LIGHTNING_BOLT, caster), (float) SpellRules.value(Spell.LIGHTNING_STRIKE, "chainDamage"));
-        next.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, (int) SpellRules.value(Spell.LIGHTNING_STRIKE, "shockedTicks"), 2), caster);
+        next.hurt(level.damageSources().source(DamageTypes.LIGHTNING_BOLT, caster),
+                CHAIN_DAMAGE * (float) PowerRules.damage());
+        next.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, SHOCKED, 2), caster);
         level.playSound(null, to.x, to.y, to.z, SoundEvents.LIGHTNING_BOLT_IMPACT, SoundSource.PLAYERS, 0.8F,
                 1.5F + ParticleFx.RANDOM.nextFloat() * 0.3F);
         level.playSound(null, to.x, to.y, to.z, SoundEvents.TRIDENT_HIT, SoundSource.PLAYERS, 0.6F, 1.8F);

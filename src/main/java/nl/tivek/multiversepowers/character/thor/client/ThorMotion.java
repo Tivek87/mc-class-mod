@@ -39,6 +39,7 @@ public final class ThorMotion {
     private static final int LIFT_TICKS = 12;
     private static final double LIFT = 0.5;
     private static final int BLINK_TICKS = 3;
+    private static final double BLINK = 15.0;
     private static final double DIVE_SPEED = 2.1;
     private static final double DIVE_REACH = 32.0;
     private static final int DIVE_LONGEST = 80;
@@ -95,6 +96,9 @@ public final class ThorMotion {
         boolean held = (data & Characters.HOLD) != 0;
         boolean slam = (data & Characters.SLAM) != 0;
         switch (ability.id()) {
+            case "combo" -> {
+                return on ? ThorCombo.act(player, ability, data) : -1;
+            }
             case "dash" -> {
                 if (!on || flying || dashAge >= 0) {
                     return on ? -1 : data;
@@ -203,10 +207,10 @@ public final class ThorMotion {
         Vec3 look = player.getLookAngle();
         blinkFrom = player.position();
         Vec3 from = blinkFrom.add(0.0, 0.9, 0.0);
-        double blink = GameCharacter.THOR.byName("air_blink").value("distanceBlocks");
-        HitResult hit = player.level().clip(new ClipContext(from, from.add(look.scale(blink)), ClipContext.Block.COLLIDER,
-                ClipContext.Fluid.NONE, player));
-        double far = hit.getType() == HitResult.Type.MISS ? blink : Math.max(0.0, hit.getLocation().distanceTo(from) - 0.6);
+        HitResult hit = player.level().clip(new ClipContext(from, from.add(look.scale(BLINK)),
+                ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, player));
+        double far = hit.getType() == HitResult.Type.MISS ? BLINK
+                : Math.max(0.0, hit.getLocation().distanceTo(from) - 0.6);
         blinkTo = blinkFrom.add(look.scale(far));
         blinkAge = 0;
         ClientThor.predict(player, ThorStatePayload.BLINK, 0, flags());

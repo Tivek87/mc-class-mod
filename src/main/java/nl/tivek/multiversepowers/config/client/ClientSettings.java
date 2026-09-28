@@ -11,47 +11,17 @@ public final class ClientSettings {
     public static final ModConfigSpec SPEC;
     public static final ModConfigSpec.DoubleValue CAMERA_SHAKE;
     public static final ModConfigSpec.DoubleValue RAM_GROUND_SHAKE;
-    public static final ModConfigSpec.DoubleValue MECH_STEP_SHAKE;
     public static final ModConfigSpec.DoubleValue SCREEN_FLASH;
-    public static final ModConfigSpec.DoubleValue SPEED_FOV;
-    public static final ModConfigSpec.DoubleValue VIEW_TILT;
     public static final ModConfigSpec.IntValue MECH_CINEMATIC;
-    public static final ModConfigSpec.DoubleValue MECH_CHASE;
-    public static final ModConfigSpec.IntValue MECH_LAMP;
-    public static final ModConfigSpec.DoubleValue MECH_LAMP_BRIGHTNESS;
-    public static final ModConfigSpec.DoubleValue MECH_LAMP_REACH;
     public static final ModConfigSpec.DoubleValue PARTICLE_AMOUNT;
-    public static final ModConfigSpec.DoubleValue GLOW_STRENGTH;
-    public static final ModConfigSpec.DoubleValue FLARE_STRENGTH;
-    public static final ModConfigSpec.IntValue LENS;
     public static final ModConfigSpec.IntValue EFFECT_DETAIL;
     public static final ModConfigSpec.IntValue RAGDOLLS;
     public static final ModConfigSpec.IntValue RAGDOLL_MOST;
     public static final ModConfigSpec.DoubleValue CORPSE_SECONDS;
     public static final ModConfigSpec.IntValue RAGDOLL_REACH;
-    public static final ModConfigSpec.DoubleValue LIE_SECONDS;
-    public static final ModConfigSpec.IntValue BLAST_BODIES;
-    public static final ModConfigSpec.IntValue RAGDOLL_STEPS;
-    public static final ModConfigSpec.IntValue ASHES;
     public static final ModConfigSpec.IntValue FOOT_PLANTING;
     public static final ModConfigSpec.IntValue CAPE_CLOTH;
-    public static final ModConfigSpec.IntValue CAPE_STEPS;
-    public static final ModConfigSpec.DoubleValue CAPE_REACH;
     public static final ModConfigSpec.IntValue THEME_MUSIC;
-    public static final ModConfigSpec.DoubleValue MOD_SOUNDS;
-    public static final ModConfigSpec.DoubleValue FLIGHT_SOUNDS;
-    public static final ModConfigSpec.DoubleValue POWER_HUM;
-    public static final ModConfigSpec.DoubleValue MECH_STEPS;
-    public static final ModConfigSpec.IntValue UI_SOUNDS;
-    public static final ModConfigSpec.IntValue ABILITY_PANEL;
-    public static final ModConfigSpec.DoubleValue PANEL_SCALE;
-    public static final ModConfigSpec.IntValue POWER_BAR;
-    public static final ModConfigSpec.IntValue HOLD_RINGS;
-    public static final ModConfigSpec.IntValue GAUGES;
-    public static final ModConfigSpec.IntValue STAMINA_BAR;
-    public static final ModConfigSpec.IntValue RING_SIGHT;
-    public static final ModConfigSpec.DoubleValue CONSTRUCT_DISTANCE;
-    public static final ModConfigSpec.IntValue RENDER_THREADS;
     public static final ModConfigSpec.IntValue UPDATE_CHECK;
     public static final ModConfigSpec.DoubleValue UPDATE_POPUP;
 
@@ -68,36 +38,15 @@ public final class ClientSettings {
         RAM_GROUND_SHAKE = sheet.number("ramGroundShake", "How hard your view shakes while you fly with the ram cone low"
                 + " along the ground (0 = not at all); the camera shake above scales it too", 1.0, 0.0, 3.0,
                 Unit.STRENGTH, 0.1);
-        MECH_STEP_SHAKE = sheet.number("mechStepShake", "How hard a mech's footsteps shake your view (0 = not at all);"
-                + " the camera shake above scales it too", 1.0, 0.0, 2.0, Unit.STRENGTH, 0.1);
         SCREEN_FLASH = sheet.number("screenFlash", "How bright the screen flashes when a blast or a thunderclap goes"
                 + " off near you (1 = as the mod makes it, 0 = never)", 1.0, 0.0, 2.0, Unit.PERCENT, 0.05);
-        SPEED_FOV = sheet.number("speedFov", "How far your view widens at speed: flying fast, charging a sword blow"
-                + " (1 = as the mod makes it, 0 = never; the game's own FOV effects setting scales it too)", 1.0, 0.0,
-                2.0, Unit.PERCENT, 0.05);
-        VIEW_TILT = sheet.number("viewTilt", "How far your view dips and tilts with a landing slam or a take-off (1 ="
-                + " as the mod makes it, 0 = never)", 1.0, 0.0, 2.0, Unit.PERCENT, 0.05);
         MECH_CINEMATIC = sheet.toggle("mechCinematic", "Film your own mech while it builds itself, shot after shot like"
                 + " a movie, before you look out of its cockpit (1 = yes, 0 = keep your own view)", true);
-        MECH_CHASE = sheet.number("mechChaseDistance", "How far behind your mech the camera stands in third person,"
-                + " in blocks", 14.0, 6.0, 40.0, Unit.BLOCKS, 1.0);
-        MECH_LAMP = sheet.choice("mechLamp", "The lamp on a mech's chest: 0 = never on, 1 = on in the dark, 2 ="
-                + " always on", 1, 3);
-        MECH_LAMP_BRIGHTNESS = sheet.number("mechLampBrightness", "How bright the mech's lamp shines",
-                1.0, 0.2, 2.0, Unit.PERCENT, 0.05);
-        MECH_LAMP_REACH = sheet.number("mechLampReach", "How far the mech's lamp reaches, in blocks", 40.0, 10.0,
-                64.0, Unit.BLOCKS, 2.0);
         sheet.section("effects");
         PARTICLE_AMOUNT = sheet.number("particleAmount", "How many particles the powers throw up: sparks, dust, smoke,"
                 + " splashes (1 = as the mod makes them, 0 = none)", 1.0, 0.0, 2.0, Unit.PERCENT, 0.05);
-        GLOW_STRENGTH = sheet.number("glowStrength", "How strongly the soft glow round light and constructs shines"
-                + " (1 = as the mod makes it, 0 = no glow)", 1.0, 0.0, 2.0, Unit.PERCENT, 0.05);
-        FLARE_STRENGTH = sheet.number("flareStrength", "How bright the flares are: the stars of light where a power"
-                + " bursts, lands or forms (1 = as the mod makes them, 0 = none)", 1.0, 0.0, 2.0, Unit.PERCENT, 0.05);
-        LENS = sheet.toggle("lensDistortion", "Blasts and bubbles bend the view behind them like a lens (1 = yes,"
-                + " 0 = never)", true);
         EFFECT_DETAIL = sheet.choice("effectDetail", "How much detail the biggest effects have: the thunderclap's"
-                + " streaks, the flamethrower's flames, a lamp's patch of light (0 = low, 1 = medium, 2 = full)", 2, 3);
+                + " streaks, the flamethrower's flames (0 = low, 1 = medium, 2 = full)", 2, 3);
         sheet.section("bodies");
         RAGDOLLS = sheet.toggle("ragdolls", "Creatures go limp: they fall, tumble and hang from what holds them, and a"
                 + " body stays where it fell before it sinks away (1 = yes, 0 = as in the plain game)", true);
@@ -107,54 +56,13 @@ public final class ClientSettings {
                 + " ground, in seconds", 10.0, 0.0, 120.0, Unit.SECONDS, 1.0);
         RAGDOLL_REACH = sheet.whole("ragdollReach", "How far away a creature may be and still go limp, in blocks", 48,
                 8, 128, Unit.BLOCKS, 4.0);
-        LIE_SECONDS = sheet.number("ragdollLieSeconds", "How long a creature thrown limp lies still on the ground before"
-                + " it gets back up, in seconds", 1.5, 0.5, 6.0, Unit.SECONDS, 0.5);
-        BLAST_BODIES = sheet.toggle("blastThrowsBodies", "Explosions throw limp creatures and bodies away by their"
-                + " weight (1 = yes, 0 = they stay where they lie)", true);
-        RAGDOLL_STEPS = sheet.whole("ragdollSteps", "How finely a limp body's fall is worked out, in steps a tick: more"
-                + " is smoother and costs more", 20, 6, 40, Unit.COUNT, 1.0);
-        ASHES = sheet.toggle("ashBodies", "A creature a fire power kills burns to ash: it glows, chars, greys and falls"
-                + " apart (1 = yes, 0 = it dies as usual)", true);
         FOOT_PLANTING = sheet.toggle("footPlanting", "Feet rest on the ground they stand on: a foot never sinks into a"
                 + " step, and a spider's legs reach down to the ground (1 = yes, 0 = as in the plain game)", true);
         CAPE_CLOTH = sheet.toggle("capeCloth", "Capes are cloth: they hang, trail and swing as players run and turn,"
                 + " and fold against their back and legs (1 = yes, 0 = the game's stiff cape)", true);
-        CAPE_STEPS = sheet.whole("capeSteps", "How finely a cape's cloth is worked out, in steps a tick: more is"
-                + " smoother and costs more", 8, 2, 16, Unit.COUNT, 1.0);
-        CAPE_REACH = sheet.number("capeReach", "How far away a player's cape is still cloth, in blocks", 32.0, 8.0,
-                96.0, Unit.BLOCKS, 4.0);
         sheet.section("sound");
         THEME_MUSIC = sheet.toggle("themeMusic", "Play the multiverse theme in the main menu (1 = yes, 0 = the game's"
                 + " own menu music)", true);
-        MOD_SOUNDS = sheet.number("modSounds", "How loud the mod's own sounds are: the Emerald Express, the mech, the"
-                + " ring (1 = as made, 0 = silent)", 1.0, 0.0, 2.0, Unit.PERCENT, 0.05);
-        FLIGHT_SOUNDS = sheet.number("flightSounds", "How loud the wind and jets of flight are (1 = as made, 0 ="
-                + " silent)", 1.0, 0.0, 2.0, Unit.PERCENT, 0.05);
-        POWER_HUM = sheet.number("powerHum", "How loud the hums and roars that go on while a power lasts are: the"
-                + " beam charging, the flamethrower, the planes, the train's rumble (1 = as made, 0 = silent)", 1.0,
-                0.0, 2.0, Unit.PERCENT, 0.05);
-        MECH_STEPS = sheet.number("mechSteps", "How loud a mech's footsteps are (1 = as made, 0 = silent)", 1.0, 0.0,
-                2.0, Unit.PERCENT, 0.05);
-        UI_SOUNDS = sheet.toggle("uiSounds", "The clicks of the power wheel and the construct wheel (1 = on, 0 ="
-                + " silent)", true);
-        sheet.section("hud");
-        ABILITY_PANEL = sheet.toggle("abilityPanel", "The panel with your abilities, keys and cooldowns in the bottom"
-                + " right (1 = shown, 0 = hidden)", true);
-        PANEL_SCALE = sheet.number("abilityPanelScale", "How big the ability panel is drawn", 1.0, 0.5, 1.5,
-                Unit.PERCENT, 0.05);
-        POWER_BAR = sheet.toggle("powerBar", "The ring's power bar (1 = shown, 0 = hidden)", true);
-        HOLD_RINGS = sheet.toggle("holdRings", "The rings round the crosshair that fill while you hold a key (1 ="
-                + " shown, 0 = hidden)", true);
-        GAUGES = sheet.toggle("gauges", "The gauges on held constructs and the beam: heat, stage and lock (1 = shown,"
-                + " 0 = hidden)", true);
-        STAMINA_BAR = sheet.toggle("staminaBar", "The stamina bar (1 = shown, 0 = hidden)", true);
-        RING_SIGHT = sheet.toggle("ringSight", "The marks the ring scan puts on creatures (1 = shown, 0 = hidden)",
-                true);
-        sheet.section("performance");
-        CONSTRUCT_DISTANCE = sheet.number("constructDistance", "How far away constructs are still drawn, in blocks",
-                256.0, 32.0, 512.0, Unit.BLOCKS, 16.0);
-        RENDER_THREADS = sheet.whole("renderThreads", "How many of your processor's cores may work out big"
-                + " constructs at once (0 = as many as help, up to 8)", 0, 0, 16, Unit.COUNT, 1.0);
         sheet.section("updates");
         UPDATE_CHECK = sheet.whole("updateCheckMinutes", "How often the game looks for a new version of the mod, in"
                 + " minutes (0 = never)", 5, 0, 120, Unit.MINUTES, 1.0);
@@ -246,10 +154,6 @@ public final class ClientSettings {
         return get(MECH_CINEMATIC) != 0;
     }
 
-    public static int mechLamp() {
-        return get(MECH_LAMP);
-    }
-
     public static boolean ragdolls() {
         return get(RAGDOLLS) != 0;
     }
@@ -260,11 +164,6 @@ public final class ClientSettings {
 
     public static boolean capeCloth() {
         return get(CAPE_CLOTH) != 0;
-    }
-
-    // A switch of this file (see Sheet.toggle).
-    public static boolean on(ModConfigSpec.IntValue value) {
-        return get(value) != 0;
     }
 
     public static float factor(ModConfigSpec.DoubleValue value) {

@@ -26,8 +26,7 @@ public enum Unit {
     SWITCH,
     MINUTES,
     PERCENT,
-    CHOICE,
-    DEGREES;
+    CHOICE;
 
     private static final String PREFIX = "config." + MultiversePowers.MODID + ".unit.";
 
@@ -55,7 +54,6 @@ public enum Unit {
             case MINUTES -> value <= 0.0 ? key("never") : key("minutes", number(value));
             case PERCENT -> key("percent", number(Math.round(value * 100.0)));
             case CHOICE -> key("count", number(value));
-            case DEGREES -> key("degrees", number(value));
         };
     }
 

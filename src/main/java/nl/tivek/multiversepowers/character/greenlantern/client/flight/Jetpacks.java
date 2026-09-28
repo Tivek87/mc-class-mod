@@ -26,7 +26,6 @@ import nl.tivek.multiversepowers.character.greenlantern.client.body.pose.FlightP
 import nl.tivek.multiversepowers.character.greenlantern.client.body.spot.BackSpot;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.JetpackPainter;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.LanternPainter;
-import nl.tivek.multiversepowers.config.client.ClientSettings;
 import nl.tivek.multiversepowers.engine.client.render.ConstructPainter;
 
 // Every client works out the jetpack itself from how the flyer lies, so all see it come and go alike.
@@ -170,8 +169,8 @@ public final class Jetpacks {
     }
 
     private static void sound(ClientLevel level, Entity player, SoundEvent sound, float volume, float pitch) {
-        level.playLocalSound(player.getX(), player.getY() + 1.0, player.getZ(), sound, SoundSource.PLAYERS,
-                volume * ClientSettings.factor(ClientSettings.FLIGHT_SOUNDS), pitch, false);
+        level.playLocalSound(player.getX(), player.getY() + 1.0, player.getZ(), sound, SoundSource.PLAYERS, volume,
+                pitch, false);
     }
 
     @SubscribeEvent
@@ -207,8 +206,7 @@ public final class Jetpacks {
             this.x = this.player.getX();
             this.y = this.player.getY() + 1.0;
             this.z = this.player.getZ();
-            float share = ClientSettings.factor(ClientSettings.FLIGHT_SOUNDS);
-            float loud = this.on ? (0.12F + 0.38F * this.pack.thrust) * share : 0.0F;
+            float loud = this.on ? 0.12F + 0.38F * this.pack.thrust : 0.0F;
             this.volume = Mth.lerp(this.on ? 0.3F : 0.4F, this.volume, loud);
             this.pitch = Mth.lerp(0.2F, this.pitch, 0.7F + 0.3F * this.pack.thrust);
             if (!this.on && this.volume < 0.02F) {

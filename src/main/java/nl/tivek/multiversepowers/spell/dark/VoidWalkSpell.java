@@ -36,13 +36,14 @@ import nl.tivek.multiversepowers.engine.effect.Effects;
 import nl.tivek.multiversepowers.engine.fx.ParticleBatch;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 import nl.tivek.multiversepowers.faction.Factions;
-import nl.tivek.multiversepowers.spell.Spell;
 import nl.tivek.multiversepowers.spell.SpellFxPayload;
-import nl.tivek.multiversepowers.spell.SpellRules;
 
 public final class VoidWalkSpell {
     static final int DURATION = 200;
     static final double MARK_RADIUS = 32.0;
+    private static final double SPEED_BONUS = 0.5;
+    private static final float AMBUSH = 1.5F;
+    private static final int DAZED = 40;
 
     private static final ResourceLocation SPEED_ID =
             ResourceLocation.fromNamespaceAndPath(MultiversePowers.MODID, "void_walk_speed");
@@ -95,7 +96,7 @@ public final class VoidWalkSpell {
                 invisibility == null ? null : new MobEffectInstance(invisibility), player.server.getTickCount()));
         player.setSilent(true);
         player.addEffect(new MobEffectInstance(MobEffects.INVISIBILITY, DURATION + 5, 0, false, false, true));
-        addModifier(player, Attributes.MOVEMENT_SPEED, SPEED_ID, SpellRules.value(Spell.VOID_WALK, "speedBonus"));
+        addModifier(player, Attributes.MOVEMENT_SPEED, SPEED_ID, SPEED_BONUS);
         hideEquipment(player);
         for (Mob mob : level.getEntitiesOfClass(Mob.class, player.getBoundingBox().inflate(64),
                 mob -> mob.getTarget() == player)) {
@@ -143,9 +144,9 @@ public final class VoidWalkSpell {
             return;
         }
         LivingEntity victim = event.getEntity();
-        event.setAmount(event.getAmount() * (float) SpellRules.value(Spell.VOID_WALK, "ambush"));
-        victim.addEffect(new MobEffectInstance(MobEffects.BLINDNESS, (int) SpellRules.value(Spell.VOID_WALK, "dazedTicks"), 0), player);
-        victim.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, (int) SpellRules.value(Spell.VOID_WALK, "dazedTicks"), 1), player);
+        event.setAmount(event.getAmount() * AMBUSH);
+        victim.addEffect(new MobEffectInstance(MobEffects.BLINDNESS, DAZED, 0), player);
+        victim.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, DAZED, 1), player);
         ServerLevel level = player.serverLevel();
         Vec3 hit = victim.getBoundingBox().getCenter();
         SpellFxPayload.send(level, SpellFxPayload.AMBUSH, hit, player.getEyePosition(), -1, 0);

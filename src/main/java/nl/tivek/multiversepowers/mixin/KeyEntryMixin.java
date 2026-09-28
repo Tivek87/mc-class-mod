@@ -15,8 +15,8 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-// The fixed power gestures show in Controls greyed out, and sharing a button with the game's own key on purpose
-// is no clash to paint red.
+// The fixed power gestures show in Controls greyed out and marked locked, and sharing a button with the game's own
+// key on purpose is no clash to paint red.
 @Mixin(targets = "net.minecraft.client.gui.screens.options.controls.KeyBindsList$KeyEntry")
 public abstract class KeyEntryMixin {
     @Shadow
@@ -41,8 +41,11 @@ public abstract class KeyEntryMixin {
             this.changeButton.active = false;
             this.resetButton.active = false;
             this.changeButton.setMessage(this.key.getTranslatedKeyMessage().copy().withStyle(ChatFormatting.GRAY));
-            this.changeButton.setTooltip(Tooltip.create(
-                    Component.translatable("controls." + MultiversePowers.MODID + ".locked")));
+            this.resetButton.setMessage(Component.translatable("controls." + MultiversePowers.MODID + ".locked_short")
+                    .withStyle(ChatFormatting.GRAY));
+            Tooltip why = Tooltip.create(Component.translatable("controls." + MultiversePowers.MODID + ".locked"));
+            this.changeButton.setTooltip(why);
+            this.resetButton.setTooltip(why);
         }
     }
 }

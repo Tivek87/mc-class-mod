@@ -24,7 +24,6 @@ import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.RenderLivingEvent;
 import nl.tivek.multiversepowers.MultiversePowers;
-import nl.tivek.multiversepowers.config.client.ClientSettings;
 import nl.tivek.multiversepowers.engine.client.fx.ParticleAmount;
 import nl.tivek.multiversepowers.engine.client.model.ModelParts;
 import nl.tivek.multiversepowers.engine.client.render.ShadedBuffers;
@@ -65,9 +64,6 @@ public final class Ashes {
     }
 
     public static void burn(int entity) {
-        if (!ClientSettings.on(ClientSettings.ASHES)) {
-            return;
-        }
         BURNING.put(entity, ticks);
         CRUMBLED.remove(entity);
     }

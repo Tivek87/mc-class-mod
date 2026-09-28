@@ -243,7 +243,7 @@ abstract class ExpressRoute implements Effect {
         AABB area = new AABB(this.head, this.head.subtract(this.way.scale(depth))).inflate(half + 1.0, 1.5, half + 1.0)
                 .expandTowards(0.0, REACH_UP * SCALE, 0.0);
         for (LivingEntity living : level.getEntitiesOfClass(LivingEntity.class, area,
-                entity -> GiantHands.fair(this.owner, entity) && !this.hit.contains(entity.getId()))) {
+                entity -> PowerRing.canHit(this.owner, entity) && !this.hit.contains(entity.getId()))) {
             Vec3 to = living.getBoundingBox().getCenter().subtract(this.head);
             double along = to.x * this.way.x + to.z * this.way.z;
             double across = to.x * right.x + to.z * right.z;

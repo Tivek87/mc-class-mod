@@ -23,12 +23,11 @@ import nl.tivek.multiversepowers.engine.effect.Effect;
 import nl.tivek.multiversepowers.engine.effect.Effects;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 import nl.tivek.multiversepowers.engine.target.Targeting;
-import nl.tivek.multiversepowers.spell.Spell;
 import nl.tivek.multiversepowers.spell.SpellFxPayload;
-import nl.tivek.multiversepowers.spell.SpellRules;
 import nl.tivek.multiversepowers.spell.SpellTargets;
 
 public final class PoisonSpell {
+    private static final double RANGE = 24.0;
     private static final double RADIUS = 3.5;
     private static final int DURATION = 160;
     private static final int SPREAD_TIME = 8;
@@ -45,7 +44,7 @@ public final class PoisonSpell {
     }
 
     public static boolean cast(ServerPlayer player, ServerLevel level) {
-        Vec3 target = Targeting.aimPoint(player, level, SpellRules.value(Spell.POISON_AREA, "rangeBlocks"));
+        Vec3 target = Targeting.aimPoint(player, level, RANGE);
         Vec3 hand = Targeting.handPoint(player);
         double distance = hand.distanceTo(target);
         int flight = Mth.clamp((int) Math.round(distance / 1.2), 6, 18);

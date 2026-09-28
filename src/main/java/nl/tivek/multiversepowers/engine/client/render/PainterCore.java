@@ -17,7 +17,6 @@ import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-import nl.tivek.multiversepowers.config.client.ClientSettings;
 import nl.tivek.multiversepowers.engine.math.Colors;
 import nl.tivek.multiversepowers.engine.math.Ease;
 import org.joml.Matrix4f;
@@ -147,8 +146,6 @@ abstract class PainterCore {
     final Layer light = take();
     final Layer glow = take();
     boolean nearFade;
-    // The player's own strength of the glow layer (ClientSettings.GLOW_STRENGTH), read once per painter.
-    private final float glowShare;
     private double glare;
     double ambient;
     boolean waiting;
@@ -160,7 +157,6 @@ abstract class PainterCore {
         this.frustum = frustum;
         this.material = material;
         this.hand = hand;
-        this.glowShare = ClientSettings.factor(ClientSettings.GLOW_STRENGTH);
     }
 
     public Material material() {
@@ -336,8 +332,6 @@ abstract class PainterCore {
         if (this.waiting) {
             this.settle();
         }
-        alphaA = this.shared(layer, alphaA);
-        alphaB = this.shared(layer, alphaB);
         // The two ends are each in both halves of the line: worked out once, written twice.
         Vector3f v = this.vertex;
         this.matrix.transformPosition((float) (ax - this.camera.x), (float) (ay - this.camera.y),
@@ -391,14 +385,14 @@ abstract class PainterCore {
         if (lightAlpha > 0) {
             double k = lightWidth * 0.5 / length;
             this.halves(this.light, ax, ay, az, bx, by, bz, sx * k, sy * k, sz * k, x0, y0, z0, x1, y1, z1, lightRgb,
-                    this.shared(this.light, fadeA < 0.0 ? lightAlpha : (int) (lightAlpha * fadeA)),
-                    this.shared(this.light, fadeB < 0.0 ? lightAlpha : (int) (lightAlpha * fadeB)));
+                    fadeA < 0.0 ? lightAlpha : (int) (lightAlpha * fadeA),
+                    fadeB < 0.0 ? lightAlpha : (int) (lightAlpha * fadeB));
         }
         if (glowAlpha > 0) {
             double k = glowWidth * 0.5 / length;
             this.halves(this.glow, ax, ay, az, bx, by, bz, sx * k, sy * k, sz * k, x0, y0, z0, x1, y1, z1, glowRgb,
-                    this.shared(this.glow, fadeA < 0.0 ? glowAlpha : (int) (glowAlpha * fadeA)),
-                    this.shared(this.glow, fadeB < 0.0 ? glowAlpha : (int) (glowAlpha * fadeB)));
+                    fadeA < 0.0 ? glowAlpha : (int) (glowAlpha * fadeA),
+                    fadeB < 0.0 ? glowAlpha : (int) (glowAlpha * fadeB));
         }
     }
 
@@ -435,11 +429,6 @@ abstract class PainterCore {
         return Ease.smooth((away - NEAR_GONE) / (NEAR_CLEAR - NEAR_GONE));
     }
 
-    // A glowing vertex's alpha as the player's glow strength has it.
-    int shared(Layer layer, int alpha) {
-        return layer == this.glow && this.glowShare != 1.0F ? Math.min(255, (int) (alpha * this.glowShare)) : alpha;
-    }
-
     // Four vertices of one quad, from the camera the way put() places them, room made for all four at once.
     void quad4(Layer layer, double x0, double y0, double z0, int a0, double x1, double y1, double z1, int a1,
             double x2, double y2, double z2, int a2, double x3, double y3, double z3, int a3, int rgb) {
@@ -453,13 +442,13 @@ abstract class PainterCore {
         double cz = this.camera.z;
         long p = layer.reserve(4);
         m.transformPosition((float) (x0 - cx), (float) (y0 - cy), (float) (z0 - cz), v);
-        Layer.write(p, v.x, v.y, v.z, rgb, this.shared(layer, a0));
+        Layer.write(p, v.x, v.y, v.z, rgb, a0);
         m.transformPosition((float) (x1 - cx), (float) (y1 - cy), (float) (z1 - cz), v);
-        Layer.write(p + 16L, v.x, v.y, v.z, rgb, this.shared(layer, a1));
+        Layer.write(p + 16L, v.x, v.y, v.z, rgb, a1);
         m.transformPosition((float) (x2 - cx), (float) (y2 - cy), (float) (z2 - cz), v);
-        Layer.write(p + 32L, v.x, v.y, v.z, rgb, this.shared(layer, a2));
+        Layer.write(p + 32L, v.x, v.y, v.z, rgb, a2);
         m.transformPosition((float) (x3 - cx), (float) (y3 - cy), (float) (z3 - cz), v);
-        Layer.write(p + 48L, v.x, v.y, v.z, rgb, this.shared(layer, a3));
+        Layer.write(p + 48L, v.x, v.y, v.z, rgb, a3);
     }
 
     private void quad(Layer layer, Vec3 p0, Vec3 p1, Vec3 p2, Vec3 p3, int rgb, int alpha) {
@@ -475,9 +464,6 @@ abstract class PainterCore {
     void put(Layer layer, double x, double y, double z, int rgb, int alpha) {
         if (this.waiting) {
             this.settle();
-        }
-        if (layer == this.glow && this.glowShare != 1.0F) {
-            alpha = Math.min(255, (int) (alpha * this.glowShare));
         }
         layer.add(this.matrix, this.vertex, x - this.camera.x, y - this.camera.y, z - this.camera.z, rgb, alpha);
     }

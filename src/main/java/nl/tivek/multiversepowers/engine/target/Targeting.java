@@ -20,7 +20,6 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.neoforged.neoforge.common.Tags;
 import nl.tivek.multiversepowers.MultiversePowers;
-import nl.tivek.multiversepowers.config.PowerRules;
 import nl.tivek.multiversepowers.engine.entity.HeldMobs;
 import nl.tivek.multiversepowers.faction.Factions;
 
@@ -104,15 +103,20 @@ public final class Targeting {
         return best;
     }
 
+    // What a power may take hold of or aim at: anything it may strike, but no boss and nothing already held.
     public static boolean isTargetable(ServerPlayer player, Entity entity) {
+        return mayStrike(player, entity) && !entity.getType().is(Tags.EntityTypes.BOSSES)
+                && !HeldMobs.isHeldByAnyone(entity);
+    }
+
+    // What a blow may land on: anything alive, players only where they may be hurt.
+    public static boolean mayStrike(ServerPlayer player, Entity entity) {
         if (entity == player || !(entity instanceof LivingEntity living) || !living.isAlive() || entity.isSpectator()
-                || entity instanceof ArmorStand || entity.getType().is(Tags.EntityTypes.BOSSES)
-                || HeldMobs.isHeldByAnyone(entity) || Factions.friendly(player, entity)) {
+                || entity instanceof ArmorStand || !Factions.mayHit(player, entity)) {
             return false;
         }
         if (entity instanceof Player other) {
-            return player.server.isPvpAllowed() && PowerRules.hurtPlayers() && !other.isCreative()
-                    && player.canHarmPlayer(other);
+            return player.server.isPvpAllowed() && !other.isCreative() && player.canHarmPlayer(other);
         }
         return true;
     }

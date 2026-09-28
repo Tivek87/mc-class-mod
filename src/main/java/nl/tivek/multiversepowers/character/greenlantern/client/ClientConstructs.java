@@ -52,7 +52,6 @@ import nl.tivek.multiversepowers.character.greenlantern.construct.ConstructPaylo
 import nl.tivek.multiversepowers.character.greenlantern.hand.HandGroup;
 import nl.tivek.multiversepowers.character.greenlantern.hand.HandPose;
 import nl.tivek.multiversepowers.character.greenlantern.mech.MechScript;
-import nl.tivek.multiversepowers.config.client.ClientSettings;
 import static nl.tivek.multiversepowers.character.greenlantern.client.ConstructPlaces.RAM_OWN_AHEAD;
 import static nl.tivek.multiversepowers.character.greenlantern.client.ConstructPlaces.beamEnd;
 import static nl.tivek.multiversepowers.character.greenlantern.client.ConstructPlaces.on;
@@ -67,7 +66,6 @@ public final class ClientConstructs extends TrackedConstructs {
     private static final Map<Integer, Broken> BROKEN = new HashMap<>();
     private static final Map<Integer, Broken> BROKEN_HANDS = new HashMap<>();
     private static final int BROKEN_TICKS = 42;
-    private static final double FAR_ROOM = 48.0;
 
     private record Broken(ConstructPayload construct, double clock, int since) {
     }
@@ -376,8 +374,6 @@ public final class ClientConstructs extends TrackedConstructs {
         Camera camera = event.getCamera();
         LanternPainter painter = new LanternPainter(event.getPoseStack(), camera.getPosition(), time,
                 event.getFrustum());
-        // Past the player's own drawing distance, with room for the biggest constructs to reach back into it.
-        double farthest = ClientSettings.get(ClientSettings.CONSTRUCT_DISTANCE) + FAR_ROOM;
         for (Track track : CONSTRUCTS.values()) {
             ConstructPayload was = track.previous;
             ConstructPayload now = track.current;
@@ -391,9 +387,6 @@ public final class ClientConstructs extends TrackedConstructs {
             double solid = Mth.lerp(partialTick, was.solid(), now.solid());
             double charge = Mth.lerp(partialTick, was.charge(), now.charge());
             Vec3 center = where(was, now, partialTick);
-            if (center.distanceToSqr(camera.getPosition()) > farthest * farthest) {
-                continue;
-            }
             boolean onItsWay = track.path != null && !track.latest.held();
             if (onItsWay) {
                 on(track, owner, partialTick);

@@ -28,6 +28,8 @@ public final class Characters {
     public static final int TAP = 2;
     public static final int HOLD = 4;
     public static final int SLAM = 8;
+    // A hold being wound up or let go before it is done: only shown to the others, never refused by a cooldown.
+    public static final int CHARGE = 16;
     public static final int WALL = 32;
     public static final int MOVE_SHIFT = 8;
 
@@ -121,7 +123,7 @@ public final class Characters {
         boolean ownCooldown = !ability.isHeld() && ability.holdTicks() > 0
                 && ability.tapWhen() != CharacterAbility.Tap.NEVER && (data & HOLD) != 0;
         // A move's landing (SLAM) belongs to the move already under way: its cooldown never refuses it.
-        boolean follow = (data & SLAM) != 0;
+        boolean follow = (data & (SLAM | CHARGE)) != 0;
         if (COOLDOWNS.left(player, character, slot.ordinal()) > 0 && !letGo && !undo && !ownCooldown && !follow) {
             sync(player);
             return;

@@ -1,33 +1,39 @@
 package nl.tivek.multiversepowers.character.greenlantern.client.mech;
 
 import javax.annotation.Nullable;
+
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.Input;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import net.neoforged.neoforge.network.PacketDistributor;
+import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.character.greenlantern.mech.MechDrivePayload;
 import nl.tivek.multiversepowers.character.greenlantern.mech.MechScript;
 
 // The pilot walks their own mech in their own game, as a player walks, and tells the server where it went: W and S
-// walk it on and back (Shift with W runs), A and D step it aside, and its legs turn after where the pilot looks. It
+// walk it on and back (the sprint key with W runs), A and D step it aside, and its legs turn after where the pilot looks. It
 // climbs no more than a step it can take, never walks off a drop too deep to see the bottom of, and stops where its
 // cockpit would run into blocks.
 public final class MechDrive {
     public static final double WALK = 0.2;
-    // Shift held with W runs: about twice as fast, getting up to it a little quicker.
-    public static final double RUN = 0.42;
-    private static final double RUN_UP = 0.02;
-    // Standing still, the legs step round only when the look is this far (degrees) off where they face.
-    private static final double STEP_ROUND = 38.0;
+    // The sprint key held with W runs: nearly four times as fast, getting up to it quicker.
+    public static final double RUN = 0.75;
+    private static final double RUN_UP = 0.03;
+    // Standing still, the legs step round only when the look is this far (degrees)
+    // off where they face.
+    private static final double STEP_ROUND = 55.0;
     public static final double TURN = Math.toRadians(3.0);
     private static final double TURN_DEGREES = 3.0;
-    // How much of the way still to turn the legs take on each tick, and how near they count as there.
+    // How much of the way still to turn the legs take on each tick, and how near
+    // they count as there.
     private static final double TURN_GAIN = 0.12;
     private static final double SETTLED_DEGREES = 1.5;
     private static final double SIDESTEP = 0.1;
@@ -65,6 +71,8 @@ public final class MechDrive {
 
     public static void drive(LocalPlayer player, int id, MechScript.Stage server, Input input) {
         if (id != mech) {
+            player.displayClientMessage(Component.translatable("ring." + MultiversePowers.MODID + ".mech_drive",
+                    Minecraft.getInstance().options.keySprint.getTranslatedKeyMessage()), true);
             mech = id;
             base = server.base();
             yaw = server.yaw();
@@ -75,12 +83,14 @@ public final class MechDrive {
             steppingRound = false;
         }
         boolean ahead = input.forwardImpulse > 0.01F;
-        boolean run = ahead && input.shiftKeyDown;
+        boolean run = ahead && Minecraft.getInstance().options.keySprint.isDown();
         double want = ahead ? run ? RUN : WALK : input.forwardImpulse < -0.01F ? -BACK : 0.0;
         speed += Mth.clamp(want - speed, -SLOW_DOWN, run ? RUN_UP : SPEED_UP);
         side += Mth.clamp(input.leftImpulse * SIDESTEP - side, -SLOW_DOWN, SPEED_UP);
-        // The legs turn after where the pilot looks, no faster than they can, while the torso swings there first.
-        // Standing, they only step round once it has twisted far over them, then all the way; walking, they keep up.
+        // The legs turn after where the pilot looks, no faster than they can, while the
+        // torso swings there first.
+        // Standing, they only step round once it has twisted far over them, then all
+        // the way; walking, they keep up.
         double behind = Mth.wrapDegrees(player.getYRot() - yaw);
         boolean moving = Math.abs(speed) > 0.02 || Math.abs(side) > 0.02;
         if (Math.abs(behind) > STEP_ROUND) {
@@ -123,7 +133,8 @@ public final class MechDrive {
         }
     }
 
-    // Whether the cockpit fits where the mech would go: trees and plants give way, anything else solid stops it.
+    // Whether the cockpit fits where the mech would go: trees and plants give way,
+    // anything else solid stops it.
     private static boolean clear(LocalPlayer player, Vec3 next) {
         Vec3 seat = MechScript.Stage.facing(next, yaw).point(MechScript.COCKPIT);
         AABB box = player.getDimensions(player.getPose()).makeBoundingBox(seat).deflate(0.05);

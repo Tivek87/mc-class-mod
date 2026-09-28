@@ -10,7 +10,6 @@ import nl.tivek.multiversepowers.character.greenlantern.client.render.LanternPai
 import nl.tivek.multiversepowers.character.greenlantern.construct.ConstructPayload;
 import nl.tivek.multiversepowers.character.greenlantern.mech.MechMoves;
 import nl.tivek.multiversepowers.character.greenlantern.mech.MechScript;
-import nl.tivek.multiversepowers.config.client.ClientSettings;
 import nl.tivek.multiversepowers.engine.client.render.ConstructPainter.Frame;
 import nl.tivek.multiversepowers.engine.client.render.ConstructPainter.Shape;
 import nl.tivek.multiversepowers.engine.client.render.Material;
@@ -61,9 +60,6 @@ public final class MechPainter {
         parts(painter, pose, t, apart, own, walk != null && pose == walk);
         if (apart < 0.0) {
             MechLight.lights(painter, pose, t, ring, own);
-            if (walk != null && pose == walk) {
-                MechLamp.drawLight(painter, now.id(), pose, t, partialTick, own);
-            }
         }
     }
 
@@ -109,7 +105,7 @@ public final class MechPainter {
             arm(painter, pose, right, t, apart, seed + PIECES * 3, walking);
             shoulder(painter, pose.torso(), right, t, apart, seed + PIECES * 8);
         }
-        body(painter, pose, t, apart, own, walking);
+        body(painter, pose, t, apart, own);
         head(painter, pose, t, apart, walking);
         spine(pose, t, apart, walking);
         painter.flush();
@@ -203,8 +199,7 @@ public final class MechPainter {
         }
     }
 
-    private static void body(LanternPainter painter, MechPose pose, double t, double apart, boolean own,
-            boolean walking) {
+    private static void body(LanternPainter painter, MechPose pose, double t, double apart, boolean own) {
         MechScript.Stage torso = pose.torso();
         Frame body = body(torso);
         if (t >= MechScript.HIPS) {
@@ -218,7 +213,6 @@ public final class MechPainter {
                     Mth.clamp((t - MechScript.ARMOR) / 16.0, 0.0, 1.0), apart);
             MechParts.draw(painter, MechBodyShapes.CHEST, body, 1.0, apart, PIECES * 52);
             MechParts.draw(painter, MechBodyShapes.RIM, body, 1.0, apart, PIECES * 54);
-            MechLamp.drawHousing(painter, pose, t, walking, apart, PIECES * 58);
             painter.noClip();
         }
         MechCockpit.draw(painter, pose, body, t, apart, own, PIECES * 56);
@@ -341,7 +335,7 @@ public final class MechPainter {
             Minecraft minecraft = Minecraft.getInstance();
             boolean inside = minecraft.player != null && minecraft.player.getId() == mech.owner();
             return (float) MechWalk.shake(mech.id(), from, minecraft.getTimer().getGameTimeDeltaPartialTick(false),
-                    inside) * ClientSettings.factor(ClientSettings.MECH_STEP_SHAKE);
+                    inside);
         }
         MechScript.Stage stage = MechScript.Stage.of(mech);
         double near = 1.0 - from.distanceTo(stage.point(0.0, 3.0, MechScript.TARGET_AHEAD * 0.5)) / SHAKE_RANGE;

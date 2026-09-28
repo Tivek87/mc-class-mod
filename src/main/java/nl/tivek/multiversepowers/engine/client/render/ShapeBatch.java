@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ForkJoinPool;
-import nl.tivek.multiversepowers.config.client.ClientSettings;
 
 // The shapes a painter held back (see ConstructPainter.batch), worked out together: split into runs of about equal
 // work, each drawn by a painter of its own, all at once on other threads, and joined back in the order they were drawn.
@@ -58,8 +57,7 @@ final class ShapeBatch {
         for (Held shape : this.held) {
             total += shape.work();
         }
-        int chosen = ClientSettings.get(ClientSettings.RENDER_THREADS);
-        int runs = total < ALONE ? 1 : Math.min(chosen > 0 ? chosen : CORES, this.held.size());
+        int runs = total < ALONE ? 1 : Math.min(CORES, this.held.size());
         int[] from = new int[runs + 1];
         long done = 0;
         int run = 1;

@@ -62,7 +62,7 @@ public final class SpellCasting {
             return;
         }
         Entity struck = event.getEntity();
-        if (struck.getUUID().equals(cause.getUUID()) || Factions.friendly(cause, struck)
+        if (struck.getUUID().equals(cause.getUUID()) || !Factions.mayHit(cause, struck)
                 || struck instanceof Player player && !Targeting.isTargetable(cause, player)) {
             event.setCanceled(true);
         }

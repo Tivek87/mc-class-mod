@@ -12,6 +12,7 @@ import nl.tivek.multiversepowers.engine.client.pose.Stance;
 import nl.tivek.multiversepowers.engine.client.render.EntityPass;
 import nl.tivek.multiversepowers.engine.math.Ease;
 import nl.tivek.multiversepowers.engine.math.Noise;
+import nl.tivek.multiversepowers.spell.client.ClientClaps;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
@@ -37,7 +38,7 @@ public final class ThorPoses {
     }
 
     // What the pose of this frame is made of, summed over every move that is on.
-    private static final class Mix {
+    static final class Mix {
         float drop;
         float pitch;
         float waist;
@@ -49,6 +50,9 @@ public final class ThorPoses {
         final Vector3f[] hands = { new Vector3f(), new Vector3f() };
         final float[] handWeight = new float[2];
         final boolean[] rootHands = new boolean[2];
+        // The way an elbow bends out, where a move says (its own weight, over the arm's usual way).
+        final Vector3f[] poles = { new Vector3f(), new Vector3f() };
+        final float[] poleWeight = new float[2];
         float weight;
 
         void reset() {
@@ -59,6 +63,7 @@ public final class ThorPoses {
             this.twist = 0.0F;
             this.footWeight[0] = this.footWeight[1] = 0.0F;
             this.handWeight[0] = this.handWeight[1] = 0.0F;
+            this.poleWeight[0] = this.poleWeight[1] = 0.0F;
             this.rootHands[0] = this.rootHands[1] = false;
             this.airborne = false;
             this.weight = 0.0F;
@@ -85,6 +90,15 @@ public final class ThorPoses {
             this.feet[side].lerp(new Vector3f(x, y, z), w / total);
             this.footWeight[side] = Math.min(1.0F, total);
         }
+
+        void pole(int side, Vector3f way, float w) {
+            if (w <= 0.0F) {
+                return;
+            }
+            float total = this.poleWeight[side] + w;
+            this.poles[side].lerp(way, w / total);
+            this.poleWeight[side] = Math.min(1.0F, total);
+        }
     }
 
     private static final Mix MIX = new Mix();
@@ -107,6 +121,7 @@ public final class ThorPoses {
         floating(mix, model, body, entity);
         flight(mix, view, body, age, entity);
         slam(mix, view, age);
+        blows(mix, view, entity, partialTick);
         float absorb = (float) Math.max(0.0, body.absorb.value);
         mix.drop += absorb;
         mix.pitch += absorb * 0.05F;
@@ -150,7 +165,38 @@ public final class ThorPoses {
                 CHEST.transform(target).add(NECK);
             }
             hand.lerp(target, w);
-            Stance.arm(model, right, hand, right ? RIGHT_ELBOW : LEFT_ELBOW);
+            Vector3f elbow = new Vector3f(right ? RIGHT_ELBOW : LEFT_ELBOW).lerp(mix.poles[side],
+                    mix.poleWeight[side]);
+            Stance.arm(model, right, hand, elbow);
+        }
+    }
+
+    // His blows and the guard he keeps between them (ThorBlowPoses): hands, trunk and a kicking foot, over his walk.
+    // A thunderclap has his arms meanwhile.
+    private static void blows(Mix mix, ClientThor.View view, LivingEntity entity, float partialTick) {
+        if (ClientClaps.active(entity) || view.has(ThorStatePayload.FLYING)) {
+            return;
+        }
+        ThorBlowPoses.Pose pose = ThorBlowPoses.of(view, partialTick);
+        if (pose == null || pose.weight < 1.0E-3F) {
+            return;
+        }
+        float w = pose.weight;
+        mix.weight = Math.max(mix.weight, w);
+        mix.drop += pose.drop * w;
+        mix.pitch += pose.pitch * w;
+        mix.twist += pose.twist * w;
+        mix.roll += pose.roll * w;
+        for (int side = 0; side < 2; side++) {
+            Vector3f hand = pose.hand[side];
+            mix.hand(side, hand.x, hand.y, hand.z, w, false);
+            mix.pole(side, pose.pole[side], w);
+        }
+        if (pose.footSide >= 0 && pose.kick > 1.0E-3F) {
+            float kick = pose.kick * w;
+            mix.foot(pose.footSide, pose.foot.x, pose.foot.y, pose.foot.z, kick);
+            int planted = 1 - pose.footSide;
+            mix.foot(planted, planted == 0 ? -Stance.HIP_X : Stance.HIP_X, Stance.GROUND, 0.5F, kick);
         }
     }
 

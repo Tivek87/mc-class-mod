@@ -25,6 +25,8 @@ abstract class PortalState {
     private static final int SKY_OPEN = 44;
     private static final int CLOSE_TIME = 34;
     static final int GRIP_TIME = 9;
+    static final int MAX_HUNT = 120;
+    static final int MAX_DRAG = 120;
     static final int SLAM_WAIT = 10;
 
     static final double DIVE_SPEED = 0.3;
@@ -46,6 +48,7 @@ abstract class PortalState {
     static final double SKY_HEIGHT = 26.0;
     static final double MIN_SKY = 7.0;
     static final double SKY_RADIUS = 10.0;
+    static final double MAX_FROM_CASTER = 28.0;
     static final double PORTAL_DEPTH = 0.3;
     static final double CLAW_OPEN = 0.7;
 

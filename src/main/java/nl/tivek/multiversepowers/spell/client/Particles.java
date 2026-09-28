@@ -101,7 +101,7 @@ final class Particles {
                 int glints = (int) (8.0 * (1.0 - age / ClapFx.LIFE)) + 1;
                 for (int k = 0; k < glints; k++) {
                     Vec3 at = from.add(ClapFx.within(aimed, random.nextDouble())
-                            .scale(1.0 + Math.sqrt(random.nextDouble()) * ClapFx.reach()));
+                            .scale(1.0 + Math.sqrt(random.nextDouble()) * ClapFx.REACH));
                     add(level, random, ParticleTypes.ELECTRIC_SPARK, at.x, at.y + (random.nextDouble() - 0.5) * 1.2,
                             at.z, 0.0, 0.05, 0.0);
                 }

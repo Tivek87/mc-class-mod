@@ -50,14 +50,9 @@ public enum Spell {
         return this.id;
     }
 
-    // As this world's spell settings have it, times the cooldown multiplier of every power.
+    // Times the cooldown multiplier of every power.
     public int getCooldown() {
-        return (int) Math.round(SpellRules.value(this, "cooldownTicks") * PowerRules.cooldowns());
-    }
-
-    // The cooldown the mod gives it, the one a new world starts from.
-    public int defaultCooldown() {
-        return this.cooldown;
+        return (int) Math.round(this.cooldown * PowerRules.cooldowns());
     }
 
     public int getColor() {

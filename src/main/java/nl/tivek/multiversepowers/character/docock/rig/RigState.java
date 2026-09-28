@@ -36,6 +36,7 @@ abstract class RigState {
     static final double HOLD_DISTANCE = 3.2;
     static final double FOLLOW = 0.75;
     static final double MAX_SPEED = 3.6;
+    static final double THROW_SPEED = 2.6;
     static final int CRASH_PAUSE = 5;
     static final int THROWN_TRACK = 40;
     static final int HELD_SLAM_TIME = 10;
@@ -46,9 +47,13 @@ abstract class RigState {
     static final int RISE_TIME = 8;
     static final int MAX_DROP = 40;
     static final double AIR_DROP = 1.8;
+    static final double SLAM_RADIUS = 6.0;
+
+    static final double AIR_SLAM_RADIUS = 8.0;
 
 
-
+    static final double RAMPAGE_RANGE = 8.0;
+    static final int RAMPAGE_EVERY = 12;
 
     static final double STEP_AFTER = 1.2;
     static final int STEP_TIME = 7;

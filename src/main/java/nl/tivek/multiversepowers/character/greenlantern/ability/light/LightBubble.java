@@ -45,7 +45,6 @@ import nl.tivek.multiversepowers.engine.effect.Effects;
 import nl.tivek.multiversepowers.engine.entity.HeldMobs;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 import nl.tivek.multiversepowers.engine.math.Ease;
-import nl.tivek.multiversepowers.faction.Factions;
 
 @EventBusSubscriber(modid = MultiversePowers.MODID)
 public final class LightBubble implements Effect {
@@ -384,8 +383,7 @@ public final class LightBubble implements Effect {
         double thrown = last ? 1.0 : EARLY_THROW;
         if (reach > 0.0) {
             for (LivingEntity other : level.getEntitiesOfClass(LivingEntity.class, new AABB(at, at).inflate(reach + 1.0),
-                    entity -> entity != this.target && PowerRing.canHit(this.owner, entity)
-                            && Factions.hostile(this.owner, entity))) {
+                    entity -> entity != this.target && PowerRing.canHit(this.owner, entity))) {
                 Vec3 middle = other.getBoundingBox().getCenter();
                 double distance = middle.distanceTo(at);
                 if (distance > reach + other.getBbWidth() * 0.5) {

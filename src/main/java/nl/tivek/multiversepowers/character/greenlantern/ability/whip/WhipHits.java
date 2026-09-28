@@ -26,7 +26,6 @@ import nl.tivek.multiversepowers.character.greenlantern.ability.flame.FlameHits;
 import nl.tivek.multiversepowers.engine.effect.Effect;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 import nl.tivek.multiversepowers.engine.world.LoadedWorld;
-import nl.tivek.multiversepowers.faction.Factions;
 
 abstract class WhipHits implements Effect {
     private static final int SEGMENTS = 12;
@@ -203,7 +202,7 @@ abstract class WhipHits implements Effect {
         Vec3 chest = at.add(0.0, this.owner.getBbHeight() * CHEST, 0.0);
         double damage = wheel().value("whirlDamage");
         for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, new AABB(at, at).inflate(reach + 1.0,
-                WHIRL_HIGH + 0.5, reach + 1.0), this::hostile)) {
+                WHIRL_HIGH + 0.5, reach + 1.0), this::fair)) {
             Vec3 to = target.position().subtract(at);
             double flat = Math.sqrt(to.x * to.x + to.z * to.z);
             if (flat < WHIRL_CLOSE || flat > reach + target.getBbWidth() * 0.5 || to.y < WHIRL_LOW
@@ -271,10 +270,6 @@ abstract class WhipHits implements Effect {
     boolean fair(LivingEntity living) {
         return PowerRing.canHit(this.owner, living)
                 && !(living instanceof OwnableEntity pet && pet.getOwner() == this.owner);
-    }
-
-    private boolean hostile(LivingEntity living) {
-        return this.fair(living) && Factions.hostile(this.owner, living);
     }
 
     static Vec3 flat(Vec3 way) {

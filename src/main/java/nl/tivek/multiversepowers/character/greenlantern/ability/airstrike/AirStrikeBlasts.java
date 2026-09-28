@@ -212,7 +212,7 @@ abstract class AirStrikeBlasts implements Effect {
     void blast(ServerLevel level, Vec3 at, double radius, double damage, @Nullable LivingEntity direct,
             double knockback) {
         AABB area = new AABB(at, at).inflate(radius + 1.0);
-        for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, area, this::hostile)) {
+        for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, area, this::hits)) {
             Vec3 middle = target.getBoundingBox().getCenter();
             double distance = middle.distanceTo(at);
             boolean hit = target == direct;
@@ -235,8 +235,13 @@ abstract class AirStrikeBlasts implements Effect {
         }
     }
 
+    // What the strike picks out to shoot at: enemies only. What its rounds and blasts hit: anything they may.
     boolean hostile(LivingEntity living) {
         return PowerRing.canHit(this.owner, living) && Factions.hostile(this.owner, living);
+    }
+
+    boolean hits(LivingEntity living) {
+        return PowerRing.canHit(this.owner, living);
     }
 
     Vec3 ground(ServerLevel level, Vec3 at) {

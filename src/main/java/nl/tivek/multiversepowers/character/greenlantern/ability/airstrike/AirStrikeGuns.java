@@ -174,7 +174,7 @@ abstract class AirStrikeGuns extends AirStrikeBlasts {
         boolean air = block.getType() == HitResult.Type.MISS;
         boolean body = false;
         for (LivingEntity living : level.getEntitiesOfClass(LivingEntity.class,
-                new AABB(muzzle, to).inflate(LEAD_REACH), this::hostile)) {
+                new AABB(muzzle, to).inflate(LEAD_REACH), this::hits)) {
             Vec3 on = ahead(living, muzzle).inflate(BULLET_HIT).clip(muzzle, to).orElse(null);
             if (on != null) {
                 to = on;
@@ -208,7 +208,7 @@ abstract class AirStrikeGuns extends AirStrikeBlasts {
             LivingEntity struck = null;
             double nearest = Double.MAX_VALUE;
             for (LivingEntity living : level.getEntitiesOfClass(LivingEntity.class,
-                    new AABB(from, end).inflate(1.0), this::hostile)) {
+                    new AABB(from, end).inflate(1.0), this::hits)) {
                 Vec3 on = living.getBoundingBox().inflate(BULLET_HIT).clip(from, end).orElse(null);
                 if (on != null && on.distanceToSqr(from) < nearest) {
                     nearest = on.distanceToSqr(from);

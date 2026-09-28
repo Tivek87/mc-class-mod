@@ -17,8 +17,6 @@ import nl.tivek.multiversepowers.character.client.PowerInputs;
 import nl.tivek.multiversepowers.config.ModConfigs;
 import nl.tivek.multiversepowers.config.PowerRules;
 import nl.tivek.multiversepowers.config.Unit;
-import nl.tivek.multiversepowers.spell.Spell;
-import nl.tivek.multiversepowers.spell.SpellRules;
 import nl.tivek.multiversepowers.stamina.StaminaConfig;
 import nl.tivek.multiversepowers.stamina.client.StaminaClient;
 
@@ -49,7 +47,6 @@ public final class SettingsPages {
         for (GameCharacter character : GameCharacter.values()) {
             pages.add(character(character));
         }
-        pages.add(spells());
         return pages;
     }
 
@@ -77,12 +74,7 @@ public final class SettingsPages {
         List<ConfigNumber> numbers = List.of(
                 fromSpec(spec, file, "general", "damageMultiplier", PowerRules.DAMAGE, Unit.STRENGTH, 0.1),
                 fromSpec(spec, file, "general", "cooldownMultiplier", PowerRules.COOLDOWNS, Unit.STRENGTH, 0.1),
-                fromSpec(spec, file, "general", "breakBlocks", PowerRules.BREAK_BLOCKS, Unit.SWITCH, 1.0),
-                fromSpec(spec, file, "general", "powerCostMultiplier", PowerRules.POWER_COST, Unit.STRENGTH, 0.1),
-                fromSpec(spec, file, "general", "hurtPlayers", PowerRules.HURT_PLAYERS, Unit.SWITCH, 1.0),
-                fromSpec(spec, file, "general", "effectRangeMultiplier", PowerRules.EFFECT_RANGE, Unit.STRENGTH,
-                        0.25),
-                fromSpec(spec, file, "general", "knockdownSeconds", PowerRules.KNOCKDOWN, Unit.SECONDS, 0.25));
+                fromSpec(spec, file, "general", "breakBlocks", PowerRules.BREAK_BLOCKS, Unit.SWITCH, 1.0));
         Section section = new Section(Component.translatable(PREFIX + "general.powers"), null,
                 List.of(new Group(null, numbers)));
         List<ConfigNumber> allowed = new ArrayList<>();
@@ -94,22 +86,6 @@ public final class SettingsPages {
                 List.of(new Group(null, allowed)));
         return new Page(Component.translatable(PREFIX + "general"), 0x9DFF8A, List.of(section, chosen),
                 worldEditable(spec), true, spec::save);
-    }
-
-    public static Page spells() {
-        ModConfigSpec spec = SpellRules.SPEC;
-        String file = ModConfigs.file("spells");
-        List<Section> sections = new ArrayList<>();
-        for (Spell spell : Spell.values()) {
-            List<ConfigNumber> numbers = new ArrayList<>();
-            for (SpellRules.Rule rule : SpellRules.rules(spell)) {
-                numbers.add(fromSpec(spec, file, "spells." + spell.getId(), rule.key(), rule.value(), rule.unit(),
-                        rule.step()));
-            }
-            sections.add(new Section(spell.getDisplayName(), null, List.of(new Group(null, numbers))));
-        }
-        return new Page(Component.translatable(PREFIX + "spells"), 0xB89CFF, sections, worldEditable(spec), true,
-                spec::save);
     }
 
     public static Page stamina() {
@@ -266,7 +242,6 @@ public final class SettingsPages {
             case BLOCK_COUNT -> 10.0;
             case COUNT, SWITCH, MINUTES, CHOICE -> 1.0;
             case PERCENT -> 0.05;
-            case DEGREES -> 1.0;
         };
     }
 }

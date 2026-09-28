@@ -17,7 +17,6 @@ import nl.tivek.multiversepowers.character.client.ClientCharacter;
 import nl.tivek.multiversepowers.character.greenlantern.RingPayload;
 import nl.tivek.multiversepowers.character.greenlantern.ability.flight.Flight;
 import nl.tivek.multiversepowers.character.greenlantern.client.ClientRing;
-import nl.tivek.multiversepowers.config.client.ClientSettings;
 import nl.tivek.multiversepowers.engine.math.Ease;
 
 abstract class FlightSteering {
@@ -220,8 +219,7 @@ abstract class FlightSteering {
             this.y = this.player.getY();
             this.z = this.player.getZ();
             double speed = velocity.length() / fullSpeed();
-            this.volume = (float) Mth.clamp((speed - 0.17) * 0.8, 0.0, 0.85)
-                    * ClientSettings.factor(ClientSettings.FLIGHT_SOUNDS);
+            this.volume = (float) Mth.clamp((speed - 0.17) * 0.8, 0.0, 0.85);
             this.pitch = 0.9F + (float) Math.min(0.5, speed * 0.32);
         }
     }

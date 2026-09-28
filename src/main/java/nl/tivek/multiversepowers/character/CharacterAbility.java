@@ -2,7 +2,6 @@ package nl.tivek.multiversepowers.character;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import javax.annotation.Nullable;
 import net.minecraft.network.chat.Component;
 import nl.tivek.multiversepowers.MultiversePowers;
@@ -265,23 +264,11 @@ public final class CharacterAbility {
         double value = CharacterConfig.value(this, key);
         for (Setting setting : this.settings) {
             if (setting.key().equals(key)) {
-                return world(setting, value);
+                return setting.unit() == Unit.HALF_HEARTS || setting.unit() == Unit.HALF_HEARTS_PER_SPEED
+                        ? value * PowerRules.damage() : value;
             }
         }
         return value;
-    }
-
-    // A setting as this world's power rules make it: damage times the damage multiplier, a cost of ring power
-    // times the cost multiplier, a full ring's flight as much shorter.
-    private static double world(Setting setting, double value) {
-        String key = setting.key().toLowerCase(Locale.ROOT);
-        return switch (setting.unit()) {
-            case HALF_HEARTS, HALF_HEARTS_PER_SPEED -> value * PowerRules.damage();
-            case POWER, POWER_PER_SECOND -> key.contains("cost") || key.contains("persecond")
-                    ? value * PowerRules.powerCost() : value;
-            case RING_SECONDS -> value / Math.max(1.0E-3, PowerRules.powerCost());
-            default -> value;
-        };
     }
 
     public int intValue(String key) {

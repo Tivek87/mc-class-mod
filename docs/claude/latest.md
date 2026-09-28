@@ -1,12 +1,15 @@
 # Laatste sessie
 
 - Datum: 2026-09-28.
-- Vraag: config client+server veel groter (effecten, particles, meer), server-config alleen voor eigenaar/host (geen ops),
-  mod optimaliseren zonder kwaliteitsverlies (mech), mech-QOL (zaklamp op torso), mech-handen clippen bij klap.
-- Gedaan: eigenaar-lock (`owners` in general.toml), 45 client-instellingen (7 secties, zelfbouwende pagina),
-  wereldregels (kosten, PvP, effectbereik, knockdown, personages/spreuken aan-uit), Thor/Doc Ock/mech-instellingen,
-  spells.toml; klap-fix (vingers stoppen in het midden, MechClapTest); zaklamp (Spotlight); painter sneller.
-- FPS mech 1e persoon (1280x720): 300 -> 490 gem., 99e pct 115 -> 285; A/B: 540 checks byte-identiek.
-- Build + 77 tests groen; in-game getest: klap, lamp, FPS, instellingenschermen. Niet getest: multiplayer-eigenaar.
-- Rooktest na de laatste refactors in orde; commit + push naar origin/master en release v0.3.9-alpha (op ja).
-- Open: ideeen #24/#25/#31 wachten op ja/nee; eigenaar-lock nog niet op een echte server getest.
+- Vraag: config kleiner (client ~15, server terug naar ~0.3.8), mech-lamp weg, mech sneller rennen, torso verder
+  draaien, "Locked" bij vaste keybinds, Thor: combo (24 hand + 4 trappen) op links klik, thunderclap op links vast
+  0.75 s (achterover, armen wijd, klap, bliksemvonken, donder ver weg); bug #34 (iedereen raken behalve eigen team).
+- Gedaan: alles gebouwd (ThorBlow/ThorBlows/ThorCombo/ThorBlowKeys/ThorBlowPoses/ThorFists, FirstPersonLeg,
+  ClientClaps wind-up, ClapFx vonken, Factions.mayHit, Targeting.mayStrike); SpellRules, MechLamp, Spotlight,
+  ModSounds weg. Gebruiker zette mech-rennen zelf op de sprint-toets (MechDrive).
+- Build + unit tests groen. In-game testrun draaide (t7), maar screenshots en log NIET nagekeken: Thor-houdingen,
+  eerste-persoon, klap en keyframes ongetest. Op verzoek meteen commit/push/release v0.4.0-alpha ("nog lang niet
+  af, heel buggy").
+- Open: screenshots-test opnieuw draaien en houdingen/timing afstellen; POWERS.md, PROJECT.md en CLAUDE.md
+  beschrijven nog oude Thor-knoppen, mech-lamp, instellingen en de oude factie-regel (bijwerken); bug #34 nog open
+  op GitHub (niet in-game getest); ideeen #24/#25/#31/#32/#33 later.

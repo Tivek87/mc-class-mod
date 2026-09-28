@@ -6,7 +6,6 @@ import javax.annotation.Nullable;
 import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
-import nl.tivek.multiversepowers.config.client.ClientSettings;
 import nl.tivek.multiversepowers.engine.math.Colors;
 import nl.tivek.multiversepowers.engine.math.Noise;
 import nl.tivek.multiversepowers.engine.math.Vectors;
@@ -76,7 +75,6 @@ abstract class PainterLight extends PainterCore {
     }
 
     public void flare(Vec3 at, double size, double strength) {
-        strength *= ClientSettings.get(ClientSettings.FLARE_STRENGTH);
         if (strength <= 0.0) {
             return;
         }
@@ -142,20 +140,6 @@ abstract class PainterLight extends PainterCore {
             this.put(layer, b.x + sb.x * flip, b.y + sb.y * flip, b.z + sb.z * flip, rgb, 0);
             this.put(layer, a.x + sa.x * flip, a.y + sa.y * flip, a.z + sa.z * flip, rgb, 0);
         }
-    }
-
-    // A patch of glow laid on a surface: a triangle whose corners each have their own strength.
-    public void glowTriangle(Vec3 a, double alphaA, Vec3 b, double alphaB, Vec3 c, double alphaC, int rgb) {
-        int fa = this.faded(a.x, a.y, a.z, Colors.alpha(alphaA));
-        int fb = this.faded(b.x, b.y, b.z, Colors.alpha(alphaB));
-        int fc = this.faded(c.x, c.y, c.z, Colors.alpha(alphaC));
-        if (fa <= 0 && fb <= 0 && fc <= 0) {
-            return;
-        }
-        this.put(this.glow, a.x, a.y, a.z, rgb, fa);
-        this.put(this.glow, b.x, b.y, b.z, rgb, fb);
-        this.put(this.glow, c.x, c.y, c.z, rgb, fc);
-        this.put(this.glow, a.x, a.y, a.z, rgb, fa);
     }
 
     public void glowDisc(Vec3 at, double radius, int rgb, double strength, double rough, int seed) {
