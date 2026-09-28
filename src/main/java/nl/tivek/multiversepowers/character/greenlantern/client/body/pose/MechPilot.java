@@ -4,7 +4,6 @@ import javax.annotation.Nullable;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.PlayerModel;
-import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.player.Input;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.entity.player.PlayerRenderer;
@@ -25,14 +24,15 @@ import nl.tivek.multiversepowers.character.greenlantern.client.ClientConstructs;
 import nl.tivek.multiversepowers.character.greenlantern.client.mech.MechDrive;
 import nl.tivek.multiversepowers.character.greenlantern.client.mech.MechPose;
 import nl.tivek.multiversepowers.character.greenlantern.client.mech.MechWalk;
-import nl.tivek.multiversepowers.character.greenlantern.mech.MechMoves;
 import nl.tivek.multiversepowers.character.greenlantern.mech.MechScript;
 import nl.tivek.multiversepowers.engine.client.fx.Cinematic;
+import nl.tivek.multiversepowers.engine.client.render.EntityPass;
 import nl.tivek.multiversepowers.engine.client.render.FirstPersonArm;
 import nl.tivek.multiversepowers.engine.math.Ease;
 import org.joml.Vector3f;
 
-// The mech's pilot: standing in its chest, their arms doing what its arms do until they take hold of its sticks.
+// The mech's pilot: casting it and leaping into its chest, working its arms with their own there, then sitting down
+// to take its sticks (PilotBody poses the whole body).
 @EventBusSubscriber(modid = MultiversePowers.MODID, value = Dist.CLIENT)
 public final class MechPilot {
     private static final float HEAD_TURN = 1.25F;
@@ -41,58 +41,50 @@ public final class MechPilot {
     private static final float ARM_DOWN = 0.55F;
     private static final float ARM_BACK = 0.5F;
     private static final double IDLE = MechScript.SETTLED + 20.0;
-    private static final float SIT_LEGS = 1.41F;
-    private static final float SIT_SPREAD = 0.2F;
-    private static final double SHOULDER_X = 0.3125;
-    private static final double SHOULDER_Y = 1.375;
     private static final double BUTTON_TOP = 0.08;
     private static final double BUTTON_PUSH = 0.05;
     private static final int DRIVE_AFTER = 2;
+    private static final Vector3f[] GRIPS = { new Vector3f(), new Vector3f() };
 
     private MechPilot() {
     }
 
     public static boolean pose(PlayerModel<?> model, LivingEntity entity) {
+        if (!EntityPass.inWorld()) {
+            return false;
+        }
         float partialTick = Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(false);
         ClientConstructs.Piloted pilot = ClientConstructs.piloted(entity.getId(), partialTick);
         if (pilot == null) {
             return false;
         }
-        double t = pilot.broke() >= 0.0 ? IDLE : pilot.t();
+        double t = pilot.t();
         MechPose walk = walking(pilot, partialTick);
         for (int side = 0; side < 2; side++) {
-            boolean right = side == 0;
-            Vec3 way = walk != null ? toHand(walk, right ? 1 : -1) : MechMoves.pilotArm(right, t).way();
-            float[] turn = reach(way);
-            ModelPart arm = right ? model.rightArm : model.leftArm;
-            arm.xRot = turn[0];
-            arm.yRot = 0.0F;
-            arm.zRot = right ? turn[1] : -turn[1];
+            int way = side == 0 ? 1 : -1;
+            Vec3 grip = walk != null ? hand(walk, way) : lever(pilot.stage(), way);
+            PilotBody.toModel(entity, partialTick, grip, GRIPS[side]);
         }
-        float leap = (float) (Ease.smooth((t - MechScript.LEAP) / 4.0)
-                * (1.0 - Ease.smooth((t - MechScript.ABOARD + 6.0) / 6.0)));
-        float sit = pilot.broke() >= 0.0 ? 0.0F : (float) Ease.smooth((t - MechScript.SIT) / 6.0);
-        float stance = (t < MechScript.LEAP ? 0.14F : 0.06F) * (1.0F - sit);
-        model.rightLeg.xRot = -0.95F * leap - SIT_LEGS * sit;
-        model.leftLeg.xRot = -0.3F * leap - SIT_LEGS * sit;
-        model.rightLeg.yRot = SIT_SPREAD * sit;
-        model.leftLeg.yRot = -SIT_SPREAD * sit;
-        model.rightLeg.zRot = stance;
-        model.leftLeg.zRot = -stance;
-        model.body.xRot = 0.0F;
+        double push = walk != null ? (walk.push(1) + walk.push(-1)) * 0.5 : 0.0;
+        PilotBody.pose(model, t, pilot.broke(), GRIPS, onStick(t), raised(t), push);
         model.head.yRot = Mth.clamp(model.head.yRot, -HEAD_TURN, HEAD_TURN);
         model.hat.copyFrom(model.head);
-        model.jacket.copyFrom(model.body);
-        model.rightSleeve.copyFrom(model.rightArm);
-        model.leftSleeve.copyFrom(model.leftArm);
-        model.rightPants.copyFrom(model.rightLeg);
-        model.leftPants.copyFrom(model.leftLeg);
         return true;
     }
 
-    // The arm's own turn from hanging down to pointing along way (the mech's places, x outwards): x first, then z.
-    private static float[] reach(Vec3 way) {
-        return new float[] { (float) Math.asin(Mth.clamp(-way.z, -1.0, 1.0)), (float) Math.atan2(way.x, -way.y) };
+    // How far the hands have taken hold of the sticks, `t` into the build.
+    private static double onStick(double t) {
+        return Ease.smooth((t - MechScript.GRIP) / 6.0);
+    }
+
+    // How far the ring fist is thrown up with the mech's own as its head locks on.
+    private static double raised(double t) {
+        return t < MechScript.LOCK - 2 ? 0.0
+                : Ease.smooth((t - (MechScript.LOCK - 2)) / 5.0) * (1.0 - Ease.smooth((t - 188.0) / 6.0));
+    }
+
+    private static Vec3 lever(MechScript.Stage stage, int side) {
+        return stage.point(side * MechScript.LEVER.x, MechScript.LEVER.y + MechScript.LEVER_LENGTH, MechScript.LEVER.z);
     }
 
     @Nullable
@@ -111,13 +103,6 @@ public final class MechPilot {
         Vec3 top = pose.torso().point(MechScript.BUTTONS[button].add(0.0, BUTTON_TOP, 0.0));
         Vec3 at = grip.lerp(top, Ease.smooth(Math.min(1.0, press / 0.8)));
         return at.subtract(pose.torso().up().scale(BUTTON_PUSH * Math.max(0.0, press - 0.8) / 0.2));
-    }
-
-    // Which way a seated pilot's arm points to reach its hand, in the mech's places with x outwards for either arm.
-    private static Vec3 toHand(MechPose pose, int side) {
-        Vec3 shoulder = MechScript.COCKPIT.add(side * SHOULDER_X, SHOULDER_Y, 0.0);
-        Vec3 way = pose.torso().local(hand(pose, side)).subtract(shoulder);
-        return new Vec3(way.x * side, way.y, way.z).normalize();
     }
 
     @SubscribeEvent
@@ -192,11 +177,10 @@ public final class MechPilot {
         double stretch = Math.tan(Math.toRadians(35.0)) / Math.tan(Math.toRadians(minecraft.options.fov().get() * 0.5));
         PlayerRenderer renderer = (PlayerRenderer) minecraft.getEntityRenderDispatcher().getRenderer(player);
         for (int side = -1; side <= 1; side += 2) {
-            if (walk == null && MechMoves.pilotArm(side > 0, t).onStick() < 0.5) {
+            if (walk == null && onStick(t) * (side > 0 ? 1.0 - raised(t) : 1.0) < 0.5) {
                 continue;
             }
-            Vec3 grip = walk != null ? hand(walk, side) : pilot.stage().point(side * MechScript.LEVER.x,
-                    MechScript.LEVER.y + MechScript.LEVER_LENGTH, MechScript.LEVER.z);
+            Vec3 grip = walk != null ? hand(walk, side) : lever(pilot.stage(), side);
             Vector3f hand = seen(camera, grip, stretch);
             if (hand.z() > -HAND_AHEAD) {
                 continue;

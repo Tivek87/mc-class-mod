@@ -3,6 +3,17 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.4.6-alpha] - 2026-09-28
+
+### Changed
+- **Hard-Light Mech: the build:** the pilot now moves with bent knees and elbows the whole way: braced with the ring
+  fist out and the other hand on its wrist, jolted by each foot landing, a crouch and a leap with one knee drawn up and
+  the ring fist high, a crouch in mid-air, arms thrown wide in the light, a real clap bent over their own hands, then
+  down onto the seat with the feet on the rest, leaning in to take the levers.
+- **Hard-Light Mech: in the cockpit:** the pilot's hands sit on the levers and buttons with bent elbows, and they lean
+  in as the levers are pushed.
+- **Docs:** the powers guide describes the pilot's new moves.
+
 ## [0.4.5-alpha] - 2026-09-28
 
 ### Fixed

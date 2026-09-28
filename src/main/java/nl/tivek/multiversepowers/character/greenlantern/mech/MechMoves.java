@@ -2,7 +2,6 @@ package nl.tivek.multiversepowers.character.greenlantern.mech;
 
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
-import nl.tivek.multiversepowers.engine.math.Ease;
 import nl.tivek.multiversepowers.engine.math.Keyframes;
 import nl.tivek.multiversepowers.engine.math.Vectors;
 
@@ -19,13 +18,9 @@ public final class MechMoves {
     private static final double WALK_SWING = 0.3;
     private static final double WALK_BEND = 0.22;
     private static final Vec3 WALK_HANG = new Vec3(0.06, -0.94, 0.34).normalize();
-    private static final Vec3 LEVER_WAY = MechScript.LEVER.add(0.0, MechScript.LEVER_LENGTH, 0.0)
-            .subtract(MechScript.COCKPIT).subtract(0.3125, 1.375, 0.0).normalize();
-    private static final Vec3 RAISED = new Vec3(0.55, 0.72, 0.4).normalize();
     private static final Keyframes.Key[] LOOSE;
     private static final Keyframes.Key[] SET;
     private static final Keyframes.Key[] SET_LEFT;
-    private static final Keyframes.Key[] PILOT;
 
     // A forearm with its hand: its elbow, which way it runs to the wrist, which way the palm faces, how far the fingers
     // curl (0 open, 1 a fist) and spread; upper is how far the upper arm has grown out to its elbow (0: none yet).
@@ -87,12 +82,6 @@ public final class MechMoves {
                 new Vec3(0.0, 0.2, 1.0), 0.15, 1.0);
         SET_LEFT[8] = set(186, true, new Vec3(0.92, -0.03, 0.4), new Vec3(0.55, 0.16, 0.82), new Vec3(0.0, 0.2, 1.0),
                 0.2, 1.0);
-        PILOT = new Keyframes.Key[] { pilot(0, true, 0.15, 0.05, 1.0), pilot(28, true, 0.15, 0.05, 1.0),
-                pilot(34, false, 0.6, -0.5, -0.6), pilot(46, true, 0.6, -0.5, -0.6), pilot(52, false, 0.9, 0.35, 0.25),
-                pilot(64, true, 0.9, 0.35, 0.25), pilot(68, false, 0.35, 0.6, 0.7), pilot(72, false, 0.2, -0.2, 1.0),
-                pilot(76, true, 0.95, 0.1, 0.3), pilot(80, true, 0.95, 0.1, 0.3), pilot(85, true, -0.25, 0.05, 1.0),
-                pilot(96, true, -0.2, 0.0, 1.0), pilot(100, false, 0.8, 0.2, 0.6), pilot(108, false, 0.9, 0.5, 0.1),
-                pilot(MechScript.ELBOWS, true, 0.97, 0.1, 0.2), pilot(128, true, 0.97, 0.1, 0.2) };
     }
 
     private MechMoves() {
@@ -114,11 +103,6 @@ public final class MechMoves {
         Vec3 p = square(palm, w);
         return new Keyframes.Key(t, stop, new float[] { (float) u.x, (float) u.y, (float) u.z, (float) w.x,
                 (float) w.y, (float) w.z, (float) p.x, (float) p.y, (float) p.z, (float) curl, (float) spread });
-    }
-
-    private static Keyframes.Key pilot(int t, boolean stop, double x, double y, double z) {
-        Vec3 d = new Vec3(x, y, z).normalize();
-        return new Keyframes.Key(t, stop, new float[] { (float) d.x, (float) d.y, (float) d.z });
     }
 
     public static Arm arm(boolean right, MechScript.Stage stage, double t) {
@@ -192,24 +176,6 @@ public final class MechMoves {
 
     public static double upper(double t) {
         return Mth.clamp((t - MechScript.UPPER_ARMS) / (MechScript.ELBOWS - MechScript.UPPER_ARMS), 0.0, 1.0);
-    }
-
-    // Which way the pilot's own arm points, from their shoulder, in the mech's places (x outwards for either arm),
-    // and how far it has gone over to holding its control stick.
-    public record PilotArm(Vec3 way, double onStick) {
-    }
-
-    public static PilotArm pilotArm(boolean right, double t) {
-        float[] v = Keyframes.at(PILOT, (float) t);
-        double onStick = Ease.smooth((t - MechScript.GRIP) / 6.0);
-        Vec3 way = new Vec3(v[0], v[1], v[2]).normalize().lerp(LEVER_WAY, onStick).normalize();
-        if (right && t > MechScript.LOCK - 2) {
-            // He throws up his right arm with the mech's.
-            double raised = Ease.smooth((t - (MechScript.LOCK - 2)) / 5.0) * (1.0 - Ease.smooth((t - 188.0) / 6.0));
-            way = way.lerp(RAISED, raised).normalize();
-            onStick *= 1.0 - raised;
-        }
-        return new PilotArm(way, onStick);
     }
 
     static Vec3 square(Vec3 palm, Vec3 way) {

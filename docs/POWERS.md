@@ -814,21 +814,23 @@ Green Lantern's ultimate: a big, slow gunship of hard light high over the battle
   foot comes down, from above as the hands clap, close on the chest, low as the head falls, beside the crater as it
   tumbles back up, close on the chest again as it locks on. Then it hands you the view from the cockpit. Your own
   setting *Film my mech* turns this off.
-- **The foot.** A giant armoured lower leg grows out of your ring's light high above the creature and **stomps it
-  flat** (**4 hearts**; what else stands round the foot takes up to half and is thrown back), with a burst of white
-  spikes and a ring of dust. The second foot comes down beside it. Then both step off and stand apart.
-- **The leap.** You leap up to where the chest will be and hang there in a blinding light, inside a bubble of
-  see-through light, while the mech builds up from its feet behind a fizzing, crackling edge: knees, thighs, hips.
-  A big ring of your lantern's light stands behind the chest while it builds. The bubble shrinks away as the glass
-  of the port forms in the closed chest.
+- **The foot.** You brace with your ring fist thrust out and your other hand on its wrist, and each foot that lands
+  jolts through your knees. A giant armoured lower leg grows out of your ring's light high above the creature and
+  **stomps it flat** (**4 hearts**; what else stands round the foot takes up to half and is thrown back), with a
+  burst of white spikes and a ring of dust. The second foot comes down beside it. Then both step off and stand apart.
+- **The leap.** You crouch, swing your arms back and leap up to where the chest will be, one knee drawn up and your
+  ring fist held high, land in a crouch in mid-air, then throw your arms wide and hang there in a blinding light,
+  inside a bubble of see-through light, while the mech builds up from its feet behind a fizzing, crackling edge:
+  knees, thighs, hips. A big ring of your lantern's light stands behind the chest while it builds. The bubble
+  shrinks away as the glass of the port forms in the closed chest.
 - **The hands.** Two giant tiled forearms with open hands come spinning in out of the sky and reach down to the
-  creature. Your own arms spread and the hands spread wide round it, palms facing; you swing your arms in and the
-  hands **clap it** between them from both sides, palm flat on palm with the fingers side by side (**3 hearts**, a
-  star of light), and squeeze it.
+  creature. Your own arms spread and the hands spread wide round it, palms facing; you swing your arms in, clap your
+  own hands together bent over them, and the hands **clap it** between them from both sides, palm flat on palm with
+  the fingers side by side (**3 hearts**, a star of light), and squeeze it.
 - **The chest.** The hands let go and rise while the barrel of the chest, the shoulder armour and the upper arms
   build round you and lock onto the forearms. A seat, a console with buttons and two levers grow in the cockpit
-  deep in the chest; you **sit down**, take a lever in each hand and look out through the round port of green
-  glass. Everyone sees you sitting in there.
+  deep in the chest; you **sit down** with your feet on the rest, lean in, take a lever in each hand and look out
+  through the round port of green glass. Everyone sees you sitting in there.
 - **The head.** A helmet forms high in the sky above the creature out of a swirl of light shards, spinning, falls
   like a meteor and **crashes it into the ground** (**5 hearts**, a crater of light with cracks and flying earth).
   It tumbles head over heels back up out of the crater, over the mech and down onto its shoulders, locking on with a

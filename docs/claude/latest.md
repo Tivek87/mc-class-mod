@@ -11,6 +11,13 @@
   blok van het wezen; `EntityShadowMixin` tekent een lichaam dat half buiten beeld ligt.
 - In-game getest (worp, vasthouden+loslaten, explosie; logs + screenshots): lichaam ligt bij wezen, staat op, wezen
   loopt pas daarna. Payload-codec round-trip getest. Build + unit-tests groen. Testklasse, wereld, shots weg.
+- Gecommit `515a7de`, gepusht, release v0.4.5-alpha (Latest), gepubliceerd vanuit schone worktree.
+- Deel 2: piloot-animatie tijdens de mech-bouw. Nieuw `PilotBody` (hele lichaam via `Stance`, keyframes): schrap
+  met ringvuist + hand om pols, schok per voet, hurk, sprong met knie op en vuist hoog, hurk in de lucht, armen
+  wijd, echte klap voorover, zitten met voeten op steun, naar voren naar de hendels (IK vanuit wereldpositie).
+  Oude `MechMoves.PILOT`/`pilotArm` weg. Gefilmd in-game (voor/na, voor- en zijaanzicht). POWERS.md en
+  GREEN_LANTERN.md bijgewerkt, CHANGELOG 0.4.6-alpha. Build + tests groen. User: "commit and push" -> gecommit,
+  gepusht, release v0.4.6-alpha vanuit schone worktree.
+- Regels: release-vanuit-worktree in project-CLAUDE.md, `gh ... isLatest` in globale CLAUDE.md.
 - Niet van mij, niet aangeraakt: `docs/CHARACTERS.md`, `Roster.java` (andere sessie), nog ongecommit.
-- Volgende: mech-bouw-animatie van de piloot (`MechPilot`) met `Stance`/IK.
 - Open: ideeën #24, #25, #31, #32, #33 wachten op ja/nee van user.
