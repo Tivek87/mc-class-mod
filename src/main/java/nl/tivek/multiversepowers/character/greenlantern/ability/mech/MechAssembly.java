@@ -23,11 +23,13 @@ import nl.tivek.multiversepowers.character.greenlantern.ability.airstrike.AirStr
 import nl.tivek.multiversepowers.character.greenlantern.ability.flame.Flamethrower;
 import nl.tivek.multiversepowers.character.greenlantern.ability.flight.Flight;
 import nl.tivek.multiversepowers.character.greenlantern.ability.hands.GiantHands;
+import nl.tivek.multiversepowers.character.greenlantern.ability.light.LightBubble;
 import nl.tivek.multiversepowers.character.greenlantern.ability.light.LightShield;
 import nl.tivek.multiversepowers.character.greenlantern.ability.ring.Recharge;
 import nl.tivek.multiversepowers.character.greenlantern.ability.sword.SwordShield;
 import nl.tivek.multiversepowers.character.greenlantern.ability.whip.EnergyWhip;
 import nl.tivek.multiversepowers.character.greenlantern.construct.ConstructPayload;
+import nl.tivek.multiversepowers.character.greenlantern.mech.MechAttacks;
 import nl.tivek.multiversepowers.character.greenlantern.mech.MechScript;
 import nl.tivek.multiversepowers.config.PowerRules;
 import nl.tivek.multiversepowers.engine.ability.Cooldowns;
@@ -58,6 +60,8 @@ public final class MechAssembly implements Effect {
     private int t;
     private int drivenAt = -1;
     private int breaking = -1;
+    @Nullable
+    private MechAttack attack;
 
     private MechAssembly(ServerPlayer owner, CharacterAbility ability, MechScript.Stage stage,
             @Nullable LivingEntity target) {
@@ -188,6 +192,21 @@ public final class MechAssembly implements Effect {
         return ACTIVE.containsKey(player.getUUID());
     }
 
+    // A left click in a built mech strikes one blow; clicks while it lasts do nothing.
+    public static boolean strike(ServerPlayer player) {
+        MechAssembly mech = ACTIVE.get(player.getUUID());
+        if (mech == null || mech.breaking >= 0 || mech.t < MechScript.SETTLED || mech.attack != null) {
+            return false;
+        }
+        mech.attack = MechAttack.start(player, player.serverLevel(), mech.upright());
+        return true;
+    }
+
+    // Upright on its ground spot, the torso turned to where its pilot looks.
+    private MechScript.Stage upright() {
+        return MechScript.upper(this.stage, MechScript.turnTo(this.stage, this.owner.getYHeadRot()));
+    }
+
     public static void clear() {
         ACTIVE.clear();
         COOLDOWNS.clear();
@@ -223,8 +242,15 @@ public final class MechAssembly implements Effect {
             this.target.release();
         }
         boolean settled = this.t >= MechScript.SETTLED;
-        MechScript.Stage body = settled ? MechScript.upper(this.stage, MechScript.turnTo(this.stage,
-                this.owner.getYHeadRot())) : this.stage;
+        MechScript.Stage body = settled ? this.upright() : this.stage;
+        if (this.attack != null) {
+            if (this.attack.tick(level, this.owner, this.stage, body, this.ability)) {
+                body = this.attack.torso(body);
+            } else {
+                this.attack.release();
+                this.attack = null;
+            }
+        }
         this.hold(body.point(MechScript.pilot(this.stage, this.t)), this.t <= MechScript.ABOARD || settled);
         this.send(level);
         return true;
@@ -236,6 +262,7 @@ public final class MechAssembly implements Effect {
         }
         this.breaking = 0;
         this.target.release();
+        this.stopAttack();
         Vec3 chest = this.stage.point(0.0, 7.0, 0.0);
         Sounds.play(level, chest, SoundEvents.AMETHYST_CLUSTER_BREAK, 3.0F, 0.6F);
         Sounds.play(level, chest, SoundEvents.GLASS_BREAK, 2.0F, 0.6F);
@@ -256,22 +283,35 @@ public final class MechAssembly implements Effect {
         }
     }
 
+    private void stopAttack() {
+        if (this.attack != null) {
+            this.attack.release();
+            this.attack = null;
+        }
+    }
+
     // What the clients read back with MechScript.Stage.of: the pilot's start in size and (while it builds) charge. The
-    // target's id goes on a little after it is let go, so every client sees it spring back up.
+    // target's id goes on a little after it is let go, so every client sees it spring back up. Once built, the blow
+    // goes in the variant and the creature a throw takes in charge, held while it is in the fist.
     private void send(ServerLevel level) {
         Vec3 base = this.stage.base();
         boolean broken = this.breaking >= 0;
         int shown = broken || this.t > MechScript.DONE + VICTIM_AFTER ? -1 : this.victim;
+        LivingEntity caught = this.attack == null ? null : this.attack.creature();
+        float charge = broken ? (float) this.breaking : caught != null ? LightBubble.caught(caught.getId())
+                : (float) this.stage.pilotY();
         PacketDistributor.sendToPlayersNear(level, null, base.x, base.y, base.z, VIEW_RANGE,
                 new ConstructPayload(this.id, this.owner.getId(), base, this.stage.point(this.stage.target())
-                        .subtract(base), (float) this.stage.pilotZ(), 1.0F,
-                        broken ? (float) this.breaking : (float) this.stage.pilotY(), false, ConstructPayload.MECH,
-                        MechScript.variant(broken, shown), this.t, null));
+                        .subtract(base), (float) this.stage.pilotZ(), 1.0F, charge,
+                        caught != null && this.attack.gripped(), ConstructPayload.MECH,
+                        MechScript.variant(broken, shown, this.attack == null ? 0 : this.attack.packed()), this.t,
+                        null));
     }
 
     private void end(ServerLevel level) {
         ACTIVE.remove(this.owner.getUUID(), this);
         this.target.release();
+        this.stopAttack();
         ConstructPayload.sendRemove(level, this.id, this.stage.base());
         this.owner.resetFallDistance();
     }

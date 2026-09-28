@@ -1,7 +1,10 @@
 package nl.tivek.multiversepowers.character.greenlantern.client.mech;
 
+import javax.annotation.Nullable;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
+import nl.tivek.multiversepowers.character.greenlantern.mech.MechAttacks;
+import nl.tivek.multiversepowers.character.greenlantern.mech.MechMoves;
 import nl.tivek.multiversepowers.character.greenlantern.mech.MechScript;
 
 // How a walking mech stands at one moment: its spot on the ground, its swaying body, where its feet are, how its arms
@@ -27,6 +30,7 @@ public final class MechPose {
     double leverRight;
     int button = -1;
     double press;
+    MechAttacks.Blow blow = MechAttacks.Blow.NONE;
 
     MechPose(MechScript.Stage stage) {
         this.stage = stage;
@@ -59,6 +63,7 @@ public final class MechPose {
         pose.leverRight = this.leverRight;
         pose.button = this.button;
         pose.press = this.press;
+        pose.blow = this.blow;
         return pose;
     }
 
@@ -83,6 +88,9 @@ public final class MechPose {
         pose.leverLeft = Mth.lerp(u, from.leverLeft, to.leverLeft);
         pose.leverRight = Mth.lerp(u, from.leverRight, to.leverRight);
         pose.press = from.button == to.button ? Mth.lerp(u, from.press, to.press) : to.press;
+        pose.blow = from.blow.kind() == to.blow.kind() && to.blow.age() >= from.blow.age() ? new MechAttacks.Blow(
+                to.blow.kind(), Mth.lerp(u, from.blow.age(), to.blow.age()), to.blow.from(), to.blow.turn())
+                : to.blow;
         return pose;
     }
 
@@ -137,5 +145,21 @@ public final class MechPose {
 
     public double press() {
         return this.press;
+    }
+
+    public MechAttacks.Blow blow() {
+        return this.blow;
+    }
+
+    // One arm as the walk swings it, taken over by a blow while one is struck (at `t` of the build, past its end).
+    public MechMoves.Arm arm(boolean right, double t, @Nullable MechAttacks.Held held) {
+        // Running, the forearms come up and pump instead of hanging.
+        double hang = this.walking * (1.0 - 0.8 * this.running);
+        MechMoves.Arm arm = MechMoves.walking(right, t, this.swing, hang);
+        if (!this.blow.striking()) {
+            return arm;
+        }
+        MechScript.Stage frame = MechAttacks.frame(this.stage.base(), this.torso, MechAttacks.body(this.blow).twist());
+        return MechAttacks.arm(this.blow, right, frame, this.torso, held, arm);
     }
 }

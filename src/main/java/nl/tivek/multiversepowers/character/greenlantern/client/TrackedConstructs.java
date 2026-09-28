@@ -28,6 +28,7 @@ import nl.tivek.multiversepowers.character.greenlantern.duo.HandDuo;
 import nl.tivek.multiversepowers.character.greenlantern.express.ExpressScript;
 import nl.tivek.multiversepowers.character.greenlantern.hand.HandGroup;
 import nl.tivek.multiversepowers.character.greenlantern.hand.HandPose;
+import nl.tivek.multiversepowers.character.greenlantern.mech.MechAttacks;
 import nl.tivek.multiversepowers.character.greenlantern.mech.MechScript;
 import nl.tivek.multiversepowers.character.greenlantern.plane.PlanePath;
 import nl.tivek.multiversepowers.engine.math.Ease;
@@ -553,7 +554,7 @@ abstract class TrackedConstructs {
         return null;
     }
 
-    public record Piloted(int id, MechScript.Stage stage, double t, double broke) {
+    public record Piloted(int id, MechScript.Stage stage, double t, double broke, MechAttacks.Blow blow) {
         public Vec3 feet() {
             return this.stage.point(this.broke >= 0.0 ? MechScript.lowered(this.broke)
                     : MechScript.pilot(this.stage, this.t));
@@ -571,7 +572,7 @@ abstract class TrackedConstructs {
             double broke = breaking ? Mth.lerp(partialTick, Math.max(0.0F, track.previous.charge()), now.charge())
                     : -1.0;
             return new Piloted(now.id(), MechScript.Stage.of(now), breaking ? now.age() : track.clock(partialTick),
-                    broke);
+                    broke, MechScript.blow(now.variant()));
         }
         return null;
     }
@@ -583,7 +584,8 @@ abstract class TrackedConstructs {
             ConstructPayload now = track.current;
             if (now.shape() == ConstructPayload.MECH && !MechScript.breaking(now.variant())
                     && MechScript.target(now.variant()) == entity) {
-                return new Piloted(now.id(), MechScript.Stage.of(now), track.clock(partialTick), -1.0);
+                return new Piloted(now.id(), MechScript.Stage.of(now), track.clock(partialTick), -1.0,
+                        MechAttacks.Blow.NONE);
             }
         }
         return null;

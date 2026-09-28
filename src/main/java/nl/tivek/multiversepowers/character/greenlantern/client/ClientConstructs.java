@@ -51,6 +51,7 @@ import nl.tivek.multiversepowers.character.greenlantern.client.victim.Flattened;
 import nl.tivek.multiversepowers.character.greenlantern.construct.ConstructPayload;
 import nl.tivek.multiversepowers.character.greenlantern.hand.HandGroup;
 import nl.tivek.multiversepowers.character.greenlantern.hand.HandPose;
+import nl.tivek.multiversepowers.character.greenlantern.mech.MechAttacks;
 import nl.tivek.multiversepowers.character.greenlantern.mech.MechScript;
 import static nl.tivek.multiversepowers.character.greenlantern.client.ConstructPlaces.RAM_OWN_AHEAD;
 import static nl.tivek.multiversepowers.character.greenlantern.client.ConstructPlaces.beamEnd;
@@ -251,12 +252,23 @@ public final class ClientConstructs extends TrackedConstructs {
         Entity pilot = minecraft.level == null ? null : minecraft.level.getEntity(mech.owner());
         MechWalk.step(mech.id(), own != null ? own : MechScript.Stage.of(mech), mech.owner(),
                 pilot == null ? Float.NaN : mine ? pilot.getYRot() : pilot.getYHeadRot(),
-                pilot == null ? Float.NaN : pilot.getXRot());
+                pilot == null ? Float.NaN : pilot.getXRot(), MechScript.blow(mech.variant()));
         MechPose pose = MechWalk.latest(mech.id());
         if (!mine && pose != null && pilot != null) {
             // Someone else's pilot sits on the seat as this game walks the mech, not a step behind it.
             Vec3 seat = pose.seat();
             pilot.setPos(seat.x, seat.y, seat.z);
+        }
+        if (pose != null && mech.held() && minecraft.level != null) {
+            // The creature a throw holds rides in this game's own fist, not where the server last put it.
+            Entity caught = minecraft.level.getEntity(LightBubble.caughtId(mech.charge()));
+            if (caught != null && caught != minecraft.player) {
+                MechAttacks.Held held = MechPainter.held(caught, 1.0F);
+                Vec3 grip = pose.torso().point(MechAttacks.grip(pose.arm(true, track.clock(0.0F), held),
+                        held.halfWidth()));
+                caught.setPos(grip.x, grip.y - held.halfHeight(), grip.z);
+                caught.setDeltaMovement(Vec3.ZERO);
+            }
         }
     }
 

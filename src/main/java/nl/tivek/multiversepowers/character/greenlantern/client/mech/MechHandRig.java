@@ -1,6 +1,7 @@
 package nl.tivek.multiversepowers.character.greenlantern.client.mech;
 
 import javax.annotation.Nullable;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.character.greenlantern.mech.MechMoves;
 import nl.tivek.multiversepowers.engine.client.render.ConstructPainter.Frame;
@@ -90,19 +91,67 @@ final class MechHandRig {
     }
 
     static Frame[] frames(Frame hand, MechMoves.Arm arm, boolean right) {
-        return frames(hand, arm, right, null);
+        return frames(hand, arm, right, null, null);
     }
 
-    // With a wall (see wall()), no finger or thumb reaches past the plane between two clapping hands.
-    static Frame[] frames(Frame hand, MechMoves.Arm arm, boolean right, @Nullable double[] wall) {
+    // With a wall (see wall()), no finger or thumb reaches past the plane between two clapping hands; with a held
+    // creature's box (in the world), each opens only as far as it takes to rest on its skin.
+    static Frame[] frames(Frame hand, MechMoves.Arm arm, boolean right, @Nullable double[] wall,
+            @Nullable AABB held) {
         Rig rig = right ? RIGHT : LEFT;
         Frame[] frames = new Frame[rig.size()];
         RigPose pose = settled(arm, right);
         if (wall != null) {
             stopAt(pose, rig, right, wall);
         }
+        if (held != null) {
+            stopOn(pose, rig, hand, held);
+        }
         RigFrames.pose(rig, pose, hand, frames, true);
         return frames;
+    }
+
+    private static void stopOn(RigPose angles, Rig rig, Frame hand, AABB held) {
+        double[] space = RigSpace.create(rig);
+        for (int k = 0; k < 5; k++) {
+            int finger = k;
+            for (int j = 2; j >= 0; j--) {
+                int from = j;
+                int turn = k < 4 ? BEND_TURNS[j] : j == 0 ? 1 : 0;
+                Settle.back(rig, angles, bone(k, j), turn, 0.0, space, s -> heldDepth(s, finger, from, hand, held),
+                        TOUCH, STEPS);
+            }
+        }
+    }
+
+    // How deep a finger's bones from `from` to its tip go into the held creature's box, their thickness counted.
+    private static double heldDepth(double[] space, int k, int from, Frame hand, AABB held) {
+        double radius = k < 4 ? FINGER : THUMB;
+        Vec3 c = hand.center();
+        Vec3 r = hand.right();
+        Vec3 u = hand.up();
+        Vec3 f = hand.forward();
+        double s = hand.scale();
+        double hx = held.getXsize() * 0.5;
+        double hy = held.getYsize() * 0.5;
+        double hz = held.getZsize() * 0.5;
+        Vec3 middle = held.getCenter();
+        double deepest = Double.NEGATIVE_INFINITY;
+        for (int j = from; j < 3; j++) {
+            int o = bone(k, j) * RigSpace.STRIDE;
+            double length = length(k, j);
+            for (int i = 0; i <= 4; i++) {
+                double along = length * i / 4.0;
+                double x = (space[o] + space[o + 6] * along) * s;
+                double y = (space[o + 1] + space[o + 7] * along) * s;
+                double z = (space[o + 2] + space[o + 8] * along) * s;
+                double box = Sdf.box(c.x + r.x * x + u.x * y + f.x * z - middle.x,
+                        c.y + r.y * x + u.y * y + f.y * z - middle.y, c.z + r.z * x + u.z * y + f.z * z - middle.z,
+                        hx, hy, hz);
+                deepest = Math.max(deepest, radius * s - box);
+            }
+        }
+        return deepest / s;
     }
 
     // The plane through `at` facing `side` (world), as a signed distance over the hand's own places: a, x, y, z with

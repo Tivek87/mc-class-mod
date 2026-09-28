@@ -11,5 +11,8 @@
   hamer-smash sloeg grond (weg), drop-variant (Thor duikt nu op het wezen), vastgehouden wezen zakte in grond,
   lightning-schade nu instelling. Test-valkuil (armor-stand-camera) in CLAUDE.md gezet.
 - Docs: POWERS.md, PROJECT.md, CLAUDE.md; CHANGELOG 0.4.2-alpha klaar. Testcode, werelden, shots weg. Build groen.
-- Open: commit + push + release 0.4.2-alpha (wacht op ja). Niet getest: echte multiplayer-verbinding, schild bij
-  uppercut. Idee: `thor/client` heeft 14 bestanden (>12), later submap.
+- Gecommit (`a07f2bd`), gepusht naar origin/master, release v0.4.2-alpha op GitHub (Latest, jar erbij).
+- Daarna (halverwege het coderen): 4 mech-aanvallen op linkermuisknop (`MechAttacks`, `MechAttack`, `MechAttacksTest`:
+  sweep, stomp, slam en throw met oppakken, 2x grond-smash en weggooien).
+- Open: mech-aanvallen nog niet in-game getest (released mid-coding / buggy). Ook nog open: echte
+  multiplayer-verbinding, schild bij uppercut, `thor/client` (14 bestanden) later splitsen.

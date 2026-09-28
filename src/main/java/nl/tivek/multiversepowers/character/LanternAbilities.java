@@ -288,7 +288,20 @@ final class LanternAbilities {
                                 + " up to half")
                 .setting("mechHeadDamage", 10.0, 0.0, 2000.0, Unit.HALF_HEARTS,
                         "Damage of the head crashing down on that creature like a meteor, in half hearts; what else"
-                                + " stands round it takes up to half");
+                                + " stands round it takes up to half")
+                .group("mechBlows", "Mech blows (left click in a built mech)")
+                .setting("mechSweepDamage", 8.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                        "Damage of the backhand sweep to everything the hand strikes, in half hearts")
+                .setting("mechStompBlowDamage", 10.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                        "Damage of the stomp right by the foot, in half hearts; at the edge of the blast half")
+                .setting("mechSlamDamage", 14.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                        "Damage of both fists slamming the ground right where they hit, in half hearts; at the edge"
+                                + " of the blast half")
+                .setting("mechSmashDamage", 6.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                        "Damage each time the mech smashes the creature it picked up into the ground, in half"
+                                + " hearts; what stands round it takes up to half")
+                .setting("mechThrowDamage", 4.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                        "Damage as the mech flings that creature away, if it lived through both smashes");
         lantern.add(abilities, AbilitySlot.ABILITY_8, "shockwave").cooldown(100).damage(12.0)
                 .setting("radiusBlocks", 5.0, 1.0, 16.0, Unit.BLOCKS, "How far the shockwave reaches, in blocks")
                 .setting("knockback", 1.2, 0.0, 5.0, Unit.STRENGTH,

@@ -3,6 +3,19 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.4.3-alpha] - 2026-09-28
+
+**RELEASED MID-CODING — VERY BUGGY:** this version was released half way through coding. Much of it is not tested or
+finished yet; expect things to look wrong, feel wrong or break.
+
+### Added
+- **Hard-Light Mech: blows** (left click in a built mech): strikes a blow at random while standing its ground: a
+  backhand sweep, a stomp of the right foot, a two-fisted ground slam, or (with an enemy in reach) a throw that picks
+  it up, smashes it into the ground twice and flings it where you look.
+- **Hard-Light Mech:** the right hand's fingers close round the creature a throw holds, and the stomp, slam and smashes
+  shake the ground and jolt the mech.
+- **Settings:** damage settings for the mech's sweep, stomp blow, slam, throw smash and throw fling.
+
 ## [0.4.2-alpha] - 2026-09-28
 
 **UNFINISHED / WORK IN PROGRESS:** Thor's new moves are first, rough versions: they work, but their looks and feel

@@ -79,6 +79,10 @@ public final class PowerRing {
             return false;
         }
         boolean mech = ability.id().equals("air_strike") && (data & Characters.HOLD) != 0;
+        if (on && ability.id().equals("light_bolt") && MechAssembly.piloting(player)) {
+            // In the mech, the attack button strikes with its fists and feet; holding it does nothing more.
+            return (data & Characters.HOLD) == 0 && MechAssembly.strike(player);
+        }
         if (on && !mech && MechAssembly.piloting(player)) {
             tell(player, "mech_busy");
             return false;

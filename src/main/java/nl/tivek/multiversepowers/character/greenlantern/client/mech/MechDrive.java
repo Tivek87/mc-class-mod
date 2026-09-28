@@ -69,7 +69,8 @@ public final class MechDrive {
         mech = -1;
     }
 
-    public static void drive(LocalPlayer player, int id, MechScript.Stage server, Input input) {
+    // `still`: it strikes a blow and stands its ground, its legs turning no more.
+    public static void drive(LocalPlayer player, int id, MechScript.Stage server, Input input, boolean still) {
         if (id != mech) {
             player.displayClientMessage(Component.translatable("ring." + MultiversePowers.MODID + ".mech_drive",
                     Minecraft.getInstance().options.keySprint.getTranslatedKeyMessage()), true);
@@ -82,11 +83,11 @@ public final class MechDrive {
             fall = 0.0;
             steppingRound = false;
         }
-        boolean ahead = input.forwardImpulse > 0.01F;
+        boolean ahead = !still && input.forwardImpulse > 0.01F;
         boolean run = ahead && Minecraft.getInstance().options.keySprint.isDown();
-        double want = ahead ? run ? RUN : WALK : input.forwardImpulse < -0.01F ? -BACK : 0.0;
+        double want = ahead ? run ? RUN : WALK : !still && input.forwardImpulse < -0.01F ? -BACK : 0.0;
         speed += Mth.clamp(want - speed, -SLOW_DOWN, run ? RUN_UP : SPEED_UP);
-        side += Mth.clamp(input.leftImpulse * SIDESTEP - side, -SLOW_DOWN, SPEED_UP);
+        side += Mth.clamp((still ? 0.0 : input.leftImpulse * SIDESTEP) - side, -SLOW_DOWN, SPEED_UP);
         // The legs turn after where the pilot looks, no faster than they can, while the
         // torso swings there first.
         // Standing, they only step round once it has twisted far over them, then all
@@ -99,7 +100,7 @@ public final class MechDrive {
             steppingRound = false;
         }
         double most = TURN_DEGREES * (1.0 - 0.4 * Mth.clamp((speed - WALK) / (RUN - WALK), 0.0, 1.0));
-        double wanted = !moving && !steppingRound || Math.abs(behind) < SETTLED_DEGREES ? 0.0
+        double wanted = still || !moving && !steppingRound || Math.abs(behind) < SETTLED_DEGREES ? 0.0
                 : Mth.clamp(behind * TURN_GAIN, -most, most);
         turn += Mth.clamp(-Math.toRadians(wanted) - turn, -TURN_UP, TURN_UP);
         yaw = Mth.wrapDegrees(yaw - (float) Math.toDegrees(turn));

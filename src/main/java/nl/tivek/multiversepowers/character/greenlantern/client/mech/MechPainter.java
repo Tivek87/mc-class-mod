@@ -4,10 +4,15 @@ import com.mojang.logging.LogUtils;
 import javax.annotation.Nullable;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.Mth;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
+import nl.tivek.multiversepowers.character.greenlantern.ability.light.LightBubble;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.LanternPainter;
 import nl.tivek.multiversepowers.character.greenlantern.construct.ConstructPayload;
+import nl.tivek.multiversepowers.character.greenlantern.mech.MechAttacks;
 import nl.tivek.multiversepowers.character.greenlantern.mech.MechMoves;
 import nl.tivek.multiversepowers.character.greenlantern.mech.MechScript;
 import nl.tivek.multiversepowers.engine.client.render.ConstructPainter.Frame;
@@ -57,7 +62,7 @@ public final class MechPainter {
         if (!painter.visible(pose.stage().point(0.0, 7.0, MechScript.TARGET_AHEAD * 0.5), REACH)) {
             return;
         }
-        parts(painter, pose, t, apart, own, walk != null && pose == walk);
+        parts(painter, pose, t, apart, own, walk != null && pose == walk, caught(now, pose));
         if (apart < 0.0) {
             MechLight.lights(painter, pose, t, ring, own);
         }
@@ -72,8 +77,29 @@ public final class MechPainter {
         if (apart < 1.0) {
             MechPose walk = MechWalk.pose(mech.id(), 0.0F);
             parts(painter, walk != null ? walk : scripted(MechScript.Stage.of(mech), clock), clock, apart, false,
-                    walk != null);
+                    walk != null, null);
         }
+    }
+
+    // The creature a throw reaches for or holds, where it is drawn this frame.
+    @Nullable
+    private static Entity caught(ConstructPayload mech, MechPose pose) {
+        int kind = pose.blow().kind();
+        Minecraft minecraft = Minecraft.getInstance();
+        if (kind != MechAttacks.THROW || minecraft.level == null) {
+            return null;
+        }
+        Entity caught = minecraft.level.getEntity(LightBubble.caughtId(mech.charge()));
+        return caught instanceof LivingEntity ? caught : null;
+    }
+
+    public static MechAttacks.Held held(Entity caught, float partialTick) {
+        AABB box = drawn(caught, partialTick);
+        return new MechAttacks.Held(box.getCenter(), caught.getBbWidth() * 0.5, caught.getBbHeight() * 0.5);
+    }
+
+    private static AABB drawn(Entity caught, float partialTick) {
+        return caught.getBoundingBox().move(caught.getPosition(partialTick).subtract(caught.position()));
     }
 
     // The mech as its build places it: upright on its ground spot, the feet where the stomps and steps put them.
@@ -86,7 +112,7 @@ public final class MechPainter {
     }
 
     private static void parts(LanternPainter painter, MechPose pose, double t, double apart, boolean own,
-            boolean walking) {
+            boolean walking, @Nullable Entity caught) {
         Material was = painter.material();
         painter.material(LanternPainter.MECH_LIGHT);
         painter.batch();
@@ -102,7 +128,7 @@ public final class MechPainter {
                 lowerLeg(painter, pose.stage(), pose.ankle[side], right, t, apart, seed);
                 upperLeg(painter, pose.stage(), right, t, apart, seed + PIECES);
             }
-            arm(painter, pose, right, t, apart, seed + PIECES * 3, walking);
+            arm(painter, pose, right, t, apart, seed + PIECES * 3, walking, right ? caught : null);
             shoulder(painter, pose.torso(), right, t, apart, seed + PIECES * 8);
         }
         body(painter, pose, t, apart, own);
@@ -235,14 +261,14 @@ public final class MechPainter {
     }
 
     private static void arm(LanternPainter painter, MechPose pose, boolean right, double t, double apart, int seed,
-            boolean walking) {
+            boolean walking, @Nullable Entity caught) {
         if (t < MechScript.ARMS_FORM) {
             return;
         }
         MechScript.Stage stage = pose.torso();
-        // Running, the forearms come up and pump instead of hanging.
-        double hang = pose.walking * (1.0 - 0.8 * pose.running);
-        MechMoves.Arm arm = walking ? MechMoves.walking(right, t, pose.swing, hang) : MechMoves.arm(right, stage, t);
+        float partialTick = Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(false);
+        MechMoves.Arm arm = walking ? pose.arm(right, t, caught == null ? null : held(caught, partialTick))
+                : MechMoves.arm(right, stage, t);
         Frame hand = Frame.of(stage.point(arm.elbow()), stage.dir(arm.palm()), stage.dir(arm.way()), 1.0);
         double grown = Mth.clamp((t - MechScript.ARMS_FORM) / (MechScript.ARMS_IN - MechScript.ARMS_FORM), 0.0, 1.0);
         if (grown < 1.0 && apart < 0.0) {
@@ -258,7 +284,7 @@ public final class MechPainter {
         boolean clapping = !walking && t > MechScript.SWING && t < MechScript.RISE;
         Vec3 side = right ? stage.right() : stage.right().scale(-1.0);
         double[] wall = clapping ? MechHandRig.wall(hand, stage.base(), side) : null;
-        fingers(painter, hand, arm, own, apart, seed + 10, wall);
+        fingers(painter, hand, arm, own, apart, seed + 10, wall, caught == null ? null : drawn(caught, partialTick));
         painter.noClip();
         if (BoneView.shown()) {
             BoneView.bone(hand.center(), hand.at(0.0, MechArmShapes.WRIST, 0.0), BoneView.CONSTRUCT);
@@ -284,8 +310,8 @@ public final class MechPainter {
     }
 
     private static void fingers(LanternPainter painter, Frame hand, MechMoves.Arm arm, boolean right, double apart,
-            int seed, @Nullable double[] wall) {
-        Frame[] bones = MechHandRig.frames(hand, arm, right, wall);
+            int seed, @Nullable double[] wall, @Nullable AABB held) {
+        Frame[] bones = MechHandRig.frames(hand, arm, right, wall, held);
         for (int k = 0; k < 4; k++) {
             for (int j = 0; j < 3; j++) {
                 Shape segment = right ? MechArmShapes.FINGERS[k][j] : MechArmShapes.FINGERS_LEFT[k][j];

@@ -212,7 +212,7 @@ public final class MechMoves {
         return new PilotArm(way, onStick);
     }
 
-    private static Vec3 square(Vec3 palm, Vec3 way) {
+    static Vec3 square(Vec3 palm, Vec3 way) {
         Vec3 flat = palm.subtract(way.scale(palm.dot(way)));
         if (flat.lengthSqr() < 1.0E-8) {
             Vec3 side = Math.abs(way.y) < 0.9 ? way.cross(new Vec3(0.0, 1.0, 0.0)) : way.cross(new Vec3(1.0, 0.0, 0.0));

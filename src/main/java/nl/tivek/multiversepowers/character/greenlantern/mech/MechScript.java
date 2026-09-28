@@ -118,9 +118,10 @@ public final class MechScript {
             return (float) Math.toDegrees(Math.atan2(-this.ahead.x, this.ahead.z));
         }
 
-        // Read back from what the server sends (see MechAssembly.send).
+        // Read back from what the server sends (see MechAssembly.send); once built, charge holds the creature a blow
+        // takes hold of instead of where the pilot set off from.
         public static Stage of(ConstructPayload mech) {
-            boolean building = !breaking(mech.variant());
+            boolean building = !breaking(mech.variant()) && mech.age() < SETTLED;
             return of(mech.center(), mech.facing(), building ? mech.charge() : COCKPIT.y, mech.size());
         }
 
@@ -158,9 +159,11 @@ public final class MechScript {
     private MechScript() {
     }
 
-    // The variant sent with the mech: bit 0 whether it breaks up, the rest the target's entity id plus one.
-    public static int variant(boolean breaking, int target) {
-        return (target + 1) << 1 | (breaking ? BREAKING : BUILDING);
+    // The variant sent with the mech: bit 0 whether it breaks up, bit 1 whether it strikes a blow; the rest is that
+    // blow (MechAttacks.pack) or else the build's target's entity id plus one.
+    public static int variant(boolean breaking, int target, int blow) {
+        int rest = blow != 0 ? blow << 1 | 1 : (target + 1) << 1;
+        return rest << 1 | (breaking ? BREAKING : BUILDING);
     }
 
     public static boolean breaking(int variant) {
@@ -168,7 +171,11 @@ public final class MechScript {
     }
 
     public static int target(int variant) {
-        return (variant >>> 1) - 1;
+        return (variant & 2) != 0 ? -1 : (variant >>> 2) - 1;
+    }
+
+    public static MechAttacks.Blow blow(int variant) {
+        return (variant & 2) != 0 ? MechAttacks.unpack(variant >>> 2) : MechAttacks.Blow.NONE;
     }
 
     public static double grown(double t, double from) {

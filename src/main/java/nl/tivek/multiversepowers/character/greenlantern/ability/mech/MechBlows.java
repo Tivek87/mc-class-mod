@@ -1,5 +1,6 @@
 package nl.tivek.multiversepowers.character.greenlantern.ability.mech;
 
+import javax.annotation.Nullable;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.BlockParticleOption;
 import net.minecraft.core.particles.ParticleTypes;
@@ -8,6 +9,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.Mth;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.level.block.Blocks;
@@ -51,12 +53,12 @@ final class MechBlows {
             case MechScript.STOMP -> {
                 stomp(level, foot.subtract(0.0, MechScript.ANKLE.y, 0.0), true);
                 target.hit(level, owner, ability.value("mechStompDamage"));
-                blast(level, owner, target, foot, STOMP_RADIUS, ability.value("mechStompDamage") * 0.5, STOMP_PUSH);
+                blast(level, owner, target.creature(), foot, STOMP_RADIUS, ability.value("mechStompDamage") * 0.5, STOMP_PUSH);
             }
             case MechScript.FOOT2_FORM -> build(level, footLeft, 1.4F);
             case MechScript.STOMP2 -> {
                 stomp(level, footLeft.subtract(0.0, MechScript.ANKLE.y, 0.0), false);
-                blast(level, owner, target, footLeft, STOMP_RADIUS * 0.8, 0.0, STOMP_PUSH * 0.7);
+                blast(level, owner, target.creature(), footLeft, STOMP_RADIUS * 0.8, 0.0, STOMP_PUSH * 0.7);
             }
             case MechScript.LEAP -> Sounds.play(level, stage.point(MechScript.pilot(stage, t)), WHOOSH, 1.6F, 1.35F);
             case MechScript.THIGHS -> {
@@ -81,7 +83,7 @@ final class MechBlows {
             case MechScript.CLAP -> {
                 clap(level, stage.point(stage.target().add(0.0, 1.25, 0.0)));
                 target.hit(level, owner, ability.value("mechClapDamage"));
-                blast(level, owner, target, stage.point(stage.target().add(0.0, 1.25, 0.0)), CLAP_RADIUS,
+                blast(level, owner, target.creature(), stage.point(stage.target().add(0.0, 1.25, 0.0)), CLAP_RADIUS,
                         ability.value("mechClapDamage") * 0.5, CLAP_PUSH);
             }
             case MechScript.ARMOR -> build(level, stage.point(0.0, 7.0, 0.0), 0.7F);
@@ -106,7 +108,7 @@ final class MechBlows {
                 Vec3 at = stage.point(stage.target());
                 crash(level, at);
                 target.hit(level, owner, ability.value("mechHeadDamage"));
-                blast(level, owner, target, at, CRASH_RADIUS, ability.value("mechHeadDamage") * 0.5, CRASH_PUSH);
+                blast(level, owner, target.creature(), at, CRASH_RADIUS, ability.value("mechHeadDamage") * 0.5, CRASH_PUSH);
             }
             case MechScript.HEAD_RISE -> Sounds.play(level, stage.point(stage.target()), WHOOSH, 3.0F, 0.85F);
             case MechScript.LOCK -> {
@@ -148,7 +150,7 @@ final class MechBlows {
         ParticleFx.sphereOut(level, ParticleFx.dust(PowerRing.BRIGHT, 1.1F), at, 12, 0.2);
     }
 
-    private static void stomp(ServerLevel level, Vec3 ground, boolean hard) {
+    static void stomp(ServerLevel level, Vec3 ground, boolean hard) {
         Sounds.play(level, ground, STOMP, hard ? 5.0F : 3.2F, hard ? 0.85F : 1.0F);
         Sounds.play(level, ground, SoundEvents.MACE_SMASH_GROUND_HEAVY, hard ? 2.0F : 1.2F, 0.7F);
         dust(level, ground, hard ? 24 : 12, hard ? 1.1 : 0.8);
@@ -167,7 +169,7 @@ final class MechBlows {
         ParticleFx.cloud(level, ParticleTypes.CLOUD, at, 6, 0.5, 0.2);
     }
 
-    private static void crash(ServerLevel level, Vec3 at) {
+    static void crash(ServerLevel level, Vec3 at) {
         Sounds.play(level, at, CRASH, 6.0F, 1.0F);
         Sounds.play(level, at, SoundEvents.GENERIC_EXPLODE.value(), 2.5F, 0.8F);
         Sounds.play(level, at, SoundEvents.MACE_SMASH_GROUND_HEAVY, 2.5F, 0.6F);
@@ -195,10 +197,9 @@ final class MechBlows {
         return level.isLoaded(pos) ? level.getBlockState(pos) : Blocks.AIR.defaultBlockState();
     }
 
-    // Only what is out to hurt the owner, and never the creature the mech holds: that one takes each blow whole.
-    private static void blast(ServerLevel level, ServerPlayer owner, MechTarget target, Vec3 at, double radius,
+    // Everything the owner may hit, but never the creature the mech holds: that one takes each blow whole.
+    static void blast(ServerLevel level, ServerPlayer owner, @Nullable Entity held, Vec3 at, double radius,
             double damage, double push) {
-        LivingEntity held = target.creature();
         for (LivingEntity living : level.getEntitiesOfClass(LivingEntity.class, new AABB(at, at).inflate(radius),
                 entity -> entity != held && PowerRing.canHit(owner, entity))) {
             Vec3 to = living.getBoundingBox().getCenter().subtract(at);

@@ -25,6 +25,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import nl.tivek.multiversepowers.MultiversePowers;
+import nl.tivek.multiversepowers.character.greenlantern.mech.MechAttacks;
 import nl.tivek.multiversepowers.character.greenlantern.mech.MechScript;
 import nl.tivek.multiversepowers.engine.client.fx.ParticleAmount;
 import nl.tivek.multiversepowers.engine.fx.Sounds;
@@ -146,6 +147,10 @@ public final class MechWalk {
     private double crouch;
     private double settleY;
     private int idle;
+    private MechAttacks.Blow blow = MechAttacks.Blow.NONE;
+    private int hitAt = -100;
+    private double hitHard;
+    private Vec3 hitSpot = Vec3.ZERO;
 
     private MechWalk(int seed, MechScript.Stage stage) {
         this.seed = seed;
@@ -182,8 +187,9 @@ public final class MechWalk {
     }
 
     // Moves a mech's walk on to where it stands this tick; a second call in the same tick does nothing.
-    // `look` and `pitch`: where its pilot looks, in the game's degrees (NaN when not known).
-    public static void step(int id, MechScript.Stage stage, int pilot, float look, float pitch) {
+    // `look` and `pitch`: where its pilot looks, in the game's degrees (NaN when not known); `blow` the one it strikes.
+    public static void step(int id, MechScript.Stage stage, int pilot, float look, float pitch,
+            MechAttacks.Blow blow) {
         ClientLevel level = Minecraft.getInstance().level;
         if (level == null) {
             return;
@@ -194,8 +200,29 @@ public final class MechWalk {
         }
         walk.ticked = ticks;
         walk.pilot = pilot;
+        walk.strike(blow, stage);
         walk.face(stage, look, pitch);
         walk.tick(level, stage);
+    }
+
+    // What of the blow landed since the last tick shakes the ground and jolts the body.
+    private void strike(MechAttacks.Blow blow, MechScript.Stage stage) {
+        MechAttacks.Blow was = this.blow;
+        this.blow = blow;
+        if (!blow.striking()) {
+            return;
+        }
+        int from = was.kind() == blow.kind() && was.age() <= blow.age() ? (int) was.age() + 1 : (int) blow.age();
+        for (int age = from; age <= (int) blow.age(); age++) {
+            double hard = MechAttacks.impact(blow.kind(), age);
+            if (hard > 0.0) {
+                this.hitAt = ticks;
+                this.hitHard = hard;
+                this.hitSpot = blow.kind() == MechAttacks.STOMP ? this.legs[0].planted
+                        : stage.point(0.0, 0.0, MechScript.TARGET_AHEAD);
+                this.sink.kick(-0.1 * hard);
+            }
+        }
     }
 
     @Nullable
@@ -267,6 +294,12 @@ public final class MechWalk {
             return 0.0;
         }
         double most = 0.0;
+        double sinceHit = ticks - walk.hitAt + partialTick - 1.0;
+        if (sinceHit >= 0.0 && sinceHit < STEP_SHAKE_TICKS * 1.5) {
+            double near = inside ? 1.0 : 1.0 - from.distanceTo(walk.hitSpot) / STEP_SHAKE_RANGE;
+            double fade = 1.0 - sinceHit / (STEP_SHAKE_TICKS * 1.5);
+            most = Math.max(0.0, (inside ? 0.26 : 0.45) * walk.hitHard * fade * fade * Math.min(1.0, near * 1.3));
+        }
         for (int side = 0; side < 2; side++) {
             double since = ticks - walk.legs[side].landed + partialTick - 1.0;
             if (since < 0.0 || since >= STEP_SHAKE_TICKS) {
@@ -338,7 +371,9 @@ public final class MechWalk {
     private void leg(ClientLevel level, MechScript.Stage stage, int side, double from, double rate) {
         Leg leg = this.legs[side];
         double start = LIFTS[side];
-        if (!leg.swinging && rate > 0.0 && Math.floor(this.phase - start) > Math.floor(from - start)) {
+        // Striking a blow it stands its ground: a foot already swinging comes down, no other lifts.
+        if (!leg.swinging && rate > 0.0 && !this.blow.striking()
+                && Math.floor(this.phase - start) > Math.floor(from - start)) {
             leg.swinging = true;
             leg.from = leg.planted;
             leg.fromToes = leg.toes;
@@ -444,16 +479,23 @@ public final class MechWalk {
         double twist = (TWIST * w + RUN_TWIST * run) * Math.sin(2.0 * Math.PI * (p + 0.04));
         double pitch = -LEAN * Math.min(this.speed, MechDrive.WALK) / MechDrive.WALK - RUN_LEAN * run
                 + Mth.clamp(BRACE * this.brace, -0.05, 0.05);
+        // A blow sinks the hips, stoops and twists the torso over them and lifts the stomping foot.
+        MechAttacks.Body blow = MechAttacks.body(this.blow);
         double low = -CROUCH * (1.0 + 0.3 * run) * Ease.smooth(this.crouch) + bob + this.settleY * 0.6
-                + this.sink.value;
+                + this.sink.value - blow.crouch();
         // The hips give a little way to the twist above them and swing back as the torso swings round.
         double share = HIPS_SHARE * this.torsoTurn - HIPS_KICK * this.torso.speed * 0.25;
         pose.hips = stage.turned(HIPS, new Vec3(sway, low, 0.0), twist + share, pitch, roll);
-        pose.turn = this.torsoTurn - share;
+        pose.turn = this.torsoTurn - share + blow.twist() + blow.turn();
         // The torso banks against the legs turning under it and leans into how fast it swings.
         this.bank.step(Mth.clamp(-2.4 * this.legsRate + 0.9 * this.torso.speed, -0.12, 0.12), 1.0, 0.08, 0.6);
         this.lean.step(-0.04 * w - 0.14 * run + Mth.clamp(-0.6 * this.brace, -0.04, 0.04), 1.0, 0.07, 0.75);
-        pose.lean = this.lean.value;
+        pose.lean = this.lean.value - blow.stoop();
+        pose.blow = this.blow;
+        if (blow.foot() > 0.0) {
+            pose.ankle[0] = pose.ankle[0].add(0.0, blow.foot(), 0.0);
+            pose.tip[0] = 0.1 * Math.min(1.0, blow.foot());
+        }
         pose.bank = this.bank.value;
         pose.torso = MechScript.upper(pose.hips, pose.turn, pose.lean, pose.bank);
         pose.walking = w;
