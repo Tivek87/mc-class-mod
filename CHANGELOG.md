@@ -3,6 +3,20 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.4.5-alpha] - 2026-09-28
+
+### Fixed
+- **Ragdolls:** a creature lying limp on the ground no longer walks or attacks while its body still lies there: it
+  stays down, without moving, until its body has got up.
+- **Ragdolls:** a creature a power lets go of (hands, tentacles, the mech, Thor's grab) now lies down and gets up too,
+  instead of walking off at once while its body still lay on the ground.
+- **Ragdolls:** the body lies where the creature really is, and gets up there; it no longer slides away from it.
+- **Ragdolls:** a limp body at the edge of the view no longer disappears while part of it is still on screen.
+
+### Changed
+- **Ragdolls:** a thrown creature now gets up at the same moment in every player's game, and stands a moment before
+  it walks on.
+
 ## [0.4.4-alpha] - 2026-09-28
 
 **STILL UNFINISHED:** the mech's blows are now tested in the game, but they are first versions and may still look or

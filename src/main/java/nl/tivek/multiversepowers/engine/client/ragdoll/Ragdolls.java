@@ -16,6 +16,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.EntityModel;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.registries.Registries;
@@ -64,9 +65,6 @@ public final class Ragdolls {
     // A creature knocked limp along the ground goes down after this many ticks; the longest it may fly limp.
     private static final int SHRUG = 3;
     private static final int LONGEST_FLIGHT = 200;
-    // Down, it lies still this long (1.5 seconds) before it gets up, and at most that long in all.
-    private static final int LIE = 30;
-    private static final int LIE_LONGEST = 110;
     private static final double GO_LIMP = 0.25;
     private static final int SINK_TICKS = 40;
     private static final double SINK_SPEED = 0.035;
@@ -185,6 +183,16 @@ public final class Ragdolls {
                 || doll.state == Ragdoll.State.FLYING && doll.phase != Ragdoll.Phase.AIR);
     }
 
+    // Whether the creature's limp body is in view, though its own box may not be: an arm or a head can lie outside it.
+    public static boolean inView(Entity entity, Frustum frustum) {
+        Ragdoll doll = LIVE.get(entity.getId());
+        if (doll == null || doll.entity != entity) {
+            return false;
+        }
+        Vec3 at = doll.coreAt(1.0);
+        return frustum.isVisible(new AABB(at.x - 2.0, at.y - 2.0, at.z - 2.0, at.x + 2.0, at.y + 2.0, at.z + 2.0));
+    }
+
     // Whether this dead creature's body stays lying where it fell, so it does not puff away yet.
     public static boolean keepsBody(LivingEntity entity) {
         Ragdoll doll = LIVE.get(entity.getId());
@@ -262,8 +270,8 @@ public final class Ragdolls {
         if (HELD.contains(entity.getId())) {
             return Ragdoll.State.HELD;
         }
-        return THROWN_NOW.contains(entity.getId()) || RagdollCauses.blown(entity.getId(), ticks) ? Ragdoll.State.FLYING
-                : null;
+        return THROWN_NOW.contains(entity.getId()) || RagdollCauses.blown(entity.getId(), ticks)
+                || Knocked.down(entity.getId()) ? Ragdoll.State.FLYING : null;
     }
 
     private static boolean claimed(Entity entity) {
@@ -332,6 +340,7 @@ public final class Ragdolls {
             return;
         }
         ticks++;
+        Knocked.tick();
         THROWN_NOW.clear();
         RagdollCauses.forget(ticks);
         if (!ClientSettings.ragdolls()) {
@@ -400,7 +409,8 @@ public final class Ragdolls {
     }
 
     // A living limp creature hangs from what holds it; one thrown flies along with its creature until it comes down,
-    // then lies where it fell (never landing on its feet) for a while and gets up. False once it stands again.
+    // then lies where it fell (never landing on its feet), kept where its creature really is, and gets up in time to
+    // stand before the server lets its creature move again. False once it stands again.
     private static boolean carried(Ragdoll doll, LivingEntity entity) {
         boolean held = HELD.contains(entity.getId());
         if (held) {
@@ -431,8 +441,8 @@ public final class Ragdolls {
                     doll.lift(entity);
                 } else {
                     doll.down++;
-                    doll.rest = doll.resting() ? doll.rest + 1 : 0;
-                    if (doll.rest >= LIE || doll.down >= LIE_LONGEST) {
+                    doll.keepNear(entity);
+                    if (Knocked.getsUp(entity.getId(), doll.down, doll.person())) {
                         doll.getUp();
                     }
                 }
@@ -441,6 +451,7 @@ public final class Ragdolls {
                 if (again) {
                     doll.lift(entity);
                 } else if (doll.up >= GetUp.ticks(doll.person())) {
+                    Knocked.forget(entity.getId());
                     return false;
                 }
             }
@@ -467,6 +478,7 @@ public final class Ragdolls {
         int id = entity.getId();
         HELD.remove(id);
         FAILED.remove(id);
+        Knocked.forget(id);
         Ragdoll doll = LIVE.get(id);
         if (doll == null || doll.entity != entity) {
             return;
@@ -576,5 +588,6 @@ public final class Ragdolls {
         THROWN_NOW.clear();
         RagdollCauses.clear();
         FAILED.clear();
+        Knocked.clear();
     }
 }

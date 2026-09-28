@@ -48,6 +48,7 @@ import nl.tivek.multiversepowers.config.WorldSettingsEditPayload;
 import nl.tivek.multiversepowers.config.WorldSettingsPayload;
 import nl.tivek.multiversepowers.engine.entity.DeathStylePayload;
 import nl.tivek.multiversepowers.engine.entity.HeldPayload;
+import nl.tivek.multiversepowers.engine.entity.KnockdownPayload;
 import nl.tivek.multiversepowers.engine.fx.ParticlesPayload;
 import nl.tivek.multiversepowers.engine.fx.VoicePayload;
 import nl.tivek.multiversepowers.faction.StandingsPayload;
@@ -87,6 +88,7 @@ public final class ModNetwork {
         registrar.playToClient(ConstructPayload.TYPE, ConstructPayload.STREAM_CODEC, ModNetwork::onConstruct);
         registrar.playToClient(FlattenPayload.TYPE, FlattenPayload.STREAM_CODEC, ModNetwork::onFlatten);
         registrar.playToClient(HeldPayload.TYPE, HeldPayload.STREAM_CODEC, ModNetwork::onHeld);
+        registrar.playToClient(KnockdownPayload.TYPE, KnockdownPayload.STREAM_CODEC, ModNetwork::onKnockdown);
         registrar.playToClient(DeathStylePayload.TYPE, DeathStylePayload.STREAM_CODEC, ModNetwork::onDeathStyle);
         registrar.playToClient(HandVictimPayload.TYPE, HandVictimPayload.STREAM_CODEC, ModNetwork::onHandVictim);
         registrar.playToClient(RingPayload.TYPE, RingPayload.STREAM_CODEC, ModNetwork::onRing);
@@ -215,6 +217,10 @@ public final class ModNetwork {
 
     private static void onHeld(HeldPayload payload, IPayloadContext context) {
         ClientPayloadHandler.handleHeld(payload, context);
+    }
+
+    private static void onKnockdown(KnockdownPayload payload, IPayloadContext context) {
+        ClientPayloadHandler.handleKnockdown(payload, context);
     }
 
     private static void onDeathStyle(DeathStylePayload payload, IPayloadContext context) {

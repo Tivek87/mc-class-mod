@@ -55,6 +55,10 @@ final class Ragdoll {
     private static final double SPIN = 0.25;
     // How much faster or slower than its body a part may be thrown (a part nearer the blast flies first).
     private static final double UNEVEN = 0.5;
+    // Lying down, its middle stays within this many blocks (level with the ground) of where its creature really is:
+    // any further, the whole body is moved this share of the rest of the way back each tick.
+    private static final double SLACK = 0.7;
+    private static final double DRAW_BACK = 0.3;
 
     // Scratch for drawing, which only ever happens on the render thread.
     private static final Matrix4f FRAME = new Matrix4f();
@@ -103,8 +107,7 @@ final class Ragdoll {
     double limp = 1.0;
     boolean flew;
     Phase phase = Phase.AIR;
-    // Ticks lying still, ticks down in all, and ticks into getting up (-1 before).
-    int rest;
+    // Ticks down, and ticks into getting up (-1 before).
     int down;
     int up = -1;
     // The body as it lay when it began to get up; a person gets up by way of one knee (GetUp).
@@ -288,9 +291,22 @@ final class Ragdoll {
     void fall() {
         this.phase = Phase.DOWN;
         this.hold.release();
-        this.rest = 0;
         this.down = 0;
         this.world.wake();
+    }
+
+    // Lying down, it slides and rolls as it will but never away from its creature: the body and the creature the
+    // server moves are always in one place, so the body gets up where the creature stands.
+    void keepNear(LivingEntity entity) {
+        int o = this.core * 7;
+        double dx = entity.getX() - this.now[o];
+        double dz = entity.getZ() - this.now[o + 2];
+        double far = Math.sqrt(dx * dx + dz * dz);
+        if (far > SLACK) {
+            double back = DRAW_BACK * (far - SLACK) / far;
+            this.world.shift(dx * back, 0.0, dz * back);
+            this.world.wake();
+        }
     }
 
     // Thrown again while down or getting up: carried along with its creature once more, from where it lies now.
@@ -322,11 +338,6 @@ final class Ragdoll {
 
     boolean person() {
         return this.person;
-    }
-
-    // Lying all but still: a last twitch of a limb does not keep it down longer.
-    boolean resting() {
-        return this.world.quiet() >= 3;
     }
 
     void step(int substeps, Blocks blocks) {

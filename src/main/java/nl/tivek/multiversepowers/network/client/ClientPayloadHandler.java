@@ -35,10 +35,12 @@ import nl.tivek.multiversepowers.config.WorldSettingsPayload;
 import nl.tivek.multiversepowers.engine.client.fx.ParticleAmount;
 import nl.tivek.multiversepowers.engine.client.fx.VoiceLine;
 import nl.tivek.multiversepowers.engine.client.ragdoll.Ashes;
+import nl.tivek.multiversepowers.engine.client.ragdoll.Knocked;
 import nl.tivek.multiversepowers.engine.client.ragdoll.Ragdolls;
 import nl.tivek.multiversepowers.engine.entity.DeathStylePayload;
 import nl.tivek.multiversepowers.engine.entity.DeathStyles;
 import nl.tivek.multiversepowers.engine.entity.HeldPayload;
+import nl.tivek.multiversepowers.engine.entity.KnockdownPayload;
 import nl.tivek.multiversepowers.engine.fx.ParticlesPayload;
 import nl.tivek.multiversepowers.engine.fx.VoicePayload;
 import nl.tivek.multiversepowers.faction.StandingsPayload;
@@ -125,6 +127,10 @@ public final class ClientPayloadHandler {
 
     public static void handleHeld(HeldPayload payload, IPayloadContext context) {
         context.enqueueWork(() -> Ragdolls.held(payload.entity(), payload.held()));
+    }
+
+    public static void handleKnockdown(KnockdownPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> Knocked.told(payload.entity(), payload.ticks()));
     }
 
     public static void handleDeathStyle(DeathStylePayload payload, IPayloadContext context) {

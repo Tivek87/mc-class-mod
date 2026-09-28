@@ -3,9 +3,12 @@ package nl.tivek.multiversepowers.engine.entity;
 import java.util.ArrayList;
 import java.util.IdentityHashMap;
 import java.util.Map;
+import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.FlyingMob;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.MoverType;
 import net.minecraft.world.entity.ambient.Bat;
 import net.minecraft.world.entity.animal.FlyingAnimal;
 import net.minecraft.world.phys.Vec3;
@@ -13,28 +16,41 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDamageEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.event.level.ExplosionKnockbackEvent;
+import net.neoforged.neoforge.network.PacketDistributor;
 import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.engine.effect.Effects;
 
-// A creature a blow throws goes limp in every player's game (Ragdolls), lies where it falls and gets up: meanwhile
-// it must not walk or fight on, so from the moment it lands it is stilled (no AI) for as long as that takes. The
-// same throw a player's game counts: hurt, then sent off hard enough.
+// A creature a blow or a blast throws, or a power lets go of, goes limp in every player's game (Ragdolls), lies where
+// it falls and gets up: all that while it must not walk or fight, so it has no AI from the throw until it stands
+// again, and is moved here as the game moves any falling creature. The players near are told when it lands and how
+// long it lies, so its body gets up in time. A throw counts a little sooner than in a player's game: a body the server
+// holds down is thrown limp there too, while one it never held down gets up at once.
 @EventBusSubscriber(modid = MultiversePowers.MODID)
 public final class Knockdowns {
     private static final String SAVED_TAG = "welcomescreen_downed_noai";
-    // As Ragdolls counts a throw, in blocks a tick: along the ground, and upward; and too heavy to throw.
-    private static final double THROWN = 0.9;
-    private static final double TOSSED = 0.6;
+    // In blocks a tick: pushed along the ground, upward, or by a blast; and too heavy to throw.
+    private static final double THROWN = 0.8;
+    private static final double TOSSED = 0.55;
+    private static final double BLOWN = 0.2;
     private static final double HEAVY = 3.5;
-    // Ticks a thrown creature lies still from landing: as long as it lies and gets up in a player's game.
-    private static final int DOWN = 75;
+    // Ticks a thrown creature stays down from landing: it lies, then gets up in every player's game, and stands a
+    // moment before its AI comes back.
+    private static final int DOWN = 80;
     private static final int LONGEST_FLIGHT = 200;
-    private static final int WATCH = 3;
+    // As long as a player's game shows a creature hurt, the push that throws it may still come.
+    private static final int WATCH = 10;
+    private static final int FLYING = -1;
+    // A creature without AI is slowed by this every tick by the game itself; its flight here makes up for it.
+    private static final double STILL_DRAG = 0.98;
 
     private static final Map<Mob, Down> DOWNED = new IdentityHashMap<>();
 
     private static final class Down {
         final boolean noAi;
+        int age;
+        int thrown;
         int landed = -1;
 
         Down(boolean noAi) {
@@ -55,6 +71,15 @@ public final class Knockdowns {
     static void forget(Mob mob) {
         if (DOWNED.remove(mob) != null) {
             mob.getPersistentData().remove(SAVED_TAG);
+            tell(mob, 0);
+        }
+    }
+
+    // A power let go of the creature: it hung limp in every player's game, so it falls and lies down as if thrown.
+    static void letGo(Mob mob) {
+        if (mob.level() instanceof ServerLevel level && mob.isAlive() && falls(mob) && !mob.isInWater()
+                && !mob.isInLava()) {
+            down(level, mob);
         }
     }
 
@@ -64,7 +89,7 @@ public final class Knockdowns {
                 || !mayFly(mob)) {
             return;
         }
-        // The push that throws it is given right after the blow: looked at over the next ticks.
+        // The push that throws it is given right after the blow, or by a power a few ticks on: looked at meanwhile.
         Effects.start(level, (lvl, age) -> {
             if (age > WATCH || !mob.isAlive() || mob.isRemoved()) {
                 return false;
@@ -78,56 +103,108 @@ public final class Knockdowns {
         });
     }
 
+    // A blast's push is known exactly before it is given, while the creature has not moved off with it yet.
+    @SubscribeEvent
+    public static void onBlast(ExplosionKnockbackEvent event) {
+        if (event.getAffectedEntity() instanceof Mob mob && mob.level() instanceof ServerLevel level
+                && mob.isAlive() && !HeldMobs.isHeld(mob) && mayFly(mob)
+                && event.getKnockbackVelocity().lengthSqr() > BLOWN * BLOWN) {
+            down(level, mob);
+        }
+    }
+
+    // Not one that flies by itself, rides or is ridden.
+    private static boolean falls(Mob mob) {
+        return !mob.isNoGravity() && !mob.isPassenger() && !mob.isVehicle() && !(mob instanceof FlyingMob)
+                && !(mob instanceof FlyingAnimal) && !(mob instanceof Bat);
+    }
+
     private static boolean mayFly(Mob mob) {
-        return !mob.isNoGravity() && !mob.isPassenger() && !mob.isVehicle() && !mob.isInWater() && !mob.isInLava()
-                && !(mob instanceof FlyingMob) && !(mob instanceof FlyingAnimal) && !(mob instanceof Bat)
+        return falls(mob) && !mob.isInWater() && !mob.isInLava()
                 && mob.getBbWidth() * mob.getBbWidth() * mob.getBbHeight() <= HEAVY;
     }
 
     private static void down(ServerLevel level, Mob mob) {
         Down down = DOWNED.get(mob);
         if (down != null) {
-            // Thrown again while down: it lies from where it lands this time.
+            // Thrown again while down: it flies, and lies from where it lands this time.
+            down.thrown = down.age;
             down.landed = -1;
+            tell(mob, FLYING);
             return;
         }
-        down = new Down(mob.isNoAi());
-        DOWNED.put(mob, down);
-        mob.getPersistentData().putBoolean(SAVED_TAG, down.noAi);
-        Down mine = down;
+        Down mine = new Down(mob.isNoAi());
+        DOWNED.put(mob, mine);
+        mob.getPersistentData().putBoolean(SAVED_TAG, mine.noAi);
+        mob.setNoAi(true);
+        mob.getNavigation().stop();
+        tell(mob, FLYING);
         Effects.start(level, (lvl, age) -> {
             if (DOWNED.get(mob) != mine) {
                 return false;
             }
             if (!mob.isAlive() || mob.isRemoved() || HeldMobs.isHeld(mob)) {
                 if (!HeldMobs.isHeld(mob)) {
-                    up(mob);
+                    up(mob, true);
                 }
                 return false;
             }
+            mine.age = age;
+            fly(lvl, mob);
             if (mine.landed < 0) {
-                if (mob.onGround() && age > 1 || mob.isInWater() || age > LONGEST_FLIGHT) {
+                int flight = age - mine.thrown;
+                if (mob.onGround() && flight > 1 || mob.isInWater() || mob.isInLava() || flight > LONGEST_FLIGHT) {
                     mine.landed = age;
-                    mob.setNoAi(true);
-                    mob.getNavigation().stop();
+                    tell(mob, DOWN);
                 }
                 return true;
             }
-            Vec3 push = mob.getDeltaMovement();
-            mob.setDeltaMovement(push.x * 0.5, push.y, push.z * 0.5);
             if (age - mine.landed >= DOWN) {
-                up(mob);
+                up(mob, true);
                 return false;
             }
             return true;
         });
     }
 
-    private static void up(Mob mob) {
+    // A creature without AI does not move by itself: while down it flies, lands and slides to a stop here as the game
+    // moves any falling creature (in water it just floats where it is).
+    private static void fly(ServerLevel level, Mob mob) {
+        if (mob.isInWater() || mob.isInLava()) {
+            return;
+        }
+        Vec3 push = mob.getDeltaMovement().scale(1.0 / STILL_DRAG);
+        mob.setDeltaMovement(push);
+        mob.move(MoverType.SELF, push);
+        BlockPos below = mob.getBlockPosBelowThatAffectsMyMovement();
+        float slip = mob.onGround() ? level.getBlockState(below).getFriction(level, below, mob) * 0.91F : 0.91F;
+        Vec3 after = mob.getDeltaMovement();
+        mob.setDeltaMovement(after.x * slip, (after.y - mob.getGravity()) * 0.98, after.z * slip);
+    }
+
+    private static void up(Mob mob, boolean tell) {
         Down down = DOWNED.remove(mob);
         if (down != null) {
             mob.setNoAi(down.noAi);
             mob.getPersistentData().remove(SAVED_TAG);
+            if (tell) {
+                tell(mob, 0);
+            }
+        }
+    }
+
+    private static void tell(Mob mob, int ticks) {
+        PacketDistributor.sendToPlayersTrackingEntity(mob, new KnockdownPayload(mob.getId(), ticks));
+    }
+
+    @SubscribeEvent
+    public static void onStartTracking(PlayerEvent.StartTracking event) {
+        if (event.getTarget() instanceof Mob mob && event.getEntity() instanceof ServerPlayer player) {
+            Down down = DOWNED.get(mob);
+            if (down != null) {
+                int left = down.landed < 0 ? FLYING : Math.max(1, DOWN - (down.age - down.landed));
+                PacketDistributor.sendToPlayer(player, new KnockdownPayload(mob.getId(), left));
+            }
         }
     }
 
@@ -143,7 +220,7 @@ public final class Knockdowns {
 
     public static void clear() {
         for (Mob mob : new ArrayList<>(DOWNED.keySet())) {
-            up(mob);
+            up(mob, false);
         }
     }
 }

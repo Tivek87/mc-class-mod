@@ -61,13 +61,21 @@ public final class HeldMobs {
     }
 
     public static void release(Mob mob) {
-        Boolean wasNoAi = HELD.remove(mob);
-        if (wasNoAi != null) {
-            mob.setNoAi(wasNoAi);
-            mob.getPersistentData().remove(SAVED_TAG);
-            mob.resetFallDistance();
-            tell(mob, false);
+        if (free(mob)) {
+            Knockdowns.letGo(mob);
         }
+    }
+
+    private static boolean free(Mob mob) {
+        Boolean wasNoAi = HELD.remove(mob);
+        if (wasNoAi == null) {
+            return false;
+        }
+        mob.setNoAi(wasNoAi);
+        mob.getPersistentData().remove(SAVED_TAG);
+        mob.resetFallDistance();
+        tell(mob, false);
+        return true;
     }
 
     private static void tell(Mob mob, boolean held) {
@@ -95,7 +103,7 @@ public final class HeldMobs {
 
     public static void releaseAll() {
         for (Mob mob : new ArrayList<>(HELD.keySet())) {
-            release(mob);
+            free(mob);
         }
     }
 }
