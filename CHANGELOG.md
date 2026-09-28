@@ -3,6 +3,19 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.4.4-alpha] - 2026-09-28
+
+**STILL UNFINISHED:** the mech's blows are now tested in the game, but they are first versions and may still look or
+feel wrong.
+
+### Fixed
+- **Hard-Light Mech: throw:** after letting go, the arm swings on through instead of dropping at once.
+- **Hard-Light Mech: throw:** a creature it lets go of (flung, or killed by a smash) no longer jumps back on screen to
+  where it was a moment before.
+
+### Changed
+- **Docs:** the powers guide now describes the mech's blows and their damage settings.
+
 ## [0.4.3-alpha] - 2026-09-28
 
 **RELEASED MID-CODING — VERY BUGGY:** this version was released half way through coding. Much of it is not tested or

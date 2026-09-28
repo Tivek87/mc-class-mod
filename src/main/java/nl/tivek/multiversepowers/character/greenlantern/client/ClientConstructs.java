@@ -267,6 +267,8 @@ public final class ClientConstructs extends TrackedConstructs {
                 Vec3 grip = pose.torso().point(MechAttacks.grip(pose.arm(true, track.clock(0.0F), held),
                         held.halfWidth()));
                 caught.setPos(grip.x, grip.y - held.halfHeight(), grip.z);
+                // Its glide towards a position the server sent while it rode along would pull it back once let go.
+                caught.lerpTo(grip.x, grip.y - held.halfHeight(), grip.z, caught.getYRot(), caught.getXRot(), 1);
                 caught.setDeltaMovement(Vec3.ZERO);
             }
         }

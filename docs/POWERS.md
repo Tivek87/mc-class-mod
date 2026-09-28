@@ -848,7 +848,14 @@ Green Lantern's ultimate: a big, slow gunship of hard light high over the battle
   one back to turn. Standing still you reach over to the console now and then and press a button, which lights up.
   In first person you look out through the round glass port in its chest, with a clear view ahead; in third person the camera stands back
   behind and above the whole mech, so it never blocks your view.
-- **Walking is all it does:** you cannot fly, jump or use your other powers while you are in it.
+- **Blows (left click).** The mech stands its ground and strikes one blow at random: a **backhand sweep** (the back
+  of the right hand swung from its chest out to the side, flinging whatever it hits), a **stomp** of the right foot
+  (it hurts and throws everything round that foot), a **slam** (both fists raised high and brought down on the
+  ground ahead, a big blast), or, with an enemy in reach in front of it, a **throw**: it turns and bends to the
+  nearest one, closes its fingers round it, lifts it, smashes it into the ground twice and, if it still lives, winds
+  up and flings it the way you look. It does not walk while it strikes. *Unfinished: the blows are first versions
+  and may still look or feel wrong.*
+- **Nothing else:** you cannot fly, jump or use your other powers while you are in it.
 - **Leaving it:** hold Y for 2 seconds again (the ring round your crosshair says *Leave the mech*): the mech breaks
   into solid pieces that dissolve into light, and you float gently down to the ground. Die, log out or stop being
   Green Lantern and it breaks up as well.
@@ -857,7 +864,7 @@ Green Lantern's ultimate: a big, slow gunship of hard light high over the battle
   your own team excepted).
 - **Power:** 25. **Cooldown:** 90 seconds, **its own**: building the mech leaves the Air Strike ready, and the Air
   Strike leaves the mech ready. Its cost, cooldown, reach and the three damages are settings (Air Strike, the mech
-  part).
+  part), and so is each blow's damage (Mech blows).
 
 ### Giant Hands (key Left Alt)
 

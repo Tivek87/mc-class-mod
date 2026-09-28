@@ -217,9 +217,13 @@ final class MechAttack {
     }
 
     // The throw: the creature waits pinned on its spot for the hand, rides in the fist from the grab on, is smashed
-    // into the ground twice and flung at the release. Once it is gone, the arm lets go and the mech stands back up.
+    // into the ground twice and flung at the release, the arm swinging on through. Gone before that, the arm lets go
+    // and the mech stands back up.
     private boolean carry(ServerLevel level, ServerPlayer owner, MechScript.Stage frame, MechScript.Stage torso,
             CharacterAbility ability) {
+        if (this.t > MechAttacks.RELEASE) {
+            return this.t < MechAttacks.length(this.kind);
+        }
         LivingEntity held = this.creature();
         if (held == null) {
             this.drop();
