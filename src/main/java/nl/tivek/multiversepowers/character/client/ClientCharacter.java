@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.function.Predicate;
+import java.util.function.ToIntFunction;
 import javax.annotation.Nullable;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.KeyMapping;
@@ -153,6 +154,16 @@ public final class ClientCharacter {
         Gestures.flying(character, flying);
     }
 
+    // Whether a gesture's ability is the one its button fires now (on the ground or in flight, in the right state).
+    public static boolean inPlay(CharacterAbility ability, LocalPlayer player) {
+        return Gestures.active(ability, player);
+    }
+
+    // A character with gestures that need a state of its own (CharacterAbility.needs) reports that state here.
+    public static void state(GameCharacter character, ToIntFunction<LocalPlayer> state) {
+        Gestures.state(character, state);
+    }
+
     static void held(AbilitySlot slot, boolean held) {
         HELD[slot.ordinal()] = held;
     }
@@ -229,6 +240,9 @@ public final class ClientCharacter {
         for (AbilitySlot slot : AbilitySlot.values()) {
             CharacterAbility ability = now == null ? null : now.ability(slot);
             KeyMapping key = AbilityKeys.of(slot);
+            if (key == null) {
+                continue;
+            }
             if (ability != null && ability.onGesture()) {
                 while (key.consumeClick()) {
                 }
@@ -329,7 +343,8 @@ public final class ClientCharacter {
     }
 
     static void press(LocalPlayer player, AbilitySlot slot) {
-        boolean quiet = AbilityKeys.sharesGameKey(AbilityKeys.of(slot));
+        KeyMapping own = AbilityKeys.of(slot);
+        boolean quiet = own == null || AbilityKeys.sharesGameKey(own);
         if (character == null) {
             if (!quiet) {
                 player.displayClientMessage(
@@ -372,7 +387,7 @@ public final class ClientCharacter {
         player.displayClientMessage(recharge == null
                 ? Component.translatable("ring." + MultiversePowers.MODID + ".no_power")
                 : Component.translatable("ring." + MultiversePowers.MODID + ".no_power_key",
-                        AbilityKeys.of(recharge.slot()).getTranslatedKeyMessage()), true);
+                        PowerInputs.label(recharge)), true);
     }
 
     @SubscribeEvent
@@ -461,8 +476,10 @@ public final class ClientCharacter {
             Component running = now == GameCharacter.GREEN_LANTERN ? ConstructHud.status(ability, minecraft.player)
                     : null;
             if (!usable) {
-                status = Component.translatable(prefix + (ability.when() == CharacterAbility.When.FLYING
-                        ? "in_flight" : "on_ground"));
+                status = !Gestures.rightWhen(ability, minecraft.player)
+                        ? Component.translatable(prefix + (ability.when() == CharacterAbility.When.FLYING
+                                ? "in_flight" : "on_ground"))
+                        : Component.translatable(prefix + "needs." + ability.needsName());
                 color = GRAY;
             } else if (running != null) {
                 status = running;

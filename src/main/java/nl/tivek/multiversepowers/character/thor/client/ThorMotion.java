@@ -1,11 +1,9 @@
 package nl.tivek.multiversepowers.character.thor.client;
 
-import javax.annotation.Nullable;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.Input;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.util.Mth;
-import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.phys.HitResult;
@@ -19,23 +17,16 @@ import nl.tivek.multiversepowers.character.CharacterAbility;
 import nl.tivek.multiversepowers.character.Characters;
 import nl.tivek.multiversepowers.character.GameCharacter;
 import nl.tivek.multiversepowers.character.client.ClientCharacter;
+import nl.tivek.multiversepowers.character.thor.ThorBlow;
+import nl.tivek.multiversepowers.character.thor.ThorMoves;
+import nl.tivek.multiversepowers.character.thor.ThorPowers;
 import nl.tivek.multiversepowers.character.thor.ThorStatePayload;
 import nl.tivek.multiversepowers.engine.client.world.ChunkEdge;
 
 // Moves your own Thor: his game, not the server, moves a player, so every move of his is made here the moment its
 // button is pressed (the server shows it to the others and hits what it hits). Speeds are in blocks per tick.
 @EventBusSubscriber(modid = MultiversePowers.MODID, value = Dist.CLIENT)
-public final class ThorMotion {
-    // A dash: one tick sinking into it, then eight covering the ground (fast out, easing in), then the stop.
-    static final int DASH_WAIT = 1;
-    static final int DASH_MOVE = 8;
-    static final int DASH_ALL = 15;
-    // A super jump from the ground sinks three ticks first; from the air (the first press already jumped) one.
-    private static final int CROUCH = 3;
-    private static final int TUCK = 1;
-    private static final int GRAVITY_BACK = 12;
-    private static final double FLOAT_SINK = -0.025;
-    private static final double DRIFT = 0.24;
+public final class ThorMotion extends ThorGroundMotion {
     private static final int LIFT_TICKS = 12;
     private static final double LIFT = 0.5;
     private static final int BLINK_TICKS = 3;
@@ -44,52 +35,37 @@ public final class ThorMotion {
     private static final double DIVE_REACH = 32.0;
     private static final int DIVE_LONGEST = 80;
     private static final int EDGE_LOOK = 30;
-    private static final RandomSource RANDOM = RandomSource.create();
+    // At lightning speed he lands by himself once the ground comes this close below him while he sinks.
+    private static final double LAND_BELOW = 2.5;
 
-    private static int dashAge = -1;
-    private static Vec3 dashWay = Vec3.ZERO;
-    private static double dashFar;
-    private static int jumpAge = -1;
-    private static int jumpWait;
-    private static double launch;
-    private static int floatAge = -1;
-    private static int floatTicks;
-    private static boolean flying;
     private static int flightAge;
     private static Vec3 velocity = Vec3.ZERO;
-    private static boolean lightning;
     private static int blinkAge = -1;
     private static Vec3 blinkFrom = Vec3.ZERO;
     private static Vec3 blinkTo = Vec3.ZERO;
     private static int diveAge = -1;
     private static Vec3 diveAt = Vec3.ZERO;
+    private static int lightningLeft;
+    // The way he was last steering in flight: ahead, aside, up (+1, 0, -1 each).
+    private static float steerForward;
+    private static float steerStrafe;
+    private static float steerUp;
 
     static {
         ClientCharacter.local(GameCharacter.THOR, ThorMotion::act);
         ClientCharacter.flying(GameCharacter.THOR, player -> flying);
+        ClientCharacter.state(GameCharacter.THOR, ThorMotion::state);
+    }
+
+    // With the hammer in hand or not, running or not: which of his gestures are his now.
+    private static int state(LocalPlayer player) {
+        ClientThor.View view = ClientThor.view(player);
+        boolean armed = view != null && view.has(ThorStatePayload.ARMED) && !view.has(ThorStatePayload.THROWN);
+        return (armed ? ThorPowers.ARMED : ThorPowers.UNARMED)
+                | (player.isSprinting() ? ThorPowers.SPRINTING : ThorPowers.WALKING);
     }
 
     private ThorMotion() {
-    }
-
-    public static boolean flying() {
-        return flying;
-    }
-
-    public static boolean lightning() {
-        return flying && lightning;
-    }
-
-    // Floating at the top of a super jump, 0 to 1 as it fades.
-    public static boolean floating() {
-        return floatAge >= 0 && floatAge < floatTicks;
-    }
-
-    private static int flags() {
-        int flags = flying ? ThorStatePayload.FLYING : 0;
-        flags |= floating() ? ThorStatePayload.FLOATING : 0;
-        flags |= lightning() ? ThorStatePayload.LIGHTNING : 0;
-        return flags;
     }
 
     private static int act(LocalPlayer player, CharacterAbility ability, boolean on, int data) {
@@ -105,6 +81,23 @@ public final class ThorMotion {
                 }
                 return data | dash(player, ability) << Characters.MOVE_SHIFT;
             }
+            case "grab_dash" -> {
+                if (!on || !held || flying || dashAge >= 0) {
+                    return on ? -1 : data;
+                }
+                return data | grabDash(player) << Characters.MOVE_SHIFT;
+            }
+            case "mjolnir" -> {
+                ClientThor.View view = ClientThor.view(player);
+                if (on && !flying && (view == null || !view.has(ThorStatePayload.THROWN))) {
+                    ClientThor.flip(player, ThorStatePayload.ARMED);
+                }
+            }
+            case "hammer_uppercut" -> {
+                if (on && held && !flying) {
+                    ClientThor.predictBlow(player, ThorBlow.HAMMER_UPPERCUT.ordinal());
+                }
+            }
             case "super_jump" -> {
                 if (on && !flying) {
                     jump(player, ability);
@@ -119,9 +112,10 @@ public final class ThorMotion {
                 }
             }
             case "air_blink" -> {
-                if (on && flying && blinkAge < 0 && diveAge < 0) {
-                    blink(player);
+                if (!on || !flying || blinkAge >= 0 || diveAge >= 0) {
+                    return -1;
                 }
+                return data | blink(player) << Characters.MOVE_SHIFT;
             }
             case "grab_dash_dive" -> {
                 if (!on) {
@@ -132,64 +126,17 @@ public final class ThorMotion {
                 }
             }
             case "lightning_flight" -> {
-                lightning = on && flying;
+                if (!on || !held || !flying || lightning) {
+                    return -1;
+                }
+                lightning = true;
+                lightningLeft = (int) Math.round(ability.value("seconds") * 20.0);
                 ClientThor.flags(player, flags());
             }
             default -> {
             }
         }
         return data;
-    }
-
-    // The way he was moving, or ahead when standing: packed with how far into the bits the server reads.
-    private static int dash(LocalPlayer player, CharacterAbility ability) {
-        float forward = player.input.forwardImpulse;
-        float strafe = player.input.leftImpulse;
-        double yaw = Math.toRadians(player.getYRot());
-        Vec3 ahead = new Vec3(-Math.sin(yaw), 0.0, Math.cos(yaw));
-        Vec3 left = new Vec3(Math.cos(yaw), 0.0, Math.sin(yaw));
-        Vec3 way = ahead.scale(forward).add(left.scale(strafe));
-        dashWay = way.lengthSqr() < 1.0E-4 ? ahead : way.normalize();
-        double shortest = ability.value("shortestBlocks");
-        double longest = Math.max(shortest, ability.value("longestBlocks"));
-        dashFar = shortest + (longest - shortest) * RANDOM.nextDouble();
-        dashAge = 0;
-        int angle = Math.floorMod(Math.round((float) Math.toDegrees(Math.atan2(-dashWay.x, dashWay.z)) / 360.0F
-                * 256.0F), 256);
-        int tenths = Mth.clamp((int) Math.round(dashFar * 10.0), 0, 255);
-        ClientThor.predict(player, ThorStatePayload.DASH, angle | tenths << 8, flags());
-        return angle | tenths << 8;
-    }
-
-    private static void jump(LocalPlayer player, CharacterAbility ability) {
-        jumpAge = 0;
-        jumpWait = player.onGround() ? CROUCH : TUCK;
-        launch = launchFor(ability.value("heightBlocks"));
-        floatTicks = (int) Math.round(ability.value("floatSeconds") * 20.0);
-        floatAge = -1;
-        dashAge = -1;
-        ClientThor.predict(player, ThorStatePayload.JUMP, 0, flags());
-    }
-
-    // The speed up that rises `height` blocks as the game's own gravity and air drag slow it.
-    private static double launchFor(double height) {
-        double low = 0.0;
-        double high = 6.0;
-        for (int i = 0; i < 40; i++) {
-            double v = (low + high) * 0.5;
-            double y = 0.0;
-            double speed = v;
-            while (speed > 0.0) {
-                y += speed;
-                speed = (speed - 0.08) * 0.98;
-            }
-            if (y < height) {
-                low = v;
-            } else {
-                high = v;
-            }
-        }
-        return (low + high) * 0.5;
     }
 
     private static void takeOff(LocalPlayer player) {
@@ -203,8 +150,22 @@ public final class ThorMotion {
         ClientThor.predict(player, ThorStatePayload.TAKE_OFF, 0, flags());
     }
 
-    private static void blink(LocalPlayer player) {
+    // Fifteen blocks the way he was steering (ahead along his look, back, aside or up), or along his look: packed as
+    // yaw and pitch in 256ths for the server.
+    private static int blink(LocalPlayer player) {
         Vec3 look = player.getLookAngle();
+        double yaw = Math.toRadians(player.getYRot());
+        Vec3 right = new Vec3(-Math.cos(yaw), 0.0, -Math.sin(yaw));
+        Vec3 wish = look.scale(steerForward).add(right.scale(-steerStrafe)).add(0.0, steerUp, 0.0);
+        if (wish.lengthSqr() > 1.0E-4) {
+            look = wish.normalize();
+        }
+        int yawByte = Math.floorMod(Math.round((float) Math.toDegrees(Math.atan2(-look.x, look.z)) / 360.0F
+                * 256.0F), 256);
+        int pitchByte = Mth.clamp(Math.round(((float) Math.toDegrees(-Math.asin(Mth.clamp(look.y, -1.0, 1.0)))
+                + 90.0F) / 180.0F * 255.0F), 0, 255);
+        // The server's own way from the bytes, so both blink the same.
+        look = ThorMoves.blinkWay(yawByte, pitchByte);
         blinkFrom = player.position();
         Vec3 from = blinkFrom.add(0.0, 0.9, 0.0);
         HitResult hit = player.level().clip(new ClipContext(from, from.add(look.scale(BLINK)),
@@ -214,6 +175,7 @@ public final class ThorMotion {
         blinkTo = blinkFrom.add(look.scale(far));
         blinkAge = 0;
         ClientThor.predict(player, ThorStatePayload.BLINK, 0, flags());
+        return yawByte | pitchByte << 8;
     }
 
     private static void dive(LocalPlayer player) {
@@ -237,6 +199,13 @@ public final class ThorMotion {
         }
     }
 
+    // What the server said about his lightning speed wins once it had time to hear of it.
+    static void toldLightning(boolean on, int sinceStart) {
+        if (lightning && !on && sinceStart > 10) {
+            lightning = false;
+        }
+    }
+
     static void stop() {
         dashAge = -1;
         jumpAge = -1;
@@ -245,7 +214,10 @@ public final class ThorMotion {
         lightning = false;
         blinkAge = -1;
         diveAge = -1;
+        dropping = false;
+        lightningLeft = 0;
         velocity = Vec3.ZERO;
+        ThorPull.stop();
     }
 
     @SubscribeEvent
@@ -266,6 +238,10 @@ public final class ThorMotion {
             fly(player, input);
             return;
         }
+        if (ThorPull.pulling(player)) {
+            still(input);
+            return;
+        }
         if (dashAge >= 0) {
             dashing(player, input);
         }
@@ -274,108 +250,30 @@ public final class ThorMotion {
         }
     }
 
-    private static void still(Input input) {
-        input.forwardImpulse = 0.0F;
-        input.leftImpulse = 0.0F;
-        input.jumping = false;
-    }
-
-    // How far along a dash is after `u` of its moving part: quick off the mark, easing into the stop.
-    static double dashEase(double u) {
-        double k = Mth.clamp(u, 0.0, 1.0);
-        return 1.0 - (1.0 - k) * (1.0 - k);
-    }
-
-    private static void dashing(LocalPlayer player, Input input) {
-        still(input);
-        int t = dashAge++;
-        Vec3 v = player.getDeltaMovement();
-        if (t >= DASH_WAIT && t < DASH_WAIT + DASH_MOVE) {
-            double step = dashFar * (dashEase((t + 1.0 - DASH_WAIT) / DASH_MOVE)
-                    - dashEase((double) (t - DASH_WAIT) / DASH_MOVE));
-            player.setDeltaMovement(dashWay.x * step, v.y, dashWay.z * step);
-            if (player.horizontalCollision && t > DASH_WAIT) {
-                dashAge = DASH_WAIT + DASH_MOVE;
-            }
-        } else if (t >= DASH_WAIT + DASH_MOVE) {
-            player.setDeltaMovement(v.x * 0.35, v.y, v.z * 0.35);
-        } else {
-            player.setDeltaMovement(v.x * 0.3, v.y, v.z * 0.3);
-        }
-        if (dashAge >= DASH_ALL) {
-            dashAge = -1;
-        }
-    }
-
-    private static void jumping(LocalPlayer player, Input input) {
-        int t = jumpAge++;
-        Vec3 v = player.getDeltaMovement();
-        if (t < jumpWait) {
-            still(input);
-            player.setDeltaMovement(v.x * 0.4, jumpWait == TUCK ? Math.max(v.y, 0.0) : v.y, v.z * 0.4);
-            return;
-        }
-        if (t == jumpWait) {
-            still(input);
-            player.setDeltaMovement(v.x, launch, v.z);
-            player.resetFallDistance();
-            return;
-        }
-        if (floatAge < 0 && v.y <= 0.02) {
-            floatAge = 0;
-            ClientThor.flags(player, flags());
-        }
-        if (floatAge >= 0) {
-            int f = floatAge++;
-            float forward = input.forwardImpulse;
-            float strafe = input.leftImpulse;
-            still(input);
-            double yaw = Math.toRadians(player.getYRot());
-            Vec3 wish = new Vec3(-Math.sin(yaw), 0.0, Math.cos(yaw)).scale(forward)
-                    .add(new Vec3(Math.cos(yaw), 0.0, Math.sin(yaw)).scale(strafe));
-            if (wish.lengthSqr() > 1.0) {
-                wish = wish.normalize();
-            }
-            wish = wish.scale(DRIFT);
-            double vx = Mth.lerp(0.12, v.x, wish.x);
-            double vz = Mth.lerp(0.12, v.z, wish.z);
-            double vy;
-            if (f < floatTicks) {
-                vy = Mth.lerp(0.25, v.y, FLOAT_SINK);
-            } else {
-                double back = Math.min(1.0, (f - floatTicks + 1.0) / GRAVITY_BACK);
-                vy = v.y - 0.08 * back * back;
-            }
-            player.setDeltaMovement(vx, vy, vz);
-            player.resetFallDistance();
-            if (f == floatTicks) {
-                ClientThor.flags(player, flags());
-            }
-        }
-        if (t > jumpWait + 2 && player.onGround()) {
-            jumpAge = -1;
-            floatAge = -1;
-            ClientThor.predict(player, ThorStatePayload.TOUCH_DOWN, 0, flags());
-        }
-    }
-
     private static void fly(LocalPlayer player, Input input) {
         float forward = input.forwardImpulse;
         float strafe = input.leftImpulse;
         boolean up = input.jumping;
-        boolean down = input.shiftKeyDown;
+        steerForward = forward;
+        steerStrafe = strafe;
+        steerUp = up ? 1.0F : 0.0F;
         still(input);
+        // Sneaking never sinks him in flight: by default its key is shift, held there for lightning speed.
         input.shiftKeyDown = false;
         flightAge++;
+        if (lightning && --lightningLeft <= 0) {
+            lightning = false;
+            ClientThor.flags(player, flags());
+        }
         CharacterAbility flight = GameCharacter.THOR.byName("flight");
         CharacterAbility fast = GameCharacter.THOR.byName("lightning_flight");
         double speed = (lightning && fast != null ? fast.value("speed") : flight == null ? 18.0
                 : flight.value("speed")) / 20.0;
         if (blinkAge >= 0) {
             int t = blinkAge++;
-            Vec3 goal = blinkFrom.lerp(blinkTo, Math.min(1.0, (t + 1.0) / BLINK_TICKS));
-            velocity = goal.subtract(player.position());
-            if (blinkAge >= BLINK_TICKS) {
+            if (t < BLINK_TICKS) {
+                velocity = blinkFrom.lerp(blinkTo, (t + 1.0) / BLINK_TICKS).subtract(player.position());
+            } else {
                 blinkAge = -1;
                 Vec3 on = blinkTo.subtract(blinkFrom);
                 velocity = on.lengthSqr() < 1.0E-6 ? Vec3.ZERO : on.normalize().scale(speed * 0.6);
@@ -388,8 +286,7 @@ public final class ThorMotion {
             Vec3 look = player.getLookAngle();
             double yaw = Math.toRadians(player.getYRot());
             Vec3 right = new Vec3(-Math.cos(yaw), 0.0, -Math.sin(yaw));
-            Vec3 wish = look.scale(forward).add(right.scale(-strafe)).add(0.0, (up ? 0.8 : 0.0) - (down ? 0.8 : 0.0),
-                    0.0);
+            Vec3 wish = look.scale(forward).add(right.scale(-strafe)).add(0.0, up ? 0.8 : 0.0, 0.0);
             if (wish.lengthSqr() > 1.0) {
                 wish = wish.normalize();
             }
@@ -403,9 +300,16 @@ public final class ThorMotion {
         velocity = ChunkEdge.cap(player.level(), player.position(), velocity, EDGE_LOOK);
         player.setDeltaMovement(velocity);
         player.resetFallDistance();
-        if (flightAge > LIFT_TICKS && player.onGround() && velocity.y <= 0.02 && diveAge < 0 && blinkAge < 0) {
+        boolean landing = player.onGround() || lightning && velocity.y < -0.2 && groundWithin(player, LAND_BELOW);
+        if (flightAge > LIFT_TICKS && landing && velocity.y <= 0.02 && diveAge < 0 && blinkAge < 0) {
             touchDown(player);
         }
+    }
+
+    private static boolean groundWithin(LocalPlayer player, double below) {
+        Vec3 feet = player.position();
+        return player.level().clip(new ClipContext(feet, feet.add(0.0, -below, 0.0), ClipContext.Block.COLLIDER,
+                ClipContext.Fluid.ANY, player)).getType() != HitResult.Type.MISS;
     }
 
     private static void touchDown(LocalPlayer player) {
@@ -459,16 +363,6 @@ public final class ThorMotion {
             ClientCharacter.sendAction(dive, true, Characters.SLAM);
         }
         ClientThor.predict(player, ThorStatePayload.SLAM, 0, flags());
-    }
-
-    // Where the dash is along its way now, for the pose: 0 before it moves, 1 at its stop.
-    static float dashDone(float age) {
-        return (float) dashEase((age - DASH_WAIT) / DASH_MOVE);
-    }
-
-    @Nullable
-    static Vec3 dashWay() {
-        return dashAge >= 0 ? dashWay : null;
     }
 
     static Vec3 flightVelocity() {

@@ -19,10 +19,11 @@ import net.minecraft.world.item.Items;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 import nl.tivek.multiversepowers.character.GameCharacter;
 import nl.tivek.multiversepowers.character.client.ClientCharacter;
+import nl.tivek.multiversepowers.character.thor.ThorStatePayload;
 import nl.tivek.multiversepowers.engine.client.model.BentParts;
 
-// Thor's axe, standing in for Mjolnir until the hammer is made: it hangs from his belt on his left hip, and in flight
-// his left hand holds it out ahead of him.
+// Thor's axe, standing in for Mjolnir until the hammer is made: it hangs from his belt on his left hip, his right hand
+// holds it once he takes it up, in flight his left hand holds it out ahead of him, and thrown it is not on him.
 public final class ThorAxeLayer extends RenderLayer<AbstractClientPlayer, PlayerModel<AbstractClientPlayer>> {
     private final ItemInHandRenderer items;
     @Nullable
@@ -46,7 +47,8 @@ public final class ThorAxeLayer extends RenderLayer<AbstractClientPlayer, Player
     public void render(PoseStack pose, MultiBufferSource buffers, int light, AbstractClientPlayer player,
             float limbSwing, float limbSwingAmount, float partialTick, float ageInTicks, float netHeadYaw,
             float headPitch) {
-        if (ClientCharacter.of(player) != GameCharacter.THOR || player.isInvisible()) {
+        if (ClientCharacter.of(player) != GameCharacter.THOR || player.isInvisible()
+                || ClientThor.has(player, ThorStatePayload.THROWN)) {
             return;
         }
         if (this.axe == null) {
@@ -54,7 +56,14 @@ public final class ThorAxeLayer extends RenderLayer<AbstractClientPlayer, Player
         }
         PlayerModel<AbstractClientPlayer> model = this.getParentModel();
         pose.pushPose();
-        if (ThorPoses.axeInHand(player)) {
+        if (!ThorPoses.axeInHand(player) && ClientThor.has(player, ThorStatePayload.ARMED)) {
+            model.translateToHand(HumanoidArm.RIGHT, pose);
+            pose.mulPose(Axis.XP.rotationDegrees(-90.0F));
+            pose.mulPose(Axis.YP.rotationDegrees(180.0F));
+            pose.translate(1.0F / 16.0F, 0.125F, -0.625F);
+            this.items.renderItem(player, this.axe, ItemDisplayContext.THIRD_PERSON_RIGHT_HAND, false, pose, buffers,
+                    light);
+        } else if (ThorPoses.axeInHand(player)) {
             model.translateToHand(HumanoidArm.LEFT, pose);
             pose.mulPose(Axis.XP.rotationDegrees(-90.0F));
             pose.mulPose(Axis.YP.rotationDegrees(180.0F));

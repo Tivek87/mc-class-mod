@@ -1,0 +1,417 @@
+package nl.tivek.multiversepowers.character.thor;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+import javax.annotation.Nullable;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
+import nl.tivek.multiversepowers.engine.effect.Effects;
+import nl.tivek.multiversepowers.engine.entity.HeldMobs;
+import nl.tivek.multiversepowers.engine.fx.ParticleFx;
+import nl.tivek.multiversepowers.engine.target.Targeting;
+import nl.tivek.multiversepowers.spell.SpellTargets;
+
+// Thor takes hold of a creature and does one thing of a pool with it: throws it away, smashes its head into the ground,
+// punches it in the body a few times, or punches first and then throws or smashes it. Grabbed at the end of a grab
+// dash (running) he may also leap high with it over his head: then he slams down with it, hurls it down, or lets it
+// fall and slams onto it. A creature that cannot be held (a player) takes the punches and the throw where it stands.
+public final class ThorGrab {
+    private static final double REACH = 3.5;
+    private static final double AHEAD = 0.35;
+    private static final double DASH_REACH = 10.0;
+    private static final double DASH_CATCH = 2.0;
+    private static final int DASH_WATCH = 12;
+    private static final int LONGEST = 120;
+    private static final int PUNCH_GAP = 5;
+    private static final int DROP_WAIT = 20;
+    private static final double SLAM_RADIUS = 3.0;
+    private static final Map<UUID, ThorGrab> ALL = new HashMap<>();
+
+    private enum Act {
+        THROW,
+        HEAD_SLAM,
+        PUNCHES,
+        PUNCH_THROW,
+        PUNCH_SLAM,
+        HOIST_SLAM,
+        HOIST_THROW,
+        HOIST_DROP
+    }
+
+    private static final ThorBlow[] PUNCHES = { ThorBlow.BODY_HOOK, ThorBlow.JAB, ThorBlow.LEAD_HOOK };
+
+    private final UUID owner;
+    private final LivingEntity target;
+    private final float damage;
+    private final Act act;
+    private boolean held;
+    private boolean overhead;
+    private boolean done;
+    private int age;
+    private int apex = -1;
+    private int dropAt = -1;
+    private double lastY;
+
+    private ThorGrab(ServerPlayer owner, LivingEntity target, float damage, Act act) {
+        this.owner = owner.getUUID();
+        this.target = target;
+        this.damage = damage;
+        this.act = act;
+        this.lastY = owner.getY();
+    }
+
+    static boolean carrying(ServerPlayer player) {
+        ThorGrab grab = ALL.get(player.getUUID());
+        return grab != null && grab.held;
+    }
+
+    // Holding right: the nearest creature before him within reach.
+    static boolean grab(ServerPlayer player, float damage) {
+        if (ALL.containsKey(player.getUUID())) {
+            return false;
+        }
+        LivingEntity target = nearest(player);
+        if (target == null) {
+            return false;
+        }
+        begin(player, target, damage, false);
+        return true;
+    }
+
+    // Holding right while running: a straight dash (his game moves him, `yaw` and `tenths` say where) at what he aims
+    // at; reaching it on the way he grabs it, else it was only a dash.
+    static boolean dash(ServerPlayer player, int yaw, int tenths, float damage) {
+        if (ALL.containsKey(player.getUUID()) || !ThorMoves.dash(player, yaw, tenths)) {
+            return false;
+        }
+        ServerLevel level = player.serverLevel();
+        LivingEntity target = Targeting.aimLiving(player, level, DASH_REACH);
+        if (target == null) {
+            return true;
+        }
+        UUID id = player.getUUID();
+        Effects.start(level, (lvl, age) -> {
+            ServerPlayer thor = lvl.getServer().getPlayerList().getPlayer(id);
+            if (thor == null || thor.level() != lvl || !target.isAlive() || age > DASH_WATCH
+                    || ALL.containsKey(id)) {
+                return false;
+            }
+            if (thor.getBoundingBox().getCenter().distanceTo(target.getBoundingBox().getCenter()) < DASH_CATCH
+                    + target.getBbWidth() * 0.5) {
+                begin(thor, target, damage, true);
+                return false;
+            }
+            return true;
+        });
+        return true;
+    }
+
+    @Nullable
+    private static LivingEntity nearest(ServerPlayer player) {
+        Vec3 eye = player.getEyePosition();
+        Vec3 ahead = new Vec3(player.getLookAngle().x, 0.0, player.getLookAngle().z).normalize();
+        LivingEntity best = null;
+        double nearest = Double.MAX_VALUE;
+        for (LivingEntity target : level(player).getEntitiesOfClass(LivingEntity.class,
+                player.getBoundingBox().inflate(REACH), entity -> Targeting.isTargetable(player, entity))) {
+            Vec3 to = target.getBoundingBox().getCenter().subtract(eye);
+            Vec3 flat = new Vec3(to.x, 0.0, to.z);
+            double far = to.length();
+            if (far > REACH + target.getBbWidth() * 0.5
+                    || flat.lengthSqr() > 1.0E-4 && flat.normalize().dot(ahead) < AHEAD) {
+                continue;
+            }
+            if (far < nearest) {
+                nearest = far;
+                best = target;
+            }
+        }
+        return best;
+    }
+
+    private static ServerLevel level(ServerPlayer player) {
+        return player.serverLevel();
+    }
+
+    private static void begin(ServerPlayer player, LivingEntity target, float damage, boolean dashed) {
+        ServerLevel level = player.serverLevel();
+        Act[] pool = Act.values();
+        int kinds = dashed ? pool.length : Act.PUNCH_SLAM.ordinal() + 1;
+        Act act = pool[level.random.nextInt(kinds)];
+        ThorGrab grab = new ThorGrab(player, target, damage, act);
+        grab.held = target instanceof Mob mob && HeldMobs.hold(mob);
+        if (!grab.held && act.ordinal() > Act.PUNCH_SLAM.ordinal()) {
+            grab = new ThorGrab(player, target, damage, Act.PUNCH_THROW);
+        }
+        ALL.put(player.getUUID(), grab);
+        Vec3 at = target.getBoundingBox().getCenter();
+        ParticleFx.cloud(level, ParticleTypes.ELECTRIC_SPARK, at, 12, 0.3, 0.2);
+        level.playSound(null, at.x, at.y, at.z, SoundEvents.PLAYER_ATTACK_KNOCKBACK, SoundSource.PLAYERS, 1.0F, 0.6F);
+        ThorMoves.tell(player, ThorStatePayload.GRAB, target.getId() + 1);
+        ThorGrab started = grab;
+        Effects.start(level, (lvl, age) -> started.tick(lvl));
+    }
+
+    private boolean tick(ServerLevel level) {
+        ServerPlayer thor = level.getServer().getPlayerList().getPlayer(this.owner);
+        if (this.done || ALL.get(this.owner) != this) {
+            return false;
+        }
+        if (thor == null || thor.level() != level || !thor.isAlive() || !this.target.isAlive()
+                || this.target.level() != level || ++this.age > LONGEST) {
+            this.end(thor);
+            return false;
+        }
+        thor.resetFallDistance();
+        if (this.held) {
+            Vec3 at = this.overhead ? overhead(thor) : GrabDive.hand(thor, this.target);
+            // Held up by the collar, never with its feet in the ground he stands on.
+            at = new Vec3(at.x, Math.max(at.y, thor.getY()), at.z);
+            this.target.setPos(at.x, at.y, at.z);
+            this.target.setDeltaMovement(Vec3.ZERO);
+            this.target.resetFallDistance();
+        }
+        int t = this.age;
+        switch (this.act) {
+            case THROW -> this.punchesThen(level, thor, t, 0, true);
+            case HEAD_SLAM -> this.punchesThen(level, thor, t, 0, false);
+            case PUNCHES -> this.punchesThen(level, thor, t, 3, null);
+            case PUNCH_THROW -> this.punchesThen(level, thor, t, 2, true);
+            case PUNCH_SLAM -> this.punchesThen(level, thor, t, 2, false);
+            case HOIST_SLAM, HOIST_THROW, HOIST_DROP -> this.hoist(level, thor, t);
+        }
+        return !this.done;
+    }
+
+    // `punches` blows to the body, then a throw (true), a smash into the ground (false) or letting go (null).
+    private void punchesThen(ServerLevel level, ServerPlayer thor, int t, int punches, @Nullable Boolean throwIt) {
+        int first = 6;
+        for (int k = 0; k < punches; k++) {
+            ThorBlow blow = PUNCHES[k % PUNCHES.length];
+            if (t == first + k * PUNCH_GAP) {
+                ThorMoves.tell(thor, ThorStatePayload.STRIKE, blow.ordinal());
+            }
+            if (t == first + k * PUNCH_GAP + blow.hit()) {
+                this.hurt(level, thor, 0.5F);
+                this.sparks(level, 6);
+                level.playSound(null, this.target.getX(), this.target.getY() + 1.0, this.target.getZ(),
+                        SoundEvents.PLAYER_ATTACK_STRONG, SoundSource.PLAYERS, 1.0F, 0.9F);
+            }
+        }
+        int finish = first + punches * PUNCH_GAP;
+        if (throwIt == null) {
+            if (t == finish + 2) {
+                this.let();
+                SpellTargets.push(this.target, flat(thor), 0.6, 0.2);
+                this.end(thor);
+            }
+            return;
+        }
+        ThorBlow blow = throwIt ? ThorBlow.PALM_STRIKE : ThorBlow.HAMMER_FIST;
+        if (t == finish) {
+            ThorMoves.tell(thor, ThorStatePayload.STRIKE, blow.ordinal());
+        }
+        if (t == finish + blow.hit()) {
+            if (throwIt) {
+                this.throwAway(level, thor);
+            } else {
+                this.headSlam(level, thor);
+            }
+            this.end(thor);
+        }
+    }
+
+    private void throwAway(ServerLevel level, ServerPlayer thor) {
+        this.let();
+        this.hurt(level, thor, 1.0F);
+        Vec3 look = thor.getLookAngle();
+        this.target.setDeltaMovement(look.x * 2.2, Math.max(0.5, look.y * 2.2 + 0.4), look.z * 2.2);
+        this.target.hasImpulse = true;
+        this.target.hurtMarked = true;
+        this.sparks(level, 14);
+        level.playSound(null, thor.getX(), thor.getY() + 1.0, thor.getZ(), SoundEvents.PLAYER_ATTACK_KNOCKBACK,
+                SoundSource.PLAYERS, 1.2F, 0.7F);
+    }
+
+    // Its head driven into the ground before him.
+    private void headSlam(ServerLevel level, ServerPlayer thor) {
+        this.let();
+        Vec3 spot = thor.position().add(flat(thor).scale(1.3));
+        double floor = Targeting.floorBelow(level, BlockPos.containing(spot.x, thor.getY() + 1.0, spot.z));
+        this.target.setPos(spot.x, floor, spot.z);
+        this.target.setDeltaMovement(0.0, -0.5, 0.0);
+        this.target.hurtMarked = true;
+        this.hurt(level, thor, 1.5F);
+        Vec3 ground = new Vec3(spot.x, floor + 0.1, spot.z);
+        ParticleFx.shockwave(level, ParticleFx.dust(ThorMoves.GLOW, 1.1F), ground, 20, 0.3);
+        ParticleFx.cloud(level, ParticleTypes.ELECTRIC_SPARK, ground.add(0.0, 0.3, 0.0), 16, 0.5, 0.15);
+        level.playSound(null, ground.x, ground.y, ground.z, SoundEvents.MACE_SMASH_GROUND_HEAVY, SoundSource.PLAYERS,
+                1.0F, 0.9F);
+    }
+
+    // Up with it over his head, and at the top of the leap one of three endings.
+    private void hoist(ServerLevel level, ServerPlayer thor, int t) {
+        if (t == 4) {
+            this.overhead = true;
+            ThorMoves.spare(thor, 140);
+            ThorMoves.tell(thor, ThorStatePayload.HOIST, 0);
+            return;
+        }
+        if (t < 10) {
+            return;
+        }
+        double y = thor.getY();
+        if (this.apex < 0 && y <= this.lastY) {
+            this.apex = t;
+            switch (this.act) {
+                case HOIST_SLAM -> {
+                    this.overhead = false;
+                    ThorMoves.tell(thor, ThorStatePayload.DROP, 0);
+                }
+                case HOIST_THROW -> {
+                    this.let();
+                    this.hurt(level, thor, 0.5F);
+                    this.target.setDeltaMovement(0.0, -3.0, 0.0);
+                    this.target.hurtMarked = true;
+                    this.smashOnLanding(level, thor);
+                    this.end(thor);
+                    return;
+                }
+                default -> {
+                    this.let();
+                    this.target.setDeltaMovement(0.0, -0.8, 0.0);
+                    this.target.hurtMarked = true;
+                }
+            }
+        }
+        this.lastY = y;
+        // Let go at the top, it falls first; once it lies on the ground he comes down onto it. Its own onGround() is
+        // stale from before he picked it up.
+        if (this.act == Act.HOIST_DROP && this.apex >= 0 && this.dropAt < 0
+                && (standing(level, this.target) || t >= this.apex + DROP_WAIT)) {
+            this.dropAt = t;
+            ThorMoves.tell(thor, ThorStatePayload.DROP, this.target.getId() + 1);
+        }
+        boolean falling = this.act == Act.HOIST_SLAM ? this.apex >= 0 : this.dropAt >= 0 && t > this.dropAt;
+        if (falling && standing(level, thor)) {
+            this.let();
+            this.landing(level, thor);
+            this.end(thor);
+        }
+    }
+
+    private static boolean standing(ServerLevel level, Entity entity) {
+        return !level.noCollision(entity, entity.getBoundingBox().move(0.0, -0.2, 0.0));
+    }
+
+    // He comes down on the ground with it (or onto it): everything round is hurt, it most.
+    private void landing(ServerLevel level, ServerPlayer thor) {
+        Vec3 center = thor.position();
+        this.hurt(level, thor, 2.0F);
+        for (LivingEntity near : level.getEntitiesOfClass(LivingEntity.class, new AABB(center, center)
+                .inflate(SLAM_RADIUS), entity -> entity != this.target && SpellTargets.hits(thor, entity))) {
+            near.invulnerableTime = 0;
+            near.hurt(level.damageSources().playerAttack(thor), this.damage * 0.8F);
+            Vec3 away = near.position().subtract(center);
+            Vec3 way = away.horizontalDistanceSqr() < 1.0E-4 ? new Vec3(1.0, 0.0, 0.0)
+                    : new Vec3(away.x, 0.0, away.z).normalize();
+            SpellTargets.push(near, way, 1.0, 0.45);
+        }
+        ParticleFx.shockwave(level, ParticleFx.dust(ThorMoves.GLOW, 1.5F), center.add(0.0, 0.15, 0.0), 36, 0.6);
+        ParticleFx.shockwave(level, ParticleTypes.CLOUD, center.add(0.0, 0.2, 0.0), 20, 0.3);
+        ParticleFx.cloud(level, ParticleTypes.ELECTRIC_SPARK, center.add(0.0, 0.5, 0.0), 30, 1.0, 0.3);
+        level.playSound(null, center.x, center.y, center.z, SoundEvents.MACE_SMASH_GROUND_HEAVY, SoundSource.PLAYERS,
+                1.4F, 0.8F);
+        level.playSound(null, center.x, center.y, center.z, SoundEvents.LIGHTNING_BOLT_IMPACT, SoundSource.PLAYERS,
+                1.0F, 1.1F);
+    }
+
+    // Hurled down, it is hurt again as it hits the ground.
+    private void smashOnLanding(ServerLevel level, ServerPlayer thor) {
+        LivingEntity hurled = this.target;
+        float hard = this.damage * 2.0F;
+        UUID id = thor.getUUID();
+        Effects.start(level, (lvl, age) -> {
+            if (!hurled.isAlive() || age > 80) {
+                return false;
+            }
+            if (age < 2 || !hurled.onGround()) {
+                return true;
+            }
+            ServerPlayer by = lvl.getServer().getPlayerList().getPlayer(id);
+            hurled.invulnerableTime = 0;
+            hurled.hurt(by == null ? lvl.damageSources().generic() : lvl.damageSources().playerAttack(by), hard);
+            Vec3 at = hurled.position().add(0.0, 0.1, 0.0);
+            ParticleFx.shockwave(lvl, ParticleTypes.CLOUD, at, 16, 0.3);
+            lvl.playSound(null, at.x, at.y, at.z, SoundEvents.MACE_SMASH_GROUND, SoundSource.PLAYERS, 1.0F, 0.8F);
+            return false;
+        });
+    }
+
+    // Held up over his head, as both client and server put it.
+    public static Vec3 overhead(Entity thor) {
+        return thor.position().add(0.0, thor.getBbHeight() + 0.3, 0.0);
+    }
+
+    private static Vec3 flat(ServerPlayer thor) {
+        return Vec3.directionFromRotation(0.0F, thor.getYRot());
+    }
+
+    private void hurt(ServerLevel level, ServerPlayer thor, float share) {
+        this.target.invulnerableTime = 0;
+        this.target.hurt(level.damageSources().playerAttack(thor), this.damage * share);
+        if (this.held) {
+            this.target.setDeltaMovement(Vec3.ZERO);
+        }
+    }
+
+    private void sparks(ServerLevel level, int count) {
+        ParticleFx.cloud(level, ParticleTypes.ELECTRIC_SPARK, this.target.getBoundingBox().getCenter(), count, 0.3,
+                0.2);
+    }
+
+    private void let() {
+        if (this.held && this.target instanceof Mob mob) {
+            HeldMobs.release(mob);
+        }
+        this.held = false;
+        this.overhead = false;
+    }
+
+    private void end(@Nullable ServerPlayer thor) {
+        if (this.done) {
+            return;
+        }
+        this.done = true;
+        this.let();
+        ALL.remove(this.owner, this);
+        if (thor != null) {
+            ThorMoves.tell(thor, ThorStatePayload.NONE, 0);
+        }
+    }
+
+    static void leave(ServerPlayer player) {
+        ThorGrab grab = ALL.get(player.getUUID());
+        if (grab != null) {
+            grab.end(player);
+        }
+    }
+
+    static void clear() {
+        for (ThorGrab grab : ALL.values().toArray(new ThorGrab[0])) {
+            grab.let();
+            grab.done = true;
+        }
+        ALL.clear();
+    }
+}

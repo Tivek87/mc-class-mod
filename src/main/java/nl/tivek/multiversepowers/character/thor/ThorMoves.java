@@ -48,6 +48,12 @@ public final class ThorMoves {
     private int flightAge;
     private int grounded;
     private boolean lightning;
+    private int lightningLeft;
+    private float strikes;
+    private float landing;
+    private Vec3 trail = Vec3.ZERO;
+    // When each creature near was last struck at lightning speed (game time).
+    private final Map<UUID, Long> struck = new HashMap<>();
     private boolean jumping;
     private int jumpAge;
     private int floatAge = -1;
@@ -98,7 +104,13 @@ public final class ThorMoves {
         flags |= this.lightning ? ThorStatePayload.LIGHTNING : 0;
         flags |= this.dive != null && this.dive.carrying() ? ThorStatePayload.CARRYING : 0;
         flags |= this.charging ? ThorStatePayload.CHARGING : 0;
-        return flags;
+        return flags | gear(this.owner);
+    }
+
+    // What lasts past his moves: the hammer, a grab, a charge.
+    private static int gear(ServerPlayer player) {
+        return Mjolnir.flags(player) | ThorCharge.flags(player)
+                | (ThorGrab.carrying(player) ? ThorStatePayload.CARRYING : 0);
     }
 
     // His game says he winds up a thunderclap, or lets go of it before it went off; the clap itself ends it too.
@@ -114,7 +126,18 @@ public final class ThorMoves {
 
     static int flags(ServerPlayer player) {
         ThorMoves moves = find(player);
-        return moves == null ? 0 : moves.flags();
+        return moves == null ? gear(player) : moves.flags();
+    }
+
+    // Tells everyone who sees him what he is now, with a move that starts (or NONE).
+    static void tell(ServerPlayer player, int move, int arg) {
+        ThorStatePayload.send(player, flags(player), move, arg);
+    }
+
+    // A move of his that may throw him high (a leap after the hammer, a hoist): no fall hurts him for this long.
+    static void spare(ServerPlayer player, int ticks) {
+        ThorMoves moves = of(player);
+        moves.cushion = Math.max(moves.cushion, ticks);
     }
 
     void sync(int move, int arg) {
@@ -186,12 +209,14 @@ public final class ThorMoves {
         return true;
     }
 
-    // His game says he touched down, or something knocks him out of the sky.
+    // His game says he touched down, or something knocks him out of the sky. Landing at lightning speed, the bolt he
+    // has become strikes where he lands.
     static void land(ServerPlayer player, boolean touched) {
         ThorMoves moves = find(player);
         if (moves == null || !moves.flying) {
             return;
         }
+        boolean bolt = moves.lightning && touched;
         moves.flying = false;
         moves.lightning = false;
         moves.cushion = CUSHION;
@@ -203,33 +228,41 @@ public final class ThorMoves {
             ServerLevel level = player.serverLevel();
             ParticleFx.cloud(level, ParticleTypes.CLOUD, player.position().add(0.0, 0.1, 0.0), 10, 0.4, 0.04);
             moves.sound(level, SoundEvents.MACE_SMASH_GROUND, 0.5F, 1.3F);
+            if (bolt) {
+                SkyMoves.landingStrike(player, moves.landing);
+            }
         }
     }
 
-    static boolean lightning(ServerPlayer player, boolean on) {
+    // Lightning speed for `ticks`: he ends it by landing, or it wears off. `strikes` hurts each foe he passes, `landing`
+    // what stands where he lands.
+    static boolean lightning(ServerPlayer player, int ticks, float strikes, float landing) {
         ThorMoves moves = find(player);
-        if (moves == null || !moves.flying || moves.lightning == on) {
+        if (moves == null || !moves.flying || moves.lightning) {
             return false;
         }
-        moves.lightning = on;
+        moves.lightning = true;
+        moves.lightningLeft = ticks;
+        moves.strikes = strikes;
+        moves.landing = landing;
+        moves.trail = player.position().add(0.0, 0.9, 0.0);
         moves.sync(ThorStatePayload.NONE, 0);
-        if (on) {
-            ServerLevel level = player.serverLevel();
-            moves.sound(level, SoundEvents.LIGHTNING_BOLT_THUNDER, 0.6F, 1.7F);
-            moves.sound(level, SoundEvents.TRIDENT_RIPTIDE_3.value(), 0.9F, 1.2F);
-        }
+        ServerLevel level = player.serverLevel();
+        moves.sound(level, SoundEvents.LIGHTNING_BOLT_THUNDER, 0.6F, 1.7F);
+        moves.sound(level, SoundEvents.TRIDENT_RIPTIDE_3.value(), 0.9F, 1.2F);
         return true;
     }
 
-    // A blink of lightning fifteen blocks along his look, short of any wall: his game moves him, this shows it.
-    static boolean blink(ServerPlayer player) {
+    // A blink of lightning fifteen blocks the way his game says he was going (`yaw` and `pitch` in 256ths), short of
+    // any wall: his game moves him, this shows it.
+    static boolean blink(ServerPlayer player, int yaw, int pitch) {
         ThorMoves moves = find(player);
         if (moves == null || !moves.flying) {
             return false;
         }
         ServerLevel level = player.serverLevel();
         Vec3 from = player.position().add(0.0, 0.9, 0.0);
-        Vec3 to = blinkEnd(level, player, from);
+        Vec3 to = blinkEnd(level, player, from, blinkWay(yaw, pitch));
         moves.sync(ThorStatePayload.BLINK, 0);
         ParticleFx.zigzag(level, ParticleFx.dust(GLOW, 1.1F), from, to, 7, 0.5, 0.35);
         ParticleFx.zigzag(level, ParticleFx.dust(DEEP, 0.8F), from, to, 5, 0.7, 0.5);
@@ -241,9 +274,15 @@ public final class ThorMoves {
         return true;
     }
 
-    // Where a blink from `from` along the look ends: half a block short of the first block in the way.
-    static Vec3 blinkEnd(ServerLevel level, ServerPlayer player, Vec3 from) {
-        Vec3 look = player.getLookAngle();
+    // A way packed into two bytes: yaw in 256ths of a turn, pitch in 256ths of half a turn from straight up.
+    public static Vec3 blinkWay(int yaw, int pitch) {
+        float yawDegrees = yaw * 360.0F / 256.0F;
+        float pitchDegrees = pitch * 180.0F / 255.0F - 90.0F;
+        return Vec3.directionFromRotation(pitchDegrees, yawDegrees);
+    }
+
+    // Where a blink from `from` along `look` ends: half a block short of the first block in the way.
+    static Vec3 blinkEnd(ServerLevel level, ServerPlayer player, Vec3 from, Vec3 look) {
         Vec3 end = from.add(look.scale(BLINK));
         HitResult hit = LoadedWorld.clip(level, new ClipContext(from, end, ClipContext.Block.COLLIDER,
                 ClipContext.Fluid.NONE, player));
@@ -270,10 +309,8 @@ public final class ThorMoves {
             this.grounded = player.onGround() && this.flightAge > 20 ? this.grounded + 1 : 0;
             if (this.grounded >= GROUNDED) {
                 land(player, true);
-            } else if (this.lightning && this.flightAge % 2 == 0) {
-                Vec3 at = player.position().add(0.0, 0.9, 0.0);
-                ParticleFx.cloud(level, ParticleTypes.ELECTRIC_SPARK, at, 5, 0.35, 0.15);
-                ParticleFx.cloud(level, ParticleFx.dust(GLOW, 1.0F), at, 2, 0.3, 0.0);
+            } else if (this.lightning) {
+                this.bolting(level, player);
             }
         }
         if (this.jumping) {
@@ -308,6 +345,25 @@ public final class ThorMoves {
             return false;
         }
         return true;
+    }
+
+    // At lightning speed others see a bolt tearing through the air where he goes, and it strikes whatever he passes
+    // near; it wears off after its time.
+    private void bolting(ServerLevel level, ServerPlayer player) {
+        Vec3 at = player.position().add(0.0, 0.9, 0.0);
+        if (this.trail.distanceToSqr(at) > 0.04) {
+            ParticleFx.zigzag(level, ParticleFx.dust(GLOW, 1.3F), this.trail, at, 4, 0.35, 0.3);
+            ParticleFx.zigzag(level, ParticleFx.dust(DEEP, 0.9F), this.trail, at, 3, 0.5, 0.4);
+        }
+        this.trail = at;
+        if (this.flightAge % 2 == 0) {
+            ParticleFx.cloud(level, ParticleTypes.ELECTRIC_SPARK, at, 5, 0.35, 0.15);
+        }
+        SkyMoves.strikeNear(player, this.struck, this.strikes);
+        if (--this.lightningLeft <= 0) {
+            this.lightning = false;
+            this.sync(ThorStatePayload.NONE, 0);
+        }
     }
 
     private void stop() {

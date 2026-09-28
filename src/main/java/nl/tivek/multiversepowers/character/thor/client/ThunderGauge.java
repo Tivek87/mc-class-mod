@@ -1,9 +1,11 @@
 package nl.tivek.multiversepowers.character.thor.client;
 
+import javax.annotation.Nullable;
 import net.minecraft.Util;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.neoforged.api.distmarker.Dist;
@@ -18,9 +20,10 @@ import nl.tivek.multiversepowers.character.client.MouseHold;
 import nl.tivek.multiversepowers.engine.client.gui.GuiShapes;
 import nl.tivek.multiversepowers.engine.math.Noise;
 
-// Thor's thunderclap round the crosshair: a small ring charging from the top while the button is held, crackling at
-// its tip; when full it pops with a flash and bolts leaping out. While it cools down a thin arc counts the wait, and
-// a glint shows the moment it is ready again.
+// Thor's hold of the attack button round the crosshair (the thunderclap, the hammer's uppercut, the shockwave in
+// flight): a small ring charging from the top while the button is held, crackling at its tip; when full it pops with
+// a flash and bolts leaping out. While it cools down a thin arc counts the wait, and a glint shows the moment it is
+// ready again.
 @Mod(value = MultiversePowers.MODID, dist = Dist.CLIENT)
 public final class ThunderGauge {
     private static final ResourceLocation LAYER_ID = ResourceLocation.fromNamespaceAndPath(MultiversePowers.MODID,
@@ -49,10 +52,9 @@ public final class ThunderGauge {
 
     private static void render(GuiGraphics graphics, DeltaTracker deltaTracker) {
         Minecraft minecraft = Minecraft.getInstance();
-        CharacterAbility clap = GameCharacter.THOR.byName("thunderclap");
+        CharacterAbility clap = minecraft.player == null ? null : leftHold(minecraft.player);
         if (minecraft.player == null || minecraft.options.hideGui || clap == null
-                || ClientCharacter.active() != GameCharacter.THOR || minecraft.screen != null
-                || ThorMotion.flying()) {
+                || ClientCharacter.active() != GameCharacter.THOR || minecraft.screen != null) {
             fullAt = 0L;
             return;
         }
@@ -83,6 +85,18 @@ public final class ThunderGauge {
         if (drawn) {
             GuiShapes.flush(graphics);
         }
+    }
+
+    // What holding the attack button does now: the thunderclap, the hammer's uppercut or the shockwave in flight.
+    @Nullable
+    private static CharacterAbility leftHold(LocalPlayer player) {
+        for (CharacterAbility ability : GameCharacter.THOR.abilities()) {
+            if (ability.input() == CharacterAbility.Input.LEFT && ability.holdTicks() > 0
+                    && ClientCharacter.inPlay(ability, player)) {
+                return ability;
+            }
+        }
+        return null;
     }
 
     private static boolean charge(GuiGraphics graphics, float x, float y, float progress, long now) {

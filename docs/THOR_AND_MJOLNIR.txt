@@ -1,0 +1,132 @@
+==================================================
+THOR / MJOLNIR - ABILITIES, CONCEPTS & KEYBINDINGS
+==================================================
+
+
+==================================================
+1. ABILITIES IDEEEN/CONCEPTS
+==================================================
+
+- Gooit mjolnir op de entity die in de crosshair staat en de entity die wordt geraakt, vliegt de directie van mjolnir mee/in/veel knockback.
+
+- Je kan een vingerknip/gebaar doen als mjolnir niet in je hand zit of aan je belt/broek hangt om hem terug te roepen. Dan vliegt die terug naar je.
+
+- gooi mjolnir en dan met vingerknip/gebaar om terug te roepen, met lightning mode AAN meer knockback
+
+- gooit mjolnir ergens in de lucht en vliegt er met hoge snelheid heen, soort teleport zonder teleport maar met high speed flying, dit kan ook op de grond, short ranges. Dus een short range teleport. dit hoort bij dat flight/mjolnir throw and hang system etcetc.
+
+- Een attack waarbij je mjolnir gooit en die mid air blijft hangen, dan vlieg je er razend snel heen en dan gooi je mjolnir richting de entity, dan komt er een cirkel van lightning erg kort, en iedereen daarin gaat lightning doorheen chainen. Maar dit hoort bij het systeem dat je kan short range teleporten en mjolnir kan gooien en die kan blijven hangen of liggen midair of op een plek en ook over dat je zelf midiar kan blijven hangen en vliegen etc, dit is een groot complex system dat samen moet werken dynamic allemaal met elkaar.
+
+- Als je iemand vastpakt met je hand, kan je hem weggooien, slaan(bijvoorbeeld in ze torso) of ze hoofd vastpakken en die full force de grond in smijt.
+
+- Je kan met een ability naar iemand toe dashen, en dan pak je hem op bij ze torso/kraag, je houd de entitiy boven je hoofd, en dan super jump je snel omhoog, dan gebeurt het volgende randomised van een pool: je gaat dan weer heel hard naar beneden maar blijft hem vasthouden dat maatk een soort bodyslam, of je gooit hem fullspeed naar beneden. of je laat hem normaal vallen en gaat er daarna zelf fullspeed op af en slammed erin.(dit zou een unarmed ability zijn)
+
+- Thor heeft light en heavy attacks voor beide unarmed, leg/kick attack, en armed/mjolnir attacks, sommige hiervan, kunnen je block doorbreken, als voorbeeld, de uppercut attack kan block breaken(dit is wel een aparte ability die met een bind wordt gedaan, niet via de moveset, maar het is even als voorbeeld), als die een block breaked doet het knockback maar als er niet eens een block is om te breken dan is de kracht veel intenser en vliegt de entity. als voorbeeld.
+
+- Als je iemand met genoeg kracht tegen een muur hit wordt die soort van stunned, bijvoorbeeld na 2 of 3 hits of een combo in een muur of na 1 of 2 hits als mjolnir of jijzelf charged bent als dat in een muur gebeurt/tegen een muur aan heeft dat een kans de entity te disorienten/stunnen, de meer of de heavier de attacks de hoger de kans op stun/disorientation wordt.
+
+- Thunderclap: Leunt lichaam naar achter, spreid armen weid, en klapt hard met handen in elkaar dat create een kleine time bubble achtig iets/shockwave en er komen thunder/electricity sparks uit richting de kant waar de attack heen is ge-aimed.
+
+- Hard op de grond slaan met beide handen veroorzaakt een (winderige) shockwave, en je hoort thunder in de achtergrond
+
+- Je schraapt moljnir over de grond in de kant waar je crosshair staat, dan schiet die een soort VFX/effect over de grond heen in de line van je crosshair, 1 rechte lijn.
+
+- Je kan je hamer met 2 handen aan de zijkanten vastpakken en met het handvat omhoog draaien zodat de harde kant omlaag gaat en dan op de grond striken, elke keer dat je dit doet, spawned er 1 lightning bolt. deze zijn niet homing mar de spawnplek van zon strike is wel homing richting de dichtbijzijndste enemy. Je kan dit 1-5x doen, MAAR je kan ook als je high jump doet of mid air vliegt of hangt op een(of andere) manier 1(de laatste) van de bolts(dit moet altijd de laatste zijn) amplifien, en dan strike je zelf de lightning bolt, dus je bent dan zelf soort van de bolt, de bolt spawned alsnog maar op jouw en die is dan groter, de langer dat je amplified/in de lucht zou hangen de sterker de amplified final bolt, zoiets.
+
+- maak lightning plekken zoals bij de strikes, maar jumped omhoog, en komt terug naar beneden met ene ground slam ronde lightning vfx/kleine explosie
+
+- summon stors/thunderstorms with controlled lightning bolts
+
+- Mjolnir chargeup/charged
+
+- Thor/Player chargeup/charged
+
+- als die charged is blijft lightning op de grond(voor langere tijd)
+
+- Iets related aan een charged explosie/self bomb, dat je zelf soort explodeert met lightning of een strike in jouw komt en je explodeert(kleinschalig)
+
+- Thor arised langzaam in de air met lightning bolts om hem heen en charged kort up en dan ontploft die als een charged/lightning bomb
+
+- Je kan high jump doen of zelfs vliegen, maar dit moet ook activateable/doenmaar zijn door iemand mee te nemen, dus dan pak je iemand bij ze kraag, keep of omhelz je hem ofzo ieuts als voorbeeld, en dan doe je de jump of flight en dan neem je die entity mee.
+
+- vliegen weg met mjolnir en lightning vfx etc
+
+- (unbound) gewoon een normale lightning bolt summonen waar je wil.
+
+-(ultimate ability idea:) Thor vliegt langzaam omhoog(hij heeft mjolnir vast en die trekt hem omhoog), niet TE hoog, denk aan 4-8 blocks, en dan krijgt die een soort lightning shield/dome en dan absordbed die 75% vab de damage die het ontvangt, je kan dit shield niet aanraken dan wordt je achter geduwd/weg geduwd/knockback met korte lightning stun, dit buildup. dan ontstaat er een lightning-tornado, waar entities langzaam ingezogen worden,
+
+
+==================================================
+2. KEYBINDINGS EN ASSIGNED ATTACKS ETC
+==================================================
+
+---------------------------------
+- unarmed/no mjolnir modus:
+---------------------------------
+
+left click: Hand attacks, and kick attacks, creating a combo and having a custom dynamic moveset.
+
+left hold 0.75s buildup/charge-up time voordat het activate: Thunderclap: Leans backward makes his arms wide and big and slams them into eachother clapping very hard, creating a shockwave with lightning sparks but no bolt, while still hearing thunder in the distance.
+---
+right click: Je dashed naar de directie waar je heen moved/loopt/rent
+
+right hold 0.75s buildup/charge-up time voordat het activate: Je probeert de dichtsbijzijnde entity te grijpen en als je hem vasthebt/grijp dan doe je  een action randomised uit een pool, of je gooit hem weg, met damage, of je slaat ze hoofd in de grond, of je slaat de entity paar keer in ze lichaam. OF een mix van dingen, bijvoorbeeld eerst slaan dan hoofd in grond slaan, of eerst slaan dan weggooien.
+(eerder idee: right hold: lightning strike op zichzelf voor knockback)
+
+sprint + right hold 0.5s buildup/charge-up time voordat het activate: Grab run/dash. Als je aan het sprinten/rennen bent en je doet right hold, dan doe je geen gewone grab maar een grab dash: je dashed in 1 rechte lijn (niet homing) naar de entity waar je crosshair op aimed, ongeveer 8-10 blokken ver. Raak je de entity, dan grijp je hem vast bij ze torso/kraag en dan doe je een action randomised uit een pool: dezelfde acties als de gewone right hold grab (weggooien, hoofd in de grond slaan, paar keer in ze lichaam slaan of een mix), OF de super jump grab: je houdt de entity boven je hoofd, super jumped snel omhoog en dan bodyslam je samen naar beneden, of je gooit hem fullspeed naar beneden, of je laat hem vallen en slammed er daarna zelf fullspeed op. Raak je niks, dan is het gewoon een normale dash naar voren. De buildup is korter (0.5s) omdat je al in beweging bent, zodat het makkelijk te activaten is midden in een gevecht.
+---
+scrollwheel click: Switch modus unarmed x mjolnir(normaal in unarmed modus is mjolnir hangend aan je broek/belt, als je dus op dit klikt(scrollwheel) dan pak je hem vast en swap je naar mjolnir modus).
+
+scrollwheel hold 2s voordat activate: Charged Mode, thor/player/jezelf wordt charged met lightning, dan doe je meer damage, meer speed, meer knockback, ALS VOORBEELD buff effecten.
+
+---------------------------------
+- armed/mjolnir modus:
+---------------------------------
+
+left click: Je slaat en trapt, maar nu sla je met mjolnir inplaats van je handen, dit heeft een eigen andere soort moveset als de unarmed mode.
+
+left hold 0.75s buildup/charge-up time voordat het activate: Je doet een uppercut die altijd hit, maar als iemand blocked met een shield-like item, dan krijgt die knockback, en als die niet blocked of geen shield heeft, en je raakt de uppercut dan vliegt die hoog de lucht in. (optional: animated dat die ronddraait en al, of ragdolls maken)
+---
+right click: Je gooit mjolnir naar waar je crosshair geaimed is, als dit raakt geeft het enorme knockback. Mjolnir komt automatisch terug.
+
+right hold 1s buildup/charge-up time voordat het activate: Hetzelfde als right click, maar nu blijft mjolnir liggen waar die land, of hij blijft mid air vliegen, nadat je hold hebt ingedrukt vlieg je enorm snel ernaartoe. met lightning VFX
+(eerder idee: als die toevallig al op de grond ligt en dan rised die stukje omhoog en teleport je naar mjolnir toe)
+---
+scrollwheel click: Switch modus unarmed x mjolnir(normaal in unarmed modus is mjolnir hangend aan je broek/belt, als je dus op dit klikt(scrollwheel) dan pak je hem vast en swap je naar mjolnir modus).
+
+scrollwheel hold 2s buildup/charge-up time voordat het activate: Charged Mode, Mjolnir wordt charged met lightning, dan doe je meer damage, meer speed, meer knockback, ALS VOORBEELD buff effecten. voor mjolnir, niet voor thor zelf.
+
+---------------------------------
+- flight modus:
+---------------------------------
+
+(tijdens het vliegen hang je altijd met je linkerhand aan mjolnir)
+
+left click: Hand attacks met je vrije (rechter)hand, creating a combo and having a custom dynamic moveset.
+
+left hold 1s buildup/charge-up time voordat het activate: Mid air shockwave stun. Je linkerarm (waarmee je aan mjolnir hangt) gloeit op met lightning VFX, en die lightning channeled naar mjolnir toe. Dan komt er veel lightning VFX in/bij mjolnir, en daarna komt er een ronde/dome lightning explosion van 5x5 area om je heen. Deze explosie veroorzaakt een stun van 3sec: alles wat om player/thor heen vliegt wordt stunned en valt dus, want hun flight wordt 3sec lang disabled.
+---
+right click: Je gaat heel snel, veel sneller dan normaal/max speed, een aantal blokken vooruit (voorbeeld: 15) in de directie van je crosshair. Zie het als een short range teleport zoals die er al is, maar inplaats van mjolnir te gooien en er fullspeed heen te vliegen/dashen, gooi je hem niet maar vlieg je gewoon heel snel mét mjolnir.
+
+right hold: Een grab-dash. Werkt zoals right click, maar dan nog sneller en met meer lightning VFX, en je dashed IN/OP een entity/target waar je crosshair op aimed (in 1 rechte lijn, niet homing). Die entity grijp je vast, net zoals bij het bestaande vastpak/grab systeem (vergelijkbaar met: "- Je kan high jump doen of zelfs vliegen, maar dit moet ook activateable/doenmaar zijn door iemand mee te nemen..."). Dan smijt je hem eerst omlaag, ga je er zelf achteraan, en land je bovenop die entity. Als je op dat moment in de lightning speed flight mode zit (hold shift), dan wordt die landing ook een lightning strike.
+---
+scrollwheel click: Je spawned een gewone lightning bolt die niet enorm veel damage doet, op de entity waar je op aimed. Werkt op entities in de lucht én op de grond. Als je geen target hebt en je clicked dit, gebeurt er niks.
+
+scrollwheel hold: unbound/nothing
+---
+hold shift minimaal 2s buildup/charge-up time voordat het activate: Lightning speed flight mode, je gaat extra sonic speed. Voor andere players verander je in een lightning bolt: zij zien een traveling lightning bolt door de air. Voor jezelf verandert er niks behalve dat er nu lightning VFX om je heen komt. Hiermee kan je sonic speed fast travelen. Als je hiermee in iemand ze buurt komt, summoned het automatisch een low damage homing lightning strike op die entity. Als je in deze mode gaat landen of te dicht bij de grond komt, land je automatisch, en dan channeled de lightning bolt die je nu zelf bent als lightning bolt strike op je landing location. Deze lightning speed flight mode blijft ongeveer 15sec.
+
+---------------------------------
+- beide unarmed/armed modussen:
+---------------------------------
+
+dubbel spatie achter elkaar: Hoge jump
+
+hold spatie: Hoge jump of vliegen
+
+
+==================================================
+3. SYSTEEM
+==================================================
+
+het systeem met mjolnir/thor moet zijn dat mjolnir, thor, attacks, de envirement, de mode/status waar je inzit(armed/unarmed) allemaal met elkaar fluidly and smooth op een dynamische interactive manier moeten verbinden, dit geldt voor de short range teleport, stance/modus switch, en het oppakken van iemand en dan kiezen wat je ermee doet of ook dat als je met vliegen iemand kan meenemen etc, al deze systemen en shit moeten dynamisch fluidly en smoothly met elkaar werken, op elkaar reageren en werken en op de omgeving en world reageren en werken

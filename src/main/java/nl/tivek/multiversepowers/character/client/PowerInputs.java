@@ -11,8 +11,8 @@ import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.character.CharacterAbility;
 import org.lwjgl.glfw.GLFW;
 
-// The mouse and space gestures powers use, listed under Controls. Left, right and space follow the game's own
-// attack, use and jump keys and cannot be changed here; the scroll wheel's click and hold can.
+// The mouse, space and shift gestures powers use, listed under Controls. Left, right and space follow the game's own
+// attack, use and jump keys and cannot be changed here; the scroll wheel's click and hold and the held shift can.
 public final class PowerInputs {
     public static final String CATEGORY = "key.categories." + MultiversePowers.MODID + ".inputs";
 
@@ -32,9 +32,12 @@ public final class PowerInputs {
             GLFW.GLFW_KEY_SPACE, CharacterAbility.Input.SPACE);
     public static final KeyMapping HOLD_SPACE = locked("hold_space", InputConstants.Type.KEYSYM,
             GLFW.GLFW_KEY_SPACE, CharacterAbility.Input.SPACE);
+    // Its own key, not the game's sneak: many play with shift on sprint and sneak elsewhere.
+    public static final KeyMapping HOLD_SHIFT = new KeyMapping(name("hold_shift"), KeyConflictContext.IN_GAME,
+            InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_LEFT_SHIFT, CATEGORY);
 
     private static final KeyMapping[] ALL = { LEFT_CLICK, LEFT_HOLD, RIGHT_CLICK, RIGHT_HOLD, SCROLL_CLICK,
-            SCROLL_HOLD, DOUBLE_SPACE, HOLD_SPACE };
+            SCROLL_HOLD, DOUBLE_SPACE, HOLD_SPACE, HOLD_SHIFT };
 
     private PowerInputs() {
     }
@@ -52,6 +55,7 @@ public final class PowerInputs {
             case LEFT -> minecraft.options.keyAttack;
             case RIGHT -> minecraft.options.keyUse;
             case SCROLL -> SCROLL_CLICK;
+            case SHIFT -> HOLD_SHIFT;
             case SPACE, KEY -> minecraft.options.keyJump;
         };
     }
@@ -65,7 +69,8 @@ public final class PowerInputs {
     public static Component label(CharacterAbility ability) {
         CharacterAbility.Input input = ability.input();
         if (input == CharacterAbility.Input.KEY) {
-            return AbilityKeys.of(ability.slot()).getTranslatedKeyMessage();
+            KeyMapping key = AbilityKeys.of(ability.slot());
+            return key == null ? Component.literal("-") : key.getTranslatedKeyMessage();
         }
         String prefix = "input." + MultiversePowers.MODID + ".";
         if (ability.tapWhen() == CharacterAbility.Tap.DOUBLE) {

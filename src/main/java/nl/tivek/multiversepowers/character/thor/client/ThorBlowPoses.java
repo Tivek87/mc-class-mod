@@ -19,7 +19,6 @@ final class ThorBlowPoses {
     // After the last blow ends the guard stays up this long, then comes down over GUARD_DOWN ticks.
     private static final float GUARD_UP = 40.0F;
     private static final float GUARD_DOWN = 10.0F;
-    private static final float TURN = (float) (Math.PI * 2.0);
 
     // One moment of a blow. Sides: 0 his right, 1 his left.
     static final class Pose {
@@ -31,7 +30,6 @@ final class ThorBlowPoses {
         float pitch;
         float roll;
         float drop;
-        float spin;
         // The kicking foot (0 right, 1 left, -1 none), how far into the kick, and where it is.
         int footSide = -1;
         float kick;
@@ -48,12 +46,11 @@ final class ThorBlowPoses {
             this.pitch = 0.04F;
             this.roll = 0.0F;
             this.drop = 0.6F;
-            this.spin = 0.0F;
             this.footSide = -1;
             this.kick = 0.0F;
         }
 
-        // Towards another pose by u; the spin goes the short way round.
+        // Towards another pose by u.
         void toward(Pose other, float u) {
             for (int side = 0; side < 2; side++) {
                 this.hand[side].lerp(other.hand[side], u);
@@ -65,7 +62,6 @@ final class ThorBlowPoses {
             this.pitch = Mth.lerp(u, this.pitch, other.pitch);
             this.roll = Mth.lerp(u, this.roll, other.roll);
             this.drop = Mth.lerp(u, this.drop, other.drop);
-            this.spin += (float) Math.IEEEremainder(other.spin - this.spin, TURN) * u;
             if (other.footSide >= 0 && (this.footSide < 0 || this.footSide == other.footSide)) {
                 if (this.footSide < 0) {
                     this.foot.set(other.foot);
@@ -124,16 +120,9 @@ final class ThorBlowPoses {
         return pose;
     }
 
-    // His whole body's turn round for a spinning blow (+ to his right), 0 when none.
-    static float spin(ClientThor.View view, float partialTick) {
-        Pose pose = of(view, partialTick);
-        return pose == null ? 0.0F : (float) Math.IEEEremainder(pose.spin, TURN) * pose.weight;
-    }
-
     private static void copy(Pose from, Pose to) {
         to.guard();
         to.toward(from, 1.0F);
-        to.spin = from.spin;
     }
 
     // A blow's keys at `age`: the two keys round it eased between.
@@ -160,7 +149,6 @@ final class ThorBlowPoses {
         out.pitch = Mth.lerp(u, a.pitch(), b.pitch());
         out.roll = Mth.lerp(u, a.roll(), b.roll());
         out.drop = Mth.lerp(u, a.drop(), b.drop());
-        out.spin = Mth.lerp(u, a.spin(), b.spin());
         feet(script, age, out);
     }
 

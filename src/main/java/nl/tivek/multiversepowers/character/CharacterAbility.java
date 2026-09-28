@@ -15,13 +15,15 @@ public final class CharacterAbility {
         ALTERNATE
     }
 
-    // KEY is the slot's own key; the rest are the fixed gestures listed under Controls (scroll can be rebound).
+    // KEY is the slot's own key; the rest are the fixed gestures listed under Controls (scroll and shift can be
+    // rebound). SHIFT is only ever held.
     public enum Input {
         KEY,
         LEFT,
         RIGHT,
         SCROLL,
-        SPACE
+        SPACE,
+        SHIFT
     }
 
     // PRESS and RELEASE: when a button with a hold version counts as a click. NEVER: only holding it does
@@ -65,6 +67,8 @@ public final class CharacterAbility {
     private Crouch crouch = Crouch.SAME;
     private Input input = Input.KEY;
     private When when = When.ALWAYS;
+    private int needs;
+    private String needsName = "";
     private int holdTicks;
     private Tap tap = Tap.PRESS;
 
@@ -139,6 +143,22 @@ public final class CharacterAbility {
     public CharacterAbility when(When when) {
         this.when = when;
         return this;
+    }
+
+    // A gesture that only works in some state of the character's own (Thor with his hammer in hand): the bits its game
+    // must report as set (ClientCharacter.state), and the name the panel shows while they are not.
+    public CharacterAbility needs(int bits, String name) {
+        this.needs = bits;
+        this.needsName = name;
+        return this;
+    }
+
+    public int needs() {
+        return this.needs;
+    }
+
+    public String needsName() {
+        return this.needsName;
     }
 
     public CharacterAbility holdVersion(int ticks, Tap tap) {

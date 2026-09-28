@@ -3,6 +3,56 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.4.2-alpha] - 2026-09-28
+
+**UNFINISHED / WORK IN PROGRESS:** Thor's new moves are first, rough versions: they work, but their looks and feel
+are still plain.
+
+### Added
+- **Thor: Take Up the Hammer** (scroll wheel click): the hammer (still an axe) goes from his belt into his right hand
+  and back; with it in hand the mouse does the hammer's moves.
+- **Thor: hammer blows** (left click, hammer in hand): a swing, a backhand, a thrust and an overhead smash.
+- **Thor: Hammer Uppercut** (hold left click, hammer in hand): always finds what stands before him and sends it high
+  into the air; a raised shield is knocked down instead.
+- **Thor: Hammer Throw** (right click, hammer in hand): thrown at the crosshair, it hits hard and flies back by
+  itself.
+- **Thor: Throw and Follow** (hold right click, hammer in hand): the hammer stays where it stops and he is pulled
+  after it in a streak of lightning.
+- **Thor: Grab** (hold right click): he grabs the nearest creature and throws it, smashes its head into the ground
+  or punches it, at random.
+- **Thor: Grab Dash** (running, hold right click): a straight dash that catches what it passes, then a grab's ending
+  or a super jump with it overhead that ends in a slam, a hurl down or a drop he comes down onto.
+- **Thor: Charge** (hold the scroll wheel): 20 seconds of Charged Mode, for the hammer in his hand or for himself
+  (harder fists, faster running).
+- **Thor: Sky Shockwave** (hold left click, flying): lightning bursts out round him, hurts what is close and takes
+  its flight for 3 seconds.
+- **Thor: Lightning Bolt** (scroll wheel click, flying): a bolt of lightning on the creature you aim at.
+- **Thor:** left click in flight throws right-hand blows.
+- **Controls:** "Hold shift", a power gesture on left shift of its own (whatever sneak and sprint are on), which can
+  be moved under Controls.
+- **Controls:** a character can have more than twelve abilities; the ones past the twelfth sit only on the mouse,
+  space or shift.
+- **Panel:** an ability that waits for something says what: *with hammer*, *no hammer*, *running* or *not running*.
+
+### Changed
+- **Thor: Lightning Speed** is holding shift for 2 seconds in flight (was holding the scroll wheel) and lasts 15
+  seconds; others see only a bolt, it strikes foes he passes, and his landing strikes the ground.
+- **Thor: Air Blink** goes the way you steer (ahead, back, aside or up), like the dash on the ground.
+- **Thor: Flight:** sneaking no longer sinks him (shift is Lightning Speed now); look down and fly ahead to go down.
+- **Thor: Thunder Fists:** he never spins round in a blow; 20 hand blows and 3 kicks now.
+- **Thor: Thunderclap and Dash** only work without the hammer in hand.
+- **Thor's settings:** Lightning Speed's cooldown is 20 seconds (was 2); it and Charge have a setting for how long
+  they last.
+- **Docs:** the Thor and Mjolnir plan moved into `docs/`.
+
+### Removed
+- **Thor: Thunder Fists:** the uppercuts, the double hammer fist (a slam into the ground), the spinning backfist and
+  the spinning back kick; uppercuts and ground slams become moves of their own.
+- **Thor: Thunderclap:** the rings of light round the blast and the sparks in his hands while he winds up.
+
+### Fixed
+- **Thor: Air Blink** went only 10 of its 15 blocks.
+
 ## [0.4.1-alpha] - 2026-09-28
 
 **UNFINISHED / WORK IN PROGRESS:** the mod is still being built; things may change, break or be missing.

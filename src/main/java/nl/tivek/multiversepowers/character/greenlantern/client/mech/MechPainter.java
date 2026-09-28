@@ -240,8 +240,9 @@ public final class MechPainter {
             return;
         }
         MechScript.Stage stage = pose.torso();
-        MechMoves.Arm arm = walking ? MechMoves.walking(right, t, pose.swing, pose.walking)
-                : MechMoves.arm(right, stage, t);
+        // Running, the forearms come up and pump instead of hanging.
+        double hang = pose.walking * (1.0 - 0.8 * pose.running);
+        MechMoves.Arm arm = walking ? MechMoves.walking(right, t, pose.swing, hang) : MechMoves.arm(right, stage, t);
         Frame hand = Frame.of(stage.point(arm.elbow()), stage.dir(arm.palm()), stage.dir(arm.way()), 1.0);
         double grown = Mth.clamp((t - MechScript.ARMS_FORM) / (MechScript.ARMS_IN - MechScript.ARMS_FORM), 0.0, 1.0);
         if (grown < 1.0 && apart < 0.0) {

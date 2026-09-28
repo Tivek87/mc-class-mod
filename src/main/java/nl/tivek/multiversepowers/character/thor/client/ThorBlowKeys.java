@@ -9,8 +9,8 @@ import org.joml.Vector3f;
 // outside (the chest's frame in pixels: +x his left, y down, -z ahead; with the way its elbow bends out) and where his
 // own eyes see it (view space: x right, y up, -z ahead; with the point its arm reaches from), written for the right
 // hand and mirrored for the left. The trunk turns (+ to his right), leans (+ forward), rolls (+ to his left) and sinks
-// (pixels); a spin turns his whole body round (+ to his right). A kick moves one foot (the model's own space, feet at
-// y 24; and view space) and plants the other.
+// (pixels). A kick moves one foot (the model's own space, feet at y 24; and view space) and plants the other. A
+// hammer blow is thrown by the right hand, which holds the hammer.
 final class ThorBlowKeys {
     enum Spot {
         GUARD(-2.2F, -1.8F, -5.0F, -0.5F, 0.5F, 1.0F, 0.30F, -0.30F, -0.62F, 0.62F, -1.0F, -0.2F),
@@ -33,10 +33,7 @@ final class ThorBlowKeys {
         CHOP(0.5F, 3.5F, -8.5F, -1.0F, 0.3F, 0.2F, -0.08F, -0.22F, -1.05F, 0.40F, -0.25F, -0.45F),
         BALANCE(-14.0F, 3.0F, 1.0F, -0.3F, 0.5F, 1.0F, 0.95F, -0.55F, -0.15F, 1.20F, -0.75F, 0.10F),
         TUCK(-2.0F, 2.0F, -4.0F, -0.5F, 0.5F, 1.0F, 0.25F, -0.45F, -0.45F, 0.55F, -1.0F, -0.15F),
-        WIND(-9.0F, 0.0F, 5.0F, 0.0F, 0.2F, 1.0F, 0.90F, -0.40F, -0.05F, 1.10F, -0.90F, 0.20F),
-        // Spinning: out to his side as his body comes round, while his eyes see it sweep in from the right.
-        SPIN_LOAD(-2.0F, 2.0F, -4.0F, -0.5F, 0.5F, 1.0F, 0.85F, -0.10F, -0.55F, 1.10F, -0.35F, 0.0F),
-        SPIN_FIST(-11.0F, -1.5F, -4.0F, -1.0F, 0.0F, 0.3F, 0.26F, 0.10F, -1.25F, 0.80F, -0.40F, -0.35F);
+        WIND(-9.0F, 0.0F, 5.0F, 0.0F, 0.2F, 1.0F, 0.90F, -0.40F, -0.05F, 1.10F, -0.90F, 0.20F);
 
         final Vector3f hand;
         final Vector3f pole;
@@ -52,7 +49,7 @@ final class ThorBlowKeys {
         }
     }
 
-    record Key(float t, Spot right, Spot left, float twist, float pitch, float roll, float drop, float spin) {
+    record Key(float t, Spot right, Spot left, float twist, float pitch, float roll, float drop) {
     }
 
     record Foot(float t, Vector3f at, Vector3f seen) {
@@ -62,8 +59,6 @@ final class ThorBlowKeys {
     record Script(Key[] keys, Foot[] feet, boolean rightFoot) {
     }
 
-    private static final float TURN = (float) (Math.PI * 2.0);
-    private static final float HALF = (float) Math.PI;
     private static final Map<ThorBlow, Script> SCRIPTS = new EnumMap<>(ThorBlow.class);
 
     static {
@@ -90,18 +85,6 @@ final class ThorBlowKeys {
                 k(4, Spot.HOOK, Spot.GUARD, -0.6F, 0.08F, -0.08F, 0.8F),
                 k(6, Spot.GUARD, Spot.GUARD, -0.2F, 0.03F, -0.02F, 0.4F),
                 k(9, Spot.GUARD, Spot.GUARD, 0, 0, 0, 0));
-        hands(ThorBlow.LEAD_UPPERCUT,
-                k(0, Spot.GUARD, Spot.GUARD, 0, 0, 0, 0),
-                k(2, Spot.GUARD, Spot.UPPER_LOW, -0.2F, 0.15F, -0.05F, 1.8F),
-                k(4, Spot.GUARD, Spot.UPPER, 0.4F, -0.12F, 0.05F, -0.4F),
-                k(6, Spot.GUARD, Spot.GUARD, 0.15F, -0.03F, 0, 0.2F),
-                k(9, Spot.GUARD, Spot.GUARD, 0, 0, 0, 0));
-        hands(ThorBlow.REAR_UPPERCUT,
-                k(0, Spot.GUARD, Spot.GUARD, 0, 0, 0, 0),
-                k(2, Spot.UPPER_LOW, Spot.GUARD, 0.25F, 0.2F, 0.05F, 2.2F),
-                k(5, Spot.UPPER, Spot.GUARD, -0.5F, -0.14F, -0.05F, -0.5F),
-                k(7, Spot.GUARD, Spot.GUARD, -0.15F, -0.03F, 0, 0.2F),
-                k(10, Spot.GUARD, Spot.GUARD, 0, 0, 0, 0));
         hands(ThorBlow.OVERHAND,
                 k(0, Spot.GUARD, Spot.GUARD, 0, 0, 0, 0),
                 k(2, Spot.OVERHEAD, Spot.GUARD, 0.3F, -0.06F, 0.05F, 0.4F),
@@ -162,25 +145,12 @@ final class ThorBlowKeys {
                 k(4, Spot.LOW_STRAIGHT, Spot.GUARD, -0.5F, 0.3F, -0.05F, 3.0F),
                 k(6, Spot.GUARD, Spot.GUARD, -0.15F, 0.1F, 0, 1.0F),
                 k(9, Spot.GUARD, Spot.GUARD, 0, 0, 0, 0));
-        hands(ThorBlow.SPINNING_BACKFIST,
-                s(0, Spot.GUARD, Spot.GUARD, 0, 0, 0, 0, 0),
-                s(2, Spot.SPIN_LOAD, Spot.TUCK, 0.2F, 0.05F, 0, 0.8F, -0.3F),
-                s(6, Spot.SPIN_LOAD, Spot.TUCK, -0.2F, 0.05F, 0, 0.8F, TURN * 0.68F),
-                s(8, Spot.SPIN_FIST, Spot.GUARD, -0.4F, 0.05F, -0.1F, 0.6F, TURN),
-                s(10, Spot.GUARD, Spot.GUARD, -0.1F, 0, 0, 0.3F, TURN),
-                s(14, Spot.GUARD, Spot.GUARD, 0, 0, 0, 0, TURN));
         hands(ThorBlow.SUPERMAN_PUNCH,
                 k(0, Spot.GUARD, Spot.GUARD, 0, 0, 0, 0),
                 k(2, Spot.CHAMBER, Spot.GUARD, 0.25F, -0.05F, 0.03F, 1.8F),
                 k(5, Spot.WIND, Spot.BALANCE, 0.3F, 0.1F, 0, -1.0F),
                 k(8, Spot.STRAIGHT, Spot.BALANCE, -0.7F, 0.3F, -0.08F, 0.2F),
                 k(10, Spot.GUARD, Spot.GUARD, -0.2F, 0.1F, 0, 1.0F),
-                k(14, Spot.GUARD, Spot.GUARD, 0, 0, 0, 0));
-        hands(ThorBlow.DOUBLE_HAMMER,
-                k(0, Spot.GUARD, Spot.GUARD, 0, 0, 0, 0),
-                k(4, Spot.OVERHEAD, Spot.OVERHEAD, 0, -0.22F, 0, -0.6F),
-                k(8, Spot.DOWN, Spot.DOWN, 0, 0.46F, 0, 3.6F),
-                k(11, Spot.GUARD, Spot.GUARD, 0, 0.12F, 0, 1.2F),
                 k(14, Spot.GUARD, Spot.GUARD, 0, 0, 0, 0));
         hands(ThorBlow.KNIFE_HAND,
                 k(0, Spot.GUARD, Spot.GUARD, 0, 0, 0, 0),
@@ -247,18 +217,36 @@ final class ThorBlowKeys {
                 f(6, 2.0F, 10.0F, -11.5F, -0.05F, -0.15F, -1.20F),
                 f(9, 3.5F, 15.5F, -2.0F, -0.30F, -0.90F, -0.40F),
                 f(11, 1.9F, 24.0F, 0.0F, -0.30F, -1.3F, -0.2F));
-        kick(ThorBlow.SPINNING_BACK_KICK, true, new Key[] {
-                s(0, Spot.GUARD, Spot.GUARD, 0, 0, 0, 0, 0),
-                s(2, Spot.TUCK, Spot.TUCK, 0.1F, 0.1F, 0, 0.6F, HALF * 0.3F),
-                s(4, Spot.TUCK, Spot.TUCK, 0, 0.2F, 0, 0.6F, HALF),
-                s(8, Spot.BALANCE, Spot.TUCK, 0, 0.35F, 0, 0.4F, HALF),
-                s(12, Spot.GUARD, Spot.GUARD, 0, 0.05F, 0, 0.3F, TURN),
-                s(15, Spot.GUARD, Spot.GUARD, 0, 0, 0, 0, TURN) },
-                f(3, -1.9F, 24.0F, 0.0F, 0.20F, -1.3F, -0.2F),
-                f(4, -1.9F, 17.0F, 3.0F, 0.20F, -1.00F, -0.40F),
-                f(8, -1.9F, 11.0F, 11.5F, 0.06F, -0.15F, -1.20F),
-                f(10, -1.9F, 17.0F, 3.0F, 0.20F, -1.00F, -0.40F),
-                f(12, -1.9F, 24.0F, 0.0F, 0.20F, -1.3F, -0.2F));
+        hands(ThorBlow.HAMMER_SWING,
+                k(0, Spot.GUARD, Spot.GUARD, 0, 0, 0, 0),
+                k(3, Spot.WIND, Spot.GUARD, 0.65F, -0.08F, 0.08F, 0.8F),
+                k(6, Spot.HOOK, Spot.GUARD, -0.9F, 0.2F, -0.12F, 1.2F),
+                k(9, Spot.GUARD, Spot.GUARD, -0.3F, 0.06F, -0.03F, 0.5F),
+                k(12, Spot.GUARD, Spot.GUARD, 0, 0, 0, 0));
+        hands(ThorBlow.HAMMER_BACKHAND,
+                k(0, Spot.GUARD, Spot.GUARD, 0, 0, 0, 0),
+                k(2, Spot.ELBOW_ACROSS, Spot.GUARD, -0.5F, 0.02F, -0.05F, 0.4F),
+                k(5, Spot.BACKFIST, Spot.GUARD, 0.55F, 0.06F, 0.06F, 0.6F),
+                k(8, Spot.GUARD, Spot.GUARD, 0.15F, 0.02F, 0, 0.3F),
+                k(11, Spot.GUARD, Spot.GUARD, 0, 0, 0, 0));
+        hands(ThorBlow.HAMMER_THRUST,
+                k(0, Spot.GUARD, Spot.GUARD, 0, 0, 0, 0),
+                k(2, Spot.CHAMBER, Spot.GUARD, 0.2F, 0, 0.02F, 0.5F),
+                k(4, Spot.STRAIGHT, Spot.GUARD, -0.5F, 0.18F, -0.04F, 0.9F),
+                k(7, Spot.GUARD, Spot.GUARD, -0.15F, 0.05F, 0, 0.3F),
+                k(10, Spot.GUARD, Spot.GUARD, 0, 0, 0, 0));
+        hands(ThorBlow.HAMMER_SMASH,
+                k(0, Spot.GUARD, Spot.GUARD, 0, 0, 0, 0),
+                k(4, Spot.OVERHEAD, Spot.GUARD, 0.1F, -0.2F, 0.03F, -0.4F),
+                k(7, Spot.DOWN, Spot.GUARD, -0.2F, 0.45F, -0.05F, 3.2F),
+                k(10, Spot.GUARD, Spot.GUARD, -0.05F, 0.12F, 0, 1.0F),
+                k(14, Spot.GUARD, Spot.GUARD, 0, 0, 0, 0));
+        hands(ThorBlow.HAMMER_UPPERCUT,
+                k(0, Spot.GUARD, Spot.GUARD, 0, 0, 0, 0),
+                k(2, Spot.UPPER_LOW, Spot.GUARD, 0.25F, 0.2F, 0.05F, 2.2F),
+                k(5, Spot.UPPER, Spot.GUARD, -0.5F, -0.14F, -0.05F, -0.5F),
+                k(8, Spot.GUARD, Spot.GUARD, -0.15F, -0.03F, 0, 0.2F),
+                k(12, Spot.GUARD, Spot.GUARD, 0, 0, 0, 0));
     }
 
     private ThorBlowKeys() {
@@ -269,12 +257,7 @@ final class ThorBlowKeys {
     }
 
     private static Key k(float t, Spot right, Spot left, float twist, float pitch, float roll, float drop) {
-        return new Key(t, right, left, twist, pitch, roll, drop, 0.0F);
-    }
-
-    private static Key s(float t, Spot right, Spot left, float twist, float pitch, float roll, float drop,
-            float spin) {
-        return new Key(t, right, left, twist, pitch, roll, drop, spin);
+        return new Key(t, right, left, twist, pitch, roll, drop);
     }
 
     private static Foot f(float t, float x, float y, float z, float sx, float sy, float sz) {

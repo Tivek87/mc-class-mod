@@ -54,7 +54,7 @@ public final class MouseAbilities {
             }
             KeyMapping key = ability.onGesture() ? AbilityKeys.of(ability) : AbilityKeys.of(ability.slot());
             if (ability.input() != CharacterAbility.Input.LEFT && ability.input() != CharacterAbility.Input.RIGHT
-                    && key.getKey().equals(pick.getKey())
+                    && key != null && key.getKey().equals(pick.getKey())
                     && (minecraft.player == null || Gestures.active(ability, minecraft.player))) {
                 return true;
             }

@@ -16,14 +16,27 @@ import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 import nl.tivek.multiversepowers.engine.fx.Sounds;
 
 // Thor: a bolt of lightning strikes as you become him and static crawls over you for a while. His moves are in
-// ThorMoves (dash, super jump, flight and what he does in flight), ThorBlows (his combo), GrabDive and Thunderclap.
+// ThorMoves (dash, super jump, flight and what he does in flight), ThorBlows (his combo), ThorGrab, GrabDive,
+// Thunderclap, Mjolnir (the hammer in hand, thrown, its uppercut), ThorCharge and SkyMoves (the shockwave and bolt
+// in flight).
 public final class ThorPowers implements CharacterPowers {
-    // How long the attack button is held to wind up the thunderclap: 0.75 seconds.
+    // What his game reports of him for the gestures that need it: hammer in hand or not, running or not.
+    public static final int UNARMED = 1;
+    public static final int ARMED = 2;
+    public static final int WALKING = 4;
+    public static final int SPRINTING = 8;
+    // How long the attack button is held to wind up the thunderclap or the hammer's uppercut: 0.75 seconds.
     public static final int CLAP_HOLD = 15;
-    // How long space is held to fly, right held for the dive and the scroll wheel for lightning speed.
+    // How long space is held to fly, right held for the dive, a grab, a grab dash (running), the hammer's throw to
+    // fly after, the scroll wheel for a charge, left in flight for the shockwave and shift for lightning speed.
     public static final int FLIGHT_HOLD = 8;
     public static final int DIVE_HOLD = 10;
-    public static final int LIGHTNING_HOLD = 4;
+    public static final int GRAB_HOLD = 15;
+    public static final int GRAB_DASH_HOLD = 10;
+    public static final int LEAP_HOLD = 20;
+    public static final int CHARGE_HOLD = 40;
+    public static final int SHOCK_HOLD = 20;
+    public static final int LIGHTNING_HOLD = 40;
     private static final int CRACKLE_TICKS = 40;
     private static final int GLOW = 0x9FE8FF;
 
@@ -63,28 +76,44 @@ public final class ThorPowers implements CharacterPowers {
     public void leave(ServerPlayer player) {
         ThorMoves.leave(player);
         ThorBlows.forget(player);
+        ThorGrab.leave(player);
+        Mjolnir.leave(player);
+        ThorCharge.leave(player);
         ParticleFx.cloud(player.serverLevel(), ParticleTypes.ELECTRIC_SPARK, player.position().add(0.0, 1.0, 0.0),
                 24, 0.5, 0.3);
     }
 
-    // Every move but the thunderclap is his own game's to make (it moves him or picks the blow); the server checks it
-    // may, shows it and hits what it hits.
+    // His moves are his own game's to make where they move him or pick the blow; the server checks he may, shows it
+    // and hits what it hits.
     @Override
     public boolean use(ServerPlayer player, CharacterAbility ability, boolean on, int data) {
         boolean flying = ThorMoves.flying(player);
         boolean held = (data & Characters.HOLD) != 0;
+        boolean armed = Mjolnir.inHand(player);
+        int move = data >> Characters.MOVE_SHIFT & 0xFF;
+        int arg = data >> Characters.MOVE_SHIFT + 8 & 0xFF;
+        float fists = ability.getDamage() * ThorCharge.fists(player);
+        float hammer = ability.getDamage() * ThorCharge.hammer(player);
         return switch (ability.id()) {
-            case "combo" -> on && !flying && (data & Characters.TAP) != 0
-                    && ThorBlows.start(player, data >> Characters.MOVE_SHIFT & 0xFF, ability.getDamage());
+            case "combo" -> on && (data & Characters.TAP) != 0
+                    && ThorBlows.start(player, move, ability.getDamage());
             case "thunderclap" -> {
                 if ((data & Characters.CHARGE) != 0) {
-                    ThorMoves.charging(player, on && !flying);
+                    ThorMoves.charging(player, on && !flying && !armed);
                     yield false;
                 }
-                yield on && held && !flying && Thunderclap.cast(player, player.serverLevel(), ability.getDamage());
+                yield on && held && !flying && !armed && Thunderclap.cast(player, player.serverLevel(), fists);
             }
-            case "dash" -> on && !flying && ThorMoves.dash(player, data >> Characters.MOVE_SHIFT & 0xFF,
-                    data >> Characters.MOVE_SHIFT + 8 & 0xFF);
+            case "hammer_uppercut" -> on && held && !flying && Mjolnir.uppercut(player, hammer);
+            case "dash" -> on && !flying && !armed && ThorMoves.dash(player, move, arg);
+            case "grab" -> on && held && !flying && !armed && ThorGrab.grab(player, fists);
+            case "grab_dash" -> on && held && !flying && !armed && ThorGrab.dash(player, move, arg, fists);
+            case "hammer_throw" -> on && !flying && Mjolnir.fling(player, hammer, false);
+            case "hammer_leap" -> on && held && !flying && Mjolnir.fling(player, hammer, true);
+            case "mjolnir" -> on && !flying && Mjolnir.toggle(player);
+            case "charged" -> on && held && !flying && ThorCharge.charge(player, ability.value("seconds"));
+            case "air_shockwave" -> on && held && flying && SkyMoves.shockwave(player, fists);
+            case "air_bolt" -> on && flying && SkyMoves.bolt(player, fists);
             case "super_jump" -> on && !flying && ThorMoves.superJump(player);
             case "flight" -> {
                 if (on && (data & Characters.SLAM) != 0) {
@@ -93,7 +122,7 @@ public final class ThorPowers implements CharacterPowers {
                 }
                 yield on && held && ThorMoves.takeOff(player);
             }
-            case "air_blink" -> on && flying && ThorMoves.blink(player);
+            case "air_blink" -> on && flying && ThorMoves.blink(player, move, arg);
             case "grab_dash_dive" -> {
                 ThorMoves moves = ThorMoves.find(player);
                 if (on && (data & Characters.SLAM) != 0) {
@@ -104,7 +133,9 @@ public final class ThorPowers implements CharacterPowers {
                 }
                 yield on && held && flying && GrabDive.start(player, ability.getDamage());
             }
-            case "lightning_flight" -> ThorMoves.lightning(player, on && flying);
+            case "lightning_flight" -> on && held && flying
+                    && ThorMoves.lightning(player, (int) Math.round(ability.value("seconds") * 20.0),
+                            ability.getDamage(), (float) ability.value("landingDamage"));
             default -> false;
         };
     }
@@ -121,5 +152,8 @@ public final class ThorPowers implements CharacterPowers {
     public void clear() {
         ThorMoves.clear();
         ThorBlows.clear();
+        ThorGrab.clear();
+        Mjolnir.clear();
+        ThorCharge.clear();
     }
 }

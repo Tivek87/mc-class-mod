@@ -13,13 +13,15 @@ public final class MouseHold {
         LET_GO
     }
 
-    // One channel per button: left, right, the scroll click, the scroll hold when it sits on a key of its own, space.
+    // One channel per button: left, right, the scroll click, the scroll hold when it sits on a key of its own, space,
+    // shift.
     static final int LEFT = 0;
     static final int RIGHT = 1;
     static final int SCROLL = 2;
     static final int SCROLL_HOLD = 3;
     static final int SPACE = 4;
-    private static final int CHANNELS = 5;
+    static final int SHIFT = 5;
+    static final int CHANNELS = 6;
 
     private static final int[] DOWN = new int[CHANNELS];
     private static final boolean[] HOLDING = new boolean[CHANNELS];
@@ -100,6 +102,7 @@ public final class MouseHold {
             case RIGHT -> RIGHT;
             case SCROLL -> SCROLL;
             case SPACE -> SPACE;
+            case SHIFT -> SHIFT;
             case KEY -> -1;
         };
     }

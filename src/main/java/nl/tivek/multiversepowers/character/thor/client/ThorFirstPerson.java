@@ -18,13 +18,14 @@ import net.neoforged.neoforge.client.event.RenderHandEvent;
 import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.character.GameCharacter;
 import nl.tivek.multiversepowers.character.client.ClientCharacter;
+import nl.tivek.multiversepowers.character.thor.ThorBlow;
 import nl.tivek.multiversepowers.character.thor.ThorStatePayload;
 import nl.tivek.multiversepowers.engine.client.render.FirstPersonArm;
 import nl.tivek.multiversepowers.engine.math.Ease;
 import org.joml.Vector3f;
 
 // Your own Thor in flight, seen from his eyes: the left hand holds the axe out ahead of him, as if it pulled him along,
-// and the right hand hangs free and ready. View space: x right, y up, -z ahead.
+// and the right hand hangs free and ready, and strikes. View space: x right, y up, -z ahead.
 @EventBusSubscriber(modid = MultiversePowers.MODID, value = Dist.CLIENT)
 public final class ThorFirstPerson {
     private static final Vector3f AXE_HAND = new Vector3f(-0.38F, -0.2F, -0.78F);
@@ -90,7 +91,16 @@ public final class ThorFirstPerson {
                 ItemDisplayContext.NONE, true, pose, event.getMultiBufferSource(), event.getPackedLight());
         pose.popPose();
         Vector3f free = new Vector3f(FirstPersonArm.HAND_RIGHT).lerp(FREE_HAND, out).add(0.0F, -bob, 0.0F);
+        Vector3f from = new Vector3f(RIGHT_FROM);
+        ClientThor.View view = ClientThor.view(player);
+        ThorBlowPoses.Pose blow = view == null ? null : ThorBlowPoses.of(view, event.getPartialTick());
+        ThorBlow thrown = view == null ? null : ThorBlow.byIndex(view.blow);
+        if (blow != null && thrown != null && thrown.oneHanded()
+                && view.blowAge(event.getPartialTick()) < thrown.ticks()) {
+            free.lerp(blow.seen[0], blow.weight);
+            from.lerp(blow.from[0], blow.weight);
+        }
         FirstPersonArm.arm(pose, event.getMultiBufferSource(), event.getPackedLight(), player, renderer, 1.0F, free,
-                RIGHT_FROM);
+                from);
     }
 }

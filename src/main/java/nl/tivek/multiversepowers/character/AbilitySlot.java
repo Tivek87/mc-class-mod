@@ -16,7 +16,16 @@ public enum AbilitySlot {
     ABILITY_9,
     ABILITY_10,
     ABILITY_11,
-    ABILITY_12;
+    ABILITY_12,
+    // Slots past the twelfth have no key of their own: only abilities on a mouse, space or shift gesture use them.
+    ABILITY_13,
+    ABILITY_14,
+    ABILITY_15,
+    ABILITY_16,
+    ABILITY_17,
+    ABILITY_18,
+    ABILITY_19,
+    ABILITY_20;
 
     public int number() {
         return this.ordinal() + 1;

@@ -7,6 +7,7 @@ import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
+import nl.tivek.multiversepowers.character.thor.ThorBlow;
 import nl.tivek.multiversepowers.character.thor.ThorStatePayload;
 import nl.tivek.multiversepowers.engine.client.pose.Stance;
 import nl.tivek.multiversepowers.engine.client.render.EntityPass;
@@ -125,6 +126,7 @@ public final class ThorPoses {
         floating(mix, model, body, entity);
         flight(mix, view, body, age, entity);
         slam(mix, view, age);
+        hold(mix, view, age);
         blows(mix, view, entity, partialTick);
         float absorb = (float) Math.max(0.0, body.absorb.value);
         mix.drop += absorb;
@@ -178,13 +180,25 @@ public final class ThorPoses {
     }
 
     // His blows and the guard he keeps between them (ThorBlowPoses): hands, trunk and a kicking foot, over his walk.
-    // A thunderclap has his arms meanwhile.
+    // A thunderclap has his arms meanwhile. In flight only his right arm strikes; the left holds the hammer.
     private static void blows(Mix mix, ClientThor.View view, LivingEntity entity, float partialTick) {
-        if (ClientClaps.active(entity) || view.has(ThorStatePayload.FLYING)) {
+        if (ClientClaps.active(entity)) {
             return;
         }
         ThorBlowPoses.Pose pose = ThorBlowPoses.of(view, partialTick);
         if (pose == null || pose.weight < 1.0E-3F) {
+            return;
+        }
+        if (view.has(ThorStatePayload.FLYING)) {
+            ThorBlow blow = ThorBlow.byIndex(view.blow);
+            if (blow == null || !blow.oneHanded() || view.blowAge(partialTick) >= blow.ticks()) {
+                return;
+            }
+            float w = pose.weight * (float) Ease.smooth((blow.ticks() - view.blowAge(partialTick)) / 2.0);
+            mix.weight = Math.max(mix.weight, w);
+            mix.aimedHands[0] = true;
+            mix.hand(0, pose.hand[0].x, pose.hand[0].y, pose.hand[0].z, w * 2.0F, false);
+            mix.pole(0, pose.pole[0], w);
             return;
         }
         float w = pose.weight;
@@ -205,6 +219,23 @@ public final class ThorPoses {
             mix.foot(pose.footSide, pose.foot.x, pose.foot.y, pose.foot.z, kick);
             int planted = 1 - pose.footSide;
             mix.foot(planted, planted == 0 ? -Stance.HIP_X : Stance.HIP_X, Stance.GROUND, 0.5F, kick);
+        }
+    }
+
+    // A creature he grabbed on the ground: held out in his right hand, or up over his head with both as he leaps.
+    private static void hold(Mix mix, ClientThor.View view, float age) {
+        if (!view.has(ThorStatePayload.CARRYING) || view.has(ThorStatePayload.FLYING)) {
+            return;
+        }
+        boolean up = view.move() == ThorStatePayload.HOIST;
+        float w = up ? (float) Ease.smooth(age / 3.0) : 1.0F;
+        mix.weight = Math.max(mix.weight, w);
+        if (up) {
+            mix.hand(0, -3.0F, -12.5F, -1.0F, w, false);
+            mix.hand(1, 3.0F, -12.5F, -1.0F, w, false);
+            mix.pitch -= 0.1F * w;
+        } else {
+            mix.hand(0, -2.5F, -1.0F, -8.5F, w, false);
         }
     }
 

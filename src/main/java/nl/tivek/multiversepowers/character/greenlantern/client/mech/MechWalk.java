@@ -8,6 +8,8 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.particles.BlockParticleOption;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -24,6 +26,7 @@ import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.character.greenlantern.mech.MechScript;
+import nl.tivek.multiversepowers.engine.client.fx.ParticleAmount;
 import nl.tivek.multiversepowers.engine.fx.Sounds;
 import nl.tivek.multiversepowers.engine.math.Ease;
 import nl.tivek.multiversepowers.engine.math.Spring;
@@ -31,6 +34,10 @@ import nl.tivek.multiversepowers.engine.math.Spring;
 // A built mech's walk, worked out on every client from where it stands tick by tick: each foot stays where it came
 // down until its turn to swing, lands where the body will be over it, and the body bobs, sways and twists above the
 // legs. Phases count in strides: a full one is both legs, the right lifting at 0 and the left at a half.
+// Walking it is heavy and slow: hunched forward and low, it hauls each foot up, carries it over and stamps it straight
+// down, its whole weight rolling over onto the planted leg and sinking into every footfall. Running is a gait of its
+// own: leaning far into it, each foot kicked back and up behind, then driven far ahead, with a moment where both feet
+// are off the ground, the arms pumping and every landing a crash that shakes the ground.
 @EventBusSubscriber(modid = MultiversePowers.MODID, value = Dist.CLIENT)
 public final class MechWalk {
     static final double CYCLE = 4.6;
@@ -43,12 +50,25 @@ public final class MechWalk {
     private static final double HOME_TURN = 0.22;
     private static final double LOST = CYCLE * 1.5;
     private static final double LIFT = 1.05;
-    private static final double CROUCH = 0.45;
-    private static final double BOB = 0.12;
-    private static final double SWAY = 0.15;
-    private static final double ROLL = 0.035;
-    private static final double TWIST = 0.07;
-    private static final double LEAN = 0.05;
+    // How far into a swing a walking foot is highest; after it the foot drops, faster and faster, onto the ground.
+    private static final double PEAK = 0.42;
+    private static final double CROUCH = 0.6;
+    private static final double BOB = 0.06;
+    private static final double SWAY = 0.26;
+    private static final double ROLL = 0.06;
+    private static final double TWIST = 0.1;
+    private static final double LEAN = 0.09;
+    // Every footfall sinks the body under its weight, and it springs back up heavily.
+    private static final double SINK_WALK = 0.22;
+    private static final double SINK_RUN = 0.38;
+    private static final double SINK_FREQ = 0.1;
+    private static final double SINK_DAMP = 0.45;
+    // A running foot is kicked back and up behind before it swings through.
+    private static final double HEEL_BACK = 1.1;
+    private static final double HEEL_UP = 0.7;
+    private static final double RUN_TWIST = 0.14;
+    private static final double RUN_PUMP = 1.4;
+    private static final int DUST = 10;
     private static final double BRACE = 2.5;
     private static final double LEVER_PACE = 0.25;
     // The torso follows where its pilot looks like a heavy weight on a spring: it swings round, carries on a touch past
@@ -68,9 +88,9 @@ public final class MechWalk {
     // A running stride is longer, its feet longer off the ground and higher, the body lower and further ahead. At
     // full run a foot lands at most a fifth of a stride from under its hip, which a straight leg still reaches.
     private static final double RUN_STRIDE = 1.0;
-    private static final double RUN_SWING = 0.14;
-    private static final double RUN_LIFT = 0.7;
-    private static final double RUN_LEAN = 0.12;
+    private static final double RUN_SWING = 0.26;
+    private static final double RUN_LIFT = 1.0;
+    private static final double RUN_LEAN = 0.28;
     private static final int IDLE_BEFORE = 20;
     private static final int PRESS_EVERY = 46;
     private static final int PRESS_TICKS = 18;
@@ -96,6 +116,8 @@ public final class MechWalk {
         boolean swinging;
         double lift;
         int landed = -100;
+        // How hard it came down last: 1 walking, more running.
+        double hard = 1.0;
     }
 
     private final int seed;
@@ -111,6 +133,7 @@ public final class MechWalk {
     private final Spring headPitch = new Spring();
     private final Spring bank = new Spring();
     private final Spring lean = new Spring();
+    private final Spring sink = new Spring();
     private double legsWas = Double.NaN;
     private double legsRate;
     private double running;
@@ -254,7 +277,8 @@ public final class MechWalk {
                 continue;
             }
             double fade = 1.0 - since / STEP_SHAKE_TICKS;
-            most = Math.max(most, (inside ? 0.22 : 0.4) * fade * fade * Math.min(1.0, near * 1.3));
+            most = Math.max(most, (inside ? 0.26 : 0.45) * walk.legs[side].hard * fade * fade
+                    * Math.min(1.0, near * 1.3));
         }
         return most;
     }
@@ -290,6 +314,7 @@ public final class MechWalk {
         for (int side = 0; side < 2; side++) {
             this.leg(level, stage, side, from, rate);
         }
+        this.sink.step(0.0, 1.0, SINK_FREQ, SINK_DAMP);
         this.was = this.now;
         this.now = this.pose(stage, rate);
     }
@@ -334,15 +359,52 @@ public final class MechWalk {
         Vec3 target = home(then, side);
         Double ground = ground(level, target, stage.base().y);
         target = new Vec3(target.x, (ground == null ? stage.base().y : ground) + MechScript.ANKLE.y, target.z);
-        double h = Ease.smooth(u);
+        double run = this.running;
+        // Walking the foot is carried over early and hangs, running it swings through evenly.
+        double carried = 1.0 - (1.0 - u) * (1.0 - u);
+        double h = Mth.lerp(run, carried, Ease.smooth(u));
         Vec3 at = leg.from.lerp(target, h);
         leg.toes = leg.fromToes.lerp(then.ahead(), h).normalize();
-        leg.planted = done ? target : at.add(0.0, leg.lift * Math.sin(Math.PI * Math.pow(u, 0.8)), 0.0);
+        double heel = Math.sin(Math.PI * Math.min(1.0, u / 0.55)) * (u < 0.55 ? 1.0 : 0.0) * run;
+        Vec3 raised = at.add(0.0, leg.lift * height(u) + HEEL_UP * heel, 0.0)
+                .subtract(stage.ahead().scale(HEEL_BACK * heel));
+        leg.planted = done ? target : raised;
         if (done) {
             leg.swinging = false;
             leg.toes = then.ahead();
             leg.landed = ticks;
-            footfall(level, target.subtract(0.0, MechScript.ANKLE.y, 0.0), this.walking + 0.6 * this.running);
+            leg.hard = 1.0 + 0.9 * run;
+            this.sink.kick(-(SINK_WALK + (SINK_RUN - SINK_WALK) * run) * Math.min(1.0, this.walking + run));
+            Vec3 sole = target.subtract(0.0, MechScript.ANKLE.y, 0.0);
+            footfall(level, sole, this.walking + 0.9 * run);
+            dust(level, sole, this.walking + run);
+        }
+    }
+
+    // How high a swinging foot is, 0 to 1 over its swing: hauled up quickly, then stamped down faster and faster.
+    private static double height(double u) {
+        if (u < PEAK) {
+            return Math.sin(Math.PI * 0.5 * u / PEAK);
+        }
+        double down = (u - PEAK) / (1.0 - PEAK);
+        return 1.0 - down * down * down;
+    }
+
+    // Dust and bits of the ground thrown up round a foot as it comes down.
+    private static void dust(ClientLevel level, Vec3 ground, double hard) {
+        int count = (int) Math.round(DUST * Math.min(1.5, hard));
+        BlockState below = level.getBlockState(BlockPos.containing(ground.x, ground.y - 0.5, ground.z));
+        for (int k = 0; k < count; k++) {
+            double angle = level.random.nextDouble() * Math.PI * 2.0;
+            double out = 0.08 + 0.12 * level.random.nextDouble();
+            double x = ground.x + Math.cos(angle) * 0.9;
+            double z = ground.z + Math.sin(angle) * 0.9;
+            ParticleAmount.add(level, level.random, ParticleTypes.POOF, x, ground.y + 0.1, z,
+                    Math.cos(angle) * out, 0.02, Math.sin(angle) * out);
+            if (!below.isAir()) {
+                ParticleAmount.add(level, level.random, new BlockParticleOption(ParticleTypes.BLOCK, below), x,
+                        ground.y + 0.2, z, Math.cos(angle) * 0.2, 0.25, Math.sin(angle) * 0.2);
+            }
         }
     }
 
@@ -374,26 +436,29 @@ public final class MechWalk {
         double settle = Mth.clamp(feet * 0.5 - stage.base().y, -1.5, 1.5);
         this.settleY = Mth.lerp(0.25, this.settleY, settle);
         double run = this.running;
-        double bob = BOB * w * (1.0 + 1.6 * run) * Math.cos(4.0 * Math.PI * (p - 0.2));
-        double sway = SWAY * w * Math.sin(2.0 * Math.PI * (p - 0.46));
-        double roll = ROLL * w * Math.sin(2.0 * Math.PI * (p - 0.46));
-        double twist = TWIST * w * Math.sin(2.0 * Math.PI * (p + 0.04));
+        // Running it springs up off each foot into the stride where both are off the ground.
+        double bob = BOB * w * Math.cos(4.0 * Math.PI * (p - 0.2))
+                + 0.35 * run * Math.max(0.0, Math.sin(4.0 * Math.PI * (p - 0.05)));
+        double sway = SWAY * w * (1.0 - 0.6 * run) * Math.sin(2.0 * Math.PI * (p - 0.46));
+        double roll = ROLL * w * (1.0 - 0.4 * run) * Math.sin(2.0 * Math.PI * (p - 0.46));
+        double twist = (TWIST * w + RUN_TWIST * run) * Math.sin(2.0 * Math.PI * (p + 0.04));
         double pitch = -LEAN * Math.min(this.speed, MechDrive.WALK) / MechDrive.WALK - RUN_LEAN * run
                 + Mth.clamp(BRACE * this.brace, -0.05, 0.05);
-        double low = -CROUCH * (1.0 + 0.5 * run) * Ease.smooth(this.crouch) + bob + this.settleY * 0.6;
+        double low = -CROUCH * (1.0 + 0.3 * run) * Ease.smooth(this.crouch) + bob + this.settleY * 0.6
+                + this.sink.value;
         // The hips give a little way to the twist above them and swing back as the torso swings round.
         double share = HIPS_SHARE * this.torsoTurn - HIPS_KICK * this.torso.speed * 0.25;
         pose.hips = stage.turned(HIPS, new Vec3(sway, low, 0.0), twist + share, pitch, roll);
         pose.turn = this.torsoTurn - share;
         // The torso banks against the legs turning under it and leans into how fast it swings.
         this.bank.step(Mth.clamp(-2.4 * this.legsRate + 0.9 * this.torso.speed, -0.12, 0.12), 1.0, 0.08, 0.6);
-        this.lean.step(-0.06 * run + Mth.clamp(-0.6 * this.brace, -0.04, 0.04), 1.0, 0.07, 0.75);
+        this.lean.step(-0.04 * w - 0.14 * run + Mth.clamp(-0.6 * this.brace, -0.04, 0.04), 1.0, 0.07, 0.75);
         pose.lean = this.lean.value;
         pose.bank = this.bank.value;
         pose.torso = MechScript.upper(pose.hips, pose.turn, pose.lean, pose.bank);
         pose.walking = w;
         pose.running = run;
-        pose.swing = -Math.sin(2.0 * Math.PI * (p + 0.04)) * w * (1.0 + 0.8 * run);
+        pose.swing = -Math.sin(2.0 * Math.PI * (p + 0.04)) * w * (1.0 + RUN_PUMP * run);
         pose.headYaw = this.headYaw.value + 0.4 * twist;
         pose.headPitch = this.headPitch.value - 0.5 * (pitch + pose.lean);
         this.levers(pose, rate);

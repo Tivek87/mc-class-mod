@@ -5,6 +5,7 @@ import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Predicate;
+import java.util.function.ToIntFunction;
 import javax.annotation.Nullable;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
@@ -33,12 +34,14 @@ final class Gestures {
     private static final int DOUBLE_WINDOW = 7;
     private static final int BLOCK_AFTER = 5;
     private static final CharacterAbility.Input[] BUTTONS = { CharacterAbility.Input.LEFT,
-            CharacterAbility.Input.RIGHT, CharacterAbility.Input.SCROLL, CharacterAbility.Input.SPACE };
+            CharacterAbility.Input.RIGHT, CharacterAbility.Input.SCROLL, CharacterAbility.Input.SPACE,
+            CharacterAbility.Input.SHIFT };
     private static final Map<GameCharacter, Predicate<LocalPlayer>> FLYING = new EnumMap<>(GameCharacter.class);
+    private static final Map<GameCharacter, ToIntFunction<LocalPlayer>> STATES = new EnumMap<>(GameCharacter.class);
     private static final Map<CharacterAbility, Predicate<LocalPlayer>> GATES = new HashMap<>();
 
     @Nullable
-    private static final CharacterAbility[] STARTED = new CharacterAbility[5];
+    private static final CharacterAbility[] STARTED = new CharacterAbility[MouseHold.CHANNELS];
     private static int defendDown = -1;
     private static boolean endedCharge;
     private static boolean spaceWas;
@@ -53,6 +56,10 @@ final class Gestures {
         FLYING.put(character, flying);
     }
 
+    static void state(GameCharacter character, ToIntFunction<LocalPlayer> state) {
+        STATES.put(character, state);
+    }
+
     static void gate(CharacterAbility ability, Predicate<LocalPlayer> may) {
         GATES.put(ability, may);
     }
@@ -63,12 +70,24 @@ final class Gestures {
     }
 
     static boolean active(CharacterAbility ability, LocalPlayer player) {
+        return rightWhen(ability, player) && inState(ability, player);
+    }
+
+    static boolean rightWhen(CharacterAbility ability, LocalPlayer player) {
         if (ability.when() == CharacterAbility.When.ALWAYS) {
             return true;
         }
         Predicate<LocalPlayer> check = FLYING.get(ability.character());
         boolean flying = check != null && check.test(player);
         return flying == (ability.when() == CharacterAbility.When.FLYING);
+    }
+
+    private static boolean inState(CharacterAbility ability, LocalPlayer player) {
+        if (ability.needs() == 0) {
+            return true;
+        }
+        ToIntFunction<LocalPlayer> state = STATES.get(ability.character());
+        return state != null && (state.applyAsInt(player) & ability.needs()) == ability.needs();
     }
 
     @Nullable
@@ -114,6 +133,7 @@ final class Gestures {
                 case LEFT, RIGHT -> mouse(player, minecraft, now, input, click, hold);
                 case SCROLL -> scroll(player, minecraft, click, hold);
                 case SPACE -> space(player, minecraft, click, hold);
+                case SHIFT -> shift(player, minecraft, hold);
                 case KEY -> {
                 }
             }
@@ -291,6 +311,22 @@ final class Gestures {
             startHold(player, MouseHold.SPACE, hold);
         } else if (step == MouseHold.Step.RELEASE) {
             letGo(player, MouseHold.SPACE);
+        }
+    }
+
+    // Shift keeps doing what the game gives it (sneak or sprint); holding it on is the hold as well.
+    private static void shift(LocalPlayer player, Minecraft minecraft, @Nullable CharacterAbility hold) {
+        if (hold == null) {
+            letGo(player, MouseHold.SHIFT);
+            return;
+        }
+        boolean down = minecraft.screen == null && PowerInputs.HOLD_SHIFT.isDown();
+        MouseHold.Step step = MouseHold.tick(MouseHold.SHIFT, hold.holdTicks(), CharacterAbility.Tap.NEVER, down,
+                true);
+        if (step == MouseHold.Step.HOLD) {
+            startHold(player, MouseHold.SHIFT, hold);
+        } else if (step == MouseHold.Step.RELEASE) {
+            letGo(player, MouseHold.SHIFT);
         }
     }
 

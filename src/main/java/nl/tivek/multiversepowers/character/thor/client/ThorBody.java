@@ -112,7 +112,7 @@ final class ThorBody {
         this.inHand = this.holding(view);
         this.axe.step(this.inHand ? 1.0 : 0.0, this.dt, 0.12, 1.0);
         this.yaw = Mth.rotLerp(partialTick, player.yBodyRotO, player.yBodyRot);
-        this.lean(view, flying, partialTick);
+        this.lean(view, flying);
     }
 
     // Holds the axe from the moment a take-off draws it until a touch-down sheathes it.
@@ -129,8 +129,8 @@ final class ThorBody {
     }
 
     // The whole body leans the way he flies: flat out at speed, head first into a dive, feet first carrying someone
-    // down, and banks into a turn by how hard he swings aside. On the ground a spinning blow turns him round.
-    private void lean(@Nullable ClientThor.View view, boolean flying, float partialTick) {
+    // down, and banks into a turn by how hard he swings aside.
+    private void lean(@Nullable ClientThor.View view, boolean flying) {
         double yaw = Math.toRadians(this.yaw);
         Vec3 forward = new Vec3(-Math.sin(yaw), 0.0, Math.cos(yaw));
         Vec3 left = new Vec3(Math.cos(yaw), 0.0, Math.sin(yaw));
@@ -154,11 +154,9 @@ final class ThorBody {
         this.bank.step(flying ? bankTarget * (0.4 + 0.6 * fast) : 0.0, this.dt, 0.05, 0.8);
         float tiltNow = (float) this.tilt.value * weight;
         float bankNow = (float) this.bank.value * weight;
-        float spin = view == null || flying ? 0.0F : ThorBlowPoses.spin(view, partialTick);
-        this.turned = Math.abs(tiltNow) > 1.0E-3F || Math.abs(bankNow) > 1.0E-3F || Math.abs(spin) > 1.0E-3F;
-        // Turning to his right is clockwise seen from above: about the up axis the other way round.
+        this.turned = Math.abs(tiltNow) > 1.0E-3F || Math.abs(bankNow) > 1.0E-3F;
         this.turn.identity().rotateAxis(bankNow, (float) forward.x, 0.0F, (float) forward.z)
-                .rotateAxis(tiltNow, (float) left.x, 0.0F, (float) left.z).rotateY(-spin);
+                .rotateAxis(tiltNow, (float) left.x, 0.0F, (float) left.z);
     }
 
     // How flat he lies in flight now: 0 upright, 1 flat out.

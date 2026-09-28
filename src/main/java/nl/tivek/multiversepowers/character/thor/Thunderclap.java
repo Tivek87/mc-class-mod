@@ -19,16 +19,15 @@ import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.engine.effect.Effects;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
-import nl.tivek.multiversepowers.engine.math.Vectors;
 import nl.tivek.multiversepowers.engine.world.LoadedWorld;
 import nl.tivek.multiversepowers.spell.ClapPayload;
 import nl.tivek.multiversepowers.spell.SpellFxPayload;
 import nl.tivek.multiversepowers.spell.SpellTargets;
 
 // Thor winds up while the button is held, leaning back with his arms flung wide (his game shows it, and ThorMoves tells
-// the others), then slams his hands together with a crack of thunder: static crackles in them as they meet, a
-// shockwave full of lightning sparks rolls out the way he looks, hurting and throwing what stands in it, and thunder
-// rolls on in the distance after it. ClapFx draws it.
+// the others), then slams his hands together with a crack of thunder: a shockwave full of lightning sparks rolls out
+// the way he looks, hurting and throwing what stands in it, and thunder rolls on in the distance after it. ClapFx
+// draws it.
 final class Thunderclap {
     private static final int MEET = ClapPayload.HANDS_MEET;
     // Ticks after the clap when its thunder rolls in from afar.
@@ -41,8 +40,6 @@ final class Thunderclap {
     private static final double STRENGTH = 1.6;
     private static final double LIFT = 0.45;
     private static final double OFF_WALL = 0.3;
-
-    private static final int GLOW = 0x00D2FF;
 
     private Thunderclap() {
     }
@@ -117,23 +114,9 @@ final class Thunderclap {
                 : stop.subtract(look.scale(Math.min(OFF_WALL, eye.distanceTo(stop) * 0.5)));
     }
 
-    private static Vec3 side(Vec3 look) {
-        Vec3 right = look.cross(Vectors.UP);
-        return right.lengthSqr() < 1.0E-6 ? new Vec3(1.0, 0.0, 0.0) : right.normalize();
-    }
-
-    // Static crackles in the hands as they slam together from wide apart.
+    // A rush of air as the hands slam together from wide apart.
     private static void gather(ServerLevel level, ServerPlayer player, int age) {
-        Vec3 forward = player.getLookAngle();
-        Vec3 right = side(forward);
-        Vec3 clap = hands(player.getEyePosition(), forward);
-        double shut = (age + 1.0) / MEET;
-        double spread = 1.0 - shut * shut;
-        for (int side = -1; side <= 1; side += 2) {
-            Vec3 hand = clap.add(forward.scale(-0.5 * spread)).add(right.scale(side * (0.06 + 1.1 * spread)));
-            ParticleFx.cloud(level, ParticleTypes.ELECTRIC_SPARK, hand, 4, 0.12, 0.08);
-            ParticleFx.at(level, ParticleFx.dust(GLOW, 0.9F), hand);
-        }
+        Vec3 clap = hands(player.getEyePosition(), player.getLookAngle());
         if (age == 0) {
             level.playSound(null, clap.x, clap.y, clap.z, SoundEvents.TRIDENT_RIPTIDE_1.value(), SoundSource.PLAYERS,
                     0.7F, 1.6F);

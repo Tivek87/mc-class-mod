@@ -56,17 +56,21 @@ long cooldown; while it goes, the panel's title turns red and counts down.
 | Key | Ability | Doctor Octopus | Green Lantern | Thor |
 |---|---|---|---|---|
 | R | Ability 1 | Grab | Emerald Express | Thunder Fists *(left click)* |
-| V | Ability 2 | Multi-Tentacle | Construct Wheel | Thunderclap *(hold left click)* |
-| Z | Ability 3 | Tentacle Dash | Recharge | Dash *(right click)* |
-| B (hold) | Ability 4 | Block | Light Bolt *(left click)* | Super Jump *(double space)* |
-| H | Ability 5 | Ground Slam | Light Shield *(right click)* | Flight *(hold space)* |
-| N | Ability 6 | Portal | Ring Scan | Air Blink *(right click, flying)* |
-| Y | Ability 7 | Octopus Rampage *(ultimate)* | Air Strike *(ultimate; hold: Mech Assembly)* | Grab-Dash Dive *(hold right, flying)* |
-| X | Ability 8 | *(free)* | Shockwave | Lightning Speed *(hold scroll wheel, flying)* |
-| C | Ability 9 | Feet or Tentacles | Flight *(double space)* | |
-| Left Alt | Ability 10 | Ground Strike | Giant Hands | |
-| K | Ability 11 | *(free)* | Light Cage | |
-| *(none)* | Ability 12 | *(free)* | Beam Lock *(scroll wheel click)* | |
+| V | Ability 2 | Multi-Tentacle | Construct Wheel | Thunderclap *(hold left click, no hammer)* |
+| Z | Ability 3 | Tentacle Dash | Recharge | Hammer Uppercut *(hold left click, hammer)* |
+| B (hold) | Ability 4 | Block | Light Bolt *(left click)* | Dash *(right click, no hammer)* |
+| H | Ability 5 | Ground Slam | Light Shield *(right click)* | Grab *(hold right click)* |
+| N | Ability 6 | Portal | Ring Scan | Grab Dash *(running, hold right click)* |
+| Y | Ability 7 | Octopus Rampage *(ultimate)* | Air Strike *(ultimate; hold: Mech Assembly)* | Hammer Throw *(right click, hammer)* |
+| X | Ability 8 | *(free)* | Shockwave | Throw and Follow *(hold right click, hammer)* |
+| C | Ability 9 | Feet or Tentacles | Flight *(double space)* | Take Up the Hammer *(scroll wheel click)* |
+| Left Alt | Ability 10 | Ground Strike | Giant Hands | Charge *(hold scroll wheel)* |
+| K | Ability 11 | *(free)* | Light Cage | Super Jump *(double space)* |
+| *(none)* | Ability 12 | *(free)* | Beam Lock *(scroll wheel click)* | Flight *(hold space)* |
+
+Thor has five more, past the twelfth, that only sit on the mouse or shift in flight: Sky Shockwave *(hold left
+click)*, Air Blink *(right click)*, Grab-Dash Dive *(hold right click)*, Lightning Bolt *(scroll wheel click)* and
+Lightning Speed *(hold shift)*.
 
 - Every key can be changed in Options > Controls, under "Multiverse Powers".
 - An ability on a mouse button or on space shows that in brackets: its number key does nothing for it.
@@ -79,12 +83,14 @@ long cooldown; while it goes, the panel's title turns red and counts down.
 ### Mouse & space (Options > Controls, "Multiverse Powers: Mouse & Space")
 
 The mouse buttons and space do more than one thing: a click, a hold, a double press. Controls lists them all:
-**left click, left hold, right click, right hold, scroll wheel click, scroll wheel hold, double space and hold
-space**. Left, right and space follow the game's own attack, use and jump keys and are shown greyed out with
-**Locked** beside them: they cannot be changed there. The **scroll wheel click and hold can**: put either on any key or button you like (on the
+**left click, left hold, right click, right hold, scroll wheel click, scroll wheel hold, double space, hold
+space and hold shift**. Left, right and space follow the game's own attack, use and jump keys and are shown greyed
+out with **Locked** beside them: they cannot be changed there. **Hold shift** is left shift of its own, whatever
+the game's sneak and sprint keys are, and can be moved. The **scroll wheel click and hold can** be too: put either on any key or button you like (on the
 same one, as they come, a click and a hold tell themselves apart). A power with a click and a hold on the same
 button waits until you let go to know which you meant. The panel shows a hold as **Hold ...** and a double press
-as **Double ...**, and greys out a power that only works on the ground while you fly, or the other way round.
+as **Double ...**, and greys out a power that only works on the ground while you fly, or the other way round, and
+one that wants something else first, saying what: *with hammer*, *no hammer*, *running* or *not running*.
 - **A character can also sit on the mouse.** Green Lantern does: left click shoots, right click puts up a
   shield. The panel shows those as `[Left Button]` and `[Right Button]`. They only take the mouse over
   while both your hands are empty and the hand behind that button is free; any other time the mouse does
@@ -1290,40 +1296,55 @@ The whole run takes about 12 seconds, longer when the creature runs.
 
 ## Thor
 
-The god of thunder, from the Other franchise. Everything he does sits on the mouse and space: on the ground left
-click fights with his fists and feet and holding it claps; right click dashes; double space jumps high and holding
-space flies; in flight right click blinks and dives and the scroll wheel speeds him up.
+The god of thunder, from the Other franchise. Everything he does sits on the mouse, space and shift, and what a
+button does depends on whether he holds his hammer and whether he flies:
+
+| | Fists (no hammer) | Hammer in hand | In flight |
+|---|---|---|---|
+| Left click | Thunder Fists | Hammer blows | Right-hand blows |
+| Hold left | Thunderclap (0.75 s) | Hammer Uppercut (0.75 s) | Sky Shockwave (1 s) |
+| Right click | Dash | Hammer Throw | Air Blink |
+| Hold right | Grab (0.75 s); running: Grab Dash (0.5 s) | Throw and Follow (1 s) | Grab-Dash Dive (0.5 s) |
+| Scroll wheel click | Take Up the Hammer | Put the hammer away | Lightning Bolt |
+| Hold scroll wheel | Charge (2 s): Thor | Charge (2 s): the hammer | |
+| Hold shift | | | Lightning Speed (2 s) |
+
+Double space jumps high and holding space flies, with or without the hammer.
 
 - **Becoming Thor:** a bolt of lightning strikes you out of the sky with a crack of thunder (it does no harm and
   lights no fire), a flash of blue light spreads round your feet, and static keeps crawling over you for about two
   seconds.
-- **The axe:** until Mjolnir is made, an axe stands in for it. It hangs from his belt on his left hip; in flight
-  his left hand holds it out ahead of him, as if it pulled him along.
+- **The hammer:** until Mjolnir is made, an axe stands in for it. It hangs from his belt on his left hip; in flight
+  his left hand holds it out ahead of him, as if it pulled him along. Taken up, he holds it in his right hand, in
+  your own view as well.
 
 ### Thunder Fists (left click)
 
-- **Click left** with empty hands, on the ground: every click throws the next blow of a combo, and the blows flow
-  into each other, each one starting where the last one ends. There are **24 hand blows** (jab, cross, hooks and
-  uppercuts with both hands, an overhand, a backfist, a hammer fist, three elbows, palm strikes, body shots, a knife
-  hand, a shovel hook, a lead straight, a haymaker, a spinning backfist, a superman punch, a double hammer fist and a
-  crackling thunder punch) and **4 kicks** (front kick, roundhouse, side kick and spinning back kick).
+- **Click left** with empty hands: every click throws the next blow of a combo, and the blows flow into each other,
+  each one starting where the last one ends. There are **20 hand blows** (jab, cross, hooks with both hands, an
+  overhand, a backfist, a hammer fist, three elbows, palm strikes, body shots, a knife hand, a shovel hook, a lead
+  straight, a haymaker, a superman punch and a crackling thunder punch) and **3 kicks** (front kick, roundhouse and
+  side kick). He never spins round in a blow; uppercuts and slams into the ground are moves of their own, not
+  blows of the combo.
+- **With the hammer in hand** the combo is the hammer's own: a wide swing, a backhand, a thrust with its head and an
+  overhead smash that ends in a crack of thunder where it lands.
+- **In flight** only his right hand strikes (the left holds the hammer out ahead), with the fists' one-handed blows.
 - **How the next blow is picked:** the hands take turns like a boxer's; up close he throws the short blows (elbows,
-  hooks, uppercuts), further off the long ones; looking down, or at something small, he goes low; looking up he goes
-  for uppercuts; running, he throws the straight or front kick. Now and then a kick comes in, and once the combo has
-  built up (four blows or more) the big finishers join, which end the combo: after one the next click starts a new
-  combo.
+  hooks), further off the long ones; looking down, or at something small, he goes low; running, he throws the
+  straight or front kick. Now and then a kick comes in, and once the combo has built up (four blows or more) the big
+  finishers join, which end the combo: after one the next click starts a new combo.
 - **Feel:** a click that comes while a blow is still going waits for it, so clicking fast never skips a blow. Some
   blows carry him a step forward, but never into what he aims at. Between blows, and for about two seconds after the
   last, he keeps both fists up in his guard. You see your own fists and, for a kick, your leg in first person, and
   your view jolts a little as a blow lands.
-- **Hits:** what stands within reach where you look (2.4 to 3.6 blocks, by blow); the sweeping blows (the double
-  palm, spinning backfist, double hammer fist, haymaker and roundhouse) hit everything they sweep through. **2 hearts**
-  a blow, from a bit less for a jab to over double for the thunder punch. Jabs keep what they hit close, the
-  finishers throw it away. The damage is a setting.
+- **Hits:** what stands within reach where you look (2.4 to 3.8 blocks, by blow); the sweeping blows (the double
+  palm, haymaker, roundhouse, and the hammer's swing, backhand and smash) hit everything they sweep through. **2
+  hearts** a blow, from a bit less for a jab to over double for the thunder punch and the hammer's smash. Jabs keep
+  what they hit close, the finishers throw it away. The damage is a setting.
 
 ### Dash (right click)
 
-- **Click right** with empty hands: Thor sinks into his knees and shoots off low along the ground, **4 to 8
+- **Click right** without the hammer in hand: Thor sinks into his knees and shoots off low along the ground, **4 to 8
   blocks** (a different distance every time), the way you were walking or running: ahead, aside or back; standing
   still, ahead. His chest leans into the run and his arms drive back; he plants his lead foot, slides to a stop
   leaning back against it and rises. Sparks and dust fly behind him.
@@ -1340,33 +1361,98 @@ space flies; in flight right click blinks and dives and the scroll wheel speeds 
 ### Flight (hold space)
 
 - **Hold space** (on the ground or in the air): Thor's left hand grabs the axe from his belt and he rises. He flies
-  where you look: W ahead, S back, A and D aside, space up and shift down; with no key held he hangs still in the
-  air, bobbing gently. Flying fast he lies flat behind the axe and banks into his turns.
+  where you look: W ahead, S back, A and D aside and space up; to go down, look down and fly ahead. Sneaking does
+  not sink him; holding shift is Lightning Speed. With no key held he hangs still in the air, bobbing gently. Flying fast
+  he lies flat behind the axe and banks into his turns.
 - **Landing:** fly down onto the ground and he touches down, the axe back on his belt. A hard hit (2.5 hearts or
   more) knocks him out of the sky. He takes no fall damage from his own flight.
-- **In flight:** right click **blinks** him **15 blocks** ahead along a streak of lightning (1.2 seconds cooldown);
-  holding right for half a second makes him **dive** at what you aim at, grab it on the way and drive it into the
-  ground in a **slam** (5 hearts to it, less to what stands round, a lightning strike; 8 seconds cooldown), which
-  ends his flight; holding the scroll wheel flies him at **lightning speed** (48 blocks a second) while you hold it.
-- His speed and lightning speed are settings.
+- His speed is a setting.
+
+### In flight
+
+- **Air Blink (right click):** he blinks **15 blocks** along a streak of lightning, the way you are steering: ahead,
+  back, aside or up, as on the ground a dash goes the way you walk; steering nowhere, along your look. It stops short
+  of a wall. **Cooldown:** 1.2 seconds.
+- **Grab-Dash Dive (hold right for 0.5 seconds):** he dives at what you aim at, grabs it on the way and drives it
+  into the ground in a **slam** (5 hearts to it, less to what stands round, a lightning strike), which ends his
+  flight. **Cooldown:** 8 seconds.
+- **Sky Shockwave (hold left for 1 second):** lightning bursts out of him in a ball about **7 blocks** across:
+  **1.5 hearts** to everything in it, and for **3 seconds** whatever it hit cannot fly: it drops to the ground, and
+  another Thor in the air is knocked out of the sky. **Cooldown:** 10 seconds.
+- **Lightning Bolt (scroll wheel click):** a bolt of lightning comes down on the creature you aim at, up to 64
+  blocks away: **2.5 hearts**. Aimed at nothing, nothing happens. **Cooldown:** 1.5 seconds.
+- **Lightning Speed (hold shift for 2 seconds):** he flies at **48 blocks a second** for **15 seconds**, a zigzag of
+  lightning behind him. Others do not see him, only the bolt he has become.
+  Creatures out to hurt you that he passes within 5 blocks are struck (**1.5 hearts**, each at most once a second).
+  Close over the ground he lands by himself, and his landing strikes the ground round him (**4 hearts** where he
+  lands, down to half 3.5 blocks away, and thrown back). **Cooldown:** 20 seconds. Its speed, how long it lasts and
+  both damages are settings.
 
 ### Thunderclap (hold left click for 0.75 seconds)
 
-- **Hold left** with empty hands, on the ground. While you hold it Thor winds up: he sets his feet wide and low,
-  leans back and flings his arms wide, static crackling louder and thicker in his hands (everyone near sees and hears
-  it). A small ring round your crosshair charges up from the top in blue, crackling at its tip; after **0.75
+- **Hold left** without the hammer in hand, on the ground. While you hold it Thor winds up: he sets his feet wide
+  and low, leans back and flings his arms wide, with a rising hum (everyone near sees and hears it). A small ring
+  round your crosshair charges up from the top in blue, crackling at its tip; after **0.75
   seconds** it is full and pops with a white flash and little bolts leaping out, and he claps: he drives forward over
   his knees and slams his hands together in front of his chest, very hard. Let go sooner and it was a blow of his
   combo instead.
 - **The clap:** a blinding blue-white light flares between the hands, thunder cracks close by and rolls on in the
   distance, and a bubble in which time all but stands still swells out of the hands and rolls ahead the way you aim,
   sparks crawling slowly inside it; short forked sparks of lightning crackle through the shockwave as it rolls out
-  (no bolt comes down from the sky); rings of light ripple out along the aim and a wall of mist rolls the same way,
-  up or down as well. The bubble is **4 blocks** across at most and gone again after about **0.6 seconds**.
+  (no bolt comes down from the sky) and a wall of mist rolls the same way, up or down as well. The bubble is **4
+  blocks** across at most and gone again after about **0.6 seconds**.
 - **What it hits:** everything in a cone where you aim, **9 blocks** long and about 90 degrees wide: **2.5 hearts**
   close to you, down to half at the edge, and each is thrown away from you and up.
 - **Cooldown:** 10 seconds. While it cools down a thin blue arc round the crosshair counts the wait, and a glint
   runs round the ring the moment it is ready again. Its cooldown and damage are settings.
+
+### Take Up the Hammer (scroll wheel click)
+
+- **Click the scroll wheel** on the ground: he takes the hammer from his belt into his right hand, or hangs it back.
+  With it in hand the mouse does the hammer's moves (see the table above), without it the fists'. Not while it is
+  thrown. **Cooldown:** 0.5 seconds.
+
+### Hammer Uppercut (hold left click for 0.75 seconds, hammer in hand)
+
+- **Hold left** with the hammer in hand, on the ground: after 0.75 seconds (the ring round the crosshair fills) he
+  swings it up from low. It always finds what stands before him, up to about 4 blocks away: **4 hearts**, and it flies
+  some **14 blocks** up into the air. A raised shield takes it instead: the shield is knocked down (a player's goes on
+  cooldown) and its holder is only pushed back. **Cooldown:** 6 seconds.
+
+### Hammer Throw (right click, hammer in hand)
+
+- **Click right:** he throws the hammer at the crosshair, spinning, up to **40 blocks**, until it hits a creature or
+  a block. What it hits takes **3.5 hearts** and is thrown far the way it flew. Then it flies back to his hand by
+  itself. **Cooldown:** 1.5 seconds.
+
+### Throw and Follow (hold right click for 1 second, hammer in hand)
+
+- **Hold right:** he throws it the same way, but it stays where it stops: in what it hit, against a block, or
+  hanging in the air at the end of its flight. Then he is pulled after it at great speed in a streak of lightning and
+  catches it, and no fall hurts him for a few seconds. Should he not get there, it flies back by itself after 5
+  seconds. What it hits takes **2 hearts**. **Cooldown:** 5 seconds.
+
+### Grab (hold right click for 0.75 seconds, no hammer)
+
+- **Hold right** without the hammer, standing or walking: he grabs the nearest creature before him (up to 3.5
+  blocks) by the collar and holds it up. Then one of five, at random: he **throws** it away (**3 hearts**), smashes
+  its **head into the ground** (**4.5 hearts**), lands **three body punches** (**1.5 hearts** each), or two punches and
+  then a throw or a smash. **Cooldown:** 5 seconds.
+
+### Grab Dash (running, hold right click for 0.5 seconds, no hammer)
+
+- **Hold right while running:** he dashes about **9.5 blocks** straight where you look. Whatever he passes within 2
+  blocks of, he catches: then one of the Grab's endings, or he super jumps with it held over his head and at the top
+  one of three: **slams down** with it, **hurls it down** into the ground, or **drops it** and comes down onto it
+  (each **6 hearts** as it hits the ground, and what stands round the landing is hurt and thrown back too). Catching
+  nothing, it is a plain dash. **Cooldown:** 7 seconds.
+
+### Charge (hold scroll wheel for 2 seconds)
+
+- **Hold the scroll wheel** on the ground: a bolt of lightning strikes him with a crack of thunder, and for **20
+  seconds** sparks crawl over him. With the hammer in hand the **hammer** is charged: its blows, uppercut and throws do
+  half as much again, in damage and in how far they throw. Without it **Thor** is charged: his fists do half as much
+  again, and he runs faster (Speed II). **Cooldown:** 45 seconds. How long it lasts is a setting.
 
 ---
 

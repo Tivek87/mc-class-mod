@@ -1,6 +1,7 @@
 package nl.tivek.multiversepowers.character.client;
 
 import com.mojang.blaze3d.platform.InputConstants;
+import javax.annotation.Nullable;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.neoforged.api.distmarker.Dist;
@@ -43,10 +44,13 @@ public final class AbilityKeys {
         modEventBus.addListener(ClientCharacter::onRegisterLayers);
     }
 
+    // Null for a slot without a key of its own (past the twelfth).
+    @Nullable
     public static KeyMapping of(AbilitySlot slot) {
-        return SLOTS[slot.ordinal()];
+        return slot.ordinal() < SLOTS.length ? SLOTS[slot.ordinal()] : null;
     }
 
+    @Nullable
     public static KeyMapping of(CharacterAbility ability) {
         if (!ability.onGesture()) {
             return of(ability.slot());

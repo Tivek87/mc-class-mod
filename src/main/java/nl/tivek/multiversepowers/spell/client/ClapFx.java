@@ -18,8 +18,8 @@ import org.joml.Vector3f;
 
 // The thunder clap, blasting out of the hands the way the caster aims: a blinding light between them, a bubble of
 // bent light in which time all but stands still rolling ahead with the shock, a spray of thunder sparks crawling
-// inside it, forked lightning sparks crackling through the wave as it rolls (never a bolt from the sky), rings
-// rippling out over the ground and a wall of mist rolling out.
+// inside it, forked lightning sparks crackling through the wave as it rolls (never a bolt from the sky) and a wall
+// of mist rolling out.
 final class ClapFx {
     static final int LIFE = 46;
     // The same reach and cone as the hits in Thunderclap.
@@ -32,8 +32,6 @@ final class ClapFx {
     private static final double SLOWED = 0.35;
     private static final int STREAKS = 190;
     private static final int PUFFS = 30;
-    private static final int RIPPLES = 3;
-    private static final double RIPPLE_TICKS = 22.0;
     private static final double SHAKE_REACH = 32.0;
     private static final double FLASH_REACH = 20.0;
     // The lightning sparks: how many at once, for how long, and how fast the wave they ride rolls (as Thunderclap).
@@ -105,11 +103,10 @@ final class ClapFx {
         bubble(painter, hands, ahead, age);
         streaks(painter, hands, ahead, age, seed);
         arcs(painter, hands, ahead, age, seed);
-        ripples(painter, hands, ahead, age, seed);
         dust(painter, hands, ahead, age, seed);
     }
 
-    // Two directions square to the aim and to each other, spanning the face the shock rings lie in.
+    // A direction square to the aim, level with the ground.
     private static Vec3 across(Vec3 ahead) {
         Vec3 side = ahead.cross(Vectors.UP);
         return side.lengthSqr() < 1.0E-6 ? new Vec3(1.0, 0.0, 0.0) : side.normalize();
@@ -241,47 +238,6 @@ final class ClapFx {
             double burst = 1.0 - age / 6.0;
             painter.lightDisc(hands.add(ahead.scale(1.5 + age)), 1.5 + age * 0.9, WHITE, 0.45 * burst, 0.3,
                     seed + 99);
-        }
-    }
-
-    // Shock rings ripple out along the aim, square to it, one after another, with a swirl turning in the first.
-    private static void ripples(ConstructPainter painter, Vec3 hands, Vec3 ahead, double age, int seed) {
-        Vec3 side = across(ahead);
-        Vec3 up = side.cross(ahead).normalize();
-        for (int k = 0; k < RIPPLES; k++) {
-            double t = age - 2.5 * k;
-            if (t < 0.0 || t > RIPPLE_TICKS) {
-                continue;
-            }
-            double u = t / RIPPLE_TICKS;
-            double grow = 1.0 - (1.0 - u) * (1.0 - u);
-            double fade = (1.0 - u) * (1.0 - u);
-            Vec3 at = hands.add(ahead.scale(1.8 + 2.4 * k + 1.5 * grow));
-            double radius = 0.3 + (1.8 + 0.8 * k) * grow;
-            painter.circle(at, up, side, radius, 0.035, 0.3, Colors.alpha(0.9 * fade),
-                    Colors.alpha(0.45 * fade));
-            painter.circle(at, up, side, radius * 0.62, 0.02, 0.18, Colors.alpha(0.5 * fade),
-                    Colors.alpha(0.25 * fade));
-            if (k == 0) {
-                swirl(painter, at, up, side, radius * 0.95, t, fade, seed);
-            }
-        }
-    }
-
-    private static void swirl(ConstructPainter painter, Vec3 at, Vec3 up, Vec3 side, double radius, double t,
-            double fade, int seed) {
-        double turn = 0.12 * t + Noise.of(seed, 0, 51) * Math.PI * 2.0;
-        for (int arm = 0; arm < 2; arm++) {
-            Vec3 last = at;
-            for (int i = 1; i <= 16; i++) {
-                double s = i / 16.0;
-                double angle = turn + arm * Math.PI + s * Math.PI * 2.2;
-                Vec3 next = at.add(up.scale(Math.cos(angle) * radius * s))
-                        .add(side.scale(Math.sin(angle) * radius * s));
-                painter.lightLine(last, next, 0.03, PALE, Colors.alpha(0.8 * fade * s));
-                painter.glowLine(last, next, 0.2, ICE, Colors.alpha(0.35 * fade * s));
-                last = next;
-            }
         }
     }
 }

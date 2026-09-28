@@ -39,7 +39,8 @@ final class ThorBlows {
 
     static boolean start(ServerPlayer player, int index, float damage) {
         ThorBlow blow = ThorBlow.byIndex(index);
-        if (blow == null || player.isPassenger() || player.isSpectator() || !player.isAlive()) {
+        if (blow == null || player.isPassenger() || player.isSpectator() || !player.isAlive()
+                || blow.kit() == ThorBlow.Kit.MOVE || blow.kit() == ThorBlow.Kit.HAMMER && !Mjolnir.inHand(player)) {
             return false;
         }
         ServerLevel level = player.serverLevel();
@@ -146,8 +147,8 @@ final class ThorBlows {
         for (LivingEntity target : struck) {
             hit(level, thor, blow, target, damage);
         }
-        if (blow == ThorBlow.DOUBLE_HAMMER || blow == ThorBlow.THUNDER_PUNCH) {
-            boom(level, thor, blow, !struck.isEmpty());
+        if (blow == ThorBlow.THUNDER_PUNCH || blow == ThorBlow.HAMMER_SMASH) {
+            boom(level, thor, !struck.isEmpty());
         }
     }
 
@@ -155,7 +156,8 @@ final class ThorBlows {
     // next blow, the finishers throw it.
     private static void hit(ServerLevel level, ServerPlayer thor, ThorBlow blow, LivingEntity target, float damage) {
         target.invulnerableTime = 0;
-        if (!target.hurt(level.damageSources().playerAttack(thor), (float) (damage * blow.power()))) {
+        float charged = blow.kit() == ThorBlow.Kit.HAMMER ? ThorCharge.hammer(thor) : ThorCharge.fists(thor);
+        if (!target.hurt(level.damageSources().playerAttack(thor), (float) (damage * blow.power()) * charged)) {
             return;
         }
         Vec3 away = target.position().subtract(thor.position());
@@ -163,7 +165,7 @@ final class ThorBlows {
         double keep = 1.0 - Mth.clamp(target.getAttributeValue(Attributes.KNOCKBACK_RESISTANCE), 0.0, 1.0);
         Vec3 was = target.getDeltaMovement();
         double up = blow.lift() >= 0.0 ? blow.lift() * keep : Math.min(was.y, blow.lift());
-        target.setDeltaMovement(way.x * blow.push() * keep, up, way.z * blow.push() * keep);
+        target.setDeltaMovement(way.x * blow.push() * keep * charged, up, way.z * blow.push() * keep * charged);
         target.hasImpulse = true;
         target.hurtMarked = true;
         Vec3 at = target.getBoundingBox().getCenter().lerp(thor.getEyePosition(), 0.3);
@@ -180,20 +182,12 @@ final class ThorBlows {
         }
     }
 
-    // The two blows that end in thunder: a charged fist crackling out, both fists hammering the ground.
-    private static void boom(ServerLevel level, ServerPlayer thor, ThorBlow blow, boolean landed) {
-        if (blow == ThorBlow.THUNDER_PUNCH) {
-            Vec3 at = fist(thor, 0.8);
-            ParticleFx.sphereOut(level, ParticleFx.dust(GLOW, 1.2F), at, 18, 0.3);
-            ParticleFx.cloud(level, ParticleTypes.ELECTRIC_SPARK, at, 24, 0.35, 0.3);
-            level.playSound(null, at.x, at.y, at.z, SoundEvents.TRIDENT_THUNDER.value(), SoundSource.PLAYERS,
-                    landed ? 0.9F : 0.5F, 1.5F);
-            return;
-        }
-        Vec3 ground = thor.position().add(flat(thor.getLookAngle()).scale(1.4)).add(0.0, 0.1, 0.0);
-        ParticleFx.shockwave(level, ParticleFx.dust(GLOW, 1.1F), ground, 20, 0.3);
-        ParticleFx.cloud(level, ParticleTypes.ELECTRIC_SPARK, ground.add(0.0, 0.3, 0.0), 16, 0.5, 0.15);
-        level.playSound(null, ground.x, ground.y, ground.z, SoundEvents.MACE_SMASH_GROUND, SoundSource.PLAYERS, 0.9F,
-                0.9F);
+    // The two blows that end in thunder, crackling out of the fist or the hammer's head where they land.
+    private static void boom(ServerLevel level, ServerPlayer thor, boolean landed) {
+        Vec3 at = fist(thor, 0.8);
+        ParticleFx.sphereOut(level, ParticleFx.dust(GLOW, 1.2F), at, 18, 0.3);
+        ParticleFx.cloud(level, ParticleTypes.ELECTRIC_SPARK, at, 24, 0.35, 0.3);
+        level.playSound(null, at.x, at.y, at.z, SoundEvents.TRIDENT_THUNDER.value(), SoundSource.PLAYERS,
+                landed ? 0.9F : 0.5F, 1.5F);
     }
 }

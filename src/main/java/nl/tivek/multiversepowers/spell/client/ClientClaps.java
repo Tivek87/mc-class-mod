@@ -8,7 +8,6 @@ import net.minecraft.client.model.PlayerModel;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.entity.player.PlayerRenderer;
-import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
@@ -23,11 +22,9 @@ import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.RenderHandEvent;
 import nl.tivek.multiversepowers.MultiversePowers;
-import nl.tivek.multiversepowers.engine.client.fx.ParticleAmount;
 import nl.tivek.multiversepowers.engine.client.pose.Stance;
 import nl.tivek.multiversepowers.engine.client.render.FirstPersonArm;
 import nl.tivek.multiversepowers.engine.math.Ease;
-import nl.tivek.multiversepowers.engine.math.Vectors;
 import nl.tivek.multiversepowers.spell.ClapPayload;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
@@ -209,7 +206,7 @@ public final class ClientClaps {
         }
     }
 
-    // Static crackles in the hands of every caster winding up, louder and thicker the further along.
+    // A hum from every caster winding up, louder the further along.
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event) {
         Minecraft minecraft = Minecraft.getInstance();
@@ -223,17 +220,7 @@ public final class ClientClaps {
                 continue;
             }
             float charge = charge(caster, 0.0F);
-            Vec3 ahead = Vec3.directionFromRotation(0.0F, caster.getYRot());
-            Vec3 right = ahead.cross(Vectors.UP).normalize();
             Vec3 chest = caster.getEyePosition().add(0.0, -0.3 + 0.1 * charge, 0.0);
-            for (int side = -1; side <= 1; side += 2) {
-                Vec3 hand = chest.add(right.scale(side * (0.3 + 0.55 * charge))).add(ahead.scale(0.1 - 0.15 * charge));
-                for (int k = 0; k < 1 + (int) (3 * charge); k++) {
-                    ParticleAmount.add(level, level.random, ParticleTypes.ELECTRIC_SPARK,
-                            hand.x + (level.random.nextDouble() - 0.5) * 0.25, hand.y + (level.random.nextDouble()
-                            - 0.5) * 0.25, hand.z + (level.random.nextDouble() - 0.5) * 0.25, 0.0, 0.0, 0.0);
-                }
-            }
             if ((level.getGameTime() + entry.getIntKey()) % 5 == 0) {
                 level.playLocalSound(chest.x, chest.y, chest.z, SoundEvents.COPPER_BULB_TURN_ON, SoundSource.PLAYERS,
                         0.25F + 0.35F * charge, 1.5F + 0.5F * charge, false);

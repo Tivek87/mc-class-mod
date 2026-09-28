@@ -24,14 +24,15 @@ import nl.tivek.multiversepowers.character.GameCharacter;
 import nl.tivek.multiversepowers.character.client.ClientCharacter;
 import nl.tivek.multiversepowers.character.client.MouseHold;
 import nl.tivek.multiversepowers.character.thor.ThorBlow;
+import nl.tivek.multiversepowers.character.thor.ThorStatePayload;
 import nl.tivek.multiversepowers.engine.client.fx.CameraShake;
 import nl.tivek.multiversepowers.spell.client.ClientClaps;
 
 // Thor's combo in his own game: every click throws the next blow, picked to flow out of the last as a fighter's
 // combination does (the other hand next, the short blows up close and the long ones further off, low blows down low,
-// now and then a kick, the big finishers once the combo has built up). A click that comes while a blow is still
-// going waits for it. It also shows his own thunderclap wind-up while the button is held, and tells the server so
-// the others see it.
+// now and then a kick, the big finishers once the combo has built up). With the hammer in hand it swings the hammer;
+// in flight only his right hand strikes. A click that comes while a blow is still going waits for it. It also shows
+// his own thunderclap wind-up while the button is held, and tells the server so the others see it.
 @EventBusSubscriber(modid = MultiversePowers.MODID, value = Dist.CLIENT)
 public final class ThorCombo {
     // Within this many ticks after a blow ends the next still counts as the same combo.
@@ -72,7 +73,7 @@ public final class ThorCombo {
         if (sending) {
             return data;
         }
-        if (ThorMotion.flying() || !player.getMainHandItem().isEmpty()) {
+        if (!player.getMainHandItem().isEmpty()) {
             return -1;
         }
         if (!ready()) {
@@ -86,9 +87,20 @@ public final class ThorCombo {
         return last == null || ClientThor.ticks() - startedAt >= last.ready();
     }
 
+    // Which blows he may throw now: the hammer's with it in hand, his right hand's alone in flight (the left holds the
+    // hammer), else his fists and feet.
+    private static boolean fits(ThorBlow blow, LocalPlayer player) {
+        if (ThorMotion.flying()) {
+            return blow.oneHanded();
+        }
+        ClientThor.View view = ClientThor.view(player);
+        boolean armed = view != null && view.has(ThorStatePayload.ARMED) && !view.has(ThorStatePayload.THROWN);
+        return blow.kit() == (armed ? ThorBlow.Kit.HAMMER : ThorBlow.Kit.FISTS);
+    }
+
     private static ThorBlow begin(LocalPlayer player) {
         int now = ClientThor.ticks();
-        if (last == null || now - startedAt > last.ticks() + CHAIN || last.finisher()) {
+        if (last == null || now - startedAt > last.ticks() + CHAIN || last.finisher() || !fits(last, player)) {
             count = 0;
             RECENT.clear();
         }
@@ -98,7 +110,11 @@ public final class ThorCombo {
         startedAt = now;
         count++;
         RECENT.addFirst(blow);
-        while (RECENT.size() > REMEMBERED) {
+        int kept = 0;
+        for (ThorBlow any : ThorBlow.values()) {
+            kept += fits(any, player) ? 1 : 0;
+        }
+        while (RECENT.size() > Math.min(REMEMBERED, kept / 3)) {
             RECENT.removeLast();
         }
         ClientThor.predictBlow(player, blow.ordinal());
@@ -161,13 +177,18 @@ public final class ThorCombo {
         ThorBlow[] all = ThorBlow.values();
         double[] weights = new double[all.length];
         double total = 0.0;
+        ThorBlow first = null;
         for (ThorBlow blow : all) {
+            if (!fits(blow, player)) {
+                continue;
+            }
+            first = first == null ? blow : first;
             double weight = weight(blow, far, low, high, running);
             weights[blow.ordinal()] = weight;
             total += weight;
         }
         if (total <= 0.0) {
-            return ThorBlow.JAB;
+            return first == null ? ThorBlow.JAB : first;
         }
         double pick = RANDOM.nextDouble() * total;
         for (ThorBlow blow : all) {
@@ -176,7 +197,7 @@ public final class ThorCombo {
                 return blow;
             }
         }
-        return ThorBlow.CROSS;
+        return first == null ? ThorBlow.CROSS : first;
     }
 
     private static double weight(ThorBlow blow, double far, boolean low, boolean high, boolean running) {
@@ -193,7 +214,8 @@ public final class ThorCombo {
         }
         if (last == null || count == 0) {
             boolean opener = blow == ThorBlow.JAB || blow == ThorBlow.CROSS || blow == ThorBlow.LEAD_STRAIGHT
-                    || blow == ThorBlow.BACKFIST || blow == ThorBlow.PALM_STRIKE;
+                    || blow == ThorBlow.BACKFIST || blow == ThorBlow.PALM_STRIKE || blow == ThorBlow.HAMMER_THRUST
+                    || blow == ThorBlow.HAMMER_SWING;
             weight *= opener ? 2.0 : 0.6;
         } else {
             // The hands take turns, as a boxer's combinations flow: the other side comes next.
@@ -234,7 +256,7 @@ public final class ThorCombo {
         boolean thor = ClientCharacter.active() == GameCharacter.THOR;
         int now = ClientThor.ticks();
         if (thor && waitingSince >= 0 && ready()) {
-            if (now - waitingSince <= WAITS && !ThorMotion.flying() && player.getMainHandItem().isEmpty()) {
+            if (now - waitingSince <= WAITS && player.getMainHandItem().isEmpty()) {
                 send(player, begin(player));
             }
             waitingSince = -1;
@@ -279,7 +301,7 @@ public final class ThorCombo {
         if (wentOff) {
             return;
         }
-        boolean want = thor && held >= CHARGE_SHOWN && !ThorMotion.flying()
+        boolean want = thor && held >= CHARGE_SHOWN && ClientCharacter.inPlay(clap, player)
                 && ClientCharacter.cooldownLeft(clap.slot()) == 0;
         if (want != charging) {
             charge(player, clap, want);
