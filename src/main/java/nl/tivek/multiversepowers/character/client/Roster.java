@@ -86,7 +86,7 @@ public final class Roster {
             new Entry("general_kai", Franchise.DREAMWORKS),
             new Entry("po", Franchise.DREAMWORKS),
             new Entry("jack_frost", Franchise.DREAMWORKS),
-            new Entry("merlin", Franchise.DREAMWORKS));
+            new Entry("merlin", Franchise.OTHER));
 
     private static final Map<Franchise, List<Entry>> BY_FRANCHISE = new EnumMap<>(Franchise.class);
 

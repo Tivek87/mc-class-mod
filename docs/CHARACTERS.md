@@ -1,6 +1,15 @@
-# Multiverse Personages (1 t/m 29)
+# Multiverse Personages (1 t/m 34)
 
-Dit document bevat de lore, achtergrond en belangrijkste krachten van de 29 personages uit het multiversum. Dit zijn hun officiële krachten uit de strips, films en verhalen, zonder vertaling naar Minecraft-spells of spelmechanieken.
+Dit document bevat de lore, achtergrond en belangrijkste krachten van alle 34 personages uit het multiversum. Dit zijn hun officiële krachten uit de strips, films, series en verhalen, ingedeeld volgens de 6 categorieën in het personage-wiel.
+
+| Categorie (Wiel) | Aantal | Personages |
+|---|---:|---|
+| **Marvel** | 15 | **Doc Ock**, Mysterio, Doctor Strange, Doctor Doom, Thanos, Loki, Iron Man, Magneto, Galactus, Spider-Man, The Hulk, Venom, Wolverine, Silver Surfer, The Sentry |
+| **DC** | 6 | **Green Lantern**, The Flash, Black Adam, Doctor Manhattan, Darkseid, Doctor Fate |
+| **Disney** | 2 | Bill Cipher *(Gravity Falls)*, Darth Vader *(Star Wars)* |
+| **Warner Bros.** | 1 | Rick Sanchez *(Rick and Morty)* |
+| **DreamWorks** | 4 | Megamind, General Kai, Po, Jack Frost |
+| **Overig (Other)** | 6 | **Thor** *(Noorse mythologie / God of War / Marvel)*, The Terminator, Spawn, Dracula, Odin, Merlin |
 
 ---
 
@@ -99,7 +108,7 @@ Dit document bevat de lore, achtergrond en belangrijkste krachten van de 29 pers
 ---
 
 ### 8. Rick Sanchez (Dimension C-137)
-- **Franchise:** Rick and Morty (Adult Swim)
+- **Franchise:** Warner Bros. (Rick and Morty, Adult Swim)
 - **Wie hij is:** Een nihilistische, cynische wetenschapper en de slimste man in het bekende multiversum.
 - **Lore & Achtergrond:** Nadat een alternatieve versie van hemzelf zijn vrouw Diane en dochter Beth vermoordde, zwierf Rick door oneindige realiteiten op zoek naar wraak. Uiteindelijk streek hij neer in dimensie C-137 bij een alternatieve versie van zijn inmiddels volwassen dochter en haar gezin. Rick beschouwt moraliteit, religie en overheden als zinloos. Samen met zijn kleinzoon Morty beleeft hij levensgevaarlijke avonturen door de verste uithoeken van de ruimte en parallelle dimensies.
 - **Belangrijkste krachten & gaven:**
@@ -168,18 +177,18 @@ Dit document bevat de lore, achtergrond en belangrijkste krachten van de 29 pers
 ---
 
 ### 13. Thor (Thor Odinson)
-- **Franchise:** Marvel Comics & God of War (Hybride)
+- **Franchise:** Overig (Noorse mythologie, *God of War: Ragnarök* & Marvel Comics)
 - **Wie hij is:** De ontzagwekkende God van de Donder; een krachtige mix tussen de nobele superheld van Marvel en de rauwe, bloeddorstige en zwaargebouwde Noorse krijgergod uit *God of War (Ragnarök)*.
-- **Lore & Achtergrond:** Deze versie van Thor combineert het heroïsche hart van de Marvel-krijger met de meedogenloze wreedheid en oerkracht van de mythische Noorse Aesir-god. Hij is een bebaarde, imposante geweldenaar die leeft voor de strijd, drinkt als een tempelier en de donder over zijn vijanden laat neerdalen. Hij kent momenten van diepe eer en loyaliteit aan zijn bondgenoten, maar ontketent in gevechten een ongeëvenaarde woede en brute kracht waarmee hij reuzen, goden en monsters velt met zijn legendarische hamer Mjölnir.
+- **Lore & Achtergrond:** Deze versie van Thor combineert het heroïsche hart van de Marvel-krijger met de meedogenloze wreedheid en oerkracht van de mythische Noorse Aesir-god. Hij is een bebaarde, imposante geweldenaar die leeft voor de strijd, drinkt als een tempelier en de donder over zijn vijanden laat neerdalen. Hij kent momenten van diepe eer en loyaliteit aan zijn bondgenoten, maar ontketent in gevechten een ongeëvenaarde woede en brute kracht waarmee hij reuzen, goden en monsters velt met zijn blote vuisten of zijn legendarische hamer Mjölnir.
 - **Belangrijkste krachten & gaven:**
-  - **Noorse oerkracht & Berserker-rage (God of War):** Kolossale brute slagkracht, meedogenloos hand-to-hand brawling, en een onstuitbare vechtwoede die zijn klappen laadt met verpletterende fysieke impact.
-  - **Bliksem- & Weersbeheersing (Marvel & GoW):** Complete controle over stormen, orkanen en bliksem; kan zowel gerichte kosmische bliksemschichten afvuren als verwoestende elektrische velden om zich heen laten exploderen.
+  - **Noorse oerkracht & Berserker-brawling (God of War):** Kolossale brute slagkracht, meedogenloos vuist- en trapwerk (*Thunder Fists*), vijanden bij de keel grijpen om ze tegen de grond te smijten of er vanuit een sprong bovenop te duiken (*Grab* & *Grab Dash*), en een oorverdovende *Thunderclap*.
+  - **Bliksem- & Weersbeheersing (Marvel & GoW):** Complete controle over stormen en bliksem; kan zowel gerichte bliksemschichten uit de hemel laten inslaan als een elektrische *Sky Shockwave* om zich heen laten ontploffen of zichzelf en Mjölnir opladen in *Charged Mode*.
   - **Mjölnir meesterschap:**
-    - Dodelijke worpen waarbij de zware hamer vijanden verplettert en direct terugvliegt naar Thors hand.
-    - *Ground Slam*: hamer met gigantisch geweld in de grond slaan voor aardbevingen en elektrische schokgolven.
-    - Hamer-voortstuwing: zichzelf met Mjölnir door de lucht lanceren om te vliegen of vijanden te rammen.
-  - **Bliksem-resurrectie / Defibrillatie:** Kan zijn eigen hart en levenskracht herstarten via een brute interne stroomstoot van zuivere bliksem wanneer hij zwaar gewond raakt.
-  - **Bifrost-energie:** Manipulatie van kosmische Bifrost-straling voor dimensionale doorgang en energie-aanvallen.
+    - Dodelijke worpen waarbij de zware hamer vijanden verplettert en vanzelf terugvliegt naar Thors hand.
+    - *Throw and Follow*: Mjölnir wegslingeren en er als een bliksemschicht achteraan getrokken worden.
+    - *Hammer Uppercut* & zware slagen die schilden wegbeuken en vijanden hoog de lucht in slaan.
+  - **Goddelijke sprong & Bliksemvlucht (*Lightning Speed*):** Kan metershoog springen, vrij door het luchtruim vliegen en overgaan in *Lightning Speed*, waarbij hij zelf verandert in een razendsnelle bliksemschicht die onderweg vijanden treft en met een donderslag landt.
+  - **Bliksem-resurrectie & Bifrost-energie:** Kan zijn eigen hart herstarten met een interne stroomstoot en Bifrost-straling beheersen.
 
 ---
 
@@ -267,7 +276,7 @@ Dit document bevat de lore, achtergrond en belangrijkste krachten van de 29 pers
 ---
 
 ### 20. The Terminator (T-800)
-- **Franchise:** The Terminator
+- **Franchise:** Overig (*The Terminator*, StudioCanal / Skydance)
 - **Wie hij is:** Een cybernetische moordmachine ontworpen door het opstandige militaire computernetwerk Skynet.
 - **Lore & Achtergrond:** Na de nucleaire apocalyps (*Judgment Day*) bouwde Skynet de T-800 Infiltrator: een zwaar metalen endoskelet bedekt met levend menselijk weefsel, bloed en haar. Hierdoor kan hij niet van een echt mens worden onderscheiden door het menselijk verzet. Skynet stuurt hem door de tijd naar het verleden om sleutelfiguren van het verzet uit te schakelen voordat ze volwassen zijn. De T-800 kent geen medelijden, geen angst en stopt pas als zijn doelwit dood is.
 - **Belangrijkste krachten & gaven:**
@@ -281,7 +290,7 @@ Dit document bevat de lore, achtergrond en belangrijkste krachten van de 29 pers
 ---
 
 ### 21. Spawn (Al Simmons)
-- **Franchise:** Spawn (Image Comics)
+- **Franchise:** Overig (*Spawn*, Image Comics)
 - **Wie hij is:** Een vermoorde huurmoordenaar van de CIA die herrees als een demonische bevelhebber van de hel.
 - **Lore & Achtergrond:** Al Simmons werd tijdens een geheime missie verraden en levend verbrand door zijn eigen superieuren. In de hel sloot hij een wanhopige deal met de demon Malebolgia: hij mocht terugkeren naar de aarde om zijn vrouw Wanda nog één keer te zien, in ruil voor zijn ziel als generaal van het leger van de hel. Hij keerde echter terug met een verminkt lichaam, een levend demonisch necroplasma-pantser en een verlies van vijf jaar tijd, waarin zijn vrouw hertrouwd was. Verbitterd verklaart hij de oorlog aan zowel de hemel als de hel.
 - **Belangrijkste krachten & gaven:**
@@ -295,21 +304,22 @@ Dit document bevat de lore, achtergrond en belangrijkste krachten van de 29 pers
 ---
 
 ### 22. Bill Cipher
-- **Franchise:** Gravity Falls (Disney)
+- **Franchise:** Disney (*Gravity Falls*)
 - **Wie hij is:** Een eeuwenoude, almachtige dromendemon uit de tweedimensionale nachtmerriedimensie.
-- **Lore & Achtergrond:** Bill verveelde zich dood in zijn platte thuisdimensie en besloot deze te verbranden. Sindsdien zoekt hij naar een manier om fysiek binnen te dringen in onze driedimensionale wereld om pure chaos (*Weirdmageddon*) te ontketenen. Hij manifesteert zich als een gele driehoek met één oog en een hoge hoed. Hij sluit listen en 'deals' met wanhopige mensen door hun gedachten en dromen binnen te dringen.
+- **Lore & Achtergrond:** Bill verveelde zich dood in zijn platte thuisdimensie en besloot deze te verbranden. Sindsdien zoekt hij naar een manier om fysiek binnen te dringen in onze driedimensionale wereld om pure chaos (*Weirdmageddon*) te ontketenen. Hij manifesteert zich als een gele driehoek met één oog en een hoge hoed. Hij sluit listen en 'deals' met wanhopige mensen door hun gedachten en dromen binnen te dringen, maar zodra hij fysieke vorm krijgt en echt woedend wordt, groeit hij uit tot een kolossaal rood, meerarmig nachtmerrie-monster.
 - **Belangrijkste krachten & gaven:**
   - Realiteitsvervorming op kosmisch niveau (breekt alle wetten van de fysica en logica).
-  - Vormgeven van materie en ruimte (verandert objecten in bizarre vormen en keert zwaartekracht om).
-  - Pyrokinese: wekt mystieke blauwe vlammen op.
+  - Vormgeven van materie en ruimte (verandert objecten en mensen in bizarre vormen of steen en keert zwaartekracht om).
+  - **Nachtmerrie- / Rode Monster-vorm:** Kan bij extreme woede transformeren in een gigantische, bloedrode driedimensionale piramide-gedaante met meerdere armen, klauwen en verpletterende fysieke kracht.
+  - Pyrokinese: wekt mystieke blauwe vlammen en schokgolven van pure waanzin op.
   - Dromen en geesten binnendringen, gedachten manipuleren en lichamen overnemen (*possession*).
-  - Dodelijke energiestralen uit zijn centrale oog.
+  - Dodelijke energiestralen uit zijn centrale oog die zelfs kosmische wezens kunnen vernietigen.
   - Levitatie, vliegen en manipulatie van de tijd.
 
 ---
 
 ### 23. Darth Vader (Anakin Skywalker)
-- **Franchise:** Star Wars
+- **Franchise:** Disney (*Star Wars*, Lucasfilm)
 - **Wie hij is:** De gevreesde Opperbevelhebber van het Galactische Keizerrijk en voormalig Jedi-ridder.
 - **Lore & Achtergrond:** Anakin Skywalker gold als de 'Uitverkorene' die balans zou brengen in de Force. Uit angst om zijn vrouw Padmé te verliezen en gemanipuleerd door kanselier Palpatine (Darth Sidious), bezweek hij voor de verleidingen van de Dark Side. Na een catastrofaal duel op de lavaplaneet Mustafar raakten zijn ledematen en longen verwoest. Opgesloten in een zwart gepantserd levensondersteunend pak regeert hij het sterrenstelsel met vrees en wreedheid, totdat het goede diep in hem opnieuw wordt aangesproken door zijn zoon Luke.
 - **Belangrijkste krachten & gaven:**
@@ -324,7 +334,7 @@ Dit document bevat de lore, achtergrond en belangrijkste krachten van de 29 pers
 ---
 
 ### 24. Doctor Manhattan (Dr. Jonathan Osterman)
-- **Franchise:** Watchmen (DC Comics)
+- **Franchise:** DC Comics (*Watchmen*)
 - **Wie hij is:** Een kernfysicus die na een laboratoriumramp transformeerde in een goddelijk wezen.
 - **Lore & Achtergrond:** In 1959 raakte Jon Osterman per ongeluk opgesloten in een testkamer voor intrinsieke velden. Zijn fysieke lichaam werd volledig ontbonden op subatomair niveau. Maanden later wist zijn bewustzijn zijn eigen lichaam stukje bij beetje weer op te bouwen als een naakte, blauw gloeiende man. Hij ervaart verleden, heden en toekomst gelijktijdig en ziet materie puur als atomen. Door zijn goddelijke alwetendheid vervreemdt hij steeds meer van de menselijke emoties en moraliteit.
 - **Belangrijkste krachten & gaven:**
@@ -410,3 +420,69 @@ Dit document bevat de lore, achtergrond en belangrijkste krachten van de 29 pers
   - Grote wijsheid, runenmagie en blikken in de toekomst.
   - Gedaanteverwisseling en reizen tussen de negen werelden.
   - Goddelijke kracht en een bijna eeuwig leven; de *Odinsslaap* om zijn krachten te herstellen.
+
+---
+
+### 30. Megamind
+- **Franchise:** DreamWorks (*Megamind*)
+- **Wie hij is:** Een briljant, blauwhuidig buitenaards genie met een enorm hoofd en een voorliefde voor theatrale superschurken-presentatie, die uitgroeit tot de nieuwe beschermer van Metro City.
+- **Lore & Achtergrond:** Als baby werd Megamind vanaf een stervende planeet naar de aarde gestuurd, precies tegelijk met zijn eeuwige rivaal Metro Man. Terwijl Metro Man opgroeide in weelde en de geliefde superheld van Metro City werd, belandde Megamind in de gevangenis en nam hij de rol van superschurk aan. Toen het hem op een dag daadwerkelijk lukte om Metro Man te "verslaan", raakte hij in een diepe identiteitscrisis zonder tegenstander. Nadat zijn eigen creatie Tighten ontspoorde en de stad bedreigde, ontdekte Megamind dat zijn ware roeping het heldendom is.
+- **Belangrijkste krachten & gaven:**
+  - Buitenaards super-intellect en meester-uitvinder van futuristische gadgets en oorlogsmachines.
+  - *De-Gun (Dehydration Gun)*: een pistool dat objecten en levende wezens direct verandert in droge, blauwe kubusjes (en weer tot leven wekt met water).
+  - *Brainbots*: zwermen vliegende mechanische kwallen met grijpkaken, zoeklichten en elektrische schokken die op zijn bevelen reageren en hem kunnen dragen of vormen aannemen.
+  - *Black Mamba* & *Giant Robot Suit*: gevechtspakken en gigantische mechs met bovenmenselijke slagkracht en raketten.
+  - *Holographic Disguise Watch* & *Invisible Car*: geavanceerde holografische vermommingen en cloaking-technologie.
+  - *Death Ray* (zonne-satelliet): een verwoestende orbitale laserstraal vanuit de ruimte.
+
+---
+
+### 31. General Kai (De Verzamelaar / The Beast of Vengeance)
+- **Franchise:** DreamWorks (*Kung Fu Panda 3*)
+- **Wie hij is:** Een eeuwenoude, bovennatuurlijke jak-krijgsheer en geesten-generaal die de Chi (levensenergie) van verslagen kungfu-meesters steelt.
+- **Lore & Achtergrond:** Vijfhonderd jaar geleden waren Kai en meester Oogway wapenbroeders en de beste vrienden. Toen Oogway zwaargewond raakte en werd genezen door de panda's met de kracht van Chi, raakte Kai geobsedeerd door het stelen van die levensenergie om zelf almachtig te worden. Oogway versloeg hem en verbande hem naar het Geestenrijk (*Spirit Realm*). Vijf eeuwen lang versloeg Kai daar elke meester en stal hun Chi, tot hij sterk genoeg was om terug te keren naar de sterfelijke wereld om Oogway's nalatenschap te vernietigen.
+- **Belangrijkste krachten & gaven:**
+  - *Jade Swords*: twee gigantische groene jade-zwaarden bevestigd aan zware ijzeren kettingen, waarmee hij op grote afstand aanvalt, vijanden grijpt, rotsblokken opensplijt en zichzelf voorttrekt.
+  - *Chi-absorptie*: zuigt de levensenergie van verslagen vijanden en meesters op en verandert hen in groene jade-amuletten aan zijn riem, waardoor zijn eigen kracht blijft groeien.
+  - *Jombies (Jade Zombies)*: kan zijn gestolen jade-amuletten op de grond werpen om een leger van versteende, groene jade-krijgers op te roepen die hij mentaal bestuurt.
+  - Bovennatuurlijke Geestenrijk-fysiologie: kolossale fysieke kracht, immuun voor gewone sterfelijke aanvallen en in staat om tussen het Geestenrijk en de sterfelijke wereld te reizen.
+
+---
+
+### 32. Po (De Drakenkrijger / The Dragon Warrior)
+- **Franchise:** DreamWorks (*Kung Fu Panda*)
+- **Wie hij is:** Een enthousiaste reuzenpanda en noedelkok die tegen alle verwachtingen in werd uitverkoren tot de legendarische *Dragon Warrior* en meester van Chi.
+- **Lore & Achtergrond:** Als wees-panda werd Po opgevoed door de ganzen-noedelkok Mr. Ping in de Valley of Peace. Hij droomde ervan om zij aan zij te vechten met zijn idolen, de *Furious Five*. Tijdens het toernooi wees meester Oogway tot ieders verbazing Po aan als de Drakenkrijger. Onder de strenge training van meester Shifu leerde Po zijn onhandige postuur en grote eetlust om te zetten in een onvoorspelbare en onverslaanbare kungfu-stijl. Uiteindelijk ontdekte hij zijn ware verleden en leerde hij de oude kunst van Chi en innerlijke vrede beheersen.
+- **Belangrijkste krachten & gaven:**
+  - *Meester van Chi & de Gouden Draak*: kan gouden Chi-energie kanaliseren om bondgenoten te genezen, schokgolven af te vuren en in het Geestenrijk een gigantische gouden aura-draak rond zichzelf te vormen.
+  - *Wuxi Finger Hold ("Skadoosh")*: een legendarische greep op één vinger die bij het buigen van zijn pink een verblindende gouden Chi-schokgolf ontketent en het doelwit naar het Geestenrijk stuurt.
+  - *Inner Peace*: kan razendsnelle projectielen, vuurballen en kanonskogels met vloeiende tai-chi-bewegingen opvangen en met dubbele kracht terugkaatsen.
+  - Ongebruikelijke panda-fysiologie: zijn zachte buik absorbeert en kaatst zware klappen terug, en zijn zenuwbanen liggen te diep voor verlammende drukpunt-aanvallen.
+  - Meesterschap over de *Staff of Wisdom*: opent portalen naar het Geestenrijk en dient als krachtig gevechtswapen.
+
+---
+
+### 33. Jack Frost
+- **Franchise:** DreamWorks (*Rise of the Guardians*)
+- **Wie hij is:** De onsterfelijke geest van de winter en beschermer van "Fun" (plezier), gewapend met een magische houten staf die ijs, sneeuw en vorst beheerst.
+- **Lore & Achtergrond:** Driehonderd jaar geleden offerde een tienerjongen zijn leven op door zijn zusje van het brekende ijs van een bevroren vijver te redden. De Man in de Maan wekte hem uit het ijskoude water weer tot leven als de onsterfelijke wintergeest *Jack Frost*. Eeuwenlang zwierf hij eenzaam rond omdat niemand in hem geloofde en mensen dwars door hem heen liepen. Pas toen de boeman Pitch Black de dromen van kinderen bedreigde, sloot Jack zich aan bij de *Guardians*, ontdekte hij zijn vergeten herinneringen en werd hij eindelijk zichtbaar voor kinderen die in hem geloven.
+- **Belangrijkste krachten & gaven:**
+  - *Cryokinese (IJs- & Vorstmanipulatie)* via zijn staf:
+    - Bevriest water, grond, muren en vijanden op slag in grillige vorstpatronen.
+    - Schiet ijsstralen, sneeuwstormen, scherpe ijspieken en bevriezende schokgolven af.
+    - Creëert glijdende ijspaden om razendsnel overheen te schaatsen en sneeuwcreaties die tot leven komen.
+  - *Rijden op de Wind*: roept de wind aan om gewichtloos en op hoge snelheid door de lucht te zweven en te vliegen.
+  - Onsterfelijke geest-fysiologie: veroudert nooit, is volledig immuun voor extreme kou en kan enkel op zijn volledige kracht komen zolang zijn staf heel is.
+
+---
+
+### 34. Merlin (Merlijn de Tovenaar)
+- **Franchise:** Overig (Arthuriaanse legenden & Keltische mythologie; talloze boeken, films en verhalen)
+- **Wie hij is:** De beroemdste en machtigste tovenaar uit de westerse mythologie: raadsheer van Koning Arthur, profeet van Camelot en meester over de oerkrachten van de natuur en magie.
+- **Lore & Achtergrond:** Volgens de eeuwenoude Arthur-legenden (van Geoffrey van Monmouth en *Le Morte d'Arthur* tot moderne verhalen) werd Merlijn geboren uit een sterfelijke vrouw en een bovennatuurlijke geest (een *incubus*), waardoor hij over bovenmenselijke profetische gaven en oermagie beschikte. Hij leidde de opkomst van Koning Arthur, plaatste het zwaard in de steen, hielp bij het verkrijgen van Excalibur via de *Vrouwe van het Meer*, stichtte de Ronde Tafel in Camelot en versloeg duistere tovenaars en draken, tot hij uiteindelijk door zijn leerlinge Nimue (Viviane) in een eeuwigdurende betovering werd opgesloten in een boom of kristallen grot.
+- **Belangrijkste krachten & gaven:**
+  - *Oermagie & Elementaire Beheersing*: roept stormen, bliksem, vuur, aardbevingen en dichte mist op met een enkel woord of gebaar van zijn staf.
+  - *Gedaanteverwisseling (Shapeshifting)*: verandert zichzelf moeiteloos in elk dier (zoals een havik, hert, wolf of draak) of in een jongeman, bedelaar of schaduw.
+  - *Profetie & Tijdbeheersing*: overziet verleden, heden en toekomst; volgens veel legenden leeft hij zelfs achterstevoren door de tijd.
+  - *Telekinese, Illusies & Betoveringen*: verplaatst kolossale rotsformaties (zoals het bouwen van Stonehenge), weeft onzichtbaarheidsmantels en smeedt onbreekbare magische zegels en wapens.
+  - *Astrale projectie & Teleportatie*: reist tussen de sterfelijke wereld en het mystieke eiland Avalon.
