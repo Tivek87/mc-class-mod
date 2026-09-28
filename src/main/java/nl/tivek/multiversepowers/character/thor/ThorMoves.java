@@ -18,6 +18,8 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.LivingDamageEvent;
 import net.neoforged.neoforge.event.entity.living.LivingFallEvent;
 import nl.tivek.multiversepowers.MultiversePowers;
+import nl.tivek.multiversepowers.character.CharacterConfig;
+import nl.tivek.multiversepowers.character.GameCharacter;
 import nl.tivek.multiversepowers.engine.effect.Effects;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 import nl.tivek.multiversepowers.engine.world.LoadedWorld;
@@ -33,11 +35,8 @@ public final class ThorMoves {
     static final int FLOAT_TICKS = 50;
     private static final int CUSHION = 10;
     private static final int LONGEST_JUMP = 400;
-    // A hit this hard (half hearts) knocks him out of the sky.
-    private static final float STUN = 5.0F;
     // Standing this long in flight lands him, if his game never said so.
     private static final int GROUNDED = 12;
-    static final double BLINK = 15.0;
 
     private static final Map<UUID, ThorMoves> ALL = new HashMap<>();
 
@@ -228,7 +227,7 @@ public final class ThorMoves {
     // Where a blink from `from` along the look ends: half a block short of the first block in the way.
     static Vec3 blinkEnd(ServerLevel level, ServerPlayer player, Vec3 from) {
         Vec3 look = player.getLookAngle();
-        Vec3 end = from.add(look.scale(BLINK));
+        Vec3 end = from.add(look.scale(GameCharacter.THOR.byName("air_blink").value("distanceBlocks")));
         HitResult hit = LoadedWorld.clip(level, new ClipContext(from, end, ClipContext.Block.COLLIDER,
                 ClipContext.Fluid.NONE, player));
         if (hit.getType() == HitResult.Type.MISS) {
@@ -334,12 +333,17 @@ public final class ThorMoves {
 
     @SubscribeEvent
     public static void onHurt(LivingDamageEvent.Post event) {
-        if (event.getEntity() instanceof ServerPlayer player && event.getNewDamage() >= STUN && flying(player)) {
+        if (event.getEntity() instanceof ServerPlayer player && event.getNewDamage() >= stun() && flying(player)) {
             land(player, false);
         }
     }
 
     ServerPlayer owner() {
         return this.owner;
+    }
+
+    // Taken as set, not by the damage multiplier: it is how hard a hit on him must be.
+    private static double stun() {
+        return CharacterConfig.value(GameCharacter.THOR.byName("flight"), "stunDamage");
     }
 }

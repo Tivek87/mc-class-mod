@@ -41,9 +41,7 @@ public final class CapeCloth {
     private static final float LONG = 16.0F;
     private static final float TOP = 0.5F;
     private static final float BACK = 2.2F;
-    private static final int SUBSTEPS = 8;
     private static final double TICK = 0.05;
-    private static final double NEAR = 32.0;
     private static final double LEAP = 4.0;
     private static final int FORGET = 20;
     // The round bodies the cape keeps off: three down the back, one down each leg and arm (from, to, radius; pixels).
@@ -91,7 +89,8 @@ public final class CapeCloth {
         ResourceLocation texture = player.getSkin().capeTexture();
         Minecraft minecraft = Minecraft.getInstance();
         Vec3 camera = minecraft.gameRenderer.getMainCamera().getPosition();
-        if (texture == null || player.distanceToSqr(camera) > NEAR * NEAR) {
+        double near = ClientSettings.get(ClientSettings.CAPE_REACH);
+        if (texture == null || player.distanceToSqr(camera) > near * near) {
             return false;
         }
         Cape cape = CAPES.get(player.getId());
@@ -267,7 +266,7 @@ public final class CapeCloth {
                 cloth.capsule(cape.bodies[o], cape.bodies[o + 1], cape.bodies[o + 2], cape.bodies[o + 3],
                         cape.bodies[o + 4], cape.bodies[o + 5], cape.bodies[o + 6]);
             }
-            cloth.step(TICK, SUBSTEPS, Blocks.NONE);
+            cloth.step(TICK, ClientSettings.get(ClientSettings.CAPE_STEPS), Blocks.NONE);
         }
     }
 

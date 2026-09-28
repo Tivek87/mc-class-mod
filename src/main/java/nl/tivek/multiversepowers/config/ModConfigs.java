@@ -10,6 +10,7 @@ import net.neoforged.fml.event.config.ModConfigEvent;
 import net.neoforged.neoforge.common.ModConfigSpec;
 import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.character.CharacterConfig;
+import nl.tivek.multiversepowers.spell.SpellRules;
 import nl.tivek.multiversepowers.stamina.StaminaConfig;
 
 public final class ModConfigs {
@@ -25,6 +26,7 @@ public final class ModConfigs {
     public static void register(ModContainer container, IEventBus modEventBus) {
         world(container, "general", PowerRules.SPEC);
         world(container, "stamina", StaminaConfig.SPEC);
+        world(container, "spells", SpellRules.SPEC);
         CharacterConfig.register(container, modEventBus);
         modEventBus.addListener(ModConfigEvent.Reloading.class, WorldSettings::onReload);
     }

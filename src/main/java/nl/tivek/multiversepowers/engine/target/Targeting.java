@@ -20,6 +20,7 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.neoforged.neoforge.common.Tags;
 import nl.tivek.multiversepowers.MultiversePowers;
+import nl.tivek.multiversepowers.config.PowerRules;
 import nl.tivek.multiversepowers.engine.entity.HeldMobs;
 import nl.tivek.multiversepowers.faction.Factions;
 
@@ -110,7 +111,8 @@ public final class Targeting {
             return false;
         }
         if (entity instanceof Player other) {
-            return player.server.isPvpAllowed() && !other.isCreative() && player.canHarmPlayer(other);
+            return player.server.isPvpAllowed() && PowerRules.hurtPlayers() && !other.isCreative()
+                    && player.canHarmPlayer(other);
         }
         return true;
     }

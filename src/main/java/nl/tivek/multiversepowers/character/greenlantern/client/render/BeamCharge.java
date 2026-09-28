@@ -208,7 +208,7 @@ public final class BeamCharge {
             this.x = this.player.getX();
             this.y = this.player.getEyeY();
             this.z = this.player.getZ();
-            this.volume = 0.3F + 0.7F * charge;
+            this.volume = (0.3F + 0.7F * charge) * ClientSettings.factor(ClientSettings.POWER_HUM);
             this.pitch = 0.5F + 1.5F * charge;
         }
     }

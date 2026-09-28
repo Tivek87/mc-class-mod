@@ -54,7 +54,6 @@ public final class Ragdolls {
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final TagKey<EntityType<?>> NEVER = tag("ragdoll_none");
     private static final TagKey<EntityType<?>> STIFF = tag("ragdoll_stiff");
-    private static final int SUBSTEPS = 20;
     // A body that dies standing still tips over sideways as it goes limp (a stiff one falls as one piece), turning
     // this fast (radians per second); one knocked away harder than CALM falls the way it was knocked.
     private static final double TOPPLE = 2.0;
@@ -64,9 +63,8 @@ public final class Ragdolls {
     // A creature knocked limp along the ground goes down after this many ticks; the longest it may fly limp.
     private static final int SHRUG = 3;
     private static final int LONGEST_FLIGHT = 200;
-    // Down, it lies still this long (1.5 seconds) before it gets up, and at most that long in all.
-    private static final int LIE = 30;
-    private static final int LIE_LONGEST = 110;
+    // Past lying still its whole while, how much longer a body may take to lie still before it gets up anyway.
+    private static final int LIE_MORE = 80;
     private static final double GO_LIMP = 0.25;
     private static final int SINK_TICKS = 40;
     private static final double SINK_SPEED = 0.035;
@@ -101,7 +99,8 @@ public final class Ragdolls {
     // and fly.
     public static void blast(Vec3 center, double power) {
         ClientLevel level = Minecraft.getInstance().level;
-        if (level == null || power <= 0.0 || !ClientSettings.ragdolls()) {
+        if (level == null || power <= 0.0 || !ClientSettings.ragdolls()
+                || !ClientSettings.on(ClientSettings.BLAST_BODIES)) {
             return;
         }
         for (Ragdoll doll : LIVE.values()) {
@@ -262,7 +261,8 @@ public final class Ragdolls {
         if (HELD.contains(entity.getId())) {
             return Ragdoll.State.HELD;
         }
-        return THROWN_NOW.contains(entity.getId()) || RagdollCauses.blown(entity.getId(), ticks) ? Ragdoll.State.FLYING : null;
+        return THROWN_NOW.contains(entity.getId()) || RagdollCauses.blown(entity.getId(), ticks) ? Ragdoll.State.FLYING
+                : null;
     }
 
     private static boolean claimed(Entity entity) {
@@ -365,7 +365,7 @@ public final class Ragdolls {
                 live.remove();
                 continue;
             }
-            doll.step(SUBSTEPS, BLOCKS);
+            doll.step(ClientSettings.get(ClientSettings.RAGDOLL_STEPS), BLOCKS);
         }
         double keep = ClientSettings.get(ClientSettings.CORPSE_SECONDS) * 20.0;
         Iterator<Ragdoll> bodies = CORPSES.iterator();
@@ -386,7 +386,7 @@ public final class Ragdolls {
                 doll.sunk = 0;
                 continue;
             }
-            doll.step(SUBSTEPS, BLOCKS);
+            doll.step(ClientSettings.get(ClientSettings.RAGDOLL_STEPS), BLOCKS);
         }
         int most = ClientSettings.get(ClientSettings.RAGDOLL_MOST);
         while (LIVE.size() + CORPSES.size() > most) {
@@ -431,7 +431,8 @@ public final class Ragdolls {
                 } else {
                     doll.down++;
                     doll.rest = doll.resting() ? doll.rest + 1 : 0;
-                    if (doll.rest >= LIE || doll.down >= LIE_LONGEST) {
+                    int lie = (int) Math.round(ClientSettings.get(ClientSettings.LIE_SECONDS) * 20.0);
+                    if (doll.rest >= lie || doll.down >= lie + LIE_MORE) {
                         doll.getUp();
                     }
                 }

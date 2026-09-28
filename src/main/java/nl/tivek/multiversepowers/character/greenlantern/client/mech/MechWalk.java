@@ -24,6 +24,7 @@ import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.character.greenlantern.mech.MechScript;
+import nl.tivek.multiversepowers.config.client.ClientSettings;
 import nl.tivek.multiversepowers.engine.fx.Sounds;
 import nl.tivek.multiversepowers.engine.math.Ease;
 import nl.tivek.multiversepowers.engine.math.Spring;
@@ -155,6 +156,7 @@ public final class MechWalk {
     public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
         WALKS.clear();
         BROKEN.clear();
+        MechLamp.clear();
     }
 
     // Moves a mech's walk on to where it stands this tick; a second call in the same tick does nothing.
@@ -172,6 +174,7 @@ public final class MechWalk {
         walk.pilot = pilot;
         walk.face(stage, look, pitch);
         walk.tick(level, stage);
+        MechLamp.tick(id, level, walk.now);
     }
 
     @Nullable
@@ -231,6 +234,7 @@ public final class MechWalk {
     // The mech breaks up: its last pose stays a while for its pieces to fly from.
     public static void stop(int id) {
         MechWalk walk = WALKS.remove(id);
+        MechLamp.forget(id);
         if (walk != null) {
             BROKEN.put(id, new Kept(walk.now, ticks));
         }
@@ -456,7 +460,7 @@ public final class MechWalk {
     }
 
     private static void footfall(ClientLevel level, Vec3 ground, double walking) {
-        float loud = (float) (0.6 + 0.6 * walking);
+        float loud = (float) (0.6 + 0.6 * walking) * ClientSettings.factor(ClientSettings.MECH_STEPS);
         float pitch = 0.9F + 0.2F * level.random.nextFloat();
         level.playLocalSound(ground.x, ground.y, ground.z, STEP, SoundSource.PLAYERS, 1.6F * loud, pitch, false);
         level.playLocalSound(ground.x, ground.y, ground.z, SoundEvents.IRON_GOLEM_STEP, SoundSource.PLAYERS,

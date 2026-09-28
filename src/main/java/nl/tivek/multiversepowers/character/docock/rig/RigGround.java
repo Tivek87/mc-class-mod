@@ -377,7 +377,7 @@ abstract class RigGround extends RigGrab {
     }
 
     private void impact(ServerLevel level) {
-        double radius = this.airSlam ? AIR_SLAM_RADIUS : SLAM_RADIUS;
+        double radius = OctoRig.ability("ground_slam").value(this.airSlam ? "airSlamRadiusBlocks" : "slamRadiusBlocks");
         float damage = this.airSlam ? (float) ability("ground_slam").value("airDamage")
                 : damageOf("ground_slam");
         Vec3 center = this.caster.position();

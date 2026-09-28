@@ -22,6 +22,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RegisterShadersEvent;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import nl.tivek.multiversepowers.MultiversePowers;
+import nl.tivek.multiversepowers.config.client.ClientSettings;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 import org.lwjgl.opengl.GL11;
@@ -51,7 +52,8 @@ public final class Lens {
 
     // Rupture from 0 to 1: how far what is seen through it is blurred and smeared.
     public static void bubble(Vec3 center, double radius, double strength, int tint, double rupture) {
-        if (shader != null && radius > 0.01 && strength > 0.001 && BUBBLES.size() < MOST) {
+        if (shader != null && radius > 0.01 && strength > 0.001 && BUBBLES.size() < MOST
+                && ClientSettings.on(ClientSettings.LENS)) {
             BUBBLES.add(new Bubble(center, radius, (float) Math.min(1.0, strength), tint,
                     (float) Math.max(0.0, Math.min(1.0, rupture))));
         }

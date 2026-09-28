@@ -15,8 +15,10 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 import nl.tivek.multiversepowers.MultiversePowers;
+import nl.tivek.multiversepowers.config.PowerRules;
 import nl.tivek.multiversepowers.engine.ability.Cooldowns;
 import nl.tivek.multiversepowers.engine.ability.Throttle;
 
@@ -55,6 +57,11 @@ public final class Characters {
         }
         GameCharacter now = ACTIVE.get(player.getUUID());
         GameCharacter wanted = character == now ? null : character;
+        if (wanted != null && !PowerRules.character(wanted.getId())) {
+            player.displayClientMessage(Component.translatable("character." + MultiversePowers.MODID + ".switched_off",
+                    wanted.getDisplayName()), true);
+            return;
+        }
         if (now != null) {
             leave(player, now);
         }
@@ -205,6 +212,22 @@ public final class Characters {
             GameCharacter character = of(target);
             if (character != null) {
                 character.powers().showTo(viewer, target);
+            }
+        }
+    }
+
+    // A character switched off in the world settings is taken away from whoever is it.
+    @SubscribeEvent
+    public static void onServerTick(ServerTickEvent.Post event) {
+        if (event.getServer().getTickCount() % 20 != 0) {
+            return;
+        }
+        for (ServerPlayer player : event.getServer().getPlayerList().getPlayers()) {
+            GameCharacter now = ACTIVE.get(player.getUUID());
+            if (now != null && !PowerRules.character(now.getId())) {
+                select(player, null);
+                player.displayClientMessage(Component.translatable("character." + MultiversePowers.MODID
+                        + ".switched_off", now.getDisplayName()), true);
             }
         }
     }

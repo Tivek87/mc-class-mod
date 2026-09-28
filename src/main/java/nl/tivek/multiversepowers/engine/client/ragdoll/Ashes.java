@@ -24,6 +24,8 @@ import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.RenderLivingEvent;
 import nl.tivek.multiversepowers.MultiversePowers;
+import nl.tivek.multiversepowers.config.client.ClientSettings;
+import nl.tivek.multiversepowers.engine.client.fx.ParticleAmount;
 import nl.tivek.multiversepowers.engine.client.model.ModelParts;
 import nl.tivek.multiversepowers.engine.client.render.ShadedBuffers;
 import nl.tivek.multiversepowers.engine.math.Colors;
@@ -63,6 +65,9 @@ public final class Ashes {
     }
 
     public static void burn(int entity) {
+        if (!ClientSettings.on(ClientSettings.ASHES)) {
+            return;
+        }
         BURNING.put(entity, ticks);
         CRUMBLED.remove(entity);
     }
@@ -146,7 +151,7 @@ public final class Ashes {
             ModelParts.frame(model, drawn, part, FRAME);
             double scale = Ragdoll.scaleOf(FRAME);
             double volume = (b[3] - b[0]) * (b[4] - b[1]) * (b[5] - b[2]) / 4096.0 * scale * scale * scale;
-            int count = Mth.clamp((int) (volume * DUST), LEAST, MOST);
+            int count = ParticleAmount.count(Mth.clamp((int) (volume * DUST), LEAST, MOST), level.random);
             for (int i = 0; i < count; i++) {
                 FRAME.transformPosition(Mth.lerp(RANDOM.nextFloat(), b[0], b[3]) / 16.0F,
                         Mth.lerp(RANDOM.nextFloat(), b[1], b[4]) / 16.0F, Mth.lerp(RANDOM.nextFloat(), b[2], b[5])
@@ -158,7 +163,8 @@ public final class Ashes {
 
     // What a model not built the usual way leaves: ash through its box.
     private static void box(ClientLevel level, AABB box) {
-        int count = Mth.clamp((int) (box.getXsize() * box.getYsize() * box.getZsize() * DUST * 0.3), LEAST, MOST * 4);
+        int count = ParticleAmount.count(Mth.clamp((int) (box.getXsize() * box.getYsize() * box.getZsize() * DUST
+                * 0.3), LEAST, MOST * 4), level.random);
         for (int i = 0; i < count; i++) {
             dust(level, Mth.lerp(RANDOM.nextDouble(), box.minX, box.maxX), Mth.lerp(RANDOM.nextDouble(), box.minY,
                     box.maxY), Mth.lerp(RANDOM.nextDouble(), box.minZ, box.maxZ), i);

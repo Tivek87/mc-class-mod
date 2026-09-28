@@ -15,6 +15,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
+import nl.tivek.multiversepowers.character.CharacterAbility;
 import nl.tivek.multiversepowers.character.docock.OctopusArms;
 import nl.tivek.multiversepowers.character.docock.RobotArm;
 import nl.tivek.multiversepowers.character.docock.rig.OctoRig;
@@ -31,7 +32,8 @@ abstract class PortalPlacing extends PortalState {
         if (!OctoRig.mayHold(this.caster, this.target, level)) {
             return false;
         }
-        double reach = MAX_FROM_CASTER + OctoRig.ability("portal").value("homingRangeBlocks");
+        CharacterAbility portal = OctoRig.ability("portal");
+        double reach = portal.value("casterReachBlocks") + portal.value("homingRangeBlocks");
         return this.held || this.target.distanceToSqr(this.caster) <= reach * reach;
     }
 
@@ -157,10 +159,10 @@ abstract class PortalPlacing extends PortalState {
         Vec3 eye = this.caster.getEyePosition();
         Vec3 away = point.subtract(eye);
         double distance = away.length();
-        if (distance <= MAX_FROM_CASTER || distance < 1.0E-4) {
+        if (distance <= OctoRig.ability("portal").value("casterReachBlocks") || distance < 1.0E-4) {
             return point;
         }
-        return eye.add(away.scale(MAX_FROM_CASTER / distance));
+        return eye.add(away.scale(OctoRig.ability("portal").value("casterReachBlocks") / distance));
     }
 
     void openSky(ServerLevel level) {

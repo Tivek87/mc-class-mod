@@ -16,6 +16,7 @@ import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.character.client.AbilityKeys;
 import nl.tivek.multiversepowers.character.greenlantern.client.ConstructChoice;
 import nl.tivek.multiversepowers.character.greenlantern.construct.Construct;
+import nl.tivek.multiversepowers.config.client.ClientSettings;
 import nl.tivek.multiversepowers.engine.client.gui.GuiShapes;
 import org.lwjgl.glfw.GLFW;
 
@@ -186,7 +187,7 @@ public class ConstructWheelScreen extends Screen {
             return;
         }
         this.pointed = slot;
-        if (this.minecraft != null) {
+        if (this.minecraft != null && ClientSettings.on(ClientSettings.UI_SOUNDS)) {
             this.minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK.value(),
                     slot < 0 ? 1.1F : 1.5F, 0.18F));
         }

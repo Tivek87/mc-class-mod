@@ -15,6 +15,7 @@ import nl.tivek.multiversepowers.character.CharacterAbility;
 import nl.tivek.multiversepowers.character.GameCharacter;
 import nl.tivek.multiversepowers.character.client.ClientCharacter;
 import nl.tivek.multiversepowers.character.client.MouseHold;
+import nl.tivek.multiversepowers.config.client.ClientSettings;
 import nl.tivek.multiversepowers.engine.client.gui.GuiShapes;
 import nl.tivek.multiversepowers.engine.math.Noise;
 
@@ -52,7 +53,7 @@ public final class ThunderGauge {
         CharacterAbility clap = GameCharacter.THOR.byName("thunderclap");
         if (minecraft.player == null || minecraft.options.hideGui || clap == null
                 || ClientCharacter.active() != GameCharacter.THOR || minecraft.screen != null
-                || ThorMotion.flying()) {
+                || ThorMotion.flying() || !ClientSettings.on(ClientSettings.HOLD_RINGS)) {
             fullAt = 0L;
             return;
         }

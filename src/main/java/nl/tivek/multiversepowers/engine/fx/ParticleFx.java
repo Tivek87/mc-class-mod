@@ -8,6 +8,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.phys.Vec3;
+import nl.tivek.multiversepowers.config.PowerRules;
 import org.joml.Vector3f;
 
 public final class ParticleFx {
@@ -40,8 +41,9 @@ public final class ParticleFx {
 
     public static void send(ServerLevel level, ParticleOptions particle, double x, double y, double z, int count,
             double dx, double dy, double dz, double speed) {
+        double range = VIEW_RANGE * PowerRules.effectRange();
         for (ServerPlayer player : level.players()) {
-            if (player.distanceToSqr(x, y, z) < VIEW_RANGE * VIEW_RANGE) {
+            if (player.distanceToSqr(x, y, z) < range * range) {
                 ParticleBatch.add(player, particle, true, x, y, z, count, dx, dy, dz, speed);
             }
         }
@@ -51,7 +53,7 @@ public final class ParticleFx {
             double dx, double dy, double dz, double speed) {
         Vec3 at = new Vec3(x, y, z);
         for (ServerPlayer player : level.players()) {
-            if (player.blockPosition().closerToCenterThan(at, NEAR_RANGE)) {
+            if (player.blockPosition().closerToCenterThan(at, NEAR_RANGE * PowerRules.effectRange())) {
                 ParticleBatch.add(player, particle, false, x, y, z, count, dx, dy, dz, speed);
             }
         }

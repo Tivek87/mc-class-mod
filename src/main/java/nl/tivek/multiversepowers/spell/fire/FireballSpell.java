@@ -29,16 +29,15 @@ import nl.tivek.multiversepowers.engine.entity.DeathStyles;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 import nl.tivek.multiversepowers.engine.target.Targeting;
 import nl.tivek.multiversepowers.faction.Factions;
+import nl.tivek.multiversepowers.spell.Spell;
 import nl.tivek.multiversepowers.spell.SpellFxPayload;
+import nl.tivek.multiversepowers.spell.SpellRules;
 import nl.tivek.multiversepowers.spell.SpellTargets;
 
 public final class FireballSpell {
-    private static final double SPEED = 1.25;
     private static final int MAX_FLIGHT = 90;
     private static final int IMPACT_DURATION = 50;
     private static final double BLAST_RADIUS = 2.5;
-    private static final float BLAST_DAMAGE = 4.0F;
-    private static final int BURN_TICKS = 60;
 
     private static final int CORE = 0xFFE27A;
     private static final int FLAME = 0xFF7A1A;
@@ -91,7 +90,7 @@ public final class FireballSpell {
             }
         };
         fireball.setPos(hand.x, hand.y, hand.z);
-        fireball.setDeltaMovement(look.scale(SPEED));
+        fireball.setDeltaMovement(look.scale(SpellRules.value(Spell.FIREBALL, "speed")));
         level.addFreshEntity(fireball);
         SpellFxPayload.send(level, SpellFxPayload.FIREBALL, hand, hand, fireball.getId(), 0);
 
@@ -212,10 +211,10 @@ public final class FireballSpell {
             if (far > BLAST_RADIUS || !Targeting.clearPath(level, at, middle, fireball)) {
                 continue;
             }
-            float damage = BLAST_DAMAGE * (float) (1.0 - 0.6 * Math.max(0.0, far) / BLAST_RADIUS);
+            float damage = (float) SpellRules.value(Spell.FIREBALL, "blastDamage") * (float) (1.0 - 0.6 * Math.max(0.0, far) / BLAST_RADIUS);
             DeathStyles.mark(target, DeathStyles.Style.ASH);
             target.hurt(level.damageSources().fireball(fireball, caster), damage);
-            target.igniteForTicks(BURN_TICKS);
+            target.igniteForTicks((int) SpellRules.value(Spell.FIREBALL, "burnTicks"));
             Vec3 away = middle.subtract(at);
             away = away.horizontalDistanceSqr() < 1.0E-4 ? new Vec3(0.0, 0.0, 0.0) : away.normalize();
             SpellTargets.push(target, away, 0.45, 0.25);

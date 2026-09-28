@@ -6,6 +6,7 @@ import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.phys.Vec3;
+import nl.tivek.multiversepowers.engine.client.fx.ParticleAmount;
 import org.joml.Vector3f;
 import nl.tivek.multiversepowers.spell.SpellFxPayload;
 
@@ -42,7 +43,7 @@ final class Particles {
                 for (int k = 0; k < 2; k++) {
                     double angle = random.nextDouble() * Math.PI * 2.0;
                     double reach = Math.sqrt(random.nextDouble()) * 2.2;
-                    level.addParticle(ParticleTypes.ELECTRIC_SPARK, from.x + Math.cos(angle) * reach, from.y + 0.1,
+                    add(level, random, ParticleTypes.ELECTRIC_SPARK, from.x + Math.cos(angle) * reach, from.y + 0.1,
                             from.z + Math.sin(angle) * reach, 0.0, 0.15, 0.0);
                 }
             }
@@ -62,7 +63,7 @@ final class Particles {
                 if (random.nextFloat() < 0.5) {
                     double angle = random.nextDouble() * Math.PI * 2.0;
                     double reach = Math.sqrt(random.nextDouble()) * radius;
-                    level.addParticle(ParticleTypes.FALLING_SPORE_BLOSSOM, from.x + Math.cos(angle) * reach,
+                    add(level, random, ParticleTypes.FALLING_SPORE_BLOSSOM, from.x + Math.cos(angle) * reach,
                             from.y + 2.2, from.z + Math.sin(angle) * reach, 0.0, 0.0, 0.0);
                 }
             }
@@ -71,7 +72,7 @@ final class Particles {
                     Vec3 way = fx.said.to();
                     Vec3 front = from.add(way.scale(age + 1.0));
                     for (int k = 0; k < 3; k++) {
-                        level.addParticle(ParticleTypes.CLOUD, front.x + (random.nextDouble() - 0.5) * 3.0,
+                        add(level, random, ParticleTypes.CLOUD, front.x + (random.nextDouble() - 0.5) * 3.0,
                                 front.y + (random.nextDouble() - 0.5), front.z + (random.nextDouble() - 0.5) * 3.0,
                                 way.x * 0.3, way.y * 0.3, way.z * 0.3);
                     }
@@ -81,10 +82,10 @@ final class Particles {
                 Vec3 aimed = ClapFx.aimed(from, fx.said.to());
                 if (age < 1.0) {
                     ClapFx.felt(ClapFx.feet(fx.said));
-                    level.addParticle(ParticleTypes.FLASH, from.x, from.y, from.z, 0.0, 0.0, 0.0);
+                    add(level, random, ParticleTypes.FLASH, from.x, from.y, from.z, 0.0, 0.0, 0.0);
                     for (int k = 0; k < 24; k++) {
                         Vec3 way = ClapFx.within(aimed, k / 23.0);
-                        level.addParticle(ParticleTypes.CLOUD, from.x + way.x, from.y + way.y, from.z + way.z,
+                        add(level, random, ParticleTypes.CLOUD, from.x + way.x, from.y + way.y, from.z + way.z,
                                 way.x * 0.9, way.y * 0.9, way.z * 0.9);
                     }
                 }
@@ -93,15 +94,15 @@ final class Particles {
                         Vec3 way = ClapFx.within(aimed, random.nextDouble())
                                 .add(0.0, (random.nextDouble() - 0.35) * 0.6, 0.0).normalize()
                                 .scale(0.4 + random.nextDouble() * 0.8);
-                        level.addParticle(k % 3 == 0 ? ParticleTypes.ELECTRIC_SPARK : SWARM, from.x, from.y, from.z,
+                        add(level, random, k % 3 == 0 ? ParticleTypes.ELECTRIC_SPARK : SWARM, from.x, from.y, from.z,
                                 way.x, way.y, way.z);
                     }
                 }
                 int glints = (int) (8.0 * (1.0 - age / ClapFx.LIFE)) + 1;
                 for (int k = 0; k < glints; k++) {
                     Vec3 at = from.add(ClapFx.within(aimed, random.nextDouble())
-                            .scale(1.0 + Math.sqrt(random.nextDouble()) * ClapFx.REACH));
-                    level.addParticle(ParticleTypes.ELECTRIC_SPARK, at.x, at.y + (random.nextDouble() - 0.5) * 1.2,
+                            .scale(1.0 + Math.sqrt(random.nextDouble()) * ClapFx.reach()));
+                    add(level, random, ParticleTypes.ELECTRIC_SPARK, at.x, at.y + (random.nextDouble() - 0.5) * 1.2,
                             at.z, 0.0, 0.05, 0.0);
                 }
             }
@@ -119,9 +120,14 @@ final class Particles {
 
     private static void puff(ClientLevel level, RandomSource random, ParticleOptions particle, Vec3 at,
             double spread, double speed) {
-        level.addParticle(particle, at.x + (random.nextDouble() - 0.5) * spread,
+        add(level, random, particle, at.x + (random.nextDouble() - 0.5) * spread,
                 at.y + (random.nextDouble() - 0.5) * spread, at.z + (random.nextDouble() - 0.5) * spread,
                 (random.nextDouble() - 0.5) * speed * 2.0, (random.nextDouble() - 0.5) * speed * 2.0,
                 (random.nextDouble() - 0.5) * speed * 2.0);
+    }
+
+    private static void add(ClientLevel level, RandomSource random, ParticleOptions particle, double x, double y,
+            double z, double vx, double vy, double vz) {
+        ParticleAmount.add(level, random, particle, x, y, z, vx, vy, vz);
     }
 }

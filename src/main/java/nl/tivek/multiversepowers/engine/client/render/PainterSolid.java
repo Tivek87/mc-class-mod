@@ -231,14 +231,10 @@ abstract class PainterSolid extends PainterCut {
                 by += (this.camera.y - by) * k;
                 bz += (this.camera.z - bz) * k;
             }
-            this.line(this.light, ax, ay, az, bx, by, bz, EDGE_WIDTH * fine, this.material.edge(),
-                    crease ? creaseEdge : edge);
             int aura = crease ? creaseGlow : glowing;
-            if (aura > 0) {
-                double length = Math.sqrt(sq(bx - ax) + sq(by - ay) + sq(bz - az));
-                this.line(this.glow, ax, ay, az, bx, by, bz, Math.min(HALO_WIDTH * fine, 0.9 * length),
-                        this.material.glow(), aura);
-            }
+            double length = aura > 0 ? Math.sqrt(sq(bx - ax) + sq(by - ay) + sq(bz - az)) : 0.0;
+            this.linePair(ax, ay, az, bx, by, bz, EDGE_WIDTH * fine, this.material.edge(), crease ? creaseEdge : edge,
+                    Math.min(HALO_WIDTH * fine, 0.9 * length), this.material.glow(), aura);
         }
         this.nearFade = false;
     }
@@ -318,17 +314,13 @@ abstract class PainterSolid extends PainterCut {
                         double[] ends = this.cutEnds;
                         this.lift(ends, 0, lift);
                         this.lift(ends, 3, lift);
-                        this.line(this.light, ends[0], ends[1], ends[2], ends[3], ends[4], ends[5],
-                                EDGE_WIDTH * fine, edgeRgb, lineAlpha);
-                        this.line(this.glow, ends[0], ends[1], ends[2], ends[3], ends[4], ends[5],
-                                HALO_WIDTH * fine, glowRgb, haloAlpha);
+                        this.linePair(ends[0], ends[1], ends[2], ends[3], ends[4], ends[5], EDGE_WIDTH * fine,
+                                edgeRgb, lineAlpha, HALO_WIDTH * fine, glowRgb, haloAlpha);
                     }
                     continue;
                 }
-                this.line(this.light, lifted[a], lifted[a + 1], lifted[a + 2], lifted[b], lifted[b + 1],
-                        lifted[b + 2], EDGE_WIDTH * fine, edgeRgb, lineAlpha);
-                this.line(this.glow, lifted[a], lifted[a + 1], lifted[a + 2], lifted[b], lifted[b + 1],
-                        lifted[b + 2], HALO_WIDTH * fine, glowRgb, haloAlpha);
+                this.linePair(lifted[a], lifted[a + 1], lifted[a + 2], lifted[b], lifted[b + 1], lifted[b + 2],
+                        EDGE_WIDTH * fine, edgeRgb, lineAlpha, HALO_WIDTH * fine, glowRgb, haloAlpha);
             }
         }
     }
@@ -343,10 +335,14 @@ abstract class PainterSolid extends PainterCut {
             return;
         }
         double[] at = this.corner;
-        for (int k = 0; k < 4; k++) {
-            int i = 3 * side[k];
-            this.put(layer, at[i], at[i + 1], at[i + 2], rgb, this.faded(at[i], at[i + 1], at[i + 2], alpha));
-        }
+        int i0 = 3 * side[0];
+        int i1 = 3 * side[1];
+        int i2 = 3 * side[2];
+        int i3 = 3 * side[3];
+        this.quad4(layer, at[i0], at[i0 + 1], at[i0 + 2], this.faded(at[i0], at[i0 + 1], at[i0 + 2], alpha),
+                at[i1], at[i1 + 1], at[i1 + 2], this.faded(at[i1], at[i1 + 1], at[i1 + 2], alpha),
+                at[i2], at[i2 + 1], at[i2 + 2], this.faded(at[i2], at[i2 + 1], at[i2 + 2], alpha),
+                at[i3], at[i3 + 1], at[i3 + 2], this.faded(at[i3], at[i3 + 1], at[i3 + 2], alpha), rgb);
     }
 
     public static double fine(double x, double y, double z) {
@@ -401,16 +397,11 @@ abstract class PainterSolid extends PainterCut {
         if (alpha <= 0) {
             return;
         }
-        this.putAt(layer, a, rgb, alpha);
-        this.putAt(layer, b, rgb, alpha);
-        this.putAt(layer, c, rgb, alpha);
-        this.putAt(layer, d, rgb, alpha);
-    }
-
-    private void putAt(Layer layer, int i, int rgb, int alpha) {
-        double x = this.wx[i];
-        double y = this.wy[i];
-        double z = this.wz[i];
-        this.put(layer, x, y, z, rgb, this.faded(x, y, z, alpha));
+        double[] x = this.wx;
+        double[] y = this.wy;
+        double[] z = this.wz;
+        this.quad4(layer, x[a], y[a], z[a], this.faded(x[a], y[a], z[a], alpha), x[b], y[b], z[b],
+                this.faded(x[b], y[b], z[b], alpha), x[c], y[c], z[c], this.faded(x[c], y[c], z[c], alpha), x[d],
+                y[d], z[d], this.faded(x[d], y[d], z[d], alpha), rgb);
     }
 }

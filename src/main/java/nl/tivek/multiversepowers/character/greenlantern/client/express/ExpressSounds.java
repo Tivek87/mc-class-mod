@@ -13,6 +13,7 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.character.greenlantern.construct.ConstructPayload;
 import nl.tivek.multiversepowers.character.greenlantern.express.ExpressScript;
+import nl.tivek.multiversepowers.config.client.ClientSettings;
 import nl.tivek.multiversepowers.engine.fx.Sounds;
 
 // What each game hears of a running Express on its own: a low rumble that rides along the train at the point nearest
@@ -77,7 +78,7 @@ public final class ExpressSounds {
             this.x = at.x;
             this.y = at.y;
             this.z = at.z;
-            this.wanted = volume;
+            this.wanted = volume * ClientSettings.factor(ClientSettings.POWER_HUM);
             this.pitch = pitch;
         }
     }

@@ -3,6 +3,40 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.3.9-alpha] - 2026-09-28
+
+**UNFINISHED / WORK IN PROGRESS:** the mod is still being built; things may change, break or be missing.
+
+### Added
+- **Hard-Light Mech: chest lamp.** A lamp beside the port swivels to where the mech looks and, in the dark, lights up
+  the ground and walls ahead.
+- **Client settings, many more:** mech step shake, screen flashes, speed view, view dips, mech camera distance, the
+  mech lamp (never, in the dark, always; brightness, reach).
+- **Client settings: effects:** particle amount, glow strength, flare strength, lens bending, effect detail.
+- **Client settings: bodies:** how long a thrown creature lies, blasts throwing bodies, fall detail, burning to ash,
+  cape detail and reach.
+- **Client settings: sound:** the mod's own sounds, flight sounds, power hums, mech footsteps, wheel clicks.
+- **Client settings: on screen:** ability panel and its size, power bar, hold rings, gauges, stamina bar, scan marks.
+- **Client settings: performance:** construct draw distance, processor cores for constructs.
+- **World settings:** power cost multiplier, powers hurt players, effect range, knockdown time, and a switch for
+  every character and for spells.
+- **World settings:** Thor's thunderclap, blink, dive and knock-out numbers; more of Doctor Octopus's (throws,
+  slams, portal tentacles, rampage); the mech's blow reach and strength.
+- **World settings: spells** page: every spell's cooldown and main numbers.
+
+### Changed
+- **World settings:** only the host, or a player named in the owners list of `general.toml`, may change them in the
+  game; operators no longer may unless listed.
+- **Constructs:** drawn faster (inside the Hard-Light Mech about 60% more frames a second): the work is shared out
+  over the processor's cores by what is in view, and every edge and side is written in one go. What is drawn stays
+  exactly the same.
+- **Spells:** their cooldowns now follow the cooldown multiplier and their damage the damage multiplier, like every
+  other power.
+- **Thunderclap:** its blast is drawn as far and as wide as its reach and width settings.
+
+### Fixed
+- **Hard-Light Mech:** the clapping hands' fingers no longer pass through each other; they meet in the middle.
+
 ## [0.3.8-alpha] - 2026-09-28
 
 **UNFINISHED / WORK IN PROGRESS:** the mod is still being built; things may change, break or be missing.

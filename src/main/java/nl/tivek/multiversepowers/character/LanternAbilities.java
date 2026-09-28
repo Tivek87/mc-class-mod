@@ -288,7 +288,15 @@ final class LanternAbilities {
                                 + " up to half")
                 .setting("mechHeadDamage", 10.0, 0.0, 2000.0, Unit.HALF_HEARTS,
                         "Damage of the head crashing down on that creature like a meteor, in half hearts; what else"
-                                + " stands round it takes up to half");
+                                + " stands round it takes up to half")
+                .setting("mechStompReach", 3.0, 0.5, 12.0, Unit.BLOCKS,
+                        "How far round the giant foot what else stands is hit and thrown, in blocks")
+                .setting("mechClapReach", 3.0, 0.5, 12.0, Unit.BLOCKS,
+                        "How far round the clap what else stands is hit and thrown, in blocks")
+                .setting("mechHeadReach", 4.5, 0.5, 16.0, Unit.BLOCKS,
+                        "How far round the head's crash what else stands is hit and thrown, in blocks")
+                .setting("mechPush", 1.0, 0.0, 5.0, Unit.STRENGTH,
+                        "How hard the mech's blows throw what stands round them");
         lantern.add(abilities, AbilitySlot.ABILITY_8, "shockwave").cooldown(100).damage(12.0)
                 .setting("radiusBlocks", 5.0, 1.0, 16.0, Unit.BLOCKS, "How far the shockwave reaches, in blocks")
                 .setting("knockback", 1.2, 0.0, 5.0, Unit.STRENGTH,

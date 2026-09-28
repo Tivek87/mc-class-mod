@@ -16,6 +16,7 @@ import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.character.greenlantern.RingPayload;
 import nl.tivek.multiversepowers.character.greenlantern.client.ClientRing;
 import nl.tivek.multiversepowers.character.greenlantern.client.flight.ClientFlight.Motion;
+import nl.tivek.multiversepowers.engine.client.fx.ParticleAmount;
 import static nl.tivek.multiversepowers.character.greenlantern.client.flight.ClientFlight.fast;
 import static nl.tivek.multiversepowers.character.greenlantern.client.flight.FlightSteering.BRACE_TICKS;
 import static nl.tivek.multiversepowers.character.greenlantern.client.flight.FlightSteering.SLAM_DOWN;
@@ -94,7 +95,7 @@ final class FlyerTracker {
         BlockPos below = BlockPos.containing(player.getX(), player.getY() - motion.ground - 0.2, player.getZ());
         BlockState state = level.getBlockState(below);
         double strength = (1.0 - motion.ground / SKIM) * Math.min(1.0, speed / (fullSpeed() * 1.15));
-        int count = (int) (1 + strength * 5);
+        int count = ParticleAmount.count((int) (1 + strength * 5), level.random);
         double y = below.getY() + 1.05;
         for (int i = 0; i < count; i++) {
             double x = player.getX() + (level.random.nextDouble() - 0.5) * 1.6;

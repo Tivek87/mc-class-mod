@@ -207,7 +207,7 @@ final class SettingsList extends ContainerObjectSelectionList<SettingsList.Row> 
             this.reset = Button.builder(Component.literal("↺"), button -> this.set(number.defaultValue()))
                     .size(14, 16)
                     .tooltip(Tooltip.create(Component.translatable(PREFIX + "reset",
-                            number.format(number.defaultValue()), number.unit().describe(number.defaultValue()))))
+                            number.format(number.defaultValue()), number.meaning(number.defaultValue()))))
                     .build();
             this.box = new EditBox(font, 0, 0, 44, 16, number.label());
             this.box.setMaxLength(12);
@@ -274,7 +274,7 @@ final class SettingsList extends ContainerObjectSelectionList<SettingsList.Row> 
             graphics.drawString(font, fit(font, this.number.label(), labelWidth - 4), left, textY,
                     0xFF000000 | (this.changed() ? CHANGED : TEXT));
             int meaningX = x + 96;
-            Component meaning = this.valid ? this.number.unit().describe(this.value)
+            Component meaning = this.valid ? this.number.meaning(this.value)
                     : Component.translatable(PREFIX + "range", this.number.format(this.number.min()),
                             this.number.format(this.number.max()));
             graphics.drawString(font, fit(font, meaning, left + width - meaningX), meaningX, textY,
@@ -293,7 +293,7 @@ final class SettingsList extends ContainerObjectSelectionList<SettingsList.Row> 
             }
             double standard = this.number.defaultValue();
             lines.add(Component.translatable(PREFIX + "default", this.number.format(standard),
-                    this.number.unit().describe(standard)).withStyle(ChatFormatting.GREEN).getVisualOrderText());
+                    this.number.meaning(standard)).withStyle(ChatFormatting.GREEN).getVisualOrderText());
             lines.add(Component.translatable(PREFIX + "range", this.number.format(this.number.min()),
                     this.number.format(this.number.max())).withStyle(ChatFormatting.DARK_GRAY).getVisualOrderText());
             return lines;

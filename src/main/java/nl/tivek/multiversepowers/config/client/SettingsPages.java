@@ -17,6 +17,8 @@ import nl.tivek.multiversepowers.character.client.PowerInputs;
 import nl.tivek.multiversepowers.config.ModConfigs;
 import nl.tivek.multiversepowers.config.PowerRules;
 import nl.tivek.multiversepowers.config.Unit;
+import nl.tivek.multiversepowers.spell.Spell;
+import nl.tivek.multiversepowers.spell.SpellRules;
 import nl.tivek.multiversepowers.stamina.StaminaConfig;
 import nl.tivek.multiversepowers.stamina.client.StaminaClient;
 
@@ -47,13 +49,16 @@ public final class SettingsPages {
         for (GameCharacter character : GameCharacter.values()) {
             pages.add(character(character));
         }
+        pages.add(spells());
         return pages;
     }
 
-    // The host of this world, or an operator on a server: the server checks the same again.
+    // The host of this world, or a listed owner on a server (the list comes with the synced world settings): the
+    // server checks the same again.
     public static boolean serverEditable() {
         Minecraft minecraft = Minecraft.getInstance();
-        return minecraft.hasSingleplayerServer() || minecraft.player != null && minecraft.player.hasPermissions(2);
+        return minecraft.hasSingleplayerServer()
+                || minecraft.player != null && PowerRules.isOwner(minecraft.player.getGameProfile());
     }
 
     public static boolean worldEditable(ModConfigSpec spec) {
@@ -72,11 +77,39 @@ public final class SettingsPages {
         List<ConfigNumber> numbers = List.of(
                 fromSpec(spec, file, "general", "damageMultiplier", PowerRules.DAMAGE, Unit.STRENGTH, 0.1),
                 fromSpec(spec, file, "general", "cooldownMultiplier", PowerRules.COOLDOWNS, Unit.STRENGTH, 0.1),
-                fromSpec(spec, file, "general", "breakBlocks", PowerRules.BREAK_BLOCKS, Unit.SWITCH, 1.0));
+                fromSpec(spec, file, "general", "breakBlocks", PowerRules.BREAK_BLOCKS, Unit.SWITCH, 1.0),
+                fromSpec(spec, file, "general", "powerCostMultiplier", PowerRules.POWER_COST, Unit.STRENGTH, 0.1),
+                fromSpec(spec, file, "general", "hurtPlayers", PowerRules.HURT_PLAYERS, Unit.SWITCH, 1.0),
+                fromSpec(spec, file, "general", "effectRangeMultiplier", PowerRules.EFFECT_RANGE, Unit.STRENGTH,
+                        0.25),
+                fromSpec(spec, file, "general", "knockdownSeconds", PowerRules.KNOCKDOWN, Unit.SECONDS, 0.25));
         Section section = new Section(Component.translatable(PREFIX + "general.powers"), null,
                 List.of(new Group(null, numbers)));
-        return new Page(Component.translatable(PREFIX + "general"), 0x9DFF8A, List.of(section), worldEditable(spec),
-                true, spec::save);
+        List<ConfigNumber> allowed = new ArrayList<>();
+        for (Map.Entry<String, ModConfigSpec.IntValue> character : PowerRules.characters().entrySet()) {
+            allowed.add(fromSpec(spec, file, "general", character.getKey(), character.getValue(), Unit.SWITCH, 1.0));
+        }
+        allowed.add(fromSpec(spec, file, "general", "spells", PowerRules.SPELLS, Unit.SWITCH, 1.0));
+        Section chosen = new Section(Component.translatable(PREFIX + "general.characters"), null,
+                List.of(new Group(null, allowed)));
+        return new Page(Component.translatable(PREFIX + "general"), 0x9DFF8A, List.of(section, chosen),
+                worldEditable(spec), true, spec::save);
+    }
+
+    public static Page spells() {
+        ModConfigSpec spec = SpellRules.SPEC;
+        String file = ModConfigs.file("spells");
+        List<Section> sections = new ArrayList<>();
+        for (Spell spell : Spell.values()) {
+            List<ConfigNumber> numbers = new ArrayList<>();
+            for (SpellRules.Rule rule : SpellRules.rules(spell)) {
+                numbers.add(fromSpec(spec, file, "spells." + spell.getId(), rule.key(), rule.value(), rule.unit(),
+                        rule.step()));
+            }
+            sections.add(new Section(spell.getDisplayName(), null, List.of(new Group(null, numbers))));
+        }
+        return new Page(Component.translatable(PREFIX + "spells"), 0xB89CFF, sections, worldEditable(spec), true,
+                spec::save);
     }
 
     public static Page stamina() {
@@ -164,31 +197,24 @@ public final class SettingsPages {
     public static Page client() {
         ModConfigSpec spec = ClientSettings.SPEC;
         String file = ModConfigs.file("client");
-        Section view = new Section(Component.translatable(PREFIX + "client.view"), null, List.of(new Group(null,
-                List.of(fromSpec(spec, file, "client", "cameraShake", ClientSettings.CAMERA_SHAKE, Unit.STRENGTH, 0.1),
-                        fromSpec(spec, file, "client", "ramGroundShake", ClientSettings.RAM_GROUND_SHAKE,
-                                Unit.STRENGTH, 0.1),
-                        fromSpec(spec, file, "client", "mechCinematic", ClientSettings.MECH_CINEMATIC, Unit.SWITCH,
-                                1.0)))));
-        Section bodies = new Section(Component.translatable(PREFIX + "client.bodies"), null, List.of(new Group(null,
-                List.of(fromSpec(spec, file, "client", "ragdolls", ClientSettings.RAGDOLLS, Unit.SWITCH, 1.0),
-                        fromSpec(spec, file, "client", "ragdollMost", ClientSettings.RAGDOLL_MOST, Unit.COUNT, 1.0),
-                        fromSpec(spec, file, "client", "corpseSeconds", ClientSettings.CORPSE_SECONDS, Unit.SECONDS,
-                                1.0),
-                        fromSpec(spec, file, "client", "ragdollReach", ClientSettings.RAGDOLL_REACH, Unit.BLOCKS,
-                                4.0),
-                        fromSpec(spec, file, "client", "footPlanting", ClientSettings.FOOT_PLANTING, Unit.SWITCH,
-                                1.0),
-                        fromSpec(spec, file, "client", "capeCloth", ClientSettings.CAPE_CLOTH, Unit.SWITCH, 1.0)))));
-        Section sound = new Section(Component.translatable(PREFIX + "client.sound"), null, List.of(new Group(null,
-                List.of(fromSpec(spec, file, "client", "themeMusic", ClientSettings.THEME_MUSIC, Unit.SWITCH, 1.0)))));
-        Section updates = new Section(Component.translatable(PREFIX + "client.updates"), null, List.of(new Group(null,
-                List.of(fromSpec(spec, file, "client", "updateCheckMinutes", ClientSettings.UPDATE_CHECK,
-                                Unit.MINUTES, 1.0),
-                        fromSpec(spec, file, "client", "updatePopupSeconds", ClientSettings.UPDATE_POPUP,
-                                Unit.SECONDS, 1.0)))));
-        return new Page(Component.translatable(PREFIX + "client"), 0x8FD3FF, List.of(view, bodies, sound, updates),
-                spec.isLoaded(), false, spec::save);
+        Map<String, List<ConfigNumber>> sections = new LinkedHashMap<>();
+        for (ClientSettings.Entry entry : ClientSettings.entries()) {
+            ConfigNumber number = fromSpec(spec, file, "client", entry.key(), entry.value(), entry.unit(),
+                    entry.step());
+            if (entry.choices() > 0) {
+                number = new ConfigNumber(number.label(), number.description(), number.unit(), number.min(),
+                        number.max(), number.step(), number.whole(), number.defaultValue(), number.stored(),
+                        number.store(), number.file(), number.path(), PREFIX + "client." + entry.key() + ".choice");
+            }
+            sections.computeIfAbsent(entry.section(), key -> new ArrayList<>()).add(number);
+        }
+        List<Section> list = new ArrayList<>();
+        for (Map.Entry<String, List<ConfigNumber>> section : sections.entrySet()) {
+            list.add(new Section(Component.translatable(PREFIX + "client." + section.getKey()), null,
+                    List.of(new Group(null, section.getValue()))));
+        }
+        return new Page(Component.translatable(PREFIX + "client"), 0x8FD3FF, list, spec.isLoaded(), false,
+                spec::save);
     }
 
     private static ConfigNumber cooldown(CharacterAbility ability) {
@@ -238,7 +264,9 @@ public final class SettingsPages {
             case RING_SECONDS -> 2.5;
             case PART_KEPT, STAMINA_PER_TICK, CHANCE -> 0.05;
             case BLOCK_COUNT -> 10.0;
-            case COUNT, SWITCH, MINUTES -> 1.0;
+            case COUNT, SWITCH, MINUTES, CHOICE -> 1.0;
+            case PERCENT -> 0.05;
+            case DEGREES -> 1.0;
         };
     }
 }

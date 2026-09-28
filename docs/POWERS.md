@@ -840,6 +840,10 @@ Green Lantern's ultimate: a big, slow gunship of hard light high over the battle
   one back to turn. Standing still you reach over to the console now and then and press a button, which lights up.
   In first person you look out through the round glass port in its chest, with a clear view ahead; in third person the camera stands back
   behind and above the whole mech, so it never blocks your view.
+- **The chest lamp:** a lamp on the upper left of its chest, beside the port, swivels to where the mech looks. In
+  the dark it switches on by itself: a beam of pale light and a patch of light on the ground and walls ahead,
+  following every step and wall. Each player chooses in their own settings whether it shines never, in the dark or
+  always, how bright and how far. From the cockpit you see only where it lands, not the beam across your view.
 - **Walking is all it does:** you cannot fly, jump or use your other powers while you are in it.
 - **Leaving it:** hold Y for 2 seconds again (the ring round your crosshair says *Leave the mech*): the mech breaks
   into solid pieces that dissolve into light, and you float gently down to the ground. Die, log out or stop being
@@ -1353,23 +1357,46 @@ There are two kinds of settings:
 - **Server settings:** how the powers play (every number on this page, and the stamina bar). Every world keeps
   its own: change them in one world and the others keep theirs. On a server everyone plays by the server's
   settings; your game gets them as you join, and again at once whenever they change on the server.
-  - **Power rules** for every power at once: a **damage multiplier** (every damage number of every ability), a
-    **cooldown multiplier** (every cooldown), and whether **powers break blocks** at all.
+  - **Power rules** for every power at once: a **damage multiplier**, a **cooldown multiplier**, a **power cost
+    multiplier** (what every power costs of the ring; a full ring's flight lasts as much shorter), whether **powers
+    break blocks**, whether **powers hurt players** (where the server allows PvP), the **effect range** (how far away
+    players still see the powers' particles) and how long a thrown creature stays **knocked down**.
+  - **Characters and spells:** each character, and spells, can be switched off for the world; whoever is a
+    character that gets switched off turns back into themselves.
+  - **Every character's page** holds its abilities' numbers, now also Thor's (the thunderclap's reach, width, wave
+    speed, push and lift; the dash, jump, flight, blink and dive, and how hard a hit must be to knock him out of the
+    sky) and more of Doctor Octopus's (throw speed, slam reach on the ground and from the air, how long the portal
+    tentacles hunt and drag, the rampage's reach and pace). The mech's blows got their reach and strength.
+  - **Spells** (their own page): every spell's cooldown, and the fireball's speed, blast damage and burning; the
+    lightning strike's reach, jumps and slow; the poison vial's reach; the void walk's ambush, daze and speed; the
+    wind gust's push and lift.
 - **Client settings:** what only you see, hear and feel, in your own game, in every world and on every server:
-  - **Camera shake:** how hard the powers shake and jolt your view (a slam, crash or blast nearby, a sword blow,
-    the beam, the ring arriving): 1 as the mod makes it, 0 never, up to 2.
-  - **Scraping shake:** how hard your view shakes while you fly with the ram cone low along the ground.
-  - **Menu theme:** the multiverse theme in the main menu, or the game's own menu music.
-  - **Look for updates:** how often the game looks for a new version (minutes, 0 = never), and **Update note in
-    game:** how long the note about a new version stays on screen while you play.
+  - **View:** camera shake, scraping shake, mech step shake, screen flashes, how far your view widens at speed,
+    how far it dips with a slam or a take-off, filming your own mech, the mech camera's distance, and the **mech
+    lamp** (never, in the dark or always; its brightness and reach).
+  - **Effects & particles:** how many particles the powers throw up, how strong the glow and the flares are,
+    whether blasts bend the view like a lens, and how much detail the biggest effects have (low, medium, full).
+  - **Bodies:** limp bodies on or off, how many at once, how far away, how long a body stays and how long a thrown
+    creature lies before it gets up, whether blasts throw bodies, how finely a fall is worked out, burning to ash,
+    feet on the ground, and capes of cloth (on or off, how finely, how far away).
+  - **Sound:** the menu theme, the mod's own sounds, the sounds of flight, the hums of lasting powers, the mech's
+    footsteps and the wheels' clicks.
+  - **On screen:** the ability panel (and its size), the power bar, the hold rings round the crosshair, the gauges,
+    the stamina bar and the ring scan's marks.
+  - **Performance:** how far away constructs are still drawn, and how many processor cores may work out big
+    constructs at once.
+  - **Updates:** how often the game looks for a new version, and how long the note about one stays on screen.
 
 **In the game:** Mods > Multiverse Powers > Config (or `/stamina` in the chat, which opens the stamina bar). You first
 pick **Client** or **Server**.
 
 - **Server** can only be changed by the **host** of the world (singleplayer, or a LAN world you host) or an
-  **operator** on a server (permission level 2 or more); the server checks this again for every change. Anyone else
-  sees the numbers read only. In the main menu there is no world, so nothing to change.
-- **Tabs** along the top: *Power rules*, the stamina bar and every character for Server; one page for Client. A dot
+  **owner** of a server: a player named in the `owners` list of `general.toml` in the world's
+  `serverconfig/welcomescreen/` folder (only that file can change the list). Operators are not owners unless listed.
+  The server checks this again for every change. Anyone else sees the numbers read only. In the main menu there is
+  no world, so nothing to change.
+- **Tabs** along the top: *Power rules*, the stamina bar, every character and the spells for Server; one page for
+  Client. A dot
   after a tab's name means it has changes that are not saved yet.
 - **Every ability is a part you can fold open and shut:** click its title. The title says how many numbers are
   in it and which key or button it sits on. *Open all* and *Close all* fold the whole page at once.

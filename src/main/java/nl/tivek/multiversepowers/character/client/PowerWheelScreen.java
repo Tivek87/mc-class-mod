@@ -12,6 +12,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import nl.tivek.multiversepowers.character.GameCharacter;
 import nl.tivek.multiversepowers.character.TransformPayload;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.hand.DevHand;
+import nl.tivek.multiversepowers.config.client.ClientSettings;
 import nl.tivek.multiversepowers.engine.client.gui.GuiShapes;
 import nl.tivek.multiversepowers.engine.client.rig.BoneView;
 import nl.tivek.multiversepowers.spell.CastSpellPayload;
@@ -171,7 +172,7 @@ public class PowerWheelScreen extends PowerWheelLayout {
     }
 
     private void click(float pitch) {
-        if (this.minecraft != null) {
+        if (this.minecraft != null && ClientSettings.on(ClientSettings.UI_SOUNDS)) {
             this.minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, pitch));
         }
     }

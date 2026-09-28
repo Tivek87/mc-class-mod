@@ -24,6 +24,7 @@ import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.character.docock.ArmPayload;
 import nl.tivek.multiversepowers.character.docock.portal.PortalPayload;
+import nl.tivek.multiversepowers.engine.client.fx.ParticleAmount;
 import nl.tivek.multiversepowers.engine.client.rig.BoneView;
 import nl.tivek.multiversepowers.engine.client.world.PathClear;
 
@@ -183,7 +184,7 @@ public final class ClientArms {
         Vec3 out = e1.scale(Math.cos(a)).add(e2.scale(Math.sin(a)));
         Vec3 at = portal.center().add(out.scale(portal.size()));
         Vec3 v = out.scale(0.1).add(n.scale(random.nextGaussian() * 0.05));
-        level.addParticle(ParticleTypes.ELECTRIC_SPARK, at.x, at.y, at.z, v.x, v.y, v.z);
+        ParticleAmount.add(level, random, ParticleTypes.ELECTRIC_SPARK, at.x, at.y, at.z, v.x, v.y, v.z);
     }
 
     @SubscribeEvent

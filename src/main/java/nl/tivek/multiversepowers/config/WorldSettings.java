@@ -117,7 +117,7 @@ public final class WorldSettings {
     }
 
     public static boolean mayEdit(ServerPlayer player) {
-        return player.server.isSingleplayerOwner(player.getGameProfile()) || player.hasPermissions(2);
+        return player.server.isSingleplayerOwner(player.getGameProfile()) || PowerRules.isOwner(player.getGameProfile());
     }
 
     public static void edit(ServerPlayer player, List<WorldSettingsEditPayload.Entry> entries) {

@@ -14,6 +14,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDamageEvent;
 import nl.tivek.multiversepowers.MultiversePowers;
+import nl.tivek.multiversepowers.config.PowerRules;
 import nl.tivek.multiversepowers.engine.effect.Effects;
 
 // A creature a blow throws goes limp in every player's game (Ragdolls), lies where it falls and gets up: meanwhile
@@ -26,8 +27,6 @@ public final class Knockdowns {
     private static final double THROWN = 0.9;
     private static final double TOSSED = 0.6;
     private static final double HEAVY = 3.5;
-    // Ticks a thrown creature lies still from landing: as long as it lies and gets up in a player's game.
-    private static final int DOWN = 75;
     private static final int LONGEST_FLIGHT = 200;
     private static final int WATCH = 3;
 
@@ -115,7 +114,7 @@ public final class Knockdowns {
             }
             Vec3 push = mob.getDeltaMovement();
             mob.setDeltaMovement(push.x * 0.5, push.y, push.z * 0.5);
-            if (age - mine.landed >= DOWN) {
+            if (age - mine.landed >= PowerRules.knockdownTicks()) {
                 up(mob);
                 return false;
             }

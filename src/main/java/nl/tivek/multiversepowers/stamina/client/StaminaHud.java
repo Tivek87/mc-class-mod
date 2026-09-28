@@ -13,6 +13,7 @@ import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 import nl.tivek.multiversepowers.MultiversePowers;
+import nl.tivek.multiversepowers.config.client.ClientSettings;
 
 @Mod(value = MultiversePowers.MODID, dist = Dist.CLIENT)
 public final class StaminaHud {
@@ -43,7 +44,8 @@ public final class StaminaHud {
     private static void render(GuiGraphics graphics, DeltaTracker deltaTracker) {
         Minecraft minecraft = Minecraft.getInstance();
         LocalPlayer player = minecraft.player;
-        if (player == null || player.getAbilities().flying || !StaminaClient.usesStamina(minecraft, player)) {
+        if (player == null || player.getAbilities().flying || !StaminaClient.usesStamina(minecraft, player)
+                || !ClientSettings.on(ClientSettings.STAMINA_BAR)) {
             return;
         }
 

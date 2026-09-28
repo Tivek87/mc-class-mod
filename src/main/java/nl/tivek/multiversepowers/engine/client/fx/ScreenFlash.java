@@ -9,6 +9,7 @@ import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.RenderGuiEvent;
 import nl.tivek.multiversepowers.MultiversePowers;
+import nl.tivek.multiversepowers.config.client.ClientSettings;
 
 @EventBusSubscriber(modid = MultiversePowers.MODID, value = Dist.CLIENT)
 public final class ScreenFlash {
@@ -21,6 +22,7 @@ public final class ScreenFlash {
 
     // The whole screen washes over in one colour and clears again over the given ticks.
     public static void add(int rgb, float amount, int ticks) {
+        amount *= ClientSettings.factor(ClientSettings.SCREEN_FLASH);
         if (amount > strength && ticks > 0) {
             color = rgb & 0xFFFFFF;
             strength = Math.min(1.0F, amount);

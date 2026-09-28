@@ -5,6 +5,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import nl.tivek.multiversepowers.MultiversePowers;
+import nl.tivek.multiversepowers.config.PowerRules;
 import nl.tivek.multiversepowers.spell.air.WindGustSpell;
 import nl.tivek.multiversepowers.spell.dark.VoidWalkSpell;
 import nl.tivek.multiversepowers.spell.fire.FireballSpell;
@@ -49,7 +50,13 @@ public enum Spell {
         return this.id;
     }
 
+    // As this world's spell settings have it, times the cooldown multiplier of every power.
     public int getCooldown() {
+        return (int) Math.round(SpellRules.value(this, "cooldownTicks") * PowerRules.cooldowns());
+    }
+
+    // The cooldown the mod gives it, the one a new world starts from.
+    public int defaultCooldown() {
         return this.cooldown;
     }
 

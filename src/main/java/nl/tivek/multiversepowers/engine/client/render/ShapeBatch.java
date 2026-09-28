@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ForkJoinPool;
+import nl.tivek.multiversepowers.config.client.ClientSettings;
 
 // The shapes a painter held back (see ConstructPainter.batch), worked out together: split into runs of about equal
 // work, each drawn by a painter of its own, all at once on other threads, and joined back in the order they were drawn.
@@ -21,7 +22,7 @@ final class ShapeBatch {
     private static final int STATE = 13;
     // Fewer sides than this are drawn on the render thread alone: handing them out would cost more than it saves.
     private static final int ALONE = 6000;
-    private static final int RUNS = Math.max(1, Math.min(8, Runtime.getRuntime().availableProcessors()));
+    private static final int CORES = Math.max(1, Math.min(8, Runtime.getRuntime().availableProcessors()));
     private final List<Held> held = new ArrayList<>();
     boolean open;
 
@@ -37,9 +38,14 @@ final class ShapeBatch {
             double a, double b, int seed) {
         double[] state = new double[STATE];
         painter.saveState(state);
-        int work = 0;
+        // Only what the camera can see is work: a part out of view is passed over at once, and counting it would hand
+        // one thread most of what is really drawn while the others wait.
+        int work = 1;
         for (Mesh mesh : shape.meshes()) {
-            work += mesh.sides.length;
+            if (painter.visible(frame.at(mesh.boundX, mesh.boundY, mesh.boundZ),
+                    mesh.boundRadius * frame.scale() * frame.stretch() * (kind == Kind.SHATTERED ? 2.0 : 1.0))) {
+                work += mesh.sides.length;
+            }
         }
         this.held.add(new Held(kind, shape, frame, a, b, seed, state, painter.material, work));
     }
@@ -52,7 +58,8 @@ final class ShapeBatch {
         for (Held shape : this.held) {
             total += shape.work();
         }
-        int runs = total < ALONE ? 1 : Math.min(RUNS, this.held.size());
+        int chosen = ClientSettings.get(ClientSettings.RENDER_THREADS);
+        int runs = total < ALONE ? 1 : Math.min(chosen > 0 ? chosen : CORES, this.held.size());
         int[] from = new int[runs + 1];
         long done = 0;
         int run = 1;

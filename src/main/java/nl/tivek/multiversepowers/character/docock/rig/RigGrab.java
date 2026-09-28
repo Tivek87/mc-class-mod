@@ -285,7 +285,8 @@ abstract class RigGrab extends RigStrikes {
 
     private void fling(ServerLevel level, Arm arm, LivingEntity target) {
         this.letGo(arm);
-        target.setDeltaMovement(this.caster.getLookAngle().scale(THROW_SPEED).add(0, 0.25, 0));
+        double speed = OctoRig.ability("grab").value("throwSpeed");
+        target.setDeltaMovement(this.caster.getLookAngle().scale(speed).add(0, 0.25, 0));
         target.hasImpulse = true;
         target.hurtMarked = true;
         Vec3 center = target.getBoundingBox().getCenter();
@@ -319,7 +320,7 @@ abstract class RigGrab extends RigStrikes {
     }
 
     private static Effect thrown(ServerPlayer caster, LivingEntity target) {
-        double[] lastSpeed = { THROW_SPEED };
+        double[] lastSpeed = { OctoRig.ability("grab").value("throwSpeed") };
         return (level, age) -> {
             if (!target.isAlive() || target.isRemoved() || age >= THROWN_TRACK) {
                 return false;

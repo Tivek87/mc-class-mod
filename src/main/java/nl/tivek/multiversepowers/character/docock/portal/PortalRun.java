@@ -227,7 +227,8 @@ public final class PortalRun extends PortalPlacing {
 
     private boolean hunt(ServerLevel level) {
         double homing = OctoRig.ability("portal").value("homingRangeBlocks");
-        if (!this.targetValid(level) || this.phaseAge > MAX_HUNT || this.shown > MAX_TRAIL
+        int hunt = OctoRig.ability("portal").intValue("huntTicks");
+        if (!this.targetValid(level) || this.phaseAge > hunt || this.shown > MAX_TRAIL
                 || this.target.position().distanceTo(this.gateB.center) > homing) {
             return this.cancel();
         }
@@ -284,7 +285,7 @@ public final class PortalRun extends PortalPlacing {
     }
 
     private boolean drag(ServerLevel level) {
-        if (!this.targetValid(level) || this.phaseAge > MAX_DRAG) {
+        if (!this.targetValid(level) || this.phaseAge > OctoRig.ability("portal").intValue("dragTicks")) {
             return this.cancel();
         }
         this.shown = Math.max(PORTAL_DEPTH, this.shown - DRAG_SPEED);

@@ -16,6 +16,7 @@ import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 import nl.tivek.multiversepowers.MultiversePowers;
+import nl.tivek.multiversepowers.config.PowerRules;
 import nl.tivek.multiversepowers.engine.ability.Cooldowns;
 import nl.tivek.multiversepowers.engine.target.Targeting;
 import nl.tivek.multiversepowers.faction.Factions;
@@ -29,7 +30,7 @@ public final class SpellCasting {
     }
 
     public static void tryCast(ServerPlayer player, Spell spell) {
-        if (!player.isAlive() || player.isSpectator()) {
+        if (!player.isAlive() || player.isSpectator() || !PowerRules.spells()) {
             return;
         }
         int left = COOLDOWNS.left(player, spell, 0);

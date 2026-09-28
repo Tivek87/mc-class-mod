@@ -48,6 +48,13 @@ final class MechBodyShapes {
     static final Shape CONSOLE = Shape.of(console());
     static final Shape LEVER = Shape.of(lever());
     static final Shape BUTTON = Shape.of(Mesh.bevel(-0.07, -0.035, -0.06, 0.07, 0.035, 0.06, 0.02, 1.0));
+    // The lamp on the upper left of the chest, between the port and the shoulder: a block it sits on, and the lamp
+    // itself round its pivot, its length along y.
+    static final Vec3 LAMP = new Vec3(-1.75, 8.45, 1.5);
+    static final Shape LAMP_MOUNT = Shape.of(Mesh.bevel(LAMP.x - 0.24, LAMP.y - 0.22, 1.0, LAMP.x + 0.24,
+            LAMP.y + 0.22, LAMP.z - 0.02, 0.05, 1.0), Mesh.ball(12, 8, 0.2, 1.0).moved(LAMP.x, LAMP.y, LAMP.z));
+    static final Shape LAMP_HOUSING = Shape.of(Mesh.cylinder(14, 0.23, -0.05, 0.34, 1.0),
+            Mesh.cylinder(14, 0.3, 0.26, 0.42, 1.02), Mesh.cylinder(14, 0.16, -0.22, -0.05, 0.96));
     static final Shape SHOULDER = Shape.of(shoulder());
     static final Shape SHOULDER_LEFT = MechParts.mirrored(SHOULDER);
 

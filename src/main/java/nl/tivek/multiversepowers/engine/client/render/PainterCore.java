@@ -7,6 +7,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import java.lang.ref.Cleaner;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.ArrayDeque;
 import javax.annotation.Nullable;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -16,6 +17,7 @@ import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
+import nl.tivek.multiversepowers.config.client.ClientSettings;
 import nl.tivek.multiversepowers.engine.math.Colors;
 import nl.tivek.multiversepowers.engine.math.Ease;
 import org.joml.Matrix4f;
@@ -85,6 +87,7 @@ abstract class PainterCore {
     // Vertices go straight into memory as they are painted, the bytes a BufferBuilder would write: a big construct has
     // hundreds of thousands, and a BufferBuilder's checks on each, or a copy of them all, cost more than the rest.
     static final class Layer {
+        private static final boolean LITTLE = ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN;
         private final ByteBufferBuilder bytes = new ByteBufferBuilder(1 << 16);
         private int count;
 
@@ -97,15 +100,29 @@ abstract class PainterCore {
         // (x, y, z) from the camera, where the view's matrix puts it.
         void add(Matrix4f matrix, Vector3f vertex, double x, double y, double z, int rgb, int alpha) {
             matrix.transformPosition((float) x, (float) y, (float) z, vertex);
-            long p = this.bytes.reserve(VERTEX_BYTES);
-            MemoryUtil.memPutFloat(p, vertex.x);
-            MemoryUtil.memPutFloat(p + 4L, vertex.y);
-            MemoryUtil.memPutFloat(p + 8L, vertex.z);
+            write(this.bytes.reserve(VERTEX_BYTES), vertex.x, vertex.y, vertex.z, rgb, alpha);
+            this.count++;
+        }
+
+        // Room for n vertices at once, written with write(): one check of the memory instead of one a vertex.
+        long reserve(int n) {
+            this.count += n;
+            return this.bytes.reserve(n * VERTEX_BYTES);
+        }
+
+        static void write(long p, float x, float y, float z, int rgb, int alpha) {
+            MemoryUtil.memPutFloat(p, x);
+            MemoryUtil.memPutFloat(p + 4L, y);
+            MemoryUtil.memPutFloat(p + 8L, z);
+            if (LITTLE) {
+                // Red, green, blue and alpha in one store: the same four bytes in the same order.
+                MemoryUtil.memPutInt(p + 12L, rgb >> 16 & 0xFF | rgb & 0xFF00 | (rgb & 0xFF) << 16 | alpha << 24);
+                return;
+            }
             MemoryUtil.memPutByte(p + 12L, (byte) (rgb >> 16));
             MemoryUtil.memPutByte(p + 13L, (byte) (rgb >> 8));
             MemoryUtil.memPutByte(p + 14L, (byte) rgb);
             MemoryUtil.memPutByte(p + 15L, (byte) alpha);
-            this.count++;
         }
     }
 
@@ -130,6 +147,8 @@ abstract class PainterCore {
     final Layer light = take();
     final Layer glow = take();
     boolean nearFade;
+    // The player's own strength of the glow layer (ClientSettings.GLOW_STRENGTH), read once per painter.
+    private final float glowShare;
     private double glare;
     double ambient;
     boolean waiting;
@@ -141,6 +160,7 @@ abstract class PainterCore {
         this.frustum = frustum;
         this.material = material;
         this.hand = hand;
+        this.glowShare = ClientSettings.factor(ClientSettings.GLOW_STRENGTH);
     }
 
     public Material material() {
@@ -313,14 +333,133 @@ abstract class PainterCore {
         sz *= k;
         int alphaA = this.faded(ax, ay, az, alpha);
         int alphaB = this.faded(bx, by, bz, alpha);
-        this.put(layer, ax, ay, az, rgb, alphaA);
-        this.put(layer, bx, by, bz, rgb, alphaB);
-        this.put(layer, bx + sx, by + sy, bz + sz, rgb, 0);
-        this.put(layer, ax + sx, ay + sy, az + sz, rgb, 0);
-        this.put(layer, ax, ay, az, rgb, alphaA);
-        this.put(layer, bx, by, bz, rgb, alphaB);
-        this.put(layer, bx - sx, by - sy, bz - sz, rgb, 0);
-        this.put(layer, ax - sx, ay - sy, az - sz, rgb, 0);
+        if (this.waiting) {
+            this.settle();
+        }
+        alphaA = this.shared(layer, alphaA);
+        alphaB = this.shared(layer, alphaB);
+        // The two ends are each in both halves of the line: worked out once, written twice.
+        Vector3f v = this.vertex;
+        this.matrix.transformPosition((float) (ax - this.camera.x), (float) (ay - this.camera.y),
+                (float) (az - this.camera.z), v);
+        float x0 = v.x;
+        float y0 = v.y;
+        float z0 = v.z;
+        this.matrix.transformPosition((float) (bx - this.camera.x), (float) (by - this.camera.y),
+                (float) (bz - this.camera.z), v);
+        this.halves(layer, ax, ay, az, bx, by, bz, sx, sy, sz, x0, y0, z0, v.x, v.y, v.z, rgb, alphaA, alphaB);
+    }
+
+    // A lit line and its glow along the same edge, each as line() draws it: the edge's two ends, their fading and the
+    // turn towards the eye are worked out once for both.
+    void linePair(double ax, double ay, double az, double bx, double by, double bz, double lightWidth, int lightRgb,
+            int lightAlpha, double glowWidth, int glowRgb, int glowAlpha) {
+        if (lightAlpha <= 0 && glowAlpha <= 0) {
+            return;
+        }
+        double dx = bx - ax;
+        double dy = by - ay;
+        double dz = bz - az;
+        double tx = this.camera.x - (ax + bx) * 0.5;
+        double ty = this.camera.y - (ay + by) * 0.5;
+        double tz = this.camera.z - (az + bz) * 0.5;
+        double sx = dy * tz - dz * ty;
+        double sy = dz * tx - dx * tz;
+        double sz = dx * ty - dy * tx;
+        double length = Math.sqrt(sx * sx + sy * sy + sz * sz);
+        if (length < 1.0E-6) {
+            return;
+        }
+        double fadeA = this.fade(ax, ay, az);
+        double fadeB = this.fade(bx, by, bz);
+        if (this.waiting) {
+            this.settle();
+        }
+        Vector3f v = this.vertex;
+        Matrix4f m = this.matrix;
+        double cx = this.camera.x;
+        double cy = this.camera.y;
+        double cz = this.camera.z;
+        m.transformPosition((float) (ax - cx), (float) (ay - cy), (float) (az - cz), v);
+        float x0 = v.x;
+        float y0 = v.y;
+        float z0 = v.z;
+        m.transformPosition((float) (bx - cx), (float) (by - cy), (float) (bz - cz), v);
+        float x1 = v.x;
+        float y1 = v.y;
+        float z1 = v.z;
+        if (lightAlpha > 0) {
+            double k = lightWidth * 0.5 / length;
+            this.halves(this.light, ax, ay, az, bx, by, bz, sx * k, sy * k, sz * k, x0, y0, z0, x1, y1, z1, lightRgb,
+                    this.shared(this.light, fadeA < 0.0 ? lightAlpha : (int) (lightAlpha * fadeA)),
+                    this.shared(this.light, fadeB < 0.0 ? lightAlpha : (int) (lightAlpha * fadeB)));
+        }
+        if (glowAlpha > 0) {
+            double k = glowWidth * 0.5 / length;
+            this.halves(this.glow, ax, ay, az, bx, by, bz, sx * k, sy * k, sz * k, x0, y0, z0, x1, y1, z1, glowRgb,
+                    this.shared(this.glow, fadeA < 0.0 ? glowAlpha : (int) (glowAlpha * fadeA)),
+                    this.shared(this.glow, fadeB < 0.0 ? glowAlpha : (int) (glowAlpha * fadeB)));
+        }
+    }
+
+    // The eight vertices of a line whose ends a and b are already placed at (x0, y0, z0) and (x1, y1, z1).
+    private void halves(Layer layer, double ax, double ay, double az, double bx, double by, double bz, double sx,
+            double sy, double sz, float x0, float y0, float z0, float x1, float y1, float z1, int rgb, int alphaA,
+            int alphaB) {
+        Vector3f v = this.vertex;
+        Matrix4f m = this.matrix;
+        double cx = this.camera.x;
+        double cy = this.camera.y;
+        double cz = this.camera.z;
+        long p = layer.reserve(8);
+        Layer.write(p, x0, y0, z0, rgb, alphaA);
+        Layer.write(p + 16L, x1, y1, z1, rgb, alphaB);
+        m.transformPosition((float) (bx + sx - cx), (float) (by + sy - cy), (float) (bz + sz - cz), v);
+        Layer.write(p + 32L, v.x, v.y, v.z, rgb, 0);
+        m.transformPosition((float) (ax + sx - cx), (float) (ay + sy - cy), (float) (az + sz - cz), v);
+        Layer.write(p + 48L, v.x, v.y, v.z, rgb, 0);
+        Layer.write(p + 64L, x0, y0, z0, rgb, alphaA);
+        Layer.write(p + 80L, x1, y1, z1, rgb, alphaB);
+        m.transformPosition((float) (bx - sx - cx), (float) (by - sy - cy), (float) (bz - sz - cz), v);
+        Layer.write(p + 96L, v.x, v.y, v.z, rgb, 0);
+        m.transformPosition((float) (ax - sx - cx), (float) (ay - sy - cy), (float) (az - sz - cz), v);
+        Layer.write(p + 112L, v.x, v.y, v.z, rgb, 0);
+    }
+
+    // What faded() multiplies an alpha by at this point, or -1 where nothing fades.
+    double fade(double x, double y, double z) {
+        if (!this.nearFade || this.hand) {
+            return -1.0;
+        }
+        double away = Math.sqrt(sq(x - this.camera.x) + sq(y - this.camera.y) + sq(z - this.camera.z));
+        return Ease.smooth((away - NEAR_GONE) / (NEAR_CLEAR - NEAR_GONE));
+    }
+
+    // A glowing vertex's alpha as the player's glow strength has it.
+    int shared(Layer layer, int alpha) {
+        return layer == this.glow && this.glowShare != 1.0F ? Math.min(255, (int) (alpha * this.glowShare)) : alpha;
+    }
+
+    // Four vertices of one quad, from the camera the way put() places them, room made for all four at once.
+    void quad4(Layer layer, double x0, double y0, double z0, int a0, double x1, double y1, double z1, int a1,
+            double x2, double y2, double z2, int a2, double x3, double y3, double z3, int a3, int rgb) {
+        if (this.waiting) {
+            this.settle();
+        }
+        Vector3f v = this.vertex;
+        Matrix4f m = this.matrix;
+        double cx = this.camera.x;
+        double cy = this.camera.y;
+        double cz = this.camera.z;
+        long p = layer.reserve(4);
+        m.transformPosition((float) (x0 - cx), (float) (y0 - cy), (float) (z0 - cz), v);
+        Layer.write(p, v.x, v.y, v.z, rgb, this.shared(layer, a0));
+        m.transformPosition((float) (x1 - cx), (float) (y1 - cy), (float) (z1 - cz), v);
+        Layer.write(p + 16L, v.x, v.y, v.z, rgb, this.shared(layer, a1));
+        m.transformPosition((float) (x2 - cx), (float) (y2 - cy), (float) (z2 - cz), v);
+        Layer.write(p + 32L, v.x, v.y, v.z, rgb, this.shared(layer, a2));
+        m.transformPosition((float) (x3 - cx), (float) (y3 - cy), (float) (z3 - cz), v);
+        Layer.write(p + 48L, v.x, v.y, v.z, rgb, this.shared(layer, a3));
     }
 
     private void quad(Layer layer, Vec3 p0, Vec3 p1, Vec3 p2, Vec3 p3, int rgb, int alpha) {
@@ -336,6 +475,9 @@ abstract class PainterCore {
     void put(Layer layer, double x, double y, double z, int rgb, int alpha) {
         if (this.waiting) {
             this.settle();
+        }
+        if (layer == this.glow && this.glowShare != 1.0F) {
+            alpha = Math.min(255, (int) (alpha * this.glowShare));
         }
         layer.add(this.matrix, this.vertex, x - this.camera.x, y - this.camera.y, z - this.camera.z, rgb, alpha);
     }

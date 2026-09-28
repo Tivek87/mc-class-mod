@@ -17,6 +17,7 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
+import nl.tivek.multiversepowers.character.GameCharacter;
 import nl.tivek.multiversepowers.engine.effect.Effects;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 import nl.tivek.multiversepowers.engine.math.Vectors;
@@ -29,13 +30,7 @@ import nl.tivek.multiversepowers.spell.SpellTargets;
 // shockwave rolls out the way he looks, hurting and throwing what wants to hurt him. ClapFx draws it.
 final class Thunderclap {
     private static final int MEET = ClapPayload.HANDS_MEET;
-    // ClapFx draws the blast in the same cone, reach and pace.
-    private static final double RADIUS = 9.0;
-    private static final double HALF_ANGLE = 0.8;
     private static final double CONE_BACK = 1.0;
-    private static final double WAVE_SPEED = 2.25;
-    private static final double STRENGTH = 1.6;
-    private static final double LIFT = 0.45;
     private static final double OFF_WALL = 0.3;
 
     private static final int GLOW = 0x00D2FF;
@@ -74,11 +69,11 @@ final class Thunderclap {
             if (t == 0) {
                 boom(lvl, casterEntity, hands(eye[0], ahead[0]), aim[0], feet[0]);
             }
-            double front = (t + 1) * WAVE_SPEED;
-            if (caster != null && front < RADIUS + WAVE_SPEED) {
-                push(lvl, caster, eye[0], ahead[0], Math.min(front, RADIUS), hit, damage);
+            double front = (t + 1) * setting("waveSpeed");
+            if (caster != null && front < setting("radiusBlocks") + setting("waveSpeed")) {
+                push(lvl, caster, eye[0], ahead[0], Math.min(front, setting("radiusBlocks")), hit, damage);
             }
-            return front < RADIUS + WAVE_SPEED;
+            return front < setting("radiusBlocks") + setting("waveSpeed");
         });
         return true;
     }
@@ -92,7 +87,7 @@ final class Thunderclap {
     private static Vec3 aimed(ServerLevel level, ServerPlayer player) {
         Vec3 eye = player.getEyePosition();
         Vec3 look = player.getLookAngle();
-        Vec3 end = eye.add(look.scale(RADIUS));
+        Vec3 end = eye.add(look.scale(setting("radiusBlocks")));
         BlockHitResult block = LoadedWorld.clip(level, new ClipContext(eye, end, ClipContext.Block.COLLIDER,
                 ClipContext.Fluid.NONE, player));
         Vec3 stop = block.getType() == HitResult.Type.MISS ? end : block.getLocation();
@@ -150,7 +145,7 @@ final class Thunderclap {
     private static void push(ServerLevel level, ServerPlayer caster, Vec3 eye, Vec3 ahead, double front,
             Set<UUID> hit, float damage) {
         Vec3 origin = eye.subtract(ahead.scale(CONE_BACK));
-        double cone = Math.cos(HALF_ANGLE);
+        double cone = Math.cos(Math.toRadians(setting("halfAngleDegrees")));
         for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class,
                 new AABB(eye, eye).inflate(front + 2.0),
                 entity -> SpellTargets.hits(caster, entity) && !hit.contains(entity.getUUID()))) {
@@ -162,11 +157,11 @@ final class Thunderclap {
             }
             hit.add(target.getUUID());
             Vec3 way = away.normalize();
-            double close = 1.0 - 0.5 * distance / RADIUS;
+            double close = 1.0 - 0.5 * distance / setting("radiusBlocks");
             target.invulnerableTime = 0;
             target.hurt(level.damageSources().playerAttack(caster), (float) (damage * close));
-            SpellTargets.push(target, way, STRENGTH * (0.5 + 0.5 * close),
-                    LIFT + Math.max(0.0, way.y) * STRENGTH * 0.5);
+            SpellTargets.push(target, way, setting("push") * (0.5 + 0.5 * close),
+                    setting("lift") + Math.max(0.0, way.y) * setting("push") * 0.5);
             ParticleFx.cloud(level, ParticleTypes.ELECTRIC_SPARK, target.getBoundingBox().getCenter(), 14, 0.35, 0.2);
         }
     }
@@ -177,5 +172,10 @@ final class Thunderclap {
         Vec3 onLine = origin.add(ahead.scale(Math.max(0.0, middle.subtract(origin).dot(ahead))));
         return new Vec3(Mth.clamp(onLine.x, box.minX, box.maxX), Mth.clamp(onLine.y, box.minY, box.maxY),
                 Mth.clamp(onLine.z, box.minZ, box.maxZ));
+    }
+
+    // ClapFx draws the blast in the same cone and reach.
+    private static double setting(String key) {
+        return GameCharacter.THOR.byName("thunderclap").value(key);
     }
 }

@@ -3,6 +3,7 @@ package nl.tivek.multiversepowers.network.client;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.network.protocol.game.ClientboundLevelParticlesPacket;
+import net.minecraft.util.RandomSource;
 import net.neoforged.fml.config.ConfigTracker;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
@@ -31,6 +32,7 @@ import nl.tivek.multiversepowers.classes.client.ClientClassData;
 import nl.tivek.multiversepowers.classes.client.ClientWelcome;
 import nl.tivek.multiversepowers.config.ModConfigs;
 import nl.tivek.multiversepowers.config.WorldSettingsPayload;
+import nl.tivek.multiversepowers.engine.client.fx.ParticleAmount;
 import nl.tivek.multiversepowers.engine.client.fx.VoiceLine;
 import nl.tivek.multiversepowers.engine.client.ragdoll.Ashes;
 import nl.tivek.multiversepowers.engine.client.ragdoll.Ragdolls;
@@ -157,10 +159,16 @@ public final class ClientPayloadHandler {
             if (connection == null) {
                 return;
             }
+            RandomSource random = Minecraft.getInstance().level == null ? RandomSource.create()
+                    : Minecraft.getInstance().level.random;
             for (ParticlesPayload.Entry entry : payload.entries()) {
-                connection.handleParticleEvent(new ClientboundLevelParticlesPacket(entry.options(), entry.force(),
-                        entry.x(), entry.y(), entry.z(), entry.dx(), entry.dy(), entry.dz(), entry.speed(),
-                        entry.count()));
+                // A count of 0 is one particle sent off exactly as given: the player's share repeats it instead.
+                int count = entry.count() == 0 ? 0 : ParticleAmount.count(entry.count(), random);
+                int times = entry.count() == 0 ? ParticleAmount.count(1, random) : count > 0 ? 1 : 0;
+                for (int k = 0; k < times; k++) {
+                    connection.handleParticleEvent(new ClientboundLevelParticlesPacket(entry.options(), entry.force(),
+                            entry.x(), entry.y(), entry.z(), entry.dx(), entry.dy(), entry.dz(), entry.speed(), count));
+                }
             }
         });
     }

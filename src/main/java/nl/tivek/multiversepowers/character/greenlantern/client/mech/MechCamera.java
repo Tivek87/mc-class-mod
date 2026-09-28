@@ -28,7 +28,6 @@ public final class MechCamera {
     private static final float COCKPIT_PITCH = 6.0F;
     private static final double FOV = 70.0;
     private static final Vec3 CHASE_PIVOT = new Vec3(0.0, 11.5, 0.0);
-    private static final double CHASE_DISTANCE = 14.0;
 
     static {
         Cinematic.add(MechCamera::shot);
@@ -65,7 +64,7 @@ public final class MechCamera {
         }
         MechPose walk = MechWalk.pose(pilot.id(), partialTick);
         MechScript.Stage stage = walk != null ? walk.stage() : pilot.stage();
-        return new ChaseCamera.Rig(stage.point(CHASE_PIVOT), CHASE_DISTANCE);
+        return new ChaseCamera.Rig(stage.point(CHASE_PIVOT), ClientSettings.get(ClientSettings.MECH_CHASE));
     }
 
     @Nullable

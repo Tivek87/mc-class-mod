@@ -365,7 +365,8 @@ public final class SwordArms extends SwordFirstPerson {
     @SubscribeEvent
     public static void onFov(ComputeFovModifierEvent event) {
         if (own != null && own.charging) {
-            event.setNewFovModifier(event.getNewFovModifier() * CHARGE_FOV);
+            float wide = (CHARGE_FOV - 1.0F) * ClientSettings.factor(ClientSettings.SPEED_FOV);
+            event.setNewFovModifier(event.getNewFovModifier() * (1.0F + wide));
         }
     }
 

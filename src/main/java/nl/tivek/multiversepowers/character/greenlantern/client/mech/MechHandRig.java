@@ -1,5 +1,6 @@
 package nl.tivek.multiversepowers.character.greenlantern.client.mech;
 
+import javax.annotation.Nullable;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.character.greenlantern.mech.MechMoves;
 import nl.tivek.multiversepowers.engine.client.render.ConstructPainter.Frame;
@@ -89,10 +90,68 @@ final class MechHandRig {
     }
 
     static Frame[] frames(Frame hand, MechMoves.Arm arm, boolean right) {
+        return frames(hand, arm, right, null);
+    }
+
+    // With a wall (see wall()), no finger or thumb reaches past the plane between two clapping hands.
+    static Frame[] frames(Frame hand, MechMoves.Arm arm, boolean right, @Nullable double[] wall) {
         Rig rig = right ? RIGHT : LEFT;
         Frame[] frames = new Frame[rig.size()];
-        RigFrames.pose(rig, settled(arm, right), hand, frames, true);
+        RigPose pose = settled(arm, right);
+        if (wall != null) {
+            stopAt(pose, rig, right, wall);
+        }
+        RigFrames.pose(rig, pose, hand, frames, true);
         return frames;
+    }
+
+    // The plane through `at` facing `side` (world), as a signed distance over the hand's own places: a, x, y, z with
+    // distance = a + x*px + y*py + z*pz, positive on the hand's side.
+    static double[] wall(Frame hand, Vec3 at, Vec3 side) {
+        return new double[] { hand.center().subtract(at).dot(side), hand.right().dot(side) * hand.scale(),
+                hand.up().dot(side) * hand.scale(), hand.forward().dot(side) * hand.scale() };
+    }
+
+    // Each finger, from its tip back, and the thumb open only as far as it takes to stay on the hand's side of the
+    // wall, so two clapping hands press against each other instead of through.
+    private static void stopAt(RigPose angles, Rig rig, boolean right, double[] wall) {
+        double[] space = RigSpace.create(rig);
+        for (int k = 0; k < 4; k++) {
+            int finger = k;
+            for (int j = 2; j >= 0; j--) {
+                int from = j;
+                Settle.back(rig, angles, bone(k, j), j == 0 ? 1 : 0, 0.0, space,
+                        s -> wallDepth(s, wall, finger, from, FINGER), TOUCH, STEPS);
+            }
+            Settle.ease(rig, angles, new int[] { bone(k, 0), bone(k, 1), bone(k, 2) }, BEND_TURNS, OPEN, space,
+                    s -> wallDepth(s, wall, finger, 0, FINGER), TOUCH, STEPS);
+        }
+        Settle.Depth thumb = s -> wallDepth(s, wall, 4, 0, THUMB);
+        for (int j = 2; j >= 1; j--) {
+            Settle.back(rig, angles, bone(4, j), 0, 0.0, space, thumb, TOUCH, STEPS);
+        }
+        Settle.back(rig, angles, THUMB_BONE, 1, 0.0, space, thumb, TOUCH, STEPS);
+        Settle.back(rig, angles, THUMB_BONE, 0, right ? -1.2 : 1.2, space, thumb, TOUCH, STEPS);
+        Settle.ease(rig, angles, new int[] { THUMB_BONE, THUMB_BONE, bone(4, 1), bone(4, 2) },
+                new int[] { 0, 1, 0, 0 }, new double[] { right ? -1.2 : 1.2, 0.0, 0.0, 0.0 }, space, thumb, TOUCH,
+                STEPS);
+    }
+
+    // How far the finger's bones from `from` to its tip reach past the wall, their thickness counted.
+    private static double wallDepth(double[] space, double[] wall, int k, int from, double radius) {
+        double deepest = Double.NEGATIVE_INFINITY;
+        for (int j = from; j < 3; j++) {
+            int o = bone(k, j) * RigSpace.STRIDE;
+            double length = length(k, j);
+            for (int i = 0; i <= 4; i++) {
+                double u = length * i / 4.0;
+                double x = space[o] + space[o + 6] * u;
+                double y = space[o + 1] + space[o + 7] * u;
+                double z = space[o + 2] + space[o + 8] * u;
+                deepest = Math.max(deepest, radius - (wall[0] + wall[1] * x + wall[2] * y + wall[3] * z));
+            }
+        }
+        return deepest;
     }
 
     static RigPose settled(MechMoves.Arm arm, boolean right) {

@@ -174,8 +174,9 @@ abstract class RigStrikes extends RigPoses {
             return;
         }
         for (Arm arm : this.arms) {
-            if (arm.free() && !this.isBlocking() && (this.rampage + arm.index * 3) % RAMPAGE_EVERY == 0) {
-                LivingEntity target = this.nearest(level, RAMPAGE_RANGE, false);
+            int every = OctoRig.ability("rampage").intValue("strikeEveryTicks");
+            if (arm.free() && !this.isBlocking() && (this.rampage + arm.index * 3) % every == 0) {
+                LivingEntity target = this.nearest(level, OctoRig.ability("rampage").value("rangeBlocks"), false);
                 if (target != null) {
                     this.strike(arm, target, Hit.RAMPAGE, 0);
                 }

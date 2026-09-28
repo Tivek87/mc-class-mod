@@ -3,6 +3,8 @@ package nl.tivek.multiversepowers.spell.client;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.phys.Vec3;
+import nl.tivek.multiversepowers.character.GameCharacter;
+import nl.tivek.multiversepowers.config.client.ClientSettings;
 import nl.tivek.multiversepowers.engine.client.fx.CameraShake;
 import nl.tivek.multiversepowers.engine.client.fx.ScreenFlash;
 import nl.tivek.multiversepowers.engine.client.render.ConstructPainter;
@@ -21,8 +23,6 @@ import org.joml.Vector3f;
 final class ClapFx {
     static final int LIFE = 46;
     // The same reach and cone as the hits in Thunderclap.
-    static final double REACH = 9.0;
-    static final double HALF_ANGLE = 0.8;
     private static final int FLASH = 8;
     private static final int BUBBLE = 12;
     private static final double BUBBLE_SIZE = 4.0;
@@ -73,8 +73,17 @@ final class ClapFx {
     }
 
     // A direction inside the blast's cone, picked by a noise value from 0 to 1: turned about the aim's own up.
+    // The thunderclap as the world settings have it, so the blast drawn covers what it hits.
+    static double reach() {
+        return GameCharacter.THOR.byName("thunderclap").value("radiusBlocks");
+    }
+
+    static double halfAngle() {
+        return Math.toRadians(GameCharacter.THOR.byName("thunderclap").value("halfAngleDegrees"));
+    }
+
     static Vec3 within(Vec3 ahead, double pick) {
-        return Vectors.spin(ahead, across(ahead).cross(ahead), (pick * 2.0 - 1.0) * HALF_ANGLE);
+        return Vectors.spin(ahead, across(ahead).cross(ahead), (pick * 2.0 - 1.0) * halfAngle());
     }
 
     // The first tick of a clap: every player feels it by how close they are.
@@ -146,7 +155,8 @@ final class ClapFx {
     // the bubble holds them they hang almost still.
     private static void streaks(ConstructPainter painter, Vec3 hands, Vec3 ahead, double age, int seed) {
         double held = slowed(age);
-        for (int k = 0; k < STREAKS; k++) {
+        int step = ClientSettings.detailStep();
+        for (int k = 0; k < STREAKS; k += step) {
             double t = held - 3.0 * SLOWED * Noise.of(seed, k, 41);
             double life = 8.0 + 10.0 * Noise.of(seed, k, 42);
             if (t < 0.0 || t > life) {
@@ -173,9 +183,10 @@ final class ClapFx {
             return;
         }
         double rolled = Ease.smooth(Math.min(1.0, age / 10.0));
-        for (int k = 0; k < PUFFS; k++) {
+        int every = ClientSettings.detailStep();
+        for (int k = 0; k < PUFFS; k += every) {
             Vec3 way = within(ahead, Noise.of(seed, k, 11));
-            double reach = 1.0 + REACH * (0.2 + 0.85 * Noise.of(seed, k, 12)) * rolled;
+            double reach = 1.0 + reach() * (0.2 + 0.85 * Noise.of(seed, k, 12)) * rolled;
             double drift = (Noise.of(seed, k, 13) - 0.5) * 1.2 * rolled + age * 0.02;
             Vec3 at = hands.add(way.scale(reach)).add(0.0, drift, 0.0);
             double size = 0.7 + 1.5 * rolled + age * 0.04;
