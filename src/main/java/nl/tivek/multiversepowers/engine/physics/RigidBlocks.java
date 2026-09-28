@@ -19,11 +19,12 @@ abstract class RigidBlocks extends RigidBodies {
     final double[] touchNormal = new double[MOST_TOUCHES * 3];
     final double[] touchDepth = new double[MOST_TOUCHES];
     int touches;
-    // Each body's touches in this substep (its own axes, and the world normal), for the pass on its speed.
+    // Each body's touches in this substep (its own axes, the world normal and how deep it went), for friction and the
+    // pass on its speed.
     final double[] contactLocal = new double[MOST * MOST_TOUCHES * 3];
     final double[] contactNormal = new double[MOST * MOST_TOUCHES * 3];
+    final double[] contactDepth = new double[MOST * MOST_TOUCHES];
     final int[] contacts = new int[MOST];
-    boolean frictionless;
     final double[] blocks = new double[MOST_BLOCKS * 6];
     int blockCount;
     // Per block, which of its faces (axis * 2 + 0 for the low side, + 1 for the high) lie against another whole block.
@@ -212,14 +213,14 @@ abstract class RigidBlocks extends RigidBodies {
             int to = (b * MOST_TOUCHES + start + t) * 3;
             System.arraycopy(this.touchLocal, from, this.contactLocal, to, 3);
             System.arraycopy(this.touchNormal, from, this.contactNormal, to, 3);
+            this.contactDepth[b * MOST_TOUCHES + start + t] = this.touchDepth[t];
         }
         this.contacts[b] = start + n;
     }
 
     // Each corner of the box that went into a block is pushed back out through an open face (the one it came in by,
     // else the shallowest), and every point of a block's sharp edge that went into the box pushes the box off it, so a
-    // box lying across the edge of a step rests on it instead of sinking in. Then each touch holds the box against
-    // sliding as far as friction reaches.
+    // box lying across the edge of a step rests on it instead of sinking in. Each touch is kept for friction().
     void touchBlocks(int b) {
         if (this.invMass[b] == 0.0 || this.blockCount == 0) {
             return;
@@ -262,17 +263,27 @@ abstract class RigidBlocks extends RigidBodies {
         }
         this.edgesInto(b);
         this.keepContacts(b);
-        // Friction last, once every touch is out: held against a push-out on its own, the tilt that push gave the box
-        // would be taken for sliding at the next touch, and a box lying still would creep and turn.
-        for (int t = 0; t < (this.frictionless ? 0 : this.touches); t++) {
-            double lx = this.touchLocal[t * 3];
-            double ly = this.touchLocal[t * 3 + 1];
-            double lz = this.touchLocal[t * 3 + 2];
+    }
+
+    // Each of the substep's touches holds its point against sliding since the substep began, as far as friction
+    // reaches, once every touch is out and every joint joined again. Held any earlier, the tilt a later push-out gives
+    // the box, or a joint joined again, would move a body lying still a little every substep, and it would creep and
+    // turn over the ground.
+    void friction(int b) {
+        if (this.invMass[b] == 0.0) {
+            return;
+        }
+        int o = b * 3;
+        for (int c = 0; c < this.contacts[b]; c++) {
+            int k = (b * MOST_TOUCHES + c) * 3;
+            double lx = this.contactLocal[k];
+            double ly = this.contactLocal[k + 1];
+            double lz = this.contactLocal[k + 2];
             this.point(b, lx, ly, lz, this.t1);
             Quat.rotate(this.pq, b * 4, lx, ly, lz, this.t2, 0);
-            double nx = this.touchNormal[t * 3];
-            double ny = this.touchNormal[t * 3 + 1];
-            double nz = this.touchNormal[t * 3 + 2];
+            double nx = this.contactNormal[k];
+            double ny = this.contactNormal[k + 1];
+            double nz = this.contactNormal[k + 2];
             double dx = this.t1[0] - this.px[o] - this.t2[0];
             double dy = this.t1[1] - this.px[o + 1] - this.t2[1];
             double dz = this.t1[2] - this.px[o + 2] - this.t2[2];
@@ -282,7 +293,7 @@ abstract class RigidBlocks extends RigidBodies {
             double sz = dz - nz * along;
             double slide = Math.sqrt(sx * sx + sy * sy + sz * sz);
             if (slide > 1.0E-9) {
-                double held = Math.min(slide, this.friction * this.touchDepth[t]);
+                double held = Math.min(slide, this.friction * this.contactDepth[b * MOST_TOUCHES + c]);
                 this.pushOut(b, this.t1[0], this.t1[1], this.t1[2], -sx / slide, -sy / slide, -sz / slide, held);
             }
         }

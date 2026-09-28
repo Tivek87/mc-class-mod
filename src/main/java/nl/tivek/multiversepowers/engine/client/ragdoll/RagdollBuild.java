@@ -5,12 +5,15 @@ import javax.annotation.Nullable;
 import net.minecraft.client.model.EntityModel;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.Vec3;
+import nl.tivek.multiversepowers.engine.client.model.BentParts;
 import nl.tivek.multiversepowers.engine.client.model.ModelParts;
 import nl.tivek.multiversepowers.engine.physics.BallJoint;
 import nl.tivek.multiversepowers.engine.physics.HingeJoint;
 import nl.tivek.multiversepowers.engine.physics.Quat;
 import nl.tivek.multiversepowers.engine.physics.RigidWorld;
 import nl.tivek.multiversepowers.engine.physics.SelfContact;
+import nl.tivek.multiversepowers.engine.physics.SpineJoint;
+import org.joml.Matrix3f;
 import org.joml.Matrix4f;
 import org.joml.Quaterniond;
 import org.joml.Vector3f;
@@ -20,38 +23,34 @@ final class RagdollBuild {
     private static final double DENSITY = 100.0;
     // How deep a limb may already lie in another part as the body is built before it is no longer kept out of it.
     private static final double TOUCHING = 0.01;
+    // How far a limp trunk leans out to its side at the waist and twists there, either way (radians).
+    private static final double WAIST_SIDE = 0.35;
+    private static final double WAIST_TWIST = 0.45;
+    private static final String WAIST = "waist";
 
     private RagdollBuild() {
     }
 
     // Built the first time the creature is drawn after something made it limp: `model` is its model as posed this
-    // frame, `drawn` the matrix from model space to the camera, `camera` where the camera stands.
+    // frame, `drawn` the matrix from model space to the camera, `camera` where the camera stands, `feet` where the
+    // creature is drawn.
     static Ragdoll build(LivingEntity entity, EntityModel<?> model, List<ModelParts.Part> parts, Matrix4f drawn,
-            Vec3 camera, float partialTick, Ragdoll.State state, boolean stiff, RagdollProfiles.Profile profile,
+            Vec3 camera, Vec3 feet, Ragdoll.State state, boolean stiff, RagdollProfiles.Profile profile,
             Vec3 velocity) {
         int n = parts.size();
         int[] body = new int[n];
         double[] center = new double[n * 3];
         Matrix4f[] frames = new Matrix4f[n];
-        int core = 0;
-        double biggest = -1.0;
-        for (int i = 0; i < n; i++) {
-            ModelParts.Part part = parts.get(i);
-            float[] b = part.bounds();
-            double volume = (b[3] - b[0]) * (b[4] - b[1]) * (b[5] - b[2]);
-            boolean better = part.role() == ModelParts.Role.BODY && parts.get(core).role() != ModelParts.Role.BODY
-                    || (part.role() == ModelParts.Role.BODY) == (parts.get(core).role() == ModelParts.Role.BODY)
-                            && volume > biggest;
-            if (i == 0 || better) {
-                core = i;
-                biggest = volume;
-            }
-        }
+        int core = ModelParts.core(parts);
         ModelParts.Bend[] bends = new ModelParts.Bend[n];
+        RagdollProfiles.Tuning waist = profile.part(WAIST);
         for (int i = 0; i < n && !stiff; i++) {
-            bends[i] = i == core ? null : ModelParts.bend(parts.get(i));
+            bends[i] = i != core ? ModelParts.bend(parts.get(i))
+                    : waist.swing().orElse(1.0) > 0.0 ? ModelParts.waist(parts, core) : null;
         }
-        Ragdoll ragdoll = new Ragdoll(entity, model, parts, body, bends, center, core, state);
+        // Which parts hang from the trunk's far half (legs, a tail): joined to it, not to the near half.
+        boolean[] hangsLow = bends[core] == null ? new boolean[n] : ModelParts.far(parts, core, bends[core]);
+        Ragdoll ragdoll = new Ragdoll(entity, model, parts, body, bends, hangsLow, center, core, state);
         RigidWorld world = ragdoll.world;
         world.friction = 0.8;
         world.angularDamping = 1.6;
@@ -83,7 +82,8 @@ final class RagdollBuild {
             body[i] = box(ragdoll, frame, near, scale, heft, camera, turn, vel);
             halves[i] = far == null ? null : new float[][] { near, far };
         }
-        // The far halves after every part's own body, so a part's index stays its body's.
+        // The far halves after every part's own body, so a part's index stays its body's; each as bent as it is drawn
+        // now, so a creature posed with a bent knee or waist goes limp from just that pose.
         for (int i = 0; i < n; i++) {
             if (halves[i] != null) {
                 ModelParts.Bend bend = bends[i];
@@ -91,8 +91,15 @@ final class RagdollBuild {
                 float[] far = halves[i][1];
                 double scale = Ragdoll.scaleOf(frames[i]);
                 double heft = heft(parts.get(i).role()) * profile.part(parts.get(i).name()).mass().orElse(1.0);
-                Ragdoll.rotationOf(frames[i], turn);
-                ragdoll.lower[i] = box(ragdoll, frames[i], far, scale, heft, camera, turn, vel);
+                Matrix4f bent = new Matrix4f(frames[i]);
+                Matrix3f drawnBent = BentParts.turn(parts.get(i).part());
+                if (drawnBent != null) {
+                    float[] k = bend.knee();
+                    bent.translate(k[0] / 16.0F, k[1] / 16.0F, k[2] / 16.0F).mul(new Matrix4f().set(drawnBent))
+                            .translate(-k[0] / 16.0F, -k[1] / 16.0F, -k[2] / 16.0F);
+                }
+                Ragdoll.rotationOf(bent, turn);
+                ragdoll.lower[i] = box(ragdoll, bent, far, scale, heft, camera, turn, vel);
                 double[] anchorA = new double[3];
                 double[] anchorB = new double[3];
                 for (int k = 0; k < 3; k++) {
@@ -102,8 +109,15 @@ final class RagdollBuild {
                 double[] hinge = { bend.hinge()[0], bend.hinge()[1], bend.hinge()[2] };
                 double[] bone = new double[3];
                 bone[bend.axis()] = bend.farSign();
-                world.add(new HingeJoint(body[i], anchorA, hinge, bone, ragdoll.lower[i], anchorB, hinge, bone,
-                        bend.min(), bend.max()));
+                if (i == core) {
+                    double fold = waist.swing().map(Math::toRadians).orElse(bend.max());
+                    double twist = waist.twist().map(Math::toRadians).orElse(WAIST_TWIST);
+                    world.add(new SpineJoint(body[i], anchorA, hinge, bone, ragdoll.lower[i], anchorB, hinge, bone,
+                            bend.min(), fold, WAIST_SIDE, twist));
+                } else {
+                    world.add(new HingeJoint(body[i], anchorA, hinge, bone, ragdoll.lower[i], anchorB, hinge, bone,
+                            bend.min(), bend.max()));
+                }
                 kneeHang[i] = anchorB;
             }
         }
@@ -119,11 +133,12 @@ final class RagdollBuild {
         double[] coreAt = new double[7];
         double[] limbAt = new double[7];
         double[][] hangs = new double[n][];
-        world.pose(body[core], coreAt);
         for (int i = 0; i < n; i++) {
             if (i == core) {
                 continue;
             }
+            int trunk = hangsLow[i] ? ragdoll.lower[core] : body[core];
+            world.pose(trunk, coreAt);
             Vector3f origin = frames[i].transformPosition(new Vector3f(), new Vector3f());
             pivot[0] = origin.x + camera.x;
             pivot[1] = origin.y + camera.y;
@@ -169,8 +184,7 @@ final class RagdollBuild {
                 case LEG -> 0.4;
                 default -> 0.6;
             });
-            world.add(new BallJoint(body[core], aLocal, axisA, refA, body[i], bLocal, axisB, refB, swing, -twist,
-                    twist));
+            world.add(new BallJoint(trunk, aLocal, axisA, refA, body[i], bLocal, axisB, refB, swing, -twist, twist));
             hangs[i] = bLocal.clone();
             if (!stiff && role != ModelParts.Role.HEAD) {
                 apart(ragdoll, i, hangs[i], kneeHang[i], core);
@@ -212,7 +226,6 @@ final class RagdollBuild {
         ragdoll.remember(ragdoll.now);
         System.arraycopy(ragdoll.now, 0, ragdoll.was, 0, ragdoll.now.length);
         // Where the core sits from the creature's feet as it is drawn now, kept while something carries it.
-        Vec3 feet = entity.getPosition(partialTick);
         System.arraycopy(ragdoll.now, core * 7, ragdoll.target, 0, 3);
         ragdoll.offset[0] = ragdoll.target[0] - feet.x;
         ragdoll.offset[1] = ragdoll.target[1] - feet.y;

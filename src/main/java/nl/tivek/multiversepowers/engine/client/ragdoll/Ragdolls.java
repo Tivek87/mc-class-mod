@@ -235,8 +235,8 @@ public final class Ragdolls {
         boolean stiff = entity.getType().is(STIFF) || profile.stiff();
         boolean blasted = state != Ragdoll.State.HELD && RagdollCauses.nearBlast(entity);
         Vec3 velocity = blasted ? Vec3.ZERO : RagdollCauses.velocity(entity);
-        Ragdoll doll = RagdollBuild.build(entity, model, parts, new Matrix4f(drawn), camera, partialTick, state, stiff,
-                profile, velocity);
+        Ragdoll doll = RagdollBuild.build(entity, model, parts, new Matrix4f(drawn), camera,
+                entity.getPosition(partialTick), state, stiff, profile, velocity);
         if (blasted && entity.level() instanceof ClientLevel level) {
             RagdollCauses.throwByBlasts(doll, level, RANDOM);
         }
@@ -409,8 +409,9 @@ public final class Ragdolls {
     }
 
     // A living limp creature hangs from what holds it; one thrown flies along with its creature until it comes down,
-    // then lies where it fell (never landing on its feet), kept where its creature really is, and gets up in time to
-    // stand before the server lets its creature move again. False once it stands again.
+    // then lies where it fell (never landing on its feet), kept where its creature really is, at least 3 seconds on
+    // the ground, and gets up in time to stand before the server lets its creature move again. False once it stands
+    // again.
     private static boolean carried(Ragdoll doll, LivingEntity entity) {
         boolean held = HELD.contains(entity.getId());
         if (held) {
@@ -441,8 +442,11 @@ public final class Ragdolls {
                     doll.lift(entity);
                 } else {
                     doll.down++;
+                    if (doll.world.touching()) {
+                        doll.lain++;
+                    }
                     doll.keepNear(entity);
-                    if (Knocked.getsUp(entity.getId(), doll.down, doll.person())) {
+                    if (Knocked.getsUp(entity.getId(), doll.down, doll.lain, doll.person())) {
                         doll.getUp();
                     }
                 }

@@ -102,6 +102,16 @@ public final class RigidWorld extends RigidBlocks {
         this.quiet = 0;
     }
 
+    // Whether any body touched a block in the last substep (lying still, when it went to sleep).
+    public boolean touching() {
+        for (int b = 0; b < this.count; b++) {
+            if (this.contacts[b] > 0) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     // Position then orientation of body b: x, y, z, qx, qy, qz, qw.
     public void pose(int b, double[] out) {
         System.arraycopy(this.x, b * 3, out, 0, 3);
@@ -144,13 +154,14 @@ public final class RigidWorld extends RigidBlocks {
             for (Constraint constraint : this.constraints) {
                 constraint.rejoin(this, h);
             }
-            // Joining the joints again can push a part back into a block: out once more, without friction, which a
-            // second time would hold a body lying still against nothing and let it creep.
-            this.frictionless = true;
+            // Joining the joints again can push a part back into a block: out once more, then friction for every
+            // touch of the substep.
             for (int b = 0; b < this.count; b++) {
                 this.touchBlocks(b);
             }
-            this.frictionless = false;
+            for (int b = 0; b < this.count; b++) {
+                this.friction(b);
+            }
             for (int b = 0; b < this.count; b++) {
                 this.settle(b, h);
             }

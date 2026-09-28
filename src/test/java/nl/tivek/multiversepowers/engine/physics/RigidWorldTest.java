@@ -200,6 +200,97 @@ class RigidWorldTest {
         assertTrue(most > 0.3, "it did bend, up to " + most);
     }
 
+    // A chest held still and a pelvis hanging from its waist, folding ahead (-z) up to 1.0, back up to 0.4, out to the
+    // sides up to 0.35 and twisting up to 0.45 either way.
+    private static int[] waist(RigidWorld world) {
+        int chest = world.add(0.0, 0.25, 0.2, 0.12);
+        world.place(chest, 0.0, 6.0, 0.0, 0.0, 0.0, 0.0, 1.0);
+        int pelvis = world.add(1.0, 0.25, 0.2, 0.12);
+        world.place(pelvis, 0.0, 5.6, 0.0, 0.0, 0.0, 0.0, 1.0);
+        double[] hinge = { 1.0, 0.0, 0.0 };
+        double[] bone = { 0.0, -1.0, 0.0 };
+        world.add(new SpineJoint(chest, new double[] { 0.0, -0.2, 0.0 }, hinge, bone, pelvis,
+                new double[] { 0.0, 0.2, 0.0 }, hinge, bone, -0.4, 1.0, 0.35, 0.45));
+        return new int[] { chest, pelvis };
+    }
+
+    // The pelvis's fold ahead, its lean to the side and its twist, as seen from the chest.
+    private static double[] spine(RigidWorld world, int chest, int pelvis) {
+        double[] h = new double[3];
+        double[] b = new double[3];
+        double[] d = new double[3];
+        double[] g = new double[3];
+        Quat.rotate(world.q, chest * 4, 1.0, 0.0, 0.0, h, 0);
+        Quat.rotate(world.q, chest * 4, 0.0, -1.0, 0.0, b, 0);
+        Quat.rotate(world.q, pelvis * 4, 0.0, -1.0, 0.0, d, 0);
+        Quat.rotate(world.q, pelvis * 4, 1.0, 0.0, 0.0, g, 0);
+        double[] f = { h[1] * b[2] - h[2] * b[1], h[2] * b[0] - h[0] * b[2], h[0] * b[1] - h[1] * b[0] };
+        double out = d[0] * h[0] + d[1] * h[1] + d[2] * h[2];
+        double along = d[0] * b[0] + d[1] * b[1] + d[2] * b[2];
+        double ahead = d[0] * f[0] + d[1] * f[1] + d[2] * f[2];
+        double[] n = { b[0] + d[0], b[1] + d[1], b[2] + d[2] };
+        double nl = Math.sqrt(n[0] * n[0] + n[1] * n[1] + n[2] * n[2]);
+        for (int k = 0; k < 3; k++) {
+            n[k] /= nl;
+        }
+        double ha = h[0] * n[0] + h[1] * n[1] + h[2] * n[2];
+        double ga = g[0] * n[0] + g[1] * n[1] + g[2] * n[2];
+        double[] p = { h[0] - n[0] * ha, h[1] - n[1] * ha, h[2] - n[2] * ha };
+        double[] q = { g[0] - n[0] * ga, g[1] - n[1] * ga, g[2] - n[2] * ga };
+        double sin = (p[1] * q[2] - p[2] * q[1]) * n[0] + (p[2] * q[0] - p[0] * q[2]) * n[1]
+                + (p[0] * q[1] - p[1] * q[0]) * n[2];
+        double cos = p[0] * q[0] + p[1] * q[1] + p[2] * q[2];
+        return new double[] { Math.atan2(ahead, along), Math.atan2(out, Math.sqrt(along * along + ahead * ahead)),
+                Math.atan2(sin, cos) };
+    }
+
+    @Test
+    void aSpineStaysWithinItsFoldLeanAndTwistAndStaysWhole() {
+        RigidWorld world = new RigidWorld();
+        int[] pair = waist(world);
+        Random random = new Random(11);
+        double[] a = new double[3];
+        double[] b = new double[3];
+        double[] least = { 0.0, 0.0, 0.0 };
+        double[] most = { 0.0, 0.0, 0.0 };
+        for (int i = 0; i < 300; i++) {
+            if (i % 10 == 0) {
+                world.velocity(pair[1], random.nextGaussian() * 6.0, random.nextGaussian() * 6.0,
+                        random.nextGaussian() * 6.0, random.nextGaussian() * 12.0, random.nextGaussian() * 12.0,
+                        random.nextGaussian() * 12.0);
+            }
+            world.step(TICK, SUBSTEPS, Blocks.NONE);
+            world.point(pair[0], 0.0, -0.2, 0.0, a);
+            world.point(pair[1], 0.0, 0.2, 0.0, b);
+            double gap = Math.sqrt((a[0] - b[0]) * (a[0] - b[0]) + (a[1] - b[1]) * (a[1] - b[1])
+                    + (a[2] - b[2]) * (a[2] - b[2]));
+            assertTrue(gap < 0.03, "tick " + i + " waist gap " + gap);
+            double[] now = spine(world, pair[0], pair[1]);
+            for (int k = 0; k < 3; k++) {
+                least[k] = Math.min(least[k], now[k]);
+                most[k] = Math.max(most[k], now[k]);
+            }
+        }
+        System.out.printf("SPINE fold %.3f..%.3f lean %.3f..%.3f twist %.3f..%.3f%n", least[0], most[0], least[1],
+                most[1], least[2], most[2]);
+        assertTrue(least[0] >= -0.4 - 0.06 && most[0] <= 1.0 + 0.06, "fold within its range");
+        assertTrue(least[1] >= -0.35 - 0.06 && most[1] <= 0.35 + 0.06, "lean within its range");
+        assertTrue(least[2] >= -0.45 - 0.06 && most[2] <= 0.45 + 0.06, "twist within its range");
+        assertTrue(most[0] > 0.5 && least[0] < -0.2, "it did fold both ways");
+        assertTrue(Math.max(most[1], -least[1]) > 0.15 && Math.max(most[2], -least[2]) > 0.15,
+                "it did lean and twist");
+    }
+
+    @Test
+    void aPelvisPushedAheadFoldsTheWaistAhead() {
+        RigidWorld world = new RigidWorld();
+        int[] pair = waist(world);
+        world.velocity(pair[1], 0.0, 0.0, -3.0, 0.0, 0.0, 0.0);
+        world.step(TICK, SUBSTEPS, Blocks.NONE);
+        world.step(TICK, SUBSTEPS, Blocks.NONE);
+        assertTrue(spine(world, pair[0], pair[1])[0] > 0.05, "folded ahead: " + spine(world, pair[0], pair[1])[0]);
+    }
+
     @Test
     void aShinKickedBackBendsTheKneeBackwards() {
         RigidWorld world = new RigidWorld();
@@ -347,19 +438,20 @@ class RigidWorldTest {
         assertTrue(world.sleeping(), "lying still, it sleeps");
     }
 
-    // Drops a body and returns how far its highest point rose again after it first met the floor.
-    private static double bounce(RigidWorld world, int core, int ticks) {
-        double[] pose = new double[7];
+    // Drops a body and returns how far it came off the floor again after it first met it: how high the lowest corner of
+    // all its parts rose. Tipping over an edge keeps that edge down and is no bounce.
+    private static double bounce(RigidWorld world, int ticks) {
         boolean landed = false;
-        double lowest = Double.POSITIVE_INFINITY;
         double rose = 0.0;
         for (int t = 0; t < ticks; t++) {
             world.step(TICK, SUBSTEPS, FLOOR);
-            world.pose(core, pose);
-            landed |= lowestCorner(world, core) < 0.02;
+            double lowest = Double.POSITIVE_INFINITY;
+            for (int b = 0; b < world.count(); b++) {
+                lowest = Math.min(lowest, lowestCorner(world, b));
+            }
+            landed |= lowest < 0.02;
             if (landed) {
-                lowest = Math.min(lowest, pose[1]);
-                rose = Math.max(rose, pose[1] - lowest);
+                rose = Math.max(rose, lowest);
             }
         }
         return rose;
@@ -372,8 +464,8 @@ class RigidWorldTest {
         int box = world.add(1.0, 0.3, 0.3, 0.3);
         world.place(box, 0.0, 2.0, 0.0, 0.1, 0.0, 0.05, 1.0);
         world.velocity(box, 3.0, -18.0, 0.0, 2.0, 0.0, 1.0);
-        double rose = bounce(world, box, 60);
-        assertTrue(rose < 0.08, "it lands and stays down, rose " + rose);
+        double rose = bounce(world, 60);
+        assertTrue(rose < 0.02, "it lands and stays down, rose " + rose);
     }
 
     @Test
@@ -397,8 +489,8 @@ class RigidWorldTest {
         for (int b : new int[] { trunk, leg, arm }) {
             world.velocity(b, 6.0, -12.0, 1.0, 3.0, 1.0, -2.0);
         }
-        double rose = bounce(world, trunk, 100);
-        assertTrue(rose < 0.15, "the body comes down and stays down, rose " + rose);
+        double rose = bounce(world, 100);
+        assertTrue(rose < 0.02, "the body comes down and stays down, rose " + rose);
     }
 
     @Test

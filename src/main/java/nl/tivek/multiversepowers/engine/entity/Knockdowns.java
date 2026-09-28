@@ -35,9 +35,9 @@ public final class Knockdowns {
     private static final double TOSSED = 0.55;
     private static final double BLOWN = 0.2;
     private static final double HEAVY = 3.5;
-    // Ticks a thrown creature stays down from landing: it lies, then gets up in every player's game, and stands a
-    // moment before its AI comes back.
-    private static final int DOWN = 80;
+    // Ticks a thrown creature stays down from landing: it lies 3 seconds, then gets up in every player's game (a little
+    // later there, as its body comes down after it), and stands a moment before its AI comes back.
+    private static final int DOWN = 110;
     private static final int LONGEST_FLIGHT = 200;
     // As long as a player's game shows a creature hurt, the push that throws it may still come.
     private static final int WATCH = 10;

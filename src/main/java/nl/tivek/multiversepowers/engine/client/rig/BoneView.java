@@ -109,8 +109,15 @@ public final class BoneView {
             return;
         }
         Vec3 camera = Minecraft.getInstance().gameRenderer.getMainCamera().getPosition();
+        int core = ModelParts.core(parts);
+        ModelParts.Bend waist = ModelParts.waist(parts, core);
         for (ModelParts.Part part : parts) {
             float[] box = part.bounds();
+            if (waist != null && part == parts.get(core)) {
+                // A trunk that bends is two bones, from the end its head is on to the waist and on to the far end.
+                trunk(model, drawn, part, waist, camera);
+                continue;
+            }
             int longest = 0;
             for (int axis = 1; axis < 3; axis++) {
                 if (box[axis + 3] - box[axis] > box[longest + 3] - box[longest]) {
@@ -149,6 +156,31 @@ public final class BoneView {
             FRAME.transformPosition(end[0] / 16.0F, end[1] / 16.0F, end[2] / 16.0F, POINT);
             add(ax, ay, az, camera.x + POINT.x, camera.y + POINT.y, camera.z + POINT.z, CREATURE);
         }
+    }
+
+    private static void trunk(EntityModel<?> model, Matrix4f drawn, ModelParts.Part part, ModelParts.Bend waist,
+            Vec3 camera) {
+        float[] box = part.bounds();
+        float[] knee = waist.knee();
+        int axis = waist.axis();
+        ModelParts.frame(model, drawn, part, FRAME);
+        END[0] = knee[0];
+        END[1] = knee[1];
+        END[2] = knee[2];
+        END[axis] = waist.farSign() > 0.0F ? box[axis] : box[axis + 3];
+        FRAME.transformPosition(END[0] / 16.0F, END[1] / 16.0F, END[2] / 16.0F, POINT);
+        double ax = camera.x + POINT.x;
+        double ay = camera.y + POINT.y;
+        double az = camera.z + POINT.z;
+        FRAME.transformPosition(knee[0] / 16.0F, knee[1] / 16.0F, knee[2] / 16.0F, POINT);
+        double kx = camera.x + POINT.x;
+        double ky = camera.y + POINT.y;
+        double kz = camera.z + POINT.z;
+        add(ax, ay, az, kx, ky, kz, CREATURE);
+        END[axis] = waist.farSign() > 0.0F ? box[axis + 3] : box[axis];
+        BentParts.place(part.part(), END[0], END[1], END[2], BENT);
+        FRAME.transformPosition(BENT.x / 16.0F, BENT.y / 16.0F, BENT.z / 16.0F, POINT);
+        add(kx, ky, kz, camera.x + POINT.x, camera.y + POINT.y, camera.z + POINT.z, CREATURE);
     }
 
     private static void add(double ax, double ay, double az, double bx, double by, double bz, int rgb) {

@@ -5,9 +5,11 @@ import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectIterator;
 
 // What the server says of the creatures a throw has down (Knockdowns): still flying, or the ticks left before it may
-// move again. A limp body lies until just before then and gets up in time to stand before its creature moves on; one
-// the server never held down gets up at once, as it may walk on already.
+// move again. A limp body lies until just before then, never less than LIES on the ground, and gets up in time to
+// stand before its creature moves on; one the server never held down gets up at once, as it may walk on already.
 public final class Knocked {
+    // A body down on the ground lies this long before it may get up: 3 seconds.
+    static final int LIES = 60;
     private static final int FLYING = Integer.MAX_VALUE;
     // Standing this many ticks before its creature may move, so it is seen up before it walks on.
     private static final int MARGIN = 5;
@@ -49,16 +51,16 @@ public final class Knocked {
     // Whether the server holds the creature down with time enough left to lie before it gets up.
     static boolean down(int entity) {
         int left = LEFT.get(entity);
-        return left == FLYING || left > GetUp.PERSON_TICKS + MARGIN;
+        return left == FLYING || left > LIES + GetUp.PERSON_TICKS + MARGIN;
     }
 
-    // Whether a body that has lain `lain` ticks gets up now.
-    static boolean getsUp(int entity, int lain, boolean person) {
+    // Whether a body down `down` ticks, `lain` of them on the ground, gets up now.
+    static boolean getsUp(int entity, int down, int lain, boolean person) {
         if (!LEFT.containsKey(entity)) {
-            return lain >= GRACE;
+            return down >= GRACE;
         }
         int left = LEFT.get(entity);
-        return left == FLYING ? lain >= LONGEST : left <= GetUp.ticks(person) + MARGIN;
+        return left == FLYING ? down >= LONGEST : lain >= LIES && left <= GetUp.ticks(person) + MARGIN;
     }
 
     static void forget(int entity) {

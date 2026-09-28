@@ -3,6 +3,24 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.4.7-alpha] - 2026-09-28
+
+### Added
+- **Ragdolls:** every creature with a long enough trunk (people, zombies, villagers, creepers, cows, pigs, sheep,
+  horses, cats, foxes and more) now bends at the waist when it goes limp: chest and belly move on their own, and a
+  robe, a saddle or a tail on the trunk bends along with it.
+- **Poses:** a pose can bend any creature's back, not only a person's, carrying its hind legs and tail along.
+
+### Changed
+- **Ragdolls:** a thrown creature lies at least 3 seconds on the ground before it gets up; it now stays down about
+  5.5 seconds from landing until it walks again.
+- **Ragdolls:** a person getting up leans over the knee with the waist bent.
+
+### Fixed
+- **Ragdolls:** a body lying on the ground no longer slides, creeps or slowly turns over the floor; it comes to rest
+  and stays where it lies.
+- **Ragdolls:** a body lying still is no longer dragged over the ground towards its creature.
+
 ## [0.4.6-alpha] - 2026-09-28
 
 ### Changed
