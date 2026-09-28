@@ -347,6 +347,60 @@ class RigidWorldTest {
         assertTrue(world.sleeping(), "lying still, it sleeps");
     }
 
+    // Drops a body and returns how far its highest point rose again after it first met the floor.
+    private static double bounce(RigidWorld world, int core, int ticks) {
+        double[] pose = new double[7];
+        boolean landed = false;
+        double lowest = Double.POSITIVE_INFINITY;
+        double rose = 0.0;
+        for (int t = 0; t < ticks; t++) {
+            world.step(TICK, SUBSTEPS, FLOOR);
+            world.pose(core, pose);
+            landed |= lowestCorner(world, core) < 0.02;
+            if (landed) {
+                lowest = Math.min(lowest, pose[1]);
+                rose = Math.max(rose, pose[1] - lowest);
+            }
+        }
+        return rose;
+    }
+
+    @Test
+    void aBoxThrownDownOnTheFloorDoesNotBounce() {
+        RigidWorld world = new RigidWorld();
+        world.gravity = -32.0;
+        int box = world.add(1.0, 0.3, 0.3, 0.3);
+        world.place(box, 0.0, 2.0, 0.0, 0.1, 0.0, 0.05, 1.0);
+        world.velocity(box, 3.0, -18.0, 0.0, 2.0, 0.0, 1.0);
+        double rose = bounce(world, box, 60);
+        assertTrue(rose < 0.08, "it lands and stays down, rose " + rose);
+    }
+
+    @Test
+    void aLimpBodyThrownOnTheFloorDoesNotBounce() {
+        RigidWorld world = new RigidWorld();
+        world.gravity = -32.0;
+        world.friction = 0.8;
+        world.angularDamping = 1.6;
+        int trunk = world.add(15.0, 0.25, 0.375, 0.125);
+        int leg = world.add(6.0, 0.125, 0.375, 0.125);
+        int arm = world.add(4.0, 0.125, 0.375, 0.125);
+        world.place(trunk, 0.0, 2.2, 0.0, 0.3, 0.0, 0.2, 0.93);
+        world.place(leg, 0.12, 1.45, 0.0, 0.3, 0.0, 0.2, 0.93);
+        world.place(arm, 0.45, 2.3, 0.0, 0.3, 0.0, 0.2, 0.93);
+        double[] down = { 0.0, -1.0, 0.0 };
+        double[] ahead = { 0.0, 0.0, 1.0 };
+        world.add(new BallJoint(trunk, new double[] { 0.12, -0.375, 0.0 }, down, ahead, leg,
+                new double[] { 0.0, 0.375, 0.0 }, down, ahead, 1.3, -0.4, 0.4));
+        world.add(new BallJoint(trunk, new double[] { 0.3, 0.3, 0.0 }, down, ahead, arm,
+                new double[] { 0.0, 0.3, 0.0 }, down, ahead, 2.4, -1.4, 1.4));
+        for (int b : new int[] { trunk, leg, arm }) {
+            world.velocity(b, 6.0, -12.0, 1.0, 3.0, 1.0, -2.0);
+        }
+        double rose = bounce(world, trunk, 100);
+        assertTrue(rose < 0.15, "the body comes down and stays down, rose " + rose);
+    }
+
     @Test
     void aLimbIsPushedOutOfTheChest() {
         RigidWorld world = new RigidWorld();

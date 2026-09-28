@@ -1,14 +1,15 @@
 package nl.tivek.multiversepowers.character.greenlantern.ability.express;
 
 import java.util.ArrayDeque;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import javax.annotation.Nullable;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attributes;
@@ -33,7 +34,13 @@ import static nl.tivek.multiversepowers.character.greenlantern.express.ExpressSc
 import static nl.tivek.multiversepowers.character.greenlantern.express.ExpressScript.TRAIN_LENGTH;
 
 abstract class ExpressRoute implements Effect {
-    private static final double MAX_TURN = 0.075;
+    // The sharpest turn a tick (radians); in a sharp curve the train slows to TIGHT of its pace, so it bends tighter.
+    private static final double MAX_TURN = 0.11;
+    private static final double TIGHT = 0.55;
+    // Longer than this (ticks) off to the side, a target is circled rather than caught: the train lets it be a while.
+    private static final int ORBIT_TICKS = 24;
+    private static final double LET_BE = 24.0;
+    private static final double LEAD_TICKS = 16.0;
     private static final double RUN_OUT = 12.0;
     private static final double FIRST_RUN = (LENGTH + 10.0) * SCALE;
     private static final int GIVE_UP_TICKS = 70;
@@ -58,9 +65,13 @@ abstract class ExpressRoute implements Effect {
     private double lastFound;
     private final Set<Integer> hit = new HashSet<>();
     private final Set<Integer> skipped = new HashSet<>();
+    // Targets let be until the train has run this far (odometer), after it found it could only circle them.
+    private final Map<Integer, Double> resting = new HashMap<>();
     @Nullable
     private LivingEntity target;
     private int chasing;
+    private int wide;
+    private double curve = 1.0;
     // Where the nose has been, by how far it had come: the rest of the train runs along it.
     private final ArrayDeque<double[]> trail = new ArrayDeque<>();
     boolean newTarget;
@@ -99,15 +110,18 @@ abstract class ExpressRoute implements Effect {
     boolean roll(ServerLevel level, boolean steer) {
         if (steer) {
             this.steer(level);
+        } else {
+            this.curve += (1.0 - this.curve) * 0.15;
         }
-        double x = this.head.x + this.way.x * this.speed;
-        double z = this.head.z + this.way.z * this.speed;
+        double pace = this.speed * this.curve;
+        double x = this.head.x + this.way.x * pace;
+        double z = this.head.z + this.way.z * pace;
         BlockPos next = BlockPos.containing(x, this.head.y, z);
         if (!level.isLoaded(next) || !level.getWorldBorder().isWithinBounds(next)) {
             return false;
         }
         double rail = ground(level, x, z, this.head.y - RAIL_LIFT) + RAIL_LIFT;
-        double y = this.head.y + Mth.clamp(rail - this.head.y, -(DROP * this.speed + 0.02), CLIMB * this.speed + 0.02);
+        double y = this.head.y + Mth.clamp(rail - this.head.y, -(DROP * pace + 0.02), CLIMB * pace + 0.02);
         Vec3 was = this.head;
         this.head = new Vec3(x, y, z);
         this.odometer += this.head.distanceTo(was);
@@ -142,16 +156,24 @@ abstract class ExpressRoute implements Effect {
             this.skipped.add(this.target.getId());
             this.target = null;
         }
+        // Circled too long, or inside the circle the train turns in (it could only go round it): let it be a while.
+        if (this.target != null && (this.wide > ORBIT_TICKS || !this.reachable(this.aim(this.target)))) {
+            this.resting.put(this.target.getId(), this.odometer + LET_BE);
+            this.target = null;
+        }
+        this.resting.values().removeIf(until -> until <= this.odometer);
         if (this.target == null) {
             this.target = this.pick(level);
             this.chasing = 0;
+            this.wide = 0;
             this.newTarget = this.target != null;
         }
         if (this.target == null) {
             this.turning *= 0.8;
+            this.curve += (1.0 - this.curve) * 0.15;
             return;
         }
-        Vec3 to = this.target.position().subtract(this.head);
+        Vec3 to = this.aim(this.target).subtract(this.head);
         double length = Math.sqrt(to.x * to.x + to.z * to.z);
         if (length < 1.0E-3) {
             return;
@@ -162,6 +184,28 @@ abstract class ExpressRoute implements Effect {
         double turn = Mth.clamp(angle, -MAX_TURN, MAX_TURN);
         this.way = Vectors.spin(this.way, Vectors.UP, turn).normalize();
         this.turning = this.turning * 0.8 + turn * 0.2;
+        this.wide = Math.abs(angle) > 1.2 ? this.wide + 1 : 0;
+        // Slows into a sharp curve and picks up again out of it.
+        double want = 1.0 - (1.0 - TIGHT) * Mth.clamp((Math.abs(angle) - 0.35) / 0.9, 0.0, 1.0);
+        this.curve += (want - this.curve) * (want < this.curve ? 0.3 : 0.12);
+    }
+
+    // Where to steer for: where the target will be by the time the train gets there, as far as it can tell.
+    private Vec3 aim(LivingEntity living) {
+        Vec3 at = living.position();
+        double far = Math.sqrt(at.distanceToSqr(this.head.x, at.y, this.head.z));
+        double ticks = Math.min(LEAD_TICKS, far / Math.max(0.2, this.speed));
+        Vec3 moving = living.getDeltaMovement();
+        return at.add(moving.x * ticks, 0.0, moving.z * ticks);
+    }
+
+    // Whether the train can reach a point at all: not inside either circle it turns in at its tightest.
+    private boolean reachable(Vec3 point) {
+        Vec3 to = point.subtract(this.head);
+        double ahead = to.x * this.way.x + to.z * this.way.z;
+        double aside = Math.abs(to.x * -this.way.z + to.z * this.way.x);
+        double radius = Math.max(0.2, this.speed * TIGHT) / MAX_TURN;
+        return ahead * ahead + aside * aside >= 2.0 * aside * radius * 0.92;
     }
 
     @Nullable
@@ -171,10 +215,11 @@ abstract class ExpressRoute implements Effect {
         double bestScore = Double.MAX_VALUE;
         for (LivingEntity living : level.getEntitiesOfClass(LivingEntity.class,
                 new AABB(this.head, this.head).inflate(reach, 10.0, reach), entity -> GiantHands.fair(this.owner,
-                        entity) && !this.hit.contains(entity.getId()) && !this.skipped.contains(entity.getId()))) {
+                        entity) && !this.hit.contains(entity.getId()) && !this.skipped.contains(entity.getId())
+                        && !this.resting.containsKey(entity.getId()))) {
             Vec3 to = living.position().subtract(this.head);
             double flat = Math.sqrt(to.x * to.x + to.z * to.z);
-            if (flat > reach) {
+            if (flat > reach || !this.reachable(this.aim(living))) {
                 continue;
             }
             double ahead = flat < 1.0E-3 ? 1.0 : (to.x * this.way.x + to.z * this.way.z) / flat;
@@ -230,9 +275,9 @@ abstract class ExpressRoute implements Effect {
         ParticleFx.sphereOut(level, ParticleFx.dust(PowerRing.BRIGHT, 1.5F), at, 22, 0.35);
         ParticleFx.cloud(level, ParticleTypes.CRIT, at, 14, 0.4, 0.4);
         ParticleFx.cloud(level, ParticleTypes.CLOUD, at, 6, 0.3, 0.08);
-        Sounds.play(level, at, SoundEvents.MACE_SMASH_GROUND, 1.2F, 0.8F);
-        Sounds.play(level, at, SoundEvents.PLAYER_ATTACK_KNOCKBACK, 1.0F, 0.6F);
-        Sounds.play(level, at, SoundEvents.ANVIL_LAND, 0.5F, 0.55F);
-        Sounds.play(level, at, SoundEvents.IRON_GOLEM_DAMAGE, 0.9F, 0.7F);
+        Sounds.play(level, at, ExpressNoise.MACE_SMASH_GROUND, 1.2F, 0.8F);
+        Sounds.play(level, at, ExpressNoise.PLAYER_ATTACK_KNOCKBACK, 1.0F, 0.6F);
+        Sounds.play(level, at, ExpressNoise.ANVIL_LAND, 0.5F, 0.55F);
+        Sounds.play(level, at, ExpressNoise.IRON_GOLEM_DAMAGE, 0.9F, 0.7F);
     }
 }

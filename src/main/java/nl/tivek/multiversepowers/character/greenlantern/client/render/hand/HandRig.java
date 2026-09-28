@@ -172,6 +172,14 @@ final class HandRig {
                     Settle.back(RIG, angles, bone(k, j), bendTurn(k, j), 0.0, space, thumb, TOUCH, STEPS);
                 }
             }
+            // A curled finger comes to rest on the thumb's root along the palm, not in it.
+            for (int k = 0; k < 4; k++) {
+                int finger = k;
+                for (int j = 2; j >= 1; j--) {
+                    Settle.back(RIG, angles, bone(k, j), bendTurn(k, j), 0.0, space,
+                            s -> rootDepth(s, finger, a0, a1, b0, b1, out), TOUCH, STEPS);
+                }
+            }
         }
         RigSpace.pose(RIG, angles, space);
         if (thumb.of(space) > TOUCH) {
@@ -252,6 +260,19 @@ final class HandRig {
                 double gap = Math.sqrt(Segments.closest(a0, a1, b0, b1, out));
                 deepest = Math.max(deepest, radius + radius(k, f) - gap);
             }
+        }
+        return deepest;
+    }
+
+    // How deep finger k's two outer joints go into the thumb's root, which lies along the palm by the index finger.
+    static double rootDepth(double[] space, int k, double[] a0, double[] a1, double[] b0, double[] b1,
+            double[] out) {
+        ends(space, 4, 0, b0, b1);
+        double deepest = Double.NEGATIVE_INFINITY;
+        for (int j = 1; j < 3; j++) {
+            ends(space, k, j, a0, a1);
+            double gap = Math.sqrt(Segments.closest(a0, a1, b0, b1, out));
+            deepest = Math.max(deepest, radius(k, j) + radius(4, 0) - gap);
         }
         return deepest;
     }

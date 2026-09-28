@@ -36,7 +36,7 @@ public final class AbilityKeys {
             key(AbilitySlot.ABILITY_9, GLFW.GLFW_KEY_C),
             key(AbilitySlot.ABILITY_10, GLFW.GLFW_KEY_LEFT_ALT),
             key(AbilitySlot.ABILITY_11, GLFW.GLFW_KEY_K),
-            key(AbilitySlot.ABILITY_12, InputConstants.Type.MOUSE, GLFW.GLFW_MOUSE_BUTTON_MIDDLE) };
+            key(AbilitySlot.ABILITY_12, GLFW.GLFW_KEY_UNKNOWN) };
 
     public AbilityKeys(IEventBus modEventBus) {
         modEventBus.addListener(AbilityKeys::onRegisterKeys);
@@ -48,12 +48,11 @@ public final class AbilityKeys {
     }
 
     public static KeyMapping of(CharacterAbility ability) {
-        Minecraft minecraft = Minecraft.getInstance();
-        return switch (ability.mouseButton()) {
-            case LEFT -> minecraft.options.keyAttack;
-            case RIGHT -> minecraft.options.keyUse;
-            case NONE -> of(ability.slot());
-        };
+        if (!ability.onGesture()) {
+            return of(ability.slot());
+        }
+        return ability.tapWhen() == CharacterAbility.Tap.NEVER ? PowerInputs.holdKey(ability.input())
+                : PowerInputs.clickKey(ability.input());
     }
 
     public static boolean isDown(KeyMapping key) {
@@ -90,5 +89,6 @@ public final class AbilityKeys {
         for (KeyMapping key : SLOTS) {
             event.register(key);
         }
+        PowerInputs.register(event);
     }
 }

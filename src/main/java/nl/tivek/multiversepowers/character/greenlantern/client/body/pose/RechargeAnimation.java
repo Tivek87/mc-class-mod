@@ -24,6 +24,7 @@ import nl.tivek.multiversepowers.character.greenlantern.PowerRing;
 import nl.tivek.multiversepowers.character.greenlantern.client.ClientRing;
 import nl.tivek.multiversepowers.character.greenlantern.client.flight.ClientFlight;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.PowerBattery;
+import nl.tivek.multiversepowers.engine.client.model.BentParts;
 import nl.tivek.multiversepowers.engine.client.render.FirstPersonArm;
 import nl.tivek.multiversepowers.engine.math.Ease;
 import org.joml.Quaternionf;
@@ -171,6 +172,7 @@ public final class RechargeAnimation {
         }
         poseStack.pushPose();
         arm.translateAndRotate(poseStack);
+        BentParts.farHalf(arm, poseStack);
         poseStack.translate((slim ? 0.5F : 1.0F) / 16.0F, 10.0F / 16.0F, 0.0F);
         poseStack.mulPose(new Quaternionf().rotationZYX(arm.zRot, arm.yRot, arm.xRot).invert());
         if (bodyTurn != null) {

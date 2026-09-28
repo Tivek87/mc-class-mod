@@ -1,14 +1,12 @@
 # Laatste sessie
 
-- Datum: 2026-09-28 (nacht).
-- Vraag: meer botten (2 per arm/been, 1 hoofd, 1 romp), hand- en mech-botten zichtbaar, mech veel te zwaar, Giant Hands
-  niet meer door blokken/wezens, mech-torso 360° mee met de crosshair (benen draaien bij).
-- Gedaan: ragdolls hebben knie en elleboog (`HingeJoint`, `BentParts` + `ModelPartMixin`, AT-regels); bone view 2
-  botten per ledemaat, breedte schaalt met afstand, constructs in magenta. Mech: vertices direct in native geheugen,
-  geen fade-wortel ver van het oog, onderdelen parallel via `ShapeBatch` (CRC-bewezen identiek): tekentijd 8,0 → 1,5–2,4
-  ms. Mech-bovenlijf draait op de heupen naar de blik, benen halen in, A/D stappen opzij. Giant Hands duwen wezens
-  opzij (`GiantHandBase.shove`), `HandStop` houdt ook terug als volledig terughouden minder in blokken steekt.
-- Getest: JUnit (HingeJoint), build groen, in-game runs (ragdolls, hands, mech meten/draaien) + rooktest.
-- Bestanden: engine render/physics/model/ragdoll/rig, mech (Drive/Walk/Pose/Painter/Legs/Script/Assembly), hands
-  (GiantHand/Base, HandStop), docs POWERS/GREEN_LANTERN/PROJECT, CLAUDE.md (codekaart + testregels).
-- Open: niets gecommit (wacht op ja). Bugs #30, #28, #27, #29 en ideeën #24/#25/#31 staan nog open.
+- Datum: 2026-09-28.
+- Vraag: Thor-moves (dash, super jump, vliegen + blink/dive/lightning), Mouse & Space-controls, ragdolls liggen en staan op,
+  mech (torso, hoofd, rennen, duim, first person), handen raken/vingers, bugs #27-#30, whip op slot, test-hand, heranimatie.
+- Gedaan: alles gebouwd en in-game getest (screenshots); build + 76 tests groen; bugs #27-#30 op fixed.
+- Opgesplitst (>600 regels): `Ragdoll`+`RagdollBuild`, `Ragdolls`+`RagdollCauses`, `RigidWorld`->`RigidBlocks`->`RigidBodies`.
+  Alleen verplaatst; compile + tests groen, niet apart in-game getest.
+- Docs: POWERS/PROJECT/GREEN_LANTERN, CLAUDE.md layout, CHANGELOG 0.3.8-alpha (release.ps1 prepare gedaan).
+- Test-harness, testwerelden en screenshots verwijderd; 3 voicelines via git rm weg.
+- 5 referentie-audiobestanden verwijderd meegecommit (gebruiker: alles committen).
+- Commit + push naar origin/master en release v0.3.8-alpha; ideeen #24/#25/#31 wachten op ja/nee.

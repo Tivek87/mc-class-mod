@@ -9,7 +9,6 @@ import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
-import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.LivingEntity;
@@ -106,10 +105,10 @@ public final class EmeraldExpress extends ExpressRoute {
         PowerRing.tell(owner, "express");
         owner.swing(InteractionHand.MAIN_HAND, true);
         Vec3 eye = owner.getEyePosition();
-        Sounds.play(level, eye, SoundEvents.BEACON_POWER_SELECT, 1.2F, 0.7F);
-        Sounds.play(level, train.gate, SoundEvents.BEACON_ACTIVATE, 2.0F, 0.6F);
-        Sounds.play(level, train.gate, SoundEvents.AMETHYST_BLOCK_RESONATE, 2.0F, 0.5F);
-        Sounds.play(level, train.gate, SoundEvents.RESPAWN_ANCHOR_CHARGE, 1.6F, 0.6F);
+        Sounds.play(level, eye, ExpressNoise.BEACON_POWER_SELECT, 1.2F, 0.7F);
+        Sounds.play(level, train.gate, ExpressNoise.BEACON_ACTIVATE, 2.0F, 0.6F);
+        Sounds.play(level, train.gate, ExpressNoise.AMETHYST_BLOCK_RESONATE, 2.0F, 0.5F);
+        Sounds.play(level, train.gate, ExpressNoise.RESPAWN_ANCHOR_CHARGE, 1.6F, 0.6F);
         train.send(level);
         return true;
     }
@@ -129,7 +128,7 @@ public final class EmeraldExpress extends ExpressRoute {
         if (!this.quiet && this.phase != BOOM && !PowerRing.fuels(this.owner, level)) {
             this.quiet = true;
             this.phase(BOOM);
-            Sounds.play(level, this.middle(), SoundEvents.AMETHYST_CLUSTER_BREAK, 3.0F, 0.6F);
+            Sounds.play(level, this.middle(), ExpressNoise.AMETHYST_CLUSTER_BREAK, 3.0F, 0.6F);
         }
         switch (this.phase) {
             case RUN -> this.run(level);
@@ -206,7 +205,7 @@ public final class EmeraldExpress extends ExpressRoute {
         Vec3 at = this.middle();
         Sounds.play(level, at, BRAKES, 4.0F, 1.0F);
         Sounds.play(level, this.whistle(), WHISTLE, 6.0F, 0.94F);
-        Sounds.play(level, at, SoundEvents.GRINDSTONE_USE, 2.0F, 0.6F);
+        Sounds.play(level, at, ExpressNoise.GRINDSTONE_USE, 2.0F, 0.6F);
     }
 
     private void brake(ServerLevel level) {
@@ -216,12 +215,12 @@ public final class EmeraldExpress extends ExpressRoute {
         this.sparks(level, 3);
         this.coachSparks(level, 2);
         if (this.phaseAge % 5 == 0) {
-            Sounds.play(level, this.middle(), SoundEvents.GRINDSTONE_USE, 1.4F, 0.5F + 0.02F * this.phaseAge);
+            Sounds.play(level, this.middle(), ExpressNoise.GRINDSTONE_USE, 1.4F, 0.5F + 0.02F * this.phaseAge);
         }
         if (this.phaseAge >= ExpressScript.BRAKE_TICKS) {
             this.phase(TIP);
-            Sounds.play(level, this.middle(), SoundEvents.IRON_GOLEM_DAMAGE, 2.5F, 0.45F);
-            Sounds.play(level, this.middle(), SoundEvents.ANVIL_PLACE, 1.5F, 0.5F);
+            Sounds.play(level, this.middle(), ExpressNoise.IRON_GOLEM_DAMAGE, 2.5F, 0.45F);
+            Sounds.play(level, this.middle(), ExpressNoise.ANVIL_PLACE, 1.5F, 0.5F);
         }
     }
 
@@ -238,8 +237,8 @@ public final class EmeraldExpress extends ExpressRoute {
 
     private void slam(ServerLevel level) {
         Vec3 at = this.middle();
-        Sounds.play(level, at, SoundEvents.ANVIL_LAND, 3.0F, 0.5F);
-        Sounds.play(level, at, SoundEvents.MACE_SMASH_GROUND_HEAVY, 3.0F, 0.6F);
+        Sounds.play(level, at, ExpressNoise.ANVIL_LAND, 3.0F, 0.5F);
+        Sounds.play(level, at, ExpressNoise.MACE_SMASH_GROUND_HEAVY, 3.0F, 0.6F);
         Sounds.play(level, at, SCRAPE, 4.0F, 1.0F);
         Sounds.play(level, at, CRASH, 5.0F, 0.85F);
         Vec3 down = this.lyingSide();
@@ -268,13 +267,13 @@ public final class EmeraldExpress extends ExpressRoute {
         }
         this.sparks(level, this.speed > 0.0 ? 8 : 0);
         if (this.phaseAge % 9 == 1 && this.speed > 0.05) {
-            Sounds.play(level, this.middle(), SoundEvents.GRINDSTONE_USE, 2.0F, 0.4F);
+            Sounds.play(level, this.middle(), ExpressNoise.GRINDSTONE_USE, 2.0F, 0.4F);
         }
         if (this.speed <= 0.0) {
             this.phase(STEAM);
             Vec3 at = this.boiler();
             Sounds.play(level, at, HISS, 4.0F, 0.8F);
-            Sounds.play(level, at, SoundEvents.LAVA_EXTINGUISH, 2.0F, 0.6F);
+            Sounds.play(level, at, ExpressNoise.LAVA_EXTINGUISH, 2.0F, 0.6F);
         }
     }
 
@@ -297,11 +296,11 @@ public final class EmeraldExpress extends ExpressRoute {
                 0.03);
         int every = Math.max(2, 8 - (int) Math.round(6.0 * pressure));
         if (this.phaseAge % every == 0) {
-            Sounds.play(level, at, SoundEvents.FIRE_EXTINGUISH, 1.5F + (float) pressure, 0.6F + 0.4F * (float) pressure);
+            Sounds.play(level, at, ExpressNoise.FIRE_EXTINGUISH, 1.5F + (float) pressure, 0.6F + 0.4F * (float) pressure);
         }
         if (this.phaseAge == 14 || this.phaseAge == 26) {
             Sounds.play(level, at, HISS, 4.0F, 0.9F + 0.15F * (float) pressure);
-            Sounds.play(level, at, SoundEvents.IRON_GOLEM_DAMAGE, 2.0F, 0.4F);
+            Sounds.play(level, at, ExpressNoise.IRON_GOLEM_DAMAGE, 2.0F, 0.4F);
         }
         if (this.phaseAge >= ExpressScript.STEAM_TICKS) {
             this.phase(BOOM);
@@ -333,9 +332,9 @@ public final class EmeraldExpress extends ExpressRoute {
             living.hurtMarked = true;
         }
         Sounds.play(level, at, BLAST, 8.0F, 1.0F);
-        Sounds.play(level, at, SoundEvents.GENERIC_EXPLODE.value(), 6.0F, 0.7F);
-        Sounds.play(level, at, SoundEvents.FIREWORK_ROCKET_LARGE_BLAST, 4.0F, 0.6F);
-        Sounds.play(level, at, SoundEvents.AMETHYST_CLUSTER_BREAK, 4.0F, 0.5F);
+        Sounds.play(level, at, ExpressNoise.GENERIC_EXPLODE, 6.0F, 0.7F);
+        Sounds.play(level, at, ExpressNoise.FIREWORK_ROCKET_LARGE_BLAST, 4.0F, 0.6F);
+        Sounds.play(level, at, ExpressNoise.AMETHYST_CLUSTER_BREAK, 4.0F, 0.5F);
         ParticleFx.at(level, ParticleTypes.EXPLOSION_EMITTER, at);
         ParticleFx.at(level, ParticleTypes.FLASH, at);
         ParticleFx.cloud(level, ParticleTypes.EXPLOSION, at, 8, 2.5, 0.0);
@@ -354,8 +353,8 @@ public final class EmeraldExpress extends ExpressRoute {
             ParticleFx.cloud(level, ParticleFx.dust(PowerRing.BRIGHT, 1.2F), point, 14, 2.0, 0.08);
             ParticleFx.cloud(level, ParticleTypes.END_ROD, point, 4, 1.6, 0.06);
         }
-        Sounds.play(level, this.middle(), SoundEvents.AMETHYST_CLUSTER_BREAK, 3.0F, 0.9F);
-        Sounds.play(level, this.middle(), SoundEvents.BEACON_DEACTIVATE, 2.0F, 0.9F);
+        Sounds.play(level, this.middle(), ExpressNoise.AMETHYST_CLUSTER_BREAK, 3.0F, 0.9F);
+        Sounds.play(level, this.middle(), ExpressNoise.BEACON_DEACTIVATE, 2.0F, 0.9F);
     }
 
     private void chuff(ServerLevel level, double atLeast) {
@@ -380,7 +379,7 @@ public final class EmeraldExpress extends ExpressRoute {
     private void steamOut(ServerLevel level) {
         if (this.age == 2) {
             Sounds.play(level, this.gate, HISS, 4.0F, 1.0F);
-            Sounds.play(level, this.gate, SoundEvents.FIRE_EXTINGUISH, 2.0F, 0.5F);
+            Sounds.play(level, this.gate, ExpressNoise.FIRE_EXTINGUISH, 2.0F, 0.5F);
         }
         Vec3 mouth = this.gate.add(0.0, (ExpressScript.FUNNEL_UP - ExpressScript.PORTAL_UP) * SCALE * 0.8, 0.0)
                 .add(this.way.scale(0.3));
@@ -395,7 +394,7 @@ public final class EmeraldExpress extends ExpressRoute {
     private void blowOff(ServerLevel level) {
         Vec3 funnel = this.funnel();
         Sounds.play(level, funnel, HISS, 4.0F, 0.9F);
-        Sounds.play(level, funnel, SoundEvents.FIRE_EXTINGUISH, 2.5F, 0.6F);
+        Sounds.play(level, funnel, ExpressNoise.FIRE_EXTINGUISH, 2.5F, 0.6F);
         ParticleFx.cloud(level, ParticleTypes.CAMPFIRE_SIGNAL_SMOKE, funnel, 6, 0.3, 0.02);
         for (int i = 0; i < 24; i++) {
             ParticleFx.send(level, ParticleTypes.CLOUD, funnel.x + ParticleFx.spread(0.3), funnel.y,
@@ -458,7 +457,7 @@ public final class EmeraldExpress extends ExpressRoute {
     private void coachDown(ServerLevel level, int k) {
         Vec3 at = this.coach(k);
         Sounds.play(level, at, CRASH, 4.0F, 0.95F + 0.08F * k);
-        Sounds.play(level, at, SoundEvents.ANVIL_LAND, 1.6F, 0.55F + 0.05F * k);
+        Sounds.play(level, at, ExpressNoise.ANVIL_LAND, 1.6F, 0.55F + 0.05F * k);
         BlockState ground = level.getBlockState(BlockPos.containing(at.x, at.y - 2.0 * SCALE - 0.5, at.z));
         for (int i = -2; i <= 2; i++) {
             Vec3 point = this.along((ExpressScript.coachMiddle(k) + i * 2.4) * SCALE);
@@ -474,7 +473,7 @@ public final class EmeraldExpress extends ExpressRoute {
     private void burst(ServerLevel level, int k) {
         Vec3 at = this.coach(k);
         Sounds.play(level, at, BLAST, 3.5F, 1.25F + 0.1F * k);
-        Sounds.play(level, at, SoundEvents.AMETHYST_CLUSTER_BREAK, 3.0F, 0.6F + 0.05F * k);
+        Sounds.play(level, at, ExpressNoise.AMETHYST_CLUSTER_BREAK, 3.0F, 0.6F + 0.05F * k);
         ParticleFx.at(level, ParticleTypes.EXPLOSION, at);
         ParticleFx.sphereOut(level, ParticleFx.dust(PowerRing.BRIGHT, 1.8F), at, 40, 0.5);
         ParticleFx.cloud(level, ParticleTypes.CLOUD, at, 16, 1.4, 0.25);
@@ -515,7 +514,7 @@ public final class EmeraldExpress extends ExpressRoute {
         }
         if (this.gateShuts < 0 && (this.odometer > ExpressScript.TRAIN_LENGTH * SCALE + 1.0 || this.phase != RUN)) {
             this.gateShuts = this.age;
-            Sounds.play(level, this.gate, SoundEvents.BEACON_DEACTIVATE, 1.6F, 0.8F);
+            Sounds.play(level, this.gate, ExpressNoise.BEACON_DEACTIVATE, 1.6F, 0.8F);
         }
         if (this.gateShuts >= 0 && this.age >= this.gateShuts + ExpressScript.OPEN_TICKS) {
             this.gateGone = true;

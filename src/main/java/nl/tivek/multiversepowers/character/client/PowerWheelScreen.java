@@ -11,6 +11,7 @@ import net.minecraft.world.scores.PlayerTeam;
 import net.neoforged.neoforge.network.PacketDistributor;
 import nl.tivek.multiversepowers.character.GameCharacter;
 import nl.tivek.multiversepowers.character.TransformPayload;
+import nl.tivek.multiversepowers.character.greenlantern.client.render.hand.DevHand;
 import nl.tivek.multiversepowers.engine.client.gui.GuiShapes;
 import nl.tivek.multiversepowers.engine.client.rig.BoneView;
 import nl.tivek.multiversepowers.spell.CastSpellPayload;
@@ -138,11 +139,13 @@ public class PowerWheelScreen extends PowerWheelLayout {
     private void use(int tool) {
         if (TOOLS[tool].equals("bones")) {
             BoneView.toggle();
+        } else if (TOOLS[tool].equals("hand")) {
+            DevHand.spawn();
         }
     }
 
     private static boolean switchedOn(int tool) {
-        return TOOLS[tool].equals("bones") && BoneView.on();
+        return TOOLS[tool].equals("bones") ? BoneView.on() : TOOLS[tool].equals("hand") && DevHand.showing();
     }
 
     private void open(Page page, int index) {
@@ -357,7 +360,8 @@ public class PowerWheelScreen extends PowerWheelLayout {
             case TOOL -> {
                 boolean on = switchedOn(card.index());
                 name = Component.translatable(KEY + "tool." + TOOLS[card.index()]);
-                line = Component.translatable(KEY + (on ? "tool_on" : "tool_off"));
+                boolean once = TOOLS[card.index()].equals("hand");
+                line = Component.translatable(KEY + (once ? on ? "tool_showing" : "tool_spawn" : on ? "tool_on" : "tool_off"));
                 lineColor = on ? ACTIVE_COLOR : MUTED_COLOR;
             }
             default -> throw new IllegalStateException();

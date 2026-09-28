@@ -38,10 +38,17 @@ public final class PoseGuard {
     private PoseGuard() {
     }
 
+    // A limb a pose bent at its elbow or knee (Stance) was placed on purpose, and is no straight rod: left as it is.
     public static void guard(HumanoidModel<?> model) {
-        out(model.rightArm, model.body);
-        out(model.leftArm, model.body);
-        apart(model.rightLeg, model.leftLeg);
+        if (Limbs.bent(model, Limbs.Joint.RIGHT_ELBOW) <= 0.0F) {
+            out(model.rightArm, model.body);
+        }
+        if (Limbs.bent(model, Limbs.Joint.LEFT_ELBOW) <= 0.0F) {
+            out(model.leftArm, model.body);
+        }
+        if (Limbs.bent(model, Limbs.Joint.RIGHT_KNEE) <= 0.0F && Limbs.bent(model, Limbs.Joint.LEFT_KNEE) <= 0.0F) {
+            apart(model.rightLeg, model.leftLeg);
+        }
     }
 
     // Turns the limb out of the body about its z axis, the smallest turn either way that clears it.

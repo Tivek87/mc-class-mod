@@ -15,11 +15,16 @@ import nl.tivek.multiversepowers.character.greenlantern.mech.MechDrivePayload;
 import nl.tivek.multiversepowers.character.greenlantern.mech.MechScript;
 
 // The pilot walks their own mech in their own game, as a player walks, and tells the server where it went: W and S
-// walk it on and back, A and D step it aside, and its legs turn after where the pilot looks. It climbs no more than a
-// step it can take, never walks off a drop too deep to see the bottom of, and stops where its cockpit would run into
-// blocks.
+// walk it on and back (Shift with W runs), A and D step it aside, and its legs turn after where the pilot looks. It
+// climbs no more than a step it can take, never walks off a drop too deep to see the bottom of, and stops where its
+// cockpit would run into blocks.
 public final class MechDrive {
     public static final double WALK = 0.2;
+    // Shift held with W runs: about twice as fast, getting up to it a little quicker.
+    public static final double RUN = 0.42;
+    private static final double RUN_UP = 0.02;
+    // Standing still, the legs step round only when the look is this far (degrees) off where they face.
+    private static final double STEP_ROUND = 38.0;
     public static final double TURN = Math.toRadians(3.0);
     private static final double TURN_DEGREES = 3.0;
     // How much of the way still to turn the legs take on each tick, and how near they count as there.
@@ -44,6 +49,7 @@ public final class MechDrive {
     private static double side;
     private static double turn;
     private static double fall;
+    private static boolean steppingRound;
 
     private MechDrive() {
     }
@@ -66,14 +72,25 @@ public final class MechDrive {
             side = 0.0;
             turn = 0.0;
             fall = 0.0;
+            steppingRound = false;
         }
-        double want = input.forwardImpulse > 0.01F ? WALK : input.forwardImpulse < -0.01F ? -BACK : 0.0;
-        speed += Mth.clamp(want - speed, -SLOW_DOWN, SPEED_UP);
+        boolean ahead = input.forwardImpulse > 0.01F;
+        boolean run = ahead && input.shiftKeyDown;
+        double want = ahead ? run ? RUN : WALK : input.forwardImpulse < -0.01F ? -BACK : 0.0;
+        speed += Mth.clamp(want - speed, -SLOW_DOWN, run ? RUN_UP : SPEED_UP);
         side += Mth.clamp(input.leftImpulse * SIDESTEP - side, -SLOW_DOWN, SPEED_UP);
-        // The legs turn after where the pilot looks, no faster than they can; the torso above already faces there.
+        // The legs turn after where the pilot looks, no faster than they can, while the torso swings there first.
+        // Standing, they only step round once it has twisted far over them, then all the way; walking, they keep up.
         double behind = Mth.wrapDegrees(player.getYRot() - yaw);
-        double wanted = Math.abs(behind) < SETTLED_DEGREES ? 0.0 : Mth.clamp(behind * TURN_GAIN, -TURN_DEGREES,
-                TURN_DEGREES);
+        boolean moving = Math.abs(speed) > 0.02 || Math.abs(side) > 0.02;
+        if (Math.abs(behind) > STEP_ROUND) {
+            steppingRound = true;
+        } else if (Math.abs(behind) < SETTLED_DEGREES) {
+            steppingRound = false;
+        }
+        double most = TURN_DEGREES * (1.0 - 0.4 * Mth.clamp((speed - WALK) / (RUN - WALK), 0.0, 1.0));
+        double wanted = !moving && !steppingRound || Math.abs(behind) < SETTLED_DEGREES ? 0.0
+                : Mth.clamp(behind * TURN_GAIN, -most, most);
         turn += Mth.clamp(-Math.toRadians(wanted) - turn, -TURN_UP, TURN_UP);
         yaw = Mth.wrapDegrees(yaw - (float) Math.toDegrees(turn));
         MechScript.Stage stage = MechScript.Stage.facing(base, yaw);

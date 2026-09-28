@@ -1,6 +1,10 @@
 package nl.tivek.multiversepowers.character.client;
 
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import java.util.Arrays;
+import java.util.EnumMap;
+import java.util.Map;
+import java.util.function.Predicate;
 import javax.annotation.Nullable;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.KeyMapping;
@@ -12,6 +16,7 @@ import net.minecraft.locale.Language;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.Entity;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -24,23 +29,14 @@ import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.character.AbilityActionPayload;
 import nl.tivek.multiversepowers.character.AbilitySlot;
 import nl.tivek.multiversepowers.character.CharacterAbility;
+import nl.tivek.multiversepowers.character.CharacterLookPayload;
 import nl.tivek.multiversepowers.character.CharacterStatePayload;
 import nl.tivek.multiversepowers.character.Characters;
 import nl.tivek.multiversepowers.character.GameCharacter;
 import nl.tivek.multiversepowers.character.docock.client.ClimbControl;
 import nl.tivek.multiversepowers.character.docock.client.TentacleLegs;
-import nl.tivek.multiversepowers.character.greenlantern.RingPayload;
-import nl.tivek.multiversepowers.character.greenlantern.ability.flame.FlameMove;
-import nl.tivek.multiversepowers.character.greenlantern.ability.flight.Flight;
-import nl.tivek.multiversepowers.character.greenlantern.ability.sword.SwordMove;
-import nl.tivek.multiversepowers.character.greenlantern.ability.whip.WhipMove;
-import nl.tivek.multiversepowers.character.greenlantern.client.ClientConstructs;
 import nl.tivek.multiversepowers.character.greenlantern.client.ClientRing;
 import nl.tivek.multiversepowers.character.greenlantern.client.ConstructChoice;
-import nl.tivek.multiversepowers.character.greenlantern.client.body.arm.CallArm;
-import nl.tivek.multiversepowers.character.greenlantern.client.body.flame.FlameArms;
-import nl.tivek.multiversepowers.character.greenlantern.client.body.sword.SwordArms;
-import nl.tivek.multiversepowers.character.greenlantern.client.body.whip.WhipArms;
 import nl.tivek.multiversepowers.character.greenlantern.client.hud.ConstructHud;
 import nl.tivek.multiversepowers.character.greenlantern.client.hud.ConstructWheel;
 import nl.tivek.multiversepowers.character.greenlantern.client.hud.ConstructWheelScreen;
@@ -72,9 +68,8 @@ public final class ClientCharacter {
     private static final int[] TAPPED = never(AbilitySlot.values().length);
     private static final int[] KEY_DOWN = up(AbilitySlot.values().length);
     private static boolean climbing;
-    private static final int BLOCK_AFTER = 5;
-    private static int defendDown = -1;
-    private static boolean endedCharge;
+    private static final Map<GameCharacter, Local> LOCAL = new EnumMap<>(GameCharacter.class);
+    private static final Int2ObjectOpenHashMap<GameCharacter> WORN = new Int2ObjectOpenHashMap<>();
 
     private ClientCharacter() {
     }
@@ -109,13 +104,28 @@ public final class ClientCharacter {
             ClimbControl.stop();
             ConstructWheel.stop();
             ConstructChoice.forget();
-            MouseHold.reset();
+            Gestures.reset();
         }
     }
 
     @Nullable
     public static GameCharacter active() {
         return character;
+    }
+
+    // Which character a player in sight is, as the server says.
+    public static void seen(CharacterLookPayload payload) {
+        GameCharacter[] all = GameCharacter.values();
+        if (payload.character() >= 0 && payload.character() < all.length) {
+            WORN.put(payload.entity(), all[payload.character()]);
+        } else {
+            WORN.remove(payload.entity());
+        }
+    }
+
+    @Nullable
+    public static GameCharacter of(Entity entity) {
+        return WORN.get(entity.getId());
     }
 
     public static float sinceTap(@Nullable CharacterAbility ability, float partialTick) {
@@ -129,7 +139,69 @@ public final class ClientCharacter {
         return legs > 0;
     }
 
-    private static void send(int action, boolean on, int data) {
+    static int clock() {
+        return clock;
+    }
+
+    // A gesture that may only fire at some moments (take off only when standing free) says when, here.
+    public static void gate(CharacterAbility ability, Predicate<LocalPlayer> may) {
+        Gestures.gate(ability, may);
+    }
+
+    // A character whose gestures change in flight says here when it flies.
+    public static void flying(GameCharacter character, Predicate<LocalPlayer> flying) {
+        Gestures.flying(character, flying);
+    }
+
+    static void held(AbilitySlot slot, boolean held) {
+        HELD[slot.ordinal()] = held;
+    }
+
+    static boolean isHeld(AbilitySlot slot) {
+        return HELD[slot.ordinal()];
+    }
+
+    // Off cooldown and paid for; else the player is told why not.
+    static boolean ready(LocalPlayer player, CharacterAbility ability) {
+        int left = COOLDOWNS[ability.slot().ordinal()];
+        if (left > 0) {
+            tell(player, "not_ready", ability.getDisplayName(), (left + 19) / 20);
+            return false;
+        }
+        if (!canPay(player, ability)) {
+            noPower(player, ability.character());
+            return false;
+        }
+        return true;
+    }
+
+    // A character that moves its player itself (a dash) acts at once in its own game, and may add to what is sent.
+    @FunctionalInterface
+    public interface Local {
+        // The data to send on, or -1 to send nothing.
+        int act(LocalPlayer player, CharacterAbility ability, boolean on, int data);
+    }
+
+    public static void local(GameCharacter character, Local local) {
+        LOCAL.put(character, local);
+    }
+
+    // A move of the character's own that goes on after its button (a dive's slam), told to the server.
+    public static void sendAction(CharacterAbility ability, boolean on, int data) {
+        send(ability.slot().ordinal(), on, data);
+    }
+
+    static void send(int action, boolean on, int data) {
+        LocalPlayer player = Minecraft.getInstance().player;
+        AbilitySlot slot = AbilitySlot.byIndex(action);
+        CharacterAbility ability = character == null || slot == null ? null : character.ability(slot);
+        Local local = character == null ? null : LOCAL.get(character);
+        if (local != null && ability != null && player != null) {
+            data = local.act(player, ability, on, data);
+            if (data < 0) {
+                return;
+            }
+        }
         PacketDistributor.sendToServer(new AbilityActionPayload(action, on, data));
     }
 
@@ -153,13 +225,15 @@ public final class ClientCharacter {
             ultimate = Math.max(0, ultimate - 1);
         }
         GameCharacter now = character;
+        Gestures.tick(player, minecraft, now);
         for (AbilitySlot slot : AbilitySlot.values()) {
             CharacterAbility ability = now == null ? null : now.ability(slot);
-            if (ability != null && ability.mouseButton() != CharacterAbility.Mouse.NONE) {
-                mouse(player, minecraft, ability, now);
+            KeyMapping key = AbilityKeys.of(slot);
+            if (ability != null && ability.onGesture()) {
+                while (key.consumeClick()) {
+                }
                 continue;
             }
-            KeyMapping key = AbilityKeys.of(slot);
             if (ability != null && ability.isClientOnly()) {
                 ConstructWheel.tick(minecraft, key);
                 while (key.consumeClick()) {
@@ -184,154 +258,7 @@ public final class ClientCharacter {
         }
     }
 
-    private static void mouse(LocalPlayer player, Minecraft minecraft, CharacterAbility ability,
-            GameCharacter now) {
-        KeyMapping key = AbilityKeys.of(ability);
-        boolean ours = takesMouse(player) && !handBusy(player, now, ability.mouseButton());
-        boolean free = ours && minecraft.screen == null && !StaminaClient.isExhausted();
-        int index = ability.slot().ordinal();
-        MouseHold.Step step = MouseHold.tick(ability, free && key.isDown(), !free);
-        if (SwordArms.holding()) {
-            sword(player, ability, index, step, free && key.isDown());
-        } else if (FlameArms.holding()) {
-            defendDown = -1;
-            flame(player, ability, index, step);
-        } else if (WhipArms.holding()) {
-            defendDown = -1;
-            whip(player, ability, index, step);
-        } else {
-            defendDown = -1;
-            switch (step) {
-                case TAP -> tap(player, ability);
-                case HOLD -> send(index, true, data(player) | Characters.HOLD);
-                case RELEASE, LET_GO -> send(index, false, data(player));
-                case NOTHING -> {
-                }
-            }
-        }
-        HELD[index] = MouseHold.holding(ability.mouseButton());
-        if (ours) {
-            while (key.consumeClick()) {
-            }
-        }
-    }
-
-    private static void sword(LocalPlayer player, CharacterAbility ability, int index, MouseHold.Step step,
-            boolean down) {
-        if (ability.mouseButton() == CharacterAbility.Mouse.LEFT) {
-            switch (step) {
-                case TAP -> {
-                    SwordMove move = SwordArms.attack(player);
-                    if (move != null) {
-                        send(index, true, data(player) | Characters.TAP | move.ordinal() << Characters.MOVE_SHIFT);
-                    }
-                }
-                case HOLD -> {
-                    if (SwordArms.flurry(player)) {
-                        send(index, true, data(player) | Characters.HOLD);
-                    }
-                }
-                case RELEASE, LET_GO -> {
-                    SwordArms.stopFlurry();
-                    send(index, false, data(player));
-                }
-                case NOTHING -> {
-                }
-            }
-            return;
-        }
-        if (down) {
-            if (defendDown < 0) {
-                defendDown = 0;
-                endedCharge = SwordArms.charging();
-                if (endedCharge) {
-                    SwordArms.endCharge();
-                }
-            } else {
-                defendDown++;
-            }
-            if (defendDown == BLOCK_AFTER && SwordArms.block(true)) {
-                send(index, true, data(player) | Characters.HOLD);
-            }
-            return;
-        }
-        if (defendDown < 0) {
-            return;
-        }
-        int held = defendDown;
-        defendDown = -1;
-        if (held >= BLOCK_AFTER) {
-            if (SwordArms.block(false)) {
-                send(index, false, data(player));
-            }
-        } else if (!endedCharge && SwordArms.charge(player)) {
-            send(index, true, data(player) | Characters.TAP);
-        }
-    }
-
-    private static void flame(LocalPlayer player, CharacterAbility ability, int index, MouseHold.Step step) {
-        boolean attack = ability.mouseButton() == CharacterAbility.Mouse.LEFT;
-        switch (step) {
-            case TAP -> {
-                if (attack) {
-                    FlameMove sweep = FlameArms.sweep(player);
-                    if (sweep != null) {
-                        send(index, true, data(player) | Characters.TAP | sweep.ordinal() << Characters.MOVE_SHIFT);
-                    }
-                } else if (FlameArms.wall(player)) {
-                    send(index, true, data(player) | Characters.TAP);
-                }
-            }
-            case HOLD -> {
-                if (attack ? FlameArms.pour(player) : FlameArms.swirl(player)) {
-                    send(index, true, data(player) | Characters.HOLD);
-                }
-            }
-            case RELEASE, LET_GO -> {
-                if (attack) {
-                    FlameArms.stopPouring();
-                } else {
-                    FlameArms.stopSwirling();
-                }
-                send(index, false, data(player));
-            }
-            case NOTHING -> {
-            }
-        }
-    }
-
-    private static void whip(LocalPlayer player, CharacterAbility ability, int index, MouseHold.Step step) {
-        boolean attack = ability.mouseButton() == CharacterAbility.Mouse.LEFT;
-        switch (step) {
-            case TAP -> {
-                if (attack) {
-                    WhipMove lash = WhipArms.lash(player);
-                    if (lash != null) {
-                        send(index, true, data(player) | Characters.TAP | lash.ordinal() << Characters.MOVE_SHIFT);
-                    }
-                } else if (WhipArms.lasso(player)) {
-                    send(index, true, data(player) | Characters.TAP);
-                }
-            }
-            case HOLD -> {
-                if (attack ? WhipArms.whirl(player) : WhipArms.spin(player)) {
-                    send(index, true, data(player) | Characters.HOLD);
-                }
-            }
-            case RELEASE, LET_GO -> {
-                if (attack) {
-                    WhipArms.stopWhirl();
-                } else {
-                    WhipArms.stopSpin();
-                }
-                send(index, false, data(player));
-            }
-            case NOTHING -> {
-            }
-        }
-    }
-
-    private static void tap(LocalPlayer player, CharacterAbility ability) {
+    static void tap(LocalPlayer player, CharacterAbility ability) {
         int index = ability.slot().ordinal();
         if (COOLDOWNS[index] > 0) {
             tell(player, "not_ready", ability.getDisplayName(), (COOLDOWNS[index] + 19) / 20);
@@ -343,34 +270,6 @@ public final class ClientCharacter {
         }
         send(index, true, data(player) | Characters.TAP);
         TAPPED[index] = clock;
-    }
-
-    static boolean takesMouse(LocalPlayer player) {
-        return player.getMainHandItem().isEmpty() && player.getOffhandItem().isEmpty();
-    }
-
-    private static boolean handBusy(LocalPlayer player, GameCharacter now, CharacterAbility.Mouse button) {
-        if (ClientRing.recharge(player, 1.0F) >= 0.0F) {
-            return true;
-        }
-        // The defend hand always stays free, so a shield can go up while a fist charges.
-        if (button == CharacterAbility.Mouse.RIGHT) {
-            return false;
-        }
-        float flight = ClientRing.flight(player, 0.0F);
-        if (flight >= 0.0F && flight < Flight.ARISE_TICKS) {
-            return true;
-        }
-        boolean attackHand = ClientConstructs.wave(player.getId(), 1.0F) != null || CallArm.up(player, 1.0F) > 0.0F;
-        for (AbilitySlot slot : AbilitySlot.values()) {
-            CharacterAbility other = now.ability(slot);
-            if (other != null && other.mouseButton() == CharacterAbility.Mouse.NONE && other.isHeld()
-                    && !other.isClientOnly() && HELD[slot.ordinal()]) {
-                attackHand = true;
-            }
-        }
-        // One free hand is enough: the attack button waits only while the defend hand is busy too.
-        return attackHand && (ClientRing.has(player, RingPayload.SHIELD) || ClientRing.has(player, RingPayload.DOME));
     }
 
     private static void hold(LocalPlayer player, CharacterAbility ability, KeyMapping key, boolean inGame) {
@@ -429,7 +328,7 @@ public final class ClientCharacter {
         }
     }
 
-    private static void press(LocalPlayer player, AbilitySlot slot) {
+    static void press(LocalPlayer player, AbilitySlot slot) {
         boolean quiet = AbilityKeys.sharesGameKey(AbilityKeys.of(slot));
         if (character == null) {
             if (!quiet) {
@@ -460,7 +359,7 @@ public final class ClientCharacter {
         send(slot.ordinal(), true, data(player));
     }
 
-    private static int data(LocalPlayer player) {
+    static int data(LocalPlayer player) {
         return player.isShiftKeyDown() ? Characters.SNEAKING : 0;
     }
 
@@ -501,6 +400,7 @@ public final class ClientCharacter {
     @SubscribeEvent
     public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
         character = null;
+        WORN.clear();
         ultimate = 0;
         legs = 0;
         marked = 0;
@@ -508,7 +408,7 @@ public final class ClientCharacter {
         ClimbControl.stop();
         ConstructWheel.stop();
         ConstructChoice.forget();
-        MouseHold.reset();
+        Gestures.reset();
         Arrays.fill(COOLDOWNS, 0);
         Arrays.fill(HELD, false);
         Arrays.fill(TAPPED, Integer.MIN_VALUE);
@@ -551,15 +451,20 @@ public final class ClientCharacter {
                 continue;
             }
             AbilitySlot slot = ability.slot();
-            Component key = AbilityKeys.of(ability).getTranslatedKeyMessage();
+            Component key = PowerInputs.label(ability);
             int cooldown = COOLDOWNS[slot.ordinal()];
+            boolean usable = Gestures.active(ability, minecraft.player);
             graphics.drawString(font, Component.literal("[").append(key).append("] ")
-                    .append(ability.getDisplayName()), left, y, cooldown > 0 ? GRAY : WHITE);
+                    .append(ability.getDisplayName()), left, y, cooldown > 0 || !usable ? GRAY : WHITE);
             Component status;
             int color;
             Component running = now == GameCharacter.GREEN_LANTERN ? ConstructHud.status(ability, minecraft.player)
                     : null;
-            if (running != null) {
+            if (!usable) {
+                status = Component.translatable(prefix + (ability.when() == CharacterAbility.When.FLYING
+                        ? "in_flight" : "on_ground"));
+                color = GRAY;
+            } else if (running != null) {
                 status = running;
                 color = GREEN;
             } else if (ability.isHeld() && HELD[slot.ordinal()]) {

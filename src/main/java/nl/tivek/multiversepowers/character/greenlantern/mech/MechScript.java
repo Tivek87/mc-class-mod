@@ -218,6 +218,11 @@ public final class MechScript {
         return turn == 0.0 ? hips : hips.turned(WAIST, Vec3.ZERO, turn, 0.0, 0.0);
     }
 
+    // The torso turned on the waist, leaning ahead (pitch) and to one side (roll) as it goes.
+    public static Stage upper(Stage hips, double turn, double pitch, double roll) {
+        return pitch == 0.0 && roll == 0.0 ? upper(hips, turn) : hips.turned(WAIST, Vec3.ZERO, turn, pitch, roll);
+    }
+
     public static Vec3 pilot(Stage stage, double t) {
         Vec3 from = stage.pilotFrom();
         if (t < LEAP) {

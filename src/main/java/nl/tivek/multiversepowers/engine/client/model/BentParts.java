@@ -31,6 +31,7 @@ public final class BentParts {
     private static final Vector3f POINT = new Vector3f();
     private static final Vector3f NORMAL = new Vector3f();
     private static final Quaternionf HALF = new Quaternionf();
+    private static final Quaternionf FAR_TURN = new Quaternionf();
 
     private BentParts() {
     }
@@ -58,6 +59,38 @@ public final class BentParts {
     public static Matrix3f turn(ModelPart part) {
         Bent bent = BENT.isEmpty() ? null : BENT.get(part);
         return bent == null ? null : bent.turn();
+    }
+
+    // Where a point of a part (pixels, in its own frame) is drawn when the part is bent: past the cut turned with the
+    // far half, on the cut half as far, as the part's own faces are (something drawn on the skin, such as a line).
+    public static Vector3f place(ModelPart part, float x, float y, float z, Vector3f out) {
+        out.set(x, y, z);
+        Bent bent = BENT.isEmpty() ? null : BENT.get(part);
+        if (bent == null) {
+            return out;
+        }
+        ModelParts.Bend bend = bent.bend();
+        float along = bend.axis() == 0 ? x : bend.axis() == 1 ? y : z;
+        float side = (along - bend.at()) * bend.farSign();
+        if (side < -CUT) {
+            return out;
+        }
+        float[] knee = bend.knee();
+        out.sub(knee[0], knee[1], knee[2]);
+        (side <= CUT ? bent.half() : bent.turn()).transform(out);
+        return out.add(knee[0], knee[1], knee[2]);
+    }
+
+    // Something held at a bent limb's far end (an item in the hand) moves along with its far half.
+    public static void farHalf(ModelPart part, PoseStack pose) {
+        Bent bent = BENT.isEmpty() ? null : BENT.get(part);
+        if (bent == null) {
+            return;
+        }
+        float[] knee = bent.bend().knee();
+        pose.translate(knee[0] / 16.0F, knee[1] / 16.0F, knee[2] / 16.0F);
+        pose.mulPose(bent.turn().getNormalizedRotation(FAR_TURN));
+        pose.translate(-knee[0] / 16.0F, -knee[1] / 16.0F, -knee[2] / 16.0F);
     }
 
     // Draws a bent part's cubes in place of ModelPart.compile; false when the part is not bent.

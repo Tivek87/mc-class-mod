@@ -25,6 +25,7 @@ public class ConstructWheelScreen extends Screen {
     private static final int GREEN = 0x3CE86A;
     private static final int BRIGHT = 0xCFFFDC;
     private static final int DEEP = 0x0B2E18;
+    private static final int LOCKED = 0xE0463C;
 
     private static final int DIM = 0x73000000;
     private static final int TEXT = 0xFFE8FFEE;
@@ -87,7 +88,15 @@ public class ConstructWheelScreen extends Screen {
 
     private void pick() {
         this.picked = true;
-        ConstructChoice.take(this.pointed < 0 ? Construct.NONE : this.wheel.get(this.pointed));
+        Construct chosen = this.pointed < 0 ? Construct.NONE : this.wheel.get(this.pointed);
+        if (chosen.locked()) {
+            if (this.minecraft != null) {
+                this.minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.VILLAGER_NO, 1.0F, 0.5F));
+            }
+            this.onClose();
+            return;
+        }
+        ConstructChoice.take(chosen);
         this.onClose();
     }
 
@@ -250,6 +259,12 @@ public class ConstructWheelScreen extends Screen {
             float iconY = middleY - Mth.cos(angle) * radius;
             float iconSize = (edge - inner) * 0.74F * (0.86F + 0.14F * this.open);
             ConstructIcons.draw(graphics, construct, iconX, iconY, iconSize, glow);
+            if (construct.locked()) {
+                // Shut for now: greyed over, with a red ring round it.
+                GuiShapes.disc(graphics, iconX, iconY, iconSize * 0.62F, GuiShapes.fade(0x101410, 0.62F * this.open));
+                GuiShapes.ring(graphics, iconX, iconY, iconSize * 0.55F, Math.max(1.2F, iconSize * 0.07F),
+                        GuiShapes.fade(LOCKED, 0.9F * this.open));
+            }
             if (construct == held) {
                 GuiShapes.disc(graphics, middleX + Mth.sin(angle) * (inner + 4.0F),
                         middleY - Mth.cos(angle) * (inner + 4.0F), 1.8F, GuiShapes.fade(BRIGHT, this.open));

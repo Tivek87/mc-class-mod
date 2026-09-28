@@ -14,6 +14,13 @@ public final class Noise {
         return (h & 0xFFFF) / 65536.0;
     }
 
+    // A value from 0 to 1 that wanders smoothly as t runs on: a new random value at every whole t, eased between.
+    public static double smooth(int seed, double t) {
+        int i = (int) Math.floor(t);
+        double u = t - i;
+        return of(seed, i, 7) + (of(seed, i + 1, 7) - of(seed, i, 7)) * u * u * (3.0 - 2.0 * u);
+    }
+
     public static Vec3 direction(int a, int b) {
         double yaw = of(a, b, 0) * Math.PI * 2;
         double y = of(a, b, 1) * 2.0 - 1.0;

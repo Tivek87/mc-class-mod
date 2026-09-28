@@ -51,7 +51,8 @@ public final class ThunderGauge {
         Minecraft minecraft = Minecraft.getInstance();
         CharacterAbility clap = GameCharacter.THOR.byName("thunderclap");
         if (minecraft.player == null || minecraft.options.hideGui || clap == null
-                || ClientCharacter.active() != GameCharacter.THOR || minecraft.screen != null) {
+                || ClientCharacter.active() != GameCharacter.THOR || minecraft.screen != null
+                || ThorMotion.flying()) {
             fullAt = 0L;
             return;
         }

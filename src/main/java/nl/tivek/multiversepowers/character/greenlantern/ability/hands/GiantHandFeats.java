@@ -359,7 +359,7 @@ abstract class GiantHandFeats extends GiantHandTricks {
             if (this.t != shot) {
                 continue;
             }
-            Vec3 way = place.up().normalize();
+            Vec3 way = HandPose.aimed(place, tip, this.base, this.aim.subtract(this.base));
             BlockHitResult wall = LoadedWorld.clip(level, new ClipContext(tip, tip.add(way.scale(GUN_RANGE)),
                     ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, CollisionContext.empty()));
             double far = wall.getType() == HitResult.Type.MISS ? GUN_RANGE : wall.getLocation().distanceTo(tip);
@@ -465,7 +465,7 @@ abstract class GiantHandFeats extends GiantHandTricks {
         if (this.t < HandPose.BEAM_FIRES || this.t > HandPose.BEAM_STOPS || (this.t - HandPose.BEAM_FIRES) % 4 != 0) {
             return;
         }
-        Vec3 way = place.up().normalize();
+        Vec3 way = HandPose.aimed(place, ring, this.base, this.aim.subtract(this.base));
         BlockHitResult wall = LoadedWorld.clip(level, new ClipContext(ring, ring.add(way.scale(BEAM_RANGE)),
                 ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, CollisionContext.empty()));
         Vec3 end = wall.getType() == HitResult.Type.MISS ? ring.add(way.scale(BEAM_RANGE)) : wall.getLocation();

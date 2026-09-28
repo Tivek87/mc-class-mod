@@ -12,6 +12,7 @@ import nl.tivek.multiversepowers.config.ModConfigs;
 import nl.tivek.multiversepowers.engine.effect.Effects;
 import nl.tivek.multiversepowers.engine.entity.DeathStyles;
 import nl.tivek.multiversepowers.engine.entity.HeldMobs;
+import nl.tivek.multiversepowers.engine.entity.Knockdowns;
 import nl.tivek.multiversepowers.engine.fx.ParticleBatch;
 import nl.tivek.multiversepowers.faction.Factions;
 import nl.tivek.multiversepowers.network.ModNetwork;
@@ -41,5 +42,6 @@ public class MultiversePowers {
         DeathStyles.clear();
         // Last: held mobs must not be saved with their AI switched off.
         HeldMobs.releaseAll();
+        Knockdowns.clear();
     }
 }

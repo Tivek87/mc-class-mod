@@ -169,11 +169,11 @@ public final class SuitGlow {
         Matrix4f torso = pose.last().pose();
         chest(light, torso, glow, time);
         node(light, torso, glow * 0.6F, time);
-        lines(light, torso, CHEST_MAIN, glow, time, MAIN, FAST * rush, arm);
-        lines(light, torso, CHEST, glow * 0.85F, time, 1.0F, 1.0F, rest);
-        lines(light, torso, BACK_MAIN, glow * 0.9F, time, MAIN, FAST * rush, arm);
-        lines(light, torso, BACK, glow * 0.75F, time, 1.0F, 1.0F, rest);
-        lines(light, torso, FLANKS, glow * 0.7F, time, 1.0F, 1.0F, rest);
+        lines(light, torso, CHEST_MAIN, glow, time, MAIN, FAST * rush, arm, suit.body);
+        lines(light, torso, CHEST, glow * 0.85F, time, 1.0F, 1.0F, rest, suit.body);
+        lines(light, torso, BACK_MAIN, glow * 0.9F, time, MAIN, FAST * rush, arm, suit.body);
+        lines(light, torso, BACK, glow * 0.75F, time, 1.0F, 1.0F, rest, suit.body);
+        lines(light, torso, FLANKS, glow * 0.7F, time, 1.0F, 1.0F, rest, suit.body);
         pose.popPose();
         part(pose, light, suit.rightArm, glow, time, rightArmMain(slim), MAIN, FAST * rush, arm);
         part(pose, light, suit.rightArm, glow * 0.9F, time, rightArm(slim), 1.0F, FAST * rush, arm);

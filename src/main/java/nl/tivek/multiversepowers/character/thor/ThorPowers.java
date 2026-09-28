@@ -15,11 +15,15 @@ import nl.tivek.multiversepowers.engine.effect.Effects;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 import nl.tivek.multiversepowers.engine.fx.Sounds;
 
-// Thor: a bolt of lightning strikes as you become him and static crawls over you for a while; holding the attack
-// button claps his hands in a thunderclap.
+// Thor: a bolt of lightning strikes as you become him and static crawls over you for a while. His moves are in
+// ThorMoves (dash, super jump, flight and what he does in flight), GrabDive and Thunderclap.
 public final class ThorPowers implements CharacterPowers {
     // How long the attack button is held for the thunderclap: 0.75 seconds.
     public static final int CLAP_HOLD = 15;
+    // How long space is held to fly, right held for the dive and the scroll wheel for lightning speed.
+    public static final int FLIGHT_HOLD = 8;
+    public static final int DIVE_HOLD = 10;
+    public static final int LIGHTNING_HOLD = 4;
     private static final int CRACKLE_TICKS = 40;
     private static final int GLOW = 0x9FE8FF;
 
@@ -57,25 +61,56 @@ public final class ThorPowers implements CharacterPowers {
 
     @Override
     public void leave(ServerPlayer player) {
+        ThorMoves.leave(player);
         ParticleFx.cloud(player.serverLevel(), ParticleTypes.ELECTRIC_SPARK, player.position().add(0.0, 1.0, 0.0),
                 24, 0.5, 0.3);
     }
 
+    // Every move but the thunderclap is his own game's to make (it moves him); the server checks it may, shows it and
+    // hits what it hits.
     @Override
     public boolean use(ServerPlayer player, CharacterAbility ability, boolean on, int data) {
-        if (!ability.id().equals("thunderclap") || !on || (data & Characters.HOLD) == 0
-                || Characters.cooldownLeft(player, ability) > 0) {
-            return false;
+        boolean flying = ThorMoves.flying(player);
+        boolean held = (data & Characters.HOLD) != 0;
+        return switch (ability.id()) {
+            case "thunderclap" -> on && held && !flying
+                    && Thunderclap.cast(player, player.serverLevel(), ability.getDamage());
+            case "dash" -> on && !flying && ThorMoves.dash(player, data >> Characters.MOVE_SHIFT & 0xFF,
+                    data >> Characters.MOVE_SHIFT + 8 & 0xFF);
+            case "super_jump" -> on && !flying && ThorMoves.superJump(player);
+            case "flight" -> {
+                if (on && (data & Characters.SLAM) != 0) {
+                    ThorMoves.land(player, true);
+                    yield false;
+                }
+                yield on && held && ThorMoves.takeOff(player);
+            }
+            case "air_blink" -> on && flying && ThorMoves.blink(player);
+            case "grab_dash_dive" -> {
+                ThorMoves moves = ThorMoves.find(player);
+                if (on && (data & Characters.SLAM) != 0) {
+                    if (moves != null && moves.dive != null) {
+                        moves.dive.slam(player.serverLevel());
+                    }
+                    yield false;
+                }
+                yield on && held && flying && GrabDive.start(player, ability.getDamage());
+            }
+            case "lightning_flight" -> ThorMoves.lightning(player, on && flying);
+            default -> false;
+        };
+    }
+
+    @Override
+    public void showTo(ServerPlayer viewer, ServerPlayer target) {
+        int flags = ThorMoves.flags(target);
+        if (flags != 0) {
+            ThorStatePayload.sendTo(viewer, target, flags);
         }
-        // The held version keeps no cooldown of the button's own (see Characters.action): this one starts it.
-        boolean cast = Thunderclap.cast(player, player.serverLevel(), ability.getDamage());
-        if (cast) {
-            Characters.startCooldown(player, ability);
-        }
-        return cast;
     }
 
     @Override
     public void clear() {
+        ThorMoves.clear();
     }
 }

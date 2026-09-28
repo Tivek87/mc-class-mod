@@ -46,6 +46,10 @@ import static nl.tivek.multiversepowers.character.greenlantern.client.flight.Fly
 
 @EventBusSubscriber(modid = MultiversePowers.MODID, value = Dist.CLIENT)
 public final class ClientFlight extends FlightSteering {
+    static {
+        ClientCharacter.gate(GameCharacter.GREEN_LANTERN.byName("flight"), FlightSteering::mayToggle);
+    }
+
     private static final double FAST = 0.51;
 
     private static final Map<Integer, Motion> MOTIONS = new HashMap<>();
@@ -219,9 +223,6 @@ public final class ClientFlight extends FlightSteering {
         if (level == null || minecraft.isPaused()) {
             return;
         }
-        if (minecraft.player != null) {
-            doubleJump(minecraft, minecraft.player);
-        }
         for (AbstractClientPlayer player : level.players()) {
             boolean flying = ClientRing.flight(player, 0.0F) >= 0.0F;
             boolean dropping = dropping(player);
@@ -344,13 +345,11 @@ public final class ClientFlight extends FlightSteering {
     @SubscribeEvent
     public static void onClone(ClientPlayerNetworkEvent.Clone event) {
         slamTick = Integer.MIN_VALUE;
-        lastJump = Integer.MIN_VALUE;
     }
 
     @SubscribeEvent
     public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
         slamTick = Integer.MIN_VALUE;
-        lastJump = Integer.MIN_VALUE;
         stop();
         velocity = Vec3.ZERO;
         velocityO = Vec3.ZERO;

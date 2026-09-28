@@ -41,6 +41,8 @@ Good to know:
 - Everyone nearby sees you change, and sees everything your abilities do.
 - The key can be changed in Options > Controls, under "Multiverse Powers".
 - While the screen is open, the panel with your abilities is hidden.
+- The wheel's **Developer** section can show every creature's bones and spawn a **test hand**: a skin-coloured
+  hand that comes out of a portal 5 blocks ahead, moves every finger and joint in turn and is gone after 10 seconds.
 
 ---
 
@@ -53,25 +55,36 @@ long cooldown; while it goes, the panel's title turns red and counts down.
 
 | Key | Ability | Doctor Octopus | Green Lantern | Thor |
 |---|---|---|---|---|
-| R | Ability 1 | Grab | Emerald Express | Thunderclap *(hold left click)* |
-| V | Ability 2 | Multi-Tentacle | Construct Wheel | |
-| Z | Ability 3 | Tentacle Dash | Recharge | |
-| B (hold) | Ability 4 | Block | Light Bolt *(left click)* | |
-| H | Ability 5 | Ground Slam | Light Shield *(right click)* | |
-| N | Ability 6 | Portal | Ring Scan | |
-| Y | Ability 7 | Octopus Rampage *(ultimate)* | Air Strike *(ultimate; hold: Mech Assembly)* | |
+| R | Ability 1 | Grab | Emerald Express | Thunderclap *(hold right click)* |
+| V | Ability 2 | Multi-Tentacle | Construct Wheel | Dash *(right click)* |
+| Z | Ability 3 | Tentacle Dash | Recharge | Super Jump *(double space)* |
+| B (hold) | Ability 4 | Block | Light Bolt *(left click)* | Flight *(hold space)* |
+| H | Ability 5 | Ground Slam | Light Shield *(right click)* | Air Blink *(right click, flying)* |
+| N | Ability 6 | Portal | Ring Scan | Grab-Dash Dive *(hold right, flying)* |
+| Y | Ability 7 | Octopus Rampage *(ultimate)* | Air Strike *(ultimate; hold: Mech Assembly)* | Lightning Speed *(hold scroll wheel, flying)* |
 | X | Ability 8 | *(free)* | Shockwave | |
-| C | Ability 9 | Feet or Tentacles | Flight | |
+| C | Ability 9 | Feet or Tentacles | Flight *(double space)* | |
 | Left Alt | Ability 10 | Ground Strike | Giant Hands | |
 | K | Ability 11 | *(free)* | Light Cage | |
-| Middle click | Ability 12 | *(free)* | Beam Lock | |
+| *(none)* | Ability 12 | *(free)* | Beam Lock *(scroll wheel click)* | |
 
 - Every key can be changed in Options > Controls, under "Multiverse Powers".
+- An ability on a mouse button or on space shows that in brackets: its number key does nothing for it.
 - A panel in the bottom right shows who you are and what each key does right now, with its cooldown.
 - Keys your character has nothing on are left off the panel and do nothing; the two Doctor Octopus keeps free for
   later powers show as **Placeholder**.
-- Middle click is also pick block. While your character has nothing on it, middle click just picks blocks
-  and stays quiet; once a character has an ability there, the ability wins.
+- The scroll wheel click is also pick block. While your character has nothing on it, it just picks blocks and
+  stays quiet; once a character has an ability there, the ability wins.
+
+### Mouse & space (Options > Controls, "Multiverse Powers: Mouse & Space")
+
+The mouse buttons and space do more than one thing: a click, a hold, a double press. Controls lists them all:
+**left click, left hold, right click, right hold, scroll wheel click, scroll wheel hold, double space and hold
+space**. Left, right and space follow the game's own attack, use and jump keys and are shown greyed out: they
+cannot be changed there. The **scroll wheel click and hold can**: put either on any key or button you like (on the
+same one, as they come, a click and a hold tell themselves apart). A power with a click and a hold on the same
+button waits until you let go to know which you meant. The panel shows a hold as **Hold ...** and a double press
+as **Double ...**, and greys out a power that only works on the ground while you fly, or the other way round.
 - **A character can also sit on the mouse.** Green Lantern does: left click shoots, right click puts up a
   shield. The panel shows those as `[Left Button]` and `[Right Button]`. They only take the mouse over
   while both your hands are empty and the hand behind that button is free; any other time the mouse does
@@ -89,7 +102,7 @@ long cooldown; while it goes, the panel's title turns red and counts down.
 | H (Ground Slam) | The slam **around you**, also when your claws are full, so you keep what you hold. |
 | C (Feet or Tentacles) | Steps **back** through the stances instead of forward. |
 | Left Alt (Ground Strike) | **Undoes it**: every creature you marked is let go. Free, even on cooldown. |
-| V, Z, B, N, Y, K, middle click | Nothing different. |
+| V, Z, B, N, Y, K, scroll wheel click | Nothing different. |
 
 ---
 
@@ -231,7 +244,7 @@ quick one, 2 seconds of holding for the lasting one.
     | 4 | 8 s | x2.28 | 58 blocks | x2.5 | 3.16/s | 44% |
     | 5 | 10 s | x3 (30 hearts/s) | 64 blocks | x3 | 5/s, fixed | 30% |
   - Let go or run the ring dry and it dies down; your walking speed comes back at once.
-  - **Beam Lock (middle click):** click it while the beam pours and it stays at the stage it has reached: it stops
+  - **Beam Lock (scroll wheel click):** click it while the beam pours and it stays at the stage it has reached: it stops
     growing, the gauge shows a padlock and **LOCKED**, and the ring says so. Click again and it grows on from
     there. Clicked before the beam is out, the ring tells you to fire it first.
   - **Your own beam is see-through close to you**, like your own shield: faint as glass right in front of you,
@@ -287,9 +300,9 @@ Green Lantern recharges his ring at his lantern, the power battery.
   from your hand however your body lies, the wind shakes it in first person, and the hit sends rings of light
   out around the way you fly. Recharging while an empty ring lets you sink makes you fly again.
 
-### Flight (key C)
+### Flight (double space)
 
-- **Press C, or tap jump twice quickly,** and you take off. Both fists come up to your chest with a small dip,
+- **Tap space twice quickly** and you take off. Both fists come up to your chest with a small dip,
   then your arms sweep down along your sides, your head goes up and you rise a few blocks, with a flash of light
   at your feet. From there you fly on without a break. It takes a little over a second, and it also catches you
   in the middle of a jump or a fall (the double tap works there too; in creative the double tap stays the
@@ -322,8 +335,7 @@ Green Lantern recharges his ring at his lantern, the power battery.
   you slow down smoothly before its edge instead and fly on at full speed once it is there. Both distances are
   world settings of the flight (*The world ahead*).
 - **Landing:** sink down onto the ground slowly and you land by yourself, or fly into it while looking down at
-  it and you land as well, whatever your speed; or press C again anywhere to stop flying, or tap jump twice
-  quickly in the air (you then fall from there). Walls and the ground stop you; hits and blasts knock you
+  it and you land as well, whatever your speed; or tap space twice quickly in the air to stop flying (you then fall from there). Walls and the ground stop you; hits and blasts knock you
   about, but you keep flying.
 - **Power:** a full ring keeps you up for **93.75 seconds**, so flying costs **1.07 power a second** (100
   divided by 93.75), from the moment you take off. You need at least **0.8 power** to take off. Everything you
@@ -462,7 +474,9 @@ jumps the rails, crashes onto its side with the coaches piling up behind it, and
   it lays its own track wherever it goes, over hills, across water and even through the air, and the whole train
   runs along it.
 - **It hunts:** once the engine and its tender are out of the portal it turns towards the nearest creature out to
-  hurt you (within 24 blocks, ahead of it first) and runs it down. Every creature it rams takes **10 hearts** and is
+  hurt you (within 24 blocks, ahead of it first) and runs it down, aiming where the creature will be and braking into
+  tight curves like a heavy train; a creature it cannot reach in a wide sweep it leaves be for a moment instead of
+  circling round it in loops. Every creature it rams takes **10 hearts** and is
   thrown far aside; then it goes after the next one. It rams **6** at most, and runs **220 blocks** at most, but
   always until its last coach is out of the portal. Hard light goes through walls, trees and houses without
   breaking a block.
@@ -574,6 +588,9 @@ arm, both as solid as every construct.
   charge, its rams and its slam.
 
 #### Energy Whip (slot 2)
+
+**Locked for now:** its slot shows a padlock and picking it only says no. The whip will be reworked or removed; what
+follows is how it worked.
 
 A whip of hard light: a handle with a round pommel, a wrapped grip, two bands and a ferrule, and out of it a long lash
 (**10 blocks**: how far every lash and the whirlwind reach) that grows thinner towards its end, with glowing bands
@@ -810,16 +827,18 @@ Green Lantern's ultimate: a big, slow gunship of hard light high over the battle
   It tumbles head over heels back up out of the crater, over the mech and down onto its shoulders, locking on with a
   hard **CLACK**, and the mech spreads its arms wide, its eyes flaring.
 - **Built:** the creature is let go, the eyes glow and the rim round the glass breathes with light.
-- **Walking.** Now you walk it: **W** walks it forward, **S** backs it up, **A** and **D** step it to the side. Its
-  body always faces where you look: it turns on its hips, all the way round if you look behind you, and its legs
-  turn after it as fast as they can. It gets going and slows down with its weight. Each foot stays planted where it came down until its turn to step:
+- **Walking.** Now you walk it: **W** walks it forward, **S** backs it up, **A** and **D** step it to the side; hold
+  **Shift** with W and it **runs**: longer strides, the knees higher, the body leaning in and the arms pumping. Its
+  body follows where you look: the torso swings round on its hips with weight, overshooting a little and settling,
+  all the way round if you look behind you, and the legs step after it; the head turns and tilts to look where you
+  look before the body catches up. It gets going and slows down with its weight. Each foot stays planted where it came down until its turn to step:
   the heel lifts, the leg swings through with the knee bent and the foot comes down with a thump that shakes the
   ground, throws up dust and spreads a ring of light. The body bobs, sways over the leg it stands on and twists
   with the stride, the arms swing against the legs, and turning on the spot it steps round on its feet. It climbs
   steps and slopes up to 3 blocks, wades through trees and plants, walks over water, and stops at walls and cliffs.
 - **In the cockpit.** You push and pull the two levers as you walk and turn: both forward to walk, one forward and
   one back to turn. Standing still you reach over to the console now and then and press a button, which lights up.
-  In first person you see your own hands on the levers through the glass; in third person the camera stands back
+  In first person you look out through the round glass port in its chest, with a clear view ahead; in third person the camera stands back
   behind and above the whole mech, so it never blocks your view.
 - **Walking is all it does:** you cannot fly, jump or use your other powers while you are in it.
 - **Leaving it:** hold Y for 2 seconds again (the ring round your crosshair says *Leave the mech*): the mech breaks
@@ -1267,21 +1286,56 @@ The whole run takes about 12 seconds, longer when the creature runs.
 
 ## Thor
 
-The god of thunder, from the Other franchise. For now he has one power; more will come.
+The god of thunder, from the Other franchise. Everything he does sits on the mouse and space: on the ground right
+click dashes and holding it claps; double space jumps high and holding space flies; in flight the same buttons blink,
+dive and speed up. Left click is a plain punch.
 
 - **Becoming Thor:** a bolt of lightning strikes you out of the sky with a crack of thunder (it does no harm and
   lights no fire), a flash of blue light spreads round your feet, and static keeps crawling over you for about two
   seconds.
+- **The axe:** until Mjolnir is made, an axe stands in for it. It hangs from his belt on his left hip; in flight
+  his left hand holds it out ahead of him, as if it pulled him along.
 
-### Thunderclap (hold left click for 0.75 seconds)
+### Dash (right click)
 
-- **Hold the attack button** with empty hands. A small ring round your crosshair charges up from the top in blue,
+- **Click right** with empty hands: Thor sinks into his knees and shoots off low along the ground, **4 to 8
+  blocks** (a different distance every time), the way you were walking or running: ahead, aside or back; standing
+  still, ahead. His chest leans into the run and his arms drive back; he plants his lead foot, slides to a stop
+  leaning back against it and rises. Sparks and dust fly behind him.
+- **Cooldown:** 0.8 seconds. The shortest and longest distance are settings.
+
+### Super Jump (double space)
+
+- **Press space twice quickly:** Thor bends his knees and throws himself up about **10 blocks**, arms thrown up and
+  knees drawn in. At the top he **hangs in the air for about 2.5 seconds**, falling only slowly, arms and legs
+  balancing, his body turning with where you aim; you can drift a little with the movement keys. Then he falls again
+  and soaks the landing up in his knees. The jump never hurts him when he lands.
+- **Cooldown:** 2.5 seconds. The height and the time he hangs are settings.
+
+### Flight (hold space)
+
+- **Hold space** (on the ground or in the air): Thor's left hand grabs the axe from his belt and he rises. He flies
+  where you look: W ahead, S back, A and D aside, space up and shift down; with no key held he hangs still in the
+  air, bobbing gently. Flying fast he lies flat behind the axe and banks into his turns.
+- **Landing:** fly down onto the ground and he touches down, the axe back on his belt. A hard hit (2.5 hearts or
+  more) knocks him out of the sky. He takes no fall damage from his own flight.
+- **In flight:** right click **blinks** him **15 blocks** ahead along a streak of lightning (1.2 seconds cooldown);
+  holding right for half a second makes him **dive** at what you aim at, grab it on the way and drive it into the
+  ground in a **slam** (5 hearts to it, less to what stands round, a lightning strike; 8 seconds cooldown), which
+  ends his flight; holding the scroll wheel flies him at **lightning speed** (48 blocks a second) while you hold it.
+- His speed and lightning speed are settings.
+
+### Thunderclap (hold right click for 0.75 seconds)
+
+- **Hold right** with empty hands, on the ground. A small ring round your crosshair charges up from the top in blue,
   crackling at its tip; after **0.75 seconds** it is full and pops with a white flash and little bolts leaping out,
-  and Thor claps: he throws his arms wide as static builds in his hands, then slams them together in front of his
-  chest. Let go sooner and nothing happens.
+  and Thor claps: he sets his feet wide and low, throws his chest open with his arms drawn wide as static builds in
+  his hands, then drives forward over his knees and slams them together in front of his chest. Let go sooner and he
+  dashes instead.
 - **The clap:** a blinding blue-white light flares between the hands, thunder cracks, and a bubble in which time all
   but stands still swells out of the hands and rolls ahead the way you aim, sparks crawling slowly inside it; rings
-  of light ripple over the ground and a wall of mist rolls forward. The bubble is **4 blocks** across at most and
+  of light ripple out along the aim and a wall of mist rolls the same way, up or down as well. The bubble is
+  **4 blocks** across at most and
   gone again after about **0.6 seconds**.
 - **What it hits:** creatures out to hurt you in a cone where you aim, **9 blocks** long and about 90 degrees wide:
   **2.5 hearts** close to you, down to half at the edge, and each is thrown away from you and up.

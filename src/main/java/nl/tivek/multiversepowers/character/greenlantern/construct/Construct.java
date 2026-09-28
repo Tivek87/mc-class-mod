@@ -47,12 +47,20 @@ public enum Construct {
         return this == NONE || this == SWORD_SHIELD || this == ENERGY_WHIP || this == FLAMETHROWER;
     }
 
+    // Shut for now: the energy whip is to be reworked or taken out (too glitchy, too heavy to draw).
+    public boolean locked() {
+        return this == ENERGY_WHIP;
+    }
+
     public Component getDisplayName() {
         return Component.translatable(KEY + this.id);
     }
 
     @Nullable
     public Component getDescription() {
+        if (this.locked()) {
+            return Component.translatable(KEY + "locked");
+        }
         return this.made() ? Component.translatable(KEY + this.id + ".about") : null;
     }
 

@@ -1,7 +1,6 @@
 package nl.tivek.multiversepowers.character.greenlantern.client.flight;
 
 import javax.annotation.Nullable;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.resources.sounds.AbstractTickableSoundInstance;
 import net.minecraft.client.resources.sounds.SoundInstance;
@@ -68,9 +67,6 @@ abstract class FlightSteering {
     static final int SLAM_ROOT = 17;
     static int slamTick = Integer.MIN_VALUE;
 
-    private static final int DOUBLE_JUMP = 7;
-    private static boolean jumpWasDown;
-    static int lastJump = Integer.MIN_VALUE;
 
     FlightSteering() {
     }
@@ -192,27 +188,14 @@ abstract class FlightSteering {
         momentum = 0.0;
     }
 
-    static void doubleJump(Minecraft minecraft, LocalPlayer player) {
-        boolean down = minecraft.options.keyJump.isDown();
-        if (down && !jumpWasDown && minecraft.screen == null) {
-            boolean lantern = ClientCharacter.active() == GameCharacter.GREEN_LANTERN && !player.mayFly()
-                    && !player.isPassenger() && !player.isFallFlying() && !player.isSpectator();
-            float t = ClientRing.flight(player, 0.0F);
-            boolean free = lantern && t < 0.0F && ClientRing.arrival(player, 0.0F) < 0.0F;
-            boolean flying = lantern && t >= ARISE && !ClientRing.has(player, RingPayload.DESCENT);
-            // No earlier tap is no double tap; MIN_VALUE would make the gap below overflow instead.
-            int gap = lastJump == Integer.MIN_VALUE ? Integer.MAX_VALUE : player.tickCount - lastJump;
-            if ((free || flying) && gap >= 0 && gap <= DOUBLE_JUMP) {
-                lastJump = Integer.MIN_VALUE;
-                CharacterAbility flight = GameCharacter.GREEN_LANTERN.byName("flight");
-                if (flight != null) {
-                    PacketDistributor.sendToServer(new AbilityActionPayload(flight.slot().ordinal(), true, 0));
-                }
-            } else {
-                lastJump = player.tickCount;
-            }
-        }
-        jumpWasDown = down;
+    // A double press of space takes off or lands only when standing free or flying level, not mid take-off.
+    static boolean mayToggle(LocalPlayer player) {
+        boolean lantern = ClientCharacter.active() == GameCharacter.GREEN_LANTERN && !player.mayFly()
+                && !player.isPassenger() && !player.isFallFlying() && !player.isSpectator();
+        float t = ClientRing.flight(player, 0.0F);
+        boolean free = lantern && t < 0.0F && ClientRing.arrival(player, 0.0F) < 0.0F;
+        boolean flying = lantern && t >= ARISE && !ClientRing.has(player, RingPayload.DESCENT);
+        return free || flying;
     }
 
     static final class WindSound extends AbstractTickableSoundInstance {

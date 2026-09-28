@@ -32,6 +32,7 @@ import nl.tivek.multiversepowers.character.greenlantern.construct.ConstructPickP
 import nl.tivek.multiversepowers.character.greenlantern.construct.FlattenPayload;
 import nl.tivek.multiversepowers.character.greenlantern.hand.HandVictimPayload;
 import nl.tivek.multiversepowers.character.greenlantern.mech.MechDrivePayload;
+import nl.tivek.multiversepowers.character.thor.ThorStatePayload;
 import nl.tivek.multiversepowers.classes.ChoosingState;
 import nl.tivek.multiversepowers.classes.ClassData;
 import nl.tivek.multiversepowers.classes.ClassGear;
@@ -78,6 +79,7 @@ public final class ModNetwork {
         registrar.playToClient(VoidStatePayload.TYPE, VoidStatePayload.STREAM_CODEC, ModNetwork::onVoidState);
         registrar.playToClient(SpellFxPayload.TYPE, SpellFxPayload.STREAM_CODEC, ModNetwork::onSpellFx);
         registrar.playToClient(ClapPayload.TYPE, ClapPayload.STREAM_CODEC, ModNetwork::onClap);
+        registrar.playToClient(ThorStatePayload.TYPE, ThorStatePayload.STREAM_CODEC, ModNetwork::onThorState);
         registrar.playToClient(GrabStatePayload.TYPE, GrabStatePayload.STREAM_CODEC, ModNetwork::onGrabState);
         registrar.playToServer(ThrowGrabPayload.TYPE, ThrowGrabPayload.STREAM_CODEC, ModNetwork::onThrowGrab);
         registrar.playToClient(ArmPayload.TYPE, ArmPayload.STREAM_CODEC, ModNetwork::onArm);
@@ -137,7 +139,8 @@ public final class ModNetwork {
     private static void onConstructHold(ConstructHoldPayload payload, IPayloadContext context) {
         context.enqueueWork(() -> {
             if (context.player() instanceof ServerPlayer serverPlayer) {
-                Construct construct = Construct.byIndex(payload.construct());
+                Construct picked = Construct.byIndex(payload.construct());
+                Construct construct = picked.locked() ? Construct.NONE : picked;
                 SwordShield.hold(serverPlayer, construct);
                 Flamethrower.hold(serverPlayer, construct);
                 EnergyWhip.hold(serverPlayer, construct);
@@ -248,6 +251,10 @@ public final class ModNetwork {
 
     private static void onVoidState(VoidStatePayload payload, IPayloadContext context) {
         ClientPayloadHandler.handleVoidState(payload, context);
+    }
+
+    private static void onThorState(ThorStatePayload payload, IPayloadContext context) {
+        ClientPayloadHandler.handleThorState(payload, context);
     }
 
     private static void onClap(ClapPayload payload, IPayloadContext context) {

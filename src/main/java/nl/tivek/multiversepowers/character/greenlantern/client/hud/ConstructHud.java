@@ -107,11 +107,11 @@ public final class ConstructHud {
         boolean drawn = false;
         for (CharacterAbility ability : GameCharacter.GREEN_LANTERN.abilities()) {
             // Sword and shield block the instant it's held; there's no fill to show
-            if (ability.mouseButton() == CharacterAbility.Mouse.NONE
-                    || SwordArms.holding() && ability.mouseButton() == CharacterAbility.Mouse.RIGHT) {
+            if (ability.input() != CharacterAbility.Input.LEFT && ability.input() != CharacterAbility.Input.RIGHT
+                    || SwordArms.holding() && ability.input() == CharacterAbility.Input.RIGHT) {
                 continue;
             }
-            boolean right = ability.mouseButton() == CharacterAbility.Mouse.LEFT;
+            boolean right = ability.input() == CharacterAbility.Input.LEFT;
             if (ability.id().equals("light_bolt") && !SwordArms.holding() && !WhipArms.holding()) {
                 drawn |= BeamGauge.render(graphics, minecraft.player, ability, middleX, middleY, partialTick, labels);
                 continue;
@@ -175,7 +175,7 @@ public final class ConstructHud {
         Minecraft minecraft = Minecraft.getInstance();
         long now = Util.getMillis();
         for (CharacterAbility ability : GameCharacter.GREEN_LANTERN.abilities()) {
-            if (ability.mouseButton() != CharacterAbility.Mouse.NONE || ability.isHeld() || ability.holdTicks() <= 0) {
+            if (ability.input() != CharacterAbility.Input.KEY || ability.isHeld() || ability.holdTicks() <= 0) {
                 continue;
             }
             float progress = ClientCharacter.keyHoldProgress(ability, partialTick);
@@ -230,29 +230,33 @@ public final class ConstructHud {
             return Component.translatable(prefix + "flurry");
         }
         if (WhipArms.holding()) {
-            return Component.translatable(prefix + (ability.mouseButton() == CharacterAbility.Mouse.LEFT ? "whirlwind"
+            return Component.translatable(prefix + (ability.input() == CharacterAbility.Input.LEFT ? "whirlwind"
                     : "spinning_shield"));
         }
-        if (ability.mouseButton() == CharacterAbility.Mouse.LEFT) {
+        if (ability.input() == CharacterAbility.Input.LEFT) {
             return Component.translatable(prefix + "beam");
         }
         boolean flying = player != null && ClientRing.flight(player, 0.0F) >= 0.0F;
         return Component.translatable(prefix + (flying ? "brake" : "dome"));
     }
 
+    private static boolean onMouse(CharacterAbility ability) {
+        return ability.input() == CharacterAbility.Input.LEFT || ability.input() == CharacterAbility.Input.RIGHT;
+    }
+
     @Nullable
     public static Component status(CharacterAbility ability, Player player) {
         String prefix = "screen." + MultiversePowers.MODID + ".character.";
-        if (SwordArms.holding() && ability.mouseButton() != CharacterAbility.Mouse.NONE) {
-            return Component.translatable(prefix + (ability.mouseButton() == CharacterAbility.Mouse.LEFT ? "sword"
+        if (SwordArms.holding() && onMouse(ability)) {
+            return Component.translatable(prefix + (ability.input() == CharacterAbility.Input.LEFT ? "sword"
                     : "shield"));
         }
-        if (FlameArms.holding() && ability.mouseButton() != CharacterAbility.Mouse.NONE) {
-            return Component.translatable(prefix + (ability.mouseButton() == CharacterAbility.Mouse.LEFT ? "flames"
+        if (FlameArms.holding() && onMouse(ability)) {
+            return Component.translatable(prefix + (ability.input() == CharacterAbility.Input.LEFT ? "flames"
                     : "fire_wall"));
         }
-        if (WhipArms.holding() && ability.mouseButton() != CharacterAbility.Mouse.NONE) {
-            return Component.translatable(prefix + (ability.mouseButton() == CharacterAbility.Mouse.LEFT ? "whip"
+        if (WhipArms.holding() && onMouse(ability)) {
+            return Component.translatable(prefix + (ability.input() == CharacterAbility.Input.LEFT ? "whip"
                     : "lasso"));
         }
         return switch (ability.id()) {

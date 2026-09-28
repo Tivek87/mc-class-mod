@@ -43,13 +43,16 @@
     "subtitle": "subtitles.welcomescreen.express.chuff",
     "sounds": [
       {
-        "name": "welcomescreen:express/chuff1"
+        "name": "welcomescreen:express/chuff1",
+        "volume": 0.5
       },
       {
-        "name": "welcomescreen:express/chuff2"
+        "name": "welcomescreen:express/chuff2",
+        "volume": 0.5
       },
       {
-        "name": "welcomescreen:express/chuff3"
+        "name": "welcomescreen:express/chuff3",
+        "volume": 0.5
       }
     ]
   },
@@ -57,7 +60,8 @@
     "subtitle": "subtitles.welcomescreen.express.hiss",
     "sounds": [
       {
-        "name": "welcomescreen:express/hiss"
+        "name": "welcomescreen:express/hiss",
+        "volume": 0.5
       }
     ]
   },
@@ -65,7 +69,8 @@
     "subtitle": "subtitles.welcomescreen.express.brakes",
     "sounds": [
       {
-        "name": "welcomescreen:express/brakes"
+        "name": "welcomescreen:express/brakes",
+        "volume": 0.5
       }
     ]
   },
@@ -73,7 +78,8 @@
     "subtitle": "subtitles.welcomescreen.express.scrape",
     "sounds": [
       {
-        "name": "welcomescreen:express/scrape"
+        "name": "welcomescreen:express/scrape",
+        "volume": 0.5
       }
     ]
   },
@@ -81,7 +87,8 @@
     "subtitle": "subtitles.welcomescreen.express.boom",
     "sounds": [
       {
-        "name": "welcomescreen:express/boom"
+        "name": "welcomescreen:express/boom",
+        "volume": 0.5
       }
     ]
   },
@@ -89,7 +96,8 @@
     "subtitle": "subtitles.welcomescreen.express.whistle",
     "sounds": [
       {
-        "name": "welcomescreen:express/whistle"
+        "name": "welcomescreen:express/whistle",
+        "volume": 0.5
       }
     ]
   },
@@ -97,7 +105,8 @@
     "subtitle": "subtitles.welcomescreen.express.toot",
     "sounds": [
       {
-        "name": "welcomescreen:express/toot"
+        "name": "welcomescreen:express/toot",
+        "volume": 0.5
       }
     ]
   },
@@ -105,7 +114,8 @@
     "subtitle": "subtitles.welcomescreen.express.bell",
     "sounds": [
       {
-        "name": "welcomescreen:express/bell"
+        "name": "welcomescreen:express/bell",
+        "volume": 0.5
       }
     ]
   },
@@ -113,7 +123,8 @@
     "subtitle": "subtitles.welcomescreen.express.crash",
     "sounds": [
       {
-        "name": "welcomescreen:express/crash"
+        "name": "welcomescreen:express/crash",
+        "volume": 0.5
       }
     ]
   },
@@ -121,7 +132,8 @@
     "subtitle": "subtitles.welcomescreen.express.clack",
     "sounds": [
       {
-        "name": "welcomescreen:express/clack"
+        "name": "welcomescreen:express/clack",
+        "volume": 0.5
       }
     ]
   },
@@ -130,7 +142,8 @@
     "sounds": [
       {
         "name": "welcomescreen:express/rumble",
-        "stream": true
+        "stream": true,
+        "volume": 0.5
       }
     ]
   },
@@ -195,6 +208,159 @@
     "sounds": [
       {
         "name": "welcomescreen:mech/surge"
+      }
+    ]
+  },
+  "express.quiet.amethyst_block_resonate": {
+    "sounds": [
+      {
+        "name": "minecraft:block.amethyst_block.resonate",
+        "type": "event",
+        "volume": 0.5
+      }
+    ]
+  },
+  "express.quiet.amethyst_cluster_break": {
+    "sounds": [
+      {
+        "name": "minecraft:block.amethyst_cluster.break",
+        "type": "event",
+        "volume": 0.5
+      }
+    ]
+  },
+  "express.quiet.anvil_land": {
+    "sounds": [
+      {
+        "name": "minecraft:block.anvil.land",
+        "type": "event",
+        "volume": 0.5
+      }
+    ]
+  },
+  "express.quiet.anvil_place": {
+    "sounds": [
+      {
+        "name": "minecraft:block.anvil.place",
+        "type": "event",
+        "volume": 0.5
+      }
+    ]
+  },
+  "express.quiet.beacon_activate": {
+    "sounds": [
+      {
+        "name": "minecraft:block.beacon.activate",
+        "type": "event",
+        "volume": 0.5
+      }
+    ]
+  },
+  "express.quiet.beacon_deactivate": {
+    "sounds": [
+      {
+        "name": "minecraft:block.beacon.deactivate",
+        "type": "event",
+        "volume": 0.5
+      }
+    ]
+  },
+  "express.quiet.beacon_power_select": {
+    "sounds": [
+      {
+        "name": "minecraft:block.beacon.power_select",
+        "type": "event",
+        "volume": 0.5
+      }
+    ]
+  },
+  "express.quiet.firework_rocket_large_blast": {
+    "sounds": [
+      {
+        "name": "minecraft:entity.firework_rocket.large_blast",
+        "type": "event",
+        "volume": 0.5
+      }
+    ]
+  },
+  "express.quiet.fire_extinguish": {
+    "sounds": [
+      {
+        "name": "minecraft:block.fire.extinguish",
+        "type": "event",
+        "volume": 0.5
+      }
+    ]
+  },
+  "express.quiet.generic_explode": {
+    "sounds": [
+      {
+        "name": "minecraft:entity.generic.explode",
+        "type": "event",
+        "volume": 0.5
+      }
+    ]
+  },
+  "express.quiet.grindstone_use": {
+    "sounds": [
+      {
+        "name": "minecraft:block.grindstone.use",
+        "type": "event",
+        "volume": 0.5
+      }
+    ]
+  },
+  "express.quiet.iron_golem_damage": {
+    "sounds": [
+      {
+        "name": "minecraft:entity.iron_golem.damage",
+        "type": "event",
+        "volume": 0.5
+      }
+    ]
+  },
+  "express.quiet.lava_extinguish": {
+    "sounds": [
+      {
+        "name": "minecraft:block.lava.extinguish",
+        "type": "event",
+        "volume": 0.5
+      }
+    ]
+  },
+  "express.quiet.mace_smash_ground": {
+    "sounds": [
+      {
+        "name": "minecraft:item.mace.smash_ground",
+        "type": "event",
+        "volume": 0.5
+      }
+    ]
+  },
+  "express.quiet.mace_smash_ground_heavy": {
+    "sounds": [
+      {
+        "name": "minecraft:item.mace.smash_ground_heavy",
+        "type": "event",
+        "volume": 0.5
+      }
+    ]
+  },
+  "express.quiet.player_attack_knockback": {
+    "sounds": [
+      {
+        "name": "minecraft:entity.player.attack.knockback",
+        "type": "event",
+        "volume": 0.5
+      }
+    ]
+  },
+  "express.quiet.respawn_anchor_charge": {
+    "sounds": [
+      {
+        "name": "minecraft:block.respawn_anchor.charge",
+        "type": "event",
+        "volume": 0.5
       }
     ]
   }

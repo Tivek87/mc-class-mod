@@ -4,10 +4,13 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import java.util.ArrayList;
 import java.util.List;
+import javax.annotation.Nullable;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.util.Mth;
+import nl.tivek.multiversepowers.engine.client.model.BentParts;
 import nl.tivek.multiversepowers.engine.math.Colors;
 import org.joml.Matrix4f;
+import org.joml.Vector3f;
 import static nl.tivek.multiversepowers.character.greenlantern.client.body.suit.SuitGlow.ALL;
 import static nl.tivek.multiversepowers.character.greenlantern.client.body.suit.SuitGlow.BRIGHT;
 import static nl.tivek.multiversepowers.character.greenlantern.client.body.suit.SuitGlow.FRONT;
@@ -110,21 +113,22 @@ final class SuitLines {
         }
         pose.pushPose();
         part.translateAndRotate(pose);
-        lines(light, pose.last().pose(), lines, glow, time, width, flow, reach);
+        lines(light, pose.last().pose(), lines, glow, time, width, flow, reach, part);
         pose.popPose();
     }
 
+    // bent: the part the lines lie on, when a pose may bend it (a knee, the waist): they bend along with it.
     static void lines(VertexConsumer light, Matrix4f matrix, float[][] lines, float glow, float time,
-            float width, float flow, float reach) {
+            float width, float flow, float reach, @Nullable ModelPart bent) {
         for (float[] line : lines) {
             if (line[1] < reach) {
-                trace(light, matrix, line, glow, time, width, flow, reach);
+                trace(light, matrix, line, glow, time, width, flow, reach, bent);
             }
         }
     }
 
     private static void trace(VertexConsumer light, Matrix4f matrix, float[] line, float glow, float time,
-            float width, float flow, float reach) {
+            float width, float flow, float reach, @Nullable ModelPart bent) {
         int face = (int) line[0];
         float[] normal = NORMALS[face];
         List<float[]> points = new ArrayList<>();
@@ -139,12 +143,23 @@ final class SuitLines {
             int steps = Math.max(1, (int) Math.ceil(length / 0.8F));
             for (int s = 0; s < steps; s++) {
                 float a = (float) s / steps;
-                points.add(lifted(normal, Mth.lerp(a, x0, x1), Mth.lerp(a, y0, y1), Mth.lerp(a, z0, z1)));
+                points.add(bent(bent, lifted(normal, Mth.lerp(a, x0, x1), Mth.lerp(a, y0, y1),
+                        Mth.lerp(a, z0, z1))));
             }
         }
         int last = line.length - 3;
-        points.add(lifted(normal, line[last], line[last + 1], line[last + 2]));
+        points.add(bent(bent, lifted(normal, line[last], line[last + 1], line[last + 2])));
         run(light, matrix, points.toArray(new float[0][]), line[1], glow, time, width, flow, reach);
+    }
+
+    private static float[] bent(@Nullable ModelPart part, float[] point) {
+        if (part == null) {
+            return point;
+        }
+        Vector3f at = BentParts.place(part, point[0], point[1], point[2], new Vector3f());
+        Vector3f tip = BentParts.place(part, point[0] + point[3], point[1] + point[4], point[2] + point[5],
+                new Vector3f()).sub(at);
+        return new float[] { at.x, at.y, at.z, tip.x, tip.y, tip.z };
     }
 
     private static float[] lifted(float[] normal, float x, float y, float z) {

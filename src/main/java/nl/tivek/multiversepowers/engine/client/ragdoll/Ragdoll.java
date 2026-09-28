@@ -12,13 +12,9 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.engine.client.model.BentParts;
 import nl.tivek.multiversepowers.engine.client.model.ModelParts;
-import nl.tivek.multiversepowers.engine.physics.BallJoint;
 import nl.tivek.multiversepowers.engine.physics.Blocks;
-import nl.tivek.multiversepowers.engine.physics.HingeJoint;
 import nl.tivek.multiversepowers.engine.physics.Pin;
-import nl.tivek.multiversepowers.engine.physics.Quat;
 import nl.tivek.multiversepowers.engine.physics.RigidWorld;
-import nl.tivek.multiversepowers.engine.physics.SelfContact;
 import org.joml.Matrix3d;
 import org.joml.Matrix4f;
 import org.joml.Quaterniond;
@@ -35,10 +31,14 @@ final class Ragdoll {
         DEAD
     }
 
+    // A living creature thrown limp: carried along its flight, then down where it fell, then getting up.
+    enum Phase {
+        AIR,
+        DOWN,
+        UP
+    }
+
     static final double TICK = 0.05;
-    private static final double DENSITY = 100.0;
-    // How deep a limb may already lie in another part as the body is built before it is no longer kept out of it.
-    private static final double TOUCHING = 0.01;
     // Carried further than this in one step (a teleport), the whole body goes along at once instead of stretching.
     private static final double LEAP = 4.0;
     // How much of the gap to where a thrown creature really is its body closes each tick, flying on by the speed the
@@ -68,41 +68,55 @@ final class Ragdoll {
     private static final Vector3d MIDDLE = new Vector3d();
     private static final Vector3f ORIGIN = new Vector3f();
     private static final Matrix3d ROTATION = new Matrix3d();
-    private static final Quaternionf BENT = new Quaternionf();
+    private static final Vector3f[] LIE_POS = GetUp.vectors();
+    private static final Quaternionf[] LIE_ROT = GetUp.turns();
+    private static final Quaternionf[] LIE_KNEE = GetUp.turns();
+    private static final Vector3f[] OWN_POS = GetUp.vectors();
+    private static final Quaternionf[] OWN_ROT = GetUp.turns();
+    private static final Vector3f[] OUT_POS = GetUp.vectors();
+    private static final Quaternionf[] OUT_ROT = GetUp.turns();
+    private static final Quaternionf[] OUT_KNEE = GetUp.turns();
 
     final LivingEntity entity;
     final EntityModel<?> model;
     final List<ModelParts.Part> parts;
     final RigidWorld world = new RigidWorld();
     // Each part's body; a long arm or leg is two, its near half in `body` and its far half past the knee in `lower`.
-    private final int[] body;
-    private final int[] lower;
+    final int[] body;
+    final int[] lower;
     private final ModelParts.Bend[] bends;
     private final double[] center;
     // Every part it moves, the parts that copy them too, and where each sits in the copies layers draw.
     private final ModelPart[] moved;
     private final Map<EntityModel<?>, ModelPart[]> copies = new IdentityHashMap<>();
     // Holds the core where its creature is while something carries or throws it.
-    private final Pin hold;
-    private final double[] offset = new double[3];
-    private final double[] target = new double[3];
+    final Pin hold;
+    final double[] offset = new double[3];
+    final double[] target = new double[3];
     private final double[] next = new double[3];
     final int core;
     State state;
     int age;
-    int still;
     int dead = -1;
     int sunk = -1;
     // 1 fully limp, falling to 0 as the creature takes back its own pose.
     double limp = 1.0;
-    boolean ending;
     boolean flew;
+    Phase phase = Phase.AIR;
+    // Ticks lying still, ticks down in all, and ticks into getting up (-1 before).
+    int rest;
+    int down;
+    int up = -1;
+    // The body as it lay when it began to get up; a person gets up by way of one knee (GetUp).
+    @Nullable
+    private double[] lay;
+    private final boolean person;
     private boolean leapt;
-    private final double[] was;
-    private final double[] now;
+    final double[] was;
+    final double[] now;
     private final double[] scratch = new double[7];
 
-    private Ragdoll(LivingEntity entity, EntityModel<?> model, List<ModelParts.Part> parts, int[] body,
+    Ragdoll(LivingEntity entity, EntityModel<?> model, List<ModelParts.Part> parts, int[] body,
             ModelParts.Bend[] bends, double[] center, int core, State state) {
         this.entity = entity;
         this.model = model;
@@ -114,6 +128,7 @@ final class Ragdoll {
         this.center = center;
         this.core = core;
         this.state = state;
+        this.person = GetUp.person(model, parts);
         this.hold = new Pin(core, 0.0, 0.0, 0.0, 0.0);
         this.world.gravity = GRAVITY;
         int bodies = parts.size();
@@ -134,278 +149,6 @@ final class Ragdoll {
                 this.moved[k++] = follower;
             }
         }
-    }
-
-    // Built the first time the creature is drawn after something made it limp: `model` is its model as posed this
-    // frame, `drawn` the matrix from model space to the camera, `camera` where the camera stands.
-    static Ragdoll build(LivingEntity entity, EntityModel<?> model, List<ModelParts.Part> parts, Matrix4f drawn,
-            Vec3 camera, float partialTick, State state, boolean stiff, RagdollProfiles.Profile profile,
-            Vec3 velocity) {
-        int n = parts.size();
-        int[] body = new int[n];
-        double[] center = new double[n * 3];
-        Matrix4f[] frames = new Matrix4f[n];
-        int core = 0;
-        double biggest = -1.0;
-        for (int i = 0; i < n; i++) {
-            ModelParts.Part part = parts.get(i);
-            float[] b = part.bounds();
-            double volume = (b[3] - b[0]) * (b[4] - b[1]) * (b[5] - b[2]);
-            boolean better = part.role() == ModelParts.Role.BODY && parts.get(core).role() != ModelParts.Role.BODY
-                    || (part.role() == ModelParts.Role.BODY) == (parts.get(core).role() == ModelParts.Role.BODY)
-                            && volume > biggest;
-            if (i == 0 || better) {
-                core = i;
-                biggest = volume;
-            }
-        }
-        ModelParts.Bend[] bends = new ModelParts.Bend[n];
-        for (int i = 0; i < n && !stiff; i++) {
-            bends[i] = i == core ? null : ModelParts.bend(parts.get(i));
-        }
-        Ragdoll ragdoll = new Ragdoll(entity, model, parts, body, bends, center, core, state);
-        RigidWorld world = ragdoll.world;
-        world.friction = 0.8;
-        world.angularDamping = 1.6;
-        Quaterniond turn = new Quaterniond();
-        double[] vel = { velocity.x, velocity.y, velocity.z };
-        double[][] kneeHang = new double[n][];
-        float[][][] halves = new float[n][][];
-        for (int i = 0; i < n; i++) {
-            ModelParts.Part part = parts.get(i);
-            Matrix4f frame = ModelParts.frame(model, drawn, part, new Matrix4f());
-            frames[i] = frame;
-            ModelParts.Bend bend = bends[i];
-            float[] b = part.bounds();
-            float[] near = b;
-            float[] far = null;
-            if (bend != null) {
-                near = b.clone();
-                far = b.clone();
-                int a = bend.axis();
-                near[bend.farSign() > 0.0F ? a + 3 : a] = bend.at();
-                far[bend.farSign() > 0.0F ? a : a + 3] = bend.at();
-            }
-            center[i * 3] = (near[0] + near[3]) / 32.0;
-            center[i * 3 + 1] = (near[1] + near[4]) / 32.0;
-            center[i * 3 + 2] = (near[2] + near[5]) / 32.0;
-            double scale = scaleOf(frame);
-            double heft = heft(part.role()) * profile.part(part.name()).mass().orElse(1.0);
-            rotationOf(frame, turn);
-            body[i] = ragdoll.box(frame, near, scale, heft, camera, turn, vel);
-            halves[i] = far == null ? null : new float[][] { near, far };
-        }
-        // The far halves after every part's own body, so a part's index stays its body's.
-        for (int i = 0; i < n; i++) {
-            if (halves[i] != null) {
-                ModelParts.Bend bend = bends[i];
-                float[] near = halves[i][0];
-                float[] far = halves[i][1];
-                double scale = scaleOf(frames[i]);
-                double heft = heft(parts.get(i).role()) * profile.part(parts.get(i).name()).mass().orElse(1.0);
-                rotationOf(frames[i], turn);
-                ragdoll.lower[i] = ragdoll.box(frames[i], far, scale, heft, camera, turn, vel);
-                double[] anchorA = new double[3];
-                double[] anchorB = new double[3];
-                for (int k = 0; k < 3; k++) {
-                    anchorA[k] = (bend.knee()[k] - (near[k] + near[k + 3]) * 0.5) / 16.0 * scale;
-                    anchorB[k] = (bend.knee()[k] - (far[k] + far[k + 3]) * 0.5) / 16.0 * scale;
-                }
-                double[] hinge = { bend.hinge()[0], bend.hinge()[1], bend.hinge()[2] };
-                double[] bone = new double[3];
-                bone[bend.axis()] = bend.farSign();
-                world.add(new HingeJoint(body[i], anchorA, hinge, bone, ragdoll.lower[i], anchorB, hinge, bone,
-                        bend.min(), bend.max()));
-                kneeHang[i] = anchorB;
-            }
-        }
-        double[] pivot = new double[3];
-        double[] away = new double[3];
-        double[] across = new double[3];
-        double[] aLocal = new double[3];
-        double[] bLocal = new double[3];
-        double[] axisA = new double[3];
-        double[] axisB = new double[3];
-        double[] refA = new double[3];
-        double[] refB = new double[3];
-        double[] coreAt = new double[7];
-        double[] limbAt = new double[7];
-        double[][] hangs = new double[n][];
-        world.pose(body[core], coreAt);
-        for (int i = 0; i < n; i++) {
-            if (i == core) {
-                continue;
-            }
-            Vector3f origin = frames[i].transformPosition(new Vector3f(), new Vector3f());
-            pivot[0] = origin.x + camera.x;
-            pivot[1] = origin.y + camera.y;
-            pivot[2] = origin.z + camera.z;
-            world.pose(body[i], limbAt);
-            away[0] = limbAt[0] - pivot[0];
-            away[1] = limbAt[1] - pivot[1];
-            away[2] = limbAt[2] - pivot[2];
-            double far = Math.sqrt(away[0] * away[0] + away[1] * away[1] + away[2] * away[2]);
-            if (far < 1.0E-6) {
-                away[0] = 0.0;
-                away[1] = -1.0;
-                away[2] = 0.0;
-            } else {
-                away[0] /= far;
-                away[1] /= far;
-                away[2] /= far;
-            }
-            across[0] = Math.abs(away[1]) < 0.9 ? away[2] : 0.0;
-            across[1] = Math.abs(away[1]) < 0.9 ? 0.0 : -away[2];
-            across[2] = Math.abs(away[1]) < 0.9 ? -away[0] : away[1];
-            double al = Math.sqrt(across[0] * across[0] + across[1] * across[1] + across[2] * across[2]);
-            for (int k = 0; k < 3; k++) {
-                across[k] /= al;
-            }
-            local(coreAt, pivot[0] - coreAt[0], pivot[1] - coreAt[1], pivot[2] - coreAt[2], aLocal);
-            local(limbAt, pivot[0] - limbAt[0], pivot[1] - limbAt[1], pivot[2] - limbAt[2], bLocal);
-            local(coreAt, away[0], away[1], away[2], axisA);
-            local(limbAt, away[0], away[1], away[2], axisB);
-            local(coreAt, across[0], across[1], across[2], refA);
-            local(limbAt, across[0], across[1], across[2], refB);
-            ModelParts.Role role = parts.get(i).role();
-            RagdollProfiles.Tuning tuning = profile.part(parts.get(i).name());
-            double swing = stiff ? 0.02 : tuning.swing().map(Math::toRadians).orElse(switch (role) {
-                case HEAD -> 0.9;
-                case ARM -> 2.4;
-                case LEG -> 1.3;
-                default -> 1.1;
-            });
-            double twist = stiff ? 0.02 : tuning.twist().map(Math::toRadians).orElse(switch (role) {
-                case HEAD -> 0.9;
-                case ARM -> 1.4;
-                case LEG -> 0.4;
-                default -> 0.6;
-            });
-            world.add(new BallJoint(body[core], aLocal, axisA, refA, body[i], bLocal, axisB, refB, swing, -twist,
-                    twist));
-            hangs[i] = bLocal.clone();
-            if (!stiff && role != ModelParts.Role.HEAD) {
-                ragdoll.apart(i, hangs[i], kneeHang[i], core);
-            }
-        }
-        // A pair of legs side by side stays apart; four legs stand too far from each other to meet.
-        int firstLeg = -1;
-        int legs = 0;
-        int lastLeg = -1;
-        for (int i = 0; i < n; i++) {
-            if (parts.get(i).role() == ModelParts.Role.LEG && i != core) {
-                legs++;
-                firstLeg = firstLeg < 0 ? i : firstLeg;
-                lastLeg = i;
-            }
-        }
-        if (!stiff && legs == 2) {
-            ragdoll.apart(lastLeg, hangs[lastLeg], kneeHang[lastLeg], firstLeg);
-        }
-        // Arms keep out of the legs and the head, legs out of the head, and the head out of the trunk.
-        for (int i = 0; i < n && !stiff; i++) {
-            ModelParts.Role role = parts.get(i).role();
-            if (i == core) {
-                continue;
-            }
-            for (int j = 0; j < n; j++) {
-                ModelParts.Role other = parts.get(j).role();
-                boolean apart = role == ModelParts.Role.ARM && (other == ModelParts.Role.LEG
-                        || other == ModelParts.Role.HEAD) || role == ModelParts.Role.LEG && other == ModelParts.Role.HEAD;
-                if (j != i && j != core && apart) {
-                    ragdoll.apart(i, hangs[i], kneeHang[i], j);
-                }
-            }
-            if (role == ModelParts.Role.HEAD) {
-                ragdoll.apart(i, hangs[i], kneeHang[i], core);
-            }
-        }
-        world.add(ragdoll.hold);
-        ragdoll.remember(ragdoll.now);
-        System.arraycopy(ragdoll.now, 0, ragdoll.was, 0, ragdoll.now.length);
-        // Where the core sits from the creature's feet as it is drawn now, kept while something carries it.
-        Vec3 feet = entity.getPosition(partialTick);
-        System.arraycopy(ragdoll.now, core * 7, ragdoll.target, 0, 3);
-        ragdoll.offset[0] = ragdoll.target[0] - feet.x;
-        ragdoll.offset[1] = ragdoll.target[1] - feet.y;
-        ragdoll.offset[2] = ragdoll.target[2] - feet.z;
-        if (state != State.DEAD) {
-            ragdoll.hold.to(ragdoll.target[0], ragdoll.target[1], ragdoll.target[2]);
-        }
-        return ragdoll;
-    }
-
-    // One body for the box b (pixels, in the part's frame) of a part drawn in `frame`, placed and moving with it.
-    private int box(Matrix4f frame, float[] b, double scale, double heft, Vec3 camera, Quaterniond turn,
-            double[] vel) {
-        double hx = Math.max(0.02, (b[3] - b[0]) / 32.0 * scale);
-        double hy = Math.max(0.02, (b[4] - b[1]) / 32.0 * scale);
-        double hz = Math.max(0.02, (b[5] - b[2]) / 32.0 * scale);
-        int made = this.world.add(DENSITY * heft * 8.0 * hx * hy * hz, hx, hy, hz);
-        Vector3f c = frame.transformPosition(new Vector3f((b[0] + b[3]) / 32.0F, (b[1] + b[4]) / 32.0F,
-                (b[2] + b[5]) / 32.0F), new Vector3f());
-        this.world.place(made, c.x + camera.x, c.y + camera.y, c.z + camera.z, turn.x, turn.y, turn.z, turn.w);
-        this.world.velocity(made, vel[0], vel[1], vel[2], 0.0, 0.0, 0.0);
-        return made;
-    }
-
-    // A block head is mostly air and a trunk mostly flesh: weighed by volume alone, a held creature would hang by its
-    // head.
-    private static double heft(ModelParts.Role role) {
-        return switch (role) {
-            case HEAD -> 0.35;
-            case BODY -> 1.5;
-            case LEG -> 1.2;
-            default -> 1.0;
-        };
-    }
-
-    // Part i (both halves of a bent limb) kept out of part j (both its halves as well).
-    private void apart(int i, double[] hang, @Nullable double[] kneeHang, int j) {
-        for (int to : new int[] { this.body[j], this.lower[j] }) {
-            if (to < 0) {
-                continue;
-            }
-            this.keepOut(this.body[i], hang, to);
-            if (this.lower[i] >= 0) {
-                this.keepOut(this.lower[i], kneeHang, to);
-            }
-        }
-    }
-
-    // A limb's far part (its capsule along its longest side, away from where it hangs) kept out of another body.
-    private void keepOut(int b, double[] hang, int other) {
-        int longest = 0;
-        for (int a = 1; a < 3; a++) {
-            if (this.world.half(b, a) > this.world.half(b, longest)) {
-                longest = a;
-            }
-        }
-        double radius = Double.POSITIVE_INFINITY;
-        for (int a = 0; a < 3; a++) {
-            if (a != longest) {
-                radius = Math.min(radius, this.world.half(b, a));
-            }
-        }
-        double reach = Math.max(0.0, this.world.half(b, longest) - radius);
-        double sign = hang[longest] > 0.0 ? -1.0 : 1.0;
-        double[] far = new double[3];
-        double[] near = new double[3];
-        far[longest] = sign * reach;
-        // A model can be built with a limb partly inside its body (a horse's legs start in its belly): the capsule
-        // then starts further out, or is left off, or it would shove the two apart every step and fling the body.
-        for (int tries = 0; tries < 5; tries++) {
-            near[longest] = sign * reach * (tries * 0.25 - 0.3);
-            SelfContact contact = new SelfContact(b, near, far, radius, other);
-            if (contact.deepest(this.world) < TOUCHING) {
-                this.world.add(contact);
-                return;
-            }
-        }
-    }
-
-    private static void local(double[] pose, double x, double y, double z, double[] out) {
-        Quat.unrotate(pose, 3, x, y, z, out, 0);
     }
 
     static double scaleOf(Matrix4f frame) {
@@ -535,12 +278,64 @@ final class Ragdoll {
         this.state = State.DEAD;
         this.dead = tick;
         this.limp = 1.0;
-        this.ending = false;
+        this.phase = Phase.DOWN;
+        this.lay = null;
+        this.up = -1;
         this.world.wake();
+    }
+
+    // It has come down: no longer held to where its creature is, it falls and lies where the blow left it.
+    void fall() {
+        this.phase = Phase.DOWN;
+        this.hold.release();
+        this.rest = 0;
+        this.down = 0;
+        this.world.wake();
+    }
+
+    // Thrown again while down or getting up: carried along with its creature once more, from where it lies now.
+    void lift(LivingEntity entity) {
+        if (this.phase == Phase.UP && this.lay != null) {
+            System.arraycopy(this.lay, 0, this.now, 0, this.now.length);
+            System.arraycopy(this.lay, 0, this.was, 0, this.now.length);
+        }
+        this.phase = Phase.AIR;
+        this.up = -1;
+        this.lay = null;
+        this.flew = false;
+        this.limp = 1.0;
+        System.arraycopy(this.now, this.core * 7, this.target, 0, 3);
+        this.offset[0] = this.target[0] - entity.getX();
+        this.offset[1] = this.target[1] - entity.getY();
+        this.offset[2] = this.target[2] - entity.getZ();
+        this.hold.to(this.target[0], this.target[1], this.target[2]);
+        this.world.wake();
+    }
+
+    // Lain long enough: it gets up from just the way it lies.
+    void getUp() {
+        this.phase = Phase.UP;
+        this.up = 0;
+        this.lay = this.now.clone();
+        System.arraycopy(this.now, 0, this.was, 0, this.now.length);
+    }
+
+    boolean person() {
+        return this.person;
+    }
+
+    // Lying all but still: a last twitch of a limb does not keep it down longer.
+    boolean resting() {
+        return this.world.quiet() >= 3;
     }
 
     void step(int substeps, Blocks blocks) {
         System.arraycopy(this.now, 0, this.was, 0, this.now.length);
+        if (this.phase == Phase.UP) {
+            this.up++;
+            this.age++;
+            return;
+        }
         this.world.step(TICK, substeps, blocks);
         this.remember(this.now);
         if (this.leapt) {
@@ -550,7 +345,7 @@ final class Ragdoll {
         this.age++;
     }
 
-    private void remember(double[] into) {
+    void remember(double[] into) {
         for (int i = 0; i < this.world.count(); i++) {
             this.world.pose(i, this.scratch);
             System.arraycopy(this.scratch, 0, into, i * 7, 7);
@@ -566,18 +361,22 @@ final class Ragdoll {
     }
 
     // Puts every moving part (and the parts that copy it) where its box is this frame, relative to how the model is
-    // drawn now, `sink` blocks lower. A part keeps `1 - limp` of its own animated pose, so a creature getting up
-    // blends back smoothly.
+    // drawn now, `sink` blocks lower. While a creature takes back its own pose (limp below 1) a part keeps some of it;
+    // getting up, it goes from how it lay to its own pose by way of GetUp.
     void pose(Matrix4f drawn, Vec3 camera, double partialTick, double sink, Restore restore) {
-        for (int i = 0; i < this.parts.size(); i++) {
+        boolean rising = this.phase == Phase.UP && this.lay != null;
+        double[] from = rising ? this.lay : this.was;
+        double[] to = rising ? this.lay : this.now;
+        double t = rising ? 1.0 : partialTick;
+        int n = this.parts.size();
+        for (int i = 0; i < n; i++) {
             ModelParts.Part part = this.parts.get(i);
             int o = i * 7;
-            double t = partialTick;
-            double px = this.was[o] + (this.now[o] - this.was[o]) * t - camera.x;
-            double py = this.was[o + 1] + (this.now[o + 1] - this.was[o + 1]) * t - camera.y - sink;
-            double pz = this.was[o + 2] + (this.now[o + 2] - this.was[o + 2]) * t - camera.z;
-            A.set(this.was[o + 3], this.was[o + 4], this.was[o + 5], this.was[o + 6]);
-            B.set(this.now[o + 3], this.now[o + 4], this.now[o + 5], this.now[o + 6]);
+            double px = from[o] + (to[o] - from[o]) * t - camera.x;
+            double py = from[o + 1] + (to[o + 1] - from[o + 1]) * t - camera.y - sink;
+            double pz = from[o + 2] + (to[o + 2] - from[o + 2]) * t - camera.z;
+            A.set(from[o + 3], from[o + 4], from[o + 5], from[o + 6]);
+            B.set(to[o + 3], to[o + 4], to[o + 5], to[o + 6]);
             A.slerp(B, t);
             ModelParts.parentFrame(this.model, drawn, part, FRAME);
             double s = scaleOf(FRAME);
@@ -591,23 +390,43 @@ final class Ragdoll {
             MIDDLE.set(this.center[i * 3], this.center[i * 3 + 1], this.center[i * 3 + 2]);
             OWN.transform(MIDDLE);
             LOCAL.sub(MIDDLE);
+            LIE_POS[i].set((float) (LOCAL.x * 16.0), (float) (LOCAL.y * 16.0), (float) (LOCAL.z * 16.0));
+            LIE_ROT[i].set((float) OWN.x, (float) OWN.y, (float) OWN.z, (float) OWN.w);
+            LIE_KNEE[i].identity();
+            if (this.lower[i] >= 0) {
+                // The far half's turn seen from the near half: how far the knee or elbow is bent.
+                int l = this.lower[i] * 7;
+                B.set(from[l + 3], from[l + 4], from[l + 5], from[l + 6]);
+                MIXED.set(to[l + 3], to[l + 4], to[l + 5], to[l + 6]);
+                B.slerp(MIXED, t);
+                MIXED.set(A).conjugate().mul(B);
+                LIE_KNEE[i].set((float) MIXED.x, (float) MIXED.y, (float) MIXED.z, (float) MIXED.w);
+            }
+            ModelPart target = part.part();
+            OWN_POS[i].set(target.x, target.y, target.z);
+            OWN_ROT[i].rotationZYX(target.zRot, target.yRot, target.xRot);
+        }
+        if (rising && this.person) {
+            float u = Math.min(1.0F, (float) ((this.up + partialTick) / GetUp.PERSON_TICKS));
+            GetUp.person(this.parts, this.core, this.bends, u, LIE_POS, LIE_ROT, LIE_KNEE, OWN_POS, OWN_ROT, OUT_POS,
+                    OUT_ROT, OUT_KNEE);
+        } else {
+            float w = rising ? GetUp.limp((float) Math.min(1.0, (this.up + partialTick) / GetUp.OTHER_TICKS))
+                    : (float) Math.max(0.0, Math.min(1.0, this.limp));
+            for (int i = 0; i < n; i++) {
+                OUT_POS[i].set(OWN_POS[i]).lerp(LIE_POS[i], w);
+                OUT_ROT[i].set(OWN_ROT[i]).slerp(LIE_ROT[i], w);
+                OUT_KNEE[i].identity().slerp(LIE_KNEE[i], w);
+            }
+        }
+        for (int i = 0; i < n; i++) {
+            ModelParts.Part part = this.parts.get(i);
             ModelPart target = part.part();
             restore.keep(target);
-            float x = (float) (LOCAL.x * 16.0);
-            float y = (float) (LOCAL.y * 16.0);
-            float z = (float) (LOCAL.z * 16.0);
-            double w = Math.max(0.0, Math.min(1.0, this.limp));
-            if (w < 1.0) {
-                MIXED.rotationZYX(target.zRot, target.yRot, target.xRot).slerp(OWN, w);
-                x = (float) (target.x + (x - target.x) * w);
-                y = (float) (target.y + (y - target.y) * w);
-                z = (float) (target.z + (z - target.z) * w);
-            } else {
-                MIXED.set(OWN);
-            }
+            MIXED.set(OUT_ROT[i].x, OUT_ROT[i].y, OUT_ROT[i].z, OUT_ROT[i].w);
             MIXED.get(ROTATION);
             ROTATION.getEulerAnglesZYX(EULER);
-            target.setPos(x, y, z);
+            target.setPos(OUT_POS[i].x, OUT_POS[i].y, OUT_POS[i].z);
             target.setRotation((float) EULER.x, (float) EULER.y, (float) EULER.z);
             List<ModelPart> followers = part.followers();
             for (int k = 0; k < followers.size(); k++) {
@@ -615,19 +434,9 @@ final class Ragdoll {
                 followers.get(k).copyFrom(target);
             }
             if (this.lower[i] >= 0) {
-                // The far half's turn seen from the near half: how far the knee or elbow is bent.
-                int l = this.lower[i] * 7;
-                B.set(this.was[l + 3], this.was[l + 4], this.was[l + 5], this.was[l + 6]);
-                MIXED.set(this.now[l + 3], this.now[l + 4], this.now[l + 5], this.now[l + 6]);
-                B.slerp(MIXED, t);
-                MIXED.set(A).conjugate().mul(B);
-                if (w < 1.0) {
-                    MIXED.set(B.identity().slerp(MIXED, w));
-                }
-                BENT.set((float) MIXED.x, (float) MIXED.y, (float) MIXED.z, (float) MIXED.w);
-                BentParts.bend(target, this.bends[i], BENT);
+                BentParts.bend(target, this.bends[i], OUT_KNEE[i]);
                 for (int k = 0; k < followers.size(); k++) {
-                    BentParts.bend(followers.get(k), this.bends[i], BENT);
+                    BentParts.bend(followers.get(k), this.bends[i], OUT_KNEE[i]);
                 }
             }
         }

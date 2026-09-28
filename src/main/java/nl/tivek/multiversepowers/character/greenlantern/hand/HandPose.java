@@ -245,6 +245,22 @@ public final class HandPose extends HandRings {
                 scale);
     }
 
+    // Which way a shot out of the hand (the ring's beam, the finger gun) goes from `from`: straight at the middle of
+    // what the hand is after, its feet at base + reach and AIMED_HEIGHT up, as long as that lies within reason of
+    // where the hand points; else just the way it points. The hand's own pose aims for a creature level with it ten
+    // blocks off, and would shoot into the ground short of one further off or over one nearer.
+    public static final double AIMED_HEIGHT = 0.9;
+
+    public static Vec3 aimed(Place place, Vec3 from, Vec3 base, Vec3 reach) {
+        Vec3 own = place.up().normalize();
+        Vec3 way = base.add(reach).add(0.0, AIMED_HEIGHT, 0.0).subtract(from);
+        if (way.lengthSqr() < 1.0) {
+            return own;
+        }
+        way = way.normalize();
+        return way.dot(own) < 0.5 ? own : way;
+    }
+
     // The way out of the ground or wall a hand stands in.
     public static Vec3 rootNormal(int variant, Vec3 reach) {
         if (!wall(variant)) {

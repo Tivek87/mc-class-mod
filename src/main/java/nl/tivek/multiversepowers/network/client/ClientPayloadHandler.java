@@ -23,6 +23,8 @@ import nl.tivek.multiversepowers.character.greenlantern.client.victim.HandVictim
 import nl.tivek.multiversepowers.character.greenlantern.construct.ConstructPayload;
 import nl.tivek.multiversepowers.character.greenlantern.construct.FlattenPayload;
 import nl.tivek.multiversepowers.character.greenlantern.hand.HandVictimPayload;
+import nl.tivek.multiversepowers.character.thor.ThorStatePayload;
+import nl.tivek.multiversepowers.character.thor.client.ClientThor;
 import nl.tivek.multiversepowers.classes.ClassSyncPayload;
 import nl.tivek.multiversepowers.classes.PlayerClass;
 import nl.tivek.multiversepowers.classes.client.ClientClassData;
@@ -76,6 +78,10 @@ public final class ClientPayloadHandler {
         context.enqueueWork(() -> ClientVoidState.set(payload.ticks()));
     }
 
+    public static void handleThorState(ThorStatePayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> ClientThor.update(payload));
+    }
+
     public static void handleClap(ClapPayload payload, IPayloadContext context) {
         context.enqueueWork(() -> ClientClaps.clap(payload.entity()));
     }
@@ -93,7 +99,10 @@ public final class ClientPayloadHandler {
     }
 
     public static void handleCharacterLook(CharacterLookPayload payload, IPayloadContext context) {
-        context.enqueueWork(() -> ClientLooks.update(payload));
+        context.enqueueWork(() -> {
+            ClientLooks.update(payload);
+            ClientCharacter.seen(payload);
+        });
     }
 
     public static void handleStaminaCost(StaminaCostPayload payload, IPayloadContext context) {

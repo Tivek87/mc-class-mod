@@ -7,6 +7,7 @@ import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.engine.client.fx.CameraShake;
 import nl.tivek.multiversepowers.engine.client.fx.ChaseCamera;
 import nl.tivek.multiversepowers.engine.client.fx.Cinematic;
+import nl.tivek.multiversepowers.engine.client.fx.FirstPersonEye;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -30,6 +31,10 @@ public abstract class CameraMixin {
             float partialTick, CallbackInfo info) {
         Cinematic.Shot shot = Cinematic.shot(partialTick);
         if (shot == null) {
+            Vec3 own = detached ? null : FirstPersonEye.eye(partialTick);
+            if (own != null) {
+                this.setPosition(own);
+            }
             if (detached) {
                 Vec3 eye = ChaseCamera.eye(new Vec3(((Camera) (Object) this).getLookVector()), partialTick);
                 if (eye != null) {

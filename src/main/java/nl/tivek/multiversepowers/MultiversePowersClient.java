@@ -8,7 +8,9 @@ import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
 import nl.tivek.multiversepowers.character.greenlantern.client.ClientConstructs;
+import nl.tivek.multiversepowers.character.greenlantern.client.body.arm.LanternArms;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.flame.FlameArms;
+import nl.tivek.multiversepowers.character.greenlantern.client.body.pose.LanternBody;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.pose.MechPilot;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.suit.GreenLanternSuitLayer;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.sword.SwordArms;
@@ -17,9 +19,12 @@ import nl.tivek.multiversepowers.character.greenlantern.client.mech.MechPainter;
 import nl.tivek.multiversepowers.character.greenlantern.client.victim.Clapped;
 import nl.tivek.multiversepowers.character.greenlantern.client.victim.Flattened;
 import nl.tivek.multiversepowers.character.greenlantern.client.victim.HandVictims;
+import nl.tivek.multiversepowers.character.thor.client.ThorAxeLayer;
+import nl.tivek.multiversepowers.character.thor.client.ThorPoses;
 import nl.tivek.multiversepowers.config.ModConfigs;
 import nl.tivek.multiversepowers.config.client.ClientSettings;
 import nl.tivek.multiversepowers.config.client.ConfigChoiceScreen;
+import nl.tivek.multiversepowers.engine.client.pose.BodyTurns;
 import nl.tivek.multiversepowers.engine.client.pose.Poses;
 import nl.tivek.multiversepowers.engine.client.ragdoll.RagdollProfiles;
 import nl.tivek.multiversepowers.engine.client.ragdoll.Ragdolls;
@@ -34,6 +39,7 @@ public final class MultiversePowersClient {
         container.registerExtensionPoint(IConfigScreenFactory.class,
                 (mod, parent) -> new ConfigChoiceScreen(parent));
         modEventBus.addListener(GreenLanternSuitLayer::onAddLayers);
+        modEventBus.addListener(ThorAxeLayer::onAddLayers);
         modEventBus.addListener(UpdatePopup::onRegisterKeys);
         modEventBus.addListener(Lens::onRegisterShaders);
         modEventBus.addListener(MechPainter::onClientSetup);
@@ -48,7 +54,13 @@ public final class MultiversePowersClient {
                 && ClientClaps.pose(player, entity));
         Poses.layer(Poses.Stage.MODEL, (model, entity, partialTick) -> model instanceof PlayerModel<?> player
                 && MechPilot.pose(player, entity));
+        Poses.layer(Poses.Stage.MODEL, (model, entity, partialTick) -> model instanceof PlayerModel<?> player
+                && LanternBody.pose(player, entity));
         Poses.layer(Poses.Stage.CREATURE, HandVictims::pose);
+        BodyTurns.add(LanternArms::turnBody);
+        BodyTurns.add(ThorPoses::turn);
+        Poses.layer(Poses.Stage.MODEL, (model, entity, partialTick) -> model instanceof PlayerModel<?> player
+                && ThorPoses.pose(player, entity));
         // A creature Green Lantern squashes, claps, strings up or crushes under the mech is posed by that power, not
         // limp.
         Ragdolls.claim(entity -> HandVictims.has(entity.getId()) || Flattened.has(entity.getId())

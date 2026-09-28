@@ -249,8 +249,11 @@ public final class MechPainter {
             painter.clip(hand.at(0.0, Mth.lerp(Ease.smooth(grown), MechArmShapes.KNUCKLES + 1.1, -0.6), 0.0),
                     hand.up(), SEAM);
         }
-        MechParts.draw(painter, right ? MechArmShapes.FOREARM : MechArmShapes.FOREARM_LEFT, hand, 1.0, apart, seed);
-        fingers(painter, hand, arm, right, apart, seed + 10);
+        // The hand's frame is left-handed (Frame.of): drawn with the other side's shapes and bones, each hand's thumb
+        // comes out on the side a hand of its own has it, not mirrored.
+        boolean own = !right;
+        MechParts.draw(painter, own ? MechArmShapes.FOREARM : MechArmShapes.FOREARM_LEFT, hand, 1.0, apart, seed);
+        fingers(painter, hand, arm, own, apart, seed + 10);
         painter.noClip();
         if (BoneView.shown()) {
             BoneView.bone(hand.center(), hand.at(0.0, MechArmShapes.WRIST, 0.0), BoneView.CONSTRUCT);

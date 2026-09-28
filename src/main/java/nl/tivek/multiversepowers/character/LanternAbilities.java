@@ -143,7 +143,7 @@ final class LanternAbilities {
                 .setting("powerRestored", 50.0, 1.0, 100.0, Unit.POWER,
                         "How much power one touch of the lantern puts back in the ring (a full ring holds"
                                 + " 100)");
-        lantern.add(abilities, AbilitySlot.ABILITY_4, "light_bolt").held().mouse(CharacterAbility.Mouse.LEFT)
+        lantern.add(abilities, AbilitySlot.ABILITY_4, "light_bolt").held().input(CharacterAbility.Input.LEFT)
                 .holdVersion(40, CharacterAbility.Tap.PRESS).damage(6.0)
                 .group("bolt", "Light Bolt (tap the button)")
                 .settingInt("shotTicks", 6, 1, 100, Unit.TICKS,
@@ -176,7 +176,7 @@ final class LanternAbilities {
                                 + " from beamRangeBlocks")
                 .setting("beamTopWalk", 0.3, 0.0, 1.0, Unit.PART_KEPT,
                         "Part of your walking speed left at the beam's last stage; the first stage keeps 85%");
-        lantern.add(abilities, AbilitySlot.ABILITY_5, "light_shield").held().mouse(CharacterAbility.Mouse.RIGHT)
+        lantern.add(abilities, AbilitySlot.ABILITY_5, "light_shield").held().input(CharacterAbility.Input.RIGHT)
                 .holdVersion(40, CharacterAbility.Tap.RELEASE)
                 .group("shield", "Light Shield (tap the button)")
                 .setting("damageKept", 0.3, 0.0, 1.0, Unit.PART_KEPT,
@@ -304,6 +304,7 @@ final class LanternAbilities {
                         "How slowly the constructs play: 1 = the old pace, 1.5 = half again as slow, 2 = twice"
                                 + " as slow. The shockwave strikes that much later too");
         lantern.add(abilities, AbilitySlot.ABILITY_9, "flight").cooldown(20)
+                .input(CharacterAbility.Input.SPACE).doubleTap()
                 .setting("powerCost", 0.8, 0.0, 100.0, Unit.POWER, "Ring power you need at least to take off")
                 .was(5.0, 2.0)
                 .setting("fullRingSeconds", 93.75, 1.0, 600.0, Unit.RING_SECONDS,
@@ -452,7 +453,7 @@ final class LanternAbilities {
                                 + " damage")
                 .was(3.5)
                 .setting("powerCost", 4.0, 0.0, 100.0, Unit.POWER, "Ring power catching a creature costs");
-        lantern.add(abilities, AbilitySlot.ABILITY_12, "beam_lock").cooldown(4);
+        lantern.add(abilities, AbilitySlot.ABILITY_12, "beam_lock").cooldown(4).input(CharacterAbility.Input.SCROLL);
     }
 
     // Every hand is as likely as every other; oldChance is the chance it had before, for config files that kept it.

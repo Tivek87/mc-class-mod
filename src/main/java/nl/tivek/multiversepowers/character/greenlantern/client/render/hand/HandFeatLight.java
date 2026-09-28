@@ -148,7 +148,7 @@ final class HandFeatLight {
             }
             HandPose.Place place = place(variant, base, facing, shot, scale);
             Vec3 tip = place.at(HandPose.GUN_TIP);
-            Vec3 way = place.up().normalize();
+            Vec3 way = HandPose.aimed(place, tip, base, facing);
             Vec3 head = tip.add(way.scale(since * 5.0));
             Vec3 tail = head.subtract(way.scale(Math.min(since * 5.0, 3.0)));
             double fade = strength * (1.0 - since / 6.0);
@@ -226,7 +226,7 @@ final class HandFeatLight {
             return;
         }
         double fade = strength * (1.0 - Ease.smooth((clock - HandPose.BEAM_STOPS) / 3.0));
-        Vec3 way = place.up().normalize();
+        Vec3 way = HandPose.aimed(place, gem, base, facing);
         Vec3 end = gem.add(way.scale(BEAM_RANGE));
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.level != null && minecraft.player != null) {

@@ -13,7 +13,7 @@ import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.character.CharacterAbility;
 import nl.tivek.multiversepowers.character.CharacterConfig;
 import nl.tivek.multiversepowers.character.GameCharacter;
-import nl.tivek.multiversepowers.character.client.AbilityKeys;
+import nl.tivek.multiversepowers.character.client.PowerInputs;
 import nl.tivek.multiversepowers.config.ModConfigs;
 import nl.tivek.multiversepowers.config.PowerRules;
 import nl.tivek.multiversepowers.config.Unit;
@@ -222,11 +222,7 @@ public final class SettingsPages {
     }
 
     private static Component hint(CharacterAbility ability) {
-        return switch (ability.mouseButton()) {
-            case LEFT -> Component.translatable(PREFIX + "mouse.left");
-            case RIGHT -> Component.translatable(PREFIX + "mouse.right");
-            case NONE -> AbilityKeys.SLOTS[ability.slot().ordinal()].getTranslatedKeyMessage();
-        };
+        return PowerInputs.label(ability);
     }
 
     private static double step(CharacterAbility.Setting setting) {

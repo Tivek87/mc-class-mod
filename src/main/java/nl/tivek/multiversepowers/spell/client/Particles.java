@@ -78,17 +78,14 @@ final class Particles {
                 }
             }
             case SpellFxPayload.CLAP -> {
-                Vec3 feet = ClapFx.feet(fx.said);
-                Vec3 aim = fx.said.to();
-                Vec3 ahead = ClapFx.facing(from, aim);
-                Vec3 aimed = ClapFx.aimed(from, aim);
+                Vec3 aimed = ClapFx.aimed(from, fx.said.to());
                 if (age < 1.0) {
-                    ClapFx.felt(feet);
+                    ClapFx.felt(ClapFx.feet(fx.said));
                     level.addParticle(ParticleTypes.FLASH, from.x, from.y, from.z, 0.0, 0.0, 0.0);
                     for (int k = 0; k < 24; k++) {
-                        Vec3 way = ClapFx.within(ahead, k / 23.0);
-                        level.addParticle(ParticleTypes.CLOUD, feet.x + way.x, feet.y + 0.3, feet.z + way.z,
-                                way.x * 0.9, 0.03, way.z * 0.9);
+                        Vec3 way = ClapFx.within(aimed, k / 23.0);
+                        level.addParticle(ParticleTypes.CLOUD, from.x + way.x, from.y + way.y, from.z + way.z,
+                                way.x * 0.9, way.y * 0.9, way.z * 0.9);
                     }
                 }
                 if (age < 5.0) {
@@ -102,10 +99,10 @@ final class Particles {
                 }
                 int glints = (int) (8.0 * (1.0 - age / ClapFx.LIFE)) + 1;
                 for (int k = 0; k < glints; k++) {
-                    Vec3 at = feet.add(ClapFx.within(ahead, random.nextDouble())
+                    Vec3 at = from.add(ClapFx.within(aimed, random.nextDouble())
                             .scale(1.0 + Math.sqrt(random.nextDouble()) * ClapFx.REACH));
-                    level.addParticle(ParticleTypes.ELECTRIC_SPARK, at.x, at.y + 0.1 + random.nextDouble() * 1.5, at.z,
-                            0.0, 0.05, 0.0);
+                    level.addParticle(ParticleTypes.ELECTRIC_SPARK, at.x, at.y + (random.nextDouble() - 0.5) * 1.2,
+                            at.z, 0.0, 0.05, 0.0);
                 }
             }
             case SpellFxPayload.VOID_IN, SpellFxPayload.VOID_OUT -> {

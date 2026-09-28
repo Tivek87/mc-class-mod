@@ -30,6 +30,7 @@ import nl.tivek.multiversepowers.character.greenlantern.client.body.spot.RingSpo
 import nl.tivek.multiversepowers.character.greenlantern.client.body.whip.WhipArms;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.BeamCharge;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.arrival.ArrivalAnimation;
+import nl.tivek.multiversepowers.engine.client.model.BentParts;
 
 public final class GreenLanternSuitLayer extends RenderLayer<AbstractClientPlayer, PlayerModel<AbstractClientPlayer>> {
     public static final ResourceLocation TEXTURE = ResourceLocation.fromNamespaceAndPath(MultiversePowers.MODID,
@@ -138,12 +139,14 @@ public final class GreenLanternSuitLayer extends RenderLayer<AbstractClientPlaye
                 BeamCharge.charge(player, partialTick));
         poseStack.pushPose();
         suit.rightArm.translateAndRotate(poseStack);
+        BentParts.farHalf(suit.rightArm, poseStack);
         Ring.draw(poseStack, buffers, light, slim, uniform.ring(), ClientRing.charge(player), glow);
         RingSpot.onBody(player, poseStack, Ring.stone(slim));
         HandSpot.onArm(player, poseStack, true, slim);
         poseStack.popPose();
         poseStack.pushPose();
         suit.leftArm.translateAndRotate(poseStack);
+        BentParts.farHalf(suit.leftArm, poseStack);
         HandSpot.onArm(player, poseStack, false, slim);
         poseStack.popPose();
         poseStack.pushPose();

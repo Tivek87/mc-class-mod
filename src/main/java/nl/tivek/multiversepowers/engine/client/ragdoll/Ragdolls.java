@@ -2,7 +2,6 @@ package nl.tivek.multiversepowers.engine.client.ragdoll;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.logging.LogUtils;
-import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import it.unimi.dsi.fastutil.objects.ObjectIterator;
@@ -25,16 +24,10 @@ import net.minecraft.tags.TagKey;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.FlyingMob;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
-import net.minecraft.world.entity.ambient.Bat;
-import net.minecraft.world.entity.animal.FlyingAnimal;
-import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.phys.AABB;
-import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
-import net.minecraft.world.phys.shapes.CollisionContext;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -62,30 +55,18 @@ public final class Ragdolls {
     private static final TagKey<EntityType<?>> NEVER = tag("ragdoll_none");
     private static final TagKey<EntityType<?>> STIFF = tag("ragdoll_stiff");
     private static final int SUBSTEPS = 20;
-    // How fast a blow must send a creature to throw it limp, in blocks per tick: along the ground, and upward.
-    private static final double THROWN = 0.9;
-    private static final double TOSSED = 0.6;
-    // A creature bigger than this (width squared times height) is too heavy for a blow to throw it limp.
-    private static final double HEAVY = 3.5;
-    // A blast pushing a creature this hard (blocks a tick, as the game counts a blast's push) sends it flying limp.
-    private static final double BLOWN = 0.25;
-    // How long a blast is remembered: a creature it kills goes limp a tick or two later and is thrown then.
-    private static final int BLAST_TICKS = 3;
-    // A blast's middle is often still in the blocks it breaks: what shields a body is looked for from this far out.
-    private static final double BLAST_CORE = 0.8;
-    private static final double FASTEST = 40.0;
     // A body that dies standing still tips over sideways as it goes limp (a stiff one falls as one piece), turning
     // this fast (radians per second); one knocked away harder than CALM falls the way it was knocked.
     private static final double TOPPLE = 2.0;
     private static final double TOPPLE_STIFF = 2.4;
     private static final double GIVE_WAY = 1.5;
     private static final double CALM = 2.0;
-    // Ticks on the ground, still, before a thrown creature gets up (or, if it never left the ground, before it
-    // shakes the blow off); and the longest it may fly limp.
-    private static final int LANDED = 3;
-    private static final int SHRUG = 10;
+    // A creature knocked limp along the ground goes down after this many ticks; the longest it may fly limp.
+    private static final int SHRUG = 3;
     private static final int LONGEST_FLIGHT = 200;
-    private static final double GET_UP = 0.1;
+    // Down, it lies still this long (1.5 seconds) before it gets up, and at most that long in all.
+    private static final int LIE = 30;
+    private static final int LIE_LONGEST = 110;
     private static final double GO_LIMP = 0.25;
     private static final int SINK_TICKS = 40;
     private static final double SINK_SPEED = 0.035;
@@ -96,8 +77,6 @@ public final class Ragdolls {
     private static final List<Ragdoll> CORPSES = new ArrayList<>();
     private static final IntOpenHashSet HELD = new IntOpenHashSet();
     private static final IntOpenHashSet THROWN_NOW = new IntOpenHashSet();
-    private static final Int2IntOpenHashMap BLOWN_AT = new Int2IntOpenHashMap();
-    private static final List<Blast> BLASTS = new ArrayList<>();
     private static final IntOpenHashSet FAILED = new IntOpenHashSet();
     private static final Set<Class<?>> UNFIT = new HashSet<>();
     private static final List<Predicate<Entity>> CLAIMS = new ArrayList<>();
@@ -117,9 +96,6 @@ public final class Ragdolls {
     private Ragdolls() {
     }
 
-    private record Blast(Vec3 center, double power, int tick) {
-    }
-
     // A blast of the given power at center, as the game counts an explosion's power (TNT is 4, it reaches twice that
     // in blocks): limp creatures and bodies near are thrown away from it, and creatures it pushes hard enough go limp
     // and fly.
@@ -128,51 +104,17 @@ public final class Ragdolls {
         if (level == null || power <= 0.0 || !ClientSettings.ragdolls()) {
             return;
         }
-        BLASTS.add(new Blast(center, power, ticks));
         for (Ragdoll doll : LIVE.values()) {
             if (doll.state != Ragdoll.State.HELD) {
-                doll.blast(center, power, seen(level, center, doll.coreAt(1.0)), RANDOM);
+                doll.blast(center, power, RagdollCauses.seen(level, center, doll.coreAt(1.0)), RANDOM);
             }
         }
         for (Ragdoll doll : CORPSES) {
             if (doll.sunk < 0) {
-                doll.blast(center, power, seen(level, center, doll.coreAt(1.0)), RANDOM);
+                doll.blast(center, power, RagdollCauses.seen(level, center, doll.coreAt(1.0)), RANDOM);
             }
         }
-        double reach = power * 2.0;
-        for (Entity entity : level.getEntities((Entity) null, new AABB(center, center).inflate(reach),
-                entity -> entity instanceof Mob)) {
-            Mob mob = (Mob) entity;
-            Vec3 middle = mob.getBoundingBox().getCenter();
-            double near = 1.0 - middle.distanceTo(center) / reach;
-            if (mob.isAlive() && !LIVE.containsKey(mob.getId()) && near * seen(level, center, middle) >= BLOWN
-                    && mayFly(mob)) {
-                BLOWN_AT.put(mob.getId(), ticks);
-            }
-        }
-    }
-
-    // How much of a blast reaches what stands at `to`: nothing past a wall, a little round its corner.
-    private static double seen(ClientLevel level, Vec3 center, Vec3 to) {
-        Vec3 way = to.subtract(center);
-        double far = way.length();
-        if (far <= BLAST_CORE) {
-            return 1.0;
-        }
-        Vec3 from = center.add(way.scale(BLAST_CORE / far));
-        int clear = 0;
-        for (int k = -1; k <= 1; k++) {
-            Vec3 aim = to.add(0.0, k * 0.4, 0.0);
-            if (level.clip(new ClipContext(from, aim, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE,
-                    CollisionContext.empty())).getType() == HitResult.Type.MISS) {
-                clear++;
-            }
-        }
-        return clear == 0 ? 0.1 : clear / 3.0;
-    }
-
-    private static boolean blown(int entity) {
-        return BLOWN_AT.containsKey(entity) && ticks - BLOWN_AT.get(entity) <= BLAST_TICKS;
+        RagdollCauses.blast(level, center, power, ticks, id -> !LIVE.containsKey(id));
     }
 
     private static TagKey<EntityType<?>> tag(String name) {
@@ -212,7 +154,7 @@ public final class Ragdolls {
                 return;
             }
         }
-        if (!rigid(drawn) || claimed(entity)) {
+        if (!RagdollCauses.rigid(drawn) || claimed(entity)) {
             return;
         }
         double sink = doll.sunk < 0 ? 0.0 : (doll.sunk + partialTick) * SINK_SPEED;
@@ -239,7 +181,8 @@ public final class Ragdolls {
             return true;
         }
         Ragdoll doll = LIVE.get(entity.getId());
-        return doll != null && doll.entity == entity && doll.state == Ragdoll.State.DEAD;
+        return doll != null && doll.entity == entity && (doll.state == Ragdoll.State.DEAD
+                || doll.state == Ragdoll.State.FLYING && doll.phase != Ragdoll.Phase.AIR);
     }
 
     // Whether this dead creature's body stays lying where it fell, so it does not puff away yet.
@@ -257,7 +200,7 @@ public final class Ragdolls {
         }
         Ragdoll.State state = wanted(entity);
         if (state == null || entity.getType().is(NEVER) || entity.isInvisible() || entity.isSleeping()
-                || claimed(entity) || !rigid(drawn)
+                || claimed(entity) || !RagdollCauses.rigid(drawn)
                 || state != Ragdoll.State.DEAD && (entity.isPassenger() || entity.isVehicle())) {
             return null;
         }
@@ -282,19 +225,12 @@ public final class Ragdolls {
             return null;
         }
         boolean stiff = entity.getType().is(STIFF) || profile.stiff();
-        // A creature a blast just hit is thrown by the blast itself (by its weight), not by the push the game gave it.
-        boolean blasted = false;
-        for (Blast blast : BLASTS) {
-            blasted |= state != Ragdoll.State.HELD
-                    && entity.getBoundingBox().getCenter().distanceTo(blast.center()) < blast.power() * 2.0;
-        }
-        Vec3 velocity = blasted ? Vec3.ZERO : velocity(entity);
-        Ragdoll doll = Ragdoll.build(entity, model, parts, new Matrix4f(drawn), camera, partialTick, state, stiff,
+        boolean blasted = state != Ragdoll.State.HELD && RagdollCauses.nearBlast(entity);
+        Vec3 velocity = blasted ? Vec3.ZERO : RagdollCauses.velocity(entity);
+        Ragdoll doll = RagdollBuild.build(entity, model, parts, new Matrix4f(drawn), camera, partialTick, state, stiff,
                 profile, velocity);
         if (blasted && entity.level() instanceof ClientLevel level) {
-            for (Blast blast : BLASTS) {
-                doll.blast(blast.center(), blast.power(), seen(level, blast.center(), doll.coreAt(1.0)), RANDOM);
-            }
+            RagdollCauses.throwByBlasts(doll, level, RANDOM);
         }
         if (state == Ragdoll.State.DEAD) {
             doll.dead = ticks;
@@ -326,7 +262,7 @@ public final class Ragdolls {
         if (HELD.contains(entity.getId())) {
             return Ragdoll.State.HELD;
         }
-        return THROWN_NOW.contains(entity.getId()) || blown(entity.getId()) ? Ragdoll.State.FLYING : null;
+        return THROWN_NOW.contains(entity.getId()) || RagdollCauses.blown(entity.getId(), ticks) ? Ragdoll.State.FLYING : null;
     }
 
     private static boolean claimed(Entity entity) {
@@ -336,55 +272,6 @@ public final class Ragdolls {
             }
         }
         return false;
-    }
-
-    // Only a creature drawn at its true size and shape can go limp: not one squashed or stretched by some effect.
-    private static boolean rigid(Matrix4f m) {
-        float a = m.m00() * m.m00() + m.m01() * m.m01() + m.m02() * m.m02();
-        float b = m.m10() * m.m10() + m.m11() * m.m11() + m.m12() * m.m12();
-        float c = m.m20() * m.m20() + m.m21() * m.m21() + m.m22() * m.m22();
-        if (a < 1.0E-6F || Math.abs(a - b) > 0.1F * a || Math.abs(a - c) > 0.1F * a) {
-            return false;
-        }
-        float ab = m.m00() * m.m10() + m.m01() * m.m11() + m.m02() * m.m12();
-        float ac = m.m00() * m.m20() + m.m01() * m.m21() + m.m02() * m.m22();
-        float bc = m.m10() * m.m20() + m.m11() * m.m21() + m.m12() * m.m22();
-        return Math.abs(ab) < 0.05F * a && Math.abs(ac) < 0.05F * a && Math.abs(bc) < 0.05F * a
-                && m.determinant3x3() > 0.0F;
-    }
-
-    private static Vec3 velocity(LivingEntity entity) {
-        Vec3 moved = new Vec3(entity.getX() - entity.xOld, entity.getY() - entity.yOld, entity.getZ() - entity.zOld);
-        Vec3 push = entity.getDeltaMovement();
-        Vec3 velocity = (push.lengthSqr() > moved.lengthSqr() ? push : moved).scale(20.0);
-        double speed = velocity.length();
-        return speed > FASTEST ? velocity.scale(FASTEST / speed) : velocity;
-    }
-
-    // A creature a blow or a blast sends flying: just hurt and given a hard push (the server tells its speed at once,
-    // while where it is only follows a few ticks later), not one that flies by itself or is too heavy.
-    private static boolean thrown(Mob mob) {
-        if (mob.hurtTime <= 0) {
-            return false;
-        }
-        Vec3 push = mob.getDeltaMovement();
-        if (push.horizontalDistanceSqr() <= THROWN * THROWN && push.y <= TOSSED) {
-            return false;
-        }
-        return mayFly(mob);
-    }
-
-    // Not one that flies by itself, rides or is ridden, swims, or is too heavy.
-    private static boolean mayFly(Mob mob) {
-        return !mob.isNoGravity() && !mob.isPassenger() && !mob.isVehicle() && !mob.isInWater() && !mob.isInLava()
-                && !(mob instanceof FlyingMob) && !(mob instanceof FlyingAnimal) && !(mob instanceof Bat)
-                && mob.getBbWidth() * mob.getBbWidth() * mob.getBbHeight() <= HEAVY;
-    }
-
-    // Whether something solid is right under the creature. A client only learns a creature's own onGround() when it
-    // moves, so one that stood still since it came into view would never seem to stand.
-    private static boolean grounded(Entity entity) {
-        return !entity.level().noCollision(entity, entity.getBoundingBox().move(0.0, -0.06, 0.0));
     }
 
     private static Vec3 camera() {
@@ -445,8 +332,7 @@ public final class Ragdolls {
         }
         ticks++;
         THROWN_NOW.clear();
-        BLASTS.removeIf(blast -> ticks - blast.tick() > BLAST_TICKS);
-        BLOWN_AT.int2IntEntrySet().removeIf(entry -> ticks - entry.getIntValue() > BLAST_TICKS);
+        RagdollCauses.forget(ticks);
         if (!ClientSettings.ragdolls()) {
             if (!LIVE.isEmpty() || !CORPSES.isEmpty()) {
                 clear();
@@ -459,7 +345,7 @@ public final class Ragdolls {
         double far = near * LET_GO * LET_GO;
         for (Entity entity : level.entitiesForRendering()) {
             if (entity instanceof Mob mob && mob.isAlive() && !LIVE.containsKey(mob.getId())
-                    && mob.distanceToSqr(camera) <= near && thrown(mob)) {
+                    && mob.distanceToSqr(camera) <= near && RagdollCauses.thrown(mob)) {
                 THROWN_NOW.add(mob.getId());
             }
         }
@@ -512,37 +398,52 @@ public final class Ragdolls {
         }
     }
 
-    // A living limp creature hangs from what holds it, or flies until it lands and gets up; false once it stands.
+    // A living limp creature hangs from what holds it; one thrown flies along with its creature until it comes down,
+    // then lies where it fell (never landing on its feet) for a while and gets up. False once it stands again.
     private static boolean carried(Ragdoll doll, LivingEntity entity) {
         boolean held = HELD.contains(entity.getId());
-        doll.state = held ? Ragdoll.State.HELD : Ragdoll.State.FLYING;
-        doll.follow(entity, !held);
         if (held) {
-            doll.ending = false;
-            doll.still = 0;
-        } else {
-            boolean grounded = grounded(entity);
-            doll.flew |= !grounded;
-            boolean resting = entity.isInWater() || entity.isInLava()
-                    || Math.abs(entity.getX() - entity.xOld) + Math.abs(entity.getZ() - entity.zOld) < 0.1
-                            && grounded;
-            if (resting) {
-                doll.still++;
-            } else {
-                doll.still = 0;
-                if (entity instanceof Mob mob && (thrown(mob) || blown(mob.getId()))) {
-                    doll.ending = false;
+            if (doll.phase != Ragdoll.Phase.AIR) {
+                doll.lift(entity);
+            }
+            doll.state = Ragdoll.State.HELD;
+            doll.follow(entity, false);
+            doll.limp = Math.min(1.0, doll.limp + GO_LIMP);
+            return true;
+        }
+        doll.state = Ragdoll.State.FLYING;
+        boolean again = doll.age > 2 && entity instanceof Mob mob
+                && (RagdollCauses.thrown(mob) || RagdollCauses.blown(mob.getId(), ticks));
+        switch (doll.phase) {
+            case AIR -> {
+                doll.follow(entity, true);
+                doll.limp = Math.min(1.0, doll.limp + GO_LIMP);
+                boolean grounded = RagdollCauses.grounded(entity) || entity.isInWater() || entity.isInLava();
+                doll.flew |= !grounded;
+                // Down once its creature is on the ground again (or never left it), or after the longest flight.
+                if (grounded && doll.age > (doll.flew ? 1 : SHRUG) || doll.age > LONGEST_FLIGHT) {
+                    doll.fall();
                 }
             }
-            if (doll.still >= (doll.flew ? LANDED : SHRUG) || doll.age > LONGEST_FLIGHT) {
-                doll.ending = true;
+            case DOWN -> {
+                if (again) {
+                    doll.lift(entity);
+                } else {
+                    doll.down++;
+                    doll.rest = doll.resting() ? doll.rest + 1 : 0;
+                    if (doll.rest >= LIE || doll.down >= LIE_LONGEST) {
+                        doll.getUp();
+                    }
+                }
+            }
+            case UP -> {
+                if (again) {
+                    doll.lift(entity);
+                } else if (doll.up >= GetUp.ticks(doll.person())) {
+                    return false;
+                }
             }
         }
-        if (doll.ending) {
-            doll.limp -= GET_UP;
-            return doll.limp > 0.0;
-        }
-        doll.limp = Math.min(1.0, doll.limp + GO_LIMP);
         return true;
     }
 
@@ -672,8 +573,7 @@ public final class Ragdolls {
         LIVE.clear();
         CORPSES.clear();
         THROWN_NOW.clear();
-        BLASTS.clear();
-        BLOWN_AT.clear();
+        RagdollCauses.clear();
         FAILED.clear();
     }
 }

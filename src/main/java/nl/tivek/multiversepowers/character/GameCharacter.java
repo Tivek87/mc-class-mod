@@ -69,8 +69,30 @@ public enum GameCharacter {
     THOR("thor", 0x6FC8FF, new ThorPowers()) {
         @Override
         void fill(Map<AbilitySlot, CharacterAbility> abilities) {
-            this.add(abilities, AbilitySlot.ABILITY_1, "thunderclap").mouse(CharacterAbility.Mouse.LEFT)
-                    .holdVersion(ThorPowers.CLAP_HOLD, CharacterAbility.Tap.RELEASE).cooldown(200).damage(5.0);
+            // On the ground: right click dashes, holding it claps, a double space jumps high and holding space flies.
+            // In flight the same buttons blink, dive and speed up.
+            this.add(abilities, AbilitySlot.ABILITY_1, "thunderclap").input(CharacterAbility.Input.RIGHT)
+                    .holdOnly(ThorPowers.CLAP_HOLD).when(CharacterAbility.When.GROUND).cooldown(200).damage(5.0);
+            this.add(abilities, AbilitySlot.ABILITY_2, "dash").input(CharacterAbility.Input.RIGHT)
+                    .when(CharacterAbility.When.GROUND).cooldown(16)
+                    .setting("shortestBlocks", 4.0, 1.0, 16.0, Unit.BLOCKS, "The shortest a dash goes, in blocks")
+                    .setting("longestBlocks", 8.0, 1.0, 24.0, Unit.BLOCKS, "The longest a dash goes, in blocks");
+            this.add(abilities, AbilitySlot.ABILITY_3, "super_jump").input(CharacterAbility.Input.SPACE).doubleTap()
+                    .when(CharacterAbility.When.GROUND).cooldown(50)
+                    .setting("heightBlocks", 10.0, 2.0, 40.0, Unit.BLOCKS, "How high a super jump goes, in blocks")
+                    .setting("floatSeconds", 2.5, 0.0, 10.0, Unit.SECONDS,
+                            "How long he hangs in the air at the top of a super jump, in seconds");
+            this.add(abilities, AbilitySlot.ABILITY_4, "flight").input(CharacterAbility.Input.SPACE)
+                    .holdOnly(ThorPowers.FLIGHT_HOLD).when(CharacterAbility.When.GROUND)
+                    .setting("speed", 18.0, 2.0, 80.0, Unit.BLOCKS_PER_SECOND, "How fast he flies, in blocks a second");
+            this.add(abilities, AbilitySlot.ABILITY_5, "air_blink").input(CharacterAbility.Input.RIGHT)
+                    .when(CharacterAbility.When.FLYING).cooldown(24);
+            this.add(abilities, AbilitySlot.ABILITY_6, "grab_dash_dive").input(CharacterAbility.Input.RIGHT)
+                    .holdOnly(ThorPowers.DIVE_HOLD).when(CharacterAbility.When.FLYING).cooldown(160).damage(10.0);
+            this.add(abilities, AbilitySlot.ABILITY_7, "lightning_flight").input(CharacterAbility.Input.SCROLL)
+                    .holdOnly(ThorPowers.LIGHTNING_HOLD).held().when(CharacterAbility.When.FLYING).cooldown(40)
+                    .setting("speed", 48.0, 10.0, 160.0, Unit.BLOCKS_PER_SECOND,
+                            "How fast he flies at lightning speed, in blocks a second");
         }
     };
 

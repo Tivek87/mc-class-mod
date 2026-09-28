@@ -12,11 +12,15 @@ public final class MechPose {
     MechScript.Stage hips;
     MechScript.Stage torso;
     double turn;
+    // The torso's lean ahead and to its side over the waist, as it swings and the legs turn under it.
+    double lean;
+    double bank;
     final Vec3[] ankle = new Vec3[2];
     final Vec3[] toes = new Vec3[2];
     final double[] tip = new double[2];
     double swing;
     double walking;
+    double running;
     double headYaw;
     double headPitch;
     double leverLeft;
@@ -39,6 +43,9 @@ public final class MechPose {
         pose.hips = this.hips;
         pose.torso = this.torso;
         pose.turn = this.turn;
+        pose.lean = this.lean;
+        pose.bank = this.bank;
+        pose.running = this.running;
         for (int side = 0; side < 2; side++) {
             pose.ankle[side] = this.ankle[side];
             pose.toes[side] = this.toes[side];
@@ -60,7 +67,10 @@ public final class MechPose {
         pose.stage = between(from.stage, to.stage, u);
         pose.hips = between(from.hips, to.hips, u);
         pose.turn = from.turn + Math.IEEEremainder(to.turn - from.turn, Math.PI * 2.0) * u;
-        pose.torso = MechScript.upper(pose.hips, pose.turn);
+        pose.lean = Mth.lerp(u, from.lean, to.lean);
+        pose.bank = Mth.lerp(u, from.bank, to.bank);
+        pose.running = Mth.lerp(u, from.running, to.running);
+        pose.torso = MechScript.upper(pose.hips, pose.turn, pose.lean, pose.bank);
         for (int side = 0; side < 2; side++) {
             pose.ankle[side] = from.ankle[side].lerp(to.ankle[side], u);
             pose.toes[side] = from.toes[side].lerp(to.toes[side], u).normalize();

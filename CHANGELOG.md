@@ -3,6 +3,47 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.3.8-alpha] - 2026-09-28
+
+**UNFINISHED / WORK IN PROGRESS:** the mod is still being built; things may change, break or be missing.
+
+### Added
+- **Thor: Dash** (right click): 4 to 8 blocks the way you walk, ahead, aside or back.
+- **Thor: Super Jump** (double space): a crouch, a big leap, a floating moment at the top, a soft landing.
+- **Thor: Flight** (hold space): rise and fly where you look, leaning into turns; hovers when no key is held.
+- **Thor: Air Blink** (right click in flight): 15 blocks ahead along a streak of lightning.
+- **Thor: Grab-Dash Dive** (hold right click in flight): dives onto a creature, grabs it and slams it down.
+- **Thor: Lightning Speed** (hold the scroll wheel in flight): much faster flight.
+- **Thor:** an axe on his belt stands in for Mjolnir; it comes to his hand in flight, also in first person.
+- **Controls, "Mouse & Space":** left and right click and hold, scroll wheel click and hold, double and hold space.
+  The scroll wheel ones can be moved; the others follow attack, use and jump.
+- **Ragdolls:** a creature thrown limp lies on the ground for about 1.5 seconds, then gets up; a person by one knee.
+- **Hard-Light Mech:** its head turns to look where you look; hold Shift with W to run.
+- **Developer section:** a test hand that comes out of a portal and moves every finger and joint for 10 seconds.
+- **Poses:** knees and elbows bend in the Thunderclap, Green Lantern's arrival, recharge, beam and bolt.
+
+### Changed
+- **Green Lantern: Flight** is double space now, no longer key C.
+- **Beam Lock** is the scroll wheel click (moveable under Controls).
+- **Thunderclap:** hold right click on the ground for 0.75 seconds, no longer left click.
+- **Thunderclap:** its blast, ripples, dust and glints follow where you aim.
+- **Emerald Express:** homes in without looping round a creature; its sounds are half as loud.
+- **Hard-Light Mech:** its torso swings round with weight and settles, the legs stepping after it.
+- **Hard-Light Mech:** in first person you look out through the round port in its chest, with a clear view.
+- **Giant Hands:** the ring beam and finger gun aim at the creature, so they miss far less.
+- **Giant Hands:** fingers never cross through each other or sink into the floor.
+- **Ragdolls:** no longer bounce or jitter, and never land on their feet.
+- **Ability panel:** shows "Hold" or "Double" for such powers and greys out a power that only works on the
+  ground or in flight.
+
+### Removed
+- **Energy Whip:** locked for now; it will be reworked or removed.
+- Five unused sound clips from the reference folder.
+
+### Fixed
+- **Hard-Light Mech:** its thumb sat on the wrong side of the hand.
+- **Thor:** a click no longer says "Thunderclap not ready".
+
 ## [0.3.7-alpha] - 2026-09-28
 
 **UNFINISHED / WORK IN PROGRESS:** the mod is still being built; things may change, break or be missing.

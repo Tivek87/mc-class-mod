@@ -238,19 +238,24 @@ final class HandStop {
         return in >= limit ? in : in + points(level, place, FINGERS, base, root, limit - in);
     }
 
+    // A hand whose wrist is out of what it rises from is all out: then its palm and fingers never go back into it
+    // either (a slam's fingers pressing into the floor), not only into the blocks above it.
     private static int points(Level level, HandPose.Place place, double[] points, Vec3 base, Vec3 root, int limit) {
         double s = place.scale();
         Vec3 w = place.wrist();
         Vec3 r = place.right();
         Vec3 u = place.up();
         Vec3 f = place.forward();
+        boolean out = (w.x - base.x) * root.x + (w.y - base.y) * root.y + (w.z - base.z) * root.z > ROOTED;
         int in = 0;
         for (int n = 0; n < points.length && in < limit; n += 3) {
             double x = points[n];
             double y = points[n + 1];
             double z = points[n + 2];
-            if (point(level, w.x + (r.x * x + u.x * y + f.x * z) * s, w.y + (r.y * x + u.y * y + f.y * z) * s,
-                    w.z + (r.z * x + u.z * y + f.z * z) * s, base, root)) {
+            double px = w.x + (r.x * x + u.x * y + f.x * z) * s;
+            double py = w.y + (r.y * x + u.y * y + f.y * z) * s;
+            double pz = w.z + (r.z * x + u.z * y + f.z * z) * s;
+            if (out ? Solid.firm(level, px, py, pz) : point(level, px, py, pz, base, root)) {
                 in++;
             }
         }

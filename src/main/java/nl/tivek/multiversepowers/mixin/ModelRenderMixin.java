@@ -7,6 +7,7 @@ import net.minecraft.client.model.AgeableListModel;
 import net.minecraft.client.model.CamelModel;
 import net.minecraft.client.model.EntityModel;
 import net.minecraft.client.model.HierarchicalModel;
+import nl.tivek.multiversepowers.engine.client.pose.Limbs;
 import nl.tivek.multiversepowers.engine.client.ragdoll.Ragdolls;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -21,5 +22,6 @@ public abstract class ModelRenderMixin {
     private void welcomescreen$limp(PoseStack pose, VertexConsumer buffer, int light, int overlay, int color,
             CallbackInfo info) {
         Ragdolls.layer((EntityModel<?>) (Object) this);
+        Limbs.layer((EntityModel<?>) (Object) this);
     }
 }

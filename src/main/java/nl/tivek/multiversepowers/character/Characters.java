@@ -111,8 +111,11 @@ public final class Characters {
         boolean letGo = ability.isHeld() && !on;
         boolean undo = (data & SNEAKING) != 0 && ability.crouchDoes() == CharacterAbility.Crouch.UNDO;
         // A key's hold version keeps a cooldown of its own; the slot's belongs to the tap.
-        boolean ownCooldown = !ability.isHeld() && ability.holdTicks() > 0 && (data & HOLD) != 0;
-        if (COOLDOWNS.left(player, character, slot.ordinal()) > 0 && !letGo && !undo && !ownCooldown) {
+        boolean ownCooldown = !ability.isHeld() && ability.holdTicks() > 0
+                && ability.tapWhen() != CharacterAbility.Tap.NEVER && (data & HOLD) != 0;
+        // A move's landing (SLAM) belongs to the move already under way: its cooldown never refuses it.
+        boolean follow = (data & SLAM) != 0;
+        if (COOLDOWNS.left(player, character, slot.ordinal()) > 0 && !letGo && !undo && !ownCooldown && !follow) {
             sync(player);
             return;
         }

@@ -15,15 +15,29 @@ public final class CharacterAbility {
         ALTERNATE
     }
 
-    public enum Mouse {
-        NONE,
+    // KEY is the slot's own key; the rest are the fixed gestures listed under Controls (scroll can be rebound).
+    public enum Input {
+        KEY,
         LEFT,
-        RIGHT
+        RIGHT,
+        SCROLL,
+        SPACE
     }
 
+    // PRESS and RELEASE: when a button with a hold version counts as a click. NEVER: only holding it does
+    // anything. DOUBLE: two quick presses.
     public enum Tap {
         PRESS,
-        RELEASE
+        RELEASE,
+        NEVER,
+        DOUBLE
+    }
+
+    // Some gestures do one thing on the ground and another in flight.
+    public enum When {
+        ALWAYS,
+        GROUND,
+        FLYING
     }
 
     public record Setting(String key, boolean whole, double value, double min, double max, Unit unit,
@@ -49,7 +63,8 @@ public final class CharacterAbility {
     private boolean clientOnly;
     private boolean placeholder;
     private Crouch crouch = Crouch.SAME;
-    private Mouse mouse = Mouse.NONE;
+    private Input input = Input.KEY;
+    private When when = When.ALWAYS;
     private int holdTicks;
     private Tap tap = Tap.PRESS;
 
@@ -105,8 +120,24 @@ public final class CharacterAbility {
         return this;
     }
 
-    public CharacterAbility mouse(Mouse mouse) {
-        this.mouse = mouse;
+    public CharacterAbility input(Input input) {
+        this.input = input;
+        return this;
+    }
+
+    public CharacterAbility holdOnly(int ticks) {
+        this.holdTicks = ticks;
+        this.tap = Tap.NEVER;
+        return this;
+    }
+
+    public CharacterAbility doubleTap() {
+        this.tap = Tap.DOUBLE;
+        return this;
+    }
+
+    public CharacterAbility when(When when) {
+        this.when = when;
         return this;
     }
 
@@ -163,8 +194,17 @@ public final class CharacterAbility {
         return this.crouch;
     }
 
-    public Mouse mouseButton() {
-        return this.mouse;
+    public Input input() {
+        return this.input;
+    }
+
+    public When when() {
+        return this.when;
+    }
+
+    // A mouse or space gesture, as opposed to the slot's own key.
+    public boolean onGesture() {
+        return this.input != Input.KEY;
     }
 
     public int holdTicks() {

@@ -121,7 +121,63 @@ class HandRigTest {
         for (int k = 0; k < 3; k++) {
             deepest = Math.max(deepest, HandRig.besideDepth(space, k, k + 1, a0, a1, b0, b1, out));
         }
+        for (int k = 0; k < 4; k++) {
+            deepest = Math.max(deepest, HandRig.rootDepth(space, k, a0, a1, b0, b1, out));
+        }
         return deepest;
+    }
+
+    // How deep any two finger joints go into each other, whichever fingers (not only neighbours) and whichever joints,
+    // past the knuckles where they meet by design.
+    static double crossDepth(double[] space) {
+        double[] a0 = new double[3];
+        double[] a1 = new double[3];
+        double[] b0 = new double[3];
+        double[] b1 = new double[3];
+        double[] out = new double[2];
+        double deepest = Double.NEGATIVE_INFINITY;
+        for (int k = 0; k < 5; k++) {
+            for (int n = k + 1; n < 5; n++) {
+                for (int j = 0; j < 3; j++) {
+                    for (int f = 0; f < 3; f++) {
+                        if (j == 0 && f == 0) {
+                            continue;
+                        }
+                        RigSpace.point(space, HandRig.bone(k, j), 0.0, 0.0, 0.0, a0);
+                        RigSpace.point(space, HandRig.bone(k, j), 0.0, HandRig.length(k, j), 0.0, a1);
+                        RigSpace.point(space, HandRig.bone(n, f), 0.0, 0.0, 0.0, b0);
+                        RigSpace.point(space, HandRig.bone(n, f), 0.0, HandRig.length(n, f), 0.0, b1);
+                        double gap = Math.sqrt(nl.tivek.multiversepowers.engine.math.Segments.closest(a0, a1, b0, b1,
+                                out));
+                        deepest = Math.max(deepest, HandRig.radius(k, j) + HandRig.radius(n, f) - gap);
+                    }
+                }
+            }
+        }
+        return deepest;
+    }
+
+    @Test
+    void noTwoFingersEverGoThroughEachOther() {
+        double[] space = RigSpace.create(HandRig.RIG);
+        double worst = 0.0;
+        String worstAt = "";
+        for (int variant : variants()) {
+            int life = HandPose.life(variant);
+            for (int tick = 0; tick <= life; tick++) {
+                for (double part : new double[] { 0.0, 0.5 }) {
+                    HandPose pose = HandPose.at(variant, tick + part, 6.0);
+                    RigSpace.pose(HandRig.RIG, HandRig.settled(pose, null, null), space);
+                    double depth = crossDepth(space);
+                    if (depth > worst) {
+                        worst = depth;
+                        worstAt = "move " + HandPose.move(variant) + " t " + (tick + part);
+                    }
+                }
+            }
+        }
+        System.out.printf("CROSS deepest %.3f (%s)%n", worst, worstAt);
+        assertTrue(worst <= HandRig.TOUCH + 0.05, "fingers cross " + worst + " at " + worstAt);
     }
 
     @Test

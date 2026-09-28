@@ -49,8 +49,11 @@ public final class HeldMobs {
         if (HELD.containsKey(mob)) {
             return false;
         }
-        HELD.put(mob, mob.isNoAi());
-        mob.getPersistentData().putBoolean(SAVED_TAG, mob.isNoAi());
+        // A creature lying still after a throw is taken over as it was before it was thrown.
+        boolean own = Knockdowns.ownNoAi(mob);
+        Knockdowns.forget(mob);
+        HELD.put(mob, own);
+        mob.getPersistentData().putBoolean(SAVED_TAG, own);
         mob.setNoAi(true);
         mob.setDeltaMovement(Vec3.ZERO);
         tell(mob, true);

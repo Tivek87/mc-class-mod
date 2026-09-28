@@ -112,7 +112,7 @@ abstract class FlameFirstPerson extends FlameSeen {
     private static double prime(float partialTick) {
         double prime = 0.0;
         for (CharacterAbility ability : GameCharacter.GREEN_LANTERN.abilities()) {
-            if (ability.mouseButton() != CharacterAbility.Mouse.NONE) {
+            if (ability.input() != CharacterAbility.Input.KEY) {
                 float progress = MouseHold.progress(ability, partialTick);
                 if (progress < 1.0F) {
                     prime = Math.max(prime, Mth.clamp((progress - 0.1) / 0.9, 0.0, 1.0));

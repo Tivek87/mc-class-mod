@@ -31,7 +31,7 @@ abstract class PowerWheelLayout extends Screen {
     // From the bottom of one section's cards to the top of the next one's, room for its heading.
     private static final int SECTION = 34;
     static final int PAGE_Y = 36;
-    static final String[] TOOLS = { "bones" };
+    static final String[] TOOLS = { "bones", "hand" };
     static final int TOOL_COLOR = 0xFF9F43;
 
     static final int DIM = 0x88000000;

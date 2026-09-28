@@ -16,9 +16,11 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.RenderHandEvent;
 import nl.tivek.multiversepowers.MultiversePowers;
+import nl.tivek.multiversepowers.engine.client.pose.Stance;
 import nl.tivek.multiversepowers.engine.client.render.FirstPersonArm;
 import nl.tivek.multiversepowers.engine.math.Ease;
 import nl.tivek.multiversepowers.spell.ClapPayload;
+import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
 @EventBusSubscriber(modid = MultiversePowers.MODID, value = Dist.CLIENT)
@@ -39,6 +41,15 @@ public final class ClientClaps {
     static final Vector3f CLAP = new Vector3f(0.05F, -0.1F, -0.75F);
     private static final Vector3f SPREAD = new Vector3f(0.78F, -0.02F, -0.52F);
     private static final Vector3f ARM_FROM = new Vector3f(0.75F, -1.1F, -0.15F);
+
+    private static final Vector3f KNEE = new Vector3f(0.0F, 0.0F, -1.0F);
+    private static final Vector3f RIGHT_ELBOW = new Vector3f(-0.6F, 0.1F, 0.8F);
+    private static final Vector3f LEFT_ELBOW = new Vector3f(0.6F, 0.1F, 0.8F);
+    private static final Quaternionf LEAN = new Quaternionf();
+    private static final Quaternionf WAIST = new Quaternionf();
+    private static final Quaternionf CHEST = new Quaternionf();
+    private static final Vector3f HIPS = new Vector3f();
+    private static final Vector3f NECK = new Vector3f();
 
     private static final Int2LongMap STARTED = new Int2LongOpenHashMap();
 
@@ -85,7 +96,8 @@ public final class ClientClaps {
             return false;
         }
         float up = raised(age);
-        float turn = Mth.lerp(open(age), SHUT_TURN, OPEN_TURN);
+        float open = open(age);
+        float turn = Mth.lerp(open, SHUT_TURN, OPEN_TURN);
         float pitch = model.head.xRot;
         float forward = ARM_FORWARD + Mth.clamp(pitch, -1.2F, 1.0F);
         model.rightArm.xRot = Mth.lerp(up, model.rightArm.xRot, forward);
@@ -94,12 +106,42 @@ public final class ClientClaps {
         model.leftArm.xRot = Mth.lerp(up, model.leftArm.xRot, forward);
         model.leftArm.yRot = Mth.lerp(up, model.leftArm.yRot, -turn);
         model.leftArm.zRot = Mth.lerp(up, model.leftArm.zRot, 0.0F);
-        model.rightSleeve.copyFrom(model.rightArm);
-        model.leftSleeve.copyFrom(model.leftArm);
-        float back = up * open(age);
+        float back = up * open;
         model.head.xRot = Mth.lerp(back, pitch, Math.max(-1.4F, pitch + HEAD_BACK));
-        model.hat.copyFrom(model.head);
+        body(model, age, up, open);
         return true;
+    }
+
+    // The whole body in the clap: set wide and low, the chest thrown open with the arms drawn back (elbows soft), then
+    // driving forward over the knees into the clap and rocking back from its shock.
+    private static void body(PlayerModel<?> model, float age, float up, float open) {
+        Vector3f[] feet = { Stance.foot(model, true, new Vector3f()), Stance.foot(model, false, new Vector3f()) };
+        float drive = (float) (Ease.smooth((age - WIDE) / (MEET - WIDE))
+                * (1.0 - Ease.smooth((age - HOLD) / (END - HOLD))));
+        float shock = (float) Ease.bump(Mth.clamp((age - MEET) / 6.0F, 0.0F, 1.0F));
+        float drop = up * (2.2F + 1.4F * drive) - 0.6F * shock;
+        float lean = up * (-0.1F * open + 0.24F * drive - 0.08F * shock);
+        float arch = up * (-0.16F * open + 0.2F * drive);
+        LEAN.rotationX(lean);
+        WAIST.rotationX(arch);
+        HIPS.set(0.0F, Stance.HIP_Y + drop, 0.3F * up);
+        Stance.trunk(model, HIPS, LEAN, WAIST);
+        for (int side = 0; side < 2; side++) {
+            float sign = side == 0 ? -1.0F : 1.0F;
+            Vector3f foot = feet[side].lerp(new Vector3f(sign * 3.3F, Stance.GROUND, side == 0 ? 1.2F : -1.0F), up);
+            Stance.leg(model, side == 0, foot, KNEE);
+        }
+        // Soft elbows: each hand pulled a little in along its arm while spread, straight at the clap.
+        Stance.neck(NECK);
+        Stance.chest(CHEST);
+        for (int side = 0; side < 2; side++) {
+            boolean right = side == 0;
+            Vector3f hand = Stance.hand(model, right, new Vector3f());
+            Vector3f shoulder = right ? new Vector3f(model.rightArm.x, model.rightArm.y, model.rightArm.z)
+                    : new Vector3f(model.leftArm.x, model.leftArm.y, model.leftArm.z);
+            hand.lerp(shoulder, 0.14F * up * open);
+            Stance.arm(model, right, hand, right ? RIGHT_ELBOW : LEFT_ELBOW);
+        }
     }
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)

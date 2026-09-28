@@ -15,6 +15,7 @@ import nl.tivek.multiversepowers.character.greenlantern.mech.MechScript;
 import nl.tivek.multiversepowers.config.client.ClientSettings;
 import nl.tivek.multiversepowers.engine.client.fx.ChaseCamera;
 import nl.tivek.multiversepowers.engine.client.fx.Cinematic;
+import nl.tivek.multiversepowers.engine.client.fx.FirstPersonEye;
 import nl.tivek.multiversepowers.engine.math.Ease;
 
 // Films the pilot's own mech while it builds, cut for cut after the clip, then hands them the view from its cockpit.
@@ -23,7 +24,7 @@ import nl.tivek.multiversepowers.engine.math.Ease;
 public final class MechCamera {
     private static final double HANDOVER = 10.0;
     private static final double END = MechScript.DONE + HANDOVER;
-    private static final double EYE = 1.62;
+    private static final Vec3 PORT_EYE = new Vec3(0.0, MechBodyShapes.PORT_Y, MechBodyShapes.GLASS_Z - 0.3);
     private static final float COCKPIT_PITCH = 6.0F;
     private static final double FOV = 70.0;
     private static final Vec3 CHASE_PIVOT = new Vec3(0.0, 11.5, 0.0);
@@ -32,9 +33,23 @@ public final class MechCamera {
     static {
         Cinematic.add(MechCamera::shot);
         ChaseCamera.add(MechCamera::chase);
+        FirstPersonEye.add(MechCamera::eye);
     }
 
     private MechCamera() {
+    }
+
+    // Built, the pilot looks out from just inside the glass of the port: from the seat, the chest round the port
+    // walled in the whole view.
+    @Nullable
+    private static Vec3 eye(float partialTick) {
+        LocalPlayer player = Minecraft.getInstance().player;
+        ClientConstructs.Piloted pilot = player == null ? null : ClientConstructs.piloted(player.getId(), partialTick);
+        if (pilot == null || pilot.broke() >= 0.0 || pilot.t() < END) {
+            return null;
+        }
+        MechPose walk = MechWalk.pose(pilot.id(), partialTick);
+        return (walk != null ? walk.torso() : pilot.stage()).point(PORT_EYE);
     }
 
     // In third person the pilot's camera circles the whole mech from above its head, not their own body in its chest.
@@ -71,7 +86,7 @@ public final class MechCamera {
         double fov = FOV;
         if (t > MechScript.DONE) {
             double u = Ease.smoother((t - MechScript.DONE) / HANDOVER);
-            Vec3 own = MechScript.COCKPIT.add(0.0, EYE, 0.0);
+            Vec3 own = PORT_EYE;
             eye = eye.lerp(own, u);
             look = look.lerp(own.add(0.0, -Math.tan(Math.toRadians(COCKPIT_PITCH)) * 10.0, 10.0), u);
             fov = Mth.lerp(u, FOV, Minecraft.getInstance().options.fov().get());

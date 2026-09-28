@@ -66,12 +66,7 @@ final class ClapFx {
         return new SpellFxPayload(said.kind(), hands, said.to(), said.entity(), said.seed(), drop);
     }
 
-    // Which way the blast goes over the ground: from the hands towards where it was aimed.
-    static Vec3 facing(Vec3 hands, Vec3 aim) {
-        Vec3 flat = new Vec3(aim.x - hands.x, 0.0, aim.z - hands.z);
-        return flat.lengthSqr() < 1.0E-6 ? new Vec3(0.0, 0.0, 1.0) : flat.normalize();
-    }
-
+    // Which way the blast goes: from the hands towards where it was aimed, up or down as well.
     static Vec3 aimed(Vec3 hands, Vec3 aim) {
         Vec3 way = aim.subtract(hands);
         return way.lengthSqr() < 1.0E-6 ? new Vec3(0.0, 0.0, 1.0) : way.normalize();
@@ -79,9 +74,7 @@ final class ClapFx {
 
     // A direction inside the blast's cone, picked by a noise value from 0 to 1: turned about the aim's own up.
     static Vec3 within(Vec3 ahead, double pick) {
-        Vec3 side = ahead.cross(Vectors.UP);
-        Vec3 up = side.lengthSqr() < 1.0E-6 ? new Vec3(1.0, 0.0, 0.0) : side.normalize().cross(ahead);
-        return Vectors.spin(ahead, up, (pick * 2.0 - 1.0) * HALF_ANGLE);
+        return Vectors.spin(ahead, across(ahead).cross(ahead), (pick * 2.0 - 1.0) * HALF_ANGLE);
     }
 
     // The first tick of a clap: every player feels it by how close they are.
@@ -100,16 +93,19 @@ final class ClapFx {
 
     static void draw(ConstructPainter painter, SpellFxPayload said, double age, int seed) {
         Vec3 hands = said.from();
-        Vec3 aim = said.to();
-        Vec3 feet = feet(said);
-        Vec3 ahead = aimed(hands, aim);
-        Vec3 flat = facing(hands, aim);
+        Vec3 ahead = aimed(hands, said.to());
         painter.material(LIGHT);
         light(painter, hands, age, seed);
         bubble(painter, hands, ahead, age);
         streaks(painter, hands, ahead, age, seed);
-        ripples(painter, feet, flat, age, seed);
-        dust(painter, feet, flat, age, seed);
+        ripples(painter, hands, ahead, age, seed);
+        dust(painter, hands, ahead, age, seed);
+    }
+
+    // Two directions square to the aim and to each other, spanning the face the shock rings lie in.
+    private static Vec3 across(Vec3 ahead) {
+        Vec3 side = ahead.cross(Vectors.UP);
+        return side.lengthSqr() < 1.0E-6 ? new Vec3(1.0, 0.0, 0.0) : side.normalize();
     }
 
     // Time for what the bubble holds: it crawls while the bubble stands and runs on at full pace once it is gone.
@@ -170,8 +166,8 @@ final class ClapFx {
         }
     }
 
-    // The mist wall: puffs rolling forward low over the ground, rising, then hanging and thinning as a haze.
-    private static void dust(ConstructPainter painter, Vec3 feet, Vec3 ahead, double age, int seed) {
+    // The mist wall: puffs rolling out of the hands the way they aim, swelling, then hanging and thinning as a haze.
+    private static void dust(ConstructPainter painter, Vec3 hands, Vec3 ahead, double age, int seed) {
         double left = 1.0 - age / LIFE;
         if (left <= 0.0) {
             return;
@@ -180,22 +176,22 @@ final class ClapFx {
         for (int k = 0; k < PUFFS; k++) {
             Vec3 way = within(ahead, Noise.of(seed, k, 11));
             double reach = 1.0 + REACH * (0.2 + 0.85 * Noise.of(seed, k, 12)) * rolled;
-            double rise = 0.3 + 1.5 * Noise.of(seed, k, 13) * rolled + age * 0.02;
-            Vec3 at = feet.add(way.scale(reach)).add(0.0, rise, 0.0);
+            double drift = (Noise.of(seed, k, 13) - 0.5) * 1.2 * rolled + age * 0.02;
+            Vec3 at = hands.add(way.scale(reach)).add(0.0, drift, 0.0);
             double size = 0.7 + 1.5 * rolled + age * 0.04;
             painter.lightDisc(at, size, DUST, 0.45 * left * left, 0.35, seed + k);
         }
         if (age < 6.0) {
             double burst = 1.0 - age / 6.0;
-            painter.lightDisc(feet.add(ahead.scale(1.5 + age)).add(0.0, 0.8, 0.0), 1.5 + age * 0.9, WHITE,
-                    0.45 * burst, 0.3, seed + 99);
+            painter.lightDisc(hands.add(ahead.scale(1.5 + age)), 1.5 + age * 0.9, WHITE, 0.45 * burst, 0.3,
+                    seed + 99);
         }
     }
 
-    // Rings of light ripple out over the ground ahead, one after another, with a swirl turning in the first.
-    private static void ripples(ConstructPainter painter, Vec3 feet, Vec3 ahead, double age, int seed) {
-        Vec3 side = ahead.cross(Vectors.UP).normalize();
-        Vec3 ground = feet.add(0.0, 0.06, 0.0);
+    // Shock rings ripple out along the aim, square to it, one after another, with a swirl turning in the first.
+    private static void ripples(ConstructPainter painter, Vec3 hands, Vec3 ahead, double age, int seed) {
+        Vec3 side = across(ahead);
+        Vec3 up = side.cross(ahead).normalize();
         for (int k = 0; k < RIPPLES; k++) {
             double t = age - 2.5 * k;
             if (t < 0.0 || t > RIPPLE_TICKS) {
@@ -204,19 +200,19 @@ final class ClapFx {
             double u = t / RIPPLE_TICKS;
             double grow = 1.0 - (1.0 - u) * (1.0 - u);
             double fade = (1.0 - u) * (1.0 - u);
-            Vec3 at = ground.add(ahead.scale(1.8 + 2.4 * k + 1.5 * grow));
+            Vec3 at = hands.add(ahead.scale(1.8 + 2.4 * k + 1.5 * grow));
             double radius = 0.3 + (1.8 + 0.8 * k) * grow;
-            painter.circle(at, ahead, side, radius, 0.035, 0.3, Colors.alpha(0.9 * fade),
+            painter.circle(at, up, side, radius, 0.035, 0.3, Colors.alpha(0.9 * fade),
                     Colors.alpha(0.45 * fade));
-            painter.circle(at, ahead, side, radius * 0.62, 0.02, 0.18, Colors.alpha(0.5 * fade),
+            painter.circle(at, up, side, radius * 0.62, 0.02, 0.18, Colors.alpha(0.5 * fade),
                     Colors.alpha(0.25 * fade));
             if (k == 0) {
-                swirl(painter, at, ahead, side, radius * 0.95, t, fade, seed);
+                swirl(painter, at, up, side, radius * 0.95, t, fade, seed);
             }
         }
     }
 
-    private static void swirl(ConstructPainter painter, Vec3 at, Vec3 ahead, Vec3 side, double radius, double t,
+    private static void swirl(ConstructPainter painter, Vec3 at, Vec3 up, Vec3 side, double radius, double t,
             double fade, int seed) {
         double turn = 0.12 * t + Noise.of(seed, 0, 51) * Math.PI * 2.0;
         for (int arm = 0; arm < 2; arm++) {
@@ -224,7 +220,7 @@ final class ClapFx {
             for (int i = 1; i <= 16; i++) {
                 double s = i / 16.0;
                 double angle = turn + arm * Math.PI + s * Math.PI * 2.2;
-                Vec3 next = at.add(ahead.scale(Math.cos(angle) * radius * s))
+                Vec3 next = at.add(up.scale(Math.cos(angle) * radius * s))
                         .add(side.scale(Math.sin(angle) * radius * s));
                 painter.lightLine(last, next, 0.03, PALE, Colors.alpha(0.8 * fade * s));
                 painter.glowLine(last, next, 0.2, ICE, Colors.alpha(0.35 * fade * s));

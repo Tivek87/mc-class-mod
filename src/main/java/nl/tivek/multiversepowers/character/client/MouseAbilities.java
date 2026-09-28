@@ -19,27 +19,19 @@ public final class MouseAbilities {
     private MouseAbilities() {
     }
 
-    private static boolean ours(CharacterAbility.Mouse button, @Nullable Entity who) {
+    private static boolean ours(CharacterAbility.Input button, @Nullable Entity who) {
         LocalPlayer player = Minecraft.getInstance().player;
         GameCharacter now = ClientCharacter.active();
         // Only ever about your own hands: the same event also reaches the server, for everyone on it.
-        if (player == null || now == null || (who != null && who != player)
-                || !ClientCharacter.takesMouse(player)) {
-            return false;
-        }
-        for (CharacterAbility ability : now.abilities()) {
-            if (ability.mouseButton() == button) {
-                return true;
-            }
-        }
-        return false;
+        return player != null && now != null && (who == null || who == player) && Gestures.takesMouse(player)
+                && Gestures.bound(now, button, player);
     }
 
     @SubscribeEvent
     public static void onClick(InputEvent.InteractionKeyMappingTriggered event) {
-        CharacterAbility.Mouse button = event.isAttack() ? CharacterAbility.Mouse.LEFT
-                : event.isUseItem() ? CharacterAbility.Mouse.RIGHT : CharacterAbility.Mouse.NONE;
-        if (button != CharacterAbility.Mouse.NONE && ours(button, null)) {
+        CharacterAbility.Input button = event.isAttack() ? CharacterAbility.Input.LEFT
+                : event.isUseItem() ? CharacterAbility.Input.RIGHT : CharacterAbility.Input.KEY;
+        if (button != CharacterAbility.Input.KEY && ours(button, null)) {
             event.setSwingHand(false);
             event.setCanceled(true);
         }
@@ -54,10 +46,16 @@ public final class MouseAbilities {
         if (now == null) {
             return false;
         }
-        KeyMapping pick = Minecraft.getInstance().options.keyPickItem;
+        Minecraft minecraft = Minecraft.getInstance();
+        KeyMapping pick = minecraft.options.keyPickItem;
         for (CharacterAbility ability : now.abilities()) {
-            if (!ability.isPlaceholder() && ability.mouseButton() == CharacterAbility.Mouse.NONE
-                    && AbilityKeys.of(ability.slot()).same(pick)) {
+            if (ability.isPlaceholder()) {
+                continue;
+            }
+            KeyMapping key = ability.onGesture() ? AbilityKeys.of(ability) : AbilityKeys.of(ability.slot());
+            if (ability.input() != CharacterAbility.Input.LEFT && ability.input() != CharacterAbility.Input.RIGHT
+                    && key.getKey().equals(pick.getKey())
+                    && (minecraft.player == null || Gestures.active(ability, minecraft.player))) {
                 return true;
             }
         }
@@ -66,21 +64,21 @@ public final class MouseAbilities {
 
     @SubscribeEvent
     public static void onLeftClickBlock(PlayerInteractEvent.LeftClickBlock event) {
-        if (ours(CharacterAbility.Mouse.LEFT, event.getEntity())) {
+        if (ours(CharacterAbility.Input.LEFT, event.getEntity())) {
             event.setCanceled(true);
         }
     }
 
     @SubscribeEvent
     public static void onRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
-        if (ours(CharacterAbility.Mouse.RIGHT, event.getEntity())) {
+        if (ours(CharacterAbility.Input.RIGHT, event.getEntity())) {
             event.setCanceled(true);
         }
     }
 
     @SubscribeEvent
     public static void onRightClickItem(PlayerInteractEvent.RightClickItem event) {
-        if (ours(CharacterAbility.Mouse.RIGHT, event.getEntity())) {
+        if (ours(CharacterAbility.Input.RIGHT, event.getEntity())) {
             event.setCanceled(true);
         }
     }

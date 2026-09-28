@@ -3,7 +3,7 @@ package nl.tivek.multiversepowers.mixin;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.client.renderer.entity.player.PlayerRenderer;
-import nl.tivek.multiversepowers.character.greenlantern.client.body.arm.LanternArms;
+import nl.tivek.multiversepowers.engine.client.pose.BodyTurns;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -15,6 +15,6 @@ public abstract class PlayerRendererMixin {
             + "Lcom/mojang/blaze3d/vertex/PoseStack;FFFF)V", at = @At("HEAD"))
     private void welcomescreen$turnBody(AbstractClientPlayer player, PoseStack pose, float bob, float yBodyRot,
             float partialTick, float scale, CallbackInfo info) {
-        LanternArms.turnBody(player, pose, scale);
+        BodyTurns.apply(player, pose, scale);
     }
 }
