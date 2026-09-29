@@ -25,6 +25,24 @@ class RigidWorldTest {
         return 1;
     };
 
+    // Ground of whole blocks, its top at y = 0, handed out block by block from the bottom up as the game's are; the
+    // buried ones, under the top layer, are left out.
+    private static final Blocks GROUND = (minX, minY, minZ, maxX, maxY, maxZ, out) -> {
+        int n = 0;
+        for (int y = Math.max(-1, (int) Math.floor(minY)); y <= Math.min(-1, (int) Math.floor(maxY)); y++) {
+            for (int x = (int) Math.floor(minX); x <= (int) Math.floor(maxX); x++) {
+                for (int z = (int) Math.floor(minZ); z <= (int) Math.floor(maxZ); z++) {
+                    if (n * 6 >= out.length) {
+                        return n;
+                    }
+                    double[] block = { x, y, z, x + 1.0, y + 1.0, z + 1.0 };
+                    System.arraycopy(block, 0, out, n++ * 6, 6);
+                }
+            }
+        }
+        return n;
+    };
+
     private static double lowestCorner(RigidWorld world, int b) {
         double[] p = new double[3];
         double lowest = Double.POSITIVE_INFINITY;
@@ -67,6 +85,27 @@ class RigidWorldTest {
         double[] pose = new double[7];
         world.pose(box, pose);
         assertEquals(0.25, pose[1], 0.05, "on its long side, its centre a half width up");
+    }
+
+    @Test
+    void aSleepingBoxFallsOnceWhatItLiesOnIsTakenAway() {
+        RigidWorld world = new RigidWorld();
+        int box = world.add(1.0, 0.3, 0.3, 0.3);
+        world.place(box, 0.0, 0.5, 0.0, 0.0, 0.0, 0.0, 1.0);
+        run(world, 80, FLOOR);
+        assertTrue(world.sleeping(), "lying still, it sleeps");
+        double[] pose = new double[7];
+        world.pose(box, pose);
+        double lay = pose[1];
+        world.probe(TICK, SUBSTEPS, FLOOR);
+        world.pose(box, pose);
+        assertTrue(world.sleeping(), "the floor still there, it sleeps on");
+        assertEquals(lay, pose[1], 1.0E-12, "where it lay");
+        world.probe(TICK, SUBSTEPS, Blocks.NONE);
+        assertFalse(world.sleeping(), "the floor gone, it wakes");
+        run(world, 20, Blocks.NONE);
+        world.pose(box, pose);
+        assertTrue(pose[1] < lay - 1.0, "and falls, now at " + pose[1]);
     }
 
     @Test
@@ -579,6 +618,80 @@ class RigidWorldTest {
         }
         double rose = bounce(world, 100);
         assertTrue(rose < 0.02, "the body comes down and stays down, rose " + rose);
+    }
+
+    // A limp body's parts, each on its own, thrown down hard onto ground made of whole blocks: every part comes to lie
+    // on top of it, none sinks in or through, and none bounces back up.
+    @Test
+    void partsThrownDownFastOntoBlocksLandOnTopAndStayDown() {
+        RigidWorld world = new RigidWorld();
+        world.gravity = -32.0;
+        world.friction = 0.8;
+        world.angularDamping = 1.6;
+        world.contactDamping = 25.0;
+        int[] parts = new int[8];
+        for (int i = 0; i < parts.length; i++) {
+            parts[i] = world.add(5.0, 0.125, 0.375, 0.125);
+            world.place(parts[i], (i % 4) * 0.9 - 1.3, 6.0 + (i / 4) * 0.9, (i / 4) * 0.7, 0.2 * i, 0.1, 0.05, 1.0);
+            world.velocity(parts[i], 2.0, -38.0, 1.0, 0.5, -0.3, 0.6);
+        }
+        double lowest = Double.POSITIVE_INFINITY;
+        boolean[] landed = new boolean[parts.length];
+        double rose = 0.0;
+        for (int t = 0; t < 80; t++) {
+            world.step(TICK, SUBSTEPS, GROUND);
+            for (int i = 0; i < parts.length; i++) {
+                double now = lowestCorner(world, parts[i]);
+                lowest = Math.min(lowest, now);
+                landed[i] |= now < 0.02;
+                if (landed[i]) {
+                    rose = Math.max(rose, now);
+                }
+            }
+        }
+        assertTrue(lowest > -0.08, "no part sinks into the ground, the lowest went to " + lowest);
+        assertTrue(rose < 0.05, "they land and stay down, rose " + rose);
+    }
+
+    @Test
+    void aLimpBodyThrownHardOntoBlocksNeitherSinksNorBounces() {
+        RigidWorld world = new RigidWorld();
+        world.gravity = -32.0;
+        world.friction = 0.8;
+        world.angularDamping = 1.6;
+        world.contactDamping = 25.0;
+        int trunk = world.add(15.0, 0.25, 0.375, 0.125);
+        int leg = world.add(6.0, 0.125, 0.375, 0.125);
+        int arm = world.add(4.0, 0.125, 0.375, 0.125);
+        world.place(trunk, 0.0, 6.2, 0.0, 0.3, 0.0, 0.2, 0.93);
+        world.place(leg, 0.12, 5.45, 0.0, 0.3, 0.0, 0.2, 0.93);
+        world.place(arm, 0.45, 6.3, 0.0, 0.3, 0.0, 0.2, 0.93);
+        double[] down = { 0.0, -1.0, 0.0 };
+        double[] ahead = { 0.0, 0.0, 1.0 };
+        world.add(new BallJoint(trunk, new double[] { 0.12, -0.375, 0.0 }, down, ahead, leg,
+                new double[] { 0.0, 0.375, 0.0 }, down, ahead, 1.3, -0.4, 0.4));
+        world.add(new BallJoint(trunk, new double[] { 0.3, 0.3, 0.0 }, down, ahead, arm,
+                new double[] { 0.0, 0.3, 0.0 }, down, ahead, 2.4, -1.4, 1.4));
+        for (int b : new int[] { trunk, leg, arm }) {
+            world.velocity(b, 8.0, -38.0, 1.0, 3.0, 1.0, -2.0);
+        }
+        boolean landed = false;
+        double lowest = Double.POSITIVE_INFINITY;
+        double rose = 0.0;
+        for (int t = 0; t < 100; t++) {
+            world.step(TICK, SUBSTEPS, GROUND);
+            double now = Double.POSITIVE_INFINITY;
+            for (int b = 0; b < world.count(); b++) {
+                now = Math.min(now, lowestCorner(world, b));
+            }
+            lowest = Math.min(lowest, now);
+            landed |= now < 0.02;
+            if (landed) {
+                rose = Math.max(rose, now);
+            }
+        }
+        assertTrue(lowest > -0.08, "it never sinks into the ground, the lowest went to " + lowest);
+        assertTrue(rose < 0.05, "it comes down and stays down, rose " + rose);
     }
 
     @Test

@@ -38,14 +38,14 @@ public final class MechWalk extends MechGait {
     // The torso follows where its pilot looks like a heavy weight on a spring: it swings round, carries on a touch past
     // and settles, and never twists further than MOST_TWIST over the hips. As the legs turn under it they drag it a
     // little along, and the hips give a little way to the twist above them.
-    private static final double TORSO_FREQ = 0.1;
+    private static final double TORSO_FREQ = 0.16;
     private static final double TORSO_DAMP = 0.7;
-    private static final double MOST_TWIST = 1.3;
+    private static final double MOST_TWIST = 1.75;
     private static final double DRAG = 0.2;
     private static final double HIPS_SHARE = 0.14;
     private static final double HIPS_KICK = 0.9;
     // The head turns the rest of the way to the look, and tilts with it, quicker than the torso.
-    private static final double HEAD_FREQ = 0.2;
+    private static final double HEAD_FREQ = 0.28;
     private static final double MOST_HEAD_YAW = 1.0;
     private static final double MOST_HEAD_UP = 0.55;
     private static final double MOST_HEAD_DOWN = 0.7;
@@ -130,6 +130,7 @@ public final class MechWalk extends MechGait {
     public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
         WALKS.clear();
         BROKEN.clear();
+        MechTouch.clear();
     }
 
     // Moves a mech's walk on to where it stands this tick; a second call in the same tick does nothing.
@@ -232,6 +233,7 @@ public final class MechWalk extends MechGait {
         MechWalk walk = WALKS.remove(id);
         if (walk != null) {
             BROKEN.put(id, new Kept(walk.now, ticks));
+            MechTouch.forget(id);
         }
     }
 

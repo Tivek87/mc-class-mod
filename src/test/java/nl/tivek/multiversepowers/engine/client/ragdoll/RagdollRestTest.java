@@ -52,23 +52,47 @@ class RagdollRestTest {
     }
 
     private static Ragdoll fallen(long seed, RagdollProfiles.Profile profile, Vec3 feet) {
+        Random random = new Random(seed);
+        double yaw = random.nextDouble() * Math.PI * 2.0;
+        Ragdoll doll = standing(yaw, profile, feet);
+        double side = random.nextBoolean() ? 1.0 : -1.0;
+        double ax = -Math.sin(yaw) * side;
+        double az = Math.cos(yaw) * side;
+        RagdollFalls.tip(doll, ax * 2.0, az * 2.0, feet);
+        RagdollFalls.giveWay(doll, RandomSource.create(seed), ax, az, 1.5);
+        return doll;
+    }
+
+    // A person's body gone limp dead standing upright at `feet`, facing `yaw`, nothing yet tipping it over.
+    private static Ragdoll standing(double yaw, RagdollProfiles.Profile profile, Vec3 feet) {
         HumanoidModel<LivingEntity> model = new HumanoidModel<>(
                 LayerDefinition.create(HumanoidModel.createMesh(CubeDeformation.NONE, 0.0F), 64, 64).bakeRoot());
         // A model is young until its renderer says otherwise.
         model.young = false;
         List<ModelParts.Part> parts = ModelParts.of(model);
-        Random random = new Random(seed);
-        double yaw = random.nextDouble() * Math.PI * 2.0;
         Matrix4f drawn = new Matrix4f().translation((float) feet.x, (float) feet.y, (float) feet.z)
                 .rotateY((float) (Math.PI - yaw)).scale(-1.0F, -1.0F, 1.0F).translate(0.0F, -1.501F, 0.0F);
-        Ragdoll doll = RagdollBuild.build(null, model, parts, drawn, Vec3.ZERO, feet, Ragdoll.State.DEAD, false,
-                profile, Vec3.ZERO);
-        double side = random.nextBoolean() ? 1.0 : -1.0;
-        double ax = -Math.sin(yaw) * side;
-        double az = Math.cos(yaw) * side;
-        doll.tip(ax * 2.0, 0.0, az * 2.0, feet);
-        doll.giveWay(RandomSource.create(seed), ax, az, 1.5);
-        return doll;
+        return RagdollBuild.build(null, model, parts, drawn, Vec3.ZERO, feet, Ragdoll.State.DEAD, false, profile,
+                Vec3.ZERO);
+    }
+
+    // A body left standing as it dies, nothing tipping it over, never stays up on its limbs: it comes to lie with its
+    // trunk on the floor (given way again, should it come to rest standing) before it sleeps.
+    @Test
+    void aDeadBodyLeftStandingGivesWayUntilItLies() {
+        StringBuilder report = new StringBuilder();
+        boolean upright = false;
+        for (long seed = 1; seed <= 8; seed++) {
+            Ragdoll doll = standing(seed * 0.8, RagdollProfiles.Profile.NONE, new Vec3(0.5, 0.0, 0.5));
+            for (int t = 0; t < 300; t++) {
+                doll.step(SUBSTEPS, FLOOR);
+                RagdollFalls.settle(doll, t);
+            }
+            report.append(String.format("seed %d: lying %b, sleeping %b, gave way %d times, rested %d%n", seed,
+                    doll.slumped(), doll.world.sleeping(), doll.slumps, doll.rested));
+            upright |= !doll.slumped();
+        }
+        assertTrue(!upright, "a body stays up on its limbs:\n" + report);
     }
 
     // Where a limb's bone (+y in its own axes) points, seen from the body it hangs on: -z ahead, +x the model's left.

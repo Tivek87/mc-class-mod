@@ -66,6 +66,61 @@ class MechHandRigTest {
         }
     }
 
+    // How deep the fingers and thumb of posed hand bones go into the ground, their thickness counted, and how low
+    // their tips reach.
+    private static double[] inGround(Frame[] bones, MechHandRig.Ground ground) {
+        double deepest = Double.NEGATIVE_INFINITY;
+        double lowest = Double.POSITIVE_INFINITY;
+        for (int k = 0; k < 5; k++) {
+            for (int j = 0; j < 3; j++) {
+                Frame bone = bones[MechHandRig.bone(k, j)];
+                double length = MechHandRig.length(k, j);
+                for (int i = 0; i <= 4; i++) {
+                    Vec3 at = bone.at(0.0, length * i / 4.0, 0.0);
+                    deepest = Math.max(deepest, ground.depth(at.x, at.y, at.z, k < 4 ? 0.15 : 0.17));
+                    lowest = Math.min(lowest, at.y);
+                }
+            }
+        }
+        return new double[] { deepest, lowest };
+    }
+
+    // A hand held palm down just over the ground, its fingers curled more or less: none goes into it.
+    @Test
+    void fingersRestOnTheGroundInsteadOfGoingIntoIt() {
+        MechHandRig.Ground ground = (x, y, z, radius) -> radius - y;
+        Frame hand = Frame.of(new Vec3(0.0, 0.36, 0.0), new Vec3(0.0, -1.0, 0.0), new Vec3(0.0, 0.0, 1.0), 1.0);
+        double worst = Double.NEGATIVE_INFINITY;
+        for (boolean right : new boolean[] { true, false }) {
+            for (int c = 0; c <= 20; c++) {
+                Frame[] bones = MechHandRig.frames(hand, arm(c / 20.0, 0.5), right, null, null, ground);
+                worst = Math.max(worst, inGround(bones, ground)[0]);
+            }
+        }
+        assertTrue(worst <= MechHandRig.TOUCH + 0.01, "fingers go into the ground " + worst);
+    }
+
+    // A gripping hand laid on a ledge, its knuckles just past the edge: its fingers hook down over the edge, onto the
+    // face of the wall under it, and never into the ledge.
+    @Test
+    void aGrippingHandWrapsItsFingersRoundAnEdge() {
+        double edge = MechArmShapes.KNUCKLES - 0.15;
+        MechHandRig.Ground ledge = (x, y, z, radius) -> {
+            double d = y < 0.0 && z < edge ? -Math.min(-y, edge - z)
+                    : Math.sqrt(Math.max(y, 0.0) * Math.max(y, 0.0) + Math.max(z - edge, 0.0) * Math.max(z - edge,
+                            0.0));
+            return radius - d;
+        };
+        Frame hand = Frame.of(new Vec3(0.0, 0.36, 0.0), new Vec3(0.0, -1.0, 0.0), new Vec3(0.0, 0.0, 1.0), 1.0);
+        for (boolean right : new boolean[] { true, false }) {
+            double[] gripped = inGround(MechHandRig.frames(hand, arm(0.7, 0.25), right, null, null, ledge), ledge);
+            double[] loose = inGround(MechHandRig.frames(hand, arm(0.3, 0.25), right, null, null, ledge), ledge);
+            assertTrue(gripped[0] <= MechHandRig.TOUCH + 0.01, "fingers go into the ledge " + gripped[0]);
+            assertTrue(gripped[1] < -0.3, "the fingers hook down over the edge, lowest at " + gripped[1]);
+            assertTrue(loose[1] > gripped[1], "a loose hand does not grip");
+        }
+    }
+
     @Test
     void settledMechHandsNeverGoIntoThemselves() {
         double[] a0 = new double[3];

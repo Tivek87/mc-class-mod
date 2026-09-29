@@ -17,7 +17,7 @@ class MechClapTest {
         MechMoves.Arm arm = MechMoves.arm(right, stage, t);
         Frame hand = Frame.of(stage.point(arm.elbow()), stage.dir(arm.palm()), stage.dir(arm.way()), 1.0);
         Frame[] bones = MechHandRig.frames(hand, arm, !right,
-                MechHandRig.wall(hand, stage.base(), right ? stage.right() : stage.right().scale(-1.0)), null);
+                MechHandRig.wall(hand, stage.base(), right ? stage.right() : stage.right().scale(-1.0)), null, null);
         double sign = right ? 1.0 : -1.0;
         double least = Double.POSITIVE_INFINITY;
         for (int k = 0; k < 5; k++) {

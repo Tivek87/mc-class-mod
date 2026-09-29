@@ -10,6 +10,7 @@ import nl.tivek.multiversepowers.character.Characters;
 import nl.tivek.multiversepowers.classes.ceremony.Ceremonies;
 import nl.tivek.multiversepowers.config.ModConfigs;
 import nl.tivek.multiversepowers.engine.effect.Effects;
+import nl.tivek.multiversepowers.engine.entity.DeathBlows;
 import nl.tivek.multiversepowers.engine.entity.DeathStyles;
 import nl.tivek.multiversepowers.engine.entity.HeldMobs;
 import nl.tivek.multiversepowers.engine.entity.Knockdowns;
@@ -40,6 +41,7 @@ public class MultiversePowers {
         Characters.clear();
         Factions.clear();
         DeathStyles.clear();
+        DeathBlows.clear();
         // Last: held mobs must not be saved with their AI switched off.
         HeldMobs.releaseAll();
         Knockdowns.clear();

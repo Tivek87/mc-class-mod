@@ -56,6 +56,11 @@ title as it is on GitHub now; sending a fourth drops the oldest.
 - Players nearby see them too. Everything happens around you, never just in front of you.
 - Details per class and group: [Classes and skill trees](CLASSES.md#the-start-screen).
 - Operators (or a singleplayer world with cheats on) can play any of them with `/classfx`.
+- **Bodies**: every creature goes limp when it dies and falls the way the blow that killed it pushed it, hardest
+  where it was struck; blasts throw bodies about. A body lies at least 5 seconds on the ground before it sinks away.
+  A creature thrown down gets up again, rising the way it lies.
+- **Kill confirmation**: when you kill something, a small red cross flicks out round your crosshair for a moment,
+  with a soft thud, as in Red Dead Redemption 2. Only you see and hear it.
 
 ---
 

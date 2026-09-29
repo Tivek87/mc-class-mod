@@ -4,16 +4,23 @@ import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
 
 // A rigid world against the blocks round it: corners and sharp edges pushed back out, then friction, and no bounce.
 abstract class RigidBlocks extends RigidBodies {
-    private static final int MOST_BLOCKS = 96;
+    private static final int MOST_BLOCKS = 256;
     private static final int MOST_TOUCHES = 48;
     private static final int MOST_EDGE_POINTS = 4096;
     // How far apart the points are that stand for a block's sharp edges, in blocks: closer than the thinnest part.
     private static final double EDGE_STEP = 0.125;
-    // Per body, the most blocks and edge points it is tested against in a step: only those it can reach.
-    private static final int NEAR_BLOCKS = 32;
+    // Per body, the most blocks and edge points it is tested against in a step: only those it can reach, the nearest
+    // first (a fast body reaches deep into the ground, and the top it lands on must be among them).
+    private static final int NEAR_BLOCKS = 48;
     private static final int NEAR_EDGES = 768;
     // Room past how far a body can move by itself in a step, for what pulls it along (a joint, a pin).
     private static final double LEEWAY = 0.35;
+    // A block's six faces all shut: nothing reaches it before the blocks round it.
+    private static final int BURIED = 63;
+    // A point in a block is stopped as far as it came in this substep, as by a blow; the rest of the way out (it was
+    // put there: built in a wall, carried into one) the body is only moved, this much in all a substep. Pushed out
+    // further at once, it would take the push as speed and fly off.
+    private static final double EASE_OUT = 0.005;
 
     final double[] touchLocal = new double[MOST_TOUCHES * 3];
     final double[] touchNormal = new double[MOST_TOUCHES * 3];
@@ -34,8 +41,11 @@ abstract class RigidBlocks extends RigidBodies {
     int edgeCount;
     final int[] nearBlocks = new int[MOST * NEAR_BLOCKS];
     final int[] nearBlockCount = new int[MOST];
+    private final double[] nearBlockFar = new double[NEAR_BLOCKS];
     final int[] nearEdges = new int[MOST * NEAR_EDGES];
     final int[] nearEdgeCount = new int[MOST];
+    // How much a body may still be moved out of blocks without speed this substep.
+    private double ease;
 
     void gather(Blocks world, double dt) {
         double minX = Double.POSITIVE_INFINITY;
@@ -62,6 +72,19 @@ abstract class RigidBlocks extends RigidBodies {
         this.sortOut(dt);
     }
 
+    // How far the middle of body o (its first coordinate's index) is from block k's box, squared.
+    private double away(int k, int o) {
+        int e = k * 6;
+        double far = 0.0;
+        for (int a = 0; a < 3; a++) {
+            double p = this.x[o + a];
+            double d = p < this.blocks[e + a] ? this.blocks[e + a] - p
+                    : p > this.blocks[e + 3 + a] ? p - this.blocks[e + 3 + a] : 0.0;
+            far += d * d;
+        }
+        return far;
+    }
+
     // For each body, the blocks and edge points it can touch during the coming step.
     void sortOut(double dt) {
         for (int b = 0; b < this.count; b++) {
@@ -74,12 +97,34 @@ abstract class RigidBlocks extends RigidBodies {
                     + 2]);
             double reach = size + (speed + spin * size) * dt + 0.5 * Math.abs(this.gravity) * dt * dt + LEEWAY;
             int blocks = 0;
-            for (int k = 0; k < this.blockCount && blocks < NEAR_BLOCKS; k++) {
+            int furthest = -1;
+            for (int k = 0; k < this.blockCount; k++) {
                 int e = k * 6;
-                if (this.blocks[e] <= this.x[o] + reach && this.blocks[e + 3] >= this.x[o] - reach
-                        && this.blocks[e + 1] <= this.x[o + 1] + reach && this.blocks[e + 4] >= this.x[o + 1] - reach
-                        && this.blocks[e + 2] <= this.x[o + 2] + reach && this.blocks[e + 5] >= this.x[o + 2] - reach) {
+                if (this.covered[k] == BURIED || this.blocks[e] > this.x[o] + reach
+                        || this.blocks[e + 3] < this.x[o] - reach || this.blocks[e + 1] > this.x[o + 1] + reach
+                        || this.blocks[e + 4] < this.x[o + 1] - reach || this.blocks[e + 2] > this.x[o + 2] + reach
+                        || this.blocks[e + 5] < this.x[o + 2] - reach) {
+                    continue;
+                }
+                double far = this.away(k, o);
+                if (blocks < NEAR_BLOCKS) {
+                    this.nearBlockFar[blocks] = far;
                     this.nearBlocks[b * NEAR_BLOCKS + blocks++] = k;
+                    furthest = -1;
+                    continue;
+                }
+                if (furthest < 0) {
+                    furthest = 0;
+                    for (int i = 1; i < NEAR_BLOCKS; i++) {
+                        if (this.nearBlockFar[i] > this.nearBlockFar[furthest]) {
+                            furthest = i;
+                        }
+                    }
+                }
+                if (far < this.nearBlockFar[furthest]) {
+                    this.nearBlockFar[furthest] = far;
+                    this.nearBlocks[b * NEAR_BLOCKS + furthest] = k;
+                    furthest = -1;
                 }
             }
             this.nearBlockCount[b] = blocks;
@@ -227,6 +272,7 @@ abstract class RigidBlocks extends RigidBodies {
         }
         int o = b * 3;
         this.touches = 0;
+        this.ease = EASE_OUT;
         for (int c = 0; c < 8; c++) {
             double lx = (c & 1) == 0 ? -this.half[o] : this.half[o];
             double ly = (c & 2) == 0 ? -this.half[o + 1] : this.half[o + 1];
@@ -256,13 +302,39 @@ abstract class RigidBlocks extends RigidBodies {
                 double nx = axis == 0 ? sign : 0.0;
                 double ny = axis == 1 ? sign : 0.0;
                 double nz = axis == 2 ? sign : 0.0;
-                this.pushOut(b, cx, cy, cz, nx, ny, nz, depth);
+                double out = this.out(b, cx, cy, cz, nx, ny, nz, depth, (ox - cx) * nx + (oy - cy) * ny
+                        + (oz - cz) * nz);
                 this.point(b, lx, ly, lz, this.t1);
-                this.touch(lx, ly, lz, nx, ny, nz, depth);
+                if (out > 0.0) {
+                    this.touch(lx, ly, lz, nx, ny, nz, out);
+                }
             }
         }
         this.edgesInto(b);
         this.keepContacts(b);
+    }
+
+    // Moves body b's point p out along n by `depth`: stopped as far as it came in (`into`, this substep, along -n),
+    // only moved the rest, as far as this substep's easing still allows. Returns how far it went out.
+    private double out(int b, double px, double py, double pz, double nx, double ny, double nz, double depth,
+            double into) {
+        double blow = Math.min(depth, Math.max(0.0, into));
+        double slide = Math.min(depth - blow, this.ease);
+        this.ease -= slide;
+        if (blow > 0.0) {
+            this.pushOut(b, px, py, pz, nx, ny, nz, blow);
+        }
+        if (slide > 0.0) {
+            // Moved where it was a substep ago too: no speed from it.
+            int o = b * 3;
+            this.x[o] += nx * slide;
+            this.x[o + 1] += ny * slide;
+            this.x[o + 2] += nz * slide;
+            this.px[o] += nx * slide;
+            this.px[o + 1] += ny * slide;
+            this.px[o + 2] += nz * slide;
+        }
+        return blow + slide;
     }
 
     // Each of the substep's touches holds its point against sliding since the substep began, as far as friction
@@ -366,8 +438,17 @@ abstract class RigidBlocks extends RigidBodies {
             double lx = this.t3[0];
             double ly = this.t3[1];
             double lz = this.t3[2];
-            this.pushOut(b, ex, ey, ez, this.t2[0], this.t2[1], this.t2[2], depth);
-            this.touch(lx, ly, lz, this.t2[0], this.t2[1], this.t2[2], depth);
+            double nx = this.t2[0];
+            double ny = this.t2[1];
+            double nz = this.t2[2];
+            // Where the box's point now on the edge was a substep ago: how far the box came onto the edge.
+            Quat.rotate(this.pq, b * 4, lx, ly, lz, this.t1, 0);
+            double into = (ex - this.px[o] - this.t1[0]) * -nx + (ey - this.px[o + 1] - this.t1[1]) * -ny
+                    + (ez - this.px[o + 2] - this.t1[2]) * -nz;
+            double out = this.out(b, ex, ey, ez, nx, ny, nz, depth, into);
+            if (out > 0.0) {
+                this.touch(lx, ly, lz, nx, ny, nz, out);
+            }
         }
     }
 

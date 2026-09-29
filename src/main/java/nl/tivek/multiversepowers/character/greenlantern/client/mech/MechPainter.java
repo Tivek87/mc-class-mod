@@ -30,6 +30,8 @@ public final class MechPainter {
     private static final double SEAM = 1.0;
     private static final double FLING = 2.0;
     private static final double REACH = 20.0;
+    // How far from the knuckles the blocks a hand's fingers may touch are looked for.
+    private static final double FINGERS_REACH = 2.2;
     private static final int PIECES = 40;
     private static final double STOMP_SHAKE = 0.75;
     private static final double STEP_SHAKE = 0.3;
@@ -62,7 +64,7 @@ public final class MechPainter {
         if (!painter.visible(pose.stage().point(0.0, 7.0, MechScript.TARGET_AHEAD * 0.5), REACH)) {
             return;
         }
-        parts(painter, pose, t, apart, own, walk != null && pose == walk, caught(now, pose));
+        parts(painter, now.id(), pose, t, apart, own, walk != null && pose == walk, caught(now, pose));
         if (apart < 0.0) {
             MechLight.lights(painter, pose, t, ring, own);
         }
@@ -76,8 +78,8 @@ public final class MechPainter {
         double apart = since / MechScript.BREAK_TICKS;
         if (apart < 1.0) {
             MechPose walk = MechWalk.pose(mech.id(), 0.0F);
-            parts(painter, walk != null ? walk : scripted(MechScript.Stage.of(mech), clock), clock, apart, false,
-                    walk != null, null);
+            parts(painter, mech.id(), walk != null ? walk : scripted(MechScript.Stage.of(mech), clock), clock, apart,
+                    false, walk != null, null);
         }
     }
 
@@ -111,7 +113,7 @@ public final class MechPainter {
         return pose;
     }
 
-    private static void parts(LanternPainter painter, MechPose pose, double t, double apart, boolean own,
+    private static void parts(LanternPainter painter, int id, MechPose pose, double t, double apart, boolean own,
             boolean walking, @Nullable Entity caught) {
         Material was = painter.material();
         painter.material(LanternPainter.MECH_LIGHT);
@@ -128,7 +130,7 @@ public final class MechPainter {
                 lowerLeg(painter, pose.stage(), pose.ankle[side], right, t, apart, seed);
                 upperLeg(painter, pose.stage(), right, t, apart, seed + PIECES);
             }
-            arm(painter, pose, right, t, apart, seed + PIECES * 3, walking, right ? caught : null);
+            arm(painter, id, pose, right, t, apart, seed + PIECES * 3, walking, right ? caught : null);
             shoulder(painter, pose.torso(), right, t, apart, seed + PIECES * 8);
         }
         body(painter, pose, t, apart, own);
@@ -260,15 +262,24 @@ public final class MechPainter {
         painter.noClip();
     }
 
-    private static void arm(LanternPainter painter, MechPose pose, boolean right, double t, double apart, int seed,
-            boolean walking, @Nullable Entity caught) {
+    private static void arm(LanternPainter painter, int id, MechPose pose, boolean right, double t, double apart,
+            int seed, boolean walking, @Nullable Entity caught) {
         if (t < MechScript.ARMS_FORM) {
             return;
         }
         MechScript.Stage stage = pose.torso();
-        float partialTick = Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(false);
-        MechMoves.Arm arm = walking ? pose.arm(right, t, caught == null ? null : held(caught, partialTick))
+        Minecraft minecraft = Minecraft.getInstance();
+        float partialTick = minecraft.getTimer().getGameTimeDeltaPartialTick(false);
+        // Built and whole, an arm stays out of the blocks round it; climbing, its hands rest on the ledge.
+        boolean touches = walking && apart < 0.0 && minecraft.level != null;
+        Vec3 spot = pose.ledge[right ? 0 : 1];
+        MechHandRig.Ground ledge = touches && pose.climbing() && spot != null
+                && MechTouch.near(minecraft.level, spot, FINGERS_REACH + 1.0) ? MechTouch::depth : null;
+        MechMoves.Arm arm = walking ? pose.arm(right, t, caught == null ? null : held(caught, partialTick), ledge)
                 : MechMoves.arm(right, stage, t);
+        if (touches && !pose.climbing()) {
+            arm = MechTouch.clear(minecraft.level, id, stage, arm, right, t);
+        }
         Frame hand = Frame.of(stage.point(arm.elbow()), stage.dir(arm.palm()), stage.dir(arm.way()), 1.0);
         double grown = Mth.clamp((t - MechScript.ARMS_FORM) / (MechScript.ARMS_IN - MechScript.ARMS_FORM), 0.0, 1.0);
         if (grown < 1.0 && apart < 0.0) {
@@ -284,7 +295,11 @@ public final class MechPainter {
         boolean clapping = !walking && t > MechScript.SWING && t < MechScript.RISE;
         Vec3 side = right ? stage.right() : stage.right().scale(-1.0);
         double[] wall = clapping ? MechHandRig.wall(hand, stage.base(), side) : null;
-        fingers(painter, hand, arm, own, apart, seed + 10, wall, caught == null ? null : drawn(caught, partialTick));
+        // Its fingers rest on the blocks round the hand, and wrap round what a gripping hand holds.
+        MechHandRig.Ground ground = touches && MechTouch.near(minecraft.level, hand.at(0.0, MechArmShapes.KNUCKLES,
+                0.0), FINGERS_REACH) ? MechTouch::depth : null;
+        fingers(painter, hand, arm, own, apart, seed + 10, wall, caught == null ? null : drawn(caught, partialTick),
+                ground);
         painter.noClip();
         if (BoneView.shown()) {
             BoneView.bone(hand.center(), hand.at(0.0, MechArmShapes.WRIST, 0.0), BoneView.CONSTRUCT);
@@ -310,8 +325,8 @@ public final class MechPainter {
     }
 
     private static void fingers(LanternPainter painter, Frame hand, MechMoves.Arm arm, boolean right, double apart,
-            int seed, @Nullable double[] wall, @Nullable AABB held) {
-        Frame[] bones = MechHandRig.frames(hand, arm, right, wall, held);
+            int seed, @Nullable double[] wall, @Nullable AABB held, @Nullable MechHandRig.Ground ground) {
+        Frame[] bones = MechHandRig.frames(hand, arm, right, wall, held, ground);
         for (int k = 0; k < 4; k++) {
             for (int j = 0; j < 3; j++) {
                 Shape segment = right ? MechArmShapes.FINGERS[k][j] : MechArmShapes.FINGERS_LEFT[k][j];

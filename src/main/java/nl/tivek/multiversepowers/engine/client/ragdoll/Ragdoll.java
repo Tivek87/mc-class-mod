@@ -64,6 +64,8 @@ final class Ragdoll {
     private static final double SLACK = 0.7;
     private static final double SLACK_STILL = 2.0;
     private static final double DRAW_BACK = 0.3;
+    // Lying still, it looks this often (ticks) whether what it lies on is still there.
+    private static final int PROBE_EVERY = 10;
 
     // Scratch for drawing, which only ever happens on the render thread.
     private static final Matrix4f FRAME = new Matrix4f();
@@ -128,9 +130,25 @@ final class Ragdoll {
     // Where its boxes lie among every body's this tick (RagdollCrowd).
     int crowdFrom;
     int crowdTo;
-    // The body as it lay when it began to get up; a person gets up by way of one knee (GetUp).
+    // Dead: ticks its trunk or head has lain on something, and how often it was made to give way again as it came to
+    // rest still standing (RagdollFalls).
+    int rested;
+    int slumps;
+    // Dead: the push every part was given as it went limp (its creature's own), whether the blow that killed it has
+    // pushed it yet or a blast threw it, and the tick it tips over to a side of its own if no word of a blow comes.
+    Vec3 built = Vec3.ZERO;
+    boolean struck;
+    boolean blasted;
+    int toppleAt = -1;
+    double toppleYaw;
+    boolean stiff;
+    // The head's part, -1 without one.
+    final int head;
+    // The body as it lay when it began to get up, and the way it faces as it rises; a person gets up by way of one
+    // knee (GetUp).
     @Nullable
     private double[] lay;
+    float riseYaw;
     private final boolean person;
     private boolean leapt;
     final double[] was;
@@ -150,6 +168,11 @@ final class Ragdoll {
         this.core = core;
         this.state = state;
         this.person = GetUp.person(model, parts);
+        int headAt = -1;
+        for (int i = 0; i < parts.size() && headAt < 0; i++) {
+            headAt = i != core && parts.get(i).role() == ModelParts.Role.HEAD ? i : -1;
+        }
+        this.head = headAt;
         boolean[] inside = new boolean[parts.size()];
         ModelPart trunk = parts.get(core).part();
         for (int i = 0; i < parts.size(); i++) {
@@ -192,35 +215,11 @@ final class Ragdoll {
         out.setFromNormalized(m);
     }
 
-    // Sets every part turning by (wx, wy, wz) radians per second about a line through `pivot`, as one rigid body would.
-    void tip(double wx, double wy, double wz, Vec3 pivot) {
-        double[] v = new double[6];
-        double[] at = new double[7];
-        for (int i = 0; i < this.world.count(); i++) {
-            this.world.velocity(i, v);
-            this.world.pose(i, at);
-            double rx = at[0] - pivot.x;
-            double ry = at[1] - pivot.y;
-            double rz = at[2] - pivot.z;
-            this.world.velocity(i, v[0] + wy * rz - wz * ry, v[1] + wz * rx - wx * rz,
-                    v[2] + wx * ry - wy * rx, v[3] + wx, v[4] + wy, v[5] + wz);
-        }
-    }
-
-    // As it dies its limbs give way, folding the way the body falls (about the level line (ax, az)), each a little
-    // differently: legs standing straight under a body would hold it up like a table's.
-    void giveWay(RandomSource random, double ax, double az, double speed) {
-        double[] v = new double[6];
-        for (int i = 0; i < this.world.count(); i++) {
-            if (i == this.body[this.core]) {
-                continue;
-            }
-            double along = speed * (0.7 + 0.6 * random.nextDouble());
-            double across = speed * 0.25 * random.nextGaussian();
-            this.world.velocity(i, v);
-            this.world.velocity(i, v[0], v[1], v[2], v[3] + ax * along - az * across, v[4],
-                    v[5] + az * along + ax * across);
-        }
+    // Whether its trunk or head rests on something: lying, not standing, kneeling or sitting up on its limbs.
+    boolean slumped() {
+        return this.world.touching(this.body[this.core])
+                || this.lower[this.core] >= 0 && this.world.touching(this.lower[this.core])
+                || this.head >= 0 && this.world.touching(this.body[this.head]);
     }
 
     // Carries the core along with its creature over the coming step, as the creature moves this tick; `smooth`
@@ -296,6 +295,7 @@ final class Ragdoll {
                     v[3] + random.nextGaussian() * own * SPIN, v[4] + random.nextGaussian() * own * SPIN,
                     v[5] + random.nextGaussian() * own * SPIN);
         }
+        this.blasted = true;
         this.world.wake();
     }
 
@@ -359,12 +359,25 @@ final class Ragdoll {
         this.world.wake();
     }
 
-    // Lain long enough: it gets up from just the way it lies.
+    // Lain long enough: it gets up from just the way it lies, facing the way it rises (riseYaw).
     void getUp() {
         this.phase = Phase.UP;
         this.up = 0;
         this.lay = this.now.clone();
         System.arraycopy(this.now, 0, this.was, 0, this.now.length);
+        this.riseYaw = rising(this.lay, this.core * 7 + 3, this.entity.yBodyRot);
+    }
+
+    // The way (the game's degrees) a body lying with its trunk turned by the quaternion at lay[o] faces as it rises:
+    // from its front towards where its head lies, from its back towards its feet, from its side the way its chest
+    // faces; `own` when it lies no way in particular.
+    static float rising(double[] lay, int o, float own) {
+        Quaterniond trunk = new Quaterniond(lay[o], lay[o + 1], lay[o + 2], lay[o + 3]);
+        Vector3d head = trunk.transform(new Vector3d(0.0, -1.0, 0.0));
+        Vector3d chest = trunk.transform(new Vector3d(0.0, 0.0, -1.0));
+        double x = chest.y < -0.5 ? head.x : chest.y > 0.5 ? -head.x : chest.x;
+        double z = chest.y < -0.5 ? head.z : chest.y > 0.5 ? -head.z : chest.z;
+        return x * x + z * z < 0.04 ? own : (float) Math.toDegrees(Math.atan2(-x, z));
     }
 
     boolean person() {
@@ -378,7 +391,12 @@ final class Ragdoll {
             this.age++;
             return;
         }
-        this.world.step(TICK, substeps, blocks);
+        if (!this.world.sleeping()) {
+            this.world.step(TICK, substeps, blocks);
+        } else if (this.age % PROBE_EVERY == 0) {
+            // Stepped once: kept only if it wakes.
+            this.world.probe(TICK, substeps, blocks);
+        }
         this.remember(this.now);
         if (this.leapt) {
             System.arraycopy(this.now, 0, this.was, 0, this.now.length);
@@ -458,10 +476,10 @@ final class Ragdoll {
             GetUp.person(this.hanging, this.parts, this.bends, u, LIE_POS, LIE_ROT, LIE_KNEE, OWN_POS, OWN_ROT,
                     OWN_KNEE, OUT_POS, OUT_ROT, OUT_KNEE);
         } else {
-            float w = rising ? GetUp.limp((float) Math.min(1.0, (this.up + partialTick) / GetUp.OTHER_TICKS))
-                    : (float) Math.max(0.0, Math.min(1.0, this.limp));
-            GetUp.blend(this.hanging, OWN_POS, OWN_ROT, OWN_KNEE, LIE_POS, LIE_ROT, LIE_KNEE, w, OUT_POS, OUT_ROT,
-                    OUT_KNEE);
+            float u = (float) Math.min(1.0, (this.up + partialTick) / GetUp.OTHER_TICKS);
+            float w = rising ? GetUp.limp(u) : (float) Math.max(0.0, Math.min(1.0, this.limp));
+            GetUp.blend(this.hanging, OWN_POS, OWN_ROT, OWN_KNEE, LIE_POS, LIE_ROT, LIE_KNEE, w,
+                    rising ? GetUp.limbsLimp(u) : w, OUT_POS, OUT_ROT, OUT_KNEE);
         }
         for (int i = 0; i < n; i++) {
             ModelParts.Part part = this.parts.get(i);

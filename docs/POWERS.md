@@ -839,13 +839,18 @@ Green Lantern's ultimate: a big, slow gunship of hard light high over the battle
 - **Walking.** Now you walk it: **W** walks it forward, **S** backs it up, **A** and **D** step it to the side; hold
   your **sprint key** with W and it **runs**, nearly four times as fast: much longer strides, the knees higher, the
   body leaning in and the arms pumping. A note above the hotbar says so as you take over. Its body follows where you
-  look: the torso swings round on its hips with weight, overshooting a little and settling; standing still, the legs
-  only step round once you look more than about 55 degrees aside, then all the way; the head turns and tilts to look where you
-  look before the body catches up. It gets going and slows down with its weight. Each foot stays planted where it came down until its turn to step:
+  look: the torso swings round on its hips quickly, with weight, overshooting a little and settling; standing still,
+  the torso twists up to about 100 degrees over the legs, and the legs only step round once you look more than about
+  90 degrees aside, then all the way and briskly; the head turns and tilts to look where you look before the body
+  catches up. It gets going and slows down with its weight. Each foot stays planted where it came down until its turn to step:
   the heel lifts, the leg swings through with the knee bent and the foot comes down with a thump that shakes the
   ground, throws up dust and spreads a ring of light. The body bobs, sways over the leg it stands on and twists
-  with the stride, the arms swing against the legs, and turning on the spot it steps round on its feet. It climbs
-  steps and slopes up to 3 blocks, wades through trees and plants, walks over water, and stops at walls and cliffs.
+  with the stride, the arms swing against the legs, and turning on the spot it steps round on its feet. Its arms
+  never pass through walls or the ground: an arm folds at the elbow and lifts out of the way, and eases back down
+  after; its fingers rest on what they touch. It climbs steps and slopes up to 3 blocks, wades through trees and
+  plants, walks over water, and stops at walls and cliffs. Walk it straight at a ledge too high to step onto,
+  looking at it, for **2 seconds** and it climbs it: only then its hands reach up and grab the top, their fingers
+  closing on the edge, and it hauls itself up and over.
 - **In the cockpit.** You push and pull the two levers as you walk and turn: both forward to walk, one forward and
   one back to turn. Standing still you reach over to the console now and then and press a button, which lights up.
   In first person you look out through the round glass port in its chest, with a clear view ahead; in third person the camera stands back
@@ -1483,8 +1488,8 @@ There are two kinds of settings:
   - **View:** camera shake, scraping shake, screen flashes and filming your own mech.
   - **Effects & particles:** how many particles the powers throw up, and how much detail the biggest effects have
     (low, medium, full).
-  - **Bodies:** limp bodies on or off, how many at once, how far away, how long a body stays, feet on the ground,
-    and capes of cloth.
+  - **Bodies:** limp bodies on or off, how many at once, how far away, how long a body lies before it sinks away (at
+    least 5 seconds on the ground), feet on the ground, and capes of cloth.
   - **Sound:** the menu theme.
   - **Updates:** how often the game looks for a new version, and how long the note about one stays on screen.
 

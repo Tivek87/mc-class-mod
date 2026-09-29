@@ -23,35 +23,37 @@ import nl.tivek.multiversepowers.character.greenlantern.mech.MechScript;
 // It stands on whatever its feet find, so a hole narrower than its stance never drops it in. It steps up no higher than
 // its legs can, never walks off a drop too deep to see the bottom of or down into a hole its cockpit would not fit in,
 // and stops where its cockpit would run into blocks (unless it already stands among them, so it can always get out).
-// Held against a ledge too high to step onto, it climbs it (MechClimb).
+// Walked against a ledge too high to step onto for 2 seconds, its pilot looking at it, it climbs it (MechClimb).
 public final class MechDrive {
     public static final double WALK = 0.2;
     // The sprint key held with W runs: two and a half times as fast, working up to it slowly.
     public static final double RUN = 0.5;
     private static final double RUN_UP = 0.018;
     // Standing still, the legs step round only when the look is this far (degrees)
-    // off where they face.
-    private static final double STEP_ROUND = 55.0;
-    public static final double TURN = Math.toRadians(3.0);
-    private static final double TURN_DEGREES = 3.0;
+    // off where they face: the torso twists that far over them first.
+    private static final double STEP_ROUND = 90.0;
+    private static final double TURN_DEGREES = 5.5;
+    public static final double TURN = Math.toRadians(TURN_DEGREES);
     // How much of the way still to turn the legs take on each tick, and how near
     // they count as there.
-    private static final double TURN_GAIN = 0.12;
+    private static final double TURN_GAIN = 0.2;
     private static final double SETTLED_DEGREES = 1.5;
     private static final double SIDESTEP = 0.1;
     private static final double BACK = 0.11;
     private static final double SPEED_UP = 0.012;
     private static final double SLOW_DOWN = 0.024;
-    private static final double TURN_UP = Math.toRadians(0.35);
+    private static final double TURN_UP = Math.toRadians(0.8);
     // The highest step its legs take; a ledge higher than that it climbs.
     static final double STEP_UP = 2.6;
     private static final double CLIMB = 0.3;
     private static final double FALL = 0.06;
     private static final double FASTEST_FALL = 1.2;
     private static final double MOVED = 1.0E-5;
-    // How far ahead of an ankle its foot meets a wall, and how many ticks it must be held against a ledge to climb it.
+    // How far ahead of an ankle its foot meets a wall, and how many ticks (2 seconds) it must be walked against a ledge,
+    // its pilot looking at it (no further off than FACING degrees), before it climbs it.
     private static final double TOE = MechGround.SOLE_AHEAD + 0.6;
-    private static final int CLIMB_AFTER = 6;
+    private static final int CLIMB_AFTER = 40;
+    private static final double FACING = 45.0;
 
     private static int mech = -1;
     private static Vec3 base = Vec3.ZERO;
@@ -146,7 +148,7 @@ public final class MechDrive {
                 ground = MechGround.support(level, stage, top);
             }
         }
-        pressed = ahead && against ? pressed + 1 : 0;
+        pressed = ahead && against && Math.abs(behind) < FACING ? pressed + 1 : 0;
         if (pressed >= CLIMB_AFTER && climb(player, stage)) {
             return;
         }

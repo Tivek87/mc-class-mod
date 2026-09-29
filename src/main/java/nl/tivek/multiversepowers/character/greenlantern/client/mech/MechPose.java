@@ -159,15 +159,25 @@ public final class MechPose {
         return this.blow;
     }
 
+    // Whether its hands reach for or hold a ledge it climbs.
+    boolean climbing() {
+        return this.hold > 0.0 && this.ledge[0] != null;
+    }
+
     // One arm as the walk swings it, taken over by a blow while one is struck or by the ledge it climbs (at `t` of the
     // build, past its end).
     public MechMoves.Arm arm(boolean right, double t, @Nullable MechAttacks.Held held) {
+        return this.arm(right, t, held, null);
+    }
+
+    // As above, a hand on the ledge resting on its top when the blocks round it are known.
+    MechMoves.Arm arm(boolean right, double t, @Nullable MechAttacks.Held held, @Nullable MechHandRig.Ground ledge) {
         // Running, the forearms come up a little and swing instead of hanging.
         double hang = this.walking * (1.0 - 0.5 * this.running);
         MechMoves.Arm arm = MechMoves.walking(right, t, this.swing, hang);
         Vec3 spot = this.ledge[right ? 0 : 1];
         if (this.hold > 0.0 && spot != null) {
-            return MechClimb.arm(arm, this.torso, right, spot, this.wall, this.hold);
+            return MechClimb.laid(arm, this.torso, right, spot, this.wall, this.hold, ledge);
         }
         if (!this.blow.striking()) {
             return arm;

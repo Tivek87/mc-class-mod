@@ -32,6 +32,8 @@ final class MechHandRig {
     static final Rig FREE_LEFT = rig(-1.0, false);
     static final int THUMB_BONE = 12;
     static final double TOUCH = 0.02;
+    // A hand curled this far or more grips: it closes on what it touches.
+    static final double GRIP = 0.65;
     private static final int STEPS = 12;
     // The palm block with the plate on its inside, and each finger block's half thickness.
     private static final double[] PALM = { 0.0, (WRIST - 0.05 + KNUCKLES) * 0.5, 0.04, 0.64,
@@ -91,24 +93,126 @@ final class MechHandRig {
     }
 
     static Frame[] frames(Frame hand, MechMoves.Arm arm, boolean right) {
-        return frames(hand, arm, right, null, null);
+        return frames(hand, arm, right, null, null, null);
     }
 
     // With a wall (see wall()), no finger or thumb reaches past the plane between two clapping hands; with a held
-    // creature's box (in the world), each opens only as far as it takes to rest on its skin.
+    // creature's box (in the world), each opens only as far as it takes to rest on its skin; with the ground round
+    // the hand, none goes into it (see posed()).
     static Frame[] frames(Frame hand, MechMoves.Arm arm, boolean right, @Nullable double[] wall,
-            @Nullable AABB held) {
+            @Nullable AABB held, @Nullable Ground ground) {
         Rig rig = right ? RIGHT : LEFT;
         Frame[] frames = new Frame[rig.size()];
+        RigFrames.pose(rig, posed(hand, arm, right, wall, held, ground), hand, frames, true);
+        return frames;
+    }
+
+    // How deep a ball of `radius` at a point in the world lies in the blocks round a hand: 0 or less when clear.
+    @FunctionalInterface
+    interface Ground {
+        double depth(double x, double y, double z, double radius);
+    }
+
+    // The fingers' angles, settled. Against the ground each finger and the thumb open, from the tip back, only as far
+    // as it takes to rest on it; a gripping hand (curled past GRIP) that would close on the ground closes all the way
+    // first, so its fingers wrap round the ledge or edge it holds instead of standing stiff.
+    static RigPose posed(Frame hand, MechMoves.Arm arm, boolean right, @Nullable double[] wall, @Nullable AABB held,
+            @Nullable Ground ground) {
+        Rig rig = right ? RIGHT : LEFT;
         RigPose pose = settled(arm, right);
+        if (ground != null && arm.curl() >= GRIP && arm.curl() < 1.0) {
+            RigPose fist = settled(fist(arm), right);
+            double[] space = RigSpace.create(rig);
+            RigSpace.pose(rig, fist, space);
+            if (groundDepth(space, hand, ground) > TOUCH) {
+                pose = fist;
+            }
+        }
         if (wall != null) {
             stopAt(pose, rig, right, wall);
         }
         if (held != null) {
             stopOn(pose, rig, hand, held);
         }
-        RigFrames.pose(rig, pose, hand, frames, true);
-        return frames;
+        if (ground != null) {
+            stopIn(pose, rig, hand, right, ground);
+        }
+        return pose;
+    }
+
+    // How deep the posed fingers and thumb still go into the ground: 0 or less once they rest on it.
+    static double rest(Frame hand, MechMoves.Arm arm, boolean right, Ground ground) {
+        Rig rig = right ? RIGHT : LEFT;
+        double[] space = RigSpace.create(rig);
+        RigSpace.pose(rig, posed(hand, arm, right, null, null, ground), space);
+        return groundDepth(space, hand, ground);
+    }
+
+    private static MechMoves.Arm fist(MechMoves.Arm arm) {
+        return new MechMoves.Arm(arm.elbow(), arm.way(), arm.palm(), 1.0, arm.spread(), arm.upper());
+    }
+
+    // Each finger, from its tip back, and the thumb open only as far as it takes to rest on the ground; a finger that
+    // cannot get out that way relaxes as a whole.
+    private static void stopIn(RigPose angles, Rig rig, Frame hand, boolean right, Ground ground) {
+        double[] space = RigSpace.create(rig);
+        RigSpace.pose(rig, angles, space);
+        if (groundDepth(space, hand, ground) <= TOUCH) {
+            return;
+        }
+        for (int k = 0; k < 4; k++) {
+            int finger = k;
+            for (int j = 2; j >= 0; j--) {
+                int from = j;
+                Settle.back(rig, angles, bone(k, j), BEND_TURNS[j], 0.0, space,
+                        s -> fingerDepth(s, hand, ground, finger, from), TOUCH, STEPS);
+            }
+            Settle.ease(rig, angles, new int[] { bone(k, 0), bone(k, 1), bone(k, 2) }, BEND_TURNS, OPEN, space,
+                    s -> fingerDepth(s, hand, ground, finger, 0), TOUCH, STEPS);
+        }
+        for (int j = 2; j >= 1; j--) {
+            int from = j;
+            Settle.back(rig, angles, bone(4, j), 0, 0.0, space, s -> fingerDepth(s, hand, ground, 4, from), TOUCH,
+                    STEPS);
+        }
+        Settle.Depth thumb = s -> fingerDepth(s, hand, ground, 4, 0);
+        Settle.back(rig, angles, THUMB_BONE, 1, 0.0, space, thumb, TOUCH, STEPS);
+        Settle.back(rig, angles, THUMB_BONE, 0, right ? -1.2 : 1.2, space, thumb, TOUCH, STEPS);
+        Settle.ease(rig, angles, new int[] { THUMB_BONE, THUMB_BONE, bone(4, 1), bone(4, 2) },
+                new int[] { 0, 1, 0, 0 }, new double[] { right ? -1.2 : 1.2, 0.0, 0.0, 0.0 }, space, thumb, TOUCH,
+                STEPS);
+    }
+
+    private static double groundDepth(double[] space, Frame hand, Ground ground) {
+        double deepest = Double.NEGATIVE_INFINITY;
+        for (int k = 0; k < 5; k++) {
+            deepest = Math.max(deepest, fingerDepth(space, hand, ground, k, 0));
+        }
+        return deepest;
+    }
+
+    // How deep a finger's bones from `from` to its tip go into the ground, their thickness counted.
+    private static double fingerDepth(double[] space, Frame hand, Ground ground, int k, int from) {
+        double radius = (k < 4 ? FINGER : THUMB) * hand.scale();
+        double s = hand.scale();
+        Vec3 c = hand.center();
+        Vec3 r = hand.right();
+        Vec3 u = hand.up();
+        Vec3 f = hand.forward();
+        double deepest = Double.NEGATIVE_INFINITY;
+        for (int j = from; j < 3; j++) {
+            int o = bone(k, j) * RigSpace.STRIDE;
+            double length = length(k, j);
+            for (int i = 0; i <= 4; i++) {
+                double along = length * i / 4.0;
+                double x = (space[o] + space[o + 6] * along) * s;
+                double y = (space[o + 1] + space[o + 7] * along) * s;
+                double z = (space[o + 2] + space[o + 8] * along) * s;
+                deepest = Math.max(deepest, ground.depth(c.x + r.x * x + u.x * y + f.x * z,
+                        c.y + r.y * x + u.y * y + f.y * z, c.z + r.z * x + u.z * y + f.z * z, radius));
+            }
+        }
+        return deepest / s;
     }
 
     private static void stopOn(RigPose angles, Rig rig, Frame hand, AABB held) {

@@ -1,9 +1,11 @@
 package nl.tivek.multiversepowers.engine.client.ragdoll;
 
 import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.IntPredicate;
+import javax.annotation.Nullable;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
@@ -33,14 +35,32 @@ final class RagdollCauses {
     // A blast's middle is often still in the blocks it breaks: what shields a body is looked for from this far out.
     private static final double BLAST_CORE = 0.8;
     private static final double FASTEST = 40.0;
+    // How long word of a killing blow is kept for a body that has not gone limp yet, and how long after it went limp
+    // a body is still pushed by word that comes late (ticks).
+    static final int BLOW_TICKS = 4;
 
     private static final Int2IntOpenHashMap BLOWN_AT = new Int2IntOpenHashMap();
     private static final List<Blast> BLASTS = new ArrayList<>();
+    private static final Int2ObjectOpenHashMap<Blow> BLOWS = new Int2ObjectOpenHashMap<>();
 
     private RagdollCauses() {
     }
 
     private record Blast(Vec3 center, double power, int tick) {
+    }
+
+    // The blow that killed a creature, as the server tells it: from where (null: from nowhere in particular), how hard
+    // it pushed (blocks a tick) and when word came.
+    record Blow(@Nullable Vec3 from, Vec3 push, int tick) {
+    }
+
+    static void told(int entity, Blow blow) {
+        BLOWS.put(entity, blow);
+    }
+
+    @Nullable
+    static Blow blow(int entity) {
+        return BLOWS.get(entity);
     }
 
     // Remembers a blast at tick `now` and marks the creatures it pushes hard enough to fly limp (`free`: not limp yet).
@@ -102,11 +122,13 @@ final class RagdollCauses {
     static void forget(int now) {
         BLASTS.removeIf(blast -> now - blast.tick() > BLAST_TICKS);
         BLOWN_AT.int2IntEntrySet().removeIf(entry -> now - entry.getIntValue() > BLAST_TICKS);
+        BLOWS.values().removeIf(blow -> now - blow.tick() > BLOW_TICKS);
     }
 
     static void clear() {
         BLASTS.clear();
         BLOWN_AT.clear();
+        BLOWS.clear();
     }
 
     // Only a creature drawn at its true size and shape can go limp: not one squashed or stretched by some effect.

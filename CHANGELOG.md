@@ -3,6 +3,32 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.5.0-alpha] - 2026-09-29
+
+### Added
+- **Kill confirmation:** when you kill something, a small red cross flicks out round your crosshair with a soft thud,
+  as in Red Dead Redemption 2. Only you see and hear it.
+- **Bodies:** a body falls the way the blow that killed it pushed it, hardest where it was struck (a sword blow, a
+  giant hand's blast), instead of falling over at random.
+- **Hard-Light Mech:** its arms never pass through walls or the ground: an arm folds at the elbow and lifts out of the
+  way, and its fingers rest on what they touch.
+- **Hard-Light Mech:** climbing, its hands really grab the ledge: palms down, fingers closing on the top and edge.
+
+### Changed
+- **Bodies:** a body sinks away only after lying at least 5 seconds on the ground; the "Body stays" setting counts from
+  when it comes to lie (at least 5 seconds).
+- **Bodies:** getting up is smoother: a creature rises facing the way it lies, without turning on the ground, and goes
+  from lying through kneeling to standing in one flowing move.
+- **Hard-Light Mech:** its body and legs turn faster, and standing still the torso twists up to about 100 degrees
+  before the legs step round (they now wait until you look 90 degrees aside, was 55).
+- **Hard-Light Mech:** it climbs a ledge only after you walk it straight at it, looking at it, for 2 seconds; its hands
+  reach for the ledge only then.
+
+### Fixed
+- **Bodies:** a body left standing or hanging still after death: one that comes to rest standing gives way again, and a
+  body lying on a block that is broken falls again.
+- **Bodies:** bodies falling fast no longer sink through the floor, and no longer bounce up and down like a ball.
+
 ## [0.4.9-alpha] - 2026-09-29
 
 ### Added

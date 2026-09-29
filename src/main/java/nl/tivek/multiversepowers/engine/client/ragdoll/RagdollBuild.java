@@ -24,6 +24,8 @@ import org.joml.Vector3f;
 // limb reaches as far as a body's does from where it hangs at rest, whatever pose it went limp in.
 final class RagdollBuild {
     private static final double DENSITY = 100.0;
+    // How much faster a part stops turning while it touches the ground or another body (per second).
+    private static final double CONTACT_DAMPING = 25.0;
     // How deep a limb may already lie in another part as the body is built before it is no longer kept out of it.
     private static final double TOUCHING = 0.01;
     // How far a limp trunk leans out to its side at the waist and twists there, either way (radians).
@@ -137,6 +139,7 @@ final class RagdollBuild {
         RigidWorld world = ragdoll.world;
         world.friction = 0.8;
         world.angularDamping = 1.6;
+        world.contactDamping = CONTACT_DAMPING;
         Quaterniond turn = new Quaterniond();
         double[] vel = { velocity.x, velocity.y, velocity.z };
         double[][] kneeHang = new double[n][];

@@ -10,13 +10,21 @@ import java.util.List;
 public final class RigidWorld extends RigidCrowd {
     // No part ever moves faster than this (blocks per second), whatever goes wrong: a body never flies off.
     private static final double FASTEST = 80.0;
+    // Nor turns faster than this (radians per second): a rigid box coming down hard on one corner takes the whole blow
+    // as spin and cartwheels off, where flesh gives.
+    private static final double MOST_SPIN = 20.0;
     // Sleeps once no part got further than this (blocks, its far corners too) from where it was QUIET_STEPS steps
     // ago: a body lying all but still that only trembles or creeps a hair is let sleep.
     private static final double STILL = 0.05;
     private static final int QUIET_STEPS = 12;
+    // A sleeping world stepped once to see whether it still rests on something wakes up when a part got further than
+    // this (blocks): falling for a step from rest goes several times as far.
+    private static final double SLIPPED = 0.01;
 
     private final double[] sx = new double[MOST * 3];
     private final double[] sq = new double[MOST * 4];
+    private final double[] keptX = new double[MOST * 3];
+    private final double[] keptQ = new double[MOST * 4];
     private final List<Constraint> constraints = new ArrayList<>();
     private int quiet;
     private boolean sleeping;
@@ -112,6 +120,32 @@ public final class RigidWorld extends RigidCrowd {
             }
         }
         return false;
+    }
+
+    // Whether body b touched a block or another body in the last substep.
+    public boolean touching(int b) {
+        return this.contacts[b] > 0;
+    }
+
+    // A sleeping world looks whether it still rests on something (the block under it may have been broken): it takes
+    // one step, and wakes if anything slipped; else it is put back as it lay and sleeps on.
+    public void probe(double dt, int substeps, Blocks world) {
+        if (!this.sleeping || this.count == 0) {
+            return;
+        }
+        System.arraycopy(this.x, 0, this.keptX, 0, this.count * 3);
+        System.arraycopy(this.q, 0, this.keptQ, 0, this.count * 4);
+        this.wake();
+        this.step(dt, substeps, world);
+        if (this.moved() > SLIPPED) {
+            return;
+        }
+        System.arraycopy(this.keptX, 0, this.x, 0, this.count * 3);
+        System.arraycopy(this.keptQ, 0, this.q, 0, this.count * 4);
+        Arrays.fill(this.v, 0, this.count * 3, 0.0);
+        Arrays.fill(this.w, 0, this.count * 3, 0.0);
+        this.sleeping = true;
+        this.quiet = QUIET_STEPS;
     }
 
     // Position then orientation of body b: x, y, z, qx, qy, qz, qw.
@@ -221,7 +255,8 @@ public final class RigidWorld extends RigidCrowd {
         Quat.velocity(this.q, b * 4, this.pq, b * 4, h, this.w, o);
         this.unbounce(b);
         double keep = Math.max(0.0, 1.0 - this.linearDamping * h);
-        double turn = Math.max(0.0, 1.0 - this.angularDamping * h);
+        double turn = Math.max(0.0, 1.0 - (this.angularDamping + (this.contacts[b] > 0 ? this.contactDamping : 0.0))
+                * h);
         for (int i = 0; i < 3; i++) {
             this.v[o + i] *= keep;
             this.w[o + i] *= turn;
@@ -232,6 +267,13 @@ public final class RigidWorld extends RigidCrowd {
             this.v[o] *= scale;
             this.v[o + 1] *= scale;
             this.v[o + 2] *= scale;
+        }
+        double spin = Math.sqrt(this.w[o] * this.w[o] + this.w[o + 1] * this.w[o + 1] + this.w[o + 2] * this.w[o + 2]);
+        if (spin > MOST_SPIN) {
+            double scale = MOST_SPIN / spin;
+            this.w[o] *= scale;
+            this.w[o + 1] *= scale;
+            this.w[o + 2] *= scale;
         }
     }
 

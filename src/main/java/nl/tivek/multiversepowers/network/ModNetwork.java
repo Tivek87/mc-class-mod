@@ -46,12 +46,14 @@ import nl.tivek.multiversepowers.classes.ceremony.Ceremonies;
 import nl.tivek.multiversepowers.config.WorldSettings;
 import nl.tivek.multiversepowers.config.WorldSettingsEditPayload;
 import nl.tivek.multiversepowers.config.WorldSettingsPayload;
+import nl.tivek.multiversepowers.engine.entity.DeathBlowPayload;
 import nl.tivek.multiversepowers.engine.entity.DeathStylePayload;
 import nl.tivek.multiversepowers.engine.entity.HeldPayload;
 import nl.tivek.multiversepowers.engine.entity.KnockdownPayload;
 import nl.tivek.multiversepowers.engine.fx.ParticlesPayload;
 import nl.tivek.multiversepowers.engine.fx.VoicePayload;
 import nl.tivek.multiversepowers.faction.StandingsPayload;
+import nl.tivek.multiversepowers.killconfirm.KillConfirmPayload;
 import nl.tivek.multiversepowers.network.client.ClientPayloadHandler;
 import nl.tivek.multiversepowers.spell.CastSpellPayload;
 import nl.tivek.multiversepowers.spell.ClapPayload;
@@ -63,7 +65,7 @@ import nl.tivek.multiversepowers.spell.dark.VoidStatePayload;
 import nl.tivek.multiversepowers.stamina.StaminaCostPayload;
 
 public final class ModNetwork {
-    private static final String VERSION = "19";
+    private static final String VERSION = "20";
 
     private ModNetwork() {
     }
@@ -90,6 +92,8 @@ public final class ModNetwork {
         registrar.playToClient(HeldPayload.TYPE, HeldPayload.STREAM_CODEC, ModNetwork::onHeld);
         registrar.playToClient(KnockdownPayload.TYPE, KnockdownPayload.STREAM_CODEC, ModNetwork::onKnockdown);
         registrar.playToClient(DeathStylePayload.TYPE, DeathStylePayload.STREAM_CODEC, ModNetwork::onDeathStyle);
+        registrar.playToClient(DeathBlowPayload.TYPE, DeathBlowPayload.STREAM_CODEC, ModNetwork::onDeathBlow);
+        registrar.playToClient(KillConfirmPayload.TYPE, KillConfirmPayload.STREAM_CODEC, ModNetwork::onKillConfirm);
         registrar.playToClient(HandVictimPayload.TYPE, HandVictimPayload.STREAM_CODEC, ModNetwork::onHandVictim);
         registrar.playToClient(RingPayload.TYPE, RingPayload.STREAM_CODEC, ModNetwork::onRing);
         registrar.playToServer(AbilityActionPayload.TYPE, AbilityActionPayload.STREAM_CODEC,
@@ -221,6 +225,14 @@ public final class ModNetwork {
 
     private static void onKnockdown(KnockdownPayload payload, IPayloadContext context) {
         ClientPayloadHandler.handleKnockdown(payload, context);
+    }
+
+    private static void onKillConfirm(KillConfirmPayload payload, IPayloadContext context) {
+        ClientPayloadHandler.handleKillConfirm(payload, context);
+    }
+
+    private static void onDeathBlow(DeathBlowPayload payload, IPayloadContext context) {
+        ClientPayloadHandler.handleDeathBlow(payload, context);
     }
 
     private static void onDeathStyle(DeathStylePayload payload, IPayloadContext context) {

@@ -5,7 +5,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.character.greenlantern.mech.MechAttacks;
+import nl.tivek.multiversepowers.character.greenlantern.mech.MechMoves;
 import nl.tivek.multiversepowers.character.greenlantern.mech.MechScript;
+import nl.tivek.multiversepowers.engine.client.render.ConstructPainter.Frame;
 import org.junit.jupiter.api.Test;
 
 class MechClimbTest {
@@ -18,6 +20,38 @@ class MechClimbTest {
     private static final double ARM = MechScript.UPPER_ARM + MechScript.PALM_ALONG;
 
     // What the pilot's game packs comes out the same in every other game.
+    // Hands laid on a ledge of any height it climbs rest on its top: palms turned down onto it, the fingers in it
+    // nowhere and not standing off it either.
+    @Test
+    void handsOnALedgeRestOnItsTop() {
+        MechScript.Stage torso = MechScript.Stage.facing(new Vec3(0.5, 0.0, 0.5), 0.0F);
+        double face = 2.1;
+        StringBuilder report = new StringBuilder();
+        for (double height : new double[] { 3.0, 4.0, 5.0, 6.5, 8.0, 9.5 }) {
+            MechHandRig.Ground ledge = (x, y, z, radius) -> {
+                double d = y < height && z > face ? -Math.min(height - y, z - face)
+                        : Math.sqrt(Math.pow(Math.max(y - height, 0.0), 2.0) + Math.pow(Math.max(face - z, 0.0), 2.0));
+                return radius - d;
+            };
+            for (boolean right : new boolean[] { true, false }) {
+                Vec3 from = torso.point(MechPainter.side(new Vec3(2.7, 0.0, 0.0), right));
+                Vec3 spot = new Vec3(from.x, height + MechClimb.GRIP_UP, face + 0.3);
+                MechMoves.Arm arm = MechClimb.laid(MechMoves.walking(right, MechScript.SETTLED, 0.0, 0.0), torso,
+                        right, spot, torso.ahead(), 1.0, ledge);
+                Frame hand = Frame.of(torso.point(arm.elbow()), torso.dir(arm.palm()), torso.dir(arm.way()), 1.0);
+                double left = MechHandRig.rest(hand, arm, !right, ledge);
+                double down = torso.dir(arm.palm()).y;
+                double off = hand.at(0.0, MechArmShapes.KNUCKLES, 0.0).y - height;
+                report.append(String.format("height %.1f %s: in %.3f, palm down %.2f, knuckles over the top %.2f%n",
+                        height, right ? "right" : "left", left, down, off));
+                assertTrue(left <= MechHandRig.TOUCH + 0.01, "fingers in the ledge:\n" + report);
+                assertTrue(down < -0.3, "palm not turned down onto the top:\n" + report);
+                assertTrue(off < 1.2, "the hand stands off the top:\n" + report);
+            }
+        }
+        System.out.print(report);
+    }
+
     @Test
     void packedClimbsComeBackTheSame() {
         for (int age = 0; age < 128; age += 9) {

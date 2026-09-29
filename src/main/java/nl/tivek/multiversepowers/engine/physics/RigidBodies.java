@@ -21,6 +21,8 @@ abstract class RigidBodies {
     public double friction = 0.6;
     public double linearDamping = 0.4;
     public double angularDamping = 1.2;
+    // Turning damped harder while touching something: a limp body lands with a thud, it does not roll like a die.
+    public double contactDamping = 0.0;
 
     // A point given in body b's own axes, in the world.
     public void point(int b, double lx, double ly, double lz, double[] out) {

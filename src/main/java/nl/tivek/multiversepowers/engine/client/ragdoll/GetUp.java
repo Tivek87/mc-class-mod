@@ -18,8 +18,8 @@ import org.joml.Vector3f;
 final class GetUp {
     // The most parts a model a ragdoll moves can have.
     static final int MOST = 32;
-    static final int PERSON_TICKS = 32;
-    static final int OTHER_TICKS = 20;
+    static final int PERSON_TICKS = 36;
+    static final int OTHER_TICKS = 24;
     private static final String[] NAMES = { "head", "body", "right_arm", "left_arm", "right_leg", "left_leg" };
     // The kneel, for each part as named above: its turn (x, y, z as a model part turns) and how far its elbow, knee
     // or waist is bent. The hips sink six pixels over the kneeling knee, the chest leans over the forward knee and
@@ -39,9 +39,12 @@ final class GetUp {
     private static final float SHOULDER_X = 5.0F;
     private static final float SHOULDER_Y = 2.0F;
     private static final float HIP_X = 1.9F;
-    // Onto the knee by this far into getting up, and from it to standing from that far on.
-    private static final float KNEELED = 0.45F;
-    private static final float STANDS = 0.52F;
+    // Onto the knee by this far into getting up; it already rises from that far on, so it never stops on the knee.
+    private static final float KNEELED = 0.5F;
+    private static final float STANDS = 0.36F;
+    // Anything else rights its trunk first, its limbs coming under it a little later.
+    private static final float TRUNK_UP = 0.75F;
+    private static final float LIMBS_FROM = 0.15F;
 
     private static final Vector3f[] MID_POS = vectors();
     private static final Quaternionf[] MID_ROT = turns();
@@ -128,9 +131,14 @@ final class GetUp {
         return person ? PERSON_TICKS : OTHER_TICKS;
     }
 
-    // How far from lying (1) to its own pose (0) a creature that is not a person is, `u` into getting up.
+    // How far from lying (1) to its own pose (0) a creature that is not a person is, `u` into getting up: its trunk,
+    // and its limbs.
     static float limp(float u) {
-        return 1.0F - (float) Ease.smoother(u);
+        return 1.0F - (float) Ease.smoother(u / TRUNK_UP);
+    }
+
+    static float limbsLimp(float u) {
+        return 1.0F - (float) Ease.smoother((u - LIMBS_FROM) / (1.0F - LIMBS_FROM));
     }
 
     // A person `u` of the way up (0 to 1), from how it lay (lie*) through the kneel to its own pose (own*); knees as
@@ -189,20 +197,27 @@ final class GetUp {
     static void blend(Body body, Vector3f[] aPos, Quaternionf[] aRot, Quaternionf[] aKnee, Vector3f[] bPos,
             Quaternionf[] bRot, Quaternionf[] bKnee, float w, Vector3f[] outPos, Quaternionf[] outRot,
             Quaternionf[] outKnee) {
+        blend(body, aPos, aRot, aKnee, bPos, bRot, bKnee, w, w, outPos, outRot, outKnee);
+    }
+
+    // As above, the trunk (and its waist) by `trunk` and every other part, in the trunk's frame, by `limbs`.
+    static void blend(Body body, Vector3f[] aPos, Quaternionf[] aRot, Quaternionf[] aKnee, Vector3f[] bPos,
+            Quaternionf[] bRot, Quaternionf[] bKnee, float trunk, float limbs, Vector3f[] outPos,
+            Quaternionf[] outRot, Quaternionf[] outKnee) {
         int core = body.core;
         for (int i = 0; i < body.n; i++) {
-            outKnee[i].set(aKnee[i]).slerp(bKnee[i], w);
+            outKnee[i].set(aKnee[i]).slerp(bKnee[i], i == core ? trunk : limbs);
         }
-        CORE_POS.set(aPos[core]).lerp(bPos[core], w);
-        CORE.set(aRot[core]).slerp(bRot[core], w);
+        CORE_POS.set(aPos[core]).lerp(bPos[core], trunk);
+        CORE.set(aRot[core]).slerp(bRot[core], trunk);
         for (int i = 0; i < body.n; i++) {
             if (i == core) {
                 continue;
             }
             toTrunk(body, i, aPos, aRot, aKnee[core], V, A);
             toTrunk(body, i, bPos, bRot, bKnee[core], W, B);
-            V.lerp(W, w);
-            A.slerp(B, w);
+            V.lerp(W, limbs);
+            A.slerp(B, limbs);
             fromTrunk(body, i, V, A, outKnee[core], outPos[i], outRot[i]);
         }
         outPos[core].set(CORE_POS);

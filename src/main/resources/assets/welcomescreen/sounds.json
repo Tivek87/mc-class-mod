@@ -1,4 +1,12 @@
 {
+  "ui.kill_confirm": {
+    "subtitle": "subtitles.welcomescreen.ui.kill_confirm",
+    "sounds": [
+      {
+        "name": "welcomescreen:ui/kill_confirm"
+      }
+    ]
+  },
   "music.multiverse_theme": {
     "sounds": [
       {

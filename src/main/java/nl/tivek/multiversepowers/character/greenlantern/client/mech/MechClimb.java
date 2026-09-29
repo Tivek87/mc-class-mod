@@ -1,10 +1,12 @@
 package nl.tivek.multiversepowers.character.greenlantern.client.mech;
 
+import javax.annotation.Nullable;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.character.greenlantern.mech.MechMoves;
 import nl.tivek.multiversepowers.character.greenlantern.mech.MechScript;
+import nl.tivek.multiversepowers.engine.client.render.ConstructPainter.Frame;
 import nl.tivek.multiversepowers.engine.math.Ease;
 import nl.tivek.multiversepowers.engine.math.Vectors;
 import nl.tivek.multiversepowers.engine.rig.Ik;
@@ -39,6 +41,12 @@ final class MechClimb {
     private static final int FOOT_SWING = 8;
     private static final double FOOT_CLEAR = 0.9;
     private static final Vec3 ELBOWS = new Vec3(0.8, -0.25, -0.55);
+    // From the palm on along the hand to its knuckles, and how high over the top they rest: their thickness.
+    private static final double KNUCKLES_ON = MechArmShapes.KNUCKLES - MechScript.PALM_ALONG;
+    private static final double KNUCKLE_REST = 0.17;
+    // The palm on the top faces down, a little towards the wall; its fingers settle onto the top in this many tries.
+    private static final double PALM_AHEAD = 0.35;
+    private static final int RESTS = 3;
 
     private MechClimb() {
     }
@@ -211,15 +219,21 @@ final class MechClimb {
     static MechMoves.Arm arm(MechMoves.Arm walking, MechScript.Stage torso, boolean right, Vec3 spot, Vec3 wall,
             double grip) {
         Vec3 shoulder = MechPainter.side(MechScript.SHOULDER, right);
-        Vec3 target = torso.local(spot);
         Vec3 pole = MechPainter.side(ELBOWS, right);
         double[] out = new double[3];
-        Ik.twoBone(new double[] { shoulder.x, shoulder.y, shoulder.z }, new double[] { target.x, target.y, target.z },
-                new double[] { pole.x, pole.y, pole.z }, MechScript.UPPER_ARM, MechScript.PALM_ALONG, out);
-        Vec3 elbow = new Vec3(out[0], out[1], out[2]);
+        Vec3 target = torso.local(spot);
+        Vec3 elbow = reach(shoulder, target, pole, out);
+        // The hand and forearm are one: coming down onto the top, its knuckles reach on past the palm. The hand is
+        // raised till they rest on the top instead of in it, so its fingers can take hold of it.
+        Vec3 knuckles = torso.point(target.add(target.subtract(elbow).normalize().scale(KNUCKLES_ON)));
+        double sunk = spot.y - GRIP_UP + KNUCKLE_REST - knuckles.y;
+        if (sunk > 0.0) {
+            target = torso.local(spot.add(0.0, sunk, 0.0));
+            elbow = reach(shoulder, target, pole, out);
+        }
         Vec3 way = target.subtract(elbow);
         way = way.lengthSqr() < 1.0E-8 ? walking.way() : way.normalize();
-        Vec3 down = torso.local(torso.base().add(wall.subtract(0.0, 0.7, 0.0)));
+        Vec3 down = torso.local(torso.base().add(wall.scale(PALM_AHEAD).subtract(0.0, 1.0, 0.0)));
         MechMoves.Arm held = new MechMoves.Arm(elbow, way, square(down, way), 0.7, 0.25, 1.0);
         if (grip >= 1.0) {
             return held;
@@ -230,6 +244,35 @@ final class MechClimb {
         turned = turned.lengthSqr() < 1.0E-8 ? held.way() : turned.normalize();
         return new MechMoves.Arm(at, turned, square(walking.palm().lerp(held.palm(), grip), turned),
                 Mth.lerp(grip, walking.curl(), held.curl()), Mth.lerp(grip, walking.spread(), held.spread()), 1.0);
+    }
+
+    // As arm(), the hand laid on the top with `ground` round it: raised as far as its fingers, opened as far as they
+    // go, would still reach into it, so they rest on the top.
+    static MechMoves.Arm laid(MechMoves.Arm walking, MechScript.Stage torso, boolean right, Vec3 spot, Vec3 wall,
+            double grip, @Nullable MechHandRig.Ground ground) {
+        MechMoves.Arm arm = arm(walking, torso, right, spot, wall, grip);
+        if (ground == null || grip <= 0.0) {
+            return arm;
+        }
+        double raise = 0.0;
+        for (int i = 0; i < RESTS; i++) {
+            Frame hand = Frame.of(torso.point(arm.elbow()), torso.dir(arm.palm()), torso.dir(arm.way()), 1.0);
+            // Drawn with the other side's bones in its left-handed frame (see MechPainter.arm).
+            double left = MechHandRig.rest(hand, arm, !right, ground);
+            if (left <= MechHandRig.TOUCH) {
+                break;
+            }
+            raise += left;
+            arm = arm(walking, torso, right, spot.add(0.0, raise, 0.0), wall, grip);
+        }
+        return arm;
+    }
+
+    // The elbow of an arm from the shoulder with its palm at the target, bent towards the pole.
+    private static Vec3 reach(Vec3 shoulder, Vec3 target, Vec3 pole, double[] out) {
+        Ik.twoBone(new double[] { shoulder.x, shoulder.y, shoulder.z }, new double[] { target.x, target.y, target.z },
+                new double[] { pole.x, pole.y, pole.z }, MechScript.UPPER_ARM, MechScript.PALM_ALONG, out);
+        return new Vec3(out[0], out[1], out[2]);
     }
 
     private static Vec3 square(Vec3 palm, Vec3 way) {
