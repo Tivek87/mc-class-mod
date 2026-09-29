@@ -3,6 +3,14 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.5.2-alpha] - 2026-09-29
+
+### Fixed
+- **Multiplayer:** sparks, hits and dust of the sword, flight, landing slam, recharge, Void Walk and transforming no
+  longer send a message per particle burst: they go in the one bundle each player gets per tick.
+- **Server:** powers that look far (aiming, targeting, portals, the light bubble) no longer load unloaded parts of the
+  world, which could make the server stall for a moment.
+
 ## [0.5.1-alpha] - 2026-09-29
 
 ### Changed

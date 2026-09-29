@@ -22,6 +22,7 @@ import nl.tivek.multiversepowers.character.greenlantern.ability.ring.Recharge;
 import nl.tivek.multiversepowers.engine.effect.Effect;
 import nl.tivek.multiversepowers.engine.effect.Effects;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
+import nl.tivek.multiversepowers.engine.world.LoadedWorld;
 
 public final class Arrival implements Effect {
     public static final int SET_OFF = 10;
@@ -111,8 +112,8 @@ public final class Arrival implements Effect {
             double distance = NEAR + random.nextDouble() * (FAR - NEAR);
             double rise = LOW + random.nextDouble() * (HIGH - LOW);
             Vec3 at = eye.add(-Math.sin(yaw) * distance, rise, Math.cos(yaw) * distance);
-            BlockHitResult hit = level.clip(new ClipContext(eye, at, ClipContext.Block.VISUAL, ClipContext.Fluid.NONE,
-                    owner));
+            BlockHitResult hit = LoadedWorld.clip(level, new ClipContext(eye, at, ClipContext.Block.VISUAL,
+                    ClipContext.Fluid.NONE, owner));
             if (hit.getType() == HitResult.Type.MISS) {
                 return at;
             }

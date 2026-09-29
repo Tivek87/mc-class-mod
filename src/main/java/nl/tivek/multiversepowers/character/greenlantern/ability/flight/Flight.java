@@ -232,7 +232,7 @@ public final class Flight implements Effect {
         if (this.ticks % 2 == 0) {
             Vec3 at = this.owner.position();
             ParticleFx.cloud(level, ParticleFx.dust(PowerRing.BRIGHT, 1.0F), at, 4, 0.4, 0.05);
-            level.sendParticles(ParticleTypes.ELECTRIC_SPARK, at.x, at.y + 0.1, at.z, 6, 0.4, 0.05, 0.4, 0.2);
+            ParticleFx.sendNear(level, ParticleTypes.ELECTRIC_SPARK, at.x, at.y + 0.1, at.z, 6, 0.4, 0.05, 0.4, 0.2);
         }
         if (this.ticks % 6 == 0) {
             this.sound(level, SoundEvents.GRINDSTONE_USE, 0.5F, 1.4F);

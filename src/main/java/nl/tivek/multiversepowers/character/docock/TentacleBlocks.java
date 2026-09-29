@@ -30,6 +30,7 @@ import nl.tivek.multiversepowers.engine.effect.Effect;
 import nl.tivek.multiversepowers.engine.effect.Effects;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 import nl.tivek.multiversepowers.engine.target.Targeting;
+import nl.tivek.multiversepowers.engine.world.LoadedWorld;
 
 public final class TentacleBlocks {
     public static final double THROW_SPEED = 1.5;
@@ -217,6 +218,7 @@ public final class TentacleBlocks {
     private static BlockHitResult aim(ServerPlayer player, ServerLevel level, double range) {
         Vec3 eye = player.getEyePosition();
         Vec3 end = eye.add(player.getLookAngle().scale(range));
-        return level.clip(new ClipContext(eye, end, ClipContext.Block.OUTLINE, ClipContext.Fluid.NONE, player));
+        return LoadedWorld.clip(level, new ClipContext(eye, end, ClipContext.Block.OUTLINE, ClipContext.Fluid.NONE,
+                player));
     }
 }

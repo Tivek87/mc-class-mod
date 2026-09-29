@@ -27,6 +27,7 @@ import nl.tivek.multiversepowers.character.GameCharacter;
 import nl.tivek.multiversepowers.character.greenlantern.PowerRing;
 import nl.tivek.multiversepowers.engine.effect.Effect;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
+import nl.tivek.multiversepowers.engine.world.LoadedWorld;
 import static nl.tivek.multiversepowers.engine.math.Vectors.flat;
 
 abstract class SwordShieldBlows implements Effect {
@@ -90,19 +91,20 @@ abstract class SwordShieldBlows implements Effect {
             if (flat > CLOSE && !this.move.inArc(angle)) {
                 continue;
             }
-            if (level.clip(new ClipContext(origin, middle, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE,
-                    this.owner)).getType() != HitResult.Type.MISS) {
+            if (LoadedWorld.clip(level, new ClipContext(origin, middle, ClipContext.Block.COLLIDER,
+                    ClipContext.Fluid.NONE, this.owner)).getType() != HitResult.Type.MISS) {
                 continue;
             }
             target.invulnerableTime = 0;
             target.hurt(level.damageSources().playerAttack(this.owner), (float) damage);
             push(target, this.move, look, right, to, 0.35);
-            level.sendParticles(ParticleTypes.ENCHANTED_HIT, middle.x, middle.y, middle.z, 8, 0.2, 0.2, 0.2, 0.25);
+            ParticleFx.sendNear(level, ParticleTypes.ENCHANTED_HIT, middle.x, middle.y, middle.z, 8, 0.2, 0.2, 0.2,
+                    0.25);
             struck++;
         }
         Vec3 front = origin.add(look.scale(1.6));
         if (this.move != SwordMove.STAB && this.move != SwordMove.LUNGE) {
-            level.sendParticles(ParticleTypes.SWEEP_ATTACK, front.x, front.y, front.z, 1, 0.0, 0.0, 0.0, 0.0);
+            ParticleFx.sendNear(level, ParticleTypes.SWEEP_ATTACK, front.x, front.y, front.z, 1, 0.0, 0.0, 0.0, 0.0);
         }
         this.sound(struck > 0 ? SoundEvents.PLAYER_ATTACK_STRONG : SoundEvents.PLAYER_ATTACK_SWEEP, 0.9F,
                 struck > 0 ? 1.0F : 1.5F);
@@ -166,7 +168,7 @@ abstract class SwordShieldBlows implements Effect {
             target.setDeltaMovement(target.getDeltaMovement().add(way.x * 0.12, 0.02, way.z * 0.12));
             target.hurtMarked = true;
             Vec3 at = target.getBoundingBox().getCenter();
-            level.sendParticles(ParticleTypes.CRIT, at.x, at.y, at.z, 4, 0.15, 0.15, 0.15, 0.2);
+            ParticleFx.sendNear(level, ParticleTypes.CRIT, at.x, at.y, at.z, 4, 0.15, 0.15, 0.15, 0.2);
             hit = true;
         }
         this.sound(hit ? SoundEvents.PLAYER_ATTACK_CRIT : SoundEvents.PLAYER_ATTACK_WEAK, 0.55F,
@@ -201,7 +203,7 @@ abstract class SwordShieldBlows implements Effect {
                     (float) (wheel.value("chargeDamage") * ram.power()));
             ram(target, ram, this.way, right, sign, wheel.value("bashKnockback"));
             Vec3 middle = target.getBoundingBox().getCenter();
-            level.sendParticles(ParticleTypes.CRIT, middle.x, middle.y, middle.z, 12, 0.3, 0.3, 0.3, 0.35);
+            ParticleFx.sendNear(level, ParticleTypes.CRIT, middle.x, middle.y, middle.z, 12, 0.3, 0.3, 0.3, 0.35);
             ParticleFx.cloud(level, ParticleFx.dust(PowerRing.BRIGHT, 1.2F), middle, 8, 0.35, 0.08);
             this.sound(SoundEvents.SHIELD_BLOCK, 1.0F, 0.7F);
             this.sound(SoundEvents.PLAYER_ATTACK_KNOCKBACK, 1.0F, 0.9F);
@@ -210,8 +212,8 @@ abstract class SwordShieldBlows implements Effect {
         if (t % 3 == 0) {
             BlockState ground = level.getBlockState(BlockPos.containing(at.subtract(0.0, 0.2, 0.0)));
             if (!ground.isAir()) {
-                level.sendParticles(new BlockParticleOption(ParticleTypes.BLOCK, ground), at.x, at.y + 0.1, at.z, 4,
-                        0.3, 0.05, 0.3, 0.1);
+                ParticleFx.sendNear(level, new BlockParticleOption(ParticleTypes.BLOCK, ground), at.x, at.y + 0.1, at.z,
+                        4, 0.3, 0.05, 0.3, 0.1);
             }
             ParticleFx.cloud(level, ParticleFx.dust(PowerRing.GREEN, 1.0F),
                     at.add(0.0, 0.9, 0.0).add(this.way.scale(0.9)), 3, 0.3, 0.02);
@@ -241,7 +243,7 @@ abstract class SwordShieldBlows implements Effect {
         }
         BlockState ground = level.getBlockState(BlockPos.containing(at.subtract(0.0, 0.2, 0.0)));
         if (!ground.isAir()) {
-            level.sendParticles(new BlockParticleOption(ParticleTypes.BLOCK, ground), at.x, at.y + 0.1, at.z, 40,
+            ParticleFx.sendNear(level, new BlockParticleOption(ParticleTypes.BLOCK, ground), at.x, at.y + 0.1, at.z, 40,
                     radius * 0.4, 0.1, radius * 0.4, 0.3);
         }
         ParticleFx.shockwave(level, ParticleFx.dust(PowerRing.GREEN, 1.8F), at.add(0.0, 0.2, 0.0), 56, 0.5);

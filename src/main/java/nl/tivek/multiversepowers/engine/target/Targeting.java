@@ -21,6 +21,7 @@ import net.minecraft.world.phys.shapes.CollisionContext;
 import net.neoforged.neoforge.common.Tags;
 import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.engine.entity.HeldMobs;
+import nl.tivek.multiversepowers.engine.world.LoadedWorld;
 import nl.tivek.multiversepowers.faction.Factions;
 
 public final class Targeting {
@@ -52,7 +53,7 @@ public final class Targeting {
     public static Vec3 aimPoint(ServerPlayer player, ServerLevel level, double range) {
         Vec3 eye = player.getEyePosition();
         Vec3 end = eye.add(player.getLookAngle().scale(range));
-        BlockHitResult block = level.clip(new ClipContext(eye, end, ClipContext.Block.COLLIDER,
+        BlockHitResult block = LoadedWorld.clip(level, new ClipContext(eye, end, ClipContext.Block.COLLIDER,
                 ClipContext.Fluid.NONE, player));
         Vec3 target = block.getType() == HitResult.Type.MISS ? end : block.getLocation();
 
@@ -86,7 +87,7 @@ public final class Targeting {
     public static LivingEntity aimLiving(ServerPlayer player, ServerLevel level, double range) {
         Vec3 eye = player.getEyePosition();
         Vec3 end = eye.add(player.getLookAngle().scale(range));
-        BlockHitResult block = level.clip(new ClipContext(eye, end, ClipContext.Block.COLLIDER,
+        BlockHitResult block = LoadedWorld.clip(level, new ClipContext(eye, end, ClipContext.Block.COLLIDER,
                 ClipContext.Fluid.NONE, player));
         Vec3 limit = block.getType() == HitResult.Type.MISS ? end : block.getLocation();
         AABB searchBox = player.getBoundingBox().expandTowards(limit.subtract(eye)).inflate(1.5);
@@ -122,13 +123,13 @@ public final class Targeting {
     }
 
     public static boolean clearPath(ServerLevel level, Vec3 from, Vec3 to, Entity viewer) {
-        return level.clip(new ClipContext(from, to, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, viewer))
-                .getType() == HitResult.Type.MISS;
+        return LoadedWorld.clip(level, new ClipContext(from, to, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE,
+                viewer)).getType() == HitResult.Type.MISS;
     }
 
     // The same with nobody looking (a cloud, a blast whose caster may be gone): only blocks stand in the way.
     public static boolean clearPath(ServerLevel level, Vec3 from, Vec3 to) {
-        return level.clip(new ClipContext(from, to, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE,
+        return LoadedWorld.clip(level, new ClipContext(from, to, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE,
                 CollisionContext.empty())).getType() == HitResult.Type.MISS;
     }
 

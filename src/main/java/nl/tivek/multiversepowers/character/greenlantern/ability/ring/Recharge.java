@@ -21,6 +21,7 @@ import nl.tivek.multiversepowers.character.greenlantern.ability.light.LightDome;
 import nl.tivek.multiversepowers.character.greenlantern.ability.light.LightShield;
 import nl.tivek.multiversepowers.engine.effect.Effect;
 import nl.tivek.multiversepowers.engine.effect.Effects;
+import nl.tivek.multiversepowers.engine.fx.ParticleBatch;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 
 public final class Recharge implements Effect {
@@ -124,7 +125,7 @@ public final class Recharge implements Effect {
         Vec3 front = at.add(ahead.scale(0.3));
         for (ServerPlayer viewer : level.players()) {
             if (viewer != this.owner && viewer.distanceToSqr(front) < 64.0 * 64.0) {
-                level.sendParticles(viewer, ParticleFx.dust(PowerRing.BRIGHT, 2.0F), false, front.x, front.y, front.z,
+                ParticleBatch.add(viewer, ParticleFx.dust(PowerRing.BRIGHT, 2.0F), false, front.x, front.y, front.z,
                         8, 0.12, 0.12, 0.12, 0.0);
             }
         }

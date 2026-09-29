@@ -261,9 +261,9 @@ public final class VoidWalkSpell {
                 continue;
             }
             double top = enemy.getY() + enemy.getBbHeight() + 0.5;
-            level.sendParticles(caster, ParticleFx.dust(VIOLET, 1.2F), true, enemy.getX(), top, enemy.getZ(),
+            ParticleBatch.add(caster, ParticleFx.dust(VIOLET, 1.2F), true, enemy.getX(), top, enemy.getZ(),
                     8, 0.15, 0.08, 0.15, 0);
-            level.sendParticles(caster, ParticleTypes.REVERSE_PORTAL, true, enemy.getX(), top, enemy.getZ(),
+            ParticleBatch.add(caster, ParticleTypes.REVERSE_PORTAL, true, enemy.getX(), top, enemy.getZ(),
                     3, 0.1, 0.1, 0.1, 0.02);
         }
     }

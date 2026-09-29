@@ -31,6 +31,7 @@ import nl.tivek.multiversepowers.character.greenlantern.construct.ConstructPaylo
 import nl.tivek.multiversepowers.engine.effect.Effect;
 import nl.tivek.multiversepowers.engine.effect.Effects;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
+import nl.tivek.multiversepowers.engine.world.LoadedWorld;
 
 public final class LandingSlam implements Effect {
     public static final int FORM_TICKS = 6;
@@ -151,8 +152,8 @@ public final class LandingSlam implements Effect {
         double feet = owner.getY();
         Vec3 from = new Vec3(at.x, feet + 2.0, at.z);
         Vec3 to = new Vec3(at.x, feet - 4.0, at.z);
-        BlockHitResult hit = level.clip(new ClipContext(from, to, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE,
-                owner));
+        BlockHitResult hit = LoadedWorld.clip(level, new ClipContext(from, to, ClipContext.Block.COLLIDER,
+                ClipContext.Fluid.NONE, owner));
         return hit.getType() == HitResult.Type.MISS ? new Vec3(at.x, feet, at.z) : hit.getLocation();
     }
 
@@ -196,7 +197,7 @@ public final class LandingSlam implements Effect {
                 int rocket = step - (IMPACT_TICK - 2);
                 if (rocket >= 0 && rocket < 5 && rocket != 2) {
                     Vec3 at = rocketTarget(this.center, this.facing, rocket);
-                    level.sendParticles(ParticleTypes.EXPLOSION, at.x, at.y + 0.4, at.z, 1, 0.0, 0.0, 0.0, 0.0);
+                    ParticleFx.sendNear(level, ParticleTypes.EXPLOSION, at.x, at.y + 0.4, at.z, 1, 0.0, 0.0, 0.0, 0.0);
                     dust(level, at, 0.8, 12);
                     level.playSound(null, at.x, at.y, at.z, SoundEvents.GENERIC_EXPLODE.value(), SoundSource.PLAYERS,
                             0.7F, 1.4F);
@@ -245,7 +246,7 @@ public final class LandingSlam implements Effect {
         dust(level, this.center, this.radius, 50);
         ParticleFx.sphereOut(level, ParticleFx.dust(PowerRing.BRIGHT, 1.8F), this.center.add(0.0, 0.5, 0.0), 40, 0.45);
         ParticleFx.sphereOut(level, ParticleFx.dust(PowerRing.GREEN, 2.2F), this.center.add(0.0, 0.3, 0.0), 30, 0.3);
-        level.sendParticles(this.variant == ConstructPayload.SLAM_TNT ? ParticleTypes.EXPLOSION_EMITTER
+        ParticleFx.sendNear(level, this.variant == ConstructPayload.SLAM_TNT ? ParticleTypes.EXPLOSION_EMITTER
                 : ParticleTypes.EXPLOSION, this.center.x, this.center.y + 0.5, this.center.z, 1, 0.0, 0.0, 0.0, 0.0);
         this.sounds(level);
     }

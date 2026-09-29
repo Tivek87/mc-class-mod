@@ -374,7 +374,7 @@ public final class SwordShield extends SwordShieldBlows {
         sword.sound(SoundEvents.SHIELD_BLOCK, 1.0F, 0.9F + 0.2F * player.getRandom().nextFloat());
         sword.sound(SoundEvents.AMETHYST_BLOCK_HIT, 0.8F, 1.4F);
         Vec3 face = player.getEyePosition().add(front.scale(0.7)).subtract(0.0, 0.35, 0.0);
-        player.serverLevel().sendParticles(ParticleTypes.CRIT, face.x, face.y, face.z, 10, 0.2, 0.25, 0.2, 0.3);
+        ParticleFx.sendNear(player.serverLevel(), ParticleTypes.CRIT, face.x, face.y, face.z, 10, 0.2, 0.25, 0.2, 0.3);
         ParticleFx.cloud(player.serverLevel(), ParticleFx.dust(PowerRing.BRIGHT, 1.0F), face, 6, 0.25, 0.06);
     }
 }

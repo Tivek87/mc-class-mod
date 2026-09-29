@@ -16,6 +16,7 @@ import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.character.docock.RobotArm;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
+import nl.tivek.multiversepowers.engine.world.LoadedWorld;
 
 abstract class PortalState {
     static final int SEARCH_TIME = 34;
@@ -101,8 +102,8 @@ abstract class PortalState {
 
     static Vec3 spotInFront(ServerPlayer caster, Vec3 look) {
         Vec3 eye = caster.getEyePosition();
-        BlockHitResult wall = caster.level().clip(new ClipContext(eye, eye.add(look.scale(PORTAL_A_DISTANCE)),
-                ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, caster));
+        BlockHitResult wall = LoadedWorld.clip(caster.level(), new ClipContext(eye,
+                eye.add(look.scale(PORTAL_A_DISTANCE)), ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, caster));
         double distance = wall.getType() == HitResult.Type.MISS ? PORTAL_A_DISTANCE
                 : Math.max(1.6, wall.getLocation().distanceTo(eye) - 0.6);
         return eye.add(look.scale(distance)).add(0, -0.2, 0);

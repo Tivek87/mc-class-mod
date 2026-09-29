@@ -19,6 +19,7 @@ import nl.tivek.multiversepowers.character.docock.RobotArm;
 import nl.tivek.multiversepowers.character.docock.TentacleBlocks;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 import nl.tivek.multiversepowers.engine.math.Ease;
+import nl.tivek.multiversepowers.engine.world.LoadedWorld;
 
 abstract class RigPoses extends RigMotion {
     RigPoses(ServerPlayer caster, ServerLevel home) {
@@ -98,7 +99,7 @@ abstract class RigPoses extends RigMotion {
                 continue;
             }
             direction = direction.normalize();
-            BlockHitResult hit = level.clip(new ClipContext(body, body.add(direction.scale(GRIP_REACH)),
+            BlockHitResult hit = LoadedWorld.clip(level, new ClipContext(body, body.add(direction.scale(GRIP_REACH)),
                     ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, this.caster));
             if (hit.getType() == HitResult.Type.MISS) {
                 continue;
@@ -161,7 +162,7 @@ abstract class RigPoses extends RigMotion {
             return false;
         }
         Vec3 end = grip.add(away.normalize().scale(0.35));
-        BlockHitResult hit = level.clip(new ClipContext(body, end, ClipContext.Block.COLLIDER,
+        BlockHitResult hit = LoadedWorld.clip(level, new ClipContext(body, end, ClipContext.Block.COLLIDER,
                 ClipContext.Fluid.NONE, this.caster));
         return hit.getType() != HitResult.Type.MISS && hit.getLocation().distanceTo(grip) < 0.7;
     }

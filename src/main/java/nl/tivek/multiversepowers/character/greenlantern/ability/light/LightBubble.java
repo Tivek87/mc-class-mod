@@ -45,6 +45,7 @@ import nl.tivek.multiversepowers.engine.effect.Effects;
 import nl.tivek.multiversepowers.engine.entity.HeldMobs;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 import nl.tivek.multiversepowers.engine.math.Ease;
+import nl.tivek.multiversepowers.engine.world.LoadedWorld;
 
 @EventBusSubscriber(modid = MultiversePowers.MODID)
 public final class LightBubble implements Effect {
@@ -167,8 +168,8 @@ public final class LightBubble implements Effect {
     private static LivingEntity aim(ServerPlayer owner, ServerLevel level, double range) {
         Vec3 eye = owner.getEyePosition();
         Vec3 end = eye.add(owner.getLookAngle().scale(range));
-        BlockHitResult wall = level.clip(new ClipContext(eye, end, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE,
-                owner));
+        BlockHitResult wall = LoadedWorld.clip(level, new ClipContext(eye, end, ClipContext.Block.COLLIDER,
+                ClipContext.Fluid.NONE, owner));
         if (wall.getType() != HitResult.Type.MISS) {
             end = wall.getLocation();
         }
@@ -309,8 +310,9 @@ public final class LightBubble implements Effect {
             Vec3 b = this.slams[k];
             double high = Math.max(a.y, b.y);
             Vec3 middle = new Vec3((a.x + b.x) * 0.5, high, (a.z + b.z) * 0.5);
-            BlockHitResult ceiling = level.clip(new ClipContext(middle, middle.add(0.0, SWING[k] + this.radius, 0.0),
-                    ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, CollisionContext.empty()));
+            BlockHitResult ceiling = LoadedWorld.clip(level, new ClipContext(middle,
+                    middle.add(0.0, SWING[k] + this.radius, 0.0), ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE,
+                    CollisionContext.empty()));
             this.tops[k] = ceiling.getType() == HitResult.Type.MISS ? high + SWING[k]
                     : Math.max(high, ceiling.getLocation().y - this.radius);
         }
@@ -320,7 +322,7 @@ public final class LightBubble implements Effect {
 
     private Vec3 floorBelow(ServerLevel level, Vec3 at) {
         Vec3 below = at.subtract(0.0, this.radius + 24.0, 0.0);
-        BlockHitResult ground = level.clip(new ClipContext(at, below, ClipContext.Block.COLLIDER,
+        BlockHitResult ground = LoadedWorld.clip(level, new ClipContext(at, below, ClipContext.Block.COLLIDER,
                 ClipContext.Fluid.ANY, CollisionContext.empty()));
         double floorY = ground.getType() == HitResult.Type.MISS ? below.y : ground.getLocation().y;
         return new Vec3(at.x, Math.min(at.y, floorY + this.radius * 0.8), at.z);
@@ -328,8 +330,8 @@ public final class LightBubble implements Effect {
 
     private Vec3 beside(ServerLevel level, Vec3 base, Vec3 aside) {
         Vec3 to = base.add(aside);
-        BlockHitResult wall = level.clip(new ClipContext(base, to, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE,
-                CollisionContext.empty()));
+        BlockHitResult wall = LoadedWorld.clip(level, new ClipContext(base, to, ClipContext.Block.COLLIDER,
+                ClipContext.Fluid.NONE, CollisionContext.empty()));
         if (wall.getType() != HitResult.Type.MISS) {
             double room = Math.max(0.0, wall.getLocation().distanceTo(base) - this.radius);
             to = base.add(aside.normalize().scale(Math.min(room, aside.length())));

@@ -21,6 +21,7 @@ import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.config.PowerRules;
 import nl.tivek.multiversepowers.engine.ability.Cooldowns;
 import nl.tivek.multiversepowers.engine.ability.Throttle;
+import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 
 @EventBusSubscriber(modid = MultiversePowers.MODID)
 public final class Characters {
@@ -93,8 +94,8 @@ public final class Characters {
 
     public static void transformFlash(ServerPlayer player, float pitch) {
         ServerLevel level = player.serverLevel();
-        level.sendParticles(ParticleTypes.END_ROD, player.getX(), player.getY() + 1.0, player.getZ(), 40, 0.4, 0.8,
-                0.4, 0.05);
+        ParticleFx.sendNear(level, ParticleTypes.END_ROD, player.getX(), player.getY() + 1.0, player.getZ(), 40, 0.4,
+                0.8, 0.4, 0.05);
         level.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.BEACON_ACTIVATE,
                 SoundSource.PLAYERS, 1.0F, pitch);
     }

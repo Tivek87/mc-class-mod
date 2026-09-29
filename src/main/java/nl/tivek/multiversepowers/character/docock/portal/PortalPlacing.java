@@ -21,6 +21,7 @@ import nl.tivek.multiversepowers.character.docock.rig.OctoRig;
 import nl.tivek.multiversepowers.engine.entity.HeldMobs;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 import nl.tivek.multiversepowers.engine.target.Targeting;
+import nl.tivek.multiversepowers.engine.world.LoadedWorld;
 
 abstract class PortalPlacing extends PortalState {
     PortalPlacing(ServerPlayer caster, LivingEntity target) {
@@ -210,7 +211,7 @@ abstract class PortalPlacing extends PortalState {
     }
 
     private double room(ServerLevel level, Vec3 floor) {
-        BlockHitResult hit = level.clip(new ClipContext(floor.add(0, 0.5, 0), floor.add(0, SKY_HEIGHT, 0),
+        BlockHitResult hit = LoadedWorld.clip(level, new ClipContext(floor.add(0, 0.5, 0), floor.add(0, SKY_HEIGHT, 0),
                 ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, this.caster));
         return hit.getType() == HitResult.Type.MISS ? SKY_HEIGHT : hit.getLocation().y - floor.y - 1.0;
     }
