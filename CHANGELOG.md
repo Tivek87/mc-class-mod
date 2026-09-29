@@ -3,6 +3,16 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.5.3-alpha] - 2026-09-30
+
+### Changed
+- **Bodies:** a body left lying sinks away only after it has lain wholly still for the set time (at least 5 seconds);
+  moving again starts the count over, and a full list of bodies no longer makes one vanish at once.
+
+### Fixed
+- **Bodies:** sharply bent knees, elbows and waists no longer stretch into a thin point: both halves stay whole,
+  square blocks.
+
 ## [0.5.2-alpha] - 2026-09-29
 
 ### Fixed

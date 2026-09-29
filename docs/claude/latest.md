@@ -1,12 +1,13 @@
 # Laatste sessie
 
-- Datum: 2026-09-29. Verzoek: alle hoognodige code-/structuurproblemen fixen, niets uit `bugs/`; vraag over worktree.
-- Worktree: was alleen tijdelijk in de scratchpad voor `release.ps1 publish` (andere sessie had `MechScript.java`
-  open), daarna verwijderd. Nu alleen `master`, geen extra branch of worktree.
-- Gecontroleerd: mappen <= 12 bestanden, bestanden < 600 regels, geen compiler-waarschuwingen (-Xlint), opruimlijst in
-  `MultiversePowers.onServerStopping` compleet, `hurt()` zonder faction-check alleen op al gekozen doelen.
-- Gefixt: 14x `level.sendParticles` -> `ParticleFx.sendNear` / `ParticleBatch.add` (multiplayer-regel, zelfde bereik);
-  16x server `level.clip` -> `LoadedWorld.clip` (geen chunk-laden, geen server-freeze), o.a. `engine/target/Targeting`.
-- Getest: build + 111 unit-tests groen. Niet in-game getest.
-- Niet gecommit: wacht op ja voor commit + push (= release 0.5.2-alpha). `MechScript.java` (andere sessie) blijft erbuiten.
-- Open (niet urgent): dubbele code (joints `rejoin`, flame/whip `onCameraAngles`, `pay`/`drain`, `rim`).
+- Datum: 2026-09-29 (2e sessie). Verzoek: "stretch" bij ragdolls fixen (husk op screenshot); user: knik moet VIERKANT,
+  niet rond, niet uitgerekt.
+- Oorzaak: fysica houdt gewrichtslimieten (gemeten, max ~0.16 rad over); de tekening (`BentParts`) draaide het snijvlak
+  maar half mee -> bij knie/elleboog ~2.3-2.6 rad een dunne punt (haakvorm), taille scheef uitgesmeerd.
+- Gedaan: `BentParts` herschreven: helften blijven hele blokken, verstek-hoek tot 90 graden, daarboven platte blokeinden;
+  twist verdeeld over beide helften (benen blijven aan heupen). Geldt voor alle knikken (ook taille, poses, GetUp).
+- Test: nieuw `BentPartsTest` (volume dicht, vierkante hoeken, twist, romp); build + 116 tests groen; in-game oud/nieuw
+  vergeleken + dode husks in geul/gat/muur/trede + taille-knikken. Testklassen, werelden, shots verwijderd.
+- Ook nog niet gecommit (vorige sessie, getest): lijken zakken pas weg na volle stilte (`Corpses`, `RagdollFalls`,
+  `Ragdolls`, `Ragdoll`, `ClientSettings`, `en_us.json`, `CLAUDE.md`). `MechScript.java` (andere sessie) blijft erbuiten.
+- Open: commit + push (= release) wacht op ja; changelog-regels (beide wijzigingen) bij `release.ps1 prepare`.
