@@ -360,6 +360,7 @@ public final class Ragdolls {
             }
         }
         BLOCKS.in(level);
+        RagdollCrowd.gather(LIVE.values(), CORPSES);
         ObjectIterator<Ragdoll> live = LIVE.values().iterator();
         while (live.hasNext()) {
             Ragdoll doll = live.next();
@@ -375,6 +376,7 @@ public final class Ragdolls {
                 live.remove();
                 continue;
             }
+            RagdollCrowd.among(doll);
             doll.step(SUBSTEPS, BLOCKS);
         }
         double keep = ClientSettings.get(ClientSettings.CORPSE_SECONDS) * 20.0;
@@ -396,6 +398,7 @@ public final class Ragdolls {
                 doll.sunk = 0;
                 continue;
             }
+            RagdollCrowd.among(doll);
             doll.step(SUBSTEPS, BLOCKS);
         }
         int most = ClientSettings.get(ClientSettings.RAGDOLL_MOST);

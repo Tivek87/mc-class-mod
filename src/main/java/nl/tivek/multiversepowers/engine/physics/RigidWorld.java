@@ -7,10 +7,12 @@ import java.util.List;
 // Rigid boxes held together by constraints, stepped in small substeps of XPBD (Mueller et al., Detailed Rigid Body
 // Simulation with Extended Position Based Dynamics, 2020; Macklin et al., Small Steps in Physics Simulation, 2019).
 // Every number lives in flat arrays so a step makes no garbage. Lengths in blocks, time in seconds.
-public final class RigidWorld extends RigidBlocks {
+public final class RigidWorld extends RigidCrowd {
     // No part ever moves faster than this (blocks per second), whatever goes wrong: a body never flies off.
     private static final double FASTEST = 80.0;
-    private static final double QUIET = 0.08;
+    // Sleeps once no part got further than this (blocks, its far corners too) from where it was QUIET_STEPS steps
+    // ago: a body lying all but still that only trembles or creeps a hair is let sleep.
+    private static final double STILL = 0.05;
     private static final int QUIET_STEPS = 12;
 
     private final double[] sx = new double[MOST * 3];
@@ -137,10 +139,15 @@ public final class RigidWorld extends RigidBlocks {
             return;
         }
         this.gather(world, dt);
-        System.arraycopy(this.x, 0, this.sx, 0, this.count * 3);
-        System.arraycopy(this.q, 0, this.sq, 0, this.count * 4);
+        this.sortOthers(dt);
+        if (this.quiet == 0) {
+            System.arraycopy(this.x, 0, this.sx, 0, this.count * 3);
+            System.arraycopy(this.q, 0, this.sq, 0, this.count * 4);
+        }
         double h = dt / substeps;
         for (int s = 0; s < substeps; s++) {
+            this.leadWas = s * h;
+            this.lead = (s + 1) * h;
             Arrays.fill(this.contacts, 0, this.count, 0);
             for (int b = 0; b < this.count; b++) {
                 this.integrate(b, h);
@@ -150,6 +157,7 @@ public final class RigidWorld extends RigidBlocks {
             }
             for (int b = 0; b < this.count; b++) {
                 this.touchBlocks(b);
+                this.touchOthers(b);
             }
             for (Constraint constraint : this.constraints) {
                 constraint.rejoin(this, h);
@@ -158,6 +166,7 @@ public final class RigidWorld extends RigidBlocks {
             // touch of the substep.
             for (int b = 0; b < this.count; b++) {
                 this.touchBlocks(b);
+                this.touchOthers(b);
             }
             for (int b = 0; b < this.count; b++) {
                 this.friction(b);
@@ -166,7 +175,7 @@ public final class RigidWorld extends RigidBlocks {
                 this.settle(b, h);
             }
         }
-        if (this.moved(dt) < QUIET) {
+        if (this.moved() < STILL) {
             if (++this.quiet >= QUIET_STEPS) {
                 this.sleeping = true;
                 Arrays.fill(this.v, 0, this.count * 3, 0.0);
@@ -177,10 +186,10 @@ public final class RigidWorld extends RigidBlocks {
         }
     }
 
-    // How fast the body that moved most got anywhere over the whole step, its far corners too. The solver's own
-    // back and forth within a step does not count, or a body lying still would never be let sleep.
-    private double moved(double dt) {
-        double fastest = 0.0;
+    // How far the body that moved most got since the quiet steps began, its far corners too. Only where it got
+    // counts, not the solver's back and forth on the way, or a body lying still would never be let sleep.
+    private double moved() {
+        double furthest = 0.0;
         for (int b = 0; b < this.count; b++) {
             if (this.invMass[b] == 0.0) {
                 continue;
@@ -195,9 +204,9 @@ public final class RigidWorld extends RigidBlocks {
                     + this.q[r + 3] * this.sq[r + 3]);
             double turned = 2.0 * Math.acos(Math.min(1.0, dot));
             double reach = Math.max(this.half[o], Math.max(this.half[o + 1], this.half[o + 2]));
-            fastest = Math.max(fastest, (Math.sqrt(dx * dx + dy * dy + dz * dz) + turned * reach) / dt);
+            furthest = Math.max(furthest, Math.sqrt(dx * dx + dy * dy + dz * dz) + turned * reach);
         }
-        return fastest;
+        return furthest;
     }
 
     // New velocities from how far the body got this substep, then damped.

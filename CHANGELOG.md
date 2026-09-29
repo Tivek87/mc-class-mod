@@ -3,6 +3,22 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.4.8-alpha] - 2026-09-29
+
+### Added
+- **Ragdolls:** limp bodies now land on each other and lie on each other instead of passing through; creatures dying
+  in a crowd come apart without being flung off.
+
+### Changed
+- **Ragdolls:** shoulders, hips and necks bend as far as a real body's do, from how the creature stands at rest: an arm
+  goes far up in front but hardly behind the back, legs no longer cross or splay backwards, and a four-legged animal's
+  legs swing back and forth but hardly sideways.
+
+### Fixed
+- **Ragdolls:** legs no longer cross into each other, an arm no longer ends up twisted behind the back, and forearms,
+  shins and the legs of four-legged animals no longer pass through each other.
+- **Ragdolls:** a body that only trembles as it lies now comes to rest.
+
 ## [0.4.7-alpha] - 2026-09-28
 
 ### Added

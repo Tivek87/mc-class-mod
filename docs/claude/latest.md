@@ -1,7 +1,12 @@
 # Laatste sessie
 
 - Datum: 2026-09-28.
-- Vraag: romp in 2 delen (borst/buik) bij alle mobs, voor poses en ragdolls, glitch-vrij; daarna: liggende ragdolls
+- Deel 2 (2026-09-29): lichaamsdelen door elkaar/verkeerd om. Nieuw `LimbJoint` (ellips om een midden-richting uit
+  de rusthouding, echte grenzen schouder/heup/nek/poten, twist vanaf rust), meer botsparen (arm-arm, poten van vier,
+  hele capsules), `RigidCrowd`/`RagdollCrowd` (lijven botsen onderling; diep-in-elkaar begonnen = negeren, geen
+  wegslingeren), inslapen op netto verplaatsing. Tests: benen kruisen 0/24 (was 22/24), overlap gehalveerd, 98 groen.
+  In-game: stapel van 4, gegooid paar, dieren+dorpeling ok. Release 0.4.8-alpha.
+- Deel 1: romp in 2 delen (borst/buik) bij alle mobs, voor poses en ragdolls, glitch-vrij; daarna: liggende ragdolls
   glijden (fix) en na landen eerst 3 s op de grond liggen vóór opstaan; daarna commit + push + release.
 - Gedaan: `SpineJoint` (taille: vouwen/zijwaarts/draaien binnen grenzen), `ModelParts.waist/far/core`, `BentParts`
   buigt ook wat de romp draagt (robe, zadel, staart), `Limbs.spine` voor elk dier, `GetUp` mengt per romphelft.

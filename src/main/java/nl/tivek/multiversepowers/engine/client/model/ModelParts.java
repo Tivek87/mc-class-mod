@@ -328,7 +328,7 @@ public final class ModelParts {
     }
 
     // A part's frame in the model as it was built (each part's first pose), in pixels.
-    private static Matrix4f rest(Part part, Matrix4f out) {
+    public static Matrix4f rest(Part part, Matrix4f out) {
         out.identity();
         for (ModelPart parent : part.parents()) {
             first(out, parent);

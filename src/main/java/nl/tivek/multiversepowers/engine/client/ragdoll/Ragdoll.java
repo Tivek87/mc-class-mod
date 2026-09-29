@@ -125,6 +125,9 @@ final class Ragdoll {
     int down;
     int lain;
     int up = -1;
+    // Where its boxes lie among every body's this tick (RagdollCrowd).
+    int crowdFrom;
+    int crowdTo;
     // The body as it lay when it began to get up; a person gets up by way of one knee (GetUp).
     @Nullable
     private double[] lay;

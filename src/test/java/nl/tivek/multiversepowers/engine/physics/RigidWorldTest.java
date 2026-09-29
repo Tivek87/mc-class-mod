@@ -419,6 +419,94 @@ class RigidWorldTest {
     }
 
     @Test
+    void theNearestPointOfAnEllipseLiesOnItSquareToItsEdge() {
+        double[] out = new double[2];
+        double[][] cases = { { 3.0, 0.5, 1.9, 0.45 }, { 0.2, 2.5, 1.2, 0.8 }, { 2.5, 1.5, 1.9, 1.7 }, { 4.0, 0.0, 1.0,
+                0.5 }, { 0.0, 3.0, 1.0, 0.5 } };
+        for (double[] c : cases) {
+            LimbJoint.nearest(c[0], c[1], c[2], c[3], out);
+            double on = out[0] * out[0] / (c[2] * c[2]) + out[1] * out[1] / (c[3] * c[3]);
+            assertEquals(1.0, on, 1.0E-6, "on the edge");
+            // The way out to the point runs along the edge's normal there.
+            double nx = out[0] / (c[2] * c[2]);
+            double ny = out[1] / (c[3] * c[3]);
+            double cross = (c[0] - out[0]) * ny - (c[1] - out[1]) * nx;
+            assertEquals(0.0, cross, 1.0E-6, "square to the edge");
+        }
+    }
+
+    // A fixed trunk and an arm on a LimbJoint whose middle lies ahead of where the arm hangs (+y): kicked every which
+    // way, the arm keeps within its ellipse about the middle and its twist from the rest.
+    @Test
+    void aLimbStaysWithinItsLopsidedReachAndTwist() {
+        RigidWorld world = new RigidWorld();
+        world.gravity = 0.0;
+        int trunk = world.add(0.0, 0.25, 0.375, 0.125);
+        int arm = world.add(4.0, 0.125, 0.375, 0.125);
+        world.place(trunk, 0.0, 2.0, 0.0, 0.0, 0.0, 0.0, 1.0);
+        world.place(arm, 0.4, 1.625, 0.0, 0.0, 0.0, 0.0, 1.0);
+        // Hanging down (-y here); the middle turned 0.8 ahead (-z) about x, the ellipse wide 1.2 that way, 0.5 across.
+        double tilt = 0.8;
+        double[] middle = { 0.0, -Math.cos(tilt), -Math.sin(tilt) };
+        double[] across = { 1.0, 0.0, 0.0 };
+        double[] rest = { 0.0, -1.0, 0.0 };
+        double[] ahead = { 0.0, 0.0, -1.0 };
+        world.add(new LimbJoint(trunk, new double[] { 0.4, 0.0, 0.0 }, middle, across, rest, ahead, arm,
+                new double[] { 0.0, 0.375, 0.0 }, new double[] { 0.0, -1.0, 0.0 }, ahead, 1.2, 0.5, -0.4, 0.4));
+        Random random = new Random(7);
+        double[] q = new double[7];
+        double worst = 0.0;
+        double worstTwist = 0.0;
+        for (int t = 0; t < 300; t++) {
+            if (t % 15 == 0) {
+                world.velocity(arm, random.nextGaussian() * 3.0, random.nextGaussian() * 3.0,
+                        random.nextGaussian() * 3.0, random.nextGaussian() * 12.0, random.nextGaussian() * 12.0,
+                        random.nextGaussian() * 12.0);
+            }
+            world.step(TICK, SUBSTEPS, Blocks.NONE);
+            world.pose(arm, q);
+            double[] d = new double[3];
+            Quat.rotate(q, 3, 0.0, -1.0, 0.0, d, 0);
+            double e2x = middle[1] * across[2] - middle[2] * across[1];
+            double e2y = middle[2] * across[0] - middle[0] * across[2];
+            double e2z = middle[0] * across[1] - middle[1] * across[0];
+            double cx = middle[1] * d[2] - middle[2] * d[1];
+            double cy = middle[2] * d[0] - middle[0] * d[2];
+            double cz = middle[0] * d[1] - middle[1] * d[0];
+            double sin = Math.sqrt(cx * cx + cy * cy + cz * cz);
+            double angle = Math.atan2(sin, middle[0] * d[0] + middle[1] * d[1] + middle[2] * d[2]);
+            if (sin > 1.0E-9) {
+                double r1 = angle * (cx * across[0] + cy * across[1] + cz * across[2]) / sin;
+                double r2 = angle * (cx * e2x + cy * e2y + cz * e2z) / sin;
+                worst = Math.max(worst, r1 * r1 / 1.44 + r2 * r2 / 0.25);
+            }
+            // The twist: the arm's ahead against the rest's ahead swung the shortest way to where the arm points.
+            double[] own = new double[3];
+            Quat.rotate(q, 3, 0.0, 0.0, -1.0, own, 0);
+            double ax = rest[1] * d[2] - rest[2] * d[1];
+            double ay = rest[2] * d[0] - rest[0] * d[2];
+            double az = rest[0] * d[1] - rest[1] * d[0];
+            double s = Math.sqrt(ax * ax + ay * ay + az * az);
+            double c = rest[0] * d[0] + rest[1] * d[1] + rest[2] * d[2];
+            double[] v = ahead.clone();
+            if (s > 1.0E-9) {
+                ax /= s;
+                ay /= s;
+                az /= s;
+                double along = (ax * v[0] + ay * v[1] + az * v[2]) * (1.0 - c);
+                double[] w = { ay * v[2] - az * v[1], az * v[0] - ax * v[2], ax * v[1] - ay * v[0] };
+                v = new double[] { v[0] * c + w[0] * s + ax * along, v[1] * c + w[1] * s + ay * along,
+                        v[2] * c + w[2] * s + az * along };
+            }
+            double twist = Math.atan2((v[1] * own[2] - v[2] * own[1]) * d[0] + (v[2] * own[0] - v[0] * own[2]) * d[1]
+                    + (v[0] * own[1] - v[1] * own[0]) * d[2], v[0] * own[0] + v[1] * own[1] + v[2] * own[2]);
+            worstTwist = Math.max(worstTwist, Math.abs(twist));
+        }
+        assertTrue(worst < 1.15, "within its ellipse, at most " + worst);
+        assertTrue(worstTwist < 0.46, "within its twist, at most " + worstTwist);
+    }
+
+    @Test
     void jointedBoxesLyingStillStayPutAndSleep() {
         RigidWorld world = new RigidWorld();
         int a = world.add(10.0, 0.25, 0.125, 0.375);
