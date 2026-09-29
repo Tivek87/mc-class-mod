@@ -51,9 +51,11 @@ public final class ClientSettings {
         RAGDOLLS = sheet.toggle("ragdolls", "Creatures go limp: they fall, tumble and hang from what holds them, and a"
                 + " body stays where it fell before it sinks away (1 = yes, 0 = as in the plain game)", true);
         RAGDOLL_MOST = sheet.whole("ragdollMost", "How many limp creatures and bodies there may be at once; the"
-                + " furthest go first", 24, 1, 64, Unit.COUNT, 1.0);
-        CORPSE_SECONDS = sheet.number("corpseSeconds", "How long a body lies where it fell before it sinks into the"
-                + " ground, in seconds (at least 5)", 10.0, 5.0, 120.0, Unit.SECONDS, 1.0);
+                + " bodies that have lain still long enough go first, then the furthest living ones", 24, 1, 64,
+                Unit.COUNT, 1.0);
+        CORPSE_SECONDS = sheet.number("corpseSeconds", "How long a body lies wholly still before it sinks into the"
+                + " ground, in seconds (at least 5; moving again starts the count over)", 10.0, 5.0, 120.0,
+                Unit.SECONDS, 1.0);
         RAGDOLL_REACH = sheet.whole("ragdollReach", "How far away a creature may be and still go limp, in blocks", 48,
                 8, 128, Unit.BLOCKS, 4.0);
         FOOT_PLANTING = sheet.toggle("footPlanting", "Feet rest on the ground they stand on: a foot never sinks into a"

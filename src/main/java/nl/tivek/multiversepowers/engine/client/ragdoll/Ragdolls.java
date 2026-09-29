@@ -278,9 +278,10 @@ public final class Ragdolls {
     }
 
     // Makes room for one more at squared distance `near`: the body that has lain longest sinks away, if one has lain
-    // long enough, else the furthest is let go, if that one is further.
+    // still long enough, else the furthest creature still alive is let go, if that one is further. A dead body is never
+    // let go before it has lain still long enough.
     private static boolean room(double near, Vec3 camera) {
-        if (counted() < ClientSettings.get(ClientSettings.RAGDOLL_MOST) || Corpses.makeRoom()) {
+        if (counted() < ClientSettings.get(ClientSettings.RAGDOLL_MOST) || Corpses.makeRoom(SUBSTEPS, BLOCKS)) {
             return true;
         }
         Ragdoll far = furthest(camera);
@@ -297,14 +298,7 @@ public final class Ragdolls {
         double most = -1.0;
         for (Ragdoll doll : LIVE.values()) {
             double d = doll.coreAt(1.0).distanceToSqr(camera);
-            if (d > most) {
-                most = d;
-                far = doll;
-            }
-        }
-        for (Ragdoll doll : Corpses.ALL) {
-            double d = doll.coreAt(1.0).distanceToSqr(camera);
-            if (doll.sunk < 0 && d > most) {
+            if (doll.state != Ragdoll.State.DEAD && d > most) {
                 most = d;
                 far = doll;
             }
@@ -318,9 +312,7 @@ public final class Ragdolls {
     }
 
     private static void forget(Ragdoll doll) {
-        if (!Corpses.ALL.remove(doll)) {
-            LIVE.remove(doll.entity.getId());
-        }
+        LIVE.remove(doll.entity.getId());
     }
 
     @SubscribeEvent
@@ -385,6 +377,9 @@ public final class Ragdolls {
         Corpses.tick(level, camera, far, ticks, SUBSTEPS, BLOCKS, RANDOM);
         int most = ClientSettings.get(ClientSettings.RAGDOLL_MOST);
         while (counted() > most) {
+            if (Corpses.makeRoom(SUBSTEPS, BLOCKS)) {
+                continue;
+            }
             Ragdoll furthest = furthest(camera);
             if (furthest == null) {
                 break;

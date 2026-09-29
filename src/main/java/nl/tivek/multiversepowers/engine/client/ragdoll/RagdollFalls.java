@@ -59,8 +59,8 @@ final class RagdollFalls {
         }
     }
 
-    // After every step of a dead body: it tips over when no blow came in time, counts how long it has lain, and gives
-    // way again when it would come to rest not lying.
+    // After every step of a dead body: it tips over when no blow came in time, counts how long it has lain wholly
+    // still (back to 0 whenever it moves), and gives way again when it would come to rest not lying.
     static void settle(Ragdoll doll, int now) {
         if (doll.toppleAt >= 0 && now >= doll.toppleAt) {
             doll.toppleAt = -1;
@@ -68,9 +68,9 @@ final class RagdollFalls {
                 topple(doll);
             }
         }
-        if (doll.slumped()) {
-            doll.rested++;
-        } else if (doll.toppleAt < 0 && doll.slumps < MOST_SLUMPS && doll.world.quiet() >= QUIET_BEFORE_SLUMP) {
+        doll.rested = doll.world.sleeping() ? doll.rested + 1 : 0;
+        if (!doll.slumped() && doll.toppleAt < 0 && doll.slumps < MOST_SLUMPS
+                && doll.world.quiet() >= QUIET_BEFORE_SLUMP) {
             doll.slumps++;
             collapse(doll);
         }

@@ -131,8 +131,8 @@ final class Ragdoll {
     // Where its boxes lie among every body's this tick (RagdollCrowd).
     int crowdFrom;
     int crowdTo;
-    // Dead: ticks its trunk or head has lain on something, and how often it was made to give way again as it came to
-    // rest still standing (RagdollFalls).
+    // Dead: ticks it has lain wholly still since it last moved, and how often it was made to give way again as it came
+    // to rest still standing (RagdollFalls).
     int rested;
     int slumps;
     // Dead: the push every part was given as it went limp (its creature's own), whether the blow that killed it has

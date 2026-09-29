@@ -21,16 +21,15 @@ import nl.tivek.multiversepowers.engine.client.render.entity.EntityPass;
 import nl.tivek.multiversepowers.engine.physics.Blocks;
 import org.slf4j.Logger;
 
-// The bodies left lying where they fell once their creatures are gone: each lies there as long as the player set, and
-// never less than LIE_LEAST, counted from when it came to lie, then sinks into the ground and puffs away.
+// The bodies left lying where they fell once their creatures are gone: each lies wholly still as long as the player
+// set, and never less than LIE_LEAST, then sinks into the ground and puffs away. A body that moves again (a block broken
+// under it, a blast) counts from 0 once it lies still again.
 final class Corpses {
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final int SINK_TICKS = 40;
     private static final double SINK_SPEED = 0.035;
-    // Ticks a body lies at least before it sinks away, however short the time the player set; one that never comes
-    // to lie goes this long after that.
+    // Ticks a body lies still at least before it sinks away, however short the time the player set.
     static final int LIE_LEAST = 100;
-    private static final int NEVER_LAY = 600;
 
     static final List<Ragdoll> ALL = new ArrayList<>();
     private static PoseStack stack = new PoseStack();
@@ -78,9 +77,14 @@ final class Corpses {
                 bodies.remove();
                 continue;
             }
-            if (doll.rested >= keep || now - doll.dead >= keep + NEVER_LAY) {
-                doll.sunk = 0;
-                continue;
+            if (doll.rested >= keep) {
+                // A sleeping body looks for the block under it only now and then: once more before it sinks.
+                doll.world.probe(Ragdoll.TICK, substeps, blocks);
+                if (doll.world.sleeping()) {
+                    doll.sunk = 0;
+                    continue;
+                }
+                doll.rested = 0;
             }
             RagdollCrowd.among(doll);
             doll.step(substeps, blocks);
@@ -88,19 +92,25 @@ final class Corpses {
         }
     }
 
-    // Makes room for another: the body that has lain longest sinks away, if one has lain long enough.
-    static boolean makeRoom() {
-        Ragdoll lain = null;
-        for (Ragdoll doll : ALL) {
-            if (doll.sunk < 0 && doll.rested >= LIE_LEAST && (lain == null || doll.rested > lain.rested)) {
-                lain = doll;
+    // Makes room for another: the body that has lain still longest sinks away, if one has lain still long enough.
+    static boolean makeRoom(int substeps, Blocks blocks) {
+        while (true) {
+            Ragdoll lain = null;
+            for (Ragdoll doll : ALL) {
+                if (doll.sunk < 0 && doll.rested >= LIE_LEAST && (lain == null || doll.rested > lain.rested)) {
+                    lain = doll;
+                }
             }
+            if (lain == null) {
+                return false;
+            }
+            lain.world.probe(Ragdoll.TICK, substeps, blocks);
+            if (lain.world.sleeping()) {
+                lain.sunk = 0;
+                return true;
+            }
+            lain.rested = 0;
         }
-        if (lain == null) {
-            return false;
-        }
-        lain.sunk = 0;
-        return true;
     }
 
     // How many lie there, not counting those already sinking away.
