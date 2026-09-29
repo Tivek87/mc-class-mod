@@ -159,10 +159,11 @@ public final class MechScript {
     private MechScript() {
     }
 
-    // The variant sent with the mech: bit 0 whether it breaks up, bit 1 whether it strikes a blow; the rest is that
-    // blow (MechAttacks.pack) or else the build's target's entity id plus one.
-    public static int variant(boolean breaking, int target, int blow) {
-        int rest = blow != 0 ? blow << 1 | 1 : (target + 1) << 1;
+    // The variant sent with the mech: bit 0 whether it breaks up, bit 1 whether it strikes a blow, bit 2 whether it
+    // climbs; the rest is that blow (MechAttacks.pack), that climb (as its pilot's game packs it) or else the build's
+    // target's entity id plus one.
+    public static int variant(boolean breaking, int target, int blow, int climb) {
+        int rest = blow != 0 ? blow << 2 | 1 : climb != 0 ? climb << 2 | 2 : (target + 1) << 2;
         return rest << 1 | (breaking ? BREAKING : BUILDING);
     }
 
@@ -171,11 +172,15 @@ public final class MechScript {
     }
 
     public static int target(int variant) {
-        return (variant & 2) != 0 ? -1 : (variant >>> 2) - 1;
+        return (variant & 6) != 0 ? -1 : (variant >>> 3) - 1;
     }
 
     public static MechAttacks.Blow blow(int variant) {
-        return (variant & 2) != 0 ? MechAttacks.unpack(variant >>> 2) : MechAttacks.Blow.NONE;
+        return (variant & 2) != 0 ? MechAttacks.unpack(variant >>> 3) : MechAttacks.Blow.NONE;
+    }
+
+    public static int climb(int variant) {
+        return (variant & 6) == 4 ? variant >>> 3 : 0;
     }
 
     public static double grown(double t, double from) {

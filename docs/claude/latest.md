@@ -1,22 +1,16 @@
 # Laatste sessie
 
-- Datum: 2026-09-28.
-- Deel 2 (2026-09-29): lichaamsdelen door elkaar/verkeerd om. Nieuw `LimbJoint` (ellips om een midden-richting uit
-  de rusthouding, echte grenzen schouder/heup/nek/poten, twist vanaf rust), meer botsparen (arm-arm, poten van vier,
-  hele capsules), `RigidCrowd`/`RagdollCrowd` (lijven botsen onderling; diep-in-elkaar begonnen = negeren, geen
-  wegslingeren), inslapen op netto verplaatsing. Tests: benen kruisen 0/24 (was 22/24), overlap gehalveerd, 98 groen.
-  In-game: stapel van 4, gegooid paar, dieren+dorpeling ok. Release 0.4.8-alpha.
-- Deel 1: romp in 2 delen (borst/buik) bij alle mobs, voor poses en ragdolls, glitch-vrij; daarna: liggende ragdolls
-  glijden (fix) en na landen eerst 3 s op de grond liggen vóór opstaan; daarna commit + push + release.
-- Gedaan: `SpineJoint` (taille: vouwen/zijwaarts/draaien binnen grenzen), `ModelParts.waist/far/core`, `BentParts`
-  buigt ook wat de romp draagt (robe, zadel, staart), `Limbs.spine` voor elk dier, `GetUp` mengt per romphelft.
-- Glijden: oorzaak in `RigidWorld`: wrijving zat vóór het opnieuw koppelen van gewrichten -> elk substapje schoof het
-  lijf een beetje (tot 2,8 blok in 10 s). Nu wrijving als laatste stap. `keepNear` trekt stilliggend lijf niet meer.
-- 3 s-regel: `Knocked.LIES` = 60 tikken op de grond (`touching`), server `Knockdowns.DOWN` 80 -> 110.
-- Getest: 93 unit-tests groen (nieuw: `RagdollRestTest`, `KnockedTest`, `ModelPartsTest`); in-game 3 runs: geen
-  NaN, lijken 0,000 blok kruip, opstaan bij lain 65-67, taille-knik zonder gaten. Testklasse/wereld/shots weg.
-- Release 0.4.7-alpha (CHANGELOG + CLAUDE.md layout bijgewerkt).
-- Niet van mij, niet aangeraakt: `docs/CHARACTERS.md`, `Roster.java` (andere sessie).
-- Volgende (user): lichaamsdelen door elkaar/verkeerd draaien fixen; dan ren-animatie zwaarder; mech armen/benen
-  los + vast in gaten (klimmen/springen).
-- Open: ideeën #24, #25, #31, #32, #33 wachten op ja/nee.
+- Datum: 2026-09-29. Verzoek: mech zwaarder/trager rennen, benen/armen niet meer los, niet meer vast in gaten/grotten
+  (klimmen/opstappen); daarna commit + push + release.
+- Oorzaken: IK-knip in `MechLegs.knee`, rechtervoet wachtte hele pas bij start, hoogte uit 1 kolom onder het midden
+  (viel in smalle gaten), grotdak telde als grond, geen klim boven 3,2 blok.
+- Gedaan: `MechGround` (grond onder hele voet/beide voeten, muren, richels), `MechClimb` (richel tot 9,5 blok: handen op
+  rand, optrekken, voet erop, eroverheen; via `MechDrivePayload` + mech-variant naar iedereen), `MechGait` (voeten, uit
+  `MechWalk` gesplitst: eerste stap meteen, achterblijvende voet stapt meteen, voetsteun naast gaten, vallen + harde
+  landing), `MechWalk` (lijf op voeten, hurkt voor bereik), `MechLegs`-vangnet. Rennen 0,75 -> 0,5 blok/tik, lange lage
+  passen. Server: klim doorgeven, geen slag tijdens klim, pilootspeling 3 blok. Benen stappen max 2,6 blok op.
+- Getest: 103 unit-tests groen (nieuw `MechClimbTest`, `MechDrivePayloadTest`); in-game baan (lopen, rennen, geulen,
+  trede, putten 5/7 diep, grot met dak): alles gehaald, geen voet buiten bereik, handen op richel, pilotenzicht ok.
+  Testklasse/wereld/shots weg. Regel aangescherpt: `CLAUDE.md` in-game tests (invoer van buiten tussen ticks).
+- User: "commit and push" (+ 2 screenshots van een hand op de richel) -> release 0.4.9-alpha (commit, push, GitHub).
+- Volgende: bug #35 (GL-vliegen "ultra traag", medium); ideeën #24, #25, #31, #32, #33 wachten op ja/nee.

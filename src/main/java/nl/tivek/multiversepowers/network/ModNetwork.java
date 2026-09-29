@@ -194,7 +194,7 @@ public final class ModNetwork {
     private static void onMechDrive(MechDrivePayload payload, IPayloadContext context) {
         context.enqueueWork(() -> {
             if (context.player() instanceof ServerPlayer serverPlayer) {
-                MechAssembly.drive(serverPlayer, payload.base(), payload.yaw());
+                MechAssembly.drive(serverPlayer, payload.base(), payload.yaw(), payload.climb());
             }
         });
     }

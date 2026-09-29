@@ -31,6 +31,10 @@ public final class MechPose {
     int button = -1;
     double press;
     MechAttacks.Blow blow = MechAttacks.Blow.NONE;
+    // Climbing, where each hand holds the ledge (in the world), how firmly, and which way the wall faces.
+    final Vec3[] ledge = new Vec3[2];
+    double hold;
+    Vec3 wall = Vec3.ZERO;
 
     MechPose(MechScript.Stage stage) {
         this.stage = stage;
@@ -54,7 +58,10 @@ public final class MechPose {
             pose.ankle[side] = this.ankle[side];
             pose.toes[side] = this.toes[side];
             pose.tip[side] = this.tip[side];
+            pose.ledge[side] = this.ledge[side];
         }
+        pose.hold = this.hold;
+        pose.wall = this.wall;
         pose.swing = this.swing;
         pose.walking = this.walking;
         pose.headYaw = this.headYaw;
@@ -81,6 +88,7 @@ public final class MechPose {
             pose.toes[side] = from.toes[side].lerp(to.toes[side], u).normalize();
             pose.tip[side] = Mth.lerp(u, from.tip[side], to.tip[side]);
         }
+        pose.hold = from.ledge[0] == to.ledge[0] ? Mth.lerp(u, from.hold, to.hold) : to.hold;
         pose.swing = Mth.lerp(u, from.swing, to.swing);
         pose.walking = Mth.lerp(u, from.walking, to.walking);
         pose.headYaw = Mth.lerp(u, from.headYaw, to.headYaw);
@@ -151,11 +159,16 @@ public final class MechPose {
         return this.blow;
     }
 
-    // One arm as the walk swings it, taken over by a blow while one is struck (at `t` of the build, past its end).
+    // One arm as the walk swings it, taken over by a blow while one is struck or by the ledge it climbs (at `t` of the
+    // build, past its end).
     public MechMoves.Arm arm(boolean right, double t, @Nullable MechAttacks.Held held) {
-        // Running, the forearms come up and pump instead of hanging.
-        double hang = this.walking * (1.0 - 0.8 * this.running);
+        // Running, the forearms come up a little and swing instead of hanging.
+        double hang = this.walking * (1.0 - 0.5 * this.running);
         MechMoves.Arm arm = MechMoves.walking(right, t, this.swing, hang);
+        Vec3 spot = this.ledge[right ? 0 : 1];
+        if (this.hold > 0.0 && spot != null) {
+            return MechClimb.arm(arm, this.torso, right, spot, this.wall, this.hold);
+        }
         if (!this.blow.striking()) {
             return arm;
         }

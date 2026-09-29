@@ -10,14 +10,16 @@ import nl.tivek.multiversepowers.engine.math.Vectors;
 
 // A walking mech's legs: each foot where its walk put it, the knee bent forward between the ankle and the hip.
 final class MechLegs {
+    static final double REACH = 0.999;
+
     private MechLegs() {
     }
 
     static void leg(LanternPainter painter, MechPose pose, boolean right, double apart, int seed) {
         int side = right ? 0 : 1;
-        Vec3 ankle = pose.ankle[side];
         Vec3 toes = pose.toes[side];
         Vec3 hip = pose.hips().point(MechPainter.side(MechScript.HIP, right));
+        Vec3 ankle = reached(hip, pose.ankle[side]);
         Vec3 knee = knee(ankle, hip, toes);
         Vec3 shin = knee.subtract(ankle).normalize();
         Vec3 thigh = hip.subtract(knee).normalize();
@@ -36,12 +38,21 @@ final class MechLegs {
         }
     }
 
+    // The ankle as far towards where its foot is put as the leg reaches: a foot put further off hangs short of it on
+    // the leg, never drawn off it.
+    static Vec3 reached(Vec3 hip, Vec3 ankle) {
+        Vec3 to = ankle.subtract(hip);
+        double most = (MechLegShapes.SHIN + MechLegShapes.THIGH) * REACH;
+        double far = to.length();
+        return far <= most ? ankle : hip.add(to.scale(most / far));
+    }
+
     // The knee two fixed lengths from the ankle and the hip, bent towards forward.
     static Vec3 knee(Vec3 ankle, Vec3 hip, Vec3 forward) {
         double shin = MechLegShapes.SHIN;
         double thigh = MechLegShapes.THIGH;
         Vec3 to = hip.subtract(ankle);
-        double far = Mth.clamp(to.length(), Math.abs(shin - thigh) + 1.0E-3, (shin + thigh) * 0.999);
+        double far = Mth.clamp(to.length(), Math.abs(shin - thigh) + 1.0E-3, (shin + thigh) * REACH);
         Vec3 along = to.lengthSqr() < 1.0E-8 ? Vectors.UP : to.normalize();
         double a = (shin * shin - thigh * thigh + far * far) / (2.0 * far);
         double h = Math.sqrt(Math.max(0.0, shin * shin - a * a));

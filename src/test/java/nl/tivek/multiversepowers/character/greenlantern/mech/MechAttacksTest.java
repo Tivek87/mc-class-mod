@@ -72,11 +72,11 @@ class MechAttacksTest {
     @Test
     void theBlowTravelsWithTheMech() {
         int packed = MechAttacks.pack(MechAttacks.DROP, 9, 41, Math.toRadians(-37.0));
-        int variant = MechScript.variant(false, -1, packed);
+        int variant = MechScript.variant(false, -1, packed, 0);
         assertEquals(new MechAttacks.Blow(MechAttacks.DROP, 9, 41, Math.toRadians(-37.0)), MechScript.blow(variant));
         assertEquals(-1, MechScript.target(variant));
         assertTrue(!MechScript.breaking(variant));
-        int building = MechScript.variant(true, 123456789, 0);
+        int building = MechScript.variant(true, 123456789, 0, 0);
         assertEquals(123456789, MechScript.target(building));
         assertEquals(MechAttacks.Blow.NONE, MechScript.blow(building));
         assertTrue(MechScript.breaking(building));

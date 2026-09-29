@@ -134,7 +134,7 @@ public final class MechPilot {
         if (pilot.broke() < 0.0 && pilot.t() >= MechScript.SETTLED + DRIVE_AFTER) {
             MechDrive.drive(player, pilot.id(), pilot.stage(), input, pilot.blow().striking());
             MechWalk.step(pilot.id(), MechDrive.stage(pilot.id()), player.getId(), player.getYRot(),
-                    player.getXRot(), pilot.blow());
+                    player.getXRot(), pilot.blow(), MechDrive.climb(pilot.id()));
             MechPose walk = MechWalk.latest(pilot.id());
             if (walk != null) {
                 feet = walk.seat();

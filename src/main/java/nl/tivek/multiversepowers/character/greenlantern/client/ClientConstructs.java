@@ -252,7 +252,8 @@ public final class ClientConstructs extends TrackedConstructs {
         Entity pilot = minecraft.level == null ? null : minecraft.level.getEntity(mech.owner());
         MechWalk.step(mech.id(), own != null ? own : MechScript.Stage.of(mech), mech.owner(),
                 pilot == null ? Float.NaN : mine ? pilot.getYRot() : pilot.getYHeadRot(),
-                pilot == null ? Float.NaN : pilot.getXRot(), MechScript.blow(mech.variant()));
+                pilot == null ? Float.NaN : pilot.getXRot(), MechScript.blow(mech.variant()),
+                own != null ? MechDrive.climb(mech.id()) : MechScript.climb(mech.variant()));
         MechPose pose = MechWalk.latest(mech.id());
         if (!mine && pose != null && pilot != null) {
             // Someone else's pilot sits on the seat as this game walks the mech, not a step behind it.

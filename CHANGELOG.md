@@ -3,6 +3,29 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.4.9-alpha] - 2026-09-29
+
+### Added
+- **Hard-Light Mech:** held against a ledge too high to step onto (up to 9 blocks), the mech climbs it: it slams both
+  hands onto the top, hauls itself up the wall, swings a foot up and heaves itself over. This gets it out of pits,
+  trenches and caves, and every player sees the climb.
+- **Hard-Light Mech:** walking off a drop, its feet hang as it falls and it lands with a heavy crash.
+
+### Changed
+- **Hard-Light Mech:** running is slower and heavier: long strides at a slow beat, feet pushed off low, less lean and
+  arm swing, and every footfall sinks the body and shakes the ground. Top speed is now 0.5 blocks a tick (was 0.75).
+- **Hard-Light Mech:** it stands on its feet instead of the ground under its middle: holes and trenches narrower than
+  its stance no longer drop it in, its feet step over or around them, and a cave's roof no longer counts as ground.
+- **Hard-Light Mech:** its legs alone step up at most 2.6 blocks; anything higher it climbs.
+- **Hard-Light Mech:** the server lets the pilot sit further from where it expects the seat, so a crouching or climbing
+  mech never pulls them back.
+
+### Fixed
+- **Hard-Light Mech:** its legs no longer come loose from its body: the body crouches to keep every foot in reach, a
+  foot left behind steps at once, and the first step comes straight away.
+- **Hard-Light Mech:** it no longer gets stuck when its cockpit already stands among blocks, and no longer walks into a
+  hole its cockpit would not fit in.
+
 ## [0.4.8-alpha] - 2026-09-29
 
 ### Added

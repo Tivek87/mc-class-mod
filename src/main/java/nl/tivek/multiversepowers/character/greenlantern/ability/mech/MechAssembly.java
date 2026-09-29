@@ -47,6 +47,13 @@ public final class MechAssembly implements Effect {
     private static final int VICTIM_AFTER = 10;
     private static final double MOST_STRIDE = 1.0;
     private static final double MOST_CLIMB = 3.0;
+    private static final int MOST_CLIMB_BITS = 1 << 22;
+    // How far (squared) the pilot may be from their seat as the server has it: close while the mech builds round them,
+    // looser as they climb aboard or it breaks up, loosest once it walks, as their own game crouches it over its feet
+    // and climbs it.
+    private static final double HELD = 0.09;
+    private static final double LOOSE = 1.0;
+    private static final double WALKING = 9.0;
 
     private static final Map<UUID, MechAssembly> ACTIVE = new HashMap<>();
     private static final Cooldowns<String> COOLDOWNS = new Cooldowns<>(1);
@@ -59,6 +66,7 @@ public final class MechAssembly implements Effect {
     private final int victim;
     private int t;
     private int drivenAt = -1;
+    private int climb;
     private int breaking = -1;
     @Nullable
     private MechAttack attack;
@@ -168,9 +176,9 @@ public final class MechAssembly implements Effect {
         return hit.getType() == HitResult.Type.MISS ? null : hit.getLocation().y;
     }
 
-    // The pilot's own game walks the mech (see MechDrive); a step further than it could have walked since the last one
-    // is not taken.
-    public static void drive(ServerPlayer player, Vec3 base, float yaw) {
+    // The pilot's own game walks the mech (see MechDrive) and says how far it has got climbing, which goes on to every
+    // game; a step further than it could have walked since the last one is not taken.
+    public static void drive(ServerPlayer player, Vec3 base, float yaw, int climb) {
         MechAssembly mech = ACTIVE.get(player.getUUID());
         if (mech == null || mech.breaking >= 0 || mech.t < MechScript.SETTLED || !Float.isFinite(yaw)
                 || !Double.isFinite(base.x) || !Double.isFinite(base.y) || !Double.isFinite(base.z)) {
@@ -181,11 +189,12 @@ public final class MechAssembly implements Effect {
         double dz = base.z - was.z;
         double reach = MOST_STRIDE * Math.max(1, mech.drivenAt < 0 ? 1 : mech.t - mech.drivenAt);
         if (dx * dx + dz * dz > reach * reach || Math.abs(base.y - was.y) > MOST_CLIMB * reach
-                || !player.serverLevel().isLoaded(BlockPos.containing(base))) {
+                || !player.serverLevel().isLoaded(BlockPos.containing(base)) || climb < 0 || climb >= MOST_CLIMB_BITS) {
             return;
         }
         mech.stage = MechScript.Stage.facing(base, yaw);
         mech.drivenAt = mech.t;
+        mech.climb = mech.attack == null ? climb : 0;
     }
 
     public static boolean piloting(ServerPlayer player) {
@@ -195,7 +204,8 @@ public final class MechAssembly implements Effect {
     // A left click in a built mech strikes one blow; clicks while it lasts do nothing.
     public static boolean strike(ServerPlayer player) {
         MechAssembly mech = ACTIVE.get(player.getUUID());
-        if (mech == null || mech.breaking >= 0 || mech.t < MechScript.SETTLED || mech.attack != null) {
+        if (mech == null || mech.breaking >= 0 || mech.t < MechScript.SETTLED || mech.attack != null
+                || mech.climb != 0) {
             return false;
         }
         mech.attack = MechAttack.start(player, player.serverLevel(), mech.upright());
@@ -226,7 +236,7 @@ public final class MechAssembly implements Effect {
         }
         if (this.breaking >= 0) {
             this.breaking++;
-            this.hold(this.stage.point(MechScript.lowered(this.breaking)), true);
+            this.hold(this.stage.point(MechScript.lowered(this.breaking)), LOOSE);
             if (this.breaking >= MechScript.BREAK_TICKS) {
                 this.end(level);
                 return false;
@@ -251,7 +261,8 @@ public final class MechAssembly implements Effect {
                 this.attack = null;
             }
         }
-        this.hold(body.point(MechScript.pilot(this.stage, this.t)), this.t <= MechScript.ABOARD || settled);
+        this.hold(body.point(MechScript.pilot(this.stage, this.t)),
+                settled ? WALKING : this.t <= MechScript.ABOARD ? LOOSE : HELD);
         this.send(level);
         return true;
     }
@@ -271,13 +282,14 @@ public final class MechAssembly implements Effect {
         ParticleFx.cloud(level, ParticleFx.dust(PowerRing.BRIGHT, 1.4F), chest, 30, 2.5, 0.15);
     }
 
-    // The pilot hangs where the mech needs them: their own game moves them there, the server only puts them back if not.
-    private void hold(Vec3 at, boolean loose) {
+    // The pilot hangs where the mech needs them: their own game moves them there, the server only puts them back if they
+    // are further off than `slack` (squared).
+    private void hold(Vec3 at, double slack) {
         ServerPlayer player = this.owner;
         player.setDeltaMovement(Vec3.ZERO);
         player.resetFallDistance();
         player.connection.aboveGroundTickCount = 0;
-        if (player.position().distanceToSqr(at) > (loose ? 1.0 : 0.09)) {
+        if (player.position().distanceToSqr(at) > slack) {
             player.connection.teleport(at.x, at.y, at.z, player.getYRot(), player.getXRot(), RelativeMovement.ROTATION);
             player.connection.send(new ClientboundSetEntityMotionPacket(player));
         }
@@ -304,7 +316,8 @@ public final class MechAssembly implements Effect {
                 new ConstructPayload(this.id, this.owner.getId(), base, this.stage.point(this.stage.target())
                         .subtract(base), (float) this.stage.pilotZ(), 1.0F, charge,
                         caught != null && this.attack.gripped(), ConstructPayload.MECH,
-                        MechScript.variant(broken, shown, this.attack == null ? 0 : this.attack.packed()), this.t,
+                        MechScript.variant(broken, shown, this.attack == null ? 0 : this.attack.packed(), this.climb),
+                        this.t,
                         null));
     }
 
