@@ -3,6 +3,21 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.5.1-alpha] - 2026-09-29
+
+### Changed
+- **Project:** the code is sorted into smaller folders: the Hard-Light Mech's code into shapes, walk and touch; the
+  construct painter's meshes and creature drawing; the ragdoll joints; Thor's motion, poses and blows; the Giant
+  Hands' light; the mixins into client and render.
+- **Project:** the two largest files are split: where a model's limbs and trunk bend, and how constructs shake the
+  camera, each have a file of their own.
+- **Project:** vector helpers that were copied into many files are now one shared set.
+- **Docs:** ideas and designs not built yet are gathered in `docs/ideas/`.
+
+### Removed
+- **Project:** unused code: a Doc Ock block pick-up that nothing called (and its two messages), and ten other unused
+  helpers and values.
+
 ## [0.5.0-alpha] - 2026-09-29
 
 ### Added

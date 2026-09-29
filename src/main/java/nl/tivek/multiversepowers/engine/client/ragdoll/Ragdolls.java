@@ -39,7 +39,7 @@ import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.config.client.ClientSettings;
 import nl.tivek.multiversepowers.engine.client.model.BentParts;
 import nl.tivek.multiversepowers.engine.client.model.ModelParts;
-import nl.tivek.multiversepowers.engine.client.render.EntityPass;
+import nl.tivek.multiversepowers.engine.client.render.entity.EntityPass;
 import nl.tivek.multiversepowers.engine.client.world.LevelBlocks;
 import nl.tivek.multiversepowers.engine.math.Ease;
 import org.joml.Matrix4f;

@@ -3,7 +3,7 @@ package nl.tivek.multiversepowers.character.greenlantern.client.render;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.fire.FirePainter;
 import nl.tivek.multiversepowers.engine.client.render.ConstructPainter;
-import nl.tivek.multiversepowers.engine.client.render.Mesh;
+import nl.tivek.multiversepowers.engine.client.render.mesh.Mesh;
 import nl.tivek.multiversepowers.engine.math.Ease;
 
 // Sizes in blocks on a frame at the middle of the back: x across, y up the spine, z out of the back.

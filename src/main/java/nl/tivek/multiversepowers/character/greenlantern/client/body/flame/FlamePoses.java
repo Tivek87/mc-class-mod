@@ -7,6 +7,7 @@ import nl.tivek.multiversepowers.character.greenlantern.ability.flame.FlameMove;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.fire.FlamePainter;
 import nl.tivek.multiversepowers.engine.math.Ease;
 import nl.tivek.multiversepowers.engine.math.Keyframes;
+import static nl.tivek.multiversepowers.engine.math.Vectors.square;
 
 final class FlamePoses extends FlameKeys {
     // From the first-person view to the body: the view's reach is squeezed onto the body's.

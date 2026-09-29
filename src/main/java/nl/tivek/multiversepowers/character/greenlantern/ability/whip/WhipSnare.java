@@ -25,6 +25,7 @@ import nl.tivek.multiversepowers.character.greenlantern.construct.ConstructPaylo
 import nl.tivek.multiversepowers.engine.entity.HeldMobs;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 import nl.tivek.multiversepowers.engine.math.Ease;
+import nl.tivek.multiversepowers.engine.math.Vectors;
 import nl.tivek.multiversepowers.engine.target.Targeting;
 import nl.tivek.multiversepowers.engine.world.LoadedWorld;
 
@@ -121,7 +122,7 @@ public final class WhipSnare {
 
     // In front of the owner on the ground, or short of a wall in the way.
     private Vec3 landing(ServerLevel level) {
-        Vec3 ahead = WhipHits.flat(this.owner.getLookAngle());
+        Vec3 ahead = Vectors.flat(this.owner.getLookAngle());
         Vec3 spot = this.owner.position().add(ahead.scale(LANDS_AHEAD + this.target.getBbWidth() * 0.5));
         Vec3 lift = new Vec3(0.0, this.target.getBbHeight() * 0.5, 0.0);
         BlockHitResult wall = LoadedWorld.clip(level, new ClipContext(this.target.position().add(lift), spot.add(lift),

@@ -6,6 +6,7 @@ import nl.tivek.multiversepowers.character.greenlantern.ability.sword.SwordMove;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.weapon.SwordPainter;
 import nl.tivek.multiversepowers.engine.math.Ease;
 import nl.tivek.multiversepowers.engine.math.Vectors;
+import static nl.tivek.multiversepowers.engine.math.Vectors.square;
 
 abstract class SwordEquip extends SwordKeys {
     static final Vec3 TOSS_AXIS = new Vec3(0.70, 0.05, -0.71).normalize();

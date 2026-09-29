@@ -29,6 +29,7 @@ import static nl.tivek.multiversepowers.character.greenlantern.ability.hands.Gia
 import static nl.tivek.multiversepowers.character.greenlantern.ability.hands.GiantHands.GRAB_TALL;
 import static nl.tivek.multiversepowers.character.greenlantern.ability.hands.GiantHands.GRAB_WIDE;
 import static nl.tivek.multiversepowers.character.greenlantern.ability.hands.GiantHands.SCALE;
+import static nl.tivek.multiversepowers.engine.math.Vectors.flat;
 
 // What the ragdoll and its catch, the ring hold, the clap, the finger gun, the scissors, the swallow, the ring beam and
 // the scoop do.
@@ -509,8 +510,4 @@ abstract class GiantHandFeats extends GiantHandTricks {
         this.storm.sound(level, palm, SoundEvents.ROOTED_DIRT_BREAK, 1.6F, 0.8F);
     }
 
-    private static Vec3 flat(Vec3 way) {
-        Vec3 flat = new Vec3(way.x, 0.0, way.z);
-        return flat.lengthSqr() < 1.0E-6 ? new Vec3(0.0, 0.0, 1.0) : flat.normalize();
-    }
 }

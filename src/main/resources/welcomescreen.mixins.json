@@ -9,21 +9,21 @@
     "ServerGamePacketListenerMixin"
   ],
   "client": [
-    "AgeableHierarchicalModelAccess",
-    "AgeableListModelAccess",
-    "CameraMixin",
-    "CapeLayerMixin",
-    "ClientPacketListenerMixin",
-    "EntityShadowMixin",
-    "HandItemMixin",
-    "KeyEntryMixin",
-    "LivingEntityPoofMixin",
-    "LivingEntityRendererMixin",
-    "MinecraftMixin",
-    "ModelPartMixin",
-    "ModelRenderMixin",
-    "PlayerModelMixin",
-    "PlayerRendererMixin"
+    "client.CameraMixin",
+    "client.ClientPacketListenerMixin",
+    "client.KeyEntryMixin",
+    "client.LivingEntityPoofMixin",
+    "client.MinecraftMixin",
+    "client.render.AgeableHierarchicalModelAccess",
+    "client.render.AgeableListModelAccess",
+    "client.render.CapeLayerMixin",
+    "client.render.EntityShadowMixin",
+    "client.render.HandItemMixin",
+    "client.render.LivingEntityRendererMixin",
+    "client.render.ModelPartMixin",
+    "client.render.ModelRenderMixin",
+    "client.render.PlayerModelMixin",
+    "client.render.PlayerRendererMixin"
   ],
   "injectors": {
     "defaultRequire": 1

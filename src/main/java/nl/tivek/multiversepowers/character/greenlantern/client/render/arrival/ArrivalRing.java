@@ -8,7 +8,7 @@ import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import nl.tivek.multiversepowers.character.greenlantern.Arrival;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.suit.Ring;
 import nl.tivek.multiversepowers.engine.client.render.ConstructPainter;
-import nl.tivek.multiversepowers.engine.client.render.Mesh;
+import nl.tivek.multiversepowers.engine.client.render.mesh.Mesh;
 import nl.tivek.multiversepowers.engine.math.Colors;
 import nl.tivek.multiversepowers.engine.math.Ease;
 import nl.tivek.multiversepowers.engine.math.Vectors;

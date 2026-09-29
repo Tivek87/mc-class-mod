@@ -24,7 +24,7 @@ public final class BentParts {
     // A part drawn bent: the bend and the far half's turn in the bent part's own axes; the cut in this part's own
     // pixels (a point lies past it, in the far half, where plane . (x, y, z) + plane[3] is above 0); where its points
     // go, past the cut and on it; and how the far half's faces turn.
-    private record Bent(ModelParts.Bend bend, Matrix3f turn, float[] plane, Matrix4f far, Matrix4f half,
+    private record Bent(ModelBends.Bend bend, Matrix3f turn, float[] plane, Matrix4f far, Matrix4f half,
             Matrix3f farFaces) {
     }
 
@@ -43,13 +43,13 @@ public final class BentParts {
     }
 
     // Draws `part` bent by `turn` (the far half's turn in the part's own axes) until clear().
-    public static void bend(ModelPart part, ModelParts.Bend bend, Quaternionf turn) {
+    public static void bend(ModelPart part, ModelBends.Bend bend, Quaternionf turn) {
         bend(part, bend, turn, Set.of());
     }
 
     // As above, and the parts drawn inside it bend along with it, all but those in `apart` (parts that are posed on
     // their own, and all that is drawn inside them).
-    public static void bend(ModelPart part, ModelParts.Bend bend, Quaternionf turn, Set<ModelPart> apart) {
+    public static void bend(ModelPart part, ModelBends.Bend bend, Quaternionf turn, Set<ModelPart> apart) {
         HALF.identity().slerp(turn, 0.5F);
         Matrix3f whole = new Matrix3f().set(turn);
         float[] k = bend.knee();
@@ -68,7 +68,7 @@ public final class BentParts {
 
     // Every part drawn inside a bent one, `into` taking its parent's pixels to the bent part's: the same cut and the
     // same moves, seen from its own frame.
-    private static void inner(ModelPart parent, ModelParts.Bend bend, Matrix3f turn, float[] plane, Matrix4f far,
+    private static void inner(ModelPart parent, ModelBends.Bend bend, Matrix3f turn, float[] plane, Matrix4f far,
             Matrix4f half, Matrix4f into, Set<ModelPart> apart) {
         for (ModelPart child : parent.children.values()) {
             if (apart.contains(child)) {

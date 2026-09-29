@@ -10,6 +10,15 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import nl.tivek.multiversepowers.character.greenlantern.ability.light.LightBubble;
+import nl.tivek.multiversepowers.character.greenlantern.client.mech.shape.MechArmShapes;
+import nl.tivek.multiversepowers.character.greenlantern.client.mech.shape.MechBodyShapes;
+import nl.tivek.multiversepowers.character.greenlantern.client.mech.shape.MechHeadShapes;
+import nl.tivek.multiversepowers.character.greenlantern.client.mech.shape.MechLegShapes;
+import nl.tivek.multiversepowers.character.greenlantern.client.mech.shape.MechParts;
+import nl.tivek.multiversepowers.character.greenlantern.client.mech.touch.MechHandRig;
+import nl.tivek.multiversepowers.character.greenlantern.client.mech.touch.MechTouch;
+import nl.tivek.multiversepowers.character.greenlantern.client.mech.walk.MechPose;
+import nl.tivek.multiversepowers.character.greenlantern.client.mech.walk.MechWalk;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.LanternPainter;
 import nl.tivek.multiversepowers.character.greenlantern.construct.ConstructPayload;
 import nl.tivek.multiversepowers.character.greenlantern.mech.MechAttacks;
@@ -161,7 +170,7 @@ public final class MechPainter {
         }
     }
 
-    static Vec3 side(Vec3 local, boolean right) {
+    public static Vec3 side(Vec3 local, boolean right) {
         return right ? local : MechScript.mirror(local);
     }
 

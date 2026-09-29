@@ -4,7 +4,7 @@ import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.client.model.PlayerModel;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.util.Mth;
-import nl.tivek.multiversepowers.engine.client.render.EntityPass;
+import nl.tivek.multiversepowers.engine.client.render.entity.EntityPass;
 import nl.tivek.multiversepowers.engine.rig.Ik;
 import org.joml.Matrix3f;
 import org.joml.Quaternionf;

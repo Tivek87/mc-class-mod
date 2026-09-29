@@ -7,7 +7,7 @@ import nl.tivek.multiversepowers.config.client.ClientSettings;
 import nl.tivek.multiversepowers.engine.client.fx.CameraShake;
 import nl.tivek.multiversepowers.engine.client.fx.ScreenFlash;
 import nl.tivek.multiversepowers.engine.client.render.ConstructPainter;
-import nl.tivek.multiversepowers.engine.client.render.Lens;
+import nl.tivek.multiversepowers.engine.client.fx.Lens;
 import nl.tivek.multiversepowers.engine.client.render.Material;
 import nl.tivek.multiversepowers.engine.math.Colors;
 import nl.tivek.multiversepowers.engine.math.Ease;

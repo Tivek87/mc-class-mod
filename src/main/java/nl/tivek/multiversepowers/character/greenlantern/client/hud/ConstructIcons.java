@@ -10,7 +10,7 @@ import nl.tivek.multiversepowers.character.greenlantern.client.render.weapon.Wea
 import nl.tivek.multiversepowers.character.greenlantern.construct.Construct;
 import nl.tivek.multiversepowers.engine.client.gui.GuiShapes;
 import nl.tivek.multiversepowers.engine.client.render.ConstructPainter;
-import nl.tivek.multiversepowers.engine.client.render.Mesh;
+import nl.tivek.multiversepowers.engine.client.render.mesh.Mesh;
 import nl.tivek.multiversepowers.engine.math.Vectors;
 
 public final class ConstructIcons {

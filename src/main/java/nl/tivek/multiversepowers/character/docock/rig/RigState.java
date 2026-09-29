@@ -71,7 +71,6 @@ abstract class RigState {
     static final double LEG_RUN_BONUS = 0.4;
     static final double IDLE_CHANCE = 0.004;
     static final double BUILD_RANGE = 10.0;
-    static final int BUILD_CLUSTER = 27;
     static final float BUILD_DAMAGE = 8.0F;
 
     static final int SHIELD_TIME = 6;

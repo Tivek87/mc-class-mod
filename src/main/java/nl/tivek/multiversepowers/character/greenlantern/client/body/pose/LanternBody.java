@@ -11,7 +11,7 @@ import nl.tivek.multiversepowers.character.greenlantern.client.ClientRing;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.arm.BeamArm;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.arm.BoltArm;
 import nl.tivek.multiversepowers.engine.client.pose.Stance;
-import nl.tivek.multiversepowers.engine.client.render.EntityPass;
+import nl.tivek.multiversepowers.engine.client.render.entity.EntityPass;
 import nl.tivek.multiversepowers.engine.math.Ease;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;

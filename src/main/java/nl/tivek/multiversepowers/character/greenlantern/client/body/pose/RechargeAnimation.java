@@ -25,7 +25,7 @@ import nl.tivek.multiversepowers.character.greenlantern.client.ClientRing;
 import nl.tivek.multiversepowers.character.greenlantern.client.flight.ClientFlight;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.PowerBattery;
 import nl.tivek.multiversepowers.engine.client.model.BentParts;
-import nl.tivek.multiversepowers.engine.client.render.FirstPersonArm;
+import nl.tivek.multiversepowers.engine.client.render.entity.FirstPersonArm;
 import nl.tivek.multiversepowers.engine.math.Ease;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;

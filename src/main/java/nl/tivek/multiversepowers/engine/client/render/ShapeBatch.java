@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ForkJoinPool;
+import nl.tivek.multiversepowers.engine.client.render.mesh.Mesh;
 
 // The shapes a painter held back (see ConstructPainter.batch), worked out together: split into runs of about equal
 // work, each drawn by a painter of its own, all at once on other threads, and joined back in the order they were drawn.

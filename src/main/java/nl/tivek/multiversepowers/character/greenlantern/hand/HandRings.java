@@ -41,7 +41,6 @@ abstract class HandRings extends HandMarvels {
     private static final double CHAIN_THROW = 28.0;
     public static final int CHAINS_SHOOT = ticks(CHAIN_SHOOT);
     public static final int CHAINS_REACH = ticks(CHAIN_REACH);
-    public static final int CHAINS_WRAPPED = ticks(CHAIN_WRAP);
     public static final int CHAINS_YANK = ticks(CHAIN_YANK);
     public static final int CHAINS_CATCH = ticks(CHAIN_CATCH);
     public static final int[] CHAINS_SQUEEZE = { ticks(CHAIN_CATCH + 1.5), ticks(CHAIN_CATCH + 3.5) };

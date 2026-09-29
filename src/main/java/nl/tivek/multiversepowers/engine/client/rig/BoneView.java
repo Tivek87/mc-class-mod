@@ -19,9 +19,10 @@ import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.engine.client.model.BentParts;
+import nl.tivek.multiversepowers.engine.client.model.ModelBends;
 import nl.tivek.multiversepowers.engine.client.model.ModelParts;
 import nl.tivek.multiversepowers.engine.client.render.ConstructPainter;
-import nl.tivek.multiversepowers.engine.client.render.EntityPass;
+import nl.tivek.multiversepowers.engine.client.render.entity.EntityPass;
 import org.joml.Matrix3f;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
@@ -109,8 +110,8 @@ public final class BoneView {
             return;
         }
         Vec3 camera = Minecraft.getInstance().gameRenderer.getMainCamera().getPosition();
-        int core = ModelParts.core(parts);
-        ModelParts.Bend waist = ModelParts.waist(parts, core);
+        int core = ModelBends.core(parts);
+        ModelBends.Bend waist = ModelBends.waist(parts, core);
         for (ModelParts.Part part : parts) {
             float[] box = part.bounds();
             if (waist != null && part == parts.get(core)) {
@@ -134,7 +135,7 @@ public final class BoneView {
             double ax = camera.x + POINT.x;
             double ay = camera.y + POINT.y;
             double az = camera.z + POINT.z;
-            ModelParts.Bend bend = ModelParts.bend(part);
+            ModelBends.Bend bend = ModelBends.bend(part);
             if (bend != null) {
                 // An arm or a leg is two bones, joined at its elbow or knee and bent as a limp body bends it.
                 float[] knee = bend.knee();
@@ -158,7 +159,7 @@ public final class BoneView {
         }
     }
 
-    private static void trunk(EntityModel<?> model, Matrix4f drawn, ModelParts.Part part, ModelParts.Bend waist,
+    private static void trunk(EntityModel<?> model, Matrix4f drawn, ModelParts.Part part, ModelBends.Bend waist,
             Vec3 camera) {
         float[] box = part.bounds();
         float[] knee = waist.knee();

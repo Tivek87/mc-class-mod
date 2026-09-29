@@ -13,9 +13,10 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.engine.client.model.BentParts;
+import nl.tivek.multiversepowers.engine.client.model.ModelBends;
 import nl.tivek.multiversepowers.engine.client.model.ModelParts;
 import nl.tivek.multiversepowers.engine.physics.Blocks;
-import nl.tivek.multiversepowers.engine.physics.Pin;
+import nl.tivek.multiversepowers.engine.physics.joint.Pin;
 import nl.tivek.multiversepowers.engine.physics.RigidWorld;
 import org.joml.Matrix3d;
 import org.joml.Matrix3f;
@@ -101,7 +102,7 @@ final class Ragdoll {
     // and so is a trunk that bends at its waist.
     final int[] body;
     final int[] lower;
-    private final ModelParts.Bend[] bends;
+    private final ModelBends.Bend[] bends;
     private final double[] center;
     // Every part it moves, the parts that copy them too, and where each sits in the copies layers draw.
     private final ModelPart[] moved;
@@ -156,7 +157,7 @@ final class Ragdoll {
     private final double[] scratch = new double[7];
 
     Ragdoll(LivingEntity entity, EntityModel<?> model, List<ModelParts.Part> parts, int[] body,
-            ModelParts.Bend[] bends, boolean[] low, double[] center, int core, State state) {
+            ModelBends.Bend[] bends, boolean[] low, double[] center, int core, State state) {
         this.entity = entity;
         this.model = model;
         this.parts = parts;
@@ -185,7 +186,7 @@ final class Ragdoll {
         this.hold = new Pin(core, 0.0, 0.0, 0.0, 0.0);
         this.world.gravity = GRAVITY;
         int bodies = parts.size();
-        for (ModelParts.Bend bend : bends) {
+        for (ModelBends.Bend bend : bends) {
             bodies += bend != null ? 1 : 0;
         }
         this.was = new double[bodies * 7];

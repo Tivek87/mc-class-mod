@@ -2,6 +2,9 @@ package nl.tivek.multiversepowers.character.greenlantern.client.mech;
 
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
+import nl.tivek.multiversepowers.character.greenlantern.client.mech.shape.MechBodyShapes;
+import nl.tivek.multiversepowers.character.greenlantern.client.mech.shape.MechParts;
+import nl.tivek.multiversepowers.character.greenlantern.client.mech.walk.MechPose;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.LanternPainter;
 import nl.tivek.multiversepowers.character.greenlantern.mech.MechScript;
 import nl.tivek.multiversepowers.engine.client.render.ConstructPainter.Frame;

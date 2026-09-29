@@ -1,5 +1,7 @@
 package nl.tivek.multiversepowers.engine.physics;
 
+import nl.tivek.multiversepowers.engine.physics.joint.SelfContact;
+
 // A rigid world among the boxes of other worlds about it (other limp bodies lying there): each body, as a capsule
 // along its longest side, is pushed out of them, and they are not moved. Every world pushes itself out of the others,
 // so bodies falling on each other come to lie on each other instead of through.

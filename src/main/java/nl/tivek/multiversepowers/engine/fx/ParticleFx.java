@@ -170,19 +170,6 @@ public final class ParticleFx {
         }
     }
 
-    public static void magicCircle(ServerLevel level, ParticleOptions primary, ParticleOptions secondary,
-            Vec3 center, double radius, double rotation) {
-        ring(level, primary, center, radius, 36, rotation);
-        ring(level, secondary, center, radius * 0.7, 24, -rotation * 0.8);
-        ring(level, primary, center, radius * 0.35, 16, rotation * 1.2);
-        for (int i = 0; i < 6; i++) {
-            double angle = rotation + (Math.PI * 2 * i / 6.0);
-            Vec3 outer = center.add(Math.cos(angle) * radius, 0, Math.sin(angle) * radius);
-            Vec3 inner = center.add(Math.cos(angle) * (radius * 0.35), 0, Math.sin(angle) * (radius * 0.35));
-            line(level, secondary, inner, outer, 0.4);
-        }
-    }
-
     public static void implosion(ServerLevel level, ParticleOptions particle, Vec3 center, double radius, int count,
             double speed) {
         for (int i = 0; i < count; i++) {

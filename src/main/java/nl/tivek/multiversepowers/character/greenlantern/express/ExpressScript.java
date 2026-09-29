@@ -49,7 +49,6 @@ public final class ExpressScript {
     public static final int BELL_TICKS = 60;
     public static final int BELL_EVERY = 11;
     public static final double DRIVER_RADIUS = 1.2;
-    public static final double LEAD_RADIUS = 0.55;
     public static final double TENDER_WHEEL = 0.5;
     // A chuff for every quarter turn of the driving wheels.
     public static final double CHUFF_BLOCKS = Math.PI * 2.0 * DRIVER_RADIUS * SCALE / 4.0;

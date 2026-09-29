@@ -6,6 +6,9 @@ import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.fire.FlamePainter;
 import nl.tivek.multiversepowers.engine.client.render.ConstructPainter;
 import nl.tivek.multiversepowers.engine.math.Keyframes;
+import static nl.tivek.multiversepowers.engine.math.Vectors.square;
+import static nl.tivek.multiversepowers.engine.math.Vectors.unit;
+import static nl.tivek.multiversepowers.engine.math.Vectors.yawed;
 
 abstract class FlameCurves {
     static final double OWN_GUN = 0.91;
@@ -137,27 +140,4 @@ abstract class FlameCurves {
         return Pose.of(n).mix(to, (float) (u * u * (3.0F - 2.0F * u)));
     }
 
-    static Vec3 unit(Vec3 way, Vec3 otherwise) {
-        double length = way.length();
-        return length < 1.0E-4 ? otherwise : way.scale(1.0 / length);
-    }
-
-    static Vec3 square(Vec3 way, Vec3 axis) {
-        Vec3 flat = way.subtract(axis.scale(way.dot(axis)));
-        if (flat.lengthSqr() < 1.0E-6) {
-            Vec3 other = Math.abs(axis.y) < 0.9 ? new Vec3(0.0, 1.0, 0.0) : new Vec3(1.0, 0.0, 0.0);
-            flat = other.subtract(axis.scale(other.dot(axis)));
-        }
-        return flat.normalize();
-    }
-
-    // Turns a view-space way to the right by the angle (radians), about the view's up.
-    static Vec3 yawed(Vec3 way, double angle) {
-        if (angle == 0.0) {
-            return way;
-        }
-        double cos = Math.cos(angle);
-        double sin = Math.sin(angle);
-        return new Vec3(way.x * cos - way.z * sin, way.y, way.x * sin + way.z * cos);
-    }
 }

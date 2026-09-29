@@ -7,6 +7,10 @@ import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.character.greenlantern.ability.light.LightBubble;
 import nl.tivek.multiversepowers.character.greenlantern.client.ClientConstructs;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.LanternPainter;
+import nl.tivek.multiversepowers.character.greenlantern.client.render.hand.light.HandFeatLight;
+import nl.tivek.multiversepowers.character.greenlantern.client.render.hand.light.HandMarvelLight;
+import nl.tivek.multiversepowers.character.greenlantern.client.render.hand.light.HandRingLight;
+import nl.tivek.multiversepowers.character.greenlantern.client.render.hand.light.HandTrickLight;
 import nl.tivek.multiversepowers.character.greenlantern.client.victim.HandVictims;
 import nl.tivek.multiversepowers.character.greenlantern.construct.ConstructPayload;
 import nl.tivek.multiversepowers.character.greenlantern.duo.HandDuo;
@@ -16,8 +20,8 @@ import nl.tivek.multiversepowers.engine.client.render.ConstructPainter;
 import nl.tivek.multiversepowers.engine.client.rig.BoneView;
 import nl.tivek.multiversepowers.engine.math.Ease;
 import nl.tivek.multiversepowers.engine.math.Vectors;
-import static nl.tivek.multiversepowers.character.greenlantern.client.render.hand.HandLight.blows;
-import static nl.tivek.multiversepowers.character.greenlantern.client.render.hand.HandLight.ground;
+import static nl.tivek.multiversepowers.character.greenlantern.client.render.hand.light.HandLight.blows;
+import static nl.tivek.multiversepowers.character.greenlantern.client.render.hand.light.HandLight.ground;
 import static nl.tivek.multiversepowers.character.greenlantern.client.render.hand.HandPair.brokenPair;
 import static nl.tivek.multiversepowers.character.greenlantern.client.render.hand.HandPair.pair;
 import static nl.tivek.multiversepowers.character.greenlantern.client.render.hand.HandRig.JOINTS;
@@ -208,7 +212,7 @@ public final class HandPainter {
                 place.scale());
     }
 
-    static ConstructPainter.Frame handFrame(HandPose.Place place, boolean left) {
+    public static ConstructPainter.Frame handFrame(HandPose.Place place, boolean left) {
         return new ConstructPainter.Frame(place.wrist(), left ? place.right().scale(-1.0) : place.right(), place.up(),
                 place.forward(), place.scale());
     }
@@ -238,7 +242,7 @@ public final class HandPainter {
     }
 
     // The tip of finger k (0 index to 3 little finger, 4 the thumb), as drawn.
-    static Vec3 fingerTip(HandPose pose, HandPose.Place place, int k) {
+    public static Vec3 fingerTip(HandPose pose, HandPose.Place place, int k) {
         return k == 4 ? thumbTip(pose, place, false)
                 : digit(handFrame(place, false), pose, k)[2].at(0.0, JOINTS[k][2], 0.0);
     }
@@ -248,7 +252,7 @@ public final class HandPainter {
     }
 
     // The gem of the ring on the middle finger, as drawn.
-    static Vec3 ringGem(HandPose pose, HandPose.Place place) {
+    public static Vec3 ringGem(HandPose pose, HandPose.Place place) {
         return digit(handFrame(place, false), pose, 1)[0].at(0.0, 0.62, -0.5);
     }
 

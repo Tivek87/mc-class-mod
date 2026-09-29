@@ -51,9 +51,9 @@ class ModelPartsTest {
         HumanoidModel<LivingEntity> person = new HumanoidModel<>(
                 LayerDefinition.create(HumanoidModel.createMesh(CubeDeformation.NONE, 0.0F), 64, 64).bakeRoot());
         List<ModelParts.Part> parts = parts(person);
-        int core = ModelParts.core(parts);
+        int core = ModelBends.core(parts);
         assertEquals(person.body, parts.get(core).part());
-        ModelParts.Bend waist = ModelParts.waist(parts, core);
+        ModelBends.Bend waist = ModelBends.waist(parts, core);
         assertNotNull(waist);
         assertEquals(1, waist.axis());
         assertEquals(6.0F, waist.at(), CLOSE);
@@ -61,7 +61,7 @@ class ModelPartsTest {
         // The belly and hips fold ahead (-z) about -x, much further than back.
         assertEquals(-1.0F, waist.hinge()[0], CLOSE);
         assertTrue(waist.max() > 0.9 && waist.min() < 0.0 && -waist.min() < waist.max());
-        boolean[] far = ModelParts.far(parts, core, waist);
+        boolean[] far = ModelBends.far(parts, core, waist);
         assertTrue(far[index(parts, "right_leg")] && far[index(parts, "left_leg")], "legs hang from the hips");
         assertFalse(far[index(parts, "head")] || far[index(parts, "right_arm")] || far[index(parts, "left_arm")],
                 "head and arms hang from the chest");
@@ -72,13 +72,13 @@ class ModelPartsTest {
         VillagerModel<LivingEntity> villager = new VillagerModel<>(
                 LayerDefinition.create(VillagerModel.createBodyModel(), 64, 64).bakeRoot());
         List<ModelParts.Part> parts = parts(villager);
-        int core = ModelParts.core(parts);
+        int core = ModelBends.core(parts);
         assertEquals("body", parts.get(core).name());
-        ModelParts.Bend waist = ModelParts.waist(parts, core);
+        ModelBends.Bend waist = ModelBends.waist(parts, core);
         assertNotNull(waist);
         assertEquals(1, waist.axis());
         assertTrue(waist.at() > 5.0F && waist.at() < 7.0F, "at its waist, not halfway down the robe: " + waist.at());
-        boolean[] far = ModelParts.far(parts, core, waist);
+        boolean[] far = ModelBends.far(parts, core, waist);
         assertTrue(far[index(parts, "right_leg")] && !far[index(parts, "arms")] && !far[index(parts, "head")]);
     }
 
@@ -87,11 +87,11 @@ class ModelPartsTest {
         CreeperModel<LivingEntity> creeper = new CreeperModel<>(
                 CreeperModel.createBodyLayer(CubeDeformation.NONE).bakeRoot());
         List<ModelParts.Part> parts = parts(creeper);
-        int core = ModelParts.core(parts);
-        ModelParts.Bend waist = ModelParts.waist(parts, core);
+        int core = ModelBends.core(parts);
+        ModelBends.Bend waist = ModelBends.waist(parts, core);
         assertNotNull(waist);
         assertEquals(1, waist.axis());
-        boolean[] far = ModelParts.far(parts, core, waist);
+        boolean[] far = ModelBends.far(parts, core, waist);
         for (int i = 0; i < parts.size(); i++) {
             if (parts.get(i).role() == ModelParts.Role.LEG) {
                 assertTrue(far[i], parts.get(i).name());
@@ -104,7 +104,7 @@ class ModelPartsTest {
     void aSpiderKeepsItsRoundBackWhole() {
         SpiderModel<LivingEntity> spider = new SpiderModel<>(SpiderModel.createSpiderBodyLayer().bakeRoot());
         List<ModelParts.Part> parts = parts(spider);
-        assertNull(ModelParts.waist(parts, ModelParts.core(parts)));
+        assertNull(ModelBends.waist(parts, ModelBends.core(parts)));
     }
 
     @Test
@@ -112,8 +112,8 @@ class ModelPartsTest {
         VillagerModel<LivingEntity> villager = new VillagerModel<>(
                 LayerDefinition.create(VillagerModel.createBodyModel(), 64, 64).bakeRoot());
         List<ModelParts.Part> parts = parts(villager);
-        int core = ModelParts.core(parts);
-        ModelParts.Bend waist = ModelParts.waist(parts, core);
+        int core = ModelBends.core(parts);
+        ModelBends.Bend waist = ModelBends.waist(parts, core);
         ModelPart body = parts.get(core).part();
         ModelPart robe = body.getChild("jacket");
         BentParts.bend(body, waist, new Quaternionf().rotationX(-0.6F), Set.of());
@@ -131,7 +131,7 @@ class ModelPartsTest {
         child.setRotation(0.3F, 1.1F, -0.4F);
         ModelPart parent = new ModelPart(List.of(), Map.of("child", child));
         float[] knee = { 0.0F, 6.0F, 0.0F };
-        ModelParts.Bend bend = new ModelParts.Bend(1, 6.0F, 1.0F, knee, new float[] { -1.0F, 0.0F, 0.0F }, -0.4, 1.0);
+        ModelBends.Bend bend = new ModelBends.Bend(1, 6.0F, 1.0F, knee, new float[] { -1.0F, 0.0F, 0.0F }, -0.4, 1.0);
         Quaternionf turn = new Quaternionf().rotationXYZ(-0.7F, 0.2F, 0.1F);
         BentParts.bend(parent, bend, turn, Set.of());
         Quaternionf own = new Quaternionf().rotationZYX(child.zRot, child.yRot, child.xRot);

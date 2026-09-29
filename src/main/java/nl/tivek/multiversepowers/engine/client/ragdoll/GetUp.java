@@ -6,6 +6,7 @@ import javax.annotation.Nullable;
 import net.minecraft.client.model.EntityModel;
 import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.util.Mth;
+import nl.tivek.multiversepowers.engine.client.model.ModelBends;
 import nl.tivek.multiversepowers.engine.client.model.ModelParts;
 import nl.tivek.multiversepowers.engine.math.Ease;
 import org.joml.Quaternionf;
@@ -143,7 +144,7 @@ final class GetUp {
 
     // A person `u` of the way up (0 to 1), from how it lay (lie*) through the kneel to its own pose (own*); knees as
     // the turn of the far half in the near half's axes. Writes out*.
-    static void person(Body body, List<ModelParts.Part> parts, ModelParts.Bend[] bends, float u, Vector3f[] liePos,
+    static void person(Body body, List<ModelParts.Part> parts, ModelBends.Bend[] bends, float u, Vector3f[] liePos,
             Quaternionf[] lieRot, Quaternionf[] lieKnee, Vector3f[] ownPos, Quaternionf[] ownRot,
             Quaternionf[] ownKnee, Vector3f[] outPos, Quaternionf[] outRot, Quaternionf[] outKnee) {
         float chest = bends[body.core] != null ? KNEEL[1][0] : KNEEL_STRAIGHT;
@@ -170,7 +171,7 @@ final class GetUp {
             // Where it kneels is in the trunk's parent's pixels: a young head drawn bigger has its own.
             K_POS[i].sub(body.move[i]).div(body.scale[i]);
             K_ROT[i].rotationZYX(kneel[2], kneel[1], k == 1 ? chest : kneel[0]);
-            ModelParts.Bend bend = bends[i];
+            ModelBends.Bend bend = bends[i];
             if (bend == null) {
                 K_KNEE[i].identity();
             } else {

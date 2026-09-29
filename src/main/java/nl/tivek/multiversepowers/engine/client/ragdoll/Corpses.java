@@ -17,7 +17,7 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import nl.tivek.multiversepowers.config.client.ClientSettings;
-import nl.tivek.multiversepowers.engine.client.render.EntityPass;
+import nl.tivek.multiversepowers.engine.client.render.entity.EntityPass;
 import nl.tivek.multiversepowers.engine.physics.Blocks;
 import org.slf4j.Logger;
 

@@ -8,6 +8,7 @@ import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.character.greenlantern.ability.sword.SwordMove;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.weapon.SwordPainter;
 import nl.tivek.multiversepowers.engine.math.Ease;
+import static nl.tivek.multiversepowers.engine.math.Vectors.square;
 
 final class SwordPoses extends SwordEquip {
     private static final double BODY_ACROSS = 0.65;

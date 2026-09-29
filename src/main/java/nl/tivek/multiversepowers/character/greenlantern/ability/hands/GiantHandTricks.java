@@ -26,6 +26,7 @@ import static nl.tivek.multiversepowers.character.greenlantern.ability.hands.Gia
 import static nl.tivek.multiversepowers.character.greenlantern.ability.hands.GiantHands.GRAB_TALL;
 import static nl.tivek.multiversepowers.character.greenlantern.ability.hands.GiantHands.GRAB_WIDE;
 import static nl.tivek.multiversepowers.character.greenlantern.ability.hands.GiantHands.SCALE;
+import static nl.tivek.multiversepowers.engine.math.Vectors.flat;
 
 // What the flick, the pinch and the snap do, and the portals the first two come through.
 abstract class GiantHandTricks extends GiantHandPair {
@@ -440,11 +441,6 @@ abstract class GiantHandTricks extends GiantHandPair {
         ParticleFx.cloud(level, ParticleTypes.ELECTRIC_SPARK, feet.add(0.0, 0.2, 0.0), 6, 0.3, 0.1);
         this.storm.sound(level, feet, SoundEvents.GRINDSTONE_USE, 1.2F, 0.6F + 0.02F * this.t);
         this.storm.sound(level, feet, SoundEvents.ROOTED_DIRT_BREAK, 1.0F, 0.8F);
-    }
-
-    private static Vec3 flat(Vec3 way) {
-        Vec3 flat = new Vec3(way.x, 0.0, way.z);
-        return flat.lengthSqr() < 1.0E-6 ? new Vec3(0.0, 0.0, 1.0) : flat.normalize();
     }
 
     void hold(Vec3 grip) {

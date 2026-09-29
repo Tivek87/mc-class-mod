@@ -4,15 +4,15 @@ package nl.tivek.multiversepowers.engine.physics;
 abstract class RigidBodies {
     public static final int MOST = 32;
 
-    final double[] x = new double[MOST * 3];
+    public final double[] x = new double[MOST * 3];
     final double[] px = new double[MOST * 3];
     final double[] v = new double[MOST * 3];
-    final double[] q = new double[MOST * 4];
+    public final double[] q = new double[MOST * 4];
     final double[] pq = new double[MOST * 4];
     final double[] w = new double[MOST * 3];
     final double[] invMass = new double[MOST];
     final double[] invInertia = new double[MOST * 3];
-    final double[] half = new double[MOST * 3];
+    public final double[] half = new double[MOST * 3];
     int count;
     final double[] t1 = new double[3];
     final double[] t2 = new double[3];
@@ -59,7 +59,7 @@ abstract class RigidBodies {
 
     // The positional constraint that brings point a on body i and point c on body j (j < 0: a fixed point in the
     // world) together; compliance 0 is rigid.
-    void attach(int i, double ax, double ay, double az, int j, double cx, double cy, double cz, double compliance,
+    public void attach(int i, double ax, double ay, double az, int j, double cx, double cy, double cz, double compliance,
             double h) {
         double dx = ax - cx;
         double dy = ay - cy;
@@ -85,7 +85,7 @@ abstract class RigidBodies {
     }
 
     // Pushes point a on body i and point c on body j apart by `depth` along the unit n (from j towards i).
-    void separate(int i, double ax, double ay, double az, int j, double cx, double cy, double cz, double nx,
+    public void separate(int i, double ax, double ay, double az, int j, double cx, double cy, double cz, double nx,
             double ny, double nz, double depth) {
         double wi = this.weight(i, ax, ay, az, nx, ny, nz);
         double wj = this.weight(j, cx, cy, cz, nx, ny, nz);
@@ -99,7 +99,7 @@ abstract class RigidBodies {
 
     // Turns body i by the rotation vector e (and body j, when there is one, the other way) as far as their inertia
     // shares it out; compliance 0 is rigid.
-    void turn(int i, int j, double ex, double ey, double ez, double compliance, double h) {
+    public void turn(int i, int j, double ex, double ey, double ez, double compliance, double h) {
         double angle = Math.sqrt(ex * ex + ey * ey + ez * ez);
         if (angle < 1.0E-9) {
             return;

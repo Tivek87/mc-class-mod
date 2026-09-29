@@ -49,13 +49,6 @@ public final class ConstructPath {
         return sight.at(this.start.x * aside, this.start.y * aside, this.start.z + distance);
     }
 
-    public Vec3 onSight(double distance, @Nullable Sight sight) {
-        if (!this.steered || sight == null) {
-            return this.along(distance, sight);
-        }
-        return sight.at(0.0, 0.0, this.start.z + distance);
-    }
-
     public Vec3 way(double distance, @Nullable Sight sight) {
         if (!this.steered || sight == null) {
             return this.line;

@@ -1,14 +1,15 @@
 # Laatste sessie
 
-- Datum: 2026-09-29. Verzoek: ragdolls (bevroren lijken, ≥5 s liggen, door vloer/stuiteren, klap-richting, opstaan),
-  kill-bevestiging (RDR2), mech-handen/armen tegen terrein + grijpen, sneller draaien/torso verder, ideeën-doc;
-  daarna klimmen pas na 2 s tegen muur lopen+kijken; "commit en push met release" -> 0.5.0-alpha.
-- Oorzaken: botsing pakte max 32/96 blokken van onderaf (snelle delen vielen door de grond); hoek-inslag gaf ~80 rad/s
-  spin (stuiteren); slapend lijk werd nooit wakker als grond wegviel; mech-hand is 1 stijf stuk (knokkels in richel).
-- Gedaan: `LevelBlocks` (nu `engine/client/world`, begraven blokken eruit), `RigidBlocks` (dichtstbijzijnde eerst,
-  rustig uitduwen), `RigidWorld` (draai-limiet, contact-demping, `probe`), `RagdollFalls`, `Corpses`, `DeathBlows`
-  (+payload), opstaan (kijkrichting, overlap), `killconfirm/` (+`sounds/ui/kill_confirm.ogg`), `MechTouch`,
-  `MechHandRig` (vingers op blokken, grip), `MechClimb.laid`, `MechDrive` (90°/5,5°/tick, klim 40 ticks), docs.
-- Getest: 111 unit-tests groen; in-game 3 ragdoll-runs + mech-runs (geen afwijkingen; greep 0,02 diep; klim na ~2 s).
-- Open: bug #35 (GL-vliegen "ultra traag", medium); ideeën #24,#25,#31,#32,#33 wachten op ja/nee. Map
-  `client/mech/` heeft 19 bestanden: opsplitsen in sub-mappen voorstellen.
+- Datum: 2026-09-29. Verzoek: `client/mech/` (19 bestanden) in sub-mappen splitsen, alle mappen/bestanden herstructureren,
+  optimaliseren (keuze: structuur), docs opruimen; daarna "rond af, commit en push" -> release 0.5.1-alpha.
+- Mappen: `client/mech/` -> `shape/`, `walk/`, `touch/`; `engine/client/render/` -> `mesh/`, `entity/` (+`Lens` naar
+  `engine/client/fx`); `engine/physics/joint/`; `thor/client/` -> `motion/`, `pose/`, `blow/`; `render/hand/light/`;
+  `mixin/client/` + `mixin/client/render/` (`welcomescreen.mixins.json` bijgewerkt). Pakket-private leden die nu over
+  pakketgrenzen gaan zijn `public` gemaakt.
+- Bestanden >600 regels: `ModelParts` -> `ModelBends` (buigen), `TrackedConstructs` -> `ConstructShakes` (in de keten).
+- Dode code weg (12 leden, 2 teksten in `en_us.json`); vector-hulpjes (`flat`, `unit`, `square`, `yawed`) naar `Vectors`.
+- Docs: idee-/ontwerp-docs naar `docs/ideas/`; CLAUDE.md-indeling en README bijgewerkt.
+- Getest: 111 unit-tests groen; game start zonder mixin-fouten (niet in een wereld gespeeld).
+- Niet van mij: `MechScript.java` (`side`-helper, WIP andere sessie) bleef buiten de commit.
+- Open: overige dubbele code (joints `rejoin`, flame/whip/sword pose-hulpjes, `pay`/`drain`) nog samen te voegen;
+  bug #35 (GL-vliegen traag); ideeën wachten op ja/nee. Issue-teksten in `bugs/` noemen nog oude doc-paden.

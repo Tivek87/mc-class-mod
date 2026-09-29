@@ -89,4 +89,35 @@ public final class Vectors {
         double angle = turn.length();
         return angle < 1.0E-9 ? v : spin(v, turn.scale(1.0 / angle), angle);
     }
+
+    // A way along the ground, of length 1: straight ahead (+z) when it points up or down.
+    public static Vec3 flat(Vec3 way) {
+        Vec3 flat = new Vec3(way.x, 0.0, way.z);
+        return flat.lengthSqr() < 1.0E-6 ? new Vec3(0.0, 0.0, 1.0) : flat.normalize();
+    }
+
+    public static Vec3 unit(Vec3 way, Vec3 otherwise) {
+        double length = way.length();
+        return length < 1.0E-4 ? otherwise : way.scale(1.0 / length);
+    }
+
+    // The part of a way square to the axis, of length 1.
+    public static Vec3 square(Vec3 way, Vec3 axis) {
+        Vec3 flat = way.subtract(axis.scale(way.dot(axis)));
+        if (flat.lengthSqr() < 1.0E-6) {
+            Vec3 other = Math.abs(axis.y) < 0.9 ? new Vec3(0.0, 1.0, 0.0) : new Vec3(1.0, 0.0, 0.0);
+            flat = other.subtract(axis.scale(other.dot(axis)));
+        }
+        return flat.normalize();
+    }
+
+    // Turns a view-space way to the right by the angle (radians), about the view's up.
+    public static Vec3 yawed(Vec3 way, double angle) {
+        if (angle == 0.0) {
+            return way;
+        }
+        double cos = Math.cos(angle);
+        double sin = Math.sin(angle);
+        return new Vec3(way.x * cos - way.z * sin, way.y, way.x * sin + way.z * cos);
+    }
 }

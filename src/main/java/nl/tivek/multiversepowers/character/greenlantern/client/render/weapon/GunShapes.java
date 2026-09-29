@@ -3,7 +3,7 @@ package nl.tivek.multiversepowers.character.greenlantern.client.render.weapon;
 import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.world.phys.Vec3;
-import nl.tivek.multiversepowers.engine.client.render.Mesh;
+import nl.tivek.multiversepowers.engine.client.render.mesh.Mesh;
 import static nl.tivek.multiversepowers.character.greenlantern.client.render.weapon.WeaponShapes.SQUIRCLE;
 import static nl.tivek.multiversepowers.character.greenlantern.client.render.weapon.WeaponShapes.band;
 import static nl.tivek.multiversepowers.character.greenlantern.client.render.weapon.WeaponShapes.grip;

@@ -5,7 +5,7 @@ import java.util.List;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.character.greenlantern.duo.HandDuo;
 import nl.tivek.multiversepowers.engine.client.render.ConstructPainter;
-import nl.tivek.multiversepowers.engine.client.render.Mesh;
+import nl.tivek.multiversepowers.engine.client.render.mesh.Mesh;
 import static nl.tivek.multiversepowers.character.greenlantern.client.render.hand.HandRig.JOINTS;
 import static nl.tivek.multiversepowers.character.greenlantern.client.render.hand.HandRig.KNUCKLES;
 import static nl.tivek.multiversepowers.character.greenlantern.client.render.hand.HandRig.THICK;

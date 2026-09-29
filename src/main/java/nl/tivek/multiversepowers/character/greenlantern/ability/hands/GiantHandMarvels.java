@@ -30,6 +30,7 @@ import nl.tivek.multiversepowers.engine.world.LoadedWorld;
 import static nl.tivek.multiversepowers.character.greenlantern.ability.hands.GiantHands.GRABBED;
 import static nl.tivek.multiversepowers.character.greenlantern.ability.hands.GiantHands.GRAB_TALL;
 import static nl.tivek.multiversepowers.character.greenlantern.ability.hands.GiantHands.GRAB_WIDE;
+import static nl.tivek.multiversepowers.engine.math.Vectors.flat;
 
 // What the evil eye and the megaphone do.
 abstract class GiantHandMarvels extends GiantHandFeats {
@@ -280,8 +281,4 @@ abstract class GiantHandMarvels extends GiantHandFeats {
         this.deafened.clear();
     }
 
-    private static Vec3 flat(Vec3 way) {
-        Vec3 flat = new Vec3(way.x, 0.0, way.z);
-        return flat.lengthSqr() < 1.0E-6 ? new Vec3(0.0, 0.0, 1.0) : flat.normalize();
-    }
 }

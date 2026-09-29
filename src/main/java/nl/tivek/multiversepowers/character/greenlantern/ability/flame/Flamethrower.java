@@ -24,6 +24,7 @@ import nl.tivek.multiversepowers.character.greenlantern.construct.ConstructPaylo
 import nl.tivek.multiversepowers.engine.ability.Throttle;
 import nl.tivek.multiversepowers.engine.effect.Effects;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
+import static nl.tivek.multiversepowers.engine.math.Vectors.flat;
 
 @EventBusSubscriber(modid = MultiversePowers.MODID)
 public final class Flamethrower extends FlameHits {

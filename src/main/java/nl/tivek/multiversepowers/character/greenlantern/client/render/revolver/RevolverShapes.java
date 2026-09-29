@@ -5,7 +5,7 @@ import java.util.List;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.character.greenlantern.duo.RevolverDuo;
 import nl.tivek.multiversepowers.engine.client.render.ConstructPainter;
-import nl.tivek.multiversepowers.engine.client.render.Mesh;
+import nl.tivek.multiversepowers.engine.client.render.mesh.Mesh;
 
 final class RevolverShapes {
     static final Vec3 HAMMER_PIVOT = new Vec3(0.0, 1.2, -0.85);

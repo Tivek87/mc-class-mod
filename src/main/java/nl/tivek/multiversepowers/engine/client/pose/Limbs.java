@@ -20,8 +20,9 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RenderLivingEvent;
 import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.engine.client.model.BentParts;
+import nl.tivek.multiversepowers.engine.client.model.ModelBends;
 import nl.tivek.multiversepowers.engine.client.model.ModelParts;
-import nl.tivek.multiversepowers.engine.client.render.EntityPass;
+import nl.tivek.multiversepowers.engine.client.render.entity.EntityPass;
 import org.joml.Matrix3f;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
@@ -44,7 +45,7 @@ public final class Limbs {
     // A model's joints: each joint's part, its bend and the parts that copy it. For the waist: the model's parts, which
     // are posed on their own and never bent with the trunk, and those that hang from its far half (with the parts that
     // copy them), each drawn inside the trunk or beside it.
-    private record Rig(ModelPart[] parts, ModelParts.Bend[] bends, List<List<ModelPart>> followers,
+    private record Rig(ModelPart[] parts, ModelBends.Bend[] bends, List<List<ModelPart>> followers,
             Set<ModelPart> apart, List<ModelPart> hanging, boolean[] inTrunk) {
     }
 
@@ -71,7 +72,7 @@ public final class Limbs {
         if (joint == Joint.WAIST || !EntityPass.inWorld() || angle < 1.0E-3F) {
             return;
         }
-        ModelParts.Bend bend = start(model, joint);
+        ModelBends.Bend bend = start(model, joint);
         if (bend == null) {
             return;
         }
@@ -86,7 +87,7 @@ public final class Limbs {
         if (!EntityPass.inWorld() || angle(turn) < 1.0E-3F) {
             return;
         }
-        ModelParts.Bend bend = start(model, Joint.WAIST);
+        ModelBends.Bend bend = start(model, Joint.WAIST);
         if (bend != null) {
             BENT[Joint.WAIST.ordinal()] = angle(turn);
             put(model, Joint.WAIST, bend, TURN.set(turn));
@@ -98,7 +99,7 @@ public final class Limbs {
         if (!EntityPass.inWorld() || angle(turn) < 1.0E-3F) {
             return;
         }
-        ModelParts.Bend bend = start(model, Joint.WAIST);
+        ModelBends.Bend bend = start(model, Joint.WAIST);
         if (bend == null) {
             return;
         }
@@ -136,9 +137,9 @@ public final class Limbs {
     }
 
     @Nullable
-    private static ModelParts.Bend start(EntityModel<?> model, Joint joint) {
+    private static ModelBends.Bend start(EntityModel<?> model, Joint joint) {
         Rig rig = rig(model);
-        ModelParts.Bend bend = rig == null ? null : rig.bends()[joint.ordinal()];
+        ModelBends.Bend bend = rig == null ? null : rig.bends()[joint.ordinal()];
         if (bend != null && drawing != model) {
             clear();
             drawing = model;
@@ -146,7 +147,7 @@ public final class Limbs {
         return bend;
     }
 
-    private static void put(EntityModel<?> model, Joint joint, ModelParts.Bend bend, Quaternionf turn) {
+    private static void put(EntityModel<?> model, Joint joint, ModelBends.Bend bend, Quaternionf turn) {
         Rig rig = RIGS.get(model);
         BentParts.bend(rig.parts()[joint.ordinal()], bend, turn, rig.apart());
         for (ModelPart follower : rig.followers().get(joint.ordinal())) {
@@ -193,7 +194,7 @@ public final class Limbs {
         List<ModelParts.Part> all = ModelParts.of(model);
         Rig rig = null;
         if (all != null) {
-            int core = ModelParts.core(all);
+            int core = ModelBends.core(all);
             ModelPart[] parts = new ModelPart[Joint.values().length];
             if (model instanceof HumanoidModel<?> person) {
                 parts[Joint.RIGHT_ELBOW.ordinal()] = person.rightArm;
@@ -202,13 +203,13 @@ public final class Limbs {
                 parts[Joint.LEFT_KNEE.ordinal()] = person.leftLeg;
             }
             parts[Joint.WAIST.ordinal()] = all.get(core).part();
-            ModelParts.Bend[] bends = new ModelParts.Bend[parts.length];
+            ModelBends.Bend[] bends = new ModelBends.Bend[parts.length];
             List<List<ModelPart>> followers = new ArrayList<>();
             for (int i = 0; i < parts.length; i++) {
                 List<ModelPart> own = List.of();
                 for (ModelParts.Part part : all) {
                     if (part.part() == parts[i]) {
-                        bends[i] = i == Joint.WAIST.ordinal() ? ModelParts.waist(all, core) : ModelParts.bend(part);
+                        bends[i] = i == Joint.WAIST.ordinal() ? ModelBends.waist(all, core) : ModelBends.bend(part);
                         own = part.followers();
                     }
                 }
@@ -217,8 +218,8 @@ public final class Limbs {
             Set<ModelPart> apart = Collections.newSetFromMap(new IdentityHashMap<>());
             List<ModelPart> hanging = new ArrayList<>();
             List<Boolean> inTrunk = new ArrayList<>();
-            ModelParts.Bend waist = bends[Joint.WAIST.ordinal()];
-            boolean[] far = waist == null ? new boolean[all.size()] : ModelParts.far(all, core, waist);
+            ModelBends.Bend waist = bends[Joint.WAIST.ordinal()];
+            boolean[] far = waist == null ? new boolean[all.size()] : ModelBends.far(all, core, waist);
             for (int i = 0; i < all.size(); i++) {
                 ModelParts.Part part = all.get(i);
                 apart.add(part.part());

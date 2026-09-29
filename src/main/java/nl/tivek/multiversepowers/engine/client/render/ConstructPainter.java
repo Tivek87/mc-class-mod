@@ -5,6 +5,7 @@ import javax.annotation.Nullable;
 import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
+import nl.tivek.multiversepowers.engine.client.render.mesh.Mesh;
 import nl.tivek.multiversepowers.engine.math.Noise;
 import nl.tivek.multiversepowers.engine.math.Vectors;
 
@@ -131,23 +132,6 @@ public class ConstructPainter extends PainterSolid {
         if (clipped) {
             this.clipping = true;
         }
-    }
-
-    protected void chargedModel(double[][] model, Frame frame, double solid, double bright, double charge) {
-        double strength = Mth.clamp(solid, 0.0, 1.0);
-        if (strength <= 0.0) {
-            return;
-        }
-        ModelInfo info = info(model);
-        Vec3 view = frame.local(this.camera);
-        this.nearFade = true;
-        for (int b = 0; b < model.length; b++) {
-            double[] box = model[b];
-            this.corners(frame, box);
-            this.box(model, info, b, view, Math.min(frame.scale(), WIDTH_CAP), strength, box[6] * bright,
-                    (box[2] + box[5]) * 0.5, charge, true);
-        }
-        this.nearFade = false;
     }
 
     private void corners(Frame frame, double[] box) {

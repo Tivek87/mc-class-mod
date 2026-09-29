@@ -16,10 +16,10 @@ import static nl.tivek.multiversepowers.character.greenlantern.client.render.han
 import static nl.tivek.multiversepowers.character.greenlantern.client.render.hand.HandPainter.PORTAL_SEAM;
 import static nl.tivek.multiversepowers.character.greenlantern.client.render.hand.HandPainter.drawHand;
 import static nl.tivek.multiversepowers.character.greenlantern.client.render.hand.HandPainter.part;
-import static nl.tivek.multiversepowers.character.greenlantern.client.render.hand.HandPairLight.calls;
-import static nl.tivek.multiversepowers.character.greenlantern.client.render.hand.HandPairLight.flashes;
-import static nl.tivek.multiversepowers.character.greenlantern.client.render.hand.HandPairLight.lights;
-import static nl.tivek.multiversepowers.character.greenlantern.client.render.hand.HandPairLight.portal;
+import static nl.tivek.multiversepowers.character.greenlantern.client.render.hand.light.HandPairLight.calls;
+import static nl.tivek.multiversepowers.character.greenlantern.client.render.hand.light.HandPairLight.flashes;
+import static nl.tivek.multiversepowers.character.greenlantern.client.render.hand.light.HandPairLight.lights;
+import static nl.tivek.multiversepowers.character.greenlantern.client.render.hand.light.HandPairLight.portal;
 import static nl.tivek.multiversepowers.character.greenlantern.client.render.hand.HandShapes.AXE;
 import static nl.tivek.multiversepowers.character.greenlantern.client.render.hand.HandShapes.BLADE;
 import static nl.tivek.multiversepowers.character.greenlantern.client.render.hand.HandShapes.BLADE_SHARES;

@@ -77,7 +77,7 @@ The jar lands in `build/libs/`. `./gradlew runClient` starts a test game, `./gra
 |---|---|
 | `src/main/java/nl/tivek/multiversepowers/` | The mod. `engine/` holds what every power can use, `character/` one folder per character, plus `spell/`, `classes/`, `stamina/`, `config/`, `network/`. |
 | `src/main/resources/` | Textures, sounds, `en_us.json` (all in-game text) |
-| `docs/` | How everything plays, per topic |
+| `docs/` | How everything plays, per topic; `ideas/` holds ideas and designs not built yet |
 | `scripts/` | `release.ps1`: builds a release and keeps the newest 10 jars in `releases/` (ignored). `bugs.ps1`: copies the open bug reports and ideas to `bugs/` (ignored). `bug-relay/`: the Cloudflare Worker that turns a report or idea from the game into an issue |
 
 ## License

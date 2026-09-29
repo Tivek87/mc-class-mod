@@ -5,6 +5,12 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Random;
+import nl.tivek.multiversepowers.engine.physics.joint.BallJoint;
+import nl.tivek.multiversepowers.engine.physics.joint.HingeJoint;
+import nl.tivek.multiversepowers.engine.physics.joint.LimbJoint;
+import nl.tivek.multiversepowers.engine.physics.joint.Pin;
+import nl.tivek.multiversepowers.engine.physics.joint.SelfContact;
+import nl.tivek.multiversepowers.engine.physics.joint.SpineJoint;
 import org.junit.jupiter.api.Test;
 
 class RigidWorldTest {

@@ -31,10 +31,10 @@ import nl.tivek.multiversepowers.character.greenlantern.client.express.ExpressTr
 import nl.tivek.multiversepowers.character.greenlantern.client.flight.Flown.Spot;
 import nl.tivek.multiversepowers.character.greenlantern.client.flight.Flown;
 import nl.tivek.multiversepowers.character.greenlantern.client.flight.Jetpacks;
-import nl.tivek.multiversepowers.character.greenlantern.client.mech.MechDrive;
+import nl.tivek.multiversepowers.character.greenlantern.client.mech.walk.MechDrive;
 import nl.tivek.multiversepowers.character.greenlantern.client.mech.MechPainter;
-import nl.tivek.multiversepowers.character.greenlantern.client.mech.MechPose;
-import nl.tivek.multiversepowers.character.greenlantern.client.mech.MechWalk;
+import nl.tivek.multiversepowers.character.greenlantern.client.mech.walk.MechPose;
+import nl.tivek.multiversepowers.character.greenlantern.client.mech.walk.MechWalk;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.BeamCharge;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.BeamPainter;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.BubblePainter;
@@ -63,7 +63,7 @@ import static nl.tivek.multiversepowers.character.greenlantern.client.ConstructP
 import static nl.tivek.multiversepowers.character.greenlantern.client.Track.PLANE_KEEP;
 
 @EventBusSubscriber(modid = MultiversePowers.MODID, value = Dist.CLIENT)
-public final class ClientConstructs extends TrackedConstructs {
+public final class ClientConstructs extends ConstructShakes {
     private static final Map<Integer, Broken> BROKEN = new HashMap<>();
     private static final Map<Integer, Broken> BROKEN_HANDS = new HashMap<>();
     private static final int BROKEN_TICKS = 42;

@@ -27,6 +27,7 @@ import nl.tivek.multiversepowers.character.GameCharacter;
 import nl.tivek.multiversepowers.character.greenlantern.PowerRing;
 import nl.tivek.multiversepowers.engine.effect.Effect;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
+import static nl.tivek.multiversepowers.engine.math.Vectors.flat;
 
 abstract class SwordShieldBlows implements Effect {
     private static final double CHEST = 0.62;
@@ -253,11 +254,6 @@ abstract class SwordShieldBlows implements Effect {
     private boolean fair(LivingEntity living) {
         return PowerRing.canHit(this.owner, living)
                 && !(living instanceof OwnableEntity pet && pet.getOwner() == this.owner);
-    }
-
-    static Vec3 flat(Vec3 way) {
-        Vec3 flat = new Vec3(way.x, 0.0, way.z);
-        return flat.lengthSqr() < 1.0E-6 ? new Vec3(0.0, 0.0, 1.0) : flat.normalize();
     }
 
     void sound(SoundEvent sound, float volume, float pitch) {

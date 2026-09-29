@@ -340,27 +340,6 @@ abstract class RigGrab extends RigStrikes {
         };
     }
 
-    boolean blockAction(ServerLevel level, boolean cluster) {
-        Arm arm = this.freeArm();
-        if (arm == null) {
-            return this.placeBlocks(level);
-        }
-        double range = BUILD_RANGE;
-        TentacleBlocks.Load load = TentacleBlocks.pickUp(level, this.caster, cluster, BUILD_CLUSTER, range);
-        if (load == null) {
-            this.caster.displayClientMessage(
-                    Component.translatable("octopus." + MultiversePowers.MODID + ".build.nothing"), true);
-            return false;
-        }
-        arm.load = load;
-        arm.job = Job.CARRY;
-        arm.age = 0;
-        this.caster.displayClientMessage(
-                Component.translatable("octopus." + MultiversePowers.MODID + ".build.taken", load.size()), true);
-        this.afterCarryChange();
-        return true;
-    }
-
     public boolean placeBlocks(ServerLevel level) {
         double range = BUILD_RANGE;
         for (Arm arm : this.arms) {

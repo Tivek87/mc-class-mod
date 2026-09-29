@@ -5,7 +5,7 @@ import java.util.Arrays;
 import java.util.List;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.engine.client.render.ConstructPainter;
-import nl.tivek.multiversepowers.engine.client.render.Mesh;
+import nl.tivek.multiversepowers.engine.client.render.mesh.Mesh;
 import static nl.tivek.multiversepowers.character.greenlantern.client.render.weapon.GunShapes.armCannon;
 import static nl.tivek.multiversepowers.character.greenlantern.client.render.weapon.GunShapes.flamethrower;
 import static nl.tivek.multiversepowers.character.greenlantern.client.render.weapon.GunShapes.minigun;

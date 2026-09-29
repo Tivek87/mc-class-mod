@@ -7,7 +7,7 @@ import nl.tivek.multiversepowers.character.greenlantern.client.render.LanternPai
 import nl.tivek.multiversepowers.character.greenlantern.client.slam.SlamPainter.Moment;
 import nl.tivek.multiversepowers.engine.client.render.ConstructPainter.Frame;
 import nl.tivek.multiversepowers.engine.client.render.ConstructPainter.Shape;
-import nl.tivek.multiversepowers.engine.client.render.Mesh;
+import nl.tivek.multiversepowers.engine.client.render.mesh.Mesh;
 import nl.tivek.multiversepowers.engine.client.rig.BoneView;
 import nl.tivek.multiversepowers.engine.math.Colors;
 import nl.tivek.multiversepowers.engine.math.Ease;

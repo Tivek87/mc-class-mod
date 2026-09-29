@@ -18,6 +18,8 @@ import net.neoforged.neoforge.client.event.RenderPlayerEvent;
 import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.character.thor.ThorGrab;
 import nl.tivek.multiversepowers.character.thor.ThorStatePayload;
+import nl.tivek.multiversepowers.character.thor.client.motion.ThorMotion;
+import nl.tivek.multiversepowers.character.thor.client.motion.ThorPull;
 import nl.tivek.multiversepowers.engine.math.Vectors;
 import nl.tivek.multiversepowers.spell.client.ClientClaps;
 
@@ -30,15 +32,15 @@ public final class ClientThor {
         int move = ThorStatePayload.NONE;
         int arg;
         int start;
-        int carried = -1;
+        public int carried = -1;
         // The move this game started itself, and when: the server's word of the same move is not taken twice.
         int predicted = ThorStatePayload.NONE;
         int predictedAt;
         // His last two blows (ThorBlow) and when they started, so one flows into the next; kept apart from the move
         // so a blow never cuts a dash or a landing short.
-        int blow = -1;
+        public int blow = -1;
         int blowStart;
-        int lastBlow = -1;
+        public int lastBlow = -1;
         int lastBlowStart;
 
         public boolean has(int flag) {
@@ -58,11 +60,11 @@ public final class ClientThor {
             return ticks - this.start + partialTick;
         }
 
-        float blowAge(float partialTick) {
+        public float blowAge(float partialTick) {
             return ticks - this.blowStart + partialTick;
         }
 
-        float lastBlowAge(float partialTick) {
+        public float lastBlowAge(float partialTick) {
             return ticks - this.lastBlowStart + partialTick;
         }
     }
@@ -145,7 +147,7 @@ public final class ClientThor {
     }
 
     // A blow your own game threw: shown at once, the server's word of it is not taken again.
-    static void predictBlow(Entity entity, int index) {
+    public static void predictBlow(Entity entity, int index) {
         blow(VIEWS.computeIfAbsent(entity.getId(), id -> new View()), index);
     }
 
@@ -156,13 +158,13 @@ public final class ClientThor {
         view.blowStart = ticks;
     }
 
-    static int ticks() {
+    public static int ticks() {
         return ticks;
     }
 
     // Your own game started a move: shown at once, without waiting for the server. It only decides how he moves; the
     // rest (his hammer, a charge, what he carries) is the server's word.
-    static void predict(Entity entity, int move, int arg, int flags) {
+    public static void predict(Entity entity, int move, int arg, int flags) {
         View view = VIEWS.computeIfAbsent(entity.getId(), id -> new View());
         view.flags = view.flags & ~OWN | flags & OWN;
         view.predicted = move;
@@ -170,13 +172,13 @@ public final class ClientThor {
         start(view, move, arg);
     }
 
-    static void flags(Entity entity, int flags) {
+    public static void flags(Entity entity, int flags) {
         View view = VIEWS.computeIfAbsent(entity.getId(), id -> new View());
         view.flags = view.flags & ~OWN | flags & OWN;
     }
 
     // Your own game takes the hammer up or puts it away at once; the server's word follows.
-    static void flip(Entity entity, int flag) {
+    public static void flip(Entity entity, int flag) {
         View view = VIEWS.computeIfAbsent(entity.getId(), id -> new View());
         view.flags ^= flag;
     }

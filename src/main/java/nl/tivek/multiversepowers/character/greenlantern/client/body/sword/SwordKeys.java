@@ -8,6 +8,7 @@ import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.character.greenlantern.ability.sword.SwordMove;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.pose.RechargeAnimation;
 import nl.tivek.multiversepowers.engine.math.Ease;
+import static nl.tivek.multiversepowers.engine.math.Vectors.square;
 
 abstract class SwordKeys extends SwordCurves {
     static final double OWN_SWORD = 0.74;

@@ -25,6 +25,7 @@ import nl.tivek.multiversepowers.character.greenlantern.construct.ConstructPaylo
 import nl.tivek.multiversepowers.engine.effect.Effect;
 import nl.tivek.multiversepowers.engine.effect.Effects;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
+import nl.tivek.multiversepowers.engine.math.Vectors;
 
 public final class FlameWall implements Effect {
     public static final int LAY_TICKS = FlameMove.LAY_TO - FlameMove.LAY_FROM;
@@ -62,7 +63,7 @@ public final class FlameWall implements Effect {
 
     @Nullable
     public static Vec3 base(Level level, Entity owner, Vec3 look) {
-        Vec3 way = FlameHits.flat(look);
+        Vec3 way = Vectors.flat(look);
         Vec3 spot = owner.position().add(way.scale(AHEAD));
         for (int dy = 1; dy >= -4; dy--) {
             BlockPos pos = BlockPos.containing(spot.x, owner.getY() + dy, spot.z);

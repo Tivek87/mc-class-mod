@@ -6,14 +6,15 @@ import net.minecraft.client.model.EntityModel;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.engine.client.model.BentParts;
+import nl.tivek.multiversepowers.engine.client.model.ModelBends;
 import nl.tivek.multiversepowers.engine.client.model.ModelParts;
-import nl.tivek.multiversepowers.engine.physics.BallJoint;
-import nl.tivek.multiversepowers.engine.physics.HingeJoint;
-import nl.tivek.multiversepowers.engine.physics.LimbJoint;
+import nl.tivek.multiversepowers.engine.physics.joint.BallJoint;
+import nl.tivek.multiversepowers.engine.physics.joint.HingeJoint;
+import nl.tivek.multiversepowers.engine.physics.joint.LimbJoint;
 import nl.tivek.multiversepowers.engine.physics.Quat;
 import nl.tivek.multiversepowers.engine.physics.RigidWorld;
-import nl.tivek.multiversepowers.engine.physics.SelfContact;
-import nl.tivek.multiversepowers.engine.physics.SpineJoint;
+import nl.tivek.multiversepowers.engine.physics.joint.SelfContact;
+import nl.tivek.multiversepowers.engine.physics.joint.SpineJoint;
 import org.joml.Matrix3f;
 import org.joml.Matrix4f;
 import org.joml.Quaterniond;
@@ -126,15 +127,15 @@ final class RagdollBuild {
         int[] body = new int[n];
         double[] center = new double[n * 3];
         Matrix4f[] frames = new Matrix4f[n];
-        int core = ModelParts.core(parts);
-        ModelParts.Bend[] bends = new ModelParts.Bend[n];
+        int core = ModelBends.core(parts);
+        ModelBends.Bend[] bends = new ModelBends.Bend[n];
         RagdollProfiles.Tuning waist = profile.part(WAIST);
         for (int i = 0; i < n && !stiff; i++) {
-            bends[i] = i != core ? ModelParts.bend(parts.get(i))
-                    : waist.swing().orElse(1.0) > 0.0 ? ModelParts.waist(parts, core) : null;
+            bends[i] = i != core ? ModelBends.bend(parts.get(i))
+                    : waist.swing().orElse(1.0) > 0.0 ? ModelBends.waist(parts, core) : null;
         }
         // Which parts hang from the trunk's far half (legs, a tail): joined to it, not to the near half.
-        boolean[] hangsLow = bends[core] == null ? new boolean[n] : ModelParts.far(parts, core, bends[core]);
+        boolean[] hangsLow = bends[core] == null ? new boolean[n] : ModelBends.far(parts, core, bends[core]);
         Ragdoll ragdoll = new Ragdoll(entity, model, parts, body, bends, hangsLow, center, core, state);
         RigidWorld world = ragdoll.world;
         world.friction = 0.8;
@@ -148,7 +149,7 @@ final class RagdollBuild {
             ModelParts.Part part = parts.get(i);
             Matrix4f frame = ModelParts.frame(model, drawn, part, new Matrix4f());
             frames[i] = frame;
-            ModelParts.Bend bend = bends[i];
+            ModelBends.Bend bend = bends[i];
             float[] b = part.bounds();
             float[] near = b;
             float[] far = null;
@@ -172,7 +173,7 @@ final class RagdollBuild {
         // now, so a creature posed with a bent knee or waist goes limp from just that pose.
         for (int i = 0; i < n; i++) {
             if (halves[i] != null) {
-                ModelParts.Bend bend = bends[i];
+                ModelBends.Bend bend = bends[i];
                 float[] near = halves[i][0];
                 float[] far = halves[i][1];
                 double scale = Ragdoll.scaleOf(frames[i]);

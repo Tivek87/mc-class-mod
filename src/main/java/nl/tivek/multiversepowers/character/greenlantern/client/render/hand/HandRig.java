@@ -277,21 +277,6 @@ final class HandRig {
         return deepest;
     }
 
-    // How deep the thumb goes into finger k from joint `from` to its tip.
-    static double thumbOn(double[] space, int k, int from, double[] a0, double[] a1, double[] b0, double[] b1,
-            double[] out) {
-        double deepest = Double.NEGATIVE_INFINITY;
-        for (int t = 1; t < 3; t++) {
-            ends(space, 4, t, a0, a1);
-            for (int f = from; f < 3; f++) {
-                ends(space, k, f, b0, b1);
-                double gap = Math.sqrt(Segments.closest(a0, a1, b0, b1, out));
-                deepest = Math.max(deepest, radius(4, t) + radius(k, f) - gap);
-            }
-        }
-        return deepest;
-    }
-
     // How deep two neighbouring fingers go into each other, past the knuckles where they touch by design.
     static double besideDepth(double[] space, int k, int n, double[] a0, double[] a1, double[] b0, double[] b1,
             double[] out) {

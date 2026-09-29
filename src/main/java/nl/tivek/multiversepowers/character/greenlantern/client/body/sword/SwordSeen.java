@@ -26,6 +26,7 @@ import nl.tivek.multiversepowers.character.greenlantern.client.render.weapon.Swo
 import nl.tivek.multiversepowers.engine.client.world.BladeStop;
 import nl.tivek.multiversepowers.engine.math.Colors;
 import nl.tivek.multiversepowers.engine.math.Ease;
+import static nl.tivek.multiversepowers.engine.math.Vectors.square;
 
 public abstract class SwordSeen extends SwordStates {
     public static boolean ownArms;
@@ -259,7 +260,7 @@ public abstract class SwordSeen extends SwordStates {
             return;
         }
         Vec3 ahead = face.normalize();
-        Vec3 up = SwordPoses.square(top, ahead);
+        Vec3 up = square(top, ahead);
         Vec3 right = ahead.cross(up).normalize();
         Vec3 at = SwordPoses.onFace(middle, right, up, ahead, scale);
         SwordPainter.clang(painter, at, right, ahead, state.t() - SwordMove.KNOCK, scale);

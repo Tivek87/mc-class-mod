@@ -2,16 +2,16 @@ package nl.tivek.multiversepowers.character.greenlantern.client.render.revolver;
 
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.LanternPainter;
-import nl.tivek.multiversepowers.character.greenlantern.client.render.hand.HandLight;
+import nl.tivek.multiversepowers.character.greenlantern.client.render.hand.light.HandLight;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.hand.HandPainter;
-import nl.tivek.multiversepowers.character.greenlantern.client.render.hand.HandPairLight;
+import nl.tivek.multiversepowers.character.greenlantern.client.render.hand.light.HandPairLight;
 import nl.tivek.multiversepowers.character.greenlantern.duo.RevolverDuo;
 import nl.tivek.multiversepowers.character.greenlantern.duo.RevolverGun;
 import nl.tivek.multiversepowers.engine.math.Colors;
 import nl.tivek.multiversepowers.engine.math.Ease;
 import nl.tivek.multiversepowers.engine.math.Noise;
 import nl.tivek.multiversepowers.engine.math.Vectors;
-import static nl.tivek.multiversepowers.character.greenlantern.client.render.hand.HandPairLight.twinkle;
+import static nl.tivek.multiversepowers.character.greenlantern.client.render.hand.light.HandPairLight.twinkle;
 import static nl.tivek.multiversepowers.character.greenlantern.duo.RevolverDuo.*;
 
 final class RevolverLight {

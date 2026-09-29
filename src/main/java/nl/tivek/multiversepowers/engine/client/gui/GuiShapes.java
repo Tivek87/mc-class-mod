@@ -38,11 +38,6 @@ public final class GuiShapes {
         }
     }
 
-    public static void triangle(GuiGraphics graphics, float x0, float y0, float x1, float y1,
-            float x2, float y2, int argb) {
-        quad(graphics, x0, y0, x1, y1, x2, y2, x2, y2, argb);
-    }
-
     public static void arc(GuiGraphics graphics, float cx, float cy, float inner, float outer,
             float fromDegrees, float toDegrees, int argb) {
         if ((argb >>> 24) == 0 || outer <= inner) {

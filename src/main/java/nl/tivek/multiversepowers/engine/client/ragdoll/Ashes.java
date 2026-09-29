@@ -26,7 +26,7 @@ import net.neoforged.neoforge.client.event.RenderLivingEvent;
 import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.engine.client.fx.ParticleAmount;
 import nl.tivek.multiversepowers.engine.client.model.ModelParts;
-import nl.tivek.multiversepowers.engine.client.render.ShadedBuffers;
+import nl.tivek.multiversepowers.engine.client.render.entity.ShadedBuffers;
 import nl.tivek.multiversepowers.engine.math.Colors;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;

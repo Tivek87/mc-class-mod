@@ -12,7 +12,7 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 import net.neoforged.neoforge.client.event.RenderLivingEvent;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.LanternPainter;
 import nl.tivek.multiversepowers.character.greenlantern.hand.HandGroup;
-import nl.tivek.multiversepowers.engine.client.render.ClippedBuffers;
+import nl.tivek.multiversepowers.engine.client.render.entity.ClippedBuffers;
 import nl.tivek.multiversepowers.engine.math.Ease;
 import nl.tivek.multiversepowers.engine.math.Noise;
 import org.joml.Quaternionf;

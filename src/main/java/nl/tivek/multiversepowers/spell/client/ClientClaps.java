@@ -23,7 +23,7 @@ import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.RenderHandEvent;
 import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.engine.client.pose.Stance;
-import nl.tivek.multiversepowers.engine.client.render.FirstPersonArm;
+import nl.tivek.multiversepowers.engine.client.render.entity.FirstPersonArm;
 import nl.tivek.multiversepowers.engine.math.Ease;
 import nl.tivek.multiversepowers.spell.ClapPayload;
 import org.joml.Quaternionf;

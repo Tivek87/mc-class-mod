@@ -4,7 +4,7 @@ import javax.annotation.Nullable;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.LanternPainter;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.hand.HandPainter;
-import nl.tivek.multiversepowers.character.greenlantern.client.render.hand.HandPairLight;
+import nl.tivek.multiversepowers.character.greenlantern.client.render.hand.light.HandPairLight;
 import nl.tivek.multiversepowers.character.greenlantern.construct.ConstructPayload;
 import nl.tivek.multiversepowers.character.greenlantern.duo.HandDuo;
 import nl.tivek.multiversepowers.character.greenlantern.duo.RevolverDuo;

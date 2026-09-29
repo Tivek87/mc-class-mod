@@ -21,13 +21,13 @@ import net.neoforged.neoforge.client.event.RenderHandEvent;
 import net.neoforged.neoforge.client.event.RenderPlayerEvent;
 import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.character.greenlantern.client.ClientConstructs;
-import nl.tivek.multiversepowers.character.greenlantern.client.mech.MechDrive;
-import nl.tivek.multiversepowers.character.greenlantern.client.mech.MechPose;
-import nl.tivek.multiversepowers.character.greenlantern.client.mech.MechWalk;
+import nl.tivek.multiversepowers.character.greenlantern.client.mech.walk.MechDrive;
+import nl.tivek.multiversepowers.character.greenlantern.client.mech.walk.MechPose;
+import nl.tivek.multiversepowers.character.greenlantern.client.mech.walk.MechWalk;
 import nl.tivek.multiversepowers.character.greenlantern.mech.MechScript;
 import nl.tivek.multiversepowers.engine.client.fx.Cinematic;
-import nl.tivek.multiversepowers.engine.client.render.EntityPass;
-import nl.tivek.multiversepowers.engine.client.render.FirstPersonArm;
+import nl.tivek.multiversepowers.engine.client.render.entity.EntityPass;
+import nl.tivek.multiversepowers.engine.client.render.entity.FirstPersonArm;
 import nl.tivek.multiversepowers.engine.math.Ease;
 import org.joml.Vector3f;
 

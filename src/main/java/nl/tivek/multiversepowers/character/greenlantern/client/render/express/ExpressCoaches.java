@@ -5,7 +5,7 @@ import java.util.List;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.character.greenlantern.express.ExpressScript;
 import nl.tivek.multiversepowers.engine.client.render.ConstructPainter;
-import nl.tivek.multiversepowers.engine.client.render.Mesh;
+import nl.tivek.multiversepowers.engine.client.render.mesh.Mesh;
 
 // The Express's coaches, in blocks at scale 1, x right, y up from the rails, z forward, round the middle between their
 // bogies: a wooden western coach of hard light with a row of windows, a raised clerestory roof and an open platform at
