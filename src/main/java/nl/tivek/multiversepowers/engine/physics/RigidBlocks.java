@@ -267,7 +267,7 @@ abstract class RigidBlocks extends RigidBodies {
     // else the shallowest), and every point of a block's sharp edge that went into the box pushes the box off it, so a
     // box lying across the edge of a step rests on it instead of sinking in. Each touch is kept for friction().
     void touchBlocks(int b) {
-        if (this.invMass[b] == 0.0 || this.blockCount == 0) {
+        if (this.invMass[b] == 0.0 || this.blockCount == 0 || this.ghost[b]) {
             return;
         }
         int o = b * 3;

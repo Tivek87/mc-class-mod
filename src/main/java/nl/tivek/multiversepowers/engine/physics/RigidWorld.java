@@ -34,6 +34,7 @@ public final class RigidWorld extends RigidCrowd {
             throw new IllegalStateException("At most " + MOST + " bodies");
         }
         int b = this.count++;
+        this.ghost[b] = false;
         this.half[b * 3] = hx;
         this.half[b * 3 + 1] = hy;
         this.half[b * 3 + 2] = hz;
@@ -78,6 +79,15 @@ public final class RigidWorld extends RigidCrowd {
         this.w[o + 1] = wy;
         this.w[o + 2] = wz;
         this.wake();
+    }
+
+    // Body b touches no block and no other world's body: only its joints move it.
+    public void ghost(int b) {
+        this.ghost[b] = true;
+    }
+
+    public boolean ghostly(int b) {
+        return this.ghost[b];
     }
 
     public void add(Constraint constraint) {

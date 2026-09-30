@@ -3,6 +3,25 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.5.4-alpha] - 2026-09-30
+
+### Added
+- **Bodies:** new bones: hands at the wrists, feet at the ankles, a pelvis below the belly and a shoulder blade for
+  each arm. Arms, legs and trunks now bend at two joints each, drawn as square blocks.
+- **Bodies:** limp bodies use the new bones: hands and feet flop, the lower back and hips bend, shoulders give.
+- **Bones view:** shows the hands, feet, pelvis (out to each hip) and shoulder blades.
+- **Engine:** poses can bend wrists, ankles and the pelvis and shrug the shoulders, ready for new animations.
+
+### Changed
+- **Getting up:** a person thrown down now gets up as a person does: from its front onto its forearms, hands and
+  knees, one foot stepped through, kneeling, then standing; from its back sitting up onto a hand and a knee first.
+  Hands, knees and feet stay put on the ground, every joint moves on one smooth curve, the head follows a moment
+  later, and it fades from how it lay into its own pose.
+- **Getting up:** other creatures roll upright first, tuck their legs and then push up.
+- **Getting up:** takes 2.6 seconds instead of 1.8; a thrown creature stays down 6.25 seconds instead of 5.5.
+- **Bodies:** a creature thrown again or killed while getting up goes limp from where it was, instead of snapping
+  back to how it lay.
+
 ## [0.5.3-alpha] - 2026-09-30
 
 ### Changed

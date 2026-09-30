@@ -8,6 +8,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.model.geom.builders.CubeDeformation;
@@ -174,6 +175,90 @@ class BentPartsTest {
                 }
             }
         }
+    }
+
+    private static ModelBends.Bend[] chain(HumanoidModel<LivingEntity> person, ModelPart of) {
+        List<ModelParts.Part> parts = ModelParts.of(person);
+        for (int i = 0; i < parts.size(); i++) {
+            if (parts.get(i).part() == of) {
+                return ModelBends.chain(parts, ModelBends.core(parts), i);
+            }
+        }
+        throw new AssertionError("no such part");
+    }
+
+    // Where a point of the part goes, turned at each joint in turn (no twist to share out).
+    private static Vector3f turned(ModelBends.Bend[] chain, Quaternionf[] turns, Vector3f point) {
+        Vector3f p = new Vector3f(point);
+        for (int j = chain.length - 1; j >= 0; j--) {
+            float[] k = chain[j].knee();
+            turns[j].transform(p.sub(k[0], k[1], k[2])).add(k[0], k[1], k[2]);
+        }
+        return p;
+    }
+
+    @Test
+    void aLegBentAtKneeAndAnkleStaysWholeAndClosed() {
+        HumanoidModel<LivingEntity> person = person();
+        ModelBends.Bend[] leg = chain(person, person.rightLeg);
+        assertEquals(2, leg.length);
+        // Both joints mitred up to square, the leg keeps its room.
+        for (float knee : new float[] { 0.0F, 0.3F, 0.9F, 1.5F }) {
+            for (float ankle : new float[] { -1.5F, -0.5F, 0.4F, 1.1F }) {
+                Quaternionf[] turns = { new Quaternionf().rotationX(knee), new Quaternionf().rotationX(ankle) };
+                BentParts.bend(person.rightLeg, leg, turns, Set.of());
+                assertEquals(192.0, Math.abs(volume(draw(person.rightLeg))), 0.01, "knee " + knee + ", ankle " + ankle);
+            }
+        }
+    }
+
+    @Test
+    void theFootTurnsAboutTheAnkle() {
+        HumanoidModel<LivingEntity> person = person();
+        ModelBends.Bend[] leg = chain(person, person.rightLeg);
+        Quaternionf[] turns = { new Quaternionf().rotationX(1.1F), new Quaternionf().rotationX(-1.4F) };
+        BentParts.bend(person.rightLeg, leg, turns, Set.of());
+        Corners corners = draw(person.rightLeg);
+        for (float x : new float[] { -2.0F, 2.0F }) {
+            for (float z : new float[] { -2.0F, 2.0F }) {
+                Vector3f sole = turned(leg, turns, new Vector3f(x, 12.0F, z));
+                assertTrue(corners.at.stream().anyMatch(p -> p.distance(sole) < CLOSE), "sole corner " + sole);
+                Vector3f moved = BentParts.place(person.rightLeg, x, 12.0F, z, new Vector3f());
+                assertEquals(0.0F, moved.distance(sole), CLOSE, "placed sole corner");
+            }
+        }
+    }
+
+    @Test
+    void anAnklesTwistIsSharedAlongTheShinAlone() {
+        HumanoidModel<LivingEntity> person = person();
+        ModelBends.Bend[] leg = chain(person, person.rightLeg);
+        Quaternionf[] turns = { new Quaternionf(), new Quaternionf().rotationY(0.6F) };
+        BentParts.bend(person.rightLeg, leg, turns, Set.of());
+        Corners corners = draw(person.rightLeg);
+        for (float x : new float[] { -2.0F, 2.0F }) {
+            for (float z : new float[] { -2.0F, 2.0F }) {
+                // The hip and knee stay, the ankle turns half as far as the sole.
+                Vector3f[] want = { new Vector3f(x, 0.0F, z), new Vector3f(x, 6.0F, z),
+                        new Quaternionf().rotationY(0.3F).transform(new Vector3f(x, 10.0F, z)),
+                        new Quaternionf().rotationY(0.6F).transform(new Vector3f(x, 12.0F, z)) };
+                for (Vector3f corner : want) {
+                    assertTrue(corners.at.stream().anyMatch(p -> p.distance(corner) < CLOSE), "corner " + corner);
+                }
+            }
+        }
+    }
+
+    @Test
+    void aTrunkBentAtWaistAndPelvisKeepsItsRoom() {
+        HumanoidModel<LivingEntity> person = person();
+        ModelBends.Bend[] trunk = chain(person, person.body);
+        assertEquals(2, trunk.length);
+        Quaternionf[] turns = { new Quaternionf().rotationX(-0.6F), new Quaternionf().rotationX(-0.4F) };
+        BentParts.bend(person.body, trunk, turns, Set.of());
+        assertEquals(8.0 * 12.0 * 4.0, Math.abs(volume(draw(person.body))), 0.01);
+        Vector3f hips = turned(trunk, turns, new Vector3f(0.0F, 12.0F, 0.0F));
+        assertEquals(0.0F, BentParts.place(person.body, 0.0F, 12.0F, 0.0F, new Vector3f()).distance(hips), CLOSE);
     }
 
     @Test

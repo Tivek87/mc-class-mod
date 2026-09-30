@@ -128,30 +128,43 @@ class RagdollRestTest {
         return deepest;
     }
 
-    // Whether a joint ties bodies b and d together (a limb on the trunk half it hangs from, or a knee).
+    // Whether joints tie bodies b and d together: two pieces of one part (at a knee and an ankle, the waist), a limb on
+    // the trunk's piece it hangs from or on its shoulder blade, a blade on the chest.
     private static boolean tied(Ragdoll doll, int b, int d) {
+        if (doll.partOf[b] == doll.partOf[d] && !trunk(doll, b) && !trunk(doll, d)) {
+            return true;
+        }
         for (int i = 0; i < doll.parts.size(); i++) {
-            int near = doll.body[i];
-            int far = doll.lower[i];
-            if (far >= 0 && (near == b && far == d || near == d && far == b)) {
-                return true;
+            int[] pieces = { doll.body[i], doll.lower[i], doll.tip[i] };
+            for (int k = 1; k < 3; k++) {
+                if (pieces[k] >= 0 && pair(b, d, pieces[k - 1], pieces[k])) {
+                    return true;
+                }
             }
-        }
-        int chest = doll.body[1];
-        int belly = doll.lower[1] < 0 ? chest : doll.lower[1];
-        int[] onChest = { doll.body[0], doll.body[2], doll.body[3] };
-        int[] onBelly = { doll.body[4], doll.body[5] };
-        for (int limb : onChest) {
-            if (b == limb && d == chest || d == limb && b == chest) {
-                return true;
+            if (i == doll.core) {
+                continue;
             }
-        }
-        for (int limb : onBelly) {
-            if (b == limb && d == belly || d == limb && b == belly) {
+            int parent = doll.blade[i] >= 0 ? doll.blade[i] : doll.piece(doll.core, doll.hang[i]);
+            if (pair(b, d, doll.body[i], parent)
+                    || doll.blade[i] >= 0 && pair(b, d, doll.blade[i], doll.body[doll.core])) {
                 return true;
             }
         }
         return false;
+    }
+
+    private static boolean pair(int b, int d, int one, int other) {
+        return b == one && d == other || b == other && d == one;
+    }
+
+    // Whether body b is a piece of the trunk or a shoulder blade (which lies inside the chest).
+    private static boolean trunk(Ragdoll doll, int b) {
+        int core = doll.core;
+        boolean blade = false;
+        for (int i = 0; i < doll.parts.size(); i++) {
+            blade |= doll.blade[i] == b;
+        }
+        return blade || b == doll.body[core] || b == doll.lower[core] || b == doll.tip[core];
     }
 
     @Test
@@ -187,8 +200,9 @@ class RagdollRestTest {
             worst = Math.max(worst, together - alone);
             report.append(String.format("seed %d: furthest %.2f, falling alone %.2f%n", seed, together, alone));
         }
-        // Sliding off each other they may end up a little further apart than each falling alone; flung, blocks away.
-        assertTrue(worst < 1.2, "a body is flung off:\n" + report);
+        // Sliding off each other they may end up a little further apart than each falling alone (a body with feet and a
+        // pelvis settles near where it fell); flung, blocks away.
+        assertTrue(worst < 1.5, "a body is flung off:\n" + report);
     }
 
     // Three bodies falling from inside each other, keeping out of each other or each on its own: how far the middle of
@@ -281,15 +295,15 @@ class RagdollRestTest {
                 doll.step(SUBSTEPS, FLOOR);
             }
             int chest = doll.body[1];
-            int belly = doll.lower[1];
+            int hips = doll.piece(1, 2);
             // The right leg hangs at -x, the left at +x: crossing, each points past the middle towards the other.
-            double rightIn = bone(doll, belly, doll.body[4]).x;
-            double leftIn = -bone(doll, belly, doll.body[5]).x;
+            double rightIn = bone(doll, hips, doll.body[4]).x;
+            double leftIn = -bone(doll, hips, doll.body[5]).x;
             double back = Math.max(bone(doll, chest, doll.body[2]).z, bone(doll, chest, doll.body[3]).z);
             double deepest = 0.0;
             for (int b = 0; b < doll.world.count(); b++) {
                 for (int d = 0; d < doll.world.count(); d++) {
-                    if (b != d && !(b == chest && d == belly || b == belly && d == chest) && !tied(doll, b, d)) {
+                    if (b != d && !(trunk(doll, b) && trunk(doll, d)) && !tied(doll, b, d)) {
                         deepest = Math.max(deepest, overlap(doll, b, d));
                     }
                 }

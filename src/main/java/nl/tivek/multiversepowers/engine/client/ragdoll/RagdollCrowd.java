@@ -41,6 +41,10 @@ final class RagdollCrowd {
             all = more;
         }
         for (int b = 0; b < n; b++) {
+            // A shoulder blade lies inside the chest.
+            if (doll.world.ghostly(b)) {
+                continue;
+            }
             int e = count++ * BOX;
             doll.world.pose(b, POSE);
             System.arraycopy(POSE, 0, all, e, 7);

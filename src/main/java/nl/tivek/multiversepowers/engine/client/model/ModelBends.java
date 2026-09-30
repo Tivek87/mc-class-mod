@@ -10,17 +10,42 @@ import nl.tivek.multiversepowers.engine.client.model.ModelParts.Role;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 
-// Where a model's parts bend: a long arm or leg at its knee or elbow, a long trunk at its waist.
+// Where a model's parts bend: a long arm or leg at its knee or elbow and again at its wrist or ankle, a long trunk at
+// its waist and again at its pelvis; and where an arm's shoulder blade meets the trunk.
 public final class ModelBends {
-    // Where a long arm or leg bends, a knee or an elbow, in pixels of its own frame: the axis it runs along, the cut
-    // across it halfway (farSign +1 when its far end lies at the high side of that axis), the knee's middle, the axis
-    // it turns about there and how far: from min to max radians, its far half bending the way the limb folds.
+    // Where a part bends, in pixels of its own frame: the axis it runs along, the cut across it (farSign +1 when its
+    // far end lies at the high side of that axis), the joint's middle, the axis it turns about there and how far: from
+    // min to max radians, the part past the cut bending the way the part folds.
     public record Bend(int axis, float at, float farSign, float[] knee, float[] hinge, double min, double max) {
     }
+
+    public static final Bend[] NONE = new Bend[0];
 
     // A limb must be this much longer than it is thick, and this long in pixels, to have a knee.
     private static final float SLENDER = 2.0F;
     private static final float LONG = 7.0F;
+    // A hand is this share of an arm's length and a foot this share of a leg's, in whole pixels between these, and
+    // past its knee a limb keeps at least SHIN_LEAST before its hand or foot.
+    private static final float HAND = 0.25F;
+    private static final float FOOT = 1.0F / 6.0F;
+    private static final float HAND_LEAST = 2.0F;
+    private static final float HAND_MOST = 4.0F;
+    private static final float FOOT_LEAST = 1.0F;
+    private static final float FOOT_MOST = 3.0F;
+    private static final float SHIN_LEAST = 2.0F;
+    // How far a hand folds either way, and a foot hanging down back (its toes up, as far as tucked under a kneeling
+    // body) and forward (pointing); the tip of a leg standing out sideways folds down more than up.
+    private static final double HAND_FOLD = 1.3;
+    private static final double TOES_UP = 1.6;
+    private static final double TOES_DOWN = 1.2;
+    private static final double TIP_UP = 0.6;
+    private static final double TIP_DOWN = 1.0;
+    // A pelvis and a belly are each at least this long (pixels) along the spine, and the pelvis folds this share of
+    // the waist's reach.
+    private static final float PELVIS_LEAST = 2.0F;
+    private static final double PELVIS_SHARE = 0.5;
+    // An arm hanging this near the spine's line (pixels) has no shoulder blade: crossed arms, or a golem's.
+    private static final float SHOULDER_LEAST = 2.5F;
 
     @Nullable
     public static Bend bend(Part part) {
@@ -69,6 +94,47 @@ public final class ModelBends {
         float[] hinge = { bone[1] * toward[2] - bone[2] * toward[1], bone[2] * toward[0] - bone[0] * toward[2],
                 bone[0] * toward[1] - bone[1] * toward[0] };
         return new Bend(axis, at, farSign, knee, hinge, min, max);
+    }
+
+    // Where a limb with a knee bends again near its far end: an arm's wrist, a leg's ankle, cut across it as the knee
+    // is and folding about the same axis, the hand or foot past it. Null when the limb is too short past its knee.
+    @Nullable
+    public static Bend end(Part part, Bend knee) {
+        float[] b = part.bounds();
+        int axis = knee.axis();
+        float sign = knee.farSign();
+        boolean arm = part.role() == Role.ARM;
+        float length = b[axis + 3] - b[axis];
+        float end = Mth.clamp(Math.round(length * (arm ? HAND : FOOT)), arm ? HAND_LEAST : FOOT_LEAST,
+                arm ? HAND_MOST : FOOT_MOST);
+        float at = (sign > 0.0F ? b[axis + 3] : b[axis]) - sign * end;
+        if ((at - knee.at()) * sign < SHIN_LEAST) {
+            return null;
+        }
+        float[] joint = knee.knee().clone();
+        joint[axis] = at;
+        double min = arm ? -HAND_FOLD : axis == 1 ? -TOES_UP : -TIP_UP;
+        double max = arm ? HAND_FOLD : axis == 1 ? TOES_DOWN : TIP_DOWN;
+        return new Bend(axis, at, sign, joint, knee.hinge().clone(), min, max);
+    }
+
+    // Every bend of part i from its near end: the trunk's waist and pelvis, a limb's knee or elbow and its wrist or
+    // ankle.
+    public static Bend[] chain(List<Part> parts, int core, int i) {
+        if (i == core) {
+            Bend waist = waist(parts, core);
+            if (waist == null) {
+                return NONE;
+            }
+            Bend pelvis = pelvis(parts, core, waist);
+            return pelvis == null ? new Bend[] { waist } : new Bend[] { waist, pelvis };
+        }
+        Bend knee = bend(parts.get(i));
+        if (knee == null) {
+            return NONE;
+        }
+        Bend end = end(parts.get(i), knee);
+        return end == null ? new Bend[] { knee } : new Bend[] { knee, end };
     }
 
     // A trunk must be this long in pixels along its spine, and this much longer than it is thick, to bend in two.
@@ -122,16 +188,7 @@ public final class ModelBends {
             return null;
         }
         float[] b = trunk.bounds();
-        int axis = -1;
-        float best = HEAD_OUT;
-        for (int a = 0; a < 3; a++) {
-            float half = (b[a + 3] - b[a]) * 0.5F;
-            float out = half > 0.0F ? Math.abs(head.get(a) - (b[a] + b[a + 3]) * 0.5F) / half : 0.0F;
-            if (out > best) {
-                best = out;
-                axis = a;
-            }
-        }
+        int axis = spine(b, head);
         if (axis < 0) {
             return null;
         }
@@ -147,16 +204,7 @@ public final class ModelBends {
         }
         float farSign = head.get(axis) < (b[axis] + b[axis + 3]) * 0.5F ? 1.0F : -1.0F;
         float front = farSign > 0.0F ? b[axis] : b[axis + 3];
-        float hind = Float.NaN;
-        Vector3f at = new Vector3f();
-        for (int i = 0; i < parts.size(); i++) {
-            if (i != core && parts.get(i).role() == Role.LEG) {
-                float along = pivot(parts.get(i), into, at).get(axis);
-                if (Float.isNaN(hind) || (along - hind) * farSign > 0.0F) {
-                    hind = along;
-                }
-            }
-        }
+        float hind = hind(parts, core, into, axis, farSign);
         ModelPart.Cube first = trunk.part().cubes.get(0);
         float lo = axis == 0 ? first.minX : axis == 1 ? first.minY : first.minZ;
         float hi = axis == 0 ? first.maxX : axis == 1 ? first.maxY : first.maxZ;
@@ -189,6 +237,106 @@ public final class ModelBends {
             }
         }
         return far;
+    }
+
+    // The axis of a trunk's box (bounds b) its head (in the trunk's pixels) sits at one end of, -1 when none.
+    private static int spine(float[] b, Vector3f head) {
+        int axis = -1;
+        float best = HEAD_OUT;
+        for (int a = 0; a < 3; a++) {
+            float half = (b[a + 3] - b[a]) * 0.5F;
+            float out = half > 0.0F ? Math.abs(head.get(a) - (b[a] + b[a + 3]) * 0.5F) / half : 0.0F;
+            if (out > best) {
+                best = out;
+                axis = a;
+            }
+        }
+        return axis;
+    }
+
+    // How far along the spine the hindmost legs hang, in the trunk's pixels; NaN without legs.
+    private static float hind(List<Part> parts, int core, Matrix4f into, int axis, float farSign) {
+        float hind = Float.NaN;
+        Vector3f at = new Vector3f();
+        for (int i = 0; i < parts.size(); i++) {
+            if (i != core && parts.get(i).role() == Role.LEG) {
+                float along = pivot(parts.get(i), into, at).get(axis);
+                if (Float.isNaN(hind) || (along - hind) * farSign > 0.0F) {
+                    hind = along;
+                }
+            }
+        }
+        return hind;
+    }
+
+    // Where a bent trunk bends again, halfway from its waist to where its hindmost legs hang (or to the far end of its
+    // first box): its pelvis, which the legs and a tail hang from, folding the way the waist does, less far. Null
+    // when the belly or the pelvis would be too short.
+    @Nullable
+    public static Bend pelvis(List<Part> parts, int core, Bend waist) {
+        Part trunk = parts.get(core);
+        Matrix4f into = ModelParts.rest(trunk, new Matrix4f()).invert();
+        int axis = waist.axis();
+        float sign = waist.farSign();
+        ModelPart.Cube first = trunk.part().cubes.get(0);
+        float end = sign > 0.0F ? axis == 0 ? first.maxX : axis == 1 ? first.maxY : first.maxZ
+                : axis == 0 ? first.minX : axis == 1 ? first.minY : first.minZ;
+        float hind = hind(parts, core, into, axis, sign);
+        float to = !Float.isNaN(hind) && (hind - waist.at()) * sign > 0.0F && (end - hind) * sign > 0.0F ? hind : end;
+        float cut = Math.round(waist.at() + (to - waist.at()) * 0.5F);
+        if ((cut - waist.at()) * sign < PELVIS_LEAST || (end - cut) * sign < PELVIS_LEAST) {
+            return null;
+        }
+        float[] knee = waist.knee().clone();
+        knee[axis] = cut;
+        return new Bend(axis, cut, sign, knee, waist.hinge().clone(), waist.min() * PELVIS_SHARE,
+                waist.max() * PELVIS_SHARE);
+    }
+
+    // Which piece of the trunk each part hangs from, as the model was built: 0 its own (the chest), 1 past its waist
+    // (the belly), 2 past its pelvis.
+    public static int[] hang(List<Part> parts, int core, Bend[] trunk) {
+        int[] hang = new int[parts.size()];
+        if (trunk.length == 0) {
+            return hang;
+        }
+        Matrix4f into = ModelParts.rest(parts.get(core), new Matrix4f()).invert();
+        Vector3f at = new Vector3f();
+        for (int i = 0; i < parts.size(); i++) {
+            if (i == core) {
+                continue;
+            }
+            float along = pivot(parts.get(i), into, at).get(trunk[0].axis());
+            for (Bend cut : trunk) {
+                hang[i] += (along - cut.at()) * cut.farSign() > 0.0F ? 1 : 0;
+            }
+        }
+        return hang;
+    }
+
+    // Where arm i's shoulder blade meets the trunk, in the trunk's own pixels: on the spine's line, level with where
+    // the arm hangs, the arm hanging from the blade's far end, which turns about this end. Null for an arm that hangs
+    // near the spine's line (crossed arms, a golem's) or not from the chest.
+    @Nullable
+    public static float[] shoulder(List<Part> parts, int core, int arm, int[] hang) {
+        if (arm == core || parts.get(arm).role() != Role.ARM || hang[arm] != 0) {
+            return null;
+        }
+        Part trunk = parts.get(core);
+        Matrix4f into = ModelParts.rest(trunk, new Matrix4f()).invert();
+        Vector3f head = head(parts, core, into);
+        float[] b = trunk.bounds();
+        int axis = head == null ? -1 : spine(b, head);
+        if (axis < 0) {
+            return null;
+        }
+        Vector3f pivot = pivot(parts.get(arm), into, new Vector3f());
+        float[] inner = { (b[0] + b[3]) * 0.5F, (b[1] + b[4]) * 0.5F, (b[2] + b[5]) * 0.5F };
+        inner[axis] = pivot.get(axis);
+        float dx = pivot.x - inner[0];
+        float dy = pivot.y - inner[1];
+        float dz = pivot.z - inner[2];
+        return dx * dx + dy * dy + dz * dz < SHOULDER_LEAST * SHOULDER_LEAST ? null : inner;
     }
 
     private static Vector3f unit(int axis, float sign) {

@@ -75,7 +75,7 @@ abstract class RigidCrowd extends RigidBlocks {
     // Body b, as a capsule along its longest side, pushed out of the other boxes near it; each touch kept as one with a
     // block is, for friction and so it does not bounce off.
     void touchOthers(int b) {
-        if (this.invMass[b] == 0.0 || this.nearOtherCount[b] == 0) {
+        if (this.invMass[b] == 0.0 || this.nearOtherCount[b] == 0 || this.ghost[b]) {
             return;
         }
         int o = b * 3;

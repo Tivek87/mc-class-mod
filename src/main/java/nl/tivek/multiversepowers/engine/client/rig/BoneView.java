@@ -23,7 +23,6 @@ import nl.tivek.multiversepowers.engine.client.model.ModelBends;
 import nl.tivek.multiversepowers.engine.client.model.ModelParts;
 import nl.tivek.multiversepowers.engine.client.render.ConstructPainter;
 import nl.tivek.multiversepowers.engine.client.render.entity.EntityPass;
-import org.joml.Matrix3f;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 
@@ -100,7 +99,9 @@ public final class BoneView {
     }
 
     // A creature's model as it is drawn this frame (drawn: its pose stack right after it took its pose): each moving
-    // part a bone from its pivot to the far end of its box.
+    // part a bone from its pivot to the far end of its box, one per piece where it bends (an arm at its elbow and
+    // wrist, a leg at its knee and ankle, a trunk at its waist and pelvis, bent as it is drawn); each shoulder blade from
+    // the spine to its arm, and the pelvis out to each leg that hangs from it.
     public static void model(EntityModel<?> model, Matrix4f drawn) {
         if (!shown() || !EntityPass.inWorld()) {
             return;
@@ -111,77 +112,82 @@ public final class BoneView {
         }
         Vec3 camera = Minecraft.getInstance().gameRenderer.getMainCamera().getPosition();
         int core = ModelBends.core(parts);
-        ModelBends.Bend waist = ModelBends.waist(parts, core);
-        for (ModelParts.Part part : parts) {
+        ModelBends.Bend[] trunk = ModelBends.chain(parts, core, core);
+        int[] hang = ModelBends.hang(parts, core, trunk);
+        ModelParts.Part body = parts.get(core);
+        for (int i = 0; i < parts.size(); i++) {
+            ModelParts.Part part = parts.get(i);
             float[] box = part.bounds();
-            if (waist != null && part == parts.get(core)) {
-                // A trunk that bends is two bones, from the end its head is on to the waist and on to the far end.
-                trunk(model, drawn, part, waist, camera);
+            ModelBends.Bend[] chain = i == core ? trunk : ModelBends.chain(parts, core, i);
+            int axis = chain.length > 0 ? chain[0].axis() : longest(box);
+            float sign = chain.length > 0 ? chain[0].farSign()
+                    : Math.abs(box[axis]) > Math.abs(box[axis + 3]) ? -1.0F : 1.0F;
+            ModelParts.frame(model, drawn, part, FRAME);
+            // From where it hangs (a trunk: from the end its head is on) through each joint to its far end.
+            for (int a = 0; a < 3; a++) {
+                END[a] = a == axis ? 0.0F : (box[a] + box[a + 3]) * 0.5F;
+            }
+            if (i == core && chain.length > 0) {
+                END[axis] = sign > 0.0F ? box[axis] : box[axis + 3];
+            } else {
+                END[0] = 0.0F;
+                END[1] = 0.0F;
+                END[2] = 0.0F;
+            }
+            double[] from = at(part, camera);
+            for (int j = 0; j <= chain.length; j++) {
+                if (j < chain.length) {
+                    System.arraycopy(chain[j].knee(), 0, END, 0, 3);
+                } else {
+                    for (int a = 0; a < 3; a++) {
+                        END[a] = a == axis ? sign > 0.0F ? box[a + 3] : box[a] : (box[a] + box[a + 3]) * 0.5F;
+                    }
+                }
+                double[] to = at(part, camera);
+                add(from[0], from[1], from[2], to[0], to[1], to[2], CREATURE);
+                from = to;
+            }
+            if (i == core) {
                 continue;
             }
-            int longest = 0;
-            for (int axis = 1; axis < 3; axis++) {
-                if (box[axis + 3] - box[axis] > box[longest + 3] - box[longest]) {
-                    longest = axis;
+            float[] blade = ModelBends.shoulder(parts, core, i, hang);
+            boolean hip = part.role() == ModelParts.Role.LEG && trunk.length > 0 && hang[i] == trunk.length;
+            if (blade == null && !hip) {
+                continue;
+            }
+            // Where it meets the trunk: the blade's own end on the spine, or the pelvis's far end.
+            if (blade != null) {
+                System.arraycopy(blade, 0, END, 0, 3);
+            } else {
+                float[] b = body.bounds();
+                for (int a = 0; a < 3; a++) {
+                    END[a] = (b[a] + b[a + 3]) * 0.5F;
                 }
+                END[trunk[0].axis()] = trunk[0].farSign() > 0.0F ? b[trunk[0].axis() + 3] : b[trunk[0].axis()];
             }
-            float[] end = END;
-            for (int axis = 0; axis < 3; axis++) {
-                end[axis] = axis != longest ? (box[axis] + box[axis + 3]) * 0.5F
-                        : Math.abs(box[axis]) > Math.abs(box[axis + 3]) ? box[axis] : box[axis + 3];
-            }
+            ModelParts.frame(model, drawn, body, FRAME);
+            double[] spine = at(body, camera);
             ModelParts.frame(model, drawn, part, FRAME);
             FRAME.transformPosition(0.0F, 0.0F, 0.0F, POINT);
-            double ax = camera.x + POINT.x;
-            double ay = camera.y + POINT.y;
-            double az = camera.z + POINT.z;
-            ModelBends.Bend bend = ModelBends.bend(part);
-            if (bend != null) {
-                // An arm or a leg is two bones, joined at its elbow or knee and bent as a limp body bends it.
-                float[] knee = bend.knee();
-                FRAME.transformPosition(knee[0] / 16.0F, knee[1] / 16.0F, knee[2] / 16.0F, POINT);
-                double kx = camera.x + POINT.x;
-                double ky = camera.y + POINT.y;
-                double kz = camera.z + POINT.z;
-                add(ax, ay, az, kx, ky, kz, CREATURE);
-                Matrix3f turn = BentParts.turn(part.part());
-                BENT.set(end[0] - knee[0], end[1] - knee[1], end[2] - knee[2]);
-                if (turn != null) {
-                    turn.transform(BENT);
-                }
-                BENT.add(knee[0], knee[1], knee[2]);
-                FRAME.transformPosition(BENT.x / 16.0F, BENT.y / 16.0F, BENT.z / 16.0F, POINT);
-                add(kx, ky, kz, camera.x + POINT.x, camera.y + POINT.y, camera.z + POINT.z, CREATURE);
-                continue;
-            }
-            FRAME.transformPosition(end[0] / 16.0F, end[1] / 16.0F, end[2] / 16.0F, POINT);
-            add(ax, ay, az, camera.x + POINT.x, camera.y + POINT.y, camera.z + POINT.z, CREATURE);
+            add(spine[0], spine[1], spine[2], camera.x + POINT.x, camera.y + POINT.y, camera.z + POINT.z, CREATURE);
         }
     }
 
-    private static void trunk(EntityModel<?> model, Matrix4f drawn, ModelParts.Part part, ModelBends.Bend waist,
-            Vec3 camera) {
-        float[] box = part.bounds();
-        float[] knee = waist.knee();
-        int axis = waist.axis();
-        ModelParts.frame(model, drawn, part, FRAME);
-        END[0] = knee[0];
-        END[1] = knee[1];
-        END[2] = knee[2];
-        END[axis] = waist.farSign() > 0.0F ? box[axis] : box[axis + 3];
-        FRAME.transformPosition(END[0] / 16.0F, END[1] / 16.0F, END[2] / 16.0F, POINT);
-        double ax = camera.x + POINT.x;
-        double ay = camera.y + POINT.y;
-        double az = camera.z + POINT.z;
-        FRAME.transformPosition(knee[0] / 16.0F, knee[1] / 16.0F, knee[2] / 16.0F, POINT);
-        double kx = camera.x + POINT.x;
-        double ky = camera.y + POINT.y;
-        double kz = camera.z + POINT.z;
-        add(ax, ay, az, kx, ky, kz, CREATURE);
-        END[axis] = waist.farSign() > 0.0F ? box[axis + 3] : box[axis];
+    private static int longest(float[] box) {
+        int longest = 0;
+        for (int axis = 1; axis < 3; axis++) {
+            if (box[axis + 3] - box[axis] > box[longest + 3] - box[longest]) {
+                longest = axis;
+            }
+        }
+        return longest;
+    }
+
+    // Where the point END of a part (pixels, its own frame, FRAME already set) is drawn now, bent as the part is.
+    private static double[] at(ModelParts.Part part, Vec3 camera) {
         BentParts.place(part.part(), END[0], END[1], END[2], BENT);
         FRAME.transformPosition(BENT.x / 16.0F, BENT.y / 16.0F, BENT.z / 16.0F, POINT);
-        add(kx, ky, kz, camera.x + POINT.x, camera.y + POINT.y, camera.z + POINT.z, CREATURE);
+        return new double[] { camera.x + POINT.x, camera.y + POINT.y, camera.z + POINT.z };
     }
 
     private static void add(double ax, double ay, double az, double bx, double by, double bz, int rgb) {

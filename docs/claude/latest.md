@@ -1,13 +1,12 @@
 # Laatste sessie
 
-- Datum: 2026-09-29 (2e sessie). Verzoek: "stretch" bij ragdolls fixen (husk op screenshot); user: knik moet VIERKANT,
-  niet rond, niet uitgerekt.
-- Oorzaak: fysica houdt gewrichtslimieten (gemeten, max ~0.16 rad over); de tekening (`BentParts`) draaide het snijvlak
-  maar half mee -> bij knie/elleboog ~2.3-2.6 rad een dunne punt (haakvorm), taille scheef uitgesmeerd.
-- Gedaan: `BentParts` herschreven: helften blijven hele blokken, verstek-hoek tot 90 graden, daarboven platte blokeinden;
-  twist verdeeld over beide helften (benen blijven aan heupen). Geldt voor alle knikken (ook taille, poses, GetUp).
-- Test: nieuw `BentPartsTest` (volume dicht, vierkante hoeken, twist, romp); build + 116 tests groen; in-game oud/nieuw
-  vergeleken + dode husks in geul/gat/muur/trede + taille-knikken. Testklassen, werelden, shots verwijderd.
-- Ook nog niet gecommit (vorige sessie, getest): lijken zakken pas weg na volle stilte (`Corpses`, `RagdollFalls`,
-  `Ragdolls`, `Ragdoll`, `ClientSettings`, `en_us.json`, `CLAUDE.md`). `MechScript.java` (andere sessie) blijft erbuiten.
-- Open: commit + push (= release) wacht op ja; changelog-regels (beide wijzigingen) bij `release.ps1 prepare`.
+- Datum: 2026-09-30. Verzoek: betere get-up na ragdoll; nieuwe botten (bekken, schouderbladen, handen, voeten; geen
+  nek); ragdolls gebruiken ze; regel "gebruik alle botten" in CLAUDE.md. Daarna: afronden, commit, push, release.
+- Gedaan: `ModelBends` (chain/hang/shoulder), `BentParts` + nieuw `FoldChain` (2 knikken per deel), `Limbs`
+  (pols/enkel/bekken/hips/shoulder), `BoneView`, ragdoll met 3 stukken per deel + spook-schouderbladen
+  (`RigidWorld.ghost`, `LimbJoint.turnsOnly`), get-up herschreven in `ragdoll/getup/` (PersonRise, Skeleton,
+  CreatureRise, PoseBlend, BodyPose, Hanging), 52 ticks; server `Knockdowns.DOWN` 110 -> 125. Versie 0.5.4-alpha.
+- Tests: volledige build groen (123 tests), nieuw `PersonRiseTest`; `RagdollRestTest` crowd-grens 1.2 -> 1.5.
+- NIET getest: in-game beeld van de get-up (alleen offline wiskunde-test). Keyframes waarschijnlijk nog tunen.
+- Overlap-gemiddelde in RagdollRestTest 0.0699 (grens 0.07): krap.
+- Niet meegenomen: `MechScript.java` (andere sessie), `run.txt`. Open: bug #35, ideeën (#45/#58 deels gedaan).

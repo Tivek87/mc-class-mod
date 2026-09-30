@@ -11,6 +11,8 @@ abstract class RigidBodies {
     final double[] pq = new double[MOST * 4];
     final double[] w = new double[MOST * 3];
     final double[] invMass = new double[MOST];
+    // Bodies that touch nothing, only held by their joints (a shoulder blade inside a chest).
+    final boolean[] ghost = new boolean[MOST];
     final double[] invInertia = new double[MOST * 3];
     public final double[] half = new double[MOST * 3];
     int count;

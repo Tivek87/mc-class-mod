@@ -12,12 +12,14 @@ import java.util.Set;
 import net.minecraft.client.model.CreeperModel;
 import net.minecraft.client.model.EntityModel;
 import net.minecraft.client.model.HumanoidModel;
+import net.minecraft.client.model.IronGolemModel;
 import net.minecraft.client.model.SpiderModel;
 import net.minecraft.client.model.VillagerModel;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.model.geom.builders.CubeDeformation;
 import net.minecraft.client.model.geom.builders.LayerDefinition;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.animal.IronGolem;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
 import org.junit.jupiter.api.AfterEach;
@@ -65,6 +67,45 @@ class ModelPartsTest {
         assertTrue(far[index(parts, "right_leg")] && far[index(parts, "left_leg")], "legs hang from the hips");
         assertFalse(far[index(parts, "head")] || far[index(parts, "right_arm")] || far[index(parts, "left_arm")],
                 "head and arms hang from the chest");
+    }
+
+    @Test
+    void aPersonHasWristsAnklesAPelvisAndShoulderBlades() {
+        HumanoidModel<LivingEntity> person = new HumanoidModel<>(
+                LayerDefinition.create(HumanoidModel.createMesh(CubeDeformation.NONE, 0.0F), 64, 64).bakeRoot());
+        List<ModelParts.Part> parts = parts(person);
+        int core = ModelBends.core(parts);
+        ModelBends.Bend[] arm = ModelBends.chain(parts, core, index(parts, "right_arm"));
+        ModelBends.Bend[] leg = ModelBends.chain(parts, core, index(parts, "left_leg"));
+        ModelBends.Bend[] trunk = ModelBends.chain(parts, core, core);
+        // Elbow and wrist, a three-pixel hand; knee and ankle, a two-pixel foot; waist and pelvis.
+        assertEquals(2, arm.length);
+        assertEquals(4.0F, arm[0].at(), CLOSE);
+        assertEquals(7.0F, arm[1].at(), CLOSE);
+        assertEquals(2, leg.length);
+        assertEquals(6.0F, leg[0].at(), CLOSE);
+        assertEquals(10.0F, leg[1].at(), CLOSE);
+        assertEquals(2, trunk.length);
+        assertEquals(9.0F, trunk[1].at(), CLOSE);
+        assertEquals(trunk[0].hinge()[0], trunk[1].hinge()[0], CLOSE);
+        int[] hang = ModelBends.hang(parts, core, trunk);
+        assertEquals(2, hang[index(parts, "right_leg")], "legs hang from the pelvis");
+        assertEquals(0, hang[index(parts, "right_arm")] + hang[index(parts, "head")], "head and arms from the chest");
+        float[] blade = ModelBends.shoulder(parts, core, index(parts, "right_arm"), hang);
+        assertNotNull(blade);
+        assertEquals(0.0F, new Vector3f(blade[0], blade[1], blade[2]).distance(0.0F, 2.0F, 0.0F), CLOSE,
+                "the blade meets the spine level with the shoulder");
+        assertNull(ModelBends.shoulder(parts, core, index(parts, "head"), hang));
+    }
+
+    @Test
+    void aGolemsArmsHangFromItsMiddleWithoutBlades() {
+        IronGolemModel<IronGolem> golem = new IronGolemModel<>(IronGolemModel.createBodyLayer().bakeRoot());
+        List<ModelParts.Part> parts = parts(golem);
+        int core = ModelBends.core(parts);
+        int[] hang = ModelBends.hang(parts, core, ModelBends.chain(parts, core, core));
+        assertNull(ModelBends.shoulder(parts, core, index(parts, "right_arm"), hang));
+        assertEquals(2, ModelBends.chain(parts, core, index(parts, "right_arm")).length, "its long arm has a hand");
     }
 
     @Test

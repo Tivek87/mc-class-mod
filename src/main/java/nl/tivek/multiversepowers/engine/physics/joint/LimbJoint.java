@@ -29,6 +29,8 @@ public final class LimbJoint implements Constraint {
     private final double twistMin;
     private final double twistMax;
     private final double[] t = new double[12];
+    // False when it only holds the turn and something else holds the limb where it hangs (a shoulder blade between).
+    private boolean joined = true;
 
     public LimbJoint(int a, double[] anchorA, double[] middle, double[] across, double[] rest, double[] referenceA,
             int b, double[] anchorB, double[] bone, double[] referenceB, double wide1, double wide2, double twistMin,
@@ -49,6 +51,12 @@ public final class LimbJoint implements Constraint {
         this.twistMax = twistMax;
     }
 
+    // Only the limb's turn is held, not where it hangs: the anchors are left alone.
+    public LimbJoint turnsOnly() {
+        this.joined = false;
+        return this;
+    }
+
     @Override
     public void solve(RigidWorld world, double h) {
         this.swing(world, h);
@@ -58,6 +66,9 @@ public final class LimbJoint implements Constraint {
 
     @Override
     public void rejoin(RigidWorld world, double h) {
+        if (!this.joined) {
+            return;
+        }
         world.point(this.a, this.anchorA[0], this.anchorA[1], this.anchorA[2], this.t);
         double ax = this.t[0];
         double ay = this.t[1];

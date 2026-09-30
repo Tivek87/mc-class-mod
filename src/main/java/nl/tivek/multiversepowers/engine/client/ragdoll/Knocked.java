@@ -3,6 +3,7 @@ package nl.tivek.multiversepowers.engine.client.ragdoll;
 import it.unimi.dsi.fastutil.ints.Int2IntMap;
 import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectIterator;
+import nl.tivek.multiversepowers.engine.client.ragdoll.getup.GetUp;
 
 // What the server says of the creatures a throw has down (Knockdowns): still flying, or the ticks left before it may
 // move again. A limp body lies until just before then, never less than LIES on the ground, and gets up in time to

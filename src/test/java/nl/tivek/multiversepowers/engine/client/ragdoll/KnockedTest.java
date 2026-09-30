@@ -4,13 +4,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import nl.tivek.multiversepowers.engine.client.ragdoll.getup.GetUp;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 class KnockedTest {
     private static final int CREATURE = 7;
     // As long as the server keeps a thrown creature down from its landing (Knockdowns).
-    private static final int DOWN = 110;
+    private static final int DOWN = 125;
 
     @AfterEach
     void forget() {
