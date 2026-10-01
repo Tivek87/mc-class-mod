@@ -341,4 +341,9 @@ public final class MechScript {
     public static Vec3 mirror(Vec3 local) {
         return new Vec3(-local.x, local.y, local.z);
     }
+
+    // A place given for the right side, on the side asked for.
+    public static Vec3 side(Vec3 local, boolean right) {
+        return right ? local : mirror(local);
+    }
 }
