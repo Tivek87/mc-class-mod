@@ -37,7 +37,7 @@ final class SkyMoves {
     // Lightning flows down his arm into the hammer and bursts out round him in a dome.
     static boolean shockwave(ServerPlayer player, float damage) {
         ServerLevel level = player.serverLevel();
-        Vec3 center = player.position().add(0.0, 0.9, 0.0);
+        Vec3 center = player.position().add(0.0, 0.9 * player.getScale(), 0.0);
         ParticleFx.sphereOut(level, ParticleFx.dust(ThorMoves.GLOW, 1.6F), center, 70, 0.55);
         ParticleFx.sphereOut(level, ParticleTypes.ELECTRIC_SPARK, center, 50, 0.45);
         ParticleFx.sphere(level, ParticleFx.dust(ThorMoves.DEEP, 1.2F), center, SHOCK_RADIUS, 60, 0.0);

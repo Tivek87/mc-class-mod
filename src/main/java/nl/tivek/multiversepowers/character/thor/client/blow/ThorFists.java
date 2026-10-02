@@ -2,14 +2,10 @@ package nl.tivek.multiversepowers.character.thor.client.blow;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
-import javax.annotation.Nullable;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.entity.player.PlayerRenderer;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.item.ItemDisplayContext;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -20,6 +16,7 @@ import nl.tivek.multiversepowers.character.client.ClientCharacter;
 import nl.tivek.multiversepowers.character.thor.ThorStatePayload;
 import nl.tivek.multiversepowers.character.thor.client.ClientThor;
 import nl.tivek.multiversepowers.character.thor.client.motion.ThorMotion;
+import nl.tivek.multiversepowers.character.thor.client.pose.ThorHammerLayer;
 import nl.tivek.multiversepowers.engine.client.render.entity.FirstPersonArm;
 import nl.tivek.multiversepowers.engine.client.render.entity.FirstPersonLeg;
 import org.joml.Vector3f;
@@ -30,8 +27,6 @@ import org.joml.Vector3f;
 public final class ThorFists {
     private static final Vector3f REST_FROM = new Vector3f(0.75F, -1.1F, -0.15F);
     private static final Vector3f HIP = new Vector3f(0.14F, -1.05F, 0.05F);
-    @Nullable
-    private static ItemStack axe;
 
     private ThorFists() {
     }
@@ -71,7 +66,7 @@ public final class ThorFists {
             FirstPersonArm.arm(event.getPoseStack(), event.getMultiBufferSource(), event.getPackedLight(), player,
                     renderer, sign, hand, from);
             if (side == 0 && armed) {
-                hammer(minecraft, player, event, hand);
+                hammer(event, player, hand);
             }
         }
         if (pose != null && pose.footSide >= 0 && pose.kick * pose.weight > 0.05F) {
@@ -84,21 +79,17 @@ public final class ThorFists {
         }
     }
 
-    // The hammer (the axe standing in for it) in his right fist, head up.
-    private static void hammer(Minecraft minecraft, LocalPlayer player, RenderHandEvent event, Vector3f hand) {
-        if (axe == null) {
-            axe = new ItemStack(Items.IRON_AXE);
-        }
+    // Mjolnir in his right fist, head up and leaning away, its long side pointing ahead and turned so a rune face
+    // shows.
+    private static void hammer(RenderHandEvent event, LocalPlayer player, Vector3f hand) {
         PoseStack pose = event.getPoseStack();
         pose.pushPose();
         pose.translate(hand.x, hand.y, hand.z);
-        pose.mulPose(Axis.XP.rotationDegrees(-25.0F));
-        pose.mulPose(Axis.YP.rotationDegrees(-15.0F));
-        pose.mulPose(Axis.ZP.rotationDegrees(40.0F));
-        pose.translate(0.0F, 0.12F, 0.0F);
-        pose.scale(0.8F, 0.8F, 0.8F);
-        minecraft.getEntityRenderDispatcher().getItemInHandRenderer().renderItem(player, axe, ItemDisplayContext.NONE,
-                false, pose, event.getMultiBufferSource(), event.getPackedLight());
+        pose.mulPose(Axis.ZP.rotationDegrees(10.0F));
+        pose.mulPose(Axis.XP.rotationDegrees(-20.0F));
+        pose.mulPose(Axis.YP.rotationDegrees(130.0F));
+        ThorHammerLayer.draw(ThorHammerLayer.GRIP, ThorHammerLayer.glow(player, event.getPartialTick()), pose,
+                event.getMultiBufferSource(), event.getPackedLight());
         pose.popPose();
     }
 }

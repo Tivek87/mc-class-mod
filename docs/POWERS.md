@@ -1327,10 +1327,15 @@ Double space jumps high and holding space flies, with or without the hammer.
 
 - **Becoming Thor:** a bolt of lightning strikes you out of the sky with a crack of thunder (it does no harm and
   lights no fire), a flash of blue light spreads round your feet, and static keeps crawling over you for about two
-  seconds.
-- **The hammer:** until Mjolnir is made, an axe stands in for it. It hangs from his belt on his left hip; in flight
-  his left hand holds it out ahead of him, as if it pulled him along. Taken up, he holds it in his right hand, in
-  your own view as well.
+  seconds. As him you are 30% bigger: taller and broader, your eyes and view higher, a higher step and a longer
+  reach; changing back you shrink to your own size again.
+- **The hammer:** Mjolnir, after the God of War Ragnarök hammer: a peaked steel head with engraved runes and gold
+  medallions, gold horns along its foot that end in curls, gold bands crossed over its collar, a red leather handle
+  wound with crossed dark straps and gold studs, and at the pommel two crossed gold hooks, two serpent heads and a
+  V-shaped tip, built of blocks and pixels in the game's own style. It is never an item: only Thor carries it, and
+  nobody can pick it up or keep it. It hangs from his belt on his left hip, head up and handle down his thigh; in
+  flight his left hand holds it out ahead of him, as if it pulled him along. Taken up, he holds it in his right hand,
+  in your own view as well; thrown, it tumbles end over end, as big as it was in his hand.
 
 ### Thunder Fists (left click)
 
@@ -1374,11 +1379,11 @@ Double space jumps high and holding space flies, with or without the hammer.
 
 ### Flight (hold space)
 
-- **Hold space** (on the ground or in the air): Thor's left hand grabs the axe from his belt and he rises. He flies
+- **Hold space** (on the ground or in the air): Thor's left hand grabs the hammer from his belt and he rises. He flies
   where you look: W ahead, S back, A and D aside and space up; to go down, look down and fly ahead. Sneaking does
   not sink him; holding shift is Lightning Speed. With no key held he hangs still in the air, bobbing gently. Flying fast
-  he lies flat behind the axe and banks into his turns.
-- **Landing:** fly down onto the ground and he touches down, the axe back on his belt. A hard hit (2.5 hearts or
+  he lies flat behind the hammer and banks into his turns.
+- **Landing:** fly down onto the ground and he touches down, the hammer back on his belt. A hard hit (2.5 hearts or
   more) knocks him out of the sky. He takes no fall damage from his own flight.
 - His speed is a setting.
 
@@ -1465,7 +1470,8 @@ Double space jumps high and holding space flies, with or without the hammer.
 
 - **Hold the scroll wheel** on the ground: a bolt of lightning strikes him with a crack of thunder, and for **20
   seconds** sparks crawl over him. With the hammer in hand the **hammer** is charged: its blows, uppercut and throws do
-  half as much again, in damage and in how far they throw. Without it **Thor** is charged: his fists do half as much
+  half as much again, in damage and in how far they throw, and its dark runes glow blue (in his hand, on his belt and
+  thrown) until it wears off. Without it **Thor** is charged: his fists do half as much
   again, and he runs faster (Speed II). **Cooldown:** 45 seconds. How long it lasts is a setting.
 
 ---

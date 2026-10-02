@@ -125,7 +125,8 @@ public final class ThorCombo {
         player.level().playLocalSound(player.getX(), player.getEyeY(), player.getZ(),
                 heavy ? SoundEvents.PLAYER_ATTACK_SWEEP : SoundEvents.PLAYER_ATTACK_NODAMAGE, SoundSource.PLAYERS,
                 heavy ? 0.45F : 0.55F, heavy ? 0.8F : 1.35F + 0.2F * RANDOM.nextFloat(), false);
-        landsAt = target != null && target.distanceTo(player) <= blow.reach() + 0.6 ? now + blow.hit() : -1;
+        landsAt = target != null && target.distanceTo(player) <= blow.reach() * player.getScale() + 0.6
+                ? now + blow.hit() : -1;
         landsHard = (float) blow.power();
         return blow;
     }
@@ -140,7 +141,7 @@ public final class ThorCombo {
         Vec3 flat = new Vec3(look.x, 0.0, look.z);
         boolean leap = blow == ThorBlow.SUPERMAN_PUNCH;
         double room = target == null ? FREE_ROOM
-                : Math.sqrt(target.getBoundingBox().distanceToSqr(player.getEyePosition())) - CLOSE;
+                : Math.sqrt(target.getBoundingBox().distanceToSqr(player.getEyePosition())) - CLOSE * player.getScale();
         if (flat.lengthSqr() < 1.0E-6 || room <= 0.0) {
             return;
         }
@@ -153,7 +154,7 @@ public final class ThorCombo {
     @Nullable
     private static LivingEntity target(LocalPlayer player) {
         Vec3 eye = player.getEyePosition();
-        Vec3 end = eye.add(player.getLookAngle().scale(LOOK_REACH));
+        Vec3 end = eye.add(player.getLookAngle().scale(LOOK_REACH * player.getScale()));
         AABB near = player.getBoundingBox().expandTowards(end.subtract(eye)).inflate(1.0);
         LivingEntity best = null;
         double nearest = Double.MAX_VALUE;
@@ -171,9 +172,12 @@ public final class ThorCombo {
     // Picks the next blow by weight: none of the last few again, and each weighed by how well it follows the last
     // one and suits where the target stands.
     private static ThorBlow choose(LocalPlayer player, @Nullable LivingEntity target) {
-        double far = target == null ? 2.6 : Math.sqrt(target.getBoundingBox().distanceToSqr(player.getEyePosition()));
+        // How far off it stands in his own sizes, so a bigger Thor picks the same blows at the same reach.
+        double size = player.getScale();
+        double far = target == null ? 2.6
+                : Math.sqrt(target.getBoundingBox().distanceToSqr(player.getEyePosition())) / size;
         boolean low = player.getXRot() > 28.0F
-                || target != null && target.getBoundingBox().maxY < player.getEyeY() - 1.1;
+                || target != null && target.getBoundingBox().maxY < player.getEyeY() - 1.1 * size;
         boolean high = player.getXRot() < -18.0F;
         boolean running = player.isSprinting();
         ThorBlow[] all = ThorBlow.values();

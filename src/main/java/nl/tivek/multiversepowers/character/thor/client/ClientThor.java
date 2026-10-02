@@ -42,6 +42,7 @@ public final class ClientThor {
         int blowStart;
         public int lastBlow = -1;
         int lastBlowStart;
+        int litAt;
 
         public boolean has(int flag) {
             return (this.flags & flag) != 0;
@@ -66,6 +67,11 @@ public final class ClientThor {
 
         public float lastBlowAge(float partialTick) {
             return ticks - this.lastBlowStart + partialTick;
+        }
+
+        // Ticks since his hammer was last charged.
+        public float litAge(float partialTick) {
+            return ticks - this.litAt + partialTick;
         }
     }
 
@@ -96,6 +102,9 @@ public final class ClientThor {
         // Your own wind-up is shown by your own game, the moment you hold the button.
         if (!own && view.has(ThorStatePayload.CHARGING) != ((payload.flags() & ThorStatePayload.CHARGING) != 0)) {
             ClientClaps.charging(payload.entity(), !view.has(ThorStatePayload.CHARGING));
+        }
+        if ((payload.flags() & ThorStatePayload.HAMMER_CHARGED) != 0 && !view.has(ThorStatePayload.HAMMER_CHARGED)) {
+            view.litAt = ticks;
         }
         view.flags = payload.flags();
         if (own) {
@@ -205,8 +214,9 @@ public final class ClientThor {
     static Vec3 hand(LivingEntity thor, Entity held, float partialTick) {
         Vec3 look = Vec3.directionFromRotation(0.0F, thor.getViewYRot(partialTick));
         Vec3 right = look.cross(Vectors.UP).normalize();
-        return thor.getPosition(partialTick).add(look.scale(0.7)).add(right.scale(0.45))
-                .add(0.0, 0.5 - held.getBbHeight() * 0.55, 0.0);
+        double size = thor.getScale();
+        return thor.getPosition(partialTick).add(look.scale(0.7 * size)).add(right.scale(0.45 * size))
+                .add(0.0, 0.5 * size - held.getBbHeight() * 0.55, 0.0);
     }
 
     @SubscribeEvent

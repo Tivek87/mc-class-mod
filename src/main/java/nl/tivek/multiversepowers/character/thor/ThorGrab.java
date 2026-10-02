@@ -120,14 +120,15 @@ public final class ThorGrab {
     private static LivingEntity nearest(ServerPlayer player) {
         Vec3 eye = player.getEyePosition();
         Vec3 ahead = new Vec3(player.getLookAngle().x, 0.0, player.getLookAngle().z).normalize();
+        double reach = REACH * player.getScale();
         LivingEntity best = null;
         double nearest = Double.MAX_VALUE;
         for (LivingEntity target : level(player).getEntitiesOfClass(LivingEntity.class,
-                player.getBoundingBox().inflate(REACH), entity -> Targeting.isTargetable(player, entity))) {
+                player.getBoundingBox().inflate(reach), entity -> Targeting.isTargetable(player, entity))) {
             Vec3 to = target.getBoundingBox().getCenter().subtract(eye);
             Vec3 flat = new Vec3(to.x, 0.0, to.z);
             double far = to.length();
-            if (far > REACH + target.getBbWidth() * 0.5
+            if (far > reach + target.getBbWidth() * 0.5
                     || flat.lengthSqr() > 1.0E-4 && flat.normalize().dot(ahead) < AHEAD) {
                 continue;
             }
@@ -239,15 +240,16 @@ public final class ThorGrab {
         this.target.hasImpulse = true;
         this.target.hurtMarked = true;
         this.sparks(level, 14);
-        level.playSound(null, thor.getX(), thor.getY() + 1.0, thor.getZ(), SoundEvents.PLAYER_ATTACK_KNOCKBACK,
-                SoundSource.PLAYERS, 1.2F, 0.7F);
+        level.playSound(null, thor.getX(), thor.getY() + thor.getScale(), thor.getZ(),
+                SoundEvents.PLAYER_ATTACK_KNOCKBACK, SoundSource.PLAYERS, 1.2F, 0.7F);
     }
 
     // Its head driven into the ground before him.
     private void headSlam(ServerLevel level, ServerPlayer thor) {
         this.let();
-        Vec3 spot = thor.position().add(flat(thor).scale(1.3));
-        double floor = Targeting.floorBelow(level, BlockPos.containing(spot.x, thor.getY() + 1.0, spot.z));
+        Vec3 spot = thor.position().add(flat(thor).scale(1.3 * thor.getScale()));
+        double floor = Targeting.floorBelow(level, BlockPos.containing(spot.x, thor.getY() + thor.getScale(),
+                spot.z));
         this.target.setPos(spot.x, floor, spot.z);
         this.target.setDeltaMovement(0.0, -0.5, 0.0);
         this.target.hurtMarked = true;
@@ -359,8 +361,8 @@ public final class ThorGrab {
     }
 
     // Held up over his head, as both client and server put it.
-    public static Vec3 overhead(Entity thor) {
-        return thor.position().add(0.0, thor.getBbHeight() + 0.3, 0.0);
+    public static Vec3 overhead(LivingEntity thor) {
+        return thor.position().add(0.0, thor.getBbHeight() + 0.3 * thor.getScale(), 0.0);
     }
 
     private static Vec3 flat(ServerPlayer thor) {

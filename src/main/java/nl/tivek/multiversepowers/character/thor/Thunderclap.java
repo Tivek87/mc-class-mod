@@ -57,6 +57,7 @@ final class Thunderclap {
         Vec3[] eye = { player.getEyePosition() };
         Vec3[] ahead = { player.getLookAngle() };
         Vec3[] aim = { aimed(level, player) };
+        double size = player.getScale();
         Effects.start(level, (lvl, age) -> {
             ServerPlayer caster = lvl.getServer().getPlayerList().getPlayer(casterId);
             boolean here = caster != null && caster.level() == lvl;
@@ -74,7 +75,7 @@ final class Thunderclap {
             }
             int t = age - MEET;
             if (t == 0) {
-                boom(lvl, casterEntity, hands(eye[0], ahead[0]), aim[0], feet[0]);
+                boom(lvl, casterEntity, hands(eye[0], ahead[0], size), aim[0], feet[0]);
             }
             if (t == DISTANT) {
                 Vec3 far = feet[0];
@@ -90,9 +91,9 @@ final class Thunderclap {
         return true;
     }
 
-    // Where the hands meet: a little ahead of the eyes, the way he looks.
-    private static Vec3 hands(Vec3 eye, Vec3 look) {
-        return eye.add(look.scale(0.6)).add(0.0, -0.3, 0.0);
+    // Where the hands meet: a little ahead of the eyes, the way he looks, further for a bigger body.
+    private static Vec3 hands(Vec3 eye, Vec3 look, double size) {
+        return eye.add(look.scale(0.6 * size)).add(0.0, -0.3 * size, 0.0);
     }
 
     // What the crosshair points at within reach: the middle of a creature, else a block, else the end of the reach.
@@ -116,7 +117,7 @@ final class Thunderclap {
 
     // A rush of air as the hands slam together from wide apart.
     private static void gather(ServerLevel level, ServerPlayer player, int age) {
-        Vec3 clap = hands(player.getEyePosition(), player.getLookAngle());
+        Vec3 clap = hands(player.getEyePosition(), player.getLookAngle(), player.getScale());
         if (age == 0) {
             level.playSound(null, clap.x, clap.y, clap.z, SoundEvents.TRIDENT_RIPTIDE_1.value(), SoundSource.PLAYERS,
                     0.7F, 1.6F);

@@ -37,16 +37,17 @@ public final class ThorPull {
             stop();
             return false;
         }
-        Vec3 to = target.position().subtract(player.position().add(0.0, 0.9, 0.0));
+        double size = player.getScale();
+        Vec3 to = target.position().subtract(player.position().add(0.0, 0.9 * size, 0.0));
         double gap = to.length();
-        if (gap < THERE) {
+        if (gap < THERE * size) {
             player.setDeltaMovement(to.scale(0.3));
             stop();
             return false;
         }
         player.setDeltaMovement(to.scale(Math.min(SPEED, gap) / gap));
         player.resetFallDistance();
-        player.level().addParticle(ParticleTypes.ELECTRIC_SPARK, player.getX(), player.getY() + 1.0, player.getZ(),
+        player.level().addParticle(ParticleTypes.ELECTRIC_SPARK, player.getX(), player.getY() + size, player.getZ(),
                 0.0, 0.0, 0.0);
         return true;
     }

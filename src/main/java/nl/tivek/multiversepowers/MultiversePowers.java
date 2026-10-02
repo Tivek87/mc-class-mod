@@ -7,6 +7,7 @@ import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import nl.tivek.multiversepowers.character.Characters;
+import nl.tivek.multiversepowers.character.thor.ThrownHammer;
 import nl.tivek.multiversepowers.classes.ceremony.Ceremonies;
 import nl.tivek.multiversepowers.config.ModConfigs;
 import nl.tivek.multiversepowers.engine.effect.Effects;
@@ -33,6 +34,7 @@ public class MultiversePowers {
         LOGGER.warn("==================== UNFINISHED / WORK IN PROGRESS ====================");
         LOGGER.warn("Multiverse Powers is still being built: things may change, break or be missing.");
         modEventBus.addListener(ModNetwork::register);
+        ThrownHammer.register(modEventBus);
         ModConfigs.register(modContainer, modEventBus);
         NeoForge.EVENT_BUS.addListener(MultiversePowers::onServerStopping);
     }

@@ -19,7 +19,8 @@ import nl.tivek.multiversepowers.character.greenlantern.client.mech.MechPainter;
 import nl.tivek.multiversepowers.character.greenlantern.client.victim.Clapped;
 import nl.tivek.multiversepowers.character.greenlantern.client.victim.Flattened;
 import nl.tivek.multiversepowers.character.greenlantern.client.victim.HandVictims;
-import nl.tivek.multiversepowers.character.thor.client.pose.ThorAxeLayer;
+import nl.tivek.multiversepowers.character.thor.client.ThrownHammerRenderer;
+import nl.tivek.multiversepowers.character.thor.client.pose.ThorHammerLayer;
 import nl.tivek.multiversepowers.character.thor.client.pose.ThorPoses;
 import nl.tivek.multiversepowers.config.ModConfigs;
 import nl.tivek.multiversepowers.config.client.ClientSettings;
@@ -41,7 +42,9 @@ public final class MultiversePowersClient {
         container.registerExtensionPoint(IConfigScreenFactory.class,
                 (mod, parent) -> new ConfigChoiceScreen(parent));
         modEventBus.addListener(GreenLanternSuitLayer::onAddLayers);
-        modEventBus.addListener(ThorAxeLayer::onAddLayers);
+        modEventBus.addListener(ThorHammerLayer::onAddLayers);
+        modEventBus.addListener(ThorHammerLayer::onRegisterModels);
+        modEventBus.addListener(ThrownHammerRenderer::onRegisterRenderers);
         modEventBus.addListener(UpdatePopup::onRegisterKeys);
         modEventBus.addListener(Lens::onRegisterShaders);
         modEventBus.addListener(MechPainter::onClientSetup);

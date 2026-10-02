@@ -169,11 +169,11 @@ public final class ThorMotion extends ThorGroundMotion {
         // The server's own way from the bytes, so both blink the same.
         look = ThorMoves.blinkWay(yawByte, pitchByte);
         blinkFrom = player.position();
-        Vec3 from = blinkFrom.add(0.0, 0.9, 0.0);
+        Vec3 from = blinkFrom.add(0.0, 0.9 * player.getScale(), 0.0);
         HitResult hit = player.level().clip(new ClipContext(from, from.add(look.scale(BLINK)),
                 ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, player));
         double far = hit.getType() == HitResult.Type.MISS ? BLINK
-                : Math.max(0.0, hit.getLocation().distanceTo(from) - 0.6);
+                : Math.max(0.0, hit.getLocation().distanceTo(from) - 0.6 * player.getScale());
         blinkTo = blinkFrom.add(look.scale(far));
         blinkAge = 0;
         ClientThor.predict(player, ThorStatePayload.BLINK, 0, flags());
@@ -330,7 +330,7 @@ public final class ThorMotion extends ThorGroundMotion {
         int t = diveAge++;
         ClientThor.View view = ClientThor.view(player);
         boolean carrying = view != null && view.has(ThorStatePayload.CARRYING);
-        Vec3 at = player.position().add(0.0, 0.9, 0.0);
+        Vec3 at = player.position().add(0.0, 0.9 * player.getScale(), 0.0);
         Vec3 goal;
         if (carrying) {
             Vec3 look = player.getLookAngle();

@@ -3,6 +3,25 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.6.0-alpha] - 2026-10-02
+
+### Added
+- **Thor:** Mjolnir, after the God of War Ragnarök hammer, built of blocks and pixels in the game's own style: a
+  peaked steel head with dark runes, gold medallions, horns and bands, a red leather handle wound with dark straps and
+  a gold pommel with two serpent heads. Only Thor carries it, never as an item.
+- **Thor:** a charged hammer's dark runes glow blue: in his hand, on his belt, in flight and thrown.
+- **Thor:** as him you are 30% bigger: taller and broader, your eyes and view higher, a higher step and a longer
+  reach, and his blows, grabs, throws and sparks grow with him; changing back you shrink to your own size again.
+- **Capes:** a player made bigger wears a bigger cape.
+- **Project:** `scripts/models/mjolnir/` builds Mjolnir's model, its glowing rune faces and its 64 pixel texture.
+- **Repository:** four Mjolnir reference pictures in `docs/reference/`.
+
+### Changed
+- **Thor:** thrown, the hammer is Mjolnir itself, tumbling end over end, as big as it was in his hand.
+
+### Removed
+- **Thor:** the iron axe that stood in for Mjolnir.
+
 ## [0.5.9-alpha] - 2026-10-02
 
 ### Added

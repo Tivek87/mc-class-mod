@@ -7,40 +7,29 @@ import java.util.Set;
 import java.util.UUID;
 import javax.annotation.Nullable;
 import net.minecraft.core.particles.ParticleTypes;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
-import net.minecraft.world.entity.Display;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
-import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.engine.effect.Effects;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
+import nl.tivek.multiversepowers.engine.math.Vectors;
 import nl.tivek.multiversepowers.engine.target.Targeting;
 import nl.tivek.multiversepowers.engine.world.LoadedWorld;
 import nl.tivek.multiversepowers.spell.SpellTargets;
 
-// Thor's hammer (an axe stands in for it until it is made): at his belt, in his right hand, or thrown. Thrown, it flies
-// at what he aims at, throws what it hits far away and flies home by itself. Thrown to fly after, it stops where it
-// hits or at the end of its reach, hanging in the air, and his game flies him to it; there he catches it. In flight
-// everyone sees it as an item display.
-@EventBusSubscriber(modid = MultiversePowers.MODID)
+// Thor's hammer: at his belt, in his right hand, or thrown. Thrown, it flies at what he aims at, throws what it hits
+// far away and flies home by itself. Thrown to fly after, it stops where it hits or at the end of its reach, hanging
+// in the air, and his game flies him to it; there he catches it. In flight it is a ThrownHammer. Where it is on him
+// and how far it reaches grow with his size.
 final class Mjolnir {
-    private static final String TAG = MultiversePowers.MODID + ".thrown_hammer";
     private static final double SPEED = 2.2;
     private static final double HOME_SPEED = 2.6;
     private static final double REACH = 40.0;
@@ -66,7 +55,7 @@ final class Mjolnir {
     private boolean armed;
     private State state = State.HOME;
     @Nullable
-    private Display.ItemDisplay shown;
+    private ThrownHammer shown;
     private Vec3 at = Vec3.ZERO;
     private Vec3 way = Vec3.ZERO;
     private double flown;
@@ -101,13 +90,24 @@ final class Mjolnir {
                 | (hammer.state != State.HOME ? ThorStatePayload.THROWN : 0);
     }
 
-    // Where the hammer is: in flight, or at his hand or belt.
+    // Where the hammer's head is: thrown, held up over him as he flies, ahead of his right fist, or on his left hip.
     static Vec3 where(ServerPlayer player) {
         Mjolnir hammer = ALL.get(player.getUUID());
         if (hammer != null && hammer.state != State.HOME) {
             return hammer.at;
         }
-        return player.position().add(0.0, 0.9, 0.0);
+        double size = player.getScale();
+        Vec3 ahead = Vec3.directionFromRotation(0.0F, player.yBodyRot);
+        Vec3 right = ahead.cross(Vectors.UP).normalize();
+        if (ThorMoves.flying(player)) {
+            return player.position().add(0.0, 2.3 * size, 0.0).add(ahead.scale(0.55 * size))
+                    .add(right.scale(-0.3 * size));
+        }
+        if (hammer != null && hammer.armed) {
+            return player.position().add(0.0, 0.75 * size, 0.0).add(ahead.scale(0.5 * size))
+                    .add(right.scale(0.35 * size));
+        }
+        return player.position().add(0.0, 0.9 * size, 0.0).add(right.scale(-0.35 * size));
     }
 
     // Takes it from his belt into his hand, or hangs it back; never while it is thrown.
@@ -118,10 +118,12 @@ final class Mjolnir {
         }
         hammer.armed = !hammer.armed;
         ServerLevel level = player.serverLevel();
-        level.playSound(null, player.getX(), player.getY() + 1.0, player.getZ(),
+        double size = player.getScale();
+        level.playSound(null, player.getX(), player.getY() + size, player.getZ(),
                 hammer.armed ? SoundEvents.ARMOR_EQUIP_IRON.value() : SoundEvents.ARMOR_EQUIP_CHAIN.value(),
                 SoundSource.PLAYERS, 1.0F, hammer.armed ? 0.8F : 1.1F);
-        ParticleFx.cloud(level, ParticleTypes.ELECTRIC_SPARK, player.position().add(0.0, 1.0, 0.0), 8, 0.3, 0.1);
+        ParticleFx.cloud(level, ParticleTypes.ELECTRIC_SPARK, player.position().add(0.0, size, 0.0), 8, 0.3 * size,
+                0.1);
         ThorMoves.tell(player, ThorStatePayload.NONE, 0);
         return true;
     }
@@ -140,10 +142,7 @@ final class Mjolnir {
         if (target != null) {
             far = Math.min(REACH, target.getBoundingBox().getCenter().distanceTo(eye) + 1.0);
         }
-        Display.ItemDisplay shown = spawn(level, eye.add(look.scale(0.6)));
-        if (shown == null) {
-            return false;
-        }
+        ThrownHammer shown = spawn(level, player, eye.add(look.scale(0.6 * player.getScale())));
         hammer.shown = shown;
         hammer.state = State.OUT;
         hammer.at = shown.position();
@@ -162,19 +161,12 @@ final class Mjolnir {
         return true;
     }
 
-    @Nullable
-    private static Display.ItemDisplay spawn(ServerLevel level, Vec3 at) {
-        CompoundTag tag = new CompoundTag();
-        tag.putString("id", "minecraft:item_display");
-        tag.put("item", new ItemStack(Items.IRON_AXE).save(level.registryAccess()));
-        tag.putInt("teleport_duration", 2);
-        if (!(EntityType.create(tag, level).orElse(null) instanceof Display.ItemDisplay shown)) {
-            return null;
-        }
-        shown.moveTo(at.x, at.y, at.z, 0.0F, 0.0F);
+    private static ThrownHammer spawn(ServerLevel level, ServerPlayer owner, Vec3 at) {
+        ThrownHammer shown = new ThrownHammer(ThrownHammer.TYPE.get(), level);
+        shown.setSize(owner.getScale());
+        shown.setCharged(ThorCharge.hammer(owner) > 1.0F);
+        shown.moveTo(at.x, at.y, at.z, owner.getYRot(), 0.0F);
         level.addFreshEntity(shown);
-        // Tagged once in the world, so only a copy loaded back from a save is turned away.
-        shown.addTag(TAG);
         return shown;
     }
 
@@ -188,11 +180,13 @@ final class Mjolnir {
             this.home(owner);
             return false;
         }
+        this.shown.setCharged(ThorCharge.hammer(owner) > 1.0F);
+        double size = owner.getScale();
         switch (this.state) {
             case OUT -> this.out(level, owner);
             case WAITING -> {
                 ParticleFx.cloud(level, ParticleTypes.ELECTRIC_SPARK, this.at, 2, 0.2, 0.1);
-                if (owner.getBoundingBox().getCenter().distanceTo(this.at) < CATCH + 0.8) {
+                if (owner.getBoundingBox().getCenter().distanceTo(this.at) < (CATCH + 0.8) * size) {
                     this.home(owner);
                     return false;
                 }
@@ -201,10 +195,10 @@ final class Mjolnir {
                 }
             }
             case BACK -> {
-                Vec3 hand = owner.getEyePosition().add(0.0, -0.5, 0.0);
+                Vec3 hand = owner.getEyePosition().add(0.0, -0.5 * size, 0.0);
                 Vec3 to = hand.subtract(this.at);
                 double gap = to.length();
-                if (gap < CATCH) {
+                if (gap < CATCH * size) {
                     this.home(owner);
                     return false;
                 }
@@ -296,9 +290,11 @@ final class Mjolnir {
         this.state = State.HOME;
         if (owner != null) {
             ServerLevel level = owner.serverLevel();
-            level.playSound(null, owner.getX(), owner.getY() + 1.0, owner.getZ(), SoundEvents.TRIDENT_RETURN,
+            double size = owner.getScale();
+            level.playSound(null, owner.getX(), owner.getY() + size, owner.getZ(), SoundEvents.TRIDENT_RETURN,
                     SoundSource.PLAYERS, 1.0F, 0.8F);
-            ParticleFx.cloud(level, ParticleTypes.ELECTRIC_SPARK, owner.position().add(0.0, 1.2, 0.0), 10, 0.3, 0.1);
+            ParticleFx.cloud(level, ParticleTypes.ELECTRIC_SPARK, owner.position().add(0.0, 1.2 * size, 0.0), 10,
+                    0.3 * size, 0.1);
             ThorMoves.tell(owner, ThorStatePayload.NONE, 0);
         }
     }
@@ -336,14 +332,15 @@ final class Mjolnir {
     private static LivingEntity before(ServerLevel level, ServerPlayer thor) {
         Vec3 eye = thor.getEyePosition();
         Vec3 ahead = new Vec3(thor.getLookAngle().x, 0.0, thor.getLookAngle().z).normalize();
+        double reach = UPPERCUT_REACH * thor.getScale();
         LivingEntity best = null;
         double nearest = Double.MAX_VALUE;
         for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class,
-                thor.getBoundingBox().inflate(UPPERCUT_REACH), entity -> Targeting.mayStrike(thor, entity))) {
+                thor.getBoundingBox().inflate(reach), entity -> Targeting.mayStrike(thor, entity))) {
             Vec3 to = target.getBoundingBox().getCenter().subtract(eye);
             Vec3 flat = new Vec3(to.x, 0.0, to.z);
             double far = to.length();
-            if (far > UPPERCUT_REACH + target.getBbWidth() * 0.5
+            if (far > reach + target.getBbWidth() * 0.5
                     || flat.lengthSqr() > 1.0E-4 && flat.normalize().dot(ahead) < UPPERCUT_WIDTH) {
                 continue;
             }
@@ -378,24 +375,6 @@ final class Mjolnir {
         ParticleFx.cloud(level, ParticleTypes.CRIT, at, 14, 0.3, 0.4);
         level.playSound(null, at.x, at.y, at.z, SoundEvents.MACE_SMASH_GROUND_HEAVY, SoundSource.PLAYERS, 1.0F, 1.1F);
         level.playSound(null, at.x, at.y, at.z, SoundEvents.LIGHTNING_BOLT_IMPACT, SoundSource.PLAYERS, 0.6F, 1.5F);
-    }
-
-    // A hammer left in a world that was saved while it flew is never loaded back.
-    @SubscribeEvent
-    public static void onJoin(EntityJoinLevelEvent event) {
-        Entity entity = event.getEntity();
-        if (!event.getLevel().isClientSide() && entity.getTags().contains(TAG) && !live(entity)) {
-            event.setCanceled(true);
-        }
-    }
-
-    private static boolean live(Entity entity) {
-        for (Mjolnir hammer : ALL.values()) {
-            if (hammer.shown == entity) {
-                return true;
-            }
-        }
-        return false;
     }
 
     static void leave(ServerPlayer player) {

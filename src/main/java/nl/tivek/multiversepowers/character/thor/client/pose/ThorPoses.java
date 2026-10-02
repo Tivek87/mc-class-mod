@@ -28,7 +28,7 @@ public final class ThorPoses {
     private static final Vector3f KNEE = new Vector3f(0.0F, 0.0F, -1.0F);
     private static final Vector3f RIGHT_ELBOW = new Vector3f(-0.5F, 0.2F, 1.0F);
     private static final Vector3f LEFT_ELBOW = new Vector3f(0.5F, 0.2F, 1.0F);
-    // Where the axe hangs from his belt, on his left hip, in the chest's frame.
+    // Where the hammer hangs from his belt, on his left hip, in the chest's frame.
     static final Vector3f BELT = new Vector3f(5.6F, 11.0F, 0.6F);
     private static final float JUMP_WAIT = 2.0F;
 
@@ -135,7 +135,7 @@ public final class ThorPoses {
         mix.drop += absorb;
         mix.pitch += absorb * 0.05F;
         mix.weight = Math.max(mix.weight, Math.min(1.0F, absorb * 2.0F));
-        if (mix.weight < 1.0E-3F && body.axe.value < 1.0E-3) {
+        if (mix.weight < 1.0E-3F && body.hammer.value < 1.0E-3) {
             return false;
         }
         apply(model, mix, body);
@@ -164,9 +164,9 @@ public final class ThorPoses {
         for (int side = 0; side < 2; side++) {
             boolean right = side == 0;
             Vector3f hand = Stance.hand(model, right, new Vector3f());
-            float axe = right ? 0.0F : (float) body.axe.value;
+            float hammer = right ? 0.0F : (float) body.hammer.value;
             float w = mix.handWeight[side];
-            if (w <= 0.0F && axe <= 0.0F) {
+            if (w <= 0.0F && hammer <= 0.0F) {
                 continue;
             }
             Vector3f target = new Vector3f(mix.hands[side]);
@@ -344,18 +344,18 @@ public final class ThorPoses {
 
     private static void flight(Mix mix, ClientThor.View view, ThorBody body, float age, LivingEntity entity) {
         float fly = (float) body.fly.value;
-        float axe = (float) body.axe.value;
+        float hammer = (float) body.hammer.value;
         boolean takeOff = view.move() == ThorStatePayload.TAKE_OFF && age < 12.0F;
         boolean touchDown = (view.move() == ThorStatePayload.TOUCH_DOWN || view.move() == ThorStatePayload.SLAM)
                 && age < ThorBody.SHEATHE + 6.0F;
-        if (fly < 1.0E-3F && !takeOff && !touchDown && axe < 1.0E-3F) {
+        if (fly < 1.0E-3F && !takeOff && !touchDown && hammer < 1.0E-3F) {
             return;
         }
         float time = body.time;
         float flat = body.flat();
         boolean fast = ThorMotion.lightning() && entity == Minecraft.getInstance().player
                 || view.has(ThorStatePayload.LIGHTNING);
-        mix.weight = Math.max(mix.weight, Math.max(fly, axe));
+        mix.weight = Math.max(mix.weight, Math.max(fly, hammer));
         if (fly > 1.0E-3F) {
             mix.airborne = true;
             float sway = (float) (Noise.smooth(entity.getId() * 5, time * 0.05) - 0.5);
@@ -371,7 +371,7 @@ public final class ThorPoses {
             mix.hand(0, Mth.lerp(flat, -7.0F, -5.5F), Mth.lerp(flat, 9.0F, 11.0F) + sway, Mth.lerp(flat, -2.5F, 3.0F),
                     fly, false);
         }
-        // The left hand: to the axe on the belt, then up ahead of him with it, then back to the belt.
+        // The left hand: to the hammer on the belt, then up ahead of him with it, then back to the belt.
         float reach = 0.0F;
         if (takeOff) {
             reach = (float) (Ease.smooth(age / ThorBody.DRAW) * (1.0 - Ease.smooth((age - ThorBody.DRAW) / 3.0)));
@@ -383,10 +383,10 @@ public final class ThorPoses {
             mix.weight = Math.max(mix.weight, reach);
             mix.hand(1, BELT.x, BELT.y, BELT.z - 0.8F, reach, false);
         }
-        float held = axe * (1.0F - reach);
+        float held = hammer * (1.0F - reach);
         if (held > 1.0E-3F) {
             float bob = (float) Math.sin(time * 0.11) * 0.6F;
-            // Held up ahead in a hover, as if the axe held him up; straight out ahead of him at speed.
+            // Held up ahead in a hover, as if the hammer held him up; straight out ahead of him at speed.
             mix.hand(1, Mth.lerp(flat, 4.5F, 2.5F), Mth.lerp(flat, -9.5F, -11.5F) + bob, Mth.lerp(flat, -5.5F, -1.0F),
                     held, false);
         }
@@ -420,7 +420,7 @@ public final class ThorPoses {
         mix.hand(0, -5.0F, Stance.GROUND - 0.5F, -4.0F, k[ThorKeys.S_FIST] * w, true);
     }
 
-    public static boolean axeInHand(Entity entity) {
+    public static boolean hammerInLeftHand(Entity entity) {
         ThorBody body = ThorBody.of(entity);
         return body != null && body.inHand;
     }

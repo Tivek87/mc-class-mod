@@ -205,6 +205,7 @@
   "character.welcomescreen.green_lantern": "Green Lantern",
   "character.welcomescreen.thor": "Thor",
   "character.welcomescreen.thor.passive": "Double space jumps high, hold space to fly",
+  "entity.welcomescreen.mjolnir": "Mjolnir",
   "ability.welcomescreen.thor.combo": "Thunder Fists",
   "ability.welcomescreen.thor.thunderclap": "Thunderclap",
   "ability.welcomescreen.thor.dash": "Dash",

@@ -62,13 +62,17 @@ public final class CapeCloth {
     private static int ticks;
 
     private static final class Cape {
-        final Strands cloth = Strands.cloth(COLUMNS, ROWS, WIDE / 16.0, LONG / 16.0, 0.0, 0.0, 0.0);
+        // As big as its wearer is drawn: a player made bigger has a bigger cape.
+        final float size;
+        final Strands cloth;
         final double[] anchors = new double[COLUMNS * 3];
         final double[] bodies = new double[CAPSULES * 7];
         boolean placed;
         int seen;
 
-        Cape() {
+        Cape(float size) {
+            this.size = size;
+            this.cloth = Strands.cloth(COLUMNS, ROWS, WIDE / 16.0 * size, LONG / 16.0 * size, 0.0, 0.0, 0.0);
             // Light cloth catches the air: running lifts it well out behind.
             this.cloth.drag = 6.0;
             this.cloth.slide = 0.5;
@@ -95,8 +99,8 @@ public final class CapeCloth {
             return false;
         }
         Cape cape = CAPES.get(player.getId());
-        if (cape == null) {
-            cape = new Cape();
+        if (cape == null || cape.size != player.getScale()) {
+            cape = new Cape(player.getScale());
             CAPES.put(player.getId(), cape);
         }
         cape.seen = ticks;
@@ -105,8 +109,8 @@ public final class CapeCloth {
         if (!cape.placed) {
             for (int r = 0; r < ROWS; r++) {
                 for (int c = 0; c < COLUMNS; c++) {
-                    cape.cloth.place(r * COLUMNS + c, cape.anchors[c * 3], cape.anchors[c * 3 + 1] - LONG / 16.0 * r
-                            / (ROWS - 1), cape.anchors[c * 3 + 2]);
+                    cape.cloth.place(r * COLUMNS + c, cape.anchors[c * 3], cape.anchors[c * 3 + 1]
+                            - LONG / 16.0 * cape.size * r / (ROWS - 1), cape.anchors[c * 3 + 2]);
                 }
             }
             cape.placed = true;

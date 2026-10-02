@@ -49,7 +49,7 @@ final class ThorCharge {
             bolt.setVisualOnly(true);
             level.addFreshEntity(bolt);
         }
-        Vec3 chest = player.position().add(0.0, 1.0, 0.0);
+        Vec3 chest = player.position().add(0.0, player.getScale(), 0.0);
         ParticleFx.sphereOut(level, ParticleFx.dust(ThorMoves.GLOW, 1.4F), chest, 40, 0.35);
         level.playSound(null, chest.x, chest.y, chest.z, SoundEvents.TRIDENT_THUNDER.value(), SoundSource.PLAYERS,
                 1.2F, 1.2F);
@@ -76,8 +76,9 @@ final class ThorCharge {
         }
         long now = level.getGameTime();
         if (now < charge.thorUntil && now % 3 == 0) {
-            Vec3 body = player.position().add(ParticleFx.spread(0.6), 0.2 + ParticleFx.RANDOM.nextDouble() * 1.6,
-                    ParticleFx.spread(0.6));
+            double size = player.getScale();
+            Vec3 body = player.position().add(ParticleFx.spread(0.6 * size),
+                    (0.2 + ParticleFx.RANDOM.nextDouble() * 1.6) * size, ParticleFx.spread(0.6 * size));
             ParticleFx.cloud(level, ParticleTypes.ELECTRIC_SPARK, body, 2, 0.2, 0.1);
         }
         if (now < charge.hammerUntil && now % 3 == 0) {

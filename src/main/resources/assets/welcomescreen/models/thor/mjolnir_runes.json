@@ -1,0 +1,46 @@
+{
+	"credit": "Built by scripts/models/mjolnir/MjolnirModel.java",
+	"texture_size": [64, 64],
+	"textures": {
+		"hammer": "welcomescreen:thor/mjolnir",
+		"particle": "welcomescreen:thor/mjolnir"
+	},
+	"elements": [
+		{
+			"name": "head",
+			"from": [-3.5, 22, 5],
+			"to": [19.5, 29, 11],
+			"faces": {
+				"north": {"uv": [0, 3.25, 5.75, 5], "texture": "#hammer"},
+				"south": {"uv": [0, 3.25, 5.75, 5], "texture": "#hammer"}
+			}
+		},
+		{
+			"name": "roof",
+			"from": [0.5, 29, 5],
+			"to": [15.5, 30, 11],
+			"faces": {
+				"north": {"uv": [1, 3, 4.75, 3.25], "texture": "#hammer"},
+				"south": {"uv": [1, 3, 4.75, 3.25], "texture": "#hammer"}
+			}
+		},
+		{
+			"name": "roof",
+			"from": [3.5, 30, 5],
+			"to": [12.5, 31, 11],
+			"faces": {
+				"north": {"uv": [1.75, 2.75, 4, 3], "texture": "#hammer"},
+				"south": {"uv": [1.75, 2.75, 4, 3], "texture": "#hammer"}
+			}
+		},
+		{
+			"name": "roof",
+			"from": [6.5, 31, 5],
+			"to": [9.5, 32, 11],
+			"faces": {
+				"north": {"uv": [2.5, 2.5, 3.25, 2.75], "texture": "#hammer"},
+				"south": {"uv": [2.5, 2.5, 3.25, 2.75], "texture": "#hammer"}
+			}
+		}
+	]
+}

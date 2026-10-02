@@ -1,15 +1,11 @@
 # Laatste sessie
 
-- Datum: 2026-10-02. Verzoek: betere ragdolls, RDR2/Euphoria-achtig struikelen en balans houden, randen en takken
-  grijpen, realistische dood-impact, minder lag met 3-7 ragdolls, nieuwe botten gebruiken, "rare" mobs fixen.
-- Gedaan: stagger/trip/fall (`engine/entity/impact/`, `engine/client/stagger/`), spieren in ragdolls (`Muscle`,
-  `RagdollMuscles`, `RagdollMotor`), richel- en takgreep (`Ledges`), ragdolls parallel en slapend goedkoop
-  (`RagdollSteps`; 7 lijken: client tick 4.7 ms -> ~0.7 ms), exact trefpunt van de dodelijke klap, yaw-fix bij
-  stilgezette mobs (`Knockdowns.pause`), twee wereldinstellingen.
-- Getest: 4 game-runs (buik-stagger, klif + richelgreep + loslaten + opstaan, worp door kracht); `./gradlew build`.
-- Release v0.5.9-alpha: alleen eigen bestanden gecommit en gepusht. Thor/Mjolnir-werk (ook `CapeCloth`, `BodySize`)
-  van de andere sessie bleef buiten de commit; in gedeelde bestanden (`MultiversePowers*.java`, `en_us.json`) alleen
-  eigen regels.
-- CLAUDE.md (lokaal): bot-vergrendel-voorbeeld, nieuwe klassen, hop-regel, yaw-valkuil.
-- Open: "rare mob"-plaatje niet exact nagebootst (gevonden oorzaak, yaw, wel gefixt); takgreep niet in game getest.
-- Bugs en ideeën (root/GitHub) bewust niet aangeraakt.
+- Datum: 2026-10-02. Verzoek: eigen Thor/Mjolnir-werk committen, pushen en releasen, alleen eigen bestanden.
+- Release v0.6.0-alpha: Mjolnir in vanilla pixel-stijl (35 blokjes, 64px), runen gloeien blauw als de hamer geladen
+  is, Thor 30% groter (`BodySize`, cape mee), as-stand-in weg, generator `scripts/models/mjolnir/`, 4 referentiebeelden.
+- Werkwijze: commit gebouwd in losse worktree vanaf `6676328`: alleen eigen bestanden, in `MultiversePowers*.java`
+  en `en_us.json` alleen eigen regels; daar gebouwd, getest, gepusht en gepubliceerd.
+- Getest: in-game test (29 shots), `gradlew build` + tests groen op precies deze inhoud.
+- Andere sessie: revert + mob-fixes (gestaged/ongestaged) bleven buiten de commit; hun klaargezette release heet
+  na deze nu v0.6.1-alpha (CHANGELOG-kop en `mod_version` in index en werkmap omgezet, inhoud ongemoeid).
+- Open: niets voor Thor/Mjolnir. Bugs/ideeën bewust niet aangeraakt.

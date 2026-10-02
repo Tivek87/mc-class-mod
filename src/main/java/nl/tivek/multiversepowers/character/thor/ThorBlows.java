@@ -93,7 +93,8 @@ final class ThorBlows {
     // Where his striking hand (or foot) is when it lands: ahead of him at the blow's height.
     private static Vec3 fist(ServerPlayer thor, double ahead) {
         Vec3 look = thor.getLookAngle();
-        return thor.getEyePosition().add(look.scale(0.6 + ahead)).add(0.0, -0.35, 0.0);
+        double size = thor.getScale();
+        return thor.getEyePosition().add(look.scale((0.6 + ahead) * size)).add(0.0, -0.35 * size, 0.0);
     }
 
     private static Vec3 flat(Vec3 way) {
@@ -105,25 +106,28 @@ final class ThorBlows {
         Vec3 eye = thor.getEyePosition();
         Vec3 look = thor.getLookAngle();
         Vec3 ahead = flat(look);
-        Vec3 aimEnd = eye.add(look.scale(blow.reach()));
+        double size = thor.getScale();
+        double reach = blow.reach() * size;
+        Vec3 aimEnd = eye.add(look.scale(reach));
         double wide = Math.cos(Math.toRadians(blow.arc()));
         List<LivingEntity> struck = new ArrayList<>();
         LivingEntity best = null;
         double bestScore = Double.MAX_VALUE;
         for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class,
-                thor.getBoundingBox().inflate(blow.reach() + 1.0), entity -> Targeting.mayStrike(thor, entity))) {
+                thor.getBoundingBox().inflate(reach + 1.0), entity -> Targeting.mayStrike(thor, entity))) {
             AABB box = target.getBoundingBox();
             Vec3 near = new Vec3(Mth.clamp(eye.x, box.minX, box.maxX), Mth.clamp(eye.y, box.minY, box.maxY),
                     Mth.clamp(eye.z, box.minZ, box.maxZ));
             double far = near.distanceTo(eye);
-            if (far > blow.reach()) {
+            if (far > reach) {
                 continue;
             }
             // Aimed straight at, it is hit whatever its height; else it must stand in the blow's width and band.
             boolean aimed = box.inflate(0.3).clip(eye, aimEnd).isPresent();
-            double facing = far < RIGHT_THERE ? 1.0 : flat(box.getCenter().subtract(eye)).dot(ahead);
+            double facing = far < RIGHT_THERE * size ? 1.0 : flat(box.getCenter().subtract(eye)).dot(ahead);
             double feet = thor.getY();
-            boolean inBand = box.maxY >= feet + blow.height().from() && box.minY <= feet + blow.height().to();
+            boolean inBand = box.maxY >= feet + blow.height().from() * size
+                    && box.minY <= feet + blow.height().to() * size;
             if (!aimed && (facing < wide || !inBand)) {
                 continue;
             }

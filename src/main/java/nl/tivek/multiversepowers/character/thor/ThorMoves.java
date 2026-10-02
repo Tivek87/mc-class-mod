@@ -162,7 +162,8 @@ public final class ThorMoves {
                 return false;
             }
             Vec3 feet = thor.position();
-            ParticleFx.cloud(lvl, ParticleTypes.ELECTRIC_SPARK, feet.add(0.0, 0.9, 0.0), 4, 0.25, 0.08);
+            ParticleFx.cloud(lvl, ParticleTypes.ELECTRIC_SPARK, feet.add(0.0, 0.9 * thor.getScale(), 0.0), 4, 0.25,
+                    0.08);
             if (age < 6) {
                 ParticleFx.cloud(lvl, ParticleTypes.CLOUD, feet.add(0.0, 0.1, 0.0), 2, 0.15, 0.02);
             }
@@ -185,7 +186,8 @@ public final class ThorMoves {
         Vec3 feet = player.position();
         ParticleFx.shockwave(level, ParticleFx.dust(GLOW, 1.3F), feet.add(0.0, 0.1, 0.0), 28, 0.45);
         ParticleFx.cloud(level, ParticleTypes.CLOUD, feet.add(0.0, 0.2, 0.0), 14, 0.4, 0.06);
-        ParticleFx.cloud(level, ParticleTypes.ELECTRIC_SPARK, feet.add(0.0, 0.6, 0.0), 20, 0.4, 0.2);
+        ParticleFx.cloud(level, ParticleTypes.ELECTRIC_SPARK, feet.add(0.0, 0.6 * player.getScale(), 0.0), 20, 0.4,
+                0.2);
         moves.sound(level, SoundEvents.WIND_CHARGE_BURST.value(), 0.9F, 0.7F);
         moves.sound(level, SoundEvents.LIGHTNING_BOLT_IMPACT, 0.5F, 1.4F);
         return true;
@@ -205,7 +207,8 @@ public final class ThorMoves {
         ServerLevel level = player.serverLevel();
         moves.sound(level, SoundEvents.TRIDENT_RIPTIDE_2.value(), 0.8F, 0.8F);
         moves.sound(level, SoundEvents.LIGHTNING_BOLT_IMPACT, 0.4F, 1.6F);
-        ParticleFx.cloud(level, ParticleTypes.ELECTRIC_SPARK, player.position().add(0.0, 0.3, 0.0), 24, 0.5, 0.25);
+        ParticleFx.cloud(level, ParticleTypes.ELECTRIC_SPARK, player.position().add(0.0, 0.3 * player.getScale(), 0.0),
+                24, 0.5, 0.25);
         return true;
     }
 
@@ -245,7 +248,7 @@ public final class ThorMoves {
         moves.lightningLeft = ticks;
         moves.strikes = strikes;
         moves.landing = landing;
-        moves.trail = player.position().add(0.0, 0.9, 0.0);
+        moves.trail = player.position().add(0.0, 0.9 * player.getScale(), 0.0);
         moves.sync(ThorStatePayload.NONE, 0);
         ServerLevel level = player.serverLevel();
         moves.sound(level, SoundEvents.LIGHTNING_BOLT_THUNDER, 0.6F, 1.7F);
@@ -261,7 +264,7 @@ public final class ThorMoves {
             return false;
         }
         ServerLevel level = player.serverLevel();
-        Vec3 from = player.position().add(0.0, 0.9, 0.0);
+        Vec3 from = player.position().add(0.0, 0.9 * player.getScale(), 0.0);
         Vec3 to = blinkEnd(level, player, from, blinkWay(yaw, pitch));
         moves.sync(ThorStatePayload.BLINK, 0);
         ParticleFx.zigzag(level, ParticleFx.dust(GLOW, 1.1F), from, to, 7, 0.5, 0.35);
@@ -289,7 +292,7 @@ public final class ThorMoves {
         if (hit.getType() == HitResult.Type.MISS) {
             return end;
         }
-        double far = Math.max(0.0, hit.getLocation().distanceTo(from) - 0.6);
+        double far = Math.max(0.0, hit.getLocation().distanceTo(from) - 0.6 * player.getScale());
         return from.add(look.scale(far));
     }
 
@@ -350,7 +353,7 @@ public final class ThorMoves {
     // At lightning speed others see a bolt tearing through the air where he goes, and it strikes whatever he passes
     // near; it wears off after its time.
     private void bolting(ServerLevel level, ServerPlayer player) {
-        Vec3 at = player.position().add(0.0, 0.9, 0.0);
+        Vec3 at = player.position().add(0.0, 0.9 * player.getScale(), 0.0);
         if (this.trail.distanceToSqr(at) > 0.04) {
             ParticleFx.zigzag(level, ParticleFx.dust(GLOW, 1.3F), this.trail, at, 4, 0.35, 0.3);
             ParticleFx.zigzag(level, ParticleFx.dust(DEEP, 0.9F), this.trail, at, 3, 0.5, 0.4);
@@ -398,7 +401,7 @@ public final class ThorMoves {
     }
 
     void sound(ServerLevel level, SoundEvent sound, float volume, float pitch) {
-        level.playSound(null, this.owner.getX(), this.owner.getY() + 1.0, this.owner.getZ(), sound,
+        level.playSound(null, this.owner.getX(), this.owner.getY() + this.owner.getScale(), this.owner.getZ(), sound,
                 SoundSource.PLAYERS, volume, pitch);
     }
 

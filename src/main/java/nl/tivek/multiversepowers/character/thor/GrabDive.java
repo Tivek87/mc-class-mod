@@ -98,8 +98,9 @@ final class GrabDive {
     static Vec3 hand(LivingEntity thor, LivingEntity held) {
         Vec3 look = Vec3.directionFromRotation(0.0F, thor.getYRot());
         Vec3 right = look.cross(Vectors.UP).normalize();
-        return thor.position().add(look.scale(0.7)).add(right.scale(0.45))
-                .add(0.0, 0.5 - held.getBbHeight() * 0.55, 0.0);
+        double size = thor.getScale();
+        return thor.position().add(look.scale(0.7 * size)).add(right.scale(0.45 * size))
+                .add(0.0, 0.5 * size - held.getBbHeight() * 0.55, 0.0);
     }
 
     private void grab(ServerLevel level, ServerPlayer owner, LivingEntity held) {

@@ -24,7 +24,7 @@ final class ThorBody {
     private static final float MOST_TILT = 2.6F;
     private static final float HOVER_LEAN = -0.12F;
     private static final double PIVOT = 0.9;
-    // A take-off draws the axe from the belt at this tick; a touch-down puts it back at that one.
+    // A take-off draws the hammer from the belt at this tick; a touch-down puts it back at that one.
     static final float DRAW = 4.0F;
     static final float SHEATHE = 6.0F;
 
@@ -39,7 +39,7 @@ final class ThorBody {
     final Spring tilt = new Spring();
     final Spring bank = new Spring();
     final Spring absorb = new Spring();
-    final Spring axe = new Spring();
+    final Spring hammer = new Spring();
     boolean inHand;
     boolean grounded = true;
     double falling;
@@ -111,12 +111,12 @@ final class ThorBody {
         this.floating.step(view != null && view.has(ThorStatePayload.FLOATING) ? 1.0 : 0.0, this.dt, 0.05, 1.0);
         this.absorb.step(0.0, this.dt, 0.085, 0.5);
         this.inHand = this.holding(view);
-        this.axe.step(this.inHand ? 1.0 : 0.0, this.dt, 0.12, 1.0);
+        this.hammer.step(this.inHand ? 1.0 : 0.0, this.dt, 0.12, 1.0);
         this.yaw = Mth.rotLerp(partialTick, player.yBodyRotO, player.yBodyRot);
         this.lean(view, flying);
     }
 
-    // Holds the axe from the moment a take-off draws it until a touch-down sheathes it.
+    // Holds the hammer from the moment a take-off draws it until a touch-down sheathes it.
     private boolean holding(@Nullable ClientThor.View view) {
         if (view == null) {
             return false;
