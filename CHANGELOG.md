@@ -28,6 +28,8 @@ the sections before 0.0.1-alpha came before versions were numbered.
 ### Changed
 - **Bodies:** bodies further away than 24 blocks (*Full detail up to*) move a little simpler, to save time, and make
   no sound.
+- **Bug reports and ideas:** one is closed as soon as it is fixed or built, saying what was done; the release it
+  ships in is added once that is out.
 
 ## [0.5.5-alpha] - 2026-10-02
 
