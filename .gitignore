@@ -35,7 +35,9 @@ bugs/
 scripts/bug-relay/.wrangler/
 scripts/bug-relay/.dev.vars
 
-# Claude Code: local settings and agent worktrees
+# Claude Code: instructions, local settings and agent worktrees (never pushed)
+CLAUDE.md
+CLAUDE.local.md
 .claude/settings.local.json
 .claude/worktrees/
 
