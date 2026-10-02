@@ -324,18 +324,18 @@ final class LanternAbilities {
                         "Seconds a full ring keeps you in the air: flying costs 100 divided by this a second,"
                                 + " and what you shoot or hold up while flying comes on top")
                 .was(15.0, 37.5)
-                .setting("topSpeed", 1.8, 1.0, 150.0, Unit.BLOCKS_PER_SECOND,
+                .setting("topSpeed", 16.0, 1.0, 150.0, Unit.BLOCKS_PER_SECOND,
                         "Top speed in blocks per second (an elytra with firework rockets does about 33); hovering"
                                 + " and climbing without flying forward go at a part of it")
-                .was(50.0, 35.0, 19.25, 9.625, 6.25625, 18.0, 9.0, 4.5)
-                .setting("startSpeed", 1.2, 1.0, 150.0, Unit.BLOCKS_PER_SECOND,
+                .was(50.0, 35.0, 19.25, 9.625, 6.25625, 18.0, 9.0, 4.5, 1.8)
+                .setting("startSpeed", 10.7, 1.0, 150.0, Unit.BLOCKS_PER_SECOND,
                         "Speed you set off at, in blocks per second: the longer you fly on, the faster you go, up"
                                 + " to the top speed")
-                .was(11.7, 6.4, 4.16, 12.0, 6.0, 3.0)
-                .setting("cruiseSpeed", 1.5, 1.0, 150.0, Unit.BLOCKS_PER_SECOND,
+                .was(11.7, 6.4, 4.16, 12.0, 6.0, 3.0, 1.2)
+                .setting("cruiseSpeed", 13.3, 1.0, 150.0, Unit.BLOCKS_PER_SECOND,
                         "Cruising speed in blocks per second: flying on, you are up to it within a moment, and"
                                 + " from there you keep gaining, up to the top speed")
-                .was(13.0, 8.0, 5.2, 15.0, 7.5, 3.75)
+                .was(13.0, 8.0, 5.2, 15.0, 7.5, 3.75, 1.5)
                 .setting("cruiseSeconds", 0.5, 0.0, 60.0, Unit.SECONDS,
                         "Seconds of flying on from the speed you set off at to the cruising speed (0 = straight"
                                 + " away)")

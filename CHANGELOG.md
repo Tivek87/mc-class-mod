@@ -3,6 +3,44 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.5.8-alpha] - 2026-10-02
+
+### Added
+- **Getting up:** every kind of body gets up its own way: villagers, witches and illagers with folded arms without
+  their hands (over their knees, or rolling up into a crouch); illagers with free arms and iron golems as a person does.
+- **Getting up:** four-legged creatures roll onto their chest and rise one end first: cattle, sheep, goats and camels
+  hind end first, horses, pigs, dogs, cats and the rest front end first; chickens flap their wings onto their feet.
+- **Ragdolls:** a resource pack can set how a creature gets up (`"rise"` in its ragdoll profile).
+
+### Changed
+- **Animations:** wrists and ankles never turn further than real ones: they fold, lean a little and twist within their
+  range in every pose and while getting up, and the forearm or shin takes the twist so a hand or foot is never wrung.
+- **Animations:** elbows, knees, wrists, ankles and the waist fade in and out with the rest of a pose.
+- **Getting up:** a shoulder follows its hand when the hand is put on the ground.
+- **Ragdolls:** a wolf's head and front legs hang from its chest, a spider's legs from its thorax and a cat's tail stays
+  one tail; a golem's arms and a goat's head turn where they join the body.
+- **Ragdolls:** an iron golem goes limp like other creatures instead of falling stiff.
+- **Ragdolls:** heads and bodies are as big as they look, so a villager's or a witch's head no longer rests on an
+  invisible hat brim, manes, bristles and ears no longer prop a body up and a foal's legs no longer sink in.
+- **Ragdolls:** spiders' legs reach further when limp.
+
+### Fixed
+- **Bone view:** bones show with Fabulous graphics too; there they were hidden behind solid things.
+- **Bone view:** a robed creature's hip bones start at its hips, not at the hem of its robe.
+- **Animations:** a foot on a step or a slab edge no longer kicks its leg out, and armor stands keep their legs as posed.
+- **Animations:** legs pushed apart no longer cross into an X, and an arm pushed out of the chest no longer flips sides.
+- **Animations:** a creature a power holds or poses no longer sags as if tired, and two poses of the trunk at once no
+  longer turn the arms twice.
+- **Getting up:** a four-legged creature on its back rolls over about its spine instead of rearing up on end.
+- **Ragdolls:** folded arms (villagers, witches, illagers) stay on the chest instead of bending in the middle and
+  swinging away.
+- **Ragdolls:** hind hooves fold the right way and turtle flippers no longer bend in the middle.
+- **Ragdolls:** a part a creature only shows at times (an illager's arms) never floats where the creature stood.
+- **Knockdowns:** creatures no game can show limp (llamas, rabbits, slimes, bosses and more) are no longer frozen
+  standing when knocked down.
+- **Green Lantern:** flight is fast again: top speed 16 blocks a second (was 1.8, slower than walking), setting off at
+  10.7 and cruising at 13.3; settings still on the old defaults move along.
+
 ## [0.5.7-alpha] - 2026-10-02
 
 ### Added
