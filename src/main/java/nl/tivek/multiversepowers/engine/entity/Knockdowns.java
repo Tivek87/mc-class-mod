@@ -1,8 +1,10 @@
 package nl.tivek.multiversepowers.engine.entity;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.Map;
+import java.util.Set;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -20,6 +22,7 @@ import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.level.ExplosionKnockbackEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 import nl.tivek.multiversepowers.MultiversePowers;
+import nl.tivek.multiversepowers.config.PowerRules;
 import nl.tivek.multiversepowers.engine.effect.Effects;
 
 // A creature a blow or a blast throws, or a power lets go of, goes limp in every player's game (Ragdolls), lies where
@@ -44,11 +47,19 @@ public final class Knockdowns {
     private static final int FLYING = -1;
     // A creature without AI is slowed by this every tick by the game itself; its flight here makes up for it.
     private static final double STILL_DRAG = 0.98;
+    // Flying along the ground faster than BUMPS (blocks a tick), it crashes into the creatures in its way, this far
+    // round it; one pushed on faster than BOWLED goes down too, tossed up a little.
+    private static final double BUMPS = 0.4;
+    private static final double BUMP_REACH = 0.15;
+    private static final double BOWLED = 0.3;
+    private static final double TOSS = 0.2;
 
     private static final Map<Mob, Down> DOWNED = new IdentityHashMap<>();
 
     private static final class Down {
         final boolean noAi;
+        // The creatures it has crashed into in this flight, each only once.
+        final Set<Mob> bumped = Collections.newSetFromMap(new IdentityHashMap<>());
         int age;
         int thrown;
         int landed = -1;
@@ -75,8 +86,9 @@ public final class Knockdowns {
         }
     }
 
-    // A power let go of the creature: it hung limp in every player's game, so it falls and lies down as if thrown.
-    static void letGo(Mob mob) {
+    // The creature goes down where it is, as if thrown: a power let go of it (it hung limp in every player's game), or
+    // blows wore it out (Fatigue).
+    static void drop(Mob mob) {
         if (mob.level() instanceof ServerLevel level && mob.isAlive() && falls(mob) && !mob.isInWater()
                 && !mob.isInLava()) {
             down(level, mob);
@@ -114,12 +126,12 @@ public final class Knockdowns {
     }
 
     // Not one that flies by itself, rides or is ridden.
-    private static boolean falls(Mob mob) {
+    static boolean falls(Mob mob) {
         return !mob.isNoGravity() && !mob.isPassenger() && !mob.isVehicle() && !(mob instanceof FlyingMob)
                 && !(mob instanceof FlyingAnimal) && !(mob instanceof Bat);
     }
 
-    private static boolean mayFly(Mob mob) {
+    static boolean mayFly(Mob mob) {
         return falls(mob) && !mob.isInWater() && !mob.isInLava()
                 && mob.getBbWidth() * mob.getBbWidth() * mob.getBbHeight() <= HEAVY;
     }
@@ -151,6 +163,9 @@ public final class Knockdowns {
             }
             mine.age = age;
             fly(lvl, mob);
+            if (PowerRules.domino()) {
+                bump(lvl, mob, mine);
+            }
             if (mine.landed < 0) {
                 int flight = age - mine.thrown;
                 if (mob.onGround() && flight > 1 || mob.isInWater() || mob.isInLava() || flight > LONGEST_FLIGHT) {
@@ -180,6 +195,43 @@ public final class Knockdowns {
         float slip = mob.onGround() ? level.getBlockState(below).getFriction(level, below, mob) * 0.91F : 0.91F;
         Vec3 after = mob.getDeltaMovement();
         mob.setDeltaMovement(after.x * slip, (after.y - mob.getGravity()) * 0.98, after.z * slip);
+    }
+
+    // Crashing into the creatures in its way (none too heavy to throw): it and each of them go on together, at the
+    // speed their weights share (a heavy one bowls a light one over and flies on; a light one hardly moves a heavy
+    // one), and each pushed on fast enough goes down with it, into a pile.
+    private static void bump(ServerLevel level, Mob mob, Down mine) {
+        Vec3 push = mob.getDeltaMovement();
+        if (push.horizontalDistanceSqr() < BUMPS * BUMPS) {
+            return;
+        }
+        double weight = weight(mob);
+        for (Mob other : level.getEntitiesOfClass(Mob.class, mob.getBoundingBox().inflate(BUMP_REACH),
+                other -> other != mob && other.isAlive() && !mine.bumped.contains(other) && !HeldMobs.isHeld(other)
+                        && mayFly(other))) {
+            mine.bumped.add(other);
+            Vec3 theirs = other.getDeltaMovement();
+            double share = weight / (weight + weight(other));
+            double x = theirs.x + (push.x - theirs.x) * share;
+            double z = theirs.z + (push.z - theirs.z) * share;
+            push = new Vec3(x, push.y, z);
+            mob.setDeltaMovement(push);
+            mob.hurtMarked = true;
+            other.setDeltaMovement(x, Math.max(theirs.y, TOSS), z);
+            other.hurtMarked = true;
+            if (x * x + z * z > BOWLED * BOWLED) {
+                down(level, other);
+            }
+        }
+    }
+
+    private static double weight(Mob mob) {
+        return mob.getBbWidth() * mob.getBbWidth() * mob.getBbHeight();
+    }
+
+    // Whether the creature is down (flying or lying) after a throw.
+    static boolean isDown(Mob mob) {
+        return DOWNED.containsKey(mob);
     }
 
     private static void up(Mob mob, boolean tell) {

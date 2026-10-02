@@ -12,6 +12,8 @@ public final class PowerRules {
     public static final ModConfigSpec.DoubleValue DAMAGE;
     public static final ModConfigSpec.DoubleValue COOLDOWNS;
     public static final ModConfigSpec.IntValue BREAK_BLOCKS;
+    public static final ModConfigSpec.IntValue FATIGUE_KNOCKDOWN;
+    public static final ModConfigSpec.IntValue DOMINO;
     public static final ModConfigSpec.IntValue SPELLS;
     public static final ModConfigSpec.ConfigValue<List<? extends String>> OWNERS;
     // The characters' ids (GameCharacter's own, which this file cannot load before its settings exist).
@@ -31,6 +33,14 @@ public final class PowerRules {
                 .defineInRange("cooldownMultiplier", 1.0, 0.0, 10.0);
         BREAK_BLOCKS = builder.comment("Whether powers may break blocks (1 = yes, 0 = never)")
                 .defineInRange("breakBlocks", 1, 0, 1);
+        builder.pop();
+        builder.comment("How creatures take blows in this world.").push("creatures");
+        FATIGUE_KNOCKDOWN = builder.comment("Whether a creature hit five times in quick succession goes down as if"
+                + " thrown, lies a while and gets up (1 = yes, 0 = it only tires)")
+                .defineInRange("fatigueKnockdown", 1, 0, 1);
+        DOMINO = builder.comment("Whether a thrown creature that crashes into another passes on its push and knocks"
+                + " that one down too (1 = yes, 0 = as in the plain game)")
+                .defineInRange("dominoKnockdown", 1, 0, 1);
         builder.pop();
         builder.comment("Which characters and spells can be chosen in this world. One switched off is taken away from"
                 + " whoever is it.").push("characters");
@@ -81,6 +91,14 @@ public final class PowerRules {
 
     public static boolean breakBlocks() {
         return (SPEC.isLoaded() ? BREAK_BLOCKS.get() : BREAK_BLOCKS.getDefault()) != 0;
+    }
+
+    public static boolean fatigueKnockdown() {
+        return get(FATIGUE_KNOCKDOWN) != 0;
+    }
+
+    public static boolean domino() {
+        return get(DOMINO) != 0;
     }
 
     // Whether the owners list names this player, by name (any case) or by UUID.

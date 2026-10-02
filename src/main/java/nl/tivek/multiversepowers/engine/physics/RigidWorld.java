@@ -137,6 +137,21 @@ public final class RigidWorld extends RigidCrowd {
         return this.contacts[b] > 0;
     }
 
+    // How fast (blocks per second) a part went into a block at the hardest hit of the last step (the speed times the
+    // root of the part's weight counts), 0 when none did; and that part (-1 then).
+    public double impact() {
+        return this.hitSpeed;
+    }
+
+    public int impactBody() {
+        return this.hitBody;
+    }
+
+    // Where that hit was (x, y, z, just inside the block) and the way out of the block's face it struck (nx, ny, nz).
+    public void impact(double[] out) {
+        System.arraycopy(this.hit, 0, out, 0, 6);
+    }
+
     // A sleeping world looks whether it still rests on something (the block under it may have been broken): it takes
     // one step, and wakes if anything slipped; else it is put back as it lay and sleeps on.
     public void probe(double dt, int substeps, Blocks world) {
@@ -179,6 +194,9 @@ public final class RigidWorld extends RigidCrowd {
     }
 
     public void step(double dt, int substeps, Blocks world) {
+        this.hitWeighed = 0.0;
+        this.hitSpeed = 0.0;
+        this.hitBody = -1;
         if (this.count == 0 || this.sleeping) {
             return;
         }

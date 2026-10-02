@@ -3,6 +3,32 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.5.6-alpha] - 2026-10-02
+
+### Added
+- **Bodies:** a limp body thuds when it hits the ground or a wall, as loud as the hit was hard, and throws up the
+  block's dust.
+- **Bodies:** a person knocked back against a wall right behind it, by a killing blow or a throw, slams into the wall
+  and slides down into a slump against it.
+- **Getting up:** a body slumped sitting gets up from there, curling up first.
+- **Getting up:** a person with a sword or an axe in hand plants its tip on the ground and leans on it as it kneels and
+  rises.
+- **Creatures:** a thrown creature that crashes into another passes on its push, by their weights, and knocks that one
+  down too (world setting *Thrown into others*).
+- **Creatures:** blows one after another wear a creature down: a person sags at the knees and hips, hunches and hangs
+  its head more with every hit, and the fifth quick hit drops it as if thrown (world setting *Worn down by blows*).
+- **Settings:** *Full detail up to*, *Throw force* (subtle, realistic, over the top), *Body thuds* and *Slump against
+  walls*.
+- **Mech:** its hands turn at the wrists, trailing its arms' swing and flopping as it comes down on a footfall; its
+  shoulders shrug as its arms rise and roll ahead as they reach.
+- **Mech:** a blast near it, or a blow to its pilot, shoves it: it leans away and springs back, its knees give, its
+  shoulders flinch and its hands flop.
+- **Bones view:** the mech's collars, which its shoulders turn about.
+
+### Changed
+- **Bodies:** bodies further away than 24 blocks (*Full detail up to*) move a little simpler, to save time, and make
+  no sound.
+
 ## [0.5.5-alpha] - 2026-10-02
 
 ### Changed

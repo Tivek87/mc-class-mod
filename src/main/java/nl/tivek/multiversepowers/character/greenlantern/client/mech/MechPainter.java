@@ -48,6 +48,14 @@ public final class MechPainter {
     private static final double LOCK_SHAKE = 0.45;
     private static final double CRASH_SHAKE = 1.0;
     private static final double SHAKE_RANGE = 40.0;
+    // A shoulder turns about its collar, where the shoulder piece meets the chest: it shrugs SHRUG_RAISED as its elbow
+    // rises from RAISED_FROM under the shoulder to an upper arm's length above that, and rolls ROLL_AHEAD as its elbow
+    // goes an upper arm's length ahead (radians).
+    private static final Vec3 COLLAR = new Vec3(1.4, MechScript.SHOULDER.y + 0.3, 0.0);
+    private static final double RAISED_FROM = 0.3;
+    private static final double SHRUG_RAISED = 0.3;
+    private static final double ROLL_AHEAD = 0.15;
+    private static final double[] STILL = { 0.0, 0.0 };
 
     private MechPainter() {
     }
@@ -139,8 +147,8 @@ public final class MechPainter {
                 lowerLeg(painter, pose.stage(), pose.ankle[side], right, t, apart, seed);
                 upperLeg(painter, pose.stage(), right, t, apart, seed + PIECES);
             }
-            arm(painter, id, pose, right, t, apart, seed + PIECES * 3, walking, right ? caught : null);
-            shoulder(painter, pose.torso(), right, t, apart, seed + PIECES * 8);
+            double[] turn = arm(painter, id, pose, right, t, apart, seed + PIECES * 3, walking, right ? caught : null);
+            shoulder(painter, pose.torso(), right, t, apart, seed + PIECES * 8, turn);
         }
         body(painter, pose, t, apart, own);
         head(painter, pose, t, apart, walking);
@@ -152,7 +160,7 @@ public final class MechPainter {
         painter.material(was);
     }
 
-    // For the developer's view: hips and shoulders off the spine, the spine from the pelvis to the chest, the neck.
+    // For the developer's view: hips and collars off the spine, the spine from the pelvis to the chest, the neck.
     private static void spine(MechPose pose, double t, double apart, boolean walking) {
         if (!BoneView.shown() || t < MechScript.HIPS) {
             return;
@@ -163,7 +171,7 @@ public final class MechPainter {
         BoneView.bone(pelvis, chest, BoneView.CONSTRUCT);
         for (int s = 0; s < 2; s++) {
             BoneView.bone(pelvis, pose.hips().point(side(MechScript.HIP, s == 0)), BoneView.CONSTRUCT);
-            BoneView.bone(chest, torso.point(side(MechScript.SHOULDER, s == 0)), BoneView.CONSTRUCT);
+            BoneView.bone(chest, torso.point(side(COLLAR, s == 0)), BoneView.CONSTRUCT);
         }
         if (t >= MechScript.HEAD_FORM) {
             BoneView.bone(chest, head(pose, t, apart, walking).center(), BoneView.CONSTRUCT);
@@ -255,8 +263,9 @@ public final class MechPainter {
         MechCockpit.draw(painter, pose, body, t, apart, own, PIECES * 56);
     }
 
+    // `turn`: how far it shrugs and rolls ahead about its collar (shoulderTurn).
     private static void shoulder(LanternPainter painter, MechScript.Stage stage, boolean right, double t,
-            double apart, int seed) {
+            double apart, int seed, double[] turn) {
         if (t < MechScript.SHOULDERS) {
             return;
         }
@@ -266,15 +275,64 @@ public final class MechPainter {
             painter.clip(stage.point(side(new Vec3(1.8 + 3.4 * Ease.smooth(grown), 0.0, 0.0), right)), out.scale(-1.0),
                     SEAM);
         }
-        MechParts.draw(painter, right ? MechBodyShapes.SHOULDER : MechBodyShapes.SHOULDER_LEFT, body(stage), 1.0,
-                apart, seed);
+        MechParts.draw(painter, right ? MechBodyShapes.SHOULDER : MechBodyShapes.SHOULDER_LEFT,
+                shrugged(stage, right, turn, body(stage)), 1.0, apart, seed);
         painter.noClip();
+        if (BoneView.shown()) {
+            BoneView.bone(stage.point(side(COLLAR, right)), shrugged(stage, right, turn,
+                    stage.point(side(MechScript.SHOULDER, right))), BoneView.CONSTRUCT);
+        }
     }
 
-    private static void arm(LanternPainter painter, int id, MechPose pose, boolean right, double t, double apart,
+    // How far a shoulder shrugs and rolls ahead about its collar (radians): up as its arm rises above it and ahead as
+    // its elbow goes out in front, on top of how the body's weight swings it; only as far as its upper arm is there
+    // (a forearm still flying in loose moves no shoulder).
+    private static double[] shoulderTurn(MechPose pose, MechMoves.Arm arm, boolean right) {
+        Vec3 elbow = arm.elbow();
+        double raised = Mth.clamp((elbow.y - MechScript.SHOULDER.y + RAISED_FROM) / MechScript.UPPER_ARM, 0.0, 1.0);
+        double ahead = Mth.clamp(elbow.z / MechScript.UPPER_ARM, 0.0, 1.0);
+        double there = arm.upper();
+        return new double[] { (SHRUG_RAISED * raised + pose.shrug[right ? 0 : 1]) * there, ROLL_AHEAD * ahead * there };
+    }
+
+    // A point of a shoulder turned about its collar by `turn`: shrugged (its outer end up), then rolled ahead.
+    private static Vec3 shrugged(MechScript.Stage stage, boolean right, double[] turn, Vec3 point) {
+        if (turn[0] == 0.0 && turn[1] == 0.0) {
+            return point;
+        }
+        Vec3 pivot = stage.point(side(COLLAR, right));
+        return pivot.add(shrugWay(stage, right, turn, point.subtract(pivot)));
+    }
+
+    private static Frame shrugged(MechScript.Stage stage, boolean right, double[] turn, Frame frame) {
+        if (turn[0] == 0.0 && turn[1] == 0.0) {
+            return frame;
+        }
+        return new Frame(shrugged(stage, right, turn, frame.center()), shrugWay(stage, right, turn, frame.right()),
+                shrugWay(stage, right, turn, frame.up()), shrugWay(stage, right, turn, frame.forward()),
+                frame.scale());
+    }
+
+    // A way turned as the shoulder turns: about the line that lifts its outward way up, then the one that takes it
+    // ahead.
+    private static Vec3 shrugWay(MechScript.Stage stage, boolean right, double[] turn, Vec3 way) {
+        Vec3 out = stage.dir(side(new Vec3(1.0, 0.0, 0.0), right));
+        Vec3 lift = out.cross(stage.up()).normalize();
+        Vec3 roll = out.cross(stage.ahead()).normalize();
+        return Vectors.spin(Vectors.spin(way, lift, turn[0]), roll, turn[1]);
+    }
+
+    // The hand on its forearm, turned at the wrist: folded towards the palm and tilted across it.
+    private static Frame wrist(Frame forearm, double fold, double tilt) {
+        Frame hand = fold == 0.0 ? forearm : forearm.turned(0.0, MechArmShapes.WRIST, 0.0, 1.0, 0.0, 0.0, fold);
+        return tilt == 0.0 ? hand : hand.turned(0.0, MechArmShapes.WRIST, 0.0, 0.0, 0.0, 1.0, tilt);
+    }
+
+    // Draws an arm; returns how far its shoulder turns (shoulderTurn).
+    private static double[] arm(LanternPainter painter, int id, MechPose pose, boolean right, double t, double apart,
             int seed, boolean walking, @Nullable Entity caught) {
         if (t < MechScript.ARMS_FORM) {
-            return;
+            return STILL;
         }
         MechScript.Stage stage = pose.torso();
         Minecraft minecraft = Minecraft.getInstance();
@@ -289,17 +347,21 @@ public final class MechPainter {
         if (touches && !pose.climbing()) {
             arm = MechTouch.clear(minecraft.level, id, stage, arm, right, t);
         }
-        Frame hand = Frame.of(stage.point(arm.elbow()), stage.dir(arm.palm()), stage.dir(arm.way()), 1.0);
+        int s = right ? 0 : 1;
+        double[] turn = shoulderTurn(pose, arm, right);
+        Frame forearm = Frame.of(stage.point(arm.elbow()), stage.dir(arm.palm()), stage.dir(arm.way()), 1.0);
+        Frame hand = wrist(forearm, pose.fold[s], pose.tilt[s]);
         double grown = Mth.clamp((t - MechScript.ARMS_FORM) / (MechScript.ARMS_IN - MechScript.ARMS_FORM), 0.0, 1.0);
         if (grown < 1.0 && apart < 0.0) {
             // Out of the light from the finger tips back to the elbow.
-            painter.clip(hand.at(0.0, Mth.lerp(Ease.smooth(grown), MechArmShapes.KNUCKLES + 1.1, -0.6), 0.0),
-                    hand.up(), SEAM);
+            painter.clip(forearm.at(0.0, Mth.lerp(Ease.smooth(grown), MechArmShapes.KNUCKLES + 1.1, -0.6), 0.0),
+                    forearm.up(), SEAM);
         }
         // The hand's frame is left-handed (Frame.of): drawn with the other side's shapes and bones, each hand's thumb
         // comes out on the side a hand of its own has it, not mirrored.
         boolean own = !right;
-        MechParts.draw(painter, own ? MechArmShapes.FOREARM : MechArmShapes.FOREARM_LEFT, hand, 1.0, apart, seed);
+        MechParts.draw(painter, own ? MechArmShapes.FOREARM : MechArmShapes.FOREARM_LEFT, forearm, 1.0, apart, seed);
+        MechParts.draw(painter, own ? MechArmShapes.HAND : MechArmShapes.HAND_LEFT, hand, 1.0, apart, seed + 5);
         // Clapping, the two hands meet in the middle: their fingers stop there against each other.
         boolean clapping = !walking && t > MechScript.SWING && t < MechScript.RISE;
         Vec3 side = right ? stage.right() : stage.right().scale(-1.0);
@@ -310,14 +372,14 @@ public final class MechPainter {
         fingers(painter, hand, arm, own, apart, seed + 10, wall, caught == null ? null : drawn(caught, partialTick),
                 ground);
         painter.noClip();
+        Vec3 shoulder = shrugged(stage, right, turn, stage.point(side(MechScript.SHOULDER, right)));
         if (BoneView.shown()) {
-            BoneView.bone(hand.center(), hand.at(0.0, MechArmShapes.WRIST, 0.0), BoneView.CONSTRUCT);
+            BoneView.bone(forearm.center(), forearm.at(0.0, MechArmShapes.WRIST, 0.0), BoneView.CONSTRUCT);
             if (arm.upper() > 0.0) {
-                BoneView.bone(stage.point(side(MechScript.SHOULDER, right)), hand.center(), BoneView.CONSTRUCT);
+                BoneView.bone(shoulder, forearm.center(), BoneView.CONSTRUCT);
             }
         }
         if (arm.upper() > 0.0) {
-            Vec3 shoulder = stage.point(side(MechScript.SHOULDER, right));
             Vec3 elbow = stage.point(arm.elbow());
             Vec3 along = elbow.subtract(shoulder);
             double far = along.length();
@@ -331,6 +393,7 @@ public final class MechPainter {
                     seed + 40);
             painter.noClip();
         }
+        return turn;
     }
 
     private static void fingers(LanternPainter painter, Frame hand, MechMoves.Arm arm, boolean right, double apart,

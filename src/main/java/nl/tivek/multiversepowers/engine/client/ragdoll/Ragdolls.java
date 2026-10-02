@@ -53,9 +53,12 @@ public final class Ragdolls {
     private static final TagKey<EntityType<?>> NEVER = tag("ragdoll_none");
     private static final TagKey<EntityType<?>> STIFF = tag("ragdoll_stiff");
     private static final int SUBSTEPS = 20;
+    static final int FAR_SUBSTEPS = 10;
     // A creature knocked limp along the ground goes down after this many ticks; the longest it may fly limp.
     private static final int SHRUG = 3;
     private static final int LONGEST_FLIGHT = 200;
+    // Flying along the ground faster than this (blocks a tick), the way it flies is kept: against a wall it slumps.
+    private static final double THROWN_WAY = 0.05;
     private static final double GO_LIMP = 0.25;
     // A limp creature is let go a little further off than where it may go limp, so it does not flicker at the edge.
     private static final double LET_GO = 1.2;
@@ -307,6 +310,13 @@ public final class Ragdolls {
         return far;
     }
 
+    // Whether a body this far (squared) from the camera moves in full detail, with thuds; further ones step with
+    // fewer substeps.
+    static boolean detailed(double distanceSqr) {
+        double detail = ClientSettings.get(ClientSettings.RAGDOLL_DETAIL);
+        return distanceSqr <= detail * detail;
+    }
+
     // Every limp creature and body but those already sinking away.
     private static int counted() {
         return LIVE.size() + Corpses.lying();
@@ -370,7 +380,11 @@ public final class Ragdolls {
                 continue;
             }
             RagdollCrowd.among(doll);
-            doll.step(SUBSTEPS, BLOCKS);
+            boolean detailed = detailed(entity.distanceToSqr(camera));
+            doll.step(detailed ? SUBSTEPS : FAR_SUBSTEPS, BLOCKS);
+            if (detailed && ClientSettings.ragdollThuds()) {
+                doll.thud(ticks, RANDOM);
+            }
             if (doll.state == Ragdoll.State.DEAD) {
                 RagdollFalls.settle(doll, ticks);
             }
@@ -405,23 +419,34 @@ public final class Ragdolls {
             return true;
         }
         doll.state = Ragdoll.State.FLYING;
-        boolean again = doll.age > 2 && entity instanceof Mob mob
+        // Thrown again, not by the blow that just slammed it into a wall.
+        boolean again = doll.age > 2 && !RagdollFalls.slamming(doll) && entity instanceof Mob mob
                 && (RagdollCauses.thrown(mob) || RagdollCauses.blown(mob.getId(), ticks));
         switch (doll.phase) {
             case AIR -> {
                 doll.follow(entity, true);
                 doll.limp = Math.min(1.0, doll.limp + GO_LIMP);
+                Vec3 push = entity.getDeltaMovement();
+                if (push.horizontalDistanceSqr() > THROWN_WAY * THROWN_WAY) {
+                    doll.wayX = push.x;
+                    doll.wayZ = push.z;
+                }
                 boolean grounded = RagdollCauses.grounded(entity) || entity.isInWater() || entity.isInLava();
                 doll.flew |= !grounded;
-                // Down once its creature is on the ground again (or never left it), or after the longest flight.
-                if (grounded && doll.age > (doll.flew ? 1 : SHRUG) || doll.age > LONGEST_FLIGHT) {
+                // Down once its creature is on the ground again (or never left it), or after the longest flight; at
+                // once when it is thrown back against a wall.
+                if (doll.age > 1 && RagdollFalls.pinned(doll)) {
                     doll.fall();
+                } else if (grounded && doll.age > (doll.flew ? 1 : SHRUG) || doll.age > LONGEST_FLIGHT) {
+                    doll.fall();
+                    RagdollFalls.pinned(doll);
                 }
             }
             case DOWN -> {
                 if (again) {
                     doll.lift(entity);
                 } else {
+                    RagdollFalls.slide(doll);
                     doll.down++;
                     if (doll.world.touching()) {
                         doll.lain++;

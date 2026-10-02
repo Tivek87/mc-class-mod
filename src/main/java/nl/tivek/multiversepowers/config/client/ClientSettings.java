@@ -19,6 +19,10 @@ public final class ClientSettings {
     public static final ModConfigSpec.IntValue RAGDOLL_MOST;
     public static final ModConfigSpec.DoubleValue CORPSE_SECONDS;
     public static final ModConfigSpec.IntValue RAGDOLL_REACH;
+    public static final ModConfigSpec.IntValue RAGDOLL_DETAIL;
+    public static final ModConfigSpec.IntValue RAGDOLL_FORCE;
+    public static final ModConfigSpec.IntValue RAGDOLL_THUDS;
+    public static final ModConfigSpec.IntValue WALL_SLUMP;
     public static final ModConfigSpec.IntValue FOOT_PLANTING;
     public static final ModConfigSpec.IntValue CAPE_CLOTH;
     public static final ModConfigSpec.IntValue THEME_MUSIC;
@@ -58,6 +62,14 @@ public final class ClientSettings {
                 Unit.SECONDS, 1.0);
         RAGDOLL_REACH = sheet.whole("ragdollReach", "How far away a creature may be and still go limp, in blocks", 48,
                 8, 128, Unit.BLOCKS, 4.0);
+        RAGDOLL_DETAIL = sheet.whole("ragdollDetail", "Limp bodies nearer than this many blocks move in full detail;"
+                + " further ones move a little simpler, to save time, and make no sound", 24, 0, 128, Unit.BLOCKS, 4.0);
+        RAGDOLL_FORCE = sheet.choice("ragdollForce", "How hard blows and blasts throw limp bodies (0 = subtle,"
+                + " 1 = realistic, 2 = over the top)", 1, 3);
+        RAGDOLL_THUDS = sheet.toggle("ragdollThuds", "Limp bodies thud when they hit the ground or a wall, and throw"
+                + " up the block's dust (1 = yes, 0 = silent)", true);
+        WALL_SLUMP = sheet.toggle("wallSlump", "A creature knocked back against a wall slams into it and slides down"
+                + " into a slump against it (1 = yes, 0 = it falls as anywhere else)", true);
         FOOT_PLANTING = sheet.toggle("footPlanting", "Feet rest on the ground they stand on: a foot never sinks into a"
                 + " step, and a spider's legs reach down to the ground (1 = yes, 0 = as in the plain game)", true);
         CAPE_CLOTH = sheet.toggle("capeCloth", "Capes are cloth: they hang, trail and swing as players run and turn,"
@@ -158,6 +170,23 @@ public final class ClientSettings {
 
     public static boolean ragdolls() {
         return get(RAGDOLLS) != 0;
+    }
+
+    // How hard blows and blasts throw limp bodies, as a share of how the mod makes it.
+    public static double ragdollForce() {
+        return switch (get(RAGDOLL_FORCE)) {
+            case 0 -> 0.6;
+            case 2 -> 1.6;
+            default -> 1.0;
+        };
+    }
+
+    public static boolean ragdollThuds() {
+        return get(RAGDOLL_THUDS) != 0;
+    }
+
+    public static boolean wallSlump() {
+        return get(WALL_SLUMP) != 0;
     }
 
     public static boolean footPlanting() {

@@ -11,7 +11,8 @@ import static nl.tivek.multiversepowers.character.greenlantern.client.mech.touch
 import static nl.tivek.multiversepowers.character.greenlantern.client.mech.touch.MechHandRig.THUMB_LENGTHS;
 
 // The right arm (the left one is its mirror). The upper arm runs up its y from the shoulder joint to the elbow, x
-// outwards; the forearm and hand run up y from the elbow to the finger tips, the palm facing z, the thumb at x.
+// outwards; the forearm runs up y from the elbow to the wrist and the hand on from there to the finger tips, the palm
+// facing z, the thumb at x.
 public final class MechArmShapes {
     public static final double WRIST = MechScript.FOREARM;
     public static final double KNUCKLES = WRIST + 1.24;
@@ -20,6 +21,8 @@ public final class MechArmShapes {
     public static final Shape UPPER_LEFT = MechParts.mirrored(UPPER);
     public static final Shape FOREARM = Shape.of(forearm());
     public static final Shape FOREARM_LEFT = MechParts.mirrored(FOREARM);
+    public static final Shape HAND = Shape.of(hand());
+    public static final Shape HAND_LEFT = MechParts.mirrored(HAND);
     public static final Shape[][] FINGERS = new Shape[4][3];
     public static final Shape[][] FINGERS_LEFT = new Shape[4][3];
     public static final Shape[] THUMB = new Shape[3];
@@ -56,7 +59,7 @@ public final class MechArmShapes {
         return m.toArray(Mesh[]::new);
     }
 
-    // The gauntlet: a thick forearm of rings of blocks, round at the elbow, with the hand's palm, knuckles and plates.
+    // The gauntlet: a thick forearm of rings of blocks, round at the elbow, ringed at the wrist.
     private static Mesh[] forearm() {
         double wrist = WRIST;
         Surface fore = Surface.loft(MechParts.at(-0.8, 0.0, 0.0, 0.0, 2.0), MechParts.at(-0.56, 0.52, 0.52, 0.0, 2.2),
@@ -68,6 +71,13 @@ public final class MechArmShapes {
         Surface ridge = MechParts.part(fore.offset(0.07, true), 0.7, 0.8, 0.2, 0.82);
         m.addAll(List.of(MechParts.plated(ridge, 1, 4, 92, 0.14, 1.08)));
         m.add(Mesh.torus(24, 4, 0.64, 0.06, 1.3).scaled(1.0, 1.0, 0.94).moved(0.0, wrist - 0.24, 0.0));
+        return m.toArray(Mesh[]::new);
+    }
+
+    // The hand past the wrist: its palm, the plates on its back, the knuckles and the pads.
+    private static Mesh[] hand() {
+        double wrist = WRIST;
+        List<Mesh> m = new ArrayList<>();
         m.add(Mesh.bevel(-0.64, wrist - 0.05, -0.28, 0.64, KNUCKLES, 0.3, 0.11, 1.0));
         for (int col = 0; col < 3; col++) {
             for (int row = 0; row < 3; row++) {

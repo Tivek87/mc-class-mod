@@ -43,7 +43,7 @@ class PersonRiseTest {
                 lie.rot[i].set(down).mul(own.rot[i]);
             }
             assertTrue(GetUp.person(model, parts, chains));
-            GetUp.Rise rise = GetUp.start(body, model, parts, chains, lie, true);
+            GetUp.Rise rise = GetUp.start(body, model, parts, chains, lie, true, null);
             BodyPose out = new BodyPose();
             Vector3f[] was = new Vector3f[n];
             float jump = 0.0F;

@@ -7,6 +7,7 @@ import javax.annotation.Nullable;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.util.Mth;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -74,6 +75,27 @@ public final class MechWalk extends MechGait {
     private static final int STEP_SHAKE_TICKS = 7;
     private static final double STEP_SHAKE_RANGE = 36.0;
     private static final int KEEP_BROKEN = 60;
+    // Its hands swing on their wrists and its shoulders shrug as its weight moves them: a hand trails its arm's swing
+    // (radians of tilt per unit of swing a tick) and flops as the body drops onto a footfall, a shoulder sinks with the
+    // body and springs back; at most MOST_WRIST at a wrist.
+    private static final double WRIST_FREQ = 0.12;
+    private static final double WRIST_DAMP = 0.45;
+    private static final double WRIST_LAG = 0.9;
+    private static final double WRIST_DROP = 0.9;
+    private static final double MOST_WRIST = 0.7;
+    private static final double SHRUG_FREQ = 0.09;
+    private static final double SHRUG_DAMP = 0.5;
+    private static final double SHRUG_SINK = 0.25;
+    // A shove (a blast near it, a blow to its pilot), at its hardest: the torso leans away and springs back, the knees
+    // give, the shoulders flinch up and the hands flop (kicks, radians or blocks a tick). A blast reaches twice its
+    // power in blocks and this much further, at the height of its chest.
+    private static final double SHOVE_LEAN = 0.15;
+    private static final double SHOVE_SINK = 0.35;
+    private static final double SHOVE_SHRUG = 0.25;
+    private static final double SHOVE_FLOP = 0.35;
+    private static final double BLAST_REACH = 8.0;
+    private static final double CHEST = 6.5;
+    private static final double PILOT_HIT = 0.3;
     private static final Vec3 HIPS = new Vec3(0.0, MechScript.HIP.y, 0.0);
     private static final Map<Integer, MechWalk> WALKS = new HashMap<>();
     private static final Map<Integer, Kept> BROKEN = new HashMap<>();
@@ -97,6 +119,11 @@ public final class MechWalk extends MechGait {
     private double settleY;
     private double squat;
     private int idle;
+    private final Spring[] folds = { new Spring(), new Spring() };
+    private final Spring[] tilts = { new Spring(), new Spring() };
+    private final Spring[] shrugs = { new Spring(), new Spring() };
+    private double swingWas;
+    private int pilotHurt;
 
     private MechWalk(int seed, MechScript.Stage stage) {
         this.seed = seed;
@@ -151,6 +178,13 @@ public final class MechWalk extends MechGait {
         }
         walk.ticked = ticks;
         walk.pilot = pilot;
+        // A blow to its pilot jolts it back a little.
+        if (level.getEntity(pilot) instanceof LivingEntity flier) {
+            if (flier.hurtTime > walk.pilotHurt) {
+                walk.shove(walk.now.torso().ahead().scale(-1.0), PILOT_HIT);
+            }
+            walk.pilotHurt = flier.hurtTime;
+        }
         walk.strike(blow, stage);
         // Climbing, the torso turns to face the wall whatever its pilot looks at.
         walk.face(stage, climb != 0 ? stage.yaw() : look, pitch);
@@ -390,10 +424,55 @@ public final class MechWalk extends MechGait {
         pose.walking = w;
         pose.running = run;
         pose.swing = -Math.sin(2.0 * Math.PI * (p + 0.04)) * w * (1.0 + RUN_PUMP * run);
+        this.swingHands(pose);
         pose.headYaw = this.headYaw.value + 0.4 * twist;
         pose.headPitch = this.headPitch.value - 0.5 * (pitch + pose.lean);
         this.levers(pose, rate);
         return pose;
+    }
+
+    // The hands on their wrists and the shoulders as the weight moves them, this tick: a hand trails its arm's swing
+    // and flops as the body drops; striking or climbing, the hands settle straight. A shoulder sinks with the body.
+    private void swingHands(MechPose pose) {
+        double swingRate = pose.swing - this.swingWas;
+        this.swingWas = pose.swing;
+        boolean free = !this.blow.striking() && this.climbing == null;
+        for (int side = 0; side < 2; side++) {
+            double lag = WRIST_LAG * (side == 0 ? swingRate : -swingRate);
+            this.tilts[side].step(free ? lag : 0.0, 1.0, WRIST_FREQ, WRIST_DAMP);
+            this.folds[side].step(free ? -WRIST_DROP * this.sink.speed : 0.0, 1.0, WRIST_FREQ, WRIST_DAMP);
+            this.shrugs[side].step(SHRUG_SINK * this.sink.value, 1.0, SHRUG_FREQ, SHRUG_DAMP);
+            pose.fold[side] = Mth.clamp(this.folds[side].value, -MOST_WRIST, MOST_WRIST);
+            pose.tilt[side] = Mth.clamp(this.tilts[side].value, -MOST_WRIST, MOST_WRIST);
+            pose.shrug[side] = this.shrugs[side].value;
+        }
+    }
+
+    // Shoved the way `away` (level, in the world) `hard` (1 a big blast close by): the torso leans away and springs
+    // back, the knees give, the shoulders flinch up and the hands flop.
+    private void shove(Vec3 away, double hard) {
+        MechScript.Stage torso = this.now.torso();
+        this.lean.kick(-SHOVE_LEAN * hard * away.dot(torso.ahead()));
+        this.bank.kick(SHOVE_LEAN * hard * away.dot(torso.right()));
+        this.sink.kick(-SHOVE_SINK * hard);
+        for (int side = 0; side < 2; side++) {
+            this.shrugs[side].kick(SHOVE_SHRUG * hard);
+            this.folds[side].kick(SHOVE_FLOP * hard);
+            this.tilts[side].kick(SHOVE_FLOP * hard * away.dot(torso.ahead()) * (side == 0 ? 1.0 : -1.0));
+        }
+    }
+
+    // A blast every player hears of (the game's explosion power at center) shoves the mechs near it away from it.
+    public static void blast(Vec3 center, double power) {
+        for (MechWalk walk : WALKS.values()) {
+            Vec3 chest = walk.now.torso().point(0.0, CHEST, 0.0);
+            Vec3 away = chest.subtract(center);
+            double near = 1.0 - away.length() / (power * 2.0 + BLAST_REACH);
+            double flat = away.horizontalDistance();
+            if (near > 0.0 && flat > 1.0E-3) {
+                walk.shove(new Vec3(away.x / flat, 0.0, away.z / flat), Mth.clamp(power / 4.0, 0.0, 1.5) * near);
+            }
+        }
     }
 
     // How far the hips must come down for every planted foot, and a foot stepping down off an edge, to be within its

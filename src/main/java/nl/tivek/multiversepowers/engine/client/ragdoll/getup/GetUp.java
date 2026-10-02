@@ -1,8 +1,10 @@
 package nl.tivek.multiversepowers.engine.client.ragdoll.getup;
 
 import java.util.List;
+import javax.annotation.Nullable;
 import net.minecraft.client.model.EntityModel;
 import net.minecraft.client.model.HumanoidModel;
+import net.minecraft.world.entity.LivingEntity;
 import nl.tivek.multiversepowers.engine.client.model.ModelBends;
 import nl.tivek.multiversepowers.engine.client.model.ModelParts;
 
@@ -44,15 +46,17 @@ public final class GetUp {
         return true;
     }
 
-    // How this body gets up, planned from how it lies now (lie), the first time it is drawn getting up.
+    // How this body gets up, planned from how it lies now (lie), the first time it is drawn getting up; a person with a
+    // sword or an axe in hand leans on it (Brace).
     public static Rise start(Hanging body, EntityModel<?> model, List<ModelParts.Part> parts,
-            ModelBends.Bend[][] chains, BodyPose lie, boolean person) {
+            ModelBends.Bend[][] chains, BodyPose lie, boolean person, @Nullable LivingEntity entity) {
         if (person) {
             int[] roles = new int[NAMES.length];
             for (int r = 0; r < NAMES.length; r++) {
                 roles[r] = index(parts, NAMES[r]);
             }
-            return new PersonRise(new Skeleton(body, parts, chains, roles), lie);
+            return new PersonRise(new Skeleton(body, parts, chains, roles), lie,
+                    entity == null ? null : Brace.of(entity));
         }
         return new CreatureRise(body, parts, chains);
     }

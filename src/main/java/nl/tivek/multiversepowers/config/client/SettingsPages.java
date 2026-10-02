@@ -77,6 +77,11 @@ public final class SettingsPages {
                 fromSpec(spec, file, "general", "breakBlocks", PowerRules.BREAK_BLOCKS, Unit.SWITCH, 1.0));
         Section section = new Section(Component.translatable(PREFIX + "general.powers"), null,
                 List.of(new Group(null, numbers)));
+        List<ConfigNumber> blows = List.of(
+                fromSpec(spec, file, "general", "fatigueKnockdown", PowerRules.FATIGUE_KNOCKDOWN, Unit.SWITCH, 1.0),
+                fromSpec(spec, file, "general", "dominoKnockdown", PowerRules.DOMINO, Unit.SWITCH, 1.0));
+        Section creatures = new Section(Component.translatable(PREFIX + "general.creatures"), null,
+                List.of(new Group(null, blows)));
         List<ConfigNumber> allowed = new ArrayList<>();
         for (Map.Entry<String, ModConfigSpec.IntValue> character : PowerRules.characters().entrySet()) {
             allowed.add(fromSpec(spec, file, "general", character.getKey(), character.getValue(), Unit.SWITCH, 1.0));
@@ -84,7 +89,7 @@ public final class SettingsPages {
         allowed.add(fromSpec(spec, file, "general", "spells", PowerRules.SPELLS, Unit.SWITCH, 1.0));
         Section chosen = new Section(Component.translatable(PREFIX + "general.characters"), null,
                 List.of(new Group(null, allowed)));
-        return new Page(Component.translatable(PREFIX + "general"), 0x9DFF8A, List.of(section, chosen),
+        return new Page(Component.translatable(PREFIX + "general"), 0x9DFF8A, List.of(section, creatures, chosen),
                 worldEditable(spec), true, spec::save);
     }
 

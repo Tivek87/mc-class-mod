@@ -1,15 +1,17 @@
 package nl.tivek.multiversepowers.engine.client.ragdoll.getup;
 
+import javax.annotation.Nullable;
 import nl.tivek.multiversepowers.engine.math.Ease;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
 // A person getting up as a person does, from how it lies. Face down it props itself on its forearms, pushes up onto its
 // hands and knees, steps one foot through and kneels, then stands; face up it curls up to sit, turns onto a hand and a
-// knee, kneels and stands (on its side, whichever it lies nearer). Its hands, knees and feet stay where they are put on
-// the ground while its weight moves over them, and step when they move. Every joint moves on one smooth curve through
-// the moments below, so it never stops dead between them, its head a moment behind its trunk. It fades in from just how
-// it lay and out into its own pose; the moments are laid out along its way from where it lay to where it stands.
+// knee, kneels and stands (on its side, whichever it lies nearer; sitting up, it starts from curling up). Its hands,
+// knees and feet stay where they are put on the ground while its weight moves over them, and step when they move. Every
+// joint moves on one smooth curve through the moments below, so it never stops dead between them, its head a moment
+// behind its trunk. It fades in from just how it lay and out into its own pose; the moments are laid out along its way
+// from where it lay to where it stands.
 final class PersonRise implements GetUp.Rise {
     // The ends that rest on the ground at a moment.
     private static final int HAND_R = 1;
@@ -99,6 +101,11 @@ final class PersonRise implements GetUp.Rise {
                             { -1.3F, 0.0F, 0.05F, 1.6F, -0.2F }, { -0.45F, 0.0F, -0.1F, 2.0F, 0.0F } },
                     HAND_L | KNEE_L | FOOT_R),
             FRONT[4].at(0.58F), FRONT[5].at(0.74F), FRONT[6].at(0.88F) };
+    // Sitting up (slumped against a wall): it curls up from there, as face up once it has sat up.
+    private static final Key[] SEATED = { BACK[1].at(0.16F), BACK[2].at(0.36F), FRONT[4].at(0.54F),
+            FRONT[5].at(0.72F), FRONT[6].at(0.88F) };
+    // Its pelvis this near upright (the cosine to straight up), it sits.
+    private static final float SITTING = 0.6F;
 
     // The pose fades in from how it lay over this much of getting up, and into its own pose from OWN_FROM on; its head
     // follows its trunk this far behind; it moves along its way to where it stands from DRIFT_FROM to DRIFT_TO.
@@ -117,8 +124,19 @@ final class PersonRise implements GetUp.Rise {
     private static final float STAY = 5.0F;
     // An end this near the ground (pixels) as the body lies rests on it.
     private static final float ON_GROUND = 1.5F;
+    // Leaning on a weapon: at the moments its hips are lower than this share of standing and its trunk is up (the
+    // cosine to straight up), its tip planted this far (pixels) ahead of its shoulder and out to the side.
+    private static final float LOW = 0.95F;
+    private static final float UP = 0.5F;
+    private static final float BRACE_AHEAD = 7.0F;
+    private static final float BRACE_OUT = 1.5F;
 
     private final Skeleton body;
+    // The weapon it leans on getting up (null without one), at which moments, and where its tip rests then.
+    @Nullable
+    private final Brace brace;
+    private final boolean[] braced;
+    private final Vector3f[] braceAt;
     private final float[] times;
     private final Skeleton.Pose[] keys;
     // Each moment's turns (Pose.all), and the pose's own.
@@ -138,14 +156,16 @@ final class PersonRise implements GetUp.Rise {
     private final Vector3f c = new Vector3f();
     private final Quaternionf q = new Quaternionf();
 
-    PersonRise(Skeleton body, BodyPose lie) {
+    PersonRise(Skeleton body, BodyPose lie, @Nullable Brace brace) {
         this.body = body;
+        this.brace = brace;
         Skeleton.Pose lying = new Skeleton.Pose();
         body.read(lie, lying);
         body.place(lying);
-        // Face down its pelvis's front (-z) points at the ground (+y: y runs down).
-        boolean front = lying.pelvis.transform(this.a.set(0.0F, 0.0F, -1.0F)).y > 0.0F;
-        Key[] plan = front ? FRONT : BACK;
+        // Face down its pelvis's front (-z) points at the ground (+y: y runs down); sitting, its trunk (-y) points up.
+        boolean sitting = lying.pelvis.transform(this.a.set(0.0F, -1.0F, 0.0F)).y < -SITTING;
+        boolean front = !sitting && lying.pelvis.transform(this.a.set(0.0F, 0.0F, -1.0F)).y > 0.0F;
+        Key[] plan = sitting ? SEATED : front ? FRONT : BACK;
         // Face down it steps through with the leg whose knee lies further ahead; face up it turns onto the side it
         // lies nearer: its front turned to its left, it lies on its right.
         boolean mirror = front ? body.joint(3, this.a).z < body.joint(2, this.b).z
@@ -155,6 +175,8 @@ final class PersonRise implements GetUp.Rise {
         this.keys = new Skeleton.Pose[n];
         this.rests = new int[n];
         this.contacts = new Vector3f[n][Skeleton.LIMBS];
+        this.braced = new boolean[n];
+        this.braceAt = new Vector3f[n];
         this.keys[0] = lying;
         this.rests[0] = this.resting(lying);
         for (int l = 0; l < Skeleton.LIMBS; l++) {
@@ -176,6 +198,7 @@ final class PersonRise implements GetUp.Rise {
             body.place(made);
             this.rests[k] = key.rests();
             this.plant(made, k);
+            this.lean(made, k);
             this.keys[k] = made;
         }
         align(this.keys);
@@ -251,6 +274,41 @@ final class PersonRise implements GetUp.Rise {
             tip.set(at);
         }
         this.body.reach(pose, l, tip, way, toward);
+    }
+
+    // Moment k with a weapon in hand: low, up on its knees or feet and that hand free, it leans on the weapon, its tip
+    // planted where it was the moment before when that is near, else ahead of its shoulder.
+    private void lean(Skeleton.Pose made, int k) {
+        Brace brace = this.brace;
+        int feet = KNEE_R | KNEE_L | FOOT_R | FOOT_L;
+        if (brace == null || rests(brace.limb, this.rests[k]) || (this.rests[k] & feet) == 0
+                || this.body.ground - made.hips.y > LOW * this.body.legLength
+                || made.pelvis.transform(this.a.set(0.0F, -1.0F, 0.0F)).y > -UP) {
+            return;
+        }
+        Vector3f ahead = ahead(made, new Vector3f());
+        float side = brace.limb == 0 ? -1.0F : 1.0F;
+        Vector3f at = this.body.pivot(brace.limb, new Vector3f()).add(ahead.x * BRACE_AHEAD, 0.0F,
+                ahead.z * BRACE_AHEAD).add(-ahead.z * side * BRACE_OUT, 0.0F, ahead.x * side * BRACE_OUT);
+        at.y = this.body.ground;
+        if (this.braced[k - 1] && this.braceAt[k - 1].distance(at) < STAY) {
+            at.set(this.braceAt[k - 1]);
+        }
+        this.braced[k] = true;
+        this.braceAt[k] = at;
+        brace.hold(this.body, made, at, ahead, elbow(ahead, side, new Vector3f()));
+    }
+
+    // The way a placed pose faces, level: its pelvis's front.
+    private static Vector3f ahead(Skeleton.Pose pose, Vector3f out) {
+        pose.pelvis.transform(out.set(0.0F, 0.0F, -1.0F));
+        out.y = 0.0F;
+        return out.lengthSquared() < 1.0E-6F ? out.set(0.0F, 0.0F, -1.0F) : out.normalize();
+    }
+
+    // An elbow leaning on a weapon goes out to its side (`side` -1 the right, +1 the left) and back.
+    private static Vector3f elbow(Vector3f ahead, float side, Vector3f out) {
+        return out.set(-ahead.z * side - ahead.x * 0.5F, 0.0F, ahead.x * side - ahead.z * 0.5F);
     }
 
     // The pose of a moment from its numbers: every turn, the hips where the caller puts them.
@@ -352,6 +410,13 @@ final class PersonRise implements GetUp.Rise {
         this.reached.set(this.pose);
         float[] weights = new float[Skeleton.LIMBS];
         for (int l = 0; l < Skeleton.LIMBS; l++) {
+            if (this.brace != null && l == this.brace.limb && (this.braced[k] || this.braced[k + 1])) {
+                float lean = this.leaning(k, s);
+                if (lean > 0.0F) {
+                    weights[l] = lean;
+                    continue;
+                }
+            }
             boolean before = rests(l, this.rests[k]);
             boolean after = rests(l, this.rests[k + 1]);
             boolean same = before && after && kneels(l, this.rests[k]) == kneels(l, this.rests[k + 1]);
@@ -391,6 +456,30 @@ final class PersonRise implements GetUp.Rise {
             }
         }
         this.body.place(this.pose);
+    }
+
+    // The weapon arm between moments k and k + 1, `s` of the way: its tip held where it is planted (moved over the
+    // ground when it is planted anew), lifted off over LIFT and set down over LAND. How much of the arm leans so.
+    private float leaning(int k, float s) {
+        Brace brace = this.brace;
+        float w;
+        if (this.braced[k] && this.braced[k + 1]) {
+            w = 1.0F;
+            this.c.set(this.braceAt[k]).lerp(this.braceAt[k + 1], (float) Ease.smoother(s));
+        } else if (this.braced[k] && s < LIFT) {
+            w = 1.0F - (float) Ease.smoother(s / LIFT);
+            this.c.set(this.braceAt[k]);
+        } else if (this.braced[k + 1] && s > 1.0F - LAND) {
+            w = (float) Ease.smoother((s - (1.0F - LAND)) / LAND);
+            this.c.set(this.braceAt[k + 1]);
+        } else {
+            return 0.0F;
+        }
+        Vector3f ahead = ahead(this.pose, new Vector3f());
+        brace.hold(this.body, this.reached, new Vector3f(this.c), ahead,
+                elbow(ahead, brace.limb == 0 ? -1.0F : 1.0F, new Vector3f()));
+        this.body.place(this.pose);
+        return w;
     }
 
     private static int segment(float[] times, float u) {

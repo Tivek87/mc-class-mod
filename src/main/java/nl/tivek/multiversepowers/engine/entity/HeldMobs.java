@@ -62,7 +62,7 @@ public final class HeldMobs {
 
     public static void release(Mob mob) {
         if (free(mob)) {
-            Knockdowns.letGo(mob);
+            Knockdowns.drop(mob);
         }
     }
 

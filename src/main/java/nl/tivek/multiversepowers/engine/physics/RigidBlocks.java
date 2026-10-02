@@ -46,6 +46,12 @@ abstract class RigidBlocks extends RigidBodies {
     final int[] nearEdgeCount = new int[MOST];
     // How much a body may still be moved out of blocks without speed this substep.
     private double ease;
+    // The step's hardest hit on a block: how hard (hit()), how fast the point went in (blocks a second), the body, and
+    // the point and the face's normal it was pushed out by.
+    double hitWeighed;
+    double hitSpeed;
+    int hitBody = -1;
+    final double[] hit = new double[6];
 
     void gather(Blocks world, double dt) {
         double minX = Double.POSITIVE_INFINITY;
@@ -302,6 +308,7 @@ abstract class RigidBlocks extends RigidBodies {
                 double nx = axis == 0 ? sign : 0.0;
                 double ny = axis == 1 ? sign : 0.0;
                 double nz = axis == 2 ? sign : 0.0;
+                this.hit(b, cx, cy, cz, nx, ny, nz);
                 double out = this.out(b, cx, cy, cz, nx, ny, nz, depth, (ox - cx) * nx + (oy - cy) * ny
                         + (oz - cz) * nz);
                 this.point(b, lx, ly, lz, this.t1);
@@ -312,6 +319,30 @@ abstract class RigidBlocks extends RigidBodies {
         }
         this.edgesInto(b);
         this.keepContacts(b);
+    }
+
+    // Body b's point c went into a block whose face turns n: kept when it is the step's hardest hit yet, by how fast
+    // the point went in times the root of the body's weight (a falling trunk outweighs a flopping hand).
+    private void hit(int b, double cx, double cy, double cz, double nx, double ny, double nz) {
+        int o = b * 3;
+        double rx = cx - this.x[o];
+        double ry = cy - this.x[o + 1];
+        double rz = cz - this.x[o + 2];
+        double speed = -((this.v[o] + this.w[o + 1] * rz - this.w[o + 2] * ry) * nx
+                + (this.v[o + 1] + this.w[o + 2] * rx - this.w[o] * rz) * ny
+                + (this.v[o + 2] + this.w[o] * ry - this.w[o + 1] * rx) * nz);
+        double weighed = speed / Math.sqrt(this.invMass[b]);
+        if (speed > 0.0 && weighed > this.hitWeighed) {
+            this.hitWeighed = weighed;
+            this.hitSpeed = speed;
+            this.hitBody = b;
+            this.hit[0] = cx;
+            this.hit[1] = cy;
+            this.hit[2] = cz;
+            this.hit[3] = nx;
+            this.hit[4] = ny;
+            this.hit[5] = nz;
+        }
     }
 
     // Moves body b's point p out along n by `depth`: stopped as far as it came in (`into`, this substep, along -n),

@@ -81,6 +81,37 @@ class RigidWorldTest {
     }
 
     @Test
+    void aLandingIsOneHardHitAsFastAsItFell() {
+        RigidWorld world = new RigidWorld();
+        int box = world.add(1.0, 0.3, 0.3, 0.3);
+        world.place(box, 0.0, 2.1, 0.0, 0.0, 0.0, 0.0, 1.0);
+        double hardest = 0.0;
+        int hits = 0;
+        double last = -1.0;
+        for (int i = 0; i < 80; i++) {
+            world.step(TICK, SUBSTEPS, FLOOR);
+            hardest = Math.max(hardest, world.impact());
+            hits += world.impact() > 2.0 ? 1 : 0;
+            last = world.impact();
+        }
+        // It falls 1.8 blocks at the world's gravity: just under 9.3 blocks a second at the floor, slowed by damping.
+        assertTrue(hardest > 6.5 && hardest < 9.3, "lands as fast as it fell: " + hardest);
+        assertEquals(1, hits, "it does not bounce, and lying there it does not hit again");
+        assertEquals(0.0, last, 1.0E-9, "a body lying still hits nothing");
+        assertEquals(-1, world.impactBody());
+    }
+
+    @Test
+    void aBoxInTheAirHitsNothing() {
+        RigidWorld world = new RigidWorld();
+        int box = world.add(1.0, 0.3, 0.3, 0.3);
+        world.place(box, 0.0, 5.0, 0.0, 0.0, 0.0, 0.0, 1.0);
+        world.step(TICK, SUBSTEPS, FLOOR);
+        assertEquals(0.0, world.impact());
+        assertEquals(-1, world.impactBody());
+    }
+
+    @Test
     void aTiltedBoxTopplesAndLiesFlat() {
         RigidWorld world = new RigidWorld();
         int box = world.add(1.0, 0.25, 0.75, 0.25);

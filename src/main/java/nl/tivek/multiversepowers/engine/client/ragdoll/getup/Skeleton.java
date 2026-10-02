@@ -349,8 +349,16 @@ final class Skeleton {
         this.place(pose);
     }
 
+    // As above, its last piece turned wholly `turn` (the trunk's parent's axes), twist and all, not just its way.
+    void reach(Pose pose, int l, Vector3f tip, Quaternionf turn, Vector3f toward) {
+        this.reach(pose, l, tip, turn.transform(this.bone(l, new Vector3f())), toward);
+        Quaternionf lower = this.limbs[l][1].getNormalizedRotation(new Quaternionf());
+        pose.end[l].set(lower.conjugate()).mul(turn);
+        this.place(pose);
+    }
+
     // Limb l's bone in its own axes: the way from its pivot to its far end.
-    private Vector3f bone(int l, Vector3f out) {
+    Vector3f bone(int l, Vector3f out) {
         ModelBends.Bend bend = this.chains[this.roles[2 + l]][0];
         return out.zero().setComponent(bend.axis(), bend.farSign());
     }

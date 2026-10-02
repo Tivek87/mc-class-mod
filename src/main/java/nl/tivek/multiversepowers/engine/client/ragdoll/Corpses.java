@@ -73,7 +73,8 @@ final class Corpses {
                 }
                 continue;
             }
-            if (doll.coreAt(1.0).distanceToSqr(camera) > far) {
+            double near = doll.coreAt(1.0).distanceToSqr(camera);
+            if (near > far) {
                 bodies.remove();
                 continue;
             }
@@ -87,7 +88,11 @@ final class Corpses {
                 doll.rested = 0;
             }
             RagdollCrowd.among(doll);
-            doll.step(substeps, blocks);
+            boolean detailed = Ragdolls.detailed(near);
+            doll.step(detailed ? substeps : Ragdolls.FAR_SUBSTEPS, blocks);
+            if (detailed && ClientSettings.ragdollThuds()) {
+                doll.thud(now, random);
+            }
             RagdollFalls.settle(doll, now);
         }
     }

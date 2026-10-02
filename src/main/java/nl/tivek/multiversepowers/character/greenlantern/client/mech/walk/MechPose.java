@@ -37,6 +37,11 @@ public final class MechPose {
     public final Vec3[] ledge = new Vec3[2];
     double hold;
     Vec3 wall = Vec3.ZERO;
+    // As its weight swings them (index 0 the right): each hand's turn at its wrist, folded towards its palm (+) and
+    // tilted across it, and each shoulder's shrug (up +), in radians.
+    public final double[] fold = new double[2];
+    public final double[] tilt = new double[2];
+    public final double[] shrug = new double[2];
 
     public MechPose(MechScript.Stage stage) {
         this.stage = stage;
@@ -61,6 +66,9 @@ public final class MechPose {
             pose.toes[side] = this.toes[side];
             pose.tip[side] = this.tip[side];
             pose.ledge[side] = this.ledge[side];
+            pose.fold[side] = this.fold[side];
+            pose.tilt[side] = this.tilt[side];
+            pose.shrug[side] = this.shrug[side];
         }
         pose.hold = this.hold;
         pose.wall = this.wall;
@@ -89,6 +97,9 @@ public final class MechPose {
             pose.ankle[side] = from.ankle[side].lerp(to.ankle[side], u);
             pose.toes[side] = from.toes[side].lerp(to.toes[side], u).normalize();
             pose.tip[side] = Mth.lerp(u, from.tip[side], to.tip[side]);
+            pose.fold[side] = Mth.lerp(u, from.fold[side], to.fold[side]);
+            pose.tilt[side] = Mth.lerp(u, from.tilt[side], to.tilt[side]);
+            pose.shrug[side] = Mth.lerp(u, from.shrug[side], to.shrug[side]);
         }
         pose.hold = from.ledge[0] == to.ledge[0] ? Mth.lerp(u, from.hold, to.hold) : to.hold;
         pose.swing = Mth.lerp(u, from.swing, to.swing);
