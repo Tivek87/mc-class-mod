@@ -822,35 +822,52 @@ Green Lantern's ultimate: a big, slow gunship of hard light high over the battle
   horns, big gauntlet forearms with three-jointed fingers, and a heavy knight's helmet of big solid plates: a thick
   brow jutting over two glowing eye slits, a faceted mask with a grille for a mouth down to a pointed chin, cheek
   guards, a tall fin over the crown and two horns swept back from the temples.
-- **Filmed like a movie.** While it builds (about 10 seconds) your camera films it shot by shot: side on as the
-  foot comes down, from above as the hands clap, close on the chest, low as the head falls, beside the crater as it
-  tumbles back up, close on the chest again as it locks on. Then it hands you the view from the cockpit. Your own
-  setting *Film my mech* turns this off.
-- **The foot.** You brace with your ring fist thrust out and your other hand on its wrist, and each foot that lands
-  jolts through your knees. A giant armoured lower leg grows out of your ring's light high above the creature and
-  **stomps it flat** (**4 hearts**; what else stands round the foot takes up to half and is thrown back), with a
-  burst of white spikes and a ring of dust. The second foot comes down beside it. Then both step off and stand apart.
-- **The leap.** You crouch, swing your arms back and leap up to where the chest will be, one knee drawn up and your
-  ring fist held high, land in a crouch in mid-air, then throw your arms wide and hang there in a blinding light,
-  inside a bubble of see-through light, while the mech builds up from its feet behind a fizzing, crackling edge:
-  knees, thighs, hips. A big ring of your lantern's light stands behind the chest while it builds. The bubble
-  shrinks away as the glass of the port forms in the closed chest.
+- **Filmed like a movie.** While it builds (about 14 seconds) your camera films it in seven long shots, flown
+  slowly like a drone and cut only on the big moments, showing you as much as the mech: close on you as your ring
+  gathers light, over your shoulder as the feet slam down, with you through the leap, one long flight round the
+  mech as its hands come in and clap and then in on you in the cockpit, low and far off as the head falls, on you at
+  the levers and then up and back as the head is thrown, and low in front as it locks on. The camera floats a little
+  like a drone and punches in a touch on every blow. Then it hands you the view from the cockpit. Your own setting
+  *Film my mech* turns this off.
+- **The foot.** First you raise your ring fist before your face, your other hand under its wrist, and the ring
+  gathers light: a glow swells and sparks spin inwards. Then you brace with your ring fist thrust out and your fist
+  follows each foot as it forms high in the sky and falls; you push it down with your whole body and each foot that
+  lands jolts through your knees. A giant armoured lower leg grows out of your ring's light high above the creature
+  and **stomps it flat** (**4 hearts**; what else stands round the foot takes up to half and is thrown back), with a
+  burst of white spikes and a ring of dust. The second foot comes down beside it. Then both step off, heel first,
+  and stand apart.
+- **The leap.** You crouch, swing your arms back and leap up to where the chest will be, one knee drawn up, the
+  other leg straight with its toes pointed and your ring fist held high, land in a crouch in mid-air, then throw your
+  arms wide and hang there in a blinding light, inside a bubble of see-through light, while the mech builds up from
+  its feet behind a fizzing, crackling edge: knees, thighs, hips. Once its hips are there it carries its own weight:
+  it sinks into its knees, its body sways and every blow jolts through it. A big ring of your lantern's light stands
+  behind the chest while it builds. The bubble shrinks away as the glass of the port forms in the closed chest.
 - **The hands.** Two giant tiled forearms with open hands come spinning in out of the sky and reach down to the
-  creature. Your own arms spread and the hands spread wide round it, palms facing; you swing your arms in, clap your
-  own hands together bent over them, and the hands **clap it** between them from both sides, palm flat on palm with
-  the fingers side by side (**3 hearts**, a star of light), and squeeze it.
+  creature; you reach up and pull them down with your hands. Your own arms spread and the hands spread wide round
+  it, palms facing, as the mech sinks into its knees; you swing your arms in, clap your own hands together bent over
+  them, and the hands **clap it** between them from both sides, palm flat on palm with the fingers side by side
+  (**3 hearts**, a star of light), and squeeze it.
 - **The chest.** The hands let go and rise while the barrel of the chest, the shoulder armour and the upper arms
-  build round you and lock onto the forearms. A seat, a console with buttons and two levers grow in the cockpit
-  deep in the chest; you **sit down** with your feet on the rest, lean in, take a lever in each hand and look out
-  through the round port of green glass. Everyone sees you sitting in there.
+  build round you and lock onto the forearms; you lift your hands, palms up, and look round as the chest closes. A
+  seat, a console with buttons and two levers grow in the cockpit deep in the chest; you **sit down** with your feet
+  on the rest, lean in, take the right lever and then the left and look out through the round port of green glass.
+  Everyone sees you sitting in there. As its elbows lock the mech clenches its fists and puffs up its chest, then
+  breathes out and sinks into a wide fighting stance.
 - **The head.** A helmet forms high in the sky above the creature out of a swirl of light shards, spinning, falls
-  like a meteor and **crashes it into the ground** (**5 hearts**, a crater of light with cracks and flying earth).
-  It tumbles head over heels back up out of the crater, over the mech and down onto its shoulders, locking on with a
-  hard **CLACK**, and the mech spreads its arms wide, its eyes flaring.
+  like a meteor and **crashes it into the ground** (**5 hearts**, a crater of light with cracks and flying earth);
+  the mech looks up at it, reaches for it and flinches as it hits. Then it raises its right claw high, plunges down
+  into its knees and snatches the helmet out of the crater with a **clack**, swings it back past its hip and throws
+  it underarm high into the sky, its left arm out for balance. Strapped into the chest, you lean with it and work the
+  levers with your whole body, then watch the helmet go. It tumbles head over heels over twenty blocks high, falls
+  back, and the mech ducks to catch it on its neck, locking on with a hard **CLACK**: it stands up tall, throws its
+  head back and its right fist up, its eyes flaring, and you throw your ring fist up with it. Then it looks round and
+  lowers its arms.
 - **Built:** the creature is let go, the eyes glow and the rim round the glass breathes with light.
 - **Walking.** Now you walk it: **W** walks it forward, **S** backs it up, **A** and **D** step it to the side; hold
-  your **sprint key** with W and it **runs**, nearly four times as fast: much longer strides, the knees higher, the
-  body leaning in and the arms pumping. A note above the hotbar says so as you take over. Its body follows where you
+  your **sprint key** with W and it really **runs**, almost three and a half times as fast: longer strides at a
+  quicker beat, both feet off the ground for a moment every step, each heel kicking up high behind and each knee
+  driving forward, the body leaning hard in, springing off each foot and crashing down on the next, the hips swinging
+  with the legs and the shoulders against them, and the clenched fists pumping on bent arms. A note above the hotbar says so as you take over. Its body follows where you
   look: the torso swings round on its hips quickly, with weight, overshooting a little and settling; standing still,
   the torso twists up to about 100 degrees over the legs, and the legs only step round once you look more than about
   90 degrees aside, then all the way and briskly; the head turns and tilts to look where you look before the body
@@ -879,15 +896,17 @@ Green Lantern's ultimate: a big, slow gunship of hard light high over the battle
   up and flings it the way you look. It does not walk while it strikes. *Unfinished: the blows are first versions
   and may still look or feel wrong.*
 - **Nothing else:** you cannot fly, jump or use your other powers while you are in it. The panel lists only the
-  hold of the scroll wheel that takes you out.
+  hold of the scroll wheel that takes you out, with how long you may still stay in (like *1:42 left*).
 - **Leaving it:** hold the scroll wheel for 2 seconds again (the ring round your crosshair says *Leave the mech*): the mech breaks
   into solid pieces that dissolve into light, and you float gently down to the ground. Die, log out or stop being
-  Green Lantern and it breaks up as well.
+  Green Lantern and it breaks up as well. You may stay in it **2 minutes** at most, counted from building it: then
+  the ring says *Your mech's time is up* and it breaks up by itself.
 - **Who gets hit:** it builds itself over a creature out to hurt you, but its blows hit whatever stands near: the
   held creature takes each blow whole, anything else near the foot, the clap or the crater takes less (players of
   your own team excepted).
-- **Power:** 25. **Cooldown:** 90 seconds, **its own**: building the mech leaves the Air Strike ready, and the Air
-  Strike leaves the mech ready. Its cost, cooldown, reach and the three damages are settings (Hard-Light Mech), and
+- **Power:** 25. **Cooldown:** 5 minutes, from the moment the mech is gone (however you leave it), **its own**:
+  building the mech leaves the Air Strike ready, and the Air Strike leaves the mech ready. Its cost, cooldown, how
+  long you may stay in it, reach and the three damages are settings (Hard-Light Mech), and
   so are each blow's damage (Mech blows) and what it crushes underfoot (Walking the mech).
 
 ### Giant Hands (key Left Alt)

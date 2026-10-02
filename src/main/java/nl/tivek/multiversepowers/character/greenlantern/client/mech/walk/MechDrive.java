@@ -28,8 +28,8 @@ import nl.tivek.multiversepowers.character.greenlantern.mech.MechScript;
 // it (MechClimb); pushing against it, its legs still turn after the look.
 public final class MechDrive {
     public static final double WALK = 0.2;
-    // The sprint key held with W runs: two and a half times as fast, working up to it slowly.
-    public static final double RUN = 0.5;
+    // The sprint key held with W runs: almost three and a half times as fast, working up to it slowly.
+    public static final double RUN = 0.675;
     private static final double RUN_UP = 0.018;
     // Standing still, the legs step round only when the look is this far (degrees)
     // off where they face: the torso twists that far over them first.

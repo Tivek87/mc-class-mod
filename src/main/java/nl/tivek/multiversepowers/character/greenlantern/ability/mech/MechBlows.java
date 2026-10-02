@@ -18,6 +18,8 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.character.CharacterAbility;
 import nl.tivek.multiversepowers.character.greenlantern.PowerRing;
+import nl.tivek.multiversepowers.character.greenlantern.mech.MechBuild;
+import nl.tivek.multiversepowers.character.greenlantern.mech.MechHead;
 import nl.tivek.multiversepowers.character.greenlantern.mech.MechMoves;
 import nl.tivek.multiversepowers.character.greenlantern.mech.MechScript;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
@@ -92,27 +94,45 @@ final class MechBlows {
                 click(level, stage.point(MechScript.mirror(MechScript.SHOULDER)), 2.0F);
             }
             case MechScript.ELBOWS -> {
-                click(level, stage.point(MechMoves.arm(true, stage, t).elbow()), 2.6F);
-                click(level, stage.point(MechMoves.arm(false, stage, t).elbow()), 2.6F);
-                Sounds.play(level, stage.point(0.0, 7.0, 0.0), SoundEvents.ANVIL_LAND, 0.5F, 1.4F);
+                MechScript.Stage torso = MechBuild.torso(stage, t);
+                click(level, torso.point(MechMoves.arm(true, stage, t).elbow()), 2.6F);
+                click(level, torso.point(MechMoves.arm(false, stage, t).elbow()), 2.6F);
+                Sounds.play(level, torso.point(0.0, 7.0, 0.0), SoundEvents.ANVIL_LAND, 0.5F, 1.4F);
             }
             case MechScript.HEAD_FORM -> {
-                Vec3 head = stage.point(MechScript.head(stage, t));
+                Vec3 head = MechHead.pose(stage, t).at();
                 build(level, head, 0.8F);
                 Sounds.play(level, head, SoundEvents.BEACON_ACTIVATE, 3.0F, 0.9F);
                 ParticleFx.sphereOut(level, ParticleFx.dust(PowerRing.BRIGHT, 2.0F), head, 60, 0.5);
             }
-            case MechScript.HEAD_DROP -> Sounds.play(level, stage.point(MechScript.head(stage, t)), WHOOSH, 4.0F,
-                    0.6F);
+            case MechScript.HEAD_DROP -> Sounds.play(level, MechHead.pose(stage, t).at(), WHOOSH, 4.0F, 0.6F);
             case MechScript.CRASH -> {
                 Vec3 at = stage.point(stage.target());
                 crash(level, at);
                 target.hit(level, owner, ability.value("mechHeadDamage"));
                 blast(level, owner, target.creature(), at, CRASH_RADIUS, ability.value("mechHeadDamage") * 0.5, CRASH_PUSH);
             }
-            case MechScript.HEAD_RISE -> Sounds.play(level, stage.point(stage.target()), WHOOSH, 3.0F, 0.85F);
+            case MechScript.REACH, MechScript.WIND -> Sounds.play(level, MechBuild.torso(stage, t)
+                    .point(MechScript.SHOULDER), WHOOSH, 2.4F, t == MechScript.REACH ? 0.85F : 0.7F);
+            case MechScript.GRAB -> {
+                Vec3 at = MechHead.pose(stage, t).at();
+                Sounds.play(level, at, CLACK, 3.0F, 0.9F);
+                Sounds.play(level, at, SoundEvents.IRON_DOOR_CLOSE, 1.6F, 0.6F);
+                dust(level, stage.point(stage.target()), 16, 0.9);
+            }
+            case MechScript.GRAB + 3 -> {
+                Vec3 at = stage.point(stage.target());
+                Sounds.play(level, at, SoundEvents.STONE_BREAK, 2.0F, 0.5F);
+                dust(level, at, 12, 0.7);
+            }
+            case MechScript.TOSS -> {
+                Vec3 at = MechHead.pose(stage, t).at();
+                Sounds.play(level, at, WHOOSH, 4.0F, 1.25F);
+                Sounds.play(level, at, WHOOSH, 3.0F, 0.7F);
+                ParticleFx.sphereOut(level, ParticleFx.dust(PowerRing.BRIGHT, 1.6F), at, 30, 0.4);
+            }
             case MechScript.LOCK -> {
-                Vec3 neck = stage.point(MechScript.NECK);
+                Vec3 neck = MechBuild.torso(stage, t).point(MechScript.NECK);
                 Sounds.play(level, neck, CLACK, 5.0F, 0.75F);
                 Sounds.play(level, neck, SoundEvents.ANVIL_LAND, 1.2F, 0.7F);
                 Sounds.play(level, neck, SoundEvents.IRON_DOOR_CLOSE, 2.0F, 0.5F);
@@ -136,6 +156,10 @@ final class MechBlows {
             Vec3 at = stage.point(stage.target().add(0.0, 1.4, 0.0));
             Sounds.play(level, at, SoundEvents.AMETHYST_CLUSTER_BREAK, 0.9F, 0.55F);
             ParticleFx.cloud(level, ParticleFx.dust(PowerRing.BRIGHT, 1.0F), at, 6, 0.4, 0.05);
+        }
+        // Thrown, the head hums round as it tumbles.
+        if (t > MechScript.TOSS && t < MechScript.LOCK - 2 && (t - MechScript.TOSS) % 6 == 3) {
+            Sounds.play(level, MechHead.pose(stage, t).at(), WHOOSH, 1.6F, 1.4F);
         }
     }
 

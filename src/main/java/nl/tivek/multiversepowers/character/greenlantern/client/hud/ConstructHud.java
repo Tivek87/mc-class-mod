@@ -260,8 +260,21 @@ public final class ConstructHud {
             case "beam_lock" -> ClientRing.has(player, RingPayload.BEAM)
                     && LightBeam.lockedIn(ClientConstructs.beamClock(player.getId()))
                     ? Component.translatable(prefix + "locked") : null;
+            case "mech" -> mechLeft(ability, player, prefix);
             default -> null;
         };
+    }
+
+    // How long the pilot may still stay in their mech, in minutes and seconds.
+    @Nullable
+    private static Component mechLeft(CharacterAbility ability, Player player, String prefix) {
+        ClientConstructs.Piloted pilot = ClientConstructs.piloted(player.getId(), 0.0F);
+        if (pilot == null || pilot.broke() >= 0.0) {
+            return null;
+        }
+        int left = Math.max(0, (int) Math.ceil((ability.intValue("mechTime") - pilot.t()) / 20.0));
+        return Component.translatable(prefix + "mech_left",
+                String.format(Locale.ROOT, "%d:%02d", left / 60, left % 60));
     }
 
     private static void renderRechargeFlash(GuiGraphics graphics, float flash) {

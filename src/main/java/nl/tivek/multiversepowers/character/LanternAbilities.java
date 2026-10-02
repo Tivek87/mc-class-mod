@@ -439,8 +439,12 @@ final class LanternAbilities {
                 .group("mech", "Hard-Light Mech Assembly (hold the scroll wheel 2 seconds)")
                 .setting("mechPowerCost", 25.0, 0.0, 100.0, Unit.POWER,
                         "Ring power building the mech costs")
-                .settingInt("mechCooldown", 1800, 0, 72000, Unit.TICKS,
-                        "Ticks before the mech can be built again (20 ticks = 1 second)")
+                .settingInt("mechCooldown", 6000, 0, 72000, Unit.TICKS,
+                        "Ticks after you leave the mech before it can be built again (20 ticks = 1 second)")
+                .was(1800)
+                .settingInt("mechTime", 2400, 300, 72000, Unit.TICKS,
+                        "Ticks you can stay in the mech, from building it, before it breaks up by itself (20 ticks"
+                                + " = 1 second)")
                 .setting("mechReach", 12.0, 2.0, 32.0, Unit.BLOCKS,
                         "How far in front of you the mech looks for the creature out to hurt you that it builds"
                                 + " itself over, in blocks")

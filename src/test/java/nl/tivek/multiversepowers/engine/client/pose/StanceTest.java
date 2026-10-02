@@ -120,6 +120,19 @@ class StanceTest {
     }
 
     @Test
+    void aFootTurnsToItsSoleAsFarAsItsAnkle() {
+        HumanoidModel<LivingEntity> model = person();
+        model.rightLeg.setRotation(0.0F, 0.0F, 0.0F);
+        Vector3f foot = new Vector3f(-1.9F, 22.0F, -1.0F);
+        Quaternionf pointed = new Quaternionf().rotationX(0.6F);
+        Stance.leg(model, true, foot, new Vector3f(0.0F, 0.0F, -1.0F), pointed, 1.0F);
+        Quaternionf last = new Quaternionf();
+        assertEquals(0.0F, drawnEnd(model.rightLeg, LEG, last).distance(foot), REACH + 0.05F);
+        Vector3f sole = last.transform(new Vector3f(0.0F, 1.0F, 0.0F));
+        assertEquals(0.0F, sole.distance(pointed.transform(new Vector3f(0.0F, 1.0F, 0.0F))), 0.02F, "toes down: " + sole);
+    }
+
+    @Test
     void anArmPutsItsHandOnTheTargetWithTheElbowBack() {
         Vector3f back = new Vector3f(0.3F, 0.0F, 1.0F);
         Vector3f[] hands = { new Vector3f(5.0F, 12.0F, 0.0F), new Vector3f(4.0F, 6.0F, -6.0F),

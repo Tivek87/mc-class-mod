@@ -9,85 +9,55 @@ import nl.tivek.multiversepowers.character.greenlantern.mech.MechScript;
 import nl.tivek.multiversepowers.engine.client.pose.Stance;
 import nl.tivek.multiversepowers.engine.math.Ease;
 import nl.tivek.multiversepowers.engine.math.Keyframes;
+import org.joml.Matrix3f;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
-// The mech's pilot posed whole, hips, trunk, knees and elbows (Stance): braced with the ring arm out while its feet
-// come down, a crouch and a leap into its chest with one knee drawn up and the ring fist high, a catch in the light
-// there, their own arms working the mech's (a flare, a spread, a clap, a lift), then down onto the seat, feet on the
-// rest, and forward to take the sticks. Model space, in pixels: y runs down, -z is ahead, +x the pilot's own left;
-// hands in the chest's own axes from the neck, feet from the ground under the hips.
+// The mech's pilot posed whole (Stance), key by key (PilotKeys): hips, trunk, knees and elbows, each hand turned at its
+// wrist and each foot at its ankle, the head looking where the moment asks. On top of the keys the ring fist is aimed
+// at each foot of the mech as it forms high above and falls, every landing, clap, lock and crash jolts through the
+// body, the hands tremble while they strain, and the pilot breathes and bobs while hanging in the light.
+// Model space, in pixels: y runs down, -z is ahead, +x the pilot's own left.
 final class PilotBody {
-    // Hips, trunk (lean ahead, waist, twist, roll), right and left foot, right and left hand.
-    private static final int DROP = 0;
-    private static final int BACK = 1;
-    private static final int PITCH = 2;
-    private static final int WAIST = 3;
-    private static final int TWIST = 4;
-    private static final int ROLL = 5;
-    private static final int FEET = 6;
-    private static final int HANDS = 12;
-    private static final int VALUES = 18;
+    private static final int DROP = PilotKeys.DROP;
+    private static final int BACK = PilotKeys.BACK;
+    private static final int PITCH = PilotKeys.PITCH;
+    private static final int WAIST = PilotKeys.WAIST;
+    private static final int TWIST = PilotKeys.TWIST;
+    private static final int ROLL = PilotKeys.ROLL;
+    private static final int FEET = PilotKeys.FEET;
+    private static final int HANDS = PilotKeys.HANDS;
+    private static final int PALMS = PilotKeys.PALMS;
+    private static final int TOES = PilotKeys.TOES;
+    private static final int LOOK = PilotKeys.LOOK;
+    private static final int VALUES = PilotKeys.VALUES;
 
-    private static final float[] STAND = pose(0.8F, 0.0F, 0.05F, 0.0F, 0.0F, 0.0F,
-            -2.4F, 24.0F, -0.8F, 2.4F, 24.0F, 0.8F, -5.8F, 11.5F, 0.5F, 5.8F, 11.5F, 0.5F);
-    // The ring fist thrust at where the feet come down, the other hand bracing its wrist.
-    private static final float[] CAST = pose(1.8F, 0.0F, 0.1F, 0.0F, -0.25F, 0.0F,
-            -3.0F, 24.0F, -2.6F, 3.2F, 24.0F, 2.4F, -1.5F, 2.8F, -8.8F, -1.0F, 4.0F, -6.2F);
-    private static final float[] WIND_UP = pose(5.0F, 1.0F, 0.55F, 0.2F, 0.0F, 0.0F,
-            -2.6F, 24.0F, -1.0F, 2.6F, 24.0F, 0.6F, -6.5F, 9.5F, 5.5F, 6.5F, 9.5F, 5.5F);
-    private static final float[] LAUNCH = pose(-0.5F, 0.0F, -0.1F, -0.1F, 0.0F, 0.0F,
-            -2.0F, 24.5F, 1.5F, 2.0F, 24.5F, 2.5F, -4.2F, -8.0F, -1.5F, 4.0F, -4.5F, -6.5F);
-    // In the air one knee drawn up, the other leg trailing, the ring fist high and the free arm out.
-    private static final float[] HERO = pose(0.5F, 0.0F, 0.12F, 0.05F, 0.0F, 0.0F,
-            -2.3F, 17.5F, -4.5F, 2.2F, 23.0F, 3.8F, -4.5F, -7.5F, -2.5F, 13.0F, 2.5F, -2.0F);
-    private static final float[] REACH_DOWN = pose(1.5F, 0.0F, 0.2F, 0.0F, 0.0F, 0.0F,
-            -2.4F, 22.5F, -1.8F, 2.4F, 22.5F, -0.8F, -12.0F, 5.0F, -3.0F, 12.0F, 5.0F, -3.0F);
-    // Caught by the light in the chest: a crouch in the air.
-    private static final float[] CATCH = pose(3.5F, 0.0F, 0.35F, 0.0F, 0.0F, 0.0F,
-            -2.5F, 22.0F, -3.0F, 2.5F, 22.0F, -2.0F, -4.5F, 9.0F, -6.5F, 4.5F, 9.0F, -6.5F);
-    private static final float[] FLARE = pose(0.3F, 0.0F, -0.22F, -0.1F, 0.0F, 0.0F,
-            -2.8F, 24.0F, 1.0F, 2.8F, 24.0F, 1.0F, -13.0F, -2.0F, -1.5F, 13.0F, -2.0F, -1.5F);
-    private static final float[] REACH_UP = pose(0.8F, 0.0F, 0.05F, 0.0F, 0.0F, 0.0F,
-            -2.3F, 23.5F, 0.3F, 2.3F, 23.2F, -0.3F, -3.5F, -3.0F, -7.5F, 3.5F, -3.0F, -7.5F);
-    private static final float[] PUSH_DOWN = pose(1.2F, 0.0F, 0.2F, 0.0F, 0.0F, 0.0F,
-            -2.3F, 23.2F, -0.3F, 2.3F, 23.5F, 0.3F, -3.0F, 6.0F, -7.0F, 3.0F, 6.0F, -7.0F);
-    private static final float[] SPREAD = pose(0.6F, 0.0F, -0.05F, 0.0F, 0.0F, 0.0F,
-            -2.6F, 23.6F, 0.2F, 2.6F, 23.6F, 0.2F, -14.0F, 2.5F, -2.5F, 14.0F, 2.5F, -2.5F);
-    private static final float[] CLAP_BACK = pose(0.6F, 0.0F, -0.08F, 0.0F, 0.0F, 0.0F,
-            -2.6F, 23.6F, 0.4F, 2.6F, 23.6F, 0.4F, -12.5F, 2.0F, -6.0F, 12.5F, 2.0F, -6.0F);
-    private static final float[] CLAP = pose(1.8F, 0.0F, 0.28F, 0.1F, 0.0F, 0.0F,
-            -2.3F, 22.5F, -2.2F, 2.3F, 22.3F, -1.8F, -0.7F, 3.2F, -8.2F, 0.7F, 3.2F, -8.2F);
-    private static final float[] RELEASE = pose(0.8F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F,
-            -2.4F, 23.5F, 0.0F, 2.4F, 23.5F, 0.0F, -9.0F, 3.0F, -6.5F, 9.0F, 3.0F, -6.5F);
-    private static final float[] LIFT = pose(0.5F, 0.0F, -0.12F, 0.0F, 0.0F, 0.0F,
-            -2.4F, 23.8F, 0.4F, 2.4F, 23.8F, 0.4F, -8.5F, -6.5F, -3.0F, 8.5F, -6.5F, -3.0F);
-    // On the seat, feet on the rest before it.
-    private static final float[] SEATED = pose(0.4F, 1.2F, -0.02F, 0.0F, 0.0F, 0.0F,
-            -2.4F, 18.4F, -10.0F, 2.4F, 18.4F, -10.0F, -14.0F, 2.5F, -1.5F, 14.0F, 2.5F, -1.5F);
-    private static final float[] SEATED_AHEAD = pose(0.4F, 1.2F, 0.12F, 0.0F, 0.0F, 0.0F,
-            -2.4F, 18.4F, -10.0F, 2.4F, 18.4F, -10.0F, -5.5F, 3.0F, -8.0F, 5.5F, 3.0F, -8.0F);
-    // Sinking back to the ground as the mech breaks up round them.
-    private static final float[] LOWERED = pose(0.8F, 0.0F, 0.05F, 0.0F, 0.0F, 0.0F,
-            -2.5F, 24.0F, -0.4F, 2.5F, 24.0F, 0.6F, -8.0F, 9.5F, -1.5F, 8.0F, 9.5F, -1.5F);
-
-    private static final Keyframes.Key[] MOVES = {
-            key(0, true, STAND), key(5, true, CAST), key(20, true, CAST), key(26, true, WIND_UP),
-            key(29, true, WIND_UP), key(32, false, LAUNCH), key(37, true, HERO), key(43, true, HERO),
-            key(47, false, REACH_DOWN), key(51, true, CATCH), key(58, true, FLARE), key(64, true, FLARE),
-            key(68, false, REACH_UP), key(72, false, PUSH_DOWN), key(76, true, SPREAD), key(80, true, SPREAD),
-            key(84, false, CLAP_BACK), key(86, true, CLAP), key(96, true, CLAP), key(100, false, RELEASE),
-            key(107, true, LIFT), key(114, true, SEATED), key(MechScript.GRIP - 2, true, SEATED),
-            key(MechScript.GRIP + 4, true, SEATED_AHEAD) };
-    // The ring fist thrown up with the mech's own as it locks, and the lean of each lever pushed.
+    // The ring fist thrown up with the mech's own as it locks, knuckles to the sky, and the lean of each lever pushed.
     private static final Vector3f FIST_UP = new Vector3f(-4.5F, -8.0F, -2.0F);
+    private static final Quaternionf FIST_UP_TURN = new Quaternionf().rotationX((float) Math.PI);
     private static final float LEVER_LEAN = 0.12F;
-    // Each foot of the mech landing jolts through the pilot: knees give, the trunk rocks back.
-    private static final float JOLT_DROP = 1.4F;
-    private static final float JOLT_BACK = -0.1F;
+    // Each foot landing, the clap, the arms locking on, the head's crash, the claw closing on it, its throw and its lock
+    // jolt through the pilot: when, how far the knees give and how far the trunk rocks (back -).
+    private static final float[][] JOLTS = { { MechScript.STOMP, 1.4F, -0.1F }, { MechScript.STOMP2, 1.1F, -0.08F },
+            { MechScript.CLAP, 0.8F, -0.06F }, { MechScript.ELBOWS, 0.5F, 0.0F }, { MechScript.CRASH, 1.8F, -0.14F },
+            { MechScript.GRAB, 1.0F, 0.1F }, { MechScript.TOSS, 0.8F, -0.12F }, { MechScript.LOCK, 1.0F, -0.08F } };
     private static final double JOLT_TICKS = 7.0;
-    // Hanging in the light, the pilot bobs gently.
+    // Hanging in the light, the pilot bobs gently; all through the build they breathe.
     private static final float BOB = 0.4F;
+    private static final float BREATH_DROP = 0.15F;
+    private static final float BREATH_PITCH = 0.015F;
+    private static final double BREATH_TICKS = 40.0;
+    // Holding a foot up, driving it down and squeezing the clap, the hands tremble.
+    private static final float TREMBLE = 0.22F;
+    // The aimed ring fist this far from its shoulder (an arm reaches 10), the other hand cupping its wrist from below.
+    private static final float AIM_REACH = 9.6F;
+    private static final float BRACE_BACK = 2.8F;
+    private static final float BRACE_BELOW = 1.3F;
+    // The eyes above the neck, and how far an aim leads the head.
+    private static final float EYES = 4.0F;
+    private static final float AIM_LOOK = 0.9F;
+    // Sinking back to the ground as the mech breaks up round them.
+    private static final float[] LOWERED = PilotKeys.lowered();
 
     private static final Vector3f KNEE = new Vector3f(0.0F, -0.5F, -1.0F);
     private static final Vector3f RIGHT_ELBOW = new Vector3f(-0.7F, 0.3F, 0.8F);
@@ -96,44 +66,58 @@ final class PilotBody {
     private static final Quaternionf LEAN = new Quaternionf();
     private static final Quaternionf TURN = new Quaternionf();
     private static final Quaternionf CHEST = new Quaternionf();
+    private static final Quaternionf PALM = new Quaternionf();
+    private static final Quaternionf AIMED = new Quaternionf();
+    private static final Quaternionf SOLE = new Quaternionf();
     private static final Vector3f NECK = new Vector3f();
     private static final Vector3f FOOT = new Vector3f();
     private static final Vector3f HAND = new Vector3f();
+    private static final Vector3f WAY = new Vector3f();
+    private static final Vector3f AIM_HAND = new Vector3f();
+    private static final Vector3f AIM_DOWN = new Vector3f();
+    private static final Vector3f FINGERS = new Vector3f();
+    private static final Vector3f FACING = new Vector3f();
+    private static final Vector3f ACROSS = new Vector3f();
+    private static final Vector3f THIRD = new Vector3f();
+    private static final Matrix3f TURNED = new Matrix3f();
 
     private PilotBody() {
     }
 
-    private static float[] pose(float... values) {
-        if (values.length != VALUES) {
-            throw new IllegalArgumentException("A pilot pose has " + VALUES + " values");
-        }
-        return values;
-    }
-
-    private static Keyframes.Key key(int t, boolean stop, float[] pose) {
-        return new Keyframes.Key(t, stop, pose);
-    }
-
     // The pose `t` ticks into the build (to SETTLED), or `broke` ticks into breaking up (below 0: not breaking).
-    // `grips`: where each hand holds on (right, left) in model space, or null; `onStick` how far they have it,
-    // `raised` how far the ring fist is up, `push` how far the levers lean ahead.
-    static void pose(PlayerModel<?> model, double t, double broke, @Nullable Vector3f[] grips, double onStick,
-            double raised, double push) {
-        float[] v = Keyframes.at(MOVES, (float) Math.min(t, MechScript.SETTLED));
+    // `grips`: where each hand holds on (right, left) in model space, or null; `onStick` how far each has it (right,
+    // left), `raised` how far the ring fist is up, `push` how far the levers lean ahead; `aim`: the point the ring fist
+    // is thrown at (model space), or null.
+    static void pose(PlayerModel<?> model, double t, double broke, @Nullable Vector3f[] grips, double[] onStick,
+            double raised, double push, @Nullable Vector3f aim) {
+        float[] v = Keyframes.at(PilotKeys.MOVES, (float) Math.min(t, MechScript.SETTLED));
+        double holdRight = onStick[0];
+        double holdLeft = onStick[1];
+        double aiming = aim == null ? 0.0 : aiming(t);
         if (broke >= 0.0) {
             float u = (float) Ease.smooth(broke / 6.0);
             for (int i = 0; i < VALUES; i++) {
                 v[i] = Mth.lerp(u, v[i], LOWERED[i]);
             }
-            onStick *= 1.0 - u;
+            holdRight *= 1.0 - u;
+            holdLeft *= 1.0 - u;
             raised *= 1.0 - u;
+            aiming = 0.0;
         }
-        float jolt = (float) (jolt(t, MechScript.STOMP) + jolt(t, MechScript.STOMP2));
-        float bob = (float) (BOB * Math.sin(t * 0.24) * Ease.smooth((t - 56.0) / 8.0)
-                * (1.0 - Ease.smooth((t - 104.0) / 8.0)));
-        float drop = v[DROP] + JOLT_DROP * jolt + bob;
+        float joltDrop = 0.0F;
+        float joltBack = 0.0F;
+        for (float[] jolt : JOLTS) {
+            float k = (float) jolt(t, jolt[0]);
+            joltDrop += jolt[1] * k;
+            joltBack += jolt[2] * k;
+        }
+        float bob = (float) (BOB * Math.sin(t * 0.24) * Ease.smooth((t - MechScript.HIPS - 2.0) / 8.0)
+                * (1.0 - Ease.smooth((t - MechScript.RISE - 1.0) / 8.0)));
+        float breath = broke >= 0.0 ? 0.0F : (float) (Math.sin(2.0 * Math.PI * t / BREATH_TICKS)
+                * (1.0 - Ease.smooth((t - MechScript.DONE) / (MechScript.SETTLED - MechScript.DONE))));
+        float drop = v[DROP] + joltDrop + bob + BREATH_DROP * breath;
         HIPS.set(0.0F, Stance.HIP_Y + drop, v[BACK]);
-        float pitch = v[PITCH] + JOLT_BACK * jolt + (float) (LEVER_LEAN * push * onStick);
+        float pitch = v[PITCH] + joltBack + BREATH_PITCH * breath + (float) (LEVER_LEAN * push * holdRight);
         LEAN.rotationZYX(v[ROLL] * 0.6F, v[TWIST] * 0.4F, pitch * 0.6F);
         TURN.rotationZYX(v[ROLL] * 0.4F, v[TWIST] * 0.6F, pitch * 0.4F + v[WAIST]);
         Stance.trunk(model, HIPS, LEAN, TURN, false);
@@ -141,27 +125,135 @@ final class PilotBody {
             int o = FEET + side * 3;
             // The hips bob, the feet hang from them: while hanging in the light nothing stands on the ground.
             FOOT.set(v[o], v[o + 1] + bob, v[o + 2]);
-            Stance.leg(model, side == 0, FOOT, KNEE);
+            Stance.leg(model, side == 0, FOOT, KNEE, SOLE.rotationX(v[TOES + side]), 1.0F);
         }
         Stance.neck(NECK);
         Stance.chest(CHEST);
+        if (aiming > 0.0 && !aimed(model, aim)) {
+            aiming = 0.0;
+        }
+        float shake = TREMBLE * (float) strain(t);
         for (int side = 0; side < 2; side++) {
             boolean right = side == 0;
             int o = HANDS + side * 3;
             HAND.set(v[o], v[o + 1], v[o + 2]);
+            palm(v, side, PALM);
             if (right && raised > 0.0) {
                 HAND.lerp(FIST_UP, (float) raised);
+                PALM.slerp(FIST_UP_TURN, (float) raised);
             }
             CHEST.transform(HAND).add(NECK);
-            if (grips != null && grips[side] != null) {
-                float hold = (float) (right ? onStick * (1.0 - raised) : onStick);
-                HAND.lerp(grips[side], hold);
+            PALM.premul(CHEST);
+            if (aiming > 0.0) {
+                if (right) {
+                    HAND.lerp(AIM_HAND, (float) aiming);
+                    PALM.slerp(AIMED, (float) aiming);
+                } else {
+                    // Cupping the ring arm's wrist from below.
+                    FOOT.set(WAY).mul(-BRACE_BACK).add(AIM_HAND).add(AIM_DOWN.x * BRACE_BELOW,
+                            AIM_DOWN.y * BRACE_BELOW, AIM_DOWN.z * BRACE_BELOW);
+                    HAND.lerp(FOOT, (float) aiming);
+                }
             }
-            Stance.arm(model, right, HAND, right ? RIGHT_ELBOW : LEFT_ELBOW);
+            double held = right ? holdRight * (1.0 - raised) : holdLeft;
+            if (grips != null && grips[side] != null && held > 0.0) {
+                HAND.lerp(grips[side], (float) held);
+            }
+            HAND.add(shake * (float) Math.sin(t * 2.9 + side * 1.3), shake * (float) Math.cos(t * 3.7 + side * 0.7),
+                    0.0F);
+            Stance.arm(model, right, HAND, right ? RIGHT_ELBOW : LEFT_ELBOW, PALM, 1.0F);
         }
+        look(model, v, aim, aiming);
     }
 
-    // How hard a foot landing `at` still jolts, rising fast and dying away.
+    // How far the ring fist is aimed at the feet as they form and fall: from the wind-up until both are down.
+    private static double aiming(double t) {
+        return Ease.smooth((t - MechScript.FOOT_FORM + 1.5) / 2.5)
+                * (1.0 - Ease.smooth((t - MechScript.STOMP2 - 0.5) / 2.5));
+    }
+
+    // How hard the hands strain: gathering the light, holding a foot up and driving it down, squeezing the clap and
+    // hauling the head out and round.
+    private static double strain(double t) {
+        return 0.6 * window(t, 4.0, MechScript.FOOT_FORM - 1.0)
+                + window(t, MechScript.FOOT_FORM + 0.5, MechScript.STOMP)
+                + window(t, MechScript.FOOT2_FORM + 0.5, MechScript.STOMP2)
+                + window(t, MechScript.CLAP + 1.0, MechScript.RELEASE)
+                + 0.7 * window(t, MechScript.GRAB - 1.0, MechScript.TOSS);
+    }
+
+    private static double window(double t, double from, double to) {
+        return Ease.smooth((t - from) / 1.5) * (1.0 - Ease.smooth((t - to) / 1.5));
+    }
+
+    // The ring fist out from its shoulder along the way to `aim` (AIM_HAND, WAY), knuckles first and palm down (AIMED,
+    // AIM_DOWN: down square to the way); false when there is no way to aim.
+    private static boolean aimed(PlayerModel<?> model, Vector3f aim) {
+        WAY.set(aim).sub(model.rightArm.x, model.rightArm.y, model.rightArm.z);
+        if (WAY.lengthSquared() < 1.0E-4F) {
+            return false;
+        }
+        WAY.normalize();
+        AIM_HAND.set(WAY).mul(AIM_REACH).add(model.rightArm.x, model.rightArm.y, model.rightArm.z);
+        AIM_DOWN.set(0.0F, 1.0F, 0.0F).sub(WAY.x * WAY.y, WAY.y * WAY.y, WAY.z * WAY.y);
+        if (AIM_DOWN.lengthSquared() < 1.0E-4F) {
+            AIM_DOWN.set(0.0F, 0.0F, 1.0F);
+        }
+        AIM_DOWN.normalize();
+        turn(WAY, AIM_DOWN, true, AIMED);
+        return true;
+    }
+
+    // A key's turn of one hand at its wrist, in the chest's axes.
+    private static void palm(float[] v, int side, Quaternionf out) {
+        int o = PALMS + side * 6;
+        FINGERS.set(v[o], v[o + 1], v[o + 2]);
+        FACING.set(v[o + 3], v[o + 4], v[o + 5]);
+        if (FINGERS.lengthSquared() < 1.0E-6F) {
+            out.identity();
+            return;
+        }
+        FINGERS.normalize();
+        FACING.sub(FINGERS.x * FACING.dot(FINGERS), FINGERS.y * FACING.dot(FINGERS), FINGERS.z * FACING.dot(FINGERS));
+        if (FACING.lengthSquared() < 1.0E-6F) {
+            out.identity();
+            return;
+        }
+        turn(FINGERS, FACING.normalize(), side == 0, out);
+    }
+
+    // The turn of a hand whose fingers run `fingers` and whose palm faces `facing` (both of length 1 and square): an
+    // arm's own y runs along its fingers, and its palm is the inner side, +x on the right hand and -x on the left.
+    private static void turn(Vector3f fingers, Vector3f facing, boolean right, Quaternionf out) {
+        ACROSS.set(facing);
+        if (!right) {
+            ACROSS.negate();
+        }
+        TURNED.set(ACROSS, fingers, THIRD.set(ACROSS).cross(fingers));
+        out.setFromNormalized(TURNED);
+    }
+
+    // The head follows the key's look as far as it leads the player's own, and the aim while the ring fist is thrown.
+    private static void look(PlayerModel<?> model, float[] v, @Nullable Vector3f aim, double aiming) {
+        float yaw = v[LOOK];
+        float pitch = v[LOOK + 1];
+        float lead = v[LOOK + 2];
+        if (aiming > 0.0 && aim != null) {
+            WAY.set(aim).sub(NECK.x, NECK.y - EYES, NECK.z);
+            float flat = (float) Math.sqrt(WAY.x * WAY.x + WAY.z * WAY.z);
+            float a = (float) aiming;
+            yaw = Mth.lerp(a, yaw, (float) Math.atan2(-WAY.x, -WAY.z));
+            pitch = Mth.lerp(a, pitch, (float) Math.atan2(WAY.y, flat));
+            lead = Mth.lerp(a, lead, AIM_LOOK);
+        }
+        if (lead <= 0.0F) {
+            return;
+        }
+        model.head.yRot = Mth.lerp(lead, model.head.yRot, yaw);
+        model.head.xRot = Mth.lerp(lead, model.head.xRot, pitch);
+    }
+
+    // How hard a jolt set off `at` still shakes, rising fast and dying away.
     private static double jolt(double t, double at) {
         double since = t - at;
         if (since < 0.0 || since > JOLT_TICKS) {

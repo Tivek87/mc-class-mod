@@ -1,26 +1,18 @@
 # Laatste sessie
 
-## Paneel, mech op scrollwiel, plattrappen (sessie "panel")
-- Datum: 2026-10-02. Verzoek: A) Thunderclap-bel sneller weg, lichter; B) paneel: alleen bruikbaar, muis alleen naast
-  max 2 andere, Thor 1-12 vrij, wapen = andere toetsen dicht; C) mech: alleen scrollwiel, aan/uit met scrollwiel 2 s;
-  D) mech trapt kleine zwakke wezens plat; E) reuzenhanden door blokken; F) straal geen as, vliegen 20 b/s.
-- Gedaan: `AbilityPanel` (nieuw) + `Rules` (`LanternPanel`, Thor in `ThunderGauge`), weigering `ClientCharacter.refusal`
-  + server in `PowerRing`; mech = slot 13 (scrollwiel 2 s), instellingen verhuisd; `MechCrush` + `MechStepPayload`;
-  mech-cooldown op paneel (`CharacterPowers.waitLeft`); `HandStop` weg, handen door blokken (nooit water); `ClapFx`;
-  `LightBeam` zonder as; topSpeed 20; `Factions`: dodelijke klap geeft geen "hostile"-melding meer. Docs + CHANGELOG.
-- Getest: build + tests groen; in-game: panelen Thor/GL/zwaard/mech, R geweigerd met zwaard, mech bouwen/verlaten met
-  scrollwiel, 20 van 49 kippen platgetrapt, cooldown 61s zichtbaar. Niet in-game: handen, bel, vliegen, as.
-- Release: `release.ps1 prepare` gedaan (0.6.3-alpha); commit, push en publish wachten op ja van de user.
-- Open: bugs/ideeën niet aangeraakt (verzoek). Oude `air_strike.mech*`-instellingen gaan terug naar standaard.
+## Mech: bouwanimatie, drone-camera, echt rennen, tijdslimiet (sessie "mech build")
+- Datum: 2026-10-03. Verzoeken: bouw van mech + piloot beter op de nieuwe botten, langer, hoofd door mech-hand
+  opgegraven en omhooggegooid, filmischer; daarna camera rustiger (weinig knippen, drone), mech echt laten rennen
+  (+35% sneller), mech-modus max 2 min, 5 min cooldown na eruit gaan; dan commit, push, release (ja gegeven).
+  Bugs/ideeën niet aangeraakt (verzoek).
+- Bouw (~14 s): `MechScript`/`MechBuild`/`MechMoves`/`MechHead` (nieuw)/`MechBuilding`; piloot `PilotKeys`/`PilotBody`/
+  `MechPilot` (leunt mee via `BodyTurns`, hendels). Camera `MechCamera`: 7 lange drone-shots.
+- Rennen: `MechGait`/`MechWalk`/`MechMoves.walking`: zweeffase, hielschop, kniestoot, vering, pompende vuisten;
+  `MechDrive.RUN` 0.5 -> 0.675. Limiet: `MechAssembly` (setting `mechTime` 2400, `mechCooldown` 6000 vanaf het einde,
+  `DEFAULTS_VERSION` 27), paneel toont resttijd (`ConstructHud`), `en_us.json`. Docs: `GREEN_LANTERN.md`, `POWERS.md`.
+- Getest: build + alle tests groen; in-game gefilmd (bouw, ver doel, rennen zij/benen/first person, limiet + cooldown).
 
-## Thor-ontwerp (andere sessie)
-- Datum: 2026-10-02. Verzoek: ontwerp voor Thor's vlucht, hamerworp, Throw and Follow (snel naar de hamer) en
-  de hamer die in de wereld blijft (grond of lucht), als MD-bestand.
-- Gedaan: Thor-code en -docs gelezen; ontwerp `docs/ideas/THOR_MJOLNIR_FLIGHT_SYSTEM.md` (Engels, met bouwplan)
-  en korte simpele versie `docs/ideas/THOR_MJOLNIR_FLIGHT_SYSTEM_SHORT.md`. Bugs/ideeën niet aangeraakt (verzoek).
-- Besloten (user): Throw and Follow = getimede dash: rechts vasthouden = verder (4-14 blokken), loslaten = gooien,
-  0,5 s wachten (bliksemlijn hand-hamer), dash op vast tempo (6 blokken in 0,7 s). Gewone worp max 24 (was 40).
-- Bestanden: beide ontwerpen (nieuw), dit bestand. Niets gebouwd, niets gecommit.
-- Open: 10 beslissingen in §9 / "Still to decide"; daarna fase 0 bouwen. Mech-wijzigingen en `devtest/` in de
-  werkboom zijn van een andere sessie.
+## Thor-ontwerp (andere sessie, 2026-10-02)
+- Ontwerp `docs/ideas/THOR_MJOLNIR_FLIGHT_SYSTEM.md` + `_SHORT.md` (niet gecommit, van die sessie). Besloten:
+  Throw and Follow = getimede dash, gewone worp max 24. Open: 10 beslissingen in §9; daarna fase 0 bouwen.
 

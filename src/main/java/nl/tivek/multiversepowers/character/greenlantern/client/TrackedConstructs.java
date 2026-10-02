@@ -23,6 +23,7 @@ import nl.tivek.multiversepowers.character.greenlantern.construct.ConstructPaylo
 import nl.tivek.multiversepowers.character.greenlantern.express.ExpressScript;
 import nl.tivek.multiversepowers.character.greenlantern.hand.HandPose;
 import nl.tivek.multiversepowers.character.greenlantern.mech.MechAttacks;
+import nl.tivek.multiversepowers.character.greenlantern.mech.MechBuild;
 import nl.tivek.multiversepowers.character.greenlantern.mech.MechScript;
 import nl.tivek.multiversepowers.character.greenlantern.plane.PlanePath;
 import nl.tivek.multiversepowers.engine.math.Ease;
@@ -431,8 +432,13 @@ abstract class TrackedConstructs {
     // A mech its owner stands in: where it stands, how far it has come, and how far it has broken up (below 0: not).
     public record Piloted(int id, MechScript.Stage stage, double t, double broke, MechAttacks.Blow blow) {
         public Vec3 feet() {
-            return this.stage.point(this.broke >= 0.0 ? MechScript.lowered(this.broke)
-                    : MechScript.pilot(this.stage, this.t));
+            return this.broke >= 0.0 ? this.stage.point(MechScript.lowered(this.broke))
+                    : this.torso().point(MechScript.pilot(this.stage, this.t));
+        }
+
+        // The torso as the build moves it (MechBuild), where the pilot hangs and sits.
+        public MechScript.Stage torso() {
+            return MechBuild.torso(this.stage, Math.min(this.t, MechScript.SETTLED));
         }
     }
 

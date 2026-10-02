@@ -56,6 +56,13 @@ public final class MechPose {
         }
     }
 
+    // A mech as its build poses it, the hips and torso where the build has them (MechBuild).
+    public MechPose(MechScript.Stage stage, MechScript.Stage hips, MechScript.Stage torso) {
+        this(stage);
+        this.hips = hips;
+        this.torso = torso;
+    }
+
     MechPose copy() {
         MechPose pose = new MechPose(this.stage);
         pose.hips = this.hips;
@@ -158,10 +165,20 @@ public final class MechPose {
 
     // The grip of one lever (side 1 right, -1 left), thrown forward by its push.
     public Vec3 grip(int side) {
-        double push = (side > 0 ? this.leverRight : this.leverLeft) * MechScript.LEVER_THROW;
+        return grip(this.torso, side, side > 0 ? this.leverRight : this.leverLeft);
+    }
+
+    // The grip of a lever in `torso` thrown `push` of the way forward (-1 back).
+    public static Vec3 grip(MechScript.Stage torso, int side, double push) {
+        double angle = push * MechScript.LEVER_THROW;
         Vec3 foot = new Vec3(side * MechScript.LEVER.x, MechScript.LEVER.y, MechScript.LEVER.z);
-        return this.torso.point(foot.add(0.0, Math.cos(push) * MechScript.LEVER_LENGTH,
-                Math.sin(push) * MechScript.LEVER_LENGTH));
+        return torso.point(foot.add(0.0, Math.cos(angle) * MechScript.LEVER_LENGTH,
+                Math.sin(angle) * MechScript.LEVER_LENGTH));
+    }
+
+    public void levers(double right, double left) {
+        this.leverRight = right;
+        this.leverLeft = left;
     }
 
     public double push(int side) {
@@ -197,9 +214,7 @@ public final class MechPose {
 
     // As above, a climbing hand resting on what it holds when the blocks round it are known.
     public MechMoves.Arm arm(boolean right, double t, @Nullable MechAttacks.Held held, @Nullable MechHandRig.Ground ledge) {
-        // Running, the forearms come up a little and swing instead of hanging.
-        double hang = this.walking * (1.0 - 0.5 * this.running);
-        MechMoves.Arm arm = MechMoves.walking(right, t, this.swing, hang);
+        MechMoves.Arm arm = MechMoves.walking(right, t, this.swing, this.walking, this.running);
         int s = right ? 0 : 1;
         Vec3 spot = this.ledge[s];
         if (this.grip[s] > 0.0 && spot != null) {

@@ -3,6 +3,32 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.6.4-alpha] - 2026-10-03
+
+### Added
+- **Hard-Light Mech:** after its head crashes into the ground, its right hand digs it out, swings it back and throws
+  it high; it tumbles down onto the neck and locks on.
+- **Hard-Light Mech:** you may stay in it 2 minutes at most (a setting), then it breaks up by itself; the panel shows
+  how long you have left.
+- **Hard-Light Mech:** your ring gathers light in your raised fist before the first foot is called down.
+
+### Changed
+- **Hard-Light Mech:** the build takes about 14 seconds instead of about 10 and is animated anew on the new bones,
+  for the mech and for you.
+- **Hard-Light Mech:** you aim your ring fist at each foot, leap with pointed toes, pull the hands down, take the
+  levers one at a time, and lean with the chest and work the levers as it throws its head.
+- **Hard-Light Mech:** it carries its weight while it builds: it sinks into its knees, flexes as its elbows lock,
+  ducks to catch its head and stands tall with its fist up.
+- **Hard-Light Mech:** the build is filmed in seven long shots flown like a drone, cut only on the big moments,
+  instead of many quick cuts.
+- **Hard-Light Mech:** it really runs, about 35% faster: both feet off the ground between steps, heels kicking up,
+  knees driving, the body bouncing and leaning in, fists pumping.
+- **Hard-Light Mech:** its cooldown is 5 minutes instead of 90 seconds and starts when the mech is gone instead of
+  when it is built.
+
+### Removed
+- **Hard-Light Mech:** the head no longer tumbles back up out of its crater by itself.
+
 ## [0.6.3-alpha] - 2026-10-02
 
 ### Added

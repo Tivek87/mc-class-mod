@@ -63,6 +63,7 @@ public final class MultiversePowersClient {
         Poses.layer(Poses.Stage.CREATURE, HandVictims::pose);
         Poses.layer(Poses.Stage.CREATURE, Tired::pose);
         BodyTurns.add(LanternArms::turnBody);
+        BodyTurns.add(MechPilot::turnBody);
         BodyTurns.add(ThorPoses::turn);
         Poses.layer(Poses.Stage.MODEL, (model, entity, partialTick) -> model instanceof PlayerModel<?> player
                 && ThorPoses.pose(player, entity));

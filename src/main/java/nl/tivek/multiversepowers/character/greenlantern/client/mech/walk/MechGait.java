@@ -24,8 +24,10 @@ import nl.tivek.multiversepowers.engine.math.Spring;
 // down until its turn to swing and lands on firm ground where the body will be over it; a foot left behind steps at
 // once, and setting off the foot furthest behind goes first. Phases count in strides: a full one is both legs, the
 // right lifting at 0 and the left at a half. Walking it hauls each foot up, carries it over and stamps it straight
-// down; running it takes strides twice as long at hardly a quicker beat, each foot pushed off low behind and driven far
-// ahead. Dropping off an edge the feet hang until it lands hard, and climbing a ledge (MechClimb) the climb places them.
+// down; running it bounds, longer strides at a quicker beat with each foot off the ground far longer than on it, so for
+// a moment of every stride both are: a foot leaves the ground behind, kicks its heel up, is driven through knee first and
+// reaches out ahead to land. Dropping off an edge the feet hang until it lands hard, and climbing a ledge (MechClimb) the
+// climb places them.
 // MechWalk carries the body over them.
 class MechGait {
     static final double CYCLE = 4.6;
@@ -48,18 +50,18 @@ class MechGait {
     private static final double PEAK = 0.42;
     // Every footfall sinks the body under its weight, and it springs back up heavily.
     private static final double SINK_WALK = 0.22;
-    private static final double SINK_RUN = 0.5;
-    // A running foot pushes off low behind before it swings through.
-    private static final double HEEL_BACK = 0.45;
-    private static final double HEEL_UP = 0.3;
+    private static final double SINK_RUN = 0.3;
+    // A running foot kicks its heel up behind before it swings through.
+    private static final double HEEL_BACK = 0.55;
+    private static final double HEEL_UP = 0.6;
     private static final double STAMP = 1.2;
     private static final int DUST = 10;
-    // A running stride is twice as long at hardly a quicker beat, its feet as long off the ground as on it and not much
-    // higher, swung through more evenly than walking.
-    private static final double RUN_STRIDE = 1.0;
-    private static final double RUN_SWING = 0.08;
-    private static final double RUN_LIFT = 0.3;
-    private static final double RUN_EVEN = 0.4;
+    // A running stride is three quarters longer at a beat almost half as quick again; each foot is off the ground two thirds of it
+    // (both are, between one foot leaving and the other landing) and goes half as high again, swung through slowly at
+    // first and then fast.
+    private static final double RUN_STRIDE = 0.75;
+    private static final double RUN_SWING = 0.26;
+    private static final double RUN_LIFT = 0.5;
     // How long after lifting a foot may lift again on its turn, and how many times further behind than a stride
     // leaves it a planted foot must be left to step out of turn.
     private static final double RESTEP = 0.75;
@@ -194,13 +196,14 @@ class MechGait {
         Vec3 target = foothold(level, leg, home(then, side), then.ahead(), stage.base().y);
         leg.aim = target.y;
         double run = this.running;
-        // Walking the foot is carried over early and hangs; running it swings through more evenly.
+        // Walking the foot is carried over early and hangs; running it is left behind as the body goes on, then flung
+        // through.
         double carried = 1.0 - (1.0 - u) * (1.0 - u);
-        double h = Mth.lerp(RUN_EVEN * run, carried, Ease.smooth(u));
+        double h = Mth.lerp(run, carried, Ease.smoother(u));
         Vec3 at = leg.from.lerp(target, h);
         leg.toes = leg.fromToes.lerp(then.ahead(), h).normalize();
         double heel = Math.sin(Math.PI * Math.min(1.0, u / 0.55)) * (u < 0.55 ? 1.0 : 0.0) * run;
-        Vec3 raised = at.add(0.0, leg.lift * height(u) + HEEL_UP * heel, 0.0)
+        Vec3 raised = at.add(0.0, leg.lift * Mth.lerp(run, height(u), bound(u)) + HEEL_UP * heel, 0.0)
                 .subtract(stage.ahead().scale(HEEL_BACK * heel));
         leg.planted = done ? target : raised;
         if (done) {
@@ -355,6 +358,11 @@ class MechGait {
         return 1.0 - down * down * down;
     }
 
+    // How high a running foot is over its swing: up at once, held high as the knee drives through, then reached down.
+    private static double bound(double u) {
+        return Math.pow(Math.sin(Math.PI * u), 0.7);
+    }
+
     // Dust and bits of the ground thrown up round a foot as it comes down.
     private static void dust(ClientLevel level, Vec3 ground, double hard) {
         int count = (int) Math.round(DUST * Math.min(1.5, hard));
@@ -378,8 +386,11 @@ class MechGait {
         return stage.point(MechPainter.side(MechScript.ANKLE, side == 0));
     }
 
-    static double tip(double u) {
-        return u < 0.3 ? -0.35 * Math.sin(Math.PI * u / 0.3) : 0.22 * Math.sin(Math.PI * (u - 0.3) / 0.7);
+    // How far a swinging foot's toes are tipped up (down below 0); running they point down hard as the heel kicks up.
+    static double tip(double u, double run) {
+        double walk = u < 0.3 ? -0.35 * Math.sin(Math.PI * u / 0.3) : 0.22 * Math.sin(Math.PI * (u - 0.3) / 0.7);
+        double bound = u < 0.5 ? -0.8 * Math.sin(Math.PI * u / 0.5) : 0.18 * Math.sin(Math.PI * (u - 0.5) / 0.5);
+        return Mth.lerp(run, walk, bound);
     }
 
     private static void footfall(ClientLevel level, Vec3 ground, double walking) {

@@ -6,47 +6,55 @@ import nl.tivek.multiversepowers.character.greenlantern.construct.ConstructPaylo
 import nl.tivek.multiversepowers.engine.math.Ease;
 import nl.tivek.multiversepowers.engine.math.Vectors;
 
-// The mech's build in ticks, timed on docs/reference/mech-robot-ultimate.mp4 (20 ticks = 30 frames of the clip). Places
-// are in blocks round its ground spot: x to its right, y up, z ahead, towards the target it builds itself over.
+// The mech's build in ticks, first timed on docs/reference/mech-robot-ultimate.mp4 (20 ticks = 30 frames of the clip)
+// and since drawn out round its pilot. Places are in blocks round its ground spot: x to its right, y up, z ahead,
+// towards the target it builds itself over.
 public final class MechScript {
     public static final int BUILDING = 0;
     public static final int BREAKING = 1;
 
-    public static final int FOOT_FORM = 0;
-    public static final int FOOT_DROP = 8;
-    public static final int STOMP = 11;
-    public static final int FOOT2_FORM = 12;
-    public static final int FOOT2_DROP = 19;
-    public static final int STOMP2 = 22;
-    public static final int[] STEPS = { 34, 39 };
+    // The pilot gathers the ring's light, then calls each foot down out of the sky onto the target.
+    public static final int FOOT_FORM = 12;
+    public static final int FOOT_DROP = 24;
+    public static final int STOMP = 28;
+    public static final int FOOT2_FORM = 32;
+    public static final int FOOT2_DROP = 42;
+    public static final int STOMP2 = 46;
+    // A deep crouch and a leap into the chest, the feet stepping off the target under it.
+    public static final int LEAP = 60;
+    public static final int[] STEPS = { 62, 68 };
     public static final int STEP_TICKS = 8;
-    public static final int LEAP = 30;
-    public static final int ABOARD = 50;
-    public static final int THIGHS = 48;
-    public static final int HIPS = 54;
-    public static final int CORE = 57;
+    public static final int THIGHS = 82;
+    public static final int ABOARD = 86;
+    public static final int HIPS = 90;
+    public static final int CORE = 94;
     public static final int FORM_TICKS = 8;
-    public static final int ARMS_FORM = 58;
-    public static final int ARMS_IN = 63;
-    public static final int SPREAD = 75;
-    public static final int SWING = 81;
-    public static final int CLAP = 86;
-    public static final int RELEASE = 97;
-    public static final int RISE = 103;
-    public static final int ARMOR = 100;
-    public static final int SHOULDERS = 104;
-    public static final int UPPER_ARMS = 108;
-    public static final int ELBOWS = 118;
-    public static final int STICKS = 118;
-    public static final int HEAD_FORM = 132;
-    public static final int HEAD_DROP = 144;
-    public static final int CRASH = 149;
-    public static final int HEAD_RISE = 157;
-    public static final int HEAD_LIFT = 162;
-    public static final int HEAD_LAND = 170;
-    public static final int LOCK = 176;
-    public static final int DONE = 188;
-    public static final int SETTLED = 200;
+    // The forearms fly in, spread round the target and clap it.
+    public static final int ARMS_FORM = 96;
+    public static final int ARMS_IN = 102;
+    public static final int SPREAD = 116;
+    public static final int SWING = 124;
+    public static final int CLAP = 130;
+    public static final int RELEASE = 144;
+    // The chest closes round the pilot, the arms join it and the pilot sits down to the sticks.
+    public static final int ARMOR = 148;
+    public static final int RISE = 151;
+    public static final int SHOULDERS = 152;
+    public static final int UPPER_ARMS = 156;
+    public static final int ELBOWS = 168;
+    public static final int STICKS = 168;
+    // The head forms high above and crashes onto the target; the right hand digs it out of the crater, swings it back
+    // and tosses it high, and it tumbles down onto the neck.
+    public static final int HEAD_FORM = 186;
+    public static final int HEAD_DROP = 200;
+    public static final int CRASH = 205;
+    public static final int REACH = 211;
+    public static final int GRAB = 222;
+    public static final int WIND = 230;
+    public static final int TOSS = 238;
+    public static final int LOCK = 260;
+    public static final int DONE = 274;
+    public static final int SETTLED = 286;
     public static final int BREAK_TICKS = 14;
 
     public static final double TARGET_AHEAD = 3.8;
@@ -62,8 +70,8 @@ public final class MechScript {
     public static final Vec3 COCKPIT = new Vec3(0.0, 6.0, 0.45);
     // The pilot sits: the seat is at their hips, a Minecraft body's 0.75 above its feet.
     public static final double SEAT = 0.72;
-    public static final int SIT = 112;
-    public static final int GRIP = 124;
+    public static final int SIT = 162;
+    public static final int GRIP = 176;
     public static final Vec3 LEVER = new Vec3(0.36, 6.62, 1.08);
     public static final double LEVER_LENGTH = 0.62;
     public static final double LEVER_THROW = 0.42;
@@ -77,14 +85,7 @@ public final class MechScript {
     private static final Vec3 FOOT_ON = new Vec3(0.35, 0.0, 0.0);
     private static final Vec3 FOOT2_ON = new Vec3(-1.25, 0.0, -0.3);
     private static final double STEP_HEIGHT = 1.3;
-    private static final double LEAP_RISE = 2.4;
-    private static final double HEAD_HIGH = 13.5;
-    private static final Vec3 HEAD_ABOVE = new Vec3(0.0, 13.6, 0.9);
-    private static final double HEAD_SINK = 0.5;
-    private static final double HEAD_LIFT_HIGH = 2.6;
-    private static final double HEAD_FORM_SPIN = Math.PI * 3.0;
-    private static final double HEAD_RISE_SPIN = -Math.PI * 2.0;
-    private static final double HEAD_FLIP = -Math.PI * 2.0;
+    private static final double LEAP_RISE = 3.4;
 
     // Where the mech stands and faces, how high the target's feet are and where its pilot set off from. Its axes stay
     // upright on the ground; a turned copy (see turned) carries the swaying body of a walking mech.
@@ -116,6 +117,21 @@ public final class MechScript {
 
         public float yaw() {
             return (float) Math.toDegrees(Math.atan2(-this.ahead.x, this.ahead.z));
+        }
+
+        // `u` of the way from this stage to `other`: its spot moved and its axes turned between theirs.
+        public Stage toward(Stage other, double u) {
+            if (u <= 0.0) {
+                return this;
+            }
+            if (u >= 1.0) {
+                return other;
+            }
+            Vec3 a = this.ahead.lerp(other.ahead, u).normalize();
+            Vec3 up = this.up.lerp(other.up, u);
+            up = up.subtract(a.scale(up.dot(a))).normalize();
+            return new Stage(this.base.lerp(other.base, u), a, a.cross(up), up, other.targetY, other.pilotY,
+                    other.pilotZ);
         }
 
         // Read back from what the server sends (see MechAssembly.send); once built, charge holds the creature a blow
@@ -253,63 +269,9 @@ public final class MechScript {
         return COCKPIT.scale(1.0 - Ease.smoother(since / BREAK_TICKS));
     }
 
-    // The head's middle: made high above the target, dropped onto it, hauled back up and set onto the neck.
-    public static Vec3 head(Stage stage, double t) {
-        Vec3 target = stage.target();
-        Vec3 high = target.add(0.0, HEAD_HIGH, 0.0);
-        Vec3 sunk = target.add(0.0, HEAD_UP - HEAD_SINK, 0.0);
-        Vec3 neck = NECK.add(0.0, HEAD_UP, 0.0);
-        if (t < HEAD_DROP) {
-            return high.add(0.0, 0.25 * Math.sin((t - HEAD_FORM) * 0.25), 0.0);
-        }
-        if (t < CRASH) {
-            double u = (t - HEAD_DROP) / (CRASH - HEAD_DROP);
-            return high.lerp(sunk.add(0.0, HEAD_SINK, 0.0), u * u);
-        }
-        if (t < CRASH + 3.0) {
-            return sunk.add(0.0, HEAD_SINK * (1.0 - Ease.smooth((t - CRASH) / 3.0)), 0.0);
-        }
-        if (t < HEAD_RISE) {
-            return sunk;
-        }
-        Vec3 lifted = sunk.add(0.0, HEAD_LIFT_HIGH, 0.0);
-        if (t < HEAD_LIFT) {
-            return sunk.lerp(lifted, Ease.smooth((t - HEAD_RISE) / (HEAD_LIFT - HEAD_RISE)));
-        }
-        if (t < HEAD_LAND) {
-            double u = (t - HEAD_LIFT) / (HEAD_LAND - HEAD_LIFT);
-            return new Vec3(Ease.hermite(lifted.x, 0.0, HEAD_ABOVE.x, 0.0, Ease.smooth(u)),
-                    Ease.hermite(lifted.y, 16.0, HEAD_ABOVE.y, 0.0, u),
-                    Ease.hermite(lifted.z, 0.0, HEAD_ABOVE.z, -2.0, Ease.smooth(u)));
-        }
-        if (t < LOCK) {
-            double u = (t - HEAD_LAND) / (LOCK - HEAD_LAND);
-            return HEAD_ABOVE.lerp(neck, u * u);
-        }
-        return neck.add(0.0, -0.08 * Ease.recoil(t - LOCK, 1.0, 1.1, 0.35), 0.0);
-    }
-
-    // How the head is turned, in radians: about the upright, then tipped over about its own x, then rolled about its
-    // own z. It spins fast as it forms and slows to face down at the target, lies tipped in the crater, and tumbles
-    // head over heels on its way up and back down onto the neck, landing upright and facing ahead.
+    // How a head is turned on its neck, in radians: about the upright, then tipped over about its own x, then rolled
+    // about its own z (as MechHead.turned turns it).
     public record Turn(double yaw, double pitch, double roll) {
-    }
-
-    public static Turn headTurn(double t) {
-        if (t < HEAD_DROP) {
-            double left = 1.0 - Mth.clamp((t - HEAD_FORM) / (HEAD_DROP - HEAD_FORM), 0.0, 1.0);
-            return new Turn(HEAD_FORM_SPIN * left * left, 0.0, 0.0);
-        }
-        if (t < CRASH) {
-            return new Turn(0.0, 0.25 * Ease.smooth((t - HEAD_DROP) / (CRASH - HEAD_DROP)), 0.0);
-        }
-        if (t < HEAD_RISE) {
-            double settle = Ease.smooth((t - CRASH) / 3.0);
-            return new Turn(0.0, 0.25 - 0.1 * settle, 0.3 * settle);
-        }
-        double u = Mth.clamp((t - HEAD_RISE) / (LOCK - HEAD_RISE), 0.0, 1.0);
-        double left = 1.0 - Ease.smoother(u);
-        return new Turn(HEAD_RISE_SPIN * left, 0.15 * left + HEAD_FLIP * left, 0.3 * left);
     }
 
     public static Victim victim(double t) {
@@ -320,7 +282,8 @@ public final class MechScript {
                     : Mth.lerp(Ease.smooth((t - STOMP) / 2.0), 1.0, 0.18);
         }
         if (t >= CRASH) {
-            double up = t - DONE;
+            // Pressed flat by the head until the hand pulls it off, then springing back up, dazed.
+            double up = t - GRAB - 2.0;
             high = up < 0.0 ? Mth.lerp(Ease.smooth((t - CRASH) / 2.0), 1.0, 0.22)
                     : Mth.lerp(Ease.backOut(up / 9.0), 0.22, 1.0);
         }

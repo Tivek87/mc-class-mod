@@ -9,6 +9,8 @@ import nl.tivek.multiversepowers.character.greenlantern.client.mech.shape.MechHe
 import nl.tivek.multiversepowers.character.greenlantern.client.mech.shape.MechLegShapes;
 import nl.tivek.multiversepowers.character.greenlantern.client.mech.walk.MechPose;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.LanternPainter;
+import nl.tivek.multiversepowers.character.greenlantern.mech.MechBuild;
+import nl.tivek.multiversepowers.character.greenlantern.mech.MechHead;
 import nl.tivek.multiversepowers.character.greenlantern.mech.MechMoves;
 import nl.tivek.multiversepowers.character.greenlantern.mech.MechScript;
 import nl.tivek.multiversepowers.engine.client.render.ConstructPainter.Frame;
@@ -51,9 +53,9 @@ final class MechLight {
             return;
         }
         if (ring != null) {
-            calls(painter, stage, t, ring);
+            calls(painter, pose, t, ring);
         }
-        fronts(painter, stage, t);
+        fronts(painter, pose, t);
         for (int side = 0; side < 2; side++) {
             boolean right = side == 0;
             double landed = MechScript.landed(right, t);
@@ -63,17 +65,18 @@ final class MechLight {
                 ring(painter, ground, landed, right ? 4.0 : 2.8);
             }
         }
-        halo(painter, stage, t);
+        halo(painter, torso, t);
         clap(painter, stage, t);
-        head(painter, stage, t);
+        head(painter, pose, t);
         crash(painter, stage, t);
-        flash(painter, stage.point(MechScript.NECK.add(0.0, 0.3, 0.0)), t - MechScript.LOCK, 2.4);
-        flash(painter, stage.point(MechScript.HIP), t - MechScript.THIGHS - MechScript.FORM_TICKS, 1.0);
-        flash(painter, stage.point(MechScript.mirror(MechScript.HIP)), t - MechScript.THIGHS - MechScript.FORM_TICKS,
-                1.0);
+        flash(painter, torso.point(MechScript.NECK.add(0.0, 0.3, 0.0)), t - MechScript.LOCK, 2.4);
+        flash(painter, pose.hips().point(MechScript.HIP), t - MechScript.THIGHS - MechScript.FORM_TICKS, 1.0);
+        flash(painter, pose.hips().point(MechScript.mirror(MechScript.HIP)),
+                t - MechScript.THIGHS - MechScript.FORM_TICKS, 1.0);
+        MechScript.Stage arms = MechBuild.arms(stage, torso, t);
         for (int side = 0; side < 2; side++) {
             MechMoves.Arm arm = MechMoves.arm(side == 0, stage, t);
-            flash(painter, stage.point(arm.elbow()), t - MechScript.ELBOWS, 1.4);
+            flash(painter, arms.point(arm.elbow()), t - MechScript.ELBOWS, 1.4);
         }
     }
 
@@ -104,31 +107,56 @@ final class MechLight {
         }
     }
 
-    private static void calls(LanternPainter painter, MechScript.Stage stage, double t, Vec3 ring) {
+    private static void calls(LanternPainter painter, MechPose pose, double t, Vec3 ring) {
+        MechScript.Stage stage = pose.stage();
+        MechScript.Stage torso = pose.torso();
+        MechScript.Stage arms = MechBuild.arms(stage, torso, t);
+        charge(painter, ring, t);
         for (int side = 0; side < 2; side++) {
             boolean right = side == 0;
             double form = right ? MechScript.FOOT_FORM : MechScript.FOOT2_FORM;
-            Vec3 ankle = stage.point(MechScript.ankle(right, stage, t));
+            Vec3 ankle = pose.ankle[side];
             beam(painter, ring, ankle.add(0.0, MechLegShapes.SHIN * (1.0 - MechScript.grown(t, form)), 0.0), t, form,
                     MechScript.FORM_TICKS);
-            Vec3 knee = stage.point(MechPainter.side(MechScript.KNEE, right));
-            Vec3 hip = stage.point(MechPainter.side(MechScript.HIP, right));
+            Vec3 knee = MechBuilding.knee(pose, right, t);
+            Vec3 hip = pose.hips().point(MechPainter.side(MechScript.HIP, right));
             beam(painter, ring, knee.lerp(hip, MechScript.grown(t, MechScript.THIGHS)), t, MechScript.THIGHS,
                     MechScript.FORM_TICKS);
             MechMoves.Arm arm = MechMoves.arm(right, stage, t);
-            beam(painter, ring, stage.point(arm.hand()), t, MechScript.ARMS_FORM,
+            beam(painter, ring, arms.point(arm.hand()), t, MechScript.ARMS_FORM,
                     MechScript.ARMS_IN - MechScript.ARMS_FORM);
-            beam(painter, ring, stage.point(MechPainter.side(new Vec3(2.2 + 1.6 * Mth.clamp((t - MechScript.SHOULDERS)
+            beam(painter, ring, torso.point(MechPainter.side(new Vec3(2.2 + 1.6 * Mth.clamp((t - MechScript.SHOULDERS)
                     / 12.0, 0.0, 1.0), 8.4, 0.0), right)), t, MechScript.SHOULDERS, 12.0);
-            beam(painter, ring, stage.point(MechPainter.side(MechScript.SHOULDER, right)).lerp(stage.point(arm.elbow()),
+            beam(painter, ring, torso.point(MechPainter.side(MechScript.SHOULDER, right)).lerp(arms.point(arm.elbow()),
                     MechMoves.upper(t)), t, MechScript.UPPER_ARMS, MechScript.ELBOWS - MechScript.UPPER_ARMS);
         }
-        beam(painter, ring, stage.point(0.0, 4.6 + 1.4 * Mth.clamp((t - MechScript.HIPS) / 6.0, 0.0, 1.0), 0.6), t,
-                MechScript.HIPS, 6.0);
-        beam(painter, ring, stage.point(MechBodyShapes.CORE), t, MechScript.CORE, MechScript.FORM_TICKS);
-        beam(painter, ring, stage.point(0.0, 5.8 + 3.0 * Mth.clamp((t - MechScript.ARMOR) / 16.0, 0.0, 1.0), 1.4), t,
+        beam(painter, ring, pose.hips().point(0.0, 4.6 + 1.4 * Mth.clamp((t - MechScript.HIPS) / 6.0, 0.0, 1.0),
+                0.6), t, MechScript.HIPS, 6.0);
+        beam(painter, ring, torso.point(MechBodyShapes.CORE), t, MechScript.CORE, MechScript.FORM_TICKS);
+        beam(painter, ring, torso.point(0.0, 5.8 + 3.0 * Mth.clamp((t - MechScript.ARMOR) / 16.0, 0.0, 1.0), 1.4), t,
                 MechScript.ARMOR, 16.0);
-        beam(painter, ring, stage.point(MechScript.head(stage, t)), t, MechScript.HEAD_FORM, 4.0);
+        beam(painter, ring, MechHead.pose(stage, t).at(), t, MechScript.HEAD_FORM, 4.0);
+    }
+
+    // Before the first foot the ring gathers its light: a glow swelling round it and sparks winding in.
+    private static void charge(LanternPainter painter, Vec3 ring, double t) {
+        double on = Ease.smooth((t + 1.0) / 4.0) * (1.0 - Ease.smooth((t - MechScript.FOOT_FORM) / 3.0));
+        if (on <= 0.0) {
+            return;
+        }
+        double full = Ease.smooth(t / MechScript.FOOT_FORM);
+        painter.flare(ring, 0.25 + 0.75 * full, on * (0.6 + 0.4 * Math.sin(t * 1.7)));
+        painter.glowDisc(ring, 0.4 + 0.5 * full, LanternPainter.GREEN, 0.35 * on, 0.15, 3);
+        for (int k = 0; k < 10; k++) {
+            double age = (t * 0.22 + Noise.of(k, 13, 1)) % 1.0;
+            Vec3 way = Noise.direction(k, 13);
+            double reach = 1.6 * (1.0 - age);
+            Vec3 spot = ring.add(Vectors.spin(way, Vectors.UP, 2.5 * age).scale(reach));
+            Vec3 tail = ring.add(Vectors.spin(way, Vectors.UP, 2.5 * age - 0.4).scale(reach + 0.3));
+            double strength = on * Ease.smooth(age * 4.0);
+            painter.lightLine(spot, tail, 0.03, LanternPainter.HOT, Colors.alpha(0.8 * strength));
+            painter.glowLine(spot, tail, 0.12, LanternPainter.GREEN, Colors.alpha(0.35 * strength));
+        }
     }
 
     private static void beam(LanternPainter painter, Vec3 ring, Vec3 target, double t, double from, double ticks) {
@@ -142,18 +170,21 @@ final class MechLight {
     }
 
     // The fizzing, crackling edge each part grows out behind, and the open ends still waiting for their next part.
-    private static void fronts(LanternPainter painter, MechScript.Stage stage, double t) {
+    private static void fronts(LanternPainter painter, MechPose pose, double t) {
+        MechScript.Stage stage = pose.stage();
+        MechScript.Stage torso = pose.torso();
+        MechScript.Stage frame = MechBuild.arms(stage, torso, t);
         for (int side = 0; side < 2; side++) {
             boolean right = side == 0;
             double form = right ? MechScript.FOOT_FORM : MechScript.FOOT2_FORM;
-            Vec3 ankle = stage.point(MechScript.ankle(right, stage, t));
+            Vec3 ankle = pose.ankle[side];
             double grown = MechScript.grown(t, form);
             if (t >= form && grown < 1.0) {
                 double y = Mth.lerp(Ease.smooth(grown), MechLegShapes.SHIN + 0.1, MechLegShapes.SOLE - 0.05);
                 fizz(painter, ankle.add(0.0, y, 0.0), 0.75, t, side * 11 + 1, 1.0);
             }
+            Vec3 top = MechBuilding.knee(pose, right, t);
             if (t >= form + MechScript.FORM_TICKS && t < MechScript.THIGHS + 2.0) {
-                Vec3 top = ankle.add(stage.dir(MechPainter.side(MechScript.KNEE.subtract(MechScript.ANKLE), right)));
                 double fade = 1.0 - Ease.smooth((t - MechScript.THIGHS + 2.0) / 4.0);
                 fizz(painter, top, 0.65, t, side * 11 + 2, 0.7 * fade);
                 painter.glowDisc(top.add(0.0, 0.25, 0.0), 1.0, LanternPainter.GREEN, 0.35 * fade, 0.3, (int) t);
@@ -161,12 +192,12 @@ final class MechLight {
             double thighs = MechScript.grown(t, MechScript.THIGHS);
             if (t >= MechScript.THIGHS && thighs < 1.0) {
                 double y = Mth.lerp(Ease.smooth(thighs), MechScript.KNEE.y - 0.7, MechScript.HIP.y + 0.6);
-                Vec3 knee = MechPainter.side(MechScript.KNEE, right);
+                Vec3 knee = stage.local(top);
                 fizz(painter, stage.point(knee.x, y, knee.z), 0.8, t, side * 11 + 3, 1.0);
             }
-            MechMoves.Arm arm = MechMoves.arm(right, stage, t);
-            Vec3 elbow = stage.point(arm.elbow());
-            Vec3 way = stage.dir(arm.way());
+            MechMoves.Arm arm = MechMoves.arm(right, frame, t);
+            Vec3 elbow = frame.point(arm.elbow());
+            Vec3 way = frame.dir(arm.way());
             double arms = Mth.clamp((t - MechScript.ARMS_FORM) / (MechScript.ARMS_IN - MechScript.ARMS_FORM), 0.0, 1.0);
             if (t >= MechScript.ARMS_FORM && arms < 1.0) {
                 double along = Mth.lerp(Ease.smooth(arms), MechArmShapes.KNUCKLES + 1.1, -0.6);
@@ -181,26 +212,26 @@ final class MechLight {
             }
             double upper = MechMoves.upper(t);
             if (upper > 0.0 && upper < 1.0) {
-                Vec3 shoulder = stage.point(MechPainter.side(MechScript.SHOULDER, right));
+                Vec3 shoulder = torso.point(MechPainter.side(MechScript.SHOULDER, right));
                 fizz(painter, shoulder.lerp(elbow, Ease.smooth(upper)), 0.6, t, side * 11 + 6, 1.0);
             }
             double pauldron = Mth.clamp((t - MechScript.SHOULDERS) / 12.0, 0.0, 1.0);
             if (t >= MechScript.SHOULDERS && pauldron < 1.0) {
                 double x = 1.8 + 3.4 * Ease.smooth(pauldron);
-                fizz(painter, stage.point(MechPainter.side(new Vec3(x, 8.3, 0.0), right)), 1.0, t, side * 11 + 7, 1.0);
+                fizz(painter, torso.point(MechPainter.side(new Vec3(x, 8.3, 0.0), right)), 1.0, t, side * 11 + 7, 1.0);
             }
         }
         double hips = Mth.clamp((t - MechScript.HIPS) / 6.0, 0.0, 1.0);
         if (t >= MechScript.HIPS && hips < 1.0) {
             double y = Mth.lerp(Ease.smooth(hips), 4.2, 6.15);
-            fizz(painter, stage.point(0.9, y, 0.0), 0.9, t, 31, 1.0);
-            fizz(painter, stage.point(-0.9, y, 0.0), 0.9, t, 32, 1.0);
+            fizz(painter, pose.hips().point(0.9, y, 0.0), 0.9, t, 31, 1.0);
+            fizz(painter, pose.hips().point(-0.9, y, 0.0), 0.9, t, 32, 1.0);
         }
         double armor = Mth.clamp((t - MechScript.ARMOR) / 16.0, 0.0, 1.0);
         if (t >= MechScript.ARMOR && armor < 1.0) {
             double y = Mth.lerp(Ease.smooth(armor), 5.6, MechBodyShapes.CHEST_TOP + 0.3);
             for (int k = -1; k <= 1; k++) {
-                fizz(painter, stage.point(k * 1.4, y, k == 0 ? -1.0 : 0.3), 1.0, t, 33 + k, 1.0);
+                fizz(painter, torso.point(k * 1.4, y, k == 0 ? -1.0 : 0.3), 1.0, t, 33 + k, 1.0);
             }
         }
     }
@@ -280,14 +311,14 @@ final class MechLight {
     }
 
     // The big ring of the lantern's light standing behind the chest while the mech takes shape, as in the clip.
-    private static void halo(LanternPainter painter, MechScript.Stage stage, double t) {
+    private static void halo(LanternPainter painter, MechScript.Stage torso, double t) {
         double on = Ease.smooth((t - MechScript.CORE) / 8.0)
                 * (1.0 - Ease.smooth((t - MechScript.HEAD_FORM + 4.0) / 8.0));
         if (on <= 0.0) {
             return;
         }
         double breath = 0.85 + 0.15 * Math.sin(t * 0.3);
-        painter.circle(stage.point(HALO), stage.right(), Vectors.UP, HALO_RADIUS * (0.75 + 0.25 * on), 0.32, 1.5,
+        painter.circle(torso.point(HALO), torso.right(), torso.up(), HALO_RADIUS * (0.75 + 0.25 * on), 0.32, 1.5,
                 Colors.alpha(0.9 * on * breath), Colors.alpha(0.5 * on * breath));
     }
 
@@ -326,8 +357,12 @@ final class MechLight {
         }
     }
 
-    private static void head(LanternPainter painter, MechScript.Stage stage, double t) {
-        Vec3 at = stage.point(MechScript.head(stage, t));
+    private static void head(LanternPainter painter, MechPose pose, double t) {
+        if (t < MechScript.HEAD_FORM - 2.0 || t >= MechScript.LOCK) {
+            return;
+        }
+        MechScript.Stage stage = pose.stage();
+        Vec3 at = MechHead.pose(stage, t).at();
         double since = t - MechScript.HEAD_FORM;
         if (since >= -2.0 && since < 7.0) {
             // A cloud of light shards swirling in and closing up into the head, as in the clip.
@@ -353,8 +388,21 @@ final class MechLight {
             painter.glowTaper(at, at.add(0.0, 2.5 + 5.0 * u, 0.0), 1.3, 0.2, LanternPainter.GREEN, 0.6, 0.0);
             painter.lightTaper(at, at.add(0.0, 1.5 + 3.5 * u, 0.0), 0.35, 0.05, LanternPainter.HOT, 0.7, 0.0);
         }
-        if (t >= MechScript.HEAD_RISE && t < MechScript.HEAD_LAND) {
-            painter.glowTaper(at, at.add(0.0, -3.0, 0.0), 0.9, 0.1, LanternPainter.GREEN, 0.35, 0.0);
+        double grabbed = t - MechScript.GRAB;
+        if (grabbed >= -1.0 && grabbed < 6.0) {
+            // The claw closing on it flashes.
+            painter.flare(at, 1.6, grabbed < 0.0 ? Ease.smooth(grabbed + 1.0) : 1.0 - Ease.smooth(grabbed / 6.0));
+        }
+        if (t >= MechScript.TOSS) {
+            // Flung up, it streaks behind itself: short as it slows at the top, long as it falls.
+            Vec3 speed = MechHead.pose(stage, t + 0.5).at().subtract(at).scale(2.0);
+            double fade = 1.0 - Ease.smooth((t - MechScript.LOCK + 4.0) / 4.0);
+            painter.glowTaper(at, at.subtract(speed.scale(3.0)), 1.0, 0.1, LanternPainter.GREEN, 0.45 * fade, 0.0);
+            painter.lightTaper(at, at.subtract(speed.scale(2.0)), 0.3, 0.03, LanternPainter.HOT, 0.6 * fade, 0.0);
+            double thrown = t - MechScript.TOSS;
+            if (thrown < 5.0) {
+                painter.flare(at, 2.0, 1.0 - Ease.smooth(thrown / 5.0));
+            }
         }
     }
 

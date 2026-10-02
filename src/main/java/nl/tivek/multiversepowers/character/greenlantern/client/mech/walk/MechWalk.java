@@ -29,9 +29,10 @@ import nl.tivek.multiversepowers.engine.math.Spring;
 // A built mech's walk, worked out on every client from where it stands tick by tick: its feet go as MechGait puts
 // them, and the body rides on them, bobbing, swaying and twisting above the legs. Walking it is heavy and slow: hunched
 // forward and low, its whole weight rolling over onto the planted leg and sinking into every footfall. Running it
-// lumbers, leaning into its long strides, rising onto each and dropping onto every footfall with a crash that shakes
-// the ground. It stays level with the ground its feet stand on whatever is under its middle, and comes down so no
-// planted foot is ever out of its leg's reach.
+// bounds, leaning hard into its strides: it springs up off each foot, flies with both off the ground and drops onto the
+// next with a crash that shakes the ground, its hips swinging with its legs, its shoulders against them and its fists
+// pumping. It stays level with the ground its feet stand on whatever is under its middle, and comes down so no planted
+// foot is ever out of its leg's reach.
 @EventBusSubscriber(modid = MultiversePowers.MODID, value = Dist.CLIENT)
 public final class MechWalk extends MechGait {
     private static final double CROUCH = 0.6;
@@ -56,13 +57,18 @@ public final class MechWalk extends MechGait {
     private static final double MOST_HEAD_YAW = 1.0;
     private static final double MOST_HEAD_UP = 0.55;
     private static final double MOST_HEAD_DOWN = 0.7;
-    // Running, the body is lower and leans into its strides, twists a little with them and the arms swing wider.
-    private static final double RUN_LEAN = 0.12;
-    private static final double RUN_TORSO_LEAN = 0.07;
-    private static final double RUN_BOB = 0.16;
-    private static final double RUN_BOB_AT = 0.325;
-    private static final double RUN_TWIST = 0.09;
-    private static final double RUN_PUMP = 0.35;
+    // Running, the body is lower and leans into its strides, highest while both feet are off the ground and lowest over
+    // each planted one; the hips swing with the legs and the shoulders twist back against them, and the arms pump twice
+    // as far, all of them RUN_SHIFT of a stride later than walking, in time with its longer-swinging legs.
+    private static final double RUN_LEAN = 0.18;
+    private static final double RUN_TORSO_LEAN = 0.1;
+    private static final double RUN_BOB = 0.26;
+    private static final double RUN_BOB_AT = 0.465;
+    private static final double RUN_TWIST = 0.13;
+    private static final double RUN_COUNTER = 1.5;
+    private static final double RUN_PUMP = 1.0;
+    private static final double RUN_SHIFT = 0.39;
+    private static final double RUN_FIRM = 0.6;
     // The hips come down so no planted foot, nor one stepping down more than STEPPING_DOWN, is further off than its leg
     // reaches, at most SQUAT_MOST, and rise back SQUAT_BACK a tick; the body follows the ground its feet stand on, at
     // most SETTLE_MOST from its base.
@@ -379,7 +385,7 @@ public final class MechWalk extends MechGait {
             double u = this.swung(leg);
             pose.ankle[side] = leg.planted;
             pose.toes[side] = leg.toes;
-            pose.tip[side] = leg.swinging ? tip(u) : 0.0;
+            pose.tip[side] = leg.swinging ? tip(u, this.running) : 0.0;
             feet += (leg.swinging ? Mth.lerp(Ease.smooth(u), leg.from.y, leg.aim) : leg.planted.y)
                     - MechScript.ANKLE.y;
         }
@@ -389,12 +395,14 @@ public final class MechWalk extends MechGait {
         double settle = carried ? Mth.clamp(feet * 0.5 - stage.base().y, -SETTLE_MOST, SETTLE_MOST) : 0.0;
         this.settleY = Mth.lerp(SETTLE_PACE, this.settleY, settle);
         double run = this.running;
-        // Running it rises onto each stride and drops onto every footfall.
-        double bob = BOB * w * Math.cos(4.0 * Math.PI * (p - 0.2))
+        double upper = p + 0.04 - RUN_SHIFT * run;
+        // Running it springs up off each foot and drops onto the next.
+        double bob = BOB * w * (1.0 - run) * Math.cos(4.0 * Math.PI * (p - 0.2))
                 + RUN_BOB * run * Math.sin(4.0 * Math.PI * (p - RUN_BOB_AT));
-        double sway = SWAY * w * (1.0 - 0.4 * run) * Math.sin(2.0 * Math.PI * (p - 0.46));
-        double roll = ROLL * w * (1.0 - 0.3 * run) * Math.sin(2.0 * Math.PI * (p - 0.46));
-        double twist = (TWIST * w + RUN_TWIST * run) * Math.sin(2.0 * Math.PI * (p + 0.04));
+        double over = p - 0.46 - 0.13 * run;
+        double sway = SWAY * w * (1.0 - 0.4 * run) * Math.sin(2.0 * Math.PI * over);
+        double roll = ROLL * w * (1.0 - 0.3 * run) * Math.sin(2.0 * Math.PI * over);
+        double twist = (TWIST * w + RUN_TWIST * run) * Math.sin(2.0 * Math.PI * upper);
         double pitch = -LEAN * Math.min(this.speed, MechDrive.WALK) / MechDrive.WALK - RUN_LEAN * run
                 + Mth.clamp(BRACE * this.brace, -0.05, 0.05);
         double climbLow = 0.0;
@@ -405,7 +413,7 @@ public final class MechWalk extends MechGait {
         }
         // A blow sinks the hips, stoops and twists the torso over them and lifts the stomping foot.
         MechAttacks.Body blow = MechAttacks.body(this.blow);
-        double low = -CROUCH * (1.0 + 0.3 * run) * Ease.smooth(this.crouch) + bob + this.settleY + this.sink.value
+        double low = -CROUCH * (1.0 + 0.1 * run) * Ease.smooth(this.crouch) + bob + this.settleY + this.sink.value
                 - blow.crouch() + climbLow;
         // The hips give a little way to the twist above them and swing back as the torso swings round.
         double share = HIPS_SHARE * this.torsoTurn - HIPS_KICK * this.torso.speed * 0.25;
@@ -416,7 +424,7 @@ public final class MechWalk extends MechGait {
             hips = stage.turned(HIPS, new Vec3(sway, low - this.squat, 0.0), twist + share, pitch, roll);
         }
         pose.hips = hips;
-        pose.turn = this.torsoTurn - share + blow.twist() + blow.turn();
+        pose.turn = this.torsoTurn - share + blow.twist() + blow.turn() - RUN_COUNTER * run * twist;
         // The torso banks against the legs turning under it and leans into how fast it swings.
         this.bank.step(Mth.clamp(-2.4 * this.legsRate + 0.9 * this.torso.speed, -0.12, 0.12), 1.0, 0.08, 0.6);
         this.lean.step(-0.04 * w - RUN_TORSO_LEAN * run + Mth.clamp(-0.6 * this.brace, -0.04, 0.04), 1.0, 0.07,
@@ -434,7 +442,7 @@ public final class MechWalk extends MechGait {
         }
         pose.walking = w;
         pose.running = run;
-        pose.swing = -Math.sin(2.0 * Math.PI * (p + 0.04)) * w * (1.0 + RUN_PUMP * run);
+        pose.swing = -Math.sin(2.0 * Math.PI * upper) * w * (1.0 + RUN_PUMP * run);
         this.swingHands(pose);
         pose.headYaw = this.headYaw.value + 0.4 * twist;
         pose.headPitch = this.headPitch.value - 0.5 * (pitch + pose.lean);
@@ -448,8 +456,10 @@ public final class MechWalk extends MechGait {
         double swingRate = pose.swing - this.swingWas;
         this.swingWas = pose.swing;
         boolean free = !this.blow.striking() && this.climbing == null;
+        // Running fists are held firm.
+        double loose = 1.0 - RUN_FIRM * pose.running;
         for (int side = 0; side < 2; side++) {
-            double lag = WRIST_LAG * (side == 0 ? swingRate : -swingRate);
+            double lag = WRIST_LAG * loose * (side == 0 ? swingRate : -swingRate);
             this.tilts[side].step(free ? lag : 0.0, 1.0, WRIST_FREQ, WRIST_DAMP);
             this.folds[side].step(free ? -WRIST_DROP * this.sink.speed : 0.0, 1.0, WRIST_FREQ, WRIST_DAMP);
             this.shrugs[side].step(SHRUG_SINK * this.sink.value, 1.0, SHRUG_FREQ, SHRUG_DAMP);

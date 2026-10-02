@@ -154,6 +154,13 @@ public final class Stance {
     // the way it pointed (as the game or a pose turned the leg), as far as its ankle turns: a sole that stood flat
     // stays flat as the knee bends.
     public static void leg(HumanoidModel<?> model, boolean right, Vector3f foot, Vector3f pole) {
+        leg(model, right, foot, pole, null, 0.0F);
+    }
+
+    // As above, the foot turned `weight` of the way from there to `sole` (its turn in model space, as a leg's own: y
+    // down through the sole, -z towards the toes), as far as its ankle turns.
+    public static void leg(HumanoidModel<?> model, boolean right, Vector3f foot, Vector3f pole,
+            @Nullable Quaternionf sole, float weight) {
         if (!EntityPass.inWorld()) {
             return;
         }
@@ -165,6 +172,9 @@ public final class Stance {
             if (turn != null) {
                 FOOT_WAY.mul(turn.getNormalizedRotation(SCRATCH));
             }
+        }
+        if (sole != null && weight > 0.0F) {
+            FOOT_WAY.slerp(sole, Math.min(1.0F, weight));
         }
         reach(model, leg, foot, pole, THIGH, SHIN - FOOT, FOOT, FOOT_WAY, 1.0F, ANKLE_MOST, false,
                 right ? Limbs.Joint.RIGHT_KNEE : Limbs.Joint.LEFT_KNEE,

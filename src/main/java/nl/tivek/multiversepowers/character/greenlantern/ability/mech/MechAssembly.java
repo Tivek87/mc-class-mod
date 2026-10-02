@@ -28,6 +28,7 @@ import nl.tivek.multiversepowers.character.greenlantern.ability.light.LightShiel
 import nl.tivek.multiversepowers.character.greenlantern.ability.ring.Recharge;
 import nl.tivek.multiversepowers.character.greenlantern.construct.ConstructPayload;
 import nl.tivek.multiversepowers.character.greenlantern.mech.MechAttacks;
+import nl.tivek.multiversepowers.character.greenlantern.mech.MechBuild;
 import nl.tivek.multiversepowers.character.greenlantern.mech.MechScript;
 import nl.tivek.multiversepowers.config.PowerRules;
 import nl.tivek.multiversepowers.engine.ability.Cooldowns;
@@ -119,10 +120,6 @@ public final class MechAssembly implements Effect {
             return false;
         }
         PowerRing.setPower(owner, power - cost);
-        int ticks = (int) Math.round(ability.value("mechCooldown") * PowerRules.cooldowns());
-        if (ticks > 0) {
-            COOLDOWNS.start(owner, KEY, 0, ticks);
-        }
         Flight.stop(owner);
         LightShield.stop(owner);
         mech = new MechAssembly(owner, ability, stage, target);
@@ -269,6 +266,10 @@ public final class MechAssembly implements Effect {
         if (this.breaking < 0 && !PowerRing.fuels(this.owner, level)) {
             this.dismantle(level);
         }
+        if (this.breaking < 0 && this.t >= this.ability.intValue("mechTime")) {
+            PowerRing.tell(this.owner, "mech_time");
+            this.dismantle(level);
+        }
         if (this.breaking >= 0) {
             this.breaking++;
             this.hold(this.stage.point(MechScript.lowered(this.breaking)), LOOSE);
@@ -287,7 +288,7 @@ public final class MechAssembly implements Effect {
             this.target.release();
         }
         boolean settled = this.t >= MechScript.SETTLED;
-        MechScript.Stage body = settled ? this.upright() : this.stage;
+        MechScript.Stage body = settled ? this.upright() : MechBuild.torso(this.stage, this.t);
         if (this.attack != null) {
             if (this.attack.tick(level, this.owner, this.stage, body, this.ability)) {
                 body = this.attack.torso(body);
@@ -356,12 +357,17 @@ public final class MechAssembly implements Effect {
                         null));
     }
 
+    // However it ends, the wait before the next one starts here.
     private void end(ServerLevel level) {
         ACTIVE.remove(this.owner.getUUID(), this);
         this.target.release();
         this.stopAttack();
         ConstructPayload.sendRemove(level, this.id, this.stage.base());
         this.owner.resetFallDistance();
+        int ticks = (int) Math.round(this.ability.value("mechCooldown") * PowerRules.cooldowns());
+        if (ticks > 0) {
+            COOLDOWNS.start(this.owner, KEY, 0, ticks);
+        }
         Characters.sync(this.owner);
     }
 }
