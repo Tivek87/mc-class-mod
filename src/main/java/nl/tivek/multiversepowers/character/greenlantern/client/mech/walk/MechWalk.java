@@ -388,12 +388,8 @@ public final class MechWalk extends MechGait {
         double climbLow = 0.0;
         if (this.climbing != null) {
             double height = this.climbing.height;
-            climbLow = MechClimb.low(this.climbAge, height);
-            pitch += MechClimb.lean(this.climbAge, height);
-            pose.hold = MechClimb.grip(this.climbAge, height);
-            pose.ledge[0] = this.climbing.hands[0];
-            pose.ledge[1] = this.climbing.hands[1];
-            pose.wall = this.climbing.start.ahead();
+            climbLow = MechClimb.low(this.climbAge, height, this.climbing.edge);
+            pitch += MechClimb.lean(this.climbAge, height, this.climbing.edge);
         }
         // A blow sinks the hips, stoops and twists the torso over them and lifts the stomping foot.
         MechAttacks.Body blow = MechAttacks.body(this.blow);
@@ -421,6 +417,9 @@ public final class MechWalk extends MechGait {
         }
         pose.bank = this.bank.value;
         pose.torso = MechScript.upper(pose.hips, pose.turn, pose.lean, pose.bank);
+        if (this.climbing != null) {
+            MechClimb.place(this.climbing, this.climbAge, pose);
+        }
         pose.walking = w;
         pose.running = run;
         pose.swing = -Math.sin(2.0 * Math.PI * (p + 0.04)) * w * (1.0 + RUN_PUMP * run);

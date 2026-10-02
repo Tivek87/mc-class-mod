@@ -50,6 +50,108 @@ public final class Ik {
         out[2] = root[2] + az * along + bz / bend * side;
     }
 
+    // How deep a two-bone limb with its middle joint at (x, y, z) goes into something: 0 or less when clear.
+    @FunctionalInterface
+    public interface Clearance {
+        double depth(double x, double y, double z);
+    }
+
+    // As twoBone, the middle joint swung round the line from root to end, from bent towards the pole (0) as far as
+    // `low` (0 or less) and `high` (0 or more) radians: tried in `steps` steps the wider way, the nearer angles first
+    // and at each the wider way first, and kept just where the limb comes clear (between that step and the one nearer),
+    // so it swings smoothly as it moves, else where it goes least deep. Returns that angle; the joint is in out.
+    public static double swivel(double[] root, double[] end, double[] pole, double upper, double lower, double low,
+            double high, int steps, Clearance clearance, double tolerance, double[] out) {
+        double[] across = across(root, end, pole);
+        if (across == null) {
+            twoBone(root, end, pole, upper, lower, out);
+            return 0.0;
+        }
+        double[] turned = new double[3];
+        double step = Math.max(Math.abs(low), Math.abs(high)) / Math.max(1, steps);
+        double wide = Math.abs(high) >= Math.abs(low) ? 1.0 : -1.0;
+        double best = 0.0;
+        double least = Double.POSITIVE_INFINITY;
+        for (int k = 0; k <= 2 * steps; k++) {
+            double angle = (k + 1) / 2 * step * (k % 2 == 1 ? wide : -wide);
+            if (angle < low - 1.0E-9 || angle > high + 1.0E-9) {
+                continue;
+            }
+            double depth = tried(root, end, across, angle, upper, lower, clearance, turned, out);
+            if (depth <= tolerance) {
+                if (k == 0) {
+                    return 0.0;
+                }
+                // Clear here but not a step nearer: found to a 64th of a step where it comes clear.
+                double clear = angle;
+                double blocked = angle - Math.signum(angle) * step;
+                for (int i = 0; i < 6; i++) {
+                    double middle = 0.5 * (clear + blocked);
+                    if (tried(root, end, across, middle, upper, lower, clearance, turned, out) <= tolerance) {
+                        clear = middle;
+                    } else {
+                        blocked = middle;
+                    }
+                }
+                bent(root, end, across, clear, upper, lower, turned, out);
+                return clear;
+            }
+            if (depth < least - 1.0E-9) {
+                least = depth;
+                best = angle;
+            }
+        }
+        bent(root, end, across, best, upper, lower, turned, out);
+        return best;
+    }
+
+    // The middle joint swung round the line from root to end by `angle` from bent towards the pole (see swivel).
+    public static void twoBone(double[] root, double[] end, double[] pole, double upper, double lower, double angle,
+            double[] out) {
+        double[] across = angle == 0.0 ? null : across(root, end, pole);
+        if (across == null) {
+            twoBone(root, end, pole, upper, lower, out);
+            return;
+        }
+        bent(root, end, across, angle, upper, lower, new double[3], out);
+    }
+
+    // The pole's part across the line from root to end, and that turned a quarter round it (the line's way crossed
+    // with it), in one array; null where root and end meet.
+    private static double[] across(double[] root, double[] end, double[] pole) {
+        double ax = end[0] - root[0];
+        double ay = end[1] - root[1];
+        double az = end[2] - root[2];
+        double length = Math.sqrt(ax * ax + ay * ay + az * az);
+        if (length < 1.0E-9) {
+            return null;
+        }
+        ax /= length;
+        ay /= length;
+        az /= length;
+        double dot = pole[0] * ax + pole[1] * ay + pole[2] * az;
+        double px = pole[0] - ax * dot;
+        double py = pole[1] - ay * dot;
+        double pz = pole[2] - az * dot;
+        return new double[] { px, py, pz, ay * pz - az * py, az * px - ax * pz, ax * py - ay * px };
+    }
+
+    private static void bent(double[] root, double[] end, double[] across, double angle, double upper, double lower,
+            double[] turned, double[] out) {
+        double c = Math.cos(angle);
+        double s = Math.sin(angle);
+        turned[0] = across[0] * c + across[3] * s;
+        turned[1] = across[1] * c + across[4] * s;
+        turned[2] = across[2] * c + across[5] * s;
+        twoBone(root, end, turned, upper, lower, out);
+    }
+
+    private static double tried(double[] root, double[] end, double[] across, double angle, double upper,
+            double lower, Clearance clearance, double[] turned, double[] out) {
+        bent(root, end, across, angle, upper, lower, turned, out);
+        return clearance.depth(out[0], out[1], out[2]);
+    }
+
     public static double fabrik(double[] joints, double[] lengths, double tx, double ty, double tz, int iterations,
             double tolerance) {
         return fabrik(joints, lengths, null, tx, ty, tz, iterations, tolerance);

@@ -6,6 +6,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
@@ -15,6 +16,8 @@ import nl.tivek.multiversepowers.character.greenlantern.client.mech.shape.MechBo
 import nl.tivek.multiversepowers.character.greenlantern.client.mech.shape.MechHeadShapes;
 import nl.tivek.multiversepowers.character.greenlantern.client.mech.shape.MechLegShapes;
 import nl.tivek.multiversepowers.character.greenlantern.client.mech.shape.MechParts;
+import nl.tivek.multiversepowers.character.greenlantern.client.mech.touch.MechArmRig;
+import nl.tivek.multiversepowers.character.greenlantern.client.mech.touch.MechFingers;
 import nl.tivek.multiversepowers.character.greenlantern.client.mech.touch.MechHandRig;
 import nl.tivek.multiversepowers.character.greenlantern.client.mech.touch.MechTouch;
 import nl.tivek.multiversepowers.character.greenlantern.client.mech.walk.MechPose;
@@ -138,11 +141,13 @@ public final class MechPainter {
         painter.ambient(GLOWS);
         painter.fling(FLING);
         painter.creases(CREASES);
+        // Built and whole, its legs keep out of the blocks round them.
+        Level level = walking && apart < 0.0 ? Minecraft.getInstance().level : null;
         for (int side = 0; side < 2; side++) {
             boolean right = side == 0;
             int seed = side * PIECES * 20;
             if (walking) {
-                MechLegs.leg(painter, pose, right, apart, seed);
+                MechLegs.leg(painter, id, pose, right, apart, seed, t, level);
             } else {
                 lowerLeg(painter, pose.stage(), pose.ankle[side], right, t, apart, seed);
                 upperLeg(painter, pose.stage(), right, t, apart, seed + PIECES);
@@ -322,10 +327,19 @@ public final class MechPainter {
         return Vectors.spin(Vectors.spin(way, lift, turn[0]), roll, turn[1]);
     }
 
-    // The hand on its forearm, turned at the wrist: folded towards the palm and tilted across it.
-    private static Frame wrist(Frame forearm, double fold, double tilt) {
-        Frame hand = fold == 0.0 ? forearm : forearm.turned(0.0, MechArmShapes.WRIST, 0.0, 1.0, 0.0, 0.0, fold);
-        return tilt == 0.0 ? hand : hand.turned(0.0, MechArmShapes.WRIST, 0.0, 0.0, 0.0, 1.0, tilt);
+    // An arm's hand in the world, turned at its wrist as the arm has it and by `fold` and `tilt` more.
+    public static Frame hand(MechScript.Stage torso, MechMoves.Arm arm, double fold, double tilt) {
+        return MechArmRig.hand(torso, arm, fold, tilt);
+    }
+
+    // The forearm and hand of an arm whose shoulder its shrug has moved (see MechArmRig.reattached); as they were
+    // without a shrug.
+    private static Frame[] reattached(MechScript.Stage torso, MechMoves.Arm arm, Frame hand, Vec3 shoulder,
+            boolean right, double[] turn) {
+        if (turn[0] == 0.0 && turn[1] == 0.0 || arm.upper() <= 0.0) {
+            return new Frame[] { MechArmRig.forearm(torso, arm), hand };
+        }
+        return MechArmRig.reattached(torso, arm, hand, shoulder, torso.point(side(MechScript.SHOULDER, right)));
     }
 
     // Draws an arm; returns how far its shoulder turns (shoulderTurn).
@@ -340,6 +354,7 @@ public final class MechPainter {
         // Built and whole, an arm stays out of the blocks round it; climbing, its hands rest on the ledge.
         boolean touches = walking && apart < 0.0 && minecraft.level != null;
         Vec3 spot = pose.ledge[right ? 0 : 1];
+        // Round a climbing hand, its fingers and its forearm.
         MechHandRig.Ground ledge = touches && pose.climbing() && spot != null
                 && MechTouch.near(minecraft.level, spot, FINGERS_REACH + 1.0) ? MechTouch::depth : null;
         MechMoves.Arm arm = walking ? pose.arm(right, t, caught == null ? null : held(caught, partialTick), ledge)
@@ -349,8 +364,10 @@ public final class MechPainter {
         }
         int s = right ? 0 : 1;
         double[] turn = shoulderTurn(pose, arm, right);
-        Frame forearm = Frame.of(stage.point(arm.elbow()), stage.dir(arm.palm()), stage.dir(arm.way()), 1.0);
-        Frame hand = wrist(forearm, pose.fold[s], pose.tilt[s]);
+        Vec3 shoulder = shrugged(stage, right, turn, stage.point(side(MechScript.SHOULDER, right)));
+        Frame[] joined = reattached(stage, arm, hand(stage, arm, pose.fold[s], pose.tilt[s]), shoulder, right, turn);
+        Frame forearm = joined[0];
+        Frame hand = joined[1];
         double grown = Mth.clamp((t - MechScript.ARMS_FORM) / (MechScript.ARMS_IN - MechScript.ARMS_FORM), 0.0, 1.0);
         if (grown < 1.0 && apart < 0.0) {
             // Out of the light from the finger tips back to the elbow.
@@ -369,10 +386,12 @@ public final class MechPainter {
         // Its fingers rest on the blocks round the hand, and wrap round what a gripping hand holds.
         MechHandRig.Ground ground = touches && MechTouch.near(minecraft.level, hand.at(0.0, MechArmShapes.KNUCKLES,
                 0.0), FINGERS_REACH) ? MechTouch::depth : null;
-        fingers(painter, hand, arm, own, apart, seed + 10, wall, caught == null ? null : drawn(caught, partialTick),
-                ground);
+        // Built and whole, its fingers take hold and let go smoothly (MechFingers).
+        Frame[] bones = touches ? MechFingers.frames(id, right, t, hand, arm, own, wall,
+                caught == null ? null : drawn(caught, partialTick), ground)
+                : MechHandRig.frames(hand, arm, own, wall, caught == null ? null : drawn(caught, partialTick), ground);
+        fingers(painter, hand, bones, own, apart, seed + 10);
         painter.noClip();
-        Vec3 shoulder = shrugged(stage, right, turn, stage.point(side(MechScript.SHOULDER, right)));
         if (BoneView.shown()) {
             BoneView.bone(forearm.center(), forearm.at(0.0, MechArmShapes.WRIST, 0.0), BoneView.CONSTRUCT);
             if (arm.upper() > 0.0) {
@@ -380,7 +399,7 @@ public final class MechPainter {
             }
         }
         if (arm.upper() > 0.0) {
-            Vec3 elbow = stage.point(arm.elbow());
+            Vec3 elbow = forearm.center();
             Vec3 along = elbow.subtract(shoulder);
             double far = along.length();
             Frame upper = limb(shoulder, along.scale(1.0 / far), stage.ahead()).stretched(1.0,
@@ -396,9 +415,8 @@ public final class MechPainter {
         return turn;
     }
 
-    private static void fingers(LanternPainter painter, Frame hand, MechMoves.Arm arm, boolean right, double apart,
-            int seed, @Nullable double[] wall, @Nullable AABB held, @Nullable MechHandRig.Ground ground) {
-        Frame[] bones = MechHandRig.frames(hand, arm, right, wall, held, ground);
+    private static void fingers(LanternPainter painter, Frame hand, Frame[] bones, boolean right, double apart,
+            int seed) {
         for (int k = 0; k < 4; k++) {
             for (int j = 0; j < 3; j++) {
                 Shape segment = right ? MechArmShapes.FINGERS[k][j] : MechArmShapes.FINGERS_LEFT[k][j];

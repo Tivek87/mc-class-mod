@@ -23,10 +23,25 @@ public final class MechMoves {
     private static final Keyframes.Key[] SET_LEFT;
 
     // A forearm with its hand: its elbow, which way it runs to the wrist, which way the palm faces, how far the fingers
-    // curl (0 open, 1 a fist) and spread; upper is how far the upper arm has grown out to its elbow (0: none yet).
-    public record Arm(Vec3 elbow, Vec3 way, Vec3 palm, double curl, double spread, double upper) {
+    // curl (0 open, 1 a fist) and spread; upper is how far the upper arm has grown out to its elbow (0: none yet). The
+    // hand turns at the wrist: folded towards its palm (+) and then tilted across it, in radians.
+    public record Arm(Vec3 elbow, Vec3 way, Vec3 palm, double curl, double spread, double upper, double fold,
+            double tilt) {
+        public Arm(Vec3 elbow, Vec3 way, Vec3 palm, double curl, double spread, double upper) {
+            this(elbow, way, palm, curl, spread, upper, 0.0, 0.0);
+        }
+
+        // The middle of the palm.
         public Vec3 hand() {
-            return this.elbow.add(this.way.scale(MechScript.PALM_ALONG));
+            if (this.fold == 0.0 && this.tilt == 0.0) {
+                return this.elbow.add(this.way.scale(MechScript.PALM_ALONG));
+            }
+            // A stage's own places turn the other way round from the world's, so across the hand is way x palm here.
+            Vec3 across = this.way.cross(this.palm).normalize();
+            Vec3 folded = this.way.scale(Math.cos(this.fold)).add(this.palm.scale(Math.sin(this.fold)));
+            Vec3 along = folded.scale(Math.cos(this.tilt)).subtract(across.scale(Math.sin(this.tilt)));
+            return this.elbow.add(this.way.scale(MechScript.FOREARM))
+                    .add(along.scale(MechScript.PALM_ALONG - MechScript.FOREARM));
         }
     }
 

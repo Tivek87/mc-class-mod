@@ -33,10 +33,13 @@ public final class MechPose {
     public int button = -1;
     public double press;
     MechAttacks.Blow blow = MechAttacks.Blow.NONE;
-    // Climbing, where each hand holds the ledge (in the world), how firmly, and which way the wall faces.
+    // Climbing, where each hand holds on (the middle of its palm, in the world), which way its fingers run and its palm
+    // faces, how firmly it holds (0: not at all) and how far its fingers curl.
     public final Vec3[] ledge = new Vec3[2];
-    double hold;
-    Vec3 wall = Vec3.ZERO;
+    final Vec3[] along = new Vec3[2];
+    final Vec3[] facing = new Vec3[2];
+    final double[] grip = new double[2];
+    final double[] curl = new double[2];
     // As its weight swings them (index 0 the right): each hand's turn at its wrist, folded towards its palm (+) and
     // tilted across it, and each shoulder's shrug (up +), in radians.
     public final double[] fold = new double[2];
@@ -66,12 +69,14 @@ public final class MechPose {
             pose.toes[side] = this.toes[side];
             pose.tip[side] = this.tip[side];
             pose.ledge[side] = this.ledge[side];
+            pose.along[side] = this.along[side];
+            pose.facing[side] = this.facing[side];
+            pose.grip[side] = this.grip[side];
+            pose.curl[side] = this.curl[side];
             pose.fold[side] = this.fold[side];
             pose.tilt[side] = this.tilt[side];
             pose.shrug[side] = this.shrug[side];
         }
-        pose.hold = this.hold;
-        pose.wall = this.wall;
         pose.swing = this.swing;
         pose.walking = this.walking;
         pose.headYaw = this.headYaw;
@@ -100,8 +105,15 @@ public final class MechPose {
             pose.fold[side] = Mth.lerp(u, from.fold[side], to.fold[side]);
             pose.tilt[side] = Mth.lerp(u, from.tilt[side], to.tilt[side]);
             pose.shrug[side] = Mth.lerp(u, from.shrug[side], to.shrug[side]);
+            // A hand on its way between holds moves on smoothly between the ticks.
+            if (from.ledge[side] != null && to.ledge[side] != null) {
+                pose.ledge[side] = from.ledge[side].lerp(to.ledge[side], u);
+                pose.along[side] = from.along[side].lerp(to.along[side], u).normalize();
+                pose.facing[side] = from.facing[side].lerp(to.facing[side], u).normalize();
+                pose.grip[side] = Mth.lerp(u, from.grip[side], to.grip[side]);
+                pose.curl[side] = Mth.lerp(u, from.curl[side], to.curl[side]);
+            }
         }
-        pose.hold = from.ledge[0] == to.ledge[0] ? Mth.lerp(u, from.hold, to.hold) : to.hold;
         pose.swing = Mth.lerp(u, from.swing, to.swing);
         pose.walking = Mth.lerp(u, from.walking, to.walking);
         pose.headYaw = Mth.lerp(u, from.headYaw, to.headYaw);
@@ -172,9 +184,9 @@ public final class MechPose {
         return this.blow;
     }
 
-    // Whether its hands reach for or hold a ledge it climbs.
+    // Whether its hands reach for or hold what it climbs.
     public boolean climbing() {
-        return this.hold > 0.0 && this.ledge[0] != null;
+        return this.ledge[0] != null && (this.grip[0] > 0.0 || this.grip[1] > 0.0);
     }
 
     // One arm as the walk swings it, taken over by a blow while one is struck or by the ledge it climbs (at `t` of the
@@ -183,14 +195,16 @@ public final class MechPose {
         return this.arm(right, t, held, null);
     }
 
-    // As above, a hand on the ledge resting on its top when the blocks round it are known.
+    // As above, a climbing hand resting on what it holds when the blocks round it are known.
     public MechMoves.Arm arm(boolean right, double t, @Nullable MechAttacks.Held held, @Nullable MechHandRig.Ground ledge) {
         // Running, the forearms come up a little and swing instead of hanging.
         double hang = this.walking * (1.0 - 0.5 * this.running);
         MechMoves.Arm arm = MechMoves.walking(right, t, this.swing, hang);
-        Vec3 spot = this.ledge[right ? 0 : 1];
-        if (this.hold > 0.0 && spot != null) {
-            return MechClimb.laid(arm, this.torso, right, spot, this.wall, this.hold, ledge);
+        int s = right ? 0 : 1;
+        Vec3 spot = this.ledge[s];
+        if (this.grip[s] > 0.0 && spot != null) {
+            return MechClimb.laid(arm, this.torso, right, spot, this.along[s], this.facing[s], this.grip[s],
+                    this.curl[s], ledge);
         }
         if (!this.blow.striking()) {
             return arm;

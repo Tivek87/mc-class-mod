@@ -26,6 +26,7 @@ final class MechGround {
     // Along its stride a foot can stand this far ahead of or behind where it rests.
     private static final double STRIDE_REACH = 1.2;
     private static final int ROOM = 2;
+    private static final double FACE_STEP = 0.25;
 
     private MechGround() {
     }
@@ -127,8 +128,9 @@ final class MechGround {
         return false;
     }
 
-    // The first ledge along `ahead` from `at`, within `far`: {how far off its face is, the height of its top}. Its top
-    // is the lowest one over `low` and up to `high` with room for a foot above it.
+    // The first ledge along `ahead` from `at`, within `far`: {how far off its face is, the height of its top}. Its face
+    // stands solid from `low` up (open ground under a roof is none), and its top is the lowest one up to `high` with
+    // room for a foot above it.
     @Nullable
     static double[] ledge(ClientLevel level, Vec3 at, Vec3 ahead, double low, double high, double far) {
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
@@ -141,11 +143,11 @@ final class MechGround {
             for (int y = Mth.floor(low); y <= Mth.floor(high); y++) {
                 pos.setY(y);
                 BlockState block = level.getBlockState(pos);
-                if (wades(block)) {
-                    continue;
-                }
-                VoxelShape shape = block.getCollisionShape(level, pos);
-                if (shape.isEmpty()) {
+                VoxelShape shape = wades(block) ? null : block.getCollisionShape(level, pos);
+                if (shape == null || shape.isEmpty() || y + shape.max(Direction.Axis.Y) <= low) {
+                    if (y == Mth.floor(low)) {
+                        break;
+                    }
                     continue;
                 }
                 double top = y + shape.max(Direction.Axis.Y);
@@ -155,6 +157,42 @@ final class MechGround {
             }
         }
         return null;
+    }
+
+    // How far along `ahead` from `at` the first solid block stands at the height `y`, within `far`, worked out to a
+    // hand's breadth; null when there is none.
+    @Nullable
+    static Double face(ClientLevel level, Vec3 at, Vec3 ahead, double y, double far) {
+        for (double d = 0.0; d <= far; d += FACE_STEP) {
+            if (solid(level, at.x + ahead.x * d, y, at.z + ahead.z * d)) {
+                double open = Math.max(0.0, d - FACE_STEP);
+                double shut = d;
+                for (int i = 0; i < 5; i++) {
+                    double middle = (open + shut) * 0.5;
+                    if (solid(level, at.x + ahead.x * middle, y, at.z + ahead.z * middle)) {
+                        shut = middle;
+                    } else {
+                        open = middle;
+                    }
+                }
+                return d == 0.0 ? 0.0 : shut;
+            }
+        }
+        return null;
+    }
+
+    // Whether the point stands in something solid a mech cannot wade through.
+    static boolean solid(ClientLevel level, double x, double y, double z) {
+        BlockPos pos = BlockPos.containing(x, y, z);
+        if (!level.isLoaded(pos)) {
+            return false;
+        }
+        BlockState block = level.getBlockState(pos);
+        if (wades(block)) {
+            return false;
+        }
+        VoxelShape shape = block.getCollisionShape(level, pos);
+        return !shape.isEmpty() && shape.bounds().move(pos).contains(x, y, z);
     }
 
     private static boolean room(ClientLevel level, BlockPos.MutableBlockPos pos, int y) {

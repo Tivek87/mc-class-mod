@@ -76,7 +76,9 @@ class MechGait {
     private static final double LAND_HARD = 2.2;
     private static final double LAND_SINK = 0.8;
     private static final double CLIMB_STEP = 1.5;
+    private static final double CLIMB_TOE = 0.5;
     private static final double CLIMB_SLAM = 0.8;
+    private static final double CLIMB_GRAB = 0.5;
     private static final SoundEvent STEP = Sounds.of("mech.step");
     static int ticks;
 
@@ -110,7 +112,7 @@ class MechGait {
     double crouch;
     boolean falling;
     @Nullable
-    MechClimb.Hold climbing;
+    MechClimbHolds climbing;
     double climbAge;
     MechAttacks.Blow blow = MechAttacks.Blow.NONE;
     int hitAt = -100;
@@ -278,34 +280,53 @@ class MechGait {
         double edge = MechClimb.edge(packed);
         MechScript.Stage start = MechClimb.start(stage, age, height, edge);
         if (this.climbing == null || this.climbing.start.base().distanceToSqr(start.base()) > 0.5) {
-            this.climbing = MechClimb.hold(level, start, height, edge,
-                    new Vec3[] { this.legs[0].planted, this.legs[1].planted });
+            // A foot still swinging comes down under where it was carried to, so the climb takes it from there.
+            Vec3[] stood = new Vec3[2];
+            Vec3[] air = new Vec3[2];
+            double floor = start.base().y;
+            for (int side = 0; side < 2; side++) {
+                Leg leg = this.legs[side];
+                stood[side] = leg.planted;
+                if (leg.swinging) {
+                    Double ground = MechGround.foot(level, leg.planted, start.ahead(), floor,
+                            floor + MechDrive.STEP_UP);
+                    stood[side] = new Vec3(leg.planted.x, (ground == null ? floor : ground) + MechScript.ANKLE.y,
+                            leg.planted.z);
+                    air[side] = leg.planted;
+                }
+            }
+            this.climbing = MechClimbHolds.find(level, start, height, edge, stood, air, age);
             this.falling = false;
         }
-        MechClimb.Hold hold = this.climbing;
+        MechClimbHolds holds = this.climbing;
         this.climbAge = age;
         for (int side = 0; side < 2; side++) {
             Leg leg = this.legs[side];
             leg.swinging = false;
-            leg.planted = MechClimb.foot(hold, side, age);
+            leg.planted = holds.foot(side, age);
             leg.toes = start.ahead();
-            if (MechClimb.lands(hold, side, age)) {
+            if (holds.footLands(side, age)) {
+                // Up on the top it stamps down; set on the face its toes scrape against it.
+                double hard = holds.onTop(side, age) ? CLIMB_STEP : CLIMB_TOE;
                 leg.landed = ticks;
-                leg.hard = CLIMB_STEP;
+                leg.hard = hard;
                 Vec3 sole = leg.planted.subtract(0.0, MechScript.ANKLE.y, 0.0);
-                footfall(level, sole, CLIMB_STEP);
-                dust(level, sole, CLIMB_STEP);
-                this.sink.kick(-0.2);
+                footfall(level, sole, hard);
+                dust(level, holds.onTop(side, age) ? sole : sole.add(start.ahead().scale(MechGround.SOLE_AHEAD)),
+                        hard);
+                this.sink.kick(-0.2 * hard / CLIMB_STEP);
             }
         }
-        if (MechClimb.slams(age)) {
-            this.hitAt = ticks;
-            this.hitHard = CLIMB_SLAM;
-            this.hitSpot = hold.hands[0].lerp(hold.hands[1], 0.5);
-            for (Vec3 hand : hold.hands) {
-                Vec3 on = hand.subtract(0.0, MechClimb.GRIP_UP, 0.0);
-                footfall(level, on, CLIMB_SLAM);
-                dust(level, on, CLIMB_SLAM);
+        for (int side = 0; side < 2; side++) {
+            if (holds.handLands(side, age)) {
+                // The first hold is slammed onto with both hands at once, each later one taken with one.
+                int k = MechClimbHolds.step(holds.handFrom[side], age);
+                Vec3 hand = holds.hands[side][k];
+                this.hitAt = ticks;
+                this.hitHard = k == 0 ? CLIMB_SLAM : CLIMB_GRAB;
+                this.hitSpot = hand;
+                footfall(level, hand, this.hitHard);
+                dust(level, hand.subtract(start.ahead().scale(0.4)), this.hitHard);
             }
         }
         this.speed = 0.0;

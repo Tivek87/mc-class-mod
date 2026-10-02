@@ -3,6 +3,31 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.6.2-alpha] - 2026-10-02
+
+### Added
+- **Hard-Light Mech:** climbs walls up to 30 blocks high, hand over hand, its feet stepping up the face.
+- **Hard-Light Mech:** at the top its hands hook over the edge and turn over to press down on it, the body leaning over
+  and sinking so they stay on it.
+- **Hard-Light Mech:** finds a ledge to climb a little to the left or right of where it walks, too.
+- **Hard-Light Mech:** its wrists bend and turn, and its elbows and knees swing out round blocks instead of passing
+  into them.
+
+### Changed
+- **Hard-Light Mech:** starts climbing after half a second of walking into a ledge, instead of two seconds.
+- **Hard-Light Mech:** its legs keep turning after your look while it pushes against a wall.
+- **Hard-Light Mech:** its fingers take hold and let go smoothly and never go into a block.
+- **Hard-Light Mech:** a climb may end on a top a little higher or lower than its edge.
+- **Hard-Light Mech:** stops before its chest walks into a wall.
+
+### Fixed
+- **Hard-Light Mech:** no longer gets stuck at steps in caves and tunnels.
+- **Hard-Light Mech:** its arms no longer stretch or come loose from the body when its shoulders shrug.
+- **Hard-Light Mech:** its knees no longer pass through walls.
+- **Hard-Light Mech:** a foot no longer hangs in the air when a climb starts.
+- **Hard-Light Mech:** its chest no longer pushes into the wall while it hangs, and its hands no longer float above
+  the ledge.
+
 ## [0.6.1-alpha] - 2026-10-02
 
 ### Changed

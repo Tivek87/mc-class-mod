@@ -4,12 +4,14 @@ import it.unimi.dsi.fastutil.longs.Long2DoubleOpenHashMap;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.character.greenlantern.client.mech.MechPainter;
+import nl.tivek.multiversepowers.character.greenlantern.client.mech.shape.MechLegShapes;
 import nl.tivek.multiversepowers.character.greenlantern.mech.MechMoves;
 import nl.tivek.multiversepowers.character.greenlantern.mech.MechScript;
 import nl.tivek.multiversepowers.engine.client.render.ConstructPainter.Frame;
 import nl.tivek.multiversepowers.engine.client.world.LevelBlocks;
 import nl.tivek.multiversepowers.engine.math.Sdf;
 import nl.tivek.multiversepowers.engine.math.Vectors;
+import nl.tivek.multiversepowers.engine.rig.Ik;
 import static nl.tivek.multiversepowers.character.greenlantern.client.mech.shape.MechArmShapes.KNUCKLES;
 import static nl.tivek.multiversepowers.character.greenlantern.client.mech.shape.MechArmShapes.WRIST;
 
@@ -41,12 +43,27 @@ public final class MechTouch {
             { -0.45, WRIST + 0.35, 0.0, 0.3 },
             { 0.45, KNUCKLES - 0.1, 0.0, 0.3 },
             { -0.45, KNUCKLES - 0.1, 0.0, 0.3 } };
+    // A knee swings out round its leg up to KNEE_OUT radians and in up to KNEE_IN, tried in so many steps each way,
+    // and is let back RELAX_SWING radians a tick. The thigh, the shin and the cap in front of the knee are so thick.
+    private static final double KNEE_OUT = 1.3;
+    private static final double KNEE_IN = 0.35;
+    private static final int KNEE_STEPS = 10;
+    private static final double KNEE_ROOM = 2.4;
+    private static final double RELAX_SWING = 0.05;
+    private static final double THIGH_RADIUS = 0.78;
+    private static final double SHIN_RADIUS = 0.62;
+    private static final double CAP_AHEAD = 0.28;
+    private static final double CAP_RADIUS = 0.6;
+    private static final double[] SHIN_THIGH = { MechLegShapes.SHIN, MechLegShapes.THIGH };
     private static final LevelBlocks BLOCKS = new LevelBlocks();
     private static final double[] BOXES = new double[MOST_BOXES * 6];
     private static int boxes;
     // How far each arm (mech id and side) was held out of the blocks, and at what time of its build.
     private static final Long2DoubleOpenHashMap HELD = new Long2DoubleOpenHashMap();
     private static final Long2DoubleOpenHashMap HELD_AT = new Long2DoubleOpenHashMap();
+    // How far each limb (mech id, two bits: arm or leg and side) is swung round its line out of the blocks, and when.
+    private static final Long2DoubleOpenHashMap SWUNG = new Long2DoubleOpenHashMap();
+    private static final Long2DoubleOpenHashMap SWUNG_AT = new Long2DoubleOpenHashMap();
 
     private MechTouch() {
     }
@@ -147,15 +164,16 @@ public final class MechTouch {
             way = Vectors.spin(way, across, -lift);
             palm = Vectors.spin(palm, across, -lift);
         }
-        return new MechMoves.Arm(elbow, way, palm, arm.curl(), arm.spread(), arm.upper());
+        return new MechMoves.Arm(elbow, way, palm, arm.curl(), arm.spread(), arm.upper(), arm.fold(), arm.tilt());
     }
 
     // How deep the forearm, the hand or its knuckles lie in the blocks at most (0 or less: clear).
     private static double deepest(MechScript.Stage torso, MechMoves.Arm arm) {
-        Frame hand = Frame.of(torso.point(arm.elbow()), torso.dir(arm.palm()), torso.dir(arm.way()), 1.0);
+        Frame forearm = MechArmRig.forearm(torso, arm);
+        Frame hand = MechArmRig.wrist(forearm, arm.fold(), arm.tilt());
         double deepest = Double.NEGATIVE_INFINITY;
         for (double[] p : ARM) {
-            Vec3 at = hand.at(p[0], p[1], p[2]);
+            Vec3 at = (p[1] < WRIST ? forearm : hand).at(p[0], p[1], p[2]);
             deepest = Math.max(deepest, depth(at.x, at.y, at.z, p[3]));
         }
         // Open fingers reach on past the knuckles.
@@ -163,15 +181,107 @@ public final class MechTouch {
         return Math.max(deepest, depth(tips.x, tips.y, tips.z, 0.25));
     }
 
+    // The knee of mech `id`'s leg from `hip` to `ankle` (in the world), bent towards `forward`, kept out of the blocks:
+    // swung round the line from the hip to the ankle, outwards (`out`) before inwards, just as far as it takes, and
+    // eased back only slowly after.
+    public static Vec3 knee(Level level, int id, boolean right, Vec3 hip, Vec3 ankle, Vec3 forward, Vec3 out,
+            double t) {
+        long key = (long) id << 2 | (right ? 2L : 3L);
+        double[] root = { hip.x, hip.y, hip.z };
+        double[] end = { ankle.x, ankle.y, ankle.z };
+        double[] pole = { forward.x, forward.y, forward.z };
+        double[] knee = new double[3];
+        Vec3 axis = ankle.subtract(hip);
+        // Which way a turn of the swivel takes the knee: outwards for a positive one.
+        double sign = Math.signum(axis.cross(forward).dot(out));
+        sign = sign == 0.0 ? 1.0 : sign;
+        double need = 0.0;
+        double reach = Math.max(KNEE_ROOM, axis.length() * 0.5 + KNEE_ROOM);
+        Vec3 middle = hip.add(ankle).scale(0.5);
+        if (near(level, middle, reach)) {
+            double flip = sign;
+            Ik.Clearance clearance = (x, y, z) -> legDepth(root, end, x, y, z);
+            Ik.twoBone(root, end, pole, SHIN_THIGH[1], SHIN_THIGH[0], knee);
+            double straight = clearance.depth(knee[0], knee[1], knee[2]);
+            if (straight > TOUCH) {
+                double found = Ik.swivel(root, end, pole, SHIN_THIGH[1], SHIN_THIGH[0],
+                        flip > 0.0 ? -KNEE_IN : -KNEE_OUT, flip > 0.0 ? KNEE_OUT : KNEE_IN, KNEE_STEPS, clearance,
+                        TOUCH, knee);
+                double left = clearance.depth(knee[0], knee[1], knee[2]);
+                // Turning it only helps where it comes out further than it was.
+                need = left < straight - LEEWAY ? found * flip : 0.0;
+            }
+        }
+        double swung = swung(key, need, t);
+        Ik.twoBone(root, end, pole, SHIN_THIGH[1], SHIN_THIGH[0], swung * sign, knee);
+        return new Vec3(knee[0], knee[1], knee[2]);
+    }
+
+    // How deep the thigh (hip to knee), the knee cap and the shin (knee to ankle) go into the blocks gathered last,
+    // leaving out their ends at the hip and ankle, which no swing of the knee moves.
+    private static double legDepth(double[] hip, double[] ankle, double x, double y, double z) {
+        double deepest = Double.NEGATIVE_INFINITY;
+        for (int i = 1; i <= 4; i++) {
+            double u = i / 4.0;
+            deepest = Math.max(deepest, depth(hip[0] + (x - hip[0]) * u, hip[1] + (y - hip[1]) * u,
+                    hip[2] + (z - hip[2]) * u, THIGH_RADIUS));
+            if (i < 4) {
+                deepest = Math.max(deepest, depth(x + (ankle[0] - x) * u, y + (ankle[1] - y) * u,
+                        z + (ankle[2] - z) * u, SHIN_RADIUS));
+            }
+        }
+        // The cap stands out in front of the knee, the way it bends.
+        double ax = ankle[0] - hip[0];
+        double ay = ankle[1] - hip[1];
+        double az = ankle[2] - hip[2];
+        double length = ax * ax + ay * ay + az * az;
+        double along = length < 1.0E-9 ? 0.0 : ((x - hip[0]) * ax + (y - hip[1]) * ay + (z - hip[2]) * az) / length;
+        double bx = x - hip[0] - ax * along;
+        double by = y - hip[1] - ay * along;
+        double bz = z - hip[2] - az * along;
+        double bend = Math.sqrt(bx * bx + by * by + bz * bz);
+        if (bend > 1.0E-6) {
+            double s = CAP_AHEAD / bend;
+            deepest = Math.max(deepest, depth(x + bx * s, y + by * s, z + bz * s, CAP_RADIUS));
+        }
+        return deepest;
+    }
+
+    // A swing kept per limb: taken at once as far out as it is needed, let back towards what is needed at RELAX_SWING
+    // radians a tick.
+    private static double swung(long key, double need, double t) {
+        double was = SWUNG.getOrDefault(key, 0.0);
+        double since = Math.max(0.0, t - SWUNG_AT.getOrDefault(key, t));
+        SWUNG_AT.put(key, t);
+        double shown;
+        if (need * was >= 0.0 && Math.abs(need) >= Math.abs(was)) {
+            shown = need;
+        } else {
+            // Needed on the other side, it swings over twice as fast.
+            double most = RELAX_SWING * since * (need * was < 0.0 ? 2.0 : 1.0);
+            shown = was + Math.max(-most, Math.min(most, need - was));
+        }
+        SWUNG.put(key, shown);
+        return shown;
+    }
+
     public static void forget(int id) {
         for (long side = 0; side < 2; side++) {
             HELD.remove((long) id << 1 | side);
             HELD_AT.remove((long) id << 1 | side);
         }
+        for (long limb = 0; limb < 4; limb++) {
+            SWUNG.remove((long) id << 2 | limb);
+            SWUNG_AT.remove((long) id << 2 | limb);
+        }
+        MechFingers.forget(id);
     }
 
     public static void clear() {
         HELD.clear();
         HELD_AT.clear();
+        SWUNG.clear();
+        SWUNG_AT.clear();
+        MechFingers.clear();
     }
 }

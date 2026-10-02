@@ -1,9 +1,12 @@
 package nl.tivek.multiversepowers.character.greenlantern.client.mech;
 
+import javax.annotation.Nullable;
 import net.minecraft.util.Mth;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.character.greenlantern.client.mech.shape.MechLegShapes;
 import nl.tivek.multiversepowers.character.greenlantern.client.mech.shape.MechParts;
+import nl.tivek.multiversepowers.character.greenlantern.client.mech.touch.MechTouch;
 import nl.tivek.multiversepowers.character.greenlantern.client.mech.walk.MechPose;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.LanternPainter;
 import nl.tivek.multiversepowers.character.greenlantern.mech.MechScript;
@@ -11,34 +14,50 @@ import nl.tivek.multiversepowers.engine.client.render.ConstructPainter.Frame;
 import nl.tivek.multiversepowers.engine.client.rig.BoneView;
 import nl.tivek.multiversepowers.engine.math.Vectors;
 
-// A walking mech's legs: each foot where its walk put it, the knee bent forward between the ankle and the hip.
+// A walking mech's legs: each foot where its walk put it, the knee bent forward between the ankle and the hip, or
+// swung out round the leg where that would put it into the blocks round it.
 final class MechLegs {
     static final double REACH = 0.999;
 
     private MechLegs() {
     }
 
-    static void leg(LanternPainter painter, MechPose pose, boolean right, double apart, int seed) {
+    // `id` and `t`: the mech and the time of its build, for how far each knee is swung out; `level` the blocks it keeps
+    // out of (null: none).
+    static void leg(LanternPainter painter, int id, MechPose pose, boolean right, double apart, int seed, double t,
+            @Nullable Level level) {
         int side = right ? 0 : 1;
         Vec3 toes = pose.toes[side];
         Vec3 hip = pose.hips().point(MechPainter.side(MechScript.HIP, right));
         Vec3 ankle = reached(hip, pose.ankle[side]);
-        Vec3 knee = knee(ankle, hip, toes);
+        Vec3 out = right ? pose.hips().right() : pose.hips().right().scale(-1.0);
+        Vec3 knee = level == null ? knee(ankle, hip, toes) : MechTouch.knee(level, id, right, hip, ankle, toes, out, t);
         Vec3 shin = knee.subtract(ankle).normalize();
         Vec3 thigh = hip.subtract(knee).normalize();
+        // The knee is a hinge: the shin, the cap and the thigh face the way it bends, swung out with it.
+        Vec3 bend = bend(hip, ankle, knee, toes);
         Frame foot = Frame.of(ankle, toes, Vectors.UP, 1.0).turned(0.0, 0.0, 0.0, 1.0, 0.0, 0.0, -pose.tip[side]);
         MechParts.draw(painter, right ? MechLegShapes.FOOT : MechLegShapes.FOOT_LEFT, foot, 1.0, apart, seed);
         MechParts.draw(painter, right ? MechLegShapes.SHIN_PART : MechLegShapes.SHIN_LEFT,
-                MechPainter.limb(ankle, shin, toes), 1.0, apart, seed + 20);
+                MechPainter.limb(ankle, shin, bend), 1.0, apart, seed + 20);
         MechParts.draw(painter, right ? MechLegShapes.KNEE : MechLegShapes.KNEE_LEFT,
-                MechPainter.limb(knee, shin.add(thigh).normalize(), toes), 1.0, apart, seed + 40);
+                MechPainter.limb(knee, shin.add(thigh).normalize(), bend), 1.0, apart, seed + 40);
         MechParts.draw(painter, right ? MechLegShapes.THIGH_PART : MechLegShapes.THIGH_LEFT,
-                MechPainter.limb(knee, thigh, pose.hips().ahead()), 1.0, apart, seed + 50);
+                MechPainter.limb(knee, thigh, bend), 1.0, apart, seed + 50);
         if (BoneView.shown()) {
             BoneView.bone(hip, knee, BoneView.CONSTRUCT);
             BoneView.bone(knee, ankle, BoneView.CONSTRUCT);
             BoneView.bone(ankle, foot.at(0.0, 0.0, 1.4), BoneView.CONSTRUCT);
         }
+    }
+
+    // Which way the knee stands out from the line between the hip and the ankle; `forward` where that line is straight.
+    static Vec3 bend(Vec3 hip, Vec3 ankle, Vec3 knee, Vec3 forward) {
+        Vec3 axis = ankle.subtract(hip);
+        double length = axis.lengthSqr();
+        Vec3 out = length < 1.0E-9 ? knee.subtract(hip) : knee.subtract(hip).subtract(axis.scale(
+                knee.subtract(hip).dot(axis) / length));
+        return out.lengthSqr() < 1.0E-8 ? forward : out.normalize();
     }
 
     // The ankle as far towards where its foot is put as the leg reaches: a foot put further off hangs short of it on

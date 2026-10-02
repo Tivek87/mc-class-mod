@@ -23,8 +23,9 @@ import nl.tivek.multiversepowers.character.greenlantern.mech.MechScript;
 // walk it on and back (the sprint key with W runs), A and D step it aside, and its legs turn after where the pilot looks.
 // It stands on whatever its feet find, so a hole narrower than its stance never drops it in. It steps up no higher than
 // its legs can, never walks off a drop too deep to see the bottom of or down into a hole its cockpit would not fit in,
-// and stops where its cockpit would run into blocks (unless it already stands among them, so it can always get out).
-// Walked against a ledge too high to step onto for 2 seconds, its pilot looking at it, it climbs it (MechClimb).
+// and stops where its cockpit or its chest would run into blocks (unless it already stands among them, so it can
+// always get out). Walked against a ledge too high to step onto for half a second, its pilot looking at it, it climbs
+// it (MechClimb); pushing against it, its legs still turn after the look.
 public final class MechDrive {
     public static final double WALK = 0.2;
     // The sprint key held with W runs: two and a half times as fast, working up to it slowly.
@@ -50,11 +51,22 @@ public final class MechDrive {
     private static final double FALL = 0.06;
     private static final double FASTEST_FALL = 1.2;
     private static final double MOVED = 1.0E-5;
-    // How far ahead of an ankle its foot meets a wall, and how many ticks (2 seconds) it must be walked against a ledge,
-    // its pilot looking at it (no further off than FACING degrees), before it climbs it.
+    // How far ahead of an ankle its foot meets a wall, and how many ticks (half a second) it must be walked against a
+    // ledge, its pilot looking at it (no further off than FACING degrees), before it climbs it.
     private static final double TOE = MechGround.SOLE_AHEAD + 0.6;
-    private static final int CLIMB_AFTER = 40;
+    private static final int CLIMB_AFTER = 10;
     private static final double FACING = 45.0;
+    // Where the front of its chest meets a wall: across, up and ahead of its base.
+    private static final double[] CHEST_ACROSS = { -1.3, 0.0, 1.3 };
+    private static final double[] CHEST_UP = { 6.4, 7.3, 8.3 };
+    private static final double CHEST_AHEAD = MechClimb.CHEST + 0.15;
+    // The climb's ledge is looked for along the middle and along lanes this far to either side.
+    private static final double LANE = 1.1;
+    // The top may stand this much lower or higher where the climb ends than at its edge: the walk takes it from there.
+    private static final double END_BELOW = 1.5;
+    private static final double END_ABOVE = 2.0;
+    // Along a climb the cockpit is tried this many times for room.
+    private static final int CLIMB_TRIES = 12;
 
     private static int mech = -1;
     private static Vec3 base = Vec3.ZERO;
@@ -65,6 +77,7 @@ public final class MechDrive {
     private static double fall;
     private static boolean steppingRound;
     private static int pressed;
+    private static boolean blocked;
     @Nullable
     private static MechScript.Stage climbFrom;
     private static double climbHeight;
@@ -103,6 +116,7 @@ public final class MechDrive {
             fall = 0.0;
             steppingRound = false;
             pressed = 0;
+            blocked = false;
             climbFrom = null;
         }
         if (climbFrom != null) {
@@ -119,7 +133,9 @@ public final class MechDrive {
         // Standing, they only step round once it has twisted far over them, then all
         // the way; walking, they keep up.
         double behind = Mth.wrapDegrees(player.getYRot() - yaw);
-        boolean moving = Math.abs(speed) > 0.02 || Math.abs(side) > 0.02;
+        // Walked against a wall it stands still, but its legs keep turning after the look, so it can face what it
+        // climbs.
+        boolean moving = Math.abs(speed) > 0.02 || Math.abs(side) > 0.02 || ahead && blocked;
         if (Math.abs(behind) > STEP_ROUND) {
             steppingRound = true;
         } else if (Math.abs(behind) < SETTLED_DEGREES) {
@@ -149,8 +165,10 @@ public final class MechDrive {
                 ground = MechGround.support(level, stage, top);
             }
         }
+        blocked = against;
         pressed = ahead && against && Math.abs(behind) < FACING ? pressed + 1 : 0;
-        if (pressed >= CLIMB_AFTER && climb(player, stage)) {
+        // Held on against what it cannot climb, it looks again now and then, as it turns.
+        if (pressed >= CLIMB_AFTER && (pressed - CLIMB_AFTER) % 4 == 0 && climb(player, stage)) {
             return;
         }
         double y = base.y;
@@ -168,7 +186,8 @@ public final class MechDrive {
         }
     }
 
-    // Whether a foot would run into a wall going on by step: something in its way higher than a step.
+    // Whether it would run into a wall going on by step: something in a foot's way higher than a step, or in the way of
+    // its chest while its chest is out of the blocks now.
     private static boolean runsInto(ClientLevel level, Vec3 next, Vec3 step, double top) {
         MechScript.Stage there = MechScript.Stage.facing(next, yaw);
         Vec3 toe = step.normalize().scale(TOE);
@@ -177,25 +196,51 @@ public final class MechDrive {
                 return true;
             }
         }
+        return chestIn(level, there) && !chestIn(level, MechScript.Stage.facing(base, yaw));
+    }
+
+    // Whether the front of the chest stands in a block with the mech at `stage`.
+    private static boolean chestIn(ClientLevel level, MechScript.Stage stage) {
+        for (int i = 0; i < CHEST_ACROSS.length; i++) {
+            double ahead = i == 1 ? CHEST_AHEAD : CHEST_AHEAD - MechClimb.CHEST_ROUND;
+            for (double up : CHEST_UP) {
+                Vec3 at = stage.point(CHEST_ACROSS[i], up, ahead);
+                if (MechGround.solid(level, at.x, at.y, at.z)) {
+                    return true;
+                }
+            }
+        }
         return false;
     }
 
-    // Held against a ledge too high to step onto, it climbs it if its top is within reach and has room to stand on,
-    // and there is room to rise straight up to it.
+    // Held against a ledge too high to step onto, it climbs it if its top is within reach, along the middle or a lane
+    // to either side, with room to stand on where it ends (a top a little higher or lower the walk takes on from
+    // there), and its cockpit has room all along the way up (or stands among blocks already, so it can get out).
     private static boolean climb(LocalPlayer player, MechScript.Stage stage) {
         ClientLevel level = player.clientLevel;
-        double[] ledge = MechGround.ledge(level, stage.base(), stage.ahead(), base.y + STEP_UP,
-                base.y + MechClimb.HIGHEST, MechClimb.FARTHEST);
+        double[] ledge = null;
+        for (int k = 0; k < 3 && ledge == null; k++) {
+            Vec3 from = stage.point(k == 0 ? 0.0 : k == 1 ? LANE : -LANE, 0.0, 0.0);
+            ledge = MechGround.ledge(level, from, stage.ahead(), base.y + STEP_UP, base.y + MechClimb.HIGHEST,
+                    MechClimb.FARTHEST);
+        }
         if (ledge == null) {
             return false;
         }
-        double edge = MechClimb.quantized(ledge[0]);
-        double height = MechClimb.quantized(ledge[1] - base.y);
-        Vec3 end = stage.point(MechClimb.path(MechClimb.ticks(height), height, edge));
-        Double stand = MechGround.support(level, MechScript.Stage.facing(end, yaw), end.y + STEP_UP);
-        if (stand == null || Math.abs(stand - end.y) > 0.6 || !clear(player, new Vec3(base.x, end.y, base.z))
-                || !clear(player, end)) {
+        double edge = MechClimb.quantizedEdge(ledge[0]);
+        double height = MechClimb.quantizedHeight(ledge[1] - base.y);
+        int ticks = MechClimb.ticks(height);
+        Vec3 end = stage.point(MechClimb.path(ticks, height, edge));
+        Double stand = MechGround.support(level, MechScript.Stage.facing(end, yaw), end.y + END_ABOVE);
+        if (stand == null || stand < end.y - END_BELOW || !clear(player, end)) {
             return false;
+        }
+        if (clear(player, base)) {
+            for (int k = 1; k < CLIMB_TRIES; k++) {
+                if (!clear(player, stage.point(MechClimb.path(ticks * k / (double) CLIMB_TRIES, height, edge)))) {
+                    return false;
+                }
+            }
         }
         climbFrom = stage;
         climbHeight = height;

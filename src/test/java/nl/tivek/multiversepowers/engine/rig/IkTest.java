@@ -61,6 +61,50 @@ class IkTest {
     }
 
     @Test
+    void swivelSwingsTheWiderWayFirstAndOnlyAsFarAsItTakes() {
+        double[] root = { 0.0, 2.0, 0.0 };
+        double[] end = { 0.0, 0.0, 0.0 };
+        double[] pole = { 0.0, 0.0, 1.0 };
+        double[] knee = new double[3];
+        // Bent forward the knee stands sqrt(1.25) off the line; a wall from z 0.5 on lets it be from this far round.
+        double clear = Math.acos(0.5 / Math.sqrt(1.25));
+        double angle = Ik.swivel(root, end, pole, 1.5, 1.5, -1.3, 1.2, 10, (x, y, z) -> z - 0.5, 0.0, knee);
+        assertTrue(angle < 0.0, "the wider way first");
+        assertEquals(-clear, angle, 0.003);
+        assertTrue(knee[2] <= 0.5 + 1.0E-9, "and clear of the wall");
+        assertEquals(1.5, length(knee[0] - root[0], knee[1] - root[1], knee[2] - root[2]), 1.0E-9);
+        angle = Ik.swivel(root, end, pole, 1.5, 1.5, -1.2, 1.3, 10, (x, y, z) -> z - 0.5, 0.0, knee);
+        assertEquals(clear, angle, 0.003);
+        assertEquals(0.0, Ik.swivel(root, end, pole, 1.5, 1.5, -1.3, 1.3, 10, (x, y, z) -> -1.0, 0.0, knee));
+    }
+
+    @Test
+    void swivelMovesOnSmoothlyAsWhatItKeepsOutOfMoves() {
+        double[] root = { 0.0, 2.0, 0.0 };
+        double[] end = { 0.0, 0.0, 0.0 };
+        double[] pole = { 0.0, 0.0, 1.0 };
+        double[] knee = new double[3];
+        double was = Double.NaN;
+        for (int i = 0; i <= 40; i++) {
+            double face = 0.6 - 0.005 * i;
+            double angle = Ik.swivel(root, end, pole, 1.5, 1.5, -1.3, 1.3, 10, (x, y, z) -> z - face, 0.0, knee);
+            if (!Double.isNaN(was)) {
+                assertTrue(Math.abs(angle - was) < 0.02, "no jump at face " + face);
+            }
+            was = angle;
+        }
+    }
+
+    @Test
+    void swivelWithNoClearWayTakesTheLeastDeep() {
+        double[] knee = new double[3];
+        double angle = Ik.swivel(new double[] { 0.0, 2.0, 0.0 }, new double[] { 0.0, 0.0, 0.0 },
+                new double[] { 0.0, 0.0, 1.0 }, 1.5, 1.5, -1.3, 1.2, 10, (x, y, z) -> z, -1.0, knee);
+        assertEquals(-1.3, angle, 1.0E-9);
+        assertEquals(Math.sqrt(1.25) * Math.cos(1.3), knee[2], 1.0E-9);
+    }
+
+    @Test
     void fabrikReachesAReachableTargetAndKeepsLengthsAndRoot() {
         double[] joints = { 0, 0, 0, 0, 1, 0, 0, 2, 0, 0, 3, 0, 0, 4, 0 };
         double[] lengths = { 1, 1, 1, 1 };

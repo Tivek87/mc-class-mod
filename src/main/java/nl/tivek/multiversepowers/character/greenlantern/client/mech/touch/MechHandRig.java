@@ -118,8 +118,15 @@ public final class MechHandRig {
     // first, so its fingers wrap round the ledge or edge it holds instead of standing stiff.
     static RigPose posed(Frame hand, MechMoves.Arm arm, boolean right, @Nullable double[] wall, @Nullable AABB held,
             @Nullable Ground ground) {
+        return posed(hand, arm, right, wall, held, ground, settled(arm, right));
+    }
+
+    // As above, from the arm's pose already settled.
+    static RigPose posed(Frame hand, MechMoves.Arm arm, boolean right, @Nullable double[] wall, @Nullable AABB held,
+            @Nullable Ground ground, RigPose settled) {
         Rig rig = right ? RIGHT : LEFT;
-        RigPose pose = settled(arm, right);
+        RigPose pose = new RigPose(rig);
+        pose.copy(settled);
         if (ground != null && arm.curl() >= GRIP && arm.curl() < 1.0) {
             RigPose fist = settled(fist(arm), right);
             double[] space = RigSpace.create(rig);
@@ -148,8 +155,39 @@ public final class MechHandRig {
         return groundDepth(space, hand, ground);
     }
 
+    // Each finger of `shown` that goes into the ground, the held creature's box or past the wall takes the angles
+    // `posed` has for it, which rest on them.
+    static void keepOut(RigPose shown, RigPose posed, Frame hand, boolean right, @Nullable double[] wall,
+            @Nullable AABB held, @Nullable Ground ground) {
+        Rig rig = right ? RIGHT : LEFT;
+        double[] space = RigSpace.create(rig);
+        RigSpace.pose(rig, shown, space);
+        for (int k = 0; k < 5; k++) {
+            double deepest = Double.NEGATIVE_INFINITY;
+            if (ground != null) {
+                deepest = Math.max(deepest, fingerDepth(space, hand, ground, k, 0));
+            }
+            if (held != null) {
+                deepest = Math.max(deepest, heldDepth(space, k, 0, hand, held));
+            }
+            if (wall != null) {
+                deepest = Math.max(deepest, wallDepth(space, wall, k, 0, k < 4 ? FINGER : THUMB));
+            }
+            if (deepest <= TOUCH + 0.01) {
+                continue;
+            }
+            for (int j = 0; j < 3; j++) {
+                int b = bone(k, j);
+                for (int t = 0; t < rig.joint(b).size(); t++) {
+                    shown.set(b, t, posed.get(b, t));
+                }
+            }
+        }
+    }
+
     private static MechMoves.Arm fist(MechMoves.Arm arm) {
-        return new MechMoves.Arm(arm.elbow(), arm.way(), arm.palm(), 1.0, arm.spread(), arm.upper());
+        return new MechMoves.Arm(arm.elbow(), arm.way(), arm.palm(), 1.0, arm.spread(), arm.upper(), arm.fold(),
+                arm.tilt());
     }
 
     // Each finger, from its tip back, and the thumb open only as far as it takes to rest on the ground; a finger that
