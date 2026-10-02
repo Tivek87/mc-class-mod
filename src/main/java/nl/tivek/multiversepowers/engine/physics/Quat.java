@@ -46,38 +46,6 @@ public final class Quat {
         normalize(q, o);
     }
 
-    // out = a b: the turn b, then a.
-    public static void multiply(double[] a, int ao, double[] b, int bo, double[] out, int at) {
-        double ax = a[ao];
-        double ay = a[ao + 1];
-        double az = a[ao + 2];
-        double aw = a[ao + 3];
-        double bx = b[bo];
-        double by = b[bo + 1];
-        double bz = b[bo + 2];
-        double bw = b[bo + 3];
-        out[at] = aw * bx + ax * bw + ay * bz - az * by;
-        out[at + 1] = aw * by + ay * bw + az * bx - ax * bz;
-        out[at + 2] = aw * bz + az * bw + ax * by - ay * bx;
-        out[at + 3] = aw * bw - ax * bx - ay * by - az * bz;
-    }
-
-    // out = a* b: b seen from a.
-    public static void relative(double[] a, int ao, double[] b, int bo, double[] out, int at) {
-        double ax = -a[ao];
-        double ay = -a[ao + 1];
-        double az = -a[ao + 2];
-        double aw = a[ao + 3];
-        double bx = b[bo];
-        double by = b[bo + 1];
-        double bz = b[bo + 2];
-        double bw = b[bo + 3];
-        out[at] = aw * bx + ax * bw + ay * bz - az * by;
-        out[at + 1] = aw * by + ay * bw + az * bx - ax * bz;
-        out[at + 2] = aw * bz + az * bw + ax * by - ay * bx;
-        out[at + 3] = aw * bw - ax * bx - ay * by - az * bz;
-    }
-
     public static void normalize(double[] q, int o) {
         double l = Math.sqrt(q[o] * q[o] + q[o + 1] * q[o + 1] + q[o + 2] * q[o + 2] + q[o + 3] * q[o + 3]);
         if (l < 1.0E-12) {

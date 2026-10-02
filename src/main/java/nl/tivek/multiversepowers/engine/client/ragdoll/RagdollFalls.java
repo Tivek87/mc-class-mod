@@ -8,7 +8,6 @@ import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.config.client.ClientSettings;
 import nl.tivek.multiversepowers.engine.client.model.ModelParts;
 import nl.tivek.multiversepowers.engine.client.world.Solid;
-import nl.tivek.multiversepowers.engine.entity.impact.ImpactPayload;
 import nl.tivek.multiversepowers.engine.physics.RigidWorld;
 import org.joml.Quaterniond;
 import org.joml.Vector3d;
@@ -28,21 +27,12 @@ final class RagdollFalls {
     private static final int WAIT_FOR_BLOW = 2;
     // A blow pushes the parts where it struck at this share of its push (blocks per second), never less than LEAST
     // nor more than MOST, the parts furthest from there at a quarter of that; it lifts at this share of its lift.
-    private static final double BLOW_SHARE = 0.6;
-    private static final double LEAST_BLOW = 2.5;
+    private static final double BLOW_SHARE = 0.85;
+    private static final double LEAST_BLOW = 3.5;
     private static final double MOST_BLOW = 22.0;
     private static final double BLOW_LIFT = 0.5;
     private static final double NEAREST = 1.3;
     private static final double FURTHEST = 0.25;
-    // The part the blow landed on takes this share of its push at the very point, so it turns as well (a head snaps
-    // back, a shoulder struck twists the trunk).
-    private static final double AT_POINT = 0.6;
-    // A blow a living creature took, by how hard it was for it (Staggers), in blocks a second where it struck, at the
-    // least and the most; swept off its legs, its trunk and head pitch forward at this share of that.
-    private static final double HIT_SPEED = 3.0;
-    private static final double LEAST_HIT = 1.5;
-    private static final double MOST_HIT = 9.0;
-    private static final double PITCH = 0.45;
     // A blow knocking a body down again as it gets up pushes it at least and at most this hard (blocks a second).
     private static final double LEAST_KNOCK = 2.0;
     private static final double MOST_KNOCK = 9.0;
@@ -138,7 +128,7 @@ final class RagdollFalls {
         double hard = Mth.clamp(push.horizontalDistance() * 20.0 * BLOW_SHARE, LEAST_BLOW, MOST_BLOW) * force;
         double lift = Mth.clamp(push.y * 20.0 * BLOW_LIFT, 0.0, hard * 0.6);
         if (!slump(doll, fx, fz, hard)) {
-            shove(doll, fx, fz, hard, lift, blow.from(), doll.built, blow.at());
+            shove(doll, fx, fz, hard, lift, blow.from(), doll.built);
         }
         doll.built = Vec3.ZERO;
         doll.struck = true;
@@ -166,87 +156,40 @@ final class RagdollFalls {
         }
         double hard = Mth.clamp(push.horizontalDistance() * 20.0 * BLOW_SHARE, LEAST_KNOCK, MOST_KNOCK)
                 * ClientSettings.ragdollForce();
-        shove(doll, fx / flat, fz / flat, hard, 0.0, from, Vec3.ZERO, null);
+        shove(doll, fx / flat, fz / flat, hard, 0.0, from, Vec3.ZERO);
     }
 
-    // A blow a living limp body takes (thrown, tripped, knocked down, held), landing at `at` going `way`, `strength`
-    // how hard it was for the creature: pushed hardest where it landed. Swept off its legs, its legs go the way the
-    // blow went and its trunk and head pitch the other way, so it falls on its face.
-    static void hit(Ragdoll doll, Vec3 at, Vec3 way, float strength, ImpactPayload.Reaction reaction) {
-        double flat = Math.sqrt(way.x * way.x + way.z * way.z);
-        if (flat < 1.0E-4) {
-            return;
-        }
-        double fx = way.x / flat;
-        double fz = way.z / flat;
-        double hard = Mth.clamp(strength * HIT_SPEED, LEAST_HIT, MOST_HIT) * ClientSettings.ragdollForce();
-        if (reaction != ImpactPayload.Reaction.TRIP) {
-            shove(doll, fx, fz, hard, 0.0, null, Vec3.ZERO, at);
-            return;
-        }
-        RigidWorld world = doll.world;
-        double[] pose = new double[7];
-        double[] v = new double[6];
-        for (int b = 0; b < world.count(); b++) {
-            int part = doll.partOf[b];
-            boolean upper = part == doll.core || part == doll.head
-                    || doll.parts.get(part).role() == ModelParts.Role.ARM;
-            world.pose(b, pose);
-            world.velocity(b, v);
-            double push = upper ? -hard * PITCH : hard * Mth.clamp(1.2 - Math.abs(pose[1] - at.y), 0.4, 1.2);
-            world.velocity(b, v[0] + fx * push, v[1], v[2] + fz * push, v[3], v[4], v[5]);
-        }
-        world.wake();
-    }
-
-    // Every part pushed (fx, fz) at `hard` blocks a second where the blow struck (at `at` when known, else at the
-    // height it came from), less the further from there, and lifted at `lift`; `was` (what every part was given as it
-    // went limp) taken back first. The part it landed on is pushed at the very point too, and its limbs give way.
+    // Every part pushed (fx, fz) at `hard` blocks a second where the blow struck, less the further from there, and
+    // lifted at `lift`; `was` (what every part was given as it went limp) taken back first. Its limbs give way.
     private static void shove(Ragdoll doll, double fx, double fz, double hard, double lift, @Nullable Vec3 from,
-            Vec3 was, @Nullable Vec3 at) {
+            Vec3 was) {
         RigidWorld world = doll.world;
-        double[] pose = new double[7];
+        double[] at = new double[7];
         double[] v = new double[6];
         double low = Double.POSITIVE_INFINITY;
         double high = Double.NEGATIVE_INFINITY;
         for (int b = 0; b < world.count(); b++) {
-            world.pose(b, pose);
+            world.pose(b, at);
             double reach = Math.max(world.half(b, 0), Math.max(world.half(b, 1), world.half(b, 2)));
-            low = Math.min(low, pose[1] - reach);
-            high = Math.max(high, pose[1] + reach);
+            low = Math.min(low, at[1] - reach);
+            high = Math.max(high, at[1] + reach);
         }
         double tall = Math.max(0.3, high - low);
         // A blow from someone strikes at the height it came from, a blow from nowhere at the chest.
-        double hit = at != null ? at.y : from != null ? Mth.clamp(from.y, low + 0.35 * tall, high) : low + 0.65 * tall;
-        int struck = -1;
-        double nearest = Double.POSITIVE_INFINITY;
+        double hit = from != null ? Mth.clamp(from.y, low + 0.35 * tall, high) : low + 0.65 * tall;
         for (int b = 0; b < world.count(); b++) {
-            world.pose(b, pose);
+            world.pose(b, at);
             world.velocity(b, v);
-            double far = at == null ? Math.abs(pose[1] - hit) : Math.sqrt(sq(pose[0] - at.x) + sq(pose[1] - at.y)
-                    + sq(pose[2] - at.z));
-            if (far < nearest && !world.ghostly(b)) {
-                nearest = far;
-                struck = b;
-            }
-            double near = Mth.clamp(NEAREST - far / tall * 1.6, FURTHEST, NEAREST);
+            double near = Mth.clamp(NEAREST - Math.abs(at[1] - hit) / tall * 1.6, FURTHEST, NEAREST);
             double flail = b == doll.body[doll.core] ? 0.0 : hard * FLAIL;
             world.velocity(b, v[0] - was.x + fx * hard * near, v[1] - was.y + lift * near,
                     v[2] - was.z + fz * hard * near, v[3] + RANDOM.nextGaussian() * flail,
                     v[4] + RANDOM.nextGaussian() * flail, v[5] + RANDOM.nextGaussian() * flail);
         }
-        if (at != null && struck >= 0) {
-            double mass = world.mass(struck) * hard * AT_POINT;
-            world.push(struck, at.x, at.y, at.z, fx * mass, lift * AT_POINT * world.mass(struck), fz * mass);
-        }
         if (!doll.stiff) {
             giveWay(doll, RANDOM, fz, -fx, GIVE_WAY);
         }
         world.wake();
-    }
-
-    private static double sq(double a) {
-        return a * a;
     }
 
     // Whether a creature thrown alive, still upright, has its back to a wall right behind it the way it is thrown: then

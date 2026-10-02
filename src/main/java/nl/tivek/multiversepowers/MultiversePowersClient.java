@@ -28,7 +28,6 @@ import nl.tivek.multiversepowers.config.client.ConfigChoiceScreen;
 import nl.tivek.multiversepowers.engine.client.pose.BodyTurns;
 import nl.tivek.multiversepowers.engine.client.pose.Poses;
 import nl.tivek.multiversepowers.engine.client.pose.Tired;
-import nl.tivek.multiversepowers.engine.client.stagger.Reactions;
 import nl.tivek.multiversepowers.engine.client.ragdoll.RagdollProfiles;
 import nl.tivek.multiversepowers.engine.client.ragdoll.Ragdolls;
 import nl.tivek.multiversepowers.engine.client.fx.Lens;
@@ -63,7 +62,6 @@ public final class MultiversePowersClient {
                 && LanternBody.pose(player, entity));
         Poses.layer(Poses.Stage.CREATURE, HandVictims::pose);
         Poses.layer(Poses.Stage.CREATURE, Tired::pose);
-        Poses.layer(Poses.Stage.CREATURE, Reactions::pose);
         BodyTurns.add(LanternArms::turnBody);
         BodyTurns.add(ThorPoses::turn);
         Poses.layer(Poses.Stage.MODEL, (model, entity, partialTick) -> model instanceof PlayerModel<?> player

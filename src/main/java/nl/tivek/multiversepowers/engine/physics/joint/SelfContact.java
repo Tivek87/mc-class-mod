@@ -13,9 +13,6 @@ public final class SelfContact implements Constraint {
     private final double[] from;
     private final double[] to;
     private final double radius;
-    // The capsule's middle and how far it reaches from there, its radius too.
-    private final double[] middle;
-    private final double reach;
     private final double[] p = new double[3];
     private final double[] local = new double[3];
     private final double[] n = new double[3];
@@ -26,11 +23,6 @@ public final class SelfContact implements Constraint {
         this.from = from.clone();
         this.to = to.clone();
         this.radius = radius;
-        this.middle = new double[] { (from[0] + to[0]) * 0.5, (from[1] + to[1]) * 0.5, (from[2] + to[2]) * 0.5 };
-        double dx = to[0] - from[0];
-        double dy = to[1] - from[1];
-        double dz = to[2] - from[2];
-        this.reach = Math.sqrt(dx * dx + dy * dy + dz * dz) * 0.5 + radius;
     }
 
     @Override
@@ -39,15 +31,6 @@ public final class SelfContact implements Constraint {
         double hx = world.half[o];
         double hy = world.half[o + 1];
         double hz = world.half[o + 2];
-        // Too far from the box for any of its points to reach it.
-        world.point(this.limb, this.middle[0], this.middle[1], this.middle[2], this.p);
-        double cx = this.p[0] - world.x[o];
-        double cy = this.p[1] - world.x[o + 1];
-        double cz = this.p[2] - world.x[o + 2];
-        double far = this.reach + Math.sqrt(hx * hx + hy * hy + hz * hz);
-        if (cx * cx + cy * cy + cz * cz > far * far) {
-            return;
-        }
         for (int i = 0; i < SAMPLES; i++) {
             double u = i / (SAMPLES - 1.0);
             world.point(this.limb, this.from[0] + (this.to[0] - this.from[0]) * u,

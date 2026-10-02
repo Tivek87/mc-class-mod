@@ -22,7 +22,7 @@ import org.joml.Vector3f;
 
 // A creature gone limp, drawn: built from the pose the creature was drawn in, so it never jumps, every part it moves
 // is put where its box is each frame; getting up, it goes from how it lay to its own pose by way of GetUp.
-final class Ragdoll extends RagdollMotor {
+final class Ragdoll extends RagdollBody {
     // Scratch for drawing, which only ever happens on the render thread.
     private static final Matrix4f FRAME = new Matrix4f();
     private static final Quaterniond A = new Quaterniond();

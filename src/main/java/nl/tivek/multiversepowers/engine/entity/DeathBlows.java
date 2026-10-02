@@ -15,17 +15,15 @@ import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.engine.effect.Effects;
-import nl.tivek.multiversepowers.engine.entity.impact.Impacts;
 
-// The blow that kills a creature, told to the players near it at the end of the tick it died in: from where it came,
-// where on the body it landed (Impacts) and how hard it pushed, so their games throw the body the way the blow went,
-// hardest where it struck. By the tick's end a power that pushes what it hits after the blow (as most do) has pushed
-// it too.
+// The blow that kills a creature, told to the players near it at the end of the tick it died in: from where it came
+// and how hard it pushed, so their games throw the body the way the blow went, hardest where it struck. By the tick's
+// end a power that pushes what it hits after the blow (as most do) has pushed it too.
 @EventBusSubscriber(modid = MultiversePowers.MODID)
 public final class DeathBlows {
     private static final List<Death> DEATHS = new ArrayList<>();
 
-    private record Death(LivingEntity victim, @Nullable Vec3 from, Vec3 push, @Nullable Vec3 at) {
+    private record Death(LivingEntity victim, @Nullable Vec3 from, Vec3 push) {
     }
 
     static {
@@ -41,9 +39,7 @@ public final class DeathBlows {
         if (event.isCanceled() || victim.level().isClientSide()) {
             return;
         }
-        Impacts.Impact impact = Impacts.of(victim);
-        DEATHS.add(new Death(victim, from(event.getSource()), victim.getDeltaMovement(),
-                impact == null ? null : impact.at()));
+        DEATHS.add(new Death(victim, from(event.getSource()), victim.getDeltaMovement()));
     }
 
     // A shot comes from where it hit, a blow from the eyes of who struck it, a blast from its middle; a fall, fire or
@@ -73,7 +69,7 @@ public final class DeathBlows {
                 continue;
             }
             PacketDistributor.sendToPlayersTrackingEntityAndSelf(victim, new DeathBlowPayload(victim.getId(),
-                    death.from(), push, death.at()));
+                    death.from(), push));
         }
         DEATHS.clear();
     }

@@ -17,8 +17,6 @@ abstract class RigidBlocks extends RigidBodies {
     private static final double LEEWAY = 0.35;
     // A block's six faces all shut: nothing reaches it before the blocks round it.
     private static final int BURIED = 63;
-    // Room for how far the pushes out of blocks may move a body in one pass.
-    private static final double ROOM = 0.25;
     // A point in a block is stopped as far as it came in this substep, as by a blow; the rest of the way out (it was
     // put there: built in a wall, carried into one) the body is only moved, this much in all a substep. Pushed out
     // further at once, it would take the push as speed and fly off.
@@ -44,7 +42,6 @@ abstract class RigidBlocks extends RigidBodies {
     final int[] nearBlocks = new int[MOST * NEAR_BLOCKS];
     final int[] nearBlockCount = new int[MOST];
     private final double[] nearBlockFar = new double[NEAR_BLOCKS];
-    private final int[] reached = new int[NEAR_BLOCKS];
     final int[] nearEdges = new int[MOST * NEAR_EDGES];
     final int[] nearEdgeCount = new int[MOST];
     // How much a body may still be moved out of blocks without speed this substep.
@@ -57,13 +54,6 @@ abstract class RigidBlocks extends RigidBodies {
     final double[] hit = new double[6];
 
     void gather(Blocks world, double dt) {
-        this.collect(world, dt);
-        this.seal();
-        this.sortOut(dt);
-    }
-
-    // The solid boxes the bodies can reach in a step of dt seconds; with dt 0, those round them as they lie.
-    void collect(Blocks world, double dt) {
         double minX = Double.POSITIVE_INFINITY;
         double minY = Double.POSITIVE_INFINITY;
         double minZ = Double.POSITIVE_INFINITY;
@@ -84,6 +74,8 @@ abstract class RigidBlocks extends RigidBodies {
             maxZ = Math.max(maxZ, this.x[o + 2] + reach + sway);
         }
         this.blockCount = Math.min(MOST_BLOCKS, world.collect(minX, minY, minZ, maxX, maxY, maxZ, this.blocks));
+        this.seal();
+        this.sortOut(dt);
     }
 
     // How far the middle of body o (its first coordinate's index) is from block k's box, squared.
@@ -287,23 +279,13 @@ abstract class RigidBlocks extends RigidBodies {
         int o = b * 3;
         this.touches = 0;
         this.ease = EASE_OUT;
-        // Only the blocks its round bound reaches can hold a corner, with room for the pushes out on the way.
-        double round = Math.sqrt(this.half[o] * this.half[o] + this.half[o + 1] * this.half[o + 1]
-                + this.half[o + 2] * this.half[o + 2]) + ROOM;
-        int reached = 0;
-        for (int n = 0; n < this.nearBlockCount[b]; n++) {
-            int k = this.nearBlocks[b * NEAR_BLOCKS + n];
-            if (this.away(k, o) <= round * round) {
-                this.reached[reached++] = k;
-            }
-        }
-        for (int c = 0; c < 8 && reached > 0; c++) {
+        for (int c = 0; c < 8; c++) {
             double lx = (c & 1) == 0 ? -this.half[o] : this.half[o];
             double ly = (c & 2) == 0 ? -this.half[o + 1] : this.half[o + 1];
             double lz = (c & 4) == 0 ? -this.half[o + 2] : this.half[o + 2];
             this.point(b, lx, ly, lz, this.t1);
-            for (int n = 0; n < reached; n++) {
-                int k = this.reached[n];
+            for (int n = 0; n < this.nearBlockCount[b]; n++) {
+                int k = this.nearBlocks[b * NEAR_BLOCKS + n];
                 int e = k * 6;
                 double cx = this.t1[0];
                 double cy = this.t1[1];

@@ -22,12 +22,9 @@ abstract class RigidCrowd extends RigidBlocks {
     // A point is stopped as far as it came into the other this substep, as by a blow; the rest of the way out the body
     // is only moved, this much in all a substep: pushed out further at once, it would gather speed and fly off.
     private static final double EASE_OUT = 0.0015;
-    // Room for how far the pushes out of other boxes may move a body in one pass.
-    private static final double ROOM = 0.25;
 
     private final double[] others = new double[MOST_OTHERS * BOX];
     private int otherCount;
-    private final int[] touching = new int[NEAR_OTHERS];
     // How far into the step the substep being solved has got, and the one before (seconds).
     double lead;
     double leadWas;
@@ -95,24 +92,6 @@ abstract class RigidCrowd extends RigidBlocks {
             }
         }
         double reach = Math.max(0.0, this.half[o + longest] - radius);
-        // Boxes too far for any point of it to reach, with room for the pushes out of the others on the way.
-        int near = 0;
-        for (int n = 0; n < this.nearOtherCount[b]; n++) {
-            int e = this.nearOthers[b * NEAR_OTHERS + n] * BOX;
-            double dx = this.others[e] + this.others[e + 10] * this.lead - this.x[o];
-            double dy = this.others[e + 1] + this.others[e + 11] * this.lead - this.x[o + 1];
-            double dz = this.others[e + 2] + this.others[e + 12] * this.lead - this.x[o + 2];
-            double hx = this.others[e + 7];
-            double hy = this.others[e + 8];
-            double hz = this.others[e + 9];
-            double far = reach + radius + Math.sqrt(hx * hx + hy * hy + hz * hz) + ROOM;
-            if (dx * dx + dy * dy + dz * dz <= far * far) {
-                this.touching[near++] = e;
-            }
-        }
-        if (near == 0) {
-            return;
-        }
         for (int s = 0; s < SAMPLES; s++) {
             double along = -reach + 2.0 * reach * s / (SAMPLES - 1);
             double lx = longest == 0 ? along : 0.0;
@@ -132,8 +111,8 @@ abstract class RigidCrowd extends RigidBlocks {
             double lx = longest == 0 ? along : 0.0;
             double ly = longest == 1 ? along : 0.0;
             double lz = longest == 2 ? along : 0.0;
-            for (int n = 0; n < near; n++) {
-                int e = this.touching[n];
+            for (int n = 0; n < this.nearOtherCount[b]; n++) {
+                int e = this.nearOthers[b * NEAR_OTHERS + n] * BOX;
                 this.point(b, lx, ly, lz, this.sample);
                 Quat.unrotate(this.others, e + 3, this.sample[0] - this.others[e] - this.others[e + 10] * this.lead,
                         this.sample[1] - this.others[e + 1] - this.others[e + 11] * this.lead,

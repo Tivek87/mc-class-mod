@@ -462,13 +462,6 @@ abstract class RagdollBody {
         return this.kind;
     }
 
-    // How much stepping it takes this tick: hardly any asleep, unless it is its turn to look whether it still rests on
-    // something.
-    long work(int substeps) {
-        boolean resting = this.phase == Phase.UP || this.world.sleeping() && this.age % PROBE_EVERY != 0;
-        return resting ? 1L : (long) substeps * this.world.count();
-    }
-
     void step(int substeps, Blocks blocks) {
         System.arraycopy(this.now, 0, this.was, 0, this.now.length);
         this.hit = 0.0;

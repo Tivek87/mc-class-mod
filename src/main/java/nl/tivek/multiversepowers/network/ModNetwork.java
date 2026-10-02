@@ -50,8 +50,6 @@ import nl.tivek.multiversepowers.engine.entity.DeathBlowPayload;
 import nl.tivek.multiversepowers.engine.entity.DeathStylePayload;
 import nl.tivek.multiversepowers.engine.entity.FatiguePayload;
 import nl.tivek.multiversepowers.engine.entity.HeldPayload;
-import nl.tivek.multiversepowers.engine.entity.impact.ImpactPayload;
-import nl.tivek.multiversepowers.engine.entity.impact.LedgePayload;
 import nl.tivek.multiversepowers.engine.entity.KnockdownPayload;
 import nl.tivek.multiversepowers.engine.fx.ParticlesPayload;
 import nl.tivek.multiversepowers.engine.fx.VoicePayload;
@@ -97,8 +95,6 @@ public final class ModNetwork {
         registrar.playToClient(FatiguePayload.TYPE, FatiguePayload.STREAM_CODEC, ModNetwork::onFatigue);
         registrar.playToClient(DeathStylePayload.TYPE, DeathStylePayload.STREAM_CODEC, ModNetwork::onDeathStyle);
         registrar.playToClient(DeathBlowPayload.TYPE, DeathBlowPayload.STREAM_CODEC, ModNetwork::onDeathBlow);
-        registrar.playToClient(ImpactPayload.TYPE, ImpactPayload.STREAM_CODEC, ModNetwork::onImpact);
-        registrar.playToClient(LedgePayload.TYPE, LedgePayload.STREAM_CODEC, ModNetwork::onLedge);
         registrar.playToClient(KillConfirmPayload.TYPE, KillConfirmPayload.STREAM_CODEC, ModNetwork::onKillConfirm);
         registrar.playToClient(HandVictimPayload.TYPE, HandVictimPayload.STREAM_CODEC, ModNetwork::onHandVictim);
         registrar.playToClient(RingPayload.TYPE, RingPayload.STREAM_CODEC, ModNetwork::onRing);
@@ -243,14 +239,6 @@ public final class ModNetwork {
 
     private static void onDeathBlow(DeathBlowPayload payload, IPayloadContext context) {
         ClientPayloadHandler.handleDeathBlow(payload, context);
-    }
-
-    private static void onImpact(ImpactPayload payload, IPayloadContext context) {
-        ClientPayloadHandler.handleImpact(payload, context);
-    }
-
-    private static void onLedge(LedgePayload payload, IPayloadContext context) {
-        ClientPayloadHandler.handleLedge(payload, context);
     }
 
     private static void onDeathStyle(DeathStylePayload payload, IPayloadContext context) {

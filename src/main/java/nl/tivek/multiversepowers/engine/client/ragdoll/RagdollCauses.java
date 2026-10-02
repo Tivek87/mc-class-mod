@@ -19,7 +19,6 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.CollisionContext;
-import nl.tivek.multiversepowers.engine.entity.impact.ImpactPayload;
 import org.joml.Matrix4f;
 
 // What throws a creature limp and how hard: a blow that sends it flying, or a blast near it.
@@ -43,7 +42,6 @@ final class RagdollCauses {
     private static final Int2IntOpenHashMap BLOWN_AT = new Int2IntOpenHashMap();
     private static final List<Blast> BLASTS = new ArrayList<>();
     private static final Int2ObjectOpenHashMap<Blow> BLOWS = new Int2ObjectOpenHashMap<>();
-    private static final Int2ObjectOpenHashMap<Hit> HITS = new Int2ObjectOpenHashMap<>();
 
     private RagdollCauses() {
     }
@@ -52,27 +50,12 @@ final class RagdollCauses {
     }
 
     // The blow that killed a creature, as the server tells it: from where (null: from nowhere in particular), how hard
-    // it pushed (blocks a tick), where on the body it landed (null: not known) and when word came.
-    record Blow(@Nullable Vec3 from, Vec3 push, @Nullable Vec3 at, int tick) {
-    }
-
-    // A blow a creature lived through that throws it limp (Staggers): where it landed, the way it went, how hard it was
-    // for the creature and how it took it, and when word came.
-    record Hit(Vec3 at, Vec3 way, float strength, ImpactPayload.Reaction reaction, int tick) {
+    // it pushed (blocks a tick) and when word came.
+    record Blow(@Nullable Vec3 from, Vec3 push, int tick) {
     }
 
     static void told(int entity, Blow blow) {
         BLOWS.put(entity, blow);
-    }
-
-    static void told(int entity, Hit hit) {
-        HITS.put(entity, hit);
-    }
-
-    // Word of a blow that throws the creature limp, taken once.
-    @Nullable
-    static Hit hit(int entity) {
-        return HITS.remove(entity);
     }
 
     @Nullable
@@ -140,14 +123,12 @@ final class RagdollCauses {
         BLASTS.removeIf(blast -> now - blast.tick() > BLAST_TICKS);
         BLOWN_AT.int2IntEntrySet().removeIf(entry -> now - entry.getIntValue() > BLAST_TICKS);
         BLOWS.values().removeIf(blow -> now - blow.tick() > BLOW_TICKS);
-        HITS.values().removeIf(hit -> now - hit.tick() > BLOW_TICKS);
     }
 
     static void clear() {
         BLASTS.clear();
         BLOWN_AT.clear();
         BLOWS.clear();
-        HITS.clear();
     }
 
     // Only a creature drawn at its true size and shape can go limp: not one squashed or stretched by some effect.
