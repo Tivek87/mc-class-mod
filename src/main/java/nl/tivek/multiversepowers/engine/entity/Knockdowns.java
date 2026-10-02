@@ -6,8 +6,12 @@ import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.Set;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.tags.TagKey;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.FlyingMob;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.MoverType;
@@ -33,6 +37,8 @@ import nl.tivek.multiversepowers.engine.effect.Effects;
 @EventBusSubscriber(modid = MultiversePowers.MODID)
 public final class Knockdowns {
     private static final String SAVED_TAG = "welcomescreen_downed_noai";
+    private static final TagKey<EntityType<?>> STAYS_UP = TagKey.create(Registries.ENTITY_TYPE,
+            ResourceLocation.fromNamespaceAndPath(MultiversePowers.MODID, "knockdown_none"));
     // In blocks a tick: pushed along the ground, upward, or by a blast; and too heavy to throw.
     private static final double THROWN = 0.8;
     private static final double TOSSED = 0.55;
@@ -133,10 +139,11 @@ public final class Knockdowns {
         }
     }
 
-    // Not one that flies by itself, rides or is ridden.
+    // Not one that flies by itself, rides or is ridden, nor one no player's game can show limp (knockdown_none: it
+    // would stand frozen while it lay).
     static boolean falls(Mob mob) {
         return !mob.isNoGravity() && !mob.isPassenger() && !mob.isVehicle() && !(mob instanceof FlyingMob)
-                && !(mob instanceof FlyingAnimal) && !(mob instanceof Bat);
+                && !(mob instanceof FlyingAnimal) && !(mob instanceof Bat) && !mob.getType().is(STAYS_UP);
     }
 
     static boolean mayFly(Mob mob) {

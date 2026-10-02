@@ -55,6 +55,8 @@ public final class Stance {
     private static final Quaternionf LAST = new Quaternionf();
     private static final Quaternionf SHARE = new Quaternionf();
     private static final Quaternionf FOOT_WAY = new Quaternionf();
+    private static final Quaternionf CARRY = new Quaternionf();
+    private static final Quaternionf BENT_TURN = new Quaternionf();
     private static final Vector3f J = new Vector3f();
     private static final Vector3f NECK = new Vector3f(0.0F, 0.0F, 0.0F);
     private static final Vector3f HIPS = new Vector3f(0.0F, HIP_Y, 0.0F);
@@ -93,12 +95,15 @@ public final class Stance {
         NECK.set(hips).add(PELVIS.transform(V.set(0.0F, -PELVIS_LENGTH, 0.0F)));
         NECK.add(ABDOMEN.transform(V.set(0.0F, -BELLY, 0.0F)));
         NECK.add(CHEST.transform(V.set(0.0F, -CHEST_LENGTH, 0.0F)));
+        // The arms turn as far as the chest turns from how it was turned before: a second pose of the trunk in one
+        // drawing does not turn them by both.
+        CARRY.rotationZYX(model.body.zRot, model.body.yRot, model.body.xRot).conjugate().premul(CHEST);
         place(model.body, NECK, CHEST);
         Limbs.waist(model, SCRATCH.set(waist).conjugate());
         Limbs.pelvis(model, SCRATCH.set(lean).conjugate().mul(PELVIS));
         model.head.setPos(NECK.x, NECK.y, NECK.z);
-        shoulder(model.rightArm, -1.0F, carry);
-        shoulder(model.leftArm, 1.0F, carry);
+        shoulder(model, model.rightArm, -1.0F, carry);
+        shoulder(model, model.leftArm, 1.0F, carry);
         for (int side = -1; side <= 1; side += 2) {
             ModelPart leg = side < 0 ? model.rightLeg : model.leftLeg;
             PELVIS.transform(V.set(side * HIP_X, 0.0F, 0.0F));
@@ -116,15 +121,17 @@ public final class Stance {
         return out.set(CHEST);
     }
 
-    private static void shoulder(ModelPart arm, float side, boolean carry) {
+    private static void shoulder(HumanoidModel<?> model, ModelPart arm, float side, boolean carry) {
         V.set(side * SHOULDER_X, SHOULDER_Y, 0.0F);
         CHEST.transform(V);
         arm.setPos(NECK.x + V.x, NECK.y + V.y, NECK.z + V.z);
+        // Moved off its shoulder blade: the blade is turned again by whatever reaches the arm next.
+        Limbs.unshrug(model, side < 0.0F);
         if (!carry) {
             return;
         }
         SCRATCH.rotationZYX(arm.zRot, arm.yRot, arm.xRot);
-        SCRATCH.premul(CHEST);
+        SCRATCH.premul(CARRY);
         turn(arm, SCRATCH);
     }
 
@@ -211,12 +218,28 @@ public final class Stance {
         return out.add(limb.x, limb.y, limb.z);
     }
 
+    // Where a person's sole or the end of its hand is as it is posed now, bent at the knee and ankle or the elbow and
+    // wrist as far as a pose bent them already.
     public static Vector3f foot(HumanoidModel<?> model, boolean right, Vector3f out) {
-        return end(right ? model.rightLeg : model.leftLeg, THIGH + SHIN, out);
+        return bent(right ? model.rightLeg : model.leftLeg, THIGH, SHIN - FOOT, FOOT, out);
     }
 
     public static Vector3f hand(HumanoidModel<?> model, boolean right, Vector3f out) {
-        return end(right ? model.rightArm : model.leftArm, UPPER_ARM + FOREARM, out);
+        return bent(right ? model.rightArm : model.leftArm, UPPER_ARM, FOREARM - HAND, HAND, out);
+    }
+
+    private static Vector3f bent(ModelPart limb, float upper, float lower, float last, Vector3f out) {
+        SCRATCH.rotationZYX(limb.zRot, limb.yRot, limb.xRot);
+        SCRATCH.transform(out.set(0.0F, upper, 0.0F));
+        float[] lengths = { lower, last };
+        for (int joint = 0; joint < 2; joint++) {
+            Matrix3f turn = BentParts.turn(limb, joint);
+            if (turn != null) {
+                SCRATCH.mul(turn.getNormalizedRotation(BENT_TURN));
+            }
+            out.add(SCRATCH.transform(V.set(0.0F, lengths[joint], 0.0F)));
+        }
+        return out.add(limb.x, limb.y, limb.z);
     }
 
     // Reaches a limb's far end to `end`, bent at its middle joint towards `pole`, its last piece (`last` long, past its

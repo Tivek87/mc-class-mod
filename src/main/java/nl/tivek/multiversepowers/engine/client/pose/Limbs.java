@@ -113,7 +113,7 @@ public final class Limbs {
     }
 
     // Turns a hand at its wrist or a foot at its ankle by `turn`, in the axes of the arm's or leg's piece before it: a
-    // fold, a lean to the side or both.
+    // fold, a lean to the side or both, and a twist, each no further than the joint goes (ModelBends.Bend.keep).
     public static void turn(HumanoidModel<?> model, Joint joint, Quaternionf turn) {
         boolean end = joint == Joint.RIGHT_WRIST || joint == Joint.LEFT_WRIST || joint == Joint.RIGHT_ANKLE
                 || joint == Joint.LEFT_ANKLE;
@@ -124,11 +124,13 @@ public final class Limbs {
             straighten(model, joint);
             return;
         }
-        if (start(model, joint) == null) {
+        ModelBends.Bend bend = start(model, joint);
+        if (bend == null) {
             return;
         }
-        BENT[joint.ordinal()] = angle(turn);
-        put(model, joint, TURN.set(turn));
+        bend.keep(TURN.set(turn));
+        BENT[joint.ordinal()] = angle(TURN);
+        put(model, joint, TURN);
     }
 
     // A joint turned earlier in this drawing turns back straight (a second pose that keeps it so).
@@ -265,6 +267,13 @@ public final class Limbs {
         return drawing == model && SHRUGGED[right ? 0 : 1];
     }
 
+    // An arm moved off where its shoulder blade put it: the blade may be turned again.
+    static void unshrug(EntityModel<?> model, boolean right) {
+        if (drawing == model) {
+            SHRUGGED[right ? 0 : 1] = false;
+        }
+    }
+
     // Whether a pose bent this part of the model being drawn at any of its joints.
     public static boolean bent(EntityModel<?> model, ModelPart part) {
         Rig rig = drawing == model ? RIGS.get(model) : null;
@@ -318,6 +327,27 @@ public final class Limbs {
     // How far a joint of the model being drawn is bent now, in radians.
     public static float bent(EntityModel<?> model, Joint joint) {
         return drawing == model ? BENT[joint.ordinal()] : 0.0F;
+    }
+
+    // Every joint's turn of the model being drawn now, in Joint's order (straight where no pose bent it).
+    static void turns(EntityModel<?> model, Quaternionf[] out) {
+        for (int i = 0; i < JOINTS; i++) {
+            if (drawing == model) {
+                out[i].set(TURNS[i]);
+            } else {
+                out[i].identity();
+            }
+        }
+    }
+
+    // Sets a joint's turn as it is, for a fade between two poses' turns (Poses): the parts it carries are placed by
+    // that fade already.
+    static void set(EntityModel<?> model, Joint joint, Quaternionf turn) {
+        if (!EntityPass.inWorld() || start(model, joint) == null) {
+            return;
+        }
+        BENT[joint.ordinal()] = angle(turn);
+        put(model, joint, TURN.set(turn));
     }
 
     // The most a joint of the model folds the way it folds, in radians; 0 when the model has no such joint.

@@ -8,7 +8,7 @@ import net.minecraft.client.model.geom.ModelPart;
 // A model is shared by every creature of its kind, and not every model sets all its parts again each frame: what a
 // ragdoll changes for one creature is put back as it was once that creature is drawn.
 final class Restore {
-    private static final int STRIDE = 9;
+    private static final int STRIDE = 10;
 
     private final List<ModelPart> parts = new ArrayList<>();
     private float[] values = new float[STRIDE * 32];
@@ -34,6 +34,7 @@ final class Restore {
         v[o + 6] = part.xScale;
         v[o + 7] = part.yScale;
         v[o + 8] = part.zScale;
+        v[o + 9] = part.visible ? 1.0F : 0.0F;
     }
 
     boolean any() {
@@ -54,6 +55,7 @@ final class Restore {
             part.xScale = v[o + 6];
             part.yScale = v[o + 7];
             part.zScale = v[o + 8];
+            part.visible = v[o + 9] != 0.0F;
         }
         this.parts.clear();
     }

@@ -42,6 +42,8 @@ public final class ModelParts {
     public static final int BODIES = 2;
     private static final int MOST = 24;
     private static final float SAME = 1.0E-4F;
+    // A cube this thin (pixels) on a part is a flat plate.
+    private static final float PLATE = 1.0F;
 
     // Models whose way of drawing a ragdoll knows: those that draw their parts as the vanilla bases do. One that
     // draws them some way of its own (another mod's) is left to die as in the plain game.
@@ -178,6 +180,33 @@ public final class ModelParts {
             return null;
         }
         return parts.size() >= 2 && parts.size() <= MOST ? parts : null;
+    }
+
+    // Every part `of` would move, shown or hidden now: a part a model shows only at times (an illager's arms, crossed
+    // or held out) is left out of a ragdoll built while it was hidden.
+    public static List<ModelPart> tops(EntityModel<?> model) {
+        List<ModelPart> tops = new ArrayList<>();
+        if (model instanceof HumanoidModel<?> humanoid) {
+            tops.addAll(List.of(humanoid.head, humanoid.body, humanoid.rightArm, humanoid.leftArm, humanoid.rightLeg,
+                    humanoid.leftLeg));
+        } else if (model instanceof AgeableListModel<?> ageable) {
+            AgeableListModelAccess lists = (AgeableListModelAccess) ageable;
+            lists.welcomescreen$headParts().forEach(tops::add);
+            lists.welcomescreen$bodyParts().forEach(tops::add);
+        } else if (model instanceof HierarchicalModel<?> hierarchical) {
+            ModelPart node = hierarchical.root();
+            while (node.cubes.isEmpty() && node.children.size() == 1) {
+                node = node.children.values().iterator().next();
+            }
+            // As `of` takes them: the part they hang in only when it draws something of its own.
+            if (!node.cubes.isEmpty()) {
+                tops.add(node);
+            }
+            tops.addAll(node.children.values());
+        } else if (model instanceof ListModel<?> list) {
+            list.parts().forEach(tops::add);
+        }
+        return tops;
     }
 
     private static Role roleOf(String name, Role otherwise) {
@@ -392,19 +421,32 @@ public final class ModelParts {
         return node;
     }
 
-    // Everything a part draws, in its own frame: its cubes and those of the parts on it where they sit now.
+    // Everything a part draws, in its own frame, as drawn (a grown cube as big as it is drawn): its cubes and those of
+    // the parts on it where they sit now, but for flat plates on it (a hat's brim, a mane, bristles, ears), which are
+    // no body to lie on or bump into.
     static void grow(ModelPart part, Matrix4f frame, float[] bounds, Vector3f corner) {
+        grow(part, frame, bounds, corner, false);
+    }
+
+    private static void grow(ModelPart part, Matrix4f frame, float[] bounds, Vector3f corner, boolean on) {
         for (ModelPart.Cube cube : part.cubes) {
-            for (int c = 0; c < 8; c++) {
-                corner.set((c & 1) == 0 ? cube.minX : cube.maxX, (c & 2) == 0 ? cube.minY : cube.maxY,
-                        (c & 4) == 0 ? cube.minZ : cube.maxZ);
-                frame.transformPosition(corner);
-                bounds[0] = Math.min(bounds[0], corner.x);
-                bounds[1] = Math.min(bounds[1], corner.y);
-                bounds[2] = Math.min(bounds[2], corner.z);
-                bounds[3] = Math.max(bounds[3], corner.x);
-                bounds[4] = Math.max(bounds[4], corner.y);
-                bounds[5] = Math.max(bounds[5], corner.z);
+            if (on && Math.min(cube.maxX - cube.minX, Math.min(cube.maxY - cube.minY, cube.maxZ - cube.minZ))
+                    <= PLATE) {
+                continue;
+            }
+            float[][] faces = BentParts.faces(cube);
+            if (faces == null) {
+                for (int c = 0; c < 8; c++) {
+                    corner.set((c & 1) == 0 ? cube.minX : cube.maxX, (c & 2) == 0 ? cube.minY : cube.maxY,
+                            (c & 4) == 0 ? cube.minZ : cube.maxZ);
+                    include(frame, corner, bounds);
+                }
+                continue;
+            }
+            for (float[] face : faces) {
+                for (int i = 3; i + 2 < face.length; i += 5) {
+                    include(frame, corner.set(face[i], face[i + 1], face[i + 2]), bounds);
+                }
             }
         }
         for (ModelPart child : part.children.values()) {
@@ -414,7 +456,17 @@ public final class ModelParts {
             Matrix4f inner = new Matrix4f(frame).translate(child.x, child.y, child.z)
                     .rotate(Axis.ZP.rotation(child.zRot)).rotate(Axis.YP.rotation(child.yRot))
                     .rotate(Axis.XP.rotation(child.xRot)).scale(child.xScale, child.yScale, child.zScale);
-            grow(child, inner, bounds, corner);
+            grow(child, inner, bounds, corner, true);
         }
+    }
+
+    private static void include(Matrix4f frame, Vector3f corner, float[] bounds) {
+        frame.transformPosition(corner);
+        bounds[0] = Math.min(bounds[0], corner.x);
+        bounds[1] = Math.min(bounds[1], corner.y);
+        bounds[2] = Math.min(bounds[2], corner.z);
+        bounds[3] = Math.max(bounds[3], corner.x);
+        bounds[4] = Math.max(bounds[4], corner.y);
+        bounds[5] = Math.max(bounds[5], corner.z);
     }
 }

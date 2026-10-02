@@ -20,6 +20,7 @@ import nl.tivek.multiversepowers.config.client.ClientSettings;
 import nl.tivek.multiversepowers.engine.client.render.entity.EntityPass;
 import nl.tivek.multiversepowers.engine.math.Ease;
 import org.joml.Matrix4f;
+import org.joml.Quaternionf;
 
 // The poses powers give a creature on top of its own animation, in one place and one order: each stage's layers,
 // then (while the world is drawn) a short fade whenever a layer starts or stops, so a pose never jumps, and last the
@@ -52,6 +53,11 @@ public final class Poses {
     private static final List<Layer> CREATURE_LAYERS = new ArrayList<>();
     private static final Int2ObjectOpenHashMap<Memory> MEMORY = new Int2ObjectOpenHashMap<>();
     private static final float[] NOW = new float[PARTS * VALUES];
+    private static final int JOINTS = Limbs.Joint.values().length;
+    private static final Quaternionf[] JOINTS_NOW = turns();
+    private static final Quaternionf MIXED = new Quaternionf();
+    // A joint turned less than this (the cosine of half its angle) is straight.
+    private static final float STRAIGHT = 0.99999F;
     private static int ticks;
 
     private static final class Memory {
@@ -60,10 +66,24 @@ public final class Poses {
         boolean drawn;
         final float[] last = new float[PARTS * VALUES];
         final float[] from = new float[PARTS * VALUES];
+        // Every joint's turn as last drawn, and as the fade under way began from.
+        final Quaternionf[] joints = turns();
+        final Quaternionf[] fromJoints = turns();
         double fading = -1.0;
         // When a pose began on a body no layer posed before: the shoulders come along as it fades in.
         double rising = -1.0;
+        // How far the shoulder blades followed the arms last time, and when the last layer stopped.
+        float followed;
+        float followFrom;
         int seen;
+    }
+
+    private static Quaternionf[] turns() {
+        Quaternionf[] turns = new Quaternionf[Limbs.Joint.values().length];
+        for (int i = 0; i < turns.length; i++) {
+            turns[i] = new Quaternionf();
+        }
+        return turns;
     }
 
     private Poses() {
@@ -106,35 +126,64 @@ public final class Poses {
         long all = on | memory.model << MOST;
         memory.model = 0L;
         read(humanoid, NOW);
+        Limbs.turns(humanoid, JOINTS_NOW);
         double now = ticks + partialTick;
         boolean fresh = !memory.drawn || ticks - memory.seen > FORGET;
         if (!fresh && all != memory.on) {
             System.arraycopy(memory.last, 0, memory.from, 0, NOW.length);
+            for (int j = 0; j < JOINTS; j++) {
+                memory.fromJoints[j].set(memory.joints[j]);
+            }
             memory.fading = now;
             memory.rising = memory.on == 0L ? now : memory.rising;
+            // The last layer stopping: its shoulders settle back as the rest of it fades.
+            memory.followFrom = all == 0L ? memory.followed : 0.0F;
         } else if (fresh) {
             memory.fading = -1.0;
             memory.rising = -1.0;
+            memory.followFrom = 0.0F;
         }
         memory.on = all;
+        float fade = 1.0F;
         if (memory.fading >= 0.0) {
             double t = (now - memory.fading) / FADE;
             if (t >= 1.0 || t < 0.0) {
                 memory.fading = -1.0;
             } else {
-                blend(memory.from, NOW, (float) Ease.smooth(t));
+                // The joints (elbows, knees, wrists, ankles, waist, pelvis) fade along with the limbs they bend.
+                fade = (float) Ease.smooth(t);
+                blend(memory.from, NOW, fade);
                 write(humanoid, NOW);
+                for (Limbs.Joint joint : Limbs.Joint.values()) {
+                    int j = joint.ordinal();
+                    Quaternionf from = memory.fromJoints[j];
+                    Quaternionf to = JOINTS_NOW[j];
+                    if (Math.abs(from.w) > STRAIGHT && Math.abs(to.w) > STRAIGHT) {
+                        continue;
+                    }
+                    if (from.dot(to) < 0.0F) {
+                        from.set(-from.x, -from.y, -from.z, -from.w);
+                    }
+                    Limbs.set(humanoid, joint, MIXED.set(from).slerp(to, fade));
+                }
             }
         }
+        // As the pose was before its shoulder blades follow its arms, so a fade never shrugs a shoulder twice.
+        read(humanoid, memory.last);
+        Limbs.turns(humanoid, memory.joints);
+        float follow = 0.0F;
         if (all != 0L) {
             double t = memory.rising < 0.0 ? 1.0 : (now - memory.rising) / FADE;
             if (t >= 1.0 || t < 0.0) {
                 memory.rising = -1.0;
                 t = 1.0;
             }
-            Shoulders.follow(humanoid, (float) Ease.smooth(t));
+            follow = (float) Ease.smooth(t);
+        } else if (memory.fading >= 0.0) {
+            follow = memory.followFrom * (1.0F - fade);
         }
-        read(humanoid, memory.last);
+        Shoulders.follow(humanoid, follow);
+        memory.followed = follow;
         memory.drawn = true;
         memory.seen = ticks;
         plant(model, entity, partialTick, drawn);

@@ -1,5 +1,6 @@
 package nl.tivek.multiversepowers.engine.client.ragdoll.getup;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
@@ -42,8 +43,8 @@ class PersonRiseTest {
                 down.transform(lie.pos[i].set(own.pos[i]).sub(0.0F, 12.0F, 0.0F)).add(3.0F, 22.0F, 5.0F);
                 lie.rot[i].set(down).mul(own.rot[i]);
             }
-            assertTrue(GetUp.person(model, parts, chains));
-            GetUp.Rise rise = GetUp.start(body, model, parts, chains, lie, true, null);
+            assertEquals(GetUp.Kind.PERSON, GetUp.kind(parts, chains, null));
+            GetUp.Rise rise = GetUp.start(body, model, parts, chains, lie, GetUp.Kind.PERSON, null);
             BodyPose out = new BodyPose();
             Vector3f[] was = new Vector3f[n];
             float jump = 0.0F;

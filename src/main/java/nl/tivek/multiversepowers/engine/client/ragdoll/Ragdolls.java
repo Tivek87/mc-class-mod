@@ -40,7 +40,6 @@ import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.config.client.ClientSettings;
 import nl.tivek.multiversepowers.engine.client.model.BentParts;
 import nl.tivek.multiversepowers.engine.client.model.ModelParts;
-import nl.tivek.multiversepowers.engine.client.ragdoll.getup.GetUp;
 import nl.tivek.multiversepowers.engine.client.render.entity.EntityPass;
 import nl.tivek.multiversepowers.engine.client.world.LevelBlocks;
 import nl.tivek.multiversepowers.engine.math.Ease;
@@ -271,6 +270,11 @@ public final class Ragdolls {
                 || Knocked.down(entity.getId()) ? Ragdoll.State.FLYING : null;
     }
 
+    // Whether a power has the creature: holding it, or posing or drawing it in a way of its own.
+    public static boolean taken(Entity entity) {
+        return HELD.contains(entity.getId()) || claimed(entity);
+    }
+
     private static boolean claimed(Entity entity) {
         for (Predicate<Entity> claim : CLAIMS) {
             if (claim.test(entity)) {
@@ -457,7 +461,7 @@ public final class Ragdolls {
                         doll.lain++;
                     }
                     doll.keepNear(entity);
-                    if (Knocked.getsUp(entity.getId(), doll.down, doll.lain, doll.person())) {
+                    if (Knocked.getsUp(entity.getId(), doll.down, doll.lain, doll.kind().ticks)) {
                         doll.getUp();
                     }
                 }
@@ -470,7 +474,7 @@ public final class Ragdolls {
                     DamageSource source = entity.getLastDamageSource();
                     RagdollFalls.knockBack(doll, entity.getDeltaMovement(),
                             source == null ? null : source.getSourcePosition());
-                } else if (doll.up >= GetUp.ticks(doll.person())) {
+                } else if (doll.up >= doll.kind().ticks) {
                     Knocked.forget(entity.getId());
                     Facings.rose(entity, doll.riseYaw);
                     return false;
@@ -512,7 +516,7 @@ public final class Ragdolls {
         float partialTick = event.getPartialTick();
         Ragdoll doll = LIVE.get(entity.getId());
         if (doll != null && doll.entity == entity && doll.phase == Ragdoll.Phase.UP) {
-            float u = (doll.up + partialTick) / GetUp.ticks(doll.person());
+            float u = (doll.up + partialTick) / doll.kind().ticks;
             float own = Mth.rotLerp(partialTick, entity.yBodyRotO, entity.yBodyRot);
             float look = Mth.wrapDegrees(Mth.rotLerp(partialTick, entity.yHeadRotO, entity.yHeadRot) - own);
             float share = (float) Ease.smoother((u - TURN_FROM) / (1.0F - TURN_FROM));

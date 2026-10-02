@@ -1,5 +1,6 @@
 package nl.tivek.multiversepowers.engine.client.ragdoll.getup;
 
+import java.util.Arrays;
 import javax.annotation.Nullable;
 import net.minecraft.util.RandomSource;
 import nl.tivek.multiversepowers.engine.client.pose.Shoulders;
@@ -66,6 +67,10 @@ final class PersonRise implements GetUp.Rise {
     private static final float BRACE_OUT = 1.5F;
 
     private final Skeleton body;
+    // Whether it gets up with its hands (its arms not folded as one part), and the parts it does not move itself (the
+    // folded arms), which its trunk carries.
+    private final boolean hands;
+    private final int[] extras;
     // The weapon it leans on getting up (null without one), at which moments, and where its tip rests then.
     @Nullable
     private final Brace brace;
@@ -92,12 +97,14 @@ final class PersonRise implements GetUp.Rise {
     private final Vector3f b = new Vector3f();
     private final Vector3f c = new Vector3f();
     private final Quaternionf q = new Quaternionf();
+    private final Quaternionf q2 = new Quaternionf();
 
     // `vary`: each moment a little sooner or later, each group a little more or less ahead or behind and the head
     // turned a little this way or that, by `seed` (never for the same body twice), so no two get up alike.
     PersonRise(Skeleton body, BodyPose lie, @Nullable Brace brace, boolean vary, long seed) {
         this.body = body;
         this.brace = brace;
+        this.extras = extras(body);
         RandomSource random = vary ? RandomSource.create(seed) : null;
         Skeleton.Pose lying = new Skeleton.Pose();
         body.read(lie, lying);
@@ -105,7 +112,11 @@ final class PersonRise implements GetUp.Rise {
         // Face down its pelvis's front (-z) points at the ground (+y: y runs down); sitting, its trunk (-y) points up.
         boolean sitting = lying.pelvis.transform(this.a.set(0.0F, -1.0F, 0.0F)).y < -SITTING;
         boolean front = !sitting && lying.pelvis.transform(this.a.set(0.0F, 0.0F, -1.0F)).y > 0.0F;
-        RiseMoments.Moment[] plan = sitting ? RiseMoments.SEATED : front ? RiseMoments.FRONT : RiseMoments.BACK;
+        // With its arms folded as one part it gets up without its hands.
+        this.hands = body.present(0) && body.present(1);
+        RiseMoments.Moment[] plan = this.hands
+                ? sitting ? RiseMoments.SEATED : front ? RiseMoments.FRONT : RiseMoments.BACK
+                : sitting ? RiseMoments.SEATED_FOLDED : front ? RiseMoments.FRONT_FOLDED : RiseMoments.BACK_FOLDED;
         // Face down it steps through with the leg whose knee lies further ahead; face up it turns onto the side it
         // lies nearer: its front turned to its left, it lies on its right.
         boolean mirror = front ? body.joint(3, this.a).z < body.joint(2, this.b).z
@@ -121,8 +132,10 @@ final class PersonRise implements GetUp.Rise {
         this.keys[0] = lying;
         this.rests[0] = this.resting(lying);
         for (int l = 0; l < Skeleton.LIMBS; l++) {
-            this.contacts[0][l] = this.end(l, RiseMoments.how(l, this.rests[0]), new Vector3f());
-            this.ways[0][l] = body.along(l, 2, new Vector3f());
+            boolean there = body.present(l);
+            this.contacts[0][l] = there ? this.end(l, RiseMoments.how(l, this.rests[0]), new Vector3f())
+                    : new Vector3f();
+            this.ways[0][l] = there ? body.along(l, 2, new Vector3f()) : new Vector3f(0.0F, 1.0F, 0.0F);
         }
         Vector3f anchor = new Vector3f(lying.hips);
         Skeleton.Pose rest = new Skeleton.Pose();
@@ -163,6 +176,9 @@ final class PersonRise implements GetUp.Rise {
     private int resting(Skeleton.Pose lying) {
         int rests = 0;
         for (int l = 0; l < Skeleton.LIMBS; l++) {
+            if (!this.body.present(l)) {
+                continue;
+            }
             if (this.body.tip(l, this.a).y >= this.body.ground - ON_GROUND) {
                 rests |= l < 2 ? 1 << l : l == 2 ? RiseMoments.FOOT_R : RiseMoments.FOOT_L;
             } else if (l >= 2 && this.body.joint(l, this.a).y >= this.body.ground - this.body.half[l] - ON_GROUND) {
@@ -194,6 +210,11 @@ final class PersonRise implements GetUp.Rise {
     private void plant(Skeleton.Pose made, int k) {
         for (int l = 2; l < Skeleton.LIMBS + 2; l++) {
             int limb = l % Skeleton.LIMBS;
+            if (!this.body.present(limb)) {
+                this.contacts[k][limb] = new Vector3f();
+                this.ways[k][limb] = new Vector3f(0.0F, 1.0F, 0.0F);
+                continue;
+            }
             int how = RiseMoments.how(limb, this.rests[k]);
             Vector3f at = this.end(limb, how, new Vector3f());
             this.contacts[k][limb] = at;
@@ -380,10 +401,45 @@ final class PersonRise implements GetUp.Rise {
     public void pose(float u, BodyPose lie, BodyPose own, BodyPose out) {
         this.at(u);
         this.body.write(this.pose, this.track);
+        this.carry(u, lie, own);
         float toOwn = (float) Ease.smoother((u - OWN_FROM) / (1.0F - OWN_FROM));
         PoseBlend.blend(this.body.body, this.track, own, toOwn, toOwn, this.faded);
         float fromLie = 1.0F - (float) Ease.smoother(u / LIE_FADE);
         PoseBlend.blend(this.body.body, this.faded, lie, fromLie, fromLie, out);
+    }
+
+    // Every part that is none of its head, trunk, arms and legs.
+    private static int[] extras(Skeleton body) {
+        int n = body.body.n;
+        int[] extras = new int[n];
+        int count = 0;
+        for (int i = 0; i < n; i++) {
+            boolean role = false;
+            for (int r : body.roles) {
+                role |= r == i;
+            }
+            if (!role) {
+                extras[count++] = i;
+            }
+        }
+        return Arrays.copyOf(extras, count);
+    }
+
+    // The parts it does not move itself go along with the piece of its trunk they hang from, from how they lay there to
+    // how they hang as it stands.
+    private void carry(float u, BodyPose lie, BodyPose own) {
+        float w = (float) Ease.smoother(u);
+        Hanging hanging = this.body.body;
+        for (int i : this.extras) {
+            PoseBlend.inTrunk(hanging, i, lie, this.a, this.q);
+            PoseBlend.inTrunk(hanging, i, own, this.b, this.q2);
+            this.a.lerp(this.b, w);
+            this.q.slerp(this.q2, w);
+            PoseBlend.fromTrunk(hanging, i, this.a, this.q, this.track);
+            for (int j = 0; j < BodyPose.JOINTS; j++) {
+                this.track.joint[j][i].set(lie.joint[j][i]).slerp(own.joint[j][i], w);
+            }
+        }
     }
 
     // The body `u` of the way up, placed: every joint on its curve through the moments, the body kept off the ground,
@@ -397,7 +453,9 @@ final class PersonRise implements GetUp.Rise {
             this.body.place(this.pose);
         }
         this.rest(u, 2);
-        this.rest(u, 0);
+        if (this.hands) {
+            this.rest(u, 0);
+        }
     }
 
     // Limbs l and l + 1 reaching where they rest at `u`, each by the moments of its own curve.
@@ -413,6 +471,10 @@ final class PersonRise implements GetUp.Rise {
                 this.pose.limb[l].slerp(this.reached.limb[l], w);
                 this.pose.mid[l].slerp(this.reached.mid[l], w);
                 this.pose.end[l].slerp(this.reached.end[l], w);
+                if (l < 2) {
+                    // A hand put on the ground or a knee brings its shoulder blade along.
+                    this.pose.blade[l].slerp(this.reached.blade[l], w);
+                }
             }
         }
         this.body.place(this.pose);

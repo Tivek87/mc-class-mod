@@ -13,6 +13,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Pose;
+import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
@@ -30,9 +31,12 @@ final class FootPlanting {
     // How far up or down a foot looks for ground, and how far from it a foot counts as on it, in blocks.
     private static final double LOOK = 0.6;
     private static final double ON = 0.03;
-    // The most a leg is turned, in radians, and how much of the way to its new turn it goes each frame.
+    // The most a leg is turned, in radians, and how much of the way to its new turn it goes each frame at 60 frames a
+    // second (FRAMES_A_TICK frames a tick).
     private static final float FURTHEST = 0.8F;
     private static final float EASE = 0.25F;
+    private static final float FRAMES_A_TICK = 3.0F;
+    private static final int WRAP = 100000;
     // Below this walking speed a creature stands still, and its spread legs reach down.
     private static final float STILL = 0.1F;
     private static final float TRY = 0.01F;
@@ -57,19 +61,25 @@ final class FootPlanting {
         Minecraft minecraft = Minecraft.getInstance();
         Level level = entity.level();
         Vec3 camera = minecraft.gameRenderer.getMainCamera().getPosition();
-        boolean standing = entity.isAlive() && !entity.isPassenger() && !entity.isSleeping() && !entity.isFallFlying()
-                && !entity.isInWater() && !entity.isSwimming() && entity.getPose() != Pose.SPIN_ATTACK
-                && entity.distanceToSqr(camera) < NEAR * NEAR;
+        // An armor stand is a statue: its legs stay as they were posed.
+        boolean standing = entity.isAlive() && !(entity instanceof ArmorStand) && !entity.isPassenger()
+                && !entity.isSleeping() && !entity.isFallFlying() && !entity.isInWater() && !entity.isSwimming()
+                && entity.getPose() != Pose.SPIN_ATTACK && entity.distanceToSqr(camera) < NEAR * NEAR;
         float[] turns = TURNS.get(entity.getId());
         if (!standing && turns == null) {
             return;
         }
         if (turns == null || turns.length != legs.length * 2 + 1) {
             turns = new float[legs.length * 2 + 1];
+            turns[legs.length * 2] = clock(tick, partialTick);
             TURNS.put(entity.getId(), turns);
         }
-        // The last slot keeps when these feet were last drawn.
-        turns[legs.length * 2] = tick;
+        // The last slot keeps when these feet were last drawn (clock); they ease towards where they go by the time
+        // since.
+        float now = clock(tick, partialTick);
+        float since = Mth.clamp(sinceThen(now, turns[legs.length * 2]), 0.0F, 2.0F);
+        turns[legs.length * 2] = now;
+        float ease = 1.0F - (float) Math.pow(1.0F - EASE, since * FRAMES_A_TICK);
         boolean still = entity.walkAnimation.speed(partialTick) < STILL;
         boolean moved = false;
         for (int i = 0; i < legs.length; i++) {
@@ -77,8 +87,14 @@ final class FootPlanting {
             ModelPart part = leg.limb().part();
             float wantX = 0.0F;
             float wantZ = 0.0F;
-            // A leg a pose bent (Stance) was placed on purpose, and its straight tip is not where its foot is.
-            if (standing && part.visible && !Limbs.bent(model, part)) {
+            // A leg a pose bent (Stance) was placed on purpose, and its straight tip is not where its foot is: it
+            // keeps just that place.
+            if (Limbs.bent(model, part)) {
+                turns[i * 2] = 0.0F;
+                turns[i * 2 + 1] = 0.0F;
+                continue;
+            }
+            if (standing && part.visible) {
                 double foot = height(model, drawn, leg, camera);
                 double ground = ground(level, TIP.x + camera.x, TIP.z + camera.z, foot);
                 double gap = ground - foot;
@@ -88,8 +104,8 @@ final class FootPlanting {
                     wantZ = turn[1];
                 }
             }
-            turns[i * 2] += (wantX - turns[i * 2]) * EASE;
-            turns[i * 2 + 1] += (wantZ - turns[i * 2 + 1]) * EASE;
+            turns[i * 2] += (wantX - turns[i * 2]) * ease;
+            turns[i * 2 + 1] += (wantZ - turns[i * 2 + 1]) * ease;
             part.xRot += turns[i * 2];
             part.zRot += turns[i * 2 + 1];
             moved |= Math.abs(turns[i * 2]) > 1.0E-4F || Math.abs(turns[i * 2 + 1]) > 1.0E-4F;
@@ -99,37 +115,65 @@ final class FootPlanting {
         }
     }
 
-    // The turn about the leg's own x or z axis (whichever moves its tip up or down the most) that brings its tip
-    // `gap` blocks higher, within reach.
+    // The least turn about the leg's own x or z axis (whichever moves its tip up or down the most) that brings its tip
+    // `gap` blocks higher; none when no turn within FURTHEST does (a leg hanging straight down only lifts its tip,
+    // whichever way it turns).
     private static float[] reach(EntityModel<?> model, Matrix4f drawn, Leg leg, Vec3 camera, double gap) {
         ModelPart part = leg.limb().part();
         float x = part.xRot;
         float z = part.zRot;
         double base = height(model, drawn, leg, camera);
-        part.xRot = x + TRY;
-        double byX = (height(model, drawn, leg, camera) - base) / TRY;
+        double[] byX = slopes(model, drawn, leg, camera, base, true);
         part.xRot = x;
-        part.zRot = z + TRY;
-        double byZ = (height(model, drawn, leg, camera) - base) / TRY;
+        double[] byZ = slopes(model, drawn, leg, camera, base, false);
         part.zRot = z;
-        boolean alongX = Math.abs(byX) >= Math.abs(byZ);
-        double rate = alongX ? byX : byZ;
+        boolean alongX = Math.abs(byX[0]) >= Math.abs(byZ[0]);
+        double[] by = alongX ? byX : byZ;
         float[] turn = new float[2];
-        if (Math.abs(rate) < 1.0E-3) {
-            return turn;
-        }
-        // A straight leg lifts its foot whichever way it turns: turn the way it is already turned, so a step forward
-        // becomes a step up, not a kick back.
-        float angle = (float) Mth.clamp(gap / rate, -FURTHEST, FURTHEST);
-        if (gap > 0.0 && Math.signum(rate) != Math.signum(gap)) {
-            angle = -angle;
-        }
-        if (alongX) {
-            turn[0] = angle;
-        } else {
-            turn[1] = angle;
+        double angle = turnFor(by[0], by[1], gap);
+        if (!Double.isNaN(angle)) {
+            turn[alongX ? 0 : 1] = (float) angle;
         }
         return turn;
+    }
+
+    // The least turn that lifts a tip `gap` higher when turning it by t lifts it a sin t + b (1 - cos t), as it goes
+    // round a circle; NaN when none within FURTHEST does.
+    static double turnFor(double a, double b, double gap) {
+        double r = Math.sqrt(a * a + b * b);
+        if (r < 1.0E-4 || Math.abs(gap - b) > r) {
+            return Double.NaN;
+        }
+        double phase = Math.atan2(b, a);
+        double reached = Math.asin((gap - b) / r);
+        double first = Mth.wrapDegrees(Math.toDegrees(phase + reached)) * Mth.DEG_TO_RAD;
+        double second = Mth.wrapDegrees(Math.toDegrees(phase + Math.PI - reached)) * Mth.DEG_TO_RAD;
+        double angle = Math.abs(first) <= Math.abs(second) ? first : second;
+        return Math.abs(angle) > FURTHEST ? Double.NaN : angle;
+    }
+
+    // How fast the tip rises as the leg turns about its x (or z) axis, and how much a turn either way lifts it beyond
+    // that: a and b of the circle it goes round.
+    private static double[] slopes(EntityModel<?> model, Matrix4f drawn, Leg leg, Vec3 camera, double base,
+            boolean aboutX) {
+        ModelPart part = leg.limb().part();
+        float was = aboutX ? part.xRot : part.zRot;
+        set(part, aboutX, was + TRY);
+        double up = height(model, drawn, leg, camera);
+        set(part, aboutX, was - TRY);
+        double down = height(model, drawn, leg, camera);
+        set(part, aboutX, was);
+        double a = (up - down) / (2.0 * TRY);
+        double b = (up + down - 2.0 * base) / (TRY * TRY);
+        return new double[] { a, b };
+    }
+
+    private static void set(ModelPart part, boolean aboutX, float angle) {
+        if (aboutX) {
+            part.xRot = angle;
+        } else {
+            part.zRot = angle;
+        }
     }
 
     // How high (world, but less the camera's y) the leg's tip is as the model stands now; leaves the tip in TIP.
@@ -212,6 +256,18 @@ final class FootPlanting {
     }
 
     static void forgetOld(int tick, int unseen) {
-        TURNS.values().removeIf(turns -> tick - turns[turns.length - 1] > unseen);
+        float now = clock(tick, 0.0F);
+        TURNS.values().removeIf(turns -> sinceThen(now, turns[turns.length - 1]) > unseen);
+    }
+
+    // The time (ticks) going round every WRAP ticks, so a float keeps it to a fraction of a tick however long the game
+    // has run; and how long ago a time of it was.
+    private static float clock(int tick, float partialTick) {
+        return Math.floorMod(tick, WRAP) + partialTick;
+    }
+
+    private static float sinceThen(float now, float then) {
+        float since = now - then;
+        return since < 0.0F ? since + WRAP : since;
     }
 }

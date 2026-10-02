@@ -115,6 +115,90 @@ final class RiseMoments {
     static final Moment[] SEATED = { BACK[1].at(0.17F), BACK[2].at(0.36F), FRONT[4].at(0.53F), FRONT[5].at(0.72F),
             FRONT[6].at(0.89F) };
 
+    private static final float[][] NO_ARMS = { { 0.0F, 0.0F, 0.0F, 0.0F, 0.0F }, { 0.0F, 0.0F, 0.0F, 0.0F, 0.0F } };
+    private static final float[] STILL = { 0.0F, 0.0F, 0.0F, 0.0F };
+
+    private static float[][] legs(float[] right, float[] left) {
+        return new float[][] { NO_ARMS[0], NO_ARMS[1], right, left };
+    }
+
+    // Face down with its arms folded on its chest (a villager's): it draws its knees in under its hips, its chest still
+    // on the ground; lifts its chest as it sits up on its knees, kneels up tall, steps its right foot up and rises
+    // over it.
+    static final Moment[] FRONT_FOLDED = {
+            // Knees drawn up under its hips, its chest and cheek still on the ground.
+            new Moment(0.16F, lead(-0.02F, 0.03F, 0.0F, 0.0F, 0.02F, 0.0F), 0.0F, 1.25F, 0.0F, 0.0F, 0.0F, 0.25F,
+                    0.2F, -0.3F, 0.7F, STILL,
+                    legs(new float[] { -1.35F, 0.0F, 0.06F, 1.75F, 0.4F }, new float[] { -1.35F, 0.0F, -0.06F, 1.75F,
+                            0.4F }),
+                    KNEE_R | KNEE_L),
+            // Its chest lifting off the ground as its hips come over its knees.
+            new Moment(0.33F, lead(-0.02F, 0.03F, 0.0F, 0.0F, 0.0F, 0.0F), 0.0F, 0.7F, 0.0F, 0.0F, 0.0F, 0.2F,
+                    0.15F, -0.15F, 0.2F, STILL,
+                    legs(new float[] { -0.6F, 0.0F, 0.05F, 1.6F, 0.4F }, new float[] { -0.6F, 0.0F, -0.05F, 1.6F,
+                            0.4F }),
+                    KNEE_R | KNEE_L),
+            // Kneeling up tall.
+            new Moment(0.47F, lead(0.0F, -0.02F, 0.0F, 0.0F, 0.0F, 0.0F), 0.0F, 0.08F, 0.0F, 0.0F, 0.0F, 0.02F,
+                    0.0F, 0.05F, 0.0F, STILL,
+                    legs(new float[] { 0.0F, 0.0F, 0.05F, 1.55F, 0.45F }, new float[] { 0.0F, 0.0F, -0.05F, 1.55F,
+                            0.45F }),
+                    KNEE_R | KNEE_L),
+            // Its right foot stepped up ahead, kneeling on its left knee.
+            new Moment(0.6F, lead(0.0F, -0.02F, 0.0F, 0.0F, 0.03F, 0.0F), 0.0F, 0.15F, 0.0F, 0.0F, 0.0F, 0.05F,
+                    0.0F, 0.08F, 0.0F, STILL,
+                    legs(new float[] { -1.55F, 0.0F, 0.08F, 1.6F, 0.0F }, new float[] { 0.0F, 0.0F, -0.05F, 1.55F,
+                            0.3F }),
+                    KNEE_L | FOOT_R),
+            // Rising over its right foot, its left on its toes behind.
+            new Moment(0.76F, lead(0.0F, -0.02F, 0.0F, 0.0F, 0.0F, 0.0F), 0.0F, 0.42F, 0.0F, 0.0F, 3.0F, 0.12F,
+                    0.08F, 0.1F, 0.0F, STILL,
+                    legs(new float[] { -0.95F, 0.0F, 0.05F, 1.0F, 0.0F }, new float[] { 0.35F, 0.0F, -0.05F, 0.6F,
+                            0.5F }),
+                    FOOT_R | TOES_L),
+            // Standing, its left foot brought up beside its right.
+            new Moment(0.9F, lead(0.0F, -0.02F, 0.0F, 0.0F, 0.0F, 0.0F), 0.0F, 0.03F, 0.0F, 0.0F, 0.0F, 0.0F,
+                    0.0F, 0.0F, 0.0F, STILL,
+                    legs(new float[] { 0.0F, 0.0F, 0.0F, 0.05F, 0.0F }, new float[] { 0.0F, 0.0F, 0.0F, 0.05F, 0.0F }),
+                    FOOT_R | FOOT_L) };
+
+    // Face up with its arms folded: it tucks its chin and draws its knees up, rolls up onto its seat with its knees
+    // tight, rocks on forward onto its feet into a crouch, leaning well over them, and rises from the crouch.
+    static final Moment[] BACK_FOLDED = {
+            // Chin tucked, knees drawn up, feet flat.
+            new Moment(0.13F, lead(-0.02F, 0.03F, 0.0F, 0.0F, 0.015F, 0.0F), 0.0F, -1.5F, 0.0F, 0.0F, 0.0F, 0.2F,
+                    0.08F, 0.5F, 0.0F, STILL,
+                    legs(new float[] { -1.0F, 0.0F, 0.08F, 1.9F, -0.3F }, new float[] { -1.0F, 0.0F, -0.08F, 1.9F,
+                            -0.3F }),
+                    FOOT_R | FOOT_L),
+            // Rolled up onto its seat, curled over its knees.
+            new Moment(0.3F, lead(0.0F, 0.025F, 0.0F, 0.0F, 0.0F, 0.0F), 0.0F, -0.55F, 0.0F, 0.0F, 2.0F, 0.55F,
+                    0.3F, 0.35F, 0.0F, STILL,
+                    legs(new float[] { -1.6F, 0.0F, 0.1F, 2.15F, -0.45F }, new float[] { -1.6F, 0.0F, -0.1F, 2.15F,
+                            -0.45F }),
+                    FOOT_R | FOOT_L),
+            // Rocked on onto its feet, crouching low and leaning well over them.
+            new Moment(0.47F, lead(0.02F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F), 0.0F, 0.65F, 0.0F, 0.0F, 4.0F, 0.35F,
+                    0.2F, 0.1F, 0.0F, STILL,
+                    legs(new float[] { -2.15F, 0.0F, 0.12F, 2.25F, -0.6F }, new float[] { -2.15F, 0.0F, -0.12F, 2.25F,
+                            -0.6F }),
+                    FOOT_R | FOOT_L),
+            // Rising out of the crouch.
+            new Moment(0.68F, lead(0.0F, -0.02F, 0.0F, 0.0F, 0.0F, 0.0F), 0.0F, 0.35F, 0.0F, 0.0F, 2.0F, 0.12F,
+                    0.06F, 0.05F, 0.0F, STILL,
+                    legs(new float[] { -1.0F, 0.0F, 0.06F, 1.15F, -0.3F }, new float[] { -1.0F, 0.0F, -0.06F, 1.15F,
+                            -0.3F }),
+                    FOOT_R | FOOT_L),
+            // Standing.
+            new Moment(0.88F, lead(0.0F, -0.02F, 0.0F, 0.0F, 0.0F, 0.0F), 0.0F, 0.03F, 0.0F, 0.0F, 0.0F, 0.0F,
+                    0.0F, 0.0F, 0.0F, STILL,
+                    legs(new float[] { 0.0F, 0.0F, 0.0F, 0.05F, 0.0F }, new float[] { 0.0F, 0.0F, 0.0F, 0.05F, 0.0F }),
+                    FOOT_R | FOOT_L) };
+
+    // Sitting up with its arms folded: it rolls on forward onto its feet from there, as face up.
+    static final Moment[] SEATED_FOLDED = { BACK_FOLDED[1].at(0.18F), BACK_FOLDED[2].at(0.4F),
+            BACK_FOLDED[3].at(0.65F), BACK_FOLDED[4].at(0.88F) };
+
     private RiseMoments() {
     }
 

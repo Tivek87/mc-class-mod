@@ -1,0 +1,11 @@
+{
+  "values": [
+    "#welcomescreen:ragdoll_none",
+    { "id": "#c:bosses", "required": false },
+    "minecraft:llama",
+    "minecraft:trader_llama",
+    "minecraft:rabbit",
+    "minecraft:axolotl",
+    "minecraft:allay"
+  ]
+}

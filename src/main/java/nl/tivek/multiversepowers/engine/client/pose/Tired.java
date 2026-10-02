@@ -12,6 +12,7 @@ import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.event.entity.EntityLeaveLevelEvent;
 import nl.tivek.multiversepowers.MultiversePowers;
+import nl.tivek.multiversepowers.engine.client.ragdoll.Ragdolls;
 import nl.tivek.multiversepowers.engine.client.render.entity.EntityPass;
 import nl.tivek.multiversepowers.engine.entity.Fatigue;
 import org.joml.Quaternionf;
@@ -82,8 +83,9 @@ public final class Tired {
 
     public static boolean pose(EntityModel<?> model, LivingEntity entity, float partialTick) {
         float[] state = WORN.get(entity.getId());
+        // A creature a power holds or poses is not sagging on its own feet.
         if (state == null || !(model instanceof HumanoidModel<?> person) || !EntityPass.inWorld()
-                || entity.isPassenger() || entity.isSleeping() || entity.isSwimming()) {
+                || entity.isPassenger() || entity.isSleeping() || entity.isSwimming() || Ragdolls.taken(entity)) {
             return false;
         }
         float worn = Mth.lerp(partialTick, state[2], state[1]);

@@ -65,16 +65,16 @@ public final class Knocked {
     // Whether the server holds the creature down with time enough left to lie before it gets up.
     static boolean down(int entity) {
         int left = LEFT.get(entity);
-        return left == FLYING || left > LIES + GetUp.PERSON_TICKS + MARGIN;
+        return left == FLYING || left > LIES + GetUp.MOST_TICKS + MARGIN;
     }
 
     // Whether a body down `down` ticks, `lain` of them on the ground, gets up now.
-    static boolean getsUp(int entity, int down, int lain, boolean person) {
+    static boolean getsUp(int entity, int down, int lain, int ticks) {
         if (!LEFT.containsKey(entity)) {
             return down >= GRACE;
         }
         int left = LEFT.get(entity);
-        return left == FLYING ? down >= LONGEST : lain >= LIES && left <= GetUp.ticks(person) + MARGIN;
+        return left == FLYING ? down >= LONGEST : lain >= LIES && left <= ticks + MARGIN;
     }
 
     static void forget(int entity) {

@@ -1,5 +1,6 @@
 package nl.tivek.multiversepowers.engine.client.rig;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.blaze3d.vertex.VertexFormat;
@@ -24,6 +25,7 @@ import nl.tivek.multiversepowers.engine.client.model.ModelParts;
 import nl.tivek.multiversepowers.engine.client.render.ConstructPainter;
 import nl.tivek.multiversepowers.engine.client.render.entity.EntityPass;
 import org.joml.Matrix4f;
+import org.joml.Matrix4fStack;
 import org.joml.Vector3f;
 
 // The developer's view of bones: every creature's model parts and every rigged construct as lines and joints, drawn
@@ -115,6 +117,15 @@ public final class BoneView {
         ModelBends.Bend[] trunk = ModelBends.chain(parts, core, core);
         int[] hang = ModelBends.hang(parts, core, trunk);
         ModelParts.Part body = parts.get(core);
+        // The spine ends at the hips its legs hang from, short of the hem of a robe it carries.
+        float spineEnd = Float.NaN;
+        for (int i = 0; i < parts.size() && trunk.length > 0; i++) {
+            float[] hip = ModelBends.hip(parts, core, i, trunk);
+            float along = hip == null ? Float.NaN : hip[trunk[0].axis()];
+            if (hip != null && (Float.isNaN(spineEnd) || (along - spineEnd) * trunk[0].farSign() > 0.0F)) {
+                spineEnd = hip[trunk[0].axis()];
+            }
+        }
         for (int i = 0; i < parts.size(); i++) {
             ModelParts.Part part = parts.get(i);
             float[] box = part.bounds();
@@ -142,6 +153,10 @@ public final class BoneView {
                     for (int a = 0; a < 3; a++) {
                         END[a] = a == axis ? sign > 0.0F ? box[a + 3] : box[a] : (box[a] + box[a + 3]) * 0.5F;
                     }
+                    if (i == core && !Float.isNaN(spineEnd)
+                            && (spineEnd - chain[chain.length - 1].at()) * sign > 0.0F) {
+                        END[axis] = spineEnd;
+                    }
                 }
                 double[] to = at(part, camera);
                 add(from[0], from[1], from[2], to[0], to[1], to[2], CREATURE);
@@ -155,16 +170,8 @@ public final class BoneView {
             if (blade == null && !hip) {
                 continue;
             }
-            // Where it meets the trunk: the blade's own end on the spine, or the pelvis's far end.
-            if (blade != null) {
-                System.arraycopy(blade, 0, END, 0, 3);
-            } else {
-                float[] b = body.bounds();
-                for (int a = 0; a < 3; a++) {
-                    END[a] = (b[a] + b[a + 3]) * 0.5F;
-                }
-                END[trunk[0].axis()] = trunk[0].farSign() > 0.0F ? b[trunk[0].axis() + 3] : b[trunk[0].axis()];
-            }
+            // Where it meets the trunk: the blade's own end on the spine, or the spine level with the hip.
+            System.arraycopy(blade != null ? blade : ModelBends.hip(parts, core, i, trunk), 0, END, 0, 3);
             ModelParts.frame(model, drawn, body, FRAME);
             double[] spine = at(body, camera);
             ModelParts.frame(model, drawn, part, FRAME);
@@ -207,9 +214,11 @@ public final class BoneView {
         bones[o + 6] = rgb;
     }
 
+    // Drawn once the whole world is (with Fabulous graphics, after its layers are merged by depth: drawn among them,
+    // every bone would end up behind what it lies in).
     @SubscribeEvent
     public static void onRenderLevel(RenderLevelStageEvent event) {
-        if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_WEATHER) {
+        if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_LEVEL) {
             return;
         }
         if (boneCount == 0 || !shown()) {
@@ -220,7 +229,11 @@ public final class BoneView {
         Vec3 eye = camera.getPosition();
         Vector3f left = camera.getLeftVector();
         Vector3f up = camera.getUpVector();
-        Matrix4f matrix = event.getPoseStack().last().pose();
+        Matrix4f matrix = FRAME.identity();
+        Matrix4fStack view = RenderSystem.getModelViewStack();
+        view.pushMatrix();
+        view.set(event.getModelViewMatrix());
+        RenderSystem.applyModelViewMatrix();
         MultiBufferSource.BufferSource buffers = Minecraft.getInstance().renderBuffers().bufferSource();
         VertexConsumer buffer = buffers.getBuffer(LINES);
         for (int i = 0; i < boneCount; i++) {
@@ -236,6 +249,8 @@ public final class BoneView {
             dot(buffer, matrix, ax, ay, az, left, up);
         }
         buffers.endBatch(LINES);
+        view.popMatrix();
+        RenderSystem.applyModelViewMatrix();
         boneCount = 0;
     }
 

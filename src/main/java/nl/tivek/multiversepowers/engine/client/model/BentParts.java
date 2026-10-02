@@ -171,7 +171,7 @@ public final class BentParts {
     // A cube's faces as plain numbers, read from the game's own once: its faces' types are hidden inside ModelPart. A
     // face: its normal, then each corner's x, y, z (pixels) and u, v.
     @Nullable
-    private static float[][] faces(ModelPart.Cube cube) {
+    static float[][] faces(ModelPart.Cube cube) {
         if (FACES.containsKey(cube)) {
             return FACES.get(cube);
         }

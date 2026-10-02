@@ -124,6 +124,31 @@ class ModelPartsTest {
     }
 
     @Test
+    void aVillagersFoldedArmsStayWholeAndItsHeadHasNoBrim() {
+        VillagerModel<LivingEntity> villager = new VillagerModel<>(
+                LayerDefinition.create(VillagerModel.createBodyModel(), 64, 64).bakeRoot());
+        List<ModelParts.Part> parts = parts(villager);
+        ModelParts.Part arms = parts.get(index(parts, "arms"));
+        assertTrue(ModelBends.crossed(arms));
+        assertEquals(0, ModelBends.chain(parts, ModelBends.core(parts), index(parts, "arms")).length);
+        // Its hat's brim is a plate: the head is as wide as its own box (and the hat grown over it), not the brim.
+        float[] head = parts.get(index(parts, "head")).bounds();
+        assertTrue(head[3] - head[0] < 10.0F, "head " + (head[3] - head[0]) + " wide");
+    }
+
+    @Test
+    void theTopPartsAreThePartsARagdollTakesNeverWhatHoldsThem() {
+        VillagerModel<LivingEntity> villager = new VillagerModel<>(
+                LayerDefinition.create(VillagerModel.createBodyModel(), 64, 64).bakeRoot());
+        List<ModelPart> tops = ModelParts.tops(villager);
+        assertFalse(tops.contains(villager.root()), "the root holds every part: hiding it hides the villager");
+        assertEquals(parts(villager).size(), tops.size());
+        HumanoidModel<LivingEntity> person = new HumanoidModel<>(
+                LayerDefinition.create(HumanoidModel.createMesh(CubeDeformation.NONE, 0.0F), 64, 64).bakeRoot());
+        assertEquals(6, ModelParts.tops(person).size());
+    }
+
+    @Test
     void aCreeperBendsWithItsFeetOnTheLowerHalf() {
         CreeperModel<LivingEntity> creeper = new CreeperModel<>(
                 CreeperModel.createBodyLayer(CubeDeformation.NONE).bakeRoot());

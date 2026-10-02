@@ -14,13 +14,14 @@ import org.joml.Vector3f;
 // piece reaches on past its cuts and is trimmed on the plane halfway between it and its neighbour, so up to a square
 // bend they meet in a mitred corner and past it each ends flat, as two blocks would; a sharp fold neither thins nor
 // stretches. A joint's twist about the bone is shared out along the pieces on either side of it, none of it at the
-// part's ends, so the joint itself only folds. Only the render thread draws, so the scratch is shared.
+// part's ends, so the joint itself only folds; a wrist's or an ankle's all along the forearm or shin, so a hand or a
+// foot stays whole, as a forearm turns a hand. Only the render thread draws, so the scratch is shared.
 final class FoldChain {
     // A joint: its cut (a point lies past it where cut . (x, y, z) + cut[3] is above 0) and middle, its whole turn;
-    // seen with the cut turned by half its twist it only folds: the planes halfway between the pieces as the near one
-    // lies and as the far one lay before it turned, the way into the fold, how far past the cut each piece reaches for
-    // every pixel a cube stands out on the outside of the fold (never further than square), and whether the fold is
-    // sharper than square, so the pieces end flat.
+    // seen with the cut turned by the near piece's share of its twist it only folds: the planes halfway between the
+    // pieces as the near one lies and as the far one lay before it turned, the way into the fold, how far past the cut
+    // each piece reaches for every pixel a cube stands out on the outside of the fold (never further than square), and
+    // whether the fold is sharper than square, so the pieces end flat.
     private record Joint(float[] cut, float[] knee, Matrix3f turn, float[] near, float[] far, float[] in, float reach,
             boolean sharp) {
     }
@@ -79,18 +80,22 @@ final class FoldChain {
         }
         Joint[] joints = new Joint[m];
         float[] twists = new float[m];
-        Quaternionf[] halves = new Quaternionf[m];
+        // How much of each joint's twist the piece before it takes, the piece past it the rest: a hand or a foot past
+        // its wrist or ankle stays whole, its forearm or shin twisting for it.
+        float[] shares = new float[m];
+        Quaternionf[] nearTurns = new Quaternionf[m];
         Quaternionf[] swings = new Quaternionf[m];
         for (int j = 0; j < m; j++) {
             ModelBends.Bend bend = bends[j];
+            shares[j] = bend.whole() ? 1.0F : 0.5F;
             Quaternionf q = new Quaternionf(turns[j]);
             if (q.w < 0.0F) {
                 q.set(-q.x, -q.y, -q.z, -q.w);
             }
             float twist = 2.0F * (float) Math.atan2(q.x * bone.x + q.y * bone.y + q.z * bone.z, q.w);
-            Quaternionf half = new Quaternionf().fromAxisAngleRad(bone, twist * 0.5F);
+            Quaternionf near = new Quaternionf().fromAxisAngleRad(bone, twist * shares[j]);
             Quaternionf swing = new Quaternionf(q).mul(new Quaternionf().fromAxisAngleRad(bone, -twist));
-            Quaternionf seen = new Quaternionf(half).conjugate().mul(swing).mul(half);
+            Quaternionf seen = new Quaternionf(near).conjugate().mul(swing).mul(near);
             if (seen.w < 0.0F) {
                 seen.set(-seen.x, -seen.y, -seen.z, -seen.w);
             }
@@ -111,7 +116,7 @@ final class FoldChain {
                     through(k, new Vector3f(bone).mul(c).sub(new Vector3f(in).mul(s))),
                     new float[] { in.x, in.y, in.z }, Math.min(1.0F, s / c), s > c);
             twists[j] = twist;
-            halves[j] = half;
+            nearTurns[j] = near;
             swings[j] = swing;
         }
         float[] b = { bone.x, bone.y, bone.z };
@@ -121,13 +126,15 @@ final class FoldChain {
         for (int j = 0; j <= m; j++) {
             float from = j == 0 ? low : sign * (bends[j - 1].at() - first.at());
             float to = j == m ? high : sign * (bends[j].at() - first.at());
-            float twistFrom = j < m ? -(0.5F * twists[j]) : 0.0F;
-            float twistTo = j > 0 ? 0.5F * twists[j - 1] : 0.0F;
-            // The first piece turns by half the first joint's twist; each past a joint as that joint turns it less
-            // the other half of its twist, and by half the next joint's twist, carried on by every joint before.
-            Quaternionf own = j == 0 ? new Quaternionf(halves[0]) : new Quaternionf(swings[j - 1]).mul(halves[j - 1]);
+            float twistFrom = j < m ? -(shares[j] * twists[j]) : 0.0F;
+            float twistTo = j > 0 ? (1.0F - shares[j - 1]) * twists[j - 1] : 0.0F;
+            // The first piece turns by its share of the first joint's twist; each past a joint as that joint turns it
+            // less the rest of its twist, and by its share of the next joint's twist, carried on by every joint
+            // before.
+            Quaternionf own = j == 0 ? new Quaternionf(nearTurns[0])
+                    : new Quaternionf(swings[j - 1]).mul(nearTurns[j - 1]);
             if (j > 0 && j < m) {
-                own.mul(halves[j]);
+                own.mul(nearTurns[j]);
             }
             Matrix3f faces = new Matrix3f().set(own);
             Matrix4f move = about(bends[Math.max(0, j - 1)].knee(), faces);

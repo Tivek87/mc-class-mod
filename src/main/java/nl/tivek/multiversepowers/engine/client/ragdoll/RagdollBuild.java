@@ -2,6 +2,7 @@ package nl.tivek.multiversepowers.engine.client.ragdoll;
 
 import java.util.List;
 import net.minecraft.client.model.EntityModel;
+import net.minecraft.util.Mth;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.engine.client.model.BentParts;
@@ -62,6 +63,8 @@ final class RagdollBuild {
     private static final float MIDDLE = 1.0F;
     // A limb's bone pointing this much along a way it bends is turned the next way instead (a head held ahead nods).
     private static final float ALONG = 0.8F;
+    // How far arms folded as one part give on the chest, swinging and twisting (radians).
+    private static final double FOLDED = 0.06;
 
     // How far a limb swings from where it hangs as the model was built, in radians: back and forth, in towards the
     // middle and out, and its twist either way.
@@ -91,13 +94,14 @@ final class RagdollBuild {
                 .orElse(new Reach(own.back(), own.fore(), own.in(), own.out(), twist));
     }
 
-    // A limb's joint on the trunk, from how the model was built: its bone (from where it hangs to its middle) swings
-    // about a middle way between how far it reaches ahead and behind, out and in, and twists about itself from how it
-    // is turned there. `trunk` and `limb` are the bodies, their anchors in their own axes.
+    // A limb's joint on what it hangs from, from how the model was built: its bone (from where it hangs to its middle)
+    // swings about a middle way between how far it reaches ahead and behind, out and in, and twists about itself from
+    // how it is turned there. `trunk` and `limb` are the bodies, their anchors in their own axes; `upRest` how the part
+    // it hangs from was turned as built.
     private static LimbJoint limb(int trunk, double[] anchorA, int limb, double[] anchorB, ModelParts.Part part,
-            Quaternionf coreRest, Reach reach) {
+            Quaternionf upRest, Reach reach) {
         Matrix4f rest = ModelParts.rest(part, new Matrix4f());
-        Quaternionf back = new Quaternionf(coreRest).conjugate();
+        Quaternionf back = new Quaternionf(upRest).conjugate();
         // The limb's own axes into the trunk's, as built.
         Quaternionf into = new Quaternionf(back).mul(rest.getNormalizedRotation(new Quaternionf()));
         float[] b = part.bounds();
@@ -162,7 +166,8 @@ final class RagdollBuild {
             blades[i] = ModelBends.shoulder(parts, core, i, hang);
         }
         fit(chains, blades, n, core);
-        Ragdoll ragdoll = new Ragdoll(entity, model, parts, chains, hang, blades, core, state);
+        Ragdoll ragdoll = new Ragdoll(entity, model, parts, chains, hang, blades, core, state,
+                profile.rise().orElse(null));
         RigidWorld world = ragdoll.world;
         world.friction = 0.8;
         world.angularDamping = 1.6;
@@ -200,7 +205,8 @@ final class RagdollBuild {
                     continue;
                 }
                 (k == 1 ? ragdoll.lower : ragdoll.tip)[i] = made;
-                hung[i][k] = join(ragdoll, i, k, chains[i], pieces[i], scale, part.role(), waist);
+                hung[i][k] = join(ragdoll, i, k, chains[i], pieces[i], scale, part.role(), ModelBends.hind(part),
+                        waist);
             }
         }
         double[] pivot = new double[3];
@@ -218,8 +224,7 @@ final class RagdollBuild {
         for (int i = 0; i < n; i++) {
             legs += i != core && parts.get(i).role() == ModelParts.Role.LEG ? 1 : 0;
         }
-        Quaternionf coreRest = ModelParts.rest(parts.get(core), new Matrix4f()).getNormalizedRotation(
-                new Quaternionf());
+        int[] parents = ModelBends.parents(parts, core);
         for (int i = 0; i < n; i++) {
             if (blades[i] != null) {
                 blade(ragdoll, i, blades[i], frames, pieces[core][0], Ragdoll.scaleOf(frames[core]), camera, vel);
@@ -229,10 +234,17 @@ final class RagdollBuild {
             if (i == core) {
                 continue;
             }
-            int trunk = ragdoll.piece(core, hang[i]);
+            // What it hangs from (the trunk's piece, or a part of the trunk's such as a wolf's chest) and where: on
+            // its own box, nearest its pivot (a golem's arm turns at its shoulder, not inside its chest).
+            int up = parents[i];
+            int trunk = up == core ? ragdoll.piece(core, hang[i]) : ragdoll.body[up];
+            Quaternionf upRest = ModelParts.rest(parts.get(up), new Matrix4f()).getNormalizedRotation(
+                    new Quaternionf());
             int blade = ragdoll.blade[i];
             world.pose(blade >= 0 ? blade : trunk, coreAt);
-            Vector3f origin = frames[i].transformPosition(new Vector3f(), new Vector3f());
+            float[] own = parts.get(i).bounds();
+            Vector3f origin = frames[i].transformPosition(new Vector3f(Mth.clamp(0.0F, own[0], own[3]),
+                    Mth.clamp(0.0F, own[1], own[4]), Mth.clamp(0.0F, own[2], own[5])).div(16.0F), new Vector3f());
             pivot[0] = origin.x + camera.x;
             pivot[1] = origin.y + camera.y;
             pivot[2] = origin.z + camera.z;
@@ -268,15 +280,19 @@ final class RagdollBuild {
                 // Held as it was drawn.
                 world.add(new BallJoint(trunk, aLocal, axisA, refA, ragdoll.body[i], bLocal, axisB, refB, 0.02, -0.02,
                         0.02));
+            } else if (ModelBends.crossed(parts.get(i))) {
+                // Arms folded as one part stay folded on the chest, only giving a little.
+                world.add(new BallJoint(trunk, aLocal, axisA, refA, ragdoll.body[i], bLocal, axisB, refB, FOLDED,
+                        -FOLDED, FOLDED));
             } else if (blade >= 0) {
                 // An arm hangs from its shoulder blade and turns within its reach of the chest, as without one: the
                 // blade only moves where it hangs.
                 world.add(new BallJoint(blade, aLocal, axisA, refA, ragdoll.body[i], bLocal, axisB, refB, Math.PI,
                         -Math.PI, Math.PI));
-                world.add(limb(trunk, aLocal, ragdoll.body[i], bLocal, parts.get(i), coreRest,
+                world.add(limb(trunk, aLocal, ragdoll.body[i], bLocal, parts.get(i), upRest,
                         reach(role, legs, profile.part(parts.get(i).name()))).turnsOnly());
             } else {
-                world.add(limb(trunk, aLocal, ragdoll.body[i], bLocal, parts.get(i), coreRest,
+                world.add(limb(trunk, aLocal, ragdoll.body[i], bLocal, parts.get(i), upRest,
                         reach(role, legs, profile.part(parts.get(i).name()))));
             }
             hung[i][0] = bLocal.clone();
@@ -289,7 +305,9 @@ final class RagdollBuild {
             if (i == core) {
                 continue;
             }
-            apart(ragdoll, i, hung[i], core);
+            if (!ModelBends.crossed(parts.get(i))) {
+                apart(ragdoll, i, hung[i], core);
+            }
             for (int j = 0; j < n; j++) {
                 ModelParts.Role other = parts.get(j).role();
                 // One way per pair: two limbs pushing each other out of their own boxes push along two lines, and
@@ -406,7 +424,7 @@ final class RagdollBuild {
     // The joint between part i's pieces k - 1 and k: a knee or an elbow, then an ankle or a wrist; a waist, then a
     // pelvis, the trunk's reach shared out between them. Where piece k hangs from it, in its own axes.
     private static double[] join(Ragdoll ragdoll, int i, int k, ModelBends.Bend[] chain, float[][] pieces,
-            double scale, ModelParts.Role role, RagdollProfiles.Tuning waist) {
+            double scale, ModelParts.Role role, boolean hind, RagdollProfiles.Tuning waist) {
         ModelBends.Bend bend = chain[k - 1];
         float[] near = pieces[k - 1];
         float[] far = pieces[k];
@@ -434,9 +452,12 @@ final class RagdollBuild {
             ragdoll.world.add(new SpineJoint(a, anchorA, hinge, bone, b, anchorB, hinge, bone, -WRIST, WRIST,
                     WRIST_SIDE, WRIST_TWIST));
         } else {
+            // A hind leg folds its hock forward and its hoof back: its ankle's reach the other way round.
             boolean hanging = bend.axis() == 1;
-            ragdoll.world.add(new SpineJoint(a, anchorA, hinge, bone, b, anchorB, hinge, bone,
-                    hanging ? -TOES_UP : -TIP_UP, hanging ? TOES_DOWN : TIP_DOWN, ANKLE_SIDE, ANKLE_TWIST));
+            double up = hanging ? hind ? TOES_DOWN : TOES_UP : TIP_UP;
+            double down = hanging ? hind ? TOES_UP : TOES_DOWN : TIP_DOWN;
+            ragdoll.world.add(new SpineJoint(a, anchorA, hinge, bone, b, anchorB, hinge, bone, -up, down, ANKLE_SIDE,
+                    ANKLE_TWIST));
         }
         return anchorB;
     }

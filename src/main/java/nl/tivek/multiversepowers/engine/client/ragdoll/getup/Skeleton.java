@@ -4,7 +4,9 @@ import java.util.List;
 import javax.annotation.Nullable;
 import nl.tivek.multiversepowers.engine.client.model.ModelBends;
 import nl.tivek.multiversepowers.engine.client.model.ModelParts;
+import nl.tivek.multiversepowers.engine.client.pose.Shoulders;
 import nl.tivek.multiversepowers.engine.rig.Ik;
+import nl.tivek.multiversepowers.engine.rig.Limits;
 import org.joml.Matrix3f;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
@@ -98,6 +100,8 @@ final class Skeleton {
     private final double[] pole = new double[3];
     private final double[] middle = new double[3];
 
+    // `roles`: the parts that are its head, trunk, right and left arm and right and left leg; an arm -1 for a body that
+    // gets up without its hands (its arms folded as one part, carried by its chest).
     Skeleton(Hanging body, List<ModelParts.Part> parts, ModelBends.Bend[][] chains, int[] roles) {
         this.body = body;
         this.roles = roles;
@@ -108,21 +112,28 @@ final class Skeleton {
         Matrix4f into = new Matrix4f(this.trunkRest).invert();
         this.trunkPieces = pieces(trunkPart.bounds(), this.trunk);
         float[] b = trunkPart.bounds();
-        // The hips' middle: the trunk's far end, on its spine (where its legs hang, for a person).
-        this.hipsAt.set((b[0] + b[3]) * 0.5F, b[4], (b[2] + b[5]) * 0.5F);
         for (int r = 0; r < 6; r++) {
+            if (roles[r] < 0) {
+                continue;
+            }
             ModelParts.Part part = parts.get(roles[r]);
             Matrix4f rest = new Matrix4f(into).mul(ModelParts.rest(part, new Matrix4f()));
             this.hangAt[r] = rest.transformPosition(new Vector3f());
             this.restTurn[r] = rest.getNormalizedRotation(new Quaternionf());
             this.pieces[r] = pieces(part.bounds(), r == BODY ? this.trunk : chains[roles[r]]);
         }
+        // The hips' middle: on its spine level with where its legs hang (short of the hem of a robe).
+        this.hipsAt.set((b[0] + b[3]) * 0.5F, (this.hangAt[4].y + this.hangAt[5].y) * 0.5F,
+                (b[2] + b[5]) * 0.5F);
         int[] hang = body.hang;
         for (int s = 0; s < 2; s++) {
-            float[] inner = ModelBends.shoulder(parts, roles[BODY], roles[2 + s], hang);
+            float[] inner = roles[2 + s] < 0 ? null : ModelBends.shoulder(parts, roles[BODY], roles[2 + s], hang);
             this.blade[s] = inner == null ? null : new Vector3f(inner[0], inner[1], inner[2]);
         }
         for (int l = 0; l < LIMBS; l++) {
+            if (!this.present(l)) {
+                continue;
+            }
             ModelParts.Part part = parts.get(roles[2 + l]);
             float[] box = part.bounds();
             ModelBends.Bend[] chain = chains[roles[2 + l]];
@@ -201,6 +212,12 @@ final class Skeleton {
         for (int l = 0; l < LIMBS; l++) {
             Matrix4f frame = this.limbs[l][0];
             int r = 2 + l;
+            if (!this.present(l)) {
+                for (int p = 0; p < 3; p++) {
+                    this.limbs[l][p].set(this.chest);
+                }
+                continue;
+            }
             at = this.hangAt[r];
             if (l < 2) {
                 frame.set(this.chest);
@@ -234,7 +251,9 @@ final class Skeleton {
         }
         low = Math.max(low, lowest(this.head, this.pieces[HEAD][0]));
         for (int l = 0; l < LIMBS; l++) {
-            low = Math.max(low, this.lowestOf(l));
+            if (this.present(l)) {
+                low = Math.max(low, this.lowestOf(l));
+            }
         }
         return low;
     }
@@ -289,6 +308,9 @@ final class Skeleton {
     // ankle) folds about, in its own axes; null when it has no such joint.
     @Nullable
     float[] hinge(int role, int j) {
+        if (this.roles[role] < 0) {
+            return null;
+        }
         ModelBends.Bend[] chain = role == BODY ? this.trunk : this.chains[this.roles[role]];
         return j < chain.length ? chain[j].hinge() : null;
     }
@@ -326,6 +348,16 @@ final class Skeleton {
         float upper = this.length[l][0];
         float lower = this.length[l][1];
         float last = this.length[l][2];
+        if (arm && this.blade[l] != null) {
+            // Its shoulder blade follows the arm reaching there, as Shoulders turns it under any arm.
+            Vector3f to = new Vector3f(tip).sub(this.pivot(l, new Vector3f()));
+            float stretch = Math.min(1.0F, to.length() / (upper + lower + last));
+            this.chest.getNormalizedRotation(new Quaternionf()).transformInverse(to);
+            if (to.lengthSquared() > 1.0E-6F) {
+                this.shrug(pose, l, Shoulders.turn(l == 0, to.normalize(), stretch, new Quaternionf()));
+                this.place(pose);
+            }
+        }
         Vector3f pivot = this.pivot(l, new Vector3f());
         Vector3f wrist = new Vector3f(way).normalize().mul(-last).add(tip);
         this.root[0] = pivot.x;
@@ -365,17 +397,37 @@ final class Skeleton {
         Matrix4f parent = new Matrix4f(this.limbs[l][0]).rotate(new Quaternionf(pose.limb[l]).conjugate());
         parent.getNormalizedRotation(this.turn);
         pose.limb[l].set(this.turn.conjugate()).mul(own);
-        pose.mid[l].rotationTo(bone, own.transformInverse(new Vector3f(b)));
+        // Its elbow or knee and its wrist or ankle each bend only as far and as the joint can.
+        ModelBends.Bend[] chain = this.chains[this.roles[2 + l]];
+        float[] along = { 0.0F, 0.0F, 0.0F };
+        along[chain[0].axis()] = chain[0].farSign();
+        this.aim(own.transformInverse(new Vector3f(b)), along, chain[0], pose.mid[l]);
         Quaternionf lowerTurn = new Quaternionf(own).mul(pose.mid[l]);
-        pose.end[l].rotationTo(bone, lowerTurn.transformInverse(new Vector3f(way).normalize()));
+        Vector3f hand = lowerTurn.transformInverse(new Vector3f(way).normalize());
+        if (chain.length > 1) {
+            this.aim(hand, along, chain[1], pose.end[l]);
+        } else {
+            pose.end[l].identity();
+        }
         this.place(pose);
     }
 
-    // As above, its last piece turned wholly `turn` (the trunk's parent's axes), twist and all, not just its way.
+    private void aim(Vector3f way, float[] bone, ModelBends.Bend bend, Quaternionf out) {
+        Limits.aim(way, bone, bend.hinge(), (float) bend.min(), (float) bend.max(), (float) bend.lean(), out);
+    }
+
+    // As above, its last piece turned wholly `turn` (the trunk's parent's axes), twist and all, not just its way: as
+    // far as its wrist or ankle goes.
     void reach(Pose pose, int l, Vector3f tip, Quaternionf turn, Vector3f toward) {
         this.reach(pose, l, tip, turn.transform(this.bone(l, new Vector3f())), toward);
         Quaternionf lower = this.limbs[l][1].getNormalizedRotation(new Quaternionf());
         pose.end[l].set(lower.conjugate()).mul(turn);
+        ModelBends.Bend[] chain = this.chains[this.roles[2 + l]];
+        if (chain.length > 1) {
+            chain[1].keep(pose.end[l]);
+        } else {
+            pose.end[l].identity();
+        }
         this.place(pose);
     }
 
@@ -404,6 +456,9 @@ final class Skeleton {
         out.head.set(chestTurn).mul(this.restTurn[HEAD]).conjugate().mul(from.rot[this.roles[HEAD]]);
         for (int l = 0; l < LIMBS; l++) {
             int part = this.roles[2 + l];
+            if (part < 0) {
+                continue;
+            }
             Quaternionf parent;
             if (l < 2) {
                 Vector3f inner = this.blade[l];
@@ -440,6 +495,9 @@ final class Skeleton {
         this.put(this.roles[HEAD], this.head, out);
         for (int l = 0; l < LIMBS; l++) {
             int part = this.roles[2 + l];
+            if (part < 0) {
+                continue;
+            }
             this.put(part, this.limbs[l][0], out);
             out.joint[0][part].set(pose.mid[l]);
             out.joint[1][part].set(pose.end[l]);
@@ -454,7 +512,12 @@ final class Skeleton {
 
     // Whether part `role` has its joint j (0 the elbow or knee, 1 the wrist or ankle; the trunk's waist and pelvis).
     boolean has(int role, int j) {
-        return j < this.chains[this.roles[role]].length;
+        return this.roles[role] >= 0 && j < this.chains[this.roles[role]].length;
+    }
+
+    // Whether limb l is there to move (an arm folded as one part is not: its chest carries it).
+    boolean present(int l) {
+        return this.roles[2 + l] >= 0;
     }
 
     @Nullable

@@ -322,7 +322,7 @@ class RagdollRestTest {
     @Test
     void aBodyWithAStiffTrunkLyingOnTheFloorStaysWhereItLies() {
         lies(new RagdollProfiles.Profile(false, false, Map.of("waist",
-                new RagdollProfiles.Tuning(Optional.empty(), Optional.of(0.0), Optional.empty()))));
+                new RagdollProfiles.Tuning(Optional.empty(), Optional.of(0.0), Optional.empty())), Optional.empty()));
     }
 
     // Bodies fallen every which way, left to settle 6 seconds, then watched 10 more: none may creep over the floor.

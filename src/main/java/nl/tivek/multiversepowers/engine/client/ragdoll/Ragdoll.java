@@ -1,6 +1,7 @@
 package nl.tivek.multiversepowers.engine.client.ragdoll;
 
 import java.util.List;
+import javax.annotation.Nullable;
 import net.minecraft.client.model.EntityModel;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.world.entity.LivingEntity;
@@ -45,8 +46,8 @@ final class Ragdoll extends RagdollBody {
     private static final Matrix4f NONE = new Matrix4f();
 
     Ragdoll(LivingEntity entity, EntityModel<?> model, List<ModelParts.Part> parts, ModelBends.Bend[][] chains,
-            int[] hang, float[][] blades, int core, State state) {
-        super(entity, model, parts, chains, hang, blades, core, state);
+            int[] hang, float[][] blades, int core, State state, @Nullable GetUp.Kind rise) {
+        super(entity, model, parts, chains, hang, blades, core, state, rise);
     }
 
     static double scaleOf(Matrix4f frame) {
@@ -111,10 +112,10 @@ final class Ragdoll extends RagdollBody {
         }
         if (rising) {
             if (this.rise == null) {
-                this.rise = GetUp.start(this.hanging, this.model, this.parts, this.chains, LIE, this.person,
+                this.rise = GetUp.start(this.hanging, this.model, this.parts, this.chains, LIE, this.kind,
                         this.entity);
             }
-            float u = Math.min(1.0F, (float) ((this.up + partialTick) / GetUp.ticks(this.person)));
+            float u = Math.min(1.0F, (float) ((this.up + partialTick) / this.kind.ticks));
             this.rise.pose(u, LIE, OWN_POSE, OUT);
         } else {
             float w = (float) Math.max(0.0, Math.min(1.0, this.limp));
@@ -145,6 +146,12 @@ final class Ragdoll extends RagdollBody {
                 for (int k = 0; k < followers.size(); k++) {
                     BentParts.bend(followers.get(k), chain, turns, this.own);
                 }
+            }
+        }
+        for (ModelPart part : this.unseen) {
+            if (part.visible) {
+                restore.keep(part);
+                part.visible = false;
             }
         }
         if (rising) {

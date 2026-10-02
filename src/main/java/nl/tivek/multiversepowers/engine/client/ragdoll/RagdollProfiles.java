@@ -4,9 +4,11 @@ import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.mojang.logging.LogUtils;
 import com.mojang.serialization.Codec;
+import com.mojang.serialization.DataResult;
 import com.mojang.serialization.JsonOps;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -16,6 +18,7 @@ import net.minecraft.server.packs.resources.SimpleJsonResourceReloadListener;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.entity.EntityType;
 import net.neoforged.neoforge.client.event.RegisterClientReloadListenersEvent;
+import nl.tivek.multiversepowers.engine.client.ragdoll.getup.GetUp;
 import org.slf4j.Logger;
 
 // How limp each kind of creature goes, from resource packs: assets/<namespace>/ragdolls/<name>.json tunes the entity
@@ -34,15 +37,24 @@ public final class RagdollProfiles extends SimpleJsonResourceReloadListener {
         static final Tuning NONE = new Tuning(Optional.empty(), Optional.empty(), Optional.empty());
     }
 
-    // A whole kind of creature: never limp, or falling stiff as one piece, and its parts tuned one by one.
-    record Profile(boolean never, boolean stiff, Map<String, Tuning> parts) {
+    // A whole kind of creature: never limp, or falling stiff as one piece, its parts tuned one by one, and how it gets
+    // up (GetUp.Kind by name, "hind_first" for cattle; by its shape when left out).
+    record Profile(boolean never, boolean stiff, Map<String, Tuning> parts, Optional<GetUp.Kind> rise) {
+        private static final Codec<GetUp.Kind> RISE = Codec.STRING.comapFlatMap(name -> {
+            try {
+                return DataResult.success(GetUp.Kind.valueOf(name.toUpperCase(Locale.ROOT)));
+            } catch (IllegalArgumentException e) {
+                return DataResult.error(() -> "No such way of getting up: " + name);
+            }
+        }, kind -> kind.name().toLowerCase(Locale.ROOT));
         static final Codec<Profile> CODEC = RecordCodecBuilder.create(profile -> profile.group(
                 Codec.BOOL.optionalFieldOf("never", false).forGetter(Profile::never),
                 Codec.BOOL.optionalFieldOf("stiff", false).forGetter(Profile::stiff),
                 Codec.unboundedMap(Codec.STRING, Tuning.CODEC).optionalFieldOf("parts", Map.of())
-                        .forGetter(Profile::parts))
+                        .forGetter(Profile::parts),
+                RISE.optionalFieldOf("rise").forGetter(Profile::rise))
                 .apply(profile, Profile::new));
-        static final Profile NONE = new Profile(false, false, Map.of());
+        static final Profile NONE = new Profile(false, false, Map.of(), Optional.empty());
 
         Tuning part(String name) {
             return this.parts.getOrDefault(name, Tuning.NONE);

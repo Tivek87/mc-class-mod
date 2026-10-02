@@ -230,7 +230,7 @@ class BentPartsTest {
     }
 
     @Test
-    void anAnklesTwistIsSharedAlongTheShinAlone() {
+    void anAnklesTwistIsTakenByTheShinAndTheFootStaysWhole() {
         HumanoidModel<LivingEntity> person = person();
         ModelBends.Bend[] leg = chain(person, person.rightLeg);
         Quaternionf[] turns = { new Quaternionf(), new Quaternionf().rotationY(0.6F) };
@@ -238,13 +238,40 @@ class BentPartsTest {
         Corners corners = draw(person.rightLeg);
         for (float x : new float[] { -2.0F, 2.0F }) {
             for (float z : new float[] { -2.0F, 2.0F }) {
-                // The hip and knee stay, the ankle turns half as far as the sole.
+                // The hip and knee stay, the shin turns all the way by the ankle and the foot turns as one block.
                 Vector3f[] want = { new Vector3f(x, 0.0F, z), new Vector3f(x, 6.0F, z),
-                        new Quaternionf().rotationY(0.3F).transform(new Vector3f(x, 10.0F, z)),
+                        new Quaternionf().rotationY(0.6F).transform(new Vector3f(x, 10.0F, z)),
                         new Quaternionf().rotationY(0.6F).transform(new Vector3f(x, 12.0F, z)) };
                 for (Vector3f corner : want) {
                     assertTrue(corners.at.stream().anyMatch(p -> p.distance(corner) < CLOSE), "corner " + corner);
                 }
+            }
+        }
+    }
+
+    @Test
+    void aFootOrAHandFoldedAndTwistedStaysClosed() {
+        HumanoidModel<LivingEntity> person = person();
+        ModelBends.Bend[] leg = chain(person, person.rightLeg);
+        ModelBends.Bend[] arm = chain(person, person.rightArm);
+        // As far as an ankle twists and a forearm mostly does. A twisted piece's faces are no longer flat and its room,
+        // measured on flat squares, reads a little short (as much with its twist shared with the hand).
+        for (float twist : new float[] { -0.3F, 0.15F, 0.3F }) {
+            for (float fold : new float[] { -1.2F, 0.5F, 1.1F }) {
+                Quaternionf[] turns = { new Quaternionf().rotationX(0.7F),
+                        new Quaternionf().rotationX(fold).rotateY(twist) };
+                BentParts.bend(person.rightLeg, leg, turns, Set.of());
+                assertEquals(192.0, Math.abs(volume(draw(person.rightLeg))), 192.0 * 0.03, "foot " + fold + ", "
+                        + twist);
+            }
+        }
+        for (float twist : new float[] { -0.8F, 0.4F, 0.8F }) {
+            for (float fold : new float[] { -1.2F, 0.5F, 1.2F }) {
+                Quaternionf[] turns = { new Quaternionf().rotationX(-0.9F),
+                        new Quaternionf().rotationX(fold).rotateY(twist) };
+                BentParts.bend(person.rightArm, arm, turns, Set.of());
+                assertEquals(192.0, Math.abs(volume(draw(person.rightArm))), 192.0 * 0.08, "hand " + fold + ", "
+                        + twist);
             }
         }
     }

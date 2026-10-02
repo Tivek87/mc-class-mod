@@ -17,8 +17,9 @@ public final class PoseGuard {
     private static final float SKIN = 0.75F;
     // The limb is looked at as a round rod a little thinner than its square block, whose edges may touch.
     private static final float ROUND = 0.8F;
-    // The most a limb is turned out, in radians.
+    // The most a limb is turned out, in radians, and how much smaller one way must be to win over the limb's own side.
     private static final float FURTHEST = 1.4F;
+    private static final float EVEN = 0.05F;
     private static final int SCAN = 8;
     private static final int REFINE = 6;
     private static final int SAMPLES = 5;
@@ -51,15 +52,20 @@ public final class PoseGuard {
         }
     }
 
-    // Turns the limb out of the body about its z axis, the smallest turn either way that clears it.
+    // Turns the limb out of the body about its z axis, the smallest turn either way that clears it (out to its own
+    // side when both are about as small, so it never flips from one to the other); when none does, only as far as
+    // takes it at least half way out, else not at all.
     static void out(ModelPart limb, ModelPart body) {
-        if (!limb.visible || !body.visible || depth(limb, body) <= SKIN) {
+        float start = !limb.visible || !body.visible ? 0.0F : depth(limb, body);
+        if (start <= SKIN) {
             return;
         }
         float base = limb.zRot;
         float best = Float.NaN;
         float leastDepth = Float.POSITIVE_INFINITY;
         float leastTurn = 0.0F;
+        // Its own side: a turn about z takes a limb hanging right of the body (-x) further right as it grows.
+        int outward = limb.x - body.x < 0.0F ? 1 : -1;
         for (int sign = -1; sign <= 1; sign += 2) {
             float cleared = Float.NaN;
             float before = 0.0F;
@@ -86,23 +92,28 @@ public final class PoseGuard {
                 }
                 before = turn;
             }
-            if (!Float.isNaN(cleared) && (Float.isNaN(best) || cleared < Math.abs(best))) {
+            if (!Float.isNaN(cleared) && (Float.isNaN(best) || cleared < Math.abs(best) - EVEN
+                    || cleared < Math.abs(best) + EVEN && sign == outward)) {
                 best = sign * cleared;
             }
         }
-        limb.zRot = base + (Float.isNaN(best) ? leastTurn : best);
+        if (Float.isNaN(best)) {
+            best = leastDepth <= start * 0.5F ? leastTurn : 0.0F;
+        }
+        limb.zRot = base + best;
     }
 
-    // Turns two legs apart, both the same amount each their own way, till they no longer pass into each other.
+    // Turns two legs apart, both the same amount each their own way, till they no longer pass into each other; at
+    // each step spreading them before drawing them together, so they never cross into an X.
     static void apart(ModelPart right, ModelPart left) {
         if (!right.visible || !left.visible || overlap(right, left) <= SKIN) {
             return;
         }
         float rightBase = right.zRot;
         float leftBase = left.zRot;
-        for (int sign = -1; sign <= 1; sign += 2) {
-            for (int k = 1; k <= SCAN; k++) {
-                float turn = FURTHEST * 0.5F * k / SCAN;
+        for (int k = 1; k <= SCAN; k++) {
+            float turn = FURTHEST * 0.5F * k / SCAN;
+            for (int sign = 1; sign >= -1; sign -= 2) {
                 right.zRot = rightBase + sign * turn;
                 left.zRot = leftBase - sign * turn;
                 if (overlap(right, left) <= SKIN) {

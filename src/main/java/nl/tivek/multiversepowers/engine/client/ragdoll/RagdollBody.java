@@ -1,5 +1,6 @@
 package nl.tivek.multiversepowers.engine.client.ragdoll;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.IdentityHashMap;
@@ -90,6 +91,9 @@ abstract class RagdollBody {
     // Every part it moves, the parts that copy them too, and where each sits in the copies layers draw.
     final ModelPart[] moved;
     final Set<ModelPart> own = Collections.newSetFromMap(new IdentityHashMap<>());
+    // Parts the model hid as the body was built (an illager's held-out arms while it folded them), kept hidden while
+    // it is limp should the model show them again: they would stand where the creature would.
+    final ModelPart[] unseen;
     final Map<EntityModel<?>, ModelPart[]> copies = new IdentityHashMap<>();
     // Which piece of the trunk each part hangs from, and whether it is drawn inside the trunk.
     final Hanging hanging;
@@ -142,7 +146,7 @@ abstract class RagdollBody {
     float riseYaw;
     @Nullable
     GetUp.Rise rise;
-    final boolean person;
+    final GetUp.Kind kind;
     private boolean leapt;
     // How hard a part hit a block this step (blocks a second), and the last thud: when, and how hard.
     private double hit;
@@ -160,7 +164,7 @@ abstract class RagdollBody {
     private final double[] scratch = new double[7];
 
     RagdollBody(LivingEntity entity, EntityModel<?> model, List<ModelParts.Part> parts, ModelBends.Bend[][] chains,
-            int[] hang, float[][] blades, int core, State state) {
+            int[] hang, float[][] blades, int core, State state, @Nullable GetUp.Kind rise) {
         int n = parts.size();
         this.entity = entity;
         this.model = model;
@@ -177,7 +181,7 @@ abstract class RagdollBody {
         this.center = new double[n * 3];
         this.core = core;
         this.state = state;
-        this.person = GetUp.person(model, parts, chains);
+        this.kind = GetUp.kind(parts, chains, rise);
         int headAt = -1;
         for (int i = 0; i < n && headAt < 0; i++) {
             headAt = i != core && parts.get(i).role() == ModelParts.Role.HEAD ? i : -1;
@@ -190,6 +194,18 @@ abstract class RagdollBody {
             this.own.add(parts.get(i).part());
             this.own.addAll(parts.get(i).followers());
         }
+        // Never a part the moved ones hang in: hiding it would hide them.
+        Set<ModelPart> holding = Collections.newSetFromMap(new IdentityHashMap<>());
+        for (ModelParts.Part part : parts) {
+            holding.addAll(part.parents());
+        }
+        List<ModelPart> unseen = new ArrayList<>();
+        for (ModelPart top : ModelParts.tops(model)) {
+            if (!this.own.contains(top) && !holding.contains(top)) {
+                unseen.add(top);
+            }
+        }
+        this.unseen = unseen.toArray(new ModelPart[0]);
         this.hanging = new Hanging(n, core, inside, hang, chains[core]);
         this.hold = new Pin(core, 0.0, 0.0, 0.0, 0.0);
         this.world.gravity = GRAVITY;
@@ -403,7 +419,8 @@ abstract class RagdollBody {
         this.slumpAge = -1;
         this.lay = this.now.clone();
         System.arraycopy(this.now, 0, this.was, 0, this.now.length);
-        this.riseYaw = this.person ? GetUp.facing(this.lay, this.piece(this.core, 2) * 7 + 3, this.entity.yBodyRot)
+        this.riseYaw = this.kind.person()
+                ? GetUp.facing(this.lay, this.piece(this.core, 2) * 7 + 3, this.entity.yBodyRot)
                 : rising(this.lay, this.core * 7 + 3, this.standing(), this.entity.yBodyRot);
         this.rise = null;
         this.shownValid = false;
@@ -441,8 +458,8 @@ abstract class RagdollBody {
                 : (float) Mth.wrapDegrees(-Math.toDegrees(2.0 * Math.atan2(turn.y, turn.w)));
     }
 
-    boolean person() {
-        return this.person;
+    GetUp.Kind kind() {
+        return this.kind;
     }
 
     void step(int substeps, Blocks blocks) {

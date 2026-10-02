@@ -7,7 +7,9 @@ import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.util.Mth;
 import nl.tivek.multiversepowers.engine.client.model.ModelParts.Part;
 import nl.tivek.multiversepowers.engine.client.model.ModelParts.Role;
+import nl.tivek.multiversepowers.engine.rig.Limits;
 import org.joml.Matrix4f;
+import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
 // Where a model's parts bend: a long arm or leg at its knee or elbow and again at its wrist or ankle, a long trunk at
@@ -15,15 +17,33 @@ import org.joml.Vector3f;
 public final class ModelBends {
     // Where a part bends, in pixels of its own frame: the axis it runs along, the cut across it (farSign +1 when its
     // far end lies at the high side of that axis), the joint's middle, the axis it turns about there and how far: from
-    // min to max radians, the part past the cut bending the way the part folds.
-    public record Bend(int axis, float at, float farSign, float[] knee, float[] hinge, double min, double max) {
+    // min to max radians, the part past the cut bending the way the part folds. A wrist or an ankle also leans across
+    // its hinge and twists about its bone, each as far as `lean` and `twist` either way, and the hand or foot past it
+    // stays whole (`whole`): its forearm or shin takes its twist. A knee or an elbow only folds.
+    public record Bend(int axis, float at, float farSign, float[] knee, float[] hinge, double min, double max,
+            double lean, double twist, boolean whole) {
+        public Bend(int axis, float at, float farSign, float[] knee, float[] hinge, double min, double max) {
+            this(axis, at, farSign, knee, hinge, min, max, 0.0, 0.0, false);
+        }
+
+        // The turn of the piece past this bend (in the axes of the piece before it) kept to what the joint can do.
+        public Quaternionf keep(Quaternionf turn) {
+            if (this.lean == 0.0 && this.twist == 0.0) {
+                return Limits.hinge(turn, this.hinge, (float) this.min, (float) this.max);
+            }
+            float[] bone = new float[3];
+            bone[this.axis] = this.farSign;
+            return Limits.end(turn, bone, this.hinge, (float) this.min, (float) this.max, (float) this.lean,
+                    (float) this.twist);
+        }
     }
 
     public static final Bend[] NONE = new Bend[0];
 
-    // A limb must be this much longer than it is thick, and this long in pixels, to have a knee.
+    // A limb must be this much longer than it is thick, this long in pixels and thicker than a plate, to have a knee.
     private static final float SLENDER = 2.0F;
     private static final float LONG = 7.0F;
+    private static final float PLATE = 1.0F;
     // A hand is this share of an arm's length and a foot this share of a leg's, in whole pixels between these, and
     // past its knee a limb keeps at least SHIN_LEAST before its hand or foot.
     private static final float HAND = 0.25F;
@@ -40,17 +60,52 @@ public final class ModelBends {
     private static final double TOES_DOWN = 1.2;
     private static final double TIP_UP = 0.6;
     private static final double TIP_DOWN = 1.0;
+    // A four-legged creature's hoof or paw folds back under its leg this far, and the other way only a little: the
+    // same way for a front leg as its knee and against its hock for a hind one.
+    private static final double HOOF_FOLD = 1.2;
+    private static final double HOOF_BACK = 0.4;
+    // How far a hand leans to its sides at the wrist and turns with its forearm, either way, and a foot at its ankle.
+    private static final double HAND_LEAN = 0.35;
+    private static final double HAND_TWIST = 1.6;
+    private static final double FOOT_LEAN = 0.4;
+    private static final double FOOT_TWIST = 0.3;
     // A pelvis and a belly are each at least this long (pixels) along the spine, and the pelvis folds this share of
     // the waist's reach.
     private static final float PELVIS_LEAST = 2.0F;
     private static final double PELVIS_SHARE = 0.5;
     // An arm hanging this near the spine's line (pixels) has no shoulder blade: crossed arms, or a golem's.
     private static final float SHOULDER_LEAST = 2.5F;
+    // An arm part reaching this far (pixels) to both sides of its own middle is a pair folded across the chest.
+    private static final float CROSSING = 2.0F;
+    // A part's pivot this near another part's box (pixels) may hang it from that part.
+    private static final float TOUCHES = 1.0F;
+
+    // A four-legged creature's hind leg, or one of its front legs, by the name its model gives it.
+    public static boolean hind(Part part) {
+        String name = part.name();
+        return part.role() == Role.LEG && (name.contains("hind") || name.contains("back_leg"));
+    }
+
+    public static boolean front(Part part) {
+        return part.role() == Role.LEG && part.name().contains("front");
+    }
+
+    // Arms folded across the chest as one part (a villager's, an illager's): it hangs on the body's middle and
+    // reaches across it to both sides.
+    public static boolean crossed(Part part) {
+        if (part.role() != Role.ARM) {
+            return false;
+        }
+        float[] b = part.bounds();
+        return Math.abs(ModelParts.rest(part, new Matrix4f()).m30()) < CROSSING && b[0] < -CROSSING
+                && b[3] > CROSSING;
+    }
 
     @Nullable
     public static Bend bend(Part part) {
-        // A limb with parts of its own on it (a foot, a hoof) stays whole: only its own cubes could be drawn bent.
-        if (part.role() != Role.ARM && part.role() != Role.LEG || !part.part().children.isEmpty()) {
+        // A limb with parts of its own on it (a foot, a hoof) stays whole: only its own cubes could be drawn bent; so
+        // do arms folded as one part.
+        if (part.role() != Role.ARM && part.role() != Role.LEG || !part.part().children.isEmpty() || crossed(part)) {
             return null;
         }
         float[] b = part.bounds();
@@ -62,12 +117,15 @@ public final class ModelBends {
         }
         float length = b[axis + 3] - b[axis];
         float thick = 0.0F;
+        float thin = Float.POSITIVE_INFINITY;
         for (int a = 0; a < 3; a++) {
             if (a != axis) {
                 thick = Math.max(thick, b[a + 3] - b[a]);
+                thin = Math.min(thin, b[a + 3] - b[a]);
             }
         }
-        if (length < LONG || length < SLENDER * thick) {
+        // A plate (a turtle's flipper) is no limb with a knee.
+        if (length < LONG || length < SLENDER * thick || thin <= PLATE) {
             return null;
         }
         float farSign = Math.abs(b[axis + 3]) >= Math.abs(b[axis]) ? 1.0F : -1.0F;
@@ -81,7 +139,7 @@ public final class ModelBends {
         double max;
         if (axis == 1) {
             // Hanging down (model y points down): legs fold back, arms and a four-legged creature's hind legs forward.
-            boolean forward = part.role() == Role.ARM || part.name().contains("hind");
+            boolean forward = part.role() == Role.ARM || hind(part);
             toward[2] = forward ? -1.0F : 1.0F;
             min = -0.08;
             max = part.role() == Role.ARM ? 2.5 : 2.3;
@@ -113,9 +171,12 @@ public final class ModelBends {
         }
         float[] joint = knee.knee().clone();
         joint[axis] = at;
-        double min = arm ? -HAND_FOLD : axis == 1 ? -TOES_UP : -TIP_UP;
-        double max = arm ? HAND_FOLD : axis == 1 ? TOES_DOWN : TIP_DOWN;
-        return new Bend(axis, at, sign, joint, knee.hinge().clone(), min, max);
+        double min = arm ? -HAND_FOLD : axis != 1 ? -TIP_UP : hind(part) ? -HOOF_FOLD : front(part) ? -HOOF_BACK
+                : -TOES_UP;
+        double max = arm ? HAND_FOLD : axis != 1 ? TIP_DOWN : hind(part) ? HOOF_BACK : front(part) ? HOOF_FOLD
+                : TOES_DOWN;
+        return new Bend(axis, at, sign, joint, knee.hinge().clone(), min, max, arm ? HAND_LEAN : FOOT_LEAN,
+                arm ? HAND_TWIST : FOOT_TWIST, true);
     }
 
     // Every bend of part i from its near end: the trunk's waist and pelvis, a limb's knee or elbow and its wrist or
@@ -337,6 +398,79 @@ public final class ModelBends {
         float dy = pivot.y - inner[1];
         float dz = pivot.z - inner[2];
         return dx * dx + dy * dy + dz * dz < SHOULDER_LEAST * SHOULDER_LEAST ? null : inner;
+    }
+
+    // Which part each part hangs from, as the model was built: the trunk (core), or another part at least as big whose
+    // box its pivot lies in or touches, the nearest (the trunk winning a tie): a wolf's head and front legs hang from
+    // its chest, a spider's legs from its thorax, a cat's tail's tip from the rest of its tail. -1 for the trunk
+    // itself.
+    public static int[] parents(List<Part> parts, int core) {
+        int n = parts.size();
+        Vector3f[] pivots = new Vector3f[n];
+        Matrix4f[] into = new Matrix4f[n];
+        float[] volume = new float[n];
+        for (int i = 0; i < n; i++) {
+            Matrix4f rest = ModelParts.rest(parts.get(i), new Matrix4f());
+            pivots[i] = rest.transformPosition(new Vector3f());
+            into[i] = rest.invert();
+            float[] b = parts.get(i).bounds();
+            volume[i] = (b[3] - b[0]) * (b[4] - b[1]) * (b[5] - b[2]);
+        }
+        int[] parent = new int[n];
+        for (int i = 0; i < n; i++) {
+            if (i == core) {
+                parent[i] = -1;
+                continue;
+            }
+            int best = core;
+            float nearest = outside(parts.get(core).bounds(), into[core].transformPosition(new Vector3f(pivots[i])));
+            for (int j = 0; j < n; j++) {
+                if (j == i || j == core || volume[j] < volume[i]) {
+                    continue;
+                }
+                float d = outside(parts.get(j).bounds(), into[j].transformPosition(new Vector3f(pivots[i])));
+                if (d <= TOUCHES && d < nearest - 1.0E-3F) {
+                    best = j;
+                    nearest = d;
+                }
+            }
+            parent[i] = best;
+        }
+        // A ring of parts hanging from each other hangs from the trunk instead.
+        for (int i = 0; i < n; i++) {
+            int up = i;
+            for (int step = 0; step <= n && up >= 0 && up != core; step++) {
+                up = parent[up];
+            }
+            if (up != core && i != core) {
+                parent[i] = core;
+            }
+        }
+        return parent;
+    }
+
+    // How far (pixels) a point lies outside a box, 0 inside it.
+    private static float outside(float[] b, Vector3f p) {
+        float dx = Math.max(Math.max(b[0] - p.x, p.x - b[3]), 0.0F);
+        float dy = Math.max(Math.max(b[1] - p.y, p.y - b[4]), 0.0F);
+        float dz = Math.max(Math.max(b[2] - p.z, p.z - b[5]), 0.0F);
+        return (float) Math.sqrt(dx * dx + dy * dy + dz * dz);
+    }
+
+    // Where leg i meets the spine, in the trunk's own pixels: on the spine's line level with where the leg hangs (a
+    // robe reaches past the hips, so the trunk's far end is no hip). Null for a leg that hangs from no bent trunk.
+    @Nullable
+    public static float[] hip(List<Part> parts, int core, int leg, Bend[] trunk) {
+        if (leg == core || parts.get(leg).role() != Role.LEG || trunk.length == 0) {
+            return null;
+        }
+        Part body = parts.get(core);
+        Matrix4f into = ModelParts.rest(body, new Matrix4f()).invert();
+        float[] b = body.bounds();
+        int axis = trunk[0].axis();
+        float[] inner = { (b[0] + b[3]) * 0.5F, (b[1] + b[4]) * 0.5F, (b[2] + b[5]) * 0.5F };
+        inner[axis] = Mth.clamp(pivot(parts.get(leg), into, new Vector3f()).get(axis), b[axis], b[axis + 3]);
+        return inner;
     }
 
     private static Vector3f unit(int axis, float sign) {

@@ -202,7 +202,7 @@ final class RagdollFalls {
     // Whether the body, a person upright with its back to a wall just behind it (the way (fx, fz) it is knocked),
     // slams into the wall `hard` (blocks a second) and slumps down it; if so, it is set going.
     static boolean slump(Ragdoll doll, double fx, double fz, double hard) {
-        if (!doll.person() || !ClientSettings.wallSlump() || !(doll.entity.level() instanceof Level level)) {
+        if (!doll.kind().person() || !ClientSettings.wallSlump() || !(doll.entity.level() instanceof Level level)) {
             return false;
         }
         RigidWorld world = doll.world;
