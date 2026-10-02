@@ -42,6 +42,8 @@ public final class Stance {
     // How far an ankle turns a foot and a wrist a hand from in line with the limb, at most.
     public static final float ANKLE_MOST = 1.0F;
     private static final float WRIST_MOST = 1.3F;
+    // Built as a person: each limb hangs within this (pixels) of where a person's does and is as long, give or take.
+    private static final float BUILT = 1.5F;
 
     private static final Quaternionf IDENTITY = new Quaternionf();
     private static final Quaternionf PELVIS = new Quaternionf();
@@ -73,6 +75,19 @@ public final class Stance {
     private static final double[] MID = new double[3];
 
     private Stance() {
+    }
+
+    // Whether a model is built as a person (a player, a zombie, a skeleton), with the limbs the poses here reach with:
+    // an enderman's long ones would fold up.
+    public static boolean person(HumanoidModel<?> model) {
+        return built(model.rightArm, SHOULDER_Y, UPPER_ARM + FOREARM) && built(model.leftArm, SHOULDER_Y,
+                UPPER_ARM + FOREARM) && built(model.rightLeg, HIP_Y, THIGH + SHIN)
+                && built(model.leftLeg, HIP_Y, THIGH + SHIN);
+    }
+
+    private static boolean built(ModelPart limb, float hangs, float reach) {
+        return Math.abs(limb.getInitialPose().y - hangs) <= BUILT
+                && Math.abs(PoseGuard.bounds(limb)[4] - reach) <= BUILT;
     }
 
     // The hips at `hips`, the belly turned by `lean` and the chest by `waist` on top of that; the pelvis, which the legs

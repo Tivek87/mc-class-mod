@@ -22,6 +22,7 @@
     "client.render.LivingEntityRendererMixin",
     "client.render.ModelPartMixin",
     "client.render.ModelRenderMixin",
+    "client.render.MushroomCowMushroomLayerMixin",
     "client.render.PlayerModelMixin",
     "client.render.PlayerRendererMixin"
   ],

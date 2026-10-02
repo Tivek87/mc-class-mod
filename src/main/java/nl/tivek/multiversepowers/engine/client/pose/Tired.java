@@ -26,8 +26,9 @@ public final class Tired {
     // The share of the way to how worn the server says it is that the pose goes each tick.
     private static final float FOLLOW = 0.2F;
     // Fully worn (all of Fatigue.HITS): the hips this much lower (pixels) and back, the hunch and the bow at the waist,
-    // the head hung and the arms out (radians), and the sway.
-    private static final float SAG = 2.6F;
+    // the head hung and the arms out (radians), and the sway. The sole stays flat, so a little sag bends the knees a
+    // lot: 0.8 is about 45 degrees.
+    private static final float SAG = 0.8F;
     private static final float HIPS_BACK = 0.6F;
     private static final float HUNCH = 0.32F;
     private static final float BOW = 0.22F;
@@ -84,8 +85,9 @@ public final class Tired {
     public static boolean pose(EntityModel<?> model, LivingEntity entity, float partialTick) {
         float[] state = WORN.get(entity.getId());
         // A creature a power holds or poses is not sagging on its own feet.
-        if (state == null || !(model instanceof HumanoidModel<?> person) || !EntityPass.inWorld()
-                || entity.isPassenger() || entity.isSleeping() || entity.isSwimming() || Ragdolls.taken(entity)) {
+        if (state == null || !(model instanceof HumanoidModel<?> person) || !Stance.person(person)
+                || !EntityPass.inWorld() || entity.isPassenger() || entity.isSleeping() || entity.isSwimming()
+                || Ragdolls.taken(entity)) {
             return false;
         }
         float worn = Mth.lerp(partialTick, state[2], state[1]);

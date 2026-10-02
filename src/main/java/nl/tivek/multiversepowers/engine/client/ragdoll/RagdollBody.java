@@ -27,6 +27,7 @@ import nl.tivek.multiversepowers.engine.physics.RigidWorld;
 import org.joml.Matrix4f;
 import org.joml.Quaterniond;
 import org.joml.Quaternionf;
+import org.joml.Vector3f;
 
 // A creature gone limp: one box per part of its model, joined where the parts turn, falling, bumping into blocks and
 // hanging from whatever holds it; carried along by its creature, thrown, lying, getting up (Ragdoll draws it).
@@ -95,6 +96,9 @@ abstract class RagdollBody {
     // it is limp should the model show them again: they would stand where the creature would.
     final ModelPart[] unseen;
     final Map<EntityModel<?>, ModelPart[]> copies = new IdentityHashMap<>();
+    // Where each part's followers sat from it as the body was built, in its own axes (pixels), null when on it: an
+    // angry enderman's jaw hangs below its raised head.
+    final float[][] beside;
     // Which piece of the trunk each part hangs from, and whether it is drawn inside the trunk.
     final Hanging hanging;
     // Holds the core where its creature is while something carries or throws it.
@@ -189,10 +193,12 @@ abstract class RagdollBody {
         this.head = headAt;
         boolean[] inside = new boolean[n];
         ModelPart trunk = parts.get(core).part();
+        this.beside = new float[n][];
         for (int i = 0; i < n; i++) {
             inside[i] = i != core && parts.get(i).parents().contains(trunk);
             this.own.add(parts.get(i).part());
             this.own.addAll(parts.get(i).followers());
+            this.beside[i] = beside(parts.get(i));
         }
         // Never a part the moved ones hang in: hiding it would hide them.
         Set<ModelPart> holding = Collections.newSetFromMap(new IdentityHashMap<>());
@@ -231,6 +237,27 @@ abstract class RagdollBody {
                 this.moved[k++] = follower;
             }
         }
+    }
+
+    @Nullable
+    private static float[] beside(ModelParts.Part part) {
+        ModelPart leader = part.part();
+        List<ModelPart> followers = part.followers();
+        float[] beside = null;
+        Quaternionf back = new Quaternionf().rotationZYX(leader.zRot, leader.yRot, leader.xRot).conjugate();
+        for (int k = 0; k < followers.size(); k++) {
+            ModelPart follower = followers.get(k);
+            Vector3f apart = new Vector3f(follower.x - leader.x, follower.y - leader.y, follower.z - leader.z);
+            if (apart.lengthSquared() < 1.0E-6F) {
+                continue;
+            }
+            beside = beside == null ? new float[followers.size() * 3] : beside;
+            back.transform(apart);
+            beside[k * 3] = apart.x;
+            beside[k * 3 + 1] = apart.y;
+            beside[k * 3 + 2] = apart.z;
+        }
+        return beside;
     }
 
     // Body b is the box b (pixels, its part's own frame, before any joint turns it) of part i's piece k.

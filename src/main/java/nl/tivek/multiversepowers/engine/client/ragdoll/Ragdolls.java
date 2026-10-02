@@ -14,6 +14,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.EntityModel;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.culling.Frustum;
+import net.minecraft.client.renderer.entity.layers.RenderLayer;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
@@ -73,6 +74,9 @@ public final class Ragdolls {
     private static final Set<Class<?>> UNFIT = new HashSet<>();
     private static final List<Predicate<Entity>> CLAIMS = new ArrayList<>();
     private static final Restore RESTORE = new Restore();
+    // How far the layer drawn now is carried along by the limp body (Ragdoll.carry), while `carrying`.
+    private static final Matrix4f CARRIED = new Matrix4f();
+    private static final Matrix4f UNCARRY = new Matrix4f();
     private static final LevelBlocks BLOCKS = new LevelBlocks();
     private static final RandomSource RANDOM = RandomSource.create();
     @Nullable
@@ -80,6 +84,7 @@ public final class Ragdolls {
     private static int ticks;
     @Nullable
     private static Ragdoll drawing;
+    private static boolean carrying;
     private static int deathTime = -1;
     // The creature drawn now turned the way it rises, its own yaws kept in YAWS.
     @Nullable
@@ -160,6 +165,28 @@ public final class Ragdolls {
         Ragdoll doll = drawing;
         if (doll != null && model != doll.model) {
             doll.copyTo(model, RESTORE);
+        }
+    }
+
+    // Around each layer of the creature drawn now: one drawn from its own frame rather than from a part of it follows
+    // its limp body (Ragdoll.carry), and is taken off `pose` again after.
+    public static void carry(RenderLayer<?, ?> layer, Entity entity, PoseStack pose) {
+        Ragdoll doll = drawing;
+        carrying = doll != null && doll.entity == entity && doll.carry(layer, entity, pose, RESTORE, CARRIED);
+    }
+
+    public static void carried(PoseStack pose) {
+        if (carrying) {
+            pose.popPose();
+            carrying = false;
+        }
+    }
+
+    // Within a carried layer, before a piece placed from a part the body moves itself (a mooshroom's head): the
+    // carrying is taken off it.
+    public static void uncarry(PoseStack pose) {
+        if (carrying) {
+            pose.mulPose(UNCARRY.set(CARRIED).invert());
         }
     }
 

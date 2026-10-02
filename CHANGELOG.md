@@ -25,6 +25,17 @@ the sections before 0.0.1-alpha came before versions were numbered.
 - **Ragdolls:** the fix that kept a creature that got up from facing the wrong way when it is drawn twice or its
   drawing is cancelled.
 
+### Fixed
+- **Creatures:** an angry enderman's head no longer floats above its body: its jaw stays under the raised head, as in
+  the game itself, also once it lies limp.
+- **Creatures:** an enderman worn down by blows no longer folds its long arms and legs up.
+- **Creatures:** a zombie, husk or skeleton worn down by blows no longer sinks into a deep squat: its knees bend a
+  little as it hunches.
+- **Ragdolls:** a villager, witch, illager or zombie villager knocked down falls at once instead of standing on the
+  hem of its robe for two seconds.
+- **Ragdolls:** an enderman's carried block, the item held in folded arms (villager, wandering trader, witch) and a
+  mooshroom's mushrooms stay on the limp body instead of floating where it stood.
+
 ## [0.6.0-alpha] - 2026-10-02
 
 ### Added

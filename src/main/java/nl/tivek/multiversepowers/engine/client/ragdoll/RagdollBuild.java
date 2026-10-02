@@ -178,7 +178,8 @@ final class RagdollBuild {
         float[][][] pieces = new float[n][][];
         for (int i = 0; i < n; i++) {
             frames[i] = ModelParts.frame(model, drawn, parts.get(i), new Matrix4f());
-            pieces[i] = pieces(parts.get(i).bounds(), chains[i]);
+            pieces[i] = pieces(parts.get(i).bounds(), chains[i],
+                    i == core ? ModelBends.robe(parts, core, chains[i]) : Float.NaN);
             float[] near = pieces[i][0];
             ragdoll.center[i * 3] = (near[0] + near[3]) / 32.0;
             ragdoll.center[i * 3 + 1] = (near[1] + near[4]) / 32.0;
@@ -403,8 +404,9 @@ final class RagdollBuild {
         return count;
     }
 
-    // A part's box (pixels, its own frame) cut at its joints into its pieces, near to far.
-    private static float[][] pieces(float[] b, ModelBends.Bend[] chain) {
+    // A part's box (pixels, its own frame) cut at its joints into its pieces, near to far; a trunk's last piece ends at
+    // `end` unless NaN (ModelBends.robe): a robe would stand it on its hem like a post while its legs gave way.
+    private static float[][] pieces(float[] b, ModelBends.Bend[] chain, float end) {
         float[][] pieces = new float[chain.length + 1][];
         float[] rest = b;
         for (int k = 0; k < chain.length; k++) {
@@ -416,6 +418,10 @@ final class RagdollBuild {
             far[bend.farSign() > 0.0F ? a : a + 3] = bend.at();
             pieces[k] = near;
             rest = far;
+        }
+        if (chain.length > 0 && !Float.isNaN(end)) {
+            ModelBends.Bend last = chain[chain.length - 1];
+            rest[last.farSign() > 0.0F ? last.axis() + 3 : last.axis()] = end;
         }
         pieces[chain.length] = rest;
         return pieces;

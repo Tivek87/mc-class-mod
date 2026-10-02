@@ -1,11 +1,15 @@
 # Laatste sessie
 
-- Datum: 2026-10-02. Verzoek: eigen Thor/Mjolnir-werk committen, pushen en releasen, alleen eigen bestanden.
-- Release v0.6.0-alpha: Mjolnir in vanilla pixel-stijl (35 blokjes, 64px), runen gloeien blauw als de hamer geladen
-  is, Thor 30% groter (`BodySize`, cape mee), as-stand-in weg, generator `scripts/models/mjolnir/`, 4 referentiebeelden.
-- Werkwijze: commit gebouwd in losse worktree vanaf `6676328`: alleen eigen bestanden, in `MultiversePowers*.java`
-  en `en_us.json` alleen eigen regels; daar gebouwd, getest, gepusht en gepubliceerd.
-- Getest: in-game test (29 shots), `gradlew build` + tests groen op precies deze inhoud.
-- Andere sessie: revert + mob-fixes (gestaged/ongestaged) bleven buiten de commit; hun klaargezette release heet
-  na deze nu v0.6.1-alpha (CHANGELOG-kop en `mod_version` in index en werkmap omgezet, inhoud ongemoeid).
-- Open: niets voor Thor/Mjolnir. Bugs/ideeën bewust niet aangeraakt.
+- Datum: 2026-10-02. Verzoek: dubbelcheck, dan alles committen, pushen en releasen (geen Thor/Mjolnir-werk).
+- Commit `7fb8a78` "Revert hit reactions, ledge grabs and faster ragdolls": alles van 0.5.9-alpha eruit, ook ledge grab.
+- Commit "Fix creature glitches in poses and ragdolls": enderman-kaak blijft onder het opgetilde hoofd; vermoeide pose
+  alleen bij mens-bouw en zonder diepe hurk (husk); mobs met gewaad vallen meteen; gedragen blok, item in gevouwen
+  armen en mooshroom-paddenstoelen volgen het slappe lijf.
+- Bestanden: `Poses`, `Stance`, `Tired`, `ModelBends`, `RagdollBuild`, `RagdollBody`, `Ragdoll`, `Restore`, `Ragdolls`,
+  `LivingEntityRendererMixin`, nieuw `MushroomCowMushroomLayerMixin`, `welcomescreen.mixins.json`, `CHANGELOG.md`.
+- Getest: in-game voor/na-shots (enderman, husk, gewaad-mobs, mooshroom, iron golem); `gradlew build` + 147 tests
+  groen op precies de commit-inhoud.
+- Gepusht naar origin/master; release v0.6.1-alpha (Latest, jar erbij).
+- Andere sessie: Thor/Mjolnir al in `9b3b29d` + release v0.6.0-alpha; daarom heet deze release v0.6.1-alpha.
+- Open: `Ragdolls.java` > 600 regels (al van vóór) -> splitsen voorstellen; panda/dolfijn-items niet gedaan.
+  Bugs/ideeën bewust niet aangeraakt.

@@ -1,10 +1,18 @@
 package nl.tivek.multiversepowers.engine.client.ragdoll;
 
+import com.mojang.blaze3d.vertex.PoseStack;
 import java.util.List;
 import javax.annotation.Nullable;
 import net.minecraft.client.model.EntityModel;
 import net.minecraft.client.model.geom.ModelPart;
+import net.minecraft.client.renderer.entity.layers.CarriedBlockLayer;
+import net.minecraft.client.renderer.entity.layers.CrossedArmsItemLayer;
+import net.minecraft.client.renderer.entity.layers.MushroomCowMushroomLayer;
+import net.minecraft.client.renderer.entity.layers.RenderLayer;
+import net.minecraft.client.renderer.entity.layers.WitchItemLayer;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.engine.client.model.BentParts;
 import nl.tivek.multiversepowers.engine.client.model.ModelBends;
@@ -44,6 +52,7 @@ final class Ragdoll extends RagdollBody {
     private static final Matrix4f LINK = new Matrix4f();
     private static final Matrix4f LINK_TRUNK = new Matrix4f();
     private static final Matrix4f NONE = new Matrix4f();
+    private static final Matrix4f WAS = new Matrix4f();
 
     Ragdoll(LivingEntity entity, EntityModel<?> model, List<ModelParts.Part> parts, ModelBends.Bend[][] chains,
             int[] hang, float[][] blades, int core, State state, @Nullable GetUp.Kind rise) {
@@ -131,9 +140,16 @@ final class Ragdoll extends RagdollBody {
             target.setPos(OUT.pos[i].x, OUT.pos[i].y, OUT.pos[i].z);
             target.setRotation((float) EULER.x, (float) EULER.y, (float) EULER.z);
             List<ModelPart> followers = part.followers();
+            float[] beside = this.beside[i];
             for (int k = 0; k < followers.size(); k++) {
-                restore.keep(followers.get(k));
-                followers.get(k).copyFrom(target);
+                ModelPart follower = followers.get(k);
+                restore.keep(follower);
+                follower.copyFrom(target);
+                if (beside != null) {
+                    MIXED.transform(LOCAL.set(beside[k * 3], beside[k * 3 + 1], beside[k * 3 + 2]));
+                    follower.setPos(target.x + (float) LOCAL.x, target.y + (float) LOCAL.y,
+                            target.z + (float) LOCAL.z);
+                }
             }
             ModelBends.Bend[] chain = this.chains[i];
             if (chain.length > 0) {
@@ -246,5 +262,29 @@ final class Ragdoll extends RagdollBody {
                 BentParts.same(this.moved[i], to[i]);
             }
         }
+    }
+
+    // A layer drawn from the creature's own frame rather than from a part of it is carried by the part it lies on, as
+    // far as that part moved from where the creature's own pose put it (into `moved`, pushed onto `pose`): an
+    // enderman's block and a mooshroom's mushrooms by the trunk, the item in folded arms by them (a witch's potion
+    // hangs from its head already). False for any other layer.
+    boolean carry(RenderLayer<?, ?> layer, Entity entity, PoseStack pose, Restore restore, Matrix4f moved) {
+        boolean arms = layer instanceof CrossedArmsItemLayer<?, ?> && !(layer instanceof WitchItemLayer<?>
+                && entity instanceof LivingEntity living && living.getMainHandItem().is(Items.POTION));
+        if (!arms && !(layer instanceof CarriedBlockLayer) && !(layer instanceof MushroomCowMushroomLayer<?>)) {
+            return false;
+        }
+        ModelParts.Part on = this.parts.get(this.core);
+        for (int i = 0; i < this.parts.size() && arms; i++) {
+            on = ModelBends.crossed(this.parts.get(i)) ? this.parts.get(i) : on;
+        }
+        if (!restore.was(on.part(), WAS)) {
+            return false;
+        }
+        ModelParts.parentFrame(this.model, NONE, on, FRAME).mul(WAS, WAS);
+        ModelParts.frame(this.model, NONE, on, moved).mul(WAS.invert());
+        pose.pushPose();
+        pose.mulPose(moved);
+        return true;
     }
 }

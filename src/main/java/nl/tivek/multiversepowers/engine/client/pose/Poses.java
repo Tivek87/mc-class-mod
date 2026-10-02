@@ -21,6 +21,7 @@ import nl.tivek.multiversepowers.engine.client.render.entity.EntityPass;
 import nl.tivek.multiversepowers.engine.math.Ease;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
+import org.joml.Vector3f;
 
 // The poses powers give a creature on top of its own animation, in one place and one order: each stage's layers,
 // then (while the world is drawn) a short fade whenever a layer starts or stops, so a pose never jumps, and last the
@@ -56,6 +57,8 @@ public final class Poses {
     private static final int JOINTS = Limbs.Joint.values().length;
     private static final Quaternionf[] JOINTS_NOW = turns();
     private static final Quaternionf MIXED = new Quaternionf();
+    private static final Quaternionf HEAD = new Quaternionf();
+    private static final Vector3f JAW = new Vector3f();
     // A joint turned less than this (the cosine of half its angle) is straight.
     private static final float STRAIGHT = 0.99999F;
     private static int ticks;
@@ -101,6 +104,7 @@ public final class Poses {
     public static void apply(Stage stage, EntityModel<?> model, LivingEntity entity, float partialTick,
             @Nullable Matrix4f drawn) {
         List<Layer> layers = stage == Stage.MODEL ? MODEL_LAYERS : CREATURE_LAYERS;
+        boolean jaw = stage == Stage.CREATURE && model instanceof HumanoidModel<?> person && jaw(person);
         long on = 0L;
         for (int i = 0; i < layers.size(); i++) {
             if (layers.get(i).pose(model, entity, partialTick)) {
@@ -188,7 +192,12 @@ public final class Poses {
         memory.seen = ticks;
         plant(model, entity, partialTick, drawn);
         PoseGuard.guard(humanoid);
-        humanoid.hat.copyFrom(humanoid.head);
+        ModelPart head = humanoid.head;
+        humanoid.hat.copyFrom(head);
+        if (jaw) {
+            HEAD.rotationZYX(head.zRot, head.yRot, head.xRot).transform(JAW);
+            humanoid.hat.setPos(head.x + JAW.x, head.y + JAW.y, head.z + JAW.z);
+        }
         if (humanoid instanceof PlayerModel<?> player) {
             player.jacket.copyFrom(player.body);
             player.rightSleeve.copyFrom(player.rightArm);
@@ -196,6 +205,18 @@ public final class Poses {
             player.rightPants.copyFrom(player.rightLeg);
             player.leftPants.copyFrom(player.leftLeg);
         }
+    }
+
+    // Where the hat sits from the head, in the head's own axes, into JAW: an angry enderman's jaw hangs below its
+    // raised head, and stays there as the hat copies the head. False when it sits on the head.
+    private static boolean jaw(HumanoidModel<?> model) {
+        ModelPart head = model.head;
+        JAW.set(model.hat.x - head.x, model.hat.y - head.y, model.hat.z - head.z);
+        if (JAW.lengthSquared() < 1.0E-6F) {
+            return false;
+        }
+        HEAD.rotationZYX(head.zRot, head.yRot, head.xRot).conjugate().transform(JAW);
+        return true;
     }
 
     private static void plant(EntityModel<?> model, LivingEntity entity, float partialTick, @Nullable Matrix4f drawn) {

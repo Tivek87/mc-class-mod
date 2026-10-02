@@ -473,6 +473,33 @@ public final class ModelBends {
         return inner;
     }
 
+    // Where a bent trunk standing up ends along its spine (its own pixels) under a robe reaching on past it over its
+    // legs (a villager's, an illager's): where its first box or its hips end, whichever is further. NaN without one.
+    public static float robe(List<Part> parts, int core, Bend[] trunk) {
+        if (trunk.length == 0) {
+            return Float.NaN;
+        }
+        Part body = parts.get(core);
+        Matrix4f rest = ModelParts.rest(body, new Matrix4f());
+        int axis = trunk[0].axis();
+        float sign = trunk[0].farSign();
+        if (Math.abs(rest.transformDirection(unit(axis, sign)).normalize().y) <= UPRIGHT) {
+            return Float.NaN;
+        }
+        float hind = hind(parts, core, rest.invert(), axis, sign);
+        if (Float.isNaN(hind)) {
+            return Float.NaN;
+        }
+        ModelPart.Cube first = body.part().cubes.get(0);
+        float own = sign > 0.0F ? axis == 0 ? first.maxX : axis == 1 ? first.maxY : first.maxZ
+                : axis == 0 ? first.minX : axis == 1 ? first.minY : first.minZ;
+        float ends = sign > 0.0F ? Math.max(hind, own) : Math.min(hind, own);
+        float[] b = body.bounds();
+        float end = sign > 0.0F ? b[axis + 3] : b[axis];
+        boolean robe = (end - ends) * sign > 0.0F && (ends - trunk[trunk.length - 1].at()) * sign > 0.0F;
+        return robe ? ends : Float.NaN;
+    }
+
     private static Vector3f unit(int axis, float sign) {
         Vector3f v = new Vector3f();
         v.setComponent(axis, sign);

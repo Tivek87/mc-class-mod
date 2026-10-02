@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import net.minecraft.client.model.geom.ModelPart;
+import org.joml.Matrix4f;
 
 // A model is shared by every creature of its kind, and not every model sets all its parts again each frame: what a
 // ragdoll changes for one creature is put back as it was once that creature is drawn.
@@ -39,6 +40,22 @@ final class Restore {
 
     boolean any() {
         return !this.parts.isEmpty();
+    }
+
+    // How the part was turned and placed before it was changed (as ModelPart.translateAndRotate puts it, in blocks);
+    // false when it was not changed.
+    boolean was(ModelPart part, Matrix4f out) {
+        for (int i = 0; i < this.parts.size(); i++) {
+            if (this.parts.get(i) != part) {
+                continue;
+            }
+            float[] v = this.values;
+            int o = i * STRIDE;
+            out.translation(v[o] / 16.0F, v[o + 1] / 16.0F, v[o + 2] / 16.0F).rotateZYX(v[o + 5], v[o + 4], v[o + 3])
+                    .scale(v[o + 6], v[o + 7], v[o + 8]);
+            return true;
+        }
+        return false;
     }
 
     void undo() {
