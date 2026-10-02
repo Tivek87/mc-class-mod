@@ -33,6 +33,9 @@ final class RagdollFalls {
     private static final double BLOW_LIFT = 0.5;
     private static final double NEAREST = 1.3;
     private static final double FURTHEST = 0.25;
+    // A blow knocking a body down again as it gets up pushes it at least and at most this hard (blocks a second).
+    private static final double LEAST_KNOCK = 2.0;
+    private static final double MOST_KNOCK = 9.0;
     // How hard its limbs flail, as a share of the blow; a push along the ground slower than NO_WAY (blocks a tick)
     // tells no way to fall.
     private static final double FLAIL = 0.3;
@@ -107,7 +110,6 @@ final class RagdollFalls {
         if (doll.struck || doll.blasted) {
             return false;
         }
-        RigidWorld world = doll.world;
         Vec3 core = doll.coreAt(1.0);
         Vec3 push = blow.push();
         double fx = push.x;
@@ -125,12 +127,43 @@ final class RagdollFalls {
         double force = ClientSettings.ragdollForce();
         double hard = Mth.clamp(push.horizontalDistance() * 20.0 * BLOW_SHARE, LEAST_BLOW, MOST_BLOW) * force;
         double lift = Mth.clamp(push.y * 20.0 * BLOW_LIFT, 0.0, hard * 0.6);
-        if (slump(doll, fx, fz, hard)) {
-            doll.built = Vec3.ZERO;
-            doll.struck = true;
-            doll.toppleAt = -1;
-            return true;
+        if (!slump(doll, fx, fz, hard)) {
+            shove(doll, fx, fz, hard, lift, blow.from(), doll.built);
         }
+        doll.built = Vec3.ZERO;
+        doll.struck = true;
+        doll.toppleAt = -1;
+        return true;
+    }
+
+    // A body getting up knocked down again by a blow that did not throw it, from `from` (null: from nowhere in
+    // particular) pushing its creature `push` (blocks a tick): it folds and falls away from the blow from just how it
+    // was drawn, more gently than a killing blow throws a body.
+    static void knockBack(Ragdoll doll, Vec3 push, @Nullable Vec3 from) {
+        Vec3 core = doll.coreAt(1.0);
+        double fx = push.x;
+        double fz = push.z;
+        if (fx * fx + fz * fz < NO_WAY * NO_WAY && from != null) {
+            fx = core.x - from.x;
+            fz = core.z - from.z;
+        }
+        double flat = Math.sqrt(fx * fx + fz * fz);
+        if (flat < 1.0E-4) {
+            double yaw = RANDOM.nextDouble() * Math.PI * 2.0;
+            fx = Math.cos(yaw);
+            fz = Math.sin(yaw);
+            flat = 1.0;
+        }
+        double hard = Mth.clamp(push.horizontalDistance() * 20.0 * BLOW_SHARE, LEAST_KNOCK, MOST_KNOCK)
+                * ClientSettings.ragdollForce();
+        shove(doll, fx / flat, fz / flat, hard, 0.0, from, Vec3.ZERO);
+    }
+
+    // Every part pushed (fx, fz) at `hard` blocks a second where the blow struck, less the further from there, and
+    // lifted at `lift`; `was` (what every part was given as it went limp) taken back first. Its limbs give way.
+    private static void shove(Ragdoll doll, double fx, double fz, double hard, double lift, @Nullable Vec3 from,
+            Vec3 was) {
+        RigidWorld world = doll.world;
         double[] at = new double[7];
         double[] v = new double[6];
         double low = Double.POSITIVE_INFINITY;
@@ -143,8 +176,7 @@ final class RagdollFalls {
         }
         double tall = Math.max(0.3, high - low);
         // A blow from someone strikes at the height it came from, a blow from nowhere at the chest.
-        double hit = blow.from() != null ? Mth.clamp(blow.from().y, low + 0.35 * tall, high) : low + 0.65 * tall;
-        Vec3 was = doll.built;
+        double hit = from != null ? Mth.clamp(from.y, low + 0.35 * tall, high) : low + 0.65 * tall;
         for (int b = 0; b < world.count(); b++) {
             world.pose(b, at);
             world.velocity(b, v);
@@ -154,14 +186,10 @@ final class RagdollFalls {
                     v[2] - was.z + fz * hard * near, v[3] + RANDOM.nextGaussian() * flail,
                     v[4] + RANDOM.nextGaussian() * flail, v[5] + RANDOM.nextGaussian() * flail);
         }
-        doll.built = Vec3.ZERO;
-        doll.struck = true;
-        doll.toppleAt = -1;
         if (!doll.stiff) {
             giveWay(doll, RANDOM, fz, -fx, GIVE_WAY);
         }
         world.wake();
-        return true;
     }
 
     // Whether a creature thrown alive, still upright, has its back to a wall right behind it the way it is thrown: then

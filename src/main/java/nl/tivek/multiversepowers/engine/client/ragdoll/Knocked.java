@@ -20,6 +20,9 @@ public final class Knocked {
     private static final int LONGEST = 200;
 
     private static final Int2IntOpenHashMap LEFT = new Int2IntOpenHashMap();
+    // Creatures the server has just sent flying (thrown, or hit as they got up), and on which tick word came.
+    private static final Int2IntOpenHashMap AGAIN = new Int2IntOpenHashMap();
+    private static int now;
 
     private Knocked() {
     }
@@ -31,9 +34,19 @@ public final class Knocked {
         } else {
             LEFT.put(entity, ticks < 0 ? FLYING : ticks);
         }
+        if (ticks < 0) {
+            AGAIN.put(entity, now);
+        }
+    }
+
+    // Whether word came this tick that the server sent the creature flying; asked once.
+    static boolean again(int entity) {
+        return AGAIN.containsKey(entity) && AGAIN.remove(entity) >= now - 1;
     }
 
     static void tick() {
+        now++;
+        AGAIN.int2IntEntrySet().removeIf(entry -> entry.getIntValue() < now - 1);
         ObjectIterator<Int2IntMap.Entry> all = LEFT.int2IntEntrySet().fastIterator();
         while (all.hasNext()) {
             Int2IntMap.Entry entry = all.next();
@@ -66,9 +79,11 @@ public final class Knocked {
 
     static void forget(int entity) {
         LEFT.remove(entity);
+        AGAIN.remove(entity);
     }
 
     static void clear() {
         LEFT.clear();
+        AGAIN.clear();
     }
 }

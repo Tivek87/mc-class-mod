@@ -39,8 +39,10 @@ public final class Knockdowns {
     private static final double BLOWN = 0.2;
     private static final double HEAVY = 3.5;
     // Ticks a thrown creature stays down from landing: it lies 3 seconds, then gets up in every player's game (a little
-    // later there, as its body comes down after it), and stands a moment before its AI comes back.
+    // later there, as its body comes down after it), and stands a moment before its AI comes back. The players' games
+    // get it up within the last RISING of them: a blow then knocks it down again from however far up it is.
     private static final int DOWN = 125;
+    private static final int RISING = 60;
     private static final int LONGEST_FLIGHT = 200;
     // As long as a player's game shows a creature hurt, the push that throws it may still come.
     private static final int WATCH = 10;
@@ -100,6 +102,12 @@ public final class Knockdowns {
         if (!(event.getEntity() instanceof Mob mob) || !(mob.level() instanceof ServerLevel level)
                 || !mayFly(mob)) {
             return;
+        }
+        Down down = DOWNED.get(mob);
+        if (down != null && down.landed >= 0 && down.age - down.landed >= DOWN - RISING && !HeldMobs.isHeld(mob)
+                && Fatigue.blow(event.getSource())) {
+            // Hit as it gets up: down again, and it lies anew from where it falls.
+            down(level, mob);
         }
         // The push that throws it is given right after the blow, or by a power a few ticks on: looked at meanwhile.
         Effects.start(level, (lvl, age) -> {

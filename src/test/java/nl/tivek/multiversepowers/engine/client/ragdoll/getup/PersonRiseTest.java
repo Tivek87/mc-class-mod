@@ -49,7 +49,7 @@ class PersonRiseTest {
             float jump = 0.0F;
             for (int f = 0; f <= 200; f++) {
                 float u = f / 200.0F;
-                rise.pose(u, 0.0F, lie, own, out);
+                rise.pose(u, lie, own, out);
                 for (int i = 0; i < n; i++) {
                     Vector3f p = out.pos[i];
                     assertTrue(Float.isFinite(p.x + p.y + p.z + out.rot[i].w), "broken at " + u);

@@ -59,7 +59,7 @@ public final class Fatigue {
     }
 
     // A hit by someone or something, or a blast; not fire, a fall or poison wearing on it.
-    private static boolean blow(DamageSource source) {
+    static boolean blow(DamageSource source) {
         return source.getEntity() != null || source.getDirectEntity() != null
                 || source.is(DamageTypeTags.IS_EXPLOSION);
     }

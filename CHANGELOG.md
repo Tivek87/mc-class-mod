@@ -3,6 +3,30 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.5.7-alpha] - 2026-10-02
+
+### Added
+- **Getting up:** any hit while a creature gets up knocks it down again: it goes limp from just the pose it was in,
+  pushed the way the hit came, and lies anew before it gets up again.
+- **Roster:** Ultron joins the Marvel characters.
+
+### Changed
+- **Getting up:** a person gets up more smoothly: it lifts its head and draws its hands in, pushes up, draws its knees
+  in, steps a foot up, kneels with a hand on that knee and rises over it, each arm and leg on its own timing, and no two
+  get up quite alike.
+- **Getting up:** hands lie flat and feet stand flat or on their toes where they rest, and the shoulder blades follow
+  the arms.
+- **Getting up:** a person lying on its side gets up along its body instead of swinging round first.
+- **Getting up:** other creatures stay on the ground as they rise, fold their legs in and push up front legs first; a
+  four-legged one rolls onto its belly about its spine.
+- **Getting up:** a creature that got up keeps facing the way it rose until it moves or turns, instead of spinning
+  round on the spot.
+- **Getting up:** a person with a sword or an axe leans on it instead of putting that hand on its knee.
+- **Roster:** a character is found by its name whatever its capitals.
+
+### Removed
+- **Project:** `CLAUDE.md` is no longer kept in the repository; it stays local.
+
 ## [0.5.6-alpha] - 2026-10-02
 
 ### Added

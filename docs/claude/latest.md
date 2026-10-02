@@ -1,18 +1,16 @@
 # Laatste sessie
 
-- Datum: 2026-10-02. Verzoek: ideeën #45 (botten, ook de mech) en #58 (ragdoll/stumble) afmaken; andere bugs/ideeën
-  NIET aangeraakt. Keuzes gebruiker: fatigue-knockdown en domino als wereldinstelling (aan), mech-wandhand overgeslagen.
-- #58: wand-slump (dood en levend gegooid, `RagdollFalls`), opstaan vanuit zit (`PersonRise.SEATED`), leunen op
-  zwaard/bijl (`Brace`), domino (`Knockdowns.bump`), vermoeidheid (`Fatigue`, `FatiguePayload`, `Tired`), dreunen +
-  stof (`RigidWorld.impact`, `Thuds`), afstands-detail + 4 client-instellingen. Netwerkversie 21.
-- #45: mech-pols (vorm gesplitst in FOREARM + HAND), schouders schuddend/rollend om het sleutelbeen, veren op lopen,
-  explosies (`MechWalk.blast` via `ClientPacketListenerMixin`) en klappen op de piloot.
-- `Ragdoll.java` (709 r.) gesplitst: `RagdollBody` (staat/beweging) + `Ragdoll` (tekenen). CLAUDE.md + CHANGELOG bij.
-- Tests: build groen (132 tests; nieuw: 2 in `RigidWorldTest`, `FatiguePayloadTest`); ~12 in-game runs; testklassen,
-  werelden en shots verwijderd. Versie 0.5.6-alpha (prepare gedaan).
-- #45 en #58 op GitHub gesloten (completed, "Finished"-commentaar). `bugs.ps1` nu tweerichtings: `fixed` sluit
-  meteen op GitHub; `sync` sluit lokale fixes die daar nog open staan, haalt heropende terug, zet op GitHub als
-  klaar gesloten issues in `bugs/fixed/`; `close` (release) zet alleen de versie erbij. Getest met nep-`gh` (28
-  checks). Sync-taak bestond niet (pwsh ontbreekt): `schedule` valt terug op Windows PowerShell, taak draait (0).
-- Commits `315a356` (features) + bug-sync; daarna push + `release.ps1 publish` v0.5.6-alpha (gebruiker zei ja).
-  Niet gebouwd: speer/drietand-leunen, grijp-/slipgeluiden (horen bij #46/#48).
+- Datum: 2026-10-02. Verzoek: opstaan na ragdoll vloeiender/dynamischer, betere overgang limp -> opstaan, limp vanuit
+  elke pose (ook tijdens opstaan, ook bij gewone klap), nieuwe botten goed gebruiken. Bugs/ideeën NIET aangeraakt.
+- `getup/`: `PersonRise` herschreven op `RiseMoments` (per ledemaat eigen timing, handen plat, voeten plat/tenen,
+  hand op knie, schouderbladen volgen armen, variatie per keer); `GetUp.facing` (opstaan langs het lichaam: fix
+  zij-ligging-sprong); `CreatureRise` op de grond gehouden, poten gevouwen, voorpoten eerst; kortste draai-richting.
+- Klap tijdens opstaan: server `Knockdowns` (RISING-venster) + client `Knocked.again` -> `RagdollBody.knockedDown` +
+  `RagdollFalls.knockBack`. `Facings`: na opstaan blijft hij zo staan tot hij zelf beweegt (geen draai op de plek).
+- Tests: build groen (135 tests; nieuw `RiseFacingTest`, `KnockedTest` +1). ~9 in-game runs met screenshots:
+  voor/na, zij, zwaard, koe, varken, villager, vindicator, klap tijdens opstaan, worp tijdens lopen, vermoeid.
+  Testklasse, film-tool, werelden en shots verwijderd. Versie 0.5.7-alpha (prepare gedaan) + CHANGELOG.
+- CLAUDE.md: regel "game altijd starten om in-game te testen", summon-NBT-regel, getup-beschrijving bijgewerkt.
+- Gebruiker: "commit and push all" -> 3 commits: Ultron (werk andere sessie), `CLAUDE.md` lokaal (untracked,
+  `.gitignore`), get-up + CHANGELOG 0.5.7-alpha. Daarna push naar origin/master en `release.ps1 publish`.
+- Open: niets van deze taak; bug #35 en ideeën blijven onaangeroerd (opdracht gebruiker).

@@ -19,6 +19,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
@@ -62,7 +63,7 @@ public final class Ragdolls {
     private static final double GO_LIMP = 0.25;
     // A limp creature is let go a little further off than where it may go limp, so it does not flicker at the edge.
     private static final double LET_GO = 1.2;
-    // Getting up, it turns from the way it rises to its own from this far on.
+    // Getting up, its head turns to its own look from this far on.
     private static final float TURN_FROM = 0.65F;
     private static final float[] YAWS = new float[4];
 
@@ -229,6 +230,8 @@ public final class Ragdolls {
         if (blasted && entity.level() instanceof ClientLevel level) {
             RagdollCauses.throwByBlasts(doll, level, RANDOM);
         }
+        // Limp, it no longer faces any way of its own.
+        Facings.forget(entity.getId());
         if (state == Ragdoll.State.DEAD) {
             doll.dead = ticks;
             // Its flames would stand on where it stood, not on the body.
@@ -340,6 +343,7 @@ public final class Ragdolls {
         }
         ticks++;
         Knocked.tick();
+        Facings.tick();
         THROWN_NOW.clear();
         RagdollCauses.forget(ticks);
         if (!ClientSettings.ragdolls()) {
@@ -419,9 +423,10 @@ public final class Ragdolls {
             return true;
         }
         doll.state = Ragdoll.State.FLYING;
-        // Thrown again, not by the blow that just slammed it into a wall.
+        // Thrown again, not by the blow that just slammed it into a wall; or knocked down again as it gets up.
         boolean again = doll.age > 2 && !RagdollFalls.slamming(doll) && entity instanceof Mob mob
                 && (RagdollCauses.thrown(mob) || RagdollCauses.blown(mob.getId(), ticks));
+        boolean downed = Knocked.again(entity.getId());
         switch (doll.phase) {
             case AIR -> {
                 doll.follow(entity, true);
@@ -460,8 +465,14 @@ public final class Ragdolls {
             case UP -> {
                 if (again) {
                     doll.lift(entity);
+                } else if (downed) {
+                    doll.knockedDown();
+                    DamageSource source = entity.getLastDamageSource();
+                    RagdollFalls.knockBack(doll, entity.getDeltaMovement(),
+                            source == null ? null : source.getSourcePosition());
                 } else if (doll.up >= GetUp.ticks(doll.person())) {
                     Knocked.forget(entity.getId());
+                    Facings.rose(entity, doll.riseYaw);
                     return false;
                 }
             }
@@ -479,6 +490,7 @@ public final class Ragdolls {
         HELD.remove(id);
         FAILED.remove(id);
         Knocked.forget(id);
+        Facings.forget(id);
         Ragdoll doll = LIVE.get(id);
         if (doll == null || doll.entity != entity) {
             return;
@@ -489,30 +501,45 @@ public final class Ragdolls {
         }
     }
 
-    // A creature getting up is drawn facing the way its body rises, not turning on the ground, and turns to its own
-    // way only as it comes to stand.
+    // A creature getting up is drawn facing the way its body rises, not turning on the ground, its head turning to its
+    // own look as it comes to stand; standing, it keeps facing that way until it moves or turns of its own (Facings).
     @SubscribeEvent
     public static void onRenderLivingPre(RenderLivingEvent.Pre<?, ?> event) {
         LivingEntity entity = event.getEntity();
-        Ragdoll doll = LIVE.get(entity.getId());
-        if (doll == null || doll.entity != entity || doll.phase != Ragdoll.Phase.UP || !EntityPass.inWorld()) {
+        if (!EntityPass.inWorld()) {
             return;
         }
         float partialTick = event.getPartialTick();
-        float u = (doll.up + partialTick) / GetUp.ticks(doll.person());
-        float own = Mth.rotLerp(partialTick, entity.yBodyRotO, entity.yBodyRot);
-        float look = Mth.wrapDegrees(Mth.rotLerp(partialTick, entity.yHeadRotO, entity.yHeadRot) - own);
-        float share = (float) Ease.smoother((u - TURN_FROM) / (1.0F - TURN_FROM));
-        float yaw = doll.riseYaw + Mth.wrapDegrees(own - doll.riseYaw) * share;
+        Ragdoll doll = LIVE.get(entity.getId());
+        if (doll != null && doll.entity == entity && doll.phase == Ragdoll.Phase.UP) {
+            float u = (doll.up + partialTick) / GetUp.ticks(doll.person());
+            float own = Mth.rotLerp(partialTick, entity.yBodyRotO, entity.yBodyRot);
+            float look = Mth.wrapDegrees(Mth.rotLerp(partialTick, entity.yHeadRotO, entity.yHeadRot) - own);
+            float share = (float) Ease.smoother((u - TURN_FROM) / (1.0F - TURN_FROM));
+            keep(entity);
+            entity.yBodyRot = doll.riseYaw;
+            entity.yBodyRotO = doll.riseYaw;
+            entity.yHeadRot = doll.riseYaw + look * share;
+            entity.yHeadRotO = entity.yHeadRot;
+            return;
+        }
+        float offset = Facings.offset(entity, partialTick);
+        if (offset != 0.0F && !claimed(entity)) {
+            keep(entity);
+            entity.yBodyRot += offset;
+            entity.yBodyRotO += offset;
+            entity.yHeadRot += offset;
+            entity.yHeadRotO += offset;
+        }
+    }
+
+    // The creature drawn now has its own yaws kept, to be put back once it is drawn.
+    private static void keep(LivingEntity entity) {
         turned = entity;
         YAWS[0] = entity.yBodyRot;
         YAWS[1] = entity.yBodyRotO;
         YAWS[2] = entity.yHeadRot;
         YAWS[3] = entity.yHeadRotO;
-        entity.yBodyRot = yaw;
-        entity.yBodyRotO = yaw;
-        entity.yHeadRot = yaw + look * share;
-        entity.yHeadRotO = entity.yHeadRot;
     }
 
     @SubscribeEvent
@@ -574,5 +601,6 @@ public final class Ragdolls {
         RagdollCauses.clear();
         FAILED.clear();
         Knocked.clear();
+        Facings.clear();
     }
 }

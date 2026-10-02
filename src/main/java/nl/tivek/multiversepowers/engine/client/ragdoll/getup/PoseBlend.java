@@ -1,5 +1,6 @@
 package nl.tivek.multiversepowers.engine.client.ragdoll.getup;
 
+import java.util.Arrays;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
@@ -11,6 +12,7 @@ public final class PoseBlend {
     private static final Quaternionf A = new Quaternionf();
     private static final Quaternionf B = new Quaternionf();
     private static final Quaternionf BACK = new Quaternionf();
+    private static final float[] EVEN = new float[BodyPose.MOST];
 
     private PoseBlend() {
     }
@@ -23,9 +25,15 @@ public final class PoseBlend {
     // As above, the trunk's turn and joints by `turn` and its place by `place`.
     public static void blend(Hanging body, BodyPose a, BodyPose b, float turn, float place, float limbs,
             BodyPose out) {
+        Arrays.fill(EVEN, 0, body.n, limbs);
+        blend(body, a, b, turn, place, EVEN, out);
+    }
+
+    // As above, each other part i and its joints by its own share limbs[i].
+    static void blend(Hanging body, BodyPose a, BodyPose b, float turn, float place, float[] limbs, BodyPose out) {
         int core = body.core;
         for (int i = 0; i < body.n; i++) {
-            float w = i == core ? turn : limbs;
+            float w = i == core ? turn : limbs[i];
             for (int j = 0; j < BodyPose.JOINTS; j++) {
                 out.joint[j][i].set(a.joint[j][i]).slerp(b.joint[j][i], w);
             }
@@ -38,8 +46,8 @@ public final class PoseBlend {
             }
             inTrunk(body, i, a, V, A);
             inTrunk(body, i, b, W, B);
-            V.lerp(W, limbs);
-            A.slerp(B, limbs);
+            V.lerp(W, limbs[i]);
+            A.slerp(B, limbs[i]);
             fromTrunk(body, i, V, A, out);
         }
     }

@@ -1,125 +1,59 @@
 package nl.tivek.multiversepowers.engine.client.ragdoll.getup;
 
 import javax.annotation.Nullable;
+import net.minecraft.util.RandomSource;
+import nl.tivek.multiversepowers.engine.client.pose.Shoulders;
 import nl.tivek.multiversepowers.engine.math.Ease;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
-// A person getting up as a person does, from how it lies. Face down it props itself on its forearms, pushes up onto its
-// hands and knees, steps one foot through and kneels, then stands; face up it curls up to sit, turns onto a hand and a
-// knee, kneels and stands (on its side, whichever it lies nearer; sitting up, it starts from curling up). Its hands,
-// knees and feet stay where they are put on the ground while its weight moves over them, and step when they move. Every
-// joint moves on one smooth curve through the moments below, so it never stops dead between them, its head a moment
-// behind its trunk. It fades in from just how it lay and out into its own pose; the moments are laid out along its way
-// from where it lay to where it stands.
+// A person getting up as a person does, from how it lies (RiseMoments): face down it draws its hands in under its
+// shoulders, pushes up onto its hands and knees, steps one foot up and kneels with a hand on that knee, then rises over
+// it; face up it curls up to sit, turns onto a hand and a knee and goes on from kneeling (on its side, whichever it lies
+// nearer; sitting up, it starts from curling up). Its hands lie flat and its feet stand flat where they are put on the
+// ground while its weight moves over them, and step when they move; its shoulder blades follow its arms. Every joint
+// moves on one smooth curve through the moments, the trunk, the head, each arm and each leg on a curve of its own a
+// little ahead of or behind the others, so it never stops dead and never moves as one block. It fades in from just how
+// it lay and out into its own pose; the moments are laid out along its way from where it lay to where it stands.
 final class PersonRise implements GetUp.Rise {
-    // The ends that rest on the ground at a moment.
-    private static final int HAND_R = 1;
-    private static final int HAND_L = 2;
-    private static final int KNEE_R = 4;
-    private static final int KNEE_L = 8;
-    private static final int FOOT_R = 16;
-    private static final int FOOT_L = 32;
-
-    // A moment of getting up, for a body that steps through with its right foot (and posts its left hand, face up);
-    // mirrored for the other side: when (u); the pelvis's turn (yaw, pitch ahead: 1.57 face down, -1.57 face up, roll);
-    // where its hips are from its way to where it stands (sideways, ahead; how high comes from the ground); the waist's
-    // and low back's fold (ahead +); the head's nod (down +) and turn; the shoulder blades' shrug (up +) and roll
-    // (ahead +), right then left; each limb's turn as a model part turns (x, y, z) and its middle and end joints' folds
-    // (an elbow ahead, a knee back, a wrist ahead, an ankle pointing), right arm, left arm, right leg, left leg; and
-    // the ends resting on the ground.
-    private record Key(float u, float yaw, float pitch, float roll, float side, float ahead, float waist, float low,
-            float nod, float shake, float[] blades, float[][] limbs, int rests) {
-        // The same moment, at another time.
-        Key at(float when) {
-            return new Key(when, this.yaw, this.pitch, this.roll, this.side, this.ahead, this.waist, this.low, this.nod,
-                    this.shake, this.blades, this.limbs, this.rests);
-        }
-    }
-
+    // How a limb rests (RiseMoments.how): its far end flat on the ground, its knee down, its hand on its own knee, its
+    // foot on its toes.
+    private static final int FLAT = 1;
+    private static final int KNEE = 2;
+    private static final int ON_KNEE = 3;
+    private static final int TOES = 4;
+    // Which group (RiseMoments) each turn of Pose.all moves with.
+    private static final int[] GROUP = { 0, 0, 0, 1, 2, 3, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5 };
     private static final float PI = (float) Math.PI;
-    private static final Key[] FRONT = {
-            // Up on its forearms, head raised.
-            new Key(0.14F, 0.0F, PI / 2.0F, 0.0F, 0.0F, 0.0F, -0.25F, -0.15F, -0.55F, 0.0F,
-                    new float[] { 0.1F, 0.05F, 0.1F, 0.05F },
-                    new float[][] { { -1.5F, 0.0F, 0.35F, 1.45F, 0.1F }, { -1.5F, 0.0F, -0.35F, 1.45F, 0.1F },
-                            { 0.02F, 0.0F, 0.06F, 0.15F, 0.05F }, { 0.02F, 0.0F, -0.06F, 0.1F, 0.05F } },
-                    HAND_R | HAND_L | KNEE_R | KNEE_L),
-            // Pushing its chest up on its hands.
-            new Key(0.3F, 0.0F, 1.3F, 0.0F, 0.0F, 1.0F, -0.4F, -0.25F, -0.45F, 0.0F,
-                    new float[] { 0.2F, 0.1F, 0.2F, 0.1F },
-                    new float[][] { { -1.15F, 0.0F, 0.3F, 0.5F, -0.9F }, { -1.15F, 0.0F, -0.3F, 0.5F, -0.9F },
-                            { 0.05F, 0.0F, 0.06F, 0.2F, 0.05F }, { 0.05F, 0.0F, -0.06F, 0.2F, 0.05F } },
-                    HAND_R | HAND_L | KNEE_R | KNEE_L),
-            // On its hands and knees.
-            new Key(0.44F, 0.0F, 1.35F, 0.0F, 0.0F, -3.0F, 0.1F, 0.1F, -0.2F, 0.0F,
-                    new float[] { 0.05F, 0.15F, 0.05F, 0.15F },
-                    new float[][] { { -1.45F, 0.0F, 0.12F, 0.08F, -1.3F }, { -1.45F, 0.0F, -0.12F, 0.08F, -1.3F },
-                            { -1.35F, 0.0F, 0.05F, 1.57F, 0.0F }, { -1.35F, 0.0F, -0.05F, 1.57F, 0.0F } },
-                    HAND_R | HAND_L | KNEE_R | KNEE_L),
-            // Its right foot stepped through between its hands.
-            new Key(0.56F, 0.0F, 0.9F, 0.0F, 0.0F, 0.0F, 0.2F, 0.1F, -0.15F, 0.0F,
-                    new float[] { 0.1F, 0.1F, 0.1F, 0.1F },
-                    new float[][] { { -1.1F, 0.0F, 0.1F, 0.25F, -0.9F }, { -1.1F, 0.0F, -0.1F, 0.25F, -0.9F },
-                            { -2.25F, 0.0F, 0.1F, 2.0F, -0.4F }, { -0.9F, 0.0F, -0.05F, 1.57F, 0.0F } },
-                    HAND_R | HAND_L | KNEE_L | FOOT_R),
-            // Kneeling upright on its left knee.
-            new Key(0.68F, 0.0F, 0.12F, 0.0F, 0.0F, 0.0F, 0.05F, 0.05F, 0.05F, 0.0F,
-                    new float[] { 0.0F, 0.0F, 0.0F, 0.0F },
-                    new float[][] { { -0.45F, 0.0F, 0.1F, 0.5F, 0.0F }, { 0.15F, 0.0F, -0.1F, 0.3F, 0.0F },
-                            { -1.6F, 0.0F, 0.1F, 1.6F, -0.05F }, { -0.1F, 0.0F, -0.05F, 1.6F, 0.0F } },
-                    KNEE_L | FOOT_R),
-            // Rising over its right foot, its left on its toes.
-            new Key(0.8F, 0.0F, 0.35F, 0.0F, 0.0F, 2.5F, 0.08F, 0.05F, -0.05F, 0.0F,
-                    new float[] { 0.0F, 0.0F, 0.0F, 0.0F },
-                    new float[][] { { 0.35F, 0.0F, 0.1F, 0.4F, 0.0F }, { -0.45F, 0.0F, -0.1F, 0.4F, 0.0F },
-                            { -0.75F, 0.0F, 0.05F, 0.95F, -0.2F }, { 0.45F, 0.0F, -0.05F, 0.7F, 0.65F } },
-                    FOOT_R),
-            // Standing, its left foot brought up beside its right.
-            new Key(0.92F, 0.0F, 0.02F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F,
-                    new float[] { 0.0F, 0.0F, 0.0F, 0.0F },
-                    new float[][] { { 0.08F, 0.0F, 0.08F, 0.15F, 0.0F }, { -0.05F, 0.0F, -0.08F, 0.15F, 0.0F },
-                            { 0.0F, 0.0F, 0.0F, 0.04F, 0.0F }, { 0.0F, 0.0F, 0.0F, 0.04F, 0.0F } },
-                    FOOT_R | FOOT_L) };
-    private static final Key[] BACK = {
-            // On its back, knees drawn up, chin tucked.
-            new Key(0.12F, 0.0F, -PI / 2.0F, 0.0F, 0.0F, 0.0F, 0.2F, 0.1F, 0.5F, 0.0F,
-                    new float[] { 0.0F, 0.0F, 0.0F, 0.0F },
-                    new float[][] { { 0.25F, 0.0F, 0.25F, 0.3F, 0.0F }, { 0.25F, 0.0F, -0.25F, 0.3F, 0.0F },
-                            { -1.1F, 0.0F, 0.05F, 2.0F, -0.35F }, { -1.1F, 0.0F, -0.05F, 2.0F, -0.35F } },
-                    HAND_R | HAND_L | FOOT_R | FOOT_L),
-            // Curled up to sit, its left hand reaching back for the ground.
-            new Key(0.28F, 0.0F, -0.85F, 0.0F, 0.0F, -1.0F, 0.5F, 0.3F, 0.3F, 0.0F,
-                    new float[] { 0.1F, 0.1F, 0.0F, -0.1F },
-                    new float[][] { { -1.2F, 0.0F, 0.1F, 0.3F, 0.0F }, { 0.55F, 0.0F, -0.45F, 0.2F, -0.2F },
-                            { -1.1F, 0.0F, 0.05F, 2.0F, -0.35F }, { -1.1F, 0.0F, -0.05F, 2.0F, -0.35F } },
-                    FOOT_R | FOOT_L),
-            // Turned onto its left hand and knee, its right foot planted ahead.
-            new Key(0.44F, -0.35F, 0.45F, 0.2F, 1.0F, -1.0F, 0.25F, 0.15F, 0.1F, 0.0F,
-                    new float[] { 0.0F, 0.1F, 0.2F, 0.0F },
-                    new float[][] { { -0.6F, 0.0F, 0.1F, 0.6F, 0.0F }, { -0.25F, 0.0F, -0.45F, 0.1F, -1.1F },
-                            { -1.3F, 0.0F, 0.05F, 1.6F, -0.2F }, { -0.45F, 0.0F, -0.1F, 2.0F, 0.0F } },
-                    HAND_L | KNEE_L | FOOT_R),
-            FRONT[4].at(0.58F), FRONT[5].at(0.74F), FRONT[6].at(0.88F) };
-    // Sitting up (slumped against a wall): it curls up from there, as face up once it has sat up.
-    private static final Key[] SEATED = { BACK[1].at(0.16F), BACK[2].at(0.36F), FRONT[4].at(0.54F),
-            FRONT[5].at(0.72F), FRONT[6].at(0.88F) };
     // Its pelvis this near upright (the cosine to straight up), it sits.
-    private static final float SITTING = 0.6F;
+    static final float SITTING = 0.6F;
+    // Varied, each moment comes up to this much sooner or later, each group's lead is this share more or less, and
+    // the head turns up to this far (radians) from the third moment on.
+    private static final float SOONER = 0.012F;
+    private static final float LEAD_SPREAD = 0.35F;
+    private static final float LOOK = 0.18F;
 
     // The pose fades in from how it lay over this much of getting up, and into its own pose from OWN_FROM on; its head
-    // follows its trunk this far behind; it moves along its way to where it stands from DRIFT_FROM to DRIFT_TO.
+    // follows its trunk this far behind as well; it moves along its way to where it stands from DRIFT_FROM to DRIFT_TO.
     private static final float LIE_FADE = 0.06F;
     private static final float OWN_FROM = 0.84F;
-    private static final float HEAD_LAG = 0.035F;
+    private static final float HEAD_LAG = 0.02F;
     private static final float DRIFT_FROM = 0.1F;
     private static final float DRIFT_TO = 0.9F;
     // A resting end lifting off is held over this first share of the time before the next moment; one landing is set
-    // down over this last share; one moving on the ground is lifted this high (pixels) halfway, a knee sliding less.
+    // down over this last share; one moving on the ground is lifted this high (pixels) halfway, a foot stepping higher
+    // and a knee sliding less.
     private static final float LIFT = 0.3F;
     private static final float LAND = 0.35F;
     private static final float STEP = 2.5F;
+    private static final float STRIDE = 4.0F;
     private static final float SLIDE = 0.4F;
+    // A flat hand's fingers turn this far out (radians); they point on from its shoulder as much as the hand is out
+    // from under it, against the way the body faces counted this far (pixels). A hand on its knee rests this far
+    // (pixels) over the thigh's top.
+    private static final float FINGERS_OUT = 0.25F;
+    private static final float REACH_OUT = 6.0F;
+    private static final float ON_THIGH = 0.5F;
     // A resting end this near (pixels) where it rested the moment before stays there.
     private static final float STAY = 5.0F;
     // An end this near the ground (pixels) as the body lies rests on it.
@@ -137,16 +71,19 @@ final class PersonRise implements GetUp.Rise {
     private final Brace brace;
     private final boolean[] braced;
     private final Vector3f[] braceAt;
-    private final float[] times;
+    // When each group reaches each moment, [group][moment].
+    private final float[][] times;
     private final Skeleton.Pose[] keys;
     // Each moment's turns (Pose.all), and the pose's own.
     private final Quaternionf[][] turns;
     private final int[] rests;
-    // Where each resting end rests at each moment, [moment][limb].
+    // Where each resting end rests at each moment and the way its hand or foot runs there, [moment][limb].
     private final Vector3f[][] contacts;
+    private final Vector3f[][] ways;
     private final Skeleton.Pose pose = new Skeleton.Pose();
     private final Quaternionf[] poseTurns = this.pose.all();
     private final Skeleton.Pose reached = new Skeleton.Pose();
+    private final float[] weights = new float[Skeleton.LIMBS];
     private final float[] p = new float[4];
     private final float[] result = new float[4];
     private final BodyPose track = new BodyPose();
@@ -156,39 +93,49 @@ final class PersonRise implements GetUp.Rise {
     private final Vector3f c = new Vector3f();
     private final Quaternionf q = new Quaternionf();
 
-    PersonRise(Skeleton body, BodyPose lie, @Nullable Brace brace) {
+    // `vary`: each moment a little sooner or later, each group a little more or less ahead or behind and the head
+    // turned a little this way or that, by `seed` (never for the same body twice), so no two get up alike.
+    PersonRise(Skeleton body, BodyPose lie, @Nullable Brace brace, boolean vary, long seed) {
         this.body = body;
         this.brace = brace;
+        RandomSource random = vary ? RandomSource.create(seed) : null;
         Skeleton.Pose lying = new Skeleton.Pose();
         body.read(lie, lying);
         body.place(lying);
         // Face down its pelvis's front (-z) points at the ground (+y: y runs down); sitting, its trunk (-y) points up.
         boolean sitting = lying.pelvis.transform(this.a.set(0.0F, -1.0F, 0.0F)).y < -SITTING;
         boolean front = !sitting && lying.pelvis.transform(this.a.set(0.0F, 0.0F, -1.0F)).y > 0.0F;
-        Key[] plan = sitting ? SEATED : front ? FRONT : BACK;
+        RiseMoments.Moment[] plan = sitting ? RiseMoments.SEATED : front ? RiseMoments.FRONT : RiseMoments.BACK;
         // Face down it steps through with the leg whose knee lies further ahead; face up it turns onto the side it
         // lies nearer: its front turned to its left, it lies on its right.
         boolean mirror = front ? body.joint(3, this.a).z < body.joint(2, this.b).z
                 : lying.pelvis.transform(this.a.set(0.0F, 0.0F, -1.0F)).x > 0.0F;
         int n = plan.length + 1;
-        this.times = new float[n];
+        this.times = new float[RiseMoments.GROUPS][n];
         this.keys = new Skeleton.Pose[n];
         this.rests = new int[n];
         this.contacts = new Vector3f[n][Skeleton.LIMBS];
+        this.ways = new Vector3f[n][Skeleton.LIMBS];
         this.braced = new boolean[n];
         this.braceAt = new Vector3f[n];
         this.keys[0] = lying;
         this.rests[0] = this.resting(lying);
         for (int l = 0; l < Skeleton.LIMBS; l++) {
-            this.contacts[0][l] = this.end(l, this.rests[0], new Vector3f());
+            this.contacts[0][l] = this.end(l, RiseMoments.how(l, this.rests[0]), new Vector3f());
+            this.ways[0][l] = body.along(l, 2, new Vector3f());
         }
         Vector3f anchor = new Vector3f(lying.hips);
         Skeleton.Pose rest = new Skeleton.Pose();
-        this.times[0] = 0.0F;
         for (int k = 1; k < n; k++) {
-            Key key = mirror ? mirrored(plan[k - 1]) : plan[k - 1];
-            this.times[k] = key.u();
-            Skeleton.Pose made = this.made(key, rest);
+            RiseMoments.Moment key = mirror ? RiseMoments.mirrored(plan[k - 1]) : plan[k - 1];
+            float sooner = random == null ? 0.0F : (random.nextFloat() * 2.0F - 1.0F) * SOONER;
+            float pace = random == null ? 1.0F : 1.0F + (random.nextFloat() * 2.0F - 1.0F) * LEAD_SPREAD;
+            float look = random == null || k < 3 ? 0.0F : (random.nextFloat() * 2.0F - 1.0F) * LOOK;
+            for (int g = 0; g < RiseMoments.GROUPS; g++) {
+                // Each group in order, never at a moment before the one before it.
+                this.times[g][k] = Math.max(key.u() + sooner - key.lead()[g] * pace, this.times[g][k - 1] + 0.03F);
+            }
+            Skeleton.Pose made = this.made(key, rest, look);
             float drift = drift(key.u());
             made.hips.x = anchor.x + (body.stands.x - anchor.x) * drift + key.side();
             made.hips.z = anchor.z + (body.stands.z - anchor.z) * drift - key.ahead();
@@ -197,6 +144,10 @@ final class PersonRise implements GetUp.Rise {
             made.hips.y += body.ground - body.lowest();
             body.place(made);
             this.rests[k] = key.rests();
+            if (brace != null) {
+                // The hand holding a weapon leans on it, not on its knee.
+                this.rests[k] &= ~(brace.limb == 0 ? RiseMoments.ON_KNEE_R : RiseMoments.ON_KNEE_L);
+            }
             this.plant(made, k);
             this.lean(made, k);
             this.keys[k] = made;
@@ -213,61 +164,85 @@ final class PersonRise implements GetUp.Rise {
         int rests = 0;
         for (int l = 0; l < Skeleton.LIMBS; l++) {
             if (this.body.tip(l, this.a).y >= this.body.ground - ON_GROUND) {
-                rests |= l < 2 ? 1 << l : l == 2 ? FOOT_R : FOOT_L;
+                rests |= l < 2 ? 1 << l : l == 2 ? RiseMoments.FOOT_R : RiseMoments.FOOT_L;
             } else if (l >= 2 && this.body.joint(l, this.a).y >= this.body.ground - this.body.half[l] - ON_GROUND) {
-                rests |= l == 2 ? KNEE_R : KNEE_L;
+                rests |= l == 2 ? RiseMoments.KNEE_R : RiseMoments.KNEE_L;
             }
         }
         return rests;
     }
 
     // Limb l's resting point as the body was placed last: its knee's middle when it kneels, else its far end.
-    private Vector3f end(int l, int rests, Vector3f out) {
-        return kneels(l, rests) ? this.body.joint(l, out) : this.body.tip(l, out);
+    private Vector3f end(int l, int how, Vector3f out) {
+        return how == KNEE ? this.body.joint(l, out) : this.body.tip(l, out);
     }
 
-    private static boolean kneels(int l, int rests) {
-        return l == 2 && (rests & KNEE_R) != 0 || l == 3 && (rests & KNEE_L) != 0;
+    // How high (y, pixels) limb l's resting point is as it rests `how`: a knee's or a flat hand's middle half its
+    // thickness over the ground, a sole on it.
+    private float height(int l, int how) {
+        return how == KNEE || how == FLAT && l < 2 ? this.body.ground - this.body.half[l] : this.body.ground;
     }
 
-    private static boolean rests(int l, int rests) {
-        int bits = l == 0 ? HAND_R : l == 1 ? HAND_L : l == 2 ? KNEE_R | FOOT_R : KNEE_L | FOOT_L;
-        return (rests & bits) != 0;
+    // Two ways of resting that keep an end where it is: the same, or a foot going from flat to its toes.
+    private static boolean alike(int a, int b) {
+        return a == b || (a == FLAT || a == TOES) && (b == FLAT || b == TOES);
     }
 
     // Moment k's resting ends put on the ground: where they rested the moment before when they have not gone far,
-    // else where the moment puts them, set down on the ground; each limb reaching there.
+    // else where the moment puts them, set down on the ground; each limb reaching there. A hand on its knee is put
+    // there as the knee moves.
     private void plant(Skeleton.Pose made, int k) {
-        for (int l = 0; l < Skeleton.LIMBS; l++) {
-            if (!rests(l, this.rests[k])) {
-                this.contacts[k][l] = this.end(l, this.rests[k], new Vector3f());
-                continue;
+        for (int l = 2; l < Skeleton.LIMBS + 2; l++) {
+            int limb = l % Skeleton.LIMBS;
+            int how = RiseMoments.how(limb, this.rests[k]);
+            Vector3f at = this.end(limb, how, new Vector3f());
+            this.contacts[k][limb] = at;
+            if (how == ON_KNEE) {
+                this.onKnee(made, limb);
+            } else if (how != 0) {
+                at.y = this.height(limb, how);
+                Vector3f before = this.contacts[k - 1][limb];
+                int was = RiseMoments.how(limb, this.rests[k - 1]);
+                if (was != 0 && was != ON_KNEE && alike(was, how) && before.distance(at) < STAY) {
+                    at.set(before);
+                }
+                this.reach(made, limb, at, how, this.way(made, limb, at, how));
             }
-            boolean knee = kneels(l, this.rests[k]);
-            Vector3f at = this.end(l, this.rests[k], new Vector3f());
-            at.y = knee ? this.body.ground - this.body.half[l] : this.body.ground;
-            Vector3f before = this.contacts[k - 1][l];
-            if (rests(l, this.rests[k - 1]) && knee == kneels(l, this.rests[k - 1]) && before.distance(at) < STAY) {
-                at.set(before);
-            }
-            this.contacts[k][l] = at;
-            this.reach(made, l, at, knee);
+            this.ways[k][limb] = this.body.along(limb, 2, new Vector3f());
         }
+        this.body.place(made);
     }
 
-    // Limb l of a placed pose reaching its resting point `at` (its knee there, when it kneels), bent the way it is.
-    private void reach(Skeleton.Pose pose, int l, Vector3f at, boolean knee) {
+    // The way limb l's hand or foot runs resting `how` at `at`, the body placed: a hand lying flat, a foot standing
+    // flat or on its toes, a kneeling leg's foot as it is.
+    private Vector3f way(Skeleton.Pose pose, int l, Vector3f at, int how) {
+        if (how == KNEE) {
+            return this.body.along(l, 2, new Vector3f());
+        }
+        if (l < 2) {
+            return this.fingers(l, at, this.body.pivot(l, new Vector3f()));
+        }
+        if (how == TOES) {
+            // On its toes the foot leans halfway with its shin, its heel off the ground.
+            return this.body.along(l, 1, new Vector3f()).add(0.0F, 1.0F, 0.0F).normalize();
+        }
+        return new Vector3f(0.0F, 1.0F, 0.0F);
+    }
+
+    // Limb l of a placed pose reaching its resting point `at`, resting `how`, its hand or foot running `way` (a
+    // kneeling leg's shin and foot keep their shape from the knee). Its elbow or knee goes out the way it faces now
+    // and the way it is bent, so the limb never twists round as it reaches.
+    private void reach(Skeleton.Pose pose, int l, Vector3f at, int how, Vector3f way) {
         Vector3f tip = this.body.tip(l, new Vector3f());
-        Vector3f way = this.body.along(l, 2, new Vector3f());
         Vector3f joint = this.body.joint(l, new Vector3f());
         Vector3f pivot = this.body.pivot(l, new Vector3f());
-        // The elbow or knee goes out the way it is bent now: from the line between its ends towards where it is.
-        Vector3f toward = new Vector3f(joint).sub(pivot.add(tip).mul(0.5F));
-        if (toward.lengthSquared() < 0.01F) {
-            toward.set(l < 2 ? 0.0F : 0.0F, l < 2 ? 0.0F : 1.0F, l < 2 ? 1.0F : -1.0F);
+        Vector3f toward = new Vector3f(joint).sub(new Vector3f(pivot).add(tip).mul(0.5F));
+        float bent = toward.length();
+        if (bent > 1.0E-3F) {
+            toward.mul(Math.min(1.0F, bent) / bent);
         }
-        if (knee) {
-            // Kneeling, its shin and foot keep their shape from the knee, which goes down to the ground.
+        toward.add(this.body.outer(l, this.c));
+        if (how == KNEE) {
             tip.sub(joint).add(at);
             toward.add(0.0F, 2.0F, 0.0F);
         } else {
@@ -276,12 +251,43 @@ final class PersonRise implements GetUp.Rise {
         this.body.reach(pose, l, tip, way, toward);
     }
 
+    // The way a flat hand's fingers point: on from its shoulder, the further the hand is out from under it, else the
+    // way the body faces as it gets up; turned a little out to the hand's own side.
+    private Vector3f fingers(int l, Vector3f at, Vector3f shoulder) {
+        Vector3f way = new Vector3f(at.x - shoulder.x, 0.0F, at.z - shoulder.z).add(0.0F, 0.0F, -REACH_OUT);
+        if (way.lengthSquared() < 1.0E-4F) {
+            way.set(0.0F, 0.0F, -1.0F);
+        }
+        way.normalize();
+        // Turned out: the right hand to the person's right (-x), the left to its left.
+        float out = l == 0 ? FINGERS_OUT : -FINGERS_OUT;
+        return way.rotateY(way.z <= 0.0F ? out : -out);
+    }
+
+    // Arm l of a placed pose with its hand on its own side's knee: on the thigh's top just short of the knee, its
+    // fingers over the knee, its elbow out to its side.
+    private void onKnee(Skeleton.Pose pose, int l) {
+        int leg = l + 2;
+        Vector3f knee = this.body.joint(leg, new Vector3f());
+        Vector3f thigh = new Vector3f(knee).sub(this.body.pivot(leg, new Vector3f())).normalize();
+        Vector3f up = new Vector3f(0.0F, -1.0F, 0.0F).sub(new Vector3f(thigh).mul(-thigh.y));
+        if (up.lengthSquared() < 1.0E-4F) {
+            up.set(0.0F, 0.0F, -1.0F);
+        }
+        up.normalize();
+        Vector3f tip = new Vector3f(knee).add(up.mul(this.body.half[leg] + ON_THIGH));
+        Vector3f way = new Vector3f(thigh).add(0.0F, 0.8F, 0.0F).normalize();
+        Vector3f toward = pose.pelvis.transform(new Vector3f(l == 0 ? -1.0F : 1.0F, 0.0F, 0.6F));
+        this.body.reach(pose, l, tip, way, toward);
+    }
+
     // Moment k with a weapon in hand: low, up on its knees or feet and that hand free, it leans on the weapon, its tip
     // planted where it was the moment before when that is near, else ahead of its shoulder.
     private void lean(Skeleton.Pose made, int k) {
         Brace brace = this.brace;
-        int feet = KNEE_R | KNEE_L | FOOT_R | FOOT_L;
-        if (brace == null || rests(brace.limb, this.rests[k]) || (this.rests[k] & feet) == 0
+        int feet = RiseMoments.KNEE_R | RiseMoments.KNEE_L | RiseMoments.FOOT_R | RiseMoments.FOOT_L
+                | RiseMoments.TOES_R | RiseMoments.TOES_L;
+        if (brace == null || RiseMoments.how(brace.limb, this.rests[k]) != 0 || (this.rests[k] & feet) == 0
                 || this.body.ground - made.hips.y > LOW * this.body.legLength
                 || made.pelvis.transform(this.a.set(0.0F, -1.0F, 0.0F)).y > -UP) {
             return;
@@ -311,13 +317,14 @@ final class PersonRise implements GetUp.Rise {
         return out.set(-ahead.z * side - ahead.x * 0.5F, 0.0F, ahead.x * side - ahead.z * 0.5F);
     }
 
-    // The pose of a moment from its numbers: every turn, the hips where the caller puts them.
-    private Skeleton.Pose made(Key key, Skeleton.Pose rest) {
+    // The pose of a moment from its numbers: every turn, the hips where the caller puts them; each shoulder blade
+    // following its arm as well (Shoulders), the arm keeping the way it points.
+    private Skeleton.Pose made(RiseMoments.Moment key, Skeleton.Pose rest, float look) {
         Skeleton.Pose made = new Skeleton.Pose().set(rest);
         made.pelvis.rotationY(key.yaw()).rotateX(key.pitch()).rotateZ(key.roll());
         fold(made.waist, this.body.hinge(Skeleton.BODY, 0), key.waist());
         fold(made.low, this.body.hinge(Skeleton.BODY, 1), key.low());
-        made.head.rotationZYX(0.0F, key.shake(), key.nod());
+        made.head.rotationZYX(0.0F, key.shake() + look, key.nod());
         for (int s = 0; s < 2; s++) {
             made.blade[s].identity();
             Vector3f way = this.body.bladeWay(s, this.a);
@@ -334,6 +341,13 @@ final class PersonRise implements GetUp.Rise {
             fold(made.mid[l], this.body.hinge(2 + l, 0), limb[3]);
             fold(made.end[l], this.body.hinge(2 + l, 1), limb[4]);
         }
+        for (int s = 0; s < 2; s++) {
+            if (this.body.blade(s) != null) {
+                float stretch = 1.0F - made.mid[s].angle() / PI;
+                Shoulders.turn(s == 0, this.body.armWay(made, s, this.a), stretch, this.q);
+                this.body.shrug(made, s, this.q.premul(made.blade[s]));
+            }
+        }
         return made;
     }
 
@@ -343,25 +357,6 @@ final class PersonRise implements GetUp.Rise {
         } else {
             out.setAngleAxis(angle, hinge[0], hinge[1], hinge[2]);
         }
-    }
-
-    // The same moment for a body stepping through with its left foot: left and right changed over.
-    private static Key mirrored(Key key) {
-        float[] blades = key.blades();
-        float[][] limbs = key.limbs();
-        float[][] swapped = new float[4][];
-        for (int l = 0; l < 4; l++) {
-            float[] from = limbs[l ^ 1];
-            swapped[l] = new float[] { from[0], -from[1], -from[2], from[3], from[4] };
-        }
-        int rests = key.rests();
-        int flipped = 0;
-        for (int bit = 0; bit < 6; bit += 2) {
-            flipped |= (rests >> bit & 1) << bit + 1 | (rests >> bit + 1 & 1) << bit;
-        }
-        return new Key(key.u(), -key.yaw(), key.pitch(), -key.roll(), -key.side(), key.ahead(), key.waist(),
-                key.low(), key.nod(), -key.shake(), new float[] { blades[2], blades[3], blades[0], blades[1] }, swapped,
-                flipped);
     }
 
     // Each turn kept on the side of the one before it, so the curve through them goes the short way round.
@@ -382,10 +377,9 @@ final class PersonRise implements GetUp.Rise {
     }
 
     @Override
-    public void pose(float u, float turned, BodyPose lie, BodyPose own, BodyPose out) {
+    public void pose(float u, BodyPose lie, BodyPose own, BodyPose out) {
         this.at(u);
         this.body.write(this.pose, this.track);
-        this.turn(this.track, -turned);
         float toOwn = (float) Ease.smoother((u - OWN_FROM) / (1.0F - OWN_FROM));
         PoseBlend.blend(this.body.body, this.track, own, toOwn, toOwn, this.faded);
         float fromLie = 1.0F - (float) Ease.smoother(u / LIE_FADE);
@@ -393,69 +387,94 @@ final class PersonRise implements GetUp.Rise {
     }
 
     // The body `u` of the way up, placed: every joint on its curve through the moments, the body kept off the ground,
-    // and its resting ends where they rest.
+    // and its resting ends where they rest: the legs first, so a hand on a knee finds the knee where it is.
     void at(float u) {
-        int k = segment(this.times, u);
-        float s = (u - this.times[k]) / (this.times[k + 1] - this.times[k]);
-        this.curve(k, u);
-        // The head a moment behind its trunk.
-        float late = Math.max(0.0F, u - HEAD_LAG);
-        this.curveTurn(segment(this.times, late), late, 3, this.pose.head);
+        this.curve(u);
         this.body.place(this.pose);
         float low = this.body.lowest();
         if (low > this.body.ground) {
             this.pose.hips.y -= low - this.body.ground;
             this.body.place(this.pose);
         }
+        this.rest(u, 2);
+        this.rest(u, 0);
+    }
+
+    // Limbs l and l + 1 reaching where they rest at `u`, each by the moments of its own curve.
+    private void rest(float u, int from) {
         this.reached.set(this.pose);
-        float[] weights = new float[Skeleton.LIMBS];
-        for (int l = 0; l < Skeleton.LIMBS; l++) {
-            if (this.brace != null && l == this.brace.limb && (this.braced[k] || this.braced[k + 1])) {
-                float lean = this.leaning(k, s);
-                if (lean > 0.0F) {
-                    weights[l] = lean;
-                    continue;
-                }
-            }
-            boolean before = rests(l, this.rests[k]);
-            boolean after = rests(l, this.rests[k + 1]);
-            boolean same = before && after && kneels(l, this.rests[k]) == kneels(l, this.rests[k + 1]);
-            Vector3f from = this.contacts[k][l];
-            Vector3f to = this.contacts[k + 1][l];
-            float w;
-            boolean knee;
-            if (same) {
-                w = 1.0F;
-                knee = kneels(l, this.rests[k]);
-                float e = (float) Ease.smoother(s);
-                this.c.set(from).lerp(to, e);
-                float far = from.distance(to);
-                if (far > 0.5F) {
-                    this.c.y -= (knee ? SLIDE : Math.min(STEP, far * 0.4F)) * (float) Math.sin(Math.PI * s);
-                }
-            } else if (before && s < LIFT) {
-                w = 1.0F - (float) Ease.smoother(s / LIFT);
-                knee = kneels(l, this.rests[k]);
-                this.c.set(from);
-            } else if (after && s > 1.0F - LAND) {
-                w = (float) Ease.smoother((s - (1.0F - LAND)) / LAND);
-                knee = kneels(l, this.rests[k + 1]);
-                this.c.set(to);
-            } else {
-                continue;
-            }
-            weights[l] = w;
-            this.reach(this.reached, l, new Vector3f(this.c), knee);
+        for (int l = from; l < from + 2; l++) {
+            this.weights[l] = this.contact(u, l);
             this.body.place(this.pose);
         }
-        for (int l = 0; l < Skeleton.LIMBS; l++) {
-            if (weights[l] > 0.0F) {
-                this.pose.limb[l].slerp(this.reached.limb[l], weights[l]);
-                this.pose.mid[l].slerp(this.reached.mid[l], weights[l]);
-                this.pose.end[l].slerp(this.reached.end[l], weights[l]);
+        for (int l = from; l < from + 2; l++) {
+            float w = this.weights[l];
+            if (w > 0.0F) {
+                this.pose.limb[l].slerp(this.reached.limb[l], w);
+                this.pose.mid[l].slerp(this.reached.mid[l], w);
+                this.pose.end[l].slerp(this.reached.end[l], w);
             }
         }
         this.body.place(this.pose);
+    }
+
+    // Limb l of `reached` where it rests at `u`, between its moments k and k + 1: held where it rests (moved over the
+    // ground, lifted halfway, when it is put down anew), lifted off over LIFT and set down over LAND. How much of the
+    // limb rests so.
+    private float contact(float u, int l) {
+        float[] times = this.times[RiseMoments.ARM_R + l];
+        int k = segment(times, u);
+        float s = Math.max(0.0F, Math.min(1.0F, (u - times[k]) / (times[k + 1] - times[k])));
+        if (this.brace != null && l == this.brace.limb && (this.braced[k] || this.braced[k + 1])) {
+            float lean = this.leaning(k, s);
+            if (lean > 0.0F) {
+                return lean;
+            }
+        }
+        int before = RiseMoments.how(l, this.rests[k]);
+        int after = RiseMoments.how(l, this.rests[k + 1]);
+        Vector3f from = this.contacts[k][l];
+        Vector3f to = this.contacts[k + 1][l];
+        float w;
+        int how;
+        Vector3f way = new Vector3f();
+        if (before != 0 && after != 0 && alike(before, after)) {
+            w = 1.0F;
+            how = s < 0.5F ? before : after;
+            float e = (float) Ease.smoother(s);
+            float far = from.distance(to);
+            this.c.set(from).lerp(to, e);
+            way.set(this.ways[k][l]).lerp(this.ways[k + 1][l], e);
+            if (far > 0.5F) {
+                float lift = how == KNEE ? SLIDE : l >= 2 ? Math.min(STRIDE, far * 0.5F) : Math.min(STEP, far * 0.4F);
+                this.c.y -= lift * (float) Math.sin(Math.PI * s);
+            }
+        } else if (before != 0 && s < LIFT) {
+            w = 1.0F - (float) Ease.smoother(s / LIFT);
+            how = before;
+            this.c.set(from);
+            way.set(this.ways[k][l]);
+        } else if (after != 0 && s > 1.0F - LAND) {
+            w = (float) Ease.smoother((s - (1.0F - LAND)) / LAND);
+            how = after;
+            this.c.set(to);
+            way.set(this.ways[k + 1][l]);
+        } else {
+            return 0.0F;
+        }
+        if (how == ON_KNEE) {
+            this.onKnee(this.reached, l);
+        } else {
+            if (l < 2 && how == FLAT) {
+                // A resting hand lies level, never pointing into the ground.
+                way.y = 0.0F;
+            }
+            if (how == KNEE || way.lengthSquared() < 1.0E-6F) {
+                this.body.along(l, 2, way);
+            }
+            this.reach(this.reached, l, new Vector3f(this.c), how, way.normalize());
+        }
+        return w;
     }
 
     // The weapon arm between moments k and k + 1, `s` of the way: its tip held where it is planted (moved over the
@@ -490,18 +509,23 @@ final class PersonRise implements GetUp.Rise {
         return k;
     }
 
-    // Every number of the pose `u` of the way (between moments k and k + 1), on a curve through the moments that
-    // passes each at the pace it moves there (its pace from the moment before to the one after), still at the first
-    // and the last.
-    private void curve(int k, float u) {
+    // Every number of the pose `u` of the way, on a curve through the moments that passes each at the pace it moves
+    // there (its pace from the moment before to the one after), still at the first and the last: each group by its
+    // own times, the head a little behind on top of that.
+    private void curve(float u) {
+        float[] trunk = this.times[RiseMoments.TRUNK];
+        int k = segment(trunk, u);
         for (int c = 0; c < 3; c++) {
             for (int j = 0; j < 4; j++) {
                 this.p[j] = this.keys[this.clamp(k - 1 + j)].hips.get(c);
             }
-            this.pose.hips.setComponent(c, hermite(this.times, k, u, this.p));
+            this.pose.hips.setComponent(c, hermite(trunk, k, u, this.p));
         }
         for (int i = 0; i < this.poseTurns.length; i++) {
-            this.curveTurn(k, u, i, this.poseTurns[i]);
+            int group = GROUP[i];
+            float at = group == RiseMoments.HEAD ? Math.max(0.0F, u - HEAD_LAG) : u;
+            float[] times = this.times[group];
+            this.curveTurn(times, segment(times, at), at, i, this.poseTurns[i]);
         }
     }
 
@@ -510,13 +534,13 @@ final class PersonRise implements GetUp.Rise {
     }
 
     // Turn i of the pose (in Pose.all's order) on its curve, as four numbers then made a turn again.
-    private void curveTurn(int k, float u, int i, Quaternionf out) {
+    private void curveTurn(float[] times, int k, float u, int i, Quaternionf out) {
         for (int c = 0; c < 4; c++) {
             for (int j = 0; j < 4; j++) {
                 Quaternionf turn = this.turns[this.clamp(k - 1 + j)][i];
                 this.p[j] = c == 0 ? turn.x : c == 1 ? turn.y : c == 2 ? turn.z : turn.w;
             }
-            this.result[c] = hermite(this.times, k, u, this.p);
+            this.result[c] = hermite(times, k, u, this.p);
         }
         out.set(this.result[0], this.result[1], this.result[2], this.result[3]).normalize();
     }
@@ -536,22 +560,5 @@ final class PersonRise implements GetUp.Rise {
         float s3 = s2 * s;
         return (2.0F * s3 - 3.0F * s2 + 1.0F) * p[1] + (s3 - 2.0F * s2 + s) * m0 + (-2.0F * s3 + 3.0F * s2) * p[2]
                 + (s3 - s2) * m1;
-    }
-
-    // The whole pose turned `angle` about the upright line through the model's middle (as the creature turns).
-    private void turn(BodyPose pose, float angle) {
-        if (Math.abs(angle) < 1.0E-5F) {
-            return;
-        }
-        this.q.rotationY(angle);
-        Hanging hanging = this.body.body;
-        for (int i = 0; i < hanging.n; i++) {
-            if (hanging.inside[i]) {
-                continue;
-            }
-            Vector3f at = pose.pos[i].mul(hanging.scale[i]).add(hanging.move[i]);
-            this.q.transform(at).sub(hanging.move[i]).div(hanging.scale[i]);
-            pose.rot[i].premul(this.q);
-        }
     }
 }

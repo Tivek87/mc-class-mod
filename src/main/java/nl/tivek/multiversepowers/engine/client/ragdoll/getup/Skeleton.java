@@ -280,6 +280,11 @@ final class Skeleton {
         return this.limbs[l][p].transformDirection(this.bone(l, out)).normalize();
     }
 
+    // The way limb l's elbow or knee faces as last placed: the back of an arm, the front of a leg.
+    Vector3f outer(int l, Vector3f out) {
+        return this.limbs[l][0].transformDirection(out.set(0.0F, 0.0F, l < 2 ? 1.0F : -1.0F)).normalize();
+    }
+
     // The axis a joint of the trunk (0 the waist, 1 the pelvis) or of limb l (0 its elbow or knee, 1 its wrist or
     // ankle) folds about, in its own axes; null when it has no such joint.
     @Nullable
@@ -294,6 +299,23 @@ final class Skeleton {
     Vector3f bladeWay(int side, Vector3f out) {
         Vector3f inner = this.blade[side];
         return inner == null ? null : out.set(this.hangAt[2 + side]).sub(inner).normalize();
+    }
+
+    // The way arm `side` points as `pose` turns it (from its shoulder to its hand, its blade included), in the
+    // chest's own axes.
+    Vector3f armWay(Pose pose, int side, Vector3f out) {
+        this.turn.set(pose.blade[side]).mul(this.restTurn[2 + side]).mul(pose.limb[side]);
+        return this.turn.transform(this.bone(side, out)).normalize();
+    }
+
+    // Arm `side`'s shoulder blade turned by `turn` (in the chest's axes about where it meets the spine), the arm
+    // keeping the way it points: only its shoulder moves.
+    void shrug(Pose pose, int side, Quaternionf turn) {
+        Quaternionf rest = this.restTurn[2 + side];
+        this.other.set(rest).mul(pose.limb[side]);
+        this.other.premul(pose.blade[side]);
+        pose.blade[side].set(turn);
+        pose.limb[side].set(rest).conjugate().mul(this.turn.set(turn).conjugate()).mul(this.other);
     }
 
     // Limb l reaching its far end to `tip` (the trunk's parent's pixels) along `way` (its hand's or foot's way, from

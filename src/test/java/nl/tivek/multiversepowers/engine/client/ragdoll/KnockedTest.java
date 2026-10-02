@@ -63,6 +63,19 @@ class KnockedTest {
         return -1;
     }
 
+    // Word that the server sent a creature flying again (a blow as it got up) counts once, on the tick it came.
+    @Test
+    void wordOfBeingDownedAgainCountsOnceAndOnlyAtOnce() {
+        Knocked.told(CREATURE, -1);
+        Knocked.tick();
+        assertTrue(Knocked.again(CREATURE));
+        assertFalse(Knocked.again(CREATURE));
+        Knocked.told(CREATURE, -1);
+        Knocked.tick();
+        Knocked.tick();
+        assertFalse(Knocked.again(CREATURE));
+    }
+
     @Test
     void aBodyStillFlyingByTheServerWaitsForWord() {
         Knocked.told(CREATURE, -1);

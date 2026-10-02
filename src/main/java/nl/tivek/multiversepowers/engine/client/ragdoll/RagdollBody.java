@@ -10,6 +10,7 @@ import javax.annotation.Nullable;
 import net.minecraft.client.model.EntityModel;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.Vec3;
@@ -22,8 +23,9 @@ import nl.tivek.multiversepowers.engine.client.ragdoll.getup.Hanging;
 import nl.tivek.multiversepowers.engine.physics.Blocks;
 import nl.tivek.multiversepowers.engine.physics.joint.Pin;
 import nl.tivek.multiversepowers.engine.physics.RigidWorld;
+import org.joml.Matrix4f;
 import org.joml.Quaterniond;
-import org.joml.Vector3d;
+import org.joml.Quaternionf;
 
 // A creature gone limp: one box per part of its model, joined where the parts turn, falling, bumping into blocks and
 // hanging from whatever holds it; carried along by its creature, thrown, lying, getting up (Ragdoll draws it).
@@ -330,7 +332,8 @@ abstract class RagdollBody {
         this.world.wake();
     }
 
-    // A body getting up that is thrown again or dies goes limp from the pose it was drawn in last, not from how it lay.
+    // A body getting up that is thrown again, hit or dies goes limp from the pose it was drawn in last, not from how it
+    // lay.
     private void resume() {
         if (this.phase != Phase.UP) {
             return;
@@ -392,28 +395,50 @@ abstract class RagdollBody {
         this.world.wake();
     }
 
-    // Lain long enough: it gets up from just the way it lies, facing the way it rises (riseYaw).
+    // Lain long enough: it gets up from just the way it lies, facing the way it rises (riseYaw): a person along its
+    // body (GetUp.facing), anything else as `rising` says.
     void getUp() {
         this.phase = Phase.UP;
         this.up = 0;
         this.slumpAge = -1;
         this.lay = this.now.clone();
         System.arraycopy(this.now, 0, this.was, 0, this.now.length);
-        this.riseYaw = rising(this.lay, this.core * 7 + 3, this.entity.yBodyRot);
+        this.riseYaw = this.person ? GetUp.facing(this.lay, this.piece(this.core, 2) * 7 + 3, this.entity.yBodyRot)
+                : rising(this.lay, this.core * 7 + 3, this.standing(), this.entity.yBodyRot);
         this.rise = null;
         this.shownValid = false;
     }
 
+    // How its trunk stands as its model was built, drawn facing the game's yaw 0, in the world's axes.
+    private Quaterniond standing() {
+        Quaternionf built = ModelParts.rest(this.parts.get(this.core), new Matrix4f())
+                .getNormalizedRotation(new Quaternionf());
+        // Drawn turned half round about the upright and flipped upside down (y runs down in a model).
+        return new Quaterniond().rotationY(Math.PI).rotateZ(Math.PI)
+                .mul(new Quaterniond(built.x, built.y, built.z, built.w));
+    }
+
+    // Hit as it gets up by a blow that did not throw it: it goes limp from just how it was drawn and lies anew where
+    // it falls (RagdollFalls.knockBack pushes it).
+    void knockedDown() {
+        this.resume();
+        this.up = -1;
+        this.lay = null;
+        this.slumpAge = -1;
+        this.limp = 1.0;
+        this.fall();
+    }
+
     // The way (the game's degrees) a body lying with its trunk turned by the quaternion at lay[o] faces as it rises:
-    // from its front towards where its head lies, from its back towards its feet, from its side the way its chest
-    // faces; `own` when it lies no way in particular.
-    static float rising(double[] lay, int o, float own) {
-        Quaterniond trunk = new Quaterniond(lay[o], lay[o + 1], lay[o + 2], lay[o + 3]);
-        Vector3d head = trunk.transform(new Vector3d(0.0, -1.0, 0.0));
-        Vector3d chest = trunk.transform(new Vector3d(0.0, 0.0, -1.0));
-        double x = chest.y < -0.5 ? head.x : chest.y > 0.5 ? -head.x : chest.x;
-        double z = chest.y < -0.5 ? head.z : chest.y > 0.5 ? -head.z : chest.z;
-        return x * x + z * z < 0.04 ? own : (float) Math.toDegrees(Math.atan2(-x, z));
+    // whichever takes the least turning from how it lies to how its trunk stands (`standing`: as its model was built,
+    // facing the game's yaw 0, in the world's axes), so a four-legged creature rolls onto its belly about its spine;
+    // `own` when it lies no way in particular (upside down).
+    static float rising(double[] lay, int o, Quaterniond standing, float own) {
+        Quaterniond turn = new Quaterniond(lay[o], lay[o + 1], lay[o + 2], lay[o + 3])
+                .mul(new Quaterniond(standing).conjugate());
+        // Drawn facing yaw Y, its trunk stands turned -Y about the upright from how it stands at 0.
+        return turn.y * turn.y + turn.w * turn.w < 0.02 ? own
+                : (float) Mth.wrapDegrees(-Math.toDegrees(2.0 * Math.atan2(turn.y, turn.w)));
     }
 
     boolean person() {

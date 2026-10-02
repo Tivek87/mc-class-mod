@@ -3,7 +3,6 @@ package nl.tivek.multiversepowers.engine.client.ragdoll;
 import java.util.List;
 import net.minecraft.client.model.EntityModel;
 import net.minecraft.client.model.geom.ModelPart;
-import net.minecraft.util.Mth;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.engine.client.model.BentParts;
@@ -116,8 +115,7 @@ final class Ragdoll extends RagdollBody {
                         this.entity);
             }
             float u = Math.min(1.0F, (float) ((this.up + partialTick) / GetUp.ticks(this.person)));
-            float turned = (float) Math.toRadians(Mth.wrapDegrees(this.entity.yBodyRot - this.riseYaw));
-            this.rise.pose(u, turned, LIE, OWN_POSE, OUT);
+            this.rise.pose(u, LIE, OWN_POSE, OUT);
         } else {
             float w = (float) Math.max(0.0, Math.min(1.0, this.limp));
             PoseBlend.blend(this.hanging, OWN_POSE, LIE, w, w, OUT);
