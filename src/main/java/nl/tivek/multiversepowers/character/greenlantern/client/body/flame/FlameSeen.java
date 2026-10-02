@@ -33,7 +33,7 @@ abstract class FlameSeen extends FlameStates {
     private static final float MODEL_PIXEL = 0.9375F / 16.0F;
     private static final Map<Integer, Turned> TURNED = new HashMap<>();
 
-    private record Turned(float orbit, float drop, @Nullable float[] knees) {
+    private record Turned(float orbit, float drop, boolean kneeling) {
     }
 
     public static boolean posing(Entity player, float partialTick) {
@@ -113,6 +113,8 @@ abstract class FlameSeen extends FlameStates {
                 Math.abs(pose.step()), pose.wide())), 0.0F, 1.0F);
         legs(model.rightLeg, hold, legs.rightThigh(), legs.spread(), FlameBody.hip(true), ours);
         legs(model.leftLeg, hold, legs.leftThigh(), -legs.spread(), FlameBody.hip(false), ours);
+        FlameBody.knee(model, true, legs.rightThigh(), legs.rightKnee());
+        FlameBody.knee(model, false, legs.leftThigh(), legs.leftKnee());
         model.hat.copyFrom(model.head);
         model.jacket.copyFrom(model.body);
         model.rightSleeve.copyFrom(model.rightArm);
@@ -277,20 +279,9 @@ abstract class FlameSeen extends FlameStates {
         FlameCurves.Pose pose = pose(event.getEntity(), state, event.getPartialTick());
         float ours = 1.0F - Mth.clamp(pose.rest(), 0.0F, 1.0F);
         FlameBody.Legs legs = FlameBody.legs(pose, ours * standing(event.getEntity(), event.getPartialTick()));
-        boolean bent = FlameBody.bent(legs) && !event.getEntity().isInvisible();
+        boolean bent = FlameBody.bent(legs);
         if (Math.abs(pose.orbit()) >= 1.0E-3F || Math.abs(legs.drop()) >= 1.0E-3F || bent) {
-            TURNED.put(event.getEntity().getId(), new Turned(pose.orbit(), legs.drop(), bent ? FlameBody.knees(legs)
-                    : null));
-        }
-        if (bent) {
-            // The game's legs cannot bend at the knee: hidden here and drawn in two halves instead (see KneelLegs).
-            PlayerModel<AbstractClientPlayer> model = event.getRenderer().getModel();
-            model.rightLeg.visible = false;
-            model.leftLeg.visible = false;
-            model.rightPants.visible = false;
-            model.leftPants.visible = false;
-            model.rightLeg.yScale = 0.5F;
-            model.leftLeg.yScale = 0.5F;
+            TURNED.put(event.getEntity().getId(), new Turned(pose.orbit(), legs.drop(), bent));
         }
     }
 
@@ -302,10 +293,9 @@ abstract class FlameSeen extends FlameStates {
         }
     }
 
-    @Nullable
-    public static float[] knees(LivingEntity entity) {
+    public static boolean kneeling(LivingEntity entity) {
         Turned turned = TURNED.get(entity.getId());
-        return turned == null ? null : turned.knees();
+        return turned != null && turned.kneeling();
     }
 
     public static void unspin(RenderPlayerEvent.Post event) {

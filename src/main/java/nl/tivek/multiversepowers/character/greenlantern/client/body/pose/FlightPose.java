@@ -54,8 +54,8 @@ public final class FlightPose {
     private static final float KNEEL_DROP = 0.32F;
     static final float KNEEL_LEAN = 1.0F;
     private static final float CROUCH_DROP = 0.125F;
-    private static final float DOWN_KNEE = 1.52F;
-    private static final float STEP_KNEE = 1.4F;
+    static final float DOWN_KNEE = 1.52F;
+    static final float STEP_KNEE = 1.4F;
     private static final float HIP_HEIGHT = 12.0F * 0.9375F / 16.0F;
     private static final Vector3f COCKED = new Vector3f(0.55F, 0.42F, -0.72F);
     private static final Vector3f PLANTED = new Vector3f(0.18F, -0.95F, -0.9F);
@@ -209,16 +209,6 @@ public final class FlightPose {
         if (flying || kneel > 0.0F) {
             model.crouching = false;
         }
-        if (kneel > 0.0F) {
-            // The game's legs cannot bend at the knee: hidden here and drawn in two halves instead (see
-            // KneelLegs). Armour copies these legs, so it shrinks to the upper half along with them.
-            model.rightLeg.visible = false;
-            model.leftLeg.visible = false;
-            model.rightPants.visible = false;
-            model.leftPants.visible = false;
-            model.rightLeg.yScale = 0.5F;
-            model.leftLeg.yScale = 0.5F;
-        }
         return true;
     }
 
@@ -239,20 +229,13 @@ public final class FlightPose {
     }
 
     public static void post(RenderPlayerEvent.Post event) {
-        PlayerModel<AbstractClientPlayer> model = event.getRenderer().getModel();
-        model.rightLeg.yScale = 1.0F;
-        model.leftLeg.yScale = 1.0F;
         body = null;
         frame = null;
     }
 
-    @Nullable
-    public static float[] knees(LivingEntity entity) {
+    public static boolean kneeling(LivingEntity entity) {
         Frame f = frame;
-        if (f == null || f.entity() != entity.getId() || f.kneel() <= 0.0F) {
-            return null;
-        }
-        return new float[] { DOWN_KNEE * f.kneel(), STEP_KNEE * f.kneel() };
+        return f != null && f.entity() == entity.getId() && f.kneel() > 0.0F;
     }
 
     private static float dip(float t, float land) {
@@ -313,6 +296,7 @@ public final class FlightPose {
         if (f.slam() >= 0.0F) {
             slam(model, limb, right, f.slam(), f.kneel());
         }
+        FlightLimbs.bones(model, f, blend.fly);
     }
 
     private static float kneel(float age) {

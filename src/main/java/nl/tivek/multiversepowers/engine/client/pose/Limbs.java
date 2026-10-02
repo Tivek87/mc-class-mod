@@ -69,6 +69,8 @@ public final class Limbs {
     private static final Vector3f EULER = new Vector3f();
     private static final Matrix3f M = new Matrix3f();
     private static final float[] BENT = new float[JOINTS];
+    // Which shoulder blades (right, left) were turned for the model being drawn.
+    private static final boolean[] SHRUGGED = new boolean[2];
     // Every joint's turn now, for the model being drawn (none: straight).
     private static final Quaternionf[] TURNS = new Quaternionf[JOINTS];
 
@@ -89,7 +91,11 @@ public final class Limbs {
     // Bends the joint `angle` radians the way it folds (a knee back, an elbow forward), within what it can; a wrist or
     // an ankle folds either way (an ankle ahead lifts the toes), not the waist or pelvis.
     public static void bend(HumanoidModel<?> model, Joint joint, float angle) {
-        if (joint == Joint.WAIST || joint == Joint.PELVIS || !EntityPass.inWorld() || Math.abs(angle) < 1.0E-3F) {
+        if (joint == Joint.WAIST || joint == Joint.PELVIS || !EntityPass.inWorld()) {
+            return;
+        }
+        if (Math.abs(angle) < 1.0E-3F) {
+            straighten(model, joint);
             return;
         }
         ModelBends.Bend bend = start(model, joint);
@@ -99,6 +105,7 @@ public final class Limbs {
         boolean end = joint.ordinal() > Joint.WAIST.ordinal();
         float a = (float) Mth.clamp(angle, end ? bend.min() : 0.0, bend.max());
         if (Math.abs(a) < 1.0E-3F) {
+            straighten(model, joint);
             return;
         }
         BENT[joint.ordinal()] = Math.abs(a);
@@ -110,17 +117,36 @@ public final class Limbs {
     public static void turn(HumanoidModel<?> model, Joint joint, Quaternionf turn) {
         boolean end = joint == Joint.RIGHT_WRIST || joint == Joint.LEFT_WRIST || joint == Joint.RIGHT_ANKLE
                 || joint == Joint.LEFT_ANKLE;
-        if (!end || !EntityPass.inWorld() || angle(turn) < 1.0E-3F || start(model, joint) == null) {
+        if (!end || !EntityPass.inWorld()) {
+            return;
+        }
+        if (angle(turn) < 1.0E-3F) {
+            straighten(model, joint);
+            return;
+        }
+        if (start(model, joint) == null) {
             return;
         }
         BENT[joint.ordinal()] = angle(turn);
         put(model, joint, TURN.set(turn));
     }
 
+    // A joint turned earlier in this drawing turns back straight (a second pose that keeps it so).
+    private static void straighten(EntityModel<?> model, Joint joint) {
+        if (drawing == model && BENT[joint.ordinal()] > 0.0F) {
+            BENT[joint.ordinal()] = 0.0F;
+            put(model, joint, TURN.identity());
+        }
+    }
+
     // Turns the trunk's far half by `turn` (in the trunk part's own axes) about the waist, for any creature whose trunk
     // bends. What hangs from that half is left where it is: a person's legs are placed by Stance.
     public static void waist(EntityModel<?> model, Quaternionf turn) {
-        if (!EntityPass.inWorld() || angle(turn) < 1.0E-3F) {
+        if (!EntityPass.inWorld()) {
+            return;
+        }
+        if (angle(turn) < 1.0E-3F) {
+            straighten(model, Joint.WAIST);
             return;
         }
         if (start(model, Joint.WAIST) != null) {
@@ -132,7 +158,11 @@ public final class Limbs {
     // Turns the trunk's pelvis by `turn` (in the belly's axes) past the belly, for any creature whose trunk bends there;
     // what hangs from it is left where it is.
     public static void pelvis(EntityModel<?> model, Quaternionf turn) {
-        if (!EntityPass.inWorld() || angle(turn) < 1.0E-3F) {
+        if (!EntityPass.inWorld()) {
+            return;
+        }
+        if (angle(turn) < 1.0E-3F) {
+            straighten(model, Joint.PELVIS);
             return;
         }
         if (start(model, Joint.PELVIS) != null) {
@@ -227,6 +257,26 @@ public final class Limbs {
         moved.add(arm);
         moved.addAll(rig.followers().get(right ? Joint.RIGHT_ELBOW.ordinal() : Joint.LEFT_ELBOW.ordinal()));
         carry(rig, moved, new boolean[moved.size()], blade, turn);
+        SHRUGGED[right ? 0 : 1] = true;
+    }
+
+    // Whether a shoulder blade of the model being drawn was turned already.
+    public static boolean shrugged(EntityModel<?> model, boolean right) {
+        return drawing == model && SHRUGGED[right ? 0 : 1];
+    }
+
+    // Whether a pose bent this part of the model being drawn at any of its joints.
+    public static boolean bent(EntityModel<?> model, ModelPart part) {
+        Rig rig = drawing == model ? RIGS.get(model) : null;
+        if (rig == null) {
+            return false;
+        }
+        for (int i = 0; i < JOINTS; i++) {
+            if (rig.parts()[i] == part && BENT[i] > 0.0F) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static float angle(Quaternionf turn) {
@@ -268,6 +318,14 @@ public final class Limbs {
     // How far a joint of the model being drawn is bent now, in radians.
     public static float bent(EntityModel<?> model, Joint joint) {
         return drawing == model ? BENT[joint.ordinal()] : 0.0F;
+    }
+
+    // The most a joint of the model folds the way it folds, in radians; 0 when the model has no such joint.
+    public static float most(EntityModel<?> model, Joint joint) {
+        Rig rig = rig(model);
+        ModelBends.Bend[] chain = rig == null ? null : rig.chains()[joint.ordinal()];
+        int order = rig == null ? 0 : rig.order()[joint.ordinal()];
+        return chain == null || order >= chain.length ? 0.0F : (float) chain[order].max();
     }
 
     // A layer's own copy of the model (armour, a sheep's wool) bends where the model itself does, and what spine(),
@@ -403,6 +461,7 @@ public final class Limbs {
     private static void clear() {
         if (drawing != null) {
             Arrays.fill(BENT, 0.0F);
+            Arrays.fill(SHRUGGED, false);
             for (Quaternionf turn : TURNS) {
                 turn.identity();
             }

@@ -8,8 +8,11 @@ import nl.tivek.multiversepowers.character.greenlantern.client.body.arm.BeamArm;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.pose.FlightPose.Blend;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.pose.FlightPose.Frame;
 import nl.tivek.multiversepowers.character.greenlantern.client.flight.ClientFlight;
+import nl.tivek.multiversepowers.engine.client.pose.Limbs;
 import nl.tivek.multiversepowers.engine.math.Ease;
+import static nl.tivek.multiversepowers.character.greenlantern.client.body.pose.FlightPose.DOWN_KNEE;
 import static nl.tivek.multiversepowers.character.greenlantern.client.body.pose.FlightPose.KNEEL_LEAN;
+import static nl.tivek.multiversepowers.character.greenlantern.client.body.pose.FlightPose.STEP_KNEE;
 
 final class FlightLimbs {
     // In model pixels: how far the shoulder shakes, and how far a kick pushes the whole arm back.
@@ -133,14 +136,10 @@ final class FlightLimbs {
             rightX = Mth.lerp(f.fast(), -0.22F + 0.09F * Mth.sin(time * 0.07F), 0.1F + flutter);
             leftX = Mth.lerp(f.fast(), 0.14F + 0.09F * Mth.sin(time * 0.07F + 2.0F), 0.1F - flutter);
             spread = Mth.lerp(f.fast(), 0.08F, 0.025F);
-            float t = f.t();
-            if (t >= 0.0F && t < ClientFlight.ARISE + 6.0F) {
-                float rise = (float) (Ease.smooth((t - ClientFlight.GATHER) / 4.0)
-                        * (1.0 - Ease.smooth((t - ClientFlight.ARISE) / 6.0)));
-                rightX = Mth.lerp(rise, rightX, 0.12F);
-                leftX = Mth.lerp(rise, leftX, 0.12F);
-                spread = Mth.lerp(rise, spread, 0.02F);
-            }
+            float rise = rise(f);
+            rightX = Mth.lerp(rise, rightX, 0.12F);
+            leftX = Mth.lerp(rise, leftX, 0.12F);
+            spread = Mth.lerp(rise, spread, 0.02F);
         }
         model.rightLeg.xRot = Mth.lerp(weight, model.rightLeg.xRot, rightX);
         model.leftLeg.xRot = Mth.lerp(weight, model.leftLeg.xRot, leftX);
@@ -148,6 +147,38 @@ final class FlightLimbs {
         model.leftLeg.yRot = Mth.lerp(weight, model.leftLeg.yRot, 0.0F);
         model.rightLeg.zRot = Mth.lerp(weight, model.rightLeg.zRot, spread);
         model.leftLeg.zRot = Mth.lerp(weight, model.leftLeg.zRot, -spread);
+    }
+
+    // How far the legs have come together to rise, as the flight takes off.
+    private static float rise(Frame f) {
+        float t = f.t();
+        if (t < 0.0F || t >= ClientFlight.ARISE + 6.0F) {
+            return 0.0F;
+        }
+        return (float) (Ease.smooth((t - ClientFlight.GATHER) / 4.0)
+                * (1.0 - Ease.smooth((t - ClientFlight.ARISE) / 6.0)));
+    }
+
+    // The knees and ankles, the same whichever arm is posed last: flying, the knees give a little (the trailing left
+    // one more, none as the legs come together to rise) and the feet point, further the faster; down on the right knee
+    // (slam), the left foot stepped ahead, the shins as the body leans so the stepping one stands upright, its foot
+    // flat.
+    static void bones(HumanoidModel<?> model, Frame f, float fly) {
+        float rightKnee = 0.25F;
+        float leftKnee = 0.25F;
+        float point = 0.45F;
+        if (!f.sinking()) {
+            float slow = (1.0F - f.fast()) * (1.0F - rise(f));
+            rightKnee = 0.12F * slow;
+            leftKnee = 0.4F * slow;
+            point = Mth.lerp(f.fast(), 0.35F, 0.8F);
+        }
+        float kneel = f.kneel();
+        float flying = fly * (1.0F - kneel);
+        Limbs.bend(model, Limbs.Joint.RIGHT_KNEE, flying * rightKnee + DOWN_KNEE * kneel);
+        Limbs.bend(model, Limbs.Joint.LEFT_KNEE, flying * leftKnee + STEP_KNEE * kneel);
+        Limbs.bend(model, Limbs.Joint.RIGHT_ANKLE, flying * point);
+        Limbs.bend(model, Limbs.Joint.LEFT_ANKLE, flying * point);
     }
 
     static float headLift(Frame f) {

@@ -22,7 +22,6 @@ import nl.tivek.multiversepowers.character.greenlantern.client.ClientLooks;
 import nl.tivek.multiversepowers.character.greenlantern.client.ClientRing;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.flame.FlameArms;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.pose.FlightPose;
-import nl.tivek.multiversepowers.character.greenlantern.client.body.pose.KneelLegs;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.pose.RechargeAnimation;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.spot.BackSpot;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.spot.HandSpot;
@@ -31,6 +30,7 @@ import nl.tivek.multiversepowers.character.greenlantern.client.body.whip.WhipArm
 import nl.tivek.multiversepowers.character.greenlantern.client.render.BeamCharge;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.arrival.ArrivalAnimation;
 import nl.tivek.multiversepowers.engine.client.model.BentParts;
+import nl.tivek.multiversepowers.engine.client.pose.Limbs;
 
 public final class GreenLanternSuitLayer extends RenderLayer<AbstractClientPlayer, PlayerModel<AbstractClientPlayer>> {
     public static final ResourceLocation TEXTURE = ResourceLocation.fromNamespaceAndPath(MultiversePowers.MODID,
@@ -96,16 +96,8 @@ public final class GreenLanternSuitLayer extends RenderLayer<AbstractClientPlaye
                     ArrivalAnimation.lanternGlow(player, partialTick), 0.0F, FlightPose.bodyTurn(player));
         }
         int overlay = LivingEntityRenderer.getOverlayCoords(player, 0.0F);
-        float[] knees = FlightPose.knees(player);
-        if (knees == null) {
-            knees = FlameArms.knees(player);
-        }
-        if (knees == null) {
-            knees = WhipArms.knees(player);
-        }
-        if (knees != null) {
-            KneelLegs.skin(poseStack, buffers, light, overlay, player, this.getParentModel(), knees);
-        }
+        // The glow's straight boxes cannot follow legs bent at the knees.
+        boolean kneeling = FlightPose.kneeling(player) || FlameArms.kneeling(player) || WhipArms.kneeling(player);
         ClientLooks.Uniform uniform = ClientLooks.uniform(player, partialTick);
         if (uniform == null) {
             return;
@@ -113,14 +105,10 @@ public final class GreenLanternSuitLayer extends RenderLayer<AbstractClientPlaye
         HandSpot.onRoot(player, poseStack);
         PlayerModel<AbstractClientPlayer> suit = model(player);
         this.getParentModel().copyPropertiesTo(suit);
-        suit.rightLeg.visible = knees == null;
-        suit.leftLeg.visible = knees == null;
+        Limbs.layer(suit);
         if (uniform.complete()) {
             VertexConsumer cloth = buffers.getBuffer(RenderType.entityCutoutNoCull(TEXTURE));
             suit.renderToBuffer(poseStack, cloth, light, overlay);
-            if (knees != null) {
-                KneelLegs.suit(poseStack, cloth, light, overlay, suit, knees, FIT);
-            }
         } else {
             SuitSpread spread = new SuitSpread(buffers.getBuffer(RenderType.entityCutoutNoCull(TEXTURE)));
             spread.render(suit.rightArm, uniform.armField(), poseStack, light, overlay);
@@ -132,10 +120,8 @@ public final class GreenLanternSuitLayer extends RenderLayer<AbstractClientPlaye
             spread.seam(buffers, 1.0F);
             SuitGlow.core(poseStack, buffers, suit, uniform.core(), ageInTicks);
         }
-        suit.rightLeg.visible = true;
-        suit.leftLeg.visible = true;
         float glow = uniform.complete() ? SuitGlow.level(player, partialTick) : 0.0F;
-        SuitGlow.body(poseStack, buffers, suit, slim, glow, ageInTicks, knees != null,
+        SuitGlow.body(poseStack, buffers, suit, slim, glow, ageInTicks, kneeling,
                 BeamCharge.charge(player, partialTick));
         poseStack.pushPose();
         suit.rightArm.translateAndRotate(poseStack);

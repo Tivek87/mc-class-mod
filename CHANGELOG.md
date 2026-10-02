@@ -3,6 +3,25 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.5.5-alpha] - 2026-10-02
+
+### Changed
+- **Poses:** whole-body poses (Thor's moves, Green Lantern's stance, the mech pilot, the clap) use every bone: feet
+  keep their way at the ankles so soles stay flat as the knees bend, shoulder blades follow the arms (up overhead,
+  ahead in a punch) and the hips take part of a lean.
+- **Poses:** every other pose of a person (sword, flamethrower, whip, ring moves, flight, recharge, held creatures)
+  moves the shoulders along with the arms.
+- **Clap:** the hands meet palm on palm, turned at the wrists.
+- **Green Lantern:** kneeling and squatting (flamethrower, whip, the dive's landing) bend the real knees and ankles;
+  armour and the suit bend along instead of shrinking to the thigh.
+- **Green Lantern:** in flight the knees give a little and the feet point, further the faster he flies.
+- **Giant Hands:** a deafened creature clasps its ears with bent elbows; one on strings droops at the wrists, its
+  knees give and its feet hang; one held spread out or drawn out writhes at the wrists and ankles.
+
+### Fixed
+- **Endermen:** their legs no longer stand spread out; their feet are planted from where they stand on the floor.
+- **Poses:** a leg a pose bent at the knee is no longer turned to the ground as if it were straight.
+
 ## [0.5.4-alpha] - 2026-09-30
 
 ### Added

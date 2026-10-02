@@ -12,6 +12,7 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 import net.neoforged.neoforge.client.event.RenderLivingEvent;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.LanternPainter;
 import nl.tivek.multiversepowers.character.greenlantern.hand.HandGroup;
+import nl.tivek.multiversepowers.engine.client.pose.Limbs;
 import nl.tivek.multiversepowers.engine.client.render.entity.ClippedBuffers;
 import nl.tivek.multiversepowers.engine.math.Ease;
 import nl.tivek.multiversepowers.engine.math.Noise;
@@ -62,6 +63,11 @@ final class HandVictimTears {
         humanoid.body.yRot = Mth.lerp(on, humanoid.body.yRot, 0.0F);
         humanoid.head.xRot = Mth.lerp(on, humanoid.head.xRot, torn ? 0.35F : -0.5F + 0.15F * writhe);
         humanoid.head.yRot = Mth.lerp(on, humanoid.head.yRot, 0.4F * twist);
+        // Pulled taut between the grips: the feet point and the hands writhe at the wrists.
+        Limbs.bend(humanoid, Limbs.Joint.RIGHT_ANKLE, on * 0.7F);
+        Limbs.bend(humanoid, Limbs.Joint.LEFT_ANKLE, on * 0.7F);
+        Limbs.bend(humanoid, Limbs.Joint.RIGHT_WRIST, on * 0.35F * writhe);
+        Limbs.bend(humanoid, Limbs.Joint.LEFT_WRIST, -on * 0.35F * writhe);
     }
 
     // The model stretched along its height to lie between the two grips; the pose stack stands at its feet.

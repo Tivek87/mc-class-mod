@@ -77,7 +77,8 @@ final class FootPlanting {
             ModelPart part = leg.limb().part();
             float wantX = 0.0F;
             float wantZ = 0.0F;
-            if (standing && part.visible) {
+            // A leg a pose bent (Stance) was placed on purpose, and its straight tip is not where its foot is.
+            if (standing && part.visible && !Limbs.bent(model, part)) {
                 double foot = height(model, drawn, leg, camera);
                 double ground = ground(level, TIP.x + camera.x, TIP.z + camera.z, foot);
                 double gap = ground - foot;
@@ -160,8 +161,7 @@ final class FootPlanting {
         return Double.NaN;
     }
 
-    // The legs of a model: its parts named or known as legs, each with its tip, the far end of its longest side
-    // (pixels, the leg's own frame, divided by 16 into blocks).
+    // The legs of a model: its parts named or known as legs, each with its sole.
     private static Leg[] legs(EntityModel<?> model) {
         List<Leg> legs = new ArrayList<>();
         List<ModelParts.Part> parts = ModelParts.of(model);
@@ -169,24 +169,42 @@ final class FootPlanting {
             return new Leg[0];
         }
         for (ModelParts.Part part : parts) {
-            if (part.role() != ModelParts.Role.LEG) {
-                continue;
+            if (part.role() == ModelParts.Role.LEG) {
+                legs.add(new Leg(part, sole(part)));
             }
-            float[] b = part.bounds();
-            int longest = 0;
-            for (int a = 1; a < 3; a++) {
-                if (b[a + 3] - b[a] > b[longest + 3] - b[longest]) {
-                    longest = a;
-                }
-            }
-            float[] tip = new float[3];
-            for (int a = 0; a < 3; a++) {
-                tip[a] = (b[a] + b[a + 3]) / 32.0F;
-            }
-            tip[longest] = (Math.abs(b[longest + 3]) > Math.abs(b[longest]) ? b[longest + 3] : b[longest]) / 16.0F;
-            legs.add(new Leg(part, tip));
         }
         return legs.toArray(new Leg[0]);
+    }
+
+    // Where a leg stands, in blocks in its own frame: the far end of its longest side. A leg built reaching below the
+    // floor its creature stands on (an enderman's, by a pixel) stands on that floor, as far up the leg: else its foot
+    // would always seem sunk into a step and the leg would turn out of it.
+    static float[] sole(ModelParts.Part part) {
+        float[] b = part.bounds();
+        int longest = 0;
+        for (int a = 1; a < 3; a++) {
+            if (b[a + 3] - b[a] > b[longest + 3] - b[longest]) {
+                longest = a;
+            }
+        }
+        float sign = Math.abs(b[longest + 3]) > Math.abs(b[longest]) ? 1.0F : -1.0F;
+        float[] tip = new float[3];
+        for (int a = 0; a < 3; a++) {
+            tip[a] = (b[a] + b[a + 3]) * 0.5F;
+        }
+        tip[longest] = sign > 0.0F ? b[longest + 3] : b[longest];
+        Matrix4f rest = ModelParts.rest(part, new Matrix4f());
+        float below = rest.transformPosition(new Vector3f(tip[0], tip[1], tip[2])).y - Stance.GROUND;
+        Vector3f way = new Vector3f();
+        way.setComponent(longest, sign);
+        float down = rest.transformDirection(way).y;
+        if (below > 0.0F && down > 0.5F) {
+            tip[longest] -= sign * below / down;
+        }
+        for (int a = 0; a < 3; a++) {
+            tip[a] /= 16.0F;
+        }
+        return tip;
     }
 
     static void forget() {

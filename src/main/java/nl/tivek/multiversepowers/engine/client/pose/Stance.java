@@ -1,9 +1,11 @@
 package nl.tivek.multiversepowers.engine.client.pose;
 
+import javax.annotation.Nullable;
 import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.client.model.PlayerModel;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.util.Mth;
+import nl.tivek.multiversepowers.engine.client.model.BentParts;
 import nl.tivek.multiversepowers.engine.client.render.entity.EntityPass;
 import nl.tivek.multiversepowers.engine.rig.Ik;
 import org.joml.Matrix3f;
@@ -11,8 +13,9 @@ import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
 // A person's model posed from where its joints go instead of part by part: the hips, the trunk leaning about them and
-// bending at the waist with the head and shoulders riding along, and arms and legs reaching their hands and feet to
-// points, bent at the elbows and knees (Limbs). Model space, in pixels: y runs down, -z is ahead, +x the model's own
+// bending at the low back and the waist with the head and shoulders riding along, and arms and legs reaching their
+// hands and feet to points, bent at the elbows and knees, the feet and hands turned at the ankles and wrists and the
+// shoulder blades following the arms (Limbs). Model space, in pixels: y runs down, -z is ahead, +x the model's own
 // left, and the feet stand at y 24. Only the world's own drawing of creatures is posed so (not the first-person arm
 // or the inventory), on the render thread, so the scratch below is shared.
 public final class Stance {
@@ -21,16 +24,38 @@ public final class Stance {
     public static final float HIP_X = 1.9F;
     public static final float SHOULDER_X = 5.0F;
     public static final float SHOULDER_Y = 2.0F;
-    // Pivot to knee and knee to sole; shoulder to elbow and elbow to the end of the hand.
+    // Pivot to knee and knee to sole; shoulder to elbow and elbow to the end of the hand; of those, the foot past the
+    // ankle and the hand past the wrist (ModelBends.end).
     public static final float THIGH = 6.0F;
     public static final float SHIN = 6.0F;
     public static final float UPPER_ARM = 4.0F;
     public static final float FOREARM = 6.0F;
-    private static final float HALF_TRUNK = 6.0F;
+    public static final float FOOT = 2.0F;
+    public static final float HAND = 3.0F;
+    // The trunk from the neck down: the chest to the waist, the belly to the pelvis, the pelvis to the hips
+    // (ModelBends.waist and pelvis).
+    private static final float CHEST_LENGTH = 6.0F;
+    private static final float BELLY = 3.0F;
+    private static final float PELVIS_LENGTH = 3.0F;
+    // How much of the lean the pelvis takes; the low back bends the rest.
+    private static final float HIPS_SHARE = 0.6F;
+    // How far an ankle turns a foot and a wrist a hand from in line with the limb, at most.
+    public static final float ANKLE_MOST = 1.0F;
+    private static final float WRIST_MOST = 1.3F;
 
+    private static final Quaternionf IDENTITY = new Quaternionf();
+    private static final Quaternionf PELVIS = new Quaternionf();
     private static final Quaternionf ABDOMEN = new Quaternionf();
     private static final Quaternionf CHEST = new Quaternionf();
     private static final Quaternionf SCRATCH = new Quaternionf();
+    private static final Quaternionf BLADE = new Quaternionf();
+    private static final Quaternionf OWN = new Quaternionf();
+    private static final Quaternionf HINGE = new Quaternionf();
+    private static final Quaternionf TURN = new Quaternionf();
+    private static final Quaternionf LAST = new Quaternionf();
+    private static final Quaternionf SHARE = new Quaternionf();
+    private static final Quaternionf FOOT_WAY = new Quaternionf();
+    private static final Vector3f J = new Vector3f();
     private static final Vector3f NECK = new Vector3f(0.0F, 0.0F, 0.0F);
     private static final Vector3f HIPS = new Vector3f(0.0F, HIP_Y, 0.0F);
     private static final Vector3f V = new Vector3f();
@@ -48,8 +73,9 @@ public final class Stance {
     private Stance() {
     }
 
-    // The hips at `hips`, the pelvis and belly turned by `lean` and the chest by `waist` on top of that. The head and
-    // arms keep their own turn but move to where the neck and shoulders go; the arms turn with the chest as well.
+    // The hips at `hips`, the belly turned by `lean` and the chest by `waist` on top of that; the pelvis, which the legs
+    // hang from, takes HIPS_SHARE of the lean and the low back bends the rest. The head and arms keep their own turn
+    // but move to where the neck and shoulders go; the arms turn with the chest as well.
     public static void trunk(HumanoidModel<?> model, Vector3f hips, Quaternionf lean, Quaternionf waist) {
         trunk(model, hips, lean, waist, true);
     }
@@ -60,24 +86,22 @@ public final class Stance {
         if (!EntityPass.inWorld()) {
             return;
         }
+        PELVIS.identity().slerp(lean, HIPS_SHARE);
         ABDOMEN.set(lean);
         CHEST.set(lean).mul(waist);
         HIPS.set(hips);
-        V.set(0.0F, -HALF_TRUNK, 0.0F);
-        ABDOMEN.transform(V);
-        NECK.set(hips).add(V);
-        V.set(0.0F, -HALF_TRUNK, 0.0F);
-        CHEST.transform(V);
-        NECK.add(V);
+        NECK.set(hips).add(PELVIS.transform(V.set(0.0F, -PELVIS_LENGTH, 0.0F)));
+        NECK.add(ABDOMEN.transform(V.set(0.0F, -BELLY, 0.0F)));
+        NECK.add(CHEST.transform(V.set(0.0F, -CHEST_LENGTH, 0.0F)));
         place(model.body, NECK, CHEST);
         Limbs.waist(model, SCRATCH.set(waist).conjugate());
+        Limbs.pelvis(model, SCRATCH.set(lean).conjugate().mul(PELVIS));
         model.head.setPos(NECK.x, NECK.y, NECK.z);
         shoulder(model.rightArm, -1.0F, carry);
         shoulder(model.leftArm, 1.0F, carry);
         for (int side = -1; side <= 1; side += 2) {
             ModelPart leg = side < 0 ? model.rightLeg : model.leftLeg;
-            V.set(side * HIP_X, 0.0F, 0.0F);
-            ABDOMEN.transform(V);
+            PELVIS.transform(V.set(side * HIP_X, 0.0F, 0.0F));
             leg.setPos(hips.x + V.x, hips.y + V.y, hips.z + V.z);
         }
         followers(model);
@@ -104,26 +128,79 @@ public final class Stance {
         turn(arm, SCRATCH);
     }
 
-    // Reaches a leg's sole to `foot`, its knee bent out towards `pole` (a direction: ahead for a knee).
+    // Reaches a leg's sole to `foot`, its knee bent out towards `pole` (a direction: ahead for a knee). The foot keeps
+    // the way it pointed (as the game or a pose turned the leg), as far as its ankle turns: a sole that stood flat
+    // stays flat as the knee bends.
     public static void leg(HumanoidModel<?> model, boolean right, Vector3f foot, Vector3f pole) {
         if (!EntityPass.inWorld()) {
             return;
         }
         ModelPart leg = right ? model.rightLeg : model.leftLeg;
-        reach(model, leg, foot, pole, THIGH, SHIN, false,
-                right ? Limbs.Joint.RIGHT_KNEE : Limbs.Joint.LEFT_KNEE);
+        // The way the foot points now: its leg's turn, and its knee's and ankle's when a pose bent them already.
+        FOOT_WAY.rotationZYX(leg.zRot, leg.yRot, leg.xRot);
+        for (int joint = 0; joint < 2; joint++) {
+            Matrix3f turn = BentParts.turn(leg, joint);
+            if (turn != null) {
+                FOOT_WAY.mul(turn.getNormalizedRotation(SCRATCH));
+            }
+        }
+        reach(model, leg, foot, pole, THIGH, SHIN - FOOT, FOOT, FOOT_WAY, 1.0F, ANKLE_MOST, false,
+                right ? Limbs.Joint.RIGHT_KNEE : Limbs.Joint.LEFT_KNEE,
+                right ? Limbs.Joint.RIGHT_ANKLE : Limbs.Joint.LEFT_ANKLE);
         followers(model);
     }
 
-    // Reaches an arm's hand to `hand`, its elbow bent out towards `pole` (a direction: back and out for an elbow).
+    // For a pose that turned a person's leg and bent its knee itself: the foot turns at the ankle towards standing flat
+    // on the model's ground, heading as the leg does, `weight` of the way and as far as the ankle turns.
+    public static void flat(HumanoidModel<?> model, boolean right, float weight) {
+        if (!EntityPass.inWorld()) {
+            return;
+        }
+        ModelPart leg = right ? model.rightLeg : model.leftLeg;
+        lower(leg, Limbs.bent(model, right ? Limbs.Joint.RIGHT_KNEE : Limbs.Joint.LEFT_KNEE), false, OWN);
+        TURN.set(OWN).conjugate().mul(LAST.rotationY(leg.yRot));
+        share(TURN, weight);
+        float angle = angle(TURN);
+        if (angle > ANKLE_MOST) {
+            share(TURN, ANKLE_MOST / angle);
+        }
+        Limbs.turn(model, right ? Limbs.Joint.RIGHT_ANKLE : Limbs.Joint.LEFT_ANKLE, TURN);
+    }
+
+    // Reaches an arm's hand to `hand`, its elbow bent out towards `pole` (a direction: back and out for an elbow), the
+    // hand in line with the forearm and the shoulder blade following the arm (Shoulders).
     public static void arm(HumanoidModel<?> model, boolean right, Vector3f hand, Vector3f pole) {
+        arm(model, right, hand, pole, null, 0.0F);
+    }
+
+    // As above, the hand turned `weight` of the way to `palm` (its turn in model space, as an arm's own: y along the
+    // fingers, its inner side +x for the right hand and -x for the left), as far as its wrist turns.
+    public static void arm(HumanoidModel<?> model, boolean right, Vector3f hand, Vector3f pole,
+            @Nullable Quaternionf palm, float weight) {
         if (!EntityPass.inWorld()) {
             return;
         }
         ModelPart arm = right ? model.rightArm : model.leftArm;
-        reach(model, arm, hand, pole, UPPER_ARM, FOREARM, true,
-                right ? Limbs.Joint.RIGHT_ELBOW : Limbs.Joint.LEFT_ELBOW);
+        blade(model, arm, right, hand);
+        reach(model, arm, hand, pole, UPPER_ARM, FOREARM - HAND, HAND, palm, weight, WRIST_MOST, true,
+                right ? Limbs.Joint.RIGHT_ELBOW : Limbs.Joint.LEFT_ELBOW,
+                right ? Limbs.Joint.RIGHT_WRIST : Limbs.Joint.LEFT_WRIST);
         followers(model);
+    }
+
+    // The shoulder blade turned for the way the hand goes, once a drawing; the arm then reaches from where the shoulder
+    // went.
+    private static void blade(HumanoidModel<?> model, ModelPart arm, boolean right, Vector3f hand) {
+        if (Limbs.shrugged(model, right)) {
+            return;
+        }
+        V.set(hand).sub(arm.x, arm.y, arm.z);
+        float length = V.length();
+        if (length < 1.0E-3F) {
+            return;
+        }
+        SCRATCH.rotationZYX(model.body.zRot, model.body.yRot, model.body.xRot).transformInverse(V.div(length));
+        Limbs.shoulder(model, right, Shoulders.turn(right, V, length / (UPPER_ARM + FOREARM), BLADE));
     }
 
     // Where a limb's far end is as it is posed now, straight.
@@ -142,8 +219,83 @@ public final class Stance {
         return end(right ? model.rightArm : model.leftArm, UPPER_ARM + FOREARM, out);
     }
 
+    // Reaches a limb's far end to `end`, bent at its middle joint towards `pole`, its last piece (`last` long, past its
+    // end joint) turned `weight` of the way to `way` (model space) as far as `most` from in line with the piece before
+    // it, or in line when `way` is null.
     private static void reach(HumanoidModel<?> model, ModelPart limb, Vector3f end, Vector3f pole, float upper,
-            float lower, boolean arm, Limbs.Joint joint) {
+            float lower, float last, @Nullable Quaternionf way, float weight, float most, boolean arm,
+            Limbs.Joint middle, Limbs.Joint tip) {
+        float fold = solve(limb, end, pole, upper, lower + last, arm);
+        if (way == null || weight <= 0.0F) {
+            Limbs.bend(model, middle, fold);
+            Limbs.turn(model, tip, IDENTITY);
+            return;
+        }
+        // How the last piece would lie in line, the turn it takes from there and where its joint goes for it.
+        lower(limb, fold, arm, OWN);
+        TURN.set(OWN).conjugate().mul(way);
+        share(TURN, weight);
+        float angle = angle(TURN);
+        if (angle > most) {
+            share(TURN, most / angle);
+        }
+        // The middle joint folds only so far (a deep crouch) and the limb reaches only so far (stretched out): the last
+        // piece gives up as much of its turn as it takes for the limb to reach its end joint.
+        double shut = Limbs.most(model, middle);
+        float least = (float) Math.sqrt(upper * upper + lower * lower + 2.0 * upper * lower * Math.cos(shut));
+        if (!fits(limb, end, last, 1.0F, least, upper + lower)) {
+            float low = 0.0F;
+            float high = 1.0F;
+            boolean inLine = fits(limb, end, last, 0.0F, least, upper + lower);
+            for (int i = 0; i < 10 && inLine; i++) {
+                float mid = (low + high) * 0.5F;
+                if (fits(limb, end, last, mid, least, upper + lower)) {
+                    low = mid;
+                } else {
+                    high = mid;
+                }
+            }
+            share(TURN, low);
+        }
+        joint(end, last, 1.0F);
+        Limbs.bend(model, middle, solve(limb, J, pole, upper, lower, arm));
+        lower(limb, Limbs.bent(model, middle), arm, OWN);
+        Limbs.turn(model, tip, TURN.set(OWN).conjugate().mul(LAST));
+    }
+
+    // Whether the limb reaches its end joint, with the last piece turned `share` of TURN, folding no further than its
+    // middle joint can and no straighter than straight.
+    private static boolean fits(ModelPart limb, Vector3f end, float last, float share, float least, float most) {
+        float distance = joint(end, last, share).distance(limb.x, limb.y, limb.z);
+        return distance >= least && distance <= most;
+    }
+
+    // Where the end joint goes (J) for the last piece to end at `end`, turned `share` of TURN from in line (OWN); the
+    // last piece's turn left in LAST.
+    private static Vector3f joint(Vector3f end, float last, float share) {
+        LAST.set(OWN).mul(SHARE.identity().slerp(TURN, share));
+        return LAST.transform(J.set(0.0F, -last, 0.0F)).add(end);
+    }
+
+    // The turn in model space of the piece past a limb's middle joint, folded `fold` about its hinge (a knee about +x,
+    // an elbow about -x).
+    private static Quaternionf lower(ModelPart limb, float fold, boolean arm, Quaternionf out) {
+        return out.rotationZYX(limb.zRot, limb.yRot, limb.xRot)
+                .mul(HINGE.setAngleAxis(fold, arm ? -1.0F : 1.0F, 0.0F, 0.0F));
+    }
+
+    // `share` of the turn, from none.
+    private static void share(Quaternionf turn, float share) {
+        turn.set(SHARE.identity().slerp(turn, share));
+    }
+
+    private static float angle(Quaternionf turn) {
+        return 2.0F * (float) Math.acos(Math.min(1.0F, Math.abs(turn.w)));
+    }
+
+    // Turns the limb about its pivot so its far end, `upper` past the pivot and `lower` past the middle joint, reaches
+    // `end` bent towards `pole`; how far the middle joint folds.
+    private static float solve(ModelPart limb, Vector3f end, Vector3f pole, float upper, float lower, boolean arm) {
         ROOT[0] = limb.x;
         ROOT[1] = limb.y;
         ROOT[2] = limb.z;
@@ -180,7 +332,7 @@ public final class Stance {
         M.set(H.x, H.y, H.z, T.x, T.y, T.z, C.x, C.y, C.z);
         M.getNormalizedRotation(SCRATCH);
         turn(limb, SCRATCH);
-        Limbs.bend(model, joint, fold);
+        return fold;
     }
 
     private static void place(ModelPart part, Vector3f at, Quaternionf turn) {

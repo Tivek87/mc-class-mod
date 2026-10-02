@@ -50,9 +50,10 @@ public final class ClientClaps {
     private static final Vector3f WIDE_FROM = new Vector3f(1.25F, -0.5F, 0.2F);
 
     // The hands in the chest's frame (pixels, +x the left hand's side): flung wide, a little high and back, and met
-    // ahead of the chest.
+    // ahead of the chest, palm flat on palm with the fingers ahead and a little up (PALM, turned at the wrists).
     private static final Vector3f WIDE = new Vector3f(13.5F, -3.0F, 1.5F);
-    private static final Vector3f MET = new Vector3f(2.0F, 0.5F, -8.5F);
+    private static final Vector3f MET = new Vector3f(1.0F, 0.5F, -8.5F);
+    private static final Quaternionf PALM = new Quaternionf().rotationX(-(float) Math.PI * 0.5F - 0.3F);
     private static final Vector3f KNEE = new Vector3f(0.0F, 0.0F, -1.0F);
     private static final Vector3f WIDE_ELBOW = new Vector3f(0.3F, 1.0F, 0.6F);
     private static final Vector3f MET_ELBOW = new Vector3f(0.8F, 0.6F, 0.3F);
@@ -174,7 +175,7 @@ public final class ClientClaps {
             Vector3f hand = Stance.hand(model, right, new Vector3f()).lerp(target, up);
             Vector3f elbow = new Vector3f(MET_ELBOW).lerp(WIDE_ELBOW, open);
             elbow.x *= sign;
-            Stance.arm(model, right, hand, elbow);
+            Stance.arm(model, right, hand, elbow, new Quaternionf(CHEST).mul(PALM), up * (1.0F - open));
         }
     }
 

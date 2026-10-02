@@ -1,16 +1,21 @@
 package nl.tivek.multiversepowers.character.greenlantern.client.body.flame;
 
+import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
+import nl.tivek.multiversepowers.engine.client.pose.Limbs;
+import nl.tivek.multiversepowers.engine.client.pose.Stance;
+import nl.tivek.multiversepowers.engine.math.Ease;
 
 // The body of a construct that moves the whole player (the flamethrower, the whip): the torso bends, turns and tips
-// at the hips, the knees bend (drawn by KneelLegs) and the whole model sinks until the lowest foot or knee is on the
-// ground. Model space: pixels, y down, -z ahead, +x to the player's left. Body space: blocks, x right, y up from the
-// shoulders, z ahead.
+// at the hips, the knees bend, the feet stand flat as far as the ankles turn (Limbs, Stance.flat) and the whole model
+// sinks until the lowest foot or knee is on the ground. Model space: pixels, y down, -z ahead, +x to the player's
+// left. Body space: blocks, x right, y up from the shoulders, z ahead.
 public final class FlameBody {
     static final float BEND = 0.5F;
     private static final double THIGH = 6.0;
     private static final double SHIN = 6.0;
+    private static final double FOOT = Stance.FOOT;
     private static final double LEG = THIGH + SHIN;
     private static final double HIP_ACROSS = 1.9;
     private static final double SQUAT_THIGH = 1.05;
@@ -78,14 +83,25 @@ public final class FlameBody {
         return new Legs(rt, rk, lt, lk, sp, (float) (LEG - reach - Math.max(0.0F, hop) * 16.0 * ours));
     }
 
-    // How far below the hip a leg reaches: its knee or its foot, whichever is lower.
+    // How far below the hip a leg reaches: its knee or its sole, whichever is lower, the foot turned flat as knee()
+    // turns it.
     private static double low(double thigh, double knee) {
         double kneeAt = THIGH * Math.cos(thigh);
-        return Math.max(kneeAt, kneeAt + SHIN * Math.cos(thigh + knee));
+        double shin = thigh + knee;
+        double foot = shin - Mth.clamp(shin * flat(thigh, knee), -Stance.ANKLE_MOST, Stance.ANKLE_MOST);
+        return Math.max(kneeAt, kneeAt + (SHIN - FOOT) * Math.cos(shin) + FOOT * Math.cos(foot));
     }
 
-    public static float[] knees(Legs legs) {
-        return new float[] { legs.rightKnee(), legs.leftKnee() };
+    // How far a bent leg's foot turns to stand flat, 0 to 1: one whose shin lies near level (kneeling on it) stays in
+    // line with it.
+    private static float flat(double thigh, double knee) {
+        return (float) Ease.smooth(3.0 * Math.cos(thigh + knee));
+    }
+
+    // Bends a leg at the knee as the legs have it, its foot standing flat.
+    public static void knee(HumanoidModel<?> model, boolean right, float thigh, float knee) {
+        Limbs.bend(model, right ? Limbs.Joint.RIGHT_KNEE : Limbs.Joint.LEFT_KNEE, knee);
+        Stance.flat(model, right, flat(thigh, knee));
     }
 
     public static boolean bent(Legs legs) {

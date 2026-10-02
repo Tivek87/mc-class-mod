@@ -12,6 +12,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.EntityModel;
 import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.client.model.PlayerModel;
+import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
@@ -32,12 +33,14 @@ import nl.tivek.multiversepowers.character.greenlantern.hand.HandPose;
 import nl.tivek.multiversepowers.character.greenlantern.hand.HandVictimPayload;
 import nl.tivek.multiversepowers.engine.client.fx.CameraShake;
 import nl.tivek.multiversepowers.engine.client.fx.ScreenFlash;
+import nl.tivek.multiversepowers.engine.client.pose.Limbs;
 import nl.tivek.multiversepowers.engine.client.render.ConstructPainter;
 import nl.tivek.multiversepowers.engine.client.render.entity.TintedBuffers;
 import nl.tivek.multiversepowers.engine.math.Colors;
 import nl.tivek.multiversepowers.engine.math.Ease;
 import nl.tivek.multiversepowers.engine.math.Noise;
 import nl.tivek.multiversepowers.engine.math.Vectors;
+import org.joml.Quaternionf;
 
 // What the evil eye, the megaphone and the tear do to a creature, as everyone sees it: strung up, a statue of hard
 // light that shatters; clasping its ears, trembling, bursting in a small green blast; drawn out and torn in two.
@@ -59,8 +62,12 @@ public final class HandVictims {
     private static final double SHARDS = 16.0;
     private static final double POP_TICKS = 12.0;
     private static final double EARS_IN = 3.0;
-    private static final double EARS_UP = -2.55;
-    private static final double EARS_IN_TURN = 0.45;
+    // A person's 12-pixel arm put to its ear: raised this far out from hanging, turned a quarter about itself so its
+    // elbow folds in towards the head, and folded so far.
+    private static final float EARS_OUT = 1.99F;
+    private static final float EARS_TWIST = Mth.HALF_PI;
+    private static final float EARS_ELBOW = 1.91F;
+    private static final Quaternionf PALM = new Quaternionf();
     private static final double TREMBLE = 0.035;
 
     private static final class Victim {
@@ -271,6 +278,11 @@ public final class HandVictims {
         humanoid.leftLeg.zRot = Mth.lerp(on, humanoid.leftLeg.zRot, -SPREAD_LEGS - 0.05F * kick);
         humanoid.head.xRot = Mth.lerp(on, humanoid.head.xRot, -0.25F + 0.1F * struggle);
         humanoid.head.yRot += on * 0.3F * kick;
+        // Held at its hands and feet, the limbs stay straight and only the wrists and ankles writhe.
+        Limbs.bend(humanoid, Limbs.Joint.RIGHT_WRIST, on * 0.35F * struggle);
+        Limbs.bend(humanoid, Limbs.Joint.LEFT_WRIST, -on * 0.35F * struggle);
+        Limbs.bend(humanoid, Limbs.Joint.RIGHT_ANKLE, on * (0.3F + 0.25F * kick));
+        Limbs.bend(humanoid, Limbs.Joint.LEFT_ANKLE, on * (0.3F - 0.25F * kick));
     }
 
     // Hung on strings: arms pulled up and flopping, legs dangling and kicking, the head hanging.
@@ -292,17 +304,31 @@ public final class HandVictims {
         humanoid.leftLeg.zRot = Mth.lerp(on, humanoid.leftLeg.zRot, -0.1F);
         humanoid.head.xRot = Mth.lerp(on, humanoid.head.xRot, 0.45F + 0.1F * flop);
         humanoid.head.yRot += on * 0.25F * jerk;
+        // Limp under the strings: the hands droop from the raised wrists, the knees give and the feet hang pointed.
+        Limbs.bend(humanoid, Limbs.Joint.RIGHT_WRIST, -on * (1.0F + 0.25F * flop));
+        Limbs.bend(humanoid, Limbs.Joint.LEFT_WRIST, -on * (1.0F + 0.25F * jerk));
+        Limbs.bend(humanoid, Limbs.Joint.RIGHT_KNEE, on * (0.2F + 0.15F * dangle));
+        Limbs.bend(humanoid, Limbs.Joint.LEFT_KNEE, on * (0.2F - 0.15F * dangle));
+        Limbs.bend(humanoid, Limbs.Joint.RIGHT_ANKLE, on * 0.55F);
+        Limbs.bend(humanoid, Limbs.Joint.LEFT_ANKLE, on * 0.55F);
     }
 
+    // Clasping its ears: each upper arm raised out past level and turned so the forearm folds in at the elbow to the
+    // side of the head, the hand turned at the wrist to lay its palm there.
     private static void ears(HumanoidModel<?> humanoid, double since) {
         float on = (float) Ease.smooth(since / EARS_IN);
         float shake = (float) Math.sin(since * 2.3);
-        humanoid.rightArm.xRot = Mth.lerp(on, humanoid.rightArm.xRot, (float) EARS_UP + 0.08F * shake);
-        humanoid.rightArm.yRot = Mth.lerp(on, humanoid.rightArm.yRot, 0.0F);
-        humanoid.rightArm.zRot = Mth.lerp(on, humanoid.rightArm.zRot, (float) EARS_IN_TURN);
-        humanoid.leftArm.xRot = Mth.lerp(on, humanoid.leftArm.xRot, (float) EARS_UP - 0.08F * shake);
-        humanoid.leftArm.yRot = Mth.lerp(on, humanoid.leftArm.yRot, 0.0F);
-        humanoid.leftArm.zRot = Mth.lerp(on, humanoid.leftArm.zRot, (float) -EARS_IN_TURN);
+        for (int side = 0; side < 2; side++) {
+            boolean right = side == 0;
+            float sign = right ? 1.0F : -1.0F;
+            ModelPart arm = right ? humanoid.rightArm : humanoid.leftArm;
+            arm.xRot = Mth.lerp(on, arm.xRot, 0.08F * shake * sign);
+            arm.yRot = Mth.lerp(on, arm.yRot, sign * EARS_TWIST);
+            arm.zRot = Mth.lerp(on, arm.zRot, sign * EARS_OUT);
+            Limbs.bend(humanoid, right ? Limbs.Joint.RIGHT_ELBOW : Limbs.Joint.LEFT_ELBOW, on * EARS_ELBOW);
+            Limbs.turn(humanoid, right ? Limbs.Joint.RIGHT_WRIST : Limbs.Joint.LEFT_WRIST,
+                    PALM.rotationY(on * sign * EARS_TWIST));
+        }
         humanoid.head.yRot += on * 0.35F * (float) Math.sin(since * 1.7);
         humanoid.head.xRot = Mth.lerp(on, humanoid.head.xRot, 0.35F);
     }

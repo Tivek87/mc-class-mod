@@ -61,6 +61,8 @@ public final class Poses {
         final float[] last = new float[PARTS * VALUES];
         final float[] from = new float[PARTS * VALUES];
         double fading = -1.0;
+        // When a pose began on a body no layer posed before: the shoulders come along as it fades in.
+        double rising = -1.0;
         int seen;
     }
 
@@ -109,8 +111,10 @@ public final class Poses {
         if (!fresh && all != memory.on) {
             System.arraycopy(memory.last, 0, memory.from, 0, NOW.length);
             memory.fading = now;
+            memory.rising = memory.on == 0L ? now : memory.rising;
         } else if (fresh) {
             memory.fading = -1.0;
+            memory.rising = -1.0;
         }
         memory.on = all;
         if (memory.fading >= 0.0) {
@@ -121,6 +125,14 @@ public final class Poses {
                 blend(memory.from, NOW, (float) Ease.smooth(t));
                 write(humanoid, NOW);
             }
+        }
+        if (all != 0L) {
+            double t = memory.rising < 0.0 ? 1.0 : (now - memory.rising) / FADE;
+            if (t >= 1.0 || t < 0.0) {
+                memory.rising = -1.0;
+                t = 1.0;
+            }
+            Shoulders.follow(humanoid, (float) Ease.smooth(t));
         }
         read(humanoid, memory.last);
         memory.drawn = true;

@@ -1,12 +1,15 @@
 # Laatste sessie
 
-- Datum: 2026-09-30. Verzoek: betere get-up na ragdoll; nieuwe botten (bekken, schouderbladen, handen, voeten; geen
-  nek); ragdolls gebruiken ze; regel "gebruik alle botten" in CLAUDE.md. Daarna: afronden, commit, push, release.
-- Gedaan: `ModelBends` (chain/hang/shoulder), `BentParts` + nieuw `FoldChain` (2 knikken per deel), `Limbs`
-  (pols/enkel/bekken/hips/shoulder), `BoneView`, ragdoll met 3 stukken per deel + spook-schouderbladen
-  (`RigidWorld.ghost`, `LimbJoint.turnsOnly`), get-up herschreven in `ragdoll/getup/` (PersonRise, Skeleton,
-  CreatureRise, PoseBlend, BodyPose, Hanging), 52 ticks; server `Knockdowns.DOWN` 110 -> 125. Versie 0.5.4-alpha.
-- Tests: volledige build groen (123 tests), nieuw `PersonRiseTest`; `RagdollRestTest` crowd-grens 1.2 -> 1.5.
-- NIET getest: in-game beeld van de get-up (alleen offline wiskunde-test). Keyframes waarschijnlijk nog tunen.
-- Overlap-gemiddelde in RagdollRestTest 0.0699 (grens 0.07): krap.
-- Niet meegenomen: `MechScript.java` (andere sessie), `run.txt`. Open: bug #35, ideeën (#45/#58 deels gedaan).
+- Datum: 2026-10-02. Verzoek: botten afmaken (animaties en ragdolls gebruiken alle botten, regel erbij) en
+  Enderman-benen die altijd gespreid stonden. Bugs/ideeën bewust NIET aangeraakt (opdracht gebruiker).
+- Enderman: oorzaak `FootPlanting` (benen 1 px onder de vloer gebouwd -> been steeds tot 0.8 rad weggedraaid). Nu
+  vanaf de zool zoals het model gebouwd is (`FootPlanting.sole`); door een pose gebogen benen niet meer geplant.
+  Voor/na in-game bevestigd (oude voetpunten via reflectie in een testrun).
+- `Stance`: enkels (voet houdt zijn stand, zool plat), schouderbladen (`Shoulders`), bekken (60% van de lean),
+  polsen (`arm(..., palm, weight)`, klap: handpalm op handpalm), `flat()`. `Poses` draait schouderbladen mee voor
+  alle andere houdingen. Knielen/hurken (slam, vlammenwerper, zweep) via echte knieën/enkels; `KneelLegs` weg.
+  Vlucht: knieën licht gebogen, voeten gestrekt. Slachtoffers: oren (ellebogen), marionet, gespreid, uitgerekt.
+- `Limbs`: rechtzetten bij 0, `shrugged`, `bent(part)`, `most`. CLAUDE.md-regels aangescherpt. Versie 0.5.5-alpha.
+- Tests: build groen (129 tests; `StanceTest` uitgebreid, `FootPlantingTest` nieuw); 3 in-game runs met shots,
+  testklasse, wereld en shots daarna verwijderd.
+- Open: zwaard-uitval (`SwordSeen` step) nog stijve benen (vraagt ontwerpkeuze). Commit/push/release wacht op ja.
