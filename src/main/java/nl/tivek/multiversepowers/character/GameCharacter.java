@@ -202,7 +202,7 @@ public enum GameCharacter {
     @Nullable
     public static GameCharacter byId(String id) {
         for (GameCharacter character : values()) {
-            if (character.id.equals(id)) {
+            if (character.id.equalsIgnoreCase(id)) {
                 return character;
             }
         }

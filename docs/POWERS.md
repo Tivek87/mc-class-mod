@@ -27,7 +27,7 @@ Back to the [overview](PROJECT.md). The plain spells anyone can cast are in [Spe
 
 | Franchise | Characters |
 |---|---|
-| Marvel | **Doctor Octopus**, Mysterio, Doctor Strange, Doctor Doom, Thanos, Loki, Iron Man, Magneto, Galactus, Spider-Man, The Hulk, Venom, Wolverine, Silver Surfer, The Sentry |
+| Marvel | **Doctor Octopus**, Mysterio, Doctor Strange, Doctor Doom, Thanos, Loki, Iron Man, Magneto, Galactus, Spider-Man, The Hulk, Venom, Wolverine, Silver Surfer, The Sentry, Ultron |
 | DC | **Green Lantern**, The Flash, Black Adam, Doctor Manhattan, Darkseid, Doctor Fate |
 | Disney | Bill Cipher (Gravity Falls), Darth Vader (Star Wars, Lucasfilm) |
 | Warner Bros. | Rick Sanchez (Rick and Morty, Adult Swim) |

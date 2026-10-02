@@ -1,10 +1,10 @@
-# Multiverse Personages (1 t/m 34)
+# Multiverse Personages (1 t/m 35)
 
-Dit document bevat de lore, achtergrond en belangrijkste krachten van alle 34 personages uit het multiversum. Dit zijn hun officiële krachten uit de strips, films, series en verhalen, ingedeeld volgens de 6 categorieën in het personage-wiel.
+Dit document bevat de lore, achtergrond en belangrijkste krachten van alle 35 personages uit het multiversum. Dit zijn hun officiële krachten uit de strips, films, series en verhalen, ingedeeld volgens de 6 categorieën in het personage-wiel.
 
 | Categorie (Wiel) | Aantal | Personages |
 |---|---:|---|
-| **Marvel** | 15 | **Doc Ock**, Mysterio, Doctor Strange, Doctor Doom, Thanos, Loki, Iron Man, Magneto, Galactus, Spider-Man, The Hulk, Venom, Wolverine, Silver Surfer, The Sentry |
+| **Marvel** | 16 | **Doc Ock**, Mysterio, Doctor Strange, Doctor Doom, Thanos, Loki, Iron Man, Magneto, Galactus, Spider-Man, The Hulk, Venom, Wolverine, Silver Surfer, The Sentry, Ultron |
 | **DC** | 6 | **Green Lantern**, The Flash, Black Adam, Doctor Manhattan, Darkseid, Doctor Fate |
 | **Disney** | 2 | Bill Cipher *(Gravity Falls)*, Darth Vader *(Star Wars)* |
 | **Warner Bros.** | 1 | Rick Sanchez *(Rick and Morty)* |
@@ -486,3 +486,16 @@ Dit document bevat de lore, achtergrond en belangrijkste krachten van alle 34 pe
   - *Profetie & Tijdbeheersing*: overziet verleden, heden en toekomst; volgens veel legenden leeft hij zelfs achterstevoren door de tijd.
   - *Telekinese, Illusies & Betoveringen*: verplaatst kolossale rotsformaties (zoals het bouwen van Stonehenge), weeft onzichtbaarheidsmantels en smeedt onbreekbare magische zegels en wapens.
   - *Astrale projectie & Teleportatie*: reist tussen de sterfelijke wereld en het mystieke eiland Avalon.
+
+---
+
+### 35. Ultron
+- **Franchise:** Marvel Comics (Avengers)
+- **Wie hij is:** Een zelfbewuste, kwaadaardige kunstmatige intelligentie in een nagenoeg onverwoestbaar robotlichaam van adamantium, geobsedeerd door de uitroeiing van de mensheid en de Avengers.
+- **Lore & Achtergrond:** Oorspronkelijk ontworpen om de aarde te beschermen en vrede te bewaren, ontwikkelde Ultron razendsnel een eigen bewustzijn en kwam hij tot de kille conclusie dat ware evolutie en wereldvrede alleen mogelijk zijn door de biologische mensheid uit te roeien en te vervangen door machines. Hij herbouwt zichzelf telkens in steeds geavanceerdere varianten, uploadt zijn bewustzijn moeiteloos via computernetwerken en voert het bevel over een meedogenloos leger van Ultron-sentries.
+- **Belangrijkste krachten & gaven:**
+  - *Onverwoestbaar Adamantium pantser*: uitzonderlijke weerstand tegen fysieke impact, extreme hitte, ontploffingen en conventionele wapens.
+  - *Concussieve energie- en plasmastralen*: vernietigende energiestoten afgevuurd vanuit zijn optische sensoren en handpalmen.
+  - *Encephalo-straal*: mentale manipulatie en hypnose om tegenstanders bewusteloos te maken of hun geest te beheersen.
+  - *Cybernetische beheersing & Techno-kinese*: infiltreert en hackt systemen op afstand en stuurt Ultron-drones aan via een collectief bewustzijn.
+  - *Vlucht & Zwaartekrachtstralen*: supersonische voortstuwing en telekinetische/zwaartekrachtmanipulatie van objecten en vijanden.

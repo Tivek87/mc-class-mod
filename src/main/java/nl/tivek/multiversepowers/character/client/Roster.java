@@ -78,6 +78,7 @@ public final class Roster {
             new Entry("darth_vader", Franchise.DISNEY),
             new Entry("doctor_manhattan", Franchise.DC),
             new Entry("sentry", Franchise.MARVEL),
+            new Entry("Ultron", Franchise.MARVEL),
             new Entry("darkseid", Franchise.DC),
             new Entry("doctor_fate", Franchise.DC),
             new Entry("dracula", Franchise.OTHER),
@@ -98,7 +99,7 @@ public final class Roster {
             BY_FRANCHISE.get(entry.franchise()).add(entry);
         }
         for (GameCharacter character : GameCharacter.values()) {
-            if (ALL.stream().noneMatch(entry -> entry.id().equals(character.getId()))) {
+            if (ALL.stream().noneMatch(entry -> entry.id().equalsIgnoreCase(character.getId()))) {
                 BY_FRANCHISE.get(Franchise.OTHER).add(new Entry(character.getId(), Franchise.OTHER));
             }
         }
