@@ -212,7 +212,12 @@ class MechGait {
             Vec3 sole = target.subtract(0.0, MechScript.ANKLE.y, 0.0);
             footfall(level, sole, this.walking + STAMP * run);
             dust(level, sole, this.walking + run);
+            this.landed(sole);
         }
+    }
+
+    // A foot came down on the ground at `sole`, under its ankle.
+    void landed(Vec3 sole) {
     }
 
     // Where a foot can come down near `at`: on the ground there; where that is a hole deeper than it steps down (a
@@ -268,6 +273,7 @@ class MechGait {
             Vec3 sole = leg.planted.subtract(0.0, MechScript.ANKLE.y, 0.0);
             footfall(level, sole, LAND_HARD);
             dust(level, sole, LAND_HARD);
+            this.landed(sole);
         }
         this.sink.kick(-LAND_SINK);
         return false;
@@ -314,6 +320,9 @@ class MechGait {
                 footfall(level, sole, hard);
                 dust(level, holds.onTop(side, age) ? sole : sole.add(start.ahead().scale(MechGround.SOLE_AHEAD)),
                         hard);
+                if (holds.onTop(side, age)) {
+                    this.landed(sole);
+                }
                 this.sink.kick(-0.2 * hard / CLIMB_STEP);
             }
         }

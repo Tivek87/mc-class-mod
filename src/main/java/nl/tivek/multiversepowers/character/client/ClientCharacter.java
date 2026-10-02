@@ -7,23 +7,16 @@ import java.util.Map;
 import java.util.function.Predicate;
 import java.util.function.ToIntFunction;
 import javax.annotation.Nullable;
-import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.locale.Language;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
-import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 import nl.tivek.multiversepowers.MultiversePowers;
@@ -38,25 +31,17 @@ import nl.tivek.multiversepowers.character.docock.client.ClimbControl;
 import nl.tivek.multiversepowers.character.docock.client.TentacleLegs;
 import nl.tivek.multiversepowers.character.greenlantern.client.ClientRing;
 import nl.tivek.multiversepowers.character.greenlantern.client.ConstructChoice;
-import nl.tivek.multiversepowers.character.greenlantern.client.hud.ConstructHud;
 import nl.tivek.multiversepowers.character.greenlantern.client.hud.ConstructWheel;
-import nl.tivek.multiversepowers.character.greenlantern.client.hud.ConstructWheelScreen;
 import nl.tivek.multiversepowers.stamina.client.StaminaClient;
 
 @EventBusSubscriber(modid = MultiversePowers.MODID, value = Dist.CLIENT)
 public final class ClientCharacter {
-    private static final ResourceLocation LAYER_ID = ResourceLocation.fromNamespaceAndPath(MultiversePowers.MODID,
-            "character_abilities");
     private static final String STAMINA_COST = "staminaCost";
     private static final String STAMINA_PER_TICK = "staminaPerTick";
     private static final String POWER_COST = "powerCost";
     private static final String RECHARGE = "recharge";
-
-    private static final int WHITE = 0xFFFFFFFF;
-    private static final int GRAY = 0xFF9AA2AC;
-    private static final int GREEN = 0xFF7FD46B;
-    private static final int RED = 0xFFFF5A3A;
-    private static final int PANEL = 0x90101418;
+    // A key with a hold version pressed while it is shut, until it is let go.
+    private static final int SHUT = -2;
 
     @Nullable
     private static GameCharacter character;
@@ -70,6 +55,7 @@ public final class ClientCharacter {
     private static final int[] KEY_DOWN = up(AbilitySlot.values().length);
     private static boolean climbing;
     private static final Map<GameCharacter, Local> LOCAL = new EnumMap<>(GameCharacter.class);
+    private static final Map<GameCharacter, Refusal> REFUSALS = new EnumMap<>(GameCharacter.class);
     private static final Int2ObjectOpenHashMap<GameCharacter> WORN = new Int2ObjectOpenHashMap<>();
 
     private ClientCharacter() {
@@ -144,6 +130,18 @@ public final class ClientCharacter {
         return clock;
     }
 
+    static int ultimate() {
+        return ultimate;
+    }
+
+    static int legs() {
+        return legs;
+    }
+
+    static int marked() {
+        return marked;
+    }
+
     // A gesture that may only fire at some moments (take off only when standing free) says when, here.
     public static void gate(CharacterAbility ability, Predicate<LocalPlayer> may) {
         Gestures.gate(ability, may);
@@ -162,6 +160,24 @@ public final class ClientCharacter {
     // A character with gestures that need a state of its own (CharacterAbility.needs) reports that state here.
     public static void state(GameCharacter character, ToIntFunction<LocalPlayer> state) {
         Gestures.state(character, state);
+    }
+
+    // A character whose keys are shut at some moments (Green Lantern's while a construct weapon is in his hands) says
+    // here why one does not work now, or null when it does. The panel leaves a shut one off.
+    @FunctionalInterface
+    public interface Refusal {
+        @Nullable
+        Component why(CharacterAbility ability, LocalPlayer player);
+    }
+
+    public static void refusal(GameCharacter character, Refusal refusal) {
+        REFUSALS.put(character, refusal);
+    }
+
+    @Nullable
+    static Component refused(CharacterAbility ability, LocalPlayer player) {
+        Refusal refusal = REFUSALS.get(ability.character());
+        return refusal == null ? null : refusal.why(ability, player);
     }
 
     static void held(AbilitySlot slot, boolean held) {
@@ -290,6 +306,11 @@ public final class ClientCharacter {
         int index = ability.slot().ordinal();
         boolean want = key.isDown() && inGame && !StaminaClient.isExhausted();
         int left = COOLDOWNS[index];
+        Component why = want && !HELD[index] ? refused(ability, player) : null;
+        if (why != null) {
+            player.displayClientMessage(why, true);
+            want = false;
+        }
         if (want && !HELD[index] && left > 0) {
             tell(player, "not_ready", ability.getDisplayName(), (left + 19) / 20);
             want = false;
@@ -328,7 +349,15 @@ public final class ClientCharacter {
             return;
         }
         if (down) {
-            if (KEY_DOWN[index] < 0) {
+            if (KEY_DOWN[index] == SHUT) {
+                return;
+            }
+            Component why = KEY_DOWN[index] < 0 ? refused(ability, player) : null;
+            if (why != null) {
+                // Said once, then nothing until it is let go: neither the hold nor the tap.
+                player.displayClientMessage(why, true);
+                KEY_DOWN[index] = SHUT;
+            } else if (KEY_DOWN[index] < 0) {
                 KEY_DOWN[index] = 0;
             } else if (KEY_DOWN[index] < ability.holdTicks() && ++KEY_DOWN[index] >= ability.holdTicks()) {
                 send(index, true, data(player) | Characters.HOLD);
@@ -337,7 +366,7 @@ public final class ClientCharacter {
         }
         int held = KEY_DOWN[index];
         KEY_DOWN[index] = -1;
-        if (held >= 0 ? held < ability.holdTicks() : clicked) {
+        if (held != SHUT && (held >= 0 ? held < ability.holdTicks() : clicked)) {
             press(player, ability.slot());
         }
     }
@@ -354,10 +383,15 @@ public final class ClientCharacter {
         }
         CharacterAbility ability = character.ability(slot);
         if (ability == null || ability.isPlaceholder()) {
-            if (!quiet) {
+            if (!quiet && (ability == null || !ability.isSpare())) {
                 player.displayClientMessage(Component.translatable("character." + MultiversePowers.MODID
                         + ".empty", character.getDisplayName(), slot.getDisplayName()), true);
             }
+            return;
+        }
+        Component why = refused(ability, player);
+        if (why != null) {
+            player.displayClientMessage(why, true);
             return;
         }
         boolean undo = player.isShiftKeyDown() && ability.crouchDoes() == CharacterAbility.Crouch.UNDO;
@@ -378,7 +412,7 @@ public final class ClientCharacter {
         return player.isShiftKeyDown() ? Characters.SNEAKING : 0;
     }
 
-    private static boolean canPay(LocalPlayer player, CharacterAbility ability) {
+    static boolean canPay(LocalPlayer player, CharacterAbility ability) {
         return !ability.has(POWER_COST) || ClientRing.power(player) + 1.0E-4F >= ability.value(POWER_COST);
     }
 
@@ -427,92 +461,5 @@ public final class ClientCharacter {
         Arrays.fill(COOLDOWNS, 0);
         Arrays.fill(HELD, false);
         Arrays.fill(TAPPED, Integer.MIN_VALUE);
-    }
-
-    static void onRegisterLayers(RegisterGuiLayersEvent event) {
-        event.registerAboveAll(LAYER_ID, ClientCharacter::render);
-    }
-
-    private static void render(GuiGraphics graphics, DeltaTracker deltaTracker) {
-        Minecraft minecraft = Minecraft.getInstance();
-        GameCharacter now = character;
-        if (now == null || minecraft.player == null || minecraft.options.hideGui
-                || minecraft.screen instanceof ConstructWheelScreen || minecraft.screen instanceof PowerWheelScreen) {
-            return;
-        }
-        Font font = minecraft.font;
-        String prefix = "screen." + MultiversePowers.MODID + ".character.";
-        int line = font.lineHeight + 2;
-        int rows = Math.max(1, (int) now.abilities().stream().filter(ability -> !ability.isPlaceholder()).count());
-        int width = 168;
-        int height = line * (rows + 2) + 4;
-        int right = graphics.guiWidth() - 4;
-        int left = right - width;
-        int top = graphics.guiHeight() - 4 - height;
-        graphics.fill(left - 3, top - 3, right + 3, top + height, PANEL);
-
-        Component title = ultimate > 0
-                ? Component.translatable(prefix + "ultimate." + now.getId(), now.getDisplayName(),
-                        (ultimate + 19) / 20)
-                : now.getDisplayName();
-        graphics.drawString(font, title, left, top, ultimate > 0 ? RED : 0xFF000000 | now.getColor());
-        int y = top + line;
-        if (now.abilities().isEmpty()) {
-            graphics.drawString(font, Component.translatable(prefix + "no_abilities"), left, y, GRAY);
-            y += line;
-        }
-        for (CharacterAbility ability : now.abilities()) {
-            if (ability.isPlaceholder()) {
-                continue;
-            }
-            AbilitySlot slot = ability.slot();
-            Component key = PowerInputs.label(ability);
-            int cooldown = COOLDOWNS[slot.ordinal()];
-            boolean usable = Gestures.active(ability, minecraft.player);
-            graphics.drawString(font, Component.literal("[").append(key).append("] ")
-                    .append(ability.getDisplayName()), left, y, cooldown > 0 || !usable ? GRAY : WHITE);
-            Component status;
-            int color;
-            Component running = now == GameCharacter.GREEN_LANTERN ? ConstructHud.status(ability, minecraft.player)
-                    : null;
-            if (!usable) {
-                status = !Gestures.rightWhen(ability, minecraft.player)
-                        ? Component.translatable(prefix + (ability.when() == CharacterAbility.When.FLYING
-                                ? "in_flight" : "on_ground"))
-                        : Component.translatable(prefix + "needs." + ability.needsName());
-                color = GRAY;
-            } else if (running != null) {
-                status = running;
-                color = GREEN;
-            } else if (ability.isHeld() && HELD[slot.ordinal()]) {
-                status = Component.translatable(prefix + "holding");
-                color = GREEN;
-            } else if (cooldown > 0) {
-                status = Component.literal((cooldown + 19) / 20 + "s");
-                color = GRAY;
-            } else if (!canPay(minecraft.player, ability)) {
-                status = Component.translatable(prefix + "no_power");
-                color = RED;
-            } else {
-                status = Component.translatable(prefix + "ready");
-                color = GREEN;
-            }
-            graphics.drawString(font, status, right - font.width(status), y, color);
-            y += line;
-        }
-        String passive = "character." + MultiversePowers.MODID + "." + now.getId() + ".passive";
-        CharacterAbility train = now.byName("emerald_express");
-        if (now == GameCharacter.GREEN_LANTERN) {
-            ConstructHud.renderPower(graphics, font, minecraft.player, left, right, y + 2,
-                    train == null || !train.has(POWER_COST) ? 0.0F : (float) train.value(POWER_COST));
-        } else if (legs > 0 || marked > 0) {
-            MutableComponent status = Component.translatable(prefix + (legs > 0 ? "on_legs" : "on_feet"), legs);
-            if (marked > 0) {
-                status.append(" + ").append(Component.translatable(prefix + "marked", marked));
-            }
-            graphics.drawString(font, status, left, y + 2, GREEN);
-        } else if (Language.getInstance().has(passive)) {
-            graphics.drawString(font, Component.translatable(passive), left, y + 2, GRAY);
-        }
     }
 }

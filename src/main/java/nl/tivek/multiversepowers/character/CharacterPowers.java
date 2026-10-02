@@ -21,6 +21,11 @@ public interface CharacterPowers {
         return 0;
     }
 
+    // Ticks an ability still waits on a cooldown of its own, apart from its slot's, sent along for the panel.
+    default int waitLeft(ServerPlayer player, CharacterAbility ability) {
+        return 0;
+    }
+
     default void showTo(ServerPlayer viewer, ServerPlayer target) {
     }
 

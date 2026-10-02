@@ -82,10 +82,6 @@ public final class HandPainter {
         if (clock < HandPose.ARRIVES - 0.5 || !painter.visible(base, 16.0 * scale)) {
             return;
         }
-        Minecraft minecraft = Minecraft.getInstance();
-        if (!hand.held() && portal == null && minecraft.level != null) {
-            HandStop.clear(minecraft.level, hand.id(), variant, clock, reach, pose, base, facing, scale, root);
-        }
         HandPose.Place place = pose.place(base, facing, scale);
         painter.glare(0.7 * (1.0 - Ease.smooth((clock - HandPose.ARRIVES) / 16.0)));
         painter.ambient(GLOWS);

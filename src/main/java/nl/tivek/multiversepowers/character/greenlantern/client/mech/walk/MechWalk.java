@@ -6,6 +6,7 @@ import java.util.Map;
 import javax.annotation.Nullable;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.Vec3;
@@ -14,12 +15,14 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
+import net.neoforged.neoforge.network.PacketDistributor;
 import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.character.greenlantern.client.mech.MechPainter;
 import nl.tivek.multiversepowers.character.greenlantern.client.mech.shape.MechLegShapes;
 import nl.tivek.multiversepowers.character.greenlantern.client.mech.touch.MechTouch;
 import nl.tivek.multiversepowers.character.greenlantern.mech.MechAttacks;
 import nl.tivek.multiversepowers.character.greenlantern.mech.MechScript;
+import nl.tivek.multiversepowers.character.greenlantern.mech.MechStepPayload;
 import nl.tivek.multiversepowers.engine.math.Ease;
 import nl.tivek.multiversepowers.engine.math.Spring;
 
@@ -189,6 +192,15 @@ public final class MechWalk extends MechGait {
         // Climbing, the torso turns to face the wall whatever its pilot looks at.
         walk.face(stage, climb != 0 ? stage.yaw() : look, pitch);
         walk.tick(level, stage, climb);
+    }
+
+    // The pilot's own game tells the server where the feet come down, to crush what is under them.
+    @Override
+    void landed(Vec3 sole) {
+        LocalPlayer player = Minecraft.getInstance().player;
+        if (player != null && player.getId() == this.pilot) {
+            PacketDistributor.sendToServer(new MechStepPayload(sole));
+        }
     }
 
     // What of the blow landed since the last tick shakes the ground and jolts the body.

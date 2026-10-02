@@ -118,8 +118,8 @@ abstract class GiantHandPlaces {
         return this.wallHand(level, target, move, extra);
     }
 
-    // The first spot round the creature where the ground is level and the whole move stays clear of blocks: the way
-    // the move likes best first, then turned further and further round.
+    // The first spot round the creature where the ground is level, the whole move kept clear of blocks where it can:
+    // the way the move likes best first, then turned further and further round.
     @Nullable
     GiantHand groundHand(ServerLevel level, LivingEntity target, int move, int extra, Vec3 away) {
         double side = this.owner.getRandom().nextBoolean() ? 1.0 : -1.0;
@@ -129,6 +129,7 @@ abstract class GiantHandPlaces {
                 : move == HandPose.RINGBEAM || move == HandPose.MEGAPHONE || move == HandPose.SMACK
                         || move == HandPose.PUPPETEER || move == HandPose.RINGHAMMER || move == HandPose.RINGCHAINS
                         ? Vectors.spin(away, Vectors.UP, side * Math.PI * 0.5) : away;
+        List<GiantHand> clipping = new ArrayList<>();
         for (int k = 0; k < GROUND_TURNS; k++) {
             int step = (k + 1) / 2;
             double turn = (k % 2 == 1 ? side : -side) * step * Math.PI * 2.0 / GROUND_TURNS;
@@ -144,7 +145,21 @@ abstract class GiantHandPlaces {
                 continue;
             }
             GiantHand hand = new GiantHand(this.storm(), variant, base, target);
-            if (GiantHandSpots.clear(level, hand) && this.fits(hand)) {
+            if (!GiantHandSpots.clear(level, hand)) {
+                clipping.add(hand);
+            } else if (this.fits(hand)) {
+                return hand;
+            }
+        }
+        return this.firstFitting(level, clipping);
+    }
+
+    // A spot where the whole move stays out of the blocks is liked best; with none, the hand comes anyway and passes
+    // through them, though never into water.
+    @Nullable
+    private GiantHand firstFitting(ServerLevel level, List<GiantHand> clipping) {
+        for (GiantHand hand : clipping) {
+            if (this.fits(hand) && GiantHandSpots.dry(level, hand)) {
                 return hand;
             }
         }
@@ -178,6 +193,7 @@ abstract class GiantHandPlaces {
     GiantHand wallHand(ServerLevel level, LivingEntity target, int move, int extra) {
         double high = Math.min(HandPose.spot(move), WALL_HIGH) * SCALE;
         int needs = (int) Math.floor(high + 1.0) + 1;
+        List<GiantHand> clipping = new ArrayList<>();
         for (WallSpot wall : this.walls(level, target)) {
             if (wall.column() < needs) {
                 continue;
@@ -188,11 +204,13 @@ abstract class GiantHandPlaces {
             }
             GiantHand hand = new GiantHand(this.storm(), HandPose.variant(move, false, true, extra), base, target,
                     wall.out());
-            if (GiantHandSpots.clear(level, hand) && this.fits(hand)) {
+            if (!GiantHandSpots.clear(level, hand)) {
+                clipping.add(hand);
+            } else if (this.fits(hand)) {
                 return hand;
             }
         }
-        return null;
+        return this.firstFitting(level, clipping);
     }
 
     // The walls round a creature, nearest first, looked up once a tick however many hands try them.
@@ -260,6 +278,7 @@ abstract class GiantHandPlaces {
         // A drag reaches back from the far side, so the creature is dragged away from the caster, never at him.
         boolean drag = move == HandPose.DRAG;
         boolean pushes = move == HandPose.FLICK || move == HandPose.POKE;
+        List<GiantHand> clipping = new ArrayList<>();
         for (double turn : pushes ? PUSH_TURNS : PAIR_TURNS) {
             if (drag && turn == Math.PI) {
                 continue;
@@ -270,12 +289,14 @@ abstract class GiantHandPlaces {
             Vec3 base = portalFor(target, variant, facing);
             if (this.clearOfOwner(base, target) && GiantHandSpots.portalRoom(level, target, variant, base, facing)) {
                 GiantHand hand = new GiantHand(this.storm(), variant, base, target, facing);
-                if ((HandGroup.is(move) || GiantHandSpots.clear(level, hand)) && this.fits(hand)) {
+                if (!HandGroup.is(move) && !GiantHandSpots.clear(level, hand)) {
+                    clipping.add(hand);
+                } else if (this.fits(hand)) {
                     return hand;
                 }
             }
         }
-        return null;
+        return this.firstFitting(level, clipping);
     }
 
     boolean clearOfOwner(Vec3 base, LivingEntity target) {
@@ -304,6 +325,12 @@ abstract class GiantHandPlaces {
         }
         return level.isLoaded(pos) && level.getBlockState(pos).getCollisionShape(level, pos).isEmpty()
                 && level.getFluidState(pos).isEmpty();
+    }
+
+    // No water, a block being no matter: what a hand passing through blocks must still keep out of.
+    static boolean dry(ServerLevel level, Vec3 at) {
+        BlockPos pos = BlockPos.containing(at);
+        return pos.getY() >= level.getMaxBuildHeight() || level.isLoaded(pos) && level.getFluidState(pos).isEmpty();
     }
 
     static Vec3 inReach(Vec3 base, Vec3 spot) {

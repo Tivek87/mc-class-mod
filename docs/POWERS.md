@@ -55,28 +55,39 @@ long cooldown; while it goes, the panel's title turns red and counts down.
 
 | Key | Ability | Doctor Octopus | Green Lantern | Thor |
 |---|---|---|---|---|
-| R | Ability 1 | Grab | Emerald Express | Thunder Fists *(left click)* |
-| V | Ability 2 | Multi-Tentacle | Construct Wheel | Thunderclap *(hold left click, no hammer)* |
-| Z | Ability 3 | Tentacle Dash | Recharge | Hammer Uppercut *(hold left click, hammer)* |
-| B (hold) | Ability 4 | Block | Light Bolt *(left click)* | Dash *(right click, no hammer)* |
-| H | Ability 5 | Ground Slam | Light Shield *(right click)* | Grab *(hold right click)* |
-| N | Ability 6 | Portal | Ring Scan | Grab Dash *(running, hold right click)* |
-| Y | Ability 7 | Octopus Rampage *(ultimate)* | Air Strike *(ultimate; hold: Mech Assembly)* | Hammer Throw *(right click, hammer)* |
-| X | Ability 8 | *(free)* | Shockwave | Throw and Follow *(hold right click, hammer)* |
-| C | Ability 9 | Feet or Tentacles | Flight *(double space)* | Take Up the Hammer *(scroll wheel click)* |
-| Left Alt | Ability 10 | Ground Strike | Giant Hands | Charge *(hold scroll wheel)* |
-| K | Ability 11 | *(free)* | Light Cage | Super Jump *(double space)* |
-| *(none)* | Ability 12 | *(free)* | Beam Lock *(scroll wheel click)* | Flight *(hold space)* |
+| R | Ability 1 | Grab | Emerald Express | *(free)* |
+| V | Ability 2 | Multi-Tentacle | Construct Wheel | *(free)* |
+| Z | Ability 3 | Tentacle Dash | Recharge | *(free)* |
+| B (hold) | Ability 4 | Block | Light Bolt *(left click)* | *(free)* |
+| H | Ability 5 | Ground Slam | Light Shield *(right click)* | *(free)* |
+| N | Ability 6 | Portal | Ring Scan | *(free)* |
+| Y | Ability 7 | Octopus Rampage *(ultimate)* | Air Strike *(ultimate)* | *(free)* |
+| X | Ability 8 | *(free)* | Shockwave | *(free)* |
+| C | Ability 9 | Feet or Tentacles | Flight *(double space)* | *(free)* |
+| Left Alt | Ability 10 | Ground Strike | Giant Hands | *(free)* |
+| K | Ability 11 | *(free)* | Light Cage | *(free)* |
+| *(none)* | Ability 12 | *(free)* | Beam Lock *(scroll wheel click)* | *(free)* |
 
-Thor has five more, past the twelfth, that only sit on the mouse or shift in flight: Sky Shockwave *(hold left
-click)*, Air Blink *(right click)*, Grab-Dash Dive *(hold right click)*, Lightning Bolt *(scroll wheel click)* and
-Lightning Speed *(hold shift)*.
+Green Lantern has one more past the twelfth: the Hard-Light Mech *(hold the scroll wheel 2 seconds)*.
+
+Thor's twelve keys are kept free for powers to come; every move of his sits on the mouse, space, shift or the scroll
+wheel. On the ground: Thunder Fists *(left click)*, Thunderclap *(hold left click, no hammer)*, Hammer Uppercut
+*(hold left click, hammer)*, Dash *(right click, no hammer)*, Grab *(hold right click)*, Grab Dash *(running, hold
+right click)*, Hammer Throw *(right click, hammer)*, Throw and Follow *(hold right click, hammer)*, Take Up the Hammer
+*(scroll wheel click)*, Charge *(hold scroll wheel)*, Super Jump *(double space)* and Flight *(hold space)*. In
+flight: Sky Shockwave *(hold left click)*, Air Blink *(right click)*, Grab-Dash Dive *(hold right click)*, Lightning
+Bolt *(scroll wheel click)* and Lightning Speed *(hold shift)*.
 
 - Every key can be changed in Options > Controls, under "Multiverse Powers".
 - An ability on a mouse button or on space shows that in brackets: its number key does nothing for it.
-- A panel in the bottom right shows who you are and what each key does right now, with its cooldown.
-- Keys your character has nothing on are left off the panel and do nothing; the two Doctor Octopus keeps free for
-  later powers show as **Placeholder**.
+- A panel in the bottom right shows who you are and **only what you can use right now**, each with its key and
+  cooldown. A power that only works on the ground is left off while you fly, and the other way round, and so is one
+  that wants something else first.
+- The mouse buttons' moves (a line for the click and one for the hold of each button) are listed only when at most
+  two other powers are; beside more, they are left off.
+- Keys your character has nothing on are left off the panel and do nothing. Keys kept free for powers to come show
+  their number with *free* beside it (Thor's **Ability 1** up to **Ability 12**) and do nothing yet; the two Doctor
+  Octopus keeps free show as **Placeholder**.
 - The scroll wheel click is also pick block. While your character has nothing on it, it just picks blocks and
   stays quiet; once a character has an ability there, the ability wins.
 
@@ -89,8 +100,7 @@ out with **Locked** beside them: they cannot be changed there. **Hold shift** is
 the game's sneak and sprint keys are, and can be moved. The **scroll wheel click and hold can** be too: put either on any key or button you like (on the
 same one, as they come, a click and a hold tell themselves apart). A power with a click and a hold on the same
 button waits until you let go to know which you meant. The panel shows a hold as **Hold ...** and a double press
-as **Double ...**, and greys out a power that only works on the ground while you fly, or the other way round, and
-one that wants something else first, saying what: *with hammer*, *no hammer*, *running* or *not running*.
+as **Double ...**.
 - **A character can also sit on the mouse.** Green Lantern does: left click shoots, right click puts up a
   shield. The panel shows those as `[Left Button]` and `[Right Button]`. They only take the mouse over
   while both your hands are empty and the hand behind that button is free; any other time the mouse does
@@ -118,7 +128,7 @@ Green Lantern's power ring turns willpower into hard light: solid shapes of gree
 while he keeps them going. His mouse always does something: bolts and a beam on left click, a shield and a
 dome on right click. On top of that he has the Emerald Express, his lantern to recharge the ring, flight, the
 shockwave, the wheel you pick a weapon from (its first weapon is a sword and shield), the Ring Scan, the Giant
-Hands, the Light Bubble and his ultimate, the Air Strike (held: the Hard-Light Mech). Every key is his now. Every ability has a move of his
+Hands, the Light Bubble, his ultimate, the Air Strike, and the Hard-Light Mech (hold the scroll wheel). Every key is his now. Every ability has a move of his
 own that goes with it, seen from outside and in first person.
 
 His hands work the way the game's own buttons do: the **right hand attacks** (left click) and the **left hand
@@ -314,10 +324,9 @@ Green Lantern recharges his ring at his lantern, the power battery.
   in the middle of a jump or a fall (the double tap works there too; in creative the double tap stays the
   game's own flying).
 - **Flying:** hold **forward** and you fly the way you look. **You pick up speed quickly and then keep getting
-  faster the longer you fly on:** a flight starts at about **1.2 blocks a second** and within **half a second** you
-  are up to a cruising speed of **1.5 blocks a second**; from there you keep gaining, until after **4 seconds**
-  you reach the top speed of **1.8 blocks a second**, slower than walking, calm and tightly under control, and
-  never more. Hovering and climbing go at a part of that speed. Let go of forward and you glide to a hover and lose the
+  faster the longer you fly on:** a flight starts at about **10.7 blocks a second** and within **half a second** you
+  are up to a cruising speed of **13.3 blocks a second**; from there you keep gaining, until after **3.5 seconds**
+  you reach the top speed of **20 blocks a second**, and never more. Hovering and climbing go at a part of that speed. Let go of forward and you glide to a hover and lose the
   speed you built up again (all of it in 3 seconds);
   pushing against a wall keeps it.
   **Jump** rises, **sneak** sinks, left and right slide sideways, back drifts backwards. You carry your speed
@@ -406,7 +415,7 @@ Green Lantern recharges his ring at his lantern, the power battery.
 
 | Flight | |
 |---|---|
-| Speed | starts at about 1.2 blocks a second, up to 1.8 after 4 seconds of flying forward |
+| Speed | starts at about 10.7 blocks a second, up to 20 after 3.5 seconds of flying forward |
 | Stop in the air | C, or a double tap on jump |
 | Power | 1.07 a second (a full ring lasts 93.75 seconds), plus whatever you use meanwhile |
 | Take off | C or a double tap on jump; at least 0.8 power; not while recharging |
@@ -542,6 +551,9 @@ Launcher / RPG**. Picking one of those changes nothing yet.
   - **At the same time:** just like with empty hands, attack and defence can be clicked or held together.
   - Holding a weapon that does nothing yet does exactly what empty hands do: bolts and the beam on left click, the
     shield and the dome on right click.
+- **A weapon in your hands shuts your other keys** (R, Z, N, Y, X, Left Alt, K): pressing one only says to put the
+  weapon away first, with V. The panel then lists just the weapon's four moves (left click, hold left, right click,
+  hold right, each by its name) and V.
 - **Let go of V** and the wheel closes: green light flares out of your crosshair and what you picked takes shape
   in your hands. You can also just click a slot while the wheel is open.
 - **The middle is empty hands**, written out as *Nothing — default: no construct, just your ring*. Let go
@@ -740,7 +752,7 @@ The ring scans everything around you, the way it does in the comics ("Ring, scan
 
 Green Lantern's ultimate: a big, slow gunship of hard light high over the battlefield, with two jets.
 
-- **Tap Y** (it goes when you let go; hold it 2 seconds for the mech, see below). You throw your ring fist up at the sky and a thick pillar of light shoots out of the ring. High in
+- **Press Y.** You throw your ring fist up at the sky and a thick pillar of light shoots out of the ring. High in
   the sky, about **55 blocks** up, a **big gunship with four propellers** grows out of its light, white-hot at first
   and cooling to green. It is a solid construct of hard light, never a real aircraft,
   and made in detail: a long round body with a glowing windscreen, rows of windows, doors and a cargo ramp under
@@ -798,10 +810,10 @@ Green Lantern's ultimate: a big, slow gunship of hard light high over the battle
   the crash (damage, reach, the size of the crater, how hard a block may be to be blown away, how many blocks are
   hurled; a hardness of -1 leaves the ground alone).
 
-### Hard-Light Mech Assembly (hold Y for 2 seconds)
+### Hard-Light Mech Assembly (hold the scroll wheel for 2 seconds)
 
-- **Hold Y.** A ring round your crosshair fills up in 2 seconds; when it is full your ring builds a giant mech of
-  hard light, beat for beat like Green Lantern's own super move (let go sooner and you get the ordinary Air Strike).
+- **Hold the scroll wheel.** A ring round your crosshair fills up in 2 seconds; when it is full your ring builds a
+  giant mech of hard light, beat for beat like Green Lantern's own super move (let go sooner and nothing happens).
   It builds itself over the **nearest creature out to hurt you in front of you**, up to 12 blocks away, and holds
   that creature on its spot the whole time; with no such creature it rises round you. It needs ground under it.
 - **The look.** Like the one in Green Lantern's super move: every part is round and covered in hundreds of raised
@@ -851,6 +863,10 @@ Green Lantern's ultimate: a big, slow gunship of hard light high over the battle
   plants, walks over water, and stops at walls and cliffs. Walk it straight at a ledge too high to step onto,
   looking at it, for **2 seconds** and it climbs it: only then its hands reach up and grab the top, their fingers
   closing on the edge, and it hauls itself up and over.
+- **Crushing underfoot.** A small, weak creature a foot comes down on (no bigger than a block, with at most **5
+  hearts** of health: a chicken, a rabbit, a pig) is **squashed flat** with a squelch and a puff of dust. Your own
+  tamed animals, players of your own team and a creature something holds are left alone. How much health is still
+  crushed is a setting (0 = nothing).
 - **In the cockpit.** You push and pull the two levers as you walk and turn: both forward to walk, one forward and
   one back to turn. Standing still you reach over to the console now and then and press a button, which lights up.
   In first person you look out through the round glass port in its chest, with a clear view ahead; in third person the camera stands back
@@ -862,16 +878,17 @@ Green Lantern's ultimate: a big, slow gunship of hard light high over the battle
   nearest one, closes its fingers round it, lifts it, smashes it into the ground twice and, if it still lives, winds
   up and flings it the way you look. It does not walk while it strikes. *Unfinished: the blows are first versions
   and may still look or feel wrong.*
-- **Nothing else:** you cannot fly, jump or use your other powers while you are in it.
-- **Leaving it:** hold Y for 2 seconds again (the ring round your crosshair says *Leave the mech*): the mech breaks
+- **Nothing else:** you cannot fly, jump or use your other powers while you are in it. The panel lists only the
+  hold of the scroll wheel that takes you out.
+- **Leaving it:** hold the scroll wheel for 2 seconds again (the ring round your crosshair says *Leave the mech*): the mech breaks
   into solid pieces that dissolve into light, and you float gently down to the ground. Die, log out or stop being
   Green Lantern and it breaks up as well.
 - **Who gets hit:** it builds itself over a creature out to hurt you, but its blows hit whatever stands near: the
   held creature takes each blow whole, anything else near the foot, the clap or the crater takes less (players of
   your own team excepted).
 - **Power:** 25. **Cooldown:** 90 seconds, **its own**: building the mech leaves the Air Strike ready, and the Air
-  Strike leaves the mech ready. Its cost, cooldown, reach and the three damages are settings (Air Strike, the mech
-  part), and so is each blow's damage (Mech blows).
+  Strike leaves the mech ready. Its cost, cooldown, reach and the three damages are settings (Hard-Light Mech), and
+  so are each blow's damage (Mech blows) and what it crushes underfoot (Walking the mech).
 
 ### Giant Hands (key Left Alt)
 
@@ -1012,12 +1029,12 @@ Green Lantern's ultimate: a big, slow gunship of hard light high over the battle
   Hands **never come up inside each other**: a hand only comes where it has room, clear of every other hand (a pair
   and its axe too, and the hands of other players) for as long as they are up. With no room near one creature it
   goes for another, or waits until a hand is gone.
-- Hands **never pass through blocks**: a hand out of the ground only comes up on level ground, never half over a drop
-  or half in a slope, never far above or below its creature, and only where its whole move stays in open air and
-  nothing solid stands between it and the creature; it tries every side of the creature, and a wall next to it,
-  before it gives up. Turning after its creature, a hand stops rather than swing into a wall. A hand never comes up
-  in water or reaches through it (water would hide it), and a hand out of a portal may still press, pinch or scrape
-  into the ground the creature stands on.
+- Hands **may pass through blocks**: a hand out of the ground only comes up on level ground, never half over a drop
+  or half in a slope, never far above or below its creature, and only where nothing solid stands between it and the
+  creature. It likes a spot where its whole move stays in open air best, trying every side of the creature and a wall
+  next to it; with none, it comes anyway and its fingers, wrist and blows go straight through the blocks in the way.
+  Turning after its creature, a hand may swing through a wall. A hand never comes up in water or reaches through it
+  (water would hide it).
 - **Every kind of hand has its own settings** (smack, grab, middle finger, slap, pound, flick, pinch, finger snap,
   poke, hammer fist, claw rake, portal drag, ragdoll slam, ring blast, clap, finger gun, scissors, swallow, ring
   beam, scoop, evil eye, megaphone, ring hammer, ring chains, tear, axe pair; the catch goes by the ragdoll slam's, the
@@ -1416,10 +1433,10 @@ Double space jumps high and holding space flies, with or without the hammer.
   his knees and slams his hands together in front of his chest, very hard. Let go sooner and it was a blow of his
   combo instead.
 - **The clap:** a blinding blue-white light flares between the hands, thunder cracks close by and rolls on in the
-  distance, and a bubble in which time all but stands still swells out of the hands and rolls ahead the way you aim,
+  distance, and a thin, faint bubble in which time all but stands still swells out of the hands and rolls ahead the way you aim,
   sparks crawling slowly inside it; short forked sparks of lightning crackle through the shockwave as it rolls out
   (no bolt comes down from the sky) and a wall of mist rolls the same way, up or down as well. The bubble is **4
-  blocks** across at most and gone again after about **0.6 seconds**.
+  blocks** across at most and gone again after about **0.4 seconds**.
 - **What it hits:** everything in a cone where you aim, **9 blocks** long and about 90 degrees wide: **2.5 hearts**
   close to you, down to half at the edge, and each is thrown away from you and up.
 - **Cooldown:** 10 seconds. While it cools down a thin blue arc round the crosshair counts the wait, and a glint

@@ -1,5 +1,6 @@
 package nl.tivek.multiversepowers.character.greenlantern.ability.hands;
 
+import java.util.function.Predicate;
 import javax.annotation.Nullable;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
@@ -40,6 +41,15 @@ final class GiantHandSpots {
     // The whole move stays in open air: every few ticks of its life, each point of the hand out of its surface. A hand
     // out of a portal may still press, pinch or scrape into the ground its creature stands on: that is its work.
     static boolean clear(ServerLevel level, GiantHandBase hand) {
+        return along(hand, at -> open(level, at));
+    }
+
+    // The whole move stays out of water, which would hide it; through blocks it may pass.
+    static boolean dry(ServerLevel level, GiantHandBase hand) {
+        return along(hand, at -> GiantHandPlaces.dry(level, at));
+    }
+
+    private static boolean along(GiantHandBase hand, Predicate<Vec3> free) {
         Vec3 facing = hand.aim.subtract(hand.base);
         HandDuo.Portal portal = HandPose.portal(hand.variant) ? HandPose.portalOf(hand.variant, hand.base, facing,
                 HandPose.firstAct(hand.variant), SCALE) : null;
@@ -48,20 +58,19 @@ final class GiantHandSpots {
         int until = HandPose.sinks(hand.variant);
         double floor = portal == null ? Double.NEGATIVE_INFINITY : hand.target.getY() + FLOOR;
         for (int t = HandPose.ARRIVES; t <= until; t += EVERY) {
-            if (!clearAt(level, hand, t, facing, surface, out, floor)) {
+            if (!clearAt(hand, t, facing, surface, out, floor, free)) {
                 return false;
             }
         }
         return true;
     }
 
-    // The same at one moment, for a hand that turns after its creature.
-    static boolean clearAt(ServerLevel level, GiantHandBase hand, int t, Vec3 facing, Vec3 surface, Vec3 out,
-            double floor) {
+    private static boolean clearAt(GiantHandBase hand, int t, Vec3 facing, Vec3 surface, Vec3 out, double floor,
+            Predicate<Vec3> free) {
         HandPose.Place place = hand.pose(t).place(hand.base, facing, SCALE);
         for (Vec3 local : BODY) {
             Vec3 at = place.at(local);
-            if (at.subtract(surface).dot(out) > OUT && at.y > floor && !open(level, at)) {
+            if (at.subtract(surface).dot(out) > OUT && at.y > floor && !free.test(at)) {
                 return false;
             }
         }

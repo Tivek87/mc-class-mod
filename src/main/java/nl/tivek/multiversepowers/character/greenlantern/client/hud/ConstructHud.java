@@ -70,6 +70,7 @@ public final class ConstructHud {
 
     public ConstructHud(IEventBus modEventBus) {
         modEventBus.addListener(ConstructHud::onRegisterLayers);
+        LanternPanel.register();
     }
 
     private static void onRegisterLayers(RegisterGuiLayersEvent event) {
@@ -170,24 +171,30 @@ public final class ConstructHud {
         labels.forEach(Runnable::run);
     }
 
-    // A key held for its hold version fills a whole ring round the crosshair, outside the two button arcs.
+    // A key or the scroll wheel held for a hold of its own fills a whole ring round the crosshair, outside the two
+    // button arcs.
     private static void renderKeyHold(GuiGraphics graphics, float partialTick) {
         Minecraft minecraft = Minecraft.getInstance();
         long now = Util.getMillis();
-        for (CharacterAbility ability : GameCharacter.GREEN_LANTERN.abilities()) {
-            if (ability.input() != CharacterAbility.Input.KEY || ability.isHeld() || ability.holdTicks() <= 0) {
-                continue;
+        CharacterAbility ability = null;
+        float progress = -1.0F;
+        for (CharacterAbility each : GameCharacter.GREEN_LANTERN.abilities()) {
+            float held = each.input() == CharacterAbility.Input.KEY && !each.isHeld() && each.holdTicks() > 0
+                    ? ClientCharacter.keyHoldProgress(each, partialTick)
+                    : each.input() == CharacterAbility.Input.SCROLL && each.tapWhen() == CharacterAbility.Tap.NEVER
+                            ? MouseHold.progress(each, partialTick) : -1.0F;
+            if (held > progress) {
+                ability = each;
+                progress = held;
             }
-            float progress = ClientCharacter.keyHoldProgress(ability, partialTick);
-            if (progress < 1.0F) {
-                keyFullAt = 0L;
-            } else if (keyFullAt == 0L) {
-                keyFullAt = now;
-            }
-            float gone = keyFullAt == 0L ? 0.0F : Mth.clamp((now - keyFullAt - KEY_KEPT_MS) / HOLD_FLASH_MS, 0.0F, 1.0F);
-            if (progress < HOLD_SHOWN || gone >= 1.0F) {
-                continue;
-            }
+        }
+        if (progress < 1.0F) {
+            keyFullAt = 0L;
+        } else if (keyFullAt == 0L) {
+            keyFullAt = now;
+        }
+        float gone = keyFullAt == 0L ? 0.0F : Mth.clamp((now - keyFullAt - KEY_KEPT_MS) / HOLD_FLASH_MS, 0.0F, 1.0F);
+        if (ability != null && progress >= HOLD_SHOWN && gone < 1.0F) {
             float middleX = graphics.guiWidth() * 0.5F;
             float middleY = graphics.guiHeight() * 0.5F;
             float appear = Mth.clamp((progress - HOLD_SHOWN) * 8.0F, 0.0F, 1.0F) * (1.0F - gone);
@@ -214,7 +221,7 @@ public final class ConstructHud {
             }
             GuiShapes.flush(graphics);
             String key = "screen." + MultiversePowers.MODID + ".hold." + ability.id();
-            boolean leaves = ability.id().equals("air_strike") && minecraft.player != null
+            boolean leaves = ability.id().equals("mech") && minecraft.player != null
                     && ClientConstructs.piloted(minecraft.player.getId(), partialTick) != null;
             Component name = Component.translatable(leaves ? key + ".leave" : key);
             int width = minecraft.font.width(name);
@@ -224,7 +231,7 @@ public final class ConstructHud {
         }
     }
 
-    private static Component holdName(CharacterAbility ability, @Nullable Player player) {
+    static Component holdName(CharacterAbility ability, @Nullable Player player) {
         String prefix = "screen." + MultiversePowers.MODID + ".hold.";
         if (SwordArms.holding()) {
             return Component.translatable(prefix + "flurry");
@@ -240,31 +247,10 @@ public final class ConstructHud {
         return Component.translatable(prefix + (flying ? "brake" : "dome"));
     }
 
-    private static boolean onMouse(CharacterAbility ability) {
-        return ability.input() == CharacterAbility.Input.LEFT || ability.input() == CharacterAbility.Input.RIGHT;
-    }
-
     @Nullable
-    public static Component status(CharacterAbility ability, Player player) {
+    static Component status(CharacterAbility ability, Player player) {
         String prefix = "screen." + MultiversePowers.MODID + ".character.";
-        if (SwordArms.holding() && onMouse(ability)) {
-            return Component.translatable(prefix + (ability.input() == CharacterAbility.Input.LEFT ? "sword"
-                    : "shield"));
-        }
-        if (FlameArms.holding() && onMouse(ability)) {
-            return Component.translatable(prefix + (ability.input() == CharacterAbility.Input.LEFT ? "flames"
-                    : "fire_wall"));
-        }
-        if (WhipArms.holding() && onMouse(ability)) {
-            return Component.translatable(prefix + (ability.input() == CharacterAbility.Input.LEFT ? "whip"
-                    : "lasso"));
-        }
         return switch (ability.id()) {
-            case "light_bolt" -> ClientRing.has(player, RingPayload.BEAM)
-                    ? Component.translatable(prefix + "beam") : null;
-            case "light_shield" -> ClientRing.has(player, RingPayload.DOME)
-                    ? Component.translatable(prefix + "dome")
-                    : ClientRing.has(player, RingPayload.SHIELD) ? Component.translatable(prefix + "on") : null;
             case "shockwave" -> ClientRing.has(player, RingPayload.DIVE)
                     ? Component.translatable(prefix + "diving") : null;
             case "flight" -> ClientRing.has(player, RingPayload.DESCENT) ? Component.translatable(prefix + "sinking")

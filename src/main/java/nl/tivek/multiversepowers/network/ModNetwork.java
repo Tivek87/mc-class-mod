@@ -32,6 +32,7 @@ import nl.tivek.multiversepowers.character.greenlantern.construct.ConstructPickP
 import nl.tivek.multiversepowers.character.greenlantern.construct.FlattenPayload;
 import nl.tivek.multiversepowers.character.greenlantern.hand.HandVictimPayload;
 import nl.tivek.multiversepowers.character.greenlantern.mech.MechDrivePayload;
+import nl.tivek.multiversepowers.character.greenlantern.mech.MechStepPayload;
 import nl.tivek.multiversepowers.character.thor.ThorStatePayload;
 import nl.tivek.multiversepowers.classes.ChoosingState;
 import nl.tivek.multiversepowers.classes.ClassData;
@@ -66,7 +67,7 @@ import nl.tivek.multiversepowers.spell.dark.VoidStatePayload;
 import nl.tivek.multiversepowers.stamina.StaminaCostPayload;
 
 public final class ModNetwork {
-    private static final String VERSION = "21";
+    private static final String VERSION = "22";
 
     private ModNetwork() {
     }
@@ -106,6 +107,7 @@ public final class ModNetwork {
                 ModNetwork::onCharacterLook);
         registrar.playToServer(TransformPayload.TYPE, TransformPayload.STREAM_CODEC, ModNetwork::onTransform);
         registrar.playToServer(MechDrivePayload.TYPE, MechDrivePayload.STREAM_CODEC, ModNetwork::onMechDrive);
+        registrar.playToServer(MechStepPayload.TYPE, MechStepPayload.STREAM_CODEC, ModNetwork::onMechStep);
         registrar.playToClient(StaminaCostPayload.TYPE, StaminaCostPayload.STREAM_CODEC, ModNetwork::onStaminaCost);
         registrar.playToServer(ConstructPickPayload.TYPE, ConstructPickPayload.STREAM_CODEC,
                 ModNetwork::onConstructPick);
@@ -201,6 +203,14 @@ public final class ModNetwork {
         context.enqueueWork(() -> {
             if (context.player() instanceof ServerPlayer serverPlayer) {
                 MechAssembly.drive(serverPlayer, payload.base(), payload.yaw(), payload.climb());
+            }
+        });
+    }
+
+    private static void onMechStep(MechStepPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> {
+            if (context.player() instanceof ServerPlayer serverPlayer) {
+                MechAssembly.stepped(serverPlayer, payload.sole());
             }
         });
     }

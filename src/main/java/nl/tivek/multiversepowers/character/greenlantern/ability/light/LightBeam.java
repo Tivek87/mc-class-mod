@@ -32,7 +32,6 @@ import nl.tivek.multiversepowers.character.greenlantern.ability.ring.Recharge;
 import nl.tivek.multiversepowers.character.greenlantern.construct.ConstructPayload;
 import nl.tivek.multiversepowers.engine.effect.Effect;
 import nl.tivek.multiversepowers.engine.effect.Effects;
-import nl.tivek.multiversepowers.engine.entity.DeathStyles;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 import nl.tivek.multiversepowers.engine.math.Vectors;
 import nl.tivek.multiversepowers.engine.world.LoadedWorld;
@@ -362,7 +361,6 @@ public final class LightBeam implements Effect {
                 }
                 // Vanilla invulnerability after a hit would otherwise swallow the beam's next, rapid tick.
                 target.invulnerableTime = 0;
-                DeathStyles.mark(target, DeathStyles.Style.ASH);
                 target.hurt(level.damageSources().playerAttack(this.owner), this.damage);
                 double resist = Mth.clamp(target.getAttributeValue(Attributes.KNOCKBACK_RESISTANCE), 0.0, 1.0);
                 Vec3 shove = new Vec3(this.facing.x, 0.0, this.facing.z).scale(this.push * (1.0 - resist));

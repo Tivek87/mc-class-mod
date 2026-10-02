@@ -25,10 +25,26 @@ public enum AbilitySlot {
     ABILITY_17,
     ABILITY_18,
     ABILITY_19,
-    ABILITY_20;
+    ABILITY_20,
+    ABILITY_21,
+    ABILITY_22,
+    ABILITY_23,
+    ABILITY_24,
+    ABILITY_25,
+    ABILITY_26,
+    ABILITY_27,
+    ABILITY_28,
+    ABILITY_29,
+    ABILITY_30,
+    ABILITY_31,
+    ABILITY_32;
 
     public int number() {
         return this.ordinal() + 1;
+    }
+
+    public boolean keyed() {
+        return this.ordinal() < ABILITY_13.ordinal();
     }
 
     public String getId() {

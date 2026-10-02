@@ -12,7 +12,7 @@ import net.neoforged.neoforge.server.ServerLifecycleHooks;
 import nl.tivek.multiversepowers.config.ModConfigs;
 
 public final class CharacterConfig {
-    private static final int DEFAULTS_VERSION = 25;
+    private static final int DEFAULTS_VERSION = 26;
 
     private static final Map<GameCharacter, ModConfigSpec> SPECS = new EnumMap<>(GameCharacter.class);
     private static final Map<GameCharacter, ModConfigSpec.IntValue> VERSIONS = new EnumMap<>(GameCharacter.class);
@@ -59,8 +59,9 @@ public final class CharacterConfig {
             if (ability.isPlaceholder()) {
                 continue;
             }
-            builder.comment("Ability " + ability.slot().number()
-                    + ": the key \"Ability " + ability.slot().number() + "\" in Options > Controls")
+            builder.comment("Ability " + ability.slot().number() + (ability.onGesture()
+                    ? ": on the mouse, space or shift, in Options > Controls under \"Multiverse Powers: Mouse & Space\""
+                    : ": the key \"Ability " + ability.slot().number() + "\" in Options > Controls"))
                     .push(ability.id());
             if (ability.usesCooldown()) {
                 COOLDOWNS.put(ability.path(), builder.comment("Cooldown in ticks (20 = 1 second)")

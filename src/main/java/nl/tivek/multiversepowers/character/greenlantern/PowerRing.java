@@ -78,13 +78,17 @@ public final class PowerRing {
             }
             return false;
         }
-        boolean mech = ability.id().equals("air_strike") && (data & Characters.HOLD) != 0;
+        boolean mech = ability.id().equals("mech");
         if (on && ability.id().equals("light_bolt") && MechAssembly.piloting(player)) {
             // In the mech, the attack button strikes with its fists and feet; holding it does nothing more.
             return (data & Characters.HOLD) == 0 && MechAssembly.strike(player);
         }
         if (on && !mech && MechAssembly.piloting(player)) {
-            tell(player, "mech_busy");
+            tell(player, "mech_busy", Component.keybind("key." + MultiversePowers.MODID + ".input.scroll_hold"));
+            return false;
+        }
+        // A construct weapon in hand shuts every other key until it is put away (the client says so first).
+        if (on && ability.input() == CharacterAbility.Input.KEY && armed(player)) {
             return false;
         }
         return switch (ability.id()) {
@@ -102,7 +106,8 @@ public final class PowerRing {
             case "ring_scan" -> RingScan.use(player, level, ability);
             case "giant_hands" -> (data & Characters.HOLD) != 0 ? RevolverAssembly.use(player, level, ability)
                     : GiantHands.use(player, level, ability);
-            case "air_strike" -> mech ? MechAssembly.use(player, level, ability) : AirStrike.use(player, level, ability);
+            case "air_strike" -> AirStrike.use(player, level, ability);
+            case "mech" -> on && MechAssembly.use(player, level, ability);
             case "light_bubble" -> LightBubble.use(player, level, ability, data);
             case "beam_lock" -> on && LightBeam.lock(player);
             case "flight" -> on && ((data & Characters.SLAM) != 0 ? Flight.slam(player, level, ability)
@@ -133,6 +138,11 @@ public final class PowerRing {
         SwordShield.clear();
         Flamethrower.clear();
         EnergyWhip.clear();
+    }
+
+    // A construct weapon from the wheel in hand.
+    public static boolean armed(ServerPlayer player) {
+        return SwordShield.equipped(player) || Flamethrower.equipped(player) || EnergyWhip.equipped(player);
     }
 
     public static boolean fuels(ServerPlayer player, ServerLevel level) {

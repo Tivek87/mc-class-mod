@@ -114,8 +114,9 @@ public final class Factions {
     @SubscribeEvent
     public static void onDamaged(LivingDamageEvent.Post event) {
         LivingEntity victim = event.getEntity();
+        // A creature killed by the blow turns on no one (a player comes back, and keeps the grudge).
         if (!(event.getSource().getEntity() instanceof ServerPlayer attacker) || attacker == victim
-                || event.getNewDamage() <= 0.0F) {
+                || event.getNewDamage() <= 0.0F || !(victim instanceof Player) && victim.isDeadOrDying()) {
             return;
         }
         long now = now(attacker.server);

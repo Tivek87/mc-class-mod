@@ -75,52 +75,58 @@ public enum GameCharacter {
             // hammer up or puts it away, holding it charges him (or the hammer). A double space jumps high, holding
             // space flies. In flight left click throws one-handed blows, holding it is a shockwave, right click blinks,
             // holding it dives, the scroll wheel's click calls down a bolt and holding shift is lightning speed.
+            // His twelve keys are kept free for abilities to come; his moves sit in the slots past them.
+            for (AbilitySlot slot : AbilitySlot.values()) {
+                if (slot.keyed()) {
+                    this.add(abilities, slot, "key_" + slot.getId()).spare();
+                }
+            }
             CharacterAbility.When ground = CharacterAbility.When.GROUND;
             CharacterAbility.When flying = CharacterAbility.When.FLYING;
-            this.add(abilities, AbilitySlot.ABILITY_1, "combo").input(CharacterAbility.Input.LEFT).damage(4.0);
-            this.add(abilities, AbilitySlot.ABILITY_2, "thunderclap").input(CharacterAbility.Input.LEFT)
-                    .holdOnly(ThorPowers.CLAP_HOLD).when(ground).needs(ThorPowers.UNARMED, "unarmed")
+            this.add(abilities, AbilitySlot.ABILITY_13, "combo").input(CharacterAbility.Input.LEFT).damage(4.0);
+            this.add(abilities, AbilitySlot.ABILITY_14, "thunderclap").input(CharacterAbility.Input.LEFT)
+                    .holdOnly(ThorPowers.CLAP_HOLD).when(ground).needs(ThorPowers.UNARMED)
                     .cooldown(200).damage(5.0);
-            this.add(abilities, AbilitySlot.ABILITY_3, "hammer_uppercut").input(CharacterAbility.Input.LEFT)
-                    .holdOnly(ThorPowers.CLAP_HOLD).when(ground).needs(ThorPowers.ARMED, "armed")
+            this.add(abilities, AbilitySlot.ABILITY_15, "hammer_uppercut").input(CharacterAbility.Input.LEFT)
+                    .holdOnly(ThorPowers.CLAP_HOLD).when(ground).needs(ThorPowers.ARMED)
                     .cooldown(120).damage(8.0);
-            this.add(abilities, AbilitySlot.ABILITY_4, "dash").input(CharacterAbility.Input.RIGHT)
-                    .when(ground).needs(ThorPowers.UNARMED, "unarmed").cooldown(16)
+            this.add(abilities, AbilitySlot.ABILITY_16, "dash").input(CharacterAbility.Input.RIGHT)
+                    .when(ground).needs(ThorPowers.UNARMED).cooldown(16)
                     .setting("shortestBlocks", 4.0, 1.0, 16.0, Unit.BLOCKS, "The shortest a dash goes, in blocks")
                     .setting("longestBlocks", 8.0, 1.0, 24.0, Unit.BLOCKS, "The longest a dash goes, in blocks");
-            this.add(abilities, AbilitySlot.ABILITY_5, "grab").input(CharacterAbility.Input.RIGHT)
+            this.add(abilities, AbilitySlot.ABILITY_17, "grab").input(CharacterAbility.Input.RIGHT)
                     .holdOnly(ThorPowers.GRAB_HOLD).when(ground)
-                    .needs(ThorPowers.UNARMED | ThorPowers.WALKING, "walking").cooldown(100).damage(6.0);
-            this.add(abilities, AbilitySlot.ABILITY_6, "grab_dash").input(CharacterAbility.Input.RIGHT)
+                    .needs(ThorPowers.UNARMED | ThorPowers.WALKING).cooldown(100).damage(6.0);
+            this.add(abilities, AbilitySlot.ABILITY_18, "grab_dash").input(CharacterAbility.Input.RIGHT)
                     .holdOnly(ThorPowers.GRAB_DASH_HOLD).when(ground)
-                    .needs(ThorPowers.UNARMED | ThorPowers.SPRINTING, "sprinting").cooldown(140).damage(6.0);
-            this.add(abilities, AbilitySlot.ABILITY_7, "hammer_throw").input(CharacterAbility.Input.RIGHT)
-                    .when(ground).needs(ThorPowers.ARMED, "armed").cooldown(30).damage(7.0);
-            this.add(abilities, AbilitySlot.ABILITY_8, "hammer_leap").input(CharacterAbility.Input.RIGHT)
-                    .holdOnly(ThorPowers.LEAP_HOLD).when(ground).needs(ThorPowers.ARMED, "armed").cooldown(100)
+                    .needs(ThorPowers.UNARMED | ThorPowers.SPRINTING).cooldown(140).damage(6.0);
+            this.add(abilities, AbilitySlot.ABILITY_19, "hammer_throw").input(CharacterAbility.Input.RIGHT)
+                    .when(ground).needs(ThorPowers.ARMED).cooldown(30).damage(7.0);
+            this.add(abilities, AbilitySlot.ABILITY_20, "hammer_leap").input(CharacterAbility.Input.RIGHT)
+                    .holdOnly(ThorPowers.LEAP_HOLD).when(ground).needs(ThorPowers.ARMED).cooldown(100)
                     .damage(4.0);
-            this.add(abilities, AbilitySlot.ABILITY_9, "mjolnir").input(CharacterAbility.Input.SCROLL).when(ground)
+            this.add(abilities, AbilitySlot.ABILITY_21, "mjolnir").input(CharacterAbility.Input.SCROLL).when(ground)
                     .cooldown(10);
-            this.add(abilities, AbilitySlot.ABILITY_10, "charged").input(CharacterAbility.Input.SCROLL)
+            this.add(abilities, AbilitySlot.ABILITY_22, "charged").input(CharacterAbility.Input.SCROLL)
                     .holdOnly(ThorPowers.CHARGE_HOLD).when(ground).cooldown(900)
                     .setting("seconds", 20.0, 1.0, 120.0, Unit.SECONDS, "How long a charge lasts, in seconds");
-            this.add(abilities, AbilitySlot.ABILITY_11, "super_jump").input(CharacterAbility.Input.SPACE).doubleTap()
+            this.add(abilities, AbilitySlot.ABILITY_23, "super_jump").input(CharacterAbility.Input.SPACE).doubleTap()
                     .when(ground).cooldown(50)
                     .setting("heightBlocks", 10.0, 2.0, 40.0, Unit.BLOCKS, "How high a super jump goes, in blocks")
                     .setting("floatSeconds", 2.5, 0.0, 10.0, Unit.SECONDS,
                             "How long he hangs in the air at the top of a super jump, in seconds");
-            this.add(abilities, AbilitySlot.ABILITY_12, "flight").input(CharacterAbility.Input.SPACE)
+            this.add(abilities, AbilitySlot.ABILITY_24, "flight").input(CharacterAbility.Input.SPACE)
                     .holdOnly(ThorPowers.FLIGHT_HOLD).when(ground)
                     .setting("speed", 18.0, 2.0, 80.0, Unit.BLOCKS_PER_SECOND, "How fast he flies, in blocks a second");
-            this.add(abilities, AbilitySlot.ABILITY_13, "air_shockwave").input(CharacterAbility.Input.LEFT)
+            this.add(abilities, AbilitySlot.ABILITY_25, "air_shockwave").input(CharacterAbility.Input.LEFT)
                     .holdOnly(ThorPowers.SHOCK_HOLD).when(flying).cooldown(200).damage(3.0);
-            this.add(abilities, AbilitySlot.ABILITY_14, "air_blink").input(CharacterAbility.Input.RIGHT)
+            this.add(abilities, AbilitySlot.ABILITY_26, "air_blink").input(CharacterAbility.Input.RIGHT)
                     .when(flying).cooldown(24);
-            this.add(abilities, AbilitySlot.ABILITY_15, "grab_dash_dive").input(CharacterAbility.Input.RIGHT)
+            this.add(abilities, AbilitySlot.ABILITY_27, "grab_dash_dive").input(CharacterAbility.Input.RIGHT)
                     .holdOnly(ThorPowers.DIVE_HOLD).when(flying).cooldown(160).damage(10.0);
-            this.add(abilities, AbilitySlot.ABILITY_16, "air_bolt").input(CharacterAbility.Input.SCROLL)
+            this.add(abilities, AbilitySlot.ABILITY_28, "air_bolt").input(CharacterAbility.Input.SCROLL)
                     .when(flying).cooldown(30).damage(5.0);
-            this.add(abilities, AbilitySlot.ABILITY_17, "lightning_flight").input(CharacterAbility.Input.SHIFT)
+            this.add(abilities, AbilitySlot.ABILITY_29, "lightning_flight").input(CharacterAbility.Input.SHIFT)
                     .holdOnly(ThorPowers.LIGHTNING_HOLD).when(flying).cooldown(400).cooldownWas(40).damage(3.0)
                     .setting("speed", 48.0, 10.0, 160.0, Unit.BLOCKS_PER_SECOND,
                             "How fast he flies at lightning speed, in blocks a second")

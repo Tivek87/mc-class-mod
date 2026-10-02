@@ -72,14 +72,18 @@ public final class PowerInputs {
             KeyMapping key = AbilityKeys.of(ability.slot());
             return key == null ? Component.literal("-") : key.getTranslatedKeyMessage();
         }
-        String prefix = "input." + MultiversePowers.MODID + ".";
         if (ability.tapWhen() == CharacterAbility.Tap.DOUBLE) {
-            return Component.translatable(prefix + "double", clickKey(input).getTranslatedKeyMessage());
+            return Component.translatable("input." + MultiversePowers.MODID + ".double",
+                    clickKey(input).getTranslatedKeyMessage());
         }
-        if (ability.tapWhen() == CharacterAbility.Tap.NEVER) {
-            return Component.translatable(prefix + "hold", holdKey(input).getTranslatedKeyMessage());
-        }
-        return clickKey(input).getTranslatedKeyMessage();
+        return ability.tapWhen() == CharacterAbility.Tap.NEVER ? holdLabel(input) : clickKey(input)
+                .getTranslatedKeyMessage();
+    }
+
+    // A gesture's hold on its own, beside its click.
+    public static Component holdLabel(CharacterAbility.Input input) {
+        return Component.translatable("input." + MultiversePowers.MODID + ".hold",
+                holdKey(input).getTranslatedKeyMessage());
     }
 
     public static boolean isLocked(KeyMapping key) {

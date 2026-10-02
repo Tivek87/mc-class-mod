@@ -218,7 +218,6 @@ final class LanternAbilities {
                 .was(12.0)
                 .setting("powerCost", 2.0, 0.0, 100.0, Unit.POWER, "Ring power one scan costs");
         lantern.add(abilities, AbilitySlot.ABILITY_7, "air_strike").cooldown(1800).damage(48.0).damageWas(40.0)
-                .holdVersion(40, CharacterAbility.Tap.RELEASE)
                 .setting("attackSeconds", 20.0, 2.0, 60.0, Unit.SECONDS,
                         "How long the plane drones on and fires before it plunges down, in seconds; its engine"
                                 + " bursts and its jets race off in the last 1.8 seconds of it")
@@ -270,38 +269,7 @@ final class LanternAbilities {
                                 + " 5); -1 leaves the ground alone. Blocks that hold something, like chests, stay")
                 .settingInt("debrisBlocks", 40, 0, 400, Unit.BLOCK_COUNT,
                         "How many of the crater's blocks are hurled up and away, to come down all round it")
-                .was(90.0, 158.0)
-                .group("mech", "Hard-Light Mech Assembly (hold the button 2 seconds)")
-                .setting("mechPowerCost", 25.0, 0.0, 100.0, Unit.POWER,
-                        "Ring power building the mech costs")
-                .settingInt("mechCooldown", 1800, 0, 72000, Unit.TICKS,
-                        "Ticks before the mech can be built again (20 ticks = 1 second); it has a cooldown of its"
-                                + " own, apart from the air strike of a tap")
-                .setting("mechReach", 12.0, 2.0, 32.0, Unit.BLOCKS,
-                        "How far in front of you the mech looks for the creature out to hurt you that it builds"
-                                + " itself over, in blocks")
-                .setting("mechStompDamage", 8.0, 0.0, 2000.0, Unit.HALF_HEARTS,
-                        "Damage of the giant foot stomping that creature, in half hearts; what else stands round the"
-                                + " foot takes up to half")
-                .setting("mechClapDamage", 6.0, 0.0, 2000.0, Unit.HALF_HEARTS,
-                        "Damage of the hands' clap to that creature, in half hearts; what else stands round it takes"
-                                + " up to half")
-                .setting("mechHeadDamage", 10.0, 0.0, 2000.0, Unit.HALF_HEARTS,
-                        "Damage of the head crashing down on that creature like a meteor, in half hearts; what else"
-                                + " stands round it takes up to half")
-                .group("mechBlows", "Mech blows (left click in a built mech)")
-                .setting("mechSweepDamage", 8.0, 0.0, 2000.0, Unit.HALF_HEARTS,
-                        "Damage of the backhand sweep to everything the hand strikes, in half hearts")
-                .setting("mechStompBlowDamage", 10.0, 0.0, 2000.0, Unit.HALF_HEARTS,
-                        "Damage of the stomp right by the foot, in half hearts; at the edge of the blast half")
-                .setting("mechSlamDamage", 14.0, 0.0, 2000.0, Unit.HALF_HEARTS,
-                        "Damage of both fists slamming the ground right where they hit, in half hearts; at the edge"
-                                + " of the blast half")
-                .setting("mechSmashDamage", 6.0, 0.0, 2000.0, Unit.HALF_HEARTS,
-                        "Damage each time the mech smashes the creature it picked up into the ground, in half"
-                                + " hearts; what stands round it takes up to half")
-                .setting("mechThrowDamage", 4.0, 0.0, 2000.0, Unit.HALF_HEARTS,
-                        "Damage as the mech flings that creature away, if it lived through both smashes");
+                .was(90.0, 158.0);
         lantern.add(abilities, AbilitySlot.ABILITY_8, "shockwave").cooldown(100).damage(12.0)
                 .setting("radiusBlocks", 5.0, 1.0, 16.0, Unit.BLOCKS, "How far the shockwave reaches, in blocks")
                 .setting("knockback", 1.2, 0.0, 5.0, Unit.STRENGTH,
@@ -324,10 +292,10 @@ final class LanternAbilities {
                         "Seconds a full ring keeps you in the air: flying costs 100 divided by this a second,"
                                 + " and what you shoot or hold up while flying comes on top")
                 .was(15.0, 37.5)
-                .setting("topSpeed", 16.0, 1.0, 150.0, Unit.BLOCKS_PER_SECOND,
+                .setting("topSpeed", 20.0, 1.0, 150.0, Unit.BLOCKS_PER_SECOND,
                         "Top speed in blocks per second (an elytra with firework rockets does about 33); hovering"
                                 + " and climbing without flying forward go at a part of it")
-                .was(50.0, 35.0, 19.25, 9.625, 6.25625, 18.0, 9.0, 4.5, 1.8)
+                .was(16.0, 50.0, 35.0, 19.25, 9.625, 6.25625, 18.0, 9.0, 4.5, 1.8)
                 .setting("startSpeed", 10.7, 1.0, 150.0, Unit.BLOCKS_PER_SECOND,
                         "Speed you set off at, in blocks per second: the longer you fly on, the faster you go, up"
                                 + " to the top speed")
@@ -467,6 +435,41 @@ final class LanternAbilities {
                 .was(3.5)
                 .setting("powerCost", 4.0, 0.0, 100.0, Unit.POWER, "Ring power catching a creature costs");
         lantern.add(abilities, AbilitySlot.ABILITY_12, "beam_lock").cooldown(4).input(CharacterAbility.Input.SCROLL);
+        lantern.add(abilities, AbilitySlot.ABILITY_13, "mech").input(CharacterAbility.Input.SCROLL).holdOnly(40)
+                .group("mech", "Hard-Light Mech Assembly (hold the scroll wheel 2 seconds)")
+                .setting("mechPowerCost", 25.0, 0.0, 100.0, Unit.POWER,
+                        "Ring power building the mech costs")
+                .settingInt("mechCooldown", 1800, 0, 72000, Unit.TICKS,
+                        "Ticks before the mech can be built again (20 ticks = 1 second)")
+                .setting("mechReach", 12.0, 2.0, 32.0, Unit.BLOCKS,
+                        "How far in front of you the mech looks for the creature out to hurt you that it builds"
+                                + " itself over, in blocks")
+                .setting("mechStompDamage", 8.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                        "Damage of the giant foot stomping that creature, in half hearts; what else stands round the"
+                                + " foot takes up to half")
+                .setting("mechClapDamage", 6.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                        "Damage of the hands' clap to that creature, in half hearts; what else stands round it takes"
+                                + " up to half")
+                .setting("mechHeadDamage", 10.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                        "Damage of the head crashing down on that creature like a meteor, in half hearts; what else"
+                                + " stands round it takes up to half")
+                .group("mechBlows", "Mech blows (left click in a built mech)")
+                .setting("mechSweepDamage", 8.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                        "Damage of the backhand sweep to everything the hand strikes, in half hearts")
+                .setting("mechStompBlowDamage", 10.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                        "Damage of the stomp right by the foot, in half hearts; at the edge of the blast half")
+                .setting("mechSlamDamage", 14.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                        "Damage of both fists slamming the ground right where they hit, in half hearts; at the edge"
+                                + " of the blast half")
+                .setting("mechSmashDamage", 6.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                        "Damage each time the mech smashes the creature it picked up into the ground, in half"
+                                + " hearts; what stands round it takes up to half")
+                .setting("mechThrowDamage", 4.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                        "Damage as the mech flings that creature away, if it lived through both smashes")
+                .group("mechWalk", "Walking the mech")
+                .setting("mechCrushHealth", 10.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                        "A creature no bigger than a block with at most this much health (a chicken has 4, a pig 10)"
+                                + " is crushed flat when a foot of the mech comes down on it (0 = none)");
     }
 
     // Every hand is as likely as every other; oldChance is the chance it had before, for config files that kept it.

@@ -18,16 +18,14 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.neoforged.neoforge.network.PacketDistributor;
 import nl.tivek.multiversepowers.character.CharacterAbility;
+import nl.tivek.multiversepowers.character.Characters;
 import nl.tivek.multiversepowers.character.greenlantern.PowerRing;
 import nl.tivek.multiversepowers.character.greenlantern.ability.airstrike.AirStrike;
-import nl.tivek.multiversepowers.character.greenlantern.ability.flame.Flamethrower;
 import nl.tivek.multiversepowers.character.greenlantern.ability.flight.Flight;
 import nl.tivek.multiversepowers.character.greenlantern.ability.hands.GiantHands;
 import nl.tivek.multiversepowers.character.greenlantern.ability.light.LightBubble;
 import nl.tivek.multiversepowers.character.greenlantern.ability.light.LightShield;
 import nl.tivek.multiversepowers.character.greenlantern.ability.ring.Recharge;
-import nl.tivek.multiversepowers.character.greenlantern.ability.sword.SwordShield;
-import nl.tivek.multiversepowers.character.greenlantern.ability.whip.EnergyWhip;
 import nl.tivek.multiversepowers.character.greenlantern.construct.ConstructPayload;
 import nl.tivek.multiversepowers.character.greenlantern.mech.MechAttacks;
 import nl.tivek.multiversepowers.character.greenlantern.mech.MechScript;
@@ -54,6 +52,10 @@ public final class MechAssembly implements Effect {
     private static final double HELD = 0.09;
     private static final double LOOSE = 1.0;
     private static final double WALKING = 9.0;
+    // How far from where the mech stands a foot it says came down may be, and how many feet a tick.
+    private static final double FOOT_REACH = 6.0;
+    private static final double FOOT_RISE = 8.0;
+    private static final int FEET = 2;
 
     private static final Map<UUID, MechAssembly> ACTIVE = new HashMap<>();
     private static final Cooldowns<String> COOLDOWNS = new Cooldowns<>(1);
@@ -67,6 +69,8 @@ public final class MechAssembly implements Effect {
     private int t;
     private int drivenAt = -1;
     private int climb;
+    private int steppedAt = -1;
+    private int steps;
     private int breaking = -1;
     @Nullable
     private MechAttack attack;
@@ -93,7 +97,7 @@ public final class MechAssembly implements Effect {
         if (AirStrike.calling(owner) || GiantHands.waving(owner)) {
             return false;
         }
-        if (SwordShield.equipped(owner) || Flamethrower.equipped(owner) || EnergyWhip.equipped(owner)) {
+        if (PowerRing.armed(owner)) {
             PowerRing.tell(owner, "mech_hands");
             return false;
         }
@@ -197,8 +201,39 @@ public final class MechAssembly implements Effect {
         mech.climb = mech.attack == null ? climb : 0;
     }
 
+    // The pilot's own game says where a foot of their mech came down (MechStepPayload): what is small and weak enough
+    // under it is crushed.
+    public static void stepped(ServerPlayer player, Vec3 sole) {
+        MechAssembly mech = ACTIVE.get(player.getUUID());
+        if (mech == null || mech.breaking >= 0 || mech.t < MechScript.SETTLED || !Double.isFinite(sole.x)
+                || !Double.isFinite(sole.y) || !Double.isFinite(sole.z)) {
+            return;
+        }
+        Vec3 base = mech.stage.base();
+        double dx = sole.x - base.x;
+        double dz = sole.z - base.z;
+        if (dx * dx + dz * dz > FOOT_REACH * FOOT_REACH || Math.abs(sole.y - base.y) > FOOT_RISE
+                || !player.serverLevel().isLoaded(BlockPos.containing(sole))) {
+            return;
+        }
+        if (mech.steppedAt != mech.t) {
+            mech.steppedAt = mech.t;
+            mech.steps = 0;
+        }
+        if (++mech.steps > FEET) {
+            return;
+        }
+        MechCrush.under(player.serverLevel(), player, mech.ability, sole, mech.stage.ahead(),
+                mech.attack == null ? null : mech.attack.creature());
+    }
+
     public static boolean piloting(ServerPlayer player) {
         return ACTIVE.containsKey(player.getUUID());
+    }
+
+    // None while a mech stands: holding the scroll wheel then takes its pilot out.
+    public static int waitLeft(ServerPlayer player) {
+        return piloting(player) ? 0 : COOLDOWNS.left(player, KEY, 0);
     }
 
     // A left click in a built mech strikes one blow; clicks while it lasts do nothing.
@@ -327,5 +362,6 @@ public final class MechAssembly implements Effect {
         this.stopAttack();
         ConstructPayload.sendRemove(level, this.id, this.stage.base());
         this.owner.resetFallDistance();
+        Characters.sync(this.owner);
     }
 }

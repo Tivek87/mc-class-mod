@@ -64,11 +64,11 @@ public final class CharacterAbility {
     private boolean held;
     private boolean clientOnly;
     private boolean placeholder;
+    private boolean spare;
     private Crouch crouch = Crouch.SAME;
     private Input input = Input.KEY;
     private When when = When.ALWAYS;
     private int needs;
-    private String needsName = "";
     private int holdTicks;
     private Tap tap = Tap.PRESS;
 
@@ -119,6 +119,17 @@ public final class CharacterAbility {
         return this.placeholder;
     }
 
+    // A key kept free for an ability to come: a placeholder the panel lists by its slot's name, doing nothing yet.
+    CharacterAbility spare() {
+        this.placeholder = true;
+        this.spare = true;
+        return this;
+    }
+
+    public boolean isSpare() {
+        return this.spare;
+    }
+
     public CharacterAbility crouch(Crouch crouch) {
         this.crouch = crouch;
         return this;
@@ -146,19 +157,14 @@ public final class CharacterAbility {
     }
 
     // A gesture that only works in some state of the character's own (Thor with his hammer in hand): the bits its game
-    // must report as set (ClientCharacter.state), and the name the panel shows while they are not.
-    public CharacterAbility needs(int bits, String name) {
+    // must report as set (ClientCharacter.state).
+    public CharacterAbility needs(int bits) {
         this.needs = bits;
-        this.needsName = name;
         return this;
     }
 
     public int needs() {
         return this.needs;
-    }
-
-    public String needsName() {
-        return this.needsName;
     }
 
     public CharacterAbility holdVersion(int ticks, Tap tap) {
@@ -296,6 +302,9 @@ public final class CharacterAbility {
     }
 
     public Component getDisplayName() {
+        if (this.spare) {
+            return this.slot.getDisplayName();
+        }
         if (this.placeholder) {
             return Component.translatable("ability." + MultiversePowers.MODID + ".placeholder");
         }

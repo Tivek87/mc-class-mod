@@ -4,6 +4,7 @@ import net.minecraft.server.level.ServerPlayer;
 import nl.tivek.multiversepowers.character.CharacterAbility;
 import nl.tivek.multiversepowers.character.CharacterPowers;
 import nl.tivek.multiversepowers.character.greenlantern.ability.airstrike.AirStrike;
+import nl.tivek.multiversepowers.character.greenlantern.ability.mech.MechAssembly;
 
 public final class GreenLanternPowers implements CharacterPowers {
     @Override
@@ -24,6 +25,11 @@ public final class GreenLanternPowers implements CharacterPowers {
     @Override
     public int ultimateLeft(ServerPlayer player) {
         return AirStrike.left(player);
+    }
+
+    @Override
+    public int waitLeft(ServerPlayer player, CharacterAbility ability) {
+        return ability.id().equals("mech") ? MechAssembly.waitLeft(player) : 0;
     }
 
     @Override

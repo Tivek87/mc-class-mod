@@ -105,7 +105,7 @@ abstract class FlightSteering {
     }
 
     public static double fullSpeed() {
-        return flightSetting("topSpeed", 16.0) / 20.0;
+        return flightSetting("topSpeed", 20.0) / 20.0;
     }
 
     private static double flightSetting(String key, double fallback) {

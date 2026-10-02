@@ -41,7 +41,7 @@ public final class AbilityKeys {
 
     public AbilityKeys(IEventBus modEventBus) {
         modEventBus.addListener(AbilityKeys::onRegisterKeys);
-        modEventBus.addListener(ClientCharacter::onRegisterLayers);
+        modEventBus.addListener(AbilityPanel::onRegisterLayers);
     }
 
     // Null for a slot without a key of its own (past the twelfth).

@@ -92,7 +92,8 @@ title as it is on GitHub now; sending a fourth drops the oldest.
   kind of ability. Default: R, V, Z, B, H, N, Y, X, C, Left Alt and K. Keys a character has nothing on yet
   say so when you press them. The one exception to "no key is a kind": Y is always the character's
   ultimate, its biggest power with a long cooldown; while it goes, the panel's title turns red and counts down.
-- A panel in the bottom right shows who you are and what each key does right now, with its cooldown.
+- A panel in the bottom right shows who you are and only what you can use right now, each with its key and
+  cooldown; the mouse buttons' moves only when at most two other powers are listed beside them.
 - Every character's numbers can be changed in the game: Mods > Multiverse Powers > Config, first *Client* or
   *Server* (the host or a listed owner only), then a tab per character, a part per ability that folds open and shut,
   and a search box that looks through everything.

@@ -3,6 +3,40 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.6.3-alpha] - 2026-10-02
+
+### Added
+- **Hard-Light Mech:** crushes small, weak creatures flat under its feet (a chicken, a rabbit, a pig); how much
+  health it still crushes is a setting.
+- **Green Lantern:** a construct weapon in your hands shuts your other keys until you put it away with V.
+- **Thor:** keys 1 to 12 show on the panel as free slots for powers to come.
+
+### Changed
+- **Ability panel:** lists only what you can use right now.
+- **Ability panel:** mouse moves only show beside at most two other powers, the click and the hold each on a line.
+- **Ability panel:** with a weapon in hand it lists the weapon's four moves by name, and V.
+- **Ability panel:** in the mech it lists only the hold that takes you out; the mech's own cooldown shows on its line.
+- **Ability panel:** grows wider to fit its longest line.
+- **Hard-Light Mech:** built and left by holding the scroll wheel 2 seconds instead of holding Y.
+- **Hard-Light Mech:** its settings moved from Air Strike to a part of their own; values changed there before are
+  back to their defaults.
+- **Air Strike:** goes off as you press Y.
+- **Giant Hands:** come where their move passes through blocks if there is no clear spot, and turn through walls.
+- **Thunderclap:** the time bubble is thinner, fainter and gone after 0.4 seconds instead of 0.6.
+- **Green Lantern:** top flight speed 20 blocks a second, up from 16.
+- **Thor:** his moves sit only on the mouse, space, shift and scroll wheel; they work as before.
+
+### Removed
+- **Light Beam:** no longer burns what it kills to ash.
+- **Giant Hands:** no longer held back from the blocks round them.
+- **Ability panel:** the greyed-out lines for powers you could not use at that moment.
+
+### Fixed
+- **Hard-Light Mech:** the ring round the crosshair for its hold now flashes and fades once full, instead of staying
+  on.
+- **Factions:** killing a neutral creature with one blow no longer says it turned hostile to you.
+- **Ability panel:** a long last line (Thor's passive) no longer runs past the edge of the screen.
+
 ## [0.6.2-alpha] - 2026-10-02
 
 ### Added

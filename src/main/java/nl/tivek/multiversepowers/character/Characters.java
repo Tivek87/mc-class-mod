@@ -159,10 +159,12 @@ public final class Characters {
             PacketDistributor.sendToPlayer(player, new CharacterStatePayload(-1, cooldowns, 0, 0, 0));
             return;
         }
-        for (AbilitySlot slot : AbilitySlot.values()) {
-            cooldowns[slot.ordinal()] = COOLDOWNS.left(player, character, slot.ordinal());
-        }
         CharacterPowers powers = character.powers();
+        for (AbilitySlot slot : AbilitySlot.values()) {
+            CharacterAbility ability = character.ability(slot);
+            cooldowns[slot.ordinal()] = Math.max(COOLDOWNS.left(player, character, slot.ordinal()),
+                    ability == null ? 0 : powers.waitLeft(player, ability));
+        }
         PacketDistributor.sendToPlayer(player, new CharacterStatePayload(character.ordinal(), cooldowns,
                 powers.ultimateLeft(player), powers.stance(player), powers.marks(player)));
     }

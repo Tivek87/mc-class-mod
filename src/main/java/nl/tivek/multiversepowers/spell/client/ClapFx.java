@@ -26,8 +26,10 @@ final class ClapFx {
     static final double REACH = 9.0;
     static final double HALF_ANGLE = 0.8;
     private static final int FLASH = 8;
-    private static final int BUBBLE = 12;
+    private static final int BUBBLE = 8;
     private static final double BUBBLE_SIZE = 4.0;
+    // How strongly the bubble bends and tints what is behind it: a thin, light glass.
+    private static final double BUBBLE_GLASS = 0.6;
     // How fast time runs for the sparks while the bubble holds them.
     private static final double SLOWED = 0.35;
     private static final int STREAKS = 190;
@@ -135,7 +137,7 @@ final class ClapFx {
         }
         double u = age / BUBBLE;
         double radius = 0.5 + (BUBBLE_SIZE - 0.5) * (1.0 - (1.0 - u) * (1.0 - u) * (1.0 - u));
-        double on = Ease.smooth(age / 1.0) * (1.0 - Ease.smooth((u - 0.45) / 0.55));
+        double on = Ease.smooth(age / 1.0) * (1.0 - Ease.smooth((u - 0.35) / 0.65)) * BUBBLE_GLASS;
         Vec3 center = hands.add(ahead.scale(radius * 0.8));
         if (Lens.available()) {
             Lens.bubble(center, radius, on, PALE, 0.0);
