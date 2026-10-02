@@ -17,9 +17,7 @@ import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
-import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
-import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
@@ -42,7 +40,7 @@ import nl.tivek.multiversepowers.engine.client.model.BentParts;
 import nl.tivek.multiversepowers.engine.client.model.ModelParts;
 import nl.tivek.multiversepowers.engine.client.render.entity.EntityPass;
 import nl.tivek.multiversepowers.engine.client.world.LevelBlocks;
-import nl.tivek.multiversepowers.engine.math.Ease;
+import nl.tivek.multiversepowers.engine.entity.impact.ImpactPayload;
 import org.joml.Matrix4f;
 
 // Every limp creature in the player's own game: what makes one go limp (it dies, a power holds it, a blow throws it),
@@ -54,17 +52,8 @@ public final class Ragdolls {
     private static final TagKey<EntityType<?>> STIFF = tag("ragdoll_stiff");
     private static final int SUBSTEPS = 20;
     static final int FAR_SUBSTEPS = 10;
-    // A creature knocked limp along the ground goes down after this many ticks; the longest it may fly limp.
-    private static final int SHRUG = 3;
-    private static final int LONGEST_FLIGHT = 200;
-    // Flying along the ground faster than this (blocks a tick), the way it flies is kept: against a wall it slumps.
-    private static final double THROWN_WAY = 0.05;
-    private static final double GO_LIMP = 0.25;
     // A limp creature is let go a little further off than where it may go limp, so it does not flicker at the edge.
     private static final double LET_GO = 1.2;
-    // Getting up, its head turns to its own look from this far on.
-    private static final float TURN_FROM = 0.65F;
-    private static final float[] YAWS = new float[4];
 
     private static final Int2ObjectOpenHashMap<Ragdoll> LIVE = new Int2ObjectOpenHashMap<>();
     private static final IntOpenHashSet HELD = new IntOpenHashSet();
@@ -74,6 +63,7 @@ public final class Ragdolls {
     private static final List<Predicate<Entity>> CLAIMS = new ArrayList<>();
     private static final Restore RESTORE = new Restore();
     private static final LevelBlocks BLOCKS = new LevelBlocks();
+    private static final RagdollSteps STEPS = new RagdollSteps();
     private static final RandomSource RANDOM = RandomSource.create();
     @Nullable
     private static ClientLevel lastLevel;
@@ -81,9 +71,6 @@ public final class Ragdolls {
     @Nullable
     private static Ragdoll drawing;
     private static int deathTime = -1;
-    // The creature drawn now turned the way it rises, its own yaws kept in YAWS.
-    @Nullable
-    private static LivingEntity turned;
 
     private Ragdolls() {
     }
@@ -229,6 +216,10 @@ public final class Ragdolls {
         if (blasted && entity.level() instanceof ClientLevel level) {
             RagdollCauses.throwByBlasts(doll, level, RANDOM);
         }
+        RagdollCauses.Hit hit = state == Ragdoll.State.FLYING ? RagdollCauses.hit(entity.getId()) : null;
+        if (hit != null) {
+            RagdollFalls.hit(doll, hit.at(), hit.way(), hit.strength(), hit.reaction());
+        }
         // Limp, it no longer faces any way of its own.
         Facings.forget(entity.getId());
         if (state == Ragdoll.State.DEAD) {
@@ -242,20 +233,48 @@ public final class Ragdolls {
         return doll;
     }
 
-    // The server tells how the blow that killed a creature struck it: from where (null: from nowhere in particular)
-    // and how hard it pushed (blocks a tick). A body gone limp just now is pushed by it at once; one not yet gone limp
-    // is when it does.
-    public static void struck(int entity, @Nullable Vec3 from, Vec3 push) {
+    // The server tells how the blow that killed a creature struck it: from where (null: from nowhere in particular),
+    // how hard it pushed (blocks a tick) and where on the body it landed (null: not known). A body gone limp just now
+    // is pushed by it at once; one not yet gone limp is when it does.
+    public static void struck(int entity, @Nullable Vec3 from, Vec3 push, @Nullable Vec3 at) {
         if (!ClientSettings.ragdolls()) {
             return;
         }
-        RagdollCauses.Blow blow = new RagdollCauses.Blow(from, push, ticks);
+        RagdollCauses.Blow blow = new RagdollCauses.Blow(from, push, at, ticks);
         Ragdoll doll = LIVE.get(entity);
         if (doll != null && doll.state == Ragdoll.State.DEAD && ticks - doll.dead <= RagdollCauses.BLOW_TICKS) {
             RagdollFalls.strike(doll, blow);
             return;
         }
         RagdollCauses.told(entity, blow);
+    }
+
+    // The server tells how a creature took a blow it lived through (Staggers): a body limp already takes it where it
+    // landed, and one about to go limp (tripped, knocked off its feet) as it does.
+    public static void impact(int entity, Vec3 at, Vec3 way, float strength, ImpactPayload.Reaction reaction) {
+        if (!ClientSettings.ragdolls() || reaction == ImpactPayload.Reaction.FLINCH
+                || reaction == ImpactPayload.Reaction.STAGGER) {
+            return;
+        }
+        Ragdoll doll = LIVE.get(entity);
+        if (doll != null && doll.state != Ragdoll.State.DEAD) {
+            RagdollFalls.hit(doll, at, way, strength, reaction);
+            return;
+        }
+        RagdollCauses.told(entity, new RagdollCauses.Hit(at, way, strength, reaction, ticks));
+    }
+
+    // The server tells that a falling creature caught hold of an edge for `ticks` (0: it lets go).
+    public static void ledge(int entity, Vec3 edge, float nx, float nz, int ticks, boolean branch) {
+        Ragdoll doll = LIVE.get(entity);
+        if (doll == null || doll.state == Ragdoll.State.DEAD) {
+            return;
+        }
+        if (ticks > 0) {
+            doll.grab(edge, nx, nz, ticks, branch);
+        } else {
+            doll.letGo(doll.entity);
+        }
     }
 
     @Nullable
@@ -270,12 +289,19 @@ public final class Ragdolls {
                 || Knocked.down(entity.getId()) ? Ragdoll.State.FLYING : null;
     }
 
+    // The creature's limp body now, if it has one.
+    @Nullable
+    static Ragdoll live(LivingEntity entity) {
+        Ragdoll doll = LIVE.get(entity.getId());
+        return doll != null && doll.entity == entity ? doll : null;
+    }
+
     // Whether a power has the creature: holding it, or posing or drawing it in a way of its own.
     public static boolean taken(Entity entity) {
         return HELD.contains(entity.getId()) || claimed(entity);
     }
 
-    private static boolean claimed(Entity entity) {
+    static boolean claimed(Entity entity) {
         for (Predicate<Entity> claim : CLAIMS) {
             if (claim.test(entity)) {
                 return true;
@@ -388,16 +414,23 @@ public final class Ragdolls {
                 continue;
             }
             RagdollCrowd.among(doll);
+            doll.tone(ticks);
             boolean detailed = detailed(entity.distanceToSqr(camera));
-            doll.step(detailed ? SUBSTEPS : FAR_SUBSTEPS, BLOCKS);
-            if (detailed && ClientSettings.ragdollThuds()) {
+            STEPS.add(doll, detailed ? SUBSTEPS : FAR_SUBSTEPS, detailed);
+        }
+        Corpses.tick(level, camera, far, SUBSTEPS, BLOCKS, RANDOM, STEPS);
+        STEPS.run(level);
+        boolean thuds = ClientSettings.ragdollThuds();
+        for (int i = 0; i < STEPS.size(); i++) {
+            Ragdoll doll = STEPS.doll(i);
+            if (STEPS.detailed(i) && thuds) {
                 doll.thud(ticks, RANDOM);
             }
             if (doll.state == Ragdoll.State.DEAD) {
                 RagdollFalls.settle(doll, ticks);
             }
         }
-        Corpses.tick(level, camera, far, ticks, SUBSTEPS, BLOCKS, RANDOM);
+        STEPS.clear();
         int most = ClientSettings.get(ClientSettings.RAGDOLL_MOST);
         while (counted() > most) {
             if (Corpses.makeRoom(SUBSTEPS, BLOCKS)) {
@@ -412,76 +445,13 @@ public final class Ragdolls {
     }
 
     // A living limp creature hangs from what holds it; one thrown flies along with its creature until it comes down,
-    // then lies where it fell (never landing on its feet), kept where its creature really is, at least 3 seconds on
-    // the ground, and gets up in time to stand before the server lets its creature move again. False once it stands
-    // again.
+    // then lies where it fell and gets up (RagdollMotor.carry). False once it stands again.
     private static boolean carried(Ragdoll doll, LivingEntity entity) {
         boolean held = HELD.contains(entity.getId());
-        if (held) {
-            if (doll.phase != Ragdoll.Phase.AIR) {
-                doll.lift(entity);
-            }
-            doll.state = Ragdoll.State.HELD;
-            doll.follow(entity, false);
-            doll.limp = Math.min(1.0, doll.limp + GO_LIMP);
-            return true;
-        }
-        doll.state = Ragdoll.State.FLYING;
         // Thrown again, not by the blow that just slammed it into a wall; or knocked down again as it gets up.
-        boolean again = doll.age > 2 && !RagdollFalls.slamming(doll) && entity instanceof Mob mob
+        boolean again = !held && doll.age > 2 && !RagdollFalls.slamming(doll) && entity instanceof Mob mob
                 && (RagdollCauses.thrown(mob) || RagdollCauses.blown(mob.getId(), ticks));
-        boolean downed = Knocked.again(entity.getId());
-        switch (doll.phase) {
-            case AIR -> {
-                doll.follow(entity, true);
-                doll.limp = Math.min(1.0, doll.limp + GO_LIMP);
-                Vec3 push = entity.getDeltaMovement();
-                if (push.horizontalDistanceSqr() > THROWN_WAY * THROWN_WAY) {
-                    doll.wayX = push.x;
-                    doll.wayZ = push.z;
-                }
-                boolean grounded = RagdollCauses.grounded(entity) || entity.isInWater() || entity.isInLava();
-                doll.flew |= !grounded;
-                // Down once its creature is on the ground again (or never left it), or after the longest flight; at
-                // once when it is thrown back against a wall.
-                if (doll.age > 1 && RagdollFalls.pinned(doll)) {
-                    doll.fall();
-                } else if (grounded && doll.age > (doll.flew ? 1 : SHRUG) || doll.age > LONGEST_FLIGHT) {
-                    doll.fall();
-                    RagdollFalls.pinned(doll);
-                }
-            }
-            case DOWN -> {
-                if (again) {
-                    doll.lift(entity);
-                } else {
-                    RagdollFalls.slide(doll);
-                    doll.down++;
-                    if (doll.world.touching()) {
-                        doll.lain++;
-                    }
-                    doll.keepNear(entity);
-                    if (Knocked.getsUp(entity.getId(), doll.down, doll.lain, doll.kind().ticks)) {
-                        doll.getUp();
-                    }
-                }
-            }
-            case UP -> {
-                if (again) {
-                    doll.lift(entity);
-                } else if (downed) {
-                    doll.knockedDown();
-                    DamageSource source = entity.getLastDamageSource();
-                    RagdollFalls.knockBack(doll, entity.getDeltaMovement(),
-                            source == null ? null : source.getSourcePosition());
-                } else if (doll.up >= doll.kind().ticks) {
-                    Knocked.forget(entity.getId());
-                    Facings.rose(entity, doll.riseYaw);
-                    return false;
-                }
-            }
-        }
-        return true;
+        return doll.carry(entity, held, again, !held && Knocked.again(entity.getId()));
     }
 
     @SubscribeEvent
@@ -505,58 +475,10 @@ public final class Ragdolls {
         }
     }
 
-    // A creature getting up is drawn facing the way its body rises, not turning on the ground, its head turning to its
-    // own look as it comes to stand; standing, it keeps facing that way until it moves or turns of its own (Facings).
-    @SubscribeEvent
-    public static void onRenderLivingPre(RenderLivingEvent.Pre<?, ?> event) {
-        LivingEntity entity = event.getEntity();
-        if (!EntityPass.inWorld()) {
-            return;
-        }
-        float partialTick = event.getPartialTick();
-        Ragdoll doll = LIVE.get(entity.getId());
-        if (doll != null && doll.entity == entity && doll.phase == Ragdoll.Phase.UP) {
-            float u = (doll.up + partialTick) / doll.kind().ticks;
-            float own = Mth.rotLerp(partialTick, entity.yBodyRotO, entity.yBodyRot);
-            float look = Mth.wrapDegrees(Mth.rotLerp(partialTick, entity.yHeadRotO, entity.yHeadRot) - own);
-            float share = (float) Ease.smoother((u - TURN_FROM) / (1.0F - TURN_FROM));
-            keep(entity);
-            entity.yBodyRot = doll.riseYaw;
-            entity.yBodyRotO = doll.riseYaw;
-            entity.yHeadRot = doll.riseYaw + look * share;
-            entity.yHeadRotO = entity.yHeadRot;
-            return;
-        }
-        float offset = Facings.offset(entity, partialTick);
-        if (offset != 0.0F && !claimed(entity)) {
-            keep(entity);
-            entity.yBodyRot += offset;
-            entity.yBodyRotO += offset;
-            entity.yHeadRot += offset;
-            entity.yHeadRotO += offset;
-        }
-    }
-
-    // The creature drawn now has its own yaws kept, to be put back once it is drawn.
-    private static void keep(LivingEntity entity) {
-        turned = entity;
-        YAWS[0] = entity.yBodyRot;
-        YAWS[1] = entity.yBodyRotO;
-        YAWS[2] = entity.yHeadRot;
-        YAWS[3] = entity.yHeadRotO;
-    }
-
     @SubscribeEvent
     public static void onRenderLivingPost(RenderLivingEvent.Post<?, ?> event) {
         if (drawing != null && drawing.entity == event.getEntity()) {
             settle();
-        }
-        if (turned == event.getEntity()) {
-            turned.yBodyRot = YAWS[0];
-            turned.yBodyRotO = YAWS[1];
-            turned.yHeadRot = YAWS[2];
-            turned.yHeadRotO = YAWS[3];
-            turned = null;
         }
     }
 

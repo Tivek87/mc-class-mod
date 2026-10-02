@@ -9,4 +9,8 @@ public interface Constraint {
     // rule has moved the bodies.
     default void rejoin(RigidWorld world, double h) {
     }
+
+    // At the end of the substep, once the bodies' speeds are known: for what slows them (a muscle's damping).
+    default void damp(RigidWorld world, double h) {
+    }
 }

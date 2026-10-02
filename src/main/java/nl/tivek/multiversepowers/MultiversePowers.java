@@ -14,6 +14,9 @@ import nl.tivek.multiversepowers.engine.entity.DeathBlows;
 import nl.tivek.multiversepowers.engine.entity.DeathStyles;
 import nl.tivek.multiversepowers.engine.entity.Fatigue;
 import nl.tivek.multiversepowers.engine.entity.HeldMobs;
+import nl.tivek.multiversepowers.engine.entity.impact.Impacts;
+import nl.tivek.multiversepowers.engine.entity.impact.Ledges;
+import nl.tivek.multiversepowers.engine.entity.impact.Staggers;
 import nl.tivek.multiversepowers.engine.entity.Knockdowns;
 import nl.tivek.multiversepowers.engine.fx.ParticleBatch;
 import nl.tivek.multiversepowers.faction.Factions;
@@ -44,8 +47,11 @@ public class MultiversePowers {
         DeathStyles.clear();
         DeathBlows.clear();
         Fatigue.clear();
-        // Last: held mobs must not be saved with their AI switched off.
+        Impacts.clear();
+        Ledges.clear();
+        // Last: held and staggering mobs must not be saved with their AI switched off.
         HeldMobs.releaseAll();
+        Staggers.clear();
         Knockdowns.clear();
     }
 }

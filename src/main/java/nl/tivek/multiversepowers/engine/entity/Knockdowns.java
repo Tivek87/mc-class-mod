@@ -28,6 +28,8 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.config.PowerRules;
 import nl.tivek.multiversepowers.engine.effect.Effects;
+import nl.tivek.multiversepowers.engine.entity.impact.Ledges;
+import nl.tivek.multiversepowers.engine.entity.impact.Staggers;
 
 // A creature a blow or a blast throws, or a power lets go of, goes limp in every player's game (Ragdolls), lies where
 // it falls and gets up: all that while it must not walk or fight, so it has no AI from the throw until it stands
@@ -61,11 +63,17 @@ public final class Knockdowns {
     private static final double BUMP_REACH = 0.15;
     private static final double BOWLED = 0.3;
     private static final double TOSS = 0.2;
+    // Gone down from its feet (tripped, knocked over) and falling faster than FALLING (blocks a tick) off an edge, it
+    // goes on along the drop at no more than TOPPLE (blocks a tick): it topples off, it is not flung.
+    private static final double TOPPLE = 0.04;
+    private static final double FALLING = -0.15;
 
     private static final Map<Mob, Down> DOWNED = new IdentityHashMap<>();
 
     private static final class Down {
         final boolean noAi;
+        // It went down from its feet, not thrown.
+        boolean toppled;
         // The creatures it has crashed into in this flight, each only once.
         final Set<Mob> bumped = Collections.newSetFromMap(new IdentityHashMap<>());
         int age;
@@ -80,14 +88,16 @@ public final class Knockdowns {
     private Knockdowns() {
     }
 
-    // Whether the game had it without AI of its own, before this or a hold stilled it.
-    static boolean ownNoAi(Mob mob) {
+    // Whether the game had it without AI of its own, before this, a stagger or a hold stilled it.
+    public static boolean ownNoAi(Mob mob) {
         Down down = DOWNED.get(mob);
-        return down != null ? down.noAi : mob.isNoAi();
+        return down != null ? down.noAi : Staggers.ownNoAi(mob);
     }
 
     // Something takes the creature over (a hand picks it up): it keeps lying still only as long as that says.
     static void forget(Mob mob) {
+        Staggers.forget(mob);
+        Ledges.forget(mob);
         if (DOWNED.remove(mob) != null) {
             mob.getPersistentData().remove(SAVED_TAG);
             tell(mob, 0);
@@ -96,11 +106,44 @@ public final class Knockdowns {
 
     // The creature goes down where it is, as if thrown: a power let go of it (it hung limp in every player's game), or
     // blows wore it out (Fatigue).
-    static void drop(Mob mob) {
+    public static void drop(Mob mob) {
         if (mob.level() instanceof ServerLevel level && mob.isAlive() && falls(mob) && !mob.isInWater()
                 && !mob.isInLava()) {
             down(level, mob);
         }
+    }
+
+    // The creature loses its footing and goes down where it is, moving off with `push` (blocks a tick): a blow swept
+    // its legs, or knocked it off its feet.
+    public static void trip(Mob mob, Vec3 push) {
+        mob.setDeltaMovement(push);
+        mob.hurtMarked = true;
+        topple(mob);
+    }
+
+    // The creature goes down from its feet where it is, as drop() does; off an edge it topples down along it.
+    public static void topple(Mob mob) {
+        drop(mob);
+        Down down = DOWNED.get(mob);
+        if (down != null) {
+            down.toppled = true;
+        }
+    }
+
+    // The creature stops acting a while (a stagger, a throw) and is moved here meanwhile (fly), `own`: whether the game
+    // had it without AI of its own. Saved while it lasts, so a creature saved then gets its own AI back when loaded
+    // again.
+    public static void pause(Mob mob, boolean own) {
+        mob.getPersistentData().putBoolean(SAVED_TAG, own);
+        mob.setNoAi(true);
+        mob.getNavigation().stop();
+        // Moved meanwhile, the game turns its body to its own yaw, which its AI may have left pointing another way.
+        mob.setYRot(mob.yBodyRot);
+    }
+
+    public static void resume(Mob mob, boolean own) {
+        mob.setNoAi(own);
+        mob.getPersistentData().remove(SAVED_TAG);
     }
 
     @SubscribeEvent
@@ -120,8 +163,7 @@ public final class Knockdowns {
             if (age > WATCH || !mob.isAlive() || mob.isRemoved()) {
                 return false;
             }
-            Vec3 push = mob.getDeltaMovement();
-            if (!HeldMobs.isHeld(mob) && (push.horizontalDistanceSqr() > THROWN * THROWN || push.y > TOSSED)) {
+            if (!HeldMobs.isHeld(mob) && thrown(mob.getDeltaMovement())) {
                 down(lvl, mob);
                 return false;
             }
@@ -141,14 +183,24 @@ public final class Knockdowns {
 
     // Not one that flies by itself, rides or is ridden, nor one no player's game can show limp (knockdown_none: it
     // would stand frozen while it lay).
-    static boolean falls(Mob mob) {
+    public static boolean falls(Mob mob) {
         return !mob.isNoGravity() && !mob.isPassenger() && !mob.isVehicle() && !(mob instanceof FlyingMob)
                 && !(mob instanceof FlyingAnimal) && !(mob instanceof Bat) && !mob.getType().is(STAYS_UP);
     }
 
-    static boolean mayFly(Mob mob) {
+    public static boolean mayFly(Mob mob) {
         return falls(mob) && !mob.isInWater() && !mob.isInLava()
                 && mob.getBbWidth() * mob.getBbWidth() * mob.getBbHeight() <= HEAVY;
+    }
+
+    // Whether the push a blow has just given it (blocks a tick) throws it, as this sees it a tick later, once the game
+    // has moved it through the air.
+    public static boolean thrownBy(Mob mob, Vec3 push) {
+        return mayFly(mob) && thrown(new Vec3(push.x * 0.91, (push.y - mob.getGravity()) * 0.98, push.z * 0.91));
+    }
+
+    private static boolean thrown(Vec3 push) {
+        return push.horizontalDistanceSqr() > THROWN * THROWN || push.y > TOSSED;
     }
 
     private static void down(ServerLevel level, Mob mob) {
@@ -157,14 +209,14 @@ public final class Knockdowns {
             // Thrown again while down: it flies, and lies from where it lands this time.
             down.thrown = down.age;
             down.landed = -1;
+            down.toppled = false;
             tell(mob, FLYING);
             return;
         }
-        Down mine = new Down(mob.isNoAi());
+        Down mine = new Down(ownNoAi(mob));
+        Staggers.forget(mob);
         DOWNED.put(mob, mine);
-        mob.getPersistentData().putBoolean(SAVED_TAG, mine.noAi);
-        mob.setNoAi(true);
-        mob.getNavigation().stop();
+        pause(mob, mine.noAi);
         tell(mob, FLYING);
         Effects.start(level, (lvl, age) -> {
             if (DOWNED.get(mob) != mine) {
@@ -177,6 +229,18 @@ public final class Knockdowns {
                 return false;
             }
             mine.age = age;
+            // Hanging from a ledge it caught on the way down: the hang does not count as flight.
+            if (mine.landed < 0 && Ledges.hangs(lvl, mob, age - mine.thrown)) {
+                mine.thrown++;
+                return true;
+            }
+            if (mine.toppled && mine.landed < 0 && !mob.onGround() && mob.getDeltaMovement().y < FALLING) {
+                Vec3 push = mob.getDeltaMovement();
+                double along = push.horizontalDistance();
+                if (along > TOPPLE) {
+                    mob.setDeltaMovement(push.x * TOPPLE / along, push.y, push.z * TOPPLE / along);
+                }
+            }
             fly(lvl, mob);
             if (PowerRules.domino()) {
                 bump(lvl, mob, mine);
@@ -199,7 +263,7 @@ public final class Knockdowns {
 
     // A creature without AI does not move by itself: while down it flies, lands and slides to a stop here as the game
     // moves any falling creature (in water it just floats where it is).
-    private static void fly(ServerLevel level, Mob mob) {
+    public static void fly(ServerLevel level, Mob mob) {
         if (mob.isInWater() || mob.isInLava()) {
             return;
         }
@@ -240,16 +304,17 @@ public final class Knockdowns {
         }
     }
 
-    private static double weight(Mob mob) {
+    public static double weight(Mob mob) {
         return mob.getBbWidth() * mob.getBbWidth() * mob.getBbHeight();
     }
 
     // Whether the creature is down (flying or lying) after a throw.
-    static boolean isDown(Mob mob) {
+    public static boolean isDown(Mob mob) {
         return DOWNED.containsKey(mob);
     }
 
     private static void up(Mob mob, boolean tell) {
+        Ledges.forget(mob);
         Down down = DOWNED.remove(mob);
         if (down != null) {
             mob.setNoAi(down.noAi);

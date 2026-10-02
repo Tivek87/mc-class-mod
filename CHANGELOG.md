@@ -3,6 +3,33 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.5.9-alpha] - 2026-10-02
+
+### Added
+- **Hit reactions:** a creature hit but not killed flinches, or staggers back, stepping to keep its feet with a hand
+  to the wound (world setting "Staggered by blows").
+- **Hit reactions:** a blow to the legs drops a creature on its face, a hard blow knocks it down, and one staggered
+  over an edge falls off it.
+- **Ledges:** a creature falling after a blow can catch a ledge or a branch, hang a while and let go (world setting
+  "Grab while falling").
+- **Ragdolls:** bodies have muscles: a dying one goes limp joint by joint, a thrown one braces with its arms, a
+  hanging one holds on.
+- **Ragdolls:** a killing blow throws the body from the point it struck.
+- **Ragdolls:** a limp body that is still alive (thrown or held) is pushed where a blow lands on it.
+- **Green Lantern:** the Light bolt's blow lands where it hits the body.
+
+### Changed
+- **Hit reactions:** a creature hit on its feet is shoved back along the ground instead of hopping; throws by powers
+  stay as they were.
+- **Ragdolls:** much less lag: all bodies are worked out on every core at once, and a body lying still costs almost
+  nothing.
+- **Ragdolls:** a killing blow pushes a body less hard.
+
+### Fixed
+- **Creatures:** a creature stilled by a stagger or a throw no longer turns its body away from its head.
+- **Ragdolls:** a creature that got up is no longer left facing the wrong way when it is drawn twice or its drawing
+  is cancelled.
+
 ## [0.5.8-alpha] - 2026-10-02
 
 ### Added

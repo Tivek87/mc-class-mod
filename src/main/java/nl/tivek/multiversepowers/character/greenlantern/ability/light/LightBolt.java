@@ -25,6 +25,7 @@ import nl.tivek.multiversepowers.character.greenlantern.construct.ConstructPath;
 import nl.tivek.multiversepowers.character.greenlantern.construct.ConstructPayload;
 import nl.tivek.multiversepowers.engine.effect.Effect;
 import nl.tivek.multiversepowers.engine.effect.Effects;
+import nl.tivek.multiversepowers.engine.entity.impact.Impacts;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 import nl.tivek.multiversepowers.engine.world.LoadedWorld;
 
@@ -160,6 +161,9 @@ public final class LightBolt implements Effect {
         if (hit != null) {
             Entity target = hit.getEntity();
             target.invulnerableTime = 0;
+            if (target instanceof LivingEntity living) {
+                Impacts.at(living, hit.getLocation(), to.subtract(from));
+            }
             target.hurt(level.damageSources().playerAttack(this.owner), this.damage);
             this.center = target.getBoundingBox().getCenter();
             return true;

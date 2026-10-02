@@ -38,6 +38,7 @@ import nl.tivek.multiversepowers.engine.client.pose.Tired;
 import nl.tivek.multiversepowers.engine.client.ragdoll.Ashes;
 import nl.tivek.multiversepowers.engine.client.ragdoll.Knocked;
 import nl.tivek.multiversepowers.engine.client.ragdoll.Ragdolls;
+import nl.tivek.multiversepowers.engine.client.stagger.Reactions;
 import nl.tivek.multiversepowers.engine.entity.DeathBlowPayload;
 import nl.tivek.multiversepowers.killconfirm.KillConfirmPayload;
 import nl.tivek.multiversepowers.killconfirm.client.KillMarker;
@@ -45,6 +46,8 @@ import nl.tivek.multiversepowers.engine.entity.DeathStylePayload;
 import nl.tivek.multiversepowers.engine.entity.DeathStyles;
 import nl.tivek.multiversepowers.engine.entity.FatiguePayload;
 import nl.tivek.multiversepowers.engine.entity.HeldPayload;
+import nl.tivek.multiversepowers.engine.entity.impact.ImpactPayload;
+import nl.tivek.multiversepowers.engine.entity.impact.LedgePayload;
 import nl.tivek.multiversepowers.engine.entity.KnockdownPayload;
 import nl.tivek.multiversepowers.engine.fx.ParticlesPayload;
 import nl.tivek.multiversepowers.engine.fx.VoicePayload;
@@ -147,7 +150,19 @@ public final class ClientPayloadHandler {
     }
 
     public static void handleDeathBlow(DeathBlowPayload payload, IPayloadContext context) {
-        context.enqueueWork(() -> Ragdolls.struck(payload.entity(), payload.from(), payload.push()));
+        context.enqueueWork(() -> Ragdolls.struck(payload.entity(), payload.from(), payload.push(), payload.at()));
+    }
+
+    public static void handleImpact(ImpactPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> {
+            Reactions.told(payload);
+            Ragdolls.impact(payload.entity(), payload.at(), payload.way(), payload.strength(), payload.reaction());
+        });
+    }
+
+    public static void handleLedge(LedgePayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> Ragdolls.ledge(payload.entity(), payload.edge(), payload.nx(), payload.nz(),
+                payload.ticks(), payload.branch()));
     }
 
     public static void handleDeathStyle(DeathStylePayload payload, IPayloadContext context) {

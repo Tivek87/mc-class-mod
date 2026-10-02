@@ -59,6 +59,9 @@ public final class Poses {
     // A joint turned less than this (the cosine of half its angle) is straight.
     private static final float STRAIGHT = 0.99999F;
     private static int ticks;
+    // The matrix the creature being posed is drawn with, while its creature-stage layers pose it (null otherwise).
+    @Nullable
+    private static Matrix4f drawing;
 
     private static final class Memory {
         long model;
@@ -89,6 +92,12 @@ public final class Poses {
     private Poses() {
     }
 
+    // For a layer: the matrix from the creature's model space (blocks) to the camera, when known.
+    @Nullable
+    public static Matrix4f drawn() {
+        return drawing;
+    }
+
     public static void layer(Stage stage, Layer layer) {
         List<Layer> layers = stage == Stage.MODEL ? MODEL_LAYERS : CREATURE_LAYERS;
         if (layers.size() >= MOST) {
@@ -102,10 +111,15 @@ public final class Poses {
             @Nullable Matrix4f drawn) {
         List<Layer> layers = stage == Stage.MODEL ? MODEL_LAYERS : CREATURE_LAYERS;
         long on = 0L;
-        for (int i = 0; i < layers.size(); i++) {
-            if (layers.get(i).pose(model, entity, partialTick)) {
-                on |= 1L << i;
+        drawing = stage == Stage.CREATURE ? drawn : null;
+        try {
+            for (int i = 0; i < layers.size(); i++) {
+                if (layers.get(i).pose(model, entity, partialTick)) {
+                    on |= 1L << i;
+                }
             }
+        } finally {
+            drawing = null;
         }
         if (!EntityPass.inWorld()) {
             return;

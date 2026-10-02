@@ -20,6 +20,8 @@ public final class RigidWorld extends RigidCrowd {
     // A sleeping world stepped once to see whether it still rests on something wakes up when a part got further than
     // this (blocks): falling for a step from rest goes several times as far.
     private static final double SLIPPED = 0.01;
+    // A sleeping world is stepped to look this many times; after that only a change in the blocks round it does.
+    private static final int STEPPED_PROBES = 2;
 
     private final double[] sx = new double[MOST * 3];
     private final double[] sq = new double[MOST * 4];
@@ -28,6 +30,9 @@ public final class RigidWorld extends RigidCrowd {
     private final List<Constraint> constraints = new ArrayList<>();
     private int quiet;
     private boolean sleeping;
+    private int probes;
+    // The blocks round it as it fell asleep.
+    private long rested;
 
     public int add(double mass, double hx, double hy, double hz) {
         if (this.count >= MOST) {
@@ -94,6 +99,49 @@ public final class RigidWorld extends RigidCrowd {
         this.constraints.add(constraint);
     }
 
+    // Solved before every rule added so far: what the joints' limits then hold within (a muscle).
+    public void addFirst(Constraint constraint) {
+        this.constraints.add(0, constraint);
+    }
+
+    // A blow: the impulse (jx, jy, jz) at a world point of body b changes how fast it moves and turns.
+    public void push(int b, double px, double py, double pz, double jx, double jy, double jz) {
+        if (this.invMass[b] == 0.0) {
+            return;
+        }
+        int o = b * 3;
+        this.v[o] += jx * this.invMass[b];
+        this.v[o + 1] += jy * this.invMass[b];
+        this.v[o + 2] += jz * this.invMass[b];
+        double rx = px - this.x[o];
+        double ry = py - this.x[o + 1];
+        double rz = pz - this.x[o + 2];
+        Quat.unrotate(this.q, b * 4, ry * jz - rz * jy, rz * jx - rx * jz, rx * jy - ry * jx, this.t3, 0);
+        Quat.rotate(this.q, b * 4, this.t3[0] * this.invInertia[o], this.t3[1] * this.invInertia[o + 1],
+                this.t3[2] * this.invInertia[o + 2], this.t3, 0);
+        this.w[o] += this.t3[0];
+        this.w[o + 1] += this.t3[1];
+        this.w[o + 2] += this.t3[2];
+        this.wake();
+    }
+
+    // Body b's turning speed, radians a second about each of the world's axes.
+    public void spin(int b, double[] out) {
+        System.arraycopy(this.w, b * 3, out, 0, 3);
+    }
+
+    public void addSpin(int b, double x, double y, double z) {
+        int o = b * 3;
+        this.w[o] += x;
+        this.w[o + 1] += y;
+        this.w[o + 2] += z;
+    }
+
+    // How much body b gives way to a turn about the unit world axis n: n . I^-1 n.
+    public double turnWeight(int b, double nx, double ny, double nz) {
+        return this.angularWeight(b, nx, ny, nz);
+    }
+
     public int count() {
         return this.count;
     }
@@ -120,6 +168,7 @@ public final class RigidWorld extends RigidCrowd {
     public void wake() {
         this.sleeping = false;
         this.quiet = 0;
+        this.probes = 0;
     }
 
     // Whether any body touched a block in the last substep (lying still, when it went to sleep).
@@ -153,11 +202,16 @@ public final class RigidWorld extends RigidCrowd {
     }
 
     // A sleeping world looks whether it still rests on something (the block under it may have been broken): it takes
-    // one step, and wakes if anything slipped; else it is put back as it lay and sleeps on.
+    // one step, and wakes if anything slipped; else it is put back as it lay and sleeps on. Once it has looked so a
+    // few times it only steps again when the blocks round it changed.
     public void probe(double dt, int substeps, Blocks world) {
         if (!this.sleeping || this.count == 0) {
             return;
         }
+        if (this.probes >= STEPPED_PROBES && this.around(world) == this.rested) {
+            return;
+        }
+        int probed = this.probes;
         System.arraycopy(this.x, 0, this.keptX, 0, this.count * 3);
         System.arraycopy(this.q, 0, this.keptQ, 0, this.count * 4);
         this.wake();
@@ -171,6 +225,18 @@ public final class RigidWorld extends RigidCrowd {
         Arrays.fill(this.w, 0, this.count * 3, 0.0);
         this.sleeping = true;
         this.quiet = QUIET_STEPS;
+        this.probes = probed + 1;
+        this.rested = this.around(world);
+    }
+
+    // A print of the solid boxes round the bodies now.
+    private long around(Blocks world) {
+        this.collect(world, 0.0);
+        long print = this.blockCount;
+        for (int i = 0; i < this.blockCount * 6; i++) {
+            print = print * 31L + Double.doubleToLongBits(this.blocks[i]);
+        }
+        return print;
     }
 
     // Position then orientation of body b: x, y, z, qx, qy, qz, qw.
@@ -236,12 +302,16 @@ public final class RigidWorld extends RigidCrowd {
             for (int b = 0; b < this.count; b++) {
                 this.settle(b, h);
             }
+            for (Constraint constraint : this.constraints) {
+                constraint.damp(this, h);
+            }
         }
         if (this.moved() < STILL) {
             if (++this.quiet >= QUIET_STEPS) {
                 this.sleeping = true;
                 Arrays.fill(this.v, 0, this.count * 3, 0.0);
                 Arrays.fill(this.w, 0, this.count * 3, 0.0);
+                this.rested = this.around(world);
             }
         } else {
             this.quiet = 0;
@@ -310,5 +380,6 @@ public final class RigidWorld extends RigidCrowd {
         this.constraints.clear();
         this.sleeping = false;
         this.quiet = 0;
+        this.probes = 0;
     }
 }

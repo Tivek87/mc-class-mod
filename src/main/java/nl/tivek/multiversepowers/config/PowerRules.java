@@ -14,6 +14,8 @@ public final class PowerRules {
     public static final ModConfigSpec.IntValue BREAK_BLOCKS;
     public static final ModConfigSpec.IntValue FATIGUE_KNOCKDOWN;
     public static final ModConfigSpec.IntValue DOMINO;
+    public static final ModConfigSpec.IntValue STAGGERS;
+    public static final ModConfigSpec.IntValue LEDGES;
     public static final ModConfigSpec.IntValue SPELLS;
     public static final ModConfigSpec.ConfigValue<List<? extends String>> OWNERS;
     // The characters' ids (GameCharacter's own, which this file cannot load before its settings exist).
@@ -41,6 +43,13 @@ public final class PowerRules {
         DOMINO = builder.comment("Whether a thrown creature that crashes into another passes on its push and knocks"
                 + " that one down too (1 = yes, 0 = as in the plain game)")
                 .defineInRange("dominoKnockdown", 1, 0, 1);
+        STAGGERS = builder.comment("Whether a creature hit but not killed reels from the blow: it flinches, or staggers"
+                + " back a moment stepping to keep its feet with a hand to where it was struck; a blow to the legs can"
+                + " trip it and a hard one knock it down (1 = yes, 0 = as in the plain game)")
+                .defineInRange("staggers", 1, 0, 1);
+        LEDGES = builder.comment("Whether a creature falling after a blow catches hold of a ledge or a branch it"
+                + " passes, hangs a moment and lets go (1 = yes, 0 = it falls straight past)")
+                .defineInRange("grabLedges", 1, 0, 1);
         builder.pop();
         builder.comment("Which characters and spells can be chosen in this world. One switched off is taken away from"
                 + " whoever is it.").push("characters");
@@ -99,6 +108,14 @@ public final class PowerRules {
 
     public static boolean domino() {
         return get(DOMINO) != 0;
+    }
+
+    public static boolean staggers() {
+        return get(STAGGERS) != 0;
+    }
+
+    public static boolean grabLedges() {
+        return get(LEDGES) != 0;
     }
 
     // Whether the owners list names this player, by name (any case) or by UUID.

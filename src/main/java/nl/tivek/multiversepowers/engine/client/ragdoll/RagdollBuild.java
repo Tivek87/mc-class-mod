@@ -225,6 +225,8 @@ final class RagdollBuild {
             legs += i != core && parts.get(i).role() == ModelParts.Role.LEG ? 1 : 0;
         }
         int[] parents = ModelBends.parents(parts, core);
+        int[] from = new int[n];
+        from[core] = -1;
         for (int i = 0; i < n; i++) {
             if (blades[i] != null) {
                 blade(ragdoll, i, blades[i], frames, pieces[core][0], Ragdoll.scaleOf(frames[core]), camera, vel);
@@ -238,6 +240,7 @@ final class RagdollBuild {
             // its own box, nearest its pivot (a golem's arm turns at its shoulder, not inside its chest).
             int up = parents[i];
             int trunk = up == core ? ragdoll.piece(core, hang[i]) : ragdoll.body[up];
+            from[i] = trunk;
             Quaternionf upRest = ModelParts.rest(parts.get(up), new Matrix4f()).getNormalizedRotation(
                     new Quaternionf());
             int blade = ragdoll.blade[i];
@@ -320,6 +323,9 @@ final class RagdollBuild {
                     apart(ragdoll, i, hung[i], j);
                 }
             }
+        }
+        if (!stiff) {
+            RagdollMuscles.build(ragdoll, parts, hung, from, core);
         }
         world.add(ragdoll.hold);
         ragdoll.remember(ragdoll.now);

@@ -60,8 +60,9 @@ final class Corpses {
         return doll.sunk < 0 ? 0.0 : (doll.sunk + partialTick) * SINK_SPEED;
     }
 
-    static void tick(ClientLevel level, Vec3 camera, double far, int now, int substeps, Blocks blocks,
-            RandomSource random) {
+    // Lets go of the bodies gone or too far, sinks the ones that have lain long enough and hands the rest to `steps`.
+    static void tick(ClientLevel level, Vec3 camera, double far, int substeps, Blocks blocks, RandomSource random,
+            RagdollSteps steps) {
         double keep = Math.max(LIE_LEAST, ClientSettings.get(ClientSettings.CORPSE_SECONDS) * 20.0);
         Iterator<Ragdoll> bodies = ALL.iterator();
         while (bodies.hasNext()) {
@@ -89,11 +90,7 @@ final class Corpses {
             }
             RagdollCrowd.among(doll);
             boolean detailed = Ragdolls.detailed(near);
-            doll.step(detailed ? substeps : Ragdolls.FAR_SUBSTEPS, blocks);
-            if (detailed && ClientSettings.ragdollThuds()) {
-                doll.thud(now, random);
-            }
-            RagdollFalls.settle(doll, now);
+            steps.add(doll, detailed ? substeps : Ragdolls.FAR_SUBSTEPS, detailed);
         }
     }
 

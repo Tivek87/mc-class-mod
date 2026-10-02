@@ -8,6 +8,7 @@ import java.util.Random;
 import nl.tivek.multiversepowers.engine.physics.joint.BallJoint;
 import nl.tivek.multiversepowers.engine.physics.joint.HingeJoint;
 import nl.tivek.multiversepowers.engine.physics.joint.LimbJoint;
+import nl.tivek.multiversepowers.engine.physics.joint.Muscle;
 import nl.tivek.multiversepowers.engine.physics.joint.Pin;
 import nl.tivek.multiversepowers.engine.physics.joint.SelfContact;
 import nl.tivek.multiversepowers.engine.physics.joint.SpineJoint;
@@ -754,5 +755,64 @@ class RigidWorldTest {
         assertEquals(1.0, n[0]);
         assertEquals(-1.0, SelfContact.depth(0.0, 3.0, 0.0, 1.0, 2.0, 1.0, n), 1.0E-12);
         assertEquals(1.0, n[1]);
+    }
+
+    @Test
+    void aMuscleBendsAJointToItsTargetAndLetsGoWhenSlack() {
+        RigidWorld world = new RigidWorld();
+        int[] leg = leg(world);
+        Muscle knee = new Muscle(leg[1], leg[2], new double[] { 0.0, 0.0, 0.0, 1.0 });
+        world.addFirst(knee);
+        // A bend of one radian about the knee's hinge (-x).
+        knee.target(-Math.sin(0.5), 0.0, 0.0, Math.cos(0.5));
+        knee.tone(1.0);
+        run(world, 60, Blocks.NONE);
+        assertEquals(1.0, bend(world, leg[1], leg[2])[0], 0.12, "toned, the knee bends as far as the muscle pulls");
+        knee.tone(0.0);
+        run(world, 80, Blocks.NONE);
+        assertTrue(bend(world, leg[1], leg[2])[0] < 0.2, "slack, the shin hangs straight again");
+    }
+
+    @Test
+    void aSleepingBodyLooksBySteppingOnlyAWhileThenOnlyAtTheBlocksRoundIt() {
+        RigidWorld world = new RigidWorld();
+        int box = world.add(1.0, 0.3, 0.3, 0.3);
+        world.place(box, 0.0, 0.5, 0.0, 0.0, 0.0, 0.0, 1.0);
+        run(world, 80, FLOOR);
+        assertTrue(world.sleeping(), "lying still, it sleeps");
+        int[] looks = { 0 };
+        Blocks counted = (minX, minY, minZ, maxX, maxY, maxZ, out) -> {
+            looks[0]++;
+            return FLOOR.collect(minX, minY, minZ, maxX, maxY, maxZ, out);
+        };
+        world.probe(TICK, SUBSTEPS, counted);
+        world.probe(TICK, SUBSTEPS, counted);
+        int stepped = looks[0];
+        double[] pose = new double[7];
+        world.pose(box, pose);
+        double lay = pose[1];
+        world.probe(TICK, SUBSTEPS, counted);
+        assertEquals(stepped + 1, looks[0], "looked twice by stepping, it then only looks at the blocks");
+        assertTrue(world.sleeping(), "the floor still there, it sleeps on");
+        world.pose(box, pose);
+        assertEquals(lay, pose[1], 0.0, "where it lay");
+        world.probe(TICK, SUBSTEPS, Blocks.NONE);
+        assertFalse(world.sleeping(), "the floor gone, it wakes");
+    }
+
+    @Test
+    void aBlowOffABoxsMiddleTurnsIt() {
+        RigidWorld world = new RigidWorld();
+        int box = world.add(1.0, 0.5, 0.5, 0.5);
+        double[] v = new double[6];
+        world.push(box, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0);
+        world.velocity(box, v);
+        assertEquals(1.0, v[0], 1.0E-9);
+        assertEquals(0.0, Math.abs(v[3]) + Math.abs(v[4]) + Math.abs(v[5]), 1.0E-9,
+                "a blow at its middle turns it not");
+        world.push(box, 0.0, 0.5, 0.0, 1.0, 0.0, 0.0);
+        world.velocity(box, v);
+        assertEquals(2.0, v[0], 1.0E-9);
+        assertTrue(v[5] < 0.0, "pushed along x at its top, it turns about -z: " + v[5]);
     }
 }
