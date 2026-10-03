@@ -75,8 +75,7 @@ final class VersionMismatchScreen extends DirtBackgroundScreen {
     }
 
     private void refresh() {
-        this.change.active = UpdateInstaller.canInstall() && this.release() != null
-                && UpdateInstaller.state() != UpdateInstaller.State.DOWNLOADING;
+        this.change.active = UpdateInstaller.canSwitch(this.release());
     }
 
     @Override
@@ -106,17 +105,15 @@ final class VersionMismatchScreen extends DirtBackgroundScreen {
         String version = "v" + this.server;
         Component text;
         int color = MUTED_COLOR;
-        if (!UpdateInstaller.canInstall()) {
-            text = UpdateManagerScreen.text("dev");
-            color = ERROR_COLOR;
-        } else if (UpdateInstaller.state() == UpdateInstaller.State.DOWNLOADING) {
+        if (UpdateInstaller.state() == UpdateInstaller.State.DOWNLOADING) {
             float progress = UpdateInstaller.progress();
             text = UpdateManagerScreen.text("versions.downloading", version, Math.round(progress * 100.0F));
             color = TEXT_COLOR;
             int barWidth = Math.min(200, this.panelWidth);
-            graphics.fill(center - barWidth / 2, y + 10, center + barWidth / 2, y + 12, 0xFF2A2F36);
-            graphics.fill(center - barWidth / 2, y + 10, center - barWidth / 2 + Math.max(2, (int) (barWidth
-                    * progress)), y + 12, 0xFF000000 | UpdatePopup.ACCENT);
+            drawBar(graphics, center - barWidth / 2, y + 11, barWidth, progress, UpdatePopup.ACCENT);
+        } else if (UpdateInstaller.state() == UpdateInstaller.State.CHECKED) {
+            text = UpdateManagerScreen.text("versions.checked", version);
+            color = NOTICE_COLOR;
         } else if (UpdateInstaller.state() == UpdateInstaller.State.FAILED) {
             Component error = UpdateInstaller.error();
             text = error == null ? UpdateManagerScreen.text("error.network") : error;
@@ -126,6 +123,9 @@ final class VersionMismatchScreen extends DirtBackgroundScreen {
             color = UpdateChecker.releasesFailed() ? ERROR_COLOR : MUTED_COLOR;
         } else if (this.release() == null) {
             text = this.reloaded ? text("missing", version) : text("looking", version);
+        } else if (!UpdateInstaller.canInstall()) {
+            text = UpdateManagerScreen.text("test");
+            color = NOTICE_COLOR;
         } else {
             text = UpdateManagerScreen.text("versions.hint");
         }

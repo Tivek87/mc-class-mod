@@ -24,7 +24,7 @@ final class ChangelogScreen extends DirtBackgroundScreen {
     private static final int BOTTOM_SPACE = 48;
     private static final int GAP = 6;
     private static final int PADDING = 10;
-    private static final int ROW = 22;
+    private static final int ROW = 25;
     private static final int SCROLLBAR = 6;
     private static final int SCROLL_STEP = 20;
     private static final int ERROR_COLOR = 0xFF7B7B;
@@ -61,7 +61,7 @@ final class ChangelogScreen extends DirtBackgroundScreen {
         this.panelWidth = Math.min(MAX_WIDTH, this.width - 24);
         this.left = (this.width - this.panelWidth) / 2;
         this.panelBottom = Math.max(PANEL_TOP + 60, this.height - BOTTOM_SPACE);
-        this.listWidth = Mth.clamp(this.panelWidth * 3 / 10, 104, 140);
+        this.listWidth = Mth.clamp(this.panelWidth * 3 / 10, 132, 150);
         this.notesX = this.left + this.listWidth + GAP;
         this.notesWidth = this.left + this.panelWidth - this.notesX;
         UpdateChecker.loadReleases();
@@ -153,16 +153,15 @@ final class ChangelogScreen extends DirtBackgroundScreen {
     }
 
     private void refreshButtons() {
-        boolean free = UpdateInstaller.canInstall() && UpdateInstaller.state() != UpdateInstaller.State.DOWNLOADING;
         Release chosen = this.chosen;
         boolean own = chosen != null && installed(chosen);
-        this.use.active = free && chosen != null && !own && chosen.jar() != null;
+        this.use.active = !own && UpdateInstaller.canSwitch(chosen);
         this.use.setMessage(chosen == null ? UpdateManagerScreen.text("versions.use")
                 : own ? UpdateManagerScreen.text("versions.installed")
                 : UpdateManagerScreen.text("versions.use_this", "v" + chosen.version()));
         Release newest = newest(true);
         boolean onLatest = newest != null && Release.compare(UpdateChecker.installed(), newest.version()) >= 0;
-        this.latest.active = free && newest != null && !onLatest;
+        this.latest.active = !onLatest && UpdateInstaller.canSwitch(newest);
         this.latest.setMessage(UpdateManagerScreen.text(onLatest ? "versions.on_latest" : "versions.latest"));
         this.retry.visible = UpdateChecker.releasesIfLoaded() == null && UpdateChecker.releasesFailed();
     }
@@ -222,24 +221,27 @@ final class ChangelogScreen extends DirtBackgroundScreen {
             Release release = this.versions.get(i);
             int y = PANEL_TOP + 2 + i * ROW - (int) this.listScroll;
             boolean chosen = release == this.chosen;
-            if (chosen || i == hover) {
-                graphics.fill(x, y, x + width, y + ROW, chosen ? 0x50FFFFFF : 0x20FFFFFF);
+            if (i > 0) {
+                graphics.fill(x + 6, y, x + width - 6, y + 1, 0x14FFFFFF);
             }
             if (chosen) {
+                graphics.fill(x, y, x + width, y + ROW, 0x38FFFFFF);
+                graphics.fill(x, y, x + width, y + 1, 0x20FFFFFF);
                 graphics.fill(x, y, x + 2, y + ROW, 0xFF000000 | UpdatePopup.ACCENT);
+            } else if (i == hover) {
+                graphics.fill(x, y, x + width, y + ROW, 0x18FFFFFF);
             }
-            graphics.drawString(this.font, "v" + release.version(), x + 6, y + 3, chosen ? 0xFFFFFFFF : 0xFFDDDDDD);
-            graphics.drawString(this.font, UpdateManagerScreen.DATE.format(release.published()), x + 6, y + 12,
-                    0xFF000000 | MUTED_COLOR, false);
-            Component chip = installed(release) ? UpdateManagerScreen.text("versions.yours")
+            graphics.drawString(this.font, "v" + release.version(), x + 7, y + 4, chosen ? 0xFFFFFFFF : 0xFFD8D8D8,
+                    chosen);
+            graphics.drawString(this.font, UpdateManagerScreen.DATE_TIME.format(release.published()), x + 7, y + 14,
+                    0xFF000000 | (chosen ? MUTED_COLOR : UpdateManagerScreen.GRAY), false);
+            boolean own = installed(release);
+            Component chip = own ? UpdateManagerScreen.text("versions.yours")
                     : newest != null && release.version().equals(newest.version())
                     ? UpdateManagerScreen.text("versions.newest") : null;
             if (chip != null) {
-                int chipWidth = this.font.width(chip) + 6;
-                int chipX = x + width - 4 - chipWidth;
-                graphics.fill(chipX, y + 11, chipX + chipWidth, y + 21,
-                        installed(release) ? 0xFF5A6270 : 0xFF000000 | UpdatePopup.ACCENT);
-                graphics.drawString(this.font, chip, chipX + 3, y + 12, 0xFF101010, false);
+                this.drawChip(graphics, chip, x + width - 8 - this.font.width(chip) - 6, y + 3,
+                        own ? 0x5A6270 : UpdatePopup.ACCENT, own ? 0xE8E8E8 : 0x0E1A12);
             }
         }
         graphics.disableScissor();
@@ -267,10 +269,7 @@ final class ChangelogScreen extends DirtBackgroundScreen {
                         target == null ? "?" : "v" + target.version(), Math.round(progress * 100.0F)), center, y,
                         TEXT_COLOR);
                 int barWidth = Math.min(200, this.panelWidth);
-                int barX = center - barWidth / 2;
-                graphics.fill(barX, y + 10, barX + barWidth, y + 12, 0xFF2A2F36);
-                graphics.fill(barX, y + 10, barX + Math.max(2, (int) (barWidth * progress)), y + 12,
-                        0xFF000000 | UpdatePopup.ACCENT);
+                drawBar(graphics, center - barWidth / 2, y + 11, barWidth, progress, UpdatePopup.ACCENT);
             }
             case FAILED -> {
                 Component error = UpdateInstaller.error();
@@ -279,9 +278,11 @@ final class ChangelogScreen extends DirtBackgroundScreen {
             }
             case READY -> graphics.drawCenteredString(this.font, UpdateManagerScreen.text("versions.ready",
                     target == null ? "?" : "v" + target.version()), center, y, NOTICE_COLOR);
+            case CHECKED -> graphics.drawCenteredString(this.font, UpdateManagerScreen.text("versions.checked",
+                    target == null ? "?" : "v" + target.version()), center, y, NOTICE_COLOR);
             case IDLE -> graphics.drawCenteredString(this.font, UpdateInstaller.canInstall()
-                    ? UpdateManagerScreen.text("versions.hint") : UpdateManagerScreen.text("dev"), center, y,
-                    UpdateInstaller.canInstall() ? MUTED_COLOR : ERROR_COLOR);
+                    ? UpdateManagerScreen.text("versions.hint") : UpdateManagerScreen.text("test"), center, y,
+                    UpdateInstaller.canInstall() ? MUTED_COLOR : NOTICE_COLOR);
         }
     }
 

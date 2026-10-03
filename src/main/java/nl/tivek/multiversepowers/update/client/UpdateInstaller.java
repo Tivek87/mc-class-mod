@@ -30,7 +30,8 @@ import nl.tivek.multiversepowers.MultiversePowers;
 import org.slf4j.Logger;
 
 final class UpdateInstaller {
-    enum State { IDLE, DOWNLOADING, READY, FAILED }
+    // CHECKED: downloaded and checked in a test game run from source, which has no jar of its own to swap.
+    enum State { IDLE, DOWNLOADING, READY, CHECKED, FAILED }
 
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final String FOLDER = ".multiverse-powers-update";
@@ -84,6 +85,11 @@ final class UpdateInstaller {
         return modJar() != null;
     }
 
+    // Whether a switch can start now: the release has a jar and nothing else is downloading.
+    static boolean canSwitch(@Nullable Release release) {
+        return release != null && release.jar() != null && state != State.DOWNLOADING;
+    }
+
     @Nullable
     private static Path modJar() {
         if (modJar == null) {
@@ -110,7 +116,7 @@ final class UpdateInstaller {
     }
 
     private static void begin(Release release, boolean close) {
-        if (!canInstall() || release.jar() == null) {
+        if (release.jar() == null) {
             return;
         }
         boolean same = target != null && target.version().equals(release.version());
@@ -145,6 +151,10 @@ final class UpdateInstaller {
             return;
         }
         downloaded = jar;
+        if (!canInstall()) {
+            state = State.CHECKED;
+            return;
+        }
         try {
             writePlan();
             startHelper();

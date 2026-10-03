@@ -153,8 +153,11 @@ final class ChangelogLayout {
 
     private static Block header(Font font, Release release, @Nullable Component label, int chipColor, int width) {
         Component version = Component.literal("v" + release.version()).withStyle(ChatFormatting.BOLD);
-        Component date = Component.literal(UpdateManagerScreen.DATE.format(release.published()));
         Component chip = label == null ? null : label.copy().withStyle(ChatFormatting.BOLD);
+        int taken = (int) Math.ceil(font.width(version) * VERSION_SCALE) + (chip == null ? 0 : font.width(chip) + 15);
+        Component full = Component.literal(UpdateManagerScreen.DATE_TIME.format(release.published()));
+        Component date = taken + 8 + font.width(full) <= width ? full
+                : Component.literal(UpdateManagerScreen.DATE.format(release.published()));
         return new Block() {
             @Override
             public int height() {
@@ -166,8 +169,9 @@ final class ChangelogLayout {
                 int versionWidth = (int) Math.ceil(font.width(version) * VERSION_SCALE);
                 if (chip != null) {
                     int chipX = x + versionWidth + 7;
-                    GuiShapes.roundRect(graphics, chipX, y + 5, font.width(chip) + 8, 11, 3.0F, 0xFF000000 | chipColor);
-                    GuiShapes.flush(graphics);
+                    int chipWidth = font.width(chip) + 8;
+                    graphics.fill(chipX, y + 5, chipX + chipWidth, y + 16, 0xFF000000 | chipColor);
+                    graphics.fill(chipX, y + 15, chipX + chipWidth, y + 16, 0x50000000);
                     graphics.drawString(font, chip, chipX + 4, y + 7, 0xFF0E2A1C, false);
                 }
                 graphics.pose().pushPose();

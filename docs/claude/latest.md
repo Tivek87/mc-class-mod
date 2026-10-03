@@ -6,6 +6,16 @@
 - Gecheckt: hashes = HEAD, `compileJava` + `compileTestJava` groen. Backup-patch (45 bestanden) in temp-scratchpad;
   weg op verzoek. Werk van de sessie hieronder (knockdowns, paneel, stamina) niet aangeraakt.
 
+## Update-menu's opnieuw, titelknop, tijd bij versies; release 0.7.1-alpha (2026-10-03)
+- Verzoek: "Use (oudere versie)" niet klikbaar; tijd bij release; update manager + versies mooier (MC-stijl);
+  knop in hoofdmenu naar manager; daarna commit, push, release.
+- Oorzaak knop: testgame (`gradlew runClient`) heeft geen jar. Nu: testgame downloadt + checkt (`CHECKED`), swapt niets;
+  echte installatie ongewijzigd (jar wisselen + afsluiten). `UpdateInstaller.canSwitch`.
+- Nieuw: `TitleButton` (20x20 pijl-icoon rechts van Realms, groene stip bij update). Manager: statuskaart + knoppen.
+  Versielijst: datum + tijd, tags naast versie. `DirtBackgroundScreen`: `drawInset`, `drawChip`, `drawBar`, panel-rand.
+- Getest: 2 in-game runs (groot + 854x480), echte download v0.6.9 → CHECKED, `./gradlew build` groen.
+- Niet getest: echte wissel in Modrinth-profiel (daar staat nog 0.6.8; dat profiel niet aangeraakt).
+
 ## Versies wisselen, rustig paneel, gids met uitklap; release 0.7.0-alpha (2026-10-03)
 - Verzoek: What's new met laatste 10 versies + wisselen (spel sluit) + 1 knop naar latest; joinen met andere
   modversie → kiezen: terug of wisselen; paneel rechtsonder rustiger, ruimer, GUI-schaal; gids met korte

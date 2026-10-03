@@ -10,12 +10,15 @@ music slider sets its volume.
 The mod keeps itself up to date: a few seconds after the game starts, and then every five minutes, it looks on its
 release page for a newer version. When there is one you hear a pling and a small card slides in at the top right. In
 the game it shows for 15 seconds; on the title screen and in the pause menu it stays and you click it. The update key
-(**U**, change it under Controls) opens the update manager at any time in the game: the installed and the newest
-version, a status line, **What's new & versions** and **Check now** when you are up to date. With an update: **Update later** (downloads now, and the new version is put in place when you close the
+(**U**, change it under Controls) opens the update manager at any time in the game, and on the title screen the small
+arrow button right of **Minecraft Realms** does too (a green dot on it while a newer version is out). On top it says
+whether you are up to date or which version is out, when it came out and how big it is; under that **What's new &
+versions**, and **Check now** when you are up to date. With an update: **Update later** (downloads now, and the new version is put in place when you close the
 game) and **Update now (quits)** (saves your world and quits the game, the new version is put in place, and you start
 the game again yourself in your launcher). Every download is checked against the release page's checksum before it is used.
 
-**What's new & versions** lists the last ten versions on the left, as the Minecraft launcher lists its versions (yours marked
+**What's new & versions** lists the last ten versions on the left, as the Minecraft launcher lists its versions, each with the day and time it
+came out (yours marked
 YOURS, the newest LATEST, with your own added under them when it is older), and the notes of the one you pick on the
 right, laid out by section. **Use ... (quits)** switches to the version you picked, older or newer: it downloads it,
 saves and quits the game, and puts it in place of the one you have; start the game again in your launcher. **Switch

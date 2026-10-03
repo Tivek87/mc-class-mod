@@ -41,9 +41,42 @@ public abstract class DirtBackgroundScreen extends Screen {
         guiGraphics.fillGradient(0, this.height / 2, this.width, this.height, VIGNETTE_TOP, VIGNETTE_BOTTOM);
     }
 
+    // A black edge, the panel and its border, with a faint lit line along its top as the game's own slots have.
     protected static void drawPanel(GuiGraphics guiGraphics, int x, int y, int width, int height, int borderColor) {
+        guiGraphics.fill(x - 1, y - 1, x + width + 1, y + height + 1, 0xFF000000);
         guiGraphics.fill(x, y, x + width, y + height, PANEL_FILL);
         guiGraphics.renderOutline(x, y, width, height, borderColor);
+        guiGraphics.fill(x + 1, y + 1, x + width - 1, y + 2, 0x18FFFFFF);
+    }
+
+    // A sunken box inside a panel, with a stripe of `accent` down its left side (0 for none).
+    protected static void drawInset(GuiGraphics guiGraphics, int x, int y, int width, int height, int accent) {
+        guiGraphics.fill(x, y, x + width, y + height, 0x60000000);
+        guiGraphics.fill(x, y, x + width, y + 1, 0x80000000);
+        guiGraphics.fill(x, y + height - 1, x + width, y + height, 0x14FFFFFF);
+        if (accent != 0) {
+            guiGraphics.fill(x, y, x + 2, y + height, 0xFF000000 | accent);
+        }
+    }
+
+    // A small tag of text on a flat fill, 10 high; returns its width.
+    protected int drawChip(GuiGraphics guiGraphics, Component text, int x, int y, int fill, int color) {
+        int width = this.font.width(text) + 6;
+        guiGraphics.fill(x, y, x + width, y + 10, 0xFF000000 | fill);
+        guiGraphics.fill(x, y + 9, x + width, y + 10, 0x50000000);
+        guiGraphics.drawString(this.font, text, x + 3, y + 1, 0xFF000000 | color, false);
+        return width;
+    }
+
+    // A thin progress bar with a black edge.
+    protected static void drawBar(GuiGraphics guiGraphics, int x, int y, int width, float progress, int color) {
+        guiGraphics.fill(x - 1, y - 1, x + width + 1, y + 4, 0xFF000000);
+        guiGraphics.fill(x, y, x + width, y + 3, 0xFF2A2A2A);
+        int filled = Math.round(width * Math.max(0.0F, Math.min(1.0F, progress)));
+        if (filled > 0) {
+            guiGraphics.fill(x, y, x + filled, y + 3, 0xFF000000 | color);
+            guiGraphics.fill(x, y, x + filled, y + 1, 0x40FFFFFF);
+        }
     }
 
     protected void drawBigCenteredString(GuiGraphics guiGraphics, Component text, int centerX, int y, float scale, int color) {

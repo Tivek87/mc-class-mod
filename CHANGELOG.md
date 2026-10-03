@@ -3,6 +3,23 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.7.1-alpha] - 2026-10-03
+
+### Added
+- **Title screen:** a small arrow button next to Minecraft Realms opens the update manager; a green dot shows while a
+  newer version is out.
+- **What's new & versions:** each version shows the time it came out, not only the day.
+
+### Changed
+- **Update manager:** cleaner: one card says whether you are up to date or which version is out, when and how big,
+  with the buttons under it.
+- **What's new & versions:** a roomier list with the YOURS and LATEST tags beside the version.
+- **Update screens:** panels, tags and download bars in one blocky Minecraft style; the bug report screens too.
+- **Test game:** switching versions now works there too; it downloads and checks the version but swaps nothing.
+
+### Fixed
+- **What's new & versions:** the Use button for an older version could not be pressed in the test game.
+
 ## [0.7.0-alpha] - 2026-10-03
 
 ### Added

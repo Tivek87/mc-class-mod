@@ -18,7 +18,8 @@ across the multiverse you can turn into.
 - **Music:** the multiverse theme plays on a loop in the main menu, in place of Minecraft's menu music; the music slider
   sets its volume.
 - **Updates in the game:** the mod looks for a new release every five minutes. A new one comes with a pling and a popup;
-  click it in the menu, or press **U** (changeable under Controls) for the update manager: read what's new, then update
+  click it in the menu, press **U** (changeable under Controls) or the small arrow button next to **Minecraft Realms**
+  on the title screen for the update manager: read what's new, then update
   later (installed when you close the game) or update now (the game quits, then start it again yourself). **What's
   new & versions** lists the last ten versions with their notes: switch to any of them, or to the latest in one click
   (the game quits, then start it again).
