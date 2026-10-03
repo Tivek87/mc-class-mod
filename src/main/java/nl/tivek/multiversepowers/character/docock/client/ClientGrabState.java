@@ -19,6 +19,11 @@ public final class ClientGrabState {
     private ClientGrabState() {
     }
 
+    // Whether his tentacles hold creatures he can throw.
+    public static boolean holding() {
+        return holding;
+    }
+
     public static void set(boolean throwable, boolean carrying) {
         holding = throwable;
         blocks = carrying;

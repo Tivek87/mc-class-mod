@@ -27,10 +27,11 @@ final class LanternPanel implements AbilityPanel.Rules {
     static void register() {
         AbilityPanel.rules(GameCharacter.GREEN_LANTERN, new LanternPanel());
         ClientCharacter.refusal(GameCharacter.GREEN_LANTERN, LanternPanel::refusal);
+        LanternGuide.register();
     }
 
     @Nullable
-    private static String weapon() {
+    static String weapon() {
         return SwordArms.holding() ? "sword" : FlameArms.holding() ? "flamethrower" : WhipArms.holding() ? "whip"
                 : null;
     }
@@ -39,7 +40,7 @@ final class LanternPanel implements AbilityPanel.Rules {
         return ability.input() == CharacterAbility.Input.LEFT || ability.input() == CharacterAbility.Input.RIGHT;
     }
 
-    private static boolean piloting(LocalPlayer player) {
+    static boolean piloting(LocalPlayer player) {
         return ClientConstructs.piloted(player.getId(), 0.0F) != null;
     }
 

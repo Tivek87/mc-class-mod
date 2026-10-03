@@ -18,7 +18,16 @@
   in `en_us.json`; "[P] guide" op paneel. Docs `POWERS.md`, `PROJECT.md`, `CLAUDE.md`.
 - Getest in worktree: build + tests groen; in-game P opent gids (social-klik gewist), Thor-namen wisselen met hamer,
   gids Thor/GL scrollt, settings-hover toont uitleg. Main compileert weer.
-- Open: commit/push/release v0.6.7 wacht op ja (alleen eigen bestanden). Bugs #59-#63 (high) + 5 ideeën open.
+- Gecommit + gepusht (`b80e83e`), release v0.6.7-alpha (Latest), via worktree.
+- Daarna UI-redesign (gids + paneel): `AbilityGuideScreen` twee panelen (lijst met statusstip, pijltjes/W/S/Home/End,
+  klik), `GuideDetail` (keycaps, tags, uitleg, status + reden), `KeyCap` (pixel-keycaps, chips, `Layer`),
+  paneel als afgeronde kaart met keycaps + cooldownbalk; `Rules.unavailable` (Thor: hamer/rennen).
+  Getest in worktree (main kapot door andere sessie, `RechargeAnimation`): kleinste + grote GUI, cooldown zichtbaar.
+- Daarna modes in de gids: `GuideMode` (+ `AbilityGuide.modes`), `LanternGuide` (10 modes), `ThorGuide` (5),
+  `OctoGuide` (7); 120 bedieningsregels in `en_us.json` (`guide.welcomescreen.*`), onderzocht door subagent.
+  Getest in worktree: geen ontbrekende teksten, mech/zwaard/vlucht/vuisten/vasthouden zichtbaar, actieve mode groen.
+- Gevonden, niet gefixt: `ConstructWheel` stuurt `mech_busy` zonder `%s` (rauwe %s); paneel toont mech-LMB niet.
+- Gecommit + gepusht, release v0.6.8-alpha (via worktree). Bugs #59-#63 (high) + 5 ideeën open.
 
 ## Thor-ontwerp (andere sessie, 2026-10-02)
 - Ontwerp `docs/ideas/THOR_MJOLNIR_FLIGHT_SYSTEM.md` + `_SHORT.md` (niet gecommit, van die sessie). Besloten:

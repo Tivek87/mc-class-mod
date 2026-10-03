@@ -46,6 +46,7 @@ public final class ThunderGauge {
     public ThunderGauge(IEventBus modEventBus) {
         modEventBus.addListener(ThunderGauge::onRegisterLayers);
         AbilityPanel.rules(GameCharacter.THOR, new ThorPanel());
+        ThorGuide.register();
     }
 
     private static void onRegisterLayers(RegisterGuiLayersEvent event) {

@@ -38,7 +38,7 @@ import nl.tivek.multiversepowers.stamina.client.StaminaClient;
 public final class ClientCharacter {
     private static final String STAMINA_COST = "staminaCost";
     private static final String STAMINA_PER_TICK = "staminaPerTick";
-    private static final String POWER_COST = "powerCost";
+    static final String POWER_COST = "powerCost";
     private static final String RECHARGE = "recharge";
     // A key with a hold version pressed while it is shut, until it is let go.
     private static final int SHUT = -2;
@@ -130,7 +130,7 @@ public final class ClientCharacter {
         return clock;
     }
 
-    static int ultimate() {
+    public static int ultimate() {
         return ultimate;
     }
 
@@ -138,7 +138,7 @@ public final class ClientCharacter {
         return legs;
     }
 
-    static int marked() {
+    public static int marked() {
         return marked;
     }
 
@@ -188,7 +188,7 @@ public final class ClientCharacter {
         HELD[slot.ordinal()] = held;
     }
 
-    static boolean isHeld(AbilitySlot slot) {
+    public static boolean isHeld(AbilitySlot slot) {
         return HELD[slot.ordinal()];
     }
 

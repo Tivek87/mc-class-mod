@@ -91,9 +91,21 @@ Bolt *(scroll wheel click)* and Lightning Speed *(hold shift)*.
 - A line's name follows what it does now: Thor's scroll wheel click says **Take Up the Hammer** or **Put Away the
   Hammer**, his combo **Hammer Swings** and his charge **Charge the Hammer** with it in hand; Doctor Octopus's stance
   key says where it takes him next; Green Lantern's flight says **Stop Flying** while he flies.
-- **P** (the ability guide, can be moved under Controls) opens a page with every ability of the character you play:
-  its key and what it does, in a few plain sentences. The panel's title line shows the key. P is also the game's
-  social interactions key: while you play a character, the guide takes it.
+- Each line shows its key as a key cap, then the name and, on the right, **ready** in green, the seconds left in
+  amber (with a thin bar under the line that empties as the cooldown runs out), **on** or **no power**.
+- **P** (the ability guide, can be moved under Controls) opens a window with every ability of the character you play.
+  On the left a list (split in on the ground and in flight where that matters) with a dot for each: green ready, amber
+  cooling down, grey not now. Click one, or go up and down with the arrow keys, W and S, Home and End; on the right
+  are its keys (a mouse button's click and hold apart, each with what it does), where it works, its cooldown, what it
+  does in a few plain sentences, and whether you can use it this moment and, if not, why (**Only in flight**, **Take
+  up the hammer first**). Under **Modes** it explains every state in which your keys do other things, with a key cap
+  for each key and button and what it does there, how you get in and out, and what is off meanwhile: Green Lantern
+  with empty hands, flying, firing the beam, with the sword or the flamethrower, in the Construct Wheel, piloting the
+  mech, holding a Light Cage, with an item in hand and with a dry ring; Thor with his fists, with the hammer, flying,
+  at Lightning Speed and in a Super Jump; Doctor Octopus on his feet, on tentacles, holding creatures, climbing,
+  blocking, marking for Ground Strike and in his Rampage. The mode you are in now is marked green. The panel's title
+  line shows the key. P is also the game's social interactions key: while
+  you play a character, the guide takes it.
 - In the settings, resting the pointer on an ability's title explains that ability the same way.
 - The scroll wheel click is also pick block. While your character has nothing on it, it just picks blocks and
   stays quiet; once a character has an ability there, the ability wins.

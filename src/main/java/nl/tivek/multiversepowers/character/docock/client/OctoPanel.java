@@ -18,6 +18,7 @@ public final class OctoPanel {
     private static final int MOST_LEGS = 4;
 
     public OctoPanel() {
+        OctoGuide.register();
         AbilityPanel.rules(GameCharacter.DOC_OCK, new AbilityPanel.Rules() {
             @Override
             public boolean lists(CharacterAbility ability, LocalPlayer player) {

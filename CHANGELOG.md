@@ -3,6 +3,19 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.6.8-alpha] - 2026-10-03
+
+### Added
+- **Ability guide:** a Modes section explains every state where your keys do other things (22 modes: Green Lantern's
+  mech, weapons, flight and more; Thor with fists or hammer, in flight; Doctor Octopus on tentacles, holding, climbing).
+- **Ability guide:** each ability shows where it works, its cooldown and whether you can use it now, and why not.
+- **Ability panel:** a thin bar under a line empties as its cooldown runs out.
+
+### Changed
+- **Ability guide:** redesigned as a window with a list on the left and the chosen ability on the right; arrow keys,
+  W/S, Home/End and clicks pick one.
+- **Ability panel:** a rounded card with key caps; seconds left show in amber.
+
 ## [0.6.7-alpha] - 2026-10-03
 
 ### Added

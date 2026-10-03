@@ -1,6 +1,9 @@
 package nl.tivek.multiversepowers.character.client;
 
 import com.mojang.blaze3d.platform.InputConstants;
+import java.util.EnumMap;
+import java.util.List;
+import java.util.Map;
 import javax.annotation.Nullable;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
@@ -24,7 +27,18 @@ public final class AbilityGuide {
     public static final KeyMapping KEY = new KeyMapping("key." + MultiversePowers.MODID + ".ability_guide",
             KeyConflictContext.IN_GAME, InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_P, AbilityKeys.CATEGORY);
 
+    private static final Map<GameCharacter, List<GuideMode>> MODES = new EnumMap<>(GameCharacter.class);
+
     private AbilityGuide() {
+    }
+
+    // The states in which a character's keys do other things, in the order the guide lists them.
+    public static void modes(GameCharacter character, GuideMode... modes) {
+        MODES.put(character, List.of(modes));
+    }
+
+    static List<GuideMode> modes(GameCharacter character) {
+        return MODES.getOrDefault(character, List.of());
     }
 
     // What an ability does, in a few plain sentences, or null while it has none.
