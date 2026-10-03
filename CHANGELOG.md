@@ -3,6 +3,12 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.6.6-alpha] - 2026-10-03
+
+### Changed
+- **Ability panel:** lists every mouse, space and shift move you can use right now, beside any number of others.
+- **Thor:** his panel shows his moves (LMB, RMB, MMB, space, shift) whenever he can use them.
+
 ## [0.6.5-alpha] - 2026-10-03
 
 ### Changed

@@ -83,8 +83,8 @@ Bolt *(scroll wheel click)* and Lightning Speed *(hold shift)*.
 - A panel in the bottom right shows who you are and **only what you can use right now**, each with its key and
   cooldown. A power that only works on the ground is left off while you fly, and the other way round, and so is one
   that wants something else first.
-- The mouse buttons' moves (a line for the click and one for the hold of each button) are listed only when at most
-  two other powers are; beside more, they are left off.
+- The mouse buttons', space's and shift's moves are listed too, a line for the click and one for the hold of each
+  button, whenever they can be used.
 - Keys and buttons your character has nothing on, keys kept free for powers to come and keys you left unbound are
   left off the panel: it shows only what you can use. Mouse buttons go by short names: **LMB**, **RMB**, **MMB**
   (the scroll wheel), **M4** and up.
@@ -102,7 +102,7 @@ same one, as they come, a click and a hold tell themselves apart). A power with 
 button waits until you let go to know which you meant. The panel shows a hold as **Hold ...** and a double press
 as **Double ...**.
 - **A character can also sit on the mouse.** Green Lantern does: left click shoots, right click puts up a
-  shield. The panel shows those as `[Left Button]` and `[Right Button]`. They only take the mouse over
+  shield. The panel shows those as `[LMB]` and `[RMB]`. They only take the mouse over
   while both your hands are empty and the hand behind that button is free; any other time the mouse does
   what it always does. Attack and defence can be used at the same time.
 - **Click or hold.** Every ability on the mouse has two sides: a **tap** of the button does the quick one,

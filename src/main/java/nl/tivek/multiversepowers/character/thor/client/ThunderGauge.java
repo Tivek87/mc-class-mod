@@ -15,7 +15,6 @@ import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.character.CharacterAbility;
 import nl.tivek.multiversepowers.character.GameCharacter;
-import nl.tivek.multiversepowers.character.client.AbilityPanel;
 import nl.tivek.multiversepowers.character.client.ClientCharacter;
 import nl.tivek.multiversepowers.character.client.MouseHold;
 import nl.tivek.multiversepowers.engine.client.gui.GuiShapes;
@@ -45,7 +44,6 @@ public final class ThunderGauge {
 
     public ThunderGauge(IEventBus modEventBus) {
         modEventBus.addListener(ThunderGauge::onRegisterLayers);
-        AbilityPanel.rules(GameCharacter.THOR, (ability, player) -> !ability.onGesture());
     }
 
     private static void onRegisterLayers(RegisterGuiLayersEvent event) {

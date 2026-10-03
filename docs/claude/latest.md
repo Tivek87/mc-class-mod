@@ -7,7 +7,11 @@
 - Doc Ock: `placeholder`/`placeholder_2` nu `.spare()` (geen rij, geen sectie in instellingen, geen melding);
   dode case in `OctopusArms` + `octopus.welcomescreen.placeholder` weg. `docs/POWERS.md` bijgewerkt.
 - Getest: build + tests groen; in-game: Doc Ock zonder Placeholder-rijen, GL toont `[Hold MMB] Mech`.
-- Open: niet gecommit (vraag ja). Thor-paneel toont bewust geen gebaren (`ThunderGauge` regel), dus leeg.
+- Gecommit + gepusht (`54ba3af`), release v0.6.5-alpha (Latest).
+- Daarna: alle bruikbare gebaren tonen. `MOUSE_BESIDE`-regel uit `AbilityPanel` weg, Thor-regel (`!onGesture`) uit
+  `ThunderGauge` weg; `docs/POWERS.md`, `docs/PROJECT.md`. Getest in worktree (andere sessie had main kapot:
+  `FlightPose` e.a., niet van mij): Thor 8 rijen (LMB/RMB/MMB/Space), GL met LMB/RMB-rijen.
+- Open: commit/push/release v0.6.6 wacht op ja (alleen eigen 5 bestanden; publish via worktree).
   Bugs #59-#63 (high) en 5 ideeën nog open.
 
 ## Thor-ontwerp (andere sessie, 2026-10-02)

@@ -21,15 +21,12 @@ import nl.tivek.multiversepowers.character.GameCharacter;
 import nl.tivek.multiversepowers.character.greenlantern.client.hud.ConstructHud;
 import nl.tivek.multiversepowers.character.greenlantern.client.hud.ConstructWheelScreen;
 
-// The panel in the bottom right: who you are and only what you can use right now, each with its key and cooldown. A
-// mouse button's click and hold are listed only beside at most two other abilities; beside more they are just what
-// your hands do anyway.
+// The panel in the bottom right: who you are and only what you can use right now, each with its key and cooldown.
 public final class AbilityPanel {
     private static final ResourceLocation LAYER_ID = ResourceLocation.fromNamespaceAndPath(MultiversePowers.MODID,
             "character_abilities");
     private static final String PREFIX = "screen." + MultiversePowers.MODID + ".character.";
     private static final String POWER_COST = "powerCost";
-    private static final int MOUSE_BESIDE = 2;
     private static final int WIDTH = 168;
     private static final int GAP = 8;
     private static final int WHITE = 0xFFFFFFFF;
@@ -81,21 +78,10 @@ public final class AbilityPanel {
     }
 
     private static List<Row> rows(GameCharacter now, LocalPlayer player, Rules rules) {
-        List<CharacterAbility> listed = new ArrayList<>();
-        int others = 0;
+        List<Row> rows = new ArrayList<>();
         for (CharacterAbility ability : now.abilities()) {
             if (ability.isPlaceholder() || !PowerInputs.bound(ability) || !Gestures.active(ability, player)
                     || ClientCharacter.refused(ability, player) != null || !rules.lists(ability, player)) {
-                continue;
-            }
-            listed.add(ability);
-            if (!onMouse(ability)) {
-                others++;
-            }
-        }
-        List<Row> rows = new ArrayList<>();
-        for (CharacterAbility ability : listed) {
-            if (onMouse(ability) && others > MOUSE_BESIDE) {
                 continue;
             }
             if (onMouse(ability) && ability.holdTicks() > 0 && ability.tapWhen() != CharacterAbility.Tap.NEVER) {
