@@ -11,11 +11,22 @@ The mod keeps itself up to date: a few seconds after the game starts, and then e
 release page for a newer version. When there is one you hear a pling and a small card slides in at the top right. In
 the game it shows for 15 seconds; on the title screen and in the pause menu it stays and you click it. The update key
 (**U**, change it under Controls) opens the update manager at any time in the game: the installed and the newest
-version, a status line, **What's new** (the notes of every newer version, laid out by section, and under them the notes
-of the version you have, marked INSTALLED) and **Check now** when you are up to date. With an update: **Update later** (downloads now, and the new version is put in place when you close the
+version, a status line, **What's new & versions** and **Check now** when you are up to date. With an update: **Update later** (downloads now, and the new version is put in place when you close the
 game) and **Update now (quits)** (saves your world and quits the game, the new version is put in place, and you start
-the game again yourself in your launcher). Every download is checked against the release page's checksum before it is used. **Report a bug** (next to
-**What's new**) sends a bug or glitch straight to the mod's makers: give it a short name, a description and a priority
+the game again yourself in your launcher). Every download is checked against the release page's checksum before it is used.
+
+**What's new & versions** lists the last ten versions on the left, as the Minecraft launcher lists its versions (yours marked
+YOURS, the newest LATEST, with your own added under them when it is older), and the notes of the one you pick on the
+right, laid out by section. **Use ... (quits)** switches to the version you picked, older or newer: it downloads it,
+saves and quits the game, and puts it in place of the one you have; start the game again in your launcher. **Switch
+to latest (quits)** does the same for the newest version in one click.
+
+Joining a server, a LAN world or a friend that runs another version of the mod (from 0.7.0 on) does not let you in:
+it says which version they run and which you have, with **Back to main menu** (nothing changes) or **Switch to ...
+(quits)** (your version is switched to theirs and the game quits, so after you start it again you can join).
+
+**Report a bug** (under
+**What's new & versions**) sends a bug or glitch straight to the mod's makers: give it a short name, a description and a priority
 (low, medium or high) and press **Send**; your Minecraft name and version go with it, and you get the report's number.
 **Suggest an idea** (next to **Report a bug**) works the same way for your own ideas: a short name, a description and
 a priority. Reports and ideas are public on the mod's GitHub page. What you type stays until you send it, also when

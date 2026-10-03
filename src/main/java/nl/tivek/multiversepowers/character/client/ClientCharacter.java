@@ -228,7 +228,6 @@ public final class ClientCharacter {
         AbilitySlot slot = AbilitySlot.byIndex(action);
         CharacterAbility ability = character == null || slot == null ? null : character.ability(slot);
         Local local = character == null ? null : LOCAL.get(character);
-        boolean hold = (data & Characters.HOLD) != 0;
         if (local != null && ability != null && player != null) {
             data = local.act(player, ability, on, data);
             if (data < 0) {
@@ -236,7 +235,7 @@ public final class ClientCharacter {
             }
         }
         if (on && slot != null) {
-            AbilityPanel.used(slot, hold);
+            AbilityPanel.wake();
         }
         PacketDistributor.sendToServer(new AbilityActionPayload(action, on, data));
     }

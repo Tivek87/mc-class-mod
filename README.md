@@ -19,7 +19,9 @@ across the multiverse you can turn into.
   sets its volume.
 - **Updates in the game:** the mod looks for a new release every five minutes. A new one comes with a pling and a popup;
   click it in the menu, or press **U** (changeable under Controls) for the update manager: read what's new, then update
-  later (installed when you close the game) or update now (the game quits, then start it again yourself).
+  later (installed when you close the game) or update now (the game quits, then start it again yourself). **What's
+  new & versions** lists the last ten versions with their notes: switch to any of them, or to the latest in one click
+  (the game quits, then start it again).
 - **Bug reports:** **Report a bug** in the update manager sends a bug with a name, a description and a priority. It
   becomes a public issue on this repository, with your Minecraft name. What you type is kept until you send it, also
   when you leave the screen, die or close the game; **Sent** shows your last 3 reports with their status on GitHub.
@@ -35,7 +37,8 @@ Everything each power does: [Characters and their powers](docs/POWERS.md).
    [Releases](https://github.com/Tivek87/mc-class-mod/releases).
 3. Put the jar in your `mods` folder and start the game.
 
-On a server, the server and every player need the same version of the mod.
+On a server, the server and every player need the same version of the mod. Joining one that runs another version
+(from 0.7.0 on) shows which version it runs, with a button that switches yours to it.
 
 ## Controls
 

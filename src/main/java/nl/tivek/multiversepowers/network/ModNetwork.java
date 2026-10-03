@@ -65,6 +65,7 @@ import nl.tivek.multiversepowers.spell.SpellCooldownPayload;
 import nl.tivek.multiversepowers.spell.SpellFxPayload;
 import nl.tivek.multiversepowers.spell.dark.VoidStatePayload;
 import nl.tivek.multiversepowers.stamina.StaminaCostPayload;
+import nl.tivek.multiversepowers.update.VersionProbe;
 
 public final class ModNetwork {
     private static final String VERSION = "22";
@@ -73,6 +74,7 @@ public final class ModNetwork {
     }
 
     public static void register(RegisterPayloadHandlersEvent event) {
+        VersionProbe.register(event);
         PayloadRegistrar registrar = event.registrar(VERSION);
         registrar.playToClient(OpenWelcomePayload.TYPE, OpenWelcomePayload.STREAM_CODEC, ModNetwork::onOpenWelcome);
         registrar.playToServer(SelectClassPayload.TYPE, SelectClassPayload.STREAM_CODEC, ModNetwork::onSelectClass);

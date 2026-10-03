@@ -2,19 +2,12 @@ package nl.tivek.multiversepowers.character.greenlantern.client.hud;
 
 import static nl.tivek.multiversepowers.character.client.GuideMode.ability;
 import static nl.tivek.multiversepowers.character.client.GuideMode.abilityHold;
-import static nl.tivek.multiversepowers.character.client.GuideMode.back;
 import static nl.tivek.multiversepowers.character.client.GuideMode.click;
-import static nl.tivek.multiversepowers.character.client.GuideMode.crouch;
 import static nl.tivek.multiversepowers.character.client.GuideMode.crouched;
 import static nl.tivek.multiversepowers.character.client.GuideMode.doubleKey;
 import static nl.tivek.multiversepowers.character.client.GuideMode.forward;
 import static nl.tivek.multiversepowers.character.client.GuideMode.heading;
 import static nl.tivek.multiversepowers.character.client.GuideMode.hold;
-import static nl.tivek.multiversepowers.character.client.GuideMode.jump;
-import static nl.tivek.multiversepowers.character.client.GuideMode.sides;
-import static nl.tivek.multiversepowers.character.client.GuideMode.sprint;
-import static nl.tivek.multiversepowers.character.client.GuideMode.text;
-import static nl.tivek.multiversepowers.character.client.GuideMode.walk;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -33,7 +26,7 @@ import nl.tivek.multiversepowers.character.greenlantern.client.body.whip.WhipArm
 import nl.tivek.multiversepowers.character.greenlantern.construct.Construct;
 
 // Green Lantern's modes for the ability guide: on the ground, in flight, in the mech and with each construct weapon,
-// every bind that does something there.
+// every bind that does something there beyond the game's own walking, jumping and looking.
 final class LanternGuide {
     private static final GameCharacter GL = GameCharacter.GREEN_LANTERN;
 
@@ -52,11 +45,9 @@ final class LanternGuide {
                         ability(GL, "emerald_express", "train"), ability(GL, "ring_scan", "scan"),
                         ability(GL, "shockwave", "shockwave"), ability(GL, "giant_hands", "hands"), revolver(),
                         cage(), pound(), free(), ability(GL, "air_strike", "strike"),
-                        heading("move"), doubleKey(LanternGuide::jumpKey, "fly").fires("flight"), walk("walk")),
+                        heading("move"), doubleKey(LanternGuide::jumpKey, "fly").fires("flight")
+                                .costs("flight", "fullRingSeconds")),
                 mode("flight", LanternGuide::flying,
-                        heading("move"), forward("forward").costs("flight", "fullRingSeconds"), back("back"),
-                        sides("sides"), jump("rise"), crouch("sink"),
-                        doubleKey(LanternGuide::jumpKey, "stop").moves("flight", false),
                         heading("mouse"), bolt(), beam(), lock(),
                         click(Input.RIGHT, "ram").fires("light_shield").costs("light_shield", "powerPerSecond"),
                         hold(Input.RIGHT, "brake").holds("light_shield").costs("light_shield", "domePowerPerSecond"),
@@ -64,13 +55,13 @@ final class LanternGuide {
                         heading("keys"), ability(GL, "shockwave", "dive"), ability(GL, "recharge", "recharge"),
                         wheel("wheel"), ability(GL, "emerald_express", "train"), ability(GL, "ring_scan", "scan"),
                         ability(GL, "giant_hands", "hands"), revolver(), cage(), pound(), free(),
-                        ability(GL, "air_strike", "strike")),
+                        ability(GL, "air_strike", "strike"),
+                        heading("move"), doubleKey(LanternGuide::jumpKey, "stop").moves("flight", false)),
                 mode("mech", LanternPanel::piloting,
-                        heading("move"), forward("walk"), sprint("run"), back("back"), sides("step"),
-                        text("look", "look"), forward("climb"),
                         heading("mouse"), click(Input.LEFT, "blow").moves("light_bolt", false)
                                 .costs("mech", "mechBlowPowerCost"),
-                        hold(Input.SCROLL, "leave").fires("mech")),
+                        hold(Input.SCROLL, "leave").fires("mech"),
+                        heading("move"), forward("climb")),
                 weapon("sword", player -> SwordArms.holding(), "swordPowerCost", "flurryPowerCost", "chargePowerCost",
                         "blockPowerPerSecond", "cut", "flurry", "charge", "block"),
                 weapon("flamethrower", player -> FlameArms.holding(), "sweepPowerCost", "infernoPowerPerSecond",
@@ -125,8 +116,7 @@ final class LanternGuide {
                 hold(Input.LEFT, moves[1]).moves("light_bolt", true).costs("construct_wheel", hold),
                 click(Input.RIGHT, moves[2]).moves("light_shield", false).costs("construct_wheel", right),
                 hold(Input.RIGHT, moves[3]).moves("light_shield", true).costs("construct_wheel", rightHold),
-                heading("keys"), ability(GL, "construct_wheel", "wheel").moves("construct_wheel", false),
-                heading("move"), walk("walk"));
+                heading("keys"), ability(GL, "construct_wheel", "wheel").moves("construct_wheel", false));
     }
 
     private static boolean flying(LocalPlayer player) {

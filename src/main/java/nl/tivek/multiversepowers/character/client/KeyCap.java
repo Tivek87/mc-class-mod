@@ -8,13 +8,14 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
 import nl.tivek.multiversepowers.engine.client.gui.GuiShapes;
 
-// Key caps, chips and dots for the ability panel and guide. Shapes and text sit in buffers the game draws in an order of
-// its own, so a `Layer` flushes the shapes first and draws the text after them, always on top.
+// Key caps, chips and dots for the ability panel and guide, small stone-grey buttons as the game's own. Shapes and text
+// sit in buffers the game draws in an order of its own, so a `Layer` flushes the shapes first and draws the text after
+// them, always on top.
 public final class KeyCap {
-    private static final int FACE = 0xFF2C3341;
-    private static final int TOP = 0xFF3D4657;
-    private static final int SHADOW = 0xFF161A22;
-    private static final int LABEL = 0xFFF3E4B8;
+    private static final int FACE = 0x3A3A3A;
+    private static final int TOP = 0x6B6B6B;
+    private static final int SHADOW = 0x121212;
+    private static final int LABEL = 0xE6E6E6;
     private static final int PAD = 3;
 
     private KeyCap() {
@@ -24,28 +25,29 @@ public final class KeyCap {
         return font.width(text) + PAD * 2;
     }
 
-    // A key cap `height` tall with its text centred; returns its width.
+    // A key cap `height` tall, its lit top edge and dark bottom edge inside that, with its text centred; returns its
+    // width.
     public static int draw(Layer layer, Font font, Component text, int x, int y, int height) {
         int width = width(font, text);
         GuiGraphics graphics = layer.graphics;
-        pill(graphics, x, y + 1, width, height, SHADOW);
-        pill(graphics, x, y, width, height, TOP);
-        pill(graphics, x, y + 1, width, height - 1, FACE);
-        layer.text(text, x + PAD, y + (height - 7) / 2, LABEL);
+        pill(graphics, x, y + 1, width, height - 1, 0xFF000000 | SHADOW);
+        pill(graphics, x, y, width, height - 1, 0xFF000000 | TOP);
+        pill(graphics, x, y + 1, width, height - 2, 0xFF000000 | FACE);
+        layer.text(text, x + PAD, y + (height - 7) / 2, 0xFF000000 | LABEL);
         return width;
     }
 
     // A box with its corner pixels cut, as the game's own buttons: three rectangles.
-    private static void pill(GuiGraphics graphics, int x, int y, int width, int height, int argb) {
+    public static void pill(GuiGraphics graphics, int x, int y, int width, int height, int argb) {
         GuiShapes.roundRect(graphics, x, y + 1, width, height - 2, 0.0F, argb);
         GuiShapes.roundRect(graphics, x + 1, y, width - 2, 1, 0.0F, argb);
         GuiShapes.roundRect(graphics, x + 1, y + height - 1, width - 2, 1, 0.0F, argb);
     }
 
-    // A flat rounded chip of text; returns its width.
+    // A flat chip of text with cut corners; returns its width.
     public static int chip(Layer layer, Font font, Component text, int x, int y, int fill, int color) {
         int width = font.width(text) + 8;
-        GuiShapes.roundRect(layer.graphics, x, y, width, 11, 5.5F, fill);
+        pill(layer.graphics, x, y, width, 11, fill);
         layer.text(text, x + 4, y + 2, color);
         return width;
     }

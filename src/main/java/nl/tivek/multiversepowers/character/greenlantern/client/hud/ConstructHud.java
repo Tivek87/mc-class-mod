@@ -21,6 +21,7 @@ import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.character.CharacterAbility;
 import nl.tivek.multiversepowers.character.GameCharacter;
 import nl.tivek.multiversepowers.character.client.ClientCharacter;
+import nl.tivek.multiversepowers.character.client.KeyCap;
 import nl.tivek.multiversepowers.character.client.MouseHold;
 import nl.tivek.multiversepowers.character.greenlantern.PowerRing;
 import nl.tivek.multiversepowers.character.greenlantern.RingPayload;
@@ -32,7 +33,6 @@ import nl.tivek.multiversepowers.character.greenlantern.client.body.flame.FlameA
 import nl.tivek.multiversepowers.character.greenlantern.client.body.pose.RechargeAnimation;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.sword.SwordArms;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.whip.WhipArms;
-import nl.tivek.multiversepowers.config.Unit;
 import nl.tivek.multiversepowers.engine.client.gui.GuiShapes;
 
 @Mod(value = MultiversePowers.MODID, dist = Dist.CLIENT)
@@ -46,9 +46,13 @@ public final class ConstructHud {
     private static final int LOW = 0xFFFF5A3A;
     private static final int PAID = 0xF2D98A;
     private static final int FLASH = 0xE8FFEE;
-    private static final float BAR_THICK = 6.0F;
+    private static final int BAR = 6;
     // Ring counts as not draining below this power/s; the shield alone costs 0.08
-    private static final float MIN_DRAIN = 0.02F;
+    private static final float MIN_DRAIN = 0.05F;
+    private static final float DRAIN_RATE = 3.0F;
+    private static final int BAR_LEAST = 40;
+    private static final String MOST_POWER = "100";
+    private static final String MOST_DRAIN = "-99.9/s";
     private static final float RISE_RATE = 9.0F;
     private static final long TRAIL_WAIT_MS = 450L;
     private static final float TRAIL_RATE = 5.0F;
@@ -65,6 +69,7 @@ public final class ConstructHud {
     private static long keyFullAt;
     private static float shown = -1.0F;
     private static float trail;
+    private static float shownDrain;
     private static long trailWaits;
     private static long lastDrawn;
 
@@ -283,71 +288,73 @@ public final class ConstructHud {
         }
     }
 
+    // The narrowest the ring's line can be: label, a short bar, the power left and room for what it drains.
+    public static int powerWidth(Font font) {
+        return font.width(ringLabel()) + 4 + BAR_LEAST + 4 + font.width(MOST_POWER) + 3 + font.width(MOST_DRAIN);
+    }
+
+    private static Component ringLabel() {
+        return Component.translatable("ring." + MultiversePowers.MODID + ".label");
+    }
+
+    // The ring's power in one line whose parts each keep their own place: the bar never resizes as the numbers change,
+    // and what the ring drains a second shows, eased and to one decimal, in a room kept for it.
     public static void renderPower(GuiGraphics graphics, Font font, Player player, int left, int right, int y,
             float lowAt) {
         float power = ClientRing.power(player);
         boolean low = power + 1.0E-4F < lowAt;
-        boolean flying = ClientRing.flight(player, 0.0F) >= 0.0F;
-        boolean steady = flying || ClientRing.has(player, RingPayload.SHIELD)
+        boolean steady = ClientRing.flight(player, 0.0F) >= 0.0F || ClientRing.has(player, RingPayload.SHIELD)
                 || ClientRing.has(player, RingPayload.DOME) || ClientRing.has(player, RingPayload.BEAM);
-        float drain = steady ? ClientRing.drain() : 0.0F;
+        follow(power, steady ? ClientRing.drain() : 0.0F);
+        Component label = ringLabel();
+        int drainX = right - font.width(MOST_DRAIN);
+        int numberRight = drainX - 3;
         String number = String.format(Locale.ROOT, "%.0f", power);
-        String goes = "";
-        String time = "";
-        if (drain >= MIN_DRAIN) {
-            goes = " -" + Unit.number(drain) + "/s";
-            if (flying) {
-                time = " " + (int) Math.ceil(power / drain) + "s";
-            }
-        }
-        Component label = Component.translatable("ring." + MultiversePowers.MODID + ".label");
-        int labelWidth = font.width(label);
-        int amountWidth = font.width(number) + font.width(goes) + font.width(time);
         graphics.drawString(font, label, left, y, MUTED, false);
-        int x = right - amountWidth;
-        x = graphics.drawString(font, number, x, y, low ? LOW : TEXT, false);
-        x = graphics.drawString(font, goes, x, y, 0xFF000000 | PAID, false);
-        graphics.drawString(font, time, x, y, MUTED, false);
+        graphics.drawString(font, number, numberRight - font.width(number), y, low ? LOW : TEXT, false);
+        if (steady && shownDrain >= MIN_DRAIN) {
+            graphics.drawString(font, String.format(Locale.ROOT, "-%.1f/s", shownDrain), drainX, y,
+                    0xFF000000 | PAID, false);
+        }
 
-        float barLeft = left + labelWidth + 5.0F;
-        float barWidth = right - amountWidth - 5.0F - barLeft;
-        if (barWidth < 8.0F) {
+        int barLeft = left + font.width(label) + 4;
+        int barWidth = numberRight - font.width(MOST_POWER) - 4 - barLeft;
+        if (barWidth < 8) {
             return;
         }
-        follow(power);
-        float barTop = y + (font.lineHeight - 1 - BAR_THICK) * 0.5F;
-        float radius = BAR_THICK * 0.5F;
+        int barTop = y + (font.lineHeight - 1 - BAR) / 2;
         float nowX = barLeft + barWidth * Mth.clamp(shown / PowerRing.MAX_POWER, 0.0F, 1.0F);
         float trailX = barLeft + barWidth * Mth.clamp(trail / PowerRing.MAX_POWER, 0.0F, 1.0F);
-        GuiShapes.roundRect(graphics, barLeft - 1.0F, barTop - 1.0F, barWidth + 2.0F, BAR_THICK + 2.0F, radius + 1.0F,
-                GuiShapes.fade(0x000000, 0.45F));
-        GuiShapes.roundRect(graphics, barLeft, barTop, barWidth, BAR_THICK, radius, GuiShapes.fade(0x0B2E18, 0.95F));
+        KeyCap.pill(graphics, barLeft - 1, barTop - 1, barWidth + 2, BAR + 2, 0xC0000000);
+        GuiShapes.roundRect(graphics, barLeft, barTop, barWidth, BAR, 0.0F, 0xFF0B2E18);
         if (trailX - nowX > 0.3F) {
-            GuiShapes.roundRect(graphics, barLeft, barTop, trailX - barLeft, BAR_THICK, radius,
+            GuiShapes.roundRect(graphics, barLeft, barTop, trailX - barLeft, BAR, 0.0F,
                     GuiShapes.fade(PAID, 0.9F));
         }
         if (nowX - barLeft > 0.3F) {
-            GuiShapes.roundRect(graphics, barLeft, barTop, nowX - barLeft, BAR_THICK, radius,
+            GuiShapes.roundRect(graphics, barLeft, barTop, nowX - barLeft, BAR, 0.0F,
                     GuiShapes.fade(low ? 0xFF5A3A : GREEN, 1.0F));
-            GuiShapes.roundRect(graphics, barLeft + 1.0F, barTop + 0.6F, Math.max(0.0F, nowX - barLeft - 2.0F),
-                    BAR_THICK * 0.3F, BAR_THICK * 0.15F, GuiShapes.fade(0xFFFFFF, 0.25F));
+            GuiShapes.roundRect(graphics, barLeft, barTop, nowX - barLeft, 1.0F, 0.0F,
+                    GuiShapes.fade(0xFFFFFF, 0.3F));
         }
         for (int quarter = 1; quarter < 4; quarter++) {
-            float markX = barLeft + barWidth * quarter / 4.0F;
-            GuiShapes.quad(graphics, markX - 0.25F, barTop + 1.0F, markX + 0.25F, barTop + 1.0F, markX + 0.25F,
-                    barTop + BAR_THICK - 1.0F, markX - 0.25F, barTop + BAR_THICK - 1.0F, GuiShapes.fade(0x000000, 0.3F));
+            float markX = Math.round(barLeft + barWidth * quarter / 4.0F);
+            GuiShapes.roundRect(graphics, markX, barTop, 1.0F, BAR, 0.0F, GuiShapes.fade(0x000000, 0.35F));
         }
         GuiShapes.flush(graphics);
     }
 
-    private static void follow(float power) {
+    private static void follow(float power, float drain) {
         long now = Util.getMillis();
         float seconds = Math.min(0.25F, (now - lastDrawn) / 1000.0F);
         if (shown < 0.0F || now - lastDrawn > 1000L) {
             shown = power;
             trail = power;
+            shownDrain = drain;
             seconds = 0.0F;
         }
+        shownDrain = drain <= 0.0F ? 0.0F : shownDrain + (drain - shownDrain) * (1.0F - (float) Math.exp(-DRAIN_RATE
+                * seconds));
         lastDrawn = now;
         if (power < shown) {
             // Only restart the trail's wait once it has fully caught up and stopped

@@ -20,37 +20,42 @@ import nl.tivek.multiversepowers.config.Unit;
 import nl.tivek.multiversepowers.engine.client.gui.GuiShapes;
 
 // The guide's right side: a mode's overview (how it starts and ends, what is off meanwhile), or one control of it
-// (its key, what it does in this mode, its cooldown and cost, the explanation of the ability it fires), with whether it
-// can be used right now pinned under it.
+// (its key, what it does in this mode in one short line, its cooldown and cost, and folded under that the full
+// explanation of the ability it fires), with whether it can be used right now pinned under it.
 final class GuideDetail {
     private static final String PREFIX = "screen." + MultiversePowers.MODID + ".guide.";
     private static final String[] OWN_COSTS = { "powerCost", "staminaCost", "staminaPerTick" };
     static final int GREEN = 0xFF72D96E;
     static final int AMBER = 0xFFE9B44C;
     static final int RED = 0xFFFF6A50;
-    static final int GRAY = 0xFF5D6571;
-    private static final int TEXT = 0xFFE6EAF0;
-    private static final int BODY = 0xFFC3CAD3;
-    private static final int MUTED = 0xFF8B94A1;
-    private static final int CHIP = 0xFF1C222C;
+    static final int GRAY = 0xFF6E6E6E;
+    private static final int TEXT = 0xFFFFFFFF;
+    private static final int BODY = 0xFFD8D8D8;
+    private static final int MUTED = 0xFF9A9A9A;
+    private static final int CHIP = 0xFF2A2A2A;
     private static final int LINE = 0x22FFFFFF;
     static final int STATUS = 20;
+    static final int FOLD = 12;
 
     record Status(Component text, int color) {
+    }
+
+    // What was drawn: its full height, and where its fold line starts within it (-1 when it has none).
+    record Drawn(int height, int fold) {
     }
 
     private GuideDetail() {
     }
 
-    // Draws the scrolled part clipped to the box above the status line; returns its full height.
-    static int overview(GuiGraphics graphics, Font font, GuideMode mode, LocalPlayer player, int x, int y, int width,
+    // Draws the scrolled part clipped to the box above the status line.
+    static Drawn overview(GuiGraphics graphics, Font font, GuideMode mode, LocalPlayer player, int x, int y, int width,
             int height, double scroll, int accent) {
         int bottom = y + height - STATUS;
         graphics.enableScissor(x, y, x + width, bottom);
         KeyCap.Layer layer = new KeyCap.Layer(graphics, font);
         int top = y - (int) Math.round(scroll);
         int cy = top + 2;
-        layer.text(mode.title().copy().withStyle(ChatFormatting.BOLD), x, cy, TEXT);
+        layer.shadowed(mode.title().copy().withStyle(ChatFormatting.BOLD), x, cy, TEXT);
         cy += 14;
         cy = heading(layer, Component.translatable(PREFIX + "when"), x, cy, accent);
         cy = paragraph(layer, font, mode.when(), x, cy, width, BODY);
@@ -65,17 +70,19 @@ final class GuideDetail {
         boolean on = mode.active().test(player);
         foot(graphics, font, new Status(Component.translatable(PREFIX + (on ? "mode_on" : "mode_off")),
                 on ? GREEN : GRAY), x, bottom, width);
-        return cy - top + 4;
+        return new Drawn(cy - top + 4, -1);
     }
 
-    static int control(GuiGraphics graphics, Font font, GuideMode mode, GuideMode.Control control,
-            LocalPlayer player, int x, int y, int width, int height, double scroll, int accent) {
+    // `more`: the ability's full explanation unfolded under the short line; `hover` whether the mouse is on the fold.
+    static Drawn control(GuiGraphics graphics, Font font, GuideMode mode, GuideMode.Control control,
+            LocalPlayer player, int x, int y, int width, int height, double scroll, int accent, boolean more,
+            boolean hover) {
         int bottom = y + height - STATUS;
         graphics.enableScissor(x, y, x + width, bottom);
         KeyCap.Layer layer = new KeyCap.Layer(graphics, font);
         int top = y - (int) Math.round(scroll);
         int cy = top + 2;
-        layer.text(mode.name(control).copy().withStyle(ChatFormatting.BOLD), x, cy, TEXT);
+        layer.shadowed(mode.name(control).copy().withStyle(ChatFormatting.BOLD), x, cy, TEXT);
         cy += 14;
         Supplier<Component> key = control.key();
         int cap = key == null ? 0 : KeyCap.draw(layer, font, key.get(), x, cy, 13);
@@ -99,17 +106,25 @@ final class GuideDetail {
             cy += 16;
         }
         Component about = ability == null || !control.describes() ? null : AbilityGuide.about(ability);
+        int fold = -1;
         if (about != null) {
             cy += 2;
             GuiShapes.roundRect(graphics, x, cy, width, 1, 0.0F, LINE);
-            cy += 6;
-            cy = heading(layer, Component.translatable(PREFIX + "about", ability.getDisplayName()), x, cy, accent);
-            cy = paragraph(layer, font, about, x, cy, width, MUTED);
+            cy += 5;
+            fold = cy - top;
+            Component label = more ? Component.translatable(PREFIX + "less")
+                    : Component.translatable(PREFIX + "more", mode.name(control));
+            layer.text(Component.literal(more ? "▼ " : "▶ ").append(hover
+                    ? label.copy().withStyle(ChatFormatting.UNDERLINE) : label), x, cy + 2, accent);
+            cy += FOLD + 2;
+            if (more) {
+                cy = paragraph(layer, font, about, x, cy, width, BODY);
+            }
         }
         layer.finish();
         graphics.disableScissor();
         foot(graphics, font, status(mode, control, player), x, bottom, width);
-        return cy - top + 4;
+        return new Drawn(cy - top + 4, fold);
     }
 
     private static int heading(KeyCap.Layer layer, Component text, int x, int y, int color) {

@@ -35,7 +35,9 @@ final class ChangelogLayout {
     private ChangelogLayout() {
     }
 
-    static List<Block> build(Font font, List<Release> releases, String installed, @Nullable Component note, int width) {
+    // `newest`: the latest release's version, which gets a chip of its own.
+    static List<Block> build(Font font, List<Release> releases, String installed, String newest,
+            @Nullable Component note, int width) {
         List<Block> blocks = new ArrayList<>();
         blocks.add(wip(font, width));
         for (int i = 0; i < releases.size(); i++) {
@@ -45,7 +47,7 @@ final class ChangelogLayout {
             Release release = releases.get(i);
             boolean isInstalled = Release.compare(release.version(), installed) == 0;
             Component chip = isInstalled ? UpdateManagerScreen.text("changelog.installed")
-                    : i == 0 ? UpdateManagerScreen.text("changelog.newest") : null;
+                    : release.version().equals(newest) ? UpdateManagerScreen.text("changelog.newest") : null;
             blocks.add(header(font, release, chip, isInstalled ? INSTALLED_CHIP : UpdatePopup.ACCENT, width));
             notes(font, release.notes(), width, blocks);
         }

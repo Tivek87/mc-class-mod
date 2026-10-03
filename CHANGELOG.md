@@ -3,6 +3,34 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.7.0-alpha] - 2026-10-03
+
+### Added
+- **What's new & versions:** the last 10 versions with their notes; switch to any of them, older too, or to the
+  latest in one click (the game saves and quits; start it again).
+- **Joining:** a server, LAN world or friend on another version of the mod says which version it runs, with Back to
+  main menu or Switch to that version (the game quits).
+- **Ability guide:** one short line about the character on top, with Read more for a full page about them.
+- **Ability guide:** each move has one short line, with More about … to unfold its full description.
+
+### Changed
+- **Ability panel:** cleaner and roomier: mouse, keys and space/shift moves in their own groups, flat key caps,
+  "hold" and "2×" written before the key.
+- **Ability panel:** drawn at your GUI scale, never taller than about 60% of the screen; on small screens its rows
+  sit closer instead of shrinking.
+- **Ability panel:** nothing flashes or jumps: lines glide, grey out and light up again slowly, statuses fade in
+  and out.
+- **Ability panel:** the ultimate's countdown shows at its top right in the character's colour.
+- **Green Lantern:** the ring bar's drain per second has a place of its own, so the numbers never shift.
+- **Ability guide:** a square Minecraft-style window; plain walking, jumping and looking are left out.
+- **Abilities:** every description is shorter and says just what the ability does.
+- **Update manager:** What's new is now What's new & versions.
+
+### Removed
+- **Ability panel:** the green flash on use, the ready dot and the cooldown bar.
+- **Ability panel:** Thor's and Doctor Octopus's passive line.
+- **Green Lantern:** the seconds of flight left beside the ring's number.
+
 ## [0.6.9-alpha] - 2026-10-03
 
 ### Added

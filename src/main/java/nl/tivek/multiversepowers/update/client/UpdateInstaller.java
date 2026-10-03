@@ -74,6 +74,12 @@ final class UpdateInstaller {
         return state == State.READY && target != null && target.version().equals(release.version());
     }
 
+    // The version being downloaded or installed, if any.
+    @Nullable
+    static Release target() {
+        return target;
+    }
+
     static boolean canInstall() {
         return modJar() != null;
     }

@@ -1,16 +1,11 @@
 package nl.tivek.multiversepowers.character.thor.client;
 
-import static nl.tivek.multiversepowers.character.client.GuideMode.back;
 import static nl.tivek.multiversepowers.character.client.GuideMode.click;
 import static nl.tivek.multiversepowers.character.client.GuideMode.doubleKey;
-import static nl.tivek.multiversepowers.character.client.GuideMode.forward;
 import static nl.tivek.multiversepowers.character.client.GuideMode.heading;
 import static nl.tivek.multiversepowers.character.client.GuideMode.hold;
 import static nl.tivek.multiversepowers.character.client.GuideMode.holdKey;
-import static nl.tivek.multiversepowers.character.client.GuideMode.jump;
 import static nl.tivek.multiversepowers.character.client.GuideMode.plus;
-import static nl.tivek.multiversepowers.character.client.GuideMode.sides;
-import static nl.tivek.multiversepowers.character.client.GuideMode.walk;
 
 import java.util.List;
 import java.util.function.Predicate;
@@ -23,7 +18,8 @@ import nl.tivek.multiversepowers.character.client.AbilityGuide;
 import nl.tivek.multiversepowers.character.client.ClientCharacter;
 import nl.tivek.multiversepowers.character.client.GuideMode;
 
-// Thor's modes for the ability guide: his fists, the hammer in hand and flight, every bind that does something there.
+// Thor's modes for the ability guide: his fists, the hammer in hand and flight, every bind that does something there
+// beyond the game's own walking, jumping and looking.
 final class ThorGuide {
     private ThorGuide() {
     }
@@ -37,7 +33,7 @@ final class ThorGuide {
                         plus(ThorGuide::sprintKey, hold(Input.RIGHT, "grab_dash"), "grab_dash").fires("grab_dash"),
                         click(Input.SCROLL, "hammer").fires("mjolnir"), hold(Input.SCROLL, "charge").fires("charged"),
                         heading("move"), doubleKey(ThorGuide::jumpKey, "jump").fires("super_jump"),
-                        holdKey(ThorGuide::jumpKey, "fly").fires("flight"), walk("walk")),
+                        holdKey(ThorGuide::jumpKey, "fly").fires("flight")),
                 mode("hammer", player -> ThorPanel.armed(player) && !flies(player),
                         heading("mouse"), click(Input.LEFT, "combo").fires("combo"),
                         hold(Input.LEFT, "uppercut").fires("hammer_uppercut"),
@@ -45,9 +41,8 @@ final class ThorGuide {
                         hold(Input.RIGHT, "follow").fires("hammer_leap"),
                         click(Input.SCROLL, "away").fires("mjolnir"), hold(Input.SCROLL, "charge").fires("charged"),
                         heading("move"), doubleKey(ThorGuide::jumpKey, "jump").fires("super_jump"),
-                        holdKey(ThorGuide::jumpKey, "fly").fires("flight"), walk("walk")),
+                        holdKey(ThorGuide::jumpKey, "fly").fires("flight")),
                 mode("flight", ThorGuide::flies,
-                        heading("move"), forward("forward"), back("back"), sides("sides"), jump("rise"),
                         heading("mouse"), click(Input.LEFT, "blows").fires("combo"),
                         hold(Input.LEFT, "shockwave").fires("air_shockwave"),
                         click(Input.RIGHT, "blink").fires("air_blink"), hold(Input.RIGHT, "dive").fires("grab_dash_dive"),

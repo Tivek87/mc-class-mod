@@ -3,7 +3,6 @@ package nl.tivek.multiversepowers.character.client;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import javax.annotation.Nullable;
 import net.minecraft.ChatFormatting;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
@@ -12,7 +11,6 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
-import net.minecraft.locale.Language;
 import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.FormattedCharSequence;
@@ -22,29 +20,30 @@ import nl.tivek.multiversepowers.character.GameCharacter;
 import nl.tivek.multiversepowers.engine.client.gui.GuiShapes;
 import org.lwjgl.glfw.GLFW;
 
-// The guide to the character you play, mode by mode: a tab for each state its keys work in (the one you are in has a
-// green dot), the binds that do something there on the left, each with a dot for whether it works now, and the chosen
-// one on the right: what it does there, what it costs and the ability's own explanation.
+// The guide to the character you play: who they are in one short line on top, which unfolds into a page of its own, then
+// mode by mode a tab for each state its keys work in (the one you are in has a green dot), the binds that do something
+// there on the left, each with a dot for whether it works now, and the chosen one on the right: what it does there in
+// one line, what it costs, and folded under that the ability's full explanation.
 final class AbilityGuideScreen extends Screen {
     private static final String PREFIX = "screen." + MultiversePowers.MODID + ".guide.";
     private static final int MAX_WIDTH = 540;
     private static final int MAX_HEIGHT = 330;
-    private static final int RADIUS = 6;
     private static final int ROW = 15;
     private static final int HEADING = 14;
     private static final int TAB = 15;
     private static final int TAB_GAP = 3;
     private static final int FOOTER = 20;
-    private static final int WINDOW = 0xF50E1118;
-    private static final int EDGE = 0xFF2A303C;
-    private static final int LIST = 0xFF090C11;
-    private static final int HOVER = 0x14FFFFFF;
-    private static final int TAB_FILL = 0x0CFFFFFF;
+    private static final int WINDOW = 0xF0101010;
+    private static final int EDGE = 0xFF000000;
+    private static final int RIM = 0x1EFFFFFF;
+    private static final int LIST = 0xFF080808;
+    private static final int HOVER = 0x18FFFFFF;
+    private static final int TAB_FILL = 0xFF2A2A2A;
     private static final int LINE = 0x22FFFFFF;
-    private static final int TEXT = 0xFFE6EAF0;
-    private static final int SOFT = 0xFFB9C0CA;
-    private static final int MUTED = 0xFF8B94A1;
-    private static final int DIM = 0xFF5E6672;
+    private static final int TEXT = 0xFFFFFFFF;
+    private static final int SOFT = 0xFFC8C8C8;
+    private static final int MUTED = 0xFF9A9A9A;
+    private static final int DIM = 0xFF6E6E6E;
     private static final int SCROLLBAR = 0x50FFFFFF;
 
     private final GameCharacter character;
@@ -54,8 +53,10 @@ final class AbilityGuideScreen extends Screen {
     private int[] tabX = new int[0];
     private int[] tabY = new int[0];
     private int[] tabWidth = new int[0];
-    @Nullable
-    private Component passive;
+    private final GuideAbout about;
+    // Whether the chosen control's full explanation is unfolded, and where its fold line was drawn.
+    private boolean more;
+    private int fold = -1;
     private int tab;
     private int selected;
     private double listScroll;
@@ -81,6 +82,7 @@ final class AbilityGuideScreen extends Screen {
         super(Component.translatable(PREFIX + "title", character.getDisplayName()));
         this.character = character;
         this.modes = AbilityGuide.modes(character);
+        this.about = new GuideAbout(character);
         LocalPlayer player = Minecraft.getInstance().player;
         for (int i = 0; player != null && i < this.modes.size(); i++) {
             if (this.modes.get(i).active().test(player)) {
@@ -101,18 +103,17 @@ final class AbilityGuideScreen extends Screen {
 
     @Override
     protected void init() {
-        String passive = "character." + MultiversePowers.MODID + "." + this.character.getId() + ".passive";
-        this.passive = Language.getInstance().has(passive) ? Component.translatable(passive) : null;
         this.windowWidth = Math.min(this.width - 16, MAX_WIDTH);
         this.windowHeight = Math.min(this.height - 16, MAX_HEIGHT);
         this.left = (this.width - this.windowWidth) / 2;
         this.top = (this.height - this.windowHeight) / 2;
+        int lines = this.about.place(this.font, this.left + 14, this.left + this.windowWidth - 14, this.top + 26);
         int count = this.modes.size();
         this.tabX = new int[count];
         this.tabY = new int[count];
         this.tabWidth = new int[count];
         int x = this.left + 10;
-        int y = this.top + (this.passive == null ? 30 : 42);
+        int y = this.top + (lines == 0 ? 30 : 32 + 10 * lines);
         for (int i = 0; i < count; i++) {
             int width = 19 + this.font.width(this.modes.get(i).title());
             if (x > this.left + 10 && x + width > this.left + this.windowWidth - 10) {
@@ -145,6 +146,28 @@ final class AbilityGuideScreen extends Screen {
         this.listScroll = Mth.clamp(this.listScroll, 0.0, this.maxListScroll());
     }
 
+    private void openAbout(boolean open) {
+        if (this.about.open(open)) {
+            this.click(open ? 1.2F : 1.0F);
+        }
+    }
+
+    private void click(float pitch) {
+        if (this.minecraft != null) {
+            this.minecraft.getSoundManager()
+                    .play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK.value(), pitch, 0.3F));
+        }
+    }
+
+    private boolean onFold(double mouseX, double mouseY) {
+        if (this.about.open() || this.fold < 0 || mouseX < this.detailX || mouseX >= this.detailX + this.detailWidth) {
+            return false;
+        }
+        double foldTop = this.listY - this.detailScroll + this.fold;
+        return mouseY >= foldTop && mouseY < foldTop + GuideDetail.FOLD && mouseY >= this.listY
+                && mouseY < this.listY + this.bodyHeight - GuideDetail.STATUS;
+    }
+
     // Opens another tab on the same control when it has one, else on its overview.
     private void open(int index) {
         if (index < 0 || index >= this.modes.size() || index == this.tab) {
@@ -163,10 +186,7 @@ final class AbilityGuideScreen extends Screen {
         this.listScroll = 0.0;
         this.selected = -1;
         this.select(found);
-        if (this.minecraft != null) {
-            this.minecraft.getSoundManager()
-                    .play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK.value(), 1.4F, 0.3F));
-        }
+        this.click(1.4F);
     }
 
     private boolean heading(int index) {
@@ -251,11 +271,11 @@ final class AbilityGuideScreen extends Screen {
         return -1;
     }
 
-    private FormattedCharSequence fit(Component text, int width) {
-        if (this.font.width(text) <= width) {
+    static FormattedCharSequence fit(Font font, Component text, int width) {
+        if (font.width(text) <= width) {
             return text.getVisualOrderText();
         }
-        String cut = this.font.plainSubstrByWidth(text.getString(), Math.max(0, width - this.font.width("...")));
+        String cut = font.plainSubstrByWidth(text.getString(), Math.max(0, width - font.width("...")));
         return Component.literal(cut + "...").withStyle(text.getStyle()).getVisualOrderText();
     }
 
@@ -277,31 +297,27 @@ final class AbilityGuideScreen extends Screen {
         float ease = 1.0F - (float) Math.exp(-seconds * 20.0F);
 
         KeyCap.Layer frame = new KeyCap.Layer(graphics, font);
-        GuiShapes.roundRect(graphics, this.left - 1, this.top - 1, this.windowWidth + 2, this.windowHeight + 2,
-                RADIUS + 1, EDGE);
-        GuiShapes.roundRect(graphics, this.left, this.top, this.windowWidth, this.windowHeight, RADIUS, WINDOW);
-        GuiShapes.roundRect(graphics, this.left, this.top + 3, this.windowWidth, 22, 0.0F,
-                GuiShapes.fade(color, 0.06F));
+        graphics.fill(this.left - 1, this.top - 1, right + 1, bottom + 1, EDGE);
+        graphics.fill(this.left, this.top, right, bottom, WINDOW);
+        graphics.renderOutline(this.left, this.top, this.windowWidth, this.windowHeight, RIM);
+        graphics.fill(this.left, this.top, right, this.top + 2, accent);
         frame.shadowed(this.title.copy().withStyle(ChatFormatting.BOLD), this.left + 14, this.top + 11, accent);
         Component subtitle = Component.translatable(PREFIX + "subtitle");
         frame.text(subtitle, right - 14 - font.width(subtitle), this.top + 11, DIM);
-        if (this.passive != null) {
-            int y = this.top + 26;
-            GuiShapes.disc(graphics, this.left + 18.5F, y + 4.0F, 4.5F, GuiShapes.fade(color, 0.45F));
-            frame.text(Component.literal("i"), this.left + 18, y, TEXT);
-            frame.sequence(this.fit(this.passive, this.windowWidth - 42), this.left + 28, y, SOFT);
-        }
+        this.about.drawTop(frame, font, mouseX, mouseY, accent);
         this.tabs(frame, font, player, mouseX, mouseY, color, ease);
-        GuiShapes.roundRect(graphics, this.left + 8, this.listY - 5, this.windowWidth - 16, 1, 0.0F, LINE);
-        GuiShapes.roundRect(graphics, this.listX, this.listY, this.listWidth, this.bodyHeight, 4.0F, LIST);
+        graphics.fill(this.left + 8, this.listY - 5, right - 8, this.listY - 4, LINE);
         this.footer(frame, font, bottom, right);
         frame.finish();
 
-        graphics.enableScissor(this.left, this.top, right, this.top + 3);
-        GuiShapes.roundRect(graphics, this.left, this.top, this.windowWidth, RADIUS * 2, RADIUS, accent);
-        GuiShapes.flush(graphics);
-        graphics.disableScissor();
-
+        if (this.about.open()) {
+            this.about.drawPage(graphics, font, this.listX, this.listY, right - 8 - this.listX, this.bodyHeight,
+                    accent);
+            return;
+        }
+        graphics.fill(this.listX - 1, this.listY - 1, this.listX + this.listWidth + 1, this.listY + this.bodyHeight + 1,
+                EDGE);
+        graphics.fill(this.listX, this.listY, this.listX + this.listWidth, this.listY + this.bodyHeight, LIST);
         if (this.rows.isEmpty()) {
             graphics.drawString(font, Component.translatable(PREFIX + "none"), this.detailX, this.listY + 2, MUTED,
                     false);
@@ -310,13 +326,16 @@ final class AbilityGuideScreen extends Screen {
         GuideMode mode = this.modes.get(this.tab);
         this.list(graphics, font, player, mode, mouseX, mouseY, color, ease);
         GuideMode.Control chosen = this.rows.get(this.selected);
-        this.detailHeight = chosen == null
+        GuideDetail.Drawn drawn = chosen == null
                 ? GuideDetail.overview(graphics, font, mode, player, this.detailX, this.listY, this.detailWidth,
                         this.bodyHeight, this.detailScroll, accent)
                 : GuideDetail.control(graphics, font, mode, chosen, player, this.detailX, this.listY,
-                        this.detailWidth, this.bodyHeight, this.detailScroll, accent);
+                        this.detailWidth, this.bodyHeight, this.detailScroll, accent, this.more,
+                        this.onFold(mouseX, mouseY));
+        this.detailHeight = drawn.height();
+        this.fold = drawn.fold();
         this.detailScroll = Mth.clamp(this.detailScroll, 0.0, this.maxDetailScroll());
-        this.scrollbar(graphics, this.detailX + this.detailWidth + 4, this.listY,
+        scrollbar(graphics, this.detailX + this.detailWidth + 4, this.listY,
                 this.bodyHeight - GuideDetail.STATUS, this.detailScroll, this.maxDetailScroll());
     }
 
@@ -340,15 +359,19 @@ final class AbilityGuideScreen extends Screen {
         for (int i = 0; i < this.modes.size(); i++) {
             GuideMode mode = this.modes.get(i);
             boolean open = i == this.tab;
-            int fill = open ? GuiShapes.fade(color, 0.16F) : i == hover ? HOVER : TAB_FILL;
-            GuiShapes.roundRect(graphics, this.tabX[i], this.tabY[i], this.tabWidth[i], TAB, 4.0F, fill);
+            int x = this.tabX[i];
+            int y = this.tabY[i];
+            KeyCap.pill(graphics, x, y, this.tabWidth[i], TAB, EDGE);
+            KeyCap.pill(graphics, x + 1, y + 1, this.tabWidth[i] - 2, TAB - 2, open
+                    ? 0xFF000000 | GuiShapes.mix(TAB_FILL, color, 0.28F) : i == hover ? 0xFF3A3A3A : TAB_FILL);
+            graphics.fill(x + 2, y + 1, x + this.tabWidth[i] - 2, y + 2, HOVER);
             if (mode.active().test(player)) {
-                KeyCap.dot(graphics, this.tabX[i] + 8.0F, this.tabY[i] + TAB * 0.5F, 2.2F, GuideDetail.GREEN);
+                KeyCap.dot(graphics, x + 8.0F, y + TAB * 0.5F, 2.2F, GuideDetail.GREEN);
             }
-            layer.text(mode.title(), this.tabX[i] + 13, this.tabY[i] + 4, open ? TEXT : i == hover ? TEXT : SOFT);
+            layer.shadowed(mode.title(), x + 13, y + 4, open || i == hover ? TEXT : SOFT);
         }
-        GuiShapes.roundRect(graphics, this.shownTabX + 4.0F, this.shownTabY + TAB - 2.0F, this.shownTabWidth - 8.0F,
-                2.0F, 1.0F, 0xFF000000 | color);
+        GuiShapes.roundRect(graphics, this.shownTabX + 3.0F, this.shownTabY + TAB - 3.0F, this.shownTabWidth - 6.0F,
+                2.0F, 0.0F, 0xFF000000 | color);
     }
 
     private void list(GuiGraphics graphics, Font font, LocalPlayer player, GuideMode mode, int mouseX, int mouseY,
@@ -360,9 +383,9 @@ final class AbilityGuideScreen extends Screen {
         KeyCap.Layer layer = new KeyCap.Layer(graphics, font);
         float base = (float) (this.listY - this.listScroll);
         float shown = base + this.shownY;
-        GuiShapes.roundRect(graphics, this.listX + 3, shown, this.listWidth - 6, ROW, 3.0F,
+        GuiShapes.roundRect(graphics, this.listX + 2, shown, this.listWidth - 4, ROW, 0.0F,
                 GuiShapes.fade(color, 0.20F));
-        GuiShapes.roundRect(graphics, this.listX + 3, shown + 3, 2, ROW - 6, 1.0F, 0xFF000000 | color);
+        GuiShapes.roundRect(graphics, this.listX + 2, shown, 2, ROW, 0.0F, 0xFF000000 | color);
         int hover = this.rowAt(mouseX, mouseY);
         for (int i = 0; i < this.rows.size(); i++) {
             GuideMode.Control row = this.rows.get(i);
@@ -376,7 +399,7 @@ final class AbilityGuideScreen extends Screen {
                 continue;
             }
             if (i == hover && i != this.selected) {
-                GuiShapes.roundRect(graphics, this.listX + 3, y, this.listWidth - 6, ROW, 3.0F, HOVER);
+                GuiShapes.roundRect(graphics, this.listX + 2, y, this.listWidth - 4, ROW, 0.0F, HOVER);
             }
             int text = i == this.selected ? TEXT : SOFT;
             if (row == null) {
@@ -396,15 +419,15 @@ final class AbilityGuideScreen extends Screen {
                 room -= cap + 6;
                 KeyCap.draw(layer, font, key, this.listX + this.listWidth - 7 - cap, y + 2, 11);
             }
-            layer.sequence(this.fit(name, room), this.listX + 19, y + 4, text);
+            layer.sequence(fit(font, name, room), this.listX + 19, y + 4, text);
         }
         layer.finish();
         graphics.disableScissor();
-        this.scrollbar(graphics, this.listX + this.listWidth - 4, this.listY, this.bodyHeight, this.listScroll,
+        scrollbar(graphics, this.listX + this.listWidth - 4, this.listY, this.bodyHeight, this.listScroll,
                 this.maxListScroll());
     }
 
-    private void scrollbar(GuiGraphics graphics, int x, int y, int height, double scroll, double max) {
+    static void scrollbar(GuiGraphics graphics, int x, int y, int height, double scroll, double max) {
         if (max <= 0.0) {
             return;
         }
@@ -431,6 +454,7 @@ final class AbilityGuideScreen extends Screen {
         x += KeyCap.draw(layer, font, Component.literal("↓"), x, y, 11) + 4;
         Component choose = Component.translatable(PREFIX + "choose");
         layer.text(choose, x, y + 2, MUTED);
+        x += font.width(choose) + 10;
         Component close = Component.translatable(PREFIX + "close");
         Component esc = Component.literal("Esc");
         Component key = PowerInputs.keyName(AbilityGuide.KEY);
@@ -442,14 +466,32 @@ final class AbilityGuideScreen extends Screen {
             end -= 2 + KeyCap.width(font, key);
             KeyCap.draw(layer, font, key, end, y, 11);
         }
+        Component enter = Component.literal("Enter");
+        Component more = Component.translatable(PREFIX + "details");
+        if (!this.about.open() && this.fold >= 0 && x + KeyCap.width(font, enter) + 4 + font.width(more) < end - 10) {
+            x += KeyCap.draw(layer, font, enter, x, y, 11) + 4;
+            layer.text(more, x, y + 2, MUTED);
+        }
     }
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (button == 0) {
+            if (this.about.onToggle(this.font, mouseX, mouseY)) {
+                this.openAbout(!this.about.open());
+                return true;
+            }
             int tab = this.tabAt(mouseX, mouseY);
             if (tab >= 0) {
+                this.openAbout(false);
                 this.open(tab);
+                return true;
+            }
+            if (this.about.open()) {
+                return true;
+            }
+            if (this.onFold(mouseX, mouseY)) {
+                this.unfold();
                 return true;
             }
             int index = this.rowAt(mouseX, mouseY);
@@ -461,8 +503,17 @@ final class AbilityGuideScreen extends Screen {
         return super.mouseClicked(mouseX, mouseY, button);
     }
 
+    private void unfold() {
+        this.more = !this.more;
+        this.click(this.more ? 1.2F : 1.0F);
+    }
+
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+        if (this.about.open()) {
+            this.about.scroll(-scrollY * 12.0, this.bodyHeight);
+            return true;
+        }
         boolean overDetail = mouseX >= this.detailX && mouseX < this.detailX + this.detailWidth
                 && mouseY >= this.listY && mouseY < this.listY + this.bodyHeight;
         if (overDetail && this.maxDetailScroll() > 0.0) {
@@ -479,6 +530,32 @@ final class AbilityGuideScreen extends Screen {
             this.onClose();
             return true;
         }
+        if (this.about.open() && keyCode == GLFW.GLFW_KEY_ESCAPE) {
+            this.openAbout(false);
+            return true;
+        }
+        if (keyCode == GLFW.GLFW_KEY_ENTER || keyCode == GLFW.GLFW_KEY_KP_ENTER || keyCode == GLFW.GLFW_KEY_SPACE) {
+            if (this.about.open()) {
+                this.openAbout(false);
+            } else if (this.fold >= 0) {
+                this.unfold();
+            }
+            return true;
+        }
+        if (this.about.open()) {
+            int page = this.bodyHeight - 24;
+            double step = switch (keyCode) {
+                case GLFW.GLFW_KEY_UP, GLFW.GLFW_KEY_W -> -12.0;
+                case GLFW.GLFW_KEY_DOWN, GLFW.GLFW_KEY_S -> 12.0;
+                case GLFW.GLFW_KEY_PAGE_UP -> -page;
+                case GLFW.GLFW_KEY_PAGE_DOWN -> page;
+                default -> 0.0;
+            };
+            if (step != 0.0) {
+                this.about.scroll(step, this.bodyHeight);
+                return true;
+            }
+        }
         int count = this.modes.size();
         int tab = switch (keyCode) {
             case GLFW.GLFW_KEY_LEFT, GLFW.GLFW_KEY_A -> this.tab - 1;
@@ -487,8 +564,12 @@ final class AbilityGuideScreen extends Screen {
             default -> keyCode >= GLFW.GLFW_KEY_1 && keyCode <= GLFW.GLFW_KEY_9 ? keyCode - GLFW.GLFW_KEY_1 : -1;
         };
         if (tab >= 0 && tab < count) {
+            this.openAbout(false);
             this.open(tab);
             return true;
+        }
+        if (this.about.open()) {
+            return super.keyPressed(keyCode, scanCode, modifiers);
         }
         if (keyCode == GLFW.GLFW_KEY_TAB || keyCode == GLFW.GLFW_KEY_LEFT || keyCode == GLFW.GLFW_KEY_RIGHT) {
             return true;

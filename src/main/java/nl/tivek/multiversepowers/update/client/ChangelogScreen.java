@@ -2,30 +2,54 @@ package nl.tivek.multiversepowers.update.client;
 
 import java.util.ArrayList;
 import java.util.List;
+import javax.annotation.Nullable;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.network.chat.Component;
+import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.Mth;
 import nl.tivek.multiversepowers.engine.client.gui.DirtBackgroundScreen;
 import org.lwjgl.glfw.GLFW;
 
+// What's new: the last ten versions listed on the left as the game's launcher lists them, the chosen one's notes on the
+// right, and under them a button that switches to the chosen version and one that goes straight to the latest. A switch
+// downloads that version's jar, closes the game and swaps it in (UpdateInstaller); the player starts the game again.
 final class ChangelogScreen extends DirtBackgroundScreen {
-    private static final int PANEL_WIDTH = 340;
+    private static final int SHOWN = 10;
+    private static final int MAX_WIDTH = 520;
     private static final int PANEL_TOP = 44;
-    private static final int BOTTOM_SPACE = 34;
+    private static final int BOTTOM_SPACE = 48;
+    private static final int GAP = 6;
     private static final int PADDING = 10;
+    private static final int ROW = 22;
     private static final int SCROLLBAR = 6;
     private static final int SCROLL_STEP = 20;
+    private static final int ERROR_COLOR = 0xFF7B7B;
 
     private final Screen parent;
+    private List<Release> versions = List.of();
+    @Nullable
+    private Release chosen;
     private List<ChangelogLayout.Block> blocks = List.of();
     private int contentHeight;
     private double scroll;
+    private double listScroll;
     private int left;
     private int panelWidth;
     private int panelBottom;
+    private int listWidth;
+    private int notesX;
+    private int notesWidth;
     private boolean complete;
+    @Nullable
+    private Button use;
+    @Nullable
+    private Button latest;
+    @Nullable
+    private Button retry;
 
     ChangelogScreen(Screen parent) {
         super(UpdateManagerScreen.text("changelog.title"));
@@ -34,32 +58,90 @@ final class ChangelogScreen extends DirtBackgroundScreen {
 
     @Override
     protected void init() {
-        this.panelWidth = Math.min(PANEL_WIDTH, this.width - 24);
+        this.panelWidth = Math.min(MAX_WIDTH, this.width - 24);
         this.left = (this.width - this.panelWidth) / 2;
-        this.panelBottom = Math.max(PANEL_TOP + 40, this.height - BOTTOM_SPACE);
+        this.panelBottom = Math.max(PANEL_TOP + 60, this.height - BOTTOM_SPACE);
+        this.listWidth = Mth.clamp(this.panelWidth * 3 / 10, 104, 140);
+        this.notesX = this.left + this.listWidth + GAP;
+        this.notesWidth = this.left + this.panelWidth - this.notesX;
         UpdateChecker.loadReleases();
-        this.layout();
+        int third = (this.panelWidth - 2 * GAP) / 3;
+        int y = this.height - 27;
+        this.use = this.addRenderableWidget(Button.builder(UpdateManagerScreen.text("versions.use"),
+                button -> this.switchTo(this.chosen)).tooltip(Tooltip.create(UpdateManagerScreen.text("versions.tip")))
+                .bounds(this.left, y, third, 20).build());
+        this.latest = this.addRenderableWidget(Button.builder(UpdateManagerScreen.text("versions.latest"),
+                button -> this.switchTo(newest(true))).tooltip(Tooltip.create(UpdateManagerScreen.text("versions.tip")))
+                .bounds(this.left + third + GAP, y, third, 20).build());
         this.addRenderableWidget(Button.builder(UpdateManagerScreen.text("back"), button -> this.onClose())
-                .bounds(this.width / 2 - 60, this.height - 27, 120, 20).build());
+                .bounds(this.left + 2 * (third + GAP), y, this.panelWidth - 2 * (third + GAP), 20).build());
+        this.retry = this.addRenderableWidget(Button.builder(UpdateManagerScreen.text("versions.retry"), button -> {
+            this.complete = false;
+            UpdateChecker.loadReleases();
+        }).bounds(this.left + 6, PANEL_TOP + 46, this.listWidth - 12, 20).build());
+        this.layout();
+        this.refreshButtons();
     }
 
+    // The ten newest versions, and yours under them when it is older; the chosen one's notes.
     private void layout() {
-        List<Release> shown = new ArrayList<>(UpdateChecker.newer());
-        Release installed = UpdateChecker.installedRelease();
+        List<Release> all = UpdateChecker.releasesIfLoaded();
+        this.complete = all != null || UpdateChecker.releasesFailed();
         Component note = null;
-        boolean loaded = UpdateChecker.releasesIfLoaded() != null;
-        if (installed != null) {
-            shown.add(installed);
-        } else if (loaded) {
-            note = UpdateManagerScreen.text("changelog.not_listed", "v" + UpdateChecker.installed());
+        if (all == null) {
+            this.versions = List.of();
+            this.chosen = null;
         } else {
-            note = UpdateManagerScreen.text(UpdateChecker.releasesFailed() ? "changelog.failed" : "changelog.loading");
+            List<Release> shown = new ArrayList<>(all.subList(0, Math.min(SHOWN, all.size())));
+            Release own = UpdateChecker.installedRelease();
+            if (own != null && !shown.contains(own)) {
+                shown.add(own);
+            }
+            this.versions = shown;
+            if (this.chosen == null || !shown.contains(this.chosen)) {
+                this.chosen = shown.isEmpty() ? null : shown.get(0);
+            }
+            if (own == null) {
+                note = UpdateManagerScreen.text("changelog.not_listed", "v" + UpdateChecker.installed());
+            }
         }
-        this.complete = loaded || UpdateChecker.releasesFailed();
-        this.blocks = ChangelogLayout.build(this.font, shown, UpdateChecker.installed(), note,
-                this.panelWidth - 2 * PADDING - SCROLLBAR);
+        Release newest = newest(false);
+        this.blocks = ChangelogLayout.build(this.font, this.chosen == null ? List.of() : List.of(this.chosen),
+                UpdateChecker.installed(), newest == null ? "" : newest.version(), note,
+                this.notesWidth - 2 * PADDING - SCROLLBAR);
         this.contentHeight = this.blocks.stream().mapToInt(ChangelogLayout.Block::height).sum() + 2 * PADDING;
         this.scroll = Mth.clamp(this.scroll, 0.0, this.maxScroll());
+        this.listScroll = Mth.clamp(this.listScroll, 0.0, this.maxListScroll());
+    }
+
+    // The latest release (`installable`: the latest that has a jar to install).
+    @Nullable
+    private static Release newest(boolean installable) {
+        List<Release> all = UpdateChecker.releasesIfLoaded();
+        if (all == null) {
+            return null;
+        }
+        return all.stream().filter(release -> !installable || release.jar() != null).findFirst().orElse(null);
+    }
+
+    private static boolean installed(Release release) {
+        return Release.compare(release.version(), UpdateChecker.installed()) == 0;
+    }
+
+    private void choose(Release release) {
+        if (release == this.chosen) {
+            return;
+        }
+        this.chosen = release;
+        this.scroll = 0.0;
+        this.layout();
+        this.refreshButtons();
+    }
+
+    private void switchTo(@Nullable Release release) {
+        if (release != null && !installed(release)) {
+            UpdateInstaller.updateNow(release);
+        }
     }
 
     @Override
@@ -67,10 +149,30 @@ final class ChangelogScreen extends DirtBackgroundScreen {
         if (!this.complete && (UpdateChecker.releasesIfLoaded() != null || UpdateChecker.releasesFailed())) {
             this.layout();
         }
+        this.refreshButtons();
+    }
+
+    private void refreshButtons() {
+        boolean free = UpdateInstaller.canInstall() && UpdateInstaller.state() != UpdateInstaller.State.DOWNLOADING;
+        Release chosen = this.chosen;
+        boolean own = chosen != null && installed(chosen);
+        this.use.active = free && chosen != null && !own && chosen.jar() != null;
+        this.use.setMessage(chosen == null ? UpdateManagerScreen.text("versions.use")
+                : own ? UpdateManagerScreen.text("versions.installed")
+                : UpdateManagerScreen.text("versions.use_this", "v" + chosen.version()));
+        Release newest = newest(true);
+        boolean onLatest = newest != null && Release.compare(UpdateChecker.installed(), newest.version()) >= 0;
+        this.latest.active = free && newest != null && !onLatest;
+        this.latest.setMessage(UpdateManagerScreen.text(onLatest ? "versions.on_latest" : "versions.latest"));
+        this.retry.visible = UpdateChecker.releasesIfLoaded() == null && UpdateChecker.releasesFailed();
     }
 
     private double maxScroll() {
         return Math.max(0, this.contentHeight - (this.panelBottom - PANEL_TOP));
+    }
+
+    private double maxListScroll() {
+        return Math.max(0, this.versions.size() * ROW + 4 - (this.panelBottom - PANEL_TOP));
     }
 
     @Override
@@ -82,50 +184,146 @@ final class ChangelogScreen extends DirtBackgroundScreen {
                 : UpdateManagerScreen.text(count == 1 ? "changelog.since_one" : "changelog.since_many",
                         count, "v" + UpdateChecker.installed());
         graphics.drawCenteredString(this.font, since, this.width / 2, 27, MUTED_COLOR);
-        drawPanel(graphics, this.left, PANEL_TOP, this.panelWidth, this.panelBottom - PANEL_TOP, PANEL_BORDER);
+        drawPanel(graphics, this.left, PANEL_TOP, this.listWidth, this.panelBottom - PANEL_TOP, PANEL_BORDER);
+        drawPanel(graphics, this.notesX, PANEL_TOP, this.notesWidth, this.panelBottom - PANEL_TOP, PANEL_BORDER);
     }
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         super.render(graphics, mouseX, mouseY, partialTick);
-        graphics.enableScissor(this.left + 1, PANEL_TOP + 1, this.left + this.panelWidth - 1, this.panelBottom - 1);
+        this.drawVersions(graphics, mouseX, mouseY);
+        graphics.enableScissor(this.notesX + 1, PANEL_TOP + 1, this.notesX + this.notesWidth - 1, this.panelBottom - 1);
         int y = PANEL_TOP + PADDING - (int) this.scroll;
         for (ChangelogLayout.Block block : this.blocks) {
             if (y + block.height() >= PANEL_TOP && y <= this.panelBottom) {
-                block.draw(graphics, this.left + PADDING, y);
+                block.draw(graphics, this.notesX + PADDING, y);
             }
             y += block.height();
         }
         graphics.flush();
         graphics.disableScissor();
-        this.drawScrollbar(graphics);
+        this.drawScrollbar(graphics, this.notesX + this.notesWidth - SCROLLBAR, this.scroll, this.maxScroll());
+        this.drawStatus(graphics);
     }
 
-    private void drawScrollbar(GuiGraphics graphics) {
-        double max = this.maxScroll();
+    // One row a version: its number, a chip for yours and the latest, and its date under it.
+    private void drawVersions(GuiGraphics graphics, int mouseX, int mouseY) {
+        int x = this.left + 1;
+        int width = this.listWidth - 2;
+        graphics.enableScissor(x, PANEL_TOP + 1, x + width, this.panelBottom - 1);
+        if (this.versions.isEmpty()) {
+            Component note = UpdateManagerScreen.text(UpdateChecker.releasesFailed() ? "versions.failed"
+                    : "versions.loading");
+            this.drawWrappedLeft(graphics, note, x + 6, PANEL_TOP + 8, width - 12, 4, PANEL_TOP + 44, MUTED_COLOR);
+        }
+        int hover = this.versionAt(mouseX, mouseY);
+        Release newest = newest(false);
+        for (int i = 0; i < this.versions.size(); i++) {
+            Release release = this.versions.get(i);
+            int y = PANEL_TOP + 2 + i * ROW - (int) this.listScroll;
+            boolean chosen = release == this.chosen;
+            if (chosen || i == hover) {
+                graphics.fill(x, y, x + width, y + ROW, chosen ? 0x50FFFFFF : 0x20FFFFFF);
+            }
+            if (chosen) {
+                graphics.fill(x, y, x + 2, y + ROW, 0xFF000000 | UpdatePopup.ACCENT);
+            }
+            graphics.drawString(this.font, "v" + release.version(), x + 6, y + 3, chosen ? 0xFFFFFFFF : 0xFFDDDDDD);
+            graphics.drawString(this.font, UpdateManagerScreen.DATE.format(release.published()), x + 6, y + 12,
+                    0xFF000000 | MUTED_COLOR, false);
+            Component chip = installed(release) ? UpdateManagerScreen.text("versions.yours")
+                    : newest != null && release.version().equals(newest.version())
+                    ? UpdateManagerScreen.text("versions.newest") : null;
+            if (chip != null) {
+                int chipWidth = this.font.width(chip) + 6;
+                int chipX = x + width - 4 - chipWidth;
+                graphics.fill(chipX, y + 11, chipX + chipWidth, y + 21,
+                        installed(release) ? 0xFF5A6270 : 0xFF000000 | UpdatePopup.ACCENT);
+                graphics.drawString(this.font, chip, chipX + 3, y + 12, 0xFF101010, false);
+            }
+        }
+        graphics.disableScissor();
+        this.drawScrollbar(graphics, this.left + this.listWidth - SCROLLBAR, this.listScroll, this.maxListScroll());
+    }
+
+    private int versionAt(double mouseX, double mouseY) {
+        if (mouseX < this.left || mouseX >= this.left + this.listWidth || mouseY < PANEL_TOP
+                || mouseY >= this.panelBottom) {
+            return -1;
+        }
+        int index = (int) Math.floor((mouseY - PANEL_TOP - 2 + this.listScroll) / ROW);
+        return index >= 0 && index < this.versions.size() ? index : -1;
+    }
+
+    // Under the panels: the download while it runs, why switching failed or cannot work here, else what switching does.
+    private void drawStatus(GuiGraphics graphics) {
+        int y = this.panelBottom + 5;
+        int center = this.width / 2;
+        Release target = UpdateInstaller.target();
+        switch (UpdateInstaller.state()) {
+            case DOWNLOADING -> {
+                float progress = UpdateInstaller.progress();
+                graphics.drawCenteredString(this.font, UpdateManagerScreen.text("versions.downloading",
+                        target == null ? "?" : "v" + target.version(), Math.round(progress * 100.0F)), center, y,
+                        TEXT_COLOR);
+                int barWidth = Math.min(200, this.panelWidth);
+                int barX = center - barWidth / 2;
+                graphics.fill(barX, y + 10, barX + barWidth, y + 12, 0xFF2A2F36);
+                graphics.fill(barX, y + 10, barX + Math.max(2, (int) (barWidth * progress)), y + 12,
+                        0xFF000000 | UpdatePopup.ACCENT);
+            }
+            case FAILED -> {
+                Component error = UpdateInstaller.error();
+                graphics.drawCenteredString(this.font, error == null ? UpdateManagerScreen.text("error.network")
+                        : error, center, y, ERROR_COLOR);
+            }
+            case READY -> graphics.drawCenteredString(this.font, UpdateManagerScreen.text("versions.ready",
+                    target == null ? "?" : "v" + target.version()), center, y, NOTICE_COLOR);
+            case IDLE -> graphics.drawCenteredString(this.font, UpdateInstaller.canInstall()
+                    ? UpdateManagerScreen.text("versions.hint") : UpdateManagerScreen.text("dev"), center, y,
+                    UpdateInstaller.canInstall() ? MUTED_COLOR : ERROR_COLOR);
+        }
+    }
+
+    private void drawScrollbar(GuiGraphics graphics, int x, double scroll, double max) {
         if (max <= 0) {
             return;
         }
         int view = this.panelBottom - PANEL_TOP - 4;
-        int x = this.left + this.panelWidth - SCROLLBAR;
         int thumb = Math.max(16, (int) (view * (double) view / (view + max)));
-        int thumbY = PANEL_TOP + 2 + (int) ((view - thumb) * (this.scroll / max));
+        int thumbY = PANEL_TOP + 2 + (int) ((view - thumb) * (scroll / max));
         graphics.fill(x, PANEL_TOP + 2, x + 3, PANEL_TOP + 2 + view, 0x40FFFFFF);
         graphics.fill(x, thumbY, x + 3, thumbY + thumb, 0xC0FFFFFF);
     }
 
     @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        int index = this.versionAt(mouseX, mouseY);
+        if (button == 0 && index >= 0) {
+            this.choose(this.versions.get(index));
+            this.minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F));
+            return true;
+        }
+        return super.mouseClicked(mouseX, mouseY, button);
+    }
+
+    @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
-        this.scrollBy(-scrollY * SCROLL_STEP);
+        if (mouseX < this.left + this.listWidth) {
+            this.listScroll = Mth.clamp(this.listScroll - scrollY * SCROLL_STEP, 0.0, this.maxListScroll());
+        } else {
+            this.scrollBy(-scrollY * SCROLL_STEP);
+        }
         return true;
     }
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         int page = this.panelBottom - PANEL_TOP - SCROLL_STEP;
+        int at = this.versions.indexOf(this.chosen);
         switch (keyCode) {
-            case GLFW.GLFW_KEY_UP -> this.scrollBy(-SCROLL_STEP);
-            case GLFW.GLFW_KEY_DOWN -> this.scrollBy(SCROLL_STEP);
+            case GLFW.GLFW_KEY_UP -> this.step(at - 1);
+            case GLFW.GLFW_KEY_DOWN -> this.step(at + 1);
             case GLFW.GLFW_KEY_PAGE_UP -> this.scrollBy(-page);
             case GLFW.GLFW_KEY_PAGE_DOWN -> this.scrollBy(page);
             case GLFW.GLFW_KEY_HOME -> this.scrollBy(-this.contentHeight);
@@ -135,6 +333,17 @@ final class ChangelogScreen extends DirtBackgroundScreen {
             }
         }
         return true;
+    }
+
+    // Chooses the version at `index` in the list and keeps its row in view.
+    private void step(int index) {
+        if (index < 0 || index >= this.versions.size()) {
+            return;
+        }
+        this.choose(this.versions.get(index));
+        int view = this.panelBottom - PANEL_TOP - 4;
+        this.listScroll = Mth.clamp(this.listScroll, index * ROW + ROW - view, index * ROW);
+        this.listScroll = Mth.clamp(this.listScroll, 0.0, this.maxListScroll());
     }
 
     private void scrollBy(double amount) {

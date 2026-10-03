@@ -17,11 +17,11 @@ import javax.annotation.Nullable;
 import net.minecraft.client.Minecraft;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.ModList;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.config.client.ClientSettings;
+import nl.tivek.multiversepowers.update.VersionProbe;
 import org.slf4j.Logger;
 
 @EventBusSubscriber(modid = MultiversePowers.MODID, value = Dist.CLIENT)
@@ -111,6 +111,14 @@ public final class UpdateChecker {
         });
     }
 
+    // Loads the list again, for a version it did not hold yet (one a server runs).
+    static void reloadReleases() {
+        if (!loadingReleases) {
+            releases = null;
+            loadReleases();
+        }
+    }
+
     private static List<Release> newestFirst(List<Release> list) {
         return list.stream().sorted(Comparator.comparing(Release::version, Release::compare).reversed()).toList();
     }
@@ -123,9 +131,7 @@ public final class UpdateChecker {
 
     public static String installed() {
         if (installed == null) {
-            installed = ModList.get().getModContainerById(MultiversePowers.MODID)
-                    .map(container -> container.getModInfo().getVersion().toString())
-                    .orElse("0");
+            installed = VersionProbe.version();
         }
         return installed;
     }

@@ -51,7 +51,7 @@ Good to know:
 There are twelve ability keys and they are only **numbered**: ability 1 up to ability 12. A key is never a
 kind of ability, so every character is free to put anything on any number. Learn the keys once; what
 they do depends purely on who you are. **Y is always the character's ultimate**: its biggest power, with a
-long cooldown; while it goes, the panel's title turns red and counts down.
+long cooldown; while it goes, the panel counts it down at its top right.
 
 | Key | Ability | Doctor Octopus | Green Lantern | Thor |
 |---|---|---|---|---|
@@ -82,36 +82,48 @@ Bolt *(scroll wheel click)* and Lightning Speed *(hold shift)*.
 - An ability on a mouse button or on space shows that in brackets: its number key does nothing for it.
 - A small panel in the bottom right shows who you are and **only what you can use right now**, each with its key and
   cooldown. A power that only works on the ground is left off while you fly, and the other way round, and so is one
-  that wants something else first. It is drawn a size smaller than the rest of the screen, still sharp, and keeps out
-  of your way: it **fades in** when you use or try a power, hit something or get hit, and **fades out** again five
-  seconds after the last of that. While a move is held or running, or an ultimate counts down, it stays.
+  that wants something else first. It is drawn at your own **GUI scale**, like the rest of the game's screen, and
+  stays right of the hotbar (or above the food bar when it is too wide for that). It keeps out of your way: it **fades
+  in** when you use or try a power, hit something or get hit, and **fades out** again five seconds after the last of
+  that. While a move is held or running, or an ultimate counts down, it stays.
+- It keeps calm: nothing on it flashes, a line's status has room of its own so the panel never jumps when it
+  changes, the panel only grows while it is up, and when a line comes or goes the others glide to their new places.
+  A line greys and lights up again slowly, and its status fades in and out. On a big GUI scale it never takes more
+  than about 60% of the screen's height: it goes a size smaller instead.
 - The mouse buttons', space's and shift's moves are listed too, a line for the click and one for the hold of each
-  button, whenever they can be used.
+  button, whenever they can be used. The mouse comes first, then the ability keys, then space and shift, with a
+  little room between them.
 - Keys and buttons your character has nothing on, keys kept free for powers to come and keys you left unbound are
   left off the panel: it shows only what you can use. Mouse buttons go by short names: **LMB**, **RMB**, **MMB**
   (the scroll wheel), **M4** and up.
 - A line's name follows what it does now: Thor's scroll wheel click says **Take Up the Hammer** or **Put Away the
   Hammer**, his combo **Hammer Swings** and his charge **Charge the Hammer** with it in hand; Doctor Octopus's stance
   key says where it takes him next; Green Lantern's flight says **Stop Flying** while he flies.
-- Each line shows its key as a key cap, then the name and, on the right, a **green dot** when it is ready (it pops
-  when a cooldown ends), the seconds left in amber (with a thin bar under the line that empties as the cooldown runs
-  out), **on**, **tired** (out of stamina: mouse buttons and held keys wait, and so does a move with a stamina cost
-  you cannot pay) or **no power**. A line you just used lights up for a moment. The green dot means the move can
-  really start now: Green Lantern's line checks the ring power that move itself needs (taking out a weapon, each
-  weapon move, the mech's blows and the rest each their own cost, the shield and beam only a ring that is not empty;
-  stopping or landing is always free).
-- **P** (the ability guide, can be moved under Controls) opens a window that explains the character you play, one
-  **mode** at a time. Tabs along the top: Green Lantern **Ground**, **Flight**, **Mech**, **Sword & Shield** and
-  **Flamethrower** (and **Energy Whip** once the whip is yours); Thor **Fists**, **Hammer** and **Flight**; Doctor Octopus
-  **Ground**, **Climbing** and **Holding**. It opens on the mode you are in now, which has a green dot on its tab.
-  Switch tabs with the left and right arrows, A and D, Tab or the number keys, or click one.
+- Each line shows its key as a small key cap (with **hold** or **2×** before it for a hold or a double press), then
+  the name and, on the right, why it cannot be used when it cannot: the seconds left in amber, **tired** (out of
+  stamina: mouse buttons and held keys wait, and so does a move with a stamina cost you cannot pay) or **no power**
+  in red; its name is grey meanwhile. A white name with nothing after it is ready; **on** or what it is doing
+  (**flying**, **diving**) shows in green. Ready means the move can really start
+  now: Green Lantern's line checks the ring power that move itself needs (taking out a weapon, each weapon move, the
+  mech's blows and the rest each their own cost, the shield and beam only a ring that is not empty; stopping or
+  landing is always free).
+- **P** (the ability guide, can be moved under Controls) opens a window that explains the character you play. On top
+  is one short line about the character; **Read more** next to it opens a page about them, which **Show less**, Esc
+  or a tab closes again. Under it the guide goes one **mode** at a time. Tabs along the top: Green Lantern
+  **Ground**, **Flight**, **Mech**, **Sword & Shield** and **Flamethrower** (and **Energy Whip** once the whip is
+  yours); Thor **Fists**, **Hammer** and **Flight**; Doctor Octopus **Ground**, **Climbing** and **Holding**. It opens
+  on the mode you are in now, which has a green dot on its tab. Switch tabs with the left and right arrows, A and D,
+  Tab or the number keys, or click one.
 - Each mode lists **only the keys and buttons that do something in it**, grouped under **Mouse**, **Ability keys**
-  and **Moving**, each with a dot: green ready, amber cooling down, grey not now. The first line, **How it works**,
-  says how you get into the mode and out of it and what is off meanwhile. Pick a line with the up and down arrows, W
-  and S, Home and End, or click it; on the right you see its key, what it does in this mode, its cooldown and its cost
-  (**Costs 0.8 power**, **Costs 30 stamina**, **Free**), what the ability does in a few plain sentences, and at the
-  bottom whether you can use it this moment and, if not, why (**Only in flight**, **Not enough power**, **Too tired:
-  wait for your stamina**, **Empty both hands first**, **Not in this mode right now**). P or Esc closes it.
+  and **Moving**, each with a dot: green ready, amber cooling down, grey not now. The game's own walking, jumping and
+  looking are left out; only what a character adds to them is listed (double jump to fly, walking into a wall to
+  climb it). The first line, **How it works**, says how you get into the mode and out of it and what is off
+  meanwhile. Pick a line with the up and down arrows, W and S, Home and End, or click it; on the right you see its
+  key, one short line on what it does in this mode, its cooldown and its cost (**Costs 0.8 power**, **Costs 30
+  stamina**, **Free**), and at the bottom whether you can use it this moment and, if not, why (**Only in flight**,
+  **Not enough power**, **Too tired: wait for your stamina**, **Empty both hands first**, **Not in this mode right
+  now**). **More about ...** under it (click it, or press Enter or space) unfolds the ability's full description;
+  it stays unfolded for the next line you pick until you fold it again. P or Esc closes the guide.
 - The panel's title line shows the guide's key. P is also the game's social interactions key: while you play a
   character, the guide takes it.
 - In the settings, resting the pointer on an ability's title explains that ability the same way.
@@ -126,9 +138,9 @@ space and hold shift**. Left, right and space follow the game's own attack, use 
 out with **Locked** beside them: they cannot be changed there. **Hold shift** is left shift of its own, whatever
 the game's sneak and sprint keys are, and can be moved. The **scroll wheel click and hold can** be too: put either on any key or button you like (on the
 same one, as they come, a click and a hold tell themselves apart). A power with a click and a hold on the same
-button waits until you let go to know which you meant. The panel shows a hold as **Hold ...** and a double press
-as **2×...**; it and the guide's list also shorten key names (**LAlt**, **RCtrl**, **PgUp**), and the guide's
-detail writes them out (**Double Space**, **Left Alt**).
+button waits until you let go to know which you meant. The panel writes **hold** or **2×** before the key of a
+hold or a double press and the guide's list **Hold ...** and **2×...**; both shorten key names (**LAlt**,
+**RCtrl**, **PgUp**), and the guide's detail writes them out (**Double Space**, **Left Alt**).
 - **A character can also sit on the mouse.** Green Lantern does: left click shoots, right click puts up a
   shield. The panel shows those as `[LMB]` and `[RMB]`. They only take the mouse over
   while both your hands are empty and the hand behind that button is free; any other time the mouse does
@@ -215,11 +227,11 @@ The ring makes Green Lantern's uniform over your own clothes.
 - The ring holds **100 power**. A full ring is bright green; the emptier it gets, the darker and duller it
   goes, and a ring that is nearly empty sputters.
 - The panel in the bottom right shows it as a green bar with the number next to it, and small marks at a
-  quarter, half and three quarters. Nothing on it blinks:
+  quarter, half and three quarters. Nothing on it blinks, and nothing in the line moves when the numbers change:
   - When the ring pays for something, the bar drops at once and what it paid stays behind it for a moment as
     a gold piece that then runs out, so you see how big every cost was. Recharging makes the bar glide up.
-  - While the ring drains by itself (flying, the shield, the dome, the beam) it says in gold how fast
-    (`97 -0.08/s`), and in the air also how many seconds of flight that leaves (`90 -1.07/s 85s`).
+  - While the ring drains by itself (flying, the shield, the dome, the beam) it says in gold how fast, eased and to
+    one decimal (`90 -1.1/s`), in a spot kept free for it.
 - Once the ring cannot pay for the Emerald Express, the bar turns red and the Emerald Express says **no power**.
   Pressing R then tells you which key recharges the ring.
 - What is left in the ring stays with you: also while you are someone else, and after dying or logging out.
@@ -383,7 +395,7 @@ Green Lantern recharges his ring at his lantern, the power battery.
   about, but you keep flying.
 - **Power:** a full ring keeps you up for **93.75 seconds**, so flying costs **1.07 power a second** (100
   divided by 93.75), from the moment you take off. Taking off costs **0.8 power**. Everything you
-  do while flying costs on top of that, so you run dry sooner. The panel shows how many seconds you have left.
+  do while flying costs on top of that, so you run dry sooner. The panel shows how fast the ring drains.
 - **Out of power in the air:** the ring's last light lets you sink down gently, arms up, and you cannot steer
   any more. You do not get hurt when you touch the ground. Recharge (on the way down or on the ground) to fly
   again.
@@ -792,7 +804,7 @@ Green Lantern's ultimate: a big, slow gunship of hard light high over the battle
   its tail, a high wing with flaps, four engines with big four-bladed propellers turning in front of them, a tall
   tail fin with the lantern emblem, a minigun on either side, a bomb bay with two doors in its belly and a sensor
   ball under its nose. A thin thread of light ties it to your ring, and your ring and uniform blaze as long as it
-  flies. "AIR STRIKE!" says your action bar, and the panel's title turns red and counts down.
+  flies. "AIR STRIKE!" says your action bar, and the panel counts it down at its top right.
 - **Its jets:** a moment later two sleek **jets of hard light** grow out of threads of your ring's light under its
   wings, each with a bubble canopy, glowing wings, twin tails, two flaming exhausts and a small missile under each
   wing. They peel off and race round the gunship, fast, banking into their turns, one high and one low.

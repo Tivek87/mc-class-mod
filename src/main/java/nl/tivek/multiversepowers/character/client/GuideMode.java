@@ -6,19 +6,18 @@ import java.util.function.Supplier;
 import javax.annotation.Nullable;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.Options;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.locale.Language;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.MutableComponent;
 import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.character.CharacterAbility;
 import nl.tivek.multiversepowers.character.GameCharacter;
 
 // A state of a character with binds of its own (on the ground, in flight, in the mech, a weapon in hand), for the
-// guide: how it starts and ends and every bind that does something in it, nothing else. Its words live in en_us.json
-// under `guide.<mod>.<character>.<id>.` (`title`, `when`, `off`, and per control its line and, unless the ability it
-// fires names it, `<control>.name`); a heading's under `screen.<mod>.guide.part.<id>`.
+// guide: how it starts and ends and every bind that does something in it, nothing else (the game's own walking, jumping
+// and looking are left out). Its words live in en_us.json under `guide.<mod>.<character>.<id>.` (`title`, `when`,
+// `off`, and per control its short line and, unless the ability it fires names it, `<control>.name`); a heading's
+// under `screen.<mod>.guide.part.<id>`.
 public record GuideMode(GameCharacter character, String id, Predicate<LocalPlayer> active, List<Control> controls) {
     private static final String INPUT = "input." + MultiversePowers.MODID + ".";
 
@@ -158,53 +157,17 @@ public record GuideMode(GameCharacter character, String id, Predicate<LocalPlaye
         return plus(() -> Minecraft.getInstance().options.keyShift, control, id);
     }
 
-    // Several keys on one cap, such as the four walking keys.
-    @SafeVarargs
-    public static Control keys(String id, Supplier<KeyMapping>... keys) {
-        return control(() -> {
-            MutableComponent all = Component.empty();
-            for (int i = 0; i < keys.length; i++) {
-                if (i > 0) {
-                    all.append(" ");
-                }
-                all.append(PowerInputs.keyName(keys[i].get()));
-            }
-            return all;
-        }, id);
-    }
-
     // A cap with words of its own rather than a key: `input.<mod>.<name>` (the mouse, the scroll wheel).
     public static Control text(String name, String id) {
         return control(() -> Component.translatable(INPUT + name), id);
-    }
-
-    public static Control walk(String id) {
-        return keys(id, () -> options().keyUp, () -> options().keyLeft, () -> options().keyDown,
-                () -> options().keyRight);
     }
 
     public static Control forward(String id) {
         return key(() -> Minecraft.getInstance().options.keyUp, id);
     }
 
-    public static Control back(String id) {
-        return key(() -> Minecraft.getInstance().options.keyDown, id);
-    }
-
-    public static Control sides(String id) {
-        return keys(id, () -> options().keyLeft, () -> options().keyRight);
-    }
-
-    private static Options options() {
-        return Minecraft.getInstance().options;
-    }
-
     public static Control jump(String id) {
         return key(() -> Minecraft.getInstance().options.keyJump, id);
-    }
-
-    public static Control sprint(String id) {
-        return key(() -> Minecraft.getInstance().options.keySprint, id);
     }
 
     public static Control crouch(String id) {
