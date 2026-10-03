@@ -35,11 +35,13 @@ final class ChangelogLayout {
     private ChangelogLayout() {
     }
 
-    // `newest`: the latest release's version, which gets a chip of its own.
+    // `newest`: the latest release's version, which gets a chip of its own; `banner`: the unfinished-mod banner on top.
     static List<Block> build(Font font, List<Release> releases, String installed, String newest,
-            @Nullable Component note, int width) {
+            @Nullable Component note, int width, boolean banner) {
         List<Block> blocks = new ArrayList<>();
-        blocks.add(wip(font, width));
+        if (banner) {
+            blocks.add(wip(font, width));
+        }
         for (int i = 0; i < releases.size(); i++) {
             if (i > 0) {
                 blocks.add(divider(width));
@@ -158,10 +160,12 @@ final class ChangelogLayout {
         Component full = Component.literal(UpdateManagerScreen.DATE_TIME.format(release.published()));
         Component date = taken + 8 + font.width(full) <= width ? full
                 : Component.literal(UpdateManagerScreen.DATE.format(release.published()));
+        // Too narrow to share the line: the date goes under the version.
+        boolean below = taken + 8 + font.width(date) > width;
         return new Block() {
             @Override
             public int height() {
-                return 24;
+                return below ? 33 : 24;
             }
 
             @Override
@@ -179,7 +183,11 @@ final class ChangelogLayout {
                 graphics.pose().scale(VERSION_SCALE, VERSION_SCALE, 1.0F);
                 graphics.drawString(font, version, 0, 0, 0xFFFFFFFF, true);
                 graphics.pose().popPose();
-                graphics.drawString(font, date, x + width - font.width(date), y + 7, 0xFF000000 | MUTED, false);
+                if (below) {
+                    graphics.drawString(font, date, x, y + 21, 0xFF000000 | MUTED, false);
+                } else {
+                    graphics.drawString(font, date, x + width - font.width(date), y + 7, 0xFF000000 | MUTED, false);
+                }
             }
         };
     }

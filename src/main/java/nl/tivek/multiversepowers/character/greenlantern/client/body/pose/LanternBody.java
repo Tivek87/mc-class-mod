@@ -97,8 +97,8 @@ public final class LanternBody {
         return (float) (Ease.smooth((t - from) / in) * (1.0 - Ease.smooth((t - to) / out)));
     }
 
-    private static float bump(float t, float at, float length) {
-        return (float) Ease.bump(Mth.clamp((t - at) / length, 0.0F, 1.0F));
+    private static float jolt(float t, float at, float length) {
+        return (float) Ease.jolt((t - at) / length);
     }
 
     private static void arrival(Mix mix, float a) {
@@ -112,11 +112,11 @@ public final class LanternBody {
         mix.add(window(a, Arrival.LANTERN_FORMED - 4.0F, Arrival.LANTERN_CAUGHT, 5.0F, 2.0F), -0.3F, -0.1F,
                 -0.12F, 0.0F, 0.4F, 0.0F);
         // The catch, soaked up in the knees.
-        mix.add(bump(a, Arrival.LANTERN_CAUGHT - 1.0F, 8.0F), 2.6F, 0.14F, 0.05F, 0.0F, 0.6F, 0.0F);
+        mix.add(jolt(a, Arrival.LANTERN_CAUGHT - 1.0F, 8.0F), 2.6F, 0.14F, 0.05F, 0.0F, 0.6F, 0.0F);
         // The oath, fist up: a wide, proud stance, the chest out; jolted as the ring comes on.
         float oath = window(a, Arrival.RING_FLY - 2.0F, Arrival.DRESSED, 5.0F, 8.0F);
         mix.add(oath, 1.1F, -0.04F, -0.1F, 0.06F, 1.4F, 1.3F);
-        mix.add(bump(a, Arrival.RING_ON, 7.0F), 1.6F, -0.05F, -0.16F, 0.0F, 1.2F, 0.0F);
+        mix.add(jolt(a, Arrival.RING_ON, 7.0F), 1.6F, -0.05F, -0.16F, 0.0F, 1.2F, 0.0F);
     }
 
     private static void recharge(Mix mix, float t) {

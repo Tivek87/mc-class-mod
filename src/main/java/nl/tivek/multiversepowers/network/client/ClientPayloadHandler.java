@@ -62,6 +62,8 @@ import nl.tivek.multiversepowers.spell.dark.VoidStatePayload;
 import nl.tivek.multiversepowers.spell.dark.client.ClientVoidState;
 import nl.tivek.multiversepowers.stamina.StaminaCostPayload;
 import nl.tivek.multiversepowers.stamina.client.StaminaClient;
+import nl.tivek.multiversepowers.testfight.TestFightPayload;
+import nl.tivek.multiversepowers.testfight.client.FightClient;
 
 public final class ClientPayloadHandler {
     private ClientPayloadHandler() {
@@ -148,6 +150,10 @@ public final class ClientPayloadHandler {
 
     public static void handleKillConfirm(KillConfirmPayload payload, IPayloadContext context) {
         context.enqueueWork(KillMarker::confirm);
+    }
+
+    public static void handleTestFight(TestFightPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> FightClient.told(payload.fighter(), payload.target(), payload.phase()));
     }
 
     public static void handleDeathBlow(DeathBlowPayload payload, IPayloadContext context) {

@@ -26,6 +26,7 @@ import nl.tivek.multiversepowers.character.client.AbilityPanelRows.Line;
 import nl.tivek.multiversepowers.character.greenlantern.client.hud.ConstructHud;
 import nl.tivek.multiversepowers.character.greenlantern.client.hud.ConstructWheelScreen;
 import nl.tivek.multiversepowers.engine.client.gui.GuiShapes;
+import nl.tivek.multiversepowers.engine.client.gui.ScreenAnchors;
 import nl.tivek.multiversepowers.engine.math.Ease;
 
 // The panel in the bottom right: who you are and only what you can use right now, each with its key, and why when it
@@ -371,13 +372,27 @@ public final class AbilityPanel {
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, (float) Ease.smooth(shown));
         PoseStack pose = graphics.pose();
         pose.pushPose();
-        pose.translate(onPixel(graphics.guiWidth() - MARGIN, guiScale),
-                onPixel(graphics.guiHeight() - MARGIN - up.lift, guiScale), 0.0F);
+        float x = onPixel(graphics.guiWidth() - MARGIN, guiScale);
+        float y = onPixel(graphics.guiHeight() - MARGIN - up.lift, guiScale);
+        pose.translate(x, y, 0.0F);
         pose.scale(scale, scale, 1.0F);
         draw(graphics, font, now, player, lines, layout, up, millis);
         graphics.flush();
         pose.popPose();
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+        anchors(layout, x, y, scale);
+    }
+
+    // Where the panel and its guide key ended up on the screen, for the tour to point at.
+    private static void anchors(Layout layout, float x, float y, float scale) {
+        int width = Math.round(up.shownWidth) + PAD * 2;
+        int height = Math.round(up.shownHeight) + PAD * 2;
+        ScreenAnchors.report("game.panel", x - width * scale, y - height * scale, width * scale, height * scale);
+        if (layout.corner() == null && layout.guideWidth() > 0) {
+            float top = y - (height - PAD + 3) * scale;
+            ScreenAnchors.report("game.panel.guide", x - (PAD + layout.guideWidth() + 2) * scale, top,
+                    (layout.guideWidth() + 4) * scale, 15 * scale);
+        }
     }
 
     // On a whole screen pixel, so the text stays sharp.

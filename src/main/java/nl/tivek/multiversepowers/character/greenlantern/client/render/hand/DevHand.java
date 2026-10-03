@@ -131,7 +131,7 @@ public final class DevHand {
         // Each finger curling and opening on its own, the thumb last.
         for (int k = 0; k < 5; k++) {
             double start = 40.0 + k * 10.0;
-            pose.curl[k] += Ease.bump(Mth.clamp((t - start) / 10.0, 0.0, 1.0));
+            pose.curl[k] += Ease.bump((t - start) / 5.0 - 1.0);
         }
         // A fist, then the hand thrown wide open, then a claw.
         double fist = window(t, 90.0, 104.0);

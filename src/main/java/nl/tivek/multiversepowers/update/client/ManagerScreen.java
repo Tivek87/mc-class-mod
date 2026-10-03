@@ -1,0 +1,118 @@
+package nl.tivek.multiversepowers.update.client;
+
+import java.util.List;
+import javax.annotation.Nullable;
+import net.minecraft.SharedConstants;
+import net.minecraft.Util;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.Component;
+import net.neoforged.fml.ModList;
+import nl.tivek.multiversepowers.MultiversePowers;
+import nl.tivek.multiversepowers.bugreport.client.BugReportScreen;
+import nl.tivek.multiversepowers.engine.client.gui.NavScreen;
+import nl.tivek.multiversepowers.engine.client.gui.PixelIcons;
+import nl.tivek.multiversepowers.update.client.tour.Tour;
+
+// The update manager: one window with its pages down the left (updates, every version, a bug report, an idea, the
+// reports you sent) and the tour of what is new; each page is one of these. The version on the title bar copies what
+// a bug report wants to know about your game.
+public abstract class ManagerScreen extends NavScreen {
+    public static final String UPDATES = "updates";
+    public static final String VERSIONS = "versions";
+    public static final String BUG = "bug";
+    public static final String IDEA = "idea";
+    public static final String REPORTS = "reports";
+    public static final String TOUR = "tour";
+    private static final long COPIED_MS = 1500L;
+
+    private static long copiedAt = -COPIED_MS;
+
+    protected ManagerScreen(Component title, @Nullable Screen root, String page) {
+        super(title, root, page);
+    }
+
+    // Opens the manager on its first page; closing it returns to `root`.
+    public static void open(@Nullable Screen root) {
+        Minecraft.getInstance().setScreen(new UpdateManagerScreen(root));
+    }
+
+    // Opens the page `id`, keeping where the manager returns to.
+    public static void open(@Nullable Screen root, String id) {
+        Minecraft.getInstance().setScreen(switch (id) {
+            case VERSIONS -> new ChangelogScreen(root);
+            case BUG -> BugReportScreen.bug(root);
+            case IDEA -> BugReportScreen.idea(root);
+            case REPORTS -> BugReportScreen.reports(root);
+            default -> new UpdateManagerScreen(root);
+        });
+    }
+
+    // Where the manager open now returns to, or the screen itself when it is no manager.
+    @Nullable
+    public static Screen rootOf(@Nullable Screen screen) {
+        return screen instanceof ManagerScreen manager ? manager.root : screen;
+    }
+
+    public static Component text(String key, Object... args) {
+        return Component.translatable("screen." + MultiversePowers.MODID + ".update." + key, args);
+    }
+
+    @Override
+    protected List<Item> items() {
+        return List.of(
+                this.item(UPDATES, PixelIcons.Icon.DOWNLOAD),
+                this.item(VERSIONS, PixelIcons.Icon.VERSIONS),
+                this.item(BUG, PixelIcons.Icon.BUG),
+                this.item(IDEA, PixelIcons.Icon.IDEA),
+                this.item(REPORTS, PixelIcons.Icon.INBOX),
+                new Item(TOUR, text("nav." + TOUR), PixelIcons.Icon.SPARK, Tour::replay, true));
+    }
+
+    private Item item(String id, PixelIcons.Icon icon) {
+        return new Item(id, text("nav." + id), icon, () -> open(this.root, id), false);
+    }
+
+    @Override
+    protected Component brand() {
+        return text("brand");
+    }
+
+    @Override
+    protected PixelIcons.Icon brandIcon() {
+        return PixelIcons.Icon.DOWNLOAD;
+    }
+
+    @Override
+    protected Component brandTag() {
+        return Util.getMillis() - copiedAt < COPIED_MS ? text("copied") : Component.literal("v" + UpdateChecker.installed());
+    }
+
+    @Override
+    protected void clickedBrandTag() {
+        String neoForge = ModList.get().getModContainerById("neoforge")
+                .map(container -> container.getModInfo().getVersion().toString()).orElse("?");
+        Minecraft.getInstance().keyboardHandler.setClipboard("Multiverse Powers v" + UpdateChecker.installed()
+                + " · Minecraft " + SharedConstants.getCurrentVersion().getName() + " · NeoForge " + neoForge);
+        copiedAt = Util.getMillis();
+    }
+
+    @Override
+    @Nullable
+    protected Badge badge(String id) {
+        return switch (id) {
+            case UPDATES -> {
+                if (UpdateInstaller.state() == UpdateInstaller.State.DOWNLOADING) {
+                    yield new Badge(Component.literal(Math.round(UpdateInstaller.progress() * 100.0F) + "%"), ACCENT);
+                }
+                yield UpdateChecker.latest() != null ? new Badge(null, WARN) : null;
+            }
+            case REPORTS -> {
+                int count = BugReportScreen.sentCount();
+                yield count == 0 ? null : new Badge(Component.literal(String.valueOf(count)), 0x8A8A8A);
+            }
+            case TOUR -> Tour.waiting() ? new Badge(null, ACCENT) : null;
+            default -> null;
+        };
+    }
+}

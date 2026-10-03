@@ -129,7 +129,7 @@ public final class ThorPoses {
         floating(mix, model, body, entity);
         flight(mix, view, body, age, entity);
         slam(mix, view, age);
-        hold(mix, view, age);
+        hold(mix, view, age, partialTick);
         blows(mix, view, entity, partialTick);
         float absorb = (float) Math.max(0.0, body.absorb.value);
         mix.drop += absorb;
@@ -210,7 +210,10 @@ public final class ThorPoses {
         mix.pitch += pose.pitch * w;
         mix.twist += pose.twist * w;
         mix.roll += pose.roll * w;
-        for (int side = 0; side < 2; side++) {
+        // Holding a creature by the throat, his right hand keeps hold of it: only the grab's own endings move it.
+        boolean holding = view.has(ThorStatePayload.CARRYING)
+                && !ThorBlow.grabbing(view.blow, view.blowAge(partialTick));
+        for (int side = holding ? 1 : 0; side < 2; side++) {
             Vector3f hand = pose.hand[side];
             // Aimed ahead only where the blow has most of the hand, not while its guard fades under another move.
             mix.aimedHands[side] = w >= mix.handWeight[side];
@@ -225,8 +228,9 @@ public final class ThorPoses {
         }
     }
 
-    // A creature he grabbed on the ground: held out in his right hand, or up over his head with both as he leaps.
-    private static void hold(Mix mix, ClientThor.View view, float age) {
+    // A creature he grabbed on the ground: held up by the throat at arm's length in his right hand, or up over his
+    // head across both as he leaps.
+    private static void hold(Mix mix, ClientThor.View view, float age, float partialTick) {
         if (!view.has(ThorStatePayload.CARRYING) || view.has(ThorStatePayload.FLYING)) {
             return;
         }
@@ -238,7 +242,15 @@ public final class ThorPoses {
             mix.hand(1, 3.0F, -12.5F, -1.0F, w, false);
             mix.pitch -= 0.1F * w;
         } else {
-            mix.hand(0, -2.5F, -1.0F, -8.5F, w, false);
+            // A grab's own ending takes the hand from here as it comes in.
+            if (ThorBlow.grabbing(view.blow, view.blowAge(partialTick))) {
+                ThorBlowPoses.Pose blow = ThorBlowPoses.of(view, partialTick);
+                w = blow == null ? 1.0F : 1.0F - blow.weight;
+            }
+            Vector3f held = ThorBlowPoses.held();
+            mix.hand(0, held.x, held.y, held.z, w, false);
+            // Bearing its weight: leaning back a little from it.
+            mix.pitch -= 0.06F * w;
         }
     }
 

@@ -43,7 +43,8 @@ public final class StaminaHud {
     private static void render(GuiGraphics graphics, DeltaTracker deltaTracker) {
         Minecraft minecraft = Minecraft.getInstance();
         LocalPlayer player = minecraft.player;
-        if (player == null || player.getAbilities().flying || !StaminaClient.usesStamina(minecraft, player)) {
+        if (player == null || minecraft.options.hideGui || player.getAbilities().flying
+                || !StaminaClient.usesStamina(minecraft, player)) {
             return;
         }
 

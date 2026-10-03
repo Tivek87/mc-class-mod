@@ -1,6 +1,7 @@
 package nl.tivek.multiversepowers.character.thor.client;
 
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
+import java.util.function.BiConsumer;
 import javax.annotation.Nullable;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -33,6 +34,11 @@ public final class ClientThor {
         int arg;
         int start;
         public int carried = -1;
+        // A grab: whether a dash brought him to it, and how it ends (ThorGrab.Act, -1 while his player picks) and
+        // since when.
+        public boolean dashed;
+        public int act = -1;
+        int actAt;
         // The move this game started itself, and when: the server's word of the same move is not taken twice.
         int predicted = ThorStatePayload.NONE;
         int predictedAt;
@@ -72,6 +78,11 @@ public final class ClientThor {
         // Ticks since his hammer was last charged.
         public float litAge(float partialTick) {
             return ticks - this.litAt + partialTick;
+        }
+
+        // Ticks since the grab's ending was picked.
+        public float actAge(float partialTick) {
+            return ticks - this.actAt + partialTick;
         }
     }
 
@@ -120,6 +131,9 @@ public final class ClientThor {
             if (own) {
                 ThorPull.start(payload.arg() - 1);
             }
+        } else if (payload.move() == ThorStatePayload.GRAB_ACT) {
+            view.act = payload.arg();
+            view.actAt = ticks;
         } else if (payload.move() != ThorStatePayload.NONE) {
             boolean echo = own && view.predicted == payload.move() && ticks - view.predictedAt <= ECHO;
             if (!echo) {
@@ -196,8 +210,21 @@ public final class ClientThor {
         view.move = move;
         view.arg = arg;
         view.start = ticks;
-        if (move == ThorStatePayload.DIVE || move == ThorStatePayload.GRAB) {
+        if (move == ThorStatePayload.DIVE) {
             view.carried = arg - 1;
+        } else if (move == ThorStatePayload.GRAB) {
+            view.carried = (arg >> 1) - 1;
+            view.dashed = (arg & 1) != 0;
+            view.act = -1;
+        }
+    }
+
+    // Every Thor in sight carrying a creature: his id and what is known of him.
+    public static void carriers(BiConsumer<Integer, View> each) {
+        for (Int2ObjectOpenHashMap.Entry<View> entry : VIEWS.int2ObjectEntrySet()) {
+            if (entry.getValue().has(ThorStatePayload.CARRYING)) {
+                each.accept(entry.getIntKey(), entry.getValue());
+            }
         }
     }
 
@@ -236,7 +263,9 @@ public final class ClientThor {
             Entity thor = level.getEntity(entry.getIntKey());
             Entity held = level.getEntity(view.carried);
             if (thor instanceof LivingEntity living && held != null) {
-                Vec3 at = view.move == ThorStatePayload.HOIST ? ThorGrab.overhead(living) : hand(living, held, 1.0F);
+                Vec3 at = view.move == ThorStatePayload.HOIST ? ThorGrab.overhead(living)
+                        : view.move == ThorStatePayload.DIVE ? hand(living, held, 1.0F)
+                        : ThorGrab.grip(living, 1.0F).subtract(0.0, ThorGrab.throat(held), 0.0);
                 if (!view.has(ThorStatePayload.FLYING)) {
                     at = new Vec3(at.x, Math.max(at.y, living.getY()), at.z);
                 }

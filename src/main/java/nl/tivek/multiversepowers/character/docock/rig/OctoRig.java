@@ -83,9 +83,11 @@ public final class OctoRig extends RigGround implements Effect {
         this.tickShield(level);
         this.draw(level);
         int legs = this.legCount();
-        if (legs != this.syncedLegs || this.marks.size() != this.syncedMarks) {
+        int limbs = this.limbs();
+        if (legs != this.syncedLegs || this.marks.size() != this.syncedMarks || limbs != this.syncedLimbs) {
             this.syncedLegs = legs;
             this.syncedMarks = this.marks.size();
+            this.syncedLimbs = limbs;
             OctopusArms.sync(this.caster);
         }
         return true;

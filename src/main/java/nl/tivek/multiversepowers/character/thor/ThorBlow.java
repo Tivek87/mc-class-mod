@@ -3,8 +3,9 @@ package nl.tivek.multiversepowers.character.thor;
 import javax.annotation.Nullable;
 
 // Thor's blows: twenty with his hands and three kicks for his combo without the hammer, four swings of the hammer for
-// his combo with it, and the hammer's uppercut, which only its own ability throws. His game chains them into a combo
-// that flows (client/ThorCombo) and poses them (client/ThorBlowKeys); the server lands each on its tick (ThorBlows).
+// his combo with it, and the hammer's uppercut and a grab's two endings, which only their own moves throw. His game
+// chains them into a combo that flows (client/ThorCombo) and poses them (client/ThorBlowKeys); the server lands each
+// on its tick (ThorBlows).
 // He never spins round in a blow. Columns: what throws it, how high it lands, its length, the tick it lands, the tick
 // the next may start, its reach in blocks and its width in degrees either side of the look, whether it hits all it
 // sweeps through, then its damage (times the combo's), how hard it throws what it hits away and up, whether it ends a
@@ -37,7 +38,13 @@ public enum ThorBlow {
     HAMMER_BACKHAND(Limb.RIGHT, Height.HIGH, 11, 5, 7, 3.4, 60, true, 1.6, 1.1, 0.15, false, 0.0, Kit.HAMMER),
     HAMMER_THRUST(Limb.RIGHT, Height.MID, 10, 4, 6, 3.8, 25, false, 1.5, 1.5, 0.1, false, 0.15, Kit.HAMMER),
     HAMMER_SMASH(Limb.RIGHT, Height.MID, 14, 7, 10, 3.4, 40, true, 2.3, 0.5, 0.35, true, 0.0, Kit.HAMMER),
-    HAMMER_UPPERCUT(Limb.RIGHT, Height.HIGH, 12, 5, 9, 3.6, 40, false, 2.0, 0.3, 1.6, true, 0.1, Kit.MOVE);
+    HAMMER_UPPERCUT(Limb.RIGHT, Height.HIGH, 12, 5, 9, 3.6, 40, false, 2.0, 0.3, 1.6, true, 0.1, Kit.MOVE),
+    // A grab's endings, with the creature in his right fist: hurled away, and slammed down onto its back.
+    GRAB_HURL(Limb.RIGHT, Height.MID, 14, 9, 11, 3.0, 30, false, 1.0, 0.9, 0.15, true, 0.0, Kit.MOVE),
+    GRAB_SLAM(Limb.RIGHT, Height.LOW, 16, 10, 12, 2.9, 30, false, 1.4, 0.2, -0.3, true, 0.0, Kit.MOVE);
+
+    // Every blow is this much longer than its numbers (ticks, landing, next) and keys say.
+    public static final float PACE = 1.3F;
 
     // Which combo a blow is thrown in: without the hammer, with it, or only by an ability of its own.
     public enum Kit {
@@ -147,15 +154,15 @@ public enum ThorBlow {
     }
 
     public int ticks() {
-        return this.ticks;
+        return Math.round(this.ticks * PACE);
     }
 
     public int hit() {
-        return this.hit;
+        return Math.round(this.hit * PACE);
     }
 
     public int ready() {
-        return this.ready;
+        return Math.round(this.ready * PACE);
     }
 
     public double reach() {
@@ -201,5 +208,16 @@ public enum ThorBlow {
     // What his right hand alone may throw while his left holds the hammer in flight.
     public boolean oneHanded() {
         return this.kit == Kit.FISTS && this.limb == Limb.RIGHT;
+    }
+
+    // A grab's own ending: thrown with the hand that holds the creature by the throat.
+    public boolean grabbing() {
+        return this == GRAB_HURL || this == GRAB_SLAM;
+    }
+
+    // Whether a grab's ending is under way `age` ticks into this blow.
+    public static boolean grabbing(int index, float age) {
+        ThorBlow blow = byIndex(index);
+        return blow != null && blow.grabbing() && age < blow.ticks();
     }
 }

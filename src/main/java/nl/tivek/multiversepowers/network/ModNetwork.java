@@ -65,6 +65,9 @@ import nl.tivek.multiversepowers.spell.SpellCooldownPayload;
 import nl.tivek.multiversepowers.spell.SpellFxPayload;
 import nl.tivek.multiversepowers.spell.dark.VoidStatePayload;
 import nl.tivek.multiversepowers.stamina.StaminaCostPayload;
+import nl.tivek.multiversepowers.testfight.TestFight;
+import nl.tivek.multiversepowers.testfight.TestFightPayload;
+import nl.tivek.multiversepowers.testfight.TestFightRequest;
 import nl.tivek.multiversepowers.update.VersionProbe;
 
 public final class ModNetwork {
@@ -99,6 +102,8 @@ public final class ModNetwork {
         registrar.playToClient(DeathStylePayload.TYPE, DeathStylePayload.STREAM_CODEC, ModNetwork::onDeathStyle);
         registrar.playToClient(DeathBlowPayload.TYPE, DeathBlowPayload.STREAM_CODEC, ModNetwork::onDeathBlow);
         registrar.playToClient(KillConfirmPayload.TYPE, KillConfirmPayload.STREAM_CODEC, ModNetwork::onKillConfirm);
+        registrar.playToServer(TestFightRequest.TYPE, TestFightRequest.STREAM_CODEC, ModNetwork::onTestFightRequest);
+        registrar.playToClient(TestFightPayload.TYPE, TestFightPayload.STREAM_CODEC, ModNetwork::onTestFight);
         registrar.playToClient(HandVictimPayload.TYPE, HandVictimPayload.STREAM_CODEC, ModNetwork::onHandVictim);
         registrar.playToClient(RingPayload.TYPE, RingPayload.STREAM_CODEC, ModNetwork::onRing);
         registrar.playToServer(AbilityActionPayload.TYPE, AbilityActionPayload.STREAM_CODEC,
@@ -247,6 +252,18 @@ public final class ModNetwork {
 
     private static void onKillConfirm(KillConfirmPayload payload, IPayloadContext context) {
         ClientPayloadHandler.handleKillConfirm(payload, context);
+    }
+
+    private static void onTestFightRequest(TestFightRequest payload, IPayloadContext context) {
+        context.enqueueWork(() -> {
+            if (context.player() instanceof ServerPlayer serverPlayer) {
+                TestFight.request(serverPlayer, payload.target());
+            }
+        });
+    }
+
+    private static void onTestFight(TestFightPayload payload, IPayloadContext context) {
+        ClientPayloadHandler.handleTestFight(payload, context);
     }
 
     private static void onDeathBlow(DeathBlowPayload payload, IPayloadContext context) {

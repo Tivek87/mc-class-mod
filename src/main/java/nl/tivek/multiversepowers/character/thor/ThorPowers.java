@@ -116,7 +116,9 @@ public final class ThorPowers implements CharacterPowers {
             }
             case "hammer_uppercut" -> on && held && !flying && Mjolnir.uppercut(player, hammer);
             case "dash" -> on && !flying && !armed && ThorMoves.dash(player, move, arg);
-            case "grab" -> on && held && !flying && !armed && ThorGrab.grab(player, fists);
+            // SLAM: his pick of how the grab under way ends.
+            case "grab" -> (data & Characters.SLAM) != 0 ? on && ThorGrab.pick(player, move)
+                    : on && held && !flying && !armed && ThorGrab.grab(player, fists);
             case "grab_dash" -> on && held && !flying && !armed && ThorGrab.dash(player, move, arg, fists);
             case "hammer_throw" -> on && !flying && Mjolnir.fling(player, hammer, false);
             case "hammer_leap" -> on && held && !flying && Mjolnir.fling(player, hammer, true);

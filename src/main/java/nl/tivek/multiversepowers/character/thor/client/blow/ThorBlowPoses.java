@@ -16,7 +16,7 @@ import org.joml.Vector3f;
 // after the last one.
 public final class ThorBlowPoses {
     // Ticks a new blow takes to flow out of the one before it.
-    private static final float FLOW = 2.5F;
+    private static final float FLOW = 3.5F;
     // After the last blow ends the guard stays up this long, then comes down over GUARD_DOWN ticks.
     private static final float GUARD_UP = 40.0F;
     private static final float GUARD_DOWN = 10.0F;
@@ -113,12 +113,30 @@ public final class ThorBlowPoses {
             } else {
                 BEFORE.guard();
             }
+            if (blow.grabbing()) {
+                // His right hand held the throat all through the blows before.
+                spot(Spot.HELD, 0, BEFORE.hand[0], BEFORE.pole[0], BEFORE.seen[0], BEFORE.from[0]);
+            }
             BEFORE.toward(pose, (float) Ease.smooth(age / FLOW));
             copy(BEFORE, pose);
         }
-        // Out of a guard already up it is all his at once; from rest it comes up over its first tick and a half.
-        pose.weight = flowing ? 1.0F : (float) Ease.smooth(age / 1.5F);
+        // Out of a guard already up it is all his at once; from rest it comes up over its first two ticks.
+        pose.weight = flowing ? 1.0F : (float) Ease.smooth(age / 2.0F);
         return pose;
+    }
+
+    // Where his right hand holds a grabbed creature up by the throat (chest's frame, pixels).
+    public static Vector3f held() {
+        return new Vector3f(Spot.HELD.hand);
+    }
+
+    // The same hand seen from his own eyes (view space, as hands are drawn), and the way his arm comes from.
+    public static Vector3f heldSeen() {
+        return new Vector3f(Spot.HELD.seen);
+    }
+
+    public static Vector3f heldFrom() {
+        return new Vector3f(Spot.HELD.from);
     }
 
     private static void copy(Pose from, Pose to) {
@@ -126,8 +144,9 @@ public final class ThorBlowPoses {
         to.toward(from, 1.0F);
     }
 
-    // A blow's keys at `age`: the two keys round it eased between.
+    // A blow's keys at `age`: the two keys round it eased between. The keys count in the blow's own ticks, before PACE.
     private static void at(ThorBlow blow, float age, Pose out) {
+        age /= ThorBlow.PACE;
         Script script = ThorBlowKeys.of(blow);
         Key[] keys = script.keys();
         int i = 0;

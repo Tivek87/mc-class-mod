@@ -26,7 +26,7 @@ final class ThorGuide {
 
     static void register() {
         AbilityGuide.modes(GameCharacter.THOR,
-                mode("fists", player -> !ThorPanel.armed(player) && !flies(player),
+                mode("fists", player -> !ThorPanel.armed(player) && !flies(player) && !ThorGrabChoice.holds(player),
                         heading("mouse"), click(Input.LEFT, "combo").fires("combo"),
                         hold(Input.LEFT, "clap").fires("thunderclap"),
                         click(Input.RIGHT, "dash").fires("dash"), hold(Input.RIGHT, "grab").fires("grab"),
@@ -42,6 +42,10 @@ final class ThorGuide {
                         click(Input.SCROLL, "away").fires("mjolnir"), hold(Input.SCROLL, "charge").fires("charged"),
                         heading("move"), doubleKey(ThorGuide::jumpKey, "jump").fires("super_jump"),
                         holdKey(ThorGuide::jumpKey, "fly").fires("flight")),
+                mode("held", ThorGrabChoice::holds,
+                        heading("mouse"), click(Input.LEFT, "punches").moves("grab", false),
+                        click(Input.RIGHT, "throw").moves("grab", false),
+                        click(Input.SCROLL, "slam").moves("grab", false)),
                 mode("flight", ThorGuide::flies,
                         heading("mouse"), click(Input.LEFT, "blows").fires("combo"),
                         hold(Input.LEFT, "shockwave").fires("air_shockwave"),

@@ -10,6 +10,7 @@ import net.minecraft.client.renderer.entity.layers.RenderLayer;
 import net.minecraft.client.renderer.entity.player.PlayerRenderer;
 import net.minecraft.client.resources.PlayerSkin;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.world.entity.player.Player;
@@ -20,6 +21,7 @@ import nl.tivek.multiversepowers.character.GameCharacter;
 import nl.tivek.multiversepowers.character.client.ClientCharacter;
 import nl.tivek.multiversepowers.character.thor.ThorStatePayload;
 import nl.tivek.multiversepowers.character.thor.client.ClientThor;
+import nl.tivek.multiversepowers.character.thor.client.blow.ThorBlowPoses;
 import nl.tivek.multiversepowers.engine.client.model.BentParts;
 import nl.tivek.multiversepowers.engine.client.render.StandaloneModel;
 import nl.tivek.multiversepowers.engine.math.Ease;
@@ -33,17 +35,28 @@ public final class ThorHammerLayer extends RenderLayer<AbstractClientPlayer, Pla
             ResourceLocation.fromNamespaceAndPath(MultiversePowers.MODID, "thor/mjolnir"));
     private static final StandaloneModel RUNES = new StandaloneModel(
             ResourceLocation.fromNamespaceAndPath(MultiversePowers.MODID, "thor/mjolnir_runes"));
-    private static final float SIZE = 0.75F;
+    private static final float SIZE = 1.1F;
     // The model's length in blocks: 32 of its pixels.
     private static final float SPAN = 2.0F;
     private static final int RUNE_LIGHT = 0x4FB4FF;
     private static final float LIGHT_UP = 6.0F;
     // Heights along the model, pommel 0 to peak 1: where a fist holds it, the collar under its head, and the middle
     // of its weight, in the head, which it turns about when thrown.
-    public static final float GRIP = 0.4F;
+    public static final float GRIP = 0.3F;
     private static final float COLLAR = 0.66F;
     public static final float HEFT = 0.8F;
     private static final float LEAD = 20.0F;
+    // The middle of a fist down its arm, in pixels from the shoulder.
+    private static final float FIST = 8.0F;
+    // How far the handle leans down from straight out of the fist: hanging heavy from a relaxed arm, nearer level in a
+    // fight, so its head leads a swing.
+    private static final float HANG = 55.0F;
+    private static final float READY = 15.0F;
+    // Seen from his own eyes: up as a held axe, leaning out from the crosshair.
+    public static final float SEEN_TILT = 25.0F;
+    public static final float SEEN_LEAN = 30.0F;
+    // Hung on the belt it is drawn a little smaller, or its handle would reach his ankle.
+    private static final float BELT = 0.85F;
 
     private ThorHammerLayer(PlayerRenderer renderer) {
         super(renderer);
@@ -90,6 +103,34 @@ public final class ThorHammerLayer extends RenderLayer<AbstractClientPlayer, Pla
         return 0.75F + 0.25F * (float) Noise.smooth(seed, time * 0.3);
     }
 
+    // From an arm's own frame (as translateToHand leaves it: y down the arm, -z its front) into Mjolnir gripped in its
+    // fist: the handle through the fist's middle, out of its front, leaning `tilt` degrees down towards the arm's line,
+    // the head's striking faces in the plane it swings in.
+    public static void inFist(PoseStack pose, boolean right, float tilt) {
+        inFist(pose, right, tilt, 0.0F);
+    }
+
+    // The same, its head leaning `lean` degrees out to the fist's side about the arm's line.
+    public static void inFist(PoseStack pose, boolean right, float tilt, float lean) {
+        pose.translate((right ? -1.0F : 1.0F) / 16.0F, FIST / 16.0F, 0.0F);
+        pose.mulPose(Axis.YP.rotationDegrees(right ? lean : -lean));
+        pose.mulPose(Axis.XP.rotationDegrees(tilt - 90.0F));
+        pose.mulPose(Axis.YP.rotationDegrees(-90.0F));
+    }
+
+    // In flight the fist leads with it: the handle on along the arm, the head out past the fist and leaning ahead.
+    public static void ahead(PoseStack pose, boolean right) {
+        pose.translate((right ? -1.0F : 1.0F) / 16.0F, FIST / 16.0F, 0.0F);
+        pose.mulPose(Axis.XP.rotationDegrees(LEAD));
+    }
+
+    // Hanging heavy from his hand at rest, raised as he fights.
+    public static float tilt(Entity thor, float partialTick) {
+        ClientThor.View view = ClientThor.view(thor);
+        ThorBlowPoses.Pose blow = view == null ? null : ThorBlowPoses.of(view, partialTick);
+        return Mth.lerp(blow == null ? 0.0F : blow.weight, HANG, READY);
+    }
+
     @Override
     public void render(PoseStack pose, MultiBufferSource buffers, int light, AbstractClientPlayer player,
             float limbSwing, float limbSwingAmount, float partialTick, float ageInTicks, float netHeadYaw,
@@ -105,18 +146,11 @@ public final class ThorHammerLayer extends RenderLayer<AbstractClientPlayer, Pla
             // In flight his left fist leads with it: the handle on along his arm, the head out past the fist and
             // leaning ahead of him, a rune face to the front, as if it pulled him along.
             model.translateToHand(HumanoidArm.LEFT, pose);
-            pose.translate(1.0F / 16.0F, 0.625F, -0.125F);
-            pose.mulPose(Axis.XP.rotationDegrees(LEAD));
+            ahead(pose, false);
             draw(GRIP, glow, pose, buffers, light);
         } else if (ClientThor.has(player, ThorStatePayload.ARMED)) {
-            // The fist as the game holds an item in it, then the handle ahead out of it as a sword's blade is, tipped
-            // 10 degrees down, the head upright so its striking face leads a blow.
             model.translateToHand(HumanoidArm.RIGHT, pose);
-            pose.mulPose(Axis.XP.rotationDegrees(-90.0F));
-            pose.mulPose(Axis.YP.rotationDegrees(180.0F));
-            pose.translate(1.0F / 16.0F, 0.125F, -0.625F);
-            pose.mulPose(Axis.YP.rotationDegrees(-90.0F));
-            pose.mulPose(Axis.ZP.rotationDegrees(10.0F));
+            inFist(pose, true, tilt(player, partialTick));
             draw(GRIP, glow, pose, buffers, light);
         } else {
             model.body.translateAndRotate(pose);
@@ -127,6 +161,7 @@ public final class ThorHammerLayer extends RenderLayer<AbstractClientPlayer, Pla
             // a little out from it.
             pose.mulPose(Axis.ZP.rotationDegrees(174.0F));
             pose.mulPose(Axis.YP.rotationDegrees(90.0F));
+            pose.scale(BELT, BELT, BELT);
             draw(COLLAR, glow, pose, buffers, light);
         }
         pose.popPose();

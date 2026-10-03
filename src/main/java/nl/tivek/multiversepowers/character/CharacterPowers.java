@@ -21,6 +21,11 @@ public interface CharacterPowers {
         return 0;
     }
 
+    // What each of the character's extra limbs does now, packed by the character (-1: it has none out).
+    default int limbs(ServerPlayer player) {
+        return -1;
+    }
+
     // Ticks an ability still waits on a cooldown of its own, apart from its slot's, sent along for the panel.
     default int waitLeft(ServerPlayer player, CharacterAbility ability) {
         return 0;

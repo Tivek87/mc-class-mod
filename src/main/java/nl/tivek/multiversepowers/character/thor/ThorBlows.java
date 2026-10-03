@@ -39,7 +39,7 @@ final class ThorBlows {
 
     static boolean start(ServerPlayer player, int index, float damage) {
         ThorBlow blow = ThorBlow.byIndex(index);
-        if (blow == null || player.isPassenger() || player.isSpectator() || !player.isAlive()
+        if (blow == null || player.isPassenger() || player.isSpectator() || !player.isAlive() || ThorGrab.busy(player)
                 || blow.kit() == ThorBlow.Kit.MOVE || blow.kit() == ThorBlow.Kit.HAMMER && !Mjolnir.inHand(player)) {
             return false;
         }

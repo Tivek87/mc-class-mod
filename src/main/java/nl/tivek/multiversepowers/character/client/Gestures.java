@@ -27,6 +27,7 @@ import nl.tivek.multiversepowers.character.greenlantern.client.body.sword.SwordA
 import nl.tivek.multiversepowers.character.greenlantern.client.body.whip.WhipArms;
 import nl.tivek.multiversepowers.engine.client.ragdoll.Downed;
 import nl.tivek.multiversepowers.stamina.client.StaminaClient;
+import nl.tivek.multiversepowers.testfight.client.FightClient;
 
 // The mouse and space gestures: per button the ability its click fires and the one its hold fires, which may be two
 // different ones (Thor dashes on a click and claps on a hold) and may change once the character flies.
@@ -144,9 +145,9 @@ final class Gestures {
         }
     }
 
-    // No screen open and not knocked down (Downed): only then do buttons and gestures fire.
+    // No screen open, not knocked down (Downed) and not in a test fight: only then do buttons and gestures fire.
     private static boolean inGame(Minecraft minecraft) {
-        return minecraft.screen == null && !Downed.now();
+        return minecraft.screen == null && !Downed.now() && !FightClient.busy();
     }
 
     static void reset() {
@@ -253,7 +254,8 @@ final class Gestures {
 
     private static void scroll(LocalPlayer player, Minecraft minecraft, @Nullable CharacterAbility click,
             @Nullable CharacterAbility hold) {
-        boolean inGame = inGame(minecraft);
+        // Crouched over a creature built as a person, the held scroll wheel starts a test fight instead.
+        boolean inGame = inGame(minecraft) && !FightClient.armed();
         if (scrollOnOneKey()) {
             button(player, MouseHold.SCROLL, PowerInputs.SCROLL_CLICK, click, hold, inGame);
             return;

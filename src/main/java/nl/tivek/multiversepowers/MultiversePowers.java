@@ -21,6 +21,7 @@ import nl.tivek.multiversepowers.engine.fx.ParticleBatch;
 import nl.tivek.multiversepowers.faction.Factions;
 import nl.tivek.multiversepowers.network.ModNetwork;
 import nl.tivek.multiversepowers.spell.SpellCasting;
+import nl.tivek.multiversepowers.testfight.TestFight;
 import org.slf4j.Logger;
 
 @Mod(MultiversePowers.MODID)
@@ -48,6 +49,7 @@ public class MultiversePowers {
         DeathStyles.clear();
         DeathBlows.clear();
         Fatigue.clear();
+        TestFight.clear();
         // Last: held mobs must not be saved with their AI switched off.
         HeldMobs.releaseAll();
         Knockdowns.clear();

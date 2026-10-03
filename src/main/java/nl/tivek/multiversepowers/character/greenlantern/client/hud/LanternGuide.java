@@ -99,11 +99,11 @@ final class LanternGuide {
 
     private static GuideMode.Control pound() {
         return ability(GL, "light_bubble", "pound").moves("light_bubble", false)
-                .costs("light_bubble", "poundPowerCost");
+                .costs("light_bubble", "poundPowerCost").again("cage");
     }
 
     private static GuideMode.Control free() {
-        return crouched(ability(GL, "light_bubble", "free").moves("light_bubble", false), "free");
+        return crouched(ability(GL, "light_bubble", "free").moves("light_bubble", false), "free").under("cage");
     }
 
     // A construct weapon: its click and hold of each mouse button, each with the wheel's setting saying what it costs,

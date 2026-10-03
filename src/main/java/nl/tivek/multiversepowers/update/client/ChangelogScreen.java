@@ -5,36 +5,29 @@ import java.util.List;
 import javax.annotation.Nullable;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.network.chat.Component;
-import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.Mth;
-import nl.tivek.multiversepowers.engine.client.gui.DirtBackgroundScreen;
+import nl.tivek.multiversepowers.engine.client.gui.ScreenAnchors;
 import org.lwjgl.glfw.GLFW;
 
-// What's new: the last ten versions listed on the left as the game's launcher lists them, the chosen one's notes on the
-// right, and under them a button that switches to the chosen version and one that goes straight to the latest. A switch
+// The manager's What's new & versions page: the last ten versions listed as the game's launcher lists them, the chosen
+// one's notes beside them, and under them a button that switches to the chosen version and one to the latest. A switch
 // downloads that version's jar, closes the game and swaps it in (UpdateInstaller); the player starts the game again.
-final class ChangelogScreen extends DirtBackgroundScreen {
+final class ChangelogScreen extends ManagerScreen {
     private static final int SHOWN = 10;
-    private static final int MAX_WIDTH = 520;
-    private static final int PANEL_TOP = 44;
-    private static final int BOTTOM_SPACE = 48;
     private static final int GAP = 6;
-    private static final int PADDING = 10;
+    private static final int PADDING = 8;
     private static final int ROW = 25;
     private static final int SCROLLBAR = 6;
     private static final int SCROLL_STEP = 20;
-    private static final int ERROR_COLOR = 0xFF7B7B;
 
-    private final Screen parent;
+    private int top;
     private List<Release> versions = List.of();
     @Nullable
     private Release chosen;
     private List<ChangelogLayout.Block> blocks = List.of();
-    private int contentHeight;
+    private int notesContent;
     private double scroll;
     private double listScroll;
     private int left;
@@ -51,34 +44,40 @@ final class ChangelogScreen extends DirtBackgroundScreen {
     @Nullable
     private Button retry;
 
-    ChangelogScreen(Screen parent) {
-        super(UpdateManagerScreen.text("changelog.title"));
-        this.parent = parent;
+    ChangelogScreen(@Nullable Screen root) {
+        super(text("changelog.title"), root, VERSIONS);
     }
 
     @Override
-    protected void init() {
-        this.panelWidth = Math.min(MAX_WIDTH, this.width - 24);
-        this.left = (this.width - this.panelWidth) / 2;
-        this.panelBottom = Math.max(PANEL_TOP + 60, this.height - BOTTOM_SPACE);
-        this.listWidth = Mth.clamp(this.panelWidth * 3 / 10, 132, 150);
+    protected Component subtitle() {
+        int count = UpdateChecker.newer().size();
+        return count == 0 ? text("changelog.up_to_date", "v" + UpdateChecker.installed())
+                : text(count == 1 ? "changelog.since_one" : "changelog.since_many", count,
+                        "v" + UpdateChecker.installed());
+    }
+
+    @Override
+    protected void initPage() {
+        this.panelWidth = this.contentWidth;
+        this.left = this.contentX;
+        this.top = this.contentY;
+        this.panelBottom = this.contentY + this.contentHeight - 38;
+        this.listWidth = Mth.clamp(this.panelWidth * 3 / 8, 112, 140);
         this.notesX = this.left + this.listWidth + GAP;
         this.notesWidth = this.left + this.panelWidth - this.notesX;
         UpdateChecker.loadReleases();
-        int third = (this.panelWidth - 2 * GAP) / 3;
-        int y = this.height - 27;
-        this.use = this.addRenderableWidget(Button.builder(UpdateManagerScreen.text("versions.use"),
-                button -> this.switchTo(this.chosen)).tooltip(Tooltip.create(UpdateManagerScreen.text("versions.tip")))
-                .bounds(this.left, y, third, 20).build());
-        this.latest = this.addRenderableWidget(Button.builder(UpdateManagerScreen.text("versions.latest"),
-                button -> this.switchTo(newest(true))).tooltip(Tooltip.create(UpdateManagerScreen.text("versions.tip")))
-                .bounds(this.left + third + GAP, y, third, 20).build());
-        this.addRenderableWidget(Button.builder(UpdateManagerScreen.text("back"), button -> this.onClose())
-                .bounds(this.left + 2 * (third + GAP), y, this.panelWidth - 2 * (third + GAP), 20).build());
-        this.retry = this.addRenderableWidget(Button.builder(UpdateManagerScreen.text("versions.retry"), button -> {
+        int half = (this.panelWidth - 4) / 2;
+        int y = this.contentY + this.contentHeight - 20;
+        this.use = this.addRenderableWidget(Button.builder(text("versions.use"),
+                button -> this.switchTo(this.chosen)).tooltip(tip(text("versions.tip")))
+                .bounds(this.left, y, half, 20).build());
+        this.latest = this.addRenderableWidget(Button.builder(text("versions.latest"),
+                button -> this.switchTo(newest(true))).tooltip(tip(text("versions.tip")))
+                .bounds(this.left + half + 4, y, this.panelWidth - half - 4, 20).build());
+        this.retry = this.addRenderableWidget(Button.builder(text("versions.retry"), button -> {
             this.complete = false;
-            UpdateChecker.loadReleases();
-        }).bounds(this.left + 6, PANEL_TOP + 46, this.listWidth - 12, 20).build());
+            UpdateChecker.reloadReleases();
+        }).bounds(this.left + 6, this.top + 46, this.listWidth - 12, 20).build());
         this.layout();
         this.refreshButtons();
     }
@@ -108,8 +107,8 @@ final class ChangelogScreen extends DirtBackgroundScreen {
         Release newest = newest(false);
         this.blocks = ChangelogLayout.build(this.font, this.chosen == null ? List.of() : List.of(this.chosen),
                 UpdateChecker.installed(), newest == null ? "" : newest.version(), note,
-                this.notesWidth - 2 * PADDING - SCROLLBAR);
-        this.contentHeight = this.blocks.stream().mapToInt(ChangelogLayout.Block::height).sum() + 2 * PADDING;
+                this.notesWidth - 2 * PADDING - SCROLLBAR, true);
+        this.notesContent = this.blocks.stream().mapToInt(ChangelogLayout.Block::height).sum() + 2 * PADDING;
         this.scroll = Mth.clamp(this.scroll, 0.0, this.maxScroll());
         this.listScroll = Mth.clamp(this.listScroll, 0.0, this.maxListScroll());
     }
@@ -167,34 +166,30 @@ final class ChangelogScreen extends DirtBackgroundScreen {
     }
 
     private double maxScroll() {
-        return Math.max(0, this.contentHeight - (this.panelBottom - PANEL_TOP));
+        return Math.max(0, this.notesContent - (this.panelBottom - this.top));
     }
 
     private double maxListScroll() {
-        return Math.max(0, this.versions.size() * ROW + 4 - (this.panelBottom - PANEL_TOP));
+        return Math.max(0, this.versions.size() * ROW + 4 - (this.panelBottom - this.top));
     }
 
     @Override
-    public void renderBackground(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        super.renderBackground(graphics, mouseX, mouseY, partialTick);
-        this.drawBigCenteredString(graphics, this.title, this.width / 2, 10, 1.5F, TEXT_COLOR);
-        int count = UpdateChecker.newer().size();
-        Component since = count == 0 ? UpdateManagerScreen.text("changelog.up_to_date", "v" + UpdateChecker.installed())
-                : UpdateManagerScreen.text(count == 1 ? "changelog.since_one" : "changelog.since_many",
-                        count, "v" + UpdateChecker.installed());
-        graphics.drawCenteredString(this.font, since, this.width / 2, 27, MUTED_COLOR);
-        drawPanel(graphics, this.left, PANEL_TOP, this.listWidth, this.panelBottom - PANEL_TOP, PANEL_BORDER);
-        drawPanel(graphics, this.notesX, PANEL_TOP, this.notesWidth, this.panelBottom - PANEL_TOP, PANEL_BORDER);
+    protected void renderPageBackground(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        card(graphics, this.left, this.top, this.listWidth, this.panelBottom - this.top, 0);
+        card(graphics, this.notesX, this.top, this.notesWidth, this.panelBottom - this.top, 0);
+        ScreenAnchors.report("versions", this.left, this.top, this.panelWidth, this.panelBottom - this.top);
+        ScreenAnchors.report("versions.list", this.left, this.top, this.listWidth, this.panelBottom - this.top);
+        ScreenAnchors.report("versions.buttons", this.use.getX(), this.use.getY(),
+                this.latest.getRight() - this.use.getX(), this.use.getHeight());
     }
 
     @Override
-    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        super.render(graphics, mouseX, mouseY, partialTick);
+    protected void renderPage(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         this.drawVersions(graphics, mouseX, mouseY);
-        graphics.enableScissor(this.notesX + 1, PANEL_TOP + 1, this.notesX + this.notesWidth - 1, this.panelBottom - 1);
-        int y = PANEL_TOP + PADDING - (int) this.scroll;
+        graphics.enableScissor(this.notesX + 1, this.top + 1, this.notesX + this.notesWidth - 1, this.panelBottom - 1);
+        int y = this.top + PADDING - (int) this.scroll;
         for (ChangelogLayout.Block block : this.blocks) {
-            if (y + block.height() >= PANEL_TOP && y <= this.panelBottom) {
+            if (y + block.height() >= this.top && y <= this.panelBottom) {
                 block.draw(graphics, this.notesX + PADDING, y);
             }
             y += block.height();
@@ -209,17 +204,17 @@ final class ChangelogScreen extends DirtBackgroundScreen {
     private void drawVersions(GuiGraphics graphics, int mouseX, int mouseY) {
         int x = this.left + 1;
         int width = this.listWidth - 2;
-        graphics.enableScissor(x, PANEL_TOP + 1, x + width, this.panelBottom - 1);
+        graphics.enableScissor(x, this.top + 1, x + width, this.panelBottom - 1);
         if (this.versions.isEmpty()) {
             Component note = UpdateManagerScreen.text(UpdateChecker.releasesFailed() ? "versions.failed"
                     : "versions.loading");
-            this.drawWrappedLeft(graphics, note, x + 6, PANEL_TOP + 8, width - 12, 4, PANEL_TOP + 44, MUTED_COLOR);
+            this.wrap(graphics, note, x + 6, this.top + 8, width - 12, MUTED, 4);
         }
         int hover = this.versionAt(mouseX, mouseY);
         Release newest = newest(false);
         for (int i = 0; i < this.versions.size(); i++) {
             Release release = this.versions.get(i);
-            int y = PANEL_TOP + 2 + i * ROW - (int) this.listScroll;
+            int y = this.top + 2 + i * ROW - (int) this.listScroll;
             boolean chosen = release == this.chosen;
             if (i > 0) {
                 graphics.fill(x + 6, y, x + width - 6, y + 1, 0x14FFFFFF);
@@ -234,13 +229,13 @@ final class ChangelogScreen extends DirtBackgroundScreen {
             graphics.drawString(this.font, "v" + release.version(), x + 7, y + 4, chosen ? 0xFFFFFFFF : 0xFFD8D8D8,
                     chosen);
             graphics.drawString(this.font, UpdateManagerScreen.DATE_TIME.format(release.published()), x + 7, y + 14,
-                    0xFF000000 | (chosen ? MUTED_COLOR : UpdateManagerScreen.GRAY), false);
+                    chosen ? 0xFFA8A090 : 0xFF000000 | UpdateManagerScreen.GRAY, false);
             boolean own = installed(release);
             Component chip = own ? UpdateManagerScreen.text("versions.yours")
                     : newest != null && release.version().equals(newest.version())
                     ? UpdateManagerScreen.text("versions.newest") : null;
             if (chip != null) {
-                this.drawChip(graphics, chip, x + width - 8 - this.font.width(chip) - 6, y + 3,
+                this.chip(graphics, chip, x + width - 8 - this.font.width(chip) - 6, y + 3,
                         own ? 0x5A6270 : UpdatePopup.ACCENT, own ? 0xE8E8E8 : 0x0E1A12);
             }
         }
@@ -249,51 +244,51 @@ final class ChangelogScreen extends DirtBackgroundScreen {
     }
 
     private int versionAt(double mouseX, double mouseY) {
-        if (mouseX < this.left || mouseX >= this.left + this.listWidth || mouseY < PANEL_TOP
+        if (mouseX < this.left || mouseX >= this.left + this.listWidth || mouseY < this.top
                 || mouseY >= this.panelBottom) {
             return -1;
         }
-        int index = (int) Math.floor((mouseY - PANEL_TOP - 2 + this.listScroll) / ROW);
+        int index = (int) Math.floor((mouseY - this.top - 2 + this.listScroll) / ROW);
         return index >= 0 && index < this.versions.size() ? index : -1;
     }
 
     // Under the panels: the download while it runs, why switching failed or cannot work here, else what switching does.
     private void drawStatus(GuiGraphics graphics) {
         int y = this.panelBottom + 5;
-        int center = this.width / 2;
+        int x = this.left;
         Release target = UpdateInstaller.target();
+        String aimed = target == null ? "?" : "v" + target.version();
         switch (UpdateInstaller.state()) {
             case DOWNLOADING -> {
                 float progress = UpdateInstaller.progress();
-                graphics.drawCenteredString(this.font, UpdateManagerScreen.text("versions.downloading",
-                        target == null ? "?" : "v" + target.version(), Math.round(progress * 100.0F)), center, y,
-                        TEXT_COLOR);
-                int barWidth = Math.min(200, this.panelWidth);
-                drawBar(graphics, center - barWidth / 2, y + 11, barWidth, progress, UpdatePopup.ACCENT);
+                Component text = UpdateManagerScreen.text("versions.downloading", aimed, Math.round(progress * 100.0F));
+                graphics.drawString(this.font, text, x, y, TEXT, false);
+                int barX = x + this.font.width(text) + 8;
+                bar(graphics, barX, y + 2, Math.max(20, x + this.panelWidth - barX), progress, ACCENT);
             }
             case FAILED -> {
                 Component error = UpdateInstaller.error();
-                graphics.drawCenteredString(this.font, error == null ? UpdateManagerScreen.text("error.network")
-                        : error, center, y, ERROR_COLOR);
+                this.status(graphics, error == null ? UpdateManagerScreen.text("error.network") : error, y, ERROR);
             }
-            case READY -> graphics.drawCenteredString(this.font, UpdateManagerScreen.text("versions.ready",
-                    target == null ? "?" : "v" + target.version()), center, y, NOTICE_COLOR);
-            case CHECKED -> graphics.drawCenteredString(this.font, UpdateManagerScreen.text("versions.checked",
-                    target == null ? "?" : "v" + target.version()), center, y, NOTICE_COLOR);
-            case IDLE -> graphics.drawCenteredString(this.font, UpdateInstaller.canInstall()
-                    ? UpdateManagerScreen.text("versions.hint") : UpdateManagerScreen.text("test"), center, y,
-                    UpdateInstaller.canInstall() ? MUTED_COLOR : NOTICE_COLOR);
+            case READY -> this.status(graphics, UpdateManagerScreen.text("versions.ready", aimed), y, WARN);
+            case CHECKED -> this.status(graphics, UpdateManagerScreen.text("versions.checked", aimed), y, WARN);
+            case IDLE -> this.status(graphics, UpdateInstaller.canInstall() ? UpdateManagerScreen.text("versions.hint")
+                    : UpdateManagerScreen.text("test"), y, UpdateInstaller.canInstall() ? 0x8E8E8E : WARN);
         }
+    }
+
+    private void status(GuiGraphics graphics, Component text, int y, int rgb) {
+        graphics.drawString(this.font, this.fit(text, this.panelWidth), this.left, y, 0xFF000000 | rgb, false);
     }
 
     private void drawScrollbar(GuiGraphics graphics, int x, double scroll, double max) {
         if (max <= 0) {
             return;
         }
-        int view = this.panelBottom - PANEL_TOP - 4;
+        int view = this.panelBottom - this.top - 4;
         int thumb = Math.max(16, (int) (view * (double) view / (view + max)));
-        int thumbY = PANEL_TOP + 2 + (int) ((view - thumb) * (scroll / max));
-        graphics.fill(x, PANEL_TOP + 2, x + 3, PANEL_TOP + 2 + view, 0x40FFFFFF);
+        int thumbY = this.top + 2 + (int) ((view - thumb) * (scroll / max));
+        graphics.fill(x, this.top + 2, x + 3, this.top + 2 + view, 0x40FFFFFF);
         graphics.fill(x, thumbY, x + 3, thumbY + thumb, 0xC0FFFFFF);
     }
 
@@ -302,7 +297,7 @@ final class ChangelogScreen extends DirtBackgroundScreen {
         int index = this.versionAt(mouseX, mouseY);
         if (button == 0 && index >= 0) {
             this.choose(this.versions.get(index));
-            this.minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F));
+            this.click(1.0F);
             return true;
         }
         return super.mouseClicked(mouseX, mouseY, button);
@@ -320,15 +315,15 @@ final class ChangelogScreen extends DirtBackgroundScreen {
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        int page = this.panelBottom - PANEL_TOP - SCROLL_STEP;
+        int page = this.panelBottom - this.top - SCROLL_STEP;
         int at = this.versions.indexOf(this.chosen);
         switch (keyCode) {
             case GLFW.GLFW_KEY_UP -> this.step(at - 1);
             case GLFW.GLFW_KEY_DOWN -> this.step(at + 1);
             case GLFW.GLFW_KEY_PAGE_UP -> this.scrollBy(-page);
             case GLFW.GLFW_KEY_PAGE_DOWN -> this.scrollBy(page);
-            case GLFW.GLFW_KEY_HOME -> this.scrollBy(-this.contentHeight);
-            case GLFW.GLFW_KEY_END -> this.scrollBy(this.contentHeight);
+            case GLFW.GLFW_KEY_HOME -> this.scrollBy(-this.notesContent);
+            case GLFW.GLFW_KEY_END -> this.scrollBy(this.notesContent);
             default -> {
                 return super.keyPressed(keyCode, scanCode, modifiers);
             }
@@ -342,22 +337,12 @@ final class ChangelogScreen extends DirtBackgroundScreen {
             return;
         }
         this.choose(this.versions.get(index));
-        int view = this.panelBottom - PANEL_TOP - 4;
+        int view = this.panelBottom - this.top - 4;
         this.listScroll = Mth.clamp(this.listScroll, index * ROW + ROW - view, index * ROW);
         this.listScroll = Mth.clamp(this.listScroll, 0.0, this.maxListScroll());
     }
 
     private void scrollBy(double amount) {
         this.scroll = Mth.clamp(this.scroll + amount, 0.0, this.maxScroll());
-    }
-
-    @Override
-    public boolean shouldCloseOnEsc() {
-        return true;
-    }
-
-    @Override
-    public void onClose() {
-        this.minecraft.setScreen(this.parent);
     }
 }

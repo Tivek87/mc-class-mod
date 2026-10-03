@@ -52,6 +52,11 @@ public final class Ease {
         return 1.0 - smoother(Math.abs(x));
     }
 
+    // A jolt struck at x = 0: nothing before it (unlike bump, whole at 0), highest a quarter in, gone by 1.
+    public static double jolt(double x) {
+        return x <= 0.0 || x >= 1.0 ? 0.0 : Math.sin(Math.PI * Math.sqrt(x));
+    }
+
     public static double recoil(double s, double speed, double swing, double damping) {
         if (s <= 0.0) {
             return 0.0;

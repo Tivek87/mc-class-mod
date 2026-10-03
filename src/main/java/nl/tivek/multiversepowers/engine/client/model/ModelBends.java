@@ -36,6 +36,19 @@ public final class ModelBends {
             return Limits.end(turn, bone, this.hinge, (float) this.min, (float) this.max, (float) this.lean,
                     (float) this.twist);
         }
+
+        // The same, kept within `least` to `most` (its fold), `lean` and `twist` as well.
+        public Quaternionf keep(Quaternionf turn, double least, double most, double lean, double twist) {
+            float min = (float) Math.max(this.min, least);
+            float max = (float) Math.max(min, Math.min(this.max, most));
+            if (this.lean == 0.0 && this.twist == 0.0) {
+                return Limits.hinge(turn, this.hinge, min, max);
+            }
+            float[] bone = new float[3];
+            bone[this.axis] = this.farSign;
+            return Limits.end(turn, bone, this.hinge, min, max, (float) Math.min(this.lean, lean),
+                    (float) Math.min(this.twist, twist));
+        }
     }
 
     public static final Bend[] NONE = new Bend[0];

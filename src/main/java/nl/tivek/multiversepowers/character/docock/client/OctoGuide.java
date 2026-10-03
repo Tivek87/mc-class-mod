@@ -35,7 +35,7 @@ final class OctoGuide {
                         ability(OCK, "dash", "dash"), block(), ability(OCK, "ground_slam", "slam"),
                         ability(OCK, "portal", "portal"), ability(OCK, "rampage", "rampage"),
                         ability(OCK, "stance", "stance"),
-                        crouched(ability(OCK, "stance", "back").moves("stance", false), "back"),
+                        crouched(ability(OCK, "stance", "back").moves("stance", false), "back").under("stance"),
                         ability(OCK, "ground_strike", "strike"), clear(),
                         heading("move"), forward("climb")),
                 mode("climb", player -> ClimbControl.climbing(),
@@ -47,9 +47,9 @@ final class OctoGuide {
                 mode("holding", player -> ClientGrabState.holding(),
                         heading("mouse"), text("look", "swing"), click(Input.LEFT, "throw"),
                         heading("keys"), ability(OCK, "grab", "more").moves("grab", false),
-                        crouched(ability(OCK, "grab", "free").moves("grab", false), "free"),
+                        crouched(ability(OCK, "grab", "free").moves("grab", false), "free").under("more"),
                         ability(OCK, "ground_slam", "slam").moves("ground_slam", false),
-                        crouched(ability(OCK, "ground_slam", "normal"), "normal"),
+                        crouched(ability(OCK, "ground_slam", "normal"), "normal").under("slam"),
                         ability(OCK, "multi_tentacle", "multi"), ability(OCK, "dash", "dash"), block(),
                         ability(OCK, "portal", "portal"), ability(OCK, "rampage", "rampage"),
                         ability(OCK, "stance", "stance"), ability(OCK, "ground_strike", "strike"), clear()));
@@ -60,7 +60,8 @@ final class OctoGuide {
     }
 
     private static GuideMode.Control clear() {
-        return crouched(ability(OCK, "ground_strike", "clear").moves("ground_strike", false), "clear");
+        return crouched(ability(OCK, "ground_strike", "clear").moves("ground_strike", false), "clear")
+                .under("strike");
     }
 
     private static GuideMode mode(String id, Predicate<LocalPlayer> active, GuideMode.Control... controls) {

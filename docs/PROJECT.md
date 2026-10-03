@@ -24,6 +24,13 @@ right, laid out by section. **Use ... (quits)** switches to the version you pick
 saves and quits the game, and puts it in place of the one you have; start the game again in your launcher. **Switch
 to latest (quits)** does the same for the newest version in one click.
 
+After an update a short tour shows what is new. On the title screen a card asks **What's new**: **Show me** or
+**Skip**. Each step dims the screen round the new thing, frames it and points at it from a small card with a line or
+two of text; some ask you to do something (**Click it**, **Press P**) and go on once you do, the others go on with
+**Next** (or Enter). Steps wait until you are where their thing is: the title screen, the update manager, the versions,
+the panel in game and the ability guide, and a card shows the way there when it can. **Skip tour** ends it at any time;
+**All caught up!** says when you have seen everything. A new install shows no tour.
+
 Joining a server, a LAN world or a friend that runs another version of the mod (from 0.7.0 on) does not let you in:
 it says which version they run and which you have, with **Back to main menu** (nothing changes) or **Switch to ...
 (quits)** (your version is switched to theirs and the game quits, so after you start it again you can join).
@@ -73,6 +80,14 @@ title as it is on GitHub now; sending a fourth drops the oldest.
 - **Bodies**: every creature goes limp when it dies and falls the way the blow that killed it pushed it, hardest
   where it was struck; blasts throw bodies about. A body lies at least 5 seconds on the ground before it sinks away.
   A creature thrown down gets up again, rising the way it lies.
+- **Players thrown limp**: a blow or a blast that throws a player hard knocks them down too: they go limp, lie a
+  moment and get back up, unable to walk or use powers meanwhile. Never where it would only be a nuisance or a
+  danger: in creative, riding, gliding or flying, asleep, in water or lava, or from your own blast. The world
+  setting **Players thrown limp** turns it off.
+- **Test fight** (the host or an operator): crouch, aim at a creature built like a person (a zombie, a husk, a
+  villager) and hold the scroll wheel for 3 seconds; a ring round the crosshair fills meanwhile. Then a filmed fight
+  plays out between you: you duck its hook, land a body hook, an uppercut, slap its jab aside, land a cross and end
+  it with a roundhouse kick that throws it limp. It is there to see how bodies move.
 - **Kill confirmation**: when you kill something, a small red cross flicks out round your crosshair for a moment,
   with a soft thud, as in Red Dead Redemption 2. Only you see and hear it.
 

@@ -11,6 +11,7 @@ import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.util.Mth;
 import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.character.GameCharacter;
+import nl.tivek.multiversepowers.engine.client.gui.ScreenAnchors;
 
 // The guide's top: the character in a line or two, and Read more, the page those lines unfold into over the guide's
 // list and detail.
@@ -76,6 +77,10 @@ final class GuideAbout {
     void drawTop(KeyCap.Layer layer, Font font, double mouseX, double mouseY, int accent) {
         for (int i = 0; i < this.lines.size(); i++) {
             layer.sequence(this.lines.get(i), this.left, this.y + 10 * i, SOFT);
+        }
+        if (!this.lines.isEmpty() || this.about != null) {
+            ScreenAnchors.report("guide.summary", this.left - 2, this.y - 2, this.right - this.left + 4,
+                    Math.max(1, this.lines.size()) * 10 + 2);
         }
         if (this.about != null) {
             Component toggle = label(this.open);

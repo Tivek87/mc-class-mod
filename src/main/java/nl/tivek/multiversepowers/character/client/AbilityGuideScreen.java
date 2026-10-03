@@ -1,36 +1,26 @@
 package nl.tivek.multiversepowers.character.client;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Locale;
 import net.minecraft.ChatFormatting;
 import net.minecraft.Util;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.network.chat.Component;
-import net.minecraft.sounds.SoundEvents;
-import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.util.Mth;
-import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.character.GameCharacter;
 import nl.tivek.multiversepowers.engine.client.gui.GuiShapes;
+import nl.tivek.multiversepowers.engine.client.gui.ScreenAnchors;
 import org.lwjgl.glfw.GLFW;
 
 // The guide to the character you play: who they are in one short line on top, which unfolds into a page of its own, then
 // mode by mode a tab for each state its keys work in (the one you are in has a green dot), the binds that do something
-// there on the left, each with a dot for whether it works now, and the chosen one on the right: what it does there in
-// one line, what it costs, and folded under that the ability's full explanation.
-final class AbilityGuideScreen extends Screen {
-    private static final String PREFIX = "screen." + MultiversePowers.MODID + ".guide.";
+// there on the left (one that belongs to another, its key again or with shift, hangs under it), each with a dot for
+// whether it works now, and the chosen one on the right: what it does there in one line, what it costs, and folded
+// under that the ability's full explanation.
+final class AbilityGuideScreen extends GuideRows {
     private static final int MAX_WIDTH = 540;
     private static final int MAX_HEIGHT = 330;
-    private static final int ROW = 15;
-    private static final int HEADING = 14;
-    private static final int TAB = 15;
     private static final int TAB_GAP = 3;
     private static final int FOOTER = 20;
     private static final int WINDOW = 0xF0101010;
@@ -45,60 +35,16 @@ final class AbilityGuideScreen extends Screen {
     private static final int MUTED = 0xFF9A9A9A;
     private static final int DIM = 0xFF6E6E6E;
     private static final int SCROLLBAR = 0x50FFFFFF;
+    private static final int LINK = 0x48FFFFFF;
 
-    private final GameCharacter character;
-    private final List<GuideMode> modes;
-    // The open tab's rows: null is its overview, then its controls and headings in order.
-    private final List<GuideMode.Control> rows = new ArrayList<>();
-    private int[] tabX = new int[0];
-    private int[] tabY = new int[0];
-    private int[] tabWidth = new int[0];
-    private final GuideAbout about;
-    // Whether the chosen control's full explanation is unfolded, and where its fold line was drawn.
-    private boolean more;
-    private int fold = -1;
-    private int tab;
-    private int selected;
-    private double listScroll;
-    private double detailScroll;
-    private int detailHeight;
     private float shownY = Float.NaN;
     private float shownTabX = Float.NaN;
     private float shownTabY;
     private float shownTabWidth;
     private long lastFrame = Util.getMillis();
-    private int left;
-    private int top;
-    private int windowWidth;
-    private int windowHeight;
-    private int listX;
-    private int listY;
-    private int listWidth;
-    private int bodyHeight;
-    private int detailX;
-    private int detailWidth;
 
     AbilityGuideScreen(GameCharacter character) {
-        super(Component.translatable(PREFIX + "title", character.getDisplayName()));
-        this.character = character;
-        this.modes = AbilityGuide.modes(character);
-        this.about = new GuideAbout(character);
-        LocalPlayer player = Minecraft.getInstance().player;
-        for (int i = 0; player != null && i < this.modes.size(); i++) {
-            if (this.modes.get(i).active().test(player)) {
-                this.tab = i;
-                break;
-            }
-        }
-        this.fill();
-    }
-
-    private void fill() {
-        this.rows.clear();
-        if (this.tab < this.modes.size()) {
-            this.rows.add(null);
-            this.rows.addAll(this.modes.get(this.tab).controls());
-        }
+        super(character);
     }
 
     @Override
@@ -132,7 +78,8 @@ final class AbilityGuideScreen extends Screen {
         for (GuideMode mode : this.modes) {
             for (GuideMode.Control control : mode.controls()) {
                 if (!control.heading() && control.key() != null) {
-                    rows = Math.max(rows, 19 + this.font.width(mode.name(control)) + 6
+                    rows = Math.max(rows, 19 + (control.child() ? INDENT : 0) + this.font.width(mode.name(control))
+                            + 6 + (control.again() ? this.font.width(AGAIN) + 4 : 0)
                             + KeyCap.width(this.font, AbilityPanel.brief(control.key().get())) + 8);
                 }
             }
@@ -144,139 +91,6 @@ final class AbilityGuideScreen extends Screen {
         this.detailWidth = this.left + this.windowWidth - 12 - this.detailX;
         this.selected = Mth.clamp(this.selected, 0, Math.max(0, this.rows.size() - 1));
         this.listScroll = Mth.clamp(this.listScroll, 0.0, this.maxListScroll());
-    }
-
-    private void openAbout(boolean open) {
-        if (this.about.open(open)) {
-            this.click(open ? 1.2F : 1.0F);
-        }
-    }
-
-    private void click(float pitch) {
-        if (this.minecraft != null) {
-            this.minecraft.getSoundManager()
-                    .play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK.value(), pitch, 0.3F));
-        }
-    }
-
-    private boolean onFold(double mouseX, double mouseY) {
-        if (this.about.open() || this.fold < 0 || mouseX < this.detailX || mouseX >= this.detailX + this.detailWidth) {
-            return false;
-        }
-        double foldTop = this.listY - this.detailScroll + this.fold;
-        return mouseY >= foldTop && mouseY < foldTop + GuideDetail.FOLD && mouseY >= this.listY
-                && mouseY < this.listY + this.bodyHeight - GuideDetail.STATUS;
-    }
-
-    // Opens another tab on the same control when it has one, else on its overview.
-    private void open(int index) {
-        if (index < 0 || index >= this.modes.size() || index == this.tab) {
-            return;
-        }
-        GuideMode.Control was = this.rows.isEmpty() ? null : this.rows.get(this.selected);
-        this.tab = index;
-        this.fill();
-        int found = 0;
-        for (int i = 1; was != null && i < this.rows.size(); i++) {
-            if (!this.heading(i) && this.rows.get(i).id().equals(was.id())) {
-                found = i;
-                break;
-            }
-        }
-        this.listScroll = 0.0;
-        this.selected = -1;
-        this.select(found);
-        this.click(1.4F);
-    }
-
-    private boolean heading(int index) {
-        GuideMode.Control row = this.rows.get(index);
-        return row != null && row.heading();
-    }
-
-    private int height(int index) {
-        return this.heading(index) ? HEADING : ROW;
-    }
-
-    // The next row that is no heading from `from` going `step`, or `from` when there is none.
-    private int next(int from, int step) {
-        for (int i = from + step; i >= 0 && i < this.rows.size(); i += step) {
-            if (!this.heading(i)) {
-                return i;
-            }
-        }
-        return from;
-    }
-
-    private void select(int index) {
-        if (index < 0 || index >= this.rows.size() || this.heading(index)) {
-            return;
-        }
-        if (index != this.selected) {
-            this.detailScroll = 0.0;
-        }
-        this.selected = index;
-        int start = this.offset(index);
-        if (index > 0 && this.heading(index - 1)) {
-            start -= HEADING;
-        }
-        int end = this.offset(index) + ROW + 4;
-        if (start < this.listScroll) {
-            this.listScroll = start;
-        } else if (end > this.listScroll + this.bodyHeight) {
-            this.listScroll = end - this.bodyHeight;
-        }
-        this.listScroll = Mth.clamp(this.listScroll, 0.0, this.maxListScroll());
-    }
-
-    // A row's top within the list before scrolling.
-    private int offset(int index) {
-        int y = 4;
-        for (int i = 0; i < index; i++) {
-            y += this.height(i);
-        }
-        return y;
-    }
-
-    private double maxListScroll() {
-        return Math.max(0, this.offset(this.rows.size()) + 4 - this.bodyHeight);
-    }
-
-    private double maxDetailScroll() {
-        return Math.max(0, this.detailHeight - (this.bodyHeight - GuideDetail.STATUS));
-    }
-
-    private int rowAt(double mouseX, double mouseY) {
-        if (mouseX < this.listX || mouseX >= this.listX + this.listWidth || mouseY < this.listY
-                || mouseY >= this.listY + this.bodyHeight) {
-            return -1;
-        }
-        double y = this.listY - this.listScroll;
-        for (int i = 0; i < this.rows.size(); i++) {
-            double rowTop = y + this.offset(i);
-            if (mouseY >= rowTop && mouseY < rowTop + this.height(i)) {
-                return i;
-            }
-        }
-        return -1;
-    }
-
-    private int tabAt(double mouseX, double mouseY) {
-        for (int i = 0; i < this.tabX.length; i++) {
-            if (mouseX >= this.tabX[i] && mouseX < this.tabX[i] + this.tabWidth[i] && mouseY >= this.tabY[i]
-                    && mouseY < this.tabY[i] + TAB) {
-                return i;
-            }
-        }
-        return -1;
-    }
-
-    static FormattedCharSequence fit(Font font, Component text, int width) {
-        if (font.width(text) <= width) {
-            return text.getVisualOrderText();
-        }
-        String cut = font.plainSubstrByWidth(text.getString(), Math.max(0, width - font.width("...")));
-        return Component.literal(cut + "...").withStyle(text.getStyle()).getVisualOrderText();
     }
 
     @Override
@@ -295,6 +109,8 @@ final class AbilityGuideScreen extends Screen {
         float seconds = Math.min(0.1F, (now - this.lastFrame) / 1000.0F);
         this.lastFrame = now;
         float ease = 1.0F - (float) Math.exp(-seconds * 20.0F);
+        ScreenAnchors.report("guide", this.left, this.top, this.windowWidth, this.windowHeight);
+        this.reveal(ease);
 
         KeyCap.Layer frame = new KeyCap.Layer(graphics, font);
         graphics.fill(this.left - 1, this.top - 1, right + 1, bottom + 1, EDGE);
@@ -328,7 +144,7 @@ final class AbilityGuideScreen extends Screen {
         GuideMode.Control chosen = this.rows.get(this.selected);
         GuideDetail.Drawn drawn = chosen == null
                 ? GuideDetail.overview(graphics, font, mode, player, this.detailX, this.listY, this.detailWidth,
-                        this.bodyHeight, this.detailScroll, accent)
+                        this.bodyHeight, this.detailScroll)
                 : GuideDetail.control(graphics, font, mode, chosen, player, this.detailX, this.listY,
                         this.detailWidth, this.bodyHeight, this.detailScroll, accent, this.more,
                         this.onFold(mouseX, mouseY));
@@ -337,6 +153,7 @@ final class AbilityGuideScreen extends Screen {
         this.detailScroll = Mth.clamp(this.detailScroll, 0.0, this.maxDetailScroll());
         scrollbar(graphics, this.detailX + this.detailWidth + 4, this.listY,
                 this.bodyHeight - GuideDetail.STATUS, this.detailScroll, this.maxDetailScroll());
+        this.anchors(chosen);
     }
 
     // A pill per mode, a green dot on the one you are in, and the open one's bar sliding under it.
@@ -407,24 +224,43 @@ final class AbilityGuideScreen extends Screen {
                 layer.text(Component.translatable(PREFIX + "how"), this.listX + 19, y + 4, text);
                 continue;
             }
-            KeyCap.dot(graphics, this.listX + 12.0F, y + ROW * 0.5F, 2.5F,
+            int indent = row.child() ? INDENT : 0;
+            if (row.child()) {
+                this.link(graphics, i, y);
+            }
+            KeyCap.dot(graphics, this.listX + 12.0F + indent, y + ROW * 0.5F, 2.5F,
                     GuideDetail.status(mode, row, player).color());
             Component key = AbilityPanel.brief(row.key().get());
             Component name = mode.name(row);
             int cap = KeyCap.width(font, key);
-            int room = this.listWidth - 19 - 8;
+            int again = row.again() ? font.width(AGAIN) + 4 : 0;
+            int room = this.listWidth - 19 - indent - 8;
             // The cap stands beside the name while the name keeps at least half the row; a longer one is left to the
             // detail.
-            if (cap + 6 <= room - Math.min(font.width(name), room / 2)) {
-                room -= cap + 6;
-                KeyCap.draw(layer, font, key, this.listX + this.listWidth - 7 - cap, y + 2, 11);
+            if (cap + again + 6 <= room - Math.min(font.width(name), room / 2)) {
+                room -= cap + again + 6;
+                int capX = this.listX + this.listWidth - 7 - cap;
+                KeyCap.draw(layer, font, key, capX, y + 2, 11);
+                if (row.again()) {
+                    layer.text(AGAIN, capX - again, y + 4, DIM);
+                }
             }
-            layer.sequence(fit(font, name, room), this.listX + 19, y + 4, text);
+            layer.sequence(fit(font, name, room), this.listX + 19 + indent, y + 4, text);
         }
         layer.finish();
         graphics.disableScissor();
         scrollbar(graphics, this.listX + this.listWidth - 4, this.listY, this.bodyHeight, this.listScroll,
                 this.maxListScroll());
+    }
+
+    // The line from a control's parent down to it, past the siblings before it.
+    private void link(GuiGraphics graphics, int index, int y) {
+        float x = this.listX + 12.0F;
+        float mid = y + ROW * 0.5F;
+        GuideMode.Control above = this.rows.get(index - 1);
+        float from = above != null && above.child() ? mid - ROW : mid - ROW + 4.0F;
+        GuiShapes.roundRect(graphics, x - 0.5F, from, 1.0F, mid + 0.5F - from, 0.0F, LINK);
+        GuiShapes.roundRect(graphics, x + 0.5F, mid - 0.5F, INDENT - 4.0F, 1.0F, 0.0F, LINK);
     }
 
     static void scrollbar(GuiGraphics graphics, int x, int y, int height, double scroll, double max) {

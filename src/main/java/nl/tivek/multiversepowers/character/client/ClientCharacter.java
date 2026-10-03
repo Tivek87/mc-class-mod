@@ -34,6 +34,7 @@ import nl.tivek.multiversepowers.character.greenlantern.client.ConstructChoice;
 import nl.tivek.multiversepowers.character.greenlantern.client.hud.ConstructWheel;
 import nl.tivek.multiversepowers.engine.client.ragdoll.Downed;
 import nl.tivek.multiversepowers.stamina.client.StaminaClient;
+import nl.tivek.multiversepowers.testfight.client.FightClient;
 
 @EventBusSubscriber(modid = MultiversePowers.MODID, value = Dist.CLIENT)
 public final class ClientCharacter {
@@ -49,6 +50,7 @@ public final class ClientCharacter {
     private static int ultimate;
     private static int legs;
     private static int marked;
+    private static int limbs = -1;
     private static final int[] COOLDOWNS = new int[AbilitySlot.values().length];
     private static final boolean[] HELD = new boolean[AbilitySlot.values().length];
     private static int clock;
@@ -81,6 +83,7 @@ public final class ClientCharacter {
         ultimate = payload.ultimate();
         legs = payload.stance();
         marked = payload.marks();
+        limbs = payload.limbs();
         for (int i = 0; i < COOLDOWNS.length; i++) {
             COOLDOWNS[i] = i < payload.cooldowns().length ? payload.cooldowns()[i] : 0;
         }
@@ -141,6 +144,11 @@ public final class ClientCharacter {
 
     public static int marked() {
         return marked;
+    }
+
+    // What each of the character's extra limbs does now, as its powers pack it (-1: none out).
+    public static int limbs() {
+        return limbs;
     }
 
     // A gesture that may only fire at some moments (take off only when standing free) says when, here.
@@ -262,7 +270,8 @@ public final class ClientCharacter {
         GameCharacter now = character;
         Gestures.tick(player, minecraft, now);
         AbilityPanel.tick(minecraft, player, now);
-        boolean downed = Downed.now();
+        // Knocked down or in a test fight, no key fires a power.
+        boolean downed = Downed.now() || FightClient.busy();
         boolean inGame = minecraft.screen == null && !downed;
         for (AbilitySlot slot : AbilitySlot.values()) {
             CharacterAbility ability = now == null ? null : now.ability(slot);
@@ -484,6 +493,7 @@ public final class ClientCharacter {
         ultimate = 0;
         legs = 0;
         marked = 0;
+        limbs = -1;
         climbing = false;
         ClimbControl.stop();
         ConstructWheel.stop();

@@ -38,8 +38,10 @@ public final class Fatigue {
 
     @SubscribeEvent
     public static void onHurt(LivingDamageEvent.Post event) {
+        // One a power holds is posed and let go by that power, never worn down out of its hold.
         if (!(event.getEntity() instanceof Mob mob) || !(mob.level() instanceof ServerLevel level) || !mob.isAlive()
-                || !Knockdowns.falls(mob) || Knockdowns.isDown(mob) || !blow(event.getSource())) {
+                || !Knockdowns.falls(mob) || Knockdowns.isDown(mob) || HeldMobs.isHeldByAnyone(mob)
+                || !blow(event.getSource())) {
             return;
         }
         Worn worn = WORN.get(mob);

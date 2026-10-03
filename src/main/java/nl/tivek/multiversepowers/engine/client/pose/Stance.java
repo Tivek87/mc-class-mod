@@ -42,6 +42,12 @@ public final class Stance {
     // How far an ankle turns a foot and a wrist a hand from in line with the limb, at most.
     public static final float ANKLE_MOST = 1.0F;
     private static final float WRIST_MOST = 1.3F;
+    // How far each turns in a whole-body pose: easily, short of how far it can (a hand pressed flat on the ground, the
+    // toes tucked under a kneeling body); the toes lift less than they point. Half a sole's depth, in pixels.
+    private static final Limbs.Range WRIST = new Limbs.Range(-0.9F, 0.9F, 0.3F, 1.6F);
+    private static final Limbs.Range ANKLE = new Limbs.Range(-0.65F, 0.9F, 0.3F, 0.15F);
+    private static final float SOLE_EDGE = 2.0F;
+    private static final int SETTLE = 3;
     // Built as a person: each limb hangs within this (pixels) of where a person's does and is as long, give or take.
     private static final float BUILT = 1.5F;
 
@@ -59,7 +65,9 @@ public final class Stance {
     private static final Quaternionf FOOT_WAY = new Quaternionf();
     private static final Quaternionf CARRY = new Quaternionf();
     private static final Quaternionf BENT_TURN = new Quaternionf();
+    private static final Quaternionf WANT = new Quaternionf();
     private static final Vector3f J = new Vector3f();
+    private static final Vector3f GOAL = new Vector3f();
     private static final Vector3f NECK = new Vector3f(0.0F, 0.0F, 0.0F);
     private static final Vector3f HIPS = new Vector3f(0.0F, HIP_Y, 0.0F);
     private static final Vector3f V = new Vector3f();
@@ -132,6 +140,15 @@ public final class Stance {
         return out.set(NECK);
     }
 
+    // Where trunk() would put the neck for these hips, lean and waist, without posing a model.
+    public static Vector3f neck(Vector3f hips, Quaternionf lean, Quaternionf waist, Vector3f out) {
+        Vector3f piece = new Vector3f();
+        out.set(hips).add(new Quaternionf().slerp(lean, HIPS_SHARE).transform(piece.set(0.0F, -PELVIS_LENGTH,
+                0.0F)));
+        out.add(lean.transform(piece.set(0.0F, -BELLY, 0.0F)));
+        return out.add(new Quaternionf(lean).mul(waist).transform(piece.set(0.0F, -CHEST_LENGTH, 0.0F)));
+    }
+
     public static Quaternionf chest(Quaternionf out) {
         return out.set(CHEST);
     }
@@ -196,7 +213,8 @@ public final class Stance {
         if (angle > ANKLE_MOST) {
             share(TURN, ANKLE_MOST / angle);
         }
-        Limbs.turn(model, right ? Limbs.Joint.RIGHT_ANKLE : Limbs.Joint.LEFT_ANKLE, TURN);
+        Limbs.Joint ankle = right ? Limbs.Joint.RIGHT_ANKLE : Limbs.Joint.LEFT_ANKLE;
+        Limbs.turn(model, ankle, Limbs.keep(model, ankle, TURN, ANKLE));
     }
 
     // Reaches an arm's hand to `hand`, its elbow bent out towards `pole` (a direction: back and out for an elbow), the
@@ -306,9 +324,31 @@ public final class Stance {
             share(TURN, low);
         }
         joint(end, last, 1.0F);
+        WANT.set(LAST);
+        GOAL.set(end);
         Limbs.bend(model, middle, solve(limb, J, pole, upper, lower, arm));
         lower(limb, Limbs.bent(model, middle), arm, OWN);
-        Limbs.turn(model, tip, TURN.set(OWN).conjugate().mul(LAST));
+        // Past how far it turns easily the last piece comes along with the one before it (a heel lifts in a deep
+        // crouch, onto the edge of the sole) and its joint moves for its end to stay put; a few rounds settle both.
+        Limbs.Range range = arm ? WRIST : ANKLE;
+        boolean standing = !arm && end.y >= GROUND - 0.5F;
+        for (int i = 0; i < SETTLE; i++) {
+            TURN.set(OWN).conjugate().mul(LAST);
+            SHARE.set(TURN);
+            Limbs.keep(model, tip, TURN, range);
+            if (TURN.equals(SHARE, 1.0E-4F)) {
+                break;
+            }
+            LAST.set(OWN).mul(TURN);
+            if (standing) {
+                float tilt = WANT.transform(V.set(0.0F, 1.0F, 0.0F)).angle(LAST.transform(S.set(0.0F, 1.0F, 0.0F)));
+                GOAL.set(end.x, end.y - SOLE_EDGE * (float) Math.sin(Math.min(tilt, Mth.HALF_PI)), end.z);
+            }
+            LAST.transform(J.set(0.0F, -last, 0.0F)).add(GOAL);
+            Limbs.bend(model, middle, solve(limb, J, pole, upper, lower, arm));
+            lower(limb, Limbs.bent(model, middle), arm, OWN);
+        }
+        Limbs.turn(model, tip, Limbs.keep(model, tip, TURN.set(OWN).conjugate().mul(LAST), range));
     }
 
     // Whether the limb reaches its end joint, with the last piece turned `share` of TURN, folding no further than its

@@ -255,11 +255,7 @@ final class PilotBody {
 
     // How hard a jolt set off `at` still shakes, rising fast and dying away.
     private static double jolt(double t, double at) {
-        double since = t - at;
-        if (since < 0.0 || since > JOLT_TICKS) {
-            return 0.0;
-        }
-        return Math.sin(Math.PI * Math.sqrt(since / JOLT_TICKS));
+        return Ease.jolt((t - at) / JOLT_TICKS);
     }
 
     // Where a point of the world is in the drawn model of `entity`, in pixels as above (see LivingEntityRenderer: the

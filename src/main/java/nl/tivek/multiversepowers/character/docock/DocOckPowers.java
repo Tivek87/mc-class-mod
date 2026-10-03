@@ -38,6 +38,11 @@ public final class DocOckPowers implements CharacterPowers {
     }
 
     @Override
+    public int limbs(ServerPlayer player) {
+        return OctopusArms.limbs(player);
+    }
+
+    @Override
     public void clear() {
         OctopusArms.clear();
     }

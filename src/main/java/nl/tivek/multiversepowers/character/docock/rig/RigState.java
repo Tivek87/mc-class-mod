@@ -177,6 +177,7 @@ abstract class RigState {
     final ServerLevel home;
     int syncedLegs;
     int syncedMarks;
+    int syncedLimbs;
     final Arm[] arms = new Arm[4];
     int age;
     double unfold;
@@ -271,6 +272,25 @@ abstract class RigState {
 
     public int markCount() {
         return this.folding ? 0 : this.marks.size();
+    }
+
+    // What each arm does, two bits an arm in order (RobotArm.FREE, LEG, HOLDING, BUSY), for his own panel.
+    public int limbs() {
+        int packed = 0;
+        for (Arm arm : this.arms) {
+            int state;
+            if (this.folding) {
+                state = RobotArm.BUSY;
+            } else if (arm.held != null || arm.load != null) {
+                state = RobotArm.HOLDING;
+            } else if (arm.leg || this.climbing) {
+                state = RobotArm.LEG;
+            } else {
+                state = arm.job == Job.REST ? RobotArm.FREE : RobotArm.BUSY;
+            }
+            packed |= state << arm.index * 2;
+        }
+        return packed;
     }
 
     boolean hasThrowable() {

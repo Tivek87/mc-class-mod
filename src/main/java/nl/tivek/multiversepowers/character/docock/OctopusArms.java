@@ -179,6 +179,11 @@ public final class OctopusArms {
         return rig == null || rig.isFolding() ? 0 : rig.markCount();
     }
 
+    public static int limbs(ServerPlayer player) {
+        OctoRig rig = RIGS.get(player.getUUID());
+        return rig == null ? -1 : rig.limbs();
+    }
+
     public static void clear() {
         for (OctoRig rig : RIGS.values().toArray(new OctoRig[0])) {
             rig.shutDown(rig.level());

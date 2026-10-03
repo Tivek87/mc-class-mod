@@ -133,6 +133,21 @@ public final class Limbs {
         put(model, joint, TURN);
     }
 
+    // How far a hand turns at its wrist or a foot at its ankle easily, as a whole-body pose keeps it: its fold from
+    // `least` to `most` (radians, the way Bend's are), its lean and its twist either way.
+    public record Range(float least, float most, float lean, float twist) {
+    }
+
+    // `turn` (as turn() takes it) kept within what the joint can do and within `range`; as it was when the model has
+    // no such joint.
+    public static Quaternionf keep(HumanoidModel<?> model, Joint joint, Quaternionf turn, Range range) {
+        Rig rig = rig(model);
+        ModelBends.Bend[] chain = rig == null ? null : rig.chains()[joint.ordinal()];
+        int order = rig == null ? 0 : rig.order()[joint.ordinal()];
+        ModelBends.Bend bend = chain == null || order >= chain.length ? null : chain[order];
+        return bend == null ? turn : bend.keep(turn, range.least(), range.most(), range.lean(), range.twist());
+    }
+
     // A joint turned earlier in this drawing turns back straight (a second pose that keeps it so).
     private static void straighten(EntityModel<?> model, Joint joint) {
         if (drawing == model && BENT[joint.ordinal()] > 0.0F) {

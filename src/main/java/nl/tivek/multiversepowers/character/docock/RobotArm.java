@@ -15,6 +15,11 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import nl.tivek.multiversepowers.character.docock.portal.PortalPayload;
 
 public final class RobotArm {
+    // What an arm does, as RigState.limbs packs it, two bits an arm.
+    public static final int FREE = 0;
+    public static final int LEG = 1;
+    public static final int HOLDING = 2;
+    public static final int BUSY = 3;
     private static final double VIEW_RANGE = 128.0;
     private static final double GONE_RANGE = VIEW_RANGE + 32.0;
     // Must stay well under ClientArms.TIMEOUT or idle arms would vanish.

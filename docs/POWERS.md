@@ -117,8 +117,12 @@ Bolt *(scroll wheel click)* and Lightning Speed *(hold shift)*.
 - Each mode lists **only the keys and buttons that do something in it**, grouped under **Mouse**, **Ability keys**
   and **Moving**, each with a dot: green ready, amber cooling down, grey not now. The game's own walking, jumping and
   looking are left out; only what a character adds to them is listed (double jump to fly, walking into a wall to
-  climb it). The first line, **How it works**, says how you get into the mode and out of it and what is off
-  meanwhile. Pick a line with the up and down arrows, W and S, Home and End, or click it; on the right you see its
+  climb it). The first line, **How it works**, lists how you **get in** and **get out** of the mode, what you
+  **can't use** there and what is **good to know**. A line that belongs to another hangs under it, joined to it by a
+  thin line: the same key pressed **again** while the first one lasts (Light Cage, then Pound the Cage), or that key
+  with another held (Let It Go). Picking the first lists them under **On the same key**; picking one of them shows the
+  line it belongs to above its name. Pick a line with the up and down arrows, W and S, Home and End, or click it; on
+  the right you see its
   key, one short line on what it does in this mode, its cooldown and its cost (**Costs 0.8 power**, **Costs 30
   stamina**, **Free**), and at the bottom whether you can use it this moment and, if not, why (**Only in flight**,
   **Not enough power**, **Too tired: wait for your stamina**, **Empty both hands first**, **Not in this mode right
@@ -1229,6 +1233,9 @@ You choose how you walk. Press **C** to go round: on your own feet, on 2, on 3, 
 - Walking on 3 or 4 and using an ability: one leg lifts off to do the job and goes back to walking
   afterwards, as long as two keep carrying you.
 - A tentacle that is holding something never becomes a leg.
+- **Which are free:** in first person four small corner marks round the crosshair show your tentacles, each where
+  it sits on your back (the upper two on top, your right ones on the right). **Bright white**: free. **Orange**:
+  holding something. **Grey**: a leg you walk on, or busy with an ability. A mark flashes when its tentacle changes.
 
 ### Always on
 
@@ -1418,7 +1425,8 @@ Double space jumps high and holding space flies, with or without the hammer.
   V-shaped tip, built of blocks and pixels in the game's own style. It is never an item: only Thor carries it, and
   nobody can pick it up or keep it. It hangs from his belt on his left hip, head up and handle down his thigh; in
   flight his left hand holds it out ahead of him, as if it pulled him along. Taken up, he holds it in his right hand,
-  in your own view as well; thrown, it tumbles end over end, as big as it was in his hand.
+  in your own view as well, his fist round the lower part of the handle; thrown, it flies head first without turning,
+  as big as it was in his hand.
 
 ### Thunder Fists (left click)
 
@@ -1439,6 +1447,9 @@ Double space jumps high and holding space flies, with or without the hammer.
   blows carry him a step forward, but never into what he aims at. Between blows, and for about two seconds after the
   last, he keeps both fists up in his guard. You see your own fists and, for a kick, your leg in first person, and
   your view jolts a little as a blow lands.
+- **How they look:** every blow takes its time, so you see it whole, and no fist ever passes through his own head or
+  chest. A kick is clearly a kick, not a punch: he draws his knee up first, drives the leg out with his body leaning
+  back and his arms out for balance, and draws the knee back in before the foot comes down.
 - **Hits:** what stands within reach where you look (2.4 to 3.8 blocks, by blow); the sweeping blows (the double
   palm, haymaker, roundhouse, and the hammer's swing, backhand and smash) hit everything they sweep through. **2
   hearts** a blow, from a bit less for a jab to over double for the thunder punch and the hammer's smash. Jabs keep
@@ -1524,7 +1535,7 @@ Double space jumps high and holding space flies, with or without the hammer.
 
 ### Hammer Throw (right click, hammer in hand)
 
-- **Click right:** he throws the hammer at the crosshair, spinning, up to **40 blocks**, until it hits a creature or
+- **Click right:** he throws the hammer at the crosshair, head first, up to **40 blocks**, until it hits a creature or
   a block. What it hits takes **3.5 hearts** and is thrown far the way it flew. Then it flies back to his hand by
   itself. **Cooldown:** 1.5 seconds.
 
@@ -1538,9 +1549,11 @@ Double space jumps high and holding space flies, with or without the hammer.
 ### Grab (hold right click for 0.75 seconds, no hammer)
 
 - **Hold right** without the hammer, standing or walking: he grabs the nearest creature before him (up to 3.5
-  blocks) by the collar and holds it up. Then one of five, at random: he **throws** it away (**3 hearts**), smashes
-  its **head into the ground** (**4.5 hearts**), lands **three body punches** (**1.5 hearts** each), or two punches and
-  then a throw or a smash. **Cooldown:** 5 seconds.
+  blocks) by the throat and lifts it at arm's length. It hangs firmly in his fist, never limp.
+- **Pick how it ends** within **1.5 seconds** (a prompt under the crosshair shows the keys): **left click** lands
+  **three body punches** (**1.5 hearts** each), **right click** **throws** it away (**3 hearts**), the **scroll
+  wheel** smashes its **head into the ground** (**4.5 hearts**). Pick nothing and it is one of five at random: those
+  three, or two punches and then a throw or a smash. **Cooldown:** 5 seconds.
 
 ### Grab Dash (running, hold right click for 0.5 seconds, no hammer)
 

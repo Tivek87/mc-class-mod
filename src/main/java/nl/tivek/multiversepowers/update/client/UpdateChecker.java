@@ -136,6 +136,11 @@ public final class UpdateChecker {
         return installed;
     }
 
+    // Above 0 when `a` is the newer version.
+    public static int compare(String a, String b) {
+        return Release.compare(a, b);
+    }
+
     static List<Release> newer() {
         return newer;
     }

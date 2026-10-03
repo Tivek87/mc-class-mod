@@ -42,13 +42,16 @@ public record ThorStatePayload(int entity, int flags, int move, int arg) impleme
     public static final int BLOW = 8;
     // A blow the server throws for him (a grab's punches, the hammer's uppercut): shown in his own game too.
     public static final int STRIKE = 9;
-    // He took hold of a creature (arg: its id + 1): his own game stops the dash that brought him there.
+    // He took hold of a creature (arg: ThorGrab.grabbed, its id and whether a dash brought him to it): his own game
+    // stops the dash that brought him there.
     public static final int GRAB = 10;
     // He leaps high with it held over his head; then drops back down fast.
     public static final int HOIST = 11;
     public static final int DROP = 12;
     // His thrown hammer came to rest (arg: its id + 1): his own game flies him to it.
     public static final int PULL = 13;
+    // How the grab ends, picked or not (arg: ThorGrab.Act): told apart from the move, as a blow is.
+    public static final int GRAB_ACT = 14;
 
     public static void send(ServerPlayer player, int flags, int move, int arg) {
         PacketDistributor.sendToPlayersTrackingEntityAndSelf(player,

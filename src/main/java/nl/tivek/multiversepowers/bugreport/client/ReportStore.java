@@ -142,6 +142,16 @@ final class ReportStore {
     }
 
     static void check(BugReporter.Kind kind) {
+        look(kind, FRESH_MS);
+    }
+
+    // Looks every report up again now, however fresh its status.
+    static void refresh(BugReporter.Kind kind) {
+        retryAt = 0L;
+        look(kind, 0L);
+    }
+
+    private static void look(BugReporter.Kind kind, long fresh) {
         Desk desk = desk(kind);
         long now = System.currentTimeMillis();
         if (now < retryAt) {
@@ -149,7 +159,7 @@ final class ReportStore {
         }
         for (Sent entry : desk.sent) {
             int issue = entry.issue();
-            if (now - entry.checked() >= FRESH_MS && desk.checking.add(issue)) {
+            if (now - entry.checked() >= fresh && desk.checking.add(issue)) {
                 desk.checkFailed = false;
                 BugReporter.status(issue).whenCompleteAsync((status, error) -> checked(kind, issue, status, error),
                         Minecraft.getInstance());

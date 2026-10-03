@@ -1,12 +1,15 @@
 package nl.tivek.multiversepowers;
 
+import java.nio.file.Files;
 import net.minecraft.client.model.PlayerModel;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
+import net.neoforged.fml.loading.FMLPaths;
 import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
+import nl.tivek.multiversepowers.character.docock.client.TentacleHud;
 import nl.tivek.multiversepowers.character.greenlantern.client.ClientConstructs;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.arm.LanternArms;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.flame.FlameArms;
@@ -19,6 +22,8 @@ import nl.tivek.multiversepowers.character.greenlantern.client.mech.MechPainter;
 import nl.tivek.multiversepowers.character.greenlantern.client.victim.Clapped;
 import nl.tivek.multiversepowers.character.greenlantern.client.victim.Flattened;
 import nl.tivek.multiversepowers.character.greenlantern.client.victim.HandVictims;
+import nl.tivek.multiversepowers.character.thor.client.ThorGrabChoice;
+import nl.tivek.multiversepowers.character.thor.client.ThorHeld;
 import nl.tivek.multiversepowers.character.thor.client.ThrownHammerRenderer;
 import nl.tivek.multiversepowers.character.thor.client.pose.ThorHammerLayer;
 import nl.tivek.multiversepowers.character.thor.client.pose.ThorPoses;
@@ -30,18 +35,26 @@ import nl.tivek.multiversepowers.engine.client.pose.Poses;
 import nl.tivek.multiversepowers.engine.client.pose.Tired;
 import nl.tivek.multiversepowers.engine.client.ragdoll.RagdollProfiles;
 import nl.tivek.multiversepowers.engine.client.ragdoll.Ragdolls;
+import nl.tivek.multiversepowers.engine.client.fx.Cinematic;
 import nl.tivek.multiversepowers.engine.client.fx.Lens;
 import nl.tivek.multiversepowers.spell.client.ClientClaps;
+import nl.tivek.multiversepowers.testfight.client.FightClient;
 import nl.tivek.multiversepowers.update.client.UpdatePopup;
+import nl.tivek.multiversepowers.update.client.tour.Tour;
 
 @Mod(value = MultiversePowers.MODID, dist = Dist.CLIENT)
 public final class MultiversePowersClient {
     public MultiversePowersClient(ModContainer container, IEventBus modEventBus) {
+        Tour.ranBefore(Files.exists(FMLPaths.CONFIGDIR.get().resolve(ModConfigs.file("client"))));
         container.registerConfig(ModConfig.Type.CLIENT, ClientSettings.SPEC, ModConfigs.file("client"));
         container.registerExtensionPoint(IConfigScreenFactory.class,
                 (mod, parent) -> new ConfigChoiceScreen(parent));
         modEventBus.addListener(GreenLanternSuitLayer::onAddLayers);
         modEventBus.addListener(ThorHammerLayer::onAddLayers);
+        modEventBus.addListener(ThorHeld::onAddLayers);
+        modEventBus.addListener(ThorGrabChoice::onRegisterLayers);
+        modEventBus.addListener(TentacleHud::onRegisterLayers);
+        modEventBus.addListener(FightClient::onRegisterLayers);
         modEventBus.addListener(ThorHammerLayer::onRegisterModels);
         modEventBus.addListener(ThrownHammerRenderer::onRegisterRenderers);
         modEventBus.addListener(UpdatePopup::onRegisterKeys);
@@ -62,6 +75,7 @@ public final class MultiversePowersClient {
                 && LanternBody.pose(player, entity));
         Poses.layer(Poses.Stage.CREATURE, HandVictims::pose);
         Poses.layer(Poses.Stage.CREATURE, Tired::pose);
+        Poses.layer(Poses.Stage.CREATURE, ThorHeld::pose);
         BodyTurns.add(LanternArms::turnBody);
         BodyTurns.add(MechPilot::turnBody);
         BodyTurns.add(ThorPoses::turn);
@@ -71,5 +85,11 @@ public final class MultiversePowersClient {
         // limp.
         Ragdolls.claim(entity -> HandVictims.has(entity.getId()) || Flattened.has(entity.getId())
                 || Clapped.has(entity.getId()) || ClientConstructs.mechVictim(entity.getId(), 0.0F) != null);
+        // A creature Thor holds by the throat hangs from his fist, struggling, not limp.
+        Ragdolls.claim(ThorHeld::holds);
+        // A test fight's two bodies, posed last; its creature fights back until the kick throws it.
+        Poses.layer(Poses.Stage.CREATURE, FightClient::pose);
+        Ragdolls.claim(FightClient::claims);
+        Cinematic.add(FightClient::shot);
     }
 }

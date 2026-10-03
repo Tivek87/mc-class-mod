@@ -125,7 +125,7 @@ public final class ClientClaps {
             float shut = Math.min(1.0F, age / MEET);
             float up = age < HOLD ? 1.0F : 1.0F - (float) Ease.smooth((age - HOLD) / (END - HOLD));
             float drive = (float) (Ease.smooth(shut) * (1.0 - Ease.smooth((age - HOLD) / (END - HOLD))));
-            float shock = (float) Ease.bump(Mth.clamp((age - MEET) / 6.0F, 0.0F, 1.0F));
+            float shock = (float) Ease.jolt((age - MEET) / 6.0F);
             // Shut hard: slow off the wide mark, fastest as the palms meet.
             return new Shape(up, 1.0F - shut * shut, drive, shock);
         }

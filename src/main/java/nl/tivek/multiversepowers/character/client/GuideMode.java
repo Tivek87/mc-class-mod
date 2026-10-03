@@ -14,37 +14,54 @@ import nl.tivek.multiversepowers.character.CharacterAbility;
 import nl.tivek.multiversepowers.character.GameCharacter;
 
 // A state of a character with binds of its own (on the ground, in flight, in the mech, a weapon in hand), for the
-// guide: how it starts and ends and every bind that does something in it, nothing else (the game's own walking, jumping
-// and looking are left out). Its words live in en_us.json under `guide.<mod>.<character>.<id>.` (`title`, `when`,
-// `off`, and per control its short line and, unless the ability it fires names it, `<control>.name`); a heading's
-// under `screen.<mod>.guide.part.<id>`.
+// guide: how you get in and out, what you cannot use there, and every bind that does something in it, nothing else
+// (the game's own walking, jumping and looking are left out). Its words live in en_us.json under
+// `guide.<mod>.<character>.<id>.` (`title`; `in`, `out`, `blocked` and `notes`, each short lines split by a line break;
+// and per control its short line and, unless the ability it fires names it, `<control>.name`); a heading's under
+// `screen.<mod>.guide.part.<id>`.
 public record GuideMode(GameCharacter character, String id, Predicate<LocalPlayer> active, List<Control> controls) {
     private static final String INPUT = "input." + MultiversePowers.MODID + ".";
+    public static final String[] SECTIONS = { "in", "out", "blocked", "notes" };
 
     // `key` is drawn on a key cap and follows the player's own key settings; a heading has none. `ability` is what
     // the control fires, for its status (`hold`: its hold version); `describes` when that ability's own explanation
     // and cost are about this very move; `cost` names the setting it costs when that is not the ability's own.
+    // `parent` is the control it belongs to, listed right before it (the same key with shift, or `again`: pressed
+    // again while that one's move lasts).
     public record Control(@Nullable Supplier<Component> key, String id, @Nullable String ability, boolean hold,
-            boolean describes, @Nullable Cost cost) {
+            boolean describes, @Nullable Cost cost, @Nullable String parent, boolean again) {
         public boolean heading() {
             return this.key == null;
         }
 
+        public boolean child() {
+            return this.parent != null;
+        }
+
         public Control fires(String ability) {
-            return new Control(this.key, this.id, ability, false, true, this.cost);
+            return new Control(this.key, this.id, ability, false, true, this.cost, this.parent, this.again);
         }
 
         public Control holds(String ability) {
-            return new Control(this.key, this.id, ability, true, true, this.cost);
+            return new Control(this.key, this.id, ability, true, true, this.cost, this.parent, this.again);
         }
 
         // Another move on that ability's button (a weapon's): its status, not its explanation.
         public Control moves(String ability, boolean hold) {
-            return new Control(this.key, this.id, ability, hold, false, this.cost);
+            return new Control(this.key, this.id, ability, hold, false, this.cost, this.parent, this.again);
         }
 
         public Control costs(String ability, String setting) {
-            return new Control(this.key, this.id, this.ability, this.hold, this.describes, new Cost(ability, setting));
+            return new Control(this.key, this.id, this.ability, this.hold, this.describes, new Cost(ability, setting),
+                    this.parent, this.again);
+        }
+
+        public Control under(String parent) {
+            return new Control(this.key, this.id, this.ability, this.hold, this.describes, this.cost, parent, false);
+        }
+
+        public Control again(String parent) {
+            return new Control(this.key, this.id, this.ability, this.hold, this.describes, this.cost, parent, true);
         }
     }
 
@@ -78,14 +95,23 @@ public record GuideMode(GameCharacter character, String id, Predicate<LocalPlaye
                 : ability.getDisplayName();
     }
 
-    public Component when() {
-        return Component.translatable(this.path() + "when");
+    // One of the overview's sections (`SECTIONS`) as its short lines; none when the mode leaves it out.
+    public List<String> section(String name) {
+        String key = this.path() + name;
+        return Language.getInstance().has(key) ? List.of(Language.getInstance().getOrDefault(key).split("\n"))
+                : List.of();
+    }
+
+    // The controls listed under this one (`Control.parent`).
+    public List<Control> children(Control control) {
+        return control.heading() || control.child() ? List.of()
+                : this.controls.stream().filter(other -> control.id().equals(other.parent())).toList();
     }
 
     @Nullable
-    public Component off() {
-        String key = this.path() + "off";
-        return Language.getInstance().has(key) ? Component.translatable(key) : null;
+    public Control parent(Control control) {
+        return control.child() ? this.controls.stream().filter(other -> !other.heading()
+                && other.id().equals(control.parent())).findFirst().orElse(null) : null;
     }
 
     // What the control does in this mode, or null when the ability's own explanation says it all.
@@ -100,12 +126,12 @@ public record GuideMode(GameCharacter character, String id, Predicate<LocalPlaye
     }
 
     private static Control control(Supplier<Component> key, String id) {
-        return new Control(key, id, null, false, false, null);
+        return new Control(key, id, null, false, false, null, null, false);
     }
 
     // A small title over the controls after it, such as the mouse or the ability keys.
     public static Control heading(String id) {
-        return new Control(null, id, null, false, false, null);
+        return new Control(null, id, null, false, false, null, null, false);
     }
 
     public static Control click(CharacterAbility.Input input, String id) {
@@ -150,7 +176,7 @@ public record GuideMode(GameCharacter character, String id, Predicate<LocalPlaye
         Supplier<Component> key = control.key();
         return new Control(() -> Component.translatable(INPUT + "plus", PowerInputs.keyName(held.get()),
                 key == null ? Component.empty() : key.get()), id, control.ability(), control.hold(),
-                control.describes(), control.cost());
+                control.describes(), control.cost(), control.parent(), control.again());
     }
 
     public static Control crouched(Control control, String id) {

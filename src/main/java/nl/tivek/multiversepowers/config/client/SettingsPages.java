@@ -84,7 +84,8 @@ public final class SettingsPages {
                 List.of(new Group(null, numbers)));
         List<ConfigNumber> blows = List.of(
                 fromSpec(spec, file, "general", "fatigueKnockdown", PowerRules.FATIGUE_KNOCKDOWN, Unit.SWITCH, 1.0),
-                fromSpec(spec, file, "general", "dominoKnockdown", PowerRules.DOMINO, Unit.SWITCH, 1.0));
+                fromSpec(spec, file, "general", "dominoKnockdown", PowerRules.DOMINO, Unit.SWITCH, 1.0),
+                fromSpec(spec, file, "general", "playerKnockdown", PowerRules.PLAYER_KNOCKDOWN, Unit.SWITCH, 1.0));
         Section creatures = new Section(Component.translatable(PREFIX + "general.creatures"), null,
                 List.of(new Group(null, blows)));
         List<ConfigNumber> allowed = new ArrayList<>();

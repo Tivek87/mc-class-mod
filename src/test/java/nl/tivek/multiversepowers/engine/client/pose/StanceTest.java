@@ -78,9 +78,10 @@ class StanceTest {
             float knee = Limbs.bent(model, Limbs.Joint.RIGHT_KNEE);
             Quaternionf shin = new Quaternionf();
             drawnEnd(model.rightLeg, new float[] { Stance.THIGH, Stance.SHIN - Stance.FOOT }, shin);
-            // A shin tilted further than an ankle turns, or a knee folded shut, leaves the sole short of flat.
+            // A shin tilted further than an ankle turns easily (toes up 0.65), or a knee folded shut, leaves the sole
+            // short of flat.
             float tilt = (float) Math.acos(Math.min(1.0F, shin.transform(new Vector3f(0.0F, 1.0F, 0.0F)).y));
-            assertTrue(tilt > 0.95F || way.y > 0.999F, "flat sole for " + foot + ": " + way);
+            assertTrue(tilt > 0.65F || way.y > 0.999F, "flat sole for " + foot + ": " + way);
             Vector3f kneeAt = new Quaternionf().rotationZYX(model.rightLeg.zRot, model.rightLeg.yRot,
                     model.rightLeg.xRot).transform(new Vector3f(0.0F, Stance.THIGH, 0.0F));
             float midZ = foot.z * 0.5F + model.rightLeg.z * 0.5F;
@@ -92,15 +93,28 @@ class StanceTest {
     @Test
     void aFootKeepsTheWayItsLegSteppedOutAsTheKneeBends() {
         HumanoidModel<LivingEntity> model = person();
-        model.rightLeg.setRotation(-0.4F, 0.0F, 0.0F);
-        Quaternionf stepped = new Quaternionf().rotationX(-0.4F);
-        Vector3f foot = Stance.end(model.rightLeg, Stance.THIGH + Stance.SHIN, new Vector3f()).add(0.0F, -3.0F, 0.0F);
+        model.rightLeg.setRotation(-0.3F, 0.0F, 0.0F);
+        Quaternionf stepped = new Quaternionf().rotationX(-0.3F);
+        Vector3f foot = Stance.end(model.rightLeg, Stance.THIGH + Stance.SHIN, new Vector3f()).add(0.0F, -1.0F, 0.0F);
         Stance.leg(model, true, foot, new Vector3f(0.0F, 0.0F, -1.0F));
         Quaternionf last = new Quaternionf();
         assertEquals(0.0F, drawnEnd(model.rightLeg, LEG, last).distance(foot), REACH);
         assertTrue(Limbs.bent(model, Limbs.Joint.RIGHT_KNEE) > 0.3F);
         Vector3f way = last.transform(new Vector3f(0.0F, 1.0F, 0.0F));
         assertEquals(0.0F, way.distance(stepped.transform(new Vector3f(0.0F, 1.0F, 0.0F))), CLOSE);
+    }
+
+    @Test
+    void anAnkleTurnsNoFurtherThanItEasilyCanAndTheSoleStillLands() {
+        HumanoidModel<LivingEntity> model = person();
+        model.rightLeg.setRotation(-0.4F, 0.0F, 0.0F);
+        Vector3f foot = Stance.end(model.rightLeg, Stance.THIGH + Stance.SHIN, new Vector3f()).add(0.0F, -3.0F, 0.0F);
+        Stance.leg(model, true, foot, new Vector3f(0.0F, 0.0F, -1.0F));
+        // Kept its way the foot would need its toes 0.8 up: it takes no more than 0.65 and gives the rest way.
+        float ankle = piece(model.rightLeg, 1).angle();
+        assertTrue(ankle <= 0.65F + CLOSE, "ankle " + ankle);
+        assertTrue(ankle > 0.5F, "ankle " + ankle);
+        assertEquals(0.0F, drawnEnd(model.rightLeg, LEG, new Quaternionf()).distance(foot), REACH);
     }
 
     @Test

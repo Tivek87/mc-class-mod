@@ -18,26 +18,36 @@ import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.engine.effect.Effects;
 import nl.tivek.multiversepowers.engine.entity.HeldMobs;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
+import nl.tivek.multiversepowers.engine.math.Vectors;
 import nl.tivek.multiversepowers.engine.target.Targeting;
 import nl.tivek.multiversepowers.spell.SpellTargets;
 
-// Thor takes hold of a creature and does one thing of a pool with it: throws it away, smashes its head into the ground,
-// punches it in the body a few times, or punches first and then throws or smashes it. Grabbed at the end of a grab
-// dash (running) he may also leap high with it over his head: then he slams down with it, hurls it down, or lets it
-// fall and slams onto it. A creature that cannot be held (a player) takes the punches and the throw where it stands.
+// Thor takes hold of a creature by the throat, lifts it, and for a moment (CHOICE) his player picks how it ends: his
+// left fist punches it in the body, he throws it away, or he slams it head first into the ground. Picked nothing, it
+// is one of a pool: those three, or punches first and then the throw or the slam; grabbed at the end of a grab dash
+// (running) he may also leap high with it over his head, then slam down with it, hurl it down, or let it fall and
+// slam onto it. A creature that cannot be held (a player) takes it all where it stands.
 public final class ThorGrab {
     private static final double REACH = 3.5;
     private static final double AHEAD = 0.35;
     private static final double DASH_REACH = 10.0;
     private static final double DASH_CATCH = 2.0;
     private static final int DASH_WATCH = 12;
-    private static final int LONGEST = 120;
-    private static final int PUNCH_GAP = 5;
+    // Ticks his player has to pick the ending, before one is picked for him.
+    public static final int CHOICE = 30;
+    private static final int LONGEST = CHOICE + 120;
+    private static final int PUNCH_GAP = 6;
     private static final int DROP_WAIT = 20;
     private static final double SLAM_RADIUS = 3.0;
+    // Where his right fist holds a creature by the throat, in his sizes: ahead of his right shoulder and as high, and
+    // how far up a creature's height its throat is.
+    private static final double GRIP_AHEAD = 0.55;
+    private static final double GRIP_RIGHT = 0.15;
+    private static final double GRIP_UP = 1.45;
+    private static final double THROAT = 0.8;
     private static final Map<UUID, ThorGrab> ALL = new HashMap<>();
 
-    private enum Act {
+    public enum Act {
         THROW,
         HEAD_SLAM,
         PUNCHES,
@@ -48,12 +58,20 @@ public final class ThorGrab {
         HOIST_DROP
     }
 
+    // What his player may pick, in the order the prompt shows them: left click punches, right click throws, the
+    // scroll wheel slams.
+    public static final Act[] PICKS = { Act.PUNCHES, Act.THROW, Act.HEAD_SLAM };
+
     private static final ThorBlow[] PUNCHES = { ThorBlow.BODY_HOOK, ThorBlow.JAB, ThorBlow.LEAD_HOOK };
 
     private final UUID owner;
     private final LivingEntity target;
     private final float damage;
-    private final Act act;
+    private final boolean dashed;
+    // Null while his player still picks.
+    @Nullable
+    private Act act;
+    private int actAt;
     private boolean held;
     private boolean overhead;
     private boolean done;
@@ -62,11 +80,11 @@ public final class ThorGrab {
     private int dropAt = -1;
     private double lastY;
 
-    private ThorGrab(ServerPlayer owner, LivingEntity target, float damage, Act act) {
+    private ThorGrab(ServerPlayer owner, LivingEntity target, float damage, boolean dashed) {
         this.owner = owner.getUUID();
         this.target = target;
         this.damage = damage;
-        this.act = act;
+        this.dashed = dashed;
         this.lastY = owner.getY();
     }
 
@@ -146,21 +164,62 @@ public final class ThorGrab {
 
     private static void begin(ServerPlayer player, LivingEntity target, float damage, boolean dashed) {
         ServerLevel level = player.serverLevel();
-        Act[] pool = Act.values();
-        int kinds = dashed ? pool.length : Act.PUNCH_SLAM.ordinal() + 1;
-        Act act = pool[level.random.nextInt(kinds)];
-        ThorGrab grab = new ThorGrab(player, target, damage, act);
+        ThorGrab grab = new ThorGrab(player, target, damage, dashed);
         grab.held = target instanceof Mob mob && HeldMobs.hold(mob);
-        if (!grab.held && act.ordinal() > Act.PUNCH_SLAM.ordinal()) {
-            grab = new ThorGrab(player, target, damage, Act.PUNCH_THROW);
-        }
         ALL.put(player.getUUID(), grab);
         Vec3 at = target.getBoundingBox().getCenter();
         ParticleFx.cloud(level, ParticleTypes.ELECTRIC_SPARK, at, 12, 0.3, 0.2);
         level.playSound(null, at.x, at.y, at.z, SoundEvents.PLAYER_ATTACK_KNOCKBACK, SoundSource.PLAYERS, 1.0F, 0.6F);
-        ThorMoves.tell(player, ThorStatePayload.GRAB, target.getId() + 1);
-        ThorGrab started = grab;
-        Effects.start(level, (lvl, age) -> started.tick(lvl));
+        ThorMoves.tell(player, ThorStatePayload.GRAB, grabbed(target.getId(), dashed));
+        Effects.start(level, (lvl, age) -> grab.tick(lvl));
+    }
+
+    // A grab's word to every game: what he holds, and whether a dash brought him to it.
+    public static int grabbed(int id, boolean dashed) {
+        return (id + 1) * 2 + (dashed ? 1 : 0);
+    }
+
+    // His player's pick of how it ends (one of PICKS), while he may still pick.
+    static boolean pick(ServerPlayer player, int pick) {
+        ThorGrab grab = ALL.get(player.getUUID());
+        if (grab == null || grab.done || grab.act != null || pick < 0 || pick >= PICKS.length) {
+            return false;
+        }
+        grab.start(player, PICKS[pick]);
+        return true;
+    }
+
+    // Whether his hands are full with a creature he grabbed: no blow of his own until the grab ends.
+    public static boolean busy(ServerPlayer player) {
+        ThorGrab grab = ALL.get(player.getUUID());
+        return grab != null && !grab.done;
+    }
+
+    // One of the pool, as before there was a pick: the leaps only after a dash, and only with a creature he holds.
+    private Act any(ServerLevel level) {
+        Act[] pool = Act.values();
+        int kinds = this.dashed && this.held ? pool.length : Act.PUNCH_SLAM.ordinal() + 1;
+        return pool[level.random.nextInt(kinds)];
+    }
+
+    private void start(ServerPlayer thor, Act act) {
+        this.act = act;
+        this.actAt = this.age;
+        ThorMoves.tell(thor, ThorStatePayload.GRAB_ACT, act.ordinal());
+    }
+
+    // Where his right fist holds a creature by the throat (client and server alike).
+    public static Vec3 grip(LivingEntity thor, float partialTick) {
+        Vec3 look = Vec3.directionFromRotation(0.0F, thor.getViewYRot(partialTick));
+        Vec3 right = look.cross(Vectors.UP).normalize();
+        double size = thor.getScale();
+        return thor.getPosition(partialTick).add(look.scale(GRIP_AHEAD * size)).add(right.scale(GRIP_RIGHT * size))
+                .add(0.0, GRIP_UP * size, 0.0);
+    }
+
+    // How far up from its feet a creature is held: its throat.
+    public static double throat(Entity held) {
+        return held.getBbHeight() * THROAT;
     }
 
     private boolean tick(ServerLevel level) {
@@ -175,14 +234,20 @@ public final class ThorGrab {
         }
         thor.resetFallDistance();
         if (this.held) {
-            Vec3 at = this.overhead ? overhead(thor) : GrabDive.hand(thor, this.target);
-            // Held up by the collar, never with its feet in the ground he stands on.
+            Vec3 at = this.overhead ? overhead(thor) : grip(thor, 1.0F).subtract(0.0, throat(this.target), 0.0);
+            // Held up by the throat, never with its feet in the ground he stands on.
             at = new Vec3(at.x, Math.max(at.y, thor.getY()), at.z);
             this.target.setPos(at.x, at.y, at.z);
             this.target.setDeltaMovement(Vec3.ZERO);
             this.target.resetFallDistance();
         }
-        int t = this.age;
+        if (this.act == null) {
+            if (this.age >= CHOICE) {
+                this.start(thor, this.any(level));
+            }
+            return true;
+        }
+        int t = this.age - this.actAt;
         switch (this.act) {
             case THROW -> this.punchesThen(level, thor, t, 0, true);
             case HEAD_SLAM -> this.punchesThen(level, thor, t, 0, false);
@@ -196,7 +261,7 @@ public final class ThorGrab {
 
     // `punches` blows to the body, then a throw (true), a smash into the ground (false) or letting go (null).
     private void punchesThen(ServerLevel level, ServerPlayer thor, int t, int punches, @Nullable Boolean throwIt) {
-        int first = 6;
+        int first = 2;
         for (int k = 0; k < punches; k++) {
             ThorBlow blow = PUNCHES[k % PUNCHES.length];
             if (t == first + k * PUNCH_GAP) {
@@ -218,7 +283,7 @@ public final class ThorGrab {
             }
             return;
         }
-        ThorBlow blow = throwIt ? ThorBlow.PALM_STRIKE : ThorBlow.HAMMER_FIST;
+        ThorBlow blow = throwIt ? ThorBlow.GRAB_HURL : ThorBlow.GRAB_SLAM;
         if (t == finish) {
             ThorMoves.tell(thor, ThorStatePayload.STRIKE, blow.ordinal());
         }
@@ -251,9 +316,10 @@ public final class ThorGrab {
         double floor = Targeting.floorBelow(level, BlockPos.containing(spot.x, thor.getY() + thor.getScale(),
                 spot.z));
         this.target.setPos(spot.x, floor, spot.z);
+        this.hurt(level, thor, 1.5F);
+        // Set after the hit, whose own knockback would hop it back up off the ground.
         this.target.setDeltaMovement(0.0, -0.5, 0.0);
         this.target.hurtMarked = true;
-        this.hurt(level, thor, 1.5F);
         Vec3 ground = new Vec3(spot.x, floor + 0.1, spot.z);
         ParticleFx.shockwave(level, ParticleFx.dust(ThorMoves.GLOW, 1.1F), ground, 20, 0.3);
         ParticleFx.cloud(level, ParticleTypes.ELECTRIC_SPARK, ground.add(0.0, 0.3, 0.0), 16, 0.5, 0.15);

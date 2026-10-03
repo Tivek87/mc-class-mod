@@ -19,9 +19,10 @@ import nl.tivek.multiversepowers.config.PowerRules;
 import nl.tivek.multiversepowers.config.Unit;
 import nl.tivek.multiversepowers.engine.client.gui.GuiShapes;
 
-// The guide's right side: a mode's overview (how it starts and ends, what is off meanwhile), or one control of it
-// (its key, what it does in this mode in one short line, its cooldown and cost, and folded under that the full
-// explanation of the ability it fires), with whether it can be used right now pinned under it.
+// The guide's right side: a mode's overview (how you get in and out, what you cannot use there, what is good to know),
+// or one control of it (its key, what it does in this mode in one short line, its cooldown and cost, what else sits on
+// its key, and folded under that the full explanation of the ability it fires), with whether it can be used right now
+// pinned under it.
 final class GuideDetail {
     private static final String PREFIX = "screen." + MultiversePowers.MODID + ".guide.";
     private static final String[] OWN_COSTS = { "powerCost", "staminaCost", "staminaPerTick" };
@@ -29,11 +30,15 @@ final class GuideDetail {
     static final int AMBER = 0xFFE9B44C;
     static final int RED = 0xFFFF6A50;
     static final int GRAY = 0xFF6E6E6E;
+    private static final int BLUE = 0xFF7DB8F0;
+    // Per overview section (`GuideMode.SECTIONS`): get in, get out, can't use here, good to know.
+    private static final int[] SECTION_COLORS = { GREEN, AMBER, RED, BLUE };
     private static final int TEXT = 0xFFFFFFFF;
     private static final int BODY = 0xFFD8D8D8;
     private static final int MUTED = 0xFF9A9A9A;
     private static final int CHIP = 0xFF2A2A2A;
     private static final int LINE = 0x22FFFFFF;
+    private static final Component AGAIN = Component.translatable(PREFIX + "again");
     static final int STATUS = 20;
     static final int FOLD = 12;
 
@@ -49,7 +54,7 @@ final class GuideDetail {
 
     // Draws the scrolled part clipped to the box above the status line.
     static Drawn overview(GuiGraphics graphics, Font font, GuideMode mode, LocalPlayer player, int x, int y, int width,
-            int height, double scroll, int accent) {
+            int height, double scroll) {
         int bottom = y + height - STATUS;
         graphics.enableScissor(x, y, x + width, bottom);
         KeyCap.Layer layer = new KeyCap.Layer(graphics, font);
@@ -57,13 +62,18 @@ final class GuideDetail {
         int cy = top + 2;
         layer.shadowed(mode.title().copy().withStyle(ChatFormatting.BOLD), x, cy, TEXT);
         cy += 14;
-        cy = heading(layer, Component.translatable(PREFIX + "when"), x, cy, accent);
-        cy = paragraph(layer, font, mode.when(), x, cy, width, BODY);
-        Component off = mode.off();
-        if (off != null) {
+        for (int i = 0; i < GuideMode.SECTIONS.length; i++) {
+            List<String> lines = mode.section(GuideMode.SECTIONS[i]);
+            if (lines.isEmpty()) {
+                continue;
+            }
+            int color = SECTION_COLORS[i];
+            cy = heading(layer, Component.translatable(PREFIX + "section." + GuideMode.SECTIONS[i]), x, cy, color);
+            for (String line : lines) {
+                GuiShapes.roundRect(graphics, x + 1, cy + 3, 3, 3, 0.0F, color);
+                cy = paragraph(layer, font, Component.literal(line), x + 8, cy, width - 8, BODY) + 2;
+            }
             cy += 5;
-            cy = heading(layer, Component.translatable(PREFIX + "off"), x, cy, AMBER);
-            cy = paragraph(layer, font, off, x, cy, width, BODY);
         }
         layer.finish();
         graphics.disableScissor();
@@ -82,11 +92,22 @@ final class GuideDetail {
         KeyCap.Layer layer = new KeyCap.Layer(graphics, font);
         int top = y - (int) Math.round(scroll);
         int cy = top + 2;
+        GuideMode.Control parent = mode.parent(control);
+        if (parent != null) {
+            layer.text(Component.empty().append(mode.name(parent)).append(" »"), x, cy, MUTED);
+            cy += 11;
+        }
         layer.shadowed(mode.name(control).copy().withStyle(ChatFormatting.BOLD), x, cy, TEXT);
         cy += 14;
         Supplier<Component> key = control.key();
-        int cap = key == null ? 0 : KeyCap.draw(layer, font, key.get(), x, cy, 13);
-        layer.text(Component.translatable(PREFIX + "in_mode", mode.title()), x + cap + 6, cy + 3, MUTED);
+        int after = x + (key == null ? 0 : KeyCap.draw(layer, font, key.get(), x, cy, 13) + 6);
+        Component inMode = Component.translatable(PREFIX + "in_mode", mode.title());
+        if (control.again()) {
+            layer.text(AGAIN, after, cy + 3, accent);
+            after += font.width(AGAIN) + 4;
+            inMode = Component.literal("· ").append(inMode);
+        }
+        layer.text(inMode, after, cy + 3, MUTED);
         cy += 19;
         Component does = mode.does(control);
         if (does != null) {
@@ -104,6 +125,21 @@ final class GuideDetail {
         }
         if (cx > x) {
             cy += 16;
+        }
+        List<GuideMode.Control> children = mode.children(control);
+        if (!children.isEmpty()) {
+            cy = heading(layer, Component.translatable(PREFIX + "same_key"), x, cy + 1, MUTED) + 1;
+            for (GuideMode.Control child : children) {
+                Supplier<Component> childKey = child.key();
+                int at = x + (childKey == null ? 0 : KeyCap.draw(layer, font, childKey.get(), x, cy, 11) + 5);
+                if (child.again()) {
+                    layer.text(AGAIN, at, cy + 2, MUTED);
+                    at += font.width(AGAIN) + 5;
+                }
+                layer.text(mode.name(child), at, cy + 2, BODY);
+                cy += 14;
+            }
+            cy += 2;
         }
         Component about = ability == null || !control.describes() ? null : AbilityGuide.about(ability);
         int fold = -1;

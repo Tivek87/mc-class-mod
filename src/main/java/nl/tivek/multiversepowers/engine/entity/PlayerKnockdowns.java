@@ -14,10 +14,11 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.engine.effect.Effects;
 
-// A player a power knocks down goes limp as a creature does (Knockdowns): in every game near, their own seen from
-// outside too, the body flies, lies 3 seconds where it lands and gets up. Their own game moves them and holds back
-// their keys meanwhile (Downed); here they only count as down, refused every power, and the games near are told when
-// they land and how long they lie. In water or lava they are let go at once, so they can swim out.
+// A player a power knocks down, or a blow or blast throws hard, goes limp as a creature does (Knockdowns): in every
+// game near, their own seen from outside too, the body flies, lies 3 seconds where it lands and gets up. Their own
+// game moves them and holds back their keys meanwhile (Downed); here they only count as down, refused every power, and
+// the games near are told when they land and how long they lie. In water or lava they are let go at once, so they can
+// swim out.
 @EventBusSubscriber(modid = MultiversePowers.MODID)
 public final class PlayerKnockdowns {
     private static final Map<UUID, Down> DOWNED = new HashMap<>();

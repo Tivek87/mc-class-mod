@@ -1,7 +1,6 @@
 package nl.tivek.multiversepowers.character.thor.client.pose;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.math.Axis;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.entity.player.PlayerRenderer;
@@ -74,12 +73,8 @@ public final class ThorFirstPerson {
         FirstPersonArm.arm(pose, event.getMultiBufferSource(), event.getPackedLight(), player, renderer, -1.0F, hand,
                 LEFT_FROM);
         pose.pushPose();
-        pose.translate(hand.x, hand.y, hand.z);
-        // Handle ahead, up and in towards the middle of the view, the head's long side upright, so a rune face shows.
-        pose.mulPose(Axis.YP.rotationDegrees(-30.0F));
-        pose.mulPose(Axis.XP.rotationDegrees(25.0F));
-        pose.mulPose(Axis.YP.rotationDegrees(-90.0F));
-        pose.mulPose(Axis.ZP.rotationDegrees(90.0F));
+        FirstPersonArm.toArm(pose, -1.0F, hand, LEFT_FROM);
+        ThorHammerLayer.ahead(pose, false);
         ThorHammerLayer.draw(ThorHammerLayer.GRIP, ThorHammerLayer.glow(player, event.getPartialTick()), pose,
                 event.getMultiBufferSource(), event.getPackedLight());
         pose.popPose();

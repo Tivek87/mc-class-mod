@@ -6,28 +6,16 @@
 - Gecheckt: hashes = HEAD, `compileJava` + `compileTestJava` groen. Backup-patch (45 bestanden) in temp-scratchpad;
   weg op verzoek. Werk van de sessie hieronder (knockdowns, paneel, stamina) niet aangeraakt.
 
-## Update-menu's opnieuw, titelknop, tijd bij versies; release 0.7.1-alpha (2026-10-03)
-- Verzoek: "Use (oudere versie)" niet klikbaar; tijd bij release; update manager + versies mooier (MC-stijl);
-  knop in hoofdmenu naar manager; daarna commit, push, release.
-- Oorzaak knop: testgame (`gradlew runClient`) heeft geen jar. Nu: testgame downloadt + checkt (`CHECKED`), swapt niets;
-  echte installatie ongewijzigd (jar wisselen + afsluiten). `UpdateInstaller.canSwitch`.
-- Nieuw: `TitleButton` (20x20 pijl-icoon rechts van Realms, groene stip bij update). Manager: statuskaart + knoppen.
-  Versielijst: datum + tijd, tags naast versie. `DirtBackgroundScreen`: `drawInset`, `drawChip`, `drawBar`, panel-rand.
-- Getest: 2 in-game runs (groot + 854x480), echte download v0.6.9 → CHECKED, `./gradlew build` groen.
-- Niet getest: echte wissel in Modrinth-profiel (daar staat nog 0.6.8; dat profiel niet aangeraakt).
-
-## Versies wisselen, rustig paneel, gids met uitklap; release 0.7.0-alpha (2026-10-03)
-- Verzoek: What's new met laatste 10 versies + wisselen (spel sluit) + 1 knop naar latest; joinen met andere
-  modversie → kiezen: terug of wisselen; paneel rechtsonder rustiger, ruimer, GUI-schaal; gids met korte
-  samenvatting + uitklap; bereikbaar vanuit update manager; daarna commit, push, release.
-- Versies: `ChangelogScreen` ("What's new & versions"), `VersionProbe` (kanaalversie = modversie),
-  `VersionMismatch` + `VersionMismatchScreen`. Echt getest: server 0.6.8 weigert client 0.6.9 → eigen scherm, juiste versies.
-- Paneel: GUI-schaal, max ~60% schermhoogte (eerst krappere rijen, dan stap kleiner), groepen muis/toetsen/gebaren,
-  "hold"/"2×" voor de toets, kleuren en status faden. Gesplitst: `AbilityPanelRows`; gids: `GuideAbout`.
-- Gids: samenvatting (max 2 regels) + Read more-pagina, korte regel + "More about"-uitklap, ▶/▼ uit MC-font.
-- Getest: 4 UI-runs (groot + 854x480), join-test, `./gradlew build` groen.
-- Open: bugs #59-#63 (high) + ideeën: nieuwe ja nodig. Voorstel: `character/client/` (17 bestanden) opdelen in
-  `guide/` en `panel/`. `docs/ideas/THOR_MJOLNIR_FLIGHT_SYSTEM*.md` (andere sessie) niet meegecommit.
+## 0.7.2-alpha: manager, tour, Thor, Ock, testgevecht (2026-10-04)
+- Verzoek: pauzemenu-knop; tour fixen + opnieuw te starten; manager-UI + QOL; GL-benen bij arrival; Thor: Mjolnir
+  groter en goed in de hand, geen spin, vuisten trager zonder clipping, grab niet slap + einde kiezen in 1,5 s; Ock:
+  vrije tentakels; spelers bijna altijd ragdoll; testgevecht (hurken + scrollwiel 3 s); polsen/enkels nooit
+  onmogelijk. Daarna: "commit 0.7.1 en 0.7.2, niet pushen".
+- Gedaan: alles hierboven + eerder verzoek (gids-groepen, overzicht, tour). In game getest, `./gradlew build` groen.
+- Lokaal gecommit als 0.7.2-alpha (`Manager pages, tour, Thor grab picks and test fight`), niet gepusht.
+  0.7.1-alpha stond al gecommit, gepusht en gereleased (Latest); daar viel niets te committen.
+- Open: push + `scripts/release.ps1 publish` (v0.7.2-alpha) wachten op ja. Bugs #59-#63 bewust niet aangeraakt.
+  `docs/ideas/THOR_MJOLNIR_FLIGHT_SYSTEM*.md` (andere sessie) niet meegecommit.
 
 ## Thor-ontwerp (andere sessie, 2026-10-02)
 - Ontwerp `docs/ideas/THOR_MJOLNIR_FLIGHT_SYSTEM.md` + `_SHORT.md` (niet gecommit, van die sessie). Besloten:

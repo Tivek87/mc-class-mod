@@ -7,7 +7,7 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import nl.tivek.multiversepowers.MultiversePowers;
 
-public record CharacterStatePayload(int character, int[] cooldowns, int ultimate, int stance, int marks)
+public record CharacterStatePayload(int character, int[] cooldowns, int ultimate, int stance, int marks, int limbs)
         implements CustomPacketPayload {
     private static final int MAX_SLOTS = 32;
 
@@ -26,6 +26,7 @@ public record CharacterStatePayload(int character, int[] cooldowns, int ultimate
         buf.writeVarInt(this.ultimate);
         buf.writeVarInt(this.stance);
         buf.writeVarInt(this.marks);
+        buf.writeVarInt(this.limbs + 1);
     }
 
     private static CharacterStatePayload read(RegistryFriendlyByteBuf buf) {
@@ -39,7 +40,7 @@ public record CharacterStatePayload(int character, int[] cooldowns, int ultimate
             cooldowns[i] = buf.readVarInt();
         }
         return new CharacterStatePayload(character, cooldowns, buf.readVarInt(), buf.readVarInt(),
-                buf.readVarInt());
+                buf.readVarInt(), buf.readVarInt() - 1);
     }
 
     @Override

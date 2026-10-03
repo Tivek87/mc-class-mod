@@ -5,12 +5,14 @@ import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.Set;
+import javax.annotation.Nullable;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.TagKey;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.FlyingMob;
 import net.minecraft.world.entity.LivingEntity;
@@ -47,6 +49,8 @@ public final class Knockdowns {
     private static final double THROWN = 0.8;
     private static final double TOSSED = 0.55;
     private static final double BLOWN = 0.2;
+    // A player is thrown limp only by a blast that really throws them, not the push of one further off.
+    private static final double PLAYER_BLOWN = 0.5;
     private static final double HEAVY = 3.5;
     // Ticks a thrown creature stays down from landing: it lies 3 seconds, then gets up in every player's game (a little
     // later there, as its body comes down after it), and stands a moment before its AI comes back. The players' games
@@ -138,6 +142,10 @@ public final class Knockdowns {
 
     @SubscribeEvent
     public static void onHurt(LivingDamageEvent.Post event) {
+        if (event.getEntity() instanceof ServerPlayer player) {
+            playerHurt(player, event.getSource().getEntity());
+            return;
+        }
         if (!(event.getEntity() instanceof Mob mob) || !(mob.level() instanceof ServerLevel level)
                 || !mayFly(mob)) {
             return;
@@ -162,9 +170,46 @@ public final class Knockdowns {
         });
     }
 
+    // A player a blow throws as hard goes limp too (world setting playerKnockdown). Their game moves them, so the
+    // server's motion of a player holds only what was given them: the push is what this blow added to it.
+    private static void playerHurt(ServerPlayer player, @Nullable Entity by) {
+        if (!PowerRules.playerKnockdown() || by == player || !mayThrow(player)) {
+            return;
+        }
+        Vec3 before = player.getDeltaMovement();
+        Effects.start(player.serverLevel(), (lvl, age) -> {
+            if (age > WATCH || !player.isAlive() || player.isRemoved()) {
+                return false;
+            }
+            Vec3 push = player.getDeltaMovement().subtract(before);
+            if (push.horizontalDistanceSqr() > THROWN * THROWN || push.y > TOSSED) {
+                if (mayThrow(player)) {
+                    PlayerKnockdowns.knock(player);
+                }
+                return false;
+            }
+            return true;
+        });
+    }
+
+    // Never where lying limp would only be a nuisance or a danger: in creative, riding, gliding or flying, asleep, or
+    // in water or lava.
+    private static boolean mayThrow(ServerPlayer player) {
+        return !player.isCreative() && !player.isSpectator() && !player.isPassenger() && !player.isFallFlying()
+                && !player.getAbilities().flying && !player.isSleeping() && !player.isInWater() && !player.isInLava();
+    }
+
     // A blast's push is known exactly before it is given, while the creature has not moved off with it yet.
     @SubscribeEvent
     public static void onBlast(ExplosionKnockbackEvent event) {
+        if (event.getAffectedEntity() instanceof ServerPlayer player) {
+            if (PowerRules.playerKnockdown() && mayThrow(player)
+                    && event.getExplosion().getIndirectSourceEntity() != player
+                    && event.getKnockbackVelocity().lengthSqr() > PLAYER_BLOWN * PLAYER_BLOWN) {
+                PlayerKnockdowns.knock(player);
+            }
+            return;
+        }
         if (event.getAffectedEntity() instanceof Mob mob && mob.level() instanceof ServerLevel level
                 && mob.isAlive() && !HeldMobs.isHeld(mob) && mayFly(mob)
                 && event.getKnockbackVelocity().lengthSqr() > BLOWN * BLOWN) {

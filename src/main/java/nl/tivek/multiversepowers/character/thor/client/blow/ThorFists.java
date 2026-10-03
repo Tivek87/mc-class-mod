@@ -1,7 +1,7 @@
 package nl.tivek.multiversepowers.character.thor.client.blow;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.math.Axis;
+import javax.annotation.Nullable;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.entity.player.PlayerRenderer;
@@ -13,6 +13,7 @@ import net.neoforged.neoforge.client.event.RenderHandEvent;
 import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.character.GameCharacter;
 import nl.tivek.multiversepowers.character.client.ClientCharacter;
+import nl.tivek.multiversepowers.character.thor.ThorBlow;
 import nl.tivek.multiversepowers.character.thor.ThorStatePayload;
 import nl.tivek.multiversepowers.character.thor.client.ClientThor;
 import nl.tivek.multiversepowers.character.thor.client.motion.ThorMotion;
@@ -42,8 +43,9 @@ public final class ThorFists {
         ClientThor.View view = ClientThor.view(player);
         ThorBlowPoses.Pose pose = view == null ? null : ThorBlowPoses.of(view, event.getPartialTick());
         boolean armed = view != null && view.has(ThorStatePayload.ARMED) && !view.has(ThorStatePayload.THROWN);
+        boolean holding = holds(view);
         float w = pose == null ? 0.0F : pose.weight;
-        if (w < 1.0E-3F && !armed) {
+        if (w < 1.0E-3F && !armed && !holding) {
             return;
         }
         event.setCanceled(true);
@@ -59,14 +61,20 @@ public final class ThorFists {
             Vector3f rest = side == 0 ? FirstPersonArm.HAND_RIGHT : FirstPersonArm.HAND_LEFT;
             Vector3f hand = new Vector3f(rest);
             Vector3f from = new Vector3f(REST_FROM.x * sign, REST_FROM.y, REST_FROM.z);
-            if (pose != null) {
+            if (side == 0 && holding) {
+                hand.set(fist(view, pose, event.getPartialTick()));
+                from.set(ThorBlowPoses.heldFrom());
+                if (pose != null && ThorBlow.grabbing(view.blow, view.blowAge(event.getPartialTick()))) {
+                    from.lerp(pose.from[0], w);
+                }
+            } else if (pose != null) {
                 hand.lerp(pose.seen[side], w);
                 from.lerp(pose.from[side], w);
             }
             FirstPersonArm.arm(event.getPoseStack(), event.getMultiBufferSource(), event.getPackedLight(), player,
                     renderer, sign, hand, from);
             if (side == 0 && armed) {
-                hammer(event, player, hand);
+                hammer(event, player, hand, from);
             }
         }
         if (pose != null && pose.footSide >= 0 && pose.kick * pose.weight > 0.05F) {
@@ -79,15 +87,35 @@ public final class ThorFists {
         }
     }
 
-    // Mjolnir in his right fist, head up and leaning away, its long side pointing ahead and turned so a rune face
-    // shows.
-    private static void hammer(RenderHandEvent event, LocalPlayer player, Vector3f hand) {
+    // Your right fist while you hold a creature up by the throat, as it is drawn (view space): where the creature hangs
+    // from in your own view; null while you hold none.
+    @Nullable
+    public static Vector3f holding(LocalPlayer player, float partialTick) {
+        ClientThor.View view = ClientThor.view(player);
+        return holds(view) ? fist(view, ThorBlowPoses.of(view, partialTick), partialTick) : null;
+    }
+
+    private static boolean holds(@Nullable ClientThor.View view) {
+        return view != null && view.has(ThorStatePayload.CARRYING) && view.carried >= 0
+                && view.move() != ThorStatePayload.HOIST && view.move() != ThorStatePayload.DIVE
+                && !view.has(ThorStatePayload.FLYING);
+    }
+
+    // Out where he holds it, or where a grab's own ending takes it, eased in from there.
+    private static Vector3f fist(ClientThor.View view, @Nullable ThorBlowPoses.Pose pose, float partialTick) {
+        Vector3f fist = ThorBlowPoses.heldSeen();
+        if (pose != null && ThorBlow.grabbing(view.blow, view.blowAge(partialTick))) {
+            fist.lerp(pose.seen[0], pose.weight);
+        }
+        return fist;
+    }
+
+    // Mjolnir in his right fist, held as others see it held.
+    private static void hammer(RenderHandEvent event, LocalPlayer player, Vector3f hand, Vector3f from) {
         PoseStack pose = event.getPoseStack();
         pose.pushPose();
-        pose.translate(hand.x, hand.y, hand.z);
-        pose.mulPose(Axis.ZP.rotationDegrees(10.0F));
-        pose.mulPose(Axis.XP.rotationDegrees(-20.0F));
-        pose.mulPose(Axis.YP.rotationDegrees(130.0F));
+        FirstPersonArm.toArm(pose, 1.0F, hand, from);
+        ThorHammerLayer.inFist(pose, true, ThorHammerLayer.SEEN_TILT, ThorHammerLayer.SEEN_LEAN);
         ThorHammerLayer.draw(ThorHammerLayer.GRIP, ThorHammerLayer.glow(player, event.getPartialTick()), pose,
                 event.getMultiBufferSource(), event.getPackedLight());
         pose.popPose();

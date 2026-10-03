@@ -38,7 +38,6 @@ final class Mjolnir {
     private static final int LONGEST = 300;
     private static final double KNOCK = 3.2;
     private static final double KNOCK_UP = 0.7;
-    private static final double SPIN = 50.0;
     private static final double UPPERCUT_REACH = 3.8;
     private static final double UPPERCUT_WIDTH = 0.45;
     private static final double LAUNCH = 1.6;
@@ -64,7 +63,6 @@ final class Mjolnir {
     private float damage;
     private int age;
     private int waited;
-    private float spin;
     private final Set<UUID> hit = new HashSet<>();
 
     private Mjolnir(UUID owner) {
@@ -142,7 +140,7 @@ final class Mjolnir {
         if (target != null) {
             far = Math.min(REACH, target.getBoundingBox().getCenter().distanceTo(eye) + 1.0);
         }
-        ThrownHammer shown = spawn(level, player, eye.add(look.scale(0.6 * player.getScale())));
+        ThrownHammer shown = spawn(level, player, eye.add(look.scale(0.6 * player.getScale())), look);
         hammer.shown = shown;
         hammer.state = State.OUT;
         hammer.at = shown.position();
@@ -161,11 +159,11 @@ final class Mjolnir {
         return true;
     }
 
-    private static ThrownHammer spawn(ServerLevel level, ServerPlayer owner, Vec3 at) {
+    private static ThrownHammer spawn(ServerLevel level, ServerPlayer owner, Vec3 at, Vec3 way) {
         ThrownHammer shown = new ThrownHammer(ThrownHammer.TYPE.get(), level);
         shown.setSize(owner.getScale());
         shown.setCharged(ThorCharge.hammer(owner) > 1.0F);
-        shown.moveTo(at.x, at.y, at.z, owner.getYRot(), 0.0F);
+        shown.moveTo(at.x, at.y, at.z, (float) Math.toDegrees(Math.atan2(-way.x, way.z)), headFirst(way));
         level.addFreshEntity(shown);
         return shown;
     }
@@ -264,11 +262,15 @@ final class Mjolnir {
 
     private void move(Vec3 to) {
         this.at = to;
-        this.spin = (float) ((this.spin + SPIN) % 360.0);
         if (this.shown != null) {
             float yaw = (float) Math.toDegrees(Math.atan2(-this.way.x, this.way.z));
-            this.shown.moveTo(to.x, to.y, to.z, yaw, this.state == State.WAITING ? 0.0F : this.spin);
+            this.shown.moveTo(to.x, to.y, to.z, yaw, this.state == State.WAITING ? 0.0F : headFirst(this.way));
         }
+    }
+
+    // It never spins: its head leads the way it flies (0 stands it upright, 90 lays it level).
+    private static float headFirst(Vec3 way) {
+        return (float) (90.0 - Math.toDegrees(Math.atan2(way.y, Math.sqrt(way.x * way.x + way.z * way.z))));
     }
 
     private void trail(ServerLevel level, ServerPlayer owner) {

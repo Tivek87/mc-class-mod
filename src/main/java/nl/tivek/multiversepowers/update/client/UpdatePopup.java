@@ -1,6 +1,7 @@
 package nl.tivek.multiversepowers.update.client;
 
 import com.mojang.blaze3d.platform.InputConstants;
+import com.mojang.blaze3d.systems.RenderSystem;
 import javax.annotation.Nullable;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.KeyMapping;
@@ -25,7 +26,7 @@ import net.neoforged.neoforge.client.settings.KeyConflictContext;
 import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.character.client.AbilityKeys;
 import nl.tivek.multiversepowers.config.client.ClientSettings;
-import nl.tivek.multiversepowers.engine.client.gui.GuiShapes;
+import nl.tivek.multiversepowers.engine.client.gui.PixelIcons;
 import org.lwjgl.glfw.GLFW;
 
 @EventBusSubscriber(modid = MultiversePowers.MODID, value = Dist.CLIENT)
@@ -33,15 +34,15 @@ public final class UpdatePopup {
     public static final KeyMapping OPEN_KEY = new KeyMapping("key." + MultiversePowers.MODID + ".open_update",
             KeyConflictContext.IN_GAME, InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_U, AbilityKeys.CATEGORY);
 
-    static final int ACCENT = 0x6EE7A0;
+    public static final int ACCENT = 0x6EE7A0;
     private static final int HEIGHT = 46;
     private static final int MARGIN = 8;
-    private static final int PADDING = 12;
+    private static final int PADDING = 10;
+    private static final int TEXT_X = 44;
     private static final int MIN_WIDTH = 200;
-    private static final int STRIPE = 3;
-    private static final int FILL = 0xEE12161C;
-    private static final int FILL_HOVER = 0xEE1C2430;
-    private static final int MUTED = 0xA8B0BC;
+    private static final int FILL = 0xF2121212;
+    private static final int FILL_HOVER = 0xF21E1E1E;
+    private static final int MUTED = 0x9A9A9A;
     private static final long SLIDE_MS = 350L;
     private static final long FADE_MS = 600L;
     private static final int SECOND_NOTE_TICKS = 3;
@@ -85,7 +86,7 @@ public final class UpdatePopup {
         Minecraft minecraft = Minecraft.getInstance();
         while (OPEN_KEY.consumeClick()) {
             if (minecraft.screen == null) {
-                minecraft.setScreen(new UpdateManagerScreen(null));
+                ManagerScreen.open(null);
             }
         }
     }
@@ -124,7 +125,7 @@ public final class UpdatePopup {
         Screen screen = event.getScreen();
         if (active() && showsOn(screen) && event.getButton() == GLFW.GLFW_MOUSE_BUTTON_LEFT
                 && over(screen.width, event.getMouseX(), event.getMouseY())) {
-            Minecraft.getInstance().setScreen(new UpdateManagerScreen(screen));
+            ManagerScreen.open(screen);
             event.setCanceled(true);
         }
     }
@@ -142,27 +143,31 @@ public final class UpdatePopup {
         return mouseX >= x && mouseX < x + width && mouseY >= MARGIN && mouseY < MARGIN + HEIGHT;
     }
 
+    // The update manager's look in small: a black edge, a dark fill, the accent down its left side and the download
+    // icon, sliding in from the right.
     private static void draw(GuiGraphics graphics, Font font, int screenWidth, long age, float alpha, boolean hover,
             Component hint) {
-        Component title = UpdateManagerScreen.text("popup.title");
+        Component title = ManagerScreen.text("popup.title").copy().withStyle(ChatFormatting.BOLD);
         Component versions = Component.empty()
                 .append(Component.literal("v" + UpdateChecker.installed()).withColor(MUTED))
                 .append(Component.literal("  →  ").withColor(MUTED))
                 .append(Component.literal("v" + shown.version()).withColor(ACCENT));
         Component line = hint.copy().withColor(MUTED);
         width = Math.max(MIN_WIDTH, Math.max(font.width(title), Math.max(font.width(versions), font.width(line)))
-                + 2 * PADDING);
+                + TEXT_X + PADDING);
         float slide = 1.0F - Mth.clamp(age / (float) SLIDE_MS, 0.0F, 1.0F);
-        float x = screenWidth - width - MARGIN + slide * slide * (width + MARGIN);
-        int fill = hover ? FILL_HOVER : FILL;
-        GuiShapes.roundRect(graphics, x, MARGIN, width, HEIGHT, 5.0F, GuiShapes.fade(fill, alpha * (fill >>> 24) / 255.0F));
-        GuiShapes.roundRect(graphics, x + 4, MARGIN + 6, STRIPE, HEIGHT - 12, 1.5F,
-                GuiShapes.fade(0xFF000000 | ACCENT, alpha));
-        GuiShapes.flush(graphics);
-
-        int textAlpha = Mth.clamp((int) (alpha * 255.0F), 4, 255) << 24;
-        graphics.drawString(font, title, (int) x + PADDING, MARGIN + 7, textAlpha | 0xFFFFFF, false);
-        graphics.drawString(font, versions, (int) x + PADDING, MARGIN + 19, textAlpha | MUTED, false);
-        graphics.drawString(font, line, (int) x + PADDING, MARGIN + 31, textAlpha | MUTED, false);
+        int x = Math.round(screenWidth - width - MARGIN + slide * slide * (width + MARGIN));
+        graphics.flush();
+        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, Math.max(alpha, 0.02F));
+        graphics.fill(x - 1, MARGIN - 1, x + width + 1, MARGIN + HEIGHT + 1, 0xFF000000);
+        graphics.fill(x, MARGIN, x + width, MARGIN + HEIGHT, hover ? FILL_HOVER : FILL);
+        graphics.renderOutline(x, MARGIN, width, HEIGHT, 0x1CFFFFFF);
+        graphics.fill(x, MARGIN, x + 2, MARGIN + HEIGHT, 0xFF000000 | ACCENT);
+        PixelIcons.draw(graphics, PixelIcons.Icon.DOWNLOAD, x + 12, MARGIN + 11, 2, 0xFF000000 | ACCENT, true);
+        graphics.drawString(font, title, x + TEXT_X, MARGIN + 7, 0xFFFFFFFF, false);
+        graphics.drawString(font, versions, x + TEXT_X, MARGIN + 19, 0xFF000000 | MUTED, false);
+        graphics.drawString(font, line, x + TEXT_X, MARGIN + 31, 0xFF000000 | MUTED, false);
+        graphics.flush();
+        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
     }
 }

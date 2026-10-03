@@ -19,21 +19,33 @@ public final class FirstPersonArm {
 
     public static void arm(PoseStack pose, MultiBufferSource buffers, int light, AbstractClientPlayer player,
             PlayerRenderer renderer, float side, Vector3f hand, Vector3f from) {
-        Vector3f restShoulder = side > 0.0F ? SHOULDER_RIGHT : SHOULDER_LEFT;
-        Vector3f restHand = new Vector3f(side > 0.0F ? HAND_RIGHT : HAND_LEFT);
-        Vector3f restWay = new Vector3f(restHand).sub(restShoulder).normalize();
-        Vector3f toHand = new Vector3f(hand).sub(from).normalize();
         pose.pushPose();
-        pose.translate(hand.x, hand.y, hand.z);
-        pose.mulPose(new Quaternionf().rotationTo(restWay, toHand));
-        pose.translate(-restHand.x, -restHand.y, -restHand.z);
-        emptyHand(pose, side);
+        place(pose, side, hand, from);
         if (side > 0.0F) {
             renderer.renderRightHand(pose, buffers, light, player);
         } else {
             renderer.renderLeftHand(pose, buffers, light, player);
         }
         pose.popPose();
+    }
+
+    // The frame of an arm `arm` draws, as ModelPart.translateAndRotate leaves it (pixels/16, y down the arm), so what
+    // the hand holds is placed in it as in a third-person hand.
+    public static void toArm(PoseStack pose, float side, Vector3f hand, Vector3f from) {
+        place(pose, side, hand, from);
+        pose.translate(side * -5.0F / 16.0F, 2.0F / 16.0F, 0.0F);
+        pose.mulPose(Axis.ZP.rotation(side * 0.1F));
+    }
+
+    private static void place(PoseStack pose, float side, Vector3f hand, Vector3f from) {
+        Vector3f restShoulder = side > 0.0F ? SHOULDER_RIGHT : SHOULDER_LEFT;
+        Vector3f restHand = side > 0.0F ? HAND_RIGHT : HAND_LEFT;
+        Vector3f restWay = new Vector3f(restHand).sub(restShoulder).normalize();
+        Vector3f toHand = new Vector3f(hand).sub(from).normalize();
+        pose.translate(hand.x, hand.y, hand.z);
+        pose.mulPose(new Quaternionf().rotationTo(restWay, toHand));
+        pose.translate(-restHand.x, -restHand.y, -restHand.z);
+        emptyHand(pose, side);
     }
 
     // Vanilla's own transform for an empty first-person hand.
