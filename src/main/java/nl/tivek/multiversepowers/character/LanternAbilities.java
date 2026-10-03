@@ -32,10 +32,16 @@ final class LanternAbilities {
                 .setting("powerCost", 6.0, 0.0, 100.0, Unit.POWER,
                         "Ring power the Emerald Express costs (a full ring holds 100)");
         lantern.add(abilities, AbilitySlot.ABILITY_2, "construct_wheel").held().clientOnly()
+                .group("weapon", "Every weapon")
+                .setting("formPowerCost", 1.0, 0.0, 100.0, Unit.POWER,
+                        "Ring power forming a weapon from the wheel costs")
+                .setting("heldPowerPerSecond", 0.05, 0.0, 20.0, Unit.POWER_PER_SECOND,
+                        "Ring power holding a formed weapon costs a second; with the ring empty it breaks up")
                 .group("sword", "Sword (left click)")
                 .setting("swordDamage", 8.0, 0.0, 2000.0, Unit.HALF_HEARTS,
                         "Damage of one cut or thrust, in half hearts; the heavy ones do more, the quick ones less")
                 .setting("swordReach", 3.2, 1.0, 8.0, Unit.BLOCKS, "How far the sword reaches, in blocks")
+                .setting("swordPowerCost", 0.1, 0.0, 100.0, Unit.POWER, "Ring power one cut or thrust costs")
                 .setting("flurryDamage", 4.0, 0.0, 2000.0, Unit.HALF_HEARTS,
                         "Damage of every one of the twelve stabs of the flurry (hold 2 seconds), in half hearts")
                 .setting("flurryPowerCost", 2.0, 0.0, 100.0, Unit.POWER, "Ring power one flurry costs")
@@ -117,6 +123,8 @@ final class LanternAbilities {
                 .setting("whipLength", 10.0, 2.0, 16.0, Unit.BLOCKS,
                         "How long the lash is, in blocks: how far the lashes and the whirlwind reach")
                 .was(4.5)
+                .setting("whipPowerCost", 0.1, 0.0, 100.0, Unit.POWER,
+                        "Ring power one lash costs, and a lasso that catches nothing")
                 .group("whip_whirl", "Energy Whip: whirlwind (hold left 2 seconds)")
                 .setting("whirlDamage", 3.0, 0.0, 2000.0, Unit.HALF_HEARTS,
                         "Damage the whirling lash does to every hostile creature round you, in half hearts, five"
@@ -286,7 +294,7 @@ final class LanternAbilities {
                                 + " as slow. The shockwave strikes that much later too");
         lantern.add(abilities, AbilitySlot.ABILITY_9, "flight").cooldown(20)
                 .input(CharacterAbility.Input.SPACE).doubleTap()
-                .setting("powerCost", 0.8, 0.0, 100.0, Unit.POWER, "Ring power you need at least to take off")
+                .setting("powerCost", 0.8, 0.0, 100.0, Unit.POWER, "Ring power taking off costs")
                 .was(5.0, 2.0)
                 .setting("fullRingSeconds", 93.75, 1.0, 600.0, Unit.RING_SECONDS,
                         "Seconds a full ring keeps you in the air: flying costs 100 divided by this a second,"
@@ -433,12 +441,20 @@ final class LanternAbilities {
                                 + " reach less far): what else stands in it is thrown away and takes half the"
                                 + " damage")
                 .was(3.5)
-                .setting("powerCost", 4.0, 0.0, 100.0, Unit.POWER, "Ring power catching a creature costs");
-        lantern.add(abilities, AbilitySlot.ABILITY_12, "beam_lock").cooldown(4).input(CharacterAbility.Input.SCROLL);
+                .setting("powerCost", 4.0, 0.0, 100.0, Unit.POWER, "Ring power catching a creature costs")
+                .setting("holdPowerPerSecond", 0.2, 0.0, 20.0, Unit.POWER_PER_SECOND,
+                        "Ring power holding a creature in the cage costs a second; with the ring empty it goes free")
+                .setting("poundPowerCost", 1.0, 0.0, 100.0, Unit.POWER,
+                        "Ring power smashing the caged creature into the ground costs");
+        lantern.add(abilities, AbilitySlot.ABILITY_12, "beam_lock").cooldown(4).input(CharacterAbility.Input.SCROLL)
+                .setting("powerCost", 0.2, 0.0, 100.0, Unit.POWER,
+                        "Ring power locking the beam at its stage, or freeing it again, costs");
         lantern.add(abilities, AbilitySlot.ABILITY_13, "mech").input(CharacterAbility.Input.SCROLL).holdOnly(40)
                 .group("mech", "Hard-Light Mech Assembly (hold the scroll wheel 2 seconds)")
                 .setting("mechPowerCost", 25.0, 0.0, 100.0, Unit.POWER,
                         "Ring power building the mech costs")
+                .setting("mechPowerPerSecond", 0.2, 0.0, 20.0, Unit.POWER_PER_SECOND,
+                        "Ring power the mech costs a second while you are in it; with the ring empty it breaks up")
                 .settingInt("mechCooldown", 6000, 0, 72000, Unit.TICKS,
                         "Ticks after you leave the mech before it can be built again (20 ticks = 1 second)")
                 .was(1800)
@@ -458,6 +474,7 @@ final class LanternAbilities {
                         "Damage of the head crashing down on that creature like a meteor, in half hearts; what else"
                                 + " stands round it takes up to half")
                 .group("mechBlows", "Mech blows (left click in a built mech)")
+                .setting("mechBlowPowerCost", 0.5, 0.0, 100.0, Unit.POWER, "Ring power one blow of the mech costs")
                 .setting("mechSweepDamage", 8.0, 0.0, 2000.0, Unit.HALF_HEARTS,
                         "Damage of the backhand sweep to everything the hand strikes, in half hearts")
                 .setting("mechStompBlowDamage", 10.0, 0.0, 2000.0, Unit.HALF_HEARTS,

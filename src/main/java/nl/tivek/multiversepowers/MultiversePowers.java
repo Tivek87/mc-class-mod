@@ -16,6 +16,7 @@ import nl.tivek.multiversepowers.engine.entity.DeathStyles;
 import nl.tivek.multiversepowers.engine.entity.Fatigue;
 import nl.tivek.multiversepowers.engine.entity.HeldMobs;
 import nl.tivek.multiversepowers.engine.entity.Knockdowns;
+import nl.tivek.multiversepowers.engine.entity.PlayerKnockdowns;
 import nl.tivek.multiversepowers.engine.fx.ParticleBatch;
 import nl.tivek.multiversepowers.faction.Factions;
 import nl.tivek.multiversepowers.network.ModNetwork;
@@ -33,6 +34,7 @@ public class MultiversePowers {
         modEventBus.addListener(ModNetwork::register);
         ThrownHammer.register(modEventBus);
         ModConfigs.register(modContainer, modEventBus);
+        PlayerKnockdowns.listen(Characters::knockedDown);
         NeoForge.EVENT_BUS.addListener(MultiversePowers::onServerStopping);
     }
 
@@ -49,5 +51,6 @@ public class MultiversePowers {
         // Last: held mobs must not be saved with their AI switched off.
         HeldMobs.releaseAll();
         Knockdowns.clear();
+        PlayerKnockdowns.clear();
     }
 }

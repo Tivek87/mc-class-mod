@@ -1,5 +1,6 @@
 package nl.tivek.multiversepowers.character.greenlantern.client.hud;
 
+import java.util.Map;
 import javax.annotation.Nullable;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.chat.Component;
@@ -20,6 +21,13 @@ import nl.tivek.multiversepowers.character.greenlantern.client.body.whip.WhipArm
 // and the wheel that puts it away, his other keys shut till then.
 final class LanternPanel implements AbilityPanel.Rules {
     private static final String MOVE = "screen." + MultiversePowers.MODID + ".move.";
+    // Each weapon's click and hold of the left button, then of the right, and the wheel's setting saying what each
+    // costs: one per second is paid every tick.
+    private static final Map<String, String[]> COSTS = Map.of(
+            "sword", new String[] { "swordPowerCost", "flurryPowerCost", "chargePowerCost", "blockPowerPerSecond" },
+            "flamethrower", new String[] { "sweepPowerCost", "infernoPowerPerSecond", "wallPowerCost",
+                    "vortexPowerPerSecond" },
+            "whip", new String[] { "whipPowerCost", "whirlPowerPerSecond", "lassoPowerCost", "spinPowerPerSecond" });
 
     private LanternPanel() {
     }
@@ -90,5 +98,36 @@ final class LanternPanel implements AbilityPanel.Rules {
     @Override
     public Component running(CharacterAbility ability, LocalPlayer player) {
         return ConstructHud.status(ability, player);
+    }
+
+    // The ring's own rules: some moves cost a setting other than powerCost, some only want the ring not empty, and
+    // ending what runs (flight, the shield, a weapon, the mech) is free.
+    @Override
+    public boolean affords(CharacterAbility ability, boolean hold, LocalPlayer player) {
+        String weapon = weapon();
+        CharacterAbility wheel = GameCharacter.GREEN_LANTERN.byName("construct_wheel");
+        if (weapon != null && onMouse(ability) && wheel != null) {
+            String cost = COSTS.get(weapon)[(ability.input() == CharacterAbility.Input.LEFT ? 0 : 2) + (hold ? 1 : 0)];
+            return pays(player, wheel.value(cost) / (cost.endsWith("PerSecond") ? 20.0 : 1.0));
+        }
+        CharacterAbility mech = GameCharacter.GREEN_LANTERN.byName("mech");
+        if (ability.id().equals("light_bolt") && mech != null && piloting(player)) {
+            return !hold && pays(player, mech.value("mechBlowPowerCost"));
+        }
+        float power = ClientRing.power(player);
+        return switch (ability.id()) {
+            case "construct_wheel" -> weapon != null || pays(player, ability.value("formPowerCost"));
+            case "light_bolt" -> hold ? power > 0.0F : ClientCharacter.canPay(player, ability);
+            case "light_shield" -> power > 0.0F || !hold && ClientRing.has(player, RingPayload.SHIELD);
+            case "mech" -> piloting(player) || pays(player, ability.value("mechPowerCost"));
+            case "flight" -> ClientRing.flight(player, 0.0F) >= 0.0F || ClientCharacter.canPay(player, ability);
+            case "light_bubble" -> ClientConstructs.bubbleAge(player.getId(), 0.0F) >= 0.0F
+                    ? pays(player, ability.value("poundPowerCost")) : ClientCharacter.canPay(player, ability);
+            default -> ClientCharacter.canPay(player, ability);
+        };
+    }
+
+    private static boolean pays(LocalPlayer player, double cost) {
+        return ClientRing.power(player) + 1.0E-4F >= cost;
     }
 }

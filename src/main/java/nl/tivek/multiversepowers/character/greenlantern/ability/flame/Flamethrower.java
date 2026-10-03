@@ -51,6 +51,9 @@ public final class Flamethrower extends FlameHits {
         boolean want = construct == Construct.FLAMETHROWER && Characters.of(player) == GameCharacter.GREEN_LANTERN
                 && player.isAlive() && !Arrival.busy(player);
         if (want && (now == null || now.breaking >= 0)) {
+            if (!PowerRing.pay(player, wheel().value("formPowerCost"))) {
+                return;
+            }
             Flamethrower gun = new Flamethrower(player);
             if (now != null) {
                 now.breaking = Math.max(now.breaking, BREAK_TICKS - 1);
@@ -240,7 +243,8 @@ public final class Flamethrower extends FlameHits {
             this.send(level);
             return true;
         }
-        if (HELD.get(this.owner.getUUID()) != this || !PowerRing.fuels(this.owner, level)) {
+        if (HELD.get(this.owner.getUUID()) != this || !PowerRing.fuels(this.owner, level)
+                || !PowerRing.upkeep(this.owner, this.age, wheel().value("heldPowerPerSecond"))) {
             this.breakUp();
             this.send(level);
             return true;

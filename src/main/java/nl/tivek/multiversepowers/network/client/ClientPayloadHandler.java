@@ -36,6 +36,7 @@ import nl.tivek.multiversepowers.engine.client.fx.ParticleAmount;
 import nl.tivek.multiversepowers.engine.client.fx.VoiceLine;
 import nl.tivek.multiversepowers.engine.client.pose.Tired;
 import nl.tivek.multiversepowers.engine.client.ragdoll.Ashes;
+import nl.tivek.multiversepowers.engine.client.ragdoll.Downed;
 import nl.tivek.multiversepowers.engine.client.ragdoll.Knocked;
 import nl.tivek.multiversepowers.engine.client.ragdoll.Ragdolls;
 import nl.tivek.multiversepowers.engine.entity.DeathBlowPayload;
@@ -135,7 +136,10 @@ public final class ClientPayloadHandler {
     }
 
     public static void handleKnockdown(KnockdownPayload payload, IPayloadContext context) {
-        context.enqueueWork(() -> Knocked.told(payload.entity(), payload.ticks()));
+        context.enqueueWork(() -> {
+            Knocked.told(payload.entity(), payload.ticks());
+            Downed.told(payload.entity(), payload.ticks());
+        });
     }
 
     public static void handleFatigue(FatiguePayload payload, IPayloadContext context) {

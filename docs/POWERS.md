@@ -80,9 +80,11 @@ Bolt *(scroll wheel click)* and Lightning Speed *(hold shift)*.
 
 - Every key can be changed in Options > Controls, under "Multiverse Powers".
 - An ability on a mouse button or on space shows that in brackets: its number key does nothing for it.
-- A panel in the bottom right shows who you are and **only what you can use right now**, each with its key and
+- A small panel in the bottom right shows who you are and **only what you can use right now**, each with its key and
   cooldown. A power that only works on the ground is left off while you fly, and the other way round, and so is one
-  that wants something else first.
+  that wants something else first. It is drawn a size smaller than the rest of the screen, still sharp, and keeps out
+  of your way: it **fades in** when you use or try a power, hit something or get hit, and **fades out** again five
+  seconds after the last of that. While a move is held or running, or an ultimate counts down, it stays.
 - The mouse buttons', space's and shift's moves are listed too, a line for the click and one for the hold of each
   button, whenever they can be used.
 - Keys and buttons your character has nothing on, keys kept free for powers to come and keys you left unbound are
@@ -91,21 +93,27 @@ Bolt *(scroll wheel click)* and Lightning Speed *(hold shift)*.
 - A line's name follows what it does now: Thor's scroll wheel click says **Take Up the Hammer** or **Put Away the
   Hammer**, his combo **Hammer Swings** and his charge **Charge the Hammer** with it in hand; Doctor Octopus's stance
   key says where it takes him next; Green Lantern's flight says **Stop Flying** while he flies.
-- Each line shows its key as a key cap, then the name and, on the right, **ready** in green, the seconds left in
-  amber (with a thin bar under the line that empties as the cooldown runs out), **on** or **no power**.
-- **P** (the ability guide, can be moved under Controls) opens a window with every ability of the character you play.
-  On the left a list (split in on the ground and in flight where that matters) with a dot for each: green ready, amber
-  cooling down, grey not now. Click one, or go up and down with the arrow keys, W and S, Home and End; on the right
-  are its keys (a mouse button's click and hold apart, each with what it does), where it works, its cooldown, what it
-  does in a few plain sentences, and whether you can use it this moment and, if not, why (**Only in flight**, **Take
-  up the hammer first**). Under **Modes** it explains every state in which your keys do other things, with a key cap
-  for each key and button and what it does there, how you get in and out, and what is off meanwhile: Green Lantern
-  with empty hands, flying, firing the beam, with the sword or the flamethrower, in the Construct Wheel, piloting the
-  mech, holding a Light Cage, with an item in hand and with a dry ring; Thor with his fists, with the hammer, flying,
-  at Lightning Speed and in a Super Jump; Doctor Octopus on his feet, on tentacles, holding creatures, climbing,
-  blocking, marking for Ground Strike and in his Rampage. The mode you are in now is marked green. The panel's title
-  line shows the key. P is also the game's social interactions key: while
-  you play a character, the guide takes it.
+- Each line shows its key as a key cap, then the name and, on the right, a **green dot** when it is ready (it pops
+  when a cooldown ends), the seconds left in amber (with a thin bar under the line that empties as the cooldown runs
+  out), **on**, **tired** (out of stamina: mouse buttons and held keys wait, and so does a move with a stamina cost
+  you cannot pay) or **no power**. A line you just used lights up for a moment. The green dot means the move can
+  really start now: Green Lantern's line checks the ring power that move itself needs (taking out a weapon, each
+  weapon move, the mech's blows and the rest each their own cost, the shield and beam only a ring that is not empty;
+  stopping or landing is always free).
+- **P** (the ability guide, can be moved under Controls) opens a window that explains the character you play, one
+  **mode** at a time. Tabs along the top: Green Lantern **Ground**, **Flight**, **Mech**, **Sword & Shield** and
+  **Flamethrower** (and **Energy Whip** once the whip is yours); Thor **Fists**, **Hammer** and **Flight**; Doctor Octopus
+  **Ground**, **Climbing** and **Holding**. It opens on the mode you are in now, which has a green dot on its tab.
+  Switch tabs with the left and right arrows, A and D, Tab or the number keys, or click one.
+- Each mode lists **only the keys and buttons that do something in it**, grouped under **Mouse**, **Ability keys**
+  and **Moving**, each with a dot: green ready, amber cooling down, grey not now. The first line, **How it works**,
+  says how you get into the mode and out of it and what is off meanwhile. Pick a line with the up and down arrows, W
+  and S, Home and End, or click it; on the right you see its key, what it does in this mode, its cooldown and its cost
+  (**Costs 0.8 power**, **Costs 30 stamina**, **Free**), what the ability does in a few plain sentences, and at the
+  bottom whether you can use it this moment and, if not, why (**Only in flight**, **Not enough power**, **Too tired:
+  wait for your stamina**, **Empty both hands first**, **Not in this mode right now**). P or Esc closes it.
+- The panel's title line shows the guide's key. P is also the game's social interactions key: while you play a
+  character, the guide takes it.
 - In the settings, resting the pointer on an ability's title explains that ability the same way.
 - The scroll wheel click is also pick block. While your character has nothing on it, it just picks blocks and
   stays quiet; once a character has an ability there, the ability wins.
@@ -119,7 +127,8 @@ out with **Locked** beside them: they cannot be changed there. **Hold shift** is
 the game's sneak and sprint keys are, and can be moved. The **scroll wheel click and hold can** be too: put either on any key or button you like (on the
 same one, as they come, a click and a hold tell themselves apart). A power with a click and a hold on the same
 button waits until you let go to know which you meant. The panel shows a hold as **Hold ...** and a double press
-as **Double ...**.
+as **2×...**; it and the guide's list also shorten key names (**LAlt**, **RCtrl**, **PgUp**), and the guide's
+detail writes them out (**Double Space**, **Left Alt**).
 - **A character can also sit on the mouse.** Green Lantern does: left click shoots, right click puts up a
   shield. The panel shows those as `[LMB]` and `[RMB]`. They only take the mouse over
   while both your hands are empty and the hand behind that button is free; any other time the mouse does
@@ -281,7 +290,8 @@ quick one, 2 seconds of holding for the lasting one.
   - Let go or run the ring dry and it dies down; your walking speed comes back at once.
   - **Beam Lock (scroll wheel click):** click it while the beam pours and it stays at the stage it has reached: it stops
     growing, the gauge shows a padlock and **LOCKED**, and the ring says so. Click again and it grows on from
-    there. Clicked before the beam is out, the ring tells you to fire it first.
+    there. Locking it or freeing it costs 0.2 power. Clicked before the beam is out, the ring tells you to fire it
+    first.
   - **Your own beam is see-through close to you**, like your own shield: faint as glass right in front of you,
     growing solid further out, so it never hides what you aim at. Others see it at full strength.
 
@@ -372,7 +382,7 @@ Green Lantern recharges his ring at his lantern, the power battery.
   it and you land as well, whatever your speed; or tap space twice quickly in the air to stop flying (you then fall from there). Walls and the ground stop you; hits and blasts knock you
   about, but you keep flying.
 - **Power:** a full ring keeps you up for **93.75 seconds**, so flying costs **1.07 power a second** (100
-  divided by 93.75), from the moment you take off. You need at least **0.8 power** to take off. Everything you
+  divided by 93.75), from the moment you take off. Taking off costs **0.8 power**. Everything you
   do while flying costs on top of that, so you run dry sooner. The panel shows how many seconds you have left.
 - **Out of power in the air:** the ring's last light lets you sink down gently, arms up, and you cannot steer
   any more. You do not get hurt when you touch the ground. Recharge (on the way down or on the ground) to fly
@@ -437,7 +447,7 @@ Green Lantern recharges his ring at his lantern, the power battery.
 | Speed | starts at about 10.7 blocks a second, up to 20 after 3.5 seconds of flying forward |
 | Stop in the air | C, or a double tap on jump |
 | Power | 1.07 a second (a full ring lasts 93.75 seconds), plus whatever you use meanwhile |
-| Take off | C or a double tap on jump; at least 0.8 power; not while recharging |
+| Take off | C or a double tap on jump; costs 0.8 power; not while recharging |
 | Ram (shield up) | 2 hearts + 26.25 hearts per block per tick of speed, strong knockback |
 | Scraping (ram cone low along the ground) | 2 more power a second, your view shakes |
 | Brake (dome up) | half speed |
@@ -575,6 +585,9 @@ Launcher / RPG**. Picking one of those changes nothing yet.
   hold right, each by its name) and V.
 - **Let go of V** and the wheel closes: green light flares out of your crosshair and what you picked takes shape
   in your hands. You can also just click a slot while the wheel is open.
+- **Power:** forming a weapon costs **1 power** and holding it **0.05 power a second**; each of its moves costs its
+  own on top. With too little power it does not form, and when the ring runs dry it breaks up in your hands. Putting
+  it away is free.
 - **The middle is empty hands**, written out as *Nothing — default: no construct, just your ring*. Let go
   there and whatever you held is gone again.
 - **A dot on a slot** means that is the one you already have out.
@@ -606,7 +619,7 @@ arm, both as solid as every construct.
   brakes after, the tip of the blade drawing one clean arc and the edge always leading; the body turns, bends and
   steps into it. Every move starts from where the last one left your arms, so they flow into each other, a swung
   blade leaves a streak of light behind it, and a blow that lands jolts your view a little. **4 hearts** a cut (the
-  quick ones a little less, the heavy ones more), 3.2 blocks.
+  quick ones a little less, the heavy ones more), 3.2 blocks. Costs 0.1 power a cut.
 - **Holding left 2 seconds:** the shield comes up before your chest (it stops **60%** of what comes from the front)
   and you stab **twelve times** very fast all over the front, **2 hearts** a stab. Costs 2 power. Letting go ends
   it at once.
@@ -665,7 +678,8 @@ crack, the whirlwind's ring and glow and the spinning shield's disc are light.
   straight ahead at eye height; reaches further) and a cowboy crack (twirled over your head, then thrown over the top).
   Every lash has its own movement of the body: you turn, bend, step and sink into it, and your wrist always leads the
   lash. What the lash passes through takes **3.5 hearts** (the heavy lashes more, the quick ones less), **30% more**
-  from the tip, and is knocked the way the lash was going. A lash that lands jolts your view a little.
+  from the tip, and is knocked the way the lash was going. A lash that lands jolts your view a little. Costs 0.1 power
+  a lash.
 - **Holding left 2 seconds (whirlwind):** your arm goes up and you whirl the lash round over your head, almost twice a
   second, its end sloping down towards the ground, with a ring of light where the tip goes, a glow and a streak of
   light along the whole lash from your hand out, and your other arm out for balance. Every hostile creature it reaches
@@ -678,8 +692,8 @@ crack, the whirlwind's ring and glow and the spinning shield's disc are light.
   with a flash: it is caught. Your left hand takes hold of the lash, you lean back and yank: it flies to you in an arc
   and **smacks down at your feet** with a ring of light and dust:
   **3 hearts** and slowed for **2 seconds**. Then the lash unwinds and goes back to its full length and its coil.
-  Costs 2 power, only when it catches something; a miss just cracks in the air. Creatures too big or too strong (as
-  for the light bubble) cannot be caught; with a wall in the way it lands before the wall.
+  Costs 2 power when it catches something; a miss just cracks in the air, for the 0.1 power of a lash. Creatures too
+  big or too strong (as for the light bubble) cannot be caught; with a wall in the way it lands before the wall.
 - **Holding right 2 seconds (spinning shield):** you put your arm out and spin the lash, made shorter, before you
   like a propeller: a disc of light with a bright rim (faint in your own view, so you see through it). Arrows and
   other shots from hostile creatures that come from the front bounce off it and fly back, now yours, and you take
@@ -923,7 +937,8 @@ Green Lantern's ultimate: a big, slow gunship of hard light high over the battle
 - **Who gets hit:** it builds itself over a creature out to hurt you, but its blows hit whatever stands near: the
   held creature takes each blow whole, anything else near the foot, the clap or the crater takes less (players of
   your own team excepted).
-- **Power:** 25. **Cooldown:** 5 minutes, from the moment the mech is gone (however you leave it), **its own**:
+- **Power:** 25 to build it, then 0.2 a second while you pilot it and 0.5 a blow; when the ring runs dry it breaks
+  up. **Cooldown:** 5 minutes, from the moment the mech is gone (however you leave it), **its own**:
   building the mech leaves the Air Strike ready, and the Air Strike leaves the mech ready. Its cost, cooldown, how
   long you may stay in it, reach and the three damages are settings (Hard-Light Mech), and
   so are each blow's damage (Mech blows) and what it crushes underfoot (Walking the mech).
@@ -1152,7 +1167,8 @@ The ring's prison, straight out of the comics: a cage of hard light round your e
   second and a half.
 - **Crouch and press K** to let it go without harm.
 - Bosses (the Wither, the Ender Dragon, the Warden) and creatures too big for a cage cannot be caught.
-- **Power:** 4. **Cooldown:** 12 seconds, counted from when the cage is gone.
+- **Power:** 4 to cast it, then 0.2 a second while it holds and 1 for the pound; when the ring runs dry the cage
+  bursts and lets go. **Cooldown:** 12 seconds, counted from when the cage is gone.
 
 ---
 
@@ -1451,8 +1467,9 @@ Double space jumps high and holding space flies, with or without the hammer.
   into the ground in a **slam** (5 hearts to it, less to what stands round, a lightning strike), which ends his
   flight. **Cooldown:** 8 seconds.
 - **Sky Shockwave (hold left for 1 second):** lightning bursts out of him in a ball about **7 blocks** across:
-  **1.5 hearts** to everything in it, and for **3 seconds** whatever it hit cannot fly: it drops to the ground, and
-  another Thor in the air is knocked out of the sky. **Cooldown:** 10 seconds.
+  **1.5 hearts** to everything in it, and everything it hit goes limp, players and flying creatures too: it drops
+  out of the air, lies on the ground for **3 seconds** and then gets up. Until it stands again it cannot move, fly
+  or use a power. Bosses and creatures held by a power are not knocked down. **Cooldown:** 10 seconds.
 - **Lightning Bolt (scroll wheel click):** a bolt of lightning comes down on the creature you aim at, up to 64
   blocks away: **2.5 hearts**. Aimed at nothing, nothing happens. **Cooldown:** 1.5 seconds.
 - **Lightning Speed (hold shift for 2 seconds):** he flies at **48 blocks a second** for **15 seconds**, a zigzag of

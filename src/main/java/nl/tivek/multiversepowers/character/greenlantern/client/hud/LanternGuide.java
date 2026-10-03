@@ -1,12 +1,14 @@
 package nl.tivek.multiversepowers.character.greenlantern.client.hud;
 
 import static nl.tivek.multiversepowers.character.client.GuideMode.ability;
+import static nl.tivek.multiversepowers.character.client.GuideMode.abilityHold;
 import static nl.tivek.multiversepowers.character.client.GuideMode.back;
 import static nl.tivek.multiversepowers.character.client.GuideMode.click;
 import static nl.tivek.multiversepowers.character.client.GuideMode.crouch;
 import static nl.tivek.multiversepowers.character.client.GuideMode.crouched;
 import static nl.tivek.multiversepowers.character.client.GuideMode.doubleKey;
 import static nl.tivek.multiversepowers.character.client.GuideMode.forward;
+import static nl.tivek.multiversepowers.character.client.GuideMode.heading;
 import static nl.tivek.multiversepowers.character.client.GuideMode.hold;
 import static nl.tivek.multiversepowers.character.client.GuideMode.jump;
 import static nl.tivek.multiversepowers.character.client.GuideMode.sides;
@@ -14,6 +16,7 @@ import static nl.tivek.multiversepowers.character.client.GuideMode.sprint;
 import static nl.tivek.multiversepowers.character.client.GuideMode.text;
 import static nl.tivek.multiversepowers.character.client.GuideMode.walk;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
 import net.minecraft.client.KeyMapping;
@@ -23,12 +26,14 @@ import nl.tivek.multiversepowers.character.CharacterAbility.Input;
 import nl.tivek.multiversepowers.character.GameCharacter;
 import nl.tivek.multiversepowers.character.client.AbilityGuide;
 import nl.tivek.multiversepowers.character.client.GuideMode;
-import nl.tivek.multiversepowers.character.greenlantern.RingPayload;
 import nl.tivek.multiversepowers.character.greenlantern.client.ClientRing;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.flame.FlameArms;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.sword.SwordArms;
+import nl.tivek.multiversepowers.character.greenlantern.client.body.whip.WhipArms;
+import nl.tivek.multiversepowers.character.greenlantern.construct.Construct;
 
-// Green Lantern's modes for the ability guide: what every key and button does in each.
+// Green Lantern's modes for the ability guide: on the ground, in flight, in the mech and with each construct weapon,
+// every bind that does something there.
 final class LanternGuide {
     private static final GameCharacter GL = GameCharacter.GREEN_LANTERN;
 
@@ -36,51 +41,92 @@ final class LanternGuide {
     }
 
     static void register() {
-        AbilityGuide.modes(GL,
-                mode("ring", LanternGuide::bare,
-                        click(Input.LEFT, "bolt"), hold(Input.LEFT, "beam"),
-                        click(Input.RIGHT, "shield"), hold(Input.RIGHT, "dome"),
-                        hold(Input.SCROLL, "mech"), doubleKey(LanternGuide::jumpKey, "fly"),
-                        ability(GL, "construct_wheel", "wheel"), ability(GL, "recharge", "recharge"),
+        List<GuideMode> modes = new ArrayList<>(List.of(
+                mode("ground", player -> !flying(player) && !LanternPanel.piloting(player)
+                        && LanternPanel.weapon() == null,
+                        heading("mouse"), bolt(), beam(), lock(),
+                        click(Input.RIGHT, "shield").fires("light_shield").costs("light_shield", "powerPerSecond"),
+                        hold(Input.RIGHT, "dome").holds("light_shield").costs("light_shield", "domePowerPerSecond"),
+                        hold(Input.SCROLL, "mech").fires("mech").costs("mech", "mechPowerCost"),
+                        heading("keys"), wheel("wheel"), ability(GL, "recharge", "recharge"),
                         ability(GL, "emerald_express", "train"), ability(GL, "ring_scan", "scan"),
-                        ability(GL, "shockwave", "shockwave"), ability(GL, "giant_hands", "hands"),
-                        ability(GL, "light_bubble", "cage"), ability(GL, "air_strike", "strike"),
-                        walk("walk")),
-                mode("flight", player -> flying(player) && !ClientRing.has(player, RingPayload.DESCENT),
-                        forward("forward"), back("back"), sides("sides"), jump("rise"), crouch("sink"),
-                        click(Input.LEFT, "bolt"), hold(Input.LEFT, "beam"),
-                        click(Input.RIGHT, "ram"), hold(Input.RIGHT, "brake"),
-                        doubleKey(LanternGuide::jumpKey, "stop"), ability(GL, "shockwave", "dive"),
-                        ability(GL, "recharge", "recharge")),
-                mode("beam", player -> ClientRing.has(player, RingPayload.BEAM),
-                        hold(Input.LEFT, "grow"), ability(GL, "beam_lock", "lock"), walk("walk")),
-                mode("sword", player -> SwordArms.holding(),
-                        click(Input.LEFT, "cut"), hold(Input.LEFT, "flurry"),
-                        click(Input.RIGHT, "charge"), hold(Input.RIGHT, "block"),
-                        ability(GL, "construct_wheel", "wheel")),
-                mode("flamethrower", player -> FlameArms.holding(),
-                        click(Input.LEFT, "sweep"), hold(Input.LEFT, "inferno"),
-                        click(Input.RIGHT, "wall"), hold(Input.RIGHT, "vortex"),
-                        ability(GL, "construct_wheel", "wheel")),
-                mode("wheel", player -> false,
-                        text("look", "point"), text("scroll", "step"), ability(GL, "construct_wheel", "take"),
-                        click(Input.LEFT, "click"), click(Input.RIGHT, "cancel")),
+                        ability(GL, "shockwave", "shockwave"), ability(GL, "giant_hands", "hands"), revolver(),
+                        cage(), pound(), free(), ability(GL, "air_strike", "strike"),
+                        heading("move"), doubleKey(LanternGuide::jumpKey, "fly").fires("flight"), walk("walk")),
+                mode("flight", LanternGuide::flying,
+                        heading("move"), forward("forward").costs("flight", "fullRingSeconds"), back("back"),
+                        sides("sides"), jump("rise"), crouch("sink"),
+                        doubleKey(LanternGuide::jumpKey, "stop").moves("flight", false),
+                        heading("mouse"), bolt(), beam(), lock(),
+                        click(Input.RIGHT, "ram").fires("light_shield").costs("light_shield", "powerPerSecond"),
+                        hold(Input.RIGHT, "brake").holds("light_shield").costs("light_shield", "domePowerPerSecond"),
+                        hold(Input.SCROLL, "mech").fires("mech").costs("mech", "mechPowerCost"),
+                        heading("keys"), ability(GL, "shockwave", "dive"), ability(GL, "recharge", "recharge"),
+                        wheel("wheel"), ability(GL, "emerald_express", "train"), ability(GL, "ring_scan", "scan"),
+                        ability(GL, "giant_hands", "hands"), revolver(), cage(), pound(), free(),
+                        ability(GL, "air_strike", "strike")),
                 mode("mech", LanternPanel::piloting,
-                        forward("walk"), sprint("run"), back("back"), sides("step"), text("look", "look"),
-                        forward("climb"), click(Input.LEFT, "blow"), hold(Input.SCROLL, "leave")),
-                mode("cage", player -> false,
-                        text("look", "aim"), ability(GL, "light_bubble", "pound"),
-                        crouched(ability(GL, "light_bubble", "free"), "free")),
-                mode("item", player -> !player.getMainHandItem().isEmpty() || !player.getOffhandItem().isEmpty(),
-                        click(Input.LEFT, "attack"), click(Input.RIGHT, "use")),
-                mode("dry", player -> ClientRing.has(player, RingPayload.DESCENT),
-                        walk("steer"), ability(GL, "recharge", "recharge")));
+                        heading("move"), forward("walk"), sprint("run"), back("back"), sides("step"),
+                        text("look", "look"), forward("climb"),
+                        heading("mouse"), click(Input.LEFT, "blow").moves("light_bolt", false)
+                                .costs("mech", "mechBlowPowerCost"),
+                        hold(Input.SCROLL, "leave").fires("mech")),
+                weapon("sword", player -> SwordArms.holding(), "swordPowerCost", "flurryPowerCost", "chargePowerCost",
+                        "blockPowerPerSecond", "cut", "flurry", "charge", "block"),
+                weapon("flamethrower", player -> FlameArms.holding(), "sweepPowerCost", "infernoPowerPerSecond",
+                        "wallPowerCost", "vortexPowerPerSecond", "sweep", "inferno", "wall", "vortex")));
+        if (!Construct.ENERGY_WHIP.locked()) {
+            modes.add(weapon("whip", player -> WhipArms.holding(), "whipPowerCost", "whirlPowerPerSecond",
+                    "lassoPowerCost", "spinPowerPerSecond", "lash", "whirl", "lasso", "spin"));
+        }
+        AbilityGuide.modes(GL, modes.toArray(GuideMode[]::new));
     }
 
-    // On foot with both hands empty and no construct in them: the ring's own state.
-    private static boolean bare(LocalPlayer player) {
-        return player.getMainHandItem().isEmpty() && player.getOffhandItem().isEmpty() && !flying(player)
-                && !LanternPanel.piloting(player) && LanternPanel.weapon() == null;
+    private static GuideMode.Control bolt() {
+        return click(Input.LEFT, "bolt").fires("light_bolt");
+    }
+
+    private static GuideMode.Control beam() {
+        return hold(Input.LEFT, "beam").holds("light_bolt").costs("light_bolt", "beamPowerPerSecond");
+    }
+
+    private static GuideMode.Control lock() {
+        return click(Input.SCROLL, "lock").fires("beam_lock");
+    }
+
+    private static GuideMode.Control wheel(String id) {
+        return ability(GL, "construct_wheel", id).costs("construct_wheel", "formPowerCost");
+    }
+
+    private static GuideMode.Control revolver() {
+        return abilityHold(GL, "giant_hands", "revolver").costs("giant_hands", "revolverPowerCost");
+    }
+
+    private static GuideMode.Control cage() {
+        return ability(GL, "light_bubble", "cage");
+    }
+
+    private static GuideMode.Control pound() {
+        return ability(GL, "light_bubble", "pound").moves("light_bubble", false)
+                .costs("light_bubble", "poundPowerCost");
+    }
+
+    private static GuideMode.Control free() {
+        return crouched(ability(GL, "light_bubble", "free").moves("light_bubble", false), "free");
+    }
+
+    // A construct weapon: its click and hold of each mouse button, each with the wheel's setting saying what it costs,
+    // and the wheel key that puts it away (free, so it shows no cost).
+    private static GuideMode weapon(String id, Predicate<LocalPlayer> active, String cut, String hold, String right,
+            String rightHold, String... moves) {
+        return mode(id, active,
+                heading("mouse"),
+                click(Input.LEFT, moves[0]).moves("light_bolt", false).costs("construct_wheel", cut),
+                hold(Input.LEFT, moves[1]).moves("light_bolt", true).costs("construct_wheel", hold),
+                click(Input.RIGHT, moves[2]).moves("light_shield", false).costs("construct_wheel", right),
+                hold(Input.RIGHT, moves[3]).moves("light_shield", true).costs("construct_wheel", rightHold),
+                heading("keys"), ability(GL, "construct_wheel", "wheel").moves("construct_wheel", false),
+                heading("move"), walk("walk"));
     }
 
     private static boolean flying(LocalPlayer player) {

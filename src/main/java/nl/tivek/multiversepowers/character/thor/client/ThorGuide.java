@@ -4,6 +4,7 @@ import static nl.tivek.multiversepowers.character.client.GuideMode.back;
 import static nl.tivek.multiversepowers.character.client.GuideMode.click;
 import static nl.tivek.multiversepowers.character.client.GuideMode.doubleKey;
 import static nl.tivek.multiversepowers.character.client.GuideMode.forward;
+import static nl.tivek.multiversepowers.character.client.GuideMode.heading;
 import static nl.tivek.multiversepowers.character.client.GuideMode.hold;
 import static nl.tivek.multiversepowers.character.client.GuideMode.holdKey;
 import static nl.tivek.multiversepowers.character.client.GuideMode.jump;
@@ -21,9 +22,8 @@ import nl.tivek.multiversepowers.character.GameCharacter;
 import nl.tivek.multiversepowers.character.client.AbilityGuide;
 import nl.tivek.multiversepowers.character.client.ClientCharacter;
 import nl.tivek.multiversepowers.character.client.GuideMode;
-import nl.tivek.multiversepowers.character.thor.ThorStatePayload;
 
-// Thor's modes for the ability guide: fists, the hammer in hand, flight and its lightning, the super jump.
+// Thor's modes for the ability guide: his fists, the hammer in hand and flight, every bind that does something there.
 final class ThorGuide {
     private ThorGuide() {
     }
@@ -31,25 +31,28 @@ final class ThorGuide {
     static void register() {
         AbilityGuide.modes(GameCharacter.THOR,
                 mode("fists", player -> !ThorPanel.armed(player) && !flies(player),
-                        click(Input.LEFT, "combo"), hold(Input.LEFT, "clap"),
-                        click(Input.RIGHT, "dash"), hold(Input.RIGHT, "grab"),
-                        plus(ThorGuide::sprintKey, hold(Input.RIGHT, "grab_dash"), "grab_dash"),
-                        click(Input.SCROLL, "hammer"), hold(Input.SCROLL, "charge"),
-                        doubleKey(ThorGuide::jumpKey, "jump"), holdKey(ThorGuide::jumpKey, "fly"), walk("walk")),
+                        heading("mouse"), click(Input.LEFT, "combo").fires("combo"),
+                        hold(Input.LEFT, "clap").fires("thunderclap"),
+                        click(Input.RIGHT, "dash").fires("dash"), hold(Input.RIGHT, "grab").fires("grab"),
+                        plus(ThorGuide::sprintKey, hold(Input.RIGHT, "grab_dash"), "grab_dash").fires("grab_dash"),
+                        click(Input.SCROLL, "hammer").fires("mjolnir"), hold(Input.SCROLL, "charge").fires("charged"),
+                        heading("move"), doubleKey(ThorGuide::jumpKey, "jump").fires("super_jump"),
+                        holdKey(ThorGuide::jumpKey, "fly").fires("flight"), walk("walk")),
                 mode("hammer", player -> ThorPanel.armed(player) && !flies(player),
-                        click(Input.LEFT, "combo"), hold(Input.LEFT, "uppercut"),
-                        click(Input.RIGHT, "throw"), hold(Input.RIGHT, "follow"),
-                        click(Input.SCROLL, "away"), hold(Input.SCROLL, "charge"),
-                        doubleKey(ThorGuide::jumpKey, "jump"), holdKey(ThorGuide::jumpKey, "fly")),
-                mode("flight", player -> flies(player) && !ClientThor.has(player, ThorStatePayload.LIGHTNING),
-                        forward("forward"), back("back"), sides("sides"), jump("rise"),
-                        click(Input.LEFT, "blows"), hold(Input.LEFT, "shockwave"),
-                        click(Input.RIGHT, "blink"), hold(Input.RIGHT, "dive"),
-                        click(Input.SCROLL, "bolt"), hold(Input.SHIFT, "lightning")),
-                mode("lightning", player -> ClientThor.has(player, ThorStatePayload.LIGHTNING),
-                        walk("steer"), jump("rise"), hold(Input.RIGHT, "dive")),
-                mode("jump", player -> false,
-                        walk("drift"), holdKey(ThorGuide::jumpKey, "fly")));
+                        heading("mouse"), click(Input.LEFT, "combo").fires("combo"),
+                        hold(Input.LEFT, "uppercut").fires("hammer_uppercut"),
+                        click(Input.RIGHT, "throw").fires("hammer_throw"),
+                        hold(Input.RIGHT, "follow").fires("hammer_leap"),
+                        click(Input.SCROLL, "away").fires("mjolnir"), hold(Input.SCROLL, "charge").fires("charged"),
+                        heading("move"), doubleKey(ThorGuide::jumpKey, "jump").fires("super_jump"),
+                        holdKey(ThorGuide::jumpKey, "fly").fires("flight"), walk("walk")),
+                mode("flight", ThorGuide::flies,
+                        heading("move"), forward("forward"), back("back"), sides("sides"), jump("rise"),
+                        heading("mouse"), click(Input.LEFT, "blows").fires("combo"),
+                        hold(Input.LEFT, "shockwave").fires("air_shockwave"),
+                        click(Input.RIGHT, "blink").fires("air_blink"), hold(Input.RIGHT, "dive").fires("grab_dash_dive"),
+                        click(Input.SCROLL, "bolt").fires("air_bolt"),
+                        hold(Input.SHIFT, "lightning").fires("lightning_flight")));
     }
 
     private static boolean flies(LocalPlayer player) {

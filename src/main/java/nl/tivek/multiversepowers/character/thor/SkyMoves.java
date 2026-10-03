@@ -12,7 +12,7 @@ import net.minecraft.world.entity.LightningBolt;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-import nl.tivek.multiversepowers.engine.effect.Effects;
+import nl.tivek.multiversepowers.engine.entity.Knockdowns;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 import nl.tivek.multiversepowers.engine.target.Targeting;
 import nl.tivek.multiversepowers.faction.Factions;
@@ -23,8 +23,6 @@ import nl.tivek.multiversepowers.spell.SpellTargets;
 // lands from it.
 final class SkyMoves {
     private static final double SHOCK_RADIUS = 3.5;
-    // Everything the shockwave hits drops for this long, its flight gone.
-    private static final int STUN = 60;
     private static final double FALL = -0.6;
     private static final double BOLT_REACH = 64.0;
     private static final double NEAR = 5.0;
@@ -53,29 +51,15 @@ final class SkyMoves {
             target.invulnerableTime = 0;
             target.hurt(level.damageSources().playerAttack(player), damage);
             ParticleFx.cloud(level, ParticleTypes.ELECTRIC_SPARK, target.getBoundingBox().getCenter(), 12, 0.3, 0.2);
-            ground(level, target);
+            // Limp and its flight gone, it drops: thrown down out of the air.
+            Knockdowns.knock(target);
+            if (!target.onGround()) {
+                Vec3 v = target.getDeltaMovement();
+                target.setDeltaMovement(v.x * 0.6, Math.min(v.y, FALL), v.z * 0.6);
+                target.hurtMarked = true;
+            }
         }
         return true;
-    }
-
-    // Its flight is gone for a while: it drops, and whoever flies as Thor lands.
-    private static void ground(ServerLevel level, LivingEntity target) {
-        if (target instanceof ServerPlayer other) {
-            ThorMoves.land(other, false);
-        }
-        UUID id = target.getUUID();
-        Effects.start(level, (lvl, age) -> {
-            if (!(lvl.getEntity(id) instanceof LivingEntity held) || !held.isAlive() || age > STUN) {
-                return false;
-            }
-            Vec3 v = held.getDeltaMovement();
-            held.setDeltaMovement(v.x * 0.6, Math.min(v.y, FALL), v.z * 0.6);
-            held.hurtMarked = true;
-            if (age % 4 == 0) {
-                ParticleFx.cloud(lvl, ParticleTypes.ELECTRIC_SPARK, held.getBoundingBox().getCenter(), 3, 0.3, 0.1);
-            }
-            return !held.onGround() || age < 10;
-        });
     }
 
     // A plain bolt on the creature he aims at; aimed at nothing, nothing happens.

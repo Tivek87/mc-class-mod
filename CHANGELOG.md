@@ -3,6 +3,31 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.6.9-alpha] - 2026-10-03
+
+### Added
+- **Ability guide:** a tab for every mode (Green Lantern: Ground, Flight, Mech, Sword & Shield, Flamethrower; Thor:
+  Fists, Hammer, Flight; Doctor Octopus: Ground, Climbing, Holding), each listing only the keys that do something there.
+- **Ability guide:** every key shows its cost in power or stamina next to its cooldown.
+- **Green Lantern:** taking out a weapon costs 1 power and holding it 0.05 power a second.
+- **Green Lantern:** each sword cut and whip lash costs 0.1 power, locking or freeing the beam 0.2.
+- **Green Lantern:** holding a Light Cage costs 0.2 power a second and pounding it 1.
+- **Green Lantern:** piloting the mech costs 0.2 power a second and each mech blow 0.5.
+- **Settings:** every new cost is a setting.
+- **Knockdowns:** players can be knocked down too: limp, keys and powers held back, view low, until they are up.
+
+### Changed
+- **Ability panel:** smaller, and smaller still on small screens; it keeps clear of the hotbar.
+- **Ability panel:** fades in when you use or try a power, hit something or get hit, and fades out 5 seconds after.
+- **Ability panel:** a green dot shows a ready move, the row you use lights up, a double press shows as 2×.
+- **Ability panel and guide:** say ready only when there is power or stamina for that very move.
+- **Green Lantern:** taking off now costs its 0.8 power instead of only needing it.
+- **Green Lantern:** a weapon breaks up, the mech breaks up and a Light Cage bursts when the ring runs dry.
+- **Thor:** Sky Shockwave knocks every creature and player in its area down for 3 seconds, flyers included.
+
+### Removed
+- **Ability guide:** the separate Modes section; the tabs replace it.
+
 ## [0.6.8-alpha] - 2026-10-03
 
 ### Added

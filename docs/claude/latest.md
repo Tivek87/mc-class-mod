@@ -1,33 +1,23 @@
 # Laatste sessie
 
-## Paneel rechtsonder: alleen bruikbare toetsen, korte muisnamen (2026-10-03)
-- Verzoek: paneel toont alleen toetsen/knoppen met een ability; muisknoppen kort (RMB).
-- `AbilityPanel`: vrije slots (spare) en ongebonden toetsen weg; "free"-regel en lang-key weg.
-- `PowerInputs`: `bound()` + `keyName()` (LMB/RMB/MMB/M4, lang `input.welcomescreen.mouse*`), ook in instellingen.
-- Doc Ock: `placeholder`/`placeholder_2` nu `.spare()` (geen rij, geen sectie in instellingen, geen melding);
-  dode case in `OctopusArms` + `octopus.welcomescreen.placeholder` weg. `docs/POWERS.md` bijgewerkt.
-- Getest: build + tests groen; in-game: Doc Ock zonder Placeholder-rijen, GL toont `[Hold MMB] Mech`.
-- Gecommit + gepusht (`54ba3af`), release v0.6.5-alpha (Latest).
-- Daarna: alle bruikbare gebaren tonen. `MOUSE_BESIDE`-regel uit `AbilityPanel` weg, Thor-regel (`!onGesture`) uit
-  `ThunderGauge` weg; `docs/POWERS.md`, `docs/PROJECT.md`. Getest in worktree (andere sessie had main kapot:
-  `FlightPose` e.a., niet van mij): Thor 8 rijen (LMB/RMB/MMB/Space), GL met LMB/RMB-rijen.
-- Gecommit + gepusht (`f97a8be`), release v0.6.6-alpha (Latest), gepubliceerd via worktree; jar in `releases/`.
-- Daarna QoL: namen volgen staat (`ThorPanel` hamer, `OctoPanel` stance, `LanternPanel` Stop Flying;
-  `ClientCharacter.flies`/`legs` public); toets P `AbilityGuide` + `AbilityGuideScreen` (P deelt met vanilla Social
-  Interactions, `sharedOnPurpose`); settings-tooltip op ability-titel (`Section`/`Block.about`); 39 `.desc` teksten
-  in `en_us.json`; "[P] guide" op paneel. Docs `POWERS.md`, `PROJECT.md`, `CLAUDE.md`.
-- Getest in worktree: build + tests groen; in-game P opent gids (social-klik gewist), Thor-namen wisselen met hamer,
-  gids Thor/GL scrollt, settings-hover toont uitleg. Main compileert weer.
-- Gecommit + gepusht (`b80e83e`), release v0.6.7-alpha (Latest), via worktree.
-- Daarna UI-redesign (gids + paneel): `AbilityGuideScreen` twee panelen (lijst met statusstip, pijltjes/W/S/Home/End,
-  klik), `GuideDetail` (keycaps, tags, uitleg, status + reden), `KeyCap` (pixel-keycaps, chips, `Layer`),
-  paneel als afgeronde kaart met keycaps + cooldownbalk; `Rules.unavailable` (Thor: hamer/rennen).
-  Getest in worktree (main kapot door andere sessie, `RechargeAnimation`): kleinste + grote GUI, cooldown zichtbaar.
-- Daarna modes in de gids: `GuideMode` (+ `AbilityGuide.modes`), `LanternGuide` (10 modes), `ThorGuide` (5),
-  `OctoGuide` (7); 120 bedieningsregels in `en_us.json` (`guide.welcomescreen.*`), onderzocht door subagent.
-  Getest in worktree: geen ontbrekende teksten, mech/zwaard/vlucht/vuisten/vasthouden zichtbaar, actieve mode groen.
-- Gevonden, niet gefixt: `ConstructWheel` stuurt `mech_busy` zonder `%s` (rauwe %s); paneel toont mech-LMB niet.
-- Gecommit + gepusht, release v0.6.8-alpha (via worktree). Bugs #59-#63 (high) + 5 ideeën open.
+## Animatie-rework teruggedraaid (2026-10-03, andere sessie dan hieronder)
+- Verzoek: alles van de animatie-rework weghalen. Gedaan: mijn 42 bestanden terug naar HEAD, 3 nieuwe weg
+  (`BodyMix`, `BodyKey`, `RingArms`), eigen regels uit `CLAUDE.md` en rule-candidates weg. Niets gecommit.
+- Gecheckt: hashes = HEAD, `compileJava` + `compileTestJava` groen. Backup-patch (45 bestanden) in temp-scratchpad;
+  weg op verzoek. Werk van de sessie hieronder (knockdowns, paneel, stamina) niet aangeraakt.
+
+## Kosten, gids per mode, compact paneel; release 0.6.9-alpha (2026-10-03)
+- Verzoek: alles van Green Lantern kost power; P-gids per mode met alleen binds die daar iets doen; paneel
+  rechtsonder veel compacter, fade in bij gebruik/gevecht, fade uit daarna; dan commit, push, release.
+- Kosten (`PowerRing.pay`/`upkeep`, alle als setting): wapen vormen 1, vasthouden 0.05/s, slag/zweepslag 0.1,
+  opstijgen 0.8, beam lock 0.2, kooi 0.2/s + pound 1, mech 0.2/s + klap 0.5. Client weigert al zonder power.
+- Gids: tabs (GL Ground/Flight/Mech/Sword/Flamethrower, Whip pas na ontgrendelen; Thor Fists/Hammer/Flight; Ock
+  Ground/Climbing/Holding), koppen, kosten-chips, status; lijst zo breed als de langste rij met korte toetsnamen.
+- Paneel: hele pixels, max halve schermhoogte, vrij van hotbar; fade in/uit (5 s); groene stip; flits per rij; 2×Space.
+- Ook (vorige sessie): "ready" alleen met power/stamina; Sky Shockwave + spelers-knockdown 3 s.
+- "112 bugs"-regel niet in changelog (niet waar). In-game getest (4 runs) + `./gradlew build` groen.
+- Open: bugs #59-#63 (high) + ideeën: nieuwe ja nodig. `docs/ideas/THOR_MJOLNIR_FLIGHT_SYSTEM*.md` (andere sessie)
+  niet meegecommit; noemt nog `SkyMoves.ground`, die bestaat niet meer.
 
 ## Thor-ontwerp (andere sessie, 2026-10-02)
 - Ontwerp `docs/ideas/THOR_MJOLNIR_FLIGHT_SYSTEM.md` + `_SHORT.md` (niet gecommit, van die sessie). Besloten:

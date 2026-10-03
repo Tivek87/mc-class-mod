@@ -32,6 +32,7 @@ import nl.tivek.multiversepowers.character.docock.client.TentacleLegs;
 import nl.tivek.multiversepowers.character.greenlantern.client.ClientRing;
 import nl.tivek.multiversepowers.character.greenlantern.client.ConstructChoice;
 import nl.tivek.multiversepowers.character.greenlantern.client.hud.ConstructWheel;
+import nl.tivek.multiversepowers.engine.client.ragdoll.Downed;
 import nl.tivek.multiversepowers.stamina.client.StaminaClient;
 
 @EventBusSubscriber(modid = MultiversePowers.MODID, value = Dist.CLIENT)
@@ -199,7 +200,7 @@ public final class ClientCharacter {
             tell(player, "not_ready", ability.getDisplayName(), (left + 19) / 20);
             return false;
         }
-        if (!canPay(player, ability)) {
+        if (!AbilityPanel.affords(ability, true, player)) {
             noPower(player, ability.character());
             return false;
         }
@@ -227,11 +228,15 @@ public final class ClientCharacter {
         AbilitySlot slot = AbilitySlot.byIndex(action);
         CharacterAbility ability = character == null || slot == null ? null : character.ability(slot);
         Local local = character == null ? null : LOCAL.get(character);
+        boolean hold = (data & Characters.HOLD) != 0;
         if (local != null && ability != null && player != null) {
             data = local.act(player, ability, on, data);
             if (data < 0) {
                 return;
             }
+        }
+        if (on && slot != null) {
+            AbilityPanel.used(slot, hold);
         }
         PacketDistributor.sendToServer(new AbilityActionPayload(action, on, data));
     }
@@ -257,6 +262,9 @@ public final class ClientCharacter {
         }
         GameCharacter now = character;
         Gestures.tick(player, minecraft, now);
+        AbilityPanel.tick(minecraft, player, now);
+        boolean downed = Downed.now();
+        boolean inGame = minecraft.screen == null && !downed;
         for (AbilitySlot slot : AbilitySlot.values()) {
             CharacterAbility ability = now == null ? null : now.ability(slot);
             KeyMapping key = AbilityKeys.of(slot);
@@ -269,13 +277,17 @@ public final class ClientCharacter {
                 continue;
             }
             if (ability != null && ability.isClientOnly()) {
-                ConstructWheel.tick(minecraft, key);
+                if (downed) {
+                    ConstructWheel.stop();
+                } else {
+                    ConstructWheel.tick(minecraft, key);
+                }
                 while (key.consumeClick()) {
                 }
                 continue;
             }
             if (ability != null && ability.isHeld()) {
-                hold(player, ability, key, minecraft.screen == null);
+                hold(player, ability, key, inGame);
                 while (key.consumeClick()) {
                 }
             } else if (ability != null && ability.holdTicks() > 0) {
@@ -283,10 +295,12 @@ public final class ClientCharacter {
                 while (key.consumeClick()) {
                     clicked = true;
                 }
-                tapOrHold(player, ability, key.isDown(), clicked, minecraft.screen == null);
+                tapOrHold(player, ability, key.isDown(), clicked, inGame);
             } else {
                 while (key.consumeClick()) {
-                    press(player, slot);
+                    if (!downed) {
+                        press(player, slot);
+                    }
                 }
             }
         }
@@ -298,7 +312,7 @@ public final class ClientCharacter {
             tell(player, "not_ready", ability.getDisplayName(), (COOLDOWNS[index] + 19) / 20);
             return;
         }
-        if (!canPay(player, ability)) {
+        if (!AbilityPanel.affords(ability, false, player)) {
             noPower(player, ability.character());
             return;
         }
@@ -319,7 +333,7 @@ public final class ClientCharacter {
             tell(player, "not_ready", ability.getDisplayName(), (left + 19) / 20);
             want = false;
         }
-        if (want && !HELD[index] && !canPay(player, ability)) {
+        if (want && !HELD[index] && !AbilityPanel.affords(ability, true, player)) {
             noPower(player, ability.character());
             want = false;
         }
@@ -416,11 +430,23 @@ public final class ClientCharacter {
         return player.isShiftKeyDown() ? Characters.SNEAKING : 0;
     }
 
-    static boolean canPay(LocalPlayer player, CharacterAbility ability) {
+    public static boolean canPay(LocalPlayer player, CharacterAbility ability) {
         return !ability.has(POWER_COST) || ClientRing.power(player) + 1.0E-4F >= ability.value(POWER_COST);
     }
 
-    private static void noPower(LocalPlayer player, GameCharacter character) {
+    // Out of stamina the mouse buttons and held keys do nothing (Gestures.mouse, hold), and a press with a stamina
+    // cost wants that much left (press).
+    static boolean tired(CharacterAbility ability) {
+        if (ability.has(STAMINA_COST) && !StaminaClient.canUse((float) ability.value(STAMINA_COST))) {
+            return true;
+        }
+        CharacterAbility.Input input = ability.input();
+        return StaminaClient.isExhausted() && (input == CharacterAbility.Input.LEFT
+                || input == CharacterAbility.Input.RIGHT
+                || input == CharacterAbility.Input.KEY && ability.isHeld() && !ability.isClientOnly());
+    }
+
+    public static void noPower(LocalPlayer player, GameCharacter character) {
         CharacterAbility recharge = character.byName(RECHARGE);
         player.displayClientMessage(recharge == null
                 ? Component.translatable("ring." + MultiversePowers.MODID + ".no_power")
@@ -435,7 +461,9 @@ public final class ClientCharacter {
             return;
         }
         boolean active = character == GameCharacter.DOC_OCK;
-        boolean onSurface = ClimbControl.tick(player, active);
+        // Knocked down he lets go of the wall and his legs no longer hold him up.
+        boolean free = active && !Downed.now();
+        boolean onSurface = ClimbControl.tick(player, free);
         if (onSurface != climbing) {
             climbing = onSurface;
             send(AbilityActionPayload.CLIMB, onSurface, ClimbControl.face().ordinal());
@@ -443,9 +471,9 @@ public final class ClientCharacter {
         if (onSurface) {
             return;
         }
-        if (active) {
+        if (free) {
             TentacleLegs.carry(player, legs);
-        } else {
+        } else if (!active) {
             legs = 0;
         }
     }

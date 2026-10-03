@@ -4,6 +4,10 @@ import net.minecraft.server.level.ServerPlayer;
 import nl.tivek.multiversepowers.character.CharacterAbility;
 import nl.tivek.multiversepowers.character.CharacterPowers;
 import nl.tivek.multiversepowers.character.greenlantern.ability.airstrike.AirStrike;
+import nl.tivek.multiversepowers.character.greenlantern.ability.flight.Flight;
+import nl.tivek.multiversepowers.character.greenlantern.ability.light.LightBeam;
+import nl.tivek.multiversepowers.character.greenlantern.ability.light.LightDome;
+import nl.tivek.multiversepowers.character.greenlantern.ability.light.LightShield;
 import nl.tivek.multiversepowers.character.greenlantern.ability.mech.MechAssembly;
 
 public final class GreenLanternPowers implements CharacterPowers {
@@ -35,6 +39,14 @@ public final class GreenLanternPowers implements CharacterPowers {
     @Override
     public void showTo(ServerPlayer viewer, ServerPlayer target) {
         PowerRing.showTo(viewer, target);
+    }
+
+    @Override
+    public void knockedDown(ServerPlayer player) {
+        Flight.stop(player);
+        LightShield.stop(player);
+        LightDome.lower(player);
+        LightBeam.stop(player);
     }
 
     @Override

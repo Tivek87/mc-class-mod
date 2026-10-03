@@ -45,16 +45,17 @@ public final class StaminaClient {
     }
 
     public static boolean tryUse(float amount) {
-        Minecraft minecraft = Minecraft.getInstance();
-        LocalPlayer player = minecraft.player;
-        if (player == null || !usesStamina(minecraft, player)) {
-            return true;
-        }
-        if (exhausted || stamina < amount) {
+        if (!canUse(amount)) {
             return false;
         }
-        drain(amount, player);
+        use(amount);
         return true;
+    }
+
+    public static boolean canUse(float amount) {
+        Minecraft minecraft = Minecraft.getInstance();
+        LocalPlayer player = minecraft.player;
+        return player == null || !usesStamina(minecraft, player) || !exhausted && stamina >= amount;
     }
 
     public static void use(float amount) {

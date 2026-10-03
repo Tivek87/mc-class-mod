@@ -55,6 +55,9 @@ public final class SwordShield extends SwordShieldBlows {
         boolean want = construct == Construct.SWORD_SHIELD && Characters.of(player) == GameCharacter.GREEN_LANTERN
                 && player.isAlive() && !Arrival.busy(player);
         if (want && (now == null || now.breaking >= 0)) {
+            if (!PowerRing.pay(player, wheel().value("formPowerCost"))) {
+                return;
+            }
             SwordShield sword = new SwordShield(player);
             // One that was still breaking up is gone at once: he never has more than one held and one breaking up.
             if (now != null) {
@@ -90,6 +93,9 @@ public final class SwordShield extends SwordShieldBlows {
             return sword.startFlurry();
         }
         if ((data & Characters.TAP) == 0) {
+            return false;
+        }
+        if (!sword.free() || !PowerRing.pay(player, wheel().value("swordPowerCost"))) {
             return false;
         }
         SwordMove move = SwordMove.byIndex(data >> Characters.MOVE_SHIFT);
@@ -133,6 +139,10 @@ public final class SwordShield extends SwordShieldBlows {
 
     private boolean startBlock() {
         if (this.charging || this.blocking) {
+            return false;
+        }
+        if (PowerRing.power(this.owner) + 1.0E-4F < wheel().value("blockPowerPerSecond") / 20.0) {
+            PowerRing.tell(this.owner, "no_power");
             return false;
         }
         this.blocking = true;
@@ -221,7 +231,8 @@ public final class SwordShield extends SwordShieldBlows {
             this.send(level);
             return true;
         }
-        if (HELD.get(this.owner.getUUID()) != this || !PowerRing.fuels(this.owner, level)) {
+        if (HELD.get(this.owner.getUUID()) != this || !PowerRing.fuels(this.owner, level)
+                || !PowerRing.upkeep(this.owner, this.age, wheel().value("heldPowerPerSecond"))) {
             this.breakUp();
             this.send(level);
             return true;

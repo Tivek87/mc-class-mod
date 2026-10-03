@@ -21,6 +21,7 @@ import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.config.PowerRules;
 import nl.tivek.multiversepowers.engine.ability.Cooldowns;
 import nl.tivek.multiversepowers.engine.ability.Throttle;
+import nl.tivek.multiversepowers.engine.entity.PlayerKnockdowns;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 
 @EventBusSubscriber(modid = MultiversePowers.MODID)
@@ -118,6 +119,11 @@ public final class Characters {
         if (ability == null || ability.isPlaceholder()) {
             return;
         }
+        // Knocked down, a player can only let go of what they held.
+        if (on && PlayerKnockdowns.isDown(player)) {
+            sync(player);
+            return;
+        }
         boolean letGo = ability.isHeld() && !on;
         boolean undo = (data & SNEAKING) != 0 && ability.crouchDoes() == CharacterAbility.Crouch.UNDO;
         // A key's hold version keeps a cooldown of its own; the slot's belongs to the tap.
@@ -135,6 +141,13 @@ public final class Characters {
             COOLDOWNS.start(player, character, slot.ordinal(), ability.getCooldown());
         }
         sync(player);
+    }
+
+    public static void knockedDown(ServerPlayer player) {
+        GameCharacter character = ACTIVE.get(player.getUUID());
+        if (character != null) {
+            character.powers().knockedDown(player);
+        }
     }
 
     public static int cooldownLeft(ServerPlayer player, CharacterAbility ability) {

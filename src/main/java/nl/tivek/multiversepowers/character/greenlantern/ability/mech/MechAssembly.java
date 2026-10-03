@@ -237,7 +237,7 @@ public final class MechAssembly implements Effect {
     public static boolean strike(ServerPlayer player) {
         MechAssembly mech = ACTIVE.get(player.getUUID());
         if (mech == null || mech.breaking >= 0 || mech.t < MechScript.SETTLED || mech.attack != null
-                || mech.climb != 0) {
+                || mech.climb != 0 || !PowerRing.pay(player, mech.ability.value("mechBlowPowerCost"))) {
             return false;
         }
         mech.attack = MechAttack.start(player, player.serverLevel(), mech.upright());
@@ -263,7 +263,8 @@ public final class MechAssembly implements Effect {
             this.end(level);
             return false;
         }
-        if (this.breaking < 0 && !PowerRing.fuels(this.owner, level)) {
+        if (this.breaking < 0 && (!PowerRing.fuels(this.owner, level)
+                || !PowerRing.upkeep(this.owner, this.t, this.ability.value("mechPowerPerSecond")))) {
             this.dismantle(level);
         }
         if (this.breaking < 0 && this.t >= this.ability.intValue("mechTime")) {

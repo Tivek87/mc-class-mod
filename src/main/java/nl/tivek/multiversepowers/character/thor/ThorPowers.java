@@ -151,6 +151,12 @@ public final class ThorPowers implements CharacterPowers {
     }
 
     @Override
+    public void knockedDown(ServerPlayer player) {
+        ThorMoves.land(player, false);
+        ThorGrab.leave(player);
+    }
+
+    @Override
     public void showTo(ServerPlayer viewer, ServerPlayer target) {
         int flags = ThorMoves.flags(target);
         if (flags != 0) {

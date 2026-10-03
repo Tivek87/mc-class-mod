@@ -83,7 +83,7 @@ public final class SwordArms extends SwordFirstPerson {
 
     @Nullable
     public static SwordMove attack(LocalPlayer player) {
-        if (!ready()) {
+        if (!ready() || !canPay(player, "swordPowerCost")) {
             return null;
         }
         SwordMove move = SwordMove.randomAttack(player.getRandom(), own.lastAttack);
@@ -107,9 +107,10 @@ public final class SwordArms extends SwordFirstPerson {
         }
     }
 
-    public static boolean block(boolean up) {
+    public static boolean block(LocalPlayer player, boolean up) {
         Own mine = own;
-        if (mine == null || mine.broke >= 0.0F || mine.charging || mine.blocking == up) {
+        if (mine == null || mine.broke >= 0.0F || mine.charging || mine.blocking == up
+                || up && ClientRing.power(player) + 1.0E-4F < wheel().value("blockPowerPerSecond") / 20.0) {
             return false;
         }
         mine.blocking = up;

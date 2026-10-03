@@ -109,7 +109,7 @@ public final class PowerRing {
             case "air_strike" -> AirStrike.use(player, level, ability);
             case "mech" -> on && MechAssembly.use(player, level, ability);
             case "light_bubble" -> LightBubble.use(player, level, ability, data);
-            case "beam_lock" -> on && LightBeam.lock(player);
+            case "beam_lock" -> on && LightBeam.lock(player, ability);
             case "flight" -> on && ((data & Characters.SLAM) != 0 ? Flight.slam(player, level, ability)
                     : Flight.toggle(player, level, ability));
             default -> false;
@@ -176,6 +176,24 @@ public final class PowerRing {
         saved(player).putFloat(POWER_KEY, Mth.clamp(power, 0.0F, MAX_POWER));
         CHANGED.add(player);
         UNSEEN.add(player);
+    }
+
+    public static boolean pay(ServerPlayer player, double cost) {
+        if (cost <= 0.0) {
+            return true;
+        }
+        float power = power(player);
+        if (power + 1.0E-4F < cost) {
+            tell(player, "no_power");
+            return false;
+        }
+        setPower(player, power - (float) cost);
+        return true;
+    }
+
+    // What lasts pays its upkeep once a second, from its first second on: false when the ring could not pay it.
+    public static boolean upkeep(ServerPlayer player, int age, double perSecond) {
+        return age <= 0 || age % 20 != 0 || pay(player, perSecond);
     }
 
     private static CompoundTag saved(ServerPlayer player) {

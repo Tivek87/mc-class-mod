@@ -25,6 +25,7 @@ import nl.tivek.multiversepowers.character.greenlantern.client.body.arm.CallArm;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.flame.FlameArms;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.sword.SwordArms;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.whip.WhipArms;
+import nl.tivek.multiversepowers.engine.client.ragdoll.Downed;
 import nl.tivek.multiversepowers.stamina.client.StaminaClient;
 
 // The mouse and space gestures: per button the ability its click fires and the one its hold fires, which may be two
@@ -143,6 +144,11 @@ final class Gestures {
         }
     }
 
+    // No screen open and not knocked down (Downed): only then do buttons and gestures fire.
+    private static boolean inGame(Minecraft minecraft) {
+        return minecraft.screen == null && !Downed.now();
+    }
+
     static void reset() {
         MouseHold.reset();
         Arrays.fill(STARTED, null);
@@ -169,7 +175,7 @@ final class Gestures {
             return;
         }
         boolean ours = takesMouse(player) && !handBusy(player, now, input);
-        boolean free = ours && minecraft.screen == null && !StaminaClient.isExhausted();
+        boolean free = ours && inGame(minecraft) && !StaminaClient.isExhausted();
         boolean down = free && key.isDown();
         MouseHold.Step step = MouseHold.tick(channel, hold == null ? 0 : hold.holdTicks(), tapMode(click, hold),
                 down, !free);
@@ -247,7 +253,7 @@ final class Gestures {
 
     private static void scroll(LocalPlayer player, Minecraft minecraft, @Nullable CharacterAbility click,
             @Nullable CharacterAbility hold) {
-        boolean inGame = minecraft.screen == null;
+        boolean inGame = inGame(minecraft);
         if (scrollOnOneKey()) {
             button(player, MouseHold.SCROLL, PowerInputs.SCROLL_CLICK, click, hold, inGame);
             return;
@@ -290,7 +296,7 @@ final class Gestures {
     private static void space(LocalPlayer player, Minecraft minecraft, @Nullable CharacterAbility click,
             @Nullable CharacterAbility hold) {
         int clock = ClientCharacter.clock();
-        boolean down = minecraft.screen == null && minecraft.options.keyJump.isDown();
+        boolean down = inGame(minecraft) && minecraft.options.keyJump.isDown();
         boolean pressed = down && !spaceWas;
         spaceWas = down;
         CharacterAbility twice = click != null && click.tapWhen() == CharacterAbility.Tap.DOUBLE ? click : null;
@@ -323,7 +329,7 @@ final class Gestures {
             letGo(player, MouseHold.SHIFT);
             return;
         }
-        boolean down = minecraft.screen == null && PowerInputs.HOLD_SHIFT.isDown();
+        boolean down = inGame(minecraft) && PowerInputs.HOLD_SHIFT.isDown();
         MouseHold.Step step = MouseHold.tick(MouseHold.SHIFT, hold.holdTicks(), CharacterAbility.Tap.NEVER, down,
                 true);
         if (step == MouseHold.Step.HOLD) {
@@ -396,7 +402,7 @@ final class Gestures {
             } else {
                 defendDown++;
             }
-            if (defendDown == BLOCK_AFTER && SwordArms.block(true)) {
+            if (defendDown == BLOCK_AFTER && SwordArms.block(player, true)) {
                 ClientCharacter.send(index, true, data | Characters.HOLD);
             }
             return;
@@ -407,7 +413,7 @@ final class Gestures {
         int held = defendDown;
         defendDown = -1;
         if (held >= BLOCK_AFTER) {
-            if (SwordArms.block(false)) {
+            if (SwordArms.block(player, false)) {
                 ClientCharacter.send(index, false, data);
             }
         } else if (!endedCharge && SwordArms.charge(player)) {

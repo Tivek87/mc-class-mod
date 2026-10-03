@@ -54,6 +54,9 @@ public final class EnergyWhip extends WhipHits {
         boolean want = construct == Construct.ENERGY_WHIP && Characters.of(player) == GameCharacter.GREEN_LANTERN
                 && player.isAlive() && !Arrival.busy(player);
         if (want && (now == null || now.breaking >= 0)) {
+            if (!PowerRing.pay(player, wheel().value("formPowerCost"))) {
+                return;
+            }
             EnergyWhip whip = new EnergyWhip(player);
             if (now != null) {
                 now.breaking = Math.max(now.breaking, BREAK_TICKS - 1);
@@ -154,7 +157,7 @@ public final class EnergyWhip extends WhipHits {
     }
 
     private boolean begin(WhipMove attack) {
-        if (!this.free()) {
+        if (!this.free() || !this.pay("whipPowerCost")) {
             return false;
         }
         this.start(attack, 0.0);
@@ -206,7 +209,7 @@ public final class EnergyWhip extends WhipHits {
             return false;
         }
         WhipSnare caught = WhipSnare.aim(this.owner, level, wheel().value("lassoRange"));
-        if (caught != null && !this.pay("lassoPowerCost")) {
+        if (!this.pay(caught != null ? "lassoPowerCost" : "whipPowerCost")) {
             return false;
         }
         this.start(WhipMove.LASSO, 0.0);
@@ -232,7 +235,8 @@ public final class EnergyWhip extends WhipHits {
             this.send(level);
             return true;
         }
-        if (HELD.get(this.owner.getUUID()) != this || !PowerRing.fuels(this.owner, level)) {
+        if (HELD.get(this.owner.getUUID()) != this || !PowerRing.fuels(this.owner, level)
+                || !PowerRing.upkeep(this.owner, this.age, wheel().value("heldPowerPerSecond"))) {
             this.breakUp();
             this.send(level);
             return true;

@@ -254,10 +254,13 @@ public final class LightBeam implements Effect {
         return true;
     }
 
-    public static boolean lock(ServerPlayer owner) {
+    public static boolean lock(ServerPlayer owner, CharacterAbility ability) {
         LightBeam beam = FIRING.get(owner.getUUID());
         if (beam == null || beam.fade >= 0) {
             PowerRing.tell(owner, "beam_lock_idle");
+            return false;
+        }
+        if (!PowerRing.pay(owner, ability.value("powerCost"))) {
             return false;
         }
         beam.locked = !beam.locked;

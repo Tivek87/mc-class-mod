@@ -29,5 +29,9 @@ public interface CharacterPowers {
     default void showTo(ServerPlayer viewer, ServerPlayer target) {
     }
 
+    // A power knocked the player down (PlayerKnockdowns): what keeps them up or holds something ends.
+    default void knockedDown(ServerPlayer player) {
+    }
+
     void clear();
 }

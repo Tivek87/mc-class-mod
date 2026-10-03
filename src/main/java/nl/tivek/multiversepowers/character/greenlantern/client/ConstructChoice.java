@@ -5,6 +5,9 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.sounds.SoundEvents;
 import net.neoforged.neoforge.network.PacketDistributor;
+import nl.tivek.multiversepowers.character.CharacterAbility;
+import nl.tivek.multiversepowers.character.GameCharacter;
+import nl.tivek.multiversepowers.character.client.ClientCharacter;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.flame.FlameArms;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.sword.SwordArms;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.whip.WhipArms;
@@ -21,12 +24,34 @@ public final class ConstructChoice {
     private ConstructChoice() {
     }
 
+    // A weapon the server would not form or broke up (the ring ran dry) is let go here too, so it can be taken again.
     public static Construct held() {
+        if (held != Construct.NONE && !shown(held)) {
+            last = held;
+            held = Construct.NONE;
+        }
         return held;
     }
 
+    private static boolean shown(Construct construct) {
+        return switch (construct) {
+            case SWORD_SHIELD -> SwordArms.present();
+            case FLAMETHROWER -> FlameArms.present();
+            case ENERGY_WHIP -> WhipArms.present();
+            default -> true;
+        };
+    }
+
     public static boolean take(Construct construct) {
-        if (held == construct) {
+        if (held() == construct) {
+            return false;
+        }
+        Minecraft minecraft = Minecraft.getInstance();
+        CharacterAbility wheel = GameCharacter.GREEN_LANTERN.byName("construct_wheel");
+        if (construct.made() && construct != Construct.NONE && minecraft.player != null && wheel != null
+                && ClientRing.power(minecraft.player) + 1.0E-4F < wheel.value("formPowerCost")) {
+            ClientCharacter.noPower(minecraft.player, GameCharacter.GREEN_LANTERN);
+            minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.VILLAGER_NO, 1.0F, 0.5F));
             return false;
         }
         if (held != Construct.NONE) {
@@ -38,7 +63,6 @@ public final class ConstructChoice {
         SwordArms.picked(construct);
         FlameArms.picked(construct);
         WhipArms.picked(construct);
-        Minecraft minecraft = Minecraft.getInstance();
         if (construct == Construct.NONE) {
             minecraft.getSoundManager().play(
                     SimpleSoundInstance.forUI(SoundEvents.AMETHYST_BLOCK_BREAK, 1.4F, 0.5F));
@@ -52,7 +76,7 @@ public final class ConstructChoice {
     }
 
     public static void swap() {
-        take(held == Construct.NONE ? last : Construct.NONE);
+        take(held() == Construct.NONE ? last : Construct.NONE);
     }
 
     public static void forget() {

@@ -79,8 +79,7 @@ public final class Flight implements Effect {
         if (owner.isPassenger() || owner.isSleeping() || owner.isFallFlying() || HeldMobs.isHeldByAnyone(owner)) {
             return false;
         }
-        if (PowerRing.power(owner) + 1.0E-4F < (float) ability.value("powerCost")) {
-            PowerRing.tell(owner, "no_power");
+        if (!PowerRing.pay(owner, ability.value("powerCost"))) {
             return false;
         }
         flight = new Flight(owner, ability);

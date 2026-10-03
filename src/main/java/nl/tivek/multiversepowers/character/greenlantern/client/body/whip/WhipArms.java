@@ -75,7 +75,7 @@ public final class WhipArms extends WhipFirstPerson {
 
     @Nullable
     public static WhipMove lash(LocalPlayer player) {
-        if (!ready()) {
+        if (!ready() || !canPay(player, wheel().value("whipPowerCost"))) {
             return null;
         }
         WhipMove move = WhipMove.randomAttack(player.getRandom(), own.lastAttack);
@@ -125,7 +125,7 @@ public final class WhipArms extends WhipFirstPerson {
             return false;
         }
         int aimed = aimed(player, wheel().value("lassoRange"));
-        if (aimed >= 0 && !canPay(player, wheel().value("lassoPowerCost"))) {
+        if (!canPay(player, wheel().value(aimed >= 0 ? "lassoPowerCost" : "whipPowerCost"))) {
             return false;
         }
         begin(WhipMove.LASSO, 0.0);

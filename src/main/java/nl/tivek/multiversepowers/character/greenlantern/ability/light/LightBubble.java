@@ -117,7 +117,8 @@ public final class LightBubble implements Effect {
         if (held != null) {
             if (crouching) {
                 held.burst(level);
-            } else if (held.phase == HOLDING && held.age >= FORM_TICKS) {
+            } else if (held.phase == HOLDING && held.age >= FORM_TICKS
+                    && PowerRing.pay(owner, ability.value("poundPowerCost"))) {
                 held.smash(level);
             }
             return false;
@@ -226,7 +227,8 @@ public final class LightBubble implements Effect {
             return true;
         }
         if (!PowerRing.fuels(this.owner, level) || !this.target.isAlive() || this.target.level() != level
-                || this.target.isRemoved() || this.owner.level() != level) {
+                || this.target.isRemoved() || this.owner.level() != level
+                || !PowerRing.upkeep(this.owner, this.age, this.ability.value("holdPowerPerSecond"))) {
             this.burst(level);
             this.send(level);
             return true;
