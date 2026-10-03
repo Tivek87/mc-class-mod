@@ -134,7 +134,7 @@ public final class ClientCharacter {
         return ultimate;
     }
 
-    static int legs() {
+    public static int legs() {
         return legs;
     }
 
@@ -150,6 +150,10 @@ public final class ClientCharacter {
     // A character whose gestures change in flight says here when it flies.
     public static void flying(GameCharacter character, Predicate<LocalPlayer> flying) {
         Gestures.flying(character, flying);
+    }
+
+    public static boolean flies(GameCharacter character, LocalPlayer player) {
+        return Gestures.flies(character, player);
     }
 
     // Whether a gesture's ability is the one its button fires now (on the ground or in flight, in the right state).

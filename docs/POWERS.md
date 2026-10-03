@@ -88,6 +88,13 @@ Bolt *(scroll wheel click)* and Lightning Speed *(hold shift)*.
 - Keys and buttons your character has nothing on, keys kept free for powers to come and keys you left unbound are
   left off the panel: it shows only what you can use. Mouse buttons go by short names: **LMB**, **RMB**, **MMB**
   (the scroll wheel), **M4** and up.
+- A line's name follows what it does now: Thor's scroll wheel click says **Take Up the Hammer** or **Put Away the
+  Hammer**, his combo **Hammer Swings** and his charge **Charge the Hammer** with it in hand; Doctor Octopus's stance
+  key says where it takes him next; Green Lantern's flight says **Stop Flying** while he flies.
+- **P** (the ability guide, can be moved under Controls) opens a page with every ability of the character you play:
+  its key and what it does, in a few plain sentences. The panel's title line shows the key. P is also the game's
+  social interactions key: while you play a character, the guide takes it.
+- In the settings, resting the pointer on an ability's title explains that ability the same way.
 - The scroll wheel click is also pick block. While your character has nothing on it, it just picks blocks and
   stays quiet; once a character has an ability there, the ability wins.
 

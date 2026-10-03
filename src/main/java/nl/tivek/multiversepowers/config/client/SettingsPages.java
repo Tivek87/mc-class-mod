@@ -13,6 +13,7 @@ import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.character.CharacterAbility;
 import nl.tivek.multiversepowers.character.CharacterConfig;
 import nl.tivek.multiversepowers.character.GameCharacter;
+import nl.tivek.multiversepowers.character.client.AbilityGuide;
 import nl.tivek.multiversepowers.character.client.PowerInputs;
 import nl.tivek.multiversepowers.config.ModConfigs;
 import nl.tivek.multiversepowers.config.PowerRules;
@@ -30,7 +31,11 @@ public final class SettingsPages {
             Runnable save) {
     }
 
-    public record Section(Component title, @Nullable Component hint, List<Group> groups) {
+    // `about`: what the section is, shown when the pointer rests on its title.
+    public record Section(Component title, @Nullable Component hint, @Nullable Component about, List<Group> groups) {
+        Section(Component title, @Nullable Component hint, List<Group> groups) {
+            this(title, hint, null, groups);
+        }
     }
 
     public record Group(@Nullable Component title, List<ConfigNumber> numbers) {
@@ -168,7 +173,7 @@ public final class SettingsPages {
             }
             groups.addAll(parts.values());
             if (!groups.isEmpty()) {
-                sections.add(new Section(ability.getDisplayName(), hint(ability), groups));
+                sections.add(new Section(ability.getDisplayName(), hint(ability), AbilityGuide.about(ability), groups));
             }
         }
         return new Page(character.getDisplayName(), character.getColor(), sections,

@@ -77,9 +77,12 @@ final class Gestures {
         if (ability.when() == CharacterAbility.When.ALWAYS) {
             return true;
         }
-        Predicate<LocalPlayer> check = FLYING.get(ability.character());
-        boolean flying = check != null && check.test(player);
-        return flying == (ability.when() == CharacterAbility.When.FLYING);
+        return flies(ability.character(), player) == (ability.when() == CharacterAbility.When.FLYING);
+    }
+
+    static boolean flies(GameCharacter character, LocalPlayer player) {
+        Predicate<LocalPlayer> check = FLYING.get(character);
+        return check != null && check.test(player);
     }
 
     private static boolean inState(CharacterAbility ability, LocalPlayer player) {

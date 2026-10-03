@@ -3,6 +3,19 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.6.7-alpha] - 2026-10-03
+
+### Added
+- **Ability guide:** press P while you play a character for a page with every ability, its key and what it does.
+- **Settings:** resting the pointer on an ability's title explains that ability.
+- **Ability panel:** its title line shows the guide's key.
+
+### Changed
+- **Thor:** his panel says Put Away the Hammer, Hammer Swings and Charge the Hammer with the hammer in hand, and hides
+  the hammer key while it is thrown.
+- **Doctor Octopus:** his stance key's line says where it takes him next.
+- **Green Lantern:** his flight line says Stop Flying while he flies.
+
 ## [0.6.6-alpha] - 2026-10-03
 
 ### Changed

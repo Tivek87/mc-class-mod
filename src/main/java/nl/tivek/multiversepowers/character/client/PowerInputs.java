@@ -112,6 +112,9 @@ public final class PowerInputs {
 
     // A gesture shares its button with the game's own key on purpose: that is no clash to show in red.
     public static boolean sharedOnPurpose(KeyMapping one, KeyMapping other) {
+        if (AbilityGuide.sharesWithSocial(one, other)) {
+            return true;
+        }
         if (mine(one) && mine(other)) {
             // A click and a hold of the same button, as they come.
             return one.isDefault() && other.isDefault();

@@ -90,6 +90,7 @@ public final class AbilityKeys {
 
     private static void onRegisterKeys(RegisterKeyMappingsEvent event) {
         event.register(SPELL_WHEEL);
+        event.register(AbilityGuide.KEY);
         for (KeyMapping key : SLOTS) {
             event.register(key);
         }

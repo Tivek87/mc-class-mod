@@ -127,8 +127,11 @@ public final class AbilityPanel {
                         (ultimate + 19) / 20)
                 : now.getDisplayName();
         Component footer = now == GameCharacter.GREEN_LANTERN ? null : footer(now);
+        Component guide = AbilityGuide.KEY.isUnbound() ? Component.empty()
+                : Component.translatable(PREFIX + "guide", PowerInputs.keyName(AbilityGuide.KEY));
         List<Line> lines = new ArrayList<>();
-        int width = Math.max(WIDTH, Math.max(font.width(title), footer == null ? 0 : font.width(footer)));
+        int width = Math.max(WIDTH, Math.max(font.width(title) + GAP + font.width(guide),
+                footer == null ? 0 : font.width(footer)));
         for (Row row : rows(now, player, rules)) {
             Line line = line(row, rules, player);
             lines.add(line);
@@ -141,6 +144,7 @@ public final class AbilityPanel {
         int top = graphics.guiHeight() - 4 - height;
         graphics.fill(left - 3, top - 3, right + 3, top + height, PANEL);
         graphics.drawString(font, title, left, top, ultimate > 0 ? RED : 0xFF000000 | now.getColor());
+        graphics.drawString(font, guide, right - font.width(guide), top, GRAY);
         int y = top + step;
         for (Line line : lines) {
             graphics.drawString(font, line.text(), left, y, line.color());

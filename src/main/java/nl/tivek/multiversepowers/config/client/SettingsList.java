@@ -33,8 +33,8 @@ final class SettingsList extends ContainerObjectSelectionList<SettingsList.Row> 
     private static final int LINE = 0x40FFFFFF;
     private static final int HOVER = 0x18FFFFFF;
 
-    record Block(String key, Component title, @Nullable Component hint, int color, boolean collapsible,
-            boolean collapsed, List<SettingsPages.Group> groups) {
+    record Block(String key, Component title, @Nullable Component hint, @Nullable Component about, int color,
+            boolean collapsible, boolean collapsed, List<SettingsPages.Group> groups) {
         int count() {
             int count = 0;
             for (SettingsPages.Group group : this.groups) {
@@ -133,6 +133,12 @@ final class SettingsList extends ContainerObjectSelectionList<SettingsList.Row> 
             graphics.drawString(font, this.hint, left + width - hintWidth, y, 0xFFA8A090);
             graphics.fill(left, top + height - 1, left + width, top + height, 0x80000000 | (this.block.color()
                     & 0xFFFFFF));
+            if (hovering && this.block.about() != null) {
+                List<FormattedCharSequence> lines = new ArrayList<>();
+                lines.add(this.block.title().copy().withStyle(ChatFormatting.WHITE).getVisualOrderText());
+                lines.addAll(font.split(this.block.about().copy().withStyle(ChatFormatting.GRAY), 220));
+                SettingsList.this.screen.setTooltipForNextRenderPass(lines);
+            }
         }
 
         @Override

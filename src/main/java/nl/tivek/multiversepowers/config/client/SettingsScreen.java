@@ -156,8 +156,8 @@ public class SettingsScreen extends DirtBackgroundScreen {
             for (int i = 0; i < page.sections().size(); i++) {
                 SettingsPages.Section section = page.sections().get(i);
                 String key = this.key(this.tab, i);
-                blocks.add(new SettingsList.Block(key, section.title(), section.hint(), page.color(), true,
-                        this.collapsed.contains(key), section.groups()));
+                blocks.add(new SettingsList.Block(key, section.title(), section.hint(), section.about(), page.color(),
+                        true, this.collapsed.contains(key), section.groups()));
             }
             return blocks;
         }
@@ -180,8 +180,8 @@ public class SettingsScreen extends DirtBackgroundScreen {
                 }
                 if (!groups.isEmpty()) {
                     Component title = Component.empty().append(page.title()).append(" › ").append(section.title());
-                    blocks.add(new SettingsList.Block("search", title, section.hint(), page.color(), false, false,
-                            groups));
+                    blocks.add(new SettingsList.Block("search", title, section.hint(), section.about(), page.color(),
+                            false, false, groups));
                 }
             }
         }

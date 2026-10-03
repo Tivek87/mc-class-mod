@@ -71,6 +71,9 @@ final class LanternPanel implements AbilityPanel.Rules {
             return Component.translatable("screen." + MultiversePowers.MODID + ".hold.mech."
                     + (piloting(player) ? "leave" : "short"));
         }
+        if (ability.id().equals("flight") && ClientRing.flight(player, 0.0F) >= 0.0F) {
+            return Component.translatable("screen." + MultiversePowers.MODID + ".panel.green_lantern.flight.stop");
+        }
         if (!onMouse(ability)) {
             return null;
         }
