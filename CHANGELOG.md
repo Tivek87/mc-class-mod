@@ -3,6 +3,16 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.6.5-alpha] - 2026-10-03
+
+### Changed
+- **Ability panel:** shows only keys and buttons that do something; free and unbound keys are left off.
+- **Ability panel and settings:** mouse buttons have short names: LMB, RMB, MMB, M4 and up.
+- **Doctor Octopus:** his two Placeholder keys are now free keys: off the panel and the settings, no message.
+
+### Removed
+- **Ability panel:** the *free* rows (Thor's Ability 1 up to Ability 12).
+
 ## [0.6.4-alpha] - 2026-10-03
 
 ### Added

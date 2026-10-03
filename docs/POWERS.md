@@ -85,9 +85,9 @@ Bolt *(scroll wheel click)* and Lightning Speed *(hold shift)*.
   that wants something else first.
 - The mouse buttons' moves (a line for the click and one for the hold of each button) are listed only when at most
   two other powers are; beside more, they are left off.
-- Keys your character has nothing on are left off the panel and do nothing. Keys kept free for powers to come show
-  their number with *free* beside it (Thor's **Ability 1** up to **Ability 12**) and do nothing yet; the two Doctor
-  Octopus keeps free show as **Placeholder**.
+- Keys and buttons your character has nothing on, keys kept free for powers to come and keys you left unbound are
+  left off the panel: it shows only what you can use. Mouse buttons go by short names: **LMB**, **RMB**, **MMB**
+  (the scroll wheel), **M4** and up.
 - The scroll wheel click is also pick block. While your character has nothing on it, it just picks blocks and
   stays quiet; once a character has an ability there, the ability wins.
 

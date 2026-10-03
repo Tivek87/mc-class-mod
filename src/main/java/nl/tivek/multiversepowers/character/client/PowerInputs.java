@@ -70,20 +70,40 @@ public final class PowerInputs {
         CharacterAbility.Input input = ability.input();
         if (input == CharacterAbility.Input.KEY) {
             KeyMapping key = AbilityKeys.of(ability.slot());
-            return key == null ? Component.literal("-") : key.getTranslatedKeyMessage();
+            return key == null ? Component.literal("-") : keyName(key);
         }
         if (ability.tapWhen() == CharacterAbility.Tap.DOUBLE) {
-            return Component.translatable("input." + MultiversePowers.MODID + ".double",
-                    clickKey(input).getTranslatedKeyMessage());
+            return Component.translatable("input." + MultiversePowers.MODID + ".double", keyName(clickKey(input)));
         }
-        return ability.tapWhen() == CharacterAbility.Tap.NEVER ? holdLabel(input) : clickKey(input)
-                .getTranslatedKeyMessage();
+        return ability.tapWhen() == CharacterAbility.Tap.NEVER ? holdLabel(input) : keyName(clickKey(input));
     }
 
     // A gesture's hold on its own, beside its click.
     public static Component holdLabel(CharacterAbility.Input input) {
-        return Component.translatable("input." + MultiversePowers.MODID + ".hold",
-                holdKey(input).getTranslatedKeyMessage());
+        return Component.translatable("input." + MultiversePowers.MODID + ".hold", keyName(holdKey(input)));
+    }
+
+    // Whether a key or button fires the ability at all.
+    public static boolean bound(CharacterAbility ability) {
+        if (ability.input() == CharacterAbility.Input.KEY) {
+            KeyMapping key = AbilityKeys.of(ability.slot());
+            return key != null && !key.isUnbound();
+        }
+        KeyMapping key = ability.tapWhen() == CharacterAbility.Tap.NEVER ? holdKey(ability.input())
+                : clickKey(ability.input());
+        return !key.isUnbound();
+    }
+
+    // A key as the game names it, a mouse button short: LMB, RMB, MMB, M4.
+    public static Component keyName(KeyMapping key) {
+        InputConstants.Key bound = key.getKey();
+        if (bound.getType() != InputConstants.Type.MOUSE || key.getKeyModifier() != KeyModifier.NONE) {
+            return key.getTranslatedKeyMessage();
+        }
+        int button = bound.getValue();
+        String mouse = "input." + MultiversePowers.MODID + ".mouse";
+        return button <= GLFW.GLFW_MOUSE_BUTTON_MIDDLE ? Component.translatable(mouse + "." + button)
+                : Component.translatable(mouse, button + 1);
     }
 
     public static boolean isLocked(KeyMapping key) {

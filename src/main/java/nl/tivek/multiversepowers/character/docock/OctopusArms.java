@@ -119,13 +119,6 @@ public final class OctopusArms {
             case "ground_slam" -> rig.heavy(level, sneaking);
             case "portal" -> rig.startPortal(level);
             case "rampage" -> rig.rampage(level);
-            case "placeholder", "placeholder_2" -> {
-                if (on) {
-                    player.displayClientMessage(
-                            Component.translatable("octopus." + MultiversePowers.MODID + ".placeholder"), true);
-                }
-                yield false;
-            }
             case "stance" -> rig.cycleStance(sneaking);
             case "ground_strike" -> {
                 if (sneaking) {

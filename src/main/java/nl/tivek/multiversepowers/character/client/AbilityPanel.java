@@ -84,7 +84,7 @@ public final class AbilityPanel {
         List<CharacterAbility> listed = new ArrayList<>();
         int others = 0;
         for (CharacterAbility ability : now.abilities()) {
-            if (ability.isPlaceholder() && !ability.isSpare() || !Gestures.active(ability, player)
+            if (ability.isPlaceholder() || !PowerInputs.bound(ability) || !Gestures.active(ability, player)
                     || ClientCharacter.refused(ability, player) != null || !rules.lists(ability, player)) {
                 continue;
             }
@@ -99,10 +99,12 @@ public final class AbilityPanel {
                 continue;
             }
             if (onMouse(ability) && ability.holdTicks() > 0 && ability.tapWhen() != CharacterAbility.Tap.NEVER) {
-                Component click = PowerInputs.clickKey(ability.input()).getTranslatedKeyMessage();
-                rows.add(new Row(ability, click, name(rules, ability, false, true, player), true, false));
-                rows.add(new Row(ability, PowerInputs.holdLabel(ability.input()),
-                        name(rules, ability, true, true, player), true, true));
+                rows.add(new Row(ability, PowerInputs.keyName(PowerInputs.clickKey(ability.input())),
+                        name(rules, ability, false, true, player), true, false));
+                if (!PowerInputs.holdKey(ability.input()).isUnbound()) {
+                    rows.add(new Row(ability, PowerInputs.holdLabel(ability.input()),
+                            name(rules, ability, true, true, player), true, true));
+                }
                 continue;
             }
             boolean hold = ability.tapWhen() == CharacterAbility.Tap.NEVER;
@@ -188,13 +190,10 @@ public final class AbilityPanel {
         CharacterAbility ability = row.ability();
         int cooldown = ClientCharacter.cooldownLeft(ability.slot());
         Component text = Component.literal("[").append(row.key()).append("] ").append(row.name());
-        int color = ability.isSpare() || cooldown > 0 ? GRAY : WHITE;
+        int color = cooldown > 0 ? GRAY : WHITE;
         Component running = row.split() ? null : rules.running(ability, player);
         boolean on = row.split() ? row.hold() && MouseHold.holding(ability.input())
                 : ability.isHeld() && ClientCharacter.isHeld(ability.slot());
-        if (ability.isSpare()) {
-            return new Line(text, color, Component.translatable(PREFIX + "free"), GRAY);
-        }
         if (running != null) {
             return new Line(text, color, running, GREEN);
         }

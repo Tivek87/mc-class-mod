@@ -48,7 +48,7 @@ public enum GameCharacter {
             this.add(abilities, AbilitySlot.ABILITY_7, "rampage").cooldown(1800).damage(3.0)
                     .settingInt("durationTicks", 400, 20, 6000, Unit.TICKS,
                             "How long the rampage lasts, in ticks (20 ticks = 1 second)");
-            this.add(abilities, AbilitySlot.ABILITY_8, "placeholder");
+            this.add(abilities, AbilitySlot.ABILITY_8, "placeholder").spare();
             this.add(abilities, AbilitySlot.ABILITY_9, "stance").cooldown(6)
                     .crouch(CharacterAbility.Crouch.ALTERNATE);
             this.add(abilities, AbilitySlot.ABILITY_10, "ground_strike").cooldown(200).damage(25.0)
@@ -57,7 +57,7 @@ public enum GameCharacter {
                             "How far you can mark a creature, and how far a tentacle travels under the ground")
                     .setting("knockUp", 0.55, 0.0, 3.0, Unit.STRENGTH,
                             "How hard the spike throws what it hits into the air");
-            this.add(abilities, AbilitySlot.ABILITY_11, "placeholder_2");
+            this.add(abilities, AbilitySlot.ABILITY_11, "placeholder_2").spare();
         }
     },
     GREEN_LANTERN("green_lantern", 0x3CE86A, new GreenLanternPowers()) {

@@ -119,7 +119,7 @@ public final class CharacterAbility {
         return this.placeholder;
     }
 
-    // A key kept free for an ability to come: a placeholder the panel lists by its slot's name, doing nothing yet.
+    // A key kept free for an ability to come: a placeholder doing nothing yet, left off the panel.
     CharacterAbility spare() {
         this.placeholder = true;
         this.spare = true;
