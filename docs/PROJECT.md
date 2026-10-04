@@ -25,15 +25,20 @@ it is older), and the notes of the one you pick on the right; a version newer th
 yours. **Use ... (quits)** switches to the version you picked, newer or older, the same way. Every download is checked
 against the release page's checksum before it is used.
 
-After an update a short tour shows what is new in the version you have, and only that. On the title screen a card
-asks **What's new**: **Show me**, **Later** or **Skip**. When a newer version is already out, the card says so first
-with an **Update** button, and the tour's first step points at it in the update manager. Each step dims the screen
-round the new thing, frames it and points at it from a small card with a line or two of text; some ask you to do
-something (**Click Feedback**) and go on once you do, the others go on with **Next** (or Enter). Steps wait until you
-are where their thing is: the title screen, the update manager, the game and the ability guide; a card shows the way
-there when it can, and a small note at the top says how many steps are left and where they wait. **Skip tour** ends it at any time; **All
-caught up!** says when you have seen everything, and **Nothing to show in this version** when the version brings
-nothing to point at. A new install shows no tour.
+After an update a tour shows every change of the version you have, and only that version's, right where each one is;
+where it helps, steps on how things work come along (such as a walk through the whole update manager and your ability
+panel and guide). On the title screen a card asks **What's new**: how many changes there are, a few of them, **Show
+me**, **Later** or **Skip**. When a newer version is already out, the card says so first with an **Update** button,
+and the tour's first step points at it in the update manager. Each step dims the screen round its thing, frames it and
+points at it from a small card with a line or two of text; the card's top says **NEW**, **CHANGED**, **FIXED** or
+**REMOVED IN** the version, or **HOW IT WORKS**. Some steps ask you to do something (**Click Feedback**) and go on once
+you do, the others go on with **Next** (or Enter). Steps wait until you are where their thing is: the title screen,
+the update manager, the game and the ability guide. When the next steps are in a world or need a character, a card
+says how to get there: on the title screen with a **Singleplayer** button, in the pause menu with **Back to game**,
+and in game with the power wheel's key to hold; **Later** (Enter in game) leaves just a small note at the top saying
+how many steps are left and where they wait. **Skip tour** ends it at any time; **All caught up!** says when you have
+seen everything, and **Nothing to show in this version** when the version brings nothing to point at. A new install
+shows no tour.
 
 Joining a server, a LAN world or a friend that runs another version of the mod (from 0.7.0 on) does not let you in:
 it says which version they run and which you have, with **Back to main menu** (nothing changes) or **Switch to ...

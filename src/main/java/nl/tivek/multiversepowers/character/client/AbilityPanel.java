@@ -65,7 +65,7 @@ public final class AbilityPanel {
     private static final int NAME = 0xF4F4F4;
     private static final int NAME_DIM = 0x8C8C8C;
     private static final int SOFT = 0x9A9A9A;
-    private static final long LINGER_MS = 5000L;
+    private static final long GONE_MS = 3000L;
     private static final float FADE_IN_SECONDS = 0.45F;
     private static final float FADE_OUT_SECONDS = 0.25F;
     private static final float GLIDE = 16.0F;
@@ -285,9 +285,10 @@ public final class AbilityPanel {
         RULES.put(character, rules);
     }
 
-    // Shows the panel now and keeps it a few seconds: a power used or refused, a blow given or taken.
+    // Shows the panel now and keeps it, fading out included, at most 3 seconds: a power used or refused, a blow given or
+    // taken.
     public static void wake() {
-        awakeUntil = Util.getMillis() + LINGER_MS;
+        awakeUntil = Util.getMillis() + GONE_MS - (long) (FADE_OUT_SECONDS * 1000.0F);
     }
 
     static void tick(Minecraft minecraft, LocalPlayer player, @Nullable GameCharacter now) {
@@ -435,8 +436,8 @@ public final class AbilityPanel {
         }
     }
 
-    // Where the panel and its guide key ended up on the screen, for the tour to point at; the corner it takes stays free
-    // of the rest of the HUD.
+    // Where the panel, its guide key, its rows and its foot (the ring's power, what Doctor Octopus stands on) ended up on
+    // the screen, for the tour to point at; the corner it takes stays free of the rest of the HUD.
     private static void anchors(Layout layout, float x, float y, float scale) {
         int width = Math.round(up.shownWidth) + PAD * 2;
         int height = Math.round(up.shownHeight) + PAD * 2;
@@ -447,6 +448,13 @@ public final class AbilityPanel {
             float top = y - (height - PAD + 3) * scale;
             ScreenAnchors.report("game.panel.guide", x - (PAD + layout.guideWidth() + 2) * scale, top,
                     (layout.guideWidth() + 4) * scale, 15 * scale);
+        }
+        float left = x - (width - PAD + 2) * scale;
+        float rowsTop = y - (height - PAD - layout.spacing().title() + 3) * scale;
+        float foot = y - (PAD + layout.foot() - 2) * scale;
+        ScreenAnchors.report("game.panel.rows", left, rowsTop, (width - PAD * 2 + 4) * scale, foot - rowsTop);
+        if (layout.foot() > 0) {
+            ScreenAnchors.report("game.panel.foot", left, foot, (width - PAD * 2 + 4) * scale, y - foot - 3 * scale);
         }
     }
 

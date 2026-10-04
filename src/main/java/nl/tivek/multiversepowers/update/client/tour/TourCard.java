@@ -6,6 +6,7 @@ import javax.annotation.Nullable;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.resources.language.I18n;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
 import nl.tivek.multiversepowers.MultiversePowers;
@@ -14,8 +15,9 @@ import nl.tivek.multiversepowers.engine.client.gui.GuiShapes;
 import nl.tivek.multiversepowers.engine.client.gui.NavScreen;
 import org.lwjgl.glfw.GLFW;
 
-// What a tour card holds and how it is drawn: a step's card (what is new and since which version, how far along the
-// tour is, what to do, and Back, Skip and Next, or their keys in game) and the first ask, both on the same dark box.
+// What a tour card holds and how it is drawn: a step's card (what it shows and in which version, how far along the
+// tour is, what to do, and Back, Skip and Next, or their keys in game), the card saying how to go on while the next
+// steps wait somewhere the tour cannot take the player, and the first ask, all on the same dark box.
 final class TourCard {
     static final String PREFIX = "tour." + MultiversePowers.MODID + ".";
     static final int ACCENT = NavScreen.ACCENT;
@@ -61,19 +63,34 @@ final class TourCard {
     record Ask(Box show, Box later, Box skip, @Nullable Box update) {
     }
 
+    // Where the card saying how to go on drew its button, Later and Skip; all null in game, where it has keys.
+    record Way(@Nullable Box go, @Nullable Box later, @Nullable Box skip) {
+    }
+
     private TourCard() {
     }
 
     static Body body(Font font, TourStep step, int inner) {
         Component prompt = step.prompt();
-        Component key = prompt == null ? null : step.keyName();
+        return body(font, step.title(), step.text(), prompt, prompt == null ? null : step.keyName(), inner);
+    }
+
+    // The card saying how to go on, with a prompt and the key to press when it has one.
+    static Body wayBody(Font font, TourStep way, int inner) {
+        String prompt = PREFIX + way.id() + ".prompt";
+        return body(font, way.title(), way.text(), I18n.exists(prompt) ? Component.translatable(prompt) : null,
+                way.keyName(), inner);
+    }
+
+    private static Body body(Font font, Component title, Component text, @Nullable Component prompt,
+            @Nullable Component key, int inner) {
         List<FormattedCharSequence> asked = List.of();
         if (prompt != null) {
             int room = inner - font.width(ARROW) - (key == null ? 0 : KeyCap.width(font, key) + 4);
             asked = font.split(prompt, Math.max(40, room));
         }
-        return new Body(font.split(step.title().copy().withStyle(ChatFormatting.BOLD), inner),
-                font.split(step.text(), inner), asked, key);
+        return new Body(font.split(title.copy().withStyle(ChatFormatting.BOLD), inner), font.split(text, inner),
+                asked, prompt == null ? null : key);
     }
 
     // How wide the footer needs the card to be.
@@ -82,7 +99,20 @@ final class TourCard {
             int links = (back ? font.width(backLabel()) + 10 : 0) + font.width(skipLabel());
             return links + 12 + font.width(nextLabel(next)) + 10;
         }
-        // Held, Enter's label turns to Skip tour.
+        return keysWidth(font, back, next);
+    }
+
+    // How wide the footer of the card saying how to go on needs it to be: its button, Later and Skip, or in game Enter
+    // for Later and holding it to skip.
+    static int wayFooterWidth(Font font, boolean mouse, Component go) {
+        if (mouse) {
+            return font.width(laterLabel()) + 10 + font.width(skipLabel()) + 12 + font.width(nextLabel(go)) + 10;
+        }
+        return keysWidth(font, false, laterLabel());
+    }
+
+    // Held, Enter's label turns to Skip tour.
+    private static int keysWidth(Font font, boolean back, Component next) {
         Component enter = enter();
         int right = KeyCap.width(font, enter) + 4 + Math.max(font.width(next), font.width(skipLabel()));
         int left = back ? KeyCap.width(font, backspace()) + 4 + font.width(Component.translatable(PREFIX + "back"))
@@ -105,9 +135,49 @@ final class TourCard {
             double mouseY) {
         int left = x + PAD;
         int right = x + w - PAD;
+        lines(layer, font, step.chip(), body, left, y);
+        pips(layer, font, number, total, right, y + PAD);
+        int footer = y + h - PAD - BUTTON;
+        layer.graphics().fill(left, footer - 7, right, footer - 6, 0x18FFFFFF);
+        if (mouse) {
+            Box nextBox = button(layer, font, nextLabel(next), right, footer, mouseX, mouseY);
+            int linkX = left;
+            Box backBox = null;
+            if (back) {
+                backBox = link(layer, font, backLabel(), linkX, footer + 3, mouseX, mouseY);
+                linkX += font.width(backLabel()) + 10;
+            }
+            Box skipBox = link(layer, font, skipLabel(), linkX, footer + 3, mouseX, mouseY);
+            return new Buttons(nextBox, backBox, skipBox);
+        }
+        keys(layer, font, next, back, hold, left, right, footer);
+        return new Buttons(null, null, null);
+    }
+
+    // The card saying how to go on: NEXT PART, what waits and how to get there, and its button with Later and Skip, or
+    // in game Enter for Later.
+    static Way waypoint(KeyCap.Layer layer, Font font, Body body, int x, int y, int w, int h, boolean mouse,
+            Component go, float hold, double mouseX, double mouseY) {
+        int left = x + PAD;
+        int right = x + w - PAD;
+        lines(layer, font, Component.translatable(PREFIX + "next_part"), body, left, y);
+        int footer = y + h - PAD - BUTTON;
+        layer.graphics().fill(left, footer - 7, right, footer - 6, 0x18FFFFFF);
+        if (mouse) {
+            Box goBox = button(layer, font, nextLabel(go), right, footer, mouseX, mouseY);
+            Box laterBox = link(layer, font, laterLabel(), left, footer + 3, mouseX, mouseY);
+            Box skipBox = link(layer, font, skipLabel(), left + font.width(laterLabel()) + 10, footer + 3, mouseX,
+                    mouseY);
+            return new Way(goBox, laterBox, skipBox);
+        }
+        keys(layer, font, laterLabel(), false, hold, left, right, footer);
+        return new Way(null, null, null);
+    }
+
+    // A card's chip, title, text and prompt beside its key cap, from its top.
+    private static void lines(KeyCap.Layer layer, Font font, Component chip, Body body, int left, int y) {
         int line = y + PAD;
-        KeyCap.chip(layer, font, step.chip(), left, line, 0xFF000000 | ACCENT, INK);
-        pips(layer, font, number, total, right, line);
+        KeyCap.chip(layer, font, chip, left, line, 0xFF000000 | ACCENT, INK);
         line += HEADER + 6;
         for (FormattedCharSequence part : body.title()) {
             layer.sequence(part, left, line, TEXT);
@@ -130,19 +200,11 @@ final class TourCard {
                 line += 10;
             }
         }
-        int footer = y + h - PAD - BUTTON;
-        layer.graphics().fill(left, footer - 7, right, footer - 6, 0x18FFFFFF);
-        if (mouse) {
-            Box nextBox = button(layer, font, nextLabel(next), right, footer, mouseX, mouseY);
-            int linkX = left;
-            Box backBox = null;
-            if (back) {
-                backBox = link(layer, font, backLabel(), linkX, footer + 3, mouseX, mouseY);
-                linkX += font.width(backLabel()) + 10;
-            }
-            Box skipBox = link(layer, font, skipLabel(), linkX, footer + 3, mouseX, mouseY);
-            return new Buttons(nextBox, backBox, skipBox);
-        }
+    }
+
+    // In game a card has keys: Enter for `next` (held, it skips the tour, its cap filling), and Backspace for Back.
+    private static void keys(KeyCap.Layer layer, Font font, Component next, boolean back, float hold, int left,
+            int right, int footer) {
         Component label = hold > 0.0F ? skipLabel() : next;
         int labelX = right - font.width(label);
         layer.text(label, labelX, footer + 3, hold > 0.0F ? TEXT : BODY);
@@ -160,21 +222,22 @@ final class TourCard {
         } else {
             layer.text(Component.translatable(PREFIX + "hold_skip"), left, footer + 3, 0xFF5E5E5E);
         }
-        return new Buttons(null, null, null);
     }
 
-    // The first ask: what is new, a few of the things it will show, and Show me, Later and Skip; while a newer version
-    // is out, a note asking to update to it first, and Update in place of Show me.
-    static int introHeight(Font font, int inner, int count, List<Component> highlights, @Nullable String newer) {
+    // The first ask: how many changes it shows, a few of them, how many steps on how things work follow, and Show me,
+    // Later and Skip; while a newer version is out, a note asking to update to it first, and Update in place of Show me.
+    static int introHeight(Font font, int inner, int count, int guides, List<Component> highlights,
+            @Nullable String newer) {
         int lines = font.split(introText(count), inner).size();
         int shown = Math.min(HIGHLIGHTS, highlights.size());
         int more = highlights.size() > HIGHLIGHTS ? 1 : 0;
+        int walk = guides <= 0 || count <= 0 ? 0 : 4 + font.split(guidesText(guides), inner).size() * 10;
         int note = newer == null ? 0 : 6 + font.split(updateText(newer), inner - NOTE_PAD * 2).size() * 10 + 6;
-        return PAD + HEADER + 6 + 10 + 4 + lines * 10 + 6 + (shown + more) * 10 + note + 8 + 1 + 6 + BUTTON + PAD
-                - 1;
+        return PAD + HEADER + 6 + 10 + 4 + lines * 10 + 6 + (shown + more) * 10 + walk + note + 8 + 1 + 6 + BUTTON
+                + PAD - 1;
     }
 
-    static Ask intro(KeyCap.Layer layer, Font font, String version, int count, List<Component> highlights,
+    static Ask intro(KeyCap.Layer layer, Font font, String version, int count, int guides, List<Component> highlights,
             @Nullable String newer, int x, int y, int w, int h, double mouseX, double mouseY) {
         int left = x + PAD;
         int right = x + w - PAD;
@@ -200,6 +263,13 @@ final class TourCard {
             layer.text(Component.translatable(PREFIX + "intro.more", highlights.size() - HIGHLIGHTS), left + 9, line,
                     MUTED);
             line += 10;
+        }
+        if (guides > 0 && count > 0) {
+            line += 4;
+            for (FormattedCharSequence part : font.split(guidesText(guides), inner)) {
+                layer.sequence(part, left, line, MUTED);
+                line += 10;
+            }
         }
         int footer = y + h - PAD - BUTTON;
         if (newer != null) {
@@ -235,7 +305,11 @@ final class TourCard {
     }
 
     private static Component introText(int count) {
-        return Component.translatable(PREFIX + "intro." + (count == 1 ? "one" : "many"), count);
+        return Component.translatable(PREFIX + "intro." + (count == 0 ? "none" : count == 1 ? "one" : "many"), count);
+    }
+
+    private static Component guidesText(int guides) {
+        return Component.translatable(PREFIX + "intro.guides" + (guides == 1 ? ".one" : ""), guides);
     }
 
     private static Component updateText(String newer) {
@@ -298,6 +372,10 @@ final class TourCard {
 
     static Component skipLabel() {
         return Component.translatable(PREFIX + "skip");
+    }
+
+    private static Component laterLabel() {
+        return Component.translatable(PREFIX + "intro.later");
     }
 
     static Component enter() {

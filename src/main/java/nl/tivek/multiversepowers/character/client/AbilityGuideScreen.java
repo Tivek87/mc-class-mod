@@ -173,11 +173,19 @@ final class AbilityGuideScreen extends GuideRows {
             this.shownTabWidth += (this.tabWidth[this.tab] - this.shownTabWidth) * ease;
         }
         int hover = this.tabAt(mouseX, mouseY);
+        int fromX = Integer.MAX_VALUE;
+        int fromY = Integer.MAX_VALUE;
+        int toX = Integer.MIN_VALUE;
+        int toY = Integer.MIN_VALUE;
         for (int i = 0; i < this.modes.size(); i++) {
             GuideMode mode = this.modes.get(i);
             boolean open = i == this.tab;
             int x = this.tabX[i];
             int y = this.tabY[i];
+            fromX = Math.min(fromX, x);
+            fromY = Math.min(fromY, y);
+            toX = Math.max(toX, x + this.tabWidth[i]);
+            toY = Math.max(toY, y + TAB);
             KeyCap.pill(graphics, x, y, this.tabWidth[i], TAB, EDGE);
             KeyCap.pill(graphics, x + 1, y + 1, this.tabWidth[i] - 2, TAB - 2, open
                     ? 0xFF000000 | GuiShapes.mix(TAB_FILL, color, 0.28F) : i == hover ? 0xFF3A3A3A : TAB_FILL);
@@ -189,6 +197,7 @@ final class AbilityGuideScreen extends GuideRows {
         }
         GuiShapes.roundRect(graphics, this.shownTabX + 3.0F, this.shownTabY + TAB - 3.0F, this.shownTabWidth - 6.0F,
                 2.0F, 0.0F, 0xFF000000 | color);
+        ScreenAnchors.report("guide.modes", fromX, fromY, toX - fromX, toY - fromY);
     }
 
     private void list(GuiGraphics graphics, Font font, LocalPlayer player, GuideMode mode, int mouseX, int mouseY,

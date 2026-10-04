@@ -83,9 +83,9 @@ Bolt *(scroll wheel click)* and Lightning Speed *(hold shift)*.
 - A small panel in the bottom right shows who you are and **only what you can use right now**, each with its key and
   cooldown. A power that only works on the ground is left off while you fly, and the other way round, and so is one
   that wants something else first. It is drawn at your own **GUI scale**, like the rest of the game's screen, and
-  stays right of the hotbar (or above the food bar when it is too wide for that). It keeps out of your way: it **fades
-  in** when you use or try a power, hit something or get hit, and **fades out** again five seconds after the last of
-  that. While a move is held or running, or an ultimate counts down, it stays.
+  always stays in the corner right of the hotbar, going a size smaller where it would not fit. It keeps out of your
+  way: it **fades in** when you use or try a power, hit something or get hit, and is **gone** again three seconds
+  after the last of that. While a move is held or running, or an ultimate counts down, it stays.
 - It keeps calm: nothing on it flashes, a line's status has room of its own so the panel never jumps when it
   changes, the panel only grows while it is up, and when a line comes or goes the others glide to their new places.
   A line greys and lights up again slowly, and its status fades in and out. On a big GUI scale it never takes more

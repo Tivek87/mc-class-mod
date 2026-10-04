@@ -24,8 +24,9 @@ across the multiverse you can turn into.
   number keys). **Updates** says whether you are up to date and what the newer version brings (**What's new**), and
   lists the last ten versions with their notes (**Versions**): update on quit (installed when you close the game), or
   switch to any version now (the game quits, then start it again yourself).
-- **Tour:** after an update a short tour asks on the title screen, then points at what is new in your version right
-  where it is; on an older version it first suggests updating. **Tour** in the update manager plays it again any time.
+- **Tour:** after an update a tour asks on the title screen, then shows every change of your version right where it
+  is (and how things work where that helps); when the next part is in a world or needs a character, it says how to get
+  there. On an older version it first suggests updating. **Tour** in the update manager plays it again any time.
 - **Bug reports:** **Feedback → Bug** in the update manager sends a bug with a name, a description and a priority. It
   becomes a public issue on this repository, with your Minecraft name. What you type is kept until you submit it, also
   when you leave the screen, die or close the game; **Feedback → Submitted** shows your last 3 reports with their

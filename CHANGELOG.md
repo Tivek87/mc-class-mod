@@ -5,7 +5,16 @@ the sections before 0.0.1-alpha came before versions were numbered.
 
 ## [0.7.4-alpha] - 2026-10-04
 
+### Added
+- **Tour:** this version's tour walks you through the whole update manager and your ability panel and guide.
+- **Tour:** each card's top says what it shows: new, changed, fixed or removed in this version, or how something works.
+- **Tour:** when the next steps are in a world or need a character, a card says how to get there: **Singleplayer** on
+  the title screen, **Back to game** in the pause menu, the power wheel's key in game.
+
 ### Changed
+- **Ability panel:** gone 3 seconds after the last power or blow, its fade included (it stayed 5 seconds, then faded).
+- **Tour:** the first card counts the version's changes and the steps on how things work.
+- **Tour:** a step whose thing does not show up still shows its card, in the middle of the screen.
 - **Update manager:** the Updates page is calmer and has two parts: **What's new** (whether you are up to date, and
   what the newer version brings or what yours brought) and **Versions** (every version, to read and to switch to).
 - **Update manager:** Update and Update on quit only show while a newer version is out; Check for updates is now a

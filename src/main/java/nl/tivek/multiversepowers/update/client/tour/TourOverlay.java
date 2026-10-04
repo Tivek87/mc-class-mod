@@ -13,14 +13,16 @@ import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.Mth;
 import nl.tivek.multiversepowers.character.client.KeyCap;
+import nl.tivek.multiversepowers.engine.client.gui.HudSpace;
 import nl.tivek.multiversepowers.engine.client.gui.ScreenAnchors;
 import nl.tivek.multiversepowers.engine.math.Ease;
 
 // Draws the tour and keeps where it drew, for clicks: a step's card beside the spotlight on what it points at
-// (`TourSpot`), the first ask, the pill saying what waits elsewhere, and what lasts past them (`TourToast`). Everything
-// glides: the spotlight from one thing to the next, the card after it, fading in.
+// (`TourSpot`), the first ask, the card saying how to go on while the next steps wait in a world or for a character,
+// the pill saying what waits elsewhere, and what lasts past them (`TourToast`). Everything glides: the spotlight from
+// one thing to the next, the card after it, fading in.
 final class TourOverlay {
-    enum Hit { NONE, BLOCK, NEXT, BACK, SKIP, SHOW, UPDATE, LATER, CONTINUE }
+    enum Hit { NONE, BLOCK, NEXT, BACK, SKIP, SHOW, UPDATE, LATER, CONTINUE, GO, DISMISS }
 
     private enum Side { BELOW, ABOVE, RIGHT, LEFT, NONE }
 
@@ -67,6 +69,8 @@ final class TourOverlay {
     private static TourCard.Ask ask;
     @Nullable
     private static TourToast.Pill pill;
+    @Nullable
+    private static TourCard.Way way;
     @Nullable
     private static TourCard.Box card;
     private static int secondNote = -1;
@@ -172,8 +176,9 @@ final class TourOverlay {
         drawnAt = now;
     }
 
-    // The first ask, in the middle of the menu; `newer` the version out past this one, which it asks to update to first.
-    static void intro(GuiGraphics graphics, String version, int count, List<Component> highlights,
+    // The first ask, in the middle of the menu: `count` changes, the first of `highlights`, and `guides` steps on how
+    // things work; `newer` the version out past this one, which it asks to update to first.
+    static void intro(GuiGraphics graphics, String version, int count, int guides, List<Component> highlights,
             @Nullable String newer, double mouseX, double mouseY) {
         long now = Util.getMillis();
         float glide = begin(now, ASK);
@@ -185,14 +190,49 @@ final class TourOverlay {
         framed = false;
         TourSpot.shade(graphics, width, height, dim * DIM, null);
         cardWidth = Math.min(INTRO, width - MARGIN * 2);
-        cardHeight = TourCard.introHeight(font, cardWidth - TourCard.PAD * 2, count, highlights, newer);
+        cardHeight = TourCard.introHeight(font, cardWidth - TourCard.PAD * 2, count, guides, highlights, newer);
         int x = (width - cardWidth) / 2;
         int y = Math.round((height - cardHeight) / 2.0F + 8.0F * (1.0F - appear));
         graphics.flush();
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, appear);
         KeyCap.Layer layer = new KeyCap.Layer(graphics, font);
         TourCard.panel(graphics, x, y, cardWidth, cardHeight);
-        ask = TourCard.intro(layer, font, version, count, highlights, newer, x, y, cardWidth, cardHeight, mouseX,
+        ask = TourCard.intro(layer, font, version, count, guides, highlights, newer, x, y, cardWidth, cardHeight,
+                mouseX, mouseY);
+        layer.finish();
+        graphics.flush();
+        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+        card = new TourCard.Box(x, y, cardWidth, cardHeight);
+        drawnAt = now;
+    }
+
+    // The card saying how to go on (`way`): in the middle of a menu with its button, in game in the top left corner with
+    // its keys, out of the way.
+    static void waypoint(GuiGraphics graphics, TourStep way, boolean mouse, float hold, double mouseX, double mouseY) {
+        long now = Util.getMillis();
+        float glide = begin(now, way);
+        Font font = Minecraft.getInstance().font;
+        int width = graphics.guiWidth();
+        int height = graphics.guiHeight();
+        float appear = appear(now);
+        dim += ((mouse ? 1.0F : 0.0F) - dim) * glide;
+        framed = false;
+        if (mouse) {
+            TourSpot.shade(graphics, width, height, dim * DIM, null);
+        }
+        Component go = Component.translatable(TourCard.PREFIX + way.id() + ".go");
+        cardWidth = Math.min(width - MARGIN * 2,
+                Math.max(INTRO, TourCard.wayFooterWidth(font, mouse, go) + TourCard.PAD * 2));
+        TourCard.Body body = TourCard.wayBody(font, way, cardWidth - TourCard.PAD * 2);
+        cardHeight = body.height();
+        int x = mouse ? (width - cardWidth) / 2 : MARGIN;
+        int y = mouse ? Math.round((height - cardHeight) / 2.0F + 8.0F * (1.0F - appear))
+                : Mth.floor(HudSpace.place(x, MARGIN, cardWidth, cardHeight, HudSpace.Way.DOWN).y());
+        graphics.flush();
+        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, appear);
+        KeyCap.Layer layer = new KeyCap.Layer(graphics, font);
+        TourCard.panel(graphics, x, y, cardWidth, cardHeight);
+        TourOverlay.way = TourCard.waypoint(layer, font, body, x, y, cardWidth, cardHeight, mouse, go, hold, mouseX,
                 mouseY);
         layer.finish();
         graphics.flush();
@@ -259,6 +299,17 @@ final class TourOverlay {
                 return Hit.SKIP;
             }
         }
+        if (way != null) {
+            if (inside(way.go(), mouseX, mouseY)) {
+                return Hit.GO;
+            }
+            if (inside(way.later(), mouseX, mouseY)) {
+                return Hit.DISMISS;
+            }
+            if (inside(way.skip(), mouseX, mouseY)) {
+                return Hit.SKIP;
+            }
+        }
         // What a step points at stays clickable, even where a card on a small screen lies over it.
         if (framed && mouseX >= frameX && mouseX < frameX + frameWidth && mouseY >= frameY
                 && mouseY < frameY + frameHeight) {
@@ -283,6 +334,10 @@ final class TourOverlay {
 
     static boolean pillUp() {
         return up() && pill != null;
+    }
+
+    static boolean wayUp() {
+        return up() && way != null;
     }
 
     // A step done: its box flashes outward from where it was, with a tick and a chime that climbs as the tour goes on
@@ -357,6 +412,7 @@ final class TourOverlay {
         buttons = null;
         ask = null;
         pill = null;
+        way = null;
         card = null;
         return 1.0F - (float) Math.exp(-GLIDE * seconds);
     }

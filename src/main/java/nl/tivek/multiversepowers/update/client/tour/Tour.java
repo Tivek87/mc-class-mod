@@ -26,6 +26,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.MultiLineEditBox;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.worldselection.SelectWorldScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
 import net.neoforged.api.distmarker.Dist;
@@ -47,12 +48,14 @@ import org.lwjgl.glfw.GLFW;
 import org.lwjgl.opengl.GL11;
 import org.slf4j.Logger;
 
-// After an update, a short tour points at what is new in the version installed, and only that, right where it is: in
-// the menus, the update manager, in game at the panel and in the ability guide. It asks first on the title screen or in
-// the pause menu, and while a newer version is out it asks to update to that one first; Next goes on (taking the player
-// to the next place itself where it can), Back goes back, and a pill in the corner says what waits elsewhere. How far
-// it got is kept in config/welcomescreen/tour.json; a first install gets no tour, as everything is new to it anyway.
-// The update manager's Tour plays it again.
+// After an update, a tour shows every change of the version installed, and only that version's, right where it
+// is (in the menus, the update manager, in game at the panel and in the ability guide), with steps on how things work
+// where they help. It asks first on the title screen or in the pause menu, and while a newer version is out it asks to
+// update to that one first; Next goes on (taking the player to the next place itself where it can), Back goes back.
+// While the next steps wait in a world or for a character, a card says how to get there (from the title screen or the
+// pause menu with a button that takes the player on, in game with the key to press); elsewhere a pill says what waits.
+// How far it got is kept in config/welcomescreen/tour.json; a first install gets no tour, as everything is new to it
+// anyway. The update manager's Tour plays it again.
 @EventBusSubscriber(modid = MultiversePowers.MODID, value = Dist.CLIENT)
 public final class Tour {
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -64,6 +67,8 @@ public final class Tour {
     // In game the pill fades after a while, so it never stays in the way.
     private static final long PILL_MS = 8000L;
     private static final long PILL_FADE_MS = 600L;
+    // What a step points at may show a moment after the step comes up; past this its card stands on its own.
+    private static final long MISSING_MS = 600L;
 
     private static boolean ranBefore;
     private static boolean loaded;
@@ -71,9 +76,15 @@ public final class Tour {
     private static String seen = "";
     private static boolean started;
     private static final Set<String> done = new LinkedHashSet<>();
-    // This session only: the steps done in order (for Back), and whether the first ask was put off.
+    // Steps passed over for good, having nothing to show: counted neither as done nor as waiting.
+    private static final Set<String> passed = new LinkedHashSet<>();
+    // This session only: the steps done in order (for Back), whether the first ask was put off, and which card saying
+    // how to go on was.
     private static final Deque<String> history = new ArrayDeque<>();
     private static boolean later;
+    @Nullable
+    private static TourStep putOff;
+    private static long missingSince = -1L;
     @Nullable
     private static TourStep shown;
     // Whether the shown step's `until` was away while it was up: only its coming after that counts.
@@ -96,6 +107,7 @@ public final class Tour {
         if (pending().isEmpty()) {
             seen = "";
             done.clear();
+            passed.clear();
         }
         if (pending().isEmpty()) {
             seen = UpdateChecker.installed();
@@ -164,6 +176,8 @@ public final class Tour {
                 case NEXT -> next();
                 case BACK -> back();
                 case CONTINUE -> resume();
+                case GO -> go();
+                case DISMISS -> wayLater();
                 default -> {
                 }
             }
@@ -171,17 +185,19 @@ public final class Tour {
         event.setCanceled(true);
     }
 
-    // Enter goes on and Backspace back, while no text field has the keys.
+    // Enter goes on and Backspace back, while no text field needs the key.
     @SubscribeEvent(priority = EventPriority.HIGH)
     static void onKeyPressed(ScreenEvent.KeyPressed.Pre event) {
-        if (typing(event.getScreen())) {
+        int key = event.getKeyCode();
+        if (typing(event.getScreen(), key)) {
             return;
         }
-        int key = event.getKeyCode();
         if (enter(key) && TourOverlay.introUp()) {
             start();
         } else if (enter(key) && TourOverlay.stepUp()) {
             next();
+        } else if (enter(key) && TourOverlay.wayUp()) {
+            go();
         } else if (key == GLFW.GLFW_KEY_BACKSPACE && TourOverlay.stepUp() && canBack()) {
             back();
         } else {
@@ -198,7 +214,8 @@ public final class Tour {
             return;
         }
         int key = event.getKey();
-        if (enter(key) && event.getAction() == GLFW.GLFW_PRESS && (TourOverlay.stepUp() || TourOverlay.pillUp())) {
+        if (enter(key) && event.getAction() == GLFW.GLFW_PRESS
+                && (TourOverlay.stepUp() || TourOverlay.pillUp() || TourOverlay.wayUp())) {
             enterAt = Util.getMillis();
         } else if (enter(key) && event.getAction() == GLFW.GLFW_RELEASE && enterAt >= 0L) {
             enterAt = -1L;
@@ -206,6 +223,8 @@ public final class Tour {
                 next();
             } else if (TourOverlay.pillUp()) {
                 resume();
+            } else if (TourOverlay.wayUp()) {
+                wayLater();
             }
         } else if (key == GLFW.GLFW_KEY_BACKSPACE && event.getAction() == GLFW.GLFW_PRESS && TourOverlay.stepUp()
                 && canBack()) {
@@ -226,8 +245,12 @@ public final class Tour {
         return key == GLFW.GLFW_KEY_ENTER || key == GLFW.GLFW_KEY_KP_ENTER;
     }
 
-    private static boolean typing(Screen screen) {
-        return screen.getFocused() instanceof EditBox || screen.getFocused() instanceof MultiLineEditBox;
+    // A one-line field on the update manager's pages has no use for Enter (the bug form focuses its name by itself).
+    private static boolean typing(Screen screen, int key) {
+        if (screen.getFocused() instanceof MultiLineEditBox) {
+            return true;
+        }
+        return screen.getFocused() instanceof EditBox && !(enter(key) && screen instanceof ManagerScreen);
     }
 
     // `mouse`: a screen is open, so the card has buttons rather than keys.
@@ -247,10 +270,12 @@ public final class Tour {
         if (!started) {
             if (place == Place.MENU && !later) {
                 List<TourStep> news = pending.stream().filter(step -> step != TourSteps.UPDATE_FIRST).toList();
+                List<TourStep> changes = news.stream().filter(TourStep::change).toList();
                 String newer = UpdateChecker.newerVersion();
-                TourOverlay.intro(graphics, TourStep.bare(UpdateChecker.installed()), news.size(),
-                        news.stream().map(TourStep::title).toList(), newer == null ? null : TourStep.bare(newer),
-                        mouseX, mouseY);
+                TourOverlay.intro(graphics, TourStep.bare(UpdateChecker.installed()), changes.size(),
+                        news.size() - changes.size(),
+                        (changes.isEmpty() ? news : changes).stream().map(TourStep::title).toList(),
+                        newer == null ? null : TourStep.bare(newer), mouseX, mouseY);
             }
             return;
         }
@@ -267,35 +292,50 @@ public final class Tour {
         }
         TourStep step = place == null ? null : current(place, pending);
         if (step == null) {
-            pill(graphics, mouse, mouseX, mouseY);
+            TourStep way = waypoint(place);
+            if (way != null) {
+                TourOverlay.waypoint(graphics, way, mouse, hold(), mouseX, mouseY);
+            } else {
+                pill(graphics, mouse, mouseX, mouseY);
+            }
             return;
         }
         pillSince = -1L;
         if (step.prepare() != null) {
             step.prepare().run();
         }
-        ScreenAnchors.Rect target = step.target();
-        if (step.points() && target == null) {
-            return;
-        }
         if (step != shown) {
             shown = step;
             untilGone = step.until() == null || !ScreenAnchors.shown(step.until());
+            missingSince = -1L;
+        }
+        ScreenAnchors.Rect target = step.target();
+        if (step.points() && target == null) {
+            long now = Util.getMillis();
+            missingSince = missingSince < 0L ? now : missingSince;
+            if (now - missingSince < MISSING_MS) {
+                return;
+            }
+        } else {
+            missingSince = -1L;
         }
         pending = pending();
         TourOverlay.step(graphics, step, target, done.size() + 1, done.size() + pending.size(), mouse, canBack(),
                 nextLabel(step), hold(), mouseX, mouseY);
     }
 
-    // The first step waiting here; one with nothing to show is passed over for good.
+    // The first step waiting here; one with nothing to show is passed over for good. In game they wait for a character.
     @Nullable
     private static TourStep current(Place place, List<TourStep> pending) {
+        if (!place.reachable()) {
+            return null;
+        }
         for (TourStep step : pending) {
             if (step.place() != place) {
                 continue;
             }
             if (step.available() != null && !step.available().getAsBoolean()) {
-                done.add(step.id());
+                passed.add(step.id());
                 save();
                 continue;
             }
@@ -305,6 +345,25 @@ public final class Tour {
             finish(true);
         }
         return null;
+    }
+
+    // While steps wait in a world or for a character, the card saying how to get there: on the title screen (join a
+    // world) and in the pause menu (pick a character) once they come next, in game (pick a character) whenever some
+    // wait there; null where the pill says it instead, or once the player put that card off.
+    @Nullable
+    private static TourStep waypoint(@Nullable Place place) {
+        List<TourStep> pending = pending();
+        if (pending.stream().allMatch(step -> step.place().reachable())) {
+            return null;
+        }
+        boolean next = !pending.get(0).place().reachable();
+        TourStep way;
+        if (Minecraft.getInstance().level == null) {
+            way = place == Place.MENU && next ? TourSteps.JOIN_WORLD : null;
+        } else {
+            way = place == Place.GAME || place == Place.MENU && next ? TourSteps.PICK_CHARACTER : null;
+        }
+        return way == putOff ? null : way;
     }
 
     // Nothing waits here: a pill says how many wait elsewhere and takes the player there when it can. In game it
@@ -350,7 +409,8 @@ public final class Tour {
             return pending;
         }
         for (TourStep step : TourSteps.ALL) {
-            if (UpdateChecker.compare(step.version(), installed) == 0 && !done.contains(step.id())) {
+            if (UpdateChecker.compare(step.version(), installed) == 0 && !done.contains(step.id())
+                    && !passed.contains(step.id())) {
                 pending.add(step);
             }
         }
@@ -384,6 +444,19 @@ public final class Tour {
     // Later: no asking again until the game starts anew.
     private static void later() {
         later = true;
+        TourOverlay.click();
+    }
+
+    // The button on the card saying how to go on: to the worlds, or out of the pause menu into the game.
+    private static void go() {
+        TourOverlay.click();
+        Minecraft minecraft = Minecraft.getInstance();
+        minecraft.setScreen(minecraft.level == null ? new SelectWorldScreen(minecraft.screen) : null);
+    }
+
+    // Later on that card: only the pill says what waits, until the game starts anew or another such card is due.
+    private static void wayLater() {
+        putOff = waypoint(Place.now());
         TourOverlay.click();
     }
 
@@ -436,7 +509,8 @@ public final class Tour {
     }
 
     // Where Next on `step` takes the player: where it leads, while steps wait there; else, once nothing waits here,
-    // the place of the next step when the tour can take them there; null to stay.
+    // the place of the next step when the tour can take them there, or the menu, where a card says how to get there
+    // when the next steps need a world or a character; null to stay.
     @Nullable
     private static Place destination(TourStep step) {
         List<TourStep> after = pending().stream().filter(other -> other != step).toList();
@@ -451,7 +525,10 @@ public final class Tour {
             return null;
         }
         Place next = after.get(0).place();
-        return next.reachable() && next != Place.now() ? next : null;
+        if (!next.reachable()) {
+            return Place.now() == Place.MENU ? null : Place.MENU;
+        }
+        return next != Place.now() ? next : null;
     }
 
     // What Next says: the place it takes the player to, Done on the last step, else Next.
@@ -481,6 +558,7 @@ public final class Tour {
     private static void finish(boolean cheer) {
         seen = UpdateChecker.installed();
         done.clear();
+        passed.clear();
         history.clear();
         started = false;
         shown = null;
@@ -514,11 +592,8 @@ public final class Tour {
             // How far a tour got counts only for the version it was of.
             if (root.has("version") && root.get("version").getAsString().equals(installed)) {
                 started = root.has("started") && root.get("started").getAsBoolean();
-                if (root.get("done") instanceof JsonArray array) {
-                    for (JsonElement element : array) {
-                        done.add(element.getAsString());
-                    }
-                }
+                read(root, "done", done);
+                read(root, "passed", passed);
             }
         } catch (IOException | RuntimeException e) {
             LOGGER.warn("Could not read {}: {}", file, e.toString());
@@ -531,9 +606,8 @@ public final class Tour {
         root.addProperty("version", UpdateChecker.installed());
         root.addProperty("seen", seen);
         root.addProperty("started", started);
-        JsonArray array = new JsonArray();
-        done.forEach(array::add);
-        root.add("done", array);
+        root.add("done", array(done));
+        root.add("passed", array(passed));
         Path file = file();
         try {
             Files.createDirectories(file.getParent());
@@ -541,5 +615,19 @@ public final class Tour {
         } catch (IOException e) {
             LOGGER.warn("Could not save {}: {}", file, e.toString());
         }
+    }
+
+    private static void read(JsonObject root, String name, Set<String> into) {
+        if (root.get(name) instanceof JsonArray array) {
+            for (JsonElement element : array) {
+                into.add(element.getAsString());
+            }
+        }
+    }
+
+    private static JsonArray array(Set<String> ids) {
+        JsonArray array = new JsonArray();
+        ids.forEach(array::add);
+        return array;
     }
 }

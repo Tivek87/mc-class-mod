@@ -176,6 +176,7 @@ public abstract class NavScreen extends Screen {
         }
         graphics.fill(this.contentX, this.contentY - 5, this.contentX + this.contentWidth, this.contentY - 4, RIM);
         ScreenAnchors.report("window", this.windowX, this.windowY, this.windowWidth, this.windowHeight);
+        ScreenAnchors.report("page." + this.page, this.contentX, this.contentY, this.contentWidth, this.contentHeight);
         this.renderPageBackground(graphics, mouseX, mouseY, partialTick);
     }
 
