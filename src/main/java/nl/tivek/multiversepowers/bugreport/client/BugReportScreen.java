@@ -18,7 +18,8 @@ import nl.tivek.multiversepowers.update.client.UpdateChecker;
 import org.lwjgl.glfw.GLFW;
 
 // The feedback page's part for a bug report or an idea: a name, a description and a priority, kept as a draft until
-// sent, with what goes along (your name and version) said above Send. Ctrl+Enter sends; Clear asks a second click.
+// submitted, with what goes along (your name and version) said above Submit. Ctrl+Enter submits; Clear asks a second
+// click.
 public final class BugReportScreen extends ManagerScreen {
     static final int SENT_COLOR = 0x6EE7A0;
     static final int ERROR_COLOR = 0xFF7B7B;
@@ -72,11 +73,6 @@ public final class BugReportScreen extends ManagerScreen {
 
     static MutableComponent words(String key, Object... args) {
         return Component.translatable("screen." + MultiversePowers.MODID + ".bugreport." + key, args);
-    }
-
-    @Override
-    protected Component subtitle() {
-        return words(this.kind.key("subtitle"));
     }
 
     @Override

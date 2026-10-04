@@ -3,6 +3,22 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.7.4-alpha] - 2026-10-04
+
+### Changed
+- **Update manager:** the Updates page is calmer and has two parts: **What's new** (whether you are up to date, and
+  what the newer version brings or what yours brought) and **Versions** (every version, to read and to switch to).
+- **Update manager:** Update and Update on quit only show while a newer version is out; Check for updates is now a
+  small **Check now** on the status card.
+- **Update manager:** versions read like v0.7.4, without "-alpha", one line each with their day; release notes have
+  quieter headings and dots.
+- **Feedback:** **Sent** is now **Submitted**, and **Send** is **Submit**.
+- **Tour:** the step asking you to update first fits the new Updates page.
+
+### Removed
+- **Update manager:** the YOURS, LATEST and INSTALLED chips (your version just says "yours"), and the line of text
+  under every page title.
+
 ## [0.7.3-alpha] - 2026-10-04
 
 ### Added

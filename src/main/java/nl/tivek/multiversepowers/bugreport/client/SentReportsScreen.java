@@ -19,7 +19,7 @@ import nl.tivek.multiversepowers.engine.client.gui.ScreenAnchors;
 import nl.tivek.multiversepowers.update.client.ManagerScreen;
 import nl.tivek.multiversepowers.update.client.UpdateChecker;
 
-// The feedback page's part of the bug reports and ideas you sent, newest first, each with how it stands on GitHub
+// The feedback page's part of the bug reports and ideas you submitted, newest first, each with how it stands on GitHub
 // (looked up again every few minutes, or now with Refresh); a click opens it on GitHub.
 final class SentReportsScreen extends ManagerScreen {
     private static final DateTimeFormatter DATE = DateTimeFormatter.ofPattern("d MMM yyyy", Locale.ENGLISH)
@@ -43,11 +43,6 @@ final class SentReportsScreen extends ManagerScreen {
     @Override
     protected List<Tab> tabs() {
         return this.feedbackTabs(REPORTS);
-    }
-
-    @Override
-    protected Component subtitle() {
-        return BugReportScreen.words("history.subtitle");
     }
 
     @Override

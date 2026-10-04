@@ -18,15 +18,18 @@ import nl.tivek.multiversepowers.engine.client.gui.PixelIcons;
 import nl.tivek.multiversepowers.engine.client.gui.ScreenAnchors;
 import org.lwjgl.glfw.GLFW;
 
-// The manager's updates page: on top whether you are up to date (or which version is out, or how its download goes);
-// under it the last ten versions as the game's launcher lists them, beside them the chosen one's notes (a newer one's
-// with those of every version between it and yours); under those a button that switches to the chosen version and one
-// that updates once you quit, or else looks for updates. A switch downloads that version's jar, closes the game and
-// swaps it in (UpdateInstaller); the player starts the game again.
+// The manager's updates page, in two parts. What's new: whether you are up to date (or which version is out, or how
+// its download goes), what the newer versions bring or else what yours brought, and only while a newer version is out a
+// button that updates now and one that updates once you quit. Versions: the last ten versions as the game's launcher
+// lists them, the chosen one's notes beside them (a newer one's with those of every version between it and yours) and a
+// button that switches to it. A switch downloads that version's jar, closes the game and swaps it in
+// (UpdateInstaller); the player starts the game again.
 final class UpdateManagerScreen extends ManagerScreen {
     static final DateTimeFormatter DATE = DateTimeFormatter.ofPattern("d MMM yyyy", Locale.ENGLISH)
             .withZone(ZoneId.systemDefault());
     static final DateTimeFormatter DATE_TIME = DateTimeFormatter.ofPattern("d MMM yyyy, HH:mm", Locale.ENGLISH)
+            .withZone(ZoneId.systemDefault());
+    private static final DateTimeFormatter DAY = DateTimeFormatter.ofPattern("d MMM", Locale.ENGLISH)
             .withZone(ZoneId.systemDefault());
     static final int ERROR_COLOR = 0xFF7B7B;
     static final int GRAY = 0x8A8A8A;
@@ -34,10 +37,11 @@ final class UpdateManagerScreen extends ManagerScreen {
     private static final int SHOWN = 10;
     private static final int GAP = 5;
     private static final int PADDING = 7;
-    private static final int ROW = 25;
+    private static final int ROW = 16;
     private static final int SCROLLBAR = 6;
     private static final int SCROLL_STEP = 20;
 
+    private final boolean news;
     @Nullable
     private Release release;
     private List<Release> versions = List.of();
@@ -56,20 +60,18 @@ final class UpdateManagerScreen extends ManagerScreen {
     @Nullable
     private Button use;
     @Nullable
-    private Button second;
+    private Button later;
     @Nullable
     private Button retry;
-    // Whether the second button updates once you quit (else it looks for updates), so its tooltip is set once.
-    @Nullable
-    private Boolean secondLater;
 
-    UpdateManagerScreen(@Nullable Screen root) {
-        super(text("title"), root, UPDATES);
+    UpdateManagerScreen(@Nullable Screen root, String part) {
+        super(text(part.equals(VERSIONS) ? "title.versions" : "title"), root, UPDATES);
+        this.news = !part.equals(VERSIONS);
     }
 
     @Override
-    protected Component subtitle() {
-        return text("subtitle.updates");
+    protected List<Tab> tabs() {
+        return this.updatesTabs(this.news ? NEWS : VERSIONS);
     }
 
     @Override
@@ -77,43 +79,48 @@ final class UpdateManagerScreen extends ManagerScreen {
         this.release = UpdateChecker.latest();
         UpdateChecker.loadReleases();
         int x = this.contentX;
-        int buttonsY = this.contentY + this.contentHeight - 20;
-        this.top = this.contentY + CARD + GAP;
-        this.bottom = buttonsY - GAP - (UpdateInstaller.canInstall() ? 0 : 12);
-        // Room for a two-digit day's date and the widest chip on one line.
-        this.listWidth = Mth.clamp(this.contentWidth * 3 / 8, 126, 150);
-        this.notesX = x + this.listWidth + GAP;
+        int end = this.contentY + this.contentHeight;
+        boolean buttons = !this.news || this.release != null;
+        int buttonsY = end - 20;
+        this.top = this.news ? this.contentY + CARD + GAP : this.contentY;
+        this.bottom = buttons ? buttonsY - GAP - (UpdateInstaller.canInstall() ? 0 : 12) : end;
+        // Room for a version, "yours" and a short date on one line.
+        this.listWidth = this.news ? 0 : Mth.clamp(this.contentWidth * 3 / 8, 118, 140);
+        this.notesX = this.news ? x : x + this.listWidth + GAP;
         this.notesWidth = x + this.contentWidth - this.notesX;
         int half = (this.contentWidth - 4) / 2;
         this.use = this.addRenderableWidget(Button.builder(text("versions.use"), button -> this.switchTo())
                 .tooltip(tip(text("versions.tip"))).bounds(x, buttonsY, half, 20).build());
-        this.second = this.addRenderableWidget(Button.builder(text("check"), button -> this.second())
-                .bounds(x + half + 4, buttonsY, this.contentWidth - half - 4, 20).build());
-        this.secondLater = null;
+        this.later = this.addRenderableWidget(Button.builder(text("later"), button -> this.later())
+                .tooltip(tip(text("later.tip"))).bounds(x + half + 4, buttonsY, this.contentWidth - half - 4, 20)
+                .build());
+        int retryX = this.news ? this.notesX : x;
+        int retryWidth = this.news ? Math.min(120, this.notesWidth) : this.listWidth;
         this.retry = this.addRenderableWidget(Button.builder(text("versions.retry"), button -> {
             this.complete = false;
             UpdateChecker.reloadReleases();
-        }).bounds(x + 6, this.top + 38, this.listWidth - 12, 20).build());
+        }).bounds(retryX + 6, this.top + 38, retryWidth - 12, 20).build());
         this.layout();
         this.refreshButtons();
     }
 
     @Override
     public void tick() {
-        Release latest = UpdateChecker.latest();
-        if (latest != this.release) {
-            // A version just came out: it is the one shown.
-            this.release = latest;
+        if (UpdateChecker.latest() != this.release) {
+            // A version just came out: What's new shows it, with the buttons that get it.
             this.chosen = null;
-            this.layout();
-        } else if (!this.complete && (UpdateChecker.releasesIfLoaded() != null || UpdateChecker.releasesFailed())) {
+            this.rebuildWidgets();
+            return;
+        }
+        if (!this.complete && (UpdateChecker.releasesIfLoaded() != null || UpdateChecker.releasesFailed())) {
             this.layout();
         }
         this.refreshButtons();
     }
 
-    // The ten newest versions, and yours under them when it is older; the chosen one's notes, a newer one's with those
-    // of every version between it and yours, so they say all that switching to it brings.
+    // What's new: every version newer than yours, newest first, so the notes say all that updating brings; else yours.
+    // Versions: the ten newest and yours under them when it is older, and the chosen one's notes, a newer one's with
+    // those of every version between it and yours.
     private void layout() {
         List<Release> all = UpdateChecker.releasesIfLoaded();
         this.complete = all != null || UpdateChecker.releasesFailed();
@@ -135,16 +142,19 @@ final class UpdateManagerScreen extends ManagerScreen {
             if (own == null) {
                 note = text("changelog.not_listed", "v" + UpdateChecker.installed());
             }
-            Release pick = this.chosen;
-            if (pick != null) {
-                shown = !newer(pick) ? List.of(pick) : all.stream()
+            Release pick = this.news ? newest(false) : this.chosen;
+            if (pick != null && newer(pick)) {
+                shown = all.stream()
                         .filter(release -> newer(release) && Release.compare(release.version(), pick.version()) <= 0)
                         .toList();
+            } else if (!this.news && pick != null) {
+                shown = List.of(pick);
+            } else if (own != null) {
+                shown = List.of(own);
             }
         }
-        Release newest = newest(false);
-        this.notes = ChangelogLayout.build(this.font, shown, UpdateChecker.installed(),
-                newest == null ? "" : newest.version(), note, this.notesWidth - 2 * PADDING - SCROLLBAR, false);
+        this.notes = ChangelogLayout.build(this.font, shown, UpdateChecker.installed(), note,
+                this.notesWidth - 2 * PADDING - SCROLLBAR, false);
         this.notesContent = this.notes.stream().mapToInt(ChangelogLayout.Block::height).sum() + 2 * PADDING;
         this.scroll = Mth.clamp(this.scroll, 0.0, this.maxScroll());
         this.listScroll = Mth.clamp(this.listScroll, 0.0, this.maxListScroll());
@@ -168,6 +178,12 @@ final class UpdateManagerScreen extends ManagerScreen {
         return Release.compare(release.version(), UpdateChecker.installed()) > 0;
     }
 
+    // A version as the page shows it: "v0.7.3", without the "-alpha" every version carries.
+    static String name(String version) {
+        int dash = version.indexOf('-');
+        return "v" + (dash < 0 ? version : version.substring(0, dash));
+    }
+
     private void choose(Release release) {
         if (release == this.chosen) {
             return;
@@ -178,20 +194,24 @@ final class UpdateManagerScreen extends ManagerScreen {
         this.refreshButtons();
     }
 
+    // What the buttons switch to: the chosen version, or on What's new the newest one with a jar to install.
+    @Nullable
+    private Release target() {
+        return this.news ? newest(true) : this.chosen;
+    }
+
     private void switchTo() {
-        Release pick = this.chosen;
+        Release pick = this.target();
         if (pick != null && !installed(pick)) {
             UpdateInstaller.updateNow(pick);
         }
     }
 
-    // A newer chosen version is put in once the game closes; otherwise this looks for updates.
-    private void second() {
-        Release pick = this.chosen;
+    // A newer version is put in once the game closes.
+    private void later() {
+        Release pick = this.target();
         if (pick != null && newer(pick)) {
             UpdateInstaller.updateLater(pick);
-        } else {
-            UpdateChecker.checkNow();
         }
     }
 
@@ -203,26 +223,23 @@ final class UpdateManagerScreen extends ManagerScreen {
         return Math.max(0, this.versions.size() * ROW + 4 - (this.bottom - this.top));
     }
 
+    // What's new shows its buttons only while a newer version is out; Update on quit only for a newer version, the
+    // other button taking the whole row while it is away.
     private void refreshButtons() {
-        Release pick = this.chosen;
+        Release pick = this.target();
         boolean own = pick != null && installed(pick);
         boolean ahead = pick != null && newer(pick);
+        this.use.visible = !this.news || this.release != null;
+        this.later.visible = this.use.visible && ahead;
+        this.use.setWidth(this.later.visible ? this.later.getX() - 4 - this.use.getX() : this.contentWidth);
         this.use.active = pick != null && !own && UpdateInstaller.canSwitch(pick);
         this.use.setMessage(pick == null ? text("versions.use") : own ? text("versions.installed")
-                : this.quits(text(ahead ? "versions.update_to" : "versions.use_this", "v" + pick.version()),
+                : this.quits(text(ahead ? "versions.update_to" : "versions.use_this", name(pick.version())),
                         this.use.getWidth()));
-        if (!Boolean.valueOf(ahead).equals(this.secondLater)) {
-            this.secondLater = ahead;
-            this.second.setTooltip(tip(ahead ? text("later.tip") : text("auto",
-                    UpdatePopup.OPEN_KEY.getTranslatedKeyMessage())));
-        }
         if (ahead) {
             boolean scheduled = UpdateInstaller.scheduled(pick);
-            this.second.active = !scheduled && UpdateInstaller.canSwitch(pick);
-            this.second.setMessage(text(scheduled ? "versions.on_quit" : "later"));
-        } else {
-            this.second.active = !UpdateChecker.checking();
-            this.second.setMessage(text(UpdateChecker.checking() ? "checking" : "check"));
+            this.later.active = !scheduled && UpdateInstaller.canSwitch(pick);
+            this.later.setMessage(text(scheduled ? "versions.on_quit" : "later"));
         }
         this.retry.visible = UpdateChecker.releasesIfLoaded() == null && UpdateChecker.releasesFailed();
     }
@@ -236,6 +253,25 @@ final class UpdateManagerScreen extends ManagerScreen {
     @Override
     protected void renderPageBackground(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         ScreenAnchors.report("manager", this.contentX, this.contentY, this.contentWidth, this.contentHeight);
+        int height = this.bottom - this.top;
+        if (this.news) {
+            this.drawStatus(graphics, mouseX, mouseY);
+        } else {
+            card(graphics, this.contentX, this.top, this.listWidth, height, 0);
+            ScreenAnchors.report("versions.list", this.contentX, this.top, this.listWidth, height);
+        }
+        card(graphics, this.notesX, this.top, this.notesWidth, height, 0);
+        ScreenAnchors.report("manager.news", this.notesX, this.top, this.notesWidth, height);
+        if (this.use.visible) {
+            Button last = this.later.visible ? this.later : this.use;
+            ScreenAnchors.report("versions.buttons", this.use.getX(), this.use.getY(),
+                    last.getRight() - this.use.getX(), this.use.getHeight());
+        }
+    }
+
+    // The card on top of What's new: a headline in the state's colour, a line under it, its icon (null: a spinner)
+    // and, while nothing is out or on its way, Check now.
+    private void drawStatus(GuiGraphics graphics, int mouseX, int mouseY) {
         Status status = this.status();
         int x = this.contentX;
         int y = this.contentY;
@@ -248,6 +284,18 @@ final class UpdateManagerScreen extends ManagerScreen {
         }
         int textX = x + 40;
         int room = this.contentWidth - 48;
+        if (this.release == null && !UpdateChecker.checking()
+                && UpdateInstaller.state() == UpdateInstaller.State.IDLE) {
+            Component check = text("check");
+            int width = this.font.width(check);
+            int linkX = x + this.contentWidth - 8 - width;
+            this.link(graphics, check, linkX, y + 12, mouseX, mouseY, 0xFF000000 | ACCENT, UpdateChecker::checkNow);
+            ScreenAnchors.report("manager.check", linkX - 2, y + 9, width + 4, 14);
+            if (mouseX >= linkX - 1 && mouseX < linkX + width + 1 && mouseY >= y + 10 && mouseY < y + 22) {
+                this.setTooltipForNextRenderPass(text("auto", UpdatePopup.OPEN_KEY.getTranslatedKeyMessage()));
+            }
+            room = linkX - 10 - textX;
+        }
         graphics.drawString(this.font, firstLine(this.font, status.head(), room), textX, y + 7,
                 0xFF000000 | status.color(), true);
         if (UpdateInstaller.state() == UpdateInstaller.State.DOWNLOADING) {
@@ -255,19 +303,19 @@ final class UpdateManagerScreen extends ManagerScreen {
         } else {
             graphics.drawString(this.font, firstLine(this.font, status.detail(), room), textX, y + 18, MUTED, false);
         }
-        int height = this.bottom - this.top;
-        card(graphics, x, this.top, this.listWidth, height, 0);
-        card(graphics, this.notesX, this.top, this.notesWidth, height, 0);
-        ScreenAnchors.report("versions.list", x, this.top, this.listWidth, height);
-        ScreenAnchors.report("manager.news", this.notesX, this.top, this.notesWidth, height);
-        ScreenAnchors.report("versions.buttons", this.use.getX(), this.use.getY(),
-                this.second.getRight() - this.use.getX(), this.use.getHeight());
     }
 
     @Override
     protected void renderPage(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        this.drawVersions(graphics, mouseX, mouseY);
+        if (!this.news) {
+            this.drawVersions(graphics, mouseX, mouseY);
+        }
         graphics.enableScissor(this.notesX + 1, this.top + 1, this.notesX + this.notesWidth - 1, this.bottom - 1);
+        if (this.news && this.notes.isEmpty()) {
+            Component note = text(UpdateChecker.releasesFailed() ? "versions.failed" : "versions.loading");
+            this.wrap(graphics, note, this.notesX + PADDING, this.top + PADDING, this.notesWidth - 2 * PADDING, MUTED,
+                    3);
+        }
         int y = this.top + PADDING - (int) this.scroll;
         for (ChangelogLayout.Block block : this.notes) {
             if (y + block.height() >= this.top && y <= this.bottom) {
@@ -278,13 +326,13 @@ final class UpdateManagerScreen extends ManagerScreen {
         graphics.flush();
         graphics.disableScissor();
         this.drawScrollbar(graphics, this.notesX + this.notesWidth - SCROLLBAR, this.scroll, this.maxScroll());
-        if (!UpdateInstaller.canInstall()) {
+        if (!UpdateInstaller.canInstall() && this.use.visible) {
             graphics.drawString(this.font, firstLine(this.font, text("test"), this.contentWidth), this.contentX,
                     this.bottom + 3, 0xFF000000 | WARN, false);
         }
     }
 
-    // One row a version: its number, a chip for yours and the latest, and its date under it.
+    // One row a version: its number, "yours" after your own, and the day it came out at the right.
     private void drawVersions(GuiGraphics graphics, int mouseX, int mouseY) {
         int x = this.contentX + 1;
         int width = this.listWidth - 2;
@@ -294,32 +342,25 @@ final class UpdateManagerScreen extends ManagerScreen {
             this.wrap(graphics, note, x + 6, this.top + 6, width - 12, MUTED, 3);
         }
         int hover = this.versionAt(mouseX, mouseY);
-        Release newest = newest(false);
+        int dayRight = x + width - SCROLLBAR - 4;
         for (int i = 0; i < this.versions.size(); i++) {
             Release release = this.versions.get(i);
             int y = this.top + 2 + i * ROW - (int) this.listScroll;
             boolean chosen = release == this.chosen;
-            if (i > 0) {
-                graphics.fill(x + 6, y, x + width - 6, y + 1, 0x14FFFFFF);
-            }
             if (chosen) {
-                graphics.fill(x, y, x + width, y + ROW, 0x38FFFFFF);
-                graphics.fill(x, y, x + width, y + 1, 0x20FFFFFF);
+                graphics.fill(x, y, x + width, y + ROW, 0x30FFFFFF);
                 graphics.fill(x, y, x + 2, y + ROW, 0xFF000000 | UpdatePopup.ACCENT);
             } else if (i == hover) {
-                graphics.fill(x, y, x + width, y + ROW, 0x18FFFFFF);
+                graphics.fill(x, y, x + width, y + ROW, 0x16FFFFFF);
             }
-            graphics.drawString(this.font, "v" + release.version(), x + 7, y + 4, chosen ? 0xFFFFFFFF : 0xFFD8D8D8,
-                    chosen);
-            graphics.drawString(this.font, DATE.format(release.published()), x + 7, y + 14,
-                    chosen ? 0xFFA8A090 : 0xFF000000 | GRAY, false);
-            boolean own = installed(release);
-            Component chip = own ? text("versions.yours")
-                    : newest != null && release.version().equals(newest.version()) ? text("versions.newest") : null;
-            if (chip != null) {
-                this.chip(graphics, chip, x + width - SCROLLBAR - 4 - this.font.width(chip) - 6, y + 13,
-                        own ? 0x5A6270 : UpdatePopup.ACCENT, own ? 0xE8E8E8 : 0x0E1A12);
+            String name = name(release.version());
+            graphics.drawString(this.font, name, x + 7, y + 4, chosen ? TEXT : 0xFFD0D0D0, false);
+            if (installed(release)) {
+                graphics.drawString(this.font, text("versions.yours"), x + 7 + this.font.width(name) + 4, y + 4,
+                        0xFF000000 | UpdatePopup.ACCENT, false);
             }
+            String day = DAY.format(release.published());
+            graphics.drawString(this.font, day, dayRight - this.font.width(day), y + 4, 0xFF000000 | GRAY, false);
         }
         graphics.disableScissor();
         this.drawScrollbar(graphics, this.contentX + this.listWidth - SCROLLBAR, this.listScroll,
@@ -375,8 +416,20 @@ final class UpdateManagerScreen extends ManagerScreen {
         int page = this.bottom - this.top - SCROLL_STEP;
         int at = this.versions.indexOf(this.chosen);
         switch (keyCode) {
-            case GLFW.GLFW_KEY_UP -> this.step(at - 1);
-            case GLFW.GLFW_KEY_DOWN -> this.step(at + 1);
+            case GLFW.GLFW_KEY_UP -> {
+                if (this.news) {
+                    this.scrollBy(-SCROLL_STEP);
+                } else {
+                    this.step(at - 1);
+                }
+            }
+            case GLFW.GLFW_KEY_DOWN -> {
+                if (this.news) {
+                    this.scrollBy(SCROLL_STEP);
+                } else {
+                    this.step(at + 1);
+                }
+            }
             case GLFW.GLFW_KEY_PAGE_UP -> this.scrollBy(-page);
             case GLFW.GLFW_KEY_PAGE_DOWN -> this.scrollBy(page);
             case GLFW.GLFW_KEY_HOME -> this.scrollBy(-this.notesContent);
@@ -414,8 +467,8 @@ final class UpdateManagerScreen extends ManagerScreen {
 
     private Status status() {
         Release target = UpdateInstaller.target();
-        String aimed = target == null ? "?" : "v" + target.version();
-        Component yours = text("detail.yours", "v" + UpdateChecker.installed());
+        String aimed = target == null ? "?" : name(target.version());
+        Component yours = text("detail.yours", name(UpdateChecker.installed()));
         switch (UpdateInstaller.state()) {
             case DOWNLOADING -> {
                 return new Status(text("versions.downloading", aimed,
@@ -436,7 +489,7 @@ final class UpdateManagerScreen extends ManagerScreen {
             }
         }
         if (this.release != null) {
-            return new Status(text("head.available", "v" + this.release.version()), this.released(), WARN,
+            return new Status(text("head.available", name(this.release.version())), this.released(), WARN,
                     PixelIcons.Icon.DOWNLOAD);
         }
         if (UpdateChecker.checking()) {
@@ -448,9 +501,8 @@ final class UpdateManagerScreen extends ManagerScreen {
         if (UpdateChecker.lastCheck() == 0L) {
             return new Status(text("not_checked"), yours, GRAY, PixelIcons.Icon.DOWNLOAD);
         }
-        return new Status(text("head.up_to_date"),
-                text("detail.checked", "v" + UpdateChecker.installed(), ago(UpdateChecker.lastCheck())),
-                ACCENT, PixelIcons.Icon.CHECK);
+        return new Status(text("head.up_to_date"), text("detail.checked", ago(UpdateChecker.lastCheck())), ACCENT,
+                PixelIcons.Icon.CHECK);
     }
 
     private Component released() {

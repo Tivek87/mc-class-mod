@@ -47,6 +47,7 @@ public abstract class NavScreen extends Screen {
     private static final int COMPACT = 26;
     protected static final int PAD = 10;
     private static final int HEADER = 28;
+    private static final int BARE_HEADER = 18;
     private static final int TAB = 14;
     private static final int MIN_CONTENT = 250;
     private static final float GLIDE = 18.0F;
@@ -151,7 +152,7 @@ public abstract class NavScreen extends Screen {
         }
         this.contentX = this.windowX + this.sideWidth + PAD;
         this.contentWidth = this.windowX + this.windowWidth - PAD - this.contentX;
-        this.contentY = this.windowY + TITLE_BAR + 8 + HEADER;
+        this.contentY = this.windowY + TITLE_BAR + 8 + (this.subtitle() == null ? BARE_HEADER : HEADER);
         this.contentHeight = this.windowY + this.windowHeight - 8 - this.contentY;
         this.initPage();
     }
@@ -210,6 +211,7 @@ public abstract class NavScreen extends Screen {
                     && mouseY < this.windowY + 16;
             chip(graphics, tag, x, this.windowY + 5, over ? 0x505050 : 0x343434, over ? 0xFFFFFF : 0xC8C8C8);
             this.links.add(new Link(x, this.windowY + 4, width, 12, this::clickedBrandTag));
+            ScreenAnchors.report("window.tag", x, this.windowY + 4, width, 12);
             free = x;
         }
         // The bar's free middle, between the brand and the tag, for what lies on it.

@@ -15,15 +15,16 @@ import net.minecraft.util.FormattedCharSequence;
 import nl.tivek.multiversepowers.engine.client.gui.GuiShapes;
 import nl.tivek.multiversepowers.engine.client.gui.WipTag;
 
+// A release's notes laid out to read calmly: each version in bold with the day it came out, its headings (Added, Fixed)
+// in their colour and its lines with a quiet dot.
 final class ChangelogLayout {
     static final int BODY = 0xD4D8DE;
     static final int MUTED = 0x8C95A3;
     private static final int CODE = 0x9AD7FF;
-    private static final int INSTALLED_CHIP = 0x9AA6B5;
+    private static final int DOT = 0x6E7682;
     private static final int LINK = 0x7CC4FF;
     private static final int LINE = 10;
     private static final int BULLET_INDENT = 11;
-    private static final float VERSION_SCALE = 1.4F;
     private static final Pattern INLINE = Pattern.compile("\\*\\*(.+?)\\*\\*|`([^`]+)`|\\[([^\\]]+)]\\([^)]*\\)");
 
     interface Block {
@@ -35,9 +36,9 @@ final class ChangelogLayout {
     private ChangelogLayout() {
     }
 
-    // `newest`: the latest release's version, which gets a chip of its own; `banner`: the unfinished-mod banner on top.
-    static List<Block> build(Font font, List<Release> releases, String installed, String newest,
-            @Nullable Component note, int width, boolean banner) {
+    // `banner`: the unfinished-mod banner on top.
+    static List<Block> build(Font font, List<Release> releases, String installed, @Nullable Component note, int width,
+            boolean banner) {
         List<Block> blocks = new ArrayList<>();
         if (banner) {
             blocks.add(wip(font, width));
@@ -47,10 +48,7 @@ final class ChangelogLayout {
                 blocks.add(divider(width));
             }
             Release release = releases.get(i);
-            boolean isInstalled = Release.compare(release.version(), installed) == 0;
-            Component chip = isInstalled ? UpdateManagerScreen.text("changelog.installed")
-                    : release.version().equals(newest) ? UpdateManagerScreen.text("changelog.newest") : null;
-            blocks.add(header(font, release, chip, isInstalled ? INSTALLED_CHIP : UpdatePopup.ACCENT, width));
+            blocks.add(header(font, release, Release.compare(release.version(), installed) == 0, width));
             notes(font, release.notes(), width, blocks);
         }
         if (note != null) {
@@ -63,7 +61,6 @@ final class ChangelogLayout {
     }
 
     private static void notes(Font font, String notes, int width, List<Block> blocks) {
-        int accent = colorOf("");
         StringBuilder bullet = null;
         StringBuilder paragraph = null;
         boolean any = false;
@@ -72,7 +69,7 @@ final class ChangelogLayout {
             boolean startsBlock = line.isEmpty() || line.startsWith("#") || line.startsWith("- ")
                     || line.startsWith("* ") || line.equals("---") || line.equals("***");
             if (startsBlock) {
-                any |= flush(font, bullet, paragraph, accent, width, blocks);
+                any |= flush(font, bullet, paragraph, width, blocks);
                 bullet = null;
                 paragraph = null;
             }
@@ -80,8 +77,7 @@ final class ChangelogLayout {
                 break;
             } else if (line.startsWith("#")) {
                 String heading = line.replaceFirst("^#+\\s*", "");
-                accent = colorOf(heading);
-                blocks.add(label(font, heading, accent));
+                blocks.add(label(font, heading, colorOf(heading)));
                 any = true;
             } else if (line.startsWith("- ") || line.startsWith("* ")) {
                 bullet = new StringBuilder(line.substring(2).strip());
@@ -95,16 +91,16 @@ final class ChangelogLayout {
                 }
             }
         }
-        any |= flush(font, bullet, paragraph, accent, width, blocks);
+        any |= flush(font, bullet, paragraph, width, blocks);
         if (!any) {
             blocks.add(text(font, UpdateManagerScreen.text("changelog.empty").copy().withColor(MUTED), 0, -1, width));
         }
     }
 
-    private static boolean flush(Font font, StringBuilder bullet, StringBuilder paragraph, int accent, int width,
+    private static boolean flush(Font font, StringBuilder bullet, StringBuilder paragraph, int width,
             List<Block> blocks) {
         if (bullet != null) {
-            blocks.add(text(font, inline(bullet.toString()), BULLET_INDENT, accent, width));
+            blocks.add(text(font, inline(bullet.toString()), BULLET_INDENT, DOT, width));
             return true;
         }
         if (paragraph != null) {
@@ -153,59 +149,49 @@ final class ChangelogLayout {
         return out;
     }
 
-    private static Block header(Font font, Release release, @Nullable Component label, int chipColor, int width) {
-        Component version = Component.literal("v" + release.version()).withStyle(ChatFormatting.BOLD);
-        Component chip = label == null ? null : label.copy().withStyle(ChatFormatting.BOLD);
-        int taken = (int) Math.ceil(font.width(version) * VERSION_SCALE) + (chip == null ? 0 : font.width(chip) + 15);
+    // The version in bold, "yours" after your own, and the day it came out at the right (under it where it is narrow).
+    private static Block header(Font font, Release release, boolean yours, int width) {
+        Component version = Component.literal(UpdateManagerScreen.name(release.version()))
+                .withStyle(ChatFormatting.BOLD);
+        Component mark = yours ? UpdateManagerScreen.text("versions.yours") : null;
+        int taken = font.width(version) + (mark == null ? 0 : 5 + font.width(mark));
         Component full = Component.literal(UpdateManagerScreen.DATE_TIME.format(release.published()));
         Component date = taken + 8 + font.width(full) <= width ? full
                 : Component.literal(UpdateManagerScreen.DATE.format(release.published()));
-        // Too narrow to share the line: the date goes under the version.
         boolean below = taken + 8 + font.width(date) > width;
         return new Block() {
             @Override
             public int height() {
-                return below ? 33 : 24;
+                return below ? 25 : 15;
             }
 
             @Override
             public void draw(GuiGraphics graphics, int x, int y) {
-                int versionWidth = (int) Math.ceil(font.width(version) * VERSION_SCALE);
-                if (chip != null) {
-                    int chipX = x + versionWidth + 7;
-                    int chipWidth = font.width(chip) + 8;
-                    graphics.fill(chipX, y + 5, chipX + chipWidth, y + 16, 0xFF000000 | chipColor);
-                    graphics.fill(chipX, y + 15, chipX + chipWidth, y + 16, 0x50000000);
-                    graphics.drawString(font, chip, chipX + 4, y + 7, 0xFF0E2A1C, false);
+                graphics.drawString(font, version, x, y + 1, 0xFFFFFFFF, false);
+                if (mark != null) {
+                    graphics.drawString(font, mark, x + font.width(version) + 5, y + 1,
+                            0xFF000000 | UpdatePopup.ACCENT, false);
                 }
-                graphics.pose().pushPose();
-                graphics.pose().translate(x, y + 4, 0.0F);
-                graphics.pose().scale(VERSION_SCALE, VERSION_SCALE, 1.0F);
-                graphics.drawString(font, version, 0, 0, 0xFFFFFFFF, true);
-                graphics.pose().popPose();
                 if (below) {
-                    graphics.drawString(font, date, x, y + 21, 0xFF000000 | MUTED, false);
+                    graphics.drawString(font, date, x, y + 12, 0xFF000000 | MUTED, false);
                 } else {
-                    graphics.drawString(font, date, x + width - font.width(date), y + 7, 0xFF000000 | MUTED, false);
+                    graphics.drawString(font, date, x + width - font.width(date), y + 1, 0xFF000000 | MUTED, false);
                 }
             }
         };
     }
 
     private static Block label(Font font, String heading, int color) {
-        Component text = Component.literal(heading.toUpperCase(Locale.ROOT)).withStyle(ChatFormatting.BOLD);
+        Component text = Component.literal(heading).withStyle(ChatFormatting.BOLD);
         return new Block() {
             @Override
             public int height() {
-                return 18;
+                return 15;
             }
 
             @Override
             public void draw(GuiGraphics graphics, int x, int y) {
-                GuiShapes.roundRect(graphics, x, y + 3, font.width(text) + 10, 12, 3.0F, GuiShapes.fade(color, 0.22F));
-                GuiShapes.roundRect(graphics, x, y + 3, 2.0F, 12, 1.0F, 0xFF000000 | color);
-                GuiShapes.flush(graphics);
-                graphics.drawString(font, text, x + 6, y + 5, 0xFF000000 | color, false);
+                graphics.drawString(font, text, x, y + 3, 0xFF000000 | color, false);
             }
         };
     }
@@ -215,7 +201,7 @@ final class ChangelogLayout {
         return new Block() {
             @Override
             public int height() {
-                return lines.size() * LINE + 4;
+                return lines.size() * LINE + 5;
             }
 
             @Override

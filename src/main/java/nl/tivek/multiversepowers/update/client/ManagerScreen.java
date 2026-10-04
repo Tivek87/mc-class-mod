@@ -14,11 +14,13 @@ import nl.tivek.multiversepowers.engine.client.gui.NavScreen;
 import nl.tivek.multiversepowers.engine.client.gui.PixelIcons;
 import nl.tivek.multiversepowers.update.client.tour.Tour;
 
-// The update manager: one window with its pages down the left (updates with every version, feedback: a bug report, an
-// idea or the ones you sent) and the tour of what is new; each page, or part of one, is one of these. The version on
+// The update manager: one window with its pages down the left (updates: what is new and every version; feedback: a bug
+// report, an idea or the ones you submitted) and the tour; each page, or part of one, is one of these. The version on
 // the title bar copies what a bug report wants to know about your game.
 public abstract class ManagerScreen extends NavScreen {
     public static final String UPDATES = "updates";
+    public static final String NEWS = "news";
+    public static final String VERSIONS = "versions";
     public static final String FEEDBACK = "feedback";
     public static final String BUG = "bug";
     public static final String IDEA = "idea";
@@ -34,12 +36,12 @@ public abstract class ManagerScreen extends NavScreen {
         super(title, root, page);
     }
 
-    // Opens the manager on its first page; closing it returns to `root`.
+    // Opens the manager on what is new; closing it returns to `root`.
     public static void open(@Nullable Screen root) {
-        Minecraft.getInstance().setScreen(new UpdateManagerScreen(root));
+        open(root, NEWS);
     }
 
-    // Opens the page or feedback part `id`, keeping where the manager returns to.
+    // Opens the page or part `id` (the updates page on what is new), keeping where the manager returns to.
     public static void open(@Nullable Screen root, String id) {
         String part = id.equals(FEEDBACK) ? feedback : id;
         if (part.equals(BUG) || part.equals(IDEA) || part.equals(REPORTS)) {
@@ -49,11 +51,17 @@ public abstract class ManagerScreen extends NavScreen {
             case BUG -> BugReportScreen.bug(root);
             case IDEA -> BugReportScreen.idea(root);
             case REPORTS -> BugReportScreen.reports(root);
-            default -> new UpdateManagerScreen(root);
+            case VERSIONS -> new UpdateManagerScreen(root, VERSIONS);
+            default -> new UpdateManagerScreen(root, NEWS);
         });
     }
 
-    // The feedback page's parts: a bug report, an idea and the ones you sent, `picked` open.
+    // The updates page's parts: what is new and every version, `picked` open.
+    protected List<Tab> updatesTabs(String picked) {
+        return List.of(this.tab(NEWS, null, picked), this.tab(VERSIONS, null, picked));
+    }
+
+    // The feedback page's parts: a bug report, an idea and the ones you submitted, `picked` open.
     protected List<Tab> feedbackTabs(String picked) {
         int sent = BugReportScreen.sentCount();
         return List.of(this.tab(BUG, null, picked), this.tab(IDEA, null, picked),

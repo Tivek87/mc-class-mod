@@ -14,15 +14,16 @@ the game it shows for 15 seconds; on the title screen and in the pause menu it s
 of **Mods** on the title screen and in the pause menu does too (a green dot on it while a newer version is out). It
 has three pages, **Updates**, **Feedback** and **Tour**: switch with the sidebar, **Ctrl+Tab** or the number keys.
 
-**Updates** says on top whether you are up to date or which version is out, when it came out and how big it is. Under
-that the last ten versions are listed on the left, as the Minecraft launcher lists its versions, each with the day and
-time it came out (yours marked YOURS, the newest LATEST, with your own added under them when it is older), and the
-notes of the one you pick on the right, laid out by section; the newest is picked when the page opens, and a version
-newer than yours shows everything new since yours. **Update to ... (quits)** or **Use ... (quits)** switches to the
-version you picked, newer or older: it downloads it, saves and quits the game, and puts it in place of the one you
-have; start the game again in your launcher. **Update on quit** downloads a newer version now and puts it in place
-when you close the game; up to date, **Check for updates** looks again at once. Every download is checked against the
-release page's checksum before it is used.
+**Updates** has two parts, switched at its top right. **What's new** says on top whether you are up to date or which
+version is out, when it came out and how big it is, and under that what the newer versions bring, or what yours
+brought when you are up to date. Only while a newer version is out are there two buttons under it: **Update to ...
+(quits)** downloads it, saves and quits the game, and puts it in place of the one you have (start the game again in
+your launcher), and **Update on quit** downloads it now and puts it in place when you close the game. Up to date,
+**Check now** on the card looks again at once. **Versions** lists the last ten versions on the left, as the Minecraft
+launcher lists its versions, one line each with the day it came out (yours marked, with your own added under them when
+it is older), and the notes of the one you pick on the right; a version newer than yours shows everything new since
+yours. **Use ... (quits)** switches to the version you picked, newer or older, the same way. Every download is checked
+against the release page's checksum before it is used.
 
 After an update a short tour shows what is new in the version you have, and only that. On the title screen a card
 asks **What's new**: **Show me**, **Later** or **Skip**. When a newer version is already out, the card says so first
@@ -39,12 +40,12 @@ it says which version they run and which you have, with **Back to main menu** (n
 (quits)** (your version is switched to theirs and the game quits, so after you start it again you can join).
 
 **Feedback** has three tabs at its top. **Bug** sends a bug or glitch straight to the mod's makers: give it a short
-name, a description and a priority (low, medium or high) and press **Send**; your Minecraft name and version go with
+name, a description and a priority (low, medium or high) and press **Submit**; your Minecraft name and version go with
 it, and you get the report's number. **Idea** works the same way for your own ideas: a short name, a description and
-a priority. Reports and ideas are public on the mod's GitHub page. What you type stays until you send it, also when
-you leave the screen, die or close the game. **Sent** lists your last 3 reports and your last 3 ideas, newest first:
-name, priority, number, date, the status on GitHub (open, fixed or added, not planned) and the title as it is on
-GitHub now; sending a fourth drops the oldest of its kind.
+a priority. Reports and ideas are public on the mod's GitHub page. What you type stays until you submit it, also when
+you leave the screen, die or close the game. **Submitted** lists your last 3 reports and your last 3 ideas, newest
+first: name, priority, number, date, the status on GitHub (open, fixed or added, not planned) and the title as it is on
+GitHub now; submitting a fourth drops the oldest of its kind.
 
 - [Classes and skill trees](CLASSES.md)
 - [Callings and Crowns](CALLINGS.md)

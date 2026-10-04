@@ -21,15 +21,15 @@ across the multiverse you can turn into.
   click it in the menu, press **U** (changeable under Controls) or the small arrow button right of **Mods** on the
   title screen or in the pause menu (a green dot on it while a newer version is out) for the update manager. It is
   one window with three pages, **Updates**, **Feedback** and **Tour** (switch with the tabs, **Ctrl+Tab** or the
-  number keys). **Updates** says whether you are up to date and lists the last ten versions with their notes: update
-  on quit (installed when you close the game), or switch to any version now (the game quits, then start it again
-  yourself).
+  number keys). **Updates** says whether you are up to date and what the newer version brings (**What's new**), and
+  lists the last ten versions with their notes (**Versions**): update on quit (installed when you close the game), or
+  switch to any version now (the game quits, then start it again yourself).
 - **Tour:** after an update a short tour asks on the title screen, then points at what is new in your version right
   where it is; on an older version it first suggests updating. **Tour** in the update manager plays it again any time.
 - **Bug reports:** **Feedback → Bug** in the update manager sends a bug with a name, a description and a priority. It
-  becomes a public issue on this repository, with your Minecraft name. What you type is kept until you send it, also
-  when you leave the screen, die or close the game; **Feedback → Sent** shows your last 3 reports with their status on
-  GitHub.
+  becomes a public issue on this repository, with your Minecraft name. What you type is kept until you submit it, also
+  when you leave the screen, die or close the game; **Feedback → Submitted** shows your last 3 reports with their
+  status on GitHub.
 - **Ideas:** **Feedback → Idea** sends an idea the same way, with a name, a description and a priority, and keeps your
   text and your last 3 ideas the same way.
 
