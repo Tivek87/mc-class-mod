@@ -12,121 +12,147 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
-import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
-import net.minecraft.util.FormattedCharSequence;
-import net.minecraft.util.Mth;
 import net.neoforged.neoforge.network.PacketDistributor;
 import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.config.WorldSettingsEditPayload;
-import nl.tivek.multiversepowers.engine.client.gui.DirtBackgroundScreen;
-import nl.tivek.multiversepowers.engine.client.gui.WipTag;
+import nl.tivek.multiversepowers.engine.client.gui.NavScreen;
+import nl.tivek.multiversepowers.engine.client.gui.PixelIcons;
+import nl.tivek.multiversepowers.engine.client.gui.ScreenAnchors;
 
-public class SettingsScreen extends DirtBackgroundScreen {
+// The settings: one window in the update manager's look, its pages down the left: your own game, the world's power
+// rules and stamina, then each character. A change waits, marked, until Save or until the window closes; Undo drops
+// what waits. A world's pages are only for its host or a listed owner, in that world (the server checks again).
+public final class SettingsScreen extends NavScreen {
     private static final String PREFIX = "config." + MultiversePowers.MODID + ".";
-    private static final int MAX_WIDTH = 520;
-    private static final int TABS_Y = 22;
-    private static final int SEARCH_Y = 44;
-    private static final int LIST_TOP = 64;
-    private static final int HELP_HEIGHT = 32;
-    private static final int FOOTER = 30;
-    private static final int CHANGED = 0xF2C84B;
+    private static final int SEARCH = 110;
+    private static final int FOOTER = 24;
 
-    @Nullable
-    private final Screen lastScreen;
-    private final List<SettingsPages.Page> pages;
-    private final Map<ConfigNumber, SettingsPages.Page> pageOf = new IdentityHashMap<>();
-    private final Map<ConfigNumber, Double> edits = new IdentityHashMap<>();
-    private final Set<String> collapsed = new HashSet<>();
-    private final List<Button> tabs = new ArrayList<>();
-    private int tab;
-    private String query = "";
-    private SettingsList list;
-    @Nullable
-    private ConfigNumber pointed;
-    private int panelLeft;
-    private int panelWidth;
-    private boolean rebuildLater;
-    private boolean keepScrollLater;
-    private boolean retabLater;
+    // What one visit to the window keeps from page to page.
+    private static final class Visit {
+        private final List<SettingsPages.Page> pages = SettingsPages.all();
+        private final Map<ConfigNumber, SettingsPages.Page> pageOf = new IdentityHashMap<>();
+        private final Map<ConfigNumber, Double> edits = new IdentityHashMap<>();
+        private final Set<String> collapsed = new HashSet<>();
+        private String query = "";
 
-    public enum Kind { CLIENT, SERVER }
-
-    public SettingsScreen(@Nullable Screen lastScreen, Kind kind, int tab) {
-        super(Component.translatable(PREFIX + "title." + kind.name().toLowerCase(Locale.ROOT)));
-        this.lastScreen = lastScreen;
-        this.pages = kind == Kind.CLIENT ? SettingsPages.clientPages() : SettingsPages.serverPages();
-        this.tab = Mth.clamp(tab, 0, this.pages.size() - 1);
-        for (SettingsPages.Page page : this.pages) {
-            for (SettingsPages.Section section : page.sections()) {
-                for (SettingsPages.Group group : section.groups()) {
-                    for (ConfigNumber number : group.numbers()) {
-                        this.pageOf.put(number, page);
+        private Visit() {
+            for (SettingsPages.Page page : this.pages) {
+                for (SettingsPages.Section section : page.sections()) {
+                    for (SettingsPages.Group group : section.groups()) {
+                        for (ConfigNumber number : group.numbers()) {
+                            this.pageOf.put(number, page);
+                        }
                     }
                 }
             }
         }
+
+        private SettingsPages.Page page(String id) {
+            return this.pages.stream().filter(page -> page.id().equals(id)).findFirst().orElse(this.pages.get(0));
+        }
+    }
+
+    private final Visit visit;
+    private final SettingsPages.Page page;
+    private SettingsList list;
+    private Button defaults;
+    private Button undo;
+    private Button save;
+    private boolean rebuildLater;
+    private boolean keepScrollLater;
+
+    private SettingsScreen(@Nullable Screen root, Visit visit, SettingsPages.Page page) {
+        super(page.title(), root, page.id());
+        this.visit = visit;
+        this.page = page;
+    }
+
+    // The window on `page` (an id of `SettingsPages` or a character's); closing it returns to `root`.
+    public static Screen create(@Nullable Screen root, String page) {
+        Visit visit = new Visit();
+        return new SettingsScreen(root, visit, visit.page(page));
     }
 
     @Override
-    protected void init() {
-        this.panelWidth = Math.min(this.width - 12, MAX_WIDTH);
-        this.panelLeft = (this.width - this.panelWidth) / 2;
-        int inner = this.panelWidth - 12;
-        int left = this.panelLeft + 6;
-        int right = left + inner;
-
-        this.tabs.clear();
-        int count = this.pages.size();
-        int tabWidth = (inner - (count - 1) * 2) / count;
-        for (int i = 0; i < count; i++) {
-            int index = i;
-            Button button = Button.builder(this.tabLabel(i), pressed -> this.selectTab(index))
-                    .bounds(left + i * (tabWidth + 2), TABS_Y, tabWidth, 18).build();
-            this.tabs.add(this.addRenderableWidget(button));
+    protected List<Item> items() {
+        List<Item> items = new ArrayList<>();
+        SettingsPages.Page last = null;
+        for (SettingsPages.Page page : this.visit.pages) {
+            boolean line = last != null && (page.world() != last.world()
+                    || (page.character() == null) != (last.character() == null));
+            items.add(new Item(page.id(), page.title(), page.icon(), () -> this.open(page), false, line));
+            last = page;
         }
+        return items;
+    }
 
-        EditBox search = new EditBox(this.font, left + 1, SEARCH_Y + 1, inner - 2 * 64 - 6, 16,
+    private void open(SettingsPages.Page page) {
+        this.visit.query = "";
+        this.minecraft.setScreen(new SettingsScreen(this.root, this.visit, page));
+    }
+
+    @Override
+    protected Component brand() {
+        return Component.translatable(PREFIX + "brand");
+    }
+
+    @Override
+    protected PixelIcons.Icon brandIcon() {
+        return PixelIcons.Icon.GEAR;
+    }
+
+    // A page with changes not saved yet.
+    @Override
+    @Nullable
+    protected Badge badge(String id) {
+        boolean waiting = this.visit.edits.keySet().stream()
+                .anyMatch(number -> this.visit.pageOf.get(number).id().equals(id));
+        return waiting ? new Badge(null, WARN) : null;
+    }
+
+    // Whom the page is for, or why it cannot be changed now.
+    @Override
+    protected Component subtitle() {
+        if (!this.page.world()) {
+            return this.page.editable() ? Component.translatable(PREFIX + "about.game")
+                    : Component.translatable(PREFIX + "locked").withColor(WARN);
+        }
+        if (this.page.editable()) {
+            return Component.translatable(PREFIX + "about.world");
+        }
+        boolean inWorld = this.minecraft != null && this.minecraft.level != null;
+        return Component.translatable(PREFIX + (inWorld ? "about.read_only" : "about.no_world")).withColor(WARN);
+    }
+
+    // Search at the right of the page's title; under the list Defaults, and Undo and Save for what waits.
+    @Override
+    protected void initPage() {
+        int top = this.windowY + TITLE_BAR + 8;
+        int room = this.contentWidth - this.font.width(this.title.copy().withStyle(ChatFormatting.BOLD)) - 12;
+        int width = Math.max(60, Math.min(SEARCH, room));
+        EditBox search = new EditBox(this.font, this.contentX + this.contentWidth - width, top - 3, width, 14,
                 Component.translatable(PREFIX + "search"));
         search.setHint(Component.translatable(PREFIX + "search.hint").withStyle(ChatFormatting.DARK_GRAY));
         search.setMaxLength(40);
-        search.setValue(this.query);
+        search.setValue(this.visit.query);
         search.setResponder(text -> {
-            this.query = text;
+            this.visit.query = text;
             this.rebuildLater(false);
         });
         this.addRenderableWidget(search);
-        this.addRenderableWidget(Button.builder(Component.translatable(PREFIX + "expand"), pressed -> {
-            this.collapsed.clear();
-            this.rebuildLater(true);
-        }).bounds(right - 2 * 64 - 2, SEARCH_Y, 64, 18)
-                .tooltip(Tooltip.create(Component.translatable(PREFIX + "expand.desc"))).build());
-        this.addRenderableWidget(Button.builder(Component.translatable(PREFIX + "collapse"), pressed -> {
-            SettingsPages.Page page = this.pages.get(this.tab);
-            for (int i = 0; i < page.sections().size(); i++) {
-                this.collapsed.add(this.key(this.tab, i));
-            }
-            this.rebuildLater(false);
-        }).bounds(right - 64, SEARCH_Y, 64, 18)
-                .tooltip(Tooltip.create(Component.translatable(PREFIX + "collapse.desc"))).build());
-
-        int buttonsY = this.height - 26;
-        int buttonWidth = Math.min(100, (inner - 3 * 4) / 4);
-        int start = this.width / 2 - (4 * buttonWidth + 3 * 4) / 2;
-        this.addRenderableWidget(Button.builder(Component.translatable(PREFIX + "defaults"), pressed -> this.defaults())
-                .bounds(start, buttonsY, buttonWidth, 20)
-                .tooltip(Tooltip.create(Component.translatable(PREFIX + "defaults.desc"))).build());
-        this.addRenderableWidget(Button.builder(Component.translatable(PREFIX + "apply"), pressed -> this.apply())
-                .bounds(start + buttonWidth + 4, buttonsY, buttonWidth, 20)
-                .tooltip(Tooltip.create(Component.translatable(PREFIX + "apply.desc"))).build());
-        this.addRenderableWidget(Button.builder(Component.translatable(PREFIX + "save"), pressed -> {
-            this.apply();
-            this.onClose();
-        }).bounds(start + 2 * (buttonWidth + 4), buttonsY, buttonWidth, 20).build());
-        this.addRenderableWidget(Button.builder(CommonComponents.GUI_CANCEL, pressed -> this.onClose())
-                .bounds(start + 3 * (buttonWidth + 4), buttonsY, buttonWidth, 20).build());
+        int y = this.contentY + this.contentHeight - 20;
+        int right = this.contentX + this.contentWidth;
+        this.defaults = this.addRenderableWidget(Button.builder(Component.translatable(PREFIX + "defaults"),
+                button -> this.defaults()).tooltip(tip(Component.translatable(PREFIX + "defaults.desc")))
+                .bounds(this.contentX, y, 70, 20).build());
+        this.undo = this.addRenderableWidget(Button.builder(Component.translatable(PREFIX + "undo"),
+                button -> this.undo()).tooltip(tip(Component.translatable(PREFIX + "undo.desc")))
+                .bounds(right - 132, y, 64, 20).build());
+        this.save = this.addRenderableWidget(Button.builder(Component.translatable(PREFIX + "save"),
+                button -> this.apply()).tooltip(tip(Component.translatable(PREFIX + "save.desc")))
+                .bounds(right - 64, y, 64, 20).build());
         this.rebuild(true);
     }
 
@@ -135,34 +161,29 @@ public class SettingsScreen extends DirtBackgroundScreen {
         if (this.list != null) {
             this.removeWidget(this.list);
         }
-        int left = this.panelLeft + 6;
-        int bottom = this.height - FOOTER - HELP_HEIGHT;
-        this.list = new SettingsList(this.minecraft, this, this.blocks(), left, LIST_TOP, this.panelWidth - 12,
-                bottom - LIST_TOP);
+        this.list = new SettingsList(this.minecraft, this, this.blocks(), this.contentX, this.contentY,
+                this.contentWidth, this.contentHeight - FOOTER);
         this.addRenderableWidget(this.list);
         if (keepScroll) {
             this.list.setClampedScrollAmount(scroll);
         }
-        for (int i = 0; i < this.tabs.size(); i++) {
-            this.tabs.get(i).setMessage(this.tabLabel(i));
-        }
+        this.refreshButtons();
     }
 
+    // The page's parts; while searching, what matches on every page.
     private List<SettingsList.Block> blocks() {
         List<SettingsList.Block> blocks = new ArrayList<>();
-        String wanted = this.query.trim().toLowerCase(Locale.ROOT);
+        String wanted = this.visit.query.trim().toLowerCase(Locale.ROOT);
         if (wanted.isEmpty()) {
-            SettingsPages.Page page = this.pages.get(this.tab);
-            for (int i = 0; i < page.sections().size(); i++) {
-                SettingsPages.Section section = page.sections().get(i);
-                String key = this.key(this.tab, i);
-                blocks.add(new SettingsList.Block(key, section.title(), section.hint(), section.about(), page.color(),
-                        true, this.collapsed.contains(key), section.groups()));
+            for (int i = 0; i < this.page.sections().size(); i++) {
+                SettingsPages.Section section = this.page.sections().get(i);
+                String key = this.page.id() + ":" + i;
+                blocks.add(new SettingsList.Block(key, section.title(), section.hint(), section.about(),
+                        this.page.color(), true, this.visit.collapsed.contains(key), section.groups()));
             }
             return blocks;
         }
-        for (int p = 0; p < this.pages.size(); p++) {
-            SettingsPages.Page page = this.pages.get(p);
+        for (SettingsPages.Page page : this.visit.pages) {
             for (SettingsPages.Section section : page.sections()) {
                 boolean all = matches(section.title(), wanted);
                 List<SettingsPages.Group> groups = new ArrayList<>();
@@ -192,21 +213,11 @@ public class SettingsScreen extends DirtBackgroundScreen {
         return text.getString().toLowerCase(Locale.ROOT).contains(wanted);
     }
 
-    private String key(int page, int section) {
-        return page + ":" + section;
-    }
-
     void toggle(String key) {
-        if (!this.collapsed.remove(key)) {
-            this.collapsed.add(key);
+        if (!this.visit.collapsed.remove(key)) {
+            this.visit.collapsed.add(key);
         }
         this.rebuildLater(true);
-    }
-
-    private void selectTab(int index) {
-        this.tab = index;
-        this.query = "";
-        this.retabLater = true;
     }
 
     // Deferred: a click still walks the widget list, which a rebuild now would change under it.
@@ -215,53 +226,60 @@ public class SettingsScreen extends DirtBackgroundScreen {
         this.rebuildLater = true;
     }
 
-    private Component tabLabel(int index) {
-        SettingsPages.Page page = this.pages.get(index);
-        boolean changed = this.edits.keySet().stream().anyMatch(number -> this.pageOf.get(number) == page);
-        Component label = changed ? Component.empty().append(page.title()).append(" •") : page.title();
-        return index == this.tab && this.query.isBlank() ? label.copy().withStyle(ChatFormatting.YELLOW,
-                ChatFormatting.UNDERLINE) : label;
-    }
-
     double value(ConfigNumber number) {
-        Double edited = this.edits.get(number);
+        Double edited = this.visit.edits.get(number);
         return edited != null ? edited : number.clamp(number.stored().getAsDouble());
     }
 
     void set(ConfigNumber number, double value) {
         if (Math.abs(value - number.clamp(number.stored().getAsDouble())) < 1.0E-9) {
-            this.edits.remove(number);
+            this.visit.edits.remove(number);
         } else {
-            this.edits.put(number, value);
+            this.visit.edits.put(number, value);
         }
-        for (int i = 0; i < this.tabs.size(); i++) {
-            this.tabs.get(i).setMessage(this.tabLabel(i));
-        }
+        this.refreshButtons();
     }
 
     boolean editable(ConfigNumber number) {
-        SettingsPages.Page page = this.pageOf.get(number);
+        SettingsPages.Page page = this.visit.pageOf.get(number);
         return page != null && page.editable();
     }
 
-    void pointAt(@Nullable ConfigNumber number) {
-        this.pointed = number;
+    // Changed but not saved yet.
+    boolean waiting(ConfigNumber number) {
+        return this.visit.edits.containsKey(number);
     }
 
+    private void refreshButtons() {
+        boolean waiting = !this.visit.edits.isEmpty();
+        this.undo.active = waiting;
+        this.save.active = waiting;
+        this.defaults.active = this.list != null && this.list.numbers().stream().anyMatch(this::editable);
+    }
+
+    // Every setting in the list back to the mod's own value, waiting like any change.
     private void defaults() {
         for (ConfigNumber number : this.list.numbers()) {
-            this.set(number, number.defaultValue());
+            if (this.editable(number)) {
+                this.set(number, number.defaultValue());
+            }
         }
         this.rebuildLater(true);
+    }
+
+    private void undo() {
+        this.visit.edits.clear();
+        this.rebuildLater(true);
+        this.refreshButtons();
     }
 
     private void apply() {
         Set<SettingsPages.Page> touched = new HashSet<>();
         List<WorldSettingsEditPayload.Entry> sent = new ArrayList<>();
         boolean remote = this.minecraft == null || !this.minecraft.hasSingleplayerServer();
-        for (Map.Entry<ConfigNumber, Double> edit : this.edits.entrySet()) {
+        for (Map.Entry<ConfigNumber, Double> edit : this.visit.edits.entrySet()) {
             ConfigNumber number = edit.getKey();
-            SettingsPages.Page page = this.pageOf.get(number);
+            SettingsPages.Page page = this.visit.pageOf.get(number);
             if (page == null || !page.editable()) {
                 continue;
             }
@@ -279,90 +297,48 @@ public class SettingsScreen extends DirtBackgroundScreen {
         if (!sent.isEmpty()) {
             PacketDistributor.sendToServer(new WorldSettingsEditPayload(sent));
         }
-        this.edits.clear();
+        this.visit.edits.clear();
         this.rebuildLater(true);
-    }
-
-    @Override
-    public void renderBackground(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        if (this.minecraft != null && this.minecraft.level != null) {
-            this.renderTransparentBackground(graphics);
-        } else {
-            super.renderBackground(graphics, mouseX, mouseY, partialTick);
-        }
-        drawPanel(graphics, this.panelLeft, 4, this.panelWidth, this.height - 8, PANEL_BORDER);
-        this.drawBigCenteredString(graphics, this.title, this.width / 2, 8, 1.1F, 0xFFFFD255);
-        WipTag.chip(graphics, this.font, this.width / 2 + (int) Math.ceil(this.font.width(this.title) * 0.55F) + 6, 6);
+        this.refreshButtons();
     }
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        if (this.retabLater) {
-            this.retabLater = false;
-            this.rebuildLater = false;
-            this.list = null;
-            this.rebuildWidgets();
-        } else if (this.rebuildLater) {
+        if (this.rebuildLater) {
             this.rebuildLater = false;
             this.rebuild(this.keepScrollLater);
         }
-        this.pointed = null;
         super.render(graphics, mouseX, mouseY, partialTick);
-        this.renderHelp(graphics);
-    }
-
-    private void renderHelp(GuiGraphics graphics) {
-        int center = this.width / 2;
-        int left = this.panelLeft + 8;
-        int width = this.panelWidth - 16;
-        int top = this.height - FOOTER - HELP_HEIGHT + 3;
-        drawDivider(graphics, left - 2, top - 2, width + 4);
-        Component line;
-        int color;
-        SettingsPages.Page page = this.pages.get(this.tab);
-        boolean inWorld = this.minecraft != null && this.minecraft.level != null;
-        if (this.pointed != null) {
-            line = this.pointed.description().getString().isEmpty() ? this.pointed.label()
-                    : this.pointed.description();
-            color = TEXT_COLOR;
-        } else if (page.world() && !page.editable()) {
-            line = Component.translatable(PREFIX + (inWorld ? "server_decides" : "world_closed"));
-            color = NOTICE_COLOR;
-        } else if (!page.editable()) {
-            line = Component.translatable(PREFIX + "locked");
-            color = NOTICE_COLOR;
-        } else {
-            line = Component.translatable(PREFIX + (page.world() ? "world_help" : "client_help"));
-            color = MUTED_COLOR;
-        }
-        List<FormattedCharSequence> lines = this.font.split(line, width);
-        for (int i = 0; i < Math.min(2, lines.size()); i++) {
-            graphics.drawString(this.font, lines.get(i), left, top + i * 10, color);
-        }
-        if (!this.edits.isEmpty()) {
-            Component changed = Component.translatable(PREFIX + "unsaved", this.edits.size());
-            graphics.drawString(this.font, changed, left + width - this.font.width(changed), top + 20, CHANGED);
-        }
-        if (this.list != null && this.list.children().isEmpty()) {
-            graphics.drawCenteredString(this.font, Component.translatable(PREFIX + "search.none"), center,
-                    LIST_TOP + 12, MUTED_COLOR);
-        }
     }
 
     @Override
-    public boolean shouldCloseOnEsc() {
-        return true;
+    protected void renderPageBackground(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        ScreenAnchors.report("settings", this.contentX, this.contentY, this.contentWidth, this.contentHeight);
     }
 
+    // Between the buttons, how many changes wait; over an empty list, that nothing matches the search.
     @Override
-    public boolean isPauseScreen() {
-        return true;
+    protected void renderPage(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        int count = this.visit.edits.size();
+        if (count > 0) {
+            int left = this.contentX + 74;
+            int room = this.contentWidth - 74 - 136;
+            Component waiting = Component.translatable(PREFIX + "unsaved", count);
+            graphics.drawString(this.font, this.fit(waiting, room), left + Math.max(0,
+                    (room - this.font.width(waiting)) / 2), this.contentY + this.contentHeight - 14, 0xFF000000 | WARN,
+                    false);
+        }
+        if (this.list != null && this.list.children().isEmpty() && !this.visit.query.isBlank()) {
+            Component none = Component.translatable(PREFIX + "search.none");
+            graphics.drawString(this.font, none, this.contentX + (this.contentWidth - this.font.width(none)) / 2,
+                    this.contentY + 12, MUTED, false);
+        }
     }
 
+    // Closing keeps what waits, as the game's own options do.
     @Override
     public void onClose() {
-        if (this.minecraft != null) {
-            this.minecraft.setScreen(this.lastScreen);
-        }
+        this.apply();
+        super.onClose();
     }
 }

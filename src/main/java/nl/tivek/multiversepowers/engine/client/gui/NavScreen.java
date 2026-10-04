@@ -9,6 +9,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.MultiLineEditBox;
 import net.minecraft.client.gui.components.Tooltip;
+import net.minecraft.client.gui.components.events.ContainerEventHandler;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
@@ -56,7 +57,11 @@ public abstract class NavScreen extends Screen {
     private static float shownPick = Float.NaN;
     private static long lastFrame;
 
-    public record Item(String id, Component label, PixelIcons.Icon icon, Runnable open, boolean gap) {
+    // `gap`: an action rather than a page (a tour), under a line and left out of Ctrl+Tab; `line`: a line above it.
+    public record Item(String id, Component label, PixelIcons.Icon icon, Runnable open, boolean gap, boolean line) {
+        public Item(String id, Component label, PixelIcons.Icon icon, Runnable open, boolean gap) {
+            this(id, label, icon, open, gap, gap);
+        }
     }
 
     // A small mark on an item: a dot when `text` is null, else a chip.
@@ -92,6 +97,12 @@ public abstract class NavScreen extends Screen {
         super(title);
         this.root = root;
         this.page = page;
+    }
+
+    // Where closing the window returns to.
+    @Nullable
+    public Screen root() {
+        return this.root;
     }
 
     protected abstract List<Item> items();
@@ -232,7 +243,7 @@ public abstract class NavScreen extends Screen {
         int pickY = -1;
         int y = top + 6;
         for (Item item : this.items) {
-            if (item.gap()) {
+            if (item.line()) {
                 graphics.fill(this.windowX + 8, y + GAP / 2, this.windowX + this.sideWidth - 8, y + GAP / 2 + 1, RIM);
                 y += GAP;
             }
@@ -250,7 +261,7 @@ public abstract class NavScreen extends Screen {
         }
         y = top + 6;
         for (Item item : this.items) {
-            if (item.gap()) {
+            if (item.line()) {
                 y += GAP;
             }
             boolean picked = item.id().equals(this.page);
@@ -342,7 +353,7 @@ public abstract class NavScreen extends Screen {
     private Item itemAt(double mouseX, double mouseY) {
         int y = this.windowY + TITLE_BAR + 6;
         for (Item item : this.items) {
-            if (item.gap()) {
+            if (item.line()) {
                 y += GAP;
             }
             if (this.over(item, y, mouseX, mouseY)) {
@@ -387,7 +398,7 @@ public abstract class NavScreen extends Screen {
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        boolean typing = this.getFocused() instanceof EditBox || this.getFocused() instanceof MultiLineEditBox;
+        boolean typing = this.typing();
         if (keyCode == GLFW.GLFW_KEY_TAB && hasControlDown()) {
             this.step(hasShiftDown() ? -1 : 1);
             return true;
@@ -421,9 +432,12 @@ public abstract class NavScreen extends Screen {
         }
     }
 
-    // Whether a text field has the keys, so letters and numbers go there.
+    // Whether a text field has the keys, so letters and numbers go there: also one in a list's row.
     protected boolean typing() {
         GuiEventListener focused = this.getFocused();
+        while (focused instanceof ContainerEventHandler container && container.getFocused() != null) {
+            focused = container.getFocused();
+        }
         return focused instanceof EditBox || focused instanceof MultiLineEditBox;
     }
 

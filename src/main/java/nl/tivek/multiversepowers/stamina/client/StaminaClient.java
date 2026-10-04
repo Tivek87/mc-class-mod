@@ -82,15 +82,13 @@ public final class StaminaClient {
                 Commands.literal("stamina")
                         .executes(ctx -> {
                             Minecraft mc = Minecraft.getInstance();
-                            mc.tell(() -> mc.setScreen(new SettingsScreen(null, SettingsScreen.Kind.SERVER,
-                                    SettingsPages.STAMINA_TAB)));
+                            mc.tell(() -> mc.setScreen(SettingsScreen.create(null, SettingsPages.STAMINA)));
                             return 1;
                         })
                         .then(Commands.literal("config")
                                 .executes(ctx -> {
                                     Minecraft mc = Minecraft.getInstance();
-                                    mc.tell(() -> mc.setScreen(new SettingsScreen(null, SettingsScreen.Kind.SERVER,
-                                            SettingsPages.STAMINA_TAB)));
+                                    mc.tell(() -> mc.setScreen(SettingsScreen.create(null, SettingsPages.STAMINA)));
                                     return 1;
                                 }))
         );

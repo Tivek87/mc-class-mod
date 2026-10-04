@@ -84,8 +84,8 @@ final class UpdateManagerScreen extends ManagerScreen {
         int buttonsY = end - 20;
         this.top = this.news ? this.contentY + CARD + GAP : this.contentY;
         this.bottom = buttons ? buttonsY - GAP - (UpdateInstaller.canInstall() ? 0 : 12) : end;
-        // Room for a version, "yours" and a short date on one line.
-        this.listWidth = this.news ? 0 : Mth.clamp(this.contentWidth * 3 / 8, 118, 140);
+        // Room for a version, its tag and a short date (or "yours") on one line.
+        this.listWidth = this.news ? 0 : Mth.clamp(this.contentWidth * 3 / 8, 136, 144);
         this.notesX = this.news ? x : x + this.listWidth + GAP;
         this.notesWidth = x + this.contentWidth - this.notesX;
         int half = (this.contentWidth - 4) / 2;
@@ -140,7 +140,7 @@ final class UpdateManagerScreen extends ManagerScreen {
                 this.chosen = listed.isEmpty() ? null : listed.get(0);
             }
             if (own == null) {
-                note = text("changelog.not_listed", "v" + UpdateChecker.installed());
+                note = text("changelog.not_listed", name(UpdateChecker.installed()));
             }
             Release pick = this.news ? newest(false) : this.chosen;
             if (pick != null && newer(pick)) {
@@ -178,10 +178,10 @@ final class UpdateManagerScreen extends ManagerScreen {
         return Release.compare(release.version(), UpdateChecker.installed()) > 0;
     }
 
-    // A version as the page shows it: "v0.7.3", without the "-alpha" every version carries.
+    // A version as the update screens show it: "v0.7.3", without the ending its tag shows (`Stage`).
     static String name(String version) {
         int dash = version.indexOf('-');
-        return "v" + (dash < 0 ? version : version.substring(0, dash));
+        return "v" + (dash < 0 || Stage.of(version) == null ? version : version.substring(0, dash));
     }
 
     private void choose(Release release) {
@@ -269,8 +269,8 @@ final class UpdateManagerScreen extends ManagerScreen {
         }
     }
 
-    // The card on top of What's new: a headline in the state's colour, a line under it, its icon (null: a spinner)
-    // and, while nothing is out or on its way, Check now.
+    // The card on top of What's new: a headline in the state's colour (with the tag of a version that is out), a line
+    // under it, its icon (null: a spinner) and, while nothing is out or on its way, Check now.
     private void drawStatus(GuiGraphics graphics, int mouseX, int mouseY) {
         Status status = this.status();
         int x = this.contentX;
@@ -296,8 +296,12 @@ final class UpdateManagerScreen extends ManagerScreen {
             }
             room = linkX - 10 - textX;
         }
-        graphics.drawString(this.font, firstLine(this.font, status.head(), room), textX, y + 7,
-                0xFF000000 | status.color(), true);
+        FormattedCharSequence head = firstLine(this.font, status.head(), room);
+        graphics.drawString(this.font, head, textX, y + 7, 0xFF000000 | status.color(), true);
+        int tagX = textX + this.font.width(head) + 5;
+        if (status.stage() != null && tagX + status.stage().width(this.font) <= textX + room) {
+            status.stage().draw(graphics, this.font, tagX, y + 6);
+        }
         if (UpdateInstaller.state() == UpdateInstaller.State.DOWNLOADING) {
             bar(graphics, textX, y + 20, room, UpdateInstaller.progress(), ACCENT);
         } else {
@@ -332,7 +336,7 @@ final class UpdateManagerScreen extends ManagerScreen {
         }
     }
 
-    // One row a version: its number, "yours" after your own, and the day it came out at the right.
+    // One row a version: its number and tag, and at the right the day it came out, or "yours" on your own.
     private void drawVersions(GuiGraphics graphics, int mouseX, int mouseY) {
         int x = this.contentX + 1;
         int width = this.listWidth - 2;
@@ -353,14 +357,15 @@ final class UpdateManagerScreen extends ManagerScreen {
             } else if (i == hover) {
                 graphics.fill(x, y, x + width, y + ROW, 0x16FFFFFF);
             }
-            String name = name(release.version());
-            graphics.drawString(this.font, name, x + 7, y + 4, chosen ? TEXT : 0xFFD0D0D0, false);
-            if (installed(release)) {
-                graphics.drawString(this.font, text("versions.yours"), x + 7 + this.font.width(name) + 4, y + 4,
-                        0xFF000000 | UpdatePopup.ACCENT, false);
+            Stage.drawVersion(graphics, this.font, release.version(), x + 7, y + 4, chosen ? TEXT : 0xFFD0D0D0);
+            boolean own = installed(release);
+            Component right = own ? text("versions.yours") : Component.literal(DAY.format(release.published()));
+            graphics.drawString(this.font, right, dayRight - this.font.width(right), y + 4,
+                    0xFF000000 | (own ? UpdatePopup.ACCENT : GRAY), false);
+            if (Stage.of(release.version()) != null && !ScreenAnchors.shown("versions.stage") && y >= this.top
+                    && y + ROW <= this.bottom) {
+                ScreenAnchors.report("versions.stage", x, y, width, ROW);
             }
-            String day = DAY.format(release.published());
-            graphics.drawString(this.font, day, dayRight - this.font.width(day), y + 4, 0xFF000000 | GRAY, false);
         }
         graphics.disableScissor();
         this.drawScrollbar(graphics, this.contentX + this.listWidth - SCROLLBAR, this.listScroll,
@@ -461,8 +466,13 @@ final class UpdateManagerScreen extends ManagerScreen {
         return lines.isEmpty() ? FormattedCharSequence.EMPTY : lines.get(0);
     }
 
-    // What the card says: a headline in the state's colour, a line under it, and its icon (null: a spinner).
-    private record Status(Component head, Component detail, int color, @Nullable PixelIcons.Icon icon) {
+    // What the card says: a headline in the state's colour, a line under it, its icon (null: a spinner), and the stage
+    // of the version it names.
+    private record Status(Component head, Component detail, int color, @Nullable PixelIcons.Icon icon,
+            @Nullable Stage stage) {
+        Status(Component head, Component detail, int color, @Nullable PixelIcons.Icon icon) {
+            this(head, detail, color, icon, null);
+        }
     }
 
     private Status status() {
@@ -490,7 +500,7 @@ final class UpdateManagerScreen extends ManagerScreen {
         }
         if (this.release != null) {
             return new Status(text("head.available", name(this.release.version())), this.released(), WARN,
-                    PixelIcons.Icon.DOWNLOAD);
+                    PixelIcons.Icon.DOWNLOAD, Stage.of(this.release.version()));
         }
         if (UpdateChecker.checking()) {
             return new Status(text("checking"), yours, GRAY, null);

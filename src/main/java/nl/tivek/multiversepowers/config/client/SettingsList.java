@@ -20,18 +20,23 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
 import nl.tivek.multiversepowers.MultiversePowers;
+import nl.tivek.multiversepowers.config.Unit;
+import nl.tivek.multiversepowers.engine.client.gui.NavScreen;
 
+// The settings window's list: each part under a title in its page's colour (click it to fold it shut), and a row for
+// every setting: a number with its steps, or one button for a switch or a choice.
 final class SettingsList extends ContainerObjectSelectionList<SettingsList.Row> {
     static final int ROW_HEIGHT = 20;
     private static final String PREFIX = "config." + MultiversePowers.MODID + ".";
     private static final Pattern NUMBER = Pattern.compile("-?[0-9]*\\.?[0-9]*");
     private static final int TEXT = 0xFFFFFF;
-    private static final int CHANGED = 0xF2C84B;
+    private static final int CHANGED = NavScreen.WARN;
     private static final int MEANING = 0x7CF29C;
+    private static final int OFF = 0xA0A0A0;
     private static final int WRONG = 0xFF6464;
     private static final int GROUP = 0x9CC8A8;
-    private static final int LINE = 0x40FFFFFF;
-    private static final int HOVER = 0x18FFFFFF;
+    private static final int LINE = 0x1CFFFFFF;
+    private static final int HOVER = 0x14FFFFFF;
 
     record Block(String key, Component title, @Nullable Component hint, @Nullable Component about, int color,
             boolean collapsible, boolean collapsed, List<SettingsPages.Group> groups) {
@@ -75,7 +80,7 @@ final class SettingsList extends ContainerObjectSelectionList<SettingsList.Row> 
 
     @Override
     public int getRowWidth() {
-        return this.width - 16;
+        return this.width - 18;
     }
 
     @Override
@@ -85,13 +90,11 @@ final class SettingsList extends ContainerObjectSelectionList<SettingsList.Row> 
 
     @Override
     protected void renderListBackground(GuiGraphics graphics) {
-        graphics.fill(this.getX(), this.getY(), this.getRight(), this.getBottom(), 0x50000000);
+        NavScreen.card(graphics, this.getX(), this.getY(), this.width, this.height, 0);
     }
 
     @Override
     protected void renderListSeparators(GuiGraphics graphics) {
-        graphics.fill(this.getX(), this.getY() - 1, this.getRight(), this.getY(), LINE);
-        graphics.fill(this.getX(), this.getBottom(), this.getRight(), this.getBottom() + 1, LINE);
     }
 
     private static FormattedCharSequence fit(Font font, Component text, int width) {
@@ -126,13 +129,12 @@ final class SettingsList extends ContainerObjectSelectionList<SettingsList.Row> 
             if (hovering && this.block.collapsible()) {
                 graphics.fill(left - 2, top, left + width + 2, top + height, HOVER);
             }
+            graphics.fill(left - 2, top + 4, left, top + height - 4, 0xFF000000 | this.block.color());
             int y = top + (height - 8) / 2;
             int hintWidth = font.width(this.hint);
-            graphics.drawString(font, fit(font, this.title, width - hintWidth - 8), left, y,
-                    0xFF000000 | this.block.color());
-            graphics.drawString(font, this.hint, left + width - hintWidth, y, 0xFFA8A090);
-            graphics.fill(left, top + height - 1, left + width, top + height, 0x80000000 | (this.block.color()
-                    & 0xFFFFFF));
+            graphics.drawString(font, fit(font, this.title, width - hintWidth - 16), left + 4, y, 0xFFFFFFFF);
+            graphics.drawString(font, this.hint, left + width - hintWidth - 4, y, 0xFF8E8E8E);
+            graphics.fill(left, top + height - 1, left + width, top + height, LINE);
             if (hovering && this.block.about() != null) {
                 List<FormattedCharSequence> lines = new ArrayList<>();
                 lines.add(this.block.title().copy().withStyle(ChatFormatting.WHITE).getVisualOrderText());
@@ -194,8 +196,11 @@ final class SettingsList extends ContainerObjectSelectionList<SettingsList.Row> 
 
     private final class NumberRow extends Row {
         private final ConfigNumber number;
+        // A switch or a choice: one button that goes on to the next value.
+        private final boolean pick;
         private final Button minus;
         private final Button plus;
+        private final Button next;
         private final Button reset;
         private final EditBox box;
         private double value;
@@ -203,6 +208,7 @@ final class SettingsList extends ContainerObjectSelectionList<SettingsList.Row> 
 
         NumberRow(ConfigNumber number) {
             this.number = number;
+            this.pick = number.unit() == Unit.SWITCH || number.choices() != null;
             this.value = SettingsList.this.screen.value(number);
             Font font = SettingsList.this.minecraft.font;
             Component steps = Component.translatable(PREFIX + "steps");
@@ -220,10 +226,25 @@ final class SettingsList extends ContainerObjectSelectionList<SettingsList.Row> 
             this.box.setFilter(text -> NUMBER.matcher(text).matches());
             this.box.setValue(number.format(this.value));
             this.box.setResponder(this::typed);
+            this.next = Button.builder(this.shown(), button -> this.set(this.following())).size(76, 16).build();
             boolean editable = SettingsList.this.screen.editable(number);
             this.minus.active = editable;
             this.plus.active = editable;
+            this.next.active = editable;
             this.box.setEditable(editable);
+        }
+
+        // A switch flips; a choice goes on to the next, after the last back to the first.
+        private double following() {
+            double next = this.value + 1.0;
+            return next > this.number.max() + 1.0E-9 ? this.number.min() : next;
+        }
+
+        // What the button of a switch or a choice says: on in green, off in grey, a choice by its name.
+        private Component shown() {
+            Component meaning = this.number.meaning(this.value);
+            return this.number.unit() != Unit.SWITCH ? meaning
+                    : meaning.copy().withColor(this.value >= 0.5 ? MEANING : OFF);
         }
 
         private void typed(String text) {
@@ -243,6 +264,7 @@ final class SettingsList extends ContainerObjectSelectionList<SettingsList.Row> 
         void set(double value) {
             this.value = this.number.clamp(value);
             this.box.setValue(this.number.format(this.value));
+            this.next.setMessage(this.shown());
             SettingsList.this.screen.set(this.number, this.value);
         }
 
@@ -262,29 +284,35 @@ final class SettingsList extends ContainerObjectSelectionList<SettingsList.Row> 
             Font font = SettingsList.this.minecraft.font;
             if (hovering) {
                 graphics.fill(left - 2, top, left + width + 2, top + height, HOVER);
-                SettingsList.this.screen.pointAt(this.number);
             }
-            int labelWidth = Math.max(80, (int) (width * 0.40));
+            if (SettingsList.this.screen.waiting(this.number)) {
+                graphics.fill(left - 2, top + 4, left, top + height - 4, 0xFF000000 | CHANGED);
+            }
+            int labelWidth = Math.max(80, (int) (width * 0.42));
             int x = left + labelWidth + 4;
-            this.minus.setPosition(x, top + 2);
-            this.box.setPosition(x + 16, top + 2);
-            this.plus.setPosition(x + 62, top + 2);
-            this.reset.setPosition(x + 78, top + 2);
-            this.reset.visible = this.changed() && SettingsList.this.screen.editable(this.number);
-            this.minus.render(graphics, mouseX, mouseY, partialTick);
-            this.box.render(graphics, mouseX, mouseY, partialTick);
-            this.plus.render(graphics, mouseX, mouseY, partialTick);
-            this.reset.render(graphics, mouseX, mouseY, partialTick);
-
             int textY = top + (height - 8) / 2;
-            graphics.drawString(font, fit(font, this.number.label(), labelWidth - 4), left, textY,
+            this.reset.visible = this.changed() && SettingsList.this.screen.editable(this.number);
+            this.reset.setPosition(x + 78, top + 2);
+            if (this.pick) {
+                this.next.setPosition(x, top + 2);
+                this.next.render(graphics, mouseX, mouseY, partialTick);
+            } else {
+                this.minus.setPosition(x, top + 2);
+                this.box.setPosition(x + 16, top + 2);
+                this.plus.setPosition(x + 62, top + 2);
+                this.minus.render(graphics, mouseX, mouseY, partialTick);
+                this.box.render(graphics, mouseX, mouseY, partialTick);
+                this.plus.render(graphics, mouseX, mouseY, partialTick);
+                int meaningX = x + 96;
+                Component meaning = this.valid ? this.number.meaning(this.value)
+                        : Component.translatable(PREFIX + "range", this.number.format(this.number.min()),
+                                this.number.format(this.number.max()));
+                graphics.drawString(font, fit(font, meaning, left + width - meaningX), meaningX, textY,
+                        0xFF000000 | (this.valid ? MEANING : WRONG));
+            }
+            this.reset.render(graphics, mouseX, mouseY, partialTick);
+            graphics.drawString(font, fit(font, this.number.label(), labelWidth - 6), left + 4, textY,
                     0xFF000000 | (this.changed() ? CHANGED : TEXT));
-            int meaningX = x + 96;
-            Component meaning = this.valid ? this.number.meaning(this.value)
-                    : Component.translatable(PREFIX + "range", this.number.format(this.number.min()),
-                            this.number.format(this.number.max()));
-            graphics.drawString(font, fit(font, meaning, left + width - meaningX), meaningX, textY,
-                    0xFF000000 | (this.valid ? MEANING : WRONG));
 
             if (mouseX >= left && mouseX < left + labelWidth && mouseY >= top && mouseY < top + height) {
                 SettingsList.this.screen.setTooltipForNextRenderPass(this.tooltip(font));
@@ -298,6 +326,11 @@ final class SettingsList extends ContainerObjectSelectionList<SettingsList.Row> 
                 lines.addAll(font.split(this.number.description().copy().withStyle(ChatFormatting.GRAY), 220));
             }
             double standard = this.number.defaultValue();
+            if (this.pick) {
+                lines.add(Component.translatable(PREFIX + "default.plain", this.number.meaning(standard))
+                        .withStyle(ChatFormatting.GREEN).getVisualOrderText());
+                return lines;
+            }
             lines.add(Component.translatable(PREFIX + "default", this.number.format(standard),
                     this.number.meaning(standard)).withStyle(ChatFormatting.GREEN).getVisualOrderText());
             lines.add(Component.translatable(PREFIX + "range", this.number.format(this.number.min()),
@@ -307,12 +340,14 @@ final class SettingsList extends ContainerObjectSelectionList<SettingsList.Row> 
 
         @Override
         public List<? extends GuiEventListener> children() {
-            return List.of(this.minus, this.box, this.plus, this.reset);
+            return this.pick ? List.<GuiEventListener>of(this.next, this.reset)
+                    : List.<GuiEventListener>of(this.minus, this.box, this.plus, this.reset);
         }
 
         @Override
         public List<? extends NarratableEntry> narratables() {
-            return List.of(this.minus, this.box, this.plus, this.reset);
+            return this.pick ? List.<NarratableEntry>of(this.next, this.reset)
+                    : List.<NarratableEntry>of(this.minus, this.box, this.plus, this.reset);
         }
     }
 

@@ -29,7 +29,8 @@ import nl.tivek.multiversepowers.character.thor.client.pose.ThorHammerLayer;
 import nl.tivek.multiversepowers.character.thor.client.pose.ThorPoses;
 import nl.tivek.multiversepowers.config.ModConfigs;
 import nl.tivek.multiversepowers.config.client.ClientSettings;
-import nl.tivek.multiversepowers.config.client.ConfigChoiceScreen;
+import nl.tivek.multiversepowers.config.client.SettingsPages;
+import nl.tivek.multiversepowers.config.client.SettingsScreen;
 import nl.tivek.multiversepowers.engine.client.pose.BodyTurns;
 import nl.tivek.multiversepowers.engine.client.pose.Poses;
 import nl.tivek.multiversepowers.engine.client.pose.Tired;
@@ -48,7 +49,7 @@ public final class MultiversePowersClient {
         Tour.ranBefore(Files.exists(FMLPaths.CONFIGDIR.get().resolve(ModConfigs.file("client"))));
         container.registerConfig(ModConfig.Type.CLIENT, ClientSettings.SPEC, ModConfigs.file("client"));
         container.registerExtensionPoint(IConfigScreenFactory.class,
-                (mod, parent) -> new ConfigChoiceScreen(parent));
+                (mod, parent) -> SettingsScreen.create(parent, SettingsPages.GAME));
         modEventBus.addListener(GreenLanternSuitLayer::onAddLayers);
         modEventBus.addListener(ThorHammerLayer::onAddLayers);
         modEventBus.addListener(ThorHeld::onAddLayers);

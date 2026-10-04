@@ -47,6 +47,7 @@ public final class UpdatePopup {
     private static final long SLIDE_MS = 350L;
     private static final long FADE_MS = 600L;
     private static final int SECOND_NOTE_TICKS = 3;
+    private static final String ARROW = "  →  ";
 
     @Nullable
     private static Release shown;
@@ -154,7 +155,6 @@ public final class UpdatePopup {
     private static void draw(GuiGraphics graphics, Font font, int screenWidth, int top, long age, float alpha,
             boolean hover, Component hint) {
         Component title = ManagerScreen.text("popup.title").copy().withStyle(ChatFormatting.BOLD);
-        Component versions = versions();
         Component line = hint.copy().withColor(MUTED);
         width = measure(font, hint);
         float slide = 1.0F - Mth.clamp(age / (float) SLIDE_MS, 0.0F, 1.0F);
@@ -167,22 +167,24 @@ public final class UpdatePopup {
         graphics.fill(x, top, x + 2, top + HEIGHT, 0xFF000000 | ACCENT);
         PixelIcons.draw(graphics, PixelIcons.Icon.DOWNLOAD, x + 12, top + 11, 2, 0xFF000000 | ACCENT, true);
         graphics.drawString(font, title, x + TEXT_X, top + 7, 0xFFFFFFFF, false);
-        graphics.drawString(font, versions, x + TEXT_X, top + 19, 0xFF000000 | MUTED, false);
+        drawVersions(graphics, font, x + TEXT_X, top + 19);
         graphics.drawString(font, line, x + TEXT_X, top + 31, 0xFF000000 | MUTED, false);
         graphics.flush();
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
     }
 
-    private static Component versions() {
-        return Component.empty()
-                .append(Component.literal("v" + UpdateChecker.installed()).withColor(MUTED))
-                .append(Component.literal("  →  ").withColor(MUTED))
-                .append(Component.literal("v" + shown.version()).withColor(ACCENT));
+    // Yours, and the one that is out with its tag.
+    private static void drawVersions(GuiGraphics graphics, Font font, int x, int y) {
+        String yours = UpdateManagerScreen.name(UpdateChecker.installed()) + ARROW;
+        graphics.drawString(font, yours, x, y, 0xFF000000 | MUTED, false);
+        Stage.drawVersion(graphics, font, shown.version(), x + font.width(yours), y, 0xFF000000 | ACCENT);
     }
 
     private static int measure(Font font, Component hint) {
         Component title = ManagerScreen.text("popup.title").copy().withStyle(ChatFormatting.BOLD);
-        return Math.max(MIN_WIDTH, Math.max(font.width(title), Math.max(font.width(versions()), font.width(hint)))
-                + TEXT_X + PADDING);
+        int versions = font.width(UpdateManagerScreen.name(UpdateChecker.installed()) + ARROW)
+                + Stage.versionWidth(font, shown.version());
+        return Math.max(MIN_WIDTH, Math.max(font.width(title), Math.max(versions, font.width(hint))) + TEXT_X
+                + PADDING);
     }
 }

@@ -72,10 +72,10 @@ public abstract class ManagerScreen extends NavScreen {
         return new Tab(id, text("tab." + id), count, id.equals(picked), () -> open(this.root, id));
     }
 
-    // Where the manager open now returns to, or the screen itself when it is no manager.
+    // Where the window open now (the manager, the settings) returns to, or the screen itself when it is no such window.
     @Nullable
     public static Screen rootOf(@Nullable Screen screen) {
-        return screen instanceof ManagerScreen manager ? manager.root : screen;
+        return screen instanceof NavScreen window ? window.root() : screen;
     }
 
     public static Component text(String key, Object... args) {
@@ -106,7 +106,8 @@ public abstract class ManagerScreen extends NavScreen {
 
     @Override
     protected Component brandTag() {
-        return Util.getMillis() - copiedAt < COPIED_MS ? text("copied") : Component.literal("v" + UpdateChecker.installed());
+        return Util.getMillis() - copiedAt < COPIED_MS ? text("copied")
+                : Component.literal(UpdateManagerScreen.name(UpdateChecker.installed()));
     }
 
     @Override

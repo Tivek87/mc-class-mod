@@ -1,16 +1,14 @@
 # Laatste sessie
 
-## 0.7.4-alpha: commit, push en release (2026-10-04)
-- Verzoek: commit, push en release van 0.7.4.
-- In deze release: rustiger update manager + Submitted (5bff3dd), tour van manager en ability-UI + paneel 3 s
-  (53a5731), tour van alles sinds 0.6.6 met uitlegkaart, `TourCoverageTest` + pre-push hook, kortere README
-  (commit 3), IDE-waarschuwingen weg (commit 4, met Project-regel in de changelog).
-- Vooraf getest: build groen, tour in game gelopen (427x240, 38 kaarten passen), hook laat de push door.
-- Volgende release: `release.ps1 prepare`, `TourSteps.FROM` = `VERSION` = nieuwe versie, elke regel een stap.
-- Open: bugs #59 #60 #61 #63 (high); #62 is een verzoek (antwoord nodig); ideeën #25 #31 #32 #33 #24.
+## 0.7.5-alpha (2026-10-04)
+- Verzoek: tag alleen waar nodig, tour korter en alleen grote wijzigingen, tour direct na update, nieuwe config-UI.
+- Tags alleen in versielijst, statuskaart, popup en serverversie; elders `v0.7.5` zonder einde (`Stage`).
+- Instellingen: `SettingsScreen` op `NavScreen` (pagina's, zoeken, schakelaar = 1 knop, Defaults/Undo/Save,
+  sluiten bewaart); `ConfigChoiceScreen` weg; tourplek `Place.SETTINGS`.
+- Tour: `TitleScreenMixin` + `Tour.underOverlay` (vraag al tijdens uitfaden laadscherm), vraag-pil in game,
+  `TourSteps.SMALL`, woordlimiet in `TourCoverageTest`; regel in CLAUDE.md.
+- Review-fix: `NavScreen.typing()` kijkt ook in lijstrijen (cijfer in getalveld wisselde pagina).
+- Getest: build groen; 3 game-runs (menu + wereld, klein/groot, opslaan/sluiten, /stamina, popup, mismatch).
+- Daarna: Thor-abilities storm + bliksembom. Open: bugs #59 #60 #61 #63 (high), #62 verzoek, ideeën #24 #25 #31-#33.
 - `docs/ideas/THOR_MJOLNIR_FLIGHT_SYSTEM*.md` (andere sessie) niet meecommitten.
-
-## Thor-ontwerp (andere sessie, 2026-10-02)
-- Ontwerp `docs/ideas/THOR_MJOLNIR_FLIGHT_SYSTEM.md` + `_SHORT.md` (niet gecommit, van die sessie). Besloten:
-  Throw and Follow = getimede dash, gewone worp max 24. Open: 10 beslissingen in §9; daarna fase 0 bouwen.
 

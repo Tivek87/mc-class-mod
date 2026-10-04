@@ -54,7 +54,8 @@ final class VersionMismatchScreen extends Screen {
         int y = this.top + HEIGHT - PAD - 20;
         this.addRenderableWidget(Button.builder(text("back"), button -> this.minecraft.setScreen(new TitleScreen()))
                 .bounds(x, y, half, 20).build());
-        this.change = this.addRenderableWidget(Button.builder(text("switch", "v" + this.server), button -> {
+        Component label = text("switch", UpdateManagerScreen.name(this.server));
+        this.change = this.addRenderableWidget(Button.builder(label, button -> {
             Release release = this.release();
             if (release != null) {
                 UpdateInstaller.updateNow(release);
@@ -104,9 +105,13 @@ final class VersionMismatchScreen extends Screen {
         int inner = this.panelWidth - PAD * 2;
         int y = this.top + TITLE_BAR + 8;
         NavScreen.card(graphics, x, y, inner, 30, UpdatePopup.ACCENT);
-        this.row(graphics, text("server"), "v" + this.server, 0xFF000000 | UpdatePopup.ACCENT, x + 8, x + inner - 8,
-                y + 6);
-        this.row(graphics, text("yours"), "v" + UpdateChecker.installed(), 0xFFFFFFFF, x + 8, x + inner - 8, y + 17);
+        int end = x + inner - 8;
+        graphics.drawString(this.font, text("server"), x + 8, y + 6, MUTED, false);
+        Stage.drawVersion(graphics, this.font, this.server, end - Stage.versionWidth(this.font, this.server), y + 6,
+                0xFF000000 | UpdatePopup.ACCENT);
+        String yours = UpdateManagerScreen.name(UpdateChecker.installed());
+        graphics.drawString(this.font, text("yours"), x + 8, y + 17, MUTED, false);
+        graphics.drawString(this.font, yours, end - this.font.width(yours), y + 17, 0xFFFFFFFF, false);
         y += 38;
         List<FormattedCharSequence> lines = this.font.split(text("how"), inner);
         for (int i = 0; i < Math.min(3, lines.size()); i++) {
@@ -115,14 +120,9 @@ final class VersionMismatchScreen extends Screen {
         this.status(graphics, x, inner, this.top + HEIGHT - PAD - 20 - 17);
     }
 
-    private void row(GuiGraphics graphics, Component label, String value, int color, int x, int right, int y) {
-        graphics.drawString(this.font, label, x, y, MUTED, false);
-        graphics.drawString(this.font, value, right - this.font.width(value), y, color, false);
-    }
-
     // Above the buttons: the download while it runs, else why the switch cannot be made yet.
     private void status(GuiGraphics graphics, int x, int width, int y) {
-        String version = "v" + this.server;
+        String version = UpdateManagerScreen.name(this.server);
         Component text;
         int color = MUTED;
         if (UpdateInstaller.state() == UpdateInstaller.State.DOWNLOADING) {

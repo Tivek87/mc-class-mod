@@ -3,6 +3,30 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.7.5-alpha] - 2026-10-04
+
+### Added
+- **Update manager:** a tag says whether a version is an **ALPHA**, a **BETA** or a **RELEASE**, read from the end of
+  its name, which the update screens no longer show: in the list of versions, beside a newer version that is out, in the
+  update popup and on the screen for a server that runs another version.
+
+### Changed
+- **Settings:** a new settings window in the update manager's look: a page each down the left (your game, the world's
+  power rules, stamina, every character), a search box, switches and choices as one button, and **Defaults**, **Undo**
+  and **Save** under the list; closing it keeps your changes.
+- **Tour:** shorter cards, and only big changes get one; small changes and fixes are in the notes only.
+- **Update manager:** in the list of versions your own version says yours at the right, where the others show their
+  day.
+- **Project:** `TourCoverageTest` lets small changes (`TourSteps.SMALL`) and fixes go without a step, and fails while a
+  tour text is too long.
+
+### Removed
+- **Settings:** the screen that first asked Client or Server; every page is in the one window.
+
+### Fixed
+- **Tour:** after an update it asks as soon as the title screen shows, while the loading screen still fades (it could
+  come seconds later); in a world reached without the menu, a small pill asks instead.
+
 ## [0.7.4-alpha] - 2026-10-04
 
 ### Added

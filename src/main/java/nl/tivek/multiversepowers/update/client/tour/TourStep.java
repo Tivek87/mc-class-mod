@@ -13,6 +13,8 @@ import net.minecraft.network.chat.Component;
 import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.character.client.AbilityGuide;
 import nl.tivek.multiversepowers.character.client.ClientCharacter;
+import nl.tivek.multiversepowers.config.client.SettingsPages;
+import nl.tivek.multiversepowers.config.client.SettingsScreen;
 import nl.tivek.multiversepowers.engine.client.gui.ScreenAnchors;
 import nl.tivek.multiversepowers.update.client.ManagerScreen;
 
@@ -43,8 +45,8 @@ record TourStep(String version, String id, Kind kind, Place place, List<String> 
     enum Place {
         // The title screen, or the pause menu in a world; the updates page's Versions comes before the page as a whole;
         // ANY wherever the tour is.
-        MENU(null), VERSIONS("versions.list"), MANAGER("page.updates"), FEEDBACK("page.feedback"), GAME(null),
-        GUIDE("guide"), ANY(null);
+        MENU(null), VERSIONS("versions.list"), MANAGER("page.updates"), FEEDBACK("page.feedback"),
+        SETTINGS("settings"), GAME(null), GUIDE("guide"), ANY(null);
 
         // What the place's screen reports while it is drawn.
         @Nullable
@@ -73,7 +75,7 @@ record TourStep(String version, String id, Kind kind, Place place, List<String> 
         boolean reachable() {
             Minecraft minecraft = Minecraft.getInstance();
             return switch (this) {
-                case MENU, VERSIONS, MANAGER, FEEDBACK, ANY -> true;
+                case MENU, VERSIONS, MANAGER, FEEDBACK, SETTINGS, ANY -> true;
                 case GAME, GUIDE -> minecraft.level != null && minecraft.player != null
                         && ClientCharacter.active() != null;
             };
@@ -94,6 +96,7 @@ record TourStep(String version, String id, Kind kind, Place place, List<String> 
                 case VERSIONS -> ManagerScreen.open(home, ManagerScreen.VERSIONS);
                 case MANAGER -> ManagerScreen.open(home, ManagerScreen.UPDATES);
                 case FEEDBACK -> ManagerScreen.open(home, ManagerScreen.BUG);
+                case SETTINGS -> minecraft.setScreen(SettingsScreen.create(home, SettingsPages.GAME));
                 case GAME -> minecraft.setScreen(null);
                 case GUIDE -> AbilityGuide.open();
                 case ANY -> {

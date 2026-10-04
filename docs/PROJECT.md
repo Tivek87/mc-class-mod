@@ -20,12 +20,16 @@ brought when you are up to date. Only while a newer version is out are there two
 (quits)** downloads it, saves and quits the game, and puts it in place of the one you have (start the game again in
 your launcher), and **Update on quit** downloads it now and puts it in place when you close the game. Up to date,
 **Check now** on the card looks again at once. **Versions** lists the last ten versions on the left, as the Minecraft
-launcher lists its versions, one line each with the day it came out (yours marked, with your own added under them when
-it is older), and the notes of the one you pick on the right; a version newer than yours shows everything new since
-yours. **Use ... (quits)** switches to the version you picked, newer or older, the same way. Every download is checked
-against the release page's checksum before it is used.
+launcher lists its versions, one line each with the day it came out (your own says **yours** there instead, and is
+added under them when it is older), and the notes of the one you pick on the right; a version newer than yours shows
+everything new since yours. **Use ... (quits)** switches to the version you picked, newer or older, the same way. Every
+download is checked against the release page's checksum before it is used. A tag read from the end of a version's
+name says whether it is an **ALPHA**, a **BETA** or a **RELEASE** where that tells something: in the list, beside a
+newer version that is out, in the update popup and on the screen for a server that runs another version; elsewhere a
+version shows without that ending.
 
-After an update a tour shows every change of the version you have, and only that version's, right where each one is;
+After an update a tour shows every big change of the version you have, and only that version's, right where each one
+is (small changes and fixes are in the notes only), with short cards;
 where it helps, steps on how things work come along (such as a walk through the whole update manager and your ability
 panel and guide). On the title screen a card asks **What's new**: how many changes there are, a few of them, **Show
 me**, **Later** or **Skip**. When a newer version is already out, the card says so first with an **Update** button,
@@ -33,7 +37,7 @@ and the tour's first step points at it in the update manager. Each step dims the
 points at it from a small card with a line or two of text; the card's top says **NEW**, **CHANGED**, **FIXED** or
 **REMOVED IN** the version, or **HOW IT WORKS**. Some steps ask you to do something (**Click Feedback**) and go on once
 you do, the others go on with **Next** (or Enter). Steps wait until you are where their thing is: the title screen,
-the update manager, the game and the ability guide. When the next steps are in a world or need a character, a card
+the update manager, the settings, the game and the ability guide. When the next steps are in a world or need a character, a card
 says how to get there: on the title screen with a **Singleplayer** button, in the pause menu with **Back to game**,
 and in game with the power wheel's key to hold; **Later** (Enter in game) leaves just a small note at the top saying
 how many steps are left and where they wait. **Skip tour** ends it at any time; **All caught up!** says when you have
@@ -132,9 +136,11 @@ GitHub now; submitting a fourth drops the oldest of its kind.
   ultimate, its biggest power with a long cooldown; while it goes, the panel's title turns red and counts down.
 - A panel in the bottom right shows who you are and only what you can use right now, each with its key and
   cooldown, mouse buttons included (LMB, RMB, MMB); **P** opens a guide to every ability of your character.
-- Every character's numbers can be changed in the game: Mods > Multiverse Powers > Config, first *Client* or
-  *Server* (the host or a listed owner only), then a tab per character, a part per ability that folds open and shut,
-  and a search box that looks through everything.
+- Every character's numbers can be changed in the game: Mods > Multiverse Powers > Config opens the settings window,
+  in the update manager's look, with a page each down the left (your game, the world's power rules, stamina and every
+  character; the world's pages only for the host or a listed owner), a part per ability that folds open and shut, a
+  search box that looks through everything, switches and choices as one button, and **Defaults**, **Undo** and
+  **Save** under the list; closing it keeps your changes.
 - **Crouching + a key** is up to the character: with some abilities it undoes them (let go, put down),
   with others it is a second version of the same ability, and with the rest it changes nothing. The
   panel and [Characters and their powers](POWERS.md) say which is which.

@@ -48,11 +48,12 @@ import org.lwjgl.glfw.GLFW;
 import org.lwjgl.opengl.GL11;
 import org.slf4j.Logger;
 
-// After an update, a tour shows every change of the versions it covers (`TourSteps.FROM` up to the one installed)
-// right where it is (in the menus, the update manager, in game at the panel and in the ability guide), with steps on
-// how things work where they help; a player's first tour starts by saying what the tour is. It asks first on the title
-// screen or in the pause menu, and while a newer version is out it asks to update to that one first; Next goes on
-// (taking the player to the next place itself where it can), Back goes back.
+// After an update, a tour shows every big change of the versions it covers (`TourSteps.FROM` up to the one installed)
+// right where it is (in the menus, the update manager, the settings, in game at the panel and in the ability guide),
+// with steps on how things work where they help; a player's first tour starts by saying what the tour is. It asks
+// first on the title screen (from its first frame, while the loading screen still fades) or in the pause menu, in game
+// with a pill when the player got there first, and while a newer version is out it asks to update to that one first;
+// Next goes on (taking the player to the next place itself where it can), Back goes back.
 // While the next steps wait in a world or for a character, a card says how to get there (from the title screen or the
 // pause menu with a button that takes the player on, in game with the key to press); elsewhere a pill says what waits.
 // How far it got is kept in config/welcomescreen/tour.json; a first install gets no tour, as everything is new to it
@@ -147,6 +148,14 @@ public final class Tour {
         graphics.pose().popPose();
     }
 
+    // The title screen as the loading screen fades off it, drawn without screen events: the first ask comes with it.
+    public static void underOverlay(GuiGraphics graphics) {
+        graphics.pose().pushPose();
+        graphics.pose().translate(0.0F, 0.0F, 500.0F);
+        frame(graphics, Place.MENU, true, -1.0, -1.0);
+        graphics.pose().popPose();
+    }
+
     @SubscribeEvent(priority = EventPriority.LOWEST)
     static void onRenderGui(RenderGuiEvent.Post event) {
         Minecraft minecraft = Minecraft.getInstance();
@@ -154,7 +163,7 @@ public final class Tour {
             return;
         }
         load();
-        if (!(started && !pending().isEmpty()) && !TourOverlay.busy()) {
+        if ((pending().isEmpty() || !started && later) && !TourOverlay.busy()) {
             return;
         }
         // Every HUD layer stands further forward than the last: start a clean depth so the tour lies over all of them.
@@ -281,6 +290,9 @@ public final class Tour {
                         changes.size(), news.size() - changes.size(),
                         (changes.isEmpty() ? news : changes).stream().map(TourStep::title).toList(),
                         newer == null ? null : TourStep.bare(newer), mouseX, mouseY);
+            } else if (place == Place.GAME && !later) {
+                // In game before any menu asked (a world joined from the launcher): a pill, Enter starts the tour.
+                pill(graphics, mouse, mouseX, mouseY);
             }
             return;
         }
@@ -378,7 +390,7 @@ public final class Tour {
         if (pending.isEmpty()) {
             return;
         }
-        boolean reachable = pending.get(0).place().reachable();
+        boolean reachable = !started || pending.get(0).place().reachable();
         float alpha = 1.0F;
         if (!mouse) {
             long now = Util.getMillis();
@@ -389,6 +401,12 @@ public final class Tour {
             if (!reachable || alpha <= 0.0F) {
                 return;
             }
+        }
+        if (!started) {
+            TourOverlay.pill(graphics, Component.translatable(TourCard.PREFIX + "pill.ask",
+                    TourStep.bare(UpdateChecker.installed())),
+                    Component.translatable(TourCard.PREFIX + "pill.ask.short"), true, mouse, alpha, mouseX, mouseY);
+            return;
         }
         String why = reachable ? "pill" : Minecraft.getInstance().level == null ? "pill.world" : "pill.character";
         TourOverlay.pill(graphics, Component.translatable(TourCard.PREFIX + why, pending.size()),
@@ -486,8 +504,12 @@ public final class Tour {
         }
     }
 
-    // The pill's Continue: on to the place of the next step.
+    // The pill's Continue: on to the place of the next step; on a tour not begun yet, Show me.
     private static void resume() {
+        if (!started) {
+            start();
+            return;
+        }
         List<TourStep> pending = pending();
         if (!pending.isEmpty() && pending.get(0).place().reachable()) {
             TourOverlay.click();

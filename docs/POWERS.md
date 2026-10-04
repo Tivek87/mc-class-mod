@@ -1598,26 +1598,28 @@ There are two kinds of settings:
   - **Sound:** the menu theme.
   - **Updates:** how often the game looks for a new version, and how long the note about one stays on screen.
 
-**In the game:** Mods > Multiverse Powers > Config (or `/stamina` in the chat, which opens the stamina bar). You first
-pick **Client** or **Server**.
+**In the game:** Mods > Multiverse Powers > Config (or `/stamina` in the chat, which opens the stamina bar). The
+settings window looks like the update manager: a page each down the left.
 
-- **Server** can only be changed by the **host** of the world (singleplayer, or a LAN world you host) or an
-  **owner** of a server: a player named in the `owners` list of `general.toml` in the world's
+- **Pages:** *Your game* (only for you, in every world), then the world's: *Power rules*, the stamina bar and every
+  character. A dot after a page's name means it has changes that are not saved yet; the line under a page's title
+  says whom it is for.
+- **The world's pages** can only be changed by the **host** of the world (singleplayer, or a LAN world you host) or
+  an **owner** of a server: a player named in the `owners` list of `general.toml` in the world's
   `serverconfig/welcomescreen/` folder (only that file can change the list). Operators are not owners unless listed.
   The server checks this again for every change. Anyone else sees the numbers read only. In the main menu there is
   no world, so nothing to change.
-- **Tabs** along the top: *Power rules*, the stamina bar and every character for Server; one page for Client. A dot
-  after a tab's name means it has changes that are not saved yet.
 - **Every ability is a part you can fold open and shut:** click its title. The title says how many numbers are
-  in it and which key or button it sits on. *Open all* and *Close all* fold the whole page at once.
-- **Search:** type in the box and the list shows every number of every tab whose name or explanation matches,
-  under the name of its tab and ability.
+  in it and which key or button it sits on.
+- **Search:** type in the box at the top right and the list shows every number of every page whose name or
+  explanation matches, under the name of its page and ability.
 - **Every number has its own line:** its name, `-` and `+` around a box you can type in (hold shift for ten
   steps at once), a button to put it back to the mod's own number once you changed it, and what it means in
-  plain words (seconds, hearts, blocks). A number you changed turns gold. Point at a line and the bar under
-  the list says what it does; point at its name for its default and the range it may go.
-- **Buttons:** *Defaults* puts every number in the list back to the mod's own; *Apply* saves every change on
-  every tab and keeps the screen open; *Save & close* saves and closes; *Cancel* throws the changes away.
+  plain words (seconds, hearts, blocks). Something that is on or off, or one of a few choices, is one button:
+  click it for the next. A setting you changed turns gold, with a mark at its left until it is saved. Point at its
+  name for what it does, its default and the range it may go.
+- **Buttons** under the list: *Defaults* puts every number in the list back to the mod's own; *Undo* drops every
+  change not saved yet; *Save* saves every change on every page. Closing the window saves them too.
 
 A settings file that already exists keeps its own numbers, also when the mod changes its numbers in a new
 version. Press "Defaults" (or delete its file) to take the new ones.

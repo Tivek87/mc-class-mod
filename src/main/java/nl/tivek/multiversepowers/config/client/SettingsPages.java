@@ -18,17 +18,22 @@ import nl.tivek.multiversepowers.character.client.PowerInputs;
 import nl.tivek.multiversepowers.config.ModConfigs;
 import nl.tivek.multiversepowers.config.PowerRules;
 import nl.tivek.multiversepowers.config.Unit;
+import nl.tivek.multiversepowers.engine.client.gui.PixelIcons;
 import nl.tivek.multiversepowers.stamina.StaminaConfig;
 import nl.tivek.multiversepowers.stamina.client.StaminaClient;
 
 public final class SettingsPages {
+    public static final String GAME = "game";
+    public static final String RULES = "rules";
+    public static final String STAMINA = "stamina";
     private static final String PREFIX = "config." + MultiversePowers.MODID + ".";
 
     private SettingsPages() {
     }
 
-    public record Page(Component title, int color, List<Section> sections, boolean editable, boolean world,
-            Runnable save) {
+    // `character`: the one whose abilities the page holds, if any.
+    public record Page(String id, Component title, int color, PixelIcons.Icon icon, @Nullable GameCharacter character,
+            List<Section> sections, boolean editable, boolean world, Runnable save) {
     }
 
     // `about`: what the section is, shown when the pointer rests on its title.
@@ -41,12 +46,10 @@ public final class SettingsPages {
     public record Group(@Nullable Component title, List<ConfigNumber> numbers) {
     }
 
-    public static List<Page> clientPages() {
-        return List.of(client());
-    }
-
-    public static List<Page> serverPages() {
+    // Every page of the settings window, in order: your own game, the world's rules and stamina, each character.
+    public static List<Page> all() {
         List<Page> pages = new ArrayList<>();
+        pages.add(client());
         pages.add(general());
         pages.add(stamina());
         for (GameCharacter character : GameCharacter.values()) {
@@ -65,12 +68,6 @@ public final class SettingsPages {
 
     public static boolean worldEditable(ModConfigSpec spec) {
         return spec.isLoaded() && serverEditable();
-    }
-
-    public static final int STAMINA_TAB = 1;
-
-    public static int tab(GameCharacter character) {
-        return 2 + character.ordinal();
     }
 
     public static Page general() {
@@ -95,8 +92,8 @@ public final class SettingsPages {
         allowed.add(fromSpec(spec, file, "general", "spells", PowerRules.SPELLS, Unit.SWITCH, 1.0));
         Section chosen = new Section(Component.translatable(PREFIX + "general.characters"), null,
                 List.of(new Group(null, allowed)));
-        return new Page(Component.translatable(PREFIX + "general"), 0x9DFF8A, List.of(section, creatures, chosen),
-                worldEditable(spec), true, spec::save);
+        return new Page(RULES, Component.translatable(PREFIX + "general"), 0x9DFF8A, PixelIcons.Icon.GLOBE, null,
+                List.of(section, creatures, chosen), worldEditable(spec), true, spec::save);
     }
 
     public static Page stamina() {
@@ -114,8 +111,8 @@ public final class SettingsPages {
                         Unit.STAMINA, 1.0));
         Section section = new Section(Component.translatable(PREFIX + "stamina"), null,
                 List.of(new Group(null, numbers)));
-        return new Page(Component.translatable(PREFIX + "stamina"), 0xFFFF55, List.of(section), worldEditable(spec),
-                true, () -> {
+        return new Page(STAMINA, Component.translatable(PREFIX + "stamina"), 0xFFFF55, PixelIcons.Icon.BATTERY, null,
+                List.of(section), worldEditable(spec), true, () -> {
                     spec.save();
                     StaminaClient.onConfigUpdated();
                 });
@@ -177,8 +174,9 @@ public final class SettingsPages {
                 sections.add(new Section(ability.getDisplayName(), hint(ability), AbilityGuide.about(ability), groups));
             }
         }
-        return new Page(character.getDisplayName(), character.getColor(), sections,
-                CharacterConfig.canEdit(character) && serverEditable(), true, () -> CharacterConfig.save(character));
+        return new Page(character.getId(), character.getDisplayName(), character.getColor(), PixelIcons.Icon.PERSON,
+                character, sections, CharacterConfig.canEdit(character) && serverEditable(), true,
+                () -> CharacterConfig.save(character));
     }
 
     public static Page client() {
@@ -200,8 +198,8 @@ public final class SettingsPages {
             list.add(new Section(Component.translatable(PREFIX + "client." + section.getKey()), null,
                     List.of(new Group(null, section.getValue()))));
         }
-        return new Page(Component.translatable(PREFIX + "client"), 0x8FD3FF, list, spec.isLoaded(), false,
-                spec::save);
+        return new Page(GAME, Component.translatable(PREFIX + "client"), 0x8FD3FF, PixelIcons.Icon.SCREEN, null, list,
+                spec.isLoaded(), false, spec::save);
     }
 
     private static ConfigNumber cooldown(CharacterAbility ability) {
