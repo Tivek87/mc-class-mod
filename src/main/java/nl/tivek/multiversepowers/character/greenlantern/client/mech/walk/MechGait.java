@@ -38,10 +38,14 @@ class MechGait {
     static final double LOST = CYCLE * 1.5;
     static final double SINK_FREQ = 0.1;
     static final double SINK_DAMP = 0.45;
-    // Setting off, a foot steps first straight away until the walk is this far under way.
+    // Setting off, a foot steps first straight away until the walk is this far under way, or after standing still
+    // this many ticks (a blow's planted stance too).
     static final double SETTING_OFF = 0.12;
+    static final int STOOD = 3;
     // A planted foot's leg reaches no further than this share of its length.
     static final double KEEP_REACH = 0.97;
+    // Striking a blow, a foot left further behind than this steps up under the body.
+    private static final double STANCE = 1.2;
     private static final double SWING = 0.42;
     private static final double HOME = 0.35;
     private static final double HOME_TURN = 0.22;
@@ -111,6 +115,7 @@ class MechGait {
     double side;
     double turn;
     double walking;
+    int stood;
     double crouch;
     boolean falling;
     @Nullable
@@ -152,10 +157,13 @@ class MechGait {
     }
 
     // Whether a planted foot has been left further off than a stride lets it go, or out of its leg's reach: it steps
-    // at once then, out of turn.
+    // at once then, out of turn. Striking a blow, it stands square rather than lunging.
     private boolean stretched(MechScript.Stage stage, int side) {
         Leg leg = this.legs[side];
         Vec3 home = home(stage, side);
+        if (this.blow.striking() && leg.planted.subtract(home).dot(stage.ahead()) < -STANCE) {
+            return true;
+        }
         double dx = leg.planted.x - home.x;
         double dz = leg.planted.z - home.z;
         double most = DRAGGED * (1.0 - this.swing()) * 0.5 * this.stride() + 0.4;
@@ -166,14 +174,22 @@ class MechGait {
         return hip.distanceTo(leg.planted) > KEEP_REACH * (MechLegShapes.SHIN + MechLegShapes.THIGH);
     }
 
-    void leg(ClientLevel level, MechScript.Stage stage, int side, double from, double rate) {
+    // Returns the phase the other foot's turn counts from.
+    double leg(ClientLevel level, MechScript.Stage stage, int side, double from, double rate) {
         Leg leg = this.legs[side];
         double start = LIFTS[side];
-        // Striking a blow it stands its ground: a foot already swinging comes down, no other lifts.
-        if (!leg.swinging && rate > 0.0 && !this.blow.striking()) {
-            boolean due = Math.floor(this.phase - start) > Math.floor(from - start)
+        // Striking a blow it stands its ground: a foot already swinging comes down, and no other lifts but one the
+        // body has left too far behind as it stops.
+        if (!leg.swinging && rate > 0.0) {
+            boolean due = !this.blow.striking() && Math.floor(this.phase - start) > Math.floor(from - start)
                     && this.phase - leg.lifted > RESTEP;
             if (due || !this.legs[1 - side].swinging && this.stretched(stage, side)) {
+                if (!due) {
+                    // Stepping out of turn makes this its turn, so the other foot still steps half a stride later
+                    // rather than with it.
+                    this.phase = start + Math.round(this.phase - start);
+                    from = this.phase;
+                }
                 leg.swinging = true;
                 leg.lifted = due ? start + Math.floor(this.phase - start) : this.phase;
                 leg.from = leg.planted;
@@ -183,7 +199,7 @@ class MechGait {
             }
         }
         if (!leg.swinging) {
-            return;
+            return from;
         }
         double u = this.swung(leg);
         boolean done = u >= 1.0;
@@ -217,6 +233,7 @@ class MechGait {
             dust(level, sole, this.walking + run);
             this.landed(sole);
         }
+        return from;
     }
 
     // A foot came down on the ground at `sole`, under its ankle.

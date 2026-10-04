@@ -431,7 +431,8 @@ public final class ClientConstructs extends ConstructShakes {
             switch (now.shape()) {
                 case ConstructPayload.BOLT -> painter.bolt(center, way, size, solid, ring);
                 case ConstructPayload.SHIELD -> painter.shield(center, way, size, solid, charge, ring, own);
-                case ConstructPayload.DOME -> painter.dome(center, size, solid, charge, own);
+                case ConstructPayload.DOME -> painter.dome(center, size, solid,
+                        now.variant() == ConstructPayload.DOME_BREAKING, charge, way, ring, own);
                 case ConstructPayload.RAM -> painter.ram(center, way, solid, charge, own);
                 case ConstructPayload.SLAM -> SlamPainter.draw(painter, track.latest, track.clock(partialTick), ring,
                         owner == null ? null : owner.getPosition(partialTick));

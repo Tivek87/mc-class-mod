@@ -39,23 +39,13 @@ public final class FlamePainter {
     private static final float[][] GROWS = grows();
     private static final ConstructPainter.Shape[] PARTS = parts();
 
-    // Charge: how near the inferno is to overheating, 0 to 1, shown by the heat gauge on the HUD (HeatBar). Prime: how
-    // far a held button is on its way to the inferno or the vortex, shown by the fins lighting one by one.
+    // Charge: how near the inferno is to overheating, 0 to 1, shown by the heat gauge on the HUD (HeatGauge).
     public record Glow(double fill, double heat, double pilot, double spark, double muzzle, double valve,
-            double charge, double prime) {
+            double charge) {
         public static final Glow READY = new Glow(1.0, 0.0, 1.0, 0.0, 0.0, 0.0);
 
         public Glow(double fill, double heat, double pilot, double spark, double muzzle, double valve) {
-            this(fill, heat, pilot, spark, muzzle, valve, 0.0, 0.0);
-        }
-
-        public Glow(double fill, double heat, double pilot, double spark, double muzzle, double valve,
-                double charge) {
-            this(fill, heat, pilot, spark, muzzle, valve, charge, 0.0);
-        }
-
-        public Glow primed(double prime) {
-            return new Glow(this.fill, this.heat, this.pilot, this.spark, this.muzzle, this.valve, this.charge, prime);
+            this(fill, heat, pilot, spark, muzzle, valve, 0.0);
         }
     }
 
@@ -239,19 +229,16 @@ public final class FlamePainter {
             }
         }
         double fins = Mth.clamp((fill - 0.55) / 0.45, 0.0, 1.0);
-        double prime = glow.prime();
         for (int k = 0; k < GunShapes.FLAME_FINS; k++) {
             double lit = Mth.clamp(fins * GunShapes.FLAME_FINS - k, 0.0, 1.0);
             double flash = fill < 1.0 ? Math.max(0.0, 1.0 - Math.abs(fins * GunShapes.FLAME_FINS - k - 0.5)) : 0.0;
-            double primed = Mth.clamp(prime * GunShapes.FLAME_FINS - k, 0.0, 1.0);
-            double strength = Math.max(Math.max(glow.heat(), 0.25 * lit), primed) + 0.6 * flash;
+            double strength = Math.max(glow.heat(), 0.25 * lit) + 0.6 * flash;
             if (strength <= 0.02) {
                 continue;
             }
             double z = 0.106 + 0.045 * k;
-            double wide = primed > 0.0 ? 1.0 + 0.25 * primed : 1.0;
             painter.circle(frame.at(0.0, 0.02, z), frame.right().normalize(), frame.up().normalize(),
-                    FIN_RADIUS * wide * scale, 0.014 * scale, 0.06 * scale, Colors.alpha(0.9 * strength),
+                    FIN_RADIUS * scale, 0.014 * scale, 0.06 * scale, Colors.alpha(0.9 * strength),
                     Colors.alpha(0.45 * strength));
         }
         Vec3 forward = frame.forward().normalize();

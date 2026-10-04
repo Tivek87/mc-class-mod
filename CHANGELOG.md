@@ -3,20 +3,22 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
-## [0.7.2-alpha] - 2026-10-04
+## [0.7.3-alpha] - 2026-10-04
 
 ### Added
 - **Pause menu:** the small arrow button right of Mods opens the update manager there too.
-- **Tour:** after an update a short tour asks on the title screen, then points at each new thing where it is, with
-  Back, Next and Skip; **Tour** in the update manager plays it again any time.
-- **Update manager:** one window with a page each: Updates, What's new & versions, Report a bug, Suggest an idea,
-  My reports and Tour; switch with the tabs, Ctrl+Tab or the number keys.
-- **Update manager:** marks on the tabs: the download's progress, a dot while a newer version is out, how many
-  reports you sent, a dot while the tour has something new.
+- **Tour:** after an update a short tour asks on the title screen, then points at what is new in your version right
+  where it is, with Back, Next and Skip; **Tour** in the update manager plays it again any time.
+- **Tour:** on an older version it first asks you to update, with an Update button.
+- **Tour:** says "Nothing to show in this version" when a version brings nothing to point at.
+- **Update manager:** one window with three pages, Updates, Feedback and Tour; switch with the sidebar, Ctrl+Tab or
+  the number keys.
+- **Update manager:** marks in the sidebar: the download's progress, a dot while a newer version is out, a dot while
+  the tour has something new.
 - **Update manager:** click your version at the top to copy it, with the Minecraft and NeoForge versions.
-- **Report a bug / Suggest an idea:** Clear (asks once more), Ctrl+Enter sends, a note when the draft is saved, and
-  See my reports.
-- **My reports:** Refresh, and click a report to open it on GitHub.
+- **Feedback:** one page with tabs for a bug, an idea and the ones you sent (with how many); Bug and Idea have Clear
+  (asks once more), Ctrl+Enter sends, and a note when the draft is saved.
+- **Feedback → Sent:** Refresh, and click a report to open it on GitHub.
 - **Ability guide:** a move that only works with another hangs under it, and its details name the key it shares.
 - **Ability guide:** each mode says how you get in, how you get out, what you can't use there and what is good to
   know.
@@ -24,22 +26,47 @@ the sections before 0.0.1-alpha came before versions were numbered.
   wheel slams its head into the ground; pick nothing and it is picked at random. A prompt shows the keys.
 - **Doctor Octopus:** four corner marks round the crosshair show which tentacles are free, holding something, or
   walking and busy.
-- **Players thrown limp:** a blow or blast that throws a player hard knocks them down limp, as it does creatures;
-  never in creative, riding, gliding, flying, asleep, in water or lava, or from your own blast. A world setting.
+- **Players thrown limp:** a blow or blast that throws a player hard knocks them down limp for at most 1.5 seconds,
+  as it does creatures; never in creative, riding, gliding, flying, asleep, in water or lava, or from your own blast.
+  A world setting.
+- **Players thrown limp:** still in the air when it ends, they fall on as themselves, or fly on if it knocked them
+  out of their flight.
+- **Thor:** Grab-Dash Dive catches players too, flying ones as well: they hang limp in his fist on the way down.
+- **Green Lantern:** holding towards Inferno or Fire Vortex fills a ring round the crosshair, as the beam does.
 - **Test fight:** the host or an operator crouches and holds the scroll wheel on a creature built like a person for
   3 seconds: a filmed fight plays out, ending in a roundhouse kick that throws it limp.
 
 ### Changed
+- **Update manager:** Updates now lists the last ten versions with their notes (a newer one with everything new since
+  yours): Update to or Use switches to the one you pick (the game quits), Update on quit puts a newer one in when you
+  close the game, Check for updates looks again.
 - **Update screens:** the popup, the version-mismatch screen and the bug report screens share the update manager's
   cleaner look.
+- **Tour:** clearer words, such as "2 more once you pick a character".
+- **Ability panel:** always in the bottom right corner beside the hotbar, at every GUI scale, going smaller rather
+  than moving; it fades in slower and out faster, and subtitles go up over it.
+- **HUD:** nothing overlaps any more: gauges, rings and their words, the panel, the update popup and the tour's notes
+  move aside for each other, for effect icons and for boss bars.
+- **Kill confirm:** the sound is louder, clearer and punchier.
 - **Ability guide:** "Off meanwhile" is gone; its sections say plainly what works where.
 - **Thor:** Mjolnir is bigger and sits right in his fist, in first and third person.
 - **Thor:** Mjolnir flies head first when thrown, without spinning.
 - **Thor:** his blows are a little slower so each one reads, and no fist passes through his own head or chest.
 - **Thor:** his kicks are clearly kicks: knee drawn up first, leg driven out, knee drawn back before the foot lands.
 - **Thor:** a grabbed creature hangs firmly by the throat in his fist instead of limp.
+- **Thor:** Mjolnir on his belt is smaller, as in God of War: its handle reaches down his thigh.
 - **Hands and feet:** in poses (the mech's build, getting up, and more) wrists and ankles stay within what a real one
   can do.
+- **Green Lantern:** the dome is built of solid hard-light plates: it grows out of the ring, ripples where it is hit
+  and breaks apart into tumbling plates.
+- **Green Lantern:** the beam's LOCKED sign is a clear pill with a padlock and the key that unlocks it.
+- **Green Lantern:** the flamethrower's gun no longer glows while you hold a button; the ring round the crosshair
+  shows it instead.
+- **Mech:** striking a blow while walking or running, it stops within a few steps, its trailing foot stepping up.
+
+### Removed
+- **Update manager:** What's new & versions, Report a bug and Suggest an idea are no longer pages of their own (see
+  Updates and Feedback).
 
 ### Fixed
 - **Tour:** pressing Next without doing anything no longer makes it vanish.
@@ -48,6 +75,10 @@ the sections before 0.0.1-alpha came before versions were numbered.
 - **Developer test hand:** its fingers curl and open one after another, no longer all curled until their turn.
 - **Stamina bar:** hidden with F1, like the rest of the screen.
 - **Held creatures:** blows no longer wear them out and drop them out of a power's hold.
+- **Thor:** Mjolnir no longer has see-through pixels; every model is now checked so none can come back.
+- **Mech:** no longer gets stuck, or walks on air, after climbing onto a ledge or platform.
+- **Mech:** its legs no longer trail behind and stretch, and its feet keep in step, when it strikes on the move.
+- **Filmed moments:** your own first-person arms and hammer no longer show in them.
 
 ## [0.7.1-alpha] - 2026-10-03
 

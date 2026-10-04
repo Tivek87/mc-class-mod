@@ -20,7 +20,7 @@ import nl.tivek.multiversepowers.engine.math.Ease;
 // (`TourSpot`), the first ask, the pill saying what waits elsewhere, and what lasts past them (`TourToast`). Everything
 // glides: the spotlight from one thing to the next, the card after it, fading in.
 final class TourOverlay {
-    enum Hit { NONE, BLOCK, NEXT, BACK, SKIP, SHOW, LATER, CONTINUE }
+    enum Hit { NONE, BLOCK, NEXT, BACK, SKIP, SHOW, UPDATE, LATER, CONTINUE }
 
     private enum Side { BELOW, ABOVE, RIGHT, LEFT, NONE }
 
@@ -172,9 +172,9 @@ final class TourOverlay {
         drawnAt = now;
     }
 
-    // The first ask, in the middle of the menu.
-    static void intro(GuiGraphics graphics, String version, int count, List<Component> highlights, double mouseX,
-            double mouseY) {
+    // The first ask, in the middle of the menu; `newer` the version out past this one, which it asks to update to first.
+    static void intro(GuiGraphics graphics, String version, int count, List<Component> highlights,
+            @Nullable String newer, double mouseX, double mouseY) {
         long now = Util.getMillis();
         float glide = begin(now, ASK);
         Font font = Minecraft.getInstance().font;
@@ -185,14 +185,15 @@ final class TourOverlay {
         framed = false;
         TourSpot.shade(graphics, width, height, dim * DIM, null);
         cardWidth = Math.min(INTRO, width - MARGIN * 2);
-        cardHeight = TourCard.introHeight(font, cardWidth - TourCard.PAD * 2, count, highlights);
+        cardHeight = TourCard.introHeight(font, cardWidth - TourCard.PAD * 2, count, highlights, newer);
         int x = (width - cardWidth) / 2;
         int y = Math.round((height - cardHeight) / 2.0F + 8.0F * (1.0F - appear));
         graphics.flush();
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, appear);
         KeyCap.Layer layer = new KeyCap.Layer(graphics, font);
         TourCard.panel(graphics, x, y, cardWidth, cardHeight);
-        ask = TourCard.intro(layer, font, version, count, highlights, x, y, cardWidth, cardHeight, mouseX, mouseY);
+        ask = TourCard.intro(layer, font, version, count, highlights, newer, x, y, cardWidth, cardHeight, mouseX,
+                mouseY);
         layer.finish();
         graphics.flush();
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
@@ -200,14 +201,14 @@ final class TourOverlay {
         drawnAt = now;
     }
 
-    // The pill saying what waits somewhere else.
-    static void pill(GuiGraphics graphics, Component label, boolean reachable, boolean mouse, float alpha,
-            double mouseX, double mouseY) {
+    // The pill saying what waits somewhere else (`brief` where there is little room).
+    static void pill(GuiGraphics graphics, Component label, Component brief, boolean reachable, boolean mouse,
+            float alpha, double mouseX, double mouseY) {
         long now = Util.getMillis();
         begin(now, PILL);
         framed = false;
         dim = 0.0F;
-        pill = TourToast.pill(graphics, label, reachable, mouse, appear(now) * alpha, mouseX, mouseY);
+        pill = TourToast.pill(graphics, label, brief, reachable, mouse, appear(now) * alpha, mouseX, mouseY);
         card = pill.all();
         drawnAt = now;
     }
@@ -239,6 +240,9 @@ final class TourOverlay {
         if (ask != null) {
             if (ask.show().contains(mouseX, mouseY)) {
                 return Hit.SHOW;
+            }
+            if (ask.update() != null && ask.update().contains(mouseX, mouseY)) {
+                return Hit.UPDATE;
             }
             if (ask.later().contains(mouseX, mouseY)) {
                 return Hit.LATER;
@@ -309,6 +313,11 @@ final class TourOverlay {
 
     static void skipped() {
         TourToast.skipped(Util.getMillis());
+        click();
+    }
+
+    static void nothing() {
+        TourToast.nothing(Util.getMillis());
         click();
     }
 

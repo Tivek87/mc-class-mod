@@ -18,14 +18,15 @@ import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.engine.client.gui.GuiShapes;
 
 // A kill marked at the crosshair, as Red Dead Redemption 2 does: a small red cross flicks out round it, holds a moment
-// and fades, with a soft thud. Only the player who made the kill sees and hears it.
+// and fades, with a sharp click, a punchy thump and a bright ring (built by scripts/sounds/kill_confirm.mjs). Only the
+// player who made the kill sees and hears it.
 @Mod(value = MultiversePowers.MODID, dist = Dist.CLIENT)
 public final class KillMarker {
     private static final ResourceLocation LAYER_ID = ResourceLocation.fromNamespaceAndPath(MultiversePowers.MODID,
             "kill_marker");
     private static final ResourceLocation SOUND = ResourceLocation.fromNamespaceAndPath(MultiversePowers.MODID,
             "ui.kill_confirm");
-    private static final float VOLUME = 0.6F;
+    private static final float VOLUME = 1.0F;
     // Kills this close together (milliseconds) are one: one sound, the cross flicked out again.
     private static final long TOGETHER_MS = 60L;
     private static final float SHOWN_MS = 480.0F;

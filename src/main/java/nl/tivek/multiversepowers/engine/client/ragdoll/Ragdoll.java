@@ -124,7 +124,7 @@ final class Ragdoll extends RagdollBody {
                 this.rise = GetUp.start(this.hanging, this.model, this.parts, this.chains, LIE, this.kind,
                         this.entity);
             }
-            float u = Math.min(1.0F, (float) ((this.up + partialTick) / this.kind.ticks));
+            float u = Math.min(1.0F, (float) ((this.up + partialTick) / this.riseTicks()));
             this.rise.pose(u, LIE, OWN_POSE, OUT);
         } else {
             float w = (float) Math.max(0.0, Math.min(1.0, this.limp));

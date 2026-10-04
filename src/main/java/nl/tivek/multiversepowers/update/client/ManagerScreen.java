@@ -14,12 +14,12 @@ import nl.tivek.multiversepowers.engine.client.gui.NavScreen;
 import nl.tivek.multiversepowers.engine.client.gui.PixelIcons;
 import nl.tivek.multiversepowers.update.client.tour.Tour;
 
-// The update manager: one window with its pages down the left (updates, every version, a bug report, an idea, the
-// reports you sent) and the tour of what is new; each page is one of these. The version on the title bar copies what
-// a bug report wants to know about your game.
+// The update manager: one window with its pages down the left (updates with every version, feedback: a bug report, an
+// idea or the ones you sent) and the tour of what is new; each page, or part of one, is one of these. The version on
+// the title bar copies what a bug report wants to know about your game.
 public abstract class ManagerScreen extends NavScreen {
     public static final String UPDATES = "updates";
-    public static final String VERSIONS = "versions";
+    public static final String FEEDBACK = "feedback";
     public static final String BUG = "bug";
     public static final String IDEA = "idea";
     public static final String REPORTS = "reports";
@@ -27,6 +27,8 @@ public abstract class ManagerScreen extends NavScreen {
     private static final long COPIED_MS = 1500L;
 
     private static long copiedAt = -COPIED_MS;
+    // The feedback part opened last, which the feedback page opens on again.
+    private static String feedback = BUG;
 
     protected ManagerScreen(Component title, @Nullable Screen root, String page) {
         super(title, root, page);
@@ -37,15 +39,29 @@ public abstract class ManagerScreen extends NavScreen {
         Minecraft.getInstance().setScreen(new UpdateManagerScreen(root));
     }
 
-    // Opens the page `id`, keeping where the manager returns to.
+    // Opens the page or feedback part `id`, keeping where the manager returns to.
     public static void open(@Nullable Screen root, String id) {
-        Minecraft.getInstance().setScreen(switch (id) {
-            case VERSIONS -> new ChangelogScreen(root);
+        String part = id.equals(FEEDBACK) ? feedback : id;
+        if (part.equals(BUG) || part.equals(IDEA) || part.equals(REPORTS)) {
+            feedback = part;
+        }
+        Minecraft.getInstance().setScreen(switch (part) {
             case BUG -> BugReportScreen.bug(root);
             case IDEA -> BugReportScreen.idea(root);
             case REPORTS -> BugReportScreen.reports(root);
             default -> new UpdateManagerScreen(root);
         });
+    }
+
+    // The feedback page's parts: a bug report, an idea and the ones you sent, `picked` open.
+    protected List<Tab> feedbackTabs(String picked) {
+        int sent = BugReportScreen.sentCount();
+        return List.of(this.tab(BUG, null, picked), this.tab(IDEA, null, picked),
+                this.tab(REPORTS, sent == 0 ? null : Component.literal(String.valueOf(sent)), picked));
+    }
+
+    private Tab tab(String id, @Nullable Component count, String picked) {
+        return new Tab(id, text("tab." + id), count, id.equals(picked), () -> open(this.root, id));
     }
 
     // Where the manager open now returns to, or the screen itself when it is no manager.
@@ -62,10 +78,7 @@ public abstract class ManagerScreen extends NavScreen {
     protected List<Item> items() {
         return List.of(
                 this.item(UPDATES, PixelIcons.Icon.DOWNLOAD),
-                this.item(VERSIONS, PixelIcons.Icon.VERSIONS),
-                this.item(BUG, PixelIcons.Icon.BUG),
-                this.item(IDEA, PixelIcons.Icon.IDEA),
-                this.item(REPORTS, PixelIcons.Icon.INBOX),
+                this.item(FEEDBACK, PixelIcons.Icon.BUG),
                 new Item(TOUR, text("nav." + TOUR), PixelIcons.Icon.SPARK, Tour::replay, true));
     }
 
@@ -106,10 +119,6 @@ public abstract class ManagerScreen extends NavScreen {
                     yield new Badge(Component.literal(Math.round(UpdateInstaller.progress() * 100.0F) + "%"), ACCENT);
                 }
                 yield UpdateChecker.latest() != null ? new Badge(null, WARN) : null;
-            }
-            case REPORTS -> {
-                int count = BugReportScreen.sentCount();
-                yield count == 0 ? null : new Badge(Component.literal(String.valueOf(count)), 0x8A8A8A);
             }
             case TOUR -> Tour.waiting() ? new Badge(null, ACCENT) : null;
             default -> null;

@@ -22,11 +22,15 @@ import nl.tivek.multiversepowers.engine.effect.Effect;
 import nl.tivek.multiversepowers.engine.effect.Effects;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 
+// The light dome round its owner: it grows plate by plate out of the ring (GROW_TICKS), takes blows for them, each
+// sending a ripple over it from where it struck (FLASH ticks), and lowered it breaks apart (BREAK_TICKS).
 @EventBusSubscriber(modid = MultiversePowers.MODID)
 public final class LightDome implements Effect {
     private static final float SIZE = 3.1F;
     private static final double VIEW_RANGE = 128.0;
-    private static final int OPEN_TICKS = 5;
+    private static final int GROW_TICKS = 10;
+    private static final int BREAK_TICKS = 14;
+    private static final int FLASH = 8;
 
     private static final Map<UUID, LightDome> UP = new HashMap<>();
 
@@ -37,6 +41,7 @@ public final class LightDome implements Effect {
     private int open;
     private int closing = -1;
     private int flash;
+    private Vec3 struck = new Vec3(0.0, 1.0, 0.0);
 
     private LightDome(ServerPlayer owner, CharacterAbility ability) {
         this.id = PowerRing.newId();
@@ -89,7 +94,7 @@ public final class LightDome implements Effect {
     public boolean tick(ServerLevel level, int age) {
         if (this.closing >= 0) {
             this.closing++;
-            if (this.closing >= OPEN_TICKS) {
+            if (this.closing >= BREAK_TICKS) {
                 ConstructPayload.sendRemove(level, this.id, this.owner.position());
                 return false;
             }
@@ -112,7 +117,7 @@ public final class LightDome implements Effect {
             return true;
         }
         PowerRing.setPower(this.owner, power - this.perTick);
-        this.open = Math.min(OPEN_TICKS, this.open + 1);
+        this.open = Math.min(GROW_TICKS, this.open + 1);
         this.flash = Math.max(0, this.flash - 1);
         this.send(level);
         return true;
@@ -122,12 +127,15 @@ public final class LightDome implements Effect {
         return this.owner.getBoundingBox().getCenter();
     }
 
+    // How far it has grown, or breaking how much is left; how fresh the last blow is, and which way it came from.
     private void send(ServerLevel level) {
         Vec3 at = this.middle();
-        float shown = this.closing >= 0 ? 1.0F - (float) this.closing / OPEN_TICKS : (float) this.open / OPEN_TICKS;
+        boolean breaking = this.closing >= 0;
+        float shown = breaking ? 1.0F - (float) this.closing / BREAK_TICKS : (float) this.open / GROW_TICKS;
         PacketDistributor.sendToPlayersNear(level, null, at.x, at.y, at.z, VIEW_RANGE,
-                new ConstructPayload(this.id, this.owner.getId(), at, this.owner.getLookAngle(), SIZE, shown,
-                        this.flash > 0 ? 1.0F : 0.0F, true, ConstructPayload.DOME));
+                new ConstructPayload(this.id, this.owner.getId(), at, this.struck, SIZE, shown,
+                        (float) this.flash / FLASH, true, ConstructPayload.DOME,
+                        breaking ? ConstructPayload.DOME_BREAKING : 0, 0, null));
     }
 
     @SubscribeEvent
@@ -141,12 +149,15 @@ public final class LightDome implements Effect {
         }
         float before = event.getAmount();
         event.setAmount(before * dome.kept);
-        dome.flash = 3;
+        dome.flash = FLASH;
         ServerLevel level = player.serverLevel();
         Vec3 from = event.getSource().getSourcePosition();
         Vec3 middle = dome.middle();
-        Vec3 at = from == null || from.distanceToSqr(middle) < 1.0E-4 ? middle
-                : middle.add(from.subtract(middle).normalize().scale(SIZE * 0.5));
+        boolean known = from != null && from.distanceToSqr(middle) >= 1.0E-4;
+        if (known) {
+            dome.struck = from.subtract(middle).normalize();
+        }
+        Vec3 at = known ? middle.add(dome.struck.scale(SIZE * 0.5)) : middle;
         ParticleFx.sphereOut(level, ParticleFx.dust(PowerRing.GREEN, 1.3F), at, 10 + (int) Math.min(16.0F, before),
                 0.25);
         level.playSound(null, at.x, at.y, at.z, SoundEvents.AMETHYST_BLOCK_RESONATE, SoundSource.PLAYERS, 0.8F, 0.7F);

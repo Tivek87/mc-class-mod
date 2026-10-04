@@ -150,6 +150,13 @@ public final class UpdateChecker {
         return newer.isEmpty() ? null : newer.get(0);
     }
 
+    // The newest version out while it is newer than yours, else null.
+    @Nullable
+    public static String newerVersion() {
+        Release latest = latest();
+        return latest == null ? null : latest.version();
+    }
+
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event) {
         long now = System.currentTimeMillis();

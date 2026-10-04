@@ -55,8 +55,8 @@ public final class ThorHammerLayer extends RenderLayer<AbstractClientPlayer, Pla
     // Seen from his own eyes: up as a held axe, leaning out from the crosshair.
     public static final float SEEN_TILT = 25.0F;
     public static final float SEEN_LEAN = 30.0F;
-    // Hung on the belt it is drawn a little smaller, or its handle would reach his ankle.
-    private static final float BELT = 0.85F;
+    // Hung on the belt it is drawn smaller, as in God of War: its head about a fist high, its handle down the thigh.
+    private static final float BELT = 0.75F;
 
     private ThorHammerLayer(PlayerRenderer renderer) {
         super(renderer);

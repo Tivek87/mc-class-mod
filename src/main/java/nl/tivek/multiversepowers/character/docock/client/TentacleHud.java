@@ -5,6 +5,7 @@ import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.Mth;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 import nl.tivek.multiversepowers.MultiversePowers;
@@ -12,6 +13,7 @@ import nl.tivek.multiversepowers.character.GameCharacter;
 import nl.tivek.multiversepowers.character.client.ClientCharacter;
 import nl.tivek.multiversepowers.character.docock.RobotArm;
 import nl.tivek.multiversepowers.engine.client.gui.GuiShapes;
+import nl.tivek.multiversepowers.engine.client.gui.HudSpace;
 import nl.tivek.multiversepowers.engine.client.gui.ScreenAnchors;
 import nl.tivek.multiversepowers.engine.math.Ease;
 
@@ -56,6 +58,10 @@ public final class TentacleHud {
         float cx = graphics.guiWidth() / 2.0F;
         float cy = graphics.guiHeight() / 2.0F;
         long now = Util.getMillis();
+        // The ring the corners take, from their inner tips to their flashed-out corners.
+        float near = Mth.sqrt(CORNER * CORNER + (CORNER - ARM) * (CORNER - ARM)) - 1.0F;
+        float out = CORNER + HudSpace.ring(cx, cy, near, (CORNER + 2.5F) * Mth.SQRT_OF_TWO - near, 0.0F, 360.0F)
+                - near;
         for (int arm = 0; arm < ARMS; arm++) {
             int state = limbs >> arm * 2 & 3;
             if (SHOWN[arm] != state) {
@@ -66,11 +72,11 @@ public final class TentacleHud {
             // Arms 0 and 1 sit high on his back, even ones on his right.
             float sx = arm % 2 == 0 ? 1.0F : -1.0F;
             float sy = arm < 2 ? -1.0F : 1.0F;
-            float reach = CORNER + 1.5F * flash;
+            float reach = out + 1.5F * flash;
             corner(graphics, cx + sx * reach, cy + sy * reach, sx, sy, state, flash);
         }
-        ScreenAnchors.report(ANCHOR, cx - CORNER - 1.0F, cy - CORNER - 1.0F, CORNER * 2.0F + 2.0F,
-                CORNER * 2.0F + 2.0F);
+        ScreenAnchors.report(ANCHOR, cx - out - 1.0F, cy - out - 1.0F, out * 2.0F + 2.0F,
+                out * 2.0F + 2.0F);
         GuiShapes.flush(graphics);
     }
 

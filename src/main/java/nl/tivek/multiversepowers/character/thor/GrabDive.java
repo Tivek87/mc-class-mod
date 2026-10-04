@@ -2,6 +2,7 @@ package nl.tivek.multiversepowers.character.thor;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.UUID;
 import javax.annotation.Nullable;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
@@ -16,18 +17,26 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.engine.effect.Effects;
 import nl.tivek.multiversepowers.engine.entity.HeldMobs;
+import nl.tivek.multiversepowers.engine.entity.HeldPlayers;
+import nl.tivek.multiversepowers.engine.entity.Knockdowns;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 import nl.tivek.multiversepowers.engine.math.Vectors;
 import nl.tivek.multiversepowers.engine.target.Targeting;
 import nl.tivek.multiversepowers.spell.SpellTargets;
 
 // The grab-dash dive: in flight Thor dives at what he aims at, grabs it on the way and drives it into the ground,
-// where the slam ends his flight. Aimed at nothing, he dives at the ground he looks at and slams there.
+// where the slam ends his flight. Aimed at nothing, he dives at the ground he looks at and slams there. A player he
+// grabs (one flying too) is knocked limp and carried in his fist, the server putting them there every tick.
 final class GrabDive {
     private static final double REACH = 32.0;
     private static final double GRAB = 2.2;
     private static final int LONGEST = 80;
     private static final double SLAM_RADIUS = 4.5;
+    private static final Set<UUID> CARRIED = new HashSet<>();
+
+    static {
+        HeldMobs.addHolder(entity -> entity instanceof ServerPlayer player && CARRIED.contains(player.getUUID()));
+    }
 
     private final ThorMoves moves;
     private final float damage;
@@ -88,7 +97,11 @@ final class GrabDive {
             return true;
         }
         Vec3 at = hand(owner, held);
-        held.setPos(at.x, at.y, at.z);
+        if (held instanceof ServerPlayer player) {
+            HeldPlayers.holdAt(player, at.x, at.y, at.z);
+        } else {
+            held.setPos(at.x, at.y, at.z);
+        }
         held.setDeltaMovement(Vec3.ZERO);
         held.resetFallDistance();
         return true;
@@ -105,6 +118,10 @@ final class GrabDive {
 
     private void grab(ServerLevel level, ServerPlayer owner, LivingEntity held) {
         if (held instanceof Mob mob && HeldMobs.hold(mob)) {
+            this.carried = true;
+        } else if (held instanceof ServerPlayer player && !HeldMobs.isHeldByAnyone(player)) {
+            Knockdowns.knock(player);
+            CARRIED.add(player.getUUID());
             this.carried = true;
         } else {
             held.invulnerableTime = 0;
@@ -167,8 +184,14 @@ final class GrabDive {
     private void let(LivingEntity held) {
         if (this.carried && held instanceof Mob mob) {
             HeldMobs.release(mob);
+        } else if (this.carried) {
+            CARRIED.remove(held.getUUID());
         }
         this.carried = false;
+    }
+
+    static void clear() {
+        CARRIED.clear();
     }
 
     void end() {

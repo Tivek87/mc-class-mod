@@ -36,6 +36,7 @@ public class MultiversePowers {
         ThrownHammer.register(modEventBus);
         ModConfigs.register(modContainer, modEventBus);
         PlayerKnockdowns.listen(Characters::knockedDown);
+        PlayerKnockdowns.flight(Characters::flying, Characters::flyAgain);
         NeoForge.EVENT_BUS.addListener(MultiversePowers::onServerStopping);
     }
 

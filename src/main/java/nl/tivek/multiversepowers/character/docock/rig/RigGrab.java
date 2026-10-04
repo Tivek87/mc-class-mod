@@ -13,7 +13,6 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.MoverType;
-import net.minecraft.world.entity.RelativeMovement;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
@@ -25,6 +24,7 @@ import nl.tivek.multiversepowers.character.docock.TentacleBlocks;
 import nl.tivek.multiversepowers.engine.effect.Effect;
 import nl.tivek.multiversepowers.engine.effect.Effects;
 import nl.tivek.multiversepowers.engine.entity.HeldMobs;
+import nl.tivek.multiversepowers.engine.entity.HeldPlayers;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 import nl.tivek.multiversepowers.engine.target.Targeting;
 
@@ -247,8 +247,7 @@ abstract class RigGrab extends RigStrikes {
     }
 
     public static void holdAt(ServerPlayer player, double x, double y, double z) {
-        player.connection.teleport(x, y, z, player.getYRot(), player.getXRot(), RelativeMovement.ROTATION);
-        player.connection.aboveGroundTickCount = 0;
+        HeldPlayers.holdAt(player, x, y, z);
     }
 
     public static boolean mayHold(ServerPlayer caster, LivingEntity target, ServerLevel level) {

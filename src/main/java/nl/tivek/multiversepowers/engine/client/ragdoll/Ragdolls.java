@@ -25,6 +25,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
@@ -61,6 +62,9 @@ public final class Ragdolls {
     // Flying along the ground faster than this (blocks a tick), the way it flies is kept: against a wall it slumps.
     private static final double THROWN_WAY = 0.05;
     private static final double GO_LIMP = 0.25;
+    // A player let go of in the air takes their own pose back this much a tick, once word of the knockdown has come.
+    private static final double TAKE_BACK = 0.16;
+    private static final int CAUGHT_AFTER = 2;
     // A limp creature is let go a little further off than where it may go limp, so it does not flicker at the edge.
     private static final double LET_GO = 1.2;
     // Getting up, its head turns to its own look from this far on.
@@ -294,7 +298,7 @@ public final class Ragdolls {
             return Ragdoll.State.HELD;
         }
         return THROWN_NOW.contains(entity.getId()) || RagdollCauses.blown(entity.getId(), ticks)
-                || Knocked.down(entity.getId()) ? Ragdoll.State.FLYING : null;
+                || Knocked.down(entity.getId(), entity instanceof Player) ? Ragdoll.State.FLYING : null;
     }
 
     // Whether a power has the creature: holding it, or posing or drawing it in a way of its own.
@@ -461,6 +465,11 @@ public final class Ragdolls {
         switch (doll.phase) {
             case AIR -> {
                 doll.follow(entity, true);
+                // A player let go of still in the air takes their own pose back and falls, or flies, on.
+                if (entity instanceof Player && doll.age > CAUGHT_AFTER && !Knocked.held(entity.getId())) {
+                    doll.limp -= TAKE_BACK;
+                    return doll.limp > 0.0;
+                }
                 doll.limp = Math.min(1.0, doll.limp + GO_LIMP);
                 Vec3 push = entity.getDeltaMovement();
                 if (push.horizontalDistanceSqr() > THROWN_WAY * THROWN_WAY) {
@@ -488,7 +497,8 @@ public final class Ragdolls {
                         doll.lain++;
                     }
                     doll.keepNear(entity);
-                    if (Knocked.getsUp(entity.getId(), doll.down, doll.lain, doll.kind().ticks)) {
+                    if (Knocked.getsUp(entity.getId(), entity instanceof Player, doll.down, doll.lain,
+                            doll.riseTicks())) {
                         doll.getUp();
                     }
                 }
@@ -501,7 +511,7 @@ public final class Ragdolls {
                     DamageSource source = entity.getLastDamageSource();
                     RagdollFalls.knockBack(doll, entity.getDeltaMovement(),
                             source == null ? null : source.getSourcePosition());
-                } else if (doll.up >= doll.kind().ticks) {
+                } else if (doll.up >= doll.riseTicks()) {
                     Knocked.forget(entity.getId());
                     Facings.rose(entity, doll.riseYaw);
                     return false;
@@ -543,7 +553,7 @@ public final class Ragdolls {
         float partialTick = event.getPartialTick();
         Ragdoll doll = LIVE.get(entity.getId());
         if (doll != null && doll.entity == entity && doll.phase == Ragdoll.Phase.UP) {
-            float u = (doll.up + partialTick) / doll.kind().ticks;
+            float u = (doll.up + partialTick) / doll.riseTicks();
             float own = Mth.rotLerp(partialTick, entity.yBodyRotO, entity.yBodyRot);
             float look = Mth.wrapDegrees(Mth.rotLerp(partialTick, entity.yHeadRotO, entity.yHeadRot) - own);
             float share = (float) Ease.smoother((u - TURN_FROM) / (1.0F - TURN_FROM));

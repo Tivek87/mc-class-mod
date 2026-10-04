@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
 import net.minecraft.Util;
+import net.minecraft.client.AttackIndicatorStatus;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
@@ -17,7 +18,13 @@ import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.HumanoidArm;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
+import net.neoforged.neoforge.client.event.RenderGuiLayerEvent;
+import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.character.AbilitySlot;
 import nl.tivek.multiversepowers.character.CharacterAbility;
@@ -26,13 +33,16 @@ import nl.tivek.multiversepowers.character.client.AbilityPanelRows.Line;
 import nl.tivek.multiversepowers.character.greenlantern.client.hud.ConstructHud;
 import nl.tivek.multiversepowers.character.greenlantern.client.hud.ConstructWheelScreen;
 import nl.tivek.multiversepowers.engine.client.gui.GuiShapes;
+import nl.tivek.multiversepowers.engine.client.gui.HudSpace;
 import nl.tivek.multiversepowers.engine.client.gui.ScreenAnchors;
 import nl.tivek.multiversepowers.engine.math.Ease;
 
-// The panel in the bottom right: who you are and only what you can use right now, each with its key, and why when it
-// cannot be used. It is drawn at the game's own GUI scale and keeps calm: while it is up its width only grows and rows
-// glide to their places. It fades in when you use or try a power, hit something or get hit, stays while a move is held
-// or running, and fades out a few seconds after the fighting stops.
+// The panel in the bottom right corner, beside the hotbar: who you are and only what you can use right now, each with
+// its key, and why when it cannot be used. It is drawn at the game's own GUI scale (smaller where the corner is too
+// small) and keeps calm: while it is up its width only grows and rows glide to their places. It fades in gently when
+// you use or try a power, hit something or get hit, stays while a move is held or running, and fades out quickly a few
+// seconds after the fighting stops.
+@EventBusSubscriber(modid = MultiversePowers.MODID, value = Dist.CLIENT)
 public final class AbilityPanel {
     private static final ResourceLocation LAYER_ID = ResourceLocation.fromNamespaceAndPath(MultiversePowers.MODID,
             "character_abilities");
@@ -56,18 +66,22 @@ public final class AbilityPanel {
     private static final int NAME_DIM = 0x8C8C8C;
     private static final int SOFT = 0x9A9A9A;
     private static final long LINGER_MS = 5000L;
-    private static final float FADE_IN_SECONDS = 0.15F;
-    private static final float FADE_OUT_SECONDS = 0.6F;
+    private static final float FADE_IN_SECONDS = 0.45F;
+    private static final float FADE_OUT_SECONDS = 0.25F;
     private static final float GLIDE = 16.0F;
     private static final float LIGHT = 12.0F;
     private static final long ROW_FADE_MS = 150L;
     // The most of the screen's height the panel takes, unless that would bring it under two screen pixels to one of
     // its own.
     private static final float CALM = 0.6F;
-    // Half the hotbar's width, and how high the bars over its right half (food, air) reach above the screen's bottom:
-    // the panel keeps right of the hotbar, or above those bars when it is too wide for that.
+    // Half the hotbar's width: the panel always stands in the corner right of it, going smaller rather than anywhere
+    // else. Right of the hotbar the game may draw a left-handed player's off-hand slot, or a right-handed one's attack
+    // indicator.
     private static final int HOTBAR = 91;
-    private static final int BARS = 50;
+    private static final int OFF_HAND = 29;
+    private static final int INDICATOR = 24;
+    // Subtitles, whose lowest box the game draws down to this far above the bottom right, go up over the panel.
+    private static final int SUBTITLES = 30;
     private static final Rules EVERY = (ability, player) -> true;
     private static final Map<GameCharacter, Rules> RULES = new EnumMap<>(GameCharacter.class);
     private static long awakeUntil;
@@ -78,6 +92,9 @@ public final class AbilityPanel {
     @Nullable
     private static GameCharacter seen;
     private static int lastHit;
+    // How high the panel reached above the screen's bottom when last drawn, in GUI units; 0 while it is away.
+    private static float drawnHeight;
+    private static boolean subtitlesMoved;
 
     // What a character's panel lists, of what its buttons fire now and its keys allow (ClientCharacter.refusal).
     @FunctionalInterface
@@ -157,8 +174,8 @@ public final class AbilityPanel {
         }
     }
 
-    // The panel while it is up: the width and key column it keeps, its size and lift gliding to where they are going,
-    // its rows, how many screen pixels make one of its own and whether its rows sit tight.
+    // The panel while it is up: the width and key column it keeps, its size gliding to where it is going, its rows, how
+    // many screen pixels make one of its own and whether its rows sit tight.
     private static final class Up {
         private final Map<Integer, Shown> rows = new HashMap<>();
         private boolean fresh = true;
@@ -166,13 +183,13 @@ public final class AbilityPanel {
         private int keys;
         private float shownWidth;
         private float shownHeight;
-        private float lift = Float.NaN;
         private int pixels;
-        private boolean lifted;
         private boolean tight;
         private double guiScale;
         private int screenWidth;
         private int screenHeight;
+        private float room;
+        private float squeeze = 1.0F;
 
         void follow(Layout layout, List<Line> lines, float seconds, long millis) {
             if (this.fresh) {
@@ -207,19 +224,19 @@ public final class AbilityPanel {
             this.rows.putAll(now);
         }
 
-        // The GUI scale itself with roomy rows. Where the panel would take more than CALM of the screen's height (never
-        // under two screen pixels to one of its own for that) or the screen cannot hold it, tight rows first, then a
-        // step less. While up on the same screen it never grows or loosens again, and once lifted over the bars it
-        // stays there. Returns the layout to draw.
-        Layout place(Layout roomy, Layout tight, double guiScale, int screenWidth, int screenHeight, float seconds) {
-            if (guiScale != this.guiScale || screenWidth != this.screenWidth || screenHeight != this.screenHeight) {
+        // The GUI scale itself with roomy rows. Where the panel would not fit in the `room` right of the hotbar, would
+        // take more than CALM of the screen's height (never under two screen pixels to one of its own for that) or
+        // the screen cannot hold it, tight rows first, then a step less: whatever the GUI scale it stays in the corner.
+        // While up on the same screen it never grows or loosens again. Returns the layout to draw.
+        Layout place(Layout roomy, Layout tight, double guiScale, int screenWidth, int screenHeight, float room) {
+            if (guiScale != this.guiScale || screenWidth != this.screenWidth || screenHeight != this.screenHeight
+                    || room != this.room) {
                 this.guiScale = guiScale;
                 this.screenWidth = screenWidth;
                 this.screenHeight = screenHeight;
+                this.room = room;
                 this.pixels = 0;
-                this.lifted = false;
                 this.tight = false;
-                this.lift = Float.NaN;
             }
             int most = Math.max(1, (int) Math.round(guiScale));
             if (this.pixels > 0) {
@@ -229,23 +246,25 @@ public final class AbilityPanel {
             for (int pixels = most; chosen == null; pixels--) {
                 float scale = (float) (pixels / guiScale);
                 for (Layout layout : this.tight ? List.of(tight) : List.of(roomy, tight)) {
-                    boolean lifted = this.lifted || (Math.max(this.width, layout.width()) + PAD * 2) * scale
-                            > screenWidth / 2.0F - HOTBAR - MARGIN * 2;
+                    float wide = (Math.max(this.width, layout.width()) + PAD * 2) * scale;
                     float tall = (layout.height() + PAD * 2) * scale;
-                    float room = screenHeight - MARGIN * 2 - (lifted ? BARS : 0);
-                    if (pixels == 1 || tall <= room && (pixels <= 2 || tall <= screenHeight * CALM)) {
+                    if (pixels == 1 || wide <= room && tall <= screenHeight - MARGIN * 2
+                            && (pixels <= 2 || tall <= screenHeight * CALM)) {
                         chosen = layout;
                         this.pixels = pixels;
-                        this.lifted = lifted;
                         this.tight = layout == tight;
+                        // Too narrow a window for even one screen pixel to one of its own: smaller still, in the
+                        // corner all the same.
+                        this.squeeze = wide > room ? Math.max(0.5F, room / wide) : 1.0F;
                         break;
                     }
                 }
             }
-            float lift = this.lifted ? BARS : 0.0F;
-            this.lift = Float.isNaN(this.lift) ? lift
-                    : glide(this.lift, lift, 1.0F - (float) Math.exp(-GLIDE * seconds), 0.05F);
             return chosen;
+        }
+
+        float scale() {
+            return (float) (this.pixels / this.guiScale) * this.squeeze;
         }
     }
 
@@ -315,7 +334,7 @@ public final class AbilityPanel {
     }
 
     // Key names short enough for the panel: "Left Alt" is "LAlt", "Right Control" is "RCtrl", "Double Space" "2×Space".
-    static Component brief(Component key) {
+    public static Component brief(Component key) {
         String name = key.getString();
         String brief = name.replace("Double ", "2×").replace("Left ", "L").replace("Right ", "R")
                 .replace("Control", "Ctrl")
@@ -337,6 +356,7 @@ public final class AbilityPanel {
         long millis = Util.getMillis();
         float seconds = Math.min(0.1F, (millis - lastFrame) / 1000.0F);
         lastFrame = millis;
+        drawnHeight = 0.0F;
         if (now == null || player == null || minecraft.options.hideGui
                 || minecraft.screen instanceof ConstructWheelScreen || minecraft.screen instanceof PowerWheelScreen) {
             shown = 0.0F;
@@ -363,17 +383,18 @@ public final class AbilityPanel {
             up = new Up();
         }
         double guiScale = minecraft.getWindow().getGuiScale();
+        float room = graphics.guiWidth() / 2.0F - HOTBAR - beside(minecraft) - MARGIN * 2;
         Layout layout = up.place(layout(font, now, lines, ultimate, up.keys, ROOMY),
                 layout(font, now, lines, ultimate, up.keys, TIGHT), guiScale, graphics.guiWidth(),
-                graphics.guiHeight(), seconds);
+                graphics.guiHeight(), room);
         up.follow(layout, lines, seconds, millis);
-        float scale = (float) (up.pixels / guiScale);
+        float scale = up.scale();
         graphics.flush();
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, (float) Ease.smooth(shown));
         PoseStack pose = graphics.pose();
         pose.pushPose();
         float x = onPixel(graphics.guiWidth() - MARGIN, guiScale);
-        float y = onPixel(graphics.guiHeight() - MARGIN - up.lift, guiScale);
+        float y = onPixel(graphics.guiHeight() - MARGIN, guiScale);
         pose.translate(x, y, 0.0F);
         pose.scale(scale, scale, 1.0F);
         draw(graphics, font, now, player, lines, layout, up, millis);
@@ -383,11 +404,45 @@ public final class AbilityPanel {
         anchors(layout, x, y, scale);
     }
 
-    // Where the panel and its guide key ended up on the screen, for the tour to point at.
+    // What the game itself may draw right of the hotbar, kept free whether it shows now or not, so the panel never
+    // jumps: a left-handed player's off-hand slot, or the attack indicator of a right-handed one who shows it there.
+    private static int beside(Minecraft minecraft) {
+        if (minecraft.options.mainHand().get() == HumanoidArm.LEFT) {
+            return OFF_HAND;
+        }
+        return minecraft.options.attackIndicator().get() == AttackIndicatorStatus.HOTBAR ? INDICATOR : 0;
+    }
+
+    // The game's subtitles stand in the bottom right as well: while the panel is up they go up over it.
+    @SubscribeEvent
+    public static void onLayerPre(RenderGuiLayerEvent.Pre event) {
+        if (!event.getName().equals(VanillaGuiLayers.SUBTITLE_OVERLAY)) {
+            return;
+        }
+        float lift = drawnHeight + HudSpace.GAP - SUBTITLES;
+        subtitlesMoved = lift > 0.0F;
+        if (subtitlesMoved) {
+            event.getGuiGraphics().pose().pushPose();
+            event.getGuiGraphics().pose().translate(0.0F, -lift, 0.0F);
+        }
+    }
+
+    @SubscribeEvent
+    public static void onLayerPost(RenderGuiLayerEvent.Post event) {
+        if (subtitlesMoved && event.getName().equals(VanillaGuiLayers.SUBTITLE_OVERLAY)) {
+            subtitlesMoved = false;
+            event.getGuiGraphics().pose().popPose();
+        }
+    }
+
+    // Where the panel and its guide key ended up on the screen, for the tour to point at; the corner it takes stays free
+    // of the rest of the HUD.
     private static void anchors(Layout layout, float x, float y, float scale) {
         int width = Math.round(up.shownWidth) + PAD * 2;
         int height = Math.round(up.shownHeight) + PAD * 2;
         ScreenAnchors.report("game.panel", x - width * scale, y - height * scale, width * scale, height * scale);
+        HudSpace.claim(x - width * scale, y - height * scale, width * scale, height * scale);
+        drawnHeight = height * scale + MARGIN;
         if (layout.corner() == null && layout.guideWidth() > 0) {
             float top = y - (height - PAD + 3) * scale;
             ScreenAnchors.report("game.panel.guide", x - (PAD + layout.guideWidth() + 2) * scale, top,

@@ -31,6 +31,7 @@ final class TourCard {
     private static final int HEADER = 11;
     private static final int PIPS_UP_TO = 12;
     private static final int HIGHLIGHTS = 4;
+    private static final int NOTE_PAD = 6;
     private static final String ARROW = "▶ ";
 
     // A clickable part as last drawn.
@@ -56,8 +57,8 @@ final class TourCard {
     record Buttons(@Nullable Box next, @Nullable Box back, @Nullable Box skip) {
     }
 
-    // Where the first ask's buttons were drawn.
-    record Ask(Box show, Box later, Box skip) {
+    // Where the first ask's buttons were drawn; `update` only while a newer version is out.
+    record Ask(Box show, Box later, Box skip, @Nullable Box update) {
     }
 
     private TourCard() {
@@ -105,8 +106,7 @@ final class TourCard {
         int left = x + PAD;
         int right = x + w - PAD;
         int line = y + PAD;
-        KeyCap.chip(layer, font, Component.translatable(PREFIX + "new_in", step.shortVersion()), left, line,
-                0xFF000000 | ACCENT, INK);
+        KeyCap.chip(layer, font, step.chip(), left, line, 0xFF000000 | ACCENT, INK);
         pips(layer, font, number, total, right, line);
         line += HEADER + 6;
         for (FormattedCharSequence part : body.title()) {
@@ -163,16 +163,19 @@ final class TourCard {
         return new Buttons(null, null, null);
     }
 
-    // The first ask: what is new, a few of the things it will show, and Show me, Later and Skip.
-    static int introHeight(Font font, int inner, int count, List<Component> highlights) {
+    // The first ask: what is new, a few of the things it will show, and Show me, Later and Skip; while a newer version
+    // is out, a note asking to update to it first, and Update in place of Show me.
+    static int introHeight(Font font, int inner, int count, List<Component> highlights, @Nullable String newer) {
         int lines = font.split(introText(count), inner).size();
         int shown = Math.min(HIGHLIGHTS, highlights.size());
         int more = highlights.size() > HIGHLIGHTS ? 1 : 0;
-        return PAD + HEADER + 6 + 10 + 4 + lines * 10 + 6 + (shown + more) * 10 + 8 + 1 + 6 + BUTTON + PAD - 1;
+        int note = newer == null ? 0 : 6 + font.split(updateText(newer), inner - NOTE_PAD * 2).size() * 10 + 6;
+        return PAD + HEADER + 6 + 10 + 4 + lines * 10 + 6 + (shown + more) * 10 + note + 8 + 1 + 6 + BUTTON + PAD
+                - 1;
     }
 
-    static Ask intro(KeyCap.Layer layer, Font font, String version, int count, List<Component> highlights, int x,
-            int y, int w, int h, double mouseX, double mouseY) {
+    static Ask intro(KeyCap.Layer layer, Font font, String version, int count, List<Component> highlights,
+            @Nullable String newer, int x, int y, int w, int h, double mouseX, double mouseY) {
         int left = x + PAD;
         int right = x + w - PAD;
         int inner = right - left;
@@ -196,20 +199,47 @@ final class TourCard {
         if (highlights.size() > HIGHLIGHTS) {
             layer.text(Component.translatable(PREFIX + "intro.more", highlights.size() - HIGHLIGHTS), left + 9, line,
                     MUTED);
+            line += 10;
         }
         int footer = y + h - PAD - BUTTON;
+        if (newer != null) {
+            List<FormattedCharSequence> note = font.split(updateText(newer), inner - NOTE_PAD * 2);
+            int top = line + 6;
+            int bottom = top + note.size() * 10 + 6;
+            GuiShapes.roundRect(layer.graphics(), left, top, inner, bottom - top, 3.0F,
+                    GuiShapes.fade(NavScreen.WARN, 0.18F));
+            GuiShapes.roundRect(layer.graphics(), left, top, 2.0F, bottom - top, 1.0F, 0xFF000000 | NavScreen.WARN);
+            for (int i = 0; i < note.size(); i++) {
+                layer.sequence(note.get(i), left + NOTE_PAD, top + 4 + i * 10, 0xFF000000 | NavScreen.WARN);
+            }
+        }
         layer.graphics().fill(left, footer - 7, right, footer - 6, 0x18FFFFFF);
-        Box show = button(layer, font, Component.translatable(PREFIX + "intro.show").append(" ▶"), right, footer,
-                mouseX, mouseY);
+        Box update = null;
+        Box show;
+        int linkX = left;
+        if (newer == null) {
+            show = button(layer, font, Component.translatable(PREFIX + "intro.show").append(" ▶"), right, footer,
+                    mouseX, mouseY);
+        } else {
+            update = button(layer, font, Component.translatable(PREFIX + "intro.update").append(" ▶"), right, footer,
+                    mouseX, mouseY);
+            Component anyway = Component.translatable(PREFIX + "intro.anyway");
+            show = link(layer, font, anyway, linkX, footer + 3, mouseX, mouseY);
+            linkX += font.width(anyway) + 10;
+        }
         Component later = Component.translatable(PREFIX + "intro.later");
-        Box laterBox = link(layer, font, later, left, footer + 3, mouseX, mouseY);
-        Box skipBox = link(layer, font, Component.translatable(PREFIX + "intro.skip"), left + font.width(later) + 10,
+        Box laterBox = link(layer, font, later, linkX, footer + 3, mouseX, mouseY);
+        Box skipBox = link(layer, font, Component.translatable(PREFIX + "intro.skip"), linkX + font.width(later) + 10,
                 footer + 3, mouseX, mouseY);
-        return new Ask(show, laterBox, skipBox);
+        return new Ask(show, laterBox, skipBox, update);
     }
 
     private static Component introText(int count) {
         return Component.translatable(PREFIX + "intro." + (count == 1 ? "one" : "many"), count);
+    }
+
+    private static Component updateText(String newer) {
+        return Component.translatable(PREFIX + "intro.newer", newer);
     }
 
     // How far along the tour is: a pip per step, the done ones lit and the one shown long; past a dozen, a count.

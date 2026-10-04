@@ -29,7 +29,7 @@ public abstract class NavScreen extends Screen {
     protected static final int BODY = 0xFFD2D2D2;
     protected static final int MUTED = 0xFF8E8E8E;
     protected static final int DIM = 0xFF5E5E5E;
-    protected static final int WARN = 0xF2C84B;
+    public static final int WARN = 0xF2C84B;
     protected static final int ERROR = 0xFF7B7B;
     private static final int EDGE = 0xFF000000;
     private static final int FILL = 0xEE121212;
@@ -47,6 +47,7 @@ public abstract class NavScreen extends Screen {
     private static final int COMPACT = 26;
     protected static final int PAD = 10;
     private static final int HEADER = 28;
+    private static final int TAB = 14;
     private static final int MIN_CONTENT = 250;
     private static final float GLIDE = 18.0F;
 
@@ -59,6 +60,10 @@ public abstract class NavScreen extends Screen {
 
     // A small mark on an item: a dot when `text` is null, else a chip.
     public record Badge(@Nullable Component text, int rgb) {
+    }
+
+    // One part of a page, switched to at the right of its title; `count` is a chip after its name.
+    public record Tab(String id, Component label, @Nullable Component count, boolean picked, Runnable open) {
     }
 
     // Text drawn this frame that does something when clicked.
@@ -113,6 +118,11 @@ public abstract class NavScreen extends Screen {
         return null;
     }
 
+    // The parts this page is made of, if any.
+    protected List<Tab> tabs() {
+        return List.of();
+    }
+
     protected abstract void initPage();
 
     // Under the page's widgets.
@@ -156,7 +166,9 @@ public abstract class NavScreen extends Screen {
         this.titleBar(graphics, mouseX, mouseY);
         this.sidebar(graphics, mouseX, mouseY);
         int top = this.windowY + TITLE_BAR + 8;
-        graphics.drawString(this.font, this.title.copy().withStyle(ChatFormatting.BOLD), this.contentX, top, TEXT, true);
+        int tabs = this.tabs(graphics, top - 3, mouseX, mouseY);
+        graphics.drawString(this.font, fit(this.title.copy().withStyle(ChatFormatting.BOLD),
+                this.contentWidth - (tabs > 0 ? tabs + 8 : 0)), this.contentX, top, TEXT, true);
         Component subtitle = this.subtitle();
         if (subtitle != null) {
             graphics.drawString(this.font, fit(subtitle, this.contentWidth), this.contentX, top + 12, MUTED, false);
@@ -190,6 +202,7 @@ public abstract class NavScreen extends Screen {
                 false);
         ScreenAnchors.report("close", closeX - 2, this.windowY + 2, 16, TITLE_BAR - 4);
         Component tag = this.brandTag();
+        int free = closeX - 2;
         if (tag != null) {
             int width = this.font.width(tag) + 8;
             int x = closeX - 8 - width;
@@ -197,7 +210,11 @@ public abstract class NavScreen extends Screen {
                     && mouseY < this.windowY + 16;
             chip(graphics, tag, x, this.windowY + 5, over ? 0x505050 : 0x343434, over ? 0xFFFFFF : 0xC8C8C8);
             this.links.add(new Link(x, this.windowY + 4, width, 12, this::clickedBrandTag));
+            free = x;
         }
+        // The bar's free middle, between the brand and the tag, for what lies on it.
+        int left = this.windowX + 24 + this.font.width(this.brand()) + 6;
+        ScreenAnchors.report("window.bar", left, this.windowY, Math.max(0, free - 6 - left), TITLE_BAR);
     }
 
     private void sidebar(GuiGraphics graphics, int mouseX, int mouseY) {
@@ -253,6 +270,46 @@ public abstract class NavScreen extends Screen {
             ScreenAnchors.report("nav." + item.id(), this.windowX, y, this.sideWidth, ITEM);
             y += ITEM;
         }
+    }
+
+    // The page's parts side by side at the right of its title, the open one lit; returns how wide they are.
+    private int tabs(GuiGraphics graphics, int y, int mouseX, int mouseY) {
+        List<Tab> tabs = this.tabs();
+        int total = 0;
+        for (Tab tab : tabs) {
+            total += this.tabWidth(tab);
+        }
+        int right = this.contentX + this.contentWidth;
+        int x = right - total;
+        if (!tabs.isEmpty()) {
+            graphics.fill(x, y, right, y + TAB, 0x50000000);
+            graphics.fill(x, y + TAB - 1, right, y + TAB, RIM);
+        }
+        for (Tab tab : tabs) {
+            int width = this.tabWidth(tab);
+            boolean over = !tab.picked() && mouseX >= x && mouseX < x + width && mouseY >= y && mouseY < y + TAB;
+            if (tab.picked()) {
+                graphics.fill(x, y, x + width, y + TAB, PICKED);
+                graphics.fill(x, y + TAB - 1, x + width, y + TAB, 0xFF000000 | ACCENT);
+            } else if (over) {
+                graphics.fill(x, y, x + width, y + TAB, HOVER);
+            }
+            graphics.drawString(this.font, tab.label(), x + 6, y + 3, tab.picked() || over ? TEXT : BODY, false);
+            if (tab.count() != null) {
+                chip(graphics, tab.count(), x + 10 + this.font.width(tab.label()), y + 2, 0x4A4A4A, 0xE0E0E0);
+            }
+            if (!tab.picked()) {
+                this.links.add(new Link(x, y, width, TAB, tab.open()));
+            }
+            ScreenAnchors.report("tab." + tab.id(), x, y, width, TAB);
+            x += width;
+        }
+        return total;
+    }
+
+    private int tabWidth(Tab tab) {
+        int width = this.font.width(tab.label()) + 12;
+        return tab.count() == null ? width : width + this.font.width(tab.count()) + 10;
     }
 
     private void drawBadge(GuiGraphics graphics, Badge badge, int y) {

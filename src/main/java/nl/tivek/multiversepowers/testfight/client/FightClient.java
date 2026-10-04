@@ -39,6 +39,7 @@ import nl.tivek.multiversepowers.character.client.PowerInputs;
 import nl.tivek.multiversepowers.engine.client.fx.CameraShake;
 import nl.tivek.multiversepowers.engine.client.fx.Cinematic;
 import nl.tivek.multiversepowers.engine.client.gui.GuiShapes;
+import nl.tivek.multiversepowers.engine.client.gui.HudSpace;
 import nl.tivek.multiversepowers.engine.client.pose.Stance;
 import nl.tivek.multiversepowers.engine.client.ragdoll.Downed;
 import nl.tivek.multiversepowers.engine.math.Ease;
@@ -360,15 +361,19 @@ public final class FightClient {
         float y = graphics.guiHeight() / 2.0F;
         float filled = Mth.clamp((held + deltaTracker.getGameTimeDeltaPartialTick(false)) / HOLD, 0.0F, 1.0F);
         float appear = Mth.clamp((held - SHOWN) / 4.0F, 0.0F, 1.0F);
-        GuiShapes.arc(graphics, x, y, 9.0F, 13.0F, 0.0F, 360.0F, GuiShapes.fade(DARK, 0.55F * appear));
-        GuiShapes.arc(graphics, x, y, 10.0F, 12.0F, 0.0F, 360.0F * filled,
+        float inner = HudSpace.ring(x, y, 9.0F, 4.0F, 0.0F, 360.0F);
+        GuiShapes.arc(graphics, x, y, inner, inner + 4.0F, 0.0F, 360.0F, GuiShapes.fade(DARK, 0.55F * appear));
+        GuiShapes.arc(graphics, x, y, inner + 1.0F, inner + 3.0F, 0.0F, 360.0F * filled,
                 GuiShapes.fade(GuiShapes.mix(WHITE, GOLD, filled), 0.95F * appear));
         GuiShapes.flush(graphics);
         // Text all but see-through is drawn whole by the font, so it waits until the ring is half in.
         if (appear >= 0.5F) {
             Component text = Component.translatable("testfight." + MultiversePowers.MODID + ".hold",
                     aimed.getName());
-            graphics.drawCenteredString(minecraft.font, text, (int) x, (int) (y + 18.0F),
+            int width = minecraft.font.width(text);
+            HudSpace.Box box = HudSpace.place(Mth.floor(x - width * 0.5F), Mth.floor(y + inner + 9.0F), width, 9,
+                    HudSpace.Way.DOWN);
+            graphics.drawString(minecraft.font, text, Mth.floor(box.x()), Mth.floor(box.y()),
                     GuiShapes.fade(WHITE, appear));
         }
     }

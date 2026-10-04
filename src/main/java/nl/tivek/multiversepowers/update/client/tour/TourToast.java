@@ -9,6 +9,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
 import nl.tivek.multiversepowers.character.client.KeyCap;
+import nl.tivek.multiversepowers.engine.client.gui.HudSpace;
 import nl.tivek.multiversepowers.engine.client.gui.PixelIcons;
 import nl.tivek.multiversepowers.engine.client.gui.ScreenAnchors;
 import nl.tivek.multiversepowers.engine.math.Ease;
@@ -22,6 +23,9 @@ final class TourToast {
     private static final int EDGE = 6;
 
     private static long toastAt = -TOAST_MS;
+    // What the toast says (`<head>` over `<line>`), and whether it shows a tick rather than the tour's spark.
+    private static String head = "caught_up";
+    private static String line = "replay_hint";
     private static boolean cheered;
 
     // Where the pill and its buttons were drawn.
@@ -31,32 +35,39 @@ final class TourToast {
     private TourToast() {
     }
 
-    // In the update manager it sits in the middle of its title bar, without Skip; on other screens at the top in the
-    // middle; in game, where it has keys, in the corner.
-    static Pill pill(GuiGraphics graphics, Component label, boolean reachable, boolean mouse, float alpha,
-            double mouseX, double mouseY) {
+    // In the update manager it sits in the free middle of its title bar, without Skip, saying only `brief` (or nothing
+    // but its button) where the whole label does not fit; on other screens at the top in the middle; in game, where it
+    // has keys, in the corner.
+    static Pill pill(GuiGraphics graphics, Component label, Component brief, boolean reachable, boolean mouse,
+            float alpha, double mouseX, double mouseY) {
         Font font = Minecraft.getInstance().font;
         Component go = Component.translatable(TourCard.PREFIX + "pill.continue");
         Component skip = TourCard.skipLabel();
         Component enter = TourCard.enter();
-        ScreenAnchors.Rect window = mouse ? ScreenAnchors.get("window") : null;
-        boolean skippable = mouse && window == null;
-        int width = 22 + font.width(label) + 8;
+        ScreenAnchors.Rect bar = mouse ? ScreenAnchors.get("window.bar") : null;
+        boolean skippable = mouse && bar == null;
+        int extra = 0;
         if (reachable) {
-            width += mouse ? font.width(TourCard.nextLabel(go)) + 10 + 6 : KeyCap.width(font, enter) + 4
+            extra += mouse ? font.width(TourCard.nextLabel(go)) + 10 + 6 : KeyCap.width(font, enter) + 4
                     + font.width(go) + 6;
         }
         if (skippable) {
-            width += font.width(skip) + 8;
+            extra += font.width(skip) + 8;
         }
+        if (bar != null && 22 + font.width(label) + 8 + extra > bar.width()) {
+            label = 22 + font.width(brief) + 8 + extra <= bar.width() ? brief : Component.empty();
+        }
+        int width = 22 + (label.getString().isEmpty() ? 0 : font.width(label) + 8) + extra;
         int x = EDGE;
         int y = EDGE;
-        if (window != null) {
-            x = Math.round(window.x() + (window.width() - width) / 2.0F);
-            y = Math.round(window.y()) + 1;
+        if (bar != null) {
+            x = Math.round(bar.x() + (bar.width() - width) / 2.0F);
+            y = Math.round(bar.y()) + 1;
         } else if (mouse) {
             x = (graphics.guiWidth() - width) / 2;
             y = 4;
+        } else {
+            y = Mth.floor(HudSpace.place(x, y, width, PILL, HudSpace.Way.DOWN).y());
         }
         graphics.flush();
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, alpha);
@@ -64,7 +75,7 @@ final class TourToast {
         TourCard.panel(graphics, x, y, width, PILL);
         PixelIcons.draw(graphics, PixelIcons.Icon.SPARK, x + 5, y + 4, 1, 0xFF000000 | TourCard.ACCENT, true);
         layer.text(label, x + 22, y + 6, TourCard.TEXT);
-        int at = x + 22 + font.width(label) + 8;
+        int at = x + width - extra;
         TourCard.Box goBox = null;
         TourCard.Box skipBox = null;
         if (reachable) {
@@ -87,13 +98,23 @@ final class TourToast {
     }
 
     static void cheer(long now) {
-        toastAt = now;
-        cheered = true;
+        toast(now, "caught_up", "replay_hint", true);
     }
 
     static void skipped(long now) {
+        toast(now, "skipped", "replay_hint", false);
+    }
+
+    // The update manager's Tour on a version with nothing to point at.
+    static void nothing(long now) {
+        toast(now, "nothing", "nothing.hint", false);
+    }
+
+    private static void toast(long now, String head, String line, boolean cheered) {
         toastAt = now;
-        cheered = false;
+        TourToast.head = head;
+        TourToast.line = line;
+        TourToast.cheered = cheered;
     }
 
     static boolean showing(long now) {
@@ -107,13 +128,15 @@ final class TourToast {
         float in = Mth.clamp(age / 250.0F, 0.0F, 1.0F);
         float out = Mth.clamp((TOAST_MS - age) / 400.0F, 0.0F, 1.0F);
         float shown = (float) Ease.smooth(Math.min(in, out));
-        Component head = Component.translatable(TourCard.PREFIX + (cheered ? "caught_up" : "skipped"))
-                .withStyle(ChatFormatting.BOLD);
-        Component line = Component.translatable(TourCard.PREFIX + "replay_hint");
+        Component head = Component.translatable(TourCard.PREFIX + TourToast.head).withStyle(ChatFormatting.BOLD);
+        Component line = Component.translatable(TourCard.PREFIX + TourToast.line);
         int w = Math.max(font.width(head), font.width(line)) + 34;
         int h = 30;
         int x = (graphics.guiWidth() - w) / 2;
-        int y = Math.round(-h - 2.0F + (h + 10.0F) * shown);
+        // In game it comes to rest under the boss bars.
+        int rest = Minecraft.getInstance().screen == null
+                ? Mth.floor(HudSpace.place(x, 8, w, h, HudSpace.Way.DOWN).y()) : 8;
+        int y = Math.round(-h - 2.0F + (rest + h + 2.0F) * shown);
         graphics.flush();
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, shown);
         TourCard.panel(graphics, x, y, w, h);

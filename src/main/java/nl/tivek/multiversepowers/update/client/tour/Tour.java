@@ -40,24 +40,24 @@ import net.neoforged.neoforge.client.event.ScreenEvent;
 import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.config.ModConfigs;
 import nl.tivek.multiversepowers.engine.client.gui.ScreenAnchors;
+import nl.tivek.multiversepowers.update.client.ManagerScreen;
 import nl.tivek.multiversepowers.update.client.UpdateChecker;
 import nl.tivek.multiversepowers.update.client.tour.TourStep.Place;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.opengl.GL11;
 import org.slf4j.Logger;
 
-// After an update, a short tour points at what is new right where it is: in the menus, the update manager and the
-// versions, in game at the panel and in the ability guide. It asks first on the title screen or in the pause menu; Next
-// goes on (taking the player to the next place itself where it can), Back goes back, and a pill in the corner says what
-// waits elsewhere. How far it got is kept in config/welcomescreen/tour.json; a first install gets no tour, as
-// everything is new to it anyway. The update manager's Tour plays it again.
+// After an update, a short tour points at what is new in the version installed, and only that, right where it is: in
+// the menus, the update manager, in game at the panel and in the ability guide. It asks first on the title screen or in
+// the pause menu, and while a newer version is out it asks to update to that one first; Next goes on (taking the player
+// to the next place itself where it can), Back goes back, and a pill in the corner says what waits elsewhere. How far
+// it got is kept in config/welcomescreen/tour.json; a first install gets no tour, as everything is new to it anyway.
+// The update manager's Tour plays it again.
 @EventBusSubscriber(modid = MultiversePowers.MODID, value = Dist.CLIENT)
 public final class Tour {
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final String FILE = "tour.json";
-    // An install from before the tour existed gets the steps of this many newest versions.
-    private static final int CATCH_UP = 2;
     // In game Enter held this long skips the tour; its key cap fills after the first moment.
     private static final long HOLD_MS = 1200L;
     private static final long HOLD_SHOWN_MS = 200L;
@@ -89,12 +89,18 @@ public final class Tour {
         ranBefore = ran;
     }
 
-    // The update manager's Tour: the tour waiting, or else every step again, from the manager's first page.
+    // The update manager's Tour: the tour waiting, or else every step of this version again, from the manager's first
+    // page; a version with nothing to show says so.
     public static void replay() {
         load();
         if (pending().isEmpty()) {
             seen = "";
             done.clear();
+        }
+        if (pending().isEmpty()) {
+            seen = UpdateChecker.installed();
+            TourOverlay.nothing();
+            return;
         }
         history.clear();
         started = true;
@@ -152,6 +158,7 @@ public final class Tour {
         if (event.getButton() == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
             switch (hit) {
                 case SHOW -> start();
+                case UPDATE -> update();
                 case LATER -> later();
                 case SKIP -> skip();
                 case NEXT -> next();
@@ -239,8 +246,11 @@ public final class Tour {
         }
         if (!started) {
             if (place == Place.MENU && !later) {
-                TourOverlay.intro(graphics, TourStep.bare(newest()), pending.size(),
-                        pending.stream().map(TourStep::title).toList(), mouseX, mouseY);
+                List<TourStep> news = pending.stream().filter(step -> step != TourSteps.UPDATE_FIRST).toList();
+                String newer = UpdateChecker.newerVersion();
+                TourOverlay.intro(graphics, TourStep.bare(UpdateChecker.installed()), news.size(),
+                        news.stream().map(TourStep::title).toList(), newer == null ? null : TourStep.bare(newer),
+                        mouseX, mouseY);
             }
             return;
         }
@@ -317,8 +327,9 @@ public final class Tour {
             }
         }
         String why = reachable ? "pill" : Minecraft.getInstance().level == null ? "pill.world" : "pill.character";
-        TourOverlay.pill(graphics, Component.translatable(TourCard.PREFIX + why, pending.size()), reachable, mouse,
-                alpha, mouseX, mouseY);
+        TourOverlay.pill(graphics, Component.translatable(TourCard.PREFIX + why, pending.size()),
+                Component.translatable(TourCard.PREFIX + "pill.short", pending.size()), reachable, mouse, alpha,
+                mouseX, mouseY);
     }
 
     // How far a held Enter is to skipping the tour.
@@ -330,12 +341,22 @@ public final class Tour {
                 1.0F);
     }
 
+    // The steps of the version installed not yet done, while its tour is not over; first, while a newer version is out,
+    // the one asking to update to it.
     private static List<TourStep> pending() {
         List<TourStep> pending = new ArrayList<>();
+        String installed = UpdateChecker.installed();
+        if (UpdateChecker.compare(installed, seen) <= 0) {
+            return pending;
+        }
         for (TourStep step : TourSteps.ALL) {
-            if (UpdateChecker.compare(step.version(), seen) > 0 && !done.contains(step.id())) {
+            if (UpdateChecker.compare(step.version(), installed) == 0 && !done.contains(step.id())) {
                 pending.add(step);
             }
+        }
+        if (!pending.isEmpty() && UpdateChecker.newerVersion() != null
+                && !done.contains(TourSteps.UPDATE_FIRST.id())) {
+            pending.add(0, TourSteps.UPDATE_FIRST);
         }
         return pending;
     }
@@ -351,6 +372,13 @@ public final class Tour {
                 && pending.get(0).place().reachable()) {
             pending.get(0).place().go();
         }
+    }
+
+    // Update first: on to the update manager, where the newer version is picked; the ask comes back until it is in.
+    private static void update() {
+        TourOverlay.click();
+        Minecraft minecraft = Minecraft.getInstance();
+        ManagerScreen.open(ManagerScreen.rootOf(minecraft.screen), ManagerScreen.UPDATES);
     }
 
     // Later: no asking again until the game starts anew.
@@ -451,7 +479,7 @@ public final class Tour {
     }
 
     private static void finish(boolean cheer) {
-        seen = newest();
+        seen = UpdateChecker.installed();
         done.clear();
         history.clear();
         started = false;
@@ -461,24 +489,6 @@ public final class Tour {
         if (cheer) {
             TourOverlay.cheer();
         }
-    }
-
-    // The newest version the tour knows: this one's, or a newer step's while testing a version not yet released.
-    private static String newest() {
-        String newest = UpdateChecker.installed();
-        for (TourStep step : TourSteps.ALL) {
-            if (UpdateChecker.compare(step.version(), newest) > 0) {
-                newest = step.version();
-            }
-        }
-        return newest;
-    }
-
-    // The version before the newest few that have steps, so only theirs are waiting.
-    private static String catchUp() {
-        List<String> versions = TourSteps.ALL.stream().map(TourStep::version).distinct()
-                .sorted((a, b) -> UpdateChecker.compare(b, a)).toList();
-        return versions.size() <= CATCH_UP ? "" : versions.get(CATCH_UP);
     }
 
     private static Path file() {
@@ -491,28 +501,34 @@ public final class Tour {
         }
         loaded = true;
         Path file = file();
+        String installed = UpdateChecker.installed();
         if (!Files.exists(file)) {
-            seen = ranBefore ? catchUp() : newest();
+            // An install from before the tour existed sees this version's tour; a first one none.
+            seen = ranBefore ? "" : installed;
             save();
             return;
         }
         try {
             JsonObject root = JsonParser.parseString(Files.readString(file, StandardCharsets.UTF_8)).getAsJsonObject();
-            seen = root.has("seen") ? root.get("seen").getAsString() : newest();
-            started = root.has("started") && root.get("started").getAsBoolean();
-            if (root.get("done") instanceof JsonArray array) {
-                for (JsonElement element : array) {
-                    done.add(element.getAsString());
+            seen = root.has("seen") ? root.get("seen").getAsString() : installed;
+            // How far a tour got counts only for the version it was of.
+            if (root.has("version") && root.get("version").getAsString().equals(installed)) {
+                started = root.has("started") && root.get("started").getAsBoolean();
+                if (root.get("done") instanceof JsonArray array) {
+                    for (JsonElement element : array) {
+                        done.add(element.getAsString());
+                    }
                 }
             }
         } catch (IOException | RuntimeException e) {
             LOGGER.warn("Could not read {}: {}", file, e.toString());
-            seen = newest();
+            seen = installed;
         }
     }
 
     private static void save() {
         JsonObject root = new JsonObject();
+        root.addProperty("version", UpdateChecker.installed());
         root.addProperty("seen", seen);
         root.addProperty("started", started);
         JsonArray array = new JsonArray();

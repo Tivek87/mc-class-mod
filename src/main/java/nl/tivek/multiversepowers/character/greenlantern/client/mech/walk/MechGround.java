@@ -1,5 +1,8 @@
 package nl.tivek.multiversepowers.character.greenlantern.client.mech.walk;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import javax.annotation.Nullable;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
@@ -27,6 +30,8 @@ final class MechGround {
     private static final double STRIDE_REACH = 1.2;
     private static final int ROOM = 2;
     private static final double FACE_STEP = 0.25;
+    // Ground no further than this under a level counts as standing on it: a dip, or a step the legs take.
+    private static final double LEVEL = 1.0;
 
     private MechGround() {
     }
@@ -95,20 +100,75 @@ final class MechGround {
         return best == null || found > best ? found : best;
     }
 
-    // The ground the legs can hold the mech up on where `stage` stands: the highest either foot finds anywhere along
-    // its stride, up to `top`. A hole narrower than the mech's stance never drops it in.
+    // The ground the legs can hold the mech up on where `stage` stands, up to `top`: the highest level either foot finds
+    // anywhere along its stride that lies under the mech's middle or all round it. A hole narrower than its stance never
+    // drops it in, but its middle never stands out over an edge: past one it drops, or stops where the drop is too deep
+    // to see the bottom of (null: nothing holds it up there).
     @Nullable
     static Double support(ClientLevel level, MechScript.Stage stage, double top) {
         double from = stage.base().y;
-        Double best = null;
+        Vec3 middle = stage.base();
+        Vec3 ahead = stage.ahead();
+        Vec3 across = new Vec3(-ahead.z, 0.0, ahead.x).scale(SOLE_ACROSS);
+        List<Vec3> found = new ArrayList<>();
+        Double under = below(level, middle, from, top);
         for (int side = 0; side < 2; side++) {
             Vec3 home = MechPainter.side(MechScript.ANKLE, side == 0);
             for (int k = -1; k <= 1; k++) {
                 Vec3 at = stage.point(home.add(0.0, 0.0, k * STRIDE_REACH));
-                best = higher(best, foot(level, at, stage.ahead(), from, top), top);
+                for (Vec3 spot : new Vec3[] { at, at.add(across), at.subtract(across), at.add(ahead.scale(SOLE_AHEAD)),
+                        at.subtract(ahead.scale(SOLE_BACK)) }) {
+                    Double ground = below(level, spot, from, top);
+                    if (ground != null) {
+                        found.add(new Vec3(spot.x, ground, spot.z));
+                    }
+                }
             }
         }
-        return best;
+        if (under != null) {
+            found.add(new Vec3(middle.x, under, middle.z));
+        }
+        found.sort((a, b) -> Double.compare(b.y, a.y));
+        for (int i = 0; i < found.size(); i++) {
+            double height = found.get(i).y;
+            if (i > 0 && height == found.get(i - 1).y) {
+                continue;
+            }
+            if (under != null && under >= height - LEVEL) {
+                return height;
+            }
+            int holding = i;
+            while (holding < found.size() && found.get(holding).y >= height - LEVEL) {
+                holding++;
+            }
+            if (round(found, holding, middle.x, middle.z)) {
+                return height;
+            }
+        }
+        return null;
+    }
+
+    @Nullable
+    private static Double below(ClientLevel level, Vec3 at, double from, double top) {
+        Double ground = ground(level, at, from);
+        return ground == null || ground > top ? null : ground;
+    }
+
+    // Whether the first `count` spots stand all round (x, z): no line through it has them all to one side.
+    private static boolean round(List<Vec3> spots, int count, double x, double z) {
+        if (count < 3) {
+            return false;
+        }
+        double[] angles = new double[count];
+        for (int i = 0; i < count; i++) {
+            angles[i] = Math.atan2(spots.get(i).z - z, spots.get(i).x - x);
+        }
+        Arrays.sort(angles);
+        double widest = angles[0] + 2.0 * Math.PI - angles[count - 1];
+        for (int i = 1; i < count; i++) {
+            widest = Math.max(widest, angles[i] - angles[i - 1]);
+        }
+        return widest < Math.PI;
     }
 
     // Whether a foot at `at` runs into a wall: anything solid from just over `top` up to a knee's height above it.

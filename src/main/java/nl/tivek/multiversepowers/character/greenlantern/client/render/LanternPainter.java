@@ -50,8 +50,6 @@ public class LanternPainter extends LanternBeams {
             Mesh.cylinder(10, 0.08, 0.30, 0.335, 1.3).moved(-0.145, 0.0, 0.40),
             Mesh.ball(10, 6, 0.065, 1.6).scaled(1.0, 0.6, 1.0).moved(-0.145, 0.34, 0.40));
     private static final double BOLT_WIDTH = 0.64;
-    private static final int DOME_RINGS = 12;
-    private static final int DOME_SLICES = 24;
     private static final int RAM_SIDES = 16;
     private static final double[][] RAM = { { -0.45, 0.92 }, { 0.35, 0.8 }, { 1.05, 0.52 }, { 1.55, 0.2 },
             { 1.8, 0.0 } };
@@ -162,70 +160,9 @@ public class LanternPainter extends LanternBeams {
         return rivets;
     }
 
-    public void dome(Vec3 center, double size, double solid, double flash, boolean inside) {
-        double strength = Mth.clamp(solid, 0.0, 1.0);
-        if (strength <= 0.0) {
-            return;
-        }
-        double radius = size * 0.5 * (0.45 + 0.55 * strength);
-        double hit = Mth.clamp(flash, 0.0, 1.0);
-        boolean under = inside || this.camera().distanceTo(center) < radius;
-        double base = under ? 0.04 : 0.1;
-        double edge = under ? 0.16 : 0.42;
-        Vec3[][] points = new Vec3[DOME_RINGS + 1][DOME_SLICES + 1];
-        for (int i = 0; i <= DOME_RINGS; i++) {
-            double polar = Math.PI * i / DOME_RINGS;
-            for (int j = 0; j <= DOME_SLICES; j++) {
-                double around = Math.PI * 2 * j / DOME_SLICES;
-                points[i][j] = center.add(Math.sin(polar) * Math.cos(around) * radius, Math.cos(polar) * radius,
-                        Math.sin(polar) * Math.sin(around) * radius);
-            }
-        }
-        double ripple = Mth.frac(this.time() * 0.03);
-        for (int i = 0; i < DOME_RINGS; i++) {
-            for (int j = 0; j < DOME_SLICES; j++) {
-                Vec3 p = points[i][j].add(points[i + 1][j + 1]).scale(0.5);
-                Vec3 normal = p.subtract(center).normalize();
-                Vec3 view = this.camera().subtract(p);
-                double facing = view.lengthSqr() < 1.0E-8 ? 1.0 : Math.abs(normal.dot(view.normalize()));
-                double rim = (1.0 - facing) * (1.0 - facing);
-                double band = Math.max(0.0, 1.0 - Math.abs((double) i / DOME_RINGS - ripple) * 8.0);
-                if (!under) {
-                    double lit = (0.62 + 0.38 * (normal.y * 0.5 + 0.5)) * (0.9 + 0.2 * band) * (1.0 + 0.3 * hit);
-                    this.massQuad(points[i][j], points[i + 1][j], points[i + 1][j + 1], points[i][j + 1],
-                            Colors.shade(MASS_GREEN, Math.min(1.0, lit)), 255);
-                    continue;
-                }
-                double a = (base + edge * rim + 0.12 * band + 0.25 * hit) * strength;
-                this.lightQuad(points[i][j], points[i + 1][j], points[i + 1][j + 1], points[i][j + 1],
-                        Colors.shade(MASS_GREEN, 0.85 + 0.25 * band), Colors.alpha(a));
-            }
-        }
-        int seam = Colors.alpha((0.5 + 0.4 * hit) * strength);
-        int seamGlow = Colors.alpha((0.25 + 0.3 * hit) * strength);
-        for (int i = 2; i < DOME_RINGS; i += 2) {
-            for (int j = 0; j < DOME_SLICES; j++) {
-                this.lightLine(points[i][j], points[i][j + 1], 0.025, BRIGHT, seam);
-                this.glowLine(points[i][j], points[i][j + 1], 0.12, GREEN, seamGlow);
-            }
-        }
-        for (int band = 0; band < DOME_RINGS; band += 2) {
-            for (int j = (band / 2 % 2) * 2; j < DOME_SLICES; j += 4) {
-                for (int i = band; i < band + 2; i++) {
-                    this.lightLine(points[i][j], points[i + 1][j], 0.025, BRIGHT, seam);
-                    this.glowLine(points[i][j], points[i + 1][j], 0.12, GREEN, seamGlow);
-                }
-            }
-        }
-        int band = Colors.alpha((0.8 + 0.2 * hit) * strength);
-        int bandGlow = Colors.alpha((0.4 + 0.3 * hit) * strength);
-        int middle = DOME_RINGS / 2;
-        for (int j = 0; j < DOME_SLICES; j++) {
-            this.lightLine(points[middle][j], points[middle][j + 1], 0.06, BRIGHT, band);
-            this.glowLine(points[middle][j], points[middle][j + 1], 0.25, GREEN, bandGlow);
-            this.lightLine(points[1][j], points[1][j + 1], 0.04, BRIGHT, band);
-        }
-        this.flare(points[0][0], 0.35 * (1.0 + hit), 0.8 * strength);
+    public void dome(Vec3 center, double size, double solid, boolean breaking, double flash, Vec3 struck,
+            @Nullable Vec3 ring, boolean own) {
+        DomePainter.draw(this, center, size, solid, breaking, flash, struck, ring, own);
     }
 
     public void ram(Vec3 center, Vec3 way, double solid, double flash, boolean own) {

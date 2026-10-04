@@ -150,6 +150,18 @@ public final class Characters {
         }
     }
 
+    public static boolean flying(ServerPlayer player) {
+        GameCharacter character = ACTIVE.get(player.getUUID());
+        return character != null && character.powers().flying(player);
+    }
+
+    public static void flyAgain(ServerPlayer player) {
+        GameCharacter character = ACTIVE.get(player.getUUID());
+        if (character != null) {
+            character.powers().flyAgain(player);
+        }
+    }
+
     public static int cooldownLeft(ServerPlayer player, CharacterAbility ability) {
         return COOLDOWNS.left(player, ability.character(), ability.slot().ordinal());
     }

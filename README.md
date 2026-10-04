@@ -20,17 +20,18 @@ across the multiverse you can turn into.
 - **Updates in the game:** the mod looks for a new release every five minutes. A new one comes with a pling and a popup;
   click it in the menu, press **U** (changeable under Controls) or the small arrow button right of **Mods** on the
   title screen or in the pause menu (a green dot on it while a newer version is out) for the update manager. It is
-  one window with a page for each job (switch with the tabs, **Ctrl+Tab** or the number keys): read what's new, then
-  update later (installed when you close the game) or update now (the game quits, then start it again yourself).
-  **What's new & versions** lists the last ten versions with their notes: switch to any of them, or to the latest in
-  one click (the game quits, then start it again).
-- **Tour:** after an update a short tour asks on the title screen, then points at what is new right where it is.
-  **Tour** in the update manager plays it again any time.
-- **Bug reports:** **Report a bug** in the update manager sends a bug with a name, a description and a priority. It
+  one window with three pages, **Updates**, **Feedback** and **Tour** (switch with the tabs, **Ctrl+Tab** or the
+  number keys). **Updates** says whether you are up to date and lists the last ten versions with their notes: update
+  on quit (installed when you close the game), or switch to any version now (the game quits, then start it again
+  yourself).
+- **Tour:** after an update a short tour asks on the title screen, then points at what is new in your version right
+  where it is; on an older version it first suggests updating. **Tour** in the update manager plays it again any time.
+- **Bug reports:** **Feedback → Bug** in the update manager sends a bug with a name, a description and a priority. It
   becomes a public issue on this repository, with your Minecraft name. What you type is kept until you send it, also
-  when you leave the screen, die or close the game; **Sent** shows your last 3 reports with their status on GitHub.
-- **Ideas:** **Suggest an idea** (its own page) sends an idea the same way, with a name, a description and a priority,
-  and keeps your text and your last 3 ideas the same way.
+  when you leave the screen, die or close the game; **Feedback → Sent** shows your last 3 reports with their status on
+  GitHub.
+- **Ideas:** **Feedback → Idea** sends an idea the same way, with a name, a description and a priority, and keeps your
+  text and your last 3 ideas the same way.
 
 Everything each power does: [Characters and their powers](docs/POWERS.md).
 

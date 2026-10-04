@@ -1,5 +1,6 @@
 package nl.tivek.multiversepowers.bugreport.client;
 
+import java.util.List;
 import javax.annotation.Nullable;
 import net.minecraft.Util;
 import net.minecraft.client.gui.GuiGraphics;
@@ -16,8 +17,8 @@ import nl.tivek.multiversepowers.update.client.ManagerScreen;
 import nl.tivek.multiversepowers.update.client.UpdateChecker;
 import org.lwjgl.glfw.GLFW;
 
-// The manager's page for a bug report or an idea: a name, a description and a priority, kept as a draft until sent,
-// with what goes along (your name and version) said above Send. Ctrl+Enter sends; Clear asks a second click.
+// The feedback page's part for a bug report or an idea: a name, a description and a priority, kept as a draft until
+// sent, with what goes along (your name and version) said above Send. Ctrl+Enter sends; Clear asks a second click.
 public final class BugReportScreen extends ManagerScreen {
     static final int SENT_COLOR = 0x6EE7A0;
     static final int ERROR_COLOR = 0xFF7B7B;
@@ -43,9 +44,14 @@ public final class BugReportScreen extends ManagerScreen {
     private int statusY;
 
     private BugReportScreen(@Nullable Screen root, BugReporter.Kind kind) {
-        super(words(kind.key("title")), root, kind == BugReporter.Kind.BUG ? BUG : IDEA);
+        super(words(kind.key("title")), root, FEEDBACK);
         this.kind = kind;
         this.shown = ReportStore.result(kind);
+    }
+
+    @Override
+    protected List<Tab> tabs() {
+        return this.feedbackTabs(this.kind == BugReporter.Kind.BUG ? BUG : IDEA);
     }
 
     public static BugReportScreen bug(@Nullable Screen root) {

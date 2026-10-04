@@ -212,6 +212,21 @@ public final class ThorMoves {
         return true;
     }
 
+    // A knockdown that took him out of the sky let go of him still in the air: he flies on, without a take-off.
+    static void flyAgain(ServerPlayer player) {
+        if (flying(player) || player.isPassenger() || player.isSleeping() || player.isFallFlying()) {
+            return;
+        }
+        ThorMoves moves = of(player);
+        moves.flying = true;
+        moves.flightAge = 0;
+        moves.grounded = 0;
+        moves.jumping = false;
+        moves.floatAge = -1;
+        moves.sync(ThorStatePayload.TAKE_OFF, ThorStatePayload.CAUGHT);
+        moves.sound(player.serverLevel(), SoundEvents.TRIDENT_RIPTIDE_1.value(), 0.6F, 1.1F);
+    }
+
     // His game says he touched down, or something knocks him out of the sky. Landing at lightning speed, the bolt he
     // has become strikes where he lands.
     static void land(ServerPlayer player, boolean touched) {

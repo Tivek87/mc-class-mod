@@ -19,8 +19,8 @@ import nl.tivek.multiversepowers.engine.client.gui.ScreenAnchors;
 import nl.tivek.multiversepowers.update.client.ManagerScreen;
 import nl.tivek.multiversepowers.update.client.UpdateChecker;
 
-// The manager's page of the bug reports and ideas you sent, newest first, each with how it stands on GitHub (looked up
-// again every few minutes, or now with Refresh); a click opens it on GitHub.
+// The feedback page's part of the bug reports and ideas you sent, newest first, each with how it stands on GitHub
+// (looked up again every few minutes, or now with Refresh); a click opens it on GitHub.
 final class SentReportsScreen extends ManagerScreen {
     private static final DateTimeFormatter DATE = DateTimeFormatter.ofPattern("d MMM yyyy", Locale.ENGLISH)
             .withZone(ZoneId.systemDefault());
@@ -37,7 +37,12 @@ final class SentReportsScreen extends ManagerScreen {
     private int listHeight;
 
     SentReportsScreen(@Nullable Screen root) {
-        super(BugReportScreen.words("history.title"), root, REPORTS);
+        super(BugReportScreen.words("history.title"), root, FEEDBACK);
+    }
+
+    @Override
+    protected List<Tab> tabs() {
+        return this.feedbackTabs(REPORTS);
     }
 
     @Override

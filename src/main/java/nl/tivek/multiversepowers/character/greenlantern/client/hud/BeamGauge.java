@@ -2,7 +2,9 @@ package nl.tivek.multiversepowers.character.greenlantern.client.hud;
 
 import java.util.List;
 import java.util.Locale;
+import javax.annotation.Nullable;
 import net.minecraft.Util;
+import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -10,7 +12,11 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Player;
 import nl.tivek.multiversepowers.character.CharacterAbility;
+import nl.tivek.multiversepowers.character.GameCharacter;
+import nl.tivek.multiversepowers.character.client.AbilityKeys;
+import nl.tivek.multiversepowers.character.client.AbilityPanel;
 import nl.tivek.multiversepowers.character.client.MouseHold;
+import nl.tivek.multiversepowers.character.client.PowerInputs;
 import nl.tivek.multiversepowers.character.greenlantern.RingPayload;
 import nl.tivek.multiversepowers.character.greenlantern.ability.light.LightBeam;
 import nl.tivek.multiversepowers.character.greenlantern.client.ClientConstructs;
@@ -22,6 +28,8 @@ import nl.tivek.multiversepowers.engine.client.gui.GuiShapes;
 final class BeamGauge {
     private static final float GAP = 3.5F;
     private static final float GROW = 1.6F;
+    // Room past the outermost piece for its number.
+    private static final float NUMBERS = 11.0F;
     private static final float SHOWN = 0.1F;
     private static final float FLASH_MS = 450.0F;
     private static int lastStage = -1;
@@ -72,18 +80,20 @@ final class BeamGauge {
         float throb = 0.5F + 0.5F * Mth.sin((now % 100000L) / (top || locked ? 70.0F : 110.0F));
         int count = LightBeam.STAGES;
         float piece = ArcGauge.piece(count, GAP);
+        float inner = ArcGauge.claim(x, y, GROW * (count - 1) + NUMBERS);
+        float thick = ArcGauge.OUTER - ArcGauge.INNER;
         Font font = Minecraft.getInstance().font;
         for (int k = 0; k < count; k++) {
             float from = ArcGauge.pieceFrom(k, count, GAP);
             float to = from + piece;
-            float outer = ArcGauge.OUTER + GROW * k;
+            float outer = inner + thick + GROW * k;
             float start = k == 0 ? 0.0F : LightBeam.stageFrom(k - 1, hold);
             float end = LightBeam.stageFrom(k, hold);
             float fill = Mth.clamp((ticks - start) / Math.max(1.0F, end - start), 0.0F, 1.0F);
-            ArcGauge.empty(graphics, x, y, ArcGauge.INNER, outer, from, to, appear);
+            ArcGauge.empty(graphics, x, y, inner, outer, from, to, appear);
             int shade = GuiShapes.mix(ArcGauge.GREEN, ArcGauge.BRIGHT, 0.3F + 0.7F * k / LightBeam.LAST);
             int full = top ? GuiShapes.mix(shade, 0xFFFFFF, 0.35F * throb) : shade;
-            ArcGauge.filled(graphics, x, y, ArcGauge.INNER, outer, from, to, fill, full,
+            ArcGauge.filled(graphics, x, y, inner, outer, from, to, fill, full,
                     GuiShapes.mix(ArcGauge.GREEN, ArcGauge.BRIGHT, fill), appear);
             if (k == stage) {
                 ArcGauge.flash(graphics, x, y, outer, from, to, flash);
@@ -92,18 +102,20 @@ final class BeamGauge {
                             GuiShapes.fade(ArcGauge.AMBER, (0.6F + 0.4F * throb) * appear));
                 }
             }
+            // Where it stops: a padlock on the piece it does not grow into.
             if (locked && k == stage + 1) {
-                float mid = (from + to) * 0.5F;
-                double rad = Math.toRadians(mid);
-                float radius = (ArcGauge.INNER + outer) * 0.5F;
-                ArcGauge.padlock(graphics, x + (float) Math.sin(rad) * radius,
-                        y - (float) Math.cos(rad) * radius + 1.0F, ArcGauge.AMBER, appear);
+                double rad = Math.toRadians((from + to) * 0.5F);
+                float radius = (inner + outer) * 0.5F;
+                int px = Mth.floor(x + (float) Math.sin(rad) * radius) - 2;
+                int py = Mth.floor(y - (float) Math.cos(rad) * radius) - 3;
+                graphics.fill(px - 1, py - 1, px + 6, py + 8, GuiShapes.fade(0x000000, 0.65F * appear));
+                ArcGauge.padlock(graphics, px, py, ArcGauge.AMBER, appear);
             }
         }
         GuiShapes.flush(graphics);
         for (int k = 0; k < count; k++) {
             float mid = ArcGauge.pieceFrom(k, count, GAP) + piece * 0.5F;
-            float outer = ArcGauge.OUTER + GROW * k;
+            float outer = inner + thick + GROW * k;
             boolean reached = k <= stage;
             int color = k == stage ? 0xFFFFFF : reached ? ArcGauge.BRIGHT : 0x6F8A78;
             ArcGauge.number(graphics, font, x, y, outer + 6.5F, mid, String.valueOf(k + 1),
@@ -125,13 +137,16 @@ final class BeamGauge {
             line = top || locked ? null : Component.translatable(ArcGauge.PREFIX + "beam_next",
                     String.format(Locale.ROOT, "%.1f", Math.max(0.0F, left)));
         }
-        boolean showLock = locked;
-        labels.add(() -> {
-            ArcGauge.label(graphics, font, x, y, title, titleColor, line, lineColor, appear);
-            if (showLock) {
-                ArcGauge.lockChip(graphics, font, x, y, appear, throb);
-            }
-        });
+        ArcGauge.Lock lock = locked ? new ArcGauge.Lock(throb, unlockKey()) : null;
+        labels.add(() -> ArcGauge.label(graphics, font, x, y, title, titleColor, line, lineColor, appear, lock));
         return true;
+    }
+
+    // The key that locks and unlocks the beam's stage, or null while it has none.
+    @Nullable
+    private static Component unlockKey() {
+        CharacterAbility lock = GameCharacter.GREEN_LANTERN.byName("beam_lock");
+        KeyMapping key = lock == null ? null : AbilityKeys.of(lock);
+        return key == null || key.isUnbound() ? null : AbilityPanel.brief(PowerInputs.keyName(key));
     }
 }

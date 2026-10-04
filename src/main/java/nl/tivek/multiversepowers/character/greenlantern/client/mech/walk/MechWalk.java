@@ -361,15 +361,17 @@ public final class MechWalk extends MechGait {
         this.running += Mth.clamp(runs - this.running, -0.05, 0.06);
         double rate = moving ? Math.max(effort / this.stride(), SLOWEST) : busy ? SETTLE : 0.0;
         double wanted = moving ? Math.min(1.0, effort / (MechDrive.WALK * 0.85)) : rate > 0.0 ? 0.3 : 0.0;
-        if (moving && this.walking < SETTING_OFF && !this.legs[0].swinging && !this.legs[1].swinging) {
+        if (moving && (this.walking < SETTING_OFF || this.stood >= STOOD) && !this.legs[0].swinging
+                && !this.legs[1].swinging) {
             this.lead(stage, moved);
         }
+        this.stood = moving ? 0 : this.stood + 1;
         this.walking += Mth.clamp(wanted - this.walking, -0.06, 0.08);
         this.crouch += Mth.clamp((moving || rate > 0.0 ? 1.0 : 0.0) - this.crouch, -0.04, 0.07);
         double from = this.phase;
         this.phase += rate;
         for (int side = 0; side < 2; side++) {
-            this.leg(level, stage, side, from, rate);
+            from = this.leg(level, stage, side, from, rate);
         }
         this.sink.step(0.0, 1.0, SINK_FREQ, SINK_DAMP);
         this.now = this.pose(stage, rate);

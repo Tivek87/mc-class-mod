@@ -164,6 +164,11 @@ public final class ClientThor {
             case ThorStatePayload.GRAB -> ThorMotion.grabbed();
             case ThorStatePayload.HOIST -> ThorMotion.hoist(player);
             case ThorStatePayload.DROP -> ThorMotion.drop(arg - 1);
+            case ThorStatePayload.TAKE_OFF -> {
+                if (arg == ThorStatePayload.CAUGHT) {
+                    ThorMotion.caught(player);
+                }
+            }
             default -> {
             }
         }

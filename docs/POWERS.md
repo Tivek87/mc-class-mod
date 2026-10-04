@@ -1488,11 +1488,13 @@ Double space jumps high and holding space flies, with or without the hammer.
   of a wall. **Cooldown:** 1.2 seconds.
 - **Grab-Dash Dive (hold right for 0.5 seconds):** he dives at what you aim at, grabs it on the way and drives it
   into the ground in a **slam** (5 hearts to it, less to what stands round, a lightning strike), which ends his
-  flight. **Cooldown:** 8 seconds.
+  flight. A player he grabs, flying or not, hangs limp in his fist on the way down. **Cooldown:** 8 seconds.
 - **Sky Shockwave (hold left for 1 second):** lightning bursts out of him in a ball about **7 blocks** across:
-  **1.5 hearts** to everything in it, and everything it hit goes limp, players and flying creatures too: it drops
-  out of the air, lies on the ground for **3 seconds** and then gets up. Until it stands again it cannot move, fly
-  or use a power. Bosses and creatures held by a power are not knocked down. **Cooldown:** 10 seconds.
+  **1.5 hearts** to everything in it, and everything it hit goes limp, players and flying creatures too: a creature
+  drops out of the air, lies on the ground for **3 seconds** and then gets up; a player is limp for at most **1.5
+  seconds**, then gets up, or, still in the air, falls on as themselves or flies on if they were flying. Until it
+  stands again it cannot move, fly or use a power. Bosses and creatures held by a power are not knocked down.
+  **Cooldown:** 10 seconds.
 - **Lightning Bolt (scroll wheel click):** a bolt of lightning comes down on the creature you aim at, up to 64
   blocks away: **2.5 hearts**. Aimed at nothing, nothing happens. **Cooldown:** 1.5 seconds.
 - **Lightning Speed (hold shift for 2 seconds):** he flies at **48 blocks a second** for **15 seconds**, a zigzag of

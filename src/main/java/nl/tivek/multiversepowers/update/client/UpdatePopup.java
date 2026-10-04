@@ -26,6 +26,7 @@ import net.neoforged.neoforge.client.settings.KeyConflictContext;
 import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.character.client.AbilityKeys;
 import nl.tivek.multiversepowers.config.client.ClientSettings;
+import nl.tivek.multiversepowers.engine.client.gui.HudSpace;
 import nl.tivek.multiversepowers.engine.client.gui.PixelIcons;
 import org.lwjgl.glfw.GLFW;
 
@@ -102,7 +103,12 @@ public final class UpdatePopup {
         float fade = Mth.clamp((shownFor - age) / (float) FADE_MS, 0.0F, 1.0F);
         Component hint = Component.translatable("screen." + MultiversePowers.MODID + ".update.popup.key",
                 OPEN_KEY.getTranslatedKeyMessage().copy().withStyle(ChatFormatting.WHITE));
-        draw(event.getGuiGraphics(), minecraft.font, event.getGuiGraphics().guiWidth(), age, fade, false, hint);
+        GuiGraphics graphics = event.getGuiGraphics();
+        int wide = measure(minecraft.font, hint);
+        // Under the game's effect icons and anything else in that corner.
+        int top = Mth.floor(HudSpace.place(graphics.guiWidth() - wide - MARGIN, MARGIN, wide, HEIGHT,
+                HudSpace.Way.DOWN).y());
+        draw(graphics, minecraft.font, graphics.guiWidth(), top, age, fade, false, hint);
     }
 
     @SubscribeEvent
@@ -115,7 +121,7 @@ public final class UpdatePopup {
         boolean hover = over(width, event.getMouseX(), event.getMouseY());
         graphics.pose().pushPose();
         graphics.pose().translate(0.0F, 0.0F, 400.0F);
-        draw(graphics, Minecraft.getInstance().font, width, System.currentTimeMillis() - shownAt, 1.0F, hover,
+        draw(graphics, Minecraft.getInstance().font, width, MARGIN, System.currentTimeMillis() - shownAt, 1.0F, hover,
                 Component.translatable("screen." + MultiversePowers.MODID + ".update.popup.click"));
         graphics.pose().popPose();
     }
@@ -145,29 +151,38 @@ public final class UpdatePopup {
 
     // The update manager's look in small: a black edge, a dark fill, the accent down its left side and the download
     // icon, sliding in from the right.
-    private static void draw(GuiGraphics graphics, Font font, int screenWidth, long age, float alpha, boolean hover,
-            Component hint) {
+    private static void draw(GuiGraphics graphics, Font font, int screenWidth, int top, long age, float alpha,
+            boolean hover, Component hint) {
         Component title = ManagerScreen.text("popup.title").copy().withStyle(ChatFormatting.BOLD);
-        Component versions = Component.empty()
-                .append(Component.literal("v" + UpdateChecker.installed()).withColor(MUTED))
-                .append(Component.literal("  →  ").withColor(MUTED))
-                .append(Component.literal("v" + shown.version()).withColor(ACCENT));
+        Component versions = versions();
         Component line = hint.copy().withColor(MUTED);
-        width = Math.max(MIN_WIDTH, Math.max(font.width(title), Math.max(font.width(versions), font.width(line)))
-                + TEXT_X + PADDING);
+        width = measure(font, hint);
         float slide = 1.0F - Mth.clamp(age / (float) SLIDE_MS, 0.0F, 1.0F);
         int x = Math.round(screenWidth - width - MARGIN + slide * slide * (width + MARGIN));
         graphics.flush();
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, Math.max(alpha, 0.02F));
-        graphics.fill(x - 1, MARGIN - 1, x + width + 1, MARGIN + HEIGHT + 1, 0xFF000000);
-        graphics.fill(x, MARGIN, x + width, MARGIN + HEIGHT, hover ? FILL_HOVER : FILL);
-        graphics.renderOutline(x, MARGIN, width, HEIGHT, 0x1CFFFFFF);
-        graphics.fill(x, MARGIN, x + 2, MARGIN + HEIGHT, 0xFF000000 | ACCENT);
-        PixelIcons.draw(graphics, PixelIcons.Icon.DOWNLOAD, x + 12, MARGIN + 11, 2, 0xFF000000 | ACCENT, true);
-        graphics.drawString(font, title, x + TEXT_X, MARGIN + 7, 0xFFFFFFFF, false);
-        graphics.drawString(font, versions, x + TEXT_X, MARGIN + 19, 0xFF000000 | MUTED, false);
-        graphics.drawString(font, line, x + TEXT_X, MARGIN + 31, 0xFF000000 | MUTED, false);
+        graphics.fill(x - 1, top - 1, x + width + 1, top + HEIGHT + 1, 0xFF000000);
+        graphics.fill(x, top, x + width, top + HEIGHT, hover ? FILL_HOVER : FILL);
+        graphics.renderOutline(x, top, width, HEIGHT, 0x1CFFFFFF);
+        graphics.fill(x, top, x + 2, top + HEIGHT, 0xFF000000 | ACCENT);
+        PixelIcons.draw(graphics, PixelIcons.Icon.DOWNLOAD, x + 12, top + 11, 2, 0xFF000000 | ACCENT, true);
+        graphics.drawString(font, title, x + TEXT_X, top + 7, 0xFFFFFFFF, false);
+        graphics.drawString(font, versions, x + TEXT_X, top + 19, 0xFF000000 | MUTED, false);
+        graphics.drawString(font, line, x + TEXT_X, top + 31, 0xFF000000 | MUTED, false);
         graphics.flush();
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+    }
+
+    private static Component versions() {
+        return Component.empty()
+                .append(Component.literal("v" + UpdateChecker.installed()).withColor(MUTED))
+                .append(Component.literal("  →  ").withColor(MUTED))
+                .append(Component.literal("v" + shown.version()).withColor(ACCENT));
+    }
+
+    private static int measure(Font font, Component hint) {
+        Component title = ManagerScreen.text("popup.title").copy().withStyle(ChatFormatting.BOLD);
+        return Math.max(MIN_WIDTH, Math.max(font.width(title), Math.max(font.width(versions()), font.width(hint)))
+                + TEXT_X + PADDING);
     }
 }

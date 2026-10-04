@@ -34,6 +34,8 @@ public final class Flight implements Effect {
     public static final double SCRAPE_PART = 0.245;
     private static final double RAM_PUSH = 0.36;
     private static final int RAM_AGAIN = 12;
+    // A flight taken up again in the air starts this far past its take-off, which every game has blended out by then.
+    private static final int RESUMED = 7;
     private static final int DESCENT_MAX = 2400;
     private static final int DIVE_MAX = 300;
     private static final int STILL_TICKS = 2;
@@ -91,6 +93,24 @@ public final class Flight implements Effect {
         flight.sound(level, SoundEvents.AMETHYST_BLOCK_RESONATE, 1.0F, 0.8F);
         PowerRing.sync(owner);
         return false;
+    }
+
+    // A knockdown that ended the flight let go of them still in the air: they fly on, free, past the take-off.
+    public static void resume(ServerPlayer owner) {
+        CharacterAbility ability = GameCharacter.GREEN_LANTERN.byName("flight");
+        if (ability == null || FLYING.containsKey(owner.getUUID()) || Recharge.busy(owner) || owner.isPassenger()
+                || owner.isSleeping() || owner.isFallFlying() || HeldMobs.isHeldByAnyone(owner)) {
+            return;
+        }
+        Flight flight = new Flight(owner, ability);
+        flight.ticks = ARISE_TICKS + RESUMED;
+        flight.velocity = owner.getDeltaMovement();
+        FLYING.put(owner.getUUID(), flight);
+        ServerLevel level = owner.serverLevel();
+        Effects.start(level, flight);
+        owner.resetFallDistance();
+        flight.sound(level, SoundEvents.BEACON_POWER_SELECT, 0.6F, 1.7F);
+        PowerRing.sync(owner);
     }
 
     public static boolean flying(ServerPlayer player) {

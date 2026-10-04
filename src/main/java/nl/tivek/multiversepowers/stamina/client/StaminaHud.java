@@ -13,6 +13,7 @@ import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 import nl.tivek.multiversepowers.MultiversePowers;
+import nl.tivek.multiversepowers.engine.client.gui.HudSpace;
 
 @Mod(value = MultiversePowers.MODID, dist = Dist.CLIENT)
 public final class StaminaHud {
@@ -52,6 +53,8 @@ public final class StaminaHud {
         int right = graphics.guiWidth() / 2 + 91;
         int top = graphics.guiHeight() - gui.rightHeight;
         gui.rightHeight += ROW_HEIGHT;
+        HudSpace.claim(right - (ICON_COUNT - 1) * ICON_SPACING - ICON_SIZE, top, (ICON_COUNT - 1) * ICON_SPACING
+                + ICON_SIZE, ICON_SIZE + 1);
 
         float stamina = StaminaClient.getStamina(deltaTracker.getGameTimeDeltaPartialTick(false));
         float maxStamina = StaminaClient.getMax();

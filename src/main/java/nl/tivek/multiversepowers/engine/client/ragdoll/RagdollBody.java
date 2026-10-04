@@ -14,6 +14,7 @@ import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.config.client.ClientSettings;
 import nl.tivek.multiversepowers.engine.client.fx.Thuds;
@@ -21,6 +22,7 @@ import nl.tivek.multiversepowers.engine.client.model.ModelBends;
 import nl.tivek.multiversepowers.engine.client.model.ModelParts;
 import nl.tivek.multiversepowers.engine.client.ragdoll.getup.GetUp;
 import nl.tivek.multiversepowers.engine.client.ragdoll.getup.Hanging;
+import nl.tivek.multiversepowers.engine.entity.PlayerKnockdowns;
 import nl.tivek.multiversepowers.engine.physics.Blocks;
 import nl.tivek.multiversepowers.engine.physics.joint.Pin;
 import nl.tivek.multiversepowers.engine.physics.RigidWorld;
@@ -487,6 +489,11 @@ abstract class RagdollBody {
 
     GetUp.Kind kind() {
         return this.kind;
+    }
+
+    // Ticks it takes to get up: a player quickly, as their knockdown is short (PlayerKnockdowns).
+    int riseTicks() {
+        return this.entity instanceof Player ? PlayerKnockdowns.RISE : this.kind.ticks;
     }
 
     void step(int substeps, Blocks blocks) {

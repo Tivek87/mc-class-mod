@@ -37,6 +37,8 @@ public record ThorStatePayload(int entity, int flags, int move, int arg) impleme
     public static final int DIVE = 4;
     public static final int SLAM = 5;
     public static final int TAKE_OFF = 6;
+    // A take-off's arg when a knockdown let go of him in the air: his own game flies on as he is.
+    public static final int CAUGHT = 1;
     public static final int TOUCH_DOWN = 7;
     // A blow of his combo: the arg is which (ThorBlow).
     public static final int BLOW = 8;

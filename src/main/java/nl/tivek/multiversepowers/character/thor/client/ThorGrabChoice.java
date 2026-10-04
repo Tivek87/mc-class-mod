@@ -31,6 +31,7 @@ import nl.tivek.multiversepowers.character.client.PowerInputs;
 import nl.tivek.multiversepowers.character.thor.ThorGrab;
 import nl.tivek.multiversepowers.character.thor.ThorStatePayload;
 import nl.tivek.multiversepowers.engine.client.gui.GuiShapes;
+import nl.tivek.multiversepowers.engine.client.gui.HudSpace;
 import nl.tivek.multiversepowers.engine.math.Ease;
 import org.lwjgl.glfw.GLFW;
 
@@ -189,9 +190,11 @@ public final class ThorGrabChoice {
         Font font = minecraft.font;
         KeyCap.Layer layer = new KeyCap.Layer(graphics, font);
         int cx = graphics.guiWidth() / 2;
-        int top = graphics.guiHeight() / 2 + 16;
         int left = cx - COLUMN - 32;
         int width = COLUMN * 2 + 64;
+        // Below the crosshair, further down while a ring drawn there first needs the room.
+        int top = Mth.floor(HudSpace.place(left - 1, graphics.guiHeight() / 2 + 15, width + 2, 50,
+                HudSpace.Way.DOWN).y()) + 1;
         boolean mine = result >= 0 && picked >= 0 && ThorGrab.PICKS[picked].ordinal() == result;
         KeyCap.pill(graphics, left - 1, top - 1, width + 2, 50, GuiShapes.fade(STORM, 0.55F * alpha));
         KeyCap.pill(graphics, left, top, width, 48, GuiShapes.fade(DARK, 0.78F * alpha));

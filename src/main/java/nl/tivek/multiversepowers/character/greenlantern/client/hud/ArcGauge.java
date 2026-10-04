@@ -1,12 +1,16 @@
 package nl.tivek.multiversepowers.character.greenlantern.client.hud;
 
+import com.mojang.blaze3d.systems.RenderSystem;
+import javax.annotation.Nullable;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
 import nl.tivek.multiversepowers.MultiversePowers;
+import nl.tivek.multiversepowers.character.client.KeyCap;
 import nl.tivek.multiversepowers.engine.client.gui.GuiShapes;
+import nl.tivek.multiversepowers.engine.client.gui.HudSpace;
 
 // A gauge of pieces on an arc right of the crosshair, with a big label beside it: the beam's stages, the gun's heat.
 final class ArcGauge {
@@ -74,47 +78,84 @@ final class ArcGauge {
                 true);
     }
 
-    static void padlock(GuiGraphics graphics, float x, float y, int rgb, float alpha) {
+    // A padlock of whole pixels, 5 wide and 7 high, its top left corner at (x, y): the shackle over a body with a
+    // keyhole.
+    static void padlock(GuiGraphics graphics, int x, int y, int rgb, float alpha) {
         int color = GuiShapes.fade(rgb, alpha);
-        GuiShapes.arc(graphics, x, y - 2.0F, 1.6F, 2.8F, 270.0F, 360.0F, color);
-        GuiShapes.arc(graphics, x, y - 2.0F, 1.6F, 2.8F, 0.0F, 90.0F, color);
-        GuiShapes.quad(graphics, x - 2.8F, y - 2.0F, x - 1.6F, y - 2.0F, x - 1.6F, y, x - 2.8F, y, color);
-        GuiShapes.quad(graphics, x + 1.6F, y - 2.0F, x + 2.8F, y - 2.0F, x + 2.8F, y, x + 1.6F, y, color);
-        GuiShapes.roundRect(graphics, x - 3.8F, y - 0.5F, 7.6F, 5.5F, 1.0F, color);
+        graphics.fill(x + 1, y, x + 4, y + 1, color);
+        graphics.fill(x, y + 1, x + 1, y + 3, color);
+        graphics.fill(x + 4, y + 1, x + 5, y + 3, color);
+        graphics.fill(x, y + 3, x + 5, y + 4, color);
+        graphics.fill(x, y + 4, x + 2, y + 5, color);
+        graphics.fill(x + 3, y + 4, x + 5, y + 5, color);
+        graphics.fill(x, y + 5, x + 5, y + 7, color);
     }
 
-    // The words go on the other side of the crosshair from the gauge, lined up to it: the character panel fills the
-    // right of the screen.
-    static int labelRight(float x) {
-        return Mth.floor(x - LABEL_GAP);
+    // Claims the gauge's band right of the crosshair, out `reach` past its pieces for its numbers and marks, and
+    // returns how far out its pieces start: INNER, or past whatever stood there first.
+    static float claim(float x, float y, float reach) {
+        return HudSpace.ring(x, y, INNER - 1.0F, OUTER - INNER + 2.0F + reach, FROM - 2.0F, FROM + SPAN + 2.0F) + 1.0F;
     }
 
-    // The big title with a line under it; drawn after the arcs are flushed.
+    // What a gauge held where it is shows under its title: a padlock, LOCKED, and the key that lets it go on.
+    record Lock(float throb, @Nullable Component key) {
+    }
+
+    // The big title with a line or the lock under it, lined up to the left of the crosshair (the gauge is on its
+    // right), moved up or down off whatever is there already; drawn after the arcs are flushed.
     static void label(GuiGraphics graphics, Font font, float x, float y, Component title, int titleColor,
-            Component line, int lineColor, float appear) {
+            @Nullable Component line, int lineColor, float appear, @Nullable Lock lock) {
         int alpha = (int) (255 * appear) << 24;
-        int right = labelRight(x);
         Component bold = title.copy().withStyle(ChatFormatting.BOLD);
+        int titleWidth = Mth.ceil(font.width(bold) * TITLE_SCALE);
+        int under = lock != null ? lockWidth(font, lock) : line != null ? font.width(line) : 0;
+        int width = Math.max(titleWidth, under);
+        int height = lock != null ? 27 : line != null ? 24 : 14;
+        HudSpace.Box box = HudSpace.place(Mth.floor(x - LABEL_GAP) - width, Mth.floor(y) - 12, width, height,
+                HudSpace.Way.UP, HudSpace.Way.DOWN);
+        int right = Mth.floor(box.right());
+        int top = Mth.floor(box.y());
         graphics.pose().pushPose();
-        graphics.pose().translate(right - font.width(bold) * TITLE_SCALE, Mth.floor(y) - 12, 0.0F);
+        graphics.pose().translate(right - font.width(bold) * TITLE_SCALE, top, 0.0F);
         graphics.pose().scale(TITLE_SCALE, TITLE_SCALE, 1.0F);
         graphics.drawString(font, bold, 0, 0, alpha | titleColor, true);
         graphics.pose().popPose();
-        if (line != null) {
-            graphics.drawString(font, line, right - font.width(line), Mth.floor(y) + 3, alpha | lineColor, true);
+        if (lock != null) {
+            lockPill(graphics, font, right - lockWidth(font, lock), top + 14, appear, lock);
+        } else if (line != null) {
+            graphics.drawString(font, line, right - font.width(line), top + 15, alpha | lineColor, true);
         }
     }
 
-    // A chip with a padlock, for a gauge that is held where it is.
-    static void lockChip(GuiGraphics graphics, Font font, float x, float y, float appear, float throb) {
-        Component text = Component.translatable(PREFIX + "beam_locked").withStyle(ChatFormatting.BOLD);
-        int width = font.width(text) + 20;
-        int left = labelRight(x) - width + 1;
-        int top = Mth.floor(y) + 2;
-        GuiShapes.roundRect(graphics, left - 1, top - 1, width, 12, 3.0F,
-                GuiShapes.fade(GuiShapes.mix(AMBER, 0xFFFFFF, 0.3F * throb), appear));
-        padlock(graphics, left + 6.0F, top + 4.0F, 0x2A1A00, appear);
-        GuiShapes.flush(graphics);
-        graphics.drawString(font, text, left + 13, top + 1, (int) (255 * appear) << 24 | 0x2A1A00, false);
+    private static int lockWidth(Font font, Lock lock) {
+        Component locked = Component.translatable(PREFIX + "beam_locked").withStyle(ChatFormatting.BOLD);
+        int width = 4 + 5 + 4 + font.width(locked) + 5;
+        if (lock.key() != null) {
+            width += KeyCap.width(font, lock.key()) + 3 + font.width(Component.translatable(PREFIX + "beam_unlock"))
+                    + 5;
+        }
+        return width;
+    }
+
+    // A dark pill with an amber edge: a padlock and LOCKED in amber, then the key that lets the gauge go on.
+    private static void lockPill(GuiGraphics graphics, Font font, int left, int top, float appear, Lock lock) {
+        int width = lockWidth(font, lock);
+        int edge = GuiShapes.mix(AMBER, 0xFFFFFF, 0.35F * lock.throb());
+        graphics.flush();
+        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, appear);
+        KeyCap.Layer layer = new KeyCap.Layer(graphics, font);
+        KeyCap.pill(graphics, left, top, width, 13, 0xFF000000 | edge);
+        KeyCap.pill(graphics, left + 1, top + 1, width - 2, 11, 0xE6140E04);
+        padlock(graphics, left + 4, top + 3, edge, 1.0F);
+        Component locked = Component.translatable(PREFIX + "beam_locked").withStyle(ChatFormatting.BOLD);
+        int at = left + 4 + 5 + 4;
+        layer.text(locked, at, top + 3, 0xFF000000 | edge);
+        at += font.width(locked) + 5;
+        if (lock.key() != null) {
+            at += KeyCap.draw(layer, font, lock.key(), at, top + 1, 11) + 3;
+            layer.text(Component.translatable(PREFIX + "beam_unlock"), at, top + 3, 0xFFB9A88A);
+        }
+        layer.finish();
+        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
     }
 }

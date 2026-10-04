@@ -10,39 +10,41 @@ music slider sets its volume.
 The mod keeps itself up to date: a few seconds after the game starts, and then every five minutes, it looks on its
 release page for a newer version. When there is one you hear a pling and a small card slides in at the top right. In
 the game it shows for 15 seconds; on the title screen and in the pause menu it stays and you click it. The update key
-(**U**, change it under Controls) opens the update manager at any time in the game, and on the title screen the small
-arrow button right of **Minecraft Realms** does too (a green dot on it while a newer version is out). On top it says
-whether you are up to date or which version is out, when it came out and how big it is; under that **What's new &
-versions**, and **Check now** when you are up to date. With an update: **Update later** (downloads now, and the new version is put in place when you close the
-game) and **Update now (quits)** (saves your world and quits the game, the new version is put in place, and you start
-the game again yourself in your launcher). Every download is checked against the release page's checksum before it is used.
+(**U**, change it under Controls) opens the update manager at any time in the game, and the small arrow button right
+of **Mods** on the title screen and in the pause menu does too (a green dot on it while a newer version is out). It
+has three pages, **Updates**, **Feedback** and **Tour**: switch with the sidebar, **Ctrl+Tab** or the number keys.
 
-**What's new & versions** lists the last ten versions on the left, as the Minecraft launcher lists its versions, each with the day and time it
-came out (yours marked
-YOURS, the newest LATEST, with your own added under them when it is older), and the notes of the one you pick on the
-right, laid out by section. **Use ... (quits)** switches to the version you picked, older or newer: it downloads it,
-saves and quits the game, and puts it in place of the one you have; start the game again in your launcher. **Switch
-to latest (quits)** does the same for the newest version in one click.
+**Updates** says on top whether you are up to date or which version is out, when it came out and how big it is. Under
+that the last ten versions are listed on the left, as the Minecraft launcher lists its versions, each with the day and
+time it came out (yours marked YOURS, the newest LATEST, with your own added under them when it is older), and the
+notes of the one you pick on the right, laid out by section; the newest is picked when the page opens, and a version
+newer than yours shows everything new since yours. **Update to ... (quits)** or **Use ... (quits)** switches to the
+version you picked, newer or older: it downloads it, saves and quits the game, and puts it in place of the one you
+have; start the game again in your launcher. **Update on quit** downloads a newer version now and puts it in place
+when you close the game; up to date, **Check for updates** looks again at once. Every download is checked against the
+release page's checksum before it is used.
 
-After an update a short tour shows what is new. On the title screen a card asks **What's new**: **Show me** or
-**Skip**. Each step dims the screen round the new thing, frames it and points at it from a small card with a line or
-two of text; some ask you to do something (**Click it**, **Press P**) and go on once you do, the others go on with
-**Next** (or Enter). Steps wait until you are where their thing is: the title screen, the update manager, the versions,
-the panel in game and the ability guide, and a card shows the way there when it can. **Skip tour** ends it at any time;
-**All caught up!** says when you have seen everything. A new install shows no tour.
+After an update a short tour shows what is new in the version you have, and only that. On the title screen a card
+asks **What's new**: **Show me**, **Later** or **Skip**. When a newer version is already out, the card says so first
+with an **Update** button, and the tour's first step points at it in the update manager. Each step dims the screen
+round the new thing, frames it and points at it from a small card with a line or two of text; some ask you to do
+something (**Click Feedback**) and go on once you do, the others go on with **Next** (or Enter). Steps wait until you
+are where their thing is: the title screen, the update manager, the game and the ability guide; a card shows the way
+there when it can, and a small note at the top says how many steps are left and where they wait. **Skip tour** ends it at any time; **All
+caught up!** says when you have seen everything, and **Nothing to show in this version** when the version brings
+nothing to point at. A new install shows no tour.
 
 Joining a server, a LAN world or a friend that runs another version of the mod (from 0.7.0 on) does not let you in:
 it says which version they run and which you have, with **Back to main menu** (nothing changes) or **Switch to ...
 (quits)** (your version is switched to theirs and the game quits, so after you start it again you can join).
 
-**Report a bug** (under
-**What's new & versions**) sends a bug or glitch straight to the mod's makers: give it a short name, a description and a priority
-(low, medium or high) and press **Send**; your Minecraft name and version go with it, and you get the report's number.
-**Suggest an idea** (next to **Report a bug**) works the same way for your own ideas: a short name, a description and
+**Feedback** has three tabs at its top. **Bug** sends a bug or glitch straight to the mod's makers: give it a short
+name, a description and a priority (low, medium or high) and press **Send**; your Minecraft name and version go with
+it, and you get the report's number. **Idea** works the same way for your own ideas: a short name, a description and
 a priority. Reports and ideas are public on the mod's GitHub page. What you type stays until you send it, also when
-you leave the screen, die or close the game. **Sent** (between **Back** and **Send**) lists your last 3 reports or
-ideas, newest first: name, priority, number, date, the status on GitHub (open, fixed or added, not planned) and the
-title as it is on GitHub now; sending a fourth drops the oldest.
+you leave the screen, die or close the game. **Sent** lists your last 3 reports and your last 3 ideas, newest first:
+name, priority, number, date, the status on GitHub (open, fixed or added, not planned) and the title as it is on
+GitHub now; sending a fourth drops the oldest of its kind.
 
 - [Classes and skill trees](CLASSES.md)
 - [Callings and Crowns](CALLINGS.md)
@@ -80,8 +82,9 @@ title as it is on GitHub now; sending a fourth drops the oldest.
 - **Bodies**: every creature goes limp when it dies and falls the way the blow that killed it pushed it, hardest
   where it was struck; blasts throw bodies about. A body lies at least 5 seconds on the ground before it sinks away.
   A creature thrown down gets up again, rising the way it lies.
-- **Players thrown limp**: a blow or a blast that throws a player hard knocks them down too: they go limp, lie a
-  moment and get back up, unable to walk or use powers meanwhile. Never where it would only be a nuisance or a
+- **Players thrown limp**: a blow or a blast that throws a player hard knocks them down too: they go limp for at most
+  1.5 seconds and get back up, unable to walk or use powers meanwhile; still in the air by then, they fall on as
+  themselves, or fly on if a power knocked them out of their flight. Never where it would only be a nuisance or a
   danger: in creative, riding, gliding or flying, asleep, in water or lava, or from your own blast. The world
   setting **Players thrown limp** turns it off.
 - **Test fight** (the host or an operator): crouch, aim at a creature built like a person (a zombie, a husk, a

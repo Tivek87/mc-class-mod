@@ -47,18 +47,20 @@ final class HeatGauge {
         float blink = charge > HOT || venting ? 0.5F + 0.5F * Mth.sin((now % 100000L) / (venting ? 90.0F
                 : 120.0F - 80.0F * charge)) : 1.0F;
         float piece = ArcGauge.piece(CELLS, GAP);
+        float inner = ArcGauge.claim(x, y, 3.0F);
+        float outer = inner + ArcGauge.OUTER - ArcGauge.INNER;
         for (int k = 0; k < CELLS; k++) {
             float from = ArcGauge.pieceFrom(k, CELLS, GAP);
             float to = from + piece;
             float fill = Mth.clamp(charge * CELLS - k, 0.0F, 1.0F);
             int color = venting ? RED : cell(k);
-            ArcGauge.empty(graphics, x, y, ArcGauge.INNER, ArcGauge.OUTER, from, to, appear);
+            ArcGauge.empty(graphics, x, y, inner, outer, from, to, appear);
             float lit = k >= CELLS - 3 || venting ? appear * (0.55F + 0.45F * blink) : appear;
-            ArcGauge.filled(graphics, x, y, ArcGauge.INNER, ArcGauge.OUTER, from, to, fill, color, color, lit);
+            ArcGauge.filled(graphics, x, y, inner, outer, from, to, fill, color, color, lit);
         }
         if (charge > HOT || venting) {
             float hot = venting ? 1.0F : (charge - HOT) / (1.0F - HOT);
-            GuiShapes.arc(graphics, x, y, ArcGauge.OUTER + 1.5F, ArcGauge.OUTER + 3.0F, ArcGauge.FROM,
+            GuiShapes.arc(graphics, x, y, outer + 1.5F, outer + 3.0F, ArcGauge.FROM,
                     ArcGauge.FROM + ArcGauge.SPAN, GuiShapes.fade(RED, hot * blink * appear));
         }
         GuiShapes.flush(graphics);
@@ -72,7 +74,7 @@ final class HeatGauge {
         int lineColor = venting ? 0xFFB0A0 : 0xFFD8B0;
         float shown = appear;
         labels.add(() -> ArcGauge.label(graphics, Minecraft.getInstance().font, x, y, title, titleColor, line,
-                lineColor, shown));
+                lineColor, shown, null));
         return true;
     }
 

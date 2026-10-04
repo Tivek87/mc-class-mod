@@ -20,6 +20,8 @@ public record ConstructPayload(int id, int owner, Vec3 center, Vec3 facing, floa
     public static final int SHIELD = 2;
     public static final int BEAM = 3;
     public static final int DOME = 4;
+    // A dome's variant while it is lowered and breaks apart.
+    public static final int DOME_BREAKING = 1;
     public static final int RAM = 5;
     public static final int SLAM = 6;
     public static final int SCAN = 7;

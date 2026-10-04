@@ -34,6 +34,7 @@ import nl.tivek.multiversepowers.character.greenlantern.client.body.pose.Recharg
 import nl.tivek.multiversepowers.character.greenlantern.client.body.sword.SwordArms;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.whip.WhipArms;
 import nl.tivek.multiversepowers.engine.client.gui.GuiShapes;
+import nl.tivek.multiversepowers.engine.client.gui.HudSpace;
 
 @Mod(value = MultiversePowers.MODID, dist = Dist.CLIENT)
 public final class ConstructHud {
@@ -104,24 +105,22 @@ public final class ConstructHud {
         float middleY = graphics.guiHeight() * 0.5F;
         long now = Util.getMillis();
         List<Runnable> labels = new ArrayList<>();
-        // The flamethrower shows a held button on the gun's fins (FlamePainter) and only its heat here.
-        if (FlameArms.holding()) {
-            HeatGauge.render(graphics, middleX, middleY, partialTick, labels);
-            labels.forEach(Runnable::run);
-            return;
+        boolean flame = FlameArms.holding();
+        boolean beam = !flame && !SwordArms.holding() && !WhipArms.holding();
+        // The gauge first: its band and its words keep their place, and the rings and words after it keep off them.
+        boolean drawn = flame && HeatGauge.render(graphics, middleX, middleY, partialTick, labels);
+        CharacterAbility bolt = GameCharacter.GREEN_LANTERN.byName("light_bolt");
+        if (beam && bolt != null) {
+            drawn |= BeamGauge.render(graphics, minecraft.player, bolt, middleX, middleY, partialTick, labels);
         }
-        boolean drawn = false;
         for (CharacterAbility ability : GameCharacter.GREEN_LANTERN.abilities()) {
             // Sword and shield block the instant it's held; there's no fill to show
             if (ability.input() != CharacterAbility.Input.LEFT && ability.input() != CharacterAbility.Input.RIGHT
-                    || SwordArms.holding() && ability.input() == CharacterAbility.Input.RIGHT) {
+                    || SwordArms.holding() && ability.input() == CharacterAbility.Input.RIGHT
+                    || beam && ability == bolt) {
                 continue;
             }
             boolean right = ability.input() == CharacterAbility.Input.LEFT;
-            if (ability.id().equals("light_bolt") && !SwordArms.holding() && !WhipArms.holding()) {
-                drawn |= BeamGauge.render(graphics, minecraft.player, ability, middleX, middleY, partialTick, labels);
-                continue;
-            }
             int button = right ? 0 : 1;
             float progress = MouseHold.progress(ability, partialTick);
             if (progress < 1.0F) {
@@ -132,41 +131,52 @@ public final class ConstructHud {
             if (progress < HOLD_SHOWN) {
                 continue;
             }
+            boolean full = progress >= 1.0F;
+            // A flamethrower move takes over once its hold is full: the ring flashes and goes.
+            float gone = flame && full ? Mth.clamp((now - FULL_AT[button]) / HOLD_FLASH_MS, 0.0F, 1.0F) : 0.0F;
+            if (gone >= 1.0F) {
+                continue;
+            }
             float filling = Mth.clamp((progress - HOLD_SHOWN) / (1.0F - HOLD_SHOWN), 0.0F, 1.0F);
             float from = right ? 30.0F : 330.0F;
             float span = right ? 120.0F : -120.0F;
-            float appear = Mth.clamp((progress - HOLD_SHOWN) * 8.0F, 0.0F, 1.0F);
-            GuiShapes.arc(graphics, middleX, middleY, HOLD_INNER - 1.0F, HOLD_OUTER + 1.0F, Math.min(from, from + span),
-                    Math.max(from, from + span), GuiShapes.fade(0x000000, 0.45F * appear));
-            GuiShapes.arc(graphics, middleX, middleY, HOLD_INNER, HOLD_OUTER, Math.min(from, from + span),
-                    Math.max(from, from + span), GuiShapes.fade(0x0E3A1E, 0.8F * appear));
+            float appear = Mth.clamp((progress - HOLD_SHOWN) * 8.0F, 0.0F, 1.0F) * (1.0F - gone);
+            float low = Math.min(from, from + span);
+            float high = Math.max(from, from + span);
+            float inner = HudSpace.ring(middleX, middleY, HOLD_INNER - 1.0F, HOLD_OUTER - HOLD_INNER + 2.0F, low, high)
+                    + 1.0F;
+            float outer = inner + HOLD_OUTER - HOLD_INNER;
+            GuiShapes.arc(graphics, middleX, middleY, inner - 1.0F, outer + 1.0F, low, high,
+                    GuiShapes.fade(0x000000, 0.45F * appear));
+            GuiShapes.arc(graphics, middleX, middleY, inner, outer, low, high, GuiShapes.fade(0x0E3A1E, 0.8F * appear));
             float end = from + span * filling;
-            boolean full = progress >= 1.0F;
             if (full) {
                 float throb = 0.75F + 0.25F * Mth.sin((now % 100000L) / 90.0F);
-                GuiShapes.arc(graphics, middleX, middleY, HOLD_INNER - 0.5F, HOLD_OUTER + 0.5F, Math.min(from, end),
-                        Math.max(from, end), GuiShapes.fade(BRIGHT, throb));
+                GuiShapes.arc(graphics, middleX, middleY, inner - 0.5F, outer + 0.5F, Math.min(from, end),
+                        Math.max(from, end), GuiShapes.fade(BRIGHT, throb * appear));
                 float flash = (now - FULL_AT[button]) / HOLD_FLASH_MS;
                 if (flash < 1.0F) {
-                    float out = HOLD_OUTER + 8.0F * flash;
+                    float out = outer + 8.0F * flash;
                     GuiShapes.arc(graphics, middleX, middleY, out - 2.0F, out, Math.min(from, end), Math.max(from, end),
                             GuiShapes.fade(0xE6FFEC, 1.0F - flash));
                 }
             } else {
                 int color = GuiShapes.mix(GREEN, BRIGHT, filling);
-                GuiShapes.arc(graphics, middleX, middleY, HOLD_INNER, HOLD_OUTER, Math.min(from, end),
+                GuiShapes.arc(graphics, middleX, middleY, inner, outer, Math.min(from, end),
                         Math.max(from, end), GuiShapes.fade(color, 0.95F * appear));
-                GuiShapes.arc(graphics, middleX, middleY, HOLD_INNER - 1.0F, HOLD_OUTER + 1.0F,
+                GuiShapes.arc(graphics, middleX, middleY, inner - 1.0F, outer + 1.0F,
                         right ? end - 3.0F : end, right ? end : end + 3.0F, GuiShapes.fade(0xE6FFEC, appear));
             }
             Component name = holdName(ability, minecraft.player);
             float fullness = full ? 1.0F : filling;
             labels.add(() -> {
                 int width = minecraft.font.width(name);
-                int x = right ? Mth.floor(middleX + HOLD_OUTER + 5.0F) : Mth.ceil(middleX - HOLD_OUTER - 5.0F) - width;
+                float wanted = right ? Mth.floor(middleX + outer + 5.0F) : Mth.ceil(middleX - outer - 5.0F) - width;
+                HudSpace.Box box = HudSpace.place(wanted, Mth.floor(middleY) - 4, width, 9, HudSpace.Way.UP,
+                        HudSpace.Way.DOWN);
                 int alpha = (int) (255 * appear);
                 int color = GuiShapes.mix(GREEN, full ? 0xFFFFFF : BRIGHT, fullness);
-                graphics.drawString(minecraft.font, name, x, Mth.floor(middleY) - 4, alpha << 24 | color);
+                graphics.drawString(minecraft.font, name, Mth.floor(box.x()), Mth.floor(box.y()), alpha << 24 | color);
             });
             drawn = true;
         }
@@ -204,24 +214,28 @@ public final class ConstructHud {
             float middleY = graphics.guiHeight() * 0.5F;
             float appear = Mth.clamp((progress - HOLD_SHOWN) * 8.0F, 0.0F, 1.0F) * (1.0F - gone);
             float filling = Mth.clamp((progress - HOLD_SHOWN) / (1.0F - HOLD_SHOWN), 0.0F, 1.0F);
-            GuiShapes.arc(graphics, middleX, middleY, KEY_INNER - 1.0F, KEY_OUTER + 1.0F, 0.0F, 360.0F,
+            // Out past the button arcs and any gauge drawn this frame.
+            float inner = HudSpace.ring(middleX, middleY, KEY_INNER - 1.0F, KEY_OUTER - KEY_INNER + 2.0F, 0.0F, 360.0F)
+                    + 1.0F;
+            float outer = inner + KEY_OUTER - KEY_INNER;
+            GuiShapes.arc(graphics, middleX, middleY, inner - 1.0F, outer + 1.0F, 0.0F, 360.0F,
                     GuiShapes.fade(0x000000, 0.45F * appear));
-            GuiShapes.arc(graphics, middleX, middleY, KEY_INNER, KEY_OUTER, 0.0F, 360.0F,
+            GuiShapes.arc(graphics, middleX, middleY, inner, outer, 0.0F, 360.0F,
                     GuiShapes.fade(0x0E3A1E, 0.8F * appear));
             float end = 360.0F * filling;
             if (progress >= 1.0F) {
-                GuiShapes.arc(graphics, middleX, middleY, KEY_INNER - 0.5F, KEY_OUTER + 0.5F, 0.0F, 360.0F,
+                GuiShapes.arc(graphics, middleX, middleY, inner - 0.5F, outer + 0.5F, 0.0F, 360.0F,
                         GuiShapes.fade(BRIGHT, appear));
                 float flash = (now - keyFullAt) / HOLD_FLASH_MS;
                 if (flash < 1.0F) {
-                    float out = KEY_OUTER + 10.0F * flash;
+                    float out = outer + 10.0F * flash;
                     GuiShapes.arc(graphics, middleX, middleY, out - 2.0F, out, 0.0F, 360.0F,
                             GuiShapes.fade(0xE6FFEC, 1.0F - flash));
                 }
             } else {
-                GuiShapes.arc(graphics, middleX, middleY, KEY_INNER, KEY_OUTER, 0.0F, end,
+                GuiShapes.arc(graphics, middleX, middleY, inner, outer, 0.0F, end,
                         GuiShapes.fade(GuiShapes.mix(GREEN, BRIGHT, filling), 0.95F * appear));
-                GuiShapes.arc(graphics, middleX, middleY, KEY_INNER - 1.0F, KEY_OUTER + 1.0F, Math.max(0.0F,
+                GuiShapes.arc(graphics, middleX, middleY, inner - 1.0F, outer + 1.0F, Math.max(0.0F,
                         end - 4.0F), end, GuiShapes.fade(0xE6FFEC, appear));
             }
             GuiShapes.flush(graphics);
@@ -231,8 +245,10 @@ public final class ConstructHud {
             Component name = Component.translatable(leaves ? key + ".leave" : key);
             int width = minecraft.font.width(name);
             int color = GuiShapes.mix(GREEN, progress >= 1.0F ? 0xFFFFFF : BRIGHT, filling);
-            graphics.drawString(minecraft.font, name, Mth.floor(middleX - width * 0.5F),
-                    Mth.floor(middleY + KEY_OUTER + 4.0F), (int) (255 * appear) << 24 | color);
+            HudSpace.Box box = HudSpace.place(Mth.floor(middleX - width * 0.5F), Mth.floor(middleY + outer + 4.0F),
+                    width, 9, HudSpace.Way.DOWN);
+            graphics.drawString(minecraft.font, name, Mth.floor(box.x()), Mth.floor(box.y()),
+                    (int) (255 * appear) << 24 | color);
         }
     }
 
@@ -244,6 +260,10 @@ public final class ConstructHud {
         if (WhipArms.holding()) {
             return Component.translatable(prefix + (ability.input() == CharacterAbility.Input.LEFT ? "whirlwind"
                     : "spinning_shield"));
+        }
+        if (FlameArms.holding()) {
+            return Component.translatable("screen." + MultiversePowers.MODID + ".move.flamethrower."
+                    + (ability.input() == CharacterAbility.Input.LEFT ? "attack_hold" : "defend_hold"));
         }
         if (ability.input() == CharacterAbility.Input.LEFT) {
             return Component.translatable(prefix + "beam");

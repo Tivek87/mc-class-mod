@@ -50,6 +50,16 @@ public final class GreenLanternPowers implements CharacterPowers {
     }
 
     @Override
+    public boolean flying(ServerPlayer player) {
+        return Flight.flying(player);
+    }
+
+    @Override
+    public void flyAgain(ServerPlayer player) {
+        Flight.resume(player);
+    }
+
+    @Override
     public void clear() {
         PowerRing.clear();
     }

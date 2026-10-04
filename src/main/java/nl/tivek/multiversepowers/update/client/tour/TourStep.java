@@ -8,6 +8,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.PauseScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.TitleScreen;
+import net.minecraft.client.resources.language.I18n;
 import net.minecraft.network.chat.Component;
 import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.character.client.AbilityGuide;
@@ -19,7 +20,8 @@ import nl.tivek.multiversepowers.update.client.ManagerScreen;
 // `ScreenAnchors`, the first one drawn; none for a card in the middle), and what the player may do to go on (`until`, an
 // anchor that shows once they did it). A step that `leads` to a place is done by going there, which Next does for them.
 // `prepare` runs every frame it is up (to wake what it points at), `available` leaves it out when it has nothing to
-// show. Its words are `tour.<mod>.<id>.title`, `.text` and `.prompt`, with `key` drawn as a key cap before the prompt.
+// show. Its words are `tour.<mod>.<id>.title`, `.text` and `.prompt`, with `key` drawn as a key cap before the prompt,
+// and `.chip` in place of NEW IN <version> when it has one.
 record TourStep(String version, String id, Place place, List<String> targets, @Nullable String until,
         @Nullable Place leads, @Nullable Runnable prepare, @Nullable BooleanSupplier available,
         @Nullable Supplier<Component> key) {
@@ -27,7 +29,7 @@ record TourStep(String version, String id, Place place, List<String> targets, @N
 
     enum Place {
         // The title screen, or the pause menu in a world.
-        MENU(null), MANAGER("manager"), VERSIONS("versions"), GAME(null), GUIDE("guide");
+        MENU(null), MANAGER("manager"), GAME(null), GUIDE("guide");
 
         // What the place's screen reports while it is drawn.
         @Nullable
@@ -56,7 +58,7 @@ record TourStep(String version, String id, Place place, List<String> targets, @N
         boolean reachable() {
             Minecraft minecraft = Minecraft.getInstance();
             return switch (this) {
-                case MENU, MANAGER, VERSIONS -> true;
+                case MENU, MANAGER -> true;
                 case GAME, GUIDE -> minecraft.level != null && minecraft.player != null
                         && ClientCharacter.active() != null;
             };
@@ -75,7 +77,6 @@ record TourStep(String version, String id, Place place, List<String> targets, @N
                     }
                 }
                 case MANAGER -> ManagerScreen.open(home, ManagerScreen.UPDATES);
-                case VERSIONS -> ManagerScreen.open(home, ManagerScreen.VERSIONS);
                 case GAME -> minecraft.setScreen(null);
                 case GUIDE -> AbilityGuide.open();
             }
@@ -129,6 +130,13 @@ record TourStep(String version, String id, Place place, List<String> targets, @N
             }
         }
         return null;
+    }
+
+    // The chip on its card: its own `.chip` when it has one, else the version it is new in.
+    Component chip() {
+        String own = PREFIX + this.id + ".chip";
+        return I18n.exists(own) ? Component.translatable(own)
+                : Component.translatable(PREFIX + "new_in", this.shortVersion());
     }
 
     Component title() {

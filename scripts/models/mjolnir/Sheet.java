@@ -96,7 +96,31 @@ final class Sheet {
         sheet.art(SNAKE_DOWN, "wy", "yw");
         sheet.art(TIP, "YY YY", " YZY ", "  y  ");
         sheet.art(GOLD, "YYYYYy", "YYyyyy", "Yyyyyw", "yyyyww", "yyywww", "ywwwwv");
+        sheet.fill();
         return sheet.image;
+    }
+
+    // Every pixel no face uses takes the colour of the nearest one that is, so the picture has no clear pixel at all:
+    // the game's smaller copies of it for far away blend each face's edge only with colour, never with nothing.
+    private void fill() {
+        int[] next = new int[SIZE * SIZE];
+        int count = 0;
+        for (int i = 0; i < SIZE * SIZE; i++) {
+            if (this.image.getRGB(i % SIZE, i / SIZE) >>> 24 != 0) {
+                next[count++] = i;
+            }
+        }
+        for (int at = 0; at < count; at++) {
+            int x = next[at] % SIZE, y = next[at] / SIZE;
+            int rgb = this.image.getRGB(x, y);
+            int[][] around = {{x + 1, y}, {x - 1, y}, {x, y + 1}, {x, y - 1}};
+            for (int[] p : around) {
+                if (p[0] >= 0 && p[0] < SIZE && p[1] >= 0 && p[1] < SIZE && this.image.getRGB(p[0], p[1]) >>> 24 == 0) {
+                    this.image.setRGB(p[0], p[1], rgb);
+                    next[count++] = p[1] * SIZE + p[0];
+                }
+            }
+        }
     }
 
     private void face() {

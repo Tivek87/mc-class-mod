@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -15,19 +16,31 @@ import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.engine.effect.Effects;
 
 // A player a power knocks down, or a blow or blast throws hard, goes limp as a creature does (Knockdowns): in every
-// game near, their own seen from outside too, the body flies, lies 3 seconds where it lands and gets up. Their own
-// game moves them and holds back their keys meanwhile (Downed); here they only count as down, refused every power, and
-// the games near are told when they land and how long they lie. In water or lava they are let go at once, so they can
-// swim out.
+// game near, their own seen from outside too, the body flies and lies where it lands, limp at most LIMP ticks from the
+// blow, then gets up quickly. Let go still in the air, they fall on as themselves, or fly on if the knockdown ended
+// their flight. Their own game moves them and holds back their keys meanwhile (Downed); here they only count as down,
+// refused every power, and the games near are told when they land and how long they lie. In water or lava they are
+// let go at once, so they can swim out.
 @EventBusSubscriber(modid = MultiversePowers.MODID)
 public final class PlayerKnockdowns {
+    // Limp at most this long from the blow: 1.5 seconds.
+    public static final int LIMP = 30;
+    // How long a player's body takes to get up in the games near (Ragdolls), and stands before they are let go.
+    public static final int RISE = 24;
+    public static final int MARGIN = 5;
+    // On the ground at least this long, however late they came down.
+    private static final int LIES_LEAST = 4;
     private static final Map<UUID, Down> DOWNED = new HashMap<>();
     private static final List<Consumer<ServerPlayer>> LISTENERS = new ArrayList<>();
+    private static final List<Predicate<ServerPlayer>> FLYING = new ArrayList<>();
+    private static final List<Consumer<ServerPlayer>> FLY_AGAIN = new ArrayList<>();
 
     private static final class Down {
         int age;
         int thrown;
         int landed = -1;
+        int free;
+        boolean flew;
     }
 
     private PlayerKnockdowns() {
@@ -38,6 +51,13 @@ public final class PlayerKnockdowns {
         LISTENERS.add(listener);
     }
 
+    // Asked as a knockdown starts whether a power holds the player up in the air, and told when one let go of still in
+    // the air had: they fly on.
+    public static void flight(Predicate<ServerPlayer> flying, Consumer<ServerPlayer> again) {
+        FLYING.add(flying);
+        FLY_AGAIN.add(again);
+    }
+
     public static boolean isDown(ServerPlayer player) {
         return DOWNED.containsKey(player.getUUID());
     }
@@ -46,6 +66,10 @@ public final class PlayerKnockdowns {
         if (!player.isAlive() || player.isSpectator() || player.isCreative() || player.isInWater()
                 || player.isInLava()) {
             return;
+        }
+        boolean flying = false;
+        for (Predicate<ServerPlayer> flies : FLYING) {
+            flying |= flies.test(player);
         }
         player.stopRiding();
         player.stopFallFlying();
@@ -60,10 +84,12 @@ public final class PlayerKnockdowns {
         if (down != null) {
             down.thrown = down.age;
             down.landed = -1;
+            down.flew |= flying;
             tell(player, Knockdowns.FLYING);
             return;
         }
         Down mine = new Down();
+        mine.flew = flying;
         DOWNED.put(player.getUUID(), mine);
         tell(player, Knockdowns.FLYING);
         Effects.start(player.serverLevel(), (level, age) -> {
@@ -76,15 +102,32 @@ public final class PlayerKnockdowns {
                 return false;
             }
             mine.age = age;
+            // Held by a power (carried, gripped), the knockdown waits: it counts from when they are let go.
+            if (HeldMobs.isHeldByAnyone(player)) {
+                if (mine.landed >= 0) {
+                    tell(player, Knockdowns.FLYING);
+                }
+                mine.thrown = age;
+                mine.landed = -1;
+                return true;
+            }
             if (mine.landed < 0) {
                 int flight = age - mine.thrown;
-                if (flight > 1 && grounded(player) || flight > Knockdowns.LONGEST_FLIGHT) {
+                if (flight > 1 && grounded(player)) {
                     mine.landed = age;
-                    tell(player, Knockdowns.DOWN);
+                    mine.free = Math.max(mine.thrown + LIMP, age + LIES_LEAST) + RISE + MARGIN;
+                    tell(player, mine.free - age);
+                } else if (flight >= LIMP) {
+                    // Still in the air when the knockdown is over: they fall on as themselves, or fly on.
+                    up(player, mine);
+                    if (mine.flew) {
+                        FLY_AGAIN.forEach(again -> again.accept(player));
+                    }
+                    return false;
                 }
                 return true;
             }
-            if (age - mine.landed >= Knockdowns.DOWN) {
+            if (age >= mine.free) {
                 up(player, mine);
                 return false;
             }
@@ -112,8 +155,7 @@ public final class PlayerKnockdowns {
         if (event.getTarget() instanceof ServerPlayer target && event.getEntity() instanceof ServerPlayer viewer) {
             Down down = DOWNED.get(target.getUUID());
             if (down != null) {
-                int left = down.landed < 0 ? Knockdowns.FLYING
-                        : Math.max(1, Knockdowns.DOWN - (down.age - down.landed));
+                int left = down.landed < 0 ? Knockdowns.FLYING : Math.max(1, down.free - down.age);
                 PacketDistributor.sendToPlayer(viewer, new KnockdownPayload(target.getId(), left));
             }
         }

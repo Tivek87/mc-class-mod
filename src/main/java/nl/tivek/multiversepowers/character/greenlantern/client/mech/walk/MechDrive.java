@@ -21,11 +21,12 @@ import nl.tivek.multiversepowers.character.greenlantern.mech.MechScript;
 
 // The pilot walks their own mech in their own game, as a player walks, and tells the server where it went: W and S
 // walk it on and back (the sprint key with W runs), A and D step it aside, and its legs turn after where the pilot looks.
-// It stands on whatever its feet find, so a hole narrower than its stance never drops it in. It steps up no higher than
-// its legs can, never walks off a drop too deep to see the bottom of or down into a hole its cockpit would not fit in,
-// and stops where its cockpit or its chest would run into blocks (unless it already stands among them, so it can
-// always get out). Walked against a ledge too high to step onto for half a second, its pilot looking at it, it climbs
-// it (MechClimb); pushing against it, its legs still turn after the look.
+// It stands on whatever its feet find, so a hole narrower than its stance never drops it in, but its middle never hangs
+// out over an edge (MechGround.support). It steps up no higher than its legs can, never walks off a drop too deep to
+// see the bottom of or down into a hole its cockpit would not fit in, and stops where its cockpit or its chest would
+// run into blocks (unless it already stands among them, so it can always get out). Walked against a ledge too high to
+// step onto for half a second, its pilot looking at it, it climbs it (MechClimb); pushing against it, its legs still
+// turn after the look.
 public final class MechDrive {
     public static final double WALK = 0.2;
     // The sprint key held with W runs: almost three and a half times as fast, working up to it slowly.
@@ -44,6 +45,7 @@ public final class MechDrive {
     private static final double BACK = 0.11;
     private static final double SPEED_UP = 0.012;
     private static final double SLOW_DOWN = 0.024;
+    private static final double STRIKE_BRAKE = 0.1;
     private static final double TURN_UP = Math.toRadians(0.8);
     // The highest step its legs take; a ledge higher than that it climbs.
     static final double STEP_UP = 2.6;
@@ -126,8 +128,11 @@ public final class MechDrive {
         boolean ahead = !still && input.forwardImpulse > 0.01F;
         boolean run = ahead && Minecraft.getInstance().options.keySprint.isDown();
         double want = ahead ? run ? RUN : WALK : !still && input.forwardImpulse < -0.01F ? -BACK : 0.0;
-        speed += Mth.clamp(want - speed, -SLOW_DOWN, run ? RUN_UP : SPEED_UP);
-        side += Mth.clamp((still ? 0.0 : input.leftImpulse * SIDESTEP) - side, -SLOW_DOWN, SPEED_UP);
+        // Striking a blow it plants its feet: it stops within a few strides, not slowly, or its feet stay behind.
+        double down = still ? STRIKE_BRAKE : SLOW_DOWN;
+        speed += Mth.clamp(want - speed, -down, still ? STRIKE_BRAKE : run ? RUN_UP : SPEED_UP);
+        side += Mth.clamp((still ? 0.0 : input.leftImpulse * SIDESTEP) - side, -down,
+                still ? STRIKE_BRAKE : SPEED_UP);
         // The legs turn after where the pilot looks, no faster than they can, while the
         // torso swings there first.
         // Standing, they only step round once it has twisted far over them, then all

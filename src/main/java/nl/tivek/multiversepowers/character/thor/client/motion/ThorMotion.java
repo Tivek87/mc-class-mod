@@ -191,6 +191,15 @@ public final class ThorMotion extends ThorGroundMotion {
         ClientThor.predict(player, ThorStatePayload.DIVE, 0, flags());
     }
 
+    // Let go of a knockdown still in the air: he flies on from where he is, with no lift.
+    public static void caught(LocalPlayer player) {
+        if (flying) {
+            return;
+        }
+        takeOff(player);
+        flightAge = LIFT_TICKS + 1;
+    }
+
     // The server's word on your own Thor: knocked out of the sky, he falls.
     public static void told(ClientThor.View view) {
         if (flying && flightAge > LIFT_TICKS && !view.has(ThorStatePayload.FLYING)) {

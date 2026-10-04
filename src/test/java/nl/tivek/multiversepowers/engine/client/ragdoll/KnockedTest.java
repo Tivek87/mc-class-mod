@@ -5,11 +5,13 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import nl.tivek.multiversepowers.engine.client.ragdoll.getup.GetUp;
+import nl.tivek.multiversepowers.engine.entity.PlayerKnockdowns;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 class KnockedTest {
     private static final int CREATURE = 7;
+    private static final int PLAYER = 8;
     // As long as the server keeps a thrown creature down from its landing (Knockdowns).
     private static final int DOWN = 125;
 
@@ -29,7 +31,7 @@ class KnockedTest {
             if (t > late) {
                 lain++;
             }
-            if (Knocked.getsUp(CREATURE, down, lain, ticks)) {
+            if (Knocked.getsUp(CREATURE, false, down, lain, ticks)) {
                 return t;
             }
         }
@@ -56,7 +58,7 @@ class KnockedTest {
 
     private static int getsUpAfterNoWord() {
         for (int down = 1; down < 100; down++) {
-            if (Knocked.getsUp(CREATURE, down, 0, GetUp.MOST_TICKS)) {
+            if (Knocked.getsUp(CREATURE, false, down, 0, GetUp.MOST_TICKS)) {
                 return down;
             }
         }
@@ -76,10 +78,29 @@ class KnockedTest {
         assertFalse(Knocked.again(CREATURE));
     }
 
+    // A player's knockdown is short: their body gets up as soon as the server's word leaves it just time enough to,
+    // however briefly it has lain, and stands before they are let go.
+    @Test
+    void aPlayerGetsUpAsTheirKnockdownEnds() {
+        int told = 20 + PlayerKnockdowns.RISE + PlayerKnockdowns.MARGIN;
+        Knocked.told(PLAYER, told);
+        assertTrue(Knocked.down(PLAYER, true));
+        int up = -1;
+        for (int t = 1; t <= told && up < 0; t++) {
+            Knocked.tick();
+            if (Knocked.getsUp(PLAYER, true, t, t, PlayerKnockdowns.RISE)) {
+                up = t;
+            }
+        }
+        assertEquals(20, up);
+        assertTrue(up + PlayerKnockdowns.RISE < told, "stands at " + (up + PlayerKnockdowns.RISE) + ", let go at "
+                + told);
+    }
+
     @Test
     void aBodyStillFlyingByTheServerWaitsForWord() {
         Knocked.told(CREATURE, -1);
-        assertFalse(Knocked.getsUp(CREATURE, 150, 150, GetUp.MOST_TICKS));
-        assertTrue(Knocked.down(CREATURE));
+        assertFalse(Knocked.getsUp(CREATURE, false, 150, 150, GetUp.MOST_TICKS));
+        assertTrue(Knocked.down(CREATURE, false));
     }
 }

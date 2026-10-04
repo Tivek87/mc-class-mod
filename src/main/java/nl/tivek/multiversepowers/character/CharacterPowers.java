@@ -38,5 +38,14 @@ public interface CharacterPowers {
     default void knockedDown(ServerPlayer player) {
     }
 
+    // Whether a power of theirs holds the player up in the air, asked as a knockdown ends it.
+    default boolean flying(ServerPlayer player) {
+        return false;
+    }
+
+    // Let go of a knockdown still in the air after it ended their flight: they fly on, free.
+    default void flyAgain(ServerPlayer player) {
+    }
+
     void clear();
 }

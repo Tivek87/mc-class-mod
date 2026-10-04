@@ -159,6 +159,16 @@ public final class ThorPowers implements CharacterPowers {
     }
 
     @Override
+    public boolean flying(ServerPlayer player) {
+        return ThorMoves.flying(player);
+    }
+
+    @Override
+    public void flyAgain(ServerPlayer player) {
+        ThorMoves.flyAgain(player);
+    }
+
+    @Override
     public void showTo(ServerPlayer viewer, ServerPlayer target) {
         int flags = ThorMoves.flags(target);
         if (flags != 0) {
@@ -171,6 +181,7 @@ public final class ThorPowers implements CharacterPowers {
         ThorMoves.clear();
         ThorBlows.clear();
         ThorGrab.clear();
+        GrabDive.clear();
         Mjolnir.clear();
         ThorCharge.clear();
     }

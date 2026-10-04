@@ -17,6 +17,7 @@ import net.neoforged.neoforge.client.event.MovementInputUpdateEvent;
 import net.neoforged.neoforge.client.event.RenderHandEvent;
 import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.engine.client.fx.FirstPersonEye;
+import nl.tivek.multiversepowers.engine.entity.PlayerKnockdowns;
 import nl.tivek.multiversepowers.engine.math.Ease;
 
 // Your own player knocked down (PlayerKnockdowns): from the blow until the server lets go they cannot walk, jump,
@@ -25,14 +26,15 @@ import nl.tivek.multiversepowers.engine.math.Ease;
 @EventBusSubscriber(modid = MultiversePowers.MODID, value = Dist.CLIENT)
 public final class Downed {
     private static final int FLYING = Integer.MAX_VALUE;
-    // Without word of landing, free again after this long all the same.
+    // Without word of landing, free again after this long all the same; the server lets go far sooner
+    // (PlayerKnockdowns), unless a power holds them, and that may last.
     private static final int LONGEST = 300;
     // The eye lying this high above the feet; it drops there in DROP ticks and rises in the RISE before the server
-    // lets go, as the body gets up (Knocked: it stands MARGIN ticks before).
+    // lets go, as the body gets up (it stands MARGIN ticks before).
     private static final double LYING = 0.3;
     private static final int DROP = 6;
-    private static final int RISE = 45;
-    private static final int MARGIN = 5;
+    private static final int RISE = PlayerKnockdowns.RISE;
+    private static final int MARGIN = PlayerKnockdowns.MARGIN;
 
     // Ticks left down (FLYING while in the air, 0 when free), ticks since the blow and ticks lain on the ground.
     private static int left;

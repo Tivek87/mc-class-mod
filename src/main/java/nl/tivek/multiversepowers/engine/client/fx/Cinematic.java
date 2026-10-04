@@ -11,11 +11,10 @@ import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.neoforged.api.distmarker.Dist;
-import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.client.event.RenderFrameEvent;
 import net.neoforged.neoforge.client.event.RenderGuiLayerEvent;
-import net.neoforged.neoforge.client.event.RenderHandEvent;
 import net.neoforged.neoforge.client.event.RenderHighlightEvent;
 import net.neoforged.neoforge.client.event.ViewportEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
@@ -26,6 +25,7 @@ import nl.tivek.multiversepowers.MultiversePowers;
 public final class Cinematic {
     private static final double WALL_GAP = 0.35;
     private static final List<Director> DIRECTORS = new ArrayList<>();
+    private static boolean handsHidden;
 
     // Where the camera stands, which way it looks and how wide it sees, in degrees the way the game counts them; a
     // film keeps its own field of view whatever the player has set.
@@ -90,10 +90,14 @@ public final class Cinematic {
         }
     }
 
-    @SubscribeEvent(priority = EventPriority.HIGH)
-    public static void onRenderHand(RenderHandEvent event) {
-        if (rolling()) {
-            event.setCanceled(true);
+    // While a film rolls no first-person hand is drawn, whatever would draw one; the switch is only flipped as a film
+    // starts and stops, so the game's own use of it (huge screenshots) is left alone.
+    @SubscribeEvent
+    public static void onFrame(RenderFrameEvent.Pre event) {
+        boolean rolling = rolling();
+        if (rolling != handsHidden) {
+            handsHidden = rolling;
+            Minecraft.getInstance().gameRenderer.setRenderHand(!rolling);
         }
     }
 

@@ -47,16 +47,24 @@ final class Hammer {
         cubes.add(hook.mirrorX("hook"));
         cubes.add(hook.mirrorZ("hook"));
         cubes.add(hook.mirrorX("hook").mirrorZ("hook"));
+        // Its top reaches out past the handle's end, so it is closed too.
         Cube snake = new Cube("serpent", 6, 2, 7, 8, 4, 9).turn("z", -22.5, 8, 4, 8)
                 .show(Cube.Side.SOUTH, Sheet.SNAKE).show(Cube.Side.NORTH, Sheet.SNAKE).flip(Cube.Side.NORTH)
                 .show(Cube.Side.EAST, Sheet.SNAKE_SIDE).show(Cube.Side.WEST, Sheet.SNAKE_SIDE)
-                .show(Cube.Side.DOWN, Sheet.SNAKE_DOWN);
+                .show(Cube.Side.UP, Sheet.SNAKE_DOWN).show(Cube.Side.DOWN, Sheet.SNAKE_DOWN);
         cubes.add(snake);
         cubes.add(snake.mirrorX("serpent"));
-        // A flat sprite, as the game draws a flower: seen from the front and back only.
-        cubes.add(new Cube("tip", 5.5, -1, 8, 10.5, 2, 8).show(Cube.Side.SOUTH, Sheet.TIP)
-                .show(Cube.Side.NORTH, Sheet.TIP));
+        // The gold point under the pommel, a pixel thick and closed all round: two prongs joining to a point.
+        Cube prong = gilt(tip("tip", 5.5, 1, 2, Sheet.TIP.sub(0, 0, 2, 1)));
+        cubes.add(prong);
+        cubes.add(prong.mirrorX("tip"));
+        cubes.add(gilt(tip("tip", 6.5, 0, 3, Sheet.TIP.sub(1, 1, 3, 1))));
+        cubes.add(gilt(tip("tip", 7.5, -1, 1, Sheet.TIP.sub(2, 2, 1, 1))));
         return cubes;
+    }
+
+    private static Cube tip(String name, double x, double y, int wide, Sheet.Rect art) {
+        return new Cube(name, x, y, 7.5, x + wide, y + 1, 8.5).show(Cube.Side.SOUTH, art).show(Cube.Side.NORTH, art);
     }
 
     // The same rune faces again, for the glow drawn over the head's own.
@@ -88,9 +96,12 @@ final class Hammer {
         return new Cube(name, LEFT + column, y, FRONT, LEFT + column + wide, y + high, FRONT + 1);
     }
 
+    // Gold on every side not shown yet, but for the back of a piece lying wholly on the head's face.
     private static Cube gilt(Cube cube, Cube.Side... hidden) {
+        boolean onHead = cube.from[2] == FRONT && cube.from[0] >= LEFT && cube.to[0] <= LEFT + 23
+                && cube.from[1] >= 22 && cube.to[1] <= 29;
         for (Cube.Side side : Cube.Side.values()) {
-            boolean skip = cube.shown(side) != null || side == Cube.Side.NORTH && cube.from[2] == FRONT;
+            boolean skip = cube.shown(side) != null || side == Cube.Side.NORTH && onHead;
             for (Cube.Side h : hidden) {
                 skip |= h == side;
             }
