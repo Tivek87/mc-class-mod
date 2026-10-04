@@ -34,6 +34,7 @@ import nl.tivek.multiversepowers.character.greenlantern.hand.HandVictimPayload;
 import nl.tivek.multiversepowers.character.greenlantern.mech.MechDrivePayload;
 import nl.tivek.multiversepowers.character.greenlantern.mech.MechStepPayload;
 import nl.tivek.multiversepowers.character.thor.ThorStatePayload;
+import nl.tivek.multiversepowers.character.thor.storm.StormFxPayload;
 import nl.tivek.multiversepowers.classes.ChoosingState;
 import nl.tivek.multiversepowers.classes.ClassData;
 import nl.tivek.multiversepowers.classes.ClassGear;
@@ -90,6 +91,7 @@ public final class ModNetwork {
         registrar.playToClient(SpellFxPayload.TYPE, SpellFxPayload.STREAM_CODEC, ModNetwork::onSpellFx);
         registrar.playToClient(ClapPayload.TYPE, ClapPayload.STREAM_CODEC, ModNetwork::onClap);
         registrar.playToClient(ThorStatePayload.TYPE, ThorStatePayload.STREAM_CODEC, ModNetwork::onThorState);
+        registrar.playToClient(StormFxPayload.TYPE, StormFxPayload.STREAM_CODEC, ModNetwork::onStormFx);
         registrar.playToClient(GrabStatePayload.TYPE, GrabStatePayload.STREAM_CODEC, ModNetwork::onGrabState);
         registrar.playToServer(ThrowGrabPayload.TYPE, ThrowGrabPayload.STREAM_CODEC, ModNetwork::onThrowGrab);
         registrar.playToClient(ArmPayload.TYPE, ArmPayload.STREAM_CODEC, ModNetwork::onArm);
@@ -308,6 +310,10 @@ public final class ModNetwork {
 
     private static void onThorState(ThorStatePayload payload, IPayloadContext context) {
         ClientPayloadHandler.handleThorState(payload, context);
+    }
+
+    private static void onStormFx(StormFxPayload payload, IPayloadContext context) {
+        ClientPayloadHandler.handleStormFx(payload, context);
     }
 
     private static void onClap(ClapPayload payload, IPayloadContext context) {

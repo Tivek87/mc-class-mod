@@ -21,20 +21,21 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
 import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.config.Unit;
+import nl.tivek.multiversepowers.engine.client.gui.GuiShapes;
 import nl.tivek.multiversepowers.engine.client.gui.NavScreen;
 
 // The settings window's list: each part under a title in its page's colour (click it to fold it shut), and a row for
-// every setting: a number with its steps, or one button for a switch or a choice.
+// every setting: a number with its steps and what it means in that colour, or one button for a switch or a choice.
 final class SettingsList extends ContainerObjectSelectionList<SettingsList.Row> {
     static final int ROW_HEIGHT = 20;
     private static final String PREFIX = "config." + MultiversePowers.MODID + ".";
     private static final Pattern NUMBER = Pattern.compile("-?[0-9]*\\.?[0-9]*");
     private static final int TEXT = 0xFFFFFF;
     private static final int CHANGED = NavScreen.WARN;
-    private static final int MEANING = 0x7CF29C;
+    private static final int ON = 0x7CF29C;
     private static final int OFF = 0xA0A0A0;
     private static final int WRONG = 0xFF6464;
-    private static final int GROUP = 0x9CC8A8;
+    private static final int GROUP = 0x9C9C9C;
     private static final int LINE = 0x1CFFFFFF;
     private static final int HOVER = 0x14FFFFFF;
 
@@ -64,11 +65,11 @@ final class SettingsList extends ContainerObjectSelectionList<SettingsList.Row> 
             }
             for (SettingsPages.Group group : block.groups()) {
                 if (group.title() != null) {
-                    this.addEntry(new GroupRow(group.title()));
+                    this.addEntry(new GroupRow(group.title(), GuiShapes.mix(block.color(), GROUP, 0.5F)));
                 }
                 for (ConfigNumber number : group.numbers()) {
                     this.numbers.add(number);
-                    this.addEntry(new NumberRow(number));
+                    this.addEntry(new NumberRow(number, block.color()));
                 }
             }
         }
@@ -132,7 +133,8 @@ final class SettingsList extends ContainerObjectSelectionList<SettingsList.Row> 
             graphics.fill(left - 2, top + 4, left, top + height - 4, 0xFF000000 | this.block.color());
             int y = top + (height - 8) / 2;
             int hintWidth = font.width(this.hint);
-            graphics.drawString(font, fit(font, this.title, width - hintWidth - 16), left + 4, y, 0xFFFFFFFF);
+            graphics.drawString(font, fit(font, this.title, width - hintWidth - 16), left + 4, y,
+                    0xFF000000 | this.block.color());
             graphics.drawString(font, this.hint, left + width - hintWidth - 4, y, 0xFF8E8E8E);
             graphics.fill(left, top + height - 1, left + width, top + height, LINE);
             if (hovering && this.block.about() != null) {
@@ -165,9 +167,11 @@ final class SettingsList extends ContainerObjectSelectionList<SettingsList.Row> 
 
     private final class GroupRow extends Row {
         private final Component title;
+        private final int color;
 
-        GroupRow(Component title) {
+        GroupRow(Component title, int color) {
             this.title = title;
+            this.color = color;
         }
 
         @Override
@@ -176,7 +180,7 @@ final class SettingsList extends ContainerObjectSelectionList<SettingsList.Row> 
             Font font = SettingsList.this.minecraft.font;
             int y = top + height - 9;
             FormattedCharSequence text = fit(font, this.title, width - 12);
-            graphics.drawString(font, text, left + 6, y, 0xFF000000 | GROUP);
+            graphics.drawString(font, text, left + 6, y, 0xFF000000 | this.color);
             int end = left + 10 + font.width(text);
             if (end < left + width) {
                 graphics.fill(end, y + 4, left + width, y + 5, LINE);
@@ -196,6 +200,8 @@ final class SettingsList extends ContainerObjectSelectionList<SettingsList.Row> 
 
     private final class NumberRow extends Row {
         private final ConfigNumber number;
+        // What a number means, in its page's colour.
+        private final int color;
         // A switch or a choice: one button that goes on to the next value.
         private final boolean pick;
         private final Button minus;
@@ -206,8 +212,9 @@ final class SettingsList extends ContainerObjectSelectionList<SettingsList.Row> 
         private double value;
         private boolean valid = true;
 
-        NumberRow(ConfigNumber number) {
+        NumberRow(ConfigNumber number, int color) {
             this.number = number;
+            this.color = color;
             this.pick = number.unit() == Unit.SWITCH || number.choices() != null;
             this.value = SettingsList.this.screen.value(number);
             Font font = SettingsList.this.minecraft.font;
@@ -244,7 +251,7 @@ final class SettingsList extends ContainerObjectSelectionList<SettingsList.Row> 
         private Component shown() {
             Component meaning = this.number.meaning(this.value);
             return this.number.unit() != Unit.SWITCH ? meaning
-                    : meaning.copy().withColor(this.value >= 0.5 ? MEANING : OFF);
+                    : meaning.copy().withColor(this.value >= 0.5 ? ON : OFF);
         }
 
         private void typed(String text) {
@@ -308,7 +315,7 @@ final class SettingsList extends ContainerObjectSelectionList<SettingsList.Row> 
                         : Component.translatable(PREFIX + "range", this.number.format(this.number.min()),
                                 this.number.format(this.number.max()));
                 graphics.drawString(font, fit(font, meaning, left + width - meaningX), meaningX, textY,
-                        0xFF000000 | (this.valid ? MEANING : WRONG));
+                        0xFF000000 | (this.valid ? this.color : WRONG));
             }
             this.reset.render(graphics, mouseX, mouseY, partialTick);
             graphics.drawString(font, fit(font, this.number.label(), labelWidth - 6), left + 4, textY,

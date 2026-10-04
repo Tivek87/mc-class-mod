@@ -165,10 +165,9 @@ public final class UpdateChecker {
             UpdateInstaller.cleanUp();
             nextCheck = now + FIRST_CHECK_MS;
         }
-        long interval = ClientSettings.updateCheckMs();
-        if (!checking && interval > 0L && now >= nextCheck) {
+        if (!checking && now >= nextCheck) {
             checking = true;
-            nextCheck = now + interval;
+            nextCheck = now + ClientSettings.updateCheckMs();
             WORKER.execute(UpdateChecker::check);
         }
     }

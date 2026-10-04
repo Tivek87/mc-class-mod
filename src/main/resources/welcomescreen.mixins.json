@@ -12,6 +12,7 @@
     "client.CameraMixin",
     "client.ClientPacketListenerMixin",
     "client.KeyEntryMixin",
+    "client.LevelWeatherMixin",
     "client.LivingEntityPoofMixin",
     "client.MinecraftMixin",
     "client.TitleScreenMixin",

@@ -45,6 +45,7 @@ public abstract class NavScreen extends Screen {
     protected static final int TITLE_BAR = 20;
     private static final int ITEM = 20;
     private static final int GAP = 9;
+    private static final int HEADING = 12;
     private static final int COMPACT = 26;
     protected static final int PAD = 10;
     private static final int HEADER = 28;
@@ -57,11 +58,22 @@ public abstract class NavScreen extends Screen {
     private static float shownPick = Float.NaN;
     private static long lastFrame;
 
-    // `gap`: an action rather than a page (a tour), under a line and left out of Ctrl+Tab; `line`: a line above it.
-    public record Item(String id, Component label, PixelIcons.Icon icon, Runnable open, boolean gap, boolean line) {
+    // `gap`: an action rather than a page (a tour), under a line and left out of Ctrl+Tab; `line`: a line above it;
+    // `heading`: a small title above it, over the items that follow; `color`: its own colour, 0 for none. Without
+    // `open` it is shut: drawn dim, never opened, and `hint` says why.
+    public record Item(String id, Component label, PixelIcons.Icon icon, @Nullable Runnable open, boolean gap,
+            boolean line, @Nullable Heading heading, int color, @Nullable Component hint) {
+        public Item(String id, Component label, PixelIcons.Icon icon, Runnable open, boolean gap, boolean line) {
+            this(id, label, icon, open, gap, line, null, 0, null);
+        }
+
         public Item(String id, Component label, PixelIcons.Icon icon, Runnable open, boolean gap) {
             this(id, label, icon, open, gap, gap);
         }
+    }
+
+    // Reported to the tour as `nav.<id>`, over itself and the item under it.
+    public record Heading(String id, Component label) {
     }
 
     // A small mark on an item: a dot when `text` is null, else a chip.
@@ -130,6 +142,16 @@ public abstract class NavScreen extends Screen {
         return null;
     }
 
+    // Room the page keeps free at the right of its subtitle, for what it draws there.
+    protected int subtitleRoom() {
+        return 0;
+    }
+
+    // The colour of the bar's stripe, its icon and the highlight of what is open.
+    protected int accent() {
+        return ACCENT;
+    }
+
     // The parts this page is made of, if any.
     protected List<Tab> tabs() {
         return List.of();
@@ -155,6 +177,9 @@ public abstract class NavScreen extends Screen {
         int widest = 0;
         for (Item item : this.items) {
             widest = Math.max(widest, this.font.width(item.label()));
+            if (item.heading() != null) {
+                widest = Math.max(widest, this.font.width(item.heading().label()) - 17);
+            }
         }
         this.sideWidth = widest + 36;
         this.compact = this.windowWidth - this.sideWidth - PAD * 2 < MIN_CONTENT;
@@ -183,7 +208,8 @@ public abstract class NavScreen extends Screen {
                 this.contentWidth - (tabs > 0 ? tabs + 8 : 0)), this.contentX, top, TEXT, true);
         Component subtitle = this.subtitle();
         if (subtitle != null) {
-            graphics.drawString(this.font, fit(subtitle, this.contentWidth), this.contentX, top + 12, MUTED, false);
+            graphics.drawString(this.font, fit(subtitle, this.contentWidth - this.subtitleRoom()), this.contentX,
+                    top + 12, MUTED, false);
         }
         graphics.fill(this.contentX, this.contentY - 5, this.contentX + this.contentWidth, this.contentY - 4, RIM);
         ScreenAnchors.report("window", this.windowX, this.windowY, this.windowWidth, this.windowHeight);
@@ -203,8 +229,9 @@ public abstract class NavScreen extends Screen {
         graphics.fill(this.windowX, this.windowY, right, this.windowY + TITLE_BAR, BAR);
         graphics.fill(this.windowX, this.windowY, right, this.windowY + 1, RIM);
         graphics.fill(this.windowX, this.windowY + TITLE_BAR - 1, right, this.windowY + TITLE_BAR, 0x50000000);
-        graphics.fill(this.windowX, this.windowY + 1, this.windowX + 2, this.windowY + TITLE_BAR - 1, 0xFF000000 | ACCENT);
-        PixelIcons.draw(graphics, this.brandIcon(), this.windowX + 7, this.windowY + 4, 1, 0xFF000000 | ACCENT, true);
+        int accent = 0xFF000000 | this.accent();
+        graphics.fill(this.windowX, this.windowY + 1, this.windowX + 2, this.windowY + TITLE_BAR - 1, accent);
+        PixelIcons.draw(graphics, this.brandIcon(), this.windowX + 7, this.windowY + 4, 1, accent, true);
         graphics.drawString(this.font, this.brand(), this.windowX + 24, this.windowY + 6, TEXT, true);
         int closeX = right - 17;
         boolean overClose = this.overClose(mouseX, mouseY);
@@ -240,13 +267,14 @@ public abstract class NavScreen extends Screen {
         long now = Util.getMillis();
         float seconds = Math.min(0.1F, Math.max(0.0F, (now - lastFrame) / 1000.0F));
         lastFrame = now;
+        int accent = 0xFF000000 | this.accent();
         int pickY = -1;
         int y = top + 6;
         for (Item item : this.items) {
             if (item.line()) {
                 graphics.fill(this.windowX + 8, y + GAP / 2, this.windowX + this.sideWidth - 8, y + GAP / 2 + 1, RIM);
-                y += GAP;
             }
+            y += this.above(item);
             if (item.id().equals(this.page)) {
                 pickY = y;
             }
@@ -257,25 +285,36 @@ public abstract class NavScreen extends Screen {
                     : shownPick + (pickY - shownPick) * (1.0F - (float) Math.exp(-GLIDE * seconds));
             int shown = Math.round(shownPick);
             graphics.fill(this.windowX, shown, this.windowX + this.sideWidth, shown + ITEM, PICKED);
-            graphics.fill(this.windowX, shown, this.windowX + 2, shown + ITEM, 0xFF000000 | ACCENT);
+            graphics.fill(this.windowX, shown, this.windowX + 2, shown + ITEM, accent);
         }
         y = top + 6;
         for (Item item : this.items) {
             if (item.line()) {
                 y += GAP;
             }
+            if (item.heading() != null) {
+                int room = this.compact ? 0 : HEADING;
+                if (!this.compact) {
+                    graphics.drawString(this.font, item.heading().label(), this.windowX + 8, y + 3, MUTED, false);
+                }
+                ScreenAnchors.report("nav." + item.heading().id(), this.windowX, y, this.sideWidth, room + ITEM);
+                y += room;
+            }
             boolean picked = item.id().equals(this.page);
+            boolean shut = item.open() == null;
             boolean over = this.over(item, y, mouseX, mouseY);
-            if (over && !picked) {
+            if (over && !picked && !shut) {
                 graphics.fill(this.windowX, y, this.windowX + this.sideWidth, y + ITEM, HOVER);
             }
-            int iconColor = picked ? 0xFF000000 | ACCENT : over ? TEXT : 0xFFA8A8A8;
+            int own = 0xFF000000 | item.color();
+            int iconColor = shut ? DIM : item.color() != 0 ? own : picked ? accent : over ? TEXT : 0xFFA8A8A8;
             PixelIcons.draw(graphics, item.icon(), this.windowX + 7, y + 4, 1, iconColor, false);
             if (!this.compact) {
-                graphics.drawString(this.font, item.label(), this.windowX + 25, y + 6, picked || over ? TEXT : BODY,
-                        picked);
-            } else if (over) {
-                this.setTooltipForNextRenderPass(item.label());
+                int color = shut ? MUTED : item.color() != 0 ? own : picked || over ? TEXT : BODY;
+                graphics.drawString(this.font, item.label(), this.windowX + 25, y + 6, color, picked);
+            }
+            if (over && (this.compact || shut)) {
+                this.tooltip(item);
             }
             Badge badge = this.badge(item.id());
             if (badge != null) {
@@ -304,7 +343,7 @@ public abstract class NavScreen extends Screen {
             boolean over = !tab.picked() && mouseX >= x && mouseX < x + width && mouseY >= y && mouseY < y + TAB;
             if (tab.picked()) {
                 graphics.fill(x, y, x + width, y + TAB, PICKED);
-                graphics.fill(x, y + TAB - 1, x + width, y + TAB, 0xFF000000 | ACCENT);
+                graphics.fill(x, y + TAB - 1, x + width, y + TAB, 0xFF000000 | this.accent());
             } else if (over) {
                 graphics.fill(x, y, x + width, y + TAB, HOVER);
             }
@@ -343,6 +382,21 @@ public abstract class NavScreen extends Screen {
         return mouseX >= this.windowX && mouseX < this.windowX + this.sideWidth && mouseY >= y && mouseY < y + ITEM;
     }
 
+    // The room above an item: its line and its heading (none in the narrow column).
+    private int above(Item item) {
+        return (item.line() ? GAP : 0) + (item.heading() != null && !this.compact ? HEADING : 0);
+    }
+
+    // An item's name in the narrow column, and why a shut one is shut.
+    private void tooltip(Item item) {
+        List<FormattedCharSequence> lines = new ArrayList<>();
+        lines.add(item.label().getVisualOrderText());
+        if (item.hint() != null) {
+            lines.addAll(this.font.split(item.hint().copy().withStyle(ChatFormatting.GRAY), 200));
+        }
+        this.setTooltipForNextRenderPass(lines);
+    }
+
     private boolean overClose(double mouseX, double mouseY) {
         int closeX = this.windowX + this.windowWidth - 17;
         return mouseX >= closeX - 2 && mouseX < closeX + 14 && mouseY >= this.windowY + 2
@@ -353,9 +407,7 @@ public abstract class NavScreen extends Screen {
     private Item itemAt(double mouseX, double mouseY) {
         int y = this.windowY + TITLE_BAR + 6;
         for (Item item : this.items) {
-            if (item.line()) {
-                y += GAP;
-            }
+            y += this.above(item);
             if (this.over(item, y, mouseX, mouseY)) {
                 return item;
             }
@@ -390,6 +442,9 @@ public abstract class NavScreen extends Screen {
     }
 
     private void openItem(Item item) {
+        if (item.open() == null) {
+            return;
+        }
         this.click(item.id().equals(this.page) ? 0.9F : 1.15F);
         if (!item.id().equals(this.page) || item.gap()) {
             item.open().run();
@@ -413,9 +468,9 @@ public abstract class NavScreen extends Screen {
         return super.keyPressed(keyCode, scanCode, modifiers);
     }
 
-    // The next page that is no action of its own (`gap` items, such as a tour, are left out).
+    // The next page that is no action of its own (`gap` items, such as a tour, are left out, and shut ones).
     private void step(int direction) {
-        List<Item> pages = this.items.stream().filter(item -> !item.gap()).toList();
+        List<Item> pages = this.items.stream().filter(item -> !item.gap() && item.open() != null).toList();
         int at = 0;
         for (int i = 0; i < pages.size(); i++) {
             if (pages.get(i).id().equals(this.page)) {
@@ -470,6 +525,18 @@ public abstract class NavScreen extends Screen {
         graphics.fill(x + 1, y, x + width - 1, y + 10, argb);
         graphics.fill(x, y + 1, x + width, y + 9, argb);
         graphics.drawString(this.font, text, x + 3, y + 1, 0xFF000000 | color, false);
+        return width;
+    }
+
+    // A chip that does something when clicked: lit under the pointer, dim and doing nothing while not `active`.
+    protected int smallButton(GuiGraphics graphics, Component text, int x, int y, int mouseX, int mouseY,
+            boolean active, Runnable action) {
+        int width = this.font.width(text) + 6;
+        boolean over = active && mouseX >= x && mouseX < x + width && mouseY >= y && mouseY < y + 10;
+        this.chip(graphics, text, x, y, over ? 0x505050 : 0x343434, !active ? 0x6A6A6A : over ? 0xFFFFFF : 0xC8C8C8);
+        if (active) {
+            this.links.add(new Link(x, y, width, 10, action));
+        }
         return width;
     }
 

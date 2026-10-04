@@ -10,8 +10,8 @@ import nl.tivek.multiversepowers.MultiversePowers;
 
 // What Thor is doing, for every game that sees him: whether he flies, floats after a super jump, flies at lightning
 // speed, carries someone, winds up a thunderclap, has his hammer in hand or thrown, is charged or has a charged
-// hammer, and the move he just started (a dash, a jump, a blink, a dive, a slam, a blow, a grab and what follows it,
-// a pull to his hammer) with what it needs.
+// hammer, has his storm over him, and the move he just started (a dash, a jump, a blink, a dive, a slam, a blow, a grab
+// and what follows it, a pull to his hammer, his storm, a bolt he calls, the lightning bomb) with what it needs.
 public record ThorStatePayload(int entity, int flags, int move, int arg) implements CustomPacketPayload {
     public static final CustomPacketPayload.Type<ThorStatePayload> TYPE = new CustomPacketPayload.Type<>(
             ResourceLocation.fromNamespaceAndPath(MultiversePowers.MODID, "thor_state"));
@@ -28,6 +28,8 @@ public record ThorStatePayload(int entity, int flags, int move, int arg) impleme
     public static final int THROWN = 64;
     public static final int CHARGED = 128;
     public static final int HAMMER_CHARGED = 256;
+    // His storm hangs over him.
+    public static final int STORMING = 512;
 
     // The move carried along: only when one starts, else NONE (a change of flags alone).
     public static final int NONE = 0;
@@ -54,6 +56,12 @@ public record ThorStatePayload(int entity, int flags, int move, int arg) impleme
     public static final int PULL = 13;
     // How the grab ends, picked or not (arg: ThorGrab.Act): told apart from the move, as a blow is.
     public static final int GRAB_ACT = 14;
+    // He calls up his storm, then calls a bolt down out of it.
+    public static final int STORM = 15;
+    public static final int CALL = 16;
+    // He rises, charges and bursts as a lightning bomb (LightningBomb); with PUT_OUT, a knockdown stopped it.
+    public static final int BOMB = 17;
+    public static final int PUT_OUT = 1;
 
     public static void send(ServerPlayer player, int flags, int move, int arg) {
         PacketDistributor.sendToPlayersTrackingEntityAndSelf(player,

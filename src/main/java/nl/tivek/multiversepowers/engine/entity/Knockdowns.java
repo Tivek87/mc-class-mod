@@ -225,8 +225,12 @@ public final class Knockdowns {
     }
 
     static boolean mayFly(Mob mob) {
-        return falls(mob) && !mob.isInWater() && !mob.isInLava()
-                && mob.getBbWidth() * mob.getBbWidth() * mob.getBbHeight() <= HEAVY;
+        return mayTopple(mob) && weight(mob) <= HEAVY;
+    }
+
+    // However heavy: what crashes into it moves it by their weights.
+    private static boolean mayTopple(Mob mob) {
+        return falls(mob) && !mob.isInWater() && !mob.isInLava();
     }
 
     private static void down(ServerLevel level, Mob mob) {
@@ -303,9 +307,9 @@ public final class Knockdowns {
         mob.setDeltaMovement(after.x * slip, down.falling, after.z * slip);
     }
 
-    // Crashing into the creatures in its way (none too heavy to throw): it and each of them go on together, at the
-    // speed their weights share (a heavy one bowls a light one over and flies on; a light one hardly moves a heavy
-    // one), and each pushed on fast enough goes down with it, into a pile.
+    // Crashing into the creatures in its way: it and each of them go on together, at the speed their weights share (a
+    // heavy one bowls a light one over and flies on; a light one hardly moves a heavy one, such as an iron golem), and
+    // each pushed on fast enough goes down with it, into a pile.
     private static void bump(ServerLevel level, Mob mob, Down mine) {
         Vec3 push = mob.getDeltaMovement();
         if (push.horizontalDistanceSqr() < BUMPS * BUMPS) {
@@ -314,7 +318,7 @@ public final class Knockdowns {
         double weight = weight(mob);
         for (Mob other : level.getEntitiesOfClass(Mob.class, mob.getBoundingBox().inflate(BUMP_REACH),
                 other -> other != mob && other.isAlive() && !mine.bumped.contains(other) && !HeldMobs.isHeld(other)
-                        && mayFly(other))) {
+                        && mayTopple(other))) {
             mine.bumped.add(other);
             Vec3 theirs = other.getDeltaMovement();
             double share = weight / (weight + weight(other));
@@ -331,8 +335,23 @@ public final class Knockdowns {
         }
     }
 
-    private static double weight(Mob mob) {
-        return mob.getBbWidth() * mob.getBbWidth() * mob.getBbHeight();
+    // Something a power swings at `speed` (a creature it holds) crashes into `other`, which goes on at the speed their
+    // weights share and, pushed on fast enough, goes down; as a thrown one crashes, but never held back itself.
+    public static void bowl(LivingEntity mover, LivingEntity other, Vec3 speed) {
+        double share = weight(mover) / (weight(mover) + weight(other));
+        double x = speed.x * share;
+        double z = speed.z * share;
+        Vec3 theirs = other.getDeltaMovement();
+        other.setDeltaMovement(theirs.x + x, Math.max(theirs.y, TOSS), theirs.z + z);
+        other.hasImpulse = true;
+        other.hurtMarked = true;
+        if (x * x + z * z > BOWLED * BOWLED) {
+            knock(other);
+        }
+    }
+
+    private static double weight(Entity entity) {
+        return entity.getBbWidth() * entity.getBbWidth() * entity.getBbHeight();
     }
 
     // Whether the creature is down (flying or lying) after a throw.

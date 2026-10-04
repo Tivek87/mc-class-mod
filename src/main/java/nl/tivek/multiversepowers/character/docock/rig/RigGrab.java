@@ -1,5 +1,6 @@
 package nl.tivek.multiversepowers.character.docock.rig;
 
+import java.util.List;
 import javax.annotation.Nullable;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.BlockParticleOption;
@@ -25,6 +26,7 @@ import nl.tivek.multiversepowers.engine.effect.Effect;
 import nl.tivek.multiversepowers.engine.effect.Effects;
 import nl.tivek.multiversepowers.engine.entity.HeldMobs;
 import nl.tivek.multiversepowers.engine.entity.HeldPlayers;
+import nl.tivek.multiversepowers.engine.entity.Knockdowns;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 import nl.tivek.multiversepowers.engine.target.Targeting;
 
@@ -201,6 +203,10 @@ abstract class RigGrab extends RigStrikes {
                 crash(level, this.caster, target, blocked.normalize().scale(wanted.length()));
                 arm.crashPause = CRASH_PAUSE;
             }
+            Vec3 swing = wanted.subtract(blocked);
+            if (arm.crashPause <= 0 && swing.length() > smashSpeed && this.swingInto(level, target, swing)) {
+                arm.crashPause = CRASH_PAUSE;
+            }
             target.resetFallDistance();
             if (arm.holdTicks % 12 == 6) {
                 this.sound(center, SoundEvents.CHAIN_STEP, 0.6F, 0.8F);
@@ -292,6 +298,28 @@ abstract class RigGrab extends RigStrikes {
         this.sound(center, SoundEvents.PLAYER_ATTACK_SWEEP, 1.0F, 0.6F);
         this.sound(center, SoundEvents.PISTON_EXTEND, 1.0F, 1.4F);
         Effects.start(level, thrown(this.caster, target));
+    }
+
+    // The held creature swung fast through others: each is struck with it and, by their weights, thrown on or down.
+    private boolean swingInto(ServerLevel level, LivingEntity target, Vec3 swing) {
+        List<LivingEntity> struck = level.getEntitiesOfClass(LivingEntity.class,
+                target.getBoundingBox().expandTowards(swing.scale(-1.0)),
+                other -> other != target && other != this.caster && !HeldMobs.isHeldByAnyone(other)
+                        && Targeting.mayStrike(this.caster, other));
+        if (struck.isEmpty()) {
+            return false;
+        }
+        float damage = (float) Math.min(damageOf("grab"), 2.0 + swing.length() * 4.0);
+        for (LivingEntity other : struck) {
+            Vec3 before = other.getDeltaMovement();
+            other.invulnerableTime = 0;
+            other.hurt(level.damageSources().playerAttack(this.caster), damage);
+            // Thrown the way it was swung, not away from him as a blow would.
+            other.setDeltaMovement(before);
+            Knockdowns.bowl(target, other, swing);
+        }
+        crash(level, this.caster, target, swing);
+        return true;
     }
 
     private static void crash(ServerLevel level, ServerPlayer caster, LivingEntity target, Vec3 blocked) {

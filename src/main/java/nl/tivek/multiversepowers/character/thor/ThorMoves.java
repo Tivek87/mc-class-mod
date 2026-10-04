@@ -18,6 +18,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.LivingDamageEvent;
 import net.neoforged.neoforge.event.entity.living.LivingFallEvent;
 import nl.tivek.multiversepowers.MultiversePowers;
+import nl.tivek.multiversepowers.character.thor.storm.ThorStorm;
 import nl.tivek.multiversepowers.engine.effect.Effects;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 import nl.tivek.multiversepowers.engine.world.LoadedWorld;
@@ -107,9 +108,9 @@ public final class ThorMoves {
         return flags | gear(this.owner);
     }
 
-    // What lasts past his moves: the hammer, a grab, a charge.
+    // What lasts past his moves: the hammer, a grab, a charge, his storm.
     private static int gear(ServerPlayer player) {
-        return Mjolnir.flags(player) | ThorCharge.flags(player)
+        return Mjolnir.flags(player) | ThorCharge.flags(player) | ThorStorm.flags(player)
                 | (ThorGrab.carrying(player) ? ThorStatePayload.CARRYING : 0);
     }
 
@@ -130,12 +131,12 @@ public final class ThorMoves {
     }
 
     // Tells everyone who sees him what he is now, with a move that starts (or NONE).
-    static void tell(ServerPlayer player, int move, int arg) {
+    public static void tell(ServerPlayer player, int move, int arg) {
         ThorStatePayload.send(player, flags(player), move, arg);
     }
 
     // A move of his that may throw him high (a leap after the hammer, a hoist): no fall hurts him for this long.
-    static void spare(ServerPlayer player, int ticks) {
+    public static void spare(ServerPlayer player, int ticks) {
         ThorMoves moves = of(player);
         moves.cushion = Math.max(moves.cushion, ticks);
     }

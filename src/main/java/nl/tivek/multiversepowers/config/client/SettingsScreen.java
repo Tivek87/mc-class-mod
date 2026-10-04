@@ -21,9 +21,10 @@ import nl.tivek.multiversepowers.engine.client.gui.NavScreen;
 import nl.tivek.multiversepowers.engine.client.gui.PixelIcons;
 import nl.tivek.multiversepowers.engine.client.gui.ScreenAnchors;
 
-// The settings: one window in the update manager's look, its pages down the left: your own game, the world's power
-// rules and stamina, then each character. A change waits, marked, until Save or until the window closes; Undo drops
-// what waits. A world's pages are only for its host or a listed owner, in that world (the server checks again).
+// The settings: one window in the update manager's look, its pages down the left: under Client your own game, under
+// Server the world's power rules and stamina, then each character. The world's pages are only for its host or a listed
+// owner, in that world (the server checks again): anyone else sees one shut line there. Each page has its colour. A
+// change waits, marked, until Save or until the window closes; Undo drops what waits.
 public final class SettingsScreen extends NavScreen {
     private static final String PREFIX = "config." + MultiversePowers.MODID + ".";
     private static final int SEARCH = 110;
@@ -64,7 +65,7 @@ public final class SettingsScreen extends NavScreen {
     private boolean keepScrollLater;
 
     private SettingsScreen(@Nullable Screen root, Visit visit, SettingsPages.Page page) {
-        super(page.title(), root, page.id());
+        super(page.title().copy().withColor(page.color()), root, page.id());
         this.visit = visit;
         this.page = page;
     }
@@ -75,15 +76,24 @@ public final class SettingsScreen extends NavScreen {
         return new SettingsScreen(root, visit, visit.page(page));
     }
 
+    // Client over your own page, Server over the world's (each character's in its colour), or over one shut line.
     @Override
     protected List<Item> items() {
         List<Item> items = new ArrayList<>();
+        Heading client = new Heading("client", Component.translatable(PREFIX + "side.client"));
+        Heading server = new Heading("server", Component.translatable(PREFIX + "side.server"));
         SettingsPages.Page last = null;
         for (SettingsPages.Page page : this.visit.pages) {
-            boolean line = last != null && (page.world() != last.world()
-                    || (page.character() == null) != (last.character() == null));
-            items.add(new Item(page.id(), page.title(), page.icon(), () -> this.open(page), false, line));
+            boolean starts = last == null || page.world() != last.world();
+            boolean line = last != null && (starts || (page.character() == null) != (last.character() == null));
+            items.add(new Item(page.id(), page.title(), page.icon(), () -> this.open(page), false, line,
+                    starts ? page.world() ? server : client : null, page.character() == null ? 0 : page.color(),
+                    null));
             last = page;
+        }
+        if (last == null || !last.world()) {
+            items.add(new Item("host_only", Component.translatable(PREFIX + "host_only"), PixelIcons.Icon.LOCK, null,
+                    false, last != null, server, 0, Component.translatable(PREFIX + "host_only.desc")));
         }
         return items;
     }
@@ -112,18 +122,36 @@ public final class SettingsScreen extends NavScreen {
         return waiting ? new Badge(null, WARN) : null;
     }
 
+    @Override
+    protected int accent() {
+        return this.page.color();
+    }
+
     // Whom the page is for, or why it cannot be changed now.
     @Override
     protected Component subtitle() {
-        if (!this.page.world()) {
-            return this.page.editable() ? Component.translatable(PREFIX + "about.game")
-                    : Component.translatable(PREFIX + "locked").withColor(WARN);
+        if (!this.page.editable()) {
+            return Component.translatable(PREFIX + "locked").withColor(WARN);
         }
-        if (this.page.editable()) {
-            return Component.translatable(PREFIX + "about.world");
-        }
-        boolean inWorld = this.minecraft != null && this.minecraft.level != null;
-        return Component.translatable(PREFIX + (inWorld ? "about.read_only" : "about.no_world")).withColor(WARN);
+        return Component.translatable(PREFIX + (this.page.world() ? "about.world" : "about.game"));
+    }
+
+    // Open all and Close all at the right of the subtitle, but not while searching every page.
+    @Override
+    protected int subtitleRoom() {
+        return this.folds() ? this.font.width(this.openAll()) + this.font.width(this.closeAll()) + 24 : 0;
+    }
+
+    private boolean folds() {
+        return this.visit.query.isBlank() && !this.page.sections().isEmpty();
+    }
+
+    private Component openAll() {
+        return Component.translatable(PREFIX + "open_all");
+    }
+
+    private Component closeAll() {
+        return Component.translatable(PREFIX + "close_all");
     }
 
     // Search at the right of the page's title; under the list Defaults, and Undo and Save for what waits.
@@ -177,7 +205,7 @@ public final class SettingsScreen extends NavScreen {
         if (wanted.isEmpty()) {
             for (int i = 0; i < this.page.sections().size(); i++) {
                 SettingsPages.Section section = this.page.sections().get(i);
-                String key = this.page.id() + ":" + i;
+                String key = this.key(i);
                 blocks.add(new SettingsList.Block(key, section.title(), section.hint(), section.about(),
                         this.page.color(), true, this.visit.collapsed.contains(key), section.groups()));
             }
@@ -213,11 +241,37 @@ public final class SettingsScreen extends NavScreen {
         return text.getString().toLowerCase(Locale.ROOT).contains(wanted);
     }
 
+    private String key(int section) {
+        return this.page.id() + ":" + section;
+    }
+
     void toggle(String key) {
         if (!this.visit.collapsed.remove(key)) {
             this.visit.collapsed.add(key);
         }
         this.rebuildLater(true);
+    }
+
+    // Every part of the page folded shut, or every one open, from the top.
+    private void fold(boolean shut) {
+        for (int i = 0; i < this.page.sections().size(); i++) {
+            if (shut) {
+                this.visit.collapsed.add(this.key(i));
+            } else {
+                this.visit.collapsed.remove(this.key(i));
+            }
+        }
+        this.rebuildLater(false);
+    }
+
+    // Whether any part of the page is folded `shut` (or, false, open).
+    private boolean anyFolded(boolean shut) {
+        for (int i = 0; i < this.page.sections().size(); i++) {
+            if (this.visit.collapsed.contains(this.key(i)) == shut) {
+                return true;
+            }
+        }
+        return false;
     }
 
     // Deferred: a click still walks the widget list, which a rebuild now would change under it.
@@ -316,9 +370,20 @@ public final class SettingsScreen extends NavScreen {
         ScreenAnchors.report("settings", this.contentX, this.contentY, this.contentWidth, this.contentHeight);
     }
 
-    // Between the buttons, how many changes wait; over an empty list, that nothing matches the search.
+    // Open all and Close all; between the buttons, how many changes wait; over an empty list, that nothing matches.
     @Override
     protected void renderPage(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        if (this.folds()) {
+            int y = this.windowY + TITLE_BAR + 19;
+            int x = this.contentX + this.contentWidth - this.font.width(this.closeAll()) - 6;
+            int width = this.smallButton(graphics, this.closeAll(), x, y, mouseX, mouseY, this.anyFolded(false),
+                    () -> this.fold(true));
+            ScreenAnchors.report("settings.close_all", x, y, width, 10);
+            x -= this.font.width(this.openAll()) + 10;
+            width = this.smallButton(graphics, this.openAll(), x, y, mouseX, mouseY, this.anyFolded(true),
+                    () -> this.fold(false));
+            ScreenAnchors.report("settings.open_all", x, y, width, 10);
+        }
         int count = this.visit.edits.size();
         if (count > 0) {
             int left = this.contentX + 74;

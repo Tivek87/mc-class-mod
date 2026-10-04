@@ -402,7 +402,7 @@ public final class AbilityPanel {
         graphics.flush();
         pose.popPose();
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
-        anchors(layout, x, y, scale);
+        anchors(layout, now, x, y, scale);
     }
 
     // What the game itself may draw right of the hotbar, kept free whether it shows now or not, so the panel never
@@ -436,9 +436,10 @@ public final class AbilityPanel {
         }
     }
 
-    // Where the panel, its guide key, its rows and its foot (the ring's power, what Doctor Octopus stands on) ended up on
-    // the screen, for the tour to point at; the corner it takes stays free of the rest of the HUD.
-    private static void anchors(Layout layout, float x, float y, float scale) {
+    // Where the panel, its guide key, its rows (also as the character's own, `game.panel.rows.<character>`) and its foot
+    // (the ring's power, what Doctor Octopus stands on) ended up on the screen, for the tour to point at; the corner it
+    // takes stays free of the rest of the HUD.
+    private static void anchors(Layout layout, GameCharacter now, float x, float y, float scale) {
         int width = Math.round(up.shownWidth) + PAD * 2;
         int height = Math.round(up.shownHeight) + PAD * 2;
         ScreenAnchors.report("game.panel", x - width * scale, y - height * scale, width * scale, height * scale);
@@ -453,6 +454,8 @@ public final class AbilityPanel {
         float rowsTop = y - (height - PAD - layout.spacing().title() + 3) * scale;
         float foot = y - (PAD + layout.foot() - 2) * scale;
         ScreenAnchors.report("game.panel.rows", left, rowsTop, (width - PAD * 2 + 4) * scale, foot - rowsTop);
+        ScreenAnchors.report("game.panel.rows." + now.getId(), left, rowsTop, (width - PAD * 2 + 4) * scale,
+                foot - rowsTop);
         if (layout.foot() > 0) {
             String name = layout.lantern() ? "game.panel.power" : "game.panel.foot";
             ScreenAnchors.report(name, left, foot, (width - PAD * 2 + 4) * scale, y - foot - 3 * scale);

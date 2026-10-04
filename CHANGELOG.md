@@ -3,6 +3,31 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.7.6-alpha] - 2026-10-04
+
+### Added
+- **Thor:** **Thunderstorm** on his first ability key: a storm gathers over him and follows him, with rain and a dark
+  sky under it; press the key again to call a bolt down where you aim, and by itself it strikes foes under it now and
+  then. Crouch and press to end it; its cooldown starts once it is over.
+- **Thor:** **Lightning Bomb** on his second ability key: he rises slowly with bolts striking round him, charges and
+  bursts, hurting, throwing and knocking down everything round and under him, then sinks back down.
+
+### Changed
+- **Abilities:** a key ability for the ground only says so when pressed in flight, instead of doing nothing.
+- **Settings:** your own settings (Client) and the world's (Server) stand apart in the window, and only the world's
+  host or a listed owner can open the server's pages; anyone else sees a locked line there.
+- **Settings:** every page in its own colour (Doctor Octopus grey, Green Lantern green, Thor blue), and **Open all**
+  and **Close all** open or fold every part of a page at once.
+- **Updates:** **Look for updates** can be set no lower than 5 minutes, and no longer turned off.
+- **Project:** lightning bolts are drawn by the engine (`Bolts`), and `LocalWeather` makes rain and a dark sky round
+  one spot, in each player's own game.
+
+### Fixed
+- **Throws:** a creature thrown into an iron golem or another heavy one crashes into it instead of passing through,
+  moving it by their weights: a thrown golem bowls another golem over.
+- **Doctor Octopus:** a creature held in a tentacle and swung fast into others strikes them and, by their weights,
+  throws them on or knocks them down.
+
 ## [0.7.5-alpha] - 2026-10-04
 
 ### Added

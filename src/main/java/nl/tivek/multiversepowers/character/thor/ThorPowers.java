@@ -13,6 +13,8 @@ import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.character.CharacterAbility;
 import nl.tivek.multiversepowers.character.CharacterPowers;
 import nl.tivek.multiversepowers.character.Characters;
+import nl.tivek.multiversepowers.character.thor.storm.LightningBomb;
+import nl.tivek.multiversepowers.character.thor.storm.ThorStorm;
 import nl.tivek.multiversepowers.engine.effect.Effects;
 import nl.tivek.multiversepowers.engine.entity.BodySize;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
@@ -20,8 +22,8 @@ import nl.tivek.multiversepowers.engine.fx.Sounds;
 
 // Thor: a bolt of lightning strikes as you become him and static crawls over you for a while. His moves are in
 // ThorMoves (dash, super jump, flight and what he does in flight), ThorBlows (his combo), ThorGrab, GrabDive,
-// Thunderclap, Mjolnir (the hammer in hand, thrown, its uppercut), ThorCharge and SkyMoves (the shockwave and bolt
-// in flight).
+// Thunderclap, Mjolnir (the hammer in hand, thrown, its uppercut), ThorCharge, SkyMoves (the shockwave and bolt in
+// flight) and in `storm/` his storm and the lightning bomb.
 public final class ThorPowers implements CharacterPowers {
     // What his game reports of him for the gestures that need it: hammer in hand or not, running or not.
     public static final int UNARMED = 1;
@@ -83,6 +85,8 @@ public final class ThorPowers implements CharacterPowers {
 
     @Override
     public void leave(ServerPlayer player) {
+        ThorStorm.leave(player);
+        LightningBomb.stop(player);
         ThorMoves.leave(player);
         ThorBlows.forget(player);
         ThorGrab.leave(player);
@@ -104,6 +108,9 @@ public final class ThorPowers implements CharacterPowers {
         int arg = data >> Characters.MOVE_SHIFT + 8 & 0xFF;
         float fists = ability.getDamage() * ThorCharge.fists(player);
         float hammer = ability.getDamage() * ThorCharge.hammer(player);
+        if (on && LightningBomb.busy(player) && !ability.id().equals("storm")) {
+            return false;
+        }
         return switch (ability.id()) {
             case "combo" -> on && (data & Characters.TAP) != 0
                     && ThorBlows.start(player, move, ability.getDamage());
@@ -148,6 +155,17 @@ public final class ThorPowers implements CharacterPowers {
             case "lightning_flight" -> on && held && flying
                     && ThorMoves.lightning(player, (int) Math.round(ability.value("seconds") * 20.0),
                             ability.getDamage(), (float) ability.value("landingDamage"));
+            // Never used at once: its cooldown starts once the storm is over (ThorStorm).
+            case "storm" -> {
+                if (on && (data & Characters.SNEAKING) != 0) {
+                    ThorStorm.calm(player);
+                } else if (on && !ThorStorm.call(player, ability.getDamage())) {
+                    ThorStorm.summon(player, ability);
+                }
+                yield false;
+            }
+            case "lightning_bomb" -> on && !flying && !ThorGrab.carrying(player)
+                    && LightningBomb.start(player, ability.getDamage(), ability.value("radius"));
             default -> false;
         };
     }
@@ -156,6 +174,7 @@ public final class ThorPowers implements CharacterPowers {
     public void knockedDown(ServerPlayer player) {
         ThorMoves.land(player, false);
         ThorGrab.leave(player);
+        LightningBomb.stop(player);
     }
 
     @Override
@@ -184,5 +203,7 @@ public final class ThorPowers implements CharacterPowers {
         GrabDive.clear();
         Mjolnir.clear();
         ThorCharge.clear();
+        ThorStorm.clear();
+        LightningBomb.clear();
     }
 }

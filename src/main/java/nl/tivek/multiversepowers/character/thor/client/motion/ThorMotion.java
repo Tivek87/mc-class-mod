@@ -73,6 +73,10 @@ public final class ThorMotion extends ThorGroundMotion {
     private static int act(LocalPlayer player, CharacterAbility ability, boolean on, int data) {
         boolean held = (data & Characters.HOLD) != 0;
         boolean slam = (data & Characters.SLAM) != 0;
+        // Through the lightning bomb he does nothing else but call his storm's bolts.
+        if (on && ThorRise.active() && !ability.id().equals("storm")) {
+            return -1;
+        }
         switch (ability.id()) {
             case "combo" -> {
                 return on ? ThorCombo.act(player, ability, data) : -1;
@@ -134,6 +138,18 @@ public final class ThorMotion extends ThorGroundMotion {
                 lightning = true;
                 lightningLeft = (int) Math.round(ability.value("seconds") * 20.0);
                 ClientThor.flags(player, flags());
+            }
+            case "lightning_bomb" -> {
+                if (!on || flying || ThorRise.active() || player.isPassenger()
+                        || ClientThor.has(player, ThorStatePayload.CARRYING)) {
+                    return -1;
+                }
+                jumpAge = -1;
+                floatAge = -1;
+                dashAge = -1;
+                dropping = false;
+                ThorRise.start(player);
+                ClientThor.predict(player, ThorStatePayload.BOMB, 0, flags());
             }
             default -> {
             }
@@ -229,6 +245,7 @@ public final class ThorMotion extends ThorGroundMotion {
         lightningLeft = 0;
         velocity = Vec3.ZERO;
         ThorPull.stop();
+        ThorRise.stop();
     }
 
     @SubscribeEvent
@@ -239,12 +256,16 @@ public final class ThorMotion extends ThorGroundMotion {
         }
         if (ClientCharacter.active() != GameCharacter.THOR || player.isPassenger() || player.isSpectator()
                 || player.getAbilities().flying || !player.isAlive()) {
-            if (flying || jumpAge >= 0 || dashAge >= 0) {
+            if (flying || jumpAge >= 0 || dashAge >= 0 || ThorRise.active()) {
                 stop();
             }
             return;
         }
         Input input = event.getInput();
+        if (ThorRise.active()) {
+            ThorRise.tick(player, input);
+            return;
+        }
         if (flying) {
             fly(player, input);
             return;

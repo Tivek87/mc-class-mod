@@ -75,14 +75,23 @@ public enum GameCharacter {
             // hammer up or puts it away, holding it charges him (or the hammer). A double space jumps high, holding
             // space flies. In flight left click throws one-handed blows, holding it is a shockwave, right click blinks,
             // holding it dives, the scroll wheel's click calls down a bolt and holding shift is lightning speed.
-            // His twelve keys are kept free for abilities to come; his moves sit in the slots past them.
+            // His first key calls up his storm (pressed again, a bolt out of it; crouched, it ends), the second is the
+            // lightning bomb. His other keys are kept free for abilities to come; his moves sit in the slots past them.
             for (AbilitySlot slot : AbilitySlot.values()) {
-                if (slot.keyed()) {
+                if (slot.keyed() && slot != AbilitySlot.ABILITY_1 && slot != AbilitySlot.ABILITY_2) {
                     this.add(abilities, slot, "key_" + slot.getId()).spare();
                 }
             }
             CharacterAbility.When ground = CharacterAbility.When.GROUND;
             CharacterAbility.When flying = CharacterAbility.When.FLYING;
+            this.add(abilities, AbilitySlot.ABILITY_1, "storm").crouch(CharacterAbility.Crouch.UNDO).cooldown(600)
+                    .damage(8.0)
+                    .setting("seconds", 20.0, 5.0, 120.0, Unit.SECONDS, "How long the storm lasts, in seconds")
+                    .setting("radius", 24.0, 8.0, 64.0, Unit.BLOCKS, "How far round him the storm reaches, in blocks")
+                    .setting("strikeDamage", 5.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                            "Damage of the bolts the storm strikes foes with by itself");
+            this.add(abilities, AbilitySlot.ABILITY_2, "lightning_bomb").when(ground).cooldown(600).damage(16.0)
+                    .setting("radius", 8.0, 3.0, 24.0, Unit.BLOCKS, "How far round him the burst reaches, in blocks");
             this.add(abilities, AbilitySlot.ABILITY_13, "combo").input(CharacterAbility.Input.LEFT).damage(4.0);
             this.add(abilities, AbilitySlot.ABILITY_14, "thunderclap").input(CharacterAbility.Input.LEFT)
                     .holdOnly(ThorPowers.CLAP_HOLD).when(ground).needs(ThorPowers.UNARMED)

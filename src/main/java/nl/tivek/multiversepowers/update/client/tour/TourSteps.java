@@ -8,6 +8,7 @@ import javax.annotation.Nullable;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.network.chat.Component;
 import nl.tivek.multiversepowers.character.client.AbilityKeys;
+import nl.tivek.multiversepowers.character.client.AbilityPanel;
 import nl.tivek.multiversepowers.update.client.tour.TourStep.Kind;
 import nl.tivek.multiversepowers.update.client.tour.TourStep.Place;
 
@@ -19,20 +20,24 @@ import nl.tivek.multiversepowers.update.client.tour.TourStep.Place;
 // while a line is in neither, or a tour text is too long. Only steps from `FROM` up to the version installed are ever
 // shown, so a release's steps replace the last one's. A player's first tour starts with `INTRO`.
 final class TourSteps {
-    static final String VERSION = "0.7.5-alpha";
+    static final String VERSION = "0.7.6-alpha";
     // The oldest version whose changes this tour shows: normally its own.
     static final String FROM = VERSION;
 
+    // The settings' Server heading, then Thor's rows of the panel: as anyone else, the card stands in the middle.
     static final List<TourStep> ALL = List.of(
-            step(VERSION, "version_stages", Kind.NEW, Place.VERSIONS).at("versions.stage", "versions.list")
-                    .covers("Update manager: a tag says"),
-            step(VERSION, "settings_window", Kind.CHANGED, Place.SETTINGS).at("nav")
-                    .covers("Settings: a new settings window", "Settings: the screen that first asked"));
+            step(VERSION, "settings_split", Kind.CHANGED, Place.SETTINGS).at("nav.server")
+                    .covers("Settings: your own settings"),
+            step(VERSION, "thor_storm", Kind.NEW, Place.GAME).at("game.panel.rows.thor").prepare(AbilityPanel::wake)
+                    .covers("Thor: Thunderstorm"),
+            step(VERSION, "thor_bomb", Kind.NEW, Place.GAME).at("game.panel.rows.thor").prepare(AbilityPanel::wake)
+                    .covers("Thor: Lightning Bomb"));
 
     // Changes too small for a step of their own, each by how its changelog line starts, as in `covers`.
     static final List<String> SMALL = List.of(
-            "Tour: shorter cards",
-            "Update manager: in the list of versions");
+            "Abilities: a key ability",
+            "Settings: every page in its own colour",
+            "Updates: Look for updates");
 
     // Shown first on a player's first tour, wherever it starts: what the tour is and how to use it.
     static final TourStep INTRO = step(VERSION, "tour_intro", Kind.HOW, Place.ANY);

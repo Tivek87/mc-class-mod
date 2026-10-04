@@ -1,6 +1,8 @@
 package nl.tivek.multiversepowers.character.thor.client;
 
+import static nl.tivek.multiversepowers.character.client.GuideMode.ability;
 import static nl.tivek.multiversepowers.character.client.GuideMode.click;
+import static nl.tivek.multiversepowers.character.client.GuideMode.crouched;
 import static nl.tivek.multiversepowers.character.client.GuideMode.doubleKey;
 import static nl.tivek.multiversepowers.character.client.GuideMode.heading;
 import static nl.tivek.multiversepowers.character.client.GuideMode.hold;
@@ -33,7 +35,8 @@ final class ThorGuide {
                         plus(ThorGuide::sprintKey, hold(Input.RIGHT, "grab_dash"), "grab_dash").fires("grab_dash"),
                         click(Input.SCROLL, "hammer").fires("mjolnir"), hold(Input.SCROLL, "charge").fires("charged"),
                         heading("move"), doubleKey(ThorGuide::jumpKey, "jump").fires("super_jump"),
-                        holdKey(ThorGuide::jumpKey, "fly").fires("flight")),
+                        holdKey(ThorGuide::jumpKey, "fly").fires("flight"),
+                        heading("keys"), storm(), call(), calm(), bomb()),
                 mode("hammer", player -> ThorPanel.armed(player) && !flies(player),
                         heading("mouse"), click(Input.LEFT, "combo").fires("combo"),
                         hold(Input.LEFT, "uppercut").fires("hammer_uppercut"),
@@ -41,7 +44,8 @@ final class ThorGuide {
                         hold(Input.RIGHT, "follow").fires("hammer_leap"),
                         click(Input.SCROLL, "away").fires("mjolnir"), hold(Input.SCROLL, "charge").fires("charged"),
                         heading("move"), doubleKey(ThorGuide::jumpKey, "jump").fires("super_jump"),
-                        holdKey(ThorGuide::jumpKey, "fly").fires("flight")),
+                        holdKey(ThorGuide::jumpKey, "fly").fires("flight"),
+                        heading("keys"), storm(), call(), calm(), bomb()),
                 mode("held", ThorGrabChoice::holds,
                         heading("mouse"), click(Input.LEFT, "punches").moves("grab", false),
                         click(Input.RIGHT, "throw").moves("grab", false),
@@ -51,7 +55,24 @@ final class ThorGuide {
                         hold(Input.LEFT, "shockwave").fires("air_shockwave"),
                         click(Input.RIGHT, "blink").fires("air_blink"), hold(Input.RIGHT, "dive").fires("grab_dash_dive"),
                         click(Input.SCROLL, "bolt").fires("air_bolt"),
-                        hold(Input.SHIFT, "lightning").fires("lightning_flight")));
+                        hold(Input.SHIFT, "lightning").fires("lightning_flight"),
+                        heading("keys"), storm(), call(), calm()));
+    }
+
+    private static GuideMode.Control storm() {
+        return ability(GameCharacter.THOR, "storm", "storm");
+    }
+
+    private static GuideMode.Control call() {
+        return ability(GameCharacter.THOR, "storm", "call").moves("storm", false).again("storm");
+    }
+
+    private static GuideMode.Control calm() {
+        return crouched(ability(GameCharacter.THOR, "storm", "calm").moves("storm", false), "calm").under("storm");
+    }
+
+    private static GuideMode.Control bomb() {
+        return ability(GameCharacter.THOR, "lightning_bomb", "bomb");
     }
 
     private static boolean flies(LocalPlayer player) {

@@ -130,6 +130,8 @@ public final class ThorPoses {
         flight(mix, view, body, age, entity);
         slam(mix, view, age);
         hold(mix, view, age, partialTick);
+        ThorSkyPoses.storm(mix, view, body, age);
+        ThorSkyPoses.bomb(mix, view, body, age, entity);
         blows(mix, view, entity, partialTick);
         float absorb = (float) Math.max(0.0, body.absorb.value);
         mix.drop += absorb;

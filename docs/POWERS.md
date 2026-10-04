@@ -55,8 +55,8 @@ long cooldown; while it goes, the panel counts it down at its top right.
 
 | Key | Ability | Doctor Octopus | Green Lantern | Thor |
 |---|---|---|---|---|
-| R | Ability 1 | Grab | Emerald Express | *(free)* |
-| V | Ability 2 | Multi-Tentacle | Construct Wheel | *(free)* |
+| R | Ability 1 | Grab | Emerald Express | Thunderstorm |
+| V | Ability 2 | Multi-Tentacle | Construct Wheel | Lightning Bomb |
 | Z | Ability 3 | Tentacle Dash | Recharge | *(free)* |
 | B (hold) | Ability 4 | Block | Light Bolt *(left click)* | *(free)* |
 | H | Ability 5 | Ground Slam | Light Shield *(right click)* | *(free)* |
@@ -70,8 +70,9 @@ long cooldown; while it goes, the panel counts it down at its top right.
 
 Green Lantern has one more past the twelfth: the Hard-Light Mech *(hold the scroll wheel 2 seconds)*.
 
-Thor's twelve keys are kept free for powers to come; every move of his sits on the mouse, space, shift or the scroll
-wheel. On the ground: Thunder Fists *(left click)*, Thunderclap *(hold left click, no hammer)*, Hammer Uppercut
+Thor's first two keys hold his Thunderstorm and Lightning Bomb; the other ten are kept free for powers to come, and
+every other move of his sits on the mouse, space, shift or the scroll wheel. On the ground: Thunder Fists *(left
+click)*, Thunderclap *(hold left click, no hammer)*, Hammer Uppercut
 *(hold left click, hammer)*, Dash *(right click, no hammer)*, Grab *(hold right click)*, Grab Dash *(running, hold
 right click)*, Hammer Throw *(right click, hammer)*, Throw and Follow *(hold right click, hammer)*, Take Up the Hammer
 *(scroll wheel click)*, Charge *(hold scroll wheel)*, Super Jump *(double space)* and Flight *(hold space)*. In
@@ -1276,6 +1277,8 @@ You choose how you walk. Press **C** to go round: on your own feet, on 2, on 3, 
   (crouch + R), throw it, or turn into someone else.
 - **Smash it:** swing your view and what you hold is whipped along with it. Hitting a wall, a ceiling or
   the ground hurts it, harder the faster it went, with flying bits of that block and a heavy crash.
+  Swung into other creatures, it strikes them as hard and throws them on or knocks them down by their
+  weights: a light one hardly moves a heavy one such as an iron golem.
 - **Left click** throws everything you hold where you look. The first hard crash after a throw hurts it
   again.
 - **H while holding** (Ground Slam with full claws) drives everything you hold straight down into the
@@ -1400,8 +1403,9 @@ The whole run takes about 12 seconds, longer when the creature runs.
 
 ## Thor
 
-The god of thunder, from the Other franchise. Everything he does sits on the mouse, space and shift, and what a
-button does depends on whether he holds his hammer and whether he flies:
+The god of thunder, from the Other franchise. His storm and his lightning bomb sit on his first two ability keys;
+everything else he does sits on the mouse, space and shift, and what a button does depends on whether he holds his
+hammer and whether he flies:
 
 | | Fists (no hammer) | Hammer in hand | In flight |
 |---|---|---|---|
@@ -1504,6 +1508,40 @@ Double space jumps high and holding space flies, with or without the hammer.
   lands, down to half 3.5 blocks away, and thrown back). **Cooldown:** 20 seconds. Its speed, how long it lasts and
   both damages are settings.
 
+### Thunderstorm (ability 1, R)
+
+- **Press R:** Thor raises his fist (or the hammer, while he holds it) to the sky and a bolt runs up out of it. Over
+  about **2.5 seconds** a dark thunderstorm gathers over him, **24 blocks** round, some 20 blocks over his head (well
+  over the ground, even when he stands in a cave). It turns slowly, the middle fastest, lightning crawls along its
+  underside with far rumbles of thunder, and grey curtains of rain hang from it. Under it the game's own rain falls,
+  the sky darkens and the rain sounds, for you and every other player standing under it, while the weather of the
+  world stays as it is. It follows him wherever he goes, on foot or in flight, a little behind.
+- **Call Lightning (press R again):** a bolt comes down out of the storm where you aim, up to 96 blocks away and at
+  most to the storm's edge. It strikes the first thing in its way down: a roof, a tree, the water. **4 hearts** to all
+  within 3 blocks, less further off; what it strikes right on is knocked down. You can call one about every half
+  second. Every bolt flashes over the sky, cracks where it lands, and its thunder comes later the further off you
+  stand; near it, the view jolts.
+- **By itself** the storm strikes a creature out to hurt you under it in the open now and then (about every 2
+  seconds, **2.5 hearts**); with none there, a bolt strikes the ground somewhere under it, away from him, and hurts
+  nothing.
+- **Ending it:** it lasts **20 seconds**; crouch and press R to end it sooner. Then it clears away over 3 seconds and
+  the **cooldown of 30 seconds** starts. How long it lasts, how far it reaches and the damage of both kinds of bolt are
+  settings.
+
+### Lightning Bomb (ability 2, V)
+
+- **Press V** on the ground (in flight it says it is for the ground only): Thor rises slowly, about **7 blocks** in
+  2.5 seconds, arms open, static crawling over him and arcs leaping from him to the ground, while small bolts strike
+  the ground round him. Then he hangs still and curls up tight for **1 second**: a shell of light closes in on him with
+  lightning drawn into him, a glare swells at his chest, and a ring of light on the ground shows how far the burst will
+  reach.
+- **The burst:** he flings himself wide open in a flash of white light. A shock front runs out, bolts are thrown from
+  him down onto the ground all round and up into the sky, a ring of light runs out over the ground and glowing cracks
+  cool there. Everything within **8 blocks** round him and under him takes up to **8 hearts** (less towards the edge),
+  is thrown back and knocked down. Then he sinks slowly back down and lands without fall damage.
+- While it goes he does nothing else but call his storm's bolts. A knockdown stops it before it bursts.
+- **Cooldown:** 30 seconds. How far it reaches and its damage are settings.
+
 ### Thunderclap (hold left click for 0.75 seconds)
 
 - **Hold left** without the hammer in hand, on the ground. While you hold it Thor winds up: he sets his feet wide
@@ -1596,21 +1634,25 @@ There are two kinds of settings:
   - **Bodies:** limp bodies on or off, how many at once, how far away, how long a body lies before it sinks away (at
     least 5 seconds on the ground), feet on the ground, and capes of cloth.
   - **Sound:** the menu theme.
-  - **Updates:** how often the game looks for a new version, and how long the note about one stays on screen.
+  - **Updates:** how often the game looks for a new version (no more often than every 5 minutes), and how long the
+    note about one stays on screen.
 
-**In the game:** Mods > Multiverse Powers > Config (or `/stamina` in the chat, which opens the stamina bar). The
-settings window looks like the update manager: a page each down the left.
+**In the game:** Mods > Multiverse Powers > Config (or `/stamina` in the chat, which opens the stamina bar for the
+host or an owner). The settings window looks like the update manager: a page each down the left, your own under
+**Client** and the world's under **Server**.
 
-- **Pages:** *Your game* (only for you, in every world), then the world's: *Power rules*, the stamina bar and every
-  character. A dot after a page's name means it has changes that are not saved yet; the line under a page's title
-  says whom it is for.
-- **The world's pages** can only be changed by the **host** of the world (singleplayer, or a LAN world you host) or
+- **Pages:** under **Client**, *Your game* (only for you, in every world); under **Server**, the world's: *Power
+  rules*, the stamina bar and every character. Every page has its own colour (Doctor Octopus grey, Green Lantern
+  green, Thor blue). A dot after a page's name means it has changes that are not saved yet; the line under a page's
+  title says whom it is for.
+- **The world's pages** can only be opened by the **host** of the world (singleplayer, or a LAN world you host) or
   an **owner** of a server: a player named in the `owners` list of `general.toml` in the world's
   `serverconfig/welcomescreen/` folder (only that file can change the list). Operators are not owners unless listed.
-  The server checks this again for every change. Anyone else sees the numbers read only. In the main menu there is
-  no world, so nothing to change.
-- **Every ability is a part you can fold open and shut:** click its title. The title says how many numbers are
-  in it and which key or button it sits on.
+  The server checks this again for every change. Anyone else, and the main menu (there is no world), sees only a
+  locked **Host only** line under **Server**.
+- **Every ability is a part you can fold open and shut:** click its title, or **Open all** and **Close all** at the
+  right under the page's title for every part of the page at once. The title says how many numbers are in it and
+  which key or button it sits on.
 - **Search:** type in the box at the top right and the list shows every number of every page whose name or
   explanation matches, under the name of its page and ability.
 - **Every number has its own line:** its name, `-` and `+` around a box you can type in (hold shift for ten

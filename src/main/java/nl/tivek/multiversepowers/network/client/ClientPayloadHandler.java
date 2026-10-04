@@ -26,6 +26,8 @@ import nl.tivek.multiversepowers.character.greenlantern.construct.FlattenPayload
 import nl.tivek.multiversepowers.character.greenlantern.hand.HandVictimPayload;
 import nl.tivek.multiversepowers.character.thor.ThorStatePayload;
 import nl.tivek.multiversepowers.character.thor.client.ClientThor;
+import nl.tivek.multiversepowers.character.thor.storm.StormFxPayload;
+import nl.tivek.multiversepowers.character.thor.storm.client.StormBolts;
 import nl.tivek.multiversepowers.classes.ClassSyncPayload;
 import nl.tivek.multiversepowers.classes.PlayerClass;
 import nl.tivek.multiversepowers.classes.client.ClientClassData;
@@ -92,6 +94,10 @@ public final class ClientPayloadHandler {
 
     public static void handleThorState(ThorStatePayload payload, IPayloadContext context) {
         context.enqueueWork(() -> ClientThor.update(payload));
+    }
+
+    public static void handleStormFx(StormFxPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> StormBolts.add(payload));
     }
 
     public static void handleClap(ClapPayload payload, IPayloadContext context) {

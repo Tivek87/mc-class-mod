@@ -79,7 +79,7 @@ public final class ClientSettings {
                 + " own menu music)", true);
         sheet.section("updates");
         UPDATE_CHECK = sheet.whole("updateCheckMinutes", "How often the game looks for a new version of the mod, in"
-                + " minutes (0 = never)", 5, 0, 120, Unit.MINUTES, 1.0);
+                + " minutes (at least 5)", 5, 5, 120, Unit.MINUTES, 1.0);
         UPDATE_POPUP = sheet.number("updatePopupSeconds", "How long the note about a new version stays on screen while"
                 + " you play, in seconds (0 = only in the menus)", 15.0, 0.0, 120.0, Unit.SECONDS, 1.0);
         builder.pop();

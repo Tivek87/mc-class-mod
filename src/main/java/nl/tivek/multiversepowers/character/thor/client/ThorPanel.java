@@ -11,7 +11,8 @@ import nl.tivek.multiversepowers.character.client.ClientCharacter;
 import nl.tivek.multiversepowers.character.thor.ThorPowers;
 import nl.tivek.multiversepowers.character.thor.ThorStatePayload;
 
-// Thor's panel names his moves for the hammer (in hand, on his belt or thrown) and says what a move waits for.
+// Thor's panel names his moves for the hammer (in hand, on his belt or thrown) and his storm, and says what a move
+// waits for.
 final class ThorPanel implements AbilityPanel.Rules {
     private static final String PREFIX = "screen." + MultiversePowers.MODID + ".panel.thor.";
 
@@ -43,6 +44,9 @@ final class ThorPanel implements AbilityPanel.Rules {
     @Nullable
     @Override
     public Component name(CharacterAbility ability, boolean hold, LocalPlayer player) {
+        if (ability.id().equals("storm") && ClientThor.has(player, ThorStatePayload.STORMING)) {
+            return Component.translatable(PREFIX + "call_lightning");
+        }
         if (!armed(player)) {
             return null;
         }

@@ -46,16 +46,25 @@ public final class SettingsPages {
     public record Group(@Nullable Component title, List<ConfigNumber> numbers) {
     }
 
-    // Every page of the settings window, in order: your own game, the world's rules and stamina, each character.
+    // Every page of the settings window, in order: your own game (client), then the world's rules, stamina and each
+    // character (server), those only for its host or a listed owner while in it.
     public static List<Page> all() {
         List<Page> pages = new ArrayList<>();
         pages.add(client());
+        if (!serverOpen()) {
+            return pages;
+        }
         pages.add(general());
         pages.add(stamina());
         for (GameCharacter character : GameCharacter.values()) {
             pages.add(character(character));
         }
         return pages;
+    }
+
+    // Whether the world's own pages may be opened: in a world, by its host or a listed owner.
+    public static boolean serverOpen() {
+        return Minecraft.getInstance().level != null && serverEditable();
     }
 
     // The host of this world, or a listed owner on a server (the list comes with the synced world settings): the
@@ -92,7 +101,7 @@ public final class SettingsPages {
         allowed.add(fromSpec(spec, file, "general", "spells", PowerRules.SPELLS, Unit.SWITCH, 1.0));
         Section chosen = new Section(Component.translatable(PREFIX + "general.characters"), null,
                 List.of(new Group(null, allowed)));
-        return new Page(RULES, Component.translatable(PREFIX + "general"), 0x9DFF8A, PixelIcons.Icon.GLOBE, null,
+        return new Page(RULES, Component.translatable(PREFIX + "general"), 0xFFA060, PixelIcons.Icon.GLOBE, null,
                 List.of(section, creatures, chosen), worldEditable(spec), true, spec::save);
     }
 
@@ -198,7 +207,7 @@ public final class SettingsPages {
             list.add(new Section(Component.translatable(PREFIX + "client." + section.getKey()), null,
                     List.of(new Group(null, section.getValue()))));
         }
-        return new Page(GAME, Component.translatable(PREFIX + "client"), 0x8FD3FF, PixelIcons.Icon.SCREEN, null, list,
+        return new Page(GAME, Component.translatable(PREFIX + "client"), 0xB79CFF, PixelIcons.Icon.SCREEN, null, list,
                 spec.isLoaded(), false, spec::save);
     }
 

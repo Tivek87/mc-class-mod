@@ -21,6 +21,7 @@ import nl.tivek.multiversepowers.character.thor.ThorGrab;
 import nl.tivek.multiversepowers.character.thor.ThorStatePayload;
 import nl.tivek.multiversepowers.character.thor.client.motion.ThorMotion;
 import nl.tivek.multiversepowers.character.thor.client.motion.ThorPull;
+import nl.tivek.multiversepowers.character.thor.client.motion.ThorRise;
 import nl.tivek.multiversepowers.engine.math.Vectors;
 import nl.tivek.multiversepowers.spell.client.ClientClaps;
 
@@ -169,6 +170,7 @@ public final class ClientThor {
                     ThorMotion.caught(player);
                 }
             }
+            case ThorStatePayload.BOMB -> ThorRise.told(arg == ThorStatePayload.PUT_OUT);
             default -> {
             }
         }
@@ -221,6 +223,13 @@ public final class ClientThor {
             view.carried = (arg >> 1) - 1;
             view.dashed = (arg & 1) != 0;
             view.act = -1;
+        }
+    }
+
+    // Every Thor in sight: his id and what is known of him.
+    public static void each(BiConsumer<Integer, View> each) {
+        for (Int2ObjectOpenHashMap.Entry<View> entry : VIEWS.int2ObjectEntrySet()) {
+            each.accept(entry.getIntKey(), entry.getValue());
         }
     }
 

@@ -16,6 +16,7 @@ import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import nl.tivek.multiversepowers.MultiversePowers;
+import nl.tivek.multiversepowers.engine.client.render.Bolts;
 import nl.tivek.multiversepowers.engine.client.render.ConstructPainter;
 import nl.tivek.multiversepowers.engine.client.render.Material;
 import nl.tivek.multiversepowers.spell.SpellFxPayload;
@@ -80,8 +81,8 @@ public final class SpellFx {
             case SpellFxPayload.FIREBALL -> 200;
             case SpellFxPayload.FIRE_BURST -> FireFx.BURST;
             case SpellFxPayload.STORM, SpellFxPayload.VIAL -> fx.said.ticks();
-            case SpellFxPayload.BOLT -> StormFx.BOLT;
-            case SpellFxPayload.ARC -> StormFx.ARC;
+            case SpellFxPayload.BOLT -> Bolts.BOLT;
+            case SpellFxPayload.ARC -> Bolts.ARC;
             case SpellFxPayload.POISON -> fx.said.ticks();
             case SpellFxPayload.GUST -> WindFx.LIFE;
             case SpellFxPayload.VOID_IN -> VoidFx.IN;

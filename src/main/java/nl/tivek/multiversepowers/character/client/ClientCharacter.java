@@ -420,6 +420,11 @@ public final class ClientCharacter {
             player.displayClientMessage(why, true);
             return;
         }
+        if (!Gestures.rightWhen(ability, player)) {
+            player.displayClientMessage(Component.translatable("screen." + MultiversePowers.MODID + ".guide.status."
+                    + (ability.when() == CharacterAbility.When.GROUND ? "ground" : "flying")), true);
+            return;
+        }
         boolean undo = player.isShiftKeyDown() && ability.crouchDoes() == CharacterAbility.Crouch.UNDO;
         int left = COOLDOWNS[slot.ordinal()];
         if (left > 0 && !undo) {
