@@ -123,6 +123,11 @@ public final class AbilityPanel {
         default boolean affords(CharacterAbility ability, boolean hold, LocalPlayer player) {
             return ClientCharacter.canPay(player, ability);
         }
+
+        // Whether holding a mouse button that also clicks does something now, so it gets a row of its own.
+        default boolean holds(CharacterAbility ability, LocalPlayer player) {
+            return true;
+        }
     }
 
     // How far apart the rows sit, in the panel's own pixels: from one row to the next, between the mouse, key and

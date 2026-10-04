@@ -42,8 +42,9 @@ public final class PowerRules {
         DOMINO = builder.comment("Whether a thrown creature that crashes into another passes on its push and knocks"
                 + " that one down too (1 = yes, 0 = as in the plain game)")
                 .defineInRange("dominoKnockdown", 1, 0, 1);
-        PLAYER_KNOCKDOWN = builder.comment("Whether a player thrown hard by a blow or a blast goes limp, lies a moment"
-                + " and gets up, as creatures do (1 = yes, 0 = only when a power knocks them down)")
+        PLAYER_KNOCKDOWN = builder.comment("Whether players go limp as creatures do, the same in every player's game:"
+                + " knocked down by a power or thrown hard by a blow or a blast they fall, lie a moment and get up,"
+                + " and a dying player's body falls limp (1 = yes, 0 = players never go limp)")
                 .defineInRange("playerKnockdown", 1, 0, 1);
         builder.pop();
         builder.comment("Which characters and spells can be chosen in this world. One switched off is taken away from"

@@ -19,7 +19,8 @@
     "subtitle": "subtitles.welcomescreen.ring.arrival_speech",
     "sounds": [
       {
-        "name": "welcomescreen:ring/arrival_speech"
+        "name": "welcomescreen:ring/arrival_speech",
+        "attenuation_distance": 24
       }
     ]
   },
@@ -27,7 +28,8 @@
     "subtitle": "subtitles.welcomescreen.ring.equip_weapon",
     "sounds": [
       {
-        "name": "welcomescreen:ring/equip_weapon"
+        "name": "welcomescreen:ring/equip_weapon",
+        "attenuation_distance": 24
       }
     ]
   },
@@ -35,7 +37,8 @@
     "subtitle": "subtitles.welcomescreen.ring.flight",
     "sounds": [
       {
-        "name": "welcomescreen:ring/flight"
+        "name": "welcomescreen:ring/flight",
+        "attenuation_distance": 24
       }
     ]
   },
@@ -43,7 +46,8 @@
     "subtitle": "subtitles.welcomescreen.ring.giant_hands",
     "sounds": [
       {
-        "name": "welcomescreen:ring/giant_hands"
+        "name": "welcomescreen:ring/giant_hands",
+        "attenuation_distance": 24
       }
     ]
   },

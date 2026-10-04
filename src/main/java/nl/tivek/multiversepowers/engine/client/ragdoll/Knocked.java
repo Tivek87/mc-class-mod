@@ -2,6 +2,7 @@ package nl.tivek.multiversepowers.engine.client.ragdoll;
 
 import it.unimi.dsi.fastutil.ints.Int2IntMap;
 import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
+import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import it.unimi.dsi.fastutil.objects.ObjectIterator;
 import nl.tivek.multiversepowers.engine.client.ragdoll.getup.GetUp;
 import nl.tivek.multiversepowers.engine.entity.PlayerKnockdowns;
@@ -11,8 +12,10 @@ import nl.tivek.multiversepowers.engine.entity.PlayerKnockdowns;
 // time to stand before its creature moves on; one the server never held down gets up at once, as it may walk on
 // already.
 public final class Knocked {
-    // A creature's body down on the ground lies this long before it may get up: 3 seconds.
+    // A creature's body down on the ground lies this long before it may get up: 3 seconds, or 1 when a blow only
+    // staggered it.
     static final int LIES = 60;
+    private static final int BRIEF_LIES = 20;
     private static final int FLYING = Integer.MAX_VALUE;
     // Standing this many ticks before its creature may move, so it is seen up before it walks on.
     private static final int MARGIN = 5;
@@ -24,17 +27,25 @@ public final class Knocked {
     private static final Int2IntOpenHashMap LEFT = new Int2IntOpenHashMap();
     // Creatures the server has just sent flying (thrown, or hit as they got up), and on which tick word came.
     private static final Int2IntOpenHashMap AGAIN = new Int2IntOpenHashMap();
+    private static final IntOpenHashSet BRIEF = new IntOpenHashSet();
     private static int now;
 
     private Knocked() {
     }
 
-    // Flying (below 0), lying `ticks` more, or free again (0).
+    // Flying (below 0), lying `ticks` more, or free again (0). Told it lies too short for a whole lie and a get-up, it
+    // was thrown by a blow that only staggers: it lies BRIEF_LIES.
     public static void told(int entity, int ticks) {
         if (ticks == 0) {
             LEFT.remove(entity);
+            BRIEF.remove(entity);
         } else {
             LEFT.put(entity, ticks < 0 ? FLYING : ticks);
+        }
+        if (ticks > 0 && ticks < LIES + GetUp.MOST_TICKS + MARGIN) {
+            BRIEF.add(entity);
+        } else if (ticks > 0) {
+            BRIEF.remove(entity);
         }
         if (ticks < 0) {
             AGAIN.put(entity, now);
@@ -71,6 +82,11 @@ public final class Knocked {
         return left == FLYING || left > (player ? PlayerKnockdowns.RISE : LIES + GetUp.MOST_TICKS) + MARGIN;
     }
 
+    // Whether a blow only staggered it: it lies a second and gets up quickly.
+    static boolean brief(int entity) {
+        return BRIEF.contains(entity);
+    }
+
     // Whether the server holds it down at all now.
     static boolean held(int entity) {
         return LEFT.containsKey(entity);
@@ -82,16 +98,24 @@ public final class Knocked {
             return down >= GRACE;
         }
         int left = LEFT.get(entity);
-        return left == FLYING ? down >= LONGEST : (player || lain >= LIES) && left <= ticks + MARGIN;
+        if (left == FLYING) {
+            return down >= LONGEST;
+        }
+        if (!player && BRIEF.contains(entity)) {
+            return lain >= BRIEF_LIES;
+        }
+        return (player || lain >= LIES) && left <= ticks + MARGIN;
     }
 
     static void forget(int entity) {
         LEFT.remove(entity);
         AGAIN.remove(entity);
+        BRIEF.remove(entity);
     }
 
     static void clear() {
         LEFT.clear();
         AGAIN.clear();
+        BRIEF.clear();
     }
 }

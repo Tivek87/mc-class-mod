@@ -71,10 +71,13 @@ public enum GameCharacter {
         void fill(Map<AbilitySlot, CharacterAbility> abilities) {
             // Without the hammer: left click throws the blows of his combo, holding it claps, right click dashes,
             // holding it grabs (running, a grab dash). With it: the combo swings it, holding left is its uppercut,
-            // right click throws it, holding right throws it and flies after it. The scroll wheel's click takes the
-            // hammer up or puts it away, holding it charges him (or the hammer). A double space jumps high, holding
-            // space flies. In flight left click throws one-handed blows, holding it is a shockwave, right click blinks,
-            // holding it dives, the scroll wheel's click calls down a bolt and holding shift is lightning speed.
+            // right click throws it (crouched, to stay where it stops), holding right draws it back and letting go
+            // throws it and dashes after it. With the hammer on him the scroll wheel's click takes it up or puts it
+            // away and holding it charges him (or the hammer); with it away the click calls it back and, while it
+            // rests, holding it dashes to it. A double space jumps high, holding space flies (calling the hammer
+            // first). In flight left click throws one-handed blows, holding it is a shockwave, right click blinks,
+            // holding it dives, the scroll wheel's click calls down a bolt, holding it is a Storm Throw and holding
+            // shift is lightning speed.
             // His first key calls up his storm (pressed again, a bolt out of it; crouched, it ends), the second is the
             // lightning bomb. His other keys are kept free for abilities to come; his moves sit in the slots past them.
             for (AbilitySlot slot : AbilitySlot.values()) {
@@ -91,7 +94,8 @@ public enum GameCharacter {
                     .setting("strikeDamage", 5.0, 0.0, 2000.0, Unit.HALF_HEARTS,
                             "Damage of the bolts the storm strikes foes with by itself");
             this.add(abilities, AbilitySlot.ABILITY_2, "lightning_bomb").when(ground).cooldown(600).damage(16.0)
-                    .setting("radius", 8.0, 3.0, 24.0, Unit.BLOCKS, "How far round him the burst reaches, in blocks");
+                    .setting("radius", 10.0, 3.0, 24.0, Unit.BLOCKS, "How far round him the burst reaches, in blocks")
+                    .was(8.0);
             this.add(abilities, AbilitySlot.ABILITY_13, "combo").input(CharacterAbility.Input.LEFT).damage(4.0);
             this.add(abilities, AbilitySlot.ABILITY_14, "thunderclap").input(CharacterAbility.Input.LEFT)
                     .holdOnly(ThorPowers.CLAP_HOLD).when(ground).needs(ThorPowers.UNARMED)
@@ -110,14 +114,20 @@ public enum GameCharacter {
                     .holdOnly(ThorPowers.GRAB_DASH_HOLD).when(ground)
                     .needs(ThorPowers.UNARMED | ThorPowers.SPRINTING).cooldown(140).damage(6.0);
             this.add(abilities, AbilitySlot.ABILITY_19, "hammer_throw").input(CharacterAbility.Input.RIGHT)
-                    .when(ground).needs(ThorPowers.ARMED).cooldown(30).damage(7.0);
+                    .when(ground).needs(ThorPowers.ARMED).cooldown(30).damage(7.0)
+                    .setting("throwBlocks", 24.0, 4.0, 64.0, Unit.BLOCKS, "How far the thrown hammer flies, in blocks")
+                    .setting("stayBlocks", 128.0, 16.0, 512.0, Unit.BLOCKS,
+                            "How far he may go from his resting hammer before it comes home by itself, in blocks");
             this.add(abilities, AbilitySlot.ABILITY_20, "hammer_leap").input(CharacterAbility.Input.RIGHT)
-                    .holdOnly(ThorPowers.LEAP_HOLD).when(ground).needs(ThorPowers.ARMED).cooldown(100)
-                    .damage(4.0);
+                    .holdOnly(ThorPowers.LEAP_HOLD).held().when(ground).needs(ThorPowers.ARMED).cooldown(100)
+                    .damage(4.0)
+                    .setting("throwBlocks", 14.0, 4.0, 24.0, Unit.BLOCKS, "How far a full draw throws it, in blocks")
+                    .setting("dashSpeed", 20.0, 5.0, 60.0, Unit.BLOCKS_PER_SECOND,
+                            "How fast he dashes to his hammer, in blocks a second");
             this.add(abilities, AbilitySlot.ABILITY_21, "mjolnir").input(CharacterAbility.Input.SCROLL).when(ground)
-                    .cooldown(10);
+                    .needs(ThorPowers.HOME).cooldown(10);
             this.add(abilities, AbilitySlot.ABILITY_22, "charged").input(CharacterAbility.Input.SCROLL)
-                    .holdOnly(ThorPowers.CHARGE_HOLD).when(ground).cooldown(900)
+                    .holdOnly(ThorPowers.CHARGE_HOLD).when(ground).needs(ThorPowers.HOME).cooldown(900)
                     .setting("seconds", 20.0, 1.0, 120.0, Unit.SECONDS, "How long a charge lasts, in seconds");
             this.add(abilities, AbilitySlot.ABILITY_23, "super_jump").input(CharacterAbility.Input.SPACE).doubleTap()
                     .when(ground).cooldown(50)
@@ -128,20 +138,34 @@ public enum GameCharacter {
                     .holdOnly(ThorPowers.FLIGHT_HOLD).when(ground)
                     .setting("speed", 18.0, 2.0, 80.0, Unit.BLOCKS_PER_SECOND, "How fast he flies, in blocks a second");
             this.add(abilities, AbilitySlot.ABILITY_25, "air_shockwave").input(CharacterAbility.Input.LEFT)
-                    .holdOnly(ThorPowers.SHOCK_HOLD).when(flying).cooldown(200).damage(3.0);
+                    .holdOnly(ThorPowers.SHOCK_HOLD).when(flying).needs(ThorPowers.HOME).cooldown(200).damage(3.0);
             this.add(abilities, AbilitySlot.ABILITY_26, "air_blink").input(CharacterAbility.Input.RIGHT)
-                    .when(flying).cooldown(24);
+                    .when(flying).needs(ThorPowers.HOME).cooldown(24);
             this.add(abilities, AbilitySlot.ABILITY_27, "grab_dash_dive").input(CharacterAbility.Input.RIGHT)
-                    .holdOnly(ThorPowers.DIVE_HOLD).when(flying).cooldown(160).damage(10.0);
+                    .holdOnly(ThorPowers.DIVE_HOLD).when(flying).needs(ThorPowers.HOME).cooldown(160).damage(10.0);
             this.add(abilities, AbilitySlot.ABILITY_28, "air_bolt").input(CharacterAbility.Input.SCROLL)
-                    .when(flying).cooldown(30).damage(5.0);
+                    .when(flying).needs(ThorPowers.HOME).cooldown(30).damage(5.0);
             this.add(abilities, AbilitySlot.ABILITY_29, "lightning_flight").input(CharacterAbility.Input.SHIFT)
-                    .holdOnly(ThorPowers.LIGHTNING_HOLD).when(flying).cooldown(400).cooldownWas(40).damage(3.0)
+                    .holdOnly(ThorPowers.LIGHTNING_HOLD).when(flying).needs(ThorPowers.HOME).cooldown(400)
+                    .cooldownWas(40).damage(3.0)
                     .setting("speed", 48.0, 10.0, 160.0, Unit.BLOCKS_PER_SECOND,
                             "How fast he flies at lightning speed, in blocks a second")
                     .setting("seconds", 15.0, 1.0, 120.0, Unit.SECONDS, "How long lightning speed lasts, in seconds")
                     .setting("landingDamage", 8.0, 0.0, 2000.0, Unit.HALF_HEARTS,
                             "Damage where he lands at lightning speed, half as much at the edge");
+            this.add(abilities, AbilitySlot.ABILITY_30, "hammer_call").input(CharacterAbility.Input.SCROLL)
+                    .when(ground).needs(ThorPowers.AWAY).cooldown(10).damage(4.0);
+            this.add(abilities, AbilitySlot.ABILITY_31, "hammer_follow").input(CharacterAbility.Input.SCROLL)
+                    .holdOnly(ThorPowers.FOLLOW_HOLD).when(ground).needs(ThorPowers.RESTING).cooldown(40)
+                    .setting("reachBlocks", 24.0, 4.0, 64.0, Unit.BLOCKS,
+                            "How far away his resting hammer may be for him to dash to it, in blocks");
+            this.add(abilities, AbilitySlot.ABILITY_32, "storm_throw").input(CharacterAbility.Input.SCROLL)
+                    .holdOnly(ThorPowers.STORM_HOLD).when(flying).needs(ThorPowers.HOME).cooldown(200).damage(6.0)
+                    .setting("chainDamage", 4.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                            "Damage of each leap of its lightning")
+                    .setting("ringBlocks", 4.0, 1.0, 16.0, Unit.BLOCKS,
+                            "How far its ring of lightning reaches round where it strikes, in blocks")
+                    .settingInt("leaps", 10, 1, 30, Unit.COUNT, "The most foes its lightning leaps to");
         }
     };
 

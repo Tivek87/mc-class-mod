@@ -2,6 +2,7 @@ package nl.tivek.multiversepowers.character.thor.client.pose;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
+import javax.annotation.Nullable;
 import net.minecraft.client.model.PlayerModel;
 import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -19,6 +20,7 @@ import net.neoforged.neoforge.client.event.ModelEvent;
 import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.character.GameCharacter;
 import nl.tivek.multiversepowers.character.client.ClientCharacter;
+import nl.tivek.multiversepowers.character.thor.ThorBlow;
 import nl.tivek.multiversepowers.character.thor.ThorStatePayload;
 import nl.tivek.multiversepowers.character.thor.client.ClientThor;
 import nl.tivek.multiversepowers.character.thor.client.blow.ThorBlowPoses;
@@ -52,9 +54,11 @@ public final class ThorHammerLayer extends RenderLayer<AbstractClientPlayer, Pla
     // fight, so its head leads a swing.
     private static final float HANG = 55.0F;
     private static final float READY = 15.0F;
-    // Seen from his own eyes: up as a held axe, leaning out from the crosshair.
+    // Seen from his own eyes: up as a held axe, leaning out from the crosshair, and a little smaller, so its head never
+    // fills the view.
     public static final float SEEN_TILT = 25.0F;
-    public static final float SEEN_LEAN = 30.0F;
+    public static final float SEEN_LEAN = 40.0F;
+    public static final float SEEN_SIZE = 0.7F;
     // Hung on the belt it is drawn smaller, as in God of War: its head about a fist high, its handle down the thigh.
     private static final float BELT = 0.75F;
 
@@ -124,19 +128,30 @@ public final class ThorHammerLayer extends RenderLayer<AbstractClientPlayer, Pla
         pose.mulPose(Axis.XP.rotationDegrees(LEAD));
     }
 
-    // Hanging heavy from his hand at rest, raised as he fights.
+    // Hanging heavy from his hand at rest, raised as he fights or draws it back to throw.
     public static float tilt(Entity thor, float partialTick) {
         ClientThor.View view = ClientThor.view(thor);
         ThorBlowPoses.Pose blow = view == null ? null : ThorBlowPoses.of(view, partialTick);
-        return Mth.lerp(blow == null ? 0.0F : blow.weight, HANG, READY);
+        float raised = Math.max(blow == null ? 0.0F : blow.weight, ThorPoses.cocked(thor));
+        return Mth.lerp(raised, HANG, READY);
+    }
+
+    // A throw's wind-up (on the ground or a Storm Throw): the hammer stays in his hand until his arm comes through and
+    // lets go of it.
+    public static boolean windingUp(@Nullable ClientThor.View view, float partialTick) {
+        ThorBlow blow = view == null ? null : ThorBlow.byIndex(view.blow);
+        return (blow == ThorBlow.HAMMER_THROW || blow == ThorBlow.STORM_THROW)
+                && view.blowAge(partialTick) < blow.hit();
     }
 
     @Override
     public void render(PoseStack pose, MultiBufferSource buffers, int light, AbstractClientPlayer player,
             float limbSwing, float limbSwingAmount, float partialTick, float ageInTicks, float netHeadYaw,
             float headPitch) {
+        ClientThor.View view = ClientThor.view(player);
         if (ClientCharacter.of(player) != GameCharacter.THOR || player.isInvisible()
-                || ClientThor.has(player, ThorStatePayload.THROWN)) {
+                || ClientThor.has(player, ThorStatePayload.THROWN) && !windingUp(view, partialTick)
+                        && !ThorPoses.hammerInLeftHand(player)) {
             return;
         }
         PlayerModel<AbstractClientPlayer> model = this.getParentModel();

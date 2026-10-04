@@ -187,8 +187,12 @@ abstract class RigGrab extends RigStrikes {
                 continue;
             }
             arm.holdDistance += (HOLD_DISTANCE - arm.holdDistance) * 0.08;
-            Vec3 goal = this.caster.getEyePosition().add(this.caster.getLookAngle().scale(arm.holdDistance))
-                    .add(this.right().scale(arm.side * 0.85)).add(0, arm.upper ? 0.35 : -0.35, 0);
+            // Held off to its arm's side, the upper arms' high and the lower arms' low, so even four leave the
+            // crosshair clear.
+            double out = (arm.upper ? HOLD_SIDE : HOLD_SIDE_LOW) + target.getBbWidth() * 0.5;
+            Vec3 goal = this.caster.getEyePosition()
+                    .add(this.caster.getLookAngle().scale(arm.holdDistance * (arm.upper ? 0.8 : 0.7)))
+                    .add(this.right().scale(arm.side * out)).add(0, arm.upper ? 1.0 : -0.8, 0);
             Vec3 center = target.getBoundingBox().getCenter();
             Vec3 wanted = goal.subtract(center).scale(FOLLOW);
             if (wanted.length() > MAX_SPEED) {

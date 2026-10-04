@@ -18,9 +18,12 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.LivingDamageEvent;
 import net.neoforged.neoforge.event.entity.living.LivingFallEvent;
 import nl.tivek.multiversepowers.MultiversePowers;
+import nl.tivek.multiversepowers.character.thor.hammer.HammerPull;
+import nl.tivek.multiversepowers.character.thor.hammer.Mjolnir;
 import nl.tivek.multiversepowers.character.thor.storm.ThorStorm;
 import nl.tivek.multiversepowers.engine.effect.Effects;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
+import nl.tivek.multiversepowers.engine.world.ChunkPreloader;
 import nl.tivek.multiversepowers.engine.world.LoadedWorld;
 
 // Thor's moves on the server. His own game moves him (a dash, a super jump, flight, a blink); the server keeps him
@@ -28,8 +31,8 @@ import nl.tivek.multiversepowers.engine.world.LoadedWorld;
 // see him. One of these lives while he jumps, floats or flies.
 @EventBusSubscriber(modid = MultiversePowers.MODID)
 public final class ThorMoves {
-    static final int GLOW = 0x9FE8FF;
-    static final int DEEP = 0x3FA2FF;
+    public static final int GLOW = 0x9FE8FF;
+    public static final int DEEP = 0x3FA2FF;
     // A super jump's float starts at its peak and lasts this long; its landing is cushioned this long after.
     static final int FLOAT_TICKS = 50;
     private static final int CUSHION = 10;
@@ -41,6 +44,9 @@ public final class ThorMoves {
     // A thunderclap wound up this long without going off (its button's letting go lost) stops showing.
     private static final int CHARGE_LONGEST = 40;
     static final double BLINK = 15.0;
+    // At lightning speed the land this far round him and this many seconds ahead is kept loaded.
+    private static final double AHEAD_RADIUS = 32.0;
+    private static final double AHEAD_SECONDS = 3.0;
 
     private static final Map<UUID, ThorMoves> ALL = new HashMap<>();
 
@@ -87,7 +93,7 @@ public final class ThorMoves {
         return moves != null && moves.owner == player ? moves : null;
     }
 
-    static boolean flying(ServerPlayer player) {
+    public static boolean flying(ServerPlayer player) {
         ThorMoves moves = find(player);
         return moves != null && moves.flying;
     }
@@ -108,9 +114,9 @@ public final class ThorMoves {
         return flags | gear(this.owner);
     }
 
-    // What lasts past his moves: the hammer, a grab, a charge, his storm.
+    // What lasts past his moves: the hammer and a pull to it, a grab, a charge, his storm.
     private static int gear(ServerPlayer player) {
-        return Mjolnir.flags(player) | ThorCharge.flags(player) | ThorStorm.flags(player)
+        return Mjolnir.flags(player) | HammerPull.flags(player) | ThorCharge.flags(player) | ThorStorm.flags(player)
                 | (ThorGrab.carrying(player) ? ThorStatePayload.CARRYING : 0);
     }
 
@@ -194,7 +200,7 @@ public final class ThorMoves {
         return true;
     }
 
-    static boolean takeOff(ServerPlayer player) {
+    public static boolean takeOff(ServerPlayer player) {
         if (flying(player) || player.isPassenger() || player.isSleeping() || player.isFallFlying()) {
             return false;
         }
@@ -214,9 +220,18 @@ public final class ThorMoves {
     }
 
     // A knockdown that took him out of the sky let go of him still in the air: he flies on, without a take-off.
-    static void flyAgain(ServerPlayer player) {
+    public static void flyAgain(ServerPlayer player) {
+        if (flyOn(player)) {
+            ThorMoves moves = of(player);
+            moves.sync(ThorStatePayload.TAKE_OFF, ThorStatePayload.CAUGHT);
+            moves.sound(player.serverLevel(), SoundEvents.TRIDENT_RIPTIDE_1.value(), 0.6F, 1.1F);
+        }
+    }
+
+    // He flies on without a take-off and tells no one: what put him in the air (a catch) tells his players itself.
+    public static boolean flyOn(ServerPlayer player) {
         if (flying(player) || player.isPassenger() || player.isSleeping() || player.isFallFlying()) {
-            return;
+            return false;
         }
         ThorMoves moves = of(player);
         moves.flying = true;
@@ -224,8 +239,7 @@ public final class ThorMoves {
         moves.grounded = 0;
         moves.jumping = false;
         moves.floatAge = -1;
-        moves.sync(ThorStatePayload.TAKE_OFF, ThorStatePayload.CAUGHT);
-        moves.sound(player.serverLevel(), SoundEvents.TRIDENT_RIPTIDE_1.value(), 0.6F, 1.1F);
+        return true;
     }
 
     // His game says he touched down, or something knocks him out of the sky. Landing at lightning speed, the bolt he
@@ -370,6 +384,10 @@ public final class ThorMoves {
     // near; it wears off after its time.
     private void bolting(ServerLevel level, ServerPlayer player) {
         Vec3 at = player.position().add(0.0, 0.9 * player.getScale(), 0.0);
+        // Faster than the game makes new land by itself: the world ahead of him is made ready before he gets there.
+        if (this.flightAge % ChunkPreloader.EVERY_TICKS == 1) {
+            ChunkPreloader.keep(player, at.subtract(this.trail), AHEAD_RADIUS, AHEAD_SECONDS);
+        }
         if (this.trail.distanceToSqr(at) > 0.04) {
             ParticleFx.zigzag(level, ParticleFx.dust(GLOW, 1.3F), this.trail, at, 4, 0.35, 0.3);
             ParticleFx.zigzag(level, ParticleFx.dust(DEEP, 0.9F), this.trail, at, 3, 0.5, 0.4);
@@ -428,11 +446,16 @@ public final class ThorMoves {
         }
     }
 
+    // A hard hit knocks him out of the sky, or out of a pull to his hammer.
     @SubscribeEvent
     public static void onHurt(LivingDamageEvent.Post event) {
-        if (event.getEntity() instanceof ServerPlayer player && event.getNewDamage() >= STUN && flying(player)) {
+        if (!(event.getEntity() instanceof ServerPlayer player) || event.getNewDamage() < STUN) {
+            return;
+        }
+        if (flying(player)) {
             land(player, false);
         }
+        HammerPull.stop(player);
     }
 
     ServerPlayer owner() {

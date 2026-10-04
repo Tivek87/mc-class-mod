@@ -1,19 +1,23 @@
 package nl.tivek.multiversepowers.character.thor;
 
+import java.util.Set;
 import java.util.UUID;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
-import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.LightningBolt;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.character.CharacterAbility;
 import nl.tivek.multiversepowers.character.CharacterPowers;
 import nl.tivek.multiversepowers.character.Characters;
+import nl.tivek.multiversepowers.character.GameCharacter;
+import nl.tivek.multiversepowers.character.thor.hammer.HammerPull;
+import nl.tivek.multiversepowers.character.thor.hammer.HammerRules;
+import nl.tivek.multiversepowers.character.thor.hammer.Mjolnir;
 import nl.tivek.multiversepowers.character.thor.storm.LightningBomb;
+import nl.tivek.multiversepowers.character.thor.storm.StormFxPayload;
 import nl.tivek.multiversepowers.character.thor.storm.ThorStorm;
 import nl.tivek.multiversepowers.engine.effect.Effects;
 import nl.tivek.multiversepowers.engine.entity.BodySize;
@@ -22,26 +26,36 @@ import nl.tivek.multiversepowers.engine.fx.Sounds;
 
 // Thor: a bolt of lightning strikes as you become him and static crawls over you for a while. His moves are in
 // ThorMoves (dash, super jump, flight and what he does in flight), ThorBlows (his combo), ThorGrab, GrabDive,
-// Thunderclap, Mjolnir (the hammer in hand, thrown, its uppercut), ThorCharge, SkyMoves (the shockwave and bolt in
-// flight) and in `storm/` his storm and the lightning bomb.
+// Thunderclap, ThorCharge, SkyMoves (the shockwave and bolt in flight), in `hammer/` the hammer (in hand, thrown,
+// resting, called back, followed, its uppercut and Storm Throw) and in `storm/` his storm and the lightning bomb.
 public final class ThorPowers implements CharacterPowers {
-    // What his game reports of him for the gestures that need it: hammer in hand or not, running or not.
+    // What his game reports of him for the gestures that need it: hammer in hand or not, running or not, the hammer
+    // on him, away (out of his hands) or resting in the world.
     public static final int UNARMED = 1;
     public static final int ARMED = 2;
     public static final int WALKING = 4;
     public static final int SPRINTING = 8;
+    public static final int HOME = 16;
+    public static final int AWAY = 32;
+    public static final int RESTING = 64;
     // How long the attack button is held to wind up the thunderclap or the hammer's uppercut: 0.75 seconds.
     public static final int CLAP_HOLD = 15;
-    // How long space is held to fly, right held for the dive, a grab, a grab dash (running), the hammer's throw to
-    // fly after, the scroll wheel for a charge, left in flight for the shockwave and shift for lightning speed.
+    // How long space is held to fly, right held for the dive, a grab, a grab dash (running), the draw of the hammer's
+    // throw to follow, the scroll wheel for a charge, to follow the resting hammer or (in flight) for a Storm Throw,
+    // left in flight for the shockwave and shift for lightning speed.
     public static final int FLIGHT_HOLD = 8;
     public static final int DIVE_HOLD = 10;
     public static final int GRAB_HOLD = 15;
     public static final int GRAB_DASH_HOLD = 10;
-    public static final int LEAP_HOLD = 20;
+    public static final int LEAP_HOLD = HammerRules.DRAW_FROM;
+    public static final int FOLLOW_HOLD = 10;
+    public static final int STORM_HOLD = 10;
     public static final int CHARGE_HOLD = 40;
     public static final int SHOCK_HOLD = 20;
     public static final int LIGHTNING_HOLD = 40;
+    // His flight moves that need the hammer in his left hand.
+    private static final Set<String> FLIGHT_MOVES = Set.of("air_shockwave", "air_bolt", "air_blink",
+            "grab_dash_dive", "lightning_flight", "storm_throw");
     private static final int CRACKLE_TICKS = 40;
     private static final int GLOW = 0x9FE8FF;
     // He stands 30% bigger than a player: his bones, hitbox, eyes, step and reach, and his moves with them.
@@ -53,12 +67,8 @@ public final class ThorPowers implements CharacterPowers {
     public void enter(ServerPlayer player) {
         BodySize.set(player, GROWN, SIZE);
         ServerLevel level = player.serverLevel();
-        LightningBolt bolt = EntityType.LIGHTNING_BOLT.create(level);
-        if (bolt != null) {
-            bolt.moveTo(player.getX(), player.getY(), player.getZ());
-            bolt.setVisualOnly(true);
-            level.addFreshEntity(bolt);
-        }
+        StormFxPayload.send(level, StormFxPayload.BOLT, ThorStorm.sky(player, player.position()), player.position(),
+                1.2F);
         Vec3 chest = player.position().add(0.0, SIZE, 0.0);
         ParticleFx.cloud(level, ParticleTypes.ELECTRIC_SPARK, chest, 60, 0.6 * SIZE, 0.5);
         ParticleFx.sphereOut(level, ParticleFx.dust(GLOW, 1.4F), chest, 40, 0.35);
@@ -87,6 +97,7 @@ public final class ThorPowers implements CharacterPowers {
     public void leave(ServerPlayer player) {
         ThorStorm.leave(player);
         LightningBomb.stop(player);
+        HammerPull.leave(player);
         ThorMoves.leave(player);
         ThorBlows.forget(player);
         ThorGrab.leave(player);
@@ -103,12 +114,22 @@ public final class ThorPowers implements CharacterPowers {
     public boolean use(ServerPlayer player, CharacterAbility ability, boolean on, int data) {
         boolean flying = ThorMoves.flying(player);
         boolean held = (data & Characters.HOLD) != 0;
+        boolean slam = (data & Characters.SLAM) != 0;
         boolean armed = Mjolnir.inHand(player);
+        boolean home = Mjolnir.home(player);
         int move = data >> Characters.MOVE_SHIFT & 0xFF;
         int arg = data >> Characters.MOVE_SHIFT + 8 & 0xFF;
         float fists = ability.getDamage() * ThorCharge.fists(player);
         float hammer = ability.getDamage() * ThorCharge.hammer(player);
         if (on && LightningBomb.busy(player) && !ability.id().equals("storm")) {
+            return false;
+        }
+        // Pulled to his hammer, nothing else until he is there.
+        if (on && HammerPull.pulling(player) && !(slam && ability.id().equals("hammer_follow"))) {
+            return false;
+        }
+        // In flight with the hammer gone (a Storm Throw) only his right hand's blows go on.
+        if (on && flying && !home && FLIGHT_MOVES.contains(ability.id())) {
             return false;
         }
         return switch (ability.id()) {
@@ -127,16 +148,47 @@ public final class ThorPowers implements CharacterPowers {
             case "grab" -> (data & Characters.SLAM) != 0 ? on && ThorGrab.pick(player, move)
                     : on && held && !flying && !armed && ThorGrab.grab(player, fists);
             case "grab_dash" -> on && held && !flying && !armed && ThorGrab.dash(player, move, arg, fists);
-            case "hammer_throw" -> on && !flying && Mjolnir.fling(player, hammer, false);
-            case "hammer_leap" -> on && held && !flying && Mjolnir.fling(player, hammer, true);
+            // Crouched: Throw to Stay.
+            case "hammer_throw" -> on && !flying && Mjolnir.fling(player, hammer,
+                    (data & Characters.SNEAKING) != 0, ability.value("throwBlocks"));
+            // Held: drawn back; let go: thrown as far as it was drawn (in tenths of a block), and followed.
+            case "hammer_leap" -> {
+                if (on) {
+                    yield held && !flying && Mjolnir.draw(player);
+                }
+                double longest = ability.value("throwBlocks");
+                double far = Math.max(HammerRules.SHORTEST, Math.min(longest, move / 10.0));
+                yield !flying && Mjolnir.leap(player, hammer, far, ability.value("dashSpeed") / 20.0);
+            }
             case "mjolnir" -> on && !flying && Mjolnir.toggle(player);
-            case "charged" -> on && held && !flying && ThorCharge.charge(player, ability.value("seconds"));
+            case "charged" -> on && held && !flying && home
+                    && ThorCharge.charge(player, ability.value("seconds"));
+            case "hammer_call" -> on && !flying && Mjolnir.call(player, hammer, false);
+            // SLAM: his game says the pull got him there.
+            case "hammer_follow" -> {
+                if (slam) {
+                    if (on) {
+                        HammerPull.arrive(player);
+                    }
+                    yield false;
+                }
+                CharacterAbility leap = GameCharacter.THOR.byName("hammer_leap");
+                yield on && held && !flying && Mjolnir.follow(player, ability.value("reachBlocks"),
+                        (leap == null ? 20.0 : leap.value("dashSpeed")) / 20.0);
+            }
+            case "storm_throw" -> on && held && flying && Mjolnir.storm(player, hammer);
             case "air_shockwave" -> on && held && flying && SkyMoves.shockwave(player, fists);
             case "air_bolt" -> on && flying && SkyMoves.bolt(player, fists);
             case "super_jump" -> on && !flying && ThorMoves.superJump(player);
+            // He flies only with the hammer: away, it is called into his raised left hand and he takes off with it.
             case "flight" -> {
-                if (on && (data & Characters.SLAM) != 0) {
+                if (on && slam) {
                     ThorMoves.land(player, true);
+                    yield false;
+                }
+                if (on && held && !home) {
+                    CharacterAbility call = GameCharacter.THOR.byName("hammer_call");
+                    Mjolnir.call(player, call == null ? 0.0F : call.getDamage() * ThorCharge.hammer(player), true);
                     yield false;
                 }
                 yield on && held && ThorMoves.takeOff(player);
@@ -173,6 +225,8 @@ public final class ThorPowers implements CharacterPowers {
     @Override
     public void knockedDown(ServerPlayer player) {
         ThorMoves.land(player, false);
+        HammerPull.stop(player);
+        Mjolnir.uncock(player);
         ThorGrab.leave(player);
         LightningBomb.stop(player);
     }
@@ -201,6 +255,7 @@ public final class ThorPowers implements CharacterPowers {
         ThorBlows.clear();
         ThorGrab.clear();
         GrabDive.clear();
+        HammerPull.clear();
         Mjolnir.clear();
         ThorCharge.clear();
         ThorStorm.clear();

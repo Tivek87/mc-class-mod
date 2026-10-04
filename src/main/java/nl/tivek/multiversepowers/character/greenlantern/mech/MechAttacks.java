@@ -8,10 +8,11 @@ import nl.tivek.multiversepowers.engine.math.Keyframes;
 import nl.tivek.multiversepowers.engine.math.Vectors;
 import nl.tivek.multiversepowers.engine.rig.Ik;
 
-// A built mech's blows on a left click, in ticks: where its right hand goes (both hands for the slam and the stomp),
-// how far its body crouches, stoops and twists over the waist, and how high the stomping foot is lifted. Hands are
-// placed in the blow's frame: upright on the mech's ground spot and facing where its torso faces (x right, y up, z
-// ahead); the arm reaches them from the shoulder with its elbow worked out, never stretched.
+// A built mech's blows on a left click and its beams on a right click, in ticks: where its right hand goes (both
+// hands for the slam, the stomp and the Unibeam), how far its body crouches, stoops and twists over the waist, and how
+// high the stomping foot is lifted. Hands are placed in the blow's frame: upright on the mech's ground spot and facing
+// where its torso faces (x right, y up, z ahead); the arm reaches them from the shoulder with its elbow worked out,
+// never stretched.
 public final class MechAttacks {
     public static final int NONE = 0;
     public static final int SWEEP = 1;
@@ -20,6 +21,14 @@ public final class MechAttacks {
     public static final int THROW = 4;
     // A throw whose creature is gone: from where the throw had got to back to the walk.
     public static final int DROP = 5;
+    // A right click: one beam from the eye slits; held, the chest's port charges and fires the Unibeam.
+    public static final int EYE = 6;
+    public static final int UNIBEAM = 7;
+
+    public static final int EYE_FIRE = 3;
+    public static final int EYE_SHOWN = 7;
+    public static final int UNIBEAM_FROM = 10;
+    public static final int UNIBEAM_TO = 60;
 
     public static final int SWEEP_FROM = 10;
     public static final int SWEEP_TO = 16;
@@ -40,7 +49,7 @@ public final class MechAttacks {
     // Where, seen from the waist, a creature lies best for the right hand to pick up: this far to the right.
     private static final double SWEET = Math.atan2(2.5, 4.0);
     private static final double MOST_TURN = 0.8;
-    private static final int[] LENGTHS = { 0, 30, 26, 34, 66 };
+    private static final int[] LENGTHS = { 0, 30, 26, 34, 66, DROP_TICKS, 16, 78 };
 
     // How the body stands under a blow: how far its hips sink, its torso stoops forward (radians) and twists to its
     // left over the waist, how high the right foot is lifted, and how far (radians, to its left) the whole blow turns
@@ -66,7 +75,7 @@ public final class MechAttacks {
     private record Move(Keyframes.Key[] hand, Keyframes.Key[] body, boolean both, Vec3 pole, int[][] pulls) {
     }
 
-    private static final Move[] MOVES = new Move[5];
+    private static final Move[] MOVES = new Move[8];
 
     static {
         Vec3 rest = new Vec3(4.0, 4.1, 2.0);
@@ -134,6 +143,29 @@ public final class MechAttacks {
                         body(53, false, bent(0.6, 0.25, 0.3, 0.0)),
                         body(57, true, bent(0.7, 0.3, 0.35, 0.0)), body(66, true, Body.STILL) },
                 false, new Vec3(1.0, -0.2, -0.5), new int[][] { { 20, SMASH, 2 }, { 33, SMASH2, 2 }, { 48, 53, 2 } });
+        // The eye beam: the head snaps forward as it fires and the body rocks back from it; the arms swing on.
+        MOVES[EYE] = new Move(new Keyframes.Key[] {
+                hand(0, true, rest, inward, 0.5, 0.4, 0.0, 0.0, 0.0),
+                hand(LENGTHS[EYE], true, rest, inward, 0.5, 0.4, 0.0, 0.0, 0.0) },
+                new Keyframes.Key[] { body(0, true, Body.STILL), body(EYE_FIRE, true, bent(0.15, 0.08, 0.0, 0.0)),
+                        body(EYE_FIRE + 2, false, bent(0.2, -0.08, 0.0, 0.0)),
+                        body(LENGTHS[EYE], true, Body.STILL) },
+                false, new Vec3(1.0, -0.3, -0.6), new int[0][]);
+        // The Unibeam: knees bent and feet planted, it leans back and pulls both fists back beside its ribs, baring
+        // the port on its chest, and rocks back further as the beam bursts out.
+        Vec3 ribs = new Vec3(3.3, 6.3, -1.3);
+        Vec3 palmUp = new Vec3(-0.6, 0.8, 0.0);
+        MOVES[UNIBEAM] = new Move(new Keyframes.Key[] {
+                hand(0, true, rest, inward, 0.5, 0.4, 0.0, 0.0, 0.0),
+                hand(UNIBEAM_FROM - 2, true, ribs, palmUp, 0.95, 0.05, 1.0, 0.0, 0.0),
+                hand(UNIBEAM_TO, true, ribs, palmUp, 0.95, 0.05, 1.0, 0.0, 0.0),
+                hand(LENGTHS[UNIBEAM], true, rest, inward, 0.5, 0.4, 0.0, 0.0, 0.0) },
+                new Keyframes.Key[] { body(0, true, Body.STILL),
+                        body(UNIBEAM_FROM - 2, true, bent(0.55, -0.2, 0.0, 0.0)),
+                        body(UNIBEAM_FROM + 2, false, bent(0.75, -0.3, 0.0, 0.0)),
+                        body(UNIBEAM_TO, true, bent(0.6, -0.24, 0.0, 0.0)),
+                        body(LENGTHS[UNIBEAM], true, Body.STILL) },
+                true, new Vec3(0.6, -0.4, -1.0), new int[0][]);
     }
 
     private MechAttacks() {
@@ -189,6 +221,9 @@ public final class MechAttacks {
             case STOMP -> age == STOMP_HIT ? 2.2 : 0.0;
             case SLAM -> age == SLAM_HIT ? 3.0 : 0.0;
             case THROW -> age == SMASH || age == SMASH2 ? 1.4 : 0.0;
+            // The Unibeam bursts out with a jolt and rumbles while it lasts.
+            case UNIBEAM -> age == UNIBEAM_FROM ? 1.2 : age > UNIBEAM_FROM && age < UNIBEAM_TO && age % 5 == 0 ? 0.3
+                    : 0.0;
             default -> 0.0;
         };
     }

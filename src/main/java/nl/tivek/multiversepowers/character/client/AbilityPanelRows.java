@@ -66,7 +66,7 @@ final class AbilityPanelRows {
             if (split(ability)) {
                 rows.add(new Row(ability, null, AbilityPanel.brief(PowerInputs.keyName(PowerInputs.clickKey(input))),
                         name(rules, ability, false, true, player), true, false));
-                if (!PowerInputs.holdKey(input).isUnbound()) {
+                if (!PowerInputs.holdKey(input).isUnbound() && rules.holds(ability, player)) {
                     rows.add(new Row(ability, word("hold"),
                             AbilityPanel.brief(PowerInputs.keyName(PowerInputs.holdKey(input))),
                             name(rules, ability, true, true, player), true, true));

@@ -18,7 +18,7 @@ multiverse.
 - **Bodies:** creatures go limp when they are thrown, blasted or killed, and get back up when they can.
 - **Music:** the mod's own theme plays in the main menu.
 - **Updates in the game:** the mod tells you when a new version is out and installs it in one click; after an update
-  a tour shows every change.
+  a short tour shows the big changes.
 - **Feedback:** report a bug or suggest an idea from inside the game. It becomes a public issue on this repository,
   with your Minecraft name.
 

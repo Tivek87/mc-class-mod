@@ -158,6 +158,10 @@ public final class MechPose {
         return this.walking;
     }
 
+    public double running() {
+        return this.running;
+    }
+
     // Where the pilot sits, by the soles of their feet.
     public Vec3 seat() {
         return this.torso.point(MechScript.COCKPIT);

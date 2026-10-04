@@ -27,7 +27,7 @@ import nl.tivek.multiversepowers.engine.math.Segments;
 
 // One blow of a built mech on a left click, picked at random: the backhand sweep, the stomp, the two-fisted slam, or,
 // with a creature out to hurt its pilot in reach, the throw: picked up, smashed into the ground twice and, still
-// alive, flung where the pilot looks.
+// alive, flung where the pilot looks. A right click fires a beam instead (MechBeams).
 final class MechAttack {
     private static final SoundEvent WHOOSH = Sounds.of("mech.whoosh");
     private static final double PICK_RANGE = 10.0;
@@ -78,6 +78,11 @@ final class MechAttack {
         int kind = 1 + level.random.nextInt(kinds);
         Sounds.play(level, upright.point(0.0, 7.0, 1.0), WHOOSH, 2.0F, 0.7F + 0.2F * level.random.nextFloat());
         return new MechAttack(kind, kind == MechAttacks.THROW ? near : null);
+    }
+
+    // A right click: the eye beam, or held, the Unibeam.
+    static MechAttack beam(boolean unibeam) {
+        return new MechAttack(unibeam ? MechAttacks.UNIBEAM : MechAttacks.EYE, null);
     }
 
     // The nearest creature out to hurt the pilot that the right hand can reach, the body turned towards it and bent
@@ -163,6 +168,16 @@ final class MechAttack {
             }
             case MechAttacks.THROW -> {
                 return this.carry(level, owner, frame, torso, ability);
+            }
+            case MechAttacks.EYE -> {
+                if (this.t == MechAttacks.EYE_FIRE) {
+                    MechBeams.eye(level, owner, torso, ability);
+                }
+            }
+            case MechAttacks.UNIBEAM -> {
+                if (this.t >= MechAttacks.UNIBEAM_FROM && this.t < MechAttacks.UNIBEAM_TO) {
+                    MechBeams.unibeam(level, owner, torso, ability, this.t - MechAttacks.UNIBEAM_FROM);
+                }
             }
             default -> {
             }
@@ -296,7 +311,7 @@ final class MechAttack {
         }
     }
 
-    private static void hit(ServerLevel level, ServerPlayer owner, LivingEntity living, double damage) {
+    static void hit(ServerLevel level, ServerPlayer owner, LivingEntity living, double damage) {
         if (damage <= 0.0) {
             return;
         }
@@ -305,7 +320,7 @@ final class MechAttack {
     }
 
     // A playerAttack knocks back by itself: the blow's own push is set after it.
-    private static void push(LivingEntity living, Vec3 velocity) {
+    static void push(LivingEntity living, Vec3 velocity) {
         double resist = Mth.clamp(living.getAttributeValue(Attributes.KNOCKBACK_RESISTANCE), 0.0, 1.0);
         living.setDeltaMovement(velocity.scale(1.0 - resist));
         living.hasImpulse = true;

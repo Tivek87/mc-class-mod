@@ -26,6 +26,8 @@ public final class ClientSettings {
     public static final ModConfigSpec.IntValue FOOT_PLANTING;
     public static final ModConfigSpec.IntValue CAPE_CLOTH;
     public static final ModConfigSpec.IntValue THEME_MUSIC;
+    public static final ModConfigSpec.IntValue VOICE_LINES;
+    public static final ModConfigSpec.DoubleValue VOICE_VOLUME;
     public static final ModConfigSpec.IntValue UPDATE_CHECK;
     public static final ModConfigSpec.DoubleValue UPDATE_POPUP;
 
@@ -53,7 +55,8 @@ public final class ClientSettings {
                 + " streaks, the flamethrower's flames (0 = low, 1 = medium, 2 = full)", 2, 3);
         sheet.section("bodies");
         RAGDOLLS = sheet.toggle("ragdolls", "Creatures go limp: they fall, tumble and hang from what holds them, and a"
-                + " body stays where it fell before it sinks away (1 = yes, 0 = as in the plain game)", true);
+                + " body stays where it fell before it sinks away (1 = yes, 0 = as in the plain game); players go limp"
+                + " by the world's own playerKnockdown", true);
         RAGDOLL_MOST = sheet.whole("ragdollMost", "How many limp creatures and bodies there may be at once; the"
                 + " bodies that have lain still long enough go first, then the furthest living ones", 24, 1, 64,
                 Unit.COUNT, 1.0);
@@ -77,6 +80,11 @@ public final class ClientSettings {
         sheet.section("sound");
         THEME_MUSIC = sheet.toggle("themeMusic", "Play the multiverse theme in the main menu (1 = yes, 0 = the game's"
                 + " own menu music)", true);
+        VOICE_LINES = sheet.toggle("voiceLines", "Characters speak their lines, such as Green Lantern's ring as he"
+                + " arrives, flies or takes up a weapon (1 = yes, 0 = never)", true);
+        VOICE_VOLUME = sheet.number("voiceVolume", "How loud the characters' spoken lines are (1 = as the mod makes"
+                + " them, 0 = silent); the game's own Voice/Speech slider scales them too", 1.0, 0.0, 1.0,
+                Unit.PERCENT, 0.05);
         sheet.section("updates");
         UPDATE_CHECK = sheet.whole("updateCheckMinutes", "How often the game looks for a new version of the mod, in"
                 + " minutes (at least 5)", 5, 5, 120, Unit.MINUTES, 1.0);

@@ -1,16 +1,16 @@
 # Laatste sessie
 
-## 0.7.6-alpha (2026-10-04)
-- Verzoek: settings splitsen in Client/Server, alleen host/owner opent server-pagina's, kleur per character,
-  update-check minimaal 5 min, Open all/Close all per pagina; daarna commit + push + release.
-- `engine/client/gui/NavScreen`: `Item` met `heading`, `color`, dicht item (`open` null + `hint`), `accent()`,
-  `subtitleRoom()`, `smallButton()`; `PixelIcons.LOCK`.
-- `config/client/SettingsPages.serverOpen()`: server-pagina's alleen in wereld voor host/owner; anders regel
-  "Host only". Kleuren: client violet, regels oranje, Doc Ock grijs, Green Lantern groen, Thor blauw.
-- `SettingsScreen`: koppen Client/Server, Open all/Close all, titel en accent in paginakleur.
-- `ClientSettings.UPDATE_CHECK` 5..120 min; tourstap `settings_split`; CHANGELOG, POWERS.md, PROJECT.md.
-- Eerder deze sessie: Thor Thunderstorm + Lightning Bomb, bugs #59 #60 #61 gefixt (staan in 0.7.6).
-- Getest in game: menu, eigen wereld, tourkaart, dedicated server (op zonder owner ziet alleen "Host only",
-  server weigert edit; owner in bestand -> pagina's zichtbaar). Build groen (173 tests). Testcode weg.
-- Open: #62 is verzoek (ja nodig); #63 niet te reproduceren; ideeën #24 #25 #31-#33 wachten op ja.
-- `docs/ideas/THOR_MJOLNIR_FLIGHT_SYSTEM*.md` (andere sessie) niet meecommitten.
+## 0.7.7-alpha (2026-10-04) - gecommit, gepusht en gereleased
+- Verzoek: guide-teksten, alle bugs + ideeën (behalve #24 NPC's), spelers minder/korter limp (1 s),
+  limp-lichamen spelers = wereld-instelling, Mjolnir flight system + Storm Throw, tour 1x per versie.
+- Thor: `thor/hammer/` (Throw to Stay, Call/Follow the Hammer, Storm Throw, vangen met spring-hold),
+  ChainBolt, eigen bolts, bomb 10 blokken; first-person bomb niet meer wit (StormBolts/BombFx).
+- Green Lantern mech: Eye Beam (rechts klik), Unibeam (rechts houden), uitlaatvlammen + knokkelpunten.
+- Bugs #62 #64 #65 #66 #68 #69 gefixt; ideeën #25 #31 #32 #33 #67 gebouwd; allemaal gesloten op GitHub.
+  #63 gesloten (niet te reproduceren); #24 (NPC's) blijft open.
+- Tour 0.7.7: 7 stappen, in spel doorgelopen (vraag, wereld, personage, stappen, klaar).
+- Docs: CHANGELOG, POWERS.md, PROJECT.md, README.
+- Getest: eind-review zelf gedaan (2 bugs hamer gefixt), build + tests groen, in-game hamer-test schoon.
+- Testklassen Zz*Test, werelden zz_* en screenshots verwijderd.
+- Niet van deze sessie, bewust niet gecommit: `docs/KEYBINDS.md`, `docs/reference/thor_storm_throw*.mp4`,
+  flight-docs (door ander terug gezet van `docs/archive/` naar `docs/ideas/`).

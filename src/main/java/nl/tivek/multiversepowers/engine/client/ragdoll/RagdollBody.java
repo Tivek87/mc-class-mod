@@ -117,10 +117,11 @@ abstract class RagdollBody {
     double limp = 1.0;
     boolean flew;
     Phase phase = Phase.AIR;
-    // Ticks down, how many of them on the ground, and ticks into getting up (-1 before).
+    // Ticks down, how many of them on the ground, and ticks into getting up (-1 before), and how long that takes.
     int down;
     int lain;
     int up = -1;
+    private int riseFor;
     // Where its boxes lie among every body's this tick (RagdollCrowd).
     int crowdFrom;
     int crowdTo;
@@ -443,6 +444,8 @@ abstract class RagdollBody {
     // Lain long enough: it gets up from just the way it lies, facing the way it rises (riseYaw): a person along its
     // body (GetUp.facing), anything else as `rising` says.
     void getUp() {
+        this.riseFor = 0;
+        this.riseFor = this.riseTicks();
         this.phase = Phase.UP;
         this.up = 0;
         this.slumpAge = -1;
@@ -491,9 +494,14 @@ abstract class RagdollBody {
         return this.kind;
     }
 
-    // Ticks it takes to get up: a player quickly, as their knockdown is short (PlayerKnockdowns).
+    // Ticks it takes to get up: a player quickly, as their knockdown is short (PlayerKnockdowns), and so does a
+    // creature a blow only staggered; kept from the moment it starts.
     int riseTicks() {
-        return this.entity instanceof Player ? PlayerKnockdowns.RISE : this.kind.ticks;
+        if (this.phase == Phase.UP && this.riseFor > 0) {
+            return this.riseFor;
+        }
+        return this.entity instanceof Player || Knocked.brief(this.entity.getId()) ? PlayerKnockdowns.RISE
+                : this.kind.ticks;
     }
 
     void step(int substeps, Blocks blocks) {

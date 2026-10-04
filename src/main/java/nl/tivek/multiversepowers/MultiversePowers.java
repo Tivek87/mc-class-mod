@@ -7,7 +7,7 @@ import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import nl.tivek.multiversepowers.character.Characters;
-import nl.tivek.multiversepowers.character.thor.ThrownHammer;
+import nl.tivek.multiversepowers.character.thor.hammer.ThrownHammer;
 import nl.tivek.multiversepowers.classes.ceremony.Ceremonies;
 import nl.tivek.multiversepowers.config.ModConfigs;
 import nl.tivek.multiversepowers.engine.effect.Effects;

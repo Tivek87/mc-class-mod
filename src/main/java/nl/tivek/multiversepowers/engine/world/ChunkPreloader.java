@@ -71,6 +71,15 @@ public final class ChunkPreloader {
         add(level, ready, READY_LEVEL, player.getId(), left);
     }
 
+    // Keeps the chunk of one spot loaded while the caller asks again every EVERY_TICKS; it lapses by itself once the
+    // asking stops.
+    public static void hold(ServerLevel level, Vec3 at, int owner) {
+        ChunkPos chunk = new ChunkPos(SectionPos.blockToSectionCoord(at.x), SectionPos.blockToSectionCoord(at.z));
+        if (level.getWorldBorder().isWithinBounds(chunk)) {
+            level.getChunkSource().addRegionTicket(READY, chunk, READY_LEVEL, owner);
+        }
+    }
+
     private static int add(ServerLevel level, LongLinkedOpenHashSet chunks, int distance, int owner, int most) {
         ServerChunkCache cache = level.getChunkSource();
         WorldBorder border = level.getWorldBorder();

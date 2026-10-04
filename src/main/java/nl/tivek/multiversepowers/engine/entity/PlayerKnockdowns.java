@@ -13,6 +13,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 import nl.tivek.multiversepowers.MultiversePowers;
+import nl.tivek.multiversepowers.config.PowerRules;
 import nl.tivek.multiversepowers.engine.effect.Effects;
 
 // A player a power knocks down, or a blow or blast throws hard, goes limp as a creature does (Knockdowns): in every
@@ -23,14 +24,17 @@ import nl.tivek.multiversepowers.engine.effect.Effects;
 // let go at once, so they can swim out.
 @EventBusSubscriber(modid = MultiversePowers.MODID)
 public final class PlayerKnockdowns {
-    // Limp at most this long from the blow: 1.5 seconds.
-    public static final int LIMP = 30;
+    // Limp at most this long from the blow: 1 second.
+    public static final int LIMP = 20;
     // How long a player's body takes to get up in the games near (Ragdolls), and stands before they are let go.
     public static final int RISE = 24;
     public static final int MARGIN = 5;
     // On the ground at least this long, however late they came down.
     private static final int LIES_LEAST = 4;
+    // Up again, a player is not knocked down anew for this long: no lying limp blow after blow.
+    private static final int SPARED = 60;
     private static final Map<UUID, Down> DOWNED = new HashMap<>();
+    private static final Map<UUID, Long> UP_AT = new HashMap<>();
     private static final List<Consumer<ServerPlayer>> LISTENERS = new ArrayList<>();
     private static final List<Predicate<ServerPlayer>> FLYING = new ArrayList<>();
     private static final List<Consumer<ServerPlayer>> FLY_AGAIN = new ArrayList<>();
@@ -62,9 +66,14 @@ public final class PlayerKnockdowns {
         return DOWNED.containsKey(player.getUUID());
     }
 
+    // Only while the world lets players go limp (playerKnockdown), so every game shows what the server does.
     static void knock(ServerPlayer player) {
-        if (!player.isAlive() || player.isSpectator() || player.isCreative() || player.isInWater()
-                || player.isInLava()) {
+        if (!PowerRules.playerKnockdown() || !player.isAlive() || player.isSpectator() || player.isCreative()
+                || player.isInWater() || player.isInLava()) {
+            return;
+        }
+        Long up = UP_AT.get(player.getUUID());
+        if (up != null && player.level().getGameTime() - up < SPARED && !DOWNED.containsKey(player.getUUID())) {
             return;
         }
         boolean flying = false;
@@ -142,6 +151,7 @@ public final class PlayerKnockdowns {
 
     private static void up(ServerPlayer player, Down down) {
         if (DOWNED.remove(player.getUUID(), down)) {
+            UP_AT.put(player.getUUID(), player.level().getGameTime());
             tell(player, 0);
         }
     }
@@ -164,9 +174,11 @@ public final class PlayerKnockdowns {
     @SubscribeEvent
     public static void onLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
         DOWNED.remove(event.getEntity().getUUID());
+        UP_AT.remove(event.getEntity().getUUID());
     }
 
     public static void clear() {
         DOWNED.clear();
+        UP_AT.clear();
     }
 }

@@ -74,10 +74,12 @@ Thor's first two keys hold his Thunderstorm and Lightning Bomb; the other ten ar
 every other move of his sits on the mouse, space, shift or the scroll wheel. On the ground: Thunder Fists *(left
 click)*, Thunderclap *(hold left click, no hammer)*, Hammer Uppercut
 *(hold left click, hammer)*, Dash *(right click, no hammer)*, Grab *(hold right click)*, Grab Dash *(running, hold
-right click)*, Hammer Throw *(right click, hammer)*, Throw and Follow *(hold right click, hammer)*, Take Up the Hammer
-*(scroll wheel click)*, Charge *(hold scroll wheel)*, Super Jump *(double space)* and Flight *(hold space)*. In
-flight: Sky Shockwave *(hold left click)*, Air Blink *(right click)*, Grab-Dash Dive *(hold right click)*, Lightning
-Bolt *(scroll wheel click)* and Lightning Speed *(hold shift)*.
+right click)*, Hammer Throw *(right click, hammer; crouching: Throw to Stay)*, Throw and Follow *(hold right click,
+hammer)*, Take Up the Hammer *(scroll wheel click)*, Charge *(hold scroll wheel)*, Call the Hammer *(scroll wheel
+click, hammer away)*, Follow the Hammer *(hold scroll wheel, hammer resting)*, Super Jump *(double space)* and Flight
+*(hold space; with the hammer away it first flies into your hand)*. In flight: Sky Shockwave *(hold left click)*, Air
+Blink *(right click)*, Grab-Dash Dive *(hold right click)*, Lightning Bolt *(scroll wheel click)*, Storm Throw *(hold
+scroll wheel)* and Lightning Speed *(hold shift)*.
 
 - Every key can be changed in Options > Controls, under "Multiverse Powers".
 - An ability on a mouse button or on space shows that in brackets: its number key does nothing for it.
@@ -945,8 +947,17 @@ Green Lantern's ultimate: a big, slow gunship of hard light high over the battle
   nearest one, closes its fingers round it, lifts it, smashes it into the ground twice and, if it still lives, winds
   up and flings it the way you look. It does not walk while it strikes. *Unfinished: the blows are first versions
   and may still look or feel wrong.*
-- **Nothing else:** you cannot fly, jump or use your other powers while you are in it. The panel lists only the
-  hold of the scroll wheel that takes you out, with how long you may still stay in (like *1:42 left*).
+- **Eye Beam (right click).** Its eye slits blaze and a beam of rings shoots from its visor to where your crosshair
+  rests: it hits the first enemy in its way and throws it back limp. Blocks stop it; it never breaks one.
+- **Unibeam (hold right click 2 seconds).** As you hold, the port on its chest gathers light. Then the mech bends its
+  knees, leans back and pulls both fists back beside its ribs, and a huge beam bursts out of the port with a ring of
+  light thrown off its rim. For 2.5 seconds it burns everything in it again and again and drives it back, stopped
+  only by blocks. The next Unibeam waits **10 seconds**.
+- **Exhaust pipes and spikes.** Two pipes run along the back of each forearm and sweep out past the elbow: their
+  mouths glow while it stands, flame as it runs or climbs and roar as it winds up a blow. Its knuckles carry spikes.
+- **Nothing else:** you cannot fly, jump or use your other powers while you are in it. The panel lists its blow,
+  Eye Beam and Unibeam and the hold of the scroll wheel that takes you out, with how long you may still stay in
+  (like *1:42 left*).
 - **Leaving it:** hold the scroll wheel for 2 seconds again (the ring round your crosshair says *Leave the mech*): the mech breaks
   into solid pieces that dissolve into light, and you float gently down to the ground. Die, log out or stop being
   Green Lantern and it breaks up as well. You may stay in it **2 minutes** at most, counted from building it: then
@@ -954,11 +965,12 @@ Green Lantern's ultimate: a big, slow gunship of hard light high over the battle
 - **Who gets hit:** it builds itself over a creature out to hurt you, but its blows hit whatever stands near: the
   held creature takes each blow whole, anything else near the foot, the clap or the crater takes less (players of
   your own team excepted).
-- **Power:** 25 to build it, then 0.2 a second while you pilot it and 0.5 a blow; when the ring runs dry it breaks
-  up. **Cooldown:** 5 minutes, from the moment the mech is gone (however you leave it), **its own**:
-  building the mech leaves the Air Strike ready, and the Air Strike leaves the mech ready. Its cost, cooldown, how
-  long you may stay in it, reach and the three damages are settings (Hard-Light Mech), and
-  so are each blow's damage (Mech blows) and what it crushes underfoot (Walking the mech).
+- **Power:** 25 to build it, then 0.2 a second while you pilot it, 0.5 a blow, 1 an Eye Beam and 6 a Unibeam; when
+  the ring runs dry it breaks up. **Cooldown:** 5 minutes, from the moment the mech is gone (however you leave it),
+  **its own**: building the mech leaves the Air Strike ready, and the Air Strike leaves the mech ready. Its cost,
+  cooldown, how long you may stay in it, reach and the three damages are settings (Hard-Light Mech), and so are each
+  blow's damage (Mech blows), the beams' costs, damage and the Unibeam's wait (Mech beams) and what it crushes
+  underfoot (Walking the mech).
 
 ### Giant Hands (key Left Alt)
 
@@ -1493,14 +1505,21 @@ Double space jumps high and holding space flies, with or without the hammer.
 - **Grab-Dash Dive (hold right for 0.5 seconds):** he dives at what you aim at, grabs it on the way and drives it
   into the ground in a **slam** (5 hearts to it, less to what stands round, a lightning strike), which ends his
   flight. A player he grabs, flying or not, hangs limp in his fist on the way down. **Cooldown:** 8 seconds.
-- **Sky Shockwave (hold left for 1 second):** lightning bursts out of him in a ball about **7 blocks** across:
+- **Sky Shockwave (hold left for 1 second):** lightning bursts out of him in a dome about **7 blocks** across:
   **1.5 hearts** to everything in it, and everything it hit goes limp, players and flying creatures too: a creature
-  drops out of the air, lies on the ground for **3 seconds** and then gets up; a player is limp for at most **1.5
-  seconds**, then gets up, or, still in the air, falls on as themselves or flies on if they were flying. Until it
+  drops out of the air, lies on the ground for **3 seconds** and then gets up; a player is limp for at most **1
+  second**, then gets up, or, still in the air, falls on as themselves or flies on if they were flying. Until it
   stands again it cannot move, fly or use a power. Bosses and creatures held by a power are not knocked down.
   **Cooldown:** 10 seconds.
 - **Lightning Bolt (scroll wheel click):** a bolt of lightning comes down on the creature you aim at, up to 64
-  blocks away: **2.5 hearts**. Aimed at nothing, nothing happens. **Cooldown:** 1.5 seconds.
+  blocks away, also up in the air: **2.5 hearts**, and it is knocked down. The bolt leaps on to up to **3** more foes
+  close by, each within about 2 blocks of the last, each taking three quarters of the hit before and slowed a
+  moment. Aimed at nothing, nothing happens. **Cooldown:** 1.5 seconds.
+- **Storm Throw (hold the scroll wheel for 0.5 seconds):** he hurls the hammer where you aim, up to **24 blocks**:
+  **3 hearts** to what it hits. Where it strikes a ring of lightning flashes **4 blocks** round it, and its lightning
+  leaps from foe to foe inside, up to **10** of them, **2 hearts** each. Then the hammer flies back to him, hitting
+  what is in its way; until it is back he hangs in the air and only his right hand's blows work. **Cooldown:** 10
+  seconds. Its leaps' damage, the ring and the most leaps are settings.
 - **Lightning Speed (hold shift for 2 seconds):** he flies at **48 blocks a second** for **15 seconds**, a zigzag of
   lightning behind him. Others do not see him, only the bolt he has become.
   Creatures out to hurt you that he passes within 5 blocks are struck (**1.5 hearts**, each at most once a second).
@@ -1517,13 +1536,15 @@ Double space jumps high and holding space flies, with or without the hammer.
   the sky darkens and the rain sounds, for you and every other player standing under it, while the weather of the
   world stays as it is. It follows him wherever he goes, on foot or in flight, a little behind.
 - **Call Lightning (press R again):** a bolt comes down out of the storm where you aim, up to 96 blocks away and at
-  most to the storm's edge. It strikes the first thing in its way down: a roof, a tree, the water. **4 hearts** to all
-  within 3 blocks, less further off; what it strikes right on is knocked down. You can call one about every half
-  second. Every bolt flashes over the sky, cracks where it lands, and its thunder comes later the further off you
-  stand; near it, the view jolts.
+  most to the storm's edge. Aimed at a creature under the storm, also one in the air, it strikes it; otherwise it
+  strikes the first thing in its way down: a creature, a roof, a tree, the water. A creature it strikes takes **4
+  hearts** and is knocked down, and the bolt leaps on to up to **3** more foes close by, as the Lightning Bolt does;
+  striking the ground, it leaps to foes standing right by. You can call one about every half second. Every bolt
+  flickers down a forked channel, flashes over the sky, and where it hits the ground leaves a glowing ring, a scorch
+  and cracks; its thunder comes later the further off you stand; near it, the view jolts.
 - **By itself** the storm strikes a creature out to hurt you under it in the open now and then (about every 2
-  seconds, **2.5 hearts**); with none there, a bolt strikes the ground somewhere under it, away from him, and hurts
-  nothing.
+  seconds, **2.5 hearts**, leaping on as well); with none there, a bolt strikes the ground somewhere under it, away
+  from him, and hurts nothing. Its clouds tower thick and dark.
 - **Ending it:** it lasts **20 seconds**; crouch and press R to end it sooner. Then it clears away over 3 seconds and
   the **cooldown of 30 seconds** starts. How long it lasts, how far it reaches and the damage of both kinds of bolt are
   settings.
@@ -1531,14 +1552,16 @@ Double space jumps high and holding space flies, with or without the hammer.
 ### Lightning Bomb (ability 2, V)
 
 - **Press V** on the ground (in flight it says it is for the ground only): Thor rises slowly, about **7 blocks** in
-  2.5 seconds, arms open, static crawling over him and arcs leaping from him to the ground, while small bolts strike
-  the ground round him. Then he hangs still and curls up tight for **1 second**: a shell of light closes in on him with
-  lightning drawn into him, a glare swells at his chest, and a ring of light on the ground shows how far the burst will
-  reach.
-- **The burst:** he flings himself wide open in a flash of white light. A shock front runs out, bolts are thrown from
-  him down onto the ground all round and up into the sky, a ring of light runs out over the ground and glowing cracks
-  cool there. Everything within **8 blocks** round him and under him takes up to **8 hearts** (less towards the edge),
-  is thrown back and knocked down. Then he sinks slowly back down and lands without fall damage.
+  2 seconds, arms open, static crawling over him and arcs leaping from him to the ground, while small bolts strike
+  the ground round him. Then he hangs still and curls up tight for **under a second**, bolts striking him out of the
+  sky: a shell of light closes in on him with lightning drawn into him, a glare swells at his chest, and a ring of
+  light on the ground shows how far the burst will reach.
+- **The burst:** bolts crash down onto him and he flings himself wide open in a white-hot flash. A shock front runs
+  out, bolts are thrown from him down onto the ground and on over it far past the edge, forking as they go, and up
+  into the sky; a blue glow of charged air lingers, a ring of light runs out over the ground and glowing cracks cool
+  there. Everything within **10 blocks** round him and under him takes up to **8 hearts** (less towards the edge), is
+  thrown back and knocked down. Then he sinks slowly back down and lands without fall damage. From his own eyes the
+  flash is short, so he sees what it does.
 - While it goes he does nothing else but call his storm's bolts. A knockdown stops it before it bursts.
 - **Cooldown:** 30 seconds. How far it reaches and its damage are settings.
 
@@ -1575,16 +1598,33 @@ Double space jumps high and holding space flies, with or without the hammer.
 
 ### Hammer Throw (right click, hammer in hand)
 
-- **Click right:** he throws the hammer at the crosshair, head first, up to **40 blocks**, until it hits a creature or
+- **Click right:** he throws the hammer at the crosshair, head first, up to **24 blocks**, until it hits a creature or
   a block. What it hits takes **3.5 hearts** and is thrown far the way it flew. Then it flies back to his hand by
-  itself. **Cooldown:** 1.5 seconds.
+  itself, grip first, hitting each creature in its path once. **Cooldown:** 1.5 seconds.
+- **Throw to Stay** (crouch as you click): it stays where it stops: lying on the ground, stuck in a wall or hanging
+  in the air. It waits there until you call it back (or follow it, see below), or until you go **128 blocks** from it;
+  then it comes home by itself. Meanwhile you fight with your fists.
 
-### Throw and Follow (hold right click for 1 second, hammer in hand)
+### Throw and Follow (hold right click, hammer in hand)
 
-- **Hold right:** he throws it the same way, but it stays where it stops: in what it hit, against a block, or
-  hanging in the air at the end of its flight. Then he is pulled after it at great speed in a streak of lightning and
-  catches it, and no fall hurts him for a few seconds. Should he not get there, it flies back by itself after 5
-  seconds. What it hits takes **2 hearts**. **Cooldown:** 5 seconds.
+- **Hold right:** after a moment he draws the hammer back; the longer you hold, up to 1 second, the further it goes
+  (**4 to 14 blocks**). **Let go** to throw it (after 3 seconds it goes by itself). It stays where it stops, a line of
+  lightning grows between his hand and it, and then lightning dashes him to it at **20 blocks a second**. With ground
+  close under it he lands by it, hammer in his right hand; up in the air he catches it in his left and flies on. No
+  fall hurts him for 2 seconds after. What it hits takes **2 hearts**. A hard hit or being knocked down breaks the
+  dash off; the hammer stays where it is. **Cooldown:** 5 seconds.
+
+### Call the Hammer (scroll wheel click, hammer away)
+
+- **Click the scroll wheel** while the hammer is thrown: it flies back to your hand, hitting each creature in its path
+  once (**2 hearts**). Stuck in a block, it tears itself free. **Cooldown:** 0.5 seconds.
+- **Hold jump** instead: it flies into your raised left hand and you take off into flight.
+
+### Follow the Hammer (hold scroll wheel for 0.5 seconds, hammer resting)
+
+- **Hold the scroll wheel** while it lies or hangs still, up to **24 blocks** away: lightning pulls you to it, as in
+  Throw and Follow. Near the ground you land by it with it in hand; up in the air you catch it and fly on.
+  **Cooldown:** 2 seconds.
 
 ### Grab (hold right click for 0.75 seconds, no hammer)
 
@@ -1624,6 +1664,8 @@ There are two kinds of settings:
   settings; your game gets them as you join, and again at once whenever they change on the server.
   - **Power rules** for every power at once: a **damage multiplier**, a **cooldown multiplier** (spells follow both
     too) and whether **powers break blocks**.
+  - **Creatures:** whether blows wear creatures down, whether a thrown creature knocks down what it crashes into,
+    and whether **players go limp** (knocked down or hurled, and when they die), the same in every player's game.
   - **Characters and spells:** each character, and spells, can be switched off for the world; whoever is a
     character that gets switched off turns back into themselves.
   - **Every character's page** holds its abilities' numbers.
@@ -1631,8 +1673,9 @@ There are two kinds of settings:
   - **View:** camera shake, scraping shake, screen flashes and filming your own mech.
   - **Effects & particles:** how many particles the powers throw up, and how much detail the biggest effects have
     (low, medium, full).
-  - **Bodies:** limp bodies on or off, how many at once, how far away, how long a body lies before it sinks away (at
-    least 5 seconds on the ground), feet on the ground, and capes of cloth.
+  - **Bodies:** limp creatures on or off (players go limp by the world's own setting), how many limp bodies at once,
+    how far away, how long a body lies before it sinks away (at least 5 seconds on the ground), feet on the ground,
+    and capes of cloth.
   - **Sound:** the menu theme.
   - **Updates:** how often the game looks for a new version (no more often than every 5 minutes), and how long the
     note about one stays on screen.

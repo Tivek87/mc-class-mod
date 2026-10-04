@@ -111,17 +111,8 @@ public final class LightningSpell {
     // The bolt leaps on to the nearest hostile it has not touched yet; null once there is none left in reach.
     @Nullable
     private static Vec3 chain(ServerLevel level, ServerPlayer caster, Vec3 from, List<LivingEntity> struck) {
-        LivingEntity next = null;
-        double best = CHAIN_REACH * CHAIN_REACH;
-        for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, new AABB(from, from).inflate(
-                CHAIN_REACH), entity -> SpellTargets.hits(caster, entity) && !struck.contains(entity))) {
-            Vec3 middle = target.getBoundingBox().getCenter();
-            double far = middle.distanceToSqr(from);
-            if (far < best && Targeting.clearPath(level, from, middle, caster)) {
-                best = far;
-                next = target;
-            }
-        }
+        LivingEntity next = Targeting.nextInChain(level, caster, from, CHAIN_REACH, struck,
+                entity -> SpellTargets.hits(caster, entity));
         if (next == null) {
             return null;
         }

@@ -130,6 +130,7 @@ public final class ThorPoses {
         flight(mix, view, body, age, entity);
         slam(mix, view, age);
         hold(mix, view, age, partialTick);
+        ThorHammerPoses.pose(mix, view, body, age, entity, partialTick);
         ThorSkyPoses.storm(mix, view, body, age);
         ThorSkyPoses.bomb(mix, view, body, age, entity);
         blows(mix, view, entity, partialTick);
@@ -196,14 +197,17 @@ public final class ThorPoses {
         }
         if (view.has(ThorStatePayload.FLYING)) {
             ThorBlow blow = ThorBlow.byIndex(view.blow);
-            if (blow == null || !blow.oneHanded() || view.blowAge(partialTick) >= blow.ticks()) {
+            boolean storm = blow == ThorBlow.STORM_THROW;
+            if (blow == null || !blow.oneHanded() && !storm || view.blowAge(partialTick) >= blow.ticks()) {
                 return;
             }
+            // A Storm Throw is hurled by the left hand, which held the hammer; else the free right hand strikes.
+            int side = storm ? 1 : 0;
             float w = pose.weight * (float) Ease.smooth((blow.ticks() - view.blowAge(partialTick)) / 2.0);
             mix.weight = Math.max(mix.weight, w);
-            mix.aimedHands[0] = true;
-            mix.hand(0, pose.hand[0].x, pose.hand[0].y, pose.hand[0].z, w * 2.0F, false);
-            mix.pole(0, pose.pole[0], w);
+            mix.aimedHands[side] = true;
+            mix.hand(side, pose.hand[side].x, pose.hand[side].y, pose.hand[side].z, w * 2.0F, false);
+            mix.pole(side, pose.pole[side], w);
             return;
         }
         float w = pose.weight;
@@ -395,7 +399,13 @@ public final class ThorPoses {
         }
         if (reach > 1.0E-3F) {
             mix.weight = Math.max(mix.weight, reach);
-            mix.hand(1, BELT.x, BELT.y, BELT.z - 0.8F, reach, false);
+            if (touchDown && view.has(ThorStatePayload.ARMED)) {
+                // Landing with it in hand, the left passes it across into the right in front of him.
+                mix.hand(1, 1.5F, 5.5F, -6.5F, reach, false);
+                mix.hand(0, -1.5F, 5.5F, -6.5F, reach, false);
+            } else {
+                mix.hand(1, BELT.x, BELT.y, BELT.z - 0.8F, reach, false);
+            }
         }
         float held = hammer * (1.0F - reach);
         if (held > 1.0E-3F) {
@@ -437,6 +447,12 @@ public final class ThorPoses {
     public static boolean hammerInLeftHand(Entity entity) {
         ThorBody body = ThorBody.of(entity);
         return body != null && body.inHand;
+    }
+
+    // How far he has the hammer drawn back over his shoulder to throw (0 to 1).
+    public static float cocked(Entity entity) {
+        ThorBody body = ThorBody.of(entity);
+        return body == null ? 0.0F : (float) body.cocked.value;
     }
 
     // Registered with BodyTurns: his whole body leans and banks in flight.

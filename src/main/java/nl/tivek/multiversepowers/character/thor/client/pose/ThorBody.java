@@ -10,6 +10,8 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.character.thor.ThorStatePayload;
 import nl.tivek.multiversepowers.character.thor.client.ClientThor;
+import nl.tivek.multiversepowers.character.thor.client.motion.ThorMotion;
+import nl.tivek.multiversepowers.character.thor.hammer.HammerRules;
 import nl.tivek.multiversepowers.engine.math.Ease;
 import nl.tivek.multiversepowers.engine.math.Spring;
 import org.joml.Quaternionf;
@@ -40,6 +42,10 @@ final class ThorBody {
     final Spring bank = new Spring();
     final Spring absorb = new Spring();
     final Spring hammer = new Spring();
+    // Drawing the hammer back, reaching for it as it flies back, hanging in the air while it is out.
+    final Spring cocked = new Spring();
+    final Spring reach = new Spring();
+    final Spring hang = new Spring();
     boolean inHand;
     boolean grounded = true;
     double falling;
@@ -83,7 +89,8 @@ final class ThorBody {
 
     private boolean idle() {
         return this.fly.value < 1.0E-3 && Math.abs(this.absorb.value) < 1.0E-2 && this.floating.value < 1.0E-3
-                && Math.abs(this.absorb.speed) < 1.0E-2;
+                && Math.abs(this.absorb.speed) < 1.0E-2 && this.cocked.value < 1.0E-3 && this.reach.value < 1.0E-3
+                && this.hang.value < 1.0E-3;
     }
 
     private void update(AbstractClientPlayer player, @Nullable ClientThor.View view, float partialTick) {
@@ -99,6 +106,10 @@ final class ThorBody {
                     1.0 - Math.exp(-0.4 * this.dt));
         }
         boolean flying = view != null && view.has(ThorStatePayload.FLYING);
+        boolean thrown = view != null && view.has(ThorStatePayload.THROWN);
+        // The dash to his hammer lays him out as fast flight does.
+        boolean dashing = view != null && view.has(ThorStatePayload.PULLING) && view.move() == ThorStatePayload.PULL
+                && view.age(partialTick) >= HammerRules.WAIT;
         boolean ground = player.onGround();
         if (ground && !this.grounded && this.falling > 0.15 && !flying) {
             this.absorb.kick(Math.min(10.0, this.falling * 7.0));
@@ -107,18 +118,27 @@ final class ThorBody {
             this.falling = Math.max(0.0, -raw.y);
         }
         this.grounded = ground;
-        this.fly.step(flying ? 1.0 : 0.0, this.dt, 0.05, 1.0);
+        this.fly.step(flying || dashing ? 1.0 : 0.0, this.dt, 0.05, 1.0);
         this.floating.step(view != null && view.has(ThorStatePayload.FLOATING) ? 1.0 : 0.0, this.dt, 0.05, 1.0);
         this.absorb.step(0.0, this.dt, 0.085, 0.5);
         this.inHand = this.holding(view);
         this.hammer.step(this.inHand ? 1.0 : 0.0, this.dt, 0.12, 1.0);
+        boolean drawing = view != null && view.has(ThorStatePayload.COCKED)
+                || player == Minecraft.getInstance().player && ThorMotion.drawn(partialTick) >= 0.0F;
+        this.cocked.step(drawing ? 1.0 : 0.0, this.dt, 0.1, 1.0);
+        boolean calling = view != null && view.has(ThorStatePayload.CALLING)
+                || player == Minecraft.getInstance().player && ThorMotion.awaiting();
+        this.reach.step(calling ? 1.0 : 0.0, this.dt, 0.15, 1.0);
+        this.hang.step(flying && thrown && !ThorHammerLayer.windingUp(view, partialTick) ? 1.0 : 0.0, this.dt, 0.08,
+                1.0);
         this.yaw = Mth.rotLerp(partialTick, player.yBodyRotO, player.yBodyRot);
-        this.lean(view, flying);
+        this.lean(view, flying || dashing);
     }
 
-    // Holds the hammer from the moment a take-off draws it until a touch-down sheathes it.
+    // Holds the hammer from the moment a take-off draws it until a touch-down sheathes it, but not while it is out
+    // of his hands (past a Storm Throw's letting go).
     private boolean holding(@Nullable ClientThor.View view) {
-        if (view == null) {
+        if (view == null || view.has(ThorStatePayload.THROWN) && !ThorHammerLayer.windingUp(view, 0.0F)) {
             return false;
         }
         float age = view.age(0.0F);

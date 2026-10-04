@@ -83,6 +83,11 @@ public final class PowerRing {
             // In the mech, the attack button strikes with its fists and feet; holding it does nothing more.
             return (data & Characters.HOLD) == 0 && MechAssembly.strike(player);
         }
+        if (on && ability.id().equals("light_shield") && MechAssembly.piloting(player)) {
+            // Right click in the mech: a tap fires the eye beam, a hold the Unibeam.
+            return (data & (Characters.TAP | Characters.HOLD)) != 0
+                    && MechAssembly.beam(player, (data & Characters.HOLD) != 0);
+        }
         if (on && !mech && MechAssembly.piloting(player)) {
             tell(player, "mech_busy", Component.keybind("key." + MultiversePowers.MODID + ".input.scroll_hold"));
             return false;

@@ -17,10 +17,11 @@ import nl.tivek.multiversepowers.character.greenlantern.client.body.flame.FlameA
 import nl.tivek.multiversepowers.character.greenlantern.client.body.sword.SwordArms;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.whip.WhipArms;
 
-// Green Lantern's panel: in his mech only the hold that leaves it; with a construct weapon in his hands its four moves
-// and the wheel that puts it away, his other keys shut till then.
+// Green Lantern's panel: in his mech its blow, its eye beam, its Unibeam and the hold that leaves it; with a construct
+// weapon in his hands its four moves and the wheel that puts it away, his other keys shut till then.
 final class LanternPanel implements AbilityPanel.Rules {
     private static final String MOVE = "screen." + MultiversePowers.MODID + ".move.";
+    private static final String MECH = "screen." + MultiversePowers.MODID + ".panel.green_lantern.mech.";
     // Each weapon's click and hold of the left button, then of the right, and the wheel's setting saying what each
     // costs: one per second is paid every tick.
     private static final Map<String, String[]> COSTS = Map.of(
@@ -65,7 +66,7 @@ final class LanternPanel implements AbilityPanel.Rules {
     @Override
     public boolean lists(CharacterAbility ability, LocalPlayer player) {
         if (piloting(player)) {
-            return ability.id().equals("mech");
+            return ability.id().equals("mech") || onMouse(ability);
         }
         if (weapon() != null) {
             return onMouse(ability) || ability.isClientOnly();
@@ -86,12 +87,22 @@ final class LanternPanel implements AbilityPanel.Rules {
         if (!onMouse(ability)) {
             return null;
         }
+        if (piloting(player)) {
+            return Component.translatable(ability.input() == CharacterAbility.Input.LEFT ? MECH + "blow"
+                    : hold ? "screen." + MultiversePowers.MODID + ".hold.unibeam" : MECH + "eye");
+        }
         String weapon = weapon();
         if (weapon == null) {
             return hold ? ConstructHud.holdName(ability, player) : null;
         }
         String move = ability.input() == CharacterAbility.Input.LEFT ? "attack" : "defend";
         return Component.translatable(MOVE + weapon + "." + move + (hold ? "_hold" : ""));
+    }
+
+    // In the mech, holding the left button does nothing more than a click.
+    @Override
+    public boolean holds(CharacterAbility ability, LocalPlayer player) {
+        return !(ability.input() == CharacterAbility.Input.LEFT && piloting(player));
     }
 
     @Nullable
@@ -113,6 +124,9 @@ final class LanternPanel implements AbilityPanel.Rules {
         CharacterAbility mech = GameCharacter.GREEN_LANTERN.byName("mech");
         if (ability.id().equals("light_bolt") && mech != null && piloting(player)) {
             return !hold && pays(player, mech.value("mechBlowPowerCost"));
+        }
+        if (ability.id().equals("light_shield") && mech != null && piloting(player)) {
+            return pays(player, mech.value(hold ? "mechUnibeamPowerCost" : "mechEyePowerCost"));
         }
         float power = ClientRing.power(player);
         return switch (ability.id()) {

@@ -39,6 +39,7 @@ import net.neoforged.neoforge.client.event.RenderNameTagEvent;
 import net.neoforged.neoforge.common.util.TriState;
 import net.neoforged.neoforge.event.entity.EntityLeaveLevelEvent;
 import nl.tivek.multiversepowers.MultiversePowers;
+import nl.tivek.multiversepowers.config.PowerRules;
 import nl.tivek.multiversepowers.config.client.ClientSettings;
 import nl.tivek.multiversepowers.engine.client.model.BentParts;
 import nl.tivek.multiversepowers.engine.client.model.ModelParts;
@@ -102,11 +103,11 @@ public final class Ragdolls {
     // and fly.
     public static void blast(Vec3 center, double power) {
         ClientLevel level = Minecraft.getInstance().level;
-        if (level == null || power <= 0.0 || !ClientSettings.ragdolls()) {
+        if (level == null || power <= 0.0 || !any()) {
             return;
         }
         for (Ragdoll doll : LIVE.values()) {
-            if (doll.state != Ragdoll.State.HELD) {
+            if (doll.state != Ragdoll.State.HELD && limp(doll.entity)) {
                 doll.blast(center, power, RagdollCauses.seen(level, center, doll.coreAt(1.0)), RANDOM);
             }
         }
@@ -117,6 +118,16 @@ public final class Ragdolls {
     private static TagKey<EntityType<?>> tag(String name) {
         return TagKey.create(Registries.ENTITY_TYPE,
                 ResourceLocation.fromNamespaceAndPath(MultiversePowers.MODID, name));
+    }
+
+    // Players go limp by the world's own rule (playerKnockdown), the same in every game; other creatures by this
+    // player's setting.
+    private static boolean limp(Entity entity) {
+        return entity instanceof Player ? PowerRules.playerKnockdown() : ClientSettings.ragdolls();
+    }
+
+    private static boolean any() {
+        return ClientSettings.ragdolls() || PowerRules.playerKnockdown();
     }
 
     // Something else that poses a creature itself (a power that squashes, strings up or stretches it): while it
@@ -217,12 +228,12 @@ public final class Ragdolls {
     // Whether this dead creature's body stays lying where it fell, so it does not puff away yet.
     public static boolean keepsBody(LivingEntity entity) {
         Ragdoll doll = LIVE.get(entity.getId());
-        return doll != null && doll.entity == entity && doll.state == Ragdoll.State.DEAD && ClientSettings.ragdolls();
+        return doll != null && doll.entity == entity && doll.state == Ragdoll.State.DEAD && limp(entity);
     }
 
     @Nullable
     private static Ragdoll start(EntityModel<?> model, LivingEntity entity, float partialTick, Matrix4f drawn) {
-        if (!ClientSettings.ragdolls() || UNFIT.contains(model.getClass()) || FAILED.contains(entity.getId())
+        if (!limp(entity) || UNFIT.contains(model.getClass()) || FAILED.contains(entity.getId())
                 || Ashes.burning(entity.getId())) {
             return null;
         }
@@ -277,7 +288,7 @@ public final class Ragdolls {
     // and how hard it pushed (blocks a tick). A body gone limp just now is pushed by it at once; one not yet gone limp
     // is when it does.
     public static void struck(int entity, @Nullable Vec3 from, Vec3 push) {
-        if (!ClientSettings.ragdolls()) {
+        if (!any()) {
             return;
         }
         RagdollCauses.Blow blow = new RagdollCauses.Blow(from, push, ticks);
@@ -381,18 +392,19 @@ public final class Ragdolls {
         Facings.tick();
         THROWN_NOW.clear();
         RagdollCauses.forget(ticks);
-        if (!ClientSettings.ragdolls()) {
+        if (!any()) {
             if (!LIVE.isEmpty() || !Corpses.ALL.isEmpty()) {
                 clear();
             }
             return;
         }
+        Corpses.ALL.removeIf(doll -> !limp(doll.entity));
         Vec3 camera = camera();
         double reach = ClientSettings.get(ClientSettings.RAGDOLL_REACH);
         double near = reach * reach;
         double far = near * LET_GO * LET_GO;
         for (Entity entity : level.entitiesForRendering()) {
-            if (entity instanceof Mob mob && mob.isAlive() && !LIVE.containsKey(mob.getId())
+            if (entity instanceof Mob mob && mob.isAlive() && !LIVE.containsKey(mob.getId()) && limp(mob)
                     && mob.distanceToSqr(camera) <= near && RagdollCauses.thrown(mob)) {
                 THROWN_NOW.add(mob.getId());
             }
@@ -403,7 +415,7 @@ public final class Ragdolls {
         while (live.hasNext()) {
             Ragdoll doll = live.next();
             LivingEntity entity = doll.entity;
-            if (entity.isRemoved() || claimed(entity) || entity.distanceToSqr(camera) > far) {
+            if (entity.isRemoved() || claimed(entity) || entity.distanceToSqr(camera) > far || !limp(entity)) {
                 live.remove();
                 continue;
             }
@@ -537,7 +549,7 @@ public final class Ragdolls {
             return;
         }
         LIVE.remove(id);
-        if (doll.state == Ragdoll.State.DEAD && entity.isRemoved() && ClientSettings.ragdolls()) {
+        if (doll.state == Ragdoll.State.DEAD && entity.isRemoved() && limp(entity)) {
             Corpses.add(doll);
         }
     }

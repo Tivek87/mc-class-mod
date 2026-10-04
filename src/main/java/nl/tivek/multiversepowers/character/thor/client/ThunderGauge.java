@@ -18,6 +18,8 @@ import nl.tivek.multiversepowers.character.GameCharacter;
 import nl.tivek.multiversepowers.character.client.AbilityPanel;
 import nl.tivek.multiversepowers.character.client.ClientCharacter;
 import nl.tivek.multiversepowers.character.client.MouseHold;
+import nl.tivek.multiversepowers.character.thor.client.motion.ThorMotion;
+import nl.tivek.multiversepowers.character.thor.hammer.HammerRules;
 import nl.tivek.multiversepowers.engine.client.gui.GuiShapes;
 import nl.tivek.multiversepowers.engine.client.gui.HudSpace;
 import nl.tivek.multiversepowers.engine.math.Noise;
@@ -25,7 +27,7 @@ import nl.tivek.multiversepowers.engine.math.Noise;
 // Thor's hold of the attack button round the crosshair (the thunderclap, the hammer's uppercut, the shockwave in
 // flight): a small ring charging from the top while the button is held, crackling at its tip; when full it pops with
 // a flash and bolts leaping out. While it cools down a thin arc counts the wait, and a glint shows the moment it is
-// ready again.
+// ready again. A hold of the right or scroll button fills the same ring (Throw and Follow's draw to its full throw).
 @Mod(value = MultiversePowers.MODID, dist = Dist.CLIENT)
 public final class ThunderGauge {
     private static final ResourceLocation LAYER_ID = ResourceLocation.fromNamespaceAndPath(MultiversePowers.MODID,
@@ -56,17 +58,23 @@ public final class ThunderGauge {
 
     private static void render(GuiGraphics graphics, DeltaTracker deltaTracker) {
         Minecraft minecraft = Minecraft.getInstance();
-        CharacterAbility clap = minecraft.player == null ? null : leftHold(minecraft.player);
-        if (minecraft.player == null || minecraft.options.hideGui || clap == null
-                || ClientCharacter.active() != GameCharacter.THOR || minecraft.screen != null) {
+        LocalPlayer player = minecraft.player;
+        if (player == null || minecraft.options.hideGui || ClientCharacter.active() != GameCharacter.THOR
+                || minecraft.screen != null) {
             fullAt = 0L;
             return;
         }
         float partialTick = deltaTracker.getGameTimeDeltaPartialTick(false);
+        CharacterAbility clap = leftHold(player);
+        float other = otherHold(player, partialTick);
+        if (clap == null && other < 0.0F) {
+            fullAt = 0L;
+            return;
+        }
         float x = graphics.guiWidth() * 0.5F;
         float y = graphics.guiHeight() * 0.5F;
         long now = Util.getMillis();
-        int cooldown = ClientCharacter.cooldownLeft(clap.slot());
+        int cooldown = clap == null ? 0 : ClientCharacter.cooldownLeft(clap.slot());
         if (cooldown > lastCooldown) {
             cooldownFrom = cooldown;
         }
@@ -75,6 +83,11 @@ public final class ThunderGauge {
         }
         lastCooldown = cooldown;
         float progress = MouseHold.progress(clap, partialTick);
+        if (other >= 0.0F) {
+            // A hold of the right or scroll button fills the ring instead, over the left's wait.
+            progress = other;
+            cooldown = 0;
+        }
         boolean drawn = false;
         boolean shown = cooldown > 0 || progress >= SHOWN || fullAt != 0L && now - fullAt < POP_MS
                 || readyAt != 0L && now - readyAt < READY_MS;
@@ -106,6 +119,27 @@ public final class ThunderGauge {
             }
         }
         return null;
+    }
+
+    // How far a hold of the right or scroll button has come (0 to 1), Throw and Follow's draw after it included, or -1
+    // while none is held.
+    private static float otherHold(LocalPlayer player, float partialTick) {
+        for (CharacterAbility ability : GameCharacter.THOR.abilities()) {
+            if (ability.input() == CharacterAbility.Input.LEFT || ability.holdTicks() <= 0
+                    || !ClientCharacter.inPlay(ability, player)) {
+                continue;
+            }
+            float hold = MouseHold.progress(ability, partialTick);
+            if (ability.id().equals("hammer_leap")) {
+                float drawn = ThorMotion.drawn(partialTick);
+                float from = (float) HammerRules.DRAW_FROM / HammerRules.DRAW_FULL;
+                hold = drawn >= 0.0F ? Mth.lerp(drawn, from, 1.0F) : hold < 0.0F ? -1.0F : hold * from;
+            }
+            if (hold >= SHOWN) {
+                return hold;
+            }
+        }
+        return -1.0F;
     }
 
     private static boolean charge(GuiGraphics graphics, float x, float y, float inner, float outer, float progress,

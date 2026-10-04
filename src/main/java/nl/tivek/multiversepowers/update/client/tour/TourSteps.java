@@ -20,24 +20,46 @@ import nl.tivek.multiversepowers.update.client.tour.TourStep.Place;
 // while a line is in neither, or a tour text is too long. Only steps from `FROM` up to the version installed are ever
 // shown, so a release's steps replace the last one's. A player's first tour starts with `INTRO`.
 final class TourSteps {
-    static final String VERSION = "0.7.6-alpha";
+    static final String VERSION = "0.7.7-alpha";
     // The oldest version whose changes this tour shows: normally its own.
     static final String FROM = VERSION;
 
-    // The settings' Server heading, then Thor's rows of the panel: as anyone else, the card stands in the middle.
+    // Thor's new ways with his hammer and his leaping bolts, then the mech's beams, each by its character's rows of the
+    // panel: as anyone else, the card stands in the middle.
     static final List<TourStep> ALL = List.of(
-            step(VERSION, "settings_split", Kind.CHANGED, Place.SETTINGS).at("nav.server")
-                    .covers("Settings: your own settings"),
-            step(VERSION, "thor_storm", Kind.NEW, Place.GAME).at("game.panel.rows.thor").prepare(AbilityPanel::wake)
-                    .covers("Thor: Thunderstorm"),
-            step(VERSION, "thor_bomb", Kind.NEW, Place.GAME).at("game.panel.rows.thor").prepare(AbilityPanel::wake)
-                    .covers("Thor: Lightning Bomb"));
+            step(VERSION, "thor_throw_follow", Kind.CHANGED, Place.GAME).at("game.panel.rows.thor")
+                    .prepare(AbilityPanel::wake).covers("Thor: Throw and Follow"),
+            step(VERSION, "thor_throw_stay", Kind.NEW, Place.GAME).at("game.panel.rows.thor")
+                    .prepare(AbilityPanel::wake).covers("Thor: Throw to Stay"),
+            step(VERSION, "thor_hammer_call", Kind.NEW, Place.GAME).at("game.panel.rows.thor")
+                    .prepare(AbilityPanel::wake)
+                    .covers("Thor: Call the Hammer", "Thor: with the hammer away, hold jump"),
+            step(VERSION, "thor_hammer_follow", Kind.NEW, Place.GAME).at("game.panel.rows.thor")
+                    .prepare(AbilityPanel::wake).covers("Thor: Follow the Hammer"),
+            step(VERSION, "thor_storm_throw", Kind.NEW, Place.GAME).at("game.panel.rows.thor")
+                    .prepare(AbilityPanel::wake).covers("Thor: Storm Throw"),
+            step(VERSION, "thor_chain", Kind.CHANGED, Place.GAME).at("game.panel.rows.thor")
+                    .prepare(AbilityPanel::wake).covers("Thor: a bolt called from the Thunderstorm"),
+            step(VERSION, "mech_beams", Kind.NEW, Place.GAME).at("game.panel.rows.green_lantern")
+                    .prepare(AbilityPanel::wake).covers("Green Lantern: Eye Beam", "Green Lantern: Unibeam"));
 
     // Changes too small for a step of their own, each by how its changelog line starts, as in `covers`.
     static final List<String> SMALL = List.of(
-            "Abilities: a key ability",
-            "Settings: every page in its own colour",
-            "Updates: Look for updates");
+            "Thor's settings: how far a throw flies",
+            "Green Lantern: the mech has exhaust pipes",
+            "Green Lantern's settings: the Eye Beam's",
+            "Settings: Voice lines",
+            "Thor: his thrown hammer hits each creature",
+            "Thor: while a Storm Throw is out",
+            "Thor: the thunder ring round the crosshair",
+            "Players go limp: far less often",
+            "Tour: asks once a version",
+            "Thor: every bolt of his is the mod's own",
+            "Thor: the Lightning Bomb charges faster",
+            "Thor: the storm's clouds tower",
+            "Thor: a creature he throws from his grab",
+            "Green Lantern: the ring's voice",
+            "Ability panel: in the mech it lists");
 
     // Shown first on a player's first tour, wherever it starts: what the tour is and how to use it.
     static final TourStep INTRO = step(VERSION, "tour_intro", Kind.HOW, Place.ANY);

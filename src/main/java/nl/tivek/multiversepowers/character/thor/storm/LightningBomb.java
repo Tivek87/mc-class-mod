@@ -23,15 +23,17 @@ import nl.tivek.multiversepowers.engine.target.Targeting;
 import nl.tivek.multiversepowers.engine.world.LoadedWorld;
 import nl.tivek.multiversepowers.spell.SpellTargets;
 
-// Thor's lightning bomb: he rises slowly into the air with bolts striking round him, charges for a moment and bursts
-// like a bomb of lightning over everything under and round him, which it hurts, throws and knocks down; then he sinks
-// back down. His own game lifts him on the same times (`client/motion/ThorRise`); the server strikes, hurts and spares
-// him the fall.
+// Thor's lightning bomb: he rises into the air with bolts striking round him, charges for a moment while bolts out of
+// the sky strike him, and bursts like a bomb of lightning over everything under and round him, which it hurts, throws
+// and knocks down; then he sinks back down. His own game lifts him on the same times (`client/motion/ThorRise`); the
+// server strikes, hurts and spares him the fall.
 public final class LightningBomb {
     // He rises this long, charges this long, then bursts.
-    public static final int RISE = 50;
-    public static final int CHARGE = 20;
+    public static final int RISE = 40;
+    public static final int CHARGE = 16;
     public static final int BURST = RISE + CHARGE;
+    // While he charges, bolts out of the sky strike him this often.
+    private static final int STRUCK_EVERY = 5;
     // How high he rises.
     public static final double HEIGHT = 7.0;
     // After the burst he sinks back down: this long at most, no fall hurting him.
@@ -86,6 +88,10 @@ public final class LightningBomb {
         player.resetFallDistance();
         if (age < BURST && age % SPARK_EVERY == 0) {
             this.spark(level, player);
+        }
+        if (age > RISE && age < BURST && (age - RISE) % STRUCK_EVERY == 1) {
+            Vec3 chest = player.position().add(0.0, player.getBbHeight() * 0.62, 0.0);
+            StormFxPayload.send(level, StormFxPayload.BOLT, ThorStorm.sky(player, chest), chest, 0.9F);
         }
         if (age == RISE) {
             sound(level, player, SoundEvents.WARDEN_SONIC_CHARGE, 1.4F, 1.5F);

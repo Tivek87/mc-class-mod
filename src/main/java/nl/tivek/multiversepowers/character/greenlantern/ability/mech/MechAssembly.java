@@ -39,6 +39,7 @@ import nl.tivek.multiversepowers.engine.world.LoadedWorld;
 
 public final class MechAssembly implements Effect {
     private static final String KEY = "mech";
+    private static final String UNIBEAM_KEY = "unibeam";
     private static final double VIEW_RANGE = 128.0;
     private static final double GROUND_BELOW = 12.0;
     private static final double GROUND_ABOVE = 3.0;
@@ -240,6 +241,33 @@ public final class MechAssembly implements Effect {
             return false;
         }
         mech.attack = MechAttack.start(player, player.serverLevel(), mech.upright());
+        return true;
+    }
+
+    // A right click in a built mech fires the eye beam; held, the Unibeam, which then waits a while.
+    public static boolean beam(ServerPlayer player, boolean unibeam) {
+        MechAssembly mech = ACTIVE.get(player.getUUID());
+        if (mech == null || mech.breaking >= 0 || mech.t < MechScript.SETTLED || mech.attack != null
+                || mech.climb != 0) {
+            return false;
+        }
+        if (unibeam) {
+            int left = COOLDOWNS.left(player, UNIBEAM_KEY, 0);
+            if (left > 0) {
+                PowerRing.tell(player, "unibeam_wait", (left + 19) / 20);
+                return false;
+            }
+        }
+        if (!PowerRing.pay(player, mech.ability.value(unibeam ? "mechUnibeamPowerCost" : "mechEyePowerCost"))) {
+            return false;
+        }
+        if (unibeam) {
+            int ticks = (int) Math.round(mech.ability.value("mechUnibeamCooldown") * PowerRules.cooldowns());
+            if (ticks > 0) {
+                COOLDOWNS.start(player, UNIBEAM_KEY, 0, ticks);
+            }
+        }
+        mech.attack = MechAttack.beam(unibeam);
         return true;
     }
 

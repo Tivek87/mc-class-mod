@@ -9,8 +9,9 @@ import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.network.PacketDistributor;
 import nl.tivek.multiversepowers.MultiversePowers;
 
-// A bolt out of Thor's storm (from the cloud to where it strikes), a small one round his rising lightning bomb, or the
-// bomb bursting (at `from`, `size` blocks round): every game near draws it and hears its thunder.
+// One of Thor's bolts (from the sky to where it strikes, `size` its thickness), a small one round his rising lightning
+// bomb or leaping from one creature to the next, or the bomb bursting (at `from`, `size` blocks round): every game near
+// draws it and hears its thunder.
 public record StormFxPayload(int kind, Vec3 from, Vec3 to, int seed, float size) implements CustomPacketPayload {
     public static final CustomPacketPayload.Type<StormFxPayload> TYPE = new CustomPacketPayload.Type<>(
             ResourceLocation.fromNamespaceAndPath(MultiversePowers.MODID, "storm_fx"));
@@ -21,10 +22,12 @@ public record StormFxPayload(int kind, Vec3 from, Vec3 to, int seed, float size)
     public static final int BOLT = 0;
     public static final int SPARK = 1;
     public static final int BLAST = 2;
+    // His sky shockwave: a dome of lightning bursting out round `from`, `size` blocks.
+    public static final int DOME = 3;
     // Thunder carries far: everyone this near hears it, later the further off they are.
     private static final double RANGE = 192.0;
 
-    static void send(ServerLevel level, int kind, Vec3 from, Vec3 to, float size) {
+    public static void send(ServerLevel level, int kind, Vec3 from, Vec3 to, float size) {
         PacketDistributor.sendToPlayersNear(level, null, to.x, to.y, to.z, RANGE,
                 new StormFxPayload(kind, from, to, level.getRandom().nextInt(), size));
     }

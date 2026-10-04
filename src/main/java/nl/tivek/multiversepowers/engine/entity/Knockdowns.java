@@ -49,14 +49,20 @@ public final class Knockdowns {
     private static final double THROWN = 0.8;
     private static final double TOSSED = 0.55;
     private static final double BLOWN = 0.2;
-    // A player is thrown limp only by a blast that really throws them, not the push of one further off.
-    private static final double PLAYER_BLOWN = 0.5;
+    // A player is thrown limp far less often: only by a blow or a blast that really hurls them, never a sprint hit's
+    // knockback or the push of a blast further off.
+    private static final double PLAYER_THROWN = 1.5;
+    private static final double PLAYER_TOSSED = 1.0;
+    private static final double PLAYER_BLOWN = 1.0;
     private static final double HEAVY = 3.5;
     // Ticks a thrown creature stays down from landing: it lies 3 seconds, then gets up in every player's game (a little
     // later there, as its body comes down after it), and stands a moment before its AI comes back. The players' games
     // get it up within the last RISING of them: a blow then knocks it down again from however far up it is.
     static final int DOWN = 125;
     private static final int RISING = 60;
+    // A blow that only staggers (brief) lays it down a second instead of three, and the players' games get it up
+    // quickly, as a player.
+    private static final int BRIEF = 60;
     static final int LONGEST_FLIGHT = 200;
     // One no player's game can show limp, knocked down by a power, only drops and stays still this long.
     private static final int STILL = 60;
@@ -73,6 +79,8 @@ public final class Knockdowns {
     private static final double TOSS = 0.2;
 
     private static final Map<Mob, Down> DOWNED = new IdentityHashMap<>();
+    // Creatures a power marked just before a blow that only staggers, and on which tick.
+    private static final Map<Mob, Long> BRIEFLY = new IdentityHashMap<>();
 
     private static final class Down {
         final boolean noAi;
@@ -82,6 +90,8 @@ public final class Knockdowns {
         final Set<Mob> bumped = Collections.newSetFromMap(new IdentityHashMap<>());
         // Knocked down by a power: it falls even if it flies by itself.
         boolean forced;
+        // Thrown by a blow that only staggers (brief): it lies a second, not three.
+        boolean brief;
         // How fast it fell here last tick (blocks a tick, below 0 downward).
         double falling;
         int age;
@@ -95,7 +105,7 @@ public final class Knockdowns {
         }
 
         int lies() {
-            return this.limp ? DOWN : STILL;
+            return !this.limp ? STILL : this.brief ? BRIEF : DOWN;
         }
     }
 
@@ -131,6 +141,21 @@ public final class Knockdowns {
         }
     }
 
+    // A power marks a creature just before a blow that only staggers it: thrown by that blow, it lies a second, not
+    // three (a player's knockdown is short anyway).
+    public static void brief(LivingEntity entity) {
+        if (entity instanceof Mob mob) {
+            long now = mob.level().getGameTime();
+            BRIEFLY.values().removeIf(marked -> now - marked > WATCH);
+            BRIEFLY.put(mob, now);
+        }
+    }
+
+    private static boolean briefly(ServerLevel level, Mob mob) {
+        Long marked = BRIEFLY.remove(mob);
+        return marked != null && level.getGameTime() - marked <= WATCH;
+    }
+
     // The creature goes down where it is, as if thrown: a power let go of it (it hung limp in every player's game), or
     // blows wore it out (Fatigue).
     static void drop(Mob mob) {
@@ -151,7 +176,7 @@ public final class Knockdowns {
             return;
         }
         Down down = DOWNED.get(mob);
-        if (down != null && down.landed >= 0 && down.age - down.landed >= DOWN - RISING && !HeldMobs.isHeld(mob)
+        if (down != null && down.landed >= 0 && down.age - down.landed >= down.lies() - RISING && !HeldMobs.isHeld(mob)
                 && Fatigue.blow(event.getSource())) {
             // Hit as it gets up: down again, and it lies anew from where it falls.
             down(level, mob);
@@ -182,7 +207,7 @@ public final class Knockdowns {
                 return false;
             }
             Vec3 push = player.getDeltaMovement().subtract(before);
-            if (push.horizontalDistanceSqr() > THROWN * THROWN || push.y > TOSSED) {
+            if (push.horizontalDistanceSqr() > PLAYER_THROWN * PLAYER_THROWN || push.y > PLAYER_TOSSED) {
                 if (mayThrow(player)) {
                     PlayerKnockdowns.knock(player);
                 }
@@ -239,9 +264,11 @@ public final class Knockdowns {
 
     private static void down(ServerLevel level, Mob mob, boolean forced) {
         Down down = DOWNED.get(mob);
+        boolean brief = briefly(level, mob);
         if (down != null) {
             // Thrown again while down: it flies, and lies from where it lands this time.
             down.forced |= forced;
+            down.brief = brief;
             down.falling = 0.0;
             down.thrown = down.age;
             down.landed = -1;
@@ -249,6 +276,7 @@ public final class Knockdowns {
             return;
         }
         Down mine = new Down(mob.isNoAi(), !mob.getType().is(STAYS_UP), forced);
+        mine.brief = brief;
         DOWNED.put(mob, mine);
         mob.getPersistentData().putBoolean(SAVED_TAG, mine.noAi);
         mob.setNoAi(true);
@@ -381,7 +409,7 @@ public final class Knockdowns {
         if (event.getTarget() instanceof Mob mob && event.getEntity() instanceof ServerPlayer player) {
             Down down = DOWNED.get(mob);
             if (down != null && down.limp) {
-                int left = down.landed < 0 ? FLYING : Math.max(1, DOWN - (down.age - down.landed));
+                int left = down.landed < 0 ? FLYING : Math.max(1, down.lies() - (down.age - down.landed));
                 PacketDistributor.sendToPlayer(player, new KnockdownPayload(mob.getId(), left));
             }
         }
@@ -401,5 +429,6 @@ public final class Knockdowns {
         for (Mob mob : new ArrayList<>(DOWNED.keySet())) {
             up(mob, false);
         }
+        BRIEFLY.clear();
     }
 }

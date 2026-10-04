@@ -86,10 +86,16 @@ public final class MechPainter {
         if (!painter.visible(pose.stage().point(0.0, 7.0, MechScript.TARGET_AHEAD * 0.5), REACH)) {
             return;
         }
-        parts(painter, now.id(), pose, t, apart, own, walk != null && pose == walk, caught(now, pose));
+        boolean walking = walk != null && pose == walk;
+        parts(painter, now.id(), pose, t, apart, own, walking, caught(now, pose));
         if (apart < 0.0) {
             MechLight.lights(painter, pose, t, ring, own);
+            if (walking) {
+                MechExhaust.flames(painter, pose, t);
+                MechBeamFx.draw(painter, pose, t, now.owner(), own, partialTick);
+            }
         }
+        MechExhaust.forget();
     }
 
     public static boolean breaks(ConstructPayload mech, double clock) {
@@ -336,6 +342,9 @@ public final class MechPainter {
         boolean own = !right;
         MechParts.draw(painter, own ? MechArmShapes.FOREARM : MechArmShapes.FOREARM_LEFT, forearm, 1.0, apart, seed);
         MechParts.draw(painter, own ? MechArmShapes.HAND : MechArmShapes.HAND_LEFT, hand, 1.0, apart, seed + 5);
+        if (walking && apart < 0.0) {
+            MechExhaust.pipes(forearm);
+        }
         // Clapping, the two hands meet in the middle: their fingers stop there against each other.
         boolean clapping = !walking && t > MechScript.SWING && t < MechScript.RISE;
         Vec3 side = right ? frame.right() : frame.right().scale(-1.0);

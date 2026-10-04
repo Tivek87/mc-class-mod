@@ -18,7 +18,7 @@ final class ThorPanel implements AbilityPanel.Rules {
 
     @Override
     public boolean lists(CharacterAbility ability, LocalPlayer player) {
-        return !ability.id().equals("mjolnir") || !ClientThor.has(player, ThorStatePayload.THROWN);
+        return true;
     }
 
     @Nullable
@@ -26,6 +26,16 @@ final class ThorPanel implements AbilityPanel.Rules {
     public Component unavailable(CharacterAbility ability, LocalPlayer player) {
         int needs = ability.needs();
         boolean armed = armed(player);
+        boolean away = ClientThor.has(player, ThorStatePayload.THROWN);
+        if ((needs & ThorPowers.HOME) != 0 && away) {
+            return Component.translatable(PREFIX + "hammer_thrown");
+        }
+        if ((needs & ThorPowers.AWAY) != 0 && !away) {
+            return Component.translatable(PREFIX + "hammer_on_you");
+        }
+        if ((needs & ThorPowers.RESTING) != 0 && !ClientThor.has(player, ThorStatePayload.RESTING)) {
+            return Component.translatable(PREFIX + "hammer_moving");
+        }
         if ((needs & ThorPowers.ARMED) != 0 && !armed) {
             return Component.translatable(PREFIX + "needs_hammer");
         }

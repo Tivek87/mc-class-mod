@@ -73,10 +73,14 @@ public final class BombFx {
         }
         for (Bomb bomb : bombs(level, 0.0F)) {
             Entity thor = bomb.thor();
+            // From his own eyes only the static on his lower body shows: by his face a spark would fill the view.
+            boolean inside = thor == minecraft.gameRenderer.getMainCamera().getEntity()
+                    && !minecraft.gameRenderer.getMainCamera().isDetached();
+            double high = thor.getBbHeight() * (inside ? 0.55 : 1.0);
             for (int k = 0; k < 2; k++) {
                 level.addParticle(ParticleTypes.ELECTRIC_SPARK,
                         thor.getX() + (RANDOM.nextDouble() - 0.5) * thor.getBbWidth() * 1.4,
-                        thor.getY() + RANDOM.nextDouble() * thor.getBbHeight(),
+                        thor.getY() + RANDOM.nextDouble() * high,
                         thor.getZ() + (RANDOM.nextDouble() - 0.5) * thor.getBbWidth() * 1.4, 0.0, 0.05, 0.0);
             }
         }
@@ -146,9 +150,13 @@ public final class BombFx {
         double radius = radius();
         double shell = radius * (1.0 - 0.85 * charge);
         painter.shell(chest, shell, StormBolts.LIGHTNING.glow(), 0.6 * charge);
+        // From his own eyes they stop halfway and fade as the shell closes in, or they would fill the view.
+        double drawn = 0.6 * charge * (inside ? Ease.smooth((shell - 2.0) / 2.0) : 1.0);
         for (int k = 0; k < 12; k++) {
-            Vec3 from = chest.add(Noise.direction(seed, k + 60).scale(shell));
-            Bolts.jag(painter, StormBolts.LOOK, from, chest, 6, 0.45, 0.04, 0.6 * charge, seed + flick + k * 13);
+            Vec3 way = Noise.direction(seed, k + 60);
+            Vec3 to = inside ? chest.add(way.scale(shell * 0.5)) : chest;
+            Bolts.jag(painter, StormBolts.LOOK, chest.add(way.scale(shell)), to, 6, 0.45, 0.04, drawn,
+                    seed + flick + k * 13);
         }
         if (!inside) {
             double pulse = 0.85 + 0.15 * Math.sin(time * 1.3);
@@ -169,6 +177,6 @@ public final class BombFx {
 
     private static double radius() {
         CharacterAbility bomb = GameCharacter.THOR.byName("lightning_bomb");
-        return bomb == null ? 8.0 : bomb.value("radius");
+        return bomb == null ? 10.0 : bomb.value("radius");
     }
 }

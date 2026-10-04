@@ -22,6 +22,7 @@ import nl.tivek.multiversepowers.character.thor.ThorStatePayload;
 import nl.tivek.multiversepowers.character.thor.client.motion.ThorMotion;
 import nl.tivek.multiversepowers.character.thor.client.motion.ThorPull;
 import nl.tivek.multiversepowers.character.thor.client.motion.ThorRise;
+import nl.tivek.multiversepowers.character.thor.hammer.ThrownHammer;
 import nl.tivek.multiversepowers.engine.math.Vectors;
 import nl.tivek.multiversepowers.spell.client.ClientClaps;
 
@@ -50,6 +51,8 @@ public final class ClientThor {
         public int lastBlow = -1;
         int lastBlowStart;
         int litAt;
+        // His hammer out of his hands (a ThrownHammer's id), or -1; looked up once a tick.
+        public int hammer = -1;
 
         public boolean has(int flag) {
             return (this.flags & flag) != 0;
@@ -129,8 +132,9 @@ public final class ClientThor {
         } else if (payload.move() == ThorStatePayload.STRIKE) {
             blow(view, payload.arg());
         } else if (payload.move() == ThorStatePayload.PULL) {
+            start(view, ThorStatePayload.PULL, 0);
             if (own) {
-                ThorPull.start(payload.arg() - 1);
+                ThorPull.start();
             }
         } else if (payload.move() == ThorStatePayload.GRAB_ACT) {
             view.act = payload.arg();
@@ -168,9 +172,17 @@ public final class ClientThor {
             case ThorStatePayload.TAKE_OFF -> {
                 if (arg == ThorStatePayload.CAUGHT) {
                     ThorMotion.caught(player);
+                } else {
+                    ThorMotion.liftOff(player);
                 }
             }
             case ThorStatePayload.BOMB -> ThorRise.told(arg == ThorStatePayload.PUT_OUT);
+            // Caught up in the air before his own game got there: he flies on with it all the same.
+            case ThorStatePayload.CATCH -> {
+                if (arg == ThorStatePayload.LEFT_HAND && has(player, ThorStatePayload.FLYING) && !ThorMotion.flying()) {
+                    ThorMotion.flyOn(player, player.getDeltaMovement().scale(0.4));
+                }
+            }
             default -> {
             }
         }
@@ -211,6 +223,20 @@ public final class ClientThor {
     public static void flip(Entity entity, int flag) {
         View view = VIEWS.computeIfAbsent(entity.getId(), id -> new View());
         view.flags ^= flag;
+    }
+
+    // Your own game throws the hammer at once, so its buttons are those for the hammer away; the server's word follows.
+    public static void set(Entity entity, int flag, boolean on) {
+        View view = VIEWS.computeIfAbsent(entity.getId(), id -> new View());
+        view.flags = on ? view.flags | flag : view.flags & ~flag;
+    }
+
+    // This Thor's hammer out of his hands, as this game has it: flying, resting or coming back; null while on him.
+    @Nullable
+    public static ThrownHammer hammer(Entity thor) {
+        View view = VIEWS.get(thor.getId());
+        Entity found = view == null || view.hammer < 0 ? null : thor.level().getEntity(view.hammer);
+        return found instanceof ThrownHammer hammer && !hammer.isRemoved() ? hammer : null;
     }
 
     private static void start(View view, int move, int arg) {
@@ -268,6 +294,7 @@ public final class ClientThor {
             return;
         }
         ticks++;
+        findHammers(level);
         // A carried creature is put at the hand every tick here, where the server only tells it now and then.
         for (Int2ObjectOpenHashMap.Entry<View> entry : VIEWS.int2ObjectEntrySet()) {
             View view = entry.getValue();
@@ -289,6 +316,26 @@ public final class ClientThor {
         }
         VIEWS.int2ObjectEntrySet().removeIf(entry -> level.getEntity(entry.getIntKey()) == null
                 && ticks - entry.getValue().start > 100);
+    }
+
+    // Which hammer is whose: every Thor whose hammer is out of his hands gets its id.
+    private static void findHammers(ClientLevel level) {
+        boolean any = false;
+        for (View view : VIEWS.values()) {
+            view.hammer = -1;
+            any |= view.has(ThorStatePayload.THROWN);
+        }
+        if (!any) {
+            return;
+        }
+        for (Entity entity : level.entitiesForRendering()) {
+            if (entity instanceof ThrownHammer hammer && !hammer.isRemoved()) {
+                View view = VIEWS.get(hammer.owner());
+                if (view != null) {
+                    view.hammer = hammer.getId();
+                }
+            }
+        }
     }
 
     @SubscribeEvent

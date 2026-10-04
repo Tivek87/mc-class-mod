@@ -7,11 +7,12 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
-import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.LightningBolt;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
+import nl.tivek.multiversepowers.character.thor.storm.ChainBolt;
+import nl.tivek.multiversepowers.character.thor.storm.StormFxPayload;
+import nl.tivek.multiversepowers.character.thor.storm.ThorStorm;
 import nl.tivek.multiversepowers.engine.entity.Knockdowns;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 import nl.tivek.multiversepowers.engine.target.Targeting;
@@ -19,8 +20,8 @@ import nl.tivek.multiversepowers.faction.Factions;
 import nl.tivek.multiversepowers.spell.SpellTargets;
 
 // What Thor does in the sky besides moving: the shockwave that knocks all round him out of the air, the bolt he calls
-// down on what he aims at, the bolts that strike what he passes near at lightning speed, and the strike where he
-// lands from it.
+// down on what he aims at, the lightning that leaps from him to what he passes near at lightning speed, and the strike
+// where he lands from it.
 final class SkyMoves {
     private static final double SHOCK_RADIUS = 3.5;
     private static final double FALL = -0.6;
@@ -28,6 +29,7 @@ final class SkyMoves {
     private static final double NEAR = 5.0;
     private static final int STRIKE_AGAIN = 20;
     private static final double LANDING_RADIUS = 3.5;
+    private static final float LANDING_BOLT = 1.5F;
 
     private SkyMoves() {
     }
@@ -36,6 +38,7 @@ final class SkyMoves {
     static boolean shockwave(ServerPlayer player, float damage) {
         ServerLevel level = player.serverLevel();
         Vec3 center = player.position().add(0.0, 0.9 * player.getScale(), 0.0);
+        StormFxPayload.send(level, StormFxPayload.DOME, center, center, (float) SHOCK_RADIUS);
         ParticleFx.sphereOut(level, ParticleFx.dust(ThorMoves.GLOW, 1.6F), center, 70, 0.55);
         ParticleFx.sphereOut(level, ParticleTypes.ELECTRIC_SPARK, center, 50, 0.45);
         ParticleFx.sphere(level, ParticleFx.dust(ThorMoves.DEEP, 1.2F), center, SHOCK_RADIUS, 60, 0.0);
@@ -62,31 +65,20 @@ final class SkyMoves {
         return true;
     }
 
-    // A plain bolt on the creature he aims at; aimed at nothing, nothing happens.
+    // A bolt out of the sky onto the creature he aims at, in the air too, leaping on to the foes round it; aimed at
+    // nothing, nothing happens.
     static boolean bolt(ServerPlayer player, float damage) {
         ServerLevel level = player.serverLevel();
         LivingEntity target = Targeting.aimLiving(player, level, BOLT_REACH);
         if (target == null) {
             return false;
         }
-        strike(level, player, target, damage);
+        ChainBolt.onto(level, player, ThorStorm.sky(player, target.getBoundingBox().getCenter()), target, damage,
+                1.0F);
         return true;
     }
 
-    private static void strike(ServerLevel level, ServerPlayer player, LivingEntity target, float damage) {
-        LightningBolt bolt = EntityType.LIGHTNING_BOLT.create(level);
-        Vec3 at = target.position();
-        if (bolt != null) {
-            bolt.moveTo(at.x, at.y, at.z);
-            bolt.setVisualOnly(true);
-            level.addFreshEntity(bolt);
-        }
-        target.invulnerableTime = 0;
-        target.hurt(level.damageSources().playerAttack(player), damage);
-        ParticleFx.cloud(level, ParticleTypes.ELECTRIC_SPARK, target.getBoundingBox().getCenter(), 20, 0.4, 0.3);
-    }
-
-    // At lightning speed a bolt leaps to each foe he passes near, once a second each.
+    // At lightning speed lightning leaps from him to each foe he passes near, once a second each.
     static void strikeNear(ServerPlayer player, Map<UUID, Long> struck, float damage) {
         ServerLevel level = player.serverLevel();
         long now = level.getGameTime();
@@ -95,7 +87,11 @@ final class SkyMoves {
                 player.getBoundingBox().inflate(NEAR), entity -> Factions.hostile(player, entity)
                         && Targeting.mayStrike(player, entity) && !struck.containsKey(entity.getUUID()))) {
             struck.put(target.getUUID(), now);
-            strike(level, player, target, damage);
+            Vec3 at = target.getBoundingBox().getCenter();
+            StormFxPayload.send(level, StormFxPayload.SPARK, player.getBoundingBox().getCenter(), at, 0.8F);
+            target.invulnerableTime = 0;
+            target.hurt(level.damageSources().playerAttack(player), damage);
+            ParticleFx.cloud(level, ParticleTypes.ELECTRIC_SPARK, at, 20, 0.4, 0.3);
         }
     }
 
@@ -103,12 +99,7 @@ final class SkyMoves {
     static void landingStrike(ServerPlayer player, float damage) {
         ServerLevel level = player.serverLevel();
         Vec3 center = player.position();
-        LightningBolt bolt = EntityType.LIGHTNING_BOLT.create(level);
-        if (bolt != null) {
-            bolt.moveTo(center.x, center.y, center.z);
-            bolt.setVisualOnly(true);
-            level.addFreshEntity(bolt);
-        }
+        StormFxPayload.send(level, StormFxPayload.BOLT, ThorStorm.sky(player, center), center, LANDING_BOLT);
         ParticleFx.shockwave(level, ParticleFx.dust(ThorMoves.GLOW, 1.5F), center.add(0.0, 0.15, 0.0), 40, 0.7);
         ParticleFx.cloud(level, ParticleTypes.ELECTRIC_SPARK, center.add(0.0, 0.5, 0.0), 40, 1.2, 0.35);
         for (LivingEntity near : level.getEntitiesOfClass(LivingEntity.class,

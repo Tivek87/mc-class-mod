@@ -3,6 +3,63 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.7.7-alpha] - 2026-10-04
+
+### Added
+- **Thor:** **Throw to Stay**: crouch as you throw the hammer and it stays where it stops, lying on the ground, stuck
+  in a wall or hanging in the air, until you call it back or go too far from it.
+- **Thor:** **Call the Hammer** (scroll wheel while it is away): it flies back to your hand, hitting each creature in
+  its path once, and tears itself free of a wall it is stuck in.
+- **Thor:** **Follow the Hammer** (hold the scroll wheel while it lies or hangs still): lightning pulls you to it;
+  near the ground you land by it, up in the air you catch it and fly on.
+- **Thor:** **Storm Throw** (hold the scroll wheel in flight): the hammer strikes where you aim, a ring of lightning
+  flashes round it and leaps through every foe inside, and the hammer flies back to you.
+- **Thor:** with the hammer away, hold jump: it flies into your raised left hand and you take off.
+- **Thor's settings:** how far a throw flies, how far you may go from a resting hammer, Throw and Follow's full
+  throw and dash speed, how far Follow the Hammer reaches, and the Storm Throw's chain damage, ring and most leaps.
+- **Green Lantern:** **Eye Beam** (right click in the mech): a beam from its eyes hits the first enemy where you aim
+  and throws it back.
+- **Green Lantern:** **Unibeam** (hold right click in the mech): the port on its chest charges and fires a huge beam
+  that burns everything in it; the next one waits 10 seconds.
+- **Green Lantern:** the mech has exhaust pipes along its forearms that flame up as it runs, climbs or strikes, and
+  spikes on its knuckles.
+- **Green Lantern's settings:** the Eye Beam's and the Unibeam's cost and damage, and the Unibeam's wait.
+- **Settings:** **Voice lines** (on or off) and **Voice volume** for the characters' spoken lines.
+
+### Changed
+- **Thor:** **Throw and Follow**: hold right click to draw the hammer back (longer throws further) and let go to
+  throw; it hangs where it stops and lightning dashes you to it at 20 blocks a second.
+- **Thor:** his thrown hammer hits each creature it passes on its way back to his hand.
+- **Thor:** while a Storm Throw is out, only his right hand's blows work in flight.
+- **Thor:** the thunder ring round the crosshair also fills while you hold right click or the scroll wheel.
+- **Players go limp:** far less often (only when a blow or a blast really hurls them), for at most 1 second instead
+  of 1.5, and not again within 3 seconds of getting up. The world setting, now called **Players go limp**, decides
+  it for everyone, also for a dying player's body; your own **Limp bodies** setting is only for creatures.
+- **Tour:** asks once a version and says what the tour is only on a player's first tour; after that the update
+  manager's Tour plays it.
+- **Thor:** every bolt of his is the mod's own: a forked, flickering channel with a flash, and a glowing ring, scorch
+  and cracks where it strikes the ground.
+- **Thor:** a bolt called from the **Thunderstorm** also hits a creature in the air and leaps on to up to 3 foes near
+  it, as his air bolt does.
+- **Thor:** the **Lightning Bomb** charges faster with bolts striking him as he rises, and bursts wider (10 blocks)
+  with bolts running out over the ground.
+- **Thor:** the storm's clouds tower thick and dark, and his sky shockwave bursts as a dome of lightning.
+- **Thor:** a creature he throws from his grab flies like a missile, hurting and throwing what it crashes into.
+- **Green Lantern:** the ring's voice as he takes up a construct weapon is as loud as its other lines.
+- **Ability panel:** in the mech it lists its blow, Eye Beam and Unibeam as well as how to leave it.
+- **Project:** Thor's hammer has a folder of its own (`thor/hammer/`), with `HammerRulesTest` for a drawn throw, the
+  dash and where a stopped throw rests; a reference clip of the Lightning Bomb is in `docs/reference/`, and the
+  README says the tour shows the big changes.
+
+### Fixed
+- **Ability guide:** Thor's **Thunderstorm** and **Lightning Bomb** say what they do, as every other move does.
+- **Thor:** swung, held up or thrown in first person, the hammer and his arm no longer fill the view; they stay low
+  and to the right.
+- **Thor:** a creature his thrown hammer hits gets up after 1 second on the ground instead of 3.
+- **Thor:** grabbing a player gives the choice of ending too, as with a creature.
+- **Thor:** the thrown hammer flies back to his hand grip first.
+- **Doctor Octopus:** creatures held in his tentacles hang out to his sides, no longer in front of his face.
+
 ## [0.7.6-alpha] - 2026-10-04
 
 ### Added

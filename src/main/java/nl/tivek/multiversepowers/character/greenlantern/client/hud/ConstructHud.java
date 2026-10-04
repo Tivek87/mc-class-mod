@@ -9,6 +9,7 @@ import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
@@ -267,6 +268,9 @@ public final class ConstructHud {
         }
         if (ability.input() == CharacterAbility.Input.LEFT) {
             return Component.translatable(prefix + "beam");
+        }
+        if (player instanceof LocalPlayer local && LanternPanel.piloting(local)) {
+            return Component.translatable(prefix + "unibeam");
         }
         boolean flying = player != null && ClientRing.flight(player, 0.0F) >= 0.0F;
         return Component.translatable(prefix + (flying ? "brake" : "dome"));

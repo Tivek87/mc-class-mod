@@ -41,7 +41,8 @@ import nl.tivek.multiversepowers.engine.math.Noise;
 // (LocalWeather). Each game moves it after him the way the server does (ThorStorm.follow).
 @EventBusSubscriber(modid = MultiversePowers.MODID, value = Dist.CLIENT)
 public final class StormSky {
-    private static final int PUFFS = 72;
+    private static final int PUFFS = 108;
+    private static final int SHREDS = 14;
     private static final int CURTAINS = 10;
     private static final int DARK = 0x262D36;
     private static final int STORM = 0x353E4A;
@@ -207,8 +208,10 @@ public final class StormSky {
         }
     }
 
-    // Rolling puffs over a wide flat disc, thickest in the middle, turning round it, the middle fastest. While it
-    // gathers it spreads out from the middle; clearing, it thins away.
+    // Rolling puffs: a dark underside over a wide flat disc, thickest in the middle, and over it towers billowing up,
+    // highest over the middle and greyer the higher they reach; all turn round the middle (fastest there) and slowly
+    // swell and shrink, and ragged shreds hang under it, drifting faster. While it gathers it spreads out from the
+    // middle; clearing, it thins away.
     private static void cloud(ConstructPainter painter, Storm storm, Vec3 c, double strength, double shade) {
         double time = painter.time();
         double spread = 0.25 + 0.75 * strength;
@@ -216,13 +219,24 @@ public final class StormSky {
             double out = Math.sqrt(Noise.of(storm.seed, k, 1));
             double middle = 1.0 - out;
             double angle = Noise.of(storm.seed, k, 2) * Math.PI * 2.0 + time * 0.004 * (1.0 + 2.5 * middle);
-            double reach = out * storm.radius * 1.1 * spread;
-            double lift = (Noise.of(storm.seed, k, 3) - 0.5) * 3.0 * (0.6 + middle) - 1.5 * middle * middle;
+            boolean tower = k % 3 == 0;
+            double reach = out * storm.radius * (tower ? 0.8 : 1.1) * spread;
+            double lift = tower ? 1.5 + 7.0 * middle * Noise.of(storm.seed, k, 3) * spread
+                    : (Noise.of(storm.seed, k, 3) - 0.5) * 3.0 * (0.6 + middle) - 1.5 * middle * middle;
             Vec3 at = c.add(Math.cos(angle) * reach, lift, Math.sin(angle) * reach);
-            double size = (4.0 + 5.0 * Noise.of(storm.seed, k, 4) + 2.0 * middle) * (0.4 + 0.6 * strength);
-            int rgb = k % 4 == 0 ? GREY : k % 3 == 0 ? DARK : STORM;
-            painter.lightDisc(at, size, Colors.shade(rgb, shade), 0.78 * strength, 0.35,
+            double swell = 1.0 + 0.12 * Math.sin(time * 0.03 + k * 1.7);
+            double size = (4.0 + 5.0 * Noise.of(storm.seed, k, 4) + 2.0 * middle) * (0.4 + 0.6 * strength) * swell;
+            float high = (float) Mth.clamp((lift + 2.0) / 10.0, 0.0, 1.0);
+            int rgb = Colors.mix(k % 2 == 0 ? DARK : STORM, GREY, high);
+            painter.lightDisc(at, size, Colors.shade(rgb, shade), (tower ? 0.7 : 0.8) * strength, 0.35,
                     storm.seed + k + (int) (time * 0.1));
+        }
+        for (int k = 0; k < SHREDS; k++) {
+            double angle = Noise.of(storm.seed, k, 31) * Math.PI * 2.0 + time * 0.012;
+            double reach = Math.sqrt(Noise.of(storm.seed, k, 32)) * storm.radius * 0.9 * spread;
+            Vec3 at = c.add(Math.cos(angle) * reach, -2.5 - 2.0 * Noise.of(storm.seed, k, 33), Math.sin(angle) * reach);
+            painter.lightDisc(at, (2.5 + 2.0 * Noise.of(storm.seed, k, 34)) * strength, Colors.shade(DARK, shade),
+                    0.5 * strength, 0.6, storm.seed + k * 3 + 500 + (int) (time * 0.2));
         }
     }
 

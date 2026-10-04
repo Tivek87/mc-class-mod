@@ -1,7 +1,10 @@
 package nl.tivek.multiversepowers.character.thor;
 
+import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import javax.annotation.Nullable;
 import net.minecraft.core.BlockPos;
@@ -17,6 +20,7 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.engine.effect.Effects;
 import nl.tivek.multiversepowers.engine.entity.HeldMobs;
+import nl.tivek.multiversepowers.engine.entity.HeldPlayers;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 import nl.tivek.multiversepowers.engine.math.Vectors;
 import nl.tivek.multiversepowers.engine.target.Targeting;
@@ -26,7 +30,8 @@ import nl.tivek.multiversepowers.spell.SpellTargets;
 // left fist punches it in the body, he throws it away, or he slams it head first into the ground. Picked nothing, it
 // is one of a pool: those three, or punches first and then the throw or the slam; grabbed at the end of a grab dash
 // (running) he may also leap high with it over his head, then slam down with it, hurl it down, or let it fall and
-// slam onto it. A creature that cannot be held (a player) takes it all where it stands.
+// slam onto it. A player is held the same way; one that cannot be held (another power holds it) takes it all where it
+// stands. Thrown away, it flies as a missile and hurts what it crashes into.
 public final class ThorGrab {
     private static final double REACH = 3.5;
     private static final double AHEAD = 0.35;
@@ -45,7 +50,16 @@ public final class ThorGrab {
     private static final double GRIP_RIGHT = 0.15;
     private static final double GRIP_UP = 1.45;
     private static final double THROAT = 0.8;
+    // A thrown creature hurts what it crashes into for this share of the grab's damage, while it flies this long.
+    private static final float MISSILE = 0.8F;
+    private static final int MISSILE_TICKS = 40;
+    private static final double MISSILE_SLOW = 0.3;
     private static final Map<UUID, ThorGrab> ALL = new HashMap<>();
+    private static final Set<UUID> HELD_PLAYERS = new HashSet<>();
+
+    static {
+        HeldMobs.addHolder(entity -> entity instanceof ServerPlayer player && HELD_PLAYERS.contains(player.getUUID()));
+    }
 
     public enum Act {
         THROW,
@@ -88,7 +102,7 @@ public final class ThorGrab {
         this.lastY = owner.getY();
     }
 
-    static boolean carrying(ServerPlayer player) {
+    public static boolean carrying(ServerPlayer player) {
         ThorGrab grab = ALL.get(player.getUUID());
         return grab != null && grab.held;
     }
@@ -165,13 +179,34 @@ public final class ThorGrab {
     private static void begin(ServerPlayer player, LivingEntity target, float damage, boolean dashed) {
         ServerLevel level = player.serverLevel();
         ThorGrab grab = new ThorGrab(player, target, damage, dashed);
-        grab.held = target instanceof Mob mob && HeldMobs.hold(mob);
+        grab.held = hold(target);
         ALL.put(player.getUUID(), grab);
         Vec3 at = target.getBoundingBox().getCenter();
         ParticleFx.cloud(level, ParticleTypes.ELECTRIC_SPARK, at, 12, 0.3, 0.2);
         level.playSound(null, at.x, at.y, at.z, SoundEvents.PLAYER_ATTACK_KNOCKBACK, SoundSource.PLAYERS, 1.0F, 0.6F);
         ThorMoves.tell(player, ThorStatePayload.GRAB, grabbed(target.getId(), dashed));
         Effects.start(level, (lvl, age) -> grab.tick(lvl));
+    }
+
+    private static boolean hold(LivingEntity target) {
+        if (target instanceof Mob mob) {
+            return HeldMobs.hold(mob);
+        }
+        if (target instanceof ServerPlayer player && !HeldMobs.isHeldByAnyone(player)) {
+            player.stopRiding();
+            HELD_PLAYERS.add(player.getUUID());
+            return true;
+        }
+        return false;
+    }
+
+    // Where a held creature goes: a player's own game moves them, so the server puts them there.
+    private static void put(LivingEntity target, Vec3 at) {
+        if (target instanceof ServerPlayer player) {
+            HeldPlayers.holdAt(player, at.x, at.y, at.z);
+        } else {
+            target.setPos(at.x, at.y, at.z);
+        }
     }
 
     // A grab's word to every game: what he holds, and whether a dash brought him to it.
@@ -228,7 +263,7 @@ public final class ThorGrab {
             return false;
         }
         if (thor == null || thor.level() != level || !thor.isAlive() || !this.target.isAlive()
-                || this.target.level() != level || ++this.age > LONGEST) {
+                || this.target.isRemoved() || this.target.level() != level || ++this.age > LONGEST) {
             this.end(thor);
             return false;
         }
@@ -237,7 +272,7 @@ public final class ThorGrab {
             Vec3 at = this.overhead ? overhead(thor) : grip(thor, 1.0F).subtract(0.0, throat(this.target), 0.0);
             // Held up by the throat, never with its feet in the ground he stands on.
             at = new Vec3(at.x, Math.max(at.y, thor.getY()), at.z);
-            this.target.setPos(at.x, at.y, at.z);
+            put(this.target, at);
             this.target.setDeltaMovement(Vec3.ZERO);
             this.target.resetFallDistance();
         }
@@ -307,6 +342,40 @@ public final class ThorGrab {
         this.sparks(level, 14);
         level.playSound(null, thor.getX(), thor.getY() + thor.getScale(), thor.getZ(),
                 SoundEvents.PLAYER_ATTACK_KNOCKBACK, SoundSource.PLAYERS, 1.2F, 0.7F);
+        missile(level, thor, this.target, this.damage * MISSILE);
+    }
+
+    // Thrown, it flies as a missile: each creature it crashes into on the way is hurt once and knocked on along its
+    // flight, until it lands or slows. Followed by where it moves, as a thrown player's own game moves them.
+    private static void missile(ServerLevel level, ServerPlayer thor, LivingEntity thrown, float damage) {
+        UUID id = thor.getUUID();
+        IntOpenHashSet struck = new IntOpenHashSet();
+        Vec3[] last = { thrown.position() };
+        Effects.start(level, (lvl, age) -> {
+            ServerPlayer by = lvl.getServer().getPlayerList().getPlayer(id);
+            if (by == null || !thrown.isAlive() || thrown.isRemoved() || thrown.level() != lvl
+                    || age > MISSILE_TICKS) {
+                return false;
+            }
+            Vec3 moved = age == 0 ? thrown.getDeltaMovement() : thrown.position().subtract(last[0]);
+            last[0] = thrown.position();
+            if (age > 2 && (moved.length() < MISSILE_SLOW || standing(lvl, thrown))) {
+                return false;
+            }
+            AABB box = thrown.getBoundingBox().expandTowards(moved).inflate(0.25);
+            for (LivingEntity hit : lvl.getEntitiesOfClass(LivingEntity.class, box, entity -> entity != thrown
+                    && entity != by && !struck.contains(entity.getId()) && SpellTargets.hits(by, entity))) {
+                struck.add(hit.getId());
+                hit.invulnerableTime = 0;
+                hit.hurt(lvl.damageSources().playerAttack(by), damage);
+                SpellTargets.push(hit, moved.normalize(), 0.9, 0.35);
+                Vec3 at = hit.getBoundingBox().getCenter();
+                ParticleFx.cloud(lvl, ParticleTypes.ELECTRIC_SPARK, at, 10, 0.3, 0.2);
+                lvl.playSound(null, at.x, at.y, at.z, SoundEvents.PLAYER_ATTACK_KNOCKBACK, SoundSource.PLAYERS, 1.0F,
+                        0.6F);
+            }
+            return true;
+        });
     }
 
     // Its head driven into the ground before him.
@@ -315,7 +384,7 @@ public final class ThorGrab {
         Vec3 spot = thor.position().add(flat(thor).scale(1.3 * thor.getScale()));
         double floor = Targeting.floorBelow(level, BlockPos.containing(spot.x, thor.getY() + thor.getScale(),
                 spot.z));
-        this.target.setPos(spot.x, floor, spot.z);
+        put(this.target, new Vec3(spot.x, floor, spot.z));
         this.hurt(level, thor, 1.5F);
         // Set after the hit, whose own knockback would hop it back up off the ground.
         this.target.setDeltaMovement(0.0, -0.5, 0.0);
@@ -451,6 +520,8 @@ public final class ThorGrab {
     private void let() {
         if (this.held && this.target instanceof Mob mob) {
             HeldMobs.release(mob);
+        } else if (this.held) {
+            HELD_PLAYERS.remove(this.target.getUUID());
         }
         this.held = false;
         this.overhead = false;
@@ -481,5 +552,6 @@ public final class ThorGrab {
             grab.done = true;
         }
         ALL.clear();
+        HELD_PLAYERS.clear();
     }
 }

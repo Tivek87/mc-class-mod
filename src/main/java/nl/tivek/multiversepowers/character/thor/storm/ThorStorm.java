@@ -25,15 +25,14 @@ import nl.tivek.multiversepowers.character.GameCharacter;
 import nl.tivek.multiversepowers.character.thor.ThorMoves;
 import nl.tivek.multiversepowers.character.thor.ThorStatePayload;
 import nl.tivek.multiversepowers.engine.effect.Effects;
-import nl.tivek.multiversepowers.engine.entity.Knockdowns;
 import nl.tivek.multiversepowers.engine.target.Targeting;
 import nl.tivek.multiversepowers.engine.world.LoadedWorld;
 import nl.tivek.multiversepowers.faction.Factions;
-import nl.tivek.multiversepowers.spell.SpellTargets;
 
 // Thor's storm: a thunderstorm gathers over him and follows him while it lasts. Its key pressed again calls a bolt down
-// out of it where he aims; by itself it strikes a foe under it now and then. Crouching and pressing it ends it. Every
-// game draws the cloud over him itself from the flag he carries (`client/StormSky`) and is told only of the bolts.
+// out of it where he aims; by itself it strikes a foe under it now and then. Each bolt strikes one creature and leaps
+// on (ChainBolt). Crouching and pressing it ends it. Every game draws the cloud over him itself from the flag he
+// carries (`client/StormSky`) and is told only of the bolts.
 public final class ThorStorm {
     public static final String ABILITY = "storm";
     // How long the cloud takes to gather before it strikes, and to clear away once it ends.
@@ -50,9 +49,8 @@ public final class ThorStorm {
     private static final int CALL_GAP = 8;
     // It strikes a foe by itself about once in this many ticks.
     private static final int STRIKE_EVERY = 36;
-    // A bolt hurts all within this of where it strikes, and knocks down what it strikes right on.
-    private static final double BLAST = 3.0;
-    private static final double DIRECT = 1.5;
+    // With no storm up, his bolts come down from this high over what they strike.
+    private static final double HIGH = 32.0;
     private static final Map<UUID, ThorStorm> ALL = new HashMap<>();
 
     private final UUID owner;
@@ -120,7 +118,8 @@ public final class ThorStorm {
         }
     }
 
-    // A bolt where he aims, under the storm once it has gathered: true when one struck.
+    // A bolt where he aims, under the storm once it has gathered: onto the creature he aims at, in the air too, else
+    // down onto the ground there. True when one struck.
     public static boolean call(ServerPlayer player, float damage) {
         ThorStorm storm = ALL.get(player.getUUID());
         ServerLevel level = player.serverLevel();
@@ -128,6 +127,12 @@ public final class ThorStorm {
             return false;
         }
         storm.nextCall = level.getGameTime() + CALL_GAP;
+        ThorMoves.tell(player, ThorStatePayload.CALL, 0);
+        LivingEntity aimed = Targeting.aimLiving(player, level, AIM);
+        if (aimed != null && storm.under(aimed.position())) {
+            ChainBolt.onto(level, player, storm.top(level, aimed.position()), aimed, damage, 1.0F);
+            return true;
+        }
         Vec3 aim = Targeting.aimPoint(player, level, AIM);
         double dx = aim.x - storm.center.x;
         double dz = aim.z - storm.center.z;
@@ -135,9 +140,32 @@ public final class ThorStorm {
         if (far > storm.radius) {
             aim = new Vec3(storm.center.x + dx * storm.radius / far, aim.y, storm.center.z + dz * storm.radius / far);
         }
-        storm.strike(level, player, storm.ground(level, player, aim), damage, true);
-        ThorMoves.tell(player, ThorStatePayload.CALL, 0);
+        Vec3 ground = storm.ground(level, player, aim);
+        ChainBolt.down(level, player, storm.top(level, ground), ground, damage, 1.0F);
         return true;
+    }
+
+    // Where a bolt of his comes down from onto `at`: his storm while it is up over there, else the sky high over it.
+    public static Vec3 sky(ServerPlayer player, Vec3 at) {
+        ThorStorm storm = ALL.get(player.getUUID());
+        ServerLevel level = player.serverLevel();
+        if (storm != null && storm.ended < 0 && storm.under(at)) {
+            return storm.top(level, at);
+        }
+        RandomSource random = level.getRandom();
+        return at.add((random.nextDouble() - 0.5) * 6.0, HIGH, (random.nextDouble() - 0.5) * 6.0);
+    }
+
+    private boolean under(Vec3 at) {
+        return at.y < this.center.y
+                && Mth.square(at.x - this.center.x) + Mth.square(at.z - this.center.z) <= this.radius * this.radius;
+    }
+
+    // Where in the cloud a bolt onto `at` starts: over it, a little to one side.
+    private Vec3 top(ServerLevel level, Vec3 at) {
+        RandomSource random = level.getRandom();
+        return new Vec3(at.x + (random.nextDouble() - 0.5) * 5.0, this.center.y + 1.0,
+                at.z + (random.nextDouble() - 0.5) * 5.0);
     }
 
     private boolean tick(ServerLevel level) {
@@ -180,23 +208,24 @@ public final class ThorStorm {
         }
     }
 
-    // A foe in the open under it, else a bolt somewhere under it away from him that hurts nothing.
+    // A foe in the open under it, flying or not, else a bolt somewhere under it away from him that hurts nothing.
     private void strikeAlone(ServerLevel level, ServerPlayer player, RandomSource random) {
         Vec3 c = this.center;
         List<LivingEntity> foes = level.getEntitiesOfClass(LivingEntity.class, new AABB(c.x - this.radius,
                 c.y - DEEPEST, c.z - this.radius, c.x + this.radius, c.y, c.z + this.radius),
                 entity -> Factions.hostile(player, entity) && Targeting.mayStrike(player, entity)
-                        && Mth.square(entity.getX() - c.x) + Mth.square(entity.getZ() - c.z) <= this.radius * this.radius
+                        && this.under(entity.position())
                         && level.canSeeSky(BlockPos.containing(entity.getX(), entity.getEyeY(), entity.getZ())));
         if (!foes.isEmpty()) {
             LivingEntity foe = foes.get(random.nextInt(foes.size()));
-            this.strike(level, player, this.ground(level, player, foe.position()), this.strikes, false);
+            ChainBolt.onto(level, player, this.top(level, foe.position()), foe, this.strikes, 0.8F);
             return;
         }
         double angle = random.nextDouble() * Math.PI * 2.0;
         double reach = this.radius * (0.35 + 0.6 * random.nextDouble());
-        Vec3 at = new Vec3(c.x + Math.cos(angle) * reach, c.y, c.z + Math.sin(angle) * reach);
-        this.strike(level, player, this.ground(level, player, at), 0.0F, false);
+        Vec3 ground = this.ground(level, player, new Vec3(c.x + Math.cos(angle) * reach, c.y,
+                c.z + Math.sin(angle) * reach));
+        ChainBolt.down(level, player, this.top(level, ground), ground, 0.0F, 0.8F);
     }
 
     // Where a bolt from the cloud straight down onto `at` strikes: the first thing in its way.
@@ -206,39 +235,6 @@ public final class ThorStorm {
         BlockHitResult hit = LoadedWorld.clip(level, new ClipContext(top, bottom, ClipContext.Block.COLLIDER,
                 ClipContext.Fluid.ANY, player));
         return hit.getType() == HitResult.Type.MISS ? at : hit.getLocation();
-    }
-
-    // A bolt from the cloud onto `ground`: all near it hurt (`damage`), what it strikes right on knocked down.
-    private void strike(ServerLevel level, ServerPlayer player, Vec3 ground, float damage, boolean called) {
-        RandomSource random = level.getRandom();
-        Vec3 top = new Vec3(ground.x + (random.nextDouble() - 0.5) * 5.0, this.center.y + 1.0,
-                ground.z + (random.nextDouble() - 0.5) * 5.0);
-        StormFxPayload.send(level, StormFxPayload.BOLT, top, ground, called ? 1.0F : 0.8F);
-        if (damage <= 0.0F) {
-            return;
-        }
-        for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class,
-                new AABB(ground, ground).inflate(BLAST, BLAST + 1.0, BLAST),
-                entity -> Targeting.mayStrike(player, entity))) {
-            double dx = target.getX() - ground.x;
-            double dz = target.getZ() - ground.z;
-            double flat = Math.sqrt(dx * dx + dz * dz);
-            double far = Math.max(0.0, flat - target.getBbWidth() * 0.5);
-            if (far > BLAST) {
-                continue;
-            }
-            double close = 1.0 - 0.6 * far / BLAST;
-            Vec3 before = target.getDeltaMovement();
-            target.invulnerableTime = 0;
-            target.hurt(level.damageSources().playerAttack(player), damage * (float) close);
-            // A bolt throws off from where it struck, not away from him as his blows do.
-            target.setDeltaMovement(before);
-            if (far < DIRECT) {
-                Knockdowns.knock(target);
-            }
-            Vec3 way = flat < 1.0E-3 ? Vec3.ZERO : new Vec3(dx / flat, 0.0, dz / flat);
-            SpellTargets.push(target, way, 0.25 + 0.35 * close, 0.2 + 0.15 * close);
-        }
     }
 
     public static void leave(ServerPlayer player) {

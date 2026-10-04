@@ -3,9 +3,15 @@ package nl.tivek.multiversepowers.character.thor.client.motion;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.Input;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.core.particles.DustParticleOptions;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.projectile.ProjectileUtil;
 import net.minecraft.world.level.ClipContext;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
@@ -23,7 +29,9 @@ import nl.tivek.multiversepowers.character.thor.ThorPowers;
 import nl.tivek.multiversepowers.character.thor.ThorStatePayload;
 import nl.tivek.multiversepowers.character.thor.client.ClientThor;
 import nl.tivek.multiversepowers.character.thor.client.blow.ThorCombo;
+import nl.tivek.multiversepowers.character.thor.hammer.HammerRules;
 import nl.tivek.multiversepowers.engine.client.world.ChunkEdge;
+import org.joml.Vector3f;
 
 // Moves your own Thor: his game, not the server, moves a player, so every move of his is made here the moment its
 // button is pressed (the server shows it to the others and hits what it hits). Speeds are in blocks per tick.
@@ -39,6 +47,12 @@ public final class ThorMotion extends ThorGroundMotion {
     private static final int EDGE_LOOK = 30;
     // At lightning speed he lands by himself once the ground comes this close below him while he sinks.
     private static final double LAND_BELOW = 2.5;
+    // His hammer gone from his hand in flight (a Storm Throw), he hangs, sinking this fast.
+    private static final double HANG_SINK = -0.03;
+    // Called into his hand to fly, the hammer is waited for this long at most; a throw the server says nothing of
+    // this long was refused.
+    private static final int AWAIT_LONGEST = 40;
+    private static final int GUESS_LONGEST = 20;
 
     private static int flightAge;
     private static Vec3 velocity = Vec3.ZERO;
@@ -48,6 +62,11 @@ public final class ThorMotion extends ThorGroundMotion {
     private static int diveAge = -1;
     private static Vec3 diveAt = Vec3.ZERO;
     private static int lightningLeft;
+    // Ticks into Throw and Follow's draw (from its start), and into the wait for the hammer called to fly; -1 when not.
+    private static int drawAge = -1;
+    private static int awaitAge = -1;
+    // Ticks since a throw of his own game that the server has not spoken of yet; -1 once it has.
+    private static int guessAge = -1;
     // The way he was last steering in flight: ahead, aside, up (+1, 0, -1 each).
     private static float steerForward;
     private static float steerStrafe;
@@ -59,12 +78,21 @@ public final class ThorMotion extends ThorGroundMotion {
         ClientCharacter.state(GameCharacter.THOR, ThorMotion::state);
     }
 
-    // With the hammer in hand or not, running or not: which of his gestures are his now.
+    // With the hammer in hand or not, running or not, the hammer on him, away or resting: which of his gestures are
+    // his now.
     private static int state(LocalPlayer player) {
         ClientThor.View view = ClientThor.view(player);
-        boolean armed = view != null && view.has(ThorStatePayload.ARMED) && !view.has(ThorStatePayload.THROWN);
+        boolean away = away(player);
+        boolean armed = view != null && view.has(ThorStatePayload.ARMED) && !away;
+        boolean resting = view != null && view.has(ThorStatePayload.RESTING);
         return (armed ? ThorPowers.ARMED : ThorPowers.UNARMED)
-                | (player.isSprinting() ? ThorPowers.SPRINTING : ThorPowers.WALKING);
+                | (player.isSprinting() ? ThorPowers.SPRINTING : ThorPowers.WALKING)
+                | (away ? ThorPowers.AWAY : ThorPowers.HOME) | (resting ? ThorPowers.RESTING : 0);
+    }
+
+    // His hammer out of his hands: thrown, resting or coming back.
+    public static boolean away(LocalPlayer player) {
+        return ClientThor.has(player, ThorStatePayload.THROWN);
     }
 
     private ThorMotion() {
@@ -104,27 +132,64 @@ public final class ThorMotion extends ThorGroundMotion {
                     ClientThor.predictBlow(player, ThorBlow.HAMMER_UPPERCUT.ordinal());
                 }
             }
+            case "hammer_throw" -> {
+                if (on && !flying && !away(player)) {
+                    thrown(player, ThorBlow.HAMMER_THROW);
+                }
+            }
+            // Held: drawn back over his shoulder; let go: thrown as far as it was drawn, in tenths of a block.
+            case "hammer_leap" -> {
+                if (on) {
+                    if (held && !flying && !away(player)) {
+                        drawAge = 0;
+                    }
+                    return data;
+                }
+                if (drawAge < 0) {
+                    return -1;
+                }
+                double far = HammerRules.drawn(HammerRules.DRAW_FROM + drawAge, ability.value("throwBlocks"));
+                drawAge = -1;
+                thrown(player, ThorBlow.HAMMER_THROW);
+                return data | Mth.clamp((int) Math.round(far * 10.0), 0, 255) << Characters.MOVE_SHIFT;
+            }
+            case "storm_throw" -> {
+                if (!on || !held || !flying || away(player)) {
+                    return -1;
+                }
+                thrown(player, ThorBlow.STORM_THROW);
+            }
+            case "air_shockwave", "air_bolt" -> {
+                if (on && flying && away(player)) {
+                    return -1;
+                }
+            }
             case "super_jump" -> {
                 if (on && !flying) {
                     jump(player, ability);
                 }
             }
+            // He flies only with the hammer: away, he waits for it to come into his raised left hand.
             case "flight" -> {
                 if (!on) {
                     return -1;
                 }
                 if (held && !slam && !flying) {
-                    takeOff(player);
+                    if (away(player)) {
+                        awaitAge = 0;
+                    } else {
+                        takeOff(player);
+                    }
                 }
             }
             case "air_blink" -> {
-                if (!on || !flying || blinkAge >= 0 || diveAge >= 0) {
+                if (!on || !flying || blinkAge >= 0 || diveAge >= 0 || away(player)) {
                     return -1;
                 }
                 return data | blink(player) << Characters.MOVE_SHIFT;
             }
             case "grab_dash_dive" -> {
-                if (!on) {
+                if (!on || held && !slam && away(player)) {
                     return -1;
                 }
                 if (held && !slam && flying && diveAge < 0) {
@@ -132,7 +197,7 @@ public final class ThorMotion extends ThorGroundMotion {
                 }
             }
             case "lightning_flight" -> {
-                if (!on || !held || !flying || lightning) {
+                if (!on || !held || !flying || lightning || away(player)) {
                     return -1;
                 }
                 lightning = true;
@@ -155,6 +220,45 @@ public final class ThorMotion extends ThorGroundMotion {
             }
         }
         return data;
+    }
+
+    // A throw leaves his hand: shown at once, and the hammer counts as away, so its buttons are those for it gone. Not
+    // heard of from the server in time (it refused), the hammer is his again.
+    private static void thrown(LocalPlayer player, ThorBlow blow) {
+        ClientThor.predictBlow(player, blow.ordinal());
+        ClientThor.set(player, ThorStatePayload.THROWN, true);
+        guessAge = 0;
+    }
+
+    // How far into Throw and Follow's draw he is, from its start to full (0 to 1), or -1 while not drawing.
+    public static float drawn(float partialTick) {
+        return drawAge < 0 ? -1.0F : Math.min(1.0F, (drawAge + partialTick)
+                / (HammerRules.DRAW_FULL - HammerRules.DRAW_FROM));
+    }
+
+    // Whether he stands waiting, his left hand raised, for the hammer he called to fly with.
+    public static boolean awaiting() {
+        return awaitAge >= 0;
+    }
+
+    // The server says the hammer he called to fly with is in his hand: he takes off.
+    public static void liftOff(LocalPlayer player) {
+        if (awaitAge >= 0 && !flying) {
+            awaitAge = -1;
+            takeOff(player);
+        }
+    }
+
+    // Arrived at his hammer up in the air: he catches it in his left hand and flies on, keeping `velocity`.
+    public static void flyOn(LocalPlayer player, Vec3 velocity) {
+        flying = true;
+        flightAge = LIFT_TICKS + 1;
+        ThorMotion.velocity = velocity;
+        lightning = false;
+        jumpAge = -1;
+        floatAge = -1;
+        dashAge = -1;
+        ClientThor.predict(player, ThorStatePayload.CATCH, ThorStatePayload.LEFT_HAND, flags());
     }
 
     private static void takeOff(LocalPlayer player) {
@@ -216,13 +320,19 @@ public final class ThorMotion extends ThorGroundMotion {
         flightAge = LIFT_TICKS + 1;
     }
 
-    // The server's word on your own Thor: knocked out of the sky, he falls.
+    // The server's word on your own Thor: knocked out of the sky, he falls; out of a pull, he drops; the hammer put
+    // away or gone, a draw ends.
     public static void told(ClientThor.View view) {
+        guessAge = -1;
         if (flying && flightAge > LIFT_TICKS && !view.has(ThorStatePayload.FLYING)) {
             flying = false;
             lightning = false;
             diveAge = -1;
             blinkAge = -1;
+        }
+        ThorPull.told(view.has(ThorStatePayload.PULLING));
+        if (drawAge > 2 && !view.has(ThorStatePayload.COCKED) && !view.has(ThorStatePayload.THROWN)) {
+            drawAge = -1;
         }
     }
 
@@ -244,6 +354,8 @@ public final class ThorMotion extends ThorGroundMotion {
         dropping = false;
         lightningLeft = 0;
         velocity = Vec3.ZERO;
+        drawAge = -1;
+        awaitAge = -1;
         ThorPull.stop();
         ThorRise.stop();
     }
@@ -266,11 +378,24 @@ public final class ThorMotion extends ThorGroundMotion {
             ThorRise.tick(player, input);
             return;
         }
+        if (drawAge >= 0) {
+            drawing(player);
+        }
+        if (awaitAge >= 0 && (++awaitAge > AWAIT_LONGEST || !away(player))) {
+            awaitAge = -1;
+        }
+        if (guessAge >= 0 && ++guessAge > GUESS_LONGEST) {
+            guessAge = -1;
+            ClientThor.set(player, ThorStatePayload.THROWN, false);
+        }
         if (flying) {
             fly(player, input);
             return;
         }
-        if (ThorPull.pulling(player)) {
+        if (ThorPull.pulling(player, input)) {
+            return;
+        }
+        if (awaitAge >= 0) {
             still(input);
             return;
         }
@@ -314,6 +439,9 @@ public final class ThorMotion extends ThorGroundMotion {
             if (diving(player)) {
                 return;
             }
+        } else if (away(player)) {
+            // His hammer hurled from his hand, he hangs in the air, arms out, sinking slowly, until it is back.
+            velocity = velocity.lerp(new Vec3(0.0, HANG_SINK, 0.0), 0.2);
         } else {
             Vec3 look = player.getLookAngle();
             double yaw = Math.toRadians(player.getYRot());
@@ -335,6 +463,40 @@ public final class ThorMotion extends ThorGroundMotion {
         boolean landing = player.onGround() || lightning && velocity.y < -0.2 && groundWithin(player, LAND_BELOW);
         if (flightAge > LIFT_TICKS && landing && velocity.y <= 0.02 && diveAge < 0 && blinkAge < 0) {
             touchDown(player);
+        }
+    }
+
+    // Drawing the hammer back for Throw and Follow: in his own view a small crackling mark shows where it would stop
+    // (the first block or creature along his look, else as far as it is drawn); held this long, it goes by itself.
+    private static void drawing(LocalPlayer player) {
+        CharacterAbility leap = GameCharacter.THOR.byName("hammer_leap");
+        if (leap == null || away(player) || flying) {
+            drawAge = -1;
+            return;
+        }
+        drawAge++;
+        if (HammerRules.DRAW_FROM + drawAge >= HammerRules.DRAW_LONGEST) {
+            ClientCharacter.sendAction(leap, false, 0);
+            return;
+        }
+        double far = HammerRules.drawn(HammerRules.DRAW_FROM + drawAge, leap.value("throwBlocks"));
+        Vec3 eye = player.getEyePosition();
+        Vec3 end = eye.add(player.getLookAngle().scale(far));
+        HitResult block = player.level().clip(new ClipContext(eye, end, ClipContext.Block.COLLIDER,
+                ClipContext.Fluid.NONE, player));
+        Vec3 stop = block.getType() == HitResult.Type.MISS ? end : block.getLocation();
+        EntityHitResult creature = ProjectileUtil.getEntityHitResult(player, eye, stop,
+                player.getBoundingBox().expandTowards(stop.subtract(eye)).inflate(1.0),
+                entity -> entity instanceof LivingEntity && entity.isPickable() && !entity.isSpectator(),
+                eye.distanceToSqr(stop));
+        if (creature != null) {
+            stop = creature.getLocation();
+        }
+        Level level = player.level();
+        level.addParticle(ParticleTypes.ELECTRIC_SPARK, stop.x, stop.y, stop.z, 0.0, 0.0, 0.0);
+        if (drawAge % 2 == 0) {
+            level.addParticle(new DustParticleOptions(new Vector3f(0.62F, 0.91F, 1.0F), 0.9F), stop.x, stop.y, stop.z,
+                    0.0, 0.0, 0.0);
         }
     }
 

@@ -50,9 +50,10 @@ import org.slf4j.Logger;
 
 // After an update, a tour shows every big change of the versions it covers (`TourSteps.FROM` up to the one installed)
 // right where it is (in the menus, the update manager, the settings, in game at the panel and in the ability guide),
-// with steps on how things work where they help; a player's first tour starts by saying what the tour is. It asks
-// first on the title screen (from its first frame, while the loading screen still fades) or in the pause menu, in game
-// with a pill when the player got there first, and while a newer version is out it asks to update to that one first;
+// with steps on how things work where they help; a player's first tour starts by saying what the tour is, and never
+// again. It asks once a version, on the title screen (from its first frame, while the loading screen still fades) or
+// in the pause menu, in game with a pill when the player got there first, after that only the update manager plays
+// it; while a newer version is out it asks to update to that one first;
 // Next goes on (taking the player to the next place itself where it can), Back goes back.
 // While the next steps wait in a world or for a character, a card says how to get there (from the title screen or the
 // pause menu with a button that takes the player on, in game with the key to press); elsewhere a pill says what waits.
@@ -76,6 +77,8 @@ public final class Tour {
     private static boolean loaded;
     // The newest version whose steps were all shown or skipped.
     private static String seen = "";
+    // The newest version whose tour was offered: it is offered once, after that only the update manager plays it.
+    private static String asked = "";
     // Whether a tour this player went through began with the card on what the tour is.
     private static boolean introduced;
     private static boolean started;
@@ -290,9 +293,11 @@ public final class Tour {
                         changes.size(), news.size() - changes.size(),
                         (changes.isEmpty() ? news : changes).stream().map(TourStep::title).toList(),
                         newer == null ? null : TourStep.bare(newer), mouseX, mouseY);
+                offered();
             } else if (place == Place.GAME && !later) {
                 // In game before any menu asked (a world joined from the launcher): a pill, Enter starts the tour.
                 pill(graphics, mouse, mouseX, mouseY);
+                offered();
             }
             return;
         }
@@ -468,10 +473,19 @@ public final class Tour {
         ManagerScreen.open(ManagerScreen.rootOf(minecraft.screen), ManagerScreen.UPDATES);
     }
 
-    // Later: no asking again until the game starts anew.
+    // Later: no asking again; the update manager's Tour still plays it.
     private static void later() {
         later = true;
         TourOverlay.click();
+    }
+
+    // The ask is shown once a version: from the next start on the tour waits in the update manager.
+    private static void offered() {
+        String installed = UpdateChecker.installed();
+        if (!installed.equals(asked)) {
+            asked = installed;
+            save();
+        }
     }
 
     // The button on the card saying how to go on: to the worlds, or out of the pause menu into the game.
@@ -488,6 +502,7 @@ public final class Tour {
     }
 
     private static void skip() {
+        introduced |= shown == TourSteps.INTRO;
         TourOverlay.skipped();
         finish(false);
     }
@@ -577,6 +592,8 @@ public final class Tour {
     // `acted`: the player did what the step asked rather than pressing Next.
     private static void complete(TourStep step, boolean acted) {
         shown = null;
+        // The card on what the tour is comes once: never again, also when this tour is left unfinished.
+        introduced |= step == TourSteps.INTRO;
         done.add(step.id());
         history.addLast(step.id());
         TourOverlay.done(acted, done.size());
@@ -622,6 +639,7 @@ public final class Tour {
         try {
             JsonObject root = JsonParser.parseString(Files.readString(file, StandardCharsets.UTF_8)).getAsJsonObject();
             seen = root.has("seen") ? root.get("seen").getAsString() : installed;
+            asked = root.has("asked") ? root.get("asked").getAsString() : "";
             introduced = root.has("introduced") && root.get("introduced").getAsBoolean();
             // How far a tour got counts only for the version it was of.
             if (root.has("version") && root.get("version").getAsString().equals(installed)) {
@@ -629,6 +647,8 @@ public final class Tour {
                 read(root, "done", done);
                 read(root, "passed", passed);
             }
+            // Offered before and not taken: it no longer asks at every start.
+            later |= !started && asked.equals(installed);
         } catch (IOException | RuntimeException e) {
             LOGGER.warn("Could not read {}: {}", file, e.toString());
             seen = installed;
@@ -639,6 +659,7 @@ public final class Tour {
         JsonObject root = new JsonObject();
         root.addProperty("version", UpdateChecker.installed());
         root.addProperty("seen", seen);
+        root.addProperty("asked", asked);
         root.addProperty("introduced", introduced);
         root.addProperty("started", started);
         root.add("done", array(done));

@@ -3,9 +3,9 @@ package nl.tivek.multiversepowers.character.thor;
 import javax.annotation.Nullable;
 
 // Thor's blows: twenty with his hands and three kicks for his combo without the hammer, four swings of the hammer for
-// his combo with it, and the hammer's uppercut and a grab's two endings, which only their own moves throw. His game
-// chains them into a combo that flows (client/ThorCombo) and poses them (client/ThorBlowKeys); the server lands each
-// on its tick (ThorBlows).
+// his combo with it, and the hammer's uppercut, its two throws and a grab's two endings, which only their own moves
+// throw. His game chains them into a combo that flows (client/ThorCombo) and poses them (client/ThorBlowKeys); the
+// server lands each on its tick (ThorBlows).
 // He never spins round in a blow. Columns: what throws it, how high it lands, its length, the tick it lands, the tick
 // the next may start, its reach in blocks and its width in degrees either side of the look, whether it hits all it
 // sweeps through, then its damage (times the combo's), how hard it throws what it hits away and up, whether it ends a
@@ -41,7 +41,11 @@ public enum ThorBlow {
     HAMMER_UPPERCUT(Limb.RIGHT, Height.HIGH, 12, 5, 9, 3.6, 40, false, 2.0, 0.3, 1.6, true, 0.1, Kit.MOVE),
     // A grab's endings, with the creature in his right fist: hurled away, and slammed down onto its back.
     GRAB_HURL(Limb.RIGHT, Height.MID, 14, 9, 11, 3.0, 30, false, 1.0, 0.9, 0.15, true, 0.0, Kit.MOVE),
-    GRAB_SLAM(Limb.RIGHT, Height.LOW, 16, 10, 12, 2.9, 30, false, 1.4, 0.2, -0.3, true, 0.0, Kit.MOVE);
+    GRAB_SLAM(Limb.RIGHT, Height.LOW, 16, 10, 12, 2.9, 30, false, 1.4, 0.2, -0.3, true, 0.0, Kit.MOVE),
+    // The hammer's throws, only shown: hurled from his right hand on the ground, from his left in flight (a Storm
+    // Throw). Mjolnir lets go of it as the arm comes through (its landing tick) and flies it.
+    HAMMER_THROW(Limb.RIGHT, Height.HIGH, 11, 2, 7, 0.0, 0, false, 0.0, 0.0, 0.0, true, 0.05, Kit.MOVE),
+    STORM_THROW(Limb.LEFT, Height.HIGH, 12, 2, 8, 0.0, 0, false, 0.0, 0.0, 0.0, true, 0.0, Kit.MOVE);
 
     // Every blow is this much longer than its numbers (ticks, landing, next) and keys say.
     public static final float PACE = 1.3F;

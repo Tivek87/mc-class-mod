@@ -487,6 +487,18 @@ final class LanternAbilities {
                                 + " hearts; what stands round it takes up to half")
                 .setting("mechThrowDamage", 4.0, 0.0, 2000.0, Unit.HALF_HEARTS,
                         "Damage as the mech flings that creature away, if it lived through both smashes")
+                .group("mechBeams", "Mech beams (right click in a built mech)")
+                .setting("mechEyePowerCost", 1.0, 0.0, 100.0, Unit.POWER,
+                        "Ring power one eye beam of the mech costs (tap right click)")
+                .setting("mechEyeDamage", 10.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                        "Damage of the eye beam to the first creature in its way, in half hearts; it is thrown back")
+                .setting("mechUnibeamPowerCost", 6.0, 0.0, 100.0, Unit.POWER,
+                        "Ring power the Unibeam from the mech's chest costs (hold right click 2 seconds)")
+                .setting("mechUnibeamDamage", 4.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                        "Damage of the Unibeam to everything in it, in half hearts, again every quarter second for"
+                                + " its 2.5 seconds")
+                .settingInt("mechUnibeamCooldown", 200, 0, 72000, Unit.TICKS,
+                        "Ticks after a Unibeam before the next one (20 ticks = 1 second)")
                 .group("mechWalk", "Walking the mech")
                 .setting("mechCrushHealth", 10.0, 0.0, 2000.0, Unit.HALF_HEARTS,
                         "A creature no bigger than a block with at most this much health (a chicken has 4, a pig 10)"

@@ -34,6 +34,9 @@ abstract class RigState {
     static final double GRAB_SPEED = 1.3;
     static final int GRAB_MAX = 26;
     static final double HOLD_DISTANCE = 3.2;
+    // How far beside him a held creature hangs, past half its own width: out of his sight, the lower arms' further.
+    static final double HOLD_SIDE = 1.8;
+    static final double HOLD_SIDE_LOW = 2.5;
     static final double FOLLOW = 0.75;
     static final double MAX_SPEED = 3.6;
     static final double THROW_SPEED = 2.6;

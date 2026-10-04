@@ -9,9 +9,10 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import nl.tivek.multiversepowers.MultiversePowers;
 
 // What Thor is doing, for every game that sees him: whether he flies, floats after a super jump, flies at lightning
-// speed, carries someone, winds up a thunderclap, has his hammer in hand or thrown, is charged or has a charged
-// hammer, has his storm over him, and the move he just started (a dash, a jump, a blink, a dive, a slam, a blow, a grab
-// and what follows it, a pull to his hammer, his storm, a bolt he calls, the lightning bomb) with what it needs.
+// speed, carries someone, winds up a thunderclap, has his hammer in hand, thrown or resting in the world (drawn back
+// to throw, flying back to him, pulling him to it), is charged or has a charged hammer, has his storm over him, and
+// the move he just started (a dash, a jump, a blink, a dive, a slam, a blow, a grab and what follows it, a pull to his
+// hammer and its catch, his storm, a bolt he calls, the lightning bomb) with what it needs.
 public record ThorStatePayload(int entity, int flags, int move, int arg) implements CustomPacketPayload {
     public static final CustomPacketPayload.Type<ThorStatePayload> TYPE = new CustomPacketPayload.Type<>(
             ResourceLocation.fromNamespaceAndPath(MultiversePowers.MODID, "thor_state"));
@@ -30,6 +31,12 @@ public record ThorStatePayload(int entity, int flags, int move, int arg) impleme
     public static final int HAMMER_CHARGED = 256;
     // His storm hangs over him.
     public static final int STORMING = 512;
+    // His thrown hammer rests in the world (always with THROWN); he is pulled to it; it flies back to him and his arm
+    // reaches for it; he draws it back to throw it and follow.
+    public static final int RESTING = 1024;
+    public static final int PULLING = 2048;
+    public static final int CALLING = 4096;
+    public static final int COCKED = 8192;
 
     // The move carried along: only when one starts, else NONE (a change of flags alone).
     public static final int NONE = 0;
@@ -52,7 +59,7 @@ public record ThorStatePayload(int entity, int flags, int move, int arg) impleme
     // He leaps high with it held over his head; then drops back down fast.
     public static final int HOIST = 11;
     public static final int DROP = 12;
-    // His thrown hammer came to rest (arg: its id + 1): his own game flies him to it.
+    // He is pulled to his resting hammer: first the wait, then the dash (his own game moves him).
     public static final int PULL = 13;
     // How the grab ends, picked or not (arg: ThorGrab.Act): told apart from the move, as a blow is.
     public static final int GRAB_ACT = 14;
@@ -62,6 +69,11 @@ public record ThorStatePayload(int entity, int flags, int move, int arg) impleme
     // He rises, charges and bursts as a lightning bomb (LightningBomb); with PUT_OUT, a knockdown stopped it.
     public static final int BOMB = 17;
     public static final int PUT_OUT = 1;
+    // He caught his hammer: in his right hand, his left (flying) or onto his belt (his right hand holds a creature).
+    public static final int CATCH = 18;
+    public static final int RIGHT_HAND = 0;
+    public static final int LEFT_HAND = 1;
+    public static final int BELT = 2;
 
     public static void send(ServerPlayer player, int flags, int move, int arg) {
         PacketDistributor.sendToPlayersTrackingEntityAndSelf(player,

@@ -1,6 +1,8 @@
 package nl.tivek.multiversepowers.engine.target;
 
+import java.util.Collection;
 import java.util.Optional;
+import java.util.function.Predicate;
 import javax.annotation.Nullable;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
@@ -120,6 +122,25 @@ public final class Targeting {
             return player.server.isPvpAllowed() && !other.isCreative() && player.canHarmPlayer(other);
         }
         return true;
+    }
+
+    // Where a chain of lightning leaps on to from `from`: the nearest creature `may` lets through and not struck yet,
+    // within `reach` and with nothing solid between; null once none is left.
+    @Nullable
+    public static LivingEntity nextInChain(ServerLevel level, Entity viewer, Vec3 from, double reach,
+            Collection<? extends Entity> struck, Predicate<LivingEntity> may) {
+        LivingEntity next = null;
+        double best = reach * reach;
+        for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, new AABB(from, from).inflate(reach),
+                entity -> may.test(entity) && !struck.contains(entity))) {
+            Vec3 middle = target.getBoundingBox().getCenter();
+            double far = middle.distanceToSqr(from);
+            if (far < best && clearPath(level, from, middle, viewer)) {
+                best = far;
+                next = target;
+            }
+        }
+        return next;
     }
 
     public static boolean clearPath(ServerLevel level, Vec3 from, Vec3 to, Entity viewer) {

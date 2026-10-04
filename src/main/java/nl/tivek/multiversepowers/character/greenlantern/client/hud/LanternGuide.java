@@ -60,6 +60,9 @@ final class LanternGuide {
                 mode("mech", LanternPanel::piloting,
                         heading("mouse"), click(Input.LEFT, "blow").moves("light_bolt", false)
                                 .costs("mech", "mechBlowPowerCost"),
+                        click(Input.RIGHT, "eye").moves("light_shield", false).costs("mech", "mechEyePowerCost"),
+                        hold(Input.RIGHT, "unibeam").moves("light_shield", true)
+                                .costs("mech", "mechUnibeamPowerCost"),
                         hold(Input.SCROLL, "leave").fires("mech"),
                         heading("move"), forward("climb")),
                 weapon("sword", player -> SwordArms.holding(), "swordPowerCost", "flurryPowerCost", "chargePowerCost",

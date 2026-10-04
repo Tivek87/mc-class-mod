@@ -2,6 +2,7 @@ package nl.tivek.multiversepowers.character.greenlantern.client.mech.shape;
 
 import java.util.ArrayList;
 import java.util.List;
+import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.character.greenlantern.mech.MechScript;
 import nl.tivek.multiversepowers.engine.client.render.ConstructPainter.Shape;
 import nl.tivek.multiversepowers.engine.client.render.mesh.Mesh;
@@ -16,6 +17,10 @@ import static nl.tivek.multiversepowers.character.greenlantern.client.mech.touch
 public final class MechArmShapes {
     public static final double WRIST = MechScript.FOREARM;
     public static final double KNUCKLES = WRIST + 1.24;
+    // Two exhaust pipes run along the back of each forearm and sweep out past the elbow: their open ends and the way
+    // they point, in the forearm's places (x across, y from the elbow to the wrist, the back of the hand at -z).
+    public static final double[] PIPE_X = { -0.25, 0.25 };
+    private static final double PIPE = 0.13;
 
     public static final Shape UPPER = Shape.of(upper());
     public static final Shape UPPER_LEFT = MechParts.mirrored(UPPER);
@@ -71,7 +76,32 @@ public final class MechArmShapes {
         Surface ridge = MechParts.part(fore.offset(0.07, true), 0.7, 0.8, 0.2, 0.82);
         m.addAll(List.of(MechParts.plated(ridge, 1, 4, 92, 0.14, 1.08)));
         m.add(Mesh.torus(24, 4, 0.64, 0.06, 1.3).scaled(1.0, 1.0, 0.94).moved(0.0, wrist - 0.24, 0.0));
+        // The exhaust pipes, out of the gauntlet by the wrist, strapped down over its back and swept out past the
+        // elbow like a motorcycle's, each ending in a ringed mouth.
+        for (double x : PIPE_X) {
+            Vec3 end = pipeEnd(x);
+            Vec3 way = pipeWay(x);
+            m.add(Mesh.tube(false, 8, PIPE, 1.15, new Vec3(x, 1.95, -0.6), new Vec3(x, 1.55, -0.94),
+                    new Vec3(x, 0.4, -1.02), new Vec3(x, -0.5, -0.98), bend(x), end));
+            m.add(Mesh.torus(10, 4, PIPE + 0.04, 0.04, 1.4).pointing(way.x, way.y, way.z).moved(end.x, end.y,
+                    end.z));
+        }
+        m.add(Mesh.bevel(-0.44, 0.82, -1.2, 0.44, 1.0, -0.84, 0.03, 1.1));
+        m.add(Mesh.bevel(-0.44, -0.22, -1.17, 0.44, -0.06, -0.82, 0.03, 1.1));
         return m.toArray(Mesh[]::new);
+    }
+
+    // The open end of the pipe at `x` across the forearm, and the way it points.
+    public static Vec3 pipeEnd(double x) {
+        return new Vec3(x * 1.4, -1.35, -1.35);
+    }
+
+    public static Vec3 pipeWay(double x) {
+        return pipeEnd(x).subtract(bend(x)).normalize();
+    }
+
+    private static Vec3 bend(double x) {
+        return new Vec3(x * 1.25, -1.05, -1.15);
     }
 
     // The hand past the wrist: its palm, the plates on its back, the knuckles and the pads.
@@ -88,6 +118,9 @@ public final class MechArmShapes {
         }
         for (double x : FINGER_X) {
             m.add(Mesh.bevel(x - 0.15, KNUCKLES - 0.22, -0.38, x + 0.15, KNUCKLES + 0.06, -0.08, 0.05, 1.2));
+            // A spike on each knuckle, leaning towards the fingers, so a fist leads with them.
+            m.add(Mesh.cone(4, 0.1, 0.0, 0.0, 0.36, 1.3).pointing(0.0, 0.5, -1.0).moved(x, KNUCKLES - 0.08,
+                    -0.36));
         }
         m.add(Mesh.bevel(-0.52, wrist + 0.16, 0.24, 0.52, KNUCKLES - 0.14, 0.36, 0.05, 0.9));
         m.add(Mesh.bevel(0.3, wrist + 0.1, 0.02, 0.72, wrist + 0.72, 0.3, 0.06, 1.0));

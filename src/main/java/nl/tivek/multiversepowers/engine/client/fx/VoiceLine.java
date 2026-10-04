@@ -15,7 +15,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import nl.tivek.multiversepowers.MultiversePowers;
-import nl.tivek.multiversepowers.engine.fx.Voices;
+import nl.tivek.multiversepowers.config.client.ClientSettings;
 
 // A spoken line, heard from where its speaker stands and following it. Each speaker says one line at a time: a new one
 // cuts the one before short, whatever said it (see claim).
@@ -39,9 +39,10 @@ public final class VoiceLine extends AbstractTickableSoundInstance implements Vo
         this.volume = loudness();
     }
 
-    // Above 1 a volume only widens how far a sound is heard: this carries a voice Voices.HEARD blocks.
+    // The player's own volume for spoken lines, 0 with them off. Never above 1, where a volume only widens how far a
+    // sound is heard: a voice carries Voices.HEARD blocks by its attenuation_distance in sounds.json.
     public static float loudness() {
-        return (float) (Voices.HEARD / 16.0);
+        return ClientSettings.VOICE_LINES.get() == 0 ? 0.0F : ClientSettings.VOICE_VOLUME.get().floatValue();
     }
 
     // The one voice of a speaker: whatever it said before is cut short.
@@ -60,7 +61,7 @@ public final class VoiceLine extends AbstractTickableSoundInstance implements Vo
         Minecraft minecraft = Minecraft.getInstance();
         ClientLevel level = minecraft.level;
         Entity speaker = level == null ? null : level.getEntity(speakerId);
-        if (speaker == null) {
+        if (speaker == null || loudness() <= 0.0F) {
             return;
         }
         VoiceLine line = new VoiceLine(speaker, sound);

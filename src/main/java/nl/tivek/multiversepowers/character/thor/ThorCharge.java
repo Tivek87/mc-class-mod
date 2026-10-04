@@ -10,15 +10,16 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
-import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.LightningBolt;
 import net.minecraft.world.phys.Vec3;
+import nl.tivek.multiversepowers.character.thor.hammer.Mjolnir;
+import nl.tivek.multiversepowers.character.thor.storm.StormFxPayload;
+import nl.tivek.multiversepowers.character.thor.storm.ThorStorm;
 import nl.tivek.multiversepowers.engine.effect.Effects;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 
 // Charged: lightning fills Thor for a while (without the hammer in hand) or the hammer (with it). Charged he hits
 // harder and throws further, and runs faster; a charged hammer hits harder and throws further.
-final class ThorCharge {
+public final class ThorCharge {
     private static final float STRONGER = 1.5F;
     private static final int SPEED_LEVEL = 1;
     private static final Map<UUID, ThorCharge> ALL = new HashMap<>();
@@ -43,12 +44,8 @@ final class ThorCharge {
             player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, ticks, SPEED_LEVEL, false, false,
                     true));
         }
-        LightningBolt bolt = EntityType.LIGHTNING_BOLT.create(level);
-        if (bolt != null) {
-            bolt.moveTo(player.getX(), player.getY(), player.getZ());
-            bolt.setVisualOnly(true);
-            level.addFreshEntity(bolt);
-        }
+        StormFxPayload.send(level, StormFxPayload.BOLT, ThorStorm.sky(player, player.position()), player.position(),
+                1.0F);
         Vec3 chest = player.position().add(0.0, player.getScale(), 0.0);
         ParticleFx.sphereOut(level, ParticleFx.dust(ThorMoves.GLOW, 1.4F), chest, 40, 0.35);
         level.playSound(null, chest.x, chest.y, chest.z, SoundEvents.TRIDENT_THUNDER.value(), SoundSource.PLAYERS,
@@ -97,7 +94,7 @@ final class ThorCharge {
         return charge != null && player.level().getGameTime() < charge.thorUntil ? STRONGER : 1.0F;
     }
 
-    static float hammer(ServerPlayer player) {
+    public static float hammer(ServerPlayer player) {
         ThorCharge charge = ALL.get(player.getUUID());
         return charge != null && player.level().getGameTime() < charge.hammerUntil ? STRONGER : 1.0F;
     }

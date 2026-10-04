@@ -19,16 +19,18 @@ import nl.tivek.multiversepowers.character.GameCharacter;
 import nl.tivek.multiversepowers.character.client.AbilityGuide;
 import nl.tivek.multiversepowers.character.client.ClientCharacter;
 import nl.tivek.multiversepowers.character.client.GuideMode;
+import nl.tivek.multiversepowers.character.thor.client.motion.ThorMotion;
 
-// Thor's modes for the ability guide: his fists, the hammer in hand and flight, every bind that does something there
-// beyond the game's own walking, jumping and looking.
+// Thor's modes for the ability guide: his fists, the hammer in hand, the hammer thrown and flight, every bind that does
+// something there beyond the game's own walking, jumping and looking.
 final class ThorGuide {
     private ThorGuide() {
     }
 
     static void register() {
         AbilityGuide.modes(GameCharacter.THOR,
-                mode("fists", player -> !ThorPanel.armed(player) && !flies(player) && !ThorGrabChoice.holds(player),
+                mode("fists", player -> !ThorPanel.armed(player) && !ThorMotion.away(player) && !flies(player)
+                        && !ThorGrabChoice.holds(player),
                         heading("mouse"), click(Input.LEFT, "combo").fires("combo"),
                         hold(Input.LEFT, "clap").fires("thunderclap"),
                         click(Input.RIGHT, "dash").fires("dash"), hold(Input.RIGHT, "grab").fires("grab"),
@@ -41,8 +43,19 @@ final class ThorGuide {
                         heading("mouse"), click(Input.LEFT, "combo").fires("combo"),
                         hold(Input.LEFT, "uppercut").fires("hammer_uppercut"),
                         click(Input.RIGHT, "throw").fires("hammer_throw"),
+                        crouched(click(Input.RIGHT, "stay"), "stay").fires("hammer_throw").under("throw"),
                         hold(Input.RIGHT, "follow").fires("hammer_leap"),
                         click(Input.SCROLL, "away").fires("mjolnir"), hold(Input.SCROLL, "charge").fires("charged"),
+                        heading("move"), doubleKey(ThorGuide::jumpKey, "jump").fires("super_jump"),
+                        holdKey(ThorGuide::jumpKey, "fly").fires("flight"),
+                        heading("keys"), storm(), call(), calm(), bomb()),
+                mode("thrown", player -> ThorMotion.away(player) && !flies(player) && !ThorGrabChoice.holds(player),
+                        heading("mouse"), click(Input.LEFT, "combo").fires("combo"),
+                        hold(Input.LEFT, "clap").fires("thunderclap"),
+                        click(Input.RIGHT, "dash").fires("dash"), hold(Input.RIGHT, "grab").fires("grab"),
+                        plus(ThorGuide::sprintKey, hold(Input.RIGHT, "grab_dash"), "grab_dash").fires("grab_dash"),
+                        click(Input.SCROLL, "recall").fires("hammer_call"),
+                        hold(Input.SCROLL, "follow").fires("hammer_follow"),
                         heading("move"), doubleKey(ThorGuide::jumpKey, "jump").fires("super_jump"),
                         holdKey(ThorGuide::jumpKey, "fly").fires("flight"),
                         heading("keys"), storm(), call(), calm(), bomb()),
@@ -55,6 +68,7 @@ final class ThorGuide {
                         hold(Input.LEFT, "shockwave").fires("air_shockwave"),
                         click(Input.RIGHT, "blink").fires("air_blink"), hold(Input.RIGHT, "dive").fires("grab_dash_dive"),
                         click(Input.SCROLL, "bolt").fires("air_bolt"),
+                        hold(Input.SCROLL, "storm_throw").fires("storm_throw"),
                         hold(Input.SHIFT, "lightning").fires("lightning_flight"),
                         heading("keys"), storm(), call(), calm()));
     }
