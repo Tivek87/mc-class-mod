@@ -48,10 +48,11 @@ import org.lwjgl.glfw.GLFW;
 import org.lwjgl.opengl.GL11;
 import org.slf4j.Logger;
 
-// After an update, a tour shows every change of the version installed, and only that version's, right where it
-// is (in the menus, the update manager, in game at the panel and in the ability guide), with steps on how things work
-// where they help. It asks first on the title screen or in the pause menu, and while a newer version is out it asks to
-// update to that one first; Next goes on (taking the player to the next place itself where it can), Back goes back.
+// After an update, a tour shows every change of the versions it covers (`TourSteps.FROM` up to the one installed)
+// right where it is (in the menus, the update manager, in game at the panel and in the ability guide), with steps on
+// how things work where they help; a player's first tour starts by saying what the tour is. It asks first on the title
+// screen or in the pause menu, and while a newer version is out it asks to update to that one first; Next goes on
+// (taking the player to the next place itself where it can), Back goes back.
 // While the next steps wait in a world or for a character, a card says how to get there (from the title screen or the
 // pause menu with a button that takes the player on, in game with the key to press); elsewhere a pill says what waits.
 // How far it got is kept in config/welcomescreen/tour.json; a first install gets no tour, as everything is new to it
@@ -74,6 +75,8 @@ public final class Tour {
     private static boolean loaded;
     // The newest version whose steps were all shown or skipped.
     private static String seen = "";
+    // Whether a tour this player went through began with the card on what the tour is.
+    private static boolean introduced;
     private static boolean started;
     private static final Set<String> done = new LinkedHashSet<>();
     // Steps passed over for good, having nothing to show: counted neither as done nor as waiting.
@@ -272,8 +275,10 @@ public final class Tour {
                 List<TourStep> news = pending.stream().filter(step -> step != TourSteps.UPDATE_FIRST).toList();
                 List<TourStep> changes = news.stream().filter(TourStep::change).toList();
                 String newer = UpdateChecker.newerVersion();
-                TourOverlay.intro(graphics, TourStep.bare(UpdateChecker.installed()), changes.size(),
-                        news.size() - changes.size(),
+                String installed = UpdateChecker.installed();
+                TourOverlay.intro(graphics, TourStep.bare(installed),
+                        UpdateChecker.compare(TourSteps.FROM, installed) < 0 ? TourStep.bare(TourSteps.FROM) : null,
+                        changes.size(), news.size() - changes.size(),
                         (changes.isEmpty() ? news : changes).stream().map(TourStep::title).toList(),
                         newer == null ? null : TourStep.bare(newer), mouseX, mouseY);
             }
@@ -331,7 +336,7 @@ public final class Tour {
             return null;
         }
         for (TourStep step : pending) {
-            if (step.place() != place) {
+            if (step.place() != place && step.place() != Place.ANY) {
                 continue;
             }
             if (step.available() != null && !step.available().getAsBoolean()) {
@@ -400,8 +405,8 @@ public final class Tour {
                 1.0F);
     }
 
-    // The steps of the version installed not yet done, while its tour is not over; first, while a newer version is out,
-    // the one asking to update to it.
+    // The steps of the versions the tour covers not yet done, while its tour is not over; first, while a newer version
+    // is out, the one asking to update to it, and before that on a player's first tour the card on what the tour is.
     private static List<TourStep> pending() {
         List<TourStep> pending = new ArrayList<>();
         String installed = UpdateChecker.installed();
@@ -409,7 +414,8 @@ public final class Tour {
             return pending;
         }
         for (TourStep step : TourSteps.ALL) {
-            if (UpdateChecker.compare(step.version(), installed) == 0 && !done.contains(step.id())
+            if (UpdateChecker.compare(step.version(), TourSteps.FROM) >= 0
+                    && UpdateChecker.compare(step.version(), installed) <= 0 && !done.contains(step.id())
                     && !passed.contains(step.id())) {
                 pending.add(step);
             }
@@ -417,6 +423,9 @@ public final class Tour {
         if (!pending.isEmpty() && UpdateChecker.newerVersion() != null
                 && !done.contains(TourSteps.UPDATE_FIRST.id())) {
             pending.add(0, TourSteps.UPDATE_FIRST);
+        }
+        if (!pending.isEmpty() && !introduced && !done.contains(TourSteps.INTRO.id())) {
+            pending.add(0, TourSteps.INTRO);
         }
         return pending;
     }
@@ -521,7 +530,8 @@ public final class Tour {
         if (leads != null && after.stream().anyMatch(other -> other.place() == leads)) {
             return leads.reachable() ? leads : null;
         }
-        if (after.stream().anyMatch(other -> other.place() == step.place())) {
+        Place here = step.place() == Place.ANY ? Place.now() : step.place();
+        if (after.stream().anyMatch(other -> other.place() == here)) {
             return null;
         }
         Place next = after.get(0).place();
@@ -557,6 +567,7 @@ public final class Tour {
 
     private static void finish(boolean cheer) {
         seen = UpdateChecker.installed();
+        introduced |= done.contains(TourSteps.INTRO.id());
         done.clear();
         passed.clear();
         history.clear();
@@ -589,6 +600,7 @@ public final class Tour {
         try {
             JsonObject root = JsonParser.parseString(Files.readString(file, StandardCharsets.UTF_8)).getAsJsonObject();
             seen = root.has("seen") ? root.get("seen").getAsString() : installed;
+            introduced = root.has("introduced") && root.get("introduced").getAsBoolean();
             // How far a tour got counts only for the version it was of.
             if (root.has("version") && root.get("version").getAsString().equals(installed)) {
                 started = root.has("started") && root.get("started").getAsBoolean();
@@ -605,6 +617,7 @@ public final class Tour {
         JsonObject root = new JsonObject();
         root.addProperty("version", UpdateChecker.installed());
         root.addProperty("seen", seen);
+        root.addProperty("introduced", introduced);
         root.addProperty("started", started);
         root.add("done", array(done));
         root.add("passed", array(passed));

@@ -1,0 +1,2 @@
+# Git runs these with sh, which a carriage return breaks.
+* text eol=lf

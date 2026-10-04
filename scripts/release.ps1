@@ -1,7 +1,8 @@
-# Usage: release.ps1 prepare (before the commit) | publish (after the push).
+# Usage: release.ps1 prepare (before the commit) | check (before the push; the pre-push hook runs it) | publish (after
+# the push).
 param(
     [Parameter(Mandatory = $true)]
-    [ValidateSet('prepare', 'publish')]
+    [ValidateSet('prepare', 'check', 'publish')]
     [string]$Step
 )
 
@@ -52,8 +53,41 @@ function Get-Notes([string]$version) {
     return $body
 }
 
+# Git runs scripts/hooks/pre-push before every push, so no release goes out with a tour that misses a change.
+function Set-Hooks {
+    if ((git -C $Root config --local core.hooksPath) -ne 'scripts/hooks') {
+        git -C $Root config --local core.hooksPath scripts/hooks
+        Write-Host 'Git hooks: scripts/hooks (pre-push runs release.ps1 check)'
+    }
+}
+
 $version = Get-Prop 'mod_version'
 $fileName = Get-Prop 'mod_file_name'
+Set-Hooks
+
+if ($Step -eq 'check') {
+    if (Test-RemoteTag "v$version") { throw "v$version is already released: run 'release.ps1 prepare' and commit first" }
+    Push-Location $Root
+    try {
+        $test = 'nl.tivek.multiversepowers.update.client.tour.TourCoverageTest'
+        $started = Get-Date
+        & .\gradlew.bat test --tests $test --console=plain -q
+        if ($LASTEXITCODE -ne 0) {
+            # A report older than this run is from an earlier one: Gradle stopped before the test (a compile error).
+            $report = Get-Item (Join-Path $Root "build\test-results\test\TEST-$test.xml") -ErrorAction SilentlyContinue
+            $failure = if ($report -and $report.LastWriteTime -ge $started) {
+                ([xml](Get-Content -Raw $report.FullName)).testsuite.testcase.failure.message
+            }
+            if (-not $failure) { throw 'The tour check could not run: see the Gradle output above' }
+            Write-Host ($failure -replace '^[\w.]+: ', '' -replace ' ==> expected.*$', '')
+            throw "The tour of $version misses changes of its CHANGELOG.md section"
+        }
+    } finally {
+        Pop-Location
+    }
+    Write-Host "Tour of $version covers its changelog"
+    exit 0
+}
 
 if ($Step -eq 'prepare') {
     if (Test-RemoteTag "v$version") {
@@ -68,6 +102,7 @@ if ($Step -eq 'prepare') {
         Write-Host "mod_version $version has no release yet: kept"
     }
     Write-Host "CHANGELOG heading needed: ## [$version] - $(Get-Date -Format yyyy-MM-dd)"
+    Write-Host "Tour needed: TourSteps.VERSION and FROM = $version, each new CHANGELOG line covered by a step; ./gradlew test checks it"
     exit 0
 }
 

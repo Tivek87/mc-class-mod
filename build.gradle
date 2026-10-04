@@ -70,6 +70,9 @@ tasks.named('test', Test) {
     // Minecraft's logging writes a logs folder where the tests run: keep it out of the project's root.
     workingDir = layout.buildDirectory.dir('test-run').get().asFile
     doFirst { workingDir.mkdirs() }
+    // TourCoverageTest reads the changelog and the version: a change to either runs the tests again.
+    inputs.files('CHANGELOG.md', 'gradle.properties')
+    systemProperty 'project.root', projectDir.absolutePath
 }
 
 var generateModMetadata = tasks.register("generateModMetadata", ProcessResources) {

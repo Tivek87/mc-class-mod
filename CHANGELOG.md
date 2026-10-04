@@ -7,12 +7,18 @@ the sections before 0.0.1-alpha came before versions were numbered.
 
 ### Added
 - **Tour:** this version's tour walks you through the whole update manager and your ability panel and guide.
-- **Tour:** each card's top says what it shows: new, changed, fixed or removed in this version, or how something works.
+- **Tour:** each card's top says what it shows: new, changed, fixed or removed, and in which version, or how something
+  works.
 - **Tour:** when the next steps are in a world or need a character, a card says how to get there: **Singleplayer** on
   the title screen, **Back to game** in the pause menu, the power wheel's key in game.
+- **Tour:** the first time you see a tour, its first card explains what the tour is and how to use it.
+- **Project:** before every push, a check that the tour shows every change of the changelog sections it covers
+  (`TourCoverageTest`, run by the pre-push hook that `scripts/release.ps1` sets up).
 
 ### Changed
+- **Project:** a shorter, clearer README.
 - **Ability panel:** gone 3 seconds after the last power or blow, its fade included (it stayed 5 seconds, then faded).
+- **Tour:** this version's tour also shows every change from 0.6.6 to 0.7.3, each card naming the version it came in.
 - **Tour:** the first card counts the version's changes and the steps on how things work.
 - **Tour:** a step whose thing does not show up still shows its card, in the middle of the screen.
 - **Update manager:** the Updates page is calmer and has two parts: **What's new** (whether you are up to date, and

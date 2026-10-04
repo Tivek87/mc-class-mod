@@ -116,7 +116,8 @@ final class TourOverlay {
         TourSpot.shade(graphics, width, height, dim * (framed ? DIM : DIM * 0.7F),
                 framed ? new float[] { frameX, frameY, frameWidth, frameHeight } : null);
 
-        // A wider card is a lower one: it widens until it fits beside what it points at.
+        // A wider card is a lower one: it widens until it fits beside what it points at, or on the screen when it
+        // points at nothing.
         int widest = Math.min(WIDEST, width - MARGIN * 2);
         cardWidth = Math.min(widest, Math.max(CARD, TourCard.footerWidth(font, mouse, back, next) + TourCard.PAD * 2));
         TourCard.Body body;
@@ -125,7 +126,8 @@ final class TourOverlay {
             body = TourCard.body(font, step, cardWidth - TourCard.PAD * 2);
             cardHeight = body.height();
             side = target == null ? Side.NONE : side(tx, ty, tw, th, width, height);
-            if (side != Side.NONE || target == null || cardWidth >= widest) {
+            boolean fits = target == null ? cardHeight <= height - MARGIN * 2 : side != Side.NONE;
+            if (fits || cardWidth >= widest) {
                 break;
             }
             cardWidth = Math.min(widest, cardWidth + 40);
@@ -176,10 +178,11 @@ final class TourOverlay {
         drawnAt = now;
     }
 
-    // The first ask, in the middle of the menu: `count` changes, the first of `highlights`, and `guides` steps on how
-    // things work; `newer` the version out past this one, which it asks to update to first.
-    static void intro(GuiGraphics graphics, String version, int count, int guides, List<Component> highlights,
-            @Nullable String newer, double mouseX, double mouseY) {
+    // The first ask, in the middle of the menu: `count` changes (of the versions from `since` on, when it covers more
+    // than this one), the first of `highlights`, and `guides` steps on how things work; `newer` the version out past
+    // this one, which it asks to update to first.
+    static void intro(GuiGraphics graphics, String version, @Nullable String since, int count, int guides,
+            List<Component> highlights, @Nullable String newer, double mouseX, double mouseY) {
         long now = Util.getMillis();
         float glide = begin(now, ASK);
         Font font = Minecraft.getInstance().font;
@@ -190,15 +193,15 @@ final class TourOverlay {
         framed = false;
         TourSpot.shade(graphics, width, height, dim * DIM, null);
         cardWidth = Math.min(INTRO, width - MARGIN * 2);
-        cardHeight = TourCard.introHeight(font, cardWidth - TourCard.PAD * 2, count, guides, highlights, newer);
+        cardHeight = TourCard.introHeight(font, cardWidth - TourCard.PAD * 2, since, count, guides, highlights, newer);
         int x = (width - cardWidth) / 2;
         int y = Math.round((height - cardHeight) / 2.0F + 8.0F * (1.0F - appear));
         graphics.flush();
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, appear);
         KeyCap.Layer layer = new KeyCap.Layer(graphics, font);
         TourCard.panel(graphics, x, y, cardWidth, cardHeight);
-        ask = TourCard.intro(layer, font, version, count, guides, highlights, newer, x, y, cardWidth, cardHeight,
-                mouseX, mouseY);
+        ask = TourCard.intro(layer, font, version, since, count, guides, highlights, newer, x, y, cardWidth,
+                cardHeight, mouseX, mouseY);
         layer.finish();
         graphics.flush();
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);

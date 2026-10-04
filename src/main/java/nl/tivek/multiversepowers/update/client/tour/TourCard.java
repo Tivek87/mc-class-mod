@@ -226,9 +226,9 @@ final class TourCard {
 
     // The first ask: how many changes it shows, a few of them, how many steps on how things work follow, and Show me,
     // Later and Skip; while a newer version is out, a note asking to update to it first, and Update in place of Show me.
-    static int introHeight(Font font, int inner, int count, int guides, List<Component> highlights,
-            @Nullable String newer) {
-        int lines = font.split(introText(count), inner).size();
+    static int introHeight(Font font, int inner, @Nullable String since, int count, int guides,
+            List<Component> highlights, @Nullable String newer) {
+        int lines = font.split(introText(since, count), inner).size();
         int shown = Math.min(HIGHLIGHTS, highlights.size());
         int more = highlights.size() > HIGHLIGHTS ? 1 : 0;
         int walk = guides <= 0 || count <= 0 ? 0 : 4 + font.split(guidesText(guides), inner).size() * 10;
@@ -237,8 +237,9 @@ final class TourCard {
                 + PAD - 1;
     }
 
-    static Ask intro(KeyCap.Layer layer, Font font, String version, int count, int guides, List<Component> highlights,
-            @Nullable String newer, int x, int y, int w, int h, double mouseX, double mouseY) {
+    static Ask intro(KeyCap.Layer layer, Font font, String version, @Nullable String since, int count, int guides,
+            List<Component> highlights, @Nullable String newer, int x, int y, int w, int h, double mouseX,
+            double mouseY) {
         int left = x + PAD;
         int right = x + w - PAD;
         int inner = right - left;
@@ -249,7 +250,7 @@ final class TourCard {
         layer.shadowed(Component.translatable(PREFIX + "intro.title").withStyle(ChatFormatting.BOLD), left, line,
                 TEXT);
         line += 14;
-        for (FormattedCharSequence part : font.split(introText(count), inner)) {
+        for (FormattedCharSequence part : font.split(introText(since, count), inner)) {
             layer.sequence(part, left, line, BODY);
             line += 10;
         }
@@ -304,7 +305,10 @@ final class TourCard {
         return new Ask(show, laterBox, skipBox, update);
     }
 
-    private static Component introText(int count) {
+    private static Component introText(@Nullable String since, int count) {
+        if (since != null && count > 1) {
+            return Component.translatable(PREFIX + "intro.since", count, since);
+        }
         return Component.translatable(PREFIX + "intro." + (count == 0 ? "none" : count == 1 ? "one" : "many"), count);
     }
 

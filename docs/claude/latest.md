@@ -1,17 +1,13 @@
 # Laatste sessie
 
-## 0.7.4-alpha: rustiger manager, Submitted, tour (2026-10-04)
-- Verzoek 1: manager (vooral Updates) minder overweldigend, "Sent" → "Submitted", committen niet pushen, changelog
-  compleet bij push. Verzoek 2: paneel max 3 s, tour van hele manager + ability-UI, regel "tour dekt ALLES van de
-  release", duidelijke instructies als de tour een wereld/personage nodig heeft.
-- Gedaan (1): Updates in twee delen (What's new / Versions), knoppen alleen bij nieuwere versie, Check now-link,
-  geen chips/subtitels, rustiger notes; Feedback: Submitted/Submit. Gecommit (5bff3dd), niet gepusht.
-- Gedaan (2), NIET gecommit: paneel weg na 3 s; tour 0.7.4 = 23 stappen (elke changelog-regel + uitleg manager,
-  paneel, guide), chips NEW/CHANGED/FIXED/REMOVED/HOW, kaarten "On to a world"/"Pick a character" (+ Later per
-  kaart), Enter werkt ook op Bug-pagina, stapteller slaat niets over, in game wacht tour op character.
-  Changelog 0.7.4 aangevuld; docs (README, PROJECT, POWERS) bijgewerkt. 3 volledige tour-runs in game, build groen.
-- Volgende: commit van (2) na ja; push = release 0.7.4 (`release.ps1 publish`); dan bugs #59-#63 (#62 is een
-  verzoek: vragen), ideeën #25, #31, #32, #33, #24.
+## 0.7.4-alpha: commit, push en release (2026-10-04)
+- Verzoek: commit, push en release van 0.7.4.
+- In deze release: rustiger update manager + Submitted (5bff3dd), tour van manager en ability-UI + paneel 3 s
+  (53a5731), tour van alles sinds 0.6.6 met uitlegkaart, `TourCoverageTest` + pre-push hook, kortere README
+  (commit 3), IDE-waarschuwingen weg (commit 4, met Project-regel in de changelog).
+- Vooraf getest: build groen, tour in game gelopen (427x240, 38 kaarten passen), hook laat de push door.
+- Volgende release: `release.ps1 prepare`, `TourSteps.FROM` = `VERSION` = nieuwe versie, elke regel een stap.
+- Open: bugs #59 #60 #61 #63 (high); #62 is een verzoek (antwoord nodig); ideeën #25 #31 #32 #33 #24.
 - `docs/ideas/THOR_MJOLNIR_FLIGHT_SYSTEM*.md` (andere sessie) niet meecommitten.
 
 ## Thor-ontwerp (andere sessie, 2026-10-02)

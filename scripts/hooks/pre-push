@@ -1,0 +1,5 @@
+#!/bin/sh
+# Every push is a release: refuse one whose tour misses a change of its CHANGELOG.md section (release.ps1 check).
+root="$(git rev-parse --show-toplevel)"
+if command -v pwsh >/dev/null 2>&1; then shell=pwsh; else shell=powershell.exe; fi
+exec "$shell" -NoProfile -ExecutionPolicy Bypass -File "$root/scripts/release.ps1" check

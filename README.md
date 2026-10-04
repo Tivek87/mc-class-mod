@@ -1,40 +1,29 @@
 # Multiverse Powers
 
-A Minecraft mod for **NeoForge 1.21.1** that adds RPG classes, a Vanilla+ stamina bar, spells, and characters from
-across the multiverse you can turn into.
+A Minecraft mod for **NeoForge 1.21.1**: pick an RPG class, cast spells and turn into characters from across the
+multiverse.
 
 > **Alpha.** Things change fast and settings may reset between versions.
 
 ## Features
 
-- **Classes:** pick one of six groups (or The Forsaken) and a class before you play, with its own start ceremony,
-  death and level-up animation. See [Classes and skill trees](docs/CLASSES.md) and [Callings](docs/CALLINGS.md).
-- **Stamina:** sprinting and jumping cost stamina; standing still or walking refills it.
-- **Spells:** fifteen schools of magic, cast from the wheel (hold **G**). See [Spells](docs/SPELLS.md).
-- **Characters:** turn into a character from the wheel and use its powers on eleven ability keys.
-  - **Green Lantern:** a power ring that shapes solid green hard light: a steam train, flight, a construct wheel,
-    shockwaves, giant hands, a light cage, an air strike and a mech.
+- **Characters:** turn into one from the power wheel (hold **G**).
+  - **Green Lantern:** a power ring that shapes solid green hard light: flight, weapons, giant hands, a steam train,
+    an air strike and a mech.
   - **Doctor Octopus:** four robot tentacles that walk, climb, grab, throw, strike the ground and open portals.
-- **Music:** the multiverse theme plays on a loop in the main menu, in place of Minecraft's menu music; the music slider
-  sets its volume.
-- **Updates in the game:** the mod looks for a new release every five minutes. A new one comes with a pling and a popup;
-  click it in the menu, press **U** (changeable under Controls) or the small arrow button right of **Mods** on the
-  title screen or in the pause menu (a green dot on it while a newer version is out) for the update manager. It is
-  one window with three pages, **Updates**, **Feedback** and **Tour** (switch with the tabs, **Ctrl+Tab** or the
-  number keys). **Updates** says whether you are up to date and what the newer version brings (**What's new**), and
-  lists the last ten versions with their notes (**Versions**): update on quit (installed when you close the game), or
-  switch to any version now (the game quits, then start it again yourself).
-- **Tour:** after an update a tour asks on the title screen, then shows every change of your version right where it
-  is (and how things work where that helps); when the next part is in a world or needs a character, it says how to get
-  there. On an older version it first suggests updating. **Tour** in the update manager plays it again any time.
-- **Bug reports:** **Feedback → Bug** in the update manager sends a bug with a name, a description and a priority. It
-  becomes a public issue on this repository, with your Minecraft name. What you type is kept until you submit it, also
-  when you leave the screen, die or close the game; **Feedback → Submitted** shows your last 3 reports with their
-  status on GitHub.
-- **Ideas:** **Feedback → Idea** sends an idea the same way, with a name, a description and a priority, and keeps your
-  text and your last 3 ideas the same way.
+  - **Thor:** thunder fists, flight, Mjolnir to throw and fly after, a thunderclap and lightning from the sky.
+- **Classes:** pick a group and a class before you play, each with its own start ceremony.
+- **Spells:** cast from the same wheel; fifteen schools of magic, five spells so far.
+- **Stamina:** sprinting and jumping cost stamina; walking or standing still refills it.
+- **Bodies:** creatures go limp when they are thrown, blasted or killed, and get back up when they can.
+- **Music:** the mod's own theme plays in the main menu.
+- **Updates in the game:** the mod tells you when a new version is out and installs it in one click; after an update
+  a tour shows every change.
+- **Feedback:** report a bug or suggest an idea from inside the game. It becomes a public issue on this repository,
+  with your Minecraft name.
 
-Everything each power does: [Characters and their powers](docs/POWERS.md).
+More: [Characters and their powers](docs/POWERS.md) · [Classes](docs/CLASSES.md) · [Callings](docs/CALLINGS.md) ·
+[Spells](docs/SPELLS.md) · [Everything else](docs/PROJECT.md)
 
 ## Install
 
@@ -43,51 +32,30 @@ Everything each power does: [Characters and their powers](docs/POWERS.md).
    [Releases](https://github.com/Tivek87/mc-class-mod/releases).
 3. Put the jar in your `mods` folder and start the game.
 
-On a server, the server and every player need the same version of the mod. Joining one that runs another version
-(from 0.7.0 on) shows which version it runs, with a button that switches yours to it.
+A server and every player on it need the same version; joining one on another version offers to switch yours.
 
 ## Controls
 
 | Key | Does |
 |---|---|
-| **G** (hold) | The wheel: pick a character or a spell |
-| R, V, Z, B, H, N, Y, X, C, Left Alt, K | Ability 1 to 11 of the character you are (Y is always the ultimate) |
-| Crouch + a key | Depends on the ability: undo it, a second version, or nothing |
+| **G** (hold) | Power wheel: pick a character or a spell |
+| **R V Z B H N Y X C**, **Left Alt**, **K** | Your character's abilities (**Y** is the ultimate); more on the mouse, space and shift (Thor uses only those) |
+| **P** | Ability guide: every control of your character |
+| **U** | Update manager: updates, feedback and the tour |
 
-Every key can be changed in *Options > Controls > Multiverse Powers*. A panel in the bottom right shows what each
-key does right now and its cooldown.
+Change any key in *Options > Controls > Multiverse Powers*. A panel at the bottom right shows what you can use right
+now.
 
 ## Settings
 
-Every character's numbers (damage, cooldowns, costs) can be changed in the game: *Mods > Multiverse Powers >
-Config*, where you first pick *Client* or *Server*. Server settings belong to a world: each world keeps its own in
-`<world>/serverconfig/welcomescreen/`, a server sends its own to everyone who plays on it, and only the host or an
-operator may change them. What only you see and hear (screen shake, menu music, update checks) is in
-`config/welcomescreen/client.toml`.
+*Mods > Multiverse Powers > Config*: **Client** for what only you see and hear, **Server** for how a world plays
+(damage, cooldowns, costs). Each world keeps its own server settings; only the host or a listed owner may change them.
 
-## Versions
+## Building
 
-Every update is one step higher: `0.0.1`, `0.0.2` ... `0.0.9`, `0.1.0` ... `9.9.9`. Every version from `0.1.0` on
-stays on the [Releases](https://github.com/Tivek87/mc-class-mod/releases) page. What changed: [CHANGELOG.md](CHANGELOG.md).
-
-## Building from source
-
-Needs Java 21.
-
-```
-./gradlew build
-```
-
-The jar lands in `build/libs/`. `./gradlew runClient` starts a test game, `./gradlew runServer` a test server.
-
-## Project layout
-
-| Folder | What |
-|---|---|
-| `src/main/java/nl/tivek/multiversepowers/` | The mod. `engine/` holds what every power can use, `character/` one folder per character, plus `spell/`, `classes/`, `stamina/`, `config/`, `network/`. |
-| `src/main/resources/` | Textures, sounds, `en_us.json` (all in-game text) |
-| `docs/` | How everything plays, per topic; `ideas/` holds ideas and designs not built yet |
-| `scripts/` | `release.ps1`: builds a release and keeps the newest 10 jars in `releases/` (ignored). `bugs.ps1`: copies the open bug reports and ideas to `bugs/` (ignored). `models/mjolnir/`: builds Thor's Mjolnir (its block model, the faces its runes glow on and its 64 pixel texture; `java scripts/models/mjolnir/MjolnirModel.java` from the root, Java 22 or newer). `bug-relay/`: the Cloudflare Worker that turns a report or idea from the game into an issue |
+Needs Java 21. `./gradlew build` puts the jar in `build/libs/`; `./gradlew runClient` starts a test game. The code is
+in `src/main/java/nl/tivek/multiversepowers/`, release and bug-report scripts in `scripts/`. What each version
+changed: [CHANGELOG.md](CHANGELOG.md).
 
 ## License
 

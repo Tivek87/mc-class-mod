@@ -22,10 +22,11 @@ import nl.tivek.multiversepowers.update.client.ManagerScreen;
 // they did it). A step that `leads` to a place is done by going there, which Next does for them. `prepare` runs every
 // frame it is up (to wake what it points at), `available` leaves it out when it has nothing to show. Its words are
 // `tour.<mod>.<id>.title`, `.text` and `.prompt`, with `key` drawn as a key cap before the prompt, and `.chip` in place
-// of the one its kind gives when it has one.
+// of the one its kind gives when it has one. `covers` names the CHANGELOG.md lines it shows, each by how it starts; its
+// kind and version are those of the first (`TourCoverageTest` holds every line the tour shows to a step).
 record TourStep(String version, String id, Kind kind, Place place, List<String> targets, @Nullable String until,
         @Nullable Place leads, @Nullable Runnable prepare, @Nullable BooleanSupplier available,
-        @Nullable Supplier<Component> key) {
+        @Nullable Supplier<Component> key, List<String> covers) {
     private static final String PREFIX = "tour." + MultiversePowers.MODID + ".";
 
     // What a step shows: a change of its version (each line of its changelog has one), or how something works.
@@ -40,9 +41,10 @@ record TourStep(String version, String id, Kind kind, Place place, List<String> 
     }
 
     enum Place {
-        // The title screen, or the pause menu in a world; the updates page's Versions comes before the page as a whole.
+        // The title screen, or the pause menu in a world; the updates page's Versions comes before the page as a whole;
+        // ANY wherever the tour is.
         MENU(null), VERSIONS("versions.list"), MANAGER("page.updates"), FEEDBACK("page.feedback"), GAME(null),
-        GUIDE("guide");
+        GUIDE("guide"), ANY(null);
 
         // What the place's screen reports while it is drawn.
         @Nullable
@@ -71,7 +73,7 @@ record TourStep(String version, String id, Kind kind, Place place, List<String> 
         boolean reachable() {
             Minecraft minecraft = Minecraft.getInstance();
             return switch (this) {
-                case MENU, VERSIONS, MANAGER, FEEDBACK -> true;
+                case MENU, VERSIONS, MANAGER, FEEDBACK, ANY -> true;
                 case GAME, GUIDE -> minecraft.level != null && minecraft.player != null
                         && ClientCharacter.active() != null;
             };
@@ -94,42 +96,52 @@ record TourStep(String version, String id, Kind kind, Place place, List<String> 
                 case FEEDBACK -> ManagerScreen.open(home, ManagerScreen.BUG);
                 case GAME -> minecraft.setScreen(null);
                 case GUIDE -> AbilityGuide.open();
+                case ANY -> {
+                    if (now() == null) {
+                        MANAGER.go();
+                    }
+                }
             }
         }
     }
 
     static TourStep step(String version, String id, Kind kind, Place place) {
-        return new TourStep(version, id, kind, place, List.of(), null, null, null, null, null);
+        return new TourStep(version, id, kind, place, List.of(), null, null, null, null, null, List.of());
     }
 
     TourStep at(String... targets) {
         return new TourStep(this.version, this.id, this.kind, this.place, List.of(targets), this.until, this.leads,
-                this.prepare, this.available, this.key);
+                this.prepare, this.available, this.key, this.covers);
     }
 
     TourStep until(String anchor) {
         return new TourStep(this.version, this.id, this.kind, this.place, this.targets, anchor, this.leads,
-                this.prepare, this.available, this.key);
+                this.prepare, this.available, this.key, this.covers);
     }
 
     TourStep leads(Place to) {
         return new TourStep(this.version, this.id, this.kind, this.place, this.targets, to.anchor, to, this.prepare,
-                this.available, this.key);
+                this.available, this.key, this.covers);
     }
 
     TourStep prepare(Runnable prepare) {
         return new TourStep(this.version, this.id, this.kind, this.place, this.targets, this.until, this.leads,
-                prepare, this.available, this.key);
+                prepare, this.available, this.key, this.covers);
     }
 
     TourStep when(BooleanSupplier available) {
         return new TourStep(this.version, this.id, this.kind, this.place, this.targets, this.until, this.leads,
-                this.prepare, available, this.key);
+                this.prepare, available, this.key, this.covers);
     }
 
     TourStep key(Supplier<Component> key) {
         return new TourStep(this.version, this.id, this.kind, this.place, this.targets, this.until, this.leads,
-                this.prepare, this.available, key);
+                this.prepare, this.available, key, this.covers);
+    }
+
+    TourStep covers(String... lines) {
+        return new TourStep(this.version, this.id, this.kind, this.place, this.targets, this.until, this.leads,
+                this.prepare, this.available, this.key, List.of(lines));
     }
 
     boolean points() {

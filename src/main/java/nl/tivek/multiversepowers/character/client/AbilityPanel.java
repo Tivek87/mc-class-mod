@@ -454,7 +454,8 @@ public final class AbilityPanel {
         float foot = y - (PAD + layout.foot() - 2) * scale;
         ScreenAnchors.report("game.panel.rows", left, rowsTop, (width - PAD * 2 + 4) * scale, foot - rowsTop);
         if (layout.foot() > 0) {
-            ScreenAnchors.report("game.panel.foot", left, foot, (width - PAD * 2 + 4) * scale, y - foot - 3 * scale);
+            String name = layout.lantern() ? "game.panel.power" : "game.panel.foot";
+            ScreenAnchors.report(name, left, foot, (width - PAD * 2 + 4) * scale, y - foot - 3 * scale);
         }
     }
 
