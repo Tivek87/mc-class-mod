@@ -17,6 +17,8 @@ the sections before 0.0.1-alpha came before versions were numbered.
 
 ### Changed
 - **Project:** a shorter, clearer README.
+- **Project:** the tests use NeoForge's current buffer constructor and an unused import is gone, so the IDE shows no
+  warnings.
 - **Ability panel:** gone 3 seconds after the last power or blow, its fade included (it stayed 5 seconds, then faded).
 - **Tour:** this version's tour also shows every change from 0.6.6 to 0.7.3, each card naming the version it came in.
 - **Tour:** the first card counts the version's changes and the steps on how things work.
