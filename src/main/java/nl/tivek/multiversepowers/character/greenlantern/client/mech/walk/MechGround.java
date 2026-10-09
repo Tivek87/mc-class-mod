@@ -23,9 +23,9 @@ final class MechGround {
     static final double GROUND_ABOVE = 4.0;
     static final double GROUND_BELOW = 9.0;
     // A foot's sole reaches this far to either side, ahead and back from its ankle.
-    private static final double SOLE_ACROSS = 0.45;
-    static final double SOLE_AHEAD = 1.0;
-    private static final double SOLE_BACK = 0.8;
+    private static final double SOLE_ACROSS = 0.6;
+    static final double SOLE_AHEAD = 1.45;
+    private static final double SOLE_BACK = 1.2;
     // Along its stride a foot can stand this far ahead of or behind where it rests.
     private static final double STRIDE_REACH = 1.2;
     private static final int ROOM = 2;

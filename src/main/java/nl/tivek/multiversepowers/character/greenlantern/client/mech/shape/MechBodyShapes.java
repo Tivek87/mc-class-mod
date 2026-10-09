@@ -8,30 +8,32 @@ import nl.tivek.multiversepowers.engine.client.render.ConstructPainter.Shape;
 import nl.tivek.multiversepowers.engine.client.render.mesh.Mesh;
 import nl.tivek.multiversepowers.engine.client.render.mesh.Surface;
 
-// The trunk round the mech's ground spot, x to its right, y up, z ahead: the pilot sits in a cockpit deep in the chest,
-// looking out through a round port of see-through green glass set in a thick flange of blocks, as in the clip.
+// The trunk round the mech's ground spot, x to its right, y up, z ahead, built like a jaeger: a chest broad at the
+// shoulders tapering in a V to a narrow ribbed waist, a heavy pelvis with plates over the hips. The pilot sits in a
+// cockpit deep in the chest, looking out through a round port of see-through green glass set in a thick flange of
+// blocks where a jaeger's reactor glows.
 public final class MechBodyShapes {
-    public static final double PORT_Y = 7.55;
+    public static final double PORT_Y = 9.8;
     public static final double PORT_IN = 1.05;
     static final double PORT_OUT = 1.62;
     static final double PORT_BACK = 1.0;
-    static final double PORT_FRONT = 2.0;
-    public static final double GLASS_Z = 1.86;
+    static final double PORT_FRONT = 2.02;
+    public static final double GLASS_Z = 1.88;
     static final double GLASS_BULGE = 0.27;
     public static final Vec3 CORE = new Vec3(0.0, PORT_Y, 1.0);
     static final double CORE_RADIUS = 1.35;
-    public static final double CHEST_TOP = 9.3;
+    public static final double CHEST_TOP = 11.75;
     private static final double FLOOR = MechScript.COCKPIT.y;
     private static final double CABIN_BACK = -0.32;
     private static final double CABIN_SIDE = 1.3;
-    private static final double CABIN_TOP = 9.0;
+    private static final double CABIN_TOP = 11.25;
     private static final double HOLE_WIDE = 1.1;
     private static final double HOLE_HIGH = 1.15;
     private static final int RIM_BLOCKS = 18;
-    private static final Surface CHEST_SKIN = Surface.loft(MechParts.at(5.85, 1.45, 1.12, 0.0, 2.6),
-            MechParts.at(6.3, 1.98, 1.45, 0.05, 2.8), MechParts.at(7.1, 2.34, 1.7, 0.08, 3.0),
-            MechParts.at(8.0, 2.5, 1.78, 0.05, 3.0), MechParts.at(8.65, 2.34, 1.62, 0.0, 2.8),
-            MechParts.at(9.1, 1.8, 1.28, -0.05, 2.6), MechParts.at(CHEST_TOP, 0.0, 0.0, -0.08, 2.0));
+    private static final Surface CHEST_SKIN = Surface.loft(MechParts.at(8.0, 1.45, 1.3, 0.05, 3.6),
+            MechParts.at(8.6, 1.75, 1.4, 0.08, 3.8), MechParts.at(9.3, 2.25, 1.74, 0.12, 4.2),
+            MechParts.at(10.15, 2.62, 1.84, 0.1, 4.5), MechParts.at(10.9, 2.66, 1.76, 0.04, 4.5),
+            MechParts.at(11.45, 2.1, 1.45, -0.04, 4.0), MechParts.at(CHEST_TOP, 0.0, 0.0, -0.08, 2.0));
 
     // Half the turn the port takes out of the front of the chest.
     private static final double OPEN = open();
@@ -54,31 +56,50 @@ public final class MechBodyShapes {
     private MechBodyShapes() {
     }
 
+    // A heavy pelvis round the hips: a plate down its front, pointed at the bottom, and a guard of two plates over each
+    // hip joint, clear of the thigh that swings under it.
     private static Mesh[] pelvis() {
         Vec3 hip = MechScript.HIP;
-        Surface pelvis = Surface.loft(MechParts.at(4.2, 0.0, 0.0, -0.05, 2.0),
-                MechParts.at(4.35, 1.15, 0.78, -0.05, 3.0), MechParts.at(4.65, 1.8, 1.02, -0.05, 3.4),
-                MechParts.at(5.1, 1.96, 1.08, -0.05, 3.4), MechParts.at(5.42, 1.78, 1.0, -0.05, 3.2),
-                MechParts.at(5.58, 0.0, 0.0, -0.05, 2.0));
+        Surface pelvis = Surface.loft(MechParts.at(6.35, 0.0, 0.0, -0.05, 2.0),
+                MechParts.at(6.5, 1.0, 0.72, -0.05, 3.4), MechParts.at(6.85, 1.7, 1.0, -0.05, 4.2),
+                MechParts.at(7.35, 1.98, 1.12, -0.05, 4.5), MechParts.at(7.75, 1.86, 1.06, -0.05, 4.2),
+                MechParts.at(7.95, 0.0, 0.0, -0.05, 2.0));
         List<Mesh> m = new ArrayList<>();
         m.add(MechParts.skin(pelvis, 22, 4, 41, 0.95));
-        MechParts.pair(m, Mesh.ball(16, 10, 0.66, 1.0).moved(hip.x, hip.y, hip.z));
-        m.add(MechParts.front(1.0, 1.36, 0.09, 1.08, -0.62, 5.4, 0.62, 5.4, 0.7, 4.8, 0.0, 4.02, -0.7, 4.8));
-        m.add(MechParts.front(1.3, 1.44, 0.03, 1.3, -0.2, 5.25, 0.2, 5.25, 0.24, 4.75, 0.0, 4.35, -0.24, 4.75));
+        MechParts.pair(m, Mesh.ball(16, 10, 0.74, 1.0).moved(hip.x, hip.y, hip.z));
+        m.add(MechParts.front(1.0, 1.34, 0.09, 1.08, -0.8, 7.82, 0.8, 7.82, 0.68, 7.0, 0.0, 6.15, -0.68, 7.0));
+        m.add(MechParts.front(1.3, 1.44, 0.03, 1.3, -0.2, 7.62, 0.2, 7.62, 0.22, 7.0, 0.0, 6.55, -0.22, 7.0));
+        for (int k = 0; k < 2; k++) {
+            double x = 2.44 + 0.12 * k;
+            double top = 8.0 - 0.55 * k;
+            Mesh guard = MechParts.side(x, x + 0.18, 0.05, 1.04 + 0.06 * k, -0.8 + 0.1 * k, top - 1.25, 0.05,
+                    top - 1.5, 0.85 - 0.1 * k, top - 1.15, 1.0 - 0.1 * k, top, -1.0 + 0.1 * k, top);
+            MechParts.pair(m, flared(guard, x, top - 0.6, 7.0 + 4.0 * k));
+        }
         Surface outside = pelvis.offset(0.05, true);
-        m.addAll(List.of(MechParts.plated(MechParts.part(outside, -0.075, 0.075, 0.18, 0.8), 2, 2, 42, 0.12,
-                1.05)));
         m.addAll(List.of(MechParts.plated(MechParts.part(outside, 0.425, 0.575, 0.18, 0.8), 2, 2, 43, 0.12,
                 1.05)));
         return m.toArray(Mesh[]::new);
     }
 
+    // A side plate at `x` turned out at its foot about a line along z at height `y`, by so many degrees.
+    private static Mesh flared(Mesh plate, double x, double y, double degrees) {
+        return plate.moved(-x, -y, 0.0).turned(0.0, 0.0, 1.0, degrees).moved(x, y, 0.0);
+    }
+
+    // The narrow waist between the pelvis and the chest, ribbed with armoured bands across its belly.
     private static Mesh[] waist() {
-        Surface waist = Surface.loft(MechParts.at(5.3, 0.0, 0.0, 0.0, 2.0), MechParts.at(5.42, 1.3, 0.96, 0.0, 2.6),
-                MechParts.at(5.62, 1.42, 1.04, 0.01, 2.6), MechParts.at(5.78, 1.34, 0.99, 0.01, 2.6),
-                MechParts.at(5.96, 1.46, 1.08, 0.02, 2.6), MechParts.at(6.1, 0.0, 0.0, 0.02, 2.0));
-        return new Mesh[] { MechParts.skin(waist, 18, 3, 51, 0.95),
-                Mesh.bevel(-0.1, 5.35, 0.95, 0.1, 6.0, 1.14, 0.03, 1.35) };
+        Surface waist = Surface.loft(MechParts.at(7.5, 0.0, 0.0, 0.0, 2.0), MechParts.at(7.56, 1.15, 0.86, 0.0, 3.6),
+                MechParts.at(7.85, 1.26, 0.94, 0.02, 3.8), MechParts.at(8.15, 1.2, 0.9, 0.02, 3.8),
+                MechParts.at(8.45, 1.32, 0.98, 0.03, 3.8), MechParts.at(8.75, 0.0, 0.0, 0.03, 2.0));
+        List<Mesh> m = new ArrayList<>();
+        m.add(MechParts.skin(waist, 18, 3, 51, 0.95));
+        for (int k = 0; k < 2; k++) {
+            double y = 7.66 + 0.36 * k;
+            MechParts.pair(m, Mesh.bevel(0.1, y, 0.82, 0.92, y + 0.28, 1.04, 0.04, 1.14 - 0.05 * k));
+        }
+        m.add(Mesh.bevel(-0.08, 7.58, 0.9, 0.08, 8.42, 1.08, 0.03, 1.35));
+        return m.toArray(Mesh[]::new);
     }
 
     // How far round from the front of the chest its surface is HOLE_WIDE out to the side, at the port's height.
@@ -111,14 +132,31 @@ public final class MechBodyShapes {
         m.addAll(List.of(MechParts.plated(MechParts.part(chest, 0.25 - OPEN, 0.25 + OPEN, 0.0, floor), 3, 1, 63,
                 0.34, 1.0)));
         Surface outside = chest.offset(0.06, true);
-        double pecTop = MechParts.along(chest, 8.55);
-        double pecLow = MechParts.along(chest, 6.9);
-        m.addAll(List.of(MechParts.plated(MechParts.part(outside, 0.25 + OPEN + 0.01, 0.25 + OPEN + 0.1, pecLow,
-                pecTop), 2, 3, 64, 0.14, 1.06)));
-        m.addAll(List.of(MechParts.plated(MechParts.part(outside, 0.25 - OPEN - 0.1, 0.25 - OPEN - 0.01, pecLow,
-                pecTop), 2, 3, 65, 0.14, 1.06)));
-        m.add(Mesh.torus(24, 4, 0.78, 0.07, 1.3).moved(0.0, CHEST_TOP - 0.12, -0.02));
+        double pecTop = MechParts.along(chest, 11.05);
+        double pecLow = MechParts.along(chest, 9.15);
+        m.addAll(List.of(MechParts.plated(MechParts.part(outside, 0.25 + OPEN + 0.01, 0.25 + OPEN + 0.12, pecLow,
+                pecTop), 2, 3, 64, 0.16, 1.06)));
+        m.addAll(List.of(MechParts.plated(MechParts.part(outside, 0.25 - OPEN - 0.12, 0.25 - OPEN - 0.01, pecLow,
+                pecTop), 2, 3, 65, 0.16, 1.06)));
+        // Under the port two plates close in a V down to the waist, as a jaeger's ribs do.
+        Surface rib = strip(outside, 0.235, MechParts.along(chest, 8.25), 0.1, MechParts.along(chest, 9.25), 0.045);
+        for (Mesh plate : MechParts.plated(rib, 1, 4, 67, 0.14, 1.1)) {
+            MechParts.pair(m, plate);
+        }
+        // The back: a raised plate between the shoulder blades and two vents low down on it.
+        double backLow = MechParts.along(chest, 9.0);
+        double backTop = MechParts.along(chest, 11.3);
+        m.addAll(List.of(MechParts.plated(MechParts.part(outside, 0.66, 0.84, backLow, backTop), 3, 4, 66, 0.18,
+                1.06)));
+        MechParts.pair(m, Mesh.cylinder(14, 0.36, 0.0, 0.4, 1.1).alongZ().moved(0.75, 9.25, -1.98));
+        MechParts.pair(m, Mesh.torus(14, 4, 0.36, 0.05, 1.35).alongZ().moved(0.75, 9.25, -1.98));
+        m.add(Mesh.torus(24, 4, 0.82, 0.08, 1.3).moved(0.0, CHEST_TOP - 0.14, -0.02));
         return m.toArray(Mesh[]::new);
+    }
+
+    // A strip of a body's skin from (u0, v0) to (u1, v1) in its own places, `wide` across in u.
+    private static Surface strip(Surface skin, double u0, double v0, double u1, double v1, double wide) {
+        return (u, v) -> skin.at(u0 + (u1 - u0) * v + (u - 0.5) * wide, v0 + (v1 - v0) * v);
     }
 
     // The port's flange: a ring of heavy blocks round the glass, every other one standing a little further out.
@@ -210,28 +248,31 @@ public final class MechBodyShapes {
                         0.0) };
     }
 
-    // The right pauldron: a tiled dome tipped outwards over the shoulder, two tiers under it and a horn on top.
+    // The right pauldron, a jaeger's: a big squared shell over the joint, tipped out at its top, open below where the
+    // arm comes out, two layered plates hanging down its outer side and a raised crest along its top.
     private static Mesh[] shoulder() {
         Vec3 joint = MechScript.SHOULDER;
         List<Mesh> m = new ArrayList<>();
-        Surface dome = Surface.lathe(0.0, -0.72, 1.12, -0.68, 1.38, -0.36, 1.42, 0.0, 1.28, 0.4, 0.98, 0.72, 0.52,
-                0.96, 0.0, 1.04).scaled(1.0, 1.0, 0.92).turned(0.0, 0.0, 1.0, -24.0)
-                .moved(joint.x + 0.2, joint.y + 0.32, joint.z);
-        m.add(MechParts.skin(dome, 18, 6, 71, 1.0));
+        Surface shell = Surface.loft(MechParts.at(-1.05, 1.2, 1.22, 0.0, 4.6), MechParts.at(-0.4, 1.46, 1.42, 0.0, 5.8),
+                MechParts.at(0.35, 1.54, 1.48, -0.02, 6.2), MechParts.at(1.0, 1.44, 1.38, -0.05, 6.0),
+                MechParts.at(1.3, 1.18, 1.14, -0.08, 5.2), MechParts.at(1.42, 0.0, 0.0, -0.1, 2.0))
+                .turned(0.0, 0.0, 1.0, -16.0).moved(joint.x + 0.3, joint.y + 0.35, joint.z);
+        m.addAll(List.of(MechParts.plated(shell, 16, 6, 71, 0.18, 1.0)));
         for (int k = 0; k < 2; k++) {
-            double r = 1.3 - 0.16 * k;
-            double y = -0.62 - 0.36 * k;
-            Surface tier = Surface.lathe(0.0, y - 0.3, r, y - 0.24, r + 0.04, y, r - 0.1, y + 0.12, 0.0, y + 0.14)
-                    .scaled(1.0, 1.0, 0.9).turned(0.0, 0.0, 1.0, -24.0).moved(joint.x + 0.2, joint.y + 0.32,
-                            joint.z);
-            m.add(MechParts.skin(tier, 16, 1, 72 + k, 1.02));
+            double y = -0.95 - 0.42 * k;
+            Surface tier = Surface.loft(MechParts.at(y - 0.42, 1.5 - 0.1 * k, 1.36 - 0.1 * k, 0.0, 4.4),
+                    MechParts.at(y, 1.58 - 0.1 * k, 1.44 - 0.1 * k, 0.0, 4.6));
+            Surface outer = MechParts.part(tier, -0.17, 0.17, 0.0, 1.0);
+            for (Mesh plate : MechParts.plated(outer, 4, 1, 72 + k, 0.12, 1.04 + 0.04 * k)) {
+                m.add(plate.turned(0.0, 0.0, 1.0, -16.0).moved(joint.x + 0.3, joint.y + 0.35, joint.z));
+            }
         }
-        m.add(Mesh.ball(16, 10, 0.74, 0.95).moved(joint.x, joint.y, joint.z));
-        m.add(MechParts.horn(0.26, 1.15, new Vec3(joint.x + 0.35, joint.y + 1.2, joint.z - 0.15),
-                new Vec3(joint.x + 0.75, joint.y + 1.75, joint.z - 0.35), new Vec3(joint.x + 1.25, joint.y + 2.1,
-                        joint.z - 0.55), new Vec3(joint.x + 1.75, joint.y + 2.2, joint.z - 0.7)));
-        m.add(MechParts.side(-0.08, 0.08, 0.04, 1.15, 0.95, 0.0, -0.55, 0.0, -0.95, 0.75, 0.2, 0.62)
-                .turned(0.0, 0.0, 1.0, -30.0).moved(joint.x + 0.55, joint.y + 1.05, joint.z));
+        m.add(Mesh.ball(16, 10, 0.82, 0.95).moved(joint.x, joint.y, joint.z));
+        // The crest along its top, from front to back, and a lamp in its front.
+        m.add(MechParts.side(-0.1, 0.1, 0.04, 1.15, -1.2, -0.05, 1.1, -0.05, 0.7, 0.42, -1.05, 0.4)
+                .turned(0.0, 0.0, 1.0, -16.0).moved(joint.x + 0.72, joint.y + 1.62, joint.z));
+        m.add(Mesh.bevel(-0.32, -0.16, 0.0, 0.32, 0.16, 0.14, 0.04, 1.5).turned(0.0, 0.0, 1.0, -16.0)
+                .moved(joint.x + 0.55, joint.y + 0.65, joint.z + 1.42));
         return m.toArray(Mesh[]::new);
     }
 }

@@ -13,17 +13,17 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import nl.tivek.multiversepowers.engine.world.LoadedWorld;
 
-// Where the mech's beams start and where they go, worked out alike on the server and in every game: the eye beam from
-// the middle of its visor, the Unibeam from the port on its chest, both at the spot its pilot's crosshair finds and on
-// until a block stops them.
+// Where the mech's eyes fire from and where their light goes, worked out alike on the server and in every game: from
+// the middle of its visor at the spot its pilot's crosshair finds, and on until a block stops it.
 public final class MechBeam {
     public static final double EYE_RANGE = 48.0;
-    public static final double UNIBEAM_RANGE = 40.0;
-    public static final double UNIBEAM_RADIUS = 1.3;
-    // The port on its chest and the middle of its visor, in the torso's places (where its shapes draw them).
-    public static final Vec3 PORT = new Vec3(0.0, 7.55, 1.86);
-    private static final Vec3 VISOR = MechScript.NECK.add(0.0, MechScript.HEAD_UP + 0.16 * MechScript.HEAD_SCALE,
-            0.6 * MechScript.HEAD_SCALE);
+    // How far the missile arm aims, and its missiles fly.
+    public static final double AIM_RANGE = 64.0;
+    public static final double GLARE_RANGE = 40.0;
+    public static final double GLARE_RADIUS = 0.9;
+    // The middle of its visor, in the torso's places (where its shapes draw it).
+    private static final Vec3 VISOR = MechScript.NECK.add(0.0, MechScript.HEAD_UP + 0.05 * MechScript.HEAD_SCALE,
+            0.62 * MechScript.HEAD_SCALE);
     private static final double BODY = 0.3;
 
     private MechBeam() {
@@ -31,10 +31,6 @@ public final class MechBeam {
 
     public static Vec3 visor(MechScript.Stage torso) {
         return torso.point(VISOR);
-    }
-
-    public static Vec3 port(MechScript.Stage torso) {
-        return torso.point(PORT);
     }
 
     // What the pilot's crosshair rests on within `range`: a creature, a block, or the end of its reach.

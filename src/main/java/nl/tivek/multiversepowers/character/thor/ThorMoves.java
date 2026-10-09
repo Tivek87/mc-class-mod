@@ -20,6 +20,7 @@ import net.neoforged.neoforge.event.entity.living.LivingFallEvent;
 import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.character.thor.hammer.HammerPull;
 import nl.tivek.multiversepowers.character.thor.hammer.Mjolnir;
+import nl.tivek.multiversepowers.character.thor.hammer.StormThrow;
 import nl.tivek.multiversepowers.character.thor.storm.ThorStorm;
 import nl.tivek.multiversepowers.engine.effect.Effects;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
@@ -41,6 +42,8 @@ public final class ThorMoves {
     private static final float STUN = 5.0F;
     // Standing this long in flight lands him, if his game never said so.
     private static final int GROUNDED = 12;
+    // He flies only with the hammer in his hand: without it longer than this (but by a move of his own), he falls.
+    private static final int HANDLESS = 20;
     // A thunderclap wound up this long without going off (its button's letting go lost) stops showing.
     private static final int CHARGE_LONGEST = 40;
     static final double BLINK = 15.0;
@@ -54,6 +57,7 @@ public final class ThorMoves {
     private boolean flying;
     private int flightAge;
     private int grounded;
+    private int handless;
     private boolean lightning;
     private int lightningLeft;
     private float strikes;
@@ -208,6 +212,7 @@ public final class ThorMoves {
         moves.flying = true;
         moves.flightAge = 0;
         moves.grounded = 0;
+        moves.handless = 0;
         moves.jumping = false;
         moves.floatAge = -1;
         moves.sync(ThorStatePayload.TAKE_OFF, 0);
@@ -237,6 +242,7 @@ public final class ThorMoves {
         moves.flying = true;
         moves.flightAge = 0;
         moves.grounded = 0;
+        moves.handless = 0;
         moves.jumping = false;
         moves.floatAge = -1;
         return true;
@@ -244,7 +250,7 @@ public final class ThorMoves {
 
     // His game says he touched down, or something knocks him out of the sky. Landing at lightning speed, the bolt he
     // has become strikes where he lands.
-    static void land(ServerPlayer player, boolean touched) {
+    public static void land(ServerPlayer player, boolean touched) {
         ThorMoves moves = find(player);
         if (moves == null || !moves.flying) {
             return;
@@ -340,8 +346,11 @@ public final class ThorMoves {
             player.resetFallDistance();
             player.connection.aboveGroundTickCount = 0;
             this.grounded = player.onGround() && this.flightAge > 20 ? this.grounded + 1 : 0;
+            this.handless = Mjolnir.home(player) || StormThrow.active(player) ? 0 : this.handless + 1;
             if (this.grounded >= GROUNDED) {
                 land(player, true);
+            } else if (this.handless > HANDLESS) {
+                land(player, false);
             } else if (this.lightning) {
                 this.bolting(level, player);
             }

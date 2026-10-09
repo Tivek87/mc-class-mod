@@ -31,7 +31,7 @@ public final class MechBuild {
     // A slow breath once the chest is shut, faded out before the walk takes over.
     private static final double BREATH_FROM = MechScript.SIT - 4.0;
     private static final double BREATH_TICKS = 36.0;
-    private static final double BREATH_RISE = 0.025;
+    private static final double BREATH_RISE = 0.04;
     private static final double BREATH_SHRUG = 0.03;
     // A lifted foot's roll (toes up +) and its shin's lean the way it goes, by how far through its step it is (0 to 1,
     // on past 1 as it slaps down flat): heel first off the ground, toes up through the swing, heel first back down.
@@ -44,63 +44,63 @@ public final class MechBuild {
     private static final Keyframes.Key[] KEYS = {
             key(0, true), key(MechScript.CORE - 1, true),
             key(MechScript.ARMS_IN + 3, true),
-            key(MechScript.SPREAD - 3, false, RISE, -0.08, LEAN, -0.03),
-            key(MechScript.SWING - 3, true, RISE, -0.16, LEAN, 0.02),
-            key(MechScript.CLAP - 2, false, RISE, -0.12, LEAN, -0.02),
-            key(MechScript.CLAP + 2, false, RISE, -0.24, LEAN, -0.06),
-            key(MechScript.RELEASE - 2, true, RISE, -0.22, LEAN, -0.05),
-            key(MechScript.RELEASE + 4, false, RISE, -0.06, LEAN, 0.01),
+            key(MechScript.SPREAD - 3, false, RISE, -0.12, LEAN, -0.03),
+            key(MechScript.SWING - 3, true, RISE, -0.25, LEAN, 0.02),
+            key(MechScript.CLAP - 2, false, RISE, -0.18, LEAN, -0.02),
+            key(MechScript.CLAP + 2, false, RISE, -0.37, LEAN, -0.06),
+            key(MechScript.RELEASE - 2, true, RISE, -0.34, LEAN, -0.05),
+            key(MechScript.RELEASE + 4, false, RISE, -0.09, LEAN, 0.01),
             key(MechScript.UPPER_ARMS, true),
-            key(MechScript.ELBOWS + 3, false, RISE, -0.04),
+            key(MechScript.ELBOWS + 3, false, RISE, -0.06),
             // Flexing as its arms lock on: chest out, shoulders up, then down into its guard.
-            key(MechScript.ELBOWS + 7, true, RISE, 0.05, LEAN, 0.07, SHRUG, 0.14, SHRUG + 1, 0.14),
-            key(MechScript.ELBOWS + 12, false, RISE, -0.12, LEAN, -0.03, SHRUG, 0.06, SHRUG + 1, 0.06),
+            key(MechScript.ELBOWS + 7, true, RISE, 0.08, LEAN, 0.07, SHRUG, 0.14, SHRUG + 1, 0.14),
+            key(MechScript.ELBOWS + 12, false, RISE, -0.18, LEAN, -0.03, SHRUG, 0.06, SHRUG + 1, 0.06),
             // Ready: a wide crouch over its knees, leaning in, the shoulders up a little.
-            key(MechScript.HEAD_FORM, true, RISE, -0.34, LEAN, -0.07, HIPS_PITCH, -0.03, SHRUG, 0.08, SHRUG + 1,
+            key(MechScript.HEAD_FORM, true, RISE, -0.52, LEAN, -0.07, HIPS_PITCH, -0.03, SHRUG, 0.08, SHRUG + 1,
                     0.08),
             // Up and back a little, watching the head take shape high above.
-            key(MechScript.HEAD_FORM + 8, true, RISE, -0.2, LEAN, 0.05, SHRUG, 0.04, SHRUG + 1, 0.04),
-            key(MechScript.HEAD_DROP + 2, false, RISE, -0.3, LEAN, -0.02, SHRUG, 0.06, SHRUG + 1, 0.06),
-            key(MechScript.CRASH + 4, false, RISE, -0.36, LEAN, -0.04, SHRUG, 0.12, SHRUG + 1, 0.12),
+            key(MechScript.HEAD_FORM + 8, true, RISE, -0.31, LEAN, 0.05, SHRUG, 0.04, SHRUG + 1, 0.04),
+            key(MechScript.HEAD_DROP + 2, false, RISE, -0.46, LEAN, -0.02, SHRUG, 0.06, SHRUG + 1, 0.06),
+            key(MechScript.CRASH + 4, false, RISE, -0.55, LEAN, -0.04, SHRUG, 0.12, SHRUG + 1, 0.12),
             // Rearing up with the right arm raised to strike, turned away from the head...
-            key(MechScript.REACH + 5, true, RISE, -0.12, LEAN, 0.1, TURN, -0.15, BANK, -0.06, HIPS_YAW, -0.05, SHRUG,
+            key(MechScript.REACH + 5, true, RISE, -0.18, LEAN, 0.1, TURN, -0.15, BANK, -0.06, HIPS_YAW, -0.05, SHRUG,
                     0.22, SHRUG + 1, 0.02),
             // ...lunging down onto it with the right shoulder driven in...
-            key(MechScript.GRAB - 3, false, RISE, -0.9, LEAN, -0.5, TURN, 0.18, BANK, 0.06, HIPS_PITCH, -0.05, SHRUG,
+            key(MechScript.GRAB - 3, false, RISE, -1.5, LEAN, -0.63, TURN, 0.18, BANK, 0.12, HIPS_PITCH, -0.05, SHRUG,
                     0.1, SHRUG + 1, 0.04),
-            key(MechScript.GRAB, true, RISE, -1.5, LEAN, -0.75, TURN, 0.3, BANK, 0.1, HIPS_PITCH, -0.1, HIPS_YAW, 0.08,
+            key(MechScript.GRAB, true, RISE, -2.5, LEAN, -0.95, TURN, 0.3, BANK, 0.2, HIPS_PITCH, -0.1, HIPS_YAW, 0.08,
                     SHRUG + 1, 0.1),
             // ...hauling it out and swinging it back past the hip, low and wound up...
-            key(MechScript.GRAB + 3, false, RISE, -1.35, LEAN, -0.6, TURN, 0.24, BANK, 0.08, HIPS_PITCH, -0.08,
+            key(MechScript.GRAB + 3, false, RISE, -2.25, LEAN, -0.76, TURN, 0.24, BANK, 0.16, HIPS_PITCH, -0.08,
                     HIPS_YAW, 0.06, SHRUG, 0.12),
-            key(MechScript.GRAB + 6, false, RISE, -1.05, LEAN, -0.35, TURN, 0.0, BANK, 0.08, HIPS_PITCH, -0.05),
-            key(MechScript.WIND, true, RISE, -1.15, LEAN, -0.28, TURN, -0.42, BANK, 0.14, HIPS_YAW, -0.12,
+            key(MechScript.GRAB + 6, false, RISE, -1.62, LEAN, -0.35, TURN, 0.0, BANK, 0.08, HIPS_PITCH, -0.05),
+            key(MechScript.WIND, true, RISE, -1.77, LEAN, -0.28, TURN, -0.42, BANK, 0.14, HIPS_YAW, -0.12,
                     HIPS_PITCH, -0.05, SHRUG, 0.05, SHRUG + 1, 0.12),
             // ...and flinging it up as it springs tall, leaning back after it.
-            key(MechScript.TOSS - 2, false, RISE, -0.6, LEAN, -0.05, TURN, -0.1, BANK, 0.04, HIPS_YAW, -0.03),
-            key(MechScript.TOSS, false, RISE, 0.12, LEAN, 0.16, TURN, 0.12, BANK, -0.06, HIPS_YAW, 0.03, SHRUG, 0.3),
-            key(MechScript.TOSS + 5, true, RISE, 0.1, LEAN, 0.2, TURN, 0.08, BANK, -0.04, SHRUG, 0.18, SHRUG + 1,
+            key(MechScript.TOSS - 2, false, RISE, -0.92, LEAN, -0.05, TURN, -0.1, BANK, 0.04, HIPS_YAW, -0.03),
+            key(MechScript.TOSS, false, RISE, 0.18, LEAN, 0.16, TURN, 0.12, BANK, -0.06, HIPS_YAW, 0.03, SHRUG, 0.3),
+            key(MechScript.TOSS + 5, true, RISE, 0.15, LEAN, 0.2, TURN, 0.08, BANK, -0.04, SHRUG, 0.18, SHRUG + 1,
                     0.04),
             // Watching it tumble high above, then hunched square under it to take it on its neck: nothing turned at
             // the lock, so the head goes on as it falls.
-            key(MechScript.LOCK - 10, false, RISE, -0.04, LEAN, 0.14, TURN, 0.03, SHRUG, 0.06, SHRUG + 1, 0.06),
-            key(MechScript.LOCK - 3, false, RISE, -0.26, LEAN, 0.02, SHRUG, 0.2, SHRUG + 1, 0.2),
-            key(MechScript.LOCK, true, RISE, -0.32, SHRUG, 0.24, SHRUG + 1, 0.24),
-            key(MechScript.LOCK + 3, false, RISE, -0.1, LEAN, 0.02, SHRUG, 0.1, SHRUG + 1, 0.1),
+            key(MechScript.LOCK - 10, false, RISE, -0.06, LEAN, 0.14, TURN, 0.03, SHRUG, 0.06, SHRUG + 1, 0.06),
+            key(MechScript.LOCK - 3, false, RISE, -0.4, LEAN, 0.02, SHRUG, 0.2, SHRUG + 1, 0.2),
+            key(MechScript.LOCK, true, RISE, -0.49, SHRUG, 0.24, SHRUG + 1, 0.24),
+            key(MechScript.LOCK + 3, false, RISE, -0.15, LEAN, 0.02, SHRUG, 0.1, SHRUG + 1, 0.1),
             // Standing tall with its chest out and its head thrown back, then a look round.
-            key(MechScript.LOCK + 7, true, RISE, 0.07, LEAN, 0.08, LOOK_PITCH, -0.3),
-            key(MechScript.DONE, true, RISE, 0.06, LEAN, 0.07, LOOK_YAW, -0.12, LOOK_PITCH, -0.25),
-            key(MechScript.DONE + 5, false, RISE, -0.06, LEAN, -0.01, LOOK_YAW, 0.15, LOOK_PITCH, 0.05),
+            key(MechScript.LOCK + 7, true, RISE, 0.11, LEAN, 0.08, LOOK_PITCH, -0.3),
+            key(MechScript.DONE, true, RISE, 0.09, LEAN, 0.07, LOOK_YAW, -0.12, LOOK_PITCH, -0.25),
+            key(MechScript.DONE + 5, false, RISE, -0.09, LEAN, -0.01, LOOK_YAW, 0.15, LOOK_PITCH, 0.05),
             key(MechScript.SETTLED, true) };
     // Each blow and lock jolts the body: when, how far the hips drop, the torso pitches and the shoulders jump, and
     // how fast it swings and dies away (ticks).
     private static final double[][] JOLTS = {
-            { MechScript.CORE + 1, -0.1, 0.0, 0.0, 7.0, 5.0 },
-            { MechScript.CLAP, -0.12, -0.05, 0.0, 8.0, 5.0 },
-            { MechScript.ELBOWS, -0.06, 0.0, 0.2, 8.0, 5.0 },
-            { MechScript.CRASH, -0.28, 0.09, 0.3, 10.0, 7.0 },
-            { MechScript.GRAB, -0.12, -0.05, 0.12, 7.0, 4.0 },
-            { MechScript.LOCK, -0.22, -0.05, 0.15, 8.0, 5.0 } };
+            { MechScript.CORE + 1, -0.15, 0.0, 0.0, 7.0, 5.0 },
+            { MechScript.CLAP, -0.18, -0.05, 0.0, 8.0, 5.0 },
+            { MechScript.ELBOWS, -0.09, 0.0, 0.2, 8.0, 5.0 },
+            { MechScript.CRASH, -0.43, 0.09, 0.3, 10.0, 7.0 },
+            { MechScript.GRAB, -0.18, -0.05, 0.12, 7.0, 4.0 },
+            { MechScript.LOCK, -0.34, -0.05, 0.15, 8.0, 5.0 } };
     // How far the pilot throws each stick (right, left; ahead +) as the mech moves: pulled back to brace, the right
     // one hauled back and shoved ahead as the right arm rears up and lunges, winds back and throws.
     private static final Keyframes.Key[] LEVERS = {

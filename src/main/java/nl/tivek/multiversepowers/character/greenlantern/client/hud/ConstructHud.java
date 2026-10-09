@@ -34,6 +34,7 @@ import nl.tivek.multiversepowers.character.greenlantern.client.body.flame.FlameA
 import nl.tivek.multiversepowers.character.greenlantern.client.body.pose.RechargeAnimation;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.sword.SwordArms;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.whip.WhipArms;
+import nl.tivek.multiversepowers.character.greenlantern.mech.MechAttacks;
 import nl.tivek.multiversepowers.engine.client.gui.GuiShapes;
 import nl.tivek.multiversepowers.engine.client.gui.HudSpace;
 
@@ -270,7 +271,7 @@ public final class ConstructHud {
             return Component.translatable(prefix + "beam");
         }
         if (player instanceof LocalPlayer local && LanternPanel.piloting(local)) {
-            return Component.translatable(prefix + "unibeam");
+            return Component.translatable("screen." + MultiversePowers.MODID + ".panel.green_lantern.mech.glare");
         }
         boolean flying = player != null && ClientRing.flight(player, 0.0F) >= 0.0F;
         return Component.translatable(prefix + (flying ? "brake" : "dome"));
@@ -279,6 +280,9 @@ public final class ConstructHud {
     @Nullable
     static Component status(CharacterAbility ability, Player player) {
         String prefix = "screen." + MultiversePowers.MODID + ".character.";
+        if (player instanceof LocalPlayer local && !ability.id().equals("mech") && LanternPanel.piloting(local)) {
+            return mechStatus(ability, LanternPanel.mechMove(local), prefix);
+        }
         return switch (ability.id()) {
             case "shockwave" -> ClientRing.has(player, RingPayload.DIVE)
                     ? Component.translatable(prefix + "diving") : null;
@@ -290,6 +294,21 @@ public final class ConstructHud {
                     && LightBeam.lockedIn(ClientConstructs.beamClock(player.getId()))
                     ? Component.translatable(prefix + "locked") : null;
             case "mech" -> mechLeft(ability, player, prefix);
+            default -> null;
+        };
+    }
+
+    // In the mech, what its own move on that key does now: the salvos the missile arm has left, flying, spinning,
+    // diving.
+    @Nullable
+    private static Component mechStatus(CharacterAbility ability, MechAttacks.Blow move, String prefix) {
+        return switch (ability.id()) {
+            case "emerald_express" -> move.kind() == MechAttacks.AIM ? Component.translatable(prefix + "salvos_left",
+                    MechAttacks.SALVOS - MechAttacks.fired(move)) : null;
+            case "flight" -> move.kind() == MechAttacks.FLY && MechAttacks.airborne(move)
+                    ? Component.translatable(prefix + "flying") : null;
+            case "shockwave" -> move.kind() == MechAttacks.SPIN ? Component.translatable(prefix + "spinning")
+                    : move.kind() == MechAttacks.DIVE ? Component.translatable(prefix + "diving") : null;
             default -> null;
         };
     }

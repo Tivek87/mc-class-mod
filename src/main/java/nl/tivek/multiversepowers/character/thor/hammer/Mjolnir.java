@@ -26,14 +26,13 @@ import nl.tivek.multiversepowers.spell.SpellTargets;
 
 // Thor's hammer: on his belt, in his right hand, or out of his hands as a ThrownHammer. Thrown it flies at what he
 // aims at and comes back by itself (Hammer Throw), stays where it stops (Throw to Stay), is dashed after (Throw and
-// Follow, HammerPull) or, hurled from the sky, strikes a ring of chained lightning (Storm Throw, StormThrow). Wherever
-// it rests he can call it back or dash to it, and he flies only with it. Its uppercut is here too. Where it is on him
-// and how far it reaches grow with his size.
+// Follow, HammerPull) or is hurled down from the air to strike a V of lightning (Storm Throw, StormThrow). Wherever it
+// rests he can call it back or dash to it, and he flies only with it. Its uppercut is here too. Where it is on him and
+// how far it reaches grow with his size.
 public final class Mjolnir extends MjolnirCatch {
     private static final double UPPERCUT_REACH = 3.8;
     private static final double UPPERCUT_WIDTH = 0.45;
     private static final double LAUNCH = 1.6;
-    private static final double STORM_REACH = 24.0;
 
     private Mjolnir(UUID owner) {
         super(owner);
@@ -177,16 +176,46 @@ public final class Mjolnir extends MjolnirCatch {
         }
     }
 
-    // Storm Throw: hurled from his left hand in flight at what he aims at; it strikes its ring and comes back.
-    public static boolean storm(ServerPlayer player, float damage) {
+    // A Storm Throw's toss: flung up out of his right hand to hang at `apex`, for him to dash up after.
+    static boolean toss(ServerPlayer player, Vec3 apex) {
+        Mjolnir hammer = of(player);
+        if (hammer.state != State.HOME) {
+            return false;
+        }
+        hammer.armed = true;
+        hammer.launchAt(player, Throw.FOLLOW, 0.0F, player.getEyePosition().distanceTo(apex), apex, 0.0, RELEASE);
+        hammer.backDamage = 0.0F;
+        ThorMoves.tell(player, ThorStatePayload.NONE, 0);
+        return true;
+    }
+
+    // A Storm Throw's hurl: raised high in his left hand as he flies, then hurled down at `aim` (where it strikes and
+    // comes back from), at most `reach` blocks.
+    static boolean hurl(ServerPlayer player, float damage, Vec3 aim, double reach) {
         Mjolnir hammer = of(player);
         if (hammer.state != State.HOME || !ThorMoves.flying(player)) {
             return false;
         }
-        hammer.launch(player, Throw.STORM, damage, STORM_REACH);
+        hammer.launchAt(player, Throw.STORM, damage, reach, aim, INTO_BLOCK, ThorBlow.STORM_THROW.hit());
         hammer.backDamage = callDamage(player);
-        ThorMoves.tell(player, ThorStatePayload.BLOW, ThorBlow.STORM_THROW.ordinal());
+        ThorMoves.tell(player, ThorStatePayload.STRIKE, ThorBlow.STORM_THROW.ordinal());
         return true;
+    }
+
+    // While it is still in his hand being thrown, it will fly at `aim` instead.
+    static void retarget(ServerPlayer player, Vec3 aim) {
+        Mjolnir hammer = find(player);
+        if (hammer != null) {
+            hammer.aimAt(aim);
+        }
+    }
+
+    // A throw broken off while it is still in his hand: he keeps it.
+    static void keep(ServerPlayer player) {
+        Mjolnir hammer = find(player);
+        if (hammer != null && hammer.inThrow()) {
+            hammer.home(player, ThorMoves.flying(player) ? Hand.LEFT : Hand.RIGHT, false);
+        }
     }
 
     // Call the Hammer back from wherever it is, hitting what is in its way; `toFly`: into his raised left hand, taking

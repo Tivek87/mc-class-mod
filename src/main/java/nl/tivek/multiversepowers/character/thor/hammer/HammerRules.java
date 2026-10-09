@@ -5,7 +5,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.util.Mth;
 
 // The numbers both sides of the hammer go by: how far a drawn throw goes, how the dash to the hammer gets going and
-// brakes into the catch, and how a throw that stopped comes to rest.
+// brakes into the catch, how a throw that stopped comes to rest, and how fast a Storm Throw goes.
 public final class HammerRules {
     // Throw and Follow: held this long the draw starts, at its shortest; full this long after the press; let go by
     // itself this long after.
@@ -26,6 +26,9 @@ public final class HammerRules {
     // He arrives this close to it (times his size); the server takes his word up to this much further off.
     public static final double THERE = 1.4;
     public static final double SLACK = 1.5;
+    // A Storm Throw: he dashes up after the tossed hammer this fast, and it is hurled down this fast (blocks a tick).
+    public static final double STORM_PACE = 1.8;
+    public static final double STORM_SPEED = 3.0;
 
     private HammerRules() {
     }

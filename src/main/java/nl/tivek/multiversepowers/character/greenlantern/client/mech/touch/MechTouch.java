@@ -36,9 +36,9 @@ public final class MechTouch {
     // Points on the forearm, palm and knuckles in the hand's frame (across, along the forearm, palm side) and how
     // thick it is round each.
     private static final double[][] ARM = {
-            { 0.0, 0.35, 0.0, 0.78 },
-            { 0.0, 1.2, 0.0, 0.82 },
-            { 0.0, WRIST - 0.25, 0.0, 0.6 },
+            { 0.0, 0.35, 0.0, 0.88 },
+            { 0.0, 1.2, 0.0, 0.96 },
+            { 0.0, WRIST - 0.25, 0.0, 0.68 },
             { 0.45, WRIST + 0.35, 0.0, 0.3 },
             { -0.45, WRIST + 0.35, 0.0, 0.3 },
             { 0.45, KNUCKLES - 0.1, 0.0, 0.3 },
@@ -50,10 +50,10 @@ public final class MechTouch {
     private static final int KNEE_STEPS = 10;
     private static final double KNEE_ROOM = 2.4;
     private static final double RELAX_SWING = 0.05;
-    private static final double THIGH_RADIUS = 0.78;
-    private static final double SHIN_RADIUS = 0.62;
-    private static final double CAP_AHEAD = 0.28;
-    private static final double CAP_RADIUS = 0.6;
+    private static final double THIGH_RADIUS = 0.92;
+    private static final double SHIN_RADIUS = 0.74;
+    private static final double CAP_AHEAD = 0.5;
+    private static final double CAP_RADIUS = 0.72;
     private static final double[] SHIN_THIGH = { MechLegShapes.SHIN, MechLegShapes.THIGH };
     private static final LevelBlocks BLOCKS = new LevelBlocks();
     private static final double[] BOXES = new double[MOST_BOXES * 6];

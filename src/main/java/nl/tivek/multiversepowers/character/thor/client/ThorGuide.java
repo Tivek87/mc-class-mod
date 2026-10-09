@@ -38,7 +38,7 @@ final class ThorGuide {
                         click(Input.SCROLL, "hammer").fires("mjolnir"), hold(Input.SCROLL, "charge").fires("charged"),
                         heading("move"), doubleKey(ThorGuide::jumpKey, "jump").fires("super_jump"),
                         holdKey(ThorGuide::jumpKey, "fly").fires("flight"),
-                        heading("keys"), storm(), call(), calm(), bomb()),
+                        heading("keys"), storm(), call(), calm(), bomb(), stormThrow()),
                 mode("hammer", player -> ThorPanel.armed(player) && !flies(player),
                         heading("mouse"), click(Input.LEFT, "combo").fires("combo"),
                         hold(Input.LEFT, "uppercut").fires("hammer_uppercut"),
@@ -48,7 +48,7 @@ final class ThorGuide {
                         click(Input.SCROLL, "away").fires("mjolnir"), hold(Input.SCROLL, "charge").fires("charged"),
                         heading("move"), doubleKey(ThorGuide::jumpKey, "jump").fires("super_jump"),
                         holdKey(ThorGuide::jumpKey, "fly").fires("flight"),
-                        heading("keys"), storm(), call(), calm(), bomb()),
+                        heading("keys"), storm(), call(), calm(), bomb(), stormThrow()),
                 mode("thrown", player -> ThorMotion.away(player) && !flies(player) && !ThorGrabChoice.holds(player),
                         heading("mouse"), click(Input.LEFT, "combo").fires("combo"),
                         hold(Input.LEFT, "clap").fires("thunderclap"),
@@ -68,9 +68,12 @@ final class ThorGuide {
                         hold(Input.LEFT, "shockwave").fires("air_shockwave"),
                         click(Input.RIGHT, "blink").fires("air_blink"), hold(Input.RIGHT, "dive").fires("grab_dash_dive"),
                         click(Input.SCROLL, "bolt").fires("air_bolt"),
-                        hold(Input.SCROLL, "storm_throw").fires("storm_throw"),
                         hold(Input.SHIFT, "lightning").fires("lightning_flight"),
-                        heading("keys"), storm(), call(), calm()));
+                        heading("keys"), storm(), call(), calm(), stormThrow()));
+    }
+
+    private static GuideMode.Control stormThrow() {
+        return ability(GameCharacter.THOR, "storm_throw", "storm_throw");
     }
 
     private static GuideMode.Control storm() {

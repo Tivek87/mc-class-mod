@@ -134,7 +134,7 @@ public final class ClientThor {
         } else if (payload.move() == ThorStatePayload.PULL) {
             start(view, ThorStatePayload.PULL, 0);
             if (own) {
-                ThorPull.start();
+                ThorPull.start(payload.arg() == ThorStatePayload.TOSSED);
             }
         } else if (payload.move() == ThorStatePayload.GRAB_ACT) {
             view.act = payload.arg();

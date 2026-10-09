@@ -10,8 +10,8 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import nl.tivek.multiversepowers.MultiversePowers;
 
 // One of Thor's bolts (from the sky to where it strikes, `size` its thickness), a small one round his rising lightning
-// bomb or leaping from one creature to the next, or the bomb bursting (at `from`, `size` blocks round): every game near
-// draws it and hears its thunder.
+// bomb or leaping from one creature to the next, the bomb bursting (at `from`, `size` blocks round), or a Storm Throw:
+// every game near draws it and hears its thunder.
 public record StormFxPayload(int kind, Vec3 from, Vec3 to, int seed, float size) implements CustomPacketPayload {
     public static final CustomPacketPayload.Type<StormFxPayload> TYPE = new CustomPacketPayload.Type<>(
             ResourceLocation.fromNamespaceAndPath(MultiversePowers.MODID, "storm_fx"));
@@ -24,6 +24,11 @@ public record StormFxPayload(int kind, Vec3 from, Vec3 to, int seed, float size)
     public static final int BLAST = 2;
     // His sky shockwave: a dome of lightning bursting out round `from`, `size` blocks.
     public static final int DOME = 3;
+    // A Storm Throw's hammer hurled from his hand at `from` down to `to`, a bolt growing behind it at `size` blocks a
+    // tick; and where it strikes (`from`), its lightning bursting up in a V that opens towards `to`, `size` radians
+    // either side.
+    public static final int HURL = 4;
+    public static final int STRIKE = 5;
     // Thunder carries far: everyone this near hears it, later the further off they are.
     private static final double RANGE = 192.0;
 

@@ -23,8 +23,8 @@ public final class MechArmRig {
     private static final double SWING_IN = 0.45;
     private static final int SWING_STEPS = 9;
     // Points along the upper arm and the forearm (a share of each from its root) and how thick the arm is round them.
-    private static final double[][] UPPER = { { 0.45, 0.6 }, { 0.8, 0.62 } };
-    private static final double[][] FORE = { { 0.0, 0.62 }, { 0.15, 0.78 }, { 0.52, 0.82 }, { 0.89, 0.6 } };
+    private static final double[][] UPPER = { { 0.45, 0.68 }, { 0.8, 0.7 } };
+    private static final double[][] FORE = { { 0.0, 0.62 }, { 0.15, 0.85 }, { 0.52, 0.96 }, { 0.89, 0.68 } };
 
     private MechArmRig() {
     }

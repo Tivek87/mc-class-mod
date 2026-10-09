@@ -25,6 +25,8 @@ public final class MouseHold {
 
     private static final int[] DOWN = new int[CHANNELS];
     private static final boolean[] HOLDING = new boolean[CHANNELS];
+    // The hold time each button went by last (a character may shorten one, Gestures.holdTime).
+    private static final int[] TICKS = new int[CHANNELS];
 
     static {
         reset();
@@ -35,6 +37,7 @@ public final class MouseHold {
 
     // A button with a hold time: letting go before it is a click, holding on for it the hold.
     static Step tick(int i, int holdTicks, CharacterAbility.Tap tap, boolean down, boolean cancelled) {
+        TICKS[i] = holdTicks;
         if (down) {
             if (DOWN[i] < 0) {
                 DOWN[i] = 0;
@@ -70,7 +73,8 @@ public final class MouseHold {
         if (i < 0 || DOWN[i] < 0) {
             return -1.0F;
         }
-        return HOLDING[i] ? 1.0F : Math.min(1.0F, (DOWN[i] + partialTick) / ability.holdTicks());
+        int ticks = TICKS[i] > 0 ? TICKS[i] : ability.holdTicks();
+        return HOLDING[i] ? 1.0F : Math.min(1.0F, (DOWN[i] + partialTick) / ticks);
     }
 
     public static boolean holding(CharacterAbility.Input button) {

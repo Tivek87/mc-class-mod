@@ -15,7 +15,8 @@ import nl.tivek.multiversepowers.engine.client.render.ConstructPainter.Frame;
 import org.junit.jupiter.api.Test;
 
 class MechClimbTest {
-    private static final double[] HEIGHTS = { 2.75, 3.4, 5.0, 7.0, 9.5, 12.0, 18.25, 24.0, MechClimb.HIGHEST };
+    private static final double[] HEIGHTS = { MechDrive.STEP_UP + 0.15, 4.4, 5.0, 7.0, 9.5, 12.0, 18.25, 24.0,
+            MechClimb.HIGHEST };
     private static final double[] EDGES = { 1.625, 2.25, 2.5, 3.375 };
     // What the server takes from the pilot's game in one tick (MechAssembly.drive).
     private static final double MOST_STRIDE = 1.0;
@@ -205,7 +206,9 @@ class MechClimbTest {
                 double grip = MechClimb.grip(age, height);
                 most = Math.max(most, grip);
                 if (grip > 0.99) {
-                    double shoulders = MechClimb.path(age, height, 2.0).y + MechScript.SHOULDER.y - CROUCH;
+                    double shoulders = MechClimb.path(age, height, 2.0).y + MechClimb.LEAN_FROM
+                            + MechClimb.low(age, height, 2.0) + (MechScript.SHOULDER.y - MechClimb.LEAN_FROM)
+                            * Math.cos(MechClimb.lean(age, height, 2.0));
                     assertTrue(shoulders - (height + MechClimb.GRIP_UP) < ARM, "height " + height + " age " + age);
                 }
             }
@@ -217,7 +220,7 @@ class MechClimbTest {
             for (int age = 1; age <= ticks; age++) {
                 for (double edge : EDGES) {
                     String where = "height " + height + " edge " + edge + " age " + age;
-                    assertTrue(Math.abs(MechClimb.low(age, height, edge) - MechClimb.low(age - 1, height, edge)) < 0.35,
+                    assertTrue(Math.abs(MechClimb.low(age, height, edge) - MechClimb.low(age - 1, height, edge)) < 0.45,
                             where + ": the body drops or jumps up");
                     assertTrue(Math.abs(MechClimb.lean(age, height, edge) - MechClimb.lean(age - 1, height, edge))
                             < 0.12, where + ": the body tips over at once");

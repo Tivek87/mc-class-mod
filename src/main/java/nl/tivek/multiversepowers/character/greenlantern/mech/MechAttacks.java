@@ -4,15 +4,14 @@ import javax.annotation.Nullable;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.engine.math.Ease;
-import nl.tivek.multiversepowers.engine.math.Keyframes;
 import nl.tivek.multiversepowers.engine.math.Vectors;
 import nl.tivek.multiversepowers.engine.rig.Ik;
 
-// A built mech's blows on a left click and its beams on a right click, in ticks: where its right hand goes (both
-// hands for the slam, the stomp and the Unibeam), how far its body crouches, stoops and twists over the waist, and how
-// high the stomping foot is lifted. Hands are placed in the blow's frame: upright on the mech's ground spot and facing
-// where its torso faces (x right, y up, z ahead); the arm reaches them from the shoulder with its elbow worked out,
-// never stretched.
+// A built mech's moves, in ticks: its blows on a left click, its eyes on a right click, the missile arm, the rocket
+// boots, the dive and the spin. For each, where its right hand goes (both hands for the slam, the stomp, the flight,
+// the dive and the spin), how far its body crouches, stoops and twists over the waist, and how high the stomping foot
+// is lifted. Hands are placed in the blow's frame: upright on the mech's ground spot and facing where its torso faces
+// (x right, y up, z ahead); the arm reaches them from the shoulder with its elbow worked out, never stretched.
 public final class MechAttacks {
     public static final int NONE = 0;
     public static final int SWEEP = 1;
@@ -21,15 +20,26 @@ public final class MechAttacks {
     public static final int THROW = 4;
     // A throw whose creature is gone: from where the throw had got to back to the walk.
     public static final int DROP = 5;
-    // A right click: one beam from the eye slits; held, the chest's port charges and fires the Unibeam.
+    // A right click: tapped, one ray from the eye slits; held, a beam from them for as long as it is held.
     public static final int EYE = 6;
-    public static final int UNIBEAM = 7;
+    public static final int GLARE = 7;
+    // The combo's first blow: a straight right fist driven down at what stands before it.
+    public static final int CROSS = 8;
+    // The missile arm: the right arm aimed at the crosshair, the back of its hand open on a pod of missiles.
+    public static final int AIM = 9;
+    // Off the ground on the rocket boots, the dive from the air onto the ground, and the spin on folded legs.
+    public static final int FLY = 10;
+    public static final int DIVE = 11;
+    public static final int SPIN = 12;
 
     public static final int EYE_FIRE = 3;
     public static final int EYE_SHOWN = 7;
-    public static final int UNIBEAM_FROM = 10;
-    public static final int UNIBEAM_TO = 60;
+    // Held, the beam burns from GLARE_FIRE until it is let go, GLARE_MOST at most, and dies away over GLARE_FADE.
+    public static final int GLARE_FIRE = 4;
+    public static final int GLARE_MOST = 64;
+    public static final int GLARE_FADE = 8;
 
+    public static final int CROSS_HIT = 10;
     public static final int SWEEP_FROM = 10;
     public static final int SWEEP_TO = 16;
     public static final int STOMP_HIT = 12;
@@ -39,9 +49,35 @@ public final class MechAttacks {
     public static final int SMASH2 = 39;
     public static final int RELEASE = 52;
     public static final int DROP_TICKS = 14;
+    // The missile arm opens over AIM_OPEN ticks, stays up AIM_MOST at most and closes over AIM_CLOSE; it fires SALVOS
+    // salvos at most, each kicking the arm back for SALVO_KICK ticks.
+    public static final int AIM_OPEN = 8;
+    public static final int AIM_MOST = 200;
+    public static final int AIM_CLOSE = 10;
+    public static final int SALVOS = 3;
+    public static final int SALVO_KICK = 8;
+    // The rocket boots: crouched, it springs up at FLY_LAUNCH and flies FLY_MOST ticks at most; out of thrust, it
+    // spreads its arms by FLY_FALL and falls until it lands at FLY_LAND.
+    public static final int FLY_LAUNCH = 6;
+    public static final int FLY_MOST = 100;
+    public static final int FLY_FALL = FLY_LAUNCH + FLY_MOST + 6;
+    public static final int FLY_LAND = FLY_FALL + 1;
+    // The dive: wound up over its head, it plunges fists first from DIVE_PLUNGE until it strikes the ground at
+    // DIVE_LAND.
+    public static final int DIVE_PLUNGE = 7;
+    public static final int DIVE_LAND = 8;
+    // The spin: its legs fold under it by SPIN_FROM, its torso spins SPIN_TURNS times round till SPIN_TO (3 seconds)
+    // and its legs unfold by the end; each arm hammers the ground every SPIN_BEAT ticks.
+    public static final int SPIN_FROM = 10;
+    public static final int SPIN_TO = 70;
+    public static final double SPIN_TURNS = 4.0;
+    public static final int SPIN_BEAT = 16;
+    public static final double SPIN_CROUCH = 5.1;
     // From the palm's middle to its inside face, where a held creature's skin lies.
     public static final double SKIN = 0.45;
     private static final double REACH = MechScript.UPPER_ARM + MechScript.PALM_ALONG;
+    // How far from the shoulder the aimed missile arm holds its hand, almost straight.
+    private static final double AIM_REACH = REACH * 0.94;
     private static final double GRAB_ROOM = 0.15;
     private static final int GRAB_AIMS = 4;
     private static final double GRAB_MISS = 0.02;
@@ -49,7 +85,8 @@ public final class MechAttacks {
     // Where, seen from the waist, a creature lies best for the right hand to pick up: this far to the right.
     private static final double SWEET = Math.atan2(2.5, 4.0);
     private static final double MOST_TURN = 0.8;
-    private static final int[] LENGTHS = { 0, 30, 26, 34, 66, DROP_TICKS, 16, 78 };
+    static final int[] LENGTHS = { 0, 30, 26, 36, 66, DROP_TICKS, 16, GLARE_MOST + GLARE_FADE, 26,
+            AIM_MOST + AIM_CLOSE, FLY_LAND + 14, 32, SPIN_TO + 16 };
 
     // How the body stands under a blow: how far its hips sink, its torso stoops forward (radians) and twists to its
     // left over the waist, how high the right foot is lifted, and how far (radians, to its left) the whole blow turns
@@ -72,136 +109,106 @@ public final class MechAttacks {
     public record Held(Vec3 center, double halfWidth, double halfHeight) {
     }
 
-    private record Move(Keyframes.Key[] hand, Keyframes.Key[] body, boolean both, Vec3 pole, int[][] pulls) {
-    }
-
-    private static final Move[] MOVES = new Move[8];
-
-    static {
-        Vec3 rest = new Vec3(4.0, 4.1, 2.0);
-        Vec3 inward = new Vec3(-1.0, 0.0, 0.0);
-        MOVES[SWEEP] = new Move(new Keyframes.Key[] {
-                hand(0, true, rest, inward, 0.5, 0.4, 0.0, 0.0, 0.0),
-                hand(7, true, new Vec3(-0.8, 5.3, 2.5), new Vec3(0.43, 0.2, -0.88), 0.2, 0.1, 1.0, 0.0, 0.0),
-                hand(SWEEP_FROM, false, new Vec3(-0.6, 1.8, 6.1), new Vec3(-1.0, 0.0, -0.1), 0.15, 0.05, 1.0, 0.0,
-                        0.0),
-                hand(12, false, new Vec3(2.0, 1.7, 6.3), new Vec3(-1.0, 0.0, 0.05), 0.15, 0.05, 1.0, 0.0, 0.0),
-                hand(14, false, new Vec3(5.0, 1.7, 5.0), new Vec3(-0.85, 0.0, 0.5), 0.15, 0.05, 1.0, 0.0, 0.0),
-                hand(SWEEP_TO, false, new Vec3(6.9, 1.9, 2.0), new Vec3(-0.3, 0.0, 0.95), 0.15, 0.05, 1.0, 0.0, 0.0),
-                hand(21, true, new Vec3(6.6, 3.4, -0.6), new Vec3(0.0, 0.0, 1.0), 0.3, 0.3, 1.0, 0.0, 0.0),
-                hand(30, true, rest, inward, 0.5, 0.4, 0.0, 0.0, 0.0) },
-                new Keyframes.Key[] { body(0, true, Body.STILL), body(7, true, bent(0.5, 0.2, 0.45, 0.0)),
-                        body(SWEEP_FROM, false, bent(1.9, 0.95, 0.45, 0.0)),
-                        body(12, false, bent(1.9, 0.95, 0.2, 0.0)),
-                        body(14, false, bent(1.9, 0.95, -0.1, 0.0)),
-                        body(SWEEP_TO, false, bent(1.8, 0.9, -0.4, 0.0)),
-                        body(21, true, bent(1.2, 0.5, -0.5, 0.0)), body(30, true, Body.STILL) },
-                false, new Vec3(1.0, -0.3, -0.6), new int[0][]);
-        Vec3 down = new Vec3(-0.4, -0.9, 0.0);
-        MOVES[STOMP] = new Move(new Keyframes.Key[] {
-                hand(0, true, rest, inward, 0.5, 0.4, 0.0, 0.0, 0.0),
-                hand(9, true, new Vec3(5.8, 6.6, 1.2), new Vec3(0.0, -1.0, 0.2), 0.6, 0.5, 1.0, 0.0, 0.0),
-                hand(STOMP_HIT, true, new Vec3(4.6, 3.8, 2.4), down, 0.9, 0.3, 1.0, 0.0, 0.0),
-                hand(16, true, new Vec3(4.6, 3.9, 2.3), down, 0.9, 0.3, 1.0, 0.0, 0.0),
-                hand(26, true, rest, inward, 0.5, 0.4, 0.0, 0.0, 0.0) },
-                new Keyframes.Key[] { body(0, true, Body.STILL), body(9, true, bent(-0.15, -0.12, 0.0, 2.8)),
-                        body(STOMP_HIT, true, bent(0.9, 0.3, 0.0, 0.0)),
-                        body(16, true, bent(0.7, 0.25, 0.0, 0.0)), body(26, true, Body.STILL) },
-                true, new Vec3(1.0, -0.2, -0.5), new int[][] { { 9, STOMP_HIT, 3 } });
-        Vec3 edge = new Vec3(-1.0, 0.0, 0.2);
-        MOVES[SLAM] = new Move(new Keyframes.Key[] {
-                hand(0, true, rest, inward, 0.5, 0.4, 0.0, 0.0, 0.0),
-                hand(9, true, new Vec3(1.6, 12.6, 0.9), edge, 1.0, 0.2, 1.0, 0.0, 0.0),
-                hand(SLAM_HIT, true, new Vec3(1.5, 1.0, 5.0), inward, 1.0, 0.2, 1.0, 0.0, 0.0),
-                hand(20, true, new Vec3(1.5, 1.25, 4.9), inward, 1.0, 0.2, 1.0, 0.0, 0.0),
-                hand(34, true, rest, inward, 0.5, 0.4, 0.0, 0.0, 0.0) },
-                new Keyframes.Key[] { body(0, true, Body.STILL), body(9, true, bent(-0.2, -0.15, 0.0, 0.0)),
-                        body(SLAM_HIT, true, bent(2.0, 1.0, 0.0, 0.0)),
-                        body(20, true, bent(1.9, 0.95, 0.0, 0.0)), body(34, true, Body.STILL) },
-                true, new Vec3(1.0, 0.1, -0.4), new int[][] { { 9, SLAM_HIT, 3 } });
-        Vec3 under = new Vec3(0.0, -1.0, 0.25);
-        Vec3 high = new Vec3(2.0, 11.2, 1.7);
-        Vec3 ground = new Vec3(1.3, 0.0, 4.3);
-        Body low = bent(1.8, 0.8, 0.1, 0.0);
-        Body up = bent(0.15, -0.1, 0.0, 0.0);
-        MOVES[THROW] = new Move(new Keyframes.Key[] {
-                hand(0, true, rest, inward, 0.5, 0.4, 0.0, 0.0, 0.0),
-                hand(9, true, new Vec3(2.0, 1.8, 4.6), under, 0.0, 0.9, 1.0, 1.0, 0.0),
-                hand(GRAB + 1, true, new Vec3(2.0, 1.8, 4.6), under, 1.0, 0.2, 1.0, 1.0, 0.0),
-                hand(20, true, high, under, 1.0, 0.2, 1.0, 0.0, 0.0),
-                hand(SMASH, true, ground, under, 1.0, 0.2, 1.0, 0.0, 1.0),
-                hand(33, true, high, under, 1.0, 0.2, 1.0, 0.0, 0.0),
-                hand(SMASH2, true, ground, under, 1.0, 0.2, 1.0, 0.0, 1.0),
-                hand(48, true, new Vec3(3.4, 10.6, -1.2), new Vec3(0.0, -0.5, 0.8), 1.0, 0.2, 1.0, 0.0, 0.0),
-                hand(53, false, new Vec3(1.2, 9.2, 4.6), new Vec3(0.0, -0.2, 1.0), 0.1, 0.6, 1.0, 0.0, 0.0),
-                hand(57, true, new Vec3(0.9, 7.0, 4.4), new Vec3(0.0, -0.3, 1.0), 0.05, 0.8, 1.0, 0.0, 0.0),
-                hand(66, true, rest, inward, 0.5, 0.4, 0.0, 0.0, 0.0) },
-                new Keyframes.Key[] { body(0, true, Body.STILL), body(9, true, bent(1.9, 0.95, 0.1, 0.0)),
-                        body(GRAB + 1, true, bent(1.9, 0.95, 0.1, 0.0)), body(20, true, up),
-                        body(SMASH, true, low), body(33, true, up), body(SMASH2, true, low),
-                        body(48, true, bent(0.3, -0.25, -0.4, 0.0)),
-                        body(53, false, bent(0.6, 0.25, 0.3, 0.0)),
-                        body(57, true, bent(0.7, 0.3, 0.35, 0.0)), body(66, true, Body.STILL) },
-                false, new Vec3(1.0, -0.2, -0.5), new int[][] { { 20, SMASH, 2 }, { 33, SMASH2, 2 }, { 48, 53, 2 } });
-        // The eye beam: the head snaps forward as it fires and the body rocks back from it; the arms swing on.
-        MOVES[EYE] = new Move(new Keyframes.Key[] {
-                hand(0, true, rest, inward, 0.5, 0.4, 0.0, 0.0, 0.0),
-                hand(LENGTHS[EYE], true, rest, inward, 0.5, 0.4, 0.0, 0.0, 0.0) },
-                new Keyframes.Key[] { body(0, true, Body.STILL), body(EYE_FIRE, true, bent(0.15, 0.08, 0.0, 0.0)),
-                        body(EYE_FIRE + 2, false, bent(0.2, -0.08, 0.0, 0.0)),
-                        body(LENGTHS[EYE], true, Body.STILL) },
-                false, new Vec3(1.0, -0.3, -0.6), new int[0][]);
-        // The Unibeam: knees bent and feet planted, it leans back and pulls both fists back beside its ribs, baring
-        // the port on its chest, and rocks back further as the beam bursts out.
-        Vec3 ribs = new Vec3(3.3, 6.3, -1.3);
-        Vec3 palmUp = new Vec3(-0.6, 0.8, 0.0);
-        MOVES[UNIBEAM] = new Move(new Keyframes.Key[] {
-                hand(0, true, rest, inward, 0.5, 0.4, 0.0, 0.0, 0.0),
-                hand(UNIBEAM_FROM - 2, true, ribs, palmUp, 0.95, 0.05, 1.0, 0.0, 0.0),
-                hand(UNIBEAM_TO, true, ribs, palmUp, 0.95, 0.05, 1.0, 0.0, 0.0),
-                hand(LENGTHS[UNIBEAM], true, rest, inward, 0.5, 0.4, 0.0, 0.0, 0.0) },
-                new Keyframes.Key[] { body(0, true, Body.STILL),
-                        body(UNIBEAM_FROM - 2, true, bent(0.55, -0.2, 0.0, 0.0)),
-                        body(UNIBEAM_FROM + 2, false, bent(0.75, -0.3, 0.0, 0.0)),
-                        body(UNIBEAM_TO, true, bent(0.6, -0.24, 0.0, 0.0)),
-                        body(LENGTHS[UNIBEAM], true, Body.STILL) },
-                true, new Vec3(0.6, -0.4, -1.0), new int[0][]);
-    }
+    // The spin's fists (in the spinning torso's frame): swung round low, raised high and hammered onto the ground.
+    // Each trails a little behind the way it spins.
+    private static final Vec3 SPIN_LOW = new Vec3(6.2, 2.6, -0.6);
+    private static final Vec3 SPIN_HIGH = new Vec3(5.0, 8.4, -1.2);
+    private static final Vec3 SPIN_GROUND = new Vec3(6.0, 1.0, -0.3);
+    private static final double SPIN_RAISE = 0.45;
+    public static final double SPIN_SLAMMED = 0.6;
 
     private MechAttacks() {
-    }
-
-    private static Keyframes.Key hand(int t, boolean stop, Vec3 at, Vec3 palm, double curl, double spread,
-            double weight, double grab, double below) {
-        Vec3 p = palm.normalize();
-        return new Keyframes.Key(t, stop, new float[] { (float) at.x, (float) at.y, (float) at.z, (float) p.x,
-                (float) p.y, (float) p.z, (float) curl, (float) spread, (float) weight, (float) grab, (float) below });
-    }
-
-    private static Body bent(double crouch, double stoop, double twist, double foot) {
-        return new Body(crouch, stoop, twist, foot, 0.0);
-    }
-
-    private static Keyframes.Key body(int t, boolean stop, Body body) {
-        return new Keyframes.Key(t, stop, new float[] { (float) body.crouch(), (float) body.stoop(),
-                (float) body.twist(), (float) body.foot() });
     }
 
     public static int length(int kind) {
         return kind == DROP ? DROP_TICKS : kind > NONE && kind < LENGTHS.length ? LENGTHS[kind] : 0;
     }
 
-    // The blow in a whole number sent with the mech (see MechScript.variant): kind, age, a drop's start and a throw's
-    // turn in whole degrees.
+    // The blow in a whole number sent with the mech (see MechScript.variant): kind, age, `from` (a drop's start; the
+    // missile arm's salvos, see salvos) and a throw's turn in whole degrees.
     public static int pack(int kind, int age, int from, double turn) {
         int degrees = (int) Math.round(Math.toDegrees(turn)) + 64;
-        return kind == NONE ? 0 : kind | Mth.clamp(age, 0, 127) << 3 | Mth.clamp(from, 0, 127) << 10
-                | Mth.clamp(degrees, 0, 127) << 17;
+        return kind == NONE ? 0 : kind | Mth.clamp(age, 0, 255) << 4 | Mth.clamp(from, 0, 127) << 12
+                | Mth.clamp(degrees, 0, 127) << 19;
     }
 
     public static Blow unpack(int packed) {
-        return packed == 0 ? Blow.NONE : new Blow(packed & 7, packed >>> 3 & 127, packed >>> 10 & 127,
-                Math.toRadians((packed >>> 17 & 127) - 64));
+        return packed == 0 ? Blow.NONE : new Blow(packed & 15, packed >>> 4 & 255, packed >>> 12 & 127,
+                Math.toRadians((packed >>> 19 & 127) - 64));
+    }
+
+    // The missile arm's `from`: how many salvos it has fired, and how many ticks ago the last one (at most 31).
+    public static int salvos(int fired, int since) {
+        return fired | Mth.clamp(since, 0, 31) << 2;
+    }
+
+    public static int fired(Blow blow) {
+        return blow.from() & 3;
+    }
+
+    // How hard the last salvo still kicks the arm back: hardest just after it fires, gone once it has settled.
+    public static double kick(Blow blow) {
+        if (blow.kind() != AIM || fired(blow) == 0) {
+            return 0.0;
+        }
+        double since = (blow.from() >>> 2) + blow.age() - Math.floor(blow.age()) - 1.0;
+        return since < 0.0 || since > SALVO_KICK ? 0.0 : Ease.jolt(since / SALVO_KICK);
+    }
+
+    // How far the back of the right hand stands open on its missiles (0 shut).
+    public static double opened(Blow blow) {
+        if (blow.kind() != AIM) {
+            return 0.0;
+        }
+        double age = blow.age();
+        return Ease.smooth((age - 2.0) / (AIM_OPEN - 2.0)) * (1.0 - Ease.smooth((age - AIM_MOST) / (AIM_CLOSE - 2.0)));
+    }
+
+    // How far its legs are folded under it for the spin (0 standing, 1 on its knees).
+    public static double folded(Blow blow) {
+        return blow.kind() == SPIN ? Mth.clamp(body(blow).crouch() / SPIN_CROUCH, 0.0, 1.0) : 0.0;
+    }
+
+    // Whether the mech stands its ground for this move, its walk stopped: every blow of the combo, the spin, and the
+    // rocket boots and the dive on the ground; its eyes and the missile arm let it walk on.
+    public static boolean plants(Blow blow) {
+        return switch (blow.kind()) {
+            case NONE, EYE, GLARE, AIM -> false;
+            default -> true;
+        };
+    }
+
+    // Whether the mech is off the ground on its rocket boots or diving from the air: its feet hang, its walk waits.
+    public static boolean airborne(Blow blow) {
+        return blow.kind() == FLY && blow.age() >= FLY_LAUNCH && blow.age() < FLY_LAND
+                || blow.kind() == DIVE && blow.age() < DIVE_LAND;
+    }
+
+    // Whether the rocket boots fire now: from the launch until their thrust runs out, and holding the dive up while it
+    // winds up; it plunges with them cut.
+    public static boolean thrusting(Blow blow) {
+        return blow.kind() == FLY && blow.age() >= FLY_LAUNCH - 1 && blow.age() < FLY_FALL - 6
+                || blow.kind() == DIVE && blow.age() < DIVE_PLUNGE;
+    }
+
+    // How far the spin has turned the torso at `age`: SPIN_TURNS whole turns, gathering speed and slowing again.
+    public static double spinTwist(double age) {
+        double u = Mth.clamp((age - SPIN_FROM + 2.0) / (SPIN_TO - SPIN_FROM + 6.0), 0.0, 1.0);
+        return Math.PI * 2.0 * SPIN_TURNS * Ease.smooth(u);
+    }
+
+    // Where in its beat an arm of the spin is (0 to 1, the left half a beat behind the right; -1 before and after the
+    // spin): raised up to SPIN_RAISE, hammered down to SPIN_SLAMMED, then swung out low again.
+    public static double beat(double age, boolean right) {
+        double from = age - SPIN_FROM - (right ? 0.0 : SPIN_BEAT * 0.5);
+        return from < 0.0 || age > SPIN_TO ? -1.0 : from % SPIN_BEAT / SPIN_BEAT;
+    }
+
+    // Whether the spin's right (or left) fist strikes the ground at this tick.
+    public static boolean slams(int age, boolean right) {
+        double now = beat(age, right);
+        double was = beat(age - 1, right);
+        return was >= 0.0 && was < SPIN_SLAMMED && now >= SPIN_SLAMMED;
     }
 
     // How far a throw turns to bring a creature at `at` round to where the right hand reaches best.
@@ -218,12 +225,14 @@ public final class MechAttacks {
     // What lands at an exact tick: how hard (0 nothing), for the ground's shake.
     public static double impact(int kind, int age) {
         return switch (kind) {
+            case CROSS -> age == CROSS_HIT ? 0.9 : 0.0;
             case STOMP -> age == STOMP_HIT ? 2.2 : 0.0;
             case SLAM -> age == SLAM_HIT ? 3.0 : 0.0;
             case THROW -> age == SMASH || age == SMASH2 ? 1.4 : 0.0;
-            // The Unibeam bursts out with a jolt and rumbles while it lasts.
-            case UNIBEAM -> age == UNIBEAM_FROM ? 1.2 : age > UNIBEAM_FROM && age < UNIBEAM_TO && age % 5 == 0 ? 0.3
-                    : 0.0;
+            case FLY -> age == FLY_LAUNCH ? 1.4 : age == FLY_LAND ? 2.4 : 0.0;
+            case DIVE -> age == DIVE_LAND ? 3.6 : 0.0;
+            // Its knees strike the ground, then every fist it hammers down.
+            case SPIN -> age == SPIN_FROM ? 2.0 : slams(age, true) || slams(age, false) ? 0.8 : 0.0;
             default -> 0.0;
         };
     }
@@ -234,14 +243,16 @@ public final class MechAttacks {
             double kept = 1.0 - Ease.smooth(blow.age() / DROP_TICKS);
             return new Body(from.crouch() * kept, from.stoop() * kept, from.twist() * kept, 0.0, from.turn() * kept);
         }
-        Move move = move(blow.kind());
+        MechAttackKeys.Move move = MechAttackKeys.move(blow.kind());
         if (move == null) {
             return Body.STILL;
         }
-        float[] v = values(move.body(), move, blow.age());
+        float[] v = MechAttackKeys.values(move.body(), move, blow.age());
         // The turn comes and goes with the arm the blow takes over.
-        double turn = blow.turn() == 0.0 ? 0.0 : blow.turn() * values(move.hand(), move, blow.age())[8];
-        return new Body(v[0], v[1], v[2], Math.max(0.0, v[3]), turn);
+        double turn = blow.turn() == 0.0 ? 0.0
+                : blow.turn() * MechAttackKeys.values(move.hand(), move, blow.age())[8];
+        double twist = blow.kind() == SPIN ? spinTwist(blow.age()) : v[2];
+        return new Body(v[0], v[1], twist, Math.max(0.0, v[3]), turn);
     }
 
     // The frame the blow's hands are placed in: upright on the ground spot, facing as the torso would without the
@@ -263,7 +274,17 @@ public final class MechAttacks {
     // the blow takes it over and gives it back.
     public static MechMoves.Arm arm(Blow blow, boolean right, MechScript.Stage frame, MechScript.Stage torso,
             @Nullable Held held, MechMoves.Arm was) {
-        Aim aim = aim(blow, right, frame, held);
+        return arm(blow, right, frame, torso, held, was, null);
+    }
+
+    // As above; `target` is what the pilot's crosshair rests on, for the missile arm (null: straight ahead).
+    public static MechMoves.Arm arm(Blow blow, boolean right, MechScript.Stage frame, MechScript.Stage torso,
+            @Nullable Held held, MechMoves.Arm was, @Nullable Vec3 target) {
+        Aim aim = switch (blow.kind()) {
+            case AIM -> right ? aimArm(blow, torso, target) : null;
+            case SPIN -> spinAim(blow, right, frame(frame.base(), torso, 0.0));
+            default -> aim(blow, right, frame, held);
+        };
         if (aim == null) {
             return was;
         }
@@ -300,12 +321,12 @@ public final class MechAttacks {
     @Nullable
     static Aim aim(Blow blow, boolean right, MechScript.Stage frame, @Nullable Held held) {
         int kind = blow.kind() == DROP ? THROW : blow.kind();
-        Move move = move(kind);
-        if (move == null || !right && !move.both()) {
+        MechAttackKeys.Move move = MechAttackKeys.move(kind);
+        if (move == null || !right && !move.both() && move.left() == null) {
             return null;
         }
         double age = blow.kind() == DROP ? blow.from() : blow.age();
-        float[] v = values(move.hand(), move, age);
+        float[] v = MechAttackKeys.values(right || move.left() == null ? move.hand() : move.left(), move, age);
         double weight = v[8];
         double curl = v[6];
         if (blow.kind() == DROP) {
@@ -327,6 +348,55 @@ public final class MechAttacks {
         }
         Vec3 pole = frame.dir(new Vec3(side * move.pole().x, move.pole().y, move.pole().z));
         return new Aim(key, at, palm, pole, curl, v[7], weight, grab);
+    }
+
+    // The missile arm, aimed: the right hand held out almost straight from the shoulder at `target`, the back of the
+    // hand up, kicked back along the arm by each salvo.
+    @Nullable
+    private static Aim aimArm(Blow blow, MechScript.Stage torso, @Nullable Vec3 target) {
+        double age = blow.age();
+        double weight = Ease.smooth(age / AIM_OPEN) * (1.0 - Ease.smooth((age - AIM_MOST) / AIM_CLOSE));
+        if (weight <= 0.0) {
+            return null;
+        }
+        Vec3 shoulder = torso.point(MechScript.SHOULDER);
+        Vec3 to = target == null ? torso.ahead() : target.subtract(shoulder);
+        Vec3 way = to.lengthSqr() < 1.0E-6 ? torso.ahead() : to.normalize();
+        double kick = kick(blow);
+        Vec3 hand = shoulder.add(way.scale(AIM_REACH - 1.1 * kick)).add(0.0, 0.5 * kick, 0.0);
+        Vec3 down = new Vec3(0.0, -1.0, 0.0);
+        Vec3 palm = down.subtract(way.scale(down.dot(way)));
+        palm = palm.lengthSqr() < 1.0E-4 ? torso.ahead() : palm.normalize();
+        return new Aim(hand, hand, palm, torso.dir(new Vec3(0.6, -1.0, -0.2)).normalize(), 1.0, 0.0, weight, 0.0);
+    }
+
+    // The spin's arms, in the spinning torso's frame: swung round out and low, each in turn raised high and hammered
+    // onto the ground every SPIN_BEAT ticks, trailing a little behind the way it spins.
+    @Nullable
+    private static Aim spinAim(Blow blow, boolean right, MechScript.Stage frame) {
+        double age = blow.age();
+        double weight = Ease.smooth((age - 2.0) / (SPIN_FROM - 2.0))
+                * (1.0 - Ease.smooth((age - SPIN_TO - 2.0) / 10.0));
+        if (weight <= 0.0) {
+            return null;
+        }
+        double u = beat(age, right);
+        Vec3 at;
+        if (u < 0.0) {
+            at = SPIN_LOW;
+        } else if (u < SPIN_RAISE) {
+            at = SPIN_LOW.lerp(SPIN_HIGH, Ease.smooth(u / SPIN_RAISE));
+        } else if (u < SPIN_SLAMMED) {
+            double s = (u - SPIN_RAISE) / (SPIN_SLAMMED - SPIN_RAISE);
+            at = SPIN_HIGH.lerp(SPIN_GROUND, s * s);
+        } else {
+            at = SPIN_GROUND.lerp(SPIN_LOW, Ease.smooth((u - SPIN_SLAMMED) / (1.0 - SPIN_SLAMMED)));
+        }
+        double side = right ? 1.0 : -1.0;
+        Vec3 key = frame.point(new Vec3(side * at.x, at.y, side * at.z));
+        Vec3 palm = frame.dir(new Vec3(-side * 0.6, -0.8, 0.0)).normalize();
+        Vec3 pole = frame.dir(new Vec3(side, -0.2, -side * 0.3)).normalize();
+        return new Aim(key, key, palm, pole, 1.0, 0.0, weight, 0.0);
     }
 
     private static MechMoves.Arm blend(MechMoves.Arm from, MechMoves.Arm to, double u, Vec3 shoulder) {
@@ -356,28 +426,6 @@ public final class MechAttacks {
         MechMoves.Arm arm = arm(grab, true, frame, torso, held, MechMoves.arm(true, frame, MechScript.SETTLED));
         return arm.hand().distanceTo(MechScript.SHOULDER) <= REACH - GRAB_ROOM
                 && torso.point(grip(arm, held.halfWidth())).distanceTo(held.center()) < GRAB_MISS;
-    }
-
-    @Nullable
-    private static Move move(int kind) {
-        return kind > NONE && kind < MOVES.length ? MOVES[kind] : null;
-    }
-
-    // The keys at t; within a pull (from, to, power) the values run straight from one key to the next, gathering
-    // speed into the blow instead of easing off before it.
-    private static float[] values(Keyframes.Key[] keys, Move move, double t) {
-        for (int[] pull : move.pulls()) {
-            if (t > pull[0] && t < pull[1]) {
-                float[] from = Keyframes.at(keys, pull[0]);
-                float[] to = Keyframes.at(keys, pull[1]);
-                float u = (float) Math.pow((t - pull[0]) / (pull[1] - pull[0]), pull[2]);
-                for (int i = 0; i < from.length; i++) {
-                    from[i] = Mth.lerp(u, from[i], to[i]);
-                }
-                return from;
-            }
-        }
-        return Keyframes.at(keys, (float) t);
     }
 
     private static Vec3 localDir(MechScript.Stage stage, Vec3 world) {

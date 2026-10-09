@@ -1,16 +1,13 @@
 # Laatste sessie
 
-## 0.7.7-alpha (2026-10-04) - gecommit, gepusht en gereleased
-- Verzoek: guide-teksten, alle bugs + ideeën (behalve #24 NPC's), spelers minder/korter limp (1 s),
-  limp-lichamen spelers = wereld-instelling, Mjolnir flight system + Storm Throw, tour 1x per versie.
-- Thor: `thor/hammer/` (Throw to Stay, Call/Follow the Hammer, Storm Throw, vangen met spring-hold),
-  ChainBolt, eigen bolts, bomb 10 blokken; first-person bomb niet meer wit (StormBolts/BombFx).
-- Green Lantern mech: Eye Beam (rechts klik), Unibeam (rechts houden), uitlaatvlammen + knokkelpunten.
-- Bugs #62 #64 #65 #66 #68 #69 gefixt; ideeën #25 #31 #32 #33 #67 gebouwd; allemaal gesloten op GitHub.
-  #63 gesloten (niet te reproduceren); #24 (NPC's) blijft open.
-- Tour 0.7.7: 7 stappen, in spel doorgelopen (vraag, wereld, personage, stappen, klaar).
-- Docs: CHANGELOG, POWERS.md, PROJECT.md, README.
-- Getest: eind-review zelf gedaan (2 bugs hamer gefixt), build + tests groen, in-game hamer-test schoon.
-- Testklassen Zz*Test, werelden zz_* en screenshots verwijderd.
-- Niet van deze sessie, bewust niet gecommit: `docs/KEYBINDS.md`, `docs/reference/thor_storm_throw*.mp4`,
-  flight-docs (door ander terug gezet van `docs/archive/` naar `docs/ideas/`).
+## 0.7.8-alpha (2026-10-09)
+- Verzoek: idee #70 mech (jaeger-bouw, grotere uitlaat + boost, combo, Eye Ray/Beam, missile arm, rocket
+  boots, spin; Unibeam weg) en Thor Storm Throw als in God of War (Z; zonder hamer valt hij uit de lucht).
+- Laatste ronde: mech-review overgenomen (geen bugs; 6 te lange regels ingekort). Storm Throw: cirkel weg
+  (haze, scorch-schijf, FLASH), V breed (60° per arm, standaard 6 blokken, `StormStrike`), V opent nu altijd
+  van Thor af naar de vijand (was scheef bij steile worp), explosie veel kleiner (`StormStrikeFx`).
+- Docs: CHANGELOG, POWERS.md (ook Z = Storm Throw in tabel), PROJECT.md, en_us; KEYBINDS.md bijgewerkt.
+- Getest: in-game bovenaanzicht + zijaanzicht (V symmetrisch, vijand in de V), build + alle tests groen.
+- Testklassen Zz*Test, werelden zz_* en screenshots verwijderd; idee #70 staat in `bugs/fixed/`.
+- Commit + push + release 0.7.8-alpha: alles mee (ook KEYBINDS.md, flight-docs, referentieclips).
+- Open: idee #24 (NPC's) wacht op ja/nee; KEYBINDS.md is Nederlands, andere docs Engels.

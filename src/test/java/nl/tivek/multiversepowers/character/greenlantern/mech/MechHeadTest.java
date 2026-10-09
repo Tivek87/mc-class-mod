@@ -32,7 +32,8 @@ class MechHeadTest {
     void theHandTakesTheHeadWhereItLies() {
         for (MechScript.Stage stage : STAGES) {
             Vec3 lying = stage.point(MechHead.sunk(stage));
-            assertTrue(MechHead.held(stage, MechScript.GRAB).distanceTo(lying) < 0.1, "the hand misses the head");
+            double miss = MechHead.held(stage, MechScript.GRAB).distanceTo(lying);
+            assertTrue(miss < 0.1, "the hand misses the head by " + miss);
         }
     }
 

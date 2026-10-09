@@ -19,8 +19,8 @@ public final class MechArmShapes {
     public static final double KNUCKLES = WRIST + 1.24;
     // Two exhaust pipes run along the back of each forearm and sweep out past the elbow: their open ends and the way
     // they point, in the forearm's places (x across, y from the elbow to the wrist, the back of the hand at -z).
-    public static final double[] PIPE_X = { -0.25, 0.25 };
-    private static final double PIPE = 0.13;
+    public static final double[] PIPE_X = { -0.3, 0.3 };
+    public static final double PIPE = 0.21;
 
     public static final Shape UPPER = Shape.of(upper());
     public static final Shape UPPER_LEFT = MechParts.mirrored(UPPER);
@@ -49,51 +49,60 @@ public final class MechArmShapes {
     private MechArmShapes() {
     }
 
+    // The upper arm: a thick column plated on its outer side and in front, with the elbow's round joint at its end.
     private static Mesh[] upper() {
         double top = MechScript.UPPER_ARM;
-        Surface upper = Surface.loft(MechParts.at(-0.3, 0.0, 0.0, 0.0, 2.0), MechParts.at(0.02, 0.58, 0.58, 0.0, 2.3),
-                MechParts.at(0.5, 0.67, 0.66, 0.0, 2.5), MechParts.at(1.15, 0.65, 0.64, 0.0, 2.5),
-                MechParts.at(top - 0.3, 0.56, 0.57, 0.0, 2.3), MechParts.at(top + 0.05, 0.0, 0.0, 0.0, 2.0));
+        Surface upper = Surface.loft(MechParts.at(-0.3, 0.0, 0.0, 0.0, 2.0), MechParts.at(0.02, 0.64, 0.62, 0.0, 2.8),
+                MechParts.at(0.6, 0.74, 0.7, 0.0, 3.2), MechParts.at(1.4, 0.72, 0.68, 0.0, 3.2),
+                MechParts.at(top - 0.3, 0.62, 0.6, 0.0, 3.0), MechParts.at(top + 0.05, 0.0, 0.0, 0.0, 2.0));
         List<Mesh> m = new ArrayList<>();
-        m.add(MechParts.skin(upper, 12, 5, 81, 1.0));
-        m.add(MechParts.hub(0.55, -0.72, 0.72, 0.95).moved(0.0, top, 0.0));
-        MechParts.pair(m, MechParts.ring(0.5, 0.05, 0.74, 1.3).moved(0.0, top, 0.0));
-        MechParts.pair(m, MechParts.disc(0.3, 0.72, 0.07, 1.15).moved(0.0, top, 0.0));
-        Surface outer = MechParts.part(upper.offset(0.05, true), -0.07, 0.07, 0.2, 0.75);
-        m.addAll(List.of(MechParts.plated(outer, 2, 3, 82, 0.12, 1.05)));
+        m.add(MechParts.skin(upper, 12, 6, 81, 1.0));
+        m.add(MechParts.hub(0.62, -0.8, 0.8, 0.95).moved(0.0, top, 0.0));
+        MechParts.pair(m, MechParts.ring(0.56, 0.05, 0.82, 1.3).moved(0.0, top, 0.0));
+        MechParts.pair(m, MechParts.disc(0.34, 0.8, 0.07, 1.15).moved(0.0, top, 0.0));
+        Surface out = upper.offset(0.05, true);
+        m.addAll(List.of(MechParts.plated(MechParts.part(out, -0.08, 0.08, 0.18, 0.78), 2, 4, 82, 0.14, 1.05)));
+        m.addAll(List.of(MechParts.plated(MechParts.part(out, 0.18, 0.32, 0.25, 0.7), 2, 3, 83, 0.12, 1.03)));
         return m.toArray(Mesh[]::new);
     }
 
-    // The gauntlet: a thick forearm of rings of blocks, round at the elbow, ringed at the wrist.
+    // The gauntlet: a forearm bigger than the upper arm, squared off and swelling to its middle, a guard over the back
+    // of the elbow, a plated ridge down its back and a ring at the wrist.
     private static Mesh[] forearm() {
         double wrist = WRIST;
-        Surface fore = Surface.loft(MechParts.at(-0.8, 0.0, 0.0, 0.0, 2.0), MechParts.at(-0.56, 0.52, 0.52, 0.0, 2.2),
-                MechParts.at(-0.15, 0.76, 0.74, 0.0, 2.5), MechParts.at(0.55, 0.86, 0.82, 0.0, 2.7),
-                MechParts.at(1.25, 0.84, 0.8, 0.0, 2.7), MechParts.at(1.85, 0.74, 0.7, 0.0, 2.6),
-                MechParts.at(wrist - 0.2, 0.6, 0.56, 0.0, 2.4), MechParts.at(wrist + 0.02, 0.0, 0.0, 0.0, 2.0));
+        Surface fore = Surface.loft(MechParts.at(-0.85, 0.0, 0.0, 0.0, 2.0), MechParts.at(-0.6, 0.56, 0.56, 0.0, 2.6),
+                MechParts.at(-0.15, 0.82, 0.8, 0.0, 3.6), MechParts.at(0.7, 0.96, 0.92, 0.0, 4.2),
+                MechParts.at(1.6, 0.96, 0.9, 0.0, 4.2), MechParts.at(2.3, 0.82, 0.76, 0.0, 3.8),
+                MechParts.at(wrist - 0.2, 0.66, 0.6, 0.0, 3.0), MechParts.at(wrist + 0.02, 0.0, 0.0, 0.0, 2.0));
         List<Mesh> m = new ArrayList<>();
-        m.add(MechParts.skin(fore, 14, 8, 91, 1.0, 0.075));
-        Surface ridge = MechParts.part(fore.offset(0.07, true), 0.7, 0.8, 0.2, 0.82);
-        m.addAll(List.of(MechParts.plated(ridge, 1, 4, 92, 0.14, 1.08)));
-        m.add(Mesh.torus(24, 4, 0.64, 0.06, 1.3).scaled(1.0, 1.0, 0.94).moved(0.0, wrist - 0.24, 0.0));
+        m.add(MechParts.skin(fore, 16, 9, 91, 1.0, 0.075));
+        Surface out = fore.offset(0.07, true);
+        m.addAll(List.of(MechParts.plated(MechParts.part(out, 0.7, 0.8, 0.22, 0.84), 1, 4, 92, 0.16, 1.08)));
+        m.addAll(List.of(MechParts.plated(MechParts.part(out, -0.1, 0.1, 0.3, 0.8), 2, 3, 93, 0.12, 1.04)));
+        Surface guard = Surface.loft(MechParts.at(-0.75, 0.62, 0.66, 0.0, 3.4), MechParts.at(0.45, 0.98, 0.96, 0.0,
+                4.2));
+        m.addAll(List.of(MechParts.plated(MechParts.part(guard, 0.58, 0.92, 0.0, 1.0), 4, 2, 94, 0.14, 1.1)));
+        m.add(Mesh.torus(24, 4, 0.7, 0.07, 1.3).scaled(1.0, 1.0, 0.94).moved(0.0, wrist - 0.24, 0.0));
         // The exhaust pipes, out of the gauntlet by the wrist, strapped down over its back and swept out past the
-        // elbow like a motorcycle's, each ending in a ringed mouth.
+        // elbow like a motorcycle's, each ending in a flared, ringed mouth.
         for (double x : PIPE_X) {
             Vec3 end = pipeEnd(x);
             Vec3 way = pipeWay(x);
-            m.add(Mesh.tube(false, 8, PIPE, 1.15, new Vec3(x, 1.95, -0.6), new Vec3(x, 1.55, -0.94),
-                    new Vec3(x, 0.4, -1.02), new Vec3(x, -0.5, -0.98), bend(x), end));
-            m.add(Mesh.torus(10, 4, PIPE + 0.04, 0.04, 1.4).pointing(way.x, way.y, way.z).moved(end.x, end.y,
-                    end.z));
+            m.add(Mesh.tube(false, 10, PIPE, 1.15, new Vec3(x, 2.3, -0.66), new Vec3(x, 1.9, -1.08),
+                    new Vec3(x, 0.4, -1.16), new Vec3(x, -0.55, -1.12), bend(x), end));
+            m.add(Mesh.cone(12, PIPE + 0.02, PIPE + 0.1, 0.0, 0.26, 1.2).pointing(way.x, way.y, way.z).moved(end.x,
+                    end.y, end.z));
+            m.add(Mesh.torus(12, 4, PIPE + 0.1, 0.05, 1.45).pointing(way.x, way.y, way.z).moved(end.x + way.x * 0.26,
+                    end.y + way.y * 0.26, end.z + way.z * 0.26));
         }
-        m.add(Mesh.bevel(-0.44, 0.82, -1.2, 0.44, 1.0, -0.84, 0.03, 1.1));
-        m.add(Mesh.bevel(-0.44, -0.22, -1.17, 0.44, -0.06, -0.82, 0.03, 1.1));
+        m.add(Mesh.bevel(-0.56, 0.95, -1.42, 0.56, 1.15, -0.96, 0.03, 1.1));
+        m.add(Mesh.bevel(-0.56, -0.2, -1.4, 0.56, -0.02, -0.96, 0.03, 1.1));
         return m.toArray(Mesh[]::new);
     }
 
     // The open end of the pipe at `x` across the forearm, and the way it points.
     public static Vec3 pipeEnd(double x) {
-        return new Vec3(x * 1.4, -1.35, -1.35);
+        return new Vec3(x * 1.45, -1.55, -1.5);
     }
 
     public static Vec3 pipeWay(double x) {
@@ -101,7 +110,7 @@ public final class MechArmShapes {
     }
 
     private static Vec3 bend(double x) {
-        return new Vec3(x * 1.25, -1.05, -1.15);
+        return new Vec3(x * 1.3, -1.2, -1.32);
     }
 
     // The hand past the wrist: its palm, the plates on its back, the knuckles and the pads.

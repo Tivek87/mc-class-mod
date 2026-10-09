@@ -3,6 +3,47 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.7.8-alpha] - 2026-10-09
+
+### Added
+- **Green Lantern:** **Missile arm** (R in the mech): it aims its right arm where you look, the back of its hand opens
+  and left click fires up to 3 salvos of six missiles.
+- **Green Lantern:** **Rocket boots** (press jump twice in the mech): it flies for up to 5 seconds; X in the air dives
+  down onto the ground with a big blast.
+- **Green Lantern:** **Spin** (X in the mech on the ground): it drops to its knees and whirls its torso round for 3
+  seconds, its fists hammering the ground.
+- **Green Lantern:** **Eye Ray** (click right in the mech): a quick bolt from each eye that bursts where you aim.
+- **Green Lantern:** the mech's blows are a **combo** of three, opening with a new **straight right**: a fist driven
+  down far ahead.
+- **Green Lantern's settings:** the straight right's damage, the Eye Ray's cost and damage, the missile arm's, rocket
+  boots', dive's and spin's cost, damage and wait, and how long the rocket boots fly.
+- **Thor's settings:** the Storm Throw's spread: how far its lightning runs out over the ground.
+
+### Changed
+- **Green Lantern:** the mech is built like a jaeger: much longer legs that step up higher, a V-shaped chest, big
+  shoulder shells and a small helmet sunk between them.
+- **Green Lantern:** **Eye Beam** (now hold right click in the mech): a flat blade of light with arrowheads racing
+  along it, burning for as long as you hold.
+- **Green Lantern:** the mech's exhaust pipes are bigger, and running on charges them up: the flames grow huge and
+  the mech runs faster.
+- **Green Lantern:** the mech's blows reach further and hit harder, with heavier moves.
+- **Green Lantern:** the mech runs steadier, with less bobbing and leaning.
+- **Green Lantern:** the mech's moves have waits of their own, shown on the panel; the keys' cooldowns no longer
+  hold them back.
+- **Green Lantern's settings:** the mech's blows hit harder by default (sweep 14, stomp 16, slam 22, smash and throw
+  8 half hearts), and the Eye Beam costs power per second.
+- **Ability panel and guide:** in the mech they list its new moves on their keys.
+- **Thor:** **Storm Throw** (now its own key, Z) is remade as in God of War: on the ground he flings the hammer high
+  up, dashes up after it, catches it and hurls it down as a bolt before his foe; in flight he only hurls it. Where it
+  strikes, lightning runs out over the ground in a wide V that opens past the foe.
+- **Thor:** he flies only with the hammer in his hand: without it for over a second (but for his own moves) he drops
+  out of the sky.
+- **Thor's settings:** the Storm Throw hits harder by default (12 half hearts).
+
+### Removed
+- **Green Lantern:** the mech's **Unibeam** and its settings.
+- **Thor:** the Storm Throw's ring of lightning, its leaps from foe to foe and their settings.
+
 ## [0.7.7-alpha] - 2026-10-04
 
 ### Added

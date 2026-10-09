@@ -61,10 +61,20 @@ final class LanternGuide {
                         heading("mouse"), click(Input.LEFT, "blow").moves("light_bolt", false)
                                 .costs("mech", "mechBlowPowerCost"),
                         click(Input.RIGHT, "eye").moves("light_shield", false).costs("mech", "mechEyePowerCost"),
-                        hold(Input.RIGHT, "unibeam").moves("light_shield", true)
-                                .costs("mech", "mechUnibeamPowerCost"),
+                        hold(Input.RIGHT, "glare").moves("light_shield", true)
+                                .costs("mech", "mechGlarePowerPerSecond"),
                         hold(Input.SCROLL, "leave").fires("mech"),
-                        heading("move"), forward("climb")),
+                        heading("keys"), ability(GL, "emerald_express", "missiles").moves("emerald_express", false),
+                        click(Input.LEFT, "salvo").moves("light_bolt", false).costs("mech", "mechMissilePowerCost")
+                                .under("missiles"),
+                        ability(GL, "emerald_express", "lower").moves("emerald_express", false).again("missiles"),
+                        ability(GL, "shockwave", "spin").moves("shockwave", false).costs("mech", "mechSpinPowerCost"),
+                        heading("move"), forward("climb"),
+                        doubleKey(LanternGuide::jumpKey, "rockets").moves("flight", false)
+                                .costs("mech", "mechRocketPowerCost"),
+                        ability(GL, "shockwave", "dive").moves("shockwave", false).costs("mech", "mechDivePowerCost")
+                                .under("rockets"),
+                        doubleKey(LanternGuide::jumpKey, "cut").moves("flight", false).again("rockets")),
                 weapon("sword", player -> SwordArms.holding(), "swordPowerCost", "flurryPowerCost", "chargePowerCost",
                         "blockPowerPerSecond", "cut", "flurry", "charge", "block"),
                 weapon("flamethrower", player -> FlameArms.holding(), "sweepPowerCost", "infernoPowerPerSecond",

@@ -131,7 +131,8 @@ public final class Characters {
                 && ability.tapWhen() != CharacterAbility.Tap.NEVER && (data & HOLD) != 0;
         // A move's landing (SLAM) belongs to the move already under way: its cooldown never refuses it.
         boolean follow = (data & (SLAM | CHARGE)) != 0;
-        if (COOLDOWNS.left(player, character, slot.ordinal()) > 0 && !letGo && !undo && !ownCooldown && !follow) {
+        if (COOLDOWNS.left(player, character, slot.ordinal()) > 0 && !letGo && !undo && !ownCooldown && !follow
+                && !character.powers().ownsKeys(player)) {
             sync(player);
             return;
         }
@@ -185,9 +186,10 @@ public final class Characters {
             return;
         }
         CharacterPowers powers = character.powers();
+        boolean owned = powers.ownsKeys(player);
         for (AbilitySlot slot : AbilitySlot.values()) {
             CharacterAbility ability = character.ability(slot);
-            cooldowns[slot.ordinal()] = Math.max(COOLDOWNS.left(player, character, slot.ordinal()),
+            cooldowns[slot.ordinal()] = Math.max(owned ? 0 : COOLDOWNS.left(player, character, slot.ordinal()),
                     ability == null ? 0 : powers.waitLeft(player, ability));
         }
         PacketDistributor.sendToPlayer(player, new CharacterStatePayload(character.ordinal(), cooldowns,

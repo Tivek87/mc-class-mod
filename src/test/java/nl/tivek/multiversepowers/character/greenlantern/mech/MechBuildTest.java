@@ -53,7 +53,7 @@ class MechBuildTest {
             // Only digging the head out and winding it back takes the chest far down and over.
             boolean lunging = t > MechScript.REACH + 5 && t < MechScript.TOSS;
             double off = seat.distanceTo(stage.point(MechScript.COCKPIT));
-            assertTrue(off < (lunging ? 3.0 : 1.0), "seat " + off + " from its place at " + t);
+            assertTrue(off < (lunging ? 4.0 : 1.0), "seat " + off + " from its place at " + t);
         }
         assertTrue(lowest < -1.0, "the seat sinks with the lunge: " + lowest);
     }

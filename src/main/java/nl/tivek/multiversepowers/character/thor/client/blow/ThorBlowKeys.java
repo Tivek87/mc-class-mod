@@ -47,7 +47,10 @@ final class ThorBlowKeys {
         // where the hammer flies.
         THROW_BACK(-6.0F, -10.0F, 4.0F, -0.5F, -0.2F, 1.0F, 0.62F, 0.40F, -0.10F, 0.80F, -0.35F, 0.15F),
         LET_GO(-2.0F, -3.0F, -11.0F, -0.5F, 0.5F, 1.0F, 0.34F, -0.02F, -1.15F, 0.70F, -0.65F, -0.20F),
-        FOLLOW(-1.0F, -0.5F, -10.5F, -0.5F, 0.5F, 1.0F, 0.38F, -0.30F, -1.00F, 0.70F, -0.95F, -0.20F);
+        FOLLOW(-1.0F, -0.5F, -10.5F, -0.5F, 0.5F, 1.0F, 0.38F, -0.30F, -1.00F, 0.70F, -0.95F, -0.20F),
+        // A Storm Throw's toss: swung low behind the hip, then flung straight up overhead.
+        TOSS_LOW(-7.0F, 9.0F, 4.0F, -0.4F, 0.3F, 1.0F, 0.55F, -0.85F, -0.35F, 0.70F, -1.10F, 0.05F),
+        TOSS_UP(-4.5F, -12.0F, -5.0F, -0.6F, 0.0F, 0.8F, 0.30F, 0.60F, -0.85F, 0.55F, -0.55F, -0.25F);
 
         final Vector3f hand;
         final Vector3f pole;
@@ -288,11 +291,22 @@ final class ThorBlowKeys {
                 k(2.5F, Spot.LET_GO, Spot.GUARD, -0.75F, 0.3F, -0.08F, 1.2F),
                 k(5, Spot.FOLLOW, Spot.GUARD, -0.4F, 0.2F, -0.04F, 0.8F),
                 k(11, Spot.GUARD, Spot.GUARD, 0, 0, 0, 0));
+        // A Storm Throw: in the air the left hand first holds the hammer high over his head while the storm gathers
+        // in it, then hurls it down ahead of him. On the ground it starts with the toss: swung low behind him and
+        // flung high up, the body rising after it.
         hands(ThorBlow.STORM_THROW,
                 k(0, Spot.GUARD, Spot.GUARD, 0, 0, 0, 0),
-                k(1.5F, Spot.GUARD, Spot.THROW_BACK, -0.5F, -0.1F, -0.05F, 0.0F),
-                k(2.5F, Spot.GUARD, Spot.LET_GO, 0.7F, 0.3F, 0.08F, 0.0F),
-                k(6, Spot.GUARD, Spot.FOLLOW, 0.3F, 0.15F, 0.03F, 0.0F),
+                k(4, Spot.GUARD, Spot.HOIST, 0.15F, -0.2F, 0.03F, 0.0F),
+                k(9, Spot.GUARD, Spot.HOIST, 0.2F, -0.25F, 0.04F, 0.0F),
+                k(10, Spot.GUARD, Spot.THROW_BACK, -0.5F, -0.15F, -0.05F, 0.0F),
+                k(11, Spot.GUARD, Spot.LET_GO, 0.7F, 0.45F, 0.08F, 0.0F),
+                k(14, Spot.GUARD, Spot.FOLLOW, 0.3F, 0.25F, 0.03F, 0.0F),
+                k(18, Spot.GUARD, Spot.GUARD, 0, 0, 0, 0));
+        hands(ThorBlow.STORM_TOSS,
+                k(0, Spot.GUARD, Spot.GUARD, 0, 0, 0, 0),
+                k(2.5F, Spot.TOSS_LOW, Spot.BALANCE, 0.45F, 0.25F, 0.05F, 2.4F),
+                k(4, Spot.TOSS_UP, Spot.GUARD, -0.35F, -0.25F, -0.04F, -0.6F),
+                k(7, Spot.TOSS_UP, Spot.GUARD, -0.2F, -0.15F, -0.02F, -0.3F),
                 k(12, Spot.GUARD, Spot.GUARD, 0, 0, 0, 0));
     }
 

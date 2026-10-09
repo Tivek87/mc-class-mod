@@ -78,19 +78,9 @@ public final class PowerRing {
             }
             return false;
         }
-        boolean mech = ability.id().equals("mech");
-        if (on && ability.id().equals("light_bolt") && MechAssembly.piloting(player)) {
-            // In the mech, the attack button strikes with its fists and feet; holding it does nothing more.
-            return (data & Characters.HOLD) == 0 && MechAssembly.strike(player);
-        }
-        if (on && ability.id().equals("light_shield") && MechAssembly.piloting(player)) {
-            // Right click in the mech: a tap fires the eye beam, a hold the Unibeam.
-            return (data & (Characters.TAP | Characters.HOLD)) != 0
-                    && MechAssembly.beam(player, (data & Characters.HOLD) != 0);
-        }
-        if (on && !mech && MechAssembly.piloting(player)) {
-            tell(player, "mech_busy", Component.keybind("key." + MultiversePowers.MODID + ".input.scroll_hold"));
-            return false;
+        // In the mech, every key does a move of the mech's own or nothing (MechAssembly.control).
+        if (MechAssembly.piloting(player)) {
+            return MechAssembly.control(player, ability, on, data);
         }
         // A construct weapon in hand shuts every other key until it is put away (the client says so first).
         if (on && ability.input() == CharacterAbility.Input.KEY && armed(player)) {

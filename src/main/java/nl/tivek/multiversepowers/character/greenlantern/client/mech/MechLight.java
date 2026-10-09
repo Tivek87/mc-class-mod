@@ -29,8 +29,8 @@ final class MechLight {
     private static final int SPIKES = 44;
     private static final int CRACKS = 12;
     private static final int SHARDS = 44;
-    private static final Vec3 HALO = new Vec3(0.0, 8.1, -0.9);
-    private static final double HALO_RADIUS = 2.8;
+    private static final Vec3 HALO = new Vec3(0.0, 10.35, -0.9);
+    private static final double HALO_RADIUS = 3.0;
 
     private MechLight() {
     }
@@ -125,15 +125,15 @@ final class MechLight {
             MechMoves.Arm arm = MechMoves.arm(right, stage, t);
             beam(painter, ring, arms.point(arm.hand()), t, MechScript.ARMS_FORM,
                     MechScript.ARMS_IN - MechScript.ARMS_FORM);
-            beam(painter, ring, torso.point(MechPainter.side(new Vec3(2.2 + 1.6 * Mth.clamp((t - MechScript.SHOULDERS)
-                    / 12.0, 0.0, 1.0), 8.4, 0.0), right)), t, MechScript.SHOULDERS, 12.0);
+            beam(painter, ring, torso.point(MechPainter.side(new Vec3(2.2 + 1.9 * Mth.clamp((t - MechScript.SHOULDERS)
+                    / 12.0, 0.0, 1.0), 10.75, 0.0), right)), t, MechScript.SHOULDERS, 12.0);
             beam(painter, ring, torso.point(MechPainter.side(MechScript.SHOULDER, right)).lerp(arms.point(arm.elbow()),
                     MechMoves.upper(t)), t, MechScript.UPPER_ARMS, MechScript.ELBOWS - MechScript.UPPER_ARMS);
         }
-        beam(painter, ring, pose.hips().point(0.0, 4.6 + 1.4 * Mth.clamp((t - MechScript.HIPS) / 6.0, 0.0, 1.0),
+        beam(painter, ring, pose.hips().point(0.0, 6.6 + 1.6 * Mth.clamp((t - MechScript.HIPS) / 6.0, 0.0, 1.0),
                 0.6), t, MechScript.HIPS, 6.0);
         beam(painter, ring, torso.point(MechBodyShapes.CORE), t, MechScript.CORE, MechScript.FORM_TICKS);
-        beam(painter, ring, torso.point(0.0, 5.8 + 3.0 * Mth.clamp((t - MechScript.ARMOR) / 16.0, 0.0, 1.0), 1.4), t,
+        beam(painter, ring, torso.point(0.0, 8.1 + 3.2 * Mth.clamp((t - MechScript.ARMOR) / 16.0, 0.0, 1.0), 1.4), t,
                 MechScript.ARMOR, 16.0);
         beam(painter, ring, MechHead.pose(stage, t).at(), t, MechScript.HEAD_FORM, 4.0);
     }
@@ -217,19 +217,20 @@ final class MechLight {
             }
             double pauldron = Mth.clamp((t - MechScript.SHOULDERS) / 12.0, 0.0, 1.0);
             if (t >= MechScript.SHOULDERS && pauldron < 1.0) {
-                double x = 1.8 + 3.4 * Ease.smooth(pauldron);
-                fizz(painter, torso.point(MechPainter.side(new Vec3(x, 8.3, 0.0), right)), 1.0, t, side * 11 + 7, 1.0);
+                double x = 1.8 + 3.7 * Ease.smooth(pauldron);
+                fizz(painter, torso.point(MechPainter.side(new Vec3(x, 10.55, 0.0), right)), 1.0, t, side * 11 + 7,
+                        1.0);
             }
         }
         double hips = Mth.clamp((t - MechScript.HIPS) / 6.0, 0.0, 1.0);
         if (t >= MechScript.HIPS && hips < 1.0) {
-            double y = Mth.lerp(Ease.smooth(hips), 4.2, 6.15);
+            double y = Mth.lerp(Ease.smooth(hips), 6.35, 8.75);
             fizz(painter, pose.hips().point(0.9, y, 0.0), 0.9, t, 31, 1.0);
             fizz(painter, pose.hips().point(-0.9, y, 0.0), 0.9, t, 32, 1.0);
         }
         double armor = Mth.clamp((t - MechScript.ARMOR) / 16.0, 0.0, 1.0);
         if (t >= MechScript.ARMOR && armor < 1.0) {
-            double y = Mth.lerp(Ease.smooth(armor), 5.6, MechBodyShapes.CHEST_TOP + 0.3);
+            double y = Mth.lerp(Ease.smooth(armor), 7.9, MechBodyShapes.CHEST_TOP + 0.3);
             for (int k = -1; k <= 1; k++) {
                 fizz(painter, torso.point(k * 1.4, y, k == 0 ? -1.0 : 0.3), 1.0, t, 33 + k, 1.0);
             }

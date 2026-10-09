@@ -16,26 +16,26 @@ import nl.tivek.multiversepowers.engine.math.Ease;
 // the top at the end, the right one first.
 final class MechClimbHolds {
     // How far the body rises between one hold of a hand or foot and its next; the right ones go first.
-    static final double RUNG = 2.2;
+    static final double RUNG = 2.6;
     private static final double[] HAND_PHASE = { 0.5, 1.0 };
     private static final double[] FOOT_PHASE = { 0.05, 0.55 };
     // A hand takes hold with its knuckles this high over its shoulder, and from the ground no higher than FIRST_REACH
     // over the base; on the edge they stand KNUCKLE_OVER over the top.
-    private static final double REACH_UP = 2.6;
-    private static final double FIRST_REACH = MechScript.SHOULDER.y + 3.2;
+    private static final double REACH_UP = 3.1;
+    private static final double FIRST_REACH = MechScript.SHOULDER.y + 3.8;
     static final double KNUCKLE_OVER = 0.15;
     // Where the hands take hold: this far out from the middle.
-    static final double HAND_OUT = 2.7;
+    static final double HAND_OUT = 2.8;
     // A hand or foot goes from one hold to the next in MOVE ticks, swung SWING_OFF off the wall on the way.
     static final int MOVE = 6;
     static final double SWING_OFF = 0.7;
     // A foot on the face stands its ankle FOOT_UP over the base (as low again as the body sinks) and its toes TOE_OFF
     // short of the face, never nearer than FOOT_UNDER under the top.
-    private static final double FOOT_UP = 3.5;
+    private static final double FOOT_UP = 4.6;
     private static final double TOE_OFF = 0.1;
     private static final double FOOT_UNDER = 0.8;
     // Off the ground with no hold on the face, a foot is drawn up under the hips, knees bent, and scrapes at the wall.
-    private static final double TUCK_UP = 1.1;
+    private static final double TUCK_UP = 1.5;
     private static final double TUCK_IN = 0.5;
     private static final double SCRAPE = 0.3;
     // Swung up onto the top a foot takes FOOT_SWING ticks and clears the edge by FOOT_CLEAR; the right one comes down

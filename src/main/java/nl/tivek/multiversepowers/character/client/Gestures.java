@@ -41,6 +41,7 @@ final class Gestures {
     private static final Map<GameCharacter, Predicate<LocalPlayer>> FLYING = new EnumMap<>(GameCharacter.class);
     private static final Map<GameCharacter, ToIntFunction<LocalPlayer>> STATES = new EnumMap<>(GameCharacter.class);
     private static final Map<CharacterAbility, Predicate<LocalPlayer>> GATES = new HashMap<>();
+    private static final Map<CharacterAbility, ToIntFunction<LocalPlayer>> HOLD_TIMES = new HashMap<>();
 
     @Nullable
     private static final CharacterAbility[] STARTED = new CharacterAbility[MouseHold.CHANNELS];
@@ -69,6 +70,20 @@ final class Gestures {
     private static boolean allowed(CharacterAbility ability, LocalPlayer player) {
         Predicate<LocalPlayer> may = GATES.get(ability);
         return may == null || may.test(player);
+    }
+
+    static void holdTime(CharacterAbility ability, ToIntFunction<LocalPlayer> ticks) {
+        HOLD_TIMES.put(ability, ticks);
+    }
+
+    // How long a button is held before its hold fires: the ability's own time, unless its character shortens it now.
+    private static int holdTicks(@Nullable CharacterAbility hold, LocalPlayer player) {
+        if (hold == null) {
+            return 0;
+        }
+        ToIntFunction<LocalPlayer> ticks = HOLD_TIMES.get(hold);
+        int now = ticks == null ? 0 : ticks.applyAsInt(player);
+        return now > 0 ? now : hold.holdTicks();
     }
 
     static boolean active(CharacterAbility ability, LocalPlayer player) {
@@ -178,8 +193,7 @@ final class Gestures {
         boolean ours = takesMouse(player) && !handBusy(player, now, input);
         boolean free = ours && inGame(minecraft) && !StaminaClient.isExhausted();
         boolean down = free && key.isDown();
-        MouseHold.Step step = MouseHold.tick(channel, hold == null ? 0 : hold.holdTicks(), tapMode(click, hold),
-                down, !free);
+        MouseHold.Step step = MouseHold.tick(channel, holdTicks(hold, player), tapMode(click, hold), down, !free);
         CharacterAbility one = click != null ? click : hold;
         if (click == hold || click == null || hold == null) {
             int index = one.slot().ordinal();

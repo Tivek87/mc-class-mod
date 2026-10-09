@@ -20,7 +20,7 @@ public final class MechParts {
     private MechParts() {
     }
 
-    static Shape mirrored(Shape shape) {
+    public static Shape mirrored(Shape shape) {
         Mesh[] meshes = new Mesh[shape.meshes().length];
         for (int i = 0; i < meshes.length; i++) {
             meshes[i] = shape.meshes()[i].mirrored();

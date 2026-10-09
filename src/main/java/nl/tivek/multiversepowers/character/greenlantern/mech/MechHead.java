@@ -10,9 +10,9 @@ import nl.tivek.multiversepowers.engine.math.Vectors;
 // left the hand down onto the neck, where it locks on and rides the torso. One path for the server and every client.
 public final class MechHead {
     // From the middle of the palm to the middle of the head it holds.
-    public static final double HOLD = 2.0;
+    public static final double HOLD = 1.9;
     // Half the head's size round its middle, for the fingers closing on it.
-    public static final Vec3 HALF = new Vec3(1.05, 1.15, 1.05);
+    public static final Vec3 HALF = new Vec3(0.94, 1.02, 0.96);
     private static final double SINK = 0.5;
     // Where it lies in its crater on a target standing level with the mech.
     public static final Vec3 SUNK = new Vec3(0.0, MechScript.HEAD_UP - SINK, MechScript.TARGET_AHEAD);

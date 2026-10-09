@@ -33,7 +33,13 @@ public final class GreenLanternPowers implements CharacterPowers {
 
     @Override
     public int waitLeft(ServerPlayer player, CharacterAbility ability) {
-        return ability.id().equals("mech") ? MechAssembly.waitLeft(player) : 0;
+        return ability.id().equals("mech") ? MechAssembly.waitLeft(player)
+                : MechAssembly.waitLeft(player, ability.id());
+    }
+
+    @Override
+    public boolean ownsKeys(ServerPlayer player) {
+        return MechAssembly.piloting(player);
     }
 
     @Override

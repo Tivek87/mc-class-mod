@@ -30,7 +30,7 @@ import nl.tivek.multiversepowers.engine.math.Spring;
 // climb places them.
 // MechWalk carries the body over them.
 class MechGait {
-    static final double CYCLE = 4.6;
+    static final double CYCLE = 6.0;
     static final double[] LIFTS = { 0.0, 0.5 };
     static final double TURN_ARC = 4.0;
     static final double SLOWEST = 1.0 / 40.0;
@@ -49,15 +49,15 @@ class MechGait {
     private static final double SWING = 0.42;
     private static final double HOME = 0.35;
     private static final double HOME_TURN = 0.22;
-    private static final double LIFT = 1.05;
+    private static final double LIFT = 1.35;
     // How far into a swing a walking foot is highest; after it the foot drops, faster and faster, onto the ground.
     private static final double PEAK = 0.42;
     // Every footfall sinks the body under its weight, and it springs back up heavily.
     private static final double SINK_WALK = 0.22;
     private static final double SINK_RUN = 0.3;
     // A running foot kicks its heel up behind before it swings through.
-    private static final double HEEL_BACK = 0.55;
-    private static final double HEEL_UP = 0.6;
+    private static final double HEEL_BACK = 0.75;
+    private static final double HEEL_UP = 0.85;
     private static final double STAMP = 1.2;
     private static final int DUST = 10;
     // A running stride is three quarters longer at a beat almost half as quick again; each foot is off the ground two thirds of it
@@ -66,21 +66,33 @@ class MechGait {
     private static final double RUN_STRIDE = 0.75;
     private static final double RUN_SWING = 0.26;
     private static final double RUN_LIFT = 0.5;
+    // Charged up, it runs faster mostly by longer strides.
+    private static final double BOOST_STRIDE = 0.55;
     // How long after lifting a foot may lift again on its turn, and how many times further behind than a stride
     // leaves it a planted foot must be left to step out of turn.
     private static final double RESTEP = 0.75;
     private static final double DRAGGED = 1.35;
     // A foot steps down no further than this; before a deeper hole it comes down on firm ground this far past or
     // short of where it was going, the nearest first.
-    private static final double STEP_DOWN = 2.2;
+    private static final double STEP_DOWN = 2.8;
     private static final double[] SHIFTS = { 0.0, 0.8, -0.8, 1.6, -1.6, -2.4, -3.2 };
     // It falls once its base drops this fast this far under its feet; they hang drawn up under it and come down hard.
     private static final double FALL_SPEED = 0.2;
     private static final double FALL_GAP = 0.5;
     private static final double LANDED = 0.02;
-    private static final Vec3 HANG = new Vec3(MechScript.ANKLE.x, MechScript.ANKLE.y + 0.9, 0.3);
+    private static final Vec3 HANG = new Vec3(MechScript.ANKLE.x, MechScript.ANKLE.y + 1.2, 0.3);
     private static final double LAND_HARD = 2.2;
     private static final double LAND_SINK = 0.8;
+    // On its rocket boots its feet hang under it, soles down, trailing back FLY_TRAIL times how far it flies a tick and
+    // drawn up as it climbs fast.
+    private static final Vec3 FLY_HANG = new Vec3(MechScript.ANKLE.x - 0.25, MechScript.ANKLE.y + 0.4, -0.3);
+    private static final double FLY_TRAIL = 2.0;
+    private static final double FLY_TUCK = 1.4;
+    // Folded for the spin: its knees on the ground before it, its shins flat behind them and the tops of its feet on
+    // the ground, toes back; on the way each foot lifts KNEEL_LIFT as it turns over.
+    private static final Vec3 KNEEL = new Vec3(MechScript.ANKLE.x - 0.1, 0.6, -0.3);
+    private static final double KNEEL_TIP = -2.8;
+    private static final double KNEEL_LIFT = 1.4;
     private static final double CLIMB_STEP = 1.5;
     private static final double CLIMB_TOE = 0.5;
     private static final double CLIMB_SLAM = 0.8;
@@ -110,6 +122,7 @@ class MechGait {
     MechPose now;
     final Spring sink = new Spring();
     double running;
+    double boost;
     double phase;
     double speed;
     double side;
@@ -122,6 +135,11 @@ class MechGait {
     MechClimbHolds climbing;
     double climbAge;
     MechAttacks.Blow blow = MechAttacks.Blow.NONE;
+    // How far it is off the ground on its rocket boots (0 to 1), and what its pilot's crosshair rests on while the
+    // missile arm aims.
+    double flight;
+    @Nullable
+    Vec3 aim;
     int hitAt = -100;
     double hitHard;
     Vec3 hitSpot = Vec3.ZERO;
@@ -136,7 +154,7 @@ class MechGait {
     }
 
     double stride() {
-        return CYCLE * (1.0 + RUN_STRIDE * this.running);
+        return CYCLE * (1.0 + RUN_STRIDE * this.running + BOOST_STRIDE * this.boost);
     }
 
     double swing() {
@@ -297,6 +315,32 @@ class MechGait {
         }
         this.sink.kick(-LAND_SINK);
         return false;
+    }
+
+    // Off the ground on its rocket boots its feet hang under it, trailing back the way it flies and drawn up as it
+    // climbs; where it comes down they land hard (fall).
+    void fly(MechScript.Stage stage, Vec3 moved) {
+        this.falling = true;
+        Vec3 trail = new Vec3(moved.x, 0.0, moved.z).scale(-FLY_TRAIL);
+        double tuck = FLY_TUCK * Mth.clamp(moved.y / 0.6, 0.0, 1.0);
+        for (int side = 0; side < 2; side++) {
+            Leg leg = this.legs[side];
+            leg.swinging = false;
+            Vec3 hang = stage.point(MechPainter.side(FLY_HANG, side == 0)).add(trail).add(0.0, tuck, 0.0);
+            leg.planted = leg.planted.lerp(hang, 0.4);
+            leg.toes = stage.ahead();
+        }
+    }
+
+    // Its legs folded under it for the spin by `fold` (0 standing, 1 knelt): each foot lifts off where it stood, turns
+    // over and comes down behind its knee.
+    static void kneel(MechPose pose, MechScript.Stage stage, double fold) {
+        for (int side = 0; side < 2; side++) {
+            Vec3 knelt = stage.point(MechPainter.side(KNEEL, side == 0));
+            pose.ankle[side] = pose.ankle[side].lerp(knelt, fold).add(0.0, KNEEL_LIFT * Math.sin(Math.PI * fold), 0.0);
+            pose.toes[side] = stage.ahead();
+            pose.tip[side] = Mth.lerp(fold, pose.tip[side], KNEEL_TIP);
+        }
     }
 
     // Climbing, the feet and hands go where the climb puts them, and the walk comes to a stop.

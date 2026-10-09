@@ -34,16 +34,19 @@ public final class ThorPull {
     private static int stuck;
     private static int longest;
     private static boolean told;
+    private static boolean tossed;
 
     private ThorPull() {
     }
 
-    public static void start() {
+    // `storm`: up after the hammer a Storm Throw tossed, at its own pace.
+    public static void start(boolean storm) {
         age = 0;
         dashAge = 0;
         stuck = 0;
         longest = HammerRules.WAIT + 2 * SLOWEST_LEFT;
         told = false;
+        tossed = storm;
     }
 
     static void stop() {
@@ -95,7 +98,7 @@ public final class ThorPull {
             return !land;
         }
         CharacterAbility leap = GameCharacter.THOR.byName("hammer_leap");
-        double pace = (leap == null ? SPEED : leap.value("dashSpeed")) / 20.0;
+        double pace = tossed ? HammerRules.STORM_PACE : (leap == null ? SPEED : leap.value("dashSpeed")) / 20.0;
         if (dashAge == 0) {
             longest = age + (int) Math.ceil(gap / pace) + SLOWEST_LEFT;
         }

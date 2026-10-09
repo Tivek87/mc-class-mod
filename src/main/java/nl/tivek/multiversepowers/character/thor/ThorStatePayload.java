@@ -61,6 +61,8 @@ public record ThorStatePayload(int entity, int flags, int move, int arg) impleme
     public static final int DROP = 12;
     // He is pulled to his resting hammer: first the wait, then the dash (his own game moves him).
     public static final int PULL = 13;
+    // A pull's arg: up after the hammer a Storm Throw tossed, faster.
+    public static final int TOSSED = 1;
     // How the grab ends, picked or not (arg: ThorGrab.Act): told apart from the move, as a blow is.
     public static final int GRAB_ACT = 14;
     // He calls up his storm, then calls a bolt down out of it.

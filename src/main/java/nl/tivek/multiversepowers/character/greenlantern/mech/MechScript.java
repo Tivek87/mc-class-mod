@@ -58,27 +58,29 @@ public final class MechScript {
     public static final int BREAK_TICKS = 14;
 
     public static final double TARGET_AHEAD = 3.8;
-    public static final Vec3 ANKLE = new Vec3(2.05, 0.95, 0.05);
-    public static final Vec3 KNEE = new Vec3(2.05, 3.0, 0.3);
-    public static final Vec3 HIP = new Vec3(1.5, 4.85, -0.05);
+    // Built like a jaeger: legs over half its height, a chest wide at the shoulders and narrow at the waist, long arms
+    // whose fists hang by its thighs.
+    public static final Vec3 ANKLE = new Vec3(1.75, 1.1, 0.05);
+    public static final Vec3 KNEE = new Vec3(1.65, 4.0, 0.4);
+    public static final Vec3 HIP = new Vec3(1.45, 7.1, -0.05);
     // Where the upper body turns on the hips.
     public static final Vec3 WAIST = new Vec3(0.0, HIP.y, 0.0);
-    public static final Vec3 SHOULDER = new Vec3(3.2, 8.2, 0.0);
-    public static final double UPPER_ARM = 1.9;
-    public static final double FOREARM = 2.3;
+    public static final Vec3 SHOULDER = new Vec3(3.25, 10.45, 0.0);
+    public static final double UPPER_ARM = 2.25;
+    public static final double FOREARM = 2.75;
     public static final double PALM_ALONG = FOREARM + 0.62;
-    public static final Vec3 COCKPIT = new Vec3(0.0, 6.0, 0.45);
+    public static final Vec3 COCKPIT = new Vec3(0.0, 8.25, 0.45);
     // The pilot sits: the seat is at their hips, a Minecraft body's 0.75 above its feet.
     public static final double SEAT = 0.72;
     public static final int SIT = 162;
     public static final int GRIP = 176;
-    public static final Vec3 LEVER = new Vec3(0.36, 6.62, 1.08);
+    public static final Vec3 LEVER = new Vec3(0.36, 8.87, 1.08);
     public static final double LEVER_LENGTH = 0.62;
     public static final double LEVER_THROW = 0.42;
-    public static final Vec3[] BUTTONS = { new Vec3(0.44, 6.99, 1.33), new Vec3(0.15, 7.02, 1.38),
-            new Vec3(-0.15, 7.02, 1.38), new Vec3(-0.44, 6.99, 1.33) };
-    public static final Vec3 NECK = new Vec3(0.0, 9.1, 0.75);
-    public static final double HEAD_SCALE = 1.65;
+    public static final Vec3[] BUTTONS = { new Vec3(0.44, 9.24, 1.33), new Vec3(0.15, 9.27, 1.38),
+            new Vec3(-0.15, 9.27, 1.38), new Vec3(-0.44, 9.24, 1.33) };
+    public static final Vec3 NECK = new Vec3(0.0, 11.45, 0.55);
+    public static final double HEAD_SCALE = 1.6;
     public static final double HEAD_UP = 0.62 * HEAD_SCALE;
 
     private static final double FOOT_HIGH = 9.0;

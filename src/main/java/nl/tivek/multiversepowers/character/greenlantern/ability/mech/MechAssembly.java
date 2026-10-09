@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.UUID;
 import javax.annotation.Nullable;
 import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -17,6 +18,7 @@ import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.neoforged.neoforge.network.PacketDistributor;
+import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.character.CharacterAbility;
 import nl.tivek.multiversepowers.character.Characters;
 import nl.tivek.multiversepowers.character.greenlantern.PowerRing;
@@ -27,6 +29,7 @@ import nl.tivek.multiversepowers.character.greenlantern.ability.light.LightBubbl
 import nl.tivek.multiversepowers.character.greenlantern.ability.light.LightShield;
 import nl.tivek.multiversepowers.character.greenlantern.ability.ring.Recharge;
 import nl.tivek.multiversepowers.character.greenlantern.construct.ConstructPayload;
+import nl.tivek.multiversepowers.character.greenlantern.mech.MechAttacks;
 import nl.tivek.multiversepowers.character.greenlantern.mech.MechBuild;
 import nl.tivek.multiversepowers.character.greenlantern.mech.MechScript;
 import nl.tivek.multiversepowers.config.PowerRules;
@@ -39,12 +42,20 @@ import nl.tivek.multiversepowers.engine.world.LoadedWorld;
 
 public final class MechAssembly implements Effect {
     private static final String KEY = "mech";
-    private static final String UNIBEAM_KEY = "unibeam";
+    // The waits of the mech's own moves, each on the key it sits on.
+    private static final String MISSILES = "emerald_express";
+    private static final String ROCKETS = "flight";
+    private static final String SPIN = "shockwave";
+    // A left click within this many ticks after a blow of the combo strikes its next one.
+    private static final int COMBO_WINDOW = 16;
+    private static final int COMBO = 3;
+    // Its base this close above the ground it stands on.
+    private static final double ON_GROUND = 0.4;
     private static final double VIEW_RANGE = 128.0;
     private static final double GROUND_BELOW = 12.0;
     private static final double GROUND_ABOVE = 3.0;
     private static final int VICTIM_AFTER = 10;
-    private static final double MOST_STRIDE = 1.0;
+    private static final double MOST_STRIDE = 1.4;
     private static final double MOST_CLIMB = 3.0;
     private static final int MOST_CLIMB_BITS = 1 << 22;
     // How far (squared) the pilot may be from their seat as the server has it: close while the mech builds round them,
@@ -54,8 +65,8 @@ public final class MechAssembly implements Effect {
     private static final double LOOSE = 1.0;
     private static final double WALKING = 9.0;
     // How far from where the mech stands a foot it says came down may be, and how many feet a tick.
-    private static final double FOOT_REACH = 6.0;
-    private static final double FOOT_RISE = 8.0;
+    private static final double FOOT_REACH = 7.5;
+    private static final double FOOT_RISE = 9.0;
     private static final int FEET = 2;
 
     private static final Map<UUID, MechAssembly> ACTIVE = new HashMap<>();
@@ -75,6 +86,8 @@ public final class MechAssembly implements Effect {
     private int breaking = -1;
     @Nullable
     private MechAttack attack;
+    private int combo;
+    private int comboUntil = -1;
 
     private MechAssembly(ServerPlayer owner, CharacterAbility ability, MechScript.Stage stage,
             @Nullable LivingEntity target) {
@@ -233,42 +246,178 @@ public final class MechAssembly implements Effect {
         return piloting(player) ? 0 : COOLDOWNS.left(player, KEY, 0);
     }
 
-    // A left click in a built mech strikes one blow; clicks while it lasts do nothing.
-    public static boolean strike(ServerPlayer player) {
+    // In the mech, the wait of the mech's own move on that ability's key (the missile arm, the rocket boots, the spin).
+    public static int waitLeft(ServerPlayer player, String ability) {
+        return piloting(player) ? COOLDOWNS.left(player, ability, 0) : 0;
+    }
+
+    // Every button and key while its pilot stands in a built mech: the left button strikes (or fires the missile arm),
+    // the right one fires its eyes (held, a beam until let go), R raises the missile arm, a double space fires the
+    // rocket boots, X spins on the ground and dives from the air; the held scroll wheel leaves it. Anything else is
+    // shut. The mech's moves keep waits of their own, never the keys'.
+    public static boolean control(ServerPlayer player, CharacterAbility key, boolean on, int data) {
+        ServerLevel level = player.serverLevel();
+        if (key.id().equals("mech")) {
+            return on && use(player, level, key);
+        }
         MechAssembly mech = ACTIVE.get(player.getUUID());
-        if (mech == null || mech.breaking >= 0 || mech.t < MechScript.SETTLED || mech.attack != null
-                || mech.climb != 0 || !PowerRing.pay(player, mech.ability.value("mechBlowPowerCost"))) {
+        if (mech == null) {
             return false;
         }
-        mech.attack = MechAttack.start(player, player.serverLevel(), mech.upright());
+        if (key.id().equals("light_shield") && !on) {
+            if (mech.attack != null && mech.attack.kind() == MechAttacks.GLARE) {
+                mech.attack.letGo();
+            }
+            return false;
+        }
+        if (!on) {
+            return false;
+        }
+        switch (key.id()) {
+            case "light_bolt" -> {
+                if ((data & Characters.HOLD) == 0) {
+                    mech.strike(level);
+                }
+            }
+            case "light_shield" -> {
+                if ((data & (Characters.TAP | Characters.HOLD)) != 0) {
+                    mech.eyes((data & Characters.HOLD) != 0);
+                }
+            }
+            case "emerald_express" -> mech.missiles();
+            case "flight" -> mech.rockets(level);
+            case "shockwave" -> mech.spinOrDive();
+            default -> PowerRing.tell(player, "mech_busy", Component.keybind("key." + MultiversePowers.MODID
+                    + ".input.scroll_hold"));
+        }
+        return false;
+    }
+
+    private boolean ready() {
+        return this.breaking < 0 && this.t >= MechScript.SETTLED && this.climb == 0;
+    }
+
+    // A left click: the next blow of the combo, or a click late in one chains it on; with the missile arm up, a salvo.
+    private void strike(ServerLevel level) {
+        if (!this.ready()) {
+            return;
+        }
+        if (this.attack != null) {
+            if (this.attack.kind() == MechAttacks.AIM) {
+                this.attack.fire(level, this.owner, this.upright(), this.ability);
+            } else if (this.attack.chains()) {
+                this.attack.queue();
+            }
+            return;
+        }
+        this.blow(level);
+    }
+
+    private void blow(ServerLevel level) {
+        if (!PowerRing.pay(this.owner, this.ability.value("mechBlowPowerCost"))) {
+            return;
+        }
+        if (this.t > this.comboUntil) {
+            this.combo = 0;
+        }
+        this.attack = MechAttack.strike(this.owner, level, this.upright(), this.combo);
+        this.combo = (this.combo + 1) % COMBO;
+    }
+
+    // A right click: a ray from the eyes; held, a beam for as long as it is held, its first second paid at once.
+    private void eyes(boolean held) {
+        if (!this.ready() || this.attack != null || !PowerRing.pay(this.owner,
+                this.ability.value(held ? "mechGlarePowerPerSecond" : "mechEyePowerCost"))) {
+            return;
+        }
+        this.attack = MechAttack.move(held ? MechAttacks.GLARE : MechAttacks.EYE);
+    }
+
+    // R: the missile arm raised at the crosshair, or lowered again.
+    private void missiles() {
+        if (this.attack != null && this.attack.kind() == MechAttacks.AIM) {
+            this.attack.close();
+            return;
+        }
+        if (this.ready() && this.attack == null && this.waited(MISSILES)) {
+            this.attack = MechAttack.move(MechAttacks.AIM);
+        }
+    }
+
+    // A double space: up on the rocket boots; flying, their thrust cut.
+    private void rockets(ServerLevel level) {
+        if (this.attack != null && this.attack.kind() == MechAttacks.FLY) {
+            this.attack.cut(level, this.stage.base());
+            return;
+        }
+        if (this.ready() && this.attack == null && this.waited(ROCKETS)
+                && PowerRing.pay(this.owner, this.ability.value("mechRocketPowerCost"))) {
+            this.attack = MechAttack.move(MechAttacks.FLY);
+        }
+    }
+
+    // X: in the air on the rocket boots, the dive; on the ground, the spin.
+    private void spinOrDive() {
+        if (this.attack != null && this.attack.flying()) {
+            if (PowerRing.pay(this.owner, this.ability.value("mechDivePowerCost"))) {
+                this.attack = MechAttack.move(MechAttacks.DIVE);
+            }
+            return;
+        }
+        if (this.ready() && this.attack == null && this.waited(SPIN)
+                && PowerRing.pay(this.owner, this.ability.value("mechSpinPowerCost"))) {
+            this.attack = MechAttack.move(MechAttacks.SPIN);
+        }
+    }
+
+    // Whether the move on that key is past its wait; if not, its pilot is told how long it still is.
+    private boolean waited(String key) {
+        int left = COOLDOWNS.left(this.owner, key, 0);
+        if (left > 0) {
+            PowerRing.tell(this.owner, "mech_move_wait", (left + 19) / 20);
+            return false;
+        }
         return true;
     }
 
-    // A right click in a built mech fires the eye beam; held, the Unibeam, which then waits a while.
-    public static boolean beam(ServerPlayer player, boolean unibeam) {
-        MechAssembly mech = ACTIVE.get(player.getUUID());
-        if (mech == null || mech.breaking >= 0 || mech.t < MechScript.SETTLED || mech.attack != null
-                || mech.climb != 0) {
-            return false;
-        }
-        if (unibeam) {
-            int left = COOLDOWNS.left(player, UNIBEAM_KEY, 0);
-            if (left > 0) {
-                PowerRing.tell(player, "unibeam_wait", (left + 19) / 20);
-                return false;
-            }
-        }
-        if (!PowerRing.pay(player, mech.ability.value(unibeam ? "mechUnibeamPowerCost" : "mechEyePowerCost"))) {
-            return false;
-        }
-        if (unibeam) {
-            int ticks = (int) Math.round(mech.ability.value("mechUnibeamCooldown") * PowerRules.cooldowns());
+    // A move over: the missile arm, the rocket boots and the spin wait a while before the next.
+    private void ended(MechAttack ended) {
+        String key = switch (ended.kind()) {
+            case MechAttacks.AIM -> MISSILES;
+            case MechAttacks.FLY, MechAttacks.DIVE -> ROCKETS;
+            case MechAttacks.SPIN -> SPIN;
+            default -> null;
+        };
+        String setting = switch (ended.kind()) {
+            case MechAttacks.AIM -> "mechMissileCooldown";
+            case MechAttacks.FLY, MechAttacks.DIVE -> "mechRocketCooldown";
+            case MechAttacks.SPIN -> "mechSpinCooldown";
+            default -> null;
+        };
+        if (key != null) {
+            int ticks = (int) Math.round(this.ability.value(setting) * PowerRules.cooldowns());
             if (ticks > 0) {
-                COOLDOWNS.start(player, UNIBEAM_KEY, 0, ticks);
+                COOLDOWNS.start(this.owner, key, 0, ticks);
+            }
+            Characters.sync(this.owner);
+        }
+        if (ended.combo()) {
+            this.comboUntil = this.t + COMBO_WINDOW;
+        }
+    }
+
+    // Whether its feet stand on the ground: something solid no further than ON_GROUND under its middle or either foot.
+    private boolean grounded(ServerLevel level) {
+        for (double x : new double[] { 0.0, MechScript.ANKLE.x, -MechScript.ANKLE.x }) {
+            Vec3 at = this.stage.point(x, 0.0, 0.0);
+            BlockHitResult hit = LoadedWorld.clip(level, new ClipContext(at.add(0.0, 0.5, 0.0),
+                    at.subtract(0.0, ON_GROUND, 0.0), ClipContext.Block.COLLIDER, ClipContext.Fluid.ANY,
+                    CollisionContext.empty()));
+            if (hit.getType() != HitResult.Type.MISS) {
+                return true;
             }
         }
-        mech.attack = MechAttack.beam(unibeam);
-        return true;
+        return false;
     }
 
     // Upright on its ground spot, the torso turned to where its pilot looks.
@@ -318,11 +467,19 @@ public final class MechAssembly implements Effect {
         boolean settled = this.t >= MechScript.SETTLED;
         MechScript.Stage body = settled ? this.upright() : MechBuild.torso(this.stage, this.t);
         if (this.attack != null) {
-            if (this.attack.tick(level, this.owner, this.stage, body, this.ability)) {
+            boolean grounded = this.attack.kind() != MechAttacks.FLY && this.attack.kind() != MechAttacks.DIVE
+                    || this.grounded(level);
+            if (this.attack.tick(level, this.owner, this.stage, body, this.ability, grounded)) {
                 body = this.attack.torso(body);
             } else {
-                this.attack.release();
+                MechAttack ended = this.attack;
+                ended.release();
                 this.attack = null;
+                this.ended(ended);
+                // A click late in a combo's blow strikes the next one straight on.
+                if (ended.queued()) {
+                    this.blow(level);
+                }
             }
         }
         this.hold(body.point(MechScript.pilot(this.stage, this.t)),
@@ -338,7 +495,7 @@ public final class MechAssembly implements Effect {
         this.breaking = 0;
         this.target.release();
         this.stopAttack();
-        Vec3 chest = this.stage.point(0.0, 7.0, 0.0);
+        Vec3 chest = this.stage.point(0.0, 9.5, 0.0);
         Sounds.play(level, chest, SoundEvents.AMETHYST_CLUSTER_BREAK, 3.0F, 0.6F);
         Sounds.play(level, chest, SoundEvents.GLASS_BREAK, 2.0F, 0.6F);
         Sounds.play(level, chest, SoundEvents.BEACON_DEACTIVATE, 2.0F, 0.7F);

@@ -7,7 +7,10 @@ import javax.annotation.Nullable;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
@@ -21,6 +24,7 @@ import nl.tivek.multiversepowers.character.greenlantern.client.mech.MechPainter;
 import nl.tivek.multiversepowers.character.greenlantern.client.mech.shape.MechLegShapes;
 import nl.tivek.multiversepowers.character.greenlantern.client.mech.touch.MechTouch;
 import nl.tivek.multiversepowers.character.greenlantern.mech.MechAttacks;
+import nl.tivek.multiversepowers.character.greenlantern.mech.MechBeam;
 import nl.tivek.multiversepowers.character.greenlantern.mech.MechScript;
 import nl.tivek.multiversepowers.character.greenlantern.mech.MechStepPayload;
 import nl.tivek.multiversepowers.engine.math.Ease;
@@ -60,23 +64,25 @@ public final class MechWalk extends MechGait {
     // Running, the body is lower and leans into its strides, highest while both feet are off the ground and lowest over
     // each planted one; the hips swing with the legs and the shoulders twist back against them, and the arms pump twice
     // as far, all of them RUN_SHIFT of a stride later than walking, in time with its longer-swinging legs.
-    private static final double RUN_LEAN = 0.18;
-    private static final double RUN_TORSO_LEAN = 0.1;
-    private static final double RUN_BOB = 0.26;
+    private static final double RUN_LEAN = 0.1;
+    private static final double RUN_TORSO_LEAN = 0.07;
+    private static final double RUN_BOB = 0.2;
     private static final double RUN_BOB_AT = 0.465;
     private static final double RUN_TWIST = 0.13;
     private static final double RUN_COUNTER = 1.5;
     private static final double RUN_PUMP = 1.0;
     private static final double RUN_SHIFT = 0.39;
     private static final double RUN_FIRM = 0.6;
+    // Charged up past this, its exhaust roars.
+    private static final double BOOST_ROAR = 0.25;
     // The hips come down so no planted foot, nor one stepping down more than STEPPING_DOWN, is further off than its leg
     // reaches, at most SQUAT_MOST, and rise back SQUAT_BACK a tick; the body follows the ground its feet stand on, at
     // most SETTLE_MOST from its base.
-    private static final double SQUAT_MOST = 2.4;
+    private static final double SQUAT_MOST = 3.2;
     private static final double SQUAT_BACK = 0.08;
     private static final double SQUAT_FLOOR = 0.6;
     private static final double STEPPING_DOWN = 0.5;
-    private static final double SETTLE_MOST = 2.8;
+    private static final double SETTLE_MOST = 3.6;
     private static final double SETTLE_PACE = 0.3;
     private static final int IDLE_BEFORE = 20;
     private static final int PRESS_EVERY = 46;
@@ -103,8 +109,10 @@ public final class MechWalk extends MechGait {
     private static final double SHOVE_SHRUG = 0.25;
     private static final double SHOVE_FLOP = 0.35;
     private static final double BLAST_REACH = 8.0;
-    private static final double CHEST = 6.5;
+    private static final double CHEST = 8.8;
     private static final double PILOT_HIT = 0.3;
+    private static final double FLY_LEAN = 0.4;
+    private static final double FLY_BANK = 0.22;
     private static final Vec3 HIPS = new Vec3(0.0, MechScript.HIP.y, 0.0);
     private static final Map<Integer, MechWalk> WALKS = new HashMap<>();
     private static final Map<Integer, Kept> BROKEN = new HashMap<>();
@@ -187,13 +195,16 @@ public final class MechWalk extends MechGait {
         }
         walk.ticked = ticks;
         walk.pilot = pilot;
+        Entity flier = level.getEntity(pilot);
         // A blow to its pilot jolts it back a little.
-        if (level.getEntity(pilot) instanceof LivingEntity flier) {
-            if (flier.hurtTime > walk.pilotHurt) {
+        if (flier instanceof LivingEntity living) {
+            if (living.hurtTime > walk.pilotHurt) {
                 walk.shove(walk.now.torso().ahead().scale(-1.0), PILOT_HIT);
             }
-            walk.pilotHurt = flier.hurtTime;
+            walk.pilotHurt = living.hurtTime;
         }
+        walk.aim = blow.kind() == MechAttacks.AIM && flier != null ? MechBeam.aim(level, flier, MechBeam.AIM_RANGE)
+                : null;
         walk.strike(blow, stage);
         // Climbing, the torso turns to face the wall whatever its pilot looks at.
         walk.face(stage, climb != 0 ? stage.yaw() : look, pitch);
@@ -348,6 +359,18 @@ public final class MechWalk extends MechGait {
         this.turn = Mth.lerp(0.4, this.turn, angle);
         this.brace = Mth.lerp(0.25, this.brace, this.speed - before);
         this.last = stage;
+        boolean airborne = MechAttacks.airborne(this.blow);
+        this.flight += Mth.clamp((airborne ? 1.0 : 0.0) - this.flight, -0.12, 0.1);
+        if (airborne) {
+            this.fly(stage, moved);
+            this.walking = Math.max(0.0, this.walking - 0.08);
+            this.crouch = Math.max(0.0, this.crouch - 0.08);
+            this.running = Math.max(0.0, this.running - 0.06);
+            this.boost = Math.max(0.0, this.boost - 0.06);
+            this.sink.step(0.0, 1.0, SINK_FREQ, SINK_DAMP);
+            this.now = this.pose(stage, 0.0);
+            return;
+        }
         if (this.fall(level, stage, -moved.y)) {
             this.sink.step(0.0, 1.0, SINK_FREQ, SINK_DAMP);
             this.now = this.pose(stage, 0.0);
@@ -359,6 +382,14 @@ public final class MechWalk extends MechGait {
         boolean busy = this.legs[0].swinging || this.legs[1].swinging || this.away(stage, 0) || this.away(stage, 1);
         double runs = Mth.clamp((pace - MechDrive.WALK) / (MechDrive.RUN - MechDrive.WALK), 0.0, 1.0);
         this.running += Mth.clamp(runs - this.running, -0.05, 0.06);
+        // Faster than a run, its exhaust is charged up (MechDrive.BOOST).
+        double boosts = Mth.clamp((pace - MechDrive.RUN) / (MechDrive.RUN * MechDrive.BOOST), 0.0, 1.0);
+        this.boost += Mth.clamp(boosts - this.boost, -0.05, 0.04);
+        if (this.boost > BOOST_ROAR && ticks % 5 == this.seed % 5) {
+            Vec3 at = stage.point(0.0, MechScript.SHOULDER.y - 3.0, -1.5);
+            level.playLocalSound(at.x, at.y, at.z, SoundEvents.BLAZE_SHOOT, SoundSource.PLAYERS,
+                    (float) (0.4 + 0.9 * this.boost), (float) (0.45 + 0.25 * this.boost), false);
+        }
         double rate = moving ? Math.max(effort / this.stride(), SLOWEST) : busy ? SETTLE : 0.0;
         double wanted = moving ? Math.min(1.0, effort / (MechDrive.WALK * 0.85)) : rate > 0.0 ? 0.3 : 0.0;
         if (moving && (this.walking < SETTING_OFF || this.stood >= STOOD) && !this.legs[0].swinging
@@ -407,6 +438,10 @@ public final class MechWalk extends MechGait {
         double twist = (TWIST * w + RUN_TWIST * run) * Math.sin(2.0 * Math.PI * upper);
         double pitch = -LEAN * Math.min(this.speed, MechDrive.WALK) / MechDrive.WALK - RUN_LEAN * run
                 + Mth.clamp(BRACE * this.brace, -0.05, 0.05);
+        // On its rocket boots it leans into the way it flies and banks into flying aside.
+        double flown = Ease.smooth(this.flight);
+        pitch -= FLY_LEAN * flown * Mth.clamp(this.speed / MechDrive.FLY, -0.4, 1.0);
+        roll += FLY_BANK * flown * Mth.clamp(this.side / MechDrive.FLY_SIDE, -1.0, 1.0);
         double climbLow = 0.0;
         if (this.climbing != null) {
             double height = this.climbing.height;
@@ -437,6 +472,11 @@ public final class MechWalk extends MechGait {
             pose.ankle[0] = pose.ankle[0].add(0.0, blow.foot(), 0.0);
             pose.tip[0] = 0.1 * Math.min(1.0, blow.foot());
         }
+        double fold = MechAttacks.folded(this.blow);
+        if (fold > 0.0) {
+            kneel(pose, stage, fold);
+        }
+        pose.aim = this.aim;
         pose.bank = this.bank.value;
         pose.torso = MechScript.upper(pose.hips, pose.turn, pose.lean, pose.bank);
         if (this.climbing != null) {
@@ -444,6 +484,7 @@ public final class MechWalk extends MechGait {
         }
         pose.walking = w;
         pose.running = run;
+        pose.boost = this.boost;
         pose.swing = -Math.sin(2.0 * Math.PI * upper) * w * (1.0 + RUN_PUMP * run);
         this.swingHands(pose);
         pose.headYaw = this.headYaw.value + 0.4 * twist;

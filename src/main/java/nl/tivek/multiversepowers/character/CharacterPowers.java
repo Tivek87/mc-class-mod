@@ -31,6 +31,12 @@ public interface CharacterPowers {
         return 0;
     }
 
+    // While a power takes over every key (Green Lantern's mech), the slots' own cooldowns neither refuse a key nor
+    // show: that power keeps its waits itself (waitLeft).
+    default boolean ownsKeys(ServerPlayer player) {
+        return false;
+    }
+
     default void showTo(ServerPlayer viewer, ServerPlayer target) {
     }
 

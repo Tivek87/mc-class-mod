@@ -136,11 +136,11 @@ public final class ThorHammerLayer extends RenderLayer<AbstractClientPlayer, Pla
         return Mth.lerp(raised, HANG, READY);
     }
 
-    // A throw's wind-up (on the ground or a Storm Throw): the hammer stays in his hand until his arm comes through and
-    // lets go of it.
+    // A throw's wind-up (on the ground, a Storm Throw or its toss): the hammer stays in his hand until his arm comes
+    // through and lets go of it.
     public static boolean windingUp(@Nullable ClientThor.View view, float partialTick) {
         ThorBlow blow = view == null ? null : ThorBlow.byIndex(view.blow);
-        return (blow == ThorBlow.HAMMER_THROW || blow == ThorBlow.STORM_THROW)
+        return (blow == ThorBlow.HAMMER_THROW || blow == ThorBlow.STORM_THROW || blow == ThorBlow.STORM_TOSS)
                 && view.blowAge(partialTick) < blow.hit();
     }
 

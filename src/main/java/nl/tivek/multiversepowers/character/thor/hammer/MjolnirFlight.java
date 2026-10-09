@@ -28,7 +28,7 @@ import nl.tivek.multiversepowers.spell.SpellTargets;
 
 // The hammer flying out: it leaves his hand as his arm comes through, from there towards what he aims at, and flies
 // until a block, a creature or the end of its reach stops it, throwing far what it hits. Thrown to come back it then
-// flies back; to stay or to be followed it rests there; hurled from the sky it strikes its ring of lightning first.
+// flies back; to stay or to be followed it rests there; hurled down by a Storm Throw its lightning strikes first.
 abstract class MjolnirFlight extends MjolnirCore {
     static final double SPEED = 2.2;
     // It leaves his hand this many ticks after the button.
@@ -37,7 +37,7 @@ abstract class MjolnirFlight extends MjolnirCore {
     private static final double KNOCK_UP = 0.7;
     // A creature it is thrown at is aimed into this far, a block just past its face.
     private static final double INTO_CREATURE = 1.0;
-    private static final double INTO_BLOCK = 0.6;
+    static final double INTO_BLOCK = 0.6;
 
     private Vec3 aim = Vec3.ZERO;
     private double reach;
@@ -76,29 +76,43 @@ abstract class MjolnirFlight extends MjolnirCore {
         Vec3 look = player.getLookAngle();
         LivingEntity target = Targeting.aimLiving(player, level, reach);
         if (target != null) {
-            this.aim = target.getBoundingBox().getCenter();
-            this.past = INTO_CREATURE;
-        } else {
-            BlockHitResult block = LoadedWorld.clip(level, new ClipContext(eye, eye.add(look.scale(reach)),
-                    ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, player));
-            boolean wall = block.getType() != HitResult.Type.MISS;
-            this.aim = wall ? block.getLocation() : eye.add(look.scale(reach));
-            this.past = wall ? INTO_BLOCK : 0.0;
+            this.launchAt(player, kind, damage, reach, target.getBoundingBox().getCenter(), INTO_CREATURE, RELEASE);
+            return;
         }
+        BlockHitResult block = LoadedWorld.clip(level, new ClipContext(eye, eye.add(look.scale(reach)),
+                ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, player));
+        boolean wall = block.getType() != HitResult.Type.MISS;
+        this.launchAt(player, kind, damage, reach, wall ? block.getLocation() : eye.add(look.scale(reach)),
+                wall ? INTO_BLOCK : 0.0, RELEASE);
+    }
+
+    // Thrown at a point of his own choosing and `past` blocks on beyond it, at most `reach` blocks; it leaves his hand
+    // `release` ticks from now.
+    final void launchAt(ServerPlayer player, Throw kind, float damage, double reach, Vec3 aim, double past,
+            int release) {
+        this.aim = aim;
+        this.past = past;
         this.state = State.OUT;
         this.kind = kind;
         this.damage = damage;
         this.reach = reach;
         this.flown = 0.0;
-        this.release = RELEASE;
+        this.release = release;
         this.age = 0;
         this.cocked = false;
         this.face = null;
         this.struck = null;
         this.hit.clear();
-        this.way = look;
+        this.way = player.getLookAngle();
         this.at = hand(player, kind == Throw.STORM);
-        this.run(level);
+        this.run(player.serverLevel());
+    }
+
+    // Still in his hand: when it is let go, it flies at `aim` instead.
+    final void aimAt(Vec3 aim) {
+        if (this.inThrow()) {
+            this.aim = aim;
+        }
     }
 
     @Override
@@ -118,8 +132,11 @@ abstract class MjolnirFlight extends MjolnirCore {
             level.playSound(null, from.x, from.y, from.z, SoundEvents.LIGHTNING_BOLT_IMPACT, SoundSource.PLAYERS, 0.4F,
                     1.8F);
             ParticleFx.cloud(level, ParticleTypes.ELECTRIC_SPARK, from, 8, 0.15, 0.1);
+            if (this.kind == Throw.STORM) {
+                StormStrike.hurled(level, owner, from, this.way, this.far);
+            }
         }
-        double step = Math.min(SPEED, this.far - this.flown);
+        double step = Math.min(this.kind == Throw.STORM ? HammerRules.STORM_SPEED : SPEED, this.far - this.flown);
         Vec3 next = this.at.add(this.way.scale(step));
         BlockHitResult block = LoadedWorld.clip(level, new ClipContext(this.at, next, ClipContext.Block.COLLIDER,
                 ClipContext.Fluid.NONE, owner));
@@ -167,7 +184,7 @@ abstract class MjolnirFlight extends MjolnirCore {
         switch (this.kind) {
             case RETURN -> this.turnBack(owner, false);
             case STORM -> {
-                StormThrow.strike(level, owner, this.at, this.struck);
+                StormStrike.strike(level, owner, this.at, this.struck, this.damage);
                 this.turnBack(owner, false);
             }
             case STAY, FOLLOW -> this.settle(level, owner, this.face);

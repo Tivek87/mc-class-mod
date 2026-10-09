@@ -9,6 +9,7 @@ import nl.tivek.multiversepowers.character.greenlantern.client.mech.shape.MechPa
 import nl.tivek.multiversepowers.character.greenlantern.client.mech.touch.MechTouch;
 import nl.tivek.multiversepowers.character.greenlantern.client.mech.walk.MechPose;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.LanternPainter;
+import nl.tivek.multiversepowers.character.greenlantern.mech.MechAttacks;
 import nl.tivek.multiversepowers.character.greenlantern.mech.MechScript;
 import nl.tivek.multiversepowers.engine.client.render.ConstructPainter.Frame;
 import nl.tivek.multiversepowers.engine.client.rig.BoneView;
@@ -31,13 +32,16 @@ final class MechLegs {
         Vec3 hip = pose.hips().point(MechPainter.side(MechScript.HIP, right));
         Vec3 ankle = reached(hip, pose.ankle[side]);
         Vec3 out = right ? pose.hips().right() : pose.hips().right().scale(-1.0);
-        Vec3 knee = level == null ? knee(ankle, hip, toes) : MechTouch.knee(level, id, right, hip, ankle, toes, out, t);
+        // Knelt for the spin, the knee rests on the ground where the fold puts it.
+        Vec3 knee = level == null || MechAttacks.folded(pose.blow()) > 0.0 ? knee(ankle, hip, toes)
+                : MechTouch.knee(level, id, right, hip, ankle, toes, out, t);
         Vec3 shin = knee.subtract(ankle).normalize();
         Vec3 thigh = hip.subtract(knee).normalize();
         // The knee is a hinge: the shin, the cap and the thigh face the way it bends, swung out with it.
         Vec3 bend = bend(hip, ankle, knee, toes);
         Frame foot = Frame.of(ankle, toes, Vectors.UP, 1.0).turned(0.0, 0.0, 0.0, 1.0, 0.0, 0.0, -pose.tip[side]);
         MechParts.draw(painter, right ? MechLegShapes.FOOT : MechLegShapes.FOOT_LEFT, foot, 1.0, apart, seed);
+        MechGear.boot(painter, foot, pose.blow(), apart, seed + 60);
         MechParts.draw(painter, right ? MechLegShapes.SHIN_PART : MechLegShapes.SHIN_LEFT,
                 MechPainter.limb(ankle, shin, bend), 1.0, apart, seed + 20);
         MechParts.draw(painter, right ? MechLegShapes.KNEE : MechLegShapes.KNEE_LEFT,

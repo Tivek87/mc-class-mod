@@ -475,30 +475,62 @@ final class LanternAbilities {
                                 + " stands round it takes up to half")
                 .group("mechBlows", "Mech blows (left click in a built mech)")
                 .setting("mechBlowPowerCost", 0.5, 0.0, 100.0, Unit.POWER, "Ring power one blow of the mech costs")
-                .setting("mechSweepDamage", 8.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                .setting("mechCrossDamage", 16.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                        "Damage of the straight right to everything the fist drives through, in half hearts")
+                .setting("mechSweepDamage", 14.0, 0.0, 2000.0, Unit.HALF_HEARTS,
                         "Damage of the backhand sweep to everything the hand strikes, in half hearts")
-                .setting("mechStompBlowDamage", 10.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                .was(8.0)
+                .setting("mechStompBlowDamage", 16.0, 0.0, 2000.0, Unit.HALF_HEARTS,
                         "Damage of the stomp right by the foot, in half hearts; at the edge of the blast half")
-                .setting("mechSlamDamage", 14.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                .was(10.0)
+                .setting("mechSlamDamage", 22.0, 0.0, 2000.0, Unit.HALF_HEARTS,
                         "Damage of both fists slamming the ground right where they hit, in half hearts; at the edge"
                                 + " of the blast half")
-                .setting("mechSmashDamage", 6.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                .was(14.0)
+                .setting("mechSmashDamage", 8.0, 0.0, 2000.0, Unit.HALF_HEARTS,
                         "Damage each time the mech smashes the creature it picked up into the ground, in half"
                                 + " hearts; what stands round it takes up to half")
-                .setting("mechThrowDamage", 4.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                .was(6.0)
+                .setting("mechThrowDamage", 8.0, 0.0, 2000.0, Unit.HALF_HEARTS,
                         "Damage as the mech flings that creature away, if it lived through both smashes")
-                .group("mechBeams", "Mech beams (right click in a built mech)")
+                .was(4.0)
+                .group("mechBeams", "Mech eyes (right click in a built mech)")
                 .setting("mechEyePowerCost", 1.0, 0.0, 100.0, Unit.POWER,
-                        "Ring power one eye beam of the mech costs (tap right click)")
+                        "Ring power one ray from the mech's eyes costs (click right)")
                 .setting("mechEyeDamage", 10.0, 0.0, 2000.0, Unit.HALF_HEARTS,
-                        "Damage of the eye beam to the first creature in its way, in half hearts; it is thrown back")
-                .setting("mechUnibeamPowerCost", 6.0, 0.0, 100.0, Unit.POWER,
-                        "Ring power the Unibeam from the mech's chest costs (hold right click 2 seconds)")
-                .setting("mechUnibeamDamage", 4.0, 0.0, 2000.0, Unit.HALF_HEARTS,
-                        "Damage of the Unibeam to everything in it, in half hearts, again every quarter second for"
-                                + " its 2.5 seconds")
-                .settingInt("mechUnibeamCooldown", 200, 0, 72000, Unit.TICKS,
-                        "Ticks after a Unibeam before the next one (20 ticks = 1 second)")
+                        "Damage of the eye ray to the first creature in its way, in half hearts; it is thrown back")
+                .setting("mechGlarePowerPerSecond", 4.0, 0.0, 100.0, Unit.POWER_PER_SECOND,
+                        "Ring power the eye beam costs a second while right click is held")
+                .setting("mechGlareDamage", 3.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                        "Damage of the held eye beam to everything in it, in half hearts, again every 0.2 seconds")
+                .group("mechMissiles", "Mech missile arm (R in a built mech)")
+                .setting("mechMissilePowerCost", 3.0, 0.0, 100.0, Unit.POWER,
+                        "Ring power one salvo of missiles costs (left click while the arm aims; 3 salvos at most)")
+                .setting("mechMissileDamage", 4.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                        "Damage of each missile's blast right where it bursts, in half hearts; at the edge of the"
+                                + " blast half")
+                .settingInt("mechMissileCooldown", 300, 0, 72000, Unit.TICKS,
+                        "Ticks after the missile arm comes down before it can be raised again (20 ticks = 1 second)")
+                .group("mechRockets", "Mech rocket boots (double space in a built mech)")
+                .setting("mechRocketPowerCost", 4.0, 0.0, 100.0, Unit.POWER,
+                        "Ring power taking off on the rocket boots costs")
+                .setting("mechRocketSeconds", 5.0, 1.0, 5.0, Unit.SECONDS,
+                        "Seconds the rocket boots can carry the mech before it falls")
+                .settingInt("mechRocketCooldown", 400, 0, 72000, Unit.TICKS,
+                        "Ticks after the mech lands before the rocket boots fire again (20 ticks = 1 second)")
+                .setting("mechDivePowerCost", 2.0, 0.0, 100.0, Unit.POWER,
+                        "Ring power the dive from the air costs (X while the rocket boots fly)")
+                .setting("mechDiveDamage", 24.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                        "Damage of the dive right where the mech crashes down, in half hearts; at the edge of the"
+                                + " blast half")
+                .group("mechSpin", "Mech spin (X on the ground in a built mech)")
+                .setting("mechSpinPowerCost", 5.0, 0.0, 100.0, Unit.POWER,
+                        "Ring power the spin costs")
+                .setting("mechSpinDamage", 8.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                        "Damage each time a fist of the spinning mech strikes a creature or the ground by it, in half"
+                                + " hearts; the knees landing do half round it")
+                .settingInt("mechSpinCooldown", 300, 0, 72000, Unit.TICKS,
+                        "Ticks after the spin before the next one (20 ticks = 1 second)")
                 .group("mechWalk", "Walking the mech")
                 .setting("mechCrushHealth", 10.0, 0.0, 2000.0, Unit.HALF_HEARTS,
                         "A creature no bigger than a block with at most this much health (a chicken has 4, a pig 10)"

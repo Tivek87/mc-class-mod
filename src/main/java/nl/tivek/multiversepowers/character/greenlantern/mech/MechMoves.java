@@ -21,11 +21,15 @@ public final class MechMoves {
     private static final double WALK_SWING = 0.3;
     private static final double WALK_BEND = 0.22;
     private static final Vec3 WALK_HANG = new Vec3(0.06, -0.94, 0.34).normalize();
-    // Running, the forearm is held bent up ahead, in towards the middle, the fist clenched with its palm turned in; it
-    // comes up further as the arm pumps forward.
-    private static final Vec3 RUN_FORE = new Vec3(-0.22, -0.2, 0.95).normalize();
+    // Running, the arms pump from the shoulders close by the body, the fists clenched with their palms turned in: the
+    // elbow bent RUN_ELBOW at the middle of the swing, more as the arm swings forward (the fist comes up before the
+    // chest) and less as it swings back (the fist passes the hip); they swing RUN_REACH further than walking.
+    private static final Vec3 RUN_UPPER = new Vec3(0.14, -0.99, 0.0).normalize();
     private static final Vec3 RUN_PALM = new Vec3(-1.0, 0.0, 0.0);
-    private static final double RUN_BEND = 0.18;
+    private static final double RUN_ELBOW = 1.35;
+    private static final double RUN_ELBOW_SWING = 0.4;
+    private static final double RUN_REACH = 0.35;
+    private static final double RUN_INWARD = 0.18;
     private static final double RUN_CURL = 0.95;
     private static final double RUN_SPREAD = 0.2;
     // The right arm digging out and tossing the head: its elbow out and back, the palm aimed a few times over so the
@@ -190,7 +194,7 @@ public final class MechMoves {
                                 new Vec3(0.0, 0.2, 1.0), 0.45, 1.0, -0.45, 0.12),
                 set(MechScript.DONE + 5, false, new Vec3(0.55, -0.8, 0.22), new Vec3(0.15, -0.5, 0.85),
                         new Vec3(-0.7, -0.2, 0.6), 0.5, 0.5, 0.2, 0.0),
-                set(MechScript.SETTLED - 2, true, new Vec3(0.34, -0.93, 0.1), new Vec3(0.06, -0.78, 0.62), inward, 0.5,
+                set(MechScript.SETTLED - 2, true, new Vec3(0.3, -0.94, 0.08), new Vec3(0.08, -0.88, 0.46), inward, 0.5,
                         0.4, 0.0, 0.0) };
     }
 
@@ -340,19 +344,28 @@ public final class MechMoves {
         return walking(right, t, swing, walking, 0.0);
     }
 
-    // As above, running (0 to 1) the arm pumping bent with its fist clenched.
+    // As above, running (0 to 1) the arm pumping bent with its fist clenched; `swing` runs twice as far at a full run.
     public static Arm walking(boolean right, double t, double swing, double walking, double running) {
         Arm set = set(right, Math.max(t, MechScript.SETTLED));
         double run = Mth.clamp(running, 0.0, 1.0);
-        double angle = WALK_SWING * (right ? swing : -swing);
+        double angle = WALK_SWING * (right ? swing : -swing) * (1.0 + RUN_REACH * run);
         Vec3 across = new Vec3(1.0, 0.0, 0.0);
-        Vec3 elbow = MechScript.SHOULDER.add(Vectors.spin(set.elbow().subtract(MechScript.SHOULDER), across, -angle));
+        Vec3 upper = set.elbow().subtract(MechScript.SHOULDER).normalize().lerp(RUN_UPPER, run).normalize()
+                .scale(MechScript.UPPER_ARM);
+        Vec3 elbow = MechScript.SHOULDER.add(Vectors.spin(upper, across, -angle));
         double ahead = Math.max(0.0, angle) / WALK_SWING;
-        double bend = angle + Mth.lerp(run, WALK_BEND * Math.min(1.0, ahead), RUN_BEND * ahead);
-        Vec3 hang = set.way().lerp(WALK_HANG, Mth.clamp(walking, 0.0, 1.0)).lerp(RUN_FORE, run).normalize();
-        Vec3 palm = square(set.palm().lerp(RUN_PALM, run), hang);
-        Arm arm = new Arm(elbow, Vectors.spin(hang, across, -bend), Vectors.spin(palm, across, -bend),
-                Mth.lerp(run, set.curl(), RUN_CURL), Mth.lerp(run, set.spread(), RUN_SPREAD), 1.0);
+        double bend = angle + WALK_BEND * Math.min(1.0, ahead);
+        Vec3 hang = set.way().lerp(WALK_HANG, Mth.clamp(walking, 0.0, 1.0)).normalize();
+        Vec3 walked = Vectors.spin(hang, across, -bend);
+        // Running, the forearm folds forward from the upper arm, in towards the middle, the more the further ahead.
+        double pump = Mth.clamp(angle / (WALK_SWING * 2.0), -1.0, 1.0);
+        Vec3 pumped = Vectors.spin(elbow.subtract(MechScript.SHOULDER).normalize(), across,
+                -(RUN_ELBOW + RUN_ELBOW_SWING * pump)).add(-RUN_INWARD * (1.0 + Math.max(0.0, pump)), 0.0, 0.0)
+                .normalize();
+        Vec3 way = walked.lerp(pumped, run).normalize();
+        Vec3 palm = square(Vectors.spin(set.palm(), across, -bend).lerp(RUN_PALM, run), way);
+        Arm arm = new Arm(elbow, way, palm, Mth.lerp(run, set.curl(), RUN_CURL), Mth.lerp(run, set.spread(),
+                RUN_SPREAD), 1.0);
         if (right) {
             return arm;
         }

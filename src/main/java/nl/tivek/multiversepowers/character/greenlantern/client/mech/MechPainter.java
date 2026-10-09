@@ -83,7 +83,7 @@ public final class MechPainter {
                 / MechScript.BREAK_TICKS, 0.0, 1.0) : -1.0;
         MechPose walk = MechWalk.pose(now.id(), partialTick);
         MechPose pose = walk != null && (breaking || t >= MechScript.SETTLED) ? walk : scripted(stage, t);
-        if (!painter.visible(pose.stage().point(0.0, 7.0, MechScript.TARGET_AHEAD * 0.5), REACH)) {
+        if (!painter.visible(pose.stage().point(0.0, 8.0, MechScript.TARGET_AHEAD * 0.5), REACH)) {
             return;
         }
         boolean walking = walk != null && pose == walk;
@@ -92,10 +92,12 @@ public final class MechPainter {
             MechLight.lights(painter, pose, t, ring, own);
             if (walking) {
                 MechExhaust.flames(painter, pose, t);
-                MechBeamFx.draw(painter, pose, t, now.owner(), own, partialTick);
+                MechGear.lights(painter, pose, own);
+                MechBeamFx.draw(painter, pose, t, now.owner(), own);
             }
         }
         MechExhaust.forget();
+        MechGear.forget();
     }
 
     public static boolean breaks(ConstructPayload mech, double clock) {
@@ -214,13 +216,13 @@ public final class MechPainter {
         MechScript.Stage torso = pose.torso();
         Frame body = body(torso);
         if (t >= MechScript.HIPS) {
-            rising(painter, torso, 4.2, 6.15, Mth.clamp((t - MechScript.HIPS) / 6.0, 0.0, 1.0), apart);
+            rising(painter, torso, 6.35, 8.75, Mth.clamp((t - MechScript.HIPS) / 6.0, 0.0, 1.0), apart);
             MechParts.draw(painter, MechBodyShapes.PELVIS, body(pose.hips()), 1.0, apart, PIECES * 50);
             MechParts.draw(painter, MechBodyShapes.WAIST, body, 1.0, apart, PIECES * 51);
             painter.noClip();
         }
         if (t >= MechScript.ARMOR) {
-            rising(painter, torso, 5.6, MechBodyShapes.CHEST_TOP + 0.3,
+            rising(painter, torso, 7.9, MechBodyShapes.CHEST_TOP + 0.3,
                     Mth.clamp((t - MechScript.ARMOR) / 16.0, 0.0, 1.0), apart);
             MechParts.draw(painter, MechBodyShapes.CHEST, body, 1.0, apart, PIECES * 52);
             MechParts.draw(painter, MechBodyShapes.RIM, body, 1.0, apart, PIECES * 54);
@@ -238,7 +240,7 @@ public final class MechPainter {
         double grown = Mth.clamp((t - MechScript.SHOULDERS) / 12.0, 0.0, 1.0);
         if (grown < 1.0 && apart < 0.0) {
             Vec3 out = stage.dir(side(new Vec3(1.0, 0.0, 0.0), right));
-            painter.clip(stage.point(side(new Vec3(1.8 + 3.4 * Ease.smooth(grown), 0.0, 0.0), right)), out.scale(-1.0),
+            painter.clip(stage.point(side(new Vec3(1.8 + 3.7 * Ease.smooth(grown), 0.0, 0.0), right)), out.scale(-1.0),
                     SEAM);
         }
         MechParts.draw(painter, right ? MechBodyShapes.SHOULDER : MechBodyShapes.SHOULDER_LEFT,
@@ -363,6 +365,9 @@ public final class MechPainter {
                 : MechHandRig.frames(hand, arm, own, wall, grips, ground);
         fingers(painter, hand, bones, own, apart, seed + 10);
         painter.noClip();
+        if (walking && right) {
+            MechGear.pod(painter, hand, pose.blow(), apart, seed + 60);
+        }
         if (BoneView.shown()) {
             BoneView.bone(forearm.center(), forearm.at(0.0, MechArmShapes.WRIST, 0.0), BoneView.CONSTRUCT);
             if (arm.upper() > 0.0) {

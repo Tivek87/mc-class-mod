@@ -42,6 +42,7 @@ public record ConstructPayload(int id, int owner, Vec3 center, Vec3 facing, floa
     public static final int REVOLVER = 22;
     public static final int EXPRESS_PORTAL = 23;
     public static final int MECH = 24;
+    public static final int MECH_MISSILE = 25;
     public static final int SLAM_FIST = 0;
     public static final int SLAM_HANDS = 1;
     public static final int SLAM_FISTS = 2;

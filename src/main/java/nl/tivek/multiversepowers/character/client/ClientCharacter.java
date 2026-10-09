@@ -156,6 +156,12 @@ public final class ClientCharacter {
         Gestures.gate(ability, may);
     }
 
+    // A character that wants a mouse button's hold sooner in some state says how many ticks, here (0: the ability's
+    // own).
+    public static void holdTime(CharacterAbility ability, ToIntFunction<LocalPlayer> ticks) {
+        Gestures.holdTime(ability, ticks);
+    }
+
     // A character whose gestures change in flight says here when it flies.
     public static void flying(GameCharacter character, Predicate<LocalPlayer> flying) {
         Gestures.flying(character, flying);

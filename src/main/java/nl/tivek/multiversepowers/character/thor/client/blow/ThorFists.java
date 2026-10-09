@@ -103,9 +103,11 @@ public final class ThorFists {
                     from.lerp(pose.from[0], w);
                 }
             } else if (pose != null) {
-                // The hammer's swings and its throw are drawn smaller than a fist's, so its head and the arm stay low
-                // and to the right, the throw alike before and after it lets go.
-                boolean small = side == 0 && (armed || ThorBlow.byIndex(view.blow) == ThorBlow.HAMMER_THROW);
+                // The hammer's swings and its throws are drawn smaller than a fist's, so its head and the arm stay low
+                // and to the right, a throw alike before and after it lets go.
+                ThorBlow thrown = ThorBlow.byIndex(view.blow);
+                boolean small = side == 0 && (armed || thrown == ThorBlow.HAMMER_THROW
+                        || thrown == ThorBlow.STORM_TOSS);
                 float swing = small ? w * ARMED_SWING : w;
                 hand.lerp(pose.seen[side], swing);
                 from.lerp(pose.from[side], swing);

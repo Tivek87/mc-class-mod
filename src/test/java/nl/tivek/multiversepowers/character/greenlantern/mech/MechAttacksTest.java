@@ -10,7 +10,8 @@ class MechAttacksTest {
     private static final double REACH = MechScript.UPPER_ARM + MechScript.PALM_ALONG;
     private static final MechScript.Stage FRAME = MechScript.Stage.facing(new Vec3(10.0, 64.0, -3.0), 37.0F);
     private static final MechAttacks.Held ZOMBIE = new MechAttacks.Held(FRAME.point(1.5, 0.975, 4.0), 0.3, 0.975);
-    private static final int[] KINDS = { MechAttacks.SWEEP, MechAttacks.STOMP, MechAttacks.SLAM, MechAttacks.THROW };
+    private static final int[] KINDS = { MechAttacks.CROSS, MechAttacks.SWEEP, MechAttacks.STOMP, MechAttacks.SLAM,
+            MechAttacks.THROW, MechAttacks.FLY, MechAttacks.DIVE };
 
     // Every place a blow sends a hand to lies within the arm's reach of its shoulder, the body bent as the blow bends
     // it at that moment: the arm gets there without stretching or stopping short.
@@ -37,6 +38,43 @@ class MechAttacksTest {
                             : MechScript.mirror(MechScript.SHOULDER)), 1.0E-6);
                 }
             }
+        }
+    }
+
+    // The spin's fists swung round and hammered down, and the missile arm aimed wherever the crosshair rests, never
+    // stretch an arm out straight.
+    @Test
+    void theSpinAndTheMissileArmNeverStretch() {
+        Vec3[] targets = { FRAME.point(0.0, 9.0, 30.0), FRAME.point(-20.0, 0.0, 15.0), FRAME.point(10.0, 40.0, 10.0),
+                FRAME.point(3.0, -6.0, 6.0) };
+        for (int kind : new int[] { MechAttacks.SPIN, MechAttacks.AIM }) {
+            for (double t = 0.0; t <= MechAttacks.length(kind); t += 0.25) {
+                MechAttacks.Blow blow = new MechAttacks.Blow(kind, t, 0, 0.0);
+                MechScript.Stage torso = MechAttacks.torso(FRAME, MechAttacks.body(blow));
+                for (int side = 0; side < 2; side++) {
+                    boolean right = side == 0;
+                    Vec3 shoulder = right ? MechScript.SHOULDER : MechScript.mirror(MechScript.SHOULDER);
+                    for (Vec3 target : targets) {
+                        MechMoves.Arm arm = MechAttacks.arm(blow, right, FRAME, torso, null,
+                                MechMoves.arm(right, FRAME, MechScript.SETTLED), target);
+                        double far = arm.hand().distanceTo(shoulder);
+                        assertTrue(far < REACH - 0.02, "kind " + kind + " t " + t + " side " + side + ": " + far);
+                    }
+                }
+            }
+        }
+    }
+
+    // The missile arm's salvos (how many, how long since the last) and every move's whole length go with the mech.
+    @Test
+    void theMovesTravelWithTheMech() {
+        MechAttacks.Blow aim = MechAttacks.unpack(MechAttacks.pack(MechAttacks.AIM, MechAttacks.AIM_MOST - 1,
+                MechAttacks.salvos(2, 5), 0.0));
+        assertEquals(2, MechAttacks.fired(aim));
+        assertEquals(5, aim.from() >>> 2);
+        for (int kind = MechAttacks.SWEEP; kind <= MechAttacks.SPIN; kind++) {
+            int age = MechAttacks.length(kind);
+            assertEquals(age, MechAttacks.unpack(MechAttacks.pack(kind, age, 0, 0.0)).age(), "kind " + kind);
         }
     }
 

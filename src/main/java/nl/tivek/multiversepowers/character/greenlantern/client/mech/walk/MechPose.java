@@ -26,6 +26,8 @@ public final class MechPose {
     double swing;
     double walking;
     double running;
+    // How far its exhaust is charged up by running on (0 to 1).
+    double boost;
     public double headYaw;
     public double headPitch;
     double leverLeft;
@@ -33,6 +35,9 @@ public final class MechPose {
     public int button = -1;
     public double press;
     MechAttacks.Blow blow = MechAttacks.Blow.NONE;
+    // What its pilot's crosshair rests on while the missile arm aims (null: straight ahead).
+    @Nullable
+    Vec3 aim;
     // Climbing, where each hand holds on (the middle of its palm, in the world), which way its fingers run and its palm
     // faces, how firmly it holds (0: not at all) and how far its fingers curl.
     public final Vec3[] ledge = new Vec3[2];
@@ -71,6 +76,7 @@ public final class MechPose {
         pose.lean = this.lean;
         pose.bank = this.bank;
         pose.running = this.running;
+        pose.boost = this.boost;
         for (int side = 0; side < 2; side++) {
             pose.ankle[side] = this.ankle[side];
             pose.toes[side] = this.toes[side];
@@ -93,6 +99,7 @@ public final class MechPose {
         pose.button = this.button;
         pose.press = this.press;
         pose.blow = this.blow;
+        pose.aim = this.aim;
         return pose;
     }
 
@@ -104,6 +111,7 @@ public final class MechPose {
         pose.lean = Mth.lerp(u, from.lean, to.lean);
         pose.bank = Mth.lerp(u, from.bank, to.bank);
         pose.running = Mth.lerp(u, from.running, to.running);
+        pose.boost = Mth.lerp(u, from.boost, to.boost);
         pose.torso = MechScript.upper(pose.hips, pose.turn, pose.lean, pose.bank);
         for (int side = 0; side < 2; side++) {
             pose.ankle[side] = from.ankle[side].lerp(to.ankle[side], u);
@@ -131,6 +139,7 @@ public final class MechPose {
         pose.blow = from.blow.kind() == to.blow.kind() && to.blow.age() >= from.blow.age() ? new MechAttacks.Blow(
                 to.blow.kind(), Mth.lerp(u, from.blow.age(), to.blow.age()), to.blow.from(), to.blow.turn())
                 : to.blow;
+        pose.aim = from.aim != null && to.aim != null ? from.aim.lerp(to.aim, u) : to.aim;
         return pose;
     }
 
@@ -160,6 +169,10 @@ public final class MechPose {
 
     public double running() {
         return this.running;
+    }
+
+    public double boost() {
+        return this.boost;
     }
 
     // Where the pilot sits, by the soles of their feet.
@@ -229,6 +242,6 @@ public final class MechPose {
             return arm;
         }
         MechScript.Stage frame = MechAttacks.frame(this.stage.base(), this.torso, MechAttacks.body(this.blow).twist());
-        return MechAttacks.arm(this.blow, right, frame, this.torso, held, arm);
+        return MechAttacks.arm(this.blow, right, frame, this.torso, held, arm, this.aim);
     }
 }

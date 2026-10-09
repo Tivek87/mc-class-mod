@@ -1,6 +1,7 @@
 package nl.tivek.multiversepowers.character.greenlantern.client.hud;
 
 import java.util.Map;
+import java.util.Set;
 import javax.annotation.Nullable;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.chat.Component;
@@ -16,12 +17,17 @@ import nl.tivek.multiversepowers.character.greenlantern.client.ClientRing;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.flame.FlameArms;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.sword.SwordArms;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.whip.WhipArms;
+import nl.tivek.multiversepowers.character.greenlantern.mech.MechAttacks;
 
-// Green Lantern's panel: in his mech its blow, its eye beam, its Unibeam and the hold that leaves it; with a construct
-// weapon in his hands its four moves and the wheel that puts it away, his other keys shut till then.
+// Green Lantern's panel: in his mech its blows, its eyes, its missile arm, its rocket boots, its spin and the hold that
+// leaves it; with a construct weapon in his hands its four moves and the wheel that puts it away, his other keys shut
+// till then.
 final class LanternPanel implements AbilityPanel.Rules {
     private static final String MOVE = "screen." + MultiversePowers.MODID + ".move.";
     private static final String MECH = "screen." + MultiversePowers.MODID + ".panel.green_lantern.mech.";
+    // The keys the mech's own moves take over, and how long right click is held for its eye beam.
+    private static final Set<String> MECH_KEYS = Set.of("emerald_express", "flight", "shockwave");
+    private static final int MECH_GLARE_HOLD = 6;
     // Each weapon's click and hold of the left button, then of the right, and the wheel's setting saying what each
     // costs: one per second is paid every tick.
     private static final Map<String, String[]> COSTS = Map.of(
@@ -36,6 +42,10 @@ final class LanternPanel implements AbilityPanel.Rules {
     static void register() {
         AbilityPanel.rules(GameCharacter.GREEN_LANTERN, new LanternPanel());
         ClientCharacter.refusal(GameCharacter.GREEN_LANTERN, LanternPanel::refusal);
+        CharacterAbility shield = GameCharacter.GREEN_LANTERN.byName("light_shield");
+        if (shield != null) {
+            ClientCharacter.holdTime(shield, player -> piloting(player) ? MECH_GLARE_HOLD : 0);
+        }
         LanternGuide.register();
     }
 
@@ -53,6 +63,12 @@ final class LanternPanel implements AbilityPanel.Rules {
         return ClientConstructs.piloted(player.getId(), 0.0F) != null;
     }
 
+    // The move the pilot's mech makes now.
+    static MechAttacks.Blow mechMove(LocalPlayer player) {
+        ClientConstructs.Piloted pilot = ClientConstructs.piloted(player.getId(), 0.0F);
+        return pilot == null ? MechAttacks.Blow.NONE : pilot.blow();
+    }
+
     @Nullable
     private static Component refusal(CharacterAbility ability, LocalPlayer player) {
         if (ability.input() != CharacterAbility.Input.KEY || ability.isClientOnly() || weapon() == null) {
@@ -66,7 +82,7 @@ final class LanternPanel implements AbilityPanel.Rules {
     @Override
     public boolean lists(CharacterAbility ability, LocalPlayer player) {
         if (piloting(player)) {
-            return ability.id().equals("mech") || onMouse(ability);
+            return ability.id().equals("mech") || onMouse(ability) || MECH_KEYS.contains(ability.id());
         }
         if (weapon() != null) {
             return onMouse(ability) || ability.isClientOnly();
@@ -81,15 +97,25 @@ final class LanternPanel implements AbilityPanel.Rules {
             return Component.translatable("screen." + MultiversePowers.MODID + ".hold.mech."
                     + (piloting(player) ? "leave" : "short"));
         }
+        if (piloting(player)) {
+            MechAttacks.Blow move = mechMove(player);
+            boolean aiming = move.kind() == MechAttacks.AIM;
+            boolean airborne = MechAttacks.airborne(move);
+            String name = switch (ability.id()) {
+                case "light_bolt" -> aiming ? "fire" : "blow";
+                case "light_shield" -> hold ? "glare" : "eye";
+                case "emerald_express" -> aiming ? "lower" : "missiles";
+                case "flight" -> airborne && move.kind() == MechAttacks.FLY ? "cut" : "rockets";
+                case "shockwave" -> airborne ? "dive" : "spin";
+                default -> null;
+            };
+            return name == null ? null : Component.translatable(MECH + name);
+        }
         if (ability.id().equals("flight") && ClientRing.flight(player, 0.0F) >= 0.0F) {
             return Component.translatable("screen." + MultiversePowers.MODID + ".panel.green_lantern.flight.stop");
         }
         if (!onMouse(ability)) {
             return null;
-        }
-        if (piloting(player)) {
-            return Component.translatable(ability.input() == CharacterAbility.Input.LEFT ? MECH + "blow"
-                    : hold ? "screen." + MultiversePowers.MODID + ".hold.unibeam" : MECH + "eye");
         }
         String weapon = weapon();
         if (weapon == null) {
@@ -122,11 +148,17 @@ final class LanternPanel implements AbilityPanel.Rules {
             return pays(player, wheel.value(cost) / (cost.endsWith("PerSecond") ? 20.0 : 1.0));
         }
         CharacterAbility mech = GameCharacter.GREEN_LANTERN.byName("mech");
-        if (ability.id().equals("light_bolt") && mech != null && piloting(player)) {
-            return !hold && pays(player, mech.value("mechBlowPowerCost"));
-        }
-        if (ability.id().equals("light_shield") && mech != null && piloting(player)) {
-            return pays(player, mech.value(hold ? "mechUnibeamPowerCost" : "mechEyePowerCost"));
+        if (mech != null && piloting(player)) {
+            MechAttacks.Blow move = mechMove(player);
+            boolean airborne = MechAttacks.airborne(move);
+            return switch (ability.id()) {
+                case "light_bolt" -> !hold && pays(player, mech.value(move.kind() == MechAttacks.AIM
+                        ? "mechMissilePowerCost" : "mechBlowPowerCost"));
+                case "light_shield" -> pays(player, mech.value(hold ? "mechGlarePowerPerSecond" : "mechEyePowerCost"));
+                case "flight" -> airborne || pays(player, mech.value("mechRocketPowerCost"));
+                case "shockwave" -> pays(player, mech.value(airborne ? "mechDivePowerCost" : "mechSpinPowerCost"));
+                default -> true;
+            };
         }
         float power = ClientRing.power(player);
         return switch (ability.id()) {

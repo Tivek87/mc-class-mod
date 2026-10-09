@@ -57,7 +57,7 @@ long cooldown; while it goes, the panel counts it down at its top right.
 |---|---|---|---|---|
 | R | Ability 1 | Grab | Emerald Express | Thunderstorm |
 | V | Ability 2 | Multi-Tentacle | Construct Wheel | Lightning Bomb |
-| Z | Ability 3 | Tentacle Dash | Recharge | *(free)* |
+| Z | Ability 3 | Tentacle Dash | Recharge | Storm Throw |
 | B (hold) | Ability 4 | Block | Light Bolt *(left click)* | *(free)* |
 | H | Ability 5 | Ground Slam | Light Shield *(right click)* | *(free)* |
 | N | Ability 6 | Portal | Ring Scan | *(free)* |
@@ -70,16 +70,15 @@ long cooldown; while it goes, the panel counts it down at its top right.
 
 Green Lantern has one more past the twelfth: the Hard-Light Mech *(hold the scroll wheel 2 seconds)*.
 
-Thor's first two keys hold his Thunderstorm and Lightning Bomb; the other ten are kept free for powers to come, and
-every other move of his sits on the mouse, space, shift or the scroll wheel. On the ground: Thunder Fists *(left
-click)*, Thunderclap *(hold left click, no hammer)*, Hammer Uppercut
-*(hold left click, hammer)*, Dash *(right click, no hammer)*, Grab *(hold right click)*, Grab Dash *(running, hold
-right click)*, Hammer Throw *(right click, hammer; crouching: Throw to Stay)*, Throw and Follow *(hold right click,
-hammer)*, Take Up the Hammer *(scroll wheel click)*, Charge *(hold scroll wheel)*, Call the Hammer *(scroll wheel
-click, hammer away)*, Follow the Hammer *(hold scroll wheel, hammer resting)*, Super Jump *(double space)* and Flight
-*(hold space; with the hammer away it first flies into your hand)*. In flight: Sky Shockwave *(hold left click)*, Air
-Blink *(right click)*, Grab-Dash Dive *(hold right click)*, Lightning Bolt *(scroll wheel click)*, Storm Throw *(hold
-scroll wheel)* and Lightning Speed *(hold shift)*.
+Thor's first three keys hold his Thunderstorm, Lightning Bomb and Storm Throw; the other nine are kept free for powers
+to come, and every other move of his sits on the mouse, space, shift or the scroll wheel. On the ground: Thunder Fists
+*(left click)*, Thunderclap *(hold left click, no hammer)*, Hammer Uppercut *(hold left click, hammer)*, Dash *(right
+click, no hammer)*, Grab *(hold right click)*, Grab Dash *(running, hold right click)*, Hammer Throw *(right click,
+hammer; crouching: Throw to Stay)*, Throw and Follow *(hold right click, hammer)*, Take Up the Hammer *(scroll wheel
+click)*, Charge *(hold scroll wheel)*, Call the Hammer *(scroll wheel click, hammer away)*, Follow the Hammer *(hold
+scroll wheel, hammer resting)*, Super Jump *(double space)* and Flight *(hold space; with the hammer away it first
+flies into your hand)*. In flight: Sky Shockwave *(hold left click)*, Air Blink *(right click)*, Grab-Dash Dive *(hold
+right click)*, Lightning Bolt *(scroll wheel click)* and Lightning Speed *(hold shift)*.
 
 - Every key can be changed in Options > Controls, under "Multiverse Powers".
 - An ability on a mouse button or on space shows that in brackets: its number key does nothing for it.
@@ -868,12 +867,12 @@ Green Lantern's ultimate: a big, slow gunship of hard light high over the battle
   giant mech of hard light, beat for beat like Green Lantern's own super move (let go sooner and nothing happens).
   It builds itself over the **nearest creature out to hurt you in front of you**, up to 12 blocks away, and holds
   that creature on its spot the whole time; with no such creature it rises round you. It needs ground under it.
-- **The look.** Like the one in Green Lantern's super move: every part is round and covered in hundreds of raised
-  tiles of deep green hard light, each with a glowing rim. Slim tall shins on clawed feet, square-cut thighs, a
-  barrel chest with a round port of see-through green glass in a thick flange of blocks, domed shoulders with
-  horns, big gauntlet forearms with three-jointed fingers, and a heavy knight's helmet of big solid plates: a thick
-  brow jutting over two glowing eye slits, a faceted mask with a grille for a mouth down to a pointed chin, cheek
-  guards, a tall fin over the crown and two horns swept back from the temples.
+- **The look.** Built like a giant fighting robot from the films, all of it covered in hundreds of raised tiles of
+  deep green hard light, each with a glowing rim. Long armoured legs on broad, heavy feet with three squared toes, a
+  chest broad at the shoulders that tapers in a V to a narrow ribbed waist, a round port of see-through green glass
+  in the middle of the chest where you sit, big squared shoulder shells, huge gauntlet forearms with exhaust pipes
+  along their backs, spiked knuckles and three-jointed fingers, and a small helmet sunk between the shoulders: a
+  heavy brow over one long glowing visor, a jaw plate down to the chin, cheek plates and vanes swept back.
 - **Filmed like a movie.** While it builds (about 14 seconds) your camera films it in seven long shots, flown
   slowly like a drone and cut only on the big moments, showing you as much as the mech: close on you as your ring
   gathers light, over your shoulder as the feet slam down, with you through the leap, one long flight round the
@@ -918,7 +917,7 @@ Green Lantern's ultimate: a big, slow gunship of hard light high over the battle
 - **Walking.** Now you walk it: **W** walks it forward, **S** backs it up, **A** and **D** step it to the side; hold
   your **sprint key** with W and it really **runs**, almost three and a half times as fast: longer strides at a
   quicker beat, both feet off the ground for a moment every step, each heel kicking up high behind and each knee
-  driving forward, the body leaning hard in, springing off each foot and crashing down on the next, the hips swinging
+  driving forward, the body leaning in, springing off each foot and crashing down on the next, the hips swinging
   with the legs and the shoulders against them, and the clenched fists pumping on bent arms. A note above the hotbar says so as you take over. Its body follows where you
   look: the torso swings round on its hips quickly, with weight, overshooting a little and settling; standing still,
   the torso twists up to about 100 degrees over the legs, and the legs only step round once you look more than about
@@ -940,24 +939,43 @@ Green Lantern's ultimate: a big, slow gunship of hard light high over the battle
   one back to turn. Standing still you reach over to the console now and then and press a button, which lights up.
   In first person you look out through the round glass port in its chest, with a clear view ahead; in third person the camera stands back
   behind and above the whole mech, so it never blocks your view.
-- **Blows (left click).** The mech stands its ground and strikes one blow at random: a **backhand sweep** (the back
-  of the right hand swung from its chest out to the side, flinging whatever it hits), a **stomp** of the right foot
-  (it hurts and throws everything round that foot), a **slam** (both fists raised high and brought down on the
-  ground ahead, a big blast), or, with an enemy in reach in front of it, a **throw**: it turns and bends to the
-  nearest one, closes its fingers round it, lifts it, smashes it into the ground twice and, if it still lives, winds
-  up and flings it the way you look. It does not walk while it strikes. *Unfinished: the blows are first versions
-  and may still look or feel wrong.*
-- **Eye Beam (right click).** Its eye slits blaze and a beam of rings shoots from its visor to where your crosshair
-  rests: it hits the first enemy in its way and throws it back limp. Blocks stop it; it never breaks one.
-- **Unibeam (hold right click 2 seconds).** As you hold, the port on its chest gathers light. Then the mech bends its
-  knees, leans back and pulls both fists back beside its ribs, and a huge beam bursts out of the port with a ring of
-  light thrown off its rim. For 2.5 seconds it burns everything in it again and again and drives it back, stopped
-  only by blocks. The next Unibeam waits **10 seconds**.
-- **Exhaust pipes and spikes.** Two pipes run along the back of each forearm and sweep out past the elbow: their
-  mouths glow while it stands, flame as it runs or climbs and roar as it winds up a blow. Its knuckles carry spikes.
-- **Nothing else:** you cannot fly, jump or use your other powers while you are in it. The panel lists its blow,
-  Eye Beam and Unibeam and the hold of the scroll wheel that takes you out, with how long you may still stay in
-  (like *1:42 left*).
+- **Combo (left click).** Click again as a blow ends and the next one follows, three in a row; wait a moment and it
+  starts again from the first. First a **straight right**: it sinks into its knees, twists and drives its right fist
+  down and far ahead into what stands before it (**8 hearts**), or, with a creature right at its feet, a **stomp** of
+  the right foot that hurts and throws everything round it (**8 hearts**). Second a **backhand sweep**: low and wide
+  from in front of it out to its right, flinging whatever it hits (**7 hearts**). Third a **slam**: both fists raised
+  high and hammered down on the ground ahead, a big blast (**11 hearts**), or, with an enemy in reach in front of it, a
+  **throw**: it turns and bends to the nearest one, closes its fingers round it, lifts it, smashes it into the ground
+  twice and, if it still lives, winds up and flings it the way you look. It does not walk while it strikes.
+- **Eye Ray (click right).** Its visor flashes and a bolt shoots out of each eye to where your crosshair rests, a
+  burning thread behind it: it hits the first enemy in its way (**5 hearts**) and throws it back limp, and bursts in
+  a star of light where it lands. Blocks stop it; it never breaks one.
+- **Eye Beam (hold right click).** The mech braces and leans in, and two streams of light out of its eyes join into
+  one flat, hard-edged blade of light with arrowheads racing along it, splashing sparks where it ends. It burns the
+  first enemy in its way every 0.2 seconds (**1.5 hearts**) for as long as you hold, up to about 3 seconds, and costs
+  power while it burns.
+- **Missile arm (R).** The mech raises its right arm and keeps it aimed at your crosshair, and the back of its hand
+  opens: two doors swing apart and a rack of six missile tubes rises out of it. **Left click** fires a salvo: six
+  missiles of hard light leap out two at a time, curve round and burst where you aim, or on the first creature or
+  block in their way (**2 hearts** each, less at the edge of the blast). Up to **3 salvos**; **R** again lowers the
+  arm, and it also comes down by itself once the salvos are spent or after 10 seconds. The next missile arm waits
+  **15 seconds**.
+- **Rocket boots (press jump twice).** Nozzles push out of the soles of its feet and fire: the mech blasts off the
+  ground and flies for up to **5 seconds**, leaning into where it goes. It flies where you look; walk keys move it,
+  hold jump to climb and sneak to sink. Press jump twice again to cut the thrust and drop. When the boots burn out it
+  falls and lands with a crash. The next flight waits **20 seconds**.
+- **Dive (X in the air).** On the rocket boots, press X: the mech rears up on its boots, then they cut out and it
+  plunges down feet first and lands with a huge blast round it (**12 hearts**).
+- **Spin (X on the ground).** The mech folds its legs and drops onto its knees with a crash, then whirls its torso
+  round four times over 3 seconds, its arms swung wide and its fists hammering the ground (**4 hearts** a hit), and
+  stands up again. The next spin waits **15 seconds**.
+- **Exhaust pipes and spikes.** Two big pipes run along the back of each forearm and sweep out past the elbow:
+  their mouths glow while it stands and flame as it runs, climbs or strikes. **Keep running** and they charge up:
+  over about 5 seconds the flames grow huge and roaring and the mech runs ever faster, up to more than half as fast
+  again; slowing down or stopping loses the charge. Its knuckles carry spikes.
+- **Nothing else:** you cannot use your other powers while you are in it. The panel lists every move it has right
+  now, with its key and how long its wait still is, and the hold of the scroll wheel that takes you out, with how
+  long you may still stay in (like *1:42 left*).
 - **Leaving it:** hold the scroll wheel for 2 seconds again (the ring round your crosshair says *Leave the mech*): the mech breaks
   into solid pieces that dissolve into light, and you float gently down to the ground. Die, log out or stop being
   Green Lantern and it breaks up as well. You may stay in it **2 minutes** at most, counted from building it: then
@@ -965,12 +983,13 @@ Green Lantern's ultimate: a big, slow gunship of hard light high over the battle
 - **Who gets hit:** it builds itself over a creature out to hurt you, but its blows hit whatever stands near: the
   held creature takes each blow whole, anything else near the foot, the clap or the crater takes less (players of
   your own team excepted).
-- **Power:** 25 to build it, then 0.2 a second while you pilot it, 0.5 a blow, 1 an Eye Beam and 6 a Unibeam; when
-  the ring runs dry it breaks up. **Cooldown:** 5 minutes, from the moment the mech is gone (however you leave it),
-  **its own**: building the mech leaves the Air Strike ready, and the Air Strike leaves the mech ready. Its cost,
-  cooldown, how long you may stay in it, reach and the three damages are settings (Hard-Light Mech), and so are each
-  blow's damage (Mech blows), the beams' costs, damage and the Unibeam's wait (Mech beams) and what it crushes
-  underfoot (Walking the mech).
+- **Power:** 25 to build it, then 0.2 a second while you pilot it, 0.5 a blow, 1 an Eye Ray, 4 a second of Eye Beam,
+  3 a salvo of missiles, 4 a flight, 2 a dive and 5 a spin; when the ring runs dry it breaks up. **Cooldown:** 5
+  minutes, from the moment the mech is gone (however you leave it), **its own**: building the mech leaves the Air
+  Strike ready, and the Air Strike leaves the mech ready. Its cost, cooldown, how long you may stay in it, reach and
+  the three damages are settings (Hard-Light Mech), and so are each blow's damage (Mech blows), the eyes' costs and
+  damage (Mech eyes), the missile arm's, the rocket boots' and the spin's costs, damage and waits (Mech missile arm,
+  Mech rocket boots, Mech spin) and what it crushes underfoot (Walking the mech).
 
 ### Giant Hands (key Left Alt)
 
@@ -1495,6 +1514,8 @@ Double space jumps high and holding space flies, with or without the hammer.
   he lies flat behind the hammer and banks into his turns.
 - **Landing:** fly down onto the ground and he touches down, the hammer back on his belt. A hard hit (2.5 hearts or
   more) knocks him out of the sky. He takes no fall damage from his own flight.
+- He flies only with the hammer in his hand: without it for over a second (but while a move of his own has it out) he
+  drops out of the sky.
 - His speed is a setting.
 
 ### In flight
@@ -1515,11 +1536,7 @@ Double space jumps high and holding space flies, with or without the hammer.
   blocks away, also up in the air: **2.5 hearts**, and it is knocked down. The bolt leaps on to up to **3** more foes
   close by, each within about 2 blocks of the last, each taking three quarters of the hit before and slowed a
   moment. Aimed at nothing, nothing happens. **Cooldown:** 1.5 seconds.
-- **Storm Throw (hold the scroll wheel for 0.5 seconds):** he hurls the hammer where you aim, up to **24 blocks**:
-  **3 hearts** to what it hits. Where it strikes a ring of lightning flashes **4 blocks** round it, and its lightning
-  leaps from foe to foe inside, up to **10** of them, **2 hearts** each. Then the hammer flies back to him, hitting
-  what is in its way; until it is back he hangs in the air and only his right hand's blows work. **Cooldown:** 10
-  seconds. Its leaps' damage, the ring and the most leaps are settings.
+- **Storm Throw (Z):** see below; in flight he only hurls the hammer.
 - **Lightning Speed (hold shift for 2 seconds):** he flies at **48 blocks a second** for **15 seconds**, a zigzag of
   lightning behind him. Others do not see him, only the bolt he has become.
   Creatures out to hurt you that he passes within 5 blocks are struck (**1.5 hearts**, each at most once a second).
@@ -1564,6 +1581,23 @@ Double space jumps high and holding space flies, with or without the hammer.
   flash is short, so he sees what it does.
 - While it goes he does nothing else but call his storm's bolts. A knockdown stops it before it bursts.
 - **Cooldown:** 30 seconds. How far it reaches and its damage are settings.
+
+### Storm Throw (ability 3, Z)
+
+- **Press Z** on the ground, the hammer on him (in his hand or on his belt): Thor swings it low behind him and flings
+  it high up, about **13 blocks** over his head and partway towards the foe you aim at (up to **48 blocks** away;
+  aimed at no foe, at the ground you look at). He dashes up after it on a streak of lightning, catches it at the top
+  and holds it high over his head while the storm gathers in it as a blue star of light, for **under a second**. Then
+  he hurls it down as a bolt that strikes the ground just before the foe, and drops back down without fall damage.
+- **In flight** he only holds it up and hurls it, then hangs in the air, sinking slowly, until it is back; only his
+  right hand's blows work meanwhile.
+- **The strike:** a small burst of light and lightning flares up where it strikes, and lightning runs out over the
+  ground in a wide V that opens past the foe, its arms reaching more to the sides than ahead, **6 blocks** long,
+  crackling there a few seconds as it fades. Everything in the V and close round where it struck takes up to
+  **6 hearts** (less towards the ends of its arms), is flung away and burnt to ash if it dies of it. Then the hammer
+  flies back to his hand, hitting what is in its way.
+- With no room over him (a ceiling), or no foe or ground where you aim, nothing happens. A knockdown breaks it off.
+- **Cooldown:** 10 seconds. Its damage and how far the V reaches are settings.
 
 ### Thunderclap (hold left click for 0.75 seconds)
 

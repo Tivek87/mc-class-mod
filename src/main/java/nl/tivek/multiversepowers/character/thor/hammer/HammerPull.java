@@ -46,13 +46,18 @@ public final class HammerPull {
 
     // Starts the pull to his hammer, resting or on its way to rest; `pace` is the dash's speed in blocks a tick.
     static boolean start(ServerPlayer player, double pace) {
+        return start(player, pace, false);
+    }
+
+    // `tossed`: up after the hammer a Storm Throw tossed, at its own pace.
+    static boolean start(ServerPlayer player, double pace, boolean tossed) {
         if (pulling(player) || player.isPassenger() || ThorMoves.flying(player)) {
             return false;
         }
         HammerPull pull = new HammerPull(player, Math.max(0.1, pace));
         ALL.put(player.getUUID(), pull);
         ThorMoves.spare(player, HammerRules.WAIT + SPARED);
-        ThorMoves.tell(player, ThorStatePayload.PULL, 0);
+        ThorMoves.tell(player, ThorStatePayload.PULL, tossed ? ThorStatePayload.TOSSED : 0);
         ServerLevel level = player.serverLevel();
         Vec3 at = chest(player);
         level.playSound(null, at.x, at.y, at.z, SoundEvents.BEACON_POWER_SELECT, SoundSource.PLAYERS, 0.6F, 1.8F);

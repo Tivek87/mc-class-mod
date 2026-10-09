@@ -53,6 +53,7 @@ import nl.tivek.multiversepowers.character.greenlantern.hand.HandGroup;
 import nl.tivek.multiversepowers.character.greenlantern.hand.HandPose;
 import nl.tivek.multiversepowers.character.greenlantern.mech.MechAttacks;
 import nl.tivek.multiversepowers.character.greenlantern.mech.MechScript;
+import nl.tivek.multiversepowers.engine.math.Vectors;
 import static nl.tivek.multiversepowers.character.greenlantern.client.ConstructPlaces.RAM_OWN_AHEAD;
 import static nl.tivek.multiversepowers.character.greenlantern.client.ConstructPlaces.beamEnd;
 import static nl.tivek.multiversepowers.character.greenlantern.client.ConstructPlaces.on;
@@ -456,6 +457,9 @@ public final class ClientConstructs extends ConstructShakes {
                 case ConstructPayload.PLANE -> PlanePainter.draw(painter, now.id(), track.latest,
                         track.clock(partialTick), ring, partialTick);
                 case ConstructPayload.MISSILE -> missile(painter, track, partialTick);
+                // The mech's missiles fly where the server has them, burning from the moment they leave the pod.
+                case ConstructPayload.MECH_MISSILE -> PlanePainter.missile(painter, true, center, way, Vectors.UP,
+                        now.age() - 1.0 + partialTick, -1.0);
                 case ConstructPayload.BULLET -> PlanePainter.bullet(painter, track.latest,
                         sinceSent(track, partialTick));
                 case ConstructPayload.BLAST -> PlanePainter.missileBlast(painter, track.latest,

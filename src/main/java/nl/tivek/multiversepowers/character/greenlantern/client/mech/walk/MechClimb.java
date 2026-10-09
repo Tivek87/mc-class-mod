@@ -27,7 +27,7 @@ final class MechClimb {
     static final double PAST = 1.6;
     static final int GRAB = 9;
     // Up to this height the arms push it up as its foot steps onto the ledge; above it they haul it up first.
-    private static final double PULL_FROM = 3.4;
+    private static final double PULL_FROM = 4.4;
     private static final double PULL_PER_BLOCK = 5.0;
     static final int HEAVE = 22;
     // How far through the heave the right foot is up on the top and the body starts over it.
@@ -43,15 +43,15 @@ final class MechClimb {
     static final double LIFT_OFF = 1.2;
     // The chest's height on the body and where the body leans over the hips; leaning, its front keeps CHEST_GAP off
     // the wall.
-    static final double CHEST_BOTTOM = 5.85;
-    static final double CHEST_TOP = 9.1;
+    static final double CHEST_BOTTOM = 8.0;
+    static final double CHEST_TOP = 11.45;
     static final double LEAN_FROM = MechScript.HIP.y;
     private static final double CHEST_GAP = 0.1;
     // While its hands press down on the top, the body leans MANTLE_LEAN over it and sinks as far as its arms then need
     // to reach it with the wrists no further than MANTLE_REACH from the shoulders, but no further than MOST_SINK.
     private static final double MANTLE_LEAN = 0.5;
-    private static final double MANTLE_REACH = 3.9;
-    private static final double MOST_SINK = 1.3;
+    private static final double MANTLE_REACH = 4.65;
+    private static final double MOST_SINK = 1.7;
     // A hand pressed on the top lies with its palm this high over it and its wrist this far in from the edge; hooked
     // over the edge or held to the face, its palm stands this far off the face.
     static final double GRIP_UP = 0.36;

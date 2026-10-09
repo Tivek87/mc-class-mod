@@ -1,15 +1,11 @@
 package nl.tivek.multiversepowers.character.greenlantern.client.mech;
 
-import javax.annotation.Nullable;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.Vec3;
-import nl.tivek.multiversepowers.character.CharacterAbility;
-import nl.tivek.multiversepowers.character.GameCharacter;
-import nl.tivek.multiversepowers.character.client.MouseHold;
-import nl.tivek.multiversepowers.character.greenlantern.client.mech.shape.MechBodyShapes;
 import nl.tivek.multiversepowers.character.greenlantern.client.mech.shape.MechHeadShapes;
 import nl.tivek.multiversepowers.character.greenlantern.client.mech.walk.MechPose;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.LanternPainter;
@@ -18,133 +14,215 @@ import nl.tivek.multiversepowers.character.greenlantern.mech.MechBeam;
 import nl.tivek.multiversepowers.engine.client.render.ConstructPainter.Frame;
 import nl.tivek.multiversepowers.engine.math.Colors;
 import nl.tivek.multiversepowers.engine.math.Ease;
+import nl.tivek.multiversepowers.engine.math.Noise;
 import nl.tivek.multiversepowers.engine.math.Vectors;
 
-// The mech's beams as everyone sees them, aimed where its pilot's crosshair rests: the eye slits blaze and a beam of
-// rings shoots out of the visor; for the Unibeam the port on its chest charges, sparks winding in, then a huge beam
-// bursts out of it with a ring of light thrown off its rim, and burns there till it dies away. From the cockpit the
-// port's light stays a ring round the view and the beam starts a little ahead, so its pilot still sees what it hits.
+// The mech's eyes as everyone sees them, aimed where its pilot's crosshair rests; nothing like the ring's own beam (no
+// rings, no strands). A click fires a lance: streaks of light flash across both eye slits, a bolt of light shoots out
+// of each and the two meet on what they strike in a star of spikes and a ring thrown off it. Held, a torrent: a stream
+// out of each slit, the two joined a little ahead into one flat blade of light with hard bright edges, arrowheads of
+// light racing along it to where it strikes, there a splash of molten light spraying sparks back.
 final class MechBeamFx {
-    private static final double EYE_THICK = 1.8;
-    private static final double UNIBEAM_THICK = 4.5;
     // A pose's blow runs about two ticks behind the server's: drawn that far ahead, a beam shows as it hits.
     private static final double LEAD = 2.0;
-    private static final double OWN_AHEAD = 3.0;
     private static final int FADE = 4;
+    // The lance's bolts shoot out LANCE_SPEED blocks a tick, LANCE_HEAD long; its star bursts over STAR ticks.
+    private static final double LANCE_SPEED = 22.0;
+    private static final double LANCE_HEAD = 6.0;
+    private static final double STAR = 6.0;
+    // The torrent's streams join JOIN ahead of the visor into a blade BLADE wide on either side, drawn in pieces
+    // PIECE long; its arrowheads run EVERY apart at RACE blocks a tick.
+    private static final double JOIN = 3.2;
+    private static final double BLADE = 0.42;
+    private static final double PIECE = 1.6;
+    private static final double EVERY = 3.4;
+    private static final double RACE = 2.2;
     private static final int SPARKS = 12;
+    // Nearer the camera than this a piece is left out, so the pilot's own view is not filled with light.
+    private static final double NEAR = 1.2;
 
     private MechBeamFx() {
     }
 
-    static void draw(LanternPainter painter, MechPose pose, double t, int pilotId, boolean own, float partialTick) {
-        Minecraft minecraft = Minecraft.getInstance();
-        ClientLevel level = minecraft.level;
-        Entity pilot = level == null ? null : level.getEntity(pilotId);
+    static void draw(LanternPainter painter, MechPose pose, double t, int pilotId, boolean own) {
         MechAttacks.Blow blow = pose.blow();
-        if (blow.kind() == MechAttacks.UNIBEAM) {
-            unibeam(painter, pose, blow.age(), pilot, own);
-        } else if (minecraft.player != null && minecraft.player.getId() == pilotId) {
-            // While its pilot holds the button, the port charges in their own game before the server fires it.
-            CharacterAbility shield = GameCharacter.GREEN_LANTERN.byName("light_shield");
-            float held = MouseHold.progress(shield, partialTick);
-            if (held > 0.1F) {
-                charge(painter, pose, 0.7 * Ease.smooth((held - 0.1) / 0.9), own);
-            }
-        }
-        if (blow.kind() == MechAttacks.EYE && pilot != null && level != null) {
-            eye(painter, MechPainter.head(pose, t, -1.0, true), blow.age(), level, pilot);
-        }
-    }
-
-    private static void eye(LanternPainter painter, Frame head, double age, ClientLevel level, Entity pilot) {
-        double since = age + LEAD - MechAttacks.EYE_FIRE;
-        if (since < -1.0 || since > MechAttacks.EYE_SHOWN) {
-            return;
-        }
-        double on = Ease.smooth(since + 1.0) * (1.0 - Ease.smooth((since - MechAttacks.EYE_SHOWN + FADE) / FADE));
-        for (int side = -1; side <= 1; side += 2) {
-            painter.flare(head.at(side * (MechHeadShapes.EYE_X[0] + MechHeadShapes.EYE_X[1]) * 0.5,
-                    MechHeadShapes.EYE_Y, MechHeadShapes.EYE_Z), 0.5, on);
-        }
-        if (since < 0.0) {
-            return;
-        }
-        Vec3 from = head.at(0.0, MechHeadShapes.EYE_Y, MechHeadShapes.EYE_Z + 0.05);
-        Vec3 end = end(level, pilot, from, MechBeam.EYE_RANGE, true);
-        painter.beamOfLight(from, end, on, since + 1.0, EYE_THICK, 0.2);
-        painter.flare(from, 1.1, on);
-        painter.flare(end, 1.6, on);
-    }
-
-    private static void unibeam(LanternPainter painter, MechPose pose, double age, @Nullable Entity pilot,
-            boolean own) {
-        double ahead = age + LEAD;
-        if (ahead < MechAttacks.UNIBEAM_FROM) {
-            charge(painter, pose, 0.7 + 0.3 * Ease.smooth(ahead / MechAttacks.UNIBEAM_FROM), own);
-            return;
-        }
-        double since = ahead - MechAttacks.UNIBEAM_FROM;
-        double last = MechAttacks.UNIBEAM_TO - MechAttacks.UNIBEAM_FROM;
-        if (since > last + FADE || pilot == null) {
+        if (blow.kind() != MechAttacks.EYE && blow.kind() != MechAttacks.GLARE) {
             return;
         }
         ClientLevel level = Minecraft.getInstance().level;
-        if (level == null) {
+        Entity pilot = level == null ? null : level.getEntity(pilotId);
+        if (pilot == null) {
             return;
         }
-        double on = Ease.smooth(since / 2.0) * (1.0 - Ease.smooth((since - last) / FADE));
-        Vec3 port = MechBeam.port(pose.torso());
-        Vec3 end = end(level, pilot, port, MechBeam.UNIBEAM_RANGE, false);
-        Vec3 way = end.subtract(port);
-        double length = way.length();
-        if (length < 1.0E-3) {
-            return;
-        }
-        way = way.scale(1.0 / length);
-        Vec3 from = own ? port.add(way.scale(Math.min(OWN_AHEAD, length * 0.5))) : port;
-        double strength = own ? 0.55 * on : on;
-        painter.beamOfLight(from, end, strength, since + 1.0, UNIBEAM_THICK, 0.5);
-        if (!own) {
-            painter.glowLine(from, end, 7.0, LanternPainter.GREEN, Colors.alpha(0.12 * on));
-            painter.flare(port, 3.0, on);
-        }
-        painter.flare(end, 3.2, on);
-        painter.glowDisc(end, 2.6, LanternPainter.GREEN, 0.5 * on, 0.3, (int) (since * 1.7));
-        Vec3[] across = Vectors.across(way);
-        double rim = MechBodyShapes.PORT_IN + 0.3;
-        painter.circle(port, across[0], across[1], rim, own ? 0.04 : 0.12, own ? 0.25 : 0.7,
-                Colors.alpha(0.9 * on), Colors.alpha(0.5 * on));
-        // The ring thrown off the rim as it bursts out.
-        if (since < 8.0 && !own) {
-            double u = since / 8.0;
-            painter.circle(port.add(way.scale(1.5 * u)), across[0], across[1], rim + 5.0 * Ease.smooth(u), 0.18, 1.0,
-                    Colors.alpha(0.95 * (1.0 - u)), Colors.alpha(0.5 * (1.0 - u)));
+        Frame head = MechPainter.head(pose, t, -1.0, true);
+        if (blow.kind() == MechAttacks.EYE) {
+            lance(painter, head, blow.age(), level, pilot, own);
+        } else {
+            torrent(painter, head, blow.age(), level, pilot, own);
         }
     }
 
-    // The port on its chest gathering light, `power` 0..1: its rim glows and sparks wind in; seen from outside a glare
-    // swells in it too.
-    private static void charge(LanternPainter painter, MechPose pose, double power, boolean own) {
-        Frame chest = MechPainter.body(pose.torso());
-        Vec3 port = MechBeam.port(pose.torso());
-        Vec3 right = pose.torso().right();
-        Vec3 up = pose.torso().up();
-        double time = painter.time();
-        painter.circle(port, right, up, MechBodyShapes.PORT_IN + 0.05, own ? 0.03 : 0.08, own ? 0.2 : 0.6,
-                Colors.alpha((own ? 0.5 : 0.95) * power), Colors.alpha(0.5 * power));
-        for (int k = 0; k < SPARKS; k++) {
-            double turn = Math.PI * 2.0 * k / SPARKS + time * 0.25;
-            double out = 1.0 - ((time * 0.06 + k * 0.37) % 1.0);
-            double from = MechBodyShapes.PORT_IN + 2.2 * out;
-            double to = from - 0.6;
-            Vec3 a = chest.at(Math.cos(turn) * from, MechBeam.PORT.y + Math.sin(turn) * from, MechBeam.PORT.z + 0.2);
-            Vec3 b = chest.at(Math.cos(turn + 0.35) * to, MechBeam.PORT.y + Math.sin(turn + 0.35) * to,
-                    MechBeam.PORT.z + 0.2);
-            painter.lightLine(a, b, 0.06, LanternPainter.HOT, Colors.alpha(0.8 * power * (1.0 - out * 0.5)));
+    private static Vec3 slit(Frame head, int side) {
+        return head.at(side * (MechHeadShapes.EYE_X[0] + MechHeadShapes.EYE_X[1]) * 0.5, MechHeadShapes.EYE_Y,
+                MechHeadShapes.EYE_Z + 0.05);
+    }
+
+    // The eye slits blazing `power` 0..1: a flare in each and a streak of light across it, out to either side.
+    private static void slits(LanternPainter painter, Frame head, double power, boolean own) {
+        double dim = own ? 0.45 : 1.0;
+        Vec3 across = head.right().normalize();
+        for (int side = -1; side <= 1; side += 2) {
+            Vec3 at = slit(head, side);
+            painter.flare(at, 0.55 * dim, power);
+            double reach = (1.4 + 0.8 * power) * dim;
+            painter.lightTaper(at, at.add(across.scale(reach)), 0.2 * dim, 0.0, LanternPainter.HOT, power, 0.0);
+            painter.lightTaper(at, at.subtract(across.scale(reach)), 0.2 * dim, 0.0, LanternPainter.HOT, power, 0.0);
         }
-        if (!own) {
-            painter.flare(port, 0.6 + 2.0 * power, power);
-            painter.glowDisc(port, 1.2 + 1.2 * power, LanternPainter.GREEN, 0.5 * power, 0.15, (int) time);
+    }
+
+    // The click: a bolt out of each slit, meeting on what they strike in a star of light.
+    private static void lance(LanternPainter painter, Frame head, double age, ClientLevel level, Entity pilot,
+            boolean own) {
+        double since = age + LEAD - MechAttacks.EYE_FIRE;
+        if (since < -2.0 || since > MechAttacks.EYE_SHOWN) {
+            return;
+        }
+        double on = 1.0 - Ease.smooth((since - MechAttacks.EYE_SHOWN + FADE) / FADE);
+        slits(painter, head, since < 0.0 ? Ease.smooth((since + 2.0) / 2.0) : on, own);
+        if (since < 0.0) {
+            return;
+        }
+        Vec3 middle = head.at(0.0, MechHeadShapes.EYE_Y, MechHeadShapes.EYE_Z + 0.05);
+        Vec3 end = end(level, pilot, middle, MechBeam.EYE_RANGE, true);
+        double reach = since * LANCE_SPEED;
+        double arrived = Double.MAX_VALUE;
+        for (int side = -1; side <= 1; side += 2) {
+            Vec3 from = slit(head, side);
+            Vec3 way = end.subtract(from);
+            double length = way.length();
+            if (length < 1.0E-3) {
+                continue;
+            }
+            way = way.scale(1.0 / length);
+            arrived = Math.min(arrived, length / LANCE_SPEED);
+            Vec3 tip = from.add(way.scale(Math.min(reach, length)));
+            Vec3 tail = from.add(way.scale(Math.max(0.0, Math.min(reach, length) - LANCE_HEAD)));
+            double bolt = reach < length + LANCE_HEAD ? on : 0.0;
+            painter.lightTaper(tail, tip, 0.0, 0.34, LanternPainter.HOT, 0.0, bolt);
+            painter.glowTaper(tail, tip, 0.0, 1.1, LanternPainter.GREEN, 0.0, 0.65 * bolt);
+            // The thread it leaves along its way, burning out.
+            double thread = on * (1.0 - Ease.smooth(since / MechAttacks.EYE_SHOWN));
+            painter.lightLine(from, tip, 0.05, LanternPainter.BRIGHT, Colors.alpha(0.7 * thread));
+            painter.glowLine(from, tip, 0.35, LanternPainter.GREEN, Colors.alpha(0.25 * thread));
+        }
+        double u = (since - arrived) / STAR;
+        if (u < 0.0 || u > 1.0) {
+            return;
+        }
+        Vec3 back = middle.subtract(end).normalize();
+        Vec3[] across = Vectors.across(back);
+        double fade = 1.0 - u;
+        for (int k = 0; k < 6; k++) {
+            double turn = Math.PI * 2.0 * k / 6.0 + 0.3;
+            Vec3 out = across[0].scale(Math.cos(turn)).add(across[1].scale(Math.sin(turn)));
+            double far = (k % 2 == 0 ? 2.6 : 1.6) * Ease.backOut(Math.min(1.0, u * 2.5));
+            painter.lightTaper(end, end.add(out.scale(far)), 0.22, 0.0, LanternPainter.HOT, fade, 0.0);
+        }
+        painter.circle(end.add(back.scale(0.3)), across[0], across[1], 0.4 + 3.6 * Ease.smooth(u), 0.09, 0.6,
+                Colors.alpha(0.95 * fade), Colors.alpha(0.5 * fade));
+        painter.flare(end, 0.6 + 1.8 * fade, fade);
+    }
+
+    // The held beam: a stream out of each slit, joined ahead of the visor into one blade of light.
+    private static void torrent(LanternPainter painter, Frame head, double age, ClientLevel level, Entity pilot,
+            boolean own) {
+        double since = age + LEAD - MechAttacks.GLARE_FIRE;
+        double over = age - MechAttacks.GLARE_MOST;
+        if (since < -3.0 || over > MechAttacks.GLARE_FADE) {
+            return;
+        }
+        double on = Ease.smooth(since / 2.0) * (1.0 - Ease.smooth(over / MechAttacks.GLARE_FADE));
+        double time = painter.time();
+        double throb = 0.9 + 0.1 * Math.sin(time * 1.9) * Math.sin(time * 0.7 + 1.0);
+        slits(painter, head, since < 0.0 ? Ease.smooth((since + 3.0) / 3.0) : Math.max(on, 0.0), own);
+        if (since < 0.0 || on <= 0.0) {
+            return;
+        }
+        Vec3 middle = head.at(0.0, MechHeadShapes.EYE_Y, MechHeadShapes.EYE_Z + 0.05);
+        Vec3 end = end(level, pilot, middle, MechBeam.GLARE_RANGE, false);
+        Vec3 axis = end.subtract(middle);
+        double full = axis.length();
+        if (full < 1.0E-3) {
+            return;
+        }
+        axis = axis.scale(1.0 / full);
+        // It shoots out over its first two ticks.
+        double length = full * Ease.smooth(Math.min(1.0, since / 2.0));
+        Vec3 join = middle.add(axis.scale(Math.min(JOIN, length)));
+        for (int side = -1; side <= 1; side += 2) {
+            Vec3 from = slit(head, side);
+            painter.lightTaper(from, join, 0.16, 0.3, LanternPainter.HOT, on, on);
+            painter.glowTaper(from, join, 0.5, 1.0, LanternPainter.GREEN, 0.5 * on, 0.6 * on);
+        }
+        Vec3 camera = painter.camera();
+        Vec3 last = join;
+        for (double d = JOIN; d < length; d += PIECE) {
+            Vec3 next = middle.add(axis.scale(Math.min(length, d + PIECE)));
+            Vec3 mid = last.add(next).scale(0.5);
+            if (mid.distanceTo(camera) >= NEAR) {
+                Vec3 side = next.subtract(last).cross(camera.subtract(mid));
+                side = side.lengthSqr() < 1.0E-9 ? Vectors.across(axis)[0] : side.normalize();
+                double wide = BLADE * throb * (1.0 + 0.08 * Math.sin(d * 0.9 - time * 1.4));
+                Vec3 edge = side.scale(wide);
+                painter.lightLine(last, next, 0.1, LanternPainter.HOT, Colors.alpha(on));
+                painter.lightLine(last.add(edge), next.add(edge), 0.05, LanternPainter.HOT, Colors.alpha(0.9 * on));
+                painter.lightLine(last.subtract(edge), next.subtract(edge), 0.05, LanternPainter.HOT,
+                        Colors.alpha(0.9 * on));
+                painter.lightLine(last, next, wide * 1.7, LanternPainter.BRIGHT, Colors.alpha(0.3 * on));
+                painter.glowLine(last, next, wide * 4.2, LanternPainter.GREEN, Colors.alpha(0.3 * on));
+            }
+            last = next;
+        }
+        // Arrowheads of light racing along the blade to where it strikes.
+        for (double d = JOIN + (time * RACE) % EVERY; d < length - 0.5; d += EVERY) {
+            Vec3 tip = middle.add(axis.scale(d));
+            if (tip.distanceTo(camera) < NEAR * 2.0) {
+                continue;
+            }
+            Vec3 side = axis.cross(camera.subtract(tip));
+            side = side.lengthSqr() < 1.0E-9 ? Vectors.across(axis)[0] : side.normalize();
+            Vec3 back = tip.subtract(axis.scale(0.9));
+            double a = on * Mth.clamp((length - d) / 3.0, 0.0, 1.0);
+            for (int flip = -1; flip <= 1; flip += 2) {
+                Vec3 wing = back.add(side.scale(flip * BLADE * 1.9));
+                painter.lightLine(wing, tip, 0.07, LanternPainter.HOT, Colors.alpha(0.95 * a));
+                painter.glowLine(wing, tip, 0.35, LanternPainter.GREEN, Colors.alpha(0.4 * a));
+            }
+        }
+        if (length < full - 1.0E-3) {
+            return;
+        }
+        splash(painter, end, axis.scale(-1.0), on, time);
+    }
+
+    // Where the torrent strikes: a splash of molten light, sparks sprayed back off it.
+    private static void splash(LanternPainter painter, Vec3 at, Vec3 back, double on, double time) {
+        int seed = (int) (time * 0.5);
+        painter.glowDisc(at, 1.5 + 0.3 * Math.sin(time * 2.3), LanternPainter.GREEN, 0.6 * on, 0.35, seed);
+        painter.lightDisc(at, 0.55, LanternPainter.HOT, 0.9 * on, 0.25, seed + 1);
+        painter.flare(at, 1.8 + 0.3 * Math.sin(time * 1.7), on);
+        Vec3[] across = Vectors.across(back);
+        for (int k = 0; k < SPARKS; k++) {
+            double u = Mth.frac(time * 0.09 + k * 0.618);
+            int round = (int) Math.floor(time * 0.09 + k * 0.618);
+            double turn = Math.PI * 2.0 * Noise.of(round, k, 51);
+            double lean = 0.4 + 0.9 * Noise.of(round, k, 52);
+            Vec3 way = back.add(across[0].scale(Math.cos(turn) * lean)).add(across[1].scale(Math.sin(turn) * lean))
+                    .normalize();
+            double far = 0.3 + 3.2 * u;
+            Vec3 from = at.add(way.scale(far)).add(0.0, -1.4 * u * u, 0.0);
+            Vec3 to = at.add(way.scale(far + 0.55)).add(0.0, -1.4 * (u + 0.1) * (u + 0.1), 0.0);
+            painter.lightLine(from, to, 0.06, LanternPainter.HOT, Colors.alpha(on * (1.0 - u)));
         }
     }
 

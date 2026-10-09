@@ -35,9 +35,9 @@ import nl.tivek.multiversepowers.engine.math.Colors;
 import nl.tivek.multiversepowers.engine.math.Ease;
 import nl.tivek.multiversepowers.engine.math.Noise;
 
-// The bolts out of Thor's storm and round his lightning bomb, and the bomb's burst, as the server tells them: drawn
-// each frame until they are over, with a flash, a crack where they strike, thunder later the further off it is (sound
-// is slow) and a jolt of the view for whoever stands near.
+// The bolts out of Thor's storm and round his lightning bomb, the bomb's burst and a Storm Throw (StormStrikeFx), as
+// the server tells them: drawn each frame until they are over, with a flash, a crack where they strike, thunder later
+// the further off it is (sound is slow) and a jolt of the view for whoever stands near.
 @EventBusSubscriber(modid = MultiversePowers.MODID, value = Dist.CLIENT)
 public final class StormBolts {
     static final Material LIGHTNING = new Material(0x7FD4FF, 0xD6F4FF, 0x3FA2FF, 0xF6FBFF);
@@ -52,7 +52,7 @@ public final class StormBolts {
     private static final double FLOOR = 2.5;
     private static final int SKY_BOLTS = 3;
     // Struck or burst this near your eyes, it throws up nothing in your face.
-    private static final double CLOSE = 4.0;
+    static final double CLOSE = 4.0;
     private static final int DOME_LIFE = 14;
     private static final int TENDRILS = 22;
     // Sound covers this many blocks a tick.
@@ -94,12 +94,20 @@ public final class StormBolts {
             LIVE.remove(0);
         }
         Vec3 eye = minecraft.gameRenderer.getMainCamera().getPosition();
-        Vec3 at = payload.kind() == StormFxPayload.BLAST ? payload.from() : payload.to();
+        Vec3 at = where(payload);
         double far = eye.distanceTo(at);
         Vec3 floor = payload.kind() == StormFxPayload.BOLT ? floor(level, at) : null;
-        boolean thunders = payload.kind() == StormFxPayload.BOLT || payload.kind() == StormFxPayload.BLAST;
+        boolean thunders = payload.kind() == StormFxPayload.BOLT || payload.kind() == StormFxPayload.BLAST
+                || payload.kind() == StormFxPayload.STRIKE;
         LIVE.add(new Fx(payload, level.getGameTime(), floor, thunders ? (int) (far / SOUND_SPEED) : -1));
         struck(level, payload, at, far, floor);
+    }
+
+    // Where it goes off, as far as its thunder goes: a burst or a Storm Throw's strike where it starts, else where it
+    // ends.
+    private static Vec3 where(StormFxPayload payload) {
+        return payload.kind() == StormFxPayload.BLAST || payload.kind() == StormFxPayload.STRIKE ? payload.from()
+                : payload.to();
     }
 
     // The ground under where a bolt strikes, if it is near: a creature it struck stands on it.
@@ -152,6 +160,7 @@ public final class StormBolts {
                 near(far, 24.0, 0.3F, 1.5F, 8);
                 puffs(level, ParticleTypes.ELECTRIC_SPARK, at, 30, payload.size() * 0.5, 0.8);
             }
+            case StormFxPayload.STRIKE -> StormStrikeFx.struck(level, payload, far);
             default -> {
             }
         }
@@ -168,7 +177,7 @@ public final class StormBolts {
     }
 
     // A flash and a jolt for whoever stands within `reach`, the stronger the nearer.
-    private static void near(double far, double reach, float flash, float shake, int ticks) {
+    static void near(double far, double reach, float flash, float shake, int ticks) {
         double close = 1.0 - far / reach;
         if (close > 0.0) {
             ScreenFlash.add(CORE, flash * (float) close, ticks / 2 + 2);
@@ -189,8 +198,7 @@ public final class StormBolts {
         }
     }
 
-    private static void puffs(ClientLevel level, ParticleOptions particle, Vec3 at, int count, double spread,
-            double speed) {
+    static void puffs(ClientLevel level, ParticleOptions particle, Vec3 at, int count, double spread, double speed) {
         for (int k = 0; k < count; k++) {
             level.addParticle(particle, at.x + (RANDOM.nextDouble() - 0.5) * spread * 2.0,
                     at.y + RANDOM.nextDouble() * spread, at.z + (RANDOM.nextDouble() - 0.5) * spread * 2.0,
@@ -204,6 +212,8 @@ public final class StormBolts {
             case StormFxPayload.BOLT -> Bolts.BOLT;
             case StormFxPayload.SPARK -> Bolts.ARC;
             case StormFxPayload.DOME -> DOME_LIFE;
+            case StormFxPayload.HURL -> StormStrikeFx.hurlLife(fx.said);
+            case StormFxPayload.STRIKE -> StormStrikeFx.LIFE;
             default -> BLAST;
         };
     }
@@ -221,7 +231,7 @@ public final class StormBolts {
             Fx fx = all.next();
             long age = now - fx.born;
             if (fx.thunder >= 0 && age >= fx.thunder) {
-                Vec3 at = fx.kind() == StormFxPayload.BLAST ? fx.said.from() : fx.said.to();
+                Vec3 at = where(fx.said);
                 level.playLocalSound(at.x, at.y, at.z, SoundEvents.LIGHTNING_BOLT_THUNDER, SoundSource.WEATHER,
                         fx.kind() == StormFxPayload.BLAST ? 8.0F : 6.0F, 0.75F + RANDOM.nextFloat() * 0.2F, false);
                 fx.thunder = -1;
@@ -262,6 +272,8 @@ public final class StormBolts {
                 }
                 case StormFxPayload.SPARK -> Bolts.arc(painter, LOOK, said.from(), said.to(), age, said.seed());
                 case StormFxPayload.DOME -> dome(painter, said.from(), said.size(), age, said.seed());
+                case StormFxPayload.HURL -> StormStrikeFx.hurl(painter, camera.getPosition(), said, age);
+                case StormFxPayload.STRIKE -> StormStrikeFx.strike(painter, camera.getPosition(), said, age);
                 default -> blast(painter, camera.getPosition(), said.from(), said.to(), said.size(), age,
                         said.seed());
             }
@@ -401,7 +413,7 @@ public final class StormBolts {
     }
 
     // A path pressed down onto the ground at `y`, its ups and downs kept small.
-    private static List<Vec3> low(List<Vec3> path, double y) {
+    static List<Vec3> low(List<Vec3> path, double y) {
         List<Vec3> pressed = new ArrayList<>(path.size());
         for (Vec3 point : path) {
             pressed.add(new Vec3(point.x, y + 0.12 + Math.min(0.5, Math.abs(point.y - y - 0.15) * 0.3), point.z));

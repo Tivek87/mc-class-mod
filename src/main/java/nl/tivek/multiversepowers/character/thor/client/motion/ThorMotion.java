@@ -153,11 +153,11 @@ public final class ThorMotion extends ThorGroundMotion {
                 thrown(player, ThorBlow.HAMMER_THROW);
                 return data | Mth.clamp((int) Math.round(far * 10.0), 0, 255) << Characters.MOVE_SHIFT;
             }
+            // Shown only once the server starts it: it may find nothing to aim at, or no room over him to toss it.
             case "storm_throw" -> {
-                if (!on || !held || !flying || away(player)) {
+                if (!on || away(player)) {
                     return -1;
                 }
-                thrown(player, ThorBlow.STORM_THROW);
             }
             case "air_shockwave", "air_bolt" -> {
                 if (on && flying && away(player)) {

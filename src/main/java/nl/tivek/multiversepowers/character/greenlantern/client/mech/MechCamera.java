@@ -35,8 +35,8 @@ public final class MechCamera {
     private static final double END = MechScript.DONE + HANDOVER;
     private static final Vec3 PORT_EYE = new Vec3(0.0, MechBodyShapes.PORT_Y, MechBodyShapes.GLASS_Z - 0.3);
     private static final float COCKPIT_PITCH = 6.0F;
-    private static final Vec3 CHASE_PIVOT = new Vec3(0.0, 11.5, 0.0);
-    private static final double CHASE_DISTANCE = 14.0;
+    private static final Vec3 CHASE_PIVOT = new Vec3(0.0, 13.6, 0.0);
+    private static final double CHASE_DISTANCE = 16.0;
 
     static {
         Cinematic.add(MechCamera::shot);
