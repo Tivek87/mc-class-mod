@@ -124,14 +124,36 @@ public final class Targeting {
         return true;
     }
 
-    // Where a chain of lightning leaps on to from `from`: the nearest creature `may` lets through and not struck yet,
-    // within `reach` and with nothing solid between; null once none is left.
+    // What picks its own target: the nearest creature red to `player` within `radius` of `around` (to its middle) that
+    // a blow may land on and `may` lets through (asked only of one nearer than the best so far); null if none.
     @Nullable
-    public static LivingEntity nextInChain(ServerLevel level, Entity viewer, Vec3 from, double reach,
+    public static LivingEntity nearestFoe(ServerPlayer player, ServerLevel level, Vec3 around, double radius,
+            Predicate<LivingEntity> may) {
+        LivingEntity best = null;
+        double nearest = radius * radius;
+        for (LivingEntity living : level.getEntitiesOfClass(LivingEntity.class, new AABB(around, around).inflate(radius),
+                entity -> mayStrike(player, entity) && Factions.hostile(player, entity))) {
+            double far = living.getBoundingBox().getCenter().distanceToSqr(around);
+            if (far < nearest && may.test(living)) {
+                nearest = far;
+                best = living;
+            }
+        }
+        return best;
+    }
+
+    // How far every chain of lightning leaps from one creature's middle to the next, in blocks.
+    public static final double CHAIN_REACH = 4.0;
+
+    // Where a chain of lightning leaps on to from `from`: the nearest creature `may` lets through and not struck yet,
+    // within CHAIN_REACH and with nothing solid between; null once none is left.
+    @Nullable
+    public static LivingEntity nextInChain(ServerLevel level, Entity viewer, Vec3 from,
             Collection<? extends Entity> struck, Predicate<LivingEntity> may) {
         LivingEntity next = null;
-        double best = reach * reach;
-        for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, new AABB(from, from).inflate(reach),
+        double best = CHAIN_REACH * CHAIN_REACH;
+        AABB around = new AABB(from, from).inflate(CHAIN_REACH);
+        for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, around,
                 entity -> may.test(entity) && !struck.contains(entity))) {
             Vec3 middle = target.getBoundingBox().getCenter();
             double far = middle.distanceToSqr(from);

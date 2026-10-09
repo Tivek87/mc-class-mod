@@ -5,6 +5,7 @@ import javax.annotation.Nullable;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.LanternPainter;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.hand.light.HandPairLight;
+import nl.tivek.multiversepowers.character.greenlantern.client.render.hand.light.HandRiftLight;
 import nl.tivek.multiversepowers.character.greenlantern.hand.HandGroup;
 import nl.tivek.multiversepowers.character.greenlantern.hand.HandPose;
 import nl.tivek.multiversepowers.engine.math.Colors;
@@ -17,7 +18,7 @@ import static nl.tivek.multiversepowers.character.greenlantern.client.render.han
 import static nl.tivek.multiversepowers.character.greenlantern.client.render.hand.HandPainter.ringGem;
 
 // A group of hands out of portals round one creature, and the light of what they do: the ring charging and blasting,
-// the clap, the tear.
+// the clap, the tear, the rift.
 final class HandGroupPainter {
     private static final double CALL = 5.0;
     private static final double BLAST_TICKS = 14.0;
@@ -27,7 +28,7 @@ final class HandGroupPainter {
     }
 
     static void draw(LanternPainter painter, int id, int variant, Vec3 base, Vec3 facing, double clock,
-            @Nullable Vec3 ring, double strength, double apart) {
+            @Nullable Vec3 ring, int caught, double strength, double apart) {
         List<HandGroup.Sub> subs = HandGroup.at(variant, base, facing, clock);
         for (int k = 0; k < subs.size(); k++) {
             HandGroup.Sub sub = subs.get(k);
@@ -57,6 +58,7 @@ final class HandGroupPainter {
         switch (HandPose.move(variant)) {
             case HandPose.CLAP -> clap(painter, base, facing, clock, strength);
             case HandPose.TEAR -> tear(painter, variant, base, facing, clock, strength);
+            case HandPose.RIFT -> HandRiftLight.draw(painter, id, variant, base, facing, clock, caught, strength, apart);
             default -> ringCharge(painter, subs, base, facing, clock, strength);
         }
     }

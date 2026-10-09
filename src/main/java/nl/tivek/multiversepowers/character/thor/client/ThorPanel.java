@@ -10,6 +10,7 @@ import nl.tivek.multiversepowers.character.client.AbilityPanel;
 import nl.tivek.multiversepowers.character.client.ClientCharacter;
 import nl.tivek.multiversepowers.character.thor.ThorPowers;
 import nl.tivek.multiversepowers.character.thor.ThorStatePayload;
+import nl.tivek.multiversepowers.character.thor.hammer.ThrownHammer;
 
 // Thor's panel names his moves for the hammer (in hand, on his belt or thrown) and his storm, and says what a move
 // waits for.
@@ -33,8 +34,8 @@ final class ThorPanel implements AbilityPanel.Rules {
         if ((needs & ThorPowers.AWAY) != 0 && !away) {
             return Component.translatable(PREFIX + "hammer_on_you");
         }
-        if ((needs & ThorPowers.RESTING) != 0 && !ClientThor.has(player, ThorStatePayload.RESTING)) {
-            return Component.translatable(PREFIX + "hammer_moving");
+        if (ability.id().equals("hammer_follow") && tooFar(ability, player)) {
+            return Component.translatable(PREFIX + "too_far");
         }
         if ((needs & ThorPowers.ARMED) != 0 && !armed) {
             return Component.translatable(PREFIX + "needs_hammer");
@@ -49,6 +50,12 @@ final class ThorPanel implements AbilityPanel.Rules {
             return Component.translatable(PREFIX + "walking");
         }
         return null;
+    }
+
+    // His thrown hammer further off than he may dash to it, measured from his feet as the server does.
+    private static boolean tooFar(CharacterAbility follow, LocalPlayer player) {
+        ThrownHammer hammer = ClientThor.hammer(player);
+        return hammer != null && player.position().distanceTo(hammer.position()) > follow.value("reachBlocks");
     }
 
     @Nullable

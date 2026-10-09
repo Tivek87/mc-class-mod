@@ -3,6 +3,7 @@ package nl.tivek.multiversepowers.character.greenlantern.mech;
 import java.util.Arrays;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
+import nl.tivek.multiversepowers.engine.math.Ease;
 import nl.tivek.multiversepowers.engine.math.Keyframes;
 import nl.tivek.multiversepowers.engine.math.Vectors;
 import nl.tivek.multiversepowers.engine.rig.Ik;
@@ -13,7 +14,9 @@ import nl.tivek.multiversepowers.engine.rig.Ik;
 public final class MechMoves {
     private static final double CLAP_HIGH = 1.25;
     private static final double CLAP_OUT = 0.5;
-    private static final Vec3 CLAP_WAY = new Vec3(0.0, 0.12, 1.0).normalize();
+    // The clapping forearms slope steeply down to the palms, their elbows high and ahead of the knees: level, they
+    // would slide through the feet.
+    private static final Vec3 CLAP_WAY = new Vec3(0.0, -0.945, 0.326).normalize();
     private static final double SQUEEZE_LIFT = 0.3;
     private static final double SWING_PULL = 2.2;
     private static final double SPIN = Math.PI * 3.0;
@@ -22,20 +25,20 @@ public final class MechMoves {
     private static final double WALK_BEND = 0.22;
     private static final Vec3 WALK_HANG = new Vec3(0.06, -0.94, 0.34).normalize();
     // Running, the arms pump from the shoulders close by the body, the fists clenched with their palms turned in: the
-    // elbow bent RUN_ELBOW at the middle of the swing, more as the arm swings forward (the fist comes up before the
-    // chest) and less as it swings back (the fist passes the hip); they swing RUN_REACH further than walking.
+    // elbow bent near square all the way, RUN_ELBOW at the middle of the swing, a little more as the arm swings forward
+    // (the fist comes up before the chest, no higher) and a little less as it swings back (the fist passes the hip).
     private static final Vec3 RUN_UPPER = new Vec3(0.14, -0.99, 0.0).normalize();
     private static final Vec3 RUN_PALM = new Vec3(-1.0, 0.0, 0.0);
-    private static final double RUN_ELBOW = 1.35;
-    private static final double RUN_ELBOW_SWING = 0.4;
-    private static final double RUN_REACH = 0.35;
+    private static final double RUN_ELBOW = 1.55;
+    private static final double RUN_ELBOW_SWING = 0.22;
     private static final double RUN_INWARD = 0.18;
     private static final double RUN_CURL = 0.95;
     private static final double RUN_SPREAD = 0.2;
     // The right arm digging out and tossing the head: its elbow out and back, the palm aimed a few times over so the
-    // head's middle lands where the keys want it.
+    // head's middle lands where the keys want it. Digging, the elbow leads ahead instead, over the knee bent under it.
     public static final int PICK_END = MechScript.TOSS + 12;
     private static final Vec3 PICK_POLE = new Vec3(1.0, -0.2, -0.5);
+    private static final Vec3 DIG_POLE = new Vec3(0.2, 0.3, 1.0);
     private static final int PICK_AIMS = 4;
     private static final Keyframes.Key[] LOOSE;
     private static final Keyframes.Key[] SET;
@@ -81,18 +84,18 @@ public final class MechMoves {
                         new Vec3(-0.3, -0.4, 0.85), 0.2, 0.6, 0.0, 0.35, 0.0),
                 loose(MechScript.ARMS_IN + 5, true, new Vec3(3.4, 5.4, 1.3), new Vec3(0.3, 0.85, 0.45),
                         new Vec3(-0.2, -0.4, 0.9), 0.1, 1.0, 0.0, -0.15, 0.1),
-                loose(MechScript.SPREAD - 3, false, new Vec3(3.4, 3.0, 1.2), new Vec3(-0.1, -0.3, 0.95),
+                loose(MechScript.SPREAD - 3, false, new Vec3(3.6, 4.4, 1.6), new Vec3(-0.05, -0.55, 0.83),
                         new Vec3(-0.9, 0.0, -0.1), 0.25, 0.7, 1.0, -0.35, 0.0),
-                loose(MechScript.SPREAD, true, new Vec3(4.2, 1.5, 1.05), new Vec3(0.08, 0.12, 1.0), inward, 0.05, 1.0,
+                loose(MechScript.SPREAD, true, new Vec3(4.3, 4.3, 2.3), new Vec3(0.06, -0.62, 0.78), inward, 0.05, 1.0,
                         1.0, -0.45, 0.0),
-                loose(MechScript.SWING, true, new Vec3(4.8, 1.6, 0.9), new Vec3(0.13, 0.14, 1.0), inward, 0.0, 1.0,
+                loose(MechScript.SWING, true, new Vec3(4.9, 4.4, 2.6), new Vec3(0.1, -0.6, 0.79), inward, 0.0, 1.0,
                         1.0, -0.6, 0.12),
                 loose(MechScript.CLAP, true, clapElbow, CLAP_WAY, inward, 0.0, 0.2, 1.0, 0.0, 0.0),
                 loose(MechScript.CLAP + 6, false, clapElbow.add(0.0, SQUEEZE_LIFT, 0.0), CLAP_WAY, inward, 0.3, 0.1,
                         1.0, 0.0, 0.0),
                 loose(MechScript.RELEASE, true, clapElbow.add(0.0, SQUEEZE_LIFT, 0.0), CLAP_WAY, inward, 0.3, 0.1,
                         1.0, 0.0, 0.0),
-                loose(MechScript.RELEASE + 4, false, new Vec3(4.3, 2.8, 0.9), new Vec3(0.25, 0.3, 0.92),
+                loose(MechScript.RELEASE + 4, false, new Vec3(4.4, 4.0, 2.2), new Vec3(0.25, 0.3, 0.92),
                         new Vec3(0.0, 0.1, 1.0), 0.05, 1.0, 0.6, -0.5, 0.0),
                 loose(MechScript.RELEASE + 10, false, new Vec3(4.9, 5.6, 0.6), new Vec3(0.5, 0.75, 0.43),
                         new Vec3(0.0, -0.3, 0.95), 0.1, 1.0, 0.0, 0.45, 0.0),
@@ -112,17 +115,18 @@ public final class MechMoves {
                 pick(MechScript.GRAB - 3, false, new Vec3(1.0, 3.6, 4.1), 0.6, new Vec3(-0.15, -0.95, 0.25), 0.1, 1.0,
                         1.0),
                 pick(MechScript.GRAB, true, MechHead.SUNK, 1.0, new Vec3(0.0, -1.0, 0.05), 0.25, 0.7, 1.0),
-                pick(MechScript.GRAB + 2, false, new Vec3(0.4, 1.4, 3.6), 1.0, new Vec3(0.15, -0.98, 0.1), 0.8, 0.35,
+                // Lifted up out of the crater before it swings out, over the knee bent under it.
+                pick(MechScript.GRAB + 2, false, new Vec3(0.3, 2.2, 4.6), 1.0, new Vec3(0.15, -0.98, 0.1), 0.8, 0.35,
                         1.0),
-                pick(MechScript.GRAB + 5, false, new Vec3(4.6, 2.4, 3.4), 0.3, new Vec3(0.0, -0.2, 0.98), 0.85, 0.3,
+                pick(MechScript.GRAB + 5, false, new Vec3(4.5, 3.6, 4.6), 0.3, new Vec3(0.0, -0.2, 0.98), 0.85, 0.3,
                         1.0),
                 // The swing: the arm straight, turning ever faster about the shoulder, the head 2 out from the palm.
                 pick(MechScript.WIND, true, new Vec3(4.05, 1.94, -2.73), 0.0, new Vec3(0.05, -0.71, 0.71), 0.85, 0.3,
                         1.0),
-                moving(pick(MechScript.WIND + 4, false, new Vec3(4.16, 2.26, 0.03), 0.0, new Vec3(0.0, -0.3, 0.95),
+                moving(pick(MechScript.WIND + 4, false, new Vec3(4.36, 2.24, 0.03), 0.0, new Vec3(0.0, -0.3, 0.95),
                         0.85, 0.3, 1.0), new Vec3(-0.05, 0.44, 1.31)),
-                moving(pick(MechScript.WIND + 6, false, new Vec3(3.52, 4.04, 2.96), 0.0, new Vec3(0.0, 0.3, 0.95),
-                        0.8, 0.35, 1.0), new Vec3(-0.15, 1.51, 1.43)),
+                moving(pick(MechScript.WIND + 6, false, new Vec3(3.92, 4.0, 2.96), 0.0, new Vec3(0.0, 0.3, 0.95),
+                        0.8, 0.35, 1.0), new Vec3(-0.35, 1.51, 1.43)),
                 moving(pick(MechScript.TOSS, false, new Vec3(2.74, 8.48, 4.72), 0.0, new Vec3(-0.05, 0.91, 0.41), 0.6,
                         0.5, 1.0), new Vec3(-0.125, 2.6, -0.18)),
                 pick(MechScript.TOSS + 3, true, new Vec3(3.08, 11.85, 3.11), 0.0, new Vec3(0.0, 0.94, -0.34), 0.05,
@@ -261,18 +265,21 @@ public final class MechMoves {
         Vec3 head = torso.local(stage.point(v[0], v[1] + v[3] * stage.targetY(), v[2]));
         Vec3 palm = within(torso, stage.dir(new Vec3(v[4], v[5], v[6])));
         Arm arm = was;
+        double dig = Ease.smooth((t - MechScript.REACH - 5.0) / (MechScript.GRAB - MechScript.REACH - 8.0))
+                * (1.0 - Ease.smooth((t - MechScript.GRAB - 5.0) / (MechScript.WIND - MechScript.GRAB - 3.0)));
+        Vec3 pole = PICK_POLE.lerp(DIG_POLE, dig);
         // The palm turns square to the forearm: aimed again from where it faces, until the head lies against it.
         for (int i = 0; i < PICK_AIMS; i++) {
-            arm = reach(head.subtract(palm.scale(MechHead.HOLD)), palm, was, v[7], v[8]);
+            arm = reach(head.subtract(palm.scale(MechHead.HOLD)), palm, was, v[7], v[8], pole);
             palm = arm.palm();
         }
         return weight >= 1.0 ? arm : blend(was, arm, weight);
     }
 
-    private static Arm reach(Vec3 target, Vec3 palm, Arm was, double curl, double spread) {
+    private static Arm reach(Vec3 target, Vec3 palm, Arm was, double curl, double spread, Vec3 pole) {
         double[] out = new double[3];
         Ik.twoBone(new double[] { MechScript.SHOULDER.x, MechScript.SHOULDER.y, MechScript.SHOULDER.z },
-                new double[] { target.x, target.y, target.z }, new double[] { PICK_POLE.x, PICK_POLE.y, PICK_POLE.z },
+                new double[] { target.x, target.y, target.z }, new double[] { pole.x, pole.y, pole.z },
                 MechScript.UPPER_ARM, MechScript.PALM_ALONG, out);
         Vec3 elbow = new Vec3(out[0], out[1], out[2]);
         Vec3 way = target.subtract(elbow);
@@ -344,11 +351,11 @@ public final class MechMoves {
         return walking(right, t, swing, walking, 0.0);
     }
 
-    // As above, running (0 to 1) the arm pumping bent with its fist clenched; `swing` runs twice as far at a full run.
+    // As above, running (0 to 1) the arm pumping bent with its fist clenched; `swing` runs further at a run.
     public static Arm walking(boolean right, double t, double swing, double walking, double running) {
         Arm set = set(right, Math.max(t, MechScript.SETTLED));
         double run = Mth.clamp(running, 0.0, 1.0);
-        double angle = WALK_SWING * (right ? swing : -swing) * (1.0 + RUN_REACH * run);
+        double angle = WALK_SWING * (right ? swing : -swing);
         Vec3 across = new Vec3(1.0, 0.0, 0.0);
         Vec3 upper = set.elbow().subtract(MechScript.SHOULDER).normalize().lerp(RUN_UPPER, run).normalize()
                 .scale(MechScript.UPPER_ARM);

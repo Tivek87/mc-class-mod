@@ -13,6 +13,7 @@ import net.minecraft.world.phys.shapes.CollisionContext;
 import nl.tivek.multiversepowers.character.greenlantern.duo.HandDuo;
 import nl.tivek.multiversepowers.character.greenlantern.hand.HandGroup;
 import nl.tivek.multiversepowers.character.greenlantern.hand.HandPose;
+import nl.tivek.multiversepowers.character.greenlantern.hand.HandRift;
 import nl.tivek.multiversepowers.engine.world.LoadedWorld;
 import static nl.tivek.multiversepowers.character.greenlantern.ability.hands.GiantHands.SCALE;
 import static nl.tivek.multiversepowers.character.greenlantern.ability.hands.GiantHands.head;
@@ -34,6 +35,9 @@ final class GiantHandSpots {
     // How much higher or lower than the creature's feet a hand may stand: most reach it from its own ground.
     private static final double RISE_NEAR = 1.6;
     private static final double RISE_FAR = 4.0;
+    // How far past its lips a rift's surface must be whole, and how deep behind it solid.
+    private static final double RIFT_RIM = 0.3;
+    private static final double RIFT_DEPTH = 0.3;
 
     private GiantHandSpots() {
     }
@@ -190,6 +194,21 @@ final class GiantHandSpots {
             }
         }
         return open(level, place.at(new Vec3(0.0, 3.0, 0.0)));
+    }
+
+    // A rift needs its surface flat all over its length and width, solid behind it and open air in front of it.
+    static boolean riftRoom(ServerLevel level, HandRift.Frame frame) {
+        for (double along = -1.0; along <= 1.0; along += 0.25) {
+            for (double across = -1.0; across <= 1.0; across += 0.5) {
+                double length = along * HandRift.HALF;
+                double side = across * (HandRift.WIDE + RIFT_RIM);
+                if (!solid(level, frame.at(length, side, -RIFT_DEPTH)) || !open(level, frame.at(length, side, 0.4))
+                        || !open(level, frame.at(length, side, 1.4))) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     static boolean room(ServerLevel level, Vec3 base, int variant, Vec3 aim) {

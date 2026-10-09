@@ -43,6 +43,17 @@ abstract class PainterCore {
     private static final RenderType GLOW = RenderType.create("welcomescreen_hard_light_glow",
             DefaultVertexFormat.POSITION_COLOR, VertexFormat.Mode.QUADS, 4096, false, false,
             RenderType.CompositeState.builder()
+                    .setShaderState(SoftGlow.SHADER)
+                    .setTransparencyState(RenderStateShard.LIGHTNING_TRANSPARENCY)
+                    .setWriteMaskState(RenderStateShard.COLOR_WRITE)
+                    .setCullState(RenderStateShard.NO_CULL)
+                    .setOutputState(RenderStateShard.WEATHER_TARGET)
+                    .createCompositeState(false));
+    // A ring's glow keeps its edge where it meets a block: rings lie on the ground, and there a soft edge would fade
+    // their brightest line.
+    private static final RenderType RING_GLOW = RenderType.create("welcomescreen_hard_light_ring_glow",
+            DefaultVertexFormat.POSITION_COLOR, VertexFormat.Mode.QUADS, 4096, false, false,
+            RenderType.CompositeState.builder()
                     .setShaderState(RenderStateShard.RENDERTYPE_LIGHTNING_SHADER)
                     .setTransparencyState(RenderStateShard.LIGHTNING_TRANSPARENCY)
                     .setWriteMaskState(RenderStateShard.COLOR_WRITE)
@@ -145,6 +156,7 @@ abstract class PainterCore {
     final Layer mass = take();
     final Layer light = take();
     final Layer glow = take();
+    final Layer ringGlow = take();
     boolean nearFade;
     private double glare;
     double ambient;
@@ -171,9 +183,17 @@ abstract class PainterCore {
         if (this.waiting) {
             this.settle();
         }
+        boolean soft = !this.hand && this.glow.count > 0;
+        if (soft) {
+            SoftGlow.before();
+        }
         this.draw(buffers, MASS, this.mass);
         this.draw(buffers, this.hand ? HAND_LIGHT : LIGHT, this.light);
+        if (soft) {
+            SoftGlow.prepare();
+        }
         this.draw(buffers, this.hand ? HAND_GLOW : GLOW, this.glow);
+        this.draw(buffers, this.hand ? HAND_GLOW : RING_GLOW, this.ringGlow);
     }
 
     private void draw(MultiBufferSource.BufferSource buffers, RenderType type, Layer layer) {
@@ -502,9 +522,11 @@ abstract class PainterCore {
         appendLayer(this.mass, other.mass);
         appendLayer(this.light, other.light);
         appendLayer(this.glow, other.glow);
+        appendLayer(this.ringGlow, other.ringGlow);
         SPARE.push(other.mass);
         SPARE.push(other.light);
         SPARE.push(other.glow);
+        SPARE.push(other.ringGlow);
     }
 
     private static void appendLayer(Layer to, Layer from) {

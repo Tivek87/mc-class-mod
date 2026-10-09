@@ -246,4 +246,20 @@ final class MechBlows {
             living.hurtMarked = true;
         }
     }
+
+    static void hit(ServerLevel level, ServerPlayer owner, LivingEntity living, double damage) {
+        if (damage <= 0.0) {
+            return;
+        }
+        living.invulnerableTime = 0;
+        living.hurt(level.damageSources().playerAttack(owner), (float) damage);
+    }
+
+    // A playerAttack knocks back by itself: the blow's own push is set after it.
+    static void push(LivingEntity living, Vec3 velocity) {
+        double resist = Mth.clamp(living.getAttributeValue(Attributes.KNOCKBACK_RESISTANCE), 0.0, 1.0);
+        living.setDeltaMovement(velocity.scale(1.0 - resist));
+        living.hasImpulse = true;
+        living.hurtMarked = true;
+    }
 }

@@ -13,6 +13,7 @@ import nl.tivek.multiversepowers.character.greenlantern.construct.ConstructPaylo
 import nl.tivek.multiversepowers.character.greenlantern.duo.HandDuo;
 import nl.tivek.multiversepowers.character.greenlantern.hand.HandGroup;
 import nl.tivek.multiversepowers.character.greenlantern.hand.HandPose;
+import nl.tivek.multiversepowers.character.greenlantern.hand.HandRift;
 import nl.tivek.multiversepowers.character.greenlantern.plane.PlanePath;
 
 abstract class ConstructShakes extends TrackedConstructs {
@@ -29,6 +30,9 @@ abstract class ConstructShakes extends TrackedConstructs {
     private static final double FINGER_SHAKE_TICKS = 8.0;
     private static final double FINGER_SHAKE_RANGE = 18.0;
     private static final double FINGER_SHAKE = 0.5;
+    private static final double RIFT_SHAKE_TICKS = 12.0;
+    private static final double RIFT_SHAKE_RANGE = 26.0;
+    private static final double RIFT_SHAKE = 0.85;
 
     ConstructShakes() {
     }
@@ -128,9 +132,21 @@ abstract class ConstructShakes extends TrackedConstructs {
             ticks = FINGER_SHAKE_TICKS;
             hard = FINGER_SHAKE * (move == HandPose.SNAP || move == HandPose.CLAP ? 0.6 : 1.0);
             near = 1.0 - from.distanceTo(hand.center()) / FINGER_SHAKE_RANGE;
+        } else if (move == HandPose.MAW) {
+            near = 1.0 - from.distanceTo(hand.center()) / FINGER_SHAKE_RANGE;
+            return Math.max(jolt(clock - HandPose.MAW_GULPS, FINGER_SHAKE_TICKS, 0.3, near),
+                    jolt(clock - HandPose.MAW_SPITS, FINGER_SHAKE_TICKS, 0.35, near));
+        } else if (move == HandPose.RIFT) {
+            near = 1.0 - from.distanceTo(hand.center()) / RIFT_SHAKE_RANGE;
+            return Math.max(jolt(clock - HandRift.TEARS[HandRift.TEARS.length - 1], FINGER_SHAKE_TICKS, 0.3, near),
+                    jolt(clock - HandRift.SHUTS, RIFT_SHAKE_TICKS, RIFT_SHAKE, near));
         } else {
             return 0.0F;
         }
+        return jolt(since, ticks, hard, near);
+    }
+
+    private static float jolt(double since, double ticks, double hard, double near) {
         if (since < 0.0 || since >= ticks || near <= 0.0) {
             return 0.0F;
         }

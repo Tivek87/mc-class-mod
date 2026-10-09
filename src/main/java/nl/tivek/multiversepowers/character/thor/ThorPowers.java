@@ -31,18 +31,17 @@ import nl.tivek.multiversepowers.engine.fx.Sounds;
 // resting, called back, followed, its uppercut and Storm Throw) and in `storm/` his storm and the lightning bomb.
 public final class ThorPowers implements CharacterPowers {
     // What his game reports of him for the gestures that need it: hammer in hand or not, running or not, the hammer
-    // on him, away (out of his hands) or resting in the world.
+    // on him or away (out of his hands).
     public static final int UNARMED = 1;
     public static final int ARMED = 2;
     public static final int WALKING = 4;
     public static final int SPRINTING = 8;
     public static final int HOME = 16;
     public static final int AWAY = 32;
-    public static final int RESTING = 64;
     // How long the attack button is held to wind up the thunderclap or the hammer's uppercut: 0.75 seconds.
     public static final int CLAP_HOLD = 15;
     // How long space is held to fly, right held for the dive, a grab, a grab dash (running), the draw of the hammer's
-    // throw to follow, the scroll wheel for a charge or to follow the resting hammer, left in flight for the shockwave
+    // throw to follow, the scroll wheel for a charge or to follow the thrown hammer, left in flight for the shockwave
     // and shift for lightning speed.
     public static final int FLIGHT_HOLD = 8;
     public static final int DIVE_HOLD = 10;

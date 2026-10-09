@@ -42,7 +42,6 @@ public final class LightningSpell {
     private static final double CLOUD_HEIGHT = 18.0;
     private static final double SHOCK_RADIUS = 3.0;
     private static final int SHOCKED = 30;
-    private static final double CHAIN_REACH = 6.0;
     private static final float CHAIN_DAMAGE = 4.0F;
     private static final int CHAIN = 3;
     // Rain carries the charge further.
@@ -111,7 +110,7 @@ public final class LightningSpell {
     // The bolt leaps on to the nearest hostile it has not touched yet; null once there is none left in reach.
     @Nullable
     private static Vec3 chain(ServerLevel level, ServerPlayer caster, Vec3 from, List<LivingEntity> struck) {
-        LivingEntity next = Targeting.nextInChain(level, caster, from, CHAIN_REACH, struck,
+        LivingEntity next = Targeting.nextInChain(level, caster, from, struck,
                 entity -> SpellTargets.hits(caster, entity));
         if (next == null) {
             return null;

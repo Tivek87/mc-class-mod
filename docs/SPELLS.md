@@ -109,7 +109,7 @@ one foe to the next. It is the spell's own lightning: the game's normal bolt is 
 | Aiming | the creature or block you look at; a creature is followed while the spell charges |
 | Damage | normal lightning: 5 (2.5 hearts) and sets the target on fire |
 | Shock | creatures within 3 blocks of the strike are slowed hard for 1.5 seconds |
-| Chain | then the bolt leaps to the nearest creature it has not touched, within 6 blocks, every 0.1 s: up to 3, or 5 when it rains there. 4 damage (2 hearts) each, and slowed like the shock |
+| Chain | then the bolt leaps to the nearest creature it has not touched, within 4 blocks, every 0.1 s: up to 3, or 5 when it rains there. 4 damage (2 hearts) each, and slowed like the shock |
 | Fire | also sets the ground on fire, on Normal and Hard difficulty |
 | You | your own lightning never hits you or players of your own faction; other players only where players may fight each other |
 | Cooldown | 8 s |

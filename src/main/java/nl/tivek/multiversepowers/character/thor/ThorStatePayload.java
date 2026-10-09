@@ -31,9 +31,8 @@ public record ThorStatePayload(int entity, int flags, int move, int arg) impleme
     public static final int HAMMER_CHARGED = 256;
     // His storm hangs over him.
     public static final int STORMING = 512;
-    // His thrown hammer rests in the world (always with THROWN); he is pulled to it; it flies back to him and his arm
-    // reaches for it; he draws it back to throw it and follow.
-    public static final int RESTING = 1024;
+    // He is pulled to his thrown hammer; it flies back to him and his arm reaches for it; he draws it back to throw it
+    // and follow.
     public static final int PULLING = 2048;
     public static final int CALLING = 4096;
     public static final int COCKED = 8192;

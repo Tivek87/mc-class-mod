@@ -82,6 +82,11 @@ public final class ClientLooks {
         static final Uniform FULL = new Uniform(1.0F, 1.0F, 1.0F, 1.0F, 1.0F, true);
         static final Uniform NONE = new Uniform(0.0F, 0.0F, 0.0F, 0.0F, 0.0F, false);
 
+        // Whether any of the suit is on yet.
+        public boolean covers() {
+            return this.complete || this.arm > 0.0F || this.torso > 0.0F || this.rest > 0.0F || this.mask > 0.0F;
+        }
+
         public SuitSpread.Field armField() {
             float reach = ARM_REACH * this.arm;
             return (x, y, z) -> reach - Math.abs(y - RING_Y);

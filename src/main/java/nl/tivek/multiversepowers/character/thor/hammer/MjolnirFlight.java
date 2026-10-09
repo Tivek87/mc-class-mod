@@ -183,8 +183,11 @@ abstract class MjolnirFlight extends MjolnirCore {
         }
         switch (this.kind) {
             case RETURN -> this.turnBack(owner, false);
+            // Run out in the air, a Storm Throw strikes nothing and only flies back.
             case STORM -> {
-                StormStrike.strike(level, owner, this.at, this.struck, this.damage);
+                if (stopped) {
+                    StormStrike.strike(level, owner, this.at, this.struck, this.damage);
+                }
                 this.turnBack(owner, false);
             }
             case STAY, FOLLOW -> this.settle(level, owner, this.face);

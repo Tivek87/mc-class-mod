@@ -122,7 +122,13 @@ public enum GameCharacter {
                     .when(ground).needs(ThorPowers.ARMED).cooldown(30).damage(7.0)
                     .setting("throwBlocks", 24.0, 4.0, 64.0, Unit.BLOCKS, "How far the thrown hammer flies, in blocks")
                     .setting("stayBlocks", 128.0, 16.0, 512.0, Unit.BLOCKS,
-                            "How far he may go from his resting hammer before it comes home by itself, in blocks");
+                            "How far he may go from his resting hammer before it comes home by itself, in blocks")
+                    .setting("arcBlocks", 5.0, 1.0, 16.0, Unit.BLOCKS,
+                            "Out of his hands the hammer shoots lightning once a second at the nearest foe this near,"
+                                    + " in blocks")
+                    .setting("arcDamage", 3.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                            "Damage of the hammer's own lightning; it leaps on to two foes near the first, each"
+                                    + " taking a little less");
             this.add(abilities, AbilitySlot.ABILITY_20, "hammer_leap").input(CharacterAbility.Input.RIGHT)
                     .holdOnly(ThorPowers.LEAP_HOLD).held().when(ground).needs(ThorPowers.ARMED).cooldown(100)
                     .damage(4.0)
@@ -161,9 +167,10 @@ public enum GameCharacter {
             this.add(abilities, AbilitySlot.ABILITY_30, "hammer_call").input(CharacterAbility.Input.SCROLL)
                     .when(ground).needs(ThorPowers.AWAY).cooldown(10).damage(4.0);
             this.add(abilities, AbilitySlot.ABILITY_31, "hammer_follow").input(CharacterAbility.Input.SCROLL)
-                    .holdOnly(ThorPowers.FOLLOW_HOLD).when(ground).needs(ThorPowers.RESTING).cooldown(40)
-                    .setting("reachBlocks", 24.0, 4.0, 64.0, Unit.BLOCKS,
-                            "How far away his resting hammer may be for him to dash to it, in blocks");
+                    .holdOnly(ThorPowers.FOLLOW_HOLD).when(ground).needs(ThorPowers.AWAY).cooldown(40)
+                    .setting("reachBlocks", 128.0, 4.0, 512.0, Unit.BLOCKS,
+                            "How far away his thrown hammer may be for him to dash to it, in blocks")
+                    .was(24.0);
         }
     };
 

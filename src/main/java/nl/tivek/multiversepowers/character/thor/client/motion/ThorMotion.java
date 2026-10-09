@@ -78,16 +78,14 @@ public final class ThorMotion extends ThorGroundMotion {
         ClientCharacter.state(GameCharacter.THOR, ThorMotion::state);
     }
 
-    // With the hammer in hand or not, running or not, the hammer on him, away or resting: which of his gestures are
-    // his now.
+    // With the hammer in hand or not, running or not, the hammer on him or away: which of his gestures are his now.
     private static int state(LocalPlayer player) {
         ClientThor.View view = ClientThor.view(player);
         boolean away = away(player);
         boolean armed = view != null && view.has(ThorStatePayload.ARMED) && !away;
-        boolean resting = view != null && view.has(ThorStatePayload.RESTING);
         return (armed ? ThorPowers.ARMED : ThorPowers.UNARMED)
                 | (player.isSprinting() ? ThorPowers.SPRINTING : ThorPowers.WALKING)
-                | (away ? ThorPowers.AWAY : ThorPowers.HOME) | (resting ? ThorPowers.RESTING : 0);
+                | (away ? ThorPowers.AWAY : ThorPowers.HOME);
     }
 
     // His hammer out of his hands: thrown, resting or coming back.
@@ -368,7 +366,7 @@ public final class ThorMotion extends ThorGroundMotion {
         }
         if (ClientCharacter.active() != GameCharacter.THOR || player.isPassenger() || player.isSpectator()
                 || player.getAbilities().flying || !player.isAlive()) {
-            if (flying || jumpAge >= 0 || dashAge >= 0 || ThorRise.active()) {
+            if (flying || jumpAge >= 0 || dashAge >= 0 || drawAge >= 0 || awaitAge >= 0 || ThorRise.active()) {
                 stop();
             }
             return;

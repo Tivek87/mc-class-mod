@@ -8,10 +8,11 @@ import nl.tivek.multiversepowers.engine.math.Vectors;
 import nl.tivek.multiversepowers.engine.rig.Ik;
 
 // A built mech's moves, in ticks: its blows on a left click, its eyes on a right click, the missile arm, the rocket
-// boots, the dive and the spin. For each, where its right hand goes (both hands for the slam, the stomp, the flight,
-// the dive and the spin), how far its body crouches, stoops and twists over the waist, and how high the stomping foot
-// is lifted. Hands are placed in the blow's frame: upright on the mech's ground spot and facing where its torso faces
-// (x right, y up, z ahead); the arm reaches them from the shoulder with its elbow worked out, never stretched.
+// boots, the dive, the spin, the flamethrower, the jump and the hatch. For each, where its right hand goes (both hands
+// for the slam, the stomp, the flight, the dive, the spin and the jump), how far its body crouches, stoops and twists
+// over the waist, and how high the stomping foot is lifted. Hands are placed in the blow's frame: upright on the
+// mech's ground spot and facing where its torso faces (x right, y up, z ahead); the arm reaches them from the shoulder
+// with its elbow worked out, never stretched.
 public final class MechAttacks {
     public static final int NONE = 0;
     public static final int SWEEP = 1;
@@ -31,6 +32,10 @@ public final class MechAttacks {
     public static final int FLY = 10;
     public static final int DIVE = 11;
     public static final int SPIN = 12;
+    // The flamethrower over the right hand, a jump, and the hatch under its cockpit its helpers drop out of.
+    public static final int FLAME = 13;
+    public static final int JUMP = 14;
+    public static final int HATCH = 15;
 
     public static final int EYE_FIRE = 3;
     public static final int EYE_SHOWN = 7;
@@ -49,13 +54,17 @@ public final class MechAttacks {
     public static final int SMASH2 = 39;
     public static final int RELEASE = 52;
     public static final int DROP_TICKS = 14;
-    // The missile arm opens over AIM_OPEN ticks, stays up AIM_MOST at most and closes over AIM_CLOSE; it fires SALVOS
-    // salvos at most, each kicking the arm back for SALVO_KICK ticks.
+    // The missile arm opens over AIM_OPEN ticks, stays up AIM_MOST at most and closes over AIM_CLOSE; it fires one
+    // missile a click, ROCKETS at most, each kicking the arm back for ROCKET_KICK ticks before the next may go.
     public static final int AIM_OPEN = 8;
     public static final int AIM_MOST = 200;
     public static final int AIM_CLOSE = 10;
-    public static final int SALVOS = 3;
-    public static final int SALVO_KICK = 8;
+    public static final int ROCKET_KICK = 5;
+    // Its tubes on the back of the right hand in the order they fire, in the hand's frame once the rack has risen:
+    // across it, and out of its back (negative).
+    public static final double[] TUBE_X = { -0.38, 0.38, 0.0, -0.19, 0.19 };
+    public static final double[] TUBE_Z = { -0.48, -0.48, -0.48, -0.74, -0.74 };
+    public static final int ROCKETS = TUBE_X.length;
     // The rocket boots: crouched, it springs up at FLY_LAUNCH and flies FLY_MOST ticks at most; out of thrust, it
     // spreads its arms by FLY_FALL and falls until it lands at FLY_LAND.
     public static final int FLY_LAUNCH = 6;
@@ -73,6 +82,23 @@ public final class MechAttacks {
     public static final double SPIN_TURNS = 4.0;
     public static final int SPIN_BEAT = 16;
     public static final double SPIN_CROUCH = 5.1;
+    // The flamethrower: the right fist is aimed and a nozzle grows over it by FLAME_FIRE; it pours fire until it is
+    // shut or out of time, FLAME_MOST at most, and sinks back over FLAME_CLOSE. MUZZLE: from the middle of the palm
+    // along the hand to the nozzle's mouth.
+    public static final int FLAME_FIRE = 12;
+    public static final int FLAME_MOST = FLAME_FIRE + 200;
+    public static final int FLAME_CLOSE = 12;
+    public static final double MUZZLE = 2.1;
+    // The jump: crouched, it springs up at JUMP_LAUNCH, comes down from JUMP_FALL on and lands at JUMP_LAND.
+    public static final int JUMP_LAUNCH = 5;
+    public static final int JUMP_FALL = JUMP_LAUNCH + 22;
+    public static final int JUMP_LAND = JUMP_FALL + 1;
+    // The hatch: it kneels a little and the hatch under its cockpit stands open from HATCH_OPEN to HATCH_SHUT; its
+    // helpers drop out one after another from HATCH_DROP, HATCH_EVERY ticks apart.
+    public static final int HATCH_OPEN = 10;
+    public static final int HATCH_DROP = 12;
+    public static final int HATCH_EVERY = 4;
+    public static final int HATCH_SHUT = 30;
     // From the palm's middle to its inside face, where a held creature's skin lies.
     public static final double SKIN = 0.45;
     private static final double REACH = MechScript.UPPER_ARM + MechScript.PALM_ALONG;
@@ -86,7 +112,8 @@ public final class MechAttacks {
     private static final double SWEET = Math.atan2(2.5, 4.0);
     private static final double MOST_TURN = 0.8;
     static final int[] LENGTHS = { 0, 30, 26, 36, 66, DROP_TICKS, 16, GLARE_MOST + GLARE_FADE, 26,
-            AIM_MOST + AIM_CLOSE, FLY_LAND + 14, 32, SPIN_TO + 16 };
+            AIM_MOST + AIM_CLOSE, FLY_LAND + 14, 32, SPIN_TO + 16, FLAME_MOST + FLAME_CLOSE, JUMP_LAND + 14,
+            HATCH_SHUT + 8 };
 
     // How the body stands under a blow: how far its hips sink, its torso stoops forward (radians) and twists to its
     // left over the waist, how high the right foot is lifted, and how far (radians, to its left) the whole blow turns
@@ -125,7 +152,7 @@ public final class MechAttacks {
     }
 
     // The blow in a whole number sent with the mech (see MechScript.variant): kind, age, `from` (a drop's start; the
-    // missile arm's salvos, see salvos) and a throw's turn in whole degrees.
+    // missile arm's missiles, see rockets) and a throw's turn in whole degrees.
     public static int pack(int kind, int age, int from, double turn) {
         int degrees = (int) Math.round(Math.toDegrees(turn)) + 64;
         return kind == NONE ? 0 : kind | Mth.clamp(age, 0, 255) << 4 | Mth.clamp(from, 0, 127) << 12
@@ -137,22 +164,27 @@ public final class MechAttacks {
                 Math.toRadians((packed >>> 19 & 127) - 64));
     }
 
-    // The missile arm's `from`: how many salvos it has fired, and how many ticks ago the last one (at most 31).
-    public static int salvos(int fired, int since) {
-        return fired | Mth.clamp(since, 0, 31) << 2;
+    // The missile arm's `from`: how many missiles it has fired, and how many ticks ago the last one (at most 15).
+    public static int rockets(int fired, int since) {
+        return fired | Mth.clamp(since, 0, 15) << 3;
     }
 
     public static int fired(Blow blow) {
-        return blow.from() & 3;
+        return blow.from() & 7;
     }
 
-    // How hard the last salvo still kicks the arm back: hardest just after it fires, gone once it has settled.
+    // How many ticks ago the last missile left, at most 15.
+    public static int sinceFired(Blow blow) {
+        return blow.from() >>> 3;
+    }
+
+    // How hard the last missile still kicks the arm back: hardest just after it fires, gone once it has settled.
     public static double kick(Blow blow) {
         if (blow.kind() != AIM || fired(blow) == 0) {
             return 0.0;
         }
-        double since = (blow.from() >>> 2) + blow.age() - Math.floor(blow.age()) - 1.0;
-        return since < 0.0 || since > SALVO_KICK ? 0.0 : Ease.jolt(since / SALVO_KICK);
+        double since = sinceFired(blow) + blow.age() - Math.floor(blow.age()) - 1.0;
+        return since < 0.0 || since > ROCKET_KICK ? 0.0 : Ease.jolt(since / ROCKET_KICK);
     }
 
     // How far the back of the right hand stands open on its missiles (0 shut).
@@ -164,24 +196,51 @@ public final class MechAttacks {
         return Ease.smooth((age - 2.0) / (AIM_OPEN - 2.0)) * (1.0 - Ease.smooth((age - AIM_MOST) / (AIM_CLOSE - 2.0)));
     }
 
+    // How far the flamethrower's nozzle has grown over the right fist (0 not at all).
+    public static double nozzle(Blow blow) {
+        if (blow.kind() != FLAME) {
+            return 0.0;
+        }
+        double age = blow.age();
+        return Ease.smooth((age - 3.0) / (FLAME_FIRE - 3.0))
+                * (1.0 - Ease.smooth((age - FLAME_MOST) / (FLAME_CLOSE - 2.0)));
+    }
+
+    // Whether the flamethrower pours fire now.
+    public static boolean pouring(Blow blow) {
+        return blow.kind() == FLAME && blow.age() >= FLAME_FIRE && blow.age() < FLAME_MOST;
+    }
+
+    // How far the hatch under the cockpit stands open (0 shut).
+    public static double hatch(Blow blow) {
+        if (blow.kind() != HATCH) {
+            return 0.0;
+        }
+        double age = blow.age();
+        return Ease.smooth((age - 2.0) / (HATCH_OPEN - 2.0)) * (1.0 - Ease.smooth((age - HATCH_SHUT) / 6.0));
+    }
+
     // How far its legs are folded under it for the spin (0 standing, 1 on its knees).
     public static double folded(Blow blow) {
         return blow.kind() == SPIN ? Mth.clamp(body(blow).crouch() / SPIN_CROUCH, 0.0, 1.0) : 0.0;
     }
 
-    // Whether the mech stands its ground for this move, its walk stopped: every blow of the combo, the spin, and the
-    // rocket boots and the dive on the ground; its eyes and the missile arm let it walk on.
+    // Whether the mech stands its ground for this move, its walk stopped: every blow of the combo, the spin, the
+    // flamethrower, the hatch, and the rocket boots and the dive on the ground; its eyes, the missile arm and the jump
+    // let it walk on.
     public static boolean plants(Blow blow) {
         return switch (blow.kind()) {
-            case NONE, EYE, GLARE, AIM -> false;
+            case NONE, EYE, GLARE, AIM, JUMP -> false;
             default -> true;
         };
     }
 
-    // Whether the mech is off the ground on its rocket boots or diving from the air: its feet hang, its walk waits.
+    // Whether the mech is off the ground on its rocket boots, diving from the air or jumping: its feet hang, its walk
+    // waits.
     public static boolean airborne(Blow blow) {
         return blow.kind() == FLY && blow.age() >= FLY_LAUNCH && blow.age() < FLY_LAND
-                || blow.kind() == DIVE && blow.age() < DIVE_LAND;
+                || blow.kind() == DIVE && blow.age() < DIVE_LAND
+                || blow.kind() == JUMP && blow.age() >= JUMP_LAUNCH && blow.age() < JUMP_LAND;
     }
 
     // Whether the rocket boots fire now: from the launch until their thrust runs out, and holding the dive up while it
@@ -231,6 +290,7 @@ public final class MechAttacks {
             case THROW -> age == SMASH || age == SMASH2 ? 1.4 : 0.0;
             case FLY -> age == FLY_LAUNCH ? 1.4 : age == FLY_LAND ? 2.4 : 0.0;
             case DIVE -> age == DIVE_LAND ? 3.6 : 0.0;
+            case JUMP -> age == JUMP_LAUNCH ? 0.9 : age == JUMP_LAND ? 2.0 : 0.0;
             // Its knees strike the ground, then every fist it hammers down.
             case SPIN -> age == SPIN_FROM ? 2.0 : slams(age, true) || slams(age, false) ? 0.8 : 0.0;
             default -> 0.0;
@@ -277,11 +337,12 @@ public final class MechAttacks {
         return arm(blow, right, frame, torso, held, was, null);
     }
 
-    // As above; `target` is what the pilot's crosshair rests on, for the missile arm (null: straight ahead).
+    // As above; `target` is what the pilot's crosshair rests on, for the missile arm and the flamethrower (null:
+    // straight ahead).
     public static MechMoves.Arm arm(Blow blow, boolean right, MechScript.Stage frame, MechScript.Stage torso,
             @Nullable Held held, MechMoves.Arm was, @Nullable Vec3 target) {
         Aim aim = switch (blow.kind()) {
-            case AIM -> right ? aimArm(blow, torso, target) : null;
+            case AIM, FLAME -> right ? aimArm(blow, torso, target) : null;
             case SPIN -> spinAim(blow, right, frame(frame.base(), torso, 0.0));
             default -> aim(blow, right, frame, held);
         };
@@ -350,12 +411,14 @@ public final class MechAttacks {
         return new Aim(key, at, palm, pole, curl, v[7], weight, grab);
     }
 
-    // The missile arm, aimed: the right hand held out almost straight from the shoulder at `target`, the back of the
-    // hand up, kicked back along the arm by each salvo.
+    // The missile arm or the flamethrower, aimed: the right hand held out almost straight from the shoulder at
+    // `target`, the back of the hand up, kicked back along the arm by each missile.
     @Nullable
     private static Aim aimArm(Blow blow, MechScript.Stage torso, @Nullable Vec3 target) {
         double age = blow.age();
-        double weight = Ease.smooth(age / AIM_OPEN) * (1.0 - Ease.smooth((age - AIM_MOST) / AIM_CLOSE));
+        boolean flame = blow.kind() == FLAME;
+        double weight = Ease.smooth(age / (flame ? FLAME_FIRE * 0.7 : AIM_OPEN))
+                * (1.0 - Ease.smooth((age - (flame ? FLAME_MOST : AIM_MOST)) / (flame ? FLAME_CLOSE : AIM_CLOSE)));
         if (weight <= 0.0) {
             return null;
         }
@@ -363,7 +426,7 @@ public final class MechAttacks {
         Vec3 to = target == null ? torso.ahead() : target.subtract(shoulder);
         Vec3 way = to.lengthSqr() < 1.0E-6 ? torso.ahead() : to.normalize();
         double kick = kick(blow);
-        Vec3 hand = shoulder.add(way.scale(AIM_REACH - 1.1 * kick)).add(0.0, 0.5 * kick, 0.0);
+        Vec3 hand = shoulder.add(way.scale(AIM_REACH - 0.6 * kick)).add(0.0, 0.3 * kick, 0.0);
         Vec3 down = new Vec3(0.0, -1.0, 0.0);
         Vec3 palm = down.subtract(way.scale(down.dot(way)));
         palm = palm.lengthSqr() < 1.0E-4 ? torso.ahead() : palm.normalize();

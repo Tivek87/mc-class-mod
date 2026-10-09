@@ -14,7 +14,7 @@ Dit document bevat de complete lijst van alle keybinds en bijbehorende vaardighe
   * **Green Lantern**: 
     * *Lege handen*: Light Bolt (groen projectiel schieten).
     * *Met construct*: Wapen-aanval (Zwaard, Vlammenwerper of Zweep).
-    * *In Mech*: Combo van drie klappen (rechte rechtse, backhand sweep, slam; stomp of worp bij een vijand dichtbij). Met de missile arm uit: raketsalvo afvuren.
+    * *In Mech*: Combo van drie klappen (rechte rechtse, backhand sweep, slam; stomp of worp bij een vijand dichtbij). Met de missile arm uit: één raket afvuren (max 5).
   * **Doc Ock**: Tentakelslag met 7,5 blokken bereik (of gegrepen vijanden weggooien).
 
 * **Left hold (Linkermuisknop ingedrukt)**
@@ -61,7 +61,7 @@ Dit document bevat de complete lijst van alle keybinds en bijbehorende vaardighe
 
 * **Scroll wheel hold (Middelste muisknop ingedrukt)**
   * **Thor**: 
-    * *Op de grond (2,0 s)*: Charged Mode (laadt Mjolnir of Thor zelf op met bliksem voor +50% schade/snelheid). Als Mjolnir ver weg ligt: dashen naar je hamer.
+    * *Op de grond (2,0 s)*: Charged Mode (laadt Mjolnir of Thor zelf op met bliksem voor +50% schade/snelheid). Als Mjolnir weggegooid is (liggend of nog vliegend): dashen naar je hamer.
     * *In vlucht*: Geen functie (Storm Throw zit nu op Z).
   * **Green Lantern**: 
     * *2,0 s vasthouden*: Hard-Light Mech Assembly (bouwt een bestuurbare reuzen-mech).
@@ -70,12 +70,12 @@ Dit document bevat de complete lijst van alle keybinds en bijbehorende vaardighe
 
 * **Double space (2x Spatie)**
   * **Thor**: Super Jump (springt 10 blokken hoog, zweeft even in de lucht en landt zonder valschade).
-  * **Green Lantern**: Flight (opstijgen met jetpack of stoppen met vliegen). *In Mech*: Rocket boots (tot 5 s vliegen).
+  * **Green Lantern**: Flight (opstijgen met jetpack of stoppen met vliegen). *In Mech*: Rocket boots (tot 5 s vliegen), ook midden in een sprong.
   * **Doc Ock**: Afzetten van muur of plafond (klimt automatisch via passieve *Wall Climb*).
 
 * **Hold space (Spatie ingedrukt)**
   * **Thor**: Flight (pakt Mjolnir met linkerhand en stijgt op om te vliegen; zonder hamer in de hand valt hij na ruim 1 s).
-  * **Green Lantern**: Stijgen tijdens vlucht (op de grond een normale sprong).
+  * **Green Lantern**: Stijgen tijdens vlucht (op de grond een normale sprong). *In Mech*: spatie = de mech springt één keer; op de rocket boots stijgen.
   * **Doc Ock**: Tentakelsprong (hoe meer tentakels op de grond, hoe hoger) of ondersteboven aan plafond haken.
 
 * **Hold shift (Left Shift ingedrukt)**
@@ -85,16 +85,16 @@ Dit document bevat de complete lijst van alle keybinds en bijbehorende vaardighe
 
 * **R (Ability 1)**
   * **Thor**: Storm (roept een onweersstorm op die automatisch bliksem afvuurt; opnieuw indrukken schiet een gerichte schicht af).
-  * **Green Lantern**: Emerald Express (grote groene sneltrein die tot 6 vijanden ramt en ontploft). *In Mech*: Missile arm (arm richt waar je kijkt; linksklik vuurt tot 3 salvo's van zes raketten).
+  * **Green Lantern**: Emerald Express (grote groene sneltrein die tot 6 vijanden ramt en ontploft). *In Mech*: Missile arm (arm richt waar je kijkt; elke linksklik vuurt één raket, max 5).
   * **Doc Ock**: Grab & Throw (grijpt tot 4 vijanden vast; sla ze tegen muren of gooi ze weg).
 
 * **V (Ability 2)**
   * **Thor**: Lightning Bomb (laadt op en ontploft in een zware bliksem-explosie).
-  * **Green Lantern**: Construct Wheel (tik = wissel naar vorig construct; inhoud = open wapenwiel voor Zwaard, Vlammenwerper, Zweep, etc.).
+  * **Green Lantern**: Construct Wheel (tik = wissel naar vorig construct; inhoud = open wapenwiel voor Zwaard, Vlammenwerper, Zweep, etc.). *In Mech*: Vlammenwerper (alleen stilstaand; vuur uit de rechtervuist, max 10 s; nogmaals = stoppen).
   * **Doc Ock**: Multi-Tentacle (alle vrije tentakels slaan achter elkaar op je doelwit).
 
 * **Z (Ability 3)**
-  * **Thor**: Storm Throw (op de grond: hamer hoog opgooien, erachteraan dashen en voor de vijand neersmijten; in vlucht alleen de worp; bliksem loopt uit in een brede V).
+  * **Thor**: Storm Throw (op de grond: hamer opgooien richting waar je mikt, erachteraan dashen en voor de vijand neersmijten, zonder vijand in je vizier de dichtstbijzijnde daar; in vlucht alleen de worp; bliksem loopt uit in een brede V).
   * **Green Lantern**: Recharge (haalt de groene lantaarn tevoorschijn en laadt +50 energie bij).
   * **Doc Ock**: Tentacle Dash (snelle lancering in je loop- of kijkrichting).
 
@@ -120,7 +120,7 @@ Dit document bevat de complete lijst van alle keybinds en bijbehorende vaardighe
 
 * **X (Ability 8)**
   * **Thor**: Open slot (concept).
-  * **Green Lantern**: Shockwave (grondslag of duikaanval met 1 van 32 reuzenconstructs). *In Mech*: Spin (op de grond) of duik naar de grond (in de lucht op de rocket boots).
+  * **Green Lantern**: Shockwave (grondslag of duikaanval met 1 van 32 reuzenconstructs). *In Mech*: Spin (op de grond) of duik naar de grond (in de lucht: in een sprong of op de rocket boots).
   * **Doc Ock**: Open slot.
 
 * **C (Ability 9)**
@@ -130,7 +130,7 @@ Dit document bevat de complete lijst van alle keybinds en bijbehorende vaardighe
 
 * **Left Alt (Ability 10)**
   * **Thor**: Open slot (concept).
-  * **Green Lantern**: Giant Hands (roept reuzenhanden op uit portalen met 26 willekeurige aanvallen; inhoud = Western Revolver).
+  * **Green Lantern**: Giant Hands (elke druk roept één reuzenhand op, max 5 per keer, met 28 willekeurige aanvallen; inhoud = Western Revolver). *In Mech*: Helpers (luik onder de cockpit gaat open en 3 robots springen eruit; ze vechten tot ze sneuvelen of je uitstapt).
   * **Doc Ock**: Ground Strike (markeert tot 4 vijanden; tentakels graven onder de grond en spiesen hen omhoog).
 
 * **K (Ability 11)**

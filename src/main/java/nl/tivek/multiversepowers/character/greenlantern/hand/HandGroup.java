@@ -9,7 +9,8 @@ import nl.tivek.multiversepowers.engine.math.Ease;
 import nl.tivek.multiversepowers.engine.math.Vectors;
 
 // Hands that come as a group out of portals round one creature: four that hold it spread out while a fifth sets its
-// ring on it and blasts it away, or two that clap it between them. Server and client both work them out from here.
+// ring on it and blasts it away, two that clap it between them, two that tear it in two, or two that tear open a rift
+// for it (HandRift). Server and client both work them out from here.
 public final class HandGroup {
     private static final double SLOW = 1.6;
     // Ring hold, in beats.
@@ -73,7 +74,7 @@ public final class HandGroup {
 
     public static boolean is(int variant) {
         int move = HandPose.move(variant);
-        return move == HandPose.RINGHOLD || move == HandPose.CLAP || move == HandPose.TEAR;
+        return move == HandPose.RINGHOLD || move == HandPose.CLAP || move == HandPose.TEAR || move == HandPose.RIFT;
     }
 
     // The creature's height rides in the tear's variant, in tenths of a block, so both sides agree where its ends are.
@@ -128,11 +129,14 @@ public final class HandGroup {
 
     // The moments a group must have room at before it comes.
     public static int[] roomAt(int variant) {
-        return HandPose.move(variant) == HandPose.TEAR ? new int[] { TEAR_GRABS, TEARS }
-                : new int[] { HandPose.firstAct(variant), RING_PRESSES };
+        return switch (HandPose.move(variant)) {
+            case HandPose.TEAR -> new int[] { TEAR_GRABS, TEARS };
+            case HandPose.RIFT -> new int[] { HandRift.DIGS, HandRift.CLOSES };
+            default -> new int[] { HandPose.firstAct(variant), RING_PRESSES };
+        };
     }
 
-    private static Vec3 flat(Vec3 facing) {
+    static Vec3 flat(Vec3 facing) {
         Vec3 flat = new Vec3(facing.x, 0.0, facing.z);
         return flat.lengthSqr() < 1.0E-8 ? new Vec3(0.0, 0.0, 1.0) : flat.normalize();
     }
@@ -151,6 +155,7 @@ public final class HandGroup {
         return switch (HandPose.move(variant)) {
             case HandPose.CLAP -> clap(center, facing, t);
             case HandPose.TEAR -> tear(variant, center, facing, t);
+            case HandPose.RIFT -> HandRift.hands(variant, center, facing, t);
             default -> ringHold(center, facing, t);
         };
     }
@@ -268,7 +273,7 @@ public final class HandGroup {
     }
 
     // A hand whose fingers point along up, reaching out of its portal until its local point lies on the goal.
-    private static HandPose.Place reaching(Vec3 portal, Vec3 goal, Vec3 up, Vec3 palm, Vec3 local, double reach,
+    static HandPose.Place reaching(Vec3 portal, Vec3 goal, Vec3 up, Vec3 palm, Vec3 local, double reach,
             double scale) {
         HandPose.Place there = frame(Vec3.ZERO, up, up, palm, scale);
         Vec3 wrist = goal.subtract(there.at(local));
@@ -276,26 +281,26 @@ public final class HandGroup {
         return frame(hidden.lerp(wrist, reach), up, up, palm, scale);
     }
 
-    private static HandPose.Place frame(Vec3 wrist, Vec3 arm, Vec3 up, Vec3 palm, double scale) {
+    static HandPose.Place frame(Vec3 wrist, Vec3 arm, Vec3 up, Vec3 palm, double scale) {
         return frame(wrist, arm, palm, up, palm, scale);
     }
 
-    private static HandPose.Place frame(Vec3 wrist, Vec3 arm, Vec3 armForward, Vec3 up, Vec3 palm, double scale) {
+    static HandPose.Place frame(Vec3 wrist, Vec3 arm, Vec3 armForward, Vec3 up, Vec3 palm, double scale) {
         Vec3 right = palm.cross(up).normalize();
         return new HandPose.Place(wrist, arm, armForward, right, up, palm, scale);
     }
 
-    private static Vec3 square(Vec3 want, Vec3 up) {
+    static Vec3 square(Vec3 want, Vec3 up) {
         Vec3 flat = want.subtract(up.scale(want.dot(up)));
         return flat.lengthSqr() < 1.0E-6 ? Vectors.across(up)[0] : flat.normalize();
     }
 
-    private static HandDuo.Portal portalAt(Vec3 center, Vec3 normal, double radius, double open) {
+    static HandDuo.Portal portalAt(Vec3 center, Vec3 normal, double radius, double open) {
         Vec3[] across = Vectors.across(normal);
         return new HandDuo.Portal(center, normal, across[0], across[1], radius, open);
     }
 
-    private static HandPose fingers(double curl, double hook, double thumb, double spread) {
+    static HandPose fingers(double curl, double hook, double thumb, double spread) {
         HandPose pose = new HandPose();
         for (int k = 0; k < 4; k++) {
             pose.curl[k] = curl;

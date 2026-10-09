@@ -75,7 +75,7 @@ final class GiantHand extends GiantHandTears {
                     HandPose.DRAG, HandPose.RAGDOLL, HandPose.CATCH, HandPose.RINGHOLD, HandPose.CLAP,
                     HandPose.FINGERGUN, HandPose.SCISSORS, HandPose.SWALLOW, HandPose.RINGBEAM, HandPose.SCOOP,
                     HandPose.EYE, HandPose.MEGAPHONE, HandPose.PUPPETEER, HandPose.RINGHAMMER, HandPose.RINGCHAINS,
-                    HandPose.TEAR -> this.trick(level);
+                    HandPose.TEAR, HandPose.MAW, HandPose.RIFT -> this.trick(level);
             default -> {
                 for (int hit : HandPose.POUND_HITS) {
                     if (this.t == hit) {

@@ -128,7 +128,7 @@ final class Gestures {
         if (now != null) {
             for (CharacterAbility ability : now.abilities()) {
                 if (!ability.isPlaceholder() && ability.input() == input && ability.holdTicks() > 0
-                        && active(ability, player)) {
+                        && active(ability, player) && AbilityPanel.holds(ability, player)) {
                     return ability;
                 }
             }

@@ -70,11 +70,11 @@ public final class MouseHold {
             return -1.0F;
         }
         int i = channel(ability);
-        if (i < 0 || DOWN[i] < 0) {
+        // A button held with no hold on it now (AbilityPanel.Rules.holds) fills nothing.
+        if (i < 0 || DOWN[i] < 0 || TICKS[i] <= 0) {
             return -1.0F;
         }
-        int ticks = TICKS[i] > 0 ? TICKS[i] : ability.holdTicks();
-        return HOLDING[i] ? 1.0F : Math.min(1.0F, (DOWN[i] + partialTick) / ticks);
+        return HOLDING[i] ? 1.0F : Math.min(1.0F, (DOWN[i] + partialTick) / TICKS[i]);
     }
 
     public static boolean holding(CharacterAbility.Input button) {

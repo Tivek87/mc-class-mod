@@ -4,7 +4,7 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.engine.math.Ease;
 
-// The evil eye and the megaphone.
+// The evil eye, the megaphone and the maw.
 abstract class HandMarvels extends HandFeats {
     private static final double MARVEL_KICK = 7.5;
     private static final double MARVEL_CALM = 0.32;
@@ -59,6 +59,47 @@ abstract class HandMarvels extends HandFeats {
     private static final double HORN_LIFT = 0.5;
     private static final double HORN_LEAN = 0.15;
     private static final double HORN_TARGET = 1.0;
+
+    // Maw: up out of the ground or a wall, palm to the creature, a mouth in its palm. The mouth gapes, the hand lunges
+    // down over the creature and bites shut round it, swallowing it whole; closed into a fist it chews it three times,
+    // rears back and spits it out far, or burps when nothing is left of it.
+    static final double MAW_GULP = 13.5;
+    public static final int MAW_GULPS = ticks(MAW_GULP);
+    public static final int[] MAW_CHOMPS = { ticks(20.0), ticks(24.0), ticks(28.0) };
+    public static final int MAW_SPITS = ticks(33.0);
+    // How long the creature takes to vanish into the mouth, in ticks.
+    public static final int MAW_SWALLOWS = 3;
+    private static final double GULP_AT = MAW_GULPS / SLOW;
+    private static final double[] CHOMP_AT = { MAW_CHOMPS[0] / SLOW, MAW_CHOMPS[1] / SLOW, MAW_CHOMPS[2] / SLOW };
+    private static final double SPIT_AT = MAW_SPITS / SLOW;
+    // The middle of the mouth in the palm, in the hand's own frame, and half its width.
+    public static final Vec3 MAW_MOUTH = new Vec3(0.0, 1.7, 0.5);
+    public static final double MAW_WIDE = 0.95;
+    private static final double MAW_HIGH = 2.2;
+    // How high over its own ground the mouth bites: about the middle of a creature its size.
+    private static final double MAW_BITE = 1.0;
+
+    // How wide the mouth in the palm is open at tick t: 0 shut, 1 wide, more as it lunges and spits.
+    public static double mawOpen(double t) {
+        double beat = t / SLOW;
+        double gape = Ease.smoother((beat - 6.5) / 3.0) * (1.0 - Ease.smoother((beat - GULP_AT + 0.3) / 0.5));
+        double lunge = 0.3 * window(beat, 10.0, 12.5, GULP_AT - 0.7, GULP_AT - 0.3);
+        double spit = Ease.smoother((beat - SPIT_AT + 0.6) / 0.6) * (1.0 - Ease.smoother((beat - SPIT_AT - 2.0) / 3.0));
+        return gape * (1.0 + 0.06 * Math.sin(beat * 1.7)) + lunge + 1.2 * spit;
+    }
+
+    // How far a swallowed creature has gone into the mouth at tick t, 0 to 1: in until the maw lets go of it.
+    public static double swallowed(double t) {
+        return Ease.smooth((t - MAW_GULPS) / MAW_SWALLOWS);
+    }
+
+    private static double chomps(double beat) {
+        double chew = 0.0;
+        for (double at : CHOMP_AT) {
+            chew += Ease.bump((beat - at) / 1.2);
+        }
+        return chew;
+    }
 
     public static int puppetStart(int k) {
         return EYE_STRINGS + 2 * k;
@@ -163,5 +204,39 @@ abstract class HandMarvels extends HandFeats {
         this.spread = Mth.lerp(Ease.smoother((t - HORN_BREAK - 4.0) / 3.0), this.spread, 0.5);
         breathe(t, 0.5 * window(t, 5.0, 7.0, HORN_AIM, HORN_AIM + 2.0));
         this.sink(t, SINK[MEGAPHONE], LIFE[MEGAPHONE], 1.0, true);
+    }
+
+    // Up with its palm to the creature, it rears back as the mouth gapes, then lunges: bent over flat, palm down, the
+    // mouth comes down on the creature's middle reach away. Shut into a fist it rises and chews; to spit it rears back
+    // palm up and snaps forward, fingers flying open.
+    void maw(double t, double reach) {
+        double out = Mth.clamp(reach, MAW_MOUTH.y + 0.25, 4.5) - MAW_MOUTH.y;
+        double over = MAW_BITE + MAW_MOUTH.z;
+        double biteLean = Math.atan2(out, over);
+        double biteLength = Math.sqrt(out * out + over * over);
+        double chew = chomps(t);
+        this.length = rise(t, MAW_HIGH, 1.0, 0.6) + Ease.keys(t, 10.0, 0.0, 0.0, GULP_AT, biteLength - MAW_HIGH, 0.0,
+                GULP_AT + 4.5, 0.5, 0.0, 30.0, 0.5, 0.0, SPIT_AT - 0.6, 0.8, 0.0, SPIT_AT + 0.6, 0.3, 0.0, 38.0, 0.3,
+                0.0) - 0.22 * chew;
+        this.lean = Ease.keys(t, 5.0, 0.05, 0.0, 9.6, -0.12, 0.0, GULP_AT, biteLean, 0.0, GULP_AT + 4.5, 0.1, 0.0,
+                30.0, 0.1, 0.0, SPIT_AT - 0.6, -0.25, 0.0, SPIT_AT + 0.6, 0.35, 0.0, 38.0, 0.15, 0.0)
+                + 0.025 * chew * Math.sin(t * 2.3);
+        this.flex = Ease.keys(t, 5.0, 0.0, 0.0, 9.6, -0.42, 0.0, GULP_AT, Math.PI * 0.5 - biteLean, 0.0,
+                GULP_AT + 4.5, -0.12, 0.0, 30.0, -0.12, 0.0, SPIT_AT - 0.6, -1.0, 0.0, SPIT_AT + 0.6, -0.55, 0.0,
+                38.0, -0.1, 0.0) + 0.15 * chew + 0.3 * Ease.recoil(t - GULP_AT, -1.0, MARVEL_KICK, MARVEL_CALM)
+                + 0.3 * Ease.recoil(t - SPIT_AT, 1.0, MARVEL_KICK, MARVEL_CALM);
+        this.twist = corkscrew(t, 0.5) + 0.03 * chew * Math.sin(t * 3.1);
+        unfurl(t, 0.06, 0.08, 0.15, 1.0);
+        cascade(t, GULP_AT - 0.4, 1.0, true, 1.0, 0.1, 0.9);
+        this.spread = Mth.lerp(Ease.smoother((t - GULP_AT + 0.4) / 1.2), this.spread, 0.0);
+        for (int k = 0; k < 5; k++) {
+            this.hook[k] += 0.1 * chew;
+        }
+        cascade(t, SPIT_AT - 0.5, 0.7, false, 0.05, 0.05, 0.2);
+        this.spread = Mth.lerp(Ease.smoother((t - SPIT_AT + 0.5) / 0.9), this.spread, 1.0);
+        cascade(t, SPIT_AT + 4.0, 3.0, false, 0.35, 0.25, 0.45);
+        this.spread = Mth.lerp(Ease.smoother((t - SPIT_AT - 4.0) / 3.0), this.spread, 0.5);
+        breathe(t, 0.6 * window(t, 6.0, 8.0, 9.5, 10.5) + 0.4 * window(t, GULP_AT + 4.0, GULP_AT + 6.0, 30.0, 31.0));
+        this.sink(t, SINK[MAW], LIFE[MAW], 1.0, true);
     }
 }

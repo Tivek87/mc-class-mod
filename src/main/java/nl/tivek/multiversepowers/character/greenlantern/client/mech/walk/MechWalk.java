@@ -62,15 +62,15 @@ public final class MechWalk extends MechGait {
     private static final double MOST_HEAD_UP = 0.55;
     private static final double MOST_HEAD_DOWN = 0.7;
     // Running, the body is lower and leans into its strides, highest while both feet are off the ground and lowest over
-    // each planted one; the hips swing with the legs and the shoulders twist back against them, and the arms pump twice
-    // as far, all of them RUN_SHIFT of a stride later than walking, in time with its longer-swinging legs.
+    // each planted one; the hips swing with the legs and the shoulders twist back against them, and the arms pump
+    // RUN_PUMP further, all of them RUN_SHIFT of a stride later than walking, in time with its longer-swinging legs.
     private static final double RUN_LEAN = 0.1;
     private static final double RUN_TORSO_LEAN = 0.07;
     private static final double RUN_BOB = 0.2;
     private static final double RUN_BOB_AT = 0.465;
     private static final double RUN_TWIST = 0.13;
     private static final double RUN_COUNTER = 1.5;
-    private static final double RUN_PUMP = 1.0;
+    private static final double RUN_PUMP = 0.85;
     private static final double RUN_SHIFT = 0.39;
     private static final double RUN_FIRM = 0.6;
     // Charged up past this, its exhaust roars.
@@ -203,8 +203,8 @@ public final class MechWalk extends MechGait {
             }
             walk.pilotHurt = living.hurtTime;
         }
-        walk.aim = blow.kind() == MechAttacks.AIM && flier != null ? MechBeam.aim(level, flier, MechBeam.AIM_RANGE)
-                : null;
+        boolean aims = blow.kind() == MechAttacks.AIM || blow.kind() == MechAttacks.FLAME;
+        walk.aim = aims && flier != null ? MechBeam.aim(level, flier, MechBeam.AIM_RANGE) : null;
         walk.strike(blow, stage);
         // Climbing, the torso turns to face the wall whatever its pilot looks at.
         walk.face(stage, climb != 0 ? stage.yaw() : look, pitch);

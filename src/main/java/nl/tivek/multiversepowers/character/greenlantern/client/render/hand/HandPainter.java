@@ -59,7 +59,8 @@ public final class HandPainter {
             return;
         }
         if (HandGroup.is(variant)) {
-            HandGroupPainter.draw(painter, hand.id(), variant, base, facing, clock, ring, 1.0, -1.0);
+            HandGroupPainter.draw(painter, hand.id(), variant, base, facing, clock, ring,
+                    hand.held() ? LightBubble.caughtId(hand.charge()) : -1, 1.0, -1.0);
             return;
         }
         double reach = Math.sqrt(facing.x * facing.x + facing.z * facing.z) / scale;
@@ -110,11 +111,13 @@ public final class HandPainter {
         }
     }
 
-    // The creature this hand holds at its fingers, where it is drawn this frame.
+    // The creature this hand holds at its fingers, where it is drawn this frame; one the maw swallowed is out of
+    // sight, so its fist closes whole.
     @Nullable
     private static HandRig.Held held(ConstructPayload hand) {
         Minecraft minecraft = Minecraft.getInstance();
-        if (!hand.held() || minecraft.level == null || !ClientConstructs.atFingers(HandPose.move(hand.variant()))) {
+        int move = HandPose.move(hand.variant());
+        if (!hand.held() || minecraft.level == null || !ClientConstructs.atFingers(move) || move == HandPose.MAW) {
             return null;
         }
         Entity caught = minecraft.level.getEntity(LightBubble.caughtId(hand.charge()));
@@ -271,7 +274,7 @@ public final class HandPainter {
         }
         double fade = 1.0 - Ease.smooth(since / 6.0);
         if (HandGroup.is(hand.variant())) {
-            HandGroupPainter.draw(painter, hand.id(), hand.variant(), base, facing, clock, null, fade, apart);
+            HandGroupPainter.draw(painter, hand.id(), hand.variant(), base, facing, clock, null, -1, fade, apart);
             return;
         }
         double reach = Math.sqrt(facing.x * facing.x + facing.z * facing.z) / scale;

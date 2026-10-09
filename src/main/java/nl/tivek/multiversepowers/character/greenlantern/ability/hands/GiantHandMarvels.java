@@ -32,7 +32,7 @@ import static nl.tivek.multiversepowers.character.greenlantern.ability.hands.Gia
 import static nl.tivek.multiversepowers.character.greenlantern.ability.hands.GiantHands.GRAB_WIDE;
 import static nl.tivek.multiversepowers.engine.math.Vectors.flat;
 
-// What the evil eye and the megaphone do.
+// What the evil eye, the megaphone and the maw do.
 abstract class GiantHandMarvels extends GiantHandFeats {
     private static final double EYE_REACH = 16.0;
     private static final int EYE_CHOICES = 5;
@@ -41,6 +41,11 @@ abstract class GiantHandMarvels extends GiantHandFeats {
     private static final double HORN_CONE = Math.cos(0.8);
     private static final double BLARE_DAMAGE = 0.12;
     private static final double POP_DAMAGE = 1.0;
+    private static final double MAW_REACH = 2.6;
+    private static final double CHOMP_DAMAGE = 0.75;
+    private static final double SPIT_DAMAGE = 0.35;
+    private static final double SPIT_OUT = 0.8;
+    private static final double SPIT_UP = 0.6;
 
     private record Puppet(LivingEntity living, Vec3 from, double lift, int start, int k) {
     }
@@ -65,8 +70,84 @@ abstract class GiantHandMarvels extends GiantHandFeats {
             case HandPose.EYE -> this.eye(level);
             case HandPose.PUPPETEER -> this.puppeteer(level);
             case HandPose.MEGAPHONE -> this.megaphone(level);
+            case HandPose.MAW -> this.maw(level);
             default -> super.feat(level);
         }
+    }
+
+    // The maw bites shut round the creature at its mouth, chews it three times and spits it out far; what dies in it
+    // stays in it, and the maw burps instead.
+    private void maw(ServerLevel level) {
+        HandPose.Place place = this.place();
+        Vec3 mouth = place.at(HandPose.MAW_MOUTH);
+        if (this.t == HandPose.MAW_GULPS) {
+            this.gulp(level, mouth);
+        }
+        LivingEntity held = this.held;
+        if (held == null) {
+            return;
+        }
+        if (held.isRemoved() || held.level() != level) {
+            this.letGo();
+            return;
+        }
+        for (int chomp : HandPose.MAW_CHOMPS) {
+            if (this.t == chomp && held.isAlive()) {
+                this.hit(level, held, this.storm.ability.getDamage() * CHOMP_DAMAGE, Vec3.ZERO, 0.0, 0.0);
+                Vec3 fist = place.at(HandPose.GRIP);
+                ParticleFx.sphereOut(level, ParticleFx.dust(PowerRing.BRIGHT, 1.1F), fist, 12, 0.25);
+                ParticleFx.cloud(level, ParticleTypes.CRIT, fist, 8, 0.6, 0.25);
+                this.storm.sound(level, fist, SoundEvents.GENERIC_EAT, 2.0F, 0.5F);
+                this.storm.sound(level, fist, SoundEvents.EVOKER_FANGS_ATTACK, 1.4F, 0.7F);
+                this.storm.sound(level, fist, SoundEvents.AMETHYST_BLOCK_BREAK, 1.2F, 0.6F);
+            }
+        }
+        if (this.t == HandPose.MAW_SPITS) {
+            if (held.isAlive()) {
+                this.spit(level, place, mouth, held);
+                return;
+            }
+            ParticleFx.cloud(level, ParticleFx.dust(PowerRing.BRIGHT, 1.3F), mouth, 18, 0.6, 0.08);
+            ParticleFx.cloud(level, ParticleTypes.POOF, mouth, 8, 0.4, 0.04);
+            this.storm.sound(level, mouth, SoundEvents.PLAYER_BURP, 2.4F, 0.5F);
+            this.storm.sound(level, mouth, SoundEvents.AMETHYST_BLOCK_CHIME, 1.4F, 0.6F);
+        }
+        this.hold(mouth);
+    }
+
+    // As the mouth comes down, it swallows what lies nearest it, out to hurt the caster and small enough to hold, its
+    // own creature first.
+    private void gulp(ServerLevel level, Vec3 mouth) {
+        LivingEntity caught = null;
+        double best = MAW_REACH;
+        for (LivingEntity living : this.near(level, 8.0)) {
+            double far = living.getBoundingBox().getCenter().distanceTo(mouth) - (living == this.target ? 0.8 : 0.0);
+            if (far < best && GiantHands.fair(this.storm.owner, living) && this.holdable(living)) {
+                best = far;
+                caught = living;
+            }
+        }
+        this.storm.sound(level, mouth, SoundEvents.EVOKER_FANGS_ATTACK, 2.4F, 0.5F);
+        this.storm.sound(level, mouth, SoundEvents.GENERIC_EAT, 2.4F, 0.4F);
+        if (caught == null) {
+            return;
+        }
+        this.take(caught);
+        ParticleFx.sphereOut(level, ParticleFx.dust(PowerRing.BRIGHT, 1.3F), mouth, 18, 0.35);
+        this.storm.sound(level, mouth, SoundEvents.PLAYER_ATTACK_STRONG, 1.8F, 0.6F);
+    }
+
+    // Out of the open mouth, the way the palm faces, hard.
+    private void spit(ServerLevel level, HandPose.Place place, Vec3 mouth, LivingEntity held) {
+        this.letGo();
+        Vec3 way = place.forward().normalize();
+        hold(held, mouth.add(way.scale(0.4 + held.getBbWidth() * 0.5)));
+        this.hit(level, held, this.storm.ability.getDamage() * SPIT_DAMAGE, flat(way), SPIT_OUT, SPIT_UP);
+        ParticleFx.cloud(level, ParticleFx.dust(PowerRing.PALE, 1.2F), mouth.add(way.scale(0.6)), 24, 0.5, 0.2);
+        ParticleFx.cloud(level, ParticleTypes.SPIT, mouth, 10, 0.3, 0.3);
+        this.storm.sound(level, mouth, SoundEvents.LLAMA_SPIT, 2.4F, 0.4F);
+        this.storm.sound(level, mouth, SoundEvents.PLAYER_ATTACK_KNOCKBACK, 2.0F, 0.6F);
+        this.storm.sound(level, mouth, SoundEvents.SLIME_SQUISH, 1.6F, 0.5F);
     }
 
     @Override

@@ -35,7 +35,7 @@ public final class MechPose {
     public int button = -1;
     public double press;
     MechAttacks.Blow blow = MechAttacks.Blow.NONE;
-    // What its pilot's crosshair rests on while the missile arm aims (null: straight ahead).
+    // What its pilot's crosshair rests on while the missile arm or the flamethrower aims (null: straight ahead).
     @Nullable
     Vec3 aim;
     // Climbing, where each hand holds on (the middle of its palm, in the world), which way its fingers run and its palm
@@ -216,6 +216,11 @@ public final class MechPose {
 
     public MechAttacks.Blow blow() {
         return this.blow;
+    }
+
+    @Nullable
+    public Vec3 aim() {
+        return this.aim;
     }
 
     // Whether its hands reach for or hold what it climbs.

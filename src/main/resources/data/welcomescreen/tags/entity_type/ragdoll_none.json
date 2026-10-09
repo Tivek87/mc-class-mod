@@ -17,6 +17,7 @@
     "minecraft:tropical_fish",
     "minecraft:pufferfish",
     "minecraft:tadpole",
-    "minecraft:dolphin"
+    "minecraft:dolphin",
+    "welcomescreen:mech_helper"
   ]
 }

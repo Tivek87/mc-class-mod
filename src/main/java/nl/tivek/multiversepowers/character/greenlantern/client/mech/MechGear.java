@@ -3,12 +3,17 @@ package nl.tivek.multiversepowers.character.greenlantern.client.mech;
 import java.util.ArrayList;
 import java.util.List;
 import javax.annotation.Nullable;
+import net.minecraft.client.Minecraft;
 import net.minecraft.util.Mth;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.Vec3;
+import nl.tivek.multiversepowers.character.CharacterAbility;
+import nl.tivek.multiversepowers.character.GameCharacter;
 import nl.tivek.multiversepowers.character.greenlantern.client.mech.shape.MechArmShapes;
 import nl.tivek.multiversepowers.character.greenlantern.client.mech.shape.MechParts;
 import nl.tivek.multiversepowers.character.greenlantern.client.mech.walk.MechPose;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.LanternPainter;
+import nl.tivek.multiversepowers.character.greenlantern.client.render.fire.FireStream;
 import nl.tivek.multiversepowers.character.greenlantern.mech.MechAttacks;
 import nl.tivek.multiversepowers.character.greenlantern.mech.MechScript;
 import nl.tivek.multiversepowers.engine.client.render.ConstructPainter.Frame;
@@ -17,23 +22,23 @@ import nl.tivek.multiversepowers.engine.client.render.mesh.Mesh;
 import nl.tivek.multiversepowers.engine.math.Colors;
 import nl.tivek.multiversepowers.engine.math.Ease;
 
-// The mech's gear for its missile arm and rocket boots, as everyone sees it. As the arm aims, the back of the right
-// hand opens: two doors hinged at its sides swing out and a rack of six tubes rises between them, a missile's nose in
-// each, their mouths ahead along the fingers (where MechMissiles fires them from); a salvo flashes out of the mouths
-// and the next missiles slide in. On the rocket boots a pair of nozzles grows out of each sole and roars with flame.
+// The mech's gear for its missile arm, flamethrower and rocket boots, as everyone sees it. As the arm aims, the back
+// of the right hand opens: two doors hinged at its sides swing out and a rack of five tubes rises between them, a
+// missile's nose in each, their mouths ahead along the fingers (where MechMissiles fires them from); each click
+// flashes one out of its tube, which stays empty. For the flamethrower a barrel grows out of the wrist over the right
+// fist, a tank on its back, and fire pours from its mouth (MechFlame). On the rocket boots a pair of nozzles grows out
+// of each sole and roars with flame. For its helpers the doors of a hatch on its belly swing open.
 final class MechGear {
     private static final double BACK = -0.3;
     private static final double RACK_DEEP = 0.62;
     private static final double MOUTH = MechArmShapes.KNUCKLES + 0.02;
-    private static final double[] TUBE_X = { -0.38, 0.0, 0.38 };
-    private static final double[] TUBE_Z = { -0.18, -0.44 };
     private static final double TUBE = 0.13;
     private static final double DOOR_OPEN = 2.0;
     private static final Shape DOOR = Shape.of(Mesh.bevel(-0.62, MechArmShapes.WRIST + 0.06, -0.1, 0.0,
             MechArmShapes.KNUCKLES - 0.02, 0.0, 0.03, 1.12));
     private static final Shape DOOR_LEFT = MechParts.mirrored(DOOR);
     private static final Shape RACK = Shape.of(rack());
-    private static final Shape NOSES = Shape.of(noses());
+    private static final Shape[] NOSES = noses();
     // Under each sole, behind and ahead of the middle of the foot, and how far the nozzles reach down out of it.
     private static final double[] NOZZLE_Z = { -0.55, 0.85 };
     private static final double NOZZLE_DOWN = 0.45;
@@ -42,6 +47,19 @@ final class MechGear {
     private static final double FLAME = 4.5;
     private static final double LAUNCH_FLAME = 8.0;
     private static final double RADIUS = 0.42;
+    // The flamethrower's barrel: grown from just behind the wrist, its middle this far out of the palm, its mouth
+    // where the server pours the fire from.
+    private static final double BARREL_FROM = MechArmShapes.WRIST - 0.5;
+    private static final double BARREL_Z = 0.2;
+    private static final double BARREL_MOUTH = MechScript.PALM_ALONG + MechAttacks.MUZZLE;
+    private static final Shape BARREL = Shape.of(barrel());
+    // The hatch under the cockpit: two doors on the belly, in the torso's places, each hinged at its outer edge.
+    private static final double HATCH_HINGE = 0.95;
+    private static final double HATCH_Z = 1.13;
+    private static final double HATCH_OPEN = 1.9;
+    private static final Shape HATCH_DOOR = Shape.of(Mesh.bevel(0.03, 7.55, HATCH_Z - 0.05, HATCH_HINGE, 8.55,
+            HATCH_Z + 0.05, 0.03, 1.1));
+    private static final Shape HATCH_DOOR_LEFT = MechParts.mirrored(HATCH_DOOR);
 
     @Nullable
     private static Frame hand;
@@ -50,29 +68,53 @@ final class MechGear {
     private MechGear() {
     }
 
-    // The rack: a block of six tubes, its back at z 0 on the back of the hand once risen, its mouths ahead.
+    // The rack: a block of five tubes, its back at z 0 on the back of the hand once risen, its mouths ahead.
     private static Mesh[] rack() {
         List<Mesh> m = new ArrayList<>();
         m.add(Mesh.bevel(-0.58, MechArmShapes.WRIST + 0.12, -RACK_DEEP, 0.58, MOUTH - 0.04, 0.0, 0.06, 1.0));
-        for (double x : TUBE_X) {
-            for (double z : TUBE_Z) {
-                m.add(Mesh.cylinder(10, TUBE + 0.05, MOUTH - 0.5, MOUTH + 0.08, 1.08).moved(x, 0.0, z));
-                m.add(Mesh.torus(12, 4, TUBE + 0.04, 0.04, 1.4).moved(x, MOUTH + 0.08, z));
-            }
+        for (int k = 0; k < MechAttacks.ROCKETS; k++) {
+            m.add(Mesh.cylinder(10, TUBE + 0.05, MOUTH - 0.5, MOUTH + 0.08, 1.08).moved(tubeX(k), 0.0, tubeZ(k)));
+            m.add(Mesh.torus(12, 4, TUBE + 0.04, 0.04, 1.4).moved(tubeX(k), MOUTH + 0.08, tubeZ(k)));
         }
         m.add(Mesh.bevel(-0.5, MechArmShapes.WRIST + 0.2, -RACK_DEEP - 0.06, 0.5, MOUTH - 0.3, -RACK_DEEP + 0.02, 0.03,
                 1.2));
         return m.toArray(Mesh[]::new);
     }
 
-    private static Mesh[] noses() {
-        List<Mesh> m = new ArrayList<>();
-        for (double x : TUBE_X) {
-            for (double z : TUBE_Z) {
-                m.add(Mesh.cone(8, TUBE * 0.8, 0.0, MOUTH - 0.12, MOUTH + 0.14, 1.3).moved(x, 0.0, z));
-            }
+    // A missile's nose in each tube, one shape per tube so a fired one is left out.
+    private static Shape[] noses() {
+        Shape[] noses = new Shape[MechAttacks.ROCKETS];
+        for (int k = 0; k < noses.length; k++) {
+            noses[k] = Shape.of(Mesh.cone(8, TUBE * 0.8, 0.0, MOUTH - 0.12, MOUTH + 0.14, 1.3).moved(tubeX(k), 0.0,
+                    tubeZ(k)));
         }
-        return m.toArray(Mesh[]::new);
+        return noses;
+    }
+
+    // Tube k in the rack's own frame (its back on the back of the hand).
+    private static double tubeX(int k) {
+        return MechAttacks.TUBE_X[k];
+    }
+
+    private static double tubeZ(int k) {
+        return MechAttacks.TUBE_Z[k] - BACK;
+    }
+
+    // The flamethrower, from its back end at y 0: a cuff over the wrist, a barrel narrowing over the fist to a flared
+    // mouth with a bore in it, two bands round it, and a tank on its back piped to the mouth.
+    private static Mesh[] barrel() {
+        double mouth = BARREL_MOUTH - BARREL_FROM;
+        double tank = -1.0 - BARREL_Z;
+        return new Mesh[] {
+                Mesh.lathe(16, 1.0, 0.0, 0.0, 0.92, 0.0, 1.0, 0.3, 1.0, 1.1, 0.88, 1.7, 0.7, 2.45, 0.66, mouth - 0.42,
+                        0.8, mouth, 0.48, mouth, 0.42, mouth - 0.27, 0.0, mouth - 0.27),
+                Mesh.torus(16, 5, 1.0, 0.08, 1.4).moved(0.0, 1.15, 0.0),
+                Mesh.torus(14, 5, 0.76, 0.07, 1.4).moved(0.0, 2.15, 0.0),
+                Mesh.torus(14, 5, 0.66, 0.09, 1.55).moved(0.0, mouth, 0.0),
+                Mesh.lathe(10, 1.1, 0.0, 0.55, 0.22, 0.6, 0.3, 0.75, 0.3, 1.95, 0.22, 2.1, 0.0, 2.15).moved(0.0, 0.0,
+                        tank),
+                Mesh.tube(false, 6, 0.08, 1.25, new Vec3(0.0, 2.1, tank), new Vec3(0.0, 2.45, tank + 0.2),
+                        new Vec3(0.0, 2.6, -0.62)) };
     }
 
     // A bell nozzle reaching down out of a sole: its throat at the sole, its bell flared at the bottom.
@@ -105,17 +147,42 @@ final class MechGear {
             painter.clip(frame.at(0.0, 0.0, BACK), frame.forward().scale(-1.0), 1.0);
         }
         MechParts.draw(painter, RACK, rack, 1.0, apart, seed + 2);
-        if (loaded(blow)) {
-            MechParts.draw(painter, NOSES, rack, 1.0, apart, seed + 3);
+        for (int k = MechAttacks.fired(blow); k < MechAttacks.ROCKETS; k++) {
+            MechParts.draw(painter, NOSES[k], rack, 1.0, apart, seed + 3 + k);
         }
         painter.noClip();
     }
 
-    // Whether missiles stand in the tubes: none for a moment after each salvo, none after the last.
-    private static boolean loaded(MechAttacks.Blow blow) {
-        int fired = MechAttacks.fired(blow);
-        return fired < MechAttacks.SALVOS && MechAttacks.kick(blow) < 0.35
-                && (fired == 0 || (blow.from() >>> 2) >= MechAttacks.SALVO_KICK - 2);
+    // The flamethrower over the right fist (`frame`, the hand as the arm draws it), grown out of the wrist as far as
+    // the blow has it and sunk back into it again.
+    static void flamer(LanternPainter painter, Frame frame, MechAttacks.Blow blow, double apart, int seed) {
+        double out = MechAttacks.nozzle(blow);
+        if (out <= 0.01) {
+            return;
+        }
+        double wide = Mth.clamp(out * 3.0, 0.15, 1.0);
+        Frame barrel = frame.moved(0.0, BARREL_FROM, BARREL_Z).stretched(wide, Ease.backOut(out), wide);
+        MechParts.draw(painter, BARREL, barrel, 1.0, apart, seed);
+    }
+
+    // The hatch under the cockpit (`body`, the torso as the trunk is drawn): its doors grow out of the belly and swing
+    // open, the right one to the right, the left one to the left.
+    static void hatch(LanternPainter painter, Frame body, MechAttacks.Blow blow, double apart, int seed) {
+        double open = MechAttacks.hatch(blow);
+        if (open <= 0.01) {
+            return;
+        }
+        double swing = HATCH_OPEN * Ease.smooth(Mth.clamp(open * 1.5 - 0.3, 0.0, 1.0));
+        double thick = Mth.clamp(open * 6.0, 0.05, 1.0);
+        for (int side = -1; side <= 1; side += 2) {
+            Frame door = body.turned(side * HATCH_HINGE, 0.0, HATCH_Z, 0.0, 1.0, 0.0, side * swing);
+            Frame grown = door.moved(0.0, 0.0, HATCH_Z).stretched(1.0, 1.0, thick).moved(0.0, 0.0, -HATCH_Z);
+            MechParts.draw(painter, side > 0 ? HATCH_DOOR : HATCH_DOOR_LEFT, grown, 1.0, apart,
+                    seed + (side > 0 ? 0 : 1));
+        }
+        if (apart < 0.0 && open > 0.3) {
+            painter.flare(body.at(0.0, 8.05, HATCH_Z), 0.9 * open, 0.8 * open);
+        }
     }
 
     // Under a sole (`foot` as the leg draws it), the nozzles out as far as the blow has them.
@@ -145,25 +212,25 @@ final class MechGear {
         };
     }
 
-    // The light of both: the pod's tubes glowing, flashing out as a salvo fires; flame out of every nozzle while the
-    // boots thrust.
-    static void lights(LanternPainter painter, MechPose pose, boolean own) {
+    // The light of all three: the full tubes glowing, the one just fired flashing out; the flamethrower's mouth
+    // alight and pouring fire towards its pilot's crosshair; flame out of every nozzle while the boots thrust.
+    static void lights(LanternPainter painter, MechPose pose, int owner, boolean own) {
         MechAttacks.Blow blow = pose.blow();
         Frame frame = hand;
+        if (frame != null && MechAttacks.nozzle(blow) > 0.5) {
+            pour(painter, frame, pose, owner);
+        }
         double open = MechAttacks.opened(blow);
         if (frame != null && open > 0.3) {
             double kick = MechAttacks.kick(blow);
-            boolean loaded = loaded(blow);
-            for (double x : TUBE_X) {
-                for (double z : TUBE_Z) {
-                    Vec3 mouth = frame.at(x, MOUTH + 0.1, BACK + z);
-                    if (loaded) {
-                        painter.flare(mouth, 0.16, 0.5 * open);
-                    }
-                    if (kick > 0.0) {
-                        painter.flare(mouth, 0.5 + 0.6 * kick, kick);
-                        painter.exhaust(mouth, frame.up().normalize(), 1.6, 0.16, kick);
-                    }
+            int fired = MechAttacks.fired(blow);
+            for (int k = 0; k < MechAttacks.ROCKETS; k++) {
+                Vec3 mouth = frame.at(MechAttacks.TUBE_X[k], MOUTH + 0.1, MechAttacks.TUBE_Z[k]);
+                if (k >= fired) {
+                    painter.flare(mouth, 0.16, 0.5 * open);
+                } else if (k == fired - 1 && kick > 0.0) {
+                    painter.flare(mouth, 0.5 + 0.6 * kick, kick);
+                    painter.exhaust(mouth, frame.up().normalize(), 1.6, 0.16, kick);
                 }
             }
         }
@@ -186,6 +253,24 @@ final class MechGear {
                 }
             }
         }
+    }
+
+    // A pilot light in the flamethrower's mouth; while it pours, fire out of it to as far as the setting reaches.
+    private static void pour(LanternPainter painter, Frame frame, MechPose pose, int owner) {
+        Vec3 mouth = frame.at(0.0, BARREL_MOUTH, BARREL_Z);
+        boolean pouring = MechAttacks.pouring(pose.blow());
+        painter.flare(mouth, pouring ? 0.9 : 0.35, pouring ? 0.9 : 0.6);
+        Minecraft minecraft = Minecraft.getInstance();
+        Entity pilot = minecraft.level == null ? null : minecraft.level.getEntity(owner);
+        CharacterAbility mech = GameCharacter.GREEN_LANTERN.byName("mech");
+        if (!pouring || pilot == null || mech == null) {
+            return;
+        }
+        Vec3 aim = pose.aim();
+        Vec3 way = aim == null || aim.distanceToSqr(mouth) < 1.0 ? frame.up().normalize() : aim.subtract(mouth);
+        FireStream.Kind kind = FireStream.Kind.MECH;
+        double now = FireStream.now(minecraft.getTimer().getGameTimeDeltaPartialTick(false));
+        FireStream.feed(pilot, kind, mouth, way, now, mech.value("mechFlameReach") / (kind.life * 0.6));
     }
 
     static void forget() {

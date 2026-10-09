@@ -3,6 +3,54 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.7.9-alpha] - 2026-10-10
+
+### Added
+- **Green Lantern:** **Maw**, a new Giant Hand: a mouth in its palm swallows a creature, chews it three times and spits
+  it out far if it still lives.
+- **Green Lantern:** **Cosmic rift**, a new Giant Hand: two hands tear the ground or a wall open on a sky of stars, a
+  tentacle of hard light drags a creature in and burns it, and the rift slams shut in a blast.
+- **Green Lantern:** **Flamethrower** (V in the mech, standing still): a flamethrower grows over its right fist and
+  pours fire for up to 10 seconds.
+- **Green Lantern:** **Helpers** (Left Alt in the mech): a hatch under the cockpit opens and 3 robots twice your height
+  drop out; they punch, shoot and leap at enemies until they fall or you leave the mech.
+- **Green Lantern:** the mech **jumps** (space); press space twice for the rocket boots and X in the air for the dive,
+  from a jump too.
+- **Thor:** a thrown **Mjolnir**, flying or lying, strikes the nearest enemy within 5 blocks with lightning every
+  second, leaping on to 3 enemies.
+- **Green Lantern's settings:** the Maw's and the Cosmic rift's chance, most per use, damage and knockback; the mech
+  flamethrower's cost, time, reach, damage and wait; the helpers' cost, health, damage and wait.
+- **Thor's settings:** how far the thrown hammer's lightning reaches and how hard it strikes.
+
+### Changed
+- **Thor:** the **Storm Throw** goes far less high: the hammer is tossed about 5½ blocks up. In flight it reaches only
+  6 blocks, so thrown from higher up it strikes no ground and flies back.
+- **Thor:** the **Storm Throw** flings the hammer up towards where you aim; with no enemy under your aim it goes for the
+  nearest one there.
+- **Green Lantern:** the **Giant Hands** bring one hand a press, up to 5 in one use; then the cooldown starts.
+- **Green Lantern:** the suit is worn over armor: your armor is hidden while you are Green Lantern.
+- **Chain lightning:** Thor's chains and the Lightning spell's chain leap on to enemies up to 4 blocks away.
+- **Green Lantern:** the mech's **missile arm** fires one missile a click, 5 at most, each bursting harder (5 hearts).
+- **Green Lantern:** the mech runs more like a runner: its fists pump up before its chest and each foot kicks up
+  behind it before it swings through.
+- **Green Lantern's settings:** the missile arm's cost and damage are per missile: 1 power and 10 half hearts by
+  default.
+- **Green Lantern's settings:** the Giant Hands' most hands counts a whole use, 5 by default, and so does each hand's
+  own most.
+- **Thor's settings:** Follow the Hammer reaches 128 blocks by default (was 24).
+
+### Removed
+- **Green Lantern's settings:** the Giant Hands' fewest hands a press.
+
+### Fixed
+- **Green Lantern:** the mech's rocket boots (press jump twice) did nothing in creative.
+- **Green Lantern:** as the mech builds itself, its arms and the head it swings no longer pass through its legs.
+- **Green Lantern:** in the mech, the ring's own moves started and did nothing (the Beam charged but never fired).
+- **Thor:** dashing to the thrown hammer (hold the scroll wheel) did nothing while it still flew, or once it had flown
+  its whole way; too far off, the panel now says so.
+- **Thor:** his arm stayed raised after he died or a move was broken off.
+- **Light effects:** glows ended in a hard cut where they met blocks; they fade out softly now.
+
 ## [0.7.8-alpha] - 2026-10-09
 
 ### Added

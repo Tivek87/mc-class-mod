@@ -17,6 +17,8 @@ import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.RenderPlayerEvent;
 import nl.tivek.multiversepowers.MultiversePowers;
+import nl.tivek.multiversepowers.character.CharacterLookPayload;
+import nl.tivek.multiversepowers.character.GameCharacter;
 import nl.tivek.multiversepowers.character.thor.ThorGrab;
 import nl.tivek.multiversepowers.character.thor.ThorStatePayload;
 import nl.tivek.multiversepowers.character.thor.client.motion.ThorMotion;
@@ -185,6 +187,18 @@ public final class ClientThor {
             }
             default -> {
             }
+        }
+    }
+
+    // A player who is no longer Thor (left him, or died as him) keeps nothing of him: no flight, raised arm or hammer.
+    public static void seen(CharacterLookPayload payload) {
+        if (payload.character() == GameCharacter.THOR.ordinal()) {
+            return;
+        }
+        VIEWS.remove(payload.entity());
+        LocalPlayer player = Minecraft.getInstance().player;
+        if (player != null && player.getId() == payload.entity()) {
+            ThorMotion.stop();
         }
     }
 

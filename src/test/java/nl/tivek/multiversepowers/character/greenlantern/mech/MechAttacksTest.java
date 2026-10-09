@@ -65,13 +65,13 @@ class MechAttacksTest {
         }
     }
 
-    // The missile arm's salvos (how many, how long since the last) and every move's whole length go with the mech.
+    // The missile arm's missiles (how many, how long since the last) and every move's whole length go with the mech.
     @Test
     void theMovesTravelWithTheMech() {
         MechAttacks.Blow aim = MechAttacks.unpack(MechAttacks.pack(MechAttacks.AIM, MechAttacks.AIM_MOST - 1,
-                MechAttacks.salvos(2, 5), 0.0));
-        assertEquals(2, MechAttacks.fired(aim));
-        assertEquals(5, aim.from() >>> 2);
+                MechAttacks.rockets(MechAttacks.ROCKETS, 15), 0.0));
+        assertEquals(MechAttacks.ROCKETS, MechAttacks.fired(aim));
+        assertEquals(15, MechAttacks.sinceFired(aim));
         for (int kind = MechAttacks.SWEEP; kind <= MechAttacks.SPIN; kind++) {
             int age = MechAttacks.length(kind);
             assertEquals(age, MechAttacks.unpack(MechAttacks.pack(kind, age, 0, 0.0)).age(), "kind " + kind);

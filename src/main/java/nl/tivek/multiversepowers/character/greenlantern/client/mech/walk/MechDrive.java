@@ -97,6 +97,8 @@ public final class MechDrive {
     private static final double DIVE_DROP = 2.4;
     private static final double DIVE_AHEAD = 0.6;
     private static final double DIVE_SPEED_UP = 0.6;
+    // A jump leaps up JUMP_UP a tick and falls back as anything falls, keeping the speed it had.
+    private static final double JUMP_UP = 0.78;
     // Where its body would run into blocks in flight (its feet, knees, hips, chest, shoulders and head).
     private static final Vec3[] BODY = { new Vec3(1.5, 0.5, 0.2), new Vec3(-1.5, 0.5, 0.2), new Vec3(1.6, 4.0, 0.4),
             new Vec3(-1.6, 4.0, 0.4), new Vec3(0.0, 7.1, 0.0), new Vec3(0.0, 9.4, 1.5), new Vec3(2.6, 9.8, 0.0),
@@ -114,6 +116,8 @@ public final class MechDrive {
     private static boolean steppingRound;
     private static int pressed;
     private static boolean blocked;
+    private static boolean jumpHeld;
+    private static boolean leapt;
     @Nullable
     private static MechScript.Stage climbFrom;
     private static double climbHeight;
@@ -139,7 +143,8 @@ public final class MechDrive {
     }
 
     // `blow`: the move it makes. Striking it stands its ground, its legs turning no more (MechAttacks.plants); aiming
-    // or firing its eyes it walks but never runs; on its rocket boots it flies (fly).
+    // or firing its eyes it walks but never runs; on its rocket boots or jumping it flies (fly). Pressing jump with no
+    // move under way tells the server, which jumps it.
     public static void drive(LocalPlayer player, int id, MechScript.Stage server, Input input, MechAttacks.Blow blow) {
         if (id != mech) {
             player.displayClientMessage(Component.translatable("ring." + MultiversePowers.MODID + ".mech_drive",
@@ -156,8 +161,11 @@ public final class MechDrive {
             steppingRound = false;
             pressed = 0;
             blocked = false;
+            jumpHeld = true;
             climbFrom = null;
         }
+        boolean jump = input.jumping && !jumpHeld;
+        jumpHeld = input.jumping;
         if (climbFrom != null) {
             climbing();
             return;
@@ -167,6 +175,7 @@ public final class MechDrive {
             return;
         }
         rise = 0.0;
+        leapt = false;
         boolean still = MechAttacks.plants(blow);
         boolean ahead = !still && input.forwardImpulse > 0.01F;
         boolean run = ahead && !blow.striking() && Minecraft.getInstance().options.keySprint.isDown();
@@ -232,8 +241,9 @@ public final class MechDrive {
         }
         Vec3 was = base;
         base = new Vec3(next.x, y, next.z);
-        if (base.distanceToSqr(was) > MOVED * MOVED || Math.abs(turn) > 1.0E-6) {
-            send(0);
+        jump &= blow.kind() == MechAttacks.NONE && fall == 0.0;
+        if (jump || base.distanceToSqr(was) > MOVED * MOVED || Math.abs(turn) > 1.0E-6) {
+            send(0, jump);
         }
     }
 
@@ -319,13 +329,18 @@ public final class MechDrive {
     }
 
     private static void send(int climb) {
-        PacketDistributor.sendToServer(new MechDrivePayload(base, yaw, climb));
+        send(climb, false);
+    }
+
+    private static void send(int climb, boolean jump) {
+        PacketDistributor.sendToServer(new MechDrivePayload(base, yaw, climb, jump));
     }
 
     // On its rocket boots (MechAttacks.FLY): crouched, it leaps up as they ignite; while they thrust it flies where its
     // pilot steers it, climbing with the jump key held, sinking with the sneak key, else hovering; out of thrust it
-    // falls. Diving (MechAttacks.DIVE) it hangs a moment, wound up, then plunges ahead and down. It stops short of
-    // blocks its body would run into and comes down on the ground under it.
+    // falls. Diving (MechAttacks.DIVE) it hangs a moment, wound up, then plunges ahead and down. Jumping
+    // (MechAttacks.JUMP) it leaps up once and falls, flying on as fast as it went. It stops short of blocks its body
+    // would run into and comes down on the ground under it.
     private static void fly(LocalPlayer player, Input input, MechAttacks.Blow blow) {
         ClientLevel level = player.clientLevel;
         double age = blow.age();
@@ -336,10 +351,14 @@ public final class MechDrive {
         turn = 0.0;
         yaw = Mth.wrapDegrees(yaw + (float) Mth.clamp(behind * FLY_TURN_GAIN, -FLY_TURN, FLY_TURN));
         MechScript.Stage stage = MechScript.Stage.facing(base, yaw);
+        boolean jumping = blow.kind() == MechAttacks.JUMP;
         double want = 0.0;
         double wantSide = 0.0;
         if (plunge) {
             want = DIVE_AHEAD;
+        } else if (jumping) {
+            want = speed;
+            wantSide = side;
         } else if (!diving) {
             boolean fast = Minecraft.getInstance().options.keySprint.isDown();
             want = input.forwardImpulse > 0.01F ? fast ? FLY_FAST : FLY : input.forwardImpulse < -0.01F ? -FLY_BACK
@@ -354,6 +373,9 @@ public final class MechDrive {
             rise += Mth.clamp(DIVE_WIND - rise, -RISE_UP, RISE_UP);
         } else if (blow.kind() == MechAttacks.FLY && age < MechAttacks.FLY_LAUNCH) {
             rise = 0.0;
+        } else if (jumping) {
+            rise = leapt ? Math.max(-FASTEST_FALL, rise - FALL) : JUMP_UP;
+            leapt = true;
         } else if (thrust && age < MechAttacks.FLY_LAUNCH + LAUNCH_TICKS) {
             rise = LAUNCH;
         } else if (thrust) {

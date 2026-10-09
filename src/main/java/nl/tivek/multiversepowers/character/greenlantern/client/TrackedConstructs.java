@@ -22,6 +22,7 @@ import nl.tivek.multiversepowers.character.greenlantern.client.slam.SlamPainter;
 import nl.tivek.multiversepowers.character.greenlantern.construct.ConstructPayload;
 import nl.tivek.multiversepowers.character.greenlantern.express.ExpressScript;
 import nl.tivek.multiversepowers.character.greenlantern.hand.HandPose;
+import nl.tivek.multiversepowers.character.greenlantern.hand.HandRift;
 import nl.tivek.multiversepowers.character.greenlantern.mech.MechAttacks;
 import nl.tivek.multiversepowers.character.greenlantern.mech.MechBuild;
 import nl.tivek.multiversepowers.character.greenlantern.mech.MechScript;
@@ -425,6 +426,32 @@ abstract class TrackedConstructs {
                 ahead = ahead.lengthSqr() < 1.0E-8 ? new Vec3(0.0, 0.0, 1.0) : ahead.normalize();
                 return new Clap(new Vec3(-ahead.z, 0.0, ahead.x), track.clock(partialTick));
             }
+        }
+        return null;
+    }
+
+    // A creature a hand has swallowed: the maw's shrinking into its mouth, or the rift's sinking down into its surface
+    // (down); gone once wholly in, until the hand lets go of it.
+    public record Devour(double shrink, Vec3 down, double sink, boolean gone) {
+    }
+
+    @Nullable
+    public static Devour devoured(int entity, float partialTick) {
+        for (Track track : CONSTRUCTS.values()) {
+            ConstructPayload hand = track.latest;
+            int move = HandPose.move(hand.variant());
+            if (hand.shape() != ConstructPayload.HAND || move != HandPose.MAW && move != HandPose.RIFT || !hand.held()
+                    || LightBubble.caughtId(hand.charge()) != entity) {
+                continue;
+            }
+            double clock = track.clock(partialTick);
+            if (move == HandPose.MAW) {
+                double shrink = HandPose.swallowed(clock);
+                return new Devour(shrink, Vec3.ZERO, 0.0, shrink >= 1.0);
+            }
+            double sink = HandRift.sunk(clock);
+            Vec3 down = HandRift.frame(hand.variant(), hand.center(), hand.facing()).normal().scale(-1.0);
+            return new Devour(0.0, down, sink, sink >= 1.0);
         }
         return null;
     }

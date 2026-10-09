@@ -21,6 +21,7 @@ import net.minecraft.world.phys.shapes.CollisionContext;
 import nl.tivek.multiversepowers.character.greenlantern.duo.HandDuo;
 import nl.tivek.multiversepowers.character.greenlantern.hand.HandGroup;
 import nl.tivek.multiversepowers.character.greenlantern.hand.HandPose;
+import nl.tivek.multiversepowers.character.greenlantern.hand.HandRift;
 import nl.tivek.multiversepowers.engine.math.Vectors;
 import nl.tivek.multiversepowers.engine.world.LoadedWorld;
 import static nl.tivek.multiversepowers.character.greenlantern.ability.hands.GiantHands.SCALE;
@@ -33,7 +34,7 @@ abstract class GiantHandPlaces {
     // Hands that may come out of a wall next to the creature instead of the ground, and how often when one is there.
     private static final Set<Integer> WALLED = Set.of(HandPose.SMACK, HandPose.GRAB, HandPose.FINGER, HandPose.SLAM,
             HandPose.POUND, HandPose.SNAP, HandPose.RAKE, HandPose.RAGDOLL, HandPose.RINGBEAM, HandPose.SCOOP,
-            HandPose.EYE, HandPose.MEGAPHONE, HandPose.PUPPETEER);
+            HandPose.EYE, HandPose.MEGAPHONE, HandPose.PUPPETEER, HandPose.MAW);
     // Hands that act from afar and so may stand higher or lower than the creature.
     private static final Set<Integer> FAR = Set.of(HandPose.RINGBEAM, HandPose.EYE, HandPose.MEGAPHONE,
             HandPose.PUPPETEER, HandPose.RINGCHAINS);
@@ -45,6 +46,9 @@ abstract class GiantHandPlaces {
     private static final int WALL_COLUMN = (int) Math.floor(WALL_HIGH * SCALE + 1.0) + 1;
     // How far out of its ground or wall a hand looks for its creature from.
     private static final double SEES_FROM = 1.5;
+    // How much higher or lower than the creature's feet a rift may tear open, and how far it keeps from the caster.
+    private static final double RIFT_STEP = 1.6;
+    private static final double RIFT_ROOM = 1.5;
 
     private record WallSpot(Vec3 hit, Vec3 out, double far, int column) {
     }
@@ -68,6 +72,9 @@ abstract class GiantHandPlaces {
         away = away.lengthSqr() < 1.0E-4 ? Vec3.directionFromRotation(0.0F, this.owner.getYRot()) : away.normalize();
         if (move == HandPose.AXE) {
             return this.pairFor(level, target, away);
+        }
+        if (move == HandPose.RIFT) {
+            return this.riftHand(level, target, away);
         }
         if (HandPose.portal(move)) {
             return this.portalHand(level, target, move, away);
@@ -297,6 +304,64 @@ abstract class GiantHandPlaces {
             }
         }
         return this.firstFitting(level, clipping);
+    }
+
+    // The rift tears open in level ground a little beyond the creature, so it is dragged away from the caster, or in a
+    // wall beside it; failing that, turned the other ways round it, never under or round the caster.
+    @Nullable
+    GiantHand riftHand(ServerLevel level, LivingEntity target, Vec3 away) {
+        boolean wallFirst = this.owner.getRandom().nextDouble() < WALL_CHANCE;
+        GiantHand hand = wallFirst ? this.riftInWall(level, target) : null;
+        if (hand == null) {
+            hand = this.riftInGround(level, target, away);
+        }
+        return hand != null || wallFirst ? hand : this.riftInWall(level, target);
+    }
+
+    @Nullable
+    private GiantHand riftInGround(ServerLevel level, LivingEntity target, Vec3 away) {
+        for (double turn : PAIR_TURNS) {
+            Vec3 way = Vectors.spin(away, Vectors.UP, turn);
+            Vec3 base = GiantHandSpots.ground(level, target.position().add(way.scale(HandRift.AWAY)),
+                    target.getY());
+            if (base == null || Math.abs(base.y - target.getY()) > RIFT_STEP) {
+                continue;
+            }
+            GiantHand hand = this.rift(level, target, HandPose.variant(HandPose.RIFT, false, false, 0), base,
+                    way.scale(-1.0));
+            if (hand != null) {
+                return hand;
+            }
+        }
+        return null;
+    }
+
+    // Upright in the wall, its middle as high over the creature's feet as the rift is long, half.
+    @Nullable
+    private GiantHand riftInWall(ServerLevel level, LivingEntity target) {
+        for (WallSpot wall : this.walls(level, target)) {
+            Vec3 hit = wall.hit().add(wall.out().scale(0.002));
+            Vec3 base = new Vec3(hit.x, target.getY() + HandRift.HALF + 0.3, hit.z);
+            GiantHand hand = this.rift(level, target, HandPose.variant(HandPose.RIFT, false, true, 0), base,
+                    wall.out());
+            if (hand != null) {
+                return hand;
+            }
+        }
+        return null;
+    }
+
+    @Nullable
+    private GiantHand rift(ServerLevel level, LivingEntity target, int variant, Vec3 base, Vec3 facing) {
+        HandRift.Frame frame = HandRift.frame(variant, base, facing);
+        if (this.owner.position().distanceTo(base) < HandRift.HALF + RIFT_ROOM
+                || !this.clearOfOwner(base, target) || !GiantHandSpots.riftRoom(level, frame)
+                || !GiantHandSpots.sees(level, frame.at(0.0, 0.0, 1.0), target)
+                || !GiantHandSpots.portalRoom(level, target, variant, base, facing)) {
+            return null;
+        }
+        GiantHand hand = new GiantHand(this.storm(), variant, base, target, facing);
+        return this.fits(hand) ? hand : null;
     }
 
     boolean clearOfOwner(Vec3 base, LivingEntity target) {

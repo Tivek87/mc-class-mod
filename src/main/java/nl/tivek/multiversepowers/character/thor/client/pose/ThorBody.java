@@ -135,15 +135,15 @@ final class ThorBody {
         this.lean(view, flying || dashing);
     }
 
-    // Holds the hammer from the moment a take-off draws it until a touch-down sheathes it, but not while it is out
-    // of his hands (past a Storm Throw's letting go).
+    // Holds the hammer from the moment a take-off draws it until a touch-down sheathes it or the flight ends otherwise
+    // (knocked out of the sky), but not while it is out of his hands (past a Storm Throw's letting go).
     private boolean holding(@Nullable ClientThor.View view) {
         if (view == null || view.has(ThorStatePayload.THROWN) && !ThorHammerLayer.windingUp(view, 0.0F)) {
             return false;
         }
         float age = view.age(0.0F);
         return switch (view.move()) {
-            case ThorStatePayload.TAKE_OFF -> age >= DRAW || view.has(ThorStatePayload.FLYING) && age > 12.0F;
+            case ThorStatePayload.TAKE_OFF -> age >= DRAW && view.has(ThorStatePayload.FLYING);
             case ThorStatePayload.TOUCH_DOWN, ThorStatePayload.SLAM -> age < SHEATHE;
             default -> view.has(ThorStatePayload.FLYING);
         };

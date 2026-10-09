@@ -37,9 +37,9 @@ final class MechBeams {
         Vec3 way = end.subtract(from).normalize();
         if (first != null && PowerRing.canHit(owner, first)) {
             end = first.getBoundingBox().getCenter();
-            MechAttack.hit(level, owner, first, ability.value("mechEyeDamage"));
+            MechBlows.hit(level, owner, first, ability.value("mechEyeDamage"));
             Knockdowns.knock(first);
-            MechAttack.push(first, way.scale(EYE_PUSH).add(0.0, EYE_LIFT, 0.0));
+            MechBlows.push(first, way.scale(EYE_PUSH).add(0.0, EYE_LIFT, 0.0));
         }
         Sounds.play(level, from, SoundEvents.BEACON_POWER_SELECT, 2.5F, 1.8F);
         Sounds.play(level, from, SoundEvents.FIREWORK_ROCKET_BLAST, 2.0F, 0.6F);
@@ -80,9 +80,9 @@ final class MechBeams {
             if (Segments.closest(a0, a1, b, b, out) > reach * reach) {
                 continue;
             }
-            MechAttack.hit(level, owner, living, damage);
+            MechBlows.hit(level, owner, living, damage);
             Knockdowns.knock(living);
-            MechAttack.push(living, way.scale(GLARE_PUSH).add(0.0, GLARE_LIFT, 0.0));
+            MechBlows.push(living, way.scale(GLARE_PUSH).add(0.0, GLARE_LIFT, 0.0));
             ParticleFx.cloud(level, ParticleFx.dust(PowerRing.BRIGHT, 1.4F), middle, 8, 0.4, 0.15);
         }
     }

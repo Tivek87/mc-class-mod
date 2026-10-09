@@ -230,10 +230,11 @@ class MechGait {
         Vec3 target = foothold(level, leg, home(then, side), then.ahead(), stage.base().y);
         leg.aim = target.y;
         double run = this.running;
-        // Walking the foot is carried over early and hangs; running it is left behind as the body goes on, then flung
-        // through.
+        // Walking the foot is carried over early and hangs; running it first keeps up with the body, rising behind it
+        // as the heel kicks up, then is driven through knee first and reaches out ahead.
         double carried = 1.0 - (1.0 - u) * (1.0 - u);
-        double h = Mth.lerp(run, carried, Ease.smoother(u));
+        double kept = swing * u + (1.0 - swing) * Ease.smoother(u);
+        double h = Mth.lerp(run, carried, kept);
         Vec3 at = leg.from.lerp(target, h);
         leg.toes = leg.fromToes.lerp(then.ahead(), h).normalize();
         double heel = Math.sin(Math.PI * Math.min(1.0, u / 0.55)) * (u < 0.55 ? 1.0 : 0.0) * run;

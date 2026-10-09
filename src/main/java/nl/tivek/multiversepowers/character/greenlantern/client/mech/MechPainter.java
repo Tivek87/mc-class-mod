@@ -92,7 +92,7 @@ public final class MechPainter {
             MechLight.lights(painter, pose, t, ring, own);
             if (walking) {
                 MechExhaust.flames(painter, pose, t);
-                MechGear.lights(painter, pose, own);
+                MechGear.lights(painter, pose, now.owner(), own);
                 MechBeamFx.draw(painter, pose, t, now.owner(), own);
             }
         }
@@ -220,6 +220,7 @@ public final class MechPainter {
             MechParts.draw(painter, MechBodyShapes.PELVIS, body(pose.hips()), 1.0, apart, PIECES * 50);
             MechParts.draw(painter, MechBodyShapes.WAIST, body, 1.0, apart, PIECES * 51);
             painter.noClip();
+            MechGear.hatch(painter, body, pose.blow(), apart, PIECES * 62);
         }
         if (t >= MechScript.ARMOR) {
             rising(painter, torso, 7.9, MechBodyShapes.CHEST_TOP + 0.3,
@@ -367,6 +368,7 @@ public final class MechPainter {
         painter.noClip();
         if (walking && right) {
             MechGear.pod(painter, hand, pose.blow(), apart, seed + 60);
+            MechGear.flamer(painter, hand, pose.blow(), apart, seed + 70);
         }
         if (BoneView.shown()) {
             BoneView.bone(forearm.center(), forearm.at(0.0, MechArmShapes.WRIST, 0.0), BoneView.CONSTRUCT);

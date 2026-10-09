@@ -176,6 +176,39 @@ final class MechAttackKeys {
                         body(14, true, bent(3.0, 1.1, 0.0, 0.0)), body(24, true, bent(0.8, 0.3, 0.0, 0.0)),
                         body(LENGTHS[DIVE], true, Body.STILL) },
                 true, new Vec3(1.0, 0.1, -0.4), new int[0][]);
+        // The jump: it sinks deep, swinging its arms back, springs up throwing them forward and up, hangs with them out
+        // and down as on the rocket boots (which can take over in the air) and lands crouched, hands braced.
+        MOVES[JUMP] = new Move(new Keyframes.Key[] {
+                hand(0, true, rest, inward, 0.5, 0.4, 0.0, 0.0, 0.0),
+                hand(JUMP_LAUNCH - 1, true, new Vec3(4.2, 4.6, -1.4), new Vec3(0.0, -0.8, -0.6), 0.8, 0.2, 1.0, 0.0,
+                        0.0),
+                hand(JUMP_LAUNCH + 3, false, new Vec3(4.4, 8.0, 2.2), new Vec3(0.0, -0.6, 0.8), 0.4, 0.5, 1.0, 0.0,
+                        0.0),
+                hand(JUMP_LAUNCH + 9, true, hover, palmsDown, 0.35, 0.5, 1.0, 0.0, 0.0),
+                hand(JUMP_FALL, true, new Vec3(5.2, 7.4, 0.8), palmsDown, 0.4, 0.6, 1.0, 0.0, 0.0),
+                hand(JUMP_LAND + 3, false, new Vec3(4.0, 4.4, 2.6), palmsDown, 0.9, 0.2, 1.0, 0.0, 0.0),
+                hand(LENGTHS[JUMP], true, rest, inward, 0.5, 0.4, 0.0, 0.0, 0.0) },
+                new Keyframes.Key[] { body(0, true, Body.STILL), body(JUMP_LAUNCH - 1, true, bent(1.9, 0.3, 0.0, 0.0)),
+                        body(JUMP_LAUNCH + 2, false, bent(-0.3, -0.08, 0.0, 0.0)),
+                        body(JUMP_LAUNCH + 9, true, bent(0.0, 0.08, 0.0, 0.0)),
+                        body(JUMP_FALL, true, bent(0.0, -0.05, 0.0, 0.0)),
+                        body(JUMP_LAND + 3, false, bent(2.0, 0.4, 0.0, 0.0)),
+                        body(LENGTHS[JUMP], true, Body.STILL) },
+                true, new Vec3(1.0, -0.4, -0.3), new int[][] { { JUMP_LAUNCH - 1, JUMP_LAUNCH + 3, 2 } });
+        // The flamethrower: the right arm follows the crosshair (aimArm); the body braces behind it, rocked back as the
+        // fire bursts out.
+        Body braced = bent(0.6, 0.12, 0.25, 0.0);
+        MOVES[FLAME] = new Move(still(LENGTHS[FLAME]),
+                new Keyframes.Key[] { body(0, true, Body.STILL), body(FLAME_FIRE - 2, true, braced),
+                        body(FLAME_FIRE + 2, false, bent(0.75, 0.0, 0.25, 0.0)), body(FLAME_FIRE + 8, true, braced),
+                        body(FLAME_MOST, true, braced), body(LENGTHS[FLAME], true, Body.STILL) },
+                false, new Vec3(0.6, -1.0, -0.2), new int[0][]);
+        // The hatch: it kneels a little and stoops, so its helpers drop out under the cockpit nearer the ground.
+        Body kneel = bent(1.6, 0.18, 0.0, 0.0);
+        MOVES[HATCH] = new Move(still(LENGTHS[HATCH]),
+                new Keyframes.Key[] { body(0, true, Body.STILL), body(HATCH_OPEN, true, kneel),
+                        body(HATCH_SHUT, true, kneel), body(LENGTHS[HATCH], true, Body.STILL) },
+                false, new Vec3(1.0, -0.3, -0.6), new int[0][]);
         // The spin: it drops onto its knees, legs folded under it, its torso spinning on the waist with both arms out
         // (spinAim), and rises again.
         MOVES[SPIN] = new Move(still(LENGTHS[SPIN]),

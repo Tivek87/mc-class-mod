@@ -120,6 +120,7 @@ public final class ClientPayloadHandler {
         context.enqueueWork(() -> {
             ClientLooks.update(payload);
             ClientCharacter.seen(payload);
+            ClientThor.seen(payload);
         });
     }
 

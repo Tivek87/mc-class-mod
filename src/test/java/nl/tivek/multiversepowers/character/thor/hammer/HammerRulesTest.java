@@ -51,10 +51,10 @@ class HammerRulesTest {
     void flagsAndNeedsAreBitsOfTheirOwn() {
         bits(ThorStatePayload.FLYING, ThorStatePayload.FLOATING, ThorStatePayload.LIGHTNING, ThorStatePayload.CARRYING,
                 ThorStatePayload.CHARGING, ThorStatePayload.ARMED, ThorStatePayload.THROWN, ThorStatePayload.CHARGED,
-                ThorStatePayload.HAMMER_CHARGED, ThorStatePayload.STORMING, ThorStatePayload.RESTING,
-                ThorStatePayload.PULLING, ThorStatePayload.CALLING, ThorStatePayload.COCKED);
+                ThorStatePayload.HAMMER_CHARGED, ThorStatePayload.STORMING, ThorStatePayload.PULLING,
+                ThorStatePayload.CALLING, ThorStatePayload.COCKED);
         bits(ThorPowers.UNARMED, ThorPowers.ARMED, ThorPowers.WALKING, ThorPowers.SPRINTING, ThorPowers.HOME,
-                ThorPowers.AWAY, ThorPowers.RESTING);
+                ThorPowers.AWAY);
     }
 
     private static void bits(int... flags) {

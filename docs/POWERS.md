@@ -76,7 +76,7 @@ to come, and every other move of his sits on the mouse, space, shift or the scro
 click, no hammer)*, Grab *(hold right click)*, Grab Dash *(running, hold right click)*, Hammer Throw *(right click,
 hammer; crouching: Throw to Stay)*, Throw and Follow *(hold right click, hammer)*, Take Up the Hammer *(scroll wheel
 click)*, Charge *(hold scroll wheel)*, Call the Hammer *(scroll wheel click, hammer away)*, Follow the Hammer *(hold
-scroll wheel, hammer resting)*, Super Jump *(double space)* and Flight *(hold space; with the hammer away it first
+scroll wheel, hammer away)*, Super Jump *(double space)* and Flight *(hold space; with the hammer away it first
 flies into your hand)*. In flight: Sky Shockwave *(hold left click)*, Air Blink *(right click)*, Grab-Dash Dive *(hold
 right click)*, Lightning Bolt *(scroll wheel click)* and Lightning Speed *(hold shift)*.
 
@@ -206,6 +206,9 @@ The ring makes Green Lantern's uniform over your own clothes.
   else. The uniform: the
   green and black suit with the lantern on the chest, white gloves, and a green mask over your eyes. Your own
   face and hair stay.
+- **The suit goes over your armor:** from the moment it starts to spread over you, the armor you wear no longer shows,
+  and while you are Green Lantern only the suit does. The armor still protects you, and it shows again once the suit
+  is gone.
 - The ring sits on top of the middle finger of your right hand, on the back of the hand, close to the
   fingertips, made like the real one: a silver band, a dark angular setting, and a big round green stone in
   it with a light glint on top. Band and setting are metal that catches the light like the rest of you (dim
@@ -955,20 +958,32 @@ Green Lantern's ultimate: a big, slow gunship of hard light high over the battle
   first enemy in its way every 0.2 seconds (**1.5 hearts**) for as long as you hold, up to about 3 seconds, and costs
   power while it burns.
 - **Missile arm (R).** The mech raises its right arm and keeps it aimed at your crosshair, and the back of its hand
-  opens: two doors swing apart and a rack of six missile tubes rises out of it. **Left click** fires a salvo: six
-  missiles of hard light leap out two at a time, curve round and burst where you aim, or on the first creature or
-  block in their way (**2 hearts** each, less at the edge of the blast). Up to **3 salvos**; **R** again lowers the
-  arm, and it also comes down by itself once the salvos are spent or after 10 seconds. The next missile arm waits
-  **15 seconds**.
+  opens: two doors swing apart and a rack of five missile tubes rises out of it. **Left click** fires one missile of
+  hard light: it leaps out of the next tube, the arm kicking back, curves round and bursts where you aim, or on the
+  first creature or block in its way (**5 hearts**, less at the edge of the blast). Up to **5 missiles**, one a
+  click; **R** again lowers the arm, and it also comes down by itself once the missiles are spent or after 10
+  seconds. The next missile arm waits **15 seconds**.
+- **Jump (space).** The mech crouches and leaps about 5 blocks up, flying on as fast as it went, and lands with a
+  thud.
 - **Rocket boots (press jump twice).** Nozzles push out of the soles of its feet and fire: the mech blasts off the
-  ground and flies for up to **5 seconds**, leaning into where it goes. It flies where you look; walk keys move it,
-  hold jump to climb and sneak to sink. Press jump twice again to cut the thrust and drop. When the boots burn out it
-  falls and lands with a crash. The next flight waits **20 seconds**.
-- **Dive (X in the air).** On the rocket boots, press X: the mech rears up on its boots, then they cut out and it
-  plunges down feet first and lands with a huge blast round it (**12 hearts**).
+  ground and flies for up to **5 seconds**, leaning into where it goes; in the middle of a jump they carry it on up.
+  It flies where you look; walk keys move it, hold jump to climb and sneak to sink. Press jump twice again to cut the
+  thrust and drop. When the boots burn out it falls and lands with a crash. The next flight waits **20 seconds**.
+- **Dive (X in the air).** On the rocket boots or in a jump, press X: the mech rears up, then it plunges down feet
+  first and lands with a huge blast round it (**12 hearts**).
 - **Spin (X on the ground).** The mech folds its legs and drops onto its knees with a crash, then whirls its torso
   round four times over 3 seconds, its arms swung wide and its fists hammering the ground (**4 hearts** a hit), and
   stands up again. The next spin waits **15 seconds**.
+- **Flamethrower (V, standing still).** A flamethrower grows out of the wrist over its right fist and pours a roaring
+  stream of fire where you aim, wider the further it goes, up to **13 blocks** or a wall: everything in it burns
+  (**2 hearts** every 0.2 seconds) and goes on burning. It pours for up to **10 seconds**; V again shuts it early.
+  While the mech walks it will not start. The next flamethrower waits **15 seconds**.
+- **Helpers (Left Alt).** A hatch under the cockpit swings open and **3 robots of hard light**, twice your height,
+  drop out one after another. They go after the nearest creature out to hurt you: a jab and a hook up close
+  (**2.5 hearts**), a bolt from the cannon on their right forearm from further off (**3 hearts**), or a leap from 5 to
+  11 blocks away that slams down round where they land (**3.5 hearts**). With nothing to fight they keep by the mech.
+  Each has **15 hearts**; they stay until they fall or you leave the mech, then break into solid pieces. The hatch
+  only drops as many as are missing, and waits **30 seconds**.
 - **Exhaust pipes and spikes.** Two big pipes run along the back of each forearm and sweep out past the elbow:
   their mouths glow while it stands and flame as it runs, climbs or strikes. **Keep running** and they charge up:
   over about 5 seconds the flames grow huge and roaring and the mech runs ever faster, up to more than half as fast
@@ -984,12 +999,14 @@ Green Lantern's ultimate: a big, slow gunship of hard light high over the battle
   held creature takes each blow whole, anything else near the foot, the clap or the crater takes less (players of
   your own team excepted).
 - **Power:** 25 to build it, then 0.2 a second while you pilot it, 0.5 a blow, 1 an Eye Ray, 4 a second of Eye Beam,
-  3 a salvo of missiles, 4 a flight, 2 a dive and 5 a spin; when the ring runs dry it breaks up. **Cooldown:** 5
+  1 a missile, 4 a flight, 2 a dive, 5 a spin, 2 a second of flamethrower and 6 to open the hatch; when the ring runs
+  dry it breaks up. **Cooldown:** 5
   minutes, from the moment the mech is gone (however you leave it), **its own**: building the mech leaves the Air
   Strike ready, and the Air Strike leaves the mech ready. Its cost, cooldown, how long you may stay in it, reach and
   the three damages are settings (Hard-Light Mech), and so are each blow's damage (Mech blows), the eyes' costs and
   damage (Mech eyes), the missile arm's, the rocket boots' and the spin's costs, damage and waits (Mech missile arm,
-  Mech rocket boots, Mech spin) and what it crushes underfoot (Walking the mech).
+  Mech rocket boots, Mech spin), the flamethrower's and the helpers' (Mech flamethrower, Mech helpers) and what it
+  crushes underfoot (Walking the mech).
 
 ### Giant Hands (key Left Alt)
 
@@ -1000,9 +1017,10 @@ Green Lantern's ultimate: a big, slow gunship of hard light high over the battle
   made in detail: Green Lantern's own right hand, with a forearm and a glowing gauntlet ring, a glowing cuff round the
   wrist, a palm with its pads and glowing creases, knuckles and glowing tendons and the lantern emblem on its back,
   four fingers of three joints each with a nail on every tip, a thumb, and the ring itself on its middle finger.
-- **For now, one hand every time you press** (temporary, while the hands are being reworked: the settings allow 2 at
-  most). With more than one they come up one after another, **one every half second**, and you wave your hand
-  towards every one. Every kind of hand is **as likely as every other**. Every next hand goes for the creature nearest
+- **One hand every time you press, up to 5:** every press brings the next hand (half a second after the last at the
+  soonest), and you wave your hand towards every one. After the fifth, or 3 seconds with no hand up and no press, the
+  hands are done and the cooldown starts; a press after the fifth only tells you none are left. Every kind of hand
+  is **as likely as every other**. Every next hand goes for the creature nearest
   to you with the fewest hands on it, so they spread over
   the creatures closest to you first. Each does one of these to its creature, never the same one twice in a row (not
   even from one press to the next):
@@ -1107,12 +1125,24 @@ Green Lantern's ultimate: a big, slow gunship of hard light high over the battle
     its middle, stretching it longer and longer, until they **tear it in two** at its middle (**18 hearts**) in a
     flash and a ring of light. Each half goes with its hand, the cut glowing green, then falls and tips over; a
     creature that lives through it is hurled down and away. Only creatures small enough to hold.
+  - **a maw:** a hand rises beside the creature with a **mouth in its palm**: lips round a dark throat and a row of
+    teeth along each lip. The mouth gapes, the hand rears back and **lunges down over the creature**, biting shut
+    round it: it **swallows it whole**, the creature shrinking into the throat. Closed into a fist, the hand **chews
+    it three times** (**4.5 hearts** each, light flaring out of the fist at every bite), rears back and **spits it
+    out far** (**2.1 hearts**), or, with nothing left of it, burps. Only creatures small enough to hold.
+  - **a cosmic rift:** two **portals** open beyond the creature and two hands reach down out of them, fingers hooked.
+    They dig in and **tear the ground open**, a jerk at a time, on a deep **sky of stars and green clouds** that
+    shifts as you look into it, solid shards of hard light standing along its lips. A **tentacle of hard light**
+    lashes out of it, winds round the creature, **drags it over and pulls it in**. Deep inside the rift burns it four
+    times (**3.9 hearts** each); a creature still alive is **hurled back out** (**1.8 hearts**). Then the hands push
+    the rift shut and it **slams closed in a burst of starlight** that throws everything round it away (**6 hearts**
+    in the middle, half at its edge 4.5 blocks out). Only creatures small enough to hold.
 - **Ground or wall:** the smack, the grab, the middle finger, the slap, the pound, the finger snap, the claw rake, the
-  ragdoll slam, the ring beam, the scoop, the evil eye (with its puppeteer) and the megaphone come out of a **wall**
-  instead of the ground when the creature stands by one (more than half the time, and always when the ground round
-  it has no room): the wall cracks open round the hand, which moves as it would out of the ground with the wall as
-  its ground, so a ragdoll slam out of a wall **slams the creature into the wall**. The other hands come through
-  portals.
+  ragdoll slam, the ring beam, the scoop, the evil eye (with its puppeteer), the megaphone and the maw come out of a
+  **wall** instead of the ground when the creature stands by one (more than half the time, and always when the ground
+  round it has no room): the wall cracks open round the hand, which moves as it would out of the ground with the wall
+  as its ground, so a ragdoll slam out of a wall **slams the creature into the wall**. The cosmic rift tears a wall
+  open the same way. The other hands come through portals.
   - **the axe pair:** the ring's light shoots off and **two portals** of it burst open in the air on either side of
     the creature and beyond it. A giant right hand (with the ring) and a left hand (without one) push out of them,
     fingers first, and hover there, their fingers rippling up and down. The right hand **snaps its fingers**, the
@@ -1138,10 +1168,10 @@ Green Lantern's ultimate: a big, slow gunship of hard light high over the battle
   (water would hide it).
 - **Every kind of hand has its own settings** (smack, grab, middle finger, slap, pound, flick, pinch, finger snap,
   poke, hammer fist, claw rake, portal drag, ragdoll slam, ring blast, clap, finger gun, scissors, swallow, ring
-  beam, scoop, evil eye, megaphone, ring hammer, ring chains, tear, axe pair; the catch goes by the ragdoll slam's, the
-  puppeteer by the evil eye's): how often it comes compared with the others (0 = never; by default every kind is as
-  likely as every other), the most of it in one press, and its damage and knockback as a factor of the usual. Out of the
-  settings every kind still allowed is picked; when none is left, the press ends early.
+  beam, scoop, evil eye, megaphone, ring hammer, ring chains, tear, maw, cosmic rift, axe pair; the catch goes by the
+  ragdoll slam's, the puppeteer by the evil eye's): how often it comes compared with the others (0 = never; by default
+  every kind is as likely as every other), the most of it in one use, and its damage and knockback as a factor of the
+  usual. Out of the settings every kind still allowed is picked; when none is left, the use ends early.
   Whatever it strikes always flies away from you, never at you. Its blows leave streaks of light in the air and rings
   of light running out over the ground. When it is done it sinks back into the ground; if you stop being Green
   Lantern it breaks into solid pieces (a pair and its axe too).
@@ -1151,10 +1181,9 @@ Green Lantern's ultimate: a big, slow gunship of hard light high over the battle
 - **Who gets hit:** the hands only go after what is out to hurt you, but a blow lands on whatever it strikes: pets,
   villagers and animals too, and players where players may fight each other, never those of your own team and never
   you.
-- **Power:** 8. **Cooldown:** 30 seconds. The damage, the reach, the fewest and the most hands at every press (1
-  and 1 by default, 2 at most for now), the time between two hands (half a second by default) and how hard they send
-  creatures flying
-  are settings.
+- **Power:** 8, once for all the hands of one use. **Cooldown:** 30 seconds, from when the use is over. The damage,
+  the reach, the most hands one use calls up (5 by default and at most), the least time between two hands (half a
+  second by default) and how hard they send creatures flying are settings.
 
 ### Western Revolver Assembly (hold Left Alt for 2 seconds)
 
@@ -1534,7 +1563,7 @@ Double space jumps high and holding space flies, with or without the hammer.
   **Cooldown:** 10 seconds.
 - **Lightning Bolt (scroll wheel click):** a bolt of lightning comes down on the creature you aim at, up to 64
   blocks away, also up in the air: **2.5 hearts**, and it is knocked down. The bolt leaps on to up to **3** more foes
-  close by, each within about 2 blocks of the last, each taking three quarters of the hit before and slowed a
+  close by, each within 4 blocks of the last, each taking three quarters of the hit before and slowed a
   moment. Aimed at nothing, nothing happens. **Cooldown:** 1.5 seconds.
 - **Storm Throw (Z):** see below; in flight he only hurls the hammer.
 - **Lightning Speed (hold shift for 2 seconds):** he flies at **48 blocks a second** for **15 seconds**, a zigzag of
@@ -1585,12 +1614,14 @@ Double space jumps high and holding space flies, with or without the hammer.
 ### Storm Throw (ability 3, Z)
 
 - **Press Z** on the ground, the hammer on him (in his hand or on his belt): Thor swings it low behind him and flings
-  it high up, about **13 blocks** over his head and partway towards the foe you aim at (up to **48 blocks** away;
-  aimed at no foe, at the ground you look at). He dashes up after it on a streak of lightning, catches it at the top
-  and holds it high over his head while the storm gathers in it as a blue star of light, for **under a second**. Then
-  he hurls it down as a bolt that strikes the ground just before the foe, and drops back down without fall damage.
-- **In flight** he only holds it up and hurls it, then hangs in the air, sinking slowly, until it is back; only his
-  right hand's blows work meanwhile.
+  it up towards where you aim: about **5½ blocks** high and most of the way there, at most **14 blocks** out (you
+  aim at a foe or at the ground, up to **48 blocks** away). He dashes after it on a streak of lightning, catches it
+  at the top and holds it high over his head while the storm gathers in it as a blue star of light, for **under a
+  second**. Then he hurls it down as a bolt that strikes the ground just before the foe, and drops back down without
+  fall damage. Aimed at no foe, it goes for the **nearest enemy** within **10 blocks** of where you aimed; with none
+  there, at the ground you aimed at.
+- **In flight** he only holds it up and hurls it, at most **6 blocks** far: higher up it strikes no ground and only
+  flies back. He hangs in the air, sinking slowly, until it is back; only his right hand's blows work meanwhile.
 - **The strike:** a small burst of light and lightning flares up where it strikes, and lightning runs out over the
   ground in a wide V that opens past the foe, its arms reaching more to the sides than ahead, **6 blocks** long,
   crackling there a few seconds as it fades. Everything in the V and close round where it struck takes up to
@@ -1638,6 +1669,10 @@ Double space jumps high and holding space flies, with or without the hammer.
 - **Throw to Stay** (crouch as you click): it stays where it stops: lying on the ground, stuck in a wall or hanging
   in the air. It waits there until you call it back (or follow it, see below), or until you go **128 blocks** from it;
   then it comes home by itself. Meanwhile you fight with your fists.
+- **Its own lightning:** whenever the hammer is out of his hands (flying, lying, stuck or hanging), at most once a
+  second a bolt leaps from it (not from the sky) onto the nearest enemy within **5 blocks**, for **1.5 hearts**, and
+  on to the enemies near that one, **3** at most, each within **4 blocks** of the last. It slows them, never knocks
+  them down. Its reach and damage are settings.
 
 ### Throw and Follow (hold right click, hammer in hand)
 
@@ -1654,11 +1689,11 @@ Double space jumps high and holding space flies, with or without the hammer.
   once (**2 hearts**). Stuck in a block, it tears itself free. **Cooldown:** 0.5 seconds.
 - **Hold jump** instead: it flies into your raised left hand and you take off into flight.
 
-### Follow the Hammer (hold scroll wheel for 0.5 seconds, hammer resting)
+### Follow the Hammer (hold scroll wheel for 0.5 seconds, hammer away)
 
-- **Hold the scroll wheel** while it lies or hangs still, up to **24 blocks** away: lightning pulls you to it, as in
-  Throw and Follow. Near the ground you land by it with it in hand; up in the air you catch it and fly on.
-  **Cooldown:** 2 seconds.
+- **Hold the scroll wheel** while it lies, hangs or flies out, up to **128 blocks** away: lightning pulls you to it, as
+  in Throw and Follow. Still flying, it stops in the air for you (not a Storm Throw's hurl). Near the ground you land
+  by it with it in hand; up in the air you catch it and fly on. **Cooldown:** 2 seconds.
 
 ### Grab (hold right click for 0.75 seconds, no hammer)
 

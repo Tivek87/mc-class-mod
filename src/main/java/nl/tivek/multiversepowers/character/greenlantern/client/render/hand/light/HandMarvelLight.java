@@ -20,8 +20,8 @@ import static nl.tivek.multiversepowers.character.greenlantern.client.render.han
 import static nl.tivek.multiversepowers.character.greenlantern.client.render.hand.HandPainter.handFrame;
 import static nl.tivek.multiversepowers.character.greenlantern.client.render.hand.HandPainter.ringGem;
 
-// The eye in the palm of the evil eye and the megaphone, both solid hard light, and their light: the eye's gaze, the
-// puppeteer's strings to the puppets, the megaphone's shockwaves.
+// The eye in the palm of the evil eye, the megaphone and the maw's mouth, all solid hard light, and their light: the
+// eye's gaze, the puppeteer's strings to the puppets, the megaphone's shockwaves, the maw's bites.
 public final class HandMarvelLight {
     private static final double EYE = HandPose.EYE_SIZE;
     private static final ConstructPainter.Shape EYEBALL = ConstructPainter.Shape.of(
@@ -40,6 +40,13 @@ public final class HandMarvelLight {
     private static final int WHITE = 0xF2FFF4;
     private static final int GLOW = 0x5CFF7A;
     private static final int ROPE_STEPS = 10;
+    private static final ConstructPainter.Shape LIPS = ConstructPainter.Shape.of(
+            Mesh.torus(28, 6, 1.0, 0.11, 1.5).alongZ());
+    private static final ConstructPainter.Shape THROAT = ConstructPainter.Shape.of(Mesh.ball(16, 8, 1.0, 0.3));
+    private static final ConstructPainter.Shape TOOTH = ConstructPainter.Shape.of(
+            Mesh.cone(4, 0.13, 0.0, 0.0, 0.5, 1.5));
+    private static final int TEETH = 7;
+    private static final int SPRAY = 12;
 
     private HandMarvelLight() {
     }
@@ -85,8 +92,36 @@ public final class HandMarvelLight {
         switch (HandPose.move(variant)) {
             case HandPose.EYE -> eye(painter, place, clock, bright, apart);
             case HandPose.MEGAPHONE -> megaphone(painter, place, clock, bright, apart);
+            case HandPose.MAW -> mouth(painter, place, clock, bright, apart);
             default -> {
             }
+        }
+    }
+
+    // The mouth in the palm: lips round a dark throat and a row of teeth along each lip, all parting as it gapes.
+    private static void mouth(LanternPainter painter, HandPose.Place place, double clock, double bright,
+            double apart) {
+        double open = HandPose.mawOpen(clock);
+        Vec3 at = HandPose.MAW_MOUTH;
+        ConstructPainter.Frame mouth = handFrame(place, false).moved(at.x, at.y, at.z);
+        double wide = HandPose.MAW_WIDE;
+        double high = wide * (0.12 + 0.6 * Math.min(open, 1.4));
+        HandPainter.part(painter, LIPS, mouth.moved(0.0, 0.0, 0.06).stretched(wide, high, 1.0), bright * 1.3, apart,
+                110);
+        if (open < 0.02) {
+            return;
+        }
+        HandPainter.part(painter, THROAT, mouth.moved(0.0, 0.0, 0.02).stretched(wide * 0.92, high * 0.92, 0.12),
+                bright, apart, 111);
+        double size = 0.75 * Ease.smooth(open / 0.4);
+        for (int k = 0; k < 2 * TEETH; k++) {
+            double angle = Math.PI * (k % TEETH + 0.5) / TEETH * (k < TEETH ? 1.0 : -1.0);
+            double inX = -Math.cos(angle) / wide;
+            double inY = -Math.sin(angle) / high;
+            ConstructPainter.Frame tooth = mouth.moved(Math.cos(angle) * wide * 0.94, Math.sin(angle) * high * 0.94,
+                    0.08).turned(0.0, 0.0, 0.0, 0.0, 0.0, 1.0, Math.atan2(-inX, inY))
+                    .turned(0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.35).stretched(size, size, size);
+            HandPainter.part(painter, TOOTH, tooth, bright * 1.4, apart, 120 + k);
         }
     }
 
@@ -144,9 +179,43 @@ public final class HandMarvelLight {
             case HandPose.EYE -> gaze(painter, id, place, clock, strength);
             case HandPose.PUPPETEER -> strings(painter, id, pose, place, clock, strength);
             case HandPose.MEGAPHONE -> blares(painter, pose, place, clock, strength);
+            case HandPose.MAW -> bites(painter, id, place, clock, strength);
             default -> {
             }
         }
+    }
+
+    // A flash as the maw bites shut, a flare out of the fist at every chomp and a spray of light as it spits.
+    private static void bites(LanternPainter painter, int id, HandPose.Place place, double clock, double strength) {
+        Vec3 mouth = place.at(HandPose.MAW_MOUTH);
+        double scale = place.scale();
+        double gulp = (clock - HandPose.MAW_GULPS) / 6.0;
+        if (gulp >= 0.0 && gulp < 1.0) {
+            painter.flare(mouth, 3.0 * (1.0 - gulp) * scale, (1.0 - gulp) * strength);
+        }
+        for (int chomp : HandPose.MAW_CHOMPS) {
+            double since = (clock - chomp) / 5.0;
+            if (since >= 0.0 && since < 1.0) {
+                painter.flare(mouth, 2.0 * (1.0 - since) * scale, 0.8 * (1.0 - since) * strength);
+            }
+        }
+        double spat = (clock - HandPose.MAW_SPITS) / 10.0;
+        if (spat < 0.0 || spat >= 1.0) {
+            return;
+        }
+        double fade = (1.0 - spat) * strength;
+        Vec3 way = place.forward().normalize();
+        Vec3 a = place.right().normalize();
+        Vec3 b = way.cross(a).normalize();
+        painter.flare(mouth, 3.5 * (1.0 - spat) * scale, fade);
+        for (int k = 0; k < SPRAY; k++) {
+            Vec3 spread = a.scale(Noise.of(id, k, 61) - 0.5).add(b.scale(Noise.of(id, k, 62) - 0.5));
+            Vec3 out = way.add(spread.scale(0.9)).normalize();
+            double far = scale * (1.0 + 5.0 * Ease.smooth(spat)) * (0.6 + 0.6 * Noise.of(id, k, 63));
+            painter.edge(mouth.add(out.scale(far * 0.5)), mouth.add(out.scale(far)), 0.08 * scale, fade);
+        }
+        painter.circle(mouth.add(way.scale(scale * (0.5 + 3.0 * spat))), a, b, scale * (0.8 + 2.5 * spat), 0.08, 0.6,
+                Colors.alpha(0.9 * fade), Colors.alpha(0.45 * fade));
     }
 
     // The iris, rings turning round it and a slit of white-hot pupil; opening, the eye sends out a ring of light.

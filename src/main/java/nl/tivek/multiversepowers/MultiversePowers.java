@@ -7,6 +7,7 @@ import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import nl.tivek.multiversepowers.character.Characters;
+import nl.tivek.multiversepowers.character.greenlantern.minion.MechMinion;
 import nl.tivek.multiversepowers.character.thor.hammer.ThrownHammer;
 import nl.tivek.multiversepowers.classes.ceremony.Ceremonies;
 import nl.tivek.multiversepowers.config.ModConfigs;
@@ -34,6 +35,7 @@ public class MultiversePowers {
         LOGGER.warn("Multiverse Powers is still being built: things may change, break or be missing.");
         modEventBus.addListener(ModNetwork::register);
         ThrownHammer.register(modEventBus);
+        MechMinion.register(modEventBus);
         ModConfigs.register(modContainer, modEventBus);
         PlayerKnockdowns.listen(Characters::knockedDown);
         PlayerKnockdowns.flight(Characters::flying, Characters::flyAgain);

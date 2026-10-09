@@ -80,6 +80,9 @@ abstract class MjolnirCore {
     // Once it is on him again (`caught`: in a hand, else come home from far off).
     abstract void homed(ServerPlayer owner, Hand hand, boolean caught);
 
+    // Every tick it is out, after it moved: the lightning it shoots of its own.
+    abstract void arcs(ServerLevel level, ServerPlayer owner);
+
     // Its one effect, while it is out.
     final void run(ServerLevel level) {
         if (this.running) {
@@ -115,6 +118,9 @@ abstract class MjolnirCore {
             case BACK -> this.back(level, owner);
             case HOME -> {
             }
+        }
+        if (this.state != State.HOME) {
+            this.arcs(level, owner);
         }
         return this.state != State.HOME;
     }

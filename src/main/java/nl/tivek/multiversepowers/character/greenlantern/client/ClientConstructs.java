@@ -35,6 +35,7 @@ import nl.tivek.multiversepowers.character.greenlantern.client.mech.walk.MechDri
 import nl.tivek.multiversepowers.character.greenlantern.client.mech.MechPainter;
 import nl.tivek.multiversepowers.character.greenlantern.client.mech.walk.MechPose;
 import nl.tivek.multiversepowers.character.greenlantern.client.mech.walk.MechWalk;
+import nl.tivek.multiversepowers.character.greenlantern.client.minion.MinionPainter;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.BeamCharge;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.BeamPainter;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.BubblePainter;
@@ -276,11 +277,11 @@ public final class ClientConstructs extends ConstructShakes {
         }
     }
 
-    // A dragged, slammed, swallowed or chained creature goes where the server puts it (kept clear of the ground), not
-    // at the fingers.
+    // A dragged, slammed, swallowed, chained or rift-caught creature goes where the server puts it (kept clear of the
+    // ground), not at the fingers.
     public static boolean atFingers(int move) {
         return move != HandPose.AXE && move != HandPose.DRAG && move != HandPose.RAGDOLL && move != HandPose.SWALLOW
-                && move != HandPose.RINGCHAINS;
+                && move != HandPose.RINGCHAINS && move != HandPose.RIFT;
     }
 
     private static void held(Minecraft minecraft, Track track) {
@@ -540,6 +541,7 @@ public final class ClientConstructs extends ConstructShakes {
                         partialTick);
             }
         }
+        MinionPainter.drawAll(painter, level, partialTick);
         FireStream.draw(painter, FireStream.now(partialTick));
         painter.finish(minecraft.renderBuffers().bufferSource());
     }

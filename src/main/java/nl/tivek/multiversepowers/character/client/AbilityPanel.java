@@ -331,6 +331,10 @@ public final class AbilityPanel {
         return RULES.getOrDefault(ability.character(), EVERY).affords(ability, hold, player);
     }
 
+    static boolean holds(CharacterAbility ability, LocalPlayer player) {
+        return RULES.getOrDefault(ability.character(), EVERY).holds(ability, player);
+    }
+
     // The ability as a whole: enough power for its click or for its hold.
     static boolean affords(CharacterAbility ability, LocalPlayer player) {
         if (!AbilityPanelRows.split(ability)) {

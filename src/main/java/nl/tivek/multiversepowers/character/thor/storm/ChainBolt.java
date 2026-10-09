@@ -19,15 +19,13 @@ import nl.tivek.multiversepowers.engine.target.Targeting;
 import nl.tivek.multiversepowers.faction.Factions;
 
 // A bolt of Thor's onto one creature, in the air as much as on the ground: it hurts only what it strikes and knocks it
-// down, then leaps on to the nearest foe and from there to the next, up to LEAPS of them, each at most LEAP blocks from
-// the one before. Every game near draws the bolt and each leap (StormFxPayload).
+// down, then leaps on to the nearest foe and from there to the next, up to LEAPS of them, each within
+// Targeting.CHAIN_REACH of the one before. Every game near draws the bolt and each leap (StormFxPayload).
 public final class ChainBolt {
     public static final int LEAPS = 3;
-    // The most room between two creatures a leap crosses, in blocks, past half a body's width each side.
-    public static final double LEAP = 2.0;
-    private static final double BODY = 0.6;
     private static final float LEAP_SHARE = 0.75F;
     private static final int SHOCKED = 30;
+    private static final float ARC_SIZE = 0.5F;
 
     private ChainBolt() {
     }
@@ -42,12 +40,27 @@ public final class ChainBolt {
         if (damage > 0.0F) {
             hurt(level, player, target, damage);
             Knockdowns.knock(target);
-            leap(level, player, at, struck, damage * LEAP_SHARE);
+            leap(level, player, at, struck, damage * LEAP_SHARE, LEAPS);
+        }
+    }
+
+    // A smaller bolt from `from` straight onto `target`, leaping on to `leaps` more foes at most: it knocks none down,
+    // it only shocks each so it slows.
+    public static void arc(ServerLevel level, ServerPlayer player, Vec3 from, LivingEntity target, float damage,
+            int leaps) {
+        Vec3 at = target.getBoundingBox().getCenter();
+        StormFxPayload.send(level, StormFxPayload.BOLT, from, at, ARC_SIZE);
+        List<LivingEntity> struck = new ArrayList<>();
+        struck.add(target);
+        if (damage > 0.0F) {
+            hurt(level, player, target, damage);
+            target.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, SHOCKED, 2), player);
+            leap(level, player, at, struck, damage * LEAP_SHARE, leaps);
         }
     }
 
     // From `top` down to `ground`: onto the first creature in its way; none there, into the ground, from where it
-    // leaps to a foe that stands within LEAP.
+    // leaps to a foe that stands within reach.
     public static void down(ServerLevel level, ServerPlayer player, Vec3 top, Vec3 ground, float damage, float size) {
         LivingEntity first = damage > 0.0F ? firstInWay(level, player, top, ground) : null;
         if (first != null) {
@@ -56,7 +69,7 @@ public final class ChainBolt {
         }
         StormFxPayload.send(level, StormFxPayload.BOLT, top, ground, size);
         if (damage > 0.0F) {
-            leap(level, player, ground.add(0.0, 0.5, 0.0), new ArrayList<>(), damage * LEAP_SHARE);
+            leap(level, player, ground.add(0.0, 0.5, 0.0), new ArrayList<>(), damage * LEAP_SHARE, LEAPS);
         }
     }
 
@@ -77,10 +90,10 @@ public final class ChainBolt {
     }
 
     private static void leap(ServerLevel level, ServerPlayer player, Vec3 from, List<LivingEntity> struck,
-            float damage) {
+            float damage, int leaps) {
         Vec3 at = from;
-        for (int k = 0; k < LEAPS; k++) {
-            LivingEntity next = Targeting.nextInChain(level, player, at, LEAP + BODY, struck,
+        for (int k = 0; k < leaps; k++) {
+            LivingEntity next = Targeting.nextInChain(level, player, at, struck,
                     entity -> Factions.hostile(player, entity) && Targeting.mayStrike(player, entity));
             if (next == null) {
                 return;

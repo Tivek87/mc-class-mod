@@ -333,19 +333,14 @@ final class LanternAbilities {
                 .setting("radiusBlocks", 20.0, 4.0, 48.0, Unit.BLOCKS,
                         "How far round you the hands come up at creatures out to hurt you, every way, in blocks"
                                 + " (20 = an area 40 blocks across)")
-                .settingInt("fewestHands", 1, 1, 2, Unit.COUNT,
-                        "TEMPORARY, for now at most 2 while the hands are being reworked: the fewest hands that"
-                                + " come up at every press; each press brings a number picked at random from this"
-                                + " to mostHands, one after another (the evil eye with its puppeteer and a pair"
-                                + " with an axe count as one)")
-                .was(4.0)
-                .settingInt("mostHands", 1, 1, 2, Unit.COUNT,
-                        "TEMPORARY, for now at most 2 while the hands are being reworked: the most hands that"
-                                + " come up at every press")
-                .was(8.0)
+                .settingInt("mostHands", 5, 1, 5, Unit.COUNT,
+                        "The most hands one use calls up, one a press (the evil eye with its puppeteer and a pair"
+                                + " with an axe count as one); after the last, or 3 seconds with no hand up and no"
+                                + " press, the use is over and the cooldown starts")
+                .was(8.0, 1.0)
                 .settingInt("handTicks", 10, 1, 200, Unit.TICKS,
-                        "Ticks from one hand coming up to the next (20 ticks = 1 second); while five are up, the"
-                                + " next waits for one to go")
+                        "The fewest ticks from one hand coming up to the next (20 ticks = 1 second): a press"
+                                + " sooner waits that long")
                 .setting("knockback", 2.0, 0.0, 5.0, Unit.STRENGTH,
                         "How hard the hands send a creature flying (a middle finger bursting out of the ground and"
                                 + " the axe of a pair far harder)")
@@ -406,6 +401,13 @@ final class LanternAbilities {
                 "two hands out of portals, one overhead and one in the ground, drawing a creature out by its hands"
                         + " and feet and pulling it apart, a jerk at a time, until it tears in two (only creatures"
                         + " small enough to hold)");
+        hand(hands, HandPose.MAW, "Maw", HAND_CHANCE,
+                "a hand out of the ground or a wall with a mouth in its palm that bites a creature whole, chews it"
+                        + " three times and spits it out far if it still lives (only creatures small enough to hold)");
+        hand(hands, HandPose.RIFT, "Cosmic rift", HAND_CHANCE,
+                "two hands out of portals tearing a rift into a sky of stars in the ground or a wall, whose"
+                        + " tentacle of hard light pulls a creature in, burns it, hurls it back out if it still lives"
+                        + " and shuts in a blast (only creatures small enough to hold)");
         hand(hands, HandPose.AXE, "Pair with an axe", 0.24,
                 "a pair of hands chopping down with an axe (only where there is room for it)");
         hands.group("revolver", "Western Revolver Assembly (hold the button 2 seconds)")
@@ -504,11 +506,13 @@ final class LanternAbilities {
                 .setting("mechGlareDamage", 3.0, 0.0, 2000.0, Unit.HALF_HEARTS,
                         "Damage of the held eye beam to everything in it, in half hearts, again every 0.2 seconds")
                 .group("mechMissiles", "Mech missile arm (R in a built mech)")
-                .setting("mechMissilePowerCost", 3.0, 0.0, 100.0, Unit.POWER,
-                        "Ring power one salvo of missiles costs (left click while the arm aims; 3 salvos at most)")
-                .setting("mechMissileDamage", 4.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                .setting("mechMissilePowerCost", 1.0, 0.0, 100.0, Unit.POWER,
+                        "Ring power one missile costs (left click while the arm aims; 5 at most)")
+                .was(3.0)
+                .setting("mechMissileDamage", 10.0, 0.0, 2000.0, Unit.HALF_HEARTS,
                         "Damage of each missile's blast right where it bursts, in half hearts; at the edge of the"
                                 + " blast half")
+                .was(4.0)
                 .settingInt("mechMissileCooldown", 300, 0, 72000, Unit.TICKS,
                         "Ticks after the missile arm comes down before it can be raised again (20 ticks = 1 second)")
                 .group("mechRockets", "Mech rocket boots (double space in a built mech)")
@@ -531,6 +535,27 @@ final class LanternAbilities {
                                 + " hearts; the knees landing do half round it")
                 .settingInt("mechSpinCooldown", 300, 0, 72000, Unit.TICKS,
                         "Ticks after the spin before the next one (20 ticks = 1 second)")
+                .group("mechFlame", "Mech flamethrower (V standing still in a built mech)")
+                .setting("mechFlamePowerPerSecond", 2.0, 0.0, 100.0, Unit.POWER_PER_SECOND,
+                        "Ring power the flamethrower costs a second while it pours fire (the first second at once)")
+                .setting("mechFlameSeconds", 10.0, 1.0, 10.0, Unit.SECONDS,
+                        "Seconds the flamethrower pours fire at most before it shuts by itself")
+                .setting("mechFlameReach", 13.0, 4.0, 24.0, Unit.BLOCKS,
+                        "How far the fire reaches from the nozzle, in blocks; a wall stops it")
+                .setting("mechFlameDamage", 4.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                        "Damage of the fire to everything in it, in half hearts, again every 0.2 seconds; it burns on")
+                .settingInt("mechFlameCooldown", 300, 0, 72000, Unit.TICKS,
+                        "Ticks after the flamethrower shuts before it can be used again (20 ticks = 1 second)")
+                .group("mechHelpers", "Mech helpers (Left Alt in a built mech)")
+                .setting("mechHelperPowerCost", 6.0, 0.0, 100.0, Unit.POWER,
+                        "Ring power opening the hatch costs; out of it drop as many helpers as are missing of 3")
+                .setting("mechHelperHealth", 30.0, 1.0, 2000.0, Unit.HEALTH,
+                        "Health of each helper, in half hearts (a zombie has 20)")
+                .setting("mechHelperDamage", 5.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                        "Damage of a helper's punch, in half hearts; its cannon bolt does 1.2 times it and the slam"
+                                + " of its leap 1.4 times it round where it lands")
+                .settingInt("mechHelperCooldown", 600, 0, 72000, Unit.TICKS,
+                        "Ticks after the hatch shuts before it opens again (20 ticks = 1 second)")
                 .group("mechWalk", "Walking the mech")
                 .setting("mechCrushHealth", 10.0, 0.0, 2000.0, Unit.HALF_HEARTS,
                         "A creature no bigger than a block with at most this much health (a chicken has 4, a pig 10)"
@@ -545,7 +570,7 @@ final class LanternAbilities {
                         "How often " + what + " comes, weighed against the chances of the other hands (0 = never)")
                 .was(oldChance)
                 .settingInt(hand + "Most", 30, 0, 30, Unit.COUNT,
-                        "The most of these hands in one press (0 = never, 30 = no limit)")
+                        "The most of these hands in one use (0 = never, 30 = no limit)")
                 .setting(hand + "Damage", 1.0, 0.0, 10.0, Unit.STRENGTH,
                         "Damage of " + what + ", times its usual damage (1 = as it is, 0 = none)")
                 .setting(hand + "Knockback", 1.0, 0.0, 10.0, Unit.STRENGTH,

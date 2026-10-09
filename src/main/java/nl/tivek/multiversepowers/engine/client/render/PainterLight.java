@@ -185,7 +185,7 @@ abstract class PainterLight extends PainterCore {
             double angle = Math.PI * 2 * i / segments;
             Vec3 next = center.add(a.scale(Math.cos(angle) * radius)).add(b.scale(Math.sin(angle) * radius));
             this.line(this.light, last, next, width, this.material.edge(), edge);
-            this.line(this.glow, last, next, glowWidth, this.material.glow(), halo);
+            this.line(this.ringGlow, last, next, glowWidth, this.material.glow(), halo);
             last = next;
         }
     }

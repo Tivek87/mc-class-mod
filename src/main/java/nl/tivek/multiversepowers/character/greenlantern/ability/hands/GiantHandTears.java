@@ -1,5 +1,6 @@
 package nl.tivek.multiversepowers.character.greenlantern.ability.hands;
 
+import javax.annotation.Nullable;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
@@ -8,16 +9,31 @@ import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.character.greenlantern.PowerRing;
 import nl.tivek.multiversepowers.character.greenlantern.hand.HandGroup;
 import nl.tivek.multiversepowers.character.greenlantern.hand.HandPose;
+import nl.tivek.multiversepowers.character.greenlantern.hand.HandRift;
 import nl.tivek.multiversepowers.character.greenlantern.hand.HandVictimPayload;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 
-// What the tear does: two hands out of portals, above and below, draw a creature out until it tears in two.
+// What the tear and the rift do: two hands out of portals, above and below, draw a creature out until it tears in two;
+// or two tear open a rift whose tentacle pulls a creature in, burns it, hurls out what is left and shuts in a blast.
 abstract class GiantHandTears extends GiantHandRings {
     private static final double CATCH_REACH = 3.0;
     private static final double STRAIN_DAMAGE = 0.12;
     private static final double TEAR_DAMAGE = 3.0;
     private static final double THROW_OUT = 1.2;
     private static final double THROW_DOWN = -0.8;
+    private static final double BURN_DAMAGE = 0.65;
+    private static final double EJECT_DAMAGE = 0.3;
+    private static final double EJECT_OUT = 0.8;
+    private static final double EJECT_UP = 1.7;
+    private static final double EJECT_WALL_UP = 1.0;
+    private static final double BLAST_REACH = 4.5;
+    private static final double BLAST_DAMAGE = 1.0;
+    private static final double BLAST_OUT = 1.2;
+    private static final double BLAST_UP = 0.8;
+
+    // Where the rift's tentacle caught its creature, which it drags from there.
+    @Nullable
+    private Vec3 caughtAt;
 
     GiantHandTears(GiantHands storm, int variant, Vec3 base, LivingEntity target) {
         super(storm, variant, base, target);
@@ -31,9 +47,165 @@ abstract class GiantHandTears extends GiantHandRings {
     void feat(ServerLevel level) {
         if (this.move == HandPose.TEAR) {
             this.tear(level);
+        } else if (this.move == HandPose.RIFT) {
+            this.rift(level);
         } else {
             super.feat(level);
         }
+    }
+
+    private void rift(ServerLevel level) {
+        HandRift.Frame frame = HandRift.frame(this.variant, this.base, this.aim.subtract(this.base));
+        Vec3 mouth = frame.at(0.0, 0.0, 0.6);
+        if (this.t == 2 || this.t == HandRift.LEAVES + 6) {
+            boolean opening = this.t == 2;
+            for (HandGroup.Sub sub : HandGroup.at(this.variant, this.base, this.aim.subtract(this.base), this.t)) {
+                if (opening) {
+                    this.opens(level, sub.portal(), sub.left() ? 1.2F : 1.4F);
+                } else {
+                    this.shuts(level, sub.portal(), sub.left() ? 1.5F : 1.7F);
+                }
+            }
+        }
+        if (this.t == HandRift.DIGS) {
+            this.dustAt(level, frame.at(0.0, -0.4, 0.0), 20, 0.6);
+            this.dustAt(level, frame.at(0.0, 0.4, 0.0), 20, 0.6);
+            this.storm.sound(level, mouth, SoundEvents.ANVIL_LAND, 1.6F, 0.5F);
+            this.storm.sound(level, mouth, SoundEvents.ROOTED_DIRT_BREAK, 2.0F, 0.5F);
+            this.storm.sound(level, mouth, SoundEvents.GENERIC_EXPLODE.value(), 0.8F, 1.4F);
+        }
+        for (int k = 0; k < HandRift.TEARS.length; k++) {
+            if (this.t == HandRift.TEARS[k]) {
+                this.tearOpen(level, frame, k);
+            }
+        }
+        if (this.t == HandRift.LASHES) {
+            this.storm.sound(level, mouth, SoundEvents.ENDER_DRAGON_FLAP, 1.6F, 1.3F);
+            this.storm.sound(level, mouth, SoundEvents.SLIME_ATTACK, 1.6F, 0.5F);
+        }
+        if (this.t == HandRift.SNARES) {
+            this.snare(level, mouth);
+        }
+        this.drag(level, frame);
+        if (this.t == HandRift.SHUTS) {
+            this.blast(level, frame);
+        }
+    }
+
+    // Each jerk tears the rift a third wider: the ground groans and its sky shows deeper.
+    private void tearOpen(ServerLevel level, HandRift.Frame frame, int k) {
+        Vec3 middle = frame.at(0.0, 0.0, 0.2);
+        for (double along = -1.0; along <= 1.0; along += 1.0) {
+            this.dustAt(level, frame.at(along * HandRift.HALF * 0.6, 0.0, 0.0), 10, 0.8);
+        }
+        ParticleFx.cloud(level, ParticleTypes.END_ROD, middle, 6 + 4 * k, 1.2, 0.08);
+        float rise = 0.6F + 0.2F * k;
+        this.storm.sound(level, middle, SoundEvents.ROOTED_DIRT_BREAK, 2.2F, rise);
+        this.storm.sound(level, middle, SoundEvents.DEEPSLATE_BREAK, 2.0F, 0.5F + 0.1F * k);
+        this.storm.sound(level, middle, SoundEvents.WOOL_BREAK, 2.0F, rise);
+        if (k == HandRift.TEARS.length - 1) {
+            this.storm.sound(level, middle, SoundEvents.PORTAL_TRIGGER, 1.0F, 1.6F);
+            this.storm.sound(level, middle, SoundEvents.BEACON_ACTIVATE, 1.6F, 0.6F);
+        }
+    }
+
+    // The tentacle winds round the creature nearest the rift within its reach, small enough to hold and out to hurt
+    // the caster, its own creature first.
+    private void snare(ServerLevel level, Vec3 mouth) {
+        LivingEntity caught = null;
+        double best = HandRift.LASH_REACH;
+        for (LivingEntity living : this.near(level, HandRift.LASH_REACH + 2.0)) {
+            Vec3 middle = living.getBoundingBox().getCenter();
+            double far = middle.distanceTo(mouth) - (living == this.target ? 2.0 : 0.0);
+            if (far < best && GiantHands.fair(this.storm.owner, living) && this.holdable(living)
+                    && GiantHandSpots.sees(level, mouth, living)) {
+                best = far;
+                caught = living;
+            }
+        }
+        this.storm.sound(level, mouth, SoundEvents.PLAYER_ATTACK_SWEEP, 1.8F, 0.5F);
+        if (caught == null) {
+            return;
+        }
+        this.caughtAt = caught.getBoundingBox().getCenter();
+        this.take(caught);
+        this.storm.sound(level, this.caughtAt, SoundEvents.ARMOR_EQUIP_NETHERITE.value(), 2.0F, 0.6F);
+        this.storm.sound(level, this.caughtAt, SoundEvents.SLIME_SQUISH, 1.6F, 0.6F);
+    }
+
+    // Dragged over and pulled in, burned while inside, and hurled back out if still alive: one dead in there stays.
+    private void drag(ServerLevel level, HandRift.Frame frame) {
+        LivingEntity held = this.held;
+        if (held == null || this.caughtAt == null) {
+            return;
+        }
+        if (held.isRemoved() || held.level() != level) {
+            this.letGo();
+            return;
+        }
+        double extent = HandRift.extent(this.variant, held.getBbWidth(), held.getBbHeight());
+        Vec3 middle = HandRift.held(frame, this.caughtAt, extent, this.t);
+        if (this.t == HandRift.SINKS) {
+            ParticleFx.sphereOut(level, ParticleFx.dust(PowerRing.BRIGHT, 1.4F), frame.at(0.0, 0.0, 0.4), 24, 0.4);
+            this.storm.sound(level, middle, SoundEvents.ENDERMAN_TELEPORT, 1.8F, 0.5F);
+            this.storm.sound(level, middle, SoundEvents.PORTAL_TRAVEL, 0.4F, 1.8F);
+        }
+        for (int burn : HandRift.BURNS_AT) {
+            if (this.t == burn && held.isAlive()) {
+                this.hit(level, held, this.storm.ability.getDamage() * BURN_DAMAGE, Vec3.ZERO, 0.0, 0.0);
+                Vec3 glow = frame.at(0.0, 0.0, 0.3);
+                ParticleFx.cloud(level, ParticleTypes.END_ROD, glow, 10, 0.6, 0.12);
+                this.storm.sound(level, glow, SoundEvents.AMETHYST_BLOCK_RESONATE, 2.0F, 0.5F);
+                this.storm.sound(level, glow, SoundEvents.BEACON_POWER_SELECT, 1.4F, 0.6F);
+            }
+        }
+        if (this.t < HandRift.EJECTS || !held.isAlive()) {
+            this.hold(middle);
+            return;
+        }
+        this.letGo();
+        boolean wall = HandPose.wall(this.variant);
+        hold(held, frame.at(0.0, 0.0, extent + 0.3));
+        this.hit(level, held, this.storm.ability.getDamage() * EJECT_DAMAGE, wall ? this.alongWall(frame, held)
+                : frame.along().scale(-1.0), EJECT_OUT, wall ? EJECT_WALL_UP : EJECT_UP);
+        ParticleFx.sphereOut(level, ParticleFx.dust(PowerRing.BRIGHT, 1.6F), frame.at(0.0, 0.0, 0.5), 30, 0.6);
+        ParticleFx.cloud(level, ParticleTypes.END_ROD, frame.at(0.0, 0.0, 0.5), 16, 0.5, 0.25);
+        this.storm.sound(level, middle, SoundEvents.FIREWORK_ROCKET_LAUNCH, 2.0F, 0.6F);
+        this.storm.sound(level, middle, SoundEvents.PLAYER_ATTACK_KNOCKBACK, 2.0F, 0.5F);
+    }
+
+    // Straight out of a wall would fly at a caster facing it, which a hand never does: out and along the wall, on the
+    // side of the caster's line the creature is on.
+    private Vec3 alongWall(HandRift.Frame frame, LivingEntity held) {
+        double side = held.position().subtract(this.storm.owner.position()).dot(frame.across());
+        return frame.across().scale(side < 0.0 ? -1.0 : 1.0).add(frame.normal().scale(0.4)).normalize();
+    }
+
+    // The rift slams shut: a burst of starlight that throws everything round it away.
+    private void blast(ServerLevel level, HandRift.Frame frame) {
+        Vec3 middle = frame.at(0.0, 0.0, 0.6);
+        for (LivingEntity living : this.near(level, BLAST_REACH + 4.0)) {
+            if (living == this.held) {
+                continue;
+            }
+            Vec3 to = living.getBoundingBox().getCenter().subtract(middle);
+            double far = to.length();
+            if (far > BLAST_REACH + living.getBbWidth() * 0.5) {
+                continue;
+            }
+            Vec3 out = new Vec3(to.x, 0.0, to.z);
+            out = out.lengthSqr() < 1.0E-4 ? frame.along() : out.normalize();
+            double share = 1.0 - 0.5 * Math.min(1.0, far / BLAST_REACH);
+            this.hit(level, living, this.storm.ability.getDamage() * BLAST_DAMAGE * share, out, BLAST_OUT, BLAST_UP);
+        }
+        ParticleFx.send(level, ParticleTypes.FLASH, middle.x, middle.y, middle.z, 1, 0.0, 0.0, 0.0, 0.0);
+        ParticleFx.sphereOut(level, ParticleFx.dust(PowerRing.BRIGHT, 1.8F), middle, 48, 0.8);
+        ParticleFx.shockwave(level, ParticleFx.dust(PowerRing.PALE, 1.6F), frame.at(0.0, 0.0, 0.15), 40, 0.7);
+        ParticleFx.cloud(level, ParticleTypes.END_ROD, middle, 30, 1.2, 0.3);
+        this.storm.sound(level, middle, SoundEvents.END_PORTAL_SPAWN, 1.2F, 1.4F);
+        this.storm.sound(level, middle, SoundEvents.GENERIC_EXPLODE.value(), 2.4F, 0.7F);
+        this.storm.sound(level, middle, SoundEvents.BEACON_DEACTIVATE, 2.0F, 0.6F);
+        this.storm.sound(level, middle, SoundEvents.AMETHYST_CLUSTER_BREAK, 2.0F, 0.5F);
     }
 
     private void tear(ServerLevel level) {

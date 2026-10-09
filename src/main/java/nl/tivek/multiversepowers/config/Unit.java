@@ -7,6 +7,8 @@ import nl.tivek.multiversepowers.MultiversePowers;
 public enum Unit {
     HALF_HEARTS,
     HALF_HEARTS_PER_SPEED,
+    // Health in half hearts: unlike damage, never changed by the world's damage multiplier.
+    HEALTH,
     TICKS,
     SECONDS,
     BLOCKS,
@@ -34,6 +36,7 @@ public enum Unit {
         return switch (this) {
             case HALF_HEARTS -> value <= 0.0 ? key("no_damage") : key("hearts", number(value / 2.0));
             case HALF_HEARTS_PER_SPEED -> key("hearts_per_speed", number(value / 2.0));
+            case HEALTH -> key("hearts", number(value / 2.0));
             case TICKS -> value <= 0.0 ? key("instant") : key("seconds", number(value / 20.0));
             case SECONDS -> key("seconds", number(value));
             case BLOCKS -> key("blocks", number(value));

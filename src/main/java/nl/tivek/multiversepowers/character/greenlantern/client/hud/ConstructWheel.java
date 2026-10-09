@@ -3,8 +3,9 @@ package nl.tivek.multiversepowers.character.greenlantern.client.hud;
 import net.minecraft.Util;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
-import net.minecraft.network.chat.Component;
-import nl.tivek.multiversepowers.MultiversePowers;
+import nl.tivek.multiversepowers.character.CharacterAbility;
+import nl.tivek.multiversepowers.character.GameCharacter;
+import nl.tivek.multiversepowers.character.client.ClientCharacter;
 import nl.tivek.multiversepowers.character.greenlantern.client.ClientConstructs;
 import nl.tivek.multiversepowers.character.greenlantern.client.ConstructChoice;
 
@@ -12,7 +13,7 @@ public final class ConstructWheel {
     private static final long TAP_MS = 160L;
 
     private static long downSince = -1L;
-    private static boolean refused;
+    private static boolean piloting;
 
     private ConstructWheel() {
     }
@@ -20,15 +21,16 @@ public final class ConstructWheel {
     public static void tick(Minecraft minecraft, KeyMapping key) {
         boolean down = minecraft.screen == null && key.isDown();
         if (minecraft.player != null && ClientConstructs.piloted(minecraft.player.getId(), 0.0F) != null) {
-            if (down && !refused) {
-                minecraft.player.displayClientMessage(Component.translatable("ring." + MultiversePowers.MODID
-                        + ".mech_busy"), true);
+            // In the mech the key works its flamethrower (MechAssembly).
+            CharacterAbility wheel = GameCharacter.GREEN_LANTERN.byName("construct_wheel");
+            if (down && !piloting && wheel != null) {
+                ClientCharacter.sendAction(wheel, true, 0);
             }
-            refused = down;
+            piloting = down;
             downSince = -1L;
             return;
         }
-        refused = false;
+        piloting = false;
         if (down) {
             if (downSince < 0L) {
                 downSince = Util.getMillis();

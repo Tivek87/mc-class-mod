@@ -16,6 +16,7 @@ import nl.tivek.multiversepowers.character.GameCharacter;
 import nl.tivek.multiversepowers.character.client.ClientCharacter;
 import nl.tivek.multiversepowers.character.greenlantern.RingPayload;
 import nl.tivek.multiversepowers.character.greenlantern.ability.flight.Flight;
+import nl.tivek.multiversepowers.character.greenlantern.client.ClientConstructs;
 import nl.tivek.multiversepowers.character.greenlantern.client.ClientRing;
 import nl.tivek.multiversepowers.engine.math.Ease;
 
@@ -188,8 +189,12 @@ abstract class FlightSteering {
         momentum = 0.0;
     }
 
-    // A double press of space takes off or lands only when standing free or flying level, not mid take-off.
+    // A double press of space takes off or lands only when standing free or flying level, not mid take-off. In a mech it
+    // fires the rocket boots, creative too: the mech keeps the jump key from the game's own flight (MechPilot).
     static boolean mayToggle(LocalPlayer player) {
+        if (ClientConstructs.piloted(player.getId(), 0.0F) != null) {
+            return true;
+        }
         boolean lantern = ClientCharacter.active() == GameCharacter.GREEN_LANTERN && !player.mayFly()
                 && !player.isPassenger() && !player.isFallFlying() && !player.isSpectator();
         float t = ClientRing.flight(player, 0.0F);

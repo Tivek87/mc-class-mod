@@ -248,7 +248,7 @@ public final class SettingsPages {
     private static double step(CharacterAbility.Setting setting) {
         double size = Math.abs(setting.value());
         return switch (setting.unit()) {
-            case HALF_HEARTS, BLOCKS_PER_SECOND, STAMINA -> 1.0;
+            case HALF_HEARTS, HEALTH, BLOCKS_PER_SECOND, STAMINA -> 1.0;
             case HALF_HEARTS_PER_SPEED, SECONDS, HARDNESS -> 0.5;
             case TICKS -> setting.max() >= 1000.0 ? 10.0 : 1.0;
             case BLOCKS -> setting.max() > 20.0 ? 1.0 : 0.5;

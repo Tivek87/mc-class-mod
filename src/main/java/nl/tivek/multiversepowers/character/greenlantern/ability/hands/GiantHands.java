@@ -18,6 +18,7 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.character.CharacterAbility;
+import nl.tivek.multiversepowers.character.Characters;
 import nl.tivek.multiversepowers.character.greenlantern.PowerRing;
 import nl.tivek.multiversepowers.character.greenlantern.ability.airstrike.AirStrike;
 import nl.tivek.multiversepowers.character.greenlantern.ability.light.LightBubble;
@@ -38,6 +39,8 @@ public final class GiantHands extends GiantHandPlaces implements Effect {
     static final double GRAB_TALL = 3.2;
     private static final int WAIT_TICKS = 80;
     private static final int LOOK_AGAIN = 5;
+    // With no hand up and no press for this long, a use is over and its cooldown starts.
+    private static final int IDLE_TICKS = 60;
     private static final double LEAST_AWAY = 0.3;
     // How likely the ragdoll's throw is followed by a hand out of a portal catching the creature in the air.
     private static final double CATCH_CHANCE = 0.5;
@@ -57,7 +60,10 @@ public final class GiantHands extends GiantHandPlaces implements Effect {
     private final int[] made = new int[HandPose.MOVES];
     private final List<LivingEntity> targets;
     private final Set<LivingEntity> missed = new HashSet<>();
-    private final int count;
+    // Every press asks for one more hand, up to `most`; the first comes with the use itself.
+    private final int most;
+    private int wanted = 1;
+    private int idle;
     private final int every;
     private int called;
     private int waited;
@@ -71,15 +77,22 @@ public final class GiantHands extends GiantHandPlaces implements Effect {
         super(owner);
         this.ability = ability;
         this.targets = targets;
-        int fewest = Math.max(1, ability.intValue("fewestHands"));
-        int most = Math.max(fewest, ability.intValue("mostHands"));
-        this.count = fewest + owner.getRandom().nextInt(most - fewest + 1);
+        this.most = Math.max(1, ability.intValue("mostHands"));
         this.every = Math.max(1, ability.intValue("handTicks"));
         this.lastMove = LAST_MOVES.getOrDefault(owner.getUUID(), -1);
     }
 
+    // A press: the first starts a use with one hand, every next press of it brings one more, `mostHands` at most. It
+    // never counts as used here: the cooldown starts once the use is over (tick).
     public static boolean use(ServerPlayer owner, ServerLevel level, CharacterAbility ability) {
-        if (ACTIVE.containsKey(owner.getUUID())) {
+        GiantHands going = ACTIVE.get(owner.getUUID());
+        if (going != null) {
+            if (going.wanted >= going.most) {
+                PowerRing.tell(owner, "hands_spent");
+            } else {
+                going.wanted++;
+                going.idle = 0;
+            }
             return false;
         }
         if (Recharge.busy(owner)) {
@@ -117,7 +130,7 @@ public final class GiantHands extends GiantHandPlaces implements Effect {
         PowerRing.tell(owner, "hands");
         storm.sound(level, owner.getEyePosition(), SoundEvents.BEACON_POWER_SELECT, 1.2F, 1.3F);
         storm.sound(level, owner.getEyePosition(), SoundEvents.AMETHYST_BLOCK_RESONATE, 1.2F, 0.8F);
-        return true;
+        return false;
     }
 
     @Override
@@ -166,7 +179,7 @@ public final class GiantHands extends GiantHandPlaces implements Effect {
         }
         boolean fuels = PowerRing.fuels(this.owner, level);
         this.since++;
-        if (fuels && this.called < this.count && !AirStrike.calling(this.owner) && this.ready()) {
+        if (fuels && this.called < this.wanted && !AirStrike.calling(this.owner) && this.ready()) {
             int before = this.called;
             boolean more = this.call(level, TRIES);
             // Waiting for room never gives up: the hands in the way always go in the end.
@@ -175,7 +188,7 @@ public final class GiantHands extends GiantHandPlaces implements Effect {
                 this.stuck = 0;
                 this.crowded = false;
             } else if (!this.crowded && ++this.stuck > WAIT_TICKS || !more && this.targets.isEmpty()) {
-                this.called = this.count;
+                this.wanted = this.called;
             } else if (!more && ++this.waited % LOOK_AGAIN == 0) {
                 this.missed.clear();
                 this.crowded = false;
@@ -184,8 +197,11 @@ public final class GiantHands extends GiantHandPlaces implements Effect {
         this.hands.removeIf(hand -> hand.tick(level, fuels));
         this.hands.addAll(this.coming);
         this.coming.clear();
-        if (this.hands.isEmpty() && (this.called >= this.count || !fuels)) {
+        boolean waiting = !this.hands.isEmpty() || this.called < this.wanted;
+        this.idle = waiting ? 0 : this.idle + 1;
+        if (!waiting && (this.called >= this.most || this.idle > IDLE_TICKS) || this.hands.isEmpty() && !fuels) {
             ACTIVE.remove(this.owner.getUUID(), this);
+            Characters.startCooldown(this.owner, this.ability);
             return false;
         }
         return true;
@@ -208,7 +224,7 @@ public final class GiantHands extends GiantHandPlaces implements Effect {
     private boolean call(ServerLevel level, int tries) {
         this.taken = null;
         if (!this.anyLeft()) {
-            this.called = this.count;
+            this.wanted = this.called;
             return false;
         }
         double reach = this.ability.value("radiusBlocks");
@@ -297,7 +313,8 @@ public final class GiantHands extends GiantHandPlaces implements Effect {
     private boolean may(int move, boolean grabbable, boolean pair, boolean fresh) {
         boolean holds = move == HandPose.GRAB || move == HandPose.PINCH || move == HandPose.DRAG
                 || move == HandPose.RAGDOLL || move == HandPose.SWALLOW || move == HandPose.RINGHOLD
-                || move == HandPose.EYE || move == HandPose.RINGCHAINS || move == HandPose.TEAR;
+                || move == HandPose.EYE || move == HandPose.RINGCHAINS || move == HandPose.TEAR || move == HandPose.MAW
+                || move == HandPose.RIFT;
         return HandPose.pickable(move) && (!fresh || move != this.lastMove) && this.made[move] < this.most(move)
                 && (!holds || grabbable) && (move != HandPose.AXE || pair);
     }

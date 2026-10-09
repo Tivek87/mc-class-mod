@@ -19,14 +19,15 @@ import nl.tivek.multiversepowers.character.greenlantern.client.body.sword.SwordA
 import nl.tivek.multiversepowers.character.greenlantern.client.body.whip.WhipArms;
 import nl.tivek.multiversepowers.character.greenlantern.mech.MechAttacks;
 
-// Green Lantern's panel: in his mech its blows, its eyes, its missile arm, its rocket boots, its spin and the hold that
-// leaves it; with a construct weapon in his hands its four moves and the wheel that puts it away, his other keys shut
-// till then.
+// Green Lantern's panel: in his mech its blows, its eyes, its missile arm, its rocket boots, its spin, its
+// flamethrower, its helpers and the hold that leaves it; with a construct weapon in his hands its four moves and the
+// wheel that puts it away, his other keys shut till then.
 final class LanternPanel implements AbilityPanel.Rules {
     private static final String MOVE = "screen." + MultiversePowers.MODID + ".move.";
     private static final String MECH = "screen." + MultiversePowers.MODID + ".panel.green_lantern.mech.";
     // The keys the mech's own moves take over, and how long right click is held for its eye beam.
-    private static final Set<String> MECH_KEYS = Set.of("emerald_express", "flight", "shockwave");
+    private static final Set<String> MECH_KEYS = Set.of("emerald_express", "flight", "shockwave", "construct_wheel",
+            "giant_hands");
     private static final int MECH_GLARE_HOLD = 6;
     // Each weapon's click and hold of the left button, then of the right, and the wheel's setting saying what each
     // costs: one per second is paid every tick.
@@ -69,8 +70,21 @@ final class LanternPanel implements AbilityPanel.Rules {
         return pilot == null ? MechAttacks.Blow.NONE : pilot.blow();
     }
 
+    // In the mech only its mouse buttons, the keys its own moves take over and the hold that leaves it do something.
+    private static boolean inMech(CharacterAbility ability) {
+        return ability.id().equals("mech") || onMouse(ability) || MECH_KEYS.contains(ability.id());
+    }
+
+    static Component mechBusy() {
+        return Component.translatable("ring." + MultiversePowers.MODID + ".mech_busy",
+                Component.keybind("key." + MultiversePowers.MODID + ".input.scroll_hold"));
+    }
+
     @Nullable
     private static Component refusal(CharacterAbility ability, LocalPlayer player) {
+        if (piloting(player)) {
+            return inMech(ability) ? null : mechBusy();
+        }
         if (ability.input() != CharacterAbility.Input.KEY || ability.isClientOnly() || weapon() == null) {
             return null;
         }
@@ -82,7 +96,7 @@ final class LanternPanel implements AbilityPanel.Rules {
     @Override
     public boolean lists(CharacterAbility ability, LocalPlayer player) {
         if (piloting(player)) {
-            return ability.id().equals("mech") || onMouse(ability) || MECH_KEYS.contains(ability.id());
+            return inMech(ability);
         }
         if (weapon() != null) {
             return onMouse(ability) || ability.isClientOnly();
@@ -107,6 +121,8 @@ final class LanternPanel implements AbilityPanel.Rules {
                 case "emerald_express" -> aiming ? "lower" : "missiles";
                 case "flight" -> airborne && move.kind() == MechAttacks.FLY ? "cut" : "rockets";
                 case "shockwave" -> airborne ? "dive" : "spin";
+                case "construct_wheel" -> move.kind() == MechAttacks.FLAME ? "flame_off" : "flame";
+                case "giant_hands" -> "helpers";
                 default -> null;
             };
             return name == null ? null : Component.translatable(MECH + name);
@@ -125,10 +141,11 @@ final class LanternPanel implements AbilityPanel.Rules {
         return Component.translatable(MOVE + weapon + "." + move + (hold ? "_hold" : ""));
     }
 
-    // In the mech, holding the left button does nothing more than a click.
+    // In the mech, holding the left button or Left Alt does nothing more than a click.
     @Override
     public boolean holds(CharacterAbility ability, LocalPlayer player) {
-        return !(ability.input() == CharacterAbility.Input.LEFT && piloting(player));
+        return !((ability.input() == CharacterAbility.Input.LEFT || ability.id().equals("giant_hands"))
+                && piloting(player));
     }
 
     @Nullable
@@ -157,6 +174,9 @@ final class LanternPanel implements AbilityPanel.Rules {
                 case "light_shield" -> pays(player, mech.value(hold ? "mechGlarePowerPerSecond" : "mechEyePowerCost"));
                 case "flight" -> airborne || pays(player, mech.value("mechRocketPowerCost"));
                 case "shockwave" -> pays(player, mech.value(airborne ? "mechDivePowerCost" : "mechSpinPowerCost"));
+                case "construct_wheel" -> move.kind() == MechAttacks.FLAME
+                        || pays(player, mech.value("mechFlamePowerPerSecond"));
+                case "giant_hands" -> pays(player, mech.value("mechHelperPowerCost"));
                 default -> true;
             };
         }

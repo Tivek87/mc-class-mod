@@ -30,6 +30,7 @@ import nl.tivek.multiversepowers.character.greenlantern.client.body.whip.WhipArm
 import nl.tivek.multiversepowers.character.greenlantern.client.render.BeamCharge;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.arrival.ArrivalAnimation;
 import nl.tivek.multiversepowers.engine.client.model.BentParts;
+import nl.tivek.multiversepowers.engine.client.render.entity.HiddenArmor;
 import nl.tivek.multiversepowers.engine.client.pose.Limbs;
 
 public final class GreenLanternSuitLayer extends RenderLayer<AbstractClientPlayer, PlayerModel<AbstractClientPlayer>> {
@@ -39,6 +40,14 @@ public final class GreenLanternSuitLayer extends RenderLayer<AbstractClientPlaye
 
     private static PlayerModel<AbstractClientPlayer> wide;
     private static PlayerModel<AbstractClientPlayer> slim;
+
+    // The suit is worn over the armor: once any of it is on, the armor is no longer drawn.
+    static {
+        HiddenArmor.when((entity, partialTick) -> {
+            ClientLooks.Uniform uniform = ClientLooks.uniform(entity, partialTick);
+            return uniform != null && uniform.covers();
+        });
+    }
 
     private GreenLanternSuitLayer(RenderLayerParent<AbstractClientPlayer, PlayerModel<AbstractClientPlayer>> parent) {
         super(parent);

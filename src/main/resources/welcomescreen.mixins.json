@@ -21,6 +21,7 @@
     "client.render.CapeLayerMixin",
     "client.render.EntityShadowMixin",
     "client.render.HandItemMixin",
+    "client.render.HumanoidArmorLayerMixin",
     "client.render.LivingEntityRendererMixin",
     "client.render.ModelPartMixin",
     "client.render.ModelRenderMixin",

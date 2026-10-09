@@ -1,8 +1,5 @@
 package nl.tivek.multiversepowers.character.greenlantern.ability.mech;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
 import java.util.Optional;
 import javax.annotation.Nullable;
 import net.minecraft.core.BlockPos;
@@ -23,6 +20,7 @@ import nl.tivek.multiversepowers.character.CharacterAbility;
 import nl.tivek.multiversepowers.character.greenlantern.PowerRing;
 import nl.tivek.multiversepowers.character.greenlantern.ability.airstrike.AirStrike;
 import nl.tivek.multiversepowers.character.greenlantern.construct.ConstructPayload;
+import nl.tivek.multiversepowers.character.greenlantern.mech.MechAttacks;
 import nl.tivek.multiversepowers.engine.effect.Effect;
 import nl.tivek.multiversepowers.engine.effect.Effects;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
@@ -30,21 +28,17 @@ import nl.tivek.multiversepowers.engine.fx.Sounds;
 import nl.tivek.multiversepowers.engine.math.Vectors;
 import nl.tivek.multiversepowers.engine.world.LoadedWorld;
 
-// One salvo of the missile arm: SALVO hard-light missiles out of the pod on the back of the right hand, two a tick.
-// Each leaps out of its tube, then curves round onto a spot round where the pilot aimed and bursts there, or on the
-// first creature or block in its way. Every game draws them where the server says (ConstructPayload.MECH_MISSILE) and
-// their bursts as the air strike's.
+// One missile of the missile arm, fired by a left click out of the next full tube of the pod on the back of the right
+// hand. It leaps out of its tube, then curves round onto where the pilot aimed and bursts there, or on the first
+// creature or block in its way. Every game draws it where the server says (ConstructPayload.MECH_MISSILE) and its
+// burst as the air strike's.
 final class MechMissiles implements Effect {
-    private static final int SALVO = 6;
-    private static final int PER_TICK = 2;
     private static final double LAUNCH_SPEED = 0.75;
     private static final double TOP_SPEED = 2.0;
     private static final double SPEED_UP = 0.14;
-    // Free of the pod for FREE ticks, then turning at most TURN radians a tick onto its spot, SPREAD at most from where
-    // the pilot aimed.
+    // Free of the pod for FREE ticks, then turning at most TURN radians a tick onto where the pilot aimed.
     private static final int FREE = 3;
     private static final double TURN = 0.24;
-    private static final double SPREAD = 1.8;
     private static final int LIFE = 80;
     private static final double BLAST = 3.2;
     private static final double PUSH = 0.9;
@@ -53,100 +47,72 @@ final class MechMissiles implements Effect {
 
     private final ServerPlayer owner;
     private final double damage;
-    private final List<Missile> missiles = new ArrayList<>();
+    private final int id = PowerRing.newId();
+    private final Vec3 goal;
+    private Vec3 at;
+    private Vec3 way;
+    private double speed = LAUNCH_SPEED;
     private int age;
 
-    private static final class Missile {
-        private final int id = PowerRing.newId();
-        private final int leaves;
-        private final Vec3 goal;
-        private Vec3 at;
-        private Vec3 way;
-        private double speed = LAUNCH_SPEED;
-
-        private Missile(int leaves, Vec3 at, Vec3 way, Vec3 goal) {
-            this.leaves = leaves;
-            this.at = at;
-            this.way = way;
-            this.goal = goal;
-        }
-    }
-
-    private MechMissiles(ServerPlayer owner, double damage) {
+    private MechMissiles(ServerPlayer owner, double damage, Vec3 at, Vec3 way, Vec3 goal) {
         this.owner = owner;
         this.damage = damage;
+        this.at = at;
+        this.way = way;
+        this.goal = goal;
     }
 
-    // `hand`: the middle of the right palm; `way` along its fingers; `back` out of the back of the hand, where the pod
-    // stands; `target` what the pilot's crosshair rests on.
-    static void salvo(ServerLevel level, ServerPlayer owner, CharacterAbility ability, Vec3 hand, Vec3 way, Vec3 back,
-            Vec3 target) {
-        MechMissiles salvo = new MechMissiles(owner, ability.value("mechMissileDamage"));
+    // `tube`: which of the pod's tubes it leaves (MechAttacks.TUBE_X); `hand`: the middle of the right palm; `way` along
+    // its fingers; `back` out of the back of the hand, where the pod stands; `target` what the pilot's crosshair rests
+    // on.
+    static void fire(ServerLevel level, ServerPlayer owner, CharacterAbility ability, int tube, Vec3 hand, Vec3 way,
+            Vec3 back, Vec3 target) {
         Vec3 across = way.cross(back).normalize();
-        for (int k = 0; k < SALVO; k++) {
-            int column = k % 3 - 1;
-            int row = k / 3;
-            Vec3 tube = hand.add(way.scale(0.7)).add(back.scale(0.5 + 0.28 * row)).add(across.scale(0.38 * column));
-            Vec3 out = way.add(back.scale(0.35 + 0.15 * row)).add(across.scale(0.18 * column)).normalize();
-            double turn = Math.PI * 2.0 * k / SALVO;
-            double far = SPREAD * (k % 2 == 0 ? 1.0 : 0.5);
-            Vec3 goal = target.add(Math.cos(turn) * far, 0.0, Math.sin(turn) * far);
-            salvo.missiles.add(new Missile(k / PER_TICK, tube, out, goal));
-        }
-        Sounds.play(level, hand, SoundEvents.FIREWORK_ROCKET_LAUNCH, 3.0F, 0.7F);
-        Sounds.play(level, hand, SoundEvents.FIREWORK_ROCKET_SHOOT, 2.5F, 0.6F);
-        ParticleFx.cloud(level, ParticleFx.dust(PowerRing.BRIGHT, 1.4F), hand.add(back.scale(0.6)), 16, 0.4, 0.15);
-        Effects.start(level, salvo);
+        double x = MechAttacks.TUBE_X[tube];
+        double out = -MechAttacks.TUBE_Z[tube];
+        Vec3 mouth = hand.add(way.scale(0.7)).add(back.scale(out)).add(across.scale(x));
+        Vec3 leaving = way.add(back.scale(0.35 + 0.58 * (out - 0.48))).add(across.scale(0.47 * x)).normalize();
+        Sounds.play(level, mouth, SoundEvents.FIREWORK_ROCKET_LAUNCH, 2.5F, 0.8F + 0.1F * level.random.nextFloat());
+        ParticleFx.cloud(level, ParticleFx.dust(PowerRing.BRIGHT, 1.4F), mouth, 6, 0.2, 0.1);
+        Effects.start(level, new MechMissiles(owner, ability.value("mechMissileDamage"), mouth, leaving, target));
     }
 
     @Override
     public boolean tick(ServerLevel level, int tick) {
         this.age++;
-        Iterator<Missile> each = this.missiles.iterator();
-        while (each.hasNext()) {
-            Missile missile = each.next();
-            int since = this.age - missile.leaves;
-            if (since < 0) {
-                continue;
-            }
-            if (this.fly(level, missile, since)) {
-                each.remove();
-            }
+        if (this.owner.isRemoved()) {
+            ConstructPayload.sendRemove(level, this.id, this.at);
+            return false;
         }
-        return !this.missiles.isEmpty() && !this.owner.isRemoved();
-    }
-
-    // One tick of a missile's flight; whether it is gone.
-    private boolean fly(ServerLevel level, Missile missile, int since) {
-        if (since == 0) {
-            Sounds.play(level, missile.at, SoundEvents.FIREWORK_ROCKET_SHOOT, 1.6F, 1.1F + 0.2F * level.random
+        if (this.age == 1) {
+            Sounds.play(level, this.at, SoundEvents.FIREWORK_ROCKET_SHOOT, 1.6F, 1.1F + 0.2F * level.random
                     .nextFloat());
         }
-        missile.speed = Math.min(TOP_SPEED, missile.speed + SPEED_UP);
-        if (since >= FREE) {
-            Vec3 to = missile.goal.subtract(missile.at);
+        this.speed = Math.min(TOP_SPEED, this.speed + SPEED_UP);
+        if (this.age >= FREE) {
+            Vec3 to = this.goal.subtract(this.at);
             if (to.lengthSqr() > 1.0E-6) {
-                missile.way = turned(missile.way, to.normalize(), TURN);
+                this.way = turned(this.way, to.normalize(), TURN);
             }
         }
-        Vec3 next = missile.at.add(missile.way.scale(missile.speed));
-        Vec3 hit = this.strikes(level, missile.at, next);
-        if (hit == null && missile.at.distanceTo(missile.goal) <= missile.speed) {
-            hit = missile.goal;
+        Vec3 next = this.at.add(this.way.scale(this.speed));
+        Vec3 hit = this.strikes(level, this.at, next);
+        if (hit == null && this.at.distanceTo(this.goal) <= this.speed) {
+            hit = this.goal;
         }
-        if (hit == null && (since >= LIFE || !level.isLoaded(BlockPos.containing(next)))) {
+        if (hit == null && (this.age >= LIFE || !level.isLoaded(BlockPos.containing(next)))) {
             hit = next;
         }
         if (hit != null) {
-            this.burst(level, missile, hit);
-            return true;
+            this.burst(level, hit);
+            return false;
         }
-        missile.at = next;
+        this.at = next;
         ParticleFx.send(level, ParticleTypes.SMOKE, next.x, next.y, next.z, 1, 0.05, 0.05, 0.05, 0.01);
         PacketDistributor.sendToPlayersNear(level, null, next.x, next.y, next.z, VIEW_RANGE,
-                new ConstructPayload(missile.id, this.owner.getId(), next, missile.way, 1.0F, 1.0F, 0.0F, false,
-                        ConstructPayload.MECH_MISSILE, 0, since, null));
-        return false;
+                new ConstructPayload(this.id, this.owner.getId(), next, this.way, 1.0F, 1.0F, 0.0F, false,
+                        ConstructPayload.MECH_MISSILE, 0, this.age, null));
+        return true;
     }
 
     // `way` turned towards `to` (both of length 1) by `most` radians at the most.
@@ -182,12 +148,12 @@ final class MechMissiles implements Effect {
         return best;
     }
 
-    private void burst(ServerLevel level, Missile missile, Vec3 at) {
+    private void burst(ServerLevel level, Vec3 at) {
         MechBlows.blast(level, this.owner, null, at, BLAST, this.damage, PUSH);
         PacketDistributor.sendToPlayersNear(level, null, at.x, at.y, at.z, VIEW_RANGE,
-                new ConstructPayload(PowerRing.newId(), this.owner.getId(), at, missile.way, (float) BLAST * 0.7F,
+                new ConstructPayload(PowerRing.newId(), this.owner.getId(), at, this.way, (float) BLAST * 0.7F,
                         1.0F, 0.0F, false, ConstructPayload.BLAST, AirStrike.SMALL_BLAST, 0, null));
-        ConstructPayload.sendRemove(level, missile.id, at);
+        ConstructPayload.sendRemove(level, this.id, at);
         ParticleFx.sphereOut(level, ParticleFx.dust(PowerRing.BRIGHT, 1.4F), at, 14, 0.25);
         ParticleFx.send(level, ParticleTypes.EXPLOSION, at.x, at.y + 0.2, at.z, 2, 0.4, 0.3, 0.4, 0.0);
         Sounds.play(level, at, SoundEvents.GENERIC_EXPLODE.value(), 2.0F, 1.2F + 0.2F * level.random.nextFloat());

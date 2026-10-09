@@ -1,13 +1,15 @@
 # Laatste sessie
 
-## 0.7.8-alpha (2026-10-09)
-- Verzoek: idee #70 mech (jaeger-bouw, grotere uitlaat + boost, combo, Eye Ray/Beam, missile arm, rocket
-  boots, spin; Unibeam weg) en Thor Storm Throw als in God of War (Z; zonder hamer valt hij uit de lucht).
-- Laatste ronde: mech-review overgenomen (geen bugs; 6 te lange regels ingekort). Storm Throw: cirkel weg
-  (haze, scorch-schijf, FLASH), V breed (60° per arm, standaard 6 blokken, `StormStrike`), V opent nu altijd
-  van Thor af naar de vijand (was scheef bij steile worp), explosie veel kleiner (`StormStrikeFx`).
-- Docs: CHANGELOG, POWERS.md (ook Z = Storm Throw in tabel), PROJECT.md, en_us; KEYBINDS.md bijgewerkt.
-- Getest: in-game bovenaanzicht + zijaanzicht (V symmetrisch, vijand in de V), build + alle tests groen.
-- Testklassen Zz*Test, werelden zz_* en screenshots verwijderd; idee #70 staat in `bugs/fixed/`.
-- Commit + push + release 0.7.8-alpha: alles mee (ook KEYBINDS.md, flight-docs, referentieclips).
-- Open: idee #24 (NPC's) wacht op ja/nee; KEYBINDS.md is Nederlands, andere docs Engels.
+## 0.7.9-alpha (2026-10-10, release)
+- 0.7.9 klaar: Storm Throw lager + mikt op dichtstbijzijnde vijand, mech (raketten, vlammenwerper V, sprong,
+  3 helpers Left Alt, GL-krachten uit), pak over armor, Thor (dash naar vliegende hamer, reach 128, arm na dood,
+  hamer-bliksem keten 3, chain 4 blokken), Giant Hands max 5, Maw en Cosmic rift, zachte gloed.
+- CHANGELOG, tour (9 stappen, in game gelopen), gids en docs bijgewerkt; volledige diff gereviewd.
+- In game getest: alles hierboven behalve GL-krachten geweigerd in de mech (alleen code gelezen).
+- Zachte gloed (2026-10-10): A/B-test liet grondringen bijna verdwijnen. Fix: shader vervaagt nu alleen richting de
+  snijlijn met een blok, over een deel van de breedte van de gloed (max 1 blok); ringen (`circle`) eigen laag
+  `ringGlow`, scherp zoals vroeger. In game getest: ringen gelijk aan/uit, straal en grote gloed zacht in de grond.
+- Testklassen, testwerelden en shots verwijderd; `run/options.txt` goed. `./gradlew build` groen.
+- Ja van gebruiker (2026-10-10): commit 'Maw, cosmic rift, mech helpers and hammer lightning', push naar
+  origin/master, `scripts/release.ps1 publish` v0.7.9-alpha (Latest); CHANGELOG-kop op 2026-10-10.
+- Open: idee #24 (NPC's) wacht op ja/nee.

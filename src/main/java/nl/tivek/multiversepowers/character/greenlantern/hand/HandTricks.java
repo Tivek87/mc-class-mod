@@ -110,6 +110,7 @@ abstract class HandTricks extends HandMoves {
             case HandPose.RINGHOLD -> HandGroup.HOLD_GRABS;
             case HandPose.CLAP -> HandGroup.CLAP_HITS;
             case HandPose.TEAR -> HandGroup.TEAR_GRABS;
+            case HandPose.RIFT -> HandRift.DIGS;
             case HandPose.FINGERGUN -> HandPose.GUN_SHOTS[0];
             case HandPose.SCISSORS -> HandPose.SNIPS[0];
             case HandPose.SWALLOW -> HandPose.SWALLOW_CATCHES;
@@ -117,9 +118,10 @@ abstract class HandTricks extends HandMoves {
         };
     }
 
-    // What a hand holds sits here in its frame: between the pinching fingertips, or in the fist.
+    // What a hand holds sits here in its frame: between the pinching fingertips, in the maw's mouth, or in the fist.
     public static Vec3 grip(int variant) {
-        return HandPose.move(variant) == PINCH ? PINCH_GRIP : GRIP;
+        int move = HandPose.move(variant);
+        return move == PINCH ? PINCH_GRIP : move == HandPose.MAW ? HandPose.MAW_MOUTH : GRIP;
     }
 
     // The portal a hand comes through: level before a flick, overhead for a pinch; it opens as the hand is called

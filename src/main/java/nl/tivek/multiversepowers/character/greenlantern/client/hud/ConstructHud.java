@@ -298,13 +298,14 @@ public final class ConstructHud {
         };
     }
 
-    // In the mech, what its own move on that key does now: the salvos the missile arm has left, flying, spinning,
-    // diving.
+    // In the mech, what its own move on that key does now: the missiles the missile arm has left, flying, spinning,
+    // diving, pouring fire.
     @Nullable
     private static Component mechStatus(CharacterAbility ability, MechAttacks.Blow move, String prefix) {
         return switch (ability.id()) {
-            case "emerald_express" -> move.kind() == MechAttacks.AIM ? Component.translatable(prefix + "salvos_left",
-                    MechAttacks.SALVOS - MechAttacks.fired(move)) : null;
+            case "construct_wheel" -> MechAttacks.pouring(move) ? Component.translatable(prefix + "flaming") : null;
+            case "emerald_express" -> move.kind() == MechAttacks.AIM ? Component.translatable(prefix + "missiles_left",
+                    MechAttacks.ROCKETS - MechAttacks.fired(move)) : null;
             case "flight" -> move.kind() == MechAttacks.FLY && MechAttacks.airborne(move)
                     ? Component.translatable(prefix + "flying") : null;
             case "shockwave" -> move.kind() == MechAttacks.SPIN ? Component.translatable(prefix + "spinning")

@@ -7,7 +7,7 @@ import nl.tivek.multiversepowers.engine.math.Vectors;
 
 public final class HandPose extends HandRings {
     private static final double[] SPOT = { 5.8, 1.25, 2.2, 2.9, 5.0, 0.0, 0.0, 3.0, 0.0, 0.0, 6.0, 0.0, 1.25, 0.0,
-            0.0, 0.0, 0.0, 0.0, 0.0, 10.0, 4.2, 6.0, 12.0, 5.0, 7.0, 12.0, 0.0 };
+            0.0, 0.0, 0.0, 0.0, 0.0, 10.0, 4.2, 6.0, 12.0, 5.0, 7.0, 12.0, 0.0, 2.6, 0.0 };
     private static final int TAPS = 10;
     private static final double TAP = 0.35;
     private static final double[] WRIST_WEIGHTS = remembered(2.4, 0.45);
@@ -96,7 +96,9 @@ public final class HandPose extends HandRings {
             case SNAP -> beat >= SNAP_AT - 3.0;
             case RAKE -> beat >= RAKE_AT - 3.0;
             // A portal hand stays turned the way it came; its portal follows the creature instead.
-            case FLICK, PINCH, POKE, HAMMER, DRAG, CATCH, RINGHOLD, CLAP, FINGERGUN, SCISSORS, SWALLOW, TEAR -> true;
+            case FLICK, PINCH, POKE, HAMMER, DRAG, CATCH, RINGHOLD, CLAP, FINGERGUN, SCISSORS, SWALLOW, TEAR,
+                    RIFT -> true;
+            case MAW -> beat >= MAW_GULP - 3.0;
             case RAGDOLL -> beat >= CATCH_BEAT - 2.0;
             case RINGBEAM -> beat >= RINGBEAM_CHARGE;
             case SCOOP -> beat >= SCOOP_AT - 4.0;
@@ -192,6 +194,7 @@ public final class HandPose extends HandRings {
             case RINGHAMMER -> pose.ringHammer(t, reach);
             case RINGCHAINS -> pose.ringChains(t);
             case MEGAPHONE -> pose.megaphone(t, reach);
+            case MAW -> pose.maw(t, reach);
             case SMACK -> pose.smack(t, side, reach);
             case GRAB -> pose.grab(t);
             case FINGER -> pose.finger(t);

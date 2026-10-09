@@ -8,6 +8,7 @@ import static nl.tivek.multiversepowers.character.client.GuideMode.doubleKey;
 import static nl.tivek.multiversepowers.character.client.GuideMode.forward;
 import static nl.tivek.multiversepowers.character.client.GuideMode.heading;
 import static nl.tivek.multiversepowers.character.client.GuideMode.hold;
+import static nl.tivek.multiversepowers.character.client.GuideMode.jump;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -65,11 +66,16 @@ final class LanternGuide {
                                 .costs("mech", "mechGlarePowerPerSecond"),
                         hold(Input.SCROLL, "leave").fires("mech"),
                         heading("keys"), ability(GL, "emerald_express", "missiles").moves("emerald_express", false),
-                        click(Input.LEFT, "salvo").moves("light_bolt", false).costs("mech", "mechMissilePowerCost")
+                        click(Input.LEFT, "fire").moves("light_bolt", false).costs("mech", "mechMissilePowerCost")
                                 .under("missiles"),
                         ability(GL, "emerald_express", "lower").moves("emerald_express", false).again("missiles"),
                         ability(GL, "shockwave", "spin").moves("shockwave", false).costs("mech", "mechSpinPowerCost"),
-                        heading("move"), forward("climb"),
+                        ability(GL, "construct_wheel", "flame").moves("construct_wheel", false)
+                                .costs("mech", "mechFlamePowerPerSecond"),
+                        ability(GL, "construct_wheel", "flame_off").moves("construct_wheel", false).again("flame"),
+                        ability(GL, "giant_hands", "helpers").moves("giant_hands", false)
+                                .costs("mech", "mechHelperPowerCost"),
+                        heading("move"), forward("climb"), jump("jump"),
                         doubleKey(LanternGuide::jumpKey, "rockets").moves("flight", false)
                                 .costs("mech", "mechRocketPowerCost"),
                         ability(GL, "shockwave", "dive").moves("shockwave", false).costs("mech", "mechDivePowerCost")

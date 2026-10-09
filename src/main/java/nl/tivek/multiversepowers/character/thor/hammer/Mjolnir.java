@@ -18,6 +18,7 @@ import nl.tivek.multiversepowers.character.thor.ThorBlow;
 import nl.tivek.multiversepowers.character.thor.ThorCharge;
 import nl.tivek.multiversepowers.character.thor.ThorMoves;
 import nl.tivek.multiversepowers.character.thor.ThorStatePayload;
+import nl.tivek.multiversepowers.character.thor.storm.ChainBolt;
 import nl.tivek.multiversepowers.engine.effect.Effects;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 import nl.tivek.multiversepowers.engine.math.Vectors;
@@ -33,6 +34,11 @@ public final class Mjolnir extends MjolnirCatch {
     private static final double UPPERCUT_REACH = 3.8;
     private static final double UPPERCUT_WIDTH = 0.45;
     private static final double LAUNCH = 1.6;
+    // Out of his hands it shoots lightning at most this often (ticks), leaping on to this many foes past the first.
+    private static final int ARC_EVERY = 20;
+    private static final int ARC_LEAPS = 2;
+
+    private int sinceArc;
 
     private Mjolnir(UUID owner) {
         super(owner);
@@ -77,7 +83,6 @@ public final class Mjolnir extends MjolnirCatch {
         }
         int flags = hammer.armed ? ThorStatePayload.ARMED : 0;
         flags |= hammer.state != State.HOME ? ThorStatePayload.THROWN : 0;
-        flags |= hammer.state == State.RESTING ? ThorStatePayload.RESTING : 0;
         flags |= hammer.state == State.BACK ? ThorStatePayload.CALLING : 0;
         flags |= hammer.cocked ? ThorStatePayload.COCKED : 0;
         return flags;
@@ -229,12 +234,18 @@ public final class Mjolnir extends MjolnirCatch {
         return true;
     }
 
-    // Follow the Hammer: he dashes to it where it rests, if it is within `reach` and not in lava.
+    // Follow the Hammer: he dashes to it where it rests, or where it flies out (a Storm Throw's hurl aside) it stops and
+    // hangs for him; only within `reach` and not in lava.
     public static boolean follow(ServerPlayer player, double reach, double pace) {
         Mjolnir hammer = find(player);
-        if (hammer == null || hammer.state != State.RESTING || player.position().distanceTo(hammer.at) > reach
+        boolean flying = hammer != null && hammer.state == State.OUT && hammer.kind != Throw.STORM;
+        if (hammer == null || hammer.state != State.RESTING && !flying
+                || player.position().distanceTo(hammer.at) > reach
                 || player.level().getFluidState(BlockPos.containing(hammer.at)).is(FluidTags.LAVA)) {
             return false;
+        }
+        if (flying) {
+            hammer.settle(player.serverLevel(), player, null);
         }
         return HammerPull.start(player, pace);
     }
@@ -261,6 +272,29 @@ public final class Mjolnir extends MjolnirCatch {
     @Override
     double stays() {
         return setting("hammer_throw", "stayBlocks", 128.0);
+    }
+
+    // Lying, stuck, hanging or flying, at most once a second a bolt leaps from it (never from the sky) onto the nearest
+    // foe within arcBlocks with nothing solid between, and on from there (ChainBolt.arc).
+    @Override
+    void arcs(ServerLevel level, ServerPlayer owner) {
+        CharacterAbility thrown = GameCharacter.THOR.byName("hammer_throw");
+        if (++this.sinceArc < ARC_EVERY || thrown == null) {
+            return;
+        }
+        Vec3 from = this.at;
+        LivingEntity foe = Targeting.nearestFoe(owner, level, from, thrown.value("arcBlocks"), living -> {
+            Vec3 middle = living.getBoundingBox().getCenter();
+            // Looked for from half a block out towards it: stuck in a wall or floor, it starts inside that block.
+            Vec3 out = from.add(middle.subtract(from).normalize().scale(0.5));
+            return Targeting.clearPath(level, out, middle, owner);
+        });
+        if (foe == null) {
+            return;
+        }
+        this.sinceArc = 0;
+        ChainBolt.arc(level, owner, from, foe, (float) thrown.value("arcDamage") * ThorCharge.hammer(owner),
+                ARC_LEAPS);
     }
 
     private static double setting(String ability, String key, double fallback) {
