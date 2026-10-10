@@ -20,44 +20,51 @@ import nl.tivek.multiversepowers.update.client.tour.TourStep.Place;
 // while a line is in neither, or a tour text is too long. Only steps from `FROM` up to the version installed are ever
 // shown, so a release's steps replace the last one's. A player's first tour starts with `INTRO`.
 final class TourSteps {
-    static final String VERSION = "0.7.9-alpha";
+    static final String VERSION = "0.8.0-alpha";
     // The oldest version whose changes this tour shows: normally its own.
     static final String FROM = VERSION;
 
-    // Thor's Storm Throw and hammer lightning by his rows of the panel, then the Giant Hands and the mech's new moves by
-    // Green Lantern's: as anyone else, the card stands in the middle.
+    // Green Lantern's new fists, clicks and weapons by his rows of the panel, then the hands and the mech; the escape game
+    // and wild helpers in the middle; Thor's flight by his rows. As anyone else, the card stands in the middle.
     static final List<TourStep> ALL = List.of(
-            step(VERSION, "thor_storm_low", Kind.CHANGED, Place.GAME).at("game.panel.rows.thor")
-                    .prepare(AbilityPanel::wake).covers("Thor: the Storm Throw goes far less high",
-                            "Thor: the Storm Throw flings the hammer up"),
-            step(VERSION, "thor_hammer_arcs", Kind.NEW, Place.GAME).at("game.panel.rows.thor")
-                    .prepare(AbilityPanel::wake).covers("Thor: a thrown Mjolnir, flying or lying"),
-            step(VERSION, "hands_five", Kind.CHANGED, Place.GAME).at("game.panel.rows.green_lantern")
-                    .prepare(AbilityPanel::wake).covers("Green Lantern: the Giant Hands bring one hand a press"),
-            step(VERSION, "hand_maw", Kind.NEW, Place.GAME).at("game.panel.rows.green_lantern")
-                    .prepare(AbilityPanel::wake).covers("Green Lantern: Maw, a new Giant Hand"),
-            step(VERSION, "hand_rift", Kind.NEW, Place.GAME).at("game.panel.rows.green_lantern")
-                    .prepare(AbilityPanel::wake).covers("Green Lantern: Cosmic rift, a new Giant Hand"),
-            step(VERSION, "mech_jump", Kind.NEW, Place.GAME).at("game.panel.rows.green_lantern")
-                    .prepare(AbilityPanel::wake).covers("Green Lantern: the mech jumps"),
-            step(VERSION, "mech_flame", Kind.NEW, Place.GAME).at("game.panel.rows.green_lantern")
-                    .prepare(AbilityPanel::wake).covers("Green Lantern: Flamethrower (V in the mech"),
-            step(VERSION, "mech_helpers", Kind.NEW, Place.GAME).at("game.panel.rows.green_lantern")
-                    .prepare(AbilityPanel::wake).covers("Green Lantern: Helpers (Left Alt in the mech)"),
-            step(VERSION, "mech_missile_single", Kind.CHANGED, Place.GAME).at("game.panel.rows.green_lantern")
-                    .prepare(AbilityPanel::wake).covers("Green Lantern: the mech's missile arm"));
+            step(VERSION, "lantern_fists", Kind.NEW, Place.GAME).at("game.panel.rows.green_lantern")
+                    .prepare(AbilityPanel::wake).covers("Green Lantern: Construct Fists"),
+            step(VERSION, "lantern_clicks", Kind.CHANGED, Place.GAME).at("game.panel.rows.green_lantern")
+                    .prepare(AbilityPanel::wake).covers("Green Lantern: right click is the bolt",
+                            "Green Lantern: the Light Dome is held", "Green Lantern: the Light Shield"),
+            step(VERSION, "lantern_axe", Kind.NEW, Place.GAME).at("game.panel.rows.green_lantern")
+                    .prepare(AbilityPanel::wake).covers("Green Lantern: Battleaxe in the Construct Wheel"),
+            step(VERSION, "lantern_saw", Kind.NEW, Place.GAME).at("game.panel.rows.green_lantern")
+                    .prepare(AbilityPanel::wake).covers("Green Lantern: Heavy Chainsaw in the Construct Wheel"),
+            step(VERSION, "hands_random", Kind.CHANGED, Place.GAME).at("game.panel.rows.green_lantern")
+                    .prepare(AbilityPanel::wake).covers("Green Lantern: the Giant Hands call up 1 to 5"),
+            step(VERSION, "hand_gauntlet", Kind.NEW, Place.GAME).at("game.panel.rows.green_lantern")
+                    .prepare(AbilityPanel::wake).covers("Green Lantern: the snapping Giant Hand"),
+            step(VERSION, "lantern_recharge", Kind.CHANGED, Place.GAME).at("game.panel.rows.green_lantern")
+                    .prepare(AbilityPanel::wake).covers("Green Lantern: to recharge you press",
+                            "Green Lantern: the Power Battery looks like"),
+            step(VERSION, "mech_combo", Kind.NEW, Place.GAME).at("game.panel.rows.green_lantern")
+                    .prepare(AbilityPanel::wake).covers("Green Lantern: the mech's left-click combo"),
+            step(VERSION, "mech_armor", Kind.CHANGED, Place.GAME).at("game.panel.rows.green_lantern")
+                    .prepare(AbilityPanel::wake).covers("Green Lantern: in the mech the pilot is guarded"),
+            step(VERSION, "escape_game", Kind.NEW, Place.GAME).covers("Escape game: caught in"),
+            step(VERSION, "wild_helpers", Kind.NEW, Place.GAME).covers("Hard-Light Helpers also come wild"),
+            step(VERSION, "thor_descend", Kind.NEW, Place.GAME).at("game.panel.rows.thor")
+                    .prepare(AbilityPanel::wake).covers("Thor: hold C in flight"));
 
     // Changes too small for a step of their own, each by how its changelog line starts, as in `covers`.
     static final List<String> SMALL = List.of(
-            "Green Lantern: the suit is worn over armor",
-            "Chain lightning: Thor's chains",
-            "Green Lantern: the mech runs more like a runner",
-            "Green Lantern's settings: the Maw's and the Cosmic rift's",
-            "Thor's settings: how far the thrown hammer's lightning",
-            "Thor's settings: Follow the Hammer reaches",
-            "Green Lantern's settings: the missile arm's cost",
-            "Green Lantern's settings: the Giant Hands' most hands",
-            "Green Lantern's settings: the Giant Hands' fewest hands");
+            "Crosshairs: Green Lantern, Thor",
+            "Green Lantern's settings: the fists'",
+            "Green Lantern: the ram cone does",
+            "Green Lantern: in flight the Construct Wheel",
+            "Green Lantern: the mech's head is bigger",
+            "Green Lantern: the mech's missiles have",
+            "Green Lantern: for the mech's flamethrower",
+            "Green Lantern: a creature the Beam kills",
+            "Thor: the Lightning Bomb is about",
+            "Thor: the Storm Bolt no longer",
+            "Green Lantern: the roar of the mech's");
 
     // Shown first on a player's first tour, wherever it starts: what the tour is and how to use it.
     static final TourStep INTRO = step(VERSION, "tour_intro", Kind.HOW, Place.ANY);

@@ -22,6 +22,8 @@ import nl.tivek.multiversepowers.character.client.AbilityGuide;
 import nl.tivek.multiversepowers.character.client.GuideMode;
 import nl.tivek.multiversepowers.character.greenlantern.client.ClientRing;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.flame.FlameArms;
+import nl.tivek.multiversepowers.character.greenlantern.client.body.heavy.ClientHeavy;
+import nl.tivek.multiversepowers.character.greenlantern.heavy.HeavyMoves;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.sword.SwordArms;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.whip.WhipArms;
 import nl.tivek.multiversepowers.character.greenlantern.construct.Construct;
@@ -38,35 +40,33 @@ final class LanternGuide {
         List<GuideMode> modes = new ArrayList<>(List.of(
                 mode("ground", player -> !flying(player) && !LanternPanel.piloting(player)
                         && LanternPanel.weapon() == null,
-                        heading("mouse"), bolt(), beam(), lock(),
-                        click(Input.RIGHT, "shield").fires("light_shield").costs("light_shield", "powerPerSecond"),
-                        hold(Input.RIGHT, "dome").holds("light_shield").costs("light_shield", "domePowerPerSecond"),
+                        heading("mouse"), punch(), heavy(), bolt(), beam(), lock(),
                         hold(Input.SCROLL, "mech").fires("mech").costs("mech", "mechPowerCost"),
                         heading("keys"), wheel("wheel"), ability(GL, "recharge", "recharge"),
                         ability(GL, "emerald_express", "train"), ability(GL, "ring_scan", "scan"),
-                        ability(GL, "shockwave", "shockwave"), ability(GL, "giant_hands", "hands"), revolver(),
+                        dome("dome"), ability(GL, "shockwave", "shockwave"), ability(GL, "giant_hands", "hands"),
+                        revolver(),
                         cage(), pound(), free(), ability(GL, "air_strike", "strike"),
                         heading("move"), doubleKey(LanternGuide::jumpKey, "fly").fires("flight")
                                 .costs("flight", "fullRingSeconds")),
                 mode("flight", LanternGuide::flying,
-                        heading("mouse"), bolt(), beam(), lock(),
-                        click(Input.RIGHT, "ram").fires("light_shield").costs("light_shield", "powerPerSecond"),
-                        hold(Input.RIGHT, "brake").holds("light_shield").costs("light_shield", "domePowerPerSecond"),
+                        heading("mouse"), punch(), heavy(), bolt(), beam(), lock(),
                         hold(Input.SCROLL, "mech").fires("mech").costs("mech", "mechPowerCost"),
                         heading("keys"), ability(GL, "shockwave", "dive"), ability(GL, "recharge", "recharge"),
-                        wheel("wheel"), ability(GL, "emerald_express", "train"), ability(GL, "ring_scan", "scan"),
+                        wheel("wheel"), ability(GL, "emerald_express", "ram").costs("emerald_express", "ramPowerPerSecond"),
+                        ability(GL, "ring_scan", "scan"), dome("brake"),
                         ability(GL, "giant_hands", "hands"), revolver(), cage(), pound(), free(),
                         ability(GL, "air_strike", "strike"),
                         heading("move"), doubleKey(LanternGuide::jumpKey, "stop").moves("flight", false)),
                 mode("mech", LanternPanel::piloting,
-                        heading("mouse"), click(Input.LEFT, "blow").moves("light_bolt", false)
+                        heading("mouse"), click(Input.LEFT, "blow").moves("light_fists", false)
                                 .costs("mech", "mechBlowPowerCost"),
-                        click(Input.RIGHT, "eye").moves("light_shield", false).costs("mech", "mechEyePowerCost"),
-                        hold(Input.RIGHT, "glare").moves("light_shield", true)
+                        click(Input.RIGHT, "eye").moves("light_bolt", false).costs("mech", "mechEyePowerCost"),
+                        hold(Input.RIGHT, "glare").moves("light_bolt", true)
                                 .costs("mech", "mechGlarePowerPerSecond"),
                         hold(Input.SCROLL, "leave").fires("mech"),
                         heading("keys"), ability(GL, "emerald_express", "missiles").moves("emerald_express", false),
-                        click(Input.LEFT, "fire").moves("light_bolt", false).costs("mech", "mechMissilePowerCost")
+                        click(Input.LEFT, "fire").moves("light_fists", false).costs("mech", "mechMissilePowerCost")
                                 .under("missiles"),
                         ability(GL, "emerald_express", "lower").moves("emerald_express", false).again("missiles"),
                         ability(GL, "shockwave", "spin").moves("shockwave", false).costs("mech", "mechSpinPowerCost"),
@@ -89,15 +89,32 @@ final class LanternGuide {
             modes.add(weapon("whip", player -> WhipArms.holding(), "whipPowerCost", "whirlPowerPerSecond",
                     "lassoPowerCost", "spinPowerPerSecond", "lash", "whirl", "lasso", "spin"));
         }
+        modes.add(weapon("battleaxe", player -> ClientHeavy.holding() == HeavyMoves.AXE, "axePowerCost",
+                "leapPowerCost", "hookPowerCost", "axeWhirlPowerPerSecond", "chop", "earthbreaker", "hook", "whirl"));
+        modes.add(weapon("chainsaw", player -> ClientHeavy.holding() == HeavyMoves.SAW, "sawPowerCost",
+                "rendPowerPerSecond", "impalePowerCost", "sawGuardPowerPerSecond", "slash", "rend", "impale",
+                "guard"));
         AbilityGuide.modes(GL, modes.toArray(GuideMode[]::new));
     }
 
+    private static GuideMode.Control punch() {
+        return click(Input.LEFT, "punch").fires("light_fists");
+    }
+
+    private static GuideMode.Control heavy() {
+        return hold(Input.LEFT, "heavy").holds("light_fists").costs("light_fists", "heavyPowerCost");
+    }
+
+    private static GuideMode.Control dome(String id) {
+        return abilityHold(GL, "ring_scan", id).costs("ring_scan", "domePowerPerSecond");
+    }
+
     private static GuideMode.Control bolt() {
-        return click(Input.LEFT, "bolt").fires("light_bolt");
+        return click(Input.RIGHT, "bolt").fires("light_bolt");
     }
 
     private static GuideMode.Control beam() {
-        return hold(Input.LEFT, "beam").holds("light_bolt").costs("light_bolt", "beamPowerPerSecond");
+        return hold(Input.RIGHT, "beam").holds("light_bolt").costs("light_bolt", "beamPowerPerSecond");
     }
 
     private static GuideMode.Control lock() {
@@ -131,10 +148,10 @@ final class LanternGuide {
             String rightHold, String... moves) {
         return mode(id, active,
                 heading("mouse"),
-                click(Input.LEFT, moves[0]).moves("light_bolt", false).costs("construct_wheel", cut),
-                hold(Input.LEFT, moves[1]).moves("light_bolt", true).costs("construct_wheel", hold),
-                click(Input.RIGHT, moves[2]).moves("light_shield", false).costs("construct_wheel", right),
-                hold(Input.RIGHT, moves[3]).moves("light_shield", true).costs("construct_wheel", rightHold),
+                click(Input.LEFT, moves[0]).moves("light_fists", false).costs("construct_wheel", cut),
+                hold(Input.LEFT, moves[1]).moves("light_fists", true).costs("construct_wheel", hold),
+                click(Input.RIGHT, moves[2]).moves("light_bolt", false).costs("construct_wheel", right),
+                hold(Input.RIGHT, moves[3]).moves("light_bolt", true).costs("construct_wheel", rightHold),
                 heading("keys"), ability(GL, "construct_wheel", "wheel").moves("construct_wheel", false));
     }
 

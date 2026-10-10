@@ -33,14 +33,12 @@ import nl.tivek.multiversepowers.faction.Factions;
 public final class GiantHands extends GiantHandPlaces implements Effect {
     public static final double SCALE = 1.0;
     public static final int WAVE_TICKS = 18;
-    private static final int AT_ONCE = 5;
+    private static final int AT_ONCE = 8;
     private static final int TRIES = 8;
     static final double GRAB_WIDE = 2.0;
     static final double GRAB_TALL = 3.2;
     private static final int WAIT_TICKS = 80;
     private static final int LOOK_AGAIN = 5;
-    // With no hand up and no press for this long, a use is over and its cooldown starts.
-    private static final int IDLE_TICKS = 60;
     private static final double LEAST_AWAY = 0.3;
     // How likely the ragdoll's throw is followed by a hand out of a portal catching the creature in the air.
     private static final double CATCH_CHANCE = 0.5;
@@ -60,10 +58,8 @@ public final class GiantHands extends GiantHandPlaces implements Effect {
     private final int[] made = new int[HandPose.MOVES];
     private final List<LivingEntity> targets;
     private final Set<LivingEntity> missed = new HashSet<>();
-    // Every press asks for one more hand, up to `most`; the first comes with the use itself.
-    private final int most;
-    private int wanted = 1;
-    private int idle;
+    // A use calls up a random number of hands, 1 to `mostHands`.
+    private int wanted;
     private final int every;
     private int called;
     private int waited;
@@ -77,22 +73,16 @@ public final class GiantHands extends GiantHandPlaces implements Effect {
         super(owner);
         this.ability = ability;
         this.targets = targets;
-        this.most = Math.max(1, ability.intValue("mostHands"));
+        this.wanted = 1 + owner.getRandom().nextInt(Math.max(1, ability.intValue("mostHands")));
         this.every = Math.max(1, ability.intValue("handTicks"));
         this.lastMove = LAST_MOVES.getOrDefault(owner.getUUID(), -1);
     }
 
-    // A press: the first starts a use with one hand, every next press of it brings one more, `mostHands` at most. It
-    // never counts as used here: the cooldown starts once the use is over (tick).
+    // A press starts a use of 1 to `mostHands` hands, at random. It never counts as used here: the cooldown starts
+    // once the use is over (tick).
     public static boolean use(ServerPlayer owner, ServerLevel level, CharacterAbility ability) {
-        GiantHands going = ACTIVE.get(owner.getUUID());
-        if (going != null) {
-            if (going.wanted >= going.most) {
-                PowerRing.tell(owner, "hands_spent");
-            } else {
-                going.wanted++;
-                going.idle = 0;
-            }
+        if (ACTIVE.containsKey(owner.getUUID())) {
+            PowerRing.tell(owner, "hands_spent");
             return false;
         }
         if (Recharge.busy(owner)) {
@@ -198,8 +188,7 @@ public final class GiantHands extends GiantHandPlaces implements Effect {
         this.hands.addAll(this.coming);
         this.coming.clear();
         boolean waiting = !this.hands.isEmpty() || this.called < this.wanted;
-        this.idle = waiting ? 0 : this.idle + 1;
-        if (!waiting && (this.called >= this.most || this.idle > IDLE_TICKS) || this.hands.isEmpty() && !fuels) {
+        if (!waiting || this.hands.isEmpty() && !fuels) {
             ACTIVE.remove(this.owner.getUUID(), this);
             Characters.startCooldown(this.owner, this.ability);
             return false;

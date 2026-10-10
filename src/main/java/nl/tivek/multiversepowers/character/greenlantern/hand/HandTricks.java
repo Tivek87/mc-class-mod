@@ -11,7 +11,7 @@ abstract class HandTricks extends HandMoves {
     private static final double FLICK_BEAT = 21.0;
     private static final double PINCH_BEAT = 15.0;
     private static final double DROP_BEAT = 33.0;
-    private static final double SNAP_BEAT = 20.0;
+    private static final double SNAP_BEAT = 34.0;
     public static final int FLICK_HITS = ticks(FLICK_BEAT);
     public static final int PINCH_CATCHES = ticks(PINCH_BEAT);
     public static final int PINCH_DROPS = ticks(DROP_BEAT);
@@ -43,6 +43,9 @@ abstract class HandTricks extends HandMoves {
     public static final Vec3 FLICK_POINT = new Vec3(-0.38, 5.2, 1.9);
     public static final Vec3 PINCH_GRIP = new Vec3(-1.12, 3.32, 2.07);
     public static final Vec3 SNAP_POINT = new Vec3(-0.38, 2.84, 2.14);
+    // The snap's ring of hard light: how far it runs out over the ground, and in how many ticks.
+    public static final double SNAP_RING = 8.0;
+    public static final int SNAP_RING_TICKS = 12;
     public static final Vec3 POKE_POINT = new Vec3(-1.12, 6.2, 0.0);
     // The bottom of the fist: where the hammer lands on the creature's feet.
     public static final Vec3 HAMMER_POINT = new Vec3(0.0, 3.5, 0.5);
@@ -219,30 +222,45 @@ abstract class HandTricks extends HandMoves {
         this.sink(t, SINK[PINCH], LIFE[PINCH], 1.0, true);
     }
 
-    // Up out of the ground beside the creature, palm turned aside, thumb pressed to the middle finger; the snap sends
-    // a ring of light out that leaves everything round it dazed.
+    // How far out the snap's ring has run, `since` ticks after the snap: fast at first, slowing as it nears its reach.
+    public static double snapRing(double since) {
+        double u = Mth.clamp(since / SNAP_RING_TICKS, 0.0, 1.0);
+        return 0.6 + (SNAP_RING - 0.6) * (1.0 - (1.0 - u) * (1.0 - u));
+    }
+
+    // Up out of the ground beside the creature, palm turned aside, thumb pressed to the middle finger; the press
+    // builds until the whole fist trembles, then the snap sends a ring of hard light out over the ground that strikes
+    // and throws everything it passes.
     void snap(double t, double side) {
         double since = t - SNAP_AT;
         double ready = window(t, 11.0, 15.0, SNAP_AT, SNAP_AT + 2.0);
-        this.length = rise(t, SNAP_LENGTH, 1.0, 0.6) + 0.3 * ready;
-        this.lean = 0.3 - 0.12 * ready + 0.6 * Ease.recoil(since, 0.4, KICK, KICK_CALM);
-        this.twist = side * Math.PI * 0.5 + side * corkscrew(t, 0.6);
-        this.flex = -0.3 * window(t, 12.0, 16.0, SNAP_AT - 0.2, SNAP_AT + 0.4)
+        double strain = window(t, 13.0, 16.0, SNAP_AT - 0.2, SNAP_AT);
+        double build = strain * Ease.smooth((t - 16.0) / (SNAP_AT - 16.0));
+        double tremble = build * (0.6 * Math.sin(t * 9.0) + 0.4 * Math.sin(t * 15.3 + 1.3));
+        this.length = rise(t, SNAP_LENGTH, 1.0, 0.6) + 0.3 * ready + 0.04 * tremble;
+        this.lean = 0.3 - 0.12 * ready - 0.08 * build + 0.025 * tremble
+                + 0.6 * Ease.recoil(since, 0.4, KICK, KICK_CALM);
+        this.twist = side * Math.PI * 0.5 + side * corkscrew(t, 0.6)
+                + 0.02 * build * Math.sin(t * 11.7 + 0.4);
+        this.flex = -0.3 * window(t, 12.0, 16.0, SNAP_AT - 0.2, SNAP_AT + 0.4) - 0.15 * build
                 + Ease.recoil(since, 3.0, KICK, KICK_CALM);
         unfurl(t, 0.2, 0.15, 0.3, 0.7);
         set(t, 8.5, 2.5, SNAP_CURL, SNAP_HOOK, 0.4, -0.5, 0.1);
-        double strain = window(t, 13.0, 16.0, SNAP_AT - 0.2, SNAP_AT);
-        this.curl[1] += strain * 0.02 * Math.sin(t * 12.0);
-        this.curl[4] += strain * 0.02 * Math.sin(t * 12.0 + 0.9);
+        this.curl[1] += strain * 0.02 * Math.sin(t * 12.0) + build * 0.035 * Math.sin(t * 17.0);
+        this.curl[4] += strain * 0.02 * Math.sin(t * 12.0 + 0.9) + build * 0.035 * Math.sin(t * 17.0 + 2.1);
+        for (int k = 2; k < 4; k++) {
+            this.curl[k] += build * 0.03 * Math.sin(t * (13.0 + 2.0 * k) + k);
+        }
+        this.curl[0] += build * 0.04 * Math.sin(t * 14.0 + 0.6);
         double snapped = Ease.smoother((t - SNAP_AT + 0.2) / 0.45);
         this.curl[1] = Mth.lerp(snapped, this.curl[1], 1.08);
         this.curl[0] = Mth.lerp(snapped, this.curl[0], 0.25);
         this.curl[4] = Mth.lerp(snapped, this.curl[4], 0.2);
         this.thumbOut = Mth.lerp(snapped, this.thumbOut, 0.45);
-        this.thumbOut = Mth.lerp(Ease.smoother((t - 27.0) / 3.0), this.thumbOut, 0.0);
-        cascade(t, 27.0, 3.0, false, 0.35, 0.25, 0.45);
-        fidget(t, window(t, 21.0, 24.0, 28.0, 31.0), false);
-        breathe(t, window(t, 9.0, 12.0, 30.0, 34.0));
+        this.thumbOut = Mth.lerp(Ease.smoother((t - SNAP_AT - 7.0) / 3.0), this.thumbOut, 0.0);
+        cascade(t, SNAP_AT + 7.0, 3.0, false, 0.35, 0.25, 0.45);
+        fidget(t, window(t, SNAP_AT + 1.0, SNAP_AT + 4.0, SNAP_AT + 8.0, SNAP_AT + 11.0), false);
+        breathe(t, window(t, 9.0, 12.0, SNAP_AT + 10.0, SNAP_AT + 14.0));
         this.sink(t, SINK[SNAP], LIFE[SNAP], side, true);
     }
 

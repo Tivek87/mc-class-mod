@@ -12,7 +12,7 @@ final class LanternAbilities {
     }
 
     static void fill(GameCharacter lantern, Map<AbilitySlot, CharacterAbility> abilities) {
-        lantern.add(abilities, AbilitySlot.ABILITY_1, "emerald_express").cooldown(240).damage(20.0)
+        lantern.add(abilities, AbilitySlot.ABILITY_1, "emerald_express").cooldown(240).damage(20.0).flightFree()
                 .group("express_run", "The run")
                 .setting("knockback", 2.2, 0.0, 6.0, Unit.STRENGTH,
                         "How hard the train throws what it rams, and what its boiler blast catches")
@@ -30,7 +30,23 @@ final class LanternAbilities {
                 .setting("blastRadius", 7.0, 1.0, 24.0, Unit.BLOCKS, "How far the boiler blast reaches, in blocks")
                 .group("express_power", "Ring power")
                 .setting("powerCost", 6.0, 0.0, 100.0, Unit.POWER,
-                        "Ring power the Emerald Express costs (a full ring holds 100)");
+                        "Ring power the Emerald Express costs (a full ring holds 100)")
+                .group("ram", "Ram cone (the key while you fly)")
+                .setting("ramPowerPerSecond", 0.08, 0.0, 20.0, Unit.POWER_PER_SECOND,
+                        "Ring power the ram cone costs a second while it is up")
+                .setting("ramDamage", 1.2, 0.0, 2000.0, Unit.HALF_HEARTS,
+                        "Damage of flying into a creature with the ram cone up, in half hearts, at the slowest"
+                                + " speed that rams")
+                .setting("ramDamagePerSpeed", 15.75, 0.0, 200.0, Unit.HALF_HEARTS_PER_SPEED,
+                        "Extra ram damage in half hearts for every block per tick you fly (about 0.09 at top"
+                                + " speed)")
+                .setting("ramKnockback", 1.4, 0.0, 6.0, Unit.STRENGTH,
+                        "How hard a ram throws a creature away; the faster you fly, the further it goes")
+                .setting("ramGroundPowerPerSecond", 2.0, 0.0, 50.0, Unit.POWER_PER_SECOND,
+                        "Extra ring power a second while you fly with the ram cone low along the ground or"
+                                + " scrape over it")
+                .setting("ramGroundBlocks", 1.5, 0.2, 6.0, Unit.BLOCKS,
+                        "How close above the ground the ram cone counts as scraping along it, in blocks");
         lantern.add(abilities, AbilitySlot.ABILITY_2, "construct_wheel").held().clientOnly()
                 .group("weapon", "Every weapon")
                 .setting("formPowerCost", 1.0, 0.0, 100.0, Unit.POWER,
@@ -146,13 +162,65 @@ final class LanternAbilities {
                         "Part of a hit from the front that still gets through the spinning lash (0.4 = 40%, so it"
                                 + " takes 60%)")
                 .setting("spinPowerPerSecond", 0.3, 0.0, 20.0, Unit.POWER_PER_SECOND,
-                        "Ring power the spinning shield costs a second");
+                        "Ring power the spinning shield costs a second")
+                .group("axe", "Battleaxe: chops (left click)")
+                .setting("axeDamage", 10.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                        "Damage of one chop to every creature in its arc, in half hearts; the third, overhead one"
+                                + " does half as much again")
+                .setting("axeReach", 3.4, 1.0, 8.0, Unit.BLOCKS, "How far the chops reach, in blocks")
+                .setting("axePowerCost", 0.2, 0.0, 100.0, Unit.POWER, "Ring power one chop costs")
+                .group("axe_leap", "Battleaxe: earthbreaker (hold left 2 seconds)")
+                .setting("leapDamage", 16.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                        "Damage of the split in the ground to every creature on it, in half hearts; it throws them"
+                                + " up and knocks them down")
+                .setting("leapLength", 7.0, 2.0, 20.0, Unit.BLOCKS, "How far the ground splits ahead, in blocks")
+                .setting("leapPowerCost", 3.0, 0.0, 100.0, Unit.POWER, "Ring power one earthbreaker costs")
+                .group("axe_hook", "Battleaxe: hook (click right)")
+                .setting("hookReach", 4.5, 2.0, 10.0, Unit.BLOCKS, "How far the hook reaches, in blocks")
+                .setting("hookDamage", 4.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                        "Damage when the hook catches, in half hearts; the caught creature is yanked to you")
+                .setting("hookPowerCost", 0.5, 0.0, 100.0, Unit.POWER, "Ring power one hook costs")
+                .group("axe_whirl", "Battleaxe: whirlwind (hold right 2 seconds)")
+                .setting("axeWhirlDamage", 5.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                        "Damage the whirling axe does to every creature round you, in half hearts, four times a"
+                                + " second")
+                .setting("axeWhirlRadius", 3.0, 1.0, 8.0, Unit.BLOCKS, "How far the whirling axe reaches, in blocks")
+                .setting("axeBurstDamage", 10.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                        "Damage of the last wide swing when you let go, in half hearts")
+                .setting("axeWhirlPowerPerSecond", 1.2, 0.0, 100.0, Unit.POWER_PER_SECOND,
+                        "Ring power the whirlwind costs a second")
+                .group("saw", "Heavy Chainsaw: slashes (left click)")
+                .setting("sawDamage", 7.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                        "Damage of one slash to every creature in its arc, in half hearts; it slows them a moment")
+                .setting("sawReach", 3.0, 1.0, 8.0, Unit.BLOCKS, "How far the chainsaw reaches, in blocks")
+                .setting("sawPowerCost", 0.15, 0.0, 100.0, Unit.POWER, "Ring power one slash costs")
+                .group("saw_rend", "Heavy Chainsaw: rend (hold left 2 seconds)")
+                .setting("rendDamage", 2.5, 0.0, 2000.0, Unit.HALF_HEARTS,
+                        "Damage of every bite while the chainsaw grinds into the creature ahead, in half hearts,"
+                                + " almost seven times a second")
+                .setting("rendPowerPerSecond", 1.2, 0.0, 100.0, Unit.POWER_PER_SECOND,
+                        "Ring power the rend costs a second")
+                .group("saw_impale", "Heavy Chainsaw: impale (click right)")
+                .setting("impaleDamage", 6.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                        "Damage of the thrust, in half hearts; the chewing after it does a quarter of it three"
+                                + " times")
+                .setting("impaleEjectDamage", 10.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                        "Damage when the creature is thrown off the tip, in half hearts")
+                .setting("impalePowerCost", 1.5, 0.0, 100.0, Unit.POWER, "Ring power one impale costs")
+                .group("saw_guard", "Heavy Chainsaw: guard (hold right 2 seconds)")
+                .setting("sawGuardDamageKept", 0.1, 0.0, 1.0, Unit.PART_KEPT,
+                        "Part of a blow from the front that still gets through the whirring blade (0.1 = 10%, so"
+                                + " it takes 90%); shots from the front are shredded")
+                .setting("sawGuardRiposte", 4.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                        "Damage a creature that strikes the guard takes back, in half hearts")
+                .setting("sawGuardPowerPerSecond", 0.3, 0.0, 20.0, Unit.POWER_PER_SECOND,
+                        "Ring power holding the guard up costs a second");
         lantern.add(abilities, AbilitySlot.ABILITY_3, "recharge").cooldown(60)
                 .setting("powerRestored", 50.0, 1.0, 100.0, Unit.POWER,
                         "How much power one touch of the lantern puts back in the ring (a full ring holds"
                                 + " 100)");
-        lantern.add(abilities, AbilitySlot.ABILITY_4, "light_bolt").held().input(CharacterAbility.Input.LEFT)
-                .holdVersion(40, CharacterAbility.Tap.PRESS).damage(6.0)
+        lantern.add(abilities, AbilitySlot.ABILITY_4, "light_bolt").held().input(CharacterAbility.Input.RIGHT)
+                .holdVersion(40, CharacterAbility.Tap.RELEASE).damage(6.0)
                 .group("bolt", "Light Bolt (tap the button)")
                 .settingInt("shotTicks", 6, 1, 100, Unit.TICKS,
                         "Ticks before the next bolt can be shot (20 ticks = 1 second)")
@@ -184,47 +252,36 @@ final class LanternAbilities {
                                 + " from beamRangeBlocks")
                 .setting("beamTopWalk", 0.3, 0.0, 1.0, Unit.PART_KEPT,
                         "Part of your walking speed left at the beam's last stage; the first stage keeps 85%");
-        lantern.add(abilities, AbilitySlot.ABILITY_5, "light_shield").held().input(CharacterAbility.Input.RIGHT)
-                .holdVersion(40, CharacterAbility.Tap.RELEASE)
-                .group("shield", "Light Shield (tap the button)")
-                .setting("damageKept", 0.3, 0.0, 1.0, Unit.PART_KEPT,
-                        "Part of a hit from the front that still gets through the shield (0.3 = 30%, so it"
-                                + " takes 70%). Damage that goes straight through armour, and arrows that pierce,"
-                                + " are not stopped")
-                .was(0.35)
-                .setting("powerPerSecond", 0.08, 0.0, 20.0, Unit.POWER_PER_SECOND,
-                        "Ring power the shield costs a second while it is up")
-                .was(0.5, 0.2)
-                .group("dome", "Light Dome (hold the button 2 seconds)")
-                .setting("domeDamageKept", 0.6, 0.0, 1.0, Unit.PART_KEPT,
-                        "Part of a hit from any side that still gets through the dome: 0.6 = 60%, so it takes"
-                                + " 40%")
-                .setting("domePowerPerSecond", 0.24, 0.0, 20.0, Unit.POWER_PER_SECOND,
-                        "Ring power the dome costs a second")
-                .was(1.5, 0.6)
-                .group("ram", "Ram cone (the shield while you fly)")
-                .setting("ramDamage", 4.0, 0.0, 2000.0, Unit.HALF_HEARTS,
-                        "Damage of flying into a creature with the shield up, in half hearts, at the slowest"
-                                + " speed that rams")
-                .setting("ramDamagePerSpeed", 52.5, 0.0, 200.0, Unit.HALF_HEARTS_PER_SPEED,
-                        "Extra ram damage in half hearts for every block per tick you fly (about 0.09 at top"
-                                + " speed)")
-                .was(6.0, 10.5, 21.0)
-                .setting("ramKnockback", 1.4, 0.0, 6.0, Unit.STRENGTH,
-                        "How hard a ram throws a creature away; the faster you fly, the further it goes")
-                .setting("ramGroundPowerPerSecond", 2.0, 0.0, 50.0, Unit.POWER_PER_SECOND,
-                        "Extra ring power a second while you fly with the ram cone low along the ground or"
-                                + " scrape over it")
-                .setting("ramGroundBlocks", 1.5, 0.2, 6.0, Unit.BLOCKS,
-                        "How close above the ground the ram cone counts as scraping along it, in blocks");
+        lantern.add(abilities, AbilitySlot.ABILITY_5, "light_fists").held().input(CharacterAbility.Input.LEFT)
+                .holdVersion(40, CharacterAbility.Tap.RELEASE).damage(5.0)
+                .group("combo", "Construct fists (click)")
+                .setting("reachBlocks", 2.6, 1.5, 3.0, Unit.BLOCKS, "How far a punch of the fists reaches, in blocks")
+                .setting("finisherTimes", 1.8, 1.0, 5.0, Unit.STRENGTH,
+                        "How many times a normal punch the tenth blow of the combo hits")
+                .settingInt("comboTicks", 24, 6, 100, Unit.TICKS,
+                        "Ticks without a punch before the combo starts again from its first blow")
+                .setting("powerCost", 0.05, 0.0, 100.0, Unit.POWER, "Ring power one punch costs")
+                .group("heavy", "Heavy blows (hold the button)")
+                .setting("heavyDamage", 14.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                        "Damage of a heavy blow, in half hearts, to everything it catches")
+                .setting("heavyRadius", 3.0, 1.0, 8.0, Unit.BLOCKS, "How far round its point a heavy blow reaches")
+                .setting("heavyKnockback", 1.8, 0.0, 6.0, Unit.STRENGTH, "How hard a heavy blow throws what it hits")
+                .setting("heavyPowerCost", 1.5, 0.0, 100.0, Unit.POWER, "Ring power one heavy blow costs");
         lantern.add(abilities, AbilitySlot.ABILITY_6, "ring_scan").cooldown(160)
+                .holdVersion(40, CharacterAbility.Tap.RELEASE)
                 .setting("rangeBlocks", 56.0, 8.0, 128.0, Unit.BLOCKS,
                         "How far the scan reaches, through walls and all, in blocks")
                 .was(32.0)
                 .setting("markSeconds", 21.0, 2.0, 120.0, Unit.SECONDS,
                         "How long every creature the scan passed stays marked for you, in seconds")
                 .was(12.0)
-                .setting("powerCost", 2.0, 0.0, 100.0, Unit.POWER, "Ring power one scan costs");
+                .setting("powerCost", 2.0, 0.0, 100.0, Unit.POWER, "Ring power one scan costs")
+                .group("dome", "Light Dome (hold the key 2 seconds; press it again to lower it)")
+                .setting("domeDamageKept", 0.6, 0.0, 1.0, Unit.PART_KEPT,
+                        "Part of a hit from any side that still gets through the dome: 0.6 = 60%, so it takes"
+                                + " 40%")
+                .setting("domePowerPerSecond", 0.24, 0.0, 20.0, Unit.POWER_PER_SECOND,
+                        "Ring power the dome costs a second");
         lantern.add(abilities, AbilitySlot.ABILITY_7, "air_strike").cooldown(1800).damage(48.0).damageWas(40.0)
                 .setting("attackSeconds", 20.0, 2.0, 60.0, Unit.SECONDS,
                         "How long the plane drones on and fires before it plunges down, in seconds; its engine"
@@ -333,10 +390,10 @@ final class LanternAbilities {
                 .setting("radiusBlocks", 20.0, 4.0, 48.0, Unit.BLOCKS,
                         "How far round you the hands come up at creatures out to hurt you, every way, in blocks"
                                 + " (20 = an area 40 blocks across)")
-                .settingInt("mostHands", 5, 1, 5, Unit.COUNT,
-                        "The most hands one use calls up, one a press (the evil eye with its puppeteer and a pair"
-                                + " with an axe count as one); after the last, or 3 seconds with no hand up and no"
-                                + " press, the use is over and the cooldown starts")
+                .settingInt("mostHands", 5, 1, 30, Unit.COUNT,
+                        "The most hands one use calls up: every use calls up 1 to this many, at random (the evil"
+                                + " eye with its puppeteer and a pair with an axe count as one); after the last the"
+                                + " use is over and the cooldown starts")
                 .was(8.0, 1.0)
                 .settingInt("handTicks", 10, 1, 200, Unit.TICKS,
                         "The fewest ticks from one hand coming up to the next (20 ticks = 1 second): a press"
@@ -463,6 +520,9 @@ final class LanternAbilities {
                 .settingInt("mechTime", 2400, 300, 72000, Unit.TICKS,
                         "Ticks you can stay in the mech, from building it, before it breaks up by itself (20 ticks"
                                 + " = 1 second)")
+                .setting("mechHealthTimes", 4.0, 1.0, 10.0, Unit.STRENGTH,
+                        "How many times their own health its pilot has while in the mech (4 = 40 hearts); they are"
+                                + " guarded as by a full set of netherite armour as well")
                 .setting("mechReach", 12.0, 2.0, 32.0, Unit.BLOCKS,
                         "How far in front of you the mech looks for the creature out to hurt you that it builds"
                                 + " itself over, in blocks")
@@ -496,6 +556,21 @@ final class LanternAbilities {
                 .setting("mechThrowDamage", 8.0, 0.0, 2000.0, Unit.HALF_HEARTS,
                         "Damage as the mech flings that creature away, if it lived through both smashes")
                 .was(4.0)
+                .setting("mechJabDamage", 10.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                        "Damage of the quick left jab to everything the fist drives through, in half hearts")
+                .setting("mechHookDamage", 14.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                        "Damage of the wide left hook to everything the fist sweeps through, in half hearts")
+                .setting("mechUppercutDamage", 16.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                        "Damage of the uppercut to everything the fist rises through, in half hearts; it is thrown"
+                                + " high")
+                .setting("mechKneeDamage", 14.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                        "Damage of the knee right before the mech, in half hearts; at the edge of the blast half")
+                .setting("mechClapBlowDamage", 12.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                        "Damage of the clap's blast in front of the mech, in half hearts; at its edge half, and"
+                                + " everything in it is knocked down")
+                .setting("mechPoundDamage", 9.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                        "Damage each time a fist of the pound strikes the ground, in half hearts; at the edge of the"
+                                + " blast half")
                 .group("mechBeams", "Mech eyes (right click in a built mech)")
                 .setting("mechEyePowerCost", 1.0, 0.0, 100.0, Unit.POWER,
                         "Ring power one ray from the mech's eyes costs (click right)")

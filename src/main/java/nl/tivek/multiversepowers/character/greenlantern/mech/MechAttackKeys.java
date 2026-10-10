@@ -34,13 +34,13 @@ final class MechAttackKeys {
         MOVES[CROSS] = new Move(new Keyframes.Key[] {
                 hand(0, true, rest, inward, 0.5, 0.4, 0.0, 0.0, 0.0),
                 hand(6, true, new Vec3(3.0, 8.0, 0.3), new Vec3(-0.8, -0.2, 0.5), 1.0, 0.0, 1.0, 0.0, 0.0),
-                hand(CROSS_HIT, false, new Vec3(0.9, 3.4, 6.5), knuckles, 1.0, 0.0, 1.0, 0.0, 0.0),
-                hand(13, true, new Vec3(1.0, 3.6, 6.3), knuckles, 1.0, 0.0, 1.0, 0.0, 0.0),
+                hand(CROSS_HIT, false, new Vec3(0.9, 2.7, 6.3), knuckles, 1.0, 0.0, 1.0, 0.0, 0.0),
+                hand(13, true, new Vec3(1.0, 2.9, 6.1), knuckles, 1.0, 0.0, 1.0, 0.0, 0.0),
                 hand(19, true, new Vec3(3.4, 7.2, 2.4), new Vec3(-0.6, -0.4, 0.7), 1.0, 0.1, 1.0, 0.0, 0.0),
                 hand(26, true, rest, inward, 0.5, 0.4, 0.0, 0.0, 0.0) },
                 new Keyframes.Key[] { body(0, true, Body.STILL), body(6, true, bent(0.7, 0.0, -0.45, 0.0)),
-                        body(CROSS_HIT, false, bent(2.8, 0.68, 0.55, 0.0)),
-                        body(13, true, bent(2.7, 0.64, 0.5, 0.0)),
+                        body(CROSS_HIT, false, bent(3.2, 0.74, 0.55, 0.0)),
+                        body(13, true, bent(3.1, 0.7, 0.5, 0.0)),
                         body(19, true, bent(0.8, 0.18, 0.1, 0.0)), body(26, true, Body.STILL) },
                 false, new Vec3(1.0, -0.5, -0.4), new int[][] { { 6, CROSS_HIT, 2 } }, new Keyframes.Key[] {
                         hand(0, true, rest, inward, 0.5, 0.4, 0.0, 0.0, 0.0),
@@ -51,18 +51,18 @@ final class MechAttackKeys {
         MOVES[SWEEP] = new Move(new Keyframes.Key[] {
                 hand(0, true, rest, inward, 0.5, 0.4, 0.0, 0.0, 0.0),
                 hand(7, true, new Vec3(-1.2, 7.8, 2.4), new Vec3(0.43, 0.2, -0.88), 0.2, 0.1, 1.0, 0.0, 0.0),
-                hand(SWEEP_FROM, false, new Vec3(-0.6, 3.3, 5.8), new Vec3(-1.0, 0.0, -0.1), 0.15, 0.05, 1.0, 0.0,
+                hand(SWEEP_FROM, false, new Vec3(-0.6, 2.7, 5.6), new Vec3(-1.0, 0.0, -0.1), 0.15, 0.05, 1.0, 0.0,
                         0.0),
-                hand(12, false, new Vec3(2.2, 3.1, 6.3), new Vec3(-1.0, 0.0, 0.05), 0.15, 0.05, 1.0, 0.0, 0.0),
-                hand(14, false, new Vec3(5.0, 3.2, 5.0), new Vec3(-0.85, 0.0, 0.5), 0.15, 0.05, 1.0, 0.0, 0.0),
-                hand(SWEEP_TO, false, new Vec3(7.0, 3.5, 2.2), new Vec3(-0.3, 0.0, 0.95), 0.15, 0.05, 1.0, 0.0, 0.0),
+                hand(12, false, new Vec3(2.2, 2.5, 6.0), new Vec3(-1.0, 0.0, 0.05), 0.15, 0.05, 1.0, 0.0, 0.0),
+                hand(14, false, new Vec3(5.0, 2.6, 4.8), new Vec3(-0.85, 0.0, 0.5), 0.15, 0.05, 1.0, 0.0, 0.0),
+                hand(SWEEP_TO, false, new Vec3(6.8, 3.0, 2.2), new Vec3(-0.3, 0.0, 0.95), 0.15, 0.05, 1.0, 0.0, 0.0),
                 hand(21, true, new Vec3(6.4, 5.4, -0.4), new Vec3(0.0, 0.0, 1.0), 0.3, 0.3, 1.0, 0.0, 0.0),
                 hand(30, true, rest, inward, 0.5, 0.4, 0.0, 0.0, 0.0) },
                 new Keyframes.Key[] { body(0, true, Body.STILL), body(7, true, bent(0.9, 0.2, 0.6, 0.0)),
-                        body(SWEEP_FROM, false, bent(3.0, 0.7, 0.45, 0.0)),
-                        body(12, false, bent(3.0, 0.7, 0.15, 0.0)),
-                        body(14, false, bent(3.0, 0.7, -0.2, 0.0)),
-                        body(SWEEP_TO, false, bent(2.9, 0.66, -0.55, 0.0)),
+                        body(SWEEP_FROM, false, bent(3.3, 0.78, 0.45, 0.0)),
+                        body(12, false, bent(3.3, 0.78, 0.15, 0.0)),
+                        body(14, false, bent(3.3, 0.78, -0.2, 0.0)),
+                        body(SWEEP_TO, false, bent(3.2, 0.72, -0.55, 0.0)),
                         body(21, true, bent(1.4, 0.35, -0.6, 0.0)), body(30, true, Body.STILL) },
                 false, new Vec3(1.0, -0.3, -0.6), new int[0][], new Keyframes.Key[] {
                         hand(0, true, rest, inward, 0.5, 0.4, 0.0, 0.0, 0.0),
@@ -218,6 +218,121 @@ final class MechAttackKeys {
                         body(SPIN_TO + 9, false, bent(2.0, 0.08, 0.0, 0.0)),
                         body(LENGTHS[SPIN], true, Body.STILL) },
                 true, new Vec3(1.0, -0.2, -0.3), new int[0][]);
+        Vec3 guard = new Vec3(2.0, 8.0, 2.8);
+        Vec3 guardPalm = new Vec3(-0.6, -0.3, 0.7);
+        // The jab: the left fist snapped out low and back, the right held up at the chest.
+        MOVES[JAB] = new Move(new Keyframes.Key[] {
+                hand(0, true, rest, inward, 0.5, 0.4, 0.0, 0.0, 0.0),
+                hand(4, true, guard, guardPalm, 1.0, 0.0, 1.0, 0.0, 0.0),
+                hand(14, true, guard, guardPalm, 1.0, 0.0, 1.0, 0.0, 0.0),
+                hand(LENGTHS[JAB], true, rest, inward, 0.5, 0.4, 0.0, 0.0, 0.0) },
+                new Keyframes.Key[] { body(0, true, Body.STILL), body(3, true, bent(0.8, 0.1, 0.2, 0.0)),
+                        body(JAB_HIT, false, bent(2.4, 0.55, -0.5, 0.0)),
+                        body(10, true, bent(2.3, 0.5, -0.45, 0.0)), body(LENGTHS[JAB], true, Body.STILL) },
+                false, new Vec3(1.0, -0.5, -0.4), new int[][] { { 3, JAB_HIT, 2 } }, new Keyframes.Key[] {
+                        hand(0, true, rest, inward, 0.5, 0.4, 0.0, 0.0, 0.0),
+                        hand(3, true, new Vec3(3.0, 8.0, 0.8), new Vec3(-0.8, -0.2, 0.5), 1.0, 0.0, 1.0, 0.0, 0.0),
+                        hand(JAB_HIT, false, new Vec3(1.2, 3.6, 6.0), knuckles, 1.0, 0.0, 1.0, 0.0, 0.0),
+                        hand(10, true, new Vec3(1.3, 3.8, 5.8), knuckles, 1.0, 0.0, 1.0, 0.0, 0.0),
+                        hand(LENGTHS[JAB], true, rest, inward, 0.5, 0.4, 0.0, 0.0, 0.0) });
+        // The hook: the left fist swung back, then round in a wide flat arc across the front, the body unwinding
+        // behind it.
+        MOVES[HOOK] = new Move(new Keyframes.Key[] {
+                hand(0, true, rest, inward, 0.5, 0.4, 0.0, 0.0, 0.0),
+                hand(6, true, new Vec3(3.0, 5.8, 4.0), guardPalm, 1.0, 0.0, 1.0, 0.0, 0.0),
+                hand(HOOK_FROM, false, new Vec3(3.1, 3.8, 4.6), guardPalm, 1.0, 0.0, 1.0, 0.0, 0.0),
+                hand(HOOK_TO, true, new Vec3(4.4, 3.8, 1.4), guardPalm, 1.0, 0.0, 1.0, 0.0, 0.0),
+                hand(20, true, new Vec3(3.8, 5.6, 0.9), guardPalm, 1.0, 0.0, 1.0, 0.0, 0.0),
+                hand(LENGTHS[HOOK], true, rest, inward, 0.5, 0.4, 0.0, 0.0, 0.0) },
+                new Keyframes.Key[] { body(0, true, Body.STILL), body(7, true, bent(1.4, 0.3, 0.55, 0.0)),
+                        body(HOOK_FROM, false, bent(3.0, 0.7, 0.3, 0.0)),
+                        body(13, false, bent(3.1, 0.72, -0.1, 0.0)),
+                        body(HOOK_TO, false, bent(3.0, 0.68, -0.6, 0.0)),
+                        body(20, true, bent(1.5, 0.35, -0.5, 0.0)), body(LENGTHS[HOOK], true, Body.STILL) },
+                false, new Vec3(1.0, -0.3, -0.6), new int[][] { { 7, HOOK_FROM, 2 } }, new Keyframes.Key[] {
+                        hand(0, true, rest, inward, 0.5, 0.4, 0.0, 0.0, 0.0),
+                        hand(7, true, new Vec3(5.4, 6.8, -0.8), new Vec3(-0.3, 0.0, 0.95), 1.0, 0.0, 1.0, 0.0, 0.0),
+                        hand(HOOK_FROM, false, new Vec3(5.6, 3.0, 3.8), new Vec3(-0.8, 0.0, 0.6), 1.0, 0.0, 1.0, 0.0,
+                                0.0),
+                        hand(13, false, new Vec3(2.0, 2.7, 5.8), new Vec3(-1.0, 0.0, 0.0), 1.0, 0.0, 1.0, 0.0, 0.0),
+                        hand(HOOK_TO, false, new Vec3(-1.4, 3.2, 4.6), new Vec3(-0.6, 0.0, -0.8), 1.0, 0.0, 1.0, 0.0,
+                                0.0),
+                        hand(20, true, new Vec3(0.8, 6.2, 3.0), guardPalm, 1.0, 0.0, 1.0, 0.0, 0.0),
+                        hand(LENGTHS[HOOK], true, rest, inward, 0.5, 0.4, 0.0, 0.0, 0.0) });
+        // The uppercut: it sinks low, its right fist dropped by the knee, and rises with the fist driven straight up,
+        // the left at the chest.
+        Vec3 up2 = new Vec3(-0.2, 0.2, -1.0);
+        MOVES[UPPERCUT] = new Move(new Keyframes.Key[] {
+                hand(0, true, rest, inward, 0.5, 0.4, 0.0, 0.0, 0.0),
+                hand(UPPERCUT_FROM - 1, true, new Vec3(2.6, 2.8, 4.2), up2, 1.0, 0.0, 1.0, 0.0, 0.0),
+                hand(UPPERCUT_HIT, false, new Vec3(1.4, 9.6, 4.8), up2, 1.0, 0.0, 1.0, 0.0, 0.0),
+                hand(18, true, new Vec3(1.4, 10.0, 4.4), up2, 1.0, 0.0, 1.0, 0.0, 0.0),
+                hand(LENGTHS[UPPERCUT], true, rest, inward, 0.5, 0.4, 0.0, 0.0, 0.0) },
+                new Keyframes.Key[] { body(0, true, Body.STILL),
+                        body(UPPERCUT_FROM - 1, true, bent(3.2, 0.8, -0.3, 0.0)),
+                        body(UPPERCUT_HIT, false, bent(0.2, -0.15, 0.45, 0.0)),
+                        body(18, true, bent(0.1, -0.12, 0.4, 0.0)), body(LENGTHS[UPPERCUT], true, Body.STILL) },
+                false, new Vec3(1.0, -0.6, -0.3), new int[][] { { UPPERCUT_FROM - 1, UPPERCUT_HIT, 2 } },
+                new Keyframes.Key[] {
+                        hand(0, true, rest, inward, 0.5, 0.4, 0.0, 0.0, 0.0),
+                        hand(UPPERCUT_FROM - 1, true, guard, guardPalm, 1.0, 0.0, 1.0, 0.0, 0.0),
+                        hand(20, true, guard, guardPalm, 1.0, 0.0, 1.0, 0.0, 0.0),
+                        hand(LENGTHS[UPPERCUT], true, rest, inward, 0.5, 0.4, 0.0, 0.0, 0.0) });
+        // The knee: both hands reach out and pull down as the right knee is driven up into what stands before it.
+        MOVES[KNEE] = new Move(new Keyframes.Key[] {
+                hand(0, true, rest, inward, 0.5, 0.4, 0.0, 0.0, 0.0),
+                hand(6, true, new Vec3(2.2, 9.0, 4.0), new Vec3(-0.2, -0.6, 0.8), 0.3, 0.5, 1.0, 0.0, 0.0),
+                hand(KNEE_HIT, false, new Vec3(1.6, 5.6, 4.6), new Vec3(-0.3, -0.9, 0.2), 1.0, 0.2, 1.0, 0.0, 0.0),
+                hand(16, true, new Vec3(1.7, 5.8, 4.4), new Vec3(-0.3, -0.9, 0.2), 1.0, 0.2, 1.0, 0.0, 0.0),
+                hand(LENGTHS[KNEE], true, rest, inward, 0.5, 0.4, 0.0, 0.0, 0.0) },
+                new Keyframes.Key[] { body(0, true, Body.STILL), body(6, true, bent(-0.2, -0.12, 0.0, 1.0)),
+                        body(KNEE_HIT, false, bent(0.5, 0.5, 0.0, 4.2)),
+                        body(16, true, bent(0.5, 0.45, 0.0, 3.6)), body(22, true, bent(0.6, 0.2, 0.0, 0.0)),
+                        body(LENGTHS[KNEE], true, Body.STILL) },
+                true, new Vec3(1.0, -0.4, -0.4), new int[][] { { 6, KNEE_HIT, 2 } });
+        // The clap: both hands thrown wide open, then clapped together before the chest, the body bowing into it.
+        MOVES[CLAP] = new Move(new Keyframes.Key[] {
+                hand(0, true, rest, inward, 0.5, 0.4, 0.0, 0.0, 0.0),
+                hand(7, true, new Vec3(5.6, 7.6, 3.0), inward, 0.0, 0.8, 1.0, 0.0, 0.0),
+                hand(CLAP_HIT, false, new Vec3(0.4, 6.6, 4.8), inward, 0.05, 0.1, 1.0, 0.0, 0.0),
+                hand(17, true, new Vec3(0.4, 6.8, 4.7), inward, 0.05, 0.1, 1.0, 0.0, 0.0),
+                hand(LENGTHS[CLAP], true, rest, inward, 0.5, 0.4, 0.0, 0.0, 0.0) },
+                new Keyframes.Key[] { body(0, true, Body.STILL), body(7, true, bent(0.4, -0.12, 0.0, 0.0)),
+                        body(CLAP_HIT, false, bent(1.4, 0.35, 0.0, 0.0)),
+                        body(17, true, bent(1.3, 0.3, 0.0, 0.0)), body(LENGTHS[CLAP], true, Body.STILL) },
+                true, new Vec3(1.0, -0.2, -0.5), new int[][] { { 7, CLAP_HIT, 3 } });
+        // The pound: bent low over the ground, its fists hammer down in turn, right, left, right, left.
+        Vec3 raised = new Vec3(2.4, 8.2, 3.4);
+        Vec3 struck = new Vec3(1.8, 1.6, 5.0);
+        Vec3 fistDown = new Vec3(-0.3, -0.9, 0.2);
+        MOVES[POUND] = new Move(new Keyframes.Key[] {
+                hand(0, true, rest, inward, 0.5, 0.4, 0.0, 0.0, 0.0),
+                hand(5, true, raised, fistDown, 1.0, 0.0, 1.0, 0.0, 0.0),
+                hand(POUNDS[0], false, struck, fistDown, 1.0, 0.0, 1.0, 0.0, 0.0),
+                hand(12, true, struck, fistDown, 1.0, 0.0, 1.0, 0.0, 0.0),
+                hand(17, true, raised, fistDown, 1.0, 0.0, 1.0, 0.0, 0.0),
+                hand(POUNDS[2], false, struck, fistDown, 1.0, 0.0, 1.0, 0.0, 0.0),
+                hand(24, true, struck, fistDown, 1.0, 0.0, 1.0, 0.0, 0.0),
+                hand(32, true, new Vec3(3.6, 6.0, 2.0), new Vec3(-0.6, -0.5, 0.6), 0.8, 0.2, 1.0, 0.0, 0.0),
+                hand(LENGTHS[POUND], true, rest, inward, 0.5, 0.4, 0.0, 0.0, 0.0) },
+                new Keyframes.Key[] { body(0, true, Body.STILL), body(6, true, bent(3.0, 0.85, 0.1, 0.0)),
+                        body(POUNDS[0], false, bent(3.2, 0.92, 0.12, 0.0)),
+                        body(POUNDS[1], false, bent(3.2, 0.92, -0.12, 0.0)),
+                        body(POUNDS[2], false, bent(3.2, 0.92, 0.12, 0.0)),
+                        body(POUNDS[3], false, bent(3.2, 0.92, -0.12, 0.0)),
+                        body(37, true, bent(1.0, 0.3, 0.0, 0.0)), body(LENGTHS[POUND], true, Body.STILL) },
+                false, new Vec3(1.0, 0.1, -0.4), new int[][] { { 5, POUNDS[0], 2 }, { 17, POUNDS[2], 2 } },
+                new Keyframes.Key[] {
+                        hand(0, true, rest, inward, 0.5, 0.4, 0.0, 0.0, 0.0),
+                        hand(8, true, raised, fistDown, 1.0, 0.0, 1.0, 0.0, 0.0),
+                        hand(11, true, raised, fistDown, 1.0, 0.0, 1.0, 0.0, 0.0),
+                        hand(POUNDS[1], false, struck, fistDown, 1.0, 0.0, 1.0, 0.0, 0.0),
+                        hand(18, true, struck, fistDown, 1.0, 0.0, 1.0, 0.0, 0.0),
+                        hand(23, true, raised, fistDown, 1.0, 0.0, 1.0, 0.0, 0.0),
+                        hand(POUNDS[3], false, struck, fistDown, 1.0, 0.0, 1.0, 0.0, 0.0),
+                        hand(30, true, new Vec3(2.2, 2.6, 4.6), fistDown, 1.0, 0.0, 1.0, 0.0, 0.0),
+                        hand(36, true, new Vec3(3.6, 6.0, 2.0), new Vec3(-0.6, -0.5, 0.6), 0.8, 0.2, 1.0, 0.0, 0.0),
+                        hand(LENGTHS[POUND], true, rest, inward, 0.5, 0.4, 0.0, 0.0, 0.0) });
     }
 
     private MechAttackKeys() {

@@ -18,7 +18,7 @@ import nl.tivek.multiversepowers.character.Characters;
 import nl.tivek.multiversepowers.character.GameCharacter;
 import nl.tivek.multiversepowers.character.greenlantern.Arrival;
 import nl.tivek.multiversepowers.character.greenlantern.PowerRing;
-import nl.tivek.multiversepowers.character.greenlantern.ability.light.LightShield;
+import nl.tivek.multiversepowers.character.greenlantern.ability.light.LightDome;
 import nl.tivek.multiversepowers.character.greenlantern.construct.Construct;
 import nl.tivek.multiversepowers.character.greenlantern.construct.ConstructPayload;
 import nl.tivek.multiversepowers.engine.ability.Throttle;
@@ -416,7 +416,7 @@ public final class Flamethrower extends FlameHits {
         }
         Flamethrower gun = HELD.get(player.getUUID());
         if (gun == null || gun.breaking >= 0 || event.getAmount() <= 0.0F
-                || LightShield.goesThrough(event.getSource())) {
+                || LightDome.goesThrough(event.getSource())) {
             return;
         }
         int t = gun.age - gun.moveStart;

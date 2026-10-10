@@ -4,10 +4,11 @@ import net.minecraft.server.level.ServerPlayer;
 import nl.tivek.multiversepowers.character.CharacterAbility;
 import nl.tivek.multiversepowers.character.CharacterPowers;
 import nl.tivek.multiversepowers.character.greenlantern.ability.airstrike.AirStrike;
+import nl.tivek.multiversepowers.character.greenlantern.ability.fist.LightFists;
 import nl.tivek.multiversepowers.character.greenlantern.ability.flight.Flight;
 import nl.tivek.multiversepowers.character.greenlantern.ability.light.LightBeam;
 import nl.tivek.multiversepowers.character.greenlantern.ability.light.LightDome;
-import nl.tivek.multiversepowers.character.greenlantern.ability.light.LightShield;
+import nl.tivek.multiversepowers.character.greenlantern.ability.flight.RamCone;
 import nl.tivek.multiversepowers.character.greenlantern.ability.mech.MechAssembly;
 
 public final class GreenLanternPowers implements CharacterPowers {
@@ -50,7 +51,8 @@ public final class GreenLanternPowers implements CharacterPowers {
     @Override
     public void knockedDown(ServerPlayer player) {
         Flight.stop(player);
-        LightShield.stop(player);
+        RamCone.stop(player);
+        LightFists.stop(player);
         LightDome.lower(player);
         LightBeam.stop(player);
     }
@@ -58,6 +60,11 @@ public final class GreenLanternPowers implements CharacterPowers {
     @Override
     public boolean flying(ServerPlayer player) {
         return Flight.flying(player);
+    }
+
+    @Override
+    public boolean endsOnly(ServerPlayer player, CharacterAbility ability) {
+        return ability.id().equals("ring_scan") && LightDome.up(player);
     }
 
     @Override

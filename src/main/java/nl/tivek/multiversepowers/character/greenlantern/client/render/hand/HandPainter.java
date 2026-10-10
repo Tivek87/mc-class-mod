@@ -204,7 +204,7 @@ public final class HandPainter {
         }
     }
 
-    private static ConstructPainter.Frame armFrame(HandPose.Place place, Vec3 forward, boolean left) {
+    static ConstructPainter.Frame armFrame(HandPose.Place place, Vec3 forward, boolean left) {
         Vec3 armRight = forward.cross(place.arm());
         armRight = armRight.lengthSqr() < 1.0E-8 ? place.right() : armRight.normalize();
         return new ConstructPainter.Frame(place.wrist(), left ? armRight.scale(-1.0) : armRight, place.arm(), forward,

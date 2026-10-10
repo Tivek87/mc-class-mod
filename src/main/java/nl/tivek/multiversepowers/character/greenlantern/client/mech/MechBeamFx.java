@@ -46,7 +46,8 @@ final class MechBeamFx {
 
     static void draw(LanternPainter painter, MechPose pose, double t, int pilotId, boolean own) {
         MechAttacks.Blow blow = pose.blow();
-        if (blow.kind() != MechAttacks.EYE && blow.kind() != MechAttacks.GLARE) {
+        int eyes = MechAttacks.eyesKind(blow);
+        if (eyes == MechAttacks.NONE) {
             return;
         }
         ClientLevel level = Minecraft.getInstance().level;
@@ -55,10 +56,10 @@ final class MechBeamFx {
             return;
         }
         Frame head = MechPainter.head(pose, t, -1.0, true);
-        if (blow.kind() == MechAttacks.EYE) {
-            lance(painter, head, blow.age(), level, pilot, own);
+        if (eyes == MechAttacks.EYE) {
+            lance(painter, head, MechAttacks.eyesAge(blow), level, pilot, own);
         } else {
-            torrent(painter, head, blow.age(), level, pilot, own);
+            torrent(painter, head, MechAttacks.eyesAge(blow), level, pilot, own);
         }
     }
 

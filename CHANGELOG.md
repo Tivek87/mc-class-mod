@@ -3,6 +3,55 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.8.0-alpha] - 2026-10-10
+
+### Added
+- **Green Lantern:** **Construct Fists**: left click with empty hands throws a ten-hit combo in gloves of hard light;
+  hold for one of four heavy blows with a giant fist.
+- **Green Lantern:** **Battleaxe** in the Construct Wheel: three chops, the Earthbreaker leap that splits the ground,
+  a hook that drags a creature to you, and a whirlwind.
+- **Green Lantern:** **Heavy Chainsaw** in the Construct Wheel: slashes that slow, a grinding rend, an impale that
+  throws the creature off, and a guard that grinds blows and shots away.
+- **Green Lantern:** the mech's left-click combo has six new blows: jab, hook, uppercut, knee, a clap blast and a
+  ground pound.
+- **Escape game:** caught in Green Lantern's cage or Thor's grab, a player clicks in time on a bar to break free.
+- **Hard-Light Helpers** also come wild: from their spawn egg in the new Multiverse Powers creative tab, they fight
+  monsters on their own.
+- **Crosshairs:** Green Lantern, Thor and Doctor Octopus each have a crosshair of their own.
+- **Green Lantern:** the snapping Giant Hand is an Infinity Gauntlet of hard light: its six stones glow as it presses,
+  and the snap sends a thin ring of hard light 8 blocks out, two fainter rings behind it, that strikes and throws hard.
+- **Thor:** hold C in flight to come down faster; press space twice in flight to drop out of it.
+- **Green Lantern's settings:** the fists', the battleaxe's and the chainsaw's damage, reach and cost; the mech blows'
+  damage and the pilot's health in the mech.
+
+### Changed
+- **Green Lantern:** right click is the bolt; hold it for the Beam.
+- **Green Lantern:** the Light Dome is held on the scan key; in flight the ram cone is on the Express key.
+- **Green Lantern:** the ram cone does 70% less damage and takes 70% off blows from the front.
+- **Green Lantern:** in flight the Construct Wheel offers only ranged weapons.
+- **Green Lantern:** the Giant Hands call up 1 to 5 hands at random in one use.
+- **Green Lantern:** in the mech the pilot is guarded as by netherite and has 4 times their health.
+- **Green Lantern:** the mech's head is bigger and its punches land better.
+- **Green Lantern:** the mech's missiles have crystal warheads, and the eye beam fires while the missile arm is up.
+- **Green Lantern:** for the mech's flamethrower the hand sinks into the wrist and a barrel slides out.
+- **Green Lantern:** a creature the Beam kills burns to ash.
+- **Green Lantern:** the Power Battery looks like the comics' lantern: a gold ring on top, gold and stone bands, ribbed
+  green glass, two gold hoops and the emblem.
+- **Green Lantern:** to recharge you press the ring to the lantern's emblem: the lantern lights up and the ring fills
+  little by little.
+- **Thor:** the Lightning Bomb is about 35% faster.
+- **Thor:** the Storm Bolt no longer leaves a ring of light.
+
+### Removed
+- **Green Lantern:** the Light Shield.
+- **Green Lantern:** the roar of the mech's exhaust flames.
+
+### Fixed
+- **Green Lantern:** in the mech, the pilot's aiming arm no longer bends across their face.
+- **Green Lantern:** the ability panel left some moves out.
+- **Green Lantern:** giant fists and helpers were not drawn while no other construct was out.
+- **Hard-Light Helpers** called up with a command now rise out of the ground with their full health.
+
 ## [0.7.9-alpha] - 2026-10-10
 
 ### Added

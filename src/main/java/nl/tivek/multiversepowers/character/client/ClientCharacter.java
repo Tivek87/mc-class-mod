@@ -3,6 +3,7 @@ package nl.tivek.multiversepowers.character.client;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import java.util.Arrays;
 import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Predicate;
 import java.util.function.ToIntFunction;
@@ -59,6 +60,7 @@ public final class ClientCharacter {
     private static boolean climbing;
     private static final Map<GameCharacter, Local> LOCAL = new EnumMap<>(GameCharacter.class);
     private static final Map<GameCharacter, Refusal> REFUSALS = new EnumMap<>(GameCharacter.class);
+    private static final Map<CharacterAbility, Predicate<LocalPlayer>> ENDS = new HashMap<>();
     private static final Int2ObjectOpenHashMap<GameCharacter> WORN = new Int2ObjectOpenHashMap<>();
 
     private ClientCharacter() {
@@ -162,6 +164,11 @@ public final class ClientCharacter {
         Gestures.holdTime(ability, ticks);
     }
 
+    // A character whose mouse buttons stay its own even with something in hand (in a vehicle of its own) says when.
+    public static void mouseFree(GameCharacter character, Predicate<LocalPlayer> free) {
+        Gestures.mouseFree(character, free);
+    }
+
     // A character whose gestures change in flight says here when it flies.
     public static void flying(GameCharacter character, Predicate<LocalPlayer> flying) {
         Gestures.flying(character, flying);
@@ -169,6 +176,11 @@ public final class ClientCharacter {
 
     public static boolean flies(GameCharacter character, LocalPlayer player) {
         return Gestures.flies(character, player);
+    }
+
+    // A key whose press now only ends what it keeps up (CharacterPowers.endsOnly) says when, here.
+    public static void endsOnly(CharacterAbility ability, Predicate<LocalPlayer> ends) {
+        ENDS.put(ability, ends);
     }
 
     // Whether a gesture's ability is the one its button fires now (on the ground or in flight, in the right state).
@@ -433,7 +445,10 @@ public final class ClientCharacter {
         }
         boolean undo = player.isShiftKeyDown() && ability.crouchDoes() == CharacterAbility.Crouch.UNDO;
         int left = COOLDOWNS[slot.ordinal()];
-        if (left > 0 && !undo) {
+        Predicate<LocalPlayer> ends = ENDS.get(ability);
+        boolean free = ability.isFlightFree() && Gestures.flies(ability.character(), player)
+                || ends != null && ends.test(player);
+        if (left > 0 && !undo && !free) {
             tell(player, "not_ready", ability.getDisplayName(), (left + 19) / 20);
             return;
         }

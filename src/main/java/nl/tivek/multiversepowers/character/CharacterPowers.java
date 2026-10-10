@@ -37,6 +37,11 @@ public interface CharacterPowers {
         return false;
     }
 
+    // A press that now only ends what its key keeps up (Green Lantern's dome) is never held back by the key's cooldown.
+    default boolean endsOnly(ServerPlayer player, CharacterAbility ability) {
+        return false;
+    }
+
     default void showTo(ServerPlayer viewer, ServerPlayer target) {
     }
 

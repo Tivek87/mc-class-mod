@@ -9,9 +9,16 @@ import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.fml.loading.FMLPaths;
 import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
+import nl.tivek.multiversepowers.character.GameCharacter;
+import nl.tivek.multiversepowers.character.client.Crosshairs;
+import nl.tivek.multiversepowers.character.docock.client.OctoCrosshair;
 import nl.tivek.multiversepowers.character.docock.client.TentacleHud;
 import nl.tivek.multiversepowers.character.greenlantern.client.ClientConstructs;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.arm.LanternArms;
+import nl.tivek.multiversepowers.character.greenlantern.client.body.fist.FistArms;
+import nl.tivek.multiversepowers.character.greenlantern.client.body.fist.FistLayer;
+import nl.tivek.multiversepowers.character.greenlantern.client.body.heavy.HeavyArms;
+import nl.tivek.multiversepowers.character.greenlantern.client.body.heavy.HeavyLayer;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.flame.FlameArms;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.pose.LanternBody;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.pose.MechPilot;
@@ -24,6 +31,10 @@ import nl.tivek.multiversepowers.character.greenlantern.client.victim.Clapped;
 import nl.tivek.multiversepowers.character.greenlantern.client.victim.Devoured;
 import nl.tivek.multiversepowers.character.greenlantern.client.victim.Flattened;
 import nl.tivek.multiversepowers.character.greenlantern.client.victim.HandVictims;
+import nl.tivek.multiversepowers.character.thor.client.GrabEscape;
+import nl.tivek.multiversepowers.character.thor.client.ThorCrosshair;
+import nl.tivek.multiversepowers.character.greenlantern.client.hud.CageEscape;
+import nl.tivek.multiversepowers.engine.client.escape.EscapeHud;
 import nl.tivek.multiversepowers.character.thor.client.ThorGrabChoice;
 import nl.tivek.multiversepowers.character.thor.client.ThorHeld;
 import nl.tivek.multiversepowers.character.thor.client.ThrownHammerRenderer;
@@ -56,10 +67,13 @@ public final class MultiversePowersClient {
                 (mod, parent) -> SettingsScreen.create(parent, SettingsPages.GAME));
         modEventBus.addListener(GreenLanternSuitLayer::onAddLayers);
         modEventBus.addListener(ThorHammerLayer::onAddLayers);
+        modEventBus.addListener(FistLayer::onAddLayers);
+        modEventBus.addListener(HeavyLayer::onAddLayers);
         modEventBus.addListener(ThorHeld::onAddLayers);
         modEventBus.addListener(ThorGrabChoice::onRegisterLayers);
         modEventBus.addListener(TentacleHud::onRegisterLayers);
         modEventBus.addListener(FightClient::onRegisterLayers);
+        modEventBus.addListener(EscapeHud::onRegisterLayers);
         modEventBus.addListener(ThorHammerLayer::onRegisterModels);
         modEventBus.addListener(ThrownHammerRenderer::onRegisterRenderers);
         modEventBus.addListener(MinionRenderer::onRegisterRenderers);
@@ -81,11 +95,21 @@ public final class MultiversePowersClient {
                 && MechPilot.pose(player, entity));
         Poses.layer(Poses.Stage.MODEL, (model, entity, partialTick) -> model instanceof PlayerModel<?> player
                 && LanternBody.pose(player, entity));
+        Poses.layer(Poses.Stage.MODEL, (model, entity, partialTick) -> model instanceof PlayerModel<?> player
+                && FistArms.pose(player, entity));
+        Poses.layer(Poses.Stage.MODEL, (model, entity, partialTick) -> model instanceof PlayerModel<?> player
+                && HeavyArms.pose(player, entity));
         Poses.layer(Poses.Stage.CREATURE, HandVictims::pose);
         Poses.layer(Poses.Stage.CREATURE, Tired::pose);
         Poses.layer(Poses.Stage.CREATURE, ThorHeld::pose);
         BodyTurns.add(LanternArms::turnBody);
         BodyTurns.add(MechPilot::turnBody);
+        BodyTurns.add(FistArms::turnBody);
+        BodyTurns.add(HeavyArms::turnBody);
+        Crosshairs.add(GameCharacter.THOR, ThorCrosshair::draw);
+        CageEscape.register();
+        GrabEscape.register();
+        Crosshairs.add(GameCharacter.DOC_OCK, OctoCrosshair::draw);
         BodyTurns.add(ThorPoses::turn);
         Poses.layer(Poses.Stage.MODEL, (model, entity, partialTick) -> model instanceof PlayerModel<?> player
                 && ThorPoses.pose(player, entity));

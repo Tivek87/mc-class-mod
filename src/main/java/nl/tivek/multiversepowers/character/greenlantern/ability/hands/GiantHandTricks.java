@@ -1,5 +1,7 @@
 package nl.tivek.multiversepowers.character.greenlantern.ability.hands;
 
+import java.util.HashSet;
+import java.util.Set;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -42,12 +44,17 @@ abstract class GiantHandTricks extends GiantHandPair {
     private static final double PINCH_REACH = 2.4;
     private static final double SQUEEZE_DAMAGE = 0.35;
     private static final double DROP_DOWN = 0.9;
-    private static final double SNAP_REACH = 7.0;
-    private static final double SNAP_DAMAGE = 0.45;
-    private static final double SNAP_SHOVE = 0.2;
+    private static final double SNAP_DAMAGE = 1.6;
+    // How hard the snap's ring throws what it passes, out and up.
+    private static final double SNAP_OUT = 2.2;
+    private static final double SNAP_UP = 0.7;
+    // Ticks before the snap the press starts to strain.
+    private static final int SNAP_STRAIN = 29;
     private static final double SNAP_ABOVE = 3.0;
     private static final double SNAP_BELOW = 3.0;
     private static final int DAZED_TICKS = 60;
+    // Who the snap's ring has passed already.
+    private final Set<Integer> rung = new HashSet<>();
     private static final double POKE_REACH = 1.8;
     private static final double POKE_DAMAGE = 0.3;
     private static final double POKE_LAST = 0.8;
@@ -188,42 +195,41 @@ abstract class GiantHandTricks extends GiantHandPair {
     private void snap(ServerLevel level) {
         HandPose.Place place = this.place();
         Vec3 fingers = place.at(HandPose.SNAP_POINT);
+        if (this.t == HandPose.SNAP_HITS - SNAP_STRAIN) {
+            this.storm.sound(level, fingers, SoundEvents.BEACON_ACTIVATE, 1.6F, 0.6F);
+            this.storm.sound(level, fingers, SoundEvents.RESPAWN_ANCHOR_CHARGE, 1.4F, 0.7F);
+        }
         if (this.t == HandPose.SNAP_HITS - TENSION) {
             this.storm.sound(level, fingers, SoundEvents.BEACON_POWER_SELECT, 1.2F, 1.8F);
             this.storm.sound(level, fingers, SoundEvents.AMETHYST_BLOCK_RESONATE, 1.2F, 1.6F);
         }
-        if (this.t != HandPose.SNAP_HITS) {
+        int since = this.t - HandPose.SNAP_HITS;
+        if (since == 0) {
+            this.rung.clear();
+            this.storm.sound(level, fingers, SoundEvents.WOODEN_BUTTON_CLICK_ON, 3.0F, 0.5F);
+            this.storm.sound(level, fingers, SoundEvents.AMETHYST_BLOCK_BREAK, 2.0F, 0.7F);
+            this.storm.sound(level, fingers, SoundEvents.BELL_RESONATE, 1.6F, 1.4F);
+            this.storm.sound(level, fingers, SoundEvents.BEACON_DEACTIVATE, 1.6F, 1.6F);
+        }
+        if (since < 0 || since > HandPose.SNAP_RING_TICKS) {
             return;
         }
-        double reach = SNAP_REACH * SCALE;
-        // The ring runs out over the ground under the fingers: everything within reach of that spot, low or high.
-        for (LivingEntity living : this.near(level, SNAP_REACH + 4.0)) {
+        // The ring of hard light runs out over the ground from under the fingers: whatever it passes, low or high,
+        // takes the blow and is thrown out from it.
+        double ring = HandPose.snapRing(since) * SCALE;
+        for (LivingEntity living : this.near(level, HandPose.SNAP_RING + 4.0)) {
             Vec3 middle = living.getBoundingBox().getCenter();
             Vec3 away = new Vec3(middle.x - fingers.x, 0.0, middle.z - fingers.z);
             double distance = away.length();
-            if (distance > reach + living.getBbWidth() * 0.5 || living.getY() > fingers.y + SNAP_ABOVE
-                    || living.getY() < this.base.y - SNAP_BELOW) {
+            if (distance - living.getBbWidth() * 0.5 > ring || living.getY() > fingers.y + SNAP_ABOVE
+                    || living.getY() < this.base.y - SNAP_BELOW || !this.rung.add(living.getId())) {
                 continue;
             }
             away = distance < 1.0E-2 ? Vec3.ZERO : away.scale(1.0 / distance);
-            double close = 1.0 - 0.5 * Mth.clamp(distance / reach, 0.0, 1.0);
-            this.hit(level, living, this.storm.ability.getDamage() * SNAP_DAMAGE * close, away, 0.0, 0.0);
-            this.shove(living, away, SNAP_SHOVE);
-            living.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, DAZED_TICKS, 3), this.storm.owner);
-            living.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, DAZED_TICKS * 2, 1), this.storm.owner);
-            if (living instanceof Mob mob) {
-                mob.getNavigation().stop();
-            }
-            ParticleFx.cloud(level, ParticleTypes.ELECTRIC_SPARK, middle.add(0.0, living.getBbHeight() * 0.6, 0.0),
-                    10, 0.35, 0.05);
+            double close = 1.0 - 0.4 * Mth.clamp(distance / (HandPose.SNAP_RING * SCALE), 0.0, 1.0);
+            this.hit(level, living, this.storm.ability.getDamage() * SNAP_DAMAGE * close, away, SNAP_OUT * close,
+                    SNAP_UP * close);
         }
-        ParticleFx.sphereOut(level, ParticleFx.dust(PowerRing.BRIGHT, 1.6F), fingers, 40, 0.8);
-        ParticleFx.shockwave(level, ParticleFx.dust(PowerRing.PALE, 1.5F), new Vec3(fingers.x, this.base.y + 0.2,
-                fingers.z), 40, 0.7);
-        this.storm.sound(level, fingers, SoundEvents.WOODEN_BUTTON_CLICK_ON, 3.0F, 0.5F);
-        this.storm.sound(level, fingers, SoundEvents.AMETHYST_BLOCK_BREAK, 2.0F, 0.7F);
-        this.storm.sound(level, fingers, SoundEvents.GENERIC_EXPLODE.value(), 1.0F, 1.9F);
-        this.storm.sound(level, fingers, SoundEvents.BELL_RESONATE, 1.6F, 1.4F);
     }
 
     // Only a small shove, never the hop the blow's own knockback gives.

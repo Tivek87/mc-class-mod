@@ -36,6 +36,15 @@ public final class MechAttacks {
     public static final int FLAME = 13;
     public static final int JUMP = 14;
     public static final int HATCH = 15;
+    // More blows of the combo: a quick left jab, a wide left hook, a right uppercut out of a crouch, a knee driven up
+    // with both hands pulling down, a clap of both hands whose blast runs on ahead, and both fists pounding the ground
+    // in turn.
+    public static final int JAB = 16;
+    public static final int HOOK = 17;
+    public static final int UPPERCUT = 18;
+    public static final int KNEE = 19;
+    public static final int CLAP = 20;
+    public static final int POUND = 21;
 
     public static final int EYE_FIRE = 3;
     public static final int EYE_SHOWN = 7;
@@ -99,6 +108,15 @@ public final class MechAttacks {
     public static final int HATCH_DROP = 12;
     public static final int HATCH_EVERY = 4;
     public static final int HATCH_SHUT = 30;
+    public static final int JAB_HIT = 7;
+    public static final int HOOK_FROM = 11;
+    public static final int HOOK_TO = 15;
+    public static final int UPPERCUT_FROM = 9;
+    public static final int UPPERCUT_HIT = 13;
+    public static final int KNEE_HIT = 12;
+    public static final int CLAP_HIT = 12;
+    // The pound's fists strike the ground at these ticks, right, left, right, left.
+    public static final int[] POUNDS = { 10, 16, 22, 28 };
     // From the palm's middle to its inside face, where a held creature's skin lies.
     public static final double SKIN = 0.45;
     private static final double REACH = MechScript.UPPER_ARM + MechScript.PALM_ALONG;
@@ -113,7 +131,7 @@ public final class MechAttacks {
     private static final double MOST_TURN = 0.8;
     static final int[] LENGTHS = { 0, 30, 26, 36, 66, DROP_TICKS, 16, GLARE_MOST + GLARE_FADE, 26,
             AIM_MOST + AIM_CLOSE, FLY_LAND + 14, 32, SPIN_TO + 16, FLAME_MOST + FLAME_CLOSE, JUMP_LAND + 14,
-            HATCH_SHUT + 8 };
+            HATCH_SHUT + 8, 20, 28, 30, 30, 30, 44 };
 
     // How the body stands under a blow: how far its hips sink, its torso stoops forward (radians) and twists to its
     // left over the waist, how high the right foot is lifted, and how far (radians, to its left) the whole blow turns
@@ -123,9 +141,14 @@ public final class MechAttacks {
     }
 
     // A blow as the mech strikes it: which one, how far in (ticks, a fraction between two), for a drop how far the
-    // throw had got, and for a throw how far it turns towards its creature (radians, to its left).
-    public record Blow(int kind, double age, int from, double turn) {
+    // throw had got, for a throw how far it turns towards its creature (radians, to its left), and its eyes firing
+    // along with a move of no turn (see eyes).
+    public record Blow(int kind, double age, int from, double turn, int eyes) {
         public static final Blow NONE = new Blow(MechAttacks.NONE, 0.0, 0, 0.0);
+
+        public Blow(int kind, double age, int from, double turn) {
+            this(kind, age, from, turn, 0);
+        }
 
         public boolean striking() {
             return this.kind != MechAttacks.NONE;
@@ -152,16 +175,51 @@ public final class MechAttacks {
     }
 
     // The blow in a whole number sent with the mech (see MechScript.variant): kind, age, `from` (a drop's start; the
-    // missile arm's missiles, see rockets) and a throw's turn in whole degrees.
+    // missile arm's missiles, see rockets) and a throw's turn in whole degrees, or for a move of no turn its eyes.
     public static int pack(int kind, int age, int from, double turn) {
-        int degrees = (int) Math.round(Math.toDegrees(turn)) + 64;
-        return kind == NONE ? 0 : kind | Mth.clamp(age, 0, 255) << 4 | Mth.clamp(from, 0, 127) << 12
-                | Mth.clamp(degrees, 0, 127) << 19;
+        return pack(kind, age, from, turn, 0);
+    }
+
+    public static int pack(int kind, int age, int from, double turn, int eyes) {
+        int extra = turns(kind) ? (int) Math.round(Math.toDegrees(turn)) + 64 : eyes;
+        return kind == NONE ? 0 : kind | Mth.clamp(age, 0, 255) << 5 | Mth.clamp(from, 0, 127) << 13
+                | Mth.clamp(extra, 0, 127) << 20;
     }
 
     public static Blow unpack(int packed) {
-        return packed == 0 ? Blow.NONE : new Blow(packed & 15, packed >>> 4 & 255, packed >>> 12 & 127,
-                Math.toRadians((packed >>> 19 & 127) - 64));
+        if (packed == 0) {
+            return Blow.NONE;
+        }
+        int kind = packed & 31;
+        int extra = packed >>> 20 & 127;
+        return new Blow(kind, packed >>> 5 & 255, packed >>> 13 & 127,
+                turns(kind) ? Math.toRadians(extra - 64) : 0.0, turns(kind) ? 0 : extra);
+    }
+
+    private static boolean turns(int kind) {
+        return kind == THROW || kind == DROP;
+    }
+
+    // The eyes fired along with another move (the missile arm up): 0 none, 1 to 16 a ray `age` ticks in, from 17 on
+    // the held beam `age` ticks in.
+    public static int eyes(boolean beam, int age) {
+        return beam ? 17 + Mth.clamp(age, 0, 110) : 1 + Mth.clamp(age, 0, 15);
+    }
+
+    // Which eyes fire now (EYE, GLARE or NONE), as the move itself or along with it.
+    public static int eyesKind(Blow blow) {
+        if (blow.kind() == EYE || blow.kind() == GLARE) {
+            return blow.kind();
+        }
+        return blow.eyes() == 0 ? NONE : blow.eyes() <= 16 ? EYE : GLARE;
+    }
+
+    // How far into its eyes' ray or beam a move is (ticks, a fraction between two).
+    public static double eyesAge(Blow blow) {
+        if (blow.kind() == EYE || blow.kind() == GLARE) {
+            return blow.age();
+        }
+        return (blow.eyes() <= 16 ? blow.eyes() - 1 : blow.eyes() - 17) + blow.age() - Math.floor(blow.age());
     }
 
     // The missile arm's `from`: how many missiles it has fired, and how many ticks ago the last one (at most 15).
@@ -204,6 +262,16 @@ public final class MechAttacks {
         double age = blow.age();
         return Ease.smooth((age - 3.0) / (FLAME_FIRE - 3.0))
                 * (1.0 - Ease.smooth((age - FLAME_MOST) / (FLAME_CLOSE - 2.0)));
+    }
+
+    // How far the right hand has sunk into its forearm for the flamethrower (0 a hand, 1 gone into the arm): before
+    // the barrel grows out of the wrist, and out again once it has sunk back.
+    public static double handIn(Blow blow) {
+        if (blow.kind() != FLAME) {
+            return 0.0;
+        }
+        double age = blow.age();
+        return Ease.smooth((age - 1.0) / 5.0) * (1.0 - Ease.smooth((age - FLAME_MOST - FLAME_CLOSE + 5.0) / 5.0));
     }
 
     // Whether the flamethrower pours fire now.
@@ -293,8 +361,24 @@ public final class MechAttacks {
             case JUMP -> age == JUMP_LAUNCH ? 0.9 : age == JUMP_LAND ? 2.0 : 0.0;
             // Its knees strike the ground, then every fist it hammers down.
             case SPIN -> age == SPIN_FROM ? 2.0 : slams(age, true) || slams(age, false) ? 0.8 : 0.0;
+            case JAB -> age == JAB_HIT ? 0.5 : 0.0;
+            case HOOK -> age == HOOK_FROM + 2 ? 0.8 : 0.0;
+            case UPPERCUT -> age == UPPERCUT_HIT ? 1.0 : 0.0;
+            case KNEE -> age == KNEE_HIT ? 1.2 : 0.0;
+            case CLAP -> age == CLAP_HIT ? 1.8 : 0.0;
+            case POUND -> pound(age) >= 0 ? 1.4 : 0.0;
             default -> 0.0;
         };
+    }
+
+    // Which of the pound's strikes lands at this tick (-1 none); even ones are the right fist's.
+    public static int pound(int age) {
+        for (int i = 0; i < POUNDS.length; i++) {
+            if (POUNDS[i] == age) {
+                return i;
+            }
+        }
+        return -1;
     }
 
     public static Body body(Blow blow) {

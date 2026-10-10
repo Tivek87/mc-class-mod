@@ -14,7 +14,6 @@ import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import nl.tivek.multiversepowers.character.CharacterAbility;
 import nl.tivek.multiversepowers.character.GameCharacter;
 import nl.tivek.multiversepowers.character.greenlantern.ability.light.LightBeam;
-import nl.tivek.multiversepowers.character.greenlantern.ability.light.LightShield;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.arm.LanternArms;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.spot.RingSpot;
 import nl.tivek.multiversepowers.character.greenlantern.client.flight.ClientFlight;
@@ -34,7 +33,7 @@ final class ConstructPlaces {
     }
 
     static Vec3 pane(Entity owner, float partialTick) {
-        return owner.getEyePosition(partialTick).add(owner.getViewVector(partialTick).scale(LightShield.AHEAD));
+        return owner.getEyePosition(partialTick).add(owner.getViewVector(partialTick).scale(RAM_OWN_AHEAD));
     }
 
     static void on(Track track, @Nullable Entity owner, float partialTick) {

@@ -344,6 +344,12 @@ public final class MechPainter {
         // comes out on the side a hand of its own has it, not mirrored.
         boolean own = !right;
         MechParts.draw(painter, own ? MechArmShapes.FOREARM : MechArmShapes.FOREARM_LEFT, forearm, 1.0, apart, seed);
+        // For the flamethrower the right hand sinks back into its forearm, fingertips first, as the barrel grows out.
+        double handIn = walking && right && apart < 0.0 && grown >= 1.0 ? MechAttacks.handIn(pose.blow()) : 0.0;
+        if (handIn > 0.0) {
+            painter.clip(hand.at(0.0, Mth.lerp(handIn, MechArmShapes.KNUCKLES + 1.4, MechArmShapes.WRIST - 0.05), 0.0),
+                    hand.up().scale(-1.0), SEAM);
+        }
         MechParts.draw(painter, own ? MechArmShapes.HAND : MechArmShapes.HAND_LEFT, hand, 1.0, apart, seed + 5);
         if (walking && apart < 0.0) {
             MechExhaust.pipes(forearm);

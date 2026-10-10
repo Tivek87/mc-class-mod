@@ -58,8 +58,8 @@ long cooldown; while it goes, the panel counts it down at its top right.
 | R | Ability 1 | Grab | Emerald Express | Thunderstorm |
 | V | Ability 2 | Multi-Tentacle | Construct Wheel | Lightning Bomb |
 | Z | Ability 3 | Tentacle Dash | Recharge | Storm Throw |
-| B (hold) | Ability 4 | Block | Light Bolt *(left click)* | *(free)* |
-| H | Ability 5 | Ground Slam | Light Shield *(right click)* | *(free)* |
+| B (hold) | Ability 4 | Block | Light Bolt *(right click)* | *(free)* |
+| H | Ability 5 | Ground Slam | Construct Fists *(left click)* | *(free)* |
 | N | Ability 6 | Portal | Ring Scan | *(free)* |
 | Y | Ability 7 | Octopus Rampage *(ultimate)* | Air Strike *(ultimate)* | *(free)* |
 | X | Ability 8 | *(free)* | Shockwave | *(free)* |
@@ -107,7 +107,7 @@ right click)*, Lightning Bolt *(scroll wheel click)* and Lightning Speed *(hold 
   in red; its name is grey meanwhile. A white name with nothing after it is ready; **on** or what it is doing
   (**flying**, **diving**) shows in green. Ready means the move can really start
   now: Green Lantern's line checks the ring power that move itself needs (taking out a weapon, each weapon move, the
-  mech's blows and the rest each their own cost, the shield and beam only a ring that is not empty; stopping or
+  mech's blows and the rest each their own cost, the dome and beam only a ring that is not empty; stopping or
   landing is always free).
 - **P** (the ability guide, can be moved under Controls) opens a window that explains the character you play. On top
   is one short line about the character; **Read more** next to it opens a page about them, which **Show less**, Esc
@@ -147,10 +147,10 @@ same one, as they come, a click and a hold tell themselves apart). A power with 
 button waits until you let go to know which you meant. The panel writes **hold** or **2×** before the key of a
 hold or a double press and the guide's list **Hold ...** and **2×...**; both shorten key names (**LAlt**,
 **RCtrl**, **PgUp**), and the guide's detail writes them out (**Double Space**, **Left Alt**).
-- **A character can also sit on the mouse.** Green Lantern does: left click shoots, right click puts up a
-  shield. The panel shows those as `[LMB]` and `[RMB]`. They only take the mouse over
+- **A character can also sit on the mouse.** Green Lantern does: left click throws his fists, right click
+  shoots. The panel shows those as `[LMB]` and `[RMB]`. They only take the mouse over
   while both your hands are empty and the hand behind that button is free; any other time the mouse does
-  what it always does. Attack and defence can be used at the same time.
+  what it always does. Both buttons can be used at the same time.
 - **Click or hold.** Every ability on the mouse has two sides: a **tap** of the button does the quick one,
   and **holding it for 2 seconds** does a stronger, lasting one for as long as you keep holding. While you
   hold, an arc beside your crosshair fills up (on the right for left click, on the left for right click); once
@@ -171,14 +171,14 @@ hold or a double press and the guide's list **Hold ...** and **2×...**; both sh
 ## Green Lantern
 
 Green Lantern's power ring turns willpower into hard light: solid shapes of green light that only last
-while he keeps them going. His mouse always does something: bolts and a beam on left click, a shield and a
-dome on right click. On top of that he has the Emerald Express, his lantern to recharge the ring, flight, the
+while he keeps them going. His mouse always does something: fists of hard light on left click, bolts and a
+beam on right click. On top of that he has the Emerald Express, his lantern to recharge the ring, flight, the
 shockwave, the wheel you pick a weapon from (its first weapon is a sword and shield), the Ring Scan, the Giant
 Hands, the Light Bubble, his ultimate, the Air Strike, and the Hard-Light Mech (hold the scroll wheel). Every key is his now. Every ability has a move of his
 own that goes with it, seen from outside and in first person.
 
-His hands work the way the game's own buttons do: the **right hand attacks** (left click) and the **left hand
-defends** (right click). The ring sits on his right hand, the Emerald Express comes out of a portal on his right,
+His hands work the way the game's own buttons do: left click throws his **fists** and right click shoots out of
+the **ring**. The ring sits on his right hand, the Emerald Express comes out of a portal on his right,
 and the lantern goes in his left hand.
 
 ### The uniform
@@ -198,8 +198,8 @@ The ring makes Green Lantern's uniform over your own clothes.
   the sky, your view jolts, and the ring's light flares up round you in tongues of light. Meanwhile the uniform
   spreads over you out of the ring: up your arm to the lantern on your chest, from there over your whole body, and
   only once all of it is on, the mask over your eyes. Your eyes light up behind it, a surge of light runs over the
-  whole suit, and the ring says *"Welcome to the Green Lantern Corps."* Last of all you hit the lantern with your
-  ring fist and the ring fills up (the recharge, see below). All of it plays out slowly and takes about 10 seconds,
+  whole suit, and the ring says *"Welcome to the Green Lantern Corps."* Last of all you press your ring
+  to the lantern's emblem and the ring fills up (the recharge, see below). All of it plays out slowly and takes about 10 seconds,
   and all that time the ring speaks to you in its own voice, fading in as it comes and fading out at the end; you
   hear it only then, and anyone near you hears it too, coming from where you stand, fainter further off. Until it is
   done the ring does nothing
@@ -219,7 +219,7 @@ The ring makes Green Lantern's uniform over your own clothes.
   suit, with pulses running outwards: the thickest and fastest over your right shoulder and down your right arm
   into the ring, and the rest over the chest and the back, down the flanks, the other arm and the legs, and up
   the back of the head. The ring's light flares out around its
-  stone. The harder the ring works, the brighter all of it: a little for the shield, more for a portal or a
+  stone. The harder the ring works, the brighter all of it: a little for a punch, more for a portal or a
   bolt, a lot for flying, the dome and the beam. You see it on your own arms in first person too.
 - When you change back it goes the other way round: the glow of your eyes goes out and the mask goes first, then
   the uniform draws back over your legs, your body and down your arm into the ring, specks of its light streaming
@@ -239,7 +239,7 @@ The ring makes Green Lantern's uniform over your own clothes.
   quarter, half and three quarters. Nothing on it blinks, and nothing in the line moves when the numbers change:
   - When the ring pays for something, the bar drops at once and what it paid stays behind it for a moment as
     a gold piece that then runs out, so you see how big every cost was. Recharging makes the bar glide up.
-  - While the ring drains by itself (flying, the shield, the dome, the beam) it says in gold how fast, eased and to
+  - While the ring drains by itself (flying, the ram cone, the dome, the beam) it says in gold how fast, eased and to
     one decimal (`90 -1.1/s`), in a spot kept free for it.
 - Once the ring cannot pay for the Emerald Express, the bar turns red and the Emerald Express says **no power**.
   Pressing R then tells you which key recharges the ring.
@@ -247,19 +247,34 @@ The ring makes Green Lantern's uniform over your own clothes.
   Changing character never fills it up.
 - Everyone around you sees how brightly your ring glows.
 - **The ring lights up whenever it does something:** every ability makes it flare, and the uniform with it, the
-  harder it works the brighter: a bolt or a swing of the sword a little, a scan, a bubble or the shield more, and
+  harder it works the brighter: a bolt or a swing of the sword a little, a scan, a bubble or the dome more, and
   the Air Strike most of all, from the moment you call it until the plane has crashed.
 
 ### The mouse: what the ring always does (empty hands)
 
 With both hands empty the mouse belongs to the ring, and the game's own left and right click do nothing:
 you cannot mine, hit, place or use anything. Pick anything up and the mouse works as it always did.
-Recharging takes both hands, so the mouse waits for it. Left click needs just one free hand: bolts and the
-beam still come out of the ring while your ring hand waves up a giant hand or calls the air strike. It only waits while your other hand is busy too (shield or dome up), and during the take-off.
+Recharging takes both hands, so the mouse waits for it, and so it does during the take-off.
 Every button works by **click or hold** (see above): a tap for the
 quick one, 2 seconds of holding for the lasting one.
 
-**Left click (the right hand attacks)**
+**Left click (Construct Fists)**
+
+- **Click — the combo.** Your fists wear gloves of hard light, and every click throws the next blow of a
+  **ten-hit combo**: jab, cross, hook, uppercut, body blow, overhand, backfist, elbow, a double blow and a
+  finisher.
+  - **Damage:** 2.5 hearts per blow to what stands up to **2.6 blocks** in front of you; the finisher hits 1.8 times
+    as hard.
+  - **Power:** 0.05 per blow.
+  - Wait longer than 1.2 seconds and the combo starts again from its first blow.
+- **Hold — a heavy blow.** One of four at random, each with a giant fist of hard light: a fist that drops from
+  above, one that bursts up out of the ground, one that rams straight ahead on a piston, or you spin round with
+  your arms out.
+  - **Damage:** 7 hearts to everything within **3 blocks**, thrown far.
+  - **Power:** 1.5 per heavy blow.
+- They work the same in the air.
+
+**Right click (the ring shoots)**
 
 - **Tap — Light Bolt.** A small bullet of hard light (round, with a pointed nose and a streak of light behind
   it) leaves your ring and flies exactly where the crosshair points. It bursts on the first creature or wall it meets. Your ring arm comes up dead straight ahead, along your view, so every bolt leaves the ring on your outstretched hand; it kicks back a little with each bolt, stays up while you keep shooting, and goes down again a moment after the last one. Everyone else sees it too, and in first person your own hand does the same.
@@ -313,58 +328,46 @@ quick one, 2 seconds of holding for the lasting one.
     growing, the gauge shows a padlock and **LOCKED**, and the ring says so. Click again and it grows on from
     there. Locking it or freeing it costs 0.2 power. Clicked before the beam is out, the ring tells you to fire it
     first.
-  - **Your own beam is see-through close to you**, like your own shield: faint as glass right in front of you,
+  - **Your own beam is see-through close to you**, like your own dome: faint as glass right in front of you,
     growing solid further out, so it never hides what you aim at. Others see it at full strength.
 
-**Right click (the left hand defends)**
+**Light Dome (hold N, the Ring Scan's key, 2 seconds)**
 
-- **Tap — Light Shield (on/off).** A round shield of hard light stands in front of you, in the way you look,
-  held up by your left hand. It stays up until you tap again. It turns with your head. Everyone else sees it
-  as solid as any construct; only from your own eyes in first person you look through it, seeing its outline
-  and a faint glow.
-  - **How it looks:** it bulges a little to the front, with a round raised rim, a groove turned into its face,
-    a ring of rivets that slowly turns, the lantern emblem raised in its middle and a grip on its back. A hit
-    sends a ripple of light out over its face, and now and then a glint sweeps across it.
-  - **Takes 70%** off every hit that comes at you from the front. Damage that goes straight through armour
-    anyway (poison, falling, drowning, the void) goes through it as well, and so do arrows that pierce.
-  - **Power:** 0.08 per second while it is up.
-  - The light flares where a hit lands on it. Tap again, recharge or run the ring dry and it falls apart.
-  - While you fly it becomes a **ram cone** (see Flight).
-- **Hold 2 seconds — Light Dome.** The shield opens out into a dome of hard light all around you, for as
-  long as you keep holding. Its seams of light run like the joints of a stone wall, with a bright band where
+- A dome of hard light goes up all around you and stays until you press the key again. Its seams of light run like the joints of a stone wall, with a bright band where
   it meets the ground and a crown of light on top. From outside it is solid; from under it (your own
   eyes, or anyone else's inside it) it is faint where you look straight through it and bright along its
   outline, so you can still see out.
-  - **Takes 40%** off every hit, **from every side**. It covers more than the shield and holds less. The
-    same hits go straight through it as through the shield.
-  - **Power:** 0.24 per second. A shield you had up waits under the dome and costs nothing meanwhile.
+  - **Takes 40%** off every hit, **from every side**. Damage that goes straight through armour anyway (poison,
+    falling, drowning, the void) goes through it as well, and so do arrows that pierce.
+  - **Power:** 0.24 per second.
   - While you fly it works as a **brake chute** (see Flight).
 
 | | Damage | Power | Other |
 |---|---|---|---|
-| Light Bolt (tap left) | 3 hearts | 0.16 per bolt | one every 0.3 s, 48 blocks |
-| Light Beam (hold left) | 2.5 hearts, 4x a second, up to x3 | 0.8 a second, up to 5 | goes through creatures, 40 up to 64 blocks, five stages, the last at 10 s |
-| Light Shield (tap right) | - | 0.08 a second | 70% off hits from the front |
-| Light Dome (hold right) | - | 0.24 a second | 40% off hits from every side |
+| Construct Fists (click left) | 2.5 hearts, finisher x1.8 | 0.05 per blow | ten-hit combo, 2.6 blocks |
+| Heavy blow (hold left) | 7 hearts | 1.5 | everything within 3 blocks |
+| Light Bolt (tap right) | 3 hearts | 0.16 per bolt | one every 0.3 s, 48 blocks |
+| Light Beam (hold right) | 2.5 hearts, 4x a second, up to x3 | 0.8 a second, up to 5 | goes through creatures, 40 up to 64 blocks, five stages, the last at 10 s |
+| Light Dome (hold N) | - | 0.24 a second | 40% off hits from every side |
 
 ### Recharge (key Z)
 
 Green Lantern recharges his ring at his lantern, the power battery.
 
-- **Press Z.** The lantern appears in your left hand and you snap it up in front of you.
-- Your right fist, the one with the ring, swings up over it and **smacks it on the back**. It is a real
-  hit: the lantern is knocked back a hair and the fist bounces off it.
-- The light blasts **out of the front of the lantern**, away from you, all of it green and none of it
-  flying far, and the ring drinks **50 power** from it, so two hits fill an empty ring.
-- The fist stays against it while the light burns on and keeps shooting out, then it dies down and the
-  lantern fades away. All of it takes under two seconds.
-- Everyone around you sees it: the lantern in your hand, the fist smacking it and the blast of light.
+- **The lantern** looks like the comics' Power Battery: a gold ring on top of a gold knob, gold and stone bands
+  above and below, ribbed green glass, two gold hoops round its middle and the emblem (a green disc with grooves,
+  gold crescents and the lantern sign) on its front and back.
+- **Press Z.** The lantern appears in your left hand and you bring your right fist, the one with the ring,
+  steadily up to its emblem until the ring **presses against it**.
+- The lantern starts to hum and lights up from inside, brighter and brighter green, while the ring fills
+  **little by little** with **50 power**, so two recharges fill an empty ring. Once it is full a soft flash
+  goes through the lantern and you draw your fist back. All of it takes about three seconds.
+- Everyone around you sees it: the lantern in your hand, the ring on its emblem and the lantern lighting up.
 - You can recharge whenever the ring is not full, once every **3 seconds**. The light hurts nobody and
   breaks no blocks.
-- While you recharge, the ring makes nothing else: a shield, dome or beam you had going stops.
+- While you recharge, the ring makes nothing else: a ram cone, dome or beam you had going stops.
 - **In the air too**, once the take-off is over: you keep flying while you do it. The lantern hangs upright
-  from your hand however your body lies, the wind shakes it in first person, and the hit sends rings of light
-  out around the way you fly. Recharging while an empty ring lets you sink makes you fly again.
+  from your hand however your body lies, and the wind shakes it in first person. Recharging while an empty ring lets you sink makes you fly again.
 
 ### Flight (double space)
 
@@ -448,19 +451,20 @@ Green Lantern recharges his ring at his lantern, the power battery.
     crystal spikes overshoot and glint; the pillar bounces and its drums come apart; the emblem bounces on the
     ground; the slapping hand drums its fingers; the clapping hands bend their fingers.
 - **Fighting in the air** works with the same buttons, shaped for flying:
-  - **Tap left:** a bolt that takes your own speed along, so at top speed you never overtake your own shots.
-  - **Hold left:** the beam, for strafing runs over creatures and the ground.
-  - **Tap right:** the shield becomes a pointed, streamlined **ram cone** out in front of you (solid to everyone
+  - **Left click and hold:** the fists and their heavy blows, as on the ground.
+  - **Tap right:** a bolt that takes your own speed along, so at top speed you never overtake your own shots.
+  - **Hold right:** the beam, for strafing runs over creatures and the ground.
+  - **R (the Emerald Express's key):** a pointed, streamlined **ram cone** out in front of you, until you press it again (solid to everyone
     else, see-through only from your own eyes), with your left fist out in front like a punch; ridges wind
-    round it to its tip like the thread of a drill, and it turns as you fly. It still takes 70% off hits from
-    ahead, and whatever you fly into is rammed away: a hard throw and **2 hearts plus 26.25 hearts for every
-    block per tick you fly** (about 4.4 hearts at top speed). The same creature can be rammed again after 0.6
+    round it to its tip like the thread of a drill, and it turns as you fly. It takes 70% off hits from
+    ahead, and whatever you fly into is rammed away: a hard throw and **0.6 hearts plus 7.9 hearts for every
+    block per tick you fly** (about 1.3 hearts at top speed). It costs 0.08 power a second. The same creature can be rammed again after 0.6
     seconds.
   - **Scraping:** fly with the ram cone low along the ground (less than 1.5 blocks above it) or slide over it,
     and it wears the cone down: **2 more power a second**, sparks fly off where it scrapes, it grinds, and your
-    view shakes, the harder the faster you go. The cost and the height are world settings (Light Shield, the
+    view shakes, the harder the faster you go. The cost and the height are world settings (Emerald Express, the
     ram cone part); how hard your view shakes is one of your own settings.
-  - **Hold right:** the dome works as a **brake chute**: your speed is halved for as long as you hold it.
+  - **Hold N 2 seconds:** the dome works as a **brake chute**: your speed is halved while it is up.
 - A short cooldown of **1 second** after landing keeps you from taking off again straight away.
 
 | Flight | |
@@ -469,7 +473,7 @@ Green Lantern recharges his ring at his lantern, the power battery.
 | Stop in the air | C, or a double tap on jump |
 | Power | 1.07 a second (a full ring lasts 93.75 seconds), plus whatever you use meanwhile |
 | Take off | C or a double tap on jump; costs 0.8 power; not while recharging |
-| Ram (shield up) | 2 hearts + 26.25 hearts per block per tick of speed, strong knockback |
+| Ram (ram cone up, R) | 0.6 hearts + 7.9 hearts per block per tick of speed, strong knockback |
 | Scraping (ram cone low along the ground) | 2 more power a second, your view shakes |
 | Brake (dome up) | half speed |
 
@@ -572,10 +576,11 @@ All of these numbers are settings of their own (see "Changing the numbers").
 ### Construct Wheel (key V)
 
 The ring can shape hard light into your hands. The wheel has ten slots: the first holds the **Sword &
-Shield**, the second the **Energy Whip** and the last the **Plasma Flamethrower** (see below); the other seven hold
-the weapons still to come, each with its name and picture but nothing to do yet: **Battleaxe**, **Heavy Chainsaw**,
-**Dual Revolvers / Hand Cannons**, **Sawed-off Shotgun**, **Arm Cannon / Mega Blaster**, **Minigun** and **Rocket
-Launcher / RPG**. Picking one of those changes nothing yet.
+Shield**, the second the **Energy Whip**, the third the **Battleaxe**, the fourth the **Heavy Chainsaw** and the last
+the **Plasma Flamethrower** (see below); the other five hold the weapons still to come, each with its name and picture
+but nothing to do yet: **Dual Revolvers / Hand Cannons**, **Sawed-off Shotgun**, **Arm Cannon / Mega Blaster**,
+**Minigun** and **Rocket Launcher / RPG**. Picking one of those changes nothing yet. In flight the wheel offers only
+weapons that fire from afar; the ones for close fighting form only on the ground.
 
 - **Tap V** and nothing opens at all: you swap straight between empty hands and the last slot you had
   out. That is the quick one, for in a fight.
@@ -599,8 +604,8 @@ Launcher / RPG**. Picking one of those changes nothing yet.
   - **Right click (free):** a second move of the weapon's own: a quick block or parry, a lasso, a wall of fire;
     holding it 2 seconds does a stronger, lasting one (a barricade, a spinning shield, a vortex).
   - **At the same time:** just like with empty hands, attack and defence can be clicked or held together.
-  - Holding a weapon that does nothing yet does exactly what empty hands do: bolts and the beam on left click, the
-    shield and the dome on right click.
+  - Holding a weapon that does nothing yet does exactly what empty hands do: the fists on left click, bolts and
+    the beam on right click.
 - **A weapon in your hands shuts your other keys** (R, Z, N, Y, X, Left Alt, K): pressing one only says to put the
   weapon away first, with V. The panel then lists just the weapon's four moves (left click, hold left, right click,
   hold right, each by its name) and V.
@@ -722,6 +727,34 @@ crack, the whirlwind's ring and glow and the spinning shield's disc are light.
 - One move at a time: lashes, whirlwind, lasso and spinning shield never run together.
 - Everything is a setting under the Construct Wheel: the damage and length of the whip, the whirlwind (damage, crack,
   cost), the lasso (reach, damage, how long it slows, cost) and the spinning shield (protection, cost).
+
+#### Battleaxe (slot 3)
+
+A heavy two-handed battleaxe of hard light, held in both hands in first person and to everyone else. It grows out of
+the ring's light and breaks into solid pieces when you put it away.
+
+- **Left click (three chops):** down, back across and from above in turn, through everything in front of you:
+  **5 hearts**, 3.4 blocks. Costs 0.2 power.
+- **Hold left (Earthbreaker):** you leap forward and drive the axe into the ground: it splits open **7 blocks** ahead
+  of you and throws everything on it up and down: **8 hearts**. Costs 3 power.
+- **Right click (hook):** you hook the creature in front of you (up to 4.5 blocks) with the axe's beard and drag it
+  to you: **2 hearts**. Costs 0.5 power.
+- **Hold right (whirlwind):** you spin round with the axe for as long as you hold (your view spins along), everything
+  within 3 blocks takes **2.5 hearts** a hit and nothing knocks you back; letting go ends in one wide swing of
+  **5 hearts**. Costs 1.2 power a second.
+
+#### Heavy Chainsaw (slot 4)
+
+A big chainsaw of hard light with running teeth, held in both hands; it growls and shakes as it revs.
+
+- **Left click (slash):** a quick slanting slash, the next one back: **3.5 hearts**, 3 blocks, and the teeth slow
+  what they hit. Costs 0.15 power.
+- **Hold left (rend):** you drive the running blade into the creature in front of you and grind for as long as you
+  hold (**1.25 hearts** a bite); both of you stand still. Costs 1.2 power a second.
+- **Right click (impale):** you drive the tip in, let it chew a moment (**3 hearts**) and throw the creature off
+  (**5 hearts**). Costs 1.5 power.
+- **Hold right (saw guard):** the running blade across in front of you: blows from the front are ground away (you keep
+  10% of them and the blade bites back, **2 hearts**) and shots shredded. Costs 0.3 power a second.
 
 #### Plasma Flamethrower (slot 10)
 
@@ -1017,9 +1050,9 @@ Green Lantern's ultimate: a big, slow gunship of hard light high over the battle
   made in detail: Green Lantern's own right hand, with a forearm and a glowing gauntlet ring, a glowing cuff round the
   wrist, a palm with its pads and glowing creases, knuckles and glowing tendons and the lantern emblem on its back,
   four fingers of three joints each with a nail on every tip, a thumb, and the ring itself on its middle finger.
-- **One hand every time you press, up to 5:** every press brings the next hand (half a second after the last at the
-  soonest), and you wave your hand towards every one. After the fifth, or 3 seconds with no hand up and no press, the
-  hands are done and the cooldown starts; a press after the fifth only tells you none are left. Every kind of hand
+- **One press calls up 1 to 5 hands, at random:** they come one after another (half a second apart at the soonest),
+  and you wave your hand towards every one. Once they are done the cooldown starts; a press while they still come
+  only tells you none are left. Every kind of hand
   is **as likely as every other**. Every next hand goes for the creature nearest
   to you with the fewest hands on it, so they spread over
   the creatures closest to you first. Each does one of these to its creature, never the same one twice in a row (not
@@ -1045,10 +1078,13 @@ Green Lantern's ultimate: a big, slow gunship of hard light high over the battle
   - **a pinch and drop:** a **portal** opens in the air high over the creature and a hand reaches down out of it,
     thumb and finger spread wide. It **pinches** the creature between them (**2.1 hearts**), lifts it **9 blocks**
     up, dangling, and lets go: it drops to the ground (and takes the fall). Only creatures small enough to hold;
-  - **a finger snap:** it rises beside the creature with its palm turned aside and its thumb pressed to its middle
-    finger while light gathers between them, then **snaps its fingers**: a flash and rings of light burst out
-    every way and over the ground, and every creature within **7 blocks** is **dazed** (**2.7 hearts** close by,
-    less further out, slowed right down for 3 seconds and weakened for 6);
+  - **a finger snap (the Infinity Gauntlet):** it rises beside the creature as an Infinity Gauntlet of hard light:
+    plated fingers, an engraved back plate with rivets, a wide ribbed cuff and six stones in their settings (purple,
+    blue, red and orange on the knuckles, green on the thumb, yellow in a toothed sun on the back of the hand). Palm
+    turned aside, it presses thumb and middle finger together; the strain builds, the fingers and the whole fist
+    tremble and the stones glow brighter and brighter, until it **snaps**: a thin ring of hard light runs **8 blocks**
+    out over the ground with two fainter rings behind it, and breaks into pieces there. Everything it passes takes
+    a lot of damage (**9.6 hearts** close by, less at the edge) and is thrown far;
   - **a poke:** a **portal** opens beside the creature, on your side of it or off to one side but never behind it, and
     never where the hand would reach out of or through you. A hand reaches out level, one finger out. It pokes the
     creature, pokes it again a little further (**1.8 hearts** each, a small shove), draws right back and gives it
@@ -1538,7 +1574,8 @@ Double space jumps high and holding space flies, with or without the hammer.
 ### Flight (hold space)
 
 - **Hold space** (on the ground or in the air): Thor's left hand grabs the hammer from his belt and he rises. He flies
-  where you look: W ahead, S back, A and D aside and space up; to go down, look down and fly ahead. Sneaking does
+  where you look: W ahead, S back, A and D aside and space up; to go down, look down and fly ahead, or hold **C** to
+  come down faster. Press **space twice** to drop out of the flight. Sneaking does
   not sink him; holding shift is Lightning Speed. With no key held he hangs still in the air, bobbing gently. Flying fast
   he lies flat behind the hammer and banks into his turns.
 - **Landing:** fly down onto the ground and he touches down, the hammer back on his belt. A hard hit (2.5 hearts or

@@ -12,8 +12,8 @@ Dit document bevat de complete lijst van alle keybinds en bijbehorende vaardighe
     * *Met hamer*: 4-delige Mjolnir combo (zwaai, backhand, kopstoot, donderslag-smash).
     * *In vlucht*: Vrije vuistslag terwijl je met een hand aan Mjolnir hangt.
   * **Green Lantern**: 
-    * *Lege handen*: Light Bolt (groen projectiel schieten).
-    * *Met construct*: Wapen-aanval (Zwaard, Vlammenwerper of Zweep).
+    * *Lege handen*: Construct Fists (combo van tien klappen met handschoenen van hard licht, ook in vlucht).
+    * *Met construct*: Wapen-aanval (Zwaard, Zweep, Strijdbijl, Kettingzaag of Vlammenwerper).
     * *In Mech*: Combo van drie klappen (rechte rechtse, backhand sweep, slam; stomp of worp bij een vijand dichtbij). Met de missile arm uit: één raket afvuren (max 5).
   * **Doc Ock**: Tentakelslag met 7,5 blokken bereik (of gegrepen vijanden weggooien).
 
@@ -23,7 +23,7 @@ Dit document bevat de complete lijst van alle keybinds en bijbehorende vaardighe
     * *Met hamer (grond, 0,75 s)*: Hammer Uppercut (breekt schilden of lanceert vijand 14 blokken omhoog).
     * *In vlucht (1,0 s)*: Mid-Air Sky Shockwave (bliksembol die vliegende vijanden 3 s stunt).
   * **Green Lantern**: 
-    * *Lege handen*: Light Beam (doorlopende laserstraal die door rijen vijanden snijdt in 5 groeifasen).
+    * *Lege handen*: zware klap (één van vier, willekeurig, met een reuzenvuist van hard licht; 7 harten binnen 3 blokken).
     * *Met construct*: Zware wapenaanval (bv. zwaard *Flurry* stekenreeks of vlammenzee *Inferno*).
   * **Doc Ock**: Doorlopend slaan of blokken breken op afstand (tot 6,5 blokken bereik).
 
@@ -33,8 +33,7 @@ Dit document bevat de complete lijst van alle keybinds en bijbehorende vaardighe
     * *Met hamer (grond)*: Hammer Throw (Mjolnir weggooien; vliegt automatisch terug).
     * *In vlucht*: Air Blink (korte bliksem-teleport van 15 blokken naar voren).
   * **Green Lantern**: 
-    * *Lege handen (grond)*: Light Shield (hard-light schild dat 70% frontale schade stopt).
-    * *In vlucht*: Ram Cone (draaiende kegel om vijanden vliegend te rammen).
+    * *Lege handen*: Light Bolt (groen projectiel schieten).
     * *Met construct*: Wapenactie (bv. *Shield Charge* stormloop of *Wall of Fire* vuurmuur).
     * *In Mech*: Eye Ray (snelle straal uit elk oog die ontploft waar je mikt).
   * **Doc Ock**: Blokken, deuren en kisten gebruiken of plaatsen op afstand (tot 6,5 blokken bereik).
@@ -46,8 +45,7 @@ Dit document bevat de complete lijst van alle keybinds en bijbehorende vaardighe
     * *Met hamer (grond, 1,0 s)*: Hammer Leap / Throw and Follow (hamer weggooien en erachteraan vliegen).
     * *In vlucht (0,5 s)*: Grab-Dash Dive (op doelwit afduiken, vastgrijpen en samen neerstorten).
   * **Green Lantern**: 
-    * *Lege handen (grond, 2,0 s)*: Light Dome (koepelschild rondom dat 40% schade stopt).
-    * *In vlucht (2,0 s)*: Brake Chute (remparachute die vliegsnelheid halveert).
+    * *Lege handen (2,0 s)*: Light Beam (doorlopende laserstraal die door rijen vijanden snijdt in 5 groeifasen).
     * *Met construct*: Volledig blokkeren met schild of *Fire Vortex* draaikolk.
     * *In Mech*: Eye Beam (lichtstraal uit de ogen zolang je vasthoudt).
   * **Doc Ock**: Items of blok-interacties continu vasthouden op afstand.
@@ -85,7 +83,7 @@ Dit document bevat de complete lijst van alle keybinds en bijbehorende vaardighe
 
 * **R (Ability 1)**
   * **Thor**: Storm (roept een onweersstorm op die automatisch bliksem afvuurt; opnieuw indrukken schiet een gerichte schicht af).
-  * **Green Lantern**: Emerald Express (grote groene sneltrein die tot 6 vijanden ramt en ontploft). *In Mech*: Missile arm (arm richt waar je kijkt; elke linksklik vuurt één raket, max 5).
+  * **Green Lantern**: Emerald Express (grote groene sneltrein die tot 6 vijanden ramt en ontploft). *In vlucht*: Ram Cone (draaiende kegel om vijanden vliegend te rammen; nog eens drukken haalt hem weg). *In Mech*: Missile arm (arm richt waar je kijkt; elke linksklik vuurt één raket, max 5).
   * **Doc Ock**: Grab & Throw (grijpt tot 4 vijanden vast; sla ze tegen muren of gooi ze weg).
 
 * **V (Ability 2)**
@@ -95,22 +93,22 @@ Dit document bevat de complete lijst van alle keybinds en bijbehorende vaardighe
 
 * **Z (Ability 3)**
   * **Thor**: Storm Throw (op de grond: hamer opgooien richting waar je mikt, erachteraan dashen en voor de vijand neersmijten, zonder vijand in je vizier de dichtstbijzijnde daar; in vlucht alleen de worp; bliksem loopt uit in een brede V).
-  * **Green Lantern**: Recharge (haalt de groene lantaarn tevoorschijn en laadt +50 energie bij).
+  * **Green Lantern**: Recharge (de lantaarn verschijnt in je linkerhand, je drukt je ring tegen het embleem en de ring laadt geleidelijk +50 energie bij).
   * **Doc Ock**: Tentacle Dash (snelle lancering in je loop- of kijkrichting).
 
 * **B (Ability 4)**
   * **Thor**: Open slot (concept).
-  * **Green Lantern**: Gekoppeld aan Light Bolt & Beam (Left click / Left hold).
+  * **Green Lantern**: Gekoppeld aan Light Bolt & Beam (Right click / Right hold).
   * **Doc Ock**: Block (inhoud: 4 tentakels vormen een schild dat 85% schade en projectielen tegenhoudt).
 
 * **H (Ability 5)**
   * **Thor**: Open slot (concept).
-  * **Green Lantern**: Gekoppeld aan Light Shield & Dome (Right click / Right hold).
+  * **Green Lantern**: Gekoppeld aan Construct Fists (Left click / Left hold).
   * **Doc Ock**: Ground Slam (slaat op de grond rondom; ramt vastgehouden vijanden de aarde in).
 
 * **N (Ability 6)**
   * **Thor**: Open slot (concept).
-  * **Green Lantern**: Ring Scan (scant tot 56 blokken door muren en toont vijanden met naam en levensbalk).
+  * **Green Lantern**: Ring Scan (scant tot 56 blokken door muren en toont vijanden met naam en levensbalk). *2 sec inhouden*: Light Dome (koepel rondom die 40% schade stopt; in vlucht een remparachute die je snelheid halveert).
   * **Doc Ock**: Portal (tentakel reist via 3 portalen, grijpt een doelwit op afstand en gooit het van 26 blokken hoog omlaag).
 
 * **Y (Ability 7 - Ultimate)**

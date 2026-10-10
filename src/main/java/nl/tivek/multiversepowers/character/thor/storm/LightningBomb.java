@@ -29,16 +29,16 @@ import nl.tivek.multiversepowers.spell.SpellTargets;
 // server strikes, hurts and spares him the fall.
 public final class LightningBomb {
     // He rises this long, charges this long, then bursts.
-    public static final int RISE = 40;
-    public static final int CHARGE = 16;
+    public static final int RISE = 30;
+    public static final int CHARGE = 12;
     public static final int BURST = RISE + CHARGE;
     // While he charges, bolts out of the sky strike him this often.
-    private static final int STRUCK_EVERY = 5;
+    private static final int STRUCK_EVERY = 4;
     // How high he rises.
     public static final double HEIGHT = 7.0;
     // After the burst he sinks back down: this long at most, no fall hurting him.
-    public static final int SINK = 100;
-    private static final int SPARK_EVERY = 5;
+    public static final int SINK = 74;
+    private static final int SPARK_EVERY = 4;
     // The burst reaches this far below him, so it still takes in the ground he rose from.
     private static final double BELOW = HEIGHT + 3.0;
     private static final Map<UUID, LightningBomb> ALL = new HashMap<>();

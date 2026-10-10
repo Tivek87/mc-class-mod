@@ -2,6 +2,7 @@ package nl.tivek.multiversepowers.character.greenlantern.client;
 
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
+import nl.tivek.multiversepowers.character.greenlantern.client.body.heavy.ClientHeavy;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.sounds.SoundEvents;
 import net.neoforged.neoforge.network.PacketDistributor;
@@ -38,6 +39,7 @@ public final class ConstructChoice {
             case SWORD_SHIELD -> SwordArms.present();
             case FLAMETHROWER -> FlameArms.present();
             case ENERGY_WHIP -> WhipArms.present();
+            case BATTLEAXE, CHAINSAW -> ClientHeavy.present(construct);
             default -> true;
         };
     }
@@ -47,6 +49,10 @@ public final class ConstructChoice {
             return false;
         }
         Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.player != null && construct.shut(ClientRing.flight(minecraft.player, 0.0F) >= 0.0F)) {
+            minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.VILLAGER_NO, 1.0F, 0.5F));
+            return false;
+        }
         CharacterAbility wheel = GameCharacter.GREEN_LANTERN.byName("construct_wheel");
         if (construct.made() && construct != Construct.NONE && minecraft.player != null && wheel != null
                 && ClientRing.power(minecraft.player) + 1.0E-4F < wheel.value("formPowerCost")) {
@@ -63,6 +69,7 @@ public final class ConstructChoice {
         SwordArms.picked(construct);
         FlameArms.picked(construct);
         WhipArms.picked(construct);
+        ClientHeavy.picked(construct);
         if (construct == Construct.NONE) {
             minecraft.getSoundManager().play(
                     SimpleSoundInstance.forUI(SoundEvents.AMETHYST_BLOCK_BREAK, 1.4F, 0.5F));

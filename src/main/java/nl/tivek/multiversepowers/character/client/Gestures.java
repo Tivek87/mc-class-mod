@@ -27,6 +27,7 @@ import nl.tivek.multiversepowers.character.greenlantern.client.body.sword.SwordA
 import nl.tivek.multiversepowers.character.greenlantern.client.body.whip.WhipArms;
 import nl.tivek.multiversepowers.engine.client.ragdoll.Downed;
 import nl.tivek.multiversepowers.stamina.client.StaminaClient;
+import nl.tivek.multiversepowers.engine.client.escape.EscapeGames;
 import nl.tivek.multiversepowers.testfight.client.FightClient;
 
 // The mouse and space gestures: per button the ability its click fires and the one its hold fires, which may be two
@@ -40,6 +41,7 @@ final class Gestures {
             CharacterAbility.Input.SHIFT };
     private static final Map<GameCharacter, Predicate<LocalPlayer>> FLYING = new EnumMap<>(GameCharacter.class);
     private static final Map<GameCharacter, ToIntFunction<LocalPlayer>> STATES = new EnumMap<>(GameCharacter.class);
+    private static final Map<GameCharacter, Predicate<LocalPlayer>> MOUSE_FREE = new EnumMap<>(GameCharacter.class);
     private static final Map<CharacterAbility, Predicate<LocalPlayer>> GATES = new HashMap<>();
     private static final Map<CharacterAbility, ToIntFunction<LocalPlayer>> HOLD_TIMES = new HashMap<>();
 
@@ -162,7 +164,7 @@ final class Gestures {
 
     // No screen open, not knocked down (Downed) and not in a test fight: only then do buttons and gestures fire.
     private static boolean inGame(Minecraft minecraft) {
-        return minecraft.screen == null && !Downed.now() && !FightClient.busy();
+        return minecraft.screen == null && !Downed.now() && !FightClient.busy() && !EscapeGames.active();
     }
 
     static void reset() {
@@ -356,7 +358,16 @@ final class Gestures {
     }
 
     static boolean takesMouse(LocalPlayer player) {
-        return player.getMainHandItem().isEmpty() && player.getOffhandItem().isEmpty();
+        if (player.getMainHandItem().isEmpty() && player.getOffhandItem().isEmpty()) {
+            return true;
+        }
+        GameCharacter now = ClientCharacter.active();
+        Predicate<LocalPlayer> free = now == null ? null : MOUSE_FREE.get(now);
+        return free != null && free.test(player);
+    }
+
+    static void mouseFree(GameCharacter character, Predicate<LocalPlayer> free) {
+        MOUSE_FREE.put(character, free);
     }
 
     private static boolean handBusy(LocalPlayer player, GameCharacter now, CharacterAbility.Input button) {

@@ -27,6 +27,10 @@ abstract class MechAttackMoves {
     private int fired;
     private int firedAt;
     private int powered;
+    // The eyes fired along with the missile arm: since when (-1 not), whether held as a beam, whether still held.
+    private int eyesAt = -1;
+    private boolean eyesBeam;
+    private boolean eyesHeld;
 
     MechAttackMoves(int kind) {
         this.kind = kind;
@@ -37,11 +41,55 @@ abstract class MechAttackMoves {
     }
 
     MechAttacks.Blow blow() {
-        return new MechAttacks.Blow(this.kind, this.t, this.shownFrom(), this.turn);
+        return new MechAttacks.Blow(this.kind, this.t, this.shownFrom(), this.turn, this.eyes());
     }
 
     int packed() {
-        return MechAttacks.pack(this.kind, this.t, this.shownFrom(), this.turn);
+        return MechAttacks.pack(this.kind, this.t, this.shownFrom(), this.turn, this.eyes());
+    }
+
+    private int eyes() {
+        return this.eyesAt < 0 ? 0 : MechAttacks.eyes(this.eyesBeam, this.t - this.eyesAt);
+    }
+
+    // Whether its eyes can fire along with this move now: the missile arm up, no ray or beam already going.
+    boolean eyesFree() {
+        return this.kind == MechAttacks.AIM && this.eyesAt < 0 && this.t < MechAttacks.AIM_MOST;
+    }
+
+    void eyesOn(boolean beam) {
+        this.eyesAt = this.t;
+        this.eyesBeam = beam;
+        this.eyesHeld = beam;
+    }
+
+    // The eyes along with this move, a tick on: the ray strikes at its moment, the beam burns while held and paid.
+    void eyesTick(ServerLevel level, ServerPlayer owner, MechScript.Stage torso, CharacterAbility ability) {
+        if (this.eyesAt < 0) {
+            return;
+        }
+        int age = this.t - this.eyesAt;
+        if (!this.eyesBeam) {
+            if (age == MechAttacks.EYE_FIRE) {
+                MechBeams.eye(level, owner, torso, ability);
+            } else if (age >= MechAttacks.length(MechAttacks.EYE)) {
+                this.eyesAt = -1;
+            }
+            return;
+        }
+        if (age >= MechAttacks.length(MechAttacks.GLARE)) {
+            this.eyesAt = -1;
+            return;
+        }
+        if (age < MechAttacks.GLARE_FIRE || age >= MechAttacks.GLARE_MOST) {
+            return;
+        }
+        if (!this.eyesHeld || !PowerRing.upkeep(owner, age - MechAttacks.GLARE_FIRE,
+                ability.value("mechGlarePowerPerSecond"))) {
+            this.eyesAt = this.t - MechAttacks.GLARE_MOST;
+            return;
+        }
+        MechBeams.glare(level, owner, torso, ability, age - MechAttacks.GLARE_FIRE);
     }
 
     private int shownFrom() {
@@ -125,6 +173,7 @@ abstract class MechAttackMoves {
     // The right button let go: a held beam dies away.
     void letGo() {
         this.held = false;
+        this.eyesHeld = false;
     }
 
     // A left click with the missile arm up: one missile out of the next full tube, once the hand is open and the last

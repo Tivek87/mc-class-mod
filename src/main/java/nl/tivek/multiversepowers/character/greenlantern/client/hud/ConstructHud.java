@@ -32,6 +32,7 @@ import nl.tivek.multiversepowers.character.greenlantern.client.ClientRing;
 import nl.tivek.multiversepowers.character.greenlantern.client.ConstructChoice;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.flame.FlameArms;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.pose.RechargeAnimation;
+import nl.tivek.multiversepowers.character.greenlantern.client.body.heavy.ClientHeavy;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.sword.SwordArms;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.whip.WhipArms;
 import nl.tivek.multiversepowers.character.greenlantern.mech.MechAttacks;
@@ -50,7 +51,7 @@ public final class ConstructHud {
     private static final int PAID = 0xF2D98A;
     private static final int FLASH = 0xE8FFEE;
     private static final int BAR = 6;
-    // Ring counts as not draining below this power/s; the shield alone costs 0.08
+    // Ring counts as not draining below this power/s; the ram cone alone costs 0.08
     private static final float MIN_DRAIN = 0.05F;
     private static final float DRAIN_RATE = 3.0F;
     private static final int BAR_LEAST = 40;
@@ -108,7 +109,7 @@ public final class ConstructHud {
         long now = Util.getMillis();
         List<Runnable> labels = new ArrayList<>();
         boolean flame = FlameArms.holding();
-        boolean beam = !flame && !SwordArms.holding() && !WhipArms.holding();
+        boolean beam = !flame && !SwordArms.holding() && !WhipArms.holding() && ClientHeavy.holding() < 0;
         // The gauge first: its band and its words keep their place, and the rings and words after it keep off them.
         boolean drawn = flame && HeatGauge.render(graphics, middleX, middleY, partialTick, labels);
         CharacterAbility bolt = GameCharacter.GREEN_LANTERN.byName("light_bolt");
@@ -263,18 +264,18 @@ public final class ConstructHud {
             return Component.translatable(prefix + (ability.input() == CharacterAbility.Input.LEFT ? "whirlwind"
                     : "spinning_shield"));
         }
-        if (FlameArms.holding()) {
-            return Component.translatable("screen." + MultiversePowers.MODID + ".move.flamethrower."
+        String weapon = LanternPanel.weapon();
+        if (FlameArms.holding() || "battleaxe".equals(weapon) || "chainsaw".equals(weapon)) {
+            return Component.translatable("screen." + MultiversePowers.MODID + ".move." + weapon + "."
                     + (ability.input() == CharacterAbility.Input.LEFT ? "attack_hold" : "defend_hold"));
         }
         if (ability.input() == CharacterAbility.Input.LEFT) {
-            return Component.translatable(prefix + "beam");
+            return Component.translatable(prefix + "heavy");
         }
         if (player instanceof LocalPlayer local && LanternPanel.piloting(local)) {
             return Component.translatable("screen." + MultiversePowers.MODID + ".panel.green_lantern.mech.glare");
         }
-        boolean flying = player != null && ClientRing.flight(player, 0.0F) >= 0.0F;
-        return Component.translatable(prefix + (flying ? "brake" : "dome"));
+        return Component.translatable(prefix + "beam");
     }
 
     @Nullable

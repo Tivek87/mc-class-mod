@@ -167,6 +167,12 @@ final class MechExhaust {
             case MechAttacks.FLY -> window(age, MechAttacks.FLY_LAUNCH, MechAttacks.FLY_FALL - 6) * 0.7;
             case MechAttacks.DIVE -> window(age, 0, MechAttacks.DIVE_LAND + 2);
             case MechAttacks.SPIN -> window(age, MechAttacks.SPIN_FROM, MechAttacks.SPIN_TO);
+            case MechAttacks.JAB -> window(age, 3, MechAttacks.JAB_HIT + 2);
+            case MechAttacks.HOOK -> window(age, 7, MechAttacks.HOOK_TO + 2);
+            case MechAttacks.UPPERCUT -> window(age, MechAttacks.UPPERCUT_FROM, MechAttacks.UPPERCUT_HIT + 2);
+            case MechAttacks.KNEE -> window(age, 6, MechAttacks.KNEE_HIT + 2);
+            case MechAttacks.CLAP -> window(age, 7, MechAttacks.CLAP_HIT + 2);
+            case MechAttacks.POUND -> window(age, 5, MechAttacks.POUNDS[3] + 2);
             default -> 0.0;
         };
         return Mth.clamp(Math.max(idle, Math.max(run, strike)), 0.0, 1.0);

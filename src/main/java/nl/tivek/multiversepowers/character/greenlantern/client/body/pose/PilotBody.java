@@ -53,6 +53,10 @@ final class PilotBody {
     private static final float AIM_REACH = 9.6F;
     private static final float BRACE_BACK = 2.8F;
     private static final float BRACE_BELOW = 1.3F;
+    // Aimed above the shoulders the ring arm stays out on its own side of the head, and the other hand lets go of its
+    // wrist rather than reach up across the face.
+    private static final float OUTSIDE = -0.45F;
+    private static float brace;
     // The eyes above the neck, and how far an aim leads the head.
     private static final float EYES = 4.0F;
     private static final float AIM_LOOK = 0.9F;
@@ -68,6 +72,7 @@ final class PilotBody {
     private static final Quaternionf CHEST = new Quaternionf();
     private static final Quaternionf PALM = new Quaternionf();
     private static final Quaternionf AIMED = new Quaternionf();
+    private static final Quaternionf BRACED = new Quaternionf();
     private static final Quaternionf SOLE = new Quaternionf();
     private static final Vector3f NECK = new Vector3f();
     private static final Vector3f FOOT = new Vector3f();
@@ -152,7 +157,8 @@ final class PilotBody {
                     // Cupping the ring arm's wrist from below.
                     FOOT.set(WAY).mul(-BRACE_BACK).add(AIM_HAND).add(AIM_DOWN.x * BRACE_BELOW,
                             AIM_DOWN.y * BRACE_BELOW, AIM_DOWN.z * BRACE_BELOW);
-                    HAND.lerp(FOOT, (float) aiming);
+                    HAND.lerp(FOOT, (float) aiming * brace);
+                    PALM.slerp(BRACED, (float) aiming * brace);
                 }
             }
             double held = right ? holdRight * (1.0 - raised) : holdLeft;
@@ -194,6 +200,13 @@ final class PilotBody {
             return false;
         }
         WAY.normalize();
+        float up = (float) Ease.smooth((-WAY.y - 0.2) / 0.5);
+        float most = Mth.lerp(up, 1.0F, OUTSIDE);
+        if (WAY.x > most) {
+            WAY.x = most;
+            WAY.normalize();
+        }
+        brace = 1.0F - (float) Ease.smooth((-WAY.y - 0.1) / 0.4);
         AIM_HAND.set(WAY).mul(AIM_REACH).add(model.rightArm.x, model.rightArm.y, model.rightArm.z);
         AIM_DOWN.set(0.0F, 1.0F, 0.0F).sub(WAY.x * WAY.y, WAY.y * WAY.y, WAY.z * WAY.y);
         if (AIM_DOWN.lengthSquared() < 1.0E-4F) {
@@ -201,6 +214,8 @@ final class PilotBody {
         }
         AIM_DOWN.normalize();
         turn(WAY, AIM_DOWN, true, AIMED);
+        // The bracing palm turned up under the ring wrist.
+        turn(WAY, FACING.set(AIM_DOWN).negate(), false, BRACED);
         return true;
     }
 

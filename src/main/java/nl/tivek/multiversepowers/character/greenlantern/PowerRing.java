@@ -21,14 +21,16 @@ import nl.tivek.multiversepowers.character.Characters;
 import nl.tivek.multiversepowers.character.GameCharacter;
 import nl.tivek.multiversepowers.character.greenlantern.ability.airstrike.AirStrike;
 import nl.tivek.multiversepowers.character.greenlantern.ability.express.EmeraldExpress;
+import nl.tivek.multiversepowers.character.greenlantern.ability.fist.LightFists;
 import nl.tivek.multiversepowers.character.greenlantern.ability.flame.Flamethrower;
+import nl.tivek.multiversepowers.character.greenlantern.ability.heavy.HeavyWeapon;
 import nl.tivek.multiversepowers.character.greenlantern.ability.flight.Flight;
 import nl.tivek.multiversepowers.character.greenlantern.ability.hands.GiantHands;
 import nl.tivek.multiversepowers.character.greenlantern.ability.light.LightBeam;
 import nl.tivek.multiversepowers.character.greenlantern.ability.light.LightBolt;
 import nl.tivek.multiversepowers.character.greenlantern.ability.light.LightBubble;
 import nl.tivek.multiversepowers.character.greenlantern.ability.light.LightDome;
-import nl.tivek.multiversepowers.character.greenlantern.ability.light.LightShield;
+import nl.tivek.multiversepowers.character.greenlantern.ability.flight.RamCone;
 import nl.tivek.multiversepowers.character.greenlantern.ability.mech.MechAssembly;
 import nl.tivek.multiversepowers.character.greenlantern.ability.revolver.RevolverAssembly;
 import nl.tivek.multiversepowers.character.greenlantern.ability.ring.Fear;
@@ -45,9 +47,10 @@ import nl.tivek.multiversepowers.faction.Factions;
 
 public final class PowerRing {
     public static final float MAX_POWER = 100.0F;
-    public static final int RECHARGE_TICKS = 36;
-    public static final int RECHARGE_HIT = 13;
-    public static final int RECHARGE_BACK = 26;
+    // The recharge: the ring touches the lantern at HIT and fills from then until BACK, gone at TICKS.
+    public static final int RECHARGE_TICKS = 60;
+    public static final int RECHARGE_HIT = 18;
+    public static final int RECHARGE_BACK = 46;
 
     public static final int GREEN = 0x3CE86A;
     public static final int BRIGHT = 0xB8FFC8;
@@ -88,18 +91,22 @@ public final class PowerRing {
             return false;
         }
         return switch (ability.id()) {
-            case "emerald_express" -> on && EmeraldExpress.use(player, level, ability);
+            case "emerald_express" -> on && (Flight.flying(player) ? RamCone.toggle(player, level, ability)
+                    : EmeraldExpress.use(player, level, ability));
             case "recharge" -> Recharge.recharge(player, level, ability);
-            case "light_bolt" -> SwordShield.equipped(player) ? SwordShield.attack(player, level, on, data)
+            case "light_fists" -> SwordShield.equipped(player) ? SwordShield.attack(player, level, on, data)
                     : Flamethrower.equipped(player) ? Flamethrower.attack(player, level, on, data)
                     : EnergyWhip.equipped(player) ? EnergyWhip.attack(player, level, on, data)
-                    : LightBolt.use(player, level, ability, on, data);
-            case "light_shield" -> SwordShield.equipped(player) ? SwordShield.defend(player, level, on, data)
+                    : HeavyWeapon.equipped(player) ? HeavyWeapon.attack(player, level, on, data)
+                    : LightFists.use(player, level, ability, on, data);
+            case "light_bolt" -> SwordShield.equipped(player) ? SwordShield.defend(player, level, on, data)
                     : Flamethrower.equipped(player) ? Flamethrower.defend(player, level, on, data)
                     : EnergyWhip.equipped(player) ? EnergyWhip.defend(player, level, on, data)
-                    : LightShield.use(player, level, ability, on, data);
+                    : HeavyWeapon.equipped(player) ? HeavyWeapon.defend(player, level, on, data)
+                    : LightBolt.use(player, level, ability, on, data);
             case "shockwave" -> Shockwave.use(player, level, ability);
-            case "ring_scan" -> RingScan.use(player, level, ability);
+            case "ring_scan" -> !on ? false : (data & Characters.HOLD) != 0 ? LightDome.raise(player, level, ability)
+                    : LightDome.lower(player) ? false : RingScan.use(player, level, ability);
             case "giant_hands" -> (data & Characters.HOLD) != 0 ? RevolverAssembly.use(player, level, ability)
                     : GiantHands.use(player, level, ability);
             case "air_strike" -> AirStrike.use(player, level, ability);
@@ -119,8 +126,9 @@ public final class PowerRing {
         MechAssembly.clear();
         Recharge.clear();
         LightBolt.clear();
+        LightFists.clear();
         LightBeam.clear();
-        LightShield.clear();
+        RamCone.clear();
         LightDome.clear();
         Flight.clear();
         Shockwave.clear();
@@ -134,11 +142,13 @@ public final class PowerRing {
         SwordShield.clear();
         Flamethrower.clear();
         EnergyWhip.clear();
+        HeavyWeapon.clear();
     }
 
     // A construct weapon from the wheel in hand.
     public static boolean armed(ServerPlayer player) {
-        return SwordShield.equipped(player) || Flamethrower.equipped(player) || EnergyWhip.equipped(player);
+        return SwordShield.equipped(player) || Flamethrower.equipped(player) || EnergyWhip.equipped(player)
+                || HeavyWeapon.equipped(player);
     }
 
     public static boolean fuels(ServerPlayer player, ServerLevel level) {
@@ -235,7 +245,7 @@ public final class PowerRing {
     }
 
     private static RingPayload state(ServerPlayer player) {
-        int state = (LightShield.up(player) ? RingPayload.SHIELD : 0) | (LightDome.up(player) ? RingPayload.DOME : 0)
+        int state = (RamCone.up(player) ? RingPayload.SHIELD : 0) | (LightDome.up(player) ? RingPayload.DOME : 0)
                 | (LightBeam.firing(player) ? RingPayload.BEAM : 0)
                 | (Flight.descending(player) ? RingPayload.DESCENT : 0)
                 | (Flight.diving(player) || Shockwave.dropping(player) ? RingPayload.DIVE : 0);

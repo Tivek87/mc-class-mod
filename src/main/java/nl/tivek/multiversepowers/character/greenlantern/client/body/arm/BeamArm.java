@@ -10,6 +10,7 @@ import nl.tivek.multiversepowers.character.greenlantern.RingPayload;
 import nl.tivek.multiversepowers.character.greenlantern.client.ClientConstructs;
 import nl.tivek.multiversepowers.character.greenlantern.client.ClientRing;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.flame.FlameArms;
+import nl.tivek.multiversepowers.character.greenlantern.client.body.heavy.ClientHeavy;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.sword.SwordArms;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.whip.WhipArms;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.BeamCharge;
@@ -30,7 +31,7 @@ public final class BeamArm {
         float charge = BeamCharge.charge(entity, partialTick);
         if (charge < 0.0F && entity == Minecraft.getInstance().player && !ClientRing.has(entity, RingPayload.BEAM)
                 && ClientRing.power(entity) > 0.0F && ClientCharacter.active() == GameCharacter.GREEN_LANTERN
-                && !SwordArms.holding() && !FlameArms.holding() && !WhipArms.holding()
+                && !SwordArms.holding() && !FlameArms.holding() && !WhipArms.holding() && ClientHeavy.holding() < 0
                 && MouseHold.progress(GameCharacter.GREEN_LANTERN.byName("light_bolt"), partialTick) >= 1.0F) {
             return 1.0F;
         }

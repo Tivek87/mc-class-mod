@@ -12,7 +12,7 @@ import nl.tivek.multiversepowers.engine.math.Ease;
 // down, on the server's times (LightningBomb). Never told the server took it, he lets go of it.
 public final class ThorRise {
     private static final int UNTOLD = 12;
-    private static final double SINK = -0.3;
+    private static final double SINK = -0.405;
     private static int age = -1;
     private static boolean taken;
     private static double fromY;
@@ -60,7 +60,7 @@ public final class ThorRise {
         } else if (t < LightningBomb.BURST) {
             player.setDeltaMovement(v.x * 0.5, 0.0, v.z * 0.5);
         } else {
-            sink = Mth.lerp(0.15, sink, SINK);
+            sink = Mth.lerp(0.2, sink, SINK);
             player.setDeltaMovement(v.x * 0.9, sink, v.z * 0.9);
             if (t > LightningBomb.BURST + 3 && player.onGround() || t > LightningBomb.BURST + LightningBomb.SINK) {
                 age = -1;

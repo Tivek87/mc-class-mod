@@ -13,6 +13,7 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.util.Mth;
 import nl.tivek.multiversepowers.MultiversePowers;
+import nl.tivek.multiversepowers.character.greenlantern.client.ClientRing;
 import nl.tivek.multiversepowers.character.client.AbilityKeys;
 import nl.tivek.multiversepowers.character.greenlantern.client.ConstructChoice;
 import nl.tivek.multiversepowers.character.greenlantern.construct.Construct;
@@ -86,10 +87,15 @@ public class ConstructWheelScreen extends Screen {
         return true;
     }
 
+    private boolean flying() {
+        return this.minecraft != null && this.minecraft.player != null
+                && ClientRing.flight(this.minecraft.player, 0.0F) >= 0.0F;
+    }
+
     private void pick() {
         this.picked = true;
         Construct chosen = this.pointed < 0 ? Construct.NONE : this.wheel.get(this.pointed);
-        if (chosen.locked()) {
+        if (chosen.shut(this.flying())) {
             if (this.minecraft != null) {
                 this.minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.VILLAGER_NO, 1.0F, 0.5F));
             }
@@ -259,8 +265,8 @@ public class ConstructWheelScreen extends Screen {
             float iconY = middleY - Mth.cos(angle) * radius;
             float iconSize = (edge - inner) * 0.74F * (0.86F + 0.14F * this.open);
             ConstructIcons.draw(graphics, construct, iconX, iconY, iconSize, glow);
-            if (construct.locked()) {
-                // Shut for now: greyed over, with a red ring round it.
+            if (construct.shut(this.flying())) {
+                // Shut for now, or a weapon for close fighting in flight: greyed over, with a red ring round it.
                 GuiShapes.disc(graphics, iconX, iconY, iconSize * 0.62F, GuiShapes.fade(0x101410, 0.62F * this.open));
                 GuiShapes.ring(graphics, iconX, iconY, iconSize * 0.55F, Math.max(1.2F, iconSize * 0.07F),
                         GuiShapes.fade(LOCKED, 0.9F * this.open));
@@ -295,7 +301,9 @@ public class ConstructWheelScreen extends Screen {
         Construct construct = this.pointed < 0 ? Construct.NONE : this.wheel.get(this.pointed);
         float room = hub * 2.0F * HUB_TEXT;
         Lines name = this.fitName(construct.getDisplayName(), room);
-        Component description = construct.getDescription();
+        Component description = !construct.locked() && construct.shut(this.flying())
+                ? Component.translatable("construct." + MultiversePowers.MODID + ".grounded")
+                : construct.getDescription();
         Lines about = description == null ? new Lines(List.of(), 1.0F)
                 : this.fit(description.copy().withStyle(ChatFormatting.ITALIC), room, 0.8F, 3);
         float total = name.height(this.font) + (about.lines().isEmpty() ? 0.0F : 3.0F + about.height(this.font));

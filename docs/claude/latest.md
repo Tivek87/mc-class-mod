@@ -1,15 +1,15 @@
 # Laatste sessie
 
-## 0.7.9-alpha (2026-10-10, release)
-- 0.7.9 klaar: Storm Throw lager + mikt op dichtstbijzijnde vijand, mech (raketten, vlammenwerper V, sprong,
-  3 helpers Left Alt, GL-krachten uit), pak over armor, Thor (dash naar vliegende hamer, reach 128, arm na dood,
-  hamer-bliksem keten 3, chain 4 blokken), Giant Hands max 5, Maw en Cosmic rift, zachte gloed.
-- CHANGELOG, tour (9 stappen, in game gelopen), gids en docs bijgewerkt; volledige diff gereviewd.
-- In game getest: alles hierboven behalve GL-krachten geweigerd in de mech (alleen code gelezen).
-- Zachte gloed (2026-10-10): A/B-test liet grondringen bijna verdwijnen. Fix: shader vervaagt nu alleen richting de
-  snijlijn met een blok, over een deel van de breedte van de gloed (max 1 blok); ringen (`circle`) eigen laag
-  `ringGlow`, scherp zoals vroeger. In game getest: ringen gelijk aan/uit, straal en grote gloed zacht in de grond.
-- Testklassen, testwerelden en shots verwijderd; `run/options.txt` goed. `./gradlew build` groen.
-- Ja van gebruiker (2026-10-10): commit 'Maw, cosmic rift, mech helpers and hammer lightning', push naar
-  origin/master, `scripts/release.ps1 publish` v0.7.9-alpha (Latest); CHANGELOG-kop op 2026-10-10.
-- Open: idee #24 (NPC's) wacht op ja/nee.
+## 0.8.0-alpha (2026-10-10 18:00, commit, niet gepusht)
+- Gevraagd: GL-rework (vuisten links, bolt rechts, schild weg, koepel op scan, ramkegel op Express), strijdbijl,
+  kettingzaag, mech-combo, escape-spel, wilde helpers, Thor C-dalen; gauntlet-knip met dunne ring + 2 zwakkere ringen;
+  lantaarn 1-op-1 als referentie; recharge: ring tegen embleem, geleidelijk laden. Daarna tour + alles committen.
+- Gedaan: alles hierboven; CHANGELOG 0.8.0 + tour (12 stappen); docs (GREEN_LANTERN, POWERS, KEYBINDS) en gids-teksten.
+- Review-fixes: ramkegel in vlucht niet meer geweigerd na Express; koepel zakken kan tijdens scan-cooldown
+  (`CharacterPowers.endsOnly`); handschoenen breken af als een wapen vormt (`LightFists.putAway`); oude client-views
+  opgeruimd; ramkegel −70% schade in CHANGELOG.
+- In game getest: gauntlet + ringen, vuisten, helpers, escape, recharge (1e/3e persoon), koepel/wapen-fixes.
+  Niet getest: lantaarn van dichtbij in de arrival; tour niet in game gelopen.
+- `./gradlew build` groen. Testklassen, testwereld en shots verwijderd.
+- Open: dode SHIELD-constructcode (ClientConstructs/TrackedConstructs/LanternArms) opruimen; server checkt
+  EscapePayload niet (cheat mogelijk); push + release pas na ja; idee #24 (NPC's) wacht op ja/nee.

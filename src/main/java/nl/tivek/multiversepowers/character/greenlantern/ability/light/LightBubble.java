@@ -42,6 +42,7 @@ import nl.tivek.multiversepowers.character.greenlantern.ability.ring.Recharge;
 import nl.tivek.multiversepowers.character.greenlantern.construct.ConstructPayload;
 import nl.tivek.multiversepowers.engine.effect.Effect;
 import nl.tivek.multiversepowers.engine.effect.Effects;
+import nl.tivek.multiversepowers.engine.entity.Captives;
 import nl.tivek.multiversepowers.engine.entity.HeldMobs;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 import nl.tivek.multiversepowers.engine.math.Ease;
@@ -75,6 +76,8 @@ public final class LightBubble implements Effect {
     private static final double DRAG_ROOM = 0.15;
     private static final double VIEW_RANGE = 128.0;
 
+    // The escape game a player caught in a cage plays (Captives).
+    public static final int ESCAPE = 1;
     private static final Map<UUID, LightBubble> ACTIVE = new HashMap<>();
     private static final Map<Integer, LightBubble> TRAPPED = new HashMap<>();
 
@@ -153,6 +156,8 @@ public final class LightBubble implements Effect {
         LightBubble bubble = new LightBubble(owner, ability, target);
         if (target instanceof Mob mob) {
             HeldMobs.hold(mob);
+        } else if (target instanceof ServerPlayer caught) {
+            Captives.hold(caught, ESCAPE, LightBubble::broken);
         }
         ACTIVE.put(owner.getUUID(), bubble);
         TRAPPED.put(target.getId(), bubble);
@@ -197,6 +202,14 @@ public final class LightBubble implements Effect {
             return best;
         }
         return (LivingEntity) hit.getEntity();
+    }
+
+    // A caught player won the escape game: the cage bursts.
+    private static void broken(ServerPlayer captive) {
+        LightBubble bubble = TRAPPED.get(captive.getId());
+        if (bubble != null) {
+            bubble.burst(captive.serverLevel());
+        }
     }
 
     public static boolean trapped(Entity entity) {
@@ -466,6 +479,8 @@ public final class LightBubble implements Effect {
         TRAPPED.remove(this.target.getId(), this);
         if (this.target instanceof Mob mob) {
             HeldMobs.release(mob);
+        } else if (this.target instanceof ServerPlayer caught) {
+            Captives.release(caught);
         }
         this.target.resetFallDistance();
     }

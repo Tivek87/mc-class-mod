@@ -18,7 +18,6 @@ import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.character.CharacterAbility;
 import nl.tivek.multiversepowers.character.GameCharacter;
 import nl.tivek.multiversepowers.character.greenlantern.PowerRing;
-import nl.tivek.multiversepowers.character.greenlantern.ability.light.LightShield;
 import nl.tivek.multiversepowers.character.greenlantern.ability.ring.Recharge;
 import nl.tivek.multiversepowers.character.greenlantern.ability.slam.LandingSlam;
 import nl.tivek.multiversepowers.engine.effect.Effect;
@@ -241,12 +240,12 @@ public final class Flight implements Effect {
     }
 
     private void scrape(ServerLevel level) {
-        CharacterAbility shield = GameCharacter.GREEN_LANTERN.byName("light_shield");
-        if (shield == null || this.velocity.length() < SCRAPE_PART * this.top() || !LightShield.up(this.owner)
-                || !scraping(this.owner, shield.value("ramGroundBlocks"))) {
+        CharacterAbility cone = GameCharacter.GREEN_LANTERN.byName("emerald_express");
+        if (cone == null || this.velocity.length() < SCRAPE_PART * this.top() || !RamCone.up(this.owner)
+                || !scraping(this.owner, cone.value("ramGroundBlocks"))) {
             return;
         }
-        float cost = (float) (shield.value("ramGroundPowerPerSecond") / 20.0);
+        float cost = (float) (cone.value("ramGroundPowerPerSecond") / 20.0);
         PowerRing.setPower(this.owner, Math.max(0.0F, PowerRing.power(this.owner) - cost));
         if (this.ticks % 2 == 0) {
             Vec3 at = this.owner.position();
@@ -290,8 +289,8 @@ public final class Flight implements Effect {
 
     private void ram(ServerLevel level) {
         double speed = this.velocity.length();
-        CharacterAbility shield = GameCharacter.GREEN_LANTERN.byName("light_shield");
-        if (speed < RAM_PART * this.top() || shield == null || !LightShield.up(this.owner)) {
+        CharacterAbility cone = GameCharacter.GREEN_LANTERN.byName("emerald_express");
+        if (speed < RAM_PART * this.top() || cone == null || !RamCone.up(this.owner)) {
             return;
         }
         Vec3 way = this.velocity.scale(1.0 / speed);
@@ -309,9 +308,9 @@ public final class Flight implements Effect {
             this.rammed.put(target.getId(), now + RAM_AGAIN);
             target.invulnerableTime = 0;
             target.hurt(level.damageSources().playerAttack(this.owner),
-                    (float) (shield.value("ramDamage") + shield.value("ramDamagePerSpeed") * speed));
+                    (float) (cone.value("ramDamage") + cone.value("ramDamagePerSpeed") * speed));
             double resist = Mth.clamp(target.getAttributeValue(Attributes.KNOCKBACK_RESISTANCE), 0.0, 1.0);
-            double push = shield.value("ramKnockback") + RAM_PUSH * speed / this.top();
+            double push = cone.value("ramKnockback") + RAM_PUSH * speed / this.top();
             target.setDeltaMovement(new Vec3(way.x * push, Math.max(0.35, way.y * push + 0.35), way.z * push)
                     .scale(1.0 - resist));
             target.hasImpulse = true;
@@ -322,7 +321,7 @@ public final class Flight implements Effect {
             level.playSound(null, at.x, at.y, at.z, SoundEvents.MACE_SMASH_GROUND, SoundSource.PLAYERS, 1.0F, 1.2F);
             level.playSound(null, at.x, at.y, at.z, SoundEvents.PLAYER_ATTACK_KNOCKBACK, SoundSource.PLAYERS, 1.0F,
                     0.8F);
-            LightShield.flash(this.owner);
+            RamCone.flash(this.owner);
         }
         this.rammed.values().removeIf(time -> time < now);
     }
@@ -332,7 +331,7 @@ public final class Flight implements Effect {
         this.dive = false;
         PowerRing.tell(this.owner, "flight_empty");
         this.sound(level, SoundEvents.BEACON_DEACTIVATE, 1.0F, 1.3F);
-        LightShield.stop(this.owner);
+        RamCone.stop(this.owner);
         PowerRing.sync(this.owner);
     }
 
@@ -344,6 +343,7 @@ public final class Flight implements Effect {
     private void end() {
         FLYING.remove(this.owner.getUUID(), this);
         this.owner.resetFallDistance();
+        RamCone.stop(this.owner);
         PowerRing.sync(this.owner);
     }
 

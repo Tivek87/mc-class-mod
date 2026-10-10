@@ -126,12 +126,9 @@ public final class LanternBody {
         float on = window(t, 0.0F, PowerRing.RECHARGE_TICKS - 6.0F, 5.0F, 6.0F);
         // Braced wide, leaning back to the lantern held up.
         mix.add(on, 1.2F, -0.06F, -0.08F, 0.0F, 1.1F, 0.9F);
-        // The right shoulder drawn back for the punch of the ring into the lantern, then driven in.
-        float wind = RechargeAnimation.wind(t);
-        mix.add(on * wind, 0.8F, 0.0F, 0.0F, 0.32F, 0.0F, 0.0F);
-        float kick = RechargeAnimation.kick(t);
-        mix.add(kick, 2.2F, 0.16F, 0.04F, -0.14F, 0.0F, 0.0F);
-        // The burst of light rocks him back.
+        // The right shoulder turned in as the ring is pressed to the lantern, leaning into it while it charges.
+        mix.add(on * RechargeAnimation.press(t), 0.8F, 0.06F, 0.0F, -0.18F, 0.0F, 0.0F);
+        // The flash of the full charge rocks him back.
         mix.add(RechargeAnimation.burst(t) * on, 0.4F, -0.08F, -0.16F, 0.0F, 0.0F, 0.0F);
     }
 

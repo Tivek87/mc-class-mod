@@ -10,11 +10,14 @@ import nl.tivek.multiversepowers.character.CharacterAbility;
 import nl.tivek.multiversepowers.character.GameCharacter;
 import nl.tivek.multiversepowers.character.client.AbilityPanel;
 import nl.tivek.multiversepowers.character.client.ClientCharacter;
+import nl.tivek.multiversepowers.character.client.Crosshairs;
 import nl.tivek.multiversepowers.character.client.PowerInputs;
 import nl.tivek.multiversepowers.character.greenlantern.RingPayload;
 import nl.tivek.multiversepowers.character.greenlantern.client.ClientConstructs;
 import nl.tivek.multiversepowers.character.greenlantern.client.ClientRing;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.flame.FlameArms;
+import nl.tivek.multiversepowers.character.greenlantern.client.body.heavy.ClientHeavy;
+import nl.tivek.multiversepowers.character.greenlantern.heavy.HeavyMoves;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.sword.SwordArms;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.whip.WhipArms;
 import nl.tivek.multiversepowers.character.greenlantern.mech.MechAttacks;
@@ -29,13 +32,17 @@ final class LanternPanel implements AbilityPanel.Rules {
     private static final Set<String> MECH_KEYS = Set.of("emerald_express", "flight", "shockwave", "construct_wheel",
             "giant_hands");
     private static final int MECH_GLARE_HOLD = 6;
+    private static final int FIST_HOLD = 8;
     // Each weapon's click and hold of the left button, then of the right, and the wheel's setting saying what each
     // costs: one per second is paid every tick.
     private static final Map<String, String[]> COSTS = Map.of(
             "sword", new String[] { "swordPowerCost", "flurryPowerCost", "chargePowerCost", "blockPowerPerSecond" },
             "flamethrower", new String[] { "sweepPowerCost", "infernoPowerPerSecond", "wallPowerCost",
                     "vortexPowerPerSecond" },
-            "whip", new String[] { "whipPowerCost", "whirlPowerPerSecond", "lassoPowerCost", "spinPowerPerSecond" });
+            "whip", new String[] { "whipPowerCost", "whirlPowerPerSecond", "lassoPowerCost", "spinPowerPerSecond" },
+            "battleaxe", new String[] { "axePowerCost", "leapPowerCost", "hookPowerCost", "axeWhirlPowerPerSecond" },
+            "chainsaw", new String[] { "sawPowerCost", "rendPowerPerSecond", "impalePowerCost",
+                    "sawGuardPowerPerSecond" });
 
     private LanternPanel() {
     }
@@ -43,17 +50,32 @@ final class LanternPanel implements AbilityPanel.Rules {
     static void register() {
         AbilityPanel.rules(GameCharacter.GREEN_LANTERN, new LanternPanel());
         ClientCharacter.refusal(GameCharacter.GREEN_LANTERN, LanternPanel::refusal);
-        CharacterAbility shield = GameCharacter.GREEN_LANTERN.byName("light_shield");
-        if (shield != null) {
-            ClientCharacter.holdTime(shield, player -> piloting(player) ? MECH_GLARE_HOLD : 0);
+        // In the mech the pilot's hands are on its levers: whatever they picked up, the buttons stay the mech's.
+        ClientCharacter.mouseFree(GameCharacter.GREEN_LANTERN, LanternPanel::piloting);
+        // In flight the Express key raises the ram cone, which the Express's cooldown never holds back.
+        ClientCharacter.flying(GameCharacter.GREEN_LANTERN, player -> ClientRing.flight(player, 0.0F) >= 0.0F);
+        CharacterAbility scan = GameCharacter.GREEN_LANTERN.byName("ring_scan");
+        if (scan != null) {
+            ClientCharacter.endsOnly(scan, player -> ClientRing.has(player, RingPayload.DOME));
+        }
+        CharacterAbility bolt = GameCharacter.GREEN_LANTERN.byName("light_bolt");
+        if (bolt != null) {
+            ClientCharacter.holdTime(bolt, player -> piloting(player) ? MECH_GLARE_HOLD : 0);
+        }
+        // Bare fists throw a heavy blow soon after the button is held; a weapon or the mech keep the full hold.
+        CharacterAbility fists = GameCharacter.GREEN_LANTERN.byName("light_fists");
+        if (fists != null) {
+            ClientCharacter.holdTime(fists, player -> piloting(player) || weapon() != null ? 0 : FIST_HOLD);
         }
         LanternGuide.register();
+        Crosshairs.add(GameCharacter.GREEN_LANTERN, LanternCrosshair::draw);
     }
 
     @Nullable
     static String weapon() {
+        int heavy = ClientHeavy.holding();
         return SwordArms.holding() ? "sword" : FlameArms.holding() ? "flamethrower" : WhipArms.holding() ? "whip"
-                : null;
+                : heavy == HeavyMoves.AXE ? "battleaxe" : heavy == HeavyMoves.SAW ? "chainsaw" : null;
     }
 
     private static boolean onMouse(CharacterAbility ability) {
@@ -116,8 +138,8 @@ final class LanternPanel implements AbilityPanel.Rules {
             boolean aiming = move.kind() == MechAttacks.AIM;
             boolean airborne = MechAttacks.airborne(move);
             String name = switch (ability.id()) {
-                case "light_bolt" -> aiming ? "fire" : "blow";
-                case "light_shield" -> hold ? "glare" : "eye";
+                case "light_fists" -> aiming ? "fire" : "blow";
+                case "light_bolt" -> hold ? "glare" : "eye";
                 case "emerald_express" -> aiming ? "lower" : "missiles";
                 case "flight" -> airborne && move.kind() == MechAttacks.FLY ? "cut" : "rockets";
                 case "shockwave" -> airborne ? "dive" : "spin";
@@ -127,8 +149,16 @@ final class LanternPanel implements AbilityPanel.Rules {
             };
             return name == null ? null : Component.translatable(MECH + name);
         }
+        if (ability.id().equals("emerald_express") && ClientRing.flight(player, 0.0F) >= 0.0F) {
+            return Component.translatable("screen." + MultiversePowers.MODID + ".panel.green_lantern.ram."
+                    + (ClientRing.has(player, RingPayload.SHIELD) ? "off" : "on"));
+        }
         if (ability.id().equals("flight") && ClientRing.flight(player, 0.0F) >= 0.0F) {
             return Component.translatable("screen." + MultiversePowers.MODID + ".panel.green_lantern.flight.stop");
+        }
+        if (ability.id().equals("ring_scan") && hold) {
+            return Component.translatable("screen." + MultiversePowers.MODID + ".hold."
+                    + (ClientRing.flight(player, 0.0F) >= 0.0F ? "brake" : "dome"));
         }
         if (!onMouse(ability)) {
             return null;
@@ -155,7 +185,7 @@ final class LanternPanel implements AbilityPanel.Rules {
     }
 
     // The ring's own rules: some moves cost a setting other than powerCost, some only want the ring not empty, and
-    // ending what runs (flight, the shield, a weapon, the mech) is free.
+    // ending what runs (flight, the ram cone, a weapon, the mech) is free.
     @Override
     public boolean affords(CharacterAbility ability, boolean hold, LocalPlayer player) {
         String weapon = weapon();
@@ -169,9 +199,9 @@ final class LanternPanel implements AbilityPanel.Rules {
             MechAttacks.Blow move = mechMove(player);
             boolean airborne = MechAttacks.airborne(move);
             return switch (ability.id()) {
-                case "light_bolt" -> !hold && pays(player, mech.value(move.kind() == MechAttacks.AIM
+                case "light_fists" -> !hold && pays(player, mech.value(move.kind() == MechAttacks.AIM
                         ? "mechMissilePowerCost" : "mechBlowPowerCost"));
-                case "light_shield" -> pays(player, mech.value(hold ? "mechGlarePowerPerSecond" : "mechEyePowerCost"));
+                case "light_bolt" -> pays(player, mech.value(hold ? "mechGlarePowerPerSecond" : "mechEyePowerCost"));
                 case "flight" -> airborne || pays(player, mech.value("mechRocketPowerCost"));
                 case "shockwave" -> pays(player, mech.value(airborne ? "mechDivePowerCost" : "mechSpinPowerCost"));
                 case "construct_wheel" -> move.kind() == MechAttacks.FLAME
@@ -184,7 +214,10 @@ final class LanternPanel implements AbilityPanel.Rules {
         return switch (ability.id()) {
             case "construct_wheel" -> weapon != null || pays(player, ability.value("formPowerCost"));
             case "light_bolt" -> hold ? power > 0.0F : ClientCharacter.canPay(player, ability);
-            case "light_shield" -> power > 0.0F || !hold && ClientRing.has(player, RingPayload.SHIELD);
+            case "light_fists" -> pays(player, ability.value(hold ? "heavyPowerCost" : "powerCost"));
+            case "emerald_express" -> ClientRing.flight(player, 0.0F) >= 0.0F
+                    ? power > 0.0F || ClientRing.has(player, RingPayload.SHIELD) : ClientCharacter.canPay(player, ability);
+            case "ring_scan" -> hold ? power > 0.0F : ClientCharacter.canPay(player, ability);
             case "mech" -> piloting(player) || pays(player, ability.value("mechPowerCost"));
             case "flight" -> ClientRing.flight(player, 0.0F) >= 0.0F || ClientCharacter.canPay(player, ability);
             case "light_bubble" -> ClientConstructs.bubbleAge(player.getId(), 0.0F) >= 0.0F

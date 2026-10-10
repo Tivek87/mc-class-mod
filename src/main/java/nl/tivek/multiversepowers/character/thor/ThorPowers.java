@@ -52,6 +52,8 @@ public final class ThorPowers implements CharacterPowers {
     public static final int CHARGE_HOLD = 40;
     public static final int SHOCK_HOLD = 20;
     public static final int LIGHTNING_HOLD = 40;
+    // The move of a flight's SLAM that ends it in the air (double space): he falls, no touch-down.
+    public static final int DROP = 1;
     // His flight moves that need the hammer in his left hand.
     private static final Set<String> FLIGHT_MOVES = Set.of("air_shockwave", "air_bolt", "air_blink",
             "grab_dash_dive", "lightning_flight", "storm_throw");
@@ -186,7 +188,10 @@ public final class ThorPowers implements CharacterPowers {
             // He flies only with the hammer: away, it is called into his raised left hand and he takes off with it.
             case "flight" -> {
                 if (on && slam) {
-                    ThorMoves.land(player, true);
+                    ThorMoves.land(player, move != DROP);
+                    if (move == DROP) {
+                        ThorMoves.spare(player, 160);
+                    }
                     yield false;
                 }
                 if (on && held && !home) {

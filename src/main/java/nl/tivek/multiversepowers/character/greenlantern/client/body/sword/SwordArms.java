@@ -355,7 +355,7 @@ public final class SwordArms extends SwordFirstPerson {
 
     public static void endCharge() {
         if (stopCharge()) {
-            CharacterAbility shield = GameCharacter.GREEN_LANTERN.byName("light_shield");
+            CharacterAbility shield = GameCharacter.GREEN_LANTERN.byName("light_bolt");
             if (shield != null) {
                 PacketDistributor.sendToServer(new AbilityActionPayload(shield.slot().ordinal(), false,
                         Characters.WALL));

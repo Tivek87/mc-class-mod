@@ -5,12 +5,14 @@ import javax.annotation.Nullable;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.goal.Goal;
+import net.minecraft.world.entity.monster.Creeper;
+import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.phys.AABB;
 import nl.tivek.multiversepowers.character.greenlantern.PowerRing;
 import nl.tivek.multiversepowers.faction.Factions;
 
 // What a mech's helper does between its moves: it picks the nearest creature red to its pilot, and with none it walks
-// back to the mech's side.
+// back to the mech's side. A wild one picks the nearest monster.
 final class MinionGoals {
     private MinionGoals() {
     }
@@ -41,23 +43,29 @@ final class MinionGoals {
             }
             this.next = EVERY;
             ServerPlayer pilot = this.minion.pilot();
+            if (pilot == null && !this.minion.wild()) {
+                this.minion.setTarget(null);
+                return;
+            }
             LivingEntity target = this.minion.getTarget();
-            if (pilot != null && target != null && (!fair(pilot, target)
-                    || target.distanceToSqr(this.minion) > LOSE * LOSE)) {
+            // A wild one keeps on whatever hurt it (HurtByTargetGoal) as long as it lives and stays near.
+            if (target != null && (!target.isAlive() || target.distanceToSqr(this.minion) > LOSE * LOSE
+                    || pilot != null && !fair(pilot, target))) {
                 target = null;
             }
-            if (pilot != null && target == null) {
+            if (target == null) {
                 target = this.nearest(pilot);
             }
-            this.minion.setTarget(pilot == null ? null : target);
+            this.minion.setTarget(target);
         }
 
         @Nullable
-        private LivingEntity nearest(ServerPlayer pilot) {
+        private LivingEntity nearest(@Nullable ServerPlayer pilot) {
             LivingEntity best = null;
             double bestFar = SEEK * SEEK;
             for (LivingEntity living : this.minion.level().getEntitiesOfClass(LivingEntity.class,
-                    new AABB(this.minion.blockPosition()).inflate(SEEK), living -> fair(pilot, living))) {
+                    new AABB(this.minion.blockPosition()).inflate(SEEK), living -> pilot == null ? monster(living)
+                            : fair(pilot, living))) {
                 double far = living.distanceToSqr(this.minion);
                 if (far < bestFar) {
                     bestFar = far;
@@ -70,6 +78,12 @@ final class MinionGoals {
         private boolean fair(ServerPlayer pilot, LivingEntity living) {
             return living != this.minion && living.isAlive() && PowerRing.canHit(pilot, living)
                     && Factions.hostile(pilot, living);
+        }
+
+        // What a wild one goes after, as an iron golem does: monsters, but not creepers.
+        private boolean monster(LivingEntity living) {
+            return living.isAlive() && living instanceof Enemy && !(living instanceof Creeper)
+                    && !(living instanceof MechMinion);
         }
     }
 

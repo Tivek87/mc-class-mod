@@ -27,7 +27,6 @@ abstract class MechControls {
     private static final String HELPERS = "giant_hands";
     // A left click within this many ticks after a blow of the combo strikes its next one.
     private static final int COMBO_WINDOW = 16;
-    private static final int COMBO = 3;
     // Its base this close above the ground it stands on.
     private static final double ON_GROUND = 0.4;
     // The flamethrower wants the mech to have stood still this many ticks.
@@ -82,16 +81,22 @@ abstract class MechControls {
             this.combo = 0;
         }
         this.attack = MechAttack.strike(this.owner, level, this.upright(), this.combo);
-        this.combo = (this.combo + 1) % COMBO;
+        this.combo = (this.combo + 1) % MechAttack.COMBO.length;
     }
 
     // A right click: a ray from the eyes; held, a beam for as long as it is held, its first second paid at once.
+    // With the missile arm up, the eyes fire along with it.
     void eyes(boolean held) {
-        if (!this.ready() || this.attack != null || !PowerRing.pay(this.owner,
+        boolean along = this.attack != null && this.attack.eyesFree();
+        if (!this.ready() || this.attack != null && !along || !PowerRing.pay(this.owner,
                 this.ability.value(held ? "mechGlarePowerPerSecond" : "mechEyePowerCost"))) {
             return;
         }
-        this.attack = MechAttack.move(held ? MechAttacks.GLARE : MechAttacks.EYE);
+        if (along) {
+            this.attack.eyesOn(held);
+        } else {
+            this.attack = MechAttack.move(held ? MechAttacks.GLARE : MechAttacks.EYE);
+        }
     }
 
     // R: the missile arm raised at the crosshair, or lowered again.

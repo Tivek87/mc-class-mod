@@ -4,6 +4,8 @@ import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.LanternPainter;
 import nl.tivek.multiversepowers.character.greenlantern.duo.HandDuo;
 import nl.tivek.multiversepowers.character.greenlantern.hand.HandPose;
+import nl.tivek.multiversepowers.engine.client.render.ConstructPainter;
+import nl.tivek.multiversepowers.engine.client.render.mesh.Mesh;
 import nl.tivek.multiversepowers.engine.math.Colors;
 import nl.tivek.multiversepowers.engine.math.Ease;
 import nl.tivek.multiversepowers.engine.math.Vectors;
@@ -16,7 +18,18 @@ import static nl.tivek.multiversepowers.character.greenlantern.client.render.han
 public final class HandTrickLight {
     private static final double TENSION = 10.0;
     private static final double RING_TICKS = 9.0;
-    private static final double SNAP_REACH = 7.0;
+    // The snap's ring: in how many pieces, how high its middle stands, its shape (one piece, a block long), and the
+    // ticks it takes to break up.
+    private static final int RING_PIECES = 64;
+    private static final double RING_HIGH = 0.3;
+    private static final ConstructPainter.Shape RING = ConstructPainter.Shape.of(
+            Mesh.bevel(-0.5, -0.05, -0.04, 0.5, 0.05, 0.04, 0.015, 1.4));
+    // The two rings left behind it: how far out (of the leading ring's reach), how thick and how bright, the one
+    // nearest the hand the faintest.
+    private static final double[] TRAIL_OUT = { 1.0, 0.72, 0.46 };
+    private static final double[] TRAIL_THICK = { 1.0, 0.7, 0.45 };
+    private static final double[] TRAIL_BRIGHT = { 1.3, 0.95, 0.7 };
+    private static final double RING_BREAKS = 8.0;
 
     private HandTrickLight() {
     }
@@ -210,7 +223,7 @@ public final class HandTrickLight {
     private static void snap(LanternPainter painter, int variant, Vec3 base, Vec3 facing, double clock,
             double scale, double strength) {
         double since = clock - HandPose.SNAP_HITS;
-        if (since < -TENSION || since > 16.0) {
+        if (since < -TENSION || since > HandPose.SNAP_RING_TICKS + RING_BREAKS) {
             return;
         }
         HandPose pose = HandPose.at(variant, Math.min(clock, HandPose.SNAP_HITS), 0.0);
@@ -221,22 +234,41 @@ public final class HandTrickLight {
             painter.flare(fingers, (0.3 + 1.0 * gather) * scale, 0.8 * gather * strength);
             return;
         }
-        shockwave(painter, new Vec3(fingers.x, base.y, fingers.z), since, SNAP_REACH * scale, 3, strength);
-        double u = Math.min(1.0, since / RING_TICKS);
-        double fade = strength * (1.0 - u) * (1.0 - u);
-        if (fade <= 0.01) {
+        if (since < 3.0) {
+            painter.flare(fingers, 1.6 * scale * (1.0 - since / 3.0), strength * (1.0 - since / 3.0));
+        }
+        ring(painter, new Vec3(fingers.x, base.y, fingers.z), since, scale);
+    }
+
+    // The snap's ring of hard light: it forms round the fingers' spot on the ground, runs out to its reach and breaks
+    // into solid pieces there.
+    private static void ring(LanternPainter painter, Vec3 ground, double since, double scale) {
+        double apart = (since - HandPose.SNAP_RING_TICKS) / RING_BREAKS;
+        if (apart >= 1.0) {
             return;
         }
-        double radius = (0.5 + SNAP_REACH * (1.0 - (1.0 - u) * (1.0 - u))) * scale;
-        Vec3 east = new Vec3(1.0, 0.0, 0.0);
-        Vec3 south = new Vec3(0.0, 0.0, 1.0);
-        painter.circle(fingers, east, Vectors.UP, radius, 0.07, 0.6, Colors.alpha(0.8 * fade),
-                Colors.alpha(0.4 * fade));
-        painter.circle(fingers, south, Vectors.UP, radius, 0.07, 0.6, Colors.alpha(0.8 * fade),
-                Colors.alpha(0.4 * fade));
-        painter.circle(fingers, east, south, radius, 0.09, 0.7, Colors.alpha(0.9 * fade), Colors.alpha(0.45 * fade));
-        if (since < 3.0) {
-            painter.flare(fingers, 4.0 * scale * (1.0 - since / 3.0), strength * (1.0 - since / 3.0));
+        double grown = Ease.smooth(since / 2.0);
+        Vec3 middle = ground.add(0.0, RING_HIGH * scale, 0.0);
+        for (int r = 0; r < TRAIL_OUT.length; r++) {
+            double radius = Math.max(0.3, HandPose.snapRing(since) * TRAIL_OUT[r]) * scale;
+            double thick = grown * TRAIL_THICK[r];
+            double length = Math.PI * 2.0 * radius / RING_PIECES * 1.04;
+            if (apart < 0.0) {
+                painter.circle(middle, new Vec3(1.0, 0.0, 0.0), new Vec3(0.0, 0.0, 1.0), radius, 0.0,
+                        0.16 * thick * scale, 0, Colors.alpha(0.45 * TRAIL_BRIGHT[r] * thick));
+            }
+            for (int k = 0; k < RING_PIECES; k++) {
+                double angle = Math.PI * 2.0 * k / RING_PIECES;
+                Vec3 out = new Vec3(Math.cos(angle), 0.0, Math.sin(angle));
+                Vec3 along = new Vec3(-out.z, 0.0, out.x);
+                ConstructPainter.Frame piece = new ConstructPainter.Frame(middle.add(out.scale(radius)), along,
+                        Vectors.UP, along.cross(Vectors.UP), scale).stretched(length / scale, thick, thick);
+                if (apart < 0.0) {
+                    painter.shape(RING, piece, 1.0, TRAIL_BRIGHT[r]);
+                } else {
+                    painter.shattered(RING, piece, apart, TRAIL_BRIGHT[r], 300 + 64 * r + k);
+                }
+            }
         }
     }
 }

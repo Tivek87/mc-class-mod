@@ -290,7 +290,7 @@ public final class ClientFlight extends FlightSteering {
     }
 
     private static float scrapeShake(LocalPlayer player) {
-        CharacterAbility shield = GameCharacter.GREEN_LANTERN.byName("light_shield");
+        CharacterAbility shield = GameCharacter.GREEN_LANTERN.byName("emerald_express");
         double speed = velocity.length();
         if (!steering || shield == null || speed < Flight.SCRAPE_PART * fullSpeed()
                 || !ClientRing.has(player, RingPayload.SHIELD)

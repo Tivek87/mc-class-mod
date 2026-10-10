@@ -7,6 +7,9 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.tags.DamageTypeTags;
+import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.entity.projectile.AbstractArrow;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -50,7 +53,13 @@ public final class LightDome implements Effect {
         this.perTick = (float) (ability.value("domePowerPerSecond") / 20.0);
     }
 
-    static boolean raise(ServerPlayer owner, ServerLevel level, CharacterAbility ability) {
+    // Damage no light construct stops: what goes through armour, and arrows that pierce.
+    public static boolean goesThrough(DamageSource source) {
+        return source.is(DamageTypeTags.BYPASSES_ARMOR) || source.is(DamageTypeTags.BYPASSES_INVULNERABILITY)
+                || source.getDirectEntity() instanceof AbstractArrow arrow && arrow.getPierceLevel() > 0;
+    }
+
+    public static boolean raise(ServerPlayer owner, ServerLevel level, CharacterAbility ability) {
         if (UP.containsKey(owner.getUUID()) || Recharge.busy(owner) || Flight.descending(owner)) {
             return false;
         }
@@ -144,7 +153,7 @@ public final class LightDome implements Effect {
             return;
         }
         LightDome dome = UP.get(player.getUUID());
-        if (dome == null || event.getAmount() <= 0.0F || LightShield.goesThrough(event.getSource())) {
+        if (dome == null || event.getAmount() <= 0.0F || LightDome.goesThrough(event.getSource())) {
             return;
         }
         float before = event.getAmount();

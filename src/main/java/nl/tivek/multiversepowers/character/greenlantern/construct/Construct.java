@@ -44,7 +44,21 @@ public enum Construct {
     }
 
     public boolean made() {
-        return this == NONE || this == SWORD_SHIELD || this == ENERGY_WHIP || this == FLAMETHROWER;
+        return this == NONE || this == SWORD_SHIELD || this == ENERGY_WHIP || this == FLAMETHROWER
+                || this == BATTLEAXE || this == CHAINSAW;
+    }
+
+    // Fights from afar: the only weapons the wheel forms in flight.
+    public boolean ranged() {
+        return switch (this) {
+            case REVOLVERS, SHOTGUN, ARM_CANNON, MINIGUN, ROCKET_LAUNCHER, FLAMETHROWER -> true;
+            default -> false;
+        };
+    }
+
+    // Whether the wheel forms it now: never while it is shut, and in flight only what fights from afar.
+    public boolean shut(boolean flying) {
+        return this.locked() || flying && this != NONE && !this.ranged();
     }
 
     // Shut for now: the energy whip is to be reworked or taken out (too glitchy, too heavy to draw).

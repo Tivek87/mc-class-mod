@@ -7,8 +7,6 @@ import javax.annotation.Nullable;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.sounds.SoundEvents;
-import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
@@ -73,8 +71,6 @@ public final class MechWalk extends MechGait {
     private static final double RUN_PUMP = 0.85;
     private static final double RUN_SHIFT = 0.39;
     private static final double RUN_FIRM = 0.6;
-    // Charged up past this, its exhaust roars.
-    private static final double BOOST_ROAR = 0.25;
     // The hips come down so no planted foot, nor one stepping down more than STEPPING_DOWN, is further off than its leg
     // reaches, at most SQUAT_MOST, and rise back SQUAT_BACK a tick; the body follows the ground its feet stand on, at
     // most SETTLE_MOST from its base.
@@ -385,11 +381,6 @@ public final class MechWalk extends MechGait {
         // Faster than a run, its exhaust is charged up (MechDrive.BOOST).
         double boosts = Mth.clamp((pace - MechDrive.RUN) / (MechDrive.RUN * MechDrive.BOOST), 0.0, 1.0);
         this.boost += Mth.clamp(boosts - this.boost, -0.05, 0.04);
-        if (this.boost > BOOST_ROAR && ticks % 5 == this.seed % 5) {
-            Vec3 at = stage.point(0.0, MechScript.SHOULDER.y - 3.0, -1.5);
-            level.playLocalSound(at.x, at.y, at.z, SoundEvents.BLAZE_SHOOT, SoundSource.PLAYERS,
-                    (float) (0.4 + 0.9 * this.boost), (float) (0.45 + 0.25 * this.boost), false);
-        }
         double rate = moving ? Math.max(effort / this.stride(), SLOWEST) : busy ? SETTLE : 0.0;
         double wanted = moving ? Math.min(1.0, effort / (MechDrive.WALK * 0.85)) : rate > 0.0 ? 0.3 : 0.0;
         if (moving && (this.walking < SETTING_OFF || this.stood >= STOOD) && !this.legs[0].swinging

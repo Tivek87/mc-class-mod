@@ -32,15 +32,16 @@ public final class Bolts {
     }
 
     public static void bolt(ConstructPainter painter, Look look, Vec3 top, Vec3 ground, double age, int seed) {
-        bolt(painter, look, top, ground, age, seed, 1.0, ground);
+        bolt(painter, look, top, ground, age, seed, 1.0, ground, true);
     }
 
     // The bolt: first a faint leader feels its way down from the cloud, forking as it goes, then the return strokes
     // blaze up the channel it found: three of them, flickering, each lighting forks of its own off it, and a flash.
     // Where it strikes the `floor` (null when it struck something up in the air) a dome of plasma swells and a scorched
-    // patch with glowing cracks is left that cools. `scale` makes all of it thicker and wider.
+    // patch with glowing cracks is left that cools, with a `ring` of light running out over the ground if asked. `scale`
+    // makes all of it thicker and wider.
     public static void bolt(ConstructPainter painter, Look look, Vec3 top, Vec3 ground, double age, int seed,
-            double scale, @Nullable Vec3 floor) {
+            double scale, @Nullable Vec3 floor, boolean ring) {
         double time = painter.time();
         painter.material(look.material());
         int glow = look.material().mass();
@@ -100,7 +101,7 @@ public final class Bolts {
             return;
         }
         Vec3 low = floor.add(0.0, 0.05, 0.0);
-        if (age < 12.0) {
+        if (ring && age < 12.0) {
             double u = age / 12.0;
             painter.circle(low, EAST, SOUTH, 0.5 + 4.0 * scale * Ease.smooth(u), 0.1, 0.6,
                     Colors.alpha(0.95 * (1.0 - u)), Colors.alpha(0.5 * (1.0 - u)));

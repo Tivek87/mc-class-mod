@@ -11,7 +11,8 @@ class MechAttacksTest {
     private static final MechScript.Stage FRAME = MechScript.Stage.facing(new Vec3(10.0, 64.0, -3.0), 37.0F);
     private static final MechAttacks.Held ZOMBIE = new MechAttacks.Held(FRAME.point(1.5, 0.975, 4.0), 0.3, 0.975);
     private static final int[] KINDS = { MechAttacks.CROSS, MechAttacks.SWEEP, MechAttacks.STOMP, MechAttacks.SLAM,
-            MechAttacks.THROW, MechAttacks.FLY, MechAttacks.DIVE };
+            MechAttacks.THROW, MechAttacks.FLY, MechAttacks.DIVE, MechAttacks.JAB, MechAttacks.HOOK,
+            MechAttacks.UPPERCUT, MechAttacks.KNEE, MechAttacks.CLAP, MechAttacks.POUND };
 
     // Every place a blow sends a hand to lies within the arm's reach of its shoulder, the body bent as the blow bends
     // it at that moment: the arm gets there without stretching or stopping short.
@@ -72,10 +73,23 @@ class MechAttacksTest {
                 MechAttacks.rockets(MechAttacks.ROCKETS, 15), 0.0));
         assertEquals(MechAttacks.ROCKETS, MechAttacks.fired(aim));
         assertEquals(15, MechAttacks.sinceFired(aim));
-        for (int kind = MechAttacks.SWEEP; kind <= MechAttacks.SPIN; kind++) {
+        for (int kind = MechAttacks.SWEEP; kind <= MechAttacks.POUND; kind++) {
             int age = MechAttacks.length(kind);
-            assertEquals(age, MechAttacks.unpack(MechAttacks.pack(kind, age, 0, 0.0)).age(), "kind " + kind);
+            MechAttacks.Blow blow = MechAttacks.unpack(MechAttacks.pack(kind, age, 0, 0.0));
+            assertEquals(age, blow.age(), "kind " + kind);
+            assertEquals(kind, blow.kind());
         }
+        // The eyes fired along with the missile arm go with it, the arm's own missiles untouched.
+        MechAttacks.Blow beam = MechAttacks.unpack(MechAttacks.pack(MechAttacks.AIM, 40, MechAttacks.rockets(2, 3),
+                0.0, MechAttacks.eyes(true, 30)));
+        assertEquals(MechAttacks.GLARE, MechAttacks.eyesKind(beam));
+        assertEquals(30.0, MechAttacks.eyesAge(beam), 1.0E-9);
+        assertEquals(2, MechAttacks.fired(beam));
+        assertEquals(0.0, beam.turn());
+        MechAttacks.Blow ray = MechAttacks.unpack(MechAttacks.pack(MechAttacks.AIM, 40, 0, 0.0,
+                MechAttacks.eyes(false, 5)));
+        assertEquals(MechAttacks.EYE, MechAttacks.eyesKind(ray));
+        assertEquals(5.0, MechAttacks.eyesAge(ray), 1.0E-9);
     }
 
     // A creature the throw may pick is one its hand can close round: turned to it and bent down for the grab, the

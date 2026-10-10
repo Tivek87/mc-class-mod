@@ -44,9 +44,9 @@ abstract class HandMoves extends HandMotion {
     static final double SLOW = 1.6;
     private static final double ARRIVE = 4.0;
     // The ragdoll's own length hangs on its number of slams: see ragdollEnds.
-    static final int[] LIFE = { 50, 58, 56, 62, 76, 50, 60, 52, 52, 50, 56, 54, 80, 52, 50, 42, 44, 42, 34, 44, 38,
+    static final int[] LIFE = { 50, 58, 56, 62, 76, 50, 60, 78, 52, 50, 56, 54, 80, 52, 50, 42, 44, 42, 34, 44, 38,
             56, 48, 56, 34, 42, 55, 50, 56 };
-    static final int[] SINK = { 36, 44, 42, 47, 62, 36, 46, 38, 39, 36, 42, 40, 60, 44, 40, 34, 32, 30, 17, 32, 26,
+    static final int[] SINK = { 36, 44, 42, 47, 62, 36, 46, 64, 39, 36, 42, 40, 60, 44, 40, 34, 32, 30, 17, 32, 26,
             46, 38, 46, 26, 34, 47, 40, 48 };
     private static final double SMACK_BEAT = 19.0;
     static final double CATCH_BEAT = 13.0;

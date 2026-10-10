@@ -4,6 +4,7 @@ import java.util.UUID;
 import javax.annotation.Nullable;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
@@ -11,6 +12,9 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
+import net.minecraft.util.Mth;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
@@ -21,7 +25,13 @@ import net.minecraft.world.entity.PathfinderMob;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.goal.FloatGoal;
+import net.minecraft.world.entity.ai.goal.LookAtPlayerGoal;
 import net.minecraft.world.entity.ai.goal.RandomLookAroundGoal;
+import net.minecraft.world.entity.ai.goal.WaterAvoidingRandomStrollGoal;
+import net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.bus.api.IEventBus;
@@ -29,25 +39,38 @@ import net.neoforged.neoforge.event.entity.EntityAttributeCreationEvent;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import nl.tivek.multiversepowers.MultiversePowers;
+import nl.tivek.multiversepowers.character.greenlantern.PowerRing;
 import nl.tivek.multiversepowers.character.greenlantern.ability.mech.MechAssembly;
+import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 
 // A helper the Hard-Light Mech drops out of the hatch under its cockpit: a robot of hard light twice a player's
 // height, a little stronger than a zombie. It goes after what is out to hurt its pilot (red to them) with three moves
 // of its own (MinionMoves) and else keeps near the mech; it breaks into solid pieces when it dies, when its pilot
-// leaves the mech or when it strays too far. Never saved, so a world saved while it was out loads without it.
+// leaves the mech or when it strays too far, and is never saved. One of no pilot (out of a spawn egg or summoned)
+// guards where it is like an iron golem: it goes after monsters and whatever hurts it, and is saved with the world.
+// Either cracks as it loses health (CRACKS), and an emerald mends one.
 public final class MechMinion extends PathfinderMob {
     private static final DeferredRegister<EntityType<?>> TYPES = DeferredRegister.create(Registries.ENTITY_TYPE,
             MultiversePowers.MODID);
     public static final DeferredHolder<EntityType<?>, EntityType<MechMinion>> TYPE = TYPES.register("mech_helper",
             () -> EntityType.Builder.<MechMinion>of(MechMinion::new, MobCategory.MISC).sized(1.2F, 3.4F)
-                    .eyeHeight(3.1F).clientTrackingRange(10).noSave().noSummon().fireImmune().build("mech_helper"));
-    // Its pilot's entity id, what it aims its moves at, and the game time it dropped out of the hatch.
+                    .eyeHeight(3.1F).clientTrackingRange(10).fireImmune().build("mech_helper"));
+    // Its pilot's entity id, what it aims its moves at, the game time it came, and how it came (HATCH or GROUND).
     private static final EntityDataAccessor<Integer> OWNER = SynchedEntityData.defineId(MechMinion.class,
             EntityDataSerializers.INT);
     private static final EntityDataAccessor<Integer> AIMED = SynchedEntityData.defineId(MechMinion.class,
             EntityDataSerializers.INT);
     private static final EntityDataAccessor<Integer> BORN = SynchedEntityData.defineId(MechMinion.class,
             EntityDataSerializers.INT);
+    private static final EntityDataAccessor<Integer> CAME = SynchedEntityData.defineId(MechMinion.class,
+            EntityDataSerializers.INT);
+    public static final int GROUND = 0;
+    public static final int HATCH = 1;
+    // Below these parts of its health it shows its first, second and third crack.
+    public static final float[] CRACKS = { 0.75F, 0.5F, 0.25F };
+    private static final float MEND = 10.0F;
+    private static final double WILD_HEALTH = 60.0;
+    private static final float WILD_DAMAGE = 7.0F;
     // It breaks into pieces over this many ticks once dead.
     public static final int BREAK = 16;
     // Further than this from its pilot it breaks up.
@@ -61,6 +84,12 @@ public final class MechMinion extends PathfinderMob {
     // In each game: the move it makes now and the tick it began (by its own count).
     private int move;
     private int moveAt;
+    // Loaded with its world: it does not come up out of the ground again.
+    private boolean loaded;
+    // In each game: how far off the ground it is, 0 standing to 1 in the air, eased, and the tick it last landed.
+    private float air;
+    private float airWas;
+    private int landedAt = -1000;
 
     public MechMinion(EntityType<? extends MechMinion> type, Level level) {
         super(type, level);
@@ -87,6 +116,7 @@ public final class MechMinion extends PathfinderMob {
         minion.damage = (float) damage;
         minion.entityData.set(OWNER, pilot.getId());
         minion.entityData.set(BORN, (int) level.getGameTime());
+        minion.entityData.set(CAME, HATCH);
         AttributeInstance most = minion.getAttribute(Attributes.MAX_HEALTH);
         if (most != null) {
             most.setBaseValue(Math.max(1.0, health));
@@ -100,7 +130,8 @@ public final class MechMinion extends PathfinderMob {
         super.defineSynchedData(builder);
         builder.define(OWNER, -1);
         builder.define(AIMED, -1);
-        builder.define(BORN, 0);
+        builder.define(BORN, Integer.MIN_VALUE);
+        builder.define(CAME, GROUND);
     }
 
     @Override
@@ -108,8 +139,104 @@ public final class MechMinion extends PathfinderMob {
         this.goalSelector.addGoal(0, new FloatGoal(this));
         this.goalSelector.addGoal(1, new MinionMoves(this));
         this.goalSelector.addGoal(2, new MinionGoals.Follow(this));
-        this.goalSelector.addGoal(3, new RandomLookAroundGoal(this));
-        this.targetSelector.addGoal(1, new MinionGoals.Foes(this));
+        this.goalSelector.addGoal(4, new WaterAvoidingRandomStrollGoal(this, 0.6));
+        this.goalSelector.addGoal(5, new LookAtPlayerGoal(this, Player.class, 8.0F));
+        this.goalSelector.addGoal(6, new RandomLookAroundGoal(this));
+        this.targetSelector.addGoal(1, new HurtByTargetGoal(this));
+        this.targetSelector.addGoal(2, new MinionGoals.Foes(this));
+    }
+
+    // With no pilot it guards where it is.
+    public boolean wild() {
+        return this.owner == null;
+    }
+
+    // How it came: out of the mech's hatch, or up out of the ground (a spawn egg, a summon).
+    public int came() {
+        return this.entityData.get(CAME);
+    }
+
+    // How cracked it is: 0 whole, up to 3 nearly broken.
+    public int cracks() {
+        float part = this.getHealth() / Math.max(1.0F, this.getMaxHealth());
+        int cracks = 0;
+        for (float below : CRACKS) {
+            if (part < below) {
+                cracks++;
+            }
+        }
+        return cracks;
+    }
+
+    @Override
+    public boolean hurt(DamageSource source, float amount) {
+        int was = this.cracks();
+        boolean hurt = super.hurt(source, amount);
+        if (hurt && this.isAlive() && this.cracks() > was && this.level() instanceof ServerLevel level) {
+            this.playSound(SoundEvents.IRON_GOLEM_DAMAGE, 1.0F, 1.3F);
+            this.playSound(SoundEvents.AMETHYST_CLUSTER_BREAK, 0.8F, 1.4F);
+            ParticleFx.cloud(level, ParticleFx.dust(PowerRing.BRIGHT, 1.2F), this.position().add(0.0, 2.2, 0.0), 14,
+                    0.5, 0.15);
+        }
+        return hurt;
+    }
+
+    // An emerald mends it a little, as iron mends an iron golem.
+    @Override
+    protected InteractionResult mobInteract(Player player, InteractionHand hand) {
+        ItemStack held = player.getItemInHand(hand);
+        if (!held.is(Items.EMERALD) || this.getHealth() >= this.getMaxHealth()) {
+            return super.mobInteract(player, hand);
+        }
+        float was = this.getHealth();
+        this.heal(MEND);
+        if (this.getHealth() == was) {
+            return InteractionResult.PASS;
+        }
+        this.playSound(SoundEvents.AMETHYST_BLOCK_CHIME, 1.0F, 1.0F + (this.random.nextFloat() - 0.5F) * 0.2F);
+        this.playSound(SoundEvents.IRON_GOLEM_REPAIR, 1.0F, 1.3F);
+        held.consume(1, player);
+        return InteractionResult.sidedSuccess(this.level().isClientSide);
+    }
+
+    // A wild one comes up out of the ground the moment it is first in a world (not when its world loads it again),
+    // sturdier than a mech's.
+    @Override
+    public void onAddedToLevel() {
+        super.onAddedToLevel();
+        if (this.level().isClientSide() || this.loaded || this.entityData.get(BORN) != Integer.MIN_VALUE) {
+            return;
+        }
+        this.entityData.set(BORN, (int) this.level().getGameTime());
+        this.playSound(SoundEvents.BEACON_ACTIVATE, 1.0F, 1.6F);
+        AttributeInstance most = this.getAttribute(Attributes.MAX_HEALTH);
+        if (most != null && this.wild()) {
+            most.setBaseValue(WILD_HEALTH);
+            this.setHealth(this.getMaxHealth());
+            this.damage = WILD_DAMAGE;
+        }
+    }
+
+    @Override
+    public void addAdditionalSaveData(CompoundTag tag) {
+        super.addAdditionalSaveData(tag);
+        tag.putFloat("Punch", this.damage);
+    }
+
+    @Override
+    public void readAdditionalSaveData(CompoundTag tag) {
+        super.readAdditionalSaveData(tag);
+        // /summon reads a tag too, one without what a saved one holds: that one still comes up out of the ground.
+        this.loaded = tag.contains("Punch");
+        if (this.loaded) {
+            this.damage = tag.getFloat("Punch");
+        }
+    }
+
+    // Only one of no pilot is saved with the world.
+    @Override
+    public boolean shouldBeSaved() {
+        return this.wild() && super.shouldBeSaved();
     }
 
     @Nullable
@@ -136,9 +263,10 @@ public final class MechMinion extends PathfinderMob {
         this.entityData.set(AIMED, target == null ? -1 : target.getId());
     }
 
-    // How many ticks ago it dropped out of the hatch.
+    // How many ticks ago it came (a large number for one loaded with its world).
     public double since(float partialTick) {
-        return this.level().getGameTime() - (long) this.entityData.get(BORN) + partialTick;
+        int born = this.entityData.get(BORN);
+        return born == Integer.MIN_VALUE ? 1.0E6 : this.level().getGameTime() - (long) born + partialTick;
     }
 
     float damage() {
@@ -152,6 +280,25 @@ public final class MechMinion extends PathfinderMob {
 
     public double moveAge(float partialTick) {
         return this.tickCount - this.moveAt + partialTick;
+    }
+
+    // A client's onGround is only what the last move packet said: it looks for a block under its feet itself.
+    private void feel() {
+        this.airWas = this.air;
+        boolean standing = !this.level().noCollision(this, this.getBoundingBox().move(0.0, -0.2, 0.0));
+        if (standing && this.air > 0.5F) {
+            this.landedAt = this.tickCount;
+        }
+        this.air += ((standing ? 0.0F : 1.0F) - this.air) * (standing ? 0.6F : 0.25F);
+    }
+
+    public double air(float partialTick) {
+        return Mth.lerp(partialTick, this.airWas, this.air);
+    }
+
+    // How many ticks ago it last came down on its feet in this game.
+    public double landed(float partialTick) {
+        return this.tickCount - this.landedAt + partialTick;
     }
 
     // Starts a move here and in every game that sees it.
@@ -174,7 +321,14 @@ public final class MechMinion extends PathfinderMob {
     @Override
     public void tick() {
         super.tick();
-        if (this.level().isClientSide() || !this.isAlive()) {
+        if (this.level().isClientSide()) {
+            this.feel();
+            return;
+        }
+        if (!this.isAlive()) {
+            return;
+        }
+        if (this.wild()) {
             return;
         }
         ServerPlayer pilot = this.pilot();

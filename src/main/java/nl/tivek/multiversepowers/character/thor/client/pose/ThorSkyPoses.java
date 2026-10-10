@@ -17,8 +17,8 @@ final class ThorSkyPoses {
     private static final float RAISE = 36.0F;
     private static final float THRUST = 12.0F;
     // After the burst he stays flung open this long, then eases out of it over `LOOSEN`.
-    private static final float OPEN = 14.0F;
-    private static final float LOOSEN = 26.0F;
+    private static final float OPEN = 10.0F;
+    private static final float LOOSEN = 19.0F;
 
     private ThorSkyPoses() {
     }

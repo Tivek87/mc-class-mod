@@ -1,4 +1,4 @@
-package nl.tivek.multiversepowers.character.greenlantern.ability.light;
+package nl.tivek.multiversepowers.character.greenlantern.ability.flight;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -7,9 +7,6 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
-import net.minecraft.tags.DamageTypeTags;
-import net.minecraft.world.damagesource.DamageSource;
-import net.minecraft.world.entity.projectile.AbstractArrow;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -17,55 +14,46 @@ import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.character.CharacterAbility;
-import nl.tivek.multiversepowers.character.Characters;
 import nl.tivek.multiversepowers.character.greenlantern.PowerRing;
-import nl.tivek.multiversepowers.character.greenlantern.ability.flight.Flight;
+import nl.tivek.multiversepowers.character.greenlantern.ability.light.LightDome;
 import nl.tivek.multiversepowers.character.greenlantern.ability.ring.Recharge;
 import nl.tivek.multiversepowers.character.greenlantern.construct.ConstructPayload;
 import nl.tivek.multiversepowers.engine.effect.Effect;
 import nl.tivek.multiversepowers.engine.effect.Effects;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 
+// The ram cone: in flight the Emerald Express's key raises a cone of light ahead of its owner (and lowers it again),
+// which takes 70% of the blows from ahead and rams what it is flown into (Flight.ram). It breaks up on landing.
 @EventBusSubscriber(modid = MultiversePowers.MODID)
-public final class LightShield implements Effect {
+public final class RamCone implements Effect {
     private static final float SIZE = 1.7F;
-    public static final double AHEAD = 0.85;
     private static final double VIEW_RANGE = 128.0;
     private static final double FRONT = 0.1;
+    private static final float KEPT = 0.3F;
     private static final int OPEN_TICKS = 3;
 
-    private static final Map<UUID, LightShield> UP = new HashMap<>();
+    private static final Map<UUID, RamCone> UP = new HashMap<>();
 
     private final int id;
     private final ServerPlayer owner;
-    private final float kept;
     private final float perTick;
     private int open;
     private int closing = -1;
     private int flash;
 
-    private LightShield(ServerPlayer owner, CharacterAbility ability) {
+    private RamCone(ServerPlayer owner, CharacterAbility ability) {
         this.id = PowerRing.newId();
         this.owner = owner;
-        this.kept = (float) ability.value("damageKept");
-        this.perTick = (float) (ability.value("powerPerSecond") / 20.0);
+        this.perTick = (float) (ability.value("ramPowerPerSecond") / 20.0);
     }
 
-    public static boolean use(ServerPlayer owner, ServerLevel level, CharacterAbility ability, boolean on, int data) {
-        if (!on) {
-            return LightDome.lower(owner);
-        }
-        if ((data & Characters.HOLD) != 0) {
-            return LightDome.raise(owner, level, ability);
-        }
-        if ((data & Characters.TAP) == 0) {
-            return false;
-        }
+    // Never starts the Express's cooldown: it gives false.
+    public static boolean toggle(ServerPlayer owner, ServerLevel level, CharacterAbility ability) {
         if (UP.containsKey(owner.getUUID())) {
             stop(owner);
             level.playSound(null, owner.getX(), owner.getY() + 1.2, owner.getZ(), SoundEvents.AMETHYST_CLUSTER_BREAK,
                     SoundSource.PLAYERS, 0.5F, 1.4F);
-            return true;
+            return false;
         }
         if (Recharge.busy(owner) || Flight.descending(owner)) {
             return false;
@@ -74,14 +62,14 @@ public final class LightShield implements Effect {
             PowerRing.tell(owner, "no_power");
             return false;
         }
-        LightShield shield = new LightShield(owner, ability);
-        UP.put(owner.getUUID(), shield);
-        Effects.start(level, shield);
-        shield.send(level);
+        RamCone cone = new RamCone(owner, ability);
+        UP.put(owner.getUUID(), cone);
+        Effects.start(level, cone);
+        cone.send(level);
         level.playSound(null, owner.getX(), owner.getY() + 1.2, owner.getZ(), SoundEvents.AMETHYST_BLOCK_CHIME,
                 SoundSource.PLAYERS, 0.5F, 1.1F);
         PowerRing.sync(owner);
-        return true;
+        return false;
     }
 
     public static boolean up(ServerPlayer player) {
@@ -89,16 +77,16 @@ public final class LightShield implements Effect {
     }
 
     public static void flash(ServerPlayer player) {
-        LightShield shield = UP.get(player.getUUID());
-        if (shield != null) {
-            shield.flash = OPEN_TICKS;
+        RamCone cone = UP.get(player.getUUID());
+        if (cone != null) {
+            cone.flash = OPEN_TICKS;
         }
     }
 
     public static void stop(ServerPlayer player) {
-        LightShield shield = UP.remove(player.getUUID());
-        if (shield != null) {
-            shield.closing = 0;
+        RamCone cone = UP.remove(player.getUUID());
+        if (cone != null) {
+            cone.closing = 0;
             PowerRing.sync(player);
         }
     }
@@ -161,10 +149,7 @@ public final class LightShield implements Effect {
     }
 
     private Vec3 point() {
-        if (Flight.flying(this.owner)) {
-            return this.owner.getBoundingBox().getCenter().add(Flight.heading(this.owner).scale(1.1));
-        }
-        return this.owner.getEyePosition().add(this.owner.getLookAngle().scale(AHEAD));
+        return this.owner.getBoundingBox().getCenter().add(this.front().scale(1.1));
     }
 
     private Vec3 front() {
@@ -177,13 +162,7 @@ public final class LightShield implements Effect {
                 : (float) this.open / OPEN_TICKS;
         PacketDistributor.sendToPlayersNear(level, null, at.x, at.y, at.z, VIEW_RANGE,
                 new ConstructPayload(this.id, this.owner.getId(), at, this.front(), SIZE, shown,
-                        this.flash > 0 ? 1.0F : 0.0F, true,
-                        Flight.flying(this.owner) ? ConstructPayload.RAM : ConstructPayload.SHIELD));
-    }
-
-    public static boolean goesThrough(DamageSource source) {
-        return source.is(DamageTypeTags.BYPASSES_ARMOR) || source.is(DamageTypeTags.BYPASSES_INVULNERABILITY)
-                || source.getDirectEntity() instanceof AbstractArrow arrow && arrow.getPierceLevel() > 0;
+                        this.flash > 0 ? 1.0F : 0.0F, true, ConstructPayload.RAM));
     }
 
     @SubscribeEvent
@@ -191,27 +170,23 @@ public final class LightShield implements Effect {
         if (!(event.getEntity() instanceof ServerPlayer player)) {
             return;
         }
-        LightShield shield = UP.get(player.getUUID());
+        RamCone cone = UP.get(player.getUUID());
         // Under the dome the dome takes the hits (see LightDome).
-        if (shield == null || event.getAmount() <= 0.0F || LightDome.up(player) || goesThrough(event.getSource())) {
+        if (cone == null || event.getAmount() <= 0.0F || LightDome.up(player)
+                || LightDome.goesThrough(event.getSource())) {
             return;
         }
         Vec3 from = event.getSource().getSourcePosition();
         if (from != null) {
-            Vec3 front = shield.front();
+            Vec3 front = cone.front();
             Vec3 toSource = from.subtract(player.getBoundingBox().getCenter());
-            // On foot only the way you face counts, flat along the ground; in the air the cone points in 3D.
-            if (!Flight.flying(player)) {
-                front = new Vec3(front.x, 0.0, front.z);
-                toSource = new Vec3(toSource.x, 0.0, toSource.z);
-            }
             if (front.lengthSqr() < 1.0E-4 || toSource.lengthSqr() < 1.0E-4
                     || front.normalize().dot(toSource.normalize()) < FRONT) {
                 return;
             }
         }
         float before = event.getAmount();
-        event.setAmount(before * shield.kept);
-        shield.struck(player.serverLevel(), before - event.getAmount());
+        event.setAmount(before * KEPT);
+        cone.struck(player.serverLevel(), before - event.getAmount());
     }
 }

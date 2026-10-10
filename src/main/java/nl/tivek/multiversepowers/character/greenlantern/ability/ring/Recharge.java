@@ -3,13 +3,12 @@ package nl.tivek.multiversepowers.character.greenlantern.ability.ring;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
-import net.minecraft.util.RandomSource;
+import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.character.CharacterAbility;
 import nl.tivek.multiversepowers.character.GameCharacter;
@@ -18,14 +17,17 @@ import nl.tivek.multiversepowers.character.greenlantern.PowerRing;
 import nl.tivek.multiversepowers.character.greenlantern.ability.flight.Flight;
 import nl.tivek.multiversepowers.character.greenlantern.ability.light.LightBeam;
 import nl.tivek.multiversepowers.character.greenlantern.ability.light.LightDome;
-import nl.tivek.multiversepowers.character.greenlantern.ability.light.LightShield;
+import nl.tivek.multiversepowers.character.greenlantern.ability.flight.RamCone;
 import nl.tivek.multiversepowers.engine.effect.Effect;
 import nl.tivek.multiversepowers.engine.effect.Effects;
-import nl.tivek.multiversepowers.engine.fx.ParticleBatch;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 
+// The ring held to the lantern's emblem: from the touch it fills little by little while the lantern hums and lights
+// up, until it is full.
 public final class Recharge implements Effect {
     private static final Map<UUID, Recharge> ACTIVE = new HashMap<>();
+    // Ticks (at the recharge's own pace) between the lantern's hums.
+    private static final double HUM = 12.0;
 
     private final ServerPlayer owner;
     private final float restore;
@@ -56,13 +58,12 @@ public final class Recharge implements Effect {
         }
         // Both hands are needed for the lantern: whatever the mouse held up or poured out stops.
         LightBeam.stop(owner);
-        LightShield.stop(owner);
+        RamCone.stop(owner);
         LightDome.lower(owner);
         Recharge lantern = new Recharge(owner, (float) ability.value("powerRestored"), 1, 1);
         ACTIVE.put(owner.getUUID(), lantern);
         Effects.start(level, lantern);
         lantern.sound(level, SoundEvents.BEACON_POWER_SELECT, 0.8F, 0.8F);
-        lantern.sound(level, SoundEvents.AMETHYST_BLOCK_RESONATE, 1.0F, 1.2F);
         PowerRing.sync(owner);
         return true;
     }
@@ -104,13 +105,21 @@ public final class Recharge implements Effect {
             return false;
         }
         this.ticks++;
-        int moment = this.ticks * this.made / this.played;
-        if (moment != (this.ticks - 1) * this.made / this.played) {
-            if (moment == PowerRing.RECHARGE_HIT) {
-                this.hit(level);
-            } else if (moment > PowerRing.RECHARGE_HIT && moment < PowerRing.RECHARGE_BACK && moment % 2 == 0) {
-                this.rays(level);
-            }
+        double moment = (double) this.ticks * this.made / this.played;
+        double before = (double) (this.ticks - 1) * this.made / this.played;
+        if (before < PowerRing.RECHARGE_HIT && moment >= PowerRing.RECHARGE_HIT) {
+            this.touch(level);
+        }
+        double filled = filled(moment) - filled(before);
+        if (filled > 0.0) {
+            PowerRing.setPower(this.owner, PowerRing.power(this.owner) + (float) (this.restore * filled));
+        }
+        if (moment >= PowerRing.RECHARGE_HIT && moment < PowerRing.RECHARGE_BACK
+                && (int) (moment / HUM) != (int) (before / HUM)) {
+            this.sound(level, SoundEvents.BEACON_AMBIENT, 1.4F, 1.3F);
+        }
+        if (before < PowerRing.RECHARGE_BACK && moment >= PowerRing.RECHARGE_BACK) {
+            this.full(level);
         }
         if (moment >= PowerRing.RECHARGE_TICKS) {
             this.stop();
@@ -119,50 +128,25 @@ public final class Recharge implements Effect {
         return true;
     }
 
-    private void hit(ServerLevel level) {
-        Vec3 at = this.lanternPoint();
-        Vec3 ahead = this.ahead();
-        Vec3 front = at.add(ahead.scale(0.3));
-        for (ServerPlayer viewer : level.players()) {
-            if (viewer != this.owner && viewer.distanceToSqr(front) < 64.0 * 64.0) {
-                ParticleBatch.add(viewer, ParticleFx.dust(PowerRing.BRIGHT, 2.0F), false, front.x, front.y, front.z,
-                        8, 0.12, 0.12, 0.12, 0.0);
-            }
-        }
-        this.cone(level, ParticleFx.dust(PowerRing.PALE, 1.6F), front, ahead, 50, 0.45, 0.42);
-        this.cone(level, ParticleFx.dust(PowerRing.GREEN, 2.2F), front, ahead, 32, 0.65, 0.26);
-        this.cone(level, ParticleFx.dust(PowerRing.PALE, 1.0F), front, ahead, 24, 0.4, 0.34);
-        ParticleFx.sphereOut(level, ParticleFx.dust(PowerRing.PALE, 1.2F), at, 18, 0.22);
-        this.sound(level, SoundEvents.PLAYER_ATTACK_STRONG, 1.0F, 0.8F);
-        this.sound(level, SoundEvents.GENERIC_EXPLODE.value(), 0.8F, 1.7F);
-        this.sound(level, SoundEvents.BEACON_ACTIVATE, 1.0F, 1.5F);
-        this.sound(level, SoundEvents.AMETHYST_BLOCK_CHIME, 1.4F, 0.9F);
-        if (Flight.ticks(this.owner) >= 0) {
-            ParticleFx.disc(level, ParticleFx.dust(PowerRing.PALE, 1.4F), front, ahead, 0.8, 22, 0.0);
-            ParticleFx.disc(level, ParticleFx.dust(PowerRing.GREEN, 1.8F), at.subtract(ahead.scale(0.6)), ahead,
-                    1.4, 30, 0.1);
-            this.sound(level, SoundEvents.FIREWORK_ROCKET_LARGE_BLAST, 1.0F, 0.7F);
-        }
-        PowerRing.setPower(this.owner, PowerRing.power(this.owner) + this.restore);
+    // How much of the charge has gone into the ring by this moment, 0 to 1.
+    private static double filled(double moment) {
+        return Mth.clamp((moment - PowerRing.RECHARGE_HIT) / (PowerRing.RECHARGE_BACK - PowerRing.RECHARGE_HIT), 0.0,
+                1.0);
+    }
+
+    // The ring touches the emblem: the lantern starts to hum.
+    private void touch(ServerLevel level) {
+        this.sound(level, SoundEvents.BEACON_ACTIVATE, 1.0F, 1.2F);
+        this.sound(level, SoundEvents.AMETHYST_BLOCK_RESONATE, 0.8F, 0.8F);
+    }
+
+    // Full: a soft flash of green in the lantern and the ring ready.
+    private void full(ServerLevel level) {
+        ParticleFx.sphereOut(level, ParticleFx.dust(PowerRing.PALE, 1.0F), this.lanternPoint(), 12, 0.1);
+        this.sound(level, SoundEvents.AMETHYST_BLOCK_CHIME, 1.4F, 1.2F);
+        this.sound(level, SoundEvents.BEACON_POWER_SELECT, 1.0F, 1.4F);
         PowerRing.tell(this.owner, "recharged");
         Flight.recharged(this.owner, level);
-    }
-
-    private void rays(ServerLevel level) {
-        Vec3 ahead = this.ahead();
-        Vec3 front = this.lanternPoint().add(ahead.scale(0.3));
-        this.cone(level, ParticleFx.dust(PowerRing.GREEN, 1.4F), front, ahead, 5, 0.35, 0.32);
-        this.cone(level, ParticleFx.dust(PowerRing.PALE, 1.2F), front, ahead, 7, 0.5, 0.24);
-    }
-
-    private void cone(ServerLevel level, ParticleOptions particle, Vec3 from, Vec3 way, int count, double spread,
-            double speed) {
-        RandomSource random = this.owner.getRandom();
-        for (int i = 0; i < count; i++) {
-            Vec3 out = way.add((random.nextDouble() * 2.0 - 1.0) * spread, (random.nextDouble() * 2.0 - 1.0) * spread,
-                    (random.nextDouble() * 2.0 - 1.0) * spread);
-            ParticleFx.fly(level, particle, from, out.lengthSqr() < 1.0E-6 ? way : out.normalize(), speed);
-        }
     }
 
     private void stop() {

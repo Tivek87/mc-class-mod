@@ -18,7 +18,14 @@ public final class WeaponShapes {
 
     public static final ConstructPainter.Shape WHIP = ConstructPainter.Shape.of(whip());
     public static final ConstructPainter.Shape BATTLEAXE = ConstructPainter.Shape.of(battleaxe());
-    public static final ConstructPainter.Shape CHAINSAW = ConstructPainter.Shape.of(chainsaw());
+    public static final ConstructPainter.Shape CHAINSAW = ConstructPainter.Shape.of(chainsaw(true));
+    // The chainsaw without its teeth, which run round its bar (sawTeeth).
+    public static final ConstructPainter.Shape CHAINSAW_BODY = ConstructPainter.Shape.of(chainsaw(false));
+    // The saw chain: down the bar along its underside, round its nose and back along its top.
+    private static final double BAR_BACK = -0.05;
+    private static final double BAR_NOSE = 0.85;
+    private static final double NOSE = 0.063;
+    private static final double TOOTH = 0.07;
     public static final ConstructPainter.Shape REVOLVER = ConstructPainter.Shape.of(revolver());
     public static final ConstructPainter.Shape SHOTGUN = ConstructPainter.Shape.of(shotgun());
     public static final ConstructPainter.Shape ARM_CANNON = ConstructPainter.Shape.of(armCannon());
@@ -95,7 +102,7 @@ public final class WeaponShapes {
         return parts.toArray(Mesh[]::new);
     }
 
-    private static Mesh[] chainsaw() {
+    private static Mesh[] chainsaw(boolean teeth) {
         List<Mesh> parts = new ArrayList<>();
         parts.add(Mesh.sweep(0.95, SQUIRCLE, new double[] { -0.4, 0.1, 0.12, 0.0 },
                 new double[] { -0.36, 0.125, 0.15, 0.01 }, new double[] { -0.06, 0.125, 0.15, 0.01 },
@@ -135,6 +142,9 @@ public final class WeaponShapes {
         }
         chain.addAll(List.of(new Vec3(0.0, 0.043, 0.85), new Vec3(0.0, 0.053, 0.4), new Vec3(0.0, 0.063, -0.05)));
         parts.add(Mesh.tube(true, 5, 0.011, 1.35, chain.toArray(Vec3[]::new)));
+        if (!teeth) {
+            return parts.toArray(Mesh[]::new);
+        }
         int tooth = 0;
         for (double z = 0.05; z <= 0.83; z += 0.07) {
             double drop = 0.02 * (z + 0.05) / 0.9;
@@ -147,6 +157,31 @@ public final class WeaponShapes {
                     Math.toDegrees(Math.atan2(Math.cos(angle), Math.sin(angle)))));
         }
         return parts.toArray(Mesh[]::new);
+    }
+
+    // The teeth round the bar, run `phase` of the way (0 to 1) from one tooth to the next.
+    public static Mesh[] sawTeeth(double phase) {
+        double straight = BAR_NOSE - BAR_BACK;
+        double arc = Math.PI * NOSE;
+        double length = straight * 2.0 + arc;
+        int count = (int) Math.floor(length / TOOTH);
+        double step = length / count;
+        Mesh[] teeth = new Mesh[count];
+        for (int i = 0; i < count; i++) {
+            double s = (i + phase) * step;
+            if (s < straight) {
+                double z = BAR_BACK + s;
+                teeth[i] = cutter(i, -0.103 + 0.02 * (z - BAR_BACK) / straight, z, 180.0);
+            } else if (s < straight + arc) {
+                double angle = -Math.PI * 0.5 + (s - straight) / arc * Math.PI;
+                teeth[i] = cutter(i, -0.02 + NOSE * Math.sin(angle), BAR_NOSE + NOSE * Math.cos(angle),
+                        Math.toDegrees(Math.atan2(Math.cos(angle), Math.sin(angle))));
+            } else {
+                double z = BAR_NOSE - (s - straight - arc);
+                teeth[i] = cutter(i, 0.063 - 0.02 * (z - BAR_BACK) / straight, z, 0.0);
+            }
+        }
+        return teeth;
     }
 
     private static Mesh cutter(int index, double y, double z, double degrees) {

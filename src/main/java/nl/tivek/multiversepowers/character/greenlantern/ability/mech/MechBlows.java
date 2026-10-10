@@ -184,7 +184,7 @@ final class MechBlows {
         ParticleFx.cloud(level, ParticleTypes.CRIT, ground.add(0.0, 0.5, 0.0), hard ? 20 : 8, 0.8, 0.4);
     }
 
-    private static void clap(ServerLevel level, Vec3 at) {
+    static void clap(ServerLevel level, Vec3 at) {
         Sounds.play(level, at, CLAP, 5.0F, 1.0F);
         Sounds.play(level, at, SoundEvents.MACE_SMASH_GROUND_HEAVY, 2.0F, 0.9F);
         Sounds.play(level, at, SoundEvents.FIREWORK_ROCKET_BLAST, 2.0F, 0.6F);

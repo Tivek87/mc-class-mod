@@ -19,6 +19,7 @@ import net.minecraft.world.entity.Mob;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.engine.effect.Effects;
+import nl.tivek.multiversepowers.engine.entity.Captives;
 import nl.tivek.multiversepowers.engine.entity.HeldMobs;
 import nl.tivek.multiversepowers.engine.entity.HeldPlayers;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
@@ -54,6 +55,9 @@ public final class ThorGrab {
     private static final float MISSILE = 0.8F;
     private static final int MISSILE_TICKS = 40;
     private static final double MISSILE_SLOW = 0.3;
+    // The escape game a player he holds plays (Captives): one second, one try.
+    public static final int ESCAPE = 2;
+    private static final double BREAK_FREE = 0.6;
     private static final Map<UUID, ThorGrab> ALL = new HashMap<>();
     private static final Set<UUID> HELD_PLAYERS = new HashSet<>();
 
@@ -195,6 +199,7 @@ public final class ThorGrab {
         if (target instanceof ServerPlayer player && !HeldMobs.isHeldByAnyone(player)) {
             player.stopRiding();
             HELD_PLAYERS.add(player.getUUID());
+            Captives.hold(player, ESCAPE, ThorGrab::brokeFree);
             return true;
         }
         return false;
@@ -522,6 +527,9 @@ public final class ThorGrab {
             HeldMobs.release(mob);
         } else if (this.held) {
             HELD_PLAYERS.remove(this.target.getUUID());
+            if (this.target instanceof ServerPlayer captive) {
+                Captives.release(captive);
+            }
         }
         this.held = false;
         this.overhead = false;
@@ -536,6 +544,26 @@ public final class ThorGrab {
         ALL.remove(this.owner, this);
         if (thor != null) {
             ThorMoves.tell(thor, ThorStatePayload.NONE, 0);
+        }
+    }
+
+    // A held player won the escape game: they tear out of his grip and are thrown back from him.
+    private static void brokeFree(ServerPlayer captive) {
+        for (ThorGrab grab : ALL.values().toArray(new ThorGrab[0])) {
+            if (grab.target != captive || grab.done) {
+                continue;
+            }
+            ServerLevel level = captive.serverLevel();
+            ServerPlayer thor = level.getServer().getPlayerList().getPlayer(grab.owner);
+            grab.end(thor);
+            Vec3 away = thor == null ? Vec3.ZERO : captive.position().subtract(thor.position()).multiply(1.0, 0.0, 1.0);
+            away = away.lengthSqr() < 1.0E-4 ? Vec3.ZERO : away.normalize().scale(BREAK_FREE);
+            captive.setDeltaMovement(away.x, 0.35, away.z);
+            captive.hurtMarked = true;
+            Vec3 at = captive.getBoundingBox().getCenter();
+            ParticleFx.cloud(level, ParticleTypes.ELECTRIC_SPARK, at, 16, 0.4, 0.25);
+            level.playSound(null, at.x, at.y, at.z, SoundEvents.PLAYER_ATTACK_KNOCKBACK, SoundSource.PLAYERS, 1.0F,
+                    1.3F);
         }
     }
 

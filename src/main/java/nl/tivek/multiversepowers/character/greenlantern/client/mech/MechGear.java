@@ -25,8 +25,8 @@ import nl.tivek.multiversepowers.engine.math.Ease;
 // The mech's gear for its missile arm, flamethrower and rocket boots, as everyone sees it. As the arm aims, the back
 // of the right hand opens: two doors hinged at its sides swing out and a rack of five tubes rises between them, a
 // missile's nose in each, their mouths ahead along the fingers (where MechMissiles fires them from); each click
-// flashes one out of its tube, which stays empty. For the flamethrower a barrel grows out of the wrist over the right
-// fist, a tank on its back, and fire pours from its mouth (MechFlame). On the rocket boots a pair of nozzles grows out
+// flashes one out of its tube, which stays empty. For the flamethrower the right hand sinks into the wrist (MechPainter)
+// and a barrel telescopes out of it in its place, a tank on its back, and fire pours from its mouth (MechFlame). On the rocket boots a pair of nozzles grows out
 // of each sole and roars with flame. For its helpers the doors of a hatch on its belly swing open.
 final class MechGear {
     private static final double BACK = -0.3;
@@ -52,7 +52,15 @@ final class MechGear {
     private static final double BARREL_FROM = MechArmShapes.WRIST - 0.5;
     private static final double BARREL_Z = 0.2;
     private static final double BARREL_MOUTH = MechScript.PALM_ALONG + MechAttacks.MUZZLE;
-    private static final Shape BARREL = Shape.of(barrel());
+    // Where along the barrel its middle and its mouth sit once out; each slides there out of the piece behind it.
+    private static final double MIDDLE_FROM = 1.1;
+    private static final double MOUTH_FROM = 2.4;
+    private static final Shape CUFF = Shape.of(cuff());
+    private static final Shape MIDDLE = Shape.of(middle());
+    private static final Shape MOUTH_PIECE = Shape.of(mouth());
+    // Two cooling fins out of the cuff's sides, grown once the barrel is out.
+    private static final Shape FIN = Shape.of(Mesh.box(0.0, 0.15, -0.05, 0.55, 1.05, 0.05, 1.3));
+    private static final Shape FIN_LEFT = MechParts.mirrored(FIN);
     // The hatch under the cockpit: two doors on the belly, in the torso's places, each hinged at its outer edge.
     private static final double HATCH_HINGE = 0.95;
     private static final double HATCH_Z = 1.13;
@@ -81,11 +89,11 @@ final class MechGear {
         return m.toArray(Mesh[]::new);
     }
 
-    // A missile's nose in each tube, one shape per tube so a fired one is left out.
+    // A missile's crystal warhead in each tube (MechMissilePainter), one shape per tube so a fired one is left out.
     private static Shape[] noses() {
         Shape[] noses = new Shape[MechAttacks.ROCKETS];
         for (int k = 0; k < noses.length; k++) {
-            noses[k] = Shape.of(Mesh.cone(8, TUBE * 0.8, 0.0, MOUTH - 0.12, MOUTH + 0.14, 1.3).moved(tubeX(k), 0.0,
+            noses[k] = Shape.of(Mesh.cone(4, TUBE * 0.8, 0.0, MOUTH - 0.12, MOUTH + 0.18, 1.9).moved(tubeX(k), 0.0,
                     tubeZ(k)));
         }
         return noses;
@@ -100,21 +108,28 @@ final class MechGear {
         return MechAttacks.TUBE_Z[k] - BACK;
     }
 
-    // The flamethrower, from its back end at y 0: a cuff over the wrist, a barrel narrowing over the fist to a flared
-    // mouth with a bore in it, two bands round it, and a tank on its back piped to the mouth.
-    private static Mesh[] barrel() {
-        double mouth = BARREL_MOUTH - BARREL_FROM;
+    // The flamethrower in three pieces that telescope out of the wrist, each from its own back end at y 0: a cuff with
+    // a band round it, a middle narrowing over where the fist was with a tank on its back, and the flared mouth with a
+    // bore in it.
+    private static Mesh[] cuff() {
+        return new Mesh[] { Mesh.lathe(16, 1.0, 0.0, 0.0, 0.92, 0.0, 1.0, 0.3, 1.0, 1.1, 0.9, 1.25, 0.0, 1.25),
+                Mesh.torus(16, 5, 1.0, 0.08, 1.4).moved(0.0, 1.15, 0.0) };
+    }
+
+    private static Mesh[] middle() {
         double tank = -1.0 - BARREL_Z;
-        return new Mesh[] {
-                Mesh.lathe(16, 1.0, 0.0, 0.0, 0.92, 0.0, 1.0, 0.3, 1.0, 1.1, 0.88, 1.7, 0.7, 2.45, 0.66, mouth - 0.42,
-                        0.8, mouth, 0.48, mouth, 0.42, mouth - 0.27, 0.0, mouth - 0.27),
-                Mesh.torus(16, 5, 1.0, 0.08, 1.4).moved(0.0, 1.15, 0.0),
-                Mesh.torus(14, 5, 0.76, 0.07, 1.4).moved(0.0, 2.15, 0.0),
-                Mesh.torus(14, 5, 0.66, 0.09, 1.55).moved(0.0, mouth, 0.0),
-                Mesh.lathe(10, 1.1, 0.0, 0.55, 0.22, 0.6, 0.3, 0.75, 0.3, 1.95, 0.22, 2.1, 0.0, 2.15).moved(0.0, 0.0,
+        return new Mesh[] { Mesh.lathe(16, 1.0, 0.0, 0.0, 0.92, 0.0, 0.88, 0.45, 0.72, 1.2, 0.7, 1.35, 0.0, 1.35),
+                Mesh.torus(14, 5, 0.76, 0.07, 1.4).moved(0.0, 1.05, 0.0),
+                Mesh.lathe(10, 1.1, 0.0, -0.55, 0.22, -0.5, 0.3, -0.35, 0.3, 0.85, 0.22, 1.0, 0.0, 1.05).moved(0.0, 0.0,
                         tank),
-                Mesh.tube(false, 6, 0.08, 1.25, new Vec3(0.0, 2.1, tank), new Vec3(0.0, 2.45, tank + 0.2),
-                        new Vec3(0.0, 2.6, -0.62)) };
+                Mesh.tube(false, 6, 0.08, 1.25, new Vec3(0.0, 1.0, tank), new Vec3(0.0, 1.35, tank + 0.2),
+                        new Vec3(0.0, 1.5, -0.62)) };
+    }
+
+    private static Mesh[] mouth() {
+        double mouth = BARREL_MOUTH - BARREL_FROM - MOUTH_FROM;
+        return new Mesh[] { Mesh.lathe(16, 1.0, 0.0, 0.0, 0.7, 0.0, 0.66, mouth - 0.42, 0.8, mouth, 0.48, mouth, 0.42,
+                mouth - 0.27, 0.0, mouth - 0.27), Mesh.torus(14, 5, 0.66, 0.09, 1.55).moved(0.0, mouth, 0.0) };
     }
 
     // A bell nozzle reaching down out of a sole: its throat at the sole, its bell flared at the bottom.
@@ -153,16 +168,37 @@ final class MechGear {
         painter.noClip();
     }
 
-    // The flamethrower over the right fist (`frame`, the hand as the arm draws it), grown out of the wrist as far as
-    // the blow has it and sunk back into it again.
+    // The flamethrower where the right fist was (`frame`, the hand as the arm draws it, sunk into the wrist by then):
+    // the cuff swells out of the wrist, the middle slides out of it and the mouth out of that, then the fins swing
+    // out; shut, it folds back in the other way round.
     static void flamer(LanternPainter painter, Frame frame, MechAttacks.Blow blow, double apart, int seed) {
         double out = MechAttacks.nozzle(blow);
         if (out <= 0.01) {
             return;
         }
-        double wide = Mth.clamp(out * 3.0, 0.15, 1.0);
-        Frame barrel = frame.moved(0.0, BARREL_FROM, BARREL_Z).stretched(wide, Ease.backOut(out), wide);
-        MechParts.draw(painter, BARREL, barrel, 1.0, apart, seed);
+        Frame root = frame.moved(0.0, BARREL_FROM, BARREL_Z);
+        double cuff = Ease.smooth(Mth.clamp(out / 0.4, 0.0, 1.0));
+        double middle = Ease.backOut(Mth.clamp((out - 0.25) / 0.4, 0.0, 1.0));
+        double mouth = Ease.backOut(Mth.clamp((out - 0.5) / 0.4, 0.0, 1.0));
+        double wide = 0.55 + 0.45 * cuff;
+        MechParts.draw(painter, CUFF, root.stretched(wide, Math.max(0.05, cuff), wide), 1.0, apart, seed);
+        if (middle > 0.0) {
+            double w = 0.75 + 0.25 * middle;
+            MechParts.draw(painter, MIDDLE, root.moved(0.0, MIDDLE_FROM * middle, 0.0).stretched(w, 1.0, w), 1.0,
+                    apart, seed + 1);
+        }
+        if (mouth > 0.0) {
+            double w = 0.75 + 0.25 * mouth;
+            MechParts.draw(painter, MOUTH_PIECE, root.moved(0.0, MIDDLE_FROM * middle + (MOUTH_FROM - MIDDLE_FROM)
+                    * mouth, 0.0).stretched(w, 1.0, w), 1.0, apart, seed + 2);
+        }
+        double fins = Ease.backOut(Mth.clamp((out - 0.75) / 0.25, 0.0, 1.0));
+        if (fins > 0.0) {
+            for (int side = -1; side <= 1; side += 2) {
+                Frame fin = root.moved(side * 0.95, 0.0, 0.0).stretched(Math.max(0.05, fins), 1.0, 1.0);
+                MechParts.draw(painter, side > 0 ? FIN : FIN_LEFT, fin, 1.0, apart, seed + 3 + side);
+            }
+        }
     }
 
     // The hatch under the cockpit (`body`, the torso as the trunk is drawn): its doors grow out of the belly and swing

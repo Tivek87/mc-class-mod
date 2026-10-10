@@ -7,7 +7,9 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.Mth;
+import net.minecraft.world.damagesource.DamageSources;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.level.ClipContext;
@@ -99,7 +101,7 @@ public final class MinionMoves extends Goal {
             this.go(target, pilot);
             return;
         }
-        if (target == null || pilot == null) {
+        if (target == null || pilot == null && !this.minion.wild()) {
             return;
         }
         this.minion.aim(target);
@@ -144,7 +146,7 @@ public final class MinionMoves extends Goal {
         switch (this.kind) {
             case PUNCH -> {
                 boolean lands = this.t == JAB || this.t == HOOK;
-                if (lands && target != null && pilot != null && this.gap(target) <= REACH + 0.6) {
+                if (lands && target != null && this.gap(target) <= REACH + 0.6) {
                     Vec3 away = this.flatWay(target).scale(this.t == HOOK ? 0.9 : 0.5).add(0.0, 0.3, 0.0);
                     this.hurt(pilot, target, this.minion.damage(), away);
                     Sounds.play(level, target.position(), SoundEvents.PLAYER_ATTACK_STRONG, 1.0F, 0.8F);
@@ -154,7 +156,7 @@ public final class MinionMoves extends Goal {
                 }
             }
             case CANNON -> {
-                if (this.t == FIRE && target != null && pilot != null) {
+                if (this.t == FIRE && target != null) {
                     this.shoot(level, pilot, target);
                 }
                 if (this.t >= CANNON_END) {
@@ -191,7 +193,7 @@ public final class MinionMoves extends Goal {
     }
 
     // The bolt: from the cannon's mouth straight at its target's middle, stopped by a wall.
-    private void shoot(ServerLevel level, ServerPlayer pilot, LivingEntity target) {
+    private void shoot(ServerLevel level, @Nullable ServerPlayer pilot, LivingEntity target) {
         Vec3 from = muzzle(this.minion);
         Vec3 to = target.getBoundingBox().getCenter();
         BlockHitResult wall = LoadedWorld.clip(level, new ClipContext(from, to, ClipContext.Block.COLLIDER,
@@ -234,11 +236,13 @@ public final class MinionMoves extends Goal {
         Sounds.play(level, at, SoundEvents.GENERIC_EXPLODE.value(), 0.8F, 1.4F);
         ParticleFx.shockwave(level, ParticleTypes.CLOUD, at.add(0.0, 0.1, 0.0), 10, 0.35);
         ParticleFx.shockwave(level, ParticleFx.dust(PowerRing.BRIGHT, 1.4F), at.add(0.0, 0.2, 0.0), 20, 0.5);
-        if (pilot == null) {
+        if (pilot == null && !this.minion.wild()) {
             return;
         }
+        LivingEntity target = this.minion.getTarget();
         for (LivingEntity living : level.getEntitiesOfClass(LivingEntity.class, new AABB(at, at).inflate(SLAM_RADIUS,
-                2.0, SLAM_RADIUS), living -> living != this.minion && PowerRing.canHit(pilot, living))) {
+                2.0, SLAM_RADIUS), living -> living != this.minion && (pilot != null ? PowerRing.canHit(pilot, living)
+                        : living == target || living instanceof Enemy && !(living instanceof MechMinion)))) {
             Vec3 to = living.position().subtract(at);
             double flat = Math.sqrt(to.x * to.x + to.z * to.z);
             if (flat > SLAM_RADIUS + living.getBbWidth() * 0.5) {
@@ -249,10 +253,12 @@ public final class MinionMoves extends Goal {
         }
     }
 
-    // A hit as its pilot's own (which knocks back by itself): its own push is set after it.
-    private void hurt(ServerPlayer pilot, LivingEntity target, double damage, Vec3 push) {
+    // A hit as its pilot's own, or a wild one's own (which knocks back by itself): its own push is set after it.
+    private void hurt(@Nullable ServerPlayer pilot, LivingEntity target, double damage, Vec3 push) {
         target.invulnerableTime = 0;
-        if (!target.hurt(this.minion.level().damageSources().playerAttack(pilot), (float) damage)) {
+        DamageSources sources = this.minion.level().damageSources();
+        if (!target.hurt(pilot != null ? sources.playerAttack(pilot) : sources.mobAttack(this.minion),
+                (float) damage)) {
             return;
         }
         double resist = Mth.clamp(target.getAttributeValue(Attributes.KNOCKBACK_RESISTANCE), 0.0, 1.0);

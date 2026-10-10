@@ -52,6 +52,10 @@ class ModelAssetsTest {
         for (Path file : files) {
             String name = folder.relativize(file).toString().replace('\\', '/').replaceAll("\\.json$", "");
             JsonObject model = JsonParser.parseString(Files.readString(file)).getAsJsonObject();
+            // An item model that only names a parent (a spawn egg) has no boxes of its own.
+            if (!model.has("elements")) {
+                continue;
+            }
             JsonObject textures = model.getAsJsonObject("textures");
             List<Element> elements = elements(model);
             for (Element element : elements) {

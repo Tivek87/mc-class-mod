@@ -19,7 +19,7 @@ import nl.tivek.multiversepowers.character.Characters;
 import nl.tivek.multiversepowers.character.GameCharacter;
 import nl.tivek.multiversepowers.character.greenlantern.Arrival;
 import nl.tivek.multiversepowers.character.greenlantern.PowerRing;
-import nl.tivek.multiversepowers.character.greenlantern.ability.light.LightShield;
+import nl.tivek.multiversepowers.character.greenlantern.ability.light.LightDome;
 import nl.tivek.multiversepowers.character.greenlantern.construct.Construct;
 import nl.tivek.multiversepowers.character.greenlantern.construct.ConstructPayload;
 import nl.tivek.multiversepowers.engine.ability.Throttle;
@@ -388,7 +388,7 @@ public final class EnergyWhip extends WhipHits {
         }
         EnergyWhip whip = HELD.get(player.getUUID());
         if (whip == null || whip.breaking >= 0 || !whip.spinning || whip.age - whip.moveStart < WhipMove.SPIN_GUARD
-                || event.getAmount() <= 0.0F || LightShield.goesThrough(event.getSource())) {
+                || event.getAmount() <= 0.0F || LightDome.goesThrough(event.getSource())) {
             return;
         }
         Vec3 front = flat(player.getLookAngle());

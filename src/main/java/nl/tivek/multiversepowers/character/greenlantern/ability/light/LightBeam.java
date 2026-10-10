@@ -27,11 +27,13 @@ import nl.tivek.multiversepowers.character.CharacterAbility;
 import nl.tivek.multiversepowers.character.greenlantern.PowerRing;
 import nl.tivek.multiversepowers.character.greenlantern.ability.airstrike.AirStrike;
 import nl.tivek.multiversepowers.character.greenlantern.ability.flight.Flight;
+import nl.tivek.multiversepowers.character.greenlantern.ability.flight.RamCone;
 import nl.tivek.multiversepowers.character.greenlantern.ability.hands.GiantHands;
 import nl.tivek.multiversepowers.character.greenlantern.ability.ring.Recharge;
 import nl.tivek.multiversepowers.character.greenlantern.construct.ConstructPayload;
 import nl.tivek.multiversepowers.engine.effect.Effect;
 import nl.tivek.multiversepowers.engine.effect.Effects;
+import nl.tivek.multiversepowers.engine.entity.DeathStyles;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 import nl.tivek.multiversepowers.engine.math.Vectors;
 import nl.tivek.multiversepowers.engine.world.LoadedWorld;
@@ -296,7 +298,7 @@ public final class LightBeam implements Effect {
             return true;
         }
         boolean ringHand = GiantHands.waving(player) || AirStrike.calling(player);
-        return ringHand && (LightShield.up(player) || LightDome.up(player));
+        return ringHand && (RamCone.up(player) || LightDome.up(player));
     }
 
     public static void clear() {
@@ -364,6 +366,8 @@ public final class LightBeam implements Effect {
                 }
                 // Vanilla invulnerability after a hit would otherwise swallow the beam's next, rapid tick.
                 target.invulnerableTime = 0;
+                // Killed by the beam, a creature burns to ash.
+                DeathStyles.mark(target, DeathStyles.Style.ASH);
                 target.hurt(level.damageSources().playerAttack(this.owner), this.damage);
                 double resist = Mth.clamp(target.getAttributeValue(Attributes.KNOCKBACK_RESISTANCE), 0.0, 1.0);
                 Vec3 shove = new Vec3(this.facing.x, 0.0, this.facing.z).scale(this.push * (1.0 - resist));

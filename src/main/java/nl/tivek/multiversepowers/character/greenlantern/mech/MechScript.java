@@ -80,7 +80,7 @@ public final class MechScript {
     public static final Vec3[] BUTTONS = { new Vec3(0.44, 9.24, 1.33), new Vec3(0.15, 9.27, 1.38),
             new Vec3(-0.15, 9.27, 1.38), new Vec3(-0.44, 9.24, 1.33) };
     public static final Vec3 NECK = new Vec3(0.0, 11.45, 0.55);
-    public static final double HEAD_SCALE = 1.6;
+    public static final double HEAD_SCALE = 1.95;
     public static final double HEAD_UP = 0.62 * HEAD_SCALE;
 
     private static final double FOOT_HIGH = 9.0;

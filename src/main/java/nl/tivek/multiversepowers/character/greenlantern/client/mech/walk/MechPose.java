@@ -137,7 +137,8 @@ public final class MechPose {
         pose.leverRight = Mth.lerp(u, from.leverRight, to.leverRight);
         pose.press = from.button == to.button ? Mth.lerp(u, from.press, to.press) : to.press;
         pose.blow = from.blow.kind() == to.blow.kind() && to.blow.age() >= from.blow.age() ? new MechAttacks.Blow(
-                to.blow.kind(), Mth.lerp(u, from.blow.age(), to.blow.age()), to.blow.from(), to.blow.turn())
+                to.blow.kind(), Mth.lerp(u, from.blow.age(), to.blow.age()), to.blow.from(), to.blow.turn(),
+                to.blow.eyes())
                 : to.blow;
         pose.aim = from.aim != null && to.aim != null ? from.aim.lerp(to.aim, u) : to.aim;
         return pose;

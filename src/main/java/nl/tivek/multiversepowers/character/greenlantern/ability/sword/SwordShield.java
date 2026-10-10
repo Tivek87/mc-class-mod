@@ -20,7 +20,7 @@ import nl.tivek.multiversepowers.character.GameCharacter;
 import nl.tivek.multiversepowers.character.greenlantern.Arrival;
 import nl.tivek.multiversepowers.character.greenlantern.PowerRing;
 import nl.tivek.multiversepowers.character.greenlantern.ability.flight.Flight;
-import nl.tivek.multiversepowers.character.greenlantern.ability.light.LightShield;
+import nl.tivek.multiversepowers.character.greenlantern.ability.light.LightDome;
 import nl.tivek.multiversepowers.character.greenlantern.construct.Construct;
 import nl.tivek.multiversepowers.character.greenlantern.construct.ConstructPayload;
 import nl.tivek.multiversepowers.engine.ability.Throttle;
@@ -363,7 +363,7 @@ public final class SwordShield extends SwordShieldBlows {
         }
         SwordShield sword = HELD.get(player.getUUID());
         if (sword == null || sword.breaking >= 0 || event.getAmount() <= 0.0F
-                || LightShield.goesThrough(event.getSource())) {
+                || LightDome.goesThrough(event.getSource())) {
             return;
         }
         boolean guarding = sword.flurry && sword.move == SwordMove.FLURRY;

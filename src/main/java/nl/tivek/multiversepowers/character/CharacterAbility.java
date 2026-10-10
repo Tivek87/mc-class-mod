@@ -69,6 +69,7 @@ public final class CharacterAbility {
     private Input input = Input.KEY;
     private When when = When.ALWAYS;
     private int needs;
+    private boolean flightFree;
     private int holdTicks;
     private Tap tap = Tap.PRESS;
 
@@ -165,6 +166,17 @@ public final class CharacterAbility {
 
     public int needs() {
         return this.needs;
+    }
+
+    // A key that does another move in flight, one with no cooldown of its own: its cooldown neither refuses nor
+    // starts there.
+    public CharacterAbility flightFree() {
+        this.flightFree = true;
+        return this;
+    }
+
+    public boolean isFlightFree() {
+        return this.flightFree;
     }
 
     public CharacterAbility holdVersion(int ticks, Tap tap) {

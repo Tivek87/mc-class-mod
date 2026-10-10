@@ -11,9 +11,11 @@ import nl.tivek.multiversepowers.character.greenlantern.minion.MechMinion;
 import nl.tivek.multiversepowers.character.thor.hammer.ThrownHammer;
 import nl.tivek.multiversepowers.classes.ceremony.Ceremonies;
 import nl.tivek.multiversepowers.config.ModConfigs;
+import nl.tivek.multiversepowers.content.ModItems;
 import nl.tivek.multiversepowers.engine.effect.Effects;
 import nl.tivek.multiversepowers.engine.entity.DeathBlows;
 import nl.tivek.multiversepowers.engine.entity.DeathStyles;
+import nl.tivek.multiversepowers.engine.entity.Captives;
 import nl.tivek.multiversepowers.engine.entity.Fatigue;
 import nl.tivek.multiversepowers.engine.entity.HeldMobs;
 import nl.tivek.multiversepowers.engine.entity.Knockdowns;
@@ -36,6 +38,7 @@ public class MultiversePowers {
         modEventBus.addListener(ModNetwork::register);
         ThrownHammer.register(modEventBus);
         MechMinion.register(modEventBus);
+        ModItems.register(modEventBus);
         ModConfigs.register(modContainer, modEventBus);
         PlayerKnockdowns.listen(Characters::knockedDown);
         PlayerKnockdowns.flight(Characters::flying, Characters::flyAgain);
@@ -52,6 +55,7 @@ public class MultiversePowers {
         DeathStyles.clear();
         DeathBlows.clear();
         Fatigue.clear();
+        Captives.clear();
         TestFight.clear();
         // Last: held mobs must not be saved with their AI switched off.
         HeldMobs.releaseAll();

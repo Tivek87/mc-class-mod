@@ -32,10 +32,13 @@ import nl.tivek.multiversepowers.character.greenlantern.client.flight.Flown.Spot
 import nl.tivek.multiversepowers.character.greenlantern.client.flight.Flown;
 import nl.tivek.multiversepowers.character.greenlantern.client.flight.Jetpacks;
 import nl.tivek.multiversepowers.character.greenlantern.client.mech.walk.MechDrive;
+import nl.tivek.multiversepowers.character.greenlantern.client.mech.MechMissilePainter;
 import nl.tivek.multiversepowers.character.greenlantern.client.mech.MechPainter;
 import nl.tivek.multiversepowers.character.greenlantern.client.mech.walk.MechPose;
 import nl.tivek.multiversepowers.character.greenlantern.client.mech.walk.MechWalk;
 import nl.tivek.multiversepowers.character.greenlantern.client.minion.MinionPainter;
+import nl.tivek.multiversepowers.character.greenlantern.client.body.fist.FistPainter;
+import nl.tivek.multiversepowers.character.greenlantern.client.body.heavy.HeavyPainter;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.BeamCharge;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.BeamPainter;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.BubblePainter;
@@ -54,7 +57,6 @@ import nl.tivek.multiversepowers.character.greenlantern.hand.HandGroup;
 import nl.tivek.multiversepowers.character.greenlantern.hand.HandPose;
 import nl.tivek.multiversepowers.character.greenlantern.mech.MechAttacks;
 import nl.tivek.multiversepowers.character.greenlantern.mech.MechScript;
-import nl.tivek.multiversepowers.engine.math.Vectors;
 import static nl.tivek.multiversepowers.character.greenlantern.client.ConstructPlaces.RAM_OWN_AHEAD;
 import static nl.tivek.multiversepowers.character.greenlantern.client.ConstructPlaces.beamEnd;
 import static nl.tivek.multiversepowers.character.greenlantern.client.ConstructPlaces.on;
@@ -383,7 +385,8 @@ public final class ClientConstructs extends ConstructShakes {
         Minecraft minecraft = Minecraft.getInstance();
         ClientLevel level = minecraft.level;
         if (level == null || CONSTRUCTS.isEmpty() && BROKEN.isEmpty() && BROKEN_HANDS.isEmpty()
-                && !BeamCharge.any(level) && FireStream.out() && !Jetpacks.any()) {
+                && !BeamCharge.any(level) && FireStream.out() && !Jetpacks.any() && !MinionPainter.any(level)
+                && !FistPainter.any() && !HeavyPainter.any()) {
             return;
         }
         float partialTick = event.getPartialTick().getGameTimeDeltaPartialTick(false);
@@ -459,8 +462,8 @@ public final class ClientConstructs extends ConstructShakes {
                         track.clock(partialTick), ring, partialTick);
                 case ConstructPayload.MISSILE -> missile(painter, track, partialTick);
                 // The mech's missiles fly where the server has them, burning from the moment they leave the pod.
-                case ConstructPayload.MECH_MISSILE -> PlanePainter.missile(painter, true, center, way, Vectors.UP,
-                        now.age() - 1.0 + partialTick, -1.0);
+                case ConstructPayload.MECH_MISSILE -> MechMissilePainter.draw(painter, center, way,
+                        now.age() - 1.0 + partialTick);
                 case ConstructPayload.BULLET -> PlanePainter.bullet(painter, track.latest,
                         sinceSent(track, partialTick));
                 case ConstructPayload.BLAST -> PlanePainter.missileBlast(painter, track.latest,
@@ -542,6 +545,8 @@ public final class ClientConstructs extends ConstructShakes {
             }
         }
         MinionPainter.drawAll(painter, level, partialTick);
+        FistPainter.drawAll(painter, level, partialTick);
+        HeavyPainter.drawAll(painter, level, partialTick);
         FireStream.draw(painter, FireStream.now(partialTick));
         painter.finish(minecraft.renderBuffers().bufferSource());
     }

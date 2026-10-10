@@ -7,6 +7,7 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.LanternPainter;
+import nl.tivek.multiversepowers.character.greenlantern.client.render.hand.HandGauntlet;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.hand.HandPainter;
 import nl.tivek.multiversepowers.character.greenlantern.client.victim.HandVictims;
 import nl.tivek.multiversepowers.character.greenlantern.hand.HandPose;
@@ -20,8 +21,8 @@ import static nl.tivek.multiversepowers.character.greenlantern.client.render.han
 import static nl.tivek.multiversepowers.character.greenlantern.client.render.hand.HandPainter.handFrame;
 import static nl.tivek.multiversepowers.character.greenlantern.client.render.hand.HandPainter.ringGem;
 
-// The eye in the palm of the evil eye, the megaphone and the maw's mouth, all solid hard light, and their light: the
-// eye's gaze, the puppeteer's strings to the puppets, the megaphone's shockwaves, the maw's bites.
+// The eye in the palm of the evil eye, the megaphone, the maw's mouth and the snap's gauntlet, all solid hard light,
+// and their light: the eye's gaze, the puppeteer's strings to the puppets, the megaphone's shockwaves, the maw's bites.
 public final class HandMarvelLight {
     private static final double EYE = HandPose.EYE_SIZE;
     private static final ConstructPainter.Shape EYEBALL = ConstructPainter.Shape.of(
@@ -93,6 +94,7 @@ public final class HandMarvelLight {
             case HandPose.EYE -> eye(painter, place, clock, bright, apart);
             case HandPose.MEGAPHONE -> megaphone(painter, place, clock, bright, apart);
             case HandPose.MAW -> mouth(painter, place, clock, bright, apart);
+            case HandPose.SNAP -> HandGauntlet.parts(painter, pose, place, clock, bright, apart);
             default -> {
             }
         }

@@ -21,6 +21,7 @@ import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.config.PowerRules;
 import nl.tivek.multiversepowers.engine.ability.Cooldowns;
 import nl.tivek.multiversepowers.engine.ability.Throttle;
+import nl.tivek.multiversepowers.engine.entity.Captives;
 import nl.tivek.multiversepowers.engine.entity.PlayerKnockdowns;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 
@@ -119,8 +120,8 @@ public final class Characters {
         if (ability == null || ability.isPlaceholder()) {
             return;
         }
-        // Knocked down, a player can only let go of what they held.
-        if (on && PlayerKnockdowns.isDown(player)) {
+        // Knocked down or held captive, a player can only let go of what they held.
+        if (on && (PlayerKnockdowns.isDown(player) || Captives.held(player))) {
             sync(player);
             return;
         }
@@ -130,14 +131,16 @@ public final class Characters {
         boolean ownCooldown = !ability.isHeld() && ability.holdTicks() > 0
                 && ability.tapWhen() != CharacterAbility.Tap.NEVER && (data & HOLD) != 0;
         // A move's landing (SLAM) belongs to the move already under way: its cooldown never refuses it.
-        boolean follow = (data & (SLAM | CHARGE)) != 0;
+        boolean follow = (data & (SLAM | CHARGE)) != 0
+                || ability.isFlightFree() && character.powers().flying(player);
         if (COOLDOWNS.left(player, character, slot.ordinal()) > 0 && !letGo && !undo && !ownCooldown && !follow
-                && !character.powers().ownsKeys(player)) {
+                && !character.powers().ownsKeys(player) && !character.powers().endsOnly(player, ability)) {
             sync(player);
             return;
         }
         boolean used = character.powers().use(player, ability, on, data);
-        boolean done = (!ability.isHeld() || letGo) && !undo && !ownCooldown;
+        boolean done = (!ability.isHeld() || letGo) && !undo && !ownCooldown
+                && !(ability.isFlightFree() && follow);
         if (used && ability.getCooldown() > 0 && done) {
             COOLDOWNS.start(player, character, slot.ordinal(), ability.getCooldown());
         }

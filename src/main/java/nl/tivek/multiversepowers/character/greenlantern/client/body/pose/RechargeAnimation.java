@@ -23,7 +23,7 @@ import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.character.greenlantern.PowerRing;
 import nl.tivek.multiversepowers.character.greenlantern.client.ClientRing;
 import nl.tivek.multiversepowers.character.greenlantern.client.flight.ClientFlight;
-import nl.tivek.multiversepowers.character.greenlantern.client.render.PowerBattery;
+import nl.tivek.multiversepowers.character.greenlantern.client.render.PowerLantern;
 import nl.tivek.multiversepowers.engine.client.model.BentParts;
 import nl.tivek.multiversepowers.engine.client.render.entity.FirstPersonArm;
 import nl.tivek.multiversepowers.engine.math.Ease;
@@ -32,22 +32,22 @@ import org.joml.Vector3f;
 
 @EventBusSubscriber(modid = MultiversePowers.MODID, value = Dist.CLIENT)
 public final class RechargeAnimation {
-    private static final float RAISED = 4.0F;
-    private static final float WIND = 8.0F;
+    // The lantern held up before him; the right fist brought slowly to it until the ring touches the emblem at HIT,
+    // pressed there while the lantern lights up from inside and the ring fills, then drawn back at BACK.
+    private static final float RAISED = 6.0F;
     private static final float HIT = PowerRing.RECHARGE_HIT;
     private static final float BACK = PowerRing.RECHARGE_BACK;
     private static final float GONE = PowerRing.RECHARGE_TICKS;
     private static final float POP = 2.5F;
     private static final float FLASH = 7.0F;
-    private static final float SHAKE = 7.0F;
 
-    private static final Vector3f GRIP_UP = new Vector3f(-0.22F, 0.20F, -0.80F);
+    private static final Vector3f GRIP_UP = new Vector3f(-0.28F, 0.28F, -0.85F);
     private static final Vector3f GRIP_DOWN = new Vector3f(-0.55F, -1.0F, -0.80F);
     private static final Vector3f LEFT_FROM = new Vector3f(-1.52F, -0.34F, 0.33F);
-    private static final Vector3f HIT_POINT = new Vector3f(0.17F, -0.24F, 0.18F);
-    private static final Vector3f WIND_BACK = new Vector3f(0.12F, 0.25F, 0.25F);
-    private static final Vector3f KNOCK = new Vector3f(-0.045F, -0.018F, -0.09F);
-    private static final float HELD_SCALE = 0.56F;
+    // From the grip to where the fist presses the ring to the emblem, turned towards it from the right.
+    private static final Vector3f HIT_POINT = new Vector3f(0.2F, -0.45F, 0.13F);
+    private static final float FACING = 40.0F;
+    private static final float HELD_SCALE = 0.85F;
     private static final float WORN_SCALE = 0.8F;
     private static final float FULL_WIND = 1.5F;
 
@@ -74,71 +74,58 @@ public final class RechargeAnimation {
         return heldAlready(player) && t < GONE - POP ? 1.0F : shown(t);
     }
 
+    // How far the right fist has come to the emblem: slowly in, held, slowly back.
     static float press(float t) {
         if (t < RAISED) {
             return 0.0F;
         }
-        if (t < WIND) {
-            return 0.3F * (float) Ease.smooth((t - RAISED) / (WIND - RAISED));
-        }
-        if (t < HIT) {
-            float in = (t - WIND) / (HIT - WIND);
-            return 0.3F + 0.7F * in * in * in;
-        }
         if (t < BACK) {
-            return 1.0F - 0.1F * kick(t);
+            return (float) Ease.smooth((t - RAISED) / (HIT - RAISED));
         }
         return 1.0F - (float) Ease.smooth((t - BACK) / (GONE - 2.0F - BACK));
     }
 
-    static float wind(float t) {
-        if (t < RAISED || t >= HIT) {
-            return 0.0F;
-        }
-        if (t < WIND) {
-            return (float) Ease.smooth((t - RAISED) / (WIND - RAISED));
-        }
-        float in = (t - WIND) / (HIT - WIND);
-        return 1.0F - in * in * in;
+    // How far the charge has come, 0 at the touch to 1 when it is done.
+    public static float charge(float t) {
+        return (float) Mth.clamp((t - HIT) / (BACK - HIT), 0.0F, 1.0F);
     }
 
-    static float kick(float t) {
-        if (t < HIT) {
+    // A small shudder through both hands while the ring takes the charge.
+    static float tremble(float t) {
+        if (t < HIT || t > BACK) {
             return 0.0F;
         }
-        float fade = Mth.clamp(1.0F - (t - HIT) / SHAKE, 0.0F, 1.0F);
-        return fade * fade;
+        return 0.6F + 0.4F * charge(t);
     }
 
+    // The flash in the emblem as the charge is full.
     static float burst(float t) {
-        if (t < HIT) {
+        if (t < BACK) {
             return 0.0F;
         }
-        return Mth.clamp(1.0F - (t - HIT) / (BACK - HIT), 0.0F, 1.0F);
+        return Mth.clamp(1.0F - (t - BACK) / FLASH, 0.0F, 1.0F);
     }
 
     static float shown(float t) {
         return (float) Ease.smooth(t / POP) * (1.0F - (float) Ease.smooth((t - (GONE - POP)) / POP));
     }
 
+    // The lantern's light: dim until the ring touches, rising with the charge, a flash when full, then fading.
     public static float glow(float t) {
         if (t < HIT) {
-            return 0.25F + 0.45F * (float) Ease.smooth((t - RAISED) / (HIT - RAISED));
+            return 0.12F;
         }
         if (t < BACK) {
-            return 1.0F + 1.9F * kick(t);
+            float u = charge(t);
+            return 0.12F + 0.88F * u * (float) Math.sqrt(u);
         }
-        return 1.0F - (float) Ease.smooth((t - BACK) / (GONE - BACK));
+        return 1.0F + 0.8F * burst(t) - 0.6F * (float) Ease.smooth((t - BACK) / (GONE - BACK));
     }
 
     public static float flash(float t) {
-        if (t < HIT || t > HIT + FLASH) {
-            return 0.0F;
-        }
-        float fade = 1.0F - (t - HIT) / FLASH;
-        return fade * fade;
+        float burst = burst(t);
+        return burst * burst * 0.6F;
     }
-
 
     public static void pose(HumanoidModel<?> model, LivingEntity entity, HumanoidArm arm) {
         float t = ClientRing.recharge(entity, Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(false));
@@ -148,16 +135,19 @@ public final class RechargeAnimation {
         float look = Mth.clamp(model.head.xRot, -0.8F, 0.8F) * 0.5F;
         if (arm == HumanoidArm.LEFT) {
             float lift = lift(entity, t);
-            model.leftArm.xRot = Mth.lerp(lift, model.leftArm.xRot, -1.85F + look - kick(t) * 0.2F);
+            model.leftArm.xRot = Mth.lerp(lift, model.leftArm.xRot, -1.85F + look + shake(entity, t));
             model.leftArm.yRot = Mth.lerp(lift, model.leftArm.yRot, 0.4F);
             model.leftArm.zRot = Mth.lerp(lift, model.leftArm.zRot, 0.0F);
         } else {
             float press = press(t);
-            float wind = wind(t);
-            model.rightArm.xRot = Mth.lerp(press, model.rightArm.xRot, -1.5F + look + wind * 0.75F);
-            model.rightArm.yRot = Mth.lerp(press, model.rightArm.yRot, -0.6F - wind * 0.25F);
-            model.rightArm.zRot = Mth.lerp(press, model.rightArm.zRot, 0.12F + wind * 0.35F);
+            model.rightArm.xRot = Mth.lerp(press, model.rightArm.xRot, -1.0F + look + shake(entity, t));
+            model.rightArm.yRot = Mth.lerp(press, model.rightArm.yRot, -0.7F);
+            model.rightArm.zRot = Mth.lerp(press, model.rightArm.zRot, 0.1F);
         }
+    }
+
+    static float shake(Entity entity, float t) {
+        return 0.02F * tremble(t) * Mth.sin((entity.tickCount + t) * 3.1F);
     }
 
     public static void lanternInHand(PoseStack poseStack, MultiBufferSource buffers, ModelPart arm, boolean slim,
@@ -182,7 +172,7 @@ public final class RechargeAnimation {
         poseStack.scale(1.0F, -1.0F, 1.0F);
         float scale = WORN_SCALE * shown;
         poseStack.scale(scale, scale, scale);
-        PowerBattery.draw(poseStack, buffers, glow, burst);
+        PowerLantern.draw(poseStack, buffers, glow, burst);
         poseStack.popPose();
     }
 
@@ -206,12 +196,12 @@ public final class RechargeAnimation {
         int light = event.getPackedLight();
         PlayerRenderer renderer = (PlayerRenderer) minecraft.getEntityRenderDispatcher().getRenderer(player);
 
-        float kick = kick(t);
+        float shudder = tremble(t) * 0.006F;
         float gust = ClientRing.flight(player, event.getPartialTick()) < 0.0F ? 0.0F
                 : Mth.clamp((float) ClientFlight.ownVelocity().length() / FULL_WIND, 0.0F, 1.0F);
         float time = player.tickCount + event.getPartialTick();
         Vector3f grip = new Vector3f(GRIP_DOWN).lerp(GRIP_UP, lift(player, t))
-                .add(KNOCK.x * kick, KNOCK.y * kick, KNOCK.z * kick)
+                .add(shudder * Mth.sin(time * 3.1F), shudder * Mth.sin(time * 4.3F + 1.0F), 0.0F)
                 .add(gust * 0.012F * Mth.sin(time * 1.9F), gust * (0.01F * Mth.sin(time * 2.7F) - 0.04F),
                         gust * 0.05F);
         arm(pose, buffers, light, player, renderer, -1.0F, grip, LEFT_FROM);
@@ -219,17 +209,15 @@ public final class RechargeAnimation {
         if (shown > 0.0F) {
             pose.pushPose();
             pose.translate(grip.x, grip.y, grip.z);
-            pose.mulPose(Axis.YP.rotationDegrees(-14.0F));
+            pose.mulPose(Axis.YP.rotationDegrees(FACING));
             pose.mulPose(Axis.XP.rotationDegrees(gust * (10.0F + 2.0F * Mth.sin(time * 2.3F))));
             float scale = HELD_SCALE * shown;
             pose.scale(scale, scale, scale);
-            PowerBattery.draw(pose, buffers, glow(t), burst(t));
+            PowerLantern.draw(pose, buffers, glow(t), burst(t));
             pose.popPose();
         }
 
-        float wind = wind(t);
-        Vector3f fist = new Vector3f(HAND_RIGHT).lerp(new Vector3f(grip).add(HIT_POINT), press(t))
-                .add(WIND_BACK.x * wind, WIND_BACK.y * wind, WIND_BACK.z * wind);
+        Vector3f fist = new Vector3f(HAND_RIGHT).lerp(new Vector3f(grip).add(HIT_POINT), press(t));
         arm(pose, buffers, light, player, renderer, 1.0F, fist, SHOULDER_RIGHT);
     }
 

@@ -37,7 +37,7 @@ import nl.tivek.multiversepowers.character.greenlantern.client.body.pose.Recharg
 import nl.tivek.multiversepowers.character.greenlantern.client.body.spot.RingSpot;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.suit.Ring;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.LanternPainter;
-import nl.tivek.multiversepowers.character.greenlantern.client.render.PowerBattery;
+import nl.tivek.multiversepowers.character.greenlantern.client.render.PowerLantern;
 import nl.tivek.multiversepowers.character.greenlantern.client.slam.SlamPainter;
 import nl.tivek.multiversepowers.config.client.ClientSettings;
 import nl.tivek.multiversepowers.engine.math.Colors;
@@ -273,7 +273,7 @@ public final class ArrivalAnimation {
         pose.mulPose(Axis.YP.rotation(0.6F * (1.0F - fly) * Mth.sin(a * 0.25F)));
         float scale = LANTERN_SCALE * Mth.clamp(grown, 0.0F, 1.2F) * (own ? Mth.lerp(fly, 1.0F, 0.7F) : 1.0F);
         pose.scale(scale, scale, scale);
-        PowerBattery.draw(pose, buffers, 0.5F + 0.6F * (1.0F - form), 0.0F,
+        PowerLantern.draw(pose, buffers, 0.5F + 0.6F * (1.0F - form), 0.0F,
                 1.0F - (float) Ease.smooth((form - 0.1F) / 0.8F));
         pose.popPose();
     }
@@ -405,7 +405,7 @@ public final class ArrivalAnimation {
             pose.translate(grip.x, grip.y, grip.z);
             pose.mulPose(Axis.YP.rotationDegrees(-14.0F));
             pose.scale(0.56F, 0.56F, 0.56F);
-            PowerBattery.draw(pose, buffers, lanternGlow(player, event.getPartialTick()), 0.0F);
+            PowerLantern.draw(pose, buffers, lanternGlow(player, event.getPartialTick()), 0.0F);
             pose.popPose();
         }
         Vector3f fist = new Vector3f(RechargeAnimation.HAND_RIGHT).lerp(FIST_UP, fistUp(a));

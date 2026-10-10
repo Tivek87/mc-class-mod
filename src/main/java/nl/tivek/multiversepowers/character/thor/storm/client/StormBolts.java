@@ -268,7 +268,7 @@ public final class StormBolts {
                     // One striking right by your eyes (your bomb charging) stops short of them, or it fills the view.
                     double clear = 2.5 * (1.0 - Ease.smooth((camera.getPosition().distanceTo(said.to()) - 0.5) / 1.5));
                     Bolts.bolt(painter, LOOK, said.from(), off(said.to(), said.from(), clear), age, said.seed(),
-                            said.size() > 0.0F ? said.size() : 1.0, fx.floor);
+                            said.size() > 0.0F ? said.size() : 1.0, fx.floor, false);
                 }
                 case StormFxPayload.SPARK -> Bolts.arc(painter, LOOK, said.from(), said.to(), age, said.seed());
                 case StormFxPayload.DOME -> dome(painter, said.from(), said.size(), age, said.seed());
@@ -299,7 +299,7 @@ public final class StormBolts {
                 Vec3 top = c.add((Noise.of(seed, k, 21) - 0.5) * radius * 1.2, 26.0 + 8.0 * Noise.of(seed, k, 22),
                         (Noise.of(seed, k, 23) - 0.5) * radius * 1.2);
                 Bolts.bolt(painter, LOOK, top, off(c, top, clear * 1.5), struck + 1.5, seed + k * 101,
-                        1.6 - 0.2 * k, null);
+                        1.6 - 0.2 * k, null, false);
             }
         }
         double fade = Math.max(0.0, 1.0 - age / 12.0);

@@ -26,7 +26,7 @@ import nl.tivek.multiversepowers.character.greenlantern.ability.airstrike.AirStr
 import nl.tivek.multiversepowers.character.greenlantern.ability.flight.Flight;
 import nl.tivek.multiversepowers.character.greenlantern.ability.hands.GiantHands;
 import nl.tivek.multiversepowers.character.greenlantern.ability.light.LightBubble;
-import nl.tivek.multiversepowers.character.greenlantern.ability.light.LightShield;
+import nl.tivek.multiversepowers.character.greenlantern.ability.flight.RamCone;
 import nl.tivek.multiversepowers.character.greenlantern.ability.ring.Recharge;
 import nl.tivek.multiversepowers.character.greenlantern.construct.ConstructPayload;
 import nl.tivek.multiversepowers.character.greenlantern.mech.MechAttacks;
@@ -110,9 +110,10 @@ public final class MechAssembly extends MechControls implements Effect {
         }
         PowerRing.setPower(owner, power - cost);
         Flight.stop(owner);
-        LightShield.stop(owner);
+        RamCone.stop(owner);
         mech = new MechAssembly(owner, ability, stage, target);
         ACTIVE.put(owner.getUUID(), mech);
+        MechArmor.on(owner, ability.value("mechHealthTimes"));
         Effects.start(level, mech);
         PowerRing.tell(owner, "mech");
         PowerRing.sync(owner);
@@ -247,8 +248,9 @@ public final class MechAssembly extends MechControls implements Effect {
         if (mech == null) {
             return false;
         }
-        if (key.id().equals("light_shield") && !on) {
-            if (mech.attack != null && mech.attack.kind() == MechAttacks.GLARE) {
+        if (key.id().equals("light_bolt") && !on) {
+            if (mech.attack != null && (mech.attack.kind() == MechAttacks.GLARE
+                    || mech.attack.kind() == MechAttacks.AIM)) {
                 mech.attack.letGo();
             }
             return false;
@@ -257,12 +259,12 @@ public final class MechAssembly extends MechControls implements Effect {
             return false;
         }
         switch (key.id()) {
-            case "light_bolt" -> {
+            case "light_fists" -> {
                 if ((data & Characters.HOLD) == 0) {
                     mech.strike(level);
                 }
             }
-            case "light_shield" -> {
+            case "light_bolt" -> {
                 if ((data & (Characters.TAP | Characters.HOLD)) != 0) {
                     mech.eyes((data & Characters.HOLD) != 0);
                 }
@@ -399,6 +401,7 @@ public final class MechAssembly extends MechControls implements Effect {
     // However it ends, the wait before the next one starts here.
     private void end(ServerLevel level) {
         ACTIVE.remove(this.owner.getUUID(), this);
+        MechArmor.off(this.owner);
         this.target.release();
         this.stopAttack();
         ConstructPayload.sendRemove(level, this.id, this.stage.base());

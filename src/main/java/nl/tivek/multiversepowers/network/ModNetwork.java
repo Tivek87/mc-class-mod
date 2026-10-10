@@ -24,8 +24,11 @@ import nl.tivek.multiversepowers.character.greenlantern.ability.flame.Flamethrow
 import nl.tivek.multiversepowers.character.greenlantern.ability.mech.MechAssembly;
 import nl.tivek.multiversepowers.character.greenlantern.ability.slam.LandingSlam;
 import nl.tivek.multiversepowers.character.greenlantern.ability.sword.SwordShield;
+import nl.tivek.multiversepowers.character.greenlantern.ability.fist.LightFists;
+import nl.tivek.multiversepowers.character.greenlantern.ability.heavy.HeavyWeapon;
 import nl.tivek.multiversepowers.character.greenlantern.ability.whip.EnergyWhip;
 import nl.tivek.multiversepowers.character.greenlantern.construct.Construct;
+import nl.tivek.multiversepowers.character.greenlantern.ability.flight.Flight;
 import nl.tivek.multiversepowers.character.greenlantern.construct.ConstructHoldPayload;
 import nl.tivek.multiversepowers.character.greenlantern.construct.ConstructPayload;
 import nl.tivek.multiversepowers.character.greenlantern.construct.ConstructPickPayload;
@@ -33,6 +36,8 @@ import nl.tivek.multiversepowers.character.greenlantern.construct.FlattenPayload
 import nl.tivek.multiversepowers.character.greenlantern.hand.HandVictimPayload;
 import nl.tivek.multiversepowers.character.greenlantern.mech.MechDrivePayload;
 import nl.tivek.multiversepowers.character.greenlantern.mech.MechStepPayload;
+import nl.tivek.multiversepowers.character.greenlantern.fist.FistPayload;
+import nl.tivek.multiversepowers.character.greenlantern.heavy.HeavyPayload;
 import nl.tivek.multiversepowers.character.thor.ThorStatePayload;
 import nl.tivek.multiversepowers.character.thor.storm.StormFxPayload;
 import nl.tivek.multiversepowers.classes.ChoosingState;
@@ -48,7 +53,10 @@ import nl.tivek.multiversepowers.classes.ceremony.Ceremonies;
 import nl.tivek.multiversepowers.config.WorldSettings;
 import nl.tivek.multiversepowers.config.WorldSettingsEditPayload;
 import nl.tivek.multiversepowers.config.WorldSettingsPayload;
+import nl.tivek.multiversepowers.engine.entity.CaptivePayload;
+import nl.tivek.multiversepowers.engine.entity.Captives;
 import nl.tivek.multiversepowers.engine.entity.DeathBlowPayload;
+import nl.tivek.multiversepowers.engine.entity.EscapePayload;
 import nl.tivek.multiversepowers.engine.entity.DeathStylePayload;
 import nl.tivek.multiversepowers.engine.entity.FatiguePayload;
 import nl.tivek.multiversepowers.engine.entity.HeldPayload;
@@ -91,6 +99,10 @@ public final class ModNetwork {
         registrar.playToClient(SpellFxPayload.TYPE, SpellFxPayload.STREAM_CODEC, ModNetwork::onSpellFx);
         registrar.playToClient(ClapPayload.TYPE, ClapPayload.STREAM_CODEC, ModNetwork::onClap);
         registrar.playToClient(ThorStatePayload.TYPE, ThorStatePayload.STREAM_CODEC, ModNetwork::onThorState);
+        registrar.playToClient(FistPayload.TYPE, FistPayload.STREAM_CODEC, ModNetwork::onFist);
+        registrar.playToClient(HeavyPayload.TYPE, HeavyPayload.STREAM_CODEC, ModNetwork::onHeavy);
+        registrar.playToClient(CaptivePayload.TYPE, CaptivePayload.STREAM_CODEC, ModNetwork::onCaptive);
+        registrar.playToServer(EscapePayload.TYPE, EscapePayload.STREAM_CODEC, ModNetwork::onEscape);
         registrar.playToClient(StormFxPayload.TYPE, StormFxPayload.STREAM_CODEC, ModNetwork::onStormFx);
         registrar.playToClient(GrabStatePayload.TYPE, GrabStatePayload.STREAM_CODEC, ModNetwork::onGrabState);
         registrar.playToServer(ThrowGrabPayload.TYPE, ThrowGrabPayload.STREAM_CODEC, ModNetwork::onThrowGrab);
@@ -159,10 +171,14 @@ public final class ModNetwork {
         context.enqueueWork(() -> {
             if (context.player() instanceof ServerPlayer serverPlayer) {
                 Construct picked = Construct.byIndex(payload.construct());
-                Construct construct = picked.locked() ? Construct.NONE : picked;
+                Construct construct = picked.shut(Flight.flying(serverPlayer)) ? Construct.NONE : picked;
                 SwordShield.hold(serverPlayer, construct);
                 Flamethrower.hold(serverPlayer, construct);
                 EnergyWhip.hold(serverPlayer, construct);
+                HeavyWeapon.hold(serverPlayer, construct);
+                if (construct != Construct.NONE) {
+                    LightFists.putAway(serverPlayer, serverPlayer.serverLevel());
+                }
             }
         });
     }
@@ -292,6 +308,22 @@ public final class ModNetwork {
         ClientPayloadHandler.handleGrabState(payload, context);
     }
 
+    private static void onHeavy(HeavyPayload payload, IPayloadContext context) {
+        ClientPayloadHandler.handleHeavy(payload, context);
+    }
+
+    private static void onCaptive(CaptivePayload payload, IPayloadContext context) {
+        ClientPayloadHandler.handleCaptive(payload, context);
+    }
+
+    private static void onEscape(EscapePayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> {
+            if (context.player() instanceof ServerPlayer serverPlayer) {
+                Captives.escaped(serverPlayer);
+            }
+        });
+    }
+
     private static void onThrowGrab(ThrowGrabPayload payload, IPayloadContext context) {
         context.enqueueWork(() -> {
             if (context.player() instanceof ServerPlayer serverPlayer) {
@@ -306,6 +338,10 @@ public final class ModNetwork {
 
     private static void onVoidState(VoidStatePayload payload, IPayloadContext context) {
         ClientPayloadHandler.handleVoidState(payload, context);
+    }
+
+    private static void onFist(FistPayload payload, IPayloadContext context) {
+        ClientPayloadHandler.handleFist(payload, context);
     }
 
     private static void onThorState(ThorStatePayload payload, IPayloadContext context) {

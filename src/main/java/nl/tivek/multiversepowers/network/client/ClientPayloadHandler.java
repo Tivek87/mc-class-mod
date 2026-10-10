@@ -43,7 +43,13 @@ import nl.tivek.multiversepowers.engine.client.ragdoll.Knocked;
 import nl.tivek.multiversepowers.engine.client.ragdoll.Ragdolls;
 import nl.tivek.multiversepowers.engine.entity.DeathBlowPayload;
 import nl.tivek.multiversepowers.killconfirm.KillConfirmPayload;
+import nl.tivek.multiversepowers.character.greenlantern.fist.FistPayload;
+import nl.tivek.multiversepowers.character.greenlantern.heavy.HeavyPayload;
+import nl.tivek.multiversepowers.character.greenlantern.client.body.heavy.ClientHeavy;
+import nl.tivek.multiversepowers.character.greenlantern.client.body.fist.ClientFists;
 import nl.tivek.multiversepowers.killconfirm.client.KillMarker;
+import nl.tivek.multiversepowers.engine.client.escape.EscapeGames;
+import nl.tivek.multiversepowers.engine.entity.CaptivePayload;
 import nl.tivek.multiversepowers.engine.entity.DeathStylePayload;
 import nl.tivek.multiversepowers.engine.entity.DeathStyles;
 import nl.tivek.multiversepowers.engine.entity.FatiguePayload;
@@ -90,6 +96,19 @@ public final class ClientPayloadHandler {
 
     public static void handleVoidState(VoidStatePayload payload, IPayloadContext context) {
         context.enqueueWork(() -> ClientVoidState.set(payload.ticks()));
+    }
+
+    public static void handleHeavy(HeavyPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> ClientHeavy.told(payload.owner(), payload.weapon(), payload.move(), payload.age(),
+                payload.yaw()));
+    }
+
+    public static void handleCaptive(CaptivePayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> EscapeGames.told(payload.game()));
+    }
+
+    public static void handleFist(FistPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> ClientFists.told(payload.owner(), payload.move(), payload.yaw()));
     }
 
     public static void handleThorState(ThorStatePayload payload, IPayloadContext context) {

@@ -25,9 +25,10 @@ import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 import nl.tivek.multiversepowers.engine.fx.Sounds;
 import nl.tivek.multiversepowers.engine.math.Segments;
 
-// One move of a built mech. A left click strikes the next blow of its combo: the straight right (or, with a creature
-// out to hurt its pilot right at its feet, the stomp), the backhand sweep, then the two-fisted slam, or, with such a
-// creature in reach, the throw: picked up, smashed into the ground twice and, still alive, flung where the pilot looks.
+// One move of a built mech. A left click strikes the next blow of its combo (COMBO): the straight right (or, with a
+// creature out to hurt its pilot right at its feet, the stomp), the jab, the backhand sweep, the uppercut, the hook,
+// the knee, the clap and the pound (MechCombo), then the two-fisted slam, or, with such a creature in reach, the throw:
+// picked up, smashed into the ground twice and, still alive, flung where the pilot looks.
 // A right click fires its eyes (MechBeams); the missile arm, the rocket boots, the dive, the spin, the flamethrower,
 // the jump and the hatch are moves too (MechAttackMoves).
 final class MechAttack extends MechAttackMoves {
@@ -87,14 +88,19 @@ final class MechAttack extends MechAttackMoves {
     private record Pick(LivingEntity creature, double turn) {
     }
 
-    // The combo's blow `step` (0, 1, 2). `upright`: on the mech's ground spot, facing where its pilot looks.
+    // The combo's blows in order; the first and the last pick by what stands round the mech.
+    static final int[] COMBO = { MechAttacks.CROSS, MechAttacks.JAB, MechAttacks.SWEEP, MechAttacks.UPPERCUT,
+            MechAttacks.HOOK, MechAttacks.KNEE, MechAttacks.CLAP, MechAttacks.POUND, MechAttacks.SLAM };
+
+    // The combo's blow `step`. `upright`: on the mech's ground spot, facing where its pilot looks.
     static MechAttack strike(ServerPlayer owner, ServerLevel level, MechScript.Stage upright, int step) {
-        Pick near = step == 2 ? nearest(owner, level, upright) : null;
-        int kind = switch (step) {
-            case 0 -> underfoot(owner, level, upright) ? MechAttacks.STOMP : MechAttacks.CROSS;
-            case 1 -> MechAttacks.SWEEP;
-            default -> near != null ? MechAttacks.THROW : MechAttacks.SLAM;
-        };
+        int kind = COMBO[step % COMBO.length];
+        Pick near = kind == MechAttacks.SLAM ? nearest(owner, level, upright) : null;
+        if (kind == MechAttacks.CROSS && underfoot(owner, level, upright)) {
+            kind = MechAttacks.STOMP;
+        } else if (near != null) {
+            kind = MechAttacks.THROW;
+        }
         Sounds.play(level, upright.point(0.0, 9.5, 1.0), WHOOSH, 2.0F, 0.7F + 0.2F * level.random.nextFloat());
         return new MechAttack(kind, near);
     }
@@ -118,8 +124,12 @@ final class MechAttack extends MechAttackMoves {
 
     // Whether this is a blow of the combo, and whether a click now chains the next one on at its end.
     boolean combo() {
-        return this.kind == MechAttacks.CROSS || this.kind == MechAttacks.STOMP || this.kind == MechAttacks.SWEEP
-                || this.kind == MechAttacks.SLAM || this.kind == MechAttacks.THROW;
+        return switch (this.kind) {
+            case MechAttacks.CROSS, MechAttacks.STOMP, MechAttacks.SWEEP, MechAttacks.SLAM, MechAttacks.THROW,
+                    MechAttacks.JAB, MechAttacks.HOOK, MechAttacks.UPPERCUT, MechAttacks.KNEE, MechAttacks.CLAP,
+                    MechAttacks.POUND -> true;
+            default -> false;
+        };
     }
 
     boolean chains() {
@@ -240,6 +250,7 @@ final class MechAttack extends MechAttackMoves {
             }
             case MechAttacks.GLARE -> this.glare(level, owner, torso, ability);
             case MechAttacks.AIM -> {
+                this.eyesTick(level, owner, torso, ability);
                 // The last missile's kick settled, the hand shuts.
                 if (this.spent()) {
                     this.close();
@@ -254,6 +265,8 @@ final class MechAttack extends MechAttackMoves {
                 }
             }
             case MechAttacks.SPIN -> this.spin(level, owner, frame, torso, legs, ability.value("mechSpinDamage"));
+            case MechAttacks.JAB, MechAttacks.HOOK, MechAttacks.UPPERCUT, MechAttacks.KNEE, MechAttacks.CLAP,
+                    MechAttacks.POUND -> MechCombo.land(this, level, owner, frame, torso, legs, ability);
             case MechAttacks.FLAME -> this.flame(level, owner, frame, torso, ability);
             case MechAttacks.HATCH -> MechHelpers.drop(level, owner, torso, this.t, ability);
             default -> {
@@ -337,8 +350,30 @@ final class MechAttack extends MechAttackMoves {
         }
     }
 
+    // A fist swung from tick `from` to `to`: what it passes through is struck once each and thrown on the way it goes,
+    // `outward` of the way out from the mech as well, and up by `up`.
+    void swing(ServerLevel level, ServerPlayer owner, MechScript.Stage frame, MechScript.Stage torso, boolean right,
+            int from, int to, double radius, double damage, double outward, double push, double up) {
+        if (this.t < from - 1 || this.t > to) {
+            return;
+        }
+        Vec3 hand = this.fist(right, frame, torso);
+        Vec3 was = right ? this.swept : this.sweptLeft;
+        if (right) {
+            this.swept = hand;
+        } else {
+            this.sweptLeft = hand;
+        }
+        if (this.t == from) {
+            Sounds.play(level, hand, WHOOSH, 3.0F, 0.75F + 0.15F * level.random.nextFloat());
+        }
+        if (this.t >= from && was != null) {
+            this.strike(level, owner, was, hand, radius, damage, frame, outward, push, up, 0);
+        }
+    }
+
     // Where a fist of this move is, in the world.
-    private Vec3 fist(boolean right, MechScript.Stage frame, MechScript.Stage torso) {
+    Vec3 fist(boolean right, MechScript.Stage frame, MechScript.Stage torso) {
         MechMoves.Arm arm = MechAttacks.arm(this.blow(), right, frame, torso, null, MechMoves.arm(right, frame,
                 MechScript.SETTLED));
         return torso.point(arm.hand());
@@ -355,12 +390,16 @@ final class MechAttack extends MechAttackMoves {
         double[] a0 = { was.x, was.y, was.z };
         double[] a1 = { hand.x, hand.y, hand.z };
         double[] out = new double[2];
-        for (LivingEntity living : level.getEntitiesOfClass(LivingEntity.class, new AABB(was, hand)
-                .inflate(radius + 1.0), entity -> PowerRing.canHit(owner, entity) && this.mayStrike(entity, again))) {
+        // Small creatures stand far under the fists: whatever stands under the fist's path, down to the ground, counts.
+        AABB room = new AABB(was, hand).inflate(radius + 1.0).expandTowards(0.0, -Math.min(was.y, hand.y)
+                + middle.base().y - 1.0, 0.0);
+        for (LivingEntity living : level.getEntitiesOfClass(LivingEntity.class, room,
+                entity -> PowerRing.canHit(owner, entity) && this.mayStrike(entity, again))) {
             Vec3 at = living.getBoundingBox().getCenter();
-            double[] b = { at.x, at.y, at.z };
+            double[] b0 = { at.x, living.getBoundingBox().minY, at.z };
+            double[] b1 = { at.x, Math.max(living.getBoundingBox().maxY, Math.min(was.y, hand.y)), at.z };
             double reach = radius + living.getBbWidth() * 0.5;
-            if (Segments.closest(a0, a1, b, b, out) > reach * reach) {
+            if (Segments.closest(a0, a1, b0, b1, out) > reach * reach) {
                 continue;
             }
             this.struck.add(living.getId());

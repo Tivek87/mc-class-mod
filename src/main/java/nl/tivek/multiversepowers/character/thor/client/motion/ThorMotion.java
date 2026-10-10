@@ -23,6 +23,7 @@ import nl.tivek.multiversepowers.character.CharacterAbility;
 import nl.tivek.multiversepowers.character.Characters;
 import nl.tivek.multiversepowers.character.GameCharacter;
 import nl.tivek.multiversepowers.character.client.ClientCharacter;
+import nl.tivek.multiversepowers.character.client.PowerInputs;
 import nl.tivek.multiversepowers.character.thor.ThorBlow;
 import nl.tivek.multiversepowers.character.thor.ThorMoves;
 import nl.tivek.multiversepowers.character.thor.ThorPowers;
@@ -53,6 +54,12 @@ public final class ThorMotion extends ThorGroundMotion {
     // this long was refused.
     private static final int AWAIT_LONGEST = 40;
     private static final int GUESS_LONGEST = 20;
+    // Space pressed twice within this many ticks in flight: he hops up and lets himself fall.
+    private static final int DOUBLE_TAP = 7;
+    private static final double HOP = 0.55;
+    private static final double SINK = 0.8;
+    private static int lastTap = -100;
+    private static boolean jumpWas;
 
     private static int flightAge;
     private static Vec3 velocity = Vec3.ZERO;
@@ -262,6 +269,8 @@ public final class ThorMotion extends ThorGroundMotion {
     private static void takeOff(LocalPlayer player) {
         flying = true;
         flightAge = 0;
+        lastTap = -100;
+        jumpWas = true;
         velocity = player.getDeltaMovement();
         lightning = false;
         jumpAge = -1;
@@ -411,10 +420,21 @@ public final class ThorMotion extends ThorGroundMotion {
         boolean up = input.jumping;
         steerForward = forward;
         steerStrafe = strafe;
-        steerUp = up ? 1.0F : 0.0F;
+        // Sneaking sinks him, unless its key is the one held for lightning speed (by default both are shift).
+        boolean down = !up && input.shiftKeyDown
+                && !Minecraft.getInstance().options.keyShift.same(PowerInputs.HOLD_SHIFT);
+        steerUp = up ? 1.0F : down ? -1.0F : 0.0F;
         still(input);
-        // Sneaking never sinks him in flight: by default its key is shift, held there for lightning speed.
         input.shiftKeyDown = false;
+        if (up && !jumpWas) {
+            if (flightAge - lastTap <= DOUBLE_TAP && flightAge > LIFT_TICKS && blinkAge < 0 && diveAge < 0) {
+                jumpWas = true;
+                hop(player);
+                return;
+            }
+            lastTap = flightAge;
+        }
+        jumpWas = up;
         flightAge++;
         if (lightning && --lightningLeft <= 0) {
             lightning = false;
@@ -444,7 +464,7 @@ public final class ThorMotion extends ThorGroundMotion {
             Vec3 look = player.getLookAngle();
             double yaw = Math.toRadians(player.getYRot());
             Vec3 right = new Vec3(-Math.cos(yaw), 0.0, -Math.sin(yaw));
-            Vec3 wish = look.scale(forward).add(right.scale(-strafe)).add(0.0, up ? 0.8 : 0.0, 0.0);
+            Vec3 wish = look.scale(forward).add(right.scale(-strafe)).add(0.0, up ? 0.8 : down ? -SINK : 0.0, 0.0);
             if (wish.lengthSqr() > 1.0) {
                 wish = wish.normalize();
             }
@@ -513,6 +533,20 @@ public final class ThorMotion extends ThorGroundMotion {
             ClientCharacter.sendAction(flight, true, Characters.SLAM);
         }
         ClientThor.predict(player, ThorStatePayload.TOUCH_DOWN, 0, flags());
+    }
+
+    // Double space in flight: a hop up, then he falls like anyone jumping.
+    private static void hop(LocalPlayer player) {
+        flying = false;
+        lightning = false;
+        velocity = Vec3.ZERO;
+        Vec3 v = player.getDeltaMovement();
+        player.setDeltaMovement(v.x * 0.6, HOP, v.z * 0.6);
+        CharacterAbility flight = GameCharacter.THOR.byName("flight");
+        if (flight != null) {
+            ClientCharacter.sendAction(flight, true, Characters.SLAM | ThorPowers.DROP << Characters.MOVE_SHIFT);
+        }
+        ClientThor.predict(player, ThorStatePayload.NONE, 0, flags());
     }
 
     // Steers the dive: at what he grabs, then straight down with it. True once he slammed into the ground.
