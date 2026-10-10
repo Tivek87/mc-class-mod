@@ -42,11 +42,25 @@ final class SettingsList extends ContainerObjectSelectionList<SettingsList.Row> 
     record Block(String key, Component title, @Nullable Component hint, @Nullable Component about, int color,
             boolean collapsible, boolean collapsed, List<SettingsPages.Group> groups) {
         int count() {
-            int count = 0;
+            return this.numbers().size();
+        }
+
+        List<ConfigNumber> numbers() {
+            List<ConfigNumber> numbers = new ArrayList<>();
             for (SettingsPages.Group group : this.groups) {
-                count += group.numbers().size();
+                numbers.addAll(group.numbers());
             }
-            return count;
+            return numbers;
+        }
+
+        List<ConfigNumber> weights() {
+            List<ConfigNumber> weights = new ArrayList<>();
+            for (ConfigNumber number : this.numbers()) {
+                if (number.unit() == Unit.WEIGHT) {
+                    weights.add(number);
+                }
+            }
+            return weights;
         }
     }
 
@@ -63,13 +77,14 @@ final class SettingsList extends ContainerObjectSelectionList<SettingsList.Row> 
             if (block.collapsed()) {
                 continue;
             }
+            List<ConfigNumber> weights = block.weights();
             for (SettingsPages.Group group : block.groups()) {
                 if (group.title() != null) {
                     this.addEntry(new GroupRow(group.title(), GuiShapes.mix(block.color(), GROUP, 0.5F)));
                 }
                 for (ConfigNumber number : group.numbers()) {
                     this.numbers.add(number);
-                    this.addEntry(new NumberRow(number, block.color()));
+                    this.addEntry(new NumberRow(number, block.color(), weights));
                 }
             }
         }
@@ -113,6 +128,8 @@ final class SettingsList extends ContainerObjectSelectionList<SettingsList.Row> 
         private final Block block;
         private final Component title;
         private final Component hint;
+        // An open part's own Reset, and None for a part of weights (every one to 0, to switch on only a few).
+        private final List<Button> buttons = new ArrayList<>();
 
         TitleRow(Block block) {
             this.block = block;
@@ -121,6 +138,30 @@ final class SettingsList extends ContainerObjectSelectionList<SettingsList.Row> 
                     .append(Component.literal("  (" + block.count() + ")").withStyle(ChatFormatting.GRAY));
             this.hint = block.hint() == null ? Component.empty() : Component.translatable(PREFIX + "key",
                     block.hint());
+            List<ConfigNumber> numbers = block.numbers();
+            if (!block.collapsible() || block.collapsed()
+                    || numbers.stream().noneMatch(SettingsList.this.screen::editable)) {
+                return;
+            }
+            if (block.weights().size() > 1) {
+                this.buttons.add(this.button("none", () -> SettingsList.this.screen.setAll(numbers, true)));
+            }
+            this.buttons.add(this.button("part_reset", () -> SettingsList.this.screen.setAll(numbers, false)));
+        }
+
+        private Button button(String key, Runnable action) {
+            Component text = Component.translatable(PREFIX + key);
+            return Button.builder(text, button -> action.run())
+                    .size(SettingsList.this.minecraft.font.width(text) + 10, 14)
+                    .tooltip(Tooltip.create(Component.translatable(PREFIX + key + ".desc"))).build();
+        }
+
+        private int buttonsWidth() {
+            int width = 0;
+            for (Button button : this.buttons) {
+                width += button.getWidth() + 3;
+            }
+            return width;
         }
 
         @Override
@@ -133,11 +174,19 @@ final class SettingsList extends ContainerObjectSelectionList<SettingsList.Row> 
             graphics.fill(left - 2, top + 4, left, top + height - 4, 0xFF000000 | this.block.color());
             int y = top + (height - 8) / 2;
             int hintWidth = font.width(this.hint);
-            graphics.drawString(font, fit(font, this.title, width - hintWidth - 16), left + 4, y,
+            int buttonsWidth = this.buttonsWidth();
+            graphics.drawString(font, fit(font, this.title, width - hintWidth - buttonsWidth - 16), left + 4, y,
                     0xFF000000 | this.block.color());
             graphics.drawString(font, this.hint, left + width - hintWidth - 4, y, 0xFF8E8E8E);
+            int x = left + width - hintWidth - 8 - buttonsWidth;
+            for (Button button : this.buttons) {
+                button.setPosition(x, top + (height - 14) / 2);
+                button.render(graphics, mouseX, mouseY, partialTick);
+                x += button.getWidth() + 3;
+            }
             graphics.fill(left, top + height - 1, left + width, top + height, LINE);
-            if (hovering && this.block.about() != null) {
+            boolean onButton = this.buttons.stream().anyMatch(button -> button.isMouseOver(mouseX, mouseY));
+            if (hovering && !onButton && this.block.about() != null) {
                 List<FormattedCharSequence> lines = new ArrayList<>();
                 lines.add(this.block.title().copy().withStyle(ChatFormatting.WHITE).getVisualOrderText());
                 lines.addAll(font.split(this.block.about().copy().withStyle(ChatFormatting.GRAY), 220));
@@ -147,6 +196,9 @@ final class SettingsList extends ContainerObjectSelectionList<SettingsList.Row> 
 
         @Override
         public boolean mouseClicked(double mouseX, double mouseY, int button) {
+            if (super.mouseClicked(mouseX, mouseY, button)) {
+                return true;
+            }
             if (!this.block.collapsible() || button != 0) {
                 return false;
             }
@@ -156,12 +208,15 @@ final class SettingsList extends ContainerObjectSelectionList<SettingsList.Row> 
 
         @Override
         public List<? extends GuiEventListener> children() {
-            return List.of();
+            return this.buttons;
         }
 
         @Override
         public List<? extends NarratableEntry> narratables() {
-            return List.of(narration(this.title));
+            List<NarratableEntry> all = new ArrayList<>();
+            all.add(narration(this.title));
+            all.addAll(this.buttons);
+            return all;
         }
     }
 
@@ -209,12 +264,15 @@ final class SettingsList extends ContainerObjectSelectionList<SettingsList.Row> 
         private final Button next;
         private final Button reset;
         private final EditBox box;
+        // The weights of its part, a weight's share being its part of them all.
+        private final List<ConfigNumber> weights;
         private double value;
         private boolean valid = true;
 
-        NumberRow(ConfigNumber number, int color) {
+        NumberRow(ConfigNumber number, int color, List<ConfigNumber> weights) {
             this.number = number;
             this.color = color;
+            this.weights = weights;
             this.pick = number.unit() == Unit.SWITCH || number.choices() != null;
             this.value = SettingsList.this.screen.value(number);
             Font font = SettingsList.this.minecraft.font;
@@ -285,6 +343,20 @@ final class SettingsList extends ContainerObjectSelectionList<SettingsList.Row> 
             return Math.abs(this.value - this.number.defaultValue()) > 1.0E-9;
         }
 
+        // How often it comes against the rest of its part: its weight over all of theirs.
+        private Component share() {
+            double total = 0.0;
+            for (ConfigNumber weight : this.weights) {
+                total += Math.max(0.0, SettingsList.this.screen.value(weight));
+            }
+            if (this.value <= 0.0 || total <= 0.0) {
+                return this.number.meaning(0.0);
+            }
+            double share = this.value / total * 100.0;
+            return Component.translatable(PREFIX + "unit.share",
+                    Unit.number(share >= 10.0 ? Math.round(share) : Math.round(share * 10.0) / 10.0));
+        }
+
         @Override
         public void render(GuiGraphics graphics, int index, int top, int left, int width, int height, int mouseX,
                 int mouseY, boolean hovering, float partialTick) {
@@ -311,9 +383,9 @@ final class SettingsList extends ContainerObjectSelectionList<SettingsList.Row> 
                 this.box.render(graphics, mouseX, mouseY, partialTick);
                 this.plus.render(graphics, mouseX, mouseY, partialTick);
                 int meaningX = x + 96;
-                Component meaning = this.valid ? this.number.meaning(this.value)
-                        : Component.translatable(PREFIX + "range", this.number.format(this.number.min()),
-                                this.number.format(this.number.max()));
+                Component meaning = !this.valid ? Component.translatable(PREFIX + "range",
+                        this.number.format(this.number.min()), this.number.format(this.number.max()))
+                        : this.number.unit() == Unit.WEIGHT ? this.share() : this.number.meaning(this.value);
                 graphics.drawString(font, fit(font, meaning, left + width - meaningX), meaningX, textY,
                         0xFF000000 | (this.valid ? this.color : WRONG));
             }

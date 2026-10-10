@@ -53,18 +53,24 @@ public final class HeavyArms {
     private static final float VIEW_Y = 0.85F;
     private static final float VIEW_UP = 0.03F;
     private static final float VIEW_IN = -0.26F;
-    private static final double[] VIEW_SIZE = { 0.85, 1.05, 0.85, 1.3 };
+    private static final double[] VIEW_SIZE = { 0.85, 1.05, 0.85, 1.3, 1.0, 0.55, 0.55 };
     private static final double VIEW_TOP = -0.12;
-    private static final double[] VIEW_NEAR = { -0.62, -1.35, -1.3, -1.2 };
+    private static final double[] VIEW_NEAR = { -0.62, -1.35, -1.3, -1.2, -0.75, -1.0, -1.3 };
     // The chainsaw, the launcher and the shotgun are held out further on the right and raised a little; the chainsaw is
     // turned in and rolled to show its bar (seen straight from behind, his hands would hide it), the guns stay upright
     // and point ahead.
-    private static final double[] VIEW_LIFT = { 0.0, 0.24, 0.02, 0.08 };
+    private static final double[] VIEW_LIFT = { 0.0, 0.24, 0.02, 0.08, 0.14, 0.02, 0.2 };
     private static final double WHIRL_SEEN = 0.75;
-    private static final double[] VIEW_SIDE = { 0.0, 0.33, 0.2, 0.28 };
-    private static final float[] VIEW_TURN = { 0.0F, 1.05F, 0.0F, 0.0F };
-    private static final float[] VIEW_RAISE = { 0.0F, 0.45F, 0.05F, 0.05F };
-    private static final float[] VIEW_ROLL = { 0.0F, -1.0F, 0.0F, 0.0F };
+    private static final double[] VIEW_SIDE = { 0.0, 0.33, 0.2, 0.28, 0.05, 0.3, 0.32 };
+    private static final float[] VIEW_TURN = { 0.0F, 1.05F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F };
+    private static final float[] VIEW_RAISE = { 0.0F, 0.45F, 0.05F, 0.05F, 0.05F, 0.0F, 0.0F };
+    private static final float[] VIEW_ROLL = { 0.0F, -1.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F };
+    // How much of his walking speed is left while the minigun pours and while its barrels spin.
+    private static final float MINIGUN_SLOW = 0.35F;
+    private static final float SPINNING_SLOW = 0.6F;
+    // How far a shot's kick throws his own view up (degrees), by gun.
+    private static final float[] VIEW_KICK = { 1.6F, 2.0F, 0.35F };
+    private static final HeavyPoses.Pose LEFT_VIEW = new HeavyPoses.Pose();
     // How far ahead a gun's barrel meets the crosshair's line.
     private static final double AIM_AT = 16.0;
     private static final HeavyPoses.Pose AIM_REST = new HeavyPoses.Pose();
@@ -88,6 +94,7 @@ public final class HeavyArms {
             held.posed = held.posed && held.brokeAt >= 0.0;
             return false;
         }
+        boolean dual = dual(held.weapon);
         float w = pose.weight;
         // In flight his flying pose keeps his legs and lean: only the trunk's turn and the arms are the weapon's.
         boolean flying = ClientRing.flight(entity, partialTick) >= 0.0F;
@@ -105,11 +112,12 @@ public final class HeavyArms {
         Stance.neck(NECK);
         Stance.chest(CHEST);
         Frame frame = chestFrame(held.weapon, pose);
+        Frame leftFrame = dual ? chestFrame(held.weapon, HeavyPoses.left()) : frame;
         float time = (float) ClientHeavy.now(partialTick);
         for (int side = 0; side < 2; side++) {
             boolean right = side == 0;
             Vec3 at = HeavyPainter.grip(held.weapon, right, HeavyPoses.reload(held, partialTick));
-            Vec3 grip = frame.at(at.x, at.y, at.z);
+            Vec3 grip = (right ? frame : leftFrame).at(at.x, at.y, at.z);
             Vector3f target = CHEST.transform(new Vector3f((float) grip.x, (float) grip.y, (float) grip.z)).add(NECK);
             target.add(pose.shake * Mth.sin(time * 2.9F + side), pose.shake * Mth.cos(time * 3.7F), 0.0F);
             Vector3f hand = Stance.hand(model, right, new Vector3f());
@@ -122,6 +130,14 @@ public final class HeavyArms {
         Vector3f hand = Stance.hand(model, true, new Vector3f()).div(16.0F);
         Vec3 off = vec(hand).subtract(seen.at(grip.x, grip.y, grip.z));
         held.frame = new Frame(seen.center().add(off), seen.right(), seen.up(), seen.forward(), seen.scale());
+        held.left = held.frame;
+        if (dual) {
+            Frame other = toModel(leftFrame, CHEST, NECK);
+            Vector3f leftHand = Stance.hand(model, false, new Vector3f()).div(16.0F);
+            Vec3 leftOff = vec(leftHand).subtract(other.at(grip.x, grip.y, grip.z));
+            held.left = new Frame(other.center().add(leftOff), other.right(), other.up(), other.forward(),
+                    other.scale());
+        }
         held.chest.set(CHEST);
         held.neck.set(NECK);
         held.posed = true;
@@ -175,6 +191,11 @@ public final class HeavyArms {
         float partialTick = event.getPartialTick();
         // The game's own view bobbing already sways the view: only half the carry on top.
         HeavyPoses.Pose pose = HeavyPoses.of(held, Gait.of(player, partialTick).scaled(0.5F), partialTick);
+        boolean dual = dual(held.weapon);
+        if (dual) {
+            LEFT_VIEW.set(HeavyPoses.left());
+            LEFT_VIEW.mirror();
+        }
         double apart = held.apart(partialTick);
         if (pose.weight < 1.0E-3F && apart < 0.0) {
             return;
@@ -189,25 +210,49 @@ public final class HeavyArms {
         PoseStack stack = event.getPoseStack();
         PlayerRenderer renderer = (PlayerRenderer) minecraft.getEntityRenderDispatcher().getRenderer(player);
         // The weapon first, its arms after: its light writes no depth, so arms drawn before it would show it through them.
+        Frame leftFrame = dual ? mirrored(viewFrame(held.weapon, LEFT_VIEW, time, turn)) : frame;
         LanternPainter painter = LanternPainter.hand(stack, player.tickCount + partialTick);
-        HeavyPainter.weapon(painter, held.weapon, frame, held.formed(partialTick), apart,
-                HeavyPoses.revving(held, partialTick), time, player.getId(), HeavyPoses.flash(held, partialTick),
-                HeavyPoses.loaded(held, partialTick), HeavyPoses.reload(held, partialTick));
-        HeavyPainter.trail(painter, back -> {
-            HeavyPoses.at(held.weapon, held.move, held.age(partialTick) - back, PAST);
-            return viewFrame(held.weapon, PAST, time, turn);
-        }, HeavyPainter.trailing(held, partialTick));
+        if (held.weapon >= REVOLVERS) {
+            GunPainter.draw(painter, held, 0, frame, held.formed(partialTick), apart, partialTick, player.getId(),
+                    true);
+            if (dual) {
+                GunPainter.draw(painter, held, 1, leftFrame, held.formed(partialTick), apart, partialTick,
+                        player.getId(), true);
+            }
+        } else {
+            HeavyPainter.weapon(painter, held.weapon, frame, held.formed(partialTick), apart,
+                    HeavyPoses.revving(held, partialTick), time, player.getId(), HeavyPoses.flash(held, partialTick),
+                    HeavyPoses.loaded(held, partialTick), HeavyPoses.reload(held, partialTick));
+            HeavyPainter.trail(painter, back -> {
+                HeavyPoses.at(held.weapon, held.move, held.age(partialTick) - back, PAST);
+                return viewFrame(held.weapon, PAST, time, turn);
+            }, HeavyPainter.trailing(held, partialTick));
+        }
         painter.finish(minecraft.renderBuffers().bufferSource());
-        float w = pose.weight;
         for (int side = 0; side < 2; side++) {
             float sign = side == 0 ? 1.0F : -1.0F;
+            // From his own eyes the cannon's and the minigun's support arm is left out: it would fill the view.
+            if (side == 1 && (held.weapon == CANNON || held.weapon == MINIGUN)) {
+                continue;
+            }
+            float w = pose.weight;
             Vec3 grip = HeavyPainter.grip(held.weapon, side == 0, HeavyPoses.reload(held, partialTick));
-            Vec3 at = frame.at(grip.x, grip.y, grip.z);
+            Vec3 at = (side == 0 ? frame : leftFrame).at(grip.x, grip.y, grip.z);
             Vector3f hand = new Vector3f(side == 0 ? FirstPersonArm.HAND_RIGHT : FirstPersonArm.HAND_LEFT);
             hand.lerp(new Vector3f((float) at.x, (float) at.y, (float) at.z), w);
             FirstPersonArm.arm(stack, event.getMultiBufferSource(), event.getPackedLight(), player, renderer, sign,
                     hand, new Vector3f(REST_FROM.x * sign, REST_FROM.y, REST_FROM.z));
         }
+    }
+
+    // A frame in his own view across the middle of it, still turning the right way round: the left revolver.
+    private static Frame mirrored(Frame frame) {
+        Vec3 c = frame.center();
+        Vec3 r = frame.right();
+        Vec3 u = frame.up();
+        Vec3 f = frame.forward();
+        return new Frame(new Vec3(-c.x, c.y, c.z), new Vec3(r.x, -r.y, -r.z), new Vec3(-u.x, u.y, u.z),
+                new Vec3(-f.x, f.y, f.z), frame.scale());
     }
 
     // The weapon in his own view: the pose's chest frame turned as his trunk turns, then laid out before his eyes; a gun
@@ -303,6 +348,17 @@ public final class HeavyArms {
         if (spin != 0.0F && !event.getCamera().isDetached()) {
             event.setYaw(event.getYaw() - (float) Math.toDegrees(spin % (Math.PI * 2.0)));
         }
+        if (held.weapon >= REVOLVERS && held.brokeAt < 0.0 && !event.getCamera().isDetached()) {
+            double age = held.age(partialTick);
+            float kick = (float) (GunFire.kick(held, 0, age) + GunFire.kick(held, 1, age));
+            float big = held.weapon == CANNON ? 1.0F + 2.5F * (float) GunPainter.charged(held) : 1.0F;
+            event.setPitch(Mth.clamp(event.getPitch() - VIEW_KICK[held.weapon - REVOLVERS] * kick * big, -90.0F,
+                    90.0F));
+            if (held.weapon == MINIGUN && GunFire.last(held, 0, age) < 1.5) {
+                float time = (float) ClientHeavy.now(partialTick);
+                event.setRoll(event.getRoll() + 0.3F * Mth.sin(time * 4.3F));
+            }
+        }
         if (held.weapon != SAW) {
             return;
         }
@@ -319,6 +375,13 @@ public final class HeavyArms {
     @SubscribeEvent(priority = EventPriority.LOW)
     public static void onMovement(MovementInputUpdateEvent event) {
         ClientHeavy.Held held = ClientHeavy.view(event.getEntity());
+        if (held != null && held.weapon == MINIGUN && held.brokeAt < 0.0) {
+            float left = held.move == AIM || held.move == SHOOT ? MINIGUN_SLOW : held.move == BRACE ? SPINNING_SLOW
+                    : 1.0F;
+            event.getInput().forwardImpulse *= left;
+            event.getInput().leftImpulse *= left;
+            return;
+        }
         if (held == null || held.weapon != SAW || held.brokeAt >= 0.0) {
             return;
         }
@@ -335,6 +398,7 @@ public final class HeavyArms {
         ClientHeavy.clear();
         ClientFists.clear();
         SawSound.clear();
+        GunTracers.clear();
     }
 
     private static Vector3f vec(Vec3 v) {

@@ -25,6 +25,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.character.CharacterAbility;
 import nl.tivek.multiversepowers.character.greenlantern.PowerRing;
+import nl.tivek.multiversepowers.character.greenlantern.ability.fist.LightFists;
 import nl.tivek.multiversepowers.character.greenlantern.ability.flight.Flight;
 import nl.tivek.multiversepowers.character.greenlantern.ability.ring.Recharge;
 import nl.tivek.multiversepowers.character.greenlantern.ability.ring.RingHands;
@@ -291,9 +292,10 @@ public final class LightBeam implements Effect {
         return FIRING.containsKey(player.getUUID());
     }
 
-    // Bolt and beam wait while his hands are in another move (RingHands) or he is still rising into flight.
+    // Bolt and beam wait while his hands are in another move (RingHands), his gloves cover the ring or he is still
+    // rising into flight.
     static boolean handsFull(ServerPlayer player) {
-        return Recharge.busy(player) || RingHands.busy(player, RingHands.Move.BEAM)
+        return Recharge.busy(player) || RingHands.busy(player, RingHands.Move.BEAM) || LightFists.gloved(player)
                 || Flight.flying(player) && Flight.ticks(player) < Flight.ARISE_TICKS;
     }
 

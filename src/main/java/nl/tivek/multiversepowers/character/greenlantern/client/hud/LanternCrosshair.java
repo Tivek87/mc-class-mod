@@ -30,6 +30,10 @@ final class LanternCrosshair {
     private static final float LOW_POWER = 0.2F;
     // When each of a reloading gun's rounds goes in, as a share of the reload.
     private static final float[][] LOADED_AT = { {}, {}, { 0.77F }, { 0.47F, 0.65F } };
+    // The revolvers' new rounds grow in pair by pair from this tick of the reload, one pair every REVOLVER_EVERY.
+    private static final float REVOLVER_FROM = 14.0F;
+    private static final float REVOLVER_EVERY = 1.4F;
+    private static final int HOT = 0xFF7A3C;
     private static int ammoWas = -1;
     private static float firedAt = -100.0F;
 
@@ -77,6 +81,7 @@ final class LanternCrosshair {
             Crosshairs.stroke(graphics, x - 1.4F, y + 5.0F, x + 1.4F, y + 5.0F, WIDTH, color, 0.6F);
         }
         ammo(graphics, cx + rx, cy + ry, ring, bar * feel.grow() * feel.tall(), heavy, feel);
+        gauge(graphics, cx + rx, cy + ry, ring, heavy, feel);
         return reach;
     }
 
@@ -100,10 +105,13 @@ final class LanternCrosshair {
         float y = cy + bar + (heavy == HeavyMoves.RPG ? 10.0F : 4.0F);
         for (int i = 0; i < full; i++) {
             float x = cx + (i - (full - 1) * 0.5F) * 3.4F;
-            boolean lit = reload >= 0.0 ? reload >= LOADED_AT[heavy][i] : i < ammo;
+            boolean lit = reload >= 0.0 ? reload >= loadedAt(heavy, i) : i < ammo;
             int tone = lit ? PALE : reload < 0.0 && ammo == 0 ? KillMarker.RED : GREEN;
             float alpha = lit ? 0.95F : 0.3F;
-            float tall = heavy == HeavyMoves.RPG ? 3.6F : 2.6F;
+            float tall = heavy == HeavyMoves.RPG ? 3.6F : heavy == HeavyMoves.REVOLVERS ? 2.0F : 2.6F;
+            if (heavy == HeavyMoves.REVOLVERS) {
+                x = cx + (i - (full - 1) * 0.5F) * 2.2F + (i < full / 2 ? -1.2F : 1.2F);
+            }
             Crosshairs.stroke(graphics, x, y, x, y + tall, heavy == HeavyMoves.RPG ? 1.2F : 1.5F, tone, alpha);
             if (heavy == HeavyMoves.RPG) {
                 Crosshairs.stroke(graphics, x - 1.1F, y + 1.1F, x, y - 0.4F, 0.8F, tone, alpha);
@@ -119,6 +127,47 @@ final class LanternCrosshair {
             GuiShapes.arc(graphics, cx, cy, r - 1.0F, r + 1.0F, 0.0F, 360.0F, GuiShapes.fade(0x000000, 0.3F));
             GuiShapes.arc(graphics, cx, cy, r - 0.5F, r + 0.5F, 0.0F, (float) (360.0 * reload),
                     GuiShapes.fade(PALE, 0.9F));
+        }
+    }
+
+    // When round `i` of a reloading gun goes in, as a share of the reload.
+    private static float loadedAt(int heavy, int i) {
+        if (heavy == HeavyMoves.REVOLVERS) {
+            float length = HeavyMoves.length(heavy, HeavyMoves.RELOAD) - HeavyMoves.RELOADED;
+            return (REVOLVER_FROM + REVOLVER_EVERY * (i / 2)) / length;
+        }
+        return LOADED_AT[heavy][i];
+    }
+
+    // The cannon's charge filling round the ring as he holds it, white once full; the minigun's heat as an arc
+    // under it, going from green to orange as the barrels heat and flashing red while they cool from overheating.
+    private static void gauge(GuiGraphics graphics, float cx, float cy, float ring, int heavy, Crosshairs.Feel feel) {
+        float r = ring + 3.8F;
+        if (heavy == HeavyMoves.CANNON) {
+            double charge = ClientHeavy.charge(feel.partialTick());
+            if (charge < 0.0) {
+                return;
+            }
+            int tone = charge >= 1.0 ? 0xFFFFFF : PALE;
+            float pulse = charge >= 1.0 ? 0.7F + 0.3F * Mth.sin(feel.time() * 1.3F) : 0.9F;
+            GuiShapes.arc(graphics, cx, cy, r - 1.0F, r + 1.0F, 0.0F, 360.0F, GuiShapes.fade(0x000000, 0.3F));
+            GuiShapes.arc(graphics, cx, cy, r - 0.6F, r + 0.6F, 0.0F, (float) (360.0 * charge),
+                    GuiShapes.fade(tone, pulse));
+        } else if (heavy == HeavyMoves.MINIGUN) {
+            ClientHeavy.Held gun = ClientHeavy.gun();
+            if (gun == null) {
+                return;
+            }
+            boolean cooling = ClientHeavy.reloading(feel.partialTick()) >= 0.0;
+            float heat = gun.ammo() / 100.0F;
+            if (heat <= 0.01F && !cooling) {
+                return;
+            }
+            int tone = cooling ? KillMarker.RED : GuiShapes.mix(GREEN, HOT, heat);
+            float alpha = cooling ? 0.5F + 0.4F * Mth.sin(feel.time() * 1.6F) : 0.9F;
+            GuiShapes.arc(graphics, cx, cy, r - 1.0F, r + 1.0F, 120.0F, 240.0F, GuiShapes.fade(0x000000, 0.3F));
+            GuiShapes.arc(graphics, cx, cy, r - 0.6F, r + 0.6F, 120.0F, 120.0F + 120.0F * (cooling ? 1.0F : heat),
+                    GuiShapes.fade(tone, alpha));
         }
     }
 

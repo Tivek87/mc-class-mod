@@ -4,6 +4,7 @@ import java.util.List;
 import javax.annotation.Nullable;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.LanternPainter;
+import nl.tivek.multiversepowers.character.greenlantern.client.render.hand.light.HandCosmosLight;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.hand.light.HandPairLight;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.hand.light.HandRiftLight;
 import nl.tivek.multiversepowers.character.greenlantern.hand.HandGroup;
@@ -40,7 +41,8 @@ final class HandGroupPainter {
                         1.0 - Ease.smooth((clock - CALL) / 3.0), clock, 0.45);
             }
         }
-        if (!painter.visible(base, 12.0)) {
+        // The Cosmos Test's moon is far off in the sky: it is drawn wherever its circle is.
+        if (!painter.visible(base, 12.0) && HandPose.move(variant) != HandPose.COSMOS) {
             return;
         }
         painter.ambient(GLOWS);
@@ -59,6 +61,7 @@ final class HandGroupPainter {
             case HandPose.CLAP -> clap(painter, base, facing, clock, strength);
             case HandPose.TEAR -> tear(painter, variant, base, facing, clock, strength);
             case HandPose.RIFT -> HandRiftLight.draw(painter, id, variant, base, facing, clock, caught, strength, apart);
+            case HandPose.COSMOS -> HandCosmosLight.draw(painter, id, base, facing, clock, strength, apart);
             default -> ringCharge(painter, subs, base, facing, clock, strength);
         }
     }

@@ -1,16 +1,10 @@
 # Laatste sessie
 
-**Datum:** 2026-10-10, 22:12
-
-**Vraag:** red dot zonder strepen, mech-straal 1 stage, crosshairs veel levendiger, Mjolnir zwart in muur, bliksem elke 5 s, rechts vasthouden in de lucht hing op 25%, munitie + herladen voor shotgun/RPG; daarna volledige tour, commit, push en release.
-
-**Gedaan:**
-- Munitie: shotgun 2 hulzen, RPG 1 raket; leeg = automatisch herladen, volledig geanimeerd (shotgun klapt open, hulzen eruit/erin; RPG nieuwe raket). Zichtbaar onder de crosshair en in het paneel (`ammo x/y`, `reloading`).
-- Crosshairs reageren op alles: geraakt, landen, vallen, lage health, wisselen, hurken, geweigerde move, water, vuur, elk ability een eigen kick, health-boog van doelwit; Thor-pijl naar zijn hamer.
-- Mjolnir in muur belicht, bliksem elke 5 s, Thor in creative flight rechts vasthouden werkt.
-- Changelog-regels + tourstappen (`gun_ammo`, `thor_arc`, fixes, crosshairs); POWERS.md bijgewerkt; 2 testlessen in CLAUDE.md.
-- In game getest: herladen (zij-camera), crosshair, Thor-worp, Mjolnir in muur, hele tour (30 kaarten). `./gradlew build` groen.
-
-**Niet getest in game:** mech-straal met 1 ring (kleine voorwaarde-wijziging).
-
-**Open:** idee #24 wacht op ja/nee van de gebruiker.
+- Datum: 2026-10-11 00:21
+- Vraag: wapens van het Construct Wheel beter en geanimeerd; Dual Revolvers, Arm Cannon en Minigun werkend; handschoenen; Giant Hands-kansen; nieuwe hand "Cosmos Test" (maan pakken en verpletteren, lucht zwart).
+- Gedaan: drie nieuwe geweren met eigen moves, schoten, terugslag, tracers, HUD en instellingen; RPG/shotgun-terugslag, ademen in rust, meer detail op bijl/shotgun/RPG; Cosmos Test (cirkel, duik, rift bij de maan, 3D-maan met schaduw, verpletteren, explosie, zwarte lucht, maan terug); kansen als gewichten met % + All 0/Reset; TintedBuffers-crashfix.
+- Release voorbereid: mod_version 0.8.1-alpha, CHANGELOG-sectie, 9 tourstappen (elke regel een stap, SMALL leeg).
+- Getest: ./gradlew build groen (TourCoverageTest); in game: revolvers/kanon/minigun/bijl/shotgun/RPG, Cosmos Test (3 runs), tour helemaal doorlopen. Testklassen, testwerelden en screenshots verwijderd; run/config tour.json teruggezet.
+- Niet gecommit: wacht op ja voor commit + push + publish van v0.8.1-alpha.
+- Daarna (lijst van de gebruiker): grab dash dive struikelen, Mjolnir altijd terugvliegen, lijk wordt nieuw personage, mob-factie-editor met zoekbalk, 100+ korte commando's + pagina + 25 eigen aliassen, Hard-Light Helper volledig opnieuw (30 hp, -50% schade, nieuw design/animaties).
+- Open: idee #24 wacht op ja/nee.

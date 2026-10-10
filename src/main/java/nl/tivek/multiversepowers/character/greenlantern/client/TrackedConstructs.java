@@ -57,6 +57,28 @@ abstract class TrackedConstructs {
         return null;
     }
 
+    public record Cosmos(Vec3 center, Vec3 facing, double clock) {
+    }
+
+    // The nearest Cosmos Test within `range` of `from`, or null.
+    @Nullable
+    public static Cosmos cosmos(Vec3 from, double range, float partialTick) {
+        Cosmos nearest = null;
+        double best = range * range;
+        for (Track track : CONSTRUCTS.values()) {
+            ConstructPayload hand = track.latest;
+            if (hand.shape() != ConstructPayload.HAND || HandPose.move(hand.variant()) != HandPose.COSMOS) {
+                continue;
+            }
+            double away = hand.center().distanceToSqr(from);
+            if (away <= best) {
+                best = away;
+                nearest = new Cosmos(hand.center(), hand.facing(), track.clock(partialTick));
+            }
+        }
+        return nearest;
+    }
+
     public record Sword(int move, double moveStart, double clock, float broken, Vec3 way) {
     }
 

@@ -143,6 +143,18 @@ public final class GiantHands extends GiantHandPlaces implements Effect {
         return all;
     }
 
+    // A Cosmos Test already up or on its way in this world, of any player.
+    private boolean cosmosOut() {
+        List<GiantHand> all = handsIn(this.owner.level());
+        all.addAll(this.coming);
+        for (GiantHand hand : all) {
+            if (hand.move == HandPose.COSMOS) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public static boolean waving(ServerPlayer player) {
         GiantHands storm = ACTIVE.get(player.getUUID());
         return storm != null && storm.latest != null && storm.latest.t < WAVE_TICKS;
@@ -279,11 +291,20 @@ public final class GiantHands extends GiantHandPlaces implements Effect {
                 && !HeldMobs.isHeldByAnyone(target) && !LightBubble.trapped(target);
         double[] chances = new double[HandPose.MOVES];
         double total = 0.0;
+        double rival = 0.0;
         for (int move = 0; move < HandPose.MOVES; move++) {
-            if (this.may(move, grabbable, pair, fresh)) {
+            if (this.may(move, grabbable, pair)) {
                 chances[move] = this.chance(move);
                 total += chances[move];
+                if (move != this.lastMove) {
+                    rival = Math.max(rival, chances[move]);
+                }
             }
+        }
+        // The last hand waits a turn, unless it is weighed above every other: then it may come again.
+        if (fresh && this.lastMove >= 0 && chances[this.lastMove] > 0.0 && chances[this.lastMove] <= rival) {
+            total -= chances[this.lastMove];
+            chances[this.lastMove] = 0.0;
         }
         if (total <= 0.0) {
             return -1;
@@ -303,13 +324,15 @@ public final class GiantHands extends GiantHandPlaces implements Effect {
         return last;
     }
 
-    private boolean may(int move, boolean grabbable, boolean pair, boolean fresh) {
+    private boolean may(int move, boolean grabbable, boolean pair) {
         boolean holds = move == HandPose.GRAB || move == HandPose.PINCH || move == HandPose.DRAG
                 || move == HandPose.RAGDOLL || move == HandPose.SWALLOW || move == HandPose.RINGHOLD
                 || move == HandPose.EYE || move == HandPose.RINGCHAINS || move == HandPose.TEAR || move == HandPose.MAW
                 || move == HandPose.RIFT;
-        return HandPose.pickable(move) && (!fresh || move != this.lastMove) && this.made[move] < this.most(move)
-                && (!holds || grabbable) && (move != HandPose.AXE || pair);
+        // The Cosmos Test darkens the sky for everyone near: one at a time.
+        return HandPose.pickable(move) && this.made[move] < this.most(move)
+                && (!holds || grabbable) && (move != HandPose.AXE || pair)
+                && (move != HandPose.COSMOS || this.made[move] == 0 && !this.cosmosOut());
     }
 
     private boolean anyLeft() {

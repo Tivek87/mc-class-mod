@@ -39,7 +39,8 @@ public final class ConstructChoice {
             case SWORD_SHIELD -> SwordArms.present();
             case FLAMETHROWER -> FlameArms.present();
             case ENERGY_WHIP -> WhipArms.present();
-            case BATTLEAXE, CHAINSAW, ROCKET_LAUNCHER, SHOTGUN -> ClientHeavy.present(construct);
+            case BATTLEAXE, CHAINSAW, ROCKET_LAUNCHER, SHOTGUN, REVOLVERS, ARM_CANNON, MINIGUN ->
+                    ClientHeavy.present(construct);
             default -> true;
         };
     }
@@ -55,7 +56,7 @@ public final class ConstructChoice {
             return false;
         }
         CharacterAbility wheel = GameCharacter.GREEN_LANTERN.byName("construct_wheel");
-        if (construct.made() && construct != Construct.NONE && minecraft.player != null && wheel != null
+        if (construct != Construct.NONE && minecraft.player != null && wheel != null
                 && ClientRing.power(minecraft.player) + 1.0E-4F < wheel.value("formPowerCost")) {
             ClientCharacter.noPower(minecraft.player, GameCharacter.GREEN_LANTERN);
             minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.VILLAGER_NO, 1.0F, 0.5F));

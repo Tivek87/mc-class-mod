@@ -16,44 +16,6 @@ public final class GunShapes {
     private GunShapes() {
     }
 
-    static Mesh[] revolver() {
-        List<Mesh> parts = new ArrayList<>();
-        double bore = 0.06;
-        double axis = 0.01;
-        parts.add(rod(14, 0.03, 0.09, 0.5, 1.0).moved(0.0, bore, 0.0));
-        parts.add(Mesh.box(-0.018, 0.08, 0.09, 0.018, 0.1, 0.5, 1.15));
-        for (int k = 0; k < 4; k++) {
-            parts.add(Mesh.box(-0.01, 0.1, 0.14 + k * 0.08, 0.01, 0.104, 0.18 + k * 0.08, 1.9));
-        }
-        parts.add(Mesh.box(-0.026, -0.005, 0.09, 0.026, bore, 0.5, 1.0));
-        parts.add(Mesh.box(-0.007, 0.1, 0.44, 0.007, 0.13, 0.49, 1.5));
-        parts.add(Mesh.torus(14, 5, 0.021, 0.008, 1.9).alongZ().moved(0.0, bore, 0.5));
-        parts.add(Mesh.lathe(20, 1.0, 0.0, -0.075, 0.062, -0.075, 0.07, -0.065, 0.07, 0.065, 0.062, 0.075, 0.0, 0.075)
-                .alongZ().moved(0.0, axis, 0.0));
-        for (int k = 0; k < 6; k++) {
-            parts.add(Mesh.box(-0.008, 0.066, -0.05, 0.008, 0.074, 0.05, 1.9).turned(0.0, 0.0, 1.0, 30.0 + 60.0 * k)
-                    .moved(0.0, axis, 0.0));
-        }
-        for (int k = 1; k < 6; k++) {
-            double angle = Math.toRadians(90.0 + 60.0 * k);
-            parts.add(Mesh.torus(10, 4, 0.016, 0.005, 1.7).alongZ().moved(Math.cos(angle) * 0.045,
-                    axis + Math.sin(angle) * 0.045, 0.076));
-        }
-        parts.add(Mesh.box(-0.03, 0.08, -0.1, 0.03, 0.1, 0.1, 1.0));
-        parts.add(Mesh.box(-0.035, -0.075, -0.16, 0.035, 0.1, -0.075, 1.0));
-        parts.add(Mesh.box(-0.028, -0.075, -0.16, 0.028, -0.055, 0.1, 1.0));
-        parts.add(Mesh.box(-0.03, -0.075, 0.075, 0.03, -0.005, 0.1, 1.0));
-        parts.add(Mesh.box(0.035, 0.02, -0.14, 0.042, 0.04, -0.1, 1.5));
-        parts.add(Mesh.box(-0.011, 0.0, -0.016, 0.011, 0.075, 0.016, 1.3).turned(1.0, 0.0, 0.0, -35.0)
-                .moved(0.0, 0.07, -0.15));
-        parts.add(Mesh.tube(false, 6, 0.011, 1.2, path(0.0, -0.075, 0.055, 0.0, -0.125, 0.045, 0.0, -0.148, 0.005, 0.0,
-                -0.14, -0.045, 0.0, -0.105, -0.075, 0.0, -0.075, -0.08)));
-        parts.add(Mesh.tube(false, 5, 0.009, 1.5, path(0.0, -0.075, -0.005, 0.0, -0.1, 0.0, 0.0, -0.125, -0.015)));
-        parts.add(leaning(grip(0.24, 0.05, 0.034, 0.95), 115.0, -0.07, -0.13));
-        twice(parts, Mesh.torus(12, 4, 0.02, 0.006, 1.9).alongX().moved(0.038, -0.179, -0.181));
-        return parts.toArray(Mesh[]::new);
-    }
-
     static Mesh[] shotgun() {
         List<Mesh> parts = new ArrayList<>(List.of(shotgunBarrels()));
         parts.addAll(List.of(shotgunStock()));
@@ -66,6 +28,7 @@ public final class GunShapes {
         for (int side = -1; side <= 1; side += 2) {
             parts.add(rod(16, 0.038, 0.0, 0.5, 1.0).moved(side * 0.039, 0.05, 0.0));
             parts.add(Mesh.torus(16, 5, 0.026, 0.009, 1.9).alongZ().moved(side * 0.039, 0.05, 0.5));
+            parts.add(Mesh.torus(16, 4, 0.039, 0.006, 1.6).alongZ().moved(side * 0.039, 0.05, 0.03));
         }
         parts.add(Mesh.box(-0.012, 0.08, 0.0, 0.012, 0.097, 0.5, 1.15));
         parts.add(Mesh.box(-0.012, 0.0, 0.0, 0.012, 0.03, 0.5, 1.0));
@@ -84,6 +47,11 @@ public final class GunShapes {
         }
         parts.add(Mesh.box(-0.074, -0.035, -0.15, 0.074, 0.09, 0.005, 1.0));
         twice(parts, Mesh.box(0.07, -0.02, -0.135, 0.08, 0.075, -0.015, 1.25));
+        twice(parts, Mesh.tube(false, 4, 0.004, 1.9, path(0.081, 0.0, -0.12, 0.081, 0.03, -0.095, 0.081, 0.052,
+                -0.065, 0.081, 0.038, -0.035, 0.081, 0.012, -0.03)));
+        for (double[] at : new double[][] { { 0.058, -0.122 }, { -0.006, -0.03 } }) {
+            twice(parts, Mesh.ball(6, 4, 0.006, 2.0).moved(0.081, at[0], at[1]));
+        }
         parts.add(Mesh.cylinder(12, 0.02, -0.082, 0.082, 1.6).alongX().moved(0.0, -0.01, -0.005));
         parts.add(Mesh.box(-0.01, 0.09, -0.13, 0.035, 0.105, -0.07, 1.4));
         parts.add(Mesh.tube(false, 6, 0.011, 1.2, path(0.0, -0.035, 0.0, 0.0, -0.085, -0.01, 0.0, -0.105, -0.05, 0.0,
@@ -103,71 +71,6 @@ public final class GunShapes {
     // A shell, its rim at z 0 and its body along +z, as it sits in a chamber.
     static Mesh[] shell() {
         return new Mesh[] { rod(10, 0.029, 0.0, 0.07, 1.3), Mesh.cylinder(10, 0.035, -0.008, 0.0, 1.9).alongZ() };
-    }
-
-    static Mesh[] armCannon() {
-        List<Mesh> parts = new ArrayList<>();
-        parts.add(Mesh.lathe(24, 1.0, 0.0, -0.42, 0.16, -0.42, 0.2, -0.395, 0.215, -0.34, 0.215, -0.08, 0.2, -0.04, 0.14,
-                0.0, 0.12, 0.02, 0.12, 0.26, 0.14, 0.28, 0.14, 0.33, 0.12, 0.345, 0.08, 0.345, 0.08, 0.24, 0.0, 0.24)
-                .alongZ());
-        parts.add(band(0.17, 0.018, -0.42, 1.4));
-        parts.add(band(0.215, 0.014, -0.34, 1.5));
-        parts.add(band(0.215, 0.014, -0.12, 1.5));
-        parts.add(band(0.12, 0.01, 0.09, 1.6));
-        parts.add(band(0.12, 0.01, 0.18, 1.6));
-        parts.add(band(0.08, 0.008, 0.34, 2.0));
-        parts.add(Mesh.ball(14, 8, 0.06, 2.3).moved(0.0, 0.0, 0.24));
-        for (int k = 0; k < 4; k++) {
-            double z = -0.3 + k * 0.055;
-            parts.add(Mesh.box(-0.06, 0.2, z, 0.06, 0.232, z + 0.03, 1.35));
-        }
-        twice(parts, Mesh.torus(20, 5, 0.06, 0.012, 1.9).alongX().moved(0.216, 0.0, -0.21));
-        twice(parts, Mesh.box(0.185, 0.08, -0.29, 0.22, 0.098, -0.13, 1.9));
-        twice(parts, Mesh.box(0.185, -0.098, -0.29, 0.22, -0.08, -0.13, 1.9));
-        parts.add(rod(12, 0.045, -0.36, -0.06, 1.1).moved(0.0, -0.22, 0.0));
-        for (double z : new double[] { -0.32, -0.21, -0.1 }) {
-            parts.add(Mesh.torus(12, 4, 0.047, 0.008, 1.8).alongZ().moved(0.0, -0.22, z));
-        }
-        return parts.toArray(Mesh[]::new);
-    }
-
-    static Mesh[] minigun() {
-        List<Mesh> parts = new ArrayList<>();
-        for (int k = 0; k < 6; k++) {
-            double angle = Math.toRadians(90.0 + 60.0 * k);
-            double x = Math.cos(angle) * 0.062;
-            double y = Math.sin(angle) * 0.062;
-            parts.add(rod(10, 0.02, -0.05, 0.75, 1.0).moved(x, y, 0.0));
-            parts.add(Mesh.torus(10, 4, 0.013, 0.005, 1.9).alongZ().moved(x, y, 0.75));
-        }
-        parts.add(rod(10, 0.022, -0.05, 0.72, 1.1));
-        parts.add(rod(24, 0.095, 0.33, 0.37, 1.1));
-        parts.add(rod(24, 0.092, 0.68, 0.72, 1.15));
-        parts.add(band(0.093, 0.007, 0.7, 1.8));
-        parts.add(rod(24, 0.105, -0.32, -0.02, 1.0));
-        parts.add(band(0.107, 0.01, -0.3, 1.5));
-        parts.add(band(0.107, 0.01, -0.04, 1.5));
-        parts.add(Mesh.box(-0.085, -0.085, -0.47, 0.085, 0.09, -0.31, 1.0));
-        parts.add(rod(12, 0.045, -0.46, -0.3, 1.1).moved(0.11, -0.03, 0.0));
-        parts.add(Mesh.torus(12, 4, 0.047, 0.008, 1.7).alongZ().moved(0.11, -0.03, -0.31));
-        for (int side = -1; side <= 1; side += 2) {
-            parts.add(Mesh.cylinder(10, 0.022, -0.12, 0.07, 1.0).moved(side * 0.1, 0.0, -0.57));
-            parts.add(Mesh.tube(false, 6, 0.014, 1.1, path(side * 0.1, 0.07, -0.57, side * 0.075, 0.07, -0.46)));
-            parts.add(Mesh.tube(false, 6, 0.014, 1.1, path(side * 0.1, -0.12, -0.57, side * 0.075, -0.08, -0.46)));
-        }
-        parts.add(Mesh.tube(false, 6, 0.012, 1.2, path(-0.1, 0.06, -0.57, 0.1, 0.06, -0.57)));
-        parts.add(Mesh.box(-0.025, 0.07, -0.585, 0.025, 0.09, -0.555, 1.9));
-        parts.add(Mesh.tube(false, 7, 0.016, 1.15, path(0.0, 0.09, -0.42, 0.0, 0.19, -0.38, 0.0, 0.205, -0.26, 0.0, 0.19,
-                -0.13, 0.0, 0.1, -0.09)));
-        Vec3[] chute = path(0.09, -0.02, -0.2, 0.16, -0.08, -0.2, 0.19, -0.18, -0.23, 0.19, -0.28, -0.29, 0.17, -0.36,
-                -0.37);
-        parts.add(Mesh.tube(false, 8, 0.03, 0.95, chute));
-        for (int i = 1; i < chute.length; i++) {
-            Vec3 along = chute[Math.min(chute.length - 1, i + 1)].subtract(chute[i - 1]);
-            parts.add(Mesh.torus(12, 4, 0.032, 0.006, 1.6).pointing(along.x, along.y, along.z)
-                    .moved(chute[i].x, chute[i].y, chute[i].z));
-        }
-        return parts.toArray(Mesh[]::new);
     }
 
     // The launcher's round body and its rocket drawn long and a little thicker than first made; its grips hang lower
@@ -212,6 +115,18 @@ public final class GunShapes {
         parts.add(Mesh.torus(12, 4, 0.018, 0.005, 1.9).alongZ().moved(0.0725, 0.06, 0.031));
         parts.add(Mesh.box(-0.008, 0.04, 0.2, 0.008, 0.085, 0.215, 1.4));
         parts.add(Mesh.box(-0.018, 0.05, -0.04, 0.018, 0.08, -0.025, 1.4));
+        for (double z : new double[] { -0.22, -0.07, 0.08 }) {
+            for (int k = 0; k < 8; k++) {
+                double turn = Math.PI * 2.0 * (k + 0.5) / 8.0;
+                parts.add(Mesh.ball(6, 4, 0.006, 1.9).moved(Math.cos(turn) * 0.066, Math.sin(turn) * 0.066, z));
+            }
+        }
+        parts.add(Mesh.box(-0.068, 0.02, -0.13, -0.044, 0.06, -0.04, 1.2));
+        parts.add(rod(12, 0.018, -0.17, 0.0, 1.05).moved(-0.056, 0.075, 0.0));
+        for (double z : new double[] { -0.17, 0.0 }) {
+            parts.add(Mesh.torus(12, 4, 0.02, 0.005, 1.9).alongZ().moved(-0.056, 0.075, z));
+        }
+        parts.add(Mesh.cylinder(10, 0.012, -0.002, 0.002, 2.3).alongZ().moved(-0.056, 0.075, 0.001));
         for (int i = 0; i < parts.size(); i++) {
             parts.set(i, parts.get(i).scaled(TUBE_THICK, TUBE_THICK, TUBE_LONG));
         }

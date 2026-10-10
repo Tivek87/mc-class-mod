@@ -4,12 +4,13 @@ import java.util.HashMap;
 import java.util.Map;
 import javax.annotation.Nullable;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.character.greenlantern.construct.Construct;
 import nl.tivek.multiversepowers.character.greenlantern.heavy.HeavyMoves;
+import nl.tivek.multiversepowers.character.greenlantern.heavy.HeavyShots;
 import nl.tivek.multiversepowers.engine.client.render.ConstructPainter.Frame;
+import nl.tivek.multiversepowers.engine.client.world.ClientClock;
 import nl.tivek.multiversepowers.engine.math.Ease;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
@@ -32,8 +33,16 @@ public final class ClientHeavy {
         int last = HeavyMoves.IDLE;
         double lastStart;
         float yaw;
-        // The rounds left in a gun.
+        // The rounds left in a gun (the minigun's heat, out of 100), and as its move began.
         int ammo;
+        int startAmmo;
+        // How far round the minigun's barrels have turned (radians), and when that was worked out.
+        double spinAngle;
+        double spinAt = -1.0;
+        // Moves begun so far, and how many shots of which one the tracers have sent on their way.
+        int moves;
+        int shotsMove = -1;
+        int shotsSeen;
         double formedAt;
         double brokeAt = -1.0;
         double told;
@@ -41,9 +50,10 @@ public final class ClientHeavy {
         @Nullable
         Vec3 impact;
         double impactAt;
-        // The weapon as last posed, in his model's space (blocks), and whether it is.
+        // The weapon as last posed, in his model's space (blocks), and whether it is; the left revolver's too.
         Frame frame = new Frame(Vec3.ZERO, new Vec3(1.0, 0.0, 0.0), new Vec3(0.0, 1.0, 0.0), new Vec3(0.0, 0.0, 1.0),
                 1.0);
+        Frame left = this.frame;
         boolean posed;
         // His chest's turn and his neck as last posed, for where the weapon was a moment ago (its trail).
         final Quaternionf chest = new Quaternionf();
@@ -63,6 +73,11 @@ public final class ClientHeavy {
 
         public int ammo() {
             return this.ammo;
+        }
+
+        // Whether the minigun's barrels were already spinning as this stream began (out of spun barrels).
+        boolean spun() {
+            return this.move == HeavyMoves.AIM && this.last == HeavyMoves.BRACE;
         }
 
         double age(float partialTick) {
@@ -105,6 +120,7 @@ public final class ClientHeavy {
             held.formedAt = move == HeavyMoves.FORM ? now - age : now - FORM;
             held.move = move;
             held.start = now - age;
+            held.startAmmo = ammo;
             HELD.put(owner, held);
         } else if (held.move != move || move != HeavyMoves.IDLE && Math.abs(held.start - (now - age)) > 3.0) {
             boolean fresh = held.move != move;
@@ -114,6 +130,8 @@ public final class ClientHeavy {
                 if (move == HeavyMoves.LEAP) {
                     held.impact = null;
                 }
+                held.startAmmo = ammo;
+                held.moves++;
             }
             held.move = move;
             held.start = now - age;
@@ -139,6 +157,15 @@ public final class ClientHeavy {
         }
         double length = HeavyMoves.length(held.weapon, HeavyMoves.RELOAD) - HeavyMoves.RELOADED;
         return Math.min(1.0, Math.max(0.0, held.age(partialTick) / length));
+    }
+
+    // How full the own arm cannon's charge is, 0 to 1, or below 0 while it is not charging.
+    public static double charge(float partialTick) {
+        Held held = gun();
+        if (held == null || held.weapon != HeavyMoves.CANNON || held.move != HeavyMoves.AIM) {
+            return -1.0;
+        }
+        return Math.min(1.0, Math.max(0.0, held.age(partialTick) / HeavyShots.CHARGE));
     }
 
     // The weapon in this entity's hands, while it or its pieces are about.
@@ -169,6 +196,9 @@ public final class ClientHeavy {
             case CHAINSAW -> HeavyMoves.SAW;
             case ROCKET_LAUNCHER -> HeavyMoves.RPG;
             case SHOTGUN -> HeavyMoves.SHOTGUN;
+            case REVOLVERS -> HeavyMoves.REVOLVERS;
+            case ARM_CANNON -> HeavyMoves.CANNON;
+            case MINIGUN -> HeavyMoves.MINIGUN;
             default -> -1;
         };
     }
@@ -198,7 +228,6 @@ public final class ClientHeavy {
     }
 
     static double now(float partialTick) {
-        ClientLevel level = Minecraft.getInstance().level;
-        return level == null ? 0.0 : level.getGameTime() + partialTick;
+        return ClientClock.now(partialTick);
     }
 }

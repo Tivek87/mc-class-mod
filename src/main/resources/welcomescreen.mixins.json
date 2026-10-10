@@ -10,6 +10,7 @@
   ],
   "client": [
     "client.CameraMixin",
+    "client.ClientLevelSkyMixin",
     "client.ClientPacketListenerMixin",
     "client.KeyEntryMixin",
     "client.LevelWeatherMixin",
@@ -27,7 +28,8 @@
     "client.render.ModelRenderMixin",
     "client.render.MushroomCowMushroomLayerMixin",
     "client.render.PlayerModelMixin",
-    "client.render.PlayerRendererMixin"
+    "client.render.PlayerRendererMixin",
+    "client.render.SkyMoonMixin"
   ],
   "injectors": {
     "defaultRequire": 1

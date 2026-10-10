@@ -19,6 +19,7 @@ import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import nl.tivek.multiversepowers.character.greenlantern.duo.HandDuo;
+import nl.tivek.multiversepowers.character.greenlantern.hand.HandCosmos;
 import nl.tivek.multiversepowers.character.greenlantern.hand.HandGroup;
 import nl.tivek.multiversepowers.character.greenlantern.hand.HandPose;
 import nl.tivek.multiversepowers.character.greenlantern.hand.HandRift;
@@ -48,6 +49,7 @@ abstract class GiantHandPlaces {
     private static final double SEES_FROM = 1.5;
     // How much higher or lower than the creature's feet a rift may tear open, and how far it keeps from the caster.
     private static final double RIFT_STEP = 1.6;
+    private static final double COSMOS_AWAY = 4.0;
     private static final double RIFT_ROOM = 1.5;
 
     private record WallSpot(Vec3 hit, Vec3 out, double far, int column) {
@@ -75,6 +77,9 @@ abstract class GiantHandPlaces {
         }
         if (move == HandPose.RIFT) {
             return this.riftHand(level, target, away);
+        }
+        if (move == HandPose.COSMOS) {
+            return this.cosmosHand(level, target, away);
         }
         if (HandPose.portal(move)) {
             return this.portalHand(level, target, move, away);
@@ -362,6 +367,26 @@ abstract class GiantHandPlaces {
         }
         GiantHand hand = new GiantHand(this.storm(), variant, base, target, facing);
         return this.fits(hand) ? hand : null;
+    }
+
+    // The Cosmos Test draws its circle on level ground beyond the creature, open to the sky for the hand diving in.
+    @Nullable
+    private GiantHand cosmosHand(ServerLevel level, LivingEntity target, Vec3 away) {
+        for (double turn : PAIR_TURNS) {
+            Vec3 way = Vectors.spin(away, Vectors.UP, turn);
+            Vec3 base = GiantHandSpots.ground(level, target.position().add(way.scale(COSMOS_AWAY)), target.getY());
+            if (base == null || Math.abs(base.y - target.getY()) > RIFT_STEP
+                    || this.owner.position().distanceTo(base) < HandCosmos.RADIUS + RIFT_ROOM
+                    || !level.canSeeSky(BlockPos.containing(base.x, base.y + 1.0, base.z))) {
+                continue;
+            }
+            GiantHand hand = new GiantHand(this.storm(), HandPose.variant(HandPose.COSMOS, false, false, 0), base,
+                    target, way.scale(-1.0));
+            if (this.fits(hand)) {
+                return hand;
+            }
+        }
+        return null;
     }
 
     boolean clearOfOwner(Vec3 base, LivingEntity target) {

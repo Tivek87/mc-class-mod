@@ -36,6 +36,8 @@ public final class FistPainter {
     private static final double PISTON_SIZE = 3.2;
     private static final double ROD_WIDE = 0.35;
     private static final double DROP = 6.0;
+    // A worn glove stands this much bigger than the hand, so no bent wrist or skin's sleeve shows through it.
+    private static final double WORN = 1.25;
 
     private FistPainter() {
     }
@@ -78,8 +80,9 @@ public final class FistPainter {
     // back, or breaking apart `apart` of the way; `size` times a hand's own.
     static void glove(LanternPainter painter, boolean right, double formed, double apart, double size, int seed) {
         double middle = right ? -0.0625 : 0.0625;
-        Frame frame = new Frame(new Vec3(middle * (1.0 - size), 0.5 * (1.0 - size), 0.0), new Vec3(1.0, 0.0, 0.0),
-                new Vec3(0.0, 1.0, 0.0), new Vec3(0.0, 0.0, 1.0), size);
+        double scale = size * WORN;
+        Frame frame = new Frame(new Vec3(middle * (1.0 - scale), 0.5 * (1.0 - scale), 0.0), new Vec3(1.0, 0.0, 0.0),
+                new Vec3(0.0, 1.0, 0.0), new Vec3(0.0, 0.0, 1.0), scale);
         Shape shape = right ? RIGHT : LEFT;
         if (apart >= 0.0) {
             painter.shattered(shape, frame, Math.min(1.0, apart), 1.0, seed);

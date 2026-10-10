@@ -34,6 +34,8 @@ final class LanternPanel implements AbilityPanel.Rules {
             "giant_hands");
     private static final int MECH_GLARE_HOLD = 6;
     private static final int FIST_HOLD = 8;
+    // The revolvers, the cannon and the minigun fan, charge, stream and brace soon after a button is held.
+    private static final int GUN_HOLD = 6;
     // Each weapon's click and hold of the left button, then of the right, and the wheel's setting saying what each
     // costs: one per second is paid every tick.
     private static final Map<String, String[]> COSTS = Map.of(
@@ -47,8 +49,15 @@ final class LanternPanel implements AbilityPanel.Rules {
             "rocket_launcher", new String[] { "rpgPowerCost", "rpgClusterPowerCost", "rpgJumpPowerCost",
                     "rpgGuidedPowerCost" },
             "shotgun", new String[] { "shotgunPowerCost", "shotgunDoublePowerCost", "shotgunBashPowerCost",
-                    "shotgunDeflectPowerPerSecond" });
-    private static final String[] HEAVY = { "battleaxe", "chainsaw", "rocket_launcher", "shotgun" };
+                    "shotgunDeflectPowerPerSecond" },
+            "revolvers", new String[] { "revolverPowerCost", "revolverFanPowerCost", "revolverWhipPowerCost",
+                    "revolverDeadeyePowerPerSecond" },
+            "arm_cannon", new String[] { "cannonPowerCost", "cannonChargePowerPerSecond", "cannonBashPowerCost",
+                    "cannonShieldPowerPerSecond" },
+            "minigun", new String[] { "minigunPowerCost", "minigunPowerPerSecond", "minigunVentPowerCost",
+                    "minigunSpinPowerPerSecond" });
+    private static final String[] HEAVY = { "battleaxe", "chainsaw", "rocket_launcher", "shotgun", "revolvers",
+            "arm_cannon", "minigun" };
 
     private LanternPanel() {
     }
@@ -64,20 +73,25 @@ final class LanternPanel implements AbilityPanel.Rules {
         if (scan != null) {
             ClientCharacter.endsOnly(scan, player -> ClientRing.has(player, RingPayload.DOME));
         }
-        // Bare-handed, one hand acts at a time: no bolt while a fist is still in its blow, nor a fist while firing.
+        // Bare-handed, one hand acts at a time: no bolt while the gloves cover the ring, nor a fist while firing.
         ClientCharacter.oneButton(GameCharacter.GREEN_LANTERN, player -> !piloting(player) && weapon() == null);
         CharacterAbility bolt = GameCharacter.GREEN_LANTERN.byName("light_bolt");
         if (bolt != null) {
-            ClientCharacter.holdTime(bolt, player -> piloting(player) ? MECH_GLARE_HOLD : 0);
-            ClientCharacter.gate(bolt, player -> piloting(player) || weapon() != null || !ClientFists.striking(player));
+            ClientCharacter.holdTime(bolt, player -> piloting(player) ? MECH_GLARE_HOLD : quickGun() ? GUN_HOLD : 0);
+            ClientCharacter.gate(bolt, player -> piloting(player) || weapon() != null || !ClientFists.gloved(player));
         }
         // Bare fists throw a heavy blow soon after the button is held; a weapon or the mech keep the full hold.
         CharacterAbility fists = GameCharacter.GREEN_LANTERN.byName("light_fists");
         if (fists != null) {
-            ClientCharacter.holdTime(fists, player -> piloting(player) || weapon() != null ? 0 : FIST_HOLD);
+            ClientCharacter.holdTime(fists, player -> piloting(player) ? 0 : quickGun() ? GUN_HOLD
+                    : weapon() != null ? 0 : FIST_HOLD);
         }
         LanternGuide.register();
         Crosshairs.add(GameCharacter.GREEN_LANTERN, LanternCrosshair::draw);
+    }
+
+    private static boolean quickGun() {
+        return ClientHeavy.holding() >= HeavyMoves.REVOLVERS;
     }
 
     @Nullable

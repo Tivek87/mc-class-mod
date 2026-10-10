@@ -165,6 +165,98 @@ final class HeavyKeys {
                 k(19, -2, 4.9F, -7, 0, -0.32F, 0, -1, 0.45F, 0.1F, 0.17F, 0, 0.7F), at(open, 21),
                 k(23, -2, 5, -7.5F, 0, -0.4F, 0, -1, 0.3F, 0.1F, 0.18F, 0, 0.7F),
                 k(25, -2, 3, -8.5F, 0.02F, 0.1F, 0, -1, 0, 0.12F, 0.05F, 0, 0.5F), rest(SHOTGUN, 32));
+
+        revolvers();
+        cannon();
+        minigun();
+    }
+
+    // The revolvers' keys are the right gun's; the left one is drawn the same across his middle (HeavyPoses.side).
+    // Each shot's kick and the twirls are added on top (HeavyPoses), so no key ever turns a gun all the way round.
+    private static void revolvers() {
+        REST[REVOLVERS] = k(0, -4.5F, 8, -6, 0.05F, -0.3F, 0, -1, 0, 0, 0, 0, 0.2F);
+        Key aim = k(0, -3, 3, -9.5F, -0.07F, 0.0F, 0, -1, 0, 0, 0.04F, 0, 0.5F);
+        AIMED[REVOLVERS] = aim;
+        // Grown hanging from his hands, swung up as they twirl and come to rest.
+        SCRIPTS[REVOLVERS][FORM] = keys(k(0, -5, 10, -3, 0, -1.3F, 0, 0, -1, 0, 0, 0, 0.3F),
+                k(8, -4.5F, 7, -6, 0, -0.6F, 0, -1, 0, 0, 0, 0, 0.3F), k(15, -3.5F, 4, -8.5F, -0.05F, 0.05F, 0, -1, 0, 0,
+                        0.03F, 0, 0.4F), rest(REVOLVERS, 22));
+        // Drawn up from the hip as the round leaves; the kick is the shot's own.
+        SCRIPTS[REVOLVERS][SHOOT] = keys(rest(REVOLVERS, 0), at(aim, 2), at(aim, 8));
+        // Fanning: held low and close before him, the hammers slapped one after the other.
+        Key fan = k(LOOP_FROM, -3.6F, 6.2F, -8, -0.16F, 0.04F, 0, -1, 0, 0, 0.1F, 0, 1.0F);
+        SCRIPTS[REVOLVERS][AIM] = keys(rest(REVOLVERS, 0), fan,
+                k(7, -3.6F, 6.4F, -8.1F, -0.15F, 0.05F, 0, -1, 0, 0, 0.1F, 0, 1.05F), at(fan, 10));
+        SCRIPTS[REVOLVERS][LOOSE] = keys(at(fan, 0), rest(REVOLVERS, 8));
+        // The right gun's butt brought round and down onto the creature ahead (the left one stays aimed).
+        SCRIPTS[REVOLVERS][KICK] = keys(rest(REVOLVERS, 0), k(2, -6, -1, -3, 0.4F, 2.3F, 0, 0, 1, 0.4F, -0.05F, 0.04F,
+                0.4F), k(4, -2, 3, -11, -0.1F, 1.1F, 0, 0.5F, -1, -0.35F, 0.3F, -0.03F, 1.6F),
+                k(7, -3, 4, -9.5F, 0, 0.5F, 0, -1, -0.5F, -0.15F, 0.15F, 0, 1.0F), rest(REVOLVERS, 12));
+        // Dead-eye: brought up close under his eyes, still, a little crouched; let go, each mark is shot in turn.
+        Key dead = k(LOOP_FROM, -3.2F, 3.0F, -8, -0.08F, 0.02F, 0, -1, 0, 0, 0.06F, 0, 0.9F);
+        SCRIPTS[REVOLVERS][BRACE] = keys(rest(REVOLVERS, 0), dead,
+                k(7, -3.2F, 3.1F, -8.1F, -0.08F, 0.025F, 0, -1, 0, 0, 0.06F, 0, 0.95F), at(dead, 10));
+        SCRIPTS[REVOLVERS][UNBRACE] = keys(at(dead, 0), at(dead, 14), rest(REVOLVERS, 16));
+        // Tipped up as the cylinders swing out and are shaken empty, pointed down while rounds of light grow into
+        // them, flicked shut and twirled back to rest.
+        SCRIPTS[REVOLVERS][RELOAD] = keys(rest(REVOLVERS, 0), k(4, -4, 4, -6, 0.1F, 1.2F, 0, 0, 1, 0, -0.05F, 0, 0.3F),
+                k(8, -4, 3.5F, -6.3F, 0.1F, 1.3F, 0, 0, 1, 0, -0.06F, 0, 0.3F),
+                k(10, -4, 2.8F, -6.6F, 0.1F, 1.45F, 0, 0, 1, 0, -0.06F, 0, 0.2F),
+                k(13, -4, 6, -6, 0.05F, -1.0F, 0, -1, -1, 0, 0.15F, 0, 0.6F),
+                k(22, -4, 6.2F, -6.2F, 0.05F, -1.05F, 0, -1, -1, 0, 0.15F, 0, 0.6F),
+                k(25, -4, 5, -7, 0.02F, -0.15F, 0, -1, 0, 0, 0.05F, 0, 0.4F), rest(REVOLVERS, 38));
+    }
+
+    // The cannon over his right forearm, its handle in his left hand.
+    private static void cannon() {
+        REST[CANNON] = k(0, -4, 7, -6, 0.05F, -0.2F, 0, -1, 0, 0.05F, 0, 0, 0.3F);
+        Key aim = k(0, -3, 2.5F, -6.5F, 0, 0, 0, -1, 0, 0.12F, 0.03F, 0, 0.4F);
+        AIMED[CANNON] = aim;
+        SCRIPTS[CANNON][FORM] = keys(k(0, -4, 9, -4, 0.1F, -0.9F, 0, -1, 0, 0.05F, 0, 0, 0.3F),
+                k(8, -4, 6, -6, 0.05F, -0.4F, 0, -1, 0, 0.05F, 0, 0, 0.3F),
+                k(12, -3, 2, -6, 0, 0.12F, 0, -1, 0, 0.15F, 0, 0, 0.6F), at(aim, 16), rest(CANNON, 20));
+        SCRIPTS[CANNON][SHOOT] = keys(rest(CANNON, 0), at(aim, 2), at(aim, 10));
+        // Charging: braced low and leaning into it; let go, the blast throws the cannon up and him back.
+        Key brace = k(4, -3, 2.5F, -7, 0, 0, 0, -1, 0, 0.15F, 0.12F, 0, 1.4F);
+        SCRIPTS[CANNON][AIM] = keys(rest(CANNON, 0), brace,
+                k(10, -3, 2.7F, -7, 0, 0.01F, 0, -1, 0, 0.16F, 0.13F, 0, 1.55F), at(brace, 16));
+        SCRIPTS[CANNON][LOOSE] = keys(at(brace, 0), at(brace, 2),
+                k(4, -3, 0, -3, 0, 0.55F, 0, -1, 0, 0.2F, -0.2F, 0, 0.3F),
+                k(9, -3, 2, -6, 0, 0.1F, 0, -1, 0, 0.12F, 0, 0, 0.4F), rest(CANNON, 18));
+        // Drawn back and rammed out ahead.
+        SCRIPTS[CANNON][KICK] = keys(rest(CANNON, 0), k(2, -4, 3, -2, 0.1F, 0.1F, 0, -1, 0, 0.35F, -0.05F, 0, 0.4F),
+                k(4, -2, 3, -12, -0.05F, 0, 0, -1, 0, -0.3F, 0.3F, 0, 1.6F),
+                k(7, -2, 3, -11, -0.05F, 0, 0, -1, 0, -0.25F, 0.25F, 0, 1.4F), rest(CANNON, 12));
+        // Raised before him as its shield stands out of the muzzle; dropped, it bursts forward.
+        Key shield = k(LOOP_FROM, -2, 1, -7, -0.15F, 0.15F, 0, -1, 0, 0.1F, 0.06F, 0, 1.0F);
+        SCRIPTS[CANNON][BRACE] = keys(rest(CANNON, 0), shield,
+                k(7, -2, 1.1F, -7.1F, -0.15F, 0.16F, 0, -1, 0, 0.1F, 0.06F, 0, 1.05F), at(shield, 10));
+        SCRIPTS[CANNON][UNBRACE] = keys(at(shield, 0), k(2, -2, 1.5F, -10, -0.1F, 0.05F, 0, -1, 0, -0.1F, 0.25F, 0,
+                1.4F), rest(CANNON, 10));
+        SCRIPTS[CANNON][RELOAD] = keys(rest(CANNON, 0), rest(CANNON, 1));
+    }
+
+    // The minigun at his right hip: the right hand on its spade grip, the left on the carry handle over it.
+    private static void minigun() {
+        REST[MINIGUN] = k(0, -3.5F, 8, -6, 0.08F, -0.08F, 0, -1, 0, 0.18F, 0, 0, 0.6F);
+        Key aim = k(0, -3, 7, -7, 0, 0, 0, -1, 0, 0.25F, 0.12F, 0, 1.4F);
+        AIMED[MINIGUN] = aim;
+        SCRIPTS[MINIGUN][FORM] = keys(k(0, -4, 10, -4, 0.1F, -0.6F, 0, -1, 0, 0.1F, 0, 0, 0.4F),
+                k(10, -3.5F, 8, -6, 0.08F, -0.1F, 0, -1, 0, 0.18F, 0, 0, 0.6F), at(aim, 14), at(aim, 18),
+                rest(MINIGUN, 24));
+        SCRIPTS[MINIGUN][SHOOT] = keys(rest(MINIGUN, 0), at(aim, 5), at(aim, 13), rest(MINIGUN, 20));
+        SCRIPTS[MINIGUN][AIM] = keys(rest(MINIGUN, 0), at(aim, 4),
+                k(10, -3, 7.2F, -7, 0, 0.005F, 0, -1, 0, 0.26F, 0.13F, 0, 1.45F), at(aim, 16));
+        SCRIPTS[MINIGUN][LOOSE] = keys(at(aim, 0), rest(MINIGUN, 14));
+        // The barrels thrown up as the steam bursts out of them.
+        SCRIPTS[MINIGUN][KICK] = keys(rest(MINIGUN, 0), k(3, -3, 6, -8, 0, 0.25F, 0, -1, 0, 0.2F, 0.05F, 0, 1.0F),
+                k(6, -3, 5.5F, -7, 0, 0.3F, 0, -1, 0, 0.2F, -0.05F, 0, 0.8F), rest(MINIGUN, 16));
+        Key ready = k(4, -3, 7, -7, 0.02F, 0, 0, -1, 0, 0.22F, 0.08F, 0, 1.1F);
+        SCRIPTS[MINIGUN][BRACE] = keys(rest(MINIGUN, 0), ready, at(ready, 10));
+        SCRIPTS[MINIGUN][UNBRACE] = keys(at(ready, 0), rest(MINIGUN, 14));
+        // Overheated: lowered, barrels down, as they hiss and cool.
+        Key low = k(8, -3.5F, 9, -5, 0.08F, -0.35F, 0, -1, 0, 0.1F, 0.08F, 0, 0.8F);
+        SCRIPTS[MINIGUN][RELOAD] = keys(at(aim, 0), low, at(low, 32), rest(MINIGUN, 40));
     }
 
     private HeavyKeys() {

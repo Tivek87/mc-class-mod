@@ -251,7 +251,65 @@ final class LanternAbilities {
                         "Part of a blow from the front that still gets through (0.3 = 30%); shots from the front are"
                                 + " stopped, and letting go fires a short wide blast")
                 .setting("shotgunDeflectPowerPerSecond", 0.3, 0.0, 20.0, Unit.POWER_PER_SECOND,
-                        "Ring power holding the deflection costs a second");
+                        "Ring power holding the deflection costs a second")
+                .group("revolvers", "Dual Revolvers: shots (left click)")
+                .setting("revolverDamage", 5.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                        "Damage one revolver round deals; the guns fire in turn, right first")
+                .setting("revolverHeadshot", 2.0, 1.0, 10.0, Unit.STRENGTH,
+                        "How many times the damage a round to the head deals")
+                .setting("revolverRange", 40.0, 4.0, 128.0, Unit.BLOCKS, "How far a round flies, in blocks")
+                .setting("revolverPowerCost", 0.15, 0.0, 100.0, Unit.POWER, "Ring power one shot costs")
+                .group("revolvers_fan", "Dual Revolvers: fan the hammers (hold left)")
+                .setting("revolverFanPowerCost", 1.0, 0.0, 100.0, Unit.POWER,
+                        "Ring power fanning costs; the rounds pour out fast and a little wide until you let go")
+                .group("revolvers_whip", "Dual Revolvers: pistol whip (click right)")
+                .setting("revolverWhipDamage", 6.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                        "Damage the butt of the right revolver deals")
+                .setting("revolverWhipPowerCost", 0.2, 0.0, 100.0, Unit.POWER, "Ring power one pistol whip costs")
+                .group("revolvers_deadeye", "Dual Revolvers: dead-eye (hold right, let go)")
+                .setting("revolverDeadeyePowerPerSecond", 1.0, 0.0, 20.0, Unit.POWER_PER_SECOND,
+                        "Ring power holding dead-eye costs a second; every foe crossing your crosshair is marked"
+                                + " and let go, each mark is shot")
+                .group("cannon", "Arm Cannon: plasma (left click)")
+                .setting("cannonDamage", 7.0, 0.0, 2000.0, Unit.HALF_HEARTS, "Damage a quick plasma shot deals")
+                .setting("cannonRadius", 1.5, 0.0, 8.0, Unit.BLOCKS, "How far a quick shot's burst reaches")
+                .setting("cannonPowerCost", 0.4, 0.0, 100.0, Unit.POWER, "Ring power one quick shot costs")
+                .group("cannon_charge", "Arm Cannon: charged blast (hold left, let go)")
+                .setting("cannonChargedDamage", 26.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                        "Damage a fully charged blast deals (2 seconds of charging)")
+                .setting("cannonChargedRadius", 4.5, 0.5, 16.0, Unit.BLOCKS,
+                        "How far a fully charged blast reaches")
+                .setting("cannonChargePowerPerSecond", 2.0, 0.0, 50.0, Unit.POWER_PER_SECOND,
+                        "Ring power charging costs a second")
+                .group("cannon_bash", "Arm Cannon: cannon bash (click right)")
+                .setting("cannonBashDamage", 7.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                        "Damage the cannon rammed forward deals to everything before you")
+                .setting("cannonBashPowerCost", 0.3, 0.0, 100.0, Unit.POWER, "Ring power one bash costs")
+                .group("cannon_shield", "Arm Cannon: shield (hold right, let go)")
+                .setting("cannonShieldDamageKept", 0.2, 0.0, 1.0, Unit.PART_KEPT,
+                        "Part of a blow from the front that still gets through the shield (0.2 = 20%)")
+                .setting("cannonBurstDamage", 5.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                        "Damage the shield deals as it bursts forward when you let go")
+                .setting("cannonBurstReach", 4.0, 1.0, 12.0, Unit.BLOCKS, "How far the bursting shield reaches")
+                .setting("cannonShieldPowerPerSecond", 0.5, 0.0, 20.0, Unit.POWER_PER_SECOND,
+                        "Ring power holding the shield costs a second")
+                .group("minigun", "Minigun: burst (left click)")
+                .setting("minigunDamage", 1.6, 0.0, 2000.0, Unit.HALF_HEARTS, "Damage one minigun round deals")
+                .setting("minigunRange", 32.0, 4.0, 96.0, Unit.BLOCKS, "How far a round flies, in blocks")
+                .setting("minigunPowerCost", 0.3, 0.0, 100.0, Unit.POWER, "Ring power one burst costs")
+                .group("minigun_stream", "Minigun: stream (hold left)")
+                .setting("minigunPowerPerSecond", 2.0, 0.0, 50.0, Unit.POWER_PER_SECOND,
+                        "Ring power the stream costs a second; the barrels heat and overheat after about 4.5"
+                                + " seconds")
+                .group("minigun_vent", "Minigun: steam vent (click right)")
+                .setting("minigunVentDamage", 4.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                        "Damage the blast of steam deals; venting also cools the barrels at once")
+                .setting("minigunVentReach", 4.5, 1.0, 12.0, Unit.BLOCKS, "How far the steam reaches")
+                .setting("minigunVentPowerCost", 0.4, 0.0, 100.0, Unit.POWER, "Ring power one vent costs")
+                .group("minigun_spin", "Minigun: spin the barrels (hold right)")
+                .setting("minigunSpinPowerPerSecond", 0.3, 0.0, 20.0, Unit.POWER_PER_SECOND,
+                        "Ring power keeping the barrels spinning costs a second; with them spun, the stream starts"
+                                + " at once");
         lantern.add(abilities, AbilitySlot.ABILITY_3, "recharge").cooldown(60)
                 .setting("powerRestored", 100.0, 1.0, 100.0, Unit.POWER,
                         "How much power one touch of the lantern puts back in the ring (a full ring holds"
@@ -503,6 +561,10 @@ final class LanternAbilities {
                 "two hands out of portals tearing a rift into a sky of stars in the ground or a wall, whose"
                         + " tentacle of hard light pulls a creature in, burns it, hurls it back out if it still lives"
                         + " and shuts in a blast (only creatures small enough to hold)");
+        hand(hands, HandPose.COSMOS, "Cosmos test", HAND_CHANCE,
+                "a test of the sky: a hand draws a circle that opens on the stars, a second dives into it, takes"
+                        + " the moon out of a rift in the sky and crushes it until the sky is black, then the moon"
+                        + " comes back (one at a time; it harms no one)");
         hand(hands, HandPose.AXE, "Pair with an axe", 0.24,
                 "a pair of hands chopping down with an axe (only where there is room for it)");
         hands.group("revolver", "Western Revolver Assembly (hold the button 2 seconds)")
@@ -679,7 +741,7 @@ final class LanternAbilities {
     static void hand(CharacterAbility ability, int move, String title, double oldChance, String what) {
         String hand = HandPose.HANDS[move];
         ability.group("hand_" + hand, title)
-                .setting(hand + "Chance", HAND_CHANCE, 0.0, 1.0, Unit.CHANCE,
+                .setting(hand + "Chance", HAND_CHANCE, 0.0, 1.0, Unit.WEIGHT,
                         "How often " + what + " comes, weighed against the chances of the other hands (0 = never)")
                 .was(oldChance)
                 .settingInt(hand + "Most", 30, 0, 30, Unit.COUNT,

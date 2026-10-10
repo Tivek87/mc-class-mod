@@ -43,11 +43,6 @@ public enum Construct {
         return this.id;
     }
 
-    public boolean made() {
-        return this == NONE || this == SWORD_SHIELD || this == ENERGY_WHIP || this == FLAMETHROWER
-                || this == BATTLEAXE || this == CHAINSAW || this == ROCKET_LAUNCHER || this == SHOTGUN;
-    }
-
     // Fights from afar: the only weapons the wheel forms in flight.
     public boolean ranged() {
         return switch (this) {
@@ -70,12 +65,11 @@ public enum Construct {
         return Component.translatable(KEY + this.id);
     }
 
-    @Nullable
     public Component getDescription() {
         if (this.locked()) {
             return Component.translatable(KEY + "locked");
         }
-        return this.made() ? Component.translatable(KEY + this.id + ".about") : null;
+        return Component.translatable(KEY + this.id + ".about");
     }
 
     public static Construct byIndex(int index) {

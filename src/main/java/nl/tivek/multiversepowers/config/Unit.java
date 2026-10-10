@@ -25,6 +25,8 @@ public enum Unit {
     COUNT,
     STRENGTH,
     CHANCE,
+    // Weighed against the others of its part: the settings show its share of them.
+    WEIGHT,
     SWITCH,
     MINUTES,
     PERCENT,
@@ -53,6 +55,7 @@ public enum Unit {
             case COUNT -> key("count", number(value));
             case STRENGTH -> key("factor", number(value));
             case CHANCE -> key("chance", number(Math.round(value * 100.0)));
+            case WEIGHT -> value <= 0.0 ? key("never") : key("weight", number(value));
             case SWITCH -> key(value >= 0.5 ? "on" : "off");
             case MINUTES -> value <= 0.0 ? key("never") : key("minutes", number(value));
             case PERCENT -> key("percent", number(Math.round(value * 100.0)));

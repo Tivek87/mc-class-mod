@@ -85,6 +85,12 @@ public final class LightFists implements Effect {
         return fists != null && fists.owner == player && fists.move >= 0;
     }
 
+    // Whether his gloves are on: in a blow or in the guard after it.
+    public static boolean gloved(ServerPlayer player) {
+        LightFists fists = ACTIVE.get(player.getUUID());
+        return fists != null && fists.owner == player && (fists.move >= 0 || fists.idle < FistMoves.GUARD);
+    }
+
     public static void stop(ServerPlayer player) {
         LightFists fists = ACTIVE.remove(player.getUUID());
         if (fists != null) {

@@ -6,10 +6,7 @@ import java.util.List;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.engine.client.render.ConstructPainter;
 import nl.tivek.multiversepowers.engine.client.render.mesh.Mesh;
-import static nl.tivek.multiversepowers.character.greenlantern.client.render.weapon.GunShapes.armCannon;
 import static nl.tivek.multiversepowers.character.greenlantern.client.render.weapon.GunShapes.flamethrower;
-import static nl.tivek.multiversepowers.character.greenlantern.client.render.weapon.GunShapes.minigun;
-import static nl.tivek.multiversepowers.character.greenlantern.client.render.weapon.GunShapes.revolver;
 import static nl.tivek.multiversepowers.character.greenlantern.client.render.weapon.GunShapes.rocketLauncher;
 import static nl.tivek.multiversepowers.character.greenlantern.client.render.weapon.GunShapes.shotgun;
 
@@ -26,7 +23,7 @@ public final class WeaponShapes {
     private static final double BAR_NOSE = 0.85;
     private static final double NOSE = 0.063;
     private static final double TOOTH = 0.07;
-    public static final ConstructPainter.Shape REVOLVER = ConstructPainter.Shape.of(revolver());
+    public static final ConstructPainter.Shape REVOLVER = ConstructPainter.Shape.of(GunParts.revolver());
     public static final ConstructPainter.Shape SHOTGUN = ConstructPainter.Shape.of(shotgun());
     // The shotgun in its two halves, for breaking it open, and one of its shells.
     public static final ConstructPainter.Shape SHOTGUN_BARRELS = ConstructPainter.Shape.of(
@@ -34,8 +31,8 @@ public final class WeaponShapes {
     public static final ConstructPainter.Shape SHOTGUN_STOCK = ConstructPainter.Shape.of(
             GunShapes.shotgunStock());
     public static final ConstructPainter.Shape SHOTGUN_SHELL = ConstructPainter.Shape.of(GunShapes.shell());
-    public static final ConstructPainter.Shape ARM_CANNON = ConstructPainter.Shape.of(armCannon());
-    public static final ConstructPainter.Shape MINIGUN = ConstructPainter.Shape.of(minigun());
+    public static final ConstructPainter.Shape ARM_CANNON = ConstructPainter.Shape.of(GunParts.armCannon());
+    public static final ConstructPainter.Shape MINIGUN = ConstructPainter.Shape.of(GunParts.minigun());
     public static final ConstructPainter.Shape ROCKET_LAUNCHER = ConstructPainter.Shape.of(rocketLauncher());
     public static final ConstructPainter.Shape ROCKET_TUBE = ConstructPainter.Shape.of(GunShapes.rocketTube());
     public static final ConstructPainter.Shape ROCKET_WARHEAD = ConstructPainter.Shape.of(GunShapes.rocketWarhead());
@@ -89,6 +86,7 @@ public final class WeaponShapes {
             parts.add(band(0.042, 0.012, z, 1.5));
         }
         parts.add(Mesh.ball(12, 8, 0.05, 1.25).scaled(1.0, 1.0, 0.8).moved(0.0, 0.0, -0.95));
+        parts.add(Mesh.torus(14, 4, 0.046, 0.008, 1.8).alongZ().moved(0.0, 0.0, -0.93));
         parts.add(Mesh.cone(10, 0.036, 0.0, 0.5, 0.74, 1.3).alongZ());
         parts.add(Mesh.box(-0.05, -0.06, 0.16, 0.05, 0.06, 0.5, 1.1));
         parts.add(Mesh.box(-0.056, -0.066, 0.17, 0.056, 0.066, 0.2, 1.5));
@@ -103,6 +101,10 @@ public final class WeaponShapes {
         for (double[] at : new double[][] { { 0.1, 0.03 }, { 0.1, -0.03 }, { 0.17, 0.0 } }) {
             twice(bit, Mesh.ball(8, 5, 0.013, 1.6).moved(0.027, at[0], at[1]));
         }
+        twice(bit, Mesh.tube(false, 4, 0.006, 2.0, path(0.022, 0.2, -0.13, 0.022, 0.27, -0.06, 0.022, 0.22, 0.0,
+                0.022, 0.29, 0.07, 0.022, 0.24, 0.14)));
+        twice(bit, Mesh.tube(false, 4, 0.005, 1.7, path(0.018, 0.33, -0.2, 0.018, 0.37, -0.05, 0.018, 0.375, 0.07,
+                0.018, 0.33, 0.21)));
         for (Mesh part : bit) {
             parts.add(part.moved(0.0, 0.0, 0.33));
             parts.add(part.scaled(1.0, -1.0, 1.0).moved(0.0, 0.0, 0.33));

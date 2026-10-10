@@ -100,6 +100,15 @@ final class LanternGuide {
         modes.add(weapon("shotgun", player -> ClientHeavy.holding() == HeavyMoves.SHOTGUN, "shotgunPowerCost",
                 "shotgunDoublePowerCost", "shotgunBashPowerCost", "shotgunDeflectPowerPerSecond", "buckshot",
                 "double", "bash", "deflect"));
+        modes.add(weapon("revolvers", player -> ClientHeavy.holding() == HeavyMoves.REVOLVERS, "revolverPowerCost",
+                "revolverFanPowerCost", "revolverWhipPowerCost", "revolverDeadeyePowerPerSecond", "shot", "fan",
+                "whip", "deadeye"));
+        modes.add(weapon("arm_cannon", player -> ClientHeavy.holding() == HeavyMoves.CANNON, "cannonPowerCost",
+                "cannonChargePowerPerSecond", "cannonBashPowerCost", "cannonShieldPowerPerSecond", "plasma",
+                "charge", "bash", "shield"));
+        modes.add(weapon("minigun", player -> ClientHeavy.holding() == HeavyMoves.MINIGUN, "minigunPowerCost",
+                "minigunPowerPerSecond", "minigunVentPowerCost", "minigunSpinPowerPerSecond", "burst", "stream",
+                "vent", "spin"));
         AbilityGuide.modes(GL, modes.toArray(GuideMode[]::new));
     }
 

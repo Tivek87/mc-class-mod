@@ -7,6 +7,7 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.character.greenlantern.PowerRing;
+import nl.tivek.multiversepowers.character.greenlantern.hand.HandCosmos;
 import nl.tivek.multiversepowers.character.greenlantern.hand.HandGroup;
 import nl.tivek.multiversepowers.character.greenlantern.hand.HandPose;
 import nl.tivek.multiversepowers.character.greenlantern.hand.HandRift;
@@ -49,8 +50,61 @@ abstract class GiantHandTears extends GiantHandRings {
             this.tear(level);
         } else if (this.move == HandPose.RIFT) {
             this.rift(level);
+        } else if (this.move == HandPose.COSMOS) {
+            this.cosmos(level);
         } else {
             super.feat(level);
+        }
+    }
+
+    // The Cosmos Test's sounds, heard by everyone near: the circle chiming as it is drawn, the hole opening, the hand
+    // diving in, the moon taken, cracking as it is crushed and bursting, and the moon coming back.
+    private void cosmos(ServerLevel level) {
+        Vec3 facing = this.aim.subtract(this.base);
+        if (this.t == 2) {
+            this.storm.sound(level, this.base, SoundEvents.BEACON_ACTIVATE, 1.6F, 1.4F);
+        }
+        if (this.t >= HandCosmos.DRAWS && this.t < HandCosmos.OPENS && (this.t - HandCosmos.DRAWS) % 3 == 0) {
+            float rise = (this.t - HandCosmos.DRAWS) / (float) (HandCosmos.OPENS - HandCosmos.DRAWS);
+            this.storm.sound(level, HandCosmos.tip(this.base, facing, this.t), SoundEvents.AMETHYST_BLOCK_CHIME,
+                    1.2F, 0.8F + 1.0F * rise);
+        }
+        if (this.t == HandCosmos.OPENS) {
+            this.storm.sound(level, this.base, SoundEvents.END_PORTAL_SPAWN, 0.7F, 1.6F);
+            this.storm.sound(level, this.base, SoundEvents.BEACON_POWER_SELECT, 1.6F, 0.7F);
+        }
+        if (this.t == HandCosmos.DIVES) {
+            this.storm.sound(level, this.base.add(0.0, 8.0, 0.0), SoundEvents.PHANTOM_SWOOP, 3.0F, 0.6F);
+        }
+        if (this.t == HandCosmos.PLUNGES) {
+            this.storm.sound(level, this.base, SoundEvents.ENDERMAN_TELEPORT, 2.0F, 0.5F);
+            this.storm.sound(level, this.base, SoundEvents.GENERIC_EXPLODE.value(), 1.2F, 1.6F);
+        }
+        if (this.t == HandCosmos.SHUTS) {
+            this.storm.sound(level, this.base, SoundEvents.BEACON_DEACTIVATE, 1.6F, 1.2F);
+        }
+        if (this.t == HandCosmos.TEARS) {
+            this.storm.sound(level, this.base, SoundEvents.BEACON_ACTIVATE, 4.0F, 0.5F);
+        }
+        if (this.t == HandCosmos.GRABS) {
+            this.storm.sound(level, this.base, SoundEvents.ANVIL_LAND, 3.0F, 0.5F);
+        }
+        if (this.t >= HandCosmos.CRUSHES && this.t < HandCosmos.BURSTS) {
+            int every = Math.max(2, 10 - (this.t - HandCosmos.CRUSHES) / 6);
+            if ((this.t - HandCosmos.CRUSHES) % every == 0) {
+                float rise = (this.t - HandCosmos.CRUSHES) / (float) (HandCosmos.BURSTS - HandCosmos.CRUSHES);
+                this.storm.sound(level, this.base, SoundEvents.DEEPSLATE_BREAK, 2.0F + 2.0F * rise,
+                        0.5F + 0.3F * rise);
+            }
+        }
+        if (this.t == HandCosmos.BURSTS) {
+            this.storm.sound(level, this.base, SoundEvents.GENERIC_EXPLODE.value(), 8.0F, 0.5F);
+            this.storm.sound(level, this.base, SoundEvents.LIGHTNING_BOLT_THUNDER, 8.0F, 0.6F);
+            this.storm.sound(level, this.base, SoundEvents.FIREWORK_ROCKET_LARGE_BLAST, 8.0F, 0.5F);
+        }
+        if (this.t == HandCosmos.RETURNS) {
+            this.storm.sound(level, this.base, SoundEvents.BEACON_POWER_SELECT, 4.0F, 1.6F);
+            this.storm.sound(level, this.base, SoundEvents.AMETHYST_CLUSTER_BREAK, 3.0F, 1.4F);
         }
     }
 

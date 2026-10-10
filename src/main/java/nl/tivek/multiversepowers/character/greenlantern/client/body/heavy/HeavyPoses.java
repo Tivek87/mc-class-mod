@@ -6,6 +6,7 @@ import nl.tivek.multiversepowers.character.greenlantern.client.body.heavy.HeavyK
 import nl.tivek.multiversepowers.engine.client.pose.Gait;
 import nl.tivek.multiversepowers.engine.client.pose.Stance;
 import nl.tivek.multiversepowers.engine.math.Ease;
+import org.joml.Quaternionf;
 import org.joml.Vector3f;
 import static nl.tivek.multiversepowers.character.greenlantern.heavy.HeavyMoves.*;
 
@@ -38,6 +39,15 @@ final class HeavyPoses {
     private static final float RUN_LOW = 1.5F;
     private static final float RUN_IN = 1.5F;
     private static final float RUN_TILT = 0.12F;
+    // Breathing at rest: how far the weapon rises and tips (pixels, radians) and how fast (radians a tick).
+    private static final float BREATH = 0.3F;
+    private static final float BREATH_TIP = 0.012F;
+    private static final float BREATH_RATE = 0.09F;
+    // A shot's kick for the revolvers, the cannon and the minigun: back and up (pixels) and the muzzle thrown up.
+    private static final float[] KICK_BACK = { 1.0F, 2.0F, 0.5F };
+    private static final float[] KICK_UP = { 0.4F, 0.5F, 0.12F };
+    private static final float[] KICK_FLIP = { 0.22F, 0.15F, 0.025F };
+    private static final float BUZZ = 0.25F;
 
     static final class Pose {
         final Vector3f middle = new Vector3f();
@@ -74,6 +84,41 @@ final class HeavyPoses {
             this.drop = Mth.lerp(u, this.drop, other.drop);
         }
 
+        void set(Pose other) {
+            this.middle.set(other.middle);
+            this.up.set(other.up);
+            this.az = other.az;
+            this.el = other.el;
+            this.twist = other.twist;
+            this.pitch = other.pitch;
+            this.roll = other.roll;
+            this.drop = other.drop;
+            this.weight = other.weight;
+            this.shake = other.shake;
+        }
+
+        // The same pose across his middle: what the right hand holds, held in the left.
+        void mirror() {
+            this.middle.x = -this.middle.x;
+            this.up.x = -this.up.x;
+            this.az = -this.az;
+            this.twist = -this.twist;
+            this.roll = -this.roll;
+        }
+
+        // The weapon turned about its own across line through the middle, muzzle up and back over for +.
+        void twirl(float angle) {
+            if (angle == 0.0F) {
+                return;
+            }
+            Vector3f way = this.way(new Vector3f());
+            Vector3f toward = new Vector3f(Mth.sin(this.az) * Mth.sin(this.el), -Mth.cos(this.el),
+                    Mth.cos(this.az) * Mth.sin(this.el));
+            Vector3f axis = way.cross(toward).normalize();
+            new Quaternionf().rotationAxis(angle, axis).transform(this.up);
+            this.el += angle;
+        }
+
         // The way the weapon's length points, in the chest's frame.
         Vector3f way(Vector3f out) {
             float flat = Mth.cos(this.el);
@@ -82,6 +127,7 @@ final class HeavyPoses {
     }
 
     private static final Pose NOW = new Pose();
+    private static final Pose LEFT = new Pose();
     private static final Pose BEFORE = new Pose();
     private static final Pose NEXT = new Pose();
 
@@ -100,11 +146,93 @@ final class HeavyPoses {
             pose.toward(BEFORE, 1.0F);
         }
         carry(pose, gait, held.move < 0 || held.move >= MOVES ? 1.0F : 0.35F);
+        float breath = Mth.sin((float) ClientHeavy.now(partialTick) * BREATH_RATE)
+                * (held.move < 0 || held.move >= MOVES ? 1.0F : 0.3F);
+        pose.middle.y += BREATH * breath;
+        pose.el += BREATH_TIP * breath;
+        if (dual(held.weapon)) {
+            LEFT.set(pose);
+            LEFT.mirror();
+            if (held.move == KICK) {
+                NEXT.set(HeavyKeys.aimed(held.weapon));
+                NEXT.mirror();
+                LEFT.toward(NEXT, (float) (Ease.smooth(age / 2.0) * (1.0 - Ease.smooth((age - 9.0) / 3.0))));
+            }
+            kick(held, 1, age, LEFT);
+            LEFT.twirl(-twirl(held, 1, age));
+        }
+        if (GunFire.of(held)) {
+            kick(held, 0, age, pose);
+            pose.twirl(-twirl(held, 0, age));
+        } else if (held.weapon == RPG || held.weapon == SHOTGUN) {
+            float k = (float) shotKick(held, age);
+            boolean shotgun = held.weapon == SHOTGUN;
+            pose.middle.add(0.0F, -(shotgun ? 0.6F : 0.3F) * k, (shotgun ? 2.0F : 1.5F) * k);
+            pose.el += (shotgun ? 0.3F : 0.12F) * k;
+        }
         double formed = Ease.smooth((ClientHeavy.now(partialTick) - held.formedAt) / 3.0);
         double apart = held.apart(partialTick);
         pose.weight = (float) (formed * (apart < 0.0 ? 1.0 : 1.0 - Ease.smooth(apart * 1.4)));
         pose.shake = SHAKE * (float) revving(held, partialTick) * (held.weapon == SAW ? 1.0F : 0.0F);
+        if (held.weapon == MINIGUN && GunFire.last(held, 0, age) < 1.5) {
+            pose.shake = BUZZ;
+        }
+        LEFT.weight = pose.weight;
+        LEFT.shake = pose.shake;
         return pose;
+    }
+
+    // The left revolver's pose as of the last `of`, in the chest's frame: the right one's across his middle, kept
+    // aimed while the right one strikes, with its own shots' kick and twirl. Shared scratch: render thread only.
+    static Pose left() {
+        return LEFT;
+    }
+
+    // `side`'s gun thrown back and its muzzle up by its last shots; a charged blast throws the cannon hardest.
+    private static void kick(ClientHeavy.Held held, int side, float age, Pose pose) {
+        float k = (float) GunFire.kick(held, side, age);
+        if (k <= 0.0F) {
+            return;
+        }
+        int gun = held.weapon - REVOLVERS;
+        float big = held.weapon == CANNON ? 1.0F + 2.0F * (float) GunPainter.charged(held) : 1.0F;
+        pose.middle.add(0.0F, -KICK_UP[gun] * k * big, KICK_BACK[gun] * k * big);
+        pose.el += KICK_FLIP[gun] * k * big;
+    }
+
+    // The launcher's and the shotgun's kick as a shot leaves, both barrels at once kicking hardest.
+    private static double shotKick(ClientHeavy.Held held, double age) {
+        if (held.brokeAt >= 0.0) {
+            return 0.0;
+        }
+        boolean shot = held.move == SHOOT || held.move == LOOSE || held.weapon == SHOTGUN && held.move == UNBRACE
+                || held.weapon == RPG && held.move == BRACE;
+        int hit = hit(held.weapon, held.move);
+        if (!shot || hit < 0) {
+            return 0.0;
+        }
+        double both = held.weapon == SHOTGUN && held.move == LOOSE ? 1.6 : 1.0;
+        return both * Ease.jolt((age - hit) / 7.0);
+    }
+
+    // How far round a revolver is spun on its trigger finger: once as it forms, after a fan and after a reload, the
+    // left one a moment behind the right.
+    private static float twirl(ClientHeavy.Held held, int side, float age) {
+        if (held.weapon != REVOLVERS || held.brokeAt >= 0.0) {
+            return 0.0F;
+        }
+        float t = age - 1.5F * side;
+        double turn = switch (held.move) {
+            case FORM -> spun(t, 9.0F, 7.0F);
+            case LOOSE -> held.last == AIM ? spun(t, 1.0F, 6.0F) : 0.0;
+            case RELOAD -> -spun(t, 28.0F, 7.0F);
+            default -> 0.0;
+        };
+        return (float) (turn % (Math.PI * 2.0));
+    }
+
+    private static double spun(float t, float from, float ticks) {
+        return Math.PI * 2.0 * Ease.smooth((t - from) / ticks);
     }
 
     // Walking, the weapon rides his steps: it dips with each footfall, swings a little from side to side against his
@@ -160,7 +288,7 @@ final class HeavyPoses {
         for (int pass = 0; pass < 3; pass++) {
             Vector3f pull = new Vector3f();
             float most = 0.0F;
-            for (int side = 0; side < 2; side++) {
+            for (int side = 0; side < (dual(weapon) ? 1 : 2); side++) {
                 Vec3 grip = HeavyPainter.grip(weapon, side == 0).subtract(middle)
                         .scale(16.0 * HeavyPainter.size(weapon));
                 Vector3f hand = new Vector3f(pose.middle).add(new Vector3f(across).mul((float) grip.x))

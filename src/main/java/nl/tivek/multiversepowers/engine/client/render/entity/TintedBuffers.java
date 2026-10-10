@@ -27,6 +27,10 @@ public final class TintedBuffers implements MultiBufferSource {
 
     @Override
     public VertexConsumer getBuffer(RenderType type) {
+        // A name tag, leash or hitbox writes fewer vertex parts than a solid model needs: drawn as it is, not tinted.
+        if (type.format() != SOLID.format()) {
+            return this.inner.getBuffer(type);
+        }
         return new Tinted(this.inner.getBuffer(SOLID), this.red, this.green, this.blue);
     }
 

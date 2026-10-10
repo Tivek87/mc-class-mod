@@ -31,12 +31,12 @@ import nl.tivek.multiversepowers.engine.effect.Effects;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 import static nl.tivek.multiversepowers.character.greenlantern.heavy.HeavyMoves.*;
 
-// The Battleaxe, the Heavy Chainsaw, the Rocket Launcher and the Sawed-off Shotgun from the Construct Wheel, held in
-// both hands: formed for formPowerCost, kept for heldPowerPerSecond, broken up when put away or the ring runs dry.
-// Left click and its hold, right click and its hold are each weapon's four moves (HeavyBlows, HeavyGuns); every player
-// near is told each move (HeavyPayload).
+// The Battleaxe, the Heavy Chainsaw, the Rocket Launcher, the Sawed-off Shotgun, the Dual Revolvers, the Arm Cannon
+// and the Minigun from the Construct Wheel: formed for formPowerCost, kept for heldPowerPerSecond, broken up when put
+// away or the ring runs dry. Left click and its hold, right click and its hold are each weapon's four moves
+// (HeavyBlows, HeavyGuns, HeavyRounds); every player near is told each move (HeavyPayload).
 @EventBusSubscriber(modid = MultiversePowers.MODID)
-public final class HeavyWeapon extends HeavyGuns implements Effect {
+public final class HeavyWeapon extends HeavyRounds implements Effect {
     private static final double VIEW_RANGE = 96.0;
     private static final int RESEND = 20;
     // The chops start over after this long without a click.
@@ -48,7 +48,10 @@ public final class HeavyWeapon extends HeavyGuns implements Effect {
             "axeWhirlPowerPerSecond" }, { "sawPowerCost", "rendPowerPerSecond", "impalePowerCost",
             "sawGuardPowerPerSecond" }, { "rpgPowerCost", "rpgClusterPowerCost", "rpgJumpPowerCost",
             "rpgGuidedPowerPerSecond" }, { "shotgunPowerCost", "shotgunDoublePowerCost", "shotgunBashPowerCost",
-            "shotgunDeflectPowerPerSecond" } };
+            "shotgunDeflectPowerPerSecond" }, { "revolverPowerCost", "revolverFanPowerCost", "revolverWhipPowerCost",
+            "revolverDeadeyePowerPerSecond" }, { "cannonPowerCost", "cannonChargePowerPerSecond", "cannonBashPowerCost",
+            "cannonShieldPowerPerSecond" }, { "minigunPowerCost", "minigunPowerPerSecond", "minigunVentPowerCost",
+            "minigunSpinPowerPerSecond" } };
 
     private static final Map<UUID, HeavyWeapon> HELD = new HashMap<>();
     private static final Throttle PICK_SOUND = new Throttle(5);
@@ -69,6 +72,9 @@ public final class HeavyWeapon extends HeavyGuns implements Effect {
             case CHAINSAW -> SAW;
             case ROCKET_LAUNCHER -> RPG;
             case SHOTGUN -> SHOTGUN;
+            case REVOLVERS -> REVOLVERS;
+            case ARM_CANNON -> CANNON;
+            case MINIGUN -> MINIGUN;
             default -> -1;
         };
     }
@@ -97,7 +103,7 @@ public final class HeavyWeapon extends HeavyGuns implements Effect {
                 weapon.sound(player.serverLevel(), player.position(), SoundEvents.ANVIL_PLACE, 0.5F, 1.4F);
             } else if (gun(kind)) {
                 weapon.sound(player.serverLevel(), player.position(), SoundEvents.CROSSBOW_LOADING_END.value(), 0.9F,
-                        kind == RPG ? 0.6F : 1.1F);
+                        kind == RPG || kind == MINIGUN ? 0.6F : kind == REVOLVERS ? 1.5F : 1.1F);
             }
             weapon.send();
         } else if (!want && now != null) {
@@ -120,8 +126,15 @@ public final class HeavyWeapon extends HeavyGuns implements Effect {
             return weapon.weapon != AXE && weapon.let(heldMove, ending(weapon.weapon, heldMove));
         }
         if ((data & Characters.HOLD) != 0) {
-            // The rend pays a second as it goes; the earthbreaker and a gun's aim pay once as they start.
-            return weapon.start(heldMove, weapon.weapon == SAW ? null : COSTS[weapon.weapon][1]);
+            // Out of the minigun's spun barrels the stream starts at once.
+            if (weapon.weapon == MINIGUN && weapon.holding && weapon.move == BRACE && !weapon.overheated) {
+                weapon.spun = true;
+                weapon.go(AIM);
+                return true;
+            }
+            // The rend, the cannon's charge and the minigun's stream pay a second as they go; the earthbreaker and
+            // the other guns' aim pay once as they start.
+            return weapon.start(heldMove, weapon.paysAsItGoes(heldMove) ? null : COSTS[weapon.weapon][1]);
         }
         if ((data & Characters.TAP) == 0) {
             return false;
@@ -174,7 +187,8 @@ public final class HeavyWeapon extends HeavyGuns implements Effect {
     }
 
     private boolean start(int next, @Nullable String cost) {
-        if (!this.ready() || this.empty(next) || cost != null && !PowerRing.pay(this.owner, value(cost))) {
+        if (!this.ready() || this.empty(next) || this.weapon == MINIGUN && this.overheated
+                || cost != null && !PowerRing.pay(this.owner, value(cost))) {
             return false;
         }
         if (held(this.weapon, next) && !this.drains(next)) {
@@ -182,8 +196,19 @@ public final class HeavyWeapon extends HeavyGuns implements Effect {
         }
         this.holding = held(this.weapon, next);
         this.combo = -1;
+        if (next == AIM) {
+            this.spun = false;
+        }
+        if (next == BRACE) {
+            this.marks.clear();
+        }
         this.go(next);
         return true;
+    }
+
+    // A held move whose cost is taken a second at a time rather than once as it starts.
+    private boolean paysAsItGoes(int heldMove) {
+        return this.weapon == SAW || heldMove == AIM && (this.weapon == CANNON || this.weapon == MINIGUN);
     }
 
     // The button of a held move let go: its ending follows.
@@ -191,9 +216,17 @@ public final class HeavyWeapon extends HeavyGuns implements Effect {
         if (!this.holding || this.move != heldMove) {
             return false;
         }
+        if (this.weapon == CANNON && heldMove == AIM) {
+            this.charged = this.age;
+        }
         this.holding = false;
         this.go(ending);
         return true;
+    }
+
+    @Override
+    void stop() {
+        this.let(this.move, ending(this.weapon, this.move));
     }
 
     private void go(int next) {
@@ -202,12 +235,12 @@ public final class HeavyWeapon extends HeavyGuns implements Effect {
         this.send();
     }
 
-    // What a held move costs this tick; false with the ring too low. A gun's aim was paid as it began.
+    // What a held move costs this tick; false with the ring too low. Most guns' aim was paid as it began.
     private boolean drains(int heldMove) {
-        if (gun(this.weapon) && heldMove == AIM) {
+        if (gun(this.weapon) && heldMove == AIM && !this.paysAsItGoes(heldMove)) {
             return true;
         }
-        String key = this.weapon == SAW && heldMove == REND ? COSTS[SAW][1] : COSTS[this.weapon][3];
+        String key = heldMove == REND || heldMove == AIM ? COSTS[this.weapon][1] : COSTS[this.weapon][3];
         float price = (float) value(key) / 20.0F;
         float power = PowerRing.power(this.owner);
         if (power + 1.0E-4F < price) {
@@ -256,7 +289,8 @@ public final class HeavyWeapon extends HeavyGuns implements Effect {
             this.age++;
             if (this.holding) {
                 if (this.move == WHIRL && this.weapon == AXE && this.age >= WHIRL_MOST
-                        || this.move == AIM && gun(this.weapon) && this.age >= AIM_MOST
+                        || this.move == AIM && gun(this.weapon) && this.weapon != MINIGUN && this.weapon != REVOLVERS
+                        && this.age >= AIM_MOST
                         || this.move == BRACE && this.weapon == RPG && this.age >= GUIDE_MOST) {
                     this.let(this.move, ending(this.weapon, this.move));
                 } else if (!this.drains(this.move)) {
@@ -265,7 +299,8 @@ public final class HeavyWeapon extends HeavyGuns implements Effect {
             }
             this.blows(level);
             if (!this.holding && this.move != IDLE && this.age >= length(this.weapon, this.move)) {
-                if (gun(this.weapon) && this.ammo < 1 && this.move != RELOAD) {
+                if (this.move != RELOAD && (ammo(this.weapon) > 0 && this.ammo < 1
+                        || this.weapon == MINIGUN && this.overheated)) {
                     this.go(RELOAD);
                 } else {
                     this.move = IDLE;
@@ -286,17 +321,19 @@ public final class HeavyWeapon extends HeavyGuns implements Effect {
         ServerLevel level = this.owner.serverLevel();
         PacketDistributor.sendToPlayersNear(level, null, this.owner.getX(), this.owner.getY(), this.owner.getZ(),
                 VIEW_RANGE, new HeavyPayload(this.owner.getId(), this.weapon, this.move,
-                        this.move == IDLE ? this.idle : this.age, this.owner.getYRot(), this.ammo));
+                        this.move == IDLE ? this.idle : this.age, this.owner.getYRot(),
+                        this.weapon == MINIGUN ? this.heatShown() : this.ammo));
     }
 
     private boolean whirling() {
         return this.breaking < 0 && this.weapon == AXE && (this.move == WHIRL || this.move == WHIRL_OUT);
     }
 
-    // The chainsaw's guard and the shotgun's deflection turn what comes from the front.
+    // The chainsaw's guard, the shotgun's deflection and the cannon's shield turn what comes from the front.
     private boolean guarding() {
         return this.breaking < 0 && this.holding && this.age >= LOOP_FROM - 1
-                && (this.weapon == SAW && this.move == GUARD || this.weapon == SHOTGUN && this.move == BRACE);
+                && (this.weapon == SAW && this.move == GUARD
+                || (this.weapon == SHOTGUN || this.weapon == CANNON) && this.move == BRACE);
     }
 
     // Whirling, nothing knocks him back.
@@ -345,8 +382,9 @@ public final class HeavyWeapon extends HeavyGuns implements Effect {
             ParticleFx.cloud(level, ParticleFx.dust(PowerRing.BRIGHT, 0.9F), shot.position(), 10, 0.2, 0.2);
             return;
         }
-        if (weapon.weapon == SHOTGUN) {
-            event.setAmount(event.getAmount() * (float) value("shotgunDeflectDamageKept"));
+        if (weapon.weapon == SHOTGUN || weapon.weapon == CANNON) {
+            event.setAmount(event.getAmount() * (float) value(weapon.weapon == SHOTGUN ? "shotgunDeflectDamageKept"
+                    : "cannonShieldDamageKept"));
             return;
         }
         event.setAmount(event.getAmount() * (float) value("sawGuardDamageKept"));

@@ -7,7 +7,11 @@ public final class HeavyMoves {
     public static final int SAW = 1;
     public static final int RPG = 2;
     public static final int SHOTGUN = 3;
-    public static final int WEAPONS = 4;
+    // Two revolvers, one in each hand; the arm cannon over his right forearm; the minigun at his hip.
+    public static final int REVOLVERS = 4;
+    public static final int CANNON = 5;
+    public static final int MINIGUN = 6;
+    public static final int WEAPONS = 7;
 
     // Between moves, both hands on the weapon at rest.
     public static final int IDLE = -1;
@@ -28,15 +32,17 @@ public final class HeavyMoves {
     public static final int IMPALE = 5;
     public static final int GUARD = 6;
     public static final int GUARD_DOWN = 7;
-    // The guns: a shot, the aim held and let fly (cluster rocket, both barrels), the right click's move (blast jump,
-    // stock strike), the right button held (guided rocket, deflection) and let go.
+    // The guns: a shot, the aim held and let fly (cluster rocket, both barrels, the revolvers' fanned hammers, the
+    // cannon's charge, the minigun's stream), the right click's move (blast jump, stock strike, pistol whip, cannon
+    // bash, vent), the right button held (guided rocket, deflection, dead-eye, shield, spun barrels) and let go.
     public static final int SHOOT = 1;
     public static final int AIM = 2;
     public static final int LOOSE = 3;
     public static final int KICK = 4;
     public static final int BRACE = 5;
     public static final int UNBRACE = 6;
-    // An empty gun reloads by itself: the shotgun breaks open for two shells, the launcher takes a new rocket.
+    // An empty gun reloads by itself: the shotgun breaks open for two shells, the launcher takes a new rocket, the
+    // revolvers swing out their cylinders; an overheated minigun cools down.
     public static final int RELOAD = 7;
     public static final int MOVES = 8;
     // Sent while the weapon breaks up.
@@ -57,12 +63,14 @@ public final class HeavyMoves {
     public static final int GUIDE_MOST = 200;
     // A reload fills the gun this many ticks before it ends.
     public static final int RELOADED = 4;
-    private static final int[] AMMO = { 0, 0, 1, 2 };
+    private static final int[] AMMO = { 0, 0, 1, 2, 12, 0, 0 };
 
     private static final int[][] LENGTH = { { 20, 14, 14, 18, 30, 20, 14, 14 }, { 20, 12, 12, 10, 8, 20, 8, 7 },
-            { 20, 14, 24, 14, 18, 12, 8, 26 }, { 20, 16, 16, 14, 12, 10, 12, 32 } };
+            { 20, 14, 24, 14, 18, 12, 8, 26 }, { 20, 16, 16, 14, 12, 10, 12, 32 }, { 22, 8, 10, 8, 12, 10, 16, 38 },
+            { 20, 10, 16, 18, 12, 10, 10, 1 }, { 24, 20, 16, 14, 16, 10, 14, 40 } };
     private static final int[][] HIT = { { -1, 6, 6, 9, 18, 6, 4, 4 }, { -1, 5, 5, 4, -1, 5, 3, -1 },
-            { -1, 3, -1, 2, 4, 3, 1, -1 }, { -1, 2, -1, 2, 5, -1, 2, -1 } };
+            { -1, 3, -1, 2, 4, 3, 1, -1 }, { -1, 2, -1, 2, 5, -1, 2, -1 }, { -1, 1, -1, -1, 4, -1, -1, -1 },
+            { -1, 2, -1, 2, 4, -1, 2, -1 }, { -1, 6, -1, -1, 4, -1, -1, -1 } };
 
     private HeavyMoves() {
     }
@@ -76,7 +84,12 @@ public final class HeavyMoves {
     }
 
     public static boolean gun(int weapon) {
-        return weapon == RPG || weapon == SHOTGUN;
+        return weapon >= RPG;
+    }
+
+    // One gun in each hand, each held and drawn on its own.
+    public static boolean dual(int weapon) {
+        return weapon == REVOLVERS;
     }
 
     // How many shots a full gun holds; 0 for a weapon with none.

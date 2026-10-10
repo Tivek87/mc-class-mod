@@ -13,6 +13,7 @@ import net.minecraft.client.resources.PlayerSkin;
 import net.minecraft.world.entity.player.Player;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.LanternPainter;
+import nl.tivek.multiversepowers.character.greenlantern.heavy.HeavyMoves;
 import nl.tivek.multiversepowers.engine.client.render.ConstructPainter.Frame;
 
 // A heavy weapon in a player's hands as others see him (and he sees himself from outside), held where his hands are.
@@ -40,6 +41,16 @@ public final class HeavyLayer extends RenderLayer<AbstractClientPlayer, PlayerMo
         }
         Frame frame = held.frame;
         LanternPainter painter = LanternPainter.hand(pose, ageInTicks);
+        if (held.weapon >= HeavyMoves.REVOLVERS) {
+            GunPainter.draw(painter, held, 0, frame, held.formed(partialTick), held.apart(partialTick), partialTick,
+                    player.getId(), false);
+            if (HeavyMoves.dual(held.weapon)) {
+                GunPainter.draw(painter, held, 1, held.left, held.formed(partialTick), held.apart(partialTick),
+                        partialTick, player.getId(), false);
+            }
+            painter.finish(Minecraft.getInstance().renderBuffers().bufferSource());
+            return;
+        }
         HeavyPainter.weapon(painter, held.weapon, frame, held.formed(partialTick), held.apart(partialTick),
                 HeavyPoses.revving(held, partialTick), ClientHeavy.now(partialTick), player.getId(),
                 HeavyPoses.flash(held, partialTick), HeavyPoses.loaded(held, partialTick),

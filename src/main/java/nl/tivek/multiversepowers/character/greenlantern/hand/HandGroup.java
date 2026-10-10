@@ -74,7 +74,8 @@ public final class HandGroup {
 
     public static boolean is(int variant) {
         int move = HandPose.move(variant);
-        return move == HandPose.RINGHOLD || move == HandPose.CLAP || move == HandPose.TEAR || move == HandPose.RIFT;
+        return move == HandPose.RINGHOLD || move == HandPose.CLAP || move == HandPose.TEAR || move == HandPose.RIFT
+                || move == HandPose.COSMOS;
     }
 
     // The creature's height rides in the tear's variant, in tenths of a block, so both sides agree where its ends are.
@@ -132,6 +133,7 @@ public final class HandGroup {
         return switch (HandPose.move(variant)) {
             case HandPose.TEAR -> new int[] { TEAR_GRABS, TEARS };
             case HandPose.RIFT -> new int[] { HandRift.DIGS, HandRift.CLOSES };
+            case HandPose.COSMOS -> new int[] { HandCosmos.DRAWS, HandCosmos.OPENS };
             default -> new int[] { HandPose.firstAct(variant), RING_PRESSES };
         };
     }
@@ -156,6 +158,7 @@ public final class HandGroup {
             case HandPose.CLAP -> clap(center, facing, t);
             case HandPose.TEAR -> tear(variant, center, facing, t);
             case HandPose.RIFT -> HandRift.hands(variant, center, facing, t);
+            case HandPose.COSMOS -> HandCosmos.hands(center, facing, t);
             default -> ringHold(center, facing, t);
         };
     }

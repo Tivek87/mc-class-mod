@@ -43,10 +43,11 @@ abstract class HeavyGuns extends HeavyBlows {
 
     abstract void send();
 
-    // Whether `next` fires a round: a shot, the aim, the launcher's blast jump and guided rocket.
+    // Whether `next` fires a round: a shot, the aim, the launcher's blast jump and guided rocket, the revolvers'
+    // dead-eye. The cannon and the minigun hold no rounds.
     final boolean fires(int next) {
-        return gun(this.weapon) && (next == SHOOT || next == AIM
-                || this.weapon == RPG && (next == KICK || next == BRACE));
+        return ammo(this.weapon) > 0 && (next == SHOOT || next == AIM
+                || this.weapon == RPG && (next == KICK || next == BRACE) || this.weapon == REVOLVERS && next == BRACE);
     }
 
     // Out of rounds: only the dry click of the trigger.
@@ -59,7 +60,7 @@ abstract class HeavyGuns extends HeavyBlows {
     }
 
     // Takes up to `most` rounds; how many there were.
-    private int spend(int most) {
+    final int spend(int most) {
         int took = Math.min(most, this.ammo);
         if (took > 0) {
             this.ammo -= took;
@@ -68,8 +69,15 @@ abstract class HeavyGuns extends HeavyBlows {
         return took;
     }
 
+    // The revolvers', the cannon's and the minigun's moves, tick by tick (HeavyRounds).
+    abstract void rounds(ServerLevel level, int hit);
+
     @Override
     final void shots(ServerLevel level, int hit) {
+        if (this.weapon >= REVOLVERS) {
+            this.rounds(level, hit);
+            return;
+        }
         this.reloads(level);
         if (this.age != hit) {
             return;
@@ -166,7 +174,7 @@ abstract class HeavyGuns extends HeavyBlows {
         }
     }
 
-    private Vec3 right() {
+    final Vec3 right() {
         Vec3 look = this.owner.getLookAngle();
         Vec3 side = look.cross(new Vec3(0.0, 1.0, 0.0));
         return side.lengthSqr() < 1.0E-6 ? Vec3.directionFromRotation(0.0F, this.owner.getYRot() + 90.0F)
@@ -174,13 +182,13 @@ abstract class HeavyGuns extends HeavyBlows {
     }
 
     // Where the muzzle is: ahead of his eyes, a little right and down.
-    private Vec3 muzzle(double ahead) {
+    final Vec3 muzzle(double ahead) {
         return this.owner.getEyePosition().add(this.owner.getLookAngle().scale(ahead)).add(this.right().scale(0.28))
                 .add(0.0, -0.18, 0.0);
     }
 
     // What his crosshair rests on, as far as `range`.
-    private Vec3 aimed(ServerLevel level, double range) {
+    final Vec3 aimed(ServerLevel level, double range) {
         Vec3 eye = this.owner.getEyePosition();
         Vec3 end = eye.add(this.owner.getLookAngle().scale(range));
         BlockHitResult block = LoadedWorld.clip(level, new ClipContext(eye, end, ClipContext.Block.COLLIDER,
@@ -290,7 +298,7 @@ abstract class HeavyGuns extends HeavyBlows {
     }
 
     // The kick of a shot pushes him back.
-    private void recoil(double strength) {
+    final void recoil(double strength) {
         Vec3 look = this.owner.getLookAngle();
         this.owner.setDeltaMovement(this.owner.getDeltaMovement().add(look.scale(-strength)).add(0.0, 0.05, 0.0));
         this.owner.hurtMarked = true;

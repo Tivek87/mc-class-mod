@@ -9,6 +9,7 @@ import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.character.GameCharacter;
 import nl.tivek.multiversepowers.character.CharacterAbility;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.LanternPainter;
+import nl.tivek.multiversepowers.character.greenlantern.client.render.weapon.GunParts;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.weapon.WeaponShapes;
 import nl.tivek.multiversepowers.engine.client.render.ConstructPainter.Frame;
 import nl.tivek.multiversepowers.engine.client.render.ConstructPainter.Shape;
@@ -28,13 +29,18 @@ public final class HeavyPainter {
     private static final Vec3[][] GRIPS = { { new Vec3(0.0, 0.0, -0.45), new Vec3(0.0, 0.0, -0.85) },
             { new Vec3(0.0, 0.14, -0.53), new Vec3(0.0, 0.29, -0.03) },
             { new Vec3(0.0, -0.172, -0.195), new Vec3(0.0, -0.145, 0.175) },
-            { new Vec3(0.0, -0.05, -0.227), new Vec3(0.0, -0.01, 0.15) } };
+            { new Vec3(0.0, -0.05, -0.227), new Vec3(0.0, -0.01, 0.15) },
+            { GunParts.REVOLVER_GRIP, GunParts.REVOLVER_GRIP },
+            { new Vec3(0.0, -0.02, -0.3), new Vec3(0.0, -0.22, -0.21) },
+            { new Vec3(-0.1, -0.025, -0.57), new Vec3(0.0, 0.205, -0.26) } };
     // How big each weapon is drawn.
-    private static final double[] SIZE = { 1.0, 1.1, 1.45, 0.95 };
+    private static final double[] SIZE = { 1.0, 1.1, 1.45, 0.95, 0.85, 1.25, 1.3 };
     // How far each weapon reaches back and out along its length, for it to grow from one end to the other.
-    private static final double[][] ENDS = { { -1.0, 0.8 }, { -0.72, 0.95 }, { -0.91, 1.053 }, { -0.45, 0.52 } };
+    private static final double[][] ENDS = { { -1.0, 0.8 }, { -0.72, 0.95 }, { -0.91, 1.053 }, { -0.45, 0.52 },
+            { -0.3, 0.53 }, { -0.45, 0.37 }, { -0.6, 0.8 } };
     private static final Shape[] BODIES = { WeaponShapes.BATTLEAXE, WeaponShapes.CHAINSAW_BODY,
-            WeaponShapes.ROCKET_TUBE, WeaponShapes.SHOTGUN };
+            WeaponShapes.ROCKET_TUBE, WeaponShapes.SHOTGUN, GunParts.REVOLVER_FRAME, GunParts.CANNON_BODY,
+            GunParts.MINIGUN_BODY };
     // Where the guns' shots leave them, in their frames: the launcher's mouth and its back blast, the two muzzles.
     private static final Vec3 MOUTH = new Vec3(0.0, 0.0, 0.39);
     private static final Vec3 BACK_BLAST = new Vec3(0.0, 0.0, -0.94);
@@ -131,6 +137,10 @@ public final class HeavyPainter {
 
     static double size(int weapon) {
         return SIZE[weapon];
+    }
+
+    static double[] ends(int weapon) {
+        return ENDS[weapon];
     }
 
     static Vec3 middle(int weapon) {
@@ -284,17 +294,20 @@ public final class HeavyPainter {
     }
 
     public static boolean any() {
-        return !ClientHeavy.all().isEmpty();
+        return !ClientHeavy.all().isEmpty() || GunTracers.any();
     }
 
     // Every heavy weapon's marks in the world: the earthbreaker's split and the whirlwind's ring.
     public static void drawAll(LanternPainter painter, ClientLevel level, float partialTick) {
         for (Map.Entry<Integer, ClientHeavy.Held> entry : ClientHeavy.all().entrySet()) {
             ClientHeavy.Held held = entry.getValue();
+            Entity owner = level.getEntity(entry.getKey());
+            if (owner != null && held.weapon >= REVOLVERS) {
+                GunTracers.fired(level, owner, held, partialTick);
+            }
             if (held.weapon != AXE) {
                 continue;
             }
-            Entity owner = level.getEntity(entry.getKey());
             double age = held.age(partialTick);
             if (held.move == LEAP) {
                 int hit = hit(AXE, LEAP);
@@ -316,6 +329,7 @@ public final class HeavyPainter {
                         new Vec3(0.0, 0.0, 1.0), radius, 0.05, 0.4, Colors.alpha(0.8 * fade), Colors.alpha(0.4 * fade));
             }
         }
+        GunTracers.draw(painter, level, partialTick);
     }
 
     // The split running out ahead from where the axe struck: a jagged crack of light, solid shards bursting up along

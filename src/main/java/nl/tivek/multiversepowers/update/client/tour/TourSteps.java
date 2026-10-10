@@ -20,83 +20,35 @@ import nl.tivek.multiversepowers.update.client.tour.TourStep.Place;
 // while a line is in neither, or a tour text is too long. Only steps from `FROM` up to the version installed are ever
 // shown, so a release's steps replace the last one's. A player's first tour starts with `INTRO`.
 final class TourSteps {
-    static final String VERSION = "0.8.0-alpha";
+    static final String VERSION = "0.8.1-alpha";
     // The oldest version whose changes this tour shows: normally its own.
     static final String FROM = VERSION;
 
-    // Green Lantern's fists, clicks and weapons by his rows of the panel, then the hands, the Beam, the ram cone and the
-    // mech; the crosshairs, the escape game, wild helpers and the fixes in the middle; Thor's by his rows; the new
-    // settings in the settings window. As anyone else, the card stands in the middle.
+    // Green Lantern's new guns, the Cosmos Test, the hands' chances, the gloves and the weapons' feel by his rows of
+    // the panel; the fixes in the middle; the new settings in the settings window. As anyone else, the card stands in the middle.
     static final List<TourStep> ALL = List.of(
-            step(VERSION, "lantern_fists", Kind.NEW, Place.GAME).at("game.panel.rows.green_lantern")
-                    .prepare(AbilityPanel::wake).covers("Green Lantern: Construct Fists"),
-            step(VERSION, "lantern_clicks", Kind.CHANGED, Place.GAME).at("game.panel.rows.green_lantern")
+            step(VERSION, "lantern_revolvers", Kind.NEW, Place.GAME).at("game.panel.rows.green_lantern")
+                    .prepare(AbilityPanel::wake).covers("Green Lantern: Dual Revolvers in the Construct Wheel"),
+            step(VERSION, "lantern_cannon", Kind.NEW, Place.GAME).at("game.panel.rows.green_lantern")
+                    .prepare(AbilityPanel::wake).covers("Green Lantern: Arm Cannon in the Construct Wheel"),
+            step(VERSION, "lantern_minigun", Kind.NEW, Place.GAME).at("game.panel.rows.green_lantern")
+                    .prepare(AbilityPanel::wake).covers("Green Lantern: Minigun in the Construct Wheel"),
+            step(VERSION, "hand_cosmos", Kind.NEW, Place.GAME).at("game.panel.rows.green_lantern")
+                    .prepare(AbilityPanel::wake).covers("Green Lantern: Cosmos Test, a new Giant Hands move"),
+            step(VERSION, "hands_even", Kind.CHANGED, Place.GAME).at("game.panel.rows.green_lantern")
+                    .prepare(AbilityPanel::wake).covers("Green Lantern: every Giant Hands move has"),
+            step(VERSION, "lantern_gloves", Kind.CHANGED, Place.GAME).at("game.panel.rows.green_lantern")
+                    .prepare(AbilityPanel::wake).covers("Green Lantern: the Construct Fists' gloves"),
+            step(VERSION, "gun_feel", Kind.CHANGED, Place.GAME).at("game.panel.rows.green_lantern")
                     .prepare(AbilityPanel::wake).covers(
-                            "Green Lantern: right click is the bolt",
-                            "Green Lantern: the Light Dome is held",
-                            "Green Lantern: the Light Shield"),
-            step(VERSION, "one_hand", Kind.CHANGED, Place.GAME).at("game.panel.rows.green_lantern")
-                    .prepare(AbilityPanel::wake).covers("Green Lantern: one hand at a time"),
-            step(VERSION, "lantern_axe", Kind.NEW, Place.GAME).at("game.panel.rows.green_lantern")
-                    .prepare(AbilityPanel::wake).covers("Green Lantern: Battleaxe in the Construct Wheel"),
-            step(VERSION, "lantern_saw", Kind.NEW, Place.GAME).at("game.panel.rows.green_lantern")
-                    .prepare(AbilityPanel::wake).covers("Green Lantern: Heavy Chainsaw in the Construct Wheel"),
-            step(VERSION, "lantern_rpg", Kind.NEW, Place.GAME).at("game.panel.rows.green_lantern")
-                    .prepare(AbilityPanel::wake).covers("Green Lantern: Rocket Launcher in the Construct Wheel"),
-            step(VERSION, "lantern_shotgun", Kind.NEW, Place.GAME).at("game.panel.rows.green_lantern")
-                    .prepare(AbilityPanel::wake).covers("Green Lantern: Sawed-off Shotgun in the Construct Wheel"),
-            step(VERSION, "gun_ammo", Kind.NEW, Place.GAME).at("game.panel.rows.green_lantern")
-                    .prepare(AbilityPanel::wake).covers("Green Lantern: the Rocket Launcher holds 1 rocket"),
-            step(VERSION, "flight_wheel", Kind.CHANGED, Place.GAME).at("game.panel.rows.green_lantern")
-                    .prepare(AbilityPanel::wake).covers("Green Lantern: in flight the Construct Wheel"),
-            step(VERSION, "heat_gauge", Kind.CHANGED, Place.GAME).at("game.panel.rows.green_lantern")
-                    .prepare(AbilityPanel::wake).covers("Green Lantern: the flamethrower's heat gauge"),
-            step(VERSION, "hands_random", Kind.CHANGED, Place.GAME).at("game.panel.rows.green_lantern")
-                    .prepare(AbilityPanel::wake).covers("Green Lantern: the Giant Hands call up 1 to 5"),
-            step(VERSION, "hand_gauntlet", Kind.NEW, Place.GAME).at("game.panel.rows.green_lantern")
-                    .prepare(AbilityPanel::wake).covers("Green Lantern: the snapping Giant Hand"),
-            step(VERSION, "lantern_recharge", Kind.CHANGED, Place.GAME).at("game.panel.rows.green_lantern")
-                    .prepare(AbilityPanel::wake).covers(
-                            "Green Lantern: to recharge you press",
-                            "Green Lantern: the Power Battery is a model"),
-            step(VERSION, "beam_ash", Kind.CHANGED, Place.GAME).at("game.panel.rows.green_lantern")
-                    .prepare(AbilityPanel::wake).covers("Green Lantern: a creature the Beam kills"),
-            step(VERSION, "ram_cone", Kind.CHANGED, Place.GAME).at("game.panel.rows.green_lantern")
-                    .prepare(AbilityPanel::wake).covers("Green Lantern: the ram cone does"),
-            step(VERSION, "mech_combo", Kind.NEW, Place.GAME).at("game.panel.rows.green_lantern")
-                    .prepare(AbilityPanel::wake).covers("Green Lantern: the mech's left-click combo"),
-            step(VERSION, "mech_armor", Kind.CHANGED, Place.GAME).at("game.panel.rows.green_lantern")
-                    .prepare(AbilityPanel::wake).covers("Green Lantern: in the mech the pilot is guarded"),
-            step(VERSION, "mech_head", Kind.CHANGED, Place.GAME).at("game.panel.rows.green_lantern")
-                    .prepare(AbilityPanel::wake).covers("Green Lantern: the mech's head is bigger"),
-            step(VERSION, "mech_missiles", Kind.CHANGED, Place.GAME).at("game.panel.rows.green_lantern")
-                    .prepare(AbilityPanel::wake).covers("Green Lantern: the mech's missiles have"),
-            step(VERSION, "mech_flamer", Kind.CHANGED, Place.GAME).at("game.panel.rows.green_lantern")
-                    .prepare(AbilityPanel::wake).covers("Green Lantern: for the mech's flamethrower"),
-            step(VERSION, "mech_roar", Kind.REMOVED, Place.GAME).at("game.panel.rows.green_lantern")
-                    .prepare(AbilityPanel::wake).covers("Green Lantern: the roar of the mech's"),
-            step(VERSION, "crosshairs", Kind.NEW, Place.GAME).covers("Crosshairs: Green Lantern, Thor"),
-            step(VERSION, "escape_game", Kind.NEW, Place.GAME).covers("Escape game: caught in"),
-            step(VERSION, "wild_helpers", Kind.NEW, Place.GAME).covers("Hard-Light Helpers also come wild"),
+                            "Green Lantern: the new guns' held moves",
+                            "Green Lantern: the weapons breathe at rest"),
             step(VERSION, "fixes", Kind.FIXED, Place.GAME).covers(
-                            "Green Lantern: in the mech, the pilot's aiming arm",
-                            "Green Lantern: the ability panel left",
-                            "Green Lantern: giant fists and helpers",
-                            "Hard-Light Helpers called up with",
-                            "A creature worn down by blows",
-                            "Doctor Octopus: knocked down or caught",
-                            "Thor: Mjolnir stuck in a wall",
-                            "Thor: holding right click while flying"),
-            step(VERSION, "thor_descend", Kind.NEW, Place.GAME).at("game.panel.rows.thor")
-                    .prepare(AbilityPanel::wake).covers("Thor: hold C in flight"),
-            step(VERSION, "thor_bomb", Kind.CHANGED, Place.GAME).at("game.panel.rows.thor")
-                    .prepare(AbilityPanel::wake).covers("Thor: the Lightning Bomb is about"),
-            step(VERSION, "thor_bolt", Kind.CHANGED, Place.GAME).at("game.panel.rows.thor")
-                    .prepare(AbilityPanel::wake).covers("Thor: the Storm Bolt no longer"),
-            step(VERSION, "thor_arc", Kind.CHANGED, Place.GAME).at("game.panel.rows.thor")
-                    .prepare(AbilityPanel::wake).covers("Thor: Mjolnir's own lightning"),
+                            "A player made a statue by the Giant Hands",
+                            "Green Lantern: the Giant Hands move with the highest chance"),
             step(VERSION, "lantern_settings", Kind.NEW, Place.SETTINGS).at("nav.green_lantern").covers(
-                            "Green Lantern's settings: the fists'"));
+                            "Green Lantern's settings: the revolvers'",
+                            "Settings: the Giant Hands' chances"));
 
     // Changes too small for a step of their own, each by how its changelog line starts, as in `covers`.
     static final List<String> SMALL = List.of();

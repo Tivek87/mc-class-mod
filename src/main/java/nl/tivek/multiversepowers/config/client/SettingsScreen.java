@@ -16,6 +16,7 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.neoforged.neoforge.network.PacketDistributor;
 import nl.tivek.multiversepowers.MultiversePowers;
+import nl.tivek.multiversepowers.config.Unit;
 import nl.tivek.multiversepowers.config.WorldSettingsEditPayload;
 import nl.tivek.multiversepowers.engine.client.gui.NavScreen;
 import nl.tivek.multiversepowers.engine.client.gui.PixelIcons;
@@ -316,6 +317,16 @@ public final class SettingsScreen extends NavScreen {
         for (ConfigNumber number : this.list.numbers()) {
             if (this.editable(number)) {
                 this.set(number, number.defaultValue());
+            }
+        }
+        this.rebuildLater(true);
+    }
+
+    // One part's settings back to the mod's own values, or (`zero`) every weight in it to 0, waiting like any change.
+    void setAll(List<ConfigNumber> numbers, boolean zero) {
+        for (ConfigNumber number : numbers) {
+            if (this.editable(number) && (!zero || number.unit() == Unit.WEIGHT)) {
+                this.set(number, zero ? 0.0 : number.defaultValue());
             }
         }
         this.rebuildLater(true);

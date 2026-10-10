@@ -204,7 +204,7 @@ abstract class GiantHandBase {
     // The portal glides after the creature, the hand still turned the same way, until the moment it acts draws near.
     // A rift stays where it was torn: its tentacle reaches for the creature.
     private void homePortal(ServerLevel level) {
-        if (this.move == HandPose.RIFT) {
+        if (this.move == HandPose.RIFT || this.move == HandPose.COSMOS) {
             return;
         }
         // The catch keeps right under its falling creature until the moment it closes on it.

@@ -9,6 +9,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.character.greenlantern.fist.FistMoves;
 import nl.tivek.multiversepowers.character.greenlantern.fist.FistPayload;
+import nl.tivek.multiversepowers.engine.client.world.ClientClock;
 import nl.tivek.multiversepowers.engine.math.Ease;
 
 // The fist blows every player near throws, as the server told them (FistPayload): which blow, since when, the one
@@ -80,10 +81,10 @@ public final class ClientFists {
         return view;
     }
 
-    // Whether this entity's fists are in a blow now (its guard after it not counted).
-    public static boolean striking(Entity entity) {
+    // Whether this entity's gloves are on: in a blow or the guard after it.
+    public static boolean gloved(Entity entity) {
         View view = view(entity);
-        return view != null && view.age(0.0F) < FistMoves.length(view.move());
+        return view != null && view.after(0.0F) < 0.0;
     }
 
     // Every view still about; one whose owner went out of sight is dropped here once its time is up.
@@ -97,7 +98,6 @@ public final class ClientFists {
     }
 
     static double now(float partialTick) {
-        ClientLevel level = Minecraft.getInstance().level;
-        return level == null ? 0.0 : level.getGameTime() + partialTick;
+        return ClientClock.now(partialTick);
     }
 }

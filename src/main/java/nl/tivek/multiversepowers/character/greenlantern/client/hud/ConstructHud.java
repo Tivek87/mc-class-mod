@@ -288,7 +288,11 @@ public final class ConstructHud {
             return mechStatus(ability, LanternPanel.mechMove(local), prefix);
         }
         ClientHeavy.Held gun = ability.input() == CharacterAbility.Input.LEFT ? ClientHeavy.gun() : null;
-        if (gun != null) {
+        if (gun != null && gun.weapon() == HeavyMoves.MINIGUN) {
+            return ClientHeavy.reloading(0.0F) >= 0.0 ? Component.translatable(prefix + "cooling")
+                    : Component.translatable(prefix + "heat", gun.ammo());
+        }
+        if (gun != null && HeavyMoves.ammo(gun.weapon()) > 0) {
             return ClientHeavy.reloading(0.0F) >= 0.0 ? Component.translatable(prefix + "reloading")
                     : Component.translatable(prefix + "ammo", gun.ammo(), HeavyMoves.ammo(gun.weapon()));
         }

@@ -3,6 +3,34 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.8.1-alpha] - 2026-10-11
+
+### Added
+- **Green Lantern:** **Dual Revolvers** in the Construct Wheel: twelve quick shots from both guns, hold to fan the
+  hammers, right click for a pistol-whip, hold right click for Dead Eye; each gun reloads by itself.
+- **Green Lantern:** **Arm Cannon** in the Construct Wheel: plasma shots, hold to charge a huge blast that kicks you
+  back, right click for a bash, hold right click for a shield that bursts out as you let go.
+- **Green Lantern:** **Minigun** in the Construct Wheel: a burst, hold to spin up into a stream of rounds that heats it
+  until it must cool, right click vents its heat as a blast, hold right click to keep the barrels spinning; it slows you.
+- **Green Lantern:** **Cosmos Test**, a new Giant Hands move: one hand draws a circle that opens a cosmic rift and a
+  second dives into it; out of a rift by the moon a hand takes the moon and crushes it until it bursts, the sky stays
+  black, then the moon comes back.
+- **Green Lantern's settings:** the revolvers', the arm cannon's, the minigun's and the Cosmos Test's damage, reach and
+  cost.
+- **Settings:** the Giant Hands' chances are shares, each showing its real percentage, with an All 0 and a Reset button.
+
+### Changed
+- **Green Lantern:** every Giant Hands move has the same chance by default.
+- **Green Lantern:** the Construct Fists' gloves are bigger and never vanish; while you wear them right click fires
+  neither the bolt nor the Beam.
+- **Green Lantern:** the new guns' held moves start after a short hold instead of 2 seconds.
+- **Green Lantern:** the weapons breathe at rest, the rocket launcher and shotgun kick as they fire, and the battleaxe,
+  shotgun and rocket launcher have more detail.
+
+### Fixed
+- A player made a statue by the Giant Hands while wearing a name tag from another mod crashed the game.
+- **Green Lantern:** the Giant Hands move with the highest chance did not always come.
+
 ## [0.8.0-alpha] - 2026-10-10
 
 ### Added
