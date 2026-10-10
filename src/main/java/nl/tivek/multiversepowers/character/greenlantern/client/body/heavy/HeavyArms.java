@@ -108,8 +108,8 @@ public final class HeavyArms {
         float time = (float) ClientHeavy.now(partialTick);
         for (int side = 0; side < 2; side++) {
             boolean right = side == 0;
-            Vec3 grip = frame.at(HeavyPainter.grip(held.weapon, right).x, HeavyPainter.grip(held.weapon, right).y,
-                    HeavyPainter.grip(held.weapon, right).z);
+            Vec3 at = HeavyPainter.grip(held.weapon, right, HeavyPoses.reload(held, partialTick));
+            Vec3 grip = frame.at(at.x, at.y, at.z);
             Vector3f target = CHEST.transform(new Vector3f((float) grip.x, (float) grip.y, (float) grip.z)).add(NECK);
             target.add(pose.shake * Mth.sin(time * 2.9F + side), pose.shake * Mth.cos(time * 3.7F), 0.0F);
             Vector3f hand = Stance.hand(model, right, new Vector3f());
@@ -192,7 +192,7 @@ public final class HeavyArms {
         LanternPainter painter = LanternPainter.hand(stack, player.tickCount + partialTick);
         HeavyPainter.weapon(painter, held.weapon, frame, held.formed(partialTick), apart,
                 HeavyPoses.revving(held, partialTick), time, player.getId(), HeavyPoses.flash(held, partialTick),
-                HeavyPoses.loaded(held, partialTick));
+                HeavyPoses.loaded(held, partialTick), HeavyPoses.reload(held, partialTick));
         HeavyPainter.trail(painter, back -> {
             HeavyPoses.at(held.weapon, held.move, held.age(partialTick) - back, PAST);
             return viewFrame(held.weapon, PAST, time, turn);
@@ -201,7 +201,7 @@ public final class HeavyArms {
         float w = pose.weight;
         for (int side = 0; side < 2; side++) {
             float sign = side == 0 ? 1.0F : -1.0F;
-            Vec3 grip = HeavyPainter.grip(held.weapon, side == 0);
+            Vec3 grip = HeavyPainter.grip(held.weapon, side == 0, HeavyPoses.reload(held, partialTick));
             Vec3 at = frame.at(grip.x, grip.y, grip.z);
             Vector3f hand = new Vector3f(side == 0 ? FirstPersonArm.HAND_RIGHT : FirstPersonArm.HAND_LEFT);
             hand.lerp(new Vector3f((float) at.x, (float) at.y, (float) at.z), w);

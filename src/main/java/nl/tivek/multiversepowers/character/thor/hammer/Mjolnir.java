@@ -35,7 +35,7 @@ public final class Mjolnir extends MjolnirCatch {
     private static final double UPPERCUT_WIDTH = 0.45;
     private static final double LAUNCH = 1.6;
     // Out of his hands it shoots lightning at most this often (ticks), leaping on to this many foes past the first.
-    private static final int ARC_EVERY = 20;
+    private static final int ARC_EVERY = 100;
     private static final int ARC_LEAPS = 2;
 
     private int sinceArc;
@@ -274,8 +274,8 @@ public final class Mjolnir extends MjolnirCatch {
         return setting("hammer_throw", "stayBlocks", 128.0);
     }
 
-    // Lying, stuck, hanging or flying, at most once a second a bolt leaps from it (never from the sky) onto the nearest
-    // foe within arcBlocks with nothing solid between, and on from there (ChainBolt.arc).
+    // Lying, stuck, hanging or flying, at most once in 5 seconds a bolt leaps from it (never from the sky) onto the
+    // nearest foe within arcBlocks with nothing solid between, and on from there (ChainBolt.arc).
     @Override
     void arcs(ServerLevel level, ServerPlayer owner) {
         CharacterAbility thrown = GameCharacter.THOR.byName("hammer_throw");

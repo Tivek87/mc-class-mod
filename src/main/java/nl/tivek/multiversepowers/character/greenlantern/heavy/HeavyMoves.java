@@ -36,6 +36,8 @@ public final class HeavyMoves {
     public static final int KICK = 4;
     public static final int BRACE = 5;
     public static final int UNBRACE = 6;
+    // An empty gun reloads by itself: the shotgun breaks open for two shells, the launcher takes a new rocket.
+    public static final int RELOAD = 7;
     public static final int MOVES = 8;
     // Sent while the weapon breaks up.
     public static final int BREAK = 8;
@@ -53,9 +55,12 @@ public final class HeavyMoves {
     public static final int AIM_MOST = 60;
     // A guided rocket is steered 10 seconds at most, then bursts as if let go.
     public static final int GUIDE_MOST = 200;
+    // A reload fills the gun this many ticks before it ends.
+    public static final int RELOADED = 4;
+    private static final int[] AMMO = { 0, 0, 1, 2 };
 
     private static final int[][] LENGTH = { { 20, 14, 14, 18, 30, 20, 14, 14 }, { 20, 12, 12, 10, 8, 20, 8, 7 },
-            { 20, 30, 24, 30, 18, 12, 22, 1 }, { 20, 16, 16, 22, 12, 10, 12, 1 } };
+            { 20, 14, 24, 14, 18, 12, 8, 26 }, { 20, 16, 16, 14, 12, 10, 12, 32 } };
     private static final int[][] HIT = { { -1, 6, 6, 9, 18, 6, 4, 4 }, { -1, 5, 5, 4, -1, 5, 3, -1 },
             { -1, 3, -1, 2, 4, 3, 1, -1 }, { -1, 2, -1, 2, 5, -1, 2, -1 } };
 
@@ -72,6 +77,11 @@ public final class HeavyMoves {
 
     public static boolean gun(int weapon) {
         return weapon == RPG || weapon == SHOTGUN;
+    }
+
+    // How many shots a full gun holds; 0 for a weapon with none.
+    public static int ammo(int weapon) {
+        return weapon < 0 || weapon >= WEAPONS ? 0 : AMMO[weapon];
     }
 
     // A move that lasts while its button is held: the whirlwind, the rend, the guard, a gun's aim and brace.
@@ -104,6 +114,9 @@ public final class HeavyMoves {
 
     // The next click may start the next move this far into this one.
     public static int open(int weapon, int move) {
+        if (gun(weapon) && move == RELOAD) {
+            return length(weapon, move);
+        }
         return (int) Math.ceil(length(weapon, move) * 0.7);
     }
 }

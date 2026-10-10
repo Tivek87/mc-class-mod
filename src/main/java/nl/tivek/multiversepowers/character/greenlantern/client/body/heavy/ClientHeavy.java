@@ -32,6 +32,8 @@ public final class ClientHeavy {
         int last = HeavyMoves.IDLE;
         double lastStart;
         float yaw;
+        // The rounds left in a gun.
+        int ammo;
         double formedAt;
         double brokeAt = -1.0;
         double told;
@@ -57,6 +59,10 @@ public final class ClientHeavy {
 
         public int move() {
             return this.move;
+        }
+
+        public int ammo() {
+            return this.ammo;
         }
 
         double age(float partialTick) {
@@ -85,7 +91,7 @@ public final class ClientHeavy {
     private ClientHeavy() {
     }
 
-    public static void told(int owner, int weapon, int move, int age, float yaw) {
+    public static void told(int owner, int weapon, int move, int age, float yaw, int ammo) {
         double now = now(0.0F);
         Held held = HELD.get(owner);
         if (move == HeavyMoves.BREAK) {
@@ -114,6 +120,25 @@ public final class ClientHeavy {
         }
         held.told = now;
         held.yaw = yaw;
+        held.ammo = ammo;
+    }
+
+    // The own player's gun whole in his hands, or null.
+    @Nullable
+    public static Held gun() {
+        Entity player = Minecraft.getInstance().player;
+        Held held = player == null ? null : view(player);
+        return held == null || held.brokeAt >= 0.0 || !HeavyMoves.gun(held.weapon) ? null : held;
+    }
+
+    // How far the own gun's reload has come, 0 to 1, or below 0 while it is not reloading.
+    public static double reloading(float partialTick) {
+        Held held = gun();
+        if (held == null || held.move != HeavyMoves.RELOAD) {
+            return -1.0;
+        }
+        double length = HeavyMoves.length(held.weapon, HeavyMoves.RELOAD) - HeavyMoves.RELOADED;
+        return Math.min(1.0, Math.max(0.0, held.age(partialTick) / length));
     }
 
     // The weapon in this entity's hands, while it or its pieces are about.

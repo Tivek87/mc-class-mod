@@ -100,7 +100,7 @@ public final class ClientPayloadHandler {
 
     public static void handleHeavy(HeavyPayload payload, IPayloadContext context) {
         context.enqueueWork(() -> ClientHeavy.told(payload.owner(), payload.weapon(), payload.move(), payload.age(),
-                payload.yaw()));
+                payload.yaw(), payload.ammo()));
     }
 
     public static void handleCaptive(CaptivePayload payload, IPayloadContext context) {

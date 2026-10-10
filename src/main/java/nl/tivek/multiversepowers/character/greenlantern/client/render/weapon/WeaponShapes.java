@@ -28,6 +28,12 @@ public final class WeaponShapes {
     private static final double TOOTH = 0.07;
     public static final ConstructPainter.Shape REVOLVER = ConstructPainter.Shape.of(revolver());
     public static final ConstructPainter.Shape SHOTGUN = ConstructPainter.Shape.of(shotgun());
+    // The shotgun in its two halves, for breaking it open, and one of its shells.
+    public static final ConstructPainter.Shape SHOTGUN_BARRELS = ConstructPainter.Shape.of(
+            GunShapes.shotgunBarrels());
+    public static final ConstructPainter.Shape SHOTGUN_STOCK = ConstructPainter.Shape.of(
+            GunShapes.shotgunStock());
+    public static final ConstructPainter.Shape SHOTGUN_SHELL = ConstructPainter.Shape.of(GunShapes.shell());
     public static final ConstructPainter.Shape ARM_CANNON = ConstructPainter.Shape.of(armCannon());
     public static final ConstructPainter.Shape MINIGUN = ConstructPainter.Shape.of(minigun());
     public static final ConstructPainter.Shape ROCKET_LAUNCHER = ConstructPainter.Shape.of(rocketLauncher());

@@ -174,7 +174,7 @@ public final class HeavyWeapon extends HeavyGuns implements Effect {
     }
 
     private boolean start(int next, @Nullable String cost) {
-        if (!this.ready() || cost != null && !PowerRing.pay(this.owner, value(cost))) {
+        if (!this.ready() || this.empty(next) || cost != null && !PowerRing.pay(this.owner, value(cost))) {
             return false;
         }
         if (held(this.weapon, next) && !this.drains(next)) {
@@ -265,10 +265,14 @@ public final class HeavyWeapon extends HeavyGuns implements Effect {
             }
             this.blows(level);
             if (!this.holding && this.move != IDLE && this.age >= length(this.weapon, this.move)) {
-                this.move = IDLE;
-                this.age = 0;
-                this.idle = 0;
-                this.send();
+                if (gun(this.weapon) && this.ammo < 1 && this.move != RELOAD) {
+                    this.go(RELOAD);
+                } else {
+                    this.move = IDLE;
+                    this.age = 0;
+                    this.idle = 0;
+                    this.send();
+                }
             }
         }
         if (this.alive % RESEND == 0) {
@@ -277,11 +281,12 @@ public final class HeavyWeapon extends HeavyGuns implements Effect {
         return true;
     }
 
-    private void send() {
+    @Override
+    void send() {
         ServerLevel level = this.owner.serverLevel();
         PacketDistributor.sendToPlayersNear(level, null, this.owner.getX(), this.owner.getY(), this.owner.getZ(),
                 VIEW_RANGE, new HeavyPayload(this.owner.getId(), this.weapon, this.move,
-                        this.move == IDLE ? this.idle : this.age, this.owner.getYRot()));
+                        this.move == IDLE ? this.idle : this.age, this.owner.getYRot(), this.ammo));
     }
 
     private boolean whirling() {

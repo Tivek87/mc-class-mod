@@ -45,6 +45,8 @@ final class TourSteps {
                     .prepare(AbilityPanel::wake).covers("Green Lantern: Rocket Launcher in the Construct Wheel"),
             step(VERSION, "lantern_shotgun", Kind.NEW, Place.GAME).at("game.panel.rows.green_lantern")
                     .prepare(AbilityPanel::wake).covers("Green Lantern: Sawed-off Shotgun in the Construct Wheel"),
+            step(VERSION, "gun_ammo", Kind.NEW, Place.GAME).at("game.panel.rows.green_lantern")
+                    .prepare(AbilityPanel::wake).covers("Green Lantern: the Rocket Launcher holds 1 rocket"),
             step(VERSION, "flight_wheel", Kind.CHANGED, Place.GAME).at("game.panel.rows.green_lantern")
                     .prepare(AbilityPanel::wake).covers("Green Lantern: in flight the Construct Wheel"),
             step(VERSION, "heat_gauge", Kind.CHANGED, Place.GAME).at("game.panel.rows.green_lantern")
@@ -82,13 +84,17 @@ final class TourSteps {
                             "Green Lantern: giant fists and helpers",
                             "Hard-Light Helpers called up with",
                             "A creature worn down by blows",
-                            "Doctor Octopus: knocked down or caught"),
+                            "Doctor Octopus: knocked down or caught",
+                            "Thor: Mjolnir stuck in a wall",
+                            "Thor: holding right click while flying"),
             step(VERSION, "thor_descend", Kind.NEW, Place.GAME).at("game.panel.rows.thor")
                     .prepare(AbilityPanel::wake).covers("Thor: hold C in flight"),
             step(VERSION, "thor_bomb", Kind.CHANGED, Place.GAME).at("game.panel.rows.thor")
                     .prepare(AbilityPanel::wake).covers("Thor: the Lightning Bomb is about"),
             step(VERSION, "thor_bolt", Kind.CHANGED, Place.GAME).at("game.panel.rows.thor")
                     .prepare(AbilityPanel::wake).covers("Thor: the Storm Bolt no longer"),
+            step(VERSION, "thor_arc", Kind.CHANGED, Place.GAME).at("game.panel.rows.thor")
+                    .prepare(AbilityPanel::wake).covers("Thor: Mjolnir's own lightning"),
             step(VERSION, "lantern_settings", Kind.NEW, Place.SETTINGS).at("nav.green_lantern").covers(
                             "Green Lantern's settings: the fists'"));
 

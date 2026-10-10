@@ -33,6 +33,7 @@ import nl.tivek.multiversepowers.character.greenlantern.client.ConstructChoice;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.flame.FlameArms;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.pose.RechargeAnimation;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.heavy.ClientHeavy;
+import nl.tivek.multiversepowers.character.greenlantern.heavy.HeavyMoves;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.sword.SwordArms;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.whip.WhipArms;
 import nl.tivek.multiversepowers.character.greenlantern.mech.MechAttacks;
@@ -109,7 +110,9 @@ public final class ConstructHud {
         long now = Util.getMillis();
         List<Runnable> labels = new ArrayList<>();
         boolean flame = FlameArms.holding();
-        boolean beam = !flame && !SwordArms.holding() && !WhipArms.holding() && ClientHeavy.holding() < 0;
+        // The mech's eye beam has one stage: its hold fills one plain ring below, not the Beam's five.
+        boolean beam = !flame && !SwordArms.holding() && !WhipArms.holding() && ClientHeavy.holding() < 0
+                && !LanternPanel.piloting(minecraft.player);
         // The gauge first: its band and its words keep their place, and the rings and words after it keep off them.
         boolean drawn = flame && HeatGauge.render(graphics, middleX, middleY, partialTick);
         CharacterAbility bolt = GameCharacter.GREEN_LANTERN.byName("light_bolt");
@@ -283,6 +286,11 @@ public final class ConstructHud {
         String prefix = "screen." + MultiversePowers.MODID + ".character.";
         if (player instanceof LocalPlayer local && !ability.id().equals("mech") && LanternPanel.piloting(local)) {
             return mechStatus(ability, LanternPanel.mechMove(local), prefix);
+        }
+        ClientHeavy.Held gun = ability.input() == CharacterAbility.Input.LEFT ? ClientHeavy.gun() : null;
+        if (gun != null) {
+            return ClientHeavy.reloading(0.0F) >= 0.0 ? Component.translatable(prefix + "reloading")
+                    : Component.translatable(prefix + "ammo", gun.ammo(), HeavyMoves.ammo(gun.weapon()));
         }
         return switch (ability.id()) {
             case "shockwave" -> ClientRing.has(player, RingPayload.DIVE)

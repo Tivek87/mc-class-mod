@@ -267,11 +267,15 @@ public final class ClientCharacter {
         }
         if (on && slot != null) {
             AbilityPanel.wake();
+            if (ability != null) {
+                Crosshairs.used(ability);
+            }
         }
         PacketDistributor.sendToServer(new AbilityActionPayload(action, on, data));
     }
 
     private static void tell(LocalPlayer player, String key, Object... args) {
+        Crosshairs.refused();
         player.displayClientMessage(Component.translatable("octopus." + MultiversePowers.MODID + "." + key, args),
                 true);
     }
@@ -358,6 +362,7 @@ public final class ClientCharacter {
         Component why = want && !HELD[index] ? refused(ability, player) : null;
         if (why != null) {
             player.displayClientMessage(why, true);
+            Crosshairs.refused();
             want = false;
         }
         if (want && !HELD[index] && left > 0) {
@@ -405,6 +410,7 @@ public final class ClientCharacter {
             if (why != null) {
                 // Said once, then nothing until it is let go: neither the hold nor the tap.
                 player.displayClientMessage(why, true);
+                Crosshairs.refused();
                 KEY_DOWN[index] = SHUT;
             } else if (KEY_DOWN[index] < 0) {
                 KEY_DOWN[index] = 0;
@@ -441,6 +447,7 @@ public final class ClientCharacter {
         Component why = refused(ability, player);
         if (why != null) {
             player.displayClientMessage(why, true);
+            Crosshairs.refused();
             return;
         }
         if (!Gestures.rightWhen(ability, player)) {
@@ -486,6 +493,7 @@ public final class ClientCharacter {
     }
 
     public static void noPower(LocalPlayer player, GameCharacter character) {
+        Crosshairs.refused();
         CharacterAbility recharge = character.byName(RECHARGE);
         player.displayClientMessage(recharge == null
                 ? Component.translatable("ring." + MultiversePowers.MODID + ".no_power")

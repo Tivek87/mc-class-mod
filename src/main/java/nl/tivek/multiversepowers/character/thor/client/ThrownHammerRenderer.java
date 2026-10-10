@@ -3,10 +3,12 @@ package nl.tivek.multiversepowers.character.thor.client;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Vec3i;
 import net.minecraft.resources.ResourceLocation;
@@ -58,6 +60,7 @@ public final class ThrownHammerRenderer extends EntityRenderer<ThrownHammer> {
         byte rest = hammer.rest();
         if (rest == ThrownHammer.LYING || rest == ThrownHammer.STUCK) {
             Direction face = rest == ThrownHammer.LYING ? Direction.UP : hammer.face();
+            light = outside(hammer, face, light);
             Vec3i into = face.getOpposite().getNormal();
             pose.translate(into.getX() * SUNK * size, into.getY() * SUNK * size, into.getZ() * SUNK * size);
             if (rest == ThrownHammer.LYING) {
@@ -82,6 +85,13 @@ public final class ThrownHammerRenderer extends EntityRenderer<ThrownHammer> {
         }
         pose.popPose();
         super.render(hammer, yaw, partialTick, pose, buffers, light);
+    }
+
+    // Sunk into a block its middle often lies inside it, where it is dark: lit as brightly as the open side it sticks
+    // out of.
+    private static int outside(ThrownHammer hammer, Direction face, int light) {
+        int open = LevelRenderer.getLightColor(hammer.level(), BlockPos.containing(hammer.position()).relative(face));
+        return Math.max(light & 0xFFFF, open & 0xFFFF) | Math.max(light >>> 16, open >>> 16) << 16;
     }
 
     @Override

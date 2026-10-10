@@ -1,17 +1,16 @@
 # Laatste sessie
 
-**Datum:** 2026-10-10, 21:23
+**Datum:** 2026-10-10, 22:12
 
-**Verzoek:** tour voor alles en alles committen (niet pushen); Beam vast op stage 1; RPG langer/dunner/trager, clusters altijd splitsen, bunker vervangen; armen doorzichtig bij RPG/shotgun; abilities niet tegelijk.
+**Vraag:** red dot zonder strepen, mech-straal 1 stage, crosshairs veel levendiger, Mjolnir zwart in muur, bliksem elke 5 s, rechts vasthouden in de lucht hing op 25%, munitie + herladen voor shotgun/RPG; daarna volledige tour, commit, push en release.
 
 **Gedaan:**
-- Tour: elke changelog-regel heeft nu een eigen stap (ook kleine wijzigingen en de fixes), `SMALL` is leeg.
-- Beam: server wachtte op een druk die sinds bolt-bij-loslaten nooit kwam; nu start hij (getest in game).
-- RPG: buis en raket langer en dunner, raket trager; cluster splitst altijd en waaiert weg van wat hij raakt; bunker vervangen door Guided Rocket (rechts vasthouden stuurt de raket met je crosshair, loslaten = ontploffen).
-- Armen: geweer eerst getekend, armen erna; laadgloed van het pak niet meer op je armen terwijl je een wapen vasthoudt (getest in game).
-- `RingHands`: één handbeweging tegelijk (vuisten, Beam, Giant Hands, Air Strike, slam blokkeren elkaar en de rest).
-- Docs (POWERS, GREEN_LANTERN, PROJECT) en changelog bijgewerkt; `./gradlew build` groen.
+- Munitie: shotgun 2 hulzen, RPG 1 raket; leeg = automatisch herladen, volledig geanimeerd (shotgun klapt open, hulzen eruit/erin; RPG nieuwe raket). Zichtbaar onder de crosshair en in het paneel (`ammo x/y`, `reloading`).
+- Crosshairs reageren op alles: geraakt, landen, vallen, lage health, wisselen, hurken, geweigerde move, water, vuur, elk ability een eigen kick, health-boog van doelwit; Thor-pijl naar zijn hamer.
+- Mjolnir in muur belicht, bliksem elke 5 s, Thor in creative flight rechts vasthouden werkt.
+- Changelog-regels + tourstappen (`gun_ammo`, `thor_arc`, fixes, crosshairs); POWERS.md bijgewerkt; 2 testlessen in CLAUDE.md.
+- In game getest: herladen (zij-camera), crosshair, Thor-worp, Mjolnir in muur, hele tour (30 kaarten). `./gradlew build` groen.
 
-**Open:**
-- Push/release 0.8.0-alpha wacht op ja; tour in game lopen vóór de push.
-- Idee #24 wacht op ja/nee.
+**Niet getest in game:** mech-straal met 1 ring (kleine voorwaarde-wijziging).
+
+**Open:** idee #24 wacht op ja/nee van de gebruiker.

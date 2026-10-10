@@ -136,6 +136,24 @@ right click)*, Lightning Bolt *(scroll wheel click)* and Lightning Speed *(hold 
 - The scroll wheel click is also pick block. While your character has nothing on it, it just picks blocks and
   stays quiet; once a character has an ability there, the ability wins.
 
+### Your crosshair
+
+Green Lantern, Thor and Doctor Octopus each draw a crosshair of their own in first person (the game's own comes back
+with F3, in third person and without a character). It keeps its shape but moves with everything that happens:
+
+- It widens as you strike, run or leave the ground and springs back; crouching or holding a mouse button draws it in.
+- On a creature it closes in and its middle takes the creature's colour (red, yellow, green), with a thin arc round
+  it as long as the share of health the creature has left. A blow of yours that lands flashes it white; a kill turns
+  it red and flicks the red cross out round it.
+- Hurt, it jolts and flashes red; landing squashes it, falling fast stretches it; at low health it beats red with your
+  heart; switching what you hold makes it pop; a refused move ("not enough power", "your hands are busy") shakes it
+  side to side; in water it rocks and on fire it flickers orange; it sways a little behind your look.
+- Each ability kicks it in its own way as you use it: a ring bursting out (shots), lines slamming shut (slams and
+  shockwaves), streaks to the sides or up and down (dashes and flight), corners closing in (grabs), a thick ring
+  (guards and charges) or arcs going round (spins and weapons).
+- Green Lantern's ring flickers as the ring's power runs low, and a gun shows its rounds under it. Thor's points the
+  way to his thrown hammer with a small arrow, and crackles while lightning runs through him.
+
 ### Mouse & space (Options > Controls, "Multiverse Powers: Mouse & Space")
 
 The mouse buttons and space do more than one thing: a click, a hold, a double press. Controls lists them all:
@@ -762,7 +780,12 @@ A big chainsaw of hard light with running teeth, held in both hands; it growls a
 
 #### Sawed-off Shotgun (slot 6)
 
-A short double-barrelled shotgun of hard light, held in both hands with its barrels on your crosshair.
+A short double-barrelled shotgun of hard light, held in both hands with its barrels on your crosshair. It holds **2
+shells**: each shot spends one (both barrels spend both, or the last one). Empty, it reloads by itself in about 1.5
+seconds: you tip it toward you and the barrels break open, a jerk flings the spent shells out over your shoulder,
+your other hand takes two new shells and presses them in one by one, and a flick snaps it shut. Two small bars under
+your crosshair show the shells (dim once spent), the ability panel says *ammo 2/2* or *reloading*, and an arc fills
+round the emblem as it reloads.
 
 - **Left click (buckshot):** one barrel of **9** pellets: **1 heart** each up close, less further off, 16 blocks. A
   creature struck by most of them is knocked down. Costs 0.3 power.
@@ -771,11 +794,14 @@ A short double-barrelled shotgun of hard light, held in both hands with its barr
 - **Right click (stock strike):** you drive the stock into the creature in front of you: **3 hearts**, and it is
   knocked off its feet. Costs 0.2 power.
 - **Hold right (deflection):** the barrels up in front of you: shots from the front are stopped and you keep 30% of
-  blows from the front; letting go fires a short wide blast. Costs 0.3 power a second.
+  blows from the front; letting go fires a short wide blast if a shell is left. Costs 0.3 power a second.
 
 #### Rocket Launcher (slot 9)
 
-A long hard-light rocket launcher on your shoulder, aimed at your crosshair; a new rocket slides in after each shot.
+A long hard-light rocket launcher on your shoulder, aimed at your crosshair. It holds **1 rocket**: every rocket,
+cluster rocket, blast jump and guided rocket spends it, and the launcher reloads by itself: lowered across you, a new
+rocket grows into its mouth, is pushed home and locks with a jolt. A small rocket under your crosshair shows it is
+loaded, and the ability panel says *ammo 1/1* or *reloading*.
 
 - **Left click (rocket):** a long, thin rocket flies straight where you aim, gathering speed, and bursts on the first creature
   or block: **8 hearts** in the middle, less out to 3.5 blocks, and it knocks down what stands near. Costs 2.5 power.
@@ -1737,8 +1763,8 @@ Double space jumps high and holding space flies, with or without the hammer.
 - **Throw to Stay** (crouch as you click): it stays where it stops: lying on the ground, stuck in a wall or hanging
   in the air. It waits there until you call it back (or follow it, see below), or until you go **128 blocks** from it;
   then it comes home by itself. Meanwhile you fight with your fists.
-- **Its own lightning:** whenever the hammer is out of his hands (flying, lying, stuck or hanging), at most once a
-  second a bolt leaps from it (not from the sky) onto the nearest enemy within **5 blocks**, for **1.5 hearts**, and
+- **Its own lightning:** whenever the hammer is out of his hands (flying, lying, stuck or hanging), at most once in
+  5 seconds a bolt leaps from it (not from the sky) onto the nearest enemy within **5 blocks**, for **1.5 hearts**, and
   on to the enemies near that one, **3** at most, each within **4 blocks** of the last. It slows them, never knocks
   them down. Its reach and damage are settings.
 

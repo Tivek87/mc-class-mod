@@ -16,15 +16,18 @@ the sections before 0.0.1-alpha came before versions were numbered.
   seek out foes, a blast jump and a guided rocket you steer with your crosshair.
 - **Green Lantern:** **Sawed-off Shotgun** in the Construct Wheel: buckshot, both barrels at once, a bash and a guard
   that deflects blows.
+- **Green Lantern:** the Rocket Launcher holds 1 rocket and the Sawed-off Shotgun 2 shells: empty, each reloads by
+  itself (the shotgun breaks open for two new shells), and the rounds show under the crosshair and in the ability panel.
 - **Green Lantern:** the mech's left-click combo has six new blows: jab, hook, uppercut, knee, a clap blast and a
   ground pound.
 - **Escape game:** caught in Green Lantern's cage or Thor's grab, a player clicks in time on a bar to break free; a
   host or operator tries it with `/escapegame cage` or `/escapegame grab`.
 - **Hard-Light Helpers** also come wild: from their spawn egg in the new Multiverse Powers creative tab, they fight
   monsters on their own.
-- **Crosshairs:** Green Lantern, Thor and Doctor Octopus each have a crosshair of their own that moves with what
-  happens: it widens as you strike or run, closes in on a creature in its colour, flashes as a blow lands, and the
-  kill's red cross sits round it.
+- **Crosshairs:** Green Lantern, Thor and Doctor Octopus each have a crosshair of their own that reacts to everything:
+  it widens as you strike or run, closes in on a creature in its colour with a thin arc of its health, flashes as a blow
+  lands, jolts red when you are hurt, squashes as you land, beats at low health, shakes when a move is refused, kicks in
+  its own way with each ability, and the kill's red cross sits round it; Thor's points the way to his thrown hammer.
 - **Green Lantern:** the snapping Giant Hand is an Infinity Gauntlet of hard light: its six stones glow as it presses,
   and the snap sends a thin ring of hard light 8 blocks out, two fainter rings behind it, that strikes and throws hard.
 - **Thor:** hold C in flight to come down faster; press space twice in flight to drop out of it.
@@ -52,6 +55,7 @@ the sections before 0.0.1-alpha came before versions were numbered.
 - **Green Lantern:** the flamethrower's heat gauge is only its filling half circle, without the heat in numbers.
 - **Thor:** the Lightning Bomb is about 35% faster.
 - **Thor:** the Storm Bolt no longer leaves a ring of light.
+- **Thor:** Mjolnir's own lightning strikes at most once in 5 seconds, not every second.
 
 ### Removed
 - **Green Lantern:** the Light Shield.
@@ -64,6 +68,8 @@ the sections before 0.0.1-alpha came before versions were numbered.
 - **Hard-Light Helpers** called up with a command now rise out of the ground with their full health.
 - A creature worn down by blows no longer folds over at the waist like a broken body.
 - **Doctor Octopus:** knocked down or caught, he could still climb, place blocks and throw.
+- **Thor:** Mjolnir stuck in a wall no longer turns black.
+- **Thor:** holding right click while flying in creative no longer hangs the charge ring at a quarter.
 
 ## [0.7.9-alpha] - 2026-10-10
 

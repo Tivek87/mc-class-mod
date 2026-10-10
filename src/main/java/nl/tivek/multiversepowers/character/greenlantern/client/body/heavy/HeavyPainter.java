@@ -41,6 +41,17 @@ public final class HeavyPainter {
     private static final Vec3[] MUZZLES = { new Vec3(0.039, 0.05, 0.52), new Vec3(-0.039, 0.05, 0.52) };
     private static final double WARHEAD_BACK = 0.338;
     private static final double WARHEAD_TIP = 1.053;
+    // The shotgun's reload (ticks in): its barrels swing down about the hinge pin as far as OPEN (radians), the spent
+    // shells fly out at EJECT, each new shell grows in his left hand at FETCH and is pressed home at SEAT, and it
+    // snaps shut by SHUT.
+    private static final Vec3 HINGE = new Vec3(0.0, -0.01, -0.005);
+    private static final double OPEN = 0.75;
+    private static final double EJECT = 8.0;
+    private static final double[] FETCH = { 9.0, 14.5 };
+    private static final double[] SEAT = { 13.0, 18.0 };
+    private static final double SHUT = 24.5;
+    private static final double[] CHAMBER_X = { 0.039, -0.039 };
+    private static final Vec3 POCKET = new Vec3(0.16, -0.26, -0.24);
     // The teeth round the bar at as many steps from one tooth to the next, and how fast they run (teeth a tick).
     private static final int STEPS = 8;
     private static final Shape[] TEETH = new Shape[STEPS];
@@ -69,6 +80,53 @@ public final class HeavyPainter {
 
     static Vec3 grip(int weapon, boolean right) {
         return GRIPS[weapon][right ? 0 : 1];
+    }
+
+    // Where a hand holds the weapon `reload` ticks into its reload: the shotgun's left hand rides the fore-end as the
+    // barrels break open, fetches each new shell from his belt and presses it into its chamber, then shuts it.
+    static Vec3 grip(int weapon, boolean right, double reload) {
+        if (weapon != SHOTGUN || right || reload < 0.0) {
+            return grip(weapon, right);
+        }
+        double open = opening(reload);
+        Vec3 fore = hinged(GRIPS[SHOTGUN][1], open);
+        Vec3[] chamber = { hinged(new Vec3(CHAMBER_X[0], 0.05, -0.07), open),
+                hinged(new Vec3(CHAMBER_X[1], 0.05, -0.07), open) };
+        if (reload < 5.0) {
+            return fore;
+        }
+        if (reload < FETCH[0]) {
+            return between(fore, POCKET, (reload - 5.0) / 3.0);
+        }
+        if (reload < SEAT[0]) {
+            return between(POCKET, chamber[0], (reload - FETCH[0] - 1.0) / 3.0);
+        }
+        if (reload < FETCH[1]) {
+            return between(chamber[0], POCKET, (reload - SEAT[0] - 0.5) / 1.0);
+        }
+        if (reload < SEAT[1] + 1.5) {
+            return between(POCKET, chamber[1], (reload - FETCH[1]) / 3.0);
+        }
+        return between(chamber[1], fore, (reload - SEAT[1] - 1.5) / 2.5);
+    }
+
+    private static Vec3 between(Vec3 from, Vec3 to, double u) {
+        return from.lerp(to, Ease.smooth(Mth.clamp(u, 0.0, 1.0)));
+    }
+
+    // How far the shotgun's barrels are broken open, 0 shut to 1.
+    private static double opening(double reload) {
+        return reload < 0.0 ? 0.0 : Ease.smooth((reload - 2.0) / 3.0) * (1.0 - Ease.smooth((reload - 23.0) / 1.5));
+    }
+
+    // A point of the barrels in the shotgun's frame, swung down `open` of the way about the hinge pin.
+    private static Vec3 hinged(Vec3 point, double open) {
+        double angle = OPEN * open;
+        double y = point.y - HINGE.y;
+        double z = point.z - HINGE.z;
+        double cos = Math.cos(angle);
+        double sin = Math.sin(angle);
+        return new Vec3(point.x, HINGE.y + y * cos - z * sin, HINGE.z + y * sin + z * cos);
     }
 
     static double size(int weapon) {
@@ -101,9 +159,9 @@ public final class HeavyPainter {
 
     // The weapon in `frame`: grown `formed` of the way from its rear end, or broken apart `apart` of the way; the
     // chainsaw's teeth running at `rev` (0 idling, 1 cutting) by `time` (ticks); a gun's shot flashing `flash` (0 to
-    // 1) and the launcher's rocket `loaded` of the way grown back.
+    // 1), the launcher's rocket `loaded` of the way grown back, and the shotgun `reload` ticks into its reload.
     static void weapon(LanternPainter painter, int weapon, Frame frame, double formed, double apart, double rev,
-            double time, int seed, double flash, double loaded) {
+            double time, int seed, double flash, double loaded, double reload) {
         Shape body = BODIES[weapon];
         boolean warhead = weapon == RPG && loaded > 0.0;
         Shape teeth = weapon == SAW ? TEETH[Math.floorMod((int) Math.floor(time * Mth.lerp(rev, IDLE_RUN,
@@ -134,7 +192,14 @@ public final class HeavyPainter {
                 painter.noClip();
             }
         }
-        painter.shape(body, frame, 1.0, 1.0);
+        if (weapon == SHOTGUN && reload >= 0.0 && formed >= 1.0) {
+            Frame barrels = frame.turned(HINGE.x, HINGE.y, HINGE.z, 1.0, 0.0, 0.0, OPEN * opening(reload));
+            painter.shape(WeaponShapes.SHOTGUN_STOCK, frame, 1.0, 1.0);
+            painter.shape(WeaponShapes.SHOTGUN_BARRELS, barrels, 1.0, 1.0);
+            shells(painter, frame, barrels, reload, seed);
+        } else {
+            painter.shape(body, frame, 1.0, 1.0);
+        }
         if (teeth != null) {
             painter.shape(teeth, frame, 1.0, 1.0);
         }
@@ -148,6 +213,37 @@ public final class HeavyPainter {
         } else if (flash > 0.01 && weapon == SHOTGUN) {
             for (Vec3 muzzle : MUZZLES) {
                 painter.flare(frame.at(muzzle.x, muzzle.y, muzzle.z), 0.12 + 0.18 * flash, flash);
+            }
+        }
+    }
+
+    // The shotgun's shells as it reloads: the spent pair pulled out as it opens and flung back over his shoulder,
+    // breaking up; each new one grown in his left hand, carried to its chamber and pressed home.
+    private static void shells(LanternPainter painter, Frame frame, Frame barrels, double reload, int seed) {
+        for (int k = 0; k < 2; k++) {
+            double x = CHAMBER_X[k];
+            if (reload < EJECT + 5.0) {
+                double s = Math.max(0.0, reload - EJECT);
+                double pulled = 0.03 * opening(reload);
+                Frame out = barrels.moved(x * (1.0 + 0.8 * s), 0.05 + 0.035 * s, -pulled - 0.07 * s);
+                if (s < 2.0) {
+                    painter.shape(WeaponShapes.SHOTGUN_SHELL, out, 1.0, 1.0);
+                } else {
+                    painter.shattered(WeaponShapes.SHOTGUN_SHELL, out, (s - 2.0) / 3.0, 1.0, seed + 11 + k);
+                }
+            }
+            if (reload < FETCH[k] || reload > SHUT) {
+                continue;
+            }
+            if (reload < SEAT[k]) {
+                Vec3 hand = grip(SHOTGUN, false, reload);
+                double grown = Ease.smooth((reload - FETCH[k]) / 2.0);
+                Frame held = new Frame(frame.at(hand.x, hand.y - 0.03, hand.z), barrels.right(), barrels.up(),
+                        barrels.forward(), frame.scale() * Math.max(0.05, grown));
+                painter.shape(WeaponShapes.SHOTGUN_SHELL, held, 1.0, 1.0);
+            } else {
+                double home = Ease.smooth((reload - SEAT[k]) / 1.5);
+                painter.shape(WeaponShapes.SHOTGUN_SHELL, barrels.moved(x, 0.05, -0.07 * (1.0 - home)), 1.0, 1.0);
             }
         }
     }

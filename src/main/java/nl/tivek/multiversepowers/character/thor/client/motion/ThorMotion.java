@@ -374,13 +374,27 @@ public final class ThorMotion extends ThorGroundMotion {
             return;
         }
         if (ClientCharacter.active() != GameCharacter.THOR || player.isPassenger() || player.isSpectator()
-                || player.getAbilities().flying || !player.isAlive()) {
+                || !player.isAlive()) {
             if (flying || jumpAge >= 0 || dashAge >= 0 || drawAge >= 0 || awaitAge >= 0 || ThorRise.active()) {
                 stop();
             }
             return;
         }
         Input input = event.getInput();
+        // The game's own flight (creative) carries him: only the hammer's draw and his pull after it go on, or a hold
+        // of the right button would hang its ring part-way with nothing thrown.
+        if (player.getAbilities().flying) {
+            if (flying || jumpAge >= 0 || dashAge >= 0 || awaitAge >= 0 || ThorRise.active()) {
+                int draw = drawAge;
+                stop();
+                drawAge = draw;
+            }
+            if (drawAge >= 0) {
+                drawing(player);
+            }
+            ThorPull.pulling(player, input);
+            return;
+        }
         if (ThorRise.active()) {
             ThorRise.tick(player, input);
             return;

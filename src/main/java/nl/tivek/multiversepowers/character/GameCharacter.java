@@ -124,7 +124,8 @@ public enum GameCharacter {
                     .setting("stayBlocks", 128.0, 16.0, 512.0, Unit.BLOCKS,
                             "How far he may go from his resting hammer before it comes home by itself, in blocks")
                     .setting("arcBlocks", 5.0, 1.0, 16.0, Unit.BLOCKS,
-                            "Out of his hands the hammer shoots lightning once a second at the nearest foe this near,"
+                            "Out of his hands the hammer shoots lightning once in 5 seconds at the nearest foe this"
+                                    + " near,"
                                     + " in blocks")
                     .setting("arcDamage", 3.0, 0.0, 2000.0, Unit.HALF_HEARTS,
                             "Damage of the hammer's own lightning; it leaps on to two foes near the first, each"

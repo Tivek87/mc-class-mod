@@ -23,7 +23,8 @@ import static nl.tivek.multiversepowers.character.greenlantern.heavy.HeavyMoves.
 
 // The guns' shots as they land: the Rocket Launcher's rocket, cluster rocket, blast jump and guided rocket; the
 // Sawed-off Shotgun's buckshot, both barrels, stock strike and the blast as the deflection drops. Shots fly from his
-// eyes where he aims, drawn from the muzzle.
+// eyes where he aims, drawn from the muzzle. Each shot spends a round (the launcher holds 1, the shotgun 2), and an
+// empty gun reloads by itself.
 abstract class HeavyGuns extends HeavyBlows {
     // How far a pellet strays from the aim (radians, about one in three this far or more).
     private static final double SPREAD = 0.06;
@@ -33,9 +34,38 @@ abstract class HeavyGuns extends HeavyBlows {
     // After the blast jump he takes no fall damage until he lands, or this long.
     private static final int SOFT_FALL = 100;
     private int soft;
+    int ammo;
 
     HeavyGuns(ServerPlayer owner, int weapon) {
         super(owner, weapon);
+        this.ammo = ammo(weapon);
+    }
+
+    abstract void send();
+
+    // Whether `next` fires a round: a shot, the aim, the launcher's blast jump and guided rocket.
+    final boolean fires(int next) {
+        return gun(this.weapon) && (next == SHOOT || next == AIM
+                || this.weapon == RPG && (next == KICK || next == BRACE));
+    }
+
+    // Out of rounds: only the dry click of the trigger.
+    final boolean empty(int next) {
+        if (!this.fires(next) || this.ammo > 0) {
+            return false;
+        }
+        this.sound(this.owner.serverLevel(), this.owner.getEyePosition(), SoundEvents.DISPENSER_FAIL, 0.6F, 1.7F);
+        return true;
+    }
+
+    // Takes up to `most` rounds; how many there were.
+    private int spend(int most) {
+        int took = Math.min(most, this.ammo);
+        if (took > 0) {
+            this.ammo -= took;
+            this.send();
+        }
+        return took;
     }
 
     @Override
@@ -46,6 +76,9 @@ abstract class HeavyGuns extends HeavyBlows {
         }
         switch (this.move) {
             case SHOOT -> {
+                if (this.spend(1) == 0) {
+                    return;
+                }
                 if (this.weapon == RPG) {
                     this.rocket(level, false, false);
                 } else {
@@ -53,30 +86,35 @@ abstract class HeavyGuns extends HeavyBlows {
                 }
             }
             case LOOSE -> {
+                int barrels = this.spend(this.weapon == RPG ? 1 : 2);
+                if (barrels == 0) {
+                    return;
+                }
                 if (this.weapon == RPG) {
                     this.rocket(level, true, false);
                 } else {
-                    this.buckshot(level, (int) value("shotgunPellets") * 2, DOUBLE_SPREAD, value("shotgunRange"));
-                    this.recoil(0.55);
+                    this.buckshot(level, (int) value("shotgunPellets") * barrels, barrels == 2 ? DOUBLE_SPREAD
+                            : SPREAD, value("shotgunRange"));
+                    this.recoil(barrels == 2 ? 0.55 : 0.3);
                 }
             }
             case KICK -> {
-                if (this.weapon == RPG) {
-                    this.blastJump(level);
-                } else {
+                if (this.weapon == SHOTGUN) {
                     this.bash(level);
+                } else if (this.spend(1) > 0) {
+                    this.blastJump(level);
                 }
             }
             case BRACE -> {
-                if (this.weapon == RPG) {
+                if (this.weapon == RPG && this.spend(1) > 0) {
                     this.rocket(level, false, true);
                 }
             }
             case UNBRACE -> {
-                if (this.weapon == SHOTGUN) {
-                    this.buckshot(level, (int) value("shotgunPellets"), BURST_SPREAD, value("shotgunRange") * 0.4);
-                } else {
+                if (this.weapon == RPG) {
                     HeavyRocket.letGo(this.owner);
+                } else if (this.spend(1) > 0) {
+                    this.buckshot(level, (int) value("shotgunPellets"), BURST_SPREAD, value("shotgunRange") * 0.4);
                 }
             }
             default -> {
@@ -84,19 +122,35 @@ abstract class HeavyGuns extends HeavyBlows {
         }
     }
 
-    // The clicks and clacks of a new rocket and fresh shells going in.
+    // The reload's clicks and clacks: the shotgun broken open, its spent shells out, two new in and snapped shut; the
+    // launcher's new rocket slid in and locked. The rounds are in a little before it ends.
     private void reloads(ServerLevel level) {
+        if (this.move != RELOAD) {
+            return;
+        }
         Vec3 at = this.owner.getEyePosition();
-        if (this.weapon == RPG && (this.move == SHOOT || this.move == LOOSE) && this.age == 16) {
-            this.sound(level, at, SoundEvents.CROSSBOW_LOADING_MIDDLE.value(), 0.9F, 0.6F);
-        } else if (this.weapon == RPG && (this.move == SHOOT || this.move == LOOSE) && this.age == 24) {
-            this.sound(level, at, SoundEvents.CROSSBOW_LOADING_END.value(), 0.9F, 0.7F);
-        } else if (this.weapon == SHOTGUN && this.move == LOOSE && this.age == 8) {
+        int age = this.age;
+        if (age == length(this.weapon, RELOAD) - RELOADED) {
+            this.ammo = ammo(this.weapon);
+            this.send();
+        }
+        if (this.weapon == RPG) {
+            if (age == 4) {
+                this.sound(level, at, SoundEvents.CROSSBOW_LOADING_START.value(), 0.9F, 0.6F);
+            } else if (age == 12) {
+                this.sound(level, at, SoundEvents.CROSSBOW_LOADING_MIDDLE.value(), 0.9F, 0.6F);
+            } else if (age == 19) {
+                this.sound(level, at, SoundEvents.CROSSBOW_LOADING_END.value(), 0.9F, 0.7F);
+                this.sound(level, at, SoundEvents.IRON_TRAPDOOR_CLOSE, 0.5F, 1.5F);
+            }
+        } else if (age == 4) {
             this.sound(level, at, SoundEvents.IRON_TRAPDOOR_OPEN, 0.7F, 1.6F);
-        } else if (this.weapon == SHOTGUN && this.move == LOOSE && this.age == 16) {
-            this.sound(level, at, SoundEvents.IRON_TRAPDOOR_CLOSE, 0.7F, 1.7F);
-        } else if (this.weapon == SHOTGUN && this.move == SHOOT && this.age == 9) {
+        } else if (age == 8) {
             this.sound(level, at, SoundEvents.ARMOR_EQUIP_CHAIN.value(), 0.6F, 1.5F);
+        } else if (age == 15 || age == 20) {
+            this.sound(level, at, SoundEvents.CROSSBOW_QUICK_CHARGE_1.value(), 0.7F, 1.3F + (age - 15) * 0.04F);
+        } else if (age == 25) {
+            this.sound(level, at, SoundEvents.IRON_TRAPDOOR_CLOSE, 0.8F, 1.7F);
         }
     }
 

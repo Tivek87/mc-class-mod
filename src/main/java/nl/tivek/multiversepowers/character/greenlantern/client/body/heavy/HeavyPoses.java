@@ -22,9 +22,9 @@ final class HeavyPoses {
     // How far from its shoulder a hand holds the weapon at most, in pixels: the arm all but straight.
     private static final float REACH = 11.0F;
     // The launcher's new rocket grows into its mouth between these ticks of a shot.
-    private static final double RELOAD_FROM = 16.0;
-    private static final double RELOAD_TO = 24.0;
-    private static final double GUIDED_RELOAD_FROM = 6.0;
+    // The launcher's reload grows its new rocket into the mouth over these ticks.
+    private static final double RELOAD_FROM = 7.0;
+    private static final double RELOAD_TO = 17.0;
     // Carrying it while walking and running: the dip of each step and the side swing (pixels), the weapon's swing
     // and tilt and the trunk's turn, roll and lean (radians); sprinting it is drawn in, lowered and turned across.
     private static final float BOB = 0.9F;
@@ -211,20 +211,21 @@ final class HeavyPoses {
         return since < -0.5 || since > 2.5 ? 0.0 : Ease.smooth((since + 0.5) / 0.5) * (1.0 - Ease.smooth(since / 2.5));
     }
 
-    // How much of the launcher's rocket sits in its mouth: gone as it fires, grown back as the reload pushes it in;
-    // after a guided rocket only once he lets go of it.
+    // How much of the launcher's rocket sits in its mouth: there while it is loaded, gone once fired, grown back as
+    // the reload pushes the next one in.
     static double loaded(ClientHeavy.Held held, float partialTick) {
-        if (held.weapon == RPG && held.move == BRACE) {
-            return held.age(partialTick) < hit(RPG, BRACE) ? 1.0 : 0.0;
-        }
-        if (held.weapon == RPG && held.move == UNBRACE) {
-            return Ease.smooth((held.age(partialTick) - GUIDED_RELOAD_FROM) / (RELOAD_TO - RELOAD_FROM));
-        }
-        if (held.weapon != RPG || held.move != SHOOT && held.move != LOOSE) {
+        if (held.weapon != RPG) {
             return 1.0;
         }
-        double age = held.age(partialTick);
-        return age < hit(RPG, held.move) ? 1.0 : Ease.smooth((age - RELOAD_FROM) / (RELOAD_TO - RELOAD_FROM));
+        if (held.move == RELOAD) {
+            return Ease.smooth((held.age(partialTick) - RELOAD_FROM) / (RELOAD_TO - RELOAD_FROM));
+        }
+        return held.ammo > 0 ? 1.0 : 0.0;
+    }
+
+    // How many ticks into its reload a gun is, or below 0.
+    static double reload(ClientHeavy.Held held, float partialTick) {
+        return gun(held.weapon) && held.move == RELOAD && held.brokeAt < 0.0 ? held.age(partialTick) : -1.0;
     }
 
     private static double window(double age, double from, double to) {

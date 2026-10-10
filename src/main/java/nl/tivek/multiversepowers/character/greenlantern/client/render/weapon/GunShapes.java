@@ -55,12 +55,17 @@ public final class GunShapes {
     }
 
     static Mesh[] shotgun() {
+        List<Mesh> parts = new ArrayList<>(List.of(shotgunBarrels()));
+        parts.addAll(List.of(shotgunStock()));
+        return parts.toArray(Mesh[]::new);
+    }
+
+    // The barrels and fore-end, which break open about the hinge pin at (0, -0.01, -0.005).
+    static Mesh[] shotgunBarrels() {
         List<Mesh> parts = new ArrayList<>();
         for (int side = -1; side <= 1; side += 2) {
             parts.add(rod(16, 0.038, 0.0, 0.5, 1.0).moved(side * 0.039, 0.05, 0.0));
             parts.add(Mesh.torus(16, 5, 0.026, 0.009, 1.9).alongZ().moved(side * 0.039, 0.05, 0.5));
-            parts.add(Mesh.box(-0.01, 0.0, -0.012, 0.01, 0.06, 0.012, 1.3).turned(1.0, 0.0, 0.0, -40.0)
-                    .moved(side * 0.04, 0.075, -0.135));
         }
         parts.add(Mesh.box(-0.012, 0.08, 0.0, 0.012, 0.097, 0.5, 1.15));
         parts.add(Mesh.box(-0.012, 0.0, 0.0, 0.012, 0.03, 0.5, 1.0));
@@ -68,6 +73,15 @@ public final class GunShapes {
         parts.add(Mesh.sweep(0.95, SQUIRCLE, new double[] { 0.02, 0.07, 0.032, 0.0 },
                 new double[] { 0.26, 0.064, 0.03, 0.0 }));
         twice(parts, Mesh.box(0.062, -0.006, 0.06, 0.071, 0.006, 0.22, 1.8));
+        return parts.toArray(Mesh[]::new);
+    }
+
+    static Mesh[] shotgunStock() {
+        List<Mesh> parts = new ArrayList<>();
+        for (int side = -1; side <= 1; side += 2) {
+            parts.add(Mesh.box(-0.01, 0.0, -0.012, 0.01, 0.06, 0.012, 1.3).turned(1.0, 0.0, 0.0, -40.0)
+                    .moved(side * 0.04, 0.075, -0.135));
+        }
         parts.add(Mesh.box(-0.074, -0.035, -0.15, 0.074, 0.09, 0.005, 1.0));
         twice(parts, Mesh.box(0.07, -0.02, -0.135, 0.08, 0.075, -0.015, 1.25));
         parts.add(Mesh.cylinder(12, 0.02, -0.082, 0.082, 1.6).alongX().moved(0.0, -0.01, -0.005));
@@ -84,6 +98,11 @@ public final class GunShapes {
         parts.add(leaning(Mesh.sweep(1.9, SQUIRCLE, new double[] { 0.3, 0.05, 0.1, 0.0 },
                 new double[] { 0.312, 0.046, 0.093, 0.0 }), 150.0, 0.0, -0.14));
         return parts.toArray(Mesh[]::new);
+    }
+
+    // A shell, its rim at z 0 and its body along +z, as it sits in a chamber.
+    static Mesh[] shell() {
+        return new Mesh[] { rod(10, 0.029, 0.0, 0.07, 1.3), Mesh.cylinder(10, 0.035, -0.008, 0.0, 1.9).alongZ() };
     }
 
     static Mesh[] armCannon() {
