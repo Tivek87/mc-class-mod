@@ -32,10 +32,6 @@ final class ConstructPlaces {
     private ConstructPlaces() {
     }
 
-    static Vec3 pane(Entity owner, float partialTick) {
-        return owner.getEyePosition(partialTick).add(owner.getViewVector(partialTick).scale(RAM_OWN_AHEAD));
-    }
-
     static void on(Track track, @Nullable Entity owner, float partialTick) {
         ConstructPath path = track.path;
         ConstructPayload latest = track.latest;

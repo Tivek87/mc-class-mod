@@ -94,6 +94,12 @@ final class LanternGuide {
         modes.add(weapon("chainsaw", player -> ClientHeavy.holding() == HeavyMoves.SAW, "sawPowerCost",
                 "rendPowerPerSecond", "impalePowerCost", "sawGuardPowerPerSecond", "slash", "rend", "impale",
                 "guard"));
+        modes.add(weapon("rocket_launcher", player -> ClientHeavy.holding() == HeavyMoves.RPG, "rpgPowerCost",
+                "rpgClusterPowerCost", "rpgJumpPowerCost", "rpgGuidedPowerCost", "rocket", "cluster", "jump",
+                "guided"));
+        modes.add(weapon("shotgun", player -> ClientHeavy.holding() == HeavyMoves.SHOTGUN, "shotgunPowerCost",
+                "shotgunDoublePowerCost", "shotgunBashPowerCost", "shotgunDeflectPowerPerSecond", "buckshot",
+                "double", "bash", "deflect"));
         AbilityGuide.modes(GL, modes.toArray(GuideMode[]::new));
     }
 

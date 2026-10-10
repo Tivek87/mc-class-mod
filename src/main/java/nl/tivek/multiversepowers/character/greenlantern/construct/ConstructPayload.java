@@ -17,7 +17,6 @@ public record ConstructPayload(int id, int owner, Vec3 center, Vec3 facing, floa
     // Reaches past the ~128 update range so nobody nearby misses the removal.
     private static final double REMOVE_RANGE = 176.0;
     public static final int BOLT = 1;
-    public static final int SHIELD = 2;
     public static final int BEAM = 3;
     public static final int DOME = 4;
     // A dome's variant while it is lowered and breaks apart.
@@ -43,6 +42,8 @@ public record ConstructPayload(int id, int owner, Vec3 center, Vec3 facing, floa
     public static final int EXPRESS_PORTAL = 23;
     public static final int MECH = 24;
     public static final int MECH_MISSILE = 25;
+    // A MECH_MISSILE's variant drawn long and thin: the Rocket Launcher's rocket.
+    public static final int SLIM_MISSILE = 1;
     public static final int SLAM_FIST = 0;
     public static final int SLAM_HANDS = 1;
     public static final int SLAM_FISTS = 2;

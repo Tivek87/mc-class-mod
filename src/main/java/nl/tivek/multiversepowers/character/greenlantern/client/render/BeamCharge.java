@@ -59,9 +59,7 @@ public final class BeamCharge {
             return -1.0F;
         }
         if (player == Minecraft.getInstance().player) {
-            // A construct in the hands owns the hold button then, not the beam charge
-            if (ClientCharacter.active() != GameCharacter.GREEN_LANTERN || SwordArms.holding()
-                    || FlameArms.holding() || WhipArms.holding() || ClientHeavy.holding() >= 0) {
+            if (ClientCharacter.active() != GameCharacter.GREEN_LANTERN || weaponInHands()) {
                 return -1.0F;
             }
             float progress = MouseHold.progress(bolt, partialTick);
@@ -212,5 +210,10 @@ public final class BeamCharge {
             this.volume = 0.3F + 0.7F * charge;
             this.pitch = 0.5F + 1.5F * charge;
         }
+    }
+
+    // A construct weapon in his own hands owns the hold buttons then, not the beam charge.
+    public static boolean weaponInHands() {
+        return SwordArms.holding() || FlameArms.holding() || WhipArms.holding() || ClientHeavy.holding() >= 0;
     }
 }

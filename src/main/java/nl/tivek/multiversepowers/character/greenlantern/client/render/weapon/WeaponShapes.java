@@ -31,6 +31,8 @@ public final class WeaponShapes {
     public static final ConstructPainter.Shape ARM_CANNON = ConstructPainter.Shape.of(armCannon());
     public static final ConstructPainter.Shape MINIGUN = ConstructPainter.Shape.of(minigun());
     public static final ConstructPainter.Shape ROCKET_LAUNCHER = ConstructPainter.Shape.of(rocketLauncher());
+    public static final ConstructPainter.Shape ROCKET_TUBE = ConstructPainter.Shape.of(GunShapes.rocketTube());
+    public static final ConstructPainter.Shape ROCKET_WARHEAD = ConstructPainter.Shape.of(GunShapes.rocketWarhead());
     public static final ConstructPainter.Shape FLAMETHROWER = ConstructPainter.Shape.of(flamethrower());
 
     private WeaponShapes() {

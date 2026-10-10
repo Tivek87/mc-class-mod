@@ -100,6 +100,12 @@ public final class LightBolt implements Effect {
         return true;
     }
 
+    // Whether a bolt left his ring so lately that its shot has not yet come round again.
+    public static boolean cooling(ServerPlayer owner) {
+        Long next = NEXT.get(owner.getUUID());
+        return next != null && owner.serverLevel().getGameTime() < next;
+    }
+
     public static void clear() {
         NEXT.clear();
     }

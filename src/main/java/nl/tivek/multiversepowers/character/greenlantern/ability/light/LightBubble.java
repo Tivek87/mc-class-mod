@@ -39,6 +39,7 @@ import nl.tivek.multiversepowers.character.greenlantern.PowerRing;
 import nl.tivek.multiversepowers.character.greenlantern.ability.airstrike.AirStrike;
 import nl.tivek.multiversepowers.character.greenlantern.ability.hands.GiantHands;
 import nl.tivek.multiversepowers.character.greenlantern.ability.ring.Recharge;
+import nl.tivek.multiversepowers.character.greenlantern.ability.ring.RingHands;
 import nl.tivek.multiversepowers.character.greenlantern.construct.ConstructPayload;
 import nl.tivek.multiversepowers.engine.effect.Effect;
 import nl.tivek.multiversepowers.engine.effect.Effects;
@@ -78,6 +79,7 @@ public final class LightBubble implements Effect {
 
     // The escape game a player caught in a cage plays (Captives).
     public static final int ESCAPE = 1;
+    public static final int ESCAPE_FASTEST = 16;
     private static final Map<UUID, LightBubble> ACTIVE = new HashMap<>();
     private static final Map<Integer, LightBubble> TRAPPED = new HashMap<>();
 
@@ -133,6 +135,9 @@ public final class LightBubble implements Effect {
             PowerRing.tell(owner, "busy_lantern");
             return false;
         }
+        if (RingHands.refuse(owner, RingHands.Move.OTHER)) {
+            return false;
+        }
         if (AirStrike.calling(owner) || GiantHands.waving(owner)) {
             return false;
         }
@@ -157,7 +162,7 @@ public final class LightBubble implements Effect {
         if (target instanceof Mob mob) {
             HeldMobs.hold(mob);
         } else if (target instanceof ServerPlayer caught) {
-            Captives.hold(caught, ESCAPE, LightBubble::broken);
+            Captives.hold(caught, ESCAPE, ESCAPE_FASTEST, LightBubble::broken);
         }
         ACTIVE.put(owner.getUUID(), bubble);
         TRAPPED.put(target.getId(), bubble);

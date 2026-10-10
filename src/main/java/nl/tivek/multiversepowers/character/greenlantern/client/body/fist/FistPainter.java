@@ -14,14 +14,17 @@ import nl.tivek.multiversepowers.engine.math.Colors;
 import nl.tivek.multiversepowers.engine.math.Ease;
 import nl.tivek.multiversepowers.engine.math.Vectors;
 
-// The fists' constructs: a glove of hard light over each hand (a cuff round the wrist, a block over the hand, a ridge
-// over the knuckles, a plate on its back and one along the thumb), in an arm's own frame (blocks, y down the arm, -z
-// its front, the right arm's middle at x -1/16); and the heavies' giant fists, drawn in the world: slammed down from
-// above, bursting up out of the ground, rammed out on a piston. They grow out of the ring's light, from the knuckles
-// back, and break into solid pieces or sink away.
+// The fists' constructs: a gauntlet of hard light over each hand (a cuff with a rim round the wrist, a block over the
+// hand, four knuckles, the curled fingers' rows on the punching face, a plate on its back with the lantern's ring and
+// one along the thumb), in an arm's own frame (blocks, y down the arm, -z its front, the right arm's middle at x
+// -1/16); and the heavies' giant fists, drawn in the world: slammed down from above, bursting up out of the ground,
+// rammed out on a piston. They grow out of the ring's light, from the fingertips back, and break into solid pieces or
+// sink away.
 public final class FistPainter {
     private static final double KNUCKLES = 0.67;
     private static final double CUFF = 0.32;
+    // The fingertips' end, past the knuckles: where a glove starts to grow.
+    private static final double TIPS = 0.715;
     private static final Shape RIGHT = Shape.of(glove(true));
     private static final Shape LEFT = Shape.of(glove(false));
     private static final Shape GIANT = Shape.of(giant());
@@ -38,11 +41,22 @@ public final class FistPainter {
     }
 
     private static Mesh[] glove(boolean right) {
-        return new Mesh[] { box(right, -0.23, CUFF, -0.16, 0.105, 0.43, 0.16, 0.03, 1.25),
-                box(right, -0.215, 0.43, -0.15, 0.09, 0.66, 0.15, 0.04, 1.0),
-                box(right, -0.21, 0.56, -0.19, 0.085, KNUCKLES, -0.13, 0.025, 1.3),
-                box(right, -0.25, 0.45, -0.11, -0.2, 0.63, 0.11, 0.02, 1.15),
-                box(right, 0.08, 0.47, -0.12, 0.12, 0.6, 0.02, 0.02, 1.1) };
+        Mesh[] parts = new Mesh[14];
+        parts[0] = box(right, -0.23, CUFF + 0.02, -0.16, 0.105, 0.43, 0.16, 0.03, 1.2);
+        parts[1] = box(right, -0.245, CUFF, -0.175, 0.12, CUFF + 0.035, 0.175, 0.015, 1.45);
+        parts[2] = box(right, -0.215, 0.43, -0.15, 0.09, 0.66, 0.15, 0.04, 1.0);
+        parts[3] = box(right, -0.25, 0.45, -0.11, -0.2, 0.63, 0.11, 0.02, 1.15);
+        parts[4] = box(right, 0.08, 0.47, -0.12, 0.12, 0.6, 0.02, 0.02, 1.1);
+        double across = (0.085 + 0.21) / 4.0;
+        for (int k = 0; k < 4; k++) {
+            double x0 = -0.21 + k * across;
+            // Each knuckle a little proud, the fingers' rows below them on the face the fist strikes with.
+            parts[5 + k] = box(right, x0 + 0.006, 0.56, -0.195, x0 + across - 0.006, KNUCKLES, -0.13, 0.02, 1.35);
+            parts[9 + k] = box(right, x0 + 0.008, 0.64, -0.13, x0 + across - 0.008, TIPS, 0.05, 0.018, 1.15);
+        }
+        double side = right ? -0.255 : 0.255;
+        parts[13] = Mesh.torus(18, 6, 0.045, 0.012, 1.6).alongX().moved(side, 0.54, 0.0);
+        return parts;
     }
 
     private static Mesh[] giant() {
@@ -72,7 +86,7 @@ public final class FistPainter {
             return;
         }
         if (formed < 1.0) {
-            painter.clip(frame.at(0.0, Mth.lerp(Ease.smooth(formed), KNUCKLES + 0.02, CUFF - 0.02), 0.0),
+            painter.clip(frame.at(0.0, Mth.lerp(Ease.smooth(formed), TIPS + 0.01, CUFF - 0.02), 0.0),
                     new Vec3(0.0, 1.0, 0.0), 1.0);
         }
         painter.shape(shape, frame, 1.0, 1.0);
@@ -219,7 +233,7 @@ public final class FistPainter {
             return;
         }
         if (formed < 1.0) {
-            painter.clip(frame.at(0.0, Mth.lerp(Ease.smooth(formed), KNUCKLES + 0.02, -0.42), 0.0), frame.up(), 1.0);
+            painter.clip(frame.at(0.0, Mth.lerp(Ease.smooth(formed), TIPS + 0.01, -0.42), 0.0), frame.up(), 1.0);
         }
         painter.shape(GIANT, frame, 1.0, 1.0);
         painter.noClip();

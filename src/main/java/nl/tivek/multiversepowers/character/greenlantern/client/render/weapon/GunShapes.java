@@ -151,7 +151,32 @@ public final class GunShapes {
         return parts.toArray(Mesh[]::new);
     }
 
+    // The launcher's round body and its rocket drawn long and a little thicker than first made; its grips hang lower
+    // under the thicker tube and sit further apart along the longer one.
+    private static final double TUBE_THICK = 1.45;
+    private static final double WARHEAD_THICK = 1.35;
+    private static final double TUBE_LONG = 1.3;
+    private static final double GRIP_DROP = 0.056 * (TUBE_THICK - 1.0);
+
     static Mesh[] rocketLauncher() {
+        List<Mesh> parts = new ArrayList<>(List.of(rocketTube()));
+        parts.addAll(List.of(rocketWarhead()));
+        return parts.toArray(Mesh[]::new);
+    }
+
+    // The rocket sitting in the launcher's mouth, along +z from 0.26 to its tip at 0.81, times TUBE_LONG.
+    static Mesh[] rocketWarhead() {
+        Mesh[] parts = { Mesh.lathe(18, 1.05, 0.0, 0.26, 0.03, 0.26, 0.03, 0.36, 0.085, 0.46, 0.088, 0.49, 0.085,
+                0.52, 0.04, 0.68, 0.018, 0.72, 0.012, 0.8, 0.0, 0.81).alongZ(), band(0.088, 0.008, 0.49, 1.8),
+                Mesh.ball(8, 5, 0.014, 2.0).moved(0.0, 0.0, 0.805) };
+        for (int i = 0; i < parts.length; i++) {
+            parts[i] = parts[i].scaled(WARHEAD_THICK, WARHEAD_THICK, TUBE_LONG);
+        }
+        return parts;
+    }
+
+    // The launcher without its rocket: the tube along +z, its mouth at 0.27, its flared back at -0.7, times TUBE_LONG.
+    static Mesh[] rocketTube() {
         List<Mesh> parts = new ArrayList<>();
         parts.add(rod(14, 0.042, -0.5, 0.27, 1.0));
         parts.add(Mesh.lathe(16, 1.05, 0.0, -0.58, 0.035, -0.58, 0.07, -0.69, 0.085, -0.7, 0.09, -0.68, 0.048, -0.52,
@@ -161,10 +186,6 @@ public final class GunShapes {
         for (double z : new double[] { -0.22, -0.07, 0.08 }) {
             parts.add(band(0.058, 0.009, z, 1.6));
         }
-        parts.add(Mesh.lathe(18, 1.05, 0.0, 0.26, 0.03, 0.26, 0.03, 0.36, 0.085, 0.46, 0.088, 0.49, 0.085, 0.52, 0.04,
-                0.68, 0.018, 0.72, 0.012, 0.8, 0.0, 0.81).alongZ());
-        parts.add(band(0.088, 0.008, 0.49, 1.8));
-        parts.add(Mesh.ball(8, 5, 0.014, 2.0).moved(0.0, 0.0, 0.805));
         parts.add(Mesh.box(0.05, 0.03, -0.13, 0.095, 0.09, -0.01, 1.0));
         parts.add(Mesh.box(0.035, 0.0, -0.1, 0.055, 0.04, -0.04, 1.1));
         parts.add(rod(12, 0.026, -0.17, -0.13, 1.1).moved(0.0725, 0.06, 0.0));
@@ -172,11 +193,20 @@ public final class GunShapes {
         parts.add(Mesh.torus(12, 4, 0.018, 0.005, 1.9).alongZ().moved(0.0725, 0.06, 0.031));
         parts.add(Mesh.box(-0.008, 0.04, 0.2, 0.008, 0.085, 0.215, 1.4));
         parts.add(Mesh.box(-0.018, 0.05, -0.04, 0.018, 0.08, -0.025, 1.4));
+        for (int i = 0; i < parts.size(); i++) {
+            parts.set(i, parts.get(i).scaled(TUBE_THICK, TUBE_THICK, TUBE_LONG));
+        }
+        int round = parts.size();
         parts.add(leaning(grip(0.2, 0.046, 0.033, 0.95), 105.0, -0.05, -0.13));
         parts.add(Mesh.tube(false, 6, 0.01, 1.2, path(0.0, -0.05, 0.0, 0.0, -0.1, -0.005, 0.0, -0.125, -0.04, 0.0, -0.11,
                 -0.075, 0.0, -0.08, -0.09)));
         parts.add(Mesh.tube(false, 5, 0.008, 1.5, path(0.0, -0.05, -0.035, 0.0, -0.075, -0.03, 0.0, -0.095, -0.042)));
         parts.add(leaning(grip(0.17, 0.04, 0.03, 0.95), 95.0, -0.035, 0.14));
+        // The grips keep their shape; each moves along with where it sits on the tube (the rear one with the trigger).
+        for (int i = round; i < parts.size(); i++) {
+            double along = i == parts.size() - 1 ? 0.14 : -0.13;
+            parts.set(i, parts.get(i).moved(0.0, -GRIP_DROP, along * (TUBE_LONG - 1.0)));
+        }
         return parts.toArray(Mesh[]::new);
     }
 

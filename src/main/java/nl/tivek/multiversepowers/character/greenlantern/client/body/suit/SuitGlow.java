@@ -117,7 +117,9 @@ public final class SuitGlow {
         if (slam >= 0.0F && slam < LandingSlam.BURST_TICK) {
             want = 1.0F;
         }
-        if (player == Minecraft.getInstance().player && ClientCharacter.active() == GameCharacter.GREEN_LANTERN) {
+        // A held button fills the suit with light, as a ring charge does; not a weapon's held move.
+        if (player == Minecraft.getInstance().player && ClientCharacter.active() == GameCharacter.GREEN_LANTERN
+                && !BeamCharge.weaponInHands()) {
             for (CharacterAbility ability : GameCharacter.GREEN_LANTERN.abilities()) {
                 float hold = MouseHold.progress(ability, partialTick);
                 if (hold > 0.1F) {

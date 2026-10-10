@@ -98,10 +98,10 @@ public final class GreenLanternSuitLayer extends RenderLayer<AbstractClientPlaye
         float recharge = ClientRing.recharge(player, partialTick);
         boolean slim = player.getSkin().model() == PlayerSkin.Model.SLIM;
         if (recharge >= 0.0F) {
-            RechargeAnimation.lanternInHand(poseStack, buffers, this.getParentModel().leftArm, slim, player, recharge,
-                    FlightPose.bodyTurn(player));
+            RechargeAnimation.lanternInHand(poseStack, buffers, light, this.getParentModel().leftArm, slim, player,
+                    recharge, FlightPose.bodyTurn(player));
         } else if (ArrivalAnimation.holdsLantern(player, partialTick)) {
-            RechargeAnimation.lanternInHand(poseStack, buffers, this.getParentModel().leftArm, slim, 1.0F,
+            RechargeAnimation.lanternInHand(poseStack, buffers, light, this.getParentModel().leftArm, slim, 1.0F,
                     ArrivalAnimation.lanternGlow(player, partialTick), 0.0F, FlightPose.bodyTurn(player));
         }
         int overlay = LivingEntityRenderer.getOverlayCoords(player, 0.0F);

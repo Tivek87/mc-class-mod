@@ -18,17 +18,28 @@ public final class MechMissilePainter {
     private static final double ROLL = 0.55;
     private static final int STRANDS = 12;
     private static final double STEP = 0.9;
+    private static final double SLIM_WIDE = 0.65;
+    private static final double SLIM_LONG = 1.7;
     private static final ConstructPainter.Shape SHAPE = ConstructPainter.Shape.of(shape());
 
     private MechMissilePainter() {
     }
 
-    public static void draw(LanternPainter painter, Vec3 at, Vec3 nose, double burning) {
+    public static void draw(LanternPainter painter, Vec3 at, Vec3 nose, double burning, double size) {
+        draw(painter, at, nose, burning, size, false);
+    }
+
+    // `size`: 1 for the mech's own missiles, less for smaller rockets (the Rocket Launcher's); `slim` drawn longer and
+    // thinner, as the launcher's rockets are.
+    public static void draw(LanternPainter painter, Vec3 at, Vec3 nose, double burning, double size, boolean slim) {
         Vec3 forward = nose.lengthSqr() < 1.0E-6 ? new Vec3(0.0, -1.0, 0.0) : nose.normalize();
         Vec3[] across = Vectors.across(forward);
         double roll = Math.max(0.0, burning) * ROLL;
         Vec3 up = across[0].scale(Math.cos(roll)).add(across[1].scale(Math.sin(roll)));
-        ConstructPainter.Frame frame = ConstructPainter.Frame.of(at, forward, up, SCALE);
+        ConstructPainter.Frame frame = ConstructPainter.Frame.of(at, forward, up, SCALE * size);
+        if (slim) {
+            frame = frame.stretched(SLIM_WIDE, SLIM_WIDE, SLIM_LONG);
+        }
         painter.ambient(0.35);
         painter.shape(SHAPE, frame, 1.0, 1.2);
         painter.ambient(0.0);
@@ -39,18 +50,18 @@ public final class MechMissilePainter {
         double lit = Ease.smooth(burning / 2.0);
         if (burning < 3.0) {
             double flash = 1.0 - burning / 3.0;
-            painter.flare(tail, 1.4 * flash + 0.5, flash);
+            painter.flare(tail, (1.4 * flash + 0.5) * size, flash);
         }
-        painter.exhaust(tail, forward.scale(-1.0), 1.6, 0.16, lit);
+        painter.exhaust(tail, forward.scale(-1.0), 1.6 * size, 0.16 * size, lit);
         for (int side = 0; side < 2; side++) {
             Vec3 last = tail;
             for (int k = 1; k <= STRANDS; k++) {
                 double turn = roll * 0.6 + k * 0.7 + side * Math.PI;
-                double wide = 0.12 + 0.03 * k;
-                Vec3 next = tail.subtract(forward.scale(STEP * k)).add(across[0].scale(Math.cos(turn) * wide))
+                double wide = (0.12 + 0.03 * k) * size;
+                Vec3 next = tail.subtract(forward.scale(STEP * k * size)).add(across[0].scale(Math.cos(turn) * wide))
                         .add(across[1].scale(Math.sin(turn) * wide));
                 double fade = 1.0 - (double) k / (STRANDS + 1);
-                painter.edge(last, next, 0.16 * fade, 0.8 * fade * lit);
+                painter.edge(last, next, 0.16 * fade * size, 0.8 * fade * lit);
                 last = next;
             }
         }

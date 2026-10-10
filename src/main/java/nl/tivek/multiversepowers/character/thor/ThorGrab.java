@@ -57,6 +57,7 @@ public final class ThorGrab {
     private static final double MISSILE_SLOW = 0.3;
     // The escape game a player he holds plays (Captives): one second, one try.
     public static final int ESCAPE = 2;
+    public static final int ESCAPE_FASTEST = 4;
     private static final double BREAK_FREE = 0.6;
     private static final Map<UUID, ThorGrab> ALL = new HashMap<>();
     private static final Set<UUID> HELD_PLAYERS = new HashSet<>();
@@ -199,7 +200,7 @@ public final class ThorGrab {
         if (target instanceof ServerPlayer player && !HeldMobs.isHeldByAnyone(player)) {
             player.stopRiding();
             HELD_PLAYERS.add(player.getUUID());
-            Captives.hold(player, ESCAPE, ThorGrab::brokeFree);
+            Captives.hold(player, ESCAPE, ESCAPE_FASTEST, ThorGrab::brokeFree);
             return true;
         }
         return false;

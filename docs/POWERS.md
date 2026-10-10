@@ -274,6 +274,10 @@ quick one, 2 seconds of holding for the lasting one.
   - **Power:** 1.5 per heavy blow.
 - They work the same in the air.
 
+**One move of the hands at a time:** while a fist blow, the Beam, the Giant Hands, the Air Strike or a slam is going,
+every other move that needs your hands waits ("Your hands are busy with another move"), and no punch leaves while a
+bolt is still leaving the ring. Flight, the ram cone and the dome go along with anything.
+
 **Right click (the ring shoots)**
 
 - **Tap — Light Bolt.** A small bullet of hard light (round, with a pointed nose and a streak of light behind
@@ -576,10 +580,10 @@ All of these numbers are settings of their own (see "Changing the numbers").
 ### Construct Wheel (key V)
 
 The ring can shape hard light into your hands. The wheel has ten slots: the first holds the **Sword &
-Shield**, the second the **Energy Whip**, the third the **Battleaxe**, the fourth the **Heavy Chainsaw** and the last
-the **Plasma Flamethrower** (see below); the other five hold the weapons still to come, each with its name and picture
-but nothing to do yet: **Dual Revolvers / Hand Cannons**, **Sawed-off Shotgun**, **Arm Cannon / Mega Blaster**,
-**Minigun** and **Rocket Launcher / RPG**. Picking one of those changes nothing yet. In flight the wheel offers only
+Shield**, the second the **Energy Whip**, the third the **Battleaxe**, the fourth the **Heavy Chainsaw**, the sixth the
+**Sawed-off Shotgun**, the ninth the **Rocket Launcher** and the last the **Plasma Flamethrower** (see below); the other
+three hold the weapons still to come, each with its name and picture but nothing to do yet: **Dual Revolvers / Hand
+Cannons**, **Arm Cannon / Mega Blaster** and **Minigun**. Picking one of those changes nothing yet. In flight the wheel offers only
 weapons that fire from afar; the ones for close fighting form only on the ground.
 
 - **Tap V** and nothing opens at all: you swap straight between empty hands and the last slot you had
@@ -739,7 +743,7 @@ the ring's light and breaks into solid pieces when you put it away.
   of you and throws everything on it up and down: **8 hearts**. Costs 3 power.
 - **Right click (hook):** you hook the creature in front of you (up to 4.5 blocks) with the axe's beard and drag it
   to you: **2 hearts**. Costs 0.5 power.
-- **Hold right (whirlwind):** you spin round with the axe for as long as you hold (your view spins along), everything
+- **Hold right (whirlwind):** you spin round with the axe while you hold, 5 seconds at most (your view spins along), everything
   within 3 blocks takes **2.5 hearts** a hit and nothing knocks you back; letting go ends in one wide swing of
   **5 hearts**. Costs 1.2 power a second.
 
@@ -755,6 +759,33 @@ A big chainsaw of hard light with running teeth, held in both hands; it growls a
   (**5 hearts**). Costs 1.5 power.
 - **Hold right (saw guard):** the running blade across in front of you: blows from the front are ground away (you keep
   10% of them and the blade bites back, **2 hearts**) and shots shredded. Costs 0.3 power a second.
+
+#### Sawed-off Shotgun (slot 6)
+
+A short double-barrelled shotgun of hard light, held in both hands with its barrels on your crosshair.
+
+- **Left click (buckshot):** one barrel of **9** pellets: **1 heart** each up close, less further off, 16 blocks. A
+  creature struck by most of them is knocked down. Costs 0.3 power.
+- **Hold left (both barrels):** you cock both hammers while you hold (3 seconds at most) and fire both at once on
+  letting go: twice the pellets, spread wider, and the kick pushes you back. Costs 0.8 power.
+- **Right click (stock strike):** you drive the stock into the creature in front of you: **3 hearts**, and it is
+  knocked off its feet. Costs 0.2 power.
+- **Hold right (deflection):** the barrels up in front of you: shots from the front are stopped and you keep 30% of
+  blows from the front; letting go fires a short wide blast. Costs 0.3 power a second.
+
+#### Rocket Launcher (slot 9)
+
+A long hard-light rocket launcher on your shoulder, aimed at your crosshair; a new rocket slides in after each shot.
+
+- **Left click (rocket):** a long, thin rocket flies straight where you aim, gathering speed, and bursts on the first creature
+  or block: **8 hearts** in the middle, less out to 3.5 blocks, and it knocks down what stands near. Costs 2.5 power.
+- **Hold left (cluster rocket):** you shoulder it while you hold (3 seconds at most) and fire on letting go: the rocket
+  always bursts into **5** bomblets, in the air or where it strikes, that fan out and then curve onto red creatures
+  near, **3 hearts** each. Costs 4 power.
+- **Right click (blast jump):** you fire into the ground at your feet: the blast throws you up and forward, hurts what
+  stands near and you land without fall damage. Costs 1.5 power.
+- **Hold right (guided rocket):** you fire a rocket that flies where your crosshair points for as long as you hold
+  (10 seconds at most); let go and it bursts where it is, as a rocket does. Costs 3 power, then 0.4 power a second.
 
 #### Plasma Flamethrower (slot 10)
 

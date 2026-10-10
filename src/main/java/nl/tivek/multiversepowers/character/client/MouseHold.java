@@ -77,6 +77,10 @@ public final class MouseHold {
         return HOLDING[i] ? 1.0F : Math.min(1.0F, (DOWN[i] + partialTick) / TICKS[i]);
     }
 
+    static boolean down(int i) {
+        return DOWN[i] >= 0;
+    }
+
     public static boolean holding(CharacterAbility.Input button) {
         int i = channel(button);
         return i >= 0 && HOLDING[i];

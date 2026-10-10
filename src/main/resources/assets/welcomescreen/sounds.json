@@ -375,5 +375,59 @@
         "volume": 0.5
       }
     ]
+  },
+  "saw.start": {
+    "subtitle": "subtitles.welcomescreen.saw.start",
+    "sounds": [
+      {
+        "name": "welcomescreen:saw/start",
+        "attenuation_distance": 24
+      }
+    ]
+  },
+  "saw.idle": {
+    "subtitle": "subtitles.welcomescreen.saw.idle",
+    "sounds": [
+      {
+        "name": "welcomescreen:saw/idle",
+        "attenuation_distance": 20
+      }
+    ]
+  },
+  "saw.run": {
+    "subtitle": "subtitles.welcomescreen.saw.run",
+    "sounds": [
+      {
+        "name": "welcomescreen:saw/run",
+        "attenuation_distance": 28
+      }
+    ]
+  },
+  "saw.cut": {
+    "subtitle": "subtitles.welcomescreen.saw.cut",
+    "sounds": [
+      {
+        "name": "welcomescreen:saw/cut",
+        "attenuation_distance": 28
+      }
+    ]
+  },
+  "lantern.charge": {
+    "subtitle": "subtitles.welcomescreen.lantern.charge",
+    "sounds": [
+      {
+        "name": "welcomescreen:lantern/charge",
+        "attenuation_distance": 20
+      }
+    ]
+  },
+  "saw.rev": {
+    "subtitle": "subtitles.welcomescreen.saw.rev",
+    "sounds": [
+      {
+        "name": "welcomescreen:saw/rev",
+        "attenuation_distance": 28
+      }
+    ]
   }
 }

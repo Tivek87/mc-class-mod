@@ -13,6 +13,7 @@ import nl.tivek.multiversepowers.classes.ceremony.Ceremonies;
 import nl.tivek.multiversepowers.config.ModConfigs;
 import nl.tivek.multiversepowers.content.ModItems;
 import nl.tivek.multiversepowers.engine.effect.Effects;
+import nl.tivek.multiversepowers.killconfirm.KillConfirms;
 import nl.tivek.multiversepowers.engine.entity.DeathBlows;
 import nl.tivek.multiversepowers.engine.entity.DeathStyles;
 import nl.tivek.multiversepowers.engine.entity.Captives;
@@ -57,6 +58,7 @@ public class MultiversePowers {
         Fatigue.clear();
         Captives.clear();
         TestFight.clear();
+        KillConfirms.clear();
         // Last: held mobs must not be saved with their AI switched off.
         HeldMobs.releaseAll();
         Knockdowns.clear();

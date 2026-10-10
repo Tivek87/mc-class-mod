@@ -64,9 +64,6 @@ public final class BeamArm {
                 || ClientRing.has(entity, RingPayload.SHIELD)) {
             return 0.0F;
         }
-        if (ClientConstructs.heldBy(entity.getId(), true) != null) {
-            return 0.0F;
-        }
         return ClientRing.has(entity, RingPayload.BEAM) && ClientConstructs.beamStage(entity.getId()) >= BRACE_STAGE
                 ? 1.0F : 0.0F;
     }

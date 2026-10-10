@@ -16,6 +16,7 @@ import nl.tivek.multiversepowers.character.CharacterAbility;
 import nl.tivek.multiversepowers.character.greenlantern.PowerRing;
 import nl.tivek.multiversepowers.character.greenlantern.ability.flight.Flight;
 import nl.tivek.multiversepowers.character.greenlantern.ability.ring.Recharge;
+import nl.tivek.multiversepowers.character.greenlantern.ability.ring.RingHands;
 import nl.tivek.multiversepowers.engine.effect.Effect;
 import nl.tivek.multiversepowers.engine.effect.Effects;
 
@@ -39,6 +40,9 @@ public final class Shockwave implements Effect {
     public static boolean use(ServerPlayer owner, ServerLevel level, CharacterAbility ability) {
         if (Recharge.busy(owner)) {
             PowerRing.tell(owner, "busy_lantern");
+            return false;
+        }
+        if (RingHands.refuse(owner, RingHands.Move.SLAM)) {
             return false;
         }
         if (LandingSlam.running(owner) || dropping(owner) || Flight.diving(owner) || owner.isPassenger()

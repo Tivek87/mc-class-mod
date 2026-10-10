@@ -21,7 +21,10 @@ import nl.tivek.multiversepowers.character.CharacterAbility;
 import nl.tivek.multiversepowers.character.Characters;
 import nl.tivek.multiversepowers.character.greenlantern.PowerRing;
 import nl.tivek.multiversepowers.character.greenlantern.ability.flight.Flight;
+import nl.tivek.multiversepowers.character.greenlantern.ability.light.LightBeam;
+import nl.tivek.multiversepowers.character.greenlantern.ability.light.LightBolt;
 import nl.tivek.multiversepowers.character.greenlantern.ability.ring.Recharge;
+import nl.tivek.multiversepowers.character.greenlantern.ability.ring.RingHands;
 import nl.tivek.multiversepowers.character.greenlantern.fist.FistMoves;
 import nl.tivek.multiversepowers.character.greenlantern.fist.FistPayload;
 import nl.tivek.multiversepowers.engine.effect.Effect;
@@ -58,7 +61,9 @@ public final class LightFists implements Effect {
     }
 
     public static boolean use(ServerPlayer owner, ServerLevel level, CharacterAbility ability, boolean on, int data) {
-        if (!on || Recharge.busy(owner) || Flight.descending(owner)) {
+        // One move of the hands at a time (RingHands), and no punch while a bolt still leaves the ring.
+        if (!on || Recharge.busy(owner) || Flight.descending(owner) || RingHands.busy(owner, RingHands.Move.FISTS)
+                || LightBolt.cooling(owner)) {
             return false;
         }
         boolean hold = (data & Characters.HOLD) != 0;
@@ -66,7 +71,7 @@ public final class LightFists implements Effect {
             return false;
         }
         LightFists fists = ACTIVE.get(owner.getUUID());
-        if (fists == null) {
+        if (fists == null || fists.owner != owner) {
             fists = new LightFists(owner, ability);
             ACTIVE.put(owner.getUUID(), fists);
             Effects.start(level, fists);
@@ -76,7 +81,8 @@ public final class LightFists implements Effect {
 
     public static boolean busy(ServerPlayer player) {
         LightFists fists = ACTIVE.get(player.getUUID());
-        return fists != null && fists.move >= 0;
+        // A blow from before a death or a log-out (another player object) never holds the hands.
+        return fists != null && fists.owner == player && fists.move >= 0;
     }
 
     public static void stop(ServerPlayer player) {
@@ -153,7 +159,12 @@ public final class LightFists implements Effect {
 
     @Override
     public boolean tick(ServerLevel level, int age) {
-        if (ACTIVE.get(this.owner.getUUID()) != this || !this.owner.isAlive()) {
+        if (ACTIVE.get(this.owner.getUUID()) != this) {
+            return false;
+        }
+        if (!this.owner.isAlive() || this.owner.isRemoved()) {
+            ACTIVE.remove(this.owner.getUUID(), this);
+            this.move = -1;
             return false;
         }
         if (this.move < 0) {

@@ -16,6 +16,7 @@ import nl.tivek.multiversepowers.character.CharacterAbility;
 import nl.tivek.multiversepowers.character.greenlantern.PowerRing;
 import nl.tivek.multiversepowers.character.greenlantern.ability.hands.GiantHands;
 import nl.tivek.multiversepowers.character.greenlantern.ability.ring.Recharge;
+import nl.tivek.multiversepowers.character.greenlantern.ability.ring.RingHands;
 import nl.tivek.multiversepowers.character.greenlantern.construct.ConstructPayload;
 import nl.tivek.multiversepowers.character.greenlantern.plane.PlanePath;
 import nl.tivek.multiversepowers.engine.effect.Effects;
@@ -75,6 +76,9 @@ public final class AirStrike extends AirStrikeMissiles {
         }
         if (Recharge.busy(owner)) {
             PowerRing.tell(owner, "busy_lantern");
+            return false;
+        }
+        if (RingHands.refuse(owner, RingHands.Move.STRIKE)) {
             return false;
         }
         if (GiantHands.waving(owner)) {

@@ -1,15 +1,17 @@
 # Laatste sessie
 
-## 0.8.0-alpha (2026-10-10 18:00, commit, niet gepusht)
-- Gevraagd: GL-rework (vuisten links, bolt rechts, schild weg, koepel op scan, ramkegel op Express), strijdbijl,
-  kettingzaag, mech-combo, escape-spel, wilde helpers, Thor C-dalen; gauntlet-knip met dunne ring + 2 zwakkere ringen;
-  lantaarn 1-op-1 als referentie; recharge: ring tegen embleem, geleidelijk laden. Daarna tour + alles committen.
-- Gedaan: alles hierboven; CHANGELOG 0.8.0 + tour (12 stappen); docs (GREEN_LANTERN, POWERS, KEYBINDS) en gids-teksten.
-- Review-fixes: ramkegel in vlucht niet meer geweigerd na Express; koepel zakken kan tijdens scan-cooldown
-  (`CharacterPowers.endsOnly`); handschoenen breken af als een wapen vormt (`LightFists.putAway`); oude client-views
-  opgeruimd; ramkegel −70% schade in CHANGELOG.
-- In game getest: gauntlet + ringen, vuisten, helpers, escape, recharge (1e/3e persoon), koepel/wapen-fixes.
-  Niet getest: lantaarn van dichtbij in de arrival; tour niet in game gelopen.
-- `./gradlew build` groen. Testklassen, testwereld en shots verwijderd.
-- Open: dode SHIELD-constructcode (ClientConstructs/TrackedConstructs/LanternArms) opruimen; server checkt
-  EscapePayload niet (cheat mogelijk); push + release pas na ja; idee #24 (NPC's) wacht op ja/nee.
+**Datum:** 2026-10-10, 21:23
+
+**Verzoek:** tour voor alles en alles committen (niet pushen); Beam vast op stage 1; RPG langer/dunner/trager, clusters altijd splitsen, bunker vervangen; armen doorzichtig bij RPG/shotgun; abilities niet tegelijk.
+
+**Gedaan:**
+- Tour: elke changelog-regel heeft nu een eigen stap (ook kleine wijzigingen en de fixes), `SMALL` is leeg.
+- Beam: server wachtte op een druk die sinds bolt-bij-loslaten nooit kwam; nu start hij (getest in game).
+- RPG: buis en raket langer en dunner, raket trager; cluster splitst altijd en waaiert weg van wat hij raakt; bunker vervangen door Guided Rocket (rechts vasthouden stuurt de raket met je crosshair, loslaten = ontploffen).
+- Armen: geweer eerst getekend, armen erna; laadgloed van het pak niet meer op je armen terwijl je een wapen vasthoudt (getest in game).
+- `RingHands`: één handbeweging tegelijk (vuisten, Beam, Giant Hands, Air Strike, slam blokkeren elkaar en de rest).
+- Docs (POWERS, GREEN_LANTERN, PROJECT) en changelog bijgewerkt; `./gradlew build` groen.
+
+**Open:**
+- Push/release 0.8.0-alpha wacht op ja; tour in game lopen vóór de push.
+- Idee #24 wacht op ja/nee.

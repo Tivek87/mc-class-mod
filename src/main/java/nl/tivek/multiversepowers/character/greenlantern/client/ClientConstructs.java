@@ -60,7 +60,6 @@ import nl.tivek.multiversepowers.character.greenlantern.mech.MechScript;
 import static nl.tivek.multiversepowers.character.greenlantern.client.ConstructPlaces.RAM_OWN_AHEAD;
 import static nl.tivek.multiversepowers.character.greenlantern.client.ConstructPlaces.beamEnd;
 import static nl.tivek.multiversepowers.character.greenlantern.client.ConstructPlaces.on;
-import static nl.tivek.multiversepowers.character.greenlantern.client.ConstructPlaces.pane;
 import static nl.tivek.multiversepowers.character.greenlantern.client.ConstructPlaces.ramWay;
 import static nl.tivek.multiversepowers.character.greenlantern.client.ConstructPlaces.ringHand;
 import static nl.tivek.multiversepowers.character.greenlantern.client.ConstructPlaces.where;
@@ -417,10 +416,6 @@ public final class ClientConstructs extends ConstructShakes {
             boolean own = owner == minecraft.player && camera.getEntity() == owner && !camera.isDetached();
             if (owner != null) {
                 switch (now.shape()) {
-                    case ConstructPayload.SHIELD -> {
-                        way = owner.getViewVector(partialTick);
-                        center = pane(owner, partialTick);
-                    }
                     case ConstructPayload.RAM -> {
                         way = ramWay(owner, partialTick);
                         center = own ? owner.getEyePosition(partialTick).add(way.scale(RAM_OWN_AHEAD))
@@ -435,7 +430,6 @@ public final class ClientConstructs extends ConstructShakes {
             }
             switch (now.shape()) {
                 case ConstructPayload.BOLT -> painter.bolt(center, way, size, solid, ring);
-                case ConstructPayload.SHIELD -> painter.shield(center, way, size, solid, charge, ring, own);
                 case ConstructPayload.DOME -> painter.dome(center, size, solid,
                         now.variant() == ConstructPayload.DOME_BREAKING, charge, way, ring, own);
                 case ConstructPayload.RAM -> painter.ram(center, way, solid, charge, own);
@@ -463,7 +457,7 @@ public final class ClientConstructs extends ConstructShakes {
                 case ConstructPayload.MISSILE -> missile(painter, track, partialTick);
                 // The mech's missiles fly where the server has them, burning from the moment they leave the pod.
                 case ConstructPayload.MECH_MISSILE -> MechMissilePainter.draw(painter, center, way,
-                        now.age() - 1.0 + partialTick);
+                        now.age() - 1.0 + partialTick, now.size(), now.variant() == ConstructPayload.SLIM_MISSILE);
                 case ConstructPayload.BULLET -> PlanePainter.bullet(painter, track.latest,
                         sinceSent(track, partialTick));
                 case ConstructPayload.BLAST -> PlanePainter.missileBlast(painter, track.latest,

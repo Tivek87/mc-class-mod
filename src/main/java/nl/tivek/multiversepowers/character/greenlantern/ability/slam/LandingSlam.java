@@ -27,6 +27,7 @@ import nl.tivek.multiversepowers.character.CharacterAbility;
 import nl.tivek.multiversepowers.character.GameCharacter;
 import nl.tivek.multiversepowers.character.greenlantern.PowerRing;
 import nl.tivek.multiversepowers.character.greenlantern.ability.ring.Recharge;
+import nl.tivek.multiversepowers.character.greenlantern.ability.ring.RingHands;
 import nl.tivek.multiversepowers.character.greenlantern.construct.ConstructPayload;
 import nl.tivek.multiversepowers.engine.effect.Effect;
 import nl.tivek.multiversepowers.engine.effect.Effects;
@@ -87,7 +88,8 @@ public final class LandingSlam implements Effect {
     public static boolean start(ServerPlayer owner, ServerLevel level, CharacterAbility shockwave) {
         float cost = (float) shockwave.value("powerCost");
         float power = PowerRing.power(owner);
-        if (power + 1.0E-4F < cost || Recharge.busy(owner) || running(owner)) {
+        if (power + 1.0E-4F < cost || Recharge.busy(owner) || running(owner)
+                || RingHands.busy(owner, RingHands.Move.SLAM)) {
             return false;
         }
         PowerRing.setPower(owner, power - cost);
@@ -136,7 +138,7 @@ public final class LandingSlam implements Effect {
         slam.send(level);
     }
 
-    static boolean running(ServerPlayer player) {
+    public static boolean running(ServerPlayer player) {
         return RUNNING.containsKey(player.getUUID());
     }
 

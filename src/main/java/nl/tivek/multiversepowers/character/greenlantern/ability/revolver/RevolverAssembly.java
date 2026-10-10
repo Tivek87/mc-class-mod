@@ -26,6 +26,7 @@ import nl.tivek.multiversepowers.character.greenlantern.PowerRing;
 import nl.tivek.multiversepowers.character.greenlantern.ability.airstrike.AirStrike;
 import nl.tivek.multiversepowers.character.greenlantern.ability.hands.GiantHands;
 import nl.tivek.multiversepowers.character.greenlantern.ability.ring.Recharge;
+import nl.tivek.multiversepowers.character.greenlantern.ability.ring.RingHands;
 import nl.tivek.multiversepowers.character.greenlantern.construct.ConstructPayload;
 import nl.tivek.multiversepowers.character.greenlantern.duo.RevolverDuo;
 import nl.tivek.multiversepowers.config.PowerRules;
@@ -75,6 +76,9 @@ public final class RevolverAssembly implements Effect {
         }
         if (Recharge.busy(owner)) {
             PowerRing.tell(owner, "busy_lantern");
+            return false;
+        }
+        if (RingHands.refuse(owner, RingHands.Move.OTHER)) {
             return false;
         }
         if (AirStrike.calling(owner)) {

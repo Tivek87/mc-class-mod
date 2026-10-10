@@ -46,6 +46,9 @@ public final class RingScan implements Effect {
             PowerRing.tell(owner, "busy_lantern");
             return false;
         }
+        if (RingHands.refuse(owner, RingHands.Move.OTHER)) {
+            return false;
+        }
         float cost = (float) ability.value("powerCost");
         float power = PowerRing.power(owner);
         if (power + 1.0E-4F < cost) {

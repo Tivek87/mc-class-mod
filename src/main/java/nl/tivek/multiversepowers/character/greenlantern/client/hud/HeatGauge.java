@@ -1,10 +1,7 @@
 package nl.tivek.multiversepowers.character.greenlantern.client.hud;
 
-import java.util.List;
 import net.minecraft.Util;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.flame.FlameArms;
 import nl.tivek.multiversepowers.engine.client.gui.GuiShapes;
@@ -26,7 +23,7 @@ final class HeatGauge {
     private HeatGauge() {
     }
 
-    static boolean render(GuiGraphics graphics, float x, float y, float partialTick, List<Runnable> labels) {
+    static boolean render(GuiGraphics graphics, float x, float y, float partialTick) {
         float charge = FlameArms.overcharge(partialTick);
         boolean venting = FlameArms.overheated();
         long now = Util.getMillis();
@@ -64,17 +61,6 @@ final class HeatGauge {
                     ArcGauge.FROM + ArcGauge.SPAN, GuiShapes.fade(RED, hot * blink * appear));
         }
         GuiShapes.flush(graphics);
-        int percent = Math.round(charge * 100.0F);
-        Component title = venting ? Component.translatable(ArcGauge.PREFIX + "overheat")
-                : Component.translatable(ArcGauge.PREFIX + "heat", percent);
-        int titleColor = venting ? GuiShapes.mix(RED, 0xFFFFFF, 0.3F * blink) : charge > HOT
-                ? GuiShapes.mix(ORANGE, RED, blink) : GuiShapes.mix(ArcGauge.BRIGHT, YELLOW, charge / HOT);
-        Component line = venting ? Component.translatable(ArcGauge.PREFIX + "cooling")
-                : charge > HOT ? Component.translatable(ArcGauge.PREFIX + "heat_hot") : null;
-        int lineColor = venting ? 0xFFB0A0 : 0xFFD8B0;
-        float shown = appear;
-        labels.add(() -> ArcGauge.label(graphics, Minecraft.getInstance().font, x, y, title, titleColor, line,
-                lineColor, shown, null));
         return true;
     }
 

@@ -18,6 +18,7 @@ import nl.tivek.multiversepowers.character.greenlantern.client.body.arm.LanternA
 import nl.tivek.multiversepowers.character.greenlantern.client.body.fist.FistArms;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.fist.FistLayer;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.heavy.HeavyArms;
+import nl.tivek.multiversepowers.character.greenlantern.client.render.PowerLantern;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.heavy.HeavyLayer;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.flame.FlameArms;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.pose.LanternBody;
@@ -75,6 +76,7 @@ public final class MultiversePowersClient {
         modEventBus.addListener(FightClient::onRegisterLayers);
         modEventBus.addListener(EscapeHud::onRegisterLayers);
         modEventBus.addListener(ThorHammerLayer::onRegisterModels);
+        modEventBus.addListener(PowerLantern::onRegisterModels);
         modEventBus.addListener(ThrownHammerRenderer::onRegisterRenderers);
         modEventBus.addListener(MinionRenderer::onRegisterRenderers);
         modEventBus.addListener(UpdatePopup::onRegisterKeys);

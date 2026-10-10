@@ -45,7 +45,7 @@ public enum Construct {
 
     public boolean made() {
         return this == NONE || this == SWORD_SHIELD || this == ENERGY_WHIP || this == FLAMETHROWER
-                || this == BATTLEAXE || this == CHAINSAW;
+                || this == BATTLEAXE || this == CHAINSAW || this == ROCKET_LAUNCHER || this == SHOTGUN;
     }
 
     // Fights from afar: the only weapons the wheel forms in flight.

@@ -1,0 +1,43 @@
+{
+	"credit": "Built by scripts/models/lantern/LanternModel.java",
+	"texture_size": [128, 128],
+	"textures": {
+		"lantern": "welcomescreen:greenlantern/lantern",
+		"particle": "welcomescreen:greenlantern/lantern"
+	},
+	"elements": [
+		{
+			"name": "neck_light",
+			"from": [4.96, 11.96, 4.96],
+			"to": [11.04, 15.04, 11.04],
+			"faces": {
+				"north": {"uv": [12.5, 5.125, 13.25, 5.5], "texture": "#lantern"},
+				"east": {"uv": [13.25, 5.125, 14, 5.5], "texture": "#lantern"},
+				"south": {"uv": [14, 5.125, 14.75, 5.5], "texture": "#lantern"},
+				"west": {"uv": [14.75, 5.125, 15.5, 5.5], "texture": "#lantern"}
+			}
+		},
+		{
+			"name": "body_light",
+			"from": [3.96, 4.96, 3.96],
+			"to": [12.04, 12.04, 12.04],
+			"faces": {
+				"north": {"uv": [0, 6.375, 1, 7.25], "texture": "#lantern"},
+				"east": {"uv": [1, 6.375, 2, 7.25], "texture": "#lantern"},
+				"south": {"uv": [2, 6.375, 3, 7.25], "texture": "#lantern"},
+				"west": {"uv": [3, 6.375, 4, 7.25], "texture": "#lantern"}
+			}
+		},
+		{
+			"name": "foot_glass_light",
+			"from": [4.96, 2.96, 4.96],
+			"to": [11.04, 5.04, 11.04],
+			"faces": {
+				"north": {"uv": [4, 6.375, 4.75, 6.625], "texture": "#lantern"},
+				"east": {"uv": [4.75, 6.375, 5.5, 6.625], "texture": "#lantern"},
+				"south": {"uv": [5.5, 6.375, 6.25, 6.625], "texture": "#lantern"},
+				"west": {"uv": [6.25, 6.375, 7, 6.625], "texture": "#lantern"}
+			}
+		}
+	]
+}

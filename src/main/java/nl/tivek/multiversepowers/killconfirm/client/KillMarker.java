@@ -19,7 +19,8 @@ import nl.tivek.multiversepowers.engine.client.gui.GuiShapes;
 
 // A kill marked at the crosshair, as Red Dead Redemption 2 does: a small red cross flicks out round it, holds a moment
 // and fades, with a sharp click, a punchy thump and a bright ring (built by scripts/sounds/kill_confirm.mjs). Only the
-// player who made the kill sees and hears it.
+// player who made the kill sees and hears it. A character's own crosshair claims the frame and draws the cross round
+// itself, at its own size (cross), and flashes with each blow that lands (hit).
 @Mod(value = MultiversePowers.MODID, dist = Dist.CLIENT)
 public final class KillMarker {
     private static final ResourceLocation LAYER_ID = ResourceLocation.fromNamespaceAndPath(MultiversePowers.MODID,
@@ -39,8 +40,11 @@ public final class KillMarker {
     private static final float POP = 1.5F;
     private static final float WIDTH = 1.4F;
     private static final float EDGE = 1.2F;
-    private static final int RED = 0xE8261C;
+    public static final int RED = 0xE8261C;
+    private static final float HIT_MS = 200.0F;
     private static long shownAt;
+    private static long hitAt;
+    private static boolean claimed;
 
     public KillMarker(IEventBus modEventBus) {
         modEventBus.addListener(KillMarker::onRegisterLayers);
@@ -60,21 +64,47 @@ public final class KillMarker {
         shownAt = now;
     }
 
-    private static void render(GuiGraphics graphics, DeltaTracker deltaTracker) {
-        Minecraft minecraft = Minecraft.getInstance();
+    public static void hit() {
+        hitAt = Util.getMillis();
+    }
+
+    // How bright the last landed blow still flashes: 1 as it lands, gone in a fifth of a second.
+    public static float hitFlash() {
+        long since = Util.getMillis() - hitAt;
+        if (hitAt == 0L || since >= HIT_MS) {
+            return 0.0F;
+        }
+        float left = 1.0F - since / HIT_MS;
+        return left * left;
+    }
+
+    // How strongly the last kill still shows: 1 while it holds, then fading out.
+    public static float killed() {
         long since = Util.getMillis() - shownAt;
-        if (shownAt == 0L || since >= SHOWN_MS || minecraft.options.hideGui || minecraft.player == null) {
-            return;
+        if (shownAt == 0L || since >= SHOWN_MS) {
+            return 0.0F;
         }
         float u = since / SHOWN_MS;
+        float left = u < HOLD ? 1.0F : 1.0F - (u - HOLD) / (1.0F - HOLD);
+        return left * left;
+    }
+
+    // A character's crosshair draws the cross itself this frame.
+    public static void claim() {
+        claimed = true;
+    }
+
+    // The red cross round (x, y), its strokes running out from `inner` to `outer` (gui pixels from the middle).
+    public static void cross(GuiGraphics graphics, float x, float y, float inner, float outer) {
+        long since = Util.getMillis() - shownAt;
+        float alpha = killed();
+        if (alpha <= 0.0F) {
+            return;
+        }
         float popped = Mth.clamp(since / POP_MS, 0.0F, 1.0F);
         float out = POP * (1.0F - popped) * (1.0F - popped);
-        float left = u < HOLD ? 1.0F : 1.0F - (u - HOLD) / (1.0F - HOLD);
-        float alpha = left * left;
-        float x = graphics.guiWidth() * 0.5F;
-        float y = graphics.guiHeight() * 0.5F;
-        float from = (INNER + out) * Mth.SQRT_OF_TWO * 0.5F;
-        float to = (OUTER + out) * Mth.SQRT_OF_TWO * 0.5F;
+        float from = (inner + out) * Mth.SQRT_OF_TWO * 0.5F;
+        float to = (outer + out) * Mth.SQRT_OF_TWO * 0.5F;
         // A dark edge under the red, so it reads on snow and sky as well.
         for (int pass = 0; pass < 2; pass++) {
             float width = pass == 0 ? WIDTH + EDGE : WIDTH;
@@ -85,6 +115,16 @@ public final class KillMarker {
                 GuiShapes.stroke(graphics, x + dx * from, y + dy * from, x + dx * to, y + dy * to, width, argb);
             }
         }
+    }
+
+    private static void render(GuiGraphics graphics, DeltaTracker deltaTracker) {
+        Minecraft minecraft = Minecraft.getInstance();
+        boolean mine = claimed;
+        claimed = false;
+        if (mine || minecraft.options.hideGui || minecraft.player == null) {
+            return;
+        }
+        cross(graphics, graphics.guiWidth() * 0.5F, graphics.guiHeight() * 0.5F, INNER, OUTER);
         GuiShapes.flush(graphics);
     }
 }

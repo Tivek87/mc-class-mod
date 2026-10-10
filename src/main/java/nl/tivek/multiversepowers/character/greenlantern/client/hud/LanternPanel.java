@@ -15,6 +15,7 @@ import nl.tivek.multiversepowers.character.client.PowerInputs;
 import nl.tivek.multiversepowers.character.greenlantern.RingPayload;
 import nl.tivek.multiversepowers.character.greenlantern.client.ClientConstructs;
 import nl.tivek.multiversepowers.character.greenlantern.client.ClientRing;
+import nl.tivek.multiversepowers.character.greenlantern.client.body.fist.ClientFists;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.flame.FlameArms;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.heavy.ClientHeavy;
 import nl.tivek.multiversepowers.character.greenlantern.heavy.HeavyMoves;
@@ -42,7 +43,12 @@ final class LanternPanel implements AbilityPanel.Rules {
             "whip", new String[] { "whipPowerCost", "whirlPowerPerSecond", "lassoPowerCost", "spinPowerPerSecond" },
             "battleaxe", new String[] { "axePowerCost", "leapPowerCost", "hookPowerCost", "axeWhirlPowerPerSecond" },
             "chainsaw", new String[] { "sawPowerCost", "rendPowerPerSecond", "impalePowerCost",
-                    "sawGuardPowerPerSecond" });
+                    "sawGuardPowerPerSecond" },
+            "rocket_launcher", new String[] { "rpgPowerCost", "rpgClusterPowerCost", "rpgJumpPowerCost",
+                    "rpgGuidedPowerCost" },
+            "shotgun", new String[] { "shotgunPowerCost", "shotgunDoublePowerCost", "shotgunBashPowerCost",
+                    "shotgunDeflectPowerPerSecond" });
+    private static final String[] HEAVY = { "battleaxe", "chainsaw", "rocket_launcher", "shotgun" };
 
     private LanternPanel() {
     }
@@ -58,9 +64,12 @@ final class LanternPanel implements AbilityPanel.Rules {
         if (scan != null) {
             ClientCharacter.endsOnly(scan, player -> ClientRing.has(player, RingPayload.DOME));
         }
+        // Bare-handed, one hand acts at a time: no bolt while a fist is still in its blow, nor a fist while firing.
+        ClientCharacter.oneButton(GameCharacter.GREEN_LANTERN, player -> !piloting(player) && weapon() == null);
         CharacterAbility bolt = GameCharacter.GREEN_LANTERN.byName("light_bolt");
         if (bolt != null) {
             ClientCharacter.holdTime(bolt, player -> piloting(player) ? MECH_GLARE_HOLD : 0);
+            ClientCharacter.gate(bolt, player -> piloting(player) || weapon() != null || !ClientFists.striking(player));
         }
         // Bare fists throw a heavy blow soon after the button is held; a weapon or the mech keep the full hold.
         CharacterAbility fists = GameCharacter.GREEN_LANTERN.byName("light_fists");
@@ -75,7 +84,7 @@ final class LanternPanel implements AbilityPanel.Rules {
     static String weapon() {
         int heavy = ClientHeavy.holding();
         return SwordArms.holding() ? "sword" : FlameArms.holding() ? "flamethrower" : WhipArms.holding() ? "whip"
-                : heavy == HeavyMoves.AXE ? "battleaxe" : heavy == HeavyMoves.SAW ? "chainsaw" : null;
+                : heavy >= 0 && heavy < HEAVY.length ? HEAVY[heavy] : null;
     }
 
     private static boolean onMouse(CharacterAbility ability) {

@@ -23,6 +23,7 @@ import nl.tivek.multiversepowers.character.greenlantern.PowerRing;
 import nl.tivek.multiversepowers.character.greenlantern.ability.airstrike.AirStrike;
 import nl.tivek.multiversepowers.character.greenlantern.ability.light.LightBubble;
 import nl.tivek.multiversepowers.character.greenlantern.ability.ring.Recharge;
+import nl.tivek.multiversepowers.character.greenlantern.ability.ring.RingHands;
 import nl.tivek.multiversepowers.character.greenlantern.duo.HandDuo;
 import nl.tivek.multiversepowers.character.greenlantern.hand.HandPose;
 import nl.tivek.multiversepowers.engine.effect.Effect;
@@ -87,6 +88,9 @@ public final class GiantHands extends GiantHandPlaces implements Effect {
         }
         if (Recharge.busy(owner)) {
             PowerRing.tell(owner, "busy_lantern");
+            return false;
+        }
+        if (RingHands.refuse(owner, RingHands.Move.HANDS)) {
             return false;
         }
         if (AirStrike.calling(owner)) {

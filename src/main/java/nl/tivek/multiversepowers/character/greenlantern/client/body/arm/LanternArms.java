@@ -100,11 +100,8 @@ public final class LanternArms {
                 || HandsArm.out(player, event.getPartialTick()) > 0.0F) {
             model.rightArmPose = pose;
         }
-        if (ClientConstructs.heldBy(player.getId(), false) != null) {
+        if (ClientConstructs.heldBy(player.getId()) != null) {
             model.rightArmPose = pose;
-        }
-        if (ClientConstructs.heldBy(player.getId(), true) != null) {
-            model.leftArmPose = pose;
         }
     }
 
@@ -145,9 +142,9 @@ public final class LanternArms {
         ScanArm.pose(model, entity, arm);
         CallArm.pose(model, entity, arm);
         HandsArm.pose(model, entity, arm);
-        ClientConstructs.Held held = ClientConstructs.heldBy(entity.getId(), arm == HumanoidArm.LEFT);
+        ClientConstructs.Held held = arm == HumanoidArm.LEFT ? null : ClientConstructs.heldBy(entity.getId());
         if (held != null) {
-            reach(arm == HumanoidArm.LEFT ? model.leftArm : model.rightArm, entity, held, partialTick);
+            reach(model.rightArm, entity, held, partialTick);
         }
     }
 
@@ -157,8 +154,7 @@ public final class LanternArms {
         Vec3 forward = new Vec3(-Math.sin(yaw), 0.0, Math.cos(yaw));
         Vec3 left = new Vec3(Math.cos(yaw), 0.0, Math.sin(yaw));
         Vec3 shoulder = shoulder(entity, left, partialTick);
-        Vec3 from = FlightPose.turned(entity,
-                held.defends() ? shoulder.add(left.scale(SHOULDER_SIDE * 2.0)) : shoulder, partialTick);
+        Vec3 from = FlightPose.turned(entity, shoulder, partialTick);
         Vec3 way = FlightPose.untilted(entity, held.center().subtract(from));
         if (way.lengthSqr() < 1.0E-6) {
             return;
@@ -186,7 +182,7 @@ public final class LanternArms {
         Vec3 left = new Vec3(Math.cos(yaw), 0.0, Math.sin(yaw));
         Vec3 shoulder = shoulder(entity, left, partialTick);
         Vec3 down = new Vec3(0.0, -1.0, 0.0).add(forward.scale(0.25)).normalize();
-        ClientConstructs.Held held = ClientConstructs.heldBy(entity.getId(), false);
+        ClientConstructs.Held held = ClientConstructs.heldBy(entity.getId());
         Vec3 way = BoltArm.pointing(entity, partialTick) ? entity.getViewVector(partialTick) : down;
         if (held != null) {
             Vec3 out = held.center().subtract(shoulder);
@@ -232,7 +228,7 @@ public final class LanternArms {
         float step = 1.0F - (float) Math.exp(-10.0 * seconds);
         beamAt = now;
         beam = Mth.lerp(step, beam, ClientRing.has(player, RingPayload.BEAM) ? 1.0F : 0.0F);
-        ClientConstructs.Held held = ClientConstructs.heldBy(player.getId(), false);
+        ClientConstructs.Held held = ClientConstructs.heldBy(player.getId());
         float construct = held == null ? 0.0F : Mth.clamp(held.strength(), 0.0F, 1.0F);
         float partialTick = Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(false);
         boolean pointing = BoltArm.pointing(player, partialTick);
@@ -245,7 +241,7 @@ public final class LanternArms {
 
     // Bolt and beam: a dead straight arm running back and down into the shoulder, so its cut-off end stays unseen.
     private static Vector3f shoulderFor(LocalPlayer player, Vector3f hand, float partialTick) {
-        ClientConstructs.Held held = ClientConstructs.heldBy(player.getId(), false);
+        ClientConstructs.Held held = ClientConstructs.heldBy(player.getId());
         float construct = held == null ? 0.0F : Mth.clamp(held.strength(), 0.0F, 1.0F);
         float aim = Math.max(Math.max(point, beam), Math.max(0.0F, BeamArm.gathering(player, partialTick)));
         float straight = Mth.clamp(aim, 0.0F, 1.0F) * (1.0F - construct);
@@ -258,7 +254,7 @@ public final class LanternArms {
     }
 
     public static Vector3f handPoint(LocalPlayer player, float partialTick) {
-        ClientConstructs.Held held = ClientConstructs.heldBy(player.getId(), false);
+        ClientConstructs.Held held = ClientConstructs.heldBy(player.getId());
         float construct = held == null ? 0.0F : Mth.clamp(held.strength(), 0.0F, 1.0F);
         float charge = Math.max(0.0F, BeamArm.gathering(player, partialTick)) * CHARGE_REACH;
         Vector3f hand = new Vector3f(RechargeAnimation.HAND_RIGHT)

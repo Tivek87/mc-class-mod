@@ -214,11 +214,49 @@ final class LanternAbilities {
                 .setting("sawGuardRiposte", 4.0, 0.0, 2000.0, Unit.HALF_HEARTS,
                         "Damage a creature that strikes the guard takes back, in half hearts")
                 .setting("sawGuardPowerPerSecond", 0.3, 0.0, 20.0, Unit.POWER_PER_SECOND,
-                        "Ring power holding the guard up costs a second");
+                        "Ring power holding the guard up costs a second")
+                .group("rpg", "Rocket Launcher: rocket (left click)")
+                .setting("rpgDamage", 16.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                        "Damage of a rocket's blast at its middle, in half hearts; less further out, and it knocks"
+                                + " down what stands near")
+                .setting("rpgBlastRadius", 3.5, 1.0, 8.0, Unit.BLOCKS, "How far a rocket's blast reaches, in blocks")
+                .setting("rpgPowerCost", 2.5, 0.0, 100.0, Unit.POWER, "Ring power one rocket costs")
+                .group("rpg_cluster", "Rocket Launcher: cluster rocket (hold left, let go)")
+                .setting("rpgClusterDamage", 6.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                        "Damage of each of the five bomblets' blasts, in half hearts; they curve onto red creatures"
+                                + " near")
+                .setting("rpgClusterPowerCost", 4.0, 0.0, 100.0, Unit.POWER, "Ring power one cluster rocket costs")
+                .group("rpg_jump", "Rocket Launcher: blast jump (click right)")
+                .setting("rpgJumpPowerCost", 1.5, 0.0, 100.0, Unit.POWER, "Ring power one blast jump costs")
+                .group("rpg_guided", "Rocket Launcher: guided rocket (hold right)")
+                .setting("rpgGuidedPowerCost", 3.0, 0.0, 100.0, Unit.POWER,
+                        "Ring power one guided rocket costs as it leaves; it does a rocket's damage")
+                .setting("rpgGuidedPowerPerSecond", 0.4, 0.0, 20.0, Unit.POWER_PER_SECOND,
+                        "Ring power steering it costs a second")
+                .group("shotgun", "Sawed-off Shotgun: buckshot (left click)")
+                .setting("shotgunPelletDamage", 2.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                        "Damage of each pellet up close, in half hearts; less further off")
+                .settingInt("shotgunPellets", 9, 1, 30, Unit.COUNT, "Pellets in one shot")
+                .setting("shotgunRange", 16.0, 4.0, 48.0, Unit.BLOCKS, "How far the pellets fly, in blocks")
+                .setting("shotgunPowerCost", 0.3, 0.0, 100.0, Unit.POWER, "Ring power one shot costs")
+                .group("shotgun_double", "Sawed-off Shotgun: both barrels (hold left, let go)")
+                .setting("shotgunDoublePowerCost", 0.8, 0.0, 100.0, Unit.POWER,
+                        "Ring power firing both barrels at once costs")
+                .group("shotgun_bash", "Sawed-off Shotgun: stock strike (click right)")
+                .setting("shotgunBashDamage", 6.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                        "Damage of the stock strike, in half hearts; it knocks the creature down")
+                .setting("shotgunBashPowerCost", 0.2, 0.0, 100.0, Unit.POWER, "Ring power one stock strike costs")
+                .group("shotgun_deflect", "Sawed-off Shotgun: deflection (hold right)")
+                .setting("shotgunDeflectDamageKept", 0.3, 0.0, 1.0, Unit.PART_KEPT,
+                        "Part of a blow from the front that still gets through (0.3 = 30%); shots from the front are"
+                                + " stopped, and letting go fires a short wide blast")
+                .setting("shotgunDeflectPowerPerSecond", 0.3, 0.0, 20.0, Unit.POWER_PER_SECOND,
+                        "Ring power holding the deflection costs a second");
         lantern.add(abilities, AbilitySlot.ABILITY_3, "recharge").cooldown(60)
-                .setting("powerRestored", 50.0, 1.0, 100.0, Unit.POWER,
+                .setting("powerRestored", 100.0, 1.0, 100.0, Unit.POWER,
                         "How much power one touch of the lantern puts back in the ring (a full ring holds"
-                                + " 100)");
+                                + " 100)")
+                .was(50.0);
         lantern.add(abilities, AbilitySlot.ABILITY_4, "light_bolt").held().input(CharacterAbility.Input.RIGHT)
                 .holdVersion(40, CharacterAbility.Tap.RELEASE).damage(6.0)
                 .group("bolt", "Light Bolt (tap the button)")

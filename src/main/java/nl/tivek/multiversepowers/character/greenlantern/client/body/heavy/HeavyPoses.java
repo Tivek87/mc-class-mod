@@ -3,6 +3,7 @@ package nl.tivek.multiversepowers.character.greenlantern.client.body.heavy;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.heavy.HeavyKeys.Key;
+import nl.tivek.multiversepowers.engine.client.pose.Gait;
 import nl.tivek.multiversepowers.engine.client.pose.Stance;
 import nl.tivek.multiversepowers.engine.math.Ease;
 import org.joml.Vector3f;
@@ -20,6 +21,23 @@ final class HeavyPoses {
     private static final float SHAKE = 0.35F;
     // How far from its shoulder a hand holds the weapon at most, in pixels: the arm all but straight.
     private static final float REACH = 11.0F;
+    // The launcher's new rocket grows into its mouth between these ticks of a shot.
+    private static final double RELOAD_FROM = 16.0;
+    private static final double RELOAD_TO = 24.0;
+    private static final double GUIDED_RELOAD_FROM = 6.0;
+    // Carrying it while walking and running: the dip of each step and the side swing (pixels), the weapon's swing
+    // and tilt and the trunk's turn, roll and lean (radians); sprinting it is drawn in, lowered and turned across.
+    private static final float BOB = 0.9F;
+    private static final float BOB_SWAY = 0.7F;
+    private static final float SWING = 0.06F;
+    private static final float TWIST = 0.07F;
+    private static final float ROLL = 0.04F;
+    private static final float DIP = 0.03F;
+    private static final float RUN_LEAN = 0.28F;
+    private static final float RUN_ACROSS = 1.5F;
+    private static final float RUN_LOW = 1.5F;
+    private static final float RUN_IN = 1.5F;
+    private static final float RUN_TILT = 0.12F;
 
     static final class Pose {
         final Vector3f middle = new Vector3f();
@@ -71,7 +89,7 @@ final class HeavyPoses {
     }
 
     // The weapon's pose this frame. Shared scratch: render thread only.
-    static Pose of(ClientHeavy.Held held, float partialTick) {
+    static Pose of(ClientHeavy.Held held, Gait gait, float partialTick) {
         Pose pose = NOW;
         at(held.weapon, held.move, held.age(partialTick), pose);
         float age = (float) held.age(partialTick);
@@ -81,11 +99,31 @@ final class HeavyPoses {
             pose.set(HeavyKeys.rest(held.weapon));
             pose.toward(BEFORE, 1.0F);
         }
+        carry(pose, gait, held.move < 0 || held.move >= MOVES ? 1.0F : 0.35F);
         double formed = Ease.smooth((ClientHeavy.now(partialTick) - held.formedAt) / 3.0);
         double apart = held.apart(partialTick);
         pose.weight = (float) (formed * (apart < 0.0 ? 1.0 : 1.0 - Ease.smooth(apart * 1.4)));
         pose.shake = SHAKE * (float) revving(held, partialTick) * (held.weapon == SAW ? 1.0F : 0.0F);
         return pose;
+    }
+
+    // Walking, the weapon rides his steps: it dips with each footfall, swings a little from side to side against his
+    // hips and the trunk rolls with it; sprinting, he leans into the run with the weapon drawn in and lowered across
+    // his body. In a move (`free` small) only a little of it shows.
+    private static void carry(Pose pose, Gait gait, float free) {
+        if (gait.amount() < 1.0E-3F) {
+            return;
+        }
+        float walk = free * (1.0F - 0.5F * gait.sprint());
+        float run = free * gait.sprint();
+        pose.middle.add(BOB_SWAY * gait.sway() * walk, BOB * gait.bounce() * (walk + 1.6F * run), 0.0F);
+        pose.middle.add(-RUN_ACROSS * run, RUN_LOW * run, RUN_IN * run);
+        pose.az += SWING * gait.sway() * walk;
+        pose.el += RUN_TILT * run;
+        pose.twist -= TWIST * gait.sway() * (walk + run);
+        pose.roll += ROLL * gait.sway() * (walk + run);
+        pose.pitch += RUN_LEAN * run + DIP * gait.bounce() * walk;
+        pose.drop += BOB * 0.5F * gait.bounce() * (walk + run);
     }
 
     // `move` of `weapon`, `age` ticks in; the weapon at rest for none, or past a move's end.
@@ -149,13 +187,44 @@ final class HeavyPoses {
         }
         double age = held.age(partialTick);
         return switch (held.move) {
-            case FORM -> window(age, 5.0, 10.0);
+            case FORM -> window(age, 13.5, 18.0);
             case REV, REV_BACK -> window(age, 2.0, 8.0);
             case REND, GUARD -> Ease.smooth((age - 1.0) / 3.0);
             case IMPALE -> window(age, 4.0, 13.0);
             case REND_OUT, GUARD_DOWN -> 1.0 - Ease.smooth(age / 5.0);
             default -> 0.0;
         };
+    }
+
+    // How bright a gun's shot flashes at its muzzle now: a moment as it fires.
+    static double flash(ClientHeavy.Held held, float partialTick) {
+        if (!gun(held.weapon) || held.brokeAt >= 0.0) {
+            return 0.0;
+        }
+        int hit = hit(held.weapon, held.move);
+        boolean shot = held.move == SHOOT || held.move == LOOSE || held.weapon == SHOTGUN && held.move == UNBRACE
+                || held.weapon == RPG && held.move == BRACE;
+        if (!shot || hit < 0) {
+            return 0.0;
+        }
+        double since = held.age(partialTick) - hit;
+        return since < -0.5 || since > 2.5 ? 0.0 : Ease.smooth((since + 0.5) / 0.5) * (1.0 - Ease.smooth(since / 2.5));
+    }
+
+    // How much of the launcher's rocket sits in its mouth: gone as it fires, grown back as the reload pushes it in;
+    // after a guided rocket only once he lets go of it.
+    static double loaded(ClientHeavy.Held held, float partialTick) {
+        if (held.weapon == RPG && held.move == BRACE) {
+            return held.age(partialTick) < hit(RPG, BRACE) ? 1.0 : 0.0;
+        }
+        if (held.weapon == RPG && held.move == UNBRACE) {
+            return Ease.smooth((held.age(partialTick) - GUIDED_RELOAD_FROM) / (RELOAD_TO - RELOAD_FROM));
+        }
+        if (held.weapon != RPG || held.move != SHOOT && held.move != LOOSE) {
+            return 1.0;
+        }
+        double age = held.age(partialTick);
+        return age < hit(RPG, held.move) ? 1.0 : Ease.smooth((age - RELOAD_FROM) / (RELOAD_TO - RELOAD_FROM));
     }
 
     private static double window(double age, double from, double to) {

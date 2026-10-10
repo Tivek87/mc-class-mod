@@ -7,7 +7,6 @@ import java.util.Map;
 import javax.annotation.Nullable;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.Mth;
-import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.character.greenlantern.ability.airstrike.AirStrike;
 import nl.tivek.multiversepowers.character.greenlantern.ability.flame.FlameMove;
@@ -28,7 +27,6 @@ import nl.tivek.multiversepowers.character.greenlantern.mech.MechBuild;
 import nl.tivek.multiversepowers.character.greenlantern.mech.MechScript;
 import nl.tivek.multiversepowers.character.greenlantern.plane.PlanePath;
 import nl.tivek.multiversepowers.engine.math.Ease;
-import static nl.tivek.multiversepowers.character.greenlantern.client.ConstructPlaces.pane;
 
 abstract class TrackedConstructs {
     static final Map<Integer, Track> CONSTRUCTS = new HashMap<>();
@@ -41,34 +39,19 @@ abstract class TrackedConstructs {
     }
 
     public record Held(Vec3 center, float strength, int shape, boolean smashing) {
-        public boolean defends() {
-            return this.shape == ConstructPayload.SHIELD;
-        }
     }
 
     @Nullable
     public static Held heldBy(int owner) {
-        Held attacks = heldBy(owner, false);
-        return attacks != null ? attacks : heldBy(owner, true);
-    }
-
-    @Nullable
-    public static Held heldBy(int owner, boolean defends) {
-        Minecraft minecraft = Minecraft.getInstance();
-        Entity entity = minecraft.level == null ? null : minecraft.level.getEntity(owner);
-        float partialTick = minecraft.getTimer().getGameTimeDeltaPartialTick(false);
+        float partialTick = Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(false);
         for (Track track : CONSTRUCTS.values()) {
             ConstructPayload now = track.current;
             if (now.owner() != owner || !now.held()) {
                 continue;
             }
-            if (now.shape() == ConstructPayload.BUBBLE && !defends) {
+            if (now.shape() == ConstructPayload.BUBBLE) {
                 return new Held(track.previous.center().lerp(now.center(), partialTick),
                         Math.min(1.0F, now.solid() * 1.5F), now.shape(), now.variant() == LightBubble.SMASHING);
-            }
-            if (now.shape() == ConstructPayload.SHIELD && defends) {
-                Vec3 center = entity == null ? now.center() : pane(entity, partialTick);
-                return new Held(center, now.solid(), now.shape(), false);
             }
         }
         return null;

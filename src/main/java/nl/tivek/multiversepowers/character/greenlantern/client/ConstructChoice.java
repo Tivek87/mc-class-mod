@@ -39,7 +39,7 @@ public final class ConstructChoice {
             case SWORD_SHIELD -> SwordArms.present();
             case FLAMETHROWER -> FlameArms.present();
             case ENERGY_WHIP -> WhipArms.present();
-            case BATTLEAXE, CHAINSAW -> ClientHeavy.present(construct);
+            case BATTLEAXE, CHAINSAW, ROCKET_LAUNCHER, SHOTGUN -> ClientHeavy.present(construct);
             default -> true;
         };
     }
@@ -49,7 +49,8 @@ public final class ConstructChoice {
             return false;
         }
         Minecraft minecraft = Minecraft.getInstance();
-        if (minecraft.player != null && construct.shut(ClientRing.flight(minecraft.player, 0.0F) >= 0.0F)) {
+        if (minecraft.player != null && (construct.shut(ClientRing.flight(minecraft.player, 0.0F) >= 0.0F)
+                || construct != Construct.NONE && ClientRing.recharge(minecraft.player, 0.0F) >= 0.0F)) {
             minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.VILLAGER_NO, 1.0F, 0.5F));
             return false;
         }

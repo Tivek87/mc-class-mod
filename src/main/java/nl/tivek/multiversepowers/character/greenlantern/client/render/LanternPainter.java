@@ -53,16 +53,6 @@ public class LanternPainter extends LanternBeams {
     private static final int RAM_SIDES = 16;
     private static final double[][] RAM = { { -0.45, 0.92 }, { 0.35, 0.8 }, { 1.05, 0.52 }, { 1.55, 0.2 },
             { 1.8, 0.0 } };
-    private static final Shape SHIELD = Shape.of(
-            Mesh.lathe(40, 1.0, 0.0, -0.07, 0.90, -0.07, 0.97, -0.03, 0.97, 0.03, 0.90, 0.05, 0.60, 0.11, 0.30, 0.14,
-                    0.0, 0.15).alongZ(),
-            Mesh.torus(48, 8, 0.96, 0.06, 1.2).alongZ(),
-            Mesh.torus(48, 6, 0.70, 0.025, 1.3).alongZ().moved(0.0, 0.0, 0.095),
-            Mesh.torus(32, 6, 0.24, 0.045, 1.45).alongZ().moved(0.0, 0.0, 0.155),
-            Mesh.box(-0.30, 0.31, 0.10, 0.30, 0.39, 0.20, 1.45),
-            Mesh.box(-0.30, -0.39, 0.10, 0.30, -0.31, 0.20, 1.45),
-            Mesh.box(-0.08, -0.30, -0.13, 0.08, 0.30, -0.07, 1.0));
-    private static final Shape SHIELD_RIVETS = Shape.of(rivets());
     private static final Shape BOLT_SHAPE = Shape.of(Mesh.lathe(10, 1.15, 0.0, -0.75, 0.18, -0.75, 0.24, -0.55,
             0.32, -0.40, 0.32, 0.20, 0.24, 0.40, 0.10, 0.55, 0.0, 0.60).alongZ());
     private static final double BOLT_NOSE = 0.60;
@@ -107,57 +97,6 @@ public class LanternPainter extends LanternBeams {
         if (ring != null && ring.distanceToSqr(center) < BOLT_BEAM * BOLT_BEAM) {
             this.beam(ring, frame.at(0.0, 0.0, BOLT_TAIL), strength * 0.7, frame.scale());
         }
-    }
-
-    public void shield(Vec3 center, Vec3 facing, double size, double solid, double flash, @Nullable Vec3 ring,
-            boolean own) {
-        double strength = Mth.clamp(solid, 0.0, 1.0);
-        if (strength <= 0.0) {
-            return;
-        }
-        Vec3 forward = facing.lengthSqr() < 1.0E-6 ? new Vec3(0, 0, 1) : facing.normalize();
-        Vec3 right = forward.cross(Vectors.UP);
-        right = right.lengthSqr() < 1.0E-4 ? new Vec3(1, 0, 0) : right.normalize();
-        Vec3 up = right.cross(forward);
-        double radius = size * 0.5 * (0.55 + 0.45 * strength);
-        Frame frame = new Frame(center, right, up, forward, radius);
-        double hit = Mth.clamp(flash, 0.0, 1.0);
-        double burn = 1.0 + 0.5 * hit;
-        Frame rivets = frame.turned(0.0, 0.0, 0.0, 0.0, 0.0, 1.0, this.time() * 0.02);
-        if (own) {
-            this.seeThrough(SHIELD, frame, (0.1 + 0.12 * hit) * strength, burn);
-            this.seeThrough(SHIELD_RIVETS, rivets, (0.1 + 0.12 * hit) * strength, burn);
-        } else {
-            this.shape(SHIELD, frame, 1.0, burn);
-            this.shape(SHIELD_RIVETS, rivets, 1.0, burn);
-        }
-        Vec3 face = frame.at(0.0, 0.0, 0.17);
-        double quiet = own ? 0.5 : 1.0;
-        if (hit > 0.0) {
-            this.circle(face, right, up, radius * (0.2 + 0.8 * (1.0 - hit)), 0.05, 0.25, Colors.alpha(hit * quiet),
-                    Colors.alpha(0.5 * hit * quiet));
-        }
-        double sweep = Mth.frac(this.time() / 70.0) * 4.0 - 1.2;
-        if (Math.abs(sweep) < 1.0) {
-            double reach = Math.sqrt(1.0 - sweep * sweep) * 0.85;
-            Vec3 across = right.add(up).normalize();
-            Vec3 along = right.subtract(up).normalize();
-            Vec3 middle = face.add(along.scale(sweep * radius * 0.85));
-            this.lightLine(middle.subtract(across.scale(reach * radius)), middle.add(across.scale(reach
-                    * radius)), radius * 0.03, HOT, Colors.alpha(0.5 * strength * quiet * (1.0 - Math.abs(sweep))));
-        }
-        if (ring != null) {
-            this.beam(ring, frame.at(0.0, 0.0, -0.13), strength, radius);
-        }
-    }
-
-    private static Mesh[] rivets() {
-        Mesh[] rivets = new Mesh[12];
-        for (int i = 0; i < rivets.length; i++) {
-            double angle = Math.PI * 2.0 * i / rivets.length;
-            rivets[i] = Mesh.ball(6, 4, 0.035, 1.4).moved(0.84 * Math.cos(angle), 0.84 * Math.sin(angle), 0.065);
-        }
-        return rivets;
     }
 
     public void dome(Vec3 center, double size, double solid, boolean breaking, double flash, Vec3 struck,

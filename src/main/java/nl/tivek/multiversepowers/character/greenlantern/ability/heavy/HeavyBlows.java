@@ -54,10 +54,14 @@ abstract class HeavyBlows extends HeavyHits {
         int hit = hit(this.weapon, this.move);
         if (this.weapon == AXE) {
             this.axe(level, hit);
-        } else {
+        } else if (this.weapon == SAW) {
             this.saw(level, hit);
+        } else {
+            this.shots(level, hit);
         }
     }
+
+    abstract void shots(ServerLevel level, int hit);
 
     private void axe(ServerLevel level, int hit) {
         switch (this.move) {
@@ -100,17 +104,9 @@ abstract class HeavyBlows extends HeavyHits {
                 if (this.age >= LOOP_FROM && (this.age - LOOP_FROM) % REND_EVERY == 0) {
                     this.rend(level);
                 }
-                if (this.age % 4 == 0) {
-                    this.sound(level, this.owner.position(), SoundEvents.GRINDSTONE_USE, 0.7F, 1.7F);
-                }
             }
             case REND_OUT -> this.caught = null;
             case IMPALE -> this.impale(level, hit);
-            case GUARD -> {
-                if (this.age % 8 == 0) {
-                    this.sound(level, this.owner.position(), SoundEvents.GRINDSTONE_USE, 0.4F, 1.9F);
-                }
-            }
             default -> {
             }
         }
@@ -242,7 +238,6 @@ abstract class HeavyBlows extends HeavyHits {
                 this.sound(level, living.position(), SoundEvents.UI_STONECUTTER_TAKE_RESULT, 1.0F, 1.4F);
             }
         }
-        this.sound(level, front, SoundEvents.GRINDSTONE_USE, 1.0F, 1.5F);
         this.sound(level, front, SoundEvents.PLAYER_ATTACK_SWEEP, 0.7F, 1.3F);
     }
 
@@ -271,7 +266,6 @@ abstract class HeavyBlows extends HeavyHits {
     private void impale(ServerLevel level, int hit) {
         if (this.age == hit) {
             LivingEntity target = this.ahead(level, value("sawReach") + 0.8);
-            this.sound(level, this.owner.position(), SoundEvents.GRINDSTONE_USE, 1.0F, 1.3F);
             if (target != null && this.strike(level, target, value("impaleDamage"), Vec3.ZERO, false)) {
                 this.caught = target;
                 pin(target);
@@ -294,7 +288,6 @@ abstract class HeavyBlows extends HeavyHits {
             this.strike(level, target, value("impaleEjectDamage"), this.ahead.scale(1.6).add(0.0, 0.55, 0.0), true);
             this.sparks(level, target.getBoundingBox().getCenter(), 16);
             this.sound(level, target.position(), SoundEvents.PLAYER_ATTACK_KNOCKBACK, 1.0F, 0.7F);
-            this.sound(level, target.position(), SoundEvents.GRINDSTONE_USE, 1.0F, 2.0F);
         }
     }
 

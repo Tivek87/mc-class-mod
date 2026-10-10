@@ -10,8 +10,10 @@ import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.entity.player.PlayerRenderer;
+import net.minecraft.core.BlockPos;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
@@ -80,7 +82,6 @@ public final class ArrivalAnimation {
     private static final Vector3f LEFT_FROM = new Vector3f(-1.52F, -0.34F, 0.33F);
     private static final Vector3f RIGHT_FROM = new Vector3f(1.5F, -0.4F, 0.35F);
     private static final Vector3f GRIP_DOWN = new Vector3f(-0.55F, -1.0F, -0.8F);
-    private static final Vector3f GRIP_UP = new Vector3f(-0.22F, 0.2F, -0.8F);
 
     private static final Map<Integer, Float> DEPARTING = new HashMap<>();
 
@@ -271,10 +272,11 @@ public final class ArrivalAnimation {
         Vec3 ahead = ahead(player, partialTick);
         pose.mulPose(Axis.YP.rotation((float) Math.atan2(-ahead.x, -ahead.z)));
         pose.mulPose(Axis.YP.rotation(0.6F * (1.0F - fly) * Mth.sin(a * 0.25F)));
-        float scale = LANTERN_SCALE * Mth.clamp(grown, 0.0F, 1.2F) * (own ? Mth.lerp(fly, 1.0F, 0.7F) : 1.0F);
+        float scale = LANTERN_SCALE * Mth.clamp(grown, 0.0F, 1.2F) * (own ? Mth.lerp(fly, 1.0F, 0.9F) : 1.0F);
         pose.scale(scale, scale, scale);
         PowerLantern.draw(pose, buffers, 0.5F + 0.6F * (1.0F - form), 0.0F,
-                1.0F - (float) Ease.smooth((form - 0.1F) / 0.8F));
+                1.0F - (float) Ease.smooth((form - 0.1F) / 0.8F),
+                LevelRenderer.getLightColor(player.level(), BlockPos.containing(at)));
         pose.popPose();
     }
 
@@ -283,8 +285,8 @@ public final class ArrivalAnimation {
             Vec3 forward = new Vec3(camera.getLookVector());
             Vec3 up = new Vec3(camera.getUpVector());
             Vec3 left = new Vec3(camera.getLeftVector());
-            return camera.getPosition().add(forward.scale(-GRIP_UP.z)).subtract(left.scale(GRIP_UP.x))
-                    .add(up.scale(GRIP_UP.y));
+            Vector3f grip = RechargeAnimation.GRIP_UP;
+            return camera.getPosition().add(forward.scale(-grip.z)).subtract(left.scale(grip.x)).add(up.scale(grip.y));
         }
         double yaw = Math.toRadians(Mth.rotLerp(partialTick, player.yBodyRotO, player.yBodyRot));
         Vec3 forward = new Vec3(-Math.sin(yaw), 0.0, Math.cos(yaw));
@@ -398,14 +400,15 @@ public final class ArrivalAnimation {
         MultiBufferSource buffers = event.getMultiBufferSource();
         int light = event.getPackedLight();
         PlayerRenderer renderer = (PlayerRenderer) minecraft.getEntityRenderDispatcher().getRenderer(player);
-        Vector3f grip = new Vector3f(GRIP_DOWN).lerp(CATCH, reach(a)).lerp(GRIP_UP, hold(a));
+        Vector3f grip = new Vector3f(GRIP_DOWN).lerp(CATCH, reach(a)).lerp(RechargeAnimation.GRIP_UP, hold(a));
         RechargeAnimation.arm(pose, buffers, light, player, renderer, -1.0F, grip, LEFT_FROM);
         if (a >= Arrival.LANTERN_CAUGHT) {
             pose.pushPose();
             pose.translate(grip.x, grip.y, grip.z);
-            pose.mulPose(Axis.YP.rotationDegrees(-14.0F));
-            pose.scale(0.56F, 0.56F, 0.56F);
-            PowerLantern.draw(pose, buffers, lanternGlow(player, event.getPartialTick()), 0.0F);
+            pose.mulPose(Axis.YP.rotationDegrees(RechargeAnimation.FACING));
+            float scale = RechargeAnimation.HELD_SCALE;
+            pose.scale(scale, scale, scale);
+            PowerLantern.draw(pose, buffers, lanternGlow(player, event.getPartialTick()), 0.0F, light);
             pose.popPose();
         }
         Vector3f fist = new Vector3f(RechargeAnimation.HAND_RIGHT).lerp(FIST_UP, fistUp(a));

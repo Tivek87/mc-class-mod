@@ -29,7 +29,8 @@ import org.junit.jupiter.api.Test;
 // model's faces may be open, never clear.
 class ModelAssetsTest {
     private static final String MOD = MultiversePowers.MODID;
-    private static final Set<String> OVERLAYS = Set.of("thor/mjolnir_runes");
+    private static final Set<String> OVERLAYS = Set.of("thor/mjolnir_runes", "greenlantern/lantern_light",
+            "greenlantern/lantern_glass", "greenlantern/lantern_glass_b");
     private static final String[] SIDES = { "north", "east", "south", "west", "up", "down" };
     // How far outside an open side its points are looked for in another element, in model pixels.
     private static final double OUT = 0.05;

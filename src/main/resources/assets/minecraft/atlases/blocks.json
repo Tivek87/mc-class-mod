@@ -3,6 +3,10 @@
     {
       "type": "single",
       "resource": "welcomescreen:thor/mjolnir"
+    },
+    {
+      "type": "single",
+      "resource": "welcomescreen:greenlantern/lantern"
     }
   ]
 }

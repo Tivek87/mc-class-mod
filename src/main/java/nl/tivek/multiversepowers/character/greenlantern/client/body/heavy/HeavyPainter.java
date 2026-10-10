@@ -19,17 +19,28 @@ import nl.tivek.multiversepowers.engine.math.Vectors;
 import static nl.tivek.multiversepowers.character.greenlantern.heavy.HeavyMoves.*;
 
 // The heavy weapons drawn: each in its own frame between the hands holding it (the battleaxe's haft along +z, its
-// blades along ±y; the chainsaw's bar along +z, its top handle up +y and its teeth running round the bar), grown
+// blades along ±y; the chainsaw's bar along +z, its top handle up +y and its teeth running round the bar; the guns'
+// barrels along +z, their tops up +y, the launcher's rocket gone once fired and grown back as it reloads), grown
 // from the rear end out of the ring's light and broken into solid pieces; the light trail of each axe swing; and in the
 // world the earthbreaker's split in the ground with solid shards bursting up along it, and the whirlwind's ring.
 public final class HeavyPainter {
     // Where each hand holds each weapon, in its frame (blocks): right, then left.
     private static final Vec3[][] GRIPS = { { new Vec3(0.0, 0.0, -0.45), new Vec3(0.0, 0.0, -0.85) },
-            { new Vec3(0.0, 0.14, -0.53), new Vec3(0.0, 0.29, -0.03) } };
-    // How big each weapon is drawn: the chainsaw is a monster of a saw.
-    private static final double[] SIZE = { 1.0, 1.6 };
+            { new Vec3(0.0, 0.14, -0.53), new Vec3(0.0, 0.29, -0.03) },
+            { new Vec3(0.0, -0.172, -0.195), new Vec3(0.0, -0.145, 0.175) },
+            { new Vec3(0.0, -0.05, -0.227), new Vec3(0.0, -0.01, 0.15) } };
+    // How big each weapon is drawn.
+    private static final double[] SIZE = { 1.0, 1.1, 1.45, 0.95 };
     // How far each weapon reaches back and out along its length, for it to grow from one end to the other.
-    private static final double[][] ENDS = { { -1.0, 0.8 }, { -0.72, 0.95 } };
+    private static final double[][] ENDS = { { -1.0, 0.8 }, { -0.72, 0.95 }, { -0.91, 1.053 }, { -0.45, 0.52 } };
+    private static final Shape[] BODIES = { WeaponShapes.BATTLEAXE, WeaponShapes.CHAINSAW_BODY,
+            WeaponShapes.ROCKET_TUBE, WeaponShapes.SHOTGUN };
+    // Where the guns' shots leave them, in their frames: the launcher's mouth and its back blast, the two muzzles.
+    private static final Vec3 MOUTH = new Vec3(0.0, 0.0, 0.39);
+    private static final Vec3 BACK_BLAST = new Vec3(0.0, 0.0, -0.94);
+    private static final Vec3[] MUZZLES = { new Vec3(0.039, 0.05, 0.52), new Vec3(-0.039, 0.05, 0.52) };
+    private static final double WARHEAD_BACK = 0.338;
+    private static final double WARHEAD_TIP = 1.053;
     // The teeth round the bar at as many steps from one tooth to the next, and how fast they run (teeth a tick).
     private static final int STEPS = 8;
     private static final Shape[] TEETH = new Shape[STEPS];
@@ -89,10 +100,12 @@ public final class HeavyPainter {
     }
 
     // The weapon in `frame`: grown `formed` of the way from its rear end, or broken apart `apart` of the way; the
-    // chainsaw's teeth running at `rev` (0 idling, 1 cutting) by `time` (ticks).
+    // chainsaw's teeth running at `rev` (0 idling, 1 cutting) by `time` (ticks); a gun's shot flashing `flash` (0 to
+    // 1) and the launcher's rocket `loaded` of the way grown back.
     static void weapon(LanternPainter painter, int weapon, Frame frame, double formed, double apart, double rev,
-            double time, int seed) {
-        Shape body = weapon == AXE ? WeaponShapes.BATTLEAXE : WeaponShapes.CHAINSAW_BODY;
+            double time, int seed, double flash, double loaded) {
+        Shape body = BODIES[weapon];
+        boolean warhead = weapon == RPG && loaded > 0.0;
         Shape teeth = weapon == SAW ? TEETH[Math.floorMod((int) Math.floor(time * Mth.lerp(rev, IDLE_RUN,
                 CUT_RUN) * STEPS), STEPS)] : null;
         if (apart >= 0.0) {
@@ -101,6 +114,9 @@ public final class HeavyPainter {
                 if (teeth != null) {
                     painter.shattered(teeth, frame, apart, 1.0, seed + 1);
                 }
+                if (warhead) {
+                    painter.shattered(WeaponShapes.ROCKET_WARHEAD, frame, apart, 1.0, seed + 2);
+                }
             }
             return;
         }
@@ -108,6 +124,15 @@ public final class HeavyPainter {
             double[] ends = ENDS[weapon];
             painter.clip(frame.at(0.0, 0.0, Mth.lerp(Ease.smooth(formed), ends[0], ends[1])),
                     frame.forward().scale(-1.0), 1.0);
+        } else if (warhead && loaded < 1.0) {
+            painter.clip(frame.at(0.0, 0.0, Mth.lerp(Ease.smooth(loaded), WARHEAD_BACK, WARHEAD_TIP)),
+                    frame.forward().scale(-1.0), 1.0);
+        }
+        if (warhead) {
+            painter.shape(WeaponShapes.ROCKET_WARHEAD, frame, 1.0, 1.0);
+            if (formed >= 1.0) {
+                painter.noClip();
+            }
         }
         painter.shape(body, frame, 1.0, 1.0);
         if (teeth != null) {
@@ -116,6 +141,14 @@ public final class HeavyPainter {
         painter.noClip();
         if (weapon == SAW && rev > 0.05) {
             painter.flare(frame.at(0.0, -0.02, 0.85), 0.25 + 0.2 * rev, 0.5 * rev);
+        }
+        if (flash > 0.01 && weapon == RPG) {
+            painter.flare(frame.at(MOUTH.x, MOUTH.y, MOUTH.z), 0.2 + 0.25 * flash, flash);
+            painter.flare(frame.at(BACK_BLAST.x, BACK_BLAST.y, BACK_BLAST.z), 0.3 + 0.4 * flash, flash);
+        } else if (flash > 0.01 && weapon == SHOTGUN) {
+            for (Vec3 muzzle : MUZZLES) {
+                painter.flare(frame.at(muzzle.x, muzzle.y, muzzle.z), 0.12 + 0.18 * flash, flash);
+            }
         }
     }
 

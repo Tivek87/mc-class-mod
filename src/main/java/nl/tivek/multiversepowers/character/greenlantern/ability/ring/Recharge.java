@@ -14,20 +14,26 @@ import nl.tivek.multiversepowers.character.CharacterAbility;
 import nl.tivek.multiversepowers.character.GameCharacter;
 import nl.tivek.multiversepowers.character.greenlantern.Arrival;
 import nl.tivek.multiversepowers.character.greenlantern.PowerRing;
+import nl.tivek.multiversepowers.character.greenlantern.ability.fist.LightFists;
+import nl.tivek.multiversepowers.character.greenlantern.ability.flame.Flamethrower;
 import nl.tivek.multiversepowers.character.greenlantern.ability.flight.Flight;
+import nl.tivek.multiversepowers.character.greenlantern.ability.heavy.HeavyWeapon;
 import nl.tivek.multiversepowers.character.greenlantern.ability.light.LightBeam;
 import nl.tivek.multiversepowers.character.greenlantern.ability.light.LightDome;
 import nl.tivek.multiversepowers.character.greenlantern.ability.flight.RamCone;
+import nl.tivek.multiversepowers.character.greenlantern.ability.sword.SwordShield;
+import nl.tivek.multiversepowers.character.greenlantern.ability.whip.EnergyWhip;
+import nl.tivek.multiversepowers.character.greenlantern.construct.Construct;
 import nl.tivek.multiversepowers.engine.effect.Effect;
 import nl.tivek.multiversepowers.engine.effect.Effects;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
+import nl.tivek.multiversepowers.engine.fx.Sounds;
 
-// The ring held to the lantern's emblem: from the touch it fills little by little while the lantern hums and lights
+// The ring held to the lantern's emblem: from the touch it fills little by little while the lantern whirs up and lights
 // up, until it is full.
 public final class Recharge implements Effect {
     private static final Map<UUID, Recharge> ACTIVE = new HashMap<>();
-    // Ticks (at the recharge's own pace) between the lantern's hums.
-    private static final double HUM = 12.0;
+    private static final SoundEvent CHARGE = Sounds.of("lantern.charge");
 
     private final ServerPlayer owner;
     private final float restore;
@@ -56,10 +62,16 @@ public final class Recharge implements Effect {
             PowerRing.tell(owner, "full");
             return false;
         }
-        // Both hands are needed for the lantern: whatever the mouse held up or poured out stops.
+        // Both hands are needed for the lantern: whatever the mouse held up or poured out stops, and a weapon or the
+        // fists are put away.
         LightBeam.stop(owner);
         RamCone.stop(owner);
         LightDome.lower(owner);
+        SwordShield.hold(owner, Construct.NONE);
+        Flamethrower.hold(owner, Construct.NONE);
+        EnergyWhip.hold(owner, Construct.NONE);
+        HeavyWeapon.hold(owner, Construct.NONE);
+        LightFists.putAway(owner, level);
         Recharge lantern = new Recharge(owner, (float) ability.value("powerRestored"), 1, 1);
         ACTIVE.put(owner.getUUID(), lantern);
         Effects.start(level, lantern);
@@ -114,10 +126,6 @@ public final class Recharge implements Effect {
         if (filled > 0.0) {
             PowerRing.setPower(this.owner, PowerRing.power(this.owner) + (float) (this.restore * filled));
         }
-        if (moment >= PowerRing.RECHARGE_HIT && moment < PowerRing.RECHARGE_BACK
-                && (int) (moment / HUM) != (int) (before / HUM)) {
-            this.sound(level, SoundEvents.BEACON_AMBIENT, 1.4F, 1.3F);
-        }
         if (before < PowerRing.RECHARGE_BACK && moment >= PowerRing.RECHARGE_BACK) {
             this.full(level);
         }
@@ -134,10 +142,10 @@ public final class Recharge implements Effect {
                 1.0);
     }
 
-    // The ring touches the emblem: the lantern starts to hum.
+    // The ring touches the emblem: the lantern whirs up, its sound made as long as the charge takes at this pace.
     private void touch(ServerLevel level) {
-        this.sound(level, SoundEvents.BEACON_ACTIVATE, 1.0F, 1.2F);
-        this.sound(level, SoundEvents.AMETHYST_BLOCK_RESONATE, 0.8F, 0.8F);
+        this.sound(level, SoundEvents.BEACON_ACTIVATE, 0.8F, 1.2F);
+        this.sound(level, CHARGE, 1.0F, Mth.clamp((float) this.made / this.played, 0.5F, 2.0F));
     }
 
     // Full: a soft flash of green in the lantern and the ring ready.

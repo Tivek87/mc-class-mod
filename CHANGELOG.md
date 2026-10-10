@@ -9,19 +9,27 @@ the sections before 0.0.1-alpha came before versions were numbered.
 - **Green Lantern:** **Construct Fists**: left click with empty hands throws a ten-hit combo in gloves of hard light;
   hold for one of four heavy blows with a giant fist.
 - **Green Lantern:** **Battleaxe** in the Construct Wheel: three chops, the Earthbreaker leap that splits the ground,
-  a hook that drags a creature to you, and a whirlwind.
+  a hook that drags a creature to you, and a whirlwind held up to 5 seconds.
 - **Green Lantern:** **Heavy Chainsaw** in the Construct Wheel: slashes that slow, a grinding rend, an impale that
   throws the creature off, and a guard that grinds blows and shots away.
+- **Green Lantern:** **Rocket Launcher** in the Construct Wheel: a rocket that bursts, a cluster rocket whose bomblets
+  seek out foes, a blast jump and a guided rocket you steer with your crosshair.
+- **Green Lantern:** **Sawed-off Shotgun** in the Construct Wheel: buckshot, both barrels at once, a bash and a guard
+  that deflects blows.
 - **Green Lantern:** the mech's left-click combo has six new blows: jab, hook, uppercut, knee, a clap blast and a
   ground pound.
-- **Escape game:** caught in Green Lantern's cage or Thor's grab, a player clicks in time on a bar to break free.
+- **Escape game:** caught in Green Lantern's cage or Thor's grab, a player clicks in time on a bar to break free; a
+  host or operator tries it with `/escapegame cage` or `/escapegame grab`.
 - **Hard-Light Helpers** also come wild: from their spawn egg in the new Multiverse Powers creative tab, they fight
   monsters on their own.
-- **Crosshairs:** Green Lantern, Thor and Doctor Octopus each have a crosshair of their own.
+- **Crosshairs:** Green Lantern, Thor and Doctor Octopus each have a crosshair of their own that moves with what
+  happens: it widens as you strike or run, closes in on a creature in its colour, flashes as a blow lands, and the
+  kill's red cross sits round it.
 - **Green Lantern:** the snapping Giant Hand is an Infinity Gauntlet of hard light: its six stones glow as it presses,
   and the snap sends a thin ring of hard light 8 blocks out, two fainter rings behind it, that strikes and throws hard.
 - **Thor:** hold C in flight to come down faster; press space twice in flight to drop out of it.
-- **Green Lantern's settings:** the fists', the battleaxe's and the chainsaw's damage, reach and cost; the mech blows'
+- **Green Lantern's settings:** the fists', the battleaxe's, the chainsaw's, the rocket launcher's and the shotgun's
+  damage, reach and cost; the mech blows'
   damage and the pilot's health in the mech.
 
 ### Changed
@@ -35,10 +43,13 @@ the sections before 0.0.1-alpha came before versions were numbered.
 - **Green Lantern:** the mech's missiles have crystal warheads, and the eye beam fires while the missile arm is up.
 - **Green Lantern:** for the mech's flamethrower the hand sinks into the wrist and a barrel slides out.
 - **Green Lantern:** a creature the Beam kills burns to ash.
-- **Green Lantern:** the Power Battery looks like the comics' lantern: a gold ring on top, gold and stone bands, ribbed
-  green glass, two gold hoops and the emblem.
-- **Green Lantern:** to recharge you press the ring to the lantern's emblem: the lantern lights up and the ring fills
-  little by little.
+- **Green Lantern:** the Power Battery is a model in the game's own style, shaped like the comics' lantern: a gold ring
+  on top, gold and stone bands, ribbed green glass, two gold hoops and the emblem.
+- **Green Lantern:** to recharge you press the ring to the lantern's side: the lantern forms out of the ring's light,
+  whirs and crackles as its glass lights up, and the ring fills all the way; a weapon or the fists are put away first.
+- **Green Lantern:** one hand at a time: while a fist blow, the Beam, the Giant Hands, the Air Strike or a slam is
+  going, every other move of the hands waits, and no punch while a bolt leaves the ring.
+- **Green Lantern:** the flamethrower's heat gauge is only its filling half circle, without the heat in numbers.
 - **Thor:** the Lightning Bomb is about 35% faster.
 - **Thor:** the Storm Bolt no longer leaves a ring of light.
 
@@ -51,6 +62,8 @@ the sections before 0.0.1-alpha came before versions were numbered.
 - **Green Lantern:** the ability panel left some moves out.
 - **Green Lantern:** giant fists and helpers were not drawn while no other construct was out.
 - **Hard-Light Helpers** called up with a command now rise out of the ground with their full health.
+- A creature worn down by blows no longer folds over at the waist like a broken body.
+- **Doctor Octopus:** knocked down or caught, he could still climb, place blocks and throw.
 
 ## [0.7.9-alpha] - 2026-10-10
 

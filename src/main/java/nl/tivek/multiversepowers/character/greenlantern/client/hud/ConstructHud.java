@@ -111,7 +111,7 @@ public final class ConstructHud {
         boolean flame = FlameArms.holding();
         boolean beam = !flame && !SwordArms.holding() && !WhipArms.holding() && ClientHeavy.holding() < 0;
         // The gauge first: its band and its words keep their place, and the rings and words after it keep off them.
-        boolean drawn = flame && HeatGauge.render(graphics, middleX, middleY, partialTick, labels);
+        boolean drawn = flame && HeatGauge.render(graphics, middleX, middleY, partialTick);
         CharacterAbility bolt = GameCharacter.GREEN_LANTERN.byName("light_bolt");
         if (beam && bolt != null) {
             drawn |= BeamGauge.render(graphics, minecraft.player, bolt, middleX, middleY, partialTick, labels);
@@ -265,7 +265,7 @@ public final class ConstructHud {
                     : "spinning_shield"));
         }
         String weapon = LanternPanel.weapon();
-        if (FlameArms.holding() || "battleaxe".equals(weapon) || "chainsaw".equals(weapon)) {
+        if (weapon != null) {
             return Component.translatable("screen." + MultiversePowers.MODID + ".move." + weapon + "."
                     + (ability.input() == CharacterAbility.Input.LEFT ? "attack_hold" : "defend_hold"));
         }

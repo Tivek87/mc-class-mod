@@ -19,22 +19,21 @@ import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
 // How worn down by blows each creature near is (the server tells, Fatigue), and a person's pose for it: the more worn,
-// the lower it sags at the hips with its knees bent deeper, the further it hunches over and hangs its head, and the
-// wider its arms hang, swaying a little where it stands.
+// the further it hangs its head and hunches over from the hips, the wider its arms hang and the more it sways, with its
+// knees only a little bent. A blocky body folded at the waist or deep at the knees looks broken, not tired.
 @EventBusSubscriber(modid = MultiversePowers.MODID, value = Dist.CLIENT)
 public final class Tired {
     // The share of the way to how worn the server says it is that the pose goes each tick.
     private static final float FOLLOW = 0.2F;
-    // Fully worn (all of Fatigue.HITS): the hips this much lower (pixels) and back, the hunch and the bow at the waist,
-    // the head hung and the arms out (radians), and the sway. The sole stays flat, so a little sag bends the knees a
-    // lot: 0.8 is about 45 degrees.
-    private static final float SAG = 0.8F;
-    private static final float HIPS_BACK = 0.6F;
-    private static final float HUNCH = 0.32F;
-    private static final float BOW = 0.22F;
-    private static final float HEAD_DOWN = 0.35F;
-    private static final float ARMS_OUT = 0.16F;
-    private static final float SWAY = 0.07F;
+    // Fully worn (all of Fatigue.HITS): the hips this much lower (pixels) and back, the hunch from the hips, the head
+    // hung and the arms out (radians), and the sway. The sole stays flat, so a little sag bends the knees a lot: 0.8 is
+    // about 45 degrees, 0.2 about 20.
+    private static final float SAG = 0.2F;
+    private static final float HIPS_BACK = 0.2F;
+    private static final float HUNCH = 0.2F;
+    private static final float HEAD_DOWN = 0.4F;
+    private static final float ARMS_OUT = 0.14F;
+    private static final float SWAY = 0.06F;
     private static final Vector3f KNEE = new Vector3f(0.0F, 0.0F, -1.0F);
 
     // Per creature: how worn the server says it is, and how worn it is shown now and the tick before.
@@ -99,7 +98,7 @@ public final class Tired {
         float time = entity.tickCount + partialTick + entity.getId() * 7.0F;
         float sway = (float) (Math.sin(time * 0.09) * 0.6 + Math.sin(time * 0.23) * 0.4) * SWAY * worn;
         LEAN.rotationX(HUNCH * worn).rotateZ(sway);
-        WAIST.rotationX(BOW * worn);
+        WAIST.identity();
         HIPS.set(0.0F, Stance.HIP_Y + SAG * worn, HIPS_BACK * worn);
         Stance.trunk(person, HIPS, LEAN, WAIST);
         Stance.leg(person, true, RIGHT, KNEE);

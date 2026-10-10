@@ -175,7 +175,13 @@ public final class ClientPayloadHandler {
     }
 
     public static void handleKillConfirm(KillConfirmPayload payload, IPayloadContext context) {
-        context.enqueueWork(KillMarker::confirm);
+        context.enqueueWork(() -> {
+            if (payload.kill()) {
+                KillMarker.confirm();
+            } else {
+                KillMarker.hit();
+            }
+        });
     }
 
     public static void handleTestFight(TestFightPayload payload, IPayloadContext context) {

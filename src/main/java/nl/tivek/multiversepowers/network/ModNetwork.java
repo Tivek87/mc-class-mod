@@ -22,6 +22,7 @@ import nl.tivek.multiversepowers.character.docock.portal.PortalPayload;
 import nl.tivek.multiversepowers.character.greenlantern.RingPayload;
 import nl.tivek.multiversepowers.character.greenlantern.ability.flame.Flamethrower;
 import nl.tivek.multiversepowers.character.greenlantern.ability.mech.MechAssembly;
+import nl.tivek.multiversepowers.character.greenlantern.ability.ring.Recharge;
 import nl.tivek.multiversepowers.character.greenlantern.ability.slam.LandingSlam;
 import nl.tivek.multiversepowers.character.greenlantern.ability.sword.SwordShield;
 import nl.tivek.multiversepowers.character.greenlantern.ability.fist.LightFists;
@@ -61,6 +62,7 @@ import nl.tivek.multiversepowers.engine.entity.DeathStylePayload;
 import nl.tivek.multiversepowers.engine.entity.FatiguePayload;
 import nl.tivek.multiversepowers.engine.entity.HeldPayload;
 import nl.tivek.multiversepowers.engine.entity.KnockdownPayload;
+import nl.tivek.multiversepowers.engine.entity.PlayerKnockdowns;
 import nl.tivek.multiversepowers.engine.fx.ParticlesPayload;
 import nl.tivek.multiversepowers.engine.fx.VoicePayload;
 import nl.tivek.multiversepowers.faction.StandingsPayload;
@@ -171,7 +173,8 @@ public final class ModNetwork {
         context.enqueueWork(() -> {
             if (context.player() instanceof ServerPlayer serverPlayer) {
                 Construct picked = Construct.byIndex(payload.construct());
-                Construct construct = picked.shut(Flight.flying(serverPlayer)) ? Construct.NONE : picked;
+                Construct construct = picked.shut(Flight.flying(serverPlayer)) || Recharge.busy(serverPlayer)
+                        ? Construct.NONE : picked;
                 SwordShield.hold(serverPlayer, construct);
                 Flamethrower.hold(serverPlayer, construct);
                 EnergyWhip.hold(serverPlayer, construct);
@@ -199,13 +202,20 @@ public final class ModNetwork {
                 return;
             }
             if (payload.action() == AbilityActionPayload.CLIMB) {
-                OctopusArms.climb(serverPlayer, payload.on(), payload.data());
+                OctopusArms.climb(serverPlayer, payload.on() && free(serverPlayer), payload.data());
             } else if (payload.action() == AbilityActionPayload.PLACE) {
-                OctopusArms.placeBlocks(serverPlayer);
+                if (free(serverPlayer)) {
+                    OctopusArms.placeBlocks(serverPlayer);
+                }
             } else {
                 Characters.action(serverPlayer, payload.action(), payload.on(), payload.data());
             }
         });
+    }
+
+    // Knocked down or held captive, a player starts nothing (as Characters.action refuses them too).
+    private static boolean free(ServerPlayer player) {
+        return player.isAlive() && !player.isSpectator() && !PlayerKnockdowns.isDown(player) && !Captives.held(player);
     }
 
     private static void onCharacterState(CharacterStatePayload payload, IPayloadContext context) {
@@ -326,7 +336,7 @@ public final class ModNetwork {
 
     private static void onThrowGrab(ThrowGrabPayload payload, IPayloadContext context) {
         context.enqueueWork(() -> {
-            if (context.player() instanceof ServerPlayer serverPlayer) {
+            if (context.player() instanceof ServerPlayer serverPlayer && free(serverPlayer)) {
                 OctopusArms.throwHeld(serverPlayer);
             }
         });

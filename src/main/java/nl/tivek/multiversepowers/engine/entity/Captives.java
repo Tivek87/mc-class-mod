@@ -1,5 +1,6 @@
 package nl.tivek.multiversepowers.engine.entity;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -7,6 +8,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 import nl.tivek.multiversepowers.MultiversePowers;
 
@@ -20,7 +22,17 @@ public final class Captives {
         void escaped(ServerPlayer captive);
     }
 
-    private record Hold(int game, Escape escape) {
+    // `fastest`: ticks no honest game can be won in. A win told sooner (a changed client) waits until then.
+    private static final class Hold {
+        final Escape escape;
+        final int fastest;
+        int age;
+        boolean won;
+
+        Hold(Escape escape, int fastest) {
+            this.escape = escape;
+            this.fastest = fastest;
+        }
     }
 
     private static final Map<UUID, Hold> HELD = new HashMap<>();
@@ -28,8 +40,8 @@ public final class Captives {
     private Captives() {
     }
 
-    public static void hold(ServerPlayer captive, int game, Escape escape) {
-        HELD.put(captive.getUUID(), new Hold(game, escape));
+    public static void hold(ServerPlayer captive, int game, int fastest, Escape escape) {
+        HELD.put(captive.getUUID(), new Hold(escape, fastest));
         PacketDistributor.sendToPlayer(captive, new CaptivePayload(game));
     }
 
@@ -45,12 +57,37 @@ public final class Captives {
 
     // The captive's game says they won.
     public static void escaped(ServerPlayer captive) {
-        Hold hold = HELD.remove(captive.getUUID());
+        Hold hold = HELD.get(captive.getUUID());
         if (hold == null) {
             return;
         }
+        hold.won = true;
+        if (hold.age >= hold.fastest) {
+            free(captive, hold);
+        }
+    }
+
+    private static void free(ServerPlayer captive, Hold hold) {
+        HELD.remove(captive.getUUID());
         PacketDistributor.sendToPlayer(captive, new CaptivePayload(0));
-        hold.escape().escaped(captive);
+        hold.escape.escaped(captive);
+    }
+
+    @SubscribeEvent
+    public static void onServerTick(ServerTickEvent.Post event) {
+        if (HELD.isEmpty()) {
+            return;
+        }
+        for (Map.Entry<UUID, Hold> entry : new ArrayList<>(HELD.entrySet())) {
+            Hold hold = entry.getValue();
+            hold.age++;
+            ServerPlayer captive = event.getServer().getPlayerList().getPlayer(entry.getKey());
+            if (captive == null) {
+                HELD.remove(entry.getKey());
+            } else if (hold.won && hold.age >= hold.fastest) {
+                free(captive, hold);
+            }
+        }
     }
 
     @SubscribeEvent

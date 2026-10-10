@@ -41,7 +41,8 @@ public final class HeavyLayer extends RenderLayer<AbstractClientPlayer, PlayerMo
         Frame frame = held.frame;
         LanternPainter painter = LanternPainter.hand(pose, ageInTicks);
         HeavyPainter.weapon(painter, held.weapon, frame, held.formed(partialTick), held.apart(partialTick),
-                HeavyPoses.revving(held, partialTick), ClientHeavy.now(partialTick), player.getId());
+                HeavyPoses.revving(held, partialTick), ClientHeavy.now(partialTick), player.getId(),
+                HeavyPoses.flash(held, partialTick), HeavyPoses.loaded(held, partialTick));
         HeavyPainter.trail(painter, back -> HeavyArms.past(held, partialTick, back),
                 HeavyPainter.trailing(held, partialTick));
         painter.finish(Minecraft.getInstance().renderBuffers().bufferSource());

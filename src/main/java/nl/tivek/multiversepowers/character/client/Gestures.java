@@ -42,6 +42,7 @@ final class Gestures {
     private static final Map<GameCharacter, Predicate<LocalPlayer>> FLYING = new EnumMap<>(GameCharacter.class);
     private static final Map<GameCharacter, ToIntFunction<LocalPlayer>> STATES = new EnumMap<>(GameCharacter.class);
     private static final Map<GameCharacter, Predicate<LocalPlayer>> MOUSE_FREE = new EnumMap<>(GameCharacter.class);
+    private static final Map<GameCharacter, Predicate<LocalPlayer>> ONE_BUTTON = new EnumMap<>(GameCharacter.class);
     private static final Map<CharacterAbility, Predicate<LocalPlayer>> GATES = new HashMap<>();
     private static final Map<CharacterAbility, ToIntFunction<LocalPlayer>> HOLD_TIMES = new HashMap<>();
 
@@ -193,7 +194,8 @@ final class Gestures {
             return;
         }
         boolean ours = takesMouse(player) && !handBusy(player, now, input);
-        boolean free = ours && inGame(minecraft) && !StaminaClient.isExhausted();
+        boolean free = ours && inGame(minecraft) && !StaminaClient.isExhausted() && !otherButton(player, now, channel)
+                && (click == null || allowed(click, player)) && (hold == null || allowed(hold, player));
         boolean down = free && key.isDown();
         MouseHold.Step step = MouseHold.tick(channel, holdTicks(hold, player), tapMode(click, hold), down, !free);
         CharacterAbility one = click != null ? click : hold;
@@ -368,6 +370,20 @@ final class Gestures {
 
     static void mouseFree(GameCharacter character, Predicate<LocalPlayer> free) {
         MOUSE_FREE.put(character, free);
+    }
+
+    static void oneButton(GameCharacter character, Predicate<LocalPlayer> one) {
+        ONE_BUTTON.put(character, one);
+    }
+
+    // Where its character says so, a mouse button waits while the other one is down: the first one pressed wins.
+    private static boolean otherButton(LocalPlayer player, GameCharacter now, int channel) {
+        if (channel != MouseHold.LEFT && channel != MouseHold.RIGHT) {
+            return false;
+        }
+        Predicate<LocalPlayer> one = ONE_BUTTON.get(now);
+        return one != null && one.test(player)
+                && MouseHold.down(channel == MouseHold.LEFT ? MouseHold.RIGHT : MouseHold.LEFT);
     }
 
     private static boolean handBusy(LocalPlayer player, GameCharacter now, CharacterAbility.Input button) {

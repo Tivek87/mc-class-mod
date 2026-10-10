@@ -20,6 +20,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import nl.tivek.multiversepowers.character.CharacterAbility;
 import nl.tivek.multiversepowers.character.greenlantern.PowerRing;
 import nl.tivek.multiversepowers.character.greenlantern.ability.ring.Recharge;
+import nl.tivek.multiversepowers.character.greenlantern.ability.ring.RingHands;
 import nl.tivek.multiversepowers.character.greenlantern.construct.ConstructPayload;
 import nl.tivek.multiversepowers.character.greenlantern.express.ExpressScript;
 import nl.tivek.multiversepowers.engine.effect.Effects;
@@ -82,6 +83,9 @@ public final class EmeraldExpress extends ExpressRoute {
         }
         if (Recharge.busy(owner)) {
             PowerRing.tell(owner, "busy_lantern");
+            return false;
+        }
+        if (RingHands.refuse(owner, RingHands.Move.OTHER)) {
             return false;
         }
         float cost = (float) ability.value("powerCost");

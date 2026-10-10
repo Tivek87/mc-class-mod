@@ -25,11 +25,9 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.character.CharacterAbility;
 import nl.tivek.multiversepowers.character.greenlantern.PowerRing;
-import nl.tivek.multiversepowers.character.greenlantern.ability.airstrike.AirStrike;
 import nl.tivek.multiversepowers.character.greenlantern.ability.flight.Flight;
-import nl.tivek.multiversepowers.character.greenlantern.ability.flight.RamCone;
-import nl.tivek.multiversepowers.character.greenlantern.ability.hands.GiantHands;
 import nl.tivek.multiversepowers.character.greenlantern.ability.ring.Recharge;
+import nl.tivek.multiversepowers.character.greenlantern.ability.ring.RingHands;
 import nl.tivek.multiversepowers.character.greenlantern.construct.ConstructPayload;
 import nl.tivek.multiversepowers.engine.effect.Effect;
 import nl.tivek.multiversepowers.engine.effect.Effects;
@@ -191,7 +189,8 @@ public final class LightBeam implements Effect {
     static boolean start(ServerPlayer owner, ServerLevel level, CharacterAbility ability) {
         Integer since = CHARGING.remove(owner.getUUID());
         boolean charged = since != null;
-        boolean ready = charged && owner.server.getTickCount() - since >= ability.holdTicks() * GATHER_SEEN;
+        // The bolt fires as the button is let go, so a hold usually comes with no bolt before it to time it by.
+        boolean ready = !charged || owner.server.getTickCount() - since >= ability.holdTicks() * GATHER_SEEN;
         if (!ready || FIRING.containsKey(owner.getUUID()) || handsFull(owner) || Flight.descending(owner)) {
             if (charged) {
                 PowerRing.sync(owner);
@@ -292,13 +291,10 @@ public final class LightBeam implements Effect {
         return FIRING.containsKey(player.getUUID());
     }
 
-    // Bolt and beam leave the ring whenever at least one hand is free.
+    // Bolt and beam wait while his hands are in another move (RingHands) or he is still rising into flight.
     static boolean handsFull(ServerPlayer player) {
-        if (Recharge.busy(player) || Flight.flying(player) && Flight.ticks(player) < Flight.ARISE_TICKS) {
-            return true;
-        }
-        boolean ringHand = GiantHands.waving(player) || AirStrike.calling(player);
-        return ringHand && (RamCone.up(player) || LightDome.up(player));
+        return Recharge.busy(player) || RingHands.busy(player, RingHands.Move.BEAM)
+                || Flight.flying(player) && Flight.ticks(player) < Flight.ARISE_TICKS;
     }
 
     public static void clear() {

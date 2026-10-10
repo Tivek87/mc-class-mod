@@ -169,6 +169,11 @@ public final class ClientCharacter {
         Gestures.mouseFree(character, free);
     }
 
+    // A character whose two mouse buttons must not act at once (one move per hand at a time) says when.
+    public static void oneButton(GameCharacter character, Predicate<LocalPlayer> one) {
+        Gestures.oneButton(character, one);
+    }
+
     // A character whose gestures change in flight says here when it flies.
     public static void flying(GameCharacter character, Predicate<LocalPlayer> flying) {
         Gestures.flying(character, flying);

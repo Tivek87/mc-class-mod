@@ -80,6 +80,12 @@ public final class ClientFists {
         return view;
     }
 
+    // Whether this entity's fists are in a blow now (its guard after it not counted).
+    public static boolean striking(Entity entity) {
+        View view = view(entity);
+        return view != null && view.age(0.0F) < FistMoves.length(view.move());
+    }
+
     // Every view still about; one whose owner went out of sight is dropped here once its time is up.
     static Map<Integer, View> all() {
         VIEWS.values().removeIf(view -> view.age(0.0F) < -1.0 || view.apart(0.0F) >= 1.0);

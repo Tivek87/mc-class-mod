@@ -19,7 +19,7 @@ import org.joml.Vector3f;
 // leaves where his hands really are on it, for the weapon to be drawn between them.
 public final class ClientHeavy {
     // Ticks the weapon takes to grow out of the ring's light.
-    static final double FORM = 8.0;
+    static final double FORM = 10.0;
     // Without a word from the server this long, a weapon is taken to be gone.
     private static final double STALE = 70.0;
     // A pick the server has not answered this long is taken as refused.
@@ -100,7 +100,7 @@ public final class ClientHeavy {
             held.move = move;
             held.start = now - age;
             HELD.put(owner, held);
-        } else if (held.move != move || Math.abs(held.start - (now - age)) > 3.0) {
+        } else if (held.move != move || move != HeavyMoves.IDLE && Math.abs(held.start - (now - age)) > 3.0) {
             boolean fresh = held.move != move;
             if (fresh) {
                 held.last = held.move;
@@ -139,8 +139,13 @@ public final class ClientHeavy {
     }
 
     public static int weaponOf(Construct construct) {
-        return construct == Construct.BATTLEAXE ? HeavyMoves.AXE
-                : construct == Construct.CHAINSAW ? HeavyMoves.SAW : -1;
+        return switch (construct) {
+            case BATTLEAXE -> HeavyMoves.AXE;
+            case CHAINSAW -> HeavyMoves.SAW;
+            case ROCKET_LAUNCHER -> HeavyMoves.RPG;
+            case SHOTGUN -> HeavyMoves.SHOTGUN;
+            default -> -1;
+        };
     }
 
     // The own player took this from the wheel.

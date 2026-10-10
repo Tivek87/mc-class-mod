@@ -20,9 +20,11 @@ import net.neoforged.neoforge.client.event.MovementInputUpdateEvent;
 import net.neoforged.neoforge.client.event.RenderHandEvent;
 import net.neoforged.neoforge.client.event.ViewportEvent;
 import nl.tivek.multiversepowers.MultiversePowers;
+import nl.tivek.multiversepowers.character.greenlantern.client.ClientRing;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.fist.ClientFists;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.sword.SwordFirstPerson;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.LanternPainter;
+import nl.tivek.multiversepowers.engine.client.pose.Gait;
 import nl.tivek.multiversepowers.engine.client.pose.Stance;
 import nl.tivek.multiversepowers.engine.client.render.ConstructPainter.Frame;
 import nl.tivek.multiversepowers.engine.client.render.entity.EntityPass;
@@ -51,15 +53,21 @@ public final class HeavyArms {
     private static final float VIEW_Y = 0.85F;
     private static final float VIEW_UP = 0.03F;
     private static final float VIEW_IN = -0.26F;
-    private static final double VIEW_SIZE = 0.85;
+    private static final double[] VIEW_SIZE = { 0.85, 1.05, 0.85, 1.3 };
     private static final double VIEW_TOP = -0.12;
-    private static final double VIEW_NEAR = -0.62;
-    // The chainsaw, held low with its bar straight ahead, is lifted into sight, moved right and turned across a
-    // little, so his hands do not hide it.
-    private static final double[] VIEW_LIFT = { 0.0, 0.2 };
+    private static final double[] VIEW_NEAR = { -0.62, -1.35, -1.3, -1.2 };
+    // The chainsaw, the launcher and the shotgun are held out further on the right and raised a little; the chainsaw is
+    // turned in and rolled to show its bar (seen straight from behind, his hands would hide it), the guns stay upright
+    // and point ahead.
+    private static final double[] VIEW_LIFT = { 0.0, 0.24, 0.02, 0.08 };
     private static final double WHIRL_SEEN = 0.75;
-    private static final double[] VIEW_SIDE = { 0.0, 0.16 };
-    private static final float[] VIEW_TURN = { 0.0F, 0.4F };
+    private static final double[] VIEW_SIDE = { 0.0, 0.33, 0.2, 0.28 };
+    private static final float[] VIEW_TURN = { 0.0F, 1.05F, 0.0F, 0.0F };
+    private static final float[] VIEW_RAISE = { 0.0F, 0.45F, 0.05F, 0.05F };
+    private static final float[] VIEW_ROLL = { 0.0F, -1.0F, 0.0F, 0.0F };
+    // How far ahead a gun's barrel meets the crosshair's line.
+    private static final double AIM_AT = 16.0;
+    private static final HeavyPoses.Pose AIM_REST = new HeavyPoses.Pose();
     private static final Vector3f REST_FROM = new Vector3f(0.75F, -1.1F, -0.15F);
 
     private HeavyArms() {
@@ -75,19 +83,24 @@ public final class HeavyArms {
             return false;
         }
         float partialTick = Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(false);
-        HeavyPoses.Pose pose = HeavyPoses.of(held, partialTick);
+        HeavyPoses.Pose pose = HeavyPoses.of(held, Gait.of(entity, partialTick), partialTick);
         if (pose.weight < 1.0E-3F) {
             held.posed = held.posed && held.brokeAt >= 0.0;
             return false;
         }
         float w = pose.weight;
+        // In flight his flying pose keeps his legs and lean: only the trunk's turn and the arms are the weapon's.
+        boolean flying = ClientRing.flight(entity, partialTick) >= 0.0F;
+        float body = flying ? 0.0F : w;
         Vector3f[] feet = { Stance.foot(model, true, new Vector3f()), Stance.foot(model, false, new Vector3f()) };
-        HIPS.set(0.0F, Stance.HIP_Y + pose.drop * w, 0.0F);
-        LEAN.rotationZYX(pose.roll * 0.6F * w, pose.twist * 0.4F * w, pose.pitch * w);
-        WAIST.rotationZYX(pose.roll * 0.4F * w, pose.twist * 0.6F * w, 0.0F);
+        HIPS.set(0.0F, Stance.HIP_Y + pose.drop * body, 0.0F);
+        LEAN.rotationZYX(pose.roll * 0.6F * body, pose.twist * 0.4F * w, pose.pitch * body);
+        WAIST.rotationZYX(pose.roll * 0.4F * body, pose.twist * 0.6F * w, 0.0F);
         Stance.trunk(model, HIPS, LEAN, WAIST);
-        for (int side = 0; side < 2; side++) {
-            Stance.leg(model, side == 0, feet[side], KNEE);
+        if (!flying) {
+            for (int side = 0; side < 2; side++) {
+                Stance.leg(model, side == 0, feet[side], KNEE);
+            }
         }
         Stance.neck(NECK);
         Stance.chest(CHEST);
@@ -160,7 +173,8 @@ public final class HeavyArms {
             return;
         }
         float partialTick = event.getPartialTick();
-        HeavyPoses.Pose pose = HeavyPoses.of(held, partialTick);
+        // The game's own view bobbing already sways the view: only half the carry on top.
+        HeavyPoses.Pose pose = HeavyPoses.of(held, Gait.of(player, partialTick).scaled(0.5F), partialTick);
         double apart = held.apart(partialTick);
         if (pose.weight < 1.0E-3F && apart < 0.0) {
             return;
@@ -174,6 +188,16 @@ public final class HeavyArms {
         Frame frame = viewFrame(held.weapon, pose, time, turn);
         PoseStack stack = event.getPoseStack();
         PlayerRenderer renderer = (PlayerRenderer) minecraft.getEntityRenderDispatcher().getRenderer(player);
+        // The weapon first, its arms after: its light writes no depth, so arms drawn before it would show it through them.
+        LanternPainter painter = LanternPainter.hand(stack, player.tickCount + partialTick);
+        HeavyPainter.weapon(painter, held.weapon, frame, held.formed(partialTick), apart,
+                HeavyPoses.revving(held, partialTick), time, player.getId(), HeavyPoses.flash(held, partialTick),
+                HeavyPoses.loaded(held, partialTick));
+        HeavyPainter.trail(painter, back -> {
+            HeavyPoses.at(held.weapon, held.move, held.age(partialTick) - back, PAST);
+            return viewFrame(held.weapon, PAST, time, turn);
+        }, HeavyPainter.trailing(held, partialTick));
+        painter.finish(minecraft.renderBuffers().bufferSource());
         float w = pose.weight;
         for (int side = 0; side < 2; side++) {
             float sign = side == 0 ? 1.0F : -1.0F;
@@ -184,18 +208,56 @@ public final class HeavyArms {
             FirstPersonArm.arm(stack, event.getMultiBufferSource(), event.getPackedLight(), player, renderer, sign,
                     hand, new Vector3f(REST_FROM.x * sign, REST_FROM.y, REST_FROM.z));
         }
-        LanternPainter painter = LanternPainter.hand(stack, player.tickCount + partialTick);
-        HeavyPainter.weapon(painter, held.weapon, frame, held.formed(partialTick), apart,
-                HeavyPoses.revving(held, partialTick), time, player.getId());
-        HeavyPainter.trail(painter, back -> {
-            HeavyPoses.at(held.weapon, held.move, held.age(partialTick) - back, PAST);
-            return viewFrame(held.weapon, PAST, time, turn);
-        }, HeavyPainter.trailing(held, partialTick));
-        painter.finish(minecraft.renderBuffers().bufferSource());
     }
 
-    // The weapon in his own view: the pose's chest frame turned as his trunk turns, then laid out before his eyes.
+    // The weapon in his own view: the pose's chest frame turned as his trunk turns, then laid out before his eyes; a gun
+    // turned so that at rest its barrel points at the crosshair.
     private static Frame viewFrame(int weapon, HeavyPoses.Pose pose, float time, float turn) {
+        Vec3[] seen = seen(weapon, pose, time, turn);
+        Vec3 way = seen[1];
+        Vec3 up = seen[2];
+        if (gun(weapon)) {
+            Quaternionf aim = aimed(weapon, pose);
+            way = turned(aim, way);
+            up = turned(aim, up);
+        }
+        return HeavyPainter.placed(weapon, seen[0], way, up, VIEW_SIZE[weapon] * HeavyPainter.size(weapon));
+    }
+
+    // The turn that brings a gun's way onto the crosshair: worked out for it at rest and held up to fire, and taken
+    // between the two by how far the pose has come from the one to the other, so the barrel stays on it in both.
+    private static Quaternionf aimed(int weapon, HeavyPoses.Pose pose) {
+        HeavyKeys.Key rest = HeavyKeys.rest(weapon);
+        HeavyKeys.Key up = HeavyKeys.aimed(weapon);
+        float az = up.az() - rest.az();
+        float el = up.el() - rest.el();
+        float toward = Mth.clamp(((pose.az - rest.az()) * az + (pose.el - rest.el()) * el)
+                / Math.max(1.0E-6F, az * az + el * el), 0.0F, 1.0F);
+        return aimedFrom(weapon, rest).slerp(aimedFrom(weapon, up), toward);
+    }
+
+    // The turn that brings a gun held by that key onto the crosshair, kept upright: about the vertical, then lifted.
+    private static Quaternionf aimedFrom(int weapon, HeavyKeys.Key key) {
+        AIM_REST.set(key);
+        Vec3[] rest = seen(weapon, AIM_REST, 0.0F, 0.0F);
+        Vec3 aim = new Vec3(0.0, 0.0, -AIM_AT).subtract(rest[0]).normalize();
+        Vec3 way = rest[1].normalize();
+        double heading = Math.atan2(aim.x, aim.z);
+        Quaternionf turn = new Quaternionf().rotationY((float) (heading - Math.atan2(way.x, way.z)));
+        Vec3 turned = turned(turn, way);
+        float lift = (float) (Math.atan2(aim.y, Math.hypot(aim.x, aim.z))
+                - Math.atan2(turned.y, Math.hypot(turned.x, turned.z)));
+        return new Quaternionf().rotationAxis(lift, (float) -Math.cos(heading), 0.0F, (float) Math.sin(heading))
+                .mul(turn);
+    }
+
+    private static Vec3 turned(Quaternionf turn, Vec3 v) {
+        Vector3f out = turn.transform(new Vector3f((float) v.x, (float) v.y, (float) v.z));
+        return new Vec3(out.x, out.y, out.z);
+    }
+
+    // Where the weapon is seen and which ways its length and top point, before a gun is aimed.
+    private static Vec3[] seen(int weapon, HeavyPoses.Pose pose, float time, float turn) {
         Quaternionf body = new Quaternionf().rotationZYX(pose.roll * 0.5F, pose.twist * 0.7F, pose.pitch * 0.6F);
         Vector3f middle = body.transform(new Vector3f(pose.middle));
         middle.add(pose.shake * Mth.sin(time * 2.9F), pose.shake * Mth.cos(time * 3.7F), 0.0F);
@@ -204,11 +266,15 @@ public final class HeavyArms {
         // Kept out before his eyes and low: a weapon raised over his head would bring his arms into his face.
         Vec3 seenMiddle = new Vec3(-middle.x * VIEW, Math.min(VIEW_TOP, -middle.y * VIEW * VIEW_Y + VIEW_UP)
                 + VIEW_LIFT[weapon],
-                Math.min(VIEW_NEAR, middle.z * VIEW + VIEW_IN)).add(VIEW_SIDE[weapon], 0.0, 0.0);
-        Vec3 seenWay = new Vec3(-way.x, -way.y * VIEW_Y, way.z).yRot(VIEW_TURN[weapon] + turn);
-        Vec3 seenUp = new Vec3(-up.x, -up.y, up.z).yRot(VIEW_TURN[weapon] + turn);
+                Math.min(VIEW_NEAR[weapon], middle.z * VIEW + VIEW_IN)).add(VIEW_SIDE[weapon], 0.0, 0.0);
+        float across = VIEW_TURN[weapon] + turn;
+        Vec3 seenWay = new Vec3(-way.x, -way.y * VIEW_Y, way.z).xRot(-VIEW_RAISE[weapon]).yRot(across);
+        Vec3 seenUp = new Vec3(-up.x, -up.y, up.z).xRot(-VIEW_RAISE[weapon]).yRot(across);
+        Vector3f roll = new Quaternionf().rotateAxis(VIEW_ROLL[weapon], (float) seenWay.x, (float) seenWay.y,
+                (float) seenWay.z).transform(new Vector3f((float) seenUp.x, (float) seenUp.y, (float) seenUp.z));
+        seenUp = new Vec3(roll.x, roll.y, roll.z);
         seenMiddle = seenMiddle.yRot(turn);
-        return HeavyPainter.placed(weapon, seenMiddle, seenWay, seenUp, VIEW_SIZE * HeavyPainter.size(weapon));
+        return new Vec3[] { seenMiddle, seenWay, seenUp };
     }
 
     // Whirling, the axe swung out at his side is turned forward into his own view.
@@ -268,6 +334,7 @@ public final class HeavyArms {
     public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
         ClientHeavy.clear();
         ClientFists.clear();
+        SawSound.clear();
     }
 
     private static Vector3f vec(Vec3 v) {
