@@ -16,6 +16,7 @@ import nl.tivek.multiversepowers.content.ModItems;
 import nl.tivek.multiversepowers.schematic.Schematic;
 import nl.tivek.multiversepowers.schematic.SchematicLibrary;
 import nl.tivek.multiversepowers.schematic.SchematicRules;
+import nl.tivek.multiversepowers.schematic.client.blueprint.ClientBlueprints;
 import nl.tivek.multiversepowers.schematic.client.hologram.Hologram;
 import nl.tivek.multiversepowers.schematic.format.SchematicException;
 import nl.tivek.multiversepowers.schematic.format.SchematicReader;
@@ -136,6 +137,8 @@ public final class SchematicClient {
         String name = file.path.substring(file.path.lastIndexOf('/') + 1);
         if (file.purpose == SchematicFilePayload.DOWNLOAD) {
             FileDialogs.save(name, bytes);
+        } else if (file.purpose == SchematicFilePayload.BLUEPRINT) {
+            ClientBlueprints.onFile(file.path, bytes);
         } else if (file.path.equals(loadingPath)) {
             read(file.path, name, bytes);
         }
@@ -168,7 +171,7 @@ public final class SchematicClient {
             }
             viewed = schematic;
             viewedPath = path;
-            PreviewModel.build(schematic);
+            PreviewModel.LIBRARY.build(schematic);
         }));
     }
 
@@ -223,6 +226,7 @@ public final class SchematicClient {
         notice = null;
         incoming = null;
         Hologram.hide();
-        PreviewModel.release();
+        PreviewModel.LIBRARY.release();
+        PreviewModel.BLUEPRINT.release();
     }
 }

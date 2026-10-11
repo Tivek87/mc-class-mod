@@ -13,6 +13,7 @@ public final class SchematicRules {
     public static final ModConfigSpec.IntValue LARGEST;
     public static final ModConfigSpec.IntValue FILE_MEGABYTES;
     public static final ModConfigSpec.IntValue UNDO_BLOCKS;
+    public static final ModConfigSpec.IntValue BLUEPRINTS;
 
     static {
         ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
@@ -31,6 +32,8 @@ public final class SchematicRules {
         UNDO_BLOCKS = builder.comment("How many replaced blocks of a player's last paste are kept so it can be undone;"
                 + " a larger paste cannot be undone (default: 2000000)")
                 .defineInRange("undoBlocks", 2000000, 0, 20000000);
+        BLUEPRINTS = builder.comment("The most blueprints (see-through plans to build by hand) a world may hold at"
+                + " once (default: 32)").defineInRange("blueprints", 32, 1, 256);
         builder.pop();
         SPEC = builder.build();
     }
@@ -52,6 +55,10 @@ public final class SchematicRules {
 
     public static int undoBlocks() {
         return get(UNDO_BLOCKS);
+    }
+
+    public static int blueprints() {
+        return get(BLUEPRINTS);
     }
 
     private static int get(ModConfigSpec.IntValue value) {

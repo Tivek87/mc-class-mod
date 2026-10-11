@@ -190,7 +190,8 @@ public final class SettingsPages {
                 fromSpec(spec, file, "schematics", "largestFileMegabytes", SchematicRules.FILE_MEGABYTES, Unit.COUNT,
                         1.0),
                 fromSpec(spec, file, "schematics", "undoBlocks", SchematicRules.UNDO_BLOCKS, Unit.BLOCK_COUNT,
-                        100000.0));
+                        100000.0),
+                fromSpec(spec, file, "schematics", "blueprints", SchematicRules.BLUEPRINTS, Unit.COUNT, 1.0));
         Component folder = Minecraft.getInstance().hasSingleplayerServer()
                 ? Component.literal(SchematicLibrary.root().toString())
                 : Component.translatable(PREFIX + "schematics.folder.server");

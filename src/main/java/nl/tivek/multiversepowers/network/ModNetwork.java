@@ -101,6 +101,9 @@ import nl.tivek.multiversepowers.spell.SpellCooldownPayload;
 import nl.tivek.multiversepowers.spell.SpellFxPayload;
 import nl.tivek.multiversepowers.spell.dark.VoidStatePayload;
 import nl.tivek.multiversepowers.schematic.SchematicServer;
+import nl.tivek.multiversepowers.schematic.blueprint.Blueprints;
+import nl.tivek.multiversepowers.schematic.net.BlueprintAskPayload;
+import nl.tivek.multiversepowers.schematic.net.BlueprintListPayload;
 import nl.tivek.multiversepowers.schematic.net.SchematicAskPayload;
 import nl.tivek.multiversepowers.schematic.net.SchematicFilePayload;
 import nl.tivek.multiversepowers.schematic.net.SchematicListPayload;
@@ -209,6 +212,17 @@ public final class ModNetwork {
                 (payload, context) -> ClientPayloadHandler.handleSchematicStatus(payload, context));
         registrar.playToClient(SchematicNoticePayload.TYPE, SchematicNoticePayload.STREAM_CODEC,
                 (payload, context) -> ClientPayloadHandler.handleSchematicNotice(payload, context));
+        registrar.playToClient(BlueprintListPayload.TYPE, BlueprintListPayload.STREAM_CODEC,
+                (payload, context) -> ClientPayloadHandler.handleBlueprintList(payload, context));
+        registrar.playToServer(BlueprintAskPayload.TYPE, BlueprintAskPayload.STREAM_CODEC, ModNetwork::onBlueprintAsk);
+    }
+
+    private static void onBlueprintAsk(BlueprintAskPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> {
+            if (context.player() instanceof ServerPlayer serverPlayer) {
+                Blueprints.onAsk(serverPlayer, payload);
+            }
+        });
     }
 
     private static void onSchematicAsk(SchematicAskPayload payload, IPayloadContext context) {

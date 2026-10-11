@@ -20,6 +20,8 @@ public final class ClientSettings {
     public static final ModConfigSpec.IntValue STAGE_MOST;
     public static final ModConfigSpec.DoubleValue SCHEMATIC_OPACITY;
     public static final ModConfigSpec.IntValue SCHEMATIC_OUTLINE;
+    public static final ModConfigSpec.IntValue SCHEMATIC_BLUEPRINTS;
+    public static final ModConfigSpec.DoubleValue BLUEPRINT_OPACITY;
     public static final ModConfigSpec.IntValue RAGDOLLS;
     public static final ModConfigSpec.IntValue RAGDOLL_MOST;
     public static final ModConfigSpec.DoubleValue CORPSE_SECONDS;
@@ -70,6 +72,10 @@ public final class ClientSettings {
                 + " it (1 = solid, 0.1 = faint)", 0.6, 0.1, 1.0, Unit.PERCENT, 0.05);
         SCHEMATIC_OUTLINE = sheet.toggle("schematicOutline", "Draw the edges of a schematic hologram's box, so you see"
                 + " where it ends (1 = yes, 0 = no)", true);
+        SCHEMATIC_BLUEPRINTS = sheet.toggle("schematicBlueprints", "Show the blueprints set down in the world, see"
+                + " through, with what is still missing, wrong or in the way (1 = yes, 0 = no)", true);
+        BLUEPRINT_OPACITY = sheet.number("blueprintOpacity", "How solid a blueprint's missing blocks look (1 = solid,"
+                + " 0.1 = faint)", 0.45, 0.1, 1.0, Unit.PERCENT, 0.05);
         sheet.section("bodies");
         RAGDOLLS = sheet.toggle("ragdolls", "Creatures go limp: they fall, tumble and hang from what holds them, and a"
                 + " body stays where it fell before it sinks away (1 = yes, 0 = as in the plain game); players go limp"

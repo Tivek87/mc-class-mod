@@ -26,7 +26,8 @@ import nl.tivek.multiversepowers.schematic.client.hologram.Hologram;
 import nl.tivek.multiversepowers.schematic.net.SchematicAskPayload;
 
 // The wand in hand: the ability keys turn, mirror and move the hologram, the scroll wheel brings it nearer or farther,
-// a left click places it; holding the move key, the walking keys move it a block at a time instead of the player.
+// a left click places it; holding the move key, the walking keys move it a block (or grid step) at a time instead of
+// the player, and a tap of it steps through the grid sizes.
 // The keys are read before a character's would be, and only while the wand is held with no character.
 @EventBusSubscriber(modid = MultiversePowers.MODID, value = Dist.CLIENT)
 public final class WandInput {
@@ -41,11 +42,16 @@ public final class WandInput {
     static final int CANCEL = 8;
     static final int MOVE = 9;
     static final int MENU = 10;
+    static final int BLUEPRINT = 11;
     private static final int REPEAT_AFTER = 8;
     private static final int REPEAT_EVERY = 2;
+    // The move key let go within this many ticks, having moved nothing, is a tap: the next grid size.
+    private static final int TAP = 7;
 
     // How long each way (forward, back, left, right, up, down) has been held with the move key.
     private static final int[] HELD = new int[6];
+    private static int moveHeld;
+    private static boolean moveUsed;
 
     private WandInput() {
     }
@@ -65,9 +71,11 @@ public final class WandInput {
         Minecraft minecraft = Minecraft.getInstance();
         LocalPlayer player = minecraft.player;
         if (player == null || minecraft.screen != null || !ready(player)) {
+            moveHeld = 0;
+            moveUsed = false;
             return;
         }
-        for (int slot = 0; slot <= MENU; slot++) {
+        for (int slot = 0; slot <= BLUEPRINT; slot++) {
             KeyMapping key = AbilityKeys.SLOTS[slot];
             while (key.consumeClick()) {
                 if (usable(slot)) {
@@ -75,6 +83,18 @@ public final class WandInput {
                 }
             }
         }
+        if (usable(MOVE) && AbilityKeys.isDown(AbilityKeys.SLOTS[MOVE])) {
+            moveHeld++;
+            return;
+        }
+        if (moveHeld > 0 && moveHeld <= TAP && !moveUsed) {
+            Hologram.nextGrid();
+            SchematicClient.say(Component.translatable(SchematicClient.PREFIX + "grid.set", Hologram.gridSize()),
+                    false);
+            click();
+        }
+        moveHeld = 0;
+        moveUsed = false;
     }
 
     private static void act(int slot, LocalPlayer player) {
@@ -89,6 +109,13 @@ public final class WandInput {
             }
             case CANCEL -> {
                 SchematicClient.ask(SchematicAskPayload.CANCEL, "", "");
+                return;
+            }
+            case BLUEPRINT -> {
+                Hologram.blueprint = !Hologram.blueprint;
+                SchematicClient.say(Component.translatable(SchematicClient.PREFIX + "as.set", Component.translatable(
+                        SchematicClient.PREFIX + "as." + (Hologram.blueprint ? 1 : 0))), false);
+                click();
                 return;
             }
             default -> {
@@ -152,6 +179,7 @@ public final class WandInput {
                 HELD[k] = 0;
                 continue;
             }
+            moveUsed = true;
             int held = HELD[k]++;
             if (held == 0 || held >= REPEAT_AFTER && (held - REPEAT_AFTER) % REPEAT_EVERY == 0) {
                 Hologram.nudge(towards[k].getStepX(), towards[k].getStepY(), towards[k].getStepZ());

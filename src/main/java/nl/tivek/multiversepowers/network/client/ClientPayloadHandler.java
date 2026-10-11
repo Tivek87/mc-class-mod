@@ -81,6 +81,8 @@ import nl.tivek.multiversepowers.stage.LampOpenPayload;
 import nl.tivek.multiversepowers.stage.client.LampScreen;
 import nl.tivek.multiversepowers.stamina.StaminaCostPayload;
 import nl.tivek.multiversepowers.schematic.client.SchematicClient;
+import nl.tivek.multiversepowers.schematic.client.blueprint.ClientBlueprints;
+import nl.tivek.multiversepowers.schematic.net.BlueprintListPayload;
 import nl.tivek.multiversepowers.schematic.net.SchematicFilePayload;
 import nl.tivek.multiversepowers.schematic.net.SchematicListPayload;
 import nl.tivek.multiversepowers.schematic.net.SchematicNoticePayload;
@@ -309,5 +311,9 @@ public final class ClientPayloadHandler {
 
     public static void handleSchematicNotice(SchematicNoticePayload payload, IPayloadContext context) {
         context.enqueueWork(() -> SchematicClient.onNotice(payload));
+    }
+
+    public static void handleBlueprintList(BlueprintListPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> ClientBlueprints.onList(payload));
     }
 }

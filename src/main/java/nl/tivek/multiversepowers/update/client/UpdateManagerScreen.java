@@ -448,7 +448,7 @@ final class UpdateManagerScreen extends ManagerScreen {
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         int page = this.bottom - this.top - SCROLL_STEP;
-        int at = this.versions.indexOf(this.chosen);
+        int at = this.chosen == null ? -1 : this.versions.indexOf(this.chosen);
         switch (keyCode) {
             case GLFW.GLFW_KEY_UP -> {
                 if (this.news) {

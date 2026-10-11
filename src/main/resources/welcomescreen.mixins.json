@@ -19,6 +19,7 @@
     "client.TitleScreenMixin",
     "client.render.AgeableHierarchicalModelAccess",
     "client.render.AgeableListModelAccess",
+    "client.render.BlockChangedMixin",
     "client.render.CapeLayerMixin",
     "client.render.EntityShadowMixin",
     "client.render.HandItemMixin",

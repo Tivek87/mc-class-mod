@@ -1,14 +1,21 @@
 package nl.tivek.multiversepowers.schematic.format;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
 import com.mojang.datafixers.DSL;
 import com.mojang.serialization.Dynamic;
+import com.mojang.serialization.JsonOps;
 import javax.annotation.Nullable;
 import net.minecraft.SharedConstants;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.NbtUtils;
+import net.minecraft.nbt.StringTag;
 import net.minecraft.nbt.Tag;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.ComponentSerialization;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.datafix.DataFixers;
 import net.minecraft.util.datafix.fixes.References;
@@ -87,7 +94,10 @@ final class Palettes {
     }
 
     private static CompoundTag fix(DSL.TypeReference type, CompoundTag tag, int version) {
-        if (version >= CURRENT) {
+        if (version > CURRENT) {
+            return newer(tag);
+        }
+        if (version == CURRENT) {
             return tag;
         }
         try {
@@ -97,5 +107,56 @@ final class Palettes {
         } catch (RuntimeException e) {
             return tag;
         }
+    }
+
+    // Games from 1.21.5 on keep text as data where this one wants JSON in a string: a sign's lines and a name are
+    // written back as JSON, or this game cannot read them.
+    static CompoundTag newer(CompoundTag tag) {
+        for (String side : new String[] { "front_text", "back_text" }) {
+            if (!(tag.get(side) instanceof CompoundTag text)) {
+                continue;
+            }
+            for (String lines : new String[] { "messages", "filtered_messages" }) {
+                if (text.get(lines) instanceof ListTag list) {
+                    ListTag json = new ListTag();
+                    for (Tag line : list) {
+                        json.add(StringTag.valueOf(json(line)));
+                    }
+                    text.put(lines, json);
+                }
+            }
+        }
+        Tag name = tag.get("CustomName");
+        if (name != null) {
+            tag.putString("CustomName", json(name));
+        }
+        return tag;
+    }
+
+    // Text as JSON: a string already in JSON stays as it is, plain words and text as data are made JSON.
+    static String json(Tag text) {
+        if (text instanceof StringTag string) {
+            String words = string.getAsString();
+            String start = words.stripLeading();
+            // Gson reads leniently ("Room #3" parses as "Room"), so only what looks like JSON is tried as JSON.
+            boolean looks = start.startsWith("{") || start.startsWith("[") || start.startsWith("\"");
+            try {
+                if (!looks) {
+                    return JsonOps.INSTANCE.createString(words).toString();
+                }
+                JsonElement parsed = JsonParser.parseString(words);
+                if ((parsed.isJsonObject() || parsed.isJsonArray() || parsed.isJsonPrimitive() && parsed
+                        .getAsJsonPrimitive().isString()) && ComponentSerialization.CODEC.parse(JsonOps.INSTANCE,
+                                parsed).result().isPresent()) {
+                    return words;
+                }
+            } catch (RuntimeException e) {
+                // Not JSON: plain words.
+            }
+            return JsonOps.INSTANCE.createString(words).toString();
+        }
+        Component read = ComponentSerialization.CODEC.parse(NbtOps.INSTANCE, text).result().orElse(Component.empty());
+        return ComponentSerialization.CODEC.encodeStart(JsonOps.INSTANCE, read).result().map(JsonElement::toString)
+                .orElse("\"\"");
     }
 }

@@ -12,6 +12,9 @@ import nl.tivek.multiversepowers.MultiversePowers;
 // the ordinals of the game's own, `mode` what it may replace and `flags` what comes along (SchematicPaste).
 public record SchematicPlacePayload(String path, BlockPos origin, int rotation, int mirror, int mode, int flags)
         implements CustomPacketPayload {
+    // In `flags`: set it down as a blueprint rather than build it.
+    public static final int BLUEPRINT = 1 << 8;
+
     public static final CustomPacketPayload.Type<SchematicPlacePayload> TYPE = new CustomPacketPayload.Type<>(
             ResourceLocation.fromNamespaceAndPath(MultiversePowers.MODID, "schematic_place"));
 

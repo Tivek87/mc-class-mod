@@ -14,6 +14,8 @@ public record SchematicFilePayload(int purpose, String path, int part, int parts
     public static final int VIEW = 0;
     public static final int DOWNLOAD = 1;
     public static final int UPLOAD = 2;
+    // A blueprint's file, to draw it (`path` its file's name in the world's blueprint folder).
+    public static final int BLUEPRINT = 3;
     // A player may send at most 32 kB at once; the server may send far more.
     public static final int UP = 30000;
     public static final int DOWN = 500000;

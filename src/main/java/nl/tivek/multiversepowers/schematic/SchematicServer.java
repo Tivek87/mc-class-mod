@@ -26,6 +26,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.server.ServerLifecycleHooks;
 import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.content.ModItems;
+import nl.tivek.multiversepowers.schematic.blueprint.Blueprints;
 import nl.tivek.multiversepowers.schematic.format.SchematicException;
 import nl.tivek.multiversepowers.schematic.format.SchematicReader;
 import nl.tivek.multiversepowers.schematic.net.SchematicAskPayload;
@@ -114,7 +115,7 @@ public final class SchematicServer {
     }
 
     // A file to the player in parts, read away from the server thread.
-    private static void send(ServerPlayer player, Path path, String relative, int purpose) {
+    public static void send(ServerPlayer player, Path path, String relative, int purpose) {
         MinecraftServer server = player.getServer();
         UUID id = player.getUUID();
         long largest = SchematicRules.largestFile();
@@ -196,7 +197,8 @@ public final class SchematicServer {
         });
     }
 
-    // Reads the schematic away from the server thread (or takes the one kept), then starts its paste.
+    // Reads the schematic away from the server thread (or takes the one kept), then starts its paste, or sets it down
+    // as a blueprint.
     public static void onPlace(ServerPlayer player, SchematicPlacePayload place) {
         if (!SchematicRules.allowed(player)) {
             notice(player, "error.not_allowed", "", "", true);
@@ -208,7 +210,8 @@ public final class SchematicServer {
             notice(player, "error.read", place.path(), "", true);
             return;
         }
-        if (SchematicPastes.busy(player) || !READING.add(id)) {
+        boolean blueprint = (place.flags() & SchematicPlacePayload.BLUEPRINT) != 0;
+        if (!blueprint && SchematicPastes.busy(player) || !READING.add(id)) {
             notice(player, "error.busy", "", "", true);
             return;
         }
@@ -256,7 +259,11 @@ public final class SchematicServer {
                 SchematicPlacement placement = new SchematicPlacement(place.origin(),
                         Rotation.values()[Math.floorMod(place.rotation(), 4)],
                         Mirror.values()[Math.floorMod(place.mirror(), 3)]);
-                SchematicPastes.start(now, read, placement, place.mode(), place.flags());
+                if (blueprint) {
+                    Blueprints.add(now, read, path, placement);
+                } else {
+                    SchematicPastes.start(now, read, placement, place.mode(), place.flags());
+                }
             });
         });
     }

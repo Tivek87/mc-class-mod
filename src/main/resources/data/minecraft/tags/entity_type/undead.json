@@ -3,6 +3,10 @@
   "values": [
     "welcomescreen:hard_light_skeleton",
     "welcomescreen:hard_light_zombified_piglin",
-    "welcomescreen:zombie_brute"
+    "welcomescreen:zombie_brute",
+    "welcomescreen:bloater",
+    "welcomescreen:lurker",
+    "welcomescreen:screamer",
+    "welcomescreen:feral"
   ]
 }

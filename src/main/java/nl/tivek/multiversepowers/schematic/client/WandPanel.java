@@ -14,6 +14,7 @@ import nl.tivek.multiversepowers.character.client.GuideMode;
 import nl.tivek.multiversepowers.character.client.GuideOwner;
 import nl.tivek.multiversepowers.character.client.PowerInputs;
 import nl.tivek.multiversepowers.schematic.SchematicWandItem;
+import nl.tivek.multiversepowers.schematic.client.blueprint.ClientBlueprints;
 import nl.tivek.multiversepowers.schematic.client.hologram.Hologram;
 
 // The wand's place in the ability panel (its controls and how each stands now, while it is held) and in the ability
@@ -33,6 +34,7 @@ public final class WandPanel implements AbilityPanel.Tool {
     public static void register() {
         AbilityPanel.tool(new WandPanel());
         SchematicWandItem.clientUse = WandInput::use;
+        ClientBlueprints.register();
         AbilityGuide.tool(OWNER, WandInput::ready, new GuideMode(OWNER, "wand", WandInput::ready, List.of(
                 GuideMode.heading("mouse"),
                 GuideMode.click(CharacterAbility.Input.LEFT, "place"),
@@ -50,8 +52,10 @@ public final class WandPanel implements AbilityPanel.Tool {
                 slot(WandInput.CANCEL, "cancel"),
                 slot(WandInput.HIDE, "hide"),
                 slot(WandInput.MENU, "open"),
+                slot(WandInput.BLUEPRINT, "blueprint"),
                 GuideMode.heading("move"),
-                GuideMode.holdKey(() -> AbilityKeys.SLOTS[WandInput.MOVE], "move"))));
+                GuideMode.holdKey(() -> AbilityKeys.SLOTS[WandInput.MOVE], "move"),
+                slot(WandInput.MOVE, "grid"))));
     }
 
     private static GuideMode.Control slot(int slot, String id) {
@@ -77,7 +81,8 @@ public final class WandPanel implements AbilityPanel.Tool {
     public List<AbilityPanel.ToolRow> rows(LocalPlayer player) {
         List<AbilityPanel.ToolRow> rows = new ArrayList<>();
         boolean shown = Hologram.shown();
-        rows.add(row(0, mouse(CharacterAbility.Input.LEFT), "place", shown ? null : say("none"), AMBER, shown));
+        rows.add(row(0, mouse(CharacterAbility.Input.LEFT), "place", !shown ? say("none") : Hologram.blueprint
+                ? say("blueprint") : null, AMBER, shown));
         rows.add(row(0, mouse(CharacterAbility.Input.RIGHT), shown ? "pin" : "menu", shown
                 ? say(Hologram.pinned ? "pinned" : "following") : null, Hologram.pinned ? AMBER : GREEN, true));
         if (shown) {
@@ -95,8 +100,14 @@ public final class WandPanel implements AbilityPanel.Tool {
             if (WandInput.usable(WandInput.MOVE)) {
                 rows.add(row(2, Component.translatable("input.welcomescreen.hold", brief(WandInput.MOVE)), "move",
                         null, GREEN, true));
+                rows.add(row(2, Component.translatable("input.welcomescreen.tap", brief(WandInput.MOVE)), "grid",
+                        Component.translatable(PREFIX + "status.grid", Hologram.gridSize()), GREEN, true));
             }
             key(rows, WandInput.HIDE, "hide", null);
+        }
+        if (WandInput.usable(WandInput.BLUEPRINT)) {
+            key(rows, WandInput.BLUEPRINT, "blueprint", Component.translatable(SchematicClient.PREFIX + "as."
+                    + (Hologram.blueprint ? 1 : 0)));
         }
         key(rows, WandInput.UNDO, "undo", null);
         if (SchematicClient.status() != null && !SchematicClient.status().over()) {

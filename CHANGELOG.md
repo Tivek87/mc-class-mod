@@ -3,6 +3,39 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.8.5-alpha] - 2026-10-11
+
+### Added
+- **Bloater:** a fat new zombie covered in pulsing, glowing boils. From afar it spits slime that poisons and slows;
+  up close it shrieks, rushes at you swelling and bursts after 3 seconds, leaving a pool of poison.
+- **Bloater:** a hit with a sword or an axe pops one of its boils, splashing acid back on you.
+- **Lurker:** a tall, gaunt zombie that runs on all fours. Unseen it creeps up without a sound, it pounces at your
+  head from 6 blocks, and it darts aside in black smoke when you stare at it or aim a bow at it.
+- **Lurker:** its claws leave a Bleeding wound that gets deeper with every tear and partly goes through shields.
+- **Screamer:** a twitching zombie whose jaw drops to its chest. Its screech stops shields working for 4 seconds and
+  leaves you dizzy and slow; whatever comes within 2 blocks it throws 5 blocks back.
+- **Feral:** a small, fast zombie on all fours; three climb out of the ground at each Screamer's screech.
+- **New zombies:** all four have a spawn egg in the mod's tab and spawn at night like other zombies (ferals only
+  with a Screamer).
+- **Schematic Wand: blueprints:** choose Blueprint on the Place page to set a schematic down see-through instead of
+  building it, then build it by hand; everyone in the world sees it.
+- **Schematic Wand: a Blueprints tab** in the wand's menu (K): every blueprint with how far it is built, its preview,
+  and every block it still needs with how many you have.
+- **Schematic Wand: grid:** tap Alt to step the grid the hologram snaps to: 1, 2, 3, 4, 6, 8, 10, 16, 32, 64, 96
+  and 128 blocks.
+- **Settings: blueprints:** show or hide blueprints and set how see-through they are; the Schematics page sets how
+  many blueprints a world may hold.
+
+### Changed
+- **Schematic Wand: a placed hologram goes away;** choose the schematic again to place another.
+- **Schematic Wand: previews** are more detailed and coloured from the blocks' own textures.
+- **Schematic Wand: the Place page** is laid out tighter, its three extras as on/off buttons.
+
+### Fixed
+- **Schematics** saved in Minecraft 1.21.5 or newer no longer fill the log with sign errors, and their signs keep
+  their text.
+- **Update manager:** pressing a key while no version was chosen crashed the game.
+
 ## [0.8.4-alpha] - 2026-10-11
 
 ### Added

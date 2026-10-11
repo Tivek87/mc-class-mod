@@ -35,6 +35,11 @@ public final class Hologram {
     public static int flags = SchematicPastes.CREATURES | SchematicPastes.CONTENTS;
     public static int follow = ON_BLOCKS;
     public static boolean pinned;
+    // Placed as a blueprint: a see-through plan to build by hand, never built itself.
+    public static boolean blueprint;
+    // The grid it snaps to across the ground, in blocks; one of GRIDS by index.
+    public static final int[] GRIDS = { 1, 2, 3, 4, 6, 8, 10, 16, 32, 64, 96, 128 };
+    public static int grid;
     static double distance = 8.0;
     // On blocks: how many blocks it stands past (or short of) the block looked at, the way the player faces.
     static int ahead;
@@ -78,6 +83,31 @@ public final class Hologram {
         return new SchematicPlacement(origin, rotation, mirror);
     }
 
+    public static int gridSize() {
+        return GRIDS[Math.floorMod(grid, GRIDS.length)];
+    }
+
+    // The next grid size, from 128 back to 1; a pinned hologram moves onto it.
+    public static void nextGrid() {
+        grid = Math.floorMod(grid + 1, GRIDS.length);
+        int most = Math.max(1, 64 / gridSize());
+        ahead = Math.max(-most, Math.min(most, ahead));
+        if (pinned) {
+            pinnedAt = snap(pinnedAt, false);
+            origin = pinnedAt;
+        }
+    }
+
+    // Its corner on the grid across the ground (and up and down too when it floats), the nearest grid line.
+    private static BlockPos snap(BlockPos at, boolean upright) {
+        int size = gridSize();
+        if (size == 1) {
+            return at;
+        }
+        return new BlockPos(Math.round(at.getX() / (float) size) * size, upright ? Math.round(at.getY()
+                / (float) size) * size : at.getY(), Math.round(at.getZ() / (float) size) * size);
+    }
+
     // Where it stands now: worked out every frame before it is drawn.
     public static void update(LocalPlayer player, float partialTick) {
         Schematic now = schematic;
@@ -96,13 +126,13 @@ public final class Hologram {
             BlockHitResult hit = player.level().clip(new ClipContext(eye, eye.add(look.scale(REACH)),
                     ClipContext.Block.OUTLINE, ClipContext.Fluid.NONE, player));
             if (hit.getType() == HitResult.Type.BLOCK) {
-                origin = against(hit.getBlockPos().relative(hit.getDirection()), hit.getDirection(), sx, now.sizeY,
-                        sz).relative(player.getDirection(), ahead);
+                origin = snap(against(hit.getBlockPos().relative(hit.getDirection()), hit.getDirection(), sx,
+                        now.sizeY, sz).relative(player.getDirection(), ahead * gridSize()), false);
                 return;
             }
         }
         Vec3 at = eye.add(look.scale(distance));
-        origin = BlockPos.containing(at.x - sx / 2.0, at.y - now.sizeY / 2.0, at.z - sz / 2.0);
+        origin = snap(BlockPos.containing(at.x - sx / 2.0, at.y - now.sizeY / 2.0, at.z - sz / 2.0), true);
     }
 
     // The box set against the block face the look fell on: on top of a floor, under a ceiling, out from a wall.
@@ -141,17 +171,18 @@ public final class Hologram {
         mirror = Mirror.values()[(mirror.ordinal() + 1) % Mirror.values().length];
     }
 
-    // Moves it a block (it stays pinned there).
+    // Moves it a block, or a grid step across the ground (it stays pinned there).
     public static void nudge(int dx, int dy, int dz) {
         if (!pinned) {
             pinned = true;
-            pinnedAt = origin;
+            pinnedAt = snap(origin, false);
         }
-        pinnedAt = pinnedAt.offset(dx, dy, dz);
+        int size = gridSize();
+        pinnedAt = pinnedAt.offset(dx * size, dy, dz * size);
         origin = pinnedAt;
     }
 
-    // The scroll wheel: farther or closer (pinned or on blocks: a block at a time along the look).
+    // The scroll wheel: farther or closer (pinned or on blocks: a block or grid step at a time along the look).
     public static void scroll(LocalPlayer player, int steps) {
         if (pinned) {
             Direction facing = Direction.getNearest(player.getLookAngle());
@@ -161,7 +192,8 @@ public final class Hologram {
             double step = now == null ? 1.0 : Math.max(1.0, Math.max(now.sizeX, now.sizeZ) / 16.0);
             distance = Mth.clamp(distance + steps * step, 2.0, 256.0);
         } else {
-            ahead = Mth.clamp(ahead + steps, -64, 64);
+            int most = Math.max(1, 64 / gridSize());
+            ahead = Mth.clamp(ahead + steps, -most, most);
         }
     }
 
@@ -175,12 +207,14 @@ public final class Hologram {
                 ClipContext.Block.OUTLINE, ClipContext.Fluid.NONE, player)).getType() == HitResult.Type.BLOCK;
     }
 
+    // Sends it to be built (or set down as a blueprint) where it stands; the hologram is gone until shown again.
     public static void place() {
         String file = path;
         if (file == null) {
             return;
         }
         PacketDistributor.sendToServer(new SchematicPlacePayload(file, origin, rotation.ordinal(), mirror.ordinal(),
-                mode, flags));
+                mode, blueprint ? flags | SchematicPlacePayload.BLUEPRINT : flags));
+        hide();
     }
 }
