@@ -16,6 +16,7 @@ import nl.tivek.multiversepowers.character.CharacterAbility;
 import nl.tivek.multiversepowers.character.CharacterConfig;
 import nl.tivek.multiversepowers.character.GameCharacter;
 import nl.tivek.multiversepowers.character.client.AbilityGuide;
+import nl.tivek.multiversepowers.character.client.PanelLayoutScreen;
 import nl.tivek.multiversepowers.character.client.PowerInputs;
 import nl.tivek.multiversepowers.command.CommandAliases;
 import nl.tivek.multiversepowers.command.client.CommandsScreen;
@@ -28,7 +29,7 @@ import nl.tivek.multiversepowers.faction.mob.MobRules;
 import nl.tivek.multiversepowers.faction.mob.client.MobRulesScreen;
 import nl.tivek.multiversepowers.schematic.SchematicLibrary;
 import nl.tivek.multiversepowers.schematic.SchematicRules;
-import nl.tivek.multiversepowers.schematic.client.SchematicScreen;
+import nl.tivek.multiversepowers.schematic.client.menu.SchematicScreen;
 import nl.tivek.multiversepowers.stamina.StaminaConfig;
 import nl.tivek.multiversepowers.stamina.client.StaminaClient;
 
@@ -57,10 +58,19 @@ public final class SettingsPages {
     }
 
     // `about`: what the section is, shown when the pointer rests on its title.
-    public record Section(Component title, @Nullable Component hint, @Nullable Component about, List<Group> groups) {
+    // `action`: a button in its title that opens something of its own (`config.<mod>.<key>`, its `.desc` the tip).
+    public record Section(Component title, @Nullable Component hint, @Nullable Component about, List<Group> groups,
+            @Nullable Action action) {
+        Section(Component title, @Nullable Component hint, @Nullable Component about, List<Group> groups) {
+            this(title, hint, about, groups, null);
+        }
+
         Section(Component title, @Nullable Component hint, List<Group> groups) {
             this(title, hint, null, groups);
         }
+    }
+
+    public record Action(String key, Runnable run) {
     }
 
     public record Group(@Nullable Component title, List<ConfigNumber> numbers) {
@@ -285,8 +295,12 @@ public final class SettingsPages {
         }
         List<Section> list = new ArrayList<>();
         for (Map.Entry<String, List<ConfigNumber>> section : sections.entrySet()) {
-            list.add(new Section(Component.translatable(PREFIX + "client." + section.getKey()), null,
-                    List.of(new Group(null, section.getValue()))));
+            Action action = section.getKey().equals("panel") ? new Action("panel_layout", () -> {
+                Minecraft minecraft = Minecraft.getInstance();
+                minecraft.setScreen(new PanelLayoutScreen(minecraft.screen));
+            }) : null;
+            list.add(new Section(Component.translatable(PREFIX + "client." + section.getKey()), null, null,
+                    List.of(new Group(null, section.getValue())), action));
         }
         return new Page(GAME, Component.translatable(PREFIX + "client"), 0xB79CFF, PixelIcons.Icon.SCREEN, null, list,
                 spec.isLoaded(), false, spec::save);

@@ -86,6 +86,32 @@ public final class HologramModel {
                 HologramMesh.SIZE), z - Math.floorMod(z, HologramMesh.SIZE)));
     }
 
+    // Only the layers up to `y` are drawn (the filter hides the rest), so the faces under the top one show; the
+    // layers between the old top and the new are made again. Below 0 every layer is drawn.
+    public void top(int y) {
+        int now = y < 0 ? Integer.MAX_VALUE : y;
+        int was = this.view.top;
+        if (now == was) {
+            return;
+        }
+        this.view.top = now;
+        int last = this.schematic.sizeY - 1;
+        this.refreshLayers(Math.min(Math.min(now, was), last), Math.min(Math.max(now, was), last));
+    }
+
+    // Every cube holding a cell of the layers `from` to `to` (y, of the schematic's own) is made again.
+    public void refreshLayers(int from, int to) {
+        int top = Math.min(to, this.schematic.sizeY - 1);
+        for (int y = Math.max(0, from) - Math.floorMod(Math.max(0, from), HologramMesh.SIZE); y <= top;
+                y += HologramMesh.SIZE) {
+            for (int z = 0; z < this.schematic.sizeZ; z += HologramMesh.SIZE) {
+                for (int x = 0; x < this.schematic.sizeX; x += HologramMesh.SIZE) {
+                    this.refresh(x, y, z);
+                }
+            }
+        }
+    }
+
     // How much of it is drawn yet, 0 to 1.
     public float progress() {
         return this.queue.isEmpty() ? 1.0F : this.built / (float) this.queue.size();

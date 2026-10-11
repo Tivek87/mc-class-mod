@@ -19,36 +19,43 @@ import nl.tivek.multiversepowers.update.client.tour.TourStep.Place;
 // while a line is in neither, or a tour text is too long. Only steps from `FROM` up to the version installed are ever
 // shown, so a release's steps replace the last one's. A player's first tour starts with `INTRO`.
 final class TourSteps {
-    static final String VERSION = "0.8.5-alpha";
+    static final String VERSION = "0.8.6-alpha";
     // The oldest version whose changes this tour shows: normally its own.
     static final String FROM = VERSION;
 
-    // The new zombies and the Schematic Wand's blueprints, grid and placing in the middle.
+    // The ability overlay's layout in the settings, then the Schematic Wand's saving, warnings and blueprint help, the
+    // Rustbound and the Bloater's weak back in the middle.
     static final List<TourStep> ALL = List.of(
-            step(VERSION, "bloater", Kind.NEW, Place.GAME).covers(
-                    "Bloater: a fat new zombie",
-                    "Bloater: a hit with a sword"),
-            step(VERSION, "lurker", Kind.NEW, Place.GAME).covers(
-                    "Lurker: a tall, gaunt zombie",
-                    "Lurker: its claws leave"),
-            step(VERSION, "screamer", Kind.NEW, Place.GAME).covers(
-                    "Screamer: a twitching zombie",
-                    "Feral: a small, fast zombie",
-                    "New zombies: all four"),
-            step(VERSION, "blueprints", Kind.NEW, Place.GAME).covers(
-                    "Schematic Wand: blueprints"),
-            step(VERSION, "blueprint_tab", Kind.NEW, Place.GAME).covers(
-                    "Schematic Wand: a Blueprints tab"),
-            step(VERSION, "schematic_grid", Kind.NEW, Place.GAME).covers(
-                    "Schematic Wand: grid"),
-            step(VERSION, "place_once", Kind.CHANGED, Place.GAME).covers(
-                    "Schematic Wand: a placed hologram goes away"));
+            step(VERSION, "panel_layout", Kind.NEW, Place.SETTINGS).covers(
+                    "Ability overlay: change layout"),
+            step(VERSION, "save_area", Kind.NEW, Place.GAME).covers(
+                    "Schematic Wand: save an area"),
+            step(VERSION, "missing_mods", Kind.NEW, Place.GAME).covers(
+                    "Schematic Wand: missing mods"),
+            step(VERSION, "red_marks", Kind.NEW, Place.GAME).covers(
+                    "Schematic Wand: red marks"),
+            step(VERSION, "blueprint_layers", Kind.NEW, Place.GAME).covers(
+                    "Blueprints: layer by layer"),
+            step(VERSION, "blueprint_guide", Kind.NEW, Place.GAME).covers(
+                    "Blueprints: guide"),
+            step(VERSION, "materials_tab", Kind.NEW, Place.GAME).covers(
+                    "Blueprints: a Materials tab",
+                    "Blueprints: materials"),
+            step(VERSION, "rustbound", Kind.NEW, Place.GAME).covers(
+                    "Rustbound"),
+            step(VERSION, "bloater_back", Kind.CHANGED, Place.GAME).covers(
+                    "Bloater: hit it from behind"));
 
     // Changes too small for a step of their own, each by how its changelog line starts, as in `covers`.
     static final List<String> SMALL = List.of(
-            "Settings: blueprints",
-            "Schematic Wand: previews",
-            "Schematic Wand: the Place page");
+            "Schematic Wand: rename and copy",
+            "Blueprints: hide the box",
+            "Blueprints: rename",
+            "Schematic Wand: layers",
+            "Schematic Wand: at last spot",
+            "Schematic Wand: build card",
+            "Settings: largest saved area",
+            "Schematic Wand: grid");
 
     // Shown first on a player's first tour, wherever it starts: what the tour is and how to use it.
     static final TourStep INTRO = step(VERSION, "tour_intro", Kind.HOW, Place.ANY);

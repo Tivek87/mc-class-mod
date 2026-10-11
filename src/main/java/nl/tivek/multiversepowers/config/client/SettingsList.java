@@ -40,7 +40,8 @@ final class SettingsList extends ContainerObjectSelectionList<SettingsList.Row> 
     private static final int HOVER = 0x14FFFFFF;
 
     record Block(String key, Component title, @Nullable Component hint, @Nullable Component about, int color,
-            boolean collapsible, boolean collapsed, List<SettingsPages.Group> groups) {
+            boolean collapsible, boolean collapsed, List<SettingsPages.Group> groups,
+            @Nullable SettingsPages.Action action) {
         int count() {
             return this.numbers().size();
         }
@@ -138,6 +139,9 @@ final class SettingsList extends ContainerObjectSelectionList<SettingsList.Row> 
                     .append(Component.literal("  (" + block.count() + ")").withStyle(ChatFormatting.GRAY));
             this.hint = block.hint() == null ? Component.empty() : Component.translatable(PREFIX + "key",
                     block.hint());
+            if (block.action() != null) {
+                this.buttons.add(this.button(block.action().key(), block.action().run()));
+            }
             List<ConfigNumber> numbers = block.numbers();
             if (!block.collapsible() || block.collapsed()
                     || numbers.stream().noneMatch(SettingsList.this.screen::editable)) {

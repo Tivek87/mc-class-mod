@@ -54,6 +54,7 @@ import nl.tivek.multiversepowers.config.client.SettingsScreen;
 import nl.tivek.multiversepowers.creature.bloater.client.BloaterRenderer;
 import nl.tivek.multiversepowers.creature.brute.client.BruteRenderer;
 import nl.tivek.multiversepowers.creature.lurker.client.CrawlerRenderer;
+import nl.tivek.multiversepowers.creature.rustbound.client.RustboundRenderer;
 import nl.tivek.multiversepowers.creature.screamer.client.ScreamerRenderer;
 import nl.tivek.multiversepowers.engine.client.pose.BodyTurns;
 import nl.tivek.multiversepowers.engine.client.pose.Poses;
@@ -100,6 +101,8 @@ public final class MultiversePowersClient {
         modEventBus.addListener(EntityRenderersEvent.RegisterLayerDefinitions.class, CrawlerRenderer::onRegisterLayers);
         modEventBus.addListener(ScreamerRenderer::onRegisterRenderers);
         modEventBus.addListener(ScreamerRenderer::onRegisterLayers);
+        modEventBus.addListener(RustboundRenderer::onRegisterRenderers);
+        modEventBus.addListener(RustboundRenderer::onRegisterLayers);
         modEventBus.addListener(HardLightRenderers::onRegisterRenderers);
         modEventBus.addListener(HardLightRenderers::onAddLayers);
         modEventBus.addListener(StageLightRenderer::onRegisterRenderers);

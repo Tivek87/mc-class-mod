@@ -5,6 +5,8 @@ import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 import javax.annotation.Nullable;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.block.state.BlockState;
@@ -28,8 +30,9 @@ public final class Schematic {
     // By cell; each holds its "id" and data, never its place.
     public final Int2ObjectMap<CompoundTag> blockEntities = new Int2ObjectOpenHashMap<>();
     public final List<Creature> creatures = new ArrayList<>();
-    // Block names the game does not know, left as air.
-    public int unknown;
+    // Blocks the game does not know (a mod's not installed, or a newer game's), left as air: by name, the cells each
+    // would have filled.
+    public final Map<String, Integer> missing = new TreeMap<>();
 
     public Schematic(String name, int sizeX, int sizeY, int sizeZ, List<BlockState> palette) {
         this.name = name;

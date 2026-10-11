@@ -23,6 +23,7 @@ import nl.tivek.multiversepowers.creature.Bleeding;
 import nl.tivek.multiversepowers.creature.bloater.Bloater;
 import nl.tivek.multiversepowers.creature.brute.ZombieBrute;
 import nl.tivek.multiversepowers.creature.lurker.Lurker;
+import nl.tivek.multiversepowers.creature.rustbound.Rustbound;
 import nl.tivek.multiversepowers.creature.screamer.Screamer;
 import nl.tivek.multiversepowers.engine.effect.Effects;
 import nl.tivek.multiversepowers.killconfirm.KillConfirms;
@@ -61,6 +62,7 @@ public class MultiversePowers {
         Bloater.register(modEventBus);
         Lurker.register(modEventBus);
         Screamer.register(modEventBus);
+        Rustbound.register(modEventBus);
         HardLight.register(modEventBus);
         StageBlocks.register(modEventBus);
         ModItems.register(modEventBus);

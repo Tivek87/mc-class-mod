@@ -1,4 +1,4 @@
-package nl.tivek.multiversepowers.schematic.client;
+package nl.tivek.multiversepowers.schematic.client.menu;
 
 import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.systems.RenderSystem;
@@ -40,7 +40,7 @@ import org.joml.Matrix4f;
 // coloured as its block's own texture looks from that way (grass green on top, earth on its sides; tinted as in a
 // plains biome), darker in the corners where cells meet, only the sides that face out, made away from the game's
 // thread. One for the library, one for the blueprints.
-final class PreviewModel {
+public final class PreviewModel {
     private static final int MOST = 128;
     // A block with no colour of its own to be found (an invisible one).
     private static final int CLEAR = 0xB8D4E0;
@@ -49,8 +49,8 @@ final class PreviewModel {
     // The average colour of each texture, worked out once.
     // By the sprite's own contents, which a resource reload replaces, so colours never outlive their textures.
     private static final Map<SpriteContents, Integer> SPRITES = Collections.synchronizedMap(new WeakHashMap<>());
-    static final PreviewModel LIBRARY = new PreviewModel();
-    static final PreviewModel BLUEPRINT = new PreviewModel();
+    public static final PreviewModel LIBRARY = new PreviewModel();
+    public static final PreviewModel BLUEPRINT = new PreviewModel();
 
     private record Mesh(@Nullable MeshData data, @Nullable ByteBufferBuilder memory, int cx, int cy, int cz) {
         void close() {
@@ -76,7 +76,7 @@ final class PreviewModel {
     private PreviewModel() {
     }
 
-    void build(Schematic schematic) {
+    public void build(Schematic schematic) {
         if (schematic == this.shown) {
             return;
         }
@@ -124,7 +124,7 @@ final class PreviewModel {
         return this.shown;
     }
 
-    void release() {
+    public void release() {
         this.generation++;
         this.building = false;
         this.shown = null;

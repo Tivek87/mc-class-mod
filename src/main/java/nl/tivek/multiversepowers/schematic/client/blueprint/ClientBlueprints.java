@@ -15,6 +15,7 @@ import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -46,9 +47,12 @@ public final class ClientBlueprints {
     private static final long FORGET = 30000L;
     private static final long RETRY = 20000L;
     private static final float[] EDGE = { 0.45F, 0.8F, 1.0F };
+    // Cells the guide looks through each tick, for each blueprint with its guide on.
+    private static final int SEEK = 60000;
 
     static final class Ghost {
-        final Blueprint blueprint;
+        // Its name may change while it stays the same plan.
+        Blueprint blueprint;
         @Nullable
         Schematic schematic;
         @Nullable
@@ -59,6 +63,8 @@ public final class ClientBlueprints {
         long askedAt;
         boolean failed;
         long wanted;
+        // The layer its model was last made for while layered, -1 while it shows every layer.
+        int shownLayer = -1;
 
         Ghost(Blueprint blueprint) {
             this.blueprint = blueprint;
@@ -72,14 +78,19 @@ public final class ClientBlueprints {
             this.schematic = null;
             this.check = null;
             this.asked = false;
+            this.shownLayer = -1;
         }
+    }
+
+    // The block the guide points the player to: where, and what goes there (air when it is to be cleared).
+    public record Guide(String blueprint, BlockPos pos, BlockState state, Item item, int layer, int layers) {
     }
 
     private static List<Blueprint> list = List.of();
     private static final Map<Integer, Ghost> GHOSTS = new HashMap<>();
-    // Blueprints this player has hidden for themselves.
-    private static final Set<Integer> HIDDEN = new HashSet<>();
     static long listed;
+    @Nullable
+    private static Guide guide;
 
     private ClientBlueprints() {
     }
@@ -100,9 +111,11 @@ public final class ClientBlueprints {
         for (Blueprint blueprint : list) {
             kept.add(blueprint.id());
             Ghost ghost = GHOSTS.get(blueprint.id());
-            if (ghost != null && !ghost.blueprint.equals(blueprint)) {
+            if (ghost != null && !ghost.blueprint.samePlan(blueprint)) {
                 ghost.release();
                 GHOSTS.remove(blueprint.id());
+            } else if (ghost != null) {
+                ghost.blueprint = blueprint;
             }
         }
         GHOSTS.entrySet().removeIf(entry -> {
@@ -112,7 +125,7 @@ public final class ClientBlueprints {
             }
             return false;
         });
-        HIDDEN.retainAll(kept);
+        BlueprintViews.keepOnly(kept);
     }
 
     // What one kind of item a blueprint needs, and how many of it are still to be placed.
@@ -155,16 +168,16 @@ public final class ClientBlueprints {
         }
     }
 
-    public static boolean hidden(int id) {
-        return HIDDEN.contains(id);
+    // The block the guide points to now, of the nearest blueprint with its guide on.
+    @Nullable
+    public static Guide guide() {
+        return guide;
     }
 
-    public static void hide(int id, boolean hide) {
-        if (hide) {
-            HIDDEN.add(id);
-        } else {
-            HIDDEN.remove(id);
-        }
+    // The layer it shows while layered (from 0), and how many it has; -1 while it is not read yet.
+    public static int layer(int id) {
+        Ghost ghost = GHOSTS.get(id);
+        return ghost == null || ghost.check == null ? -1 : ghost.check.layer();
     }
 
     // Asked again when its file has not come within RETRY (lost on the way, or refused).
@@ -253,18 +266,49 @@ public final class ClientBlueprints {
                 checking.add(ghost);
             }
         }
+        guide = null;
         if (checking.isEmpty()) {
             return;
         }
         int each = Math.max(1000, SCAN / checking.size());
+        double nearest = Double.MAX_VALUE;
         for (Ghost ghost : checking) {
             BlueprintCheck check = ghost.check;
+            int id = ghost.blueprint.id();
+            check.layered = BlueprintViews.has(id, BlueprintViews.LAYERS);
             check.scan(level, each, ghost.model);
             if (ghost.model == null && check.passes > 0 && ghost.schematic != null) {
                 ghost.model = new HologramModel(ghost.schematic, level, check::look);
                 refreshInTheWay(ghost.model, check);
             }
+            layers(ghost, check);
+            if (BlueprintViews.has(id, BlueprintViews.GUIDE) && !BlueprintViews.has(id, BlueprintViews.HIDDEN)
+                    && check.passes > 0) {
+                check.seek(player.getX(), player.getEyeY(), player.getZ(), SEEK);
+                BlockPos at = check.targetPos();
+                double distance = at == null ? Double.MAX_VALUE : at.distToCenterSqr(player.position());
+                if (at != null && distance < nearest) {
+                    nearest = distance;
+                    BlockState wanted = check.targetState();
+                    guide = new Guide(ghost.blueprint.name(), at, wanted, Materials.item(wanted), check.layer(),
+                            check.schematic.sizeY);
+                }
+            }
         }
+    }
+
+    // Layered, the layers that come into sight or go out of it as the lowest unfinished one moves are made again.
+    private static void layers(Ghost ghost, BlueprintCheck check) {
+        HologramModel model = ghost.model;
+        if (model == null) {
+            return;
+        }
+        int now = check.layered ? check.layer() : -1;
+        if (now == ghost.shownLayer) {
+            return;
+        }
+        ghost.shownLayer = now;
+        model.top(now);
     }
 
     // Blocks in the way where the plan has only air lie in cubes the model does not make by itself.
@@ -301,15 +345,23 @@ public final class ClientBlueprints {
         float alpha = (float) ClientSettings.get(ClientSettings.BLUEPRINT_OPACITY);
         for (Ghost ghost : GHOSTS.values()) {
             HologramModel model = ghost.model;
-            if (model == null || !here(level, ghost.blueprint) || HIDDEN.contains(ghost.blueprint.id())) {
+            int id = ghost.blueprint.id();
+            if (model == null || !here(level, ghost.blueprint) || BlueprintViews.has(id, BlueprintViews.HIDDEN)) {
                 continue;
             }
             room = Math.max(1, room - HologramRenderer.work(model, room));
             model.draw(event, ghost.blueprint.placement(), 1.0F, 1.0F, 1.0F, alpha);
-            if (ClientSettings.get(ClientSettings.SCHEMATIC_OUTLINE) != 0) {
+            if (ClientSettings.get(ClientSettings.SCHEMATIC_OUTLINE) != 0 && !BlueprintViews.has(id,
+                    BlueprintViews.NO_BOX)) {
                 HologramRenderer.outline(event, ghost.blueprint.placement(), model.schematic(), EDGE[0], EDGE[1],
                         EDGE[2]);
             }
+        }
+        Guide shown = guide;
+        if (shown != null) {
+            // A pulsing yellow frame round the block the guide points to.
+            float pulse = 0.6F + 0.4F * (float) Math.sin(Util.getMillis() / 160.0);
+            HologramRenderer.box(event, new AABB(shown.pos()).inflate(0.02), 1.0F, 0.85F * pulse + 0.15F, 0.2F);
         }
     }
 
@@ -319,7 +371,7 @@ public final class ClientBlueprints {
             ghost.release();
         }
         GHOSTS.clear();
-        HIDDEN.clear();
+        guide = null;
         list = List.of();
     }
 }

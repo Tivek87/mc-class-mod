@@ -42,6 +42,16 @@ public record Blueprint(int id, String name, String owner, ResourceLocation leve
         }
     };
 
+    public Blueprint named(String named) {
+        return new Blueprint(this.id, named, this.owner, this.level, this.origin, this.rotation, this.mirror,
+                this.sizeX, this.sizeY, this.sizeZ, this.file);
+    }
+
+    // The same plan in the same place, whatever its name.
+    public boolean samePlan(Blueprint other) {
+        return this.named("").equals(other.named(""));
+    }
+
     public SchematicPlacement placement() {
         return new SchematicPlacement(this.origin, Rotation.values()[Math.floorMod(this.rotation, 4)],
                 Mirror.values()[Math.floorMod(this.mirror, 3)]);

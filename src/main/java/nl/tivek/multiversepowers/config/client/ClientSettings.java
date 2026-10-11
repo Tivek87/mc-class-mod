@@ -13,6 +13,10 @@ public final class ClientSettings {
     public static final ModConfigSpec.DoubleValue RAM_GROUND_SHAKE;
     public static final ModConfigSpec.DoubleValue SCREEN_FLASH;
     public static final ModConfigSpec.IntValue MECH_CINEMATIC;
+    public static final ModConfigSpec.DoubleValue PANEL_SIZE;
+    public static final ModConfigSpec.IntValue PANEL_PLACED;
+    public static final ModConfigSpec.DoubleValue PANEL_X;
+    public static final ModConfigSpec.DoubleValue PANEL_Y;
     public static final ModConfigSpec.DoubleValue PARTICLE_AMOUNT;
     public static final ModConfigSpec.IntValue EFFECT_DETAIL;
     public static final ModConfigSpec.IntValue STAGE_BEAMS;
@@ -55,6 +59,15 @@ public final class ClientSettings {
                 + " off near you (1 = as the mod makes it, 0 = never)", 1.0, 0.0, 2.0, Unit.PERCENT, 0.05);
         MECH_CINEMATIC = sheet.toggle("mechCinematic", "Film your own mech while it builds itself, shot after shot like"
                 + " a movie, before you look out of its cockpit (1 = yes, 0 = keep your own view)", true);
+        sheet.section("panel");
+        PANEL_SIZE = sheet.number("panelSize", "How big the ability overlay is (1 = as the mod makes it for your GUI"
+                + " scale)", 1.0, 0.5, 2.0, Unit.PERCENT, 0.05);
+        PANEL_PLACED = sheet.toggle("panelPlaced", "Put the ability overlay where you dragged it (1) rather than in"
+                + " the corner right of the hotbar (0)", false);
+        PANEL_X = sheet.number("panelX", "Where across the screen the ability overlay stands while placed (0 = left"
+                + " edge, 1 = right edge)", 1.0, 0.0, 1.0, Unit.PERCENT, 0.01);
+        PANEL_Y = sheet.number("panelY", "Where down the screen the ability overlay stands while placed (0 = top,"
+                + " 1 = bottom)", 1.0, 0.0, 1.0, Unit.PERCENT, 0.01);
         sheet.section("effects");
         PARTICLE_AMOUNT = sheet.number("particleAmount", "How many particles the powers throw up: sparks, dust, smoke,"
                 + " splashes (1 = as the mod makes them, 0 = none)", 1.0, 0.0, 2.0, Unit.PERCENT, 0.05);

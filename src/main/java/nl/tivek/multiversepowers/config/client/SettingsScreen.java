@@ -220,7 +220,8 @@ public final class SettingsScreen extends NavScreen {
                 SettingsPages.Section section = this.page.sections().get(i);
                 String key = this.key(i);
                 blocks.add(new SettingsList.Block(key, section.title(), section.hint(), section.about(),
-                        this.page.color(), true, this.visit.collapsed.contains(key), section.groups()));
+                        this.page.color(), true, this.visit.collapsed.contains(key), section.groups(),
+                        this.action(section)));
             }
             return blocks;
         }
@@ -243,7 +244,7 @@ public final class SettingsScreen extends NavScreen {
                 if (!groups.isEmpty()) {
                     Component title = Component.empty().append(page.title()).append(" › ").append(section.title());
                     blocks.add(new SettingsList.Block("search", title, section.hint(), section.about(), page.color(),
-                            false, false, groups));
+                            false, false, groups, this.action(section)));
                 }
             }
         }
@@ -348,6 +349,21 @@ public final class SettingsScreen extends NavScreen {
         this.visit.edits.clear();
         this.rebuildLater(true);
         this.refreshButtons();
+    }
+
+    // A section's own screen changes its settings itself: what was typed here for them first gives way.
+    @Nullable
+    private SettingsPages.Action action(SettingsPages.Section section) {
+        SettingsPages.Action action = section.action();
+        if (action == null) {
+            return null;
+        }
+        return new SettingsPages.Action(action.key(), () -> {
+            for (SettingsPages.Group group : section.groups()) {
+                group.numbers().forEach(this.visit.edits::remove);
+            }
+            action.run().run();
+        });
     }
 
     private void apply() {

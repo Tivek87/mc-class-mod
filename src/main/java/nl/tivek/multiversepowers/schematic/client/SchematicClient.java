@@ -18,6 +18,8 @@ import nl.tivek.multiversepowers.schematic.SchematicLibrary;
 import nl.tivek.multiversepowers.schematic.SchematicRules;
 import nl.tivek.multiversepowers.schematic.client.blueprint.ClientBlueprints;
 import nl.tivek.multiversepowers.schematic.client.hologram.Hologram;
+import nl.tivek.multiversepowers.schematic.client.menu.LibraryPage;
+import nl.tivek.multiversepowers.schematic.client.menu.PreviewModel;
 import nl.tivek.multiversepowers.schematic.format.SchematicException;
 import nl.tivek.multiversepowers.schematic.format.SchematicReader;
 import nl.tivek.multiversepowers.schematic.net.SchematicAskPayload;
@@ -45,27 +47,27 @@ public final class SchematicClient {
         }
     }
 
-    static String folder = "";
-    static String root = "";
-    static List<SchematicLibrary.Entry> entries = List.of();
-    static long listed;
+    public static String folder = "";
+    public static String root = "";
+    public static List<SchematicLibrary.Entry> entries = List.of();
+    public static long listed;
     @Nullable
-    static Schematic viewed;
+    public static Schematic viewed;
     @Nullable
-    static String viewedPath;
+    public static String viewedPath;
     @Nullable
-    static String loadingPath;
+    public static String loadingPath;
     // How far the file of the schematic asked for has come in, 0 to 1.
-    static float loading;
+    public static float loading;
     @Nullable
-    static Component viewError;
+    public static Component viewError;
     @Nullable
     static SchematicStatusPayload status;
     static long statusAt;
     @Nullable
-    static Component notice;
-    static boolean noticeBad;
-    static long noticeAt;
+    public static Component notice;
+    public static boolean noticeBad;
+    public static long noticeAt;
     @Nullable
     private static Incoming incoming;
     private static int asked;
@@ -78,7 +80,7 @@ public final class SchematicClient {
         return trusted(player) && ClientCharacter.active() == null;
     }
 
-    static boolean trusted(LocalPlayer player) {
+    public static boolean trusted(LocalPlayer player) {
         Minecraft minecraft = Minecraft.getInstance();
         return minecraft.hasSingleplayerServer() || PowerRules.isOwner(player.getGameProfile())
                 || player.hasPermissions(2);
@@ -88,16 +90,16 @@ public final class SchematicClient {
         return player.getMainHandItem().is(ModItems.SCHEMATIC_WAND.get());
     }
 
-    static void ask(int action, String path, String text) {
+    public static void ask(int action, String path, String text) {
         PacketDistributor.sendToServer(new SchematicAskPayload(action, path, text));
     }
 
-    static void list(String folder) {
+    public static void list(String folder) {
         ask(SchematicAskPayload.LIST, folder, "");
     }
 
     // Asks for a schematic to look at; it is read once its file is in.
-    static void view(String path) {
+    public static void view(String path) {
         if (path.equals(viewedPath) && viewed != null || path.equals(loadingPath)) {
             return;
         }
@@ -106,6 +108,22 @@ public final class SchematicClient {
         viewError = null;
         asked++;
         ask(SchematicAskPayload.VIEW, path, "");
+    }
+
+    // A file or folder renamed from the menu: the chosen schematic and the hologram follow it.
+    private static void renamed(String from, String to) {
+        viewedPath = moved(viewedPath, from, to);
+        Hologram.path = moved(Hologram.path, from, to);
+        LibraryPage.selected = moved(LibraryPage.selected, from, to);
+        Hologram.renamed(from, to);
+    }
+
+    @Nullable
+    static String moved(@Nullable String path, String from, String to) {
+        if (path == null) {
+            return null;
+        }
+        return path.equals(from) ? to : path.startsWith(from + "/") ? to + path.substring(from.length()) : path;
     }
 
     public static void onList(SchematicListPayload payload) {
@@ -190,10 +208,13 @@ public final class SchematicClient {
             viewed = null;
             viewedPath = null;
         }
+        if (payload.key().equals("notice.renamed")) {
+            renamed(payload.first(), payload.second());
+        }
         say(payload.text(), payload.bad());
     }
 
-    static void say(Component text, boolean bad) {
+    public static void say(Component text, boolean bad) {
         notice = text;
         noticeBad = bad;
         noticeAt = Util.getMillis();
@@ -205,7 +226,7 @@ public final class SchematicClient {
 
     // A paste under way, or just ended.
     @Nullable
-    static SchematicStatusPayload status() {
+    public static SchematicStatusPayload status() {
         SchematicStatusPayload now = status;
         if (now == null) {
             return null;
@@ -226,6 +247,9 @@ public final class SchematicClient {
         notice = null;
         incoming = null;
         Hologram.hide();
+        Hologram.forgetSpots();
+        AreaSelection.stop();
+        AreaSelection.clear();
         PreviewModel.LIBRARY.release();
         PreviewModel.BLUEPRINT.release();
     }

@@ -50,13 +50,12 @@ final class SpongeFormat {
         short[] remap = new short[most + 1];
         Arrays.fill(remap, Schematic.VOID);
         List<BlockState> palette = new ArrayList<>();
-        int[] unknown = { 0 };
+        Palettes.Missing missing = new Palettes.Missing();
         for (String key : paletteTag.getAllKeys()) {
             remap[paletteTag.getInt(key)] = (short) palette.size();
-            palette.add(Palettes.known(Palettes.tag(key), data, unknown));
+            palette.add(Palettes.known(Palettes.tag(key), data, missing, palette.size()));
         }
         Schematic schematic = new Schematic(name, sx, sy, sz, palette);
-        schematic.unknown = unknown[0];
         int[] cells = Packed.varints(ids, schematic.volume());
         if (cells == null) {
             throw new SchematicException("broken", name);
@@ -64,6 +63,7 @@ final class SpongeFormat {
         for (int i = 0; i < cells.length; i++) {
             schematic.cells[i] = cells[i] < remap.length ? remap[cells[i]] : Schematic.VOID;
         }
+        missing.count(schematic);
         for (Tag entry : blockEntities) {
             CompoundTag be = (CompoundTag) entry;
             int[] pos = be.getIntArray("Pos");

@@ -114,6 +114,41 @@ public final class SchematicLibrary {
         return folder;
     }
 
+    // The name `typed` gives a file or folder called `old`: cleaned, a file keeping its kind (its ending); "" when
+    // nothing fit is left.
+    static String renamed(String old, String typed, boolean folder) {
+        String clean = clean(typed);
+        if (!folder) {
+            int dot = old.lastIndexOf('.');
+            String kind = dot < 0 ? "" : old.substring(dot);
+            if (clean.toLowerCase(Locale.ROOT).endsWith(kind.toLowerCase(Locale.ROOT))) {
+                clean = clean.substring(0, clean.length() - kind.length()).trim();
+            }
+            clean = clean.isEmpty() ? "" : clean + kind;
+        }
+        return clean.startsWith(".") ? "" : clean;
+    }
+
+    // A file or folder named anew in its own folder; a file keeps its kind (its ending), whatever was typed.
+    public static Path rename(Path path, String name) throws IOException {
+        if (path.equals(root()) || !Files.exists(path)) {
+            throw new IOException("gone");
+        }
+        String clean = renamed(path.getFileName().toString(), name, Files.isDirectory(path));
+        if (clean.isEmpty()) {
+            throw new IOException("name");
+        }
+        Path to = path.resolveSibling(clean);
+        if (to.equals(path)) {
+            return path;
+        }
+        // Only the case changed: on Windows the name already "exists" as itself.
+        if (Files.exists(to) && !to.getFileName().toString().equalsIgnoreCase(path.getFileName().toString())) {
+            throw new IOException("taken");
+        }
+        return Files.move(path, to);
+    }
+
     // A file, or a folder with all it holds; never the library itself.
     public static void delete(Path path) throws IOException {
         if (path.equals(root()) || !Files.exists(path)) {
@@ -140,6 +175,21 @@ public final class SchematicLibrary {
 
     // Writes an imported file into a folder, next to any of the same name; returns where it went.
     public static Path save(Path folder, String fileName, byte[] bytes) throws IOException {
+        Path path = free(folder, fileName);
+        Files.write(path, bytes);
+        return path;
+    }
+
+    // A copy of a file beside it, "name (2).schem"; returns the copy.
+    public static Path duplicate(Path file) throws IOException {
+        if (!Files.isRegularFile(file)) {
+            throw new IOException("gone");
+        }
+        return Files.copy(file, free(file.getParent(), file.getFileName().toString()));
+    }
+
+    // Where a file of this name can go in `folder` without writing over another: "name (2).schem" and on.
+    private static Path free(Path folder, String fileName) throws IOException {
         String clean = clean(fileName);
         if (!SchematicReader.readable(clean)) {
             throw new IOException("kind");
@@ -152,7 +202,6 @@ public final class SchematicLibrary {
         for (int k = 2; Files.exists(path); k++) {
             path = folder.resolve(stem + " (" + k + ")" + kind);
         }
-        Files.write(path, bytes);
         return path;
     }
 }

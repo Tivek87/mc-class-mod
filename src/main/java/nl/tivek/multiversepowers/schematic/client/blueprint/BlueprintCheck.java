@@ -9,6 +9,7 @@ import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.Property;
@@ -63,6 +64,17 @@ final class BlueprintCheck {
     int turnedWrong;
     int inTheWay;
     long changed;
+    // By layer (y): the cells still to be built or cleared there.
+    private final int[] open;
+    // The lowest layer not finished yet, kept for the mesh threads that read it once a cell.
+    private volatile int lowest;
+    // Shown a layer at a time: only the lowest layer not finished yet and what lies under it.
+    volatile boolean layered;
+    // The nearest cell still to be done, as the last search round found it (-1: none), and that round's own.
+    private int searched;
+    private int bestCell = -1;
+    private double bestDistance;
+    int target = -1;
 
     BlueprintCheck(Blueprint blueprint, Schematic schematic) {
         this.blueprint = blueprint;
@@ -99,17 +111,25 @@ final class BlueprintCheck {
             }
         }
         this.status = new byte[schematic.volume()];
-        for (short cell : schematic.cells) {
+        this.open = new int[schematic.sizeY];
+        int layer = schematic.sizeX * schematic.sizeZ;
+        for (int i = 0; i < schematic.cells.length; i++) {
+            short cell = schematic.cells[i];
             if (cell != Schematic.VOID && !this.turned[cell].isAir()) {
                 this.unseen++;
+                this.open[i / layer]++;
             }
         }
         this.wideX = this.placement.sizeX(schematic);
         this.wideZ = this.placement.sizeZ(schematic);
+        this.lowest = this.lowestOpen();
     }
 
     // How the cell is drawn now.
     int look(int index) {
+        if (this.layered && index / (this.schematic.sizeX * this.schematic.sizeZ) > this.lowest) {
+            return HologramMesh.HIDDEN;
+        }
         return switch (this.status[index]) {
             case UNKNOWN, MISSING -> HologramMesh.PLAIN;
             case WRONG -> HologramMesh.WRONG;
@@ -169,6 +189,12 @@ final class BlueprintCheck {
         this.status[index] = now;
         this.count(cell, was, -1);
         this.count(cell, now, 1);
+        boolean air = this.turned[cell].isAir();
+        int opened = (open(air, now) ? 1 : 0) - (open(air, was) ? 1 : 0);
+        if (opened != 0) {
+            this.open[y] += opened;
+            this.lowest = this.lowestOpen();
+        }
         this.changed = Util.getMillis();
         if (model != null) {
             model.refresh(this.xz[0], y, this.xz[1]);
@@ -196,6 +222,102 @@ final class BlueprintCheck {
             default -> {
             }
         }
+    }
+
+    // Whether a cell still has to be built (or, where the plan has air, cleared).
+    private static boolean open(boolean air, byte state) {
+        return air ? state == IN_THE_WAY : state != DONE;
+    }
+
+    // The lowest layer not finished yet; the height when all are.
+    int layer() {
+        return this.lowest;
+    }
+
+    private int lowestOpen() {
+        for (int y = 0; y < this.open.length; y++) {
+            if (this.open[y] > 0) {
+                return y;
+            }
+        }
+        return this.open.length;
+    }
+
+    // Goes on looking for the cell still to be done nearest `eye`, `budget` cells a call (only in the layer shown
+    // while layered); each round's nearest becomes `target`. Cells not seen yet are left out.
+    void seek(double eyeX, double eyeY, double eyeZ, int budget) {
+        int area = this.wideX * this.wideZ;
+        int layer = this.layer();
+        int from = this.layered ? Math.min(layer, this.schematic.sizeY) * area : 0;
+        int to = this.layered ? Math.min(this.status.length, from + area) : this.status.length;
+        if (this.searched < from || this.searched >= to) {
+            this.searched = from;
+        }
+        BlockPos origin = this.placement.origin();
+        for (int k = 0; k < budget && from < to; k++) {
+            int cursor = this.searched;
+            int u = cursor % this.wideX;
+            int rest = cursor / this.wideX;
+            int w = rest % this.wideZ;
+            int y = rest / this.wideZ;
+            this.placement.source(this.schematic, u, w, this.xz);
+            int index = this.schematic.index(this.xz[0], y, this.xz[1]);
+            short cell = this.schematic.cells[index];
+            byte state = this.status[index];
+            if (cell != Schematic.VOID && state != UNKNOWN && open(this.turned[cell].isAir(), state)) {
+                double dx = origin.getX() + u + 0.5 - eyeX;
+                double dy = origin.getY() + y + 0.5 - eyeY;
+                double dz = origin.getZ() + w + 0.5 - eyeZ;
+                double distance = dx * dx + dy * dy + dz * dz;
+                if (this.bestCell < 0 || distance < this.bestDistance) {
+                    this.bestCell = cursor;
+                    this.bestDistance = distance;
+                }
+            }
+            if (++this.searched >= to) {
+                this.target = this.bestCell;
+                this.bestCell = -1;
+                this.searched = from;
+            }
+        }
+        if (this.target >= 0 && !this.stillOpen(this.target)) {
+            this.target = -1;
+        }
+    }
+
+    // Whether the cell at turned-box place `cursor` (x first, then z, then y) still has to be done.
+    private boolean stillOpen(int cursor) {
+        int u = cursor % this.wideX;
+        int rest = cursor / this.wideX;
+        this.placement.source(this.schematic, u, rest % this.wideZ, this.xz);
+        int index = this.schematic.index(this.xz[0], rest / this.wideZ, this.xz[1]);
+        short cell = this.schematic.cells[index];
+        return cell != Schematic.VOID && open(this.turned[cell].isAir(), this.status[index]);
+    }
+
+    // Where in the world the target lies, and the block it wants there (air when it is to be cleared).
+    @Nullable
+    BlockPos targetPos() {
+        int cursor = this.target;
+        if (cursor < 0) {
+            return null;
+        }
+        int u = cursor % this.wideX;
+        int rest = cursor / this.wideX;
+        return this.placement.origin().offset(u, rest / this.wideZ, rest % this.wideZ);
+    }
+
+    BlockState targetState() {
+        int cursor = this.target;
+        if (cursor < 0) {
+            return Blocks.AIR.defaultBlockState();
+        }
+        int u = cursor % this.wideX;
+        int rest = cursor / this.wideX;
+        this.placement.source(this.schematic, u, rest % this.wideZ, this.xz);
+        short cell = this.schematic.cells[this.schematic.index(this.xz[0], rest / this.wideZ, this.xz[1])];
+        return cell == Schematic.VOID ? Blocks.AIR.defaultBlockState()
+                : this.turned[cell];
     }
 
     // What a cell is, the plan wanting `expected` where the world has `world`.

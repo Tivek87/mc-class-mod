@@ -15,7 +15,7 @@ import org.lwjgl.util.tinyfd.TinyFileDialogs;
 
 // The computer's own file windows (TinyFileDialogs, which comes with the game): a schematic picked to import, or a
 // downloaded one saved where the player chooses. They run beside the game's thread, so the game keeps drawing.
-final class FileDialogs {
+public final class FileDialogs {
     private static volatile boolean open;
 
     private FileDialogs() {
@@ -25,7 +25,7 @@ final class FileDialogs {
         return open;
     }
 
-    static void pick(Consumer<Path> picked) {
+    public static void pick(Consumer<Path> picked) {
         if (open) {
             return;
         }

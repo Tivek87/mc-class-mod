@@ -19,6 +19,7 @@ import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.Mth;
 import net.minecraft.world.entity.HumanoidArm;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -33,6 +34,7 @@ import nl.tivek.multiversepowers.character.GameCharacter;
 import nl.tivek.multiversepowers.character.client.AbilityPanelRows.Line;
 import nl.tivek.multiversepowers.character.greenlantern.client.hud.ConstructHud;
 import nl.tivek.multiversepowers.character.greenlantern.client.hud.ConstructWheelScreen;
+import nl.tivek.multiversepowers.config.client.ClientSettings;
 import nl.tivek.multiversepowers.engine.client.gui.GuiShapes;
 import nl.tivek.multiversepowers.engine.client.gui.HudSpace;
 import nl.tivek.multiversepowers.engine.client.gui.ScreenAnchors;
@@ -95,6 +97,11 @@ public final class AbilityPanel {
     private static int lastHit;
     // How high the panel reached above the screen's bottom when last drawn, in GUI units; 0 while it is away.
     private static float drawnHeight;
+    // In the corner right of the hotbar (not where the player put it).
+    private static boolean corner = true;
+    @Nullable
+    private static float[] drawn;
+    private static long drawnAt;
     private static boolean subtitlesMoved;
     private static final List<Tool> TOOLS = new ArrayList<>();
 
@@ -308,6 +315,13 @@ public final class AbilityPanel {
     private AbilityPanel() {
     }
 
+    // Where it was drawn last on the screen (left, top, width, height), for the layout editor; null for a while
+    // after it was last drawn.
+    @Nullable
+    public static float[] drawn() {
+        return Util.getMillis() - drawnAt < 250L ? drawn : null;
+    }
+
     public static void rules(GameCharacter character, Rules rules) {
         RULES.put(character, rules);
     }
@@ -446,18 +460,35 @@ public final class AbilityPanel {
             up = new Up();
         }
         double guiScale = minecraft.getWindow().getGuiScale();
-        float room = graphics.guiWidth() / 2.0F - HOTBAR - beside(minecraft) - MARGIN * 2;
+        boolean placed = ClientSettings.get(ClientSettings.PANEL_PLACED) != 0;
+        float size = (float) ClientSettings.get(ClientSettings.PANEL_SIZE);
+        float room = (placed ? graphics.guiWidth() - MARGIN * 2.0F : graphics.guiWidth() / 2.0F - HOTBAR
+                - beside(minecraft) - MARGIN * 2) / size;
         Layout layout = up.place(layout(font, owner, lines, ultimate, up.keys, ROOMY),
                 layout(font, owner, lines, ultimate, up.keys, TIGHT), guiScale, graphics.guiWidth(),
-                graphics.guiHeight(), room);
+                Math.round(graphics.guiHeight() / size), room);
         up.follow(layout, lines, seconds, millis);
-        float scale = up.scale();
+        float scale = up.scale() * size;
         graphics.flush();
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, (float) Ease.smooth(shown));
         PoseStack pose = graphics.pose();
         pose.pushPose();
-        float x = onPixel(graphics.guiWidth() - MARGIN, guiScale);
-        float y = onPixel(graphics.guiHeight() - MARGIN, guiScale);
+        float x = graphics.guiWidth() - MARGIN;
+        float y = graphics.guiHeight() - MARGIN;
+        if (placed) {
+            // Its corner nearest the screen's nearest corner stays where it was dragged, so it grows away from it.
+            float wide = (up.shownWidth + PAD * 2) * scale;
+            float tall = (up.shownHeight + PAD * 2) * scale;
+            double across = ClientSettings.get(ClientSettings.PANEL_X);
+            double down = ClientSettings.get(ClientSettings.PANEL_Y);
+            x = (float) (across * graphics.guiWidth()) + (across >= 0.5 ? 0.0F : wide);
+            y = (float) (down * graphics.guiHeight()) + (down >= 0.5 ? 0.0F : tall);
+            x = Mth.clamp(x, Math.min(wide, graphics.guiWidth()), graphics.guiWidth());
+            y = Mth.clamp(y, Math.min(tall, graphics.guiHeight()), graphics.guiHeight());
+        }
+        x = onPixel(x, guiScale);
+        y = onPixel(y, guiScale);
+        corner = !placed;
         pose.translate(x, y, 0.0F);
         pose.scale(scale, scale, 1.0F);
         draw(graphics, font, owner, player, lines, layout, up, millis);
@@ -506,7 +537,9 @@ public final class AbilityPanel {
         int height = Math.round(up.shownHeight) + PAD * 2;
         ScreenAnchors.report("game.panel", x - width * scale, y - height * scale, width * scale, height * scale);
         HudSpace.claim(x - width * scale, y - height * scale, width * scale, height * scale);
-        drawnHeight = height * scale + MARGIN;
+        drawn = new float[] { x - width * scale, y - height * scale, width * scale, height * scale };
+        drawnAt = Util.getMillis();
+        drawnHeight = corner ? height * scale + MARGIN : 0.0F;
         if (layout.corner() == null && layout.guideWidth() > 0) {
             float top = y - (height - PAD + 3) * scale;
             ScreenAnchors.report("game.panel.guide", x - (PAD + layout.guideWidth() + 2) * scale, top,

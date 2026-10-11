@@ -57,29 +57,37 @@ final class LitematicFormat {
         List<BlockState> palette = new ArrayList<>();
         Object2IntOpenHashMap<BlockState> known = new Object2IntOpenHashMap<>();
         known.defaultReturnValue(-1);
-        int[] unknown = { 0 };
+        Object2IntOpenHashMap<String> lost = new Object2IntOpenHashMap<>();
+        lost.defaultReturnValue(-1);
+        Palettes.Missing missing = new Palettes.Missing();
         List<short[]> remaps = new ArrayList<>();
         for (Region region : regions) {
             ListTag paletteTag = region.tag().getList("BlockStatePalette", Tag.TAG_COMPOUND);
             short[] remap = new short[paletteTag.size()];
             for (int k = 0; k < remap.length; k++) {
-                BlockState state = Palettes.known(paletteTag.getCompound(k), data, unknown);
-                int at = known.getInt(state);
+                Palettes.Entry entry = Palettes.entry(paletteTag.getCompound(k), data);
+                // A block the game lacks keeps an entry of its own, so its cells can be counted.
+                int at = entry.missing() == null ? known.getInt(entry.state()) : lost.getInt(entry.missing());
                 if (at < 0) {
                     at = palette.size();
                     SchematicReader.palette(at + 1);
-                    known.put(state, at);
-                    palette.add(state);
+                    if (entry.missing() == null) {
+                        known.put(entry.state(), at);
+                    } else {
+                        lost.put(entry.missing(), at);
+                        missing.note(at, entry.missing());
+                    }
+                    palette.add(entry.state());
                 }
                 remap[k] = (short) at;
             }
             remaps.add(remap);
         }
         Schematic schematic = new Schematic(name, maxX - minX, maxY - minY, maxZ - minZ, palette);
-        schematic.unknown = unknown[0];
         for (int r = 0; r < regions.size(); r++) {
             fill(schematic, regions.get(r), remaps.get(r), minX, minY, minZ, data);
         }
+        missing.count(schematic);
         return schematic;
     }
 

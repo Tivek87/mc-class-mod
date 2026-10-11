@@ -22,6 +22,8 @@ final class SchematicView implements BlockAndTintGetter {
     private final Schematic schematic;
     private final Biome biome;
     private final LevelLightEngine light;
+    // The highest layer drawn: what lies above is air, so the faces under it show.
+    volatile int top = Integer.MAX_VALUE;
 
     SchematicView(Schematic schematic, Biome biome, LevelLightEngine light) {
         this.schematic = schematic;
@@ -31,6 +33,9 @@ final class SchematicView implements BlockAndTintGetter {
 
     @Override
     public BlockState getBlockState(BlockPos pos) {
+        if (pos.getY() > this.top) {
+            return AIR;
+        }
         BlockState state = this.schematic.state(pos.getX(), pos.getY(), pos.getZ());
         return state == null ? AIR : state;
     }

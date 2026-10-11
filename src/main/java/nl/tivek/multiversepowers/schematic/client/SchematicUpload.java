@@ -42,7 +42,7 @@ public final class SchematicUpload {
     }
 
     // Sends a file into `folder` of the library, under its own name; it is read away from the game's thread.
-    static void send(Path file, String folder) {
+    public static void send(Path file, String folder) {
         String name = file.getFileName().toString();
         if (!SchematicReader.readable(name)) {
             SchematicClient.say(Component.translatable(SchematicClient.PREFIX + "error.kind", name), true);

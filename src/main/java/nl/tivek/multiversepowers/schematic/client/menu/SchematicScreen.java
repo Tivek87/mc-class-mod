@@ -1,4 +1,4 @@
-package nl.tivek.multiversepowers.schematic.client;
+package nl.tivek.multiversepowers.schematic.client.menu;
 
 import java.util.List;
 import javax.annotation.Nullable;
@@ -10,6 +10,8 @@ import net.minecraft.network.chat.Component;
 import nl.tivek.multiversepowers.engine.client.gui.NavScreen;
 import nl.tivek.multiversepowers.engine.client.gui.PixelIcons;
 import nl.tivek.multiversepowers.schematic.Schematic;
+import nl.tivek.multiversepowers.schematic.client.SchematicClient;
+import nl.tivek.multiversepowers.schematic.client.SchematicHud;
 import nl.tivek.multiversepowers.schematic.client.hologram.Hologram;
 import nl.tivek.multiversepowers.schematic.net.SchematicStatusPayload;
 
@@ -21,6 +23,7 @@ public abstract class SchematicScreen extends NavScreen {
     static final String LIBRARY = "library";
     static final String PLACE = "place";
     static final String BLUEPRINTS = "blueprints";
+    static final String SAVE = "save_area";
     static final String PREFIX = SchematicClient.PREFIX;
     private static final int GOOD = 0xFF8CE08C;
     private static final int BAD = 0xFFEF7B6E;
@@ -39,6 +42,16 @@ public abstract class SchematicScreen extends NavScreen {
         minecraft.setScreen(Hologram.shown() ? new PlacePage(null) : new LibraryPage(null));
     }
 
+    // From the wand while picking an area: the page that saves it.
+    public static void openSave() {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.player == null || !SchematicClient.allowed(minecraft.player)) {
+            return;
+        }
+        SchematicClient.list(SchematicClient.folder);
+        minecraft.setScreen(new SavePage(null));
+    }
+
     @Override
     protected List<Item> items() {
         boolean chosen = SchematicClient.viewed != null;
@@ -48,7 +61,9 @@ public abstract class SchematicScreen extends NavScreen {
                         chosen ? () -> this.minecraft.setScreen(new PlacePage(this.root)) : null, false, false, null, 0,
                         chosen ? null : Component.translatable(PREFIX + "place.none")),
                 new Item(BLUEPRINTS, Component.translatable(PREFIX + BLUEPRINTS), PixelIcons.Icon.PLAN,
-                        () -> this.minecraft.setScreen(new BlueprintPage(this.root)), false));
+                        () -> this.minecraft.setScreen(new BlueprintPage(this.root)), false),
+                new Item(SAVE, Component.translatable(PREFIX + SAVE), PixelIcons.Icon.AREA,
+                        () -> this.minecraft.setScreen(new SavePage(this.root)), false));
     }
 
     @Override
@@ -94,7 +109,7 @@ public abstract class SchematicScreen extends NavScreen {
     }
 
     // Name, size and how many blocks of the chosen schematic.
-    protected int facts(GuiGraphics graphics, int x, int y, int width) {
+    protected int facts(GuiGraphics graphics, int x, int y, int width, int mouseX, int mouseY) {
         Schematic shown = SchematicClient.viewed;
         if (shown == null || SchematicClient.loadingPath != null) {
             return y;
@@ -107,11 +122,24 @@ public abstract class SchematicScreen extends NavScreen {
         graphics.drawString(this.font, Component.translatable(PREFIX + "blocks", String.format("%,d", shown.blocks())),
                 x, y, MUTED, false);
         y += 10;
-        if (shown.unknown > 0) {
-            y = this.wrap(graphics, Component.translatable(PREFIX + "unknown", shown.unknown), x, y, width,
-                    0xFF000000 | WARN, 2);
+        return this.missing(graphics, shown, x, y + 2, width, mouseX, mouseY);
+    }
+
+    // One red line while it holds blocks this game lacks (a mod not installed), a link to which and where to get
+    // them.
+    protected int missing(GuiGraphics graphics, Schematic shown, int x, int y, int width, int mouseX, int mouseY) {
+        if (shown.missing.isEmpty()) {
+            return y;
         }
-        return y;
+        graphics.fill(x, y - 2, x + width, y + 10, 0x40EF4B3E);
+        graphics.fill(x, y - 2, x + 2, y + 10, 0xFFEF7B6E);
+        Component line = MissingBlocksScreen.line(shown.missing, this.font, width - 8);
+        if (this.font.width(line) > width - 8) {
+            line = Component.literal(this.font.plainSubstrByWidth(line.getString(), width - 14) + "...");
+        }
+        this.link(graphics, line, x + 5, y, mouseX, mouseY, BAD,
+                () -> this.minecraft.setScreen(new MissingBlocksScreen(this, shown.name, shown.missing)));
+        return y + 12;
     }
 
     // What the last paste or notice said, along the bottom.

@@ -111,6 +111,19 @@ public final class Blueprints {
                 SchematicServer.notice(player, "notice.blueprint_removed", blueprint.name(), "", false);
             }
             case BlueprintAskPayload.BUILD -> build(player, blueprint, path);
+            case BlueprintAskPayload.RENAME -> {
+                if (!SchematicRules.trusted(player) && !blueprint.owner().equals(player.getGameProfile().getName())) {
+                    SchematicServer.notice(player, "error.not_allowed", "", "", true);
+                    return;
+                }
+                String name = ask.text().replaceAll("\\p{Cntrl}", "").trim();
+                if (name.isEmpty()) {
+                    return;
+                }
+                data.replace(blueprint.named(name));
+                sync(server);
+                SchematicServer.notice(player, "notice.blueprint_renamed", blueprint.name(), name, false);
+            }
             default -> {
             }
         }

@@ -16,6 +16,8 @@ import nl.tivek.multiversepowers.character.client.PowerInputs;
 import nl.tivek.multiversepowers.schematic.SchematicWandItem;
 import nl.tivek.multiversepowers.schematic.client.blueprint.ClientBlueprints;
 import nl.tivek.multiversepowers.schematic.client.hologram.Hologram;
+import nl.tivek.multiversepowers.schematic.client.hologram.HologramReplaced;
+import nl.tivek.multiversepowers.schematic.client.menu.SchematicScreen;
 
 // The wand's place in the ability panel (its controls and how each stands now, while it is held) and in the ability
 // guide (P), as a character has them.
@@ -55,7 +57,16 @@ public final class WandPanel implements AbilityPanel.Tool {
                 slot(WandInput.BLUEPRINT, "blueprint"),
                 GuideMode.heading("move"),
                 GuideMode.holdKey(() -> AbilityKeys.SLOTS[WandInput.MOVE], "move"),
-                slot(WandInput.MOVE, "grid"))));
+                slot(WandInput.MOVE, "grid"),
+                GuideMode.text("scroll", "layers"))), new GuideMode(OWNER, "select", player -> WandInput.ready(player)
+                        && AreaSelection.on(), List.of(
+                                GuideMode.heading("mouse"),
+                                GuideMode.click(CharacterAbility.Input.LEFT, "corner1"),
+                                GuideMode.click(CharacterAbility.Input.RIGHT, "corner2"),
+                                GuideMode.crouched(GuideMode.click(CharacterAbility.Input.RIGHT, "save"), "save"),
+                                GuideMode.heading("keys"),
+                                slot(WandInput.HIDE, "stop"),
+                                slot(WandInput.MENU, "open"))));
     }
 
     private static GuideMode.Control slot(int slot, String id) {
@@ -80,9 +91,25 @@ public final class WandPanel implements AbilityPanel.Tool {
     @Override
     public List<AbilityPanel.ToolRow> rows(LocalPlayer player) {
         List<AbilityPanel.ToolRow> rows = new ArrayList<>();
+        if (AreaSelection.on()) {
+            rows.add(row(0, mouse(CharacterAbility.Input.LEFT), "corner1", AreaSelection.first == null
+                    ? say("unset") : null, GREEN, true));
+            rows.add(row(0, mouse(CharacterAbility.Input.RIGHT), "corner2", AreaSelection.second == null
+                    ? say("unset") : null, GREEN, true));
+            rows.add(row(0, Component.translatable(PREFIX + "key_save", mouse(CharacterAbility.Input.RIGHT)),
+                    "save_area", AreaSelection.complete() ? Component.translatable(PREFIX + "status.size",
+                            String.format("%,d", AreaSelection.volume())) : say("unset"), AMBER,
+                    AreaSelection.complete()));
+            key(rows, WandInput.HIDE, "stop_select", null);
+            key(rows, WandInput.MENU, "open", null);
+            return rows;
+        }
         boolean shown = Hologram.shown();
-        rows.add(row(0, mouse(CharacterAbility.Input.LEFT), "place", !shown ? say("none") : Hologram.blueprint
-                ? say("blueprint") : null, AMBER, shown));
+        int replaced = HologramReplaced.count();
+        rows.add(row(0, mouse(CharacterAbility.Input.LEFT), "place", !shown ? say("none") : replaced > 0
+                ? Component.translatable(PREFIX + "status.replaces", String.format("%,d", replaced)
+                        + (HologramReplaced.complete() ? "" : "+")).withColor(0xEF7B6E) : Hologram.blueprint
+                                ? say("blueprint") : null, AMBER, shown));
         rows.add(row(0, mouse(CharacterAbility.Input.RIGHT), shown ? "pin" : "menu", shown
                 ? say(Hologram.pinned ? "pinned" : "following") : null, Hologram.pinned ? AMBER : GREEN, true));
         if (shown) {
@@ -101,7 +128,9 @@ public final class WandPanel implements AbilityPanel.Tool {
                 rows.add(row(2, Component.translatable("input.welcomescreen.hold", brief(WandInput.MOVE)), "move",
                         null, GREEN, true));
                 rows.add(row(2, Component.translatable("input.welcomescreen.tap", brief(WandInput.MOVE)), "grid",
-                        Component.translatable(PREFIX + "status.grid", Hologram.gridSize()), GREEN, true));
+                        Hologram.gridName(), GREEN, true));
+                rows.add(row(2, Component.translatable(PREFIX + "key_layers", brief(WandInput.MOVE)), "layers",
+                        Hologram.layerName(), GREEN, true));
             }
             key(rows, WandInput.HIDE, "hide", null);
         }

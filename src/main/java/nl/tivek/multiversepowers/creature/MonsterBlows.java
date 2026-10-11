@@ -33,6 +33,7 @@ public final class MonsterBlows {
     public static final ResourceKey<DamageType> BLEED = key("bleed");
     public static final ResourceKey<DamageType> ACID = key("acid");
     public static final ResourceKey<DamageType> SCREAM = key("scream");
+    public static final ResourceKey<DamageType> SHRAPNEL = key("shrapnel");
 
     private MonsterBlows() {
     }

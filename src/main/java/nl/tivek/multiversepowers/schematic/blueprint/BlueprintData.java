@@ -67,6 +67,17 @@ public final class BlueprintData extends SavedData {
         this.setDirty();
     }
 
+    // Puts `blueprint` in the place of the one with its id.
+    void replace(Blueprint blueprint) {
+        for (int i = 0; i < this.blueprints.size(); i++) {
+            if (this.blueprints.get(i).id() == blueprint.id()) {
+                this.blueprints.set(i, blueprint);
+                this.setDirty();
+                return;
+            }
+        }
+    }
+
     @Nullable
     Blueprint remove(int id) {
         Blueprint found = this.get(id);

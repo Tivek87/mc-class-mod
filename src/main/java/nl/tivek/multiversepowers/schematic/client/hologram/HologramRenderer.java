@@ -56,7 +56,16 @@ public final class HologramRenderer {
         if (level == null) {
             return;
         }
-        model = new HologramModel(shown, level, null);
+        int area = shown.sizeX * shown.sizeZ;
+        model = new HologramModel(shown, level, index -> Hologram.layer >= 0 && index / area > Hologram.layer
+                ? HologramMesh.HIDDEN : HologramMesh.PLAIN);
+    }
+
+    // Only the layers up to `layer` are drawn (-1: all).
+    static void top(int layer) {
+        if (model != null) {
+            model.top(layer);
+        }
     }
 
     static void release() {
@@ -88,6 +97,7 @@ public final class HologramRenderer {
             room -= now.work(room);
             SchematicPlacement placement = Hologram.placement();
             float alpha = (float) ClientSettings.get(ClientSettings.SCHEMATIC_OPACITY);
+            HologramReplaced.draw(event);
             if (Hologram.blueprint) {
                 now.draw(event, placement, PLAN[0], PLAN[1], PLAN[2], alpha);
             } else {
@@ -119,14 +129,18 @@ public final class HologramRenderer {
     // The edges of a placed schematic's box, in (r, g, b).
     public static void outline(RenderLevelStageEvent event, SchematicPlacement placement, Schematic shown, float r,
             float g, float b) {
-        Vec3 camera = event.getCamera().getPosition();
         BlockPos origin = placement.origin();
-        AABB box = new AABB(origin.getX(), origin.getY(), origin.getZ(), origin.getX() + placement.sizeX(shown),
-                origin.getY() + shown.sizeY, origin.getZ() + placement.sizeZ(shown)).move(-camera.x, -camera.y,
-                        -camera.z);
+        box(event, new AABB(origin.getX(), origin.getY(), origin.getZ(), origin.getX() + placement.sizeX(shown),
+                origin.getY() + shown.sizeY, origin.getZ() + placement.sizeZ(shown)), r, g, b);
+    }
+
+    // The edges of a box in the world, in (r, g, b).
+    public static void box(RenderLevelStageEvent event, AABB box, float r, float g, float b) {
+        Vec3 camera = event.getCamera().getPosition();
         MultiBufferSource.BufferSource buffers = Minecraft.getInstance().renderBuffers().bufferSource();
         PoseStack pose = event.getPoseStack();
-        LevelRenderer.renderLineBox(pose, buffers.getBuffer(RenderType.lines()), box, r, g, b, 0.9F);
+        LevelRenderer.renderLineBox(pose, buffers.getBuffer(RenderType.lines()), box.move(-camera.x, -camera.y,
+                -camera.z), r, g, b, 0.9F);
         buffers.endBatch(RenderType.lines());
     }
 }

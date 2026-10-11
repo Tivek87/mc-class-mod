@@ -36,7 +36,7 @@ final class LegacyFormat {
         List<BlockState> palette = new ArrayList<>();
         Int2IntOpenHashMap seen = new Int2IntOpenHashMap();
         seen.defaultReturnValue(-1);
-        int[] unknown = { 0 };
+        Palettes.Missing missing = new Palettes.Missing();
         short[] cells = new short[volume];
         for (int i = 0; i < volume; i++) {
             int id = ids[i] & 0xFF;
@@ -48,14 +48,14 @@ final class LegacyFormat {
             if (at < 0) {
                 at = palette.size();
                 SchematicReader.palette(at + 1);
-                palette.add(Palettes.known(old(id, values[i] & 0x0F), Palettes.FLATTENING, unknown));
+                palette.add(Palettes.known(old(id, values[i] & 0x0F), Palettes.FLATTENING, missing, at));
                 seen.put(key, at);
             }
             cells[i] = (short) at;
         }
         Schematic schematic = new Schematic(name, sx, sy, sz, palette);
-        schematic.unknown = unknown[0];
         System.arraycopy(cells, 0, schematic.cells, 0, volume);
+        missing.count(schematic);
         for (Tag entry : root.getList("TileEntities", Tag.TAG_COMPOUND)) {
             CompoundTag be = ((CompoundTag) entry).copy();
             int x = be.getInt("x");

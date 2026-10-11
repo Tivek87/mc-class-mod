@@ -8,7 +8,7 @@ import net.minecraft.resources.ResourceLocation;
 import nl.tivek.multiversepowers.MultiversePowers;
 
 // A wand holder asks the server to do something with the schematic files or pastes: `path` is a file or folder inside
-// the library, `text` a new folder's name.
+// the library, `text` a new folder's or file's name.
 public record SchematicAskPayload(int action, String path, String text) implements CustomPacketPayload {
     public static final int LIST = 0;
     public static final int FOLDER = 1;
@@ -17,6 +17,8 @@ public record SchematicAskPayload(int action, String path, String text) implemen
     public static final int DOWNLOAD = 4;
     public static final int UNDO = 5;
     public static final int CANCEL = 6;
+    public static final int RENAME = 7;
+    public static final int COPY = 8;
 
     public static final CustomPacketPayload.Type<SchematicAskPayload> TYPE = new CustomPacketPayload.Type<>(
             ResourceLocation.fromNamespaceAndPath(MultiversePowers.MODID, "schematic_ask"));

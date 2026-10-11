@@ -5,6 +5,8 @@ import com.google.gson.JsonParser;
 import com.mojang.datafixers.DSL;
 import com.mojang.serialization.Dynamic;
 import com.mojang.serialization.JsonOps;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import javax.annotation.Nullable;
 import net.minecraft.SharedConstants;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -21,6 +23,7 @@ import net.minecraft.util.datafix.DataFixers;
 import net.minecraft.util.datafix.fixes.References;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
+import nl.tivek.multiversepowers.schematic.Schematic;
 
 // Saved block states, block entities and creatures from any game version, made as this game has them (the game's own
 // data fixers), and block states written as text read back.
@@ -41,25 +44,56 @@ final class Palettes {
         return tag.getString("id").indexOf(':') < 0 ? UNNAMED : OLD;
     }
 
-    // A state saved as {Name, Properties} by a game of `version`; null when this game has no such block.
-    @Nullable
-    static BlockState state(CompoundTag tag, int version) {
-        CompoundTag fixed = fix(References.BLOCK_STATE, tag, version);
-        ResourceLocation id = ResourceLocation.tryParse(fixed.getString("Name"));
-        if (id == null || !BuiltInRegistries.BLOCK.containsKey(id)) {
-            return null;
-        }
-        return NbtUtils.readBlockState(BuiltInRegistries.BLOCK.asLookup(), fixed);
+    // A palette entry as this game has it: its state, or air and the block's name when the game has no such block.
+    record Entry(BlockState state, @Nullable String missing) {
     }
 
-    // The state in a palette entry; air (counted) when the game has no such block.
-    static BlockState known(CompoundTag tag, int version, int[] unknown) {
-        BlockState state = state(tag, version);
-        if (state == null) {
-            unknown[0]++;
-            return Blocks.AIR.defaultBlockState();
+    // The block names a schematic's palette entries stand in for as air, by palette entry.
+    static final class Missing {
+        private final Int2ObjectMap<String> names = new Int2ObjectOpenHashMap<>();
+
+        void note(int entry, String name) {
+            this.names.put(entry, name);
         }
-        return state;
+
+        // Counts the cells each missing block would have filled, into the schematic.
+        void count(Schematic schematic) {
+            if (this.names.isEmpty()) {
+                return;
+            }
+            int[] cells = new int[schematic.palette.size()];
+            for (short cell : schematic.cells) {
+                if (cell != Schematic.VOID) {
+                    cells[cell]++;
+                }
+            }
+            for (Int2ObjectMap.Entry<String> name : this.names.int2ObjectEntrySet()) {
+                int count = name.getIntKey() < cells.length ? cells[name.getIntKey()] : 0;
+                if (count > 0) {
+                    schematic.missing.merge(name.getValue(), count, Integer::sum);
+                }
+            }
+        }
+    }
+
+    // A state saved as {Name, Properties} by a game of `version`.
+    static Entry entry(CompoundTag tag, int version) {
+        CompoundTag fixed = fix(References.BLOCK_STATE, tag, version);
+        String name = fixed.getString("Name");
+        ResourceLocation id = ResourceLocation.tryParse(name);
+        if (id == null || !BuiltInRegistries.BLOCK.containsKey(id)) {
+            return new Entry(Blocks.AIR.defaultBlockState(), id == null ? name : id.toString());
+        }
+        return new Entry(NbtUtils.readBlockState(BuiltInRegistries.BLOCK.asLookup(), fixed), null);
+    }
+
+    // The state in palette entry `entry`; air (noted) when the game has no such block.
+    static BlockState known(CompoundTag tag, int version, Missing missing, int entry) {
+        Entry read = entry(tag, version);
+        if (read.missing() != null) {
+            missing.note(entry, read.missing());
+        }
+        return read.state();
     }
 
     // "minecraft:oak_stairs[facing=east,half=bottom]" as {Name, Properties}.

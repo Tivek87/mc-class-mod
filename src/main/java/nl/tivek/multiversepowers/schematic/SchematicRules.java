@@ -14,6 +14,7 @@ public final class SchematicRules {
     public static final ModConfigSpec.IntValue FILE_MEGABYTES;
     public static final ModConfigSpec.IntValue UNDO_BLOCKS;
     public static final ModConfigSpec.IntValue BLUEPRINTS;
+    public static final ModConfigSpec.IntValue LARGEST_SAVE;
 
     static {
         ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
@@ -34,6 +35,9 @@ public final class SchematicRules {
                 .defineInRange("undoBlocks", 2000000, 0, 20000000);
         BLUEPRINTS = builder.comment("The most blueprints (see-through plans to build by hand) a world may hold at"
                 + " once (default: 32)").defineInRange("blueprints", 32, 1, 256);
+        LARGEST_SAVE = builder.comment("The most cells (width x height x length) of an area the wand may save as a"
+                + " schematic at once; saving reads every block, so a huge area holds the server up (default:"
+                + " 2000000)").defineInRange("largestSave", 2000000, 1000, 16777216);
         builder.pop();
         SPEC = builder.build();
     }
@@ -59,6 +63,10 @@ public final class SchematicRules {
 
     public static int blueprints() {
         return get(BLUEPRINTS);
+    }
+
+    public static int largestSave() {
+        return get(LARGEST_SAVE);
     }
 
     private static int get(ModConfigSpec.IntValue value) {

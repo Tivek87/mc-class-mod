@@ -3,6 +3,40 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.8.6-alpha] - 2026-10-11
+
+### Added
+- **Schematic Wand: save an area:** the menu's Save area page picks two corners with the wand (left click, right
+  click) and saves the blocks between them as a schematic of your own, set down as a blueprint too if you like.
+- **Schematic Wand: missing mods:** a schematic with blocks from mods you do not have says so in red, with a list of
+  which blocks and a button to find each mod on Modrinth.
+- **Schematic Wand: rename and copy** schematics in the Library (F2 renames), and search and sort the list.
+- **Blueprints: layer by layer:** show only the lowest layer not finished yet; finish it and the next one appears.
+- **Blueprints: guide:** an arrow under the crosshair and a yellow frame lead you to the nearest block still to
+  place.
+- **Blueprints: hide the box** round a blueprint, so only the plan itself shows.
+- **Blueprints: rename** a blueprint on its page.
+- **Blueprints: a Materials tab:** per block what is still to place, the total and what you carry, with Done, Enough
+  or how many more you need; filter, sort and copy the list.
+- **Schematic Wand: red marks** on every block the hologram would replace.
+- **Schematic Wand: layers:** hold the move key and scroll to show the hologram a layer at a time.
+- **Schematic Wand: at last spot** puts the hologram back where that schematic was placed last.
+- **Schematic Wand: build card:** while it builds, the card at the top shows the schematic's name, a progress bar,
+  blocks done of all and the time left.
+- **Ability overlay: change layout:** in the settings, drag the ability overlay anywhere and pull its corner to
+  size it.
+- **Settings: largest saved area:** the Schematics page sets how many blocks a saved area may hold.
+- **Rustbound:** a zombie grown through with rusted scrap, a glowing magnet core in its chest. It pulls you in
+  (harder the more metal you wear and hold) and may tear a metal weapon or shield from your hand, flings the scrap
+  circling it in a fan that leaves you bleeding, and its scrap fist knocks a raised shield aside. Rain or water
+  douses its core.
+
+### Changed
+- **Bloater: hit it from behind:** a hit or a shot from the front or the sides makes it burst at once; only from
+  its back can you wear it down.
+- **Schematic Wand: grid** can be turned off.
+- **Blueprints: materials** moved from the Plan tab to the new Materials tab.
+
 ## [0.8.5-alpha] - 2026-10-11
 
 ### Added

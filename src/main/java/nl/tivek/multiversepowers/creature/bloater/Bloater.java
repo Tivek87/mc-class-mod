@@ -35,6 +35,7 @@ import net.minecraft.world.entity.animal.IronGolem;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.npc.AbstractVillager;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.item.AxeItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.SwordItem;
@@ -83,6 +84,8 @@ public final class Bloater extends MovingMonster {
     private static final EntityDataAccessor<Integer> INTACT = SynchedEntityData.defineId(Bloater.class,
             EntityDataSerializers.INT);
     private static final double BURST = 5.0;
+    // How far behind it a blow must come from not to burst it: the cosine of the angle off its back (about 66 degrees).
+    private static final double BACK = 0.4;
     // Nothing is harmed by the burst's own explosion: it only shakes and throws, the burst's harm is the Bloater's own.
     private static final ExplosionDamageCalculator HARMLESS = new ExplosionDamageCalculator() {
         @Override
@@ -170,15 +173,45 @@ public final class Bloater extends MovingMonster {
         return this.position().add(-right * cos - ahead * sin, HIPS - at[1] / 16.0, -right * sin + ahead * cos);
     }
 
-    // A blade striking it pops one of its boils, which splashes the one who swung it.
+    // Struck anywhere but its back (a blow, a shot, a power) it bursts at once; from behind it is hurt as anything is,
+    // and a blade striking it pops one of its boils, which splashes the one who swung it.
     @Override
     public boolean hurt(DamageSource source, float amount) {
+        if (!this.level().isClientSide && this.isAlive() && !this.isInvulnerableTo(source) && this.facing(source)) {
+            this.explode();
+            return true;
+        }
         boolean hurt = super.hurt(source, amount);
         if (hurt && this.level() instanceof ServerLevel level && source.getDirectEntity() instanceof LivingEntity hitter
                 && source.getDirectEntity() == source.getEntity() && blade(hitter.getMainHandItem())) {
             this.pop(level, hitter);
         }
         return hurt;
+    }
+
+    // Whether a blow by someone came from in front of it or its sides rather than its back: a shot by the way it flew,
+    // anything else by where it came from. Harm with no one behind it (a fall, fire, poison) never counts.
+    private boolean facing(DamageSource source) {
+        Entity by = source.getEntity() != null ? source.getEntity() : source.getDirectEntity();
+        if (by == null || by == this || by instanceof Bloater) {
+            return false;
+        }
+        Vec3 from;
+        if (source.getDirectEntity() instanceof Projectile shot && shot.getDeltaMovement().horizontalDistanceSqr()
+                > 1.0E-4) {
+            from = shot.getDeltaMovement().reverse();
+        } else {
+            Vec3 at = source.getSourcePosition();
+            if (at == null) {
+                return false;
+            }
+            from = at.subtract(this.position());
+        }
+        Vec3 flat = new Vec3(from.x, 0.0, from.z);
+        if (flat.lengthSqr() < 1.0E-6) {
+            return true;
+        }
+        return flat.normalize().dot(MonsterBlows.ahead(this)) > -BACK;
     }
 
     private static boolean blade(ItemStack stack) {

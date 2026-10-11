@@ -32,12 +32,11 @@ final class StructureFormat {
                 : tag.getList("palette", Tag.TAG_COMPOUND);
         SchematicReader.palette(paletteTag.size());
         List<BlockState> palette = new ArrayList<>();
-        int[] unknown = { 0 };
+        Palettes.Missing missing = new Palettes.Missing();
         for (int k = 0; k < paletteTag.size(); k++) {
-            palette.add(Palettes.known(paletteTag.getCompound(k), Palettes.CURRENT, unknown));
+            palette.add(Palettes.known(paletteTag.getCompound(k), Palettes.CURRENT, missing, k));
         }
         Schematic schematic = new Schematic(name, sx, sy, sz, palette);
-        schematic.unknown = unknown[0];
         for (Tag entry : tag.getList("blocks", Tag.TAG_COMPOUND)) {
             CompoundTag block = (CompoundTag) entry;
             ListTag pos = block.getList("pos", Tag.TAG_INT);
@@ -64,6 +63,7 @@ final class StructureFormat {
                         Tag.TAG_DOUBLE)), creature.getCompound("nbt").copy()));
             }
         }
+        missing.count(schematic);
         return schematic;
     }
 }

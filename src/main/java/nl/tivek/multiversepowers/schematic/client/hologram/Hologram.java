@@ -1,9 +1,12 @@
 package nl.tivek.multiversepowers.schematic.client.hologram;
 
+import java.util.HashMap;
+import java.util.Map;
 import javax.annotation.Nullable;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.block.Mirror;
@@ -37,14 +40,22 @@ public final class Hologram {
     public static boolean pinned;
     // Placed as a blueprint: a see-through plan to build by hand, never built itself.
     public static boolean blueprint;
-    // The grid it snaps to across the ground, in blocks; one of GRIDS by index.
-    public static final int[] GRIDS = { 1, 2, 3, 4, 6, 8, 10, 16, 32, 64, 96, 128 };
+    // The grid it snaps to across the ground, in blocks; one of GRIDS by index, 0 being no grid.
+    public static final int[] GRIDS = { 0, 1, 2, 3, 4, 6, 8, 10, 16, 32, 64, 96, 128 };
     public static int grid;
+    // The highest layer shown (from 0), -1 for all of them.
+    public static volatile int layer = -1;
     static double distance = 8.0;
     // On blocks: how many blocks it stands past (or short of) the block looked at, the way the player faces.
     static int ahead;
     private static BlockPos pinnedAt = BlockPos.ZERO;
     private static BlockPos origin = BlockPos.ZERO;
+
+    // Where a schematic was last placed, turned and mirrored, by its file, while this game runs.
+    private record Spot(BlockPos origin, Rotation rotation, Mirror mirror) {
+    }
+
+    private static final Map<String, Spot> LAST = new HashMap<>();
 
     private Hologram() {
     }
@@ -58,6 +69,7 @@ public final class Hologram {
         path = file;
         pinned = false;
         ahead = 0;
+        layer = -1;
         distance = Math.max(6.0, Math.max(shown.sizeX, shown.sizeZ) * 0.8 + 3.0);
         HologramRenderer.load(shown);
     }
@@ -87,10 +99,22 @@ public final class Hologram {
         return GRIDS[Math.floorMod(grid, GRIDS.length)];
     }
 
-    // The next grid size, from 128 back to 1; a pinned hologram moves onto it.
+    // How far a step moves it: a grid step, or a block with no grid.
+    private static int step() {
+        return Math.max(1, gridSize());
+    }
+
+    // The grid size or "Off", as the menu, panel and messages name it.
+    public static Component gridName() {
+        int size = gridSize();
+        return Component.translatable(size == 0 ? "schematic.welcomescreen.grid.off"
+                : "schematic.welcomescreen.grid.blocks", size);
+    }
+
+    // The next grid size, from 128 back to none; a pinned hologram moves onto it.
     public static void nextGrid() {
         grid = Math.floorMod(grid + 1, GRIDS.length);
-        int most = Math.max(1, 64 / gridSize());
+        int most = Math.max(1, 64 / step());
         ahead = Math.max(-most, Math.min(most, ahead));
         if (pinned) {
             pinnedAt = snap(pinnedAt, false);
@@ -101,7 +125,7 @@ public final class Hologram {
     // Its corner on the grid across the ground (and up and down too when it floats), the nearest grid line.
     private static BlockPos snap(BlockPos at, boolean upright) {
         int size = gridSize();
-        if (size == 1) {
+        if (size <= 1) {
             return at;
         }
         return new BlockPos(Math.round(at.getX() / (float) size) * size, upright ? Math.round(at.getY()
@@ -127,7 +151,7 @@ public final class Hologram {
                     ClipContext.Block.OUTLINE, ClipContext.Fluid.NONE, player));
             if (hit.getType() == HitResult.Type.BLOCK) {
                 origin = snap(against(hit.getBlockPos().relative(hit.getDirection()), hit.getDirection(), sx,
-                        now.sizeY, sz).relative(player.getDirection(), ahead * gridSize()), false);
+                        now.sizeY, sz).relative(player.getDirection(), ahead * step()), false);
                 return;
             }
         }
@@ -177,7 +201,7 @@ public final class Hologram {
             pinned = true;
             pinnedAt = snap(origin, false);
         }
-        int size = gridSize();
+        int size = step();
         pinnedAt = pinnedAt.offset(dx * size, dy, dz * size);
         origin = pinnedAt;
     }
@@ -192,7 +216,7 @@ public final class Hologram {
             double step = now == null ? 1.0 : Math.max(1.0, Math.max(now.sizeX, now.sizeZ) / 16.0);
             distance = Mth.clamp(distance + steps * step, 2.0, 256.0);
         } else {
-            int most = Math.max(1, 64 / gridSize());
+            int most = Math.max(1, 64 / step());
             ahead = Mth.clamp(ahead + steps, -most, most);
         }
     }
@@ -207,12 +231,77 @@ public final class Hologram {
                 ClipContext.Block.OUTLINE, ClipContext.Fluid.NONE, player)).getType() == HitResult.Type.BLOCK;
     }
 
+    // Shows layers up to `next` (from 0; -1 or past the top: all of them).
+    public static void layer(int next) {
+        Schematic now = schematic;
+        if (now == null) {
+            return;
+        }
+        layer = next < 0 || next >= now.sizeY - 1 ? -1 : next;
+        HologramRenderer.top(layer);
+    }
+
+    // "All", or how many layers of all are shown.
+    public static Component layerName() {
+        Schematic now = schematic;
+        return layer < 0 || now == null ? Component.translatable("schematic.welcomescreen.layers.all")
+                : Component.translatable("schematic.welcomescreen.layers.some", layer + 1, now.sizeY);
+    }
+
+    // A layer up or down; from all, down starts at the top layer but one.
+    public static void stepLayer(int steps) {
+        Schematic now = schematic;
+        if (now == null) {
+            return;
+        }
+        int at = layer < 0 ? now.sizeY - 1 : layer;
+        layer(Mth.clamp(at + steps, 0, now.sizeY - 1));
+    }
+
+    // Leaving the world: its spots mean nothing in the next.
+    public static void forgetSpots() {
+        LAST.clear();
+    }
+
+    // A file or folder renamed: the spots of the files in it go along.
+    public static void renamed(String from, String to) {
+        Map<String, Spot> moved = new HashMap<>();
+        LAST.entrySet().removeIf(entry -> {
+            String file = entry.getKey();
+            if (file.equals(from) || file.startsWith(from + "/")) {
+                moved.put(to + file.substring(from.length()), entry.getValue());
+                return true;
+            }
+            return false;
+        });
+        LAST.putAll(moved);
+    }
+
+    // Whether `file` was placed before while this game runs.
+    public static boolean placedBefore(@Nullable String file) {
+        return file != null && LAST.containsKey(file);
+    }
+
+    // Pins it where the same file was placed last, turned and mirrored as then.
+    public static void toLastSpot() {
+        Spot spot = path == null ? null : LAST.get(path);
+        if (spot == null) {
+            return;
+        }
+        rotation = spot.rotation();
+        mirror = spot.mirror();
+        pinned = true;
+        pinnedAt = spot.origin();
+        origin = pinnedAt;
+    }
+
     // Sends it to be built (or set down as a blueprint) where it stands; the hologram is gone until shown again.
     public static void place() {
         String file = path;
         if (file == null) {
             return;
         }
+        LAST.put(file, new Spot(origin, rotation, mirror));
         PacketDistributor.sendToServer(new SchematicPlacePayload(file, origin, rotation.ordinal(), mirror.ordinal(),
                 mode, blueprint ? flags | SchematicPlacePayload.BLUEPRINT : flags));
         hide();

@@ -23,6 +23,7 @@ import net.neoforged.neoforge.client.event.RenderFrameEvent;
 import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.character.client.AbilityKeys;
 import nl.tivek.multiversepowers.schematic.client.hologram.Hologram;
+import nl.tivek.multiversepowers.schematic.client.menu.SchematicScreen;
 import nl.tivek.multiversepowers.schematic.net.SchematicAskPayload;
 
 // The wand in hand: the ability keys turn, mirror and move the hologram, the scroll wheel brings it nearer or farther,
@@ -89,7 +90,7 @@ public final class WandInput {
         }
         if (moveHeld > 0 && moveHeld <= TAP && !moveUsed) {
             Hologram.nextGrid();
-            SchematicClient.say(Component.translatable(SchematicClient.PREFIX + "grid.set", Hologram.gridSize()),
+            SchematicClient.say(Component.translatable(SchematicClient.PREFIX + "grid.set", Hologram.gridName()),
                     false);
             click();
         }
@@ -120,6 +121,12 @@ public final class WandInput {
             }
             default -> {
             }
+        }
+        if (AreaSelection.on() && slot == HIDE) {
+            AreaSelection.stop();
+            SchematicClient.say(Component.translatable(SchematicClient.PREFIX + "select.stopped"), false);
+            click();
+            return;
         }
         if (!Hologram.shown()) {
             if (slot != MOVE) {
@@ -195,7 +202,15 @@ public final class WandInput {
                 || event.getScrollDeltaY() == 0.0) {
             return;
         }
-        Hologram.scroll(player, event.getScrollDeltaY() > 0.0 ? 1 : -1);
+        int steps = event.getScrollDeltaY() > 0.0 ? 1 : -1;
+        if (moving(player)) {
+            moveUsed = true;
+            Hologram.stepLayer(steps);
+            SchematicClient.say(Component.translatable(SchematicClient.PREFIX + "layers.set", Hologram.layerName()),
+                    false);
+        } else {
+            Hologram.scroll(player, steps);
+        }
         event.setCanceled(true);
     }
 
@@ -211,6 +226,11 @@ public final class WandInput {
         if (!SchematicClient.allowed(player)) {
             SchematicClient.say(Component.translatable(SchematicClient.PREFIX + (SchematicClient.trusted(player)
                     ? "error.character" : "error.not_allowed")), true);
+            return;
+        }
+        if (AreaSelection.on()) {
+            AreaSelection.corner(player, true);
+            player.swing(InteractionHand.MAIN_HAND);
             return;
         }
         if (!Hologram.shown()) {
@@ -246,6 +266,14 @@ public final class WandInput {
         if (!SchematicClient.allowed(player)) {
             SchematicClient.say(Component.translatable(SchematicClient.PREFIX + (SchematicClient.trusted(player)
                     ? "error.character" : "error.not_allowed")), true);
+            return;
+        }
+        if (AreaSelection.on()) {
+            if (sneaking) {
+                SchematicScreen.openSave();
+            } else {
+                AreaSelection.corner(player, false);
+            }
             return;
         }
         if (sneaking || !Hologram.shown()) {

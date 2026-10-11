@@ -23,6 +23,7 @@ import nl.tivek.multiversepowers.character.greenlantern.summon.HardLight;
 import nl.tivek.multiversepowers.creature.bloater.Bloater;
 import nl.tivek.multiversepowers.creature.brute.ZombieBrute;
 import nl.tivek.multiversepowers.creature.lurker.Lurker;
+import nl.tivek.multiversepowers.creature.rustbound.Rustbound;
 import nl.tivek.multiversepowers.creature.screamer.Feral;
 import nl.tivek.multiversepowers.creature.screamer.Screamer;
 import nl.tivek.multiversepowers.schematic.SchematicWandItem;
@@ -46,7 +47,9 @@ public final class ModItems {
             ITEMS.register("screamer_spawn_egg",
                     () -> new DeferredSpawnEggItem(Screamer.TYPE, 0x6E6658, 0x8A1F1F, new Item.Properties())),
             ITEMS.register("feral_spawn_egg",
-                    () -> new DeferredSpawnEggItem(Feral.TYPE, 0x4A5A3C, 0xC9C29F, new Item.Properties())));
+                    () -> new DeferredSpawnEggItem(Feral.TYPE, 0x4A5A3C, 0xC9C29F, new Item.Properties())),
+            ITEMS.register("rustbound_spawn_egg",
+                    () -> new DeferredSpawnEggItem(Rustbound.TYPE, 0x7A3E1E, 0x7FC8FF, new Item.Properties())));
 
     // The hard-light creatures' eggs, a dark green shell spotted in each creature's own colour.
     private static final int HARD_LIGHT = 0x0E5A2A;

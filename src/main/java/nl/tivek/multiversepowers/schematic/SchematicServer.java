@@ -94,6 +94,16 @@ public final class SchematicServer {
                 }
                 list(player, path.getParent());
             }
+            case SchematicAskPayload.RENAME -> {
+                try {
+                    Path named = SchematicLibrary.rename(path, ask.text());
+                    notice(player, "notice.renamed", ask.path(), SchematicLibrary.relative(named), false);
+                } catch (IOException e) {
+                    notice(player, "error.rename", ask.text(), "", true);
+                }
+                list(player, path.getParent());
+            }
+            case SchematicAskPayload.COPY -> copy(player, path, ask.path());
             case SchematicAskPayload.VIEW -> send(player, path, ask.path(), SchematicFilePayload.VIEW);
             case SchematicAskPayload.DOWNLOAD -> send(player, path, ask.path(), SchematicFilePayload.DOWNLOAD);
             case SchematicAskPayload.UNDO -> SchematicPastes.undo(player);
@@ -103,7 +113,7 @@ public final class SchematicServer {
         }
     }
 
-    private static void list(ServerPlayer player, Path folder) {
+    static void list(ServerPlayer player, Path folder) {
         try {
             String root = player.getServer() != null && player.getServer().isDedicatedServer()
                     ? SchematicLibrary.FOLDER + "/" : SchematicLibrary.root().toString();
@@ -112,6 +122,32 @@ public final class SchematicServer {
         } catch (IOException e) {
             notice(player, "error.list", "", "", true);
         }
+    }
+
+    // A copy beside the file, written away from the server thread; a file too big to load is not copied.
+    private static void copy(ServerPlayer player, Path path, String relative) {
+        MinecraftServer server = player.getServer();
+        UUID id = player.getUUID();
+        long largest = SchematicRules.largestFile();
+        Util.ioPool().execute(() -> {
+            String made;
+            try {
+                if (!Files.isRegularFile(path) || Files.size(path) > largest) {
+                    throw new IOException("size");
+                }
+                made = SchematicLibrary.duplicate(path).getFileName().toString();
+            } catch (IOException e) {
+                server.execute(() -> notice(id, "error.copy", relative, "", true));
+                return;
+            }
+            server.execute(() -> {
+                ServerPlayer now = server.getPlayerList().getPlayer(id);
+                if (now != null) {
+                    notice(now, "notice.copied", made, "", false);
+                    list(now, path.getParent());
+                }
+            });
+        });
     }
 
     // A file to the player in parts, read away from the server thread.
@@ -311,7 +347,12 @@ public final class SchematicServer {
     }
 
     public static void notice(ServerPlayer player, String key, String first, String second, boolean bad) {
-        PacketDistributor.sendToPlayer(player, new SchematicNoticePayload(key, first, second, bad));
+        PacketDistributor.sendToPlayer(player, new SchematicNoticePayload(key, cut(first), cut(second), bad));
+    }
+
+    // Text the notice can carry: a long path keeps its end.
+    private static String cut(String text) {
+        return text.length() <= 200 ? text : "..." + text.substring(text.length() - 197);
     }
 
     public static void notice(UUID id, String key, String first, String second, boolean bad) {

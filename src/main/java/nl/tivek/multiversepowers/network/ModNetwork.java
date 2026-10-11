@@ -100,6 +100,7 @@ import nl.tivek.multiversepowers.spell.SpellCasting;
 import nl.tivek.multiversepowers.spell.SpellCooldownPayload;
 import nl.tivek.multiversepowers.spell.SpellFxPayload;
 import nl.tivek.multiversepowers.spell.dark.VoidStatePayload;
+import nl.tivek.multiversepowers.schematic.SchematicSaves;
 import nl.tivek.multiversepowers.schematic.SchematicServer;
 import nl.tivek.multiversepowers.schematic.blueprint.Blueprints;
 import nl.tivek.multiversepowers.schematic.net.BlueprintAskPayload;
@@ -109,6 +110,7 @@ import nl.tivek.multiversepowers.schematic.net.SchematicFilePayload;
 import nl.tivek.multiversepowers.schematic.net.SchematicListPayload;
 import nl.tivek.multiversepowers.schematic.net.SchematicNoticePayload;
 import nl.tivek.multiversepowers.schematic.net.SchematicPlacePayload;
+import nl.tivek.multiversepowers.schematic.net.SchematicSavePayload;
 import nl.tivek.multiversepowers.schematic.net.SchematicStatusPayload;
 import nl.tivek.multiversepowers.stamina.StaminaCostPayload;
 import nl.tivek.multiversepowers.testfight.TestFight;
@@ -215,12 +217,22 @@ public final class ModNetwork {
         registrar.playToClient(BlueprintListPayload.TYPE, BlueprintListPayload.STREAM_CODEC,
                 (payload, context) -> ClientPayloadHandler.handleBlueprintList(payload, context));
         registrar.playToServer(BlueprintAskPayload.TYPE, BlueprintAskPayload.STREAM_CODEC, ModNetwork::onBlueprintAsk);
+        registrar.playToServer(SchematicSavePayload.TYPE, SchematicSavePayload.STREAM_CODEC,
+                ModNetwork::onSchematicSave);
     }
 
     private static void onBlueprintAsk(BlueprintAskPayload payload, IPayloadContext context) {
         context.enqueueWork(() -> {
             if (context.player() instanceof ServerPlayer serverPlayer) {
                 Blueprints.onAsk(serverPlayer, payload);
+            }
+        });
+    }
+
+    private static void onSchematicSave(SchematicSavePayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> {
+            if (context.player() instanceof ServerPlayer serverPlayer) {
+                SchematicSaves.onSave(serverPlayer, payload);
             }
         });
     }
