@@ -13,7 +13,8 @@ import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 // The light of the Wizard's spells as they gather, made in each game that sees him (or one of his images): motes drawn
 // spiralling into his crystal, fire winding round his left hand, snow whirling, lightning crackling, stars streaming up
 // from the raised staff, the light of the beam falling in on the crystal, his phase's glow at rest (motes under him as
-// he floats, violet-gold fire licking off him once he is unbound) and stars round his head while he is stunned.
+// he flies, fire licking off him once he is unbound, the void smoking off him once he has woken it, stars streaming
+// from him at the last), stars round his head while he is stunned, and the shards of his ward as it breaks.
 final class WizardSparks {
     private WizardSparks() {
     }
@@ -36,10 +37,28 @@ final class WizardSparks {
             level.addParticle(Wizard.dust(Wizard.light(phase), 0.9F), feet.x + spread(random, 0.6), feet.y + 0.1
                     + random.nextDouble() * 0.5, feet.z + spread(random, 0.6), 0.0, -0.02, 0.0);
         }
-        if (phase > 2 && random.nextInt(2) == 0) {
-            level.addParticle(random.nextBoolean() ? ParticleTypes.SOUL_FIRE_FLAME : ParticleTypes.SMALL_FLAME,
+        if (phase == 3 && random.nextInt(2) == 0) {
+            level.addParticle(random.nextBoolean() ? ParticleTypes.FLAME : ParticleTypes.SMALL_FLAME,
                     middle.x + spread(random, 0.7), middle.y + spread(random, 1.2), middle.z + spread(random, 0.7),
                     0.0, 0.04, 0.0);
+        }
+        if (phase == 4) {
+            if (random.nextInt(2) == 0) {
+                level.addParticle(ParticleTypes.SQUID_INK, middle.x + spread(random, 0.8), middle.y + spread(random,
+                        1.4), middle.z + spread(random, 0.8), 0.0, 0.02, 0.0);
+            }
+            level.addParticle(Wizard.dust(Wizard.VOID, 0.8F), middle.x + spread(random, 0.9),
+                    middle.y + spread(random, 1.6), middle.z + spread(random, 0.9), 0.0, 0.0, 0.0);
+        }
+        if (phase == 5) {
+            if (random.nextInt(2) == 0) {
+                level.addParticle(ParticleTypes.END_ROD, middle.x + spread(random, 0.8), middle.y + spread(random,
+                        1.4), middle.z + spread(random, 0.8), 0.0, -0.02, 0.0);
+            }
+            if (random.nextInt(3) == 0) {
+                level.addParticle(ParticleTypes.FIREWORK, middle.x + spread(random, 1.4), middle.y + 0.8 + spread(random,
+                        1.0), middle.z + spread(random, 1.4), 0.0, 0.0, 0.0);
+            }
         }
         switch (move) {
             case WizardMove.SPARK, WizardMove.BOLT -> {
@@ -121,11 +140,68 @@ final class WizardSparks {
                     spiral(level, middle, 1.5, age * 0.7F, Wizard.dust(Wizard.TIME, 1.2F), 4);
                 }
             }
-            case WizardMove.ASCEND, WizardMove.UNBIND -> {
+            case WizardMove.ASCEND, WizardMove.UNBIND, WizardMove.AWAKEN, WizardMove.APOTHEOSIS -> {
                 if (gathering) {
-                    int light = Wizard.light(move == WizardMove.ASCEND ? 2 : 3);
+                    int light = Wizard.light(WizardMove.carries(move));
                     spiral(level, feet.add(0.0, (t % 30) * 0.08, 0.0), 1.8 - t * 0.02, age * 2.0F,
                             Wizard.dust(light, 1.4F), 6);
+                    spiral(level, middle.add(0.0, 1.0 - (t % 20) * 0.1, 0.0), 1.2, -age * 2.6F,
+                            Wizard.dust(0xFFFFFF, 0.9F), 3);
+                }
+            }
+            case WizardMove.ORBIT, WizardMove.LANCES, WizardMove.SPIRAL -> {
+                if (gathering) {
+                    int light = WizardMove.colour(move);
+                    spiral(level, crystal, 1.0 - Math.min(0.7, t * 0.05), age * 1.7F, Wizard.dust(light, 1.0F), 3);
+                    level.addParticle(ParticleTypes.END_ROD, crystal.x, crystal.y, crystal.z, spread(random, 0.05),
+                            spread(random, 0.05), spread(random, 0.05));
+                }
+            }
+            case WizardMove.NOVA -> {
+                if (gathering) {
+                    spiral(level, crystal, 0.7, age * 2.4F, ParticleTypes.SNOWFLAKE, 3);
+                    spiral(level, feet.add(0.0, 0.2, 0.0), 2.2 - t * 0.1, -age * 1.6F, Wizard.dust(Wizard.ICE, 1.2F),
+                            4);
+                }
+            }
+            case WizardMove.TORNADO -> {
+                if (gathering) {
+                    spiral(level, hand.add(0.0, (t % 8) * 0.1, 0.0), 0.6, age * 3.0F, Wizard.dust(Wizard.VIOLET, 1.0F),
+                            3);
+                    level.addParticle(ParticleTypes.CLOUD, hand.x, hand.y, hand.z, spread(random, 0.1), 0.05,
+                            spread(random, 0.1));
+                }
+            }
+            case WizardMove.INFERNO, WizardMove.COMET -> {
+                if (move == WizardMove.COMET || gathering) {
+                    spiral(level, hand, 0.4, age * 2.0F, ParticleTypes.FLAME, 2);
+                    level.addParticle(ParticleTypes.FLAME, middle.x + spread(random, 0.8), middle.y + spread(random,
+                            1.6), middle.z + spread(random, 0.8), 0.0, 0.06, 0.0);
+                }
+            }
+            case WizardMove.PHANTOM -> {
+                for (int k = 0; k < 2; k++) {
+                    level.addParticle(ParticleTypes.REVERSE_PORTAL, middle.x + spread(random, 1.0),
+                            middle.y + spread(random, 2.0), middle.z + spread(random, 1.0), 0.0, 0.0, 0.0);
+                }
+            }
+            case WizardMove.TENDRILS, WizardMove.VOID_ORB, WizardMove.DRAIN -> {
+                if (gathering) {
+                    spiral(level, move == WizardMove.DRAIN ? hand : crystal, 0.9 - Math.min(0.6, t * 0.04),
+                            age * 1.9F, Wizard.dust(Wizard.VOID, 1.1F), 3);
+                    level.addParticle(ParticleTypes.SQUID_INK, hand.x, hand.y, hand.z, 0.0, -0.02, 0.0);
+                }
+            }
+            case WizardMove.SUPERNOVA -> {
+                if (t < WizardMove.release(move)) {
+                    level.addParticle(ParticleTypes.END_ROD, crystal.x, crystal.y, crystal.z, spread(random, 0.1),
+                            0.3 + random.nextDouble() * 0.2, spread(random, 0.1));
+                }
+            }
+            case WizardMove.AIRSTEP -> {
+                for (int k = 0; k < 4; k++) {
+                    level.addParticle(Wizard.dust(Wizard.light(phase), 1.0F), middle.x + spread(random, 0.8),
+                            middle.y + spread(random, 1.8), middle.z + spread(random, 0.8), 0.0, 0.0, 0.0);
                 }
             }
             case WizardMove.STUNNED -> {
@@ -195,6 +271,21 @@ final class WizardSparks {
             double z = Mth.sin(a) * radius;
             level.addParticle(particle, at.x + x, at.y + (k % 2 == 0 ? 0.05 : -0.05), at.z + z, -x * 0.12, 0.0,
                     -z * 0.12);
+        }
+    }
+
+    // His ward breaks, as this game sees it: shards of it flying out from all round him, falling as they go.
+    static void shatter(Wizard wizard) {
+        Level level = wizard.level();
+        RandomSource random = wizard.getRandom();
+        Vec3 middle = wizard.position().add(0.0, 1.0 + wizard.hover(), 0.0);
+        int light = Wizard.light(wizard.phase());
+        for (int k = 0; k < 70; k++) {
+            Vec3 way = new Vec3(random.nextGaussian(), random.nextGaussian(), random.nextGaussian()).normalize();
+            Vec3 at = middle.add(way.scale(1.7));
+            Vec3 fly = way.scale(0.25 + random.nextDouble() * 0.25);
+            level.addParticle(k % 3 == 0 ? ParticleTypes.END_ROD : Wizard.dust(light, 1.4F), at.x, at.y, at.z, fly.x,
+                    fly.y, fly.z);
         }
     }
 

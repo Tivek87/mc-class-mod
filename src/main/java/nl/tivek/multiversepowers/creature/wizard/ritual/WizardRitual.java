@@ -139,7 +139,7 @@ public final class WizardRitual implements Effect {
             }
         }
         if (age == LENGTH - 6) {
-            ParticleFx.at(level, ParticleTypes.FLASH, top);
+            ParticleFx.sphereOut(level, ParticleTypes.ELECTRIC_SPARK, top, 30, 0.6);
             ParticleFx.shockwave(level, Wizard.dust(Wizard.STARLIGHT, 2.0F), ground, 64, 0.7);
             ParticleFx.sphereOut(level, ParticleTypes.END_ROD, top, 40, 0.3);
         }

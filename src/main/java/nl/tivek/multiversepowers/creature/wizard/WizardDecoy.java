@@ -158,7 +158,9 @@ public final class WizardDecoy extends MovingMonster {
         }
         boolean image = this.mode() == IMAGE;
         Entity wizard = this.owner == null ? null : ((ServerLevel) this.level()).getEntity(this.owner);
-        if (image && (!(wizard instanceof Wizard) || !wizard.isAlive())) {
+        // An image breaks once he is gone; a new phase breaks images and ghosts alike, as they wear his old look.
+        if (image && (!(wizard instanceof Wizard) || !wizard.isAlive())
+                || wizard instanceof Wizard owner && owner.phase() != this.look()) {
             this.shatter(null);
             return;
         }
@@ -213,7 +215,7 @@ public final class WizardDecoy extends MovingMonster {
                 MonsterBlows.hurt(living, Wizard.source(this, owner, WizardEntities.ARCANE),
                         owner.harm(WizardMove.SPARK), away.scale(0.9).add(0.0, 0.35, 0.0));
             }
-            ParticleFx.at(level, ParticleTypes.FLASH, at);
+            ParticleFx.sphereOut(level, ParticleTypes.ELECTRIC_SPARK, at, 24, 0.5);
             level.playSound(null, at.x, at.y, at.z, SoundEvents.FIREWORK_ROCKET_BLAST, SoundSource.HOSTILE, 1.4F,
                     0.7F);
         } else if (by != null && by.distanceTo(this) < PUSH) {

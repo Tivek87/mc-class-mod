@@ -4,15 +4,24 @@ import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 import nl.tivek.multiversepowers.creature.wizard.Wizard;
 import nl.tivek.multiversepowers.creature.wizard.WizardDecoy;
 import nl.tivek.multiversepowers.creature.wizard.WizardEntities;
+import nl.tivek.multiversepowers.creature.wizard.client.abyss.DrainRenderer;
+import nl.tivek.multiversepowers.creature.wizard.client.abyss.SupernovaRenderer;
+import nl.tivek.multiversepowers.creature.wizard.client.abyss.TendrilsRenderer;
+import nl.tivek.multiversepowers.creature.wizard.client.abyss.VoidOrbRenderer;
 import nl.tivek.multiversepowers.creature.wizard.client.field.BlizzardRenderer;
 import nl.tivek.multiversepowers.creature.wizard.client.field.ChainsRenderer;
+import nl.tivek.multiversepowers.creature.wizard.client.field.InfernoRenderer;
+import nl.tivek.multiversepowers.creature.wizard.client.field.NovaRenderer;
 import nl.tivek.multiversepowers.creature.wizard.client.field.RiftRenderer;
 import nl.tivek.multiversepowers.creature.wizard.client.field.RuneRenderer;
+import nl.tivek.multiversepowers.creature.wizard.client.field.TornadoRenderer;
 import nl.tivek.multiversepowers.creature.wizard.client.field.WarpRenderer;
 import nl.tivek.multiversepowers.creature.wizard.client.field.WellRenderer;
 import nl.tivek.multiversepowers.creature.wizard.client.fx.ArcRenderer;
 import nl.tivek.multiversepowers.creature.wizard.client.fx.BeamRenderer;
+import nl.tivek.multiversepowers.creature.wizard.client.fx.CrystalRenderer;
 import nl.tivek.multiversepowers.creature.wizard.client.fx.FamiliarRenderer;
+import nl.tivek.multiversepowers.creature.wizard.client.fx.LanceRenderer;
 import nl.tivek.multiversepowers.creature.wizard.client.fx.MeteorRenderer;
 import nl.tivek.multiversepowers.creature.wizard.client.fx.OrbRenderer;
 
@@ -44,6 +53,19 @@ public final class WizardClient {
         event.registerEntityRenderer(WizardEntities.WARP.get(), WarpRenderer::new);
         event.registerEntityRenderer(WizardEntities.ARC.get(), ArcRenderer::new);
         event.registerEntityRenderer(WizardEntities.BEAM.get(), BeamRenderer::new);
+        event.registerEntityRenderer(WizardEntities.CRYSTAL.get(), CrystalRenderer::new);
+        event.registerEntityRenderer(WizardEntities.ORB.get(), context -> new OrbRenderer<>(context, Wizard.VIOLET,
+                0.45F, 0.8F));
+        event.registerEntityRenderer(WizardEntities.SHARD.get(), context -> new OrbRenderer<>(context,
+                Wizard.STARLIGHT, 0.35F, 1.4F));
+        event.registerEntityRenderer(WizardEntities.LANCE.get(), LanceRenderer::new);
+        event.registerEntityRenderer(WizardEntities.NOVA.get(), NovaRenderer::new);
+        event.registerEntityRenderer(WizardEntities.TORNADO.get(), TornadoRenderer::new);
+        event.registerEntityRenderer(WizardEntities.RING_OF_FIRE.get(), InfernoRenderer::new);
+        event.registerEntityRenderer(WizardEntities.TENDRILS.get(), TendrilsRenderer::new);
+        event.registerEntityRenderer(WizardEntities.VOID_ORB.get(), VoidOrbRenderer::new);
+        event.registerEntityRenderer(WizardEntities.DRAIN.get(), DrainRenderer::new);
+        event.registerEntityRenderer(WizardEntities.SUPERNOVA.get(), SupernovaRenderer::new);
     }
 
     public static void onRegisterLayers(EntityRenderersEvent.RegisterLayerDefinitions event) {

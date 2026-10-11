@@ -25,8 +25,10 @@ import org.joml.Quaternionf;
 // a belt, a cape from his shoulders, and a long skirt from his hips in two panels, front and back, that part as his legs
 // step so they never pass through it; bell sleeves; a hooked nose, bushy brows, a moustache, long white hair down his
 // back and at his temples, and a beard in three joints that hangs from his chin; a tall pointed hat whose tip bends back
-// in three joints. Beard, hat-tip, skirt and cape trail after him (WizardPoses). His staff is drawn in his right hand on
-// its own (StaffLayer). Its texture is made by scripts/models/zombies.
+// in three joints. Beard, hat-tip, skirt and cape trail after him (WizardPoses). Grander each phase: pauldrons on his
+// shoulders from his second, a crown of spikes round his hat's brim from his third, curling horns through his hat and a
+// longer cape from his fourth (the rest of each phase's dress is its texture and RegaliaLayer). His staff is drawn in
+// his right hand on its own (StaffLayer). Its textures are made by scripts/models/zombies.
 public final class WizardModel<T extends MovingMonster> extends HumanoidModel<T> implements PlainDrawing {
     private static final float HIP_Y = 12.0F;
     private static final float NECK_Y = -12.0F;
@@ -38,6 +40,9 @@ public final class WizardModel<T extends MovingMonster> extends HumanoidModel<T>
     private static final float CAPE_LONG = 20.0F;
     private static final float SKIRT_DEEP = 3.5F;
     private static final float SKIRT_LONG = 9.0F;
+    static final int SPIKES = 7;
+    // How much longer his cape hangs from his fourth phase.
+    private static final float CAPE_LONGER = 1.15F;
     private final ModelPart beard;
     private final ModelPart beardTip;
     private final ModelPart beardPoint;
@@ -45,6 +50,9 @@ public final class WizardModel<T extends MovingMonster> extends HumanoidModel<T>
     private final ModelPart skirtBack;
     private final ModelPart cape;
     private final ModelPart[] hatJoints;
+    private final ModelPart[] pauldrons;
+    private final ModelPart[] spikes;
+    private final ModelPart[] horns;
     private final Quaternionf wrist = new Quaternionf();
     final WizardPoses pose = new WizardPoses();
     float alpha = 1.0F;
@@ -60,6 +68,12 @@ public final class WizardModel<T extends MovingMonster> extends HumanoidModel<T>
         ModelPart mid = this.hat.getChild("mid");
         ModelPart top = mid.getChild("top");
         this.hatJoints = new ModelPart[] { mid, top, top.getChild("tip") };
+        this.pauldrons = new ModelPart[] { this.rightArm.getChild("pauldron"), this.leftArm.getChild("pauldron") };
+        this.spikes = new ModelPart[SPIKES];
+        for (int k = 0; k < SPIKES; k++) {
+            this.spikes[k] = this.hat.getChild("spike" + k);
+        }
+        this.horns = new ModelPart[] { this.hat.getChild("right_horn"), this.hat.getChild("left_horn") };
     }
 
     public static LayerDefinition createLayer() {
@@ -95,6 +109,27 @@ public final class WizardModel<T extends MovingMonster> extends HumanoidModel<T>
                 .texOffs(88, 8).addBox(-1.5F, -4.0F, -1.5F, 3.0F, 4.0F, 3.0F)
                 .texOffs(100, 8).addBox(-0.75F, -6.5F, -0.75F, 1.5F, 3.0F, 1.5F),
                 PartPose.offsetAndRotation(0.0F, -3.8F, 0.2F, -0.4F, 0.0F, 0.0F));
+        // The crown round the brim, its middle spike over his brow the tallest, each leaning out a little.
+        for (int k = 0; k < SPIKES; k++) {
+            float angle = -Mth.HALF_PI + k * Mth.TWO_PI / SPIKES;
+            float tall = k == 0 ? 1.5F : 1.0F;
+            hat.addOrReplaceChild("spike" + k, CubeListBuilder.create().texOffs(64, 64).addBox(-0.5F, -3.0F * tall,
+                    -0.5F, 1.0F, 3.0F * tall, 1.0F), PartPose.offsetAndRotation(Mth.cos(angle) * 5.6F, -8.6F,
+                    Mth.sin(angle) * 5.6F, Mth.sin(angle) * 0.3F, 0.0F, -Mth.cos(angle) * 0.3F));
+        }
+        // Horns through the hat's band, sweeping out and back and curling up at their points.
+        for (int s = 0; s < 2; s++) {
+            float side = s == 0 ? -1.0F : 1.0F;
+            PartDefinition horn = hat.addOrReplaceChild(s == 0 ? "right_horn" : "left_horn", CubeListBuilder.create()
+                    .mirror(s == 1).texOffs(72, 64).addBox(-1.0F, -4.0F, -1.0F, 2.0F, 4.0F, 2.0F),
+                    PartPose.offsetAndRotation(side * 4.2F, -10.4F, 0.6F, 0.25F, 0.0F, side * 1.05F));
+            PartDefinition bend = horn.addOrReplaceChild("mid", CubeListBuilder.create().mirror(s == 1)
+                    .texOffs(82, 64).addBox(-0.5F, -3.0F, -0.5F, 1.0F, 3.0F, 1.0F),
+                    PartPose.offsetAndRotation(0.0F, -3.8F, 0.0F, 0.35F, 0.0F, -side * 0.6F));
+            bend.addOrReplaceChild("tip", CubeListBuilder.create().mirror(s == 1).texOffs(88, 64).addBox(-0.5F,
+                    -2.0F, -0.5F, 1.0F, 2.0F, 1.0F), PartPose.offsetAndRotation(0.0F, -2.8F, 0.0F, 0.3F, 0.0F,
+                    -side * 0.55F));
+        }
         PartDefinition body = root.addOrReplaceChild("body", CubeListBuilder.create()
                 .texOffs(0, 32).addBox(-4.0F, -12.0F, -2.0F, 8.0F, 12.0F, 4.0F)
                 .texOffs(24, 32).addBox(-6.0F, -12.6F, -3.0F, 12.0F, 4.0F, 6.0F)
@@ -117,8 +152,11 @@ public final class WizardModel<T extends MovingMonster> extends HumanoidModel<T>
                     .texOffs(80, 44).addBox(-1.5F, -2.0F, -1.5F, 3.0F, 12.0F, 3.0F)
                     .texOffs(92, 29).addBox(-2.0F, -2.4F, -2.0F, 4.0F, 7.0F, 4.0F)
                     .texOffs(108, 29).addBox(-2.5F, 4.6F, -2.5F, 5.0F, 4.0F, 5.0F);
-            root.addOrReplaceChild(s == 0 ? "right_arm" : "left_arm", arm, PartPose.offset(side * SHOULDER_X,
-                    HIP_Y + SHOULDER_Y, 0.0F));
+            PartDefinition limb = root.addOrReplaceChild(s == 0 ? "right_arm" : "left_arm", arm,
+                    PartPose.offset(side * SHOULDER_X, HIP_Y + SHOULDER_Y, 0.0F));
+            limb.addOrReplaceChild("pauldron", CubeListBuilder.create().mirror(s == 1).texOffs(40, 64)
+                    .addBox(-3.0F, -3.3F, -2.5F, 6.0F, 3.0F, 5.0F), PartPose.offsetAndRotation(side * 0.4F, 0.0F,
+                    0.0F, 0.0F, 0.0F, side * 0.28F));
             CubeListBuilder leg = CubeListBuilder.create().mirror(s == 1).texOffs(92, 44).addBox(-2.0F, 0.0F, -2.0F,
                     4.0F, 12.0F, 4.0F);
             root.addOrReplaceChild(s == 0 ? "right_leg" : "left_leg", leg, PartPose.offset(side * LEG_X, HIP_Y,
@@ -151,6 +189,17 @@ public final class WizardModel<T extends MovingMonster> extends HumanoidModel<T>
         for (ModelPart joint : this.hatJoints) {
             joint.resetPose();
         }
+        int phase = WizardRenderer.phase(caster);
+        for (ModelPart pauldron : this.pauldrons) {
+            pauldron.visible = phase >= 2;
+        }
+        for (ModelPart spike : this.spikes) {
+            spike.visible = phase >= 3;
+        }
+        for (ModelPart horn : this.horns) {
+            horn.visible = phase >= 4;
+        }
+        this.cape.yScale = phase >= 4 ? CAPE_LONGER : 1.0F;
         WizardPoses p = this.pose;
         p.of(caster, limbSwing, limbSwingAmount, ageInTicks, WizardRenderer.floating(caster));
         float[] c = p.c;

@@ -14,7 +14,6 @@ import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.creature.wizard.Wizard;
 import nl.tivek.multiversepowers.creature.wizard.WizardEntities;
-import nl.tivek.multiversepowers.creature.wizard.WizardDecoy;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 
 // A star fallen out of the Wizard's rift: a white-hot core in a violet glow trailing sparks, faster as it falls. It
@@ -89,9 +88,7 @@ public final class FallingStar extends ThrowableProjectile {
 
     @Override
     protected boolean canHitEntity(Entity entity) {
-        return !(entity instanceof Wizard) && !(entity instanceof WizardDecoy) && !(entity instanceof FallingStar)
-                && !(entity instanceof ArcaneFamiliar)
-                && super.canHitEntity(entity);
+        return !Wizard.ally(entity) && !(entity instanceof FallingStar) && super.canHitEntity(entity);
     }
 
     @Override
@@ -102,7 +99,7 @@ public final class FallingStar extends ThrowableProjectile {
         }
         Vec3 at = result.getLocation();
         SpellBlast.burst(level, this, this.getOwner(), at, POWER, false, REACH, this.damage, WizardEntities.STARFALL);
-        ParticleFx.send(level, ParticleTypes.FLASH, at.x, at.y + 0.3, at.z, 1, 0.0, 0.0, 0.0, 0.0);
+        ParticleFx.sphereOut(level, ParticleTypes.ELECTRIC_SPARK, at.add(0.0, 0.3, 0.0), 30, 0.6);
         ParticleFx.send(level, ParticleTypes.END_ROD, at.x, at.y + 0.3, at.z, 24, 0.1, 0.1, 0.1, 0.35);
         ParticleFx.send(level, Wizard.dust(Wizard.VIOLET, 2.0F), at.x, at.y + 0.4, at.z, 24, 0.9, 0.3, 0.9, 0.0);
         ParticleFx.send(level, ParticleTypes.FIREWORK, at.x, at.y + 0.3, at.z, 16, 0.2, 0.1, 0.2, 0.25);

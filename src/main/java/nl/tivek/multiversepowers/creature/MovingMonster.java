@@ -10,8 +10,9 @@ import net.minecraft.world.level.Level;
 // every game that sees it learns which by an entity event and draws it by how long it has been going (moveAge). A
 // zombie out in daylight with nothing on its head catches fire (burnsInDaylight).
 public abstract class MovingMonster extends Monster {
-    // The entity events that tell every game a move starts (kinds after FIRST_EVENT).
-    private static final byte FIRST_EVENT = 100;
+    // The entity events that tell every game a move starts (kinds after FIRST_EVENT): the game's own events are all
+    // above 0, so the moves take the negative ones, room for 127 kinds.
+    private static final byte FIRST_EVENT = Byte.MIN_VALUE;
 
     private int move;
     private int moveAt;

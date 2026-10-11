@@ -67,7 +67,7 @@ final class WizardMirrors {
             member.start(WizardMove.GLIDE);
         }
         Vec3 middle = target.position().add(0.0, 1.0, 0.0);
-        ParticleFx.at(level, ParticleTypes.FLASH, middle);
+        ParticleFx.sphereOut(level, ParticleTypes.ELECTRIC_SPARK, middle, 30, 0.6);
         ParticleFx.shockwave(level, Wizard.dust(Wizard.STARLIGHT, 2.0F), middle, 72, 0.8);
         WizardSparks.blink(level, wizard.position(), mirrors.place(mirrors.real, target));
         level.playSound(null, middle.x, middle.y, middle.z, SoundEvents.ILLUSIONER_MIRROR_MOVE, SoundSource.HOSTILE,
@@ -210,7 +210,7 @@ final class WizardMirrors {
             MonsterBlows.hurt(living, Wizard.source(this.wizard, this.wizard, WizardEntities.ARCANE),
                     this.wizard.harm(WizardMove.MIRRORS) * 2.5F, away.scale(1.2).add(0.0, 0.5, 0.0));
         }
-        ParticleFx.at(this.level, ParticleTypes.FLASH, middle);
+        ParticleFx.sphereOut(this.level, ParticleTypes.ELECTRIC_SPARK, middle, 30, 0.6);
         ParticleFx.sphereOut(this.level, Wizard.dust(Wizard.STARLIGHT, 2.0F), middle, 90, 0.7);
         this.level.playSound(null, middle.x, middle.y, middle.z, SoundEvents.AMETHYST_CLUSTER_BREAK,
                 SoundSource.HOSTILE, 2.5F, 0.5F);
@@ -223,7 +223,7 @@ final class WizardMirrors {
     // Found out: every image shatters, he drops where he is.
     void foundOut() {
         Vec3 at = this.wizard.position().add(0.0, 1.0, 0.0);
-        ParticleFx.at(this.level, ParticleTypes.FLASH, at);
+        ParticleFx.sphereOut(this.level, ParticleTypes.ELECTRIC_SPARK, at, 30, 0.6);
         this.level.playSound(null, at.x, at.y, at.z, SoundEvents.GLASS_BREAK, SoundSource.HOSTILE, 2.0F, 0.6F);
         this.end();
     }
@@ -233,7 +233,7 @@ final class WizardMirrors {
             return;
         }
         this.ended = true;
-        this.wizard.setNoGravity(false);
+        this.wizard.setNoGravity(this.wizard.flies());
         for (MovingMonster member : this.members) {
             if (member instanceof WizardDecoy clone && clone.isAlive()) {
                 clone.shatter(null);

@@ -12,24 +12,24 @@ import nl.tivek.multiversepowers.creature.wizard.Wizard;
 
 // A spell of the Wizard's laid on a place for a few seconds: it knows who cast it and how hard it strikes, and is never
 // saved with the world.
-abstract class FieldSpell extends Entity {
+public abstract class FieldSpell extends Entity {
     @Nullable
     private UUID owner;
     protected float damage;
 
-    FieldSpell(EntityType<?> type, Level level) {
+    protected FieldSpell(EntityType<?> type, Level level) {
         super(type, level);
         this.noPhysics = true;
     }
 
-    void castBy(Wizard wizard, float damage) {
+    protected void castBy(Wizard wizard, float damage) {
         this.owner = wizard.getUUID();
         this.damage = damage;
     }
 
     // Its caster, while he is alive.
     @Nullable
-    Wizard owner(ServerLevel level) {
+    protected Wizard owner(ServerLevel level) {
         Entity owner = this.owner == null ? null : level.getEntity(this.owner);
         return owner instanceof Wizard wizard && wizard.isAlive() ? wizard : null;
     }

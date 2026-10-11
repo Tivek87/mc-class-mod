@@ -15,9 +15,16 @@ import net.neoforged.neoforge.event.entity.EntityAttributeCreationEvent;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import nl.tivek.multiversepowers.MultiversePowers;
+import nl.tivek.multiversepowers.creature.wizard.abyss.SoulDrain;
+import nl.tivek.multiversepowers.creature.wizard.abyss.Supernova;
+import nl.tivek.multiversepowers.creature.wizard.abyss.VoidOrb;
+import nl.tivek.multiversepowers.creature.wizard.abyss.VoidTendrils;
 import nl.tivek.multiversepowers.creature.wizard.field.ArcaneChains;
+import nl.tivek.multiversepowers.creature.wizard.field.ArcaneTornado;
 import nl.tivek.multiversepowers.creature.wizard.field.Blizzard;
+import nl.tivek.multiversepowers.creature.wizard.field.FrostNova;
 import nl.tivek.multiversepowers.creature.wizard.field.GravityWell;
+import nl.tivek.multiversepowers.creature.wizard.field.InfernoRing;
 import nl.tivek.multiversepowers.creature.wizard.field.RuneMine;
 import nl.tivek.multiversepowers.creature.wizard.field.StarRift;
 import nl.tivek.multiversepowers.creature.wizard.field.TimeWarp;
@@ -27,6 +34,8 @@ import nl.tivek.multiversepowers.creature.wizard.spell.ArcaneBolt;
 import nl.tivek.multiversepowers.creature.wizard.spell.ArcaneFamiliar;
 import nl.tivek.multiversepowers.creature.wizard.spell.FallingStar;
 import nl.tivek.multiversepowers.creature.wizard.spell.GreatMeteor;
+import nl.tivek.multiversepowers.creature.wizard.spell.PrismLance;
+import nl.tivek.multiversepowers.creature.wizard.spell.WardCrystal;
 import nl.tivek.multiversepowers.creature.wizard.spell.WizardFireball;
 
 // Every kind of thing the Wizard brings into the world: himself, his decoys and familiars, and his spells, with the
@@ -69,10 +78,41 @@ public final class WizardEntities {
             ArcLightning::new);
     public static final DeferredHolder<EntityType<?>, EntityType<ArcaneBeam>> BEAM = field("arcane_beam",
             ArcaneBeam::new);
+    // His ward's crystals circle him: told every tick, struck by anything.
+    public static final DeferredHolder<EntityType<?>, EntityType<WardCrystal>> CRYSTAL = TYPES.register(
+            "ward_crystal", () -> EntityType.Builder.<WardCrystal>of(WardCrystal::new, MobCategory.MISC)
+                    .sized(0.6F, 0.9F).fireImmune().clientTrackingRange(10).updateInterval(1).build("ward_crystal"));
+    public static final DeferredHolder<EntityType<?>, EntityType<ArcaneBolt>> ORB = projectile("arcane_orb",
+            ArcaneBolt::new, 0.4F);
+    public static final DeferredHolder<EntityType<?>, EntityType<ArcaneBolt>> SHARD = projectile("star_shard",
+            ArcaneBolt::new, 0.3F);
+    public static final DeferredHolder<EntityType<?>, EntityType<PrismLance>> LANCE = projectile("prism_lance",
+            PrismLance::new, 0.4F);
+    public static final DeferredHolder<EntityType<?>, EntityType<FrostNova>> NOVA = field("frost_nova",
+            FrostNova::new);
+    public static final DeferredHolder<EntityType<?>, EntityType<ArcaneTornado>> TORNADO = field("arcane_tornado",
+            ArcaneTornado::new);
+    public static final DeferredHolder<EntityType<?>, EntityType<InfernoRing>> RING_OF_FIRE = field("inferno_ring",
+            InfernoRing::new);
+    // A tendril holds its foe's legs, and its foe may strike it to break free.
+    public static final DeferredHolder<EntityType<?>, EntityType<VoidTendrils>> TENDRILS = TYPES.register(
+            "void_tendrils", () -> EntityType.Builder.<VoidTendrils>of(VoidTendrils::new, MobCategory.MISC)
+                    .sized(0.9F, 1.2F).fireImmune().clientTrackingRange(10).updateInterval(1).build("void_tendrils"));
+    public static final DeferredHolder<EntityType<?>, EntityType<VoidOrb>> VOID_ORB = TYPES.register("void_orb",
+            () -> EntityType.Builder.<VoidOrb>of(VoidOrb::new, MobCategory.MISC).sized(1.0F, 1.0F).fireImmune()
+                    .clientTrackingRange(10).updateInterval(1).build("void_orb"));
+    public static final DeferredHolder<EntityType<?>, EntityType<SoulDrain>> DRAIN = field("soul_drain",
+            SoulDrain::new);
+    public static final DeferredHolder<EntityType<?>, EntityType<Supernova>> SUPERNOVA = TYPES.register("supernova",
+            () -> EntityType.Builder.<Supernova>of(Supernova::new, MobCategory.MISC).sized(1.0F, 1.0F).fireImmune()
+                    .clientTrackingRange(16).updateInterval(1).build("supernova"));
     public static final ResourceKey<DamageType> ARCANE = key("arcane");
     public static final ResourceKey<DamageType> FROST = key("frost");
     public static final ResourceKey<DamageType> STARFALL = key("starfall");
     public static final ResourceKey<DamageType> LIGHTNING = key("arcane_lightning");
+    public static final ResourceKey<DamageType> VOID = key("void_magic");
+    public static final ResourceKey<DamageType> INFERNO = key("inferno");
+    public static final ResourceKey<DamageType> NOVA_BURST = key("supernova");
 
     private WizardEntities() {
     }
@@ -101,10 +141,10 @@ public final class WizardEntities {
     }
 
     private static void onAttributes(EntityAttributeCreationEvent event) {
-        event.put(WIZARD.get(), Monster.createMonsterAttributes().add(Attributes.MAX_HEALTH, 500.0)
-                .add(Attributes.MOVEMENT_SPEED, 0.34).add(Attributes.ATTACK_DAMAGE, 12.0).add(Attributes.ARMOR, 8.0)
-                .add(Attributes.ARMOR_TOUGHNESS, 4.0).add(Attributes.KNOCKBACK_RESISTANCE, 0.8)
-                .add(Attributes.FOLLOW_RANGE, 40.0).build());
+        event.put(WIZARD.get(), Monster.createMonsterAttributes().add(Attributes.MAX_HEALTH, 800.0)
+                .add(Attributes.MOVEMENT_SPEED, 0.34).add(Attributes.ATTACK_DAMAGE, 14.0).add(Attributes.ARMOR, 10.0)
+                .add(Attributes.ARMOR_TOUGHNESS, 6.0).add(Attributes.KNOCKBACK_RESISTANCE, 0.85)
+                .add(Attributes.FOLLOW_RANGE, 48.0).build());
         event.put(DECOY.get(), Monster.createMonsterAttributes().add(Attributes.MAX_HEALTH, 1.0).build());
         event.put(FAMILIAR.get(), Vex.createAttributes().add(Attributes.MAX_HEALTH, 14.0)
                 .add(Attributes.ATTACK_DAMAGE, 8.0).build());

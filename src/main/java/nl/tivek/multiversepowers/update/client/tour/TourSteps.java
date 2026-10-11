@@ -19,23 +19,23 @@ import nl.tivek.multiversepowers.update.client.tour.TourStep.Place;
 // while a line is in neither, or a tour text is too long. Only steps from `FROM` up to the version installed are ever
 // shown, so a release's steps replace the last one's. A player's first tour starts with `INTRO`.
 final class TourSteps {
-    static final String VERSION = "0.8.8-alpha";
+    static final String VERSION = "0.8.9-alpha";
     // The oldest version whose changes this tour shows: normally its own.
     static final String FROM = VERSION;
 
-    // The ritual that calls the Wizard and what changed of him, then the Mobs page, last so the settings open in the
-    // world, where it is.
+    // The Wizard's five phases, his ward, his new spells and his new arrival and death, all in the game.
     static final List<TourStep> ALL = List.of(
-            step(VERSION, "arcane_tome", Kind.NEW, Place.GAME).covers(
-                    "Arcane Tome"),
-            step(VERSION, "wizard_rework", Kind.CHANGED, Place.GAME).covers(
-                    "Wizard: new look", "Wizard: animations", "Wizard: death", "Wizard: arrival", "Wizard: faster",
-                    "Wizard: fights everyone"),
-            step(VERSION, "mobs_page", Kind.CHANGED, Place.SETTINGS).at("nav.mobs").covers(
-                    "Mobs page"));
+            step(VERSION, "wizard_phases", Kind.NEW, Place.GAME).covers(
+                    "Wizard: five phases", "Wizard: flight", "Wizard: stronger"),
+            step(VERSION, "wizard_ward", Kind.NEW, Place.GAME).covers(
+                    "Wizard: magic ward", "Wizard: boss bar"),
+            step(VERSION, "wizard_spells", Kind.NEW, Place.GAME).covers(
+                    "Wizard: 12 new spells", "Wizard: outfit per phase"),
+            step(VERSION, "wizard_light", Kind.CHANGED, Place.GAME).covers(
+                    "Wizard: arrival", "Wizard: death"));
 
     // Changes too small for a step of their own, each by how its changelog line starts, as in `covers`.
-    static final List<String> SMALL = List.of();
+    static final List<String> SMALL = List.of("Wizard: images");
 
     // Shown first on a player's first tour, wherever it starts: what the tour is and how to use it.
     static final TourStep INTRO = step(VERSION, "tour_intro", Kind.HOW, Place.ANY);

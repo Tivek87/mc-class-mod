@@ -3,6 +3,33 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.8.9-alpha] - 2026-10-11
+
+### Added
+- **Wizard: five phases:** two more, The Voidborn and The Eternal. A phase wakes at every fifth of his health, each
+  one faster and harder hitting, and opens with a great spell of its own.
+- **Wizard: magic ward:** every phase he raises a ward that takes every blow. Break the three crystals circling him to
+  weaken it, then break the ward: he falls stunned and takes extra harm.
+- **Wizard: flight:** from his second phase he flies round you, and blinks from place to place in mid-air, often
+  just as you strike.
+- **Wizard: 12 new spells:** Arcane Orbit, Prism Lances, Frost Nova, Arcane Tornado (sweeps you up and flings you),
+  Comet Dive, Inferno Ring, Phantom Strike, Void Tendrils (strike them, or walk or jump away again and again, to break free), Void Orb, Soul Drain
+  (it heals him), Star Spiral and Supernova (get behind something).
+- **Wizard: outfit per phase:** new colours every phase, with shoulder plates, a crown of spikes and horns, and light
+  that grows: rings of runes, flames, shards of the void, at last a halo and wings.
+
+### Changed
+- **Wizard: stronger:** 800 health instead of 500, harder blows and more armor; every phase he waits less between
+  spells.
+- **Wizard: arrival:** he comes down curled up in a cocoon of light, lands on one knee as it opens, rises and roars.
+- **Wizard: death:** light pours out of him and lifts him in a pillar to the sky before he is drawn in; dying in the
+  air, he sinks down first.
+- **Wizard: boss bar:** marks for all five phases, and his ward's own bar with its crystals under it.
+- **Wizard: images** of him break when a new phase begins.
+
+### Fixed
+- **Wizard: bursts** no longer show a big pale square up close.
+
 ## [0.8.8-alpha] - 2026-10-11
 
 ### Added

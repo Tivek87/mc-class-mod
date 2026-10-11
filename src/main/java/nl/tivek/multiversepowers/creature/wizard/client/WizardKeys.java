@@ -9,6 +9,7 @@ import nl.tivek.multiversepowers.engine.math.Keyframes.Key;
 // before its release (a pull back, a coil, a breath in), strikes past where it settles and follows through. Each
 // channel runs a little behind or ahead of the trunk (LAG): legs lead, the arm follows the trunk, the elbow the arm, the
 // wrist and staff the elbow, the head last, so a move rolls through his body as a whip does instead of all at once.
+// The moves his later phases brought are in WizardKeysMore.
 final class WizardKeys {
     static final int LEAN = 0;
     static final int SINK = 1;
@@ -47,7 +48,7 @@ final class WizardKeys {
     }
 
     // A key at `tick` setting each named channel (channel, value, channel, value ...).
-    private static Key k(float tick, float... pairs) {
+    static Key k(float tick, float... pairs) {
         float[] values = new float[CHANNELS];
         for (int i = 0; i + 1 < pairs.length; i += 2) {
             values[(int) pairs[i]] = pairs[i + 1];
@@ -56,7 +57,7 @@ final class WizardKeys {
     }
 
     // A key the pose comes to rest on before going on.
-    private static Key hold(float tick, float... pairs) {
+    static Key hold(float tick, float... pairs) {
         Key key = k(tick, pairs);
         return new Key(key.tick(), true, key.values());
     }
@@ -291,31 +292,43 @@ final class WizardKeys {
                         STAFF, -0.5F, L_ARM, 0.4F, L_OUT, 0.7F, L_WRIST, -0.4F, FLARE, 0.9F, NOD, -0.1F),
                 k(8, SINK, 1.0F, LEAN, -0.1F, R_KNEE, 0.4F, L_KNEE, 0.4F, L_ARM, 0.2F, L_OUT, 0.4F, FLARE, 0.3F),
                 k(10) };
-        // Called down out of his rift: sinking slowly, arms spread palms down, head bowed, legs hanging and robe
-        // spread; gathering himself; landing on one knee with the staff driven into the ground; rising slowly and
-        // levelling his hand at them.
-        MOVES[WizardMove.ARRIVE] = new Key[] { k(0, R_ARM, -0.4F, R_OUT, 0.9F, STAFF, 0.3F, L_ARM, -0.4F, L_OUT, 1.1F,
-                L_WRIST, 0.6F, NOD, 0.5F, R_LEG, 0.1F, L_LEG, 0.05F, R_KNEE, 0.25F, L_KNEE, 0.3F, FLARE, 0.7F,
-                GLOW, 1.0F),
-                k(40, R_ARM, -0.6F, R_OUT, 1.0F, STAFF, 0.4F, L_ARM, -0.6F, L_OUT, 1.2F, L_WRIST, 0.5F, NOD, 0.4F,
-                        R_LEG, 0.15F, L_LEG, 0.05F, R_KNEE, 0.3F, L_KNEE, 0.35F, FLARE, 0.8F, GLOW, 1.4F),
-                k(56, R_ARM, -2.2F, R_ELBOW, -0.4F, STAFF, 0.1F, L_ARM, -1.6F, L_OUT, 0.8F, NOD, -0.1F, R_LEG,
-                        -0.5F, R_KNEE, 0.9F, L_LEG, 0.2F, L_KNEE, 1.0F, LEAN, 0.15F, FLARE, 0.5F, GLOW, 2.0F),
-                k(62, R_ARM, -0.6F, R_ELBOW, 0.2F, STAFF, 0.3F, L_ARM, -0.7F, L_OUT, 1.3F, L_WRIST, -0.6F, NOD,
-                        0.45F, LEAN, 0.5F, SINK, 5.5F, R_LEG, -1.3F, R_KNEE, 1.5F, L_LEG, 0.25F, L_KNEE, 1.9F,
-                        FLARE, 1.4F, GLOW, 3.0F),
-                hold(70, R_ARM, -0.6F, R_ELBOW, 0.2F, STAFF, 0.3F, L_ARM, -0.6F, L_OUT, 1.2F, L_WRIST, -0.5F, NOD,
-                        0.4F, LEAN, 0.45F, SINK, 5.3F, R_LEG, -1.3F, R_KNEE, 1.5F, L_LEG, 0.25F, L_KNEE, 1.9F,
-                        GLOW, 1.5F),
-                k(80, R_ARM, -0.4F, STAFF, 0.2F, L_ARM, -0.3F, L_OUT, 0.4F, NOD, 0.1F, LEAN, 0.2F, SINK, 2.0F,
-                        R_LEG, -0.4F, R_KNEE, 0.5F, L_KNEE, 0.6F, GLOW, 1.0F),
-                k(88, L_ARM, -1.45F, L_IN, 0.25F, L_ELBOW, 0.15F, L_WRIST, -0.5F, NOD, -0.15F, LEAN, -0.05F,
+        // Called down out of his rift curled up in his cocoon, turning over slowly as it sinks; uncurling as it nears
+        // the ground, the staff raised; landing on one knee with the staff driven into the ground as the cocoon opens;
+        // rising slowly; the staff thrust at the sky with a roar; then his hand levelled at them.
+        float[] curled = { LEAN, 0.55F, NOD, 0.6F, SINK, 1.0F, R_ARM, -0.7F, R_IN, 0.9F, R_ELBOW, 0.8F, STAFF, -0.4F,
+                L_ARM, -0.9F, L_IN, 1.0F, L_ELBOW, 1.9F, R_LEG, -1.3F, R_KNEE, 2.0F, L_LEG, -1.1F, L_KNEE, 2.1F, FLARE,
+                0.3F, GLOW, 0.6F };
+        float[] knelt = { R_ARM, -0.6F, R_ELBOW, 0.2F, STAFF, 0.3F, L_ARM, -0.7F, L_OUT, 1.3F, L_WRIST, -0.6F, NOD,
+                0.45F, LEAN, 0.5F, SINK, 5.5F, R_LEG, -1.3F, R_KNEE, 1.5F, L_LEG, 0.25F, L_KNEE, 1.9F, FLARE, 1.4F,
+                GLOW, 3.0F };
+        float[] roar = { R_ARM, -2.8F, R_ELBOW, -0.5F, STAFF, 0.1F, L_ARM, -1.5F, L_OUT, 1.2F, L_WRIST, -0.7F, NOD,
+                -0.6F, LEAN, -0.25F, SINK, -0.3F, FLARE, 1.6F, GLOW, 3.0F };
+        MOVES[WizardMove.ARRIVE] = new Key[] { k(0, curled), k(24, curled), k(46, LEAN, 0.5F, NOD, 0.55F, SINK, 0.9F,
+                R_ARM, -0.7F, R_IN, 0.85F, R_ELBOW, 0.8F, STAFF, -0.4F, L_ARM, -0.9F, L_IN, 1.0F, L_ELBOW, 1.9F, R_LEG,
+                -1.2F, R_KNEE, 1.9F, L_LEG, -1.0F, L_KNEE, 2.0F, FLARE, 0.4F, GLOW, 1.2F),
+                k(55, R_ARM, -0.6F, R_OUT, 0.9F, STAFF, 0.3F, L_ARM, -0.6F, L_OUT, 1.1F, L_WRIST, 0.5F, NOD, 0.3F,
+                        R_LEG, 0.1F, L_LEG, 0.05F, R_KNEE, 0.3F, L_KNEE, 0.35F, FLARE, 0.9F, GLOW, 1.6F),
+                k(59, R_ARM, -2.2F, R_ELBOW, -0.4F, STAFF, 0.1F, L_ARM, -1.6F, L_OUT, 0.8F, NOD, -0.1F, R_LEG, -0.5F,
+                        R_KNEE, 0.9F, L_LEG, 0.2F, L_KNEE, 1.0F, LEAN, 0.15F, FLARE, 0.5F, GLOW, 2.0F),
+                k(62, knelt),
+                hold(78, R_ARM, -0.6F, R_ELBOW, 0.2F, STAFF, 0.3F, L_ARM, -0.6F, L_OUT, 1.2F, L_WRIST, -0.5F, NOD,
+                        0.4F, LEAN, 0.45F, SINK, 5.3F, R_LEG, -1.3F, R_KNEE, 1.5F, L_LEG, 0.25F, L_KNEE, 1.9F, GLOW,
+                        1.5F),
+                k(92, R_ARM, -0.4F, STAFF, 0.2F, L_ARM, -0.3F, L_OUT, 0.4F, NOD, 0.1F, LEAN, 0.2F, SINK, 2.0F, R_LEG,
+                        -0.4F, R_KNEE, 0.5F, L_KNEE, 0.6F, GLOW, 1.0F),
+                k(100, R_ARM, -0.3F, STAFF, 0.2F, L_ARM, -0.2F, NOD, -0.1F, GLOW, 1.2F),
+                k(104, roar), hold(110, roar),
+                k(116, L_ARM, -1.45F, L_IN, 0.25F, L_ELBOW, 0.15F, L_WRIST, -0.5F, NOD, -0.15F, LEAN, -0.05F,
                         TWIST, 0.2F, R_ARM, -0.3F, STAFF, 0.25F, GLOW, 1.4F, HAND, 1.0F),
-                k(96) };
-        // His death: reeling from the blow, staggering, sinking to his knees leaning on his staff, looking up as light
-        // breaks out of him, arms and head thrown back, lifted off the ground as it pours out of him.
+                k(120) };
+        // His death: reeling from the blow, staggering, sinking to his knees leaning on his staff as light cracks out
+        // of him, looking up as it breaks out of him, arms and head thrown back, lifted off the ground as it pours out
+        // of him; then drawn in on himself, curled up, as he is gone.
         float[] lifted = { NOD, -0.75F, LEAN, -0.3F, R_ARM, -1.8F, R_OUT, 1.15F, STAFF, 0.4F, L_ARM, -1.8F, L_OUT,
                 1.2F, L_WRIST, -0.5F, R_LEG, 0.2F, L_LEG, 0.1F, R_KNEE, 0.4F, L_KNEE, 0.5F, FLARE, 1.4F, GLOW, 3.0F,
+                LIFT, 22.0F };
+        float[] drawnIn = { NOD, 0.7F, LEAN, 0.5F, R_ARM, -0.8F, R_IN, 1.0F, R_ELBOW, 1.0F, STAFF, -0.3F, L_ARM,
+                -0.9F, L_IN, 1.1F, L_ELBOW, 2.0F, R_LEG, -1.0F, R_KNEE, 1.8F, L_LEG, -0.9F, L_KNEE, 1.9F, GLOW, 3.0F,
                 LIFT, 22.0F };
         MOVES[WizardMove.DEATH] = new Key[] { k(0),
                 k(4, LEAN, -0.35F, NOD, -0.5F, TWIST, 0.25F, SINK, -0.3F, R_ARM, -1.2F, R_OUT, 0.6F, STAFF, 0.6F,
@@ -333,7 +346,7 @@ final class WizardKeys {
                         0.4F),
                 k(52, NOD, -0.8F, LEAN, -0.35F, SINK, 5.0F, R_ARM, -1.9F, R_OUT, 1.2F, STAFF, 0.4F, L_ARM, -1.9F,
                         L_OUT, 1.25F, L_WRIST, -0.6F, R_KNEE, 1.3F, L_KNEE, 1.3F, FLARE, 1.6F, GLOW, 3.0F),
-                k(74, lifted), k(90, lifted) };
+                k(74, lifted), k(86, lifted), k(98, drawnIn), k(112, drawnIn) };
         // Flying round in the circle of mirrors: leaning forward, legs trailing, staff swept back.
         float[] glide = { LEAN, 0.35F, R_LEG, 0.4F, L_LEG, 0.25F, R_KNEE, 0.4F, L_KNEE, 0.5F, R_ARM, 0.35F, STAFF,
                 -0.6F, L_ARM, 0.45F, L_OUT, 0.55F, FLARE, 0.8F, LIFT, 2.0F, NOD, -0.15F };
@@ -345,5 +358,6 @@ final class WizardKeys {
                 k(6, LEAN, 0.6F, R_ARM, -1.4F, R_IN, 1.2F, R_ELBOW, -0.8F, STAFF, 1.25F, TWIST, -0.7F, L_ARM, 0.5F,
                         L_OUT, 0.6F, R_LEG, 0.5F, L_LEG, 0.3F, LIFT, 2.0F, FLARE, 1.2F),
                 k(12, glide) };
+        WizardKeysMore.fill(MOVES);
     }
 }

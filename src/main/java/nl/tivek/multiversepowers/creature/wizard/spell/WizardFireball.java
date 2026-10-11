@@ -17,7 +17,6 @@ import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.creature.wizard.Wizard;
 import nl.tivek.multiversepowers.creature.wizard.WizardEntities;
-import nl.tivek.multiversepowers.creature.wizard.WizardDecoy;
 
 // A ball of fire the Wizard throws from his left hand, in a shallow arc: where it lands it bursts, throwing whoever
 // stands near and setting them alight, and (if the world lets creatures grief) starting fires round it. It breaks no
@@ -78,8 +77,7 @@ public final class WizardFireball extends ThrowableProjectile {
 
     @Override
     protected boolean canHitEntity(Entity entity) {
-        return !(entity instanceof Wizard) && !(entity instanceof WizardDecoy) && !(entity instanceof ArcaneFamiliar)
-                && super.canHitEntity(entity);
+        return !Wizard.ally(entity) && super.canHitEntity(entity);
     }
 
     @Override

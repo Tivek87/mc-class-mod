@@ -75,8 +75,8 @@ final class StaffLayer<T extends MovingMonster> extends RenderLayer<T, WizardMod
         WizardModel<T> model = this.getParentModel();
         float[] c = model.pose.c;
         boolean faded = model.alpha < 1.0F;
-        RenderType wood = faded ? RenderType.entityTranslucent(WizardRenderer.TEXTURE)
-                : RenderType.entityCutoutNoCull(WizardRenderer.TEXTURE);
+        ResourceLocation texture = WizardRenderer.texture(WizardRenderer.phase(caster));
+        RenderType wood = faded ? RenderType.entityTranslucent(texture) : RenderType.entityCutoutNoCull(texture);
         int tint = faded ? (int) (255 * model.alpha) << 24 | 0xFFFFFF : -1;
         pose.pushPose();
         model.translateToHand(HumanoidArm.RIGHT, pose);
@@ -95,7 +95,8 @@ final class StaffLayer<T extends MovingMonster> extends RenderLayer<T, WizardMod
         int r = (int) ((colour >> 16 & 255) * bright);
         int g = (int) ((colour >> 8 & 255) * bright);
         int b = (int) ((colour & 255) * bright);
-        this.crystal.render(pose, buffers.getBuffer(RenderType.eyes(WizardRenderer.GLOW)), light,
+        this.crystal.render(pose, buffers.getBuffer(RenderType.eyes(WizardRenderer.glow(WizardRenderer.phase(
+                caster)))), light,
                 OverlayTexture.NO_OVERLAY, 0xFF000000 | r << 16 | g << 8 | b);
         Vec3 tip = world(pose, 0.0F, CRYSTAL / 16.0F, 0.0F);
         pose.popPose();

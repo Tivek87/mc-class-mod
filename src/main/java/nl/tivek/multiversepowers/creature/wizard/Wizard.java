@@ -47,21 +47,25 @@ import net.minecraft.world.level.ServerLevelAccessor;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.creature.MovingMonster;
+import nl.tivek.multiversepowers.creature.wizard.abyss.VoidTendrils;
 import nl.tivek.multiversepowers.creature.wizard.field.StarRift;
 import nl.tivek.multiversepowers.creature.wizard.spell.ArcaneFamiliar;
+import nl.tivek.multiversepowers.creature.wizard.spell.WardCrystal;
 import org.joml.Vector3f;
 
 // The Wizard: an old mage in a long robe and a pointed hat, a staff crowned with a glowing crystal in his right hand. A
 // boss with a bar of his own (client/WizardBar), called by the Arcane Tome's ritual (WizardRitual) or his egg, coming
-// down out of a rift (ARRIVE), fighting every creature but his own as the Mobs page lets him, in three phases:
-// the Archmage on his feet; at two thirds of his health he rises into the air (ASCEND), the Ascended, floating from then
-// on; at a third the magic breaks loose round him (UNBIND), the Unbound. Each phase he knows stronger spells and casts
-// harder (WizardMove, WizardMoves). While a phase takes him he cannot be harmed; caught out among his mirror images he
-// is stunned and takes half again. He never falls limp: dying, he sinks to his knees, rises as light breaks out of him
-// and is gone in a flash (DEATH), and only then leaves what he carried.
+// down out of a rift wrapped in a cocoon of light (ARRIVE), fighting every creature but his own as the Mobs page lets
+// him, in five phases, one for each fifth of his health: the Archmage on his feet; the Ascended (ASCEND), flying from
+// then on and blinking from one spot in the air to the next; the Unbound (UNBIND); the Voidborn (AWAKEN); the Eternal
+// (APOTHEOSIS). Each phase he knows stronger spells, casts harder and dresses grander (client/WizardModel). Each phase
+// also brings a ward round him (WizardWard): it takes every blow until it breaks, softened while its three crystals
+// circle him, and when it breaks he reels. While a phase takes him he cannot be harmed; caught out among his mirror
+// images he is stunned and takes half again. He never falls limp: dying, he sinks to his knees as light cracks out of
+// him, is lifted, drawn in on himself and gone in a burst (DEATH), and only then leaves what he carried.
 public final class Wizard extends MovingMonster {
-    // His colours: the arcane violet, the fire, the frost, the stars' white-blue, gravity's deep blue, time's gold
-    // and the lightning's white-blue.
+    // His colours: the arcane violet, the fire, the frost, the stars' white-blue, gravity's deep blue, time's gold,
+    // the lightning's white-blue and the void's magenta.
     public static final int VIOLET = 0xB46CFF;
     public static final int FIRE = 0xFF8A2A;
     public static final int ICE = 0xA8E6FF;
@@ -69,14 +73,22 @@ public final class Wizard extends MovingMonster {
     public static final int GRAVITY = 0x6E6BFF;
     public static final int TIME = 0xFFD27A;
     public static final int STORM = 0x9FDCFF;
-    // The light of each phase: violet, a cold blue, a burning gold.
-    private static final int[] PHASE_LIGHT = { VIOLET, VIOLET, 0x62C6FF, 0xFFB23C };
+    public static final int VOID = 0xD046FF;
+    // The light of each phase: violet, a cold blue, a burning gold, the void's magenta, a white gold.
+    private static final int[] PHASE_LIGHT = { VIOLET, VIOLET, 0x62C6FF, 0xFFB23C, VOID, 0xFFF0C0 };
+    private static final BossEvent.BossBarColor[] BAR_COLOUR = { BossEvent.BossBarColor.PURPLE,
+            BossEvent.BossBarColor.PURPLE, BossEvent.BossBarColor.BLUE, BossEvent.BossBarColor.YELLOW,
+            BossEvent.BossBarColor.PINK, BossEvent.BossBarColor.WHITE };
     // How far above the ground he floats from his second phase.
     public static final double HOVER = 0.8;
     private static final EntityDataAccessor<Integer> PHASE = SynchedEntityData.defineId(Wizard.class,
             EntityDataSerializers.INT);
     private static final EntityDataAccessor<Optional<UUID>> BAR = SynchedEntityData.defineId(Wizard.class,
             EntityDataSerializers.OPTIONAL_UUID);
+    private static final EntityDataAccessor<Float> WARD = SynchedEntityData.defineId(Wizard.class,
+            EntityDataSerializers.FLOAT);
+    private static final EntityDataAccessor<Integer> CRYSTALS = SynchedEntityData.defineId(Wizard.class,
+            EntityDataSerializers.INT);
     private static final ResourceLocation PHASE_SPEED = ResourceLocation.fromNamespaceAndPath(MultiversePowers.MODID,
             "wizard_phase_speed");
     private static final EntityDimensions FLOATING = EntityDimensions.scalable(0.6F, 1.95F + (float) HOVER)
@@ -103,6 +115,15 @@ public final class Wizard extends MovingMonster {
     @Nullable
     private Player killer;
     private int killerTime;
+    // Loaded with a ward up: its crystals (never saved) are set round him again at his next tick.
+    private boolean wardLoaded;
+    // As this game saw his ward: how strong it was, when a blow last struck it and when it broke.
+    private float wardSeen;
+    private int wardStruck = -100;
+    private int wardBroke = -100;
+    // On the server: when a blow last struck the ward, and how hard.
+    private int wardHitAt = -100;
+    private float wardHit;
 
     public Wizard(EntityType<? extends Wizard> type, Level level) {
         super(type, level);
@@ -125,6 +146,8 @@ public final class Wizard extends MovingMonster {
         super.defineSynchedData(builder);
         builder.define(PHASE, 1);
         builder.define(BAR, Optional.empty());
+        builder.define(WARD, 0.0F);
+        builder.define(CRYSTALS, 0);
     }
 
     @Override
@@ -152,12 +175,23 @@ public final class Wizard extends MovingMonster {
     }
 
     // Every creature but his own (his images, his familiars) is his foe, as the Mobs page may change.
-    static boolean prey(LivingEntity living) {
-        return !(living instanceof Wizard || living instanceof WizardDecoy || living instanceof ArcaneFamiliar
-                || living instanceof ArmorStand);
+    public static boolean prey(LivingEntity living) {
+        return !(ally(living) || living instanceof ArmorStand);
     }
 
-    // His phase, 1 to 3.
+    // He, his images, his familiars, his ward's crystals and his tendrils: what his spells never pull, hold, throw or
+    // burst on.
+    public static boolean ally(Entity entity) {
+        return entity instanceof Wizard || entity instanceof WizardDecoy || entity instanceof ArcaneFamiliar
+                || entity instanceof WardCrystal || entity instanceof VoidTendrils;
+    }
+
+    // His health where his phase began: his drain never heals him past it.
+    public float phaseTop() {
+        return this.getMaxHealth() * (WizardMove.PHASES - this.phase() + 1) / WizardMove.PHASES;
+    }
+
+    // His phase, 1 to 5.
     public int phase() {
         return this.entityData.get(PHASE);
     }
@@ -168,18 +202,50 @@ public final class Wizard extends MovingMonster {
         if (speed != null) {
             speed.removeModifier(PHASE_SPEED);
             if (phase > 1) {
-                speed.addPermanentModifier(new AttributeModifier(PHASE_SPEED, 0.15 * (phase - 1),
+                speed.addPermanentModifier(new AttributeModifier(PHASE_SPEED, 0.12 * (phase - 1),
                         AttributeModifier.Operation.ADD_MULTIPLIED_BASE));
             }
         }
-        this.bar.setColor(phase == 1 ? BossEvent.BossBarColor.PURPLE : phase == 2 ? BossEvent.BossBarColor.BLUE
-                : BossEvent.BossBarColor.YELLOW);
+        this.bar.setColor(BAR_COLOUR[Mth.clamp(phase, 1, WizardMove.PHASES)]);
+        this.setNoGravity(this.flies());
         this.refreshDimensions();
     }
 
     // The light of his phase: his crystal, his runes and his bar.
     public static int light(int phase) {
-        return PHASE_LIGHT[Mth.clamp(phase, 1, 3)];
+        return PHASE_LIGHT[Mth.clamp(phase, 1, WizardMove.PHASES)];
+    }
+
+    // From his second phase he flies (WizardFlight), until he dies.
+    public boolean flies() {
+        return this.phase() > 1 && this.isAlive();
+    }
+
+    // His ward (WizardWard): how much it can still take, how much it took when raised, and its crystals still whole.
+    public float ward() {
+        return this.entityData.get(WARD);
+    }
+
+    public static float wardOf(int phase) {
+        return WizardWard.strength(phase);
+    }
+
+    public int crystals() {
+        return this.entityData.get(CRYSTALS);
+    }
+
+    void setWard(float ward, int crystals) {
+        this.entityData.set(WARD, Math.max(0.0F, ward));
+        this.entityData.set(CRYSTALS, crystals);
+    }
+
+    // When this game last saw a blow strike his ward, and saw it break (ticks of his).
+    public int wardStruck() {
+        return this.wardStruck;
+    }
+
+    public int wardBroke() {
+        return this.wardBroke;
     }
 
     @Nullable
@@ -193,6 +259,17 @@ public final class Wizard extends MovingMonster {
         if (PHASE.equals(key)) {
             this.refreshDimensions();
         }
+        if (WARD.equals(key) && this.level().isClientSide) {
+            float ward = this.ward();
+            if (ward < this.wardSeen - 0.01F) {
+                this.wardStruck = this.tickCount;
+                if (ward <= 0.0F) {
+                    this.wardBroke = this.tickCount;
+                    WizardSparks.shatter(this);
+                }
+            }
+            this.wardSeen = ward;
+        }
     }
 
     @Override
@@ -205,9 +282,9 @@ public final class Wizard extends MovingMonster {
         return this.phase() > 1 ? HOVER : 0.0;
     }
 
-    // Changing phase (or stunned): no harm reaches him while a phase takes him.
-    public boolean shielded() {
-        return this.move() == WizardMove.ASCEND || this.move() == WizardMove.UNBIND;
+    // No harm reaches him while a phase takes him.
+    public boolean changing() {
+        return WizardMove.carries(this.move()) != 0;
     }
 
     boolean hasted() {
@@ -246,9 +323,21 @@ public final class Wizard extends MovingMonster {
         return this.crystal == null ? this.staffTip() : this.crystal;
     }
 
+    // Where his left hand was last drawn (where it should be, before he is first drawn).
+    public Vec3 hand() {
+        return this.leftHand == null ? this.palm() : this.leftHand;
+    }
+
     public void drawnAt(Vec3 crystal, Vec3 leftHand) {
         this.crystal = crystal;
         this.leftHand = leftHand;
+    }
+
+    // One of his ward's crystals was broken (spell/WardCrystal).
+    public void crystalBroke() {
+        if (this.level() instanceof ServerLevel level) {
+            WizardWard.crystalBroke(level, this, this.moves);
+        }
     }
 
     // Called (the ritual, his egg): he comes down out of a rift over `ground` at his next tick.
@@ -258,6 +347,11 @@ public final class Wizard extends MovingMonster {
         this.bar.setVisible(false);
         this.moveTo(ground.x, ground.y + WizardCasts.ARRIVE_HEIGHT, ground.z, this.getYRot(), 0.0F);
         this.setNoGravity(true);
+    }
+
+    @Nullable
+    WizardMoves moves() {
+        return this.moves;
     }
 
     @Nullable
@@ -287,6 +381,10 @@ public final class Wizard extends MovingMonster {
             StarRift.portal(level, this, this.arrivesAt, WizardCasts.ARRIVE_HEIGHT + 2.4);
             this.moves.arrive();
         }
+        if (this.wardLoaded && this.level() instanceof ServerLevel level) {
+            this.wardLoaded = false;
+            WizardWard.restore(level, this);
+        }
         super.tick();
         if (this.level().isClientSide && (this.isAlive() || this.move() == WizardMove.DEATH)) {
             WizardSparks.of(this, this.phase(), this.crystal == null ? this.staffTip() : this.crystal,
@@ -308,7 +406,8 @@ public final class Wizard extends MovingMonster {
                 || source.is(DamageTypes.IN_WALL) || source.is(DamageTypeTags.IS_FALL)) {
             return false;
         }
-        if (this.shielded() && !source.is(DamageTypeTags.BYPASSES_INVULNERABILITY)) {
+        boolean bypass = source.is(DamageTypeTags.BYPASSES_INVULNERABILITY);
+        if (this.changing() && !bypass) {
             if (!this.level().isClientSide && this.tickCount % 4 == 0) {
                 this.playSound(SoundEvents.AMETHYST_BLOCK_RESONATE, 1.5F, 1.6F);
             }
@@ -317,10 +416,29 @@ public final class Wizard extends MovingMonster {
         if (this.moves != null && !this.level().isClientSide) {
             this.moves.struck(by);
         }
+        if (this.ward() > 0.0F && !bypass && this.isAlive()) {
+            if (this.level() instanceof ServerLevel level && !this.isInvulnerableTo(source)) {
+                // As his health does, the ward takes a blow at most twice a second, or only what a harder one adds.
+                boolean fresh = this.tickCount - this.wardHitAt >= 10;
+                float taken = fresh ? amount : amount - this.wardHit;
+                if (taken > 0.0F) {
+                    if (fresh) {
+                        this.wardHitAt = this.tickCount;
+                    }
+                    this.wardHit = amount;
+                    if (by instanceof LivingEntity living) {
+                        this.setLastHurtByMob(living);
+                    }
+                    WizardWard.absorb(level, this, taken, source, this.moves);
+                }
+            }
+            return false;
+        }
         float taken = this.move() == WizardMove.STUNNED ? amount * 1.5F : amount;
         boolean hit = super.hurt(source, taken);
-        if (hit && this.isAlive() && this.moves != null && this.phase() < 3) {
-            float edge = this.getMaxHealth() * (this.phase() == 1 ? 2.0F / 3.0F : 1.0F / 3.0F);
+        if (hit && this.isAlive() && this.moves != null && this.phase() < WizardMove.PHASES) {
+            // The phases wake at four fifths of his health, three fifths, two and one.
+            float edge = this.getMaxHealth() * (WizardMove.PHASES - this.phase()) / WizardMove.PHASES;
             if (this.getHealth() <= edge) {
                 // A phase is never skipped: the blow that breaks it stops at its edge.
                 this.setHealth(edge);
@@ -348,7 +466,9 @@ public final class Wizard extends MovingMonster {
         if (this.moves != null) {
             this.moves.dying();
         }
-        this.setNoGravity(false);
+        WizardWard.drop((ServerLevel) this.level(), this, false);
+        // Up in the air he sinks to the ground as he dies (WizardDeath), and falls as anything does once he is down.
+        this.setNoGravity(this.phase() > 1);
         this.bar.setProgress(0.0F);
         this.start(WizardMove.DEATH);
     }
@@ -368,12 +488,13 @@ public final class Wizard extends MovingMonster {
             return;
         }
         WizardDeath.tick(level, this, this.deathTime);
-        if (this.deathTime >= WizardMove.GONE) {
-            if (this.death != null) {
-                this.lastHurtByPlayer = this.killer;
-                this.lastHurtByPlayerTime = this.killerTime > 0 ? 100 : 0;
-                this.dropAllDeathLoot(level, this.death);
-            }
+        if (this.deathTime == WizardMove.GONE && this.death != null) {
+            this.lastHurtByPlayer = this.killer;
+            this.lastHurtByPlayerTime = this.killerTime > 0 ? 100 : 0;
+            this.dropAllDeathLoot(level, this.death);
+        }
+        // Gone, his last glow fades a moment longer where he was (client/light/DeathLight).
+        if (this.deathTime >= WizardMove.GONE + WizardMove.AFTERGLOW) {
             this.remove(RemovalReason.KILLED);
         }
     }
@@ -400,13 +521,19 @@ public final class Wizard extends MovingMonster {
     public void addAdditionalSaveData(CompoundTag tag) {
         super.addAdditionalSaveData(tag);
         tag.putInt("Phase", this.phase());
+        tag.putFloat("Ward", this.ward());
+        tag.putInt("Crystals", this.crystals());
     }
 
     @Override
     public void readAdditionalSaveData(CompoundTag tag) {
         super.readAdditionalSaveData(tag);
         if (tag.contains("Phase")) {
-            this.setPhase(Mth.clamp(tag.getInt("Phase"), 1, 3));
+            this.setPhase(Mth.clamp(tag.getInt("Phase"), 1, WizardMove.PHASES));
+        }
+        if (tag.contains("Ward")) {
+            this.setWard(tag.getFloat("Ward"), Mth.clamp(tag.getInt("Crystals"), 0, WizardWard.CRYSTALS));
+            this.wardLoaded = this.ward() > 0.0F;
         }
         if (this.hasCustomName()) {
             this.bar.setName(this.getDisplayName());

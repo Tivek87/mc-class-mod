@@ -19,6 +19,7 @@ final class WizardDeath {
     }
 
     static void tick(ServerLevel level, Wizard wizard, int t) {
+        WizardFlight.sink(wizard);
         int light = Wizard.light(wizard.phase());
         double lifted = t <= WizardMove.BREAK ? 0.0
                 : RISE * Math.min(1.0, (t - WizardMove.BREAK) / (double) (WizardMove.GONE - 10 - WizardMove.BREAK));
@@ -40,7 +41,7 @@ final class WizardDeath {
                     2.0F, 0.5F);
         }
         if (t == WizardMove.BREAK) {
-            ParticleFx.at(level, ParticleTypes.FLASH, body);
+            ParticleFx.sphereOut(level, ParticleTypes.ELECTRIC_SPARK, body, 30, 0.6);
             ParticleFx.shockwave(level, Wizard.dust(Wizard.STARLIGHT, 2.2F), wizard.position().add(0.0, 0.2, 0.0), 64,
                     0.8);
             ParticleFx.sphereOut(level, ParticleTypes.END_ROD, body, 40, 0.35);
@@ -61,7 +62,7 @@ final class WizardDeath {
                     1.4F);
         }
         if (t == WizardMove.GONE) {
-            ParticleFx.at(level, ParticleTypes.FLASH, body);
+            ParticleFx.sphereOut(level, ParticleTypes.ELECTRIC_SPARK, body, 40, 0.7);
             ParticleFx.sphereOut(level, Wizard.dust(light, 2.4F), body, 90, 0.6);
             ParticleFx.sphereOut(level, ParticleTypes.END_ROD, body, 60, 0.5);
             ParticleFx.send(level, ParticleTypes.FIREWORK, body.x, body.y, body.z, 40, 0.6, 0.8, 0.6, 0.15);

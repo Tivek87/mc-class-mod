@@ -19,7 +19,6 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.creature.wizard.Wizard;
-import nl.tivek.multiversepowers.creature.wizard.WizardDecoy;
 import nl.tivek.multiversepowers.creature.wizard.WizardEntities;
 import nl.tivek.multiversepowers.creature.wizard.field.StarRift;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
@@ -110,8 +109,7 @@ public final class GreatMeteor extends ThrowableProjectile {
 
     @Override
     protected boolean canHitEntity(Entity entity) {
-        return !(entity instanceof Wizard) && !(entity instanceof WizardDecoy) && !(entity instanceof ArcaneFamiliar)
-                && !(entity instanceof FallingStar) && super.canHitEntity(entity);
+        return !Wizard.ally(entity) && !(entity instanceof FallingStar) && super.canHitEntity(entity);
     }
 
     @Override

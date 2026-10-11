@@ -10,10 +10,12 @@ import nl.tivek.multiversepowers.creature.wizard.WizardMove;
 
 // How the Wizard holds himself this frame (WizardModel, StaffLayer), on his channels (WizardKeys): upright and a
 // little stooped, breathing slow, his staff upright before him in his right hand; walking he plants the staff with
-// every other step, his robe swinging; floating (from his second phase) he drifts with his legs hanging and his robe
-// trailing. At rest now and then he strokes his beard or taps his staff; struck, he flinches. On top his moves'
+// every other step, his robe swinging; flying (from his second phase) he drifts with his legs hanging and his robe
+// trailing, leaning into where he flies, arms lifting as he drops and trailing as he climbs. At rest now and then he
+// strokes his beard or taps his staff; struck, he flinches. On top his moves'
 // keyframes, and what no keyframe holds: the staff swung round in circles, the trembling as great magic passes through
-// him, the kick of each bolt, the circle his hand draws for the time warp, the sway of a stunned head. All of it
+// him, the kick of each bolt, the circle his hand draws for the time warp and the tornado, the turning of the star
+// spiral, the clutch of a draining hand, the sway of a stunned head. All of it
 // followed on springs, so he never snaps from one pose into the next; beard, hat-tip and robe trail after.
 final class WizardPoses {
     private static final PoseSprings SPRINGS = new PoseSprings(0.3, 0.8);
@@ -29,6 +31,8 @@ final class WizardPoses {
     float hatSide;
     float skirt;
     float skirtSide;
+    // How fast he climbs (blocks a tick, below 0 as he drops), for his flight.
+    private float rise;
 
     void of(MovingMonster caster, float limbSwing, float amount, float age, boolean floating) {
         float breath = Mth.sin(age * 0.07F);
@@ -56,6 +60,7 @@ final class WizardPoses {
         }
         int move = caster.move();
         double t = caster.moveAge(age - caster.tickCount);
+        this.rise = Mth.clamp((float) (caster.getY() - caster.yo), -0.5F, 0.5F);
         this.walk(limbSwing, amount, floating);
         if (move == 0) {
             this.idle(age + caster.getId() * 37, amount);
@@ -91,6 +96,10 @@ final class WizardPoses {
         float w = Math.min(1.0F, amount * 1.8F);
         if (floating) {
             this.c[LEAN] += 0.25F * w;
+            this.c[R_ARM] += this.rise * 2.0F;
+            this.c[L_ARM] += this.rise * 2.4F;
+            this.c[L_OUT] += Math.max(0.0F, -this.rise) * 2.0F;
+            this.c[FLARE] += Math.abs(this.rise) * 1.5F;
             this.c[R_LEG] += 0.3F * w;
             this.c[L_LEG] += 0.22F * w;
             this.c[R_KNEE] += 0.2F * w;
@@ -180,9 +189,9 @@ final class WizardPoses {
                 this.c[L_ARM] += 0.05F * shake * Mth.sin(age * 5.3F);
                 this.c[SINK] += 0.25F * shake * Mth.sin(age * 3.7F);
             }
-            case WizardMove.UNBIND, WizardMove.ASCEND -> {
+            case WizardMove.UNBIND, WizardMove.ASCEND, WizardMove.AWAKEN, WizardMove.APOTHEOSIS -> {
                 float shake = Trunk.in(t, 8.0, 44.0) * (1.0F - Trunk.in(t, 46.0, 50.0))
-                        * (move == WizardMove.UNBIND ? 1.0F : 0.4F);
+                        * (move == WizardMove.UNBIND || move == WizardMove.AWAKEN ? 1.0F : 0.4F);
                 this.c[LEAN] += 0.06F * shake * Mth.sin(age * 4.3F);
                 this.c[ROLL] += 0.06F * shake * Mth.sin(age * 5.9F);
                 this.c[TILT] += 0.08F * shake * Mth.sin(age * 3.7F);
@@ -194,6 +203,50 @@ final class WizardPoses {
                 float round = (float) ((t - 6.0) / 12.0 * Mth.TWO_PI);
                 this.c[L_IN] += 0.5F * draw * Mth.sin(round);
                 this.c[L_ARM] += 0.4F * draw * Mth.cos(round);
+            }
+            case WizardMove.TORNADO -> {
+                float stir = Trunk.in(t, 5.0, 8.0) * (1.0F - Trunk.in(t, 20.0, 23.0));
+                float round = (float) (t * 0.7);
+                this.c[L_IN] += 0.6F * stir * Mth.sin(round);
+                this.c[L_ARM] += 0.4F * stir * Mth.cos(round);
+                this.c[TWIST] += 0.15F * stir * Mth.sin(round);
+            }
+            case WizardMove.TENDRILS, WizardMove.VOID_ORB -> {
+                float end = WizardMove.release(move);
+                float tremble = Trunk.in(t, 6.0, end) * (1.0F - Trunk.in(t, end, end + 3.0));
+                this.c[TILT] += 0.04F * tremble * Mth.sin(age * 5.7F);
+                this.c[ROLL] += 0.02F * tremble * Mth.sin(age * 6.3F);
+                this.c[L_ARM] += 0.06F * tremble * Mth.sin(age * 7.9F);
+                this.c[R_ARM] += 0.04F * tremble * Mth.sin(age * 8.3F);
+            }
+            case WizardMove.DRAIN -> {
+                float draw = Trunk.in(t, 16.0, 20.0) * (1.0F - Trunk.in(t, 62.0, 66.0));
+                this.c[L_WRIST] += 0.18F * draw * Mth.sin(age * 0.6F);
+                this.c[L_ELBOW] += 0.12F * draw * (0.5F + 0.5F * Mth.sin(age * 0.6F));
+                this.c[SINK] += 0.3F * draw * Mth.sin(age * 0.3F);
+                this.c[TILT] += 0.05F * draw * Mth.sin(age * 0.17F);
+            }
+            case WizardMove.SPIRAL -> {
+                float turn = Trunk.in(t, 12.0, 16.0) * (1.0F - Trunk.in(t, 54.0, 58.0));
+                this.c[TWIST] += 0.55F * turn * Mth.sin(age * 0.45F);
+                this.c[ROLL] += 0.06F * turn * Mth.sin(age * 0.3F);
+                this.c[SPIN] += (float) t * 0.5F * turn;
+                this.c[LIFT] += 0.5F * turn * Mth.sin(age * 0.2F);
+            }
+            case WizardMove.SUPERNOVA -> {
+                float tremble = Trunk.in(t, 24.0, 100.0) * (1.0F - Trunk.in(t, 104.0, 110.0));
+                this.c[TILT] += 0.05F * tremble * Mth.sin(age * 5.3F);
+                this.c[ROLL] += 0.03F * tremble * Mth.sin(age * 6.1F);
+                this.c[R_ARM] += 0.06F * tremble * Mth.sin(age * 7.3F);
+                this.c[L_ARM] += 0.06F * tremble * Mth.sin(age * 6.7F);
+                this.c[SINK] += 0.3F * tremble * Mth.sin(age * 4.1F);
+            }
+            case WizardMove.ARRIVE -> {
+                // Turning over slowly in his cocoon as it sinks.
+                float sink = 1.0F - Trunk.in(t, 44.0, 56.0);
+                this.c[ROLL] += 0.12F * sink * Mth.sin(age * 0.07F);
+                this.c[LEAN] += 0.1F * sink * Mth.sin(age * 0.05F);
+                this.c[SINK] += 0.4F * sink * Mth.sin(age * 0.09F);
             }
             case WizardMove.STUNNED -> {
                 this.c[TILT] += 0.16F * Mth.sin(age * 0.15F);

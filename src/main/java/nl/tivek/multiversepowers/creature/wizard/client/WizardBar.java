@@ -18,16 +18,21 @@ import net.neoforged.neoforge.client.event.CustomizeGuiOverlayEvent;
 import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.creature.wizard.Wizard;
 import nl.tivek.multiversepowers.creature.wizard.WizardMove;
+import nl.tivek.multiversepowers.creature.wizard.WizardWard;
 
 // The Wizard's boss bar, in place of the game's own: as wide, but framed in his phase's colour, its fill shaded and a
 // glint running along it, what a blow took lingering white a moment before it drains, notches where his next phases
-// wake. Over it his name and the title of his phase; under it three gems, one lit for every phase he has reached. While
-// a phase takes him the bar flashes and its frame burns gold; stunned, the frame blinks pale.
+// wake. Over it his name and the title of his phase; under it his ward while it holds (a pale bar with a gem for each
+// crystal still whole; behind it his health is barred over, for no blow reaches it), then five gems, one lit for every
+// phase he has reached. While a phase takes him the bar flashes and its frame burns gold; stunned, the frame blinks
+// pale; a blow on his ward flashes it white.
 @EventBusSubscriber(modid = MultiversePowers.MODID, value = Dist.CLIENT)
 public final class WizardBar {
     private static final int WIDTH = 182;
     private static final int HEIGHT = 5;
-    private static final int INCREMENT = 26;
+    private static final int INCREMENT = 32;
+    private static final int WARD_HEIGHT = 3;
+    private static final int WARD = 0xD8F2FF;
     private static final int GOLD = 0xFFD27A;
     private static final long LAG_HOLD = 550L;
     private static final float LAG_DRAIN = 0.00035F;
@@ -80,7 +85,7 @@ public final class WizardBar {
         float lag = lag(bar.getId(), progress, now);
         int phase = wizard.phase();
         int colour = Wizard.light(phase);
-        boolean changing = wizard.shielded();
+        boolean changing = wizard.changing();
         boolean stunned = wizard.move() == WizardMove.STUNNED;
         float pulse = 0.5F + 0.5F * Mth.sin(now / 70.0F);
         int frame = shade(colour, 0.45F);
@@ -103,13 +108,16 @@ public final class WizardBar {
             graphics.fill(x, y + 1, x + filled, y + HEIGHT - 1, 0xFF000000 | colour);
             graphics.fill(x, y + HEIGHT - 1, x + filled, y + HEIGHT, 0xFF000000 | shade(colour, 0.55F));
             glint(graphics, x, y, filled, now);
+            if (wizard.ward() > 0.0F) {
+                bars(graphics, x, y, filled, now);
+            }
             if (changing) {
                 int alpha = (int) (170 * pulse);
                 graphics.fill(x, y, x + filled, y + HEIGHT, alpha << 24 | 0xFFFFFF);
             }
         }
-        for (int k = 1; k <= 2; k++) {
-            int nx = x + Math.round(WIDTH * (3 - k) / 3.0F);
+        for (int k = 1; k < WizardMove.PHASES; k++) {
+            int nx = x + Math.round(WIDTH * (WizardMove.PHASES - k) / (float) WizardMove.PHASES);
             boolean passed = phase > k;
             int gem = passed ? 0xFF5A5060 : 0xFF000000 | Wizard.light(k + 1);
             graphics.fill(nx - 1, y - 1, nx + 1, y + HEIGHT + 1, 0xFF000000);
@@ -122,9 +130,10 @@ public final class WizardBar {
         Component line = bar.getName().copy().append(Component.literal("  ·  ").withColor(0x8A8094))
                 .append(title);
         graphics.drawString(font, line, x + WIDTH / 2 - font.width(line) / 2, y - 12, 0xFFFFFF);
-        for (int i = 0; i < 3; i++) {
-            int cx = x + WIDTH / 2 + (i - 1) * 11;
-            int cy = y + HEIGHT + 7;
+        ward(graphics, x, y + HEIGHT + 3, wizard, now);
+        for (int i = 0; i < WizardMove.PHASES; i++) {
+            int cx = x + WIDTH / 2 + (i - WizardMove.PHASES / 2) * 11;
+            int cy = y + HEIGHT + 13;
             int lit = Wizard.light(i + 1);
             int gem;
             if (i + 1 < phase) {
@@ -136,6 +145,44 @@ public final class WizardBar {
             }
             diamond(graphics, cx, cy, 3, 0xFF000000);
             diamond(graphics, cx, cy, 2, 0xFF000000 | gem);
+        }
+    }
+
+    // His ward under the bar while it holds: its strength, a gem for each crystal still whole, a white flash as a blow
+    // strikes it.
+    private static void ward(GuiGraphics graphics, int x, int y, Wizard wizard, long now) {
+        float ward = wizard.ward();
+        if (ward <= 0.0F) {
+            return;
+        }
+        float share = Mth.clamp(ward / Wizard.wardOf(wizard.phase()), 0.0F, 1.0F);
+        float struck = Mth.clamp(1.0F - (wizard.tickCount - wizard.wardStruck()) / 6.0F, 0.0F, 1.0F);
+        int colour = mix(mix(WARD, Wizard.light(wizard.phase()), 0.35F), 0xFFFFFF, struck);
+        graphics.fill(x - 1, y - 1, x + WIDTH + 1, y + WARD_HEIGHT + 1, 0xFF000000);
+        graphics.fill(x, y, x + WIDTH, y + WARD_HEIGHT, 0xFF101828);
+        int filled = Math.round(WIDTH * share);
+        graphics.fill(x, y, x + filled, y + WARD_HEIGHT, 0xFF000000 | colour);
+        graphics.fill(x, y, x + filled, y + 1, 0xFF000000 | mix(colour, 0xFFFFFF, 0.6F));
+        float pulse = 0.5F + 0.5F * Mth.sin(now / 160.0F);
+        for (int k = 0; k < WizardWard.CRYSTALS; k++) {
+            int cx = x + WIDTH + 6 + k * 7;
+            int cy = y + 1;
+            boolean whole = k < wizard.crystals();
+            int gem = whole ? mix(Wizard.light(wizard.phase()), 0xFFFFFF, 0.3F + 0.3F * pulse) : 0x302838;
+            diamond(graphics, cx, cy, 3, 0xFF000000);
+            diamond(graphics, cx, cy, 2, 0xFF000000 | gem);
+        }
+    }
+
+    // Slanting bars over his health while his ward holds: no blow reaches it.
+    private static void bars(GuiGraphics graphics, int x, int y, int filled, long now) {
+        int run = (int) (now / 60L % 8L);
+        for (int column = 0; column < filled; column++) {
+            for (int row = 0; row < HEIGHT; row++) {
+                if ((column + row + run) % 8 < 2) {
+                    graphics.fill(x + column, y + row, x + column + 1, y + row + 1, 0x60FFFFFF);
+                }
+            }
         }
     }
 

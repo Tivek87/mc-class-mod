@@ -13,7 +13,8 @@ import nl.tivek.multiversepowers.MultiversePowers;
 // Light added onto what is behind it, as the Wizard's spells give off: quads in a colour (darker is fainter), drawn
 // from both sides, taking the white middle of the orb's picture so they show as plain colour. MIST is laid over what
 // is behind it instead (snow), its colours' fourth number how thick. On top: the shapes his magic is drawn from, flat
-// on the ground (rings, stars, tick marks, his circle of runes) or a ribbon between two points turned to the eye.
+// on the ground (rings, stars, tick marks, his circle of runes), a ribbon between two points turned to the eye, and
+// round bodies of light: a spindle (a lance, a shard), a tube along a path (a tendril, a thread) and a shell (a ward).
 public final class Additive {
     public static final ResourceLocation ORB = ResourceLocation.fromNamespaceAndPath(MultiversePowers.MODID,
             "textures/entity/wizard_orb.png");
@@ -157,6 +158,102 @@ public final class Additive {
                     new float[] { Mth.cos(a0) * half, Mth.sin(a0) * half, 0.0F }, colour, colour, none, none);
         }
         pose.popPose();
+    }
+
+    // A crystal along +y from 0 to `length`: `sides` faces widening to `radius` at `waist` of its length and closing to
+    // a point at each end, the middle colour fading to `tips` at both points.
+    public static void spindle(PoseStack.Pose pose, VertexConsumer buffer, float length, float radius, float waist,
+            int sides, float[] middle, float[] tips) {
+        float[] bottom = { 0.0F, 0.0F, 0.0F };
+        float[] top = { 0.0F, length, 0.0F };
+        for (int i = 0; i < sides; i++) {
+            float a0 = i * Mth.TWO_PI / sides;
+            float a1 = (i + 1) * Mth.TWO_PI / sides;
+            float[] p0 = { Mth.cos(a0) * radius, length * waist, Mth.sin(a0) * radius };
+            float[] p1 = { Mth.cos(a1) * radius, length * waist, Mth.sin(a1) * radius };
+            quad(pose, buffer, bottom, p0, p1, bottom, tips, middle, middle, tips);
+            quad(pose, buffer, p0, top, top, p1, middle, tips, tips, middle);
+        }
+    }
+
+    // A tube through `points` (x, y, z each), each ring `radii` across, `sides` round, its colour from `from` at the
+    // first point to `to` at the last.
+    public static void tube(PoseStack.Pose pose, VertexConsumer buffer, Vec3[] points, float[] radii, int sides,
+            float[] from, float[] to) {
+        Vec3[][] rings = new Vec3[points.length][];
+        Vec3 side = null;
+        for (int k = 0; k < points.length; k++) {
+            Vec3 along = points[Math.min(points.length - 1, k + 1)].subtract(points[Math.max(0, k - 1)]);
+            along = along.lengthSqr() < 1.0E-8 ? new Vec3(0.0, 1.0, 0.0) : along.normalize();
+            if (side == null || Math.abs(side.dot(along)) > 0.95) {
+                side = Math.abs(along.y) > 0.9 ? new Vec3(1.0, 0.0, 0.0) : new Vec3(0.0, 1.0, 0.0);
+            }
+            Vec3 u = along.cross(side).normalize();
+            Vec3 v = along.cross(u).normalize();
+            side = v;
+            rings[k] = new Vec3[sides];
+            for (int i = 0; i < sides; i++) {
+                double a = i * Math.PI * 2.0 / sides;
+                rings[k][i] = points[k].add(u.scale(Math.cos(a) * radii[k])).add(v.scale(Math.sin(a) * radii[k]));
+            }
+        }
+        for (int k = 0; k + 1 < points.length; k++) {
+            float[] c0 = mix(from, to, k / (float) (points.length - 1));
+            float[] c1 = mix(from, to, (k + 1) / (float) (points.length - 1));
+            for (int i = 0; i < sides; i++) {
+                int j = (i + 1) % sides;
+                quad(pose, buffer, point(rings[k][i]), point(rings[k][j]), point(rings[k + 1][j]),
+                        point(rings[k + 1][i]), c0, c0, c1, c1);
+            }
+        }
+    }
+
+    // A shell round the middle, `wide` across and `tall` high in its halves, in `rings` bands of `sides` cells, each
+    // cell lit by `light` from how its corners face `eye` (the pose's frame): brighter where the shell is seen edge on,
+    // as light gathers at a bubble's rim. `gap` shrinks each cell towards its middle (0 for none), `out` pushes it out.
+    public static void shell(PoseStack.Pose pose, VertexConsumer buffer, float wide, float tall, int rings, int sides,
+            Vec3 eye, CellLight light, float gap, float out) {
+        for (int r = 0; r < rings; r++) {
+            for (int i = 0; i < sides; i++) {
+                float[][] corner = new float[4][];
+                float[][] colour = new float[4][];
+                int[][] at = { { r, i }, { r, i + 1 }, { r + 1, i + 1 }, { r + 1, i } };
+                Vec3 middle = Vec3.ZERO;
+                Vec3[] ways = new Vec3[4];
+                for (int c = 0; c < 4; c++) {
+                    double lat = Math.PI * at[c][0] / rings - Math.PI / 2.0;
+                    double lon = Math.PI * 2.0 * at[c][1] / sides;
+                    ways[c] = new Vec3(Math.cos(lat) * Math.cos(lon), Math.sin(lat), Math.cos(lat) * Math.sin(lon));
+                    middle = middle.add(ways[c].scale(0.25));
+                }
+                for (int c = 0; c < 4; c++) {
+                    Vec3 way = ways[c].add(middle.subtract(ways[c]).scale(gap)).scale(1.0 + out);
+                    Vec3 p = new Vec3(way.x * wide, way.y * tall, way.z * wide);
+                    Vec3 look = eye.subtract(p);
+                    double facing = look.lengthSqr() < 1.0E-6 ? 1.0 : Math.abs(way.normalize().dot(look.normalize()));
+                    corner[c] = point(p);
+                    colour[c] = light.of(r, i, (float) (1.0 - facing));
+                }
+                quad(pose, buffer, corner[0], corner[1], corner[2], corner[3], colour[0], colour[1], colour[2],
+                        colour[3]);
+            }
+        }
+    }
+
+    // The colour of a shell's cell `ring`, `side` at a corner seen `rim` edge on (0 face on, 1 edge on).
+    @FunctionalInterface
+    public interface CellLight {
+        float[] of(int ring, int side, float rim);
+    }
+
+    public static float[] mix(float[] a, float[] b, float t) {
+        float[] out = new float[Math.max(a.length, b.length)];
+        for (int i = 0; i < out.length; i++) {
+            float x = i < a.length ? a[i] : 1.0F;
+            float y = i < b.length ? b[i] : 1.0F;
+            out[i] = x + (y - x) * t;
+        }
+        return out;
     }
 
     private static float[] point(Vec3 at) {

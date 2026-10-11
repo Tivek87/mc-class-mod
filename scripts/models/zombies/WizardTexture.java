@@ -1,40 +1,44 @@
 import java.nio.file.Path;
 
-// Paints the Wizard for the boxes of creature/wizard/client/WizardModel and StaffLayer: wizard.png (a deep violet-blue
-// robe, mantle, cape and hat sewn with silver stars and trimmed in gold, long white hair, brows, moustache and beard, a
-// hooked nose, a dark staff of twisted wood shod with iron and its crystal), wizard_glow.png (his pale eyes, the runes
-// round his hem and cuffs, the stars on his hat, robe and cape, and the crystal, all glowing) and wizard_orb.png (a soft round glow, white in the middle, for his spells'
-// light). Keep the boxes here as the models build them. From the repository root, with Java 22 or newer:
+// Paints the Wizard for the boxes of creature/wizard/client/WizardModel and StaffLayer, once for each of his five
+// phases: wizard.png (a deep violet-blue robe, mantle, cape and hat sewn with silver stars and trimmed in gold, long
+// white hair, brows, moustache and beard, a hooked nose, a dark staff of twisted wood shod with iron and its crystal,
+// the pauldrons, crown spikes and horns his later phases wear) and wizard_glow.png (his pale eyes, the runes round his
+// hem and cuffs, the stars on his hat, robe and cape, and the crystal, all glowing); wizard_2 to wizard_5 (and their
+// glows) the same in the colours of each later phase, grander each time: frost-blue and silver with frost on the hem,
+// crimson and gold with flames licking up the skirt, the void's black and magenta cracked with light, white and gold
+// strewn with stars. wizard_orb.png is a soft round glow, white in the middle, for his spells' light. Keep the boxes
+// here as the models build them. From the repository root, with Java 22 or newer:
 // java scripts/models/zombies/WizardTexture.java
 public final class WizardTexture {
-    private static final int[] ROBE = { 44, 40, 104 };
-    private static final int[] ROBE_DARK = { 30, 26, 74 };
-    private static final int[] ROBE_LIGHT = { 62, 58, 134 };
-    private static final int[] GOLD = { 214, 172, 66 };
-    private static final int[] GOLD_DARK = { 150, 112, 40 };
-    private static final int[] SILVER = { 206, 214, 236 };
+    private static int[] ROBE = { 44, 40, 104 };
+    private static int[] ROBE_DARK = { 30, 26, 74 };
+    private static int[] ROBE_LIGHT = { 62, 58, 134 };
+    private static int[] GOLD = { 214, 172, 66 };
+    private static int[] GOLD_DARK = { 150, 112, 40 };
+    private static int[] SILVER = { 206, 214, 236 };
     private static final int[] SKIN = { 214, 172, 146 };
     private static final int[] SKIN_DARK = { 176, 132, 110 };
     private static final int[] BEARD = { 226, 226, 232 };
     private static final int[] BEARD_DARK = { 184, 184, 196 };
     private static final int[] EYE = { 40, 70, 120 };
     private static final int[] GLOW_EYE = { 150, 210, 255 };
-    private static final int[] RUNE = { 190, 150, 255 };
+    private static int[] RUNE = { 190, 150, 255 };
     private static final int[] WOOD = { 72, 50, 34 };
     private static final int[] WOOD_DARK = { 46, 32, 22 };
     private static final int[] IRON = { 120, 120, 130 };
-    private static final int[] CRYSTAL = { 186, 128, 255 };
-    private static final int[] CRYSTAL_LIGHT = { 236, 214, 255 };
+    private static int[] CRYSTAL = { 186, 128, 255 };
+    private static int[] CRYSTAL_LIGHT = { 236, 214, 255 };
     private static final int[] BOOT = { 54, 40, 32 };
     private static final int[] BOOT_DARK = { 34, 24, 20 };
     private static final int[] WHITE = { 236, 236, 240 };
     private static final int[] CHEEK = { 204, 140, 126 };
     private static final int[] BEARD_LIGHT = { 246, 246, 250 };
-    private static final int[] STAR_GLOW = { 150, 160, 200 };
-    private static final int[] GOLD_LIGHT = { 252, 220, 120 };
-    private static final int[] LEATHER = { 74, 48, 32 };
-    private static final int[] RUNE_DIM = { 130, 96, 200 };
-    private static final int[] PLUM = { 78, 30, 72 };
+    private static int[] STAR_GLOW = { 150, 160, 200 };
+    private static int[] GOLD_LIGHT = { 252, 220, 120 };
+    private static int[] LEATHER = { 74, 48, 32 };
+    private static int[] RUNE_DIM = { 130, 96, 200 };
+    private static int[] PLUM = { 78, 30, 72 };
 
     private static final Paint.Box HEAD = new Paint.Box(0, 0, 8, 8, 8);
     private static final Paint.Box NOSE = new Paint.Box(32, 0, 2, 3, 2);
@@ -71,6 +75,13 @@ public final class WizardTexture {
     private static final Paint.Box CRYSTAL_BOX = new Paint.Box(24, 64, 2, 5, 2);
     private static final Paint.Box CRYSTAL_TOP = new Paint.Box(24, 72, 1, 1, 1);
     private static final Paint.Box BUTT = new Paint.Box(32, 64, 2, 2, 2);
+    private static final Paint.Box PAULDRON = new Paint.Box(40, 64, 6, 3, 5);
+    private static final Paint.Box SPIKE = new Paint.Box(64, 64, 1, 5, 1);
+    private static final Paint.Box HORN = new Paint.Box(72, 64, 2, 4, 2);
+    private static final Paint.Box HORN_MID = new Paint.Box(82, 64, 1, 3, 1);
+    private static final Paint.Box HORN_TIP = new Paint.Box(88, 64, 1, 2, 1);
+    private static final int[] HORN_DARK = { 30, 18, 40 };
+    private static final int[] HORN_LIGHT = { 64, 44, 80 };
     private static final Paint.Face[] AROUND = { Paint.Face.FRONT, Paint.Face.RIGHT, Paint.Face.LEFT,
             Paint.Face.BACK };
 
@@ -79,16 +90,193 @@ public final class WizardTexture {
 
     public static void main(String[] args) throws Exception {
         Path folder = Paint.textures(args, "entity");
-        Paint p = new Paint(128, 128, 9091);
-        Paint glow = new Paint(128, 128, 9092);
-        head(p, glow);
-        hat(p, glow);
-        robe(p, glow);
-        staff(p, glow);
-        p.save(folder, "wizard");
-        glow.save(folder, "wizard_glow");
+        for (int phase = 1; phase <= 5; phase++) {
+            look(phase);
+            // The same seeds each phase: the same folds, stars and strands, in other colours.
+            Paint p = new Paint(128, 128, 9091);
+            Paint glow = new Paint(128, 128, 9092);
+            head(p, glow);
+            hat(p, glow);
+            robe(p, glow);
+            staff(p, glow);
+            regalia(p, glow);
+            extras(p, glow, phase);
+            String end = phase == 1 ? "" : "_" + phase;
+            p.save(folder, "wizard" + end);
+            glow.save(folder, "wizard_glow" + end);
+        }
         orb(folder);
         System.out.println("painted");
+    }
+
+    // The colours of each phase's robe, trim, runes, lining, stars and crystal.
+    private static void look(int phase) {
+        int[][] c = switch (phase) {
+            case 2 -> new int[][] { { 40, 78, 132 }, { 24, 50, 92 }, { 84, 132, 184 }, { 200, 224, 244 },
+                    { 130, 160, 196 }, { 240, 250, 255 }, { 255, 255, 255 }, { 140, 220, 255 }, { 90, 160, 220 },
+                    { 22, 44, 84 }, { 150, 210, 250 }, { 60, 70, 90 }, { 130, 210, 255 } };
+            case 3 -> new int[][] { { 120, 28, 26 }, { 72, 14, 16 }, { 164, 52, 38 }, { 236, 170, 56 },
+                    { 170, 104, 30 }, { 255, 214, 110 }, { 255, 200, 120 }, { 255, 160, 60 }, { 200, 100, 40 },
+                    { 36, 10, 10 }, { 240, 140, 60 }, { 50, 26, 20 }, { 255, 180, 80 } };
+            case 4 -> new int[][] { { 26, 16, 40 }, { 12, 6, 20 }, { 56, 30, 80 }, { 170, 80, 230 },
+                    { 100, 40, 150 }, { 226, 150, 255 }, { 230, 170, 255 }, { 220, 90, 255 }, { 150, 60, 200 },
+                    { 70, 10, 80 }, { 190, 90, 255 }, { 30, 20, 36 }, { 220, 80, 255 } };
+            case 5 -> new int[][] { { 228, 224, 240 }, { 186, 180, 210 }, { 250, 248, 255 }, { 244, 200, 90 },
+                    { 196, 150, 56 }, { 255, 236, 160 }, { 255, 246, 210 }, { 255, 230, 150 }, { 220, 190, 110 },
+                    { 24, 28, 70 }, { 255, 240, 190 }, { 200, 170, 110 }, { 255, 248, 220 } };
+            default -> new int[][] { { 44, 40, 104 }, { 30, 26, 74 }, { 62, 58, 134 }, { 214, 172, 66 },
+                    { 150, 112, 40 }, { 252, 220, 120 }, { 206, 214, 236 }, { 190, 150, 255 }, { 130, 96, 200 },
+                    { 78, 30, 72 }, { 150, 160, 200 }, { 74, 48, 32 }, { 186, 128, 255 } };
+        };
+        ROBE = c[0];
+        ROBE_DARK = c[1];
+        ROBE_LIGHT = c[2];
+        GOLD = c[3];
+        GOLD_DARK = c[4];
+        GOLD_LIGHT = c[5];
+        SILVER = c[6];
+        RUNE = c[7];
+        RUNE_DIM = c[8];
+        PLUM = c[9];
+        STAR_GLOW = c[10];
+        LEATHER = c[11];
+        CRYSTAL = c[12];
+        CRYSTAL_LIGHT = phase == 1 ? new int[] { 236, 214, 255 } : mix(c[12], new int[] { 255, 255, 255 }, 0.65);
+    }
+
+    private static int[] mix(int[] a, int[] b, double t) {
+        return new int[] { (int) Math.round(a[0] + (b[0] - a[0]) * t), (int) Math.round(a[1] + (b[1] - a[1]) * t),
+                (int) Math.round(a[2] + (b[2] - a[2]) * t) };
+    }
+
+    // What his later phases wear (WizardModel shows each from its phase): pauldrons in the trim's metal with a rune,
+    // crown spikes of the trim tipped with light, horns of dark polished stone veined with the runes' light.
+    private static void regalia(Paint p, Paint glow) {
+        for (Paint.Face face : Paint.Face.values()) {
+            int[] f = PAULDRON.face(face);
+            p.fill(f, GOLD_DARK, 6);
+            p.row(f, 0, GOLD_LIGHT);
+            p.row(f, f[3] - 1, GOLD);
+            if (face != Paint.Face.TOP && face != Paint.Face.BOTTOM) {
+                int x = f[2] / 2;
+                p.dot(f, x, 1, RUNE);
+                glow.dot(f, x, 1, RUNE);
+            } else if (face == Paint.Face.TOP) {
+                p.fill(f, GOLD, 6);
+                for (int x = 1; x < f[2]; x += 2) {
+                    p.dot(f, x, f[3] / 2, GOLD_LIGHT);
+                }
+            }
+            int[] spike = SPIKE.face(face);
+            p.fill(spike, GOLD, 4);
+            p.dot(spike, 0, 0, GOLD_LIGHT);
+            glow.dot(spike, 0, 0, RUNE);
+            glow.dot(spike, 0, 1, RUNE_DIM);
+            for (Paint.Box box : new Paint.Box[] { HORN, HORN_MID, HORN_TIP }) {
+                int[] h = box.face(face);
+                p.fill(h, HORN_DARK, 5);
+                for (int y = 0; y < h[3]; y += 2) {
+                    p.dot(h, y % Math.max(1, h[2]), y, HORN_LIGHT);
+                }
+            }
+            int[] horn = HORN.face(face);
+            for (int y = 0; y < horn[3]; y++) {
+                if ((y + face.ordinal()) % 2 == 0) {
+                    p.dot(horn, y % horn[2], y, RUNE);
+                    glow.dot(horn, y % horn[2], y, RUNE);
+                }
+            }
+            int[] tip = HORN_TIP.face(face);
+            p.dot(tip, 0, 0, RUNE);
+            glow.dot(tip, 0, 0, RUNE);
+        }
+    }
+
+    // What makes each phase grander than the last: frost riming the hem and cuffs; flames licking up the skirt and
+    // cape; cracks of the void's light across the robe; stars strewn all over him, glowing.
+    private static void extras(Paint p, Paint glow, int phase) {
+        Paint.Box[] cloth = { TORSO, MANTLE, SKIRT_FRONT, SKIRT_BACK, HEM_FRONT, HEM_BACK, SLEEVE, CUFF, CAPE, HAT1,
+                HAT2, HAT3, BRIM };
+        switch (phase) {
+            case 2 -> {
+                int[] frost = { 232, 246, 255 };
+                for (Paint.Box box : new Paint.Box[] { SKIRT_FRONT, SKIRT_BACK, HEM_FRONT, HEM_BACK, CUFF, CAPE }) {
+                    for (Paint.Face face : AROUND) {
+                        int[] f = box.face(face);
+                        for (int x = 0; x < f[2]; x++) {
+                            int deep = 1 + p.random.nextInt(box == CAPE ? 4 : 3);
+                            for (int y = f[3] - deep; y < f[3]; y++) {
+                                p.dot(f, x, y, p.shade(frost, 8));
+                            }
+                            if (p.random.nextInt(4) == 0) {
+                                glow.dot(f, x, f[3] - 1, RUNE_DIM);
+                            }
+                        }
+                    }
+                }
+            }
+            case 3 -> {
+                int[] yellow = { 255, 220, 110 };
+                int[] orange = { 255, 130, 40 };
+                for (Paint.Box box : new Paint.Box[] { SKIRT_FRONT, SKIRT_BACK, CAPE, SLEEVE }) {
+                    for (Paint.Face face : AROUND) {
+                        int[] f = box.face(face);
+                        for (int x = 0; x < f[2]; x++) {
+                            int tall = 2 + (int) Math.round(Math.abs(Math.sin(x * 1.7 + box.u())) * (f[3] * 0.45));
+                            for (int k = 0; k < tall; k++) {
+                                int y = f[3] - 1 - k;
+                                int[] c = k < tall / 3 ? yellow : k < tall * 2 / 3 ? orange : RUNE_DIM;
+                                p.dot(f, x, y, c);
+                                if (k < tall * 2 / 3) {
+                                    glow.dot(f, x, y, c);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            case 4 -> {
+                for (Paint.Box box : cloth) {
+                    for (Paint.Face face : AROUND) {
+                        int[] f = box.face(face);
+                        int x = p.random.nextInt(f[2]);
+                        for (int y = 0; y < f[3]; y++) {
+                            if (p.random.nextInt(3) == 0) {
+                                x = Math.max(0, Math.min(f[2] - 1, x + p.random.nextInt(3) - 1));
+                            }
+                            if (p.random.nextInt(5) != 0) {
+                                p.dot(f, x, y, RUNE);
+                                glow.dot(f, x, y, RUNE);
+                            }
+                        }
+                    }
+                }
+            }
+            case 5 -> {
+                for (Paint.Box box : cloth) {
+                    for (Paint.Face face : Paint.Face.values()) {
+                        int[] f = box.face(face);
+                        int stars = Math.max(1, f[2] * f[3] / 9);
+                        for (int k = 0; k < stars; k++) {
+                            int x = p.random.nextInt(f[2]);
+                            int y = p.random.nextInt(f[3]);
+                            int[] c = k % 3 == 0 ? GOLD_LIGHT : SILVER;
+                            p.dot(f, x, y, c);
+                            glow.dot(f, x, y, STAR_GLOW);
+                        }
+                    }
+                }
+                int[] lining = CAPE.face(Paint.Face.FRONT);
+                for (int k = 0; k < 30; k++) {
+                    int x = p.random.nextInt(lining[2]);
+                    int y = p.random.nextInt(lining[3]);
+                    p.dot(lining, x, y, SILVER);
+                    glow.dot(lining, x, y, STAR_GLOW);
+                }
+            }
+            default -> {
+            }
+        }
     }
 
     // A weathered face: lined brow, pale blue eyes that glow, ruddy cheeks; bushy white brows, a drooping moustache, long
