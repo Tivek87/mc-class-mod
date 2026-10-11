@@ -57,9 +57,9 @@ public final class ShortCommandRegistry {
                 MultiversePowers.LOGGER.info("/{} is already a command: the short command is left out", command.name());
                 continue;
             }
-            dispatcher.register(build(command, event.getBuildContext()));
+            dispatcher.register(build(command, event.getBuildContext(), command.name()));
         }
-        CommandAliases.register(dispatcher);
+        CommandAliases.register(dispatcher, event.getBuildContext());
     }
 
     @SubscribeEvent
@@ -88,8 +88,10 @@ public final class ShortCommandRegistry {
         CommandAliases.clear();
     }
 
-    // `/name`, then each argument under the one before, each place it may end running the command.
-    private static LiteralArgumentBuilder<CommandSourceStack> build(ShortCommand command, CommandBuildContext context) {
+    // `/literal`, then each argument under the one before, each place it may end running the command; it answers only
+    // while the world has the command under that name (`CommandAliases.answers`).
+    static LiteralArgumentBuilder<CommandSourceStack> build(ShortCommand command, CommandBuildContext context,
+            String literal) {
         List<Arg> args = command.args();
         ArgumentBuilder<CommandSourceStack, ?> next = null;
         boolean restOptional = true;
@@ -104,8 +106,9 @@ public final class ShortCommandRegistry {
             next = node;
             restOptional &= args.get(i).fallback() != null;
         }
-        LiteralArgumentBuilder<CommandSourceStack> root = Commands.literal(command.name())
-                .requires(source -> source.hasPermission(command.permission()));
+        LiteralArgumentBuilder<CommandSourceStack> root = Commands.literal(literal)
+                .requires(source -> source.hasPermission(command.permission())
+                        && CommandAliases.answers(command, literal));
         if (restOptional) {
             root.executes(c -> run(c, command));
         }

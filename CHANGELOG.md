@@ -3,6 +3,68 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.8.4-alpha] - 2026-10-11
+
+### Added
+- **Stage lights:** six new blocks, in the mod's tab and the Functional Blocks tab: Moving Head, Searchlight, Laser,
+  Wash Light, Strobe and Mirror Ball, throwing beams that sweep, flash and change colour.
+- **Stage lights:** sneak and right click a light to set it up, on pages of its own for each kind of light: its
+  beam, flash or ball, colours (a palette, hex codes, presets), movement and show; a plain right click turns it on
+  or off.
+- **Stage lights:** a light can shine on one spot, follow a creature you pick, or find the nearest creature, player
+  or hostile itself.
+- **Stage lights:** lights on the same channel share their show; Copy to channel sends one light's show to the rest.
+- **Stage lights:** /lightshow builds a whole stage of every kind of light in front of you, playing a show;
+  /lightshow stop takes it down again.
+- **Settings:** stage light beams can be turned off, and how far and how many are drawn set, in your game's settings.
+- **Green Lantern:** Abyss, a new Giant Hand: two hands tear the ground open into a deep pit whose tentacles drag
+  everything in it down into the stars, hurting it hard; then the ground closes as it was, and what lived through
+  it climbs back out.
+- **Green Lantern:** Beam eye, a new Giant Hand: an eye in its palm fires a thick beam that burns creatures to ash.
+- **Green Lantern:** Gunslinger, a new Giant Hand: its fist grows a revolver and shoots three creatures one after
+  another.
+- **Green Lantern:** Baseball bat, a new Giant Hand: a bat grows in its fist and it swings it flat through a
+  creature.
+- **Green Lantern:** Hourglass, a new Giant Hand: it tosses an hourglass over and time stands still round it until
+  the sand runs out.
+- **Green Lantern:** Gravity flip, a new Giant Hand: it turns palm up and everything under it falls up into the sky,
+  then it slams it all back down.
+- **Green Lantern:** Black hole, a new Giant Hand: a black hole over its palm draws everything round it in, until
+  the fist closes and it bursts.
+- **Green Lantern:** Sentinels have three new attacks: a spin with their arms out, a shoulder charge and spikes of
+  hard light that break out of the ground.
+- **Zombie Brute:** a big new zombie, with a spawn egg in the mod's tab and the Spawn Eggs tab: it smashes, roars,
+  leaps and slams the ground, and charges; charging into a wall stuns it.
+- **Schematic Wand:** a new item for the host, owners and operators with no character: sneak and right click to pick
+  a schematic (.schem, .schematic, .litematic, .nbt) from the world's schematics folder.
+- **Schematic Wand:** a life-size hologram of the schematic: turn, mirror and move it, scroll it nearer or farther,
+  then left click to build it.
+- **Schematic Wand:** choose what it replaces and whether creatures, chest contents and block updates come along;
+  Undo puts back what it replaced.
+- **Schematic Wand:** import schematics from your computer, download them, and make and delete folders, all in the
+  game.
+- **Schematic Wand:** its controls show in the ability panel and the guide (P), as a character's do.
+- **Settings:** a Schematics page shows where the schematics lie and sets how fast the wand builds.
+- **Settings:** a schematic's hologram opacity and outline, in your game's settings.
+- **Settings:** Import & export saves every world setting to a file and loads it into another world.
+- **Green Lantern's settings:** how far a Sentinel sees its foes.
+- **Commands:** while you type a command, its options show below as in the chat: arrows pick one, Tab fills it in.
+- **Commands:** categories of your own: make, rename and remove them, and put any command in one.
+
+### Changed
+- **Commands:** built-in and custom commands are one list; your own commands carry a CUSTOM tag.
+- **Commands:** a built-in command can be renamed, moved to another category or taken away, and brought back later.
+- **Commands:** up to 100 custom commands of your own, from 25.
+- **Commands:** the list sorts by category, by name or custom first.
+- **Commands:** categories fold open and shut: click one to open it.
+- **Settings:** the Mobs page is calmer: click a creature to change it.
+- **Green Lantern:** Sentinels look and move more smoothly, have twice the health and heal twice as much per kill.
+
+### Fixed
+- **Flight:** holding space while hovering lifted Green Lantern and Thor far too fast; they now climb at 8 blocks a
+  second, set by the new Climb speed setting.
+- **Crouching:** a crouching player's legs no longer splay out.
+
 ## [0.8.3-alpha] - 2026-10-11
 
 ### Added

@@ -20,8 +20,10 @@ final class MinionPose {
     private static final double SHOULDER_Y = MinionShapes.SHOULDER_Y;
     // Coming up out of the ground takes RISE ticks; a landing gives LAND, the first out of the hatch (within
     // HERO_WITHIN ticks of coming) HERO.
-    static final double RISE = 36.0;
+    static final double RISE = MechMinion.RISE;
     private static final double LAND = 9.0;
+    // How far its hips sink standing ready.
+    private static final double READY = 0.035;
     private static final double HERO = 20.0;
     private static final double HERO_WITHIN = 60.0;
 
@@ -34,6 +36,8 @@ final class MinionPose {
     double nod;
     // How hard its feet and back pack burn, 0 to 1.
     double thrust;
+    // Its whole body turned about its feet (the spin), on top of the way it faces.
+    double turn;
     final double[] hip = new double[2];
     final double[] knee = new double[2];
     final double[] ankle = new double[2];
@@ -54,6 +58,7 @@ final class MinionPose {
         double time = minion.tickCount + partialTick;
         pose.walk(minion, partialTick);
         pose.idle(minion, time);
+        pose.ready();
         float body = Mth.rotLerp(partialTick, minion.yBodyRotO, minion.yBodyRot);
         float head = Mth.rotLerp(partialTick, minion.yHeadRotO, minion.yHeadRot);
         pose.look = Math.toRadians(Mth.clamp(Mth.wrapDegrees(head - body), -60.0F, 60.0F));
@@ -74,6 +79,9 @@ final class MinionPose {
             case MinionMoves.CANNON -> pose.cannon(level, minion, age, partialTick);
             case MinionMoves.LEAP -> pose.leap(age);
             case MinionMoves.SLAM -> pose.slam(age);
+            case MinionMoves.SPIN -> pose.spin(age);
+            case MinionMoves.CHARGE -> pose.charge(age);
+            case MinionMoves.SPIKES -> pose.spikes(age);
             default -> {
             }
         }
@@ -85,6 +93,7 @@ final class MinionPose {
         for (int s = 0; s < 2; s++) {
             pose.curl[s] = Mth.clamp(pose.curl[s], 0.0, 1.0);
         }
+        MinionSmooth.follow(minion.getId(), pose, time, level.getGameTime());
         return pose;
     }
 
@@ -280,6 +289,20 @@ final class MinionPose {
         this.nod = -0.03 * speed;
     }
 
+    // Even at rest it stands ready, never stiff: knees bent, its weight a little forward, elbows bent and the arms held
+    // a little off its sides.
+    private void ready() {
+        this.crouch(READY);
+        this.lean += 0.06;
+        double bend = Math.acos((LEG - READY) / LEG);
+        for (int s = 0; s < 2; s++) {
+            this.ankle[s] -= bend;
+            this.arm[s] -= 0.08;
+            this.elbow[s] -= 0.22;
+            this.spread[s] += 0.06;
+        }
+    }
+
     // Sinks its hips by `by`, bending both legs so its feet stay where they are.
     private void crouch(double by) {
         if (by <= 0.0) {
@@ -401,6 +424,84 @@ final class MinionPose {
         this.crouch(0.7 * hit + 0.1 * squash);
         this.hip[1] -= 0.25 * hit;
         this.ankle[0] += 0.3 * hit;
+    }
+
+    // Arms flung out wide and hands open, it winds back the other way, then whirls round twice on the spot, leaning
+    // into it, and comes to a stop facing its target again.
+    private void spin(double age) {
+        double out = Ease.smooth(age / 4.0) * (1.0 - Ease.smooth((age - MinionMoves.SPIN_END + 6.0) / 6.0));
+        double whirl = Ease.smoother((age - MinionMoves.SPIN_WIND) / 12.0);
+        double wound = Ease.smooth(age / MinionMoves.SPIN_WIND) * (1.0 - whirl);
+        double fast = bump(age, MinionMoves.SPIN_WIND, MinionMoves.SPIN_WIND + 6.0, MinionMoves.SPIN_WIND + 12.0);
+        this.turn = 0.6 * wound - Math.PI * 4.0 * whirl;
+        for (int s = 0; s < 2; s++) {
+            this.spread[s] = Mth.lerp(out, this.spread[s], 1.5 - 0.15 * fast);
+            this.arm[s] = Mth.lerp(out, this.arm[s], -0.15 + (s == 0 ? 0.25 : -0.25) * fast);
+            this.elbow[s] = Mth.lerp(out, this.elbow[s], -0.12);
+            this.wrist[s] = Mth.lerp(out, this.wrist[s], 0.0);
+            this.curl[s] = Mth.lerp(out, this.curl[s], 0.1);
+        }
+        this.crouch(0.25 * out);
+        this.lean += 0.12 * out + 0.1 * fast;
+        this.roll += 0.1 * fast;
+        this.twist += 0.35 * wound;
+        this.nod -= 0.1 * fast;
+    }
+
+    // Shoulder dropped and the right forearm across its chest, it leans far into a rush, head up; at the end of its
+    // run it digs its heels in and rocks back upright.
+    private void charge(double age) {
+        double on = Ease.smooth(age / 4.0) * (1.0 - Ease.smooth((age - MinionMoves.CHARGE_END + 6.0) / 6.0));
+        double end = MinionMoves.RUSH + MinionMoves.RUSH_TICKS;
+        double rush = bump(age, MinionMoves.RUSH - 2.0, MinionMoves.RUSH + 1.0, end + 2.0);
+        double skid = bump(age, end - 1.0, end + 2.0, MinionMoves.CHARGE_END);
+        this.lean += 0.3 * on + 0.3 * rush - 0.2 * skid;
+        this.twist -= 0.4 * on;
+        this.roll += 0.12 * on;
+        this.nod -= 0.25 * rush + 0.1 * skid;
+        this.crouch(0.2 * on + 0.15 * skid);
+        this.arm[0] = Mth.lerp(on, this.arm[0], -0.45);
+        this.spread[0] = Mth.lerp(on, this.spread[0], 0.2);
+        this.elbow[0] = Mth.lerp(on, this.elbow[0], -2.0);
+        this.curl[0] = Mth.lerp(on, this.curl[0], 1.0);
+        this.arm[1] = Mth.lerp(on, this.arm[1], 0.45 - 0.6 * skid);
+        this.spread[1] = Mth.lerp(on, this.spread[1], 0.35 + 0.4 * skid);
+        this.elbow[1] = Mth.lerp(on, this.elbow[1], -1.1);
+        this.curl[1] = Mth.lerp(on, this.curl[1], 1.0);
+        this.hip[0] -= 0.2 * skid;
+        this.knee[0] += 0.3 * skid;
+        this.ankle[1] += 0.3 * skid;
+    }
+
+    // The right fist goes up high over its head, the left arm out for balance and its weight on its toes; at PLANT it
+    // drives the fist down into the ground before it, sinking onto one knee, and holds there while the spikes run out
+    // of the ground, then rises.
+    private void spikes(double age) {
+        double on = Ease.smooth(age / 3.0) * (1.0 - Ease.smooth((age - MinionMoves.SPIKES_END + 6.0) / 6.0));
+        double up = bump(age, 0.0, MinionMoves.PLANT - 2.0, MinionMoves.PLANT);
+        double hold = MinionMoves.PLANT + MinionMoves.SPIKE_EVERY * MinionMoves.SPIKE_COUNT + 2.0;
+        double down = strike(age, MinionMoves.PLANT - 2.0, MinionMoves.PLANT, hold) * on;
+        double shudder = age > MinionMoves.PLANT && age < hold ? 0.03 * Math.sin(age * 4.7) : 0.0;
+        this.arm[0] = Mth.lerp(on, this.arm[0], Mth.lerp(up, -0.6, -2.95));
+        this.arm[0] = Mth.lerp(down, this.arm[0], -0.55 + shudder);
+        this.elbow[0] = Mth.lerp(on, this.elbow[0], Mth.lerp(up, -1.2, -0.45));
+        this.elbow[0] = Mth.lerp(down, this.elbow[0], -0.05);
+        this.spread[0] = Mth.lerp(on, this.spread[0], 0.15);
+        this.wrist[0] = Mth.lerp(down, this.wrist[0], 0.3);
+        this.curl[0] = Mth.lerp(on, this.curl[0], 1.0);
+        this.arm[1] = Mth.lerp(on, this.arm[1], 0.2 + 0.3 * down);
+        this.spread[1] = Mth.lerp(on, this.spread[1], 0.75 - 0.3 * down);
+        this.elbow[1] = Mth.lerp(on, this.elbow[1], -0.5);
+        this.curl[1] = Mth.lerp(on, this.curl[1], 0.3);
+        this.twist += 0.35 * up - 0.25 * down;
+        this.lean += -0.1 * up + 0.65 * down;
+        this.nod += 0.3 * down + shudder;
+        this.crouch(0.7 * down);
+        this.sink -= 0.08 * up;
+        this.hip[0] -= 0.3 * down;
+        this.knee[1] += 0.45 * down;
+        this.ankle[0] -= 0.25 * up;
+        this.ankle[1] -= 0.25 * up;
     }
 
     // Up from `from` to whole at `peak`, down again by `to`.

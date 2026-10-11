@@ -8,7 +8,6 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
-import nl.tivek.multiversepowers.character.GameCharacter;
 import nl.tivek.multiversepowers.engine.client.gui.GuiShapes;
 import nl.tivek.multiversepowers.engine.client.gui.ScreenAnchors;
 import nl.tivek.multiversepowers.engine.client.gui.ScrollDrag;
@@ -46,8 +45,8 @@ final class AbilityGuideScreen extends GuideRows {
     private float shownTabWidth;
     private long lastFrame = Util.getMillis();
 
-    AbilityGuideScreen(GameCharacter character) {
-        super(character);
+    AbilityGuideScreen(GuideOwner owner) {
+        super(owner);
     }
 
     @Override
@@ -104,7 +103,7 @@ final class AbilityGuideScreen extends GuideRows {
             return;
         }
         Font font = this.font;
-        int color = this.character.getColor();
+        int color = this.owner.color();
         int accent = 0xFF000000 | color;
         int right = this.left + this.windowWidth;
         int bottom = this.top + this.windowHeight;

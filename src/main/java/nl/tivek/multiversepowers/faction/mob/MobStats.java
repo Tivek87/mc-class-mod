@@ -185,7 +185,7 @@ public final class MobStats {
     }
 
     // Puts the numbers of `only` (every kind for null) on every creature in the worlds now.
-    static void applyAll(MinecraftServer server, @Nullable EntityType<?> only) {
+    public static void applyAll(MinecraftServer server, @Nullable EntityType<?> only) {
         for (ServerLevel level : server.getAllLevels()) {
             for (Entity entity : level.getAllEntities()) {
                 if (entity instanceof LivingEntity living && !(living instanceof Player)

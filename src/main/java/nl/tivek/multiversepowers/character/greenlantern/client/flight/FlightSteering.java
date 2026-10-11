@@ -25,9 +25,9 @@ abstract class FlightSteering {
     public static final float SWEEP = 13.0F;
     public static final float ARISE = Flight.ARISE_TICKS;
 
-    // Parts of the top speed, so hovering and climbing slow down along with it.
+    // Parts of the top speed, so hovering and sinking slow down along with it; climbing has a setting of its own.
     private static final double HOVER = 0.71;
-    private static final double CLIMB = 0.845;
+    private static final double SINK_SPEED = 0.845;
     private static final double SPEED_UP = 0.20825;
     private static final double SLOW_DOWN = 0.055;
     private static final double BRAKE = 0.13;
@@ -161,8 +161,9 @@ abstract class FlightSteering {
                     .add(0.0, vertical * top * 0.25, 0.0);
         } else {
             double full = fullSpeed();
+            double climb = up ? flightSetting("climbSpeed", 8.0) / 20.0 : SINK_SPEED * full;
             target = right.scale(-strafe * HOVER * full).add(flat.scale(forward * HOVER * 0.8 * full))
-                    .add(0.0, vertical * CLIMB * full, 0.0);
+                    .add(0.0, vertical * climb, 0.0);
         }
         double rate = target.lengthSqr() > velocity.lengthSqr() ? SPEED_UP : SLOW_DOWN;
         if (ClientRing.has(player, RingPayload.DOME) && velocity.length() > top) {

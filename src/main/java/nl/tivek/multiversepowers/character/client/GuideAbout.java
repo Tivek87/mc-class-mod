@@ -10,7 +10,6 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.util.Mth;
 import nl.tivek.multiversepowers.MultiversePowers;
-import nl.tivek.multiversepowers.character.GameCharacter;
 import nl.tivek.multiversepowers.engine.client.gui.ScreenAnchors;
 import nl.tivek.multiversepowers.engine.client.gui.ScrollDrag;
 
@@ -22,7 +21,7 @@ final class GuideAbout {
     private static final int PAGE = 0xFF080808;
     private static final int SOFT = 0xFFC8C8C8;
 
-    private final GameCharacter character;
+    private final GuideOwner owner;
     @Nullable
     private final Component summary;
     @Nullable
@@ -36,9 +35,9 @@ final class GuideAbout {
     private int right;
     private int y;
 
-    GuideAbout(GameCharacter character) {
-        String own = "character." + MultiversePowers.MODID + "." + character.getId() + ".";
-        this.character = character;
+    GuideAbout(GuideOwner owner) {
+        String own = "character." + MultiversePowers.MODID + "." + owner.key() + ".";
+        this.owner = owner;
         this.summary = Language.getInstance().has(own + "summary") ? Component.translatable(own + "summary") : null;
         this.about = Language.getInstance().has(own + "about") ? Component.translatable(own + "about") : null;
     }
@@ -102,7 +101,7 @@ final class GuideAbout {
         KeyCap.Layer layer = new KeyCap.Layer(graphics, font);
         int start = top - (int) Math.round(this.scroll);
         int y = start + 8;
-        layer.shadowed(Component.translatable(PREFIX + "about", this.character.getDisplayName())
+        layer.shadowed(Component.translatable(PREFIX + "about", this.owner.name())
                 .withStyle(ChatFormatting.BOLD), x + 10, y, accent);
         y += 16;
         for (FormattedCharSequence line : font.split(this.about, width - 20)) {

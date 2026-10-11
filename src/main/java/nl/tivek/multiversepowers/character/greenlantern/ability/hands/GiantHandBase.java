@@ -33,6 +33,9 @@ abstract class GiantHandBase {
     private static final double HOMING = 10.0;
     private static final double SWITCH = 1.5;
     private static final double TURN = 0.07;
+    // The gunslinger swings round to its next creature between shots as a gunslinger does.
+    private static final double SLING_TURN = 0.18;
+    private static final double SLING_GATHER = 0.04;
     private static final double TURN_GATHER = 0.01;
     private static final double EASE = 0.2;
     private static final double NEAREST = 0.6;
@@ -147,7 +150,8 @@ abstract class GiantHandBase {
         LivingEntity after = locked ? this.kept(level) : this.after(level);
         double near = this.nearest();
         double off = 0.0;
-        double most = TURN;
+        double turns = this.move == HandPose.GUNSLINGER ? SLING_TURN : TURN;
+        double most = turns;
         double wanted = this.out;
         if (after != null) {
             double dx = after.getX() - this.base.x;
@@ -160,10 +164,10 @@ abstract class GiantHandBase {
             if (off * this.turn < 0.0 && Math.abs(off) > Math.PI * 0.75) {
                 off += Math.copySign(Math.PI * 2.0, this.turn);
             }
-            most = TURN * Ease.smooth(far / near) * (locked ? LATE : 1.0);
+            most = turns * Ease.smooth(far / near) * (locked ? LATE : 1.0);
             wanted = Math.max(near, far);
         }
-        this.turn = follow(this.turn, off, TURN_GATHER, most);
+        this.turn = follow(this.turn, off, this.move == HandPose.GUNSLINGER ? SLING_GATHER : TURN_GATHER, most);
         this.outSpeed = follow(this.outSpeed, wanted - this.out, GATHER, locked ? FOLLOW * LATE : FOLLOW);
         if (this.turn == 0.0 && this.outSpeed == 0.0) {
             return;
@@ -204,7 +208,7 @@ abstract class GiantHandBase {
     // The portal glides after the creature, the hand still turned the same way, until the moment it acts draws near.
     // A rift stays where it was torn: its tentacle reaches for the creature.
     private void homePortal(ServerLevel level) {
-        if (this.move == HandPose.RIFT || this.move == HandPose.COSMOS) {
+        if (this.move == HandPose.RIFT || this.move == HandPose.COSMOS || this.move == HandPose.ABYSS) {
             return;
         }
         // The catch keeps right under its falling creature until the moment it closes on it.
@@ -250,14 +254,15 @@ abstract class GiantHandBase {
 
     @Nullable
     private LivingEntity after(ServerLevel level) {
-        double reach = HOMING * SCALE;
+        double reach = this.homing();
         LivingEntity nearest = this.kept(level);
         double best = nearest != null ? this.flat(nearest) - SWITCH * SCALE : reach;
+        double least = this.move == HandPose.GUNSLINGER ? HandPose.SLING_CLEAR * SCALE : 0.0;
         for (LivingEntity living : level.getEntitiesOfClass(LivingEntity.class,
                 new AABB(this.base, this.base).inflate(reach, reach * 0.6, reach),
                 entity -> fair(this.storm.owner, entity))) {
             double distance = this.flat(living);
-            if (living != this.target && distance < best) {
+            if (living != this.target && distance < best && distance >= least) {
                 best = distance;
                 nearest = living;
             }
@@ -272,7 +277,11 @@ abstract class GiantHandBase {
     @Nullable
     private LivingEntity kept(ServerLevel level) {
         return this.target.isAlive() && this.target.level() == level && fair(this.storm.owner, this.target)
-                && this.flat(this.target) <= HOMING * SCALE ? this.target : null;
+                && this.flat(this.target) <= this.homing() ? this.target : null;
+    }
+
+    private double homing() {
+        return (this.move == HandPose.GUNSLINGER ? HandPose.SLING_HOMING : HOMING) * SCALE;
     }
 
     private double nearest() {

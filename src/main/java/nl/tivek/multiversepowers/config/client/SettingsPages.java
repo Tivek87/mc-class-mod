@@ -22,9 +22,13 @@ import nl.tivek.multiversepowers.command.client.CommandsScreen;
 import nl.tivek.multiversepowers.config.ModConfigs;
 import nl.tivek.multiversepowers.config.PowerRules;
 import nl.tivek.multiversepowers.config.Unit;
+import nl.tivek.multiversepowers.config.transfer.client.ShareSettingsScreen;
 import nl.tivek.multiversepowers.engine.client.gui.PixelIcons;
 import nl.tivek.multiversepowers.faction.mob.MobRules;
 import nl.tivek.multiversepowers.faction.mob.client.MobRulesScreen;
+import nl.tivek.multiversepowers.schematic.SchematicLibrary;
+import nl.tivek.multiversepowers.schematic.SchematicRules;
+import nl.tivek.multiversepowers.schematic.client.SchematicScreen;
 import nl.tivek.multiversepowers.stamina.StaminaConfig;
 import nl.tivek.multiversepowers.stamina.client.StaminaClient;
 
@@ -34,6 +38,8 @@ public final class SettingsPages {
     public static final String STAMINA = "stamina";
     public static final String MOBS = "mobs";
     public static final String COMMANDS = "commands";
+    public static final String SHARE = "share";
+    public static final String SCHEMATICS = "schematics";
     private static final String PREFIX = "config." + MultiversePowers.MODID + ".";
 
     private SettingsPages() {
@@ -72,9 +78,11 @@ public final class SettingsPages {
         pages.add(stamina());
         pages.add(mobs());
         pages.add(commands());
+        pages.add(schematics());
         for (GameCharacter character : GameCharacter.values()) {
             pages.add(character(character));
         }
+        pages.add(share());
         return pages;
     }
 
@@ -168,6 +176,35 @@ public final class SettingsPages {
         return new Page(COMMANDS, Component.translatable(PREFIX + "commands"), 0xFFB86B, PixelIcons.Icon.SLASH, null,
                 List.of(), worldEditable(CommandAliases.SPEC), true, () -> {
                 }, CommandsScreen::new);
+    }
+
+    // How the Schematic Wand places its files, and where those files lie.
+    public static Page schematics() {
+        ModConfigSpec spec = SchematicRules.SPEC;
+        String file = ModConfigs.file("schematics");
+        List<ConfigNumber> numbers = List.of(
+                fromSpec(spec, file, "schematics", "blocksPerTick", SchematicRules.BLOCKS_PER_TICK, Unit.BLOCK_COUNT,
+                        500.0),
+                fromSpec(spec, file, "schematics", "largestSchematic", SchematicRules.LARGEST, Unit.BLOCK_COUNT,
+                        1000000.0),
+                fromSpec(spec, file, "schematics", "largestFileMegabytes", SchematicRules.FILE_MEGABYTES, Unit.COUNT,
+                        1.0),
+                fromSpec(spec, file, "schematics", "undoBlocks", SchematicRules.UNDO_BLOCKS, Unit.BLOCK_COUNT,
+                        100000.0));
+        Component folder = Minecraft.getInstance().hasSingleplayerServer()
+                ? Component.literal(SchematicLibrary.root().toString())
+                : Component.translatable(PREFIX + "schematics.folder.server");
+        Section section = new Section(Component.translatable(PREFIX + "schematics.folder", folder), null,
+                Component.translatable(PREFIX + "schematics.folder.desc"), List.of(new Group(null, numbers)));
+        return new Page(SCHEMATICS, Component.translatable(PREFIX + "schematics"), SchematicScreen.COLOR,
+                PixelIcons.Icon.CUBE, null, List.of(section), worldEditable(spec), true, spec::save);
+    }
+
+    // Every world setting saved to a file on this computer, or loaded from one: a page of its own.
+    public static Page share() {
+        return new Page(SHARE, Component.translatable(PREFIX + "share"), ShareSettingsScreen.COLOR,
+                PixelIcons.Icon.DOWNLOAD, null, List.of(), serverEditable(), true, () -> {
+                }, ShareSettingsScreen::new);
     }
 
     private static ConfigNumber fromSpec(ModConfigSpec spec, String file, String page, String key,

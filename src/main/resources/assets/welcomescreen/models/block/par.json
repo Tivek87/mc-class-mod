@@ -1,0 +1,13 @@
+{
+	"credit": "Built by scripts/models/stagelights/StageLightModels.java",
+	"parent": "minecraft:block/block",
+	"ambientocclusion": false,
+	"textures": {
+		"metal": "welcomescreen:block/stage_metal",
+		"vent": "welcomescreen:block/stage_vent",
+		"particle": "welcomescreen:block/stage_metal"
+	},
+	"elements": [
+		{"from": [2, 0, 2], "to": [14, 3, 14], "faces": {"north": {"uv": [2, 13, 14, 16], "texture": "#metal"}, "east": {"uv": [2, 13, 14, 16], "texture": "#metal"}, "south": {"uv": [2, 13, 14, 16], "texture": "#metal"}, "west": {"uv": [2, 13, 14, 16], "texture": "#metal"}, "up": {"uv": [2, 2, 14, 14], "texture": "#vent"}, "down": {"uv": [2, 2, 14, 14], "texture": "#metal"}}}
+	]
+}

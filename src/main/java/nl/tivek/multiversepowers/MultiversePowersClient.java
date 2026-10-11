@@ -30,10 +30,13 @@ import nl.tivek.multiversepowers.character.greenlantern.client.mech.MechPainter;
 import nl.tivek.multiversepowers.character.greenlantern.client.minion.MinionPainter;
 import nl.tivek.multiversepowers.character.greenlantern.client.minion.MinionRenderer;
 import nl.tivek.multiversepowers.character.greenlantern.summon.client.HardLightRenderers;
+import nl.tivek.multiversepowers.character.greenlantern.client.victim.Abyssed;
 import nl.tivek.multiversepowers.character.greenlantern.client.victim.Clapped;
 import nl.tivek.multiversepowers.character.greenlantern.client.victim.Devoured;
 import nl.tivek.multiversepowers.character.greenlantern.client.victim.Flattened;
+import nl.tivek.multiversepowers.character.greenlantern.client.victim.Flipped;
 import nl.tivek.multiversepowers.character.greenlantern.client.victim.HandVictims;
+import nl.tivek.multiversepowers.character.greenlantern.client.victim.TimeStopped;
 import nl.tivek.multiversepowers.character.thor.client.GrabEscape;
 import nl.tivek.multiversepowers.character.thor.client.ThorCrosshair;
 import nl.tivek.multiversepowers.character.greenlantern.client.hud.CageEscape;
@@ -47,6 +50,7 @@ import nl.tivek.multiversepowers.config.ModConfigs;
 import nl.tivek.multiversepowers.config.client.ClientSettings;
 import nl.tivek.multiversepowers.config.client.SettingsPages;
 import nl.tivek.multiversepowers.config.client.SettingsScreen;
+import nl.tivek.multiversepowers.creature.brute.client.BruteRenderer;
 import nl.tivek.multiversepowers.engine.client.pose.BodyTurns;
 import nl.tivek.multiversepowers.engine.client.pose.Poses;
 import nl.tivek.multiversepowers.engine.client.pose.Tired;
@@ -56,7 +60,10 @@ import nl.tivek.multiversepowers.engine.client.fx.Cinematic;
 import nl.tivek.multiversepowers.engine.client.fx.Cosmos;
 import nl.tivek.multiversepowers.engine.client.fx.Lens;
 import nl.tivek.multiversepowers.engine.client.render.SoftGlow;
+import nl.tivek.multiversepowers.schematic.client.SchematicHud;
+import nl.tivek.multiversepowers.schematic.client.WandPanel;
 import nl.tivek.multiversepowers.spell.client.ClientClaps;
+import nl.tivek.multiversepowers.stage.client.StageLightRenderer;
 import nl.tivek.multiversepowers.testfight.client.FightClient;
 import nl.tivek.multiversepowers.update.client.UpdatePopup;
 import nl.tivek.multiversepowers.update.client.tour.Tour;
@@ -81,8 +88,12 @@ public final class MultiversePowersClient {
         modEventBus.addListener(PowerLantern::onRegisterModels);
         modEventBus.addListener(ThrownHammerRenderer::onRegisterRenderers);
         modEventBus.addListener(MinionRenderer::onRegisterRenderers);
+        modEventBus.addListener(BruteRenderer::onRegisterRenderers);
+        modEventBus.addListener(BruteRenderer::onRegisterLayers);
         modEventBus.addListener(HardLightRenderers::onRegisterRenderers);
         modEventBus.addListener(HardLightRenderers::onAddLayers);
+        modEventBus.addListener(StageLightRenderer::onRegisterRenderers);
+        modEventBus.addListener(StageLightRenderer::onRegisterModels);
         modEventBus.addListener(UpdatePopup::onRegisterKeys);
         modEventBus.addListener(Lens::onRegisterShaders);
         modEventBus.addListener(SoftGlow::onRegisterShaders);
@@ -90,6 +101,8 @@ public final class MultiversePowersClient {
         modEventBus.addListener(MechPainter::onClientSetup);
         modEventBus.addListener(MinionPainter::onClientSetup);
         modEventBus.addListener(RagdollProfiles::onRegisterReloadListeners);
+        modEventBus.addListener(SchematicHud::onRegisterLayers);
+        WandPanel.register();
         Poses.layer(Poses.Stage.MODEL, (model, entity, partialTick) -> model instanceof PlayerModel<?> player
                 && SwordArms.lean(player, entity));
         Poses.layer(Poses.Stage.MODEL, (model, entity, partialTick) -> model instanceof PlayerModel<?> player
@@ -123,7 +136,8 @@ public final class MultiversePowersClient {
         // A creature Green Lantern squashes, claps, strings up or crushes under the mech is posed by that power, not
         // limp.
         Ragdolls.claim(entity -> HandVictims.has(entity.getId()) || Flattened.has(entity.getId())
-                || Clapped.has(entity.getId()) || Devoured.has(entity.getId())
+                || Clapped.has(entity.getId()) || Devoured.has(entity.getId()) || Abyssed.has(entity.getId())
+                || TimeStopped.has(entity.getId()) || Flipped.has(entity.getId())
                 || ClientConstructs.mechVictim(entity.getId(), 0.0F) != null);
         // A creature Thor holds by the throat hangs from his fist, struggling, not limp.
         Ragdolls.claim(ThorHeld::holds);

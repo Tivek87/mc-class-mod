@@ -1,0 +1,11 @@
+{
+	"credit": "Built by scripts/models/stagelights/StageLightModels.java",
+	"ambientocclusion": false,
+	"textures": {
+		"lens": "welcomescreen:block/stage_lens",
+		"particle": "welcomescreen:block/stage_lens"
+	},
+	"elements": [
+		{"from": [2, 5, 2], "to": [14, 5.10, 14], "faces": {"north": {"uv": [2, 10.90, 14, 11], "texture": "#lens"}, "east": {"uv": [2, 10.90, 14, 11], "texture": "#lens"}, "south": {"uv": [2, 10.90, 14, 11], "texture": "#lens"}, "west": {"uv": [2, 10.90, 14, 11], "texture": "#lens"}, "up": {"uv": [2, 2, 14, 14], "texture": "#lens"}, "down": {"uv": [2, 2, 14, 14], "texture": "#lens"}}}
+	]
+}

@@ -1,9 +1,11 @@
 package nl.tivek.multiversepowers.engine.entity;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Predicate;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
@@ -20,6 +22,7 @@ import nl.tivek.multiversepowers.MultiversePowers;
 public final class HeldMobs {
     private static final String SAVED_TAG = "welcomescreen_held_noai";
     private static final Map<Mob, Boolean> HELD = new IdentityHashMap<>();
+    private static final Set<Mob> STILL = Collections.newSetFromMap(new IdentityHashMap<>());
     private static final List<Predicate<Entity>> HOLDERS = new ArrayList<>();
 
     private HeldMobs() {
@@ -46,6 +49,11 @@ public final class HeldMobs {
     }
 
     public static boolean hold(Mob mob) {
+        return hold(mob, true);
+    }
+
+    // Not limp: held where it stands and drawn as it was (stopped in time), so nearby players are not told.
+    public static boolean hold(Mob mob, boolean limp) {
         if (HELD.containsKey(mob)) {
             return false;
         }
@@ -56,7 +64,11 @@ public final class HeldMobs {
         mob.getPersistentData().putBoolean(SAVED_TAG, own);
         mob.setNoAi(true);
         mob.setDeltaMovement(Vec3.ZERO);
-        tell(mob, true);
+        if (limp) {
+            tell(mob, true);
+        } else {
+            STILL.add(mob);
+        }
         return true;
     }
 
@@ -74,7 +86,9 @@ public final class HeldMobs {
         mob.setNoAi(wasNoAi);
         mob.getPersistentData().remove(SAVED_TAG);
         mob.resetFallDistance();
-        tell(mob, false);
+        if (!STILL.remove(mob)) {
+            tell(mob, false);
+        }
         return true;
     }
 
@@ -86,7 +100,7 @@ public final class HeldMobs {
 
     @SubscribeEvent
     public static void onStartTracking(PlayerEvent.StartTracking event) {
-        if (event.getTarget() instanceof Mob mob && HELD.containsKey(mob)
+        if (event.getTarget() instanceof Mob mob && HELD.containsKey(mob) && !STILL.contains(mob)
                 && event.getEntity() instanceof ServerPlayer player) {
             PacketDistributor.sendToPlayer(player, new HeldPayload(mob.getId(), true));
         }

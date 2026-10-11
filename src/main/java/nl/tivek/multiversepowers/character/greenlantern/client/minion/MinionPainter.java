@@ -9,8 +9,10 @@ import nl.tivek.multiversepowers.character.greenlantern.client.mech.shape.MechPa
 import nl.tivek.multiversepowers.character.greenlantern.client.render.LanternPainter;
 import nl.tivek.multiversepowers.character.greenlantern.minion.MechMinion;
 import nl.tivek.multiversepowers.character.greenlantern.minion.MinionMoves;
+import nl.tivek.multiversepowers.engine.client.render.ConstructPainter;
 import nl.tivek.multiversepowers.engine.client.render.ConstructPainter.Frame;
 import nl.tivek.multiversepowers.engine.client.render.Material;
+import nl.tivek.multiversepowers.engine.client.render.mesh.Mesh;
 import nl.tivek.multiversepowers.engine.math.Colors;
 import nl.tivek.multiversepowers.engine.math.Ease;
 import nl.tivek.multiversepowers.engine.math.Vectors;
@@ -33,6 +35,11 @@ public final class MinionPainter {
     // How far each finger joint folds in a full fist, and the thumb.
     private static final double[] FOLD = { 1.5, 1.35 };
     private static final double THUMB_FOLD = 0.9;
+    // A spike of the ground spikes: a crystal of hard light with two smaller ones at its foot.
+    private static final ConstructPainter.Shape SPIKE = ConstructPainter.Shape.of(
+            Mesh.cone(6, 0.42, 0.0, -0.3, 2.0, 1.2),
+            Mesh.cone(5, 0.2, 0.0, -0.2, 0.9, 1.4).turned(0.0, 0.0, 1.0, 28.0).moved(0.36, 0.0, 0.08),
+            Mesh.cone(5, 0.17, 0.0, -0.2, 0.7, 1.4).turned(1.0, 0.0, 0.0, -30.0).moved(-0.1, 0.0, -0.33));
     // The painter's material while the helpers are drawn, given back after.
     private static Material was = LanternPainter.MECH_LIGHT;
 
@@ -92,7 +99,7 @@ public final class MinionPainter {
         MinionPose pose = MinionPose.of(level, minion, partialTick);
         double apart = minion.deathTime > 0 ? Mth.clamp((minion.deathTime + partialTick) / MechMinion.BREAK, 0.0, 1.0)
                 : -1.0;
-        double yaw = Math.toRadians(Mth.rotLerp(partialTick, minion.yBodyRotO, minion.yBodyRot));
+        double yaw = Math.toRadians(Mth.rotLerp(partialTick, minion.yBodyRotO, minion.yBodyRot)) + pose.turn;
         Vec3 ahead = new Vec3(-Math.sin(yaw), 0.0, Math.cos(yaw));
         Frame stand = Frame.of(minion.getPosition(partialTick).add(0.0, -pose.sink, 0.0), ahead, Vectors.UP, 1.0);
         Frame body = stand.turned(0.0, MinionShapes.HIP_Y, 0.0, 0.0, 0.0, 1.0, pose.roll);
@@ -168,7 +175,72 @@ public final class MinionPainter {
         if (grown > 0.5) {
             MinionCracks.draw(painter, minion.getId(), MinionPose.lost(minion), parts);
             thrusters(painter, upper, stand, soles, pose.thrust);
+            spikes(painter, level, minion, partialTick);
+            whirl(painter, minion, stand, upper, partialTick);
             lights(painter, level, minion, pose, head, upper, partialTick);
+        }
+    }
+
+    // The ground spikes: each breaks out of the ground in its turn, overshooting its height, stands while the rest
+    // follow and sinks back into the ground, all solid hard light.
+    private static void spikes(LanternPainter painter, ClientLevel level, MechMinion minion, float partialTick) {
+        if (minion.move() != MinionMoves.SPIKES) {
+            return;
+        }
+        double age = minion.moveAge(partialTick);
+        double yaw = Math.toRadians(minion.yBodyRot);
+        Vec3 ahead = new Vec3(-Math.sin(yaw), 0.0, Math.cos(yaw));
+        for (int k = 0; k < MinionMoves.SPIKE_COUNT; k++) {
+            double since = age - MinionMoves.PLANT - MinionMoves.SPIKE_EVERY * k;
+            double sinking = (since - MinionMoves.SPIKE_STANDS) / 5.0;
+            if (since < 0.0 || sinking >= 1.0) {
+                continue;
+            }
+            Vec3 at = MinionMoves.spikeAt(level, minion.position(), minion.yBodyRot, k);
+            if (at == null) {
+                continue;
+            }
+            double tall = Ease.backOut(Math.min(1.0, since / 2.5)) * (0.8 + 0.08 * k);
+            double down = Ease.smooth(Math.max(0.0, sinking)) * (2.0 * tall + 0.4);
+            Frame frame = Frame.of(at.add(0.0, -down, 0.0), ahead, Vectors.UP, 1.0)
+                    .turned(0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.3)
+                    .turned(0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.7 * k)
+                    .stretched(1.0, Math.max(0.01, tall), 1.0);
+            painter.clip(at, Vectors.UP, 1.0);
+            painter.shape(SPIKE, frame, 1.0, 1.2);
+            painter.noClip();
+            if (since < 4.0) {
+                painter.flare(at.add(0.0, 0.3, 0.0), 0.9 * (1.0 - since / 4.0), 0.8);
+            }
+        }
+    }
+
+    // Whirling, its open hands leave a ring of light round it at shoulder height; rushing, streaks of light trail
+    // back from its shoulders.
+    private static void whirl(LanternPainter painter, MechMinion minion, Frame stand, Frame upper,
+            float partialTick) {
+        double age = minion.moveAge(partialTick);
+        if (minion.move() == MinionMoves.SPIN) {
+            double fast = Ease.smooth((age - MinionMoves.SPIN_WIND) / 3.0)
+                    * (1.0 - Ease.smooth((age - MinionMoves.SPIN_WIND - 9.0) / 4.0));
+            if (fast > 0.01) {
+                Vec3 middle = stand.at(0.0, MinionShapes.SHOULDER_Y - 0.2, 0.0);
+                painter.circle(middle, stand.right(), stand.forward(), 2.3, 0.07, 0.6, Colors.alpha(0.8 * fast),
+                        Colors.alpha(0.4 * fast));
+                painter.circle(middle.add(0.0, -0.15, 0.0), stand.right(), stand.forward(), 1.9, 0.04, 0.4,
+                        Colors.alpha(0.5 * fast), Colors.alpha(0.25 * fast));
+            }
+        } else if (minion.move() == MinionMoves.CHARGE) {
+            double rush = Ease.smooth((age - MinionMoves.RUSH) / 2.0)
+                    * (1.0 - Ease.smooth((age - MinionMoves.RUSH - MinionMoves.RUSH_TICKS) / 3.0));
+            if (rush > 0.01) {
+                Vec3 back = stand.forward().scale(-2.4);
+                for (int k = -1; k <= 1; k++) {
+                    Vec3 from = upper.at(0.85 * k, MinionShapes.SHOULDER_Y - 0.4 * Math.abs(k), -0.2);
+                    painter.glowLine(from, from.add(back), 0.5, LanternPainter.GREEN, Colors.alpha(0.5 * rush));
+                    painter.lightLine(from, from.add(back), 0.06, 0xE4FFEA, Colors.alpha(0.8 * rush));
+                }
+            }
         }
     }
 

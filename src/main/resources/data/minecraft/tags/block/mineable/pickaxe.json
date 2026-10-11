@@ -1,0 +1,11 @@
+{
+  "replace": false,
+  "values": [
+    "welcomescreen:moving_head",
+    "welcomescreen:searchlight",
+    "welcomescreen:laser",
+    "welcomescreen:par",
+    "welcomescreen:strobe",
+    "welcomescreen:disco_ball"
+  ]
+}

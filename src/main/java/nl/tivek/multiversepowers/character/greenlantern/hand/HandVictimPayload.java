@@ -23,6 +23,16 @@ public record HandVictimPayload(int entity, int hand, int kind) implements Custo
     // Drawn out between the two hands of the tear, and torn in two by them.
     public static final int STRETCH = 7;
     public static final int SPLIT = 8;
+    // Wound round by a tentacle of the abyss and dragged down into its stars.
+    public static final int ABYSS = 9;
+    // Let go by the abyss's tentacle, alive, and thrown out of the ground again.
+    public static final int ABYSS_FREED = 10;
+    // Stopped in time by the hourglass, and going on again as it breaks.
+    public static final int STOPPED = 11;
+    public static final int GOES_ON = 12;
+    // Falling up under the gravity flip, and slammed back down into the ground.
+    public static final int FLIPPED = 13;
+    public static final int LANDED = 14;
 
     public static final CustomPacketPayload.Type<HandVictimPayload> TYPE = new CustomPacketPayload.Type<>(
             ResourceLocation.fromNamespaceAndPath(MultiversePowers.MODID, "hand_victim"));

@@ -13,7 +13,6 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.util.Mth;
 import nl.tivek.multiversepowers.MultiversePowers;
-import nl.tivek.multiversepowers.character.GameCharacter;
 import nl.tivek.multiversepowers.engine.client.gui.ScreenAnchors;
 
 // The guide's rows under `AbilityGuideScreen`: the open tab's binds in order, which one is chosen, how far the list and
@@ -26,7 +25,7 @@ abstract class GuideRows extends Screen {
     static final int INDENT = 9;
     static final Component AGAIN = Component.translatable(PREFIX + "again");
 
-    final GameCharacter character;
+    final GuideOwner owner;
     final List<GuideMode> modes;
     // The open tab's rows: null is its overview, then its controls and headings in order.
     final List<GuideMode.Control> rows = new ArrayList<>();
@@ -53,11 +52,11 @@ abstract class GuideRows extends Screen {
     int detailX;
     int detailWidth;
 
-    GuideRows(GameCharacter character) {
-        super(Component.translatable(PREFIX + "title", character.getDisplayName()));
-        this.character = character;
-        this.modes = AbilityGuide.modes(character);
-        this.about = new GuideAbout(character);
+    GuideRows(GuideOwner owner) {
+        super(Component.translatable(PREFIX + "title", owner.name()));
+        this.owner = owner;
+        this.modes = AbilityGuide.modes(owner);
+        this.about = new GuideAbout(owner);
         LocalPlayer player = Minecraft.getInstance().player;
         for (int i = 0; player != null && i < this.modes.size(); i++) {
             if (this.modes.get(i).active().test(player)) {

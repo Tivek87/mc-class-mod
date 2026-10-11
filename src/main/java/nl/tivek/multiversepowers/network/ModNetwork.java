@@ -5,6 +5,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
+import net.minecraft.network.protocol.PacketFlow;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 import nl.tivek.multiversepowers.MultiversePowers;
@@ -55,11 +56,18 @@ import nl.tivek.multiversepowers.classes.PlayerClass;
 import nl.tivek.multiversepowers.classes.SelectClassPayload;
 import nl.tivek.multiversepowers.classes.TestEffectPayload;
 import nl.tivek.multiversepowers.classes.ceremony.Ceremonies;
-import nl.tivek.multiversepowers.command.CommandAliasEditPayload;
 import nl.tivek.multiversepowers.command.CommandAliases;
+import nl.tivek.multiversepowers.command.CommandEditPayload;
+import nl.tivek.multiversepowers.stage.LampEditPayload;
+import nl.tivek.multiversepowers.stage.LampOpenPayload;
 import nl.tivek.multiversepowers.config.WorldSettings;
 import nl.tivek.multiversepowers.config.WorldSettingsEditPayload;
 import nl.tivek.multiversepowers.config.WorldSettingsPayload;
+import nl.tivek.multiversepowers.config.transfer.SettingsExportAskPayload;
+import nl.tivek.multiversepowers.config.transfer.SettingsExportPayload;
+import nl.tivek.multiversepowers.config.transfer.SettingsImportPayload;
+import nl.tivek.multiversepowers.config.transfer.SettingsResultPayload;
+import nl.tivek.multiversepowers.config.transfer.SettingsTransfer;
 import nl.tivek.multiversepowers.engine.entity.CaptivePayload;
 import nl.tivek.multiversepowers.engine.entity.Captives;
 import nl.tivek.multiversepowers.engine.entity.DeathBlowPayload;
@@ -92,6 +100,13 @@ import nl.tivek.multiversepowers.spell.SpellCasting;
 import nl.tivek.multiversepowers.spell.SpellCooldownPayload;
 import nl.tivek.multiversepowers.spell.SpellFxPayload;
 import nl.tivek.multiversepowers.spell.dark.VoidStatePayload;
+import nl.tivek.multiversepowers.schematic.SchematicServer;
+import nl.tivek.multiversepowers.schematic.net.SchematicAskPayload;
+import nl.tivek.multiversepowers.schematic.net.SchematicFilePayload;
+import nl.tivek.multiversepowers.schematic.net.SchematicListPayload;
+import nl.tivek.multiversepowers.schematic.net.SchematicNoticePayload;
+import nl.tivek.multiversepowers.schematic.net.SchematicPlacePayload;
+import nl.tivek.multiversepowers.schematic.net.SchematicStatusPayload;
 import nl.tivek.multiversepowers.stamina.StaminaCostPayload;
 import nl.tivek.multiversepowers.testfight.TestFight;
 import nl.tivek.multiversepowers.testfight.TestFightPayload;
@@ -99,7 +114,7 @@ import nl.tivek.multiversepowers.testfight.TestFightRequest;
 import nl.tivek.multiversepowers.update.VersionProbe;
 
 public final class ModNetwork {
-    private static final String VERSION = "22";
+    private static final String VERSION = "23";
 
     private ModNetwork() {
     }
@@ -160,6 +175,14 @@ public final class ModNetwork {
                 ModNetwork::onWorldSettings);
         registrar.playToServer(WorldSettingsEditPayload.TYPE, WorldSettingsEditPayload.STREAM_CODEC,
                 ModNetwork::onWorldSettingsEdit);
+        registrar.playToServer(SettingsExportAskPayload.TYPE, SettingsExportAskPayload.STREAM_CODEC,
+                ModNetwork::onSettingsExportAsk);
+        registrar.playToClient(SettingsExportPayload.TYPE, SettingsExportPayload.STREAM_CODEC,
+                ModNetwork::onSettingsExport);
+        registrar.playToServer(SettingsImportPayload.TYPE, SettingsImportPayload.STREAM_CODEC,
+                ModNetwork::onSettingsImport);
+        registrar.playToClient(SettingsResultPayload.TYPE, SettingsResultPayload.STREAM_CODEC,
+                ModNetwork::onSettingsResult);
         registrar.playToClient(ParticlesPayload.TYPE, ParticlesPayload.STREAM_CODEC, ModNetwork::onParticles);
         registrar.playToClient(StandingsPayload.TYPE, StandingsPayload.STREAM_CODEC, ModNetwork::onStandings);
         registrar.playToClient(MobTablePayload.TYPE, MobTablePayload.STREAM_CODEC, ModNetwork::onMobTable);
@@ -171,9 +194,61 @@ public final class ModNetwork {
                 ModNetwork::onMobPageAction);
         registrar.playToServer(MobStatEditPayload.TYPE, MobStatEditPayload.STREAM_CODEC, ModNetwork::onMobStatEdit);
         registrar.playToClient(MobStepsPayload.TYPE, MobStepsPayload.STREAM_CODEC, ModNetwork::onMobSteps);
-        registrar.playToServer(CommandAliasEditPayload.TYPE, CommandAliasEditPayload.STREAM_CODEC,
-                ModNetwork::onCommandAliasEdit);
+        registrar.playToServer(CommandEditPayload.TYPE, CommandEditPayload.STREAM_CODEC, ModNetwork::onCommandEdit);
         registrar.playToClient(VoicePayload.TYPE, VoicePayload.STREAM_CODEC, ModNetwork::onVoice);
+        registrar.playToClient(LampOpenPayload.TYPE, LampOpenPayload.STREAM_CODEC, ModNetwork::onLampOpen);
+        registrar.playToServer(LampEditPayload.TYPE, LampEditPayload.STREAM_CODEC, ModNetwork::onLampEdit);
+        registrar.playToServer(SchematicAskPayload.TYPE, SchematicAskPayload.STREAM_CODEC, ModNetwork::onSchematicAsk);
+        registrar.playToServer(SchematicPlacePayload.TYPE, SchematicPlacePayload.STREAM_CODEC,
+                ModNetwork::onSchematicPlace);
+        registrar.playBidirectional(SchematicFilePayload.TYPE, SchematicFilePayload.STREAM_CODEC,
+                ModNetwork::onSchematicFile);
+        registrar.playToClient(SchematicListPayload.TYPE, SchematicListPayload.STREAM_CODEC,
+                (payload, context) -> ClientPayloadHandler.handleSchematicList(payload, context));
+        registrar.playToClient(SchematicStatusPayload.TYPE, SchematicStatusPayload.STREAM_CODEC,
+                (payload, context) -> ClientPayloadHandler.handleSchematicStatus(payload, context));
+        registrar.playToClient(SchematicNoticePayload.TYPE, SchematicNoticePayload.STREAM_CODEC,
+                (payload, context) -> ClientPayloadHandler.handleSchematicNotice(payload, context));
+    }
+
+    private static void onSchematicAsk(SchematicAskPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> {
+            if (context.player() instanceof ServerPlayer serverPlayer) {
+                SchematicServer.onAsk(serverPlayer, payload);
+            }
+        });
+    }
+
+    private static void onSchematicPlace(SchematicPlacePayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> {
+            if (context.player() instanceof ServerPlayer serverPlayer) {
+                SchematicServer.onPlace(serverPlayer, payload);
+            }
+        });
+    }
+
+    private static void onSchematicFile(SchematicFilePayload payload, IPayloadContext context) {
+        if (context.flow() == PacketFlow.CLIENTBOUND) {
+            ClientPayloadHandler.handleSchematicFile(payload, context);
+            return;
+        }
+        context.enqueueWork(() -> {
+            if (context.player() instanceof ServerPlayer serverPlayer) {
+                SchematicServer.onFile(serverPlayer, payload);
+            }
+        });
+    }
+
+    private static void onLampOpen(LampOpenPayload payload, IPayloadContext context) {
+        ClientPayloadHandler.handleLampOpen(payload, context);
+    }
+
+    private static void onLampEdit(LampEditPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> {
+            if (context.player() instanceof ServerPlayer serverPlayer) {
+                payload.apply(serverPlayer);
+            }
+        });
     }
 
     private static void onParticles(ParticlesPayload payload, IPayloadContext context) {
@@ -201,10 +276,10 @@ public final class ModNetwork {
         });
     }
 
-    private static void onCommandAliasEdit(CommandAliasEditPayload payload, IPayloadContext context) {
+    private static void onCommandEdit(CommandEditPayload payload, IPayloadContext context) {
         context.enqueueWork(() -> {
             if (context.player() instanceof ServerPlayer serverPlayer) {
-                CommandAliases.edit(serverPlayer, payload.name(), payload.command());
+                CommandAliases.change(serverPlayer, payload);
             }
         });
     }
@@ -261,6 +336,30 @@ public final class ModNetwork {
 
     private static void onWorldSettings(WorldSettingsPayload payload, IPayloadContext context) {
         ClientPayloadHandler.handleWorldSettings(payload, context);
+    }
+
+    private static void onSettingsExportAsk(SettingsExportAskPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> {
+            if (context.player() instanceof ServerPlayer serverPlayer) {
+                SettingsTransfer.export(serverPlayer, payload.name());
+            }
+        });
+    }
+
+    private static void onSettingsExport(SettingsExportPayload payload, IPayloadContext context) {
+        ClientPayloadHandler.handleSettingsExport(payload, context);
+    }
+
+    private static void onSettingsImport(SettingsImportPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> {
+            if (context.player() instanceof ServerPlayer serverPlayer) {
+                SettingsTransfer.receive(serverPlayer, payload);
+            }
+        });
+    }
+
+    private static void onSettingsResult(SettingsResultPayload payload, IPayloadContext context) {
+        ClientPayloadHandler.handleSettingsResult(payload, context);
     }
 
     private static void onWorldSettingsEdit(WorldSettingsEditPayload payload, IPayloadContext context) {

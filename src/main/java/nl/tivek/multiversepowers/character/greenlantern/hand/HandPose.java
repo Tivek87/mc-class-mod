@@ -5,9 +5,10 @@ import nl.tivek.multiversepowers.character.greenlantern.duo.HandDuo;
 import nl.tivek.multiversepowers.engine.math.Ease;
 import nl.tivek.multiversepowers.engine.math.Vectors;
 
-public final class HandPose extends HandRings {
+public final class HandPose extends HandWonders {
     private static final double[] SPOT = { 5.8, 1.25, 2.2, 2.9, 5.0, 0.0, 0.0, 3.0, 0.0, 0.0, 6.0, 0.0, 1.25, 0.0,
-            0.0, 0.0, 0.0, 0.0, 0.0, 10.0, 4.2, 6.0, 12.0, 5.0, 7.0, 12.0, 0.0, 2.6, 0.0, 0.0 };
+            0.0, 0.0, 0.0, 0.0, 0.0, 10.0, 4.2, 6.0, 12.0, 5.0, 7.0, 12.0, 0.0, 2.6, 0.0, 0.0, 0.0, 10.0, 17.0,
+            BAT_SPOT, 4.0, 4.5, 6.0, 0.0 };
     private static final int TAPS = 10;
     private static final double TAP = 0.35;
     private static final double[] WRIST_WEIGHTS = remembered(2.4, 0.45);
@@ -97,7 +98,12 @@ public final class HandPose extends HandRings {
             case RAKE -> beat >= RAKE_AT - 3.0;
             // A portal hand stays turned the way it came; its portal follows the creature instead.
             case FLICK, PINCH, POKE, HAMMER, DRAG, CATCH, RINGHOLD, CLAP, FINGERGUN, SCISSORS, SWALLOW, TEAR,
-                    RIFT, COSMOS -> true;
+                    RIFT, COSMOS, ABYSS -> true;
+            case BEAMEYE -> beat >= BEAMEYE_FIRE - 2.0;
+            case GUNSLINGER -> aiming(beat);
+            case BAT -> beat >= BAT_SWING - 3.0;
+            case HOURGLASS, BLACKHOLE -> beat >= 6.0;
+            case GRAVITY -> beat >= GRAVITY_FLIP - 2.0;
             case MAW -> beat >= MAW_GULP - 3.0;
             case RAGDOLL -> beat >= CATCH_BEAT - 2.0;
             case RINGBEAM -> beat >= RINGBEAM_CHARGE;
@@ -190,6 +196,12 @@ public final class HandPose extends HandRings {
             case RINGBEAM -> pose.ringBeam(t);
             case SCOOP -> pose.scoop(t);
             case EYE -> pose.eye(t);
+            case BEAMEYE -> pose.beamEye(t);
+            case GUNSLINGER -> pose.gunslinger(t);
+            case BAT -> pose.bat(t, side);
+            case HOURGLASS -> pose.hourglass(t);
+            case GRAVITY -> pose.gravity(t);
+            case BLACKHOLE -> pose.blackHole(t);
             case PUPPETEER -> pose.puppeteer(t);
             case RINGHAMMER -> pose.ringHammer(t, reach);
             case RINGCHAINS -> pose.ringChains(t);

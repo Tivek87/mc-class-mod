@@ -9,6 +9,7 @@ import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.entity.monster.Creeper;
 import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.phys.AABB;
+import nl.tivek.multiversepowers.character.GameCharacter;
 import nl.tivek.multiversepowers.character.greenlantern.PowerRing;
 import nl.tivek.multiversepowers.faction.Factions;
 import nl.tivek.multiversepowers.faction.Standing;
@@ -21,10 +22,9 @@ final class MinionGoals {
     }
 
     // Its target, looked for again every half second: the nearest creature red to its pilot that it may hit, within
-    // SEEK; one that died, turned another colour or got further than LOSE is let go.
+    // the mech's sight setting; one that died, turned another colour or got half as far again is let go.
     static final class Foes extends Goal {
-        private static final double SEEK = 16.0;
-        private static final double LOSE = 24.0;
+        private static final double LOSE = 1.5;
         private static final int EVERY = 10;
         private final MechMinion minion;
         private int next;
@@ -52,7 +52,8 @@ final class MinionGoals {
             }
             LivingEntity target = this.minion.getTarget();
             // A wild one keeps on whatever hurt it (HurtByTargetGoal) as long as it lives and stays near.
-            if (target != null && (!target.isAlive() || target.distanceToSqr(this.minion) > LOSE * LOSE
+            double lose = sight() * LOSE;
+            if (target != null && (!target.isAlive() || target.distanceToSqr(this.minion) > lose * lose
                     || pilot != null && !fair(pilot, target)
                     || pilot == null && MobRules.set(this.minion.getType(), target.getType()) == Standing.FRIENDLY)) {
                 target = null;
@@ -66,9 +67,10 @@ final class MinionGoals {
         @Nullable
         private LivingEntity nearest(@Nullable ServerPlayer pilot) {
             LivingEntity best = null;
-            double bestFar = SEEK * SEEK;
+            double seek = sight();
+            double bestFar = seek * seek;
             for (LivingEntity living : this.minion.level().getEntitiesOfClass(LivingEntity.class,
-                    new AABB(this.minion.blockPosition()).inflate(SEEK), living -> pilot == null ? monster(living)
+                    new AABB(this.minion.blockPosition()).inflate(seek), living -> pilot == null ? monster(living)
                             : fair(pilot, living))) {
                 double far = living.distanceToSqr(this.minion);
                 if (far < bestFar) {
@@ -77,6 +79,10 @@ final class MinionGoals {
                 }
             }
             return best;
+        }
+
+        private static double sight() {
+            return GameCharacter.GREEN_LANTERN.byName("mech").value("mechHelperSight");
         }
 
         private boolean fair(ServerPlayer pilot, LivingEntity living) {

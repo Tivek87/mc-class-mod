@@ -2,6 +2,7 @@ package nl.tivek.multiversepowers.character.client;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
+import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
@@ -95,6 +96,27 @@ public final class AbilityPanel {
     // How high the panel reached above the screen's bottom when last drawn, in GUI units; 0 while it is away.
     private static float drawnHeight;
     private static boolean subtitlesMoved;
+    private static final List<Tool> TOOLS = new ArrayList<>();
+
+    // A tool held with no character (the Schematic Wand): while it is, the panel shows its controls instead.
+    public interface Tool {
+        boolean active(LocalPlayer player);
+
+        Component title();
+
+        int color();
+
+        List<ToolRow> rows(LocalPlayer player);
+    }
+
+    // `status` says how it stands now (in `statusColor`); `ready` lights the row.
+    public record ToolRow(int group, Component key, Component name, @Nullable Component status, int statusColor,
+            boolean ready) {
+    }
+
+    // Whose panel it is: a character's or a tool's.
+    private record Owner(String id, Component title, int color, @Nullable GameCharacter character) {
+    }
 
     // What a character's panel lists, of what its buttons fire now and its keys allow (ClientCharacter.refusal).
     @FunctionalInterface
@@ -290,6 +312,32 @@ public final class AbilityPanel {
         RULES.put(character, rules);
     }
 
+    public static void tool(Tool tool) {
+        TOOLS.add(tool);
+    }
+
+    @Nullable
+    private static Tool tool(LocalPlayer player) {
+        for (Tool tool : TOOLS) {
+            if (tool.active(player)) {
+                return tool;
+            }
+        }
+        return null;
+    }
+
+    // A tool's rows as the panel's own, each keeping its place by its order.
+    private static List<Line> lines(Tool tool, LocalPlayer player) {
+        List<ToolRow> rows = tool.rows(player);
+        List<Line> lines = new ArrayList<>(rows.size());
+        for (int k = 0; k < rows.size(); k++) {
+            ToolRow row = rows.get(k);
+            lines.add(new Line(-1 - k, row.group(), null, row.key(), row.name(), row.ready(), row.status(),
+                    row.statusColor(), false));
+        }
+        return lines;
+    }
+
     // Shows the panel now and keeps it, fading out included, at most 3 seconds: a power used or refused, a blow given or
     // taken.
     public static void wake() {
@@ -367,15 +415,20 @@ public final class AbilityPanel {
         float seconds = Math.min(0.1F, (millis - lastFrame) / 1000.0F);
         lastFrame = millis;
         drawnHeight = 0.0F;
-        if (now == null || player == null || minecraft.options.hideGui
+        Tool tool = now == null && player != null ? tool(player) : null;
+        if (now == null && tool == null || player == null || minecraft.options.hideGui
                 || minecraft.screen instanceof ConstructWheelScreen || minecraft.screen instanceof PowerWheelScreen) {
             shown = 0.0F;
             up = null;
             return;
         }
-        int ultimate = ClientCharacter.ultimate();
-        List<Line> lines = AbilityPanelRows.lines(now, player, RULES.getOrDefault(now, EVERY));
-        boolean busy = ultimate > 0;
+        Owner owner = tool != null ? new Owner("tool", tool.title(), tool.color(), null)
+                : new Owner(now.getId(), now.getDisplayName(), now.getColor(), now);
+        int ultimate = tool != null ? 0 : ClientCharacter.ultimate();
+        List<Line> lines = tool != null ? lines(tool, player)
+                : AbilityPanelRows.lines(now, player, RULES.getOrDefault(now, EVERY));
+        // A tool's controls stay up while it is held.
+        boolean busy = ultimate > 0 || tool != null;
         for (Line line : lines) {
             busy |= line.busy();
         }
@@ -394,8 +447,8 @@ public final class AbilityPanel {
         }
         double guiScale = minecraft.getWindow().getGuiScale();
         float room = graphics.guiWidth() / 2.0F - HOTBAR - beside(minecraft) - MARGIN * 2;
-        Layout layout = up.place(layout(font, now, lines, ultimate, up.keys, ROOMY),
-                layout(font, now, lines, ultimate, up.keys, TIGHT), guiScale, graphics.guiWidth(),
+        Layout layout = up.place(layout(font, owner, lines, ultimate, up.keys, ROOMY),
+                layout(font, owner, lines, ultimate, up.keys, TIGHT), guiScale, graphics.guiWidth(),
                 graphics.guiHeight(), room);
         up.follow(layout, lines, seconds, millis);
         float scale = up.scale();
@@ -407,11 +460,11 @@ public final class AbilityPanel {
         float y = onPixel(graphics.guiHeight() - MARGIN, guiScale);
         pose.translate(x, y, 0.0F);
         pose.scale(scale, scale, 1.0F);
-        draw(graphics, font, now, player, lines, layout, up, millis);
+        draw(graphics, font, owner, player, lines, layout, up, millis);
         graphics.flush();
         pose.popPose();
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
-        anchors(layout, now, x, y, scale);
+        anchors(layout, owner, x, y, scale);
     }
 
     // What the game itself may draw right of the hotbar, kept free whether it shows now or not, so the panel never
@@ -448,7 +501,7 @@ public final class AbilityPanel {
     // Where the panel, its guide key, its rows (also as the character's own, `game.panel.rows.<character>`) and its foot
     // (the ring's power, what Doctor Octopus stands on) ended up on the screen, for the tour to point at; the corner it
     // takes stays free of the rest of the HUD.
-    private static void anchors(Layout layout, GameCharacter now, float x, float y, float scale) {
+    private static void anchors(Layout layout, Owner owner, float x, float y, float scale) {
         int width = Math.round(up.shownWidth) + PAD * 2;
         int height = Math.round(up.shownHeight) + PAD * 2;
         ScreenAnchors.report("game.panel", x - width * scale, y - height * scale, width * scale, height * scale);
@@ -463,7 +516,7 @@ public final class AbilityPanel {
         float rowsTop = y - (height - PAD - layout.spacing().title() + 3) * scale;
         float foot = y - (PAD + layout.foot() - 2) * scale;
         ScreenAnchors.report("game.panel.rows", left, rowsTop, (width - PAD * 2 + 4) * scale, foot - rowsTop);
-        ScreenAnchors.report("game.panel.rows." + now.getId(), left, rowsTop, (width - PAD * 2 + 4) * scale,
+        ScreenAnchors.report("game.panel.rows." + owner.id(), left, rowsTop, (width - PAD * 2 + 4) * scale,
                 foot - rowsTop);
         if (layout.foot() > 0) {
             String name = layout.lantern() ? "game.panel.power" : "game.panel.foot";
@@ -478,13 +531,13 @@ public final class AbilityPanel {
 
     // Its width fits the widest row of keys, names and the longest status, so a status coming or going never moves
     // anything; `keys` is the narrowest the key column may get.
-    private static Layout layout(Font font, GameCharacter now, List<Line> lines, int ultimate, int keys,
+    private static Layout layout(Font font, Owner owner, List<Line> lines, int ultimate, int keys,
             Spacing spacing) {
-        Component title = now.getDisplayName();
+        Component title = owner.title();
         Component corner = ultimate > 0
-                ? Component.translatable(PREFIX + "ultimate." + now.getId(), (ultimate + 19) / 20) : null;
-        boolean lantern = now == GameCharacter.GREEN_LANTERN;
-        Component footer = lantern ? null : footer();
+                ? Component.translatable(PREFIX + "ultimate." + owner.id(), (ultimate + 19) / 20) : null;
+        boolean lantern = owner.character() == GameCharacter.GREEN_LANTERN;
+        Component footer = lantern || owner.character() == null ? null : footer();
         Component guideKey = PowerInputs.keyName(AbilityGuide.KEY);
         Component guide = Component.translatable(PREFIX + "guide");
         int guideWidth = AbilityGuide.KEY.isUnbound() ? 0 : KeyCap.width(font, guideKey) + 4 + font.width(guide);
@@ -525,7 +578,7 @@ public final class AbilityPanel {
     }
 
     // Laid out from the bottom right corner at 0, 0, growing up and to the left.
-    private static void draw(GuiGraphics graphics, Font font, GameCharacter now, LocalPlayer player, List<Line> lines,
+    private static void draw(GuiGraphics graphics, Font font, Owner owner, LocalPlayer player, List<Line> lines,
             Layout layout, Up up, long millis) {
         int width = Math.round(up.shownWidth);
         int height = Math.round(up.shownHeight);
@@ -533,7 +586,7 @@ public final class AbilityPanel {
         int left = right - width;
         int bottom = -PAD;
         int top = bottom - height;
-        int color = now.getColor();
+        int color = owner.color();
 
         KeyCap.Layer layer = new KeyCap.Layer(graphics, font);
         KeyCap.pill(graphics, left - PAD, top - PAD, width + PAD * 2, height + PAD * 2, BACK);
@@ -575,8 +628,8 @@ public final class AbilityPanel {
         }
         layer.finish();
         int footY = bottom - 8;
-        CharacterAbility train = now.byName("emerald_express");
         if (layout.lantern()) {
+            CharacterAbility train = GameCharacter.GREEN_LANTERN.byName("emerald_express");
             ConstructHud.renderPower(graphics, font, player, left, right, footY,
                     train == null || !train.has(POWER_COST) ? 0.0F : (float) train.value(POWER_COST));
         } else if (layout.footer() != null) {

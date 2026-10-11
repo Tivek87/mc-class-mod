@@ -19,6 +19,7 @@ import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import nl.tivek.multiversepowers.character.greenlantern.duo.HandDuo;
+import nl.tivek.multiversepowers.character.greenlantern.hand.HandAbyss;
 import nl.tivek.multiversepowers.character.greenlantern.hand.HandCosmos;
 import nl.tivek.multiversepowers.character.greenlantern.hand.HandGroup;
 import nl.tivek.multiversepowers.character.greenlantern.hand.HandPose;
@@ -35,10 +36,10 @@ abstract class GiantHandPlaces {
     // Hands that may come out of a wall next to the creature instead of the ground, and how often when one is there.
     private static final Set<Integer> WALLED = Set.of(HandPose.SMACK, HandPose.GRAB, HandPose.FINGER, HandPose.SLAM,
             HandPose.POUND, HandPose.SNAP, HandPose.RAKE, HandPose.RAGDOLL, HandPose.RINGBEAM, HandPose.SCOOP,
-            HandPose.EYE, HandPose.MEGAPHONE, HandPose.PUPPETEER, HandPose.MAW);
+            HandPose.EYE, HandPose.MEGAPHONE, HandPose.PUPPETEER, HandPose.MAW, HandPose.BEAMEYE);
     // Hands that act from afar and so may stand higher or lower than the creature.
     private static final Set<Integer> FAR = Set.of(HandPose.RINGBEAM, HandPose.EYE, HandPose.MEGAPHONE,
-            HandPose.PUPPETEER, HandPose.RINGCHAINS);
+            HandPose.PUPPETEER, HandPose.RINGCHAINS, HandPose.BEAMEYE, HandPose.GUNSLINGER);
     private static final double WALL_CHANCE = 0.6;
     private static final double WALL_NEAR = 4.5;
     private static final int GROUND_TURNS = 8;
@@ -80,6 +81,9 @@ abstract class GiantHandPlaces {
         }
         if (move == HandPose.COSMOS) {
             return this.cosmosHand(level, target, away);
+        }
+        if (move == HandPose.ABYSS) {
+            return this.abyssHand(level, target, away);
         }
         if (HandPose.portal(move)) {
             return this.portalHand(level, target, move, away);
@@ -140,14 +144,18 @@ abstract class GiantHandPlaces {
         Vec3 liked = move == HandPose.SCOOP || move == HandPose.EYE ? away.scale(-1.0)
                 : move == HandPose.RINGBEAM || move == HandPose.MEGAPHONE || move == HandPose.SMACK
                         || move == HandPose.PUPPETEER || move == HandPose.RINGHAMMER || move == HandPose.RINGCHAINS
+                        || move == HandPose.BEAMEYE || move == HandPose.GUNSLINGER || move == HandPose.BAT
                         ? Vectors.spin(away, Vectors.UP, side * Math.PI * 0.5) : away;
+        if (move == HandPose.GUNSLINGER) {
+            liked = this.crowdWay(level, target, liked);
+        }
         List<GiantHand> clipping = new ArrayList<>();
         for (int k = 0; k < GROUND_TURNS; k++) {
             int step = (k + 1) / 2;
             double turn = (k % 2 == 1 ? side : -side) * step * Math.PI * 2.0 / GROUND_TURNS;
             Vec3 reach = Vectors.spin(liked, Vectors.UP, turn);
             int variant = HandPose.variant(move, move == HandPose.SNAP && side < 0.0, false, extra);
-            if (move == HandPose.SMACK) {
+            if (move == HandPose.SMACK || move == HandPose.BAT) {
                 variant = reach.cross(Vectors.UP).dot(away) > 0.0 ? move : move + HandPose.MOVES;
             }
             Vec3 spot = target.position().subtract(reach.scale(HandPose.spot(move) * SCALE));
@@ -164,6 +172,18 @@ abstract class GiantHandPlaces {
             }
         }
         return this.firstFitting(level, clipping);
+    }
+
+    // The gunslinger's barrel passes over whatever stands near the hand: it stands off on the side away from the
+    // creatures round its first one, so the others lie beyond it.
+    private Vec3 crowdWay(ServerLevel level, LivingEntity target, Vec3 fallback) {
+        double room = (HandPose.SLING_HOMING - HandPose.spot(HandPose.GUNSLINGER)) * SCALE;
+        Vec3 sum = Vec3.ZERO;
+        for (LivingEntity living : level.getEntitiesOfClass(LivingEntity.class, target.getBoundingBox().inflate(room),
+                entity -> entity != target && entity.isAlive() && GiantHands.fair(this.owner, entity))) {
+            sum = sum.add(living.getX() - target.getX(), 0.0, living.getZ() - target.getZ());
+        }
+        return sum.lengthSqr() < 1.0 ? fallback : sum.normalize();
     }
 
     // A spot where the whole move stays out of the blocks is liked best; with none, the hand comes anyway and passes
@@ -382,6 +402,30 @@ abstract class GiantHandPlaces {
             }
             GiantHand hand = new GiantHand(this.storm(), HandPose.variant(HandPose.COSMOS, false, false, 0), base,
                     target, way.scale(-1.0));
+            if (this.fits(hand)) {
+                return hand;
+            }
+        }
+        return null;
+    }
+
+    // The abyss opens right under the creature on level ground, its rim well clear of the caster; its hands reach
+    // in from either side of the caster's line.
+    @Nullable
+    private GiantHand abyssHand(ServerLevel level, LivingEntity target, Vec3 away) {
+        Vec3 base = GiantHandSpots.ground(level, target.position(), target.getY());
+        if (base == null || Math.abs(base.y - target.getY()) > RIFT_STEP
+                || this.owner.position().distanceTo(base) < HandAbyss.RADIUS + RIFT_ROOM + 1.0
+                || !GiantHandSpots.pitRoom(level, base)) {
+            return null;
+        }
+        int variant = HandPose.variant(HandPose.ABYSS, false, false, AbyssPit.depthAt(level, this.owner, base));
+        for (double turn : PAIR_TURNS) {
+            Vec3 way = Vectors.spin(away, Vectors.UP, turn);
+            if (!GiantHandSpots.portalRoom(level, target, variant, base, way)) {
+                continue;
+            }
+            GiantHand hand = new GiantHand(this.storm(), variant, base, target, way);
             if (this.fits(hand)) {
                 return hand;
             }

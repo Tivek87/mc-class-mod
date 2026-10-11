@@ -1,6 +1,7 @@
 {
   "replace": false,
   "values": [
-    "welcomescreen:hard_light_zombified_piglin"
+    "welcomescreen:hard_light_zombified_piglin",
+    "welcomescreen:zombie_brute"
   ]
 }

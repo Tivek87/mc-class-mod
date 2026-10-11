@@ -204,7 +204,7 @@ final class GuideDetail {
     @Nullable
     private static Component cost(GuideMode mode, GuideMode.Control control, @Nullable CharacterAbility ability) {
         GuideMode.Cost named = control.cost();
-        CharacterAbility owner = named != null ? mode.character().byName(named.ability())
+        CharacterAbility owner = named != null ? mode.owner().byName(named.ability())
                 : control.describes() ? ability : null;
         if (owner == null) {
             return null;

@@ -1,0 +1,10 @@
+{
+	"variants": {
+		"facing=up": {"model": "welcomescreen:block/laser"},
+		"facing=down": {"model": "welcomescreen:block/laser", "x": 180},
+		"facing=north": {"model": "welcomescreen:block/laser", "x": 90},
+		"facing=south": {"model": "welcomescreen:block/laser", "x": 90, "y": 180},
+		"facing=west": {"model": "welcomescreen:block/laser", "x": 90, "y": 270},
+		"facing=east": {"model": "welcomescreen:block/laser", "x": 90, "y": 90}
+	}
+}

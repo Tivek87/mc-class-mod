@@ -152,7 +152,9 @@ public enum GameCharacter {
                             "How long he hangs in the air at the top of a super jump, in seconds");
             this.add(abilities, AbilitySlot.ABILITY_24, "flight").input(CharacterAbility.Input.SPACE)
                     .holdOnly(ThorPowers.FLIGHT_HOLD).when(ground)
-                    .setting("speed", 18.0, 2.0, 80.0, Unit.BLOCKS_PER_SECOND, "How fast he flies, in blocks a second");
+                    .setting("speed", 18.0, 2.0, 80.0, Unit.BLOCKS_PER_SECOND, "How fast he flies, in blocks a second")
+                    .setting("climbSpeed", 8.0, 1.0, 80.0, Unit.BLOCKS_PER_SECOND,
+                            "How fast holding space lifts him straight up, in blocks a second");
             this.add(abilities, AbilitySlot.ABILITY_25, "air_shockwave").input(CharacterAbility.Input.LEFT)
                     .holdOnly(ThorPowers.SHOCK_HOLD).when(flying).needs(ThorPowers.HOME).cooldown(200).damage(3.0);
             this.add(abilities, AbilitySlot.ABILITY_26, "air_blink").input(CharacterAbility.Input.RIGHT)

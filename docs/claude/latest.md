@@ -1,12 +1,12 @@
 # Laatste sessie
 
-- Datum: 2026-10-11 05:17
-- Vraag (2e batch): stille groene laag op summons, vrienden vechten niet door na per-ongeluk-klap, ALLES-knoppen (lijst/groep), Everyone hostile, Undo (25) en Reset all op Mobs-pagina, veel meer mob-getallen, meer config (fists/zuilen, storm, summons), operators-mogen-bewerken-instelling, Cosmos-hand om de maan, storm max 1 bliksem per 3 s.
-- Gedaan: alles gebouwd. Nieuw: MobStats (15 getallen per mob), MobRules wildcards (`actor>*`, `*>*`) + undo-stappen + reset, 4 payloads, Mobs-pagina gesplitst (MobRulesState + MobRulesScreen).
-- Bug gevonden in test: wissen van lastHurtByMob in target-event crashte vanilla HurtByTargetGoal; nu in tick (MobTargets.onTick).
-- Cosmos: palm plat op kubusvlak, hand 1.0x maan, vingers stoppen op gedraaide kubus (HandRig.Held met assen).
-- Getest in game: vriendelijk (geen doelwit/boosheid), storm 3 calls in 140 ticks, regels/undo/bulk/reset, Mobs-pagina shots, Cosmos-greep shots.
-- Changelog 0.8.3 aangevuld + 3 tourstappen (mob_all, mob_undo, mob_numbers).
-- Niet van mij: src/.../arena/ArenaCommand.java (ongetrackt), niet meecommitten.
-- Laatste run: groene laag, mob-getallen (hp x2, armor +5, grootte 1.5, reset) en Mobs-pagina na splitsing ok. Testklasse/wereld/shots weg, tour.json terug. build + release check groen.
-- Open: 3 nieuwe tourstappen nog niet in game gelopen (voor push doen); commit/push/release op ja; idee #24 wacht op ja/nee.
+- Datum: 2026-10-11 10:09
+- Vraag (batch 0.8.4, deel 2): Abyss langer/25 schade, Commands/Mobs rustiger, 4 nieuwe handen, Sentinels sterker, /lightshow, Zombie Brute, lamp-instellingen per soort, import/export van wereld-instellingen, Schematic Wand, bugs #73 en #74.
+- Gedaan: alles gebouwd en in game getest. Schematic Wand: `schematic/` (formaten .schem v1-3, .litematic, .nbt, oude .schematic; hologram 1 op 1; plaatsen, undo, stoppen; wachten op niet-geladen chunks met popup; importeren/downloaden/mappen; paneel + gids (P); Schematics-instellingenpagina).
+- Getest: 5 unit tests (`SchematicMathTest`), alle 43 testsuites groen. In game: 132/132 blokken goed na draaien+spiegelen, kist-inhoud en armor stand mee, undo zet alles terug, grote stad (160x48x160) zonder lag (ergste frame 17 ms), oude MCEdit-kist via datafixer goed.
+- Review-fixes: undo blijft in eigen dimensie, Stop werkt ook op undo, import leest buiten game-thread, HUD-tekst breekt af, kapot bestand toont geen oude gegevens.
+- Bugs #73 (klimsnelheid 8 b/s, nieuwe setting) en #74 (benen bij sneaken) gesloten.
+- CHANGELOG 0.8.4 en tour (13 stappen) bijgewerkt; tour in game gelopen, alle kaarten ok; tour.json teruggezet.
+- Niet van mij, niet meecommitten: `arena/`, `CONTENT.txt`.
+- Opgeruimd: testklasse `uitest/`, wereld claude_ui, ui_*-shots, `run/schematics`, `run/world_settings`. Volledige build + `release.ps1 check` groen.
+- Open: idee #24 ja/nee; commit + push + release 0.8.4-alpha wacht op ja.

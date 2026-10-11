@@ -227,7 +227,9 @@ public final class MobRulesScreen extends MobRulesState {
         String count = String.valueOf(line.members().size());
         int countX = this.contentX + width - 6 - this.font.width(count);
         graphics.drawString(this.font, count, countX, y + 5, MUTED, false);
-        int left = this.allPills(graphics, line.members(), countX - 8, y + 3, mouseX, mouseY);
+        // The whole group at once, only while the mouse is on its head, so the list stays calm.
+        int left = over && this.editable() ? this.allPills(graphics, line.members(), countX - 8, y + 3, mouseX, mouseY)
+                : countX;
         Component title = groupName(line.group()).copy().withStyle(ChatFormatting.BOLD);
         graphics.drawString(this.font, this.fit(title, left - this.contentX - 22), this.contentX + 16, y + 5,
                 0xFF000000 | COLOR, false);
@@ -326,7 +328,7 @@ public final class MobRulesScreen extends MobRulesState {
                 }
                 this.area.hit(this.contentX, y, width, ROW, () -> this.pick(row));
             } else {
-                Tip pills = this.pills(graphics, row, right, y + 3, mouseX, mouseY);
+                Tip pills = this.pills(graphics, row, right, y + 3, mouseX, mouseY, over);
                 right = pills.left() - 4;
                 if (pills.tip() != null) {
                     tip = pills.tip();
@@ -356,16 +358,18 @@ public final class MobRulesScreen extends MobRulesState {
             right -= this.font.width(reset) + 6;
             this.smallButton(graphics, reset, right, y - 1, mouseX, mouseY, editable, () -> this.page(
                     MobPageActionPayload.RESET));
-            Component undo = Component.translatable(PREFIX + "mobs.undo", ClientMobTable.steps());
-            right -= this.font.width(undo) + 10;
-            this.smallButton(graphics, undo, right, y - 1, mouseX, mouseY, editable && ClientMobTable.steps() > 0,
-                    () -> this.page(MobPageActionPayload.UNDO));
+            if (ClientMobTable.steps() > 0) {
+                Component undo = Component.translatable(PREFIX + "mobs.undo", ClientMobTable.steps());
+                right -= this.font.width(undo) + 10;
+                this.smallButton(graphics, undo, right, y - 1, mouseX, mouseY, editable,
+                        () -> this.page(MobPageActionPayload.UNDO));
+            }
             Component everyone = Component.translatable(PREFIX + "mobs.everyone."
                     + (MobRules.everyoneHostile() ? "on" : "off"));
             right -= this.font.width(everyone) + 10;
             this.smallButton(graphics, everyone, right, y - 1, mouseX, mouseY, editable,
                     () -> this.page(MobPageActionPayload.EVERYONE));
-            graphics.drawString(this.font, this.fit(Component.translatable(PREFIX + "mobs.pick", this.creatures.size()),
+            graphics.drawString(this.font, this.fit(Component.translatable(PREFIX + "mobs.pick"),
                     right - this.contentX - 8), this.contentX, y, MUTED, false);
             return;
         }
@@ -404,9 +408,9 @@ public final class MobRulesScreen extends MobRulesState {
     private record Tip(int left, @Nullable Component tip) {
     }
 
-    // Friendly, Neutral and Hostile for one target, right-aligned to `right`, the lit one how the picked creature
-    // stands to it, a line under the game's own.
-    private Tip pills(GuiGraphics graphics, Row target, int right, int y, int mouseX, int mouseY) {
+    // How the picked creature stands to one target, right-aligned to `right`: only that while the mouse is elsewhere;
+    // on the row Friendly, Neutral and Hostile to pick from, the lit one how it stands, a line under the game's own.
+    private Tip pills(GuiGraphics graphics, Row target, int right, int y, int mouseX, int mouseY, boolean open) {
         Row actor = this.picked;
         Standing now = this.shown(actor, target);
         Standing own = ClientMobTable.of(actor.index(), target.index());
@@ -418,6 +422,13 @@ public final class MobRulesScreen extends MobRulesState {
         int left = x;
         Component tip = null;
         boolean editable = this.editable();
+        if (!open || !editable) {
+            int at = right - each;
+            graphics.fill(at, y, at + each, y + 12, 0xFF000000 | dim(now.rgb()));
+            Component text = label(now);
+            graphics.drawString(this.font, text, at + (each - this.font.width(text)) / 2, y + 2, 0xFFFFFFFF, false);
+            return new Tip(left, null);
+        }
         for (Standing standing : ORDER) {
             boolean lit = standing == now;
             boolean over = editable && this.area.over(mouseX, mouseY, x, y, each, 12);

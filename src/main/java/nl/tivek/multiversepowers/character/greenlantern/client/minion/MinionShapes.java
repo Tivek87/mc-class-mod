@@ -117,8 +117,8 @@ final class MinionShapes {
         List<Mesh> m = new ArrayList<>();
         for (int k = 0; k < 3; k++) {
             double y = 1.96 + k * 0.105;
-            double wide = 0.34 + 0.04 * k;
-            double deep = 0.24 + 0.025 * k;
+            double wide = 0.27 + 0.05 * k;
+            double deep = 0.21 + 0.03 * k;
             m.add(Mesh.bevel(-wide, y, -deep, wide, y + 0.09, deep, 0.03, 1.0 + 0.04 * k));
         }
         m.add(Mesh.cylinder(12, 0.2, 1.94, 2.28, 0.8));
@@ -194,16 +194,19 @@ final class MinionShapes {
         return Mesh.slab(x0, x1, cut, bright, outline).turned(0.0, 1.0, 0.0, 90.0);
     }
 
-    // The upper arm: a tiled column under two layered plates over the shoulder, the elbow's round joint at its end.
+    // The upper arm: a tiled column under a rounded pauldron over the shoulder, ringed at its rim with a ridge along
+    // its crown, a plate below it, the elbow's round joint at its end.
     private static Mesh[] upper() {
         List<Mesh> m = new ArrayList<>();
         m.add(MechParts.skin(UPPER_SKIN, 8, 4, 231, 1.0));
-        m.add(Mesh.bevel(-0.18, -0.03, -0.25, 0.25, 0.1, 0.25, 0.035, 1.05).turned(0.0, 0.0, 1.0, -26.0)
-                .moved(0.06, 0.08, 0.0));
-        m.add(Mesh.bevel(-0.1, -0.04, -0.21, 0.23, 0.05, 0.21, 0.025, 1.12).turned(0.0, 0.0, 1.0, -40.0)
-                .moved(0.14, -0.12, 0.0));
-        m.add(Mesh.bevel(0.19, 0.06, -0.03, 0.27, 0.13, 0.03, 0.012, 1.4).turned(0.0, 0.0, 1.0, -26.0)
-                .moved(0.06, 0.08, 0.0));
+        m.add(Mesh.lathe(18, 1.05, 0.0, 0.17, 0.15, 0.155, 0.25, 0.1, 0.3, 0.01, 0.31, -0.12, 0.0, -0.12)
+                .scaled(1.0, 1.0, 1.12).turned(0.0, 0.0, 1.0, -22.0).moved(0.08, 0.04, 0.0));
+        m.add(Mesh.torus(18, 4, 0.31, 0.028, 1.35).scaled(1.0, 1.0, 1.12).moved(0.0, -0.12, 0.0)
+                .turned(0.0, 0.0, 1.0, -22.0).moved(0.08, 0.04, 0.0));
+        m.add(Mesh.bevel(-0.03, 0.12, -0.24, 0.03, 0.2, 0.24, 0.015, 1.4).turned(0.0, 0.0, 1.0, -22.0)
+                .moved(0.08, 0.04, 0.0));
+        m.add(Mesh.bevel(-0.1, -0.04, -0.2, 0.23, 0.05, 0.2, 0.025, 1.12).turned(0.0, 0.0, 1.0, -40.0)
+                .moved(0.16, -0.2, 0.0));
         m.add(Mesh.cylinder(14, 0.13, -0.15, 0.15, 0.95).alongX().moved(0.0, -UPPER, 0.0));
         m.add(Mesh.torus(14, 4, 0.13, 0.025, 1.4).alongX().moved(0.16, -UPPER, 0.0));
         m.add(Mesh.torus(14, 4, 0.13, 0.025, 1.4).alongX().moved(-0.16, -UPPER, 0.0));
@@ -288,12 +291,12 @@ final class MinionShapes {
     // The foot under the ankle: a sole, a plated top, two toe caps and a spur at the heel, round the ankle's joint.
     private static Mesh[] foot() {
         List<Mesh> m = new ArrayList<>();
-        m.add(Mesh.bevel(-0.17, -0.15, -0.22, 0.17, -0.06, 0.3, 0.03, 1.0));
-        m.add(Mesh.bevel(-0.14, -0.08, -0.16, 0.14, 0.04, 0.2, 0.04, 1.05));
-        for (double x : new double[] { 0.085, -0.085 }) {
-            m.add(Mesh.bevel(x - 0.075, -0.15, 0.28, x + 0.075, -0.04, 0.42, 0.03, 1.12));
+        m.add(Mesh.bevel(-0.2, -0.15, -0.26, 0.2, -0.06, 0.36, 0.03, 1.0));
+        m.add(Mesh.bevel(-0.16, -0.08, -0.19, 0.16, 0.04, 0.24, 0.04, 1.05));
+        for (double x : new double[] { 0.1, -0.1 }) {
+            m.add(Mesh.bevel(x - 0.088, -0.15, 0.33, x + 0.088, -0.04, 0.5, 0.03, 1.12));
         }
-        m.add(Mesh.bevel(-0.06, -0.15, -0.32, 0.06, -0.05, -0.2, 0.02, 1.15));
+        m.add(Mesh.bevel(-0.07, -0.15, -0.37, 0.07, -0.05, -0.24, 0.02, 1.15));
         m.add(Mesh.cylinder(12, 0.09, -0.15, 0.15, 0.95).alongX());
         return m.toArray(Mesh[]::new);
     }

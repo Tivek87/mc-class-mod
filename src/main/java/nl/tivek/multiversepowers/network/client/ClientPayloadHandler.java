@@ -34,6 +34,9 @@ import nl.tivek.multiversepowers.classes.client.ClientClassData;
 import nl.tivek.multiversepowers.classes.client.ClientWelcome;
 import nl.tivek.multiversepowers.config.ModConfigs;
 import nl.tivek.multiversepowers.config.WorldSettingsPayload;
+import nl.tivek.multiversepowers.config.transfer.SettingsExportPayload;
+import nl.tivek.multiversepowers.config.transfer.SettingsResultPayload;
+import nl.tivek.multiversepowers.config.transfer.client.SavedSettings;
 import nl.tivek.multiversepowers.engine.client.fx.ParticleAmount;
 import nl.tivek.multiversepowers.engine.client.fx.VoiceLine;
 import nl.tivek.multiversepowers.engine.client.pose.Tired;
@@ -74,7 +77,14 @@ import nl.tivek.multiversepowers.spell.client.ClientSpellCooldowns;
 import nl.tivek.multiversepowers.spell.client.SpellFx;
 import nl.tivek.multiversepowers.spell.dark.VoidStatePayload;
 import nl.tivek.multiversepowers.spell.dark.client.ClientVoidState;
+import nl.tivek.multiversepowers.stage.LampOpenPayload;
+import nl.tivek.multiversepowers.stage.client.LampScreen;
 import nl.tivek.multiversepowers.stamina.StaminaCostPayload;
+import nl.tivek.multiversepowers.schematic.client.SchematicClient;
+import nl.tivek.multiversepowers.schematic.net.SchematicFilePayload;
+import nl.tivek.multiversepowers.schematic.net.SchematicListPayload;
+import nl.tivek.multiversepowers.schematic.net.SchematicNoticePayload;
+import nl.tivek.multiversepowers.schematic.net.SchematicStatusPayload;
 import nl.tivek.multiversepowers.stamina.client.StaminaClient;
 import nl.tivek.multiversepowers.testfight.TestFightPayload;
 import nl.tivek.multiversepowers.testfight.client.FightClient;
@@ -107,6 +117,10 @@ public final class ClientPayloadHandler {
     public static void handleHeavy(HeavyPayload payload, IPayloadContext context) {
         context.enqueueWork(() -> ClientHeavy.told(payload.owner(), payload.weapon(), payload.move(), payload.age(),
                 payload.yaw(), payload.ammo()));
+    }
+
+    public static void handleLampOpen(LampOpenPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> LampScreen.open(payload.pos()));
     }
 
     public static void handleCaptive(CaptivePayload payload, IPayloadContext context) {
@@ -260,6 +274,14 @@ public final class ClientPayloadHandler {
         });
     }
 
+    public static void handleSettingsExport(SettingsExportPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> SavedSettings.receive(payload));
+    }
+
+    public static void handleSettingsResult(SettingsResultPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> SavedSettings.result(payload.result(), payload.count()));
+    }
+
     public static void handleWorldSettings(WorldSettingsPayload payload, IPayloadContext context) {
         context.enqueueWork(() -> {
             if (Minecraft.getInstance().isLocalServer() || !ModConfigs.worldFiles().containsKey(payload.file())) {
@@ -271,5 +293,21 @@ public final class ClientPayloadHandler {
                 StaminaClient.onConfigUpdated();
             }
         });
+    }
+
+    public static void handleSchematicList(SchematicListPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> SchematicClient.onList(payload));
+    }
+
+    public static void handleSchematicFile(SchematicFilePayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> SchematicClient.onFile(payload));
+    }
+
+    public static void handleSchematicStatus(SchematicStatusPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> SchematicClient.onStatus(payload));
+    }
+
+    public static void handleSchematicNotice(SchematicNoticePayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> SchematicClient.onNotice(payload));
     }
 }

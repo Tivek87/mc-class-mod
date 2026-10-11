@@ -129,13 +129,18 @@ public final class HandMarvelLight {
 
     private static void eye(LanternPainter painter, HandPose.Place place, double clock, double bright,
             double apart) {
+        eyeball(painter, place, HandPose.eyeOpen(clock), HandPose.eyeWild(clock), clock, bright, apart);
+    }
+
+    // The eye in a palm and its lids, open 0 to 1, trembling as it goes wild.
+    public static void eyeball(LanternPainter painter, HandPose.Place place, double opened, double wild, double clock,
+            double bright, double apart) {
         Vec3 at = HandPose.EYE_POINT;
         ConstructPainter.Frame eye = handFrame(place, false).moved(at.x, at.y, at.z);
-        double wild = HandPose.eyeWild(clock);
         if (wild > 0.0) {
             eye = eye.turned(0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.06 * wild * Math.sin(clock * 3.1));
         }
-        double open = HandPose.eyeOpen(clock) * LID_OPENS;
+        double open = opened * LID_OPENS;
         ConstructPainter.Frame upper = eye.turned(0.0, 0.0, 0.0, 1.0, 0.0, 0.0, -open);
         ConstructPainter.Frame lower = eye.turned(0.0, 0.0, 0.0, 1.0, 0.0, 0.0, open);
         // The eyeball paler than the hand round it, so it stands out once the lids part.

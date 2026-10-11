@@ -1,0 +1,15 @@
+{
+	"credit": "Built by scripts/models/stagelights/StageLightModels.java",
+	"ambientocclusion": false,
+	"textures": {
+		"mirror": "welcomescreen:block/stage_mirror",
+		"particle": "welcomescreen:block/stage_mirror"
+	},
+	"elements": [
+		{"from": [3.50, 6, 5], "to": [12.50, 12, 11], "faces": {"north": {"uv": [3.50, 4, 12.50, 10], "texture": "#mirror"}, "east": {"uv": [5, 4, 11, 10], "texture": "#mirror"}, "south": {"uv": [3.50, 4, 12.50, 10], "texture": "#mirror"}, "west": {"uv": [5, 4, 11, 10], "texture": "#mirror"}, "up": {"uv": [3.50, 5, 12.50, 11], "texture": "#mirror"}, "down": {"uv": [3.50, 5, 12.50, 11], "texture": "#mirror"}}},
+		{"from": [5, 6, 3.50], "to": [11, 12, 12.50], "faces": {"north": {"uv": [5, 4, 11, 10], "texture": "#mirror"}, "east": {"uv": [3.50, 4, 12.50, 10], "texture": "#mirror"}, "south": {"uv": [5, 4, 11, 10], "texture": "#mirror"}, "west": {"uv": [3.50, 4, 12.50, 10], "texture": "#mirror"}, "up": {"uv": [5, 3.50, 11, 12.50], "texture": "#mirror"}, "down": {"uv": [5, 3.50, 11, 12.50], "texture": "#mirror"}}},
+		{"from": [3.50, 6, 5], "to": [12.50, 12, 11], "rotation": {"angle": 45, "axis": "y", "origin": [8, 8, 8]}, "faces": {"north": {"uv": [3.50, 4, 12.50, 10], "texture": "#mirror"}, "east": {"uv": [5, 4, 11, 10], "texture": "#mirror"}, "south": {"uv": [3.50, 4, 12.50, 10], "texture": "#mirror"}, "west": {"uv": [5, 4, 11, 10], "texture": "#mirror"}, "up": {"uv": [3.50, 5, 12.50, 11], "texture": "#mirror"}, "down": {"uv": [3.50, 5, 12.50, 11], "texture": "#mirror"}}},
+		{"from": [5, 6, 3.50], "to": [11, 12, 12.50], "rotation": {"angle": 45, "axis": "y", "origin": [8, 8, 8]}, "faces": {"north": {"uv": [5, 4, 11, 10], "texture": "#mirror"}, "east": {"uv": [3.50, 4, 12.50, 10], "texture": "#mirror"}, "south": {"uv": [5, 4, 11, 10], "texture": "#mirror"}, "west": {"uv": [3.50, 4, 12.50, 10], "texture": "#mirror"}, "up": {"uv": [5, 3.50, 11, 12.50], "texture": "#mirror"}, "down": {"uv": [5, 3.50, 11, 12.50], "texture": "#mirror"}}},
+		{"from": [5, 4.50, 5], "to": [11, 13.50, 11], "faces": {"north": {"uv": [5, 2.50, 11, 11.50], "texture": "#mirror"}, "east": {"uv": [5, 2.50, 11, 11.50], "texture": "#mirror"}, "south": {"uv": [5, 2.50, 11, 11.50], "texture": "#mirror"}, "west": {"uv": [5, 2.50, 11, 11.50], "texture": "#mirror"}, "up": {"uv": [5, 5, 11, 11], "texture": "#mirror"}, "down": {"uv": [5, 5, 11, 11], "texture": "#mirror"}}}
+	]
+}

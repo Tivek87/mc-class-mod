@@ -23,7 +23,7 @@ import static nl.tivek.multiversepowers.character.greenlantern.ability.hands.Gia
 import static nl.tivek.multiversepowers.character.greenlantern.ability.hands.GiantHands.GRAB_WIDE;
 import static nl.tivek.multiversepowers.character.greenlantern.ability.hands.GiantHands.SCALE;
 
-final class GiantHand extends GiantHandTears {
+final class GiantHand extends GiantHandWonders {
     private static final double BURST_REACH = 4.5;
     private static final double BURST_DAMAGE = 2.5;
     private static final double BURST_OUT = 1.8;
@@ -75,7 +75,9 @@ final class GiantHand extends GiantHandTears {
                     HandPose.DRAG, HandPose.RAGDOLL, HandPose.CATCH, HandPose.RINGHOLD, HandPose.CLAP,
                     HandPose.FINGERGUN, HandPose.SCISSORS, HandPose.SWALLOW, HandPose.RINGBEAM, HandPose.SCOOP,
                     HandPose.EYE, HandPose.MEGAPHONE, HandPose.PUPPETEER, HandPose.RINGHAMMER, HandPose.RINGCHAINS,
-                    HandPose.TEAR, HandPose.MAW, HandPose.RIFT, HandPose.COSMOS -> this.trick(level);
+                    HandPose.TEAR, HandPose.MAW, HandPose.RIFT, HandPose.COSMOS, HandPose.ABYSS, HandPose.BEAMEYE,
+                    HandPose.GUNSLINGER, HandPose.BAT, HandPose.HOURGLASS, HandPose.GRAVITY,
+                    HandPose.BLACKHOLE -> this.trick(level);
             default -> {
                 for (int hit : HandPose.POUND_HITS) {
                     if (this.t == hit) {

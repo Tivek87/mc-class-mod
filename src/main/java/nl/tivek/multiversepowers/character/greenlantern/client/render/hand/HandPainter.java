@@ -10,6 +10,8 @@ import nl.tivek.multiversepowers.character.greenlantern.client.render.LanternPai
 import nl.tivek.multiversepowers.character.greenlantern.client.render.hand.light.HandFeatLight;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.hand.light.HandMarvelLight;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.hand.light.HandRingLight;
+import nl.tivek.multiversepowers.character.greenlantern.client.render.hand.light.HandShotLight;
+import nl.tivek.multiversepowers.character.greenlantern.client.render.hand.light.HandWonderLight;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.hand.light.HandTrickLight;
 import nl.tivek.multiversepowers.character.greenlantern.client.victim.HandVictims;
 import nl.tivek.multiversepowers.character.greenlantern.construct.ConstructPayload;
@@ -92,6 +94,8 @@ public final class HandPainter {
         drawHand(painter, pose, place, false, 1.0, -1.0, 0, false, holdingBox);
         HandMarvelLight.parts(painter, variant, pose, place, clock, 1.0, -1.0);
         HandRingLight.parts(painter, hand, pose, place, base, facing, clock, 1.0, -1.0);
+        HandShotLight.parts(painter, variant, place, clock, 1.0, -1.0);
+        HandWonderLight.parts(painter, hand, place, base, facing, clock, reach, 1.0, -1.0);
         painter.noClip();
         painter.ambient(0.0);
         painter.glare(0.0);
@@ -100,6 +104,8 @@ public final class HandPainter {
         HandFeatLight.blows(painter, variant, base, facing, clock, scale, 1.0);
         HandMarvelLight.blows(painter, hand.id(), variant, pose, place, clock, ring, 1.0);
         HandRingLight.blows(painter, hand, pose, place, base, facing, clock, reach, 1.0);
+        HandShotLight.blows(painter, hand.id(), variant, place, base, facing, clock, 1.0);
+        HandWonderLight.blows(painter, hand, pose, place, base, facing, clock, reach, 1.0);
     }
 
     // A hand out of the ground or a wall is cut at its surface, one out of a portal at the portal.
@@ -301,6 +307,8 @@ public final class HandPainter {
         HandFeatLight.blows(painter, hand.variant(), base, facing, clock, scale, fade);
         HandMarvelLight.blows(painter, hand.id(), hand.variant(), pose, place, clock, null, fade);
         HandRingLight.blows(painter, hand, pose, place, base, facing, clock, reach, fade);
+        HandShotLight.blows(painter, hand.id(), hand.variant(), place, base, facing, clock, fade);
+        HandWonderLight.blows(painter, hand, pose, place, base, facing, clock, reach, fade);
         painter.glare(0.5 * Math.max(0.0, 1.0 - since / 5.0));
         painter.ambient(GLOWS);
         painter.fling(1.8);
@@ -308,6 +316,8 @@ public final class HandPainter {
         drawHand(painter, pose, place, false, 1.2, apart, 0, false);
         HandMarvelLight.parts(painter, hand.variant(), pose, place, clock, 1.2, apart);
         HandRingLight.parts(painter, hand, pose, place, base, facing, clock, 1.2, apart);
+        HandShotLight.parts(painter, hand.variant(), place, clock, 1.2, apart);
+        HandWonderLight.parts(painter, hand, place, base, facing, clock, reach, 1.2, apart);
         painter.noClip();
         painter.fling(1.0);
         painter.ambient(0.0);

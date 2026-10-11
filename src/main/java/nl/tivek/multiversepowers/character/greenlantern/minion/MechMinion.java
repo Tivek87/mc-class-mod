@@ -65,11 +65,13 @@ public final class MechMinion extends PathfinderMob {
     private static final EntityDataAccessor<Integer> CAME = SynchedEntityData.defineId(MechMinion.class,
             EntityDataSerializers.INT);
     public static final int GROUND = 0;
+    // How many ticks coming up out of the ground takes.
+    public static final double RISE = 36.0;
     public static final int HATCH = 1;
     // Below these parts of its health it shows its first, second and third crack.
     public static final float[] CRACKS = { 0.75F, 0.5F, 0.25F };
     private static final float MEND = 10.0F;
-    private static final double WILD_HEALTH = 30.0;
+    private static final double WILD_HEALTH = 60.0;
     private static final float WILD_DAMAGE = 3.5F;
     // It breaks into pieces over this many ticks once dead.
     public static final int BREAK = 16;
@@ -103,9 +105,9 @@ public final class MechMinion extends PathfinderMob {
     }
 
     private static void onAttributes(EntityAttributeCreationEvent event) {
-        event.put(TYPE.get(), Mob.createMobAttributes().add(Attributes.MAX_HEALTH, 30.0)
+        event.put(TYPE.get(), Mob.createMobAttributes().add(Attributes.MAX_HEALTH, 60.0)
                 .add(Attributes.MOVEMENT_SPEED, 0.3).add(Attributes.ATTACK_DAMAGE, 2.5).add(Attributes.ARMOR, 4.0)
-                .add(Attributes.KNOCKBACK_RESISTANCE, 0.5).add(Attributes.FOLLOW_RANGE, 32.0)
+                .add(Attributes.KNOCKBACK_RESISTANCE, 0.5).add(Attributes.FOLLOW_RANGE, 64.0)
                 .add(Attributes.STEP_HEIGHT, 1.1).build());
     }
 
@@ -154,6 +156,11 @@ public final class MechMinion extends PathfinderMob {
     // How it came: out of the mech's hatch, or up out of the ground (a spawn egg, a summon).
     public int came() {
         return this.entityData.get(CAME);
+    }
+
+    // Whether it stands whole: one coming up out of the ground fights only once it is out.
+    boolean risen() {
+        return this.came() != GROUND || this.since(0.0F) >= RISE;
     }
 
     // How cracked it is: 0 whole, up to 3 nearly broken.

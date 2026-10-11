@@ -1,0 +1,16 @@
+{
+	"credit": "Built by scripts/models/stagelights/StageLightModels.java",
+	"ambientocclusion": false,
+	"textures": {
+		"dark": "welcomescreen:block/stage_dark",
+		"metal": "welcomescreen:block/stage_metal",
+		"particle": "welcomescreen:block/stage_dark"
+	},
+	"elements": [
+		{"from": [1, 2, 6.50], "to": [2.50, 11, 9.50], "faces": {"north": {"uv": [13.50, 5, 15, 14], "texture": "#dark"}, "east": {"uv": [6.50, 5, 9.50, 14], "texture": "#dark"}, "south": {"uv": [1, 5, 2.50, 14], "texture": "#dark"}, "west": {"uv": [6.50, 5, 9.50, 14], "texture": "#dark"}, "up": {"uv": [1, 6.50, 2.50, 9.50], "texture": "#dark"}, "down": {"uv": [1, 6.50, 2.50, 9.50], "texture": "#dark"}}},
+		{"from": [13.50, 2, 6.50], "to": [15, 11, 9.50], "faces": {"north": {"uv": [1, 5, 2.50, 14], "texture": "#dark"}, "east": {"uv": [6.50, 5, 9.50, 14], "texture": "#dark"}, "south": {"uv": [13.50, 5, 15, 14], "texture": "#dark"}, "west": {"uv": [6.50, 5, 9.50, 14], "texture": "#dark"}, "up": {"uv": [13.50, 6.50, 15, 9.50], "texture": "#dark"}, "down": {"uv": [13.50, 6.50, 15, 9.50], "texture": "#dark"}}},
+		{"from": [1, 2, 6.50], "to": [15, 3.50, 9.50], "faces": {"north": {"uv": [1, 12.50, 15, 14], "texture": "#dark"}, "east": {"uv": [6.50, 12.50, 9.50, 14], "texture": "#dark"}, "south": {"uv": [1, 12.50, 15, 14], "texture": "#dark"}, "west": {"uv": [6.50, 12.50, 9.50, 14], "texture": "#dark"}, "up": {"uv": [1, 6.50, 15, 9.50], "texture": "#dark"}, "down": {"uv": [1, 6.50, 15, 9.50], "texture": "#dark"}}},
+		{"from": [1.20, 5.50, 7], "to": [2.60, 7.50, 9], "faces": {"north": {"uv": [13.40, 8.50, 14.80, 10.50], "texture": "#metal"}, "east": {"uv": [7, 8.50, 9, 10.50], "texture": "#metal"}, "south": {"uv": [1.20, 8.50, 2.60, 10.50], "texture": "#metal"}, "west": {"uv": [7, 8.50, 9, 10.50], "texture": "#metal"}, "up": {"uv": [1.20, 7, 2.60, 9], "texture": "#metal"}, "down": {"uv": [1.20, 7, 2.60, 9], "texture": "#metal"}}},
+		{"from": [13.40, 5.50, 7], "to": [14.80, 7.50, 9], "faces": {"north": {"uv": [1.20, 8.50, 2.60, 10.50], "texture": "#metal"}, "east": {"uv": [7, 8.50, 9, 10.50], "texture": "#metal"}, "south": {"uv": [13.40, 8.50, 14.80, 10.50], "texture": "#metal"}, "west": {"uv": [7, 8.50, 9, 10.50], "texture": "#metal"}, "up": {"uv": [13.40, 7, 14.80, 9], "texture": "#metal"}, "down": {"uv": [13.40, 7, 14.80, 9], "texture": "#metal"}}}
+	]
+}

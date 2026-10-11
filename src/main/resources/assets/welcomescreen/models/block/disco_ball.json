@@ -1,0 +1,14 @@
+{
+	"credit": "Built by scripts/models/stagelights/StageLightModels.java",
+	"parent": "minecraft:block/block",
+	"ambientocclusion": false,
+	"textures": {
+		"metal": "welcomescreen:block/stage_metal",
+		"dark": "welcomescreen:block/stage_dark",
+		"particle": "welcomescreen:block/stage_metal"
+	},
+	"elements": [
+		{"from": [5, 0, 5], "to": [11, 1, 11], "faces": {"north": {"uv": [5, 15, 11, 16], "texture": "#metal"}, "east": {"uv": [5, 15, 11, 16], "texture": "#metal"}, "south": {"uv": [5, 15, 11, 16], "texture": "#metal"}, "west": {"uv": [5, 15, 11, 16], "texture": "#metal"}, "up": {"uv": [5, 5, 11, 11], "texture": "#metal"}, "down": {"uv": [5, 5, 11, 11], "texture": "#metal"}}},
+		{"from": [7.50, 1, 7.50], "to": [8.50, 4.50, 8.50], "faces": {"north": {"uv": [7.50, 11.50, 8.50, 15], "texture": "#dark"}, "east": {"uv": [7.50, 11.50, 8.50, 15], "texture": "#dark"}, "south": {"uv": [7.50, 11.50, 8.50, 15], "texture": "#dark"}, "west": {"uv": [7.50, 11.50, 8.50, 15], "texture": "#dark"}, "up": {"uv": [7.50, 7.50, 8.50, 8.50], "texture": "#dark"}, "down": {"uv": [7.50, 7.50, 8.50, 8.50], "texture": "#dark"}}}
+	]
+}

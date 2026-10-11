@@ -1,0 +1,14 @@
+{
+	"credit": "Built by scripts/models/stagelights/StageLightModels.java",
+	"ambientocclusion": false,
+	"textures": {
+		"metal": "welcomescreen:block/stage_metal",
+		"glass": "welcomescreen:block/stage_glass",
+		"dark": "welcomescreen:block/stage_dark",
+		"particle": "welcomescreen:block/stage_metal"
+	},
+	"elements": [
+		{"from": [4.50, 4, 4.50], "to": [11.50, 13, 11.50], "faces": {"north": {"uv": [4.50, 3, 11.50, 12], "texture": "#metal"}, "east": {"uv": [4.50, 3, 11.50, 12], "texture": "#metal"}, "south": {"uv": [4.50, 3, 11.50, 12], "texture": "#metal"}, "west": {"uv": [4.50, 3, 11.50, 12], "texture": "#metal"}, "up": {"uv": [4.50, 4.50, 11.50, 11.50], "texture": "#glass"}, "down": {"uv": [4.50, 4.50, 11.50, 11.50], "texture": "#metal"}}},
+		{"from": [4, 12, 4], "to": [12, 13.50, 12], "faces": {"north": {"uv": [4, 2.50, 12, 4], "texture": "#dark"}, "east": {"uv": [4, 2.50, 12, 4], "texture": "#dark"}, "south": {"uv": [4, 2.50, 12, 4], "texture": "#dark"}, "west": {"uv": [4, 2.50, 12, 4], "texture": "#dark"}, "up": {"uv": [4, 4, 12, 12], "texture": "#glass"}, "down": {"uv": [4, 4, 12, 12], "texture": "#dark"}}}
+	]
+}

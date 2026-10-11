@@ -1,0 +1,22 @@
+{
+	"credit": "Built by scripts/models/stagelights/StageLightModels.java",
+	"parent": "minecraft:block/block",
+	"ambientocclusion": false,
+	"textures": {
+		"metal": "welcomescreen:block/stage_metal",
+		"vent": "welcomescreen:block/stage_vent",
+		"dark": "welcomescreen:block/stage_dark",
+		"glass": "welcomescreen:block/stage_glass",
+		"particle": "welcomescreen:block/stage_metal"
+	},
+	"elements": [
+		{"from": [2, 0, 2], "to": [14, 3, 14], "faces": {"north": {"uv": [2, 13, 14, 16], "texture": "#metal"}, "east": {"uv": [2, 13, 14, 16], "texture": "#metal"}, "south": {"uv": [2, 13, 14, 16], "texture": "#metal"}, "west": {"uv": [2, 13, 14, 16], "texture": "#metal"}, "up": {"uv": [2, 2, 14, 14], "texture": "#vent"}, "down": {"uv": [2, 2, 14, 14], "texture": "#metal"}}},
+		{"from": [3, 3, 6.50], "to": [4.50, 12, 9.50], "faces": {"north": {"uv": [11.50, 4, 13, 13], "texture": "#dark"}, "east": {"uv": [6.50, 4, 9.50, 13], "texture": "#dark"}, "south": {"uv": [3, 4, 4.50, 13], "texture": "#dark"}, "west": {"uv": [6.50, 4, 9.50, 13], "texture": "#dark"}, "up": {"uv": [3, 6.50, 4.50, 9.50], "texture": "#dark"}, "down": {"uv": [3, 6.50, 4.50, 9.50], "texture": "#dark"}}},
+		{"from": [11.50, 3, 6.50], "to": [13, 12, 9.50], "faces": {"north": {"uv": [3, 4, 4.50, 13], "texture": "#dark"}, "east": {"uv": [6.50, 4, 9.50, 13], "texture": "#dark"}, "south": {"uv": [11.50, 4, 13, 13], "texture": "#dark"}, "west": {"uv": [6.50, 4, 9.50, 13], "texture": "#dark"}, "up": {"uv": [11.50, 6.50, 13, 9.50], "texture": "#dark"}, "down": {"uv": [11.50, 6.50, 13, 9.50], "texture": "#dark"}}},
+		{"from": [3, 3, 6.50], "to": [13, 4.50, 9.50], "faces": {"north": {"uv": [3, 11.50, 13, 13], "texture": "#dark"}, "east": {"uv": [6.50, 11.50, 9.50, 13], "texture": "#dark"}, "south": {"uv": [3, 11.50, 13, 13], "texture": "#dark"}, "west": {"uv": [6.50, 11.50, 9.50, 13], "texture": "#dark"}, "up": {"uv": [3, 6.50, 13, 9.50], "texture": "#dark"}, "down": {"uv": [3, 6.50, 13, 9.50], "texture": "#dark"}}},
+		{"from": [3.20, 6.50, 7], "to": [4.60, 8.50, 9], "faces": {"north": {"uv": [11.40, 7.50, 12.80, 9.50], "texture": "#metal"}, "east": {"uv": [7, 7.50, 9, 9.50], "texture": "#metal"}, "south": {"uv": [3.20, 7.50, 4.60, 9.50], "texture": "#metal"}, "west": {"uv": [7, 7.50, 9, 9.50], "texture": "#metal"}, "up": {"uv": [3.20, 7, 4.60, 9], "texture": "#metal"}, "down": {"uv": [3.20, 7, 4.60, 9], "texture": "#metal"}}},
+		{"from": [11.40, 6.50, 7], "to": [12.80, 8.50, 9], "faces": {"north": {"uv": [3.20, 7.50, 4.60, 9.50], "texture": "#metal"}, "east": {"uv": [7, 7.50, 9, 9.50], "texture": "#metal"}, "south": {"uv": [11.40, 7.50, 12.80, 9.50], "texture": "#metal"}, "west": {"uv": [7, 7.50, 9, 9.50], "texture": "#metal"}, "up": {"uv": [11.40, 7, 12.80, 9], "texture": "#metal"}, "down": {"uv": [11.40, 7, 12.80, 9], "texture": "#metal"}}},
+		{"from": [5, 5, 5], "to": [11, 14, 11], "faces": {"north": {"uv": [5, 2, 11, 11], "texture": "#vent"}, "east": {"uv": [5, 2, 11, 11], "texture": "#vent"}, "south": {"uv": [5, 2, 11, 11], "texture": "#vent"}, "west": {"uv": [5, 2, 11, 11], "texture": "#vent"}, "up": {"uv": [5, 5, 11, 11], "texture": "#glass"}, "down": {"uv": [5, 5, 11, 11], "texture": "#vent"}}},
+		{"from": [4.50, 12, 4.50], "to": [11.50, 14.50, 11.50], "faces": {"north": {"uv": [4.50, 1.50, 11.50, 4], "texture": "#dark"}, "east": {"uv": [4.50, 1.50, 11.50, 4], "texture": "#dark"}, "south": {"uv": [4.50, 1.50, 11.50, 4], "texture": "#dark"}, "west": {"uv": [4.50, 1.50, 11.50, 4], "texture": "#dark"}, "up": {"uv": [4.50, 4.50, 11.50, 11.50], "texture": "#glass"}, "down": {"uv": [4.50, 4.50, 11.50, 11.50], "texture": "#dark"}}}
+	]
+}

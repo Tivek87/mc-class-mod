@@ -1,0 +1,10 @@
+{
+	"variants": {
+		"facing=up": {"model": "welcomescreen:block/disco_ball"},
+		"facing=down": {"model": "welcomescreen:block/disco_ball", "x": 180},
+		"facing=north": {"model": "welcomescreen:block/disco_ball", "x": 90},
+		"facing=south": {"model": "welcomescreen:block/disco_ball", "x": 90, "y": 180},
+		"facing=west": {"model": "welcomescreen:block/disco_ball", "x": 90, "y": 270},
+		"facing=east": {"model": "welcomescreen:block/disco_ball", "x": 90, "y": 90}
+	}
+}

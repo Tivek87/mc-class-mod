@@ -10,7 +10,7 @@ import nl.tivek.multiversepowers.engine.math.Vectors;
 
 // Hands that come as a group out of portals round one creature: four that hold it spread out while a fifth sets its
 // ring on it and blasts it away, two that clap it between them, two that tear it in two, or two that tear open a rift
-// for it (HandRift). Server and client both work them out from here.
+// for it (HandRift) or a pit under it (HandAbyss). Server and client both work them out from here.
 public final class HandGroup {
     private static final double SLOW = 1.6;
     // Ring hold, in beats.
@@ -75,7 +75,7 @@ public final class HandGroup {
     public static boolean is(int variant) {
         int move = HandPose.move(variant);
         return move == HandPose.RINGHOLD || move == HandPose.CLAP || move == HandPose.TEAR || move == HandPose.RIFT
-                || move == HandPose.COSMOS;
+                || move == HandPose.COSMOS || move == HandPose.ABYSS;
     }
 
     // The creature's height rides in the tear's variant, in tenths of a block, so both sides agree where its ends are.
@@ -134,6 +134,7 @@ public final class HandGroup {
             case HandPose.TEAR -> new int[] { TEAR_GRABS, TEARS };
             case HandPose.RIFT -> new int[] { HandRift.DIGS, HandRift.CLOSES };
             case HandPose.COSMOS -> new int[] { HandCosmos.DRAWS, HandCosmos.OPENS };
+            case HandPose.ABYSS -> new int[] { HandAbyss.DIGS, HandAbyss.CLOSES };
             default -> new int[] { HandPose.firstAct(variant), RING_PRESSES };
         };
     }
@@ -159,6 +160,7 @@ public final class HandGroup {
             case HandPose.TEAR -> tear(variant, center, facing, t);
             case HandPose.RIFT -> HandRift.hands(variant, center, facing, t);
             case HandPose.COSMOS -> HandCosmos.hands(center, facing, t);
+            case HandPose.ABYSS -> HandAbyss.hands(center, facing, t);
             default -> ringHold(center, facing, t);
         };
     }

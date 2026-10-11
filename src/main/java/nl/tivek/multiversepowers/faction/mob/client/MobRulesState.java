@@ -252,8 +252,9 @@ abstract class MobRulesState extends NavScreen {
                 || MobRules.id(row.type()).contains(wanted);
     }
 
-    // The picked creature's numbers alone, or: the way to them, all shown, the player while a creature is picked, then a
-    // group per mod, the game's own first; while searching every group shows what it found, folded or not.
+    // The picked creature's numbers alone, or: the way to them, all a search found, the player while a creature is
+    // picked, then a group per mod, the game's own first; while searching every group shows what it found, folded or
+    // not.
     List<Line> shownLines() {
         String wanted = this.query.trim().toLowerCase(Locale.ROOT);
         List<Line> lines = new ArrayList<>();
@@ -292,7 +293,8 @@ abstract class MobRulesState extends NavScreen {
                 }
             }
         }
-        if (everyone.isEmpty()) {
+        // All at once only for what a search found: the groups' own buttons do it for a whole group.
+        if (everyone.isEmpty() || wanted.isEmpty()) {
             lines.remove(all);
         }
         return lines;

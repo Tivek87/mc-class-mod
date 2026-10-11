@@ -165,6 +165,7 @@ public final class GiantHands extends GiantHandPlaces implements Effect {
                 hand.letGo();
             }
         }
+        AbyssPit.closeAll();
         ACTIVE.clear();
         RESTING.clear();
         GRABBED.clear();

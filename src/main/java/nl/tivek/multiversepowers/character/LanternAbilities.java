@@ -509,7 +509,7 @@ final class LanternAbilities {
                 .was(15.0, 37.5)
                 .setting("topSpeed", 20.0, 1.0, 150.0, Unit.BLOCKS_PER_SECOND,
                         "Top speed in blocks per second (an elytra with firework rockets does about 33); hovering"
-                                + " and climbing without flying forward go at a part of it")
+                                + " without flying forward goes at a part of it")
                 .was(16.0, 50.0, 35.0, 19.25, 9.625, 6.25625, 18.0, 9.0, 4.5, 1.8)
                 .setting("startSpeed", 10.7, 1.0, 150.0, Unit.BLOCKS_PER_SECOND,
                         "Speed you set off at, in blocks per second: the longer you fly on, the faster you go, up"
@@ -527,6 +527,8 @@ final class LanternAbilities {
                         "Seconds of flying on from the cruising speed to the top speed (0 = straight away);"
                                 + " letting go of forward loses the speed again in a few seconds")
                 .was(12.0, 30.0, 5.6, 7.0)
+                .setting("climbSpeed", 8.0, 1.0, 150.0, Unit.BLOCKS_PER_SECOND,
+                        "How fast holding space lifts you straight up while you hover, in blocks per second")
                 .group("chunks", "The world ahead")
                 .settingInt("chunkRadiusBlocks", 128, 0, 256, Unit.BLOCKS,
                         "How far around a flyer the server makes the world ready while he flies (made, loaded and"
@@ -621,6 +623,32 @@ final class LanternAbilities {
                 "a test of the sky: a hand draws a circle that opens on the stars, a second dives into it, takes"
                         + " the moon out of a rift in the sky and crushes it until the sky is black, then the moon"
                         + " comes back (one at a time; it harms no one)");
+        hand(hands, HandPose.ABYSS, "Abyss", HAND_CHANCE,
+                "two hands out of portals tearing the ground open into a deep pit over a sky of stars, whose"
+                        + " tentacles of hard light drag everything in it down (25 damage); what lives through it is"
+                        + " thrown back out, and the ground closes just as it was (only ground you may break; with"
+                        + " water near, the hole is only a window)");
+        hand(hands, HandPose.BEAMEYE, "Beam eye", HAND_CHANCE,
+                "a hand out of the ground or a wall with an eye in its palm that opens and fires a thick beam of"
+                        + " light, burning what it hits to ash");
+        hand(hands, HandPose.GUNSLINGER, "Gunslinger", HAND_CHANCE,
+                "a hand out of the ground whose fist grows a revolver of hard light that shoots three creatures"
+                        + " one after another");
+        hand(hands, HandPose.BAT, "Baseball bat", HAND_CHANCE,
+                "a fist out of the ground beside a creature whose ring grows a baseball bat of hard light that it"
+                        + " swings flat through the creature, hitting it far away (a home run)");
+        hand(hands, HandPose.HOURGLASS, "Hourglass", HAND_CHANCE,
+                "a hand out of the ground holding up an hourglass of hard light: it turns it over and time stops"
+                        + " round it for 4 seconds, everything near standing still, until the hourglass breaks and"
+                        + " every stopped creature takes the blow at once");
+        hand(hands, HandPose.GRAVITY, "Gravity flip", HAND_CHANCE,
+                "a hand spread over a creature that turns over, and with it gravity: everything under it falls up"
+                        + " into the sky and hangs there upside down until the hand turns back and slams it all down"
+                        + " into the ground");
+        hand(hands, HandPose.BLACKHOLE, "Black hole", HAND_CHANCE,
+                "a hand out of the ground with a black hole over its palm that draws everything round it in, round"
+                        + " and round it, burning what comes close, until the fist crushes it and it bursts, throwing"
+                        + " everything away");
         hand(hands, HandPose.AXE, "Pair with an axe", 0.24,
                 "a pair of hands chopping down with an axe (only where there is room for it)");
         hands.group("revolver", "Western Revolver Assembly (hold the button 2 seconds)")
@@ -780,17 +808,23 @@ final class LanternAbilities {
                 .group("mechHelpers", "Mech sentinels (Left Alt in a built mech)")
                 .setting("mechHelperPowerCost", 6.0, 0.0, 100.0, Unit.POWER,
                         "Ring power opening the hatch costs; out of it drop as many sentinels as are missing of 3")
-                .setting("mechHelperHealth", 30.0, 1.0, 2000.0, Unit.HEALTH,
+                .setting("mechHelperHealth", 60.0, 1.0, 2000.0, Unit.HEALTH,
                         "Health of each sentinel, in half hearts (a zombie has 20)")
+                .was(30.0)
                 .setting("mechHelperDamage", 2.5, 0.0, 2000.0, Unit.HALF_HEARTS,
-                        "Damage of a sentinel's punch, in half hearts; its cannon bolt does 1.2 times it and the slam"
-                                + " of its leap 1.4 times it round where it lands")
+                        "Damage of a sentinel's punch, in half hearts; its cannon bolt does 1.2 times it, the slam of"
+                                + " its leap 1.4 times round where it lands, each turn of its spin 0.8 times, its"
+                                + " shoulder charge 1.6 times and each of its ground spikes 1.3 times")
                 .was(5.0)
                 .settingInt("mechHelperCooldown", 600, 0, 72000, Unit.TICKS,
                         "Ticks after the hatch shuts before it opens again (20 ticks = 1 second)")
-                .setting("mechHelperKillHeal", 5.0, 0.0, 2000.0, Unit.HEALTH,
-                        "Health a sentinel gets back for each creature it kills, as a ball of light flies from the"
+                .setting("mechHelperKillHeal", 10.0, 0.0, 2000.0, Unit.HEALTH,
+                        "Health a sentinel gets back for each creature it kills, as a spark of light flies from the"
                                 + " body into it")
+                .was(5.0)
+                .setting("mechHelperSight", 28.0, 4.0, 64.0, Unit.BLOCKS,
+                        "How far a sentinel sees creatures to go after, in blocks; it lets one go once it is half"
+                                + " as far again")
                 .group("mechWalk", "Walking the mech")
                 .setting("mechCrushHealth", 10.0, 0.0, 2000.0, Unit.HALF_HEARTS,
                         "A creature no bigger than a block with at most this much health (a chicken has 4, a pig 10)"

@@ -19,7 +19,11 @@ import nl.tivek.multiversepowers.character.GameCharacter;
 // `guide.<mod>.<character>.<id>.` (`title`; `in`, `out`, `blocked` and `notes`, each short lines split by a line break;
 // and per control its short line and, unless the ability it fires names it, `<control>.name`); a heading's under
 // `screen.<mod>.guide.part.<id>`.
-public record GuideMode(GameCharacter character, String id, Predicate<LocalPlayer> active, List<Control> controls) {
+public record GuideMode(GuideOwner owner, String id, Predicate<LocalPlayer> active, List<Control> controls) {
+    public GuideMode(GameCharacter character, String id, Predicate<LocalPlayer> active, List<Control> controls) {
+        this(GuideOwner.of(character), id, active, controls);
+    }
+
     private static final String INPUT = "input." + MultiversePowers.MODID + ".";
     public static final String[] SECTIONS = { "in", "out", "blocked", "notes" };
 
@@ -74,7 +78,7 @@ public record GuideMode(GameCharacter character, String id, Predicate<LocalPlaye
 
     @Nullable
     public CharacterAbility ability(Control control) {
-        return control.ability() == null ? null : this.character.byName(control.ability());
+        return control.ability() == null ? null : this.owner.byName(control.ability());
     }
 
     // The short name the guide's list gives a control: its own, else the ability it fires (or that one's hold).
@@ -122,7 +126,7 @@ public record GuideMode(GameCharacter character, String id, Predicate<LocalPlaye
     }
 
     private String path() {
-        return "guide." + MultiversePowers.MODID + "." + this.character.getId() + "." + this.id + ".";
+        return "guide." + MultiversePowers.MODID + "." + this.owner.key() + "." + this.id + ".";
     }
 
     private static Control control(Supplier<Component> key, String id) {

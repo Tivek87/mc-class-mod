@@ -11,6 +11,7 @@ import nl.tivek.multiversepowers.character.greenlantern.client.render.revolver.R
 import nl.tivek.multiversepowers.character.greenlantern.client.slam.SlamPainter;
 import nl.tivek.multiversepowers.character.greenlantern.construct.ConstructPayload;
 import nl.tivek.multiversepowers.character.greenlantern.duo.HandDuo;
+import nl.tivek.multiversepowers.character.greenlantern.hand.HandAbyss;
 import nl.tivek.multiversepowers.character.greenlantern.hand.HandGroup;
 import nl.tivek.multiversepowers.character.greenlantern.hand.HandPose;
 import nl.tivek.multiversepowers.character.greenlantern.hand.HandRift;
@@ -140,6 +141,33 @@ abstract class ConstructShakes extends TrackedConstructs {
             near = 1.0 - from.distanceTo(hand.center()) / RIFT_SHAKE_RANGE;
             return Math.max(jolt(clock - HandRift.TEARS[HandRift.TEARS.length - 1], FINGER_SHAKE_TICKS, 0.3, near),
                     jolt(clock - HandRift.SHUTS, RIFT_SHAKE_TICKS, RIFT_SHAKE, near));
+        } else if (move == HandPose.ABYSS) {
+            near = 1.0 - from.distanceTo(hand.center()) / RIFT_SHAKE_RANGE;
+            return Math.max(jolt(clock - HandAbyss.OPENS, RIFT_SHAKE_TICKS, RIFT_SHAKE, near),
+                    jolt(clock - HandAbyss.SHUTS, RIFT_SHAKE_TICKS, RIFT_SHAKE * 0.8, near));
+        } else if (move == HandPose.BEAMEYE) {
+            near = 1.0 - from.distanceTo(hand.center()) / FINGER_SHAKE_RANGE;
+            return jolt(clock - HandPose.BEAMEYE_FIRES, FINGER_SHAKE_TICKS, 0.35, near);
+        } else if (move == HandPose.BAT) {
+            near = 1.0 - from.distanceTo(hand.center()) / FINGER_SHAKE_RANGE;
+            return jolt(clock - HandPose.BAT_HITS, 6.0, 0.3, near);
+        } else if (move == HandPose.HOURGLASS) {
+            near = 1.0 - from.distanceTo(hand.center()) / FINGER_SHAKE_RANGE;
+            return Math.max(jolt(clock - HandPose.TIME_STOPS, FINGER_SHAKE_TICKS, 0.25, near),
+                    jolt(clock - HandPose.TIME_GOES, FINGER_SHAKE_TICKS, 0.4, near));
+        } else if (move == HandPose.GRAVITY) {
+            near = 1.0 - from.distanceTo(hand.center()) / RIFT_SHAKE_RANGE;
+            return jolt(clock - HandPose.GRAVITY_SLAMS - 3.0, RIFT_SHAKE_TICKS, RIFT_SHAKE * 0.7, near);
+        } else if (move == HandPose.BLACKHOLE) {
+            near = 1.0 - from.distanceTo(hand.center()) / RIFT_SHAKE_RANGE;
+            return jolt(clock - HandPose.HOLE_BLASTS, RIFT_SHAKE_TICKS, RIFT_SHAKE, near);
+        } else if (move == HandPose.GUNSLINGER) {
+            near = 1.0 - from.distanceTo(hand.center()) / FINGER_SHAKE_RANGE;
+            float most = 0.0F;
+            for (int shot : HandPose.SLING_SHOTS) {
+                most = Math.max(most, jolt(clock - shot, 6.0, 0.2, near));
+            }
+            return most;
         } else {
             return 0.0F;
         }

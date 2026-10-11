@@ -96,7 +96,8 @@ abstract class GiantHandTricks extends GiantHandPair {
             default -> this.feat(level);
         }
         // The rift's hands open and shut their own portals over it.
-        if (HandPose.portal(this.variant) && this.move != HandPose.RIFT && this.move != HandPose.COSMOS) {
+        if (HandPose.portal(this.variant) && this.move != HandPose.RIFT && this.move != HandPose.COSMOS
+                && this.move != HandPose.ABYSS) {
             if (this.t == PORTAL_OPENS) {
                 this.opens(level, this.portal(), HandPose.overhead(this.variant) ? 1.2F : 1.5F);
             }

@@ -122,6 +122,12 @@ public final class HandVictims {
             case HandVictimPayload.SPREAD -> victim.spread = ticks;
             case HandVictimPayload.POP -> victim.pop = ticks;
             case HandVictimPayload.STRETCH -> victim.stretch = ticks;
+            case HandVictimPayload.ABYSS -> Abyssed.mark(entity, hand);
+            case HandVictimPayload.ABYSS_FREED -> Abyssed.free(entity);
+            case HandVictimPayload.STOPPED -> TimeStopped.stop(entity);
+            case HandVictimPayload.GOES_ON -> TimeStopped.goOn(entity);
+            case HandVictimPayload.FLIPPED -> Flipped.flip(entity);
+            case HandVictimPayload.LANDED -> Flipped.land(entity);
             case HandVictimPayload.SPLIT -> {
                 victim.split = ticks;
                 if (living != null) {

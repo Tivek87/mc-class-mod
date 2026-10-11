@@ -15,6 +15,11 @@ public final class ClientSettings {
     public static final ModConfigSpec.IntValue MECH_CINEMATIC;
     public static final ModConfigSpec.DoubleValue PARTICLE_AMOUNT;
     public static final ModConfigSpec.IntValue EFFECT_DETAIL;
+    public static final ModConfigSpec.IntValue STAGE_BEAMS;
+    public static final ModConfigSpec.IntValue STAGE_REACH;
+    public static final ModConfigSpec.IntValue STAGE_MOST;
+    public static final ModConfigSpec.DoubleValue SCHEMATIC_OPACITY;
+    public static final ModConfigSpec.IntValue SCHEMATIC_OUTLINE;
     public static final ModConfigSpec.IntValue RAGDOLLS;
     public static final ModConfigSpec.IntValue RAGDOLL_MOST;
     public static final ModConfigSpec.DoubleValue CORPSE_SECONDS;
@@ -53,6 +58,18 @@ public final class ClientSettings {
                 + " splashes (1 = as the mod makes them, 0 = none)", 1.0, 0.0, 2.0, Unit.PERCENT, 0.05);
         EFFECT_DETAIL = sheet.choice("effectDetail", "How much detail the biggest effects have: the thunderclap's"
                 + " streaks, the flamethrower's flames (0 = low, 1 = medium, 2 = full)", 2, 3);
+        sheet.section("stage");
+        STAGE_BEAMS = sheet.toggle("stageBeams", "Stage lights throw their beams, lasers and mirror-ball dots"
+                + " (1 = yes, 0 = only their lenses glow)", true);
+        STAGE_REACH = sheet.whole("stageReach", "How far away a stage light may be and still throw its beams, in"
+                + " blocks", 160, 16, 256, Unit.BLOCKS, 8.0);
+        STAGE_MOST = sheet.whole("stageMost", "How many stage lights throw their beams at once; the nearest go"
+                + " first", 64, 1, 256, Unit.COUNT, 1.0);
+        sheet.section("schematics");
+        SCHEMATIC_OPACITY = sheet.number("schematicOpacity", "How solid a schematic's hologram looks before you place"
+                + " it (1 = solid, 0.1 = faint)", 0.6, 0.1, 1.0, Unit.PERCENT, 0.05);
+        SCHEMATIC_OUTLINE = sheet.toggle("schematicOutline", "Draw the edges of a schematic hologram's box, so you see"
+                + " where it ends (1 = yes, 0 = no)", true);
         sheet.section("bodies");
         RAGDOLLS = sheet.toggle("ragdolls", "Creatures go limp: they fall, tumble and hang from what holds them, and a"
                 + " body stays where it fell before it sinks away (1 = yes, 0 = as in the plain game); players go limp"

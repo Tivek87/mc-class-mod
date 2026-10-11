@@ -115,6 +115,7 @@ abstract class HandTricks extends HandMoves {
             case HandPose.TEAR -> HandGroup.TEAR_GRABS;
             case HandPose.RIFT -> HandRift.DIGS;
             case HandPose.COSMOS -> HandCosmos.DRAWS;
+            case HandPose.ABYSS -> HandAbyss.DIGS;
             case HandPose.FINGERGUN -> HandPose.GUN_SHOTS[0];
             case HandPose.SCISSORS -> HandPose.SNIPS[0];
             case HandPose.SWALLOW -> HandPose.SWALLOW_CATCHES;

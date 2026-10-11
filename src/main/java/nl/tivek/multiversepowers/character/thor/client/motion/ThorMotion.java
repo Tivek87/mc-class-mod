@@ -461,6 +461,7 @@ public final class ThorMotion extends ThorGroundMotion {
         CharacterAbility fast = GameCharacter.THOR.byName("lightning_flight");
         double speed = (lightning && fast != null ? fast.value("speed") : flight == null ? 18.0
                 : flight.value("speed")) / 20.0;
+        double climb = lightning || flight == null ? 0.8 : flight.value("climbSpeed") / 20.0 / speed;
         if (blinkAge >= 0) {
             int t = blinkAge++;
             if (t < BLINK_TICKS) {
@@ -481,7 +482,7 @@ public final class ThorMotion extends ThorGroundMotion {
             Vec3 look = player.getLookAngle();
             double yaw = Math.toRadians(player.getYRot());
             Vec3 right = new Vec3(-Math.cos(yaw), 0.0, -Math.sin(yaw));
-            Vec3 wish = look.scale(forward).add(right.scale(-strafe)).add(0.0, up ? 0.8 : down ? -SINK : 0.0, 0.0);
+            Vec3 wish = look.scale(forward).add(right.scale(-strafe)).add(0.0, up ? climb : down ? -SINK : 0.0, 0.0);
             if (wish.lengthSqr() > 1.0) {
                 wish = wish.normalize();
             }

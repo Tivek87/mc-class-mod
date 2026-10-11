@@ -1,0 +1,10 @@
+{
+	"variants": {
+		"facing=up": {"model": "welcomescreen:block/strobe"},
+		"facing=down": {"model": "welcomescreen:block/strobe", "x": 180},
+		"facing=north": {"model": "welcomescreen:block/strobe", "x": 90},
+		"facing=south": {"model": "welcomescreen:block/strobe", "x": 90, "y": 180},
+		"facing=west": {"model": "welcomescreen:block/strobe", "x": 90, "y": 270},
+		"facing=east": {"model": "welcomescreen:block/strobe", "x": 90, "y": 90}
+	}
+}

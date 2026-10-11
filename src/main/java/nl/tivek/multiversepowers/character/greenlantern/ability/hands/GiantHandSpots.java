@@ -11,6 +11,7 @@ import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import nl.tivek.multiversepowers.character.greenlantern.duo.HandDuo;
+import nl.tivek.multiversepowers.character.greenlantern.hand.HandAbyss;
 import nl.tivek.multiversepowers.character.greenlantern.hand.HandGroup;
 import nl.tivek.multiversepowers.character.greenlantern.hand.HandPose;
 import nl.tivek.multiversepowers.character.greenlantern.hand.HandRift;
@@ -194,6 +195,20 @@ final class GiantHandSpots {
             }
         }
         return open(level, place.at(new Vec3(0.0, 3.0, 0.0)));
+    }
+
+    // The abyss needs level ground all round its rim and its middle, with open air above.
+    static boolean pitRoom(ServerLevel level, Vec3 center) {
+        for (int k = 0; k <= 12; k++) {
+            double angle = Math.PI * 2.0 * k / 12.0;
+            double far = k == 12 ? 0.0 : HandAbyss.RADIUS * 0.9;
+            Vec3 at = center.add(Math.sin(angle) * far, 0.0, Math.cos(angle) * far);
+            if (!solid(level, at.subtract(0.0, 0.5, 0.0)) || !open(level, at.add(0.0, 0.4, 0.0))
+                    || !open(level, at.add(0.0, 1.4, 0.0))) {
+                return false;
+            }
+        }
+        return true;
     }
 
     // A rift needs its surface flat all over its length and width, solid behind it and open air in front of it.

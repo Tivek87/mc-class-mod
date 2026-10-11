@@ -4,6 +4,7 @@ import java.util.List;
 import javax.annotation.Nullable;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.LanternPainter;
+import nl.tivek.multiversepowers.character.greenlantern.client.render.hand.light.HandAbyssLight;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.hand.light.HandCosmosLight;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.hand.light.HandPairLight;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.hand.light.HandRiftLight;
@@ -19,7 +20,7 @@ import static nl.tivek.multiversepowers.character.greenlantern.client.render.han
 import static nl.tivek.multiversepowers.character.greenlantern.client.render.hand.HandPainter.ringGem;
 
 // A group of hands out of portals round one creature, and the light of what they do: the ring charging and blasting,
-// the clap, the tear, the rift.
+// the clap, the tear, the rift, the abyss.
 final class HandGroupPainter {
     private static final double CALL = 5.0;
     private static final double BLAST_TICKS = 14.0;
@@ -62,6 +63,7 @@ final class HandGroupPainter {
             case HandPose.TEAR -> tear(painter, variant, base, facing, clock, strength);
             case HandPose.RIFT -> HandRiftLight.draw(painter, id, variant, base, facing, clock, caught, strength, apart);
             case HandPose.COSMOS -> HandCosmosLight.draw(painter, id, base, facing, clock, strength, apart);
+            case HandPose.ABYSS -> HandAbyssLight.draw(painter, id, variant, base, facing, clock, strength, apart);
             default -> ringCharge(painter, subs, base, facing, clock, strength);
         }
     }

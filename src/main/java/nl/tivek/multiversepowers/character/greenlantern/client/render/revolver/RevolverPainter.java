@@ -141,6 +141,28 @@ public final class RevolverPainter {
         painter.noClip();
     }
 
+    // A revolver held in one hand's fist: grown out of the light about its grip (0 to 1), its hammer drawn back (0 to
+    // 1) and its cylinder turned so many chambers; apart from 0 on, it breaks into pieces.
+    public static void held(LanternPainter painter, RevolverGun.Gun gun, double grown, double hammer, double turn,
+            double apart) {
+        if (grown <= 0.01) {
+            return;
+        }
+        Vec3 hole = gun.at(RevolverGun.GRIP_HOLE);
+        RevolverGun.Gun sized = new RevolverGun.Gun(hole.add(gun.origin().subtract(hole).scale(grown)), gun.right(),
+                gun.up(), gun.forward(), gun.scale() * grown);
+        ConstructPainter.Frame frame = frame(sized);
+        for (int part : new int[] { RevolverDuo.FRAME, RevolverDuo.GRIP, RevolverDuo.BARREL, RevolverDuo.GUARD }) {
+            part(painter, RevolverShapes.PARTS[part], frame, 1.0, apart, GUN_PIECES + part * 20);
+        }
+        Vec3 pivot = RevolverShapes.HAMMER_PIVOT;
+        part(painter, RevolverShapes.PARTS[RevolverDuo.HAMMER], frame.turned(pivot.x, pivot.y, pivot.z, 1.0, 0.0,
+                0.0, -0.8 * hammer), 1.0, apart, GUN_PIECES + RevolverDuo.HAMMER * 20);
+        Vec3 axis = RevolverGun.CYLINDER_AT;
+        part(painter, RevolverShapes.PARTS[RevolverDuo.CYLINDER], frame.turned(axis.x, axis.y, 0.0, 0.0, 0.0, 1.0,
+                -turn * Math.PI / 3.0), 1.0, apart, GUN_PIECES + RevolverDuo.CYLINDER * 20);
+    }
+
     static ConstructPainter.Frame frame(RevolverGun.Gun gun) {
         return new ConstructPainter.Frame(gun.origin(), gun.right(), gun.up(), gun.forward(), gun.scale());
     }

@@ -2,6 +2,7 @@ package nl.tivek.multiversepowers.character.greenlantern.duo;
 
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
+import nl.tivek.multiversepowers.character.greenlantern.hand.HandPose;
 import nl.tivek.multiversepowers.engine.math.Ease;
 import nl.tivek.multiversepowers.engine.math.Vectors;
 import static nl.tivek.multiversepowers.character.greenlantern.duo.RevolverScript.*;
@@ -227,6 +228,30 @@ public final class RevolverGun {
         Vec3 center = a.at(CENTER).lerp(b.at(CENTER), u);
         Pose pose = new Pose(Vec3.ZERO, Vectors.turned(from[0], turn), Vectors.turned(from[1], turn));
         return pose.moved(center.subtract(pose.at(CENTER)));
+    }
+
+    // The revolver in a hand's fist, gripped as pistolGrip grips it: worked back from where the hand is. The gun's
+    // axes run left-handed (right is forward × up), so its palm way is the negative cross of thumb and up.
+    public static Gun inFist(HandPose.Place place) {
+        Vec3 ahead = new Vec3(0.0, 0.0, 1.0);
+        Vec3 up = ahead.subtract(GRIP_AXIS.scale(ahead.dot(GRIP_AXIS))).normalize();
+        Vec3 thumb = GRIP_AXIS.scale(-1.0);
+        Vec3 palm = thumb.cross(up).scale(-1.0);
+        Vec3[] from = { thumb, up, palm };
+        Vec3[] to = { place.right().normalize().scale(-1.0), place.up().normalize(), place.forward().normalize() };
+        Vec3 forward = Vec3.ZERO;
+        Vec3 gunUp = Vec3.ZERO;
+        for (int k = 0; k < 3; k++) {
+            forward = forward.add(to[k].scale(from[k].z));
+            gunUp = gunUp.add(to[k].scale(from[k].y));
+        }
+        forward = forward.normalize();
+        gunUp = gunUp.normalize();
+        Vec3 right = forward.cross(gunUp);
+        double scale = place.scale();
+        Vec3 origin = place.at(HandDuoScript.FIST_HOLE).subtract(right.scale(GRIP_HOLE.x * scale))
+                .subtract(gunUp.scale(GRIP_HOLE.y * scale)).subtract(forward.scale(GRIP_HOLE.z * scale));
+        return new Gun(origin, right, gunUp, forward, scale);
     }
 
     // The right hand's fist round the grip: thumb up the grip, fingers wrapped towards the front strap.

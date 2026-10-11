@@ -20,48 +20,64 @@ import nl.tivek.multiversepowers.update.client.tour.TourStep.Place;
 // while a line is in neither, or a tour text is too long. Only steps from `FROM` up to the version installed are ever
 // shown, so a release's steps replace the last one's. A player's first tour starts with `INTRO`.
 final class TourSteps {
-    static final String VERSION = "0.8.3-alpha";
+    static final String VERSION = "0.8.4-alpha";
     // The oldest version whose changes this tour shows: normally its own.
     static final String FROM = VERSION;
 
-    // Green Lantern's hard-light creatures in the middle, ordering summons and the Sentinels by his rows of the panel;
-    // the Mobs page, its tools and his settings in the settings window.
+    // The stage lights, the Zombie Brute and the Schematic Wand in the middle, Green Lantern's new hands and Sentinels
+    // by his rows of the panel; the Commands, Schematics and Import & export pages in the settings window.
     static final List<TourStep> ALL = List.of(
-            step(VERSION, "hard_light_mobs", Kind.NEW, Place.GAME).covers(
-                    "Green Lantern: seven hard-light creatures",
-                    "Green Lantern: summons are these hard-light creatures"),
-            step(VERSION, "summon_orders", Kind.NEW, Place.GAME).at("game.panel.rows.green_lantern")
+            step(VERSION, "stage_lights", Kind.NEW, Place.GAME).covers(
+                    "Stage lights: six new blocks",
+                    "Stage lights: sneak and right click"),
+            step(VERSION, "stage_aim", Kind.NEW, Place.GAME).covers(
+                    "Stage lights: a light can shine",
+                    "Stage lights: lights on the same channel"),
+            step(VERSION, "light_show", Kind.NEW, Place.GAME).covers(
+                    "Stage lights: /lightshow"),
+            step(VERSION, "new_hands", Kind.NEW, Place.GAME).at("game.panel.rows.green_lantern")
                     .prepare(AbilityPanel::wake).covers(
-                            "Green Lantern: tap the Construct Wheel key",
-                            "Green Lantern: hold the Construct Wheel key",
-                            "Green Lantern: at most 5 summons"),
+                            "Green Lantern: Abyss",
+                            "Green Lantern: Beam eye",
+                            "Green Lantern: Gunslinger",
+                            "Green Lantern: Baseball bat",
+                            "Green Lantern: Hourglass",
+                            "Green Lantern: Gravity flip",
+                            "Green Lantern: Black hole"),
             step(VERSION, "sentinels", Kind.NEW, Place.GAME).at("game.panel.rows.green_lantern")
                     .prepare(AbilityPanel::wake).covers(
-                            "Green Lantern: a Sentinel that kills",
-                            "Green Lantern: the mech's helpers are called Sentinels"),
-            step(VERSION, "mob_spawning", Kind.NEW, Place.SETTINGS).at("nav.mobs").covers(
-                    "Settings: the Mobs page turns",
-                    "Settings: the Mobs page groups"),
-            step(VERSION, "mob_all", Kind.NEW, Place.SETTINGS).at("nav.mobs").covers(
-                    "Settings: the Mobs page sets a whole group",
-                    "Settings: Everyone hostile"),
-            step(VERSION, "mob_undo", Kind.NEW, Place.SETTINGS).at("nav.mobs").covers(
-                    "Settings: Undo on the Mobs page"),
-            step(VERSION, "mob_numbers", Kind.NEW, Place.SETTINGS).at("nav.mobs").covers(
-                    "Settings: each creature's own numbers"),
-            step(VERSION, "summon_settings", Kind.NEW, Place.SETTINGS).at("nav.green_lantern")
-                    .covers("Green Lantern's settings: the most summons"));
+                            "Green Lantern: Sentinels have",
+                            "Green Lantern: Sentinels look"),
+            step(VERSION, "zombie_brute", Kind.NEW, Place.GAME).covers(
+                    "Zombie Brute: a big new zombie"),
+            step(VERSION, "schematic_wand", Kind.NEW, Place.GAME).covers(
+                    "Schematic Wand: a new item",
+                    "Schematic Wand: import schematics",
+                    "Schematic Wand: its controls show"),
+            step(VERSION, "schematic_place", Kind.NEW, Place.GAME).covers(
+                    "Schematic Wand: a life-size hologram",
+                    "Schematic Wand: choose what it replaces"),
+            step(VERSION, "command_suggest", Kind.NEW, Place.SETTINGS).at("nav.commands").covers(
+                    "Commands: while you type"),
+            step(VERSION, "command_categories", Kind.NEW, Place.SETTINGS).at("nav.commands").covers(
+                    "Commands: categories of your own",
+                    "Commands: built-in and custom commands are one list"),
+            step(VERSION, "command_builtin", Kind.CHANGED, Place.SETTINGS).at("nav.commands").covers(
+                    "Commands: a built-in command can be renamed"),
+            step(VERSION, "schematic_settings", Kind.NEW, Place.SETTINGS).at("nav.schematics").covers(
+                    "Settings: a Schematics page"),
+            step(VERSION, "share_settings", Kind.NEW, Place.SETTINGS).at("nav.share").covers(
+                    "Settings: Import & export"));
 
     // Changes too small for a step of their own, each by how its changelog line starts, as in `covers`.
     static final List<String> SMALL = List.of(
-            "Green Lantern: in third person",
-            "Settings: the Commands page keeps",
-            "Scrollbars can be dragged",
-            "Settings: a world setting that lets operators",
-            "Green Lantern's settings: each heavy blow",
-            "Green Lantern's settings: how far summons",
-            "Thor's settings: how often",
-            "Thor: pressing the storm's key");
+            "Settings: stage light beams",
+            "Commands: up to 100",
+            "Commands: the list sorts",
+            "Commands: categories fold",
+            "Settings: the Mobs page is calmer",
+            "Settings: a schematic's hologram",
+            "Green Lantern's settings: how far");
 
     // Shown first on a player's first tour, wherever it starts: what the tour is and how to use it.
     static final TourStep INTRO = step(VERSION, "tour_intro", Kind.HOW, Place.ANY);

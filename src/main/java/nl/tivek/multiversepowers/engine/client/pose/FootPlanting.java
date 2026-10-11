@@ -61,8 +61,10 @@ final class FootPlanting {
         Minecraft minecraft = Minecraft.getInstance();
         Level level = entity.level();
         Vec3 camera = minecraft.gameRenderer.getMainCamera().getPosition();
-        // An armor stand is a statue: its legs stay as they were posed.
+        // An armor stand is a statue: its legs stay as they were posed. The game draws a crouching body with its feet
+        // sunk into the ground on purpose; lifting them would splay its legs.
         boolean standing = entity.isAlive() && !(entity instanceof ArmorStand) && !entity.isPassenger()
+                && !entity.isCrouching()
                 && !entity.isSleeping() && !entity.isFallFlying() && !entity.isInWater() && !entity.isSwimming()
                 && entity.getPose() != Pose.SPIN_ATTACK && entity.distanceToSqr(camera) < NEAR * NEAR;
         float[] turns = TURNS.get(entity.getId());
