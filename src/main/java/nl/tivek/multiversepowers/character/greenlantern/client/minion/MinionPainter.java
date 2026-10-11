@@ -4,97 +4,43 @@ import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.Vec3;
+import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import nl.tivek.multiversepowers.character.greenlantern.client.mech.shape.MechParts;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.LanternPainter;
 import nl.tivek.multiversepowers.character.greenlantern.minion.MechMinion;
 import nl.tivek.multiversepowers.character.greenlantern.minion.MinionMoves;
 import nl.tivek.multiversepowers.engine.client.render.ConstructPainter.Frame;
-import nl.tivek.multiversepowers.engine.client.render.ConstructPainter.Shape;
 import nl.tivek.multiversepowers.engine.client.render.Material;
-import nl.tivek.multiversepowers.engine.client.render.mesh.Mesh;
 import nl.tivek.multiversepowers.engine.math.Colors;
 import nl.tivek.multiversepowers.engine.math.Ease;
 import nl.tivek.multiversepowers.engine.math.Vectors;
 
-// The mech's helpers as every game draws them: robots of solid hard light, twice a player's height, a boxy trunk with
-// a glowing core, a head with a visor slit, a cannon along the right forearm. They walk heavily, jab with the left and
-// hook with the right, aim the cannon and fire it, crouch and leap and hammer both fists into the ground. Dropped out
-// of the hatch they form from the head down; from a spawn egg they are built up out of a ring of light on the ground.
-// Off the ground their feet burn; worn down they crack; dead they break into solid pieces. Each part is drawn in the
-// frame of the joint it turns on (x its right, y up, z ahead).
+// The mech's helpers as every game draws them: robots of solid hard light twice a player's height, built like the
+// big mech in glowing tiles: a broad V of a chest with the Lantern's sign round a burning core, a pack with two
+// nozzles on its back, a finned helmet with a V-shaped visor, layered plates over the shoulders, hands with jointed
+// fingers and a ringed cannon along the right forearm (MinionShapes). They walk heavily heel to toe, jab and hook,
+// brace and fire the cannon, leap on their pack's flames and hammer both fists into the ground (MinionPose). Dropped
+// out of the hatch they form from the head down; from a spawn egg they are built up out of a ring of light on the
+// ground. Worn down they crack all over and leak light (MinionCracks); dead they break into solid pieces. Each part
+// is drawn in the frame of the joint it turns on (x its right, y up, z ahead).
 public final class MinionPainter {
-    private static final double HIP_Y = 1.55;
-    private static final double HIP_X = 0.3;
-    private static final double THIGH = 0.72;
-    private static final double SHIN = 0.7;
-    private static final double WAIST_Y = 1.98;
-    private static final double SHOULDER_X = 0.8;
-    private static final double SHOULDER_Y = 2.78;
-    private static final double UPPER = 0.78;
-    private static final double FOREARM = 0.72;
-    private static final double TOP = 3.62;
-    private static final double MUZZLE = FOREARM + 0.58;
-    private static final double CANNON_X = 0.26;
     private static final double GROW = 10.0;
     private static final double BUILD = MinionPose.RISE * 0.75;
-    // Its fissures for each crack, as paths on a part's face: the part (0 trunk, 1 head, 2 right thigh, 3 left upper
-    // arm), then points in its frame.
-    private static final double[][][] CRACKS = {
-            { { 0, 0.3, 2.84, 0.515, 0.18, 2.7, 0.515, 0.26, 2.56, 0.515, 0.12, 2.4, 0.515, 0.18, 2.3, 0.515 },
-                    { 1, -0.24, 3.42, 0.31, -0.16, 3.36, 0.31, -0.2, 3.3, 0.31 } },
-            { { 0, -0.44, 2.5, 0.515, -0.3, 2.6, 0.515, -0.34, 2.74, 0.515, -0.18, 2.82, 0.515 },
-                    { 0, 0.1, 2.26, 0.43, 0.0, 2.14, 0.43, 0.12, 2.04, 0.43 },
-                    { 2, -0.05, -0.05, 0.2, 0.06, -0.25, 0.2, -0.02, -0.45, 0.2 } },
-            { { 1, 0.22, 3.14, 0.31, 0.12, 3.08, 0.31, 0.18, 3.03, 0.31 },
-                    { 0, -0.1, 2.84, 0.515, 0.02, 2.68, 0.515, -0.06, 2.5, 0.515, 0.08, 2.32, 0.515 },
-                    { 3, -0.17, -0.1, 0.05, -0.17, -0.3, -0.04, -0.17, -0.52, 0.06 } } };
     private static final double GLOWS = 0.22;
     private static final double CREASES = 0.7;
     private static final double FLING = 2.0;
     private static final int PIECES = 16;
-
-    private static final Shape PELVIS = Shape.of(Mesh.bevel(-0.46, HIP_Y - 0.14, -0.3, 0.46, WAIST_Y + 0.06, 0.3, 0.06,
-            1.0));
-    private static final Shape TRUNK = Shape.of(trunk());
-    private static final Shape HEAD = Shape.of(head());
-    private static final Shape THIGH_PART = Shape.of(Mesh.bevel(-0.18, -THIGH, -0.19, 0.18, 0.08, 0.19, 0.05, 1.0),
-            Mesh.ball(10, 6, 0.17, 1.1).moved(0.0, -THIGH, 0.0));
-    private static final Shape SHIN_PART = Shape.of(Mesh.bevel(-0.17, -SHIN, -0.18, 0.17, 0.0, 0.2, 0.05, 1.0),
-            Mesh.bevel(-0.13, -SHIN + 0.15, 0.18, 0.13, -0.1, 0.25, 0.03, 1.2));
-    private static final Shape FOOT = Shape.of(Mesh.bevel(-0.21, -0.14, -0.25, 0.21, 0.08, 0.42, 0.05, 1.0));
-    private static final Shape UPPER_PART = Shape.of(Mesh.bevel(-0.16, -UPPER, -0.16, 0.16, 0.05, 0.16, 0.05, 1.0),
-            Mesh.ball(10, 6, 0.15, 1.1).moved(0.0, -UPPER, 0.0));
-    private static final Shape FOREARM_PART = Shape.of(Mesh.bevel(-0.15, -FOREARM, -0.16, 0.15, 0.0, 0.16, 0.05, 1.0),
-            Mesh.bevel(-0.2, -FOREARM - 0.32, -0.2, 0.2, -FOREARM + 0.02, 0.2, 0.06, 1.05),
-            Mesh.bevel(-0.17, -FOREARM - 0.34, 0.12, 0.17, -FOREARM - 0.2, 0.22, 0.03, 1.2));
-    private static final Shape CANNON = Shape.of(Mesh.cylinder(12, 0.13, -MUZZLE + 0.1, -0.08, 1.05).moved(CANNON_X,
-            0.0, 0.0), Mesh.cone(12, 0.13, 0.18, -MUZZLE, -MUZZLE + 0.12, 1.2).moved(CANNON_X, 0.0, 0.0),
-            Mesh.torus(12, 5, 0.17, 0.04, 1.5).moved(CANNON_X, -MUZZLE, 0.0),
-            Mesh.torus(12, 5, 0.15, 0.035, 1.4).moved(CANNON_X, -0.35, 0.0));
+    // How far each finger joint folds in a full fist, and the thumb.
+    private static final double[] FOLD = { 1.5, 1.35 };
+    private static final double THUMB_FOLD = 0.9;
     // The painter's material while the helpers are drawn, given back after.
     private static Material was = LanternPainter.MECH_LIGHT;
 
     private MinionPainter() {
     }
 
-    // The trunk over the waist: a broad chest with a plate on its front, shoulder pads, a narrower belly, and a ring
-    // round the core on its chest.
-    private static Mesh[] trunk() {
-        return new Mesh[] { Mesh.bevel(-0.64, WAIST_Y, -0.4, 0.64, 2.98, 0.42, 0.08, 1.0),
-                Mesh.bevel(-0.48, 2.28, 0.4, 0.48, 2.86, 0.5, 0.04, 1.15),
-                Mesh.bevel(-0.42, WAIST_Y - 0.1, -0.3, 0.42, WAIST_Y + 0.12, 0.32, 0.04, 0.95),
-                Mesh.ball(12, 8, 0.3, 1.05).moved(SHOULDER_X, 2.86, 0.0),
-                Mesh.ball(12, 8, 0.3, 1.05).moved(-SHOULDER_X, 2.86, 0.0),
-                Mesh.torus(14, 5, 0.17, 0.05, 1.5).turned(1.0, 0.0, 0.0, 90.0).moved(0.0, 2.58, 0.5),
-                Mesh.cylinder(10, 0.14, 2.94, 3.06, 1.0) };
-    }
-
-    // The head: a block with a visor slit across its face and an antenna on its right.
-    private static Mesh[] head() {
-        return new Mesh[] { Mesh.bevel(-0.3, 3.02, -0.3, 0.3, 3.44, 0.3, 0.06, 1.0),
-                Mesh.bevel(-0.26, 3.16, 0.27, 0.26, 3.28, 0.34, 0.02, 1.6),
-                Mesh.cylinder(6, 0.03, 3.42, TOP - 0.06, 1.3).moved(0.18, 0.0, -0.1),
-                Mesh.ball(8, 5, 0.06, 1.6).moved(0.18, TOP - 0.04, -0.1) };
+    public static void onClientSetup(FMLClientSetupEvent event) {
+        MinionShapes.onClientSetup(event);
     }
 
     // Whether any helper is about to be drawn: the world pass runs for them alone too.
@@ -148,66 +94,102 @@ public final class MinionPainter {
                 : -1.0;
         double yaw = Math.toRadians(Mth.rotLerp(partialTick, minion.yBodyRotO, minion.yBodyRot));
         Vec3 ahead = new Vec3(-Math.sin(yaw), 0.0, Math.cos(yaw));
-        Frame body = Frame.of(minion.getPosition(partialTick).add(0.0, -pose.sink, 0.0), ahead, Vectors.UP, 1.0);
+        Frame stand = Frame.of(minion.getPosition(partialTick).add(0.0, -pose.sink, 0.0), ahead, Vectors.UP, 1.0);
+        Frame body = stand.turned(0.0, MinionShapes.HIP_Y, 0.0, 0.0, 0.0, 1.0, pose.roll);
         boolean ground = minion.came() == MechMinion.GROUND;
         double since = minion.since(partialTick);
         double grown = Mth.clamp(since / (ground ? BUILD : GROW), 0.0, 1.0);
         double cut = 0.0;
         if (grown < 1.0 && apart < 0.0) {
-            cut = ground ? Mth.lerp(Ease.smooth(grown), -0.2, TOP + 0.1) : Mth.lerp(Ease.smooth(grown), TOP + 0.1, -0.2);
-            painter.clip(body.at(0.0, cut, 0.0), ground ? Vectors.UP.scale(-1.0) : Vectors.UP, 1.0);
+            double top = MinionShapes.TOP + 0.1;
+            cut = ground ? Mth.lerp(Ease.smooth(grown), -0.2, top) : Mth.lerp(Ease.smooth(grown), top, -0.2);
+            painter.clip(stand.at(0.0, cut, 0.0), ground ? Vectors.UP.scale(-1.0) : Vectors.UP, 1.0);
         }
-        int seed = minion.getId() * PIECES * 20;
-        Frame upper = body.turned(0.0, WAIST_Y, 0.0, 0.0, 1.0, 0.0, pose.twist).turned(0.0, WAIST_Y, 0.0, 1.0, 0.0,
-                0.0, pose.lean);
-        MechParts.draw(painter, PELVIS, body, 1.0, apart, seed);
-        MechParts.draw(painter, TRUNK, upper, 1.0, apart, seed + PIECES);
-        Frame head = upper.turned(0.0, 3.0, 0.0, 0.0, 1.0, 0.0, pose.look).turned(0.0, 3.0, 0.0, 1.0, 0.0, 0.0,
-                pose.nod);
-        MechParts.draw(painter, HEAD, head, 1.0, apart, seed + PIECES * 2);
-        Frame[] thighs = new Frame[2];
-        Frame[] arms = new Frame[2];
-        Vec3[] feet = new Vec3[2];
+        int seed = minion.getId() * PIECES * 24;
+        double waist = MinionShapes.WAIST_Y;
+        Frame belly = body.turned(0.0, waist, 0.0, 0.0, 1.0, 0.0, pose.twist * 0.5).turned(0.0, waist, 0.0, 1.0, 0.0,
+                0.0, pose.lean * 0.5);
+        Frame upper = body.turned(0.0, waist, 0.0, 0.0, 1.0, 0.0, pose.twist).turned(0.0, waist, 0.0, 1.0, 0.0, 0.0,
+                pose.lean);
+        Frame head = upper.turned(0.0, MinionShapes.NECK_Y, 0.0, 0.0, 1.0, 0.0, pose.look)
+                .turned(0.0, MinionShapes.NECK_Y, 0.0, 1.0, 0.0, 0.0, pose.nod);
+        MechParts.draw(painter, MinionShapes.PELVIS, body, 1.0, apart, seed);
+        MechParts.draw(painter, MinionShapes.ABDOMEN, belly, 1.0, apart, seed + PIECES);
+        MechParts.draw(painter, MinionShapes.TRUNK, upper, 1.0, apart, seed + PIECES * 2);
+        MechParts.draw(painter, MinionShapes.HEAD, head, 1.0, apart, seed + PIECES * 3);
+        Frame[] parts = new Frame[MinionCracks.Part.values().length];
+        parts[MinionCracks.Part.PELVIS.ordinal()] = body;
+        parts[MinionCracks.Part.TRUNK.ordinal()] = upper;
+        parts[MinionCracks.Part.HEAD.ordinal()] = head;
+        Vec3[] soles = new Vec3[2];
         for (int s = 0; s < 2; s++) {
             boolean right = s == 0;
             double side = right ? 1.0 : -1.0;
-            thighs[s] = body.moved(side * HIP_X, HIP_Y, 0.0).turned(0.0, 0.0, 0.0, 1.0, 0.0, 0.0, pose.hip[s]);
-            feet[s] = leg(painter, body, thighs[s], pose.knee[s], apart, seed + PIECES * (3 + s));
-            Frame arm = upper.moved(side * SHOULDER_X, SHOULDER_Y, 0.0).turned(0.0, 0.0, 0.0, 0.0, 0.0, 1.0,
-                    side * pose.spread[s]).turned(0.0, 0.0, 0.0, 1.0, 0.0, 0.0, pose.arm[s]);
-            arms[s] = arm;
-            MechParts.draw(painter, UPPER_PART, arm, 1.0, apart, seed + PIECES * (5 + s));
-            Frame forearm = arm.moved(0.0, -UPPER, 0.0).turned(0.0, 0.0, 0.0, 1.0, 0.0, 0.0, pose.elbow[s]);
-            MechParts.draw(painter, FOREARM_PART, forearm, 1.0, apart, seed + PIECES * (7 + s));
+            Frame thigh = body.moved(side * MinionShapes.HIP_X, MinionShapes.HIP_Y, 0.0).turned(0.0, 0.0, 0.0, 1.0,
+                    0.0, 0.0, pose.hip[s]);
+            Frame shin = thigh.moved(0.0, -MinionShapes.THIGH, 0.0).turned(0.0, 0.0, 0.0, 1.0, 0.0, 0.0,
+                    pose.knee[s]);
+            Frame foot = new Frame(shin.at(0.0, -MinionShapes.SHIN, 0.0), stand.right(), stand.up(), stand.forward(),
+                    stand.scale()).turned(0.0, 0.0, 0.0, 1.0, 0.0, 0.0, pose.ankle[s]);
+            MechParts.draw(painter, right ? MinionShapes.THIGH_RIGHT : MinionShapes.THIGH_LEFT, thigh, 1.0, apart,
+                    seed + PIECES * (4 + s));
+            MechParts.draw(painter, right ? MinionShapes.SHIN_RIGHT : MinionShapes.SHIN_LEFT, shin, 1.0, apart,
+                    seed + PIECES * (6 + s));
+            MechParts.draw(painter, right ? MinionShapes.FOOT_RIGHT : MinionShapes.FOOT_LEFT, foot, 1.0, apart,
+                    seed + PIECES * (8 + s));
+            soles[s] = foot.at(0.0, -0.15, 0.04);
+            Frame arm = upper.moved(side * MinionShapes.SHOULDER_X, MinionShapes.SHOULDER_Y, 0.0).turned(0.0, 0.0,
+                    0.0, 0.0, 0.0, 1.0, side * pose.spread[s]).turned(0.0, 0.0, 0.0, 1.0, 0.0, 0.0, pose.arm[s]);
+            Frame forearm = arm.moved(0.0, -MinionShapes.UPPER, 0.0).turned(0.0, 0.0, 0.0, 1.0, 0.0, 0.0,
+                    pose.elbow[s]);
+            MechParts.draw(painter, right ? MinionShapes.UPPER_RIGHT : MinionShapes.UPPER_LEFT, arm, 1.0, apart,
+                    seed + PIECES * (10 + s));
+            MechParts.draw(painter, right ? MinionShapes.FOREARM_RIGHT : MinionShapes.FOREARM_LEFT, forearm, 1.0,
+                    apart, seed + PIECES * (12 + s));
+            Frame hand = forearm.moved(0.0, -MinionShapes.FOREARM, 0.0).turned(0.0, 0.0, 0.0, 1.0, 0.0, 0.0,
+                    pose.wrist[s]);
+            hand(painter, hand, side, pose.curl[s], apart, seed + PIECES * (14 + s));
             if (right) {
-                MechParts.draw(painter, CANNON, forearm, 1.0, apart, seed + PIECES * 9);
-                pose.muzzle = forearm.at(CANNON_X, -MUZZLE - 0.05, 0.0);
+                MechParts.draw(painter, MinionShapes.CANNON, forearm, 1.0, apart, seed + PIECES * 16);
+                pose.muzzle = forearm.at(MinionShapes.CANNON_X, -MinionShapes.MUZZLE - 0.05, 0.0);
             }
+            parts[(right ? MinionCracks.Part.THIGH_RIGHT : MinionCracks.Part.THIGH_LEFT).ordinal()] = thigh;
+            parts[(right ? MinionCracks.Part.SHIN_RIGHT : MinionCracks.Part.SHIN_LEFT).ordinal()] = shin;
+            parts[(right ? MinionCracks.Part.UPPER_RIGHT : MinionCracks.Part.UPPER_LEFT).ordinal()] = arm;
+            parts[(right ? MinionCracks.Part.FOREARM_RIGHT : MinionCracks.Part.FOREARM_LEFT).ordinal()] = forearm;
         }
         painter.noClip();
         if (apart >= 0.0) {
             return;
         }
         if (grown < 1.0) {
-            arrival(painter, body, ground, grown, cut);
+            arrival(painter, stand, ground, grown, cut);
         }
         if (grown > 0.5) {
-            cracks(painter, minion.cracks(), upper, head, thighs[0], arms[1]);
-            thrusters(painter, body, feet, pose.thrust);
+            MinionCracks.draw(painter, minion.getId(), MinionPose.lost(minion), parts);
+            thrusters(painter, upper, stand, soles, pose.thrust);
             lights(painter, level, minion, pose, head, upper, partialTick);
         }
     }
 
-    // A leg from its hip, turned already at the hip: the thigh, the shin under the knee, and the foot kept flat under
-    // the ankle; gives the ankle.
-    private static Vec3 leg(LanternPainter painter, Frame body, Frame thigh, double knee, double apart, int seed) {
-        MechParts.draw(painter, THIGH_PART, thigh, 1.0, apart, seed);
-        Frame shin = thigh.moved(0.0, -THIGH, 0.0).turned(0.0, 0.0, 0.0, 1.0, 0.0, 0.0, knee);
-        MechParts.draw(painter, SHIN_PART, shin, 1.0, apart, seed + 4);
-        Vec3 ankle = shin.at(0.0, -SHIN, 0.0);
-        MechParts.draw(painter, FOOT, new Frame(ankle, body.right(), body.up(), body.forward(), body.scale()), 1.0,
-                apart, seed + 8);
-        return ankle;
+    // A hand from its wrist: the palm, four fingers of two joints hanging from its lower edge and a thumb at its
+    // front, all folding towards the palm (`side`'s inside) as far as `curl` says, 1 a fist.
+    private static void hand(LanternPainter painter, Frame wrist, double side, double curl, double apart, int seed) {
+        MechParts.draw(painter, side > 0.0 ? MinionShapes.PALM_RIGHT : MinionShapes.PALM_LEFT, wrist, 1.0, apart,
+                seed);
+        for (int k = 0; k < MinionShapes.FINGER_Z.length; k++) {
+            // The outer fingers fold a little further, as a real fist's do.
+            double more = 1.0 + 0.06 * Math.abs(k - 1.5);
+            Frame joint = wrist.moved(0.0, -MinionShapes.PALM, MinionShapes.FINGER_Z[k]);
+            for (int j = 0; j < 2; j++) {
+                joint = joint.turned(0.0, 0.0, 0.0, 0.0, 0.0, 1.0, -side * curl * FOLD[j] * more);
+                MechParts.draw(painter, MinionShapes.FINGERS[j], joint, 1.0, apart, seed + 1 + k * 2 + j);
+                joint = joint.moved(0.0, -MinionShapes.FINGER[j], 0.0);
+            }
+        }
+        Frame thumb = wrist.moved(-side * 0.01, -0.06, 0.13).turned(0.0, 0.0, 0.0, 1.0, 0.0, 0.0, -0.55)
+                .turned(0.0, 0.0, 0.0, 0.0, 0.0, 1.0, -side * (0.25 + curl * THUMB_FOLD));
+        MechParts.draw(painter, MinionShapes.THUMB, thumb, 1.0, apart, seed + 9);
     }
 
     // Being formed: up out of the ground a ring of light lies round its feet and a second rides the line it is built
@@ -227,54 +209,49 @@ public final class MinionPainter {
                 Colors.alpha(0.55 * fade));
     }
 
-    // Like an iron golem it cracks as it is worn down: bright fissures open on its chest and head first, then its
-    // belly and thigh, then its face and arm.
-    private static void cracks(LanternPainter painter, int cracks, Frame upper, Frame head, Frame thigh, Frame arm) {
-        for (int c = 0; c < cracks; c++) {
-            for (double[] path : CRACKS[c]) {
-                Frame on = switch ((int) path[0]) {
-                    case 1 -> head;
-                    case 2 -> thigh;
-                    case 3 -> arm;
-                    default -> upper;
-                };
-                Vec3 last = on.at(path[1], path[2], path[3]);
-                for (int i = 4; i + 2 < path.length; i += 3) {
-                    Vec3 next = on.at(path[i], path[i + 1], path[i + 2]);
-                    painter.edge(last, next, 0.035, 1.0);
-                    last = next;
-                }
-            }
-        }
-    }
-
-    // Off the ground its feet burn: a flare under each sole and a short flame down from it.
-    private static void thrusters(LanternPainter painter, Frame body, Vec3[] feet, double thrust) {
+    // Off the ground its pack's two nozzles and its soles burn, the flames pointing down and a little back.
+    private static void thrusters(LanternPainter painter, Frame upper, Frame stand, Vec3[] soles, double thrust) {
         if (thrust < 0.05) {
             return;
         }
-        double flicker = 0.85 + 0.15 * Math.sin(painter.time() * 2.3);
-        for (Vec3 ankle : feet) {
-            Vec3 sole = ankle.add(body.up().scale(-0.16));
-            painter.flare(sole, 0.35 * thrust * flicker, 0.9 * thrust);
-            painter.edge(sole, sole.add(body.up().scale(-0.7 * thrust * flicker)), 0.09 * thrust, thrust);
+        Vec3 down = stand.up().scale(-1.0);
+        Vec3 back = upper.up().scale(-1.0).add(upper.forward().scale(-0.35));
+        for (double x : MinionShapes.NOZZLE_X) {
+            painter.exhaust(upper.at(x, MinionShapes.NOZZLE_Y - 0.15, MinionShapes.NOZZLE_Z + 0.06), back, 1.1,
+                    0.09, thrust);
+        }
+        for (Vec3 sole : soles) {
+            painter.exhaust(sole, down, 0.75, 0.08, thrust * 0.85);
         }
     }
 
-    // The light it gives off: its visor and core, the cannon's charge and its bolt.
+    // The light it gives off: its V-shaped visor and the core in the Lantern's sign on its chest, beating together,
+    // and the cannon: rings of light drawn in along it as it charges, the bolt, and the glow left in the muzzle.
     private static void lights(LanternPainter painter, ClientLevel level, MechMinion minion, MinionPose pose,
             Frame head, Frame upper, float partialTick) {
         double time = painter.time();
         double pulse = 0.85 + 0.15 * Math.sin(time * 0.3 + minion.getId());
-        painter.glowLine(head.at(-0.22, 3.22, 0.36), head.at(0.22, 3.22, 0.36), 0.9, LanternPainter.GREEN,
-                Colors.alpha(0.5 * pulse));
-        painter.flare(upper.at(0.0, 2.58, 0.56), 0.22, 0.6 * pulse);
+        int visor = Colors.alpha(0.55 * pulse);
+        Vec3 middle = head.at(0.0, 3.235, 0.36);
+        painter.glowLine(middle, head.at(0.23, 3.29, 0.35), 0.3, LanternPainter.GREEN, visor);
+        painter.glowLine(middle, head.at(-0.23, 3.29, 0.35), 0.3, LanternPainter.GREEN, visor);
+        painter.flare(upper.at(0.0, MinionShapes.CORE_Y, MinionShapes.CORE_Z + 0.04), 0.24, 0.65 * pulse);
         if (minion.move() != MinionMoves.CANNON || pose.muzzle == null) {
             return;
         }
         double age = minion.moveAge(partialTick);
         if (age < MinionMoves.FIRE) {
-            painter.flare(pose.muzzle, 0.1 + 0.35 * Ease.smooth(age / MinionMoves.FIRE), 0.8);
+            double charge = Ease.smooth(age / MinionMoves.FIRE);
+            painter.flare(pose.muzzle, 0.1 + 0.4 * charge, 0.85);
+            Vec3 along = pose.muzzle.subtract(head.at(0.0, 3.0, 0.0)).normalize();
+            Vec3[] across = Vectors.across(along);
+            for (int k = 0; k < 3; k++) {
+                double t = (age * 0.25 + k / 3.0) % 1.0;
+                Vec3 at = pose.muzzle.subtract(along.scale(0.7 * (1.0 - t)));
+                double ring = 0.32 * (1.0 - t) + 0.06;
+                painter.circle(at, across[0], across[1], ring, 0.025, 0.12, Colors.alpha(0.8 * charge * t),
+                        Colors.alpha(0.4 * charge * t));
+            }
             return;
         }
         double after = age - MinionMoves.FIRE;
@@ -285,6 +262,9 @@ public final class MinionPainter {
             painter.glowLine(pose.muzzle, to, 1.4 * fade, LanternPainter.GREEN, Colors.alpha(0.8 * fade));
             painter.flare(pose.muzzle, 0.6 * fade, fade);
             painter.flare(to, 0.5 * fade, fade);
+        }
+        if (after < 8.0) {
+            painter.flare(pose.muzzle, 0.12, 0.5 * (1.0 - after / 8.0));
         }
     }
 }

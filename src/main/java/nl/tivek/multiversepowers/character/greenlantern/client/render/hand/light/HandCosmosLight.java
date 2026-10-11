@@ -3,12 +3,14 @@ package nl.tivek.multiversepowers.character.greenlantern.client.render.hand.ligh
 import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.client.Minecraft;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.LanternPainter;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.hand.HandPainter;
 import nl.tivek.multiversepowers.character.greenlantern.hand.HandCosmos;
 import nl.tivek.multiversepowers.character.greenlantern.hand.HandGroup;
 import nl.tivek.multiversepowers.engine.client.fx.Cosmos;
+import nl.tivek.multiversepowers.engine.client.fx.TexturedBox;
 import nl.tivek.multiversepowers.engine.client.render.ConstructPainter;
 import nl.tivek.multiversepowers.engine.client.render.Material;
 import nl.tivek.multiversepowers.engine.client.render.mesh.Mesh;
@@ -18,19 +20,20 @@ import nl.tivek.multiversepowers.engine.math.Ease;
 import nl.tivek.multiversepowers.engine.math.Noise;
 import nl.tivek.multiversepowers.engine.math.Vectors;
 
-// The Cosmos Test's light: the circle drawn on the ground and the hole of stars it opens, the flash as the hand dives
-// in; then in the sky the rift beside the moon, the moon itself made solid in the hand's grip, cracking and leaking light
-// as it is crushed, and its burst into shards, shock rings and a storm of stars.
+// The Cosmos Test's light, in the ring's green: the circle drawn on the ground and the hole of stars it opens, the
+// flash as the hand dives in; then in the sky the rift cut beside the moon, the sky's own moon made a cube in the hand's
+// grip, cracking and leaking light as it is crushed, and its burst into shards, shock rings and a storm of stars.
 public final class HandCosmosLight {
-    private static final int DEEP = 0x07021C;
-    private static final int LIGHT = 0xA98BFF;
-    private static final int WHITE = 0xF4EEFF;
-    private static final Material COSMIC = new Material(0x1A0A2E, 0xB07CFF, 0x6A2FD8, 0xF0D8FF);
-    private static final Material MOON = new Material(0xB4B1A8, 0xD9D6CC, 0xEDEBE3, 0xFFFFFF);
-    private static final Material CRATER = new Material(0x6E6B64, 0x8C8981, 0xA6A39B, 0xC8C6BE);
-    private static final Material NIGHT_SIDE = new Material(0x1E1D1A, 0x2A2925, 0x34332E, 0x4A4842);
-    private static final ConstructPainter.Shape MOON_BALL = ConstructPainter.Shape.of(Mesh.ball(40, 20, 1.0, 1.0));
-    private static final ConstructPainter.Shape CRATERS = ConstructPainter.Shape.of(craters());
+    private static final int DEEP = 0x021C0A;
+    private static final int LIGHT = 0x7BFF9C;
+    private static final int WHITE = 0xEEFFF2;
+    private static final Material COSMIC = new Material(0x0A2E14, 0x7CFF9E, 0x2FD85A, 0xD8FFE2);
+    private static final Material MOON = new Material(0x505666, 0x9097A5, 0xAFB8CC, 0xD9E4FF);
+    private static final ConstructPainter.Shape MOON_CUBE = ConstructPainter.Shape.of(
+            Mesh.bevel(-1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 0.02, 1.0));
+    // The sky's moon: its eight phases in a row of four, two rows, each face 8 pixels square in the middle of 32.
+    private static final ResourceLocation MOON_PHASES = ResourceLocation.withDefaultNamespace(
+            "textures/environment/moon_phases.png");
     private static final int CIRCLE_STEPS = 64;
     private static final int RIFT_POINTS = 28;
     private static final int CRACKS = 26;
@@ -39,26 +42,6 @@ public final class HandCosmosLight {
     private static final double BURST_TICKS = 60.0;
 
     private HandCosmosLight() {
-    }
-
-    private static Mesh[] craters() {
-        List<Mesh> parts = new ArrayList<>();
-        for (int k = 0; k < 22; k++) {
-            Vec3 n = Noise.direction(k * 7 + 3, 811);
-            double r = 0.07 + 0.2 * Noise.of(k, 5, 812);
-            Vec3 axis = new Vec3(0.0, 1.0, 0.0).cross(n);
-            double angle = Math.toDegrees(Math.acos(Math.max(-1.0, Math.min(1.0, n.y))));
-            Mesh disc = Mesh.cylinder(14, r, 0.985, 1.004, 1.0);
-            Mesh rim = Mesh.torus(16, 4, r, r * 0.12, 1.2).moved(0.0, 1.0, 0.0);
-            if (axis.lengthSqr() > 1.0E-6) {
-                axis = axis.normalize();
-                disc = disc.turned(axis.x, axis.y, axis.z, angle);
-                rim = rim.turned(axis.x, axis.y, axis.z, angle);
-            }
-            parts.add(disc);
-            parts.add(rim);
-        }
-        return parts.toArray(Mesh[]::new);
     }
 
     public static void draw(LanternPainter painter, int id, Vec3 base, Vec3 facing, double clock, double strength,
@@ -137,7 +120,7 @@ public final class HandCosmosLight {
     private static void sky(LanternPainter painter, int id, double clock, double strength, Material lantern) {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.level == null || HandCosmos.rift(clock) <= 0.0 && HandCosmos.sinceBurst(clock) > BURST_TICKS
-                || clock < HandCosmos.TEARS - 2) {
+                || clock < HandCosmos.TRACES) {
             return;
         }
         float partialTick = minecraft.getTimer().getGameTimeDeltaPartialTick(false);
@@ -148,7 +131,7 @@ public final class HandCosmosLight {
         Vec3 moon = HandCosmos.moonAt(skyMoon, radius, eye, clock);
         rift(painter, id, skyMoon, radius, eye, clock, strength);
         if (HandCosmos.moonWhole(clock)) {
-            moon(painter, id, moon, radius, eye, clock);
+            moon(painter, id, moon, radius, eye, clock, minecraft.level.getMoonPhase());
         }
         HandGroup.Sub hand = HandCosmos.moonHand(skyMoon, radius, eye, clock);
         if (HandCosmos.rift(clock) > 0.0) {
@@ -162,17 +145,26 @@ public final class HandCosmosLight {
         burst(painter, id, moon, radius, eye, clock, strength);
     }
 
-    // The rift beside the moon: a ragged window on the stars, its lips burning.
+    // The rift beside the moon: first a cut of light drawn slowly down the sky, then a ragged window on the stars
+    // opening out of it, its lips burning.
     private static void rift(LanternPainter painter, int id, Vec3 moon, double radius, Vec3 eye, double clock,
             double strength) {
         double open = HandCosmos.rift(clock);
-        if (open <= 0.0) {
-            return;
-        }
+        double traced = HandCosmos.riftTraced(clock);
         Vec3 center = HandCosmos.riftCenter(moon, radius, eye);
         Vec3 normal = HandCosmos.riftNormal(moon, radius, eye);
         Vec3[] axes = Vectors.across(normal);
         double size = radius * HandCosmos.RIFT_SIZE;
+        double cut = traced * (1.0 - Ease.smooth(open / 0.2)) * strength;
+        if (cut > 0.01) {
+            Vec3 top = center.add(axes[1].scale(size * 1.3));
+            Vec3 tip = top.lerp(center.subtract(axes[1].scale(size * 1.3)), traced);
+            painter.edge(top, tip, radius * 0.04, cut);
+            painter.flare(tip, radius * (0.25 + 0.05 * Math.sin(clock * 0.9)), cut);
+        }
+        if (open <= 0.0) {
+            return;
+        }
         List<Vec3> outline = new ArrayList<>();
         for (int k = 0; k < RIFT_POINTS; k++) {
             double turn = Math.PI * 2.0 * k / RIFT_POINTS;
@@ -188,43 +180,50 @@ public final class HandCosmosLight {
         painter.flare(center, radius * 0.6 * open, 0.4 * open * strength);
     }
 
-    // The moon made solid: turning slowly, pressed out of round by the fingers as they crush it, cracks spreading
-    // over it and light leaking out of them, brighter and brighter.
-    private static void moon(LanternPainter painter, int id, Vec3 moon, double radius, Vec3 eye, double clock) {
+    // The moon as the sky draws it, laid on the sky's own axes so its face stands just as it did there: its texture's
+    // u running north, v along the moon's path. Then turned slowly out of that face, so it shows it is a cube, drawn
+    // nearer, and pressed flat by the fingers as they crush it.
+    private static ConstructPainter.Frame moonFrame(Vec3 moon, double radius, Vec3 eye, double clock) {
         double crush = HandCosmos.crush(clock);
         Vec3 view = moon.subtract(eye).normalize();
-        Vec3 side = HandCosmos.skySide(view);
-        Vec3 up = side.cross(view).normalize();
-        double spin = clock * 0.004;
-        Vec3 right = side.scale(Math.cos(spin)).add(view.scale(Math.sin(spin)));
-        Vec3 forward = view.scale(Math.cos(spin)).subtract(side.scale(Math.sin(spin)));
-        ConstructPainter.Frame frame = new ConstructPainter.Frame(moon, right, up, forward, radius)
+        Vec3 path = view.cross(new Vec3(0.0, 0.0, 1.0));
+        path = path.lengthSqr() < 1.0E-6 ? Vectors.UP : path.normalize();
+        Vec3 north = view.cross(path).normalize();
+        double turn = HandCosmos.moonTurn(clock);
+        Vec3 right = north.scale(Math.cos(turn)).add(view.scale(Math.sin(turn)));
+        Vec3 forward = view.scale(Math.cos(turn)).subtract(north.scale(Math.sin(turn)));
+        double tilt = turn * 0.35;
+        Vec3 up = path.scale(Math.cos(tilt)).add(forward.scale(Math.sin(tilt)));
+        forward = forward.scale(Math.cos(tilt)).subtract(path.scale(Math.sin(tilt)));
+        return new ConstructPainter.Frame(moon, right, up, forward, radius * HandCosmos.moonSize(clock))
                 .stretched(1.0 - 0.26 * crush, 1.0 + 0.12 * crush, 1.0 - 0.18 * crush);
-        Material cosmic = painter.material();
-        painter.material(MOON);
-        painter.shape(MOON_BALL, frame, 1.0, 1.0 + 0.4 * crush);
-        painter.material(CRATER);
-        painter.shape(CRATERS, frame, 1.0, 1.0);
-        // The far side of a gibbous moon in shadow, so it reads round rather than as a flat disc.
-        Vec3 dark = side.add(view.scale(0.7)).subtract(up.scale(0.35));
-        painter.clip(moon, dark, 0.0);
-        painter.material(NIGHT_SIDE);
-        painter.shape(MOON_BALL, frame.stretched(1.004, 1.004, 1.004), 1.0, 0.6);
-        painter.noClip();
-        painter.material(cosmic);
+    }
+
+    // The moon made solid: the sky's own moon, its square face the face of a cube, cracks spreading over it as it is
+    // crushed and light leaking out of them, brighter and brighter.
+    private static void moon(LanternPainter painter, int id, Vec3 moon, double radius, Vec3 eye, double clock,
+            int phase) {
+        double crush = HandCosmos.crush(clock);
+        ConstructPainter.Frame frame = moonFrame(moon, radius, eye, clock);
+        Vec3[] corners = new Vec3[8];
+        for (int i = 0; i < 8; i++) {
+            corners[i] = frame.at((i & 1) * 2.0 - 1.0, ((i >> 1) & 1) * 2.0 - 1.0, ((i >> 2) & 1) * 2.0 - 1.0);
+        }
+        float u = (Math.floorMod(phase, 4) * 32 + 12) / 128.0F;
+        float v = (Math.floorMod(phase, 8) / 4 * 32 + 12) / 64.0F;
+        TexturedBox.draw(MOON_PHASES, u, v, u + 8.0F / 128.0F, v + 8.0F / 64.0F, corners);
         if (crush <= 0.0) {
             return;
         }
+        Vec3 camera = painter.camera();
         int cracks = (int) Math.ceil(CRACKS * Math.min(1.0, crush * 1.3));
         for (int k = 0; k < cracks; k++) {
             Vec3 from = Noise.direction(k * 3 + 1, id + 31);
             Vec3 to = Noise.direction(k * 3 + 2, id + 31);
             double grown = Math.min(1.0, crush * 1.3 * CRACKS - k);
-            Vec3 last = frame.at(from.x, from.y, from.z);
+            Vec3 last = onCube(frame, from, camera, radius);
             for (int s = 1; s <= 6; s++) {
-                double u = s / 6.0 * 0.45 * grown;
-                Vec3 on = from.lerp(to, u).normalize().scale(1.01);
-                Vec3 next = frame.at(on.x, on.y, on.z);
+                Vec3 next = onCube(frame, from.lerp(to, s / 6.0 * 0.45 * grown), camera, radius);
                 painter.edge(last, next, radius * (0.02 + 0.025 * crush), 0.5 + 0.5 * crush);
                 last = next;
             }
@@ -232,7 +231,15 @@ public final class HandCosmosLight {
                 painter.flare(last, radius * (0.08 + 0.2 * crush), crush);
             }
         }
-        painter.flare(moon, radius * (0.6 + 1.6 * crush * crush), 0.3 + 0.6 * crush);
+        painter.flare(moon, radius * (0.6 + 1.6 * crush * crush), 0.1 + 0.8 * crush);
+    }
+
+    // A way out of the cube's middle laid on its surface, lifted a little toward the eye so it never sinks into it.
+    private static Vec3 onCube(ConstructPainter.Frame frame, Vec3 way, Vec3 camera, double radius) {
+        double most = Math.max(Math.abs(way.x), Math.max(Math.abs(way.y), Math.abs(way.z)));
+        Vec3 on = most < 1.0E-6 ? way : way.scale(1.0 / most);
+        Vec3 at = frame.at(on.x, on.y, on.z);
+        return at.add(camera.subtract(at).normalize().scale(radius * 0.03));
     }
 
     // The moon bursting: a blinding flash, shards flung out, rings of shock across the sky and a storm of stars that
@@ -254,8 +261,8 @@ public final class HandCosmosLight {
         Material cosmic = painter.material();
         painter.material(MOON);
         painter.fling(5.0);
-        painter.shattered(MOON_BALL, new ConstructPainter.Frame(moon, axes[0], axes[1], view, radius),
-                Math.min(1.0, Math.sqrt(since / 30.0)), 1.2, id + 77);
+        painter.shattered(MOON_CUBE, moonFrame(moon, radius, eye, clock), Math.min(1.0, Math.sqrt(since / 30.0)),
+                1.2, id + 77);
         painter.fling(1.0);
         painter.material(cosmic);
         for (int k = 0; k < 3; k++) {

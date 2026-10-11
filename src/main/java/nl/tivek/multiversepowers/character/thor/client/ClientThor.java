@@ -141,6 +141,10 @@ public final class ClientThor {
         } else if (payload.move() == ThorStatePayload.GRAB_ACT) {
             view.act = payload.arg();
             view.actAt = ticks;
+        } else if (payload.move() == ThorStatePayload.NONE && view.move == ThorStatePayload.DIVE
+                && (payload.flags() & ThorStatePayload.CARRYING) == 0) {
+            // The dive is over (it ran out, or was cut short) with nothing in his fist: he flies on as before.
+            start(view, ThorStatePayload.NONE, 0);
         } else if (payload.move() != ThorStatePayload.NONE) {
             boolean echo = own && view.predicted == payload.move() && ticks - view.predictedAt <= ECHO;
             if (!echo) {

@@ -285,14 +285,12 @@ final class LanternAbilities {
                 .setting("cannonBashDamage", 7.0, 0.0, 2000.0, Unit.HALF_HEARTS,
                         "Damage the cannon rammed forward deals to everything before you")
                 .setting("cannonBashPowerCost", 0.3, 0.0, 100.0, Unit.POWER, "Ring power one bash costs")
-                .group("cannon_shield", "Arm Cannon: shield (hold right, let go)")
-                .setting("cannonShieldDamageKept", 0.2, 0.0, 1.0, Unit.PART_KEPT,
-                        "Part of a blow from the front that still gets through the shield (0.2 = 20%)")
-                .setting("cannonBurstDamage", 5.0, 0.0, 2000.0, Unit.HALF_HEARTS,
-                        "Damage the shield deals as it bursts forward when you let go")
-                .setting("cannonBurstReach", 4.0, 1.0, 12.0, Unit.BLOCKS, "How far the bursting shield reaches")
-                .setting("cannonShieldPowerPerSecond", 0.5, 0.0, 20.0, Unit.POWER_PER_SECOND,
-                        "Ring power holding the shield costs a second")
+                .group("cannon_rapid", "Arm Cannon: rapid fire (hold right)")
+                .setting("cannonRapidDamage", 2.5, 0.0, 2000.0, Unit.HALF_HEARTS,
+                        "Damage one small bolt of the rapid stream deals")
+                .setting("cannonRapidRadius", 0.8, 0.0, 8.0, Unit.BLOCKS, "How far a small bolt's burst reaches")
+                .setting("cannonRapidPowerPerSecond", 2.5, 0.0, 50.0, Unit.POWER_PER_SECOND,
+                        "Ring power the rapid stream costs a second")
                 .group("minigun", "Minigun: burst (left click)")
                 .setting("minigunDamage", 1.6, 0.0, 2000.0, Unit.HALF_HEARTS, "Damage one minigun round deals")
                 .setting("minigunRange", 32.0, 4.0, 96.0, Unit.BLOCKS, "How far a round flies, in blocks")
@@ -309,7 +307,23 @@ final class LanternAbilities {
                 .group("minigun_spin", "Minigun: spin the barrels (hold right)")
                 .setting("minigunSpinPowerPerSecond", 0.3, 0.0, 20.0, Unit.POWER_PER_SECOND,
                         "Ring power keeping the barrels spinning costs a second; with them spun, the stream starts"
-                                + " at once");
+                                + " at once")
+                .group("summon", "Hard-Light Summon (pick it in the wheel)")
+                .setting("summonPowerCost", 25.0, 0.0, 100.0, Unit.POWER, "Ring power one summoning costs")
+                .setting("summonCooldown", 30.0, 0.0, 600.0, Unit.SECONDS,
+                        "Seconds before the ring can summon again")
+                .setting("summonMinutes", 10.0, 0.5, 60.0, Unit.MINUTES, "How long a summoned creature stays")
+                .settingInt("summonMost", 3, 1, 6, Unit.COUNT,
+                        "Most summoned creatures at once: a summoning forms 1 up to this many, at random, and"
+                                + " the oldest break up past it")
+                .group("summon_kinds", "Hard-Light Summon: how often each creature comes")
+                .setting("summonSkeleton", 26.0, 0.0, 100.0, Unit.WEIGHT, "Skeleton")
+                .setting("summonPiglin", 22.0, 0.0, 100.0, Unit.WEIGHT, "Zombified piglin")
+                .setting("summonCreeper", 18.0, 0.0, 100.0, Unit.WEIGHT, "Creeper")
+                .setting("summonBlaze", 13.0, 0.0, 100.0, Unit.WEIGHT, "Blaze")
+                .setting("summonVindicator", 10.0, 0.0, 100.0, Unit.WEIGHT, "Vindicator")
+                .setting("summonEnderman", 7.0, 0.0, 100.0, Unit.WEIGHT, "Enderman")
+                .setting("summonGolem", 4.0, 0.0, 100.0, Unit.WEIGHT, "Iron golem");
         lantern.add(abilities, AbilitySlot.ABILITY_3, "recharge").cooldown(60)
                 .setting("powerRestored", 100.0, 1.0, 100.0, Unit.POWER,
                         "How much power one touch of the lantern puts back in the ring (a full ring holds"
@@ -491,6 +505,8 @@ final class LanternAbilities {
                                 + " eye with its puppeteer and a pair with an axe count as one); after the last the"
                                 + " use is over and the cooldown starts")
                 .was(8.0, 1.0)
+                .setting("handRestSeconds", 15.0, 0.0, 120.0, Unit.SECONDS,
+                        "Seconds a hand rests after it came before it can come again (unless every hand rests)")
                 .settingInt("handTicks", 10, 1, 200, Unit.TICKS,
                         "The fewest ticks from one hand coming up to the next (20 ticks = 1 second): a press"
                                 + " sooner waits that long")
@@ -726,9 +742,10 @@ final class LanternAbilities {
                         "Ring power opening the hatch costs; out of it drop as many helpers as are missing of 3")
                 .setting("mechHelperHealth", 30.0, 1.0, 2000.0, Unit.HEALTH,
                         "Health of each helper, in half hearts (a zombie has 20)")
-                .setting("mechHelperDamage", 5.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                .setting("mechHelperDamage", 2.5, 0.0, 2000.0, Unit.HALF_HEARTS,
                         "Damage of a helper's punch, in half hearts; its cannon bolt does 1.2 times it and the slam"
                                 + " of its leap 1.4 times it round where it lands")
+                .was(5.0)
                 .settingInt("mechHelperCooldown", 600, 0, 72000, Unit.TICKS,
                         "Ticks after the hatch shuts before it opens again (20 ticks = 1 second)")
                 .group("mechWalk", "Walking the mech")

@@ -53,13 +53,13 @@ public final class HandPose extends HandRings {
     public static int life(int variant) {
         int move = move(variant);
         return move == AXE ? HandDuo.LIFE : move == RAGDOLL ? ticks(ragdollEnds(extra(variant)))
-                : ticks(LIFE[move]);
+                : move == COSMOS ? HandCosmos.life() : ticks(LIFE[move]);
     }
 
     public static int sinks(int variant) {
         int move = move(variant);
         return move == AXE ? HandDuo.AXE_BREAKS : move == RAGDOLL ? ticks(ragdollSinks(extra(variant)))
-                : ticks(SINK[move]);
+                : move == COSMOS ? HandCosmos.sinks() : ticks(SINK[move]);
     }
 
     // The catch hand belongs to the ragdoll and the puppeteer to the evil eye: never picked by themselves, they go by

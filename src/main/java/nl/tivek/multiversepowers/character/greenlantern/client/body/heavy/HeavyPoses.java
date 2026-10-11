@@ -288,7 +288,7 @@ final class HeavyPoses {
         for (int pass = 0; pass < 3; pass++) {
             Vector3f pull = new Vector3f();
             float most = 0.0F;
-            for (int side = 0; side < (dual(weapon) ? 1 : 2); side++) {
+            for (int side = 0; side < (dual(weapon) || HeavyPainter.worn(weapon) ? 1 : 2); side++) {
                 Vec3 grip = HeavyPainter.grip(weapon, side == 0).subtract(middle)
                         .scale(16.0 * HeavyPainter.size(weapon));
                 Vector3f hand = new Vector3f(pose.middle).add(new Vector3f(across).mul((float) grip.x))

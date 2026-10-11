@@ -34,10 +34,10 @@ public final class HeavyPainter {
             { new Vec3(0.0, -0.02, -0.3), new Vec3(0.0, -0.22, -0.21) },
             { new Vec3(-0.1, -0.025, -0.57), new Vec3(0.0, 0.205, -0.26) } };
     // How big each weapon is drawn.
-    private static final double[] SIZE = { 1.0, 1.1, 1.45, 0.95, 0.85, 1.25, 1.3 };
+    private static final double[] SIZE = { 1.0, 1.1, 1.45, 1.15, 0.85, 1.25, 1.3 };
     // How far each weapon reaches back and out along its length, for it to grow from one end to the other.
     private static final double[][] ENDS = { { -1.0, 0.8 }, { -0.72, 0.95 }, { -0.91, 1.053 }, { -0.45, 0.52 },
-            { -0.3, 0.53 }, { -0.45, 0.37 }, { -0.6, 0.8 } };
+            { -0.3, 0.53 }, { -0.45, 0.37 }, { -0.6, 1.04 } };
     private static final Shape[] BODIES = { WeaponShapes.BATTLEAXE, WeaponShapes.CHAINSAW_BODY,
             WeaponShapes.ROCKET_TUBE, WeaponShapes.SHOTGUN, GunParts.REVOLVER_FRAME, GunParts.CANNON_BODY,
             GunParts.MINIGUN_BODY };
@@ -86,6 +86,11 @@ public final class HeavyPainter {
 
     static Vec3 grip(int weapon, boolean right) {
         return GRIPS[weapon][right ? 0 : 1];
+    }
+
+    // Worn on the right forearm alone, the right hand inside it and the left free: the arm cannon.
+    static boolean worn(int weapon) {
+        return weapon == CANNON;
     }
 
     // Where a hand holds the weapon `reload` ticks into its reload: the shotgun's left hand rides the fore-end as the

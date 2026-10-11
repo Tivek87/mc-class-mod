@@ -44,7 +44,7 @@ import nl.tivek.multiversepowers.character.greenlantern.ability.mech.MechAssembl
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 
 // A helper the Hard-Light Mech drops out of the hatch under its cockpit: a robot of hard light twice a player's
-// height, a little stronger than a zombie. It goes after what is out to hurt its pilot (red to them) with three moves
+// height, about as strong as a zombie. It goes after what is out to hurt its pilot (red to them) with three moves
 // of its own (MinionMoves) and else keeps near the mech; it breaks into solid pieces when it dies, when its pilot
 // leaves the mech or when it strays too far, and is never saved. One of no pilot (out of a spawn egg or summoned)
 // guards where it is like an iron golem: it goes after monsters and whatever hurts it, and is saved with the world.
@@ -69,8 +69,8 @@ public final class MechMinion extends PathfinderMob {
     // Below these parts of its health it shows its first, second and third crack.
     public static final float[] CRACKS = { 0.75F, 0.5F, 0.25F };
     private static final float MEND = 10.0F;
-    private static final double WILD_HEALTH = 60.0;
-    private static final float WILD_DAMAGE = 7.0F;
+    private static final double WILD_HEALTH = 30.0;
+    private static final float WILD_DAMAGE = 3.5F;
     // It breaks into pieces over this many ticks once dead.
     public static final int BREAK = 16;
     // Further than this from its pilot it breaks up.
@@ -80,7 +80,7 @@ public final class MechMinion extends PathfinderMob {
 
     @Nullable
     private UUID owner;
-    private float damage = 5.0F;
+    private float damage = 2.5F;
     // In each game: the move it makes now and the tick it began (by its own count).
     private int move;
     private int moveAt;
@@ -104,7 +104,7 @@ public final class MechMinion extends PathfinderMob {
 
     private static void onAttributes(EntityAttributeCreationEvent event) {
         event.put(TYPE.get(), Mob.createMobAttributes().add(Attributes.MAX_HEALTH, 30.0)
-                .add(Attributes.MOVEMENT_SPEED, 0.3).add(Attributes.ATTACK_DAMAGE, 5.0).add(Attributes.ARMOR, 4.0)
+                .add(Attributes.MOVEMENT_SPEED, 0.3).add(Attributes.ATTACK_DAMAGE, 2.5).add(Attributes.ARMOR, 4.0)
                 .add(Attributes.KNOCKBACK_RESISTANCE, 0.5).add(Attributes.FOLLOW_RANGE, 32.0)
                 .add(Attributes.STEP_HEIGHT, 1.1).build());
     }
@@ -200,7 +200,7 @@ public final class MechMinion extends PathfinderMob {
     }
 
     // A wild one comes up out of the ground the moment it is first in a world (not when its world loads it again),
-    // sturdier than a mech's.
+    // hitting a little harder than a mech's.
     @Override
     public void onAddedToLevel() {
         super.onAddedToLevel();

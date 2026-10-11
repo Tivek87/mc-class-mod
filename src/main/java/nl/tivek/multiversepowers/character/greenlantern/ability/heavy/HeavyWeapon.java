@@ -50,7 +50,7 @@ public final class HeavyWeapon extends HeavyRounds implements Effect {
             "rpgGuidedPowerPerSecond" }, { "shotgunPowerCost", "shotgunDoublePowerCost", "shotgunBashPowerCost",
             "shotgunDeflectPowerPerSecond" }, { "revolverPowerCost", "revolverFanPowerCost", "revolverWhipPowerCost",
             "revolverDeadeyePowerPerSecond" }, { "cannonPowerCost", "cannonChargePowerPerSecond", "cannonBashPowerCost",
-            "cannonShieldPowerPerSecond" }, { "minigunPowerCost", "minigunPowerPerSecond", "minigunVentPowerCost",
+            "cannonRapidPowerPerSecond" }, { "minigunPowerCost", "minigunPowerPerSecond", "minigunVentPowerCost",
             "minigunSpinPowerPerSecond" } };
 
     private static final Map<UUID, HeavyWeapon> HELD = new HashMap<>();
@@ -329,11 +329,11 @@ public final class HeavyWeapon extends HeavyRounds implements Effect {
         return this.breaking < 0 && this.weapon == AXE && (this.move == WHIRL || this.move == WHIRL_OUT);
     }
 
-    // The chainsaw's guard, the shotgun's deflection and the cannon's shield turn what comes from the front.
+    // The chainsaw's guard and the shotgun's deflection turn what comes from the front.
     private boolean guarding() {
         return this.breaking < 0 && this.holding && this.age >= LOOP_FROM - 1
                 && (this.weapon == SAW && this.move == GUARD
-                || (this.weapon == SHOTGUN || this.weapon == CANNON) && this.move == BRACE);
+                || this.weapon == SHOTGUN && this.move == BRACE);
     }
 
     // Whirling, nothing knocks him back.
@@ -382,9 +382,8 @@ public final class HeavyWeapon extends HeavyRounds implements Effect {
             ParticleFx.cloud(level, ParticleFx.dust(PowerRing.BRIGHT, 0.9F), shot.position(), 10, 0.2, 0.2);
             return;
         }
-        if (weapon.weapon == SHOTGUN || weapon.weapon == CANNON) {
-            event.setAmount(event.getAmount() * (float) value(weapon.weapon == SHOTGUN ? "shotgunDeflectDamageKept"
-                    : "cannonShieldDamageKept"));
+        if (weapon.weapon == SHOTGUN) {
+            event.setAmount(event.getAmount() * (float) value("shotgunDeflectDamageKept"));
             return;
         }
         event.setAmount(event.getAmount() * (float) value("sawGuardDamageKept"));

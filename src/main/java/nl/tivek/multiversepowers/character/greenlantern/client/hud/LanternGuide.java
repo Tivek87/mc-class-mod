@@ -104,8 +104,8 @@ final class LanternGuide {
                 "revolverFanPowerCost", "revolverWhipPowerCost", "revolverDeadeyePowerPerSecond", "shot", "fan",
                 "whip", "deadeye"));
         modes.add(weapon("arm_cannon", player -> ClientHeavy.holding() == HeavyMoves.CANNON, "cannonPowerCost",
-                "cannonChargePowerPerSecond", "cannonBashPowerCost", "cannonShieldPowerPerSecond", "plasma",
-                "charge", "bash", "shield"));
+                "cannonChargePowerPerSecond", "cannonBashPowerCost", "cannonRapidPowerPerSecond", "plasma",
+                "charge", "bash", "rapid"));
         modes.add(weapon("minigun", player -> ClientHeavy.holding() == HeavyMoves.MINIGUN, "minigunPowerCost",
                 "minigunPowerPerSecond", "minigunVentPowerCost", "minigunSpinPowerPerSecond", "burst", "stream",
                 "vent", "spin"));

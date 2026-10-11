@@ -131,7 +131,8 @@ final class GrabDive {
         Vec3 at = held.getBoundingBox().getCenter();
         ParticleFx.cloud(level, ParticleTypes.ELECTRIC_SPARK, at, 18, 0.4, 0.25);
         level.playSound(null, at.x, at.y, at.z, SoundEvents.PLAYER_ATTACK_KNOCKBACK, SoundSource.PLAYERS, 1.0F, 0.7F);
-        this.moves.sync(ThorStatePayload.NONE, 0);
+        // Carrying, the dive shows as his carry; a creature he could not hold was only struck, and he dives on.
+        this.moves.sync(this.carried ? ThorStatePayload.NONE : ThorStatePayload.DIVE, 0);
     }
 
     // His game says he hit the ground in the dive: the slam, and his flight is over.

@@ -18,6 +18,7 @@ import nl.tivek.multiversepowers.character.thor.ThorStatePayload;
 import nl.tivek.multiversepowers.engine.entity.Knockdowns;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 import nl.tivek.multiversepowers.engine.math.Vectors;
+import nl.tivek.multiversepowers.engine.world.ChunkPreloader;
 import nl.tivek.multiversepowers.engine.target.Targeting;
 import nl.tivek.multiversepowers.spell.SpellTargets;
 
@@ -31,6 +32,7 @@ abstract class MjolnirCatch extends MjolnirRest {
     private static final int SPEED_UP = 4;
     private static final double ASIDE = 1.0;
     private static final double ASIDE_UP = 0.3;
+    private static final double LOAD_AHEAD = 64.0;
 
     private boolean called;
     private boolean toFly;
@@ -102,6 +104,11 @@ abstract class MjolnirCatch extends MjolnirRest {
         }
         this.way = to.scale(1.0 / gap);
         Vec3 next = this.at.add(this.way.scale(Math.min(speed, gap)));
+        // The land ahead is loaded before it gets there, so it is seen all the way and hits what is in its way.
+        for (double ahead = 0.0; level.getGameTime() % ChunkPreloader.EVERY_TICKS == 0
+                && ahead <= Math.min(gap, LOAD_AHEAD); ahead += 16.0) {
+            ChunkPreloader.hold(level, this.at.add(this.way.scale(ahead)), owner.getId());
+        }
         this.passing(level, owner, this.at, next);
         this.move(next);
         this.trail(level, owner);

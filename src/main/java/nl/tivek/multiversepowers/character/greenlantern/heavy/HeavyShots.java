@@ -17,8 +17,11 @@ public final class HeavyShots {
     // A click fires a burst of BURST rounds from BURST_FROM.
     public static final int BURST_FROM = 6;
     public static final int BURST = 6;
-    // The cannon is fully charged after this long.
+    // The cannon is fully charged after this long; held on the right button it fires a bolt every RAPID_EVERY ticks
+    // from RAPID_FROM.
     public static final int CHARGE = 40;
+    public static final int RAPID_FROM = 3;
+    public static final int RAPID_EVERY = 3;
     // The minigun overheats after this many rounds in a row; it cools by as many a tick when it rests.
     public static final int HEAT_ROUNDS = 90;
     public static final double COOL = 1.5;
@@ -33,7 +36,8 @@ public final class HeavyShots {
             case REVOLVERS -> move == SHOOT && age == hit(weapon, move)
                     || move == AIM && age >= FAN_FROM && (age - FAN_FROM) % FAN_EVERY == 0
                     || move == UNBRACE && age >= DEAD_EVERY && age % DEAD_EVERY == 0 && age / DEAD_EVERY <= marks;
-            case CANNON -> (move == SHOOT || move == LOOSE) && age == hit(weapon, move);
+            case CANNON -> (move == SHOOT || move == LOOSE) && age == hit(weapon, move)
+                    || move == BRACE && age >= RAPID_FROM && (age - RAPID_FROM) % RAPID_EVERY == 0;
             case MINIGUN -> move == SHOOT && age >= BURST_FROM && age < BURST_FROM + BURST
                     || move == AIM && age >= (spun ? SPUN : SPIN_UP);
             default -> false;

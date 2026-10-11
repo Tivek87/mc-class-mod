@@ -52,7 +52,7 @@ public final class ThorMotion extends ThorGroundMotion {
     private static final double HANG_SINK = -0.03;
     // Called into his hand to fly, the hammer is waited for this long at most; a throw the server says nothing of
     // this long was refused.
-    private static final int AWAIT_LONGEST = 40;
+    private static final int AWAIT_LONGEST = 200;
     private static final int GUESS_LONGEST = 20;
     // Space pressed twice within this many ticks in flight: he hops up and lets himself fall.
     private static final int DOUBLE_TAP = 7;
@@ -68,6 +68,8 @@ public final class ThorMotion extends ThorGroundMotion {
     private static Vec3 blinkTo = Vec3.ZERO;
     private static int diveAge = -1;
     private static Vec3 diveAt = Vec3.ZERO;
+    // Past the point he dove at with nothing grabbed: from then on straight down until he hits the ground.
+    private static boolean diveDown;
     private static int lightningLeft;
     // Ticks into Throw and Follow's draw (from its start), and into the wait for the hammer called to fly; -1 when not.
     private static int drawAge = -1;
@@ -314,6 +316,7 @@ public final class ThorMotion extends ThorGroundMotion {
                 ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, player));
         diveAt = hit.getLocation();
         diveAge = 0;
+        diveDown = false;
         lightning = false;
         ClientThor.predict(player, ThorStatePayload.DIVE, 0, flags());
     }
@@ -577,7 +580,9 @@ public final class ThorMotion extends ThorGroundMotion {
             Entity target = view == null || view.carried < 0 ? null : player.level().getEntity(view.carried);
             Vec3 aim = target != null && target.isAlive() ? target.getBoundingBox().getCenter() : diveAt;
             goal = aim.subtract(at);
-            if (goal.lengthSqr() < 2.25) {
+            // Aimed at empty air the point is passed, never landed on: once there he keeps going down.
+            if (diveDown || goal.lengthSqr() < 2.25 || target == null && goal.dot(velocity) < 0.0 && t > 2) {
+                diveDown = target == null;
                 goal = new Vec3(0.0, -1.0, 0.0);
             }
         }

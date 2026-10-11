@@ -1,10 +1,9 @@
 # Laatste sessie
 
-- Datum: 2026-10-11 00:21
-- Vraag: wapens van het Construct Wheel beter en geanimeerd; Dual Revolvers, Arm Cannon en Minigun werkend; handschoenen; Giant Hands-kansen; nieuwe hand "Cosmos Test" (maan pakken en verpletteren, lucht zwart).
-- Gedaan: drie nieuwe geweren met eigen moves, schoten, terugslag, tracers, HUD en instellingen; RPG/shotgun-terugslag, ademen in rust, meer detail op bijl/shotgun/RPG; Cosmos Test (cirkel, duik, rift bij de maan, 3D-maan met schaduw, verpletteren, explosie, zwarte lucht, maan terug); kansen als gewichten met % + All 0/Reset; TintedBuffers-crashfix.
-- Release voorbereid: mod_version 0.8.1-alpha, CHANGELOG-sectie, 9 tourstappen (elke regel een stap, SMALL leeg).
-- Getest: ./gradlew build groen (TourCoverageTest); in game: revolvers/kanon/minigun/bijl/shotgun/RPG, Cosmos Test (3 runs), tour helemaal doorlopen. Testklassen, testwerelden en screenshots verwijderd; run/config tour.json teruggezet.
-- Niet gecommit: wacht op ja voor commit + push + publish van v0.8.1-alpha.
-- Daarna (lijst van de gebruiker): grab dash dive struikelen, Mjolnir altijd terugvliegen, lijk wordt nieuw personage, mob-factie-editor met zoekbalk, 100+ korte commando's + pagina + 25 eigen aliassen, Hard-Light Helper volledig opnieuw (30 hp, -50% schade, nieuw design/animaties).
+- Datum: 2026-10-11 03:10
+- Vraag: lijst na v0.8.1 (dive-fix, Mjolnir, lijk-fix, Mobs-pagina, Commands-pagina, helper rework), daarna arm cannon in hand, minigun + kogels, grotere shotgun, Summon-slot, giant-hand-rust 15 s, Cosmos-maan rework; commit, tour, push, release.
+- Gedaan: alles gebouwd en in game getest; Cosmos Test trager, groen, maan = vanilla-textuur als kubus (engine/client/fx/TexturedBox).
+- Review (2 agents) verwerkt: lijk-id na verwijderen (Corpses), .was weer op mostHands, summons niet tegen eigenaar (LivingChangeTargetEvent), max summons tegelijk, niet betalen zonder soort, /sm locale, commando's LOWEST, neutrale regel, helper-tekst.
+- Release 0.8.2-alpha: changelog, 11 tourstappen (in game gelopen), build groen; commit + push + publish.
+- Bewust gelaten: alias-lus via execute (alleen eigenaars), faction/mob kent Summons bij naam.
 - Open: idee #24 wacht op ja/nee.

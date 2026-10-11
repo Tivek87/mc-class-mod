@@ -33,6 +33,8 @@ final class Corpses {
 
     static final List<Ragdoll> ALL = new ArrayList<>();
     private static PoseStack stack = new PoseStack();
+    // Below every id the server hands out.
+    private static int nextId = -1000;
     // The body being drawn now.
     @Nullable
     static Ragdoll drawing;
@@ -41,6 +43,9 @@ final class Corpses {
     }
 
     static void add(Ragdoll doll) {
+        // A respawned player comes back under the same id: on an id of its own the body keeps none of what they become.
+        // Given once the level has let go of the creature, as it still looks it up by its old id to take it out.
+        Minecraft.getInstance().tell(() -> doll.entity.setId(nextId--));
         doll.entity.deathTime = 0;
         doll.entity.hurtTime = 0;
         doll.entity.setSharedFlagOnFire(false);

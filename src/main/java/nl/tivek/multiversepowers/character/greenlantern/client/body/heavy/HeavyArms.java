@@ -2,6 +2,7 @@ package nl.tivek.multiversepowers.character.greenlantern.client.body.heavy;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
+import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.PlayerModel;
 import net.minecraft.client.player.AbstractClientPlayer;
@@ -41,6 +42,7 @@ import static nl.tivek.multiversepowers.character.greenlantern.heavy.HeavyMoves.
 @EventBusSubscriber(modid = MultiversePowers.MODID, value = Dist.CLIENT)
 public final class HeavyArms {
     private static final Vector3f KNEE = new Vector3f(0.0F, 0.0F, -1.0F);
+    private static final double HAND_FOV = 70.0;
     private static final Vector3f[] POLES = { new Vector3f(-0.6F, 0.6F, 0.5F), new Vector3f(0.6F, 0.6F, 0.5F) };
     private static final Vector3f HIPS = new Vector3f();
     private static final Vector3f NECK = new Vector3f();
@@ -114,7 +116,7 @@ public final class HeavyArms {
         Frame frame = chestFrame(held.weapon, pose);
         Frame leftFrame = dual ? chestFrame(held.weapon, HeavyPoses.left()) : frame;
         float time = (float) ClientHeavy.now(partialTick);
-        for (int side = 0; side < 2; side++) {
+        for (int side = 0; side < (HeavyPainter.worn(held.weapon) ? 1 : 2); side++) {
             boolean right = side == 0;
             Vec3 at = HeavyPainter.grip(held.weapon, right, HeavyPoses.reload(held, partialTick));
             Vec3 grip = (right ? frame : leftFrame).at(at.x, at.y, at.z);
@@ -213,11 +215,11 @@ public final class HeavyArms {
         Frame leftFrame = dual ? mirrored(viewFrame(held.weapon, LEFT_VIEW, time, turn)) : frame;
         LanternPainter painter = LanternPainter.hand(stack, player.tickCount + partialTick);
         if (held.weapon >= REVOLVERS) {
-            GunPainter.draw(painter, held, 0, frame, held.formed(partialTick), apart, partialTick, player.getId(),
-                    true);
+            GunPainter.draw(painter, held, 0, frame, held.formed(partialTick), apart, partialTick, player.getId());
+            GunPainter.leaving(painter, held, frame, held.age(partialTick));
             if (dual) {
                 GunPainter.draw(painter, held, 1, leftFrame, held.formed(partialTick), apart, partialTick,
-                        player.getId(), true);
+                        player.getId());
             }
         } else {
             HeavyPainter.weapon(painter, held.weapon, frame, held.formed(partialTick), apart,
@@ -229,6 +231,9 @@ public final class HeavyArms {
             }, HeavyPainter.trailing(held, partialTick));
         }
         painter.finish(minecraft.renderBuffers().bufferSource());
+        if (held.weapon >= REVOLVERS) {
+            muzzles(minecraft, held, stack, frame, leftFrame, dual, partialTick);
+        }
         for (int side = 0; side < 2; side++) {
             float sign = side == 0 ? 1.0F : -1.0F;
             // From his own eyes the cannon's and the minigun's support arm is left out: it would fill the view.
@@ -243,6 +248,31 @@ public final class HeavyArms {
             FirstPersonArm.arm(stack, event.getMultiBufferSource(), event.getPackedLight(), player, renderer, sign,
                     hand, new Vector3f(REST_FROM.x * sign, REST_FROM.y, REST_FROM.z));
         }
+    }
+
+    // Where the guns' muzzles lie in the world as drawn in his own view: the hand's view is drawn at its own field of
+    // view, so it is widened to the game's for the shots to leave from where he sees the muzzle.
+    private static void muzzles(Minecraft minecraft, ClientHeavy.Held held, PoseStack stack, Frame frame,
+            Frame leftFrame, boolean dual, float partialTick) {
+        Camera camera = minecraft.gameRenderer.getMainCamera();
+        float widen = (float) (Math.tan(Math.toRadians(minecraft.options.fov().get()
+                * minecraft.player.getFieldOfViewModifier() * 0.5))
+                / Math.tan(Math.toRadians(HAND_FOV * 0.5)));
+        Vec3 mouth = GunPainter.muzzle(held.weapon);
+        for (int side = 0; side < (dual ? 2 : 1); side++) {
+            Vec3 at = (side == 0 ? frame : leftFrame).at(mouth.x, mouth.y, mouth.z);
+            Vector3f seen = stack.last().pose().transformPosition((float) at.x, (float) at.y, (float) at.z,
+                    new Vector3f());
+            // The hand's pose stack turns its space about: past it, +x is the view's left and +z straight ahead.
+            Vector3f left = camera.getLeftVector();
+            Vector3f up = camera.getUpVector();
+            Vector3f ahead = camera.getLookVector();
+            held.muzzle[side] = camera.getPosition()
+                    .add(left.x * seen.x * widen, left.y * seen.x * widen, left.z * seen.x * widen)
+                    .add(up.x * seen.y * widen, up.y * seen.y * widen, up.z * seen.y * widen)
+                    .add(ahead.x * seen.z, ahead.y * seen.z, ahead.z * seen.z);
+        }
+        held.muzzleAt = ClientHeavy.now(partialTick);
     }
 
     // A frame in his own view across the middle of it, still turning the right way round: the left revolver.

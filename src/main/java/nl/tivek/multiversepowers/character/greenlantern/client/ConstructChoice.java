@@ -62,6 +62,11 @@ public final class ConstructChoice {
             minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.VILLAGER_NO, 1.0F, 0.5F));
             return false;
         }
+        if (construct.summons()) {
+            PacketDistributor.sendToServer(new ConstructHoldPayload(construct.ordinal()));
+            minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.BEACON_ACTIVATE, 1.5F, 0.4F));
+            return true;
+        }
         if (held != Construct.NONE) {
             last = held;
         }

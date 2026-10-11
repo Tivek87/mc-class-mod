@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import javax.annotation.Nullable;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -47,7 +48,7 @@ abstract class MjolnirCore {
     static final Map<UUID, Mjolnir> ALL = new HashMap<>();
     // It is caught this close to his hand (times his size).
     static final double CATCH = 1.8;
-    // Flying out or back longer than this, it comes home by itself.
+    // Flying out longer than this, it comes home by itself.
     static final int LONGEST = 300;
 
     final UUID owner;
@@ -100,12 +101,23 @@ abstract class MjolnirCore {
             return false;
         }
         ServerPlayer owner = level.getServer().getPlayerList().getPlayer(this.owner);
-        if (owner == null || !owner.isAlive() || owner.level() != level
-                || this.shown != null && this.shown.isRemoved()) {
+        if (owner == null || !owner.isAlive() || owner.level() != level) {
             this.home(owner, Hand.BELT, false);
             return false;
         }
-        if (this.state != State.RESTING && ++this.age > LONGEST) {
+        if (this.shown != null && this.shown.isRemoved()) {
+            if (this.state != State.BACK) {
+                this.home(owner, Hand.BELT, false);
+                return false;
+            }
+            // Flying home over land no one has loaded, it was unloaded with it: it flies on and is shown again there.
+            this.shown = null;
+        }
+        if (this.state == State.BACK && this.shown == null && level.isLoaded(BlockPos.containing(this.at))) {
+            this.shown = this.show(level, owner, this.at, ThrownHammer.BACK);
+        }
+        // Flying home it always gets there, however far: only a throw out runs out.
+        if (this.state == State.OUT && ++this.age > LONGEST) {
             this.home(owner, Hand.BELT, false);
             return false;
         }

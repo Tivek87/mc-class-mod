@@ -55,6 +55,9 @@ public final class ClientHeavy {
                 1.0);
         Frame left = this.frame;
         boolean posed;
+        // Where each gun's muzzle was last drawn, in the world, and when: shots leave from there.
+        final Vec3[] muzzle = new Vec3[2];
+        double muzzleAt = -1.0;
         // His chest's turn and his neck as last posed, for where the weapon was a moment ago (its trail).
         final Quaternionf chest = new Quaternionf();
         final Vector3f neck = new Vector3f();

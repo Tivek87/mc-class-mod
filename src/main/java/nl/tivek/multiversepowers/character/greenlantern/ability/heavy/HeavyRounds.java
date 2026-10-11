@@ -25,11 +25,12 @@ import static nl.tivek.multiversepowers.character.greenlantern.heavy.HeavyMoves.
 
 // The Dual Revolvers', the Arm Cannon's and the Minigun's moves as they land (when each shot leaves is HeavyShots, the
 // same in every game, which draws and sounds them): the revolvers fire in turn, fan their hammers, whip with a butt
-// and dead-eye up to six marks; the cannon fires plasma, charges a big blast, bashes and raises a shield that bursts
-// as it drops; the minigun bursts and streams rounds until it overheats, vents its heat and spins its barrels ready.
+// and dead-eye up to six marks; the cannon fires plasma, charges a big blast, bashes and pours out a rapid stream of
+// small bolts; the minigun bursts and streams rounds until it overheats, vents its heat and spins its barrels ready.
 abstract class HeavyRounds extends HeavyGuns {
     private static final double FAN_SPREAD = 0.035;
     private static final double MINIGUN_SPREAD = 0.045;
+    private static final double RAPID_SPREAD = 0.02;
     // Dead-eye marks what lies within this of his crosshair (cosine), as far as the revolvers reach.
     private static final double MARK_CONE = 0.985;
     // A hit this far below the top of a creature's box is to the head.
@@ -75,9 +76,6 @@ abstract class HeavyRounds extends HeavyGuns {
                 case CANNON -> this.bash(level);
                 default -> this.vent(level);
             }
-        }
-        if (this.weapon == CANNON && this.move == UNBRACE && this.age == hit) {
-            this.burst(level);
         }
         if (this.weapon == MINIGUN && (this.move == AIM || this.move == BRACE) && this.age % 4 == 0) {
             float rise = this.spun || this.move == BRACE && this.age >= HeavyShots.SPIN_UP ? 1.0F
@@ -158,12 +156,24 @@ abstract class HeavyRounds extends HeavyGuns {
         }
     }
 
-    // The cannon's plasma: a quick ball, or let go after a charge one that grows with it, kicking him back.
+    // The cannon's plasma: a quick ball, or let go after a charge one that grows with it, kicking him back; held on
+    // the right button, a stream of small bolts straying a little round the aim.
     private void plasma(ServerLevel level) {
-        double charge = this.move == LOOSE ? Mth.clamp(this.charged / (double) HeavyShots.CHARGE, 0.0, 1.0) : 0.0;
         Vec3 mouth = this.muzzle(1.3).add(0.0, 0.05, 0.0);
         Vec3 way = this.aimed(level, 96.0).subtract(mouth);
         way = way.lengthSqr() < 1.0E-4 ? this.owner.getLookAngle() : way.normalize();
+        if (this.move == BRACE) {
+            RandomSource random = this.owner.getRandom();
+            Vec3[] across = Vectors.across(way);
+            way = way.add(across[0].scale(random.nextGaussian() * RAPID_SPREAD))
+                    .add(across[1].scale(random.nextGaussian() * RAPID_SPREAD)).normalize();
+            HeavyPlasma.fire(level, this.owner, mouth, way, value("cannonRapidDamage"), value("cannonRapidRadius"));
+            this.sound(level, mouth, SoundEvents.BLAZE_SHOOT, 0.45F, 1.8F + 0.2F * random.nextFloat());
+            this.recoil(0.015);
+            ParticleFx.cloud(level, ParticleFx.dust(PowerRing.BRIGHT, 0.8F), mouth, 2, 0.06, 0.05);
+            return;
+        }
+        double charge = this.move == LOOSE ? Mth.clamp(this.charged / (double) HeavyShots.CHARGE, 0.0, 1.0) : 0.0;
         double damage = Mth.lerp(charge, value("cannonDamage"), value("cannonChargedDamage"));
         double radius = Mth.lerp(charge, value("cannonRadius"), value("cannonChargedRadius"));
         HeavyPlasma.fire(level, this.owner, mouth, way, damage, radius);
@@ -278,17 +288,6 @@ abstract class HeavyRounds extends HeavyGuns {
             this.sound(level, front, SoundEvents.ANVIL_LAND, 0.4F, 1.6F);
             this.sound(level, front, SoundEvents.PLAYER_ATTACK_KNOCKBACK, 1.0F, 0.7F);
         }
-    }
-
-    // The shield dropped: it bursts forward and throws back what stands before him.
-    private void burst(ServerLevel level) {
-        Vec3 front = this.owner.getEyePosition().add(this.owner.getLookAngle().scale(1.2));
-        for (LivingEntity living : this.arc(level, value("cannonBurstReach"), 0.4)) {
-            this.strike(level, living, value("cannonBurstDamage"), this.ahead.scale(1.3).add(0.0, 0.35, 0.0), true);
-        }
-        ParticleFx.shockwave(level, ParticleFx.dust(PowerRing.BRIGHT, 1.4F), front, 20, 0.5);
-        this.sound(level, front, SoundEvents.AMETHYST_CLUSTER_BREAK, 1.0F, 0.9F);
-        this.sound(level, front, SoundEvents.FIREWORK_ROCKET_BLAST, 1.2F, 0.6F);
     }
 
     // The minigun vents all its heat at once: a blast of steam out of the barrels throws back what stands before it.

@@ -85,9 +85,13 @@ abstract class MjolnirRest extends MjolnirFlight {
         if (this.restAge % ChunkPreloader.EVERY_TICKS == 0) {
             ChunkPreloader.hold(level, this.at, owner.getId());
         }
-        if (this.restAge % LEASH == 0 && owner.position().distanceTo(this.at) > this.stays()
-                || this.at.y < level.getMinBuildHeight() - 16) {
+        if (this.at.y < level.getMinBuildHeight() - 16) {
             this.home(owner, Hand.BELT, false);
+            return;
+        }
+        // Left too far behind, it flies back to him by itself.
+        if (this.restAge % LEASH == 0 && owner.position().distanceTo(this.at) > this.stays()) {
+            this.turnBack(owner, false);
             return;
         }
         this.world(level);

@@ -11,8 +11,8 @@ import static nl.tivek.multiversepowers.character.greenlantern.heavy.HeavyMoves.
 
 // The revolvers, the arm cannon and the minigun drawn with their moving parts: each revolver's cylinder turning a
 // chamber on with every shot and its hammer falling and cocked again, the cylinders swung out on their cranes to be
-// shaken empty and filled with rounds of light; the cannon's vents opening and its core blazing as it charges, its
-// shield standing out of the muzzle and bursting forward; the minigun's barrels spinning up, glowing with heat and
+// shaken empty and filled with rounds of light; the cannon's vents opening and its core blazing as it charges or
+// pours out its rapid stream; the minigun's barrels spinning up, glowing with heat and
 // throwing out spent casings.
 final class GunPainter {
     private static final double CHAMBER = Math.PI / 3.0;
@@ -22,22 +22,32 @@ final class GunPainter {
     // The minigun's barrels at full speed, radians a tick.
     private static final double SPIN = 1.35;
     private static final Vec3 PORT = new Vec3(-0.11, 0.02, -0.2);
-    private static final double SHIELD_OUT = 0.1;
-    private static final double SHIELD_FAINT = 0.22;
+    // A round leaving the barrels in his own view: how fast (the gun's lengths a tick) and how far it is drawn.
+    private static final double LEAVE = 4.0;
+    private static final double LEAVE_MOST = 4.0;
 
     private GunPainter() {
     }
 
     // `side`'s gun (0 right, 1 left; the cannon and minigun have only the right) in `frame`, grown `formed` of the
-    // way or broken `apart`; `own`: seen from his own eyes.
+    // way or broken `apart`.
     static void draw(LanternPainter painter, ClientHeavy.Held held, int side, Frame frame, double formed, double apart,
-            float partialTick, int seed, boolean own) {
+            float partialTick, int seed) {
         double age = held.age(partialTick);
         switch (held.weapon) {
             case REVOLVERS -> revolver(painter, held, side, frame, formed, apart, age, seed + 31 * side);
-            case CANNON -> cannon(painter, held, frame, formed, apart, age, partialTick, seed, own);
+            case CANNON -> cannon(painter, held, frame, formed, apart, age, partialTick, seed);
             default -> minigun(painter, held, frame, formed, apart, age, partialTick, seed);
         }
+    }
+
+    // Where a gun's shots leave it, in its frame.
+    static Vec3 muzzle(int weapon) {
+        return switch (weapon) {
+            case REVOLVERS -> GunParts.REVOLVER_MUZZLE;
+            case CANNON -> GunParts.CANNON_MUZZLE;
+            default -> GunParts.MINIGUN_MUZZLE;
+        };
     }
 
     private static boolean grow(LanternPainter painter, int weapon, Frame frame, double formed) {
@@ -131,7 +141,7 @@ final class GunPainter {
     }
 
     private static void cannon(LanternPainter painter, ClientHeavy.Held held, Frame frame, double formed,
-            double apart, double age, float partialTick, int seed, boolean own) {
+            double apart, double age, float partialTick, int seed) {
         double charge = charge(held, age);
         double last = GunFire.last(held, 0, age);
         double flash = flash(last * 0.8);
@@ -176,7 +186,6 @@ final class GunPainter {
             double big = held.move == LOOSE ? 1.0 + 1.5 * charged(held) : 1.0;
             painter.flare(frame.at(0.0, 0.0, GunParts.CANNON_MUZZLE.z + 0.06), (0.18 + 0.22 * flash) * big, flash);
         }
-        shield(painter, held, frame, age, seed, own);
     }
 
     // How full the cannon's charge is: rising as he holds, let go, draining as it fires.
@@ -192,32 +201,6 @@ final class GunPainter {
     static double charged(ClientHeavy.Held held) {
         return held.move == LOOSE && held.last == AIM
                 ? Mth.clamp((held.start - held.lastStart) / HeavyShots.CHARGE, 0.0, 1.0) : 0.0;
-    }
-
-    // The cannon's shield: grown out of the muzzle while braced, thrown forward and broken when dropped.
-    private static void shield(LanternPainter painter, ClientHeavy.Held held, Frame frame, double age, int seed,
-            boolean own) {
-        boolean braced = held.move == BRACE;
-        boolean burst = held.move == UNBRACE && held.last == BRACE;
-        if (!braced && !burst) {
-            return;
-        }
-        int hit = hit(CANNON, UNBRACE);
-        double grown = braced ? Ease.smooth(age / 3.0) : 1.0;
-        double out = burst ? 0.45 * Ease.smooth(age / hit) : 0.0;
-        double wobble = braced ? 0.02 * Math.sin(age * 0.7) : 0.0;
-        Frame at = frame.moved(0.0, 0.0, GunParts.CANNON_MUZZLE.z + SHIELD_OUT + out + wobble);
-        Frame shield = new Frame(at.center(), at.right(), at.up(), at.forward(), at.scale() * Math.max(0.05, grown));
-        if (burst && age >= hit) {
-            painter.shattered(GunParts.CANNON_SHIELD, shield, Math.min(1.0, (age - hit) / 5.0), 1.3, seed + 5);
-            return;
-        }
-        double bright = 1.1 + 0.4 * (1.0 - grown);
-        if (own) {
-            painter.seeThrough(GunParts.CANNON_SHIELD, shield, SHIELD_FAINT, bright);
-        } else {
-            painter.shape(GunParts.CANNON_SHIELD, shield, 1.0, bright);
-        }
     }
 
     private static void minigun(LanternPainter painter, ClientHeavy.Held held, Frame frame, double formed,
@@ -260,6 +243,30 @@ final class GunPainter {
             painter.flare(frame.at(0.0, 0.0, GunParts.MINIGUN_MUZZLE.z + 0.1), 0.25 + 0.35 * vent, vent);
         }
         casings(painter, held, frame, age, seed);
+    }
+
+    // Rounds just out of the minigun's barrels as he sees it himself: the gun in his hands is drawn over the world, so
+    // the world's rounds only show once clear of it.
+    static void leaving(LanternPainter painter, ClientHeavy.Held held, Frame frame, double age) {
+        if (held.weapon != MINIGUN || held.brokeAt >= 0.0 || held.move < 0 || held.move >= MOVES) {
+            return;
+        }
+        int now = (int) Math.floor(age);
+        for (int back = 0; back < 2; back++) {
+            int tick = now - back;
+            if (tick < 0 || !HeavyShots.fires(MINIGUN, held.move, tick, held.spun(), 0)) {
+                continue;
+            }
+            double out = (age - tick) * LEAVE;
+            if (out > LEAVE_MOST) {
+                continue;
+            }
+            double z = GunParts.MINIGUN_MUZZLE.z + out;
+            painter.shape(GunParts.ROUND, frame.moved(0.0, 0.0, z), 1.0, 1.6);
+            painter.flare(frame.at(0.0, 0.0, z), 0.08, 0.9);
+            painter.edge(frame.at(0.0, 0.0, Math.max(GunParts.MINIGUN_MUZZLE.z, z - 0.5)), frame.at(0.0, 0.0, z),
+                    0.025, 0.9);
+        }
     }
 
     // Spent casings thrown out of the minigun's right side, tumbling down and breaking up.

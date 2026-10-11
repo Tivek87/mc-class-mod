@@ -14,8 +14,9 @@ import static nl.tivek.multiversepowers.character.greenlantern.client.render.wea
 
 // The revolver, the arm cannon and the minigun in the parts that move apart (barrels +z, top +y, blocks): the
 // revolver's frame, its cylinder turning about (0, CYLINDER_Y) and swinging out on its crane, its hammer cocking about
-// HAMMER and its rounds; the cannon's body, its vents opening as it charges, its core and its shield; the minigun's body
-// and its barrels spinning about the z axis, and a spent casing.
+// HAMMER and its rounds; the cannon's body, its vents opening as it charges and its core; the minigun (an M134: six
+// long clamped barrels spinning about the z axis, the motor housing and its round drum behind, the carry handle, the
+// spade grips and the spiralled feed hose) and a spent casing.
 public final class GunParts {
     public static final double CYLINDER_Y = 0.01;
     public static final Vec3 HAMMER = new Vec3(0.0, 0.07, -0.15);
@@ -28,7 +29,7 @@ public final class GunParts {
     public static final Vec3 CANNON_CORE = new Vec3(0.0, 0.0, 0.24);
     public static final Vec3 VENT_HINGE = new Vec3(0.2, 0.0, -0.29);
     public static final double BARREL_RING = 0.062;
-    public static final Vec3 MINIGUN_MUZZLE = new Vec3(0.0, 0.0, 0.78);
+    public static final Vec3 MINIGUN_MUZZLE = new Vec3(0.0, 0.0, 1.02);
 
     // Every point above is set before any shape: building one loads WeaponShapes, whose icons are built from here.
     public static final Shape REVOLVER_FRAME = Shape.of(revolverFrame());
@@ -41,7 +42,6 @@ public final class GunParts {
     public static final Shape CANNON_VENT = Shape.of(cannonVent());
     public static final Shape CANNON_VENT_LEFT = Shape.of(cannonVent()[0].mirrored());
     public static final Shape CANNON_CORE_BALL = Shape.of(Mesh.ball(14, 8, 0.06, 2.3));
-    public static final Shape CANNON_SHIELD = Shape.of(cannonShield());
 
     public static final Shape MINIGUN_BODY = Shape.of(minigunBody());
     public static final Shape MINIGUN_BARRELS = Shape.of(minigunBarrels());
@@ -157,26 +157,14 @@ public final class GunParts {
             double z = -0.33 + k * 0.045;
             parts.add(Mesh.bevel(-0.07, 0.205, z, 0.07, 0.238, z + 0.026, 0.004, 1.35));
         }
-        // The lantern's ring on each side, the handle under it.
+        // The lantern's ring on each side.
         twice(parts, Mesh.torus(22, 5, 0.062, 0.012, 1.95).alongX().moved(0.218, 0.0, -0.21));
         twice(parts, Mesh.ball(10, 6, 0.022, 2.1).moved(0.218, 0.0, -0.21));
-        parts.add(rod(12, 0.045, -0.36, -0.06, 1.1).moved(0.0, -0.22, 0.0));
-        for (double z : new double[] { -0.32, -0.21, -0.1 }) {
-            parts.add(Mesh.torus(12, 4, 0.047, 0.008, 1.8).alongZ().moved(0.0, -0.22, z));
-        }
-        parts.add(Mesh.bevel(-0.02, -0.215, -0.34, 0.02, -0.17, -0.08, 0.006, 1.0));
         return parts.toArray(Mesh[]::new);
     }
 
     private static Mesh[] cannonVent() {
         return new Mesh[] { Mesh.bevel(0.188, -0.1, -0.29, 0.222, 0.1, -0.13, 0.006, 1.2) };
-    }
-
-    // A six-sided shield of hard light facing +z, its rim raised and bright and the ring at its heart.
-    private static Mesh[] cannonShield() {
-        return new Mesh[] { Mesh.lathe(6, 0.9, 0.0, -0.02, 0.5, -0.02, 0.5, 0.02, 0.0, 0.02).alongZ(),
-                Mesh.ring(6, 1.3, 0.5, -0.035, 0.62, -0.035, 0.62, 0.035, 0.5, 0.035).alongZ(),
-                Mesh.torus(24, 5, 0.18, 0.025, 1.95).alongZ(), Mesh.ball(12, 6, 0.07, 2.1).scaled(1.0, 1.0, 0.5) };
     }
 
     static Mesh[] minigun() {
@@ -185,39 +173,62 @@ public final class GunParts {
         return parts.toArray(Mesh[]::new);
     }
 
+    // Six long barrels round a spindle, held by the rotor at their roots, a clamp halfway and a clamp near the muzzles.
     private static Mesh[] minigunBarrels() {
         List<Mesh> parts = new ArrayList<>();
+        double end = MINIGUN_MUZZLE.z - 0.02;
         for (int k = 0; k < 6; k++) {
             double angle = Math.toRadians(90.0 + 60.0 * k);
             double x = Math.cos(angle) * BARREL_RING;
             double y = Math.sin(angle) * BARREL_RING;
-            parts.add(rod(10, 0.02, -0.05, 0.76, 1.0).moved(x, y, 0.0));
-            parts.add(Mesh.torus(10, 4, 0.014, 0.005, 1.9).alongZ().moved(x, y, 0.76));
+            parts.add(rod(10, 0.019, -0.04, end, 1.0).moved(x, y, 0.0));
+            parts.add(Mesh.torus(10, 4, 0.014, 0.005, 1.9).alongZ().moved(x, y, end));
+            parts.add(rod(8, 0.023, -0.04, 0.06, 1.15).moved(x, y, 0.0));
         }
-        parts.add(rod(10, 0.024, -0.05, 0.72, 1.1));
-        parts.add(Mesh.cylinder(24, 0.096, 0.33, 0.37, 1.1).alongZ());
-        parts.add(Mesh.cylinder(24, 0.092, 0.68, 0.72, 1.15).alongZ());
-        parts.add(band(0.093, 0.007, 0.7, 1.9));
-        parts.add(band(0.097, 0.007, 0.35, 1.9));
+        parts.add(rod(10, 0.022, -0.04, end - 0.06, 1.1));
+        parts.add(Mesh.cylinder(24, 0.1, -0.03, 0.05, 1.05).alongZ());
+        parts.add(band(0.101, 0.007, 0.01, 1.8));
+        for (double z : new double[] { 0.46, end - 0.1 }) {
+            parts.add(Mesh.cylinder(24, 0.094, z, z + 0.05, 1.1).alongZ());
+            parts.add(band(0.095, 0.007, z + 0.025, 1.9));
+            for (int k = 0; k < 6; k++) {
+                parts.add(Mesh.box(-0.01, 0.094, z + 0.01, 0.01, 0.106, z + 0.04, 1.6).turned(0.0, 0.0, 1.0,
+                        30.0 + 60.0 * k));
+            }
+        }
         for (int k = 0; k < 6; k++) {
-            parts.add(Mesh.box(-0.006, 0.08, 0.37, 0.006, 0.09, 0.68, 1.8).turned(0.0, 0.0, 1.0, 60.0 * k));
+            parts.add(Mesh.box(-0.005, 0.078, 0.06, 0.005, 0.087, end - 0.1, 1.75).turned(0.0, 0.0, 1.0, 60.0 * k));
         }
         return parts.toArray(Mesh[]::new);
     }
 
     private static Mesh[] minigunBody() {
         List<Mesh> parts = new ArrayList<>();
-        // The motor housing the barrels turn in, ribbed and lit, and the gearbox behind it.
-        parts.add(Mesh.lathe(24, 1.0, 0.0, -0.33, 0.1, -0.33, 0.108, -0.31, 0.108, -0.03, 0.098, -0.01, 0.0, -0.01)
+        // The housing the barrels turn in, ribbed and lit; the round drum closing it behind, its hub and bolts; the
+        // electric motor along its right side.
+        parts.add(Mesh.lathe(24, 1.0, 0.0, -0.36, 0.1, -0.36, 0.108, -0.34, 0.108, -0.04, 0.098, -0.02, 0.0, -0.02)
                 .alongZ());
-        for (double z : new double[] { -0.29, -0.2, -0.11, -0.04 }) {
+        for (double z : new double[] { -0.31, -0.22, -0.13, -0.06 }) {
             parts.add(band(0.109, 0.009, z, 1.6));
         }
         for (int k = 0; k < 8; k++) {
-            parts.add(Mesh.box(-0.005, 0.104, -0.27, 0.005, 0.114, -0.06, 1.95).turned(0.0, 0.0, 1.0, 22.5 + 45.0 * k));
+            parts.add(Mesh.box(-0.005, 0.104, -0.29, 0.005, 0.114, -0.08, 1.95).turned(0.0, 0.0, 1.0, 22.5 + 45.0 * k));
         }
-        parts.add(Mesh.bevel(-0.088, -0.088, -0.48, 0.088, 0.093, -0.31, 0.012, 1.0));
-        twice(parts, Mesh.box(0.088, -0.05, -0.46, 0.093, 0.05, -0.33, 1.9));
+        parts.add(Mesh.lathe(28, 1.0, 0.0, -0.49, 0.11, -0.49, 0.136, -0.47, 0.142, -0.43, 0.136, -0.37, 0.11, -0.36,
+                0.0, -0.36).alongZ());
+        parts.add(band(0.143, 0.01, -0.45, 1.7));
+        parts.add(Mesh.torus(24, 5, 0.1, 0.01, 1.9).alongZ().moved(0.0, 0.0, -0.49));
+        parts.add(Mesh.cylinder(16, 0.045, -0.52, -0.49, 1.4).alongZ());
+        for (int k = 0; k < 8; k++) {
+            double angle = Math.toRadians(22.5 + 45.0 * k);
+            parts.add(Mesh.ball(6, 4, 0.012, 1.8).moved(Math.cos(angle) * 0.122, Math.sin(angle) * 0.122, -0.492));
+        }
+        parts.add(rod(14, 0.042, -0.33, -0.1, 1.05).moved(-0.115, 0.06, 0.0));
+        parts.add(Mesh.cylinder(14, 0.046, -0.35, -0.33, 1.5).alongZ().moved(-0.115, 0.06, 0.0));
+        parts.add(Mesh.cylinder(14, 0.046, -0.1, -0.08, 1.5).alongZ().moved(-0.115, 0.06, 0.0));
+        for (double z : new double[] { -0.28, -0.22, -0.16 }) {
+            parts.add(Mesh.torus(12, 4, 0.043, 0.006, 1.8).alongZ().moved(-0.115, 0.06, z));
+        }
         // The spade grips behind, their trigger bar between them.
         for (int side = -1; side <= 1; side += 2) {
             parts.add(Mesh.cylinder(10, 0.023, -0.12, 0.075, 1.0).moved(side * 0.1, 0.0, -0.57));
@@ -227,19 +238,35 @@ public final class GunParts {
         }
         parts.add(Mesh.tube(false, 6, 0.012, 1.2, path(-0.1, 0.06, -0.57, 0.1, 0.06, -0.57)));
         parts.add(Mesh.bevel(-0.028, 0.068, -0.588, 0.028, 0.092, -0.552, 0.004, 1.95));
-        // The carry handle over it, and the feed chute down its right side to the belt box.
-        parts.add(Mesh.tube(false, 8, 0.017, 1.15, path(0.0, 0.093, -0.42, 0.0, 0.19, -0.38, 0.0, 0.207, -0.26, 0.0,
-                0.19, -0.13, 0.0, 0.1, -0.09)));
-        Vec3[] chute = path(-0.09, -0.02, -0.2, -0.16, -0.08, -0.2, -0.19, -0.18, -0.23, -0.19, -0.28, -0.29, -0.17,
-                -0.36, -0.37);
-        parts.add(Mesh.tube(false, 8, 0.03, 0.95, chute));
-        for (int i = 1; i < chute.length; i++) {
-            Vec3 along = chute[Math.min(chute.length - 1, i + 1)].subtract(chute[i - 1]);
-            parts.add(Mesh.torus(12, 4, 0.032, 0.006, 1.6).pointing(along.x, along.y, along.z)
-                    .moved(chute[i].x, chute[i].y, chute[i].z));
-        }
-        parts.add(Mesh.bevel(-0.25, -0.5, -0.47, -0.09, -0.34, -0.27, 0.015, 1.0));
-        parts.add(Mesh.torus(14, 4, 0.04, 0.008, 1.95).alongX().moved(-0.25, -0.42, -0.37));
+        // The carry handle over it, and the feed hose curling down its left side to the belt box, a lit wire wound
+        // round it.
+        parts.add(Mesh.tube(false, 8, 0.017, 1.15, path(0.0, 0.13, -0.43, 0.0, 0.2, -0.38, 0.0, 0.217, -0.26, 0.0,
+                0.2, -0.13, 0.0, 0.1, -0.09)));
+        Vec3[] hose = path(0.09, -0.02, -0.18, 0.15, -0.06, -0.17, 0.2, -0.13, -0.19, 0.22, -0.22, -0.23, 0.21, -0.3,
+                -0.29, 0.19, -0.36, -0.36);
+        parts.add(Mesh.tube(false, 8, 0.032, 0.95, hose));
+        parts.add(Mesh.tube(false, 4, 0.008, 1.9, spiral(hose, 0.036, 9)));
+        parts.add(Mesh.torus(14, 4, 0.036, 0.008, 1.7).pointing(0.06, -0.04, 0.01).moved(0.09, -0.02, -0.18));
+        parts.add(Mesh.bevel(0.09, -0.5, -0.47, 0.27, -0.34, -0.27, 0.015, 1.0));
+        parts.add(Mesh.torus(14, 4, 0.04, 0.008, 1.95).alongX().moved(0.27, -0.42, -0.37));
         return parts.toArray(Mesh[]::new);
+    }
+
+    // A line winding `turns` times round `along` at `radius`, for a coiled hose.
+    private static Vec3[] spiral(Vec3[] along, double radius, int turns) {
+        int steps = turns * 10;
+        Vec3[] out = new Vec3[steps + 1];
+        for (int i = 0; i <= steps; i++) {
+            double u = (double) i / steps * (along.length - 1);
+            int k = Math.min(along.length - 2, (int) u);
+            Vec3 at = along[k].lerp(along[k + 1], u - k);
+            Vec3 tangent = along[k + 1].subtract(along[k]).normalize();
+            Vec3 side = tangent.cross(new Vec3(0.0, 0.0, 1.0));
+            side = side.lengthSqr() < 1.0E-6 ? new Vec3(1.0, 0.0, 0.0) : side.normalize();
+            Vec3 other = tangent.cross(side);
+            double angle = Math.PI * 2.0 * turns * i / steps;
+            out[i] = at.add(side.scale(Math.cos(angle) * radius)).add(other.scale(Math.sin(angle) * radius));
+        }
+        return out;
     }
 }

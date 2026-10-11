@@ -45,7 +45,8 @@ public final class GiantHands extends GiantHandPlaces implements Effect {
     private static final double CATCH_CHANCE = 0.5;
 
     private static final Map<UUID, GiantHands> ACTIVE = new HashMap<>();
-    private static final Map<UUID, Integer> LAST_MOVES = new HashMap<>();
+    // Each player's hands resting after they came: the server tick each may come again.
+    private static final Map<UUID, int[]> RESTING = new HashMap<>();
     static final Map<Integer, GiantHandBase> GRABBED = new HashMap<>();
 
     static {
@@ -66,7 +67,6 @@ public final class GiantHands extends GiantHandPlaces implements Effect {
     private int waited;
     private int stuck;
     private int since;
-    private int lastMove;
     @Nullable
     private GiantHand latest;
 
@@ -76,7 +76,6 @@ public final class GiantHands extends GiantHandPlaces implements Effect {
         this.targets = targets;
         this.wanted = 1 + owner.getRandom().nextInt(Math.max(1, ability.intValue("mostHands")));
         this.every = Math.max(1, ability.intValue("handTicks"));
-        this.lastMove = LAST_MOVES.getOrDefault(owner.getUUID(), -1);
     }
 
     // A press starts a use of 1 to `mostHands` hands, at random. It never counts as used here: the cooldown starts
@@ -167,7 +166,7 @@ public final class GiantHands extends GiantHandPlaces implements Effect {
             }
         }
         ACTIVE.clear();
-        LAST_MOVES.clear();
+        RESTING.clear();
         GRABBED.clear();
     }
 
@@ -272,8 +271,8 @@ public final class GiantHands extends GiantHandPlaces implements Effect {
             this.called++;
             this.since = 0;
             this.latest = hand;
-            this.lastMove = move;
-            LAST_MOVES.put(this.owner.getUUID(), move);
+            RESTING.computeIfAbsent(this.owner.getUUID(), id -> new int[HandPose.MOVES])[move] =
+                    this.owner.server.getTickCount() + (int) Math.round(this.ability.value("handRestSeconds") * 20.0);
             this.sound(level, this.owner.getEyePosition(), SoundEvents.PLAYER_ATTACK_SWEEP, 0.7F, 1.5F);
             this.sound(level, this.owner.getEyePosition(), SoundEvents.AMETHYST_BLOCK_CHIME, 1.0F, 1.2F);
             return true;
@@ -291,20 +290,14 @@ public final class GiantHands extends GiantHandPlaces implements Effect {
                 && !HeldMobs.isHeldByAnyone(target) && !LightBubble.trapped(target);
         double[] chances = new double[HandPose.MOVES];
         double total = 0.0;
-        double rival = 0.0;
+        // A hand that came rests a while before it may come again (`fresh`), unless every other is resting too.
+        int[] resting = RESTING.get(this.owner.getUUID());
+        int now = this.owner.server.getTickCount();
         for (int move = 0; move < HandPose.MOVES; move++) {
-            if (this.may(move, grabbable, pair)) {
+            if (this.may(move, grabbable, pair) && !(fresh && resting != null && resting[move] > now)) {
                 chances[move] = this.chance(move);
                 total += chances[move];
-                if (move != this.lastMove) {
-                    rival = Math.max(rival, chances[move]);
-                }
             }
-        }
-        // The last hand waits a turn, unless it is weighed above every other: then it may come again.
-        if (fresh && this.lastMove >= 0 && chances[this.lastMove] > 0.0 && chances[this.lastMove] <= rival) {
-            total -= chances[this.lastMove];
-            chances[this.lastMove] = 0.0;
         }
         if (total <= 0.0) {
             return -1;

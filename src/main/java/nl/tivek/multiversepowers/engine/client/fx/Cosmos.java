@@ -96,6 +96,10 @@ public final class Cosmos {
         RenderSystem.enableCull();
     }
 
+    static boolean drawingLevel() {
+        return inLevel;
+    }
+
     private static float channel(int rgb, int shift) {
         return ((rgb >> shift) & 0xFF) / 255.0F;
     }

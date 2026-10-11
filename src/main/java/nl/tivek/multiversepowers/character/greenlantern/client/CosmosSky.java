@@ -48,7 +48,7 @@ public final class CosmosSky {
             CameraShake.add((float) (2.5 * near), 10);
         }
         if (crossed(clock, HandCosmos.BURSTS)) {
-            ScreenFlash.add(0xF4EEFF, 0.75F, 14);
+            ScreenFlash.add(0xEEFFF2, 0.75F, 14);
             CameraShake.add(4.0F, 24);
         }
         lastClock = clock;

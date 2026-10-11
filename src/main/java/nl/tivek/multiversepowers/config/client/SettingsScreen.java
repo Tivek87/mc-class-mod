@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Consumer;
 import javax.annotation.Nullable;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphics;
@@ -74,20 +75,26 @@ public final class SettingsScreen extends NavScreen {
     // The window on `page` (an id of `SettingsPages` or a character's); closing it returns to `root`.
     public static Screen create(@Nullable Screen root, String page) {
         Visit visit = new Visit();
-        return new SettingsScreen(root, visit, visit.page(page));
+        SettingsPages.Page opened = visit.page(page);
+        return opened.screen() != null ? opened.screen().apply(root) : new SettingsScreen(root, visit, opened);
     }
 
-    // Client over your own page, Server over the world's (each character's in its colour), or over one shut line.
     @Override
     protected List<Item> items() {
+        return sidebar(this.visit.pages, this::open);
+    }
+
+    // Client over your own page, Server over the world's (each character's in its colour), or over one shut line: the
+    // same for a page of its own kind (`Page.screen`).
+    public static List<Item> sidebar(List<SettingsPages.Page> pages, Consumer<SettingsPages.Page> open) {
         List<Item> items = new ArrayList<>();
         Heading client = new Heading("client", Component.translatable(PREFIX + "side.client"));
         Heading server = new Heading("server", Component.translatable(PREFIX + "side.server"));
         SettingsPages.Page last = null;
-        for (SettingsPages.Page page : this.visit.pages) {
+        for (SettingsPages.Page page : pages) {
             boolean starts = last == null || page.world() != last.world();
             boolean line = last != null && (starts || (page.character() == null) != (last.character() == null));
-            items.add(new Item(page.id(), page.title(), page.icon(), () -> this.open(page), false, line,
+            items.add(new Item(page.id(), page.title(), page.icon(), () -> open.accept(page), false, line,
                     starts ? page.world() ? server : client : null, page.character() == null ? 0 : page.color(),
                     null));
             last = page;
@@ -101,6 +108,11 @@ public final class SettingsScreen extends NavScreen {
 
     private void open(SettingsPages.Page page) {
         this.visit.query = "";
+        if (page.screen() != null) {
+            this.apply();
+            this.minecraft.setScreen(page.screen().apply(this.root));
+            return;
+        }
         this.minecraft.setScreen(new SettingsScreen(this.root, this.visit, page));
     }
 

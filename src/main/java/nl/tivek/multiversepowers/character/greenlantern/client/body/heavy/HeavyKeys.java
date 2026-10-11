@@ -207,7 +207,7 @@ final class HeavyKeys {
                 k(25, -4, 5, -7, 0.02F, -0.15F, 0, -1, 0, 0, 0.05F, 0, 0.4F), rest(REVOLVERS, 38));
     }
 
-    // The cannon over his right forearm, its handle in his left hand.
+    // The cannon worn over his right forearm, his left hand free.
     private static void cannon() {
         REST[CANNON] = k(0, -4, 7, -6, 0.05F, -0.2F, 0, -1, 0, 0.05F, 0, 0, 0.3F);
         Key aim = k(0, -3, 2.5F, -6.5F, 0, 0, 0, -1, 0, 0.12F, 0.03F, 0, 0.4F);
@@ -227,12 +227,12 @@ final class HeavyKeys {
         SCRIPTS[CANNON][KICK] = keys(rest(CANNON, 0), k(2, -4, 3, -2, 0.1F, 0.1F, 0, -1, 0, 0.35F, -0.05F, 0, 0.4F),
                 k(4, -2, 3, -12, -0.05F, 0, 0, -1, 0, -0.3F, 0.3F, 0, 1.6F),
                 k(7, -2, 3, -11, -0.05F, 0, 0, -1, 0, -0.25F, 0.25F, 0, 1.4F), rest(CANNON, 12));
-        // Raised before him as its shield stands out of the muzzle; dropped, it bursts forward.
-        Key shield = k(LOOP_FROM, -2, 1, -7, -0.15F, 0.15F, 0, -1, 0, 0.1F, 0.06F, 0, 1.0F);
-        SCRIPTS[CANNON][BRACE] = keys(rest(CANNON, 0), shield,
-                k(7, -2, 1.1F, -7.1F, -0.15F, 0.16F, 0, -1, 0, 0.1F, 0.06F, 0, 1.05F), at(shield, 10));
-        SCRIPTS[CANNON][UNBRACE] = keys(at(shield, 0), k(2, -2, 1.5F, -10, -0.1F, 0.05F, 0, -1, 0, -0.1F, 0.25F, 0,
-                1.4F), rest(CANNON, 10));
+        // Rapid fire: thrust out straight at the crosshair and held there, each bolt jolting it; let go, lowered.
+        Key rapid = k(LOOP_FROM - 1, -3, 2.3F, -7.6F, 0, 0, 0, -1, 0, 0.16F, 0.08F, 0, 0.7F);
+        SCRIPTS[CANNON][BRACE] = keys(rest(CANNON, 0), rapid,
+                k(7, -3, 2.4F, -7.4F, 0, 0.02F, 0, -1, 0, 0.16F, 0.09F, 0, 0.75F), at(rapid, 10));
+        SCRIPTS[CANNON][UNBRACE] = keys(at(rapid, 0), k(4, -3, 2.5F, -6.5F, 0, 0.05F, 0, -1, 0, 0.12F, 0.03F, 0,
+                0.4F), rest(CANNON, 10));
         SCRIPTS[CANNON][RELOAD] = keys(rest(CANNON, 0), rest(CANNON, 1));
     }
 

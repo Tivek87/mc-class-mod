@@ -34,7 +34,7 @@ public final class HeavyMoves {
     public static final int GUARD_DOWN = 7;
     // The guns: a shot, the aim held and let fly (cluster rocket, both barrels, the revolvers' fanned hammers, the
     // cannon's charge, the minigun's stream), the right click's move (blast jump, stock strike, pistol whip, cannon
-    // bash, vent), the right button held (guided rocket, deflection, dead-eye, shield, spun barrels) and let go.
+    // bash, vent), the right button held (guided rocket, deflection, dead-eye, rapid fire, spun barrels) and let go.
     public static final int SHOOT = 1;
     public static final int AIM = 2;
     public static final int LOOSE = 3;
@@ -70,7 +70,7 @@ public final class HeavyMoves {
             { 20, 10, 16, 18, 12, 10, 10, 1 }, { 24, 20, 16, 14, 16, 10, 14, 40 } };
     private static final int[][] HIT = { { -1, 6, 6, 9, 18, 6, 4, 4 }, { -1, 5, 5, 4, -1, 5, 3, -1 },
             { -1, 3, -1, 2, 4, 3, 1, -1 }, { -1, 2, -1, 2, 5, -1, 2, -1 }, { -1, 1, -1, -1, 4, -1, -1, -1 },
-            { -1, 2, -1, 2, 4, -1, 2, -1 }, { -1, 6, -1, -1, 4, -1, -1, -1 } };
+            { -1, 2, -1, 2, 4, -1, -1, -1 }, { -1, 6, -1, -1, 4, -1, -1, -1 } };
 
     private HeavyMoves() {
     }

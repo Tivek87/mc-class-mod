@@ -4,8 +4,10 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import javax.annotation.Nullable;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.resources.language.I18n;
 import net.minecraft.network.chat.Component;
 import net.neoforged.neoforge.common.ModConfigSpec;
@@ -15,10 +17,14 @@ import nl.tivek.multiversepowers.character.CharacterConfig;
 import nl.tivek.multiversepowers.character.GameCharacter;
 import nl.tivek.multiversepowers.character.client.AbilityGuide;
 import nl.tivek.multiversepowers.character.client.PowerInputs;
+import nl.tivek.multiversepowers.command.CommandAliases;
+import nl.tivek.multiversepowers.command.client.CommandsScreen;
 import nl.tivek.multiversepowers.config.ModConfigs;
 import nl.tivek.multiversepowers.config.PowerRules;
 import nl.tivek.multiversepowers.config.Unit;
 import nl.tivek.multiversepowers.engine.client.gui.PixelIcons;
+import nl.tivek.multiversepowers.faction.mob.MobRules;
+import nl.tivek.multiversepowers.faction.mob.client.MobRulesScreen;
 import nl.tivek.multiversepowers.stamina.StaminaConfig;
 import nl.tivek.multiversepowers.stamina.client.StaminaClient;
 
@@ -26,14 +32,22 @@ public final class SettingsPages {
     public static final String GAME = "game";
     public static final String RULES = "rules";
     public static final String STAMINA = "stamina";
+    public static final String MOBS = "mobs";
+    public static final String COMMANDS = "commands";
     private static final String PREFIX = "config." + MultiversePowers.MODID + ".";
 
     private SettingsPages() {
     }
 
-    // `character`: the one whose abilities the page holds, if any.
+    // `character`: the one whose abilities the page holds, if any; `screen`: a page of its own kind, opened as its own
+    // screen (given where closing it returns to) rather than as a list of settings.
     public record Page(String id, Component title, int color, PixelIcons.Icon icon, @Nullable GameCharacter character,
-            List<Section> sections, boolean editable, boolean world, Runnable save) {
+            List<Section> sections, boolean editable, boolean world, Runnable save,
+            @Nullable Function<Screen, Screen> screen) {
+        Page(String id, Component title, int color, PixelIcons.Icon icon, @Nullable GameCharacter character,
+                List<Section> sections, boolean editable, boolean world, Runnable save) {
+            this(id, title, color, icon, character, sections, editable, world, save, null);
+        }
     }
 
     // `about`: what the section is, shown when the pointer rests on its title.
@@ -56,6 +70,8 @@ public final class SettingsPages {
         }
         pages.add(general());
         pages.add(stamina());
+        pages.add(mobs());
+        pages.add(commands());
         for (GameCharacter character : GameCharacter.values()) {
             pages.add(character(character));
         }
@@ -125,6 +141,20 @@ public final class SettingsPages {
                     spec.save();
                     StaminaClient.onConfigUpdated();
                 });
+    }
+
+    // Who is friendly, neutral or hostile to whom, per creature: a page of its own.
+    public static Page mobs() {
+        return new Page(MOBS, Component.translatable(PREFIX + "mobs"), 0x7FD8FF, PixelIcons.Icon.FACE, null,
+                List.of(), worldEditable(MobRules.SPEC), true, () -> {
+                }, MobRulesScreen::new);
+    }
+
+    // Every short command and the world's own: a page of its own.
+    public static Page commands() {
+        return new Page(COMMANDS, Component.translatable(PREFIX + "commands"), 0xFFB86B, PixelIcons.Icon.SLASH, null,
+                List.of(), worldEditable(CommandAliases.SPEC), true, () -> {
+                }, CommandsScreen::new);
     }
 
     private static ConfigNumber fromSpec(ModConfigSpec spec, String file, String page, String key,

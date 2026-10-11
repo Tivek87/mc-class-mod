@@ -27,6 +27,7 @@ import nl.tivek.multiversepowers.character.greenlantern.client.body.suit.GreenLa
 import nl.tivek.multiversepowers.character.greenlantern.client.body.sword.SwordArms;
 import nl.tivek.multiversepowers.character.greenlantern.client.body.whip.WhipArms;
 import nl.tivek.multiversepowers.character.greenlantern.client.mech.MechPainter;
+import nl.tivek.multiversepowers.character.greenlantern.client.minion.MinionPainter;
 import nl.tivek.multiversepowers.character.greenlantern.client.minion.MinionRenderer;
 import nl.tivek.multiversepowers.character.greenlantern.client.victim.Clapped;
 import nl.tivek.multiversepowers.character.greenlantern.client.victim.Devoured;
@@ -84,6 +85,7 @@ public final class MultiversePowersClient {
         modEventBus.addListener(SoftGlow::onRegisterShaders);
         modEventBus.addListener(Cosmos::onRegisterShaders);
         modEventBus.addListener(MechPainter::onClientSetup);
+        modEventBus.addListener(MinionPainter::onClientSetup);
         modEventBus.addListener(RagdollProfiles::onRegisterReloadListeners);
         Poses.layer(Poses.Stage.MODEL, (model, entity, partialTick) -> model instanceof PlayerModel<?> player
                 && SwordArms.lean(player, entity));

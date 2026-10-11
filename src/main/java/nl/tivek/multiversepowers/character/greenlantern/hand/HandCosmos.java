@@ -9,45 +9,47 @@ import nl.tivek.multiversepowers.engine.math.Vectors;
 
 // The Cosmos Test: one hand out of a portal draws a circle of light on the ground with a fingertip, and the circle opens
 // on a deep sky of stars; a second hand out of a portal overhead dives into it at full speed. Then a rift opens in the
-// sky beside the moon, the hand reaches out of it, takes the moon, crushes it slowly and it bursts. The sky goes black
-// without it until the moon comes back. Server and client both work out the moments from here; only each client knows
+// sky beside the moon, the hand reaches out of it, takes the moon (the sky's own, its square face made a cube) and
+// draws it nearer, crushes it slowly and it bursts. The sky goes black without it until the moon comes back. All of it
+// slow, as a filmed moment. Server and client both work out the moments from here; only each client knows
 // where the moon stands in its own sky.
 public final class HandCosmos {
-    private static final double SLOW = 1.6;
+    private static final double SLOW = 2.6;
     // In beats.
     private static final double A_REACH = 2.5;
     private static final double DRAW = 7.0;
-    private static final double DRAWN = 17.0;
-    private static final double FILL = 20.0;
-    private static final double A_BACK = 18.5;
-    private static final double A_GONE = 24.0;
-    private static final double B_OUT = 19.5;
-    private static final double B_COCK = 23.5;
-    private static final double DIVE = 25.0;
-    private static final double DIVEN = 26.6;
-    private static final double HOLE_SHUT = 28.5;
-    private static final double HOLE_GONE = 31.5;
-    private static final double NIGHT_FROM = 18.0;
-    private static final double NIGHT_TO = 29.0;
-    private static final double RIFT_OPEN = 30.5;
-    private static final double RIFT_WIDE = 34.0;
-    private static final double MOON_SWAP = 32.0;
-    private static final double MOON_REACH = 34.5;
-    private static final double GRAB = 40.5;
-    private static final double CRUSH = 47.0;
-    private static final double BOOM = 80.0;
-    private static final double LET = 82.0;
-    private static final double RIFT_SHUT = 88.0;
-    private static final double RIFT_GONE = 92.0;
-    private static final double BLACK = 90.0;
-    private static final double DAWN = 110.0;
-    private static final double DAY = 122.0;
-    public static final double LIFE = 126.0;
+    private static final double DRAWN = 29.0;
+    private static final double FILL = 32.5;
+    private static final double A_BACK = 30.5;
+    private static final double A_GONE = 36.0;
+    private static final double B_OUT = 31.5;
+    private static final double B_COCK = 35.5;
+    private static final double DIVE = 37.0;
+    private static final double DIVEN = 38.6;
+    private static final double HOLE_SHUT = 40.5;
+    private static final double HOLE_GONE = 44.5;
+    private static final double NIGHT_FROM = 22.0;
+    private static final double NIGHT_TO = 41.0;
+    private static final double RIFT_OPEN = 42.5;
+    private static final double RIFT_WIDE = 51.0;
+    private static final double MOON_SWAP = 44.0;
+    private static final double MOON_REACH = 51.0;
+    private static final double GRAB = 57.0;
+    private static final double CRUSH = 63.5;
+    private static final double BOOM = 96.5;
+    private static final double LET = 98.5;
+    private static final double RIFT_SHUT = 104.5;
+    private static final double RIFT_GONE = 109.0;
+    private static final double BLACK = 106.5;
+    private static final double DAWN = 126.5;
+    private static final double DAY = 138.5;
+    public static final double LIFE = 142.5;
     public static final int DRAWS = ticks(DRAW);
     public static final int OPENS = ticks(DRAWN);
     public static final int DIVES = ticks(DIVE);
     public static final int PLUNGES = ticks(DIVE + (DIVEN - DIVE) * 0.65);
     public static final int SHUTS = ticks(HOLE_SHUT);
+    public static final int TRACES = ticks(RIFT_OPEN - 3.0);
     public static final int TEARS = ticks(RIFT_OPEN);
     public static final int GRABS = ticks(GRAB);
     public static final int CRUSHES = ticks(CRUSH);
@@ -77,6 +79,10 @@ public final class HandCosmos {
 
     public static int life() {
         return ticks(LIFE);
+    }
+
+    public static int sinks() {
+        return ticks(LIFE - 6.0);
     }
 
     // The ground's frame: along the way it faces and across it, up out of the ground.
@@ -147,6 +153,11 @@ public final class HandCosmos {
         return beat >= MOON_SWAP && beat < BOOM;
     }
 
+    // How much of the moon's rift's lips are traced at tick t, 0 to 1: they run round before it opens.
+    public static double riftTraced(double t) {
+        return Ease.smoother((t / SLOW - RIFT_OPEN + 3.0) / 4.0);
+    }
+
     // How far the moon's rift is open at tick t, 0 to 1.
     public static double rift(double t) {
         double beat = t / SLOW;
@@ -182,6 +193,19 @@ public final class HandCosmos {
     public static Vec3 riftNormal(Vec3 moon, double radius, Vec3 eye) {
         Vec3 rift = riftCenter(moon, radius, eye);
         return moon.subtract(rift).normalize().add(eye.subtract(rift).normalize()).normalize();
+    }
+
+    // How big the moon is at tick t, in moon radii from its middle to a face: as big as the sky shows it at the swap,
+    // drawn nearer until the hand closes round it.
+    public static double moonSize(double t) {
+        return 0.5 + 0.35 * Ease.smoother((t / SLOW - MOON_SWAP - 2.0) / (GRAB - MOON_SWAP - 2.0));
+    }
+
+    // How far the moon has turned out of its flat face toward the eye at tick t, in radians.
+    public static double moonTurn(double t) {
+        double beat = t / SLOW;
+        double u = Math.max(0.0, beat - MOON_SWAP - 2.0);
+        return 0.6 * Ease.smoother(u / 12.0) + 0.006 * u * u / (1.0 + u * 0.05);
     }
 
     // Where the moon is at tick t: where the sky has it, drawn a little toward the rift once taken.

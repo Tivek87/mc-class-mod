@@ -42,6 +42,8 @@ import nl.tivek.multiversepowers.engine.client.ragdoll.Downed;
 import nl.tivek.multiversepowers.engine.client.ragdoll.Knocked;
 import nl.tivek.multiversepowers.engine.client.ragdoll.Ragdolls;
 import nl.tivek.multiversepowers.engine.entity.DeathBlowPayload;
+import nl.tivek.multiversepowers.character.greenlantern.summon.SummonPayload;
+import nl.tivek.multiversepowers.character.greenlantern.summon.client.ClientSummons;
 import nl.tivek.multiversepowers.killconfirm.KillConfirmPayload;
 import nl.tivek.multiversepowers.character.greenlantern.fist.FistPayload;
 import nl.tivek.multiversepowers.character.greenlantern.heavy.HeavyPayload;
@@ -59,6 +61,8 @@ import nl.tivek.multiversepowers.engine.fx.ParticlesPayload;
 import nl.tivek.multiversepowers.engine.fx.VoicePayload;
 import nl.tivek.multiversepowers.faction.StandingsPayload;
 import nl.tivek.multiversepowers.faction.client.ClientStandings;
+import nl.tivek.multiversepowers.faction.mob.MobTablePayload;
+import nl.tivek.multiversepowers.faction.mob.client.ClientMobTable;
 import nl.tivek.multiversepowers.spell.ClapPayload;
 import nl.tivek.multiversepowers.spell.Spell;
 import nl.tivek.multiversepowers.spell.SpellCooldownPayload;
@@ -174,6 +178,10 @@ public final class ClientPayloadHandler {
         context.enqueueWork(() -> Tired.told(payload.entity(), payload.hits()));
     }
 
+    public static void handleSummon(SummonPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> ClientSummons.told(payload));
+    }
+
     public static void handleKillConfirm(KillConfirmPayload payload, IPayloadContext context) {
         context.enqueueWork(() -> {
             if (payload.kill()) {
@@ -212,6 +220,10 @@ public final class ClientPayloadHandler {
 
     public static void handleStandings(StandingsPayload payload, IPayloadContext context) {
         context.enqueueWork(() -> ClientStandings.update(payload));
+    }
+
+    public static void handleMobTable(MobTablePayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> ClientMobTable.accept(payload));
     }
 
     public static void handleClassSync(ClassSyncPayload payload, IPayloadContext context) {

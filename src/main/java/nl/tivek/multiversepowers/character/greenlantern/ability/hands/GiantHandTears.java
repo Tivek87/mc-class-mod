@@ -64,7 +64,7 @@ abstract class GiantHandTears extends GiantHandRings {
         if (this.t == 2) {
             this.storm.sound(level, this.base, SoundEvents.BEACON_ACTIVATE, 1.6F, 1.4F);
         }
-        if (this.t >= HandCosmos.DRAWS && this.t < HandCosmos.OPENS && (this.t - HandCosmos.DRAWS) % 3 == 0) {
+        if (this.t >= HandCosmos.DRAWS && this.t < HandCosmos.OPENS && (this.t - HandCosmos.DRAWS) % 4 == 0) {
             float rise = (this.t - HandCosmos.DRAWS) / (float) (HandCosmos.OPENS - HandCosmos.DRAWS);
             this.storm.sound(level, HandCosmos.tip(this.base, facing, this.t), SoundEvents.AMETHYST_BLOCK_CHIME,
                     1.2F, 0.8F + 1.0F * rise);
@@ -83,6 +83,9 @@ abstract class GiantHandTears extends GiantHandRings {
         if (this.t == HandCosmos.SHUTS) {
             this.storm.sound(level, this.base, SoundEvents.BEACON_DEACTIVATE, 1.6F, 1.2F);
         }
+        if (this.t == HandCosmos.TRACES) {
+            this.storm.sound(level, this.base, SoundEvents.AMETHYST_BLOCK_RESONATE, 4.0F, 0.6F);
+        }
         if (this.t == HandCosmos.TEARS) {
             this.storm.sound(level, this.base, SoundEvents.BEACON_ACTIVATE, 4.0F, 0.5F);
         }
@@ -90,7 +93,7 @@ abstract class GiantHandTears extends GiantHandRings {
             this.storm.sound(level, this.base, SoundEvents.ANVIL_LAND, 3.0F, 0.5F);
         }
         if (this.t >= HandCosmos.CRUSHES && this.t < HandCosmos.BURSTS) {
-            int every = Math.max(2, 10 - (this.t - HandCosmos.CRUSHES) / 6);
+            int every = Math.max(2, 12 - (this.t - HandCosmos.CRUSHES) / 8);
             if ((this.t - HandCosmos.CRUSHES) % every == 0) {
                 float rise = (this.t - HandCosmos.CRUSHES) / (float) (HandCosmos.BURSTS - HandCosmos.CRUSHES);
                 this.storm.sound(level, this.base, SoundEvents.DEEPSLATE_BREAK, 2.0F + 2.0F * rise,

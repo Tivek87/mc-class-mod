@@ -53,7 +53,7 @@ final class LanternPanel implements AbilityPanel.Rules {
             "revolvers", new String[] { "revolverPowerCost", "revolverFanPowerCost", "revolverWhipPowerCost",
                     "revolverDeadeyePowerPerSecond" },
             "arm_cannon", new String[] { "cannonPowerCost", "cannonChargePowerPerSecond", "cannonBashPowerCost",
-                    "cannonShieldPowerPerSecond" },
+                    "cannonRapidPowerPerSecond" },
             "minigun", new String[] { "minigunPowerCost", "minigunPowerPerSecond", "minigunVentPowerCost",
                     "minigunSpinPowerPerSecond" });
     private static final String[] HEAVY = { "battleaxe", "chainsaw", "rocket_launcher", "shotgun", "revolvers",

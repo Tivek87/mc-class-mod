@@ -145,14 +145,19 @@ public final class WorldSettings {
             }
         }
         for (String file : changed) {
-            ModConfigs.worldFiles().get(file).save();
-            ModConfig config = net.neoforged.fml.config.ModConfigs.getFileMap().get(file);
-            if (config != null) {
-                send(config);
-            }
+            store(file);
         }
         if (!changed.isEmpty()) {
             MultiversePowers.LOGGER.info("{} changed the world settings in {}", player.getGameProfile().getName(), changed);
+        }
+    }
+
+    // Saves a world file changed on the server and sends everyone the new copy.
+    public static void store(String file) {
+        ModConfigs.worldFiles().get(file).save();
+        ModConfig config = net.neoforged.fml.config.ModConfigs.getFileMap().get(file);
+        if (config != null) {
+            send(config);
         }
     }
 

@@ -30,6 +30,15 @@ public final class ConstructIcons {
     private static final Model MINIGUN = Model.of(WeaponShapes.MINIGUN);
     private static final Model ROCKET_LAUNCHER = Model.of(WeaponShapes.ROCKET_LAUNCHER);
     private static final Model FLAMETHROWER = Model.of(WeaponShapes.FLAMETHROWER);
+    // The summon: a creeper's head of hard light, its face lit, over a summoning ring.
+    private static final Model SUMMON = Model.of(ConstructPainter.Shape.of(
+            Mesh.bevel(-0.25, -0.25, -0.25, 0.25, 0.25, 0.25, 0.03, 1.0),
+            Mesh.bevel(-0.17, 0.02, 0.24, -0.05, 0.14, 0.27, 0.01, 2.2),
+            Mesh.bevel(0.05, 0.02, 0.24, 0.17, 0.14, 0.27, 0.01, 2.2),
+            Mesh.bevel(-0.06, -0.16, 0.24, 0.06, 0.02, 0.27, 0.01, 2.2),
+            Mesh.bevel(-0.12, -0.21, 0.24, -0.06, -0.08, 0.27, 0.01, 2.2),
+            Mesh.bevel(0.06, -0.21, 0.24, 0.12, -0.08, 0.27, 0.01, 2.2),
+            Mesh.torus(28, 5, 0.4, 0.025, 1.9).moved(0.0, -0.34, 0.0)));
 
     private ConstructIcons() {
     }
@@ -72,6 +81,8 @@ public final class ConstructIcons {
                         way(110.0, 10.0), 1.0, sway);
                 painter.flare(frame.at(0.0, 0.02, 0.63), 0.12 * frame.scale(), 0.8);
             }
+            case SUMMON -> place(painter, SUMMON, 0.0, 0.0, 0.0, way(-25.0, 70.0), way(90.0, -20.0), 0.95,
+                    sway);
             default -> {
             }
         }

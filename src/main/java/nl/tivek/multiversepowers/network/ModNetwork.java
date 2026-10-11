@@ -29,6 +29,8 @@ import nl.tivek.multiversepowers.character.greenlantern.ability.fist.LightFists;
 import nl.tivek.multiversepowers.character.greenlantern.ability.heavy.HeavyWeapon;
 import nl.tivek.multiversepowers.character.greenlantern.ability.whip.EnergyWhip;
 import nl.tivek.multiversepowers.character.greenlantern.construct.Construct;
+import nl.tivek.multiversepowers.character.greenlantern.summon.SummonPayload;
+import nl.tivek.multiversepowers.character.greenlantern.summon.Summons;
 import nl.tivek.multiversepowers.character.greenlantern.ability.flight.Flight;
 import nl.tivek.multiversepowers.character.greenlantern.construct.ConstructHoldPayload;
 import nl.tivek.multiversepowers.character.greenlantern.construct.ConstructPayload;
@@ -51,6 +53,8 @@ import nl.tivek.multiversepowers.classes.PlayerClass;
 import nl.tivek.multiversepowers.classes.SelectClassPayload;
 import nl.tivek.multiversepowers.classes.TestEffectPayload;
 import nl.tivek.multiversepowers.classes.ceremony.Ceremonies;
+import nl.tivek.multiversepowers.command.CommandAliasEditPayload;
+import nl.tivek.multiversepowers.command.CommandAliases;
 import nl.tivek.multiversepowers.config.WorldSettings;
 import nl.tivek.multiversepowers.config.WorldSettingsEditPayload;
 import nl.tivek.multiversepowers.config.WorldSettingsPayload;
@@ -66,6 +70,11 @@ import nl.tivek.multiversepowers.engine.entity.PlayerKnockdowns;
 import nl.tivek.multiversepowers.engine.fx.ParticlesPayload;
 import nl.tivek.multiversepowers.engine.fx.VoicePayload;
 import nl.tivek.multiversepowers.faction.StandingsPayload;
+import nl.tivek.multiversepowers.faction.mob.MobDefaults;
+import nl.tivek.multiversepowers.faction.mob.MobRuleEditPayload;
+import nl.tivek.multiversepowers.faction.mob.MobRules;
+import nl.tivek.multiversepowers.faction.mob.MobTableAskPayload;
+import nl.tivek.multiversepowers.faction.mob.MobTablePayload;
 import nl.tivek.multiversepowers.killconfirm.KillConfirmPayload;
 import nl.tivek.multiversepowers.network.client.ClientPayloadHandler;
 import nl.tivek.multiversepowers.spell.CastSpellPayload;
@@ -118,6 +127,7 @@ public final class ModNetwork {
         registrar.playToClient(DeathStylePayload.TYPE, DeathStylePayload.STREAM_CODEC, ModNetwork::onDeathStyle);
         registrar.playToClient(DeathBlowPayload.TYPE, DeathBlowPayload.STREAM_CODEC, ModNetwork::onDeathBlow);
         registrar.playToClient(KillConfirmPayload.TYPE, KillConfirmPayload.STREAM_CODEC, ModNetwork::onKillConfirm);
+        registrar.playToClient(SummonPayload.TYPE, SummonPayload.STREAM_CODEC, ModNetwork::onSummon);
         registrar.playToServer(TestFightRequest.TYPE, TestFightRequest.STREAM_CODEC, ModNetwork::onTestFightRequest);
         registrar.playToClient(TestFightPayload.TYPE, TestFightPayload.STREAM_CODEC, ModNetwork::onTestFight);
         registrar.playToClient(HandVictimPayload.TYPE, HandVictimPayload.STREAM_CODEC, ModNetwork::onHandVictim);
@@ -142,6 +152,11 @@ public final class ModNetwork {
                 ModNetwork::onWorldSettingsEdit);
         registrar.playToClient(ParticlesPayload.TYPE, ParticlesPayload.STREAM_CODEC, ModNetwork::onParticles);
         registrar.playToClient(StandingsPayload.TYPE, StandingsPayload.STREAM_CODEC, ModNetwork::onStandings);
+        registrar.playToClient(MobTablePayload.TYPE, MobTablePayload.STREAM_CODEC, ModNetwork::onMobTable);
+        registrar.playToServer(MobTableAskPayload.TYPE, MobTableAskPayload.STREAM_CODEC, ModNetwork::onMobTableAsk);
+        registrar.playToServer(MobRuleEditPayload.TYPE, MobRuleEditPayload.STREAM_CODEC, ModNetwork::onMobRuleEdit);
+        registrar.playToServer(CommandAliasEditPayload.TYPE, CommandAliasEditPayload.STREAM_CODEC,
+                ModNetwork::onCommandAliasEdit);
         registrar.playToClient(VoicePayload.TYPE, VoicePayload.STREAM_CODEC, ModNetwork::onVoice);
     }
 
@@ -155,6 +170,34 @@ public final class ModNetwork {
 
     private static void onStandings(StandingsPayload payload, IPayloadContext context) {
         ClientPayloadHandler.handleStandings(payload, context);
+    }
+
+    private static void onMobTable(MobTablePayload payload, IPayloadContext context) {
+        ClientPayloadHandler.handleMobTable(payload, context);
+    }
+
+    private static void onMobTableAsk(MobTableAskPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> {
+            if (context.player() instanceof ServerPlayer serverPlayer && WorldSettings.mayEdit(serverPlayer)) {
+                context.reply(MobDefaults.table(serverPlayer.serverLevel()));
+            }
+        });
+    }
+
+    private static void onCommandAliasEdit(CommandAliasEditPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> {
+            if (context.player() instanceof ServerPlayer serverPlayer) {
+                CommandAliases.edit(serverPlayer, payload.name(), payload.command());
+            }
+        });
+    }
+
+    private static void onMobRuleEdit(MobRuleEditPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> {
+            if (context.player() instanceof ServerPlayer serverPlayer) {
+                MobRules.edit(serverPlayer, payload.actor(), payload.target(), payload.standing());
+            }
+        });
     }
 
     private static void onWorldSettings(WorldSettingsPayload payload, IPayloadContext context) {
@@ -173,6 +216,12 @@ public final class ModNetwork {
         context.enqueueWork(() -> {
             if (context.player() instanceof ServerPlayer serverPlayer) {
                 Construct picked = Construct.byIndex(payload.construct());
+                if (picked.summons()) {
+                    if (!picked.shut(Flight.flying(serverPlayer))) {
+                        Summons.cast(serverPlayer);
+                    }
+                    return;
+                }
                 Construct construct = picked.shut(Flight.flying(serverPlayer)) || Recharge.busy(serverPlayer)
                         ? Construct.NONE : picked;
                 SwordShield.hold(serverPlayer, construct);
@@ -280,6 +329,10 @@ public final class ModNetwork {
 
     private static void onKillConfirm(KillConfirmPayload payload, IPayloadContext context) {
         ClientPayloadHandler.handleKillConfirm(payload, context);
+    }
+
+    private static void onSummon(SummonPayload payload, IPayloadContext context) {
+        ClientPayloadHandler.handleSummon(payload, context);
     }
 
     private static void onTestFightRequest(TestFightRequest payload, IPayloadContext context) {

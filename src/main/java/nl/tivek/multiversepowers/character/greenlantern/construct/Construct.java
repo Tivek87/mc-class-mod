@@ -17,7 +17,8 @@ public enum Construct {
     ARM_CANNON("arm_cannon"),
     MINIGUN("minigun"),
     ROCKET_LAUNCHER("rocket_launcher"),
-    FLAMETHROWER("flamethrower");
+    FLAMETHROWER("flamethrower"),
+    SUMMON("summon");
 
     private static final String KEY = "construct." + MultiversePowers.MODID + ".";
 
@@ -51,9 +52,14 @@ public enum Construct {
         };
     }
 
-    // Whether the wheel forms it now: never while it is shut, and in flight only what fights from afar.
+    // Whether the wheel forms it now: never while it is shut, and in flight only what fights from afar (or summons).
     public boolean shut(boolean flying) {
-        return this.locked() || flying && this != NONE && !this.ranged();
+        return this.locked() || flying && this != NONE && this != SUMMON && !this.ranged();
+    }
+
+    // Not held: picking it forms creatures that fight for him, and whatever he holds stays in his hands.
+    public boolean summons() {
+        return this == SUMMON;
     }
 
     // Shut for now: the energy whip is to be reworked or taken out (too glitchy, too heavy to draw).

@@ -3,6 +3,33 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.8.2-alpha] - 2026-10-11
+
+### Added
+- **Green Lantern:** **Hard-Light Summon** in the Construct Wheel: 1 to 3 hard-light creatures at random (skeleton,
+  zombified piglin, creeper, blaze, vindicator, enderman, iron golem; the stronger, the rarer) fight for you 10 minutes.
+- **Settings:** a **Mobs** page: search any creature and choose who it attacks in this world.
+- **Settings:** a **Commands** page with 133 short commands (such as `/day` and `/heal`) and up to 25 of your own.
+- **Green Lantern's settings:** the summon's cost, cooldown, time, count and how often each creature comes, the arm
+  cannon's rapid fire and how long a Giant Hand rests.
+
+### Changed
+- **Green Lantern:** the Arm Cannon takes the place of your right hand; hold right click for rapid fire.
+- **Green Lantern:** the Minigun has a new model, and its bullets fly visibly out of the barrels.
+- **Green Lantern:** the sawed-off shotgun is bigger.
+- **Green Lantern:** the mech's helpers deal half damage and have a new look, new moves and cracks that spread as they
+  are hurt; wild ones have 30 health.
+- **Green Lantern:** a Giant Hand that came rests 15 seconds before it can come again.
+- **Green Lantern:** the Cosmos Test is slower and green; the moon it takes is the sky's own, as a cube.
+- **Thor:** Mjolnir flies back to you from any distance.
+
+### Removed
+- **Green Lantern:** the Arm Cannon's shield.
+
+### Fixed
+- **Thor:** a grab dive at empty air, or at a creature he could not hold, stopped in the air.
+- A body left lying changed its look when you respawned.
+
 ## [0.8.1-alpha] - 2026-10-11
 
 ### Added
