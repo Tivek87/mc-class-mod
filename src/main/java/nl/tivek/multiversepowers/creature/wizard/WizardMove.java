@@ -4,7 +4,8 @@ package nl.tivek.multiversepowers.creature.wizard;
 // magic is let go, how long before he may cast it again, from which phase on he knows it and how hard it strikes (times
 // his attack). A big spell is followed by a breath in which he only strikes or flicks sparks; an ultimate by a longer
 // one before the next ultimate. GLIDE and DASH are what he and his clones do in the circle of mirrors (WizardMirrors);
-// ASCEND and UNBIND carry him into his second and third phase.
+// ASCEND and UNBIND carry him into his second and third phase. SPARK and BOLT are his light spells, cast between the
+// others; SKIP a quick glide to a better place; ARRIVE how he comes down out of his rift when called, DEATH how he dies.
 public final class WizardMove {
     public static final int STRIKE = 1;
     public static final int SPARK = 2;
@@ -27,7 +28,10 @@ public final class WizardMove {
     public static final int STUNNED = 19;
     public static final int GLIDE = 20;
     public static final int DASH = 21;
-    public static final int KINDS = 21;
+    public static final int SKIP = 22;
+    public static final int ARRIVE = 23;
+    public static final int DEATH = 24;
+    public static final int KINDS = 24;
 
     // The staff strike's two blows: a thrust, then a sweep.
     public static final int JAB = 8;
@@ -42,16 +46,21 @@ public final class WizardMove {
     public static final int BURST = 46;
     // A dash strikes halfway.
     public static final int DASH_HIT = 6;
+    // He lands from his rift, and his staff strikes the ground.
+    public static final int LAND = 62;
+    // Light breaks out of the dying Wizard, and he is gone.
+    public static final int BREAK = 52;
+    public static final int GONE = 84;
 
     private static final int[] LENGTH = { 0, 26, 12, 22, 28, 34, 16, 30, 26, 42, 32, 44, 36, 90, 50, 34, 30, 70, 70,
-            50, 400, 12 };
+            50, 400, 12, 10, 96, 90 };
     private static final int[] RELEASE = { 0, JAB, 6, 11, 17, 22, 8, 14, 14, 20, 18, 14, 22, 26, 26, 20, 22, BURST,
-            BURST, 0, 0, DASH_HIT };
-    private static final int[] AGAIN = { 0, 34, 26, 90, 130, 380, 220, 280, 200, 440, 320, 360, 640, 520, 760, 820,
-            1000, 0, 0, 0, 0, 0 };
-    private static final int[] PHASE = { 0, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 9, 9, 9, 9, 9 };
-    private static final double[] HARM = { 0.0, 1.0, 0.7, 1.2, 1.5, 0.25, 0.0, 0.5, 1.2, 1.0, 1.5, 1.2, 0.0, 0.4, 2.0,
-            0.0, 0.6, 0.0, 0.0, 0.0, 0.0, 0.6 };
+            BURST, 0, 0, DASH_HIT, 1, LAND, BREAK };
+    private static final int[] AGAIN = { 0, 30, 12, 36, 130, 380, 200, 280, 200, 440, 320, 360, 640, 520, 760, 820,
+            1000, 0, 0, 0, 0, 0, 44, 0, 0 };
+    private static final int[] PHASE = { 0, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 9, 9, 9, 9, 9, 1, 9, 9 };
+    private static final double[] HARM = { 0.0, 1.0, 0.55, 0.9, 1.5, 0.25, 0.0, 0.5, 1.2, 1.0, 1.5, 1.2, 0.0, 0.4, 2.0,
+            0.0, 0.6, 0.0, 0.0, 0.0, 0.0, 0.6, 0.0, 1.0, 0.0 };
     // The sweep after the thrust strikes harder.
     public static final double SWEEP_HARM = 1.25;
     // How much harder his magic strikes in each phase.
@@ -84,9 +93,14 @@ public final class WizardMove {
         return POWER[Math.max(0, Math.min(3, phase))];
     }
 
-    // A spell after which he takes a breath before the next.
+    // A spell after which he takes a breath before the next big one.
     public static boolean big(int kind) {
-        return kind >= BOLT && kind <= MIRRORS && kind != BLINK;
+        return kind >= FIREBALL && kind <= MIRRORS && kind != BLINK;
+    }
+
+    // A light spell he may cast between the big ones.
+    public static boolean light(int kind) {
+        return kind == SPARK || kind == BOLT;
     }
 
     public static boolean ultimate(int kind) {
@@ -95,7 +109,7 @@ public final class WizardMove {
 
     // A move he makes with his crystal blazing and a circle of runes turning under his feet as it gathers.
     public static boolean circled(int kind) {
-        return big(kind) && kind != BOLT && kind != FIREBALL;
+        return big(kind) && kind != FIREBALL;
     }
 
     // The colour of a spell's light and its circle: arcane violet, fire, frost, the stars, gravity, time, lightning.

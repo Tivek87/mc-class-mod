@@ -13,6 +13,7 @@ import javax.annotation.Nullable;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.SpawnEggItem;
@@ -31,8 +32,9 @@ import nl.tivek.multiversepowers.faction.mob.MobSpawnEditPayload;
 import nl.tivek.multiversepowers.faction.mob.MobStatEditPayload;
 import nl.tivek.multiversepowers.faction.mob.MobStats;
 
-// The Mobs page's state under `MobRulesScreen`: its creatures in rows and groups, what was sent and not back yet,
-// a standing for many at once, each creature's numbers, and how each stands now.
+// The Mobs page's state under `MobRulesScreen`: its creatures in rows and groups, the picked creature's tab and the
+// lines it shows, what was sent and not back yet, a standing for many at once, each creature's numbers, and how each
+// stands now.
 abstract class MobRulesState extends NavScreen {
     static final String PREFIX = "config." + MultiversePowers.MODID + ".";
     static final int COLOR = 0x7FD8FF;
@@ -51,15 +53,33 @@ abstract class MobRulesState extends NavScreen {
     static final int CREATURE = 0;
     static final int GROUP = 1;
     static final int ALL = 2;
-    static final int NUMBERS = 3;
+    static final int HEADING = 3;
     static final int NUMBER = 4;
+    static final int FACT = 5;
+    static final int TOWARD_PLAYERS = 6;
+    static final int TOWARD_ALL = 7;
+    static final int SUMMARY = 8;
 
-    // A line of the list: a creature, the head of a group, all shown, the way to the picked creature's numbers, or one
-    // of them. `members`: the creatures a group or all shown holds.
+    // The picked creature's tabs: what it is, its numbers to change, how it stands to each creature.
+    static final int OVERVIEW = 0;
+    static final int NUMBERS = 1;
+    static final int RELATIONS = 2;
+
+    // A line of the list: a creature, the head of a group, all shown, a section's title, a number to change, a fact,
+    // how the picked one stands to players or to every creature, or how many it is hostile to. `members`: the
+    // creatures a group or all shown holds.
     record Line(int kind, @Nullable Row row, @Nullable String group, List<Row> members,
-            @Nullable MobStats.Stat stat) {
+            @Nullable MobStats.Stat stat, @Nullable MobFacts.Fact fact, @Nullable Component title) {
         static Line of(Row row) {
-            return new Line(CREATURE, row, null, List.of(), null);
+            return new Line(CREATURE, row, null, List.of(), null, null, null);
+        }
+
+        static Line of(int kind) {
+            return new Line(kind, null, null, List.of(), null, null, null);
+        }
+
+        static Line heading(Component title) {
+            return new Line(HEADING, null, null, List.of(), null, null, title);
         }
     }
 
@@ -72,9 +92,9 @@ abstract class MobRulesState extends NavScreen {
     final Map<String, Standing> sentAny = new HashMap<>();
     // A number, maybe not back yet, by "<creature>|<number>".
     final Map<String, Double> sentStat = new HashMap<>();
+    final MobPreview preview = new MobPreview();
     int stamp;
-    // The picked creature's numbers shown instead of who it attacks.
-    boolean numbers;
+    int tab = OVERVIEW;
     List<Row> creatures = List.of();
     @Nullable
     Row player;
@@ -200,6 +220,37 @@ abstract class MobRulesState extends NavScreen {
         }
     }
 
+    // Every number of `creature` as shown now, by `MobStats.Stat` order.
+    double[] stats(Row creature) {
+        double[] values = new double[MobStats.Stat.values().length];
+        for (MobStats.Stat stat : MobStats.Stat.values()) {
+            values[stat.ordinal()] = this.stat(creature, stat);
+        }
+        return values;
+    }
+
+    // How many creatures (and players) the picked one stands to each way, by `Standing` order.
+    int[] counts(Row actor) {
+        int[] counts = new int[Standing.values().length];
+        counts[this.shown(actor, this.player).ordinal()]++;
+        for (Row target : this.creatures) {
+            counts[this.shown(actor, target).ordinal()]++;
+        }
+        return counts;
+    }
+
+    // The picked creature toward every creature at once (players are their own line).
+    void everyCreature(Row actor, Standing standing) {
+        this.sentAny.put(MobRules.id(actor.type()), standing);
+        for (Row target : this.creatures) {
+            if (target != actor) {
+                this.sent.put(key(actor, target), standing);
+            }
+        }
+        PacketDistributor.sendToServer(new MobBulkEditPayload(List.of(MobRules.id(actor.type())),
+                List.of(MobRules.ANY), standing.ordinal()));
+    }
+
     double stat(Row creature, MobStats.Stat stat) {
         return this.sentStat.getOrDefault(MobRules.id(creature.type()) + "|" + stat.key,
                 MobStats.value(creature.type(), stat));
@@ -252,23 +303,29 @@ abstract class MobRulesState extends NavScreen {
                 || MobRules.id(row.type()).contains(wanted);
     }
 
-    // The picked creature's numbers alone, or: the way to them, all a search found, the player while a creature is
+    // The picked creature's overview or numbers in sections, or: all a search found, the player while a creature is
     // picked, then a group per mod, the game's own first; while searching every group shows what it found, folded or
     // not.
     List<Line> shownLines() {
         String wanted = this.query.trim().toLowerCase(Locale.ROOT);
         List<Line> lines = new ArrayList<>();
-        if (this.picked != null && this.numbers) {
-            for (MobStats.Stat stat : MobStats.Stat.values()) {
-                lines.add(new Line(NUMBER, null, null, List.of(), stat));
+        if (this.picked != null && this.tab == OVERVIEW) {
+            return this.overview(this.picked);
+        }
+        if (this.picked != null && this.tab == NUMBERS) {
+            LivingEntity living = this.preview.of(this.picked.type());
+            for (MobFacts.Section section : MobFacts.Section.values()) {
+                lines.add(Line.heading(section.title()));
+                for (MobStats.Stat stat : section.stats) {
+                    if (MobFacts.applies(living, stat)) {
+                        lines.add(new Line(NUMBER, null, null, List.of(), stat, null, null));
+                    }
+                }
             }
             return lines;
         }
-        if (this.picked != null && wanted.isEmpty()) {
-            lines.add(new Line(NUMBERS, null, null, List.of(), null));
-        }
         List<Row> everyone = new ArrayList<>();
-        Line all = new Line(ALL, null, null, everyone, null);
+        Line all = new Line(ALL, null, null, everyone, null, null, null);
         lines.add(all);
         if (this.picked != null && matches(this.player, wanted)) {
             lines.add(Line.of(this.player));
@@ -286,7 +343,7 @@ abstract class MobRulesState extends NavScreen {
         for (String group : order) {
             List<Row> rows = groups.get(group);
             everyone.addAll(rows);
-            lines.add(new Line(GROUP, null, group, rows, null));
+            lines.add(new Line(GROUP, null, group, rows, null, null, null));
             if (!wanted.isEmpty() || !FOLDED.contains(group)) {
                 for (Row row : rows) {
                     lines.add(Line.of(row));
@@ -296,6 +353,24 @@ abstract class MobRulesState extends NavScreen {
         // All at once only for what a search found: the groups' own buttons do it for a whole group.
         if (everyone.isEmpty() || wanted.isEmpty()) {
             lines.remove(all);
+        }
+        return lines;
+    }
+
+    private List<Line> overview(Row actor) {
+        List<Line> lines = new ArrayList<>();
+        lines.add(Line.heading(Component.translatable(MobFacts.PREFIX + "section.stands")));
+        lines.add(Line.of(TOWARD_PLAYERS));
+        lines.add(Line.of(TOWARD_ALL));
+        lines.add(Line.of(SUMMARY));
+        LivingEntity living = this.preview.of(actor.type());
+        double[] stats = this.stats(actor);
+        boolean spawns = this.spawns(actor);
+        for (MobFacts.Section section : MobFacts.Section.values()) {
+            lines.add(Line.heading(section.title()));
+            for (MobFacts.Fact fact : MobFacts.of(section, actor.type(), living, stats, spawns)) {
+                lines.add(new Line(FACT, null, null, List.of(), fact.stat(), fact, null));
+            }
         }
         return lines;
     }

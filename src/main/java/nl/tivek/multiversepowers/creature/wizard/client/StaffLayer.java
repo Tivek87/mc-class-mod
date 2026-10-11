@@ -35,7 +35,7 @@ final class StaffLayer<T extends MovingMonster> extends RenderLayer<T, WizardMod
     static final ModelLayerLocation LAYER = new ModelLayerLocation(ResourceLocation.fromNamespaceAndPath(
             MultiversePowers.MODID, "wizard_staff"), "main");
     // The grip down the arm from the shoulder, and the crystal's middle up the staff from the grip, in pixels.
-    private static final float GRIP = 8.5F;
+    private static final float GRIP = 9.0F;
     private static final float CRYSTAL = -23.5F;
     private static final int PALE = 0xC8C4D0;
     private final ModelPart staff;
@@ -74,10 +74,10 @@ final class StaffLayer<T extends MovingMonster> extends RenderLayer<T, WizardMod
             float partialTick, float age, float headYaw, float headPitch) {
         WizardModel<T> model = this.getParentModel();
         float[] c = model.pose.c;
-        boolean ghost = WizardRenderer.ghost(caster);
-        RenderType wood = ghost ? RenderType.entityTranslucent(WizardRenderer.TEXTURE)
+        boolean faded = model.alpha < 1.0F;
+        RenderType wood = faded ? RenderType.entityTranslucent(WizardRenderer.TEXTURE)
                 : RenderType.entityCutoutNoCull(WizardRenderer.TEXTURE);
-        int tint = ghost ? (int) (255 * model.alpha) << 24 | 0xFFFFFF : -1;
+        int tint = faded ? (int) (255 * model.alpha) << 24 | 0xFFFFFF : -1;
         pose.pushPose();
         model.translateToHand(HumanoidArm.RIGHT, pose);
         pose.translate(0.0F, GRIP / 16.0F, 0.0F);

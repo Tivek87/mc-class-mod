@@ -1,9 +1,9 @@
 import java.nio.file.Path;
 
 // Paints the Wizard for the boxes of creature/wizard/client/WizardModel and StaffLayer: wizard.png (a deep violet-blue
-// robe and hat sewn with silver stars and trimmed in gold, a long white beard, a hooked nose, a dark staff of twisted
-// wood shod with iron and its crystal), wizard_glow.png (his pale eyes, the runes round his hem and sleeves, the stars
-// on his hat and the crystal, all glowing) and wizard_orb.png (a soft round glow, white in the middle, for his spells'
+// robe, mantle, cape and hat sewn with silver stars and trimmed in gold, long white hair, brows, moustache and beard, a
+// hooked nose, a dark staff of twisted wood shod with iron and its crystal), wizard_glow.png (his pale eyes, the runes
+// round his hem and cuffs, the stars on his hat, robe and cape, and the crystal, all glowing) and wizard_orb.png (a soft round glow, white in the middle, for his spells'
 // light). Keep the boxes here as the models build them. From the repository root, with Java 22 or newer:
 // java scripts/models/zombies/WizardTexture.java
 public final class WizardTexture {
@@ -26,24 +26,44 @@ public final class WizardTexture {
     private static final int[] CRYSTAL = { 186, 128, 255 };
     private static final int[] CRYSTAL_LIGHT = { 236, 214, 255 };
     private static final int[] BOOT = { 54, 40, 32 };
+    private static final int[] BOOT_DARK = { 34, 24, 20 };
+    private static final int[] WHITE = { 236, 236, 240 };
+    private static final int[] CHEEK = { 204, 140, 126 };
+    private static final int[] BEARD_LIGHT = { 246, 246, 250 };
+    private static final int[] STAR_GLOW = { 150, 160, 200 };
+    private static final int[] GOLD_LIGHT = { 252, 220, 120 };
+    private static final int[] LEATHER = { 74, 48, 32 };
+    private static final int[] RUNE_DIM = { 130, 96, 200 };
+    private static final int[] PLUM = { 78, 30, 72 };
 
     private static final Paint.Box HEAD = new Paint.Box(0, 0, 8, 8, 8);
     private static final Paint.Box NOSE = new Paint.Box(32, 0, 2, 3, 2);
-    private static final Paint.Box BEARD_BOX = new Paint.Box(40, 0, 6, 7, 2);
-    private static final Paint.Box BEARD_TIP = new Paint.Box(56, 0, 4, 4, 2);
-    private static final Paint.Box MANTLE = new Paint.Box(68, 0, 10, 3, 6);
+    private static final Paint.Box BROWS = new Paint.Box(40, 0, 7, 1, 1);
+    private static final Paint.Box MUSTACHE = new Paint.Box(40, 2, 7, 2, 1);
+    private static final Paint.Box HAIR = new Paint.Box(56, 0, 9, 10, 2);
+    private static final Paint.Box LOCK = new Paint.Box(78, 0, 1, 8, 4);
+    private static final Paint.Box BEARD_BOX = new Paint.Box(88, 0, 6, 6, 2);
+    private static final Paint.Box BEARD_TIP = new Paint.Box(104, 0, 4, 5, 2);
+    private static final Paint.Box BEARD_POINT = new Paint.Box(116, 0, 2, 3, 1);
     private static final Paint.Box BRIM = new Paint.Box(0, 16, 14, 1, 14);
     private static final Paint.Box HAT1 = new Paint.Box(56, 16, 9, 4, 9);
     private static final Paint.Box HAT2 = new Paint.Box(92, 16, 7, 4, 7);
-    private static final Paint.Box HAT3 = new Paint.Box(56, 30, 5, 4, 5);
-    private static final Paint.Box HAT4 = new Paint.Box(76, 30, 3, 4, 3);
-    private static final Paint.Box HAT5 = new Paint.Box(88, 30, 2, 3, 2);
+    private static final Paint.Box HAT3 = new Paint.Box(32, 5, 5, 4, 5);
+    private static final Paint.Box HAT4 = new Paint.Box(88, 8, 3, 4, 3);
+    private static final Paint.Box HAT5 = new Paint.Box(100, 8, 2, 3, 2);
     private static final Paint.Box TORSO = new Paint.Box(0, 32, 8, 12, 4);
-    private static final Paint.Box SKIRT = new Paint.Box(24, 32, 9, 11, 5);
-    private static final Paint.Box HEM = new Paint.Box(52, 40, 10, 5, 6);
-    private static final Paint.Box ARM = new Paint.Box(0, 48, 3, 12, 3);
-    private static final Paint.Box SLEEVE = new Paint.Box(12, 48, 5, 6, 5);
-    private static final Paint.Box LEG = new Paint.Box(32, 48, 4, 12, 4);
+    private static final Paint.Box MANTLE = new Paint.Box(24, 32, 12, 4, 6);
+    private static final Paint.Box COLLAR = new Paint.Box(60, 32, 9, 3, 1);
+    private static final Paint.Box BELT = new Paint.Box(60, 36, 9, 2, 5);
+    private static final Paint.Box SKIRT_FRONT = new Paint.Box(0, 48, 10, 12, 3);
+    private static final Paint.Box SKIRT_BACK = new Paint.Box(26, 48, 10, 12, 3);
+    private static final Paint.Box HEM_FRONT = new Paint.Box(52, 48, 11, 3, 3);
+    private static final Paint.Box HEM_BACK = new Paint.Box(52, 54, 11, 3, 3);
+    private static final Paint.Box ARM = new Paint.Box(80, 44, 3, 12, 3);
+    private static final Paint.Box SLEEVE = new Paint.Box(92, 29, 4, 7, 4);
+    private static final Paint.Box CUFF = new Paint.Box(108, 29, 5, 4, 5);
+    private static final Paint.Box LEG = new Paint.Box(92, 44, 4, 12, 4);
+    private static final Paint.Box CAPE = new Paint.Box(108, 40, 9, 20, 1);
     private static final Paint.Box SHAFT = new Paint.Box(0, 64, 2, 35, 2);
     private static final Paint.Box KNOT = new Paint.Box(8, 64, 3, 2, 3);
     private static final Paint.Box RING = new Paint.Box(8, 72, 2, 1, 2);
@@ -71,149 +91,300 @@ public final class WizardTexture {
         System.out.println("painted");
     }
 
-    // A weathered face with bushy white brows over pale eyes, a hooked nose, white hair round the back, and the long
-    // white beard in strands.
+    // A weathered face: lined brow, pale blue eyes that glow, ruddy cheeks; bushy white brows, a drooping moustache, long
+    // white hair down his back and at his temples, and the long beard in strands that fray at its point.
     private static void head(Paint p, Paint glow) {
-        p.all(HEAD, SKIN, 6);
+        p.all(HEAD, SKIN, 5);
         int[] f = HEAD.face(Paint.Face.FRONT);
-        p.row(f, 0, BEARD);
-        p.row(f, 1, BEARD_DARK);
-        for (int x : new int[] { 1, 2, 5, 6 }) {
-            p.dot(f, x, 2, BEARD);
+        for (int x = 0; x < 8; x++) {
+            p.dot(f, x, 0, p.shade(x % 3 == 0 ? BEARD_DARK : BEARD, 6));
         }
+        p.dot(f, 0, 1, BEARD);
+        p.dot(f, 7, 1, BEARD);
+        for (int x = 2; x < 6; x++) {
+            p.dot(f, x, 1, p.shade(x % 2 == 0 ? SKIN_DARK : SKIN, 4));
+        }
+        p.dot(f, 0, 2, BEARD_DARK);
+        p.dot(f, 7, 2, BEARD_DARK);
+        p.dot(f, 1, 3, WHITE);
         p.dot(f, 2, 3, EYE);
         p.dot(f, 5, 3, EYE);
-        p.dot(f, 1, 3, SKIN_DARK);
-        p.dot(f, 6, 3, SKIN_DARK);
+        p.dot(f, 6, 3, WHITE);
         glow.dot(f, 2, 3, GLOW_EYE);
         glow.dot(f, 5, 3, GLOW_EYE);
-        p.row(f, 5, SKIN_DARK);
+        p.dot(f, 0, 3, BEARD_DARK);
+        p.dot(f, 7, 3, BEARD_DARK);
+        p.dot(f, 1, 4, SKIN_DARK);
+        p.dot(f, 6, 4, SKIN_DARK);
+        p.dot(f, 1, 5, CHEEK);
+        p.dot(f, 6, 5, CHEEK);
+        for (int y = 4; y < 8; y++) {
+            p.dot(f, 0, y, p.shade(BEARD, 6));
+            p.dot(f, 7, y, p.shade(BEARD, 6));
+        }
         for (int y = 6; y < 8; y++) {
-            for (int x = 0; x < 8; x++) {
-                p.dot(f, x, y, p.shade(x == 0 || x == 7 ? BEARD_DARK : BEARD, 8));
+            for (int x = 1; x < 7; x++) {
+                p.dot(f, x, y, p.shade((x + y) % 2 == 0 ? BEARD : BEARD_DARK, 6));
             }
         }
         for (Paint.Face face : new Paint.Face[] { Paint.Face.RIGHT, Paint.Face.LEFT, Paint.Face.BACK }) {
             int[] s = HEAD.face(face);
-            for (int y = 2; y < 8; y++) {
+            for (int y = 0; y < 8; y++) {
                 for (int x = 0; x < s[2]; x++) {
-                    boolean hair = face == Paint.Face.BACK || x >= (face == Paint.Face.RIGHT ? 4 : 0)
-                            && x < (face == Paint.Face.RIGHT ? 8 : 4);
-                    if (hair) {
-                        p.dot(s, x, y, p.shade((x + y) % 3 == 0 ? BEARD_DARK : BEARD, 6));
+                    boolean front = face == Paint.Face.RIGHT ? x < 3 : face == Paint.Face.LEFT && x > 4;
+                    if (!front || y < 1 || y > 5) {
+                        p.dot(s, x, y, strand(p, x, y));
                     }
                 }
             }
+            if (face != Paint.Face.BACK) {
+                int ear = face == Paint.Face.RIGHT ? 2 : 5;
+                p.dot(s, ear, 3, SKIN_DARK);
+                p.dot(s, ear, 4, SKIN_DARK);
+            }
         }
-        p.all(NOSE, SKIN, 5);
-        p.row(NOSE.face(Paint.Face.FRONT), 2, SKIN_DARK);
-        for (Paint.Box box : new Paint.Box[] { BEARD_BOX, BEARD_TIP }) {
+        p.fill(HEAD.face(Paint.Face.TOP), BEARD_DARK, 6);
+        p.all(NOSE, SKIN, 4);
+        int[] nose = NOSE.face(Paint.Face.FRONT);
+        p.dot(nose, 0, 0, SKIN_DARK);
+        p.dot(nose, 1, 0, SKIN_DARK);
+        p.row(nose, 2, CHEEK);
+        p.row(NOSE.face(Paint.Face.BOTTOM), 0, SKIN_DARK);
+        p.row(NOSE.face(Paint.Face.BOTTOM), 1, SKIN_DARK);
+        for (Paint.Box box : new Paint.Box[] { BROWS, MUSTACHE, HAIR, LOCK, BEARD_BOX, BEARD_TIP, BEARD_POINT }) {
             for (Paint.Face face : Paint.Face.values()) {
                 int[] b = box.face(face);
                 for (int y = 0; y < b[3]; y++) {
                     for (int x = 0; x < b[2]; x++) {
-                        p.dot(b, x, y, p.shade(x % 2 == 0 ? BEARD : BEARD_DARK, 8));
+                        p.dot(b, x, y, strand(p, x, y));
                     }
                 }
             }
         }
-        int[] tip = BEARD_TIP.face(Paint.Face.FRONT);
-        p.clear(tip, 0, 3);
-        p.clear(tip, 3, 3);
+        int[] brows = BROWS.face(Paint.Face.FRONT);
+        p.dot(brows, 3, 0, SKIN_DARK);
+        p.dot(brows, 0, 0, BEARD_DARK);
+        p.dot(brows, 6, 0, BEARD_DARK);
+        int[] stache = MUSTACHE.face(Paint.Face.FRONT);
+        p.clear(stache, 0, 0);
+        p.clear(stache, 6, 0);
+        p.dot(stache, 3, 0, SKIN_DARK);
+        p.dot(stache, 3, 1, BEARD_DARK);
+        for (Paint.Face face : Paint.Face.values()) {
+            int[] tip = BEARD_POINT.face(face);
+            if (face != Paint.Face.TOP && face != Paint.Face.BOTTOM) {
+                p.clear(tip, 0, tip[3] - 1);
+            }
+            int[] end = BEARD_TIP.face(face);
+            if (face == Paint.Face.FRONT || face == Paint.Face.BACK) {
+                p.clear(end, 0, end[3] - 1);
+                p.clear(end, end[2] - 1, end[3] - 1);
+            }
+            int[] hair = HAIR.face(face);
+            if (face != Paint.Face.TOP && face != Paint.Face.BOTTOM) {
+                for (int x = 0; x < hair[2]; x += 2) {
+                    p.clear(hair, x, hair[3] - 1);
+                }
+            }
+            int[] lock = LOCK.face(face);
+            if (face != Paint.Face.TOP && face != Paint.Face.BOTTOM) {
+                p.clear(lock, 0, lock[3] - 1);
+            }
+        }
     }
 
-    // The hat: robe-blue, a gold band above the brim, silver stars and a crescent moon, a little bent and worn.
+    // White hair in strands: lighter and darker lines, now and then a grey one.
+    private static int[] strand(Paint p, int x, int y) {
+        int k = (x * 7 + y / 3) % 5;
+        int[] c = k == 0 ? BEARD_DARK : k == 3 ? BEARD_LIGHT : BEARD;
+        return p.shade(c, 5);
+    }
+
+    // The hat: robe-blue, darker under the brim, a gold band, silver stars and a crescent moon on its crown, patches of
+    // wear, and a few stars higher up its bent tip, which glow.
     private static void hat(Paint p, Paint glow) {
         for (Paint.Box box : new Paint.Box[] { BRIM, HAT1, HAT2, HAT3, HAT4, HAT5 }) {
             for (Paint.Face face : Paint.Face.values()) {
-                p.skin(box.face(face), ROBE, ROBE_DARK, ROBE_LIGHT);
-            }
-        }
-        int[] under = BRIM.face(Paint.Face.BOTTOM);
-        p.fill(under, ROBE_DARK, 5);
-        for (Paint.Face face : AROUND) {
-            int[] band = HAT1.face(face);
-            p.row(band, 3, GOLD);
-            p.row(band, 2, GOLD_DARK);
-            int[] mid = HAT2.face(face);
-            int x = p.random.nextInt(mid[2]);
-            p.dot(mid, x, 1, SILVER);
-            glow.dot(mid, x, 1, SILVER);
-            int[] top = HAT3.face(face);
-            int tx = p.random.nextInt(top[2]);
-            p.dot(top, tx, 2, SILVER);
-            glow.dot(top, tx, 2, SILVER);
-        }
-        int[] front = HAT1.face(Paint.Face.FRONT);
-        for (int[] d : new int[][] { { 3, 0 }, { 4, 0 }, { 2, 1 }, { 5, 1 }, { 3, 1 } }) {
-            p.dot(front, d[0] + 1, d[1], SILVER);
-            glow.dot(front, d[0] + 1, d[1], SILVER);
-        }
-        int[] brim = BRIM.face(Paint.Face.TOP);
-        for (int k = 0; k < 14; k++) {
-            int bx = p.random.nextInt(14);
-            int by = p.random.nextInt(14);
-            if (bx < 3 || bx > 10 || by < 3 || by > 10) {
-                p.dot(brim, bx, by, ROBE_LIGHT);
-            }
-        }
-    }
-
-    // The robe: deep violet-blue, darker in its folds, a gold trim down its front and round the hem, runes stitched
-    // round the hem and the cuffs of the sleeves, a gold-clasped mantle over the shoulders; boots under it.
-    private static void robe(Paint p, Paint glow) {
-        for (Paint.Box box : new Paint.Box[] { TORSO, SKIRT, HEM, SLEEVE, MANTLE }) {
-            for (Paint.Face face : Paint.Face.values()) {
                 int[] f = box.face(face);
-                p.fill(f, ROBE, 6);
+                p.fill(f, ROBE, 5);
                 for (int x = 1; x < f[2]; x += 3) {
-                    p.column(f, x, ROBE_DARK);
+                    for (int y = 0; y < f[3]; y++) {
+                        if (p.random.nextInt(3) == 0) {
+                            p.dot(f, x, y, p.shade(ROBE_DARK, 4));
+                        }
+                    }
+                }
+                if (face == Paint.Face.TOP) {
+                    p.fill(f, ROBE_LIGHT, 5);
                 }
             }
         }
-        p.column(TORSO.face(Paint.Face.FRONT), 3, GOLD);
-        p.column(TORSO.face(Paint.Face.FRONT), 4, GOLD_DARK);
-        p.column(SKIRT.face(Paint.Face.FRONT), 4, GOLD);
-        p.row(TORSO.face(Paint.Face.FRONT), 9, GOLD_DARK);
+        p.fill(BRIM.face(Paint.Face.BOTTOM), ROBE_DARK, 4);
+        int[] brim = BRIM.face(Paint.Face.TOP);
+        p.fill(brim, ROBE, 5);
+        for (int x = 0; x < 14; x++) {
+            p.dot(brim, x, 0, ROBE_LIGHT);
+            p.dot(brim, x, 13, ROBE_DARK);
+            p.dot(brim, 0, x, ROBE_LIGHT);
+            p.dot(brim, 13, x, ROBE_DARK);
+        }
+        for (int[] d : new int[][] { { 2, 3 }, { 11, 2 }, { 3, 11 }, { 10, 11 }, { 1, 7 }, { 12, 6 } }) {
+            p.dot(brim, d[0], d[1], SILVER);
+            glow.dot(brim, d[0], d[1], STAR_GLOW);
+        }
+        for (Paint.Face face : AROUND) {
+            int[] band = HAT1.face(face);
+            p.row(band, 3, GOLD_DARK);
+            p.row(band, 2, GOLD);
+            for (Paint.Box box : new Paint.Box[] { HAT2, HAT3 }) {
+                int[] up = box.face(face);
+                int x = p.random.nextInt(up[2]);
+                int y = p.random.nextInt(Math.max(1, up[3] - 1));
+                p.dot(up, x, y, SILVER);
+                glow.dot(up, x, y, STAR_GLOW);
+            }
+        }
+        int[] front = HAT1.face(Paint.Face.FRONT);
+        for (int[] d : new int[][] { { 2, 0 }, { 3, 0 }, { 1, 1 }, { 4, 1 }, { 7, 0 } }) {
+            p.dot(front, d[0], d[1], SILVER);
+            glow.dot(front, d[0], d[1], STAR_GLOW);
+        }
+        p.dot(front, 4, 2, GOLD_LIGHT);
+        int[] tip = HAT5.face(Paint.Face.FRONT);
+        p.dot(tip, 0, 2, GOLD);
+        p.dot(tip, 1, 2, GOLD_DARK);
+    }
+
+    // The robe: deep violet-blue with darker folds and silver stars; a gold trim down its front, a mantle with a gold
+    // edge and clasp, a high collar, a leather belt with a gold buckle; the skirt in two panels (front and back) with a
+    // gold hem stitched with glowing runes; bell sleeves trimmed in gold; boots; a cape lined in plum with a silver
+    // moon and star on its back.
+    private static void robe(Paint p, Paint glow) {
+        Paint.Box[] cloth = { TORSO, MANTLE, COLLAR, SKIRT_FRONT, SKIRT_BACK, HEM_FRONT, HEM_BACK, SLEEVE, CUFF, CAPE };
+        for (Paint.Box box : cloth) {
+            for (Paint.Face face : Paint.Face.values()) {
+                int[] f = box.face(face);
+                p.fill(f, ROBE, 5);
+                for (int x = 1; x < f[2]; x += 3) {
+                    p.column(f, x, ROBE_DARK);
+                }
+                if (f[2] > 3) {
+                    for (int y = 0; y < f[3]; y += 4) {
+                        p.dot(f, (y * 3 + 2) % f[2], y, ROBE_LIGHT);
+                    }
+                }
+                if (face == Paint.Face.TOP) {
+                    p.fill(f, ROBE_LIGHT, 4);
+                } else if (face == Paint.Face.BOTTOM) {
+                    p.fill(f, ROBE_DARK, 4);
+                }
+            }
+        }
+        int[] chest = TORSO.face(Paint.Face.FRONT);
+        p.column(chest, 3, GOLD);
+        p.column(chest, 4, GOLD_DARK);
+        p.dot(chest, 1, 5, SILVER);
+        p.dot(chest, 6, 7, SILVER);
+        glow.dot(chest, 1, 5, STAR_GLOW);
+        glow.dot(chest, 6, 7, STAR_GLOW);
         for (Paint.Face face : AROUND) {
             int[] m = MANTLE.face(face);
             p.row(m, m[3] - 1, GOLD);
-            int[] hem = HEM.face(face);
-            p.row(hem, hem[3] - 1, GOLD);
-            p.row(hem, hem[3] - 2, GOLD_DARK);
-            for (int x = 1; x < hem[2] - 1; x += 2) {
-                int y = 1 + (x / 2) % 2;
-                p.dot(hem, x, y, RUNE);
-                glow.dot(hem, x, y, RUNE);
+            p.row(m, m[3] - 2, GOLD_DARK);
+            int[] c = COLLAR.face(face);
+            p.row(c, 0, GOLD);
+            int[] belt = BELT.face(face);
+            p.fill(belt, LEATHER, 5);
+            p.row(belt, 0, p.shade(LEATHER, 0));
+            for (Paint.Box hemBox : new Paint.Box[] { HEM_FRONT, HEM_BACK }) {
+                int[] hem = hemBox.face(face);
+                p.row(hem, 0, ROBE_DARK);
+                p.row(hem, hem[3] - 1, GOLD);
+                for (int x = 0; x < hem[2]; x += 2) {
+                    int y = 1;
+                    int[] rune = (x / 2) % 2 == 0 ? RUNE : RUNE_DIM;
+                    p.dot(hem, x, y, rune);
+                    glow.dot(hem, x, y, rune);
+                }
             }
-            int[] cuff = SLEEVE.face(face);
+            int[] cuff = CUFF.face(face);
             p.row(cuff, cuff[3] - 1, GOLD);
-            int rx = 1 + p.random.nextInt(Math.max(1, cuff[2] - 2));
-            p.dot(cuff, rx, cuff[3] - 3, RUNE);
-            glow.dot(cuff, rx, cuff[3] - 3, RUNE);
+            p.row(cuff, cuff[3] - 2, GOLD_DARK);
+            int rx = cuff[2] / 2;
+            p.dot(cuff, rx, 1, RUNE);
+            glow.dot(cuff, rx, 1, RUNE);
         }
         int[] clasp = MANTLE.face(Paint.Face.FRONT);
-        p.dot(clasp, 4, 1, GOLD);
+        p.dot(clasp, 5, 2, GOLD_LIGHT);
+        p.dot(clasp, 6, 2, GOLD_LIGHT);
         p.dot(clasp, 5, 1, GOLD);
-        glow.dot(clasp, 4, 1, GOLD_DARK);
+        p.dot(clasp, 6, 1, GOLD);
+        glow.dot(clasp, 5, 2, CRYSTAL);
+        for (int[] d : new int[][] { { 1, 0 }, { 10, 1 }, { 3, 2 }, { 8, 0 } }) {
+            p.dot(clasp, d[0], d[1], SILVER);
+        }
+        int[] buckle = BELT.face(Paint.Face.FRONT);
+        p.dot(buckle, 4, 0, GOLD_LIGHT);
+        p.dot(buckle, 4, 1, GOLD);
+        p.dot(buckle, 3, 0, GOLD);
+        p.dot(buckle, 5, 0, GOLD);
+        p.dot(buckle, 3, 1, GOLD_DARK);
+        p.dot(buckle, 5, 1, GOLD_DARK);
+        int[] skirt = SKIRT_FRONT.face(Paint.Face.FRONT);
+        p.column(skirt, 4, GOLD);
+        p.column(skirt, 5, GOLD_DARK);
+        for (Paint.Box box : new Paint.Box[] { SKIRT_FRONT, SKIRT_BACK }) {
+            for (Paint.Face face : AROUND) {
+                int[] s = box.face(face);
+                for (int y = s[3] - 3; y < s[3]; y++) {
+                    for (int x = 0; x < s[2]; x++) {
+                        if ((x + y) % 2 == 0) {
+                            p.dot(s, x, y, p.shade(ROBE_DARK, 4));
+                        }
+                    }
+                }
+                int sx = p.random.nextInt(s[2]);
+                int sy = 1 + p.random.nextInt(Math.max(1, s[3] - 5));
+                p.dot(s, sx, sy, SILVER);
+                glow.dot(s, sx, sy, STAR_GLOW);
+            }
+        }
+        int[] lining = CAPE.face(Paint.Face.FRONT);
+        p.fill(lining, PLUM, 5);
+        int[] back = CAPE.face(Paint.Face.BACK);
+        for (int y = 0; y < back[3]; y++) {
+            p.dot(back, 0, y, GOLD_DARK);
+            p.dot(back, back[2] - 1, y, GOLD_DARK);
+        }
+        p.row(back, back[3] - 1, GOLD);
+        p.row(back, 0, GOLD_DARK);
+        int[][] moon = { { 3, 5 }, { 4, 4 }, { 5, 4 }, { 3, 6 }, { 3, 7 }, { 4, 8 }, { 5, 8 }, { 2, 6 } };
+        for (int[] d : moon) {
+            p.dot(back, d[0], d[1], SILVER);
+            glow.dot(back, d[0], d[1], STAR_GLOW);
+        }
+        for (int[] d : new int[][] { { 6, 6 }, { 5, 11 }, { 3, 14 }, { 6, 16 }, { 2, 10 } }) {
+            p.dot(back, d[0], d[1], SILVER);
+            glow.dot(back, d[0], d[1], STAR_GLOW);
+        }
         for (Paint.Face face : Paint.Face.values()) {
             int[] arm = ARM.face(face);
             p.fill(arm, ROBE_DARK, 5);
             for (int y = 10; y < 12; y++) {
                 for (int x = 0; x < arm[2]; x++) {
-                    p.dot(arm, x, y, p.shade(SKIN, 6));
+                    p.dot(arm, x, y, p.shade(SKIN, 5));
                 }
             }
             int[] leg = LEG.face(face);
             p.fill(leg, ROBE_DARK, 5);
             for (int y = 8; y < 12; y++) {
                 for (int x = 0; x < leg[2]; x++) {
-                    p.dot(leg, x, y, p.shade(BOOT, 6));
+                    p.dot(leg, x, y, p.shade(y == 11 ? BOOT_DARK : BOOT, 5));
                 }
             }
         }
-        int[] belt = SKIRT.face(Paint.Face.FRONT);
-        p.row(belt, 0, GOLD_DARK);
+        p.fill(ARM.face(Paint.Face.BOTTOM), SKIN, 5);
+        p.fill(LEG.face(Paint.Face.BOTTOM), BOOT_DARK, 4);
     }
 
     // Dark twisted wood with a grain winding round it, iron rings and an iron foot, the claws of its head and the

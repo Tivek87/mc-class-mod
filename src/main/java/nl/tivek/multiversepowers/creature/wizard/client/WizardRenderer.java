@@ -20,7 +20,9 @@ import nl.tivek.multiversepowers.creature.wizard.client.fx.Additive;
 // The Wizard drawn from his own model with his staff in hand (StaffLayer) and the runes on his robe glowing in his
 // phase's colour, floating from his second phase. As he gathers a great spell a circle of runes in its colour lights up
 // on the ground under him. His images are drawn as he is, but cast no shadow and their crystal is pale (StaffLayer);
-// the decoy he leaves when he blinks is a see-through ghost of him, shimmering, a violet echo trembling round it.
+// the decoy he leaves when he blinks is a see-through ghost of him, shimmering, a violet echo trembling round it. He
+// never falls over or reddens as the game's dying creatures do: his death is his own move (WizardMove.DEATH), and at
+// its end he burns brighter and brighter in his phase's light as his body fades into it.
 public final class WizardRenderer<T extends MovingMonster> extends MobRenderer<T, WizardModel<T>> {
     static final ModelLayerLocation LAYER = new ModelLayerLocation(ResourceLocation.fromNamespaceAndPath(
             MultiversePowers.MODID, "wizard"), "main");
@@ -29,6 +31,8 @@ public final class WizardRenderer<T extends MovingMonster> extends MobRenderer<T
     private static final RenderType RUNES = RenderType.eyes(GLOW);
     private static final RenderType ECHO = RenderType.eyes(TEXTURE);
     private static final float CIRCLE = 2.4F;
+    // His body fades into light from this tick of his death.
+    private static final float FADE_FROM = 60.0F;
 
     WizardRenderer(EntityRendererProvider.Context context, float shadow) {
         super(context, new WizardModel<>(context.bakeLayer(LAYER)), shadow);
@@ -42,8 +46,12 @@ public final class WizardRenderer<T extends MovingMonster> extends MobRenderer<T
             public void render(PoseStack pose, MultiBufferSource buffers, int light, T caster, float limbSwing,
                     float amount, float partialTick, float age, float headYaw, float headPitch) {
                 int colour = Wizard.light(phase(caster));
+                float shown = this.getParentModel().alpha;
+                int r = (int) ((colour >> 16 & 255) * shown);
+                int g = (int) ((colour >> 8 & 255) * shown);
+                int b = (int) ((colour & 255) * shown);
                 this.getParentModel().renderToBuffer(pose, buffers.getBuffer(RUNES), 15728640,
-                        OverlayTexture.NO_OVERLAY, 0xFF000000 | colour);
+                        OverlayTexture.NO_OVERLAY, 0xFF000000 | r << 16 | g << 8 | b);
             }
         });
         this.addLayer(new StaffLayer<>(this, context.bakeLayer(StaffLayer.LAYER)));
@@ -75,32 +83,59 @@ public final class WizardRenderer<T extends MovingMonster> extends MobRenderer<T
         }
         boolean ghost = ghost(caster);
         float age = caster.tickCount + partialTick;
-        this.model.alpha = ghost ? 0.42F + 0.14F * Mth.sin(age * 0.45F) : 1.0F;
-        pose.pushPose();
-        if (floating(caster)) {
-            pose.translate(0.0, Wizard.HOVER, 0.0);
+        float t = (float) caster.moveAge(partialTick);
+        boolean dying = caster.move() == WizardMove.DEATH;
+        float fade = dying ? Mth.clamp((t - FADE_FROM) / (WizardMove.GONE - FADE_FROM), 0.0F, 1.0F) : 0.0F;
+        this.model.alpha = ghost ? 0.42F + 0.14F * Mth.sin(age * 0.45F) : 1.0F - fade;
+        double hover = floating(caster) ? Wizard.HOVER : 0.0;
+        if (dying) {
+            hover *= 1.0 - Mth.clamp(t / 14.0F, 0.0F, 1.0F);
         }
+        pose.pushPose();
+        pose.translate(0.0, hover, 0.0);
+        // The game tints and topples a creature by its death time: the Wizard's death is drawn by his own pose.
+        int deathTime = caster.deathTime;
+        caster.deathTime = 0;
         super.render(caster, yaw, partialTick, pose, buffers, light);
+        caster.deathTime = deathTime;
         if (ghost) {
-            this.echo(caster, yaw, partialTick, age, pose, buffers);
+            float strength = 0.3F + 0.15F * Mth.sin(age * 0.9F);
+            this.echo(caster, partialTick, pose, buffers, Wizard.VIOLET, strength, 0.06F * Mth.sin(age * 1.7F),
+                    0.06F * Mth.cos(age * 1.3F));
+        } else if (dying && t > WizardMove.BREAK - 8) {
+            float rise = Mth.clamp((t - WizardMove.BREAK + 8) / 16.0F, 0.0F, 1.0F);
+            float strength = rise * (0.5F + 0.5F * fade) * (1.0F - Mth.clamp((t - WizardMove.GONE + 2) / 4.0F, 0.0F,
+                    1.0F));
+            this.echo(caster, partialTick, pose, buffers, Wizard.light(phase(caster)), strength,
+                    0.04F * Mth.sin(age * 2.3F), 0.04F * Mth.cos(age * 1.9F));
         }
         pose.popPose();
         this.model.alpha = 1.0F;
     }
 
-    // The blink decoy's violet echo: its body again in light, a little off and trembling.
-    private void echo(T caster, float yaw, float partialTick, float age, PoseStack pose, MultiBufferSource buffers) {
+    // His body again in light over itself (a blink ghost's violet echo, the light he dies in), a little off.
+    private void echo(T caster, float partialTick, PoseStack pose, MultiBufferSource buffers, int colour,
+            float strength, float dx, float dz) {
         float body = Mth.rotLerp(partialTick, caster.yBodyRotO, caster.yBodyRot);
         pose.pushPose();
         pose.mulPose(com.mojang.math.Axis.YP.rotationDegrees(180.0F - body));
         pose.scale(-1.0F, -1.0F, 1.0F);
-        pose.translate(0.06F * Mth.sin(age * 1.7F), -1.501F, 0.06F * Mth.cos(age * 1.3F));
-        float strength = 0.3F + 0.15F * Mth.sin(age * 0.9F);
-        int c = (int) (255 * strength);
-        int violet = 0xFF000000 | (int) (c * 0.7F) << 16 | (int) (c * 0.42F) << 8 | c;
+        pose.translate(dx, -1.501F, dz);
+        int r = (int) ((colour >> 16 & 255) * strength);
+        int g = (int) ((colour >> 8 & 255) * strength);
+        int b = (int) ((colour & 255) * strength);
+        float alpha = this.model.alpha;
         this.model.alpha = 1.0F;
-        this.model.renderToBuffer(pose, buffers.getBuffer(ECHO), 15728640, OverlayTexture.NO_OVERLAY, violet);
+        this.model.renderToBuffer(pose, buffers.getBuffer(ECHO), 15728640, OverlayTexture.NO_OVERLAY,
+                0xFF000000 | r << 16 | g << 8 | b);
+        this.model.alpha = alpha;
         pose.popPose();
+    }
+
+    @Override
+    protected void setupRotations(T caster, PoseStack pose, float bob, float bodyYaw, float partialTick,
+            float scale) {
+        pose.mulPose(com.mojang.math.Axis.YP.rotationDegrees(180.0F - bodyYaw));
     }
 
     // The circle of runes under him while he gathers a great spell, lit up to its release and fading after.
@@ -123,7 +158,7 @@ public final class WizardRenderer<T extends MovingMonster> extends MobRenderer<T
 
     @Override
     protected RenderType getRenderType(T caster, boolean bodyVisible, boolean translucent, boolean glowing) {
-        if (ghost(caster)) {
+        if (ghost(caster) || caster.move() == WizardMove.DEATH) {
             return RenderType.entityTranslucent(TEXTURE);
         }
         return super.getRenderType(caster, bodyVisible, translucent, glowing);

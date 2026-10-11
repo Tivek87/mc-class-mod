@@ -132,6 +132,46 @@ final class WizardSparks {
                 Vec3 head = middle.add(0.0, 1.2, 0.0);
                 spiral(level, head, 0.45, age * 2.5F, ParticleTypes.CRIT, 2);
             }
+            case WizardMove.STRIKE -> {
+                // The crystal's arc as the staff swings through.
+                if (Math.abs(t - release) < 4.0) {
+                    level.addParticle(Wizard.dust(Wizard.light(phase), 1.1F), crystal.x, crystal.y, crystal.z, 0.0,
+                            0.0, 0.0);
+                    level.addParticle(ParticleTypes.END_ROD, crystal.x, crystal.y, crystal.z, spread(random, 0.05),
+                            spread(random, 0.05), spread(random, 0.05));
+                }
+            }
+            case WizardMove.SKIP -> {
+                // A streak of violet after-images where he glides from, folding into his robe's hem.
+                for (int k = 0; k < 3; k++) {
+                    level.addParticle(Wizard.dust(Wizard.VIOLET, 0.9F + 0.3F * k), middle.x + spread(random, 0.5),
+                            middle.y + spread(random, 1.6), middle.z + spread(random, 0.5), 0.0, 0.0, 0.0);
+                }
+                level.addParticle(ParticleTypes.REVERSE_PORTAL, feet.x, feet.y + 0.1, feet.z, spread(random, 0.2),
+                        0.02, spread(random, 0.2));
+            }
+            case WizardMove.ARRIVE -> {
+                // Coming down: glyphs whirl round him and light rains past him to the ground.
+                if (t < WizardMove.LAND) {
+                    spiral(level, middle, 1.3, age * 1.8F, ParticleTypes.ENCHANT, 3);
+                    spiral(level, middle.add(0.0, 0.8, 0.0), 0.9, -age * 2.4F, Wizard.dust(Wizard.light(phase),
+                            1.0F), 2);
+                    level.addParticle(ParticleTypes.END_ROD, middle.x + spread(random, 1.8), middle.y + 2.0
+                            + random.nextDouble() * 2.0, middle.z + spread(random, 1.8), 0.0, -0.18, 0.0);
+                }
+            }
+            case WizardMove.DEATH -> {
+                // Motes of his light leaving him, more and more, and drawn back in before he is gone.
+                if (t < WizardMove.GONE - 14) {
+                    if (random.nextFloat() < 0.3F + (float) t / WizardMove.GONE) {
+                        level.addParticle(Wizard.dust(Wizard.light(phase), 0.7F), middle.x + spread(random, 0.7),
+                                middle.y + spread(random, 1.4), middle.z + spread(random, 0.7), 0.0, 0.03, 0.0);
+                    }
+                } else if (t < WizardMove.GONE) {
+                    spiral(level, middle.add(0.0, 0.6, 0.0), 1.6 - (t - WizardMove.GONE + 14) * 0.1, age * 3.0F,
+                            ParticleTypes.ENCHANT, 3);
+                }
+            }
             case WizardMove.GLIDE, WizardMove.DASH -> {
                 level.addParticle(Wizard.dust(Wizard.STARLIGHT, move == WizardMove.DASH ? 1.4F : 0.8F),
                         middle.x + spread(random, 0.3), middle.y + spread(random, 0.8), middle.z + spread(random, 0.3),

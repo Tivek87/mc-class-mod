@@ -17,8 +17,12 @@ import nl.tivek.multiversepowers.creature.wizard.WizardMove;
 // followed on springs, so he never snaps from one pose into the next; beard, hat-tip and robe trail after.
 final class WizardPoses {
     private static final PoseSprings SPRINGS = new PoseSprings(0.3, 0.8);
+    private static final PoseSprings CLOTH = new PoseSprings(0.09, 0.32);
 
     final float[] c = new float[CHANNELS];
+    private final float[] cloth = new float[8];
+    float cape;
+    float capeSide;
     float beard;
     float beardSide;
     float hat;
@@ -204,18 +208,38 @@ final class WizardPoses {
         }
     }
 
-    // Beard, hat-tip and robe trail after his turns, leans and steps, and wave in their own slow way.
+    // Beard, hat-tip, skirt and cape: cloth and hair on soft springs of their own, swung back by his speed, out to the
+    // side as he turns, up as he drops and down as he rises, shaken by bursts of magic, and waving slowly at rest. The
+    // beard's angle is in the world's tilt (WizardModel hangs it from his chin), the others in his trunk's.
     private void trail(MovingMonster caster, float age, float amount, boolean floating) {
         float sway = Mth.sin(age * 0.11F + caster.getId());
-        this.beard = 0.06F * sway - 0.6F * this.c[LEAN] - 0.25F * this.c[NOD];
-        this.beardSide = -0.5F * this.c[ROLL] - 0.3F * this.c[TWIST] + 0.04F * Mth.sin(age * 0.09F);
-        this.hat = 0.05F * sway - 0.3F * this.c[LEAN];
-        this.hatSide = -0.6F * this.c[ROLL] + 0.05F * Mth.cos(age * 0.08F);
-        float knees = Math.max(this.c[R_KNEE], this.c[L_KNEE]);
-        float stride = Math.max(-Math.min(this.c[R_LEG], this.c[L_LEG]), 0.0F);
-        this.skirt = -0.85F * this.c[LEAN] - 0.35F * knees - 0.4F * stride
-                + (floating ? 0.25F * Math.min(1.0F, amount * 1.8F) : 0.0F) + 0.03F * sway;
-        this.skirtSide = -0.7F * this.c[ROLL] + 0.03F * Mth.sin(age * 0.13F);
+        float yaw = caster.yBodyRot * Mth.DEG_TO_RAD;
+        double dx = caster.getX() - caster.xo;
+        double dz = caster.getZ() - caster.zo;
+        float ahead = (float) (-dx * Mth.sin(yaw) + dz * Mth.cos(yaw));
+        float across = (float) (dx * Mth.cos(yaw) + dz * Mth.sin(yaw));
+        float rise = (float) (caster.getY() - caster.yo);
+        float turn = Mth.wrapDegrees(caster.yBodyRot - caster.yBodyRotO) * Mth.DEG_TO_RAD;
+        float burst = Math.max(0.0F, this.c[FLARE]);
+        float rush = Mth.clamp(ahead * 4.0F, -0.8F, 1.6F);
+        float[] cloth = this.cloth;
+        cloth[0] = 0.04F * sway + 0.35F * rush - 0.8F * rise;
+        cloth[1] = -0.5F * this.c[ROLL] - 1.2F * turn - 0.4F * across * 4.0F + 0.04F * Mth.sin(age * 0.09F);
+        cloth[2] = 0.05F * sway - 0.3F * this.c[LEAN] + 0.3F * rush;
+        cloth[3] = -0.6F * this.c[ROLL] - 1.5F * turn + 0.05F * Mth.cos(age * 0.08F);
+        cloth[4] = 0.03F * sway + 0.3F * rush - 0.6F * rise * 4.0F + (floating ? 0.12F : 0.0F) + 0.15F * burst;
+        cloth[5] = -0.4F * this.c[ROLL] - 0.8F * turn - 0.3F * across * 4.0F + 0.03F * Mth.sin(age * 0.13F);
+        cloth[6] = 0.04F * sway + 0.55F * rush - 0.9F * rise * 4.0F + 0.25F * burst + (floating ? 0.1F : 0.0F);
+        cloth[7] = -1.0F * turn - 0.5F * across * 4.0F + 0.04F * Mth.sin(age * 0.07F + 1.0F);
+        CLOTH.follow(caster.getId(), cloth, age, caster.level().getGameTime());
+        this.beard = cloth[0];
+        this.beardSide = cloth[1];
+        this.hat = cloth[2];
+        this.hatSide = cloth[3];
+        this.skirt = cloth[4];
+        this.skirtSide = cloth[5];
+        this.cape = Math.max(0.0F, cloth[6]);
+        this.capeSide = cloth[7];
     }
 
     // 0 outside `from`..`to`, rising and falling smoothly between.

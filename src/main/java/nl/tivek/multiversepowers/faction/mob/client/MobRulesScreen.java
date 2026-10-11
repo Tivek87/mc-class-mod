@@ -1,15 +1,13 @@
 package nl.tivek.multiversepowers.faction.mob.client;
 
 import java.util.List;
-import java.util.Locale;
 import javax.annotation.Nullable;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
+import net.minecraft.world.entity.LivingEntity;
 import net.neoforged.neoforge.network.PacketDistributor;
 import nl.tivek.multiversepowers.config.client.SettingsPages;
 import nl.tivek.multiversepowers.config.client.SettingsScreen;
@@ -23,12 +21,12 @@ import nl.tivek.multiversepowers.faction.mob.MobTableAskPayload;
 import org.lwjgl.glfw.GLFW;
 
 // The settings window's Mobs page: every creature of the game, modded ones too, searchable, in a group per mod (the
-// game's own first) that folds in and out; a click on one lists every creature and the player again, each with
-// Friendly, Neutral and Hostile, the one lit being how the first stands to it, and whether it spawns by itself, and its
-// numbers (`MobStats`). A line under one marks the game's own. Every group and the list as shown take a standing for
-// all at once (in the list: toward every creature); over the list, everyone hostile, a step back and a reset of it all.
-// A change goes to the server at once (`MobRules`).
-public final class MobRulesScreen extends MobRulesState {
+// game's own first) that folds in and out; every group and the list as shown take a standing for all at once, and over
+// the list are everyone hostile, a step back and a reset of it all. A click on a creature opens it: its model on the
+// left, and in tabs what it is (how it stands to players and to every creature, its health, armor, damage, speed and
+// more), its numbers to change (`MobStats`), and how it stands to each creature and the player, a line under the
+// game's own. A change goes to the server at once (`MobRules`).
+public final class MobRulesScreen extends MobRulesProfile {
     private static final int SEARCH = 110;
     private boolean asked;
     @Nullable
@@ -89,9 +87,15 @@ public final class MobRulesScreen extends MobRulesState {
         this.addRenderableWidget(this.search);
     }
 
+    @Override
+    public void removed() {
+        super.removed();
+        this.preview.forget();
+    }
+
     private void pick(@Nullable Row row) {
         this.picked = row;
-        this.numbers = false;
+        this.tab = OVERVIEW;
         this.area.top();
         this.query = "";
         if (this.search != null) {
@@ -102,76 +106,34 @@ public final class MobRulesScreen extends MobRulesState {
     // Friendly, Neutral and Hostile for every one of `rows` at once, right-aligned to `right`; the lit one how they all
     // stand, if they do alike. Returns its left edge.
     private int allPills(GuiGraphics graphics, List<Row> rows, int right, int y, int mouseX, int mouseY) {
-        Standing now = this.common(rows);
-        int each = 0;
-        for (Standing standing : ORDER) {
-            each = Math.max(each, this.font.width(label(standing)) + 8);
-        }
-        int x = right - each * ORDER.length - 2 * (ORDER.length - 1);
-        int left = x;
-        boolean editable = this.editable();
-        for (Standing standing : ORDER) {
-            boolean lit = standing == now;
-            boolean over = editable && this.area.over(mouseX, mouseY, x, y, each, 12);
-            graphics.fill(x, y, x + each, y + 12, lit ? 0xFF000000 | dim(standing.rgb()) : over ? 0xFF404040
-                    : 0xFF1E1E1E);
-            graphics.renderOutline(x, y, each, 12, 0xFF000000 | dim(dim(standing.rgb())));
-            Component text = label(standing);
-            graphics.drawString(this.font, text, x + (each - this.font.width(text)) / 2, y + 2,
-                    lit ? 0xFFFFFFFF : over ? 0xFFE0E0E0 : 0xFF9A9A9A, false);
-            if (editable) {
-                this.area.hit(x, y, each, 12, () -> this.all(rows, standing));
-            }
-            x += each + 2;
-        }
-        return left;
+        return this.standingPills(graphics, this.common(rows), right, y, mouseX, mouseY,
+                standing -> this.all(rows, standing));
     }
 
     // All shown at once: the creatures the list shows now, the player too while one is picked. Returns what it does
     // while the mouse is on its name.
     @Nullable
     private Component allLine(GuiGraphics graphics, Line line, int y, int width, int mouseX, int mouseY) {
-        graphics.fill(this.contentX, y + 1, this.contentX + width, y + ROW - 1, 0x2A6EE7A0);
-        int left = this.allPills(graphics, line.members(), this.contentX + width - 4, y + 3, mouseX, mouseY);
+        graphics.fill(this.listX, y + 1, this.listX + width, y + ROW - 1, 0x2A6EE7A0);
+        int left = this.allPills(graphics, line.members(), this.listX + width - 4, y + 3, mouseX, mouseY);
         Component title = Component.translatable(PREFIX + (this.picked != null ? "mobs.all.toward" : "mobs.all"),
                 line.members().size()).withStyle(ChatFormatting.BOLD);
-        graphics.drawString(this.font, this.fit(title, left - this.contentX - 10), this.contentX + 5, y + 5,
+        graphics.drawString(this.font, this.fit(title, left - this.listX - 10), this.listX + 5, y + 5,
                 0xFF000000 | ACCENT, false);
-        boolean over = this.area.over(mouseX, mouseY, this.contentX, y, left - this.contentX, ROW);
+        boolean over = this.area.over(mouseX, mouseY, this.listX, y, left - this.listX, ROW);
         return over ? Component.translatable(PREFIX + (this.picked != null ? "mobs.all.toward.tip" : "mobs.all.tip"))
                 : null;
     }
 
-    // The way to the picked creature's numbers.
-    private void numbersLine(GuiGraphics graphics, int y, int width, int mouseX, int mouseY) {
-        boolean over = this.area.over(mouseX, mouseY, this.contentX, y, width, ROW);
-        graphics.fill(this.contentX, y, this.contentX + width, y + ROW, over ? 0x28FFFFFF : 0x14FFFFFF);
-        graphics.renderItem(new ItemStack(Items.COMPARATOR), this.contentX + 2, y + 1);
-        int right = this.contentX + width - 4;
-        graphics.drawString(this.font, "›", right - 4, y + 5, over ? TEXT : MUTED, false);
-        right -= 10;
-        int changed = MobStats.changed(this.picked.type());
-        if (changed > 0) {
-            Component count = Component.translatable(PREFIX + "mobs.changed", changed);
-            right -= this.font.width(count) + 6;
-            this.chip(graphics, count, right, y + 4, 0x3A3010, WARN);
-        }
-        graphics.drawString(this.font, Component.translatable(PREFIX + "mobs.numbers"), this.contentX + 22, y + 5,
-                over ? TEXT : BODY, false);
-        this.area.hit(this.contentX, y, width, ROW, () -> {
-            this.numbers = true;
-            this.area.top();
-        });
-    }
-
-    // One of the picked creature's numbers: its name, then - value + and a way back to the game's own.
+    // One of the picked creature's numbers: its name and what it makes of the creature, then - value + and a way back
+    // to the game's own.
     @Nullable
     private Component numberLine(GuiGraphics graphics, MobStats.Stat stat, int y, int width, int mouseX,
             int mouseY) {
         Row creature = this.picked;
         double now = this.stat(creature, stat);
         boolean editable = this.editable();
-        int right = this.contentX + width - 4;
+        int right = this.listX + width - 4;
         Component back = Component.translatable(PREFIX + "mobs.reset");
         right -= this.font.width(back) + 6;
         if (now != stat.normal) {
@@ -190,7 +152,7 @@ public final class MobRulesScreen extends MobRulesState {
             this.button(graphics, plus, right, y + 4, mouseX, mouseY, editable && now < stat.most,
                     () -> this.stat(creature, stat, now + stat.step * (hasShiftDown() ? 10.0 : 1.0)));
             Component shown = value(stat, now);
-            int box = Math.max(44, this.font.width(shown) + 8);
+            int box = Math.max(30, this.font.width(shown) + 6);
             right -= box + 2;
             graphics.fill(right, y + 3, right + box, y + 15, 0xFF161616);
             graphics.drawString(this.font, shown, right + (box - this.font.width(shown)) / 2, y + 5,
@@ -200,40 +162,36 @@ public final class MobRulesScreen extends MobRulesState {
             this.button(graphics, minus, right, y + 4, mouseX, mouseY, editable && now > stat.least,
                     () -> this.stat(creature, stat, now - stat.step * (hasShiftDown() ? 10.0 : 1.0)));
         }
+        LivingEntity living = this.preview.of(creature.type());
+        Component result = MobFacts.result(stat, living, this.stats(creature));
         Component name = Component.translatable(PREFIX + "mobs.stat." + stat.key);
-        graphics.drawString(this.font, this.fit(name, right - this.contentX - 12), this.contentX + 5, y + 5,
-                now != stat.normal ? TEXT : BODY, false);
-        boolean over = this.area.over(mouseX, mouseY, this.contentX, y, right - this.contentX - 4, ROW);
-        return over ? Component.translatable(PREFIX + "mobs.stat." + stat.key + ".desc") : null;
-    }
-
-    // A chip inside the list that scrolls with it.
-    private void button(GuiGraphics graphics, Component text, int x, int y, int mouseX, int mouseY, boolean active,
-            Runnable action) {
-        int width = this.font.width(text) + 6;
-        boolean over = active && this.area.over(mouseX, mouseY, x, y, width, 10);
-        this.chip(graphics, text, x, y, over ? 0x505050 : 0x343434, !active ? 0x6A6A6A : over ? 0xFFFFFF : 0xC8C8C8);
-        if (active) {
-            this.area.hit(x, y, width, 10, action);
+        // What it makes of the creature only where the name still fits whole beside it.
+        if (result != null && this.font.width(name) + this.font.width(result) + 18 <= right - this.listX) {
+            right -= this.font.width(result) + 6;
+            graphics.drawString(this.font, result, right, y + 5, MUTED, false);
         }
+        graphics.drawString(this.font, this.fit(name, right - this.listX - 10), this.listX + 5, y + 5,
+                now != stat.normal ? TEXT : BODY, false);
+        boolean over = this.area.over(mouseX, mouseY, this.listX, y, right - this.listX - 4, ROW);
+        return over ? Component.translatable(PREFIX + "mobs.stat." + stat.key + ".desc") : null;
     }
 
     // A group's head: all of it at once, and a click elsewhere on it folds the group in or out.
     private void groupLine(GuiGraphics graphics, Line line, int y, int width, int mouseX, int mouseY) {
         boolean folded = FOLDED.contains(line.group()) && this.query.isBlank();
-        boolean over = this.area.over(mouseX, mouseY, this.contentX, y, width, ROW);
-        graphics.fill(this.contentX, y + 1, this.contentX + width, y + ROW - 1, over ? 0x30FFFFFF : 0x22FFFFFF);
-        graphics.drawString(this.font, folded ? "▸" : "▾", this.contentX + 5, y + 5, 0xFF000000 | COLOR, false);
+        boolean over = this.area.over(mouseX, mouseY, this.listX, y, width, ROW);
+        graphics.fill(this.listX, y + 1, this.listX + width, y + ROW - 1, over ? 0x30FFFFFF : 0x22FFFFFF);
+        graphics.drawString(this.font, folded ? "▸" : "▾", this.listX + 5, y + 5, 0xFF000000 | COLOR, false);
         String count = String.valueOf(line.members().size());
-        int countX = this.contentX + width - 6 - this.font.width(count);
+        int countX = this.listX + width - 6 - this.font.width(count);
         graphics.drawString(this.font, count, countX, y + 5, MUTED, false);
         // The whole group at once, only while the mouse is on its head, so the list stays calm.
         int left = over && this.editable() ? this.allPills(graphics, line.members(), countX - 8, y + 3, mouseX, mouseY)
                 : countX;
         Component title = groupName(line.group()).copy().withStyle(ChatFormatting.BOLD);
-        graphics.drawString(this.font, this.fit(title, left - this.contentX - 22), this.contentX + 16, y + 5,
+        graphics.drawString(this.font, this.fit(title, left - this.listX - 22), this.listX + 16, y + 5,
                 0xFF000000 | COLOR, false);
-        this.area.hit(this.contentX, y, width, ROW, () -> {
+        this.area.hit(this.listX, y, width, ROW, () -> {
             if (!FOLDED.remove(line.group())) {
                 FOLDED.add(line.group());
             }
@@ -242,6 +200,12 @@ public final class MobRulesScreen extends MobRulesState {
 
     @Override
     protected void renderPage(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        this.hits.clear();
+        // A page of the settings window, as the tour knows it.
+        ScreenAnchors.report("settings", this.contentX, this.contentY, this.contentWidth, this.contentHeight);
+        if (this.search != null) {
+            this.search.visible = this.picked == null || this.tab == RELATIONS;
+        }
         if (!ClientMobTable.ready()) {
             Component waiting = Component.translatable(PREFIX + "mobs.loading");
             graphics.drawString(this.font, waiting, this.contentX + (this.contentWidth - this.font.width(waiting)) / 2,
@@ -261,94 +225,133 @@ public final class MobRulesScreen extends MobRulesState {
         }
         this.header(graphics, mouseX, mouseY);
         int top = this.contentY + HEADER + 4;
-        int height = this.contentY + this.contentHeight - top;
+        int bottom = this.contentY + this.contentHeight;
+        this.listX = this.contentX;
+        this.listWidth = this.contentWidth;
+        if (this.picked != null) {
+            top = this.profile(graphics, top, bottom, mouseX, mouseY);
+        }
+        int height = bottom - top;
         List<Line> rows = this.shownLines();
-        ScreenAnchors.report("mobs.list", this.contentX, top, this.contentWidth, height);
+        ScreenAnchors.report("mobs.list", this.listX, top, this.listWidth, height);
         if (rows.isEmpty()) {
             Component none = Component.translatable(PREFIX + "search.none");
-            graphics.drawString(this.font, none, this.contentX + (this.contentWidth - this.font.width(none)) / 2,
+            graphics.drawString(this.font, none, this.listX + (this.listWidth - this.font.width(none)) / 2,
                     top + 8, MUTED, false);
             return;
         }
         Component tip = null;
-        int start = this.area.begin(graphics, this.contentX, top, this.contentWidth, height, rows.size() * ROW);
+        int start = this.area.begin(graphics, this.listX, top, this.listWidth, height, rows.size() * ROW);
         int width = this.area.rowWidth();
         for (int i = 0; i < rows.size(); i++) {
             int y = start + i * ROW;
             if (!this.area.shows(y, ROW)) {
                 continue;
             }
-            Line line = rows.get(i);
-            if (line.kind() == GROUP) {
-                this.groupLine(graphics, line, y, width, mouseX, mouseY);
-                continue;
-            }
-            if (line.kind() == ALL) {
-                Component about = this.allLine(graphics, line, y, width, mouseX, mouseY);
-                tip = about != null ? about : tip;
-                continue;
-            }
-            if (line.kind() == NUMBERS) {
-                this.numbersLine(graphics, y, width, mouseX, mouseY);
-                continue;
-            }
-            if (line.kind() == NUMBER) {
-                if (i % 2 == 0) {
-                    graphics.fill(this.contentX, y, this.contentX + width, y + ROW, 0x10FFFFFF);
-                }
-                Component about = this.numberLine(graphics, line.stat(), y, width, mouseX, mouseY);
-                tip = about != null ? about : tip;
-                continue;
-            }
-            Row row = line.row();
-            boolean over = this.area.over(mouseX, mouseY, this.contentX, y, width, ROW);
-            if (i % 2 == 0) {
-                graphics.fill(this.contentX, y, this.contentX + width, y + ROW, 0x10FFFFFF);
-            }
-            graphics.renderItem(row.icon(), this.contentX + 2, y + 1);
-            int right = this.contentX + width - 4;
-            if (this.picked == null) {
-                if (over) {
-                    graphics.fill(this.contentX, y, this.contentX + width, y + ROW, 0x18FFFFFF);
-                }
-                graphics.drawString(this.font, "›", right - 4, y + 5, over ? TEXT : MUTED, false);
-                right -= 10;
-                int changed = this.changes(row);
-                if (changed > 0) {
-                    Component count = Component.translatable(PREFIX + "mobs.changed", changed);
-                    right -= this.font.width(count) + 6;
-                    this.chip(graphics, count, right, y + 4, 0x3A3010, WARN);
-                    right -= 4;
-                }
-                if (!this.spawns(row)) {
-                    Component off = Component.translatable(PREFIX + "mobs.no_spawn");
-                    right -= this.font.width(off) + 6;
-                    this.chip(graphics, off, right, y + 4, 0x3A1414, 0xFF7A7A);
-                    right -= 4;
-                }
-                this.area.hit(this.contentX, y, width, ROW, () -> this.pick(row));
-            } else {
-                Tip pills = this.pills(graphics, row, right, y + 3, mouseX, mouseY, over);
-                right = pills.left() - 4;
-                if (pills.tip() != null) {
-                    tip = pills.tip();
-                }
-                if (this.shown(this.picked, row) != ClientMobTable.of(this.picked.index(), row.index())) {
-                    graphics.drawString(this.font, "•", right - 4, y + 5, 0xFF000000 | WARN, false);
-                    right -= 8;
-                }
-            }
-            graphics.drawString(this.font, this.fit(row.name(), right - this.contentX - 26), this.contentX + 22,
-                    y + 5, over && this.picked == null ? TEXT : BODY, false);
+            Component about = this.line(graphics, rows.get(i), i, y, width, mouseX, mouseY);
+            tip = about != null ? about : tip;
         }
         this.area.end(graphics);
         if (tip != null) {
-            graphics.renderTooltip(this.font, tip, mouseX, mouseY);
+            graphics.renderComponentTooltip(this.font, List.of(tip), mouseX, mouseY);
         }
     }
 
+    // One line of the list; what it tells while the mouse is on it.
+    @Nullable
+    private Component line(GuiGraphics graphics, Line line, int i, int y, int width, int mouseX, int mouseY) {
+        switch (line.kind()) {
+            case GROUP -> {
+                this.groupLine(graphics, line, y, width, mouseX, mouseY);
+                return null;
+            }
+            case ALL -> {
+                return this.allLine(graphics, line, y, width, mouseX, mouseY);
+            }
+            case HEADING -> {
+                this.headingLine(graphics, line.title(), y, width);
+                return null;
+            }
+            case NUMBER -> {
+                if (i % 2 == 0) {
+                    graphics.fill(this.listX, y, this.listX + width, y + ROW, 0x10FFFFFF);
+                }
+                return this.numberLine(graphics, line.stat(), y, width, mouseX, mouseY);
+            }
+            case FACT -> {
+                return this.factLine(graphics, line.fact(), y, width, mouseX, mouseY, i % 2 == 0);
+            }
+            case TOWARD_PLAYERS -> {
+                return this.towardPlayersLine(graphics, y, width, mouseX, mouseY);
+            }
+            case TOWARD_ALL -> {
+                return this.towardAllLine(graphics, y, width, mouseX, mouseY);
+            }
+            case SUMMARY -> {
+                this.summaryLine(graphics, y, width, mouseX, mouseY);
+                return null;
+            }
+            default -> {
+                return this.creatureLine(graphics, line.row(), i, y, width, mouseX, mouseY);
+            }
+        }
+    }
+
+    // A creature: in the list a way into it, with what this world changed of it; in a picked one's relations how
+    // the picked one stands to it.
+    @Nullable
+    private Component creatureLine(GuiGraphics graphics, Row row, int i, int y, int width, int mouseX, int mouseY) {
+        Component tip = null;
+        boolean over = this.area.over(mouseX, mouseY, this.listX, y, width, ROW);
+        if (i % 2 == 0) {
+            graphics.fill(this.listX, y, this.listX + width, y + ROW, 0x10FFFFFF);
+        }
+        graphics.renderItem(row.icon(), this.listX + 2, y + 1);
+        int right = this.listX + width - 4;
+        if (this.picked == null) {
+            if (over) {
+                graphics.fill(this.listX, y, this.listX + width, y + ROW, 0x18FFFFFF);
+            }
+            graphics.drawString(this.font, "›", right - 4, y + 5, over ? TEXT : MUTED, false);
+            right -= 10;
+            int changed = this.changes(row);
+            if (changed > 0) {
+                Component count = Component.translatable(PREFIX + "mobs.changed", changed);
+                right -= this.font.width(count) + 6;
+                this.chip(graphics, count, right, y + 4, 0x3A3010, WARN);
+                right -= 4;
+            }
+            if (!this.spawns(row)) {
+                Component off = Component.translatable(PREFIX + "mobs.no_spawn");
+                right -= this.font.width(off) + 6;
+                this.chip(graphics, off, right, y + 4, 0x3A1414, 0xFF7A7A);
+                right -= 4;
+            }
+            Standing toPlayers = this.shown(row, this.player);
+            graphics.fill(right - 6, y + 6, right - 1, y + 11, 0xFF000000 | toPlayers.rgb());
+            if (this.area.over(mouseX, mouseY, right - 8, y, 9, ROW)) {
+                tip = Component.translatable(PREFIX + "mobs.dot", label(toPlayers));
+            }
+            right -= 10;
+            this.area.hit(this.listX, y, width, ROW, () -> this.pick(row));
+        } else {
+            Tip pills = this.pills(graphics, row, right, y + 3, mouseX, mouseY, over);
+            right = pills.left() - 4;
+            if (pills.tip() != null) {
+                tip = pills.tip();
+            }
+            if (this.shown(this.picked, row) != ClientMobTable.of(this.picked.index(), row.index())) {
+                graphics.drawString(this.font, "•", right - 4, y + 5, 0xFF000000 | WARN, false);
+                right -= 8;
+            }
+        }
+        graphics.drawString(this.font, this.fit(row.name(), right - this.listX - 26), this.listX + 22,
+                y + 5, over && this.picked == null ? TEXT : BODY, false);
+        return tip;
+    }
+
     // Over the list: what to do with everyone hostile, a step back and a reset of the whole page; or the picked
-    // creature with a way back and its reset; or its numbers with a way back to who it attacks.
+    // creature with a way back, whether it spawns and its reset.
     private void header(GuiGraphics graphics, int mouseX, int mouseY) {
         int y = this.contentY + 3;
         boolean editable = this.editable();
@@ -375,81 +378,19 @@ public final class MobRulesScreen extends MobRulesState {
         }
         Row actor = this.picked;
         int x = this.contentX;
-        if (this.numbers) {
-            x += this.link(graphics, Component.translatable(PREFIX + "mobs.numbers.back"), x, y, mouseX, mouseY, MUTED,
-                    () -> {
-                        this.numbers = false;
-                        this.area.top();
-                    }) + 8;
-            Component reset = Component.translatable(PREFIX + "mobs.reset");
-            int resetX = this.contentX + this.contentWidth - this.font.width(reset) - 6;
-            this.smallButton(graphics, reset, resetX, y - 1, mouseX, mouseY,
-                    editable && MobStats.changed(actor.type()) > 0, () -> this.resetNumbers(actor));
-            Component name = Component.translatable(PREFIX + "mobs.numbers.of", actor.name())
-                    .withStyle(ChatFormatting.BOLD);
-            graphics.drawString(this.font, this.fit(name, resetX - x - 8), x, y, 0xFF000000 | COLOR, false);
-            return;
-        }
         x += this.link(graphics, Component.translatable(PREFIX + "mobs.back"), x, y, mouseX, mouseY, MUTED,
                 () -> this.pick(null)) + 8;
         Component reset = Component.translatable(PREFIX + "mobs.reset");
         int resetX = this.contentX + this.contentWidth - this.font.width(reset) - 6;
-        this.smallButton(graphics, reset, resetX, y - 1, mouseX, mouseY, this.editable() && this.changes(actor) > 0,
+        this.smallButton(graphics, reset, resetX, y - 1, mouseX, mouseY, editable && this.changes(actor) > 0,
                 () -> this.reset(actor));
         boolean spawns = this.spawns(actor);
         Component spawning = Component.translatable(PREFIX + "mobs.spawns." + (spawns ? "on" : "off"));
         int spawnX = resetX - this.font.width(spawning) - 14;
-        this.smallButton(graphics, spawning, spawnX, y - 1, mouseX, mouseY, this.editable(),
+        this.smallButton(graphics, spawning, spawnX, y - 1, mouseX, mouseY, editable,
                 () -> this.spawning(actor, !spawns));
-        Component name = Component.translatable(PREFIX + "mobs.toward", actor.name()).withStyle(ChatFormatting.BOLD);
+        Component name = actor.name().copy().withStyle(ChatFormatting.BOLD);
         graphics.drawString(this.font, this.fit(name, spawnX - x - 8), x, y, 0xFF000000 | COLOR, false);
-    }
-
-    private record Tip(int left, @Nullable Component tip) {
-    }
-
-    // How the picked creature stands to one target, right-aligned to `right`: only that while the mouse is elsewhere;
-    // on the row Friendly, Neutral and Hostile to pick from, the lit one how it stands, a line under the game's own.
-    private Tip pills(GuiGraphics graphics, Row target, int right, int y, int mouseX, int mouseY, boolean open) {
-        Row actor = this.picked;
-        Standing now = this.shown(actor, target);
-        Standing own = ClientMobTable.of(actor.index(), target.index());
-        int each = 0;
-        for (Standing standing : ORDER) {
-            each = Math.max(each, this.font.width(label(standing)) + 8);
-        }
-        int x = right - each * ORDER.length - 2 * (ORDER.length - 1);
-        int left = x;
-        Component tip = null;
-        boolean editable = this.editable();
-        if (!open || !editable) {
-            int at = right - each;
-            graphics.fill(at, y, at + each, y + 12, 0xFF000000 | dim(now.rgb()));
-            Component text = label(now);
-            graphics.drawString(this.font, text, at + (each - this.font.width(text)) / 2, y + 2, 0xFFFFFFFF, false);
-            return new Tip(left, null);
-        }
-        for (Standing standing : ORDER) {
-            boolean lit = standing == now;
-            boolean over = editable && this.area.over(mouseX, mouseY, x, y, each, 12);
-            int fill = lit ? 0xFF000000 | dim(standing.rgb()) : over ? 0xFF404040 : 0xFF262626;
-            graphics.fill(x, y, x + each, y + 12, fill);
-            Component text = label(standing);
-            int color = lit ? 0xFFFFFFFF : over ? 0xFFE0E0E0 : 0xFF8A8A8A;
-            graphics.drawString(this.font, text, x + (each - this.font.width(text)) / 2, y + 2, color, false);
-            if (standing == own) {
-                graphics.fill(x + 2, y + 11, x + each - 2, y + 12, 0xFF000000 | standing.rgb());
-            }
-            if (over) {
-                tip = Component.translatable(PREFIX + "mobs.tip." + standing.name().toLowerCase(Locale.ROOT),
-                        actor.name(), target.name());
-            }
-            if (editable && !lit) {
-                this.area.hit(x, y, each, 12, () -> this.choose(actor, target, standing));
-            }
-            x += each + 2;
-        }
-        return new Tip(left, tip);
     }
 
     @Override
@@ -458,6 +399,14 @@ public final class MobRulesScreen extends MobRulesState {
             return true;
         }
         if (super.mouseClicked(mouseX, mouseY, button)) {
+            return true;
+        }
+        if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT && this.clickHit(mouseX, mouseY)) {
+            this.click(1.0F);
+            return true;
+        }
+        if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT && this.overCard(mouseX, mouseY)) {
+            this.preview.hold(true);
             return true;
         }
         if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT && this.area.click(mouseX, mouseY)) {
@@ -469,11 +418,16 @@ public final class MobRulesScreen extends MobRulesState {
 
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
+        if (this.preview.held()) {
+            this.preview.drag(dragX);
+            return true;
+        }
         return this.area.drag(mouseY) || super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
     }
 
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        this.preview.hold(false);
         this.area.release();
         return super.mouseReleased(mouseX, mouseY, button);
     }
@@ -488,12 +442,7 @@ public final class MobRulesScreen extends MobRulesState {
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         if (keyCode == GLFW.GLFW_KEY_ESCAPE && this.picked != null) {
-            if (this.numbers) {
-                this.numbers = false;
-                this.area.top();
-            } else {
-                this.pick(null);
-            }
+            this.pick(null);
             return true;
         }
         return super.keyPressed(keyCode, scanCode, modifiers);

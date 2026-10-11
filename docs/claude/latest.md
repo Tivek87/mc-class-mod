@@ -1,17 +1,12 @@
 # Laatste sessie
 
-- Datum: 2026-10-11 19:40
-- Nieuwe vraag: Rustbound laat item vallen (niet kapot); Wizard = echte boss (3 fases, 8 extra spreuken, 16 spiegelbeelden, eigen boss bar, betere animaties, geen spam, decoy herkenbaar).
-- Gedaan: server (WizardMove/Moves/Casts/Mirrors, spell/, field/), client (WizardKeys/Poses/Model, StaffLayer, WizardRenderer, WizardBar, fx/, field/), data + en_us, CHANGELOG, tour-tekst, CLAUDE.md wizard-regel. Build + tests groen.
-- Getest in game (losse projectkopie, eigen `run/`): Rustbound-zwaard valt als item (onbreekbaar, gloeit); 3 fases + boss bar; spreuken 1-16; spiegelcirkel + echte raken → STUNNED; staf-slag, blink-ghost doorzichtig. Fix: na UNBIND komt spiegelcirkel eerst, Time Warp vanaf afstand < 10.
-- Testklasse + kopie opgeruimd. Open: vuurbal/meteoor zet gras in brand (zoals Ghast); commit/push/release-ja.
-- Hieronder: stand van 18:33.
-- Vraag: black hole (Giant Hands) veel cinematischer; nieuwe vijand Stalker (verstoppen, vermommen als dier, teleport, toeslaan); miniboss Wizard met staf en 5 spreuken.
-- Black hole: eigen shader `engine/client/fx/Singularity` (licht buigt, schijf, jets, aanzuigen, schokgolf), `HandHoleLight`, grond-stof naar binnen, langer, instabiel voor instorting; geen camera-overname.
-- Stalker (`creature/stalker/`): boom/bosje verstoppen als bekeken, sluipen van dekking naar dekking, vermomming als dier in de buurt, sprong + klauwen + bloeding, blink weg. Spawnt in bossen.
-- Wizard (`creature/wizard/`): miniboss met bossbar, alleen ei; arcane bolt (zoekt), vuurbal, sterren-rift (Cosmos) met vallende sterren, blizzard (bevriest + witte mist), blink met decoy. XP + loot.
-- Getest in game: alle poses/spreuken, blizzard-mist, Stalker-gedrag, tour 0.8.7 (3 kaarten) gelopen; build + tests groen.
-- Niet getest: echte black hole-cast via Giant Hands-toets (alleen client-tekening getest; server = stof + zelfde timings).
-- Versie 0.8.7-alpha (prepare), CHANGELOG + TourSteps. Testklassen, werelden, shots opgeruimd; tour.json teruggezet.
+- Datum: 2026-10-11 20:32
+- Vraag: Wizard nooit ragdoll + dood-animatie; Mobs-pagina compleet vernieuwd (info, model, alles aanpassen, factions blijven); haar/kleding-clipping; decoy aanvalbaar; betere animaties + VFX; ritueel + spawn-animatie; vecht tegen alles; sneller; blizzard minder wit.
+- Gedaan: Wizard nieuw model/texture, dood (`WizardDeath`), aankomst uit rift, ritueel (`ritual/`: Arcane Tome + `WizardRitual`), sneller + spam lichte spreuken, vecht tegen alle wezens (`MonsterBlows.foes` + `MobDefaults`), blinkt weg als ingesloten, decoy rood + breekt niet door muren, VFX (`WizardSparks`), blizzard-mist dunner + speler-frost max 40%.
+- Mobs-pagina: lijst gelijk; klik = profiel met draaibaar model (`MobPreview`), tabs Overview (`MobFacts`), Numbers, Relations (`MobRulesProfile`).
+- Engine: `PlainDrawing` (model met eigen kleur-render blijft bekend, ellebogen buigen weer).
+- 0.8.8-alpha: CHANGELOG, TourSteps (3 stappen), en_us, CLAUDE.md-indeling.
+- Getest in game (4 runs): Mobs-pagina, model, dood, ritueel, gevecht met monsters, decoy-klap. Build + tests groen. Testklasse/wereld/shots opgeruimd.
+- Niet getest: tour 0.8.8 lopen in game (moet voor push), blizzard-zicht van binnen (niet geforceerd).
 - Niet van mij, niet meecommitten: `arena/`, `CONTENT.txt`.
-- Open: commit/push/release-ja van gebruiker; golem-details van gebruiker; idee #24.
+- Open: commit/push/release-ja van gebruiker.

@@ -3,6 +3,32 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.8.8-alpha] - 2026-10-11
+
+### Added
+- **Arcane Tome:** made from a book, lapis, an amethyst shard and a diamond. At night, use it on an enchanting table
+  ringed with 15 bookshelves: glyphs stream into it, a rune circle burns, lightning strikes, and the Wizard comes down
+  out of a rift.
+
+### Changed
+- **Mobs page:** click a creature to open it: its model turning, and tabs for what it is (health in hearts, armor,
+  damage, speed, follow range, size, kind and more), its numbers to change, and who it attacks. How it stands to
+  players and to every creature sits right on top, and a dot in the list shows how each stands to players.
+- **Wizard: new look:** a new model: a beard, hair and cape that hang and sway as he moves, a robe that follows his
+  legs, and sleeves that no longer cut through it.
+- **Wizard: animations:** every move redone, smoother, each part of him following a little after the next.
+- **Wizard: death:** he no longer falls limp: he sinks to his knees, light cracks out of him and lifts him, and he
+  bursts into stars.
+- **Wizard: arrival:** from his spawn egg too he comes down out of a rift and lands with a shockwave.
+- **Wizard: faster:** he moves and glides quicker and casts bolts and sparks often; his great spells still need their
+  time. Walled in, he blinks out.
+- **Wizard: fights everyone:** he attacks every creature, not only players (change it on the Mobs page), and his
+  spells hit them.
+
+### Fixed
+- **Wizard: blizzard:** standing in it no longer turns your screen white; its mist and frost stay thin.
+- **Wizard: decoys** are taken for him by every power's aim, and no longer break by themselves against a wall.
+
 ## [0.8.7-alpha] - 2026-10-11
 
 ### Added

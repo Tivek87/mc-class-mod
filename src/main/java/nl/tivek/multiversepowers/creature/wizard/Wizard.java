@@ -13,19 +13,24 @@ import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerBossEvent;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.tags.DamageTypeTags;
 import net.minecraft.util.Mth;
 import net.minecraft.world.BossEvent;
+import net.minecraft.world.DifficultyInstance;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.damagesource.DamageType;
 import net.minecraft.world.damagesource.DamageTypes;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityDimensions;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.entity.Pose;
+import net.minecraft.world.entity.SpawnGroupData;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
@@ -35,20 +40,25 @@ import net.minecraft.world.entity.ai.goal.RandomLookAroundGoal;
 import net.minecraft.world.entity.ai.goal.WaterAvoidingRandomStrollGoal;
 import net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal;
 import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
+import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.ServerLevelAccessor;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.creature.MovingMonster;
+import nl.tivek.multiversepowers.creature.wizard.field.StarRift;
 import nl.tivek.multiversepowers.creature.wizard.spell.ArcaneFamiliar;
 import org.joml.Vector3f;
 
 // The Wizard: an old mage in a long robe and a pointed hat, a staff crowned with a glowing crystal in his right hand. A
-// boss with a bar of his own (client/WizardBar), only ever brought into the world by his egg, fought in three phases:
+// boss with a bar of his own (client/WizardBar), called by the Arcane Tome's ritual (WizardRitual) or his egg, coming
+// down out of a rift (ARRIVE), fighting every creature but his own as the Mobs page lets him, in three phases:
 // the Archmage on his feet; at two thirds of his health he rises into the air (ASCEND), the Ascended, floating from then
 // on; at a third the magic breaks loose round him (UNBIND), the Unbound. Each phase he knows stronger spells and casts
 // harder (WizardMove, WizardMoves). While a phase takes him he cannot be harmed; caught out among his mirror images he
-// is stunned and takes half again.
+// is stunned and takes half again. He never falls limp: dying, he sinks to his knees, rises as light breaks out of him
+// and is gone in a flash (DEATH), and only then leaves what he carried.
 public final class Wizard extends MovingMonster {
     // His colours: the arcane violet, the fire, the frost, the stars' white-blue, gravity's deep blue, time's gold
     // and the lightning's white-blue.
@@ -83,6 +93,16 @@ public final class Wizard extends MovingMonster {
     private Vec3 leftHand;
     // Until when time runs fast for him (field/TimeWarp).
     private int hastedUntil;
+    // Where he lands as he comes down out of his rift, while he does; whether he still has to begin it.
+    @Nullable
+    private Vec3 arrivesAt;
+    private boolean arriveFirst;
+    // How he died, kept to leave his loot when he is gone; who last struck him then.
+    @Nullable
+    private DamageSource death;
+    @Nullable
+    private Player killer;
+    private int killerTime;
 
     public Wizard(EntityType<? extends Wizard> type, Level level) {
         super(type, level);
@@ -127,6 +147,14 @@ public final class Wizard extends MovingMonster {
         this.goalSelector.addGoal(8, new RandomLookAroundGoal(this));
         this.targetSelector.addGoal(1, new HurtByTargetGoal(this));
         this.targetSelector.addGoal(2, new NearestAttackableTargetGoal<>(this, Player.class, true));
+        this.targetSelector.addGoal(3, new NearestAttackableTargetGoal<>(this, LivingEntity.class, 10, true, false,
+                Wizard::prey));
+    }
+
+    // Every creature but his own (his images, his familiars) is his foe, as the Mobs page may change.
+    static boolean prey(LivingEntity living) {
+        return !(living instanceof Wizard || living instanceof WizardDecoy || living instanceof ArcaneFamiliar
+                || living instanceof ArmorStand);
     }
 
     // His phase, 1 to 3.
@@ -223,10 +251,44 @@ public final class Wizard extends MovingMonster {
         this.leftHand = leftHand;
     }
 
+    // Called (the ritual, his egg): he comes down out of a rift over `ground` at his next tick.
+    public void callDown(Vec3 ground) {
+        this.arrivesAt = ground;
+        this.arriveFirst = true;
+        this.bar.setVisible(false);
+        this.moveTo(ground.x, ground.y + WizardCasts.ARRIVE_HEIGHT, ground.z, this.getYRot(), 0.0F);
+        this.setNoGravity(true);
+    }
+
+    @Nullable
+    Vec3 arrivesAt() {
+        return this.arrivesAt;
+    }
+
+    void arrived() {
+        this.arrivesAt = null;
+        this.bar.setVisible(true);
+    }
+
+    @Override
+    public SpawnGroupData finalizeSpawn(ServerLevelAccessor level, DifficultyInstance difficulty, MobSpawnType how,
+            @Nullable SpawnGroupData data) {
+        SpawnGroupData spawned = super.finalizeSpawn(level, difficulty, how, data);
+        if (how == MobSpawnType.SPAWN_EGG) {
+            this.callDown(this.position());
+        }
+        return spawned;
+    }
+
     @Override
     public void tick() {
+        if (this.arriveFirst && this.level() instanceof ServerLevel level && this.moves != null) {
+            this.arriveFirst = false;
+            StarRift.portal(level, this, this.arrivesAt, WizardCasts.ARRIVE_HEIGHT + 2.4);
+            this.moves.arrive();
+        }
         super.tick();
-        if (this.level().isClientSide && this.isAlive()) {
+        if (this.level().isClientSide && (this.isAlive() || this.move() == WizardMove.DEATH)) {
             WizardSparks.of(this, this.phase(), this.crystal == null ? this.staffTip() : this.crystal,
                     this.leftHand == null ? this.palm() : this.leftHand);
         }
@@ -271,6 +333,49 @@ public final class Wizard extends MovingMonster {
     @Override
     public boolean causeFallDamage(float distance, float multiplier, DamageSource source) {
         return false;
+    }
+
+    @Override
+    public void die(DamageSource source) {
+        boolean was = this.dead;
+        super.die(source);
+        if (was || !this.dead || this.level().isClientSide) {
+            return;
+        }
+        this.death = source;
+        this.killer = this.lastHurtByPlayer;
+        this.killerTime = this.lastHurtByPlayerTime;
+        if (this.moves != null) {
+            this.moves.dying();
+        }
+        this.setNoGravity(false);
+        this.bar.setProgress(0.0F);
+        this.start(WizardMove.DEATH);
+    }
+
+    // His loot waits until he is gone (tickDeath).
+    @Override
+    protected void dropAllDeathLoot(ServerLevel level, DamageSource source) {
+        if (this.deathTime >= WizardMove.GONE) {
+            super.dropAllDeathLoot(level, source);
+        }
+    }
+
+    @Override
+    protected void tickDeath() {
+        this.deathTime++;
+        if (!(this.level() instanceof ServerLevel level) || this.isRemoved()) {
+            return;
+        }
+        WizardDeath.tick(level, this, this.deathTime);
+        if (this.deathTime >= WizardMove.GONE) {
+            if (this.death != null) {
+                this.lastHurtByPlayer = this.killer;
+                this.lastHurtByPlayerTime = this.killerTime > 0 ? 100 : 0;
+                this.dropAllDeathLoot(level, this.death);
+            }
+            this.remove(RemovalReason.KILLED);
+        }
     }
 
     @Override

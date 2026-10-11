@@ -56,7 +56,7 @@ public final class ModelParts {
                 }
                 boolean vanilla = c == AgeableHierarchicalModel.class || c == CamelModel.class
                         || c == ColorableAgeableListModel.class || c == ColorableHierarchicalModel.class
-                        || c == TurtleModel.class;
+                        || c == TurtleModel.class || PlainDrawing.class.isAssignableFrom(c);
                 if (!vanilla && draws(c)) {
                     return false;
                 }

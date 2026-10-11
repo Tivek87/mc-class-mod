@@ -10,6 +10,7 @@ import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.tags.DamageTypeTags;
 import net.minecraft.util.Mth;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
@@ -17,6 +18,7 @@ import net.minecraft.world.entity.EntityDimensions;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Pose;
+import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -52,6 +54,15 @@ public final class WizardDecoy extends MovingMonster {
         super(type, level);
         this.setNoAi(true);
         this.xpReward = 0;
+    }
+
+    // Never run (it has no AI): they make the game's tables, and so every player's colours and every power's aim, take
+    // it for the Wizard's own, not a harmless creature.
+    @Override
+    protected void registerGoals() {
+        this.targetSelector.addGoal(1, new NearestAttackableTargetGoal<>(this, Player.class, true));
+        this.targetSelector.addGoal(2, new NearestAttackableTargetGoal<>(this, LivingEntity.class, 10, true, false,
+                Wizard::prey));
     }
 
     @Override
@@ -173,6 +184,11 @@ public final class WizardDecoy extends MovingMonster {
     public boolean hurt(DamageSource source, float amount) {
         if (this.level().isClientSide || this.isRemoved() || source.getEntity() instanceof Wizard
                 || source.getEntity() instanceof WizardDecoy) {
+            return false;
+        }
+        // An image is struck, not worn down: walls, falls and the like leave it be.
+        if (source.getEntity() == null && !source.is(DamageTypeTags.BYPASSES_INVULNERABILITY)
+                && !source.is(DamageTypeTags.IS_EXPLOSION)) {
             return false;
         }
         this.shatter(source.getEntity() instanceof LivingEntity living ? living : null);

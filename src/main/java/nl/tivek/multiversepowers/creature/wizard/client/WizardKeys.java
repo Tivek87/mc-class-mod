@@ -6,7 +6,9 @@ import nl.tivek.multiversepowers.engine.math.Keyframes.Key;
 
 // The Wizard's moves as keyframes on his channels (WizardPoses): each key what is added to his pose at rest at that
 // tick, every channel it does not name at rest; between keys the pose runs smoothly through them. Every move winds up
-// before its release (a pull back, a coil, a breath in), strikes past where it settles and follows through.
+// before its release (a pull back, a coil, a breath in), strikes past where it settles and follows through. Each
+// channel runs a little behind or ahead of the trunk (LAG): legs lead, the arm follows the trunk, the elbow the arm, the
+// wrist and staff the elbow, the head last, so a move rolls through his body as a whip does instead of all at once.
 final class WizardKeys {
     static final int LEAN = 0;
     static final int SINK = 1;
@@ -37,6 +39,9 @@ final class WizardKeys {
     static final int CHANNELS = 26;
 
     private static final Key[][] MOVES = new Key[WizardMove.KINDS + 1][];
+    // How many ticks each channel runs behind the trunk (ahead, below 0).
+    private static final float[] LAG = { 0.0F, 0.0F, 0.3F, 0.5F, 1.2F, 1.5F, 1.6F, 1.6F, 0.0F, 0.0F, 0.4F, 0.4F, 0.5F,
+            0.5F, 0.5F, 0.5F, 0.9F, 0.9F, 1.4F, 1.4F, -0.5F, -0.5F, -0.2F, -0.2F, 0.0F, 1.0F };
 
     private WizardKeys() {
     }
@@ -56,10 +61,17 @@ final class WizardKeys {
         return new Key(key.tick(), true, key.values());
     }
 
-    // What the move adds to his pose `t` ticks in; null when it has no keys.
+    // What the move adds to his pose `t` ticks in, each channel at its own lag; null when it has no keys.
     static float[] at(int move, double t) {
         Key[] keys = move >= 0 && move < MOVES.length ? MOVES[move] : null;
-        return keys == null ? null : Keyframes.at(keys, (float) t);
+        if (keys == null) {
+            return null;
+        }
+        float[] out = new float[CHANNELS];
+        for (int i = 0; i < CHANNELS; i++) {
+            out[i] = Keyframes.at(keys, Math.max(0.0F, (float) t - LAG[i]))[i];
+        }
+        return out;
     }
 
     static {
@@ -271,6 +283,57 @@ final class WizardKeys {
                 hold(42, SINK, 3.0F, LEAN, 0.4F, NOD, 0.5F, TILT, 0.25F, R_LEG, -0.9F, R_KNEE, 1.4F, L_LEG, 0.4F,
                         L_KNEE, 1.6F, R_ARM, -0.5F, STAFF, 0.3F, L_ARM, -0.15F, L_OUT, 0.3F),
                 k(50) };
+        // A quick glide: a dip to push off, swept along with his robe and cape streaming, a dip as he stops.
+        MOVES[WizardMove.SKIP] = new Key[] { k(0),
+                k(2, SINK, 1.4F, LEAN, 0.25F, R_KNEE, 0.5F, L_KNEE, 0.5F, R_LEG, -0.2F, L_LEG, -0.2F, L_ARM, -0.3F,
+                        L_OUT, 0.3F),
+                k(5, LEAN, 0.3F, LIFT, 2.0F, R_LEG, 0.35F, L_LEG, 0.2F, R_KNEE, 0.35F, L_KNEE, 0.5F, R_ARM, 0.3F,
+                        STAFF, -0.5F, L_ARM, 0.4F, L_OUT, 0.7F, L_WRIST, -0.4F, FLARE, 0.9F, NOD, -0.1F),
+                k(8, SINK, 1.0F, LEAN, -0.1F, R_KNEE, 0.4F, L_KNEE, 0.4F, L_ARM, 0.2F, L_OUT, 0.4F, FLARE, 0.3F),
+                k(10) };
+        // Called down out of his rift: sinking slowly, arms spread palms down, head bowed, legs hanging and robe
+        // spread; gathering himself; landing on one knee with the staff driven into the ground; rising slowly and
+        // levelling his hand at them.
+        MOVES[WizardMove.ARRIVE] = new Key[] { k(0, R_ARM, -0.4F, R_OUT, 0.9F, STAFF, 0.3F, L_ARM, -0.4F, L_OUT, 1.1F,
+                L_WRIST, 0.6F, NOD, 0.5F, R_LEG, 0.1F, L_LEG, 0.05F, R_KNEE, 0.25F, L_KNEE, 0.3F, FLARE, 0.7F,
+                GLOW, 1.0F),
+                k(40, R_ARM, -0.6F, R_OUT, 1.0F, STAFF, 0.4F, L_ARM, -0.6F, L_OUT, 1.2F, L_WRIST, 0.5F, NOD, 0.4F,
+                        R_LEG, 0.15F, L_LEG, 0.05F, R_KNEE, 0.3F, L_KNEE, 0.35F, FLARE, 0.8F, GLOW, 1.4F),
+                k(56, R_ARM, -2.2F, R_ELBOW, -0.4F, STAFF, 0.1F, L_ARM, -1.6F, L_OUT, 0.8F, NOD, -0.1F, R_LEG,
+                        -0.5F, R_KNEE, 0.9F, L_LEG, 0.2F, L_KNEE, 1.0F, LEAN, 0.15F, FLARE, 0.5F, GLOW, 2.0F),
+                k(62, R_ARM, -0.6F, R_ELBOW, 0.2F, STAFF, 0.3F, L_ARM, -0.7F, L_OUT, 1.3F, L_WRIST, -0.6F, NOD,
+                        0.45F, LEAN, 0.5F, SINK, 5.5F, R_LEG, -1.3F, R_KNEE, 1.5F, L_LEG, 0.25F, L_KNEE, 1.9F,
+                        FLARE, 1.4F, GLOW, 3.0F),
+                hold(70, R_ARM, -0.6F, R_ELBOW, 0.2F, STAFF, 0.3F, L_ARM, -0.6F, L_OUT, 1.2F, L_WRIST, -0.5F, NOD,
+                        0.4F, LEAN, 0.45F, SINK, 5.3F, R_LEG, -1.3F, R_KNEE, 1.5F, L_LEG, 0.25F, L_KNEE, 1.9F,
+                        GLOW, 1.5F),
+                k(80, R_ARM, -0.4F, STAFF, 0.2F, L_ARM, -0.3F, L_OUT, 0.4F, NOD, 0.1F, LEAN, 0.2F, SINK, 2.0F,
+                        R_LEG, -0.4F, R_KNEE, 0.5F, L_KNEE, 0.6F, GLOW, 1.0F),
+                k(88, L_ARM, -1.45F, L_IN, 0.25F, L_ELBOW, 0.15F, L_WRIST, -0.5F, NOD, -0.15F, LEAN, -0.05F,
+                        TWIST, 0.2F, R_ARM, -0.3F, STAFF, 0.25F, GLOW, 1.4F, HAND, 1.0F),
+                k(96) };
+        // His death: reeling from the blow, staggering, sinking to his knees leaning on his staff, looking up as light
+        // breaks out of him, arms and head thrown back, lifted off the ground as it pours out of him.
+        float[] lifted = { NOD, -0.75F, LEAN, -0.3F, R_ARM, -1.8F, R_OUT, 1.15F, STAFF, 0.4F, L_ARM, -1.8F, L_OUT,
+                1.2F, L_WRIST, -0.5F, R_LEG, 0.2F, L_LEG, 0.1F, R_KNEE, 0.4F, L_KNEE, 0.5F, FLARE, 1.4F, GLOW, 3.0F,
+                LIFT, 22.0F };
+        MOVES[WizardMove.DEATH] = new Key[] { k(0),
+                k(4, LEAN, -0.35F, NOD, -0.5F, TWIST, 0.25F, SINK, -0.3F, R_ARM, -1.2F, R_OUT, 0.6F, STAFF, 0.6F,
+                        L_ARM, -0.8F, L_OUT, 0.8F, R_LEG, -0.2F, L_LEG, 0.25F),
+                k(12, LEAN, 0.35F, NOD, 0.3F, TWIST, -0.1F, SINK, 1.4F, R_ARM, -0.5F, STAFF, 0.4F, L_ARM, -0.6F,
+                        L_IN, 0.6F, L_ELBOW, 1.5F, R_KNEE, 0.5F, L_KNEE, 0.6F, R_LEG, -0.3F, L_LEG, 0.2F),
+                k(22, LEAN, 0.3F, NOD, 0.55F, TILT, 0.15F, SINK, 6.0F, R_ARM, -0.75F, R_ELBOW, -0.3F, STAFF, 0.25F,
+                        L_ARM, -0.2F, L_OUT, 0.25F, L_ELBOW, 0.4F, R_LEG, -0.1F, R_KNEE, 1.57F, L_LEG, -0.05F, L_KNEE,
+                        1.57F),
+                hold(38, LEAN, 0.32F, NOD, 0.6F, TILT, 0.1F, SINK, 6.0F, R_ARM, -0.75F, R_ELBOW, -0.3F, STAFF, 0.25F,
+                        L_ARM, -0.15F, L_OUT, 0.2F, L_ELBOW, 0.5F, R_LEG, -0.1F, R_KNEE, 1.57F, L_LEG, -0.05F,
+                        L_KNEE, 1.57F, GLOW, 0.4F),
+                k(46, LEAN, 0.0F, NOD, -0.35F, SINK, 6.0F, R_ARM, -1.0F, R_OUT, 0.5F, STAFF, 0.3F, L_ARM, -1.0F,
+                        L_OUT, 0.6F, R_LEG, -0.1F, R_KNEE, 1.57F, L_LEG, -0.05F, L_KNEE, 1.57F, GLOW, 1.5F, FLARE,
+                        0.4F),
+                k(52, NOD, -0.8F, LEAN, -0.35F, SINK, 5.0F, R_ARM, -1.9F, R_OUT, 1.2F, STAFF, 0.4F, L_ARM, -1.9F,
+                        L_OUT, 1.25F, L_WRIST, -0.6F, R_KNEE, 1.3F, L_KNEE, 1.3F, FLARE, 1.6F, GLOW, 3.0F),
+                k(74, lifted), k(90, lifted) };
         // Flying round in the circle of mirrors: leaning forward, legs trailing, staff swept back.
         float[] glide = { LEAN, 0.35F, R_LEG, 0.4F, L_LEG, 0.25F, R_KNEE, 0.4F, L_KNEE, 0.5F, R_ARM, 0.35F, STAFF,
                 -0.6F, L_ARM, 0.45F, L_OUT, 0.55F, FLARE, 0.8F, LIFT, 2.0F, NOD, -0.15F };

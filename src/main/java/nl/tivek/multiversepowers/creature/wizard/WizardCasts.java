@@ -28,12 +28,15 @@ import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 
 // What each of the Wizard's moves does on the server at its moments (WizardMove): the sound as he begins, the magic he
 // lets go at its release, and what follows during it (the sweep after the thrust, his second and third bolt, the slow
-// turn of his beam).
+// turn of his beam, the trail of a skip, his slow descent out of his rift and the blow of his landing).
 final class WizardCasts {
     private static final double JAB_REACH = 2.9;
     private static final double SWEEP_REACH = 3.3;
     // How far a phase bursting out of him throws whoever stands near.
     private static final double BURST_REACH = 9.0;
+    // How high over the ground he comes out of his rift, and how far his landing throws.
+    static final double ARRIVE_HEIGHT = 8.0;
+    private static final double LAND_REACH = 6.0;
 
     private WizardCasts() {
     }
@@ -50,10 +53,14 @@ final class WizardCasts {
             case WizardMove.BEAM, WizardMove.WARP -> SoundEvents.BEACON_ACTIVATE;
             case WizardMove.ASCEND, WizardMove.UNBIND -> SoundEvents.WITHER_AMBIENT;
             case WizardMove.STUNNED -> SoundEvents.ZOMBIE_VILLAGER_CURE;
+            case WizardMove.SKIP -> SoundEvents.ILLUSIONER_MIRROR_MOVE;
+            case WizardMove.ARRIVE -> SoundEvents.END_PORTAL_SPAWN;
             default -> SoundEvents.EVOKER_PREPARE_ATTACK;
         };
-        float pitch = kind == WizardMove.STRIKE ? 0.6F : kind == WizardMove.SPARK ? 1.6F : 0.7F;
-        wizard.playSound(sound, kind == WizardMove.ASCEND || kind == WizardMove.UNBIND ? 2.5F : 1.3F, pitch);
+        float pitch = kind == WizardMove.STRIKE ? 0.6F : kind == WizardMove.SPARK ? 1.6F : kind == WizardMove.SKIP ? 1.5F
+                : 0.7F;
+        boolean loud = kind == WizardMove.ASCEND || kind == WizardMove.UNBIND || kind == WizardMove.ARRIVE;
+        wizard.playSound(sound, loud ? 2.5F : kind == WizardMove.SKIP ? 0.8F : 1.3F, pitch);
         if (kind == WizardMove.ASCEND || kind == WizardMove.UNBIND) {
             wizard.removeAllEffects();
             wizard.clearFire();
@@ -110,6 +117,7 @@ final class WizardCasts {
             case WizardMove.WARP -> TimeWarp.cast(level, wizard);
             case WizardMove.ASCEND -> burst(level, wizard, 2);
             case WizardMove.UNBIND -> burst(level, wizard, 3);
+            case WizardMove.ARRIVE -> land(level, wizard);
             default -> {
             }
         }
@@ -136,6 +144,13 @@ final class WizardCasts {
                     wizard.getLookControl().setLookAt(target, 3.0F, 3.0F);
                 }
             }
+            case WizardMove.SKIP -> {
+                Vec3 at = wizard.position().add(0.0, 1.0 + wizard.hover(), 0.0);
+                ParticleFx.send(level, Wizard.dust(Wizard.light(wizard.phase()), 1.3F), at.x, at.y, at.z, 6, 0.25,
+                        0.6, 0.25, 0.0);
+                ParticleFx.send(level, ParticleTypes.END_ROD, at.x, at.y - 0.4, at.z, 2, 0.2, 0.3, 0.2, 0.01);
+            }
+            case WizardMove.ARRIVE -> descend(level, wizard, t);
             case WizardMove.ASCEND, WizardMove.UNBIND -> {
                 Vec3 at = wizard.position().add(0.0, 1.2, 0.0);
                 if (t < WizardMove.BURST && t % 3 == 0) {
@@ -218,6 +233,63 @@ final class WizardCasts {
                 moved = false;
             }
         }
+    }
+
+    // Out of his rift he sinks slowly to the ground, a spiral of light round him, and stops just over it before his
+    // landing.
+    private static void descend(ServerLevel level, Wizard wizard, int t) {
+        Vec3 ground = wizard.arrivesAt();
+        if (ground == null || t > WizardMove.LAND) {
+            return;
+        }
+        double f = Math.min(1.0, t / (double) WizardMove.LAND);
+        double eased = 1.0 - (1.0 - f) * (1.0 - f) * (1.0 - f);
+        double y = ground.y + ARRIVE_HEIGHT * (1.0 - eased) + 0.15 * (1.0 - f);
+        wizard.setNoGravity(true);
+        wizard.setDeltaMovement(Vec3.ZERO);
+        wizard.moveTo(ground.x, y, ground.z, wizard.getYRot(), wizard.getXRot());
+        Vec3 at = wizard.position().add(0.0, 1.0, 0.0);
+        if (t % 2 == 0) {
+            ParticleFx.helix(level, Wizard.dust(Wizard.VIOLET, 1.4F), at.add(0.0, -1.0, 0.0), 1.2, 2.4, 1.5, 10,
+                    t * 0.25);
+            ParticleFx.send(level, ParticleTypes.END_ROD, at.x, at.y + 1.0, at.z, 2, 0.3, 0.4, 0.3, 0.02);
+        }
+        if (t % 8 == 0) {
+            ParticleFx.ring(level, Wizard.dust(Wizard.STARLIGHT, 1.8F), ground.add(0.0, 0.1, 0.0), 2.6, 28, t * 0.1);
+        }
+        if (t == WizardMove.LAND - 10) {
+            wizard.playSound(SoundEvents.BEACON_POWER_SELECT, 2.0F, 0.5F);
+        }
+    }
+
+    // He lands: the ground cracks in a ring of light, whoever stands near is thrown back, and his bar appears.
+    private static void land(ServerLevel level, Wizard wizard) {
+        landed(wizard);
+        Vec3 at = wizard.position().add(0.0, 0.2, 0.0);
+        for (LivingEntity living : MonsterBlows.foes(wizard, wizard.getBoundingBox().inflate(LAND_REACH))) {
+            Vec3 away = living.position().subtract(wizard.position()).multiply(1.0, 0.0, 1.0);
+            double far = away.length();
+            if (far > LAND_REACH) {
+                continue;
+            }
+            away = far < 1.0E-3 ? MonsterBlows.ahead(wizard) : away.scale(1.0 / far);
+            MonsterBlows.hurt(living, Wizard.source(wizard, wizard, WizardEntities.ARCANE),
+                    wizard.harm(WizardMove.ARRIVE) * (float) (1.0 - 0.6 * far / LAND_REACH),
+                    away.scale(1.3).add(0.0, 0.55, 0.0));
+        }
+        ParticleFx.shockwave(level, Wizard.dust(Wizard.VIOLET, 2.4F), at, 72, 0.9);
+        ParticleFx.shockwave(level, ParticleTypes.END_ROD, at, 40, 0.6);
+        ParticleFx.groundStar(level, Wizard.dust(Wizard.STARLIGHT, 1.8F), at, 4.5, 6, 2, 0.0, 0.3);
+        ParticleFx.at(level, ParticleTypes.FLASH, at.add(0.0, 1.0, 0.0));
+        level.playSound(null, at.x, at.y, at.z, SoundEvents.LIGHTNING_BOLT_THUNDER, SoundSource.HOSTILE, 2.5F, 0.7F);
+        level.playSound(null, at.x, at.y, at.z, SoundEvents.ANVIL_LAND, SoundSource.HOSTILE, 1.4F, 0.5F);
+        level.playSound(null, at.x, at.y, at.z, SoundEvents.EVOKER_CAST_SPELL, SoundSource.HOSTILE, 2.0F, 0.6F);
+    }
+
+    // The arrival is over (or cut short): he falls as anything does again and his bar shows.
+    static void landed(Wizard wizard) {
+        wizard.setNoGravity(false);
+        wizard.arrived();
     }
 
     // A phase bursting out of him: whoever stands near is thrown back, and he is the next phase.

@@ -24,6 +24,7 @@ import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 import nl.tivek.multiversepowers.faction.Standing;
+import nl.tivek.multiversepowers.faction.mob.MobDefaults;
 import nl.tivek.multiversepowers.faction.mob.MobRules;
 
 // What the mod's zombies share when they strike: who their blows land on, a blow that throws, the ground's dust and
@@ -48,7 +49,8 @@ public final class MonsterBlows {
                 .getHolderOrThrow(type), by);
     }
 
-    // Who its blows land on: what it hunts, players, and creatures that are no monster, as the Mobs page sets them.
+    // Who its blows land on: what it hunts, players, creatures that are no monster and monsters it hunts by the game's
+    // own rules (the Wizard hunts them all), as the Mobs page sets them.
     public static List<LivingEntity> foes(Mob mob, AABB box) {
         LivingEntity target = mob.getTarget();
         return mob.level().getEntitiesOfClass(LivingEntity.class, box, living -> {
@@ -62,7 +64,11 @@ public final class MonsterBlows {
             if (set != null) {
                 return set == Standing.HOSTILE;
             }
-            return living instanceof Player || !(living instanceof Enemy);
+            if (living instanceof Player || !(living instanceof Enemy)) {
+                return true;
+            }
+            return mob.level() instanceof ServerLevel level
+                    && MobDefaults.of(level, mob.getType(), living.getType()) == Standing.HOSTILE;
         });
     }
 

@@ -21,16 +21,18 @@ import nl.tivek.multiversepowers.creature.wizard.field.Blizzard;
 import nl.tivek.multiversepowers.creature.wizard.client.fx.Additive;
 
 // The Wizard's blizzard: sheets of driven snow whirling round in bands at three heights, torn and thickest at its
-// wall, and frost glittering on the ground inside. Seen from inside it the world is lost in white: the fog closes in
-// and pales the further in the eye is.
+// wall, and frost glittering on the ground inside. Seen from inside it a cold blue-grey mist closes in the further in
+// the eye is, never so thick or white that what is near cannot be seen.
 @EventBusSubscriber(modid = MultiversePowers.MODID, value = Dist.CLIENT)
 public final class BlizzardRenderer extends EntityRenderer<Blizzard> {
     private static final int SIDES = 40;
     private static final int SNOW = 0xF4F9FF;
     private static final int FROST = 0xE2F4FF;
     private static final float[] BANDS = { 0.4F, 1.6F, 2.9F };
-    private static final float FOG_NEAR = 0.0F;
-    private static final float FOG_FAR = 7.0F;
+    private static final float FOG_NEAR = 3.0F;
+    private static final float FOG_FAR = 20.0F;
+    // How far the fog's colour goes to the storm's at its deepest.
+    private static final float TINT = 0.6F;
 
     public BlizzardRenderer(EntityRendererProvider.Context context) {
         super(context);
@@ -139,9 +141,9 @@ public final class BlizzardRenderer extends EntityRenderer<Blizzard> {
         if (deep <= 0.0F) {
             return;
         }
-        event.setRed(Mth.lerp(deep, event.getRed(), 0.82F));
-        event.setGreen(Mth.lerp(deep, event.getGreen(), 0.9F));
-        event.setBlue(Mth.lerp(deep, event.getBlue(), 0.97F));
+        event.setRed(Mth.lerp(deep * TINT, event.getRed(), 0.62F));
+        event.setGreen(Mth.lerp(deep * TINT, event.getGreen(), 0.72F));
+        event.setBlue(Mth.lerp(deep * TINT, event.getBlue(), 0.84F));
     }
 
     @Override

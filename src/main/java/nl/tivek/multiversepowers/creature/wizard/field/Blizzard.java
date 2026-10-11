@@ -15,6 +15,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
@@ -25,8 +26,8 @@ import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 
 // An icy blizzard the Wizard calls down round his foe: it bursts out of the ground where his staff strikes it and
 // whirls there a while, a wall of snow turning round and round. Whoever stands in it is pushed round with the wind,
-// slowed, frozen to the bone (the frost creeping over their sight) and bitten by the cold every half second. Seen from
-// inside it, the world beyond is lost in white (client/BlizzardRenderer).
+// slowed, frozen (a player only chilled, the frost thin at the edge of their sight) and bitten by the cold every half
+// second. Seen from inside it, a blue-grey mist closes in (client/BlizzardRenderer).
 public final class Blizzard extends Entity {
     public static final double RADIUS = 6.0;
     public static final double TALL = 5.0;
@@ -34,6 +35,8 @@ public final class Blizzard extends Entity {
     public static final int LIFE = 150;
     public static final int FADES = 25;
     private static final int BITE = 10;
+    // How far a player's frost goes, as a share of being frozen through.
+    private static final float PLAYER_FROST = 0.4F;
     @Nullable
     private UUID owner;
     private float damage = 2.0F;
@@ -106,7 +109,10 @@ public final class Blizzard extends Entity {
                         off.x / far * push - off.z / far * push * 0.3);
                 living.hurtMarked = true;
             }
-            living.setTicksFrozen(Math.min(living.getTicksRequiredToFreeze() + 40, living.getTicksFrozen() + 5));
+            // A player is chilled, never frozen white: the frost at the screen's edge stays thin enough to see through.
+            int most = living instanceof Player ? (int) (living.getTicksRequiredToFreeze() * PLAYER_FROST)
+                    : living.getTicksRequiredToFreeze() + 40;
+            living.setTicksFrozen(Math.min(most, living.getTicksFrozen() + 5));
             if (this.tickCount % BITE == 0) {
                 living.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 30, 2), mob);
                 if (living.hurt(Wizard.source(this, owner, WizardEntities.FROST), this.damage * strength)) {
