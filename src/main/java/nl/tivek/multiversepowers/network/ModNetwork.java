@@ -29,6 +29,8 @@ import nl.tivek.multiversepowers.character.greenlantern.ability.fist.LightFists;
 import nl.tivek.multiversepowers.character.greenlantern.ability.heavy.HeavyWeapon;
 import nl.tivek.multiversepowers.character.greenlantern.ability.whip.EnergyWhip;
 import nl.tivek.multiversepowers.character.greenlantern.construct.Construct;
+import nl.tivek.multiversepowers.character.greenlantern.summon.SummonMarkerPayload;
+import nl.tivek.multiversepowers.character.greenlantern.summon.SummonOrderPayload;
 import nl.tivek.multiversepowers.character.greenlantern.summon.SummonPayload;
 import nl.tivek.multiversepowers.character.greenlantern.summon.Summons;
 import nl.tivek.multiversepowers.character.greenlantern.ability.flight.Flight;
@@ -71,8 +73,14 @@ import nl.tivek.multiversepowers.engine.fx.ParticlesPayload;
 import nl.tivek.multiversepowers.engine.fx.VoicePayload;
 import nl.tivek.multiversepowers.faction.StandingsPayload;
 import nl.tivek.multiversepowers.faction.mob.MobDefaults;
+import nl.tivek.multiversepowers.faction.mob.MobBulkEditPayload;
+import nl.tivek.multiversepowers.faction.mob.MobPageActionPayload;
 import nl.tivek.multiversepowers.faction.mob.MobRuleEditPayload;
 import nl.tivek.multiversepowers.faction.mob.MobRules;
+import nl.tivek.multiversepowers.faction.mob.MobSpawnEditPayload;
+import nl.tivek.multiversepowers.faction.mob.MobStatEditPayload;
+import nl.tivek.multiversepowers.faction.mob.MobStats;
+import nl.tivek.multiversepowers.faction.mob.MobStepsPayload;
 import nl.tivek.multiversepowers.faction.mob.MobTableAskPayload;
 import nl.tivek.multiversepowers.faction.mob.MobTablePayload;
 import nl.tivek.multiversepowers.killconfirm.KillConfirmPayload;
@@ -128,6 +136,8 @@ public final class ModNetwork {
         registrar.playToClient(DeathBlowPayload.TYPE, DeathBlowPayload.STREAM_CODEC, ModNetwork::onDeathBlow);
         registrar.playToClient(KillConfirmPayload.TYPE, KillConfirmPayload.STREAM_CODEC, ModNetwork::onKillConfirm);
         registrar.playToClient(SummonPayload.TYPE, SummonPayload.STREAM_CODEC, ModNetwork::onSummon);
+        registrar.playToClient(SummonMarkerPayload.TYPE, SummonMarkerPayload.STREAM_CODEC, ModNetwork::onSummonMarker);
+        registrar.playToServer(SummonOrderPayload.TYPE, SummonOrderPayload.STREAM_CODEC, ModNetwork::onSummonOrder);
         registrar.playToServer(TestFightRequest.TYPE, TestFightRequest.STREAM_CODEC, ModNetwork::onTestFightRequest);
         registrar.playToClient(TestFightPayload.TYPE, TestFightPayload.STREAM_CODEC, ModNetwork::onTestFight);
         registrar.playToClient(HandVictimPayload.TYPE, HandVictimPayload.STREAM_CODEC, ModNetwork::onHandVictim);
@@ -155,6 +165,12 @@ public final class ModNetwork {
         registrar.playToClient(MobTablePayload.TYPE, MobTablePayload.STREAM_CODEC, ModNetwork::onMobTable);
         registrar.playToServer(MobTableAskPayload.TYPE, MobTableAskPayload.STREAM_CODEC, ModNetwork::onMobTableAsk);
         registrar.playToServer(MobRuleEditPayload.TYPE, MobRuleEditPayload.STREAM_CODEC, ModNetwork::onMobRuleEdit);
+        registrar.playToServer(MobSpawnEditPayload.TYPE, MobSpawnEditPayload.STREAM_CODEC, ModNetwork::onMobSpawnEdit);
+        registrar.playToServer(MobBulkEditPayload.TYPE, MobBulkEditPayload.STREAM_CODEC, ModNetwork::onMobBulkEdit);
+        registrar.playToServer(MobPageActionPayload.TYPE, MobPageActionPayload.STREAM_CODEC,
+                ModNetwork::onMobPageAction);
+        registrar.playToServer(MobStatEditPayload.TYPE, MobStatEditPayload.STREAM_CODEC, ModNetwork::onMobStatEdit);
+        registrar.playToClient(MobStepsPayload.TYPE, MobStepsPayload.STREAM_CODEC, ModNetwork::onMobSteps);
         registrar.playToServer(CommandAliasEditPayload.TYPE, CommandAliasEditPayload.STREAM_CODEC,
                 ModNetwork::onCommandAliasEdit);
         registrar.playToClient(VoicePayload.TYPE, VoicePayload.STREAM_CODEC, ModNetwork::onVoice);
@@ -180,6 +196,7 @@ public final class ModNetwork {
         context.enqueueWork(() -> {
             if (context.player() instanceof ServerPlayer serverPlayer && WorldSettings.mayEdit(serverPlayer)) {
                 context.reply(MobDefaults.table(serverPlayer.serverLevel()));
+                context.reply(new MobStepsPayload(MobRules.steps()));
             }
         });
     }
@@ -190,6 +207,48 @@ public final class ModNetwork {
                 CommandAliases.edit(serverPlayer, payload.name(), payload.command());
             }
         });
+    }
+
+    private static void onMobSpawnEdit(MobSpawnEditPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> {
+            if (context.player() instanceof ServerPlayer serverPlayer) {
+                MobRules.editSpawn(serverPlayer, payload.creature(), payload.spawns());
+            }
+        });
+    }
+
+    private static void onMobBulkEdit(MobBulkEditPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> {
+            if (context.player() instanceof ServerPlayer serverPlayer) {
+                MobRules.bulk(serverPlayer, payload.actors(), payload.targets(), payload.standing());
+            }
+        });
+    }
+
+    private static void onMobPageAction(MobPageActionPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> {
+            if (context.player() instanceof ServerPlayer serverPlayer) {
+                switch (payload.action()) {
+                    case MobPageActionPayload.EVERYONE -> MobRules.everyone(serverPlayer);
+                    case MobPageActionPayload.RESET -> MobRules.reset(serverPlayer);
+                    case MobPageActionPayload.UNDO -> MobRules.undo(serverPlayer);
+                    default -> {
+                    }
+                }
+            }
+        });
+    }
+
+    private static void onMobStatEdit(MobStatEditPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> {
+            if (context.player() instanceof ServerPlayer serverPlayer) {
+                MobStats.edit(serverPlayer, payload.creature(), payload.stat(), payload.value());
+            }
+        });
+    }
+
+    private static void onMobSteps(MobStepsPayload payload, IPayloadContext context) {
+        ClientPayloadHandler.handleMobSteps(payload, context);
     }
 
     private static void onMobRuleEdit(MobRuleEditPayload payload, IPayloadContext context) {
@@ -329,6 +388,22 @@ public final class ModNetwork {
 
     private static void onKillConfirm(KillConfirmPayload payload, IPayloadContext context) {
         ClientPayloadHandler.handleKillConfirm(payload, context);
+    }
+
+    private static void onSummonMarker(SummonMarkerPayload payload, IPayloadContext context) {
+        ClientPayloadHandler.handleSummonMarker(payload, context);
+    }
+
+    private static void onSummonOrder(SummonOrderPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> {
+            if (context.player() instanceof ServerPlayer serverPlayer) {
+                if (payload.entity() == SummonOrderPayload.SWITCH) {
+                    Summons.order(serverPlayer);
+                } else {
+                    Summons.dismiss(serverPlayer, payload.entity());
+                }
+            }
+        });
     }
 
     private static void onSummon(SummonPayload payload, IPayloadContext context) {

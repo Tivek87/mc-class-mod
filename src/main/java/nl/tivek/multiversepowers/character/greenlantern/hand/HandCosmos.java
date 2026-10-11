@@ -63,9 +63,10 @@ public final class HandCosmos {
     // The pointing fingertip and the middle fingertip of a flat hand, in the hand's own frame.
     private static final Vec3 POINT = new Vec3(-0.38, 6.3, 0.0);
     private static final Vec3 TIP = new Vec3(0.0, 6.2, 0.2);
-    // Where a held ball sits in the hand's frame, and the biggest it holds at scale 1.
-    private static final Vec3 GRIP = new Vec3(0.0, 3.05, 1.25);
-    private static final double HOLDS = 1.55;
+    // The hand on the moon: its size per moon radius, and in its own frame the face of its palm and its knuckles.
+    private static final double MOON_HAND = 1.0;
+    private static final double PALM_FACE = 0.56;
+    private static final double KNUCKLES = 3.05;
     // How far the moon's rift stands beside it, and how big it opens, in moon radii.
     private static final double RIFT_AWAY = 2.7;
     public static final double RIFT_SIZE = 1.5;
@@ -217,28 +218,95 @@ public final class HandCosmos {
                 .scale(shake));
     }
 
-    // The hand on the moon: out of the rift, fingers open as it reaches, closed round the moon, squeezing tighter and
-    // shaking as it crushes, blown open as the moon bursts, and drawn back in.
+    // The moon's own axes at tick t, where `moonAt` puts it: its face as the sky shows it (u north, v along its path),
+    // turned out of that face toward the eye and tipped a little.
+    public static Vec3[] moonAxes(Vec3 moon, Vec3 eye, double t) {
+        Vec3 view = moon.subtract(eye).normalize();
+        Vec3 path = view.cross(new Vec3(0.0, 0.0, 1.0));
+        path = path.lengthSqr() < 1.0E-6 ? Vectors.UP : path.normalize();
+        Vec3 north = view.cross(path).normalize();
+        double turn = moonTurn(t);
+        Vec3 right = north.scale(Math.cos(turn)).add(view.scale(Math.sin(turn)));
+        Vec3 forward = view.scale(Math.cos(turn)).subtract(north.scale(Math.sin(turn)));
+        double tilt = turn * 0.35;
+        Vec3 up = path.scale(Math.cos(tilt)).add(forward.scale(Math.sin(tilt)));
+        forward = forward.scale(Math.cos(tilt)).subtract(path.scale(Math.sin(tilt)));
+        return new Vec3[] { right, up, forward };
+    }
+
+    // How far the moon reaches from its middle along each of its axes at tick t, in moon radii: pressed flat as the
+    // fingers crush it.
+    public static double[] moonHalves(double t) {
+        double size = moonSize(t);
+        double crushed = crush(t);
+        return new double[] { size * (1.0 - 0.26 * crushed), size * (1.0 + 0.12 * crushed),
+                size * (1.0 - 0.18 * crushed) };
+    }
+
+    // The hand on the moon: out of the rift, fingers open as it reaches; its palm laid flat on the moon's nearest face
+    // and its fingers closed over the next, turning with it, squeezing tighter and shaking as it crushes, blown open as
+    // the moon bursts, and drawn back in. The fingers stop on the moon's faces where they are drawn.
     public static HandGroup.Sub moonHand(Vec3 moon, double radius, Vec3 eye, double t) {
         double beat = t / SLOW;
         Vec3 rift = riftCenter(moon, radius, eye);
         Vec3 normal = riftNormal(moon, radius, eye);
         Vec3 held = moonAt(moon, radius, eye, t);
-        double scale = radius / HOLDS;
+        double scale = radius * MOON_HAND;
         double reach = Ease.smoother((beat - MOON_REACH) / (GRAB - MOON_REACH))
                 * (1.0 - Ease.smoother((beat - LET) / (RIFT_SHUT - LET)));
         double grabbed = Ease.smoother((beat - GRAB + 1.5) / 2.0);
         double crushed = crush(t);
         double blown = Ease.smoother((beat - BOOM) / 0.8);
-        double curl = Mth.lerp(blown, Mth.lerp(grabbed, 0.12, 0.5) + 0.38 * crushed, 0.05);
-        HandPose pose = HandGroup.fingers(curl, Mth.lerp(grabbed, 0.1, 0.45) + 0.3 * crushed,
-                Mth.lerp(grabbed, 0.2, 0.55) + 0.3 * crushed, Mth.lerp(blown, Mth.lerp(grabbed, 0.8, 0.3)
+        double curl = Mth.lerp(blown, Mth.lerp(grabbed, 0.12, 0.9) + 0.1 * crushed, 0.05);
+        HandPose pose = HandGroup.fingers(curl, Mth.lerp(grabbed, 0.1, 0.7) + 0.3 * crushed,
+                Mth.lerp(grabbed, 0.2, 0.75) + 0.25 * crushed, Mth.lerp(blown, Mth.lerp(grabbed, 0.8, 0.3)
                         - 0.15 * crushed, 1.0));
-        Vec3 up = held.subtract(rift).normalize();
-        Vec3 toEye = eye.subtract(held).normalize();
-        Vec3 palm = HandGroup.square(toEye.cross(up).normalize().add(toEye.scale(0.45)), up);
-        HandPose.Place place = HandGroup.reaching(rift, held, up, palm, GRIP, reach, scale);
+        Vec3 arm = held.subtract(rift).normalize();
+        Vec3[] axes = moonAxes(held, eye, t);
+        // The faces it takes are picked as it takes hold, so the hand never jumps from one face to another.
+        double taken = GRAB * SLOW;
+        Vec3 heldThen = moonAt(moon, radius, eye, taken);
+        Vec3[] axesThen = moonAxes(heldThen, eye, taken);
+        Vec3 armThen = heldThen.subtract(rift).normalize();
+        int[] onPalm = nearest(axesThen, freePalm(heldThen, armThen, eye), -1);
+        int[] onFingers = nearest(axesThen, armThen, onPalm[0]);
+        double square = Ease.smoother((beat - MOON_REACH) / (GRAB - MOON_REACH));
+        Vec3 up = arm.lerp(axes[onFingers[0]].scale(onFingers[1]), square).normalize();
+        Vec3 palm = HandGroup.square(freePalm(held, arm, eye).lerp(axes[onPalm[0]].scale(onPalm[1]), square), up);
+        double[] half = moonHalves(t);
+        Vec3 grip = new Vec3(0.0, KNUCKLES - support(axes, half, up) * radius / scale,
+                PALM_FACE + support(axes, half, palm) * radius / scale);
+        HandPose.Place there = HandGroup.frame(Vec3.ZERO, arm, up, palm, scale);
+        Vec3 wrist = held.subtract(there.at(grip));
+        Vec3 hidden = rift.subtract(arm.scale(4.5 * scale));
+        HandPose.Place place = HandGroup.frame(hidden.lerp(wrist, reach), arm, up, palm, scale);
         return new HandGroup.Sub(pose, place, HandGroup.portalAt(rift, normal, radius * RIFT_SIZE, rift(t)), false);
+    }
+
+    // The way the palm faces as it reaches for the moon: across the eye's view and a little toward it.
+    private static Vec3 freePalm(Vec3 held, Vec3 arm, Vec3 eye) {
+        Vec3 toEye = eye.subtract(held).normalize();
+        return toEye.cross(arm).normalize().add(toEye.scale(0.45));
+    }
+
+    // The axis of `axes` (and its side) nearest `want`, `skip` left out: {index, 1 or -1}.
+    private static int[] nearest(Vec3[] axes, Vec3 want, int skip) {
+        int best = skip == 0 ? 1 : 0;
+        for (int i = 0; i < axes.length; i++) {
+            if (i != skip && Math.abs(axes[i].dot(want)) > Math.abs(axes[best].dot(want))) {
+                best = i;
+            }
+        }
+        return new int[] { best, axes[best].dot(want) < 0.0 ? -1 : 1 };
+    }
+
+    // How far a box of these axes and half sides reaches from its middle along `way`.
+    private static double support(Vec3[] axes, double[] half, Vec3 way) {
+        double far = 0.0;
+        for (int i = 0; i < axes.length; i++) {
+            far += Math.abs(axes[i].dot(way)) * half[i];
+        }
+        return far;
     }
 
     // The hand drawing the circle, out of a portal hovering beside it; and the hand diving into it, out of a portal

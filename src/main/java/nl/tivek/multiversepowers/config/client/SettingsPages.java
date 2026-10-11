@@ -83,9 +83,16 @@ public final class SettingsPages {
         return Minecraft.getInstance().level != null && serverEditable();
     }
 
-    // The host of this world, or a listed owner on a server (the list comes with the synced world settings): the
-    // server checks the same again.
+    // The host of this world, a listed owner on a server (the list comes with the synced world settings), or an
+    // operator where the world lets them: the server checks the same again.
     public static boolean serverEditable() {
+        Minecraft minecraft = Minecraft.getInstance();
+        return mayGrant() || PowerRules.operatorsMayEdit() && minecraft.player != null
+                && minecraft.player.hasPermissions(2);
+    }
+
+    // The host or a listed owner: only they see and change whether operators may.
+    private static boolean mayGrant() {
         Minecraft minecraft = Minecraft.getInstance();
         return minecraft.hasSingleplayerServer()
                 || minecraft.player != null && PowerRules.isOwner(minecraft.player.getGameProfile());
@@ -117,8 +124,14 @@ public final class SettingsPages {
         allowed.add(fromSpec(spec, file, "general", "spells", PowerRules.SPELLS, Unit.SWITCH, 1.0));
         Section chosen = new Section(Component.translatable(PREFIX + "general.characters"), null,
                 List.of(new Group(null, allowed)));
+        List<Section> sections = new ArrayList<>(List.of(section, creatures, chosen));
+        if (mayGrant()) {
+            sections.add(new Section(Component.translatable(PREFIX + "general.access"), null, List.of(new Group(null,
+                    List.of(fromSpec(spec, file, "general", "operatorsMayEdit", PowerRules.OPERATORS, Unit.SWITCH,
+                            1.0))))));
+        }
         return new Page(RULES, Component.translatable(PREFIX + "general"), 0xFFA060, PixelIcons.Icon.GLOBE, null,
-                List.of(section, creatures, chosen), worldEditable(spec), true, spec::save);
+                sections, worldEditable(spec), true, spec::save);
     }
 
     public static Page stamina() {

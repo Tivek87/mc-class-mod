@@ -46,9 +46,6 @@ public final class ThorStorm {
     private static final double FOLLOW_MOST = 1.2;
     private static final double AIM = 96.0;
     private static final double DEEPEST = 128.0;
-    private static final int CALL_GAP = 8;
-    // It strikes a foe by itself about once in this many ticks.
-    private static final int STRIKE_EVERY = 36;
     // With no storm up, his bolts come down from this high over what they strike.
     private static final double HIGH = 32.0;
     private static final Map<UUID, ThorStorm> ALL = new HashMap<>();
@@ -57,18 +54,24 @@ public final class ThorStorm {
     private final int ticks;
     private final double radius;
     private final float strikes;
+    private final int callGap;
+    // It strikes a foe by itself about once in this many ticks.
+    private final int strikeEvery;
     private Vec3 center;
     private int age;
     private int ended = -1;
     private long nextCall;
     private int nextStrike = GATHER;
 
-    private ThorStorm(UUID owner, int ticks, double radius, float strikes, Vec3 center) {
+    private ThorStorm(UUID owner, int ticks, double radius, float strikes, Vec3 center, int callGap,
+            int strikeEvery) {
         this.owner = owner;
         this.ticks = ticks;
         this.radius = radius;
         this.strikes = strikes;
         this.center = center;
+        this.callGap = callGap;
+        this.strikeEvery = strikeEvery;
     }
 
     // Where the storm's underside wants to be for someone at `at`: over him, and well over the ground under him.
@@ -99,7 +102,9 @@ public final class ThorStorm {
         }
         ServerLevel level = player.serverLevel();
         ThorStorm storm = new ThorStorm(player.getUUID(), (int) Math.round(ability.value("seconds") * 20.0),
-                ability.value("radius"), (float) ability.value("strikeDamage"), cloudAt(level, player.position()));
+                ability.value("radius"), (float) ability.value("strikeDamage"), cloudAt(level, player.position()),
+                Math.max(1, (int) Math.round(ability.value("callSeconds") * 20.0)),
+                Math.max(3, (int) Math.round(ability.value("strikeSeconds") * 20.0)));
         ALL.put(player.getUUID(), storm);
         ThorMoves.tell(player, ThorStatePayload.STORM, 0);
         Vec3 sky = storm.center;
@@ -126,7 +131,7 @@ public final class ThorStorm {
         if (storm == null || storm.ended >= 0 || storm.age < GATHER || level.getGameTime() < storm.nextCall) {
             return false;
         }
-        storm.nextCall = level.getGameTime() + CALL_GAP;
+        storm.nextCall = level.getGameTime() + storm.callGap;
         ThorMoves.tell(player, ThorStatePayload.CALL, 0);
         LivingEntity aimed = Targeting.aimLiving(player, level, AIM);
         if (aimed != null && storm.under(aimed.position())) {
@@ -193,7 +198,7 @@ public final class ThorStorm {
             this.end(player);
         } else if (this.age >= this.nextStrike) {
             RandomSource random = level.getRandom();
-            this.nextStrike = this.age + STRIKE_EVERY * 2 / 3 + random.nextInt(STRIKE_EVERY * 2 / 3 + 1);
+            this.nextStrike = this.age + this.strikeEvery * 2 / 3 + random.nextInt(this.strikeEvery * 2 / 3 + 1);
             this.strikeAlone(level, player, random);
         }
         return true;

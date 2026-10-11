@@ -7,14 +7,15 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import nl.tivek.multiversepowers.MultiversePowers;
 
-// Tells a player that a creature they see is a hard-light summon, and how many ticks it has stood.
-public record SummonPayload(int entity, int age) implements CustomPacketPayload {
+// Tells a player that a creature they see is a hard-light summon, whose (the owner's entity id, -1 for one out of
+// their world), and how many ticks it has stood.
+public record SummonPayload(int entity, int owner, int age) implements CustomPacketPayload {
     public static final CustomPacketPayload.Type<SummonPayload> TYPE = new CustomPacketPayload.Type<>(
             ResourceLocation.fromNamespaceAndPath(MultiversePowers.MODID, "summon"));
 
     public static final StreamCodec<RegistryFriendlyByteBuf, SummonPayload> STREAM_CODEC = StreamCodec.composite(
-            ByteBufCodecs.VAR_INT, SummonPayload::entity, ByteBufCodecs.VAR_INT, SummonPayload::age,
-            SummonPayload::new);
+            ByteBufCodecs.VAR_INT, SummonPayload::entity, ByteBufCodecs.VAR_INT, SummonPayload::owner,
+            ByteBufCodecs.VAR_INT, SummonPayload::age, SummonPayload::new);
 
     @Override
     public CustomPacketPayload.Type<SummonPayload> type() {

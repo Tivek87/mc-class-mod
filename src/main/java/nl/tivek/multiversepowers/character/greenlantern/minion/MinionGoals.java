@@ -3,6 +3,7 @@ package nl.tivek.multiversepowers.character.greenlantern.minion;
 import java.util.EnumSet;
 import javax.annotation.Nullable;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.EntitySelector;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.entity.monster.Creeper;
@@ -10,9 +11,11 @@ import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.phys.AABB;
 import nl.tivek.multiversepowers.character.greenlantern.PowerRing;
 import nl.tivek.multiversepowers.faction.Factions;
+import nl.tivek.multiversepowers.faction.Standing;
+import nl.tivek.multiversepowers.faction.mob.MobRules;
 
-// What a mech's helper does between its moves: it picks the nearest creature red to its pilot, and with none it walks
-// back to the mech's side. A wild one picks the nearest monster.
+// What a mech's sentinel does between its moves: it picks the nearest creature red to its pilot, and with none it
+// walks back to the mech's side. A wild one picks the nearest creature the world sets it hostile to, else a monster.
 final class MinionGoals {
     private MinionGoals() {
     }
@@ -50,7 +53,8 @@ final class MinionGoals {
             LivingEntity target = this.minion.getTarget();
             // A wild one keeps on whatever hurt it (HurtByTargetGoal) as long as it lives and stays near.
             if (target != null && (!target.isAlive() || target.distanceToSqr(this.minion) > LOSE * LOSE
-                    || pilot != null && !fair(pilot, target))) {
+                    || pilot != null && !fair(pilot, target)
+                    || pilot == null && MobRules.set(this.minion.getType(), target.getType()) == Standing.FRIENDLY)) {
                 target = null;
             }
             if (target == null) {
@@ -80,10 +84,17 @@ final class MinionGoals {
                     && Factions.hostile(pilot, living);
         }
 
-        // What a wild one goes after, as an iron golem does: monsters, but not creepers.
+        // What a wild one goes after: what the world's Mobs page sets it hostile to, else as an iron golem does,
+        // monsters but not creepers.
         private boolean monster(LivingEntity living) {
-            return living.isAlive() && living instanceof Enemy && !(living instanceof Creeper)
-                    && !(living instanceof MechMinion);
+            if (!living.isAlive() || living == this.minion || !EntitySelector.NO_CREATIVE_OR_SPECTATOR.test(living)) {
+                return false;
+            }
+            Standing set = MobRules.set(this.minion.getType(), living.getType());
+            if (set != null) {
+                return set == Standing.HOSTILE;
+            }
+            return living instanceof Enemy && !(living instanceof Creeper) && !(living instanceof MechMinion);
         }
     }
 

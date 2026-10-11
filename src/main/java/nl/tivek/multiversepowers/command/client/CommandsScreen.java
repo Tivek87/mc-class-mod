@@ -381,6 +381,9 @@ public final class CommandsScreen extends NavScreen {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (button == 0 && this.area.press(mouseX, mouseY)) {
+            return true;
+        }
         if (super.mouseClicked(mouseX, mouseY, button)) {
             return true;
         }
@@ -389,6 +392,17 @@ public final class CommandsScreen extends NavScreen {
             return true;
         }
         return false;
+    }
+
+    @Override
+    public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
+        return this.area.drag(mouseY) || super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
+    }
+
+    @Override
+    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        this.area.release();
+        return super.mouseReleased(mouseX, mouseY, button);
     }
 
     @Override

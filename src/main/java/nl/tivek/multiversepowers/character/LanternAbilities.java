@@ -314,8 +314,13 @@ final class LanternAbilities {
                         "Seconds before the ring can summon again")
                 .setting("summonMinutes", 10.0, 0.5, 60.0, Unit.MINUTES, "How long a summoned creature stays")
                 .settingInt("summonMost", 3, 1, 6, Unit.COUNT,
-                        "Most summoned creatures at once: a summoning forms 1 up to this many, at random, and"
-                                + " the oldest break up past it")
+                        "Most creatures one summoning forms: it forms 1 up to this many, at random")
+                .settingInt("summonAtOnce", 5, 1, 30, Unit.COUNT,
+                        "Most summoned creatures a player has at once: past it the oldest break up")
+                .setting("summonFollowBlocks", 7.0, 2.0, 32.0, Unit.BLOCKS,
+                        "How far from you a summoned creature may wander before it walks back, in blocks")
+                .setting("summonTeleportBlocks", 24.0, 8.0, 96.0, Unit.BLOCKS,
+                        "How far behind you a summoned creature may fall before it steps to your side, in blocks")
                 .group("summon_kinds", "Hard-Light Summon: how often each creature comes")
                 .setting("summonSkeleton", 26.0, 0.0, 100.0, Unit.WEIGHT, "Skeleton")
                 .setting("summonPiglin", 22.0, 0.0, 100.0, Unit.WEIGHT, "Zombified piglin")
@@ -323,7 +328,15 @@ final class LanternAbilities {
                 .setting("summonBlaze", 13.0, 0.0, 100.0, Unit.WEIGHT, "Blaze")
                 .setting("summonVindicator", 10.0, 0.0, 100.0, Unit.WEIGHT, "Vindicator")
                 .setting("summonEnderman", 7.0, 0.0, 100.0, Unit.WEIGHT, "Enderman")
-                .setting("summonGolem", 4.0, 0.0, 100.0, Unit.WEIGHT, "Iron golem");
+                .setting("summonGolem", 4.0, 0.0, 100.0, Unit.WEIGHT, "Iron golem")
+                .group("summon_health", "Hard-light creatures' health, summoned or out of a spawn egg")
+                .setting("summonSkeletonHealth", 20.0, 1.0, 2000.0, Unit.HEALTH, "Hard-Light Skeleton")
+                .setting("summonPiglinHealth", 20.0, 1.0, 2000.0, Unit.HEALTH, "Hard-Light Zombified Piglin")
+                .setting("summonCreeperHealth", 20.0, 1.0, 2000.0, Unit.HEALTH, "Hard-Light Creeper")
+                .setting("summonBlazeHealth", 20.0, 1.0, 2000.0, Unit.HEALTH, "Hard-Light Blaze")
+                .setting("summonVindicatorHealth", 24.0, 1.0, 2000.0, Unit.HEALTH, "Hard-Light Vindicator")
+                .setting("summonEndermanHealth", 40.0, 1.0, 2000.0, Unit.HEALTH, "Hard-Light Enderman")
+                .setting("summonGolemHealth", 100.0, 1.0, 2000.0, Unit.HEALTH, "Hard-Light Iron Golem");
         lantern.add(abilities, AbilitySlot.ABILITY_3, "recharge").cooldown(60)
                 .setting("powerRestored", 100.0, 1.0, 100.0, Unit.POWER,
                         "How much power one touch of the lantern puts back in the ring (a full ring holds"
@@ -371,12 +384,39 @@ final class LanternAbilities {
                 .settingInt("comboTicks", 24, 6, 100, Unit.TICKS,
                         "Ticks without a punch before the combo starts again from its first blow")
                 .setting("powerCost", 0.05, 0.0, 100.0, Unit.POWER, "Ring power one punch costs")
+                .setting("catchBlocks", 0.55, 0.0, 2.0, Unit.BLOCKS,
+                        "How far beside its fist a punch still catches a creature, in blocks")
+                .setting("pushTimes", 1.0, 0.0, 5.0, Unit.STRENGTH, "How hard the combo's punches throw what they hit")
+                .setting("uppercutLift", 0.55, 0.0, 3.0, Unit.STRENGTH,
+                        "How high the uppercut throws what it hits")
+                .setting("finisherLunge", 0.55, 0.0, 3.0, Unit.STRENGTH,
+                        "How far you lunge ahead with the tenth blow of the combo")
+                .settingInt("sweeps", 1, 0, 1, Unit.SWITCH,
+                        "Whether the sweeping punches also catch the creatures beside the one in front")
                 .group("heavy", "Heavy blows (hold the button)")
                 .setting("heavyDamage", 14.0, 0.0, 2000.0, Unit.HALF_HEARTS,
                         "Damage of a heavy blow, in half hearts, to everything it catches")
                 .setting("heavyRadius", 3.0, 1.0, 8.0, Unit.BLOCKS, "How far round its point a heavy blow reaches")
                 .setting("heavyKnockback", 1.8, 0.0, 6.0, Unit.STRENGTH, "How hard a heavy blow throws what it hits")
-                .setting("heavyPowerCost", 1.5, 0.0, 100.0, Unit.POWER, "Ring power one heavy blow costs");
+                .setting("heavyPowerCost", 1.5, 0.0, 100.0, Unit.POWER, "Ring power one heavy blow costs")
+                .setting("heavyHeightBlocks", 2.5, 0.5, 10.0, Unit.BLOCKS,
+                        "How far above and below its point a heavy blow still catches, in blocks")
+                .setting("heavyLift", 1.0, 0.0, 5.0, Unit.STRENGTH, "How high the heavy blows throw what they hit")
+                .settingInt("heavyGapTicks", 0, 0, 400, Unit.TICKS,
+                        "Ticks after a heavy blow before the next one can be thrown")
+                .setting("hammerTimes", 1.0, 0.0, 10.0, Unit.STRENGTH,
+                        "How many times the heavy damage the giant fist slammed down from above hits")
+                .setting("risingTimes", 1.0, 0.0, 10.0, Unit.STRENGTH,
+                        "How many times the heavy damage the giant fist bursting up out of the ground hits")
+                .setting("pistonTimes", 1.0, 0.0, 10.0, Unit.STRENGTH,
+                        "How many times the heavy damage the giant fist rammed out on a piston hits")
+                .setting("spinTimes", 1.0, 0.0, 10.0, Unit.STRENGTH,
+                        "How many times the heavy damage the full turn with both fists swollen huge hits")
+                .group("heavy_kinds", "Heavy blows: how often each comes")
+                .setting("hammerChance", 1.0, 0.0, 10.0, Unit.WEIGHT, "Giant fist from above")
+                .setting("risingChance", 1.0, 0.0, 10.0, Unit.WEIGHT, "Giant fist out of the ground")
+                .setting("pistonChance", 1.0, 0.0, 10.0, Unit.WEIGHT, "Piston fist")
+                .setting("spinChance", 1.0, 0.0, 10.0, Unit.WEIGHT, "Spinning fists");
         lantern.add(abilities, AbilitySlot.ABILITY_6, "ring_scan").cooldown(160)
                 .holdVersion(40, CharacterAbility.Tap.RELEASE)
                 .setting("rangeBlocks", 56.0, 8.0, 128.0, Unit.BLOCKS,
@@ -737,17 +777,20 @@ final class LanternAbilities {
                         "Damage of the fire to everything in it, in half hearts, again every 0.2 seconds; it burns on")
                 .settingInt("mechFlameCooldown", 300, 0, 72000, Unit.TICKS,
                         "Ticks after the flamethrower shuts before it can be used again (20 ticks = 1 second)")
-                .group("mechHelpers", "Mech helpers (Left Alt in a built mech)")
+                .group("mechHelpers", "Mech sentinels (Left Alt in a built mech)")
                 .setting("mechHelperPowerCost", 6.0, 0.0, 100.0, Unit.POWER,
-                        "Ring power opening the hatch costs; out of it drop as many helpers as are missing of 3")
+                        "Ring power opening the hatch costs; out of it drop as many sentinels as are missing of 3")
                 .setting("mechHelperHealth", 30.0, 1.0, 2000.0, Unit.HEALTH,
-                        "Health of each helper, in half hearts (a zombie has 20)")
+                        "Health of each sentinel, in half hearts (a zombie has 20)")
                 .setting("mechHelperDamage", 2.5, 0.0, 2000.0, Unit.HALF_HEARTS,
-                        "Damage of a helper's punch, in half hearts; its cannon bolt does 1.2 times it and the slam"
+                        "Damage of a sentinel's punch, in half hearts; its cannon bolt does 1.2 times it and the slam"
                                 + " of its leap 1.4 times it round where it lands")
                 .was(5.0)
                 .settingInt("mechHelperCooldown", 600, 0, 72000, Unit.TICKS,
                         "Ticks after the hatch shuts before it opens again (20 ticks = 1 second)")
+                .setting("mechHelperKillHeal", 5.0, 0.0, 2000.0, Unit.HEALTH,
+                        "Health a sentinel gets back for each creature it kills, as a ball of light flies from the"
+                                + " body into it")
                 .group("mechWalk", "Walking the mech")
                 .setting("mechCrushHealth", 10.0, 0.0, 2000.0, Unit.HALF_HEARTS,
                         "A creature no bigger than a block with at most this much health (a chicken has 4, a pig 10)"

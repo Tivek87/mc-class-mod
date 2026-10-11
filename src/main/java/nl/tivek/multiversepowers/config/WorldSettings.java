@@ -117,6 +117,11 @@ public final class WorldSettings {
     }
 
     public static boolean mayEdit(ServerPlayer player) {
+        return mayGrant(player) || PowerRules.operatorsMayEdit() && player.hasPermissions(2);
+    }
+
+    // The host or a listed owner: only they may let operators change the settings.
+    public static boolean mayGrant(ServerPlayer player) {
         return player.server.isSingleplayerOwner(player.getGameProfile()) || PowerRules.isOwner(player.getGameProfile());
     }
 
@@ -128,7 +133,8 @@ public final class WorldSettings {
         Set<String> changed = new LinkedHashSet<>();
         for (WorldSettingsEditPayload.Entry entry : entries) {
             ModConfigSpec spec = ModConfigs.worldFiles().get(entry.file());
-            if (spec == null || !spec.isLoaded() || !(spec.getSpec().get(entry.path()) instanceof ModConfigSpec.ValueSpec rule)) {
+            if (spec == null || !spec.isLoaded() || !(spec.getSpec().get(entry.path()) instanceof ModConfigSpec.ValueSpec rule)
+                    || entry.path().equals(PowerRules.OPERATORS.getPath()) && !mayGrant(player)) {
                 continue;
             }
             Object value = spec.getValues().get(entry.path());

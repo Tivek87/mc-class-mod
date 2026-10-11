@@ -12,6 +12,7 @@ import net.minecraft.util.Mth;
 import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.character.GameCharacter;
 import nl.tivek.multiversepowers.engine.client.gui.ScreenAnchors;
+import nl.tivek.multiversepowers.engine.client.gui.ScrollDrag;
 
 // The guide's top: the character in a line or two, and Read more, the page those lines unfold into over the guide's
 // list and detail.
@@ -29,6 +30,7 @@ final class GuideAbout {
     private List<FormattedCharSequence> lines = List.of();
     private boolean open;
     private double scroll;
+    private final ScrollDrag drag = new ScrollDrag();
     private int height;
     private int left;
     private int right;
@@ -111,10 +113,26 @@ final class GuideAbout {
         graphics.disableScissor();
         this.height = y - start + 6;
         this.scroll = Mth.clamp(this.scroll, 0.0, this.most(height));
-        AbilityGuideScreen.scrollbar(graphics, x + width - 5, top, height, this.scroll, this.most(height));
+        AbilityGuideScreen.scrollbar(graphics, x + width - 5, top, height, this.scroll, this.most(height), this.drag);
     }
 
     // Scrolls the page by `by`, shown `height` tall.
+    boolean press(double mouseX, double mouseY) {
+        return this.drag.press(mouseX, mouseY);
+    }
+
+    boolean drag(double mouseY, int height) {
+        if (!this.drag.held()) {
+            return false;
+        }
+        this.scroll = Mth.clamp(this.drag.to(mouseY), 0.0, this.most(height));
+        return true;
+    }
+
+    void release() {
+        this.drag.release();
+    }
+
     void scroll(double by, int height) {
         this.scroll = Mth.clamp(this.scroll + by, 0.0, this.most(height));
     }

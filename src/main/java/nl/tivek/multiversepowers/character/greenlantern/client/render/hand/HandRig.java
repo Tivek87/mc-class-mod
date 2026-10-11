@@ -54,11 +54,26 @@ final class HandRig {
     private static ConstructPainter.Frame cachedHand;
     private static RigPose cachedAngles;
 
-    // What a hand holds at its fingers: the creature's box in the world.
-    record Held(double x, double y, double z, double halfX, double halfY, double halfZ) {
+    // What a hand holds at its fingers: the creature's box in the world, or a box turned along axes of its own.
+    record Held(double x, double y, double z, double halfX, double halfY, double halfZ, @Nullable Vec3 axisX,
+            @Nullable Vec3 axisY, @Nullable Vec3 axisZ) {
+        Held(double x, double y, double z, double halfX, double halfY, double halfZ) {
+            this(x, y, z, halfX, halfY, halfZ, null, null, null);
+        }
+
         static Held of(AABB box) {
             return new Held((box.minX + box.maxX) * 0.5, (box.minY + box.maxY) * 0.5, (box.minZ + box.maxZ) * 0.5,
                     (box.maxX - box.minX) * 0.5, (box.maxY - box.minY) * 0.5, (box.maxZ - box.minZ) * 0.5);
+        }
+
+        // The box a frame spans from -1 to 1 along each of its axes.
+        static Held of(ConstructPainter.Frame box) {
+            Vec3 c = box.center();
+            Vec3 x = box.at(1.0, 0.0, 0.0).subtract(c);
+            Vec3 y = box.at(0.0, 1.0, 0.0).subtract(c);
+            Vec3 z = box.at(0.0, 0.0, 1.0).subtract(c);
+            return new Held(c.x, c.y, c.z, x.length(), y.length(), z.length(), x.normalize(), y.normalize(),
+                    z.normalize());
         }
     }
 
@@ -314,8 +329,20 @@ final class HandRig {
             double wx = c.x + r.x * x + u.x * y + f.x * z;
             double wy = c.y + r.y * x + u.y * y + f.y * z;
             double wz = c.z + r.z * x + u.z * y + f.z * z;
-            double box = Sdf.box(wx - held.x(), wy - held.y(), wz - held.z(), held.halfX(), held.halfY(),
-                    held.halfZ());
+            double dx = wx - held.x();
+            double dy = wy - held.y();
+            double dz = wz - held.z();
+            if (held.axisX() != null) {
+                Vec3 ax = held.axisX();
+                Vec3 ay = held.axisY();
+                Vec3 az = held.axisZ();
+                double lx = dx * ax.x + dy * ax.y + dz * ax.z;
+                double ly = dx * ay.x + dy * ay.y + dz * ay.z;
+                dz = dx * az.x + dy * az.y + dz * az.z;
+                dx = lx;
+                dy = ly;
+            }
+            double box = Sdf.box(dx, dy, dz, held.halfX(), held.halfY(), held.halfZ());
             deepest = Math.max(deepest, radius - box);
         }
         return deepest / scale;

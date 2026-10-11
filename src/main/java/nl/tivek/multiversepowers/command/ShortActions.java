@@ -16,8 +16,6 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.InteractionHand;
-import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LightningBolt;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
@@ -127,13 +125,6 @@ final class ShortActions {
         return players.size();
     }
 
-    static int extinguish(CommandSourceStack source, Map<String, String> args) throws CommandSyntaxException {
-        Collection<ServerPlayer> players = players(source, args.get("player"));
-        players.forEach(ServerPlayer::clearFire);
-        tell(source, "ext", players.size());
-        return players.size();
-    }
-
     static int repair(CommandSourceStack source, Map<String, String> args) throws CommandSyntaxException {
         ItemStack held = source.getPlayerOrException().getMainHandItem();
         if (!held.isDamageableItem()) {
@@ -145,21 +136,6 @@ final class ShortActions {
         return 1;
     }
 
-    static int repairAll(CommandSourceStack source, Map<String, String> args) throws CommandSyntaxException {
-        int fixed = 0;
-        for (ServerPlayer player : players(source, args.get("player"))) {
-            for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
-                ItemStack stack = player.getInventory().getItem(i);
-                if (stack.isDamageableItem() && stack.isDamaged()) {
-                    stack.setDamageValue(0);
-                    fixed++;
-                }
-            }
-        }
-        tell(source, "repairall", fixed);
-        return fixed;
-    }
-
     static int more(CommandSourceStack source, Map<String, String> args) throws CommandSyntaxException {
         ItemStack held = source.getPlayerOrException().getMainHandItem();
         if (held.isEmpty()) {
@@ -168,23 +144,6 @@ final class ShortActions {
         }
         held.setCount(held.getMaxStackSize());
         tell(source, "more", held.getCount(), held.getHoverName());
-        return 1;
-    }
-
-    static int hat(CommandSourceStack source, Map<String, String> args) throws CommandSyntaxException {
-        ServerPlayer player = source.getPlayerOrException();
-        ItemStack held = player.getMainHandItem();
-        if (held.isEmpty()) {
-            source.sendFailure(Component.translatable(KEY + "hand.empty"));
-            return 0;
-        }
-        ItemStack worn = player.getItemBySlot(EquipmentSlot.HEAD);
-        player.setItemSlot(EquipmentSlot.HEAD, held.split(1));
-        if (!worn.isEmpty() && !player.getInventory().add(worn)) {
-            player.drop(worn, false);
-        }
-        player.setItemInHand(InteractionHand.MAIN_HAND, held);
-        tell(source, "hat");
         return 1;
     }
 
@@ -294,23 +253,14 @@ final class ShortActions {
     }
 
     static int butcher(CommandSourceStack source, Map<String, String> args) {
-        return kill(source, args, true);
-    }
-
-    static int killMobs(CommandSourceStack source, Map<String, String> args) {
-        return kill(source, args, false);
-    }
-
-    private static int kill(CommandSourceStack source, Map<String, String> args, boolean hostileOnly) {
         double radius = Math.max(1, Math.min(512, Integer.parseInt(args.get("radius"))));
         Vec3 at = source.getPosition();
         List<Mob> mobs = source.getLevel().getEntitiesOfClass(Mob.class,
-                new AABB(at, at).inflate(radius),
-                mob -> (!hostileOnly || mob instanceof Enemy) && mob.distanceToSqr(at) <= radius * radius);
+                new AABB(at, at).inflate(radius), mob -> mob instanceof Enemy && mob.distanceToSqr(at) <= radius * radius);
         for (Mob mob : mobs) {
             mob.kill();
         }
-        tell(source, hostileOnly ? "butcher" : "kmobs", mobs.size());
+        tell(source, "butcher", mobs.size());
         return mobs.size();
     }
 

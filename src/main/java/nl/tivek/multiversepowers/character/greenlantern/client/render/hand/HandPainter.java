@@ -129,6 +129,12 @@ public final class HandPainter {
         drawHand(painter, pose, place, left, bright, apart, seed, twists, null);
     }
 
+    // A hand closing round the box `box` spans from -1 to 1 along its axes: its fingers stop on its faces.
+    public static void drawHandRound(LanternPainter painter, HandPose pose, HandPose.Place place, boolean left,
+            double bright, double apart, int seed, boolean twists, ConstructPainter.Frame box) {
+        drawHand(painter, pose, place, left, bright, apart, seed, twists, HandRig.Held.of(box));
+    }
+
     static void drawHand(LanternPainter painter, HandPose pose, HandPose.Place place, boolean left, double bright,
             double apart, int seed, boolean twists, @Nullable HandRig.Held held) {
         ConstructPainter.Frame hand = handFrame(place, left);

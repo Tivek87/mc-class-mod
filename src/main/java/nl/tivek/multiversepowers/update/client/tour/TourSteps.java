@@ -20,41 +20,48 @@ import nl.tivek.multiversepowers.update.client.tour.TourStep.Place;
 // while a line is in neither, or a tour text is too long. Only steps from `FROM` up to the version installed are ever
 // shown, so a release's steps replace the last one's. A player's first tour starts with `INTRO`.
 final class TourSteps {
-    static final String VERSION = "0.8.2-alpha";
+    static final String VERSION = "0.8.3-alpha";
     // The oldest version whose changes this tour shows: normally its own.
     static final String FROM = VERSION;
 
-    // Green Lantern's summon and changed constructs by his rows of the panel; Thor's hammer and the fixes in the middle;
-    // the new pages and settings in the settings window. As anyone else, the card stands in the middle.
+    // Green Lantern's hard-light creatures in the middle, ordering summons and the Sentinels by his rows of the panel;
+    // the Mobs page, its tools and his settings in the settings window.
     static final List<TourStep> ALL = List.of(
-            step(VERSION, "lantern_summon", Kind.NEW, Place.GAME).at("game.panel.rows.green_lantern")
-                    .prepare(AbilityPanel::wake).covers("Green Lantern: Hard-Light Summon in the Construct Wheel"),
-            step(VERSION, "cannon_hand", Kind.CHANGED, Place.GAME).at("game.panel.rows.green_lantern")
+            step(VERSION, "hard_light_mobs", Kind.NEW, Place.GAME).covers(
+                    "Green Lantern: seven hard-light creatures",
+                    "Green Lantern: summons are these hard-light creatures"),
+            step(VERSION, "summon_orders", Kind.NEW, Place.GAME).at("game.panel.rows.green_lantern")
                     .prepare(AbilityPanel::wake).covers(
-                            "Green Lantern: the Arm Cannon takes the place",
-                            "Green Lantern: the Arm Cannon's shield"),
-            step(VERSION, "minigun_bullets", Kind.CHANGED, Place.GAME).at("game.panel.rows.green_lantern")
+                            "Green Lantern: tap the Construct Wheel key",
+                            "Green Lantern: hold the Construct Wheel key",
+                            "Green Lantern: at most 5 summons"),
+            step(VERSION, "sentinels", Kind.NEW, Place.GAME).at("game.panel.rows.green_lantern")
                     .prepare(AbilityPanel::wake).covers(
-                            "Green Lantern: the Minigun has a new model",
-                            "Green Lantern: the sawed-off shotgun is bigger"),
-            step(VERSION, "helpers", Kind.CHANGED, Place.GAME).at("game.panel.rows.green_lantern")
-                    .prepare(AbilityPanel::wake).covers("Green Lantern: the mech's helpers"),
-            step(VERSION, "hand_rest", Kind.CHANGED, Place.GAME).at("game.panel.rows.green_lantern")
-                    .prepare(AbilityPanel::wake).covers("Green Lantern: a Giant Hand that came rests"),
-            step(VERSION, "cosmos_slow", Kind.CHANGED, Place.GAME).at("game.panel.rows.green_lantern")
-                    .prepare(AbilityPanel::wake).covers("Green Lantern: the Cosmos Test is slower"),
-            step(VERSION, "hammer_return", Kind.CHANGED, Place.GAME).covers("Thor: Mjolnir flies back"),
-            step(VERSION, "fixes", Kind.FIXED, Place.GAME).covers(
-                            "Thor: a grab dive at empty air",
-                            "A body left lying changed"),
-            step(VERSION, "mobs_page", Kind.NEW, Place.SETTINGS).at("nav.mobs").covers("Settings: a Mobs page"),
-            step(VERSION, "commands_page", Kind.NEW, Place.SETTINGS).at("nav.commands")
-                    .covers("Settings: a Commands page"),
-            step(VERSION, "lantern_settings", Kind.NEW, Place.SETTINGS).at("nav.green_lantern")
-                    .covers("Green Lantern's settings: the summon's"));
+                            "Green Lantern: a Sentinel that kills",
+                            "Green Lantern: the mech's helpers are called Sentinels"),
+            step(VERSION, "mob_spawning", Kind.NEW, Place.SETTINGS).at("nav.mobs").covers(
+                    "Settings: the Mobs page turns",
+                    "Settings: the Mobs page groups"),
+            step(VERSION, "mob_all", Kind.NEW, Place.SETTINGS).at("nav.mobs").covers(
+                    "Settings: the Mobs page sets a whole group",
+                    "Settings: Everyone hostile"),
+            step(VERSION, "mob_undo", Kind.NEW, Place.SETTINGS).at("nav.mobs").covers(
+                    "Settings: Undo on the Mobs page"),
+            step(VERSION, "mob_numbers", Kind.NEW, Place.SETTINGS).at("nav.mobs").covers(
+                    "Settings: each creature's own numbers"),
+            step(VERSION, "summon_settings", Kind.NEW, Place.SETTINGS).at("nav.green_lantern")
+                    .covers("Green Lantern's settings: the most summons"));
 
     // Changes too small for a step of their own, each by how its changelog line starts, as in `covers`.
-    static final List<String> SMALL = List.of();
+    static final List<String> SMALL = List.of(
+            "Green Lantern: in third person",
+            "Settings: the Commands page keeps",
+            "Scrollbars can be dragged",
+            "Settings: a world setting that lets operators",
+            "Green Lantern's settings: each heavy blow",
+            "Green Lantern's settings: how far summons",
+            "Thor's settings: how often",
+            "Thor: pressing the storm's key");
 
     // Shown first on a player's first tour, wherever it starts: what the tour is and how to use it.
     static final TourStep INTRO = step(VERSION, "tour_intro", Kind.HOW, Place.ANY);

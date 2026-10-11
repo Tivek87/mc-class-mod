@@ -138,7 +138,12 @@ public final class HandCosmosLight {
             painter.clip(hand.portal().center(), hand.portal().normal(), HandPainter.PORTAL_SEAM);
             Material cosmic = painter.material();
             painter.material(lantern);
-            HandPainter.drawHand(painter, hand.pose(), hand.place(), hand.left(), 1.15, -1.0, id * 13, true);
+            if (HandCosmos.moonWhole(clock)) {
+                HandPainter.drawHandRound(painter, hand.pose(), hand.place(), hand.left(), 1.15, -1.0, id * 13, true,
+                        moonFrame(moon, radius, eye, clock));
+            } else {
+                HandPainter.drawHand(painter, hand.pose(), hand.place(), hand.left(), 1.15, -1.0, id * 13, true);
+            }
             painter.material(cosmic);
             painter.noClip();
         }
@@ -184,19 +189,11 @@ public final class HandCosmosLight {
     // u running north, v along the moon's path. Then turned slowly out of that face, so it shows it is a cube, drawn
     // nearer, and pressed flat by the fingers as they crush it.
     private static ConstructPainter.Frame moonFrame(Vec3 moon, double radius, Vec3 eye, double clock) {
-        double crush = HandCosmos.crush(clock);
-        Vec3 view = moon.subtract(eye).normalize();
-        Vec3 path = view.cross(new Vec3(0.0, 0.0, 1.0));
-        path = path.lengthSqr() < 1.0E-6 ? Vectors.UP : path.normalize();
-        Vec3 north = view.cross(path).normalize();
-        double turn = HandCosmos.moonTurn(clock);
-        Vec3 right = north.scale(Math.cos(turn)).add(view.scale(Math.sin(turn)));
-        Vec3 forward = view.scale(Math.cos(turn)).subtract(north.scale(Math.sin(turn)));
-        double tilt = turn * 0.35;
-        Vec3 up = path.scale(Math.cos(tilt)).add(forward.scale(Math.sin(tilt)));
-        forward = forward.scale(Math.cos(tilt)).subtract(path.scale(Math.sin(tilt)));
-        return new ConstructPainter.Frame(moon, right, up, forward, radius * HandCosmos.moonSize(clock))
-                .stretched(1.0 - 0.26 * crush, 1.0 + 0.12 * crush, 1.0 - 0.18 * crush);
+        Vec3[] axes = HandCosmos.moonAxes(moon, eye, clock);
+        double[] half = HandCosmos.moonHalves(clock);
+        double size = HandCosmos.moonSize(clock);
+        return new ConstructPainter.Frame(moon, axes[0], axes[1], axes[2], radius * size)
+                .stretched(half[0] / size, half[1] / size, half[2] / size);
     }
 
     // The moon made solid: the sky's own moon, its square face the face of a cube, cracks spreading over it as it is

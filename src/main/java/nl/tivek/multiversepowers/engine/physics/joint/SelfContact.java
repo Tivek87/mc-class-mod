@@ -13,6 +13,8 @@ public final class SelfContact implements Constraint {
     private final double[] from;
     private final double[] to;
     private final double radius;
+    // A ball (both ends one point) is pushed out once: pushed at each sample it would go out that many times as deep.
+    private final int samples;
     private final double[] p = new double[3];
     private final double[] local = new double[3];
     private final double[] n = new double[3];
@@ -23,6 +25,7 @@ public final class SelfContact implements Constraint {
         this.from = from.clone();
         this.to = to.clone();
         this.radius = radius;
+        this.samples = from[0] == to[0] && from[1] == to[1] && from[2] == to[2] ? 1 : SAMPLES;
     }
 
     @Override
@@ -31,8 +34,8 @@ public final class SelfContact implements Constraint {
         double hx = world.half[o];
         double hy = world.half[o + 1];
         double hz = world.half[o + 2];
-        for (int i = 0; i < SAMPLES; i++) {
-            double u = i / (SAMPLES - 1.0);
+        for (int i = 0; i < this.samples; i++) {
+            double u = this.samples == 1 ? 0.0 : i / (this.samples - 1.0);
             world.point(this.limb, this.from[0] + (this.to[0] - this.from[0]) * u,
                     this.from[1] + (this.to[1] - this.from[1]) * u, this.from[2] + (this.to[2] - this.from[2]) * u,
                     this.p);
@@ -54,8 +57,8 @@ public final class SelfContact implements Constraint {
     public double deepest(RigidWorld world) {
         int o = this.body * 3;
         double deepest = 0.0;
-        for (int i = 0; i < SAMPLES; i++) {
-            double u = i / (SAMPLES - 1.0);
+        for (int i = 0; i < this.samples; i++) {
+            double u = this.samples == 1 ? 0.0 : i / (this.samples - 1.0);
             world.point(this.limb, this.from[0] + (this.to[0] - this.from[0]) * u,
                     this.from[1] + (this.to[1] - this.from[1]) * u, this.from[2] + (this.to[2] - this.from[2]) * u,
                     this.p);

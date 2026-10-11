@@ -16,30 +16,9 @@ public final class ShortCommands {
     private static final List<ShortCommand> ALL = new ArrayList<>();
     private static final String[][] RULES = {
             {"keepinv", "keepInventory"}, {"daycycle", "doDaylightCycle"}, {"weathercycle", "doWeatherCycle"},
-            {"mobgrief", "mobGriefing"}, {"firetick", "doFireTick"}, {"mobspawn", "doMobSpawning"},
-            {"insomnia", "doInsomnia"}, {"falldmg", "fallDamage"}, {"firedmg", "fireDamage"},
-            {"drowndmg", "drowningDamage"}, {"freezedmg", "freezeDamage"}, {"mobloot", "doMobLoot"},
-            {"blockdrops", "doTileDrops"}, {"instarespawn", "doImmediateRespawn"}, {"natregen", "naturalRegeneration"},
-            {"patrols", "doPatrolSpawning"}, {"traders", "doTraderSpawning"}, {"wardens", "doWardenSpawning"},
-            {"deathmsg", "showDeathMessages"}, {"advmsg", "announceAdvancements"},
-            {"feedback", "sendCommandFeedback"}, {"limitcraft", "doLimitedCrafting"}};
-    private static final String[][] EFFECTS = {
-            {"speed", "speed"}, {"slow", "slowness"}, {"haste", "haste"}, {"fatigue", "mining_fatigue"},
-            {"strength", "strength"}, {"jump", "jump_boost"}, {"nausea", "nausea"}, {"regen", "regeneration"},
-            {"res", "resistance"}, {"fireres", "fire_resistance"}, {"breath", "water_breathing"},
-            {"invis", "invisibility"}, {"blind", "blindness"}, {"nv", "night_vision"}, {"hunger", "hunger"},
-            {"weak", "weakness"}, {"poison", "poison"}, {"wither", "wither"}, {"hpboost", "health_boost"},
-            {"absorb", "absorption"}, {"sat", "saturation"}, {"glow", "glowing"}, {"levitate", "levitation"},
-            {"luck", "luck"}, {"badluck", "unluck"}, {"slowfall", "slow_falling"}, {"conduit", "conduit_power"},
-            {"dolphin", "dolphins_grace"}, {"badomen", "bad_omen"}, {"hero", "hero_of_the_village"},
-            {"dark", "darkness"}, {"windy", "wind_charged"}, {"weaving", "weaving"}, {"oozing", "oozing"},
-            {"infested", "infested"}};
-    private static final String[][] GIVES = {
-            {"food", "cooked_beef", "64"}, {"torches", "torch", "64"}, {"stone", "stone", "64"},
-            {"logs", "oak_log", "64"}, {"glass", "glass", "64"}, {"tnt", "tnt", "16"}, {"pearls", "ender_pearl", "16"},
-            {"rockets", "firework_rocket", "64"}, {"gapples", "golden_apple", "16"}, {"totem", "totem_of_undying", "1"},
-            {"elytra", "elytra", "1"}, {"water", "water_bucket", "1"}, {"lava", "lava_bucket", "1"},
-            {"bottles", "experience_bottle", "64"}, {"beacon", "beacon", "1"}};
+            {"mobgrief", "mobGriefing"}, {"mobspawn", "doMobSpawning"}};
+    private static final String[][] EFFECTS = {{"speed", "speed"}, {"haste", "haste"}, {"nv", "night_vision"}};
+    private static final String[][] GIVES = {{"food", "cooked_beef", "64"}};
 
     static {
         run("gs", Group.MODE, "gamemode survival $player", player());
@@ -49,29 +28,19 @@ public final class ShortCommands {
 
         run("day", Group.TIME, "time set day");
         run("night", Group.TIME, "time set night");
-        run("noon", Group.TIME, "time set noon");
-        run("midnight", Group.TIME, "time set midnight");
-        run("sunrise", Group.TIME, "time set 23000");
-        run("sunset", Group.TIME, "time set 12000");
 
         run("sun", Group.WEATHER, "weather clear");
         run("rain", Group.WEATHER, "weather rain");
         run("storm", Group.WEATHER, "weather thunder");
 
         run("peace", Group.WORLD, "difficulty peaceful");
-        run("easy", Group.WORLD, "difficulty easy");
         run("normal", Group.WORLD, "difficulty normal");
         run("hard", Group.WORLD, "difficulty hard");
-        run("wspawn", Group.WORLD, "setworldspawn");
         run("loc", Group.WORLD, "locate structure $structure", new Arg("structure", Kind.TEXT, null));
-        run("biome", Group.WORLD, "locate biome $biome", new Arg("biome", Kind.TEXT, null));
 
         for (String[] rule : RULES) {
             run(rule[0], Group.RULES, "gamerule " + rule[1] + " $on", new Arg("on", Kind.SWITCH, "on"));
         }
-        run("sleep", Group.RULES, "gamerule playersSleepingPercentage $percent", new Arg("percent", Kind.NUMBER,
-                "100"));
-        run("tickspeed", Group.RULES, "gamerule randomTickSpeed $speed", new Arg("speed", Kind.NUMBER, "3"));
 
         for (String[] effect : EFFECTS) {
             run(effect[0], Group.EFFECTS, "effect give $player minecraft:" + effect[1] + " $seconds $level",
@@ -80,16 +49,12 @@ public final class ShortCommands {
         run("e", Group.EFFECTS, "effect give $player $effect $seconds $level", new Arg("effect", Kind.EFFECT, null),
                 new Arg("level", Kind.LEVEL, "1"), new Arg("seconds", Kind.SECONDS, "infinite"), player());
         run("ec", Group.EFFECTS, "effect clear $player", player());
-        run("econe", Group.EFFECTS, "effect clear $player $effect", new Arg("effect", Kind.EFFECT, null), player());
 
         run("i", Group.ITEMS, "give $player $item $count", new Arg("item", Kind.ITEM, null),
                 new Arg("count", Kind.NUMBER, "1"), player());
-        run("ic", Group.ITEMS, "clear $player $item", new Arg("item", Kind.ITEM, null), player());
         run("ci", Group.ITEMS, "clear $player", player());
         run("kit", Group.ITEMS, kit("diamond"), player());
         run("nkit", Group.ITEMS, kit("netherite"), player());
-        run("bow", Group.ITEMS, "give $player bow;give $player arrow $count", new Arg("count", Kind.NUMBER, "64"),
-                player());
         for (String[] give : GIVES) {
             run(give[0], Group.ITEMS, "give $player minecraft:" + give[1] + " $count",
                     new Arg("count", Kind.NUMBER, give[2]), player());
@@ -99,17 +64,11 @@ public final class ShortCommands {
         act("feed", Group.PLAYER, 2, ShortActions::feed, player());
         act("fly", Group.PLAYER, 2, ShortActions::fly, player());
         act("god", Group.PLAYER, 2, ShortActions::god, player());
-        act("ext", Group.PLAYER, 2, ShortActions::extinguish, player());
         act("repair", Group.PLAYER, 2, ShortActions::repair);
-        act("repairall", Group.PLAYER, 2, ShortActions::repairAll, player());
         act("more", Group.PLAYER, 2, ShortActions::more);
-        act("hat", Group.PLAYER, 2, ShortActions::hat);
-        run("xpp", Group.PLAYER, "xp add $player $amount points", new Arg("amount", Kind.NUMBER, null), player());
         run("lvl", Group.PLAYER, "xp add $player $amount levels", new Arg("amount", Kind.NUMBER, null), player());
-        run("xpclear", Group.PLAYER, "xp set $player 0 levels;xp set $player 0 points", player());
         run("ench", Group.PLAYER, "enchant $player $enchantment $level",
                 new Arg("enchantment", Kind.ENCHANTMENT, null), new Arg("level", Kind.NUMBER, "1"), player());
-        run("suicide", Group.PLAYER, "kill @s");
         run("setspawn", Group.PLAYER, "spawnpoint $player", player());
         act("pos", Group.PLAYER, 0, ShortActions::pos);
 
@@ -124,9 +83,7 @@ public final class ShortCommands {
         act("sm", Group.MOBS, 2, ShortActions::summon, new Arg("creature", Kind.ENTITY, null),
                 new Arg("count", Kind.NUMBER, "1"));
         act("butcher", Group.MOBS, 2, ShortActions::butcher, new Arg("radius", Kind.NUMBER, "64"));
-        act("kmobs", Group.MOBS, 2, ShortActions::killMobs, new Arg("radius", Kind.NUMBER, "64"));
         run("kitems", Group.MOBS, "kill @e[type=item]");
-        run("kxp", Group.MOBS, "kill @e[type=experience_orb]");
         act("smite", Group.MOBS, 2, ShortActions::smite, new Arg("player", Kind.PLAYERS, ""));
         act("boom", Group.MOBS, 2, ShortActions::boom, new Arg("power", Kind.NUMBER, "4"));
     }

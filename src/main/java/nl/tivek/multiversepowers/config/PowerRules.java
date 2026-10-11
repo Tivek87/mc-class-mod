@@ -16,6 +16,7 @@ public final class PowerRules {
     public static final ModConfigSpec.IntValue DOMINO;
     public static final ModConfigSpec.IntValue PLAYER_KNOCKDOWN;
     public static final ModConfigSpec.IntValue SPELLS;
+    public static final ModConfigSpec.IntValue OPERATORS;
     public static final ModConfigSpec.ConfigValue<List<? extends String>> OWNERS;
     // The characters' ids (GameCharacter's own, which this file cannot load before its settings exist).
     public static final List<String> CHARACTER_IDS = List.of("green_lantern", "doc_ock", "thor");
@@ -56,8 +57,11 @@ public final class PowerRules {
         SPELLS = builder.comment("Whether spells can be cast (1 = yes, 0 = no)").defineInRange("spells", 1, 0, 1);
         builder.pop();
         builder.comment("Who may change the world settings in the game (Mods > this mod > Config > Server).",
-                "In singleplayer and on a LAN world the host always may; operators may not unless they are listed.")
+                "In singleplayer and on a LAN world the host always may; operators only if listed or let below.")
                 .push("access");
+        OPERATORS = builder.comment("Whether operators (op) may change the world settings in the game too (1 = yes,"
+                + " 0 = only the host and the owners). Only the host and the owners may change this one.")
+                .defineInRange("operatorsMayEdit", 0, 0, 1);
         OWNERS = builder.comment("The owners of this world or server by player name (or UUID), for example"
                 + " [\"Steve\", \"Alex\"]; only they may change these settings in the game. Only this file can change"
                 + " the list.")
@@ -108,6 +112,10 @@ public final class PowerRules {
 
     public static boolean playerKnockdown() {
         return get(PLAYER_KNOCKDOWN) != 0;
+    }
+
+    public static boolean operatorsMayEdit() {
+        return get(OPERATORS) != 0;
     }
 
     // Whether the owners list names this player, by name (any case) or by UUID.

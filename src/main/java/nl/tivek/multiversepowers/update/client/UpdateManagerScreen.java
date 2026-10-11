@@ -16,6 +16,7 @@ import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.util.Mth;
 import nl.tivek.multiversepowers.engine.client.gui.PixelIcons;
 import nl.tivek.multiversepowers.engine.client.gui.ScreenAnchors;
+import nl.tivek.multiversepowers.engine.client.gui.ScrollDrag;
 import org.lwjgl.glfw.GLFW;
 
 // The manager's updates page, in two parts. What's new: whether you are up to date (or which version is out, or how
@@ -57,6 +58,8 @@ final class UpdateManagerScreen extends ManagerScreen {
     private int notesContent;
     private double scroll;
     private double listScroll;
+    private final ScrollDrag notesDrag = new ScrollDrag();
+    private final ScrollDrag listDrag = new ScrollDrag();
     @Nullable
     private Button use;
     @Nullable
@@ -329,7 +332,8 @@ final class UpdateManagerScreen extends ManagerScreen {
         }
         graphics.flush();
         graphics.disableScissor();
-        this.drawScrollbar(graphics, this.notesX + this.notesWidth - SCROLLBAR, this.scroll, this.maxScroll());
+        this.drawScrollbar(graphics, this.notesX + this.notesWidth - SCROLLBAR, this.scroll, this.maxScroll(),
+                this.notesDrag);
         if (!UpdateInstaller.canInstall() && this.use.visible) {
             graphics.drawString(this.font, firstLine(this.font, text("test"), this.contentWidth), this.contentX,
                     this.bottom + 3, 0xFF000000 | WARN, false);
@@ -369,7 +373,7 @@ final class UpdateManagerScreen extends ManagerScreen {
         }
         graphics.disableScissor();
         this.drawScrollbar(graphics, this.contentX + this.listWidth - SCROLLBAR, this.listScroll,
-                this.maxListScroll());
+                this.maxListScroll(), this.listDrag);
     }
 
     private int versionAt(double mouseX, double mouseY) {
@@ -381,19 +385,44 @@ final class UpdateManagerScreen extends ManagerScreen {
         return index >= 0 && index < this.versions.size() ? index : -1;
     }
 
-    private void drawScrollbar(GuiGraphics graphics, int x, double scroll, double max) {
+    private void drawScrollbar(GuiGraphics graphics, int x, double scroll, double max, ScrollDrag drag) {
         if (max <= 0) {
+            drag.hide();
             return;
         }
         int view = this.bottom - this.top - 4;
         int thumb = Math.max(16, (int) (view * (double) view / (view + max)));
         int thumbY = this.top + 2 + (int) ((view - thumb) * (scroll / max));
         graphics.fill(x, this.top + 2, x + 3, this.top + 2 + view, 0x40FFFFFF);
-        graphics.fill(x, thumbY, x + 3, thumbY + thumb, 0xC0FFFFFF);
+        graphics.fill(x, thumbY, x + 3, thumbY + thumb, drag.held() ? 0xFFFFFFFF : 0xC0FFFFFF);
+        drag.bar(x, 3, this.top + 2, view, thumb, thumbY, max);
+    }
+
+    @Override
+    public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
+        if (this.notesDrag.held()) {
+            this.scroll = this.notesDrag.to(mouseY);
+            return true;
+        }
+        if (this.listDrag.held()) {
+            this.listScroll = this.listDrag.to(mouseY);
+            return true;
+        }
+        return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
+    }
+
+    @Override
+    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        this.notesDrag.release();
+        this.listDrag.release();
+        return super.mouseReleased(mouseX, mouseY, button);
     }
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (button == 0 && (this.notesDrag.press(mouseX, mouseY) || this.listDrag.press(mouseX, mouseY))) {
+            return true;
+        }
         int index = this.versionAt(mouseX, mouseY);
         if (button == 0 && index >= 0) {
             this.choose(this.versions.get(index));

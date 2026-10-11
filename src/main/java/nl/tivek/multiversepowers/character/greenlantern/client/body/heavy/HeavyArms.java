@@ -77,6 +77,9 @@ public final class HeavyArms {
     private static final double AIM_AT = 16.0;
     private static final HeavyPoses.Pose AIM_REST = new HeavyPoses.Pose();
     private static final Vector3f REST_FROM = new Vector3f(0.75F, -1.1F, -0.15F);
+    // The cannon on his forearm, the minigun at his hip (hidden there by his arm and thigh).
+    private static final double CANNON_OUT = 3.5;
+    private static final double MINIGUN_OUT = 6.0;
 
     private HeavyArms() {
     }
@@ -114,6 +117,9 @@ public final class HeavyArms {
         Stance.neck(NECK);
         Stance.chest(CHEST);
         Frame frame = chestFrame(held.weapon, pose);
+        if (held.weapon == CANNON || held.weapon == MINIGUN) {
+            frame = aimedAlong(held.weapon, pose, frame, model, HeavyPoses.reload(held, partialTick));
+        }
         Frame leftFrame = dual ? chestFrame(held.weapon, HeavyPoses.left()) : frame;
         float time = (float) ClientHeavy.now(partialTick);
         for (int side = 0; side < (HeavyPainter.worn(held.weapon) ? 1 : 2); side++) {
@@ -152,6 +158,34 @@ public final class HeavyArms {
         return HeavyPainter.placed(weapon, new Vec3(pose.middle.x, pose.middle.y, pose.middle.z),
                 new Vec3(way.x, way.y, way.z), new Vec3(pose.up.x, pose.up.y, pose.up.z),
                 16.0 * HeavyPainter.size(weapon));
+    }
+
+    // As in his own view, the gun turned about his right hand so that held at rest or up to fire its barrel follows his
+    // look, and held out to his right (pixels), or his body would hide it from behind; what its keys do besides (a kick,
+    // a reload) turns it on from there.
+    private static Frame aimedAlong(int weapon, HeavyPoses.Pose pose, Frame frame, PlayerModel<?> model,
+            double reload) {
+        Vector3f look = new Quaternionf().rotationZYX(model.head.zRot, model.head.yRot, model.head.xRot)
+                .transform(new Vector3f(0.0F, 0.0F, -1.0F));
+        CHEST.conjugate(new Quaternionf()).transform(look);
+        Quaternionf turn = onto(HeavyKeys.rest(weapon), look).slerp(onto(HeavyKeys.aimed(weapon), look),
+                toward(weapon, pose));
+        Vec3 at = HeavyPainter.grip(weapon, true, reload);
+        Vec3 grip = frame.at(at.x, at.y, at.z);
+        Vec3 center = grip.add(turned(turn, frame.center().subtract(grip)))
+                .add(weapon == MINIGUN ? -MINIGUN_OUT : -CANNON_OUT, 0.0, 0.0);
+        return new Frame(center, turned(turn, frame.right()), turned(turn, frame.up()), turned(turn, frame.forward()),
+                frame.scale());
+    }
+
+    // The turn that brings the way a key holds the gun onto a look in the chest's frame: about the upright first, then
+    // lifted, so it never rolls.
+    private static Quaternionf onto(HeavyKeys.Key key, Vector3f look) {
+        AIM_REST.set(key);
+        Vector3f way = AIM_REST.way(new Vector3f()).normalize();
+        Quaternionf turn = new Quaternionf().rotationY((float) (Math.atan2(look.x, look.z) - Math.atan2(way.x, way.z)));
+        Vector3f flat = turn.transform(new Vector3f(way));
+        return new Quaternionf().rotationTo(flat, look).mul(turn);
     }
 
     // A frame in the chest's pixels as his model's space draws it (blocks).
@@ -302,13 +336,18 @@ public final class HeavyArms {
     // The turn that brings a gun's way onto the crosshair: worked out for it at rest and held up to fire, and taken
     // between the two by how far the pose has come from the one to the other, so the barrel stays on it in both.
     private static Quaternionf aimed(int weapon, HeavyPoses.Pose pose) {
+        return aimedFrom(weapon, HeavyKeys.rest(weapon)).slerp(aimedFrom(weapon, HeavyKeys.aimed(weapon)),
+                toward(weapon, pose));
+    }
+
+    // How far a pose has come from the gun held at rest to it held up to fire, 0 to 1.
+    private static float toward(int weapon, HeavyPoses.Pose pose) {
         HeavyKeys.Key rest = HeavyKeys.rest(weapon);
         HeavyKeys.Key up = HeavyKeys.aimed(weapon);
         float az = up.az() - rest.az();
         float el = up.el() - rest.el();
-        float toward = Mth.clamp(((pose.az - rest.az()) * az + (pose.el - rest.el()) * el)
+        return Mth.clamp(((pose.az - rest.az()) * az + (pose.el - rest.el()) * el)
                 / Math.max(1.0E-6F, az * az + el * el), 0.0F, 1.0F);
-        return aimedFrom(weapon, rest).slerp(aimedFrom(weapon, up), toward);
     }
 
     // The turn that brings a gun held by that key onto the crosshair, kept upright: about the vertical, then lifted.

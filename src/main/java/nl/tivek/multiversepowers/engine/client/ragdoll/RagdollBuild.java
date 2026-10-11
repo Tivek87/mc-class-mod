@@ -30,6 +30,8 @@ final class RagdollBuild {
     private static final double CONTACT_DAMPING = 25.0;
     // How deep a limb may already lie in another part as the body is built before it is no longer kept out of it.
     private static final double TOUCHING = 0.01;
+    // A block's corner balls, as a share of its smallest half size.
+    private static final double CORNER = 0.4;
     // How far a limp trunk leans out to its side at the waist and twists there, either way (radians).
     private static final double WAIST_SIDE = 0.35;
     private static final double WAIST_TWIST = 0.45;
@@ -307,7 +309,7 @@ final class RagdollBuild {
                 continue;
             }
             if (!ModelBends.crossed(parts.get(i))) {
-                apart(ragdoll, i, hung[i], core);
+                apart(ragdoll, i, hung[i], core, role == ModelParts.Role.HEAD);
             }
             for (int j = 0; j < n; j++) {
                 ModelParts.Role other = parts.get(j).role();
@@ -318,7 +320,7 @@ final class RagdollBuild {
                         || role == ModelParts.Role.LEG && (other == ModelParts.Role.HEAD
                                 || other == ModelParts.Role.LEG && i > j && legs <= 4);
                 if (j != i && j != core && apart) {
-                    apart(ragdoll, i, hung[i], j);
+                    apart(ragdoll, i, hung[i], j, false);
                 }
             }
         }
@@ -363,14 +365,17 @@ final class RagdollBuild {
 
     // Part i (its first two pieces; its hand or foot only for the trunk) kept out of part j (its first two pieces, or
     // all three of the trunk's). `hung`: where each of part i's pieces hangs, in its own axes. Only where a limb hangs
-    // on the trunk (j) is its end there left free.
-    private static void apart(Ragdoll ragdoll, int i, double[][] hung, int j) {
+    // on the trunk (j) is its end there left free. A block (a head) keeps its corners out as well, not only its middle.
+    private static void apart(Ragdoll ragdoll, int i, double[][] hung, int j, boolean block) {
         boolean trunk = j == ragdoll.core;
         for (int to : new int[] { ragdoll.body[j], ragdoll.lower[j], trunk ? ragdoll.tip[j] : -1 }) {
             if (to < 0) {
                 continue;
             }
             keepOut(ragdoll, ragdoll.body[i], hung[0], to, !trunk);
+            if (block) {
+                corners(ragdoll, ragdoll.body[i], to);
+            }
             if (ragdoll.lower[i] >= 0) {
                 keepOut(ragdoll, ragdoll.lower[i], hung[1], to, true);
             }
@@ -550,6 +555,22 @@ final class RagdollBuild {
             if (contact.deepest(ragdoll.world) < TOUCHING) {
                 ragdoll.world.add(contact);
                 return;
+            }
+        }
+    }
+
+    // A ball in each corner of a block, each kept out of another body: the one ball in its middle lets the corners in.
+    private static void corners(Ragdoll ragdoll, int b, int other) {
+        double radius = CORNER * Math.min(ragdoll.world.half(b, 0), Math.min(ragdoll.world.half(b, 1),
+                ragdoll.world.half(b, 2)));
+        for (int k = 0; k < 8; k++) {
+            double[] at = new double[3];
+            for (int a = 0; a < 3; a++) {
+                at[a] = ((k >> a & 1) == 0 ? -1.0 : 1.0) * (ragdoll.world.half(b, a) - radius);
+            }
+            SelfContact contact = new SelfContact(b, at, at, radius, other);
+            if (contact.deepest(ragdoll.world) < TOUCHING) {
+                ragdoll.world.add(contact);
             }
         }
     }

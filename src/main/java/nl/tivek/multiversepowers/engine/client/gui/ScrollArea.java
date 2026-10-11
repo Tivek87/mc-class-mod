@@ -5,7 +5,8 @@ import java.util.List;
 import net.minecraft.client.gui.GuiGraphics;
 
 // A box of rows drawn by hand that scrolls: `begin` clips to it and says where the rows start, `end` draws the bar.
-// What is clicked in it is kept per frame (`hit`) and found again by `click`, only inside the box.
+// What is clicked in it is kept per frame (`hit`) and found again by `click`, only inside the box; the bar can be
+// dragged (`press`, `drag`, `release`).
 public final class ScrollArea {
     private static final int BAR = 3;
 
@@ -13,6 +14,7 @@ public final class ScrollArea {
     }
 
     private final List<Hit> hits = new ArrayList<>();
+    private final ScrollDrag drag = new ScrollDrag();
     private int x;
     private int top;
     private int width;
@@ -37,6 +39,7 @@ public final class ScrollArea {
         graphics.disableScissor();
         double most = this.most();
         if (most <= 0) {
+            this.drag.hide();
             return;
         }
         int track = this.bottom - this.top;
@@ -44,7 +47,25 @@ public final class ScrollArea {
         int at = this.top + (int) ((track - thumb) * (this.scroll / most));
         int left = this.x + this.width - BAR;
         graphics.fill(left, this.top, left + BAR, this.bottom, 0x30000000);
-        graphics.fill(left, at, left + BAR, at + thumb, 0xFF6A6A6A);
+        graphics.fill(left, at, left + BAR, at + thumb, this.drag.held() ? 0xFF9A9A9A : 0xFF6A6A6A);
+        this.drag.bar(left, BAR, this.top, track, thumb, at, most);
+    }
+
+    // A press on the bar takes hold of it; whether it did.
+    public boolean press(double mouseX, double mouseY) {
+        return this.drag.press(mouseX, mouseY);
+    }
+
+    public boolean drag(double mouseY) {
+        if (!this.drag.held()) {
+            return false;
+        }
+        this.scroll = this.drag.to(mouseY);
+        return true;
+    }
+
+    public void release() {
+        this.drag.release();
     }
 
     // The width rows may use, leaving room for the bar while there is one.

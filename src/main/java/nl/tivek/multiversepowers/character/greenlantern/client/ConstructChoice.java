@@ -21,6 +21,8 @@ public final class ConstructChoice {
     private static Construct held = Construct.NONE;
     private static Construct last = Construct.WHEEL.get(0);
     private static long changedAt = Long.MIN_VALUE / 2L;
+    // Whether the summon was the last thing picked in the wheel: then a tap of the key orders the summons about.
+    private static boolean summoned;
 
     private ConstructChoice() {
     }
@@ -63,6 +65,7 @@ public final class ConstructChoice {
             return false;
         }
         if (construct.summons()) {
+            summoned = true;
             PacketDistributor.sendToServer(new ConstructHoldPayload(construct.ordinal()));
             minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.BEACON_ACTIVATE, 1.5F, 0.4F));
             return true;
@@ -71,6 +74,7 @@ public final class ConstructChoice {
             last = held;
         }
         held = construct;
+        summoned = false;
         changedAt = Util.getMillis();
         PacketDistributor.sendToServer(new ConstructHoldPayload(construct.ordinal()));
         SwordArms.picked(construct);
@@ -93,8 +97,13 @@ public final class ConstructChoice {
         take(held() == Construct.NONE ? last : Construct.NONE);
     }
 
+    public static boolean summoned() {
+        return summoned;
+    }
+
     public static void forget() {
         held = Construct.NONE;
+        summoned = false;
         changedAt = Long.MIN_VALUE / 2L;
         SwordArms.forget();
         FlameArms.forget();

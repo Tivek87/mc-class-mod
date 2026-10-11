@@ -4,6 +4,7 @@
     "minecraft:warden",
     "minecraft:vex",
     "minecraft:enderman",
-    "minecraft:endermite"
+    "minecraft:endermite",
+    "welcomescreen:hard_light_enderman"
   ]
 }

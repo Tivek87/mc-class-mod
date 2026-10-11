@@ -18,6 +18,7 @@
     "minecraft:pufferfish",
     "minecraft:tadpole",
     "minecraft:dolphin",
-    "welcomescreen:mech_helper"
+    "welcomescreen:mech_helper",
+    "welcomescreen:hard_light_blaze"
   ]
 }

@@ -13,6 +13,7 @@ public final class ClientMobTable {
     @Nullable
     private static MobTablePayload table;
     private static List<EntityType<?>> types = List.of();
+    private static int steps;
 
     private ClientMobTable() {
     }
@@ -24,6 +25,15 @@ public final class ClientMobTable {
         }
         types = known;
         table = payload;
+    }
+
+    // How many changes to the Mobs page the server can take back.
+    public static void steps(int count) {
+        steps = count;
+    }
+
+    static int steps() {
+        return steps;
     }
 
     public static boolean ready() {

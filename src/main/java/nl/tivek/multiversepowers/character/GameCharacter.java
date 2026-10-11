@@ -93,7 +93,11 @@ public enum GameCharacter {
                     .setting("seconds", 20.0, 5.0, 120.0, Unit.SECONDS, "How long the storm lasts, in seconds")
                     .setting("radius", 24.0, 8.0, 64.0, Unit.BLOCKS, "How far round him the storm reaches, in blocks")
                     .setting("strikeDamage", 5.0, 0.0, 2000.0, Unit.HALF_HEARTS,
-                            "Damage of the bolts the storm strikes foes with by itself");
+                            "Damage of the bolts the storm strikes foes with by itself")
+                    .setting("callSeconds", 3.0, 0.5, 30.0, Unit.SECONDS,
+                            "At most one bolt called down by pressing its key again in this many seconds")
+                    .setting("strikeSeconds", 1.8, 0.2, 30.0, Unit.SECONDS,
+                            "About how often the storm strikes a foe under it by itself, in seconds");
             this.add(abilities, AbilitySlot.ABILITY_2, "lightning_bomb").when(ground).cooldown(600).damage(16.0)
                     .setting("radius", 10.0, 3.0, 24.0, Unit.BLOCKS, "How far round him the burst reaches, in blocks")
                     .was(8.0);

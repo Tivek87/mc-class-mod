@@ -3,6 +3,46 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.8.3-alpha] - 2026-10-11
+
+### Added
+- **Green Lantern:** seven hard-light creatures of their own, each with a spawn egg in the mod's tab and the Spawn
+  Eggs tab; from an egg they are wild.
+- **Green Lantern:** tap the Construct Wheel key after a summon to switch your summons between staying by a marker
+  (8 by 8 blocks round it) and following you.
+- **Green Lantern:** hold the Construct Wheel key 3 seconds on one of your summons to send it away.
+- **Green Lantern:** a Sentinel that kills something draws a ball of light out of it and heals 5 health.
+- **Settings:** the Mobs page turns each creature's natural spawning on or off.
+- **Settings:** the Mobs page sets a whole group, or every creature shown, Friendly, Neutral or Hostile at once.
+- **Settings:** Everyone hostile on the Mobs page turns every creature against every other kind.
+- **Settings:** Undo on the Mobs page takes back up to the last 25 changes; Reset all puts the whole page back.
+- **Settings:** each creature's own numbers on the Mobs page: health, damage, speed, armor, size, regeneration,
+  experience, drops, spawn chance and more.
+- **Settings:** a world setting that lets operators change the world's settings.
+- **Green Lantern's settings:** the most summons at once, each hard-light creature's health and a Sentinel's heal
+  per kill.
+- **Green Lantern's settings:** each heavy blow of the Construct Fists has its own strength and how often it comes,
+  with more numbers for punches and heavy blows.
+- **Green Lantern's settings:** how far summons wander before they walk back, and before they step to you.
+- **Thor's settings:** how often a called storm bolt can come, and how often the storm strikes by itself.
+
+### Changed
+- **Green Lantern:** the mech's helpers are called Sentinels.
+- **Green Lantern:** summons are these hard-light creatures: the game's own look under a still green layer, their
+  bodies too.
+- **Thor:** pressing the storm's key again calls at most one bolt every 3 seconds.
+- **Green Lantern:** at most 5 summons at once; the oldest breaks up.
+- **Green Lantern:** in third person the Arm Cannon and the Minigun point where you look, as in first person.
+- **Settings:** the Mobs page groups creatures by game and mod, each group folding open and shut.
+- **Settings:** the Commands page keeps the 50 most useful commands.
+- Scrollbars can be dragged with the mouse.
+
+### Fixed
+- **Green Lantern:** a Sentinel set to attack a creature on the Mobs page never did.
+- A body's head could sink into its chest.
+- Creatures set Friendly to each other no longer keep fighting once one hits the other by accident.
+- **Green Lantern:** the Cosmos Test's hand passed through the moon; it now lies flat on it and closes round it.
+
 ## [0.8.2-alpha] - 2026-10-11
 
 ### Added

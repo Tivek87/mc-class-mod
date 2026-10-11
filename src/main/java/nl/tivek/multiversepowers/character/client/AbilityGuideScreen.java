@@ -11,6 +11,7 @@ import net.minecraft.util.Mth;
 import nl.tivek.multiversepowers.character.GameCharacter;
 import nl.tivek.multiversepowers.engine.client.gui.GuiShapes;
 import nl.tivek.multiversepowers.engine.client.gui.ScreenAnchors;
+import nl.tivek.multiversepowers.engine.client.gui.ScrollDrag;
 import org.lwjgl.glfw.GLFW;
 
 // The guide to the character you play: who they are in one short line on top, which unfolds into a page of its own, then
@@ -28,6 +29,8 @@ final class AbilityGuideScreen extends GuideRows {
     private static final int RIM = 0x1EFFFFFF;
     private static final int LIST = 0xFF080808;
     private static final int HOVER = 0x18FFFFFF;
+    private final ScrollDrag listDrag = new ScrollDrag();
+    private final ScrollDrag detailDrag = new ScrollDrag();
     private static final int TAB_FILL = 0xFF2A2A2A;
     private static final int LINE = 0x22FFFFFF;
     private static final int TEXT = 0xFFFFFFFF;
@@ -152,7 +155,7 @@ final class AbilityGuideScreen extends GuideRows {
         this.fold = drawn.fold();
         this.detailScroll = Mth.clamp(this.detailScroll, 0.0, this.maxDetailScroll());
         scrollbar(graphics, this.detailX + this.detailWidth + 4, this.listY,
-                this.bodyHeight - GuideDetail.STATUS, this.detailScroll, this.maxDetailScroll());
+                this.bodyHeight - GuideDetail.STATUS, this.detailScroll, this.maxDetailScroll(), this.detailDrag);
         this.anchors(chosen);
     }
 
@@ -259,7 +262,7 @@ final class AbilityGuideScreen extends GuideRows {
         layer.finish();
         graphics.disableScissor();
         scrollbar(graphics, this.listX + this.listWidth - 4, this.listY, this.bodyHeight, this.listScroll,
-                this.maxListScroll());
+                this.maxListScroll(), this.listDrag);
     }
 
     // The line from a control's parent down to it, past the siblings before it.
@@ -272,15 +275,42 @@ final class AbilityGuideScreen extends GuideRows {
         GuiShapes.roundRect(graphics, x + 0.5F, mid - 0.5F, INDENT - 4.0F, 1.0F, 0.0F, LINK);
     }
 
-    static void scrollbar(GuiGraphics graphics, int x, int y, int height, double scroll, double max) {
+    static void scrollbar(GuiGraphics graphics, int x, int y, int height, double scroll, double max,
+            ScrollDrag drag) {
         if (max <= 0.0) {
+            drag.hide();
             return;
         }
         int track = height - 8;
         float bar = Math.max(14.0F, track * track / (float) (track + max));
         float barTop = y + 4 + (float) ((track - bar) * (scroll / max));
-        GuiShapes.roundRect(graphics, x, barTop, 2, bar, 1.0F, SCROLLBAR);
+        GuiShapes.roundRect(graphics, x, barTop, 2, bar, 1.0F, drag.held() ? 0xFFFFFFFF : SCROLLBAR);
         GuiShapes.flush(graphics);
+        drag.bar(x, 2, y + 4, track, bar, barTop, max);
+    }
+
+    @Override
+    public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
+        if (this.about.drag(mouseY, this.bodyHeight)) {
+            return true;
+        }
+        if (this.detailDrag.held()) {
+            this.detailScroll = this.detailDrag.to(mouseY);
+            return true;
+        }
+        if (this.listDrag.held()) {
+            this.listScroll = this.listDrag.to(mouseY);
+            return true;
+        }
+        return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
+    }
+
+    @Override
+    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        this.about.release();
+        this.detailDrag.release();
+        this.listDrag.release();
+        return super.mouseReleased(mouseX, mouseY, button);
     }
 
     private void footer(KeyCap.Layer layer, Font font, int bottom, int right) {
@@ -322,6 +352,10 @@ final class AbilityGuideScreen extends GuideRows {
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (button == 0) {
+            if (this.about.open() ? this.about.press(mouseX, mouseY)
+                    : this.detailDrag.press(mouseX, mouseY) || this.listDrag.press(mouseX, mouseY)) {
+                return true;
+            }
             if (this.about.onToggle(this.font, mouseX, mouseY)) {
                 this.openAbout(!this.about.open());
                 return true;

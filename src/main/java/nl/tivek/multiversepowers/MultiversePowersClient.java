@@ -29,6 +29,7 @@ import nl.tivek.multiversepowers.character.greenlantern.client.body.whip.WhipArm
 import nl.tivek.multiversepowers.character.greenlantern.client.mech.MechPainter;
 import nl.tivek.multiversepowers.character.greenlantern.client.minion.MinionPainter;
 import nl.tivek.multiversepowers.character.greenlantern.client.minion.MinionRenderer;
+import nl.tivek.multiversepowers.character.greenlantern.summon.client.HardLightRenderers;
 import nl.tivek.multiversepowers.character.greenlantern.client.victim.Clapped;
 import nl.tivek.multiversepowers.character.greenlantern.client.victim.Devoured;
 import nl.tivek.multiversepowers.character.greenlantern.client.victim.Flattened;
@@ -80,6 +81,8 @@ public final class MultiversePowersClient {
         modEventBus.addListener(PowerLantern::onRegisterModels);
         modEventBus.addListener(ThrownHammerRenderer::onRegisterRenderers);
         modEventBus.addListener(MinionRenderer::onRegisterRenderers);
+        modEventBus.addListener(HardLightRenderers::onRegisterRenderers);
+        modEventBus.addListener(HardLightRenderers::onAddLayers);
         modEventBus.addListener(UpdatePopup::onRegisterKeys);
         modEventBus.addListener(Lens::onRegisterShaders);
         modEventBus.addListener(SoftGlow::onRegisterShaders);

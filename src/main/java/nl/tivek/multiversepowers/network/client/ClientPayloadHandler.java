@@ -42,6 +42,7 @@ import nl.tivek.multiversepowers.engine.client.ragdoll.Downed;
 import nl.tivek.multiversepowers.engine.client.ragdoll.Knocked;
 import nl.tivek.multiversepowers.engine.client.ragdoll.Ragdolls;
 import nl.tivek.multiversepowers.engine.entity.DeathBlowPayload;
+import nl.tivek.multiversepowers.character.greenlantern.summon.SummonMarkerPayload;
 import nl.tivek.multiversepowers.character.greenlantern.summon.SummonPayload;
 import nl.tivek.multiversepowers.character.greenlantern.summon.client.ClientSummons;
 import nl.tivek.multiversepowers.killconfirm.KillConfirmPayload;
@@ -61,6 +62,7 @@ import nl.tivek.multiversepowers.engine.fx.ParticlesPayload;
 import nl.tivek.multiversepowers.engine.fx.VoicePayload;
 import nl.tivek.multiversepowers.faction.StandingsPayload;
 import nl.tivek.multiversepowers.faction.client.ClientStandings;
+import nl.tivek.multiversepowers.faction.mob.MobStepsPayload;
 import nl.tivek.multiversepowers.faction.mob.MobTablePayload;
 import nl.tivek.multiversepowers.faction.mob.client.ClientMobTable;
 import nl.tivek.multiversepowers.spell.ClapPayload;
@@ -182,6 +184,10 @@ public final class ClientPayloadHandler {
         context.enqueueWork(() -> ClientSummons.told(payload));
     }
 
+    public static void handleSummonMarker(SummonMarkerPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> ClientSummons.marked(payload));
+    }
+
     public static void handleKillConfirm(KillConfirmPayload payload, IPayloadContext context) {
         context.enqueueWork(() -> {
             if (payload.kill()) {
@@ -220,6 +226,10 @@ public final class ClientPayloadHandler {
 
     public static void handleStandings(StandingsPayload payload, IPayloadContext context) {
         context.enqueueWork(() -> ClientStandings.update(payload));
+    }
+
+    public static void handleMobSteps(MobStepsPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> ClientMobTable.steps(payload.steps()));
     }
 
     public static void handleMobTable(MobTablePayload payload, IPayloadContext context) {

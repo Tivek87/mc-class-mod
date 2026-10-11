@@ -1,5 +1,7 @@
 package nl.tivek.multiversepowers.faction.mob;
 
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.NeutralMob;
@@ -12,15 +14,18 @@ import net.minecraft.world.entity.ai.memory.MemoryModuleType;
 import net.minecraft.world.entity.monster.RangedAttackMob;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.minecraft.world.entity.MobSpawnType;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
+import net.neoforged.neoforge.event.entity.living.FinalizeSpawnEvent;
 import net.neoforged.neoforge.event.entity.living.LivingChangeTargetEvent;
 import net.neoforged.neoforge.event.tick.EntityTickEvent;
 import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.character.greenlantern.summon.Summons;
 import nl.tivek.multiversepowers.faction.Standing;
 
-// Holds creatures to `MobRules`: one set friendly never takes the target, one set neutral only when it was hit by it,
-// and one set hostile hunts it (every creature carries a goal for that, idle until the world sets a hunt for its kind,
+// Holds creatures to `MobRules`: one set friendly never takes the target, not even struck by it by accident (its
+// anger and the grudge in its memory are let go too), one set neutral only when it was hit by it, and one set hostile
+// hunts it (every creature carries a goal for that, idle until the world sets a hunt for its kind,
 // and one that can strike but has no attack of its own a melee attack beside it). A target no longer allowed, the
 // world's settings changed meanwhile, is let go.
 @EventBusSubscriber(modid = MultiversePowers.MODID)
@@ -40,16 +45,64 @@ public final class MobTargets {
         }
     }
 
+    // A creature the world keeps from spawning by itself does not come as the world spawns creatures, and one with a
+    // spawn chance comes only that share of the times.
+    @SubscribeEvent
+    public static void onSpawn(FinalizeSpawnEvent event) {
+        MobSpawnType how = event.getSpawnType();
+        boolean byItself = how == MobSpawnType.NATURAL || how == MobSpawnType.CHUNK_GENERATION
+                || how == MobSpawnType.STRUCTURE || how == MobSpawnType.PATROL || how == MobSpawnType.REINFORCEMENT
+                || how == MobSpawnType.JOCKEY;
+        EntityType<?> type = event.getEntity().getType();
+        if (byItself && (!MobRules.spawns(type) || event.getEntity().getRandom().nextDouble() * 100.0
+                >= MobStats.value(type, MobStats.Stat.SPAWN_CHANCE))) {
+            event.setSpawnCancelled(true);
+        }
+    }
+
+    // Every tick: a creature run by its brain (a piglin, a hoglin) can take a target past the event. A friend's blow is
+    // forgiven here, after the creature's own goals ran: vanilla's goals still read who hurt it while they start.
     @SubscribeEvent
     public static void onTick(EntityTickEvent.Post event) {
-        if (event.getEntity().tickCount % 20 != 0 || !(event.getEntity() instanceof Mob mob)
-                || mob.level().isClientSide()) {
+        if (!(event.getEntity() instanceof Mob mob) || mob.level().isClientSide()) {
             return;
+        }
+        LivingEntity hurtBy = mob.getLastHurtByMob();
+        if (hurtBy != null && friendly(mob, hurtBy)) {
+            calm(mob, hurtBy);
+        }
+        if (mob instanceof NeutralMob neutral && neutral.getPersistentAngerTarget() != null
+                && mob.level() instanceof ServerLevel level
+                && level.getEntity(neutral.getPersistentAngerTarget()) instanceof LivingEntity angry
+                && friendly(mob, angry)) {
+            calm(mob, angry);
         }
         LivingEntity target = mob.getTarget();
         if (target != null && forbidden(mob, target)) {
+            if (friendly(mob, target)) {
+                calm(mob, target);
+            }
             mob.setTarget(null);
             mob.getBrain().eraseMemory(MemoryModuleType.ATTACK_TARGET);
+        }
+    }
+
+    private static boolean friendly(Mob mob, LivingEntity target) {
+        return !Summons.owned(mob) && MobRules.set(mob.getType(), target.getType()) == Standing.FRIENDLY;
+    }
+
+    // A friend that struck it by accident: no anger, no grudge, nothing that would call it back to the fight.
+    private static void calm(Mob mob, LivingEntity friend) {
+        if (mob.getLastHurtByMob() == friend) {
+            mob.setLastHurtByMob(null);
+        }
+        if (mob instanceof NeutralMob neutral && friend.getUUID().equals(neutral.getPersistentAngerTarget())) {
+            neutral.setPersistentAngerTarget(null);
+            neutral.setRemainingPersistentAngerTime(0);
+        }
+        if (mob.getBrain().hasMemoryValue(MemoryModuleType.ANGRY_AT)
+                && mob.getBrain().getMemory(MemoryModuleType.ANGRY_AT).filter(friend.getUUID()::equals).isPresent()) {
+            mob.getBrain().eraseMemory(MemoryModuleType.ANGRY_AT);
         }
     }
 

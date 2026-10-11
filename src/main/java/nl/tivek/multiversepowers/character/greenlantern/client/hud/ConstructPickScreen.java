@@ -19,6 +19,7 @@ import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.character.greenlantern.construct.ConstructPayload;
 import nl.tivek.multiversepowers.character.greenlantern.construct.ConstructPickPayload;
 import nl.tivek.multiversepowers.engine.client.gui.DirtBackgroundScreen;
+import nl.tivek.multiversepowers.engine.client.gui.ScrollDrag;
 
 @EventBusSubscriber(modid = MultiversePowers.MODID, value = Dist.CLIENT)
 public class ConstructPickScreen extends DirtBackgroundScreen {
@@ -61,6 +62,7 @@ public class ConstructPickScreen extends DirtBackgroundScreen {
     private int panelWidth;
     private int contentHeight;
     private int scroll;
+    private final ScrollDrag drag = new ScrollDrag();
 
     public ConstructPickScreen() {
         super(Component.translatable(PREFIX + "title"));
@@ -144,6 +146,27 @@ public class ConstructPickScreen extends DirtBackgroundScreen {
     }
 
     @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        return button == 0 && this.drag.press(mouseX, mouseY) || super.mouseClicked(mouseX, mouseY, button);
+    }
+
+    @Override
+    public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
+        if (this.drag.held()) {
+            this.scroll = (int) Math.round(this.drag.to(mouseY));
+            this.layout();
+            return true;
+        }
+        return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
+    }
+
+    @Override
+    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        this.drag.release();
+        return super.mouseReleased(mouseX, mouseY, button);
+    }
+
+    @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
         this.scroll = Mth.clamp(this.scroll - (int) Math.round(scrollY * ROW), 0, this.maxScroll());
         this.layout();
@@ -176,7 +199,10 @@ public class ConstructPickScreen extends DirtBackgroundScreen {
             int barY = TOP + (track - bar) * this.scroll / this.maxScroll();
             int x = this.panelLeft + this.panelWidth - 5;
             graphics.fill(x, TOP, x + 2, TOP + track, 0x40FFFFFF);
-            graphics.fill(x, barY, x + 2, barY + bar, 0xC0FFFFFF);
+            graphics.fill(x, barY, x + 2, barY + bar, this.drag.held() ? 0xFFFFFFFF : 0xC0FFFFFF);
+            this.drag.bar(x, 2, TOP, track, bar, barY, this.maxScroll());
+        } else {
+            this.drag.hide();
         }
     }
 

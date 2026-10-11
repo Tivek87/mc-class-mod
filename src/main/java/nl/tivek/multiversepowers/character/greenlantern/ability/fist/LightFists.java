@@ -36,11 +36,11 @@ import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 // the button throws one of four heavy blows at random, each with a giant fist of its own.
 public final class LightFists implements Effect {
     private static final double VIEW_RANGE = 96.0;
-    // A blow catches what its fist passes within this of, besides the reach.
-    private static final double SLACK = 0.55;
     // A wide blow sweeps through this much of a turn either side of the look (cosine).
     private static final double WIDE_ARC = 0.35;
-    private static final double LUNGE = 0.55;
+    // Each heavy blow's own settings: how many times the heavy damage it hits, and how often it comes.
+    private static final String[] TIMES = { "hammerTimes", "risingTimes", "pistonTimes", "spinTimes" };
+    private static final String[] CHANCES = { "hammerChance", "risingChance", "pistonChance", "spinChance" };
 
     private static final Map<UUID, LightFists> ACTIVE = new HashMap<>();
 
@@ -51,6 +51,7 @@ public final class LightFists implements Effect {
     private int combo = -1;
     private int idle;
     private int lastHeavy = -1;
+    private long heavyAgain;
     private boolean queued;
     private Vec3 at = Vec3.ZERO;
     private Vec3 ahead = new Vec3(0.0, 0.0, 1.0);
@@ -128,20 +129,52 @@ public final class LightFists implements Effect {
     }
 
     private boolean heavy(ServerLevel level) {
-        if (this.move >= 0 && FistMoves.heavy(this.move)) {
+        if (this.move >= 0 && FistMoves.heavy(this.move) || level.getGameTime() < this.heavyAgain) {
             return false;
         }
-        if (!PowerRing.pay(this.owner, this.ability.value("heavyPowerCost"))) {
+        int pick = this.pickHeavy();
+        if (pick < 0 || !PowerRing.pay(this.owner, this.ability.value("heavyPowerCost"))) {
             return false;
         }
-        int pick;
-        do {
-            pick = FistMoves.COMBO + this.owner.getRandom().nextInt(FistMoves.KINDS - FistMoves.COMBO);
-        } while (pick == this.lastHeavy);
         this.lastHeavy = pick;
+        this.heavyAgain = level.getGameTime() + this.ability.intValue("heavyGapTicks");
         this.combo = -1;
         this.begin(level, pick);
         return true;
+    }
+
+    // One of the heavy blows by how often each comes, never the last one twice running while another can come; -1
+    // when none may.
+    private int pickHeavy() {
+        double[] weights = new double[CHANCES.length];
+        double others = 0.0;
+        for (int k = 0; k < weights.length; k++) {
+            weights[k] = Math.max(0.0, this.ability.value(CHANCES[k]));
+            others += FistMoves.COMBO + k == this.lastHeavy ? 0.0 : weights[k];
+        }
+        if (others > 0.0 && this.lastHeavy >= FistMoves.COMBO) {
+            weights[this.lastHeavy - FistMoves.COMBO] = 0.0;
+        }
+        double total = 0.0;
+        for (double weight : weights) {
+            total += weight;
+        }
+        if (total <= 0.0) {
+            return -1;
+        }
+        double roll = this.owner.getRandom().nextDouble() * total;
+        for (int k = 0; k < weights.length; k++) {
+            roll -= weights[k];
+            if (roll < 0.0 && weights[k] > 0.0) {
+                return FistMoves.COMBO + k;
+            }
+        }
+        for (int k = weights.length - 1; k >= 0; k--) {
+            if (weights[k] > 0.0) {
+                return FistMoves.COMBO + k;
+            }
+        }
+        return -1;
     }
 
     private void begin(ServerLevel level, int kind) {
@@ -158,7 +191,8 @@ public final class LightFists implements Effect {
         this.sound(level, this.at.add(0.0, 1.2, 0.0), SoundEvents.PLAYER_ATTACK_SWEEP, 0.4F,
                 1.5F + this.owner.getRandom().nextFloat() * 0.3F);
         if (kind == FistMoves.FINISHER) {
-            this.owner.setDeltaMovement(this.owner.getDeltaMovement().add(this.ahead.scale(LUNGE)));
+            this.owner.setDeltaMovement(this.owner.getDeltaMovement().add(this.ahead.scale(
+                    this.ability.value("finisherLunge"))));
             this.owner.hurtMarked = true;
         }
     }
@@ -213,6 +247,8 @@ public final class LightFists implements Effect {
     // A combo blow: the creature its fist meets ahead within reach, and for a sweeping one those beside it as well.
     private void punch(ServerLevel level) {
         double reach = this.ability.value("reachBlocks");
+        double slack = this.ability.value("catchBlocks");
+        boolean sweeps = this.ability.intValue("sweeps") != 0;
         Vec3 eye = this.owner.getEyePosition();
         Vec3 look = this.owner.getLookAngle();
         Vec3 end = eye.add(look.scale(reach));
@@ -220,9 +256,9 @@ public final class LightFists implements Effect {
         LivingEntity best = null;
         double bestFar = Double.MAX_VALUE;
         for (LivingEntity living : level.getEntitiesOfClass(LivingEntity.class,
-                new AABB(eye, end).inflate(SLACK + 1.0), living -> living != this.owner && living.isAlive()
+                new AABB(eye, end).inflate(slack + 1.0), living -> living != this.owner && living.isAlive()
                         && PowerRing.canHit(this.owner, living))) {
-            AABB box = living.getBoundingBox().inflate(SLACK);
+            AABB box = living.getBoundingBox().inflate(slack);
             Vec3 middle = living.getBoundingBox().getCenter();
             boolean ahead = box.contains(eye) || box.clip(eye, end).isPresent();
             if (ahead) {
@@ -231,10 +267,10 @@ public final class LightFists implements Effect {
                     bestFar = far;
                     best = living;
                 }
-            } else if (FistMoves.wide(this.move)) {
+            } else if (sweeps && FistMoves.wide(this.move)) {
                 Vec3 to = middle.subtract(eye);
                 Vec3 flat = new Vec3(to.x, 0.0, to.z);
-                if (to.length() <= reach + SLACK && flat.lengthSqr() > 1.0E-6
+                if (to.length() <= reach + slack && flat.lengthSqr() > 1.0E-6
                         && flat.normalize().dot(this.ahead) >= WIDE_ARC) {
                     hit.add(living);
                 }
@@ -250,9 +286,11 @@ public final class LightFists implements Effect {
         if (this.move == FistMoves.FINISHER) {
             damage *= this.ability.value("finisherTimes");
         }
-        double lift = this.move == FistMoves.UPPERCUT ? 0.55 : this.move == FistMoves.FINISHER ? 0.4 : 0.15;
+        double lift = this.move == FistMoves.UPPERCUT ? this.ability.value("uppercutLift")
+                : this.move == FistMoves.FINISHER ? 0.4 : 0.15;
+        double push = FistMoves.push(this.move) * this.ability.value("pushTimes");
         for (LivingEntity living : hit) {
-            this.strike(level, living, damage, this.ahead.scale(FistMoves.push(this.move)).add(0.0, lift, 0.0));
+            this.strike(level, living, damage, this.ahead.scale(push).add(0.0, lift, 0.0));
         }
         Vec3 spot = hit.get(0).getBoundingBox().getCenter();
         ParticleFx.sphereOut(level, ParticleFx.dust(PowerRing.BRIGHT, 1.1F), spot, 8, 0.2);
@@ -265,10 +303,12 @@ public final class LightFists implements Effect {
     // `up`.
     private void blast(ServerLevel level, Vec3 middle, double out, double up, SoundEvent sound) {
         double radius = this.ability.value("heavyRadius");
-        double damage = this.ability.value("heavyDamage");
+        double damage = this.heavyDamage();
         double knock = this.ability.value("heavyKnockback");
+        up *= this.ability.value("heavyLift");
         for (LivingEntity living : level.getEntitiesOfClass(LivingEntity.class,
-                new AABB(middle, middle).inflate(radius, 2.5, radius), living -> living != this.owner
+                new AABB(middle, middle).inflate(radius, this.ability.value("heavyHeightBlocks"), radius),
+                living -> living != this.owner
                         && living.isAlive() && PowerRing.canHit(this.owner, living))) {
             Vec3 from = living.position().subtract(middle);
             Vec3 flat = new Vec3(from.x, 0.0, from.z);
@@ -288,7 +328,7 @@ public final class LightFists implements Effect {
     private void piston(ServerLevel level) {
         Vec3 from = this.owner.position().add(0.0, this.owner.getBbHeight() * 0.6, 0.0);
         Vec3 to = from.add(this.ahead.scale(FistMoves.PISTON_REACH));
-        double damage = this.ability.value("heavyDamage");
+        double damage = this.heavyDamage();
         double knock = this.ability.value("heavyKnockback");
         for (LivingEntity living : level.getEntitiesOfClass(LivingEntity.class, new AABB(from, to).inflate(1.0),
                 living -> living != this.owner && living.isAlive() && PowerRing.canHit(this.owner, living))) {
@@ -297,11 +337,16 @@ public final class LightFists implements Effect {
                 continue;
             }
             this.strike(level, living, damage, this.ahead.scale(FistMoves.push(FistMoves.PISTON) * knock)
-                    .add(0.0, 0.35, 0.0));
+                    .add(0.0, 0.35 * this.ability.value("heavyLift"), 0.0));
         }
         ParticleFx.cloud(level, ParticleFx.dust(PowerRing.BRIGHT, 1.4F), to, 16, 0.5, 0.15);
         this.sound(level, to, SoundEvents.PISTON_EXTEND, 1.0F, 0.6F);
         this.sound(level, to, SoundEvents.MACE_SMASH_AIR, 1.0F, 0.8F);
+    }
+
+    // The heavy damage times this heavy blow's own share.
+    private double heavyDamage() {
+        return this.ability.value("heavyDamage") * this.ability.value(TIMES[this.move - FistMoves.COMBO]);
     }
 
     // A hit as the owner's own (which knocks back by itself): its own push is set after it.

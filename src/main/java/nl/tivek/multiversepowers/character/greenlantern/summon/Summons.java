@@ -2,12 +2,15 @@ package nl.tivek.multiversepowers.character.greenlantern.summon;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import javax.annotation.Nullable;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
@@ -21,12 +24,14 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.entity.EntityMobGriefingEvent;
 import net.neoforged.neoforge.event.entity.living.LivingChangeTargetEvent;
+import net.neoforged.neoforge.event.entity.living.LivingConversionEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDropsEvent;
 import net.neoforged.neoforge.event.entity.living.LivingExperienceDropEvent;
@@ -45,23 +50,32 @@ import nl.tivek.multiversepowers.engine.ability.Cooldowns;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 import nl.tivek.multiversepowers.faction.Factions;
 
-// The construct wheel's summon: one to a few hard-light copies of real creatures, picked at random (the stronger, the
-// rarer), formed round Green Lantern out of his ring's light. Each is the real creature with its own moves, but fights
-// for him: it strikes back at what hurts it, turns on what hurts him or what he strikes, and goes after what is red to
-// him; it never hurts him or his own, wrecks nothing, drops nothing and breaks up when its time runs out. Who owns it
-// and until when is kept in the creature itself, so it lasts through a save.
+// The construct wheel's summon: one to a few hard-light creatures (`HardLight`), picked at random (the stronger, the
+// rarer), formed round Green Lantern out of his ring's light. Each has the creature's own moves, but fights for him: it
+// strikes back at what hurts it, turns on what hurts him or what he strikes, and goes after what is red to him; it never
+// hurts him or his own, wrecks nothing, drops nothing and breaks up when its time runs out or he sends it away. They
+// follow him, or stay round a place he marks (`order`). Who owns one and until when is kept in the creature itself, so
+// it lasts through a save.
 @EventBusSubscriber(modid = MultiversePowers.MODID)
 public final class Summons {
     private static final String OWNER = MultiversePowers.MODID + ":summon_owner";
     private static final String UNTIL = MultiversePowers.MODID + ":summon_until";
     private static final Cooldowns<String> WAIT = new Cooldowns<>(1);
     private static final String KEY = "summon";
-    // The creatures it can make, with the setting that weighs each.
-    private static final EntityType<?>[] KINDS = { EntityType.SKELETON, EntityType.ZOMBIFIED_PIGLIN,
-            EntityType.CREEPER, EntityType.BLAZE, EntityType.VINDICATOR, EntityType.ENDERMAN, EntityType.IRON_GOLEM };
+    // The setting that weighs each kind, in `HardLight.ALL`'s order.
     private static final String[] WEIGHTS = { "summonSkeleton", "summonPiglin", "summonCreeper", "summonBlaze",
             "summonVindicator", "summonEnderman", "summonGolem" };
     private static final int CHECK = 20;
+    // How far from where it was told to stay a summon may go, each way, and how far it chases a foe beyond that.
+    public static final double STAY = 4.0;
+    static final double CHASE = 3.0;
+    // How far a player may be from a summon they send away.
+    private static final double DISMISS_REACH = 32.0;
+    // Each player's summons told to stay: where, in which world. With none they follow him.
+    private static final Map<UUID, Anchor> ANCHORS = new HashMap<>();
+
+    record Anchor(ResourceKey<Level> level, Vec3 at) {
+    }
 
     private Summons() {
     }
@@ -70,7 +84,7 @@ public final class Summons {
         return GameCharacter.GREEN_LANTERN.byName("construct_wheel");
     }
 
-    private static double value(String key) {
+    static double value(String key) {
         return wheel().value(key);
     }
 
@@ -89,10 +103,12 @@ public final class Summons {
             return;
         }
         WAIT.start(player, KEY, 0, (int) Math.round(value("summonCooldown") * 20.0));
+        // A summoning starts out following him: a place marked for summons gone long ago holds no new ones.
+        follow(player);
         ServerLevel level = player.serverLevel();
         RandomSource random = player.getRandom();
-        int most = Math.max(1, (int) Math.round(value("summonMost")));
-        int count = 1 + random.nextInt(most);
+        int count = 1 + random.nextInt(Math.max(1, (int) Math.round(value("summonMost"))));
+        int most = Math.max(1, (int) Math.round(value("summonAtOnce")));
         long until = level.getGameTime() + Math.round(value("summonMinutes") * 1200.0);
         float yaw = player.getYRot() * Mth.DEG_TO_RAD;
         for (int i = 0; i < count; i++) {
@@ -119,12 +135,7 @@ public final class Summons {
                     0.04);
             ParticleFx.cloud(level, ParticleTypes.END_ROD, middle, 8, mob.getBbWidth() * 0.4, 0.05);
         }
-        List<Mob> his = new ArrayList<>();
-        for (Entity entity : level.getAllEntities()) {
-            if (entity instanceof Mob mob && mob.isAlive() && player.getUUID().equals(ownerId(mob))) {
-                his.add(mob);
-            }
-        }
+        List<Mob> his = his(player);
         his.sort(Comparator.comparingLong(mob -> mob.getPersistentData().getLong(UNTIL)));
         for (int k = 0; k < his.size() - most; k++) {
             breakUp(level, his.get(k));
@@ -146,13 +157,94 @@ public final class Summons {
             return null;
         }
         double roll = random.nextDouble() * total;
-        for (int k = 0; k < KINDS.length; k++) {
+        for (int k = 0; k < WEIGHTS.length; k++) {
             roll -= Math.max(0.0, value(WEIGHTS[k]));
             if (roll < 0.0) {
-                return KINDS[k];
+                return HardLight.ALL.get(k).get();
             }
         }
-        return KINDS[KINDS.length - 1];
+        return HardLight.ALL.get(WEIGHTS.length - 1).get();
+    }
+
+    // Every summon of `player` in his world.
+    private static List<Mob> his(ServerPlayer player) {
+        List<Mob> his = new ArrayList<>();
+        for (Entity entity : player.serverLevel().getAllEntities()) {
+            if (entity instanceof Mob mob && mob.isAlive() && player.getUUID().equals(ownerId(mob))) {
+                his.add(mob);
+            }
+        }
+        return his;
+    }
+
+    // V tapped after a summoning: his summons stay round where he stands, or follow him again.
+    public static void order(ServerPlayer player) {
+        if (Characters.of(player) != GameCharacter.GREEN_LANTERN || his(player).isEmpty()) {
+            return;
+        }
+        if (follow(player)) {
+            PowerRing.tell(player, "summon_follow");
+        } else {
+            Vec3 at = player.position();
+            ANCHORS.put(player.getUUID(), new Anchor(player.level().dimension(), at));
+            PowerRing.tell(player, "summon_stay");
+            PacketDistributor.sendToPlayer(player, new SummonMarkerPayload(true, at.x, at.y, at.z));
+        }
+        player.serverLevel().playSound(null, player.getX(), player.getY(), player.getZ(),
+                SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.PLAYERS, 1.0F, 1.2F);
+    }
+
+    // His summons follow him again; whether they stayed somewhere.
+    private static boolean follow(ServerPlayer player) {
+        if (ANCHORS.remove(player.getUUID()) == null) {
+            return false;
+        }
+        PacketDistributor.sendToPlayer(player, new SummonMarkerPayload(false, 0.0, 0.0, 0.0));
+        return true;
+    }
+
+    // Gone from the world, or into another: his summons no longer stay where he left them.
+    @SubscribeEvent
+    public static void onLogout(PlayerEvent.PlayerLoggedOutEvent event) {
+        ANCHORS.remove(event.getEntity().getUUID());
+    }
+
+    @SubscribeEvent
+    public static void onDimension(PlayerEvent.PlayerChangedDimensionEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player) {
+            follow(player);
+        }
+    }
+
+    // A summon is a construct: it never turns into something else (a skeleton freezing into a stray).
+    @SubscribeEvent
+    public static void onConvert(LivingConversionEvent.Pre event) {
+        if (HardLight.is(event.getEntity().getType())) {
+            event.setCanceled(true);
+        }
+    }
+
+    // V held on a summon of his: it breaks up.
+    public static void dismiss(ServerPlayer player, int entityId) {
+        Entity entity = player.serverLevel().getEntity(entityId);
+        if (entity != null && player.getUUID().equals(ownerId(entity)) && entity.isAlive()
+                && entity.distanceToSqr(player) <= DISMISS_REACH * DISMISS_REACH) {
+            breakUp(player.serverLevel(), entity);
+            entity.discard();
+        }
+    }
+
+    // Where `mob`'s owner told it to stay, while that is in its world; null while it follows him.
+    @Nullable
+    static Anchor anchor(Mob mob) {
+        UUID id = ownerId(mob);
+        Anchor anchor = id == null ? null : ANCHORS.get(id);
+        return anchor != null && anchor.level() == mob.level().dimension() ? anchor : null;
+    }
+
+    // Whether `at` lies further than `room` from the anchor's place, either way along the ground.
+    static boolean outside(Anchor anchor, Vec3 at, double room) {
+        return Math.abs(at.x - anchor.at().x) > room || Math.abs(at.z - anchor.at().z) > room;
     }
 
     // A free spot standing on something near `around`, a few blocks up or down.
@@ -304,11 +396,14 @@ public final class Summons {
     public static void onTrack(PlayerEvent.StartTracking event) {
         Entity target = event.getTarget();
         if (event.getEntity() instanceof ServerPlayer viewer && owned(target)) {
-            PacketDistributor.sendToPlayer(viewer, new SummonPayload(target.getId(), target.tickCount));
+            ServerPlayer owner = owner(target);
+            PacketDistributor.sendToPlayer(viewer, new SummonPayload(target.getId(), owner == null ? -1
+                    : owner.getId(), target.tickCount));
         }
     }
 
     public static void clear() {
         WAIT.clear();
+        ANCHORS.clear();
     }
 }
