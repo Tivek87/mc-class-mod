@@ -257,7 +257,7 @@ public final class RustboundMoves extends Goal {
     }
 
     // The pull ends with a jerk of its arms: now and then a weapon or shield of metal flies out of a hand it caught
-    // and lands at its feet, to be picked up again after 2 seconds.
+    // and drops a little way towards it, to be picked up again after 2 seconds.
     private void yank() {
         if (!(this.rustbound.level() instanceof ServerLevel level)) {
             return;
@@ -284,10 +284,14 @@ public final class RustboundMoves extends Goal {
             Vec3 flat = new Vec3(to.x, 0.0, to.z);
             double reach = flat.length();
             Vec3 way = reach < 1.0E-3 ? Vec3.ZERO : flat.scale(1.0 / reach);
-            flying.setDeltaMovement(way.scale(Math.min(1.0, 0.12 + reach * 0.08)).add(0.0, 0.3, 0.0));
+            flying.setDeltaMovement(way.scale(Math.min(0.45, 0.08 + reach * 0.04)).add(0.0, 0.3, 0.0));
             flying.setPickUpDelay(40);
+            // Only knocked loose, never lost: it cannot burn, blow up or despawn, and glows until picked up again.
+            flying.setUnlimitedLifetime();
+            flying.setInvulnerable(true);
+            flying.setGlowingTag(true);
             level.addFreshEntity(flying);
-            level.playSound(null, caught.blockPosition(), SoundEvents.ITEM_BREAK, caught.getSoundSource(), 0.8F, 0.6F);
+            level.playSound(null, caught.blockPosition(), SoundEvents.ANVIL_PLACE, caught.getSoundSource(), 0.5F, 1.7F);
             ParticleFx.send(level, ParticleTypes.ELECTRIC_SPARK, from.x, from.y, from.z, 10, 0.1, 0.1, 0.1, 0.2);
         }
         this.pulled.clear();

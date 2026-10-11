@@ -6,9 +6,9 @@ import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.level.Level;
 
-// A zombie of the mod's own that makes its moves on one timeline in every game: the server starts a move (start) and
-// every game that sees it learns which by an entity event and draws it by how long it has been going (moveAge). Out
-// in daylight with nothing on its head it catches fire, as a zombie does.
+// A monster of the mod's own that makes its moves on one timeline in every game: the server starts a move (start) and
+// every game that sees it learns which by an entity event and draws it by how long it has been going (moveAge). A
+// zombie out in daylight with nothing on its head catches fire (burnsInDaylight).
 public abstract class MovingMonster extends Monster {
     // The entity events that tell every game a move starts (kinds after FIRST_EVENT).
     private static final byte FIRST_EVENT = 100;
@@ -49,9 +49,14 @@ public abstract class MovingMonster extends Monster {
         super.handleEntityEvent(id);
     }
 
+    protected boolean burnsInDaylight() {
+        return true;
+    }
+
     @Override
     public void aiStep() {
-        if (this.isAlive() && this.isSunBurnTick() && this.getItemBySlot(EquipmentSlot.HEAD).isEmpty()) {
+        if (this.burnsInDaylight() && this.isAlive() && this.isSunBurnTick()
+                && this.getItemBySlot(EquipmentSlot.HEAD).isEmpty()) {
             this.igniteForSeconds(8.0F);
         }
         super.aiStep();

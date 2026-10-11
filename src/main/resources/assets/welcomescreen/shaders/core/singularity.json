@@ -1,0 +1,27 @@
+{
+    "vertex": "welcomescreen:singularity",
+    "fragment": "welcomescreen:singularity",
+    "samplers": [
+        { "name": "SceneSampler" },
+        { "name": "DepthSampler" }
+    ],
+    "uniforms": [
+        { "name": "Projection", "type": "matrix4x4", "count": 16, "values": [ 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0 ] },
+        { "name": "InverseProjection", "type": "matrix4x4", "count": 16, "values": [ 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0 ] },
+        { "name": "Center", "type": "float", "count": 3, "values": [ 0.0, 0.0, -8.0 ] },
+        { "name": "Horizon", "type": "float", "count": 1, "values": [ 1.0 ] },
+        { "name": "Bound", "type": "float", "count": 1, "values": [ 11.0 ] },
+        { "name": "Axis", "type": "float", "count": 3, "values": [ 0.0, 1.0, 0.0 ] },
+        { "name": "Inner", "type": "float", "count": 1, "values": [ 2.4 ] },
+        { "name": "Outer", "type": "float", "count": 1, "values": [ 7.0 ] },
+        { "name": "Strength", "type": "float", "count": 1, "values": [ 1.0 ] },
+        { "name": "Collapse", "type": "float", "count": 1, "values": [ 0.0 ] },
+        { "name": "Clock", "type": "float", "count": 1, "values": [ 0.0 ] },
+        { "name": "Seed", "type": "float", "count": 1, "values": [ 0.0 ] },
+        { "name": "Hot", "type": "float", "count": 3, "values": [ 0.9, 1.0, 0.9 ] },
+        { "name": "Cool", "type": "float", "count": 3, "values": [ 0.1, 0.8, 0.35 ] },
+        { "name": "Pull", "type": "float", "count": 1, "values": [ 0.0 ] },
+        { "name": "Wave", "type": "float", "count": 1, "values": [ 0.0 ] },
+        { "name": "WaveStrength", "type": "float", "count": 1, "values": [ 0.0 ] }
+    ]
+}

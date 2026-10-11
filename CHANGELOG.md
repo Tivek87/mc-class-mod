@@ -3,6 +3,29 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.8.7-alpha] - 2026-10-11
+
+### Added
+- **Stalker:** a tall, gaunt creature of the forest with long claws. Looked at, it slips behind a tree trunk or
+  folds down small in a bush, or blinks away; unseen it creeps closer from cover to cover and may take the shape of
+  an animal grazing near by. Close behind you it leaps and rends you, leaving you bleeding, then vanishes again.
+  Spawns in forests in the dark.
+- **Wizard:** a boss with a staff, only from his spawn egg, made for a player in full diamond. Three phases, shown
+  on a boss bar of his own, each waking stronger magic. First staff blows, quick sparks, seeking bolts, a fireball,
+  an icy blizzard, arcane chains and chain lightning; floating, falling stars, rune circles, a gravity lift and
+  spectral familiars; at last an arcane beam, a great meteor, a time warp, and sixteen images of him racing round
+  you, only one of them real (it casts a shadow, its crystal glows). He waits between great spells, and the decoy he
+  leaves when he blinks is a see-through ghost. Lots of XP, lapis, amethyst, books and an enchanted book.
+- **Arcane Familiar:** the Wizard's spectral helper, also from a spawn egg of its own.
+
+### Changed
+- **Giant Hands: Black hole** is a real black hole now: it bends the light of the world round it, a glowing disc
+  whirls round its shadow with jets from its poles, the ground breaks loose and spirals in and your view is drawn in
+  towards it; it grows unsteady before it collapses in a flash and a shockwave. It lasts longer.
+
+### Fixed
+- **Rustbound:** an item its pull tears from your hand drops near it, glowing, to pick up again, never lost.
+
 ## [0.8.6-alpha] - 2026-10-11
 
 ### Added

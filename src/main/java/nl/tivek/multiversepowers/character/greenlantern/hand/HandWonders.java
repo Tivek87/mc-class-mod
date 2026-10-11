@@ -63,10 +63,11 @@ abstract class HandWonders extends HandShots {
     // Black hole: up out of the ground palm up and cupped; a black hole grows over the palm, drawing everything round
     // it in and round, harder and harder, until the fist closes on it, it falls in on itself and bursts out.
     private static final double HOLE_FORM = 7.0;
-    private static final double HOLE_FORMED = 10.0;
-    private static final double HOLE_CRUSH = 26.5;
-    private static final double HOLE_GONE = 28.0;
-    private static final double HOLE_BLAST = 28.6;
+    private static final double HOLE_FORMED = 11.0;
+    private static final double HOLE_CRUSH = 52.0;
+    private static final double HOLE_GONE = 53.5;
+    private static final double HOLE_BLAST = 54.1;
+    private static final double HOLE_UNSTEADY = 8.0;
     public static final int HOLE_FORMS = ticks(HOLE_FORM);
     public static final int HOLE_CRUSHES = ticks(HOLE_CRUSH);
     public static final int HOLE_BLASTS = ticks(HOLE_BLAST);
@@ -137,9 +138,15 @@ abstract class HandWonders extends HandShots {
         return grown * (1.0 - crushed) * (1.0 + 0.04 * Math.sin(beat * 2.3));
     }
 
+    // How far the black hole has fallen in on itself, 0 to 1: unsteady a while before the fist closes, its disc
+    // whirling faster and brighter as it sinks in, gone as the fist shuts.
+    public static double holeCollapse(double t) {
+        return Ease.smoother((t / SLOW - HOLE_CRUSH + HOLE_UNSTEADY) / (HOLE_GONE - HOLE_CRUSH + HOLE_UNSTEADY));
+    }
+
     public static double holePull(double t) {
         double beat = t / SLOW;
-        return Ease.smooth((beat - HOLE_FORM) / 9.0) * (1.0 - Ease.smoother((beat - HOLE_CRUSH) / 1.0));
+        return Ease.smooth((beat - HOLE_FORM) / 16.0) * (1.0 - Ease.smoother((beat - HOLE_CRUSH) / 1.0));
     }
 
     // The blast as the crushed hole bursts out of the fist, 0 to 1 as it runs out.

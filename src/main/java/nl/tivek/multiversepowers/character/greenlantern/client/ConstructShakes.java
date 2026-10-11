@@ -34,6 +34,7 @@ abstract class ConstructShakes extends TrackedConstructs {
     private static final double RIFT_SHAKE_TICKS = 12.0;
     private static final double RIFT_SHAKE_RANGE = 26.0;
     private static final double RIFT_SHAKE = 0.85;
+    private static final double HOLE_RUMBLE = 0.14;
 
     ConstructShakes() {
     }
@@ -160,7 +161,9 @@ abstract class ConstructShakes extends TrackedConstructs {
             return jolt(clock - HandPose.GRAVITY_SLAMS - 3.0, RIFT_SHAKE_TICKS, RIFT_SHAKE * 0.7, near);
         } else if (move == HandPose.BLACKHOLE) {
             near = 1.0 - from.distanceTo(hand.center()) / RIFT_SHAKE_RANGE;
-            return jolt(clock - HandPose.HOLE_BLASTS, RIFT_SHAKE_TICKS, RIFT_SHAKE, near);
+            float rumble = (float) (HOLE_RUMBLE * HandPose.holePull(clock) * Math.max(0.0, near));
+            return Math.max(rumble, jolt(clock - HandPose.HOLE_BLASTS, RIFT_SHAKE_TICKS * 1.5, RIFT_SHAKE * 1.2,
+                    near));
         } else if (move == HandPose.GUNSLINGER) {
             near = 1.0 - from.distanceTo(hand.center()) / FINGER_SHAKE_RANGE;
             float most = 0.0F;

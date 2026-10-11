@@ -6,8 +6,6 @@ import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.LanternPainter;
 import nl.tivek.multiversepowers.character.greenlantern.construct.ConstructPayload;
 import nl.tivek.multiversepowers.character.greenlantern.hand.HandPose;
-import nl.tivek.multiversepowers.engine.client.fx.Cosmos;
-import nl.tivek.multiversepowers.engine.client.fx.Lens;
 import nl.tivek.multiversepowers.engine.client.render.ConstructPainter;
 import nl.tivek.multiversepowers.engine.client.render.mesh.Mesh;
 import nl.tivek.multiversepowers.engine.math.Colors;
@@ -19,13 +17,11 @@ import static nl.tivek.multiversepowers.character.greenlantern.client.render.han
 
 // The baseball bat and the hourglass, both solid hard light, and the light of all four: the bat's swing and its flip
 // into the air, the sand running out and the clock of stopped time on the ground, the field that falls up, and the
-// black hole with its ring of light, the stars seen through it and the world bent round it.
+// black hole (HandHoleLight).
 public final class HandWonderLight {
     private static final int WHITE = 0xF2FFF4;
     private static final int LIGHT = 0x5CFF7A;
     private static final int PALE = 0xB8FFC8;
-    private static final int VOID = 0x000000;
-    private static final int STARS = 0x1C3A24;
     private static final Vec3 HOLD = HandPose.BAT_HOLD;
     private static final Vec3 FOOT = HandPose.GLASS_FOOT;
     private static final double MIDDLE = HandPose.GLASS_TALL * 0.5;
@@ -40,7 +36,6 @@ public final class HandWonderLight {
     private static final double TIME_RADIUS = 9.0;
     private static final double GRAVITY_RADIUS = 5.5;
     private static final int RISING = 28;
-    private static final int FALLING_IN = 16;
     private static final int ROUND = 20;
 
     private HandWonderLight() {
@@ -85,7 +80,7 @@ public final class HandWonderLight {
             case HandPose.BAT -> batLight(painter, hand, pose, place, base, facing, clock, reach, strength);
             case HandPose.HOURGLASS -> timeLight(painter, place, base, clock, strength);
             case HandPose.GRAVITY -> gravityLight(painter, hand.id(), base, facing, clock, place.scale(), strength);
-            case HandPose.BLACKHOLE -> holeLight(painter, hand.id(), place, clock, strength);
+            case HandPose.BLACKHOLE -> HandHoleLight.draw(painter, hand.id(), place, clock, strength);
             default -> {
             }
         }
@@ -270,7 +265,7 @@ public final class HandWonderLight {
         painter.lightLine(ground, ground.add(out.scale(length)), width, WHITE, Colors.alpha(0.9 * fade));
     }
 
-    private static void ring(LanternPainter painter, Vec3 center, Vec3[] round, double radius, double width, int rgb,
+    static void ring(LanternPainter painter, Vec3 center, Vec3[] round, double radius, double width, int rgb,
             double strength) {
         if (strength <= 0.01) {
             return;
@@ -318,67 +313,6 @@ public final class HandWonderLight {
                 painter.glowDisc(field.add(0.0, 0.2, 0.0), radius * (1.0 - slammed * 3.0), PALE,
                         0.6 * strength, 0.25, id);
             }
-        }
-    }
-
-    // A window on black, starless space that always faces you, a thin bright ring at its edge, a tilted disc of light
-    // racing round it and streaks falling in; the world round it bends. Crushed, it bursts out in a ring of light.
-    private static void holeLight(LanternPainter painter, int id, HandPose.Place place, double clock,
-            double strength) {
-        Vec3 center = place.at(HandPose.HOLE_AT);
-        double scale = place.scale();
-        double size = HandPose.holeSize(clock);
-        double burst = HandPose.holeBurst(clock);
-        if (burst > 0.0 && burst < 1.0) {
-            double fade = (1.0 - burst) * strength;
-            painter.flare(center, 9.0 * (1.0 - burst) * scale, fade);
-            painter.shell(center, 9.0 * Ease.smooth(burst) * scale, PALE, 0.8 * fade);
-            if (Lens.available()) {
-                Lens.bubble(center, 9.0 * Ease.smooth(burst) * scale, 0.6 * fade, PALE, 0.5);
-            }
-        }
-        if (size <= 0.01) {
-            return;
-        }
-        double radius = HandPose.HOLE_SIZE * size * scale;
-        Vec3 view = painter.camera().subtract(center);
-        Vec3 normal = view.lengthSqr() < 1.0E-6 ? new Vec3(0.0, 1.0, 0.0) : view.normalize();
-        Vec3[] face = Vectors.across(normal);
-        List<Vec3> outline = new ArrayList<>();
-        for (int i = 0; i < 28; i++) {
-            double angle = Math.PI * 2.0 * i / 28;
-            outline.add(center.add(face[0].scale(Math.cos(angle) * radius)).add(face[1].scale(Math.sin(angle)
-                    * radius)));
-        }
-        Cosmos.window(center, normal, face[0], outline, 40.0, VOID, STARS, 0.4, id);
-        if (Lens.available()) {
-            Lens.bubble(center, radius * 1.9, 0.4 * size * strength, VOID, 0.0);
-        }
-        ring(painter, center.add(normal.scale(0.05)), face, radius * 1.04, 0.07 * scale, WHITE,
-                0.95 * strength);
-        Vec3 tilt = Vectors.spin(new Vec3(0.0, 1.0, 0.0), place.right().normalize(), 0.35);
-        Vec3[] disc = Vectors.across(tilt);
-        double pull = HandPose.holePull(clock);
-        for (int band = 0; band < 3; band++) {
-            double r = radius * (1.5 + 0.55 * band);
-            double fade = (0.8 - 0.2 * band) * strength;
-            ring(painter, center, disc, r, (0.12 - 0.03 * band) * scale, band == 0 ? WHITE : LIGHT, fade);
-            for (int k = 0; k < 6; k++) {
-                double angle = clock * (0.5 / (1.0 + band)) + k * Math.PI / 3.0 + band;
-                Vec3 a = center.add(disc[0].scale(Math.cos(angle) * r)).add(disc[1].scale(Math.sin(angle) * r));
-                Vec3 b = center.add(disc[0].scale(Math.cos(angle + 0.6) * r)).add(disc[1].scale(Math.sin(angle + 0.6)
-                        * r));
-                painter.lightLine(a, b, 0.16 * scale, WHITE, Colors.alpha(0.8 * fade));
-            }
-        }
-        painter.glowDisc(center, radius * 3.2, LIGHT, 0.35 * size * strength, 0.2, id);
-        for (int k = 0; k < FALLING_IN; k++) {
-            double run = (clock * (0.04 + 0.05 * pull) + Noise.of(id, k, 5)) % 1.0;
-            Vec3 from = center.add(Noise.direction(k * 7 + (int) (clock * 0.05 + Noise.of(id, k, 6) * 9.0), 31)
-                    .scale((radius + 7.0 * scale) * (1.0 - run)));
-            Vec3 swirl = Vectors.spin(from.subtract(center), tilt, 0.8 * run).add(center);
-            painter.lightLine(swirl, swirl.lerp(center, 0.25), 0.07 * scale, PALE,
-                    Colors.alpha(0.8 * pull * Math.sin(Math.PI * run) * strength));
         }
     }
 }

@@ -2,10 +2,14 @@ package nl.tivek.multiversepowers.character.greenlantern.ability.hands;
 
 import java.util.ArrayList;
 import java.util.List;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.BlockParticleOption;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.character.greenlantern.PowerRing;
@@ -41,11 +45,12 @@ abstract class GiantHandWonders extends GiantHandShots {
     private static final double PULL_RADIUS = 11.0;
     private static final double CORE = 2.5;
     private static final double CORE_DAMAGE = 0.25;
-    private static final int CORE_EVERY = 10;
+    private static final int CORE_EVERY = 24;
     private static final double BLAST_RADIUS = 9.0;
     private static final double BLAST_DAMAGE = 1.0;
     private static final double BLAST_OUT = 2.6;
     private static final double BLAST_UP = 0.9;
+    private static final int DUST = 5;
 
     private record Floating(LivingEntity living, double high) {
     }
@@ -382,6 +387,12 @@ abstract class GiantHandWonders extends GiantHandShots {
             if (this.t % 3 == 0) {
                 ParticleFx.send(level, ParticleTypes.PORTAL, hole.x, hole.y, hole.z, 12, 3.0, 3.0, 3.0, 1.0);
             }
+            if (this.t % 2 == 0) {
+                this.groundDust(level, hole, pull);
+            }
+            if (this.t % 4 == 0) {
+                ParticleFx.implosion(level, ParticleTypes.REVERSE_PORTAL, hole, 6.0 * SCALE, 10, 0.6 * pull);
+            }
             if (this.t % 20 == 0) {
                 this.storm.sound(level, hole, SoundEvents.PORTAL_AMBIENT, 2.0F, 0.5F);
             }
@@ -392,6 +403,27 @@ abstract class GiantHandWonders extends GiantHandShots {
         }
         if (this.t == HandPose.HOLE_BLASTS) {
             this.burst(level, hole);
+        }
+    }
+
+    // Dust of the ground round the hand torn up and flying in.
+    private void groundDust(ServerLevel level, Vec3 hole, double pull) {
+        for (int k = 0; k < DUST; k++) {
+            double angle = level.random.nextDouble() * Math.PI * 2.0;
+            double out = (4.0 + level.random.nextDouble() * 7.0) * SCALE;
+            BlockPos column = BlockPos.containing(this.base.x + Math.cos(angle) * out, this.base.y,
+                    this.base.z + Math.sin(angle) * out);
+            if (!level.isLoaded(column)) {
+                continue;
+            }
+            int top = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, column.getX(), column.getZ());
+            BlockState ground = level.getBlockState(new BlockPos(column.getX(), top - 1, column.getZ()));
+            if (ground.isAir() || Math.abs(top - this.base.y) > 12.0) {
+                continue;
+            }
+            Vec3 from = new Vec3(column.getX() + 0.5, top + 0.1, column.getZ() + 0.5);
+            ParticleFx.fly(level, new BlockParticleOption(ParticleTypes.BLOCK, ground), from,
+                    hole.subtract(from).normalize(), 0.5 + 0.6 * pull);
         }
     }
 

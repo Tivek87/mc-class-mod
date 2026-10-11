@@ -1,6 +1,7 @@
 {
   "replace": false,
   "values": [
-    "welcomescreen:bleed"
+    "welcomescreen:bleed",
+    "welcomescreen:frost"
   ]
 }

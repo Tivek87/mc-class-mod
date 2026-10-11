@@ -26,6 +26,8 @@ import nl.tivek.multiversepowers.creature.lurker.Lurker;
 import nl.tivek.multiversepowers.creature.rustbound.Rustbound;
 import nl.tivek.multiversepowers.creature.screamer.Feral;
 import nl.tivek.multiversepowers.creature.screamer.Screamer;
+import nl.tivek.multiversepowers.creature.stalker.Stalker;
+import nl.tivek.multiversepowers.creature.wizard.WizardEntities;
 import nl.tivek.multiversepowers.schematic.SchematicWandItem;
 import nl.tivek.multiversepowers.stage.StageBlocks;
 
@@ -39,7 +41,7 @@ public final class ModItems {
             () -> new DeferredSpawnEggItem(MechMinion.TYPE, 0x0E5A2A, 0x6CFF8E, new Item.Properties()));
     public static final DeferredItem<DeferredSpawnEggItem> BRUTE_EGG = ITEMS.register("zombie_brute_spawn_egg",
             () -> new DeferredSpawnEggItem(ZombieBrute.TYPE, 0x3E5A34, 0x8A2E24, new Item.Properties()));
-    public static final List<DeferredItem<DeferredSpawnEggItem>> ZOMBIE_EGGS = List.of(
+    public static final List<DeferredItem<DeferredSpawnEggItem>> MONSTER_EGGS = List.of(
             ITEMS.register("bloater_spawn_egg",
                     () -> new DeferredSpawnEggItem(Bloater.TYPE, 0x5E7A2E, 0xB6E14A, new Item.Properties())),
             ITEMS.register("lurker_spawn_egg",
@@ -49,7 +51,13 @@ public final class ModItems {
             ITEMS.register("feral_spawn_egg",
                     () -> new DeferredSpawnEggItem(Feral.TYPE, 0x4A5A3C, 0xC9C29F, new Item.Properties())),
             ITEMS.register("rustbound_spawn_egg",
-                    () -> new DeferredSpawnEggItem(Rustbound.TYPE, 0x7A3E1E, 0x7FC8FF, new Item.Properties())));
+                    () -> new DeferredSpawnEggItem(Rustbound.TYPE, 0x7A3E1E, 0x7FC8FF, new Item.Properties())),
+            ITEMS.register("stalker_spawn_egg",
+                    () -> new DeferredSpawnEggItem(Stalker.TYPE, 0x2B2622, 0xD8F2E4, new Item.Properties())),
+            ITEMS.register("wizard_spawn_egg",
+                    () -> new DeferredSpawnEggItem(WizardEntities.WIZARD, 0x2C2868, 0xD6AC42, new Item.Properties())),
+            ITEMS.register("arcane_familiar_spawn_egg",
+                    () -> new DeferredSpawnEggItem(WizardEntities.FAMILIAR, 0x3A1E66, 0xC9A2FF, new Item.Properties())));
 
     // The hard-light creatures' eggs, a dark green shell spotted in each creature's own colour.
     private static final int HARD_LIGHT = 0x0E5A2A;
@@ -74,7 +82,7 @@ public final class ModItems {
                     .displayItems((parameters, output) -> {
                         output.accept(HELPER_EGG.get());
                         output.accept(BRUTE_EGG.get());
-                        ZOMBIE_EGGS.forEach(egg -> output.accept(egg.get()));
+                        MONSTER_EGGS.forEach(egg -> output.accept(egg.get()));
                         HARD_LIGHT_EGGS.forEach(egg -> output.accept(egg.get()));
                         LAMPS.forEach(lamp -> output.accept(lamp.get()));
                         output.accept(SCHEMATIC_WAND.get());
@@ -100,7 +108,7 @@ public final class ModItems {
         if (event.getTabKey() == CreativeModeTabs.SPAWN_EGGS) {
             event.accept(HELPER_EGG.get());
             event.accept(BRUTE_EGG.get());
-            ZOMBIE_EGGS.forEach(egg -> event.accept(egg.get()));
+            MONSTER_EGGS.forEach(egg -> event.accept(egg.get()));
             HARD_LIGHT_EGGS.forEach(egg -> event.accept(egg.get()));
         }
         if (event.getTabKey() == CreativeModeTabs.FUNCTIONAL_BLOCKS) {

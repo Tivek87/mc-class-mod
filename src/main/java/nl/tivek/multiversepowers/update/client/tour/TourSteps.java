@@ -19,43 +19,21 @@ import nl.tivek.multiversepowers.update.client.tour.TourStep.Place;
 // while a line is in neither, or a tour text is too long. Only steps from `FROM` up to the version installed are ever
 // shown, so a release's steps replace the last one's. A player's first tour starts with `INTRO`.
 final class TourSteps {
-    static final String VERSION = "0.8.6-alpha";
+    static final String VERSION = "0.8.7-alpha";
     // The oldest version whose changes this tour shows: normally its own.
     static final String FROM = VERSION;
 
-    // The ability overlay's layout in the settings, then the Schematic Wand's saving, warnings and blueprint help, the
-    // Rustbound and the Bloater's weak back in the middle.
+    // The two new creatures, then the Giant Hands' black hole.
     static final List<TourStep> ALL = List.of(
-            step(VERSION, "panel_layout", Kind.NEW, Place.SETTINGS).covers(
-                    "Ability overlay: change layout"),
-            step(VERSION, "save_area", Kind.NEW, Place.GAME).covers(
-                    "Schematic Wand: save an area"),
-            step(VERSION, "missing_mods", Kind.NEW, Place.GAME).covers(
-                    "Schematic Wand: missing mods"),
-            step(VERSION, "red_marks", Kind.NEW, Place.GAME).covers(
-                    "Schematic Wand: red marks"),
-            step(VERSION, "blueprint_layers", Kind.NEW, Place.GAME).covers(
-                    "Blueprints: layer by layer"),
-            step(VERSION, "blueprint_guide", Kind.NEW, Place.GAME).covers(
-                    "Blueprints: guide"),
-            step(VERSION, "materials_tab", Kind.NEW, Place.GAME).covers(
-                    "Blueprints: a Materials tab",
-                    "Blueprints: materials"),
-            step(VERSION, "rustbound", Kind.NEW, Place.GAME).covers(
-                    "Rustbound"),
-            step(VERSION, "bloater_back", Kind.CHANGED, Place.GAME).covers(
-                    "Bloater: hit it from behind"));
+            step(VERSION, "stalker", Kind.NEW, Place.GAME).covers(
+                    "Stalker"),
+            step(VERSION, "wizard", Kind.NEW, Place.GAME).covers(
+                    "Wizard", "Arcane Familiar"),
+            step(VERSION, "black_hole", Kind.CHANGED, Place.GAME).covers(
+                    "Giant Hands: Black hole"));
 
     // Changes too small for a step of their own, each by how its changelog line starts, as in `covers`.
-    static final List<String> SMALL = List.of(
-            "Schematic Wand: rename and copy",
-            "Blueprints: hide the box",
-            "Blueprints: rename",
-            "Schematic Wand: layers",
-            "Schematic Wand: at last spot",
-            "Schematic Wand: build card",
-            "Settings: largest saved area",
-            "Schematic Wand: grid");
+    static final List<String> SMALL = List.of();
 
     // Shown first on a player's first tour, wherever it starts: what the tour is and how to use it.
     static final TourStep INTRO = step(VERSION, "tour_intro", Kind.HOW, Place.ANY);
