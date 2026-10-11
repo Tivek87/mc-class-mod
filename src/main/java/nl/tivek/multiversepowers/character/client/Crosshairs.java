@@ -177,14 +177,13 @@ public final class Crosshairs {
 
     private static Kind kindOf(String id) {
         return switch (id) {
-            case "shockwave", "ground_slam", "ground_strike", "thunderclap", "air_shockwave", "giant_hands",
-                    "air_strike", "rampage", "hammer_uppercut", "lightning_bomb" -> Kind.SLAM;
+            case "shockwave", "thunderclap", "air_shockwave", "giant_hands", "air_strike", "hammer_uppercut",
+                    "lightning_bomb" -> Kind.SLAM;
             case "dash", "air_blink", "grab_dash", "lightning_flight", "emerald_express" -> Kind.DASH;
             case "flight", "super_jump", "hammer_leap", "storm" -> Kind.LIFT;
-            case "grab", "light_bubble", "multi_tentacle", "grab_dash_dive", "hammer_call", "hammer_follow",
-                    "beam_lock" -> Kind.GRAB;
-            case "block", "stance", "charged", "recharge", "mjolnir" -> Kind.GUARD;
-            case "construct_wheel", "light_fists", "combo", "storm_throw", "hammer_throw", "portal", "mech",
+            case "grab", "light_bubble", "grab_dash_dive", "hammer_call", "hammer_follow", "beam_lock" -> Kind.GRAB;
+            case "charged", "recharge", "mjolnir" -> Kind.GUARD;
+            case "construct_wheel", "light_fists", "combo", "storm_throw", "hammer_throw", "mech",
                     "ring_scan" -> Kind.SPIN;
             default -> Kind.BURST;
         };

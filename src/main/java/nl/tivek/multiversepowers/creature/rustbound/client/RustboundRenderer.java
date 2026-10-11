@@ -20,6 +20,7 @@ import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.creature.rustbound.Rustbound;
 import nl.tivek.multiversepowers.creature.rustbound.RustboundMoves;
+import nl.tivek.multiversepowers.faction.mob.client.MobPreview;
 
 // The Rustbound drawn from its own model, its eyes glowing a cold blue and its magnet core glowing over its chest
 // (brighter as it pulls), and the scrap circling round it: slowly as it walks, fast and close as it pulls, gathered to
@@ -51,6 +52,10 @@ public final class RustboundRenderer extends MobRenderer<Rustbound, RustboundMod
     public static void onRegisterRenderers(EntityRenderersEvent.RegisterRenderers event) {
         event.registerEntityRenderer(Rustbound.TYPE.get(), RustboundRenderer::new);
         event.registerEntityRenderer(Rustbound.SHARD.get(), ShardRenderer::new);
+        MobPreview.move(Rustbound.TYPE.get(), RustboundMoves.SLAM_END + 8, r -> r.play(RustboundMoves.SLAM),
+                r -> r.play(0));
+        MobPreview.move(Rustbound.TYPE.get(), RustboundMoves.PULL_END + 8, r -> r.play(RustboundMoves.PULL),
+                r -> r.play(0));
     }
 
     public static void onRegisterLayers(EntityRenderersEvent.RegisterLayerDefinitions event) {

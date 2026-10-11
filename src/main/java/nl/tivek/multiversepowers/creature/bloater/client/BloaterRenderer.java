@@ -17,6 +17,7 @@ import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.creature.bloater.Bloater;
 import nl.tivek.multiversepowers.creature.bloater.BloaterMoves;
+import nl.tivek.multiversepowers.faction.mob.client.MobPreview;
 
 // The Bloater drawn from its own model, its little eyes glowing, its boils glowing acid green over its skin: faintly as
 // they pulse, brightly as it is hurt or swells to burst, while its whole body trembles.
@@ -45,6 +46,10 @@ public final class BloaterRenderer extends MobRenderer<Bloater, BloaterModel> {
     public static void onRegisterRenderers(EntityRenderersEvent.RegisterRenderers event) {
         event.registerEntityRenderer(Bloater.TYPE.get(), BloaterRenderer::new);
         event.registerEntityRenderer(Bloater.SPIT.get(), SpitRenderer::new);
+        MobPreview.move(Bloater.TYPE.get(), BloaterMoves.SHRIEK_END + 10, b -> b.play(BloaterMoves.SHRIEK),
+                b -> b.play(0));
+        MobPreview.move(Bloater.TYPE.get(), BloaterMoves.SPIT_END + 8, b -> b.play(BloaterMoves.SPIT),
+                b -> b.play(0));
     }
 
     public static void onRegisterLayers(EntityRenderersEvent.RegisterLayerDefinitions event) {

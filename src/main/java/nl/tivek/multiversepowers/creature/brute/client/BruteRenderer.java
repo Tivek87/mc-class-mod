@@ -9,7 +9,9 @@ import net.minecraft.client.renderer.entity.layers.EyesLayer;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 import nl.tivek.multiversepowers.MultiversePowers;
+import nl.tivek.multiversepowers.creature.brute.BruteMoves;
 import nl.tivek.multiversepowers.creature.brute.ZombieBrute;
+import nl.tivek.multiversepowers.faction.mob.client.MobPreview;
 
 // The brute drawn from its own model, a fifth bigger than its pixels, its eyes glowing in the dark.
 public final class BruteRenderer extends MobRenderer<ZombieBrute, BruteModel> {
@@ -33,6 +35,10 @@ public final class BruteRenderer extends MobRenderer<ZombieBrute, BruteModel> {
 
     public static void onRegisterRenderers(EntityRenderersEvent.RegisterRenderers event) {
         event.registerEntityRenderer(ZombieBrute.TYPE.get(), BruteRenderer::new);
+        MobPreview.move(ZombieBrute.TYPE.get(), BruteMoves.ROAR_END + 10, b -> b.play(BruteMoves.ROAR),
+                b -> b.play(0));
+        MobPreview.move(ZombieBrute.TYPE.get(), BruteMoves.SMASH_END + 8, b -> b.play(BruteMoves.SMASH),
+                b -> b.play(0));
     }
 
     public static void onRegisterLayers(EntityRenderersEvent.RegisterLayerDefinitions event) {

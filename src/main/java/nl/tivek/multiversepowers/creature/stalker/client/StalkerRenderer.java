@@ -14,6 +14,7 @@ import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.creature.client.Trunk;
 import nl.tivek.multiversepowers.creature.stalker.Stalker;
 import nl.tivek.multiversepowers.creature.stalker.StalkerMoves;
+import nl.tivek.multiversepowers.faction.mob.client.MobPreview;
 
 // The Stalker drawn from its own model, its eyes a cold pale glow; wearing an animal's shape it is drawn as that animal
 // (Stalker.shape). Folding into a bush it shrinks down small (and grows again rising out of it), blinking it is
@@ -42,6 +43,11 @@ public final class StalkerRenderer extends MobRenderer<Stalker, StalkerModel> {
 
     public static void onRegisterRenderers(EntityRenderersEvent.RegisterRenderers event) {
         event.registerEntityRenderer(Stalker.TYPE.get(), StalkerRenderer::new);
+        MobPreview.move(Stalker.TYPE.get(), StalkerMoves.SWIPE_END + 8, s -> s.play(StalkerMoves.SWIPE),
+                s -> s.play(0));
+        // Folds small as in a bush, waits, and stands up again.
+        MobPreview.move(Stalker.TYPE.get(), StalkerMoves.FOLD_END + 36, s -> s.play(StalkerMoves.FOLD),
+                s -> s.play(StalkerMoves.RISE));
     }
 
     public static void onRegisterLayers(EntityRenderersEvent.RegisterLayerDefinitions event) {

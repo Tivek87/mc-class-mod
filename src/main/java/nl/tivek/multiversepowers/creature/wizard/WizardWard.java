@@ -18,7 +18,7 @@ import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 // brings a new one.
 public final class WizardWard {
     public static final int CRYSTALS = 3;
-    private static final float[] STRENGTH = { 0.0F, 120.0F, 150.0F, 180.0F, 210.0F, 240.0F };
+    private static final float[] STRENGTH = { 0.0F, 42.0F, 52.5F, 63.0F, 73.5F, 84.0F };
     // The share of a blow that reaches the ward with every crystal whole (with none it takes the whole blow).
     private static final float SOFT = 0.3F;
     // The share of the whole ward a crystal takes with it when it breaks.

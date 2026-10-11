@@ -257,6 +257,11 @@ abstract class MobRulesProfile extends MobRulesState {
         return each;
     }
 
+    // Where the three choices start when open, right-aligned to `right`.
+    int pillsLeft(int right) {
+        return right - this.pillWidth() * ORDER.length - 2 * (ORDER.length - 1);
+    }
+
     // How the picked creature stands to one target, right-aligned to `right`: only that while the mouse is elsewhere;
     // on the row Friendly, Neutral and Hostile to pick from, the lit one how it stands, a line under the game's own.
     Tip pills(GuiGraphics graphics, Row target, int right, int y, int mouseX, int mouseY, boolean open) {
@@ -264,7 +269,7 @@ abstract class MobRulesProfile extends MobRulesState {
         Standing now = this.shown(actor, target);
         Standing own = ClientMobTable.of(actor.index(), target.index());
         int each = this.pillWidth();
-        int x = right - each * ORDER.length - 2 * (ORDER.length - 1);
+        int x = this.pillsLeft(right);
         int left = x;
         Component tip = null;
         boolean editable = this.editable();

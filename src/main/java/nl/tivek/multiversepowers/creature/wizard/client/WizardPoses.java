@@ -7,6 +7,7 @@ import nl.tivek.multiversepowers.creature.MovingMonster;
 import nl.tivek.multiversepowers.creature.client.PoseSprings;
 import nl.tivek.multiversepowers.creature.client.Trunk;
 import nl.tivek.multiversepowers.creature.wizard.WizardMove;
+import nl.tivek.multiversepowers.faction.mob.client.MobPreview;
 
 // How the Wizard holds himself this frame (WizardModel, StaffLayer), on his channels (WizardKeys): upright and a
 // little stooped, breathing slow, his staff upright before him in his right hand; walking he plants the staff with
@@ -58,6 +59,9 @@ final class WizardPoses {
             this.c[LIFT] = 0.8F * Mth.sin(age * 0.09F + caster.getId());
             this.c[FLARE] = 0.15F;
         }
+        if (!floating && MobPreview.drawing(caster)) {
+            this.planted();
+        }
         int move = caster.move();
         double t = caster.moveAge(age - caster.tickCount);
         this.rise = Mth.clamp((float) (caster.getY() - caster.yo), -0.5F, 0.5F);
@@ -88,6 +92,19 @@ final class WizardPoses {
         this.c[R_KNEE] = Math.max(0.0F, this.c[R_KNEE]);
         this.c[L_KNEE] = Math.max(0.0F, this.c[L_KNEE]);
         this.trail(caster, age, amount, floating);
+    }
+
+    // Standing for his picture (the Mobs page): the staff planted upright at his side, its foot on the ground, his
+    // hand resting on it.
+    private void planted() {
+        // The arm straight, as the staff hangs from the arm and not the bent hand (StaffLayer), and out so far that
+        // the staff's foot, a block under the grip, meets the ground.
+        // Turned out about the upright rather than lifted out sideways, which would tip the staff.
+        this.c[R_ARM] = -0.84F;
+        this.c[R_OUT] = 0.0F;
+        this.c[R_IN] = -0.35F;
+        this.c[R_ELBOW] = 0.0F;
+        this.c[STAFF] = -Mth.HALF_PI - this.c[R_ARM];
     }
 
     // A measured walk: short steps under the robe, a gentle bob, the staff swung forward and planted every other step;

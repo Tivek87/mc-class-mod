@@ -7,9 +7,6 @@ import net.minecraft.resources.ResourceLocation;
 import nl.tivek.multiversepowers.MultiversePowers;
 
 public record AbilityActionPayload(int action, boolean on, int data) implements CustomPacketPayload {
-    public static final int CLIMB = 100;
-    public static final int PLACE = 101;
-
     public static final CustomPacketPayload.Type<AbilityActionPayload> TYPE = new CustomPacketPayload.Type<>(
             ResourceLocation.fromNamespaceAndPath(MultiversePowers.MODID, "ability_action"));
 

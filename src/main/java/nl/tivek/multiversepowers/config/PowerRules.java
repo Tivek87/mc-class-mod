@@ -19,7 +19,7 @@ public final class PowerRules {
     public static final ModConfigSpec.IntValue OPERATORS;
     public static final ModConfigSpec.ConfigValue<List<? extends String>> OWNERS;
     // The characters' ids (GameCharacter's own, which this file cannot load before its settings exist).
-    public static final List<String> CHARACTER_IDS = List.of("green_lantern", "doc_ock", "thor");
+    public static final List<String> CHARACTER_IDS = List.of("green_lantern", "thor");
     private static final Map<String, ModConfigSpec.IntValue> CHARACTERS = new LinkedHashMap<>();
 
     static {

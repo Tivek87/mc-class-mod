@@ -183,7 +183,6 @@ soft tone warns you.
 
 ## Characters
 
-The tentacles of Doctor Octopus are no longer a spell: he is a **character** you turn into from the outer
-ring of the same wheel. The Thunder Clap is no longer a spell either: it is **Thor**'s own power, held on the attack
+The characters are turned into from the outer ring of the same wheel. The Thunder Clap is no longer a spell either: it is **Thor**'s own power, held on the attack
 button. Everything about him, about Green Lantern, and about the ability keys is in
 **[Characters and their powers](POWERS.md)**.

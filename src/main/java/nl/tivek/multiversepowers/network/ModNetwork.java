@@ -15,11 +15,6 @@ import nl.tivek.multiversepowers.character.CharacterStatePayload;
 import nl.tivek.multiversepowers.character.Characters;
 import nl.tivek.multiversepowers.character.GameCharacter;
 import nl.tivek.multiversepowers.character.TransformPayload;
-import nl.tivek.multiversepowers.character.docock.ArmPayload;
-import nl.tivek.multiversepowers.character.docock.GrabStatePayload;
-import nl.tivek.multiversepowers.character.docock.OctopusArms;
-import nl.tivek.multiversepowers.character.docock.ThrowGrabPayload;
-import nl.tivek.multiversepowers.character.docock.portal.PortalPayload;
 import nl.tivek.multiversepowers.character.greenlantern.RingPayload;
 import nl.tivek.multiversepowers.character.greenlantern.ability.flame.Flamethrower;
 import nl.tivek.multiversepowers.character.greenlantern.ability.mech.MechAssembly;
@@ -76,7 +71,6 @@ import nl.tivek.multiversepowers.engine.entity.DeathStylePayload;
 import nl.tivek.multiversepowers.engine.entity.FatiguePayload;
 import nl.tivek.multiversepowers.engine.entity.HeldPayload;
 import nl.tivek.multiversepowers.engine.entity.KnockdownPayload;
-import nl.tivek.multiversepowers.engine.entity.PlayerKnockdowns;
 import nl.tivek.multiversepowers.engine.fx.ParticlesPayload;
 import nl.tivek.multiversepowers.engine.fx.VoicePayload;
 import nl.tivek.multiversepowers.faction.StandingsPayload;
@@ -91,6 +85,7 @@ import nl.tivek.multiversepowers.faction.mob.MobStats;
 import nl.tivek.multiversepowers.faction.mob.MobStepsPayload;
 import nl.tivek.multiversepowers.faction.mob.MobTableAskPayload;
 import nl.tivek.multiversepowers.faction.mob.MobTablePayload;
+import nl.tivek.multiversepowers.galactus.GalactusPayload;
 import nl.tivek.multiversepowers.killconfirm.KillConfirmPayload;
 import nl.tivek.multiversepowers.network.client.ClientPayloadHandler;
 import nl.tivek.multiversepowers.spell.CastSpellPayload;
@@ -143,10 +138,6 @@ public final class ModNetwork {
         registrar.playToClient(CaptivePayload.TYPE, CaptivePayload.STREAM_CODEC, ModNetwork::onCaptive);
         registrar.playToServer(EscapePayload.TYPE, EscapePayload.STREAM_CODEC, ModNetwork::onEscape);
         registrar.playToClient(StormFxPayload.TYPE, StormFxPayload.STREAM_CODEC, ModNetwork::onStormFx);
-        registrar.playToClient(GrabStatePayload.TYPE, GrabStatePayload.STREAM_CODEC, ModNetwork::onGrabState);
-        registrar.playToServer(ThrowGrabPayload.TYPE, ThrowGrabPayload.STREAM_CODEC, ModNetwork::onThrowGrab);
-        registrar.playToClient(ArmPayload.TYPE, ArmPayload.STREAM_CODEC, ModNetwork::onArm);
-        registrar.playToClient(PortalPayload.TYPE, PortalPayload.STREAM_CODEC, ModNetwork::onPortal);
         registrar.playToClient(ConstructPayload.TYPE, ConstructPayload.STREAM_CODEC, ModNetwork::onConstruct);
         registrar.playToClient(FlattenPayload.TYPE, FlattenPayload.STREAM_CODEC, ModNetwork::onFlatten);
         registrar.playToClient(HeldPayload.TYPE, HeldPayload.STREAM_CODEC, ModNetwork::onHeld);
@@ -155,6 +146,7 @@ public final class ModNetwork {
         registrar.playToClient(DeathStylePayload.TYPE, DeathStylePayload.STREAM_CODEC, ModNetwork::onDeathStyle);
         registrar.playToClient(DeathBlowPayload.TYPE, DeathBlowPayload.STREAM_CODEC, ModNetwork::onDeathBlow);
         registrar.playToClient(KillConfirmPayload.TYPE, KillConfirmPayload.STREAM_CODEC, ModNetwork::onKillConfirm);
+        registrar.playToClient(GalactusPayload.TYPE, GalactusPayload.STREAM_CODEC, ModNetwork::onGalactus);
         registrar.playToClient(SummonPayload.TYPE, SummonPayload.STREAM_CODEC, ModNetwork::onSummon);
         registrar.playToClient(SummonMarkerPayload.TYPE, SummonMarkerPayload.STREAM_CODEC, ModNetwork::onSummonMarker);
         registrar.playToServer(SummonOrderPayload.TYPE, SummonOrderPayload.STREAM_CODEC, ModNetwork::onSummonOrder);
@@ -431,24 +423,10 @@ public final class ModNetwork {
 
     private static void onAbilityAction(AbilityActionPayload payload, IPayloadContext context) {
         context.enqueueWork(() -> {
-            if (!(context.player() instanceof ServerPlayer serverPlayer)) {
-                return;
-            }
-            if (payload.action() == AbilityActionPayload.CLIMB) {
-                OctopusArms.climb(serverPlayer, payload.on() && free(serverPlayer), payload.data());
-            } else if (payload.action() == AbilityActionPayload.PLACE) {
-                if (free(serverPlayer)) {
-                    OctopusArms.placeBlocks(serverPlayer);
-                }
-            } else {
+            if (context.player() instanceof ServerPlayer serverPlayer) {
                 Characters.action(serverPlayer, payload.action(), payload.on(), payload.data());
             }
         });
-    }
-
-    // Knocked down or held captive, a player starts nothing (as Characters.action refuses them too).
-    private static boolean free(ServerPlayer player) {
-        return player.isAlive() && !player.isSpectator() && !PlayerKnockdowns.isDown(player) && !Captives.held(player);
     }
 
     private static void onCharacterState(CharacterStatePayload payload, IPayloadContext context) {
@@ -487,10 +465,6 @@ public final class ModNetwork {
         ClientPayloadHandler.handleStaminaCost(payload, context);
     }
 
-    private static void onPortal(PortalPayload payload, IPayloadContext context) {
-        ClientPayloadHandler.handlePortal(payload, context);
-    }
-
     private static void onConstruct(ConstructPayload payload, IPayloadContext context) {
         ClientPayloadHandler.handleConstruct(payload, context);
     }
@@ -509,6 +483,10 @@ public final class ModNetwork {
 
     private static void onFatigue(FatiguePayload payload, IPayloadContext context) {
         ClientPayloadHandler.handleFatigue(payload, context);
+    }
+
+    private static void onGalactus(GalactusPayload payload, IPayloadContext context) {
+        ClientPayloadHandler.handleGalactus(payload, context);
     }
 
     private static void onKillConfirm(KillConfirmPayload payload, IPayloadContext context) {
@@ -563,14 +541,6 @@ public final class ModNetwork {
         ClientPayloadHandler.handleRing(payload, context);
     }
 
-    private static void onArm(ArmPayload payload, IPayloadContext context) {
-        ClientPayloadHandler.handleArm(payload, context);
-    }
-
-    private static void onGrabState(GrabStatePayload payload, IPayloadContext context) {
-        ClientPayloadHandler.handleGrabState(payload, context);
-    }
-
     private static void onHeavy(HeavyPayload payload, IPayloadContext context) {
         ClientPayloadHandler.handleHeavy(payload, context);
     }
@@ -583,14 +553,6 @@ public final class ModNetwork {
         context.enqueueWork(() -> {
             if (context.player() instanceof ServerPlayer serverPlayer) {
                 Captives.escaped(serverPlayer);
-            }
-        });
-    }
-
-    private static void onThrowGrab(ThrowGrabPayload payload, IPayloadContext context) {
-        context.enqueueWork(() -> {
-            if (context.player() instanceof ServerPlayer serverPlayer && free(serverPlayer)) {
-                OctopusArms.throwHeld(serverPlayer);
             }
         });
     }

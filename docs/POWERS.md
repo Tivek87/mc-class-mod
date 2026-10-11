@@ -27,7 +27,7 @@ Back to the [overview](PROJECT.md). The plain spells anyone can cast are in [Spe
 
 | Franchise | Characters |
 |---|---|
-| Marvel | **Doctor Octopus**, Mysterio, Doctor Strange, Doctor Doom, Thanos, Loki, Iron Man, Magneto, Galactus, Spider-Man, The Hulk, Venom, Wolverine, Silver Surfer, The Sentry, Ultron |
+| Marvel | Doctor Octopus *(work in progress)*, Mysterio, Doctor Strange, Doctor Doom, Thanos, Loki, Iron Man, Magneto, Galactus, Spider-Man, The Hulk, Venom, Wolverine, Silver Surfer, The Sentry, Ultron |
 | DC | **Green Lantern**, The Flash, Black Adam, Doctor Manhattan, Darkseid, Doctor Fate |
 | Disney | Bill Cipher (Gravity Falls), Darth Vader (Star Wars, Lucasfilm) |
 | Warner Bros. | Rick Sanchez (Rick and Morty, Adult Swim) |
@@ -53,20 +53,20 @@ kind of ability, so every character is free to put anything on any number. Learn
 they do depends purely on who you are. **Y is always the character's ultimate**: its biggest power, with a
 long cooldown; while it goes, the panel counts it down at its top right.
 
-| Key | Ability | Doctor Octopus | Green Lantern | Thor |
-|---|---|---|---|---|
-| R | Ability 1 | Grab | Emerald Express | Thunderstorm |
-| V | Ability 2 | Multi-Tentacle | Construct Wheel | Lightning Bomb |
-| Z | Ability 3 | Tentacle Dash | Recharge | Storm Throw |
-| B (hold) | Ability 4 | Block | Light Bolt *(right click)* | *(free)* |
-| H | Ability 5 | Ground Slam | Construct Fists *(left click)* | *(free)* |
-| N | Ability 6 | Portal | Ring Scan | *(free)* |
-| Y | Ability 7 | Octopus Rampage *(ultimate)* | Air Strike *(ultimate)* | *(free)* |
-| X | Ability 8 | *(free)* | Shockwave | *(free)* |
-| C | Ability 9 | Feet or Tentacles | Flight *(double space)* | *(free)* |
-| Left Alt | Ability 10 | Ground Strike | Giant Hands | *(free)* |
-| K | Ability 11 | *(free)* | Light Cage | *(free)* |
-| *(none)* | Ability 12 | *(free)* | Beam Lock *(scroll wheel click)* | *(free)* |
+| Key | Ability | Green Lantern | Thor |
+|---|---|---|---|
+| R | Ability 1 | Emerald Express | Thunderstorm |
+| V | Ability 2 | Construct Wheel | Lightning Bomb |
+| Z | Ability 3 | Recharge | Storm Throw |
+| B (hold) | Ability 4 | Light Bolt *(right click)* | *(free)* |
+| H | Ability 5 | Construct Fists *(left click)* | *(free)* |
+| N | Ability 6 | Ring Scan | *(free)* |
+| Y | Ability 7 | Air Strike *(ultimate)* | *(free)* |
+| X | Ability 8 | Shockwave | *(free)* |
+| C | Ability 9 | Flight *(double space)* | *(free)* |
+| Left Alt | Ability 10 | Giant Hands | *(free)* |
+| K | Ability 11 | Light Cage | *(free)* |
+| *(none)* | Ability 12 | Beam Lock *(scroll wheel click)* | *(free)* |
 
 Green Lantern has one more past the twelfth: the Hard-Light Mech *(hold the scroll wheel 2 seconds)*.
 
@@ -99,8 +99,8 @@ right click)*, Lightning Bolt *(scroll wheel click)* and Lightning Speed *(hold 
   left off the panel: it shows only what you can use. Mouse buttons go by short names: **LMB**, **RMB**, **MMB**
   (the scroll wheel), **M4** and up.
 - A line's name follows what it does now: Thor's scroll wheel click says **Take Up the Hammer** or **Put Away the
-  Hammer**, his combo **Hammer Swings** and his charge **Charge the Hammer** with it in hand; Doctor Octopus's stance
-  key says where it takes him next; Green Lantern's flight says **Stop Flying** while he flies.
+  Hammer**, his combo **Hammer Swings** and his charge **Charge the Hammer** with it in hand; Green Lantern's flight
+  says **Stop Flying** while he flies.
 - Each line shows its key as a small key cap (with **hold** or **2×** before it for a hold or a double press), then
   the name and, on the right, why it cannot be used when it cannot: the seconds left in amber, **tired** (out of
   stamina: mouse buttons and held keys wait, and so does a move with a stamina cost you cannot pay) or **no power**
@@ -113,7 +113,7 @@ right click)*, Lightning Bolt *(scroll wheel click)* and Lightning Speed *(hold 
   is one short line about the character; **Read more** next to it opens a page about them, which **Show less**, Esc
   or a tab closes again. Under it the guide goes one **mode** at a time. Tabs along the top: Green Lantern
   **Ground**, **Flight**, **Mech**, **Sword & Shield** and **Flamethrower** (and **Energy Whip** once the whip is
-  yours); Thor **Fists**, **Hammer** and **Flight**; Doctor Octopus **Ground**, **Climbing** and **Holding**. It opens
+  yours); Thor **Fists**, **Hammer** and **Flight**. It opens
   on the mode you are in now, which has a green dot on its tab. Switch tabs with the left and right arrows, A and D,
   Tab or the number keys, or click one.
 - Each mode lists **only the keys and buttons that do something in it**, grouped under **Mouse**, **Ability keys**
@@ -153,6 +153,8 @@ with F3, in third person and without a character). It keeps its shape but moves 
   (guards and charges) or arcs going round (spins and weapons).
 - Green Lantern's ring flickers as the ring's power runs low, and a gun shows its rounds under it. Thor's points the
   way to his thrown hammer with a small arrow, and crackles while lightning runs through him.
+- Doctor Octopus's is a steel ring round an amber point, like the lens of his goggles. On a creature four steel lens
+  arcs turn in and lock round it, with the thin health arc round them.
 
 ### Mouse & space (Options > Controls, "Multiverse Powers: Mouse & Space")
 
@@ -174,15 +176,7 @@ hold or a double press and the guide's list **Hold ...** and **2×...**; both sh
   hold, an arc beside your crosshair fills up (on the right for left click, on the left for right click); once
   it is full, the lasting one starts. A quick tap never shows it. Keys that you hold down anyway (the Construct
   Wheel) keep their own way of working.
-- **Crouching + a key** is decided by that ability itself, not by the key:
-
-| Crouching + | Doctor Octopus does |
-|---|---|
-| R (Grab) | **Undoes it**: every tentacle lets go. Free, even while the key is still on cooldown. |
-| H (Ground Slam) | The slam **around you**, also when your claws are full, so you keep what you hold. |
-| C (Feet or Tentacles) | Steps **back** through the stances instead of forward. |
-| Left Alt (Ground Strike) | **Undoes it**: every creature you marked is let go. Free, even on cooldown. |
-| V, Z, B, N, Y, K, scroll wheel click | Nothing different. |
+- **Crouching + a key** is decided by that ability itself, not by the key.
 
 ---
 
@@ -401,7 +395,8 @@ Green Lantern recharges his ring at his lantern, the power battery.
 - **Flying:** hold **forward** and you fly the way you look. **You pick up speed quickly and then keep getting
   faster the longer you fly on:** a flight starts at about **10.7 blocks a second** and within **half a second** you
   are up to a cruising speed of **13.3 blocks a second**; from there you keep gaining, until after **3.5 seconds**
-  you reach the top speed of **20 blocks a second**, and never more. Hovering and climbing go at a part of that speed. Let go of forward and you glide to a hover and lose the
+  you reach the top speed of **20 blocks a second**, and never more. Hovering, you drift sideways or back at only
+  **5 blocks a second** (setting: Hover speed), also while you hold space to climb. Let go of forward and you glide to a hover and lose the
   speed you built up again (all of it in 3 seconds);
   pushing against a wall keeps it.
   **Jump** rises, **sneak** sinks, left and right slide sideways, back drifts backwards. You carry your speed
@@ -1344,213 +1339,11 @@ The ring's prison, straight out of the comics: a cage of hard light round your e
 
 ## Doctor Octopus
 
-**In short:** four robot tentacles unfold from your back and stay out until you turn into someone else.
-You get ten abilities: three that always work, an ultimate, and the rest on their own keys.
+**Work in progress.** Doctor Octopus is in heavy rework and cannot be played right now. He is still in the
+power wheel (Marvel), marked **Work in progress**; picking him only tells you so, and he has no settings page
+until he comes back.
 
-### What the tentacles look like
-
-- **Segments:** short slim segments of dark metal, thinning towards the claw, so a tentacle reads as one
-  smooth tube.
-- **Rings:** a thin steel ring over every third joint, which also keeps bends closed.
-- **Spikes:** two small steel spikes every fourth segment, swept backwards.
-- **Claw:** a slim hub with a glowing eye and three curved fingers with a lamp at every knuckle. Open
-  while reaching, closed around what it holds.
-- **Sharp point and thrusters:** during the Portal ability a needle slides out between the three fingers
-  and thruster pods fold out and burn (see [Portal](#portal-key-n)).
-- **Red lamps:** during the Octopus Rampage every lamp glows red.
-- **Smooth:** the tentacles stay glued to your back, also in first person and while you walk or turn, and
-  whatever a claw holds moves exactly with it.
-
-### Feet or tentacles (key C)
-
-You choose how you walk. Press **C** to go round: on your own feet, on 2, on 3, on 4 tentacles.
-**Crouch + C** goes back the other way, so you never have to go round the whole circle.
-
-| Stance | Walking on | Free for abilities |
-|---|---|---|
-| Feet | your own feet | all 4 tentacles |
-| 2 tentacles | 2 | 2 |
-| 3 tentacles | 3 | 1 |
-| 4 tentacles | 4 | 0 (one lifts off when an ability needs it) |
-
-- **On tentacles** you stand in the air on them. They spread evenly around you, plant their claws, and
-  step one at a time, never all at once. The more you walk on, the higher you stand.
-- **Running on them is faster** than running on your own feet: they take far longer strides, so a sprint
-  on tentacles is about 40% quicker. **Jumping** is theirs too: they push off, so you jump higher the
-  more of them carry you.
-- Every leg stands on **its own side** of you, so two legs never swap sides or step through each other.
-  They step over anything up to a block high and catch your falls: no fall damage while they carry you.
-  Sneak to crouch down on them. They find the ground up to 3 blocks below you; falling further they hang
-  until the ground comes close again, and then break the fall.
-- **On your own feet** you move exactly as you normally do, and all four tentacles are free to grab,
-  fight and build.
-- Walking on 3 or 4 and using an ability: one leg lifts off to do the job and goes back to walking
-  afterwards, as long as two keep carrying you.
-- A tentacle that is holding something never becomes a leg.
-- **Which are free:** in first person four small corner marks round the crosshair show your tentacles, each where
-  it sits on your back (the upper two on top, your right ones on the right). **Bright white**: free. **Orange**:
-  holding something. **Grey**: a leg you walk on, or busy with an ability. A mark flashes when its tentacle changes.
-
-### Always on
-
-| Ability | What it does |
-|---|---|
-| **Tentacle Reach** | You hit creatures from 7.5 blocks away (normally 3) and use blocks from 6.5 (normally 4.5). |
-| **Tentacle Strike** | Every melee hit is delivered by a tentacle lashing out, in turns. It is your own normal hit: weapon, enchantments and critical hits all count. With every tentacle busy you just hit normally. |
-| **Wall Climb** | Walk into a wall and the claws hook in. See below. |
-| **Idle claws** | Standing still, a claw now and then turns to look around, or back at you. Every tentacle can turn its claw any way it likes: it bends its last stretch round to look there. |
-
-### Wall Climb
-
-- Walk into a wall and the tentacles hook in. You hang a normal distance from the surface and move with
-  WASD: forward climbs, back goes down, left and right slide sideways. Sneak holds you still.
-- **Every tentacle holds its own spot**, in its own quarter around your body, far away from the other
-  three, and it prefers **edges and corners** to clamp on. A grip is only let go when it is out of reach
-  or its block is gone, and only one tentacle reaches for a new grip at a time, so the others keep
-  holding you.
-- **Around a corner:** where a wall ends at an outside corner, the tentacles feel round it and take the
-  wall that carries on, so you swing around it instead of dropping off. They also keep holding on while
-  only part of your body is still over the wall.
-- **Over the top:** where the wall ends and there is floor up there, you hop onto it and walk on.
-- **Ceilings:** **jump up against a roof** and the claws hook into it, so you hang under it upside down
-  and move where you look. It works from the ground as well as from a wall you are already climbing.
-  Hanging there they keep your head clear of the blocks.
-- Holding on costs a little stamina and takes no fall damage. **Tap jump to let go** and push off.
-- **The four never tangle:** every tentacle holds the quarter on **its own side** (the shoulder pair
-  high, the hip pair low), and they are always kept apart, so they never cross, swap sides or sit
-  inside one another.
-
-### Grab and throw (key R)
-
-- Press **R** and **one** tentacle takes **one** creature: the one you aim at (up to 20 blocks), or
-  else the nearest enemy in front of you (up to 12 blocks). Nothing is ever grabbed by itself.
-- Press **R** again for the next one, so you decide yourself how many you hold: one press is one
-  tentacle, up to four. Peaceful animals are only taken when you aim at them.
-- **Nothing is ever let go by itself.** No timer, no distance: a tentacle holds on until *you* let go
-  (crouch + R), throw it, or turn into someone else.
-- **Smash it:** swing your view and what you hold is whipped along with it. Hitting a wall, a ceiling or
-  the ground hurts it, harder the faster it went, with flying bits of that block and a heavy crash.
-  Swung into other creatures, it strikes them as hard and throws them on or knocks them down by their
-  weights: a light one hardly moves a heavy one such as an iron golem.
-- **Left click** throws everything you hold where you look. The first hard crash after a throw hurts it
-  again.
-- **H while holding** (Ground Slam with full claws) drives everything you hold straight down into the
-  ground for a heavy extra hit. **Crouch + H** gives the normal slam around you instead, so you keep
-  hold of everything.
-- While a mob is held it cannot move, fall or attack.
-
-### The other keys
-
-| Key | Ability | What it does | Cooldown |
-|---|---|---|---|
-| V | **Multi-Tentacle** | Every free tentacle hits the creature you aim at (up to 8 blocks; otherwise the nearest enemy in front of you), one after another. 2 hearts per hit. | 6 s |
-| Z | **Tentacle Dash** | The tentacles push off the ground and launch you **the way you are pressing**: forward, sideways or backwards, and much further than before. Standing still they throw you where you look. Costs 30 stamina. No fall damage on the landing. | 3 s |
-| B (hold) | **Block** | All four tentacles take their own corner in front of you behind a glowing energy shield. Hits from the front do 85% less damage, projectiles are stopped, and you get no knockback. You walk 40% slower, and it drains stamina, more for every hit caught. Out of stamina: the block drops. | - |
-| H | **Ground Slam** | With empty claws: the tentacles rise high and smash down around you. Everything within 6 blocks takes up to 3.5 hearts and is thrown back and up. In the air you dive down first and the slam is bigger (8 blocks, up to 5 hearts). No fall damage. | 8 s |
-| Y | **Octopus Rampage** (ultimate) | For 20 seconds: double attack speed, every lamp glows red, and all four tentacles attack hostile (red) creatures within 8 blocks by themselves (1.5 hearts per hit). | 90 s |
-| N | **Portal** | One tentacle goes hunting through three portals (see below). The others keep working. | 20 s |
-| Left Alt | **Ground Strike** | You mark creatures first, then the tentacles dive into the ground and come up underneath them (see below). | 10 s |
-
-### Ground Strike (key Left Alt)
-
-**In short:** you pick your targets first, then every marked creature gets a tentacle out of the ground
-right under it.
-
-| Press | What happens |
-|---|---|
-| **Left Alt** on a creature | Marks it. You can mark as many as you have free tentacles: one to four. A marked creature **lights up**, through walls, so you always see who is on the list. |
-| **Left Alt** aiming at nothing | **Launches:** one tentacle per mark dives into the ground beside you. |
-| **Crouch + Left Alt** | Lets every mark go again. Free, even while the ability is on cooldown. |
-
-- **First the warning:** the tentacles swing up in front of you, **turn their claws towards you** and
-  slide the spikes out of the middle of them, in plain sight, and only then go into the ground.
-- Each tentacle digs its own hole at your feet, travels underneath the ground (a little longer the
-  further it has to go, the ground shaking above it on the way), then bursts up under its creature.
-- **12.5 hearts** damage, a quarter of an Iron Golem's health, and it throws what it hits into the air.
-- **Range 32 blocks** for marking and for the way under the ground. A creature that dies or walks out of
-  range is dropped from the list by itself, and its glow goes out.
-- Marks are also let go when you turn back into yourself.
-- Everything else keeps working while it runs: the tentacles that are not digging still carry you,
-  hold what they hold and block.
-
-### Who can be hit or grabbed
-
-- Every ability works the same on mobs and on players.
-- Other players count only when the server allows PvP, never in creative or spectator, and never
-  teammates the server protects from you. Then they are grabbed, hit, slammed, thrown and pulled
-  through the portal exactly like a mob, and the tentacles pick them as a target by themselves.
-- A player you hold cannot walk out of the claw: the tentacle keeps them where it puts them.
-- Never bosses (the Wither, the Ender Dragon), and never something another tentacle already holds.
-- Aim at the creature: the crosshair has to be on it or just next to it (half a block), with no wall in
-  between. Aiming at nothing shows "No creature in your sights", and costs no cooldown.
-- All damage counts as your attack: a mob killed this way drops its loot and experience.
-
----
-
-## Portal (key N)
-
-**In short:** one of your tentacles looks around, unfolds a sharp point and thrusters, dives into a
-portal in front of you, comes out of a second portal near the creature you aim at, chases it down, grabs
-it, hauls it back through, and comes screaming out of a third portal high in the sky to slam it into the
-ground. Your other three tentacles keep walking, holding and striking the whole time.
-
-### Step by step
-
-| Time | What happens |
-|---|---|
-| 0 s | One tentacle stops what it was doing and **looks around**, swinging slowly from side to side, its eye ticking. The first portal starts building itself in front of you. |
-| 1.7 s | A **sharp point slides out** of the middle of the claw, between the three fingers, and locks with a clack. |
-| 2.5 s | **Thruster pods fold out** of the tentacle and light up, howling and smoking. The second portal starts building itself near the creature. |
-| 4 s | Fully boosting, and only once both portals really stand open, the tentacle **dives into** the first portal. |
-| then | It bursts out of the second portal and **chases** the creature, curving after it like a homing missile, with a flame trail behind it. |
-| on contact | **Grab:** the claw clamps around it. |
-| then | **Drag:** the tentacle hauls it back along its own track into the second portal. |
-| through | A flash at both portals. The third portal opens high in the sky; tentacle and catch hang out of it for a moment, thrusters howling. |
-| slam | It **fires straight down** at full speed and smashes it into the ground: cracks, flying ground, sparks, smoke, a shockwave and a heavy crash. |
-| end | The tentacle goes back up into the sky portal and back out of the first one, its point and thrusters folding away, and is free again. The portals shrink shut behind it. |
-
-The whole run takes about 12 seconds, longer when the creature runs.
-
-### The three portals
-
-| Portal | Where | Size | Faces |
-|---|---|---|---|
-| First | about 3 blocks in front of your eyes, where you look (closer if a wall is in the way) | 3 blocks across | towards you |
-| Second | 4 to 7 blocks from the creature, a little above it, off to one side | 3.6 blocks across | the creature |
-| Third | high in the sky, up to 26 blocks above the ground, within 10 blocks of the creature | 4.6 blocks across | down |
-
-- The three of them are always pulled **far apart** (14 blocks by default), so you never get a pile of
-  rings on one spot. They can never open far away from you either.
-- Every portal is a solid steel ring with three clamps, six orange lamps and a toothed outer ring that
-  slowly turns, around a glowing cyan field of energy that swirls inwards, with a tunnel going back into
-  it. It throws sparks.
-- Portals open slowly, in 2.6 seconds (the sky portal in 2.2): the ring assembles, its pieces flying in
-  one after another while it turns; the clamps lock on; the lamps light up one by one, ticking; then the
-  energy tears open, from a thin bright line to a full swirling field. Then the lamps blink in turns.
-- When the tentacle has left a portal it closes the same way backwards, in 1.7 seconds.
-- The second portal is placed with open air to the creature, preferably where you can see it. The third
-  needs at least 7 blocks of open air down to the ground; in a cave it opens as high as the ceiling
-  allows.
-
-### Numbers
-
-| | |
-|---|---|
-| Aim range | 24 blocks |
-| Hunting range | 30 blocks out of the second portal |
-| Gives up | after 6 seconds of chasing, or when the creature runs out of hunting range |
-| Slam damage | 25 hearts: half the health of an Iron Golem (bosses can never be grabbed) |
-| Cooldown | 20 s |
-
-### If something goes wrong
-
-- **Every tentacle is busy:** nothing happens and there is no cooldown; the message says so.
-- **The creature dies, escapes or disappears** before the slam: the tentacle lets go and comes back the
-  way it came, and the portals close.
-- **You die, log out or change dimension:** the tentacles and portals disappear at once and everything
-  is let go.
-- A mob that was being held when its area unloaded (or the game closed) gets its normal behaviour back
-  the next time it loads.
+His crosshair stays as it is: see [Your crosshair](#your-crosshair).
 
 ---
 
@@ -1848,8 +1641,8 @@ host or an owner). The settings window looks like the update manager: a page eac
 **Client** and the world's under **Server**.
 
 - **Pages:** under **Client**, *Your game* (only for you, in every world); under **Server**, the world's: *Power
-  rules*, the stamina bar and every character. Every page has its own colour (Doctor Octopus grey, Green Lantern
-  green, Thor blue). A dot after a page's name means it has changes that are not saved yet; the line under a page's
+  rules*, the stamina bar and every character. Every page has its own colour (Green Lantern green, Thor
+  blue). A dot after a page's name means it has changes that are not saved yet; the line under a page's
   title says whom it is for.
 - **The world's pages** can only be opened by the **host** of the world (singleplayer, or a LAN world you host) or
   an **owner** of a server: a player named in the `owners` list of `general.toml` in the world's
@@ -1879,7 +1672,6 @@ starts with. Your own settings are in `config/welcomescreen/client.toml`.
 | File | What is in it |
 |---|---|
 | `<world>/serverconfig/welcomescreen/general.toml` | The power rules: damage and cooldown multipliers, breaking blocks |
-| `<world>/serverconfig/welcomescreen/doc_ock.toml` | Everything Doctor Octopus does |
 | `<world>/serverconfig/welcomescreen/green_lantern.toml` | Everything Green Lantern does |
 | `<world>/serverconfig/welcomescreen/stamina.toml` | The stamina bar, the same for everyone in the world |
 | `config/welcomescreen/client.toml` | Your own settings |

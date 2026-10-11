@@ -10,11 +10,6 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 import nl.tivek.multiversepowers.character.CharacterLookPayload;
 import nl.tivek.multiversepowers.character.CharacterStatePayload;
 import nl.tivek.multiversepowers.character.client.ClientCharacter;
-import nl.tivek.multiversepowers.character.docock.ArmPayload;
-import nl.tivek.multiversepowers.character.docock.GrabStatePayload;
-import nl.tivek.multiversepowers.character.docock.client.ClientArms;
-import nl.tivek.multiversepowers.character.docock.client.ClientGrabState;
-import nl.tivek.multiversepowers.character.docock.portal.PortalPayload;
 import nl.tivek.multiversepowers.character.greenlantern.RingPayload;
 import nl.tivek.multiversepowers.character.greenlantern.client.ClientConstructs;
 import nl.tivek.multiversepowers.character.greenlantern.client.ClientLooks;
@@ -48,6 +43,8 @@ import nl.tivek.multiversepowers.engine.entity.DeathBlowPayload;
 import nl.tivek.multiversepowers.character.greenlantern.summon.SummonMarkerPayload;
 import nl.tivek.multiversepowers.character.greenlantern.summon.SummonPayload;
 import nl.tivek.multiversepowers.character.greenlantern.summon.client.ClientSummons;
+import nl.tivek.multiversepowers.galactus.GalactusPayload;
+import nl.tivek.multiversepowers.galactus.client.GalactusSky;
 import nl.tivek.multiversepowers.killconfirm.KillConfirmPayload;
 import nl.tivek.multiversepowers.character.greenlantern.fist.FistPayload;
 import nl.tivek.multiversepowers.character.greenlantern.heavy.HeavyPayload;
@@ -145,14 +142,6 @@ public final class ClientPayloadHandler {
         context.enqueueWork(() -> ClientClaps.clap(payload.entity()));
     }
 
-    public static void handleGrabState(GrabStatePayload payload, IPayloadContext context) {
-        context.enqueueWork(() -> ClientGrabState.set(payload.holding(), payload.blocks()));
-    }
-
-    public static void handleArm(ArmPayload payload, IPayloadContext context) {
-        context.enqueueWork(() -> ClientArms.update(payload));
-    }
-
     public static void handleCharacterState(CharacterStatePayload payload, IPayloadContext context) {
         context.enqueueWork(() -> ClientCharacter.set(payload));
     }
@@ -167,10 +156,6 @@ public final class ClientPayloadHandler {
 
     public static void handleStaminaCost(StaminaCostPayload payload, IPayloadContext context) {
         context.enqueueWork(() -> StaminaClient.use(payload.amount()));
-    }
-
-    public static void handlePortal(PortalPayload payload, IPayloadContext context) {
-        context.enqueueWork(() -> ClientArms.updatePortal(payload));
     }
 
     public static void handleConstruct(ConstructPayload payload, IPayloadContext context) {
@@ -202,6 +187,10 @@ public final class ClientPayloadHandler {
 
     public static void handleSummonMarker(SummonMarkerPayload payload, IPayloadContext context) {
         context.enqueueWork(() -> ClientSummons.marked(payload));
+    }
+
+    public static void handleGalactus(GalactusPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> GalactusSky.told(payload.start(), payload.speed()));
     }
 
     public static void handleKillConfirm(KillConfirmPayload payload, IPayloadContext context) {

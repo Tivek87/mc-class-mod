@@ -77,6 +77,10 @@ public final class ScrollArea {
         return y + height > this.top && y < this.bottom;
     }
 
+    public boolean whole(int y, int height) {
+        return y >= this.top && y + height <= this.bottom;
+    }
+
     public boolean over(int mouseX, int mouseY, int x, int y, int width, int height) {
         return mouseX >= x && mouseX < x + width && mouseY >= Math.max(y, this.top)
                 && mouseY < Math.min(y + height, this.bottom) && mouseY >= this.top && mouseY < this.bottom;

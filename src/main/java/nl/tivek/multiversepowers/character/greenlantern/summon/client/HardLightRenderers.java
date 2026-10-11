@@ -19,9 +19,11 @@ import net.minecraft.client.renderer.entity.layers.HumanoidArmorLayer;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.level.block.Blocks;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import nl.tivek.multiversepowers.character.greenlantern.summon.HardLight;
+import nl.tivek.multiversepowers.faction.mob.client.MobPreview;
 
 // The hard-light creatures drawn as the game draws its own, each with its light laid over it (`HardLightLayer`).
 public final class HardLightRenderers {
@@ -36,6 +38,17 @@ public final class HardLightRenderers {
         event.registerEntityRenderer(HardLight.VINDICATOR.get(), VindicatorRenderer::new);
         event.registerEntityRenderer(HardLight.ENDERMAN.get(), EndermanRenderer::new);
         event.registerEntityRenderer(HardLight.GOLEM.get(), IronGolemRenderer::new);
+        MobPreview.move(HardLight.SKELETON.get(), 50, s -> s.setAggressive(true), s -> s.setAggressive(false));
+        MobPreview.move(HardLight.PIGLIN.get(), 50, p -> p.setAggressive(true), p -> p.setAggressive(false));
+        MobPreview.looks(HardLight.CREEPER.get());
+        MobPreview.looks(HardLight.BLAZE.get());
+        MobPreview.move(HardLight.VINDICATOR.get(), 50, v -> v.setAggressive(true), v -> v.setAggressive(false));
+        MobPreview.move(HardLight.VINDICATOR.get(), 60, v -> v.setCelebrating(true), v -> v.setCelebrating(false));
+        MobPreview.move(HardLight.ENDERMAN.get(), 80, e -> e.setCarriedBlock(Blocks.GRASS_BLOCK.defaultBlockState()),
+                e -> e.setCarriedBlock(null));
+        // The game's own entity events: 11 holds out a poppy, 34 takes it back.
+        MobPreview.move(HardLight.GOLEM.get(), 80, g -> g.handleEntityEvent((byte) 11),
+                g -> g.handleEntityEvent((byte) 34));
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes" })

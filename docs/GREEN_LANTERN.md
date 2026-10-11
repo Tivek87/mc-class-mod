@@ -236,7 +236,7 @@ Voor **alle** linksklik- (aanval) en rechtsklik-acties (verdediging) geldt een a
 
 ## 12. Luchtaanval (toets Y, ability 7: de ultimate)
 
-- **Y is altijd de ultimate** van een personage (bij Doctor Octopus de razernij).
+- **Y is altijd de ultimate** van een personage.
 - **Actie:** Druk op Y. Je steekt je ringvuist naar de hemel en een dikke pilaar van licht schiet uit de ring. Hoog in de lucht, ongeveer **55 blokken**, groeit uit dat licht een **groot, langzaam vliegtuig met vier propellers**: eerst witheet, dan groen. Een solid construct van hard licht, nooit een echt vliegtuig, en heel gedetailleerd: een lange ronde romp met een gloeiende voorruit, rijen raampjes, deuren en een laadklep onder de staart, een hoge vleugel met kleppen, vier motoren met grote vierbladige propellers die draaien, een hoge staartvin met het lantaarn-embleem, een minigun aan elke kant, een bommenluik met twee deuren in zijn buik en een sensorbol onder de neus. Een dunne draad licht verbindt hem met je ring, en ring en pak gloeien fel zolang hij vliegt. Je actiebalk roept "LUCHTAANVAL!" en de titel van het paneel wordt rood en telt af.
 - **Zijn jets:** even later groeien onder zijn vleugels uit draden ringlicht **twee straaljagers van hard licht**, elk met een bolle cockpit, gloeiende vleugels, twee staarten, twee vlammende uitlaten en een kleine raket onder elke vleugel. Ze maken zich los en racen snel rond het vliegtuig, hellend in hun bochten, één hoog en één laag.
 - **Zijn route:** hij vliegt **recht in één lijn** in de richting waarin je keek, langzaam, en komt halverwege precies over de plek waar je naar keek (tot 32 blokken ver, of 16 blokken voor je). Er moet open lucht zijn: met minder dan 21 blokken ruimte boven je zegt de ring dat, en gebeurt er niets.

@@ -9,6 +9,8 @@ import net.minecraft.resources.ResourceLocation;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.creature.screamer.Screamer;
+import nl.tivek.multiversepowers.creature.screamer.ScreamerMoves;
+import nl.tivek.multiversepowers.faction.mob.client.MobPreview;
 
 // The Screamer drawn from its own model, its sunken eyes glowing a sick red.
 public final class ScreamerRenderer extends MobRenderer<Screamer, ScreamerModel> {
@@ -33,6 +35,10 @@ public final class ScreamerRenderer extends MobRenderer<Screamer, ScreamerModel>
 
     public static void onRegisterRenderers(EntityRenderersEvent.RegisterRenderers event) {
         event.registerEntityRenderer(Screamer.TYPE.get(), ScreamerRenderer::new);
+        MobPreview.move(Screamer.TYPE.get(), ScreamerMoves.SCREECH_END + 8, s -> s.play(ScreamerMoves.SCREECH),
+                s -> s.play(0));
+        MobPreview.move(Screamer.TYPE.get(), ScreamerMoves.BITE_END + 8, s -> s.play(ScreamerMoves.BITE),
+                s -> s.play(0));
     }
 
     public static void onRegisterLayers(EntityRenderersEvent.RegisterLayerDefinitions event) {

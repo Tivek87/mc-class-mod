@@ -73,6 +73,9 @@ abstract class HandWonders extends HandShots {
     public static final int HOLE_BLASTS = ticks(HOLE_BLAST);
     public static final Vec3 HOLE_AT = new Vec3(0.0, 1.7, 2.9);
     public static final double HOLE_SIZE = 1.25;
+    // How far round it the hole draws things in and its burst reaches, at scale 1.
+    public static final double HOLE_PULL = 18.0;
+    public static final double HOLE_BLAST_RADIUS = 14.0;
     private static final double PALM_UP_LEAN = -0.45;
     private static final double PALM_UP_FLEX = -1.12;
 

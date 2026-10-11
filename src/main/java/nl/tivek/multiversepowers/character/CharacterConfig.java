@@ -22,7 +22,9 @@ public final class CharacterConfig {
 
     static {
         for (GameCharacter character : GameCharacter.values()) {
-            SPECS.put(character, build(character));
+            if (character.playable()) {
+                SPECS.put(character, build(character));
+            }
         }
     }
 

@@ -1,18 +1,22 @@
 package nl.tivek.multiversepowers.creature.lurker.client;
 
 import com.mojang.blaze3d.vertex.PoseStack;
+import java.util.List;
 import net.minecraft.client.model.geom.ModelLayerLocation;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.entity.MobRenderer;
 import net.minecraft.client.renderer.entity.layers.EyesLayer;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.EntityType;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.creature.MovingMonster;
 import nl.tivek.multiversepowers.creature.lurker.Crawler;
 import nl.tivek.multiversepowers.creature.lurker.Lurker;
+import nl.tivek.multiversepowers.creature.lurker.LurkerMoves;
 import nl.tivek.multiversepowers.creature.screamer.Feral;
+import nl.tivek.multiversepowers.faction.mob.client.MobPreview;
 
 // A crawler drawn from LurkerModel in its own skin and size, its eyes glowing, sunk into the ground as far as it has
 // yet to climb out of it.
@@ -44,6 +48,12 @@ public final class CrawlerRenderer<T extends MovingMonster & Crawler> extends Mo
     public static void onRegisterRenderers(EntityRenderersEvent.RegisterRenderers event) {
         event.registerEntityRenderer(Lurker.TYPE.get(), context -> new CrawlerRenderer<>(context, "lurker", 1.0F));
         event.registerEntityRenderer(Feral.TYPE.get(), context -> new CrawlerRenderer<>(context, "feral", 0.7F));
+        for (EntityType<? extends MovingMonster> type : List.<EntityType<? extends MovingMonster>>of(
+                Lurker.TYPE.get(), Feral.TYPE.get())) {
+            MobPreview.move(type, LurkerMoves.CLAW_END + 8, c -> c.play(c.getRandom().nextBoolean()
+                    ? LurkerMoves.CLAW_RIGHT : LurkerMoves.CLAW_LEFT), c -> c.play(0));
+            MobPreview.move(type, LurkerMoves.LAND_END + 12, c -> c.play(LurkerMoves.LANDED), c -> c.play(0));
+        }
     }
 
     public static void onRegisterLayers(EntityRenderersEvent.RegisterLayerDefinitions event) {

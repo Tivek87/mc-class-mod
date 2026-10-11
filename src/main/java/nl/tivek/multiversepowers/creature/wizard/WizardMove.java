@@ -92,7 +92,7 @@ public final class WizardMove {
     // The sweep after the thrust strikes harder.
     public static final double SWEEP_HARM = 1.25;
     // How much harder his magic strikes in each phase.
-    private static final double[] POWER = { 1.0, 1.0, 1.12, 1.25, 1.4, 1.55 };
+    private static final double[] POWER = { 1.0, 1.0, 1.15, 1.32, 1.5, 1.7 };
     // Never his to choose: they come by themselves (a phase, his mirrors, his arrival, his death).
     private static final int NEVER = 9;
 

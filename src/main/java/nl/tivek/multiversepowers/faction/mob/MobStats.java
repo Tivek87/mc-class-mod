@@ -94,8 +94,10 @@ public final class MobStats {
             return null;
         }
 
+        // Kept to a tenth of a step, so a typed or doubled value holds; a switch stays on or off.
         public double clamp(double value) {
-            return Mth.clamp(Math.round(value / this.step) * this.step, this.least, this.most);
+            double per = Math.rint((this.kind == Kind.SWITCH ? 1.0 : 10.0) / this.step);
+            return Mth.clamp(Math.round(value * per) / per, this.least, this.most);
         }
     }
 

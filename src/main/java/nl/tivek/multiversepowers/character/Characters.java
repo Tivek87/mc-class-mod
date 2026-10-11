@@ -62,6 +62,11 @@ public final class Characters {
         }
         GameCharacter now = ACTIVE.get(player.getUUID());
         GameCharacter wanted = character == now ? null : character;
+        if (wanted != null && !wanted.playable()) {
+            player.displayClientMessage(Component.translatable("character." + MultiversePowers.MODID + ".wip",
+                    wanted.getDisplayName()).withColor(0xFFB547), false);
+            return;
+        }
         if (wanted != null && !PowerRules.character(wanted.getId())) {
             player.displayClientMessage(Component.translatable("character." + MultiversePowers.MODID + ".switched_off",
                     wanted.getDisplayName()), true);
@@ -185,7 +190,7 @@ public final class Characters {
         GameCharacter character = ACTIVE.get(player.getUUID());
         int[] cooldowns = new int[AbilitySlot.values().length];
         if (character == null) {
-            PacketDistributor.sendToPlayer(player, new CharacterStatePayload(-1, cooldowns, 0, 0, 0, -1));
+            PacketDistributor.sendToPlayer(player, new CharacterStatePayload(-1, cooldowns, 0));
             return;
         }
         CharacterPowers powers = character.powers();
@@ -196,7 +201,7 @@ public final class Characters {
                     ability == null ? 0 : powers.waitLeft(player, ability));
         }
         PacketDistributor.sendToPlayer(player, new CharacterStatePayload(character.ordinal(), cooldowns,
-                powers.ultimateLeft(player), powers.stance(player), powers.marks(player), powers.limbs(player)));
+                powers.ultimateLeft(player)));
     }
 
     public static void lost(ServerPlayer player, GameCharacter character) {

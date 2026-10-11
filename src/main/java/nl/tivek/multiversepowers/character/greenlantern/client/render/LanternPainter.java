@@ -66,12 +66,17 @@ public class LanternPainter extends LanternBeams {
         super(pose, camera, time, frustum, HARD_LIGHT);
     }
 
-    private LanternPainter(PoseStack pose, float time) {
-        super(pose, Vec3.ZERO, time, null, HARD_LIGHT, true);
+    private LanternPainter(PoseStack pose, Vec3 camera, float time, boolean hand) {
+        super(pose, camera, time, null, HARD_LIGHT, hand);
     }
 
     public static LanternPainter hand(PoseStack pose, float time) {
-        return new LanternPainter(pose, time);
+        return new LanternPainter(pose, Vec3.ZERO, time, true);
+    }
+
+    // Drawn in a screen as a hand is, but seen from `camera`.
+    public static LanternPainter gui(PoseStack pose, Vec3 camera, float time) {
+        return new LanternPainter(pose, camera, time, true);
     }
 
     public void bolt(Vec3 center, Vec3 facing, double size, double solid, @Nullable Vec3 ring) {

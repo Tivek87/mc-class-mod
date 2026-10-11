@@ -2,31 +2,25 @@ package nl.tivek.multiversepowers.character.greenlantern.client.render.hand.ligh
 
 import java.util.ArrayList;
 import java.util.List;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.renderer.texture.TextureAtlasSprite;
-import net.minecraft.core.BlockPos;
 import net.minecraft.util.Mth;
-import net.minecraft.world.inventory.InventoryMenu;
-import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.LanternPainter;
 import nl.tivek.multiversepowers.character.greenlantern.hand.HandPose;
+import nl.tivek.multiversepowers.engine.client.fx.CameraShake;
 import nl.tivek.multiversepowers.engine.client.fx.Cosmos;
 import nl.tivek.multiversepowers.engine.client.fx.Lens;
 import nl.tivek.multiversepowers.engine.client.fx.ScreenFlash;
 import nl.tivek.multiversepowers.engine.client.fx.Singularity;
-import nl.tivek.multiversepowers.engine.client.fx.TexturedBox;
 import nl.tivek.multiversepowers.engine.math.Colors;
 import nl.tivek.multiversepowers.engine.math.Ease;
 import nl.tivek.multiversepowers.engine.math.Noise;
 import nl.tivek.multiversepowers.engine.math.Vectors;
 
 // The black hole's light: the hole itself (Singularity: the world bent round it, a disc of glowing matter whirling
-// round it, the picture dragged in towards it), jets of light out of its poles, streaks and torn-up pieces of the
-// ground round the hand spiralling in and stretching as they fall, and, crushed, a flash and a ring of bent light
-// bursting out. Without the shader a window on black space with rings of light stands in for it.
+// round it, the picture dragged in towards it), jets of light out of its poles and streaks spiralling in (the blocks
+// it tears out of the ground are real ones, engine/entity/TornBlock), and, crushed, a burst as far as it harms: a
+// flare, shells and rays of light, the world bent in a running ring, a ring of light racing over the ground and a
+// flash and a shake for whoever is near. Without the shader a window on black space with rings of light stands in.
 final class HandHoleLight {
     private static final int WHITE = 0xF2FFF4;
     private static final int LIGHT = 0x5CFF7A;
@@ -45,7 +39,8 @@ final class HandHoleLight {
     private static final double WAVE = 34.0;
     private static final double FLASH_FAR = 40.0;
     private static final int FALLING_IN = 24;
-    private static final int DEBRIS = 22;
+    private static final int RAYS = 28;
+    private static final int RING = 72;
     private static int flashed = Integer.MIN_VALUE;
 
     private HandHoleLight() {
@@ -58,7 +53,8 @@ final class HandHoleLight {
         double pull = HandPose.holePull(clock);
         double collapse = HandPose.holeCollapse(clock);
         double far = painter.camera().distanceTo(center);
-        burst(painter, id, center, scale, HandPose.holeBurst(clock), far, strength);
+        Vec3 ground = place.at(new Vec3(HandPose.HOLE_AT.x, 0.0, HandPose.HOLE_AT.z));
+        burst(painter, id, center, ground, scale, HandPose.holeBurst(clock), far, strength);
         if (size <= 0.01) {
             return;
         }
@@ -76,9 +72,6 @@ final class HandHoleLight {
         painter.glowDisc(center, radius * 3.0, LIGHT, (0.06 + 0.5 * collapse) * size * strength, 0.2, id);
         jets(painter, center, tilt, radius, scale, size, clock, pull * strength);
         streaks(painter, id, center, tilt, radius, scale, clock, pull * strength);
-        if (collapse < 0.6) {
-            debris(id, center, tilt, radius, scale, clock, pull * (1.0 - collapse));
-        }
     }
 
     // Two narrow beams of light thrown out of its poles, flickering, longest while it pulls hardest.
@@ -107,84 +100,69 @@ final class HandHoleLight {
         for (int k = 0; k < FALLING_IN; k++) {
             double run = (clock * (0.04 + 0.05 * strength) + Noise.of(id, k, 5)) % 1.0;
             Vec3 from = center.add(Noise.direction(k * 7 + (int) (clock * 0.05 + Noise.of(id, k, 6) * 9.0), 31)
-                    .scale((radius + 7.0 * scale) * (1.0 - run)));
+                    .scale((radius + 12.0 * scale) * (1.0 - run)));
             Vec3 swirl = Vectors.spin(from.subtract(center), tilt, 1.2 * run).add(center);
             painter.lightLine(swirl, swirl.lerp(center, 0.25), 0.07 * scale, PALE,
                     Colors.alpha(0.8 * strength * Math.sin(Math.PI * run)));
         }
     }
 
-    // Pieces of the ground round the hand, each in the texture of the block it was torn from, rising off it and
-    // spiralling in about the disc, stretched out longer and thinner the nearer they fall, gone at the horizon.
-    private static void debris(int id, Vec3 center, Vec3 tilt, double radius, double scale, double clock,
-            double pull) {
-        Minecraft minecraft = Minecraft.getInstance();
-        ClientLevel level = minecraft.level;
-        if (level == null || pull <= 0.05) {
-            return;
-        }
-        for (int k = 0; k < DEBRIS; k++) {
-            double cycles = clock * (0.012 + 0.01 * Noise.of(id, k, 11)) + Noise.of(id, k, 12);
-            int cycle = Mth.floor(cycles);
-            double run = cycles - cycle;
-            int piece = k + cycle * 37;
-            double angle = Math.PI * 2.0 * Noise.of(id, piece, 13);
-            double out = (6.0 + 6.0 * Noise.of(id, piece, 14)) * scale;
-            int x = Mth.floor(center.x + Math.cos(angle) * out);
-            int z = Mth.floor(center.z + Math.sin(angle) * out);
-            // The game sends players only some of its height maps: this is one of them.
-            int top = level.getHeight(Heightmap.Types.MOTION_BLOCKING, x, z);
-            BlockState state = level.getBlockState(new BlockPos(x, top - 1, z));
-            if (state.isAir() || Math.abs(top - center.y) > 24.0) {
-                continue;
-            }
-            Vec3 start = new Vec3(x + 0.5, top, z + 0.5);
-            double fall = Math.pow(run, 1.4);
-            Vec3 at = center.add(Vectors.spin(start.subtract(center), tilt, 2.6 * fall).scale(1.0 - 0.97 * fall))
-                    .add(0.0, Math.sin(Math.PI * run) * 1.2 * scale * (1.0 - fall), 0.0);
-            Vec3 in = center.subtract(at);
-            double gap = in.length();
-            if (gap < radius * 1.1 || gap < 1.0E-3) {
-                continue;
-            }
-            Vec3 along = in.scale(1.0 / gap);
-            Vec3[] across = Vectors.across(along);
-            double tumble = clock * (0.2 + 0.3 * Noise.of(id, piece, 16)) + k;
-            Vec3 a = Vectors.spin(across[0], along, tumble);
-            Vec3 b = Vectors.spin(across[1], along, tumble);
-            double side = (0.18 + 0.18 * Noise.of(id, piece, 15)) * scale * Math.min(1.0, pull * 2.0)
-                    * (1.0 - 0.55 * fall);
-            double length = side * (1.0 + 3.5 * fall * fall);
-            Vec3[] corners = new Vec3[8];
-            for (int i = 0; i < 8; i++) {
-                corners[i] = at.add(a.scale((i & 1) == 0 ? -side : side))
-                        .add(b.scale(((i >> 1) & 1) == 0 ? -side : side))
-                        .add(along.scale(((i >> 2) & 1) == 0 ? -length : length));
-            }
-            TextureAtlasSprite sprite = minecraft.getBlockRenderer().getBlockModelShaper().getParticleIcon(state);
-            TexturedBox.draw(InventoryMenu.BLOCK_ATLAS, sprite.getU0(), sprite.getV0(), sprite.getU1(),
-                    sprite.getV1(), corners);
-        }
-    }
-
-    // Crushed, it bursts: a flare and a shell of light, the world bent in a running ring, and a flash for whoever is
-    // near enough to see it.
-    private static void burst(LanternPainter painter, int id, Vec3 center, double scale, double burst, double far,
-            double strength) {
+    // Crushed, it bursts out as far as it harms: a flare, two shells of light, rays thrown every way, the world bent
+    // in a running ring, a ring of light racing over the ground, and a flash and a shake for whoever is near.
+    private static void burst(LanternPainter painter, int id, Vec3 center, Vec3 ground, double scale, double burst,
+            double far, double strength) {
         if (burst <= 0.0 || burst >= 1.0) {
             return;
         }
         double fade = (1.0 - burst) * strength;
         double out = 1.0 - Math.pow(1.0 - burst, 3.0);
-        painter.flare(center, 11.0 * (1.0 - burst) * scale, fade);
-        painter.shell(center, 9.0 * Ease.smooth(burst) * scale, PALE, 0.8 * fade);
+        double reach = HandPose.HOLE_BLAST_RADIUS * scale;
+        painter.flare(center, 15.0 * (1.0 - burst) * scale, fade);
+        painter.shell(center, reach * Ease.smooth(burst), PALE, 0.8 * fade);
+        painter.shell(center, reach * 0.55 * Ease.smooth(Math.min(1.0, burst * 1.7)), WHITE, 0.55 * fade);
         if (Lens.available()) {
-            Lens.bubble(center, 9.0 * Ease.smooth(burst) * scale, 0.6 * fade, PALE, 0.5);
+            Lens.bubble(center, reach * Ease.smooth(burst), 0.6 * fade, PALE, 0.5);
         }
         Singularity.wave(center, (2.0 + WAVE * out) * scale, fade, WHITE);
+        rays(painter, id, center, reach, burst, fade, scale);
+        groundRing(painter, ground, reach * out, fade, scale);
         if (burst < 0.15 && flashed != id && far < FLASH_FAR) {
             flashed = id;
-            ScreenFlash.add(PALE, (float) (0.6 * (1.0 - far / FLASH_FAR)), 12);
+            double near = 1.0 - far / FLASH_FAR;
+            ScreenFlash.add(PALE, (float) (0.6 * near), 12);
+            CameraShake.add((float) (6.0 * near), 14);
+        }
+    }
+
+    // Narrow beams of light thrown out every way, shooting out fast and thinning as they fade.
+    private static void rays(LanternPainter painter, int id, Vec3 center, double reach, double burst, double fade,
+            double scale) {
+        double shot = Ease.smooth(Math.min(1.0, burst * 2.5));
+        for (int k = 0; k < RAYS; k++) {
+            Vec3 way = Noise.direction(id * 31 + k, 47);
+            double length = reach * (0.55 + 0.45 * Noise.of(id, k, 21)) * shot;
+            Vec3 from = center.add(way.scale(length * 0.15));
+            Vec3 to = center.add(way.scale(length));
+            double width = (0.18 + 0.12 * Noise.of(id, k, 22)) * scale * (1.0 - burst);
+            painter.lightLine(from, to, width, WHITE, Colors.alpha(0.9 * fade));
+            painter.glowLine(from, to, width * 5.0, LIGHT, Colors.alpha(0.45 * fade));
+        }
+    }
+
+    // A ring of light racing out over the ground under the hole.
+    private static void groundRing(LanternPainter painter, Vec3 ground, double radius, double fade, double scale) {
+        if (radius < 0.5 || fade <= 0.02) {
+            return;
+        }
+        Vec3 last = null;
+        for (int i = 0; i <= RING; i++) {
+            double angle = Math.PI * 2.0 * i / RING;
+            Vec3 point = ground.add(Math.cos(angle) * radius, 0.15, Math.sin(angle) * radius);
+            if (last != null) {
+                painter.lightLine(last, point, (0.12 + 0.3 * fade) * scale, PALE, Colors.alpha(0.85 * fade));
+                painter.glowLine(last, point, 1.8 * scale, LIGHT, Colors.alpha(0.4 * fade));
+            }
+            last = point;
         }
     }
 

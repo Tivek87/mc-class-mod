@@ -7,7 +7,9 @@ import net.minecraft.core.particles.BlockParticleOption;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
+import net.minecraft.util.Mth;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.AABB;
@@ -19,7 +21,9 @@ import nl.tivek.multiversepowers.engine.effect.Effects;
 import nl.tivek.multiversepowers.engine.entity.HeldMobs;
 import nl.tivek.multiversepowers.engine.entity.Knockdowns;
 import nl.tivek.multiversepowers.engine.entity.TimeFreeze;
+import nl.tivek.multiversepowers.engine.entity.TornBlock;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
+import nl.tivek.multiversepowers.engine.world.BlockRules;
 import static nl.tivek.multiversepowers.character.greenlantern.ability.hands.GiantHands.SCALE;
 import static nl.tivek.multiversepowers.engine.math.Vectors.flat;
 
@@ -42,15 +46,19 @@ abstract class GiantHandWonders extends GiantHandShots {
     private static final double SLAM_SPEED = 2.6;
     private static final int SLAM_MOST = 40;
     private static final int GRAVITY_LOOKS = 6;
-    private static final double PULL_RADIUS = 11.0;
-    private static final double CORE = 2.5;
-    private static final double CORE_DAMAGE = 0.25;
-    private static final int CORE_EVERY = 24;
-    private static final double BLAST_RADIUS = 9.0;
-    private static final double BLAST_DAMAGE = 1.0;
-    private static final double BLAST_OUT = 2.6;
-    private static final double BLAST_UP = 0.9;
-    private static final int DUST = 5;
+    private static final double PULL_RADIUS = HandPose.HOLE_PULL;
+    private static final double CORE = 3.5;
+    private static final double CORE_DAMAGE = 0.6;
+    private static final int CORE_EVERY = 12;
+    private static final double BLAST_RADIUS = HandPose.HOLE_BLAST_RADIUS;
+    private static final double BLAST_DAMAGE = 2.5;
+    private static final double BLAST_OUT = 3.4;
+    private static final double BLAST_UP = 1.1;
+    private static final int DUST = 8;
+    // The hardest block a black hole tears out (deepslate), and the fewest ticks a torn block still needs to get in
+    // before the fist crushes the hole.
+    private static final float HOLE_HARDEST = 3.0F;
+    private static final int HOLE_LAST = 10;
 
     private record Floating(LivingEntity living, double high) {
     }
@@ -58,6 +66,8 @@ abstract class GiantHandWonders extends GiantHandShots {
     private final List<LivingEntity> stopped = new ArrayList<>();
     private final List<Floating> floating = new ArrayList<>();
     private final List<LivingEntity> falling = new ArrayList<>();
+    private final List<TornBlock> torn = new ArrayList<>();
+    private int tornCount;
     private Vec3 field;
     private int slammedAt = -1;
 
@@ -382,8 +392,12 @@ abstract class GiantHandWonders extends GiantHandShots {
             this.storm.sound(level, hole, SoundEvents.END_PORTAL_SPAWN, 0.8F, 0.6F);
         }
         double pull = HandPose.holePull(this.t);
+        for (TornBlock block : this.torn) {
+            block.aim(hole);
+        }
         if (pull > 0.01 && this.t < HandPose.HOLE_CRUSHES) {
             this.draw(level, hole, pull);
+            this.tearGround(level, hole, pull);
             if (this.t % 3 == 0) {
                 ParticleFx.send(level, ParticleTypes.PORTAL, hole.x, hole.y, hole.z, 12, 3.0, 3.0, 3.0, 1.0);
             }
@@ -406,11 +420,54 @@ abstract class GiantHandWonders extends GiantHandShots {
         }
     }
 
+    // Blocks of the ground round the hand torn out of the world, one or more a tick, the harder it pulls the more,
+    // each set to fall in before the fist closes.
+    private void tearGround(ServerLevel level, Vec3 hole, double pull) {
+        int most = this.storm.ability.intValue("holeBlocks");
+        int left = HandPose.HOLE_CRUSHES - this.t - 2;
+        if (pull < 0.2 || left < HOLE_LAST) {
+            return;
+        }
+        int tries = 1 + (int) (pull * 3.0);
+        for (int k = 0; k < tries && this.tornCount < most; k++) {
+            double angle = level.random.nextDouble() * Math.PI * 2.0;
+            double out = (2.5 + level.random.nextDouble() * (PULL_RADIUS - 4.0)) * SCALE;
+            int x = Mth.floor(this.base.x + Math.cos(angle) * out);
+            int z = Mth.floor(this.base.z + Math.sin(angle) * out);
+            if (!level.isLoaded(new BlockPos(x, (int) this.base.y, z))) {
+                continue;
+            }
+            int top = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
+            BlockPos pos = new BlockPos(x, top - 1, z);
+            BlockState state = level.getBlockState(pos);
+            if (Math.abs(top - this.base.y) > 10.0 || state.isAir() || state.hasBlockEntity()
+                    || !state.getFluidState().isEmpty()) {
+                continue;
+            }
+            float hardness = state.getDestroySpeed(level, pos);
+            if (hardness < 0.0F || hardness > HOLE_HARDEST || !BlockRules.mayBreak(level, this.storm.owner, pos,
+                    state)) {
+                continue;
+            }
+            // A plant on it goes first, so it never drops as an item.
+            BlockPos above = pos.above();
+            BlockState cover = level.getBlockState(above);
+            if (!cover.isAir() && cover.getFluidState().isEmpty() && !cover.hasBlockEntity()
+                    && BlockRules.mayBreak(level, this.storm.owner, above, cover)) {
+                level.setBlock(above, Blocks.AIR.defaultBlockState(), 3);
+            }
+            double far = hole.distanceTo(Vec3.atCenterOf(pos));
+            this.torn.add(TornBlock.tear(level, pos, state, hole, Math.min(left, 16 + (int) (far * 2.4))));
+            this.tornCount++;
+        }
+        this.torn.removeIf(block -> !block.isAlive());
+    }
+
     // Dust of the ground round the hand torn up and flying in.
     private void groundDust(ServerLevel level, Vec3 hole, double pull) {
         for (int k = 0; k < DUST; k++) {
             double angle = level.random.nextDouble() * Math.PI * 2.0;
-            double out = (4.0 + level.random.nextDouble() * 7.0) * SCALE;
+            double out = (4.0 + level.random.nextDouble() * (PULL_RADIUS - 4.0)) * SCALE;
             BlockPos column = BlockPos.containing(this.base.x + Math.cos(angle) * out, this.base.y,
                     this.base.z + Math.sin(angle) * out);
             if (!level.isLoaded(column)) {
@@ -442,9 +499,9 @@ abstract class GiantHandWonders extends GiantHandShots {
             Vec3 round = in.cross(new Vec3(0.0, 1.0, 0.0));
             round = round.lengthSqr() < 1.0E-6 ? Vec3.ZERO : round.normalize();
             double near = 1.0 - far / (PULL_RADIUS * SCALE);
-            Vec3 want = far < 1.6 ? round.scale(0.3).add(in.scale((far - 1.0) * 0.3))
-                    : in.scale(0.25 + 0.6 * near).add(round.scale(0.35 * near));
-            living.setDeltaMovement(living.getDeltaMovement().scale(1.0 - 0.4 * pull).add(want.scale(0.4 * pull)));
+            Vec3 want = far < 1.6 ? round.scale(0.35).add(in.scale((far - 1.0) * 0.3))
+                    : in.scale(0.4 + 0.85 * near).add(round.scale(0.4 * near));
+            living.setDeltaMovement(living.getDeltaMovement().scale(1.0 - 0.5 * pull).add(want.scale(0.5 * pull)));
             living.resetFallDistance();
             living.hurtMarked = true;
             if (burns && far < CORE * SCALE) {
@@ -465,12 +522,44 @@ abstract class GiantHandWonders extends GiantHandShots {
             double share = 1.0 - 0.6 * far / (BLAST_RADIUS * SCALE);
             this.hit(level, living, this.part(BLAST_DAMAGE * share), flat(from), BLAST_OUT * share, BLAST_UP);
         }
-        ParticleFx.send(level, ParticleTypes.EXPLOSION_EMITTER, hole.x, hole.y, hole.z, 1, 0.0, 0.0, 0.0, 0.0);
-        ParticleFx.send(level, ParticleTypes.FLASH, hole.x, hole.y, hole.z, 1, 0.0, 0.0, 0.0, 0.0);
-        ParticleFx.sphereOut(level, ParticleFx.dust(PowerRing.BRIGHT, 1.8F), hole, 40, 0.9);
-        ParticleFx.shockwave(level, ParticleFx.dust(PowerRing.PALE, 1.8F), this.base.add(0.0, 0.2, 0.0), 48, 0.9);
+        for (TornBlock block : this.torn) {
+            block.discard();
+        }
+        this.torn.clear();
+        // The burst reaches as far as its light runs out (client/render/hand/light/HandHoleLight).
+        double reach = BLAST_RADIUS * SCALE;
+        ParticleFx.send(level, ParticleTypes.EXPLOSION_EMITTER, hole.x, hole.y, hole.z, 2, 0.6, 0.6, 0.6, 0.0);
+        ParticleFx.sphereOut(level, ParticleTypes.ELECTRIC_SPARK, hole, 60, 1.4);
+        ParticleFx.sphereOut(level, ParticleTypes.END_ROD, hole, 50, 0.9);
+        ParticleFx.sphereOut(level, ParticleFx.dust(PowerRing.BRIGHT, 2.4F), hole, 90, 1.3);
+        ParticleFx.sphereOut(level, ParticleFx.dust(PowerRing.PALE, 1.6F), hole, 60, 0.7);
+        ParticleFx.shockwave(level, ParticleFx.dust(PowerRing.PALE, 2.2F), this.base.add(0.0, 0.2, 0.0), 120,
+                reach / 12.0);
+        ParticleFx.shockwave(level, ParticleTypes.CLOUD, this.base.add(0.0, 0.3, 0.0), 60, reach / 16.0);
+        this.groundBurst(level, reach);
         this.storm.sound(level, hole, SoundEvents.GENERIC_EXPLODE.value(), 3.0F, 0.5F);
         this.storm.sound(level, hole, SoundEvents.WARDEN_SONIC_BOOM, 2.0F, 0.7F);
         this.storm.sound(level, hole, SoundEvents.LIGHTNING_BOLT_THUNDER, 1.4F, 1.5F);
+        this.storm.sound(level, hole, SoundEvents.DRAGON_FIREBALL_EXPLODE, 2.0F, 0.6F);
+    }
+
+    // The ground thrown up in a ring as the burst runs over it.
+    private void groundBurst(ServerLevel level, double reach) {
+        for (int k = 0; k < 40; k++) {
+            double angle = Math.PI * 2.0 * k / 40.0 + level.random.nextDouble() * 0.15;
+            double out = reach * (0.3 + 0.7 * level.random.nextDouble());
+            int x = Mth.floor(this.base.x + Math.cos(angle) * out);
+            int z = Mth.floor(this.base.z + Math.sin(angle) * out);
+            if (!level.isLoaded(new BlockPos(x, (int) this.base.y, z))) {
+                continue;
+            }
+            int top = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
+            BlockState ground = level.getBlockState(new BlockPos(x, top - 1, z));
+            if (ground.isAir() || Math.abs(top - this.base.y) > 10.0) {
+                continue;
+            }
+            ParticleFx.send(level, new BlockParticleOption(ParticleTypes.BLOCK, ground), x + 0.5, top + 0.1,
+                    z + 0.5, 8, 0.4, 0.2, 0.4, 0.3);
+        }
     }
 }

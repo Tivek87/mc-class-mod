@@ -90,7 +90,9 @@ public final class SettingsPages {
         pages.add(commands());
         pages.add(schematics());
         for (GameCharacter character : GameCharacter.values()) {
-            pages.add(character(character));
+            if (character.playable()) {
+                pages.add(character(character));
+            }
         }
         pages.add(share());
         return pages;

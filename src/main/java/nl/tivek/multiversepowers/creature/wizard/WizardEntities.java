@@ -142,7 +142,7 @@ public final class WizardEntities {
 
     private static void onAttributes(EntityAttributeCreationEvent event) {
         event.put(WIZARD.get(), Monster.createMonsterAttributes().add(Attributes.MAX_HEALTH, 800.0)
-                .add(Attributes.MOVEMENT_SPEED, 0.34).add(Attributes.ATTACK_DAMAGE, 14.0).add(Attributes.ARMOR, 10.0)
+                .add(Attributes.MOVEMENT_SPEED, 0.34).add(Attributes.ATTACK_DAMAGE, 18.0).add(Attributes.ARMOR, 10.0)
                 .add(Attributes.ARMOR_TOUGHNESS, 6.0).add(Attributes.KNOCKBACK_RESISTANCE, 0.85)
                 .add(Attributes.FOLLOW_RANGE, 48.0).build());
         event.put(DECOY.get(), Monster.createMonsterAttributes().add(Attributes.MAX_HEALTH, 1.0).build());

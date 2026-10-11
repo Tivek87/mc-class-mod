@@ -18,7 +18,6 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
-import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.character.AbilityActionPayload;
@@ -28,8 +27,6 @@ import nl.tivek.multiversepowers.character.CharacterLookPayload;
 import nl.tivek.multiversepowers.character.CharacterStatePayload;
 import nl.tivek.multiversepowers.character.Characters;
 import nl.tivek.multiversepowers.character.GameCharacter;
-import nl.tivek.multiversepowers.character.docock.client.ClimbControl;
-import nl.tivek.multiversepowers.character.docock.client.TentacleLegs;
 import nl.tivek.multiversepowers.character.greenlantern.client.ClientRing;
 import nl.tivek.multiversepowers.character.greenlantern.client.ConstructChoice;
 import nl.tivek.multiversepowers.character.greenlantern.client.hud.ConstructWheel;
@@ -49,15 +46,11 @@ public final class ClientCharacter {
     @Nullable
     private static GameCharacter character;
     private static int ultimate;
-    private static int legs;
-    private static int marked;
-    private static int limbs = -1;
     private static final int[] COOLDOWNS = new int[AbilitySlot.values().length];
     private static final boolean[] HELD = new boolean[AbilitySlot.values().length];
     private static int clock;
     private static final int[] TAPPED = never(AbilitySlot.values().length);
     private static final int[] KEY_DOWN = up(AbilitySlot.values().length);
-    private static boolean climbing;
     private static final Map<GameCharacter, Local> LOCAL = new EnumMap<>(GameCharacter.class);
     private static final Map<GameCharacter, Refusal> REFUSALS = new EnumMap<>(GameCharacter.class);
     private static final Map<CharacterAbility, Predicate<LocalPlayer>> ENDS = new HashMap<>();
@@ -83,9 +76,6 @@ public final class ClientCharacter {
         GameCharacter before = character;
         character = payload.character() >= 0 && payload.character() < all.length ? all[payload.character()] : null;
         ultimate = payload.ultimate();
-        legs = payload.stance();
-        marked = payload.marks();
-        limbs = payload.limbs();
         for (int i = 0; i < COOLDOWNS.length; i++) {
             COOLDOWNS[i] = i < payload.cooldowns().length ? payload.cooldowns()[i] : 0;
         }
@@ -93,8 +83,6 @@ public final class ClientCharacter {
             Arrays.fill(HELD, false);
             Arrays.fill(TAPPED, Integer.MIN_VALUE);
             Arrays.fill(KEY_DOWN, -1);
-            climbing = false;
-            ClimbControl.stop();
             ConstructWheel.stop();
             ConstructChoice.forget();
             Gestures.reset();
@@ -128,29 +116,12 @@ public final class ClientCharacter {
         return clock - TAPPED[ability.slot().ordinal()] + partialTick;
     }
 
-    public static boolean carried() {
-        return legs > 0;
-    }
-
     static int clock() {
         return clock;
     }
 
     public static int ultimate() {
         return ultimate;
-    }
-
-    public static int legs() {
-        return legs;
-    }
-
-    public static int marked() {
-        return marked;
-    }
-
-    // What each of the character's extra limbs does now, as its powers pack it (-1: none out).
-    public static int limbs() {
-        return limbs;
     }
 
     // A gesture that may only fire at some moments (take off only when standing free) says when, here.
@@ -276,7 +247,7 @@ public final class ClientCharacter {
 
     private static void tell(LocalPlayer player, String key, Object... args) {
         Crosshairs.refused();
-        player.displayClientMessage(Component.translatable("octopus." + MultiversePowers.MODID + "." + key, args),
+        player.displayClientMessage(Component.translatable("character." + MultiversePowers.MODID + "." + key, args),
                 true);
     }
 
@@ -502,39 +473,10 @@ public final class ClientCharacter {
     }
 
     @SubscribeEvent
-    public static void onPlayerTick(PlayerTickEvent.Pre event) {
-        Minecraft minecraft = Minecraft.getInstance();
-        if (!(event.getEntity() instanceof LocalPlayer player) || player != minecraft.player) {
-            return;
-        }
-        boolean active = character == GameCharacter.DOC_OCK;
-        // Knocked down he lets go of the wall and his legs no longer hold him up.
-        boolean free = active && !Downed.now();
-        boolean onSurface = ClimbControl.tick(player, free);
-        if (onSurface != climbing) {
-            climbing = onSurface;
-            send(AbilityActionPayload.CLIMB, onSurface, ClimbControl.face().ordinal());
-        }
-        if (onSurface) {
-            return;
-        }
-        if (free) {
-            TentacleLegs.carry(player, legs);
-        } else if (!active) {
-            legs = 0;
-        }
-    }
-
-    @SubscribeEvent
     public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
         character = null;
         WORN.clear();
         ultimate = 0;
-        legs = 0;
-        marked = 0;
-        limbs = -1;
-        climbing = false;
-        ClimbControl.stop();
         ConstructWheel.stop();
         ConstructChoice.forget();
         Gestures.reset();

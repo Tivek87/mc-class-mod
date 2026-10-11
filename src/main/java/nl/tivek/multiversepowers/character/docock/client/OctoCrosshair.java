@@ -6,8 +6,7 @@ import net.minecraft.util.Mth;
 import nl.tivek.multiversepowers.character.client.Crosshairs;
 import nl.tivek.multiversepowers.engine.client.gui.GuiShapes;
 
-// Doctor Octopus's crosshair: a steel ring round a point, like the lens of his goggles; his tentacles' corners
-// (TentacleHud) sit round it. It widens as he strikes or runs; on a creature four lens arcs turn in and lock round it,
+// Doctor Octopus's crosshair: a steel ring round a point, like the lens of his goggles. It widens as he strikes or runs; on a creature four lens arcs turn in and lock round it,
 // the point in its colour, a thin arc of its health round them; a landed blow flashes it. It reacts as every crosshair
 // does (Crosshairs.Feel).
 public final class OctoCrosshair {

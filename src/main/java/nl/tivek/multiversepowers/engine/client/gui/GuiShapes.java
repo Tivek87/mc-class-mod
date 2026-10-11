@@ -104,6 +104,31 @@ public final class GuiShapes {
         arc(graphics, x + r, y + r, 0.0F, r, 270.0F, 360.0F, argb);
     }
 
+    // A rectangle shaded from `top` down to `bottom` (both with their alpha).
+    public static void gradient(GuiGraphics graphics, float x, float y, float width, float height, int top,
+            int bottom) {
+        if ((top >>> 24) == 0 && (bottom >>> 24) == 0) {
+            return;
+        }
+        Matrix4f matrix = graphics.pose().last().pose();
+        VertexConsumer buffer = graphics.bufferSource().getBuffer(RenderType.gui());
+        buffer.addVertex(matrix, x, y, 0.0F).setColor(top);
+        buffer.addVertex(matrix, x, y + height, 0.0F).setColor(bottom);
+        buffer.addVertex(matrix, x + width, y + height, 0.0F).setColor(bottom);
+        buffer.addVertex(matrix, x + width, y, 0.0F).setColor(top);
+    }
+
+    // A soft glow round a rectangle, fading out over `spread`.
+    public static void glow(GuiGraphics graphics, float x, float y, float width, float height, float spread, int rgb,
+            float alpha) {
+        int steps = 5;
+        for (int k = steps; k >= 1; k--) {
+            float out = spread * k / steps;
+            roundRect(graphics, x - out, y - out, width + 2.0F * out, height + 2.0F * out, out + 1.0F,
+                    fade(rgb, alpha * 0.35F * (steps - k + 1) / steps));
+        }
+    }
+
     public static int fade(int rgb, float alpha) {
         int a = Mth.clamp(Mth.floor(alpha * 255.0F + 0.5F), 0, 255);
         return a << 24 | rgb & 0xFFFFFF;

@@ -17,7 +17,6 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.HumanoidArm;
@@ -166,9 +165,9 @@ public final class AbilityPanel {
 
     // The panel's parts and its size in its own pixels; `corner` is the ultimate's countdown, else the guide's key;
     // `keys` the key column's width, `tops` each row's top from the bottom.
-    private record Layout(Spacing spacing, Component title, @Nullable Component corner, @Nullable Component footer,
-            boolean lantern, Component guideKey, Component guide, int guideWidth, int keys, int foot, int[] tops,
-            int width, int height) {
+    private record Layout(Spacing spacing, Component title, @Nullable Component corner, boolean lantern,
+            Component guideKey, Component guide, int guideWidth, int keys, int foot, int[] tops, int width,
+            int height) {
     }
 
     // A row as drawn: its top gliding to its place, when it came, how lit it is and how far its status shows, keeping
@@ -530,8 +529,8 @@ public final class AbilityPanel {
     }
 
     // Where the panel, its guide key, its rows (also as the character's own, `game.panel.rows.<character>`) and its foot
-    // (the ring's power, what Doctor Octopus stands on) ended up on the screen, for the tour to point at; the corner it
-    // takes stays free of the rest of the HUD.
+    // (the ring's power) ended up on the screen, for the tour to point at; the corner it takes stays free of the rest of
+    // the HUD.
     private static void anchors(Layout layout, Owner owner, float x, float y, float scale) {
         int width = Math.round(up.shownWidth) + PAD * 2;
         int height = Math.round(up.shownHeight) + PAD * 2;
@@ -570,7 +569,6 @@ public final class AbilityPanel {
         Component corner = ultimate > 0
                 ? Component.translatable(PREFIX + "ultimate." + owner.id(), (ultimate + 19) / 20) : null;
         boolean lantern = owner.character() == GameCharacter.GREEN_LANTERN;
-        Component footer = lantern || owner.character() == null ? null : footer();
         Component guideKey = PowerInputs.keyName(AbilityGuide.KEY);
         Component guide = Component.translatable(PREFIX + "guide");
         int guideWidth = AbilityGuide.KEY.isUnbound() ? 0 : KeyCap.width(font, guideKey) + 4 + font.width(guide);
@@ -586,13 +584,10 @@ public final class AbilityPanel {
         }
         int width = Math.max(font.width(title) + GAP * 2 + (corner == null ? guideWidth : font.width(corner)),
                 keys + GAP + names + STATUS_GAP + statuses);
-        if (footer != null) {
-            width = Math.max(width, font.width(footer));
-        }
         if (lantern) {
             width = Math.max(width, ConstructHud.powerWidth(font));
         }
-        int foot = lantern || footer != null ? spacing.foot() : 0;
+        int foot = lantern ? spacing.foot() : 0;
         int[] tops = new int[lines.size()];
         int below = 0;
         for (int i = 0; i < lines.size(); i++) {
@@ -606,7 +601,7 @@ public final class AbilityPanel {
             tops[i] -= rows + foot;
         }
         int height = spacing.title() + rows + foot;
-        return new Layout(spacing, title, corner, footer, lantern, guideKey, guide, guideWidth, keys, foot, tops,
+        return new Layout(spacing, title, corner, lantern, guideKey, guide, guideWidth, keys, foot, tops,
                 width, height);
     }
 
@@ -665,8 +660,6 @@ public final class AbilityPanel {
             CharacterAbility train = GameCharacter.GREEN_LANTERN.byName("emerald_express");
             ConstructHud.renderPower(graphics, font, player, left, right, footY,
                     train == null || !train.has(POWER_COST) ? 0.0F : (float) train.value(POWER_COST));
-        } else if (layout.footer() != null) {
-            graphics.drawString(font, layout.footer(), left, footY, 0xFF000000 | KEY_TEXT, false);
         }
     }
 
@@ -676,20 +669,5 @@ public final class AbilityPanel {
         KeyCap.pill(layer.graphics(), x, y, width, CAP, faded(KEY_FILL, alpha));
         layer.text(key, x + 3, y + 1, GuiShapes.fade(color, alpha));
         return width;
-    }
-
-    // What Doctor Octopus stands on and how many he has marked, while that is anything.
-    @Nullable
-    private static Component footer() {
-        int legs = ClientCharacter.legs();
-        int marked = ClientCharacter.marked();
-        if (legs <= 0 && marked <= 0) {
-            return null;
-        }
-        MutableComponent status = Component.translatable(PREFIX + (legs > 0 ? "on_legs" : "on_feet"), legs);
-        if (marked > 0) {
-            status.append(" + ").append(Component.translatable(PREFIX + "marked", marked));
-        }
-        return status;
     }
 }

@@ -32,7 +32,7 @@ public final class WardCrystal extends Entity {
             EntityDataSerializers.INT);
     private static final EntityDataAccessor<Float> HEALTH = SynchedEntityData.defineId(WardCrystal.class,
             EntityDataSerializers.FLOAT);
-    public static final float MOST_HEALTH = 16.0F;
+    public static final float MOST_HEALTH = 5.6F;
     private static final double RADIUS = 2.5;
     private static final double HEIGHT = 1.3;
 

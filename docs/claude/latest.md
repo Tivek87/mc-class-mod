@@ -1,12 +1,15 @@
 # Laatste sessie
 
-- Datum: 2026-10-11 22:38
-- Vraag: Wizard sterker, 5 phases, 12 nieuwe spells, vliegen + teleport in de lucht, magic shield per phase, outfit per phase, betere spawn/death/animaties.
-- Gedaan: 5 phases, ward + 3 kristallen (`WizardWard`, `WardCrystal`), vliegen (`WizardFlight`), 12 spells (`abyss/`, `field/`, `PrismLance`), outfits (`WizardTexture` 5 texturen, `RegaliaLayer`), cocoon/dood-licht (`client/light/`), nieuwe keys (`WizardKeysMore`), boss bar met ward.
-- In-game getest (5 runs): crash "Not building!" in 4 renderers gefixt; Soul Drain zette HP omlaag; oude decoys bleven na phase; FLASH-vierkant; inkt voor oog bij tendrils; drain pakte armor stand. Alles gefixt en opnieuw getest.
-- 0.8.9-alpha: `release.ps1 prepare`, CHANGELOG, TourSteps (4 stappen) + en_us; tour in game gelopen. Build + tests groen.
-- Review (agent) gefixt: zwaartekracht na mirrors, bolts barsten op eigen kristallen/tendrils, dive zonder doel, ward-hitcooldown, kroonpunt-texture, nagloed bij dood, dode code, FLASH overal weg.
-- CLAUDE.md: Wizard-indeling, regels `getBuffer`, FLASH, tour-test state.
-- Opgeruimd: testklassen, testwereld, shots; tour.json terug. Laatste FLASH-wissel (mirrors/ritueel/vallende ster) alleen gecompileerd, niet in game gezien.
+- Datum: 2026-10-12 00:34
+- Release 0.8.9-alpha: commit + push + publish op verzoek; tour in game doorlopen (7 kaarten ok), CHANGELOG-datum 2026-10-12.
+- Laatste vragen: korte lijst van alles wat nieuw is (gegeven); waar het ability-paneel aan te passen (Mods → Multiverse Powers → Config → Your game → Ability overlay → Change layout); Wizard in de Mobs-preview met staf op de grond (gedaan: `WizardPoses.planted`, alleen in preview via `MobPreview.drawing`, in game getest, build groen).
+- Vraag: Wizard-ward 65% zwakker, daarna de lijst: Mobs-pagina (tooltip, draaien, typen/vermenigvuldigen, relaties klikken, Sentinel), paneel verplaatsen, GL hover-snelheid, black hole (echte blokken, burst), Wizard sterker + meerdere spelers, `/galactus`, escape-minigame, Doc Ock weg (WIP), idle-animaties in de mob-viewer.
+- Commit `cb2fc36` gedaan (Wizard), niet gepusht/gereleased.
+- Gedaan (code, build + unit tests groen): alles uit de lijst. Doc Ock: `docock/` weg op `OctoCrosshair` na, `GameCharacter.DOC_OCK` zonder abilities en `playable()` false, G-menu + server zeggen WIP, geen config/settings-pagina, docs ingekort. Idle: `MobPreview` acts (eigen moves + rondkijken), vloeiende partialTick.
+- CHANGELOG 0.8.9-alpha + 3 tour-stappen (galactus, black_hole, doc_ock_rework) + SMALL-regels; TourCoverageTest groen.
+- Paneel verplaatsen/schalen bestond al: Settings > Your game > Change layout.
+- In-game getest (5 runs, tijdelijke `ClaudeAllTest`, nu verwijderd met wereld + shots): idle-moves alle 12 mobs, Sentinel-preview, typen/*2/÷2, Relations-naam klikt door, Galactus (stip -> por -> weg), zwart gat (echte blokken, burst), Doc Ock WIP, escape-UI, hover-snelheid, Wizard meerdere spelers.
+- Fixes uit test: Galactus-arm 's nachts verlicht + gloed op vingertop; Relations-knoppen openen pas op het label (anders bedekten ze de naam).
+- `./gradlew build` groen (incl. TourCoverageTest).
 - Niet van mij, niet meecommitten: `arena/`, `CONTENT.txt`.
-- Open: commit/push/release v0.8.9-alpha vraagt ja van gebruiker.
+- Open: commit vragen (geen push/release). Niet getest: echte multiplayer-verbinding.

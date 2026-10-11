@@ -1,9 +1,13 @@
 package nl.tivek.multiversepowers.creature.wizard.client;
 
+import java.util.List;
+import net.minecraft.world.entity.EntityType;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
+import nl.tivek.multiversepowers.creature.MovingMonster;
 import nl.tivek.multiversepowers.creature.wizard.Wizard;
 import nl.tivek.multiversepowers.creature.wizard.WizardDecoy;
 import nl.tivek.multiversepowers.creature.wizard.WizardEntities;
+import nl.tivek.multiversepowers.creature.wizard.WizardMove;
 import nl.tivek.multiversepowers.creature.wizard.client.abyss.DrainRenderer;
 import nl.tivek.multiversepowers.creature.wizard.client.abyss.SupernovaRenderer;
 import nl.tivek.multiversepowers.creature.wizard.client.abyss.TendrilsRenderer;
@@ -24,6 +28,7 @@ import nl.tivek.multiversepowers.creature.wizard.client.fx.FamiliarRenderer;
 import nl.tivek.multiversepowers.creature.wizard.client.fx.LanceRenderer;
 import nl.tivek.multiversepowers.creature.wizard.client.fx.MeteorRenderer;
 import nl.tivek.multiversepowers.creature.wizard.client.fx.OrbRenderer;
+import nl.tivek.multiversepowers.faction.mob.client.MobPreview;
 
 // Registers how the Wizard, his images and his spells are drawn.
 public final class WizardClient {
@@ -36,6 +41,13 @@ public final class WizardClient {
         event.registerEntityRenderer(WizardEntities.DECOY.get(), context -> new WizardRenderer<WizardDecoy>(context,
                 0.0F));
         event.registerEntityRenderer(WizardEntities.FAMILIAR.get(), FamiliarRenderer::new);
+        for (EntityType<? extends MovingMonster> type : List.<EntityType<? extends MovingMonster>>of(
+                WizardEntities.WIZARD.get(), WizardEntities.DECOY.get())) {
+            for (int kind : new int[] { WizardMove.STRIKE, WizardMove.BOLT, WizardMove.BLIZZARD }) {
+                MobPreview.move(type, WizardMove.length(kind) + 8, w -> w.play(kind), w -> w.play(0));
+            }
+        }
+        MobPreview.move(WizardEntities.FAMILIAR.get(), 40, f -> f.setIsCharging(true), f -> f.setIsCharging(false));
         event.registerEntityRenderer(WizardEntities.BOLT.get(), context -> new OrbRenderer<>(context, Wizard.VIOLET,
                 0.55F, 0.9F));
         event.registerEntityRenderer(WizardEntities.SPARK.get(), context -> new OrbRenderer<>(context, Wizard.VIOLET,

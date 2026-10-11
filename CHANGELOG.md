@@ -3,7 +3,7 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
-## [0.8.9-alpha] - 2026-10-11
+## [0.8.9-alpha] - 2026-10-12
 
 ### Added
 - **Wizard: five phases:** two more, The Voidborn and The Eternal. A phase wakes at every fifth of his health, each
@@ -17,8 +17,24 @@ the sections before 0.0.1-alpha came before versions were numbered.
   (it heals him), Star Spiral and Supernova (get behind something).
 - **Wizard: outfit per phase:** new colours every phase, with shoulder plates, a crown of spikes and horns, and light
   that grows: rings of runes, flames, shards of the void, at last a halo and wings.
+- **Galactus in the sky:** `/galactus` (host or operator) brings him in from far away, growing until his fingertip,
+  big as the moon, pokes it; then he goes. `/galactus quick` is six times as fast, `/galactus stop` sends him off.
+- **Black hole: real blocks:** the Giant Hands' black hole rips blocks out of the ground and pulls them in as you
+  watch (setting: Black hole blocks).
+- **Mobs page: type a value:** click a number to type it; `*2` or `/2` multiplies or divides it, and ×2 and ÷2
+  buttons sit beside it.
+- **Mobs page: idle moves:** the mod's own creatures move now and then in the preview: they look round, roar, swipe
+  or cast. The Wizard stands with his staff planted on the ground.
+- **Mobs page: open from Relations:** click another creature in the Relations tab to open its page.
 
 ### Changed
+- **Wizard: several foes:** he deals more damage, and with more players near he fights them all, his spells striking
+  the others too.
+- **Wizard: weaker ward:** every ward and its crystals hold 65% less.
+- **Black hole: bigger blast:** it pulls from further, hurts more, and bursts in a flash with rays and a ring of light
+  over the ground.
+- **Escape game: easier and clearer:** the slider moves half as fast, the red zone always sits in the middle of the
+  yellow, and the bar has a new look.
 - **Wizard: stronger:** 800 health instead of 500, harder blows and more armor; every phase he waits less between
   spells.
 - **Wizard: arrival:** he comes down curled up in a cocoon of light, lands on one knee as it opens, rises and roars.
@@ -27,8 +43,16 @@ the sections before 0.0.1-alpha came before versions were numbered.
 - **Wizard: boss bar:** marks for all five phases, and his ward's own bar with its crystals under it.
 - **Wizard: images** of him break when a new phase begins.
 
+### Removed
+- **Doctor Octopus: in rework:** his powers, settings and guide are gone for now; picking him in the power wheel says
+  he cannot be played yet. His crosshair stays.
+
 ### Fixed
 - **Wizard: bursts** no longer show a big pale square up close.
+- **Green Lantern: hover** no longer slides sideways insanely fast while you hold space; its speed is a setting.
+- **Mobs page: tooltips** no longer show a broken symbol where a line breaks.
+- **Mobs page: turning** a creature by dragging no longer goes the wrong way.
+- **Mobs page: Sentinel** now shows in the preview.
 
 ## [0.8.8-alpha] - 2026-10-11
 

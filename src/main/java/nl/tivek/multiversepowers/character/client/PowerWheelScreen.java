@@ -9,6 +9,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.scores.PlayerTeam;
 import net.neoforged.neoforge.network.PacketDistributor;
+import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.character.GameCharacter;
 import nl.tivek.multiversepowers.character.TransformPayload;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.hand.DevHand;
@@ -117,7 +118,12 @@ public class PowerWheelScreen extends PowerWheelLayout {
 
     private void selectCharacter(GameCharacter character) {
         if (this.minecraft != null && this.minecraft.player != null) {
-            PacketDistributor.sendToServer(new TransformPayload(character.getId()));
+            if (character.playable()) {
+                PacketDistributor.sendToServer(new TransformPayload(character.getId()));
+            } else {
+                this.minecraft.player.displayClientMessage(Component.translatable("character."
+                        + MultiversePowers.MODID + ".wip", character.getDisplayName()).withColor(WIP_COLOR), false);
+            }
         }
         this.onClose();
     }
@@ -344,6 +350,9 @@ public class PowerWheelScreen extends PowerWheelLayout {
                     line = Component.translatable(KEY + "coming_soon");
                     nameColor = OFF_COLOR;
                     lineColor = OFF_COLOR;
+                } else if (!entry.playable()) {
+                    line = Component.translatable(KEY + "wip");
+                    lineColor = WIP_COLOR;
                 } else {
                     line = Component.translatable(KEY + (active ? "active" : "become"));
                     lineColor = active ? ACTIVE_COLOR : MUTED_COLOR;

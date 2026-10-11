@@ -14,6 +14,7 @@ Dit document bevat de lore, achtergrond en belangrijkste krachten van alle 35 pe
 ---
 
 ### 1. Doc Ock (Dr. Otto Octavius)
+- **In de mod:** work in progress, in zware rework; nu niet speelbaar.
 - **Franchise:** Marvel Comics (Spider-Man)
 - **Wie hij is:** Een geniale en gerespecteerde atoomfysicus die geobsedeerd raakte door het beheersen van atoomenergie.
 - **Lore & Achtergrond:** Tijdens een mislukt laboratoriumexperiment veroorzaakte een stralingslek een explosie. Hierdoor smolten vier mechanische, kunstmatig intelligente tentakels vast aan zijn wervelkolom en zenuwstelsel. De straling beschadigde tevens zijn brein, waardoor de AI van de tentakels zijn gedachten begon te beïnvloeden. Hij veranderde in een meedogenloze schurk die zijn intellect inzet om Spider-Man te vernietigen en zijn wetenschappelijke superioriteit aan de wereld te bewijzen.

@@ -45,6 +45,7 @@ abstract class PowerWheelLayout extends Screen {
     static final int OFF_COLOR = 0xFF6A6A6A;
     static final int COOLDOWN_COLOR = 0xFFE06050;
     static final int ACTIVE_COLOR = 0xFF7FD46B;
+    static final int WIP_COLOR = 0xFFFFB547;
 
     enum Page {
         HOME,

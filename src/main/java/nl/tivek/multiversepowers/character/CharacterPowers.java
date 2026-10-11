@@ -3,6 +3,26 @@ package nl.tivek.multiversepowers.character;
 import net.minecraft.server.level.ServerPlayer;
 
 public interface CharacterPowers {
+    // The powers of a character that cannot be played yet: none.
+    CharacterPowers NONE = new CharacterPowers() {
+        @Override
+        public void enter(ServerPlayer player) {
+        }
+
+        @Override
+        public void leave(ServerPlayer player) {
+        }
+
+        @Override
+        public boolean use(ServerPlayer player, CharacterAbility ability, boolean on, int data) {
+            return false;
+        }
+
+        @Override
+        public void clear() {
+        }
+    };
+
     void enter(ServerPlayer player);
 
     void leave(ServerPlayer player);
@@ -11,19 +31,6 @@ public interface CharacterPowers {
 
     default int ultimateLeft(ServerPlayer player) {
         return 0;
-    }
-
-    default int stance(ServerPlayer player) {
-        return 0;
-    }
-
-    default int marks(ServerPlayer player) {
-        return 0;
-    }
-
-    // What each of the character's extra limbs does now, packed by the character (-1: it has none out).
-    default int limbs(ServerPlayer player) {
-        return -1;
     }
 
     // Ticks an ability still waits on a cooldown of its own, apart from its slot's, sent along for the panel.

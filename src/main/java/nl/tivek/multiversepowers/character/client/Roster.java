@@ -45,6 +45,11 @@ public final class Roster {
             return this.character() != null;
         }
 
+        public boolean playable() {
+            GameCharacter character = this.character();
+            return character != null && character.playable();
+        }
+
         public Component getDisplayName() {
             GameCharacter character = this.character();
             return character != null ? character.getDisplayName()
@@ -115,6 +120,6 @@ public final class Roster {
     }
 
     public static int available(Franchise franchise) {
-        return (int) BY_FRANCHISE.get(franchise).stream().filter(Entry::available).count();
+        return (int) BY_FRANCHISE.get(franchise).stream().filter(Entry::playable).count();
     }
 }

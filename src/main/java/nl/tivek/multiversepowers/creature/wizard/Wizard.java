@@ -532,7 +532,8 @@ public final class Wizard extends MovingMonster {
             this.setPhase(Mth.clamp(tag.getInt("Phase"), 1, WizardMove.PHASES));
         }
         if (tag.contains("Ward")) {
-            this.setWard(tag.getFloat("Ward"), Mth.clamp(tag.getInt("Crystals"), 0, WizardWard.CRYSTALS));
+            this.setWard(Math.min(tag.getFloat("Ward"), wardOf(this.phase())),
+                    Mth.clamp(tag.getInt("Crystals"), 0, WizardWard.CRYSTALS));
             this.wardLoaded = this.ward() > 0.0F;
         }
         if (this.hasCustomName()) {

@@ -10,7 +10,7 @@ multiverse.
 - **Characters:** turn into one from the power wheel (hold **G**).
   - **Green Lantern:** a power ring that shapes solid green hard light: flight, weapons, giant hands, a steam train,
     an air strike and a mech.
-  - **Doctor Octopus:** four robot tentacles that walk, climb, grab, throw, strike the ground and open portals.
+  - **Doctor Octopus:** work in progress, in heavy rework; he cannot be played right now.
   - **Thor:** thunder fists, flight, Mjolnir to throw and fly after, a thunderclap and lightning from the sky.
 - **Classes:** pick a group and a class before you play, each with its own start ceremony.
 - **Spells:** cast from the same wheel; fifteen schools of magic, five spells so far.

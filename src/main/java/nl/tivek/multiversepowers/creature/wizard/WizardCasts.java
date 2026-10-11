@@ -1,5 +1,7 @@
 package nl.tivek.multiversepowers.creature.wizard;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import javax.annotation.Nullable;
 import net.minecraft.core.BlockPos;
@@ -10,6 +12,7 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.BlockHitResult;
@@ -41,9 +44,10 @@ import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 import nl.tivek.multiversepowers.engine.world.LoadedWorld;
 
 // What each of the Wizard's moves does on the server at its moments (WizardMove): the sound as he begins, the magic he
-// lets go at its release, and what follows during it (the sweep after the thrust, his second and third bolt, the slow
-// turn of his beam, the trail of a skip, the star spiral's volleys, the supernova kindled once he has risen, his slow
-// descent out of his rift and the blow of his landing). How he moves in the air is WizardFlight's.
+// lets go at its release (his aimed spells at other players near too), and what follows during it (the sweep after
+// the thrust, his second and third bolt, the slow turn of his beam, the trail of a skip, the star spiral's volleys,
+// the supernova kindled once he has risen, his slow descent out of his rift and the blow of his landing). How he moves
+// in the air is WizardFlight's.
 final class WizardCasts {
     private static final double JAB_REACH = 2.9;
     private static final double SWEEP_REACH = 3.3;
@@ -54,6 +58,9 @@ final class WizardCasts {
     private static final double LAND_REACH = 6.0;
     // The star spiral lets go a volley every this many ticks.
     private static final int SPIRAL_EVERY = 2;
+    // How far round him other players are struck by his aimed spells too, and how hard against his target.
+    private static final double OTHERS_REACH = 28.0;
+    private static final float OTHERS_HARM = 0.75F;
 
     private WizardCasts() {
     }
@@ -174,6 +181,44 @@ final class WizardCasts {
             default -> {
             }
         }
+        alsoAt(level, wizard, kind, target);
+    }
+
+    // His aimed spells strike more than one: each other player he sees near gets one too, a little weaker, so a crowd
+    // never leaves him on one alone.
+    private static void alsoAt(ServerLevel level, Wizard wizard, int kind, @Nullable LivingEntity target) {
+        float share = OTHERS_HARM;
+        for (LivingEntity other : others(level, wizard, target)) {
+            switch (kind) {
+                case WizardMove.SPARK -> ArcaneBolt.spark(level, wizard, wizard.staffTip(), other,
+                        wizard.harm(WizardMove.SPARK) * share);
+                case WizardMove.BOLT -> ArcaneBolt.cast(level, wizard, other, wizard.harm(WizardMove.BOLT) * share);
+                case WizardMove.FIREBALL -> WizardFireball.cast(level, wizard, other,
+                        wizard.harm(WizardMove.FIREBALL) * share);
+                case WizardMove.LIGHTNING -> ArcLightning.strike(level, wizard, other,
+                        wizard.harm(WizardMove.LIGHTNING) * share, 1 + wizard.phase());
+                case WizardMove.CHAINS -> ArcaneChains.cast(level, wizard, ground(level, other.position()),
+                        wizard.harm(WizardMove.CHAINS) * share, 40 + 10 * wizard.phase());
+                case WizardMove.RUNES -> RuneMine.ring(level, wizard, ground(level, other.position()),
+                        wizard.harm(WizardMove.RUNES) * share);
+                case WizardMove.LIFT -> GravityWell.lift(level, wizard, other, wizard.harm(WizardMove.LIFT) * share);
+                case WizardMove.LANCES -> PrismLance.fan(level, wizard, other, wizard.harm(WizardMove.LANCES) * share,
+                        3, 16, 4);
+                default -> {
+                    return;
+                }
+            }
+        }
+    }
+
+    // Players besides his target that he sees within reach, nearest first: one, and from his third phase two.
+    static List<LivingEntity> others(ServerLevel level, Wizard wizard, @Nullable LivingEntity target) {
+        int most = wizard.phase() >= 3 ? 2 : 1;
+        List<LivingEntity> found = new ArrayList<>(level.getEntitiesOfClass(Player.class,
+                wizard.getBoundingBox().inflate(OTHERS_REACH), player -> player != target && player.isAlive()
+                        && !player.isSpectator() && !player.isCreative() && wizard.hasLineOfSight(player)));
+        found.sort(Comparator.comparingDouble(wizard::distanceToSqr));
+        return found.subList(0, Math.min(most, found.size()));
     }
 
     static void during(ServerLevel level, Wizard wizard, int kind, int t, @Nullable LivingEntity target) {

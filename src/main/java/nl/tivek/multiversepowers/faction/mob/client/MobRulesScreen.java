@@ -1,6 +1,8 @@
 package nl.tivek.multiversepowers.faction.mob.client;
 
 import java.util.List;
+import java.util.Locale;
+import java.util.OptionalDouble;
 import javax.annotation.Nullable;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphics;
@@ -28,9 +30,24 @@ import org.lwjgl.glfw.GLFW;
 // game's own. A change goes to the server at once (`MobRules`).
 public final class MobRulesScreen extends MobRulesProfile {
     private static final int SEARCH = 110;
+    private static final int TIP_WIDTH = 220;
     private boolean asked;
     @Nullable
     private EditBox search;
+    // A number's box opened to type into, where its row lies this frame.
+    @Nullable
+    private EditBox typing;
+    @Nullable
+    private MobStats.Stat typingStat;
+    @Nullable
+    private Row typingCreature;
+    private int typingX;
+    private int typingY;
+    private int typingWidth;
+    private boolean typingShown;
+    // The relation whose three choices are open: from the mouse reaching its pill until it leaves them.
+    @Nullable
+    private Row choosing;
 
     public MobRulesScreen(@Nullable Screen root) {
         super(Component.translatable(PREFIX + "mobs").withColor(COLOR), root, SettingsPages.MOBS);
@@ -93,7 +110,82 @@ public final class MobRulesScreen extends MobRulesProfile {
         this.preview.forget();
     }
 
+    private void startTyping(MobStats.Stat stat, double now) {
+        this.stopTyping();
+        EditBox box = new EditBox(this.font, 0, 0, 34, 12, Component.translatable(PREFIX + "mobs.stat." + stat.key));
+        box.setMaxLength(12);
+        box.setFilter(text -> text.matches("[0-9.,x×*/÷+%\\- ]*"));
+        box.setValue(value(stat, now).getString().replaceAll("[^0-9.\\-]", ""));
+        box.moveCursorToEnd(false);
+        box.setHighlightPos(0);
+        box.visible = false;
+        this.typing = box;
+        this.typingStat = stat;
+        this.typingCreature = this.picked;
+        this.addRenderableWidget(box);
+        this.setFocused(box);
+    }
+
+    private void stopTyping() {
+        if (this.typing != null) {
+            this.removeWidget(this.typing);
+        }
+        this.typing = null;
+        this.typingStat = null;
+        this.typingCreature = null;
+    }
+
+    private void applyTyping() {
+        if (this.typing != null && this.typingStat != null && this.typingCreature != null) {
+            Row creature = this.typingCreature;
+            MobStats.Stat stat = this.typingStat;
+            double now = this.stat(creature, stat);
+            OptionalDouble value = typed(this.typing.getValue(), stat, now);
+            if (value.isPresent()) {
+                this.stat(creature, stat, value.getAsDouble());
+            }
+        }
+        this.stopTyping();
+    }
+
+    // The open box over its number's row, hidden while the row is scrolled out of the list.
+    private void placeTyping() {
+        if (this.typing == null) {
+            return;
+        }
+        if (this.picked != this.typingCreature || this.tab != NUMBERS) {
+            this.stopTyping();
+            return;
+        }
+        this.typing.visible = this.typingShown;
+        this.typing.setX(this.typingX);
+        this.typing.setY(this.typingY);
+        this.typing.setWidth(this.typingWidth);
+    }
+
+    // What was typed into a number's box: its value as the box shows it, *2 or /2 to multiply or divide what it is
+    // now. An x before the number reads as the box's own × on a multiplier and as *, multiplying, on anything else.
+    static OptionalDouble typed(String text, MobStats.Stat stat, double now) {
+        String clean = text.trim().toLowerCase(Locale.ROOT).replace(',', '.').replace('÷', '/').replace(" ", "")
+                .replace("/s", "").replace("%", "").replace("+", "");
+        boolean times = clean.startsWith("*") || clean.endsWith("x")
+                || (clean.startsWith("x") || clean.startsWith("×")) && stat.kind != MobStats.Kind.TIMES;
+        boolean divide = clean.startsWith("/");
+        clean = clean.replaceAll("^[x×*/]+|x$", "");
+        try {
+            double number = Double.parseDouble(clean);
+            if (!Double.isFinite(number) || divide && number <= 0.0) {
+                return OptionalDouble.empty();
+            }
+            return OptionalDouble.of(times ? now * number : divide ? now / number : number);
+        } catch (NumberFormatException e) {
+            return OptionalDouble.empty();
+        }
+    }
+
     private void pick(@Nullable Row row) {
+        this.stopTyping();
+        this.choosing = null;
         this.picked = row;
         this.tab = OVERVIEW;
         this.area.top();
@@ -147,20 +239,43 @@ public final class MobRulesScreen extends MobRulesProfile {
             this.button(graphics, flip, right, y + 4, mouseX, mouseY, editable, () -> this.stat(creature, stat,
                     now >= 0.5 ? 0.0 : 1.0));
         } else {
+            Component twice = Component.literal("×2");
+            right -= this.font.width(twice) + 6;
+            this.button(graphics, twice, right, y + 4, mouseX, mouseY, editable && now > 0.0 && now < stat.most,
+                    () -> this.stat(creature, stat, now * 2.0));
             Component plus = Component.literal("+");
-            right -= this.font.width(plus) + 6;
+            right -= this.font.width(plus) + 8;
             this.button(graphics, plus, right, y + 4, mouseX, mouseY, editable && now < stat.most,
                     () -> this.stat(creature, stat, now + stat.step * (hasShiftDown() ? 10.0 : 1.0)));
             Component shown = value(stat, now);
-            int box = Math.max(30, this.font.width(shown) + 6);
+            int box = Math.max(34, this.font.width(shown) + 8);
             right -= box + 2;
-            graphics.fill(right, y + 3, right + box, y + 15, 0xFF161616);
-            graphics.drawString(this.font, shown, right + (box - this.font.width(shown)) / 2, y + 5,
-                    now != stat.normal ? 0xFF000000 | WARN : BODY, false);
+            boolean typing = this.typing != null && this.typingStat == stat;
+            boolean overBox = editable && this.area.over(mouseX, mouseY, right, y + 3, box, 12);
+            graphics.fill(right, y + 3, right + box, y + 15, overBox && !typing ? 0xFF2A2A2A : 0xFF161616);
+            if (typing) {
+                this.typingX = right;
+                this.typingY = y + 3;
+                this.typingWidth = box;
+                this.typingShown = this.area.whole(y + 3, 12);
+            } else {
+                graphics.drawString(this.font, shown, right + (box - this.font.width(shown)) / 2, y + 5,
+                        now != stat.normal ? 0xFF000000 | WARN : BODY, false);
+                if (editable) {
+                    this.area.hit(right, y + 3, box, 12, () -> this.startTyping(stat, now));
+                }
+            }
             Component minus = Component.literal("-");
             right -= this.font.width(minus) + 8;
             this.button(graphics, minus, right, y + 4, mouseX, mouseY, editable && now > stat.least,
                     () -> this.stat(creature, stat, now - stat.step * (hasShiftDown() ? 10.0 : 1.0)));
+            Component half = Component.literal("÷2");
+            right -= this.font.width(half) + 8;
+            this.button(graphics, half, right, y + 4, mouseX, mouseY, editable && now > stat.least,
+                    () -> this.stat(creature, stat, now / 2.0));
+            if (overBox && !typing) {
+                return Component.translatable(PREFIX + "mobs.type.tip");
+            }
         }
         LivingEntity living = this.preview.of(creature.type());
         Component result = MobFacts.result(stat, living, this.stats(creature));
@@ -201,6 +316,7 @@ public final class MobRulesScreen extends MobRulesProfile {
     @Override
     protected void renderPage(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         this.hits.clear();
+        this.typingShown = false;
         // A page of the settings window, as the tour knows it.
         ScreenAnchors.report("settings", this.contentX, this.contentY, this.contentWidth, this.contentHeight);
         if (this.search != null) {
@@ -252,8 +368,10 @@ public final class MobRulesScreen extends MobRulesProfile {
             tip = about != null ? about : tip;
         }
         this.area.end(graphics);
+        this.placeTyping();
         if (tip != null) {
-            graphics.renderComponentTooltip(this.font, List.of(tip), mouseX, mouseY);
+            // Split into its own lines: a line break inside one tooltip line shows as a glyph.
+            graphics.renderTooltip(this.font, this.font.split(tip, TIP_WIDTH), mouseX, mouseY);
         }
     }
 
@@ -335,7 +453,16 @@ public final class MobRulesScreen extends MobRulesProfile {
             right -= 10;
             this.area.hit(this.listX, y, width, ROW, () -> this.pick(row));
         } else {
-            Tip pills = this.pills(graphics, row, right, y + 3, mouseX, mouseY, over);
+            // The choices open once the mouse reaches the pill and close when it leaves them, so the name beside
+            // them stays a way into its own page.
+            boolean named = row != this.player && row != this.picked;
+            if (over && mouseX >= right - this.pillWidth()) {
+                this.choosing = row;
+            } else if (this.choosing == row && !(over && mouseX >= this.pillsLeft(right))) {
+                this.choosing = null;
+            }
+            Tip pills = this.pills(graphics, row, right, y + 3, mouseX, mouseY,
+                    over && (!named || this.choosing == row));
             right = pills.left() - 4;
             if (pills.tip() != null) {
                 tip = pills.tip();
@@ -343,6 +470,18 @@ public final class MobRulesScreen extends MobRulesProfile {
             if (this.shown(this.picked, row) != ClientMobTable.of(this.picked.index(), row.index())) {
                 graphics.drawString(this.font, "•", right - 4, y + 5, 0xFF000000 | WARN, false);
                 right -= 8;
+            }
+            // Another creature's name opens its own page.
+            if (named) {
+                boolean overName = this.area.over(mouseX, mouseY, this.listX, y, right - this.listX, ROW);
+                if (overName) {
+                    graphics.fill(this.listX, y, right, y + ROW, 0x18FFFFFF);
+                    tip = tip != null ? tip : Component.translatable(PREFIX + "mobs.open", row.name());
+                }
+                this.area.hit(this.listX, y, right - this.listX, ROW, () -> this.pick(row));
+                graphics.drawString(this.font, this.fit(row.name(), right - this.listX - 26), this.listX + 22,
+                        y + 5, overName ? TEXT : BODY, false);
+                return tip;
             }
         }
         graphics.drawString(this.font, this.fit(row.name(), right - this.listX - 26), this.listX + 22,
@@ -395,6 +534,10 @@ public final class MobRulesScreen extends MobRulesProfile {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        // A click away from an open number box takes what was typed.
+        if (this.typing != null && !(this.typing.visible && this.typing.isMouseOver(mouseX, mouseY))) {
+            this.applyTyping();
+        }
         if (button == 0 && this.area.press(mouseX, mouseY)) {
             return true;
         }
@@ -441,6 +584,14 @@ public final class MobRulesScreen extends MobRulesProfile {
     // Esc first goes back from a creature to the list.
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (this.typing != null && (keyCode == GLFW.GLFW_KEY_ENTER || keyCode == GLFW.GLFW_KEY_KP_ENTER)) {
+            this.applyTyping();
+            return true;
+        }
+        if (this.typing != null && keyCode == GLFW.GLFW_KEY_ESCAPE) {
+            this.stopTyping();
+            return true;
+        }
         if (keyCode == GLFW.GLFW_KEY_ESCAPE && this.picked != null) {
             this.pick(null);
             return true;

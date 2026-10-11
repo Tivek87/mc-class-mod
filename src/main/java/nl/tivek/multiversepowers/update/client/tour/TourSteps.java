@@ -23,19 +23,25 @@ final class TourSteps {
     // The oldest version whose changes this tour shows: normally its own.
     static final String FROM = VERSION;
 
-    // The Wizard's five phases, his ward, his new spells and his new arrival and death, all in the game.
+    // The Wizard's five phases, his ward, his new spells and his new arrival and death, Galactus in the sky, the black
+    // hole's real blocks, and Doctor Octopus in rework, all in the game.
     static final List<TourStep> ALL = List.of(
             step(VERSION, "wizard_phases", Kind.NEW, Place.GAME).covers(
-                    "Wizard: five phases", "Wizard: flight", "Wizard: stronger"),
+                    "Wizard: five phases", "Wizard: flight", "Wizard: stronger", "Wizard: several foes"),
             step(VERSION, "wizard_ward", Kind.NEW, Place.GAME).covers(
                     "Wizard: magic ward", "Wizard: boss bar"),
             step(VERSION, "wizard_spells", Kind.NEW, Place.GAME).covers(
                     "Wizard: 12 new spells", "Wizard: outfit per phase"),
             step(VERSION, "wizard_light", Kind.CHANGED, Place.GAME).covers(
-                    "Wizard: arrival", "Wizard: death"));
+                    "Wizard: arrival", "Wizard: death"),
+            step(VERSION, "galactus", Kind.NEW, Place.GAME).covers("Galactus in the sky"),
+            step(VERSION, "black_hole", Kind.NEW, Place.GAME).covers(
+                    "Black hole: real blocks", "Black hole: bigger blast"),
+            step(VERSION, "doc_ock_rework", Kind.REMOVED, Place.GAME).covers("Doctor Octopus: in rework"));
 
     // Changes too small for a step of their own, each by how its changelog line starts, as in `covers`.
-    static final List<String> SMALL = List.of("Wizard: images");
+    static final List<String> SMALL = List.of("Wizard: images", "Wizard: weaker ward", "Mobs page: type a value",
+            "Mobs page: idle moves", "Mobs page: open from Relations", "Escape game: easier and clearer");
 
     // Shown first on a player's first tour, wherever it starts: what the tour is and how to use it.
     static final TourStep INTRO = step(VERSION, "tour_intro", Kind.HOW, Place.ANY);

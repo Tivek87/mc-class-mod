@@ -1,8 +1,12 @@
 package nl.tivek.multiversepowers.character.greenlantern.client.minion;
 
+import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import nl.tivek.multiversepowers.character.greenlantern.client.mech.shape.MechParts;
@@ -16,6 +20,7 @@ import nl.tivek.multiversepowers.engine.client.render.mesh.Mesh;
 import nl.tivek.multiversepowers.engine.math.Colors;
 import nl.tivek.multiversepowers.engine.math.Ease;
 import nl.tivek.multiversepowers.engine.math.Vectors;
+import nl.tivek.multiversepowers.faction.mob.client.MobPreview;
 
 // The mech's helpers as every game draws them: robots of solid hard light twice a player's height, built like the
 // big mech in glowing tiles: a broad V of a chest with the Lantern's sign round a burning core, a pack with two
@@ -48,6 +53,26 @@ public final class MinionPainter {
 
     public static void onClientSetup(FMLClientSetupEvent event) {
         MinionShapes.onClientSetup(event);
+        event.enqueueWork(() -> {
+            EntityType<MechMinion> type = MechMinion.TYPE.get();
+            MobPreview.drawWith(type, MinionPainter::preview);
+            MobPreview.move(type, MinionMoves.PUNCH_END + 8, m -> m.play(MinionMoves.PUNCH), m -> m.play(0));
+            MobPreview.move(type, MinionMoves.SPIN_END + 8, m -> m.play(MinionMoves.SPIN), m -> m.play(0));
+            MobPreview.move(type, MinionMoves.CANNON_END + 8, m -> m.play(MinionMoves.CANNON), m -> m.play(0));
+        });
+    }
+
+    // One helper alone on the Mobs page.
+    private static void preview(PoseStack pose, Vec3 camera, LivingEntity living, float partialTick,
+            MultiBufferSource.BufferSource buffers) {
+        if (!(living instanceof MechMinion minion) || !(minion.level() instanceof ClientLevel level)) {
+            return;
+        }
+        LanternPainter painter = LanternPainter.gui(pose, camera, minion.tickCount + partialTick);
+        begin(painter);
+        draw(painter, level, minion, partialTick);
+        end(painter);
+        painter.finish(buffers);
     }
 
     // Whether any helper is about to be drawn: the world pass runs for them alone too.

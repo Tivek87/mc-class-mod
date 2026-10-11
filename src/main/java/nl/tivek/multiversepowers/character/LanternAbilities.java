@@ -529,6 +529,9 @@ final class LanternAbilities {
                 .was(12.0, 30.0, 5.6, 7.0)
                 .setting("climbSpeed", 8.0, 1.0, 150.0, Unit.BLOCKS_PER_SECOND,
                         "How fast holding space lifts you straight up while you hover, in blocks per second")
+                .setting("hoverSpeed", 5.0, 1.0, 150.0, Unit.BLOCKS_PER_SECOND,
+                        "How fast you drift sideways or back while you hover, space held or not, in blocks per"
+                                + " second")
                 .group("chunks", "The world ahead")
                 .settingInt("chunkRadiusBlocks", 128, 0, 256, Unit.BLOCKS,
                         "How far around a flyer the server makes the world ready while he flies (made, loaded and"
@@ -555,6 +558,8 @@ final class LanternAbilities {
                 .setting("knockback", 2.0, 0.0, 5.0, Unit.STRENGTH,
                         "How hard the hands send a creature flying (a middle finger bursting out of the ground and"
                                 + " the axe of a pair far harder)")
+                .settingInt("holeBlocks", 80, 0, 400, Unit.COUNT,
+                        "The most blocks one black hole tears out of the ground round it and draws in (0 = none)")
                 .setting("powerCost", 8.0, 0.0, 100.0, Unit.POWER, "Ring power the hands cost");
         hand(hands, HandPose.SMACK, "Smack", 0.25, "a hand coming up beside a creature to swat it away");
         hand(hands, HandPose.GRAB, "Grab and throw", 0.22,

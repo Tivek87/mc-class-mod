@@ -22,8 +22,8 @@ import org.lwjgl.glfw.GLFW;
 public final class EscapeHud {
     private static final ResourceLocation LAYER_ID = ResourceLocation.fromNamespaceAndPath(MultiversePowers.MODID,
             "escape");
-    private static final float WIDTH = 180.0F;
-    private static final float HEIGHT = 12.0F;
+    private static final float WIDTH = 220.0F;
+    private static final float HEIGHT = 16.0F;
     private static final float LOW = 0.66F;
 
     private EscapeHud() {

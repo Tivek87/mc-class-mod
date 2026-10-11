@@ -11,9 +11,9 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import nl.tivek.multiversepowers.engine.entity.EscapePayload;
 
 // The escape game of a held player (Captives): a stripe runs to and fro along a bar, and a click while it is over the
-// yellow zone scores one, over the red one (smaller) one of its own; enough of either sets them free. Each click is a
-// try: the zones move after every one, and with all tries spent the score starts over (or the game is lost). Each
-// game is content's: its rules and the look of its bar (a Theme).
+// yellow zone scores one, over the red one (smaller, always in the yellow's middle) one of its own; enough of either
+// sets them free. Each click is a try: the zones move after every one, and with all tries spent the score starts over
+// (or the game is lost). Each game is content's: its rules and the look of its bar (a Theme).
 public final class EscapeGames {
     // `tries` clicks a round; `yellow` and `red` hits to win (red 0: no red zone); zone widths as parts of the bar;
     // the stripe crosses the bar `speed` times a second; `ticks` to play at most (0: no limit); `again`: a round
@@ -27,11 +27,12 @@ public final class EscapeGames {
         void draw(GuiGraphics graphics, float x, float y, float width, float height, View view);
     }
 
-    // What a theme draws: where the stripe and zones are (parts of the bar), the score, the tries left this round,
-    // how fresh the last click is (1 just now) and whether it scored, the time left (1 to 0, or -1 with no limit),
-    // and whether the game is won or lost.
-    public record View(Rules rules, float stripe, float yellowAt, float redAt, int yellowHits, int redHits, int tries,
-            float flash, boolean scored, float timeLeft, boolean won, boolean lost) {
+    // What a theme draws: where the stripe and zones are (parts of the bar) and where the stripe just was (newest
+    // first), the score, the tries left this round, how fresh the last click is (1 just now), whether it scored and
+    // where it struck, the time left (1 to 0, or -1 with no limit), and whether the game is won or lost.
+    public record View(Rules rules, float stripe, float[] trail, float yellowAt, float redAt, int yellowHits,
+            int redHits, int tries, float flash, boolean scored, float clickedAt, float timeLeft, boolean won,
+            boolean lost) {
     }
 
     private record Game(Rules rules, Theme theme) {
@@ -42,6 +43,9 @@ public final class EscapeGames {
     // How long a won or lost game stays up.
     private static final long END_MS = 1200L;
     private static final RandomSource RANDOM = RandomSource.create();
+    // Where the stripe was over the last moments, for its trail.
+    private static final int TRAIL = 6;
+    private static final long TRAIL_MS = 16L;
 
     @Nullable
     private static Game game;
@@ -53,6 +57,7 @@ public final class EscapeGames {
     private static int redHits;
     private static int tries;
     private static long clickMs = Long.MIN_VALUE / 2L;
+    private static float clickedAt;
     private static boolean scored;
     private static boolean won;
     private static long lostMs = -1L;
@@ -109,7 +114,8 @@ public final class EscapeGames {
             return;
         }
         Rules rules = now.rules();
-        float stripe = stripe(rules);
+        float stripe = stripe(rules, Util.getMillis());
+        clickedAt = stripe;
         boolean red = rules.red() > 0 && stripe >= redAt && stripe <= redAt + rules.redWidth();
         boolean yellow = !red && stripe >= yellowAt && stripe <= yellowAt + rules.yellowWidth();
         if (red) {
@@ -165,29 +171,26 @@ public final class EscapeGames {
         float flash = 1.0F - Mth.clamp((ms - clickMs) / (float) FLASH_MS, 0.0F, 1.0F);
         float left = rules.ticks() <= 0 ? -1.0F
                 : 1.0F - Mth.clamp((ms - startMs) / (rules.ticks() * 50.0F), 0.0F, 1.0F);
-        now.theme().draw(graphics, x, y, width, height, new View(rules, stripe(rules), yellowAt, redAt, yellowHits,
-                redHits, tries, flash, scored, left, won, lostMs >= 0L));
+        // Stopped where it was clicked once the game is over.
+        long at = endMs >= 0L ? endMs : ms;
+        float[] trail = new float[TRAIL];
+        for (int k = 0; k < TRAIL; k++) {
+            trail[k] = stripe(rules, at - (k + 1) * TRAIL_MS);
+        }
+        now.theme().draw(graphics, x, y, width, height, new View(rules, stripe(rules, at), trail, yellowAt, redAt,
+                yellowHits, redHits, tries, flash, scored, clickedAt, left, won, lostMs >= 0L));
     }
 
     // To and fro along the bar, `speed` crossings a second.
-    private static float stripe(Rules rules) {
-        double crossings = (Util.getMillis() - startMs) / 1000.0 * rules.speed();
+    private static float stripe(Rules rules, long ms) {
+        double crossings = Math.max(0L, ms - startMs) / 1000.0 * rules.speed();
         double phase = crossings % 2.0;
         return (float) (phase < 1.0 ? phase : 2.0 - phase);
     }
 
-    // New zones, each somewhere on the bar and never on each other.
+    // A new yellow zone somewhere on the bar, the red one always in its middle.
     private static void place(Rules rules) {
         yellowAt = 0.04F + RANDOM.nextFloat() * (0.92F - rules.yellowWidth());
-        if (rules.red() <= 0) {
-            return;
-        }
-        for (int attempt = 0; attempt < 20; attempt++) {
-            redAt = 0.04F + RANDOM.nextFloat() * (0.92F - rules.redWidth());
-            if (redAt + rules.redWidth() < yellowAt - 0.03F || redAt > yellowAt + rules.yellowWidth() + 0.03F) {
-                return;
-            }
-        }
-        redAt = yellowAt > 0.5F ? 0.05F : 0.95F - rules.redWidth();
+        redAt = yellowAt + (rules.yellowWidth() - rules.redWidth()) / 2.0F;
     }
 }

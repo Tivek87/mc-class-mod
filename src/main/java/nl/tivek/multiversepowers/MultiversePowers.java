@@ -34,10 +34,12 @@ import nl.tivek.multiversepowers.engine.entity.HeldMobs;
 import nl.tivek.multiversepowers.engine.entity.Knockdowns;
 import nl.tivek.multiversepowers.engine.entity.PlayerKnockdowns;
 import nl.tivek.multiversepowers.engine.entity.TimeFreeze;
+import nl.tivek.multiversepowers.engine.entity.TornBlock;
 import nl.tivek.multiversepowers.engine.fx.ParticleBatch;
 import nl.tivek.multiversepowers.faction.Factions;
 import nl.tivek.multiversepowers.faction.mob.MobDefaults;
 import nl.tivek.multiversepowers.faction.mob.MobRules;
+import nl.tivek.multiversepowers.galactus.GalactusCommand;
 import nl.tivek.multiversepowers.killconfirm.KillConfirms;
 import nl.tivek.multiversepowers.network.ModNetwork;
 import nl.tivek.multiversepowers.schematic.SchematicServer;
@@ -59,6 +61,7 @@ public class MultiversePowers {
         LOGGER.warn("Multiverse Powers is still being built: things may change, break or be missing.");
         modEventBus.addListener(ModNetwork::register);
         ThrownHammer.register(modEventBus);
+        TornBlock.register(modEventBus);
         MechMinion.register(modEventBus);
         ZombieBrute.register(modEventBus);
         Bleeding.register(modEventBus);
@@ -89,6 +92,7 @@ public class MultiversePowers {
         ShortCommandRegistry.clear();
         Summons.clear();
         WizardRitual.clear();
+        GalactusCommand.clear();
         MobRules.forget();
         DeathStyles.clear();
         DeathBlows.clear();

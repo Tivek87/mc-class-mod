@@ -40,6 +40,12 @@ public abstract class MovingMonster extends Monster {
         this.level().broadcastEntityEvent(this, (byte) (FIRST_EVENT + kind));
     }
 
+    // Shows a move in this game alone, as if the server had started it (one shown in a screen).
+    public void play(int kind) {
+        this.move = kind;
+        this.moveAt = this.tickCount;
+    }
+
     @Override
     public void handleEntityEvent(byte id) {
         if (id >= FIRST_EVENT && id <= FIRST_EVENT + this.kinds()) {

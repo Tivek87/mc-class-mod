@@ -1,6 +1,7 @@
 package nl.tivek.multiversepowers.creature.wizard;
 
 import java.util.EnumSet;
+import java.util.List;
 import javax.annotation.Nullable;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
@@ -19,7 +20,8 @@ import nl.tivek.multiversepowers.creature.wizard.spell.ArcaneFamiliar;
 // phase he flies (WizardFlight) and now and then, or when struck, blinks to another spot in the air (AIRSTEP). When a
 // phase breaks he drops whatever he was doing and the next phase takes him (ASCEND, UNBIND, AWAKEN, APOTHEOSIS), and
 // its own great spell comes first; caught out among his mirror images, or when his ward breaks, he is stunned and drops
-// to the ground. Called by the ritual, he first comes down out of his rift (ARRIVE).
+// to the ground. Called by the ritual, he first comes down out of his rift (ARRIVE). Among several players he turns
+// on another now and then.
 final class WizardMoves extends Goal {
     // The breath after a big spell, in each phase.
     private static final int[] BREATH = { 0, 55, 46, 38, 31, 25 };
@@ -34,6 +36,8 @@ final class WizardMoves extends Goal {
     private static final double SKIP_SPEED = 0.95;
     // Ticks out of sight of his target before he blinks to where he sees it.
     private static final int BLIND = 40;
+    // Ticks at least before he may turn on another player.
+    private static final int FOCUS = 120;
 
     private final Wizard wizard;
     private final WizardFlight flight;
@@ -44,6 +48,7 @@ final class WizardMoves extends Goal {
     // Ticks he has not seen his target: walled in, he blinks out once it lasts.
     private int blind;
     private int nextBig = 40;
+    private int nextFocus = FOCUS;
     private int nextUltimate;
     private int lastBig;
     private int side = 1;
@@ -205,11 +210,24 @@ final class WizardMoves extends Goal {
         } else {
             this.keepAway(target, far, sees, now);
         }
+        this.refocus(target, now);
         if (now >= this.nextLight) {
             int pick = this.pick(target, gap, far, sees, now);
             if (pick != 0) {
                 this.begin(pick, target);
             }
+        }
+    }
+
+    // Among several players he turns on another now and then rather than staying on one.
+    private void refocus(LivingEntity target, int now) {
+        if (now < this.nextFocus) {
+            return;
+        }
+        this.nextFocus = now + FOCUS + this.wizard.getRandom().nextInt(FOCUS);
+        List<LivingEntity> others = WizardCasts.others((ServerLevel) this.wizard.level(), this.wizard, target);
+        if (!others.isEmpty()) {
+            this.wizard.setTarget(others.get(this.wizard.getRandom().nextInt(others.size())));
         }
     }
 
