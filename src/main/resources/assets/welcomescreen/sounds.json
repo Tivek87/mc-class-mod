@@ -571,5 +571,280 @@
         "type": "event"
       }
     ]
+  },
+  "hedgehog.ambient": {
+    "subtitle": "subtitles.welcomescreen.hedgehog.ambient",
+    "sounds": [
+      {
+        "name": "minecraft:entity.armadillo.ambient",
+        "type": "event"
+      }
+    ]
+  },
+  "hedgehog.hurt": {
+    "subtitle": "subtitles.welcomescreen.hedgehog.hurt",
+    "sounds": [
+      {
+        "name": "minecraft:entity.armadillo.hurt",
+        "type": "event"
+      }
+    ]
+  },
+  "hedgehog.hurt_curled": {
+    "subtitle": "subtitles.welcomescreen.hedgehog.hurt_curled",
+    "sounds": [
+      {
+        "name": "minecraft:entity.armadillo.hurt_reduced",
+        "type": "event"
+      }
+    ]
+  },
+  "hedgehog.death": {
+    "subtitle": "subtitles.welcomescreen.hedgehog.death",
+    "sounds": [
+      {
+        "name": "minecraft:entity.armadillo.death",
+        "type": "event"
+      }
+    ]
+  },
+  "hedgehog.curl": {
+    "subtitle": "subtitles.welcomescreen.hedgehog.curl",
+    "sounds": [
+      {
+        "name": "minecraft:entity.armadillo.roll",
+        "type": "event"
+      }
+    ]
+  },
+  "hedgehog.uncurl": {
+    "subtitle": "subtitles.welcomescreen.hedgehog.uncurl",
+    "sounds": [
+      {
+        "name": "minecraft:entity.armadillo.unroll_finish",
+        "type": "event"
+      }
+    ]
+  },
+  "hedgehog.step": {
+    "sounds": [
+      {
+        "name": "minecraft:entity.armadillo.step",
+        "type": "event"
+      }
+    ]
+  },
+  "owl.hoot": {
+    "subtitle": "subtitles.welcomescreen.owl.hoot",
+    "sounds": [
+      {
+        "name": "welcomescreen:owl/hoot",
+        "attenuation_distance": 32
+      }
+    ]
+  },
+  "owl.hurt": {
+    "subtitle": "subtitles.welcomescreen.owl.hurt",
+    "sounds": [
+      {
+        "name": "minecraft:entity.parrot.hurt",
+        "type": "event"
+      }
+    ]
+  },
+  "owl.death": {
+    "subtitle": "subtitles.welcomescreen.owl.death",
+    "sounds": [
+      {
+        "name": "minecraft:entity.parrot.death",
+        "type": "event"
+      }
+    ]
+  },
+  "squirrel.ambient": {
+    "subtitle": "subtitles.welcomescreen.squirrel.ambient",
+    "sounds": [
+      {
+        "name": "minecraft:entity.rabbit.ambient",
+        "type": "event"
+      }
+    ]
+  },
+  "squirrel.hurt": {
+    "subtitle": "subtitles.welcomescreen.squirrel.hurt",
+    "sounds": [
+      {
+        "name": "minecraft:entity.rabbit.hurt",
+        "type": "event"
+      }
+    ]
+  },
+  "squirrel.death": {
+    "subtitle": "subtitles.welcomescreen.squirrel.death",
+    "sounds": [
+      {
+        "name": "minecraft:entity.rabbit.death",
+        "type": "event"
+      }
+    ]
+  },
+  "squirrel.chatter": {
+    "subtitle": "subtitles.welcomescreen.squirrel.chatter",
+    "sounds": [
+      {
+        "name": "minecraft:entity.bat.ambient",
+        "type": "event"
+      }
+    ]
+  },
+  "squirrel.eat": {
+    "subtitle": "subtitles.welcomescreen.squirrel.eat",
+    "sounds": [
+      {
+        "name": "minecraft:entity.parrot.eat",
+        "type": "event"
+      }
+    ]
+  },
+  "snake.hiss": {
+    "subtitle": "subtitles.welcomescreen.snake.hiss",
+    "sounds": [
+      {
+        "name": "minecraft:entity.cat.hiss",
+        "type": "event"
+      }
+    ]
+  },
+  "snake.hurt": {
+    "subtitle": "subtitles.welcomescreen.snake.hurt",
+    "sounds": [
+      {
+        "name": "minecraft:entity.silverfish.hurt",
+        "type": "event"
+      }
+    ]
+  },
+  "snake.death": {
+    "subtitle": "subtitles.welcomescreen.snake.death",
+    "sounds": [
+      {
+        "name": "minecraft:entity.silverfish.death",
+        "type": "event"
+      }
+    ]
+  },
+  "snake.bite": {
+    "subtitle": "subtitles.welcomescreen.snake.bite",
+    "sounds": [
+      {
+        "name": "minecraft:entity.fox.bite",
+        "type": "event"
+      }
+    ]
+  },
+  "snake.step": {
+    "sounds": [
+      {
+        "name": "minecraft:entity.silverfish.step",
+        "type": "event"
+      }
+    ]
+  },
+  "crab.hurt": {
+    "subtitle": "subtitles.welcomescreen.crab.hurt",
+    "sounds": [
+      {
+        "name": "minecraft:entity.turtle.hurt_baby",
+        "type": "event"
+      }
+    ]
+  },
+  "crab.death": {
+    "subtitle": "subtitles.welcomescreen.crab.death",
+    "sounds": [
+      {
+        "name": "minecraft:entity.turtle.death_baby",
+        "type": "event"
+      }
+    ]
+  },
+  "crab.snap": {
+    "subtitle": "subtitles.welcomescreen.crab.snap",
+    "sounds": [
+      {
+        "name": "minecraft:entity.turtle.egg_crack",
+        "type": "event"
+      }
+    ]
+  },
+  "crab.pinch": {
+    "subtitle": "subtitles.welcomescreen.crab.pinch",
+    "sounds": [
+      {
+        "name": "minecraft:entity.turtle.egg_break",
+        "type": "event"
+      }
+    ]
+  },
+  "crab.step": {
+    "sounds": [
+      {
+        "name": "minecraft:entity.spider.step",
+        "type": "event"
+      }
+    ]
+  },
+  "moose.ambient": {
+    "subtitle": "subtitles.welcomescreen.moose.ambient",
+    "sounds": [
+      {
+        "name": "minecraft:entity.camel.ambient",
+        "type": "event"
+      }
+    ]
+  },
+  "moose.hurt": {
+    "subtitle": "subtitles.welcomescreen.moose.hurt",
+    "sounds": [
+      {
+        "name": "minecraft:entity.camel.hurt",
+        "type": "event"
+      }
+    ]
+  },
+  "moose.death": {
+    "subtitle": "subtitles.welcomescreen.moose.death",
+    "sounds": [
+      {
+        "name": "minecraft:entity.camel.death",
+        "type": "event"
+      }
+    ]
+  },
+  "moose.snort": {
+    "subtitle": "subtitles.welcomescreen.moose.snort",
+    "sounds": [
+      {
+        "name": "minecraft:entity.horse.angry",
+        "type": "event"
+      }
+    ]
+  },
+  "moose.stomp": {
+    "subtitle": "subtitles.welcomescreen.moose.stomp",
+    "sounds": [
+      {
+        "name": "minecraft:entity.goat.ram_impact",
+        "type": "event"
+      }
+    ]
+  },
+  "moose.step": {
+    "sounds": [
+      {
+        "name": "minecraft:entity.camel.step",
+        "type": "event"
+      }
+    ]
   }
 }

@@ -3,6 +3,29 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.9.8-alpha] - 2026-10-13
+
+### Added
+- **Hedgehog:** a small spiny hedgehog of forests, plains and meadows, sometimes with a hoglet. It rolls into a ball
+  when you, a wolf or a fox come close (creep up and it stays open), taking half the harm and pricking a bare hand
+  that hits it. It sniffs the air, noses through the ground and scratches. Apples and berries tempt and breed it.
+- **Owl:** a tawny owl in woods and taiga, a white snowy owl where it snows. By day it sleeps on a branch with its
+  eyes shut; at night it wakes, turns its head, preens, hoots and flies from perch to perch. Raw rabbit and chicken
+  tempt and breed it; it drops feathers.
+- **Squirrel:** red in taiga, grey in other woods, bushy tail up. Shy, it bounds away from you, wolves, foxes and
+  owls. It sits up, nibbles, digs and flicks its tail with a chatter. Seeds and sweet berries tempt and breed it.
+- **Snake:** a green grass snake or a brown zigzag adder in swamps, woods, plains and hills. Come close and it coils
+  and hisses a warning; stay there or hit it and it strikes once, then slips away. Only the adder's bite poisons, for
+  a few seconds. It basks in the sun and lifts its head to look round. Eggs, raw rabbit and cod tempt and breed it.
+- **Crab:** crabs on beaches, stony shores and in mangroves walk sideways, in and out of the water, breathing in
+  both. A hard shell; it pinches back only when hit. It waves a claw, raises both when you come near, feeds and digs
+  itself into sand. Kelp, seagrass and raw fish tempt and breed it.
+- **Moose:** a huge dark moose in taiga, groves and snowy plains: a bull with broad antlers, a cow, or a cow with
+  her calf. It leaves you be until you hit it or come near its calf, then lowers its head, snorts, charges and
+  stomps. It browses, grazes, lies down and shakes itself dry. It drops venison and leather; apples, wheat, lily
+  pads and seagrass tempt and breed it.
+- **Crab meat:** crabs drop raw crab, to eat raw or cooked in a furnace, smoker or campfire.
+
 ## [0.9.7-alpha] - 2026-10-12
 
 ### Added

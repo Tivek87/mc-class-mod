@@ -1,0 +1,10 @@
+{
+  "type": "neoforge:add_spawns",
+  "biomes": "#welcomescreen:spawns_snakes",
+  "spawners": {
+    "type": "welcomescreen:snake",
+    "weight": 3,
+    "minCount": 1,
+    "maxCount": 1
+  }
+}

@@ -1,6 +1,10 @@
 package nl.tivek.multiversepowers.creature.animal;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.syncher.EntityDataAccessor;
+import net.minecraft.network.syncher.EntityDataSerializers;
+import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.EntityType;
@@ -13,8 +17,11 @@ import nl.tivek.multiversepowers.engine.math.Ease;
 // A wild animal of the mod's own that does things now and then (acts: grazing, sitting up, shaking itself dry): the
 // server starts an act, every game that sees it learns which by an entity event and poses it by how long it has gone
 // (actAge), fading it in as it starts and out again once it ends (blend), worked out from the clock alone so a screen's
-// copy that never ticks poses the same.
+// copy that never ticks poses the same. A kind that comes in more than one look (a red or a grey squirrel) keeps
+// which in `variant`.
 public abstract class WildAnimal extends Animal {
+    private static final EntityDataAccessor<Integer> VARIANT = SynchedEntityData.defineId(WildAnimal.class,
+            EntityDataSerializers.INT);
     // The game's own entity events are all above 0, so the acts take the negative ones.
     private static final byte FIRST_EVENT = Byte.MIN_VALUE;
     private int act;
@@ -26,6 +33,32 @@ public abstract class WildAnimal extends Animal {
 
     protected WildAnimal(EntityType<? extends Animal> type, Level level) {
         super(type, level);
+    }
+
+    @Override
+    protected void defineSynchedData(SynchedEntityData.Builder builder) {
+        super.defineSynchedData(builder);
+        builder.define(VARIANT, 0);
+    }
+
+    public int variant() {
+        return this.entityData.get(VARIANT);
+    }
+
+    public void setVariant(int variant) {
+        this.entityData.set(VARIANT, variant);
+    }
+
+    @Override
+    public void addAdditionalSaveData(CompoundTag tag) {
+        super.addAdditionalSaveData(tag);
+        tag.putInt("Variant", this.variant());
+    }
+
+    @Override
+    public void readAdditionalSaveData(CompoundTag tag) {
+        super.readAdditionalSaveData(tag);
+        this.setVariant(tag.getInt("Variant"));
     }
 
     // How many kinds of act it has (numbered from 1).

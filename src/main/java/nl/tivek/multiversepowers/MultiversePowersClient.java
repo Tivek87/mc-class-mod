@@ -40,9 +40,7 @@ import nl.tivek.multiversepowers.character.greenlantern.client.victim.TimeStoppe
 import nl.tivek.multiversepowers.character.thor.client.GrabEscape;
 import nl.tivek.multiversepowers.character.thor.client.ThorCrosshair;
 import nl.tivek.multiversepowers.character.greenlantern.client.hud.CageEscape;
-import nl.tivek.multiversepowers.creature.bear.client.BearRenderer;
-import nl.tivek.multiversepowers.creature.deer.client.DeerRenderer;
-import nl.tivek.multiversepowers.creature.raccoon.client.RaccoonRenderer;
+import nl.tivek.multiversepowers.creature.animal.client.WildAnimalsClient;
 import nl.tivek.multiversepowers.engine.client.escape.EscapeHud;
 import nl.tivek.multiversepowers.character.thor.client.ThorGrabChoice;
 import nl.tivek.multiversepowers.character.thor.client.ThorHeld;
@@ -114,12 +112,7 @@ public final class MultiversePowersClient {
         modEventBus.addListener(RustboundRenderer::onRegisterLayers);
         modEventBus.addListener(StalkerRenderer::onRegisterRenderers);
         modEventBus.addListener(StalkerRenderer::onRegisterLayers);
-        modEventBus.addListener(BearRenderer::onRegisterRenderers);
-        modEventBus.addListener(BearRenderer::onRegisterLayers);
-        modEventBus.addListener(DeerRenderer::onRegisterRenderers);
-        modEventBus.addListener(DeerRenderer::onRegisterLayers);
-        modEventBus.addListener(RaccoonRenderer::onRegisterRenderers);
-        modEventBus.addListener(RaccoonRenderer::onRegisterLayers);
+        WildAnimalsClient.register(modEventBus);
         modEventBus.addListener(WizardClient::onRegisterRenderers);
         modEventBus.addListener(WizardClient::onRegisterLayers);
         modEventBus.addListener(HardLightRenderers::onRegisterRenderers);

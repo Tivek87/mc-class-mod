@@ -13,6 +13,7 @@ public final class IdleActs extends Goal {
     private final List<Act> acts = new ArrayList<>();
     private final int every;
     private Act playing;
+    private boolean wet;
 
     private record Act(int kind, int least, int most, int weight, Predicate<WildAnimal> fits) {
     }
@@ -23,6 +24,12 @@ public final class IdleActs extends Goal {
         this.every = every;
         // Not the look: an act's own pose says how far its head follows what it looks at.
         this.setFlags(EnumSet.of(Goal.Flag.MOVE, Goal.Flag.JUMP));
+    }
+
+    // For an animal at home under water as well: its acts go on there too.
+    public IdleActs inWater() {
+        this.wet = true;
+        return this;
     }
 
     public IdleActs add(int kind, int least, int most, int weight) {
@@ -37,7 +44,7 @@ public final class IdleActs extends Goal {
     @Override
     public boolean canUse() {
         WildAnimal a = this.animal;
-        if (a.act() != 0 || !a.onGround() || a.isInWater() || a.getTarget() != null || a.hurtTime > 0
+        if (a.act() != 0 || !a.onGround() || !this.wet && a.isInWater() || a.getTarget() != null || a.hurtTime > 0
                 || a.isLeashed() || a.getRandom().nextInt(this.every) != 0) {
             return false;
         }
@@ -62,7 +69,7 @@ public final class IdleActs extends Goal {
     public boolean canContinueToUse() {
         WildAnimal a = this.animal;
         return a.act() == this.playing.kind && a.hurtTime == 0 && a.getTarget() == null
-                && !a.isInWater();
+                && (this.wet || !a.isInWater());
     }
 
     @Override

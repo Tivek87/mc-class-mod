@@ -1,0 +1,10 @@
+{
+  "type": "neoforge:add_spawns",
+  "biomes": "#welcomescreen:spawns_squirrels",
+  "spawners": {
+    "type": "welcomescreen:squirrel",
+    "weight": 6,
+    "minCount": 1,
+    "maxCount": 3
+  }
+}

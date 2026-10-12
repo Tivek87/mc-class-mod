@@ -23,12 +23,18 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.character.greenlantern.minion.MechMinion;
 import nl.tivek.multiversepowers.character.greenlantern.summon.HardLight;
-import nl.tivek.multiversepowers.creature.bear.BrownBear;
+import nl.tivek.multiversepowers.creature.animal.bear.BrownBear;
+import nl.tivek.multiversepowers.creature.animal.crab.Crab;
+import nl.tivek.multiversepowers.creature.animal.deer.Deer;
+import nl.tivek.multiversepowers.creature.animal.hedgehog.Hedgehog;
+import nl.tivek.multiversepowers.creature.animal.moose.Moose;
+import nl.tivek.multiversepowers.creature.animal.owl.Owl;
+import nl.tivek.multiversepowers.creature.animal.raccoon.Raccoon;
+import nl.tivek.multiversepowers.creature.animal.snake.Snake;
+import nl.tivek.multiversepowers.creature.animal.squirrel.Squirrel;
 import nl.tivek.multiversepowers.creature.bloater.Bloater;
 import nl.tivek.multiversepowers.creature.brute.ZombieBrute;
-import nl.tivek.multiversepowers.creature.deer.Deer;
 import nl.tivek.multiversepowers.creature.lurker.Lurker;
-import nl.tivek.multiversepowers.creature.raccoon.Raccoon;
 import nl.tivek.multiversepowers.creature.rustbound.Rustbound;
 import nl.tivek.multiversepowers.creature.screamer.Feral;
 import nl.tivek.multiversepowers.creature.screamer.Screamer;
@@ -72,10 +78,22 @@ public final class ModItems {
             ITEMS.register("deer_spawn_egg",
                     () -> new DeferredSpawnEggItem(Deer.TYPE, 0x9A6436, 0xF1E9DA, new Item.Properties())),
             ITEMS.register("raccoon_spawn_egg",
-                    () -> new DeferredSpawnEggItem(Raccoon.TYPE, 0x86807A, 0x1C1A19, new Item.Properties())));
+                    () -> new DeferredSpawnEggItem(Raccoon.TYPE, 0x86807A, 0x1C1A19, new Item.Properties())),
+            ITEMS.register("hedgehog_spawn_egg",
+                    () -> new DeferredSpawnEggItem(Hedgehog.TYPE, 0x6B5A48, 0xD9C9A8, new Item.Properties())),
+            ITEMS.register("owl_spawn_egg",
+                    () -> new DeferredSpawnEggItem(Owl.TYPE, 0x7A5A3A, 0xE8DCC0, new Item.Properties())),
+            ITEMS.register("squirrel_spawn_egg",
+                    () -> new DeferredSpawnEggItem(Squirrel.TYPE, 0xB5562A, 0xF2EADC, new Item.Properties())),
+            ITEMS.register("snake_spawn_egg",
+                    () -> new DeferredSpawnEggItem(Snake.TYPE, 0x5E6B34, 0x1E1C16, new Item.Properties())),
+            ITEMS.register("crab_spawn_egg",
+                    () -> new DeferredSpawnEggItem(Crab.TYPE, 0xA8452A, 0xE9D2A6, new Item.Properties())),
+            ITEMS.register("moose_spawn_egg",
+                    () -> new DeferredSpawnEggItem(Moose.TYPE, 0x3D2B1E, 0xB9A68C, new Item.Properties())));
 
-    // The wild animals' meat: venison from deer, bear meat from bears, which raw may make you hungry as raw chicken
-    // does.
+    // The wild animals' meat: venison from deer and moose, bear meat from bears, which raw may make you hungry as
+    // raw chicken does, and crab.
     public static final DeferredItem<Item> RAW_VENISON = ITEMS.registerSimpleItem("raw_venison",
             new Item.Properties().food(new FoodProperties.Builder().nutrition(3).saturationModifier(0.3F).build()));
     public static final DeferredItem<Item> COOKED_VENISON = ITEMS.registerSimpleItem("cooked_venison",
@@ -85,8 +103,12 @@ public final class ModItems {
                     .effect(() -> new MobEffectInstance(MobEffects.HUNGER, 600, 0), 0.3F).build()));
     public static final DeferredItem<Item> COOKED_BEAR_MEAT = ITEMS.registerSimpleItem("cooked_bear_meat",
             new Item.Properties().food(new FoodProperties.Builder().nutrition(8).saturationModifier(0.8F).build()));
+    public static final DeferredItem<Item> RAW_CRAB = ITEMS.registerSimpleItem("raw_crab",
+            new Item.Properties().food(new FoodProperties.Builder().nutrition(2).saturationModifier(0.2F).build()));
+    public static final DeferredItem<Item> COOKED_CRAB = ITEMS.registerSimpleItem("cooked_crab",
+            new Item.Properties().food(new FoodProperties.Builder().nutrition(6).saturationModifier(0.7F).build()));
     public static final List<DeferredItem<Item>> MEATS = List.of(RAW_VENISON, COOKED_VENISON, RAW_BEAR_MEAT,
-            COOKED_BEAR_MEAT);
+            COOKED_BEAR_MEAT, RAW_CRAB, COOKED_CRAB);
 
     // The hard-light creatures' eggs, a dark green shell spotted in each creature's own colour.
     private static final int HARD_LIGHT = 0x0E5A2A;

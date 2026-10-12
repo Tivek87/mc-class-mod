@@ -1,0 +1,10 @@
+{
+  "type": "neoforge:add_spawns",
+  "biomes": "#welcomescreen:spawns_owls",
+  "spawners": {
+    "type": "welcomescreen:owl",
+    "weight": 3,
+    "minCount": 1,
+    "maxCount": 2
+  }
+}
