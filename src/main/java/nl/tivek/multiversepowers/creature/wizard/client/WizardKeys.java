@@ -37,12 +37,15 @@ final class WizardKeys {
     static final int L_KNEE = 23;
     static final int LIFT = 24;
     static final int FLARE = 25;
-    static final int CHANNELS = 26;
+    // A foot's turn at its ankle past standing flat on the ground (toes down above 0).
+    static final int R_FOOT = 26;
+    static final int L_FOOT = 27;
+    static final int CHANNELS = 28;
 
     private static final Key[][] MOVES = new Key[WizardMove.KINDS + 1][];
     // How many ticks each channel runs behind the trunk (ahead, below 0).
     private static final float[] LAG = { 0.0F, 0.0F, 0.3F, 0.5F, 1.2F, 1.5F, 1.6F, 1.6F, 0.0F, 0.0F, 0.4F, 0.4F, 0.5F,
-            0.5F, 0.5F, 0.5F, 0.9F, 0.9F, 1.4F, 1.4F, -0.5F, -0.5F, -0.2F, -0.2F, 0.0F, 1.0F };
+            0.5F, 0.5F, 0.5F, 0.9F, 0.9F, 1.4F, 1.4F, -0.5F, -0.5F, -0.2F, -0.2F, 0.0F, 1.0F, 0.2F, 0.2F };
 
     private WizardKeys() {
     }
@@ -69,8 +72,16 @@ final class WizardKeys {
             return null;
         }
         float[] out = new float[CHANNELS];
+        float[][] rows = new float[CHANNELS][];
         for (int i = 0; i < CHANNELS; i++) {
-            out[i] = Keyframes.at(keys, Math.max(0.0F, (float) t - LAG[i]))[i];
+            int first = 0;
+            while (LAG[first] != LAG[i]) {
+                first++;
+            }
+            if (rows[first] == null) {
+                rows[first] = Keyframes.at(keys, Math.max(0.0F, (float) t - LAG[i]));
+            }
+            out[i] = rows[first][i];
         }
         return out;
     }
@@ -359,5 +370,7 @@ final class WizardKeys {
                         L_OUT, 0.6F, R_LEG, 0.5F, L_LEG, 0.3F, LIFT, 2.0F, FLARE, 1.2F),
                 k(12, glide) };
         WizardKeysMore.fill(MOVES);
+        WizardKeysClose.fill(MOVES);
+        WizardKeysSpecial.fill(MOVES);
     }
 }

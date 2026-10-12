@@ -24,21 +24,27 @@ import nl.tivek.multiversepowers.creature.wizard.abyss.SoulDrain;
 import nl.tivek.multiversepowers.creature.wizard.abyss.Supernova;
 import nl.tivek.multiversepowers.creature.wizard.abyss.VoidOrb;
 import nl.tivek.multiversepowers.creature.wizard.abyss.VoidTendrils;
+import nl.tivek.multiversepowers.creature.wizard.close.CloseSpells;
+import nl.tivek.multiversepowers.creature.wizard.close.StaffBlows;
 import nl.tivek.multiversepowers.creature.wizard.field.ArcaneChains;
 import nl.tivek.multiversepowers.creature.wizard.field.ArcaneTornado;
 import nl.tivek.multiversepowers.creature.wizard.field.Blizzard;
 import nl.tivek.multiversepowers.creature.wizard.field.FrostNova;
+import nl.tivek.multiversepowers.creature.wizard.field.GlacialSpikes;
 import nl.tivek.multiversepowers.creature.wizard.field.GravityWell;
 import nl.tivek.multiversepowers.creature.wizard.field.InfernoRing;
+import nl.tivek.multiversepowers.creature.wizard.field.MarkedStrike;
 import nl.tivek.multiversepowers.creature.wizard.field.RuneMine;
 import nl.tivek.multiversepowers.creature.wizard.field.StarRift;
 import nl.tivek.multiversepowers.creature.wizard.field.TimeWarp;
+import nl.tivek.multiversepowers.creature.wizard.special.PhaseSpecials;
 import nl.tivek.multiversepowers.creature.wizard.spell.ArcLightning;
 import nl.tivek.multiversepowers.creature.wizard.spell.ArcaneBeam;
 import nl.tivek.multiversepowers.creature.wizard.spell.ArcaneBolt;
 import nl.tivek.multiversepowers.creature.wizard.spell.ArcaneFamiliar;
 import nl.tivek.multiversepowers.creature.wizard.spell.GreatMeteor;
 import nl.tivek.multiversepowers.creature.wizard.spell.PrismLance;
+import nl.tivek.multiversepowers.creature.wizard.spell.RuneSentry;
 import nl.tivek.multiversepowers.creature.wizard.spell.WizardFireball;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 import nl.tivek.multiversepowers.engine.world.LoadedWorld;
@@ -87,12 +93,21 @@ final class WizardCasts {
             case WizardMove.PHANTOM -> SoundEvents.PHANTOM_AMBIENT;
             case WizardMove.TENDRILS, WizardMove.VOID_ORB, WizardMove.DRAIN -> SoundEvents.WARDEN_NEARBY_CLOSER;
             case WizardMove.SPIRAL, WizardMove.SUPERNOVA -> SoundEvents.EVOKER_PREPARE_SUMMON;
+            case WizardMove.COMBO, WizardMove.WHIRL -> SoundEvents.PLAYER_ATTACK_NODAMAGE;
+            case WizardMove.REPULSE, WizardMove.TETHER -> SoundEvents.ILLUSIONER_PREPARE_BLINDNESS;
+            case WizardMove.FROST_CONE, WizardMove.GLACIAL -> SoundEvents.POWDER_SNOW_STEP;
+            case WizardMove.FLAME_LASH, WizardMove.PILLARS, WizardMove.FLARE -> SoundEvents.BLAZE_AMBIENT;
+            case WizardMove.SENTRY, WizardMove.SIGIL -> SoundEvents.EVOKER_PREPARE_SUMMON;
+            case WizardMove.RAIN, WizardMove.JUDGMENT -> SoundEvents.BEACON_ACTIVATE;
+            case WizardMove.ECLIPSE -> SoundEvents.WARDEN_NEARBY_CLOSEST;
             default -> SoundEvents.EVOKER_PREPARE_ATTACK;
         };
-        float pitch = kind == WizardMove.STRIKE ? 0.6F : kind == WizardMove.SPARK ? 1.6F
+        float pitch = kind == WizardMove.STRIKE || kind == WizardMove.COMBO || kind == WizardMove.WHIRL ? 0.6F
+                : kind == WizardMove.SPARK ? 1.6F
                 : kind == WizardMove.SKIP || kind == WizardMove.AIRSTEP ? 1.5F : 0.7F;
         boolean changes = WizardMove.carries(kind) != 0;
-        boolean loud = changes || kind == WizardMove.ARRIVE || kind == WizardMove.SUPERNOVA;
+        boolean loud = changes || kind == WizardMove.ARRIVE || kind == WizardMove.SUPERNOVA
+                || WizardMove.isSpecial(kind);
         wizard.playSound(sound, loud ? 2.5F : kind == WizardMove.SKIP || kind == WizardMove.AIRSTEP ? 0.8F : 1.3F,
                 pitch);
         if (changes) {
@@ -103,8 +118,8 @@ final class WizardCasts {
 
     static void release(ServerLevel level, Wizard wizard, int kind, @Nullable LivingEntity target, Vec3 aim) {
         switch (kind) {
-            case WizardMove.STRIKE -> strike(level, wizard, JAB_REACH, 0.6, wizard.harm(WizardMove.STRIKE), 0.5,
-                    0.15);
+            case WizardMove.STRIKE -> StaffBlows.strike(level, wizard, JAB_REACH, 0.6, wizard.harm(WizardMove.STRIKE),
+                    0.5, 0.15);
             case WizardMove.SPARK -> {
                 if (target != null) {
                     ArcaneBolt.spark(level, wizard, wizard.staffTip(), target, wizard.harm(WizardMove.SPARK));
@@ -178,6 +193,23 @@ final class WizardCasts {
                     wizard.harm(WizardMove.VOID_ORB));
             case WizardMove.DRAIN -> SoulDrain.reach(level, wizard, target, wizard.harm(WizardMove.DRAIN),
                     WizardMove.DRAIN_STOP - WizardMove.release(WizardMove.DRAIN));
+            case WizardMove.REPULSE, WizardMove.FROST_CONE, WizardMove.FLAME_LASH, WizardMove.TETHER,
+                    WizardMove.COMBO, WizardMove.WHIRL -> CloseSpells.release(level, wizard, kind, target);
+            case WizardMove.GLACIAL -> {
+                if (target != null) {
+                    GlacialSpikes.run(level, wizard, ground(level, wizard.position()), target.position(),
+                            wizard.harm(WizardMove.GLACIAL));
+                }
+            }
+            case WizardMove.PILLARS -> {
+                if (target != null) {
+                    MarkedStrike.pillars(level, wizard, target, wizard.harm(WizardMove.PILLARS),
+                            wizard.phase() > 3 ? 7 : 5);
+                }
+            }
+            case WizardMove.SENTRY -> RuneSentry.raise(level, wizard, wizard.harm(WizardMove.SENTRY));
+            case WizardMove.SIGIL, WizardMove.RAIN, WizardMove.FLARE, WizardMove.ECLIPSE, WizardMove.JUDGMENT ->
+                    PhaseSpecials.release(level, wizard, kind);
             default -> {
             }
         }
@@ -204,6 +236,10 @@ final class WizardCasts {
                 case WizardMove.LIFT -> GravityWell.lift(level, wizard, other, wizard.harm(WizardMove.LIFT) * share);
                 case WizardMove.LANCES -> PrismLance.fan(level, wizard, other, wizard.harm(WizardMove.LANCES) * share,
                         3, 16, 4);
+                case WizardMove.GLACIAL -> GlacialSpikes.run(level, wizard, ground(level, wizard.position()),
+                        other.position(), wizard.harm(WizardMove.GLACIAL) * share);
+                case WizardMove.PILLARS -> MarkedStrike.pillars(level, wizard, other,
+                        wizard.harm(WizardMove.PILLARS) * share, 3);
                 default -> {
                     return;
                 }
@@ -225,10 +261,14 @@ final class WizardCasts {
         switch (kind) {
             case WizardMove.STRIKE -> {
                 if (t == WizardMove.SWEEP) {
-                    strike(level, wizard, SWEEP_REACH, 1.9, (float) (wizard.harm(WizardMove.STRIKE)
+                    StaffBlows.strike(level, wizard, SWEEP_REACH, 1.9, (float) (wizard.harm(WizardMove.STRIKE)
                             * WizardMove.SWEEP_HARM), 1.1, 0.4);
                 }
             }
+            case WizardMove.REPULSE, WizardMove.FROST_CONE, WizardMove.FLAME_LASH, WizardMove.TETHER,
+                    WizardMove.COMBO, WizardMove.WHIRL -> CloseSpells.during(level, wizard, kind, t, target);
+            case WizardMove.SIGIL, WizardMove.RAIN, WizardMove.FLARE, WizardMove.ECLIPSE, WizardMove.JUDGMENT ->
+                    PhaseSpecials.during(level, wizard, kind, t);
             case WizardMove.BOLT -> {
                 int extra = t - WizardMove.release(WizardMove.BOLT);
                 if (target != null && extra > 0 && extra % WizardMove.BOLT_AGAIN == 0
@@ -307,34 +347,6 @@ final class WizardCasts {
         if ((t - from) % 6 == 0) {
             wizard.playSound(SoundEvents.AMETHYST_BLOCK_CHIME, 1.6F, 1.2F + 0.4F * wizard.getRandom().nextFloat());
         }
-    }
-
-    // A blow of the staff on whoever stands within `reach` before him, within `half` radians either side.
-    private static void strike(ServerLevel level, Wizard wizard, double reach, double half, float damage, double push,
-            double up) {
-        Vec3 ahead = MonsterBlows.ahead(wizard);
-        Vec3 from = wizard.position();
-        for (LivingEntity living : MonsterBlows.foes(wizard, wizard.getBoundingBox().inflate(reach, 1.0, reach))) {
-            Vec3 off = new Vec3(living.getX() - from.x, 0.0, living.getZ() - from.z);
-            double far = off.length() - living.getBbWidth() * 0.5;
-            if (far > reach) {
-                continue;
-            }
-            Vec3 way = off.lengthSqr() < 1.0E-4 ? ahead : off.normalize();
-            if (Math.acos(Mth.clamp(way.dot(ahead), -1.0, 1.0)) > half) {
-                continue;
-            }
-            if (MonsterBlows.hurt(living, wizard.damageSources().mobAttack(wizard), damage,
-                    way.scale(push).add(0.0, up, 0.0))) {
-                Vec3 hit = living.getBoundingBox().getCenter();
-                ParticleFx.send(level, Wizard.dust(Wizard.light(wizard.phase()), 1.4F), hit.x, hit.y, hit.z, 12, 0.2,
-                        0.3, 0.2, 0.0);
-                ParticleFx.send(level, ParticleTypes.CRIT, hit.x, hit.y, hit.z, 8, 0.2, 0.2, 0.2, 0.3);
-            }
-        }
-        Vec3 swing = from.add(ahead.scale(1.4)).add(0.0, 1.1 + wizard.hover(), 0.0);
-        ParticleFx.at(level, ParticleTypes.SWEEP_ATTACK, swing);
-        wizard.playSound(half > 1.0 ? SoundEvents.PLAYER_ATTACK_SWEEP : SoundEvents.PLAYER_ATTACK_STRONG, 1.2F, 0.7F);
     }
 
     // The ground under (or a little below) `near`: the first solid block down from it, as far as 24 blocks.
@@ -426,7 +438,7 @@ final class WizardCasts {
             away = far < 1.0E-3 ? MonsterBlows.ahead(wizard) : away.scale(1.0 / far);
             MonsterBlows.hurt(living, Wizard.source(wizard, wizard, WizardEntities.ARCANE),
                     wizard.harm(WizardMove.ARRIVE) * (float) (1.0 - 0.6 * far / LAND_REACH),
-                    away.scale(1.3).add(0.0, 0.55, 0.0));
+                    WizardKnock.knock(away.scale(1.3).add(0.0, 0.55, 0.0)));
         }
         ParticleFx.shockwave(level, Wizard.dust(Wizard.VIOLET, 2.4F), at, 72, 0.9);
         ParticleFx.shockwave(level, ParticleTypes.END_ROD, at, 40, 0.6);
@@ -456,7 +468,7 @@ final class WizardCasts {
             }
             away = far < 1.0E-3 ? MonsterBlows.ahead(wizard) : away.scale(1.0 / far);
             double strength = 1.6 * (1.0 - far / BURST_REACH) + 0.4;
-            living.setDeltaMovement(away.scale(strength).add(0.0, 0.5, 0.0));
+            living.setDeltaMovement(WizardKnock.knock(away.scale(strength).add(0.0, 0.5, 0.0)));
             living.hurtMarked = true;
         }
         int light = Wizard.light(phase);

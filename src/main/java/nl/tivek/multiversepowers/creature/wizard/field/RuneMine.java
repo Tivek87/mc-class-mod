@@ -16,6 +16,7 @@ import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.creature.MonsterBlows;
 import nl.tivek.multiversepowers.creature.wizard.Wizard;
 import nl.tivek.multiversepowers.creature.wizard.WizardEntities;
+import nl.tivek.multiversepowers.creature.wizard.WizardKnock;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 
 // The rune circle, his second phase: seven runes burn into the ground, one under his foe and six in a ring round
@@ -88,7 +89,7 @@ public final class RuneMine extends FieldSpell {
                     .expandTowards(0.0, 3.0, 0.0))) {
                 if (Math.hypot(living.getX() - at.x, living.getZ() - at.z) <= RADIUS + living.getBbWidth() * 0.5) {
                     MonsterBlows.hurt(living, Wizard.source(this, wizard, WizardEntities.ARCANE), this.damage,
-                            new Vec3(0.0, 0.95, 0.0));
+                            WizardKnock.knock(new Vec3(0.0, 0.95, 0.0)));
                 }
             }
         }

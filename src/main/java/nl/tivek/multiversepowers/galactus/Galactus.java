@@ -4,8 +4,9 @@ import net.minecraft.util.Mth;
 
 // Galactus in the sky (`/galactus`): a giant far bigger than the world, played out in real time for every player in
 // the overworld. He comes in out of deep space, a speck by the moon growing until he fills half the sky, raises his
-// arm and pokes the moon with a fingertip as big as it, then lowers his arm and goes back out. One timeline for server
-// and clients, in ticks at speed 1.
+// arm (RAISE to REACHED), pokes the moon with a fingertip as big as it (TOUCH), draws back (LET_GO, BACK), lowers his
+// arm (LOWERED) and goes back out (GONE). One timeline for server and clients, in ticks at speed 1; how he moves in
+// between is the client's (`client/GalactusMotion`).
 public final class Galactus {
     public static final int RAISE = 1500;
     public static final int REACHED = 1800;
@@ -31,17 +32,6 @@ public final class Galactus {
         }
         double v = Mth.clamp((t - LOWERED) / (double) (GONE - LOWERED), 0.0, 1.0);
         return Math.exp(Math.log(FAR) * Math.pow(v, 1.6));
-    }
-
-    // How far his right arm is raised to the moon, 0 hanging to 1 reaching.
-    public static double arm(double t) {
-        if (t < RAISE) {
-            return 0.0;
-        }
-        if (t < BACK) {
-            return smooth((t - RAISE) / (REACHED - RAISE));
-        }
-        return 1.0 - smooth((t - BACK) / (LOWERED - BACK));
     }
 
     // How far the poke has gone in, 1 with the fingertip on the moon.

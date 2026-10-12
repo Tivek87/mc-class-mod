@@ -18,6 +18,8 @@ import nl.tivek.multiversepowers.creature.wizard.client.field.InfernoRenderer;
 import nl.tivek.multiversepowers.creature.wizard.client.field.NovaRenderer;
 import nl.tivek.multiversepowers.creature.wizard.client.field.RiftRenderer;
 import nl.tivek.multiversepowers.creature.wizard.client.field.RuneRenderer;
+import nl.tivek.multiversepowers.creature.wizard.client.field.SpikesRenderer;
+import nl.tivek.multiversepowers.creature.wizard.client.field.StrikeRenderer;
 import nl.tivek.multiversepowers.creature.wizard.client.field.TornadoRenderer;
 import nl.tivek.multiversepowers.creature.wizard.client.field.WarpRenderer;
 import nl.tivek.multiversepowers.creature.wizard.client.field.WellRenderer;
@@ -28,6 +30,10 @@ import nl.tivek.multiversepowers.creature.wizard.client.fx.FamiliarRenderer;
 import nl.tivek.multiversepowers.creature.wizard.client.fx.LanceRenderer;
 import nl.tivek.multiversepowers.creature.wizard.client.fx.MeteorRenderer;
 import nl.tivek.multiversepowers.creature.wizard.client.fx.OrbRenderer;
+import nl.tivek.multiversepowers.creature.wizard.client.fx.SentryRenderer;
+import nl.tivek.multiversepowers.creature.wizard.client.special.OmenRenderer;
+import nl.tivek.multiversepowers.creature.wizard.client.special.SigilRenderer;
+import nl.tivek.multiversepowers.creature.wizard.client.special.WavesRenderer;
 import nl.tivek.multiversepowers.faction.mob.client.MobPreview;
 
 // Registers how the Wizard, his images and his spells are drawn.
@@ -43,7 +49,8 @@ public final class WizardClient {
         event.registerEntityRenderer(WizardEntities.FAMILIAR.get(), FamiliarRenderer::new);
         for (EntityType<? extends MovingMonster> type : List.<EntityType<? extends MovingMonster>>of(
                 WizardEntities.WIZARD.get(), WizardEntities.DECOY.get())) {
-            for (int kind : new int[] { WizardMove.STRIKE, WizardMove.BOLT, WizardMove.BLIZZARD }) {
+            for (int kind : new int[] { WizardMove.STRIKE, WizardMove.BOLT, WizardMove.BLIZZARD, WizardMove.COMBO,
+                    WizardMove.WHIRL, WizardMove.FLAME_LASH, WizardMove.REPULSE }) {
                 MobPreview.move(type, WizardMove.length(kind) + 8, w -> w.play(kind), w -> w.play(0));
             }
         }
@@ -78,6 +85,12 @@ public final class WizardClient {
         event.registerEntityRenderer(WizardEntities.VOID_ORB.get(), VoidOrbRenderer::new);
         event.registerEntityRenderer(WizardEntities.DRAIN.get(), DrainRenderer::new);
         event.registerEntityRenderer(WizardEntities.SUPERNOVA.get(), SupernovaRenderer::new);
+        event.registerEntityRenderer(WizardEntities.GLACIAL.get(), SpikesRenderer::new);
+        event.registerEntityRenderer(WizardEntities.STRIKE.get(), StrikeRenderer::new);
+        event.registerEntityRenderer(WizardEntities.SENTRY.get(), SentryRenderer::new);
+        event.registerEntityRenderer(WizardEntities.SIGIL.get(), SigilRenderer::new);
+        event.registerEntityRenderer(WizardEntities.WAVES.get(), WavesRenderer::new);
+        event.registerEntityRenderer(WizardEntities.OMEN.get(), OmenRenderer::new);
     }
 
     public static void onRegisterLayers(EntityRenderersEvent.RegisterLayerDefinitions event) {

@@ -4,6 +4,7 @@ import java.util.Optional;
 import java.util.UUID;
 import javax.annotation.Nullable;
 import net.minecraft.core.particles.DustParticleOptions;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
@@ -42,6 +43,7 @@ import net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal;
 import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
 import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.projectile.AbstractArrow;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.ServerLevelAccessor;
 import net.minecraft.world.phys.Vec3;
@@ -50,7 +52,9 @@ import nl.tivek.multiversepowers.creature.MovingMonster;
 import nl.tivek.multiversepowers.creature.wizard.abyss.VoidTendrils;
 import nl.tivek.multiversepowers.creature.wizard.field.StarRift;
 import nl.tivek.multiversepowers.creature.wizard.spell.ArcaneFamiliar;
+import nl.tivek.multiversepowers.creature.wizard.spell.RuneSentry;
 import nl.tivek.multiversepowers.creature.wizard.spell.WardCrystal;
+import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 import org.joml.Vector3f;
 
 // The Wizard: an old mage in a long robe and a pointed hat, a staff crowned with a glowing crystal in his right hand. A
@@ -133,6 +137,7 @@ public final class Wizard extends MovingMonster {
 
     public static void register(net.neoforged.bus.api.IEventBus modEventBus) {
         WizardEntities.register(modEventBus);
+        WizardKnock.register();
     }
 
     // The harm of one of his spells, struck by `by` (the spell itself or him) on his behalf.
@@ -183,7 +188,7 @@ public final class Wizard extends MovingMonster {
     // burst on.
     public static boolean ally(Entity entity) {
         return entity instanceof Wizard || entity instanceof WizardDecoy || entity instanceof ArcaneFamiliar
-                || entity instanceof WardCrystal || entity instanceof VoidTendrils;
+                || entity instanceof WardCrystal || entity instanceof VoidTendrils || entity instanceof RuneSentry;
     }
 
     // His health where his phase began: his drain never heals him past it.
@@ -299,6 +304,11 @@ public final class Wizard extends MovingMonster {
     public float harm(int kind) {
         return (float) (this.getAttributeValue(Attributes.ATTACK_DAMAGE) * WizardMove.harm(kind)
                 * WizardMove.power(this.phase()));
+    }
+
+    // The ground under (or a little below) `near`, as his spells find it.
+    public static Vec3 groundUnder(ServerLevel level, Vec3 near) {
+        return WizardCasts.ground(level, near);
     }
 
     // A point on his body: to his right, up from his feet and ahead of him, in blocks.
@@ -418,8 +428,16 @@ public final class Wizard extends MovingMonster {
         }
         if (this.ward() > 0.0F && !bypass && this.isAlive()) {
             if (this.level() instanceof ServerLevel level && !this.isInvulnerableTo(source)) {
+                // An arrow breaks on the ward instead of glancing off it (a refused blow sends it back), and counts
+                // however soon after another it comes.
+                boolean arrow = source.getDirectEntity() instanceof AbstractArrow;
+                if (arrow) {
+                    Vec3 at = source.getDirectEntity().position();
+                    ParticleFx.send(level, ParticleTypes.CRIT, at.x, at.y, at.z, 8, 0.1, 0.1, 0.1, 0.2);
+                    source.getDirectEntity().discard();
+                }
                 // As his health does, the ward takes a blow at most twice a second, or only what a harder one adds.
-                boolean fresh = this.tickCount - this.wardHitAt >= 10;
+                boolean fresh = arrow || this.tickCount - this.wardHitAt >= 10;
                 float taken = fresh ? amount : amount - this.wardHit;
                 if (taken > 0.0F) {
                     if (fresh) {

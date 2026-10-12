@@ -1,15 +1,10 @@
 # Laatste sessie
 
-- Datum: 2026-10-12 00:34
-- Release 0.8.9-alpha: commit + push + publish op verzoek; tour in game doorlopen (7 kaarten ok), CHANGELOG-datum 2026-10-12.
-- Laatste vragen: korte lijst van alles wat nieuw is (gegeven); waar het ability-paneel aan te passen (Mods → Multiverse Powers → Config → Your game → Ability overlay → Change layout); Wizard in de Mobs-preview met staf op de grond (gedaan: `WizardPoses.planted`, alleen in preview via `MobPreview.drawing`, in game getest, build groen).
-- Vraag: Wizard-ward 65% zwakker, daarna de lijst: Mobs-pagina (tooltip, draaien, typen/vermenigvuldigen, relaties klikken, Sentinel), paneel verplaatsen, GL hover-snelheid, black hole (echte blokken, burst), Wizard sterker + meerdere spelers, `/galactus`, escape-minigame, Doc Ock weg (WIP), idle-animaties in de mob-viewer.
-- Commit `cb2fc36` gedaan (Wizard), niet gepusht/gereleased.
-- Gedaan (code, build + unit tests groen): alles uit de lijst. Doc Ock: `docock/` weg op `OctoCrosshair` na, `GameCharacter.DOC_OCK` zonder abilities en `playable()` false, G-menu + server zeggen WIP, geen config/settings-pagina, docs ingekort. Idle: `MobPreview` acts (eigen moves + rondkijken), vloeiende partialTick.
-- CHANGELOG 0.8.9-alpha + 3 tour-stappen (galactus, black_hole, doc_ock_rework) + SMALL-regels; TourCoverageTest groen.
-- Paneel verplaatsen/schalen bestond al: Settings > Your game > Change layout.
-- In-game getest (5 runs, tijdelijke `ClaudeAllTest`, nu verwijderd met wereld + shots): idle-moves alle 12 mobs, Sentinel-preview, typen/*2/÷2, Relations-naam klikt door, Galactus (stip -> por -> weg), zwart gat (echte blokken, burst), Doc Ock WIP, escape-UI, hover-snelheid, Wizard meerdere spelers.
-- Fixes uit test: Galactus-arm 's nachts verlicht + gloed op vingertop; Relations-knoppen openen pas op het label (anders bedekten ze de naam).
-- `./gradlew build` groen (incl. TourCoverageTest).
-- Niet van mij, niet meecommitten: `arena/`, `CONTENT.txt`.
-- Open: commit vragen (geen push/release). Niet getest: echte multiplayer-verbinding.
+- Datum: 2026-10-12 12:45
+- Verzoek: Wizard zwakker (700 hp, -40% schade, -70% knockback, -65% armor, ward -55%, pijlen 60% op ward zonder terugkaatsen, Supernova -35%), betere animaties, 14 nieuwe moves, Galactus 100x beter, kosmische nachthemel.
+- Wizard: `creature/wizard/` (`close/`, `special/`, `WizardKnock`, `GlacialSpikes`, `MarkedStrike`, `RuneSentry`, keyframes); in game getest (15 moves).
+- Nachthemel: `sky/client/`, `CosmicSkyMixin`, `Perlin`, setting `cosmicSky` (standaard aan). Galactus: `galactus/client/` (rig 46 botten, eigen shader). Samen in game getest.
+- Bug #75 (sentinel-voeten omhoog): `MinionPose.ready` gefixt, in game getest, gesloten.
+- Release 0.9.0-alpha voorbereid: `mod_version`, CHANGELOG, 6 tour-stappen (in game doorlopen), CLAUDE.md layout. Build + tests groen.
+- Open: commit + push + publish wacht op ja; niet meecommitten: `CONTENT.txt`, `arena/`, `models/`, `__pycache__/`, `wizard_phases_viewer.html` (andere sessie). Agent-worktrees `.claude/worktrees/agent-*` opruimen na ja.
+- Open idee: #24 huurbare companions (low, wacht op ja).

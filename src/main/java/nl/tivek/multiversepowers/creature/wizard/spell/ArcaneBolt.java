@@ -18,6 +18,7 @@ import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.creature.wizard.Wizard;
 import nl.tivek.multiversepowers.creature.wizard.WizardEntities;
+import nl.tivek.multiversepowers.creature.wizard.WizardKnock;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 
 // A bolt of arcane light from the Wizard's staff: it flies fast and bends after its mark a little each tick, so it
@@ -189,9 +190,10 @@ public final class ArcaneBolt extends ThrowableProjectile {
     protected void onHitEntity(EntityHitResult result) {
         super.onHitEntity(result);
         if (result.getEntity() instanceof LivingEntity living) {
-            Vec3 push = this.getDeltaMovement().normalize().scale(0.4);
+            Vec3 way = this.getDeltaMovement().normalize();
+            Vec3 push = WizardKnock.knock(new Vec3(way.x * 0.4, 0.15, way.z * 0.4));
             if (living.hurt(Wizard.source(this, this.getOwner(), WizardEntities.ARCANE), this.damage)) {
-                living.push(push.x, 0.15, push.z);
+                living.push(push.x, push.y, push.z);
             }
         }
     }

@@ -213,7 +213,7 @@ public final class WizardDecoy extends MovingMonster {
             for (LivingEntity living : MonsterBlows.foes(owner, new AABB(at, at).inflate(BURST))) {
                 Vec3 away = MonsterBlows.toward(owner, at, living.position());
                 MonsterBlows.hurt(living, Wizard.source(this, owner, WizardEntities.ARCANE),
-                        owner.harm(WizardMove.SPARK), away.scale(0.9).add(0.0, 0.35, 0.0));
+                        owner.harm(WizardMove.SPARK), WizardKnock.knock(away.scale(0.9).add(0.0, 0.35, 0.0)));
             }
             ParticleFx.sphereOut(level, ParticleTypes.ELECTRIC_SPARK, at, 24, 0.5);
             level.playSound(null, at.x, at.y, at.z, SoundEvents.FIREWORK_ROCKET_BLAST, SoundSource.HOSTILE, 1.4F,
@@ -221,7 +221,8 @@ public final class WizardDecoy extends MovingMonster {
         } else if (by != null && by.distanceTo(this) < PUSH) {
             Vec3 away = by.position().subtract(this.position()).multiply(1.0, 0.0, 1.0);
             away = away.lengthSqr() < 1.0E-4 ? new Vec3(0.0, 0.0, 1.0) : away.normalize();
-            by.push(away.x * 0.9, 0.35, away.z * 0.9);
+            Vec3 knock = WizardKnock.knock(new Vec3(away.x * 0.9, 0.35, away.z * 0.9));
+            by.push(knock.x, knock.y, knock.z);
             by.hurtMarked = true;
         }
         this.discard();

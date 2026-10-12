@@ -21,6 +21,7 @@ import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.creature.MonsterBlows;
 import nl.tivek.multiversepowers.creature.wizard.Wizard;
 import nl.tivek.multiversepowers.creature.wizard.WizardEntities;
+import nl.tivek.multiversepowers.creature.wizard.WizardKnock;
 import nl.tivek.multiversepowers.creature.wizard.WizardMove;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 import nl.tivek.multiversepowers.engine.world.LoadedWorld;
@@ -149,7 +150,8 @@ public final class ArcaneBeam extends Entity {
             double off = middle.distanceTo(from.add(way.scale(along)));
             if (off < WIDTH + living.getBbWidth() * 0.5 + living.getBbHeight() * 0.25) {
                 if (living.hurt(Wizard.source(this, wizard, WizardEntities.ARCANE), this.damage)) {
-                    living.push(way.x * 0.15, 0.05, way.z * 0.15);
+                    Vec3 push = WizardKnock.knock(new Vec3(way.x * 0.15, 0.05, way.z * 0.15));
+                    living.push(push.x, push.y, push.z);
                 }
             }
         }

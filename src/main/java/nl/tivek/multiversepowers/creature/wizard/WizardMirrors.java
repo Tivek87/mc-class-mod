@@ -132,7 +132,7 @@ final class WizardMirrors {
             if (this.dashT == WizardMove.DASH_HIT && member.distanceTo(target) < DASH_REACH + target.getBbWidth()) {
                 Vec3 way = MonsterBlows.toward(this.wizard, member.position(), target.position());
                 MonsterBlows.hurt(target, this.wizard.damageSources().mobAttack(this.wizard),
-                        this.wizard.harm(WizardMove.DASH), way.scale(0.7).add(0.0, 0.25, 0.0));
+                        this.wizard.harm(WizardMove.DASH), WizardKnock.knock(way.scale(0.7).add(0.0, 0.25, 0.0)));
                 member.playSound(SoundEvents.PLAYER_ATTACK_SWEEP, 1.0F, 1.2F);
             }
             if (this.dashT >= DASH) {
@@ -208,7 +208,7 @@ final class WizardMirrors {
         for (LivingEntity living : MonsterBlows.foes(this.wizard, target.getBoundingBox().inflate(3.0))) {
             Vec3 away = MonsterBlows.toward(this.wizard, middle, living.position());
             MonsterBlows.hurt(living, Wizard.source(this.wizard, this.wizard, WizardEntities.ARCANE),
-                    this.wizard.harm(WizardMove.MIRRORS) * 2.5F, away.scale(1.2).add(0.0, 0.5, 0.0));
+                    this.wizard.harm(WizardMove.MIRRORS) * 2.5F, WizardKnock.knock(away.scale(1.2).add(0.0, 0.5, 0.0)));
         }
         ParticleFx.sphereOut(this.level, ParticleTypes.ELECTRIC_SPARK, middle, 30, 0.6);
         ParticleFx.sphereOut(this.level, Wizard.dust(Wizard.STARLIGHT, 2.0F), middle, 90, 0.7);

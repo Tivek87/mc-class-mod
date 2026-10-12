@@ -11,17 +11,21 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.creature.MonsterBlows;
+import nl.tivek.multiversepowers.creature.wizard.field.GlacialSpikes;
 import nl.tivek.multiversepowers.creature.wizard.spell.ArcaneFamiliar;
+import nl.tivek.multiversepowers.creature.wizard.spell.RuneSentry;
 
-// How the Wizard fights: he keeps his foe at a caster's distance, circling them, gliding quickly aside or back when they
-// close in and towards them when they fall behind, blinking to them from afar, and casts what is ready and fits. Light
-// spells (sparks, bolts) he flicks often; up close he strikes with his staff or blinks away; between his big spells he
-// takes a breath, never the same big spell twice running, and an ultimate never soon after another. From his second
-// phase he flies (WizardFlight) and now and then, or when struck, blinks to another spot in the air (AIRSTEP). When a
-// phase breaks he drops whatever he was doing and the next phase takes him (ASCEND, UNBIND, AWAKEN, APOTHEOSIS), and
-// its own great spell comes first; caught out among his mirror images, or when his ward breaks, he is stunned and drops
-// to the ground. Called by the ritual, he first comes down out of his rift (ARRIVE). Among several players he turns
-// on another now and then.
+// How the Wizard fights: he keeps his foe at a caster's distance, circling them, gliding quickly aside or back when
+// they close in and towards them when they fall behind, blinking to them from afar, and casts what is ready and fits.
+// Light spells (sparks, bolts) he flicks often; up close he strikes with his staff, its combo or whirl, or casts a
+// close spell (repulse, frost cone, flame lash: CloseSpells), else blinks away; a foe far off he may tether in; between
+// his big spells he takes a breath, never the same big spell twice running, and an ultimate never soon after another.
+// From his second phase he flies (WizardFlight) and now and then, or when struck, blinks to another spot in the air
+// (AIRSTEP). When a phase breaks he drops whatever he was doing and the next phase takes him (ASCEND, UNBIND, AWAKEN,
+// APOTHEOSIS); its special comes first (WizardMove.special, PhaseSpecials; the first phase's once he has arrived),
+// then its own great spell; caught out among his mirror images, or when his ward breaks, he is stunned and drops to
+// the ground. Called by the ritual, he first comes down out of his rift (ARRIVE). Among several players he turns on
+// another now and then.
 final class WizardMoves extends Goal {
     // The breath after a big spell, in each phase.
     private static final int[] BREATH = { 0, 55, 46, 38, 31, 25 };
@@ -32,6 +36,7 @@ final class WizardMoves extends Goal {
     private static final double FAR = 15.0;
     private static final double BLINK_FROM = 22.0;
     private static final int MOST_FAMILIARS = 2;
+    private static final int MOST_SENTRIES = 2;
     // How fast a skip glides (blocks a tick at its start).
     private static final double SKIP_SPEED = 0.95;
     // Ticks out of sight of his target before he blinks to where he sees it.
@@ -55,6 +60,8 @@ final class WizardMoves extends Goal {
     private int sideUntil;
     private int pendingPhase;
     private int opening;
+    // The special his phase opens with (or his landing), cast as soon as he has a foe.
+    private int special;
     // Struck in the air: he blinks away at the next chance.
     private boolean dodge;
     private Vec3 aim = Vec3.ZERO;
@@ -190,6 +197,12 @@ final class WizardMoves extends Goal {
         if (target == null) {
             return;
         }
+        if (this.special != 0) {
+            int special = this.special;
+            this.special = 0;
+            this.begin(special, target);
+            return;
+        }
         int now = this.wizard.tickCount;
         double far = this.wizard.distanceTo(target);
         double gap = MonsterBlows.gap(this.wizard, target);
@@ -241,6 +254,10 @@ final class WizardMoves extends Goal {
     // How he moves while a move lasts: on the ground only a skip moves him; in the air he hangs where he is, but for
     // the moves that carry him (the comet, the phantom strike, the rise before the supernova) and the fall as he reels.
     private void fly(ServerLevel level, @Nullable LivingEntity target) {
+        if (WizardMove.close(this.kind) && !this.wizard.flies()) {
+            this.lunge(target);
+            return;
+        }
         switch (this.kind) {
             case WizardMove.SKIP -> this.glide();
             case WizardMove.COMET -> this.flight.comet(level, this.t, target);
@@ -285,12 +302,16 @@ final class WizardMoves extends Goal {
             if (air >= 0) {
                 return air;
             }
-        } else if (gap < 2.2) {
-            if (this.ready(WizardMove.STRIKE) && (random.nextInt(4) != 0 || !this.ready(WizardMove.BLINK))) {
-                return WizardMove.STRIKE;
+        } else if (gap < 2.4) {
+            int close = this.close(true, random);
+            if (close != 0) {
+                return close;
             }
-            if (this.ready(WizardMove.BLINK)) {
-                return WizardMove.BLINK;
+        }
+        if (gap < 4.5 && random.nextInt(2) == 0) {
+            int spell = this.close(false, random);
+            if (spell != 0) {
+                return spell;
             }
         }
         if (!this.wizard.flies()) {
@@ -313,6 +334,9 @@ final class WizardMoves extends Goal {
                 return big;
             }
         }
+        if (far > NEAR && far < 18.0 && this.ready(WizardMove.TETHER) && random.nextInt(5) == 0) {
+            return WizardMove.TETHER;
+        }
         if (!this.wizard.flies() && this.ready(WizardMove.SKIP) && (far > FAR + 2.0 || random.nextInt(6) == 0)) {
             return this.skipFrom(target, far < NEAR);
         }
@@ -328,8 +352,11 @@ final class WizardMoves extends Goal {
     // then a blink elsewhere for no reason they can see. -1 to pick as on the ground.
     private int pickInAir(LivingEntity target, double gap, boolean sees, RandomSource random) {
         double below = this.wizard.getY() + this.wizard.hover() - target.getY();
-        if (gap < 2.4 && Math.abs(below) < 1.6 && this.ready(WizardMove.STRIKE) && random.nextInt(3) != 0) {
-            return WizardMove.STRIKE;
+        if (gap < 2.6 && Math.abs(below) < 1.6 && random.nextInt(3) != 0) {
+            int close = this.close(true, random);
+            if (close != 0) {
+                return close;
+            }
         }
         if (gap < 4.0 && this.ready(WizardMove.AIRSTEP) && random.nextInt(2) == 0) {
             return WizardMove.AIRSTEP;
@@ -338,6 +365,37 @@ final class WizardMoves extends Goal {
             return WizardMove.AIRSTEP;
         }
         return -1;
+    }
+
+    // Up close (`blows`: in reach of his staff) a blow or a short spell, else (a few steps off) a short spell, picked
+    // by weight among those ready; on the ground right up close a blink away now and then. 0 for none.
+    private int close(boolean blows, RandomSource random) {
+        int[] kinds = blows ? new int[] { WizardMove.STRIKE, WizardMove.COMBO, WizardMove.WHIRL, WizardMove.REPULSE,
+                WizardMove.FROST_CONE, WizardMove.FLAME_LASH, WizardMove.BLINK }
+                : new int[] { WizardMove.REPULSE, WizardMove.FROST_CONE, WizardMove.FLAME_LASH };
+        double[] weight = new double[kinds.length];
+        double total = 0.0;
+        for (int i = 0; i < kinds.length; i++) {
+            int kind = kinds[i];
+            if (!this.ready(kind) || kind == WizardMove.BLINK && this.wizard.flies()) {
+                continue;
+            }
+            weight[i] = switch (kind) {
+                case WizardMove.STRIKE, WizardMove.COMBO -> 3.0;
+                case WizardMove.WHIRL, WizardMove.REPULSE -> 2.0;
+                case WizardMove.BLINK -> 1.0;
+                default -> 1.5;
+            };
+            total += weight[i];
+        }
+        double roll = random.nextDouble() * total;
+        for (int i = 0; i < kinds.length; i++) {
+            roll -= weight[i];
+            if (weight[i] > 0.0 && roll < 0.0) {
+                return kinds[i];
+            }
+        }
+        return 0;
     }
 
     // A quick glide: away and aside when they are close, towards and aside when they are far, else round them.
@@ -349,6 +407,28 @@ final class WizardMoves extends Goal {
         double toward = away ? -0.75 : far > FAR ? 0.8 : 0.0;
         this.skip = ahead.scale(toward).add(aside.scale(away ? 0.65 : 1.0)).normalize();
         return WizardMove.SKIP;
+    }
+
+    // On his feet his staff's blows carry him in: a step after each blow of the combo, a slow drift through the whirl.
+    private void lunge(@Nullable LivingEntity target) {
+        double step = switch (this.kind) {
+            case WizardMove.COMBO -> this.t == WizardMove.COMBO_SMASH - 3 || this.t == WizardMove.COMBO_SWEEP - 3
+                    || this.t == WizardMove.COMBO_THRUST - 3 ? 0.42 : 0.0;
+            case WizardMove.WHIRL -> this.t >= WizardMove.release(WizardMove.WHIRL) && this.t < WizardMove.WHIRL_STOP
+                    ? 0.1 : 0.0;
+            default -> 0.0;
+        };
+        if (step <= 0.0 || target == null || MonsterBlows.gap(this.wizard, target) < 0.8) {
+            return;
+        }
+        Vec3 way = target.position().subtract(this.wizard.position()).multiply(1.0, 0.0, 1.0);
+        if (way.lengthSqr() < 1.0E-4) {
+            return;
+        }
+        Vec3 motion = this.wizard.getDeltaMovement();
+        way = way.normalize().scale(step);
+        this.wizard.setDeltaMovement(way.x, motion.y, way.z);
+        this.wizard.hurtMarked = true;
     }
 
     // The glide itself: fast at first, slowing to a stop.
@@ -396,7 +476,8 @@ final class WizardMoves extends Goal {
             case WizardMove.LIGHTNING, WizardMove.MIRRORS, WizardMove.ORBIT, WizardMove.LANCES, WizardMove.COMET,
                     WizardMove.INFERNO, WizardMove.PHANTOM, WizardMove.TENDRILS, WizardMove.SPIRAL,
                     WizardMove.SUPERNOVA -> 2.5;
-            case WizardMove.FAMILIARS, WizardMove.WARP -> 1.5;
+            case WizardMove.GLACIAL, WizardMove.PILLARS -> 2.5;
+            case WizardMove.FAMILIARS, WizardMove.WARP, WizardMove.SENTRY -> 1.5;
             default -> 2.0;
         };
         return WizardMove.ultimate(kind) ? base * 1.5 : base;
@@ -422,6 +503,9 @@ final class WizardMoves extends Goal {
             case WizardMove.TENDRILS, WizardMove.DRAIN -> far < 16.0;
             case WizardMove.VOID_ORB -> far > 5.0 && far < 24.0;
             case WizardMove.SUPERNOVA -> far < 36.0 && this.wizard.flies();
+            case WizardMove.GLACIAL -> far > 4.0 && far < GlacialSpikes.RANGE;
+            case WizardMove.PILLARS -> far < 24.0;
+            case WizardMove.SENTRY -> RuneSentry.owned(this.wizard) < MOST_SENTRIES;
             default -> false;
         };
     }
@@ -477,13 +561,20 @@ final class WizardMoves extends Goal {
             };
             this.ready[opening] = now + (WizardMove.ultimate(opening) ? 50 : 30);
             this.opening = opening;
+            this.special = WizardMove.special(phase);
             this.nextUltimate = now;
             this.nextBig = now + 20;
         } else if (done == WizardMove.STUNNED) {
             this.wizard.setNoGravity(this.wizard.flies());
         } else if (done == WizardMove.ARRIVE) {
+            this.special = WizardMove.special(1);
             this.nextLight = now + 10;
             this.nextBig = now + 40;
+        } else if (done == WizardMove.TETHER) {
+            // Dragged in, they meet his staff or a short spell at once.
+            this.nextLight = now + 2;
+        } else if (WizardMove.isSpecial(done)) {
+            this.nextLight = now + 16;
         }
         this.kind = 0;
         this.wizard.start(0);

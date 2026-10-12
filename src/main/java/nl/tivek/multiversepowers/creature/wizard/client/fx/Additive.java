@@ -72,6 +72,21 @@ public final class Additive {
         }
     }
 
+    // A wall standing on a ring of `radius` from `y` up `tall`, its foot in `foot` fading to `top`.
+    public static void wall(PoseStack.Pose pose, VertexConsumer buffer, float radius, float y, float tall, int sides,
+            float[] foot, float[] top) {
+        for (int i = 0; i < sides; i++) {
+            float a0 = i * Mth.TWO_PI / sides;
+            float a1 = (i + 1) * Mth.TWO_PI / sides;
+            float c0 = Mth.cos(a0) * radius;
+            float s0 = Mth.sin(a0) * radius;
+            float c1 = Mth.cos(a1) * radius;
+            float s1 = Mth.sin(a1) * radius;
+            quad(pose, buffer, new float[] { c0, y, s0 }, new float[] { c1, y, s1 }, new float[] { c1, y + tall, s1 },
+                    new float[] { c0, y + tall, s0 }, foot, foot, top, top);
+        }
+    }
+
     // A flat line on the ground from (x0, z0) to (x1, z1), `width` across.
     public static void line(PoseStack.Pose pose, VertexConsumer buffer, float x0, float z0, float x1, float z1,
             float width, float y, float[] colour) {

@@ -3,6 +3,35 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.9.0-alpha] - 2026-10-12
+
+### Added
+- **Wizard: close spells:** up close he casts Repulse (a burst that throws you back), Frost Cone (a freezing breath)
+  and Flame Lash (a whip of fire across the ground before him).
+- **Wizard: staff combos:** a three-blow combo (smash, sweep, thrust) and a whirl that strikes all round him.
+- **Wizard: 4 new spells:** Arcane Tether (pulls you to him), Glacial Spikes (a line of ice running at you), Flame
+  Pillars (glowing marks that erupt in fire) and Rune Sentry (a floating turret that shoots sparks).
+- **Wizard: phase specials:** every phase opens with a great spell of its own: Grand Sigil (jump its rings of force),
+  Rain of Light, Solar Flare (jump its waves of fire), Eclipse (the void opens under you) and Judgment (time stops,
+  then lances fall). A warning names each one.
+- **Cosmic night sky:** at night the sky shows twelve planets and moons, rings, the Milky Way, nebulae, a spiral
+  galaxy and thousands more stars (setting: Cosmic night sky, on by default).
+
+### Changed
+- **Wizard: easier:** 700 health instead of 800, 40% less damage, 70% less knockback and 65% less armor; his
+  Supernova does 35% less.
+- **Wizard: ward and arrows:** every ward is 55% weaker, and arrows now hurt it for 60% of their damage instead of
+  bouncing off.
+- **Galactus: remade:** a detailed new Galactus (horned helmet, glowing eyes, armour, gauntlets) with lit, shining
+  metal and violet energy cracks; he breathes and moves his hands, winds up, raises his arm and pokes the moon with
+  lightning crackling at his fingertip.
+- **Wizard: smoother moves:** his weight shifts as he stands, his feet roll heel to toe, he banks into turns in flight,
+  every joint follows at its own pace, and he has new idle moves.
+- **Project:** reference pictures for Galactus, the night sky and Doctor Octopus's rework in `docs/reference/`.
+
+### Fixed
+- **Sentinels:** their feet no longer point upward, standing or walking.
+
 ## [0.8.9-alpha] - 2026-10-12
 
 ### Added

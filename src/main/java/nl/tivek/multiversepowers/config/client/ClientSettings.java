@@ -19,6 +19,7 @@ public final class ClientSettings {
     public static final ModConfigSpec.DoubleValue PANEL_Y;
     public static final ModConfigSpec.DoubleValue PARTICLE_AMOUNT;
     public static final ModConfigSpec.IntValue EFFECT_DETAIL;
+    public static final ModConfigSpec.IntValue COSMIC_SKY;
     public static final ModConfigSpec.IntValue STAGE_BEAMS;
     public static final ModConfigSpec.IntValue STAGE_REACH;
     public static final ModConfigSpec.IntValue STAGE_MOST;
@@ -73,6 +74,8 @@ public final class ClientSettings {
                 + " splashes (1 = as the mod makes them, 0 = none)", 1.0, 0.0, 2.0, Unit.PERCENT, 0.05);
         EFFECT_DETAIL = sheet.choice("effectDetail", "How much detail the biggest effects have: the thunderclap's"
                 + " streaks, the flamethrower's flames (0 = low, 1 = medium, 2 = full)", 2, 3);
+        COSMIC_SKY = sheet.toggle("cosmicSky", "The night sky shows the universe: planets, rings, the Milky Way,"
+                + " nebulae, a spiral galaxy and many more stars (1 = yes, 0 = the game's own stars)", true);
         sheet.section("stage");
         STAGE_BEAMS = sheet.toggle("stageBeams", "Stage lights throw their beams, lasers and mirror-ball dots"
                 + " (1 = yes, 0 = only their lenses glow)", true);
@@ -223,6 +226,10 @@ public final class ClientSettings {
             case 2 -> 1.6;
             default -> 1.0;
         };
+    }
+
+    public static boolean cosmicSky() {
+        return get(COSMIC_SKY) != 0;
     }
 
     public static boolean ragdollThuds() {

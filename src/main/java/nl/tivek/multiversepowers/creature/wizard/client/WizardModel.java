@@ -19,6 +19,7 @@ import nl.tivek.multiversepowers.creature.MovingMonster;
 import nl.tivek.multiversepowers.creature.client.Trunk;
 import nl.tivek.multiversepowers.engine.client.model.PlainDrawing;
 import nl.tivek.multiversepowers.engine.client.pose.Limbs;
+import nl.tivek.multiversepowers.engine.client.pose.Shoulders;
 import org.joml.Quaternionf;
 
 // The Wizard's body (and his images'), built as a person's: a robe with a mantle and a high collar over his shoulders,
@@ -225,6 +226,7 @@ public final class WizardModel<T extends MovingMonster> extends HumanoidModel<T>
         Limbs.Joint[] elbows = { Limbs.Joint.RIGHT_ELBOW, Limbs.Joint.LEFT_ELBOW };
         Limbs.Joint[] wrists = { Limbs.Joint.RIGHT_WRIST, Limbs.Joint.LEFT_WRIST };
         Limbs.Joint[] knees = { Limbs.Joint.RIGHT_KNEE, Limbs.Joint.LEFT_KNEE };
+        Limbs.Joint[] ankles = { Limbs.Joint.RIGHT_ANKLE, Limbs.Joint.LEFT_ANKLE };
         for (int s = 0; s < 2; s++) {
             float side = s == 0 ? -1.0F : 1.0F;
             float[] at = Trunk.turn(side * SHOULDER_X, SHOULDER_Y, 0.0F, c[LEAN], c[TWIST], c[ROLL]);
@@ -242,7 +244,15 @@ public final class WizardModel<T extends MovingMonster> extends HumanoidModel<T>
             leg.xRot = c[R_LEG + s];
             leg.zRot = -side * 0.03F;
             Limbs.bend(this, knees[s], c[R_KNEE + s]);
+            // The foot stands flat on the ground however the leg swings and the knee bends, then turns from there.
+            float shin = c[R_LEG + s] + Math.max(0.0F, c[R_KNEE + s]);
+            Limbs.turn(this, ankles[s], this.wrist.rotationX(-shin + c[R_FOOT + s]));
         }
+        // The spine bends rather than tipping whole: the chest takes the lean and twist, the belly under it turned back
+        // part of the way, so the hips stay nearer upright and turn less than the shoulders.
+        Limbs.waist(this, this.wrist.rotationYXZ(-0.4F * c[TWIST], -0.3F * c[LEAN], -0.35F * c[ROLL]));
+        // The shoulder blades follow the arms: up as an arm rises overhead, ahead as it reaches.
+        Shoulders.follow(this, 1.0F);
         this.skirt(c, hipY, p);
         this.beard(c, p);
         this.cape(c, p);

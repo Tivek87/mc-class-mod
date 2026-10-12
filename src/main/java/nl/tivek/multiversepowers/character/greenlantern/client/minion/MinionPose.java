@@ -294,9 +294,8 @@ final class MinionPose {
     private void ready() {
         this.crouch(READY);
         this.lean += 0.06;
-        double bend = Math.acos((LEG - READY) / LEG);
+        // Its feet are turned from the ground, not the shin (MinionPainter): bent knees leave them flat.
         for (int s = 0; s < 2; s++) {
-            this.ankle[s] -= bend;
             this.arm[s] -= 0.08;
             this.elbow[s] -= 0.22;
             this.spread[s] += 0.06;

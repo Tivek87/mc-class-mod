@@ -23,11 +23,16 @@ import nl.tivek.multiversepowers.creature.wizard.field.ArcaneChains;
 import nl.tivek.multiversepowers.creature.wizard.field.ArcaneTornado;
 import nl.tivek.multiversepowers.creature.wizard.field.Blizzard;
 import nl.tivek.multiversepowers.creature.wizard.field.FrostNova;
+import nl.tivek.multiversepowers.creature.wizard.field.GlacialSpikes;
 import nl.tivek.multiversepowers.creature.wizard.field.GravityWell;
 import nl.tivek.multiversepowers.creature.wizard.field.InfernoRing;
+import nl.tivek.multiversepowers.creature.wizard.field.MarkedStrike;
 import nl.tivek.multiversepowers.creature.wizard.field.RuneMine;
 import nl.tivek.multiversepowers.creature.wizard.field.StarRift;
 import nl.tivek.multiversepowers.creature.wizard.field.TimeWarp;
+import nl.tivek.multiversepowers.creature.wizard.special.GrandSigil;
+import nl.tivek.multiversepowers.creature.wizard.special.Omen;
+import nl.tivek.multiversepowers.creature.wizard.special.SolarWaves;
 import nl.tivek.multiversepowers.creature.wizard.spell.ArcLightning;
 import nl.tivek.multiversepowers.creature.wizard.spell.ArcaneBeam;
 import nl.tivek.multiversepowers.creature.wizard.spell.ArcaneBolt;
@@ -35,6 +40,7 @@ import nl.tivek.multiversepowers.creature.wizard.spell.ArcaneFamiliar;
 import nl.tivek.multiversepowers.creature.wizard.spell.FallingStar;
 import nl.tivek.multiversepowers.creature.wizard.spell.GreatMeteor;
 import nl.tivek.multiversepowers.creature.wizard.spell.PrismLance;
+import nl.tivek.multiversepowers.creature.wizard.spell.RuneSentry;
 import nl.tivek.multiversepowers.creature.wizard.spell.WardCrystal;
 import nl.tivek.multiversepowers.creature.wizard.spell.WizardFireball;
 
@@ -106,6 +112,21 @@ public final class WizardEntities {
     public static final DeferredHolder<EntityType<?>, EntityType<Supernova>> SUPERNOVA = TYPES.register("supernova",
             () -> EntityType.Builder.<Supernova>of(Supernova::new, MobCategory.MISC).sized(1.0F, 1.0F).fireImmune()
                     .clientTrackingRange(16).updateInterval(1).build("supernova"));
+    public static final DeferredHolder<EntityType<?>, EntityType<GlacialSpikes>> GLACIAL = field("glacial_spikes",
+            GlacialSpikes::new);
+    public static final DeferredHolder<EntityType<?>, EntityType<MarkedStrike>> STRIKE = field("marked_strike",
+            MarkedStrike::new);
+    public static final DeferredHolder<EntityType<?>, EntityType<GrandSigil>> SIGIL = field("grand_sigil",
+            GrandSigil::new);
+    public static final DeferredHolder<EntityType<?>, EntityType<SolarWaves>> WAVES = field("solar_waves",
+            SolarWaves::new);
+    // A sentry turns to its foe and the omens keep over him: told every tick.
+    public static final DeferredHolder<EntityType<?>, EntityType<RuneSentry>> SENTRY = TYPES.register("rune_sentry",
+            () -> EntityType.Builder.<RuneSentry>of(RuneSentry::new, MobCategory.MISC).sized(0.8F, 0.8F)
+                    .fireImmune().clientTrackingRange(10).updateInterval(1).build("rune_sentry"));
+    public static final DeferredHolder<EntityType<?>, EntityType<Omen>> OMEN = TYPES.register("wizard_omen",
+            () -> EntityType.Builder.<Omen>of(Omen::new, MobCategory.MISC).sized(1.0F, 1.0F).fireImmune()
+                    .clientTrackingRange(16).updateInterval(1).build("wizard_omen"));
     public static final ResourceKey<DamageType> ARCANE = key("arcane");
     public static final ResourceKey<DamageType> FROST = key("frost");
     public static final ResourceKey<DamageType> STARFALL = key("starfall");
@@ -141,12 +162,12 @@ public final class WizardEntities {
     }
 
     private static void onAttributes(EntityAttributeCreationEvent event) {
-        event.put(WIZARD.get(), Monster.createMonsterAttributes().add(Attributes.MAX_HEALTH, 800.0)
-                .add(Attributes.MOVEMENT_SPEED, 0.34).add(Attributes.ATTACK_DAMAGE, 18.0).add(Attributes.ARMOR, 10.0)
-                .add(Attributes.ARMOR_TOUGHNESS, 6.0).add(Attributes.KNOCKBACK_RESISTANCE, 0.85)
+        event.put(WIZARD.get(), Monster.createMonsterAttributes().add(Attributes.MAX_HEALTH, 700.0)
+                .add(Attributes.MOVEMENT_SPEED, 0.34).add(Attributes.ATTACK_DAMAGE, 10.8).add(Attributes.ARMOR, 3.5)
+                .add(Attributes.ARMOR_TOUGHNESS, 2.1).add(Attributes.KNOCKBACK_RESISTANCE, 0.85)
                 .add(Attributes.FOLLOW_RANGE, 48.0).build());
         event.put(DECOY.get(), Monster.createMonsterAttributes().add(Attributes.MAX_HEALTH, 1.0).build());
         event.put(FAMILIAR.get(), Vex.createAttributes().add(Attributes.MAX_HEALTH, 14.0)
-                .add(Attributes.ATTACK_DAMAGE, 8.0).build());
+                .add(Attributes.ATTACK_DAMAGE, 4.8).build());
     }
 }

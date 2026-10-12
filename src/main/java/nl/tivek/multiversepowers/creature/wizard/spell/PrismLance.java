@@ -21,6 +21,7 @@ import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.creature.wizard.Wizard;
 import nl.tivek.multiversepowers.creature.wizard.WizardEntities;
+import nl.tivek.multiversepowers.creature.wizard.WizardKnock;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 import org.joml.Vector3f;
 
@@ -135,9 +136,10 @@ public final class PrismLance extends ThrowableProjectile {
         Entity entity = result.getEntity();
         this.struck.add(entity.getId());
         if (entity instanceof LivingEntity living && this.level() instanceof ServerLevel level) {
-            Vec3 push = this.getDeltaMovement().normalize().scale(0.6);
+            Vec3 way = this.getDeltaMovement().normalize();
+            Vec3 push = WizardKnock.knock(new Vec3(way.x * 0.6, 0.2, way.z * 0.6));
             if (living.hurt(Wizard.source(this, this.getOwner(), WizardEntities.LIGHTNING), this.damage)) {
-                living.push(push.x, 0.2, push.z);
+                living.push(push.x, push.y, push.z);
             }
             Vec3 at = living.getBoundingBox().getCenter();
             ParticleFx.send(level, Wizard.dust(Wizard.STORM, 1.4F), at.x, at.y, at.z, 14, 0.2, 0.3, 0.2, 0.0);

@@ -19,6 +19,7 @@ import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.creature.MonsterBlows;
 import nl.tivek.multiversepowers.creature.wizard.Wizard;
 import nl.tivek.multiversepowers.creature.wizard.WizardEntities;
+import nl.tivek.multiversepowers.creature.wizard.WizardKnock;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 import nl.tivek.multiversepowers.engine.world.LoadedWorld;
 
@@ -143,7 +144,7 @@ public final class ArcaneTornado extends FieldSpell {
         }
         this.caught.put(id, -AGAIN);
         MonsterBlows.hurt(living, Wizard.source(this, wizard, WizardEntities.ARCANE), this.damage,
-                out.scale(1.9).add(round.scale(0.6)).add(0.0, 0.9, 0.0));
+                WizardKnock.knock(out.scale(1.9).add(round.scale(0.6)).add(0.0, 0.9, 0.0)));
         Vec3 top = living.position().add(0.0, 0.5, 0.0);
         ParticleFx.sphereOut(level, Wizard.dust(Wizard.VIOLET, 1.5F), top, 20, 0.3);
         level.playSound(null, top.x, top.y, top.z, SoundEvents.BREEZE_WIND_CHARGE_BURST.value(), SoundSource.HOSTILE,

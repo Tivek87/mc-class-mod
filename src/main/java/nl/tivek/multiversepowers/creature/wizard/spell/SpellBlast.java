@@ -17,6 +17,7 @@ import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.creature.MonsterBlows;
 import nl.tivek.multiversepowers.creature.wizard.Wizard;
 import nl.tivek.multiversepowers.creature.wizard.WizardDecoy;
+import nl.tivek.multiversepowers.creature.wizard.WizardKnock;
 
 // Where one of the Wizard's spells bursts: an explosion that breaks nothing and harms no one by itself, only throwing
 // what stands near (never him or his decoy), and the spell's own harm on his foes within reach, less towards its edge.
@@ -30,7 +31,7 @@ public final class SpellBlast {
         @Override
         public float getKnockbackMultiplier(Entity entity) {
             return entity instanceof Wizard || entity instanceof WizardDecoy || entity instanceof ArcaneFamiliar ? 0.0F
-                    : 1.0F;
+                    : (float) WizardKnock.KNOCK;
         }
     };
 

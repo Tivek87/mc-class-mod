@@ -187,6 +187,8 @@ public final class WizardRenderer<T extends MovingMonster> extends MobRenderer<T
     protected void setupRotations(T caster, PoseStack pose, float bob, float bodyYaw, float partialTick,
             float scale) {
         pose.mulPose(Axis.YP.rotationDegrees(180.0F - bodyYaw));
+        // The whirl turns all of him round on the spot.
+        pose.mulPose(Axis.YP.rotation(WizardPoses.whirl(caster.move(), caster.moveAge(partialTick))));
     }
 
     // The circle of runes under him while he gathers a great spell, lit up to its release and fading after.

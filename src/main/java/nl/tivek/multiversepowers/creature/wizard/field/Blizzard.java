@@ -22,6 +22,7 @@ import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.creature.MonsterBlows;
 import nl.tivek.multiversepowers.creature.wizard.Wizard;
 import nl.tivek.multiversepowers.creature.wizard.WizardEntities;
+import nl.tivek.multiversepowers.creature.wizard.WizardKnock;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 
 // An icy blizzard the Wizard calls down round his foe: it bursts out of the ground where his staff strikes it and
@@ -104,7 +105,7 @@ public final class Blizzard extends Entity {
             }
             // Pushed round with the wind and a little in towards its eye.
             if (far > 0.3) {
-                double push = 0.05 * strength;
+                double push = 0.05 * strength * WizardKnock.KNOCK;
                 living.push(-off.z / far * push - off.x / far * push * 0.3, 0.0,
                         off.x / far * push - off.z / far * push * 0.3);
                 living.hurtMarked = true;

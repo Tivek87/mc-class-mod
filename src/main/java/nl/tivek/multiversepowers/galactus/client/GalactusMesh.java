@@ -7,81 +7,104 @@ import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.MeshData;
 import com.mojang.blaze3d.vertex.VertexBuffer;
 import com.mojang.blaze3d.vertex.VertexFormat;
-import java.util.List;
 import javax.annotation.Nullable;
-import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.ShaderInstance;
+import net.minecraft.resources.ResourceLocation;
+import net.neoforged.neoforge.client.event.RegisterShadersEvent;
+import nl.tivek.multiversepowers.MultiversePowers;
 import org.joml.Matrix4f;
+import org.joml.Vector3f;
 
-// Galactus's boxes as the game's own pixels: every face cut into cells a model pixel wide, each a shade of its paint
-// a little lighter or darker than the next, darker round a plate's edge, cloth woven and steel brushed; faces lit by
-// the way they look as blocks are. Made once into buffers kept on the graphics card: the body, its glowing eyes and
-// emblem (drawn at full light, day or night), the upper arm and the forearm with the hand.
+// Galactus's hulls as buffers kept on the graphics card, one per bone, made once and posed by matrices each frame, and
+// the shader that lights them: a key light (the moon's, or the sun's by day), rim lights in cosmic violet and teal, a
+// shine on the metal, crevices darker, the energy cracks pulsing over his armour and what glows (eyes, emblem).
 final class GalactusMesh {
-    private static final float TOP = 1.0F;
-    private static final float BOTTOM = 0.55F;
-    private static final float FRONT = 0.85F;
-    private static final float SIDE = 0.7F;
-    private static final float EDGE = 0.8F;
+    // The lights, every direction in view space (towards the light).
+    record Lights(Vector3f key, Vector3f keyColor, Vector3f ambient, Vector3f rimA, Vector3f rimAColor, Vector3f rimB,
+            Vector3f rimBColor) {
+    }
 
     @Nullable
-    private VertexBuffer body;
-    @Nullable
-    private VertexBuffer glow;
-    @Nullable
-    private VertexBuffer upper;
-    @Nullable
-    private VertexBuffer lower;
+    private static ShaderInstance shader;
+    private final VertexBuffer[] buffers = new VertexBuffer[GalactusRig.COUNT];
     private boolean made;
 
-    // Draws each part in its own place: the body lit by `light`, the arm by `armLight` (the glow always whole), as
-    // solid as `alpha`.
-    void draw(Matrix4f body, Matrix4f upper, Matrix4f lower, Matrix4f projection, float light, float armLight,
-            float alpha) {
-        if (!this.made) {
-            this.make();
+    static void register(RegisterShadersEvent event) {
+        // A shader that will not build leaves him undrawn, never the game.
+        try {
+            ResourceLocation name = ResourceLocation.fromNamespaceAndPath(MultiversePowers.MODID, "galactus");
+            event.registerShader(new ShaderInstance(event.getResourceProvider(), name,
+                    DefaultVertexFormat.POSITION_TEX_COLOR_NORMAL), loaded -> shader = loaded);
+        } catch (Exception e) {
+            shader = null;
+            MultiversePowers.LOGGER.error("The galactus shader could not be built", e);
         }
-        ShaderInstance shader = GameRenderer.getPositionColorShader();
-        if (shader == null) {
+    }
+
+    // Every bone drawn in its posed frame (`body` takes model pixels to the view), as solid as `alpha`; `clock` runs
+    // the pulses, `energy` lights the cracks all over him and `charge` his reaching right arm the more.
+    void draw(GalactusRig rig, Matrix4f body, Matrix4f projection, Lights lights, float clock, float energy,
+            float charge, float alpha) {
+        ShaderInstance lit = shader;
+        if (lit == null) {
             return;
         }
-        RenderSystem.setShaderColor(light, light, light, alpha);
-        draw(this.body, body, projection, shader);
-        RenderSystem.setShaderColor(armLight, armLight, armLight, alpha);
-        draw(this.upper, upper, projection, shader);
-        draw(this.lower, lower, projection, shader);
+        if (!this.made) {
+            this.make(rig);
+        }
+        set(lit, "KeyDir", lights.key());
+        set(lit, "KeyColor", lights.keyColor());
+        set(lit, "Ambient", lights.ambient());
+        set(lit, "RimDirA", lights.rimA());
+        set(lit, "RimColorA", lights.rimAColor());
+        set(lit, "RimDirB", lights.rimB());
+        set(lit, "RimColorB", lights.rimBColor());
+        lit.safeGetUniform("Clock").set(clock);
+        lit.safeGetUniform("Energy").set(energy);
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, alpha);
-        draw(this.glow, body, projection, shader);
+        Matrix4f pose = new Matrix4f();
+        for (int b = 0; b < GalactusRig.COUNT; b++) {
+            VertexBuffer buffer = this.buffers[b];
+            if (buffer == null) {
+                continue;
+            }
+            lit.safeGetUniform("Charge").set(reaching(b) ? charge : 0.0F);
+            buffer.bind();
+            buffer.drawWithShader(pose.set(body).mul(rig.world[b]), projection, lit);
+        }
         VertexBuffer.unbind();
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
     }
 
-    private static void draw(@Nullable VertexBuffer buffer, Matrix4f pose, Matrix4f projection,
-            ShaderInstance shader) {
-        if (buffer != null) {
-            buffer.bind();
-            buffer.drawWithShader(pose, projection, shader);
+    private static boolean reaching(int bone) {
+        return bone == GalactusRig.FORE + GalactusRig.RIGHT || bone == GalactusRig.HAND + GalactusRig.RIGHT
+                || bone >= GalactusRig.DIGITS && bone < GalactusRig.DIGITS + 15;
+    }
+
+    private static void set(ShaderInstance lit, String name, Vector3f value) {
+        lit.safeGetUniform(name).set(value.x, value.y, value.z);
+    }
+
+    private void make(GalactusRig rig) {
+        this.made = true;
+        GalactusShape shape = new GalactusShape(rig);
+        for (int b = 0; b < GalactusRig.COUNT; b++) {
+            this.buffers[b] = build(shape.hulls[b]);
         }
     }
 
-    private void make() {
-        this.made = true;
-        GalactusShape shape = new GalactusShape();
-        this.body = build(shape.body, false);
-        this.glow = build(shape.body, true);
-        this.upper = build(shape.upper, false);
-        this.lower = build(shape.lower, false);
-    }
-
     @Nullable
-    private static VertexBuffer build(List<GalactusShape.Box> boxes, boolean glowing) {
-        ByteBufferBuilder memory = new ByteBufferBuilder(1 << 20);
-        BufferBuilder buffer = new BufferBuilder(memory, VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
-        for (int k = 0; k < boxes.size(); k++) {
-            GalactusShape.Box box = boxes.get(k);
-            if (box.paint().glows() == glowing) {
-                faces(buffer, box, k + 1);
-            }
+    private static VertexBuffer build(GalactusHull hull) {
+        if (hull.vertices() == 0) {
+            return null;
+        }
+        ByteBufferBuilder memory = new ByteBufferBuilder(hull.vertices() * 28 + 256);
+        BufferBuilder buffer = new BufferBuilder(memory, VertexFormat.Mode.TRIANGLES,
+                DefaultVertexFormat.POSITION_TEX_COLOR_NORMAL);
+        float[] d = hull.data();
+        for (int i = 0; i < hull.vertices() * GalactusHull.STRIDE; i += GalactusHull.STRIDE) {
+            buffer.addVertex(d[i], d[i + 1], d[i + 2]).setUv(d[i + 10], d[i + 11])
+                    .setColor(d[i + 6], d[i + 7], d[i + 8], d[i + 9]).setNormal(d[i + 3], d[i + 4], d[i + 5]);
         }
         MeshData mesh = buffer.build();
         VertexBuffer made = null;
@@ -93,78 +116,5 @@ final class GalactusMesh {
         }
         memory.close();
         return made;
-    }
-
-    // The six faces of a box, each cut into cells: (origin, along u, along v) in pixels.
-    private static void faces(BufferBuilder buffer, GalactusShape.Box b, int seed) {
-        float dx = b.x1() - b.x0();
-        float dy = b.y1() - b.y0();
-        float dz = b.z1() - b.z0();
-        face(buffer, b, seed, 0, TOP, b.x0(), b.y1(), b.z0(), dx, 0, 0, 0, 0, dz);
-        face(buffer, b, seed, 1, BOTTOM, b.x0(), b.y0(), b.z0(), dx, 0, 0, 0, 0, dz);
-        face(buffer, b, seed, 2, FRONT, b.x0(), b.y0(), b.z1(), dx, 0, 0, 0, dy, 0);
-        face(buffer, b, seed, 3, FRONT * 0.9F, b.x0(), b.y0(), b.z0(), dx, 0, 0, 0, dy, 0);
-        face(buffer, b, seed, 4, SIDE, b.x1(), b.y0(), b.z0(), 0, 0, dz, 0, dy, 0);
-        face(buffer, b, seed, 5, SIDE, b.x0(), b.y0(), b.z0(), 0, 0, dz, 0, dy, 0);
-    }
-
-    private static void face(BufferBuilder buffer, GalactusShape.Box box, int seed, int side, float shade, float ox,
-            float oy, float oz, float ux, float uy, float uz, float vx, float vy, float vz) {
-        float lengthU = Math.abs(ux + uy + uz);
-        float lengthV = Math.abs(vx + vy + vz);
-        int cellsU = Math.max(1, Math.round(lengthU));
-        int cellsV = Math.max(1, Math.round(lengthV));
-        GalactusShape.Paint paint = box.paint();
-        boolean glows = paint.glows();
-        for (int i = 0; i < cellsU; i++) {
-            for (int j = 0; j < cellsV; j++) {
-                float light = glows ? 0.94F + 0.06F * noise(seed, side, i, j) : shade * cell(paint, seed, side, i, j,
-                        cellsU, cellsV);
-                int color = 0xFF000000 | scale(paint.rgb, light);
-                float a0 = i / (float) cellsU;
-                float a1 = (i + 1) / (float) cellsU;
-                float b0 = j / (float) cellsV;
-                float b1 = (j + 1) / (float) cellsV;
-                corner(buffer, ox, oy, oz, ux, uy, uz, vx, vy, vz, a0, b0, color);
-                corner(buffer, ox, oy, oz, ux, uy, uz, vx, vy, vz, a1, b0, color);
-                corner(buffer, ox, oy, oz, ux, uy, uz, vx, vy, vz, a1, b1, color);
-                corner(buffer, ox, oy, oz, ux, uy, uz, vx, vy, vz, a0, b1, color);
-            }
-        }
-    }
-
-    // How light one cell of a paint is: a little noise, darker round the face's edge, cloth woven, steel brushed.
-    private static float cell(GalactusShape.Paint paint, int seed, int side, int i, int j, int cellsU, int cellsV) {
-        float light = 0.93F + 0.14F * noise(seed, side, i, j);
-        if (cellsU >= 3 && cellsV >= 3 && (i == 0 || j == 0 || i == cellsU - 1 || j == cellsV - 1)) {
-            light *= EDGE;
-        }
-        switch (paint) {
-            case SUIT, SUIT_DARK -> light *= (i + j) % 2 == 0 ? 0.92F : 1.0F;
-            case STEEL, STEEL_LIGHT, STEEL_DARK -> light *= 0.95F + 0.1F * noise(seed, side, i, 97);
-            default -> {
-            }
-        }
-        return light;
-    }
-
-    private static void corner(BufferBuilder buffer, float ox, float oy, float oz, float ux, float uy, float uz,
-            float vx, float vy, float vz, float a, float b, int color) {
-        buffer.addVertex(ox + ux * a + vx * b, oy + uy * a + vy * b, oz + uz * a + vz * b).setColor(color);
-    }
-
-    private static float noise(int seed, int side, int i, int j) {
-        int h = seed * 73856093 ^ side * 19349663 ^ i * 83492791 ^ j * 50331653;
-        h ^= h >>> 13;
-        h *= 0x5BD1E995;
-        h ^= h >>> 15;
-        return (h & 0xFFFF) / 65535.0F;
-    }
-
-    private static int scale(int rgb, float light) {
-        int r = Math.min(255, Math.round(((rgb >> 16) & 0xFF) * light));
-        int g = Math.min(255, Math.round(((rgb >> 8) & 0xFF) * light));
-        int b = Math.min(255, Math.round((rgb & 0xFF) * light));
-        return r << 16 | g << 8 | b;
     }
 }

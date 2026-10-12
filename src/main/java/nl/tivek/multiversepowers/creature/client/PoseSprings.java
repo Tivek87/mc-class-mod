@@ -28,11 +28,24 @@ public final class PoseSprings {
     private final Map<Integer, State> states = new HashMap<>();
     private final double frequency;
     private final double damping;
+    // Each channel's own, when it has its own (a heavy trunk slower than a light hand).
+    private final double[] frequencies;
+    private final double[] dampings;
 
     // `frequency`: how quickly it follows (cycles a tick); `damping`: 1 settles without going past.
     public PoseSprings(double frequency, double damping) {
         this.frequency = frequency;
         this.damping = damping;
+        this.frequencies = null;
+        this.dampings = null;
+    }
+
+    // A frequency and a damping for each channel.
+    public PoseSprings(double[] frequencies, double[] dampings) {
+        this.frequency = frequencies[0];
+        this.damping = dampings[0];
+        this.frequencies = frequencies.clone();
+        this.dampings = dampings.clone();
     }
 
     // The channels as the creature `id` shows them at `time` (ticks), following `target`, written back into it.
@@ -49,8 +62,11 @@ public final class PoseSprings {
         }
         state.time = time;
         state.seen = gameTime;
+        boolean own = this.frequencies != null && this.frequencies.length >= target.length;
         for (int i = 0; i < target.length; i++) {
-            target[i] = (float) (dt > 0.0 ? state.springs[i].step(target[i], dt, this.frequency, this.damping)
+            double frequency = own ? this.frequencies[i] : this.frequency;
+            double damping = own ? this.dampings[i] : this.damping;
+            target[i] = (float) (dt > 0.0 ? state.springs[i].step(target[i], dt, frequency, damping)
                     : state.springs[i].value);
         }
     }

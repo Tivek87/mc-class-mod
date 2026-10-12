@@ -18,6 +18,7 @@ import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.creature.MonsterBlows;
 import nl.tivek.multiversepowers.creature.wizard.Wizard;
 import nl.tivek.multiversepowers.creature.wizard.WizardEntities;
+import nl.tivek.multiversepowers.creature.wizard.WizardKnock;
 import nl.tivek.multiversepowers.creature.wizard.WizardMove;
 import nl.tivek.multiversepowers.creature.wizard.field.FieldSpell;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
@@ -111,7 +112,7 @@ public final class Supernova extends FieldSpell {
             Vec3 away = living.position().subtract(at).normalize();
             float harm = (float) (this.damage * (1.0 - 0.55 * far / REACH));
             if (MonsterBlows.hurt(living, Wizard.source(this, wizard, WizardEntities.NOVA_BURST), harm,
-                    away.scale(1.7).add(0.0, 0.6, 0.0))) {
+                    WizardKnock.knock(away.scale(1.7).add(0.0, 0.6, 0.0)))) {
                 living.igniteForSeconds(6.0F);
             }
         }

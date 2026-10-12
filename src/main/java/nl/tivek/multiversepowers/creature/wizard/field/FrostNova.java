@@ -17,6 +17,7 @@ import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.creature.MonsterBlows;
 import nl.tivek.multiversepowers.creature.wizard.Wizard;
 import nl.tivek.multiversepowers.creature.wizard.WizardEntities;
+import nl.tivek.multiversepowers.creature.wizard.WizardKnock;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 
 // The frost nova, his second phase: his staff struck down, a ring of ice bursts out from under him along the ground,
@@ -81,7 +82,7 @@ public final class FrostNova extends FieldSpell {
             Vec3 away = new Vec3(living.getX() - at.x, 0.0, living.getZ() - at.z);
             away = away.lengthSqr() < 1.0E-4 ? new Vec3(1.0, 0.0, 0.0) : away.normalize();
             if (MonsterBlows.hurt(living, Wizard.source(this, wizard, WizardEntities.FROST), this.damage,
-                    away.scale(0.9).add(0.0, 0.5, 0.0))) {
+                    WizardKnock.knock(away.scale(0.9).add(0.0, 0.5, 0.0)))) {
                 living.setTicksFrozen(Math.max(living.getTicksFrozen(), 260));
                 living.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 80, 2), wizard);
                 Vec3 hit = living.getBoundingBox().getCenter();

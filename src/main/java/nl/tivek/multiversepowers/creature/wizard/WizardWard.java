@@ -7,6 +7,7 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
 import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.entity.projectile.AbstractArrow;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.creature.wizard.spell.WardCrystal;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
@@ -18,7 +19,9 @@ import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 // brings a new one.
 public final class WizardWard {
     public static final int CRYSTALS = 3;
-    private static final float[] STRENGTH = { 0.0F, 42.0F, 52.5F, 63.0F, 73.5F, 84.0F };
+    private static final float[] STRENGTH = { 0.0F, 18.9F, 23.6F, 28.4F, 33.1F, 37.8F };
+    // An arrow strikes the ward for this share of its harm, crystals or not, and breaks on it.
+    static final float ARROW = 0.6F;
     // The share of a blow that reaches the ward with every crystal whole (with none it takes the whole blow).
     private static final float SOFT = 0.3F;
     // The share of the whole ward a crystal takes with it when it breaks.
@@ -52,7 +55,8 @@ public final class WizardWard {
     // A blow meant for him strikes his ward instead.
     static void absorb(ServerLevel level, Wizard wizard, float amount, DamageSource source,
             @Nullable WizardMoves moves) {
-        float share = SOFT + (1.0F - SOFT) * (CRYSTALS - wizard.crystals()) / CRYSTALS;
+        boolean arrow = source.getDirectEntity() instanceof AbstractArrow;
+        float share = arrow ? ARROW : SOFT + (1.0F - SOFT) * (CRYSTALS - wizard.crystals()) / CRYSTALS;
         float left = wizard.ward() - amount * share;
         Vec3 at = middle(wizard);
         Vec3 from = source.getSourcePosition();

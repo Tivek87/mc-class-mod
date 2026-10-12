@@ -47,7 +47,21 @@ public final class WizardMove {
     public static final int AWAKEN = 37;
     public static final int APOTHEOSIS = 38;
     public static final int AIRSTEP = 39;
-    public static final int KINDS = 39;
+    public static final int REPULSE = 40;
+    public static final int FROST_CONE = 41;
+    public static final int FLAME_LASH = 42;
+    public static final int COMBO = 43;
+    public static final int WHIRL = 44;
+    public static final int TETHER = 45;
+    public static final int GLACIAL = 46;
+    public static final int PILLARS = 47;
+    public static final int SENTRY = 48;
+    public static final int SIGIL = 49;
+    public static final int RAIN = 50;
+    public static final int FLARE = 51;
+    public static final int ECLIPSE = 52;
+    public static final int JUDGMENT = 53;
+    public static final int KINDS = 53;
     // The last phase.
     public static final int PHASES = 5;
 
@@ -81,6 +95,16 @@ public final class WizardMove {
     public static final int SPIRAL_STOP = 56;
     // The supernova: he rises until NOVA_RISE, the star grows until its release and bursts.
     public static final int NOVA_RISE = 24;
+    // The frost cone breathes from its release every CONE_EVERY ticks until CONE_STOP.
+    public static final int CONE_EVERY = 3;
+    public static final int CONE_STOP = 23;
+    // The staff combo's three blows: an overhead smash, a backhand sweep, a rising thrust.
+    public static final int COMBO_SMASH = 9;
+    public static final int COMBO_SWEEP = 19;
+    public static final int COMBO_THRUST = 31;
+    // The whirl strikes all round him every WHIRL_EVERY ticks from its release until WHIRL_STOP.
+    public static final int WHIRL_EVERY = 6;
+    public static final int WHIRL_STOP = 28;
 
     private static final int[] LENGTH = new int[KINDS + 1];
     private static final int[] RELEASE = new int[KINDS + 1];
@@ -89,6 +113,7 @@ public final class WizardMove {
     private static final double[] HARM = new double[KINDS + 1];
     private static final boolean[] BIG = new boolean[KINDS + 1];
     private static final boolean[] ULTIMATE = new boolean[KINDS + 1];
+    private static final boolean[] CLOSE = new boolean[KINDS + 1];
     // The sweep after the thrust strikes harder.
     public static final double SWEEP_HARM = 1.25;
     // How much harder his magic strikes in each phase.
@@ -126,7 +151,7 @@ public final class WizardMove {
         ultimate(VOID_ORB, 44, 26, 820, 4, 2.2);
         big(DRAIN, 70, 18, 600, 4, 0.3);
         big(SPIRAL, 64, 14, 420, 5, 0.45);
-        ultimate(SUPERNOVA, 132, 104, 1600, 5, 4.0);
+        ultimate(SUPERNOVA, 132, 104, 1600, 5, 2.6);
         move(ASCEND, 70, BURST, 0, NEVER, 0.0);
         move(UNBIND, 70, BURST, 0, NEVER, 0.0);
         move(AWAKEN, 70, BURST, 0, NEVER, 0.0);
@@ -137,6 +162,25 @@ public final class WizardMove {
         move(SKIP, 10, 1, 44, 1, 0.0);
         move(ARRIVE, 120, LAND, 0, NEVER, 1.0);
         move(DEATH, 112, BREAK, 0, NEVER, 0.0);
+        close(REPULSE, 20, 9, 150, 1, 0.9);
+        close(FROST_CONE, 30, 10, 220, 1, 0.3);
+        close(FLAME_LASH, 24, 11, 190, 2, 1.1);
+        close(COMBO, 42, COMBO_SMASH, 140, 1, 0.75);
+        close(WHIRL, 36, 10, 210, 2, 0.55);
+        move(TETHER, 30, 12, 300, 1, 0.5);
+        big(GLACIAL, 30, 15, 300, 2, 1.2);
+        big(PILLARS, 32, 18, 340, 3, 1.4);
+        big(SENTRY, 30, 20, 720, 2, 0.45);
+        move(SIGIL, 56, 22, 0, NEVER, 0.9);
+        move(RAIN, 64, 18, 0, NEVER, 0.85);
+        move(FLARE, 60, 22, 0, NEVER, 1.0);
+        move(ECLIPSE, 64, 24, 0, NEVER, 1.2);
+        move(JUDGMENT, 84, 18, 0, NEVER, 1.5);
+    }
+
+    private static void close(int kind, int length, int release, int again, int phase, double harm) {
+        move(kind, length, release, again, phase, harm);
+        CLOSE[kind] = true;
     }
 
     private WizardMove() {
@@ -218,23 +262,45 @@ public final class WizardMove {
         return kind > 0 && kind <= KINDS && ULTIMATE[kind];
     }
 
+    // A move for a foe up close: a short spell or a blow of his staff.
+    public static boolean close(int kind) {
+        return kind > 0 && kind <= KINDS && CLOSE[kind];
+    }
+
+    // The great spell each phase opens with as it takes him, his first phase's as he lands (SIGIL), each fitting the
+    // phase: the Archmage's circle of runes, the Ascended's rain of light, the Unbound's solar flare, the Voidborn's
+    // eclipse, the Eternal's judgment as time stands still.
+    public static int special(int phase) {
+        return switch (phase) {
+            case 1 -> SIGIL;
+            case 2 -> RAIN;
+            case 3 -> FLARE;
+            case 4 -> ECLIPSE;
+            default -> JUDGMENT;
+        };
+    }
+
+    public static boolean isSpecial(int kind) {
+        return kind >= SIGIL && kind <= JUDGMENT;
+    }
+
     // A move he makes with his crystal blazing and a circle of runes turning under his feet as it gathers (in the
     // air, under him where he hangs).
     public static boolean circled(int kind) {
-        return big(kind) && kind != FIREBALL && kind != COMET && kind != PHANTOM;
+        return big(kind) && kind != FIREBALL && kind != COMET && kind != PHANTOM || isSpecial(kind);
     }
 
     // The colour of a spell's light and its circle: arcane violet, fire, frost, the stars, gravity, time, lightning,
     // the void's magenta.
     public static int colour(int kind) {
         return switch (kind) {
-            case FIREBALL, METEOR, INFERNO, COMET -> Wizard.FIRE;
-            case BLIZZARD, NOVA -> Wizard.ICE;
-            case STARFALL, MIRRORS, SPIRAL, SUPERNOVA -> Wizard.STARLIGHT;
-            case LIFT -> Wizard.GRAVITY;
-            case WARP -> Wizard.TIME;
+            case FIREBALL, METEOR, INFERNO, COMET, FLAME_LASH, PILLARS, FLARE -> Wizard.FIRE;
+            case BLIZZARD, NOVA, FROST_CONE, GLACIAL -> Wizard.ICE;
+            case STARFALL, MIRRORS, SPIRAL, SUPERNOVA, RAIN -> Wizard.STARLIGHT;
+            case LIFT, REPULSE -> Wizard.GRAVITY;
+            case WARP, JUDGMENT -> Wizard.TIME;
             case LIGHTNING, LANCES -> Wizard.STORM;
-            case TENDRILS, VOID_ORB, DRAIN -> Wizard.VOID;
+            case TENDRILS, VOID_ORB, DRAIN, TETHER, ECLIPSE -> Wizard.VOID;
             default -> Wizard.VIOLET;
         };
     }

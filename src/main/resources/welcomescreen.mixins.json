@@ -21,6 +21,7 @@
     "client.render.AgeableListModelAccess",
     "client.render.BlockChangedMixin",
     "client.render.CapeLayerMixin",
+    "client.render.CosmicSkyMixin",
     "client.render.EntityShadowMixin",
     "client.render.HandItemMixin",
     "client.render.HumanoidArmorLayerMixin",

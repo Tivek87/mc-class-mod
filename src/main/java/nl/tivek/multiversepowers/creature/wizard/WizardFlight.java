@@ -255,7 +255,7 @@ final class WizardFlight {
             if (kind == WizardMove.COMET) {
                 living.igniteForSeconds(4.0F);
             }
-            living.setDeltaMovement(living.getDeltaMovement().add(0.0, 0.5, 0.0));
+            living.setDeltaMovement(living.getDeltaMovement().add(0.0, 0.5 * WizardKnock.KNOCK, 0.0));
             living.hurtMarked = true;
         }
         ParticleFx.shockwave(level, Wizard.dust(colour, 2.4F), at, 64, 0.9);
