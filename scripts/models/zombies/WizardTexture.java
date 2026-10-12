@@ -44,11 +44,14 @@ public final class WizardTexture {
     private static final Paint.Box NOSE = new Paint.Box(32, 0, 2, 3, 2);
     private static final Paint.Box BROWS = new Paint.Box(40, 0, 7, 1, 1);
     private static final Paint.Box MUSTACHE = new Paint.Box(40, 2, 7, 2, 1);
-    private static final Paint.Box HAIR = new Paint.Box(56, 0, 9, 10, 2);
-    private static final Paint.Box LOCK = new Paint.Box(78, 0, 1, 8, 4);
-    private static final Paint.Box BEARD_BOX = new Paint.Box(88, 0, 6, 6, 2);
-    private static final Paint.Box BEARD_TIP = new Paint.Box(104, 0, 4, 5, 2);
-    private static final Paint.Box BEARD_POINT = new Paint.Box(116, 0, 2, 3, 1);
+    private static final Paint.Box HAIR = new Paint.Box(56, 0, 9, 7, 2);
+    private static final Paint.Box LOCK = new Paint.Box(78, 0, 1, 6, 4);
+    private static final Paint.Box BEARD_BOX = new Paint.Box(40, 80, 7, 5, 2);
+    private static final Paint.Box BEARD_TIP = new Paint.Box(60, 80, 5, 5, 2);
+    private static final Paint.Box BEARD_POINT = new Paint.Box(76, 80, 3, 4, 1);
+    private static final Paint.Box MANE = new Paint.Box(88, 80, 8, 10, 1);
+    private static final int[] LIP = { 150, 84, 80 };
+    private static final int[] MOUTH = { 70, 34, 36 };
     private static final Paint.Box BRIM = new Paint.Box(0, 16, 14, 1, 14);
     private static final Paint.Box HAT1 = new Paint.Box(56, 16, 9, 4, 9);
     private static final Paint.Box HAT2 = new Paint.Box(92, 16, 7, 4, 7);
@@ -284,6 +287,8 @@ public final class WizardTexture {
     private static void head(Paint p, Paint glow) {
         p.all(HEAD, SKIN, 5);
         int[] f = HEAD.face(Paint.Face.FRONT);
+        // Rows down the face: the hair's fringe under the brim, a lined brow, the brows (their own box), the eyes, the
+        // cheeks beside the nose, the moustache's roots, the mouth between its halves, and the beard from the chin.
         for (int x = 0; x < 8; x++) {
             p.dot(f, x, 0, p.shade(x % 3 == 0 ? BEARD_DARK : BEARD, 6));
         }
@@ -306,13 +311,26 @@ public final class WizardTexture {
         p.dot(f, 6, 4, SKIN_DARK);
         p.dot(f, 1, 5, CHEEK);
         p.dot(f, 6, 5, CHEEK);
+        p.dot(f, 2, 5, SKIN_DARK);
+        p.dot(f, 5, 5, SKIN_DARK);
         for (int y = 4; y < 8; y++) {
             p.dot(f, 0, y, p.shade(BEARD, 6));
             p.dot(f, 7, y, p.shade(BEARD, 6));
         }
-        for (int y = 6; y < 8; y++) {
-            for (int x = 1; x < 7; x++) {
-                p.dot(f, x, y, p.shade((x + y) % 2 == 0 ? BEARD : BEARD_DARK, 6));
+        p.dot(f, 1, 6, BEARD_DARK);
+        p.dot(f, 6, 6, BEARD_DARK);
+        p.dot(f, 2, 6, LIP);
+        p.dot(f, 3, 6, MOUTH);
+        p.dot(f, 4, 6, MOUTH);
+        p.dot(f, 5, 6, LIP);
+        for (int x = 1; x < 7; x++) {
+            p.dot(f, x, 7, p.shade((x + 7) % 2 == 0 ? BEARD : BEARD_DARK, 6));
+        }
+        // Under the chin the beard grows out of the jaw.
+        int[] chin = HEAD.face(Paint.Face.BOTTOM);
+        for (int y = 0; y < 4; y++) {
+            for (int x = 0; x < 8; x++) {
+                p.dot(chin, x, y, strand(p, x, y));
             }
         }
         for (Paint.Face face : new Paint.Face[] { Paint.Face.RIGHT, Paint.Face.LEFT, Paint.Face.BACK }) {
@@ -339,7 +357,8 @@ public final class WizardTexture {
         p.row(nose, 2, CHEEK);
         p.row(NOSE.face(Paint.Face.BOTTOM), 0, SKIN_DARK);
         p.row(NOSE.face(Paint.Face.BOTTOM), 1, SKIN_DARK);
-        for (Paint.Box box : new Paint.Box[] { BROWS, MUSTACHE, HAIR, LOCK, BEARD_BOX, BEARD_TIP, BEARD_POINT }) {
+        for (Paint.Box box : new Paint.Box[] { BROWS, MUSTACHE, HAIR, LOCK, BEARD_BOX, BEARD_TIP, BEARD_POINT,
+                MANE }) {
             for (Paint.Face face : Paint.Face.values()) {
                 int[] b = box.face(face);
                 for (int y = 0; y < b[3]; y++) {
@@ -353,20 +372,41 @@ public final class WizardTexture {
         p.dot(brows, 3, 0, SKIN_DARK);
         p.dot(brows, 0, 0, BEARD_DARK);
         p.dot(brows, 6, 0, BEARD_DARK);
+        // The moustache in two halves under the nose, drooping at their ends, the mouth showing between them.
         int[] stache = MUSTACHE.face(Paint.Face.FRONT);
         p.clear(stache, 0, 0);
         p.clear(stache, 6, 0);
+        for (int x = 2; x <= 4; x++) {
+            p.clear(stache, x, 1);
+            p.clear(MUSTACHE.face(Paint.Face.BOTTOM), x, 0);
+        }
         p.dot(stache, 3, 0, SKIN_DARK);
-        p.dot(stache, 3, 1, BEARD_DARK);
+        // The beard narrows down in three steps, each frayed at its lower corners, to a point.
         for (Paint.Face face : Paint.Face.values()) {
-            int[] tip = BEARD_POINT.face(face);
-            if (face != Paint.Face.TOP && face != Paint.Face.BOTTOM) {
-                p.clear(tip, 0, tip[3] - 1);
+            if (face == Paint.Face.TOP || face == Paint.Face.BOTTOM) {
+                continue;
             }
-            int[] end = BEARD_TIP.face(face);
-            if (face == Paint.Face.FRONT || face == Paint.Face.BACK) {
-                p.clear(end, 0, end[3] - 1);
-                p.clear(end, end[2] - 1, end[3] - 1);
+            boolean across = face == Paint.Face.FRONT || face == Paint.Face.BACK;
+            for (Paint.Box box : new Paint.Box[] { BEARD_BOX, BEARD_TIP, BEARD_POINT }) {
+                int[] b = box.face(face);
+                if (across) {
+                    p.clear(b, 0, b[3] - 1);
+                    p.clear(b, b[2] - 1, b[3] - 1);
+                } else {
+                    p.clear(b, b[2] - 1, b[3] - 1);
+                }
+            }
+            if (across) {
+                int[] point = BEARD_POINT.face(face);
+                p.clear(point, 0, point[3] - 2);
+                p.clear(point, point[2] - 1, point[3] - 2);
+            }
+            int[] mane = MANE.face(face);
+            for (int x = 0; x < mane[2]; x += 2) {
+                p.clear(mane, x, mane[3] - 1);
+                if (x % 4 == 0) {
+                    p.clear(mane, x, mane[3] - 2);
+                }
             }
             int[] hair = HAIR.face(face);
             if (face != Paint.Face.TOP && face != Paint.Face.BOTTOM) {

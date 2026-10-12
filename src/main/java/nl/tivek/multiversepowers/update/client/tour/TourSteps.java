@@ -36,7 +36,7 @@ final class TourSteps {
             step(VERSION, "galactus_remade", Kind.CHANGED, Place.GAME).covers("Galactus: remade"));
 
     // Changes too small for a step of their own, each by how its changelog line starts, as in `covers`.
-    static final List<String> SMALL = List.of("Wizard: smoother moves");
+    static final List<String> SMALL = List.of("Wizard: smoother moves", "Wizard: new face and beard");
 
     // Shown first on a player's first tour, wherever it starts: what the tour is and how to use it.
     static final TourStep INTRO = step(VERSION, "tour_intro", Kind.HOW, Place.ANY);

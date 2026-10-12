@@ -27,6 +27,8 @@ the sections before 0.0.1-alpha came before versions were numbered.
   lightning crackling at his fingertip.
 - **Wizard: smoother moves:** his weight shifts as he stands, his feet roll heel to toe, he banks into turns in flight,
   every joint follows at its own pace, and he has new idle moves.
+- **Wizard: new face and beard:** his mouth shows under a parted moustache, his beard narrows to a point and lies on
+  his chest (over his arms, never through his mantle), and his long hair hangs down his back over the cape.
 - **Project:** reference pictures for Galactus, the night sky and Doctor Octopus's rework in `docs/reference/`.
 
 ### Fixed
