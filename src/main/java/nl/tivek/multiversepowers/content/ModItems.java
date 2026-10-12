@@ -25,8 +25,14 @@ import nl.tivek.multiversepowers.character.greenlantern.minion.MechMinion;
 import nl.tivek.multiversepowers.character.greenlantern.summon.HardLight;
 import nl.tivek.multiversepowers.creature.animal.bear.BrownBear;
 import nl.tivek.multiversepowers.creature.animal.crab.Crab;
+import nl.tivek.multiversepowers.creature.animal.crocodile.Crocodile;
 import nl.tivek.multiversepowers.creature.animal.deer.Deer;
+import nl.tivek.multiversepowers.creature.animal.duck.Duck;
+import nl.tivek.multiversepowers.creature.animal.elephant.Elephant;
+import nl.tivek.multiversepowers.creature.animal.giraffe.Giraffe;
 import nl.tivek.multiversepowers.creature.animal.hedgehog.Hedgehog;
+import nl.tivek.multiversepowers.creature.animal.lynx.Lynx;
+import nl.tivek.multiversepowers.creature.animal.monkey.Monkey;
 import nl.tivek.multiversepowers.creature.animal.moose.Moose;
 import nl.tivek.multiversepowers.creature.animal.owl.Owl;
 import nl.tivek.multiversepowers.creature.animal.raccoon.Raccoon;
@@ -90,10 +96,22 @@ public final class ModItems {
             ITEMS.register("crab_spawn_egg",
                     () -> new DeferredSpawnEggItem(Crab.TYPE, 0xA8452A, 0xE9D2A6, new Item.Properties())),
             ITEMS.register("moose_spawn_egg",
-                    () -> new DeferredSpawnEggItem(Moose.TYPE, 0x3D2B1E, 0xB9A68C, new Item.Properties())));
+                    () -> new DeferredSpawnEggItem(Moose.TYPE, 0x3D2B1E, 0xB9A68C, new Item.Properties())),
+            ITEMS.register("lynx_spawn_egg",
+                    () -> new DeferredSpawnEggItem(Lynx.TYPE, 0xB98A52, 0x2A211A, new Item.Properties())),
+            ITEMS.register("monkey_spawn_egg",
+                    () -> new DeferredSpawnEggItem(Monkey.TYPE, 0x221F1E, 0xEAD8AC, new Item.Properties())),
+            ITEMS.register("elephant_spawn_egg",
+                    () -> new DeferredSpawnEggItem(Elephant.TYPE, 0x807872, 0xECE2C4, new Item.Properties())),
+            ITEMS.register("giraffe_spawn_egg",
+                    () -> new DeferredSpawnEggItem(Giraffe.TYPE, 0xECD4A2, 0xA4602E, new Item.Properties())),
+            ITEMS.register("duck_spawn_egg",
+                    () -> new DeferredSpawnEggItem(Duck.TYPE, 0x8A6A48, 0x1F6A3A, new Item.Properties())),
+            ITEMS.register("crocodile_spawn_egg",
+                    () -> new DeferredSpawnEggItem(Crocodile.TYPE, 0x4A5632, 0xC9BE84, new Item.Properties())));
 
     // The wild animals' meat: venison from deer and moose, bear meat from bears, which raw may make you hungry as
-    // raw chicken does, and crab.
+    // raw chicken does, crab, and duck.
     public static final DeferredItem<Item> RAW_VENISON = ITEMS.registerSimpleItem("raw_venison",
             new Item.Properties().food(new FoodProperties.Builder().nutrition(3).saturationModifier(0.3F).build()));
     public static final DeferredItem<Item> COOKED_VENISON = ITEMS.registerSimpleItem("cooked_venison",
@@ -107,8 +125,13 @@ public final class ModItems {
             new Item.Properties().food(new FoodProperties.Builder().nutrition(2).saturationModifier(0.2F).build()));
     public static final DeferredItem<Item> COOKED_CRAB = ITEMS.registerSimpleItem("cooked_crab",
             new Item.Properties().food(new FoodProperties.Builder().nutrition(6).saturationModifier(0.7F).build()));
+    public static final DeferredItem<Item> RAW_DUCK = ITEMS.registerSimpleItem("raw_duck",
+            new Item.Properties().food(new FoodProperties.Builder().nutrition(2).saturationModifier(0.3F)
+                    .effect(() -> new MobEffectInstance(MobEffects.HUNGER, 600, 0), 0.3F).build()));
+    public static final DeferredItem<Item> COOKED_DUCK = ITEMS.registerSimpleItem("cooked_duck",
+            new Item.Properties().food(new FoodProperties.Builder().nutrition(6).saturationModifier(0.7F).build()));
     public static final List<DeferredItem<Item>> MEATS = List.of(RAW_VENISON, COOKED_VENISON, RAW_BEAR_MEAT,
-            COOKED_BEAR_MEAT, RAW_CRAB, COOKED_CRAB);
+            COOKED_BEAR_MEAT, RAW_CRAB, COOKED_CRAB, RAW_DUCK, COOKED_DUCK);
 
     // The hard-light creatures' eggs, a dark green shell spotted in each creature's own colour.
     private static final int HARD_LIGHT = 0x0E5A2A;

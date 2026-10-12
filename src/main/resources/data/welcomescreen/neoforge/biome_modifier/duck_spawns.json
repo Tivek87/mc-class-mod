@@ -1,0 +1,10 @@
+{
+  "type": "neoforge:add_spawns",
+  "biomes": "#welcomescreen:spawns_ducks",
+  "spawners": {
+    "type": "welcomescreen:duck",
+    "weight": 6,
+    "minCount": 2,
+    "maxCount": 4
+  }
+}

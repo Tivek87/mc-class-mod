@@ -1,0 +1,10 @@
+{
+  "type": "neoforge:add_spawns",
+  "biomes": "#welcomescreen:spawns_giraffes",
+  "spawners": {
+    "type": "welcomescreen:giraffe",
+    "weight": 2,
+    "minCount": 2,
+    "maxCount": 3
+  }
+}

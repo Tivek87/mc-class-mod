@@ -1,0 +1,12 @@
+{
+  "values": [
+    "minecraft:river",
+    "minecraft:swamp",
+    "minecraft:mangrove_swamp",
+    "minecraft:plains",
+    "minecraft:sunflower_plains",
+    "minecraft:flower_forest",
+    "minecraft:meadow",
+    "minecraft:cherry_grove"
+  ]
+}

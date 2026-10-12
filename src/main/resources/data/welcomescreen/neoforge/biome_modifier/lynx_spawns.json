@@ -1,0 +1,10 @@
+{
+  "type": "neoforge:add_spawns",
+  "biomes": "#welcomescreen:spawns_lynx",
+  "spawners": {
+    "type": "welcomescreen:lynx",
+    "weight": 2,
+    "minCount": 1,
+    "maxCount": 1
+  }
+}

@@ -25,6 +25,27 @@ the sections before 0.0.1-alpha came before versions were numbered.
   stomps. It browses, grazes, lies down and shakes itself dry. It drops venison and leather; apples, wheat, lily
   pads and seagrass tempt and breed it.
 - **Crab meat:** crabs drop raw crab, to eat raw or cooked in a furnace, smoker or campfire.
+- **Lynx:** a tuft-eared cat with a short tail in taiga, groves and windswept forests, tawny and spotted, or pale
+  where it snows. Shy, it keeps well away from you; hit it and it hisses, then claws. It sits, licks a paw, stretches
+  and lies down. Raw rabbit, chicken, duck and fish tempt and breed it.
+- **Monkey:** troops of capuchins in jungles, white-faced or brown, long tails held high. Harmless: they keep a
+  little way off, and run when hit and from crocodiles and lynx. They sit, scratch, eat with both hands and stand up
+  to hoot. Melon slices, apples, cocoa beans and glow berries tempt and breed them.
+- **Elephant:** small herds in savannas: bulls with long tusks, cows with short ones, calves with none. It leaves you
+  be until you hit it or come near a calf, then spreads its ears, trumpets, charges and tosses you with its tusks. It
+  fans its ears, pulls down leaves and tears up grass with its trunk and throws dust over its back. It drops leather;
+  melons, sugar cane, hay bales, apples and bamboo tempt and breed it.
+- **Giraffe:** small herds in savannas, over four blocks tall, sometimes with a calf. It does no harm and keeps a few
+  steps off; hit it and it kicks back once and bolts. It pulls leaves down with its tongue, spreads its forelegs to
+  get its head to the ground, and chews. It drops leather; acacia leaves, acacia saplings and hay bales tempt and
+  breed it.
+- **Duck:** green-headed drakes, brown hens and yellow ducklings on rivers, swamps, plains and meadows. They float
+  and paddle, dabble tail up, preen, stretch their wings, quack and tuck their heads in; scared, they take off and
+  fly a short way. Seeds, bread and seagrass tempt and breed them; they drop duck and feathers.
+- **Crocodile:** in swamps and mangroves it lies on the bank or floats with only its eyes and back above water. Come
+  close and it opens its jaws and hisses; stay there or hit it and it lunges and bites hard. Creep past and it lets
+  you be. Raw fish and meat tempt and breed it; it drops leather.
+- **Duck meat:** ducks drop raw duck, to cook in a furnace, smoker or campfire.
 
 ## [0.9.7-alpha] - 2026-10-12
 

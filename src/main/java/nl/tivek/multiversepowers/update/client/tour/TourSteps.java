@@ -27,10 +27,12 @@ final class TourSteps {
     // the newest is marked NEW.
     static final String NEW_CHARACTER = "new_character";
 
-    // Six more wild animals, in the game.
+    // Twelve more wild animals, in the game: six to a card.
     static final List<TourStep> ALL = List.of(
             step(VERSION, "more_animals", Kind.NEW, Place.GAME).covers("Hedgehog", "Owl", "Squirrel", "Snake", "Crab:",
-                    "Moose", "Crab meat"));
+                    "Moose", "Crab meat"),
+            step(VERSION, "safari_animals", Kind.NEW, Place.GAME).covers("Lynx", "Monkey", "Elephant", "Giraffe",
+                    "Duck:", "Crocodile", "Duck meat"));
 
     // Changes too small for a step of their own, each by how its changelog line starts, as in `covers`.
     static final List<String> SMALL = List.of();

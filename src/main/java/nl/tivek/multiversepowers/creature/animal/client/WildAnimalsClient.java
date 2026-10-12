@@ -3,8 +3,14 @@ package nl.tivek.multiversepowers.creature.animal.client;
 import net.neoforged.bus.api.IEventBus;
 import nl.tivek.multiversepowers.creature.animal.bear.client.BearRenderer;
 import nl.tivek.multiversepowers.creature.animal.crab.client.CrabRenderer;
+import nl.tivek.multiversepowers.creature.animal.crocodile.client.CrocodileRenderer;
 import nl.tivek.multiversepowers.creature.animal.deer.client.DeerRenderer;
+import nl.tivek.multiversepowers.creature.animal.duck.client.DuckRenderer;
+import nl.tivek.multiversepowers.creature.animal.elephant.client.ElephantRenderer;
+import nl.tivek.multiversepowers.creature.animal.giraffe.client.GiraffeRenderer;
 import nl.tivek.multiversepowers.creature.animal.hedgehog.client.HedgehogRenderer;
+import nl.tivek.multiversepowers.creature.animal.lynx.client.LynxRenderer;
+import nl.tivek.multiversepowers.creature.animal.monkey.client.MonkeyRenderer;
 import nl.tivek.multiversepowers.creature.animal.moose.client.MooseRenderer;
 import nl.tivek.multiversepowers.creature.animal.owl.client.OwlRenderer;
 import nl.tivek.multiversepowers.creature.animal.raccoon.client.RaccoonRenderer;
@@ -35,5 +41,17 @@ public final class WildAnimalsClient {
         modEventBus.addListener(CrabRenderer::onRegisterLayers);
         modEventBus.addListener(MooseRenderer::onRegisterRenderers);
         modEventBus.addListener(MooseRenderer::onRegisterLayers);
+        modEventBus.addListener(LynxRenderer::onRegisterRenderers);
+        modEventBus.addListener(LynxRenderer::onRegisterLayers);
+        modEventBus.addListener(MonkeyRenderer::onRegisterRenderers);
+        modEventBus.addListener(MonkeyRenderer::onRegisterLayers);
+        modEventBus.addListener(ElephantRenderer::onRegisterRenderers);
+        modEventBus.addListener(ElephantRenderer::onRegisterLayers);
+        modEventBus.addListener(GiraffeRenderer::onRegisterRenderers);
+        modEventBus.addListener(GiraffeRenderer::onRegisterLayers);
+        modEventBus.addListener(DuckRenderer::onRegisterRenderers);
+        modEventBus.addListener(DuckRenderer::onRegisterLayers);
+        modEventBus.addListener(CrocodileRenderer::onRegisterRenderers);
+        modEventBus.addListener(CrocodileRenderer::onRegisterLayers);
     }
 }

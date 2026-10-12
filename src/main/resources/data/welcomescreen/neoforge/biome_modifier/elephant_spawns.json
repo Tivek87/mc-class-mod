@@ -1,0 +1,10 @@
+{
+  "type": "neoforge:add_spawns",
+  "biomes": "#welcomescreen:spawns_elephants",
+  "spawners": {
+    "type": "welcomescreen:elephant",
+    "weight": 1,
+    "minCount": 2,
+    "maxCount": 3
+  }
+}

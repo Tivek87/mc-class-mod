@@ -14,6 +14,7 @@ public final class IdleActs extends Goal {
     private final int every;
     private Act playing;
     private boolean wet;
+    private boolean afloat;
 
     private record Act(int kind, int least, int most, int weight, Predicate<WildAnimal> fits) {
     }
@@ -32,6 +33,13 @@ public final class IdleActs extends Goal {
         return this;
     }
 
+    // For one that floats: its acts go on while it lies on the water, off the ground.
+    public IdleActs afloat() {
+        this.wet = true;
+        this.afloat = true;
+        return this;
+    }
+
     public IdleActs add(int kind, int least, int most, int weight) {
         return this.add(kind, least, most, weight, a -> true);
     }
@@ -44,7 +52,8 @@ public final class IdleActs extends Goal {
     @Override
     public boolean canUse() {
         WildAnimal a = this.animal;
-        if (a.act() != 0 || !a.onGround() || !this.wet && a.isInWater() || a.getTarget() != null || a.hurtTime > 0
+        boolean standing = a.onGround() || this.afloat && a.isInWater();
+        if (a.act() != 0 || !standing || !this.wet && a.isInWater() || a.getTarget() != null || a.hurtTime > 0
                 || a.isLeashed() || a.getRandom().nextInt(this.every) != 0) {
             return false;
         }

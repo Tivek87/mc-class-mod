@@ -1,6 +1,7 @@
 {
   "replace": false,
   "values": [
-    "welcomescreen:crab"
+    "welcomescreen:crab",
+    "welcomescreen:crocodile"
   ]
 }

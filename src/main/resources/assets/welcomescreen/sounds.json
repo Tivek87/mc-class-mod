@@ -846,5 +846,298 @@
         "type": "event"
       }
     ]
+  },
+  "lynx.ambient": {
+    "subtitle": "subtitles.welcomescreen.lynx.ambient",
+    "sounds": [
+      {
+        "name": "minecraft:entity.cat.stray_ambient",
+        "type": "event"
+      }
+    ]
+  },
+  "lynx.hiss": {
+    "subtitle": "subtitles.welcomescreen.lynx.hiss",
+    "sounds": [
+      {
+        "name": "minecraft:entity.cat.hiss",
+        "type": "event"
+      }
+    ]
+  },
+  "lynx.hurt": {
+    "subtitle": "subtitles.welcomescreen.lynx.hurt",
+    "sounds": [
+      {
+        "name": "minecraft:entity.ocelot.hurt",
+        "type": "event"
+      }
+    ]
+  },
+  "lynx.death": {
+    "subtitle": "subtitles.welcomescreen.lynx.death",
+    "sounds": [
+      {
+        "name": "minecraft:entity.ocelot.death",
+        "type": "event"
+      }
+    ]
+  },
+  "lynx.swipe": {
+    "subtitle": "subtitles.welcomescreen.lynx.swipe",
+    "sounds": [
+      {
+        "name": "minecraft:entity.fox.bite",
+        "type": "event"
+      }
+    ]
+  },
+  "monkey.ambient": {
+    "subtitle": "subtitles.welcomescreen.monkey.ambient",
+    "sounds": [
+      {
+        "name": "welcomescreen:monkey/call",
+        "attenuation_distance": 24
+      }
+    ]
+  },
+  "monkey.hoot": {
+    "subtitle": "subtitles.welcomescreen.monkey.hoot",
+    "sounds": [
+      {
+        "name": "welcomescreen:monkey/hoot",
+        "attenuation_distance": 24
+      }
+    ]
+  },
+  "monkey.hurt": {
+    "subtitle": "subtitles.welcomescreen.monkey.hurt",
+    "sounds": [
+      {
+        "name": "minecraft:entity.fox.hurt",
+        "type": "event"
+      }
+    ]
+  },
+  "monkey.death": {
+    "subtitle": "subtitles.welcomescreen.monkey.death",
+    "sounds": [
+      {
+        "name": "minecraft:entity.fox.death",
+        "type": "event"
+      }
+    ]
+  },
+  "monkey.eat": {
+    "subtitle": "subtitles.welcomescreen.monkey.eat",
+    "sounds": [
+      {
+        "name": "minecraft:entity.parrot.eat",
+        "type": "event"
+      }
+    ]
+  },
+  "elephant.ambient": {
+    "subtitle": "subtitles.welcomescreen.elephant.ambient",
+    "sounds": [
+      {
+        "name": "minecraft:entity.sniffer.idle",
+        "type": "event"
+      }
+    ]
+  },
+  "elephant.hurt": {
+    "subtitle": "subtitles.welcomescreen.elephant.hurt",
+    "sounds": [
+      {
+        "name": "minecraft:entity.ravager.hurt",
+        "type": "event"
+      }
+    ]
+  },
+  "elephant.death": {
+    "subtitle": "subtitles.welcomescreen.elephant.death",
+    "sounds": [
+      {
+        "name": "minecraft:entity.ravager.death",
+        "type": "event"
+      }
+    ]
+  },
+  "elephant.trumpet": {
+    "subtitle": "subtitles.welcomescreen.elephant.trumpet",
+    "sounds": [
+      {
+        "name": "welcomescreen:elephant/trumpet",
+        "attenuation_distance": 64
+      }
+    ]
+  },
+  "elephant.strike": {
+    "subtitle": "subtitles.welcomescreen.elephant.strike",
+    "sounds": [
+      {
+        "name": "minecraft:entity.goat.ram_impact",
+        "type": "event"
+      }
+    ]
+  },
+  "elephant.step": {
+    "sounds": [
+      {
+        "name": "minecraft:entity.ravager.step",
+        "type": "event"
+      }
+    ]
+  },
+  "giraffe.ambient": {
+    "subtitle": "subtitles.welcomescreen.giraffe.ambient",
+    "sounds": [
+      {
+        "name": "minecraft:entity.llama.ambient",
+        "type": "event"
+      }
+    ]
+  },
+  "giraffe.hurt": {
+    "subtitle": "subtitles.welcomescreen.giraffe.hurt",
+    "sounds": [
+      {
+        "name": "minecraft:entity.llama.hurt",
+        "type": "event"
+      }
+    ]
+  },
+  "giraffe.death": {
+    "subtitle": "subtitles.welcomescreen.giraffe.death",
+    "sounds": [
+      {
+        "name": "minecraft:entity.llama.death",
+        "type": "event"
+      }
+    ]
+  },
+  "giraffe.eat": {
+    "subtitle": "subtitles.welcomescreen.giraffe.eat",
+    "sounds": [
+      {
+        "name": "minecraft:entity.llama.eat",
+        "type": "event"
+      }
+    ]
+  },
+  "giraffe.kick": {
+    "subtitle": "subtitles.welcomescreen.giraffe.kick",
+    "sounds": [
+      {
+        "name": "minecraft:entity.goat.ram_impact",
+        "type": "event"
+      }
+    ]
+  },
+  "giraffe.step": {
+    "sounds": [
+      {
+        "name": "minecraft:entity.horse.step",
+        "type": "event"
+      }
+    ]
+  },
+  "duck.quack": {
+    "subtitle": "subtitles.welcomescreen.duck.quack",
+    "sounds": [
+      {
+        "name": "welcomescreen:duck/quack",
+        "attenuation_distance": 24
+      }
+    ]
+  },
+  "duck.ambient": {
+    "subtitle": "subtitles.welcomescreen.duck.ambient",
+    "sounds": [
+      {
+        "name": "welcomescreen:duck/call",
+        "attenuation_distance": 24
+      }
+    ]
+  },
+  "duck.hurt": {
+    "subtitle": "subtitles.welcomescreen.duck.hurt",
+    "sounds": [
+      {
+        "name": "minecraft:entity.chicken.hurt",
+        "type": "event"
+      }
+    ]
+  },
+  "duck.death": {
+    "subtitle": "subtitles.welcomescreen.duck.death",
+    "sounds": [
+      {
+        "name": "minecraft:entity.chicken.death",
+        "type": "event"
+      }
+    ]
+  },
+  "duck.takeoff": {
+    "subtitle": "subtitles.welcomescreen.duck.takeoff",
+    "sounds": [
+      {
+        "name": "minecraft:entity.bat.takeoff",
+        "type": "event"
+      }
+    ]
+  },
+  "duck.step": {
+    "sounds": [
+      {
+        "name": "minecraft:entity.chicken.step",
+        "type": "event"
+      }
+    ]
+  },
+  "crocodile.hiss": {
+    "subtitle": "subtitles.welcomescreen.crocodile.hiss",
+    "sounds": [
+      {
+        "name": "minecraft:entity.cat.hiss",
+        "type": "event"
+      }
+    ]
+  },
+  "crocodile.hurt": {
+    "subtitle": "subtitles.welcomescreen.crocodile.hurt",
+    "sounds": [
+      {
+        "name": "minecraft:entity.turtle.hurt",
+        "type": "event"
+      }
+    ]
+  },
+  "crocodile.death": {
+    "subtitle": "subtitles.welcomescreen.crocodile.death",
+    "sounds": [
+      {
+        "name": "minecraft:entity.turtle.death",
+        "type": "event"
+      }
+    ]
+  },
+  "crocodile.bite": {
+    "subtitle": "subtitles.welcomescreen.crocodile.bite",
+    "sounds": [
+      {
+        "name": "minecraft:entity.evoker_fangs.attack",
+        "type": "event"
+      }
+    ]
+  },
+  "crocodile.step": {
+    "sounds": [
+      {
+        "name": "minecraft:entity.turtle.shamble",
+        "type": "event"
+      }
+    ]
   }
 }
