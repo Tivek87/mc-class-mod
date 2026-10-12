@@ -22,6 +22,7 @@ import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.engine.client.fx.CameraShake;
 import nl.tivek.multiversepowers.engine.client.fx.ScreenFlash;
 import nl.tivek.multiversepowers.galactus.Galactus;
+import nl.tivek.multiversepowers.sky.client.CosmicSky;
 import org.joml.Matrix3f;
 import org.joml.Matrix4f;
 import org.joml.Matrix4fStack;
@@ -173,6 +174,8 @@ public final class GalactusSky {
         RenderSystem.depthMask(true);
         MESH.draw(RIG, body, event.getProjectionMatrix(), lights(event, moon, chest, day), (float) t, pose.energy,
                 pose.charge, alpha);
+        // He stands far behind the moon and reaches round it: the moon hides what of him lies behind it.
+        CosmicSky.moonOver(sky, partialTick);
         GalactusFx.additive();
         RenderSystem.depthMask(false);
         // Far off he is a speck of light by the moon.
@@ -184,10 +187,10 @@ public final class GalactusSky {
         }
         // His eyes burn through the dark.
         for (int side = -1; side <= 1; side += 2) {
-            Vec3 eye = feet.add(place(stand, pixel, RIG.at(GalactusRig.HEAD, new Vector3f(side * 1.3F, 5.1F,
-                    4.4F))));
+            Vec3 eye = feet.add(place(stand, pixel, RIG.at(GalactusRig.HEAD, new Vector3f(side * 1.65F, 5.7F,
+                    5.1F))));
             eye = eye.subtract(eye.normalize().scale(2.0 * pixel));
-            GalactusFx.disc(sky, eye, 1.6 * pixel * GalactusRig.HEAD_SIZE, GalactusFx.VIOLET,
+            GalactusFx.disc(sky, eye, 1.6 * pixel * GalactusRig.HEAD_SIZE, GalactusFx.EYES,
                     (0.55F + 0.15F * (float) Math.sin(t * 0.13)) * alpha * (1.0F - speck));
         }
         lightning(level, sky, feet, stand, pixel, moon, tip, t, pose.charge * alpha * (float) (1.0 - by));
@@ -198,7 +201,11 @@ public final class GalactusSky {
         }
         double since = t - Galactus.TOUCH;
         if (since >= 0.0 && since < RIPPLE_TICKS) {
+            // The rings lie through the moon's middle: drawn over it, or its cube would hide them.
+            RenderSystem.disableDepthTest();
             ripple(sky, moon, tip, since);
+            RenderSystem.enableDepthTest();
+            CosmicSky.strikeMoon(start + Galactus.TOUCH / speed);
         }
         RenderSystem.depthMask(true);
         RenderSystem.defaultBlendFunc();

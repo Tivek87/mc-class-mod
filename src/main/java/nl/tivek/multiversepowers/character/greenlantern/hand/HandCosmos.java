@@ -6,6 +6,7 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.engine.math.Ease;
 import nl.tivek.multiversepowers.engine.math.Vectors;
+import nl.tivek.multiversepowers.sky.SkyMoon;
 
 // The Cosmos Test: one hand out of a portal draws a circle of light on the ground with a fingertip, and the circle opens
 // on a deep sky of stars; a second hand out of a portal overhead dives into it at full speed. Then a rift opens in the
@@ -199,7 +200,8 @@ public final class HandCosmos {
     // How big the moon is at tick t, in moon radii from its middle to a face: as big as the sky shows it at the swap,
     // drawn nearer until the hand closes round it.
     public static double moonSize(double t) {
-        return 0.5 + 0.35 * Ease.smoother((t / SLOW - MOON_SWAP - 2.0) / (GRAB - MOON_SWAP - 2.0));
+        double sky = SkyMoon.half() * 10.0;
+        return sky + (0.85 - sky) * Ease.smoother((t / SLOW - MOON_SWAP - 2.0) / (GRAB - MOON_SWAP - 2.0));
     }
 
     // How far the moon has turned out of its flat face toward the eye at tick t, in radians.
@@ -218,19 +220,20 @@ public final class HandCosmos {
                 .scale(shake));
     }
 
-    // The moon's own axes at tick t, where `moonAt` puts it: its face as the sky shows it (u north, v along its path),
-    // turned out of that face toward the eye and tipped a little.
+    // The moon's own axes at tick t, where `moonAt` puts it: as the sky shows it (`SkyMoon`: its cube, or the flat
+    // face, u north, v along its path), turned on toward the eye and tipped a little.
     public static Vec3[] moonAxes(Vec3 moon, Vec3 eye, double t) {
         Vec3 view = moon.subtract(eye).normalize();
         Vec3 path = view.cross(new Vec3(0.0, 0.0, 1.0));
         path = path.lengthSqr() < 1.0E-6 ? Vectors.UP : path.normalize();
         Vec3 north = view.cross(path).normalize();
+        Vec3[] rest = SkyMoon.axes(north, path, view);
         double turn = moonTurn(t);
-        Vec3 right = north.scale(Math.cos(turn)).add(view.scale(Math.sin(turn)));
-        Vec3 forward = view.scale(Math.cos(turn)).subtract(north.scale(Math.sin(turn)));
+        Vec3 right = rest[0].scale(Math.cos(turn)).add(rest[2].scale(Math.sin(turn)));
+        Vec3 forward = rest[2].scale(Math.cos(turn)).subtract(rest[0].scale(Math.sin(turn)));
         double tilt = turn * 0.35;
-        Vec3 up = path.scale(Math.cos(tilt)).add(forward.scale(Math.sin(tilt)));
-        forward = forward.scale(Math.cos(tilt)).subtract(path.scale(Math.sin(tilt)));
+        Vec3 up = rest[1].scale(Math.cos(tilt)).add(forward.scale(Math.sin(tilt)));
+        forward = forward.scale(Math.cos(tilt)).subtract(rest[1].scale(Math.sin(tilt)));
         return new Vec3[] { right, up, forward };
     }
 

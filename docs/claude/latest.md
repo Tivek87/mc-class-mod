@@ -1,11 +1,12 @@
 # Laatste sessie
 
-- Datum: 2026-10-12 19:05
-- Verzoek deel 1: Wizard gooit staf vaker / laat hem liggen, staf vecht vaker en langer zelf, alle spreuken komen aan de beurt, pijlen normale schade; dan committen, pushen, releasen (0.9.4). Deel 2 daarna: Doc Ock (12 blokken overal, shift+rechtsklik, echte worp, crosshair) en de nachthemel (Melkweg kleiner en mooier, niets over de maan, zon/maan/planeten 3D, meer sterren, Green Lantern maan-hand en Galactus bijwerken).
-- Wizard: grote spreuken gaan in rondes (`WizardPicks.spent`): geen komt terug voor alle andere aan de beurt waren; adempauze korter (`BREATH`).
-- Staf: los van de rondes (`nextStaff`): 10-20 s na terugkomst weer gegooid of losgelaten, al vanaf fase 1; gegooide staf blijft 2-8 s steken, dan terug of hij wordt wakker en vecht zelf (`WizardStaff.wake`); zelf vechten tot 45 s (`FREE_LIFE` 900).
-- Pijlen: zelfde aandeel op het schild als elke klap (`WizardWard`, geen `ARROW` meer).
-- Getest in game (scratchpad-kopie, 9000 ticks): fase 1 elke grote spreuk 5-6 keer, fase 3 en 5 35-36 soorten; staf 63% van de tijd uit de hand (5 worpen, 6 keer zelf vechten); pijl 10 schade = 3.0 van het schild, zwaard ook 3.0.
-- Bestanden: `creature/wizard/` (`WizardPicks`, `WizardMoves`, `WizardMove`, `WizardWard`, `staff/WizardStaff`), `TourSteps`, `en_us.json`, `CHANGELOG.md`, `gradle.properties`.
-- Niet committen: `CONTENT.txt`, `arena/`, `models/`, `__pycache__/`; losse Doc Ock- en hemel-edits in de boom horen bij deel 2.
+- Datum: 2026-10-12 20:19
+- Verzoek: Melkweg niet op de plek van de maan, kring om de zon weg, Galactus niet over de maan, Aarde weg uit de hemel, Wizard gevarieerder en sterker (+30% HP, +30% armor, +35% schade), Galactus trouwer aan de plaatjes (huid, masker, blauw-paarse ogen), en naar de maan/planeten kunnen vliegen (maan 7000 blokken hoog).
+- Hemel: Melkweg ligt op de grote cirkel die het verst van de maan blijft (`SkyBodies.BAND`); gloed om de zon weg (`SkyCubes`); Aarde uit `SkyBodies.PLANETS` (11 planeten; `Kind.EARTH` staat er nog voor een latere Aarde-kubus).
+- Galactus: de maankubus wordt na hem nog eens met diepte getekend en verbergt wat achter hem staat (`CosmicSky.moonOver`, `SkyCubes.moonAlone`); gezicht van huid, masker over ogen en wangen, ogen blauw-violet, hoge kroon, bredere zijplaten, staalblauw juk (`GalactusShape`, `GalactusFx.EYES`).
+- Wizard: 910 HP, 4,55 armor, 14,58 aanval (`WizardEntities`); 10 spreuken van fase 2 naar fase 1 en 4 latere een fase eerder (`WizardMove`); tussen twee grote spreuken meestal alleen bewegen, lichte spreuk om de beurt (`WizardPicks`), kortere adempauze (`WizardMoves.BREATH`).
+- Getest in game (scratchpad-kopie): Galactus achter de maan, Melkweg ~45 graden van de maan, geen kring om de zon; Wizard 38 soorten zetten in fase 3 en 43 in fase 5; tour van 0.9.5 (4 kaarten). `gradlew build` slaagt (in de kopie, want het eigen spel van de gebruiker draait vanuit de hoofdmap).
+- Klaar voor release 0.9.5 (`mod_version`, `CHANGELOG.md`, `TourSteps`, `en_us.json`): wacht op ja voor commit + push; daarna `release.ps1 publish` vanuit een losse worktree.
+- Niet committen: `CONTENT.txt`, `arena/`, `models/`, `__pycache__/`.
+- Niet gebouwd: naar de maan en planeten vliegen. Echte grond op 7000 hoog kan niet zonder wissel van dimensie (blokken bestaan alleen tot y 2031); vragen daarover gesteld.
 - Open bugs: #76 (minigun/arm blaster first person), #77 (dubbele stage HUD); ideeën #78, #24.

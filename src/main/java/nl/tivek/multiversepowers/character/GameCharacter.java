@@ -33,8 +33,9 @@ public enum GameCharacter {
             }
             this.add(abilities, AbilitySlot.ABILITY_1, "stance");
             this.add(abilities, AbilitySlot.ABILITY_9, "throw").cooldown(10).damage(6.0)
-                    .setting("speed", 24.0, 5.0, 80.0, Unit.BLOCKS_PER_SECOND,
-                            "How fast a hurled creature flies, in blocks a second");
+                    .setting("speed", 44.0, 5.0, 80.0, Unit.BLOCKS_PER_SECOND,
+                            "How fast a hurled creature flies, in blocks a second")
+                    .was(24.0);
             this.add(abilities, AbilitySlot.ABILITY_10, "selection");
             this.add(abilities, AbilitySlot.ABILITY_13, "grab").input(CharacterAbility.Input.RIGHT)
                     .setting("slamDamage", 6.0, 0.0, 2000.0, Unit.HALF_HEARTS,

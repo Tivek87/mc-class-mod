@@ -6,9 +6,10 @@ import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
 // Galactus's body in boxes, as the game's own creatures are built, a hull per bone of `GalactusRig`, in model pixels as
-// he stands at rest. His helmet: a shell round a face with glowing eyes under a V brow, cheek guards, the crown with its
-// ridge and prongs, discs at the ears and the two great plates stepping out from them and up like horns. Stepped
-// pauldrons over a broad chest with a breastplate and the round emblem, a gorget, banded abdomen and a belt with a
+// he stands at rest. His helmet: a shell round a face of bare skin, of which the mask leaves only the nose and mouth to
+// see (its eyes two lenses of blue-violet light under a V brow), the crown a tall tower stepping in to its peak, discs
+// at the ears and the two great plates slanting out from them and standing tall. Stepped pauldrons over a broad
+// chest with a breastplate, a steel-blue yoke and the round emblem, a gorget, banded abdomen and a belt with a
 // glowing buckle and hanging plates, armoured legs and boots; flared gauntlets and armoured hands with every finger in
 // three bones. Dark purple plates (cracks of energy across the big ones) over a deep blue suit.
 final class GalactusShape {
@@ -17,9 +18,12 @@ final class GalactusShape {
     static final Paint SUIT = Paint.of(0x2B3B66, Look.SUIT, false);
     static final Paint TRIM = Paint.of(0x3C3B4C, Look.TRIM, false);
     static final Paint SILVER = Paint.of(0x9497AE, Look.PLAIN, false);
-    static final Paint SKIN = Paint.of(0x7E7088, Look.PLAIN, false);
+    static final Paint YOKE = Paint.of(0x4F6294, Look.PLATE, false);
+    static final Paint SKIN = Paint.of(0xE3AE8C, Look.PLAIN, false);
+    static final Paint LIP = Paint.of(0x9A5B4C, Look.PLAIN, false);
     static final Paint DARK = Paint.of(0x0D0A13, Look.PLAIN, false);
-    static final Paint EYE = Paint.of(0xD8B8FF, Look.GLOW, false);
+    // Light is drawn brighter than its paint: this deep, his eyes stay blue-violet instead of burning out to white.
+    static final Paint EYE = Paint.of(0x6B66FF, Look.GLOW, false);
     static final Paint ENERGY = Paint.of(0xA45CFF, Look.GLOW, false);
     static final Paint EMBLEM = Paint.of(0x4A2C66, Look.EMBLEM, false);
 
@@ -94,7 +98,10 @@ final class GalactusShape {
         hull.box(ARMOR, -9.2, 41.0, 1.0, 9.2, 49.6, 6.4);
         hull.box(ARMOR, -7.6, 40.2, 1.0, 7.6, 41.0, 5.6);
         hull.box(ARMOR, -6.6, 49.6, -2.0, 6.6, 50.6, 5.2);
-        hull.box(EMBLEM, -3.2, 41.2, 6.4, 3.2, 47.6, 7.0);
+        // A steel-blue yoke across the shoulders, the emblem set in its point.
+        hull.box(YOKE, -9.4, 45.8, 0.6, 9.4, 50.2, 6.9);
+        hull.box(YOKE, -4.6, 42.6, 6.4, 4.6, 45.8, 6.9);
+        hull.box(EMBLEM, -3.2, 42.9, 6.9, 3.2, 49.3, 7.5);
         hull.box(ARMOR_DARK, -8.6, 41.0, -6.3, 8.6, 49.6, -5.4);
         hull.box(ARMOR, -5.6, 49.0, -3.6, 5.6, 52.0, 3.0);
         for (int s = -1; s <= 1; s += 2) {
@@ -104,17 +111,24 @@ final class GalactusShape {
 
     private void head() {
         GalactusHull hull = h(GalactusRig.HEAD);
-        hull.box(SKIN, -2.5, 48.8, -2.6, 2.5, 53.0, 2.0);
+        hull.box(ARMOR_DARK, -2.5, 48.8, -2.6, 2.5, 53.0, 2.0);
         hull.box(SKIN, -3.2, 51.6, -2.4, 3.2, 60.4, 4.0);
         hull.box(SKIN, -2.2, 51.4, 2.2, 2.2, 53.6, 4.4);
-        hull.box(SKIN, -0.5, 54.4, 4.0, 0.5, 56.4, 4.7);
-        hull.box(DARK, -1.0, 53.0, 4.4, 1.0, 53.4, 4.5);
+        hull.box(SKIN, -0.55, 53.9, 4.0, 0.55, 55.6, 4.9);
+        hull.box(SKIN, -0.85, 53.9, 4.0, 0.85, 54.5, 4.7);
+        hull.box(LIP, -1.1, 52.7, 4.4, 1.1, 53.1, 4.55);
+        // The mask: over his eyes and his cheeks and under his chin, open only round his nose and mouth.
+        hull.box(ARMOR, -3.4, 55.4, 3.6, 3.4, 58.6, 4.6);
+        hull.box(ARMOR, -1.9, 51.0, 4.0, 1.9, 51.9, 4.9);
         for (int s = -1; s <= 1; s += 2) {
-            hull.box(DARK, s * 0.3, 55.5, 3.8, s * 2.4, 56.9, 4.1);
-            hull.box(EYE, s * 0.6, 55.8, 4.0, s * 2.1, 56.6, 4.25);
-            // The brow: its outer ends higher, a V over the eyes.
-            hull.box(ARMOR, new Vector3f(s * 1.55F, 57.4F, 4.2F), new Vector3f(1.75F, 0.45F, 0.5F),
-                    new Quaternionf().rotationZ(s * 0.25F));
+            hull.box(ARMOR, s * 1.9, 51.4, 3.4, s * 3.4, 55.4, 4.5);
+            hull.box(TRIM, s * 1.9, 51.9, 4.5, s * 2.2, 55.4, 4.7);
+            // Each eye a lens of light in the mask, slanting up to its outer end, under a brow that does the same.
+            hull.box(DARK, s * 0.45, 55.9, 4.6, s * 2.9, 57.5, 4.7);
+            hull.box(EYE, new Vector3f(s * 1.65F, 56.7F, 4.78F), new Vector3f(1.0F, 0.5F, 0.08F),
+                    new Quaternionf().rotationZ(s * 0.14F));
+            hull.box(ARMOR, new Vector3f(s * 1.7F, 58.0F, 4.75F), new Vector3f(1.8F, 0.4F, 0.45F),
+                    new Quaternionf().rotationZ(s * 0.22F));
         }
     }
 
@@ -122,25 +136,30 @@ final class GalactusShape {
         GalactusHull hull = h(GalactusRig.HEAD);
         hull.box(ARMOR, -4.4, 51.0, -5.8, 4.4, 61.0, -1.0);
         hull.box(ARMOR, -4.3, 58.6, -5.6, 4.3, 61.4, 4.3);
-        hull.box(ARMOR, -3.6, 61.4, -4.4, 3.6, 66.2, 2.4);
-        hull.box(TRIM, -4.5, 61.0, -5.9, 4.5, 61.8, 4.5);
+        hull.box(TRIM, -4.5, 61.0, -5.9, 4.5, 61.8, 4.7);
+        // The crown: a tall tower stepping in to its peak, a ridge up its front.
+        hull.box(ARMOR, -3.6, 61.8, -4.4, 3.6, 66.0, 2.6);
+        hull.box(ARMOR, -2.9, 66.0, -3.8, 2.9, 67.8, 2.0);
+        hull.box(ARMOR, -2.0, 67.8, -3.0, 2.0, 69.2, 1.2);
+        hull.box(ARMOR_DARK, -1.0, 69.2, -2.2, 1.0, 70.0, 0.4);
         hull.box(ARMOR, -0.6, 58.6, 4.3, 0.6, 61.4, 4.9);
-        hull.box(ARMOR, -0.6, 61.4, 2.4, 0.6, 66.6, 3.2);
-        for (double x : new double[] { -2.25, -0.75, 0.75, 2.25 }) {
-            double high = Math.abs(x) > 1.0 ? 2.2 : 1.6;
-            hull.box(ARMOR, x - 0.4, 66.2, -3.4, x + 0.4, 66.2 + high, 1.4);
-        }
+        hull.box(ARMOR, -0.6, 61.8, 2.6, 0.6, 67.4, 3.3);
         for (int s = -1; s <= 1; s += 2) {
+            hull.box(SILVER, s * 2.0, 59.5, 4.3, s * 3.0, 60.5, 4.5);
             hull.box(ARMOR, s * 3.2, 51.4, -1.0, s * 4.3, 58.2, 3.6);
-            hull.box(TRIM, s * 4.3, 53.2, -2.6, s * 5.3, 57.2, 1.4);
-            hull.box(SILVER, s * 5.3, 54.6, -1.2, s * 5.7, 55.8, 0.0);
-            // The great side plates: out from the ear, then stepping up and out like horns.
-            hull.box(ARMOR, s * 5.3, 54.4, -2.4, s * 10.2, 56.2, 1.2);
-            hull.box(TRIM, s * 5.3, 54.0, -2.0, s * 9.8, 54.4, 0.8);
-            hull.box(ARMOR, s * 9.4, 56.2, -2.6, s * 11.4, 60.0, 1.4);
-            hull.box(ARMOR, s * 10.6, 60.0, -2.8, s * 12.4, 64.2, 1.6);
-            hull.box(ARMOR, s * 11.6, 64.2, -3.0, s * 13.4, 68.0, 1.8);
-            hull.box(ARMOR, s * 12.4, 68.0, -2.6, s * 13.8, 70.0, 1.0);
+            hull.box(TRIM, s * 4.3, 52.9, -2.9, s * 5.4, 57.5, 1.7);
+            hull.box(SILVER, s * 5.4, 54.6, -1.2, s * 5.8, 55.8, 0.0);
+            // The two great plates: each a broad flat arm slanting out and up from the ear to its elbow, then
+            // standing tall from there, leaning in a little at its tip.
+            hull.box(ARMOR, new Vector3f(s * 8.7F, 56.8F, -0.6F), new Vector3f(3.9F, 1.6F, 0.9F),
+                    new Quaternionf().rotationZ(s * 0.42F));
+            hull.box(ARMOR, new Vector3f(s * 12.2F, 58.6F, -0.6F), new Vector3f(1.7F, 1.7F, 0.9F), null);
+            hull.box(ARMOR, new Vector3f(s * 11.9F, 65.0F, -0.6F), new Vector3f(1.7F, 6.2F, 0.9F),
+                    new Quaternionf().rotationZ(s * 0.08F));
+            hull.box(TRIM, new Vector3f(s * 11.9F, 65.0F, 0.4F), new Vector3f(0.8F, 5.2F, 0.1F),
+                    new Quaternionf().rotationZ(s * 0.08F));
+            hull.box(ARMOR_DARK, new Vector3f(s * 11.2F, 71.6F, -0.6F), new Vector3f(1.2F, 0.8F, 0.8F),
+                    new Quaternionf().rotationZ(s * 0.08F));
         }
     }
 

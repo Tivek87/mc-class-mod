@@ -3,6 +3,49 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.9.5-alpha] - 2026-10-12
+
+### Added
+- **Sky: moons round the planets:** small cube moons circle the bigger planets.
+- **Sky: asteroid belt:** a belt of tumbling rocks crosses the night sky.
+- **Sky: comet:** an icy comet with two tails of light drifts slowly round the night sky.
+- **Sky: shooting stars:** now and then a shooting star streaks across the night.
+- **Sky: more stars:** thousands more stars all over the night sky, a few bright ones among them.
+- **Sky: more nebulae and clusters:** two more nebulae and two more star clusters.
+
+### Changed
+- **Sky: cube sun and moon:** the sun and the moon are cubes in the sky; the moon has a soft glow and its phases are
+  light falling across its faces.
+- **Sky: cube planets:** every planet is a cube turning on its axis, the ringed ones inside a square ring.
+- **Sky: smaller Milky Way:** the Milky Way is narrower, an arc of torn clouds thick at its core, no longer a
+  straight-edged strip round the whole sky, and it keeps well away from the moon.
+- **Sky: setting renamed:** the setting Cosmic night sky is now Cosmic sky, as it also turns the sun and moon into
+  cubes.
+- **Giant Hands: Cosmos Test takes the cube moon:** the hand out of the rift takes the moon as the cube it is in the
+  sky.
+- **Galactus: cube moon:** his finger pokes the cube moon, which rocks where it stands and hides what of him stands
+  behind it.
+- **Galactus: truer look:** a face of bare skin in a mask that leaves only his nose and mouth to see, eyes of
+  blue-violet light, a tall peaked crown, broader side plates standing tall and a steel-blue yoke.
+- **Wizard: stronger:** 30% more health (910) and armour, and every blow and spell of his strikes 35% harder.
+- **Wizard: more spells sooner:** eight big spells and two close moves of his second phase are his from the start,
+  four later ones come a phase sooner; his bolt, spark, tether and watching fill far fewer of the gaps between
+  them, and his two light spells take turns.
+- **Doctor Octopus: 12 blocks for everything:** he opens, uses and breaks blocks and reaches creatures from up to 12
+  blocks away, as far as his tentacles grab and strike.
+- **Doctor Octopus: harder throw:** a thrown creature is hurled almost twice as fast in a rising arc and flies some 35
+  blocks; the tentacle that throws lashes out.
+- **Doctor Octopus: clearer crosshair:** the corner brackets stand further from the reticle, each joined to it by a
+  thin line, and a tentacle holding something shows a dot.
+
+### Fixed
+- **Sky: lights over the moon:** the Milky Way, the nebulae and the stars no longer shine through the moon; they lie
+  behind the sun, the moon and every planet.
+
+### Removed
+- **Sky: flat planets:** the flat painted planets and rings are gone, replaced by the cubes.
+- **Sky: Earth:** the Earth is gone from the night sky: you stand on it.
+
 ## [0.9.4-alpha] - 2026-10-12
 
 ### Changed

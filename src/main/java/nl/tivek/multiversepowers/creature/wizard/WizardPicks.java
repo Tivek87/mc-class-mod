@@ -11,11 +11,11 @@ import nl.tivek.multiversepowers.creature.wizard.field.TimeWarp;
 import nl.tivek.multiversepowers.creature.wizard.spell.ArcaneFamiliar;
 import nl.tivek.multiversepowers.creature.wizard.spell.RuneSentry;
 
-// Which move the Wizard picks next (WizardMoves): what is ready, fits how far his foe is and weighs most. Light spells
-// often; up close his staff (while it is in his hand) or a close spell, else away by a skip or one of his ways of
-// going; far off a way of going to them; now and then he stops a moment and only watches them. His big spells go in
-// rounds: none comes again before every other he could cast has had its turn. His staff is apart from them: a while
-// after it comes back to his hand he hurls it or sets it free again.
+// Which move the Wizard picks next (WizardMoves): what is ready, fits how far his foe is and weighs most. A light spell
+// now and then between his big ones; up close his staff (while it is in his hand) or a close spell, else away by a skip
+// or one of his ways of going; far off a way of going to them; now and then he stops a moment and only watches them.
+// His big spells go in rounds: none comes again before every other he could cast has had its turn. His staff is apart
+// from them: a while after it comes back to his hand he hurls it or sets it free again.
 abstract class WizardPicks extends Goal {
     // The least a spell he picks waits after he cast it (WizardMove's own waits are longer), and how many ticks
     // uncast make a spell weigh once more when he picks the next.
@@ -42,6 +42,9 @@ abstract class WizardPicks extends Goal {
     // Ticks he has not seen his target: walled in, he goes elsewhere once it lasts.
     int blind;
     int nextBig = 40;
+    // The breath (by the `nextBig` that ends it) he last chose for, and whether a light spell fills it.
+    private int breath = -1;
+    private boolean light;
     int nextUltimate;
     int lastBig;
     // The great spell his phase opens with, cast first once it fits.
@@ -113,6 +116,18 @@ abstract class WizardPicks extends Goal {
                 return big;
             }
         }
+        // Between two big spells he mostly only moves, gliding nearer when they are far: a light spell or one of his
+        // small moves fills no more than two breaths in five, or they would be most of what he does.
+        if (now < this.nextBig) {
+            if (this.breath != this.nextBig) {
+                this.breath = this.nextBig;
+                this.light = random.nextInt(5) < 2;
+            }
+            if (!this.light) {
+                return !this.wizard.flies() && this.ready(WizardMove.SKIP) && far > FAR + 2.0
+                        ? this.skipFrom(target, false) : 0;
+            }
+        }
         if (far > NEAR && far < 18.0 && this.ready(WizardMove.TETHER) && random.nextInt(5) == 0) {
             return WizardMove.TETHER;
         }
@@ -122,9 +137,10 @@ abstract class WizardPicks extends Goal {
         if (!this.wizard.flies() && this.ready(WizardMove.SKIP) && (far > FAR + 2.0 || random.nextInt(6) == 0)) {
             return this.skipFrom(target, far < NEAR);
         }
+        // His light spells take turns: the one he cast longest ago.
         boolean bolt = this.ready(WizardMove.BOLT) && far < 26.0;
         boolean spark = this.ready(WizardMove.SPARK) && far < 24.0;
-        if (bolt && (!spark || random.nextInt(2) == 0)) {
+        if (bolt && (!spark || this.castAt[WizardMove.BOLT] <= this.castAt[WizardMove.SPARK])) {
             return WizardMove.BOLT;
         }
         return spark ? WizardMove.SPARK : 0;

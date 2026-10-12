@@ -11,42 +11,46 @@ import com.mojang.blaze3d.vertex.VertexBuffer;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import java.util.ArrayList;
 import java.util.List;
+import javax.annotation.Nullable;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.DimensionSpecialEffects;
 import net.minecraft.client.renderer.GameRenderer;
-import net.minecraft.client.renderer.ShaderInstance;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.config.client.ClientSettings;
-import nl.tivek.multiversepowers.sky.client.SkyBodies.Planet;
+import nl.tivek.multiversepowers.engine.client.world.LocalSky;
+import nl.tivek.multiversepowers.sky.SkyMoon;
 import org.joml.Matrix4f;
 
-// The cosmic night sky: on the game's own sky, whose colour, sun, moon and stars stay as they are, things of their own
-// as the moon is: the Milky Way's band and its stars, nebulae, clusters, a far galaxy and planets, each a picture
-// painted in code (never an image file) once on a background thread at client setup and uploaded one a frame. The
-// light is added in the stars' frame before the sun and moon, fading with the night; the planets, which hide what is
-// behind them, are laid on after the game's stars so none shines through them.
+// The cosmic sky: on the game's own sky, whose colour and stars stay as they are, things of their own: by night the
+// Milky Way's band and its stars, nebulae, clusters and a far galaxy, each a picture whose light is added, and before
+// them all the sky's cubes (SkyCubes): the sun and the moon in place of the game's flat ones, by day too, and by night
+// the planets, their moons, a belt of rocks and a comet. Every picture is painted in code (never an image file) once
+// on a background thread at client setup and uploaded one a frame; until all are up the game's own sun and moon show.
+// Drawn right after the game's stars in the stars' frame, the cubes last, so nothing shines through them.
 public final class CosmicSky {
     private static final float DISTANCE_SCALE = 0.5F;
     // How far below the horizon (the sun's height, 1 overhead) the sky is wholly out.
     private static final float SUNK = 0.2F;
+    private static final int GLOW = 32;
+    private static final ResourceLocation CUBES = ResourceLocation.fromNamespaceAndPath(MultiversePowers.MODID,
+            "sky/cubes");
     private static volatile Pictures painted;
-    private static final List<SkyTexture> PLANETS = new ArrayList<>();
     private static final List<SkyTexture> NEBULAE = new ArrayList<>();
     private static final List<SkyTexture> CLUSTERS = new ArrayList<>();
     private static SkyTexture band;
     private static SkyTexture galaxy;
+    private static SkyTexture cubes;
+    private static SkyTexture glow;
     private static VertexBuffer stars;
     private static boolean ready;
-    // This frame's sky, kept for the planets laid on after the game's stars; null when they are not shown.
-    private static Matrix4f shown;
-    private static float shownFade;
 
-    private record Pictures(NativeImage band, NativeImage galaxy, NativeImage[] planets, NativeImage[] nebulae,
-            NativeImage[] clusters, float[] stars) {
+    private record Pictures(NativeImage band, NativeImage galaxy, NativeImage cubes, NativeImage glow,
+            NativeImage[] nebulae, NativeImage[] clusters, float[] stars) {
     }
 
     private CosmicSky() {
@@ -57,10 +61,6 @@ public final class CosmicSky {
             try {
                 long start = System.nanoTime();
                 float[] stars = StarField.build();
-                NativeImage[] planets = new NativeImage[SkyBodies.PLANETS.size()];
-                for (int i = 0; i < planets.length; i++) {
-                    planets[i] = PlanetPainter.paint(SkyBodies.PLANETS.get(i));
-                }
                 NativeImage[] nebulae = new NativeImage[SkyBodies.NEBULAE.size()];
                 for (int i = 0; i < nebulae.length; i++) {
                     nebulae[i] = MilkyWay.nebula(SkyBodies.NEBULAE.get(i));
@@ -69,7 +69,8 @@ public final class CosmicSky {
                 for (int i = 0; i < clusters.length; i++) {
                     clusters[i] = MilkyWay.cluster(SkyBodies.CLUSTERS.get(i));
                 }
-                painted = new Pictures(MilkyWay.band(), GalaxyPainter.paint(), planets, nebulae, clusters, stars);
+                painted = new Pictures(MilkyWay.band(), GalaxyPainter.paint(), SkyCubes.paint(), glow(), nebulae,
+                        clusters, stars);
                 MultiversePowers.LOGGER.debug("Cosmic sky painted in {} ms", (System.nanoTime() - start) / 1_000_000L);
             } catch (RuntimeException e) {
                 MultiversePowers.LOGGER.error("Could not paint the cosmic sky", e);
@@ -77,25 +78,92 @@ public final class CosmicSky {
         });
     }
 
+    // A soft round glow, white, fading from its middle to nothing at its edge.
+    private static NativeImage glow() {
+        NativeImage image = new NativeImage(GLOW, GLOW, false);
+        for (int y = 0; y < GLOW; y++) {
+            for (int x = 0; x < GLOW; x++) {
+                double r = Math.hypot(x + 0.5 - GLOW * 0.5, y + 0.5 - GLOW * 0.5) / (GLOW * 0.5);
+                image.setPixelRGBA(x, y, SkyColors.channel(Math.pow(Math.max(0.0, 1.0 - r), 2.2)) << 24 | 0xFFFFFF);
+            }
+        }
+        return image;
+    }
+
+    // Whether this sky's own sun and moon are drawn now, in place of the game's.
+    public static boolean bodies() {
+        ClientLevel level = Minecraft.getInstance().level;
+        return ready && level != null && level.effects().skyType() == DimensionSpecialEffects.SkyType.NORMAL
+                && ClientSettings.cosmicSky();
+    }
+
+    // The moon's cube, for what takes it out of the sky: the picture its faces are in (null while the game's own
+    // moon shows), each face's square of it and how bright each stands now.
+    @Nullable
+    public static ResourceLocation moonTexture() {
+        return bodies() ? CUBES : null;
+    }
+
+    public static float[][] moonSquares() {
+        return SkyCubes.moonSquares();
+    }
+
+    public static float[] moonShades(ClientLevel level) {
+        return SkyCubes.moonShades(level);
+    }
+
+    // Something struck the moon at this game time: its cube rocks where it stands and comes to rest.
+    public static void strikeMoon(double gameTime) {
+        SkyCubes.strike(gameTime);
+    }
+
+    // The moon's cube once more, with depth: for what is drawn after the sky and stands partly behind the moon, so
+    // the moon hides that part. `eye` holds the eye at its origin, the world's ways along its axes, at the scale the
+    // moon stands 100 away in.
+    public static void moonOver(Matrix4f eye, float partialTick) {
+        ClientLevel level = Minecraft.getInstance().level;
+        if (!bodies()) {
+            return;
+        }
+        Matrix4f sky = new Matrix4f(eye).rotateY((float) Math.toRadians(-90.0))
+                .rotateX((float) Math.toRadians(level.getTimeOfDay(partialTick) * 360.0F));
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+        RenderSystem.enableDepthTest();
+        RenderSystem.depthMask(true);
+        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+        SkyCubes.moonAlone(sky, level, partialTick, cubes.getId());
+    }
+
     public static void draw(Matrix4f frustum, Matrix4f projection, float partialTick) {
-        shown = null;
         Minecraft minecraft = Minecraft.getInstance();
         ClientLevel level = minecraft.level;
-        if (level == null || level.effects().skyType() != DimensionSpecialEffects.SkyType.NORMAL
-                || !ClientSettings.cosmicSky() || !upload()) {
+        upload();
+        boolean on = bodies();
+        SkyMoon.cube(on);
+        if (!on) {
             return;
         }
-        // Only once the sun is down, as deep as it sinks in twilight; never while it is up.
+        // The night's own only once the sun is down, as deep as it sinks in twilight; never while it is up.
         float sunk = Mth.clamp(-Mth.cos(level.getTimeOfDay(partialTick) * Mth.TWO_PI) / SUNK, 0.0F, 1.0F);
-        float fade = sunk * sunk * (3.0F - 2.0F * sunk) * (1.0F - level.getRainLevel(partialTick));
-        if (fade <= 0.002F) {
-            return;
-        }
+        float fade = sunk * sunk * (3.0F - 2.0F * sunk) * (1.0F - level.getRainLevel(partialTick))
+                * LocalSky.stars(level, 1.0F);
         Matrix4f sky = new Matrix4f(frustum).rotateY((float) Math.toRadians(-90.0))
                 .rotateX((float) Math.toRadians(level.getTimeOfDay(partialTick) * 360.0F)).scale(DISTANCE_SCALE);
-        shown = sky;
-        shownFade = fade;
         RenderSystem.disableCull();
+        if (fade > 0.002F) {
+            // Added light shows pale on a sky still blue: it comes later in the dusk than the cubes do.
+            lights(sky, projection, fade * fade);
+        }
+        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+        SkyCubes.draw(sky, level, partialTick, fade, cubes.getId(), glow.getId());
+        RenderSystem.blendFuncSeparate(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE,
+                GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ZERO);
+        RenderSystem.enableCull();
+    }
+
+    // The night's light, only added to what is behind it: the band, the nebulae, the clusters, the galaxy, the stars.
+    private static void lights(Matrix4f sky, Matrix4f projection, float fade) {
         RenderSystem.setShaderColor(fade, fade, fade, fade);
         RenderSystem.blendFunc(GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ONE);
         RenderSystem.setShader(GameRenderer::getPositionTexShader);
@@ -114,36 +182,6 @@ public final class CosmicSky {
         stars.bind();
         stars.drawWithShader(sky, projection, RenderSystem.getShader());
         VertexBuffer.unbind();
-        RenderSystem.blendFuncSeparate(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE,
-                GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ZERO);
-        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
-        RenderSystem.enableCull();
-    }
-
-    // The planets, right after the game's stars: each hides what is behind it.
-    public static void planets() {
-        Matrix4f sky = shown;
-        if (sky == null) {
-            return;
-        }
-        float fade = shownFade;
-        float[] was = RenderSystem.getShaderColor().clone();
-        ShaderInstance shader = RenderSystem.getShader();
-        RenderSystem.disableCull();
-        RenderSystem.blendFuncSeparate(GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA,
-                GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ZERO);
-        // In twilight a world's dark side would show as a dark disc on the blue sky: it hides less than it shines.
-        RenderSystem.setShaderColor(fade, fade, fade, fade * fade);
-        RenderSystem.setShader(GameRenderer::getPositionTexShader);
-        for (int i = 0; i < PLANETS.size(); i++) {
-            Planet planet = SkyBodies.PLANETS.get(i);
-            picture(sky, PLANETS.get(i), planet.dir(), planet.degrees() * planet.reach(), 0.0);
-        }
-        RenderSystem.blendFuncSeparate(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE,
-                GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ZERO);
-        RenderSystem.setShaderColor(was[0], was[1], was[2], was[3]);
-        RenderSystem.setShader(() -> shader);
-        RenderSystem.enableCull();
     }
 
     // A square picture `degrees` wide round `dir`, its top towards the sun's side, turned by `roll`.
@@ -205,8 +243,11 @@ public final class CosmicSky {
         }
         if (stars == null) {
             stars = starBuffer(pictures.stars());
-        } else if (PLANETS.size() < pictures.planets().length) {
-            PLANETS.add(new SkyTexture(pictures.planets()[PLANETS.size()]));
+        } else if (cubes == null) {
+            cubes = new SkyTexture(pictures.cubes());
+            Minecraft.getInstance().getTextureManager().register(CUBES, cubes);
+        } else if (glow == null) {
+            glow = new SkyTexture(pictures.glow(), true);
         } else if (NEBULAE.size() < pictures.nebulae().length) {
             NEBULAE.add(new SkyTexture(pictures.nebulae()[NEBULAE.size()]));
         } else if (CLUSTERS.size() < pictures.clusters().length) {

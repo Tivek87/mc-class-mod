@@ -8,12 +8,13 @@ import nl.tivek.multiversepowers.sky.client.SkyBodies.Cluster;
 import nl.tivek.multiversepowers.sky.client.SkyBodies.Nebula;
 
 // The Milky Way and the clouds of light in the night sky, each a thing of its own laid on the game's sky as the moon
-// is, the sky between them left as it is: the band a strip round the sky along its great circle (`band`, drawn in
-// PIECES x ROWS quads), each nebula and each cluster's glow a picture of its own (`nebula`, `cluster`). Painted in
-// sharp pixels the moon's size, the light only added to what is behind.
+// is, the sky between them left as it is: the band an arc of torn clouds along its great circle, thick at its core
+// and gone before it comes round, painted on a strip round the sky (`band`, drawn in PIECES x ROWS quads), each
+// nebula and each cluster's glow a picture of its own (`nebula`, `cluster`). Painted in sharp pixels the moon's
+// size, the light only added to what is behind.
 final class MilkyWay {
     // The band reaches this far either side of its middle line, in degrees.
-    static final double HALF = 24.0;
+    static final double HALF = 15.0;
     static final int PIECES = 48;
     static final int ROWS = 4;
     // A nebula's picture is this many times as wide as the nebula, a cluster's glow this many.
@@ -40,7 +41,8 @@ final class MilkyWay {
         IntStream.range(0, tall).parallel().forEach(row -> {
             double[] rgb = new double[3];
             double lat = Math.toRadians((0.5 - (row + 0.5) / tall) * 2.0 * HALF);
-            double edge = 1.0 - Surfaces.smooth(0.6, 1.0, Math.abs(Math.toDegrees(lat)) / HALF);
+            // The band's light is gone well inside the strip, so its edge never shows as a straight line.
+            double edge = 1.0 - Surfaces.smooth(0.55, 0.95, Math.abs(Math.toDegrees(lat)) / HALF);
             for (int col = 0; col < wide; col++) {
                 double lon = ((col + 0.5) / wide * 2.0 - 1.0) * Math.PI;
                 rgb[0] = 0.0;
@@ -106,16 +108,26 @@ final class MilkyWay {
         double lon = Math.atan2(s, c);
         double sx = c * 3.2 + 7.0;
         double sy = s * 3.2;
-        double sz = lat * 12.0;
+        double sz = lat * 20.0;
         double wave = Perlin.fbm(sx * 0.5, sy * 0.5, sz * 0.4 + 2.0, 4);
-        double width = 0.15 + 0.05 * wave + 0.08 * Math.exp(-lon * lon / 0.3);
-        double warped = lat + 0.035 * Perlin.fbm(sx * 0.8 + 11.0, sy * 0.8, sz * 0.3, 4);
+        // Thick at its core, thinning and wandering away from it, as the real one does.
+        double width = (0.055 + 0.07 * Math.max(0.0, Math.min(1.0, wave + 0.5)) + 0.05 * Math.exp(-lon * lon / 0.3))
+                * (0.55 + 0.45 * Math.exp(-lon * lon / 3.0));
+        double warped = lat + 0.045 * Perlin.fbm(sx * 0.8 + 11.0, sy * 0.8, sz * 0.3, 4) + 0.012 * Math.sin(
+                lon * 2.0 + 1.0);
         double across = warped / width;
-        double body = Math.exp(-across * across) * (0.32 + 0.68 * Math.exp(-lon * lon / 1.4));
-        double outer = Math.exp(-across * across * 0.25) * 0.25 * (0.4 + 0.6 * Math.exp(-lon * lon / 2.0));
+        // Its edges are torn clouds, not a smooth fade.
+        double torn = Surfaces.smooth(-0.2, 0.5, 1.6 * Perlin.fbm(sx * 2.2 + 41.0, sy * 2.2, sz * 1.5, 5) + 1.2
+                - Math.abs(across));
+        // Away from the core it breaks up into patches with dark sky between them, and it ends before it has gone
+        // round the sky: an arc of light, not a ring.
+        double patch = Surfaces.mix(1.0, Surfaces.smooth(-0.3, 0.3, Perlin.fbm(sx * 0.7 + 60.0, sy * 0.7, 3.0, 4)),
+                0.85 * (1.0 - Math.exp(-lon * lon / 2.5))) * (1.0 - Surfaces.smooth(1.2, 2.2, Math.abs(lon)));
+        double body = Math.exp(-across * across) * torn * patch * (0.2 + 0.8 * Math.exp(-lon * lon / 1.2));
+        double outer = Math.exp(-across * across * 0.4) * torn * 0.25 * Math.exp(-lon * lon / 2.0);
         double clouds = 0.45 + 0.55 * Math.max(0.0, Perlin.fbm(sx, sy, sz, 6) + 0.45);
         double clumps = Math.pow(Math.max(0.0, Perlin.fbm(sx * 3.0 + 4.0, sy * 3.0, sz * 2.0, 4) + 0.2), 1.5);
-        double bulge = Math.exp(-(lon * lon / 0.09 + warped * warped / 0.012));
+        double bulge = Math.exp(-(lon * lon / 0.09 + warped * warped / 0.006));
         double heart = Math.exp(-(lon * lon / 0.012 + lat * lat / 0.0022));
         double lane = Math.exp(-Math.pow((warped - 0.012 * Math.sin(lon * 3.0)) / (width * 0.28), 2.0))
                 * Surfaces.smooth(-0.3, 0.3, Perlin.fbm(sx * 0.9 + 21.0, sy * 0.9, sz * 0.6, 5));

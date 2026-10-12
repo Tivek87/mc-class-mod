@@ -4,29 +4,39 @@ import java.util.SplittableRandom;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.sky.client.SkyBodies.Cluster;
 
-// The stars that belong to the Milky Way and the clusters, square as the game's own (whose stars stay as they are),
-// each turned its own way, a cluster's brightest a cross of five squares.
+// The stars of the Milky Way, of the clusters and more all over the sky, square as the game's own (whose stars stay as
+// they are), each turned its own way, the brightest a cross of five squares.
 final class StarField {
     // Per star corner: x, y, z, red, green, blue.
     static final int STRIDE = 6;
-    private static final int BAND = 1800;
+    private static final int BAND = 2800;
+    // Stars all over the sky, and among them a few bright ones, each a cross.
+    private static final int FIELD = 2600;
+    private static final int BRIGHT = 36;
 
     private StarField() {
     }
 
     static float[] build() {
         SplittableRandom random = new SplittableRandom(0x57A25L);
-        StarList list = new StarList(BAND + 600);
+        StarList list = new StarList(BAND + FIELD + BRIGHT * 5 + 1200);
         Vec3 n = SkyBodies.BAND;
         Vec3 c = SkyBodies.CORE.subtract(n.scale(SkyBodies.CORE.dot(n))).normalize();
         Vec3 s = n.cross(c);
         for (int i = 0; i < BAND; i++) {
-            double lon = random.nextDouble() < 0.5 ? random.nextGaussian() * 0.9 : random.nextDouble(-Math.PI,
-                    Math.PI);
-            double lat = random.nextGaussian() * 0.09;
+            double lon = random.nextDouble() < 0.7 ? random.nextGaussian() * 0.8 : random.nextDouble(-2.4, 2.4);
+            double lat = random.nextGaussian() * 0.07;
             Vec3 d = c.scale(Math.cos(lon)).add(s.scale(Math.sin(lon))).scale(Math.cos(lat)).add(n.scale(
                     Math.sin(lat))).normalize();
             faint(list, random, d);
+        }
+        for (int i = 0; i < FIELD + BRIGHT; i++) {
+            Vec3 d = new Vec3(random.nextGaussian(), random.nextGaussian(), random.nextGaussian()).normalize();
+            if (i < BRIGHT) {
+                list.cross(d, 0.17 + 0.07 * random.nextDouble(), random, color(random), 0.95);
+            } else {
+                faint(list, random, d);
+            }
         }
         for (Cluster cluster : SkyBodies.CLUSTERS) {
             cluster(list, random, cluster);

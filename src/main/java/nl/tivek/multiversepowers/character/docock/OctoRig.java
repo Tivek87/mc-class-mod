@@ -32,8 +32,9 @@ import nl.tivek.multiversepowers.faction.Factions;
 // ground: an empty one goes instead, or the stance waits. A held creature that dies, goes or is left far behind is let
 // go of by itself.
 final class OctoRig implements Effect {
-    private static final double FAR = 24.0;
     private static final int SQUEEZE_EVERY = 10;
+    // How much a hurl with no creature aimed at is lifted, so what is hurled flies in a bow.
+    private static final double LOB = 0.3;
 
     private final ServerPlayer player;
     private int stance;
@@ -93,11 +94,14 @@ final class OctoRig implements Effect {
             return false;
         }
         this.clock++;
+        if (age % 20 == 0) {
+            DocOckPowers.reach(this.player, true);
+        }
         boolean changed = false;
         for (int i = 0; i < COUNT; i++) {
             Mob mob = this.held[i];
             if (mob != null && (!mob.isAlive() || mob.isRemoved() || mob.level() != this.player.level()
-                    || mob.distanceToSqr(this.player) > FAR * FAR)) {
+                    || !this.reaches(mob))) {
                 this.drop(i);
                 changed = true;
                 continue;
@@ -134,6 +138,12 @@ final class OctoRig implements Effect {
         mob.setPos(middle.x, middle.y - mob.getBbHeight() * 0.5, middle.z);
         mob.setDeltaMovement(Vec3.ZERO);
         mob.resetFallDistance();
+    }
+
+    // Within a tentacle's length of his eye, as his own game measures it along the crosshair.
+    private boolean reaches(Entity entity) {
+        double most = TentacleReach.LENGTH + 0.5;
+        return entity.getBoundingBox().distanceToSqr(this.player.getEyePosition()) <= most * most;
     }
 
     private Vec3 holdPoint(int i, Mob mob) {
@@ -177,8 +187,7 @@ final class OctoRig implements Effect {
     void grab(int targetId, int mask) {
         Entity entity = this.player.serverLevel().getEntity(targetId);
         if (!(entity instanceof Mob mob) || this.holds(mob) || !Targeting.isTargetable(this.player, mob)
-                || !Factions.mayHit(this.player, mob) || mob.distanceTo(this.player) > TentacleReach.LENGTH
-                        + mob.getBbWidth() * 0.5) {
+                || !Factions.mayHit(this.player, mob) || !this.reaches(mob)) {
             return;
         }
         int i = -1;
@@ -231,7 +240,8 @@ final class OctoRig implements Effect {
         this.send();
     }
 
-    // Hurls what the tentacles hold the way he looks, or at the creature he aims at; whether anything flew.
+    // Hurls what the tentacles hold the way he looks, lifted into a bow, or straight at the creature he aims at, each
+    // tentacle lashing out after what it threw; whether anything flew.
     boolean hurl(int mask, int targetId) {
         Entity aimed = targetId < 0 ? null : this.player.serverLevel().getEntity(targetId);
         LivingEntity at = aimed instanceof LivingEntity living && !this.holds(living)
@@ -244,10 +254,11 @@ final class OctoRig implements Effect {
                 continue;
             }
             this.drop(i);
-            Vec3 way = at == null ? this.player.getLookAngle().add(0.0, 0.15, 0.0).normalize()
+            Vec3 way = at == null ? this.player.getLookAngle().add(0.0, LOB, 0.0).normalize()
                     : at.position().add(0.0, at.getBbHeight() * 0.5, 0.0).subtract(mob.position()).normalize();
             mob.setDeltaMovement(way.scale(hurl.value("speed") / 20.0));
             mob.hurtMarked = true;
+            this.start(i, TentacleReach.THROW, way, -1);
             Effects.start(this.player.serverLevel(), new Flung(this.player, mob, at, hurl.getDamage()));
             any = true;
         }
@@ -304,7 +315,7 @@ final class OctoRig implements Effect {
         }
         Entity entity = this.player.serverLevel().getEntity(targetId);
         if (!(entity instanceof LivingEntity living) || this.holds(living) || !Factions.mayHit(this.player, living)
-                || living.distanceTo(this.player) > TentacleReach.LENGTH + living.getBbWidth() * 0.5) {
+                || !this.reaches(living)) {
             return;
         }
         Vec3 middle = living.position().add(0.0, living.getBbHeight() * 0.5, 0.0);

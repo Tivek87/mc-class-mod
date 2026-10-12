@@ -34,6 +34,8 @@ import nl.tivek.multiversepowers.engine.entity.PlayerKnockdowns;
 public final class DocOckPowers implements CharacterPowers {
     private static final ResourceLocation STEP_ID = ResourceLocation.fromNamespaceAndPath(MultiversePowers.MODID,
             "tentacle_step");
+    private static final ResourceLocation REACH_ID = ResourceLocation.fromNamespaceAndPath(MultiversePowers.MODID,
+            "tentacle_reach");
     private static final Map<UUID, OctoRig> RIGS = new HashMap<>();
 
     static {
@@ -57,6 +59,7 @@ public final class DocOckPowers implements CharacterPowers {
         OctoRig rig = new OctoRig(player);
         RIGS.put(player.getUUID(), rig);
         Effects.start(player.serverLevel(), rig);
+        reach(player, true);
         player.serverLevel().playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.PISTON_EXTEND,
                 SoundSource.PLAYERS, 1.0F, 0.6F);
         player.serverLevel().playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.CHAIN_PLACE,
@@ -71,6 +74,25 @@ public final class DocOckPowers implements CharacterPowers {
             rig.stop();
         }
         step(player, 0);
+        reach(player, false);
+    }
+
+    // His tentacles are his hands: blocks and creatures are in reach as far as they are long. Asked again now and then
+    // (OctoRig): the game's own reach changes with the game mode.
+    static void reach(ServerPlayer player, boolean on) {
+        reach(player.getAttribute(Attributes.BLOCK_INTERACTION_RANGE), on);
+        reach(player.getAttribute(Attributes.ENTITY_INTERACTION_RANGE), on);
+    }
+
+    private static void reach(AttributeInstance range, boolean on) {
+        if (range == null || on && Math.abs(range.getValue() - TentacleReach.LENGTH) < 1.0E-6) {
+            return;
+        }
+        range.removeModifier(REACH_ID);
+        if (on) {
+            range.addTransientModifier(new AttributeModifier(REACH_ID, TentacleReach.LENGTH - range.getValue(),
+                    AttributeModifier.Operation.ADD_VALUE));
+        }
     }
 
     @Override

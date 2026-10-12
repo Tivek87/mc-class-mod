@@ -14,11 +14,12 @@ import nl.tivek.multiversepowers.character.docock.TentacleReach;
 import nl.tivek.multiversepowers.engine.client.gui.GuiShapes;
 import nl.tivek.multiversepowers.engine.client.gui.ScreenAnchors;
 
-// Doctor Octopus's crosshair: a steel ring round a point, like the lens of his goggles, and his four tentacles close
-// round it, each a bracket at the corner of a square where it sits on his back (1 top left, 2 top right, 3 bottom
-// left, 4 bottom right) in the colour of what it does, never a word: free pale steel, on the ground pushed outward
-// with a foot, holding amber and drawn in with a claw, squeezing red and throbbing. A bracket kicks as its tentacle
-// changes, eases where it goes, and in Selection Mode the picked ones light up blue with their numbers. It widens as
+// Doctor Octopus's crosshair: a steel ring round a point, like the lens of his goggles, and his four tentacles well
+// clear of it, each a bracket at the corner of a square where it sits on his back (1 top left, 2 top right, 3 bottom
+// left, 4 bottom right) with a thin line running out to it from the lens, in the colour of what it does, never a
+// word: free pale steel, on the ground pushed outward with a foot, holding amber and drawn in round a point,
+// squeezing red and throbbing. A bracket kicks as its tentacle changes, eases where it goes, and in Selection Mode
+// the picked ones light up blue with their numbers. It widens as
 // he strikes or runs; on a creature four lens arcs turn in and lock round it, the point in its colour, a thin arc of
 // its health round them. A short message shows under it for a moment when a pick or a key cannot be done. It reacts
 // as every crosshair does (Crosshairs.Feel).
@@ -33,6 +34,8 @@ public final class OctoCrosshair {
     private static final int PICKED = 0x59E1FF;
     private static final int MESSAGE_TICKS = 40;
     private static final float KICK_TICKS = 7.0F;
+    // How far outside the lens the tentacles' brackets stand.
+    private static final float GAP = 5.0F;
 
     // Per tentacle: its state last frame, when it last changed (ticks), and how far out (`reach`), how thick and how
     // picked its arc is drawn now, each eased towards where its state puts it.
@@ -99,10 +102,10 @@ public final class OctoCrosshair {
     private static float tentacles(GuiGraphics graphics, ClientOcto.View view, float cx, float cy, float inner,
             Crosshairs.Feel feel, float time, float step, boolean choosing) {
         int picked = OctoControls.picked();
-        float base = inner + 1.6F;
+        float base = inner + GAP;
         float far = base;
-        ScreenAnchors.report("game.tentacles", (int) (cx - base - 8), (int) (cy - base - 8), (int) (2 * base + 16),
-                (int) (2 * base + 16));
+        ScreenAnchors.report("game.tentacles", (int) (cx - base - 12), (int) (cy - base - 12), (int) (2 * base + 24),
+                (int) (2 * base + 24));
         float turn = feel.turn();
         for (int i = 0; i < COUNT; i++) {
             int now = view.ground(i) ? 1 : view.squeezing(i) ? 3 : view.holding(i) ? 2 : 0;
@@ -111,8 +114,8 @@ public final class OctoCrosshair {
                 changed[i] = time;
             }
             float throb = now == 3 ? 0.5F + 0.5F * Mth.sin(time * 0.9F + i) : 0.0F;
-            reach[i] = ease(reach[i], now == 1 ? 1.4F : now >= 2 ? -0.8F : 0.0F, step, 0.4F);
-            thick[i] = ease(thick[i], now == 1 ? 1.0F : now == 2 ? 1.3F : now == 3 ? 1.5F : 1.0F, step, 0.4F);
+            reach[i] = ease(reach[i], now == 1 ? 1.6F : now >= 2 ? -0.6F : 0.0F, step, 0.4F);
+            thick[i] = ease(thick[i], now == 1 ? 1.1F : now == 2 ? 1.4F : now == 3 ? 1.6F : 1.1F, step, 0.4F);
             boolean on = choosing && (picked & 1 << i) != 0;
             lit[i] = ease(lit[i], on ? 1.0F : 0.0F, step, 0.5F);
             float kick = 1.0F - Mth.clamp((time - changed[i]) / KICK_TICKS, 0.0F, 1.0F);
@@ -122,35 +125,45 @@ public final class OctoCrosshair {
             // The corner this tentacle sits at on his back: x -1 on the left, y -1 at the top.
             float sx = TentacleReach.side(i) > 0 ? -1.0F : 1.0F;
             float sy = TentacleReach.upper(i) ? -1.0F : 1.0F;
-            float s = base + reach[i] + 1.2F * kick + 0.4F * throb + feel.radius(0.0F);
-            float arm = 2.6F + 1.6F * kick + 0.8F * lit[i] - (now >= 2 ? 0.5F : 0.0F);
-            float w = thick[i] + 0.6F * lit[i] + 0.4F * throb + 0.5F * kick;
+            float s = base + reach[i] + 1.4F * kick + 0.5F * throb + feel.radius(0.0F);
+            float arm = 3.6F + 1.8F * kick + 1.0F * lit[i] - (now >= 2 ? 0.6F : 0.0F);
+            float w = thick[i] + 0.7F * lit[i] + 0.5F * throb + 0.6F * kick;
             float[] corner = turned(sx * s, sy * s, turn);
             float[] alongX = turned(sx * (s - arm), sy * s, turn);
             float[] alongY = turned(sx * s, sy * (s - arm), turn);
+            // The tentacle itself: a thin line from the lens out to its bracket, bright while it works.
+            float from = (inner + 1.6F) / Mth.SQRT_OF_TWO;
+            float to = s - 1.8F;
+            if (to > from + 0.5F) {
+                float[] root = turned(sx * from, sy * from, turn);
+                float[] end = turned(sx * to, sy * to, turn);
+                float glow = now == 0 ? 0.32F : now == 1 ? 0.5F : 0.8F;
+                Crosshairs.stroke(graphics, cx + root[0], cy + root[1], cx + end[0], cy + end[1],
+                        0.6F + 0.3F * throb + 0.3F * lit[i], color, glow + 0.2F * kick);
+            }
             for (boolean shadow : new boolean[] { true, false }) {
-                float width = shadow ? w + 1.0F : w;
-                int fill = shadow ? GuiShapes.fade(0x000000, 0.4F) : GuiShapes.fade(color, 0.95F);
+                float width = shadow ? w + 1.2F : w;
+                int fill = shadow ? GuiShapes.fade(0x000000, 0.45F) : GuiShapes.fade(color, 0.96F);
                 GuiShapes.stroke(graphics, cx + alongX[0], cy + alongX[1], cx + corner[0], cy + corner[1], width, fill);
                 GuiShapes.stroke(graphics, cx + corner[0], cy + corner[1], cx + alongY[0], cy + alongY[1], width, fill);
             }
             if (now == 1) {
                 // A foot planted outward: a short tick out of the corner.
-                float[] foot = turned(sx * (s + 2.0F), sy * (s + 2.0F), turn);
-                Crosshairs.stroke(graphics, cx + corner[0], cy + corner[1], cx + foot[0], cy + foot[1], 0.9F, color,
-                        0.95F);
+                float[] foot = turned(sx * (s + 2.4F), sy * (s + 2.4F), turn);
+                Crosshairs.stroke(graphics, cx + corner[0], cy + corner[1], cx + foot[0], cy + foot[1], 1.0F, color,
+                        0.96F);
             }
             if (now >= 2) {
-                // Holding: a claw shut in the corner, pointing in at the ring.
-                float[] claw = turned(sx * (s - 1.6F), sy * (s - 1.6F), turn);
-                Crosshairs.stroke(graphics, cx + corner[0], cy + corner[1], cx + claw[0], cy + claw[1],
-                        1.0F + 0.5F * throb, color, 0.95F);
+                // Holding: what it holds, a point shut in the corner.
+                float[] claw = turned(sx * (s - 1.9F), sy * (s - 1.9F), turn);
+                Crosshairs.dot(graphics, cx + claw[0], cy + claw[1], 1.0F + 0.5F * throb, 0x000000, 0.45F);
+                Crosshairs.dot(graphics, cx + claw[0], cy + claw[1], 0.7F + 0.4F * throb, color, 0.96F);
             }
-            float out = (s + w * 0.5F + (now == 1 ? 2.0F : 0.0F)) * Mth.SQRT_OF_TWO;
+            float out = (s + w * 0.5F + (now == 1 ? 2.4F : 0.0F)) * Mth.SQRT_OF_TWO;
             far = Math.max(far, out);
             if (lit[i] > 0.05F || selecting > 0.05F) {
-                float alpha = Math.max(lit[i], 0.55F * selecting);
-                float[] label = turned(sx * (s + 3.2F), sy * (s + 3.2F), turn);
+                float alpha = Math.max(lit[i], 0.6F * selecting);
+                float[] label = turned(sx * (s + 4.8F), sy * (s + 4.8F), turn);
                 number(graphics, i + 1, cx + label[0], cy + label[1], GuiShapes.mix(FREE, PICKED, lit[i]), alpha);
             }
         }

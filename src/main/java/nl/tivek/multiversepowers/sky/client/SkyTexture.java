@@ -11,10 +11,15 @@ final class SkyTexture extends AbstractTexture {
     static final double TEXEL = Math.toDegrees(2.0 * Math.atan(0.2)) / 32.0;
 
     SkyTexture(NativeImage image) {
+        this(image, false);
+    }
+
+    // `soft`: blended from pixel to pixel, for a glow.
+    SkyTexture(NativeImage image, boolean soft) {
         int width = image.getWidth();
         int height = image.getHeight();
         TextureUtil.prepareImage(this.getId(), 0, width, height);
-        image.upload(0, 0, 0, 0, 0, width, height, false, true, false, true);
+        image.upload(0, 0, 0, 0, 0, width, height, soft, true, false, true);
     }
 
     static int pixels(double degrees) {

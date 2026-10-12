@@ -20,6 +20,7 @@ import org.joml.Matrix4f;
 // crackling lightning, jagged bolts that branch and flicker.
 final class GalactusFx {
     static final int VIOLET = 0x8A3CFF;
+    static final int EYES = 0x7684FF;
     static final int TEAL = 0x3FD8E8;
     static final int SPARK = 0xE4F4FF;
     static final int BOLT = 0xB78CFF;

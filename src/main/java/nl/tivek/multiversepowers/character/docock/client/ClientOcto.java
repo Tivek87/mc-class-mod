@@ -267,6 +267,14 @@ public final class ClientOcto {
                 in = at.distanceToSqr(rest) < 1.0E-4 ? in : at.subtract(rest).normalize();
                 bow = bow.lerp(body.reachBow(i), t);
                 open = 0.35;
+            } else if (view.move(i) == TentacleReach.THROW && view.way(i).lengthSqr() > 1.0E-6) {
+                // Lashing out after what it hurled, claw wide open.
+                float t = Mth.sin(Mth.PI * Mth.clamp(view.age(i, partialTick) / TentacleReach.MOVE_TICKS, 0.0F,
+                        1.0F));
+                in = view.way(i).normalize();
+                tip = tip.lerp(socket.add(in.scale(TentacleReach.LENGTH * 0.92)), t);
+                bow = bow.lerp(body.reachBow(i), t);
+                open = 1.0;
             }
         }
         painter.tentacle(TentacleShapes.curve(socket, out, tip, in, bow), open, view.squeezing(i));

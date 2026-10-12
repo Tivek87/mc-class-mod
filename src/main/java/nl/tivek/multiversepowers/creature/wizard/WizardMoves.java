@@ -27,7 +27,7 @@ import nl.tivek.multiversepowers.creature.wizard.staff.WizardStaff;
 // (ARRIVE). Among several players he turns on another now and then.
 final class WizardMoves extends WizardPicks {
     // The breath after a big spell, in each phase.
-    private static final int[] BREATH = { 0, 44, 37, 31, 26, 21 };
+    private static final int[] BREATH = { 0, 36, 31, 27, 23, 20 };
     private static final int ULTIMATE_GAP = 180;
     // How fast a skip glides (blocks a tick at its start).
     private static final double SKIP_SPEED = 0.95;

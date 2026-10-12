@@ -3,6 +3,7 @@ package nl.tivek.multiversepowers.character.greenlantern.client.render.hand.ligh
 import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.character.greenlantern.client.render.LanternPainter;
@@ -19,6 +20,8 @@ import nl.tivek.multiversepowers.engine.math.Colors;
 import nl.tivek.multiversepowers.engine.math.Ease;
 import nl.tivek.multiversepowers.engine.math.Noise;
 import nl.tivek.multiversepowers.engine.math.Vectors;
+import nl.tivek.multiversepowers.sky.SkyMoon;
+import nl.tivek.multiversepowers.sky.client.CosmicSky;
 
 // The Cosmos Test's light, in the ring's green: the circle drawn on the ground and the hole of stars it opens, the
 // flash as the hand dives in; then in the sky the rift cut beside the moon, the sky's own moon made a cube in the hand's
@@ -125,6 +128,8 @@ public final class HandCosmosLight {
         }
         float partialTick = minecraft.getTimer().getGameTimeDeltaPartialTick(false);
         Vec3 eye = minecraft.gameRenderer.getMainCamera().getPosition();
+        // Where no sky is drawn (the Nether, a tiny view distance) nothing else says how the moon stands.
+        SkyMoon.cube(CosmicSky.bodies());
         double away = Math.max(60.0, Math.min(160.0, minecraft.options.getEffectiveRenderDistance() * 64.0 * 0.45));
         double radius = away * 0.1;
         Vec3 skyMoon = eye.add(LocalSky.moon(minecraft.level, partialTick).scale(away));
@@ -185,9 +190,9 @@ public final class HandCosmosLight {
         painter.flare(center, radius * 0.6 * open, 0.4 * open * strength);
     }
 
-    // The moon as the sky draws it, laid on the sky's own axes so its face stands just as it did there: its texture's
-    // u running north, v along the moon's path. Then turned slowly out of that face, so it shows it is a cube, drawn
-    // nearer, and pressed flat by the fingers as they crush it.
+    // The moon as the sky draws it, laid on the sky's own axes so it stands just as it did there (the cosmic sky's
+    // cube, or the game's flat face: its texture's u running north, v along the moon's path). Then turned slowly
+    // further, drawn nearer, and pressed flat by the fingers as they crush it.
     private static ConstructPainter.Frame moonFrame(Vec3 moon, double radius, Vec3 eye, double clock) {
         Vec3[] axes = HandCosmos.moonAxes(moon, eye, clock);
         double[] half = HandCosmos.moonHalves(clock);
@@ -206,9 +211,15 @@ public final class HandCosmosLight {
         for (int i = 0; i < 8; i++) {
             corners[i] = frame.at((i & 1) * 2.0 - 1.0, ((i >> 1) & 1) * 2.0 - 1.0, ((i >> 2) & 1) * 2.0 - 1.0);
         }
-        float u = (Math.floorMod(phase, 4) * 32 + 12) / 128.0F;
-        float v = (Math.floorMod(phase, 8) / 4 * 32 + 12) / 64.0F;
-        TexturedBox.draw(MOON_PHASES, u, v, u + 8.0F / 128.0F, v + 8.0F / 64.0F, corners);
+        ResourceLocation cube = CosmicSky.moonTexture();
+        ClientLevel level = Minecraft.getInstance().level;
+        if (cube != null && level != null) {
+            TexturedBox.draw(cube, CosmicSky.moonSquares(), CosmicSky.moonShades(level), corners);
+        } else {
+            float u = (Math.floorMod(phase, 4) * 32 + 12) / 128.0F;
+            float v = (Math.floorMod(phase, 8) / 4 * 32 + 12) / 64.0F;
+            TexturedBox.draw(MOON_PHASES, u, v, u + 8.0F / 128.0F, v + 8.0F / 64.0F, corners);
+        }
         if (crush <= 0.0) {
             return;
         }
