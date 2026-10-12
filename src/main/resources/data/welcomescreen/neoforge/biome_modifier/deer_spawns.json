@@ -1,0 +1,10 @@
+{
+  "type": "neoforge:add_spawns",
+  "biomes": "#welcomescreen:spawns_deer",
+  "spawners": {
+    "type": "welcomescreen:deer",
+    "weight": 6,
+    "minCount": 2,
+    "maxCount": 4
+  }
+}

@@ -3,8 +3,11 @@ package nl.tivek.multiversepowers.content;
 import java.util.List;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.food.FoodProperties;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.CreativeModeTabs;
@@ -20,9 +23,12 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.character.greenlantern.minion.MechMinion;
 import nl.tivek.multiversepowers.character.greenlantern.summon.HardLight;
+import nl.tivek.multiversepowers.creature.bear.BrownBear;
 import nl.tivek.multiversepowers.creature.bloater.Bloater;
 import nl.tivek.multiversepowers.creature.brute.ZombieBrute;
+import nl.tivek.multiversepowers.creature.deer.Deer;
 import nl.tivek.multiversepowers.creature.lurker.Lurker;
+import nl.tivek.multiversepowers.creature.raccoon.Raccoon;
 import nl.tivek.multiversepowers.creature.rustbound.Rustbound;
 import nl.tivek.multiversepowers.creature.screamer.Feral;
 import nl.tivek.multiversepowers.creature.screamer.Screamer;
@@ -60,6 +66,28 @@ public final class ModItems {
             ITEMS.register("arcane_familiar_spawn_egg",
                     () -> new DeferredSpawnEggItem(WizardEntities.FAMILIAR, 0x3A1E66, 0xC9A2FF, new Item.Properties())));
 
+    public static final List<DeferredItem<DeferredSpawnEggItem>> ANIMAL_EGGS = List.of(
+            ITEMS.register("brown_bear_spawn_egg",
+                    () -> new DeferredSpawnEggItem(BrownBear.TYPE, 0x5C3D24, 0x2A1A10, new Item.Properties())),
+            ITEMS.register("deer_spawn_egg",
+                    () -> new DeferredSpawnEggItem(Deer.TYPE, 0x9A6436, 0xF1E9DA, new Item.Properties())),
+            ITEMS.register("raccoon_spawn_egg",
+                    () -> new DeferredSpawnEggItem(Raccoon.TYPE, 0x86807A, 0x1C1A19, new Item.Properties())));
+
+    // The wild animals' meat: venison from deer, bear meat from bears, which raw may make you hungry as raw chicken
+    // does.
+    public static final DeferredItem<Item> RAW_VENISON = ITEMS.registerSimpleItem("raw_venison",
+            new Item.Properties().food(new FoodProperties.Builder().nutrition(3).saturationModifier(0.3F).build()));
+    public static final DeferredItem<Item> COOKED_VENISON = ITEMS.registerSimpleItem("cooked_venison",
+            new Item.Properties().food(new FoodProperties.Builder().nutrition(7).saturationModifier(0.8F).build()));
+    public static final DeferredItem<Item> RAW_BEAR_MEAT = ITEMS.registerSimpleItem("raw_bear_meat",
+            new Item.Properties().food(new FoodProperties.Builder().nutrition(3).saturationModifier(0.3F)
+                    .effect(() -> new MobEffectInstance(MobEffects.HUNGER, 600, 0), 0.3F).build()));
+    public static final DeferredItem<Item> COOKED_BEAR_MEAT = ITEMS.registerSimpleItem("cooked_bear_meat",
+            new Item.Properties().food(new FoodProperties.Builder().nutrition(8).saturationModifier(0.8F).build()));
+    public static final List<DeferredItem<Item>> MEATS = List.of(RAW_VENISON, COOKED_VENISON, RAW_BEAR_MEAT,
+            COOKED_BEAR_MEAT);
+
     // The hard-light creatures' eggs, a dark green shell spotted in each creature's own colour.
     private static final int HARD_LIGHT = 0x0E5A2A;
     public static final List<DeferredItem<DeferredSpawnEggItem>> HARD_LIGHT_EGGS = List.of(
@@ -87,6 +115,8 @@ public final class ModItems {
                         output.accept(HELPER_EGG.get());
                         output.accept(BRUTE_EGG.get());
                         MONSTER_EGGS.forEach(egg -> output.accept(egg.get()));
+                        ANIMAL_EGGS.forEach(egg -> output.accept(egg.get()));
+                        MEATS.forEach(meat -> output.accept(meat.get()));
                         HARD_LIGHT_EGGS.forEach(egg -> output.accept(egg.get()));
                         LAMPS.forEach(lamp -> output.accept(lamp.get()));
                         output.accept(ARCANE_TOME.get());
@@ -114,7 +144,11 @@ public final class ModItems {
             event.accept(HELPER_EGG.get());
             event.accept(BRUTE_EGG.get());
             MONSTER_EGGS.forEach(egg -> event.accept(egg.get()));
+            ANIMAL_EGGS.forEach(egg -> event.accept(egg.get()));
             HARD_LIGHT_EGGS.forEach(egg -> event.accept(egg.get()));
+        }
+        if (event.getTabKey() == CreativeModeTabs.FOOD_AND_DRINKS) {
+            MEATS.forEach(meat -> event.accept(meat.get()));
         }
         if (event.getTabKey() == CreativeModeTabs.TOOLS_AND_UTILITIES) {
             event.accept(ARCANE_TOME.get());

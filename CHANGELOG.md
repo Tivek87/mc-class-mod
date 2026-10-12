@@ -3,6 +3,20 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.9.7-alpha] - 2026-10-12
+
+### Added
+- **Brown Bear:** a heavy, humped bear of the taiga and forests, alone or a sow with her cub. It leaves you be until
+  you hit it or come near its cub, then stands up, roars, charges and mauls. It sits, rears up to sniff the wind, lies
+  down and shakes itself dry after a swim. Sweet berries, honeycomb and fish tempt and breed it.
+- **Deer:** small herds of stags with antlers, does and spotted fawns in forests, taiga and meadows. Shy, they bound
+  away with their white tails raised unless you creep up or hold out wheat, an apple or a carrot. They graze, stand
+  alert and stamp, groom and lie down.
+- **Raccoon:** a masked, ring-tailed raccoon of woods and swamps that keeps its distance. It sits up to look round,
+  rubs its paws as if washing them, noses through the ground and scratches. Berries and eggs tempt and breed it.
+- **Venison and bear meat:** deer drop venison and bears bear meat, to eat raw or cooked; raw bear meat may make you
+  hungry.
+
 ## [0.9.6-alpha] - 2026-10-12
 
 ### Added

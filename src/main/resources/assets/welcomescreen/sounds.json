@@ -429,5 +429,147 @@
         "attenuation_distance": 28
       }
     ]
+  },
+  "brown_bear.ambient": {
+    "subtitle": "subtitles.welcomescreen.brown_bear.ambient",
+    "sounds": [
+      {
+        "name": "minecraft:entity.polar_bear.ambient",
+        "type": "event"
+      }
+    ]
+  },
+  "brown_bear.ambient_baby": {
+    "subtitle": "subtitles.welcomescreen.brown_bear.ambient_baby",
+    "sounds": [
+      {
+        "name": "minecraft:entity.polar_bear.ambient_baby",
+        "type": "event"
+      }
+    ]
+  },
+  "brown_bear.hurt": {
+    "subtitle": "subtitles.welcomescreen.brown_bear.hurt",
+    "sounds": [
+      {
+        "name": "minecraft:entity.polar_bear.hurt",
+        "type": "event"
+      }
+    ]
+  },
+  "brown_bear.death": {
+    "subtitle": "subtitles.welcomescreen.brown_bear.death",
+    "sounds": [
+      {
+        "name": "minecraft:entity.polar_bear.death",
+        "type": "event"
+      }
+    ]
+  },
+  "brown_bear.warning": {
+    "subtitle": "subtitles.welcomescreen.brown_bear.warning",
+    "sounds": [
+      {
+        "name": "minecraft:entity.polar_bear.warning",
+        "type": "event"
+      }
+    ]
+  },
+  "brown_bear.step": {
+    "sounds": [
+      {
+        "name": "minecraft:entity.polar_bear.step",
+        "type": "event"
+      }
+    ]
+  },
+  "deer.ambient": {
+    "subtitle": "subtitles.welcomescreen.deer.ambient",
+    "sounds": [
+      {
+        "name": "minecraft:entity.goat.ambient",
+        "type": "event"
+      }
+    ]
+  },
+  "deer.hurt": {
+    "subtitle": "subtitles.welcomescreen.deer.hurt",
+    "sounds": [
+      {
+        "name": "minecraft:entity.goat.hurt",
+        "type": "event"
+      }
+    ]
+  },
+  "deer.death": {
+    "subtitle": "subtitles.welcomescreen.deer.death",
+    "sounds": [
+      {
+        "name": "minecraft:entity.goat.death",
+        "type": "event"
+      }
+    ]
+  },
+  "deer.snort": {
+    "subtitle": "subtitles.welcomescreen.deer.snort",
+    "sounds": [
+      {
+        "name": "minecraft:entity.horse.breathe",
+        "type": "event"
+      }
+    ]
+  },
+  "deer.step": {
+    "sounds": [
+      {
+        "name": "minecraft:entity.goat.step",
+        "type": "event"
+      }
+    ]
+  },
+  "raccoon.ambient": {
+    "subtitle": "subtitles.welcomescreen.raccoon.ambient",
+    "sounds": [
+      {
+        "name": "minecraft:entity.fox.ambient",
+        "type": "event"
+      }
+    ]
+  },
+  "raccoon.hurt": {
+    "subtitle": "subtitles.welcomescreen.raccoon.hurt",
+    "sounds": [
+      {
+        "name": "minecraft:entity.fox.hurt",
+        "type": "event"
+      }
+    ]
+  },
+  "raccoon.death": {
+    "subtitle": "subtitles.welcomescreen.raccoon.death",
+    "sounds": [
+      {
+        "name": "minecraft:entity.fox.death",
+        "type": "event"
+      }
+    ]
+  },
+  "raccoon.eat": {
+    "subtitle": "subtitles.welcomescreen.raccoon.eat",
+    "sounds": [
+      {
+        "name": "minecraft:entity.fox.eat",
+        "type": "event"
+      }
+    ]
+  },
+  "raccoon.sniff": {
+    "subtitle": "subtitles.welcomescreen.raccoon.sniff",
+    "sounds": [
+      {
+        "name": "minecraft:entity.fox.sniff",
+        "type": "event"
+      }
+    ]
   }
 }

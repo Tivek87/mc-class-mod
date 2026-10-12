@@ -1,0 +1,10 @@
+{
+  "type": "neoforge:add_spawns",
+  "biomes": "#welcomescreen:spawns_brown_bears",
+  "spawners": {
+    "type": "welcomescreen:brown_bear",
+    "weight": 3,
+    "minCount": 1,
+    "maxCount": 2
+  }
+}

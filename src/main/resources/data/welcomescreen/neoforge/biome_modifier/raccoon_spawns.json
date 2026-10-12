@@ -1,0 +1,10 @@
+{
+  "type": "neoforge:add_spawns",
+  "biomes": "#welcomescreen:spawns_raccoons",
+  "spawners": {
+    "type": "welcomescreen:raccoon",
+    "weight": 5,
+    "minCount": 1,
+    "maxCount": 3
+  }
+}

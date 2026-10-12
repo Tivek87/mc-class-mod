@@ -1,0 +1,9 @@
+{
+  "replace": false,
+  "values": [
+    "welcomescreen:raw_venison",
+    "welcomescreen:raw_bear_meat",
+    "welcomescreen:cooked_venison",
+    "welcomescreen:cooked_bear_meat"
+  ]
+}
