@@ -74,6 +74,7 @@ import nl.tivek.multiversepowers.engine.entity.DeathStylePayload;
 import nl.tivek.multiversepowers.engine.entity.FatiguePayload;
 import nl.tivek.multiversepowers.engine.entity.HeldPayload;
 import nl.tivek.multiversepowers.engine.entity.KnockdownPayload;
+import nl.tivek.multiversepowers.engine.entity.TumblePayload;
 import nl.tivek.multiversepowers.engine.fx.ParticlesPayload;
 import nl.tivek.multiversepowers.engine.fx.VoicePayload;
 import nl.tivek.multiversepowers.faction.StandingsPayload;
@@ -147,6 +148,7 @@ public final class ModNetwork {
         registrar.playToClient(FlattenPayload.TYPE, FlattenPayload.STREAM_CODEC, ModNetwork::onFlatten);
         registrar.playToClient(HeldPayload.TYPE, HeldPayload.STREAM_CODEC, ModNetwork::onHeld);
         registrar.playToClient(KnockdownPayload.TYPE, KnockdownPayload.STREAM_CODEC, ModNetwork::onKnockdown);
+        registrar.playToClient(TumblePayload.TYPE, TumblePayload.STREAM_CODEC, ModNetwork::onTumble);
         registrar.playToClient(FatiguePayload.TYPE, FatiguePayload.STREAM_CODEC, ModNetwork::onFatigue);
         registrar.playToClient(DeathStylePayload.TYPE, DeathStylePayload.STREAM_CODEC, ModNetwork::onDeathStyle);
         registrar.playToClient(DeathBlowPayload.TYPE, DeathBlowPayload.STREAM_CODEC, ModNetwork::onDeathBlow);
@@ -480,6 +482,10 @@ public final class ModNetwork {
 
     private static void onHeld(HeldPayload payload, IPayloadContext context) {
         ClientPayloadHandler.handleHeld(payload, context);
+    }
+
+    private static void onTumble(TumblePayload payload, IPayloadContext context) {
+        ClientPayloadHandler.handleTumble(payload, context);
     }
 
     private static void onKnockdown(KnockdownPayload payload, IPayloadContext context) {

@@ -32,12 +32,16 @@ import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 // An image of the Wizard. Left behind as he blinks away (BLINK): himself to the life but ghostly, a shimmer of violet
 // glass you can see through, turning to watch whoever is nearest and now and then flicking a spark it never lets go;
 // from his second phase it bursts when struck. One of his sixteen in the circle of mirrors (IMAGE): solid as he is,
-// moved by him (WizardMirrors), only its pale crystal and the shadow it does not cast telling it from him. It harms no
-// one by itself; the first blow shatters it into shards of violet glass with a push.
+// moved by him (WizardMirrors), only its pale crystal and the shadow it does not cast telling it from him. Left as he
+// slips behind his foe unseen (VEIL): solid too, standing on where he stood, watching and flicking sparks as the ghost
+// does. It harms no one by itself; the first blow shatters it into shards of violet glass with a push.
 public final class WizardDecoy extends MovingMonster {
     public static final int BLINK = 0;
     public static final int IMAGE = 1;
+    // Left as he slips behind his foe (WizardMove.VEIL): solid as he is, standing on as if it were him a moment.
+    public static final int VEIL = 2;
     private static final int BLINK_LIFE = 200;
+    private static final int VEIL_LIFE = 90;
     private static final int IMAGE_LIFE = 320;
     private static final double PUSH = 4.0;
     private static final double BURST = 2.6;
@@ -45,6 +49,9 @@ public final class WizardDecoy extends MovingMonster {
             EntityDataSerializers.INT);
     private static final EntityDataAccessor<Integer> LOOK = SynchedEntityData.defineId(WizardDecoy.class,
             EntityDataSerializers.INT);
+    // Whether it hangs in the air as he did when it was left (on his feet from his second phase too, at times).
+    private static final EntityDataAccessor<Boolean> AIR = SynchedEntityData.defineId(WizardDecoy.class,
+            EntityDataSerializers.BOOLEAN);
     private static final EntityDimensions FLOATING = EntityDimensions.scalable(0.6F, 1.95F + (float) Wizard.HOVER)
             .withEyeHeight(1.62F + (float) Wizard.HOVER);
     @Nullable
@@ -70,11 +77,20 @@ public final class WizardDecoy extends MovingMonster {
         super.defineSynchedData(builder);
         builder.define(MODE, BLINK);
         builder.define(LOOK, 1);
+        builder.define(AIR, true);
     }
 
     // A ghostly image of him left at `at`.
     static void leave(ServerLevel level, Wizard wizard, Vec3 at) {
         make(level, wizard, at, BLINK);
+    }
+
+    // A solid image of him left where he stands as he slips away unseen.
+    static void veil(ServerLevel level, Wizard wizard) {
+        WizardDecoy decoy = make(level, wizard, wizard.position(), VEIL);
+        if (decoy != null && wizard.flies()) {
+            decoy.setNoGravity(true);
+        }
     }
 
     // One of his images in the circle of mirrors.
@@ -95,6 +111,7 @@ public final class WizardDecoy extends MovingMonster {
         }
         decoy.entityData.set(MODE, mode);
         decoy.entityData.set(LOOK, wizard.phase());
+        decoy.entityData.set(AIR, mode == IMAGE || wizard.aloft());
         decoy.owner = wizard.getUUID();
         decoy.moveTo(at.x, at.y, at.z, wizard.getYRot(), wizard.getXRot());
         decoy.yBodyRot = wizard.yBodyRot;
@@ -123,17 +140,26 @@ public final class WizardDecoy extends MovingMonster {
         return this.entityData.get(LOOK);
     }
 
+    // Drawn floating over the ground, as he was.
+    public boolean floats() {
+        return this.look() > 1 && this.entityData.get(AIR);
+    }
+
+    public double hover() {
+        return this.floats() ? Wizard.HOVER : 0.0;
+    }
+
     @Override
     public void onSyncedDataUpdated(EntityDataAccessor<?> key) {
         super.onSyncedDataUpdated(key);
-        if (LOOK.equals(key)) {
+        if (LOOK.equals(key) || AIR.equals(key)) {
             this.refreshDimensions();
         }
     }
 
     @Override
     protected EntityDimensions getDefaultDimensions(Pose pose) {
-        return this.look() > 1 ? FLOATING : super.getDefaultDimensions(pose);
+        return this.floats() ? FLOATING : super.getDefaultDimensions(pose);
     }
 
     @Override
@@ -151,7 +177,7 @@ public final class WizardDecoy extends MovingMonster {
         super.tick();
         if (this.level().isClientSide) {
             if (this.mode() == IMAGE) {
-                double hover = this.look() > 1 ? Wizard.HOVER : 0.0;
+                double hover = this.hover();
                 WizardSparks.of(this, this.look(), tip(this, hover), this.position().add(0.0, 1.35 + hover, 0.0));
             }
             return;
@@ -177,7 +203,7 @@ public final class WizardDecoy extends MovingMonster {
                 this.start(0);
             }
         }
-        if (this.tickCount >= (image ? IMAGE_LIFE : BLINK_LIFE)) {
+        if (this.tickCount >= (image ? IMAGE_LIFE : this.mode() == VEIL ? VEIL_LIFE : BLINK_LIFE)) {
             this.shatter(null);
         }
     }
@@ -201,14 +227,14 @@ public final class WizardDecoy extends MovingMonster {
         if (!(this.level() instanceof ServerLevel level) || this.isRemoved()) {
             return;
         }
-        Vec3 at = this.position().add(0.0, 1.0 + (this.look() > 1 ? Wizard.HOVER : 0.0), 0.0);
+        Vec3 at = this.position().add(0.0, 1.0 + this.hover(), 0.0);
         ParticleFx.send(level, new ItemParticleOption(ParticleTypes.ITEM, new ItemStack(Items.AMETHYST_SHARD)),
                 at.x, at.y, at.z, 40, 0.3, 0.7, 0.3, 0.25);
         ParticleFx.send(level, Wizard.dust(Wizard.VIOLET, 1.6F), at.x, at.y, at.z, 30, 0.3, 0.8, 0.3, 0.0);
         ParticleFx.send(level, ParticleTypes.END_ROD, at.x, at.y, at.z, 12, 0.2, 0.5, 0.2, 0.15);
         level.playSound(null, at.x, at.y, at.z, SoundEvents.AMETHYST_CLUSTER_BREAK, SoundSource.HOSTILE, 1.4F, 0.8F);
         Entity wizard = this.owner == null ? null : level.getEntity(this.owner);
-        if (by != null && this.mode() == BLINK && this.look() > 1 && wizard instanceof Wizard owner) {
+        if (by != null && this.mode() != IMAGE && this.look() > 1 && wizard instanceof Wizard owner) {
             // From his second phase a struck decoy bursts in the striker's face.
             for (LivingEntity living : MonsterBlows.foes(owner, new AABB(at, at).inflate(BURST))) {
                 Vec3 away = MonsterBlows.toward(owner, at, living.position());

@@ -91,7 +91,7 @@ public final class OctoControls {
     // In Selection Mode with nothing picked no tentacle may act: a mask of 0 would leave the pick to the rules.
     private static boolean noneTell() {
         if (selecting && picked == 0) {
-            OctoHud.tell("none_picked");
+            OctoCrosshair.tell("none_picked");
             return true;
         }
         return false;
@@ -133,7 +133,7 @@ public final class OctoControls {
             if (selecting) {
                 close();
             } else if (view.stance() == TentacleReach.STANCES - 1) {
-                OctoHud.tell("all_down");
+                OctoCrosshair.tell("all_down");
             } else {
                 selecting = true;
             }
@@ -152,7 +152,7 @@ public final class OctoControls {
                 Entity aimed = aimed(player, THROW_AIM);
                 send(OctoInputPayload.THROW, mask(), aimed == null ? -1 : aimed.getId(), Vec3.ZERO);
             } else if (inGame) {
-                OctoHud.tell("nothing_held");
+                OctoCrosshair.tell("nothing_held");
             }
         }
         squeeze(minecraft, view, inGame);
@@ -166,7 +166,7 @@ public final class OctoControls {
             while (minecraft.options.keyHotbarSlots[k].consumeClick()) {
                 if (k < COUNT) {
                     if (view.ground(k)) {
-                        OctoHud.tell("on_ground", k + 1);
+                        OctoCrosshair.tell("on_ground", k + 1);
                     } else {
                         picked ^= 1 << k;
                     }

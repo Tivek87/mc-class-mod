@@ -25,7 +25,8 @@ public record GuideMode(GuideOwner owner, String id, Predicate<LocalPlayer> acti
     }
 
     private static final String INPUT = "input." + MultiversePowers.MODID + ".";
-    public static final String[] SECTIONS = { "in", "out", "blocked", "notes" };
+    // No section lists what cannot be used: a tab shows only what works in it.
+    public static final String[] SECTIONS = { "in", "out", "notes" };
 
     // `key` is drawn on a key cap and follows the player's own key settings; a heading has none. `ability` is what
     // the control fires, for its status (`hold`: its hold version); `describes` when that ability's own explanation

@@ -163,7 +163,7 @@ public enum GameCharacter {
                     .setting("landingDamage", 8.0, 0.0, 2000.0, Unit.HALF_HEARTS,
                             "Damage where he lands at lightning speed, half as much at the edge");
             this.add(abilities, AbilitySlot.ABILITY_30, "hammer_call").input(CharacterAbility.Input.SCROLL)
-                    .when(ground).needs(ThorPowers.AWAY).cooldown(10).damage(4.0);
+                    .needs(ThorPowers.AWAY).cooldown(10).damage(4.0);
             this.add(abilities, AbilitySlot.ABILITY_31, "hammer_follow").input(CharacterAbility.Input.SCROLL)
                     .holdOnly(ThorPowers.FOLLOW_HOLD).when(ground).needs(ThorPowers.AWAY).cooldown(40)
                     .setting("reachBlocks", 128.0, 4.0, 512.0, Unit.BLOCKS,

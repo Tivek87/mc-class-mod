@@ -20,21 +20,25 @@ import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.character.thor.ThorCharge;
 import nl.tivek.multiversepowers.engine.entity.Knockdowns;
+import nl.tivek.multiversepowers.engine.entity.Tumbles;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 import nl.tivek.multiversepowers.engine.math.Vectors;
 import nl.tivek.multiversepowers.engine.target.Targeting;
 import nl.tivek.multiversepowers.engine.world.LoadedWorld;
-import nl.tivek.multiversepowers.spell.SpellTargets;
 
 // The hammer flying out: it leaves his hand as his arm comes through, from there towards what he aims at, and flies
-// until a block, a creature or the end of its reach stops it, throwing far what it hits. Thrown to come back it then
+// until a block, a creature or the end of its reach stops it, sending what it hits tumbling. Thrown to come back it then
 // flies back; to stay or to be followed it rests there; hurled down by a Storm Throw its lightning strikes first.
 abstract class MjolnirFlight extends MjolnirCore {
     static final double SPEED = 2.2;
     // It leaves his hand this many ticks after the button.
     static final int RELEASE = 3;
-    private static final double KNOCK = 3.2;
-    private static final double KNOCK_UP = 0.7;
+    // What it hits: pushed this little (blocks a tick) along and up, spun this fast head over heels and a little about
+    // the up axis (radians a second).
+    private static final double TUMBLE_PUSH = 0.28;
+    private static final double TUMBLE_LIFT = 0.5;
+    private static final double TUMBLE_SPIN = 13.0;
+    private static final double TUMBLE_YAW = 6.0;
     // A creature it is thrown at is aimed into this far, a block just past its face.
     private static final double INTO_CREATURE = 1.0;
     static final double INTO_BLOCK = 0.6;
@@ -194,20 +198,29 @@ abstract class MjolnirFlight extends MjolnirCore {
         }
     }
 
-    // What it hits is thrown far the way it flew (less so by a Storm Throw, whose lightning does the rest).
+    // What it hits is knocked a little way the way it flew, tumbling (`tumble`).
     private void strike(ServerLevel level, ServerPlayer owner, LivingEntity target) {
-        Knockdowns.brief(target);
-        target.invulnerableTime = 0;
-        target.hurt(level.damageSources().playerAttack(owner), this.damage);
-        Vec3 flat = new Vec3(this.way.x, 0.0, this.way.z);
-        Vec3 push = flat.lengthSqr() < 1.0E-6 ? new Vec3(0.0, 0.0, 1.0) : flat.normalize();
-        float more = ThorCharge.hammer(owner) * (this.kind == Throw.STORM ? 0.4F : 1.0F);
-        SpellTargets.push(target, push, KNOCK * more, KNOCK_UP * more);
+        tumble(level, owner, target, this.damage, this.way);
         Vec3 at = target.getBoundingBox().getCenter();
         ParticleFx.cloud(level, ParticleTypes.ELECTRIC_SPARK, at, 20, 0.4, 0.3);
         ParticleFx.cloud(level, ParticleTypes.CRIT, at, 12, 0.3, 0.3);
         level.playSound(null, at.x, at.y, at.z, SoundEvents.MACE_SMASH_AIR, SoundSource.PLAYERS, 1.2F, 0.8F);
         level.playSound(null, at.x, at.y, at.z, SoundEvents.LIGHTNING_BOLT_IMPACT, SoundSource.PLAYERS, 0.7F, 1.4F);
+    }
+
+    // Whatever state the hammer is in, what it hits is pushed only a little up and along `way`, knocked down and spun
+    // head over heels through the air, then drops and lies a moment.
+    static void tumble(ServerLevel level, ServerPlayer owner, LivingEntity target, float damage, Vec3 way) {
+        Knockdowns.brief(target);
+        target.invulnerableTime = 0;
+        target.hurt(level.damageSources().playerAttack(owner), damage);
+        Vec3 flat = new Vec3(way.x, 0.0, way.z);
+        Vec3 push = flat.lengthSqr() < 1.0E-6 ? new Vec3(0.0, 0.0, 1.0) : flat.normalize();
+        float more = Math.min(1.5F, ThorCharge.hammer(owner));
+        Vec3 axis = push.cross(Vectors.UP).scale(-1.0);
+        double yaw = (level.random.nextDouble() - 0.5) * TUMBLE_YAW;
+        Tumbles.tumble(target, push.scale(TUMBLE_PUSH * more).add(0.0, TUMBLE_LIFT * more, 0.0),
+                axis.scale(TUMBLE_SPIN * more).add(0.0, yaw, 0.0));
     }
 
     // A block stops it with a clang and a puff of its dust.

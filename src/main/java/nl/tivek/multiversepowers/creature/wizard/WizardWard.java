@@ -7,6 +7,7 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
 import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.projectile.AbstractArrow;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.creature.wizard.spell.WardCrystal;
@@ -19,7 +20,7 @@ import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 // brings a new one.
 public final class WizardWard {
     public static final int CRYSTALS = 3;
-    private static final float[] STRENGTH = { 0.0F, 18.9F, 23.6F, 28.4F, 33.1F, 37.8F };
+    private static final float[] STRENGTH = { 0.0F, 25.5F, 31.9F, 38.3F, 44.7F, 51.0F };
     // An arrow strikes the ward for this share of its harm, crystals or not, and breaks on it.
     static final float ARROW = 0.6F;
     // The share of a blow that reaches the ward with every crystal whole (with none it takes the whole blow).
@@ -52,8 +53,34 @@ public final class WizardWard {
         WardCrystal.ring(level, wizard, wizard.crystals());
     }
 
+    // A blow meant for him reaches his ward. An arrow breaks on it instead of glancing off (a refused blow sends it
+    // back) and counts however soon after another it comes; else, as his health does, the ward takes a blow at most
+    // twice a second, or only what a harder one adds.
+    static void struck(ServerLevel level, Wizard wizard, DamageSource source, float amount,
+            @Nullable WizardMoves moves) {
+        boolean arrow = source.getDirectEntity() instanceof AbstractArrow;
+        if (arrow) {
+            Vec3 at = source.getDirectEntity().position();
+            ParticleFx.send(level, ParticleTypes.CRIT, at.x, at.y, at.z, 8, 0.1, 0.1, 0.1, 0.2);
+            source.getDirectEntity().discard();
+        }
+        boolean fresh = arrow || wizard.tickCount - wizard.wardHitAt >= 10;
+        float taken = fresh ? amount : amount - wizard.wardHit;
+        if (taken <= 0.0F) {
+            return;
+        }
+        if (fresh) {
+            wizard.wardHitAt = wizard.tickCount;
+        }
+        wizard.wardHit = amount;
+        if (source.getEntity() instanceof LivingEntity living) {
+            wizard.setLastHurtByMob(living);
+        }
+        absorb(level, wizard, taken, source, moves);
+    }
+
     // A blow meant for him strikes his ward instead.
-    static void absorb(ServerLevel level, Wizard wizard, float amount, DamageSource source,
+    private static void absorb(ServerLevel level, Wizard wizard, float amount, DamageSource source,
             @Nullable WizardMoves moves) {
         boolean arrow = source.getDirectEntity() instanceof AbstractArrow;
         float share = arrow ? ARROW : SOFT + (1.0F - SOFT) * (CRYSTALS - wizard.crystals()) / CRYSTALS;

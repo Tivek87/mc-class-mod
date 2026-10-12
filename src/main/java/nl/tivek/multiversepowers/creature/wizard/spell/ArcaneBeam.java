@@ -92,10 +92,16 @@ public final class ArcaneBeam extends Entity {
         return Math.min(1.0F, (age - WARN) / 3.0F) * Math.min(1.0F, (this.life() - age) / 6.0F);
     }
 
-    // From his crystal along where he looks, stopped by the first block.
+    // From his crystal through what he looks at (his eyes and crystal are apart, so a line along his look from the
+    // crystal would pass by his foe, above all from the air), stopped by the first block.
     private void aim(ServerLevel level, Wizard wizard) {
         Vec3 from = wizard.staffTip();
-        Vec3 to = from.add(wizard.getViewVector(1.0F).scale(REACH));
+        Vec3 eye = wizard.getEyePosition();
+        LivingEntity target = wizard.getTarget();
+        double far = target != null ? Math.max(2.0, eye.distanceTo(target.getBoundingBox().getCenter())) : REACH;
+        Vec3 way = eye.add(wizard.getViewVector(1.0F).scale(far)).subtract(from);
+        way = way.lengthSqr() < 1.0E-6 ? wizard.getViewVector(1.0F) : way.normalize();
+        Vec3 to = from.add(way.scale(REACH));
         BlockHitResult hit = LoadedWorld.clip(level, new ClipContext(from, to, ClipContext.Block.COLLIDER,
                 ClipContext.Fluid.NONE, wizard));
         Vec3 end = hit.getType() == HitResult.Type.MISS ? to : hit.getLocation();

@@ -160,8 +160,9 @@ with F3, in third person and without a character). It keeps its shape but moves 
   (guards and charges) or arcs going round (spins and weapons).
 - Green Lantern's ring flickers as the ring's power runs low, and a gun shows its rounds under it. Thor's points the
   way to his thrown hammer with a small arrow, and crackles while lightning runs through him.
-- Doctor Octopus's is a steel ring round an amber point, like the lens of his goggles. On a creature four steel lens
-  arcs turn in and lock round it, with the thin health arc round them.
+- Doctor Octopus's is a steel ring round an amber point, like the lens of his goggles, with an arc for each tentacle
+  round it that kicks when the tentacle changes; in Selection Mode the picked ones turn blue with their numbers. On a
+  creature four steel lens arcs turn in and lock round it, with the thin health arc round them.
 
 ### Mouse, space and shift (Ability 13 to 23)
 
@@ -1358,7 +1359,9 @@ The ring's prison, straight out of the comics: a cage of hard light round your e
 
 ## Doctor Octopus
 
-An iron harness sits on your back and round your waist, and four tentacles grow out of it:
+A steel spine runs down your back into a corset of five steel bands round your belly, and four tentacles grow out
+of round mounts on the small of your back: black hoses ringed with gold, each ending in a claw of three long hooked
+talons round a red lamp:
 
 | Number | Where |
 |---|---|
@@ -1367,8 +1370,9 @@ An iron harness sits on your back and round your waist, and four tentacles grow 
 | 3 | bottom left |
 | 4 | bottom right |
 
-Four corner marks round the crosshair show each tentacle's number and what it does: **Ground**, **Free**,
-**Holding** or **Squeezing**. Your crosshair: see [Your crosshair](#your-crosshair).
+Your crosshair shows every tentacle as an arc at its corner, in the colour of what it does: pale for **Free**,
+brown and pushed out with a foot for **Ground**, amber and drawn in for **Holding**, red and throbbing for
+**Squeezing**. See [Your crosshair](#your-crosshair).
 
 ### Grab, squeeze, slam, throw
 
@@ -1461,6 +1465,8 @@ Double space jumps high and holding space flies, with or without the hammer.
   hooks), further off the long ones; looking down, or at something small, he goes low; running, he throws the
   straight or front kick. Now and then a kick comes in, and once the combo has built up (four blows or more) the big
   finishers join, which end the combo: after one the next click starts a new combo.
+- **Swap mid-combo:** take the hammer up or hang it back (scroll wheel click) between blows: the combo goes on with
+  what you hold now, so its finisher can be the hammer's smash or your fists'.
 - **Feel:** a click that comes while a blow is still going waits for it, so clicking fast never skips a blow. Some
   blows carry him a step forward, but never into what he aims at. Between blows, and for about two seconds after the
   last, he keeps both fists up in his guard. You see your own fists and, for a kick, your leg in first person, and
@@ -1619,8 +1625,9 @@ Double space jumps high and holding space flies, with or without the hammer.
 ### Hammer Throw (right click, hammer in hand)
 
 - **Click right:** he throws the hammer at the crosshair, head first, up to **24 blocks**, until it hits a creature or
-  a block. What it hits takes **3.5 hearts** and is thrown far the way it flew. Then it flies back to his hand by
-  itself, grip first, hitting each creature in its path once. **Cooldown:** 1.5 seconds.
+  a block. What it hits takes **3.5 hearts**, is knocked only a little way and spins head over heels through the
+  air, then drops and lies a moment. Then it flies back to his hand by itself, grip first, hitting each creature in
+  its path once the same way. **Cooldown:** 1.5 seconds.
 - **Throw to Stay** (crouch as you click): it stays where it stops: lying on the ground, stuck in a wall or hanging
   in the air. It waits there until you call it back (or follow it, see below), or until you go **128 blocks** from it;
   then it comes home by itself. Meanwhile you fight with your fists.
@@ -1640,8 +1647,10 @@ Double space jumps high and holding space flies, with or without the hammer.
 
 ### Call the Hammer (scroll wheel click, hammer away)
 
-- **Click the scroll wheel** while the hammer is thrown: it flies back to your hand, hitting each creature in its path
-  once (**2 hearts**). Stuck in a block, it tears itself free. **Cooldown:** 0.5 seconds.
+- **Click the scroll wheel** while the hammer is out, wherever it is: still flying out, falling, lying, stuck or
+  hanging, on the ground or in flight (then it comes to your left hand). It flies back, hitting each creature in its
+  path once (**2 hearts**, sent tumbling aside). Stuck in a block, it tears itself free; a dash to it or a Storm Throw
+  under way is broken off. **Cooldown:** 0.5 seconds.
 - **Hold jump** instead: it flies into your raised left hand and you take off into flight.
 
 ### Follow the Hammer (hold scroll wheel for 0.5 seconds, hammer away)

@@ -3,6 +3,50 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.9.2-alpha] - 2026-10-12
+
+### Added
+- **Wizard: his staff fights:** he throws it as a spear and calls it back, or sets it free to fight you with ten
+  moves of its own; break it and it flies home.
+- **Wizard: on his feet:** from his second phase he lands now and then to fight on foot, and at times only stands
+  and watches you.
+- **Wizard: a life of his own:** with no one to fight he goes down to the ground and reads, brews, juggles,
+  meditates, sits on his staff in the air, plays with rifts and more, with twelve small habits in between.
+- **Wizard: a face:** his eyes look at you and about, blink and blaze; his brows and mouth move with what he does.
+- **Wizard: new ways to go:** a quick flicker, a step through two rifts, and a veil that leaves a decoy while he
+  strikes from behind.
+- **Wizard: rifts of six kinds:** violet, void, gold, frost, starry and ember rifts; he fires sparks out of four at
+  once.
+
+### Changed
+- **Wizard: grander coming and going:** four rifts pour their light into him as he comes down; small rifts flicker
+  round him as he dies and a rift of the void swallows his light.
+- **Wizard: stronger wards:** each phase's ward holds 35% more.
+- **Wizard: every spell in turn:** a spell waits 5 seconds before he casts it again (his life drain 20), so he uses
+  all he knows.
+- **Wizard: longer blinks:** his blinks reach about twice as far.
+- **Wizard: bare hands:** with his staff away he casts from his open hand.
+- **Doctor Octopus: a model of his own:** his harness and tentacles are no longer built from blocks: a steel spine,
+  a corset of five steel bands, black tentacles ringed with gold and claws round a red lamp, as in the films.
+- **Doctor Octopus: tentacles in the crosshair:** the tentacle HUD is gone; each tentacle is an arc round his
+  crosshair in the colour of what it does, kicking when it changes.
+- **Thor: call the hammer anytime:** a scroll wheel click calls it back from wherever it is: still flying out,
+  falling, or while you fly.
+- **Thor: hammer hits tumble:** what a thrown or returning hammer hits is knocked only a little way, spins through
+  the air and drops.
+- **Thor: swap mid-combo:** taking the hammer up or hanging it back mid-combo carries the combo on with what you hold.
+- **Night sky: the game's own sky stays:** the sky and its stars are the game's again; the Milky Way, nebulae, star
+  clusters, a galaxy and planets lie on it as things of their own, as the moon does.
+- **Controls: fixed gestures without keys:** Ability 13 to 23 (mouse, space and shift) show only their name; they are
+  set for you and never change.
+- **Ability guide: only what works:** each tab lists only what can be used in it; the "Can't use here" part is gone.
+- **Galactus: longer touch:** he keeps his fingertip on the moon for five seconds instead of a quick poke.
+
+### Fixed
+- **Wizard: clones in reach:** the sixteen images in his circle of mirrors can be hit with a sword.
+- **Wizard: armour wear:** his blows no longer wear down netherite armour in moments.
+- **Wizard: aim in the air:** spells he casts straight ahead while flying now go at you instead of past you.
+
 ## [0.9.1-alpha] - 2026-10-12
 
 ### Added

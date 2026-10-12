@@ -31,8 +31,8 @@ final class GuideDetail {
     static final int RED = 0xFFFF6A50;
     static final int GRAY = 0xFF6E6E6E;
     private static final int BLUE = 0xFF7DB8F0;
-    // Per overview section (`GuideMode.SECTIONS`): get in, get out, can't use here, good to know.
-    private static final int[] SECTION_COLORS = { GREEN, AMBER, RED, BLUE };
+    // Per overview section (`GuideMode.SECTIONS`): get in, get out, good to know.
+    private static final int[] SECTION_COLORS = { GREEN, AMBER, BLUE };
     private static final int TEXT = 0xFFFFFFFF;
     private static final int BODY = 0xFFD8D8D8;
     private static final int MUTED = 0xFF9A9A9A;

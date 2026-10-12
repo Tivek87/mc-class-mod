@@ -12,9 +12,9 @@ import nl.tivek.multiversepowers.faction.mob.client.MobPreview;
 // How the Wizard holds himself this frame (WizardModel, StaffLayer), on his channels (WizardKeys): upright and a
 // little stooped, breathing slow, his staff upright before him in his right hand; walking he plants the staff with
 // every other step, his robe swinging; flying (from his second phase) he drifts with his legs hanging and his robe
-// trailing, leaning into where he flies, arms lifting as he drops and trailing as he climbs. At rest now and then he
-// strokes his beard, taps his staff, peers into its crystal, settles his hat or mutters a charm; standing, his weight
-// shifts from foot to foot, and his feet roll heel to toe as he walks; struck, he flinches. On top his moves'
+// trailing, leaning into where he flies, arms lifting as he drops and trailing as he climbs. At rest with no foe about
+// his habits and pastimes come round (WizardRest); standing, his weight shifts from foot to foot, and his feet roll
+// heel to toe as he walks; struck, he flinches. On top his moves'
 // keyframes, and what no keyframe holds: the staff swung round in circles, the trembling as great magic passes through
 // him, the kick of each bolt, the circle his hand draws for the time warp and the tornado, the turning of the star
 // spiral, the clutch of a draining hand, the sway of a stunned head. All of it
@@ -94,8 +94,10 @@ final class WizardPoses {
         if (floating) {
             this.bank(caster);
         }
-        if (move == 0) {
-            this.idle(age + caster.getId() * 37, amount);
+        if (move == 0 && amount < 0.1F && !caster.isAggressive()) {
+            WizardRest.idle(this.c, age + caster.getId() * 37);
+        } else if (WizardMove.pastime(move)) {
+            WizardRest.pastime(this.c, move, t, age);
         }
         float[] keys = WizardKeys.at(move, t);
         if (keys != null) {
@@ -284,64 +286,6 @@ final class WizardPoses {
         this.c[LEAN] += 0.05F * w;
     }
 
-    // Now and then at rest: a slow stroke of his beard, a tap of his staff on the ground.
-    private void idle(float age, float amount) {
-        if (amount > 0.1F) {
-            return;
-        }
-        float cycle = age % 300.0F;
-        float stroke = bump(cycle, 10.0F, 70.0F);
-        if (stroke > 0.0F) {
-            float pull = 0.5F + 0.5F * Mth.sin(age * 0.25F);
-            this.c[L_ARM] += -1.3F * stroke;
-            this.c[L_IN] += 0.55F * stroke;
-            this.c[L_ELBOW] += 1.75F * stroke;
-            this.c[L_WRIST] += (0.3F + 0.3F * pull) * stroke;
-            this.c[NOD] += 0.12F * stroke;
-            this.c[SINK] += -0.2F * pull * stroke;
-        }
-        float tap = bump(cycle, 170.0F, 190.0F);
-        if (tap > 0.0F) {
-            float knock = Mth.sin((cycle - 170.0F) / 20.0F * Mth.PI * 2.0F);
-            this.c[R_ARM] += -0.12F * tap + 0.08F * knock * tap;
-            this.c[STAFF] += 0.06F * knock * tap;
-            this.c[NOD] += -0.08F * tap;
-        }
-        // He lifts his staff and peers into its crystal, head tipped, as it brightens.
-        float peer = bump(cycle, 95.0F, 150.0F);
-        if (peer > 0.0F) {
-            this.c[R_ARM] += -0.45F * peer;
-            this.c[R_IN] += 0.4F * peer;
-            this.c[R_ELBOW] += 0.35F * peer;
-            this.c[STAFF] += -0.25F * peer;
-            this.c[NOD] += -0.12F * peer;
-            this.c[TILT] += 0.14F * peer;
-            this.c[TWIST] += 0.08F * peer;
-            this.c[GLOW] += 0.7F * peer;
-        }
-        // He settles his hat on his head with his left hand.
-        float hat = bump(cycle, 215.0F, 255.0F);
-        if (hat > 0.0F) {
-            this.c[L_ARM] += -2.35F * hat;
-            this.c[L_IN] += 0.45F * hat;
-            this.c[L_ELBOW] += 1.5F * hat;
-            this.c[L_WRIST] += 0.3F * hat;
-            this.c[NOD] += 0.08F * hat;
-            this.c[TILT] += -0.06F * hat;
-        }
-        // Muttering a charm, his left fingers turning over before his chest in small slow circles.
-        float charm = bump(cycle, 265.0F, 298.0F);
-        if (charm > 0.0F) {
-            float round = (cycle - 265.0F) * 0.4F;
-            this.c[L_ARM] += (-0.9F + 0.12F * Mth.sin(round)) * charm;
-            this.c[L_IN] += (0.5F + 0.12F * Mth.cos(round)) * charm;
-            this.c[L_ELBOW] += 1.2F * charm;
-            this.c[L_WRIST] += 0.35F * Mth.sin(round * 1.3F) * charm;
-            this.c[HAND] += 0.5F * charm;
-            this.c[NOD] += 0.06F * charm;
-        }
-    }
-
     // What no keyframe holds.
     private void extras(int move, double t, float age) {
         switch (move) {
@@ -482,15 +426,5 @@ final class WizardPoses {
         this.skirtSide = cloth[5];
         this.cape = Math.max(0.0F, cloth[6]);
         this.capeSide = cloth[7];
-    }
-
-    // 0 outside `from`..`to`, rising and falling smoothly between.
-    private static float bump(float x, float from, float to) {
-        if (x <= from || x >= to) {
-            return 0.0F;
-        }
-        float f = (x - from) / (to - from);
-        float s = Mth.sin(f * Mth.PI);
-        return s * s;
     }
 }

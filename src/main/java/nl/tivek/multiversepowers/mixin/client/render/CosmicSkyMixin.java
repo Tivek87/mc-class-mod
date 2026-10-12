@@ -26,14 +26,13 @@ public abstract class CosmicSkyMixin {
         CosmicSky.draw(frustumMatrix, projectionMatrix, partialTick);
     }
 
-    // The second buffer the sky draws is the stars'; the game's own would shine through the planets.
+    // The second buffer the sky draws is the stars': the planets go on right after them, so no star shines through.
     @Redirect(method = "renderSky", at = @At(value = "INVOKE", ordinal = 1,
             target = "Lcom/mojang/blaze3d/vertex/VertexBuffer;drawWithShader("
                     + "Lorg/joml/Matrix4f;Lorg/joml/Matrix4f;Lnet/minecraft/client/renderer/ShaderInstance;)V"))
     private void welcomescreen$stars(VertexBuffer buffer, Matrix4f modelView, Matrix4f projection,
             ShaderInstance shader) {
-        if (!CosmicSky.replacesStars()) {
-            buffer.drawWithShader(modelView, projection, shader);
-        }
+        buffer.drawWithShader(modelView, projection, shader);
+        CosmicSky.planets();
     }
 }

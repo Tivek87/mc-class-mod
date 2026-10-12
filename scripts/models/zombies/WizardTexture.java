@@ -43,6 +43,11 @@ public final class WizardTexture {
     private static final Paint.Box HEAD = new Paint.Box(0, 0, 8, 8, 8);
     private static final Paint.Box NOSE = new Paint.Box(32, 0, 2, 3, 2);
     private static final Paint.Box BROWS = new Paint.Box(40, 0, 7, 1, 1);
+    // The moving parts of his face, as {u, v, width, height} on the sheet: iris, eyelid, brow, open mouth.
+    private static final int[] IRIS = { 104, 0, 2, 1 };
+    private static final int[] LID = { 106, 0, 4, 1 };
+    private static final int[] BROW = { 110, 0, 10, 2 };
+    private static final int[] MOUTH_OPEN = { 120, 0, 4, 1 };
     private static final Paint.Box MUSTACHE = new Paint.Box(40, 2, 7, 2, 1);
     private static final Paint.Box HAIR = new Paint.Box(56, 0, 9, 7, 2);
     private static final Paint.Box LOCK = new Paint.Box(78, 0, 1, 6, 4);
@@ -282,6 +287,26 @@ public final class WizardTexture {
         }
     }
 
+    // The parts of his face that move (client/WizardFace), each its own colour with no mottling: the irises, glowing
+    // pale blue (front and back of a flat box), the eyelids in his skin, the two bushy brows and the open mouth.
+    private static void face(Paint p, Paint glow) {
+        p.dot(IRIS, 0, 0, EYE);
+        p.dot(IRIS, 1, 0, EYE);
+        glow.dot(IRIS, 0, 0, GLOW_EYE);
+        glow.dot(IRIS, 1, 0, GLOW_EYE);
+        for (int x = 0; x < LID[2]; x++) {
+            p.dot(LID, x, 0, SKIN_DARK);
+        }
+        for (int y = 0; y < BROW[3]; y++) {
+            for (int x = 0; x < BROW[2]; x++) {
+                p.dot(BROW, x, y, x % 3 == 0 ? BEARD_DARK : (x + y) % 2 == 0 ? BEARD_LIGHT : BEARD);
+            }
+        }
+        for (int x = 0; x < MOUTH_OPEN[2]; x++) {
+            p.dot(MOUTH_OPEN, x, 0, MOUTH);
+        }
+    }
+
     // A weathered face: lined brow, pale blue eyes that glow, ruddy cheeks; bushy white brows, a drooping moustache, long
     // white hair down his back and at his temples, and the long beard in strands that fray at its point.
     private static void head(Paint p, Paint glow) {
@@ -299,12 +324,12 @@ public final class WizardTexture {
         }
         p.dot(f, 0, 2, BEARD_DARK);
         p.dot(f, 7, 2, BEARD_DARK);
+        // The eyes' whites: the irises are parts of their own that look about over them (face()).
         p.dot(f, 1, 3, WHITE);
-        p.dot(f, 2, 3, EYE);
-        p.dot(f, 5, 3, EYE);
+        p.dot(f, 2, 3, WHITE);
+        p.dot(f, 5, 3, WHITE);
         p.dot(f, 6, 3, WHITE);
-        glow.dot(f, 2, 3, GLOW_EYE);
-        glow.dot(f, 5, 3, GLOW_EYE);
+        face(p, glow);
         p.dot(f, 0, 3, BEARD_DARK);
         p.dot(f, 7, 3, BEARD_DARK);
         p.dot(f, 1, 4, SKIN_DARK);

@@ -6,7 +6,10 @@ package nl.tivek.multiversepowers.creature.wizard;
 // one before the next ultimate. GLIDE and DASH are what he and his clones do in the circle of mirrors (WizardMirrors);
 // ASCEND, UNBIND, AWAKEN and APOTHEOSIS carry him into his second to fifth phase. SPARK and BOLT are his light spells,
 // cast between the others; SKIP a quick glide to a better place, AIRSTEP a blink to another spot in the air; ARRIVE
-// how he comes down out of his rift when called, DEATH how he dies.
+// how he comes down out of his rift when called, DEATH how he dies. ALIGHT and TAKEOFF take him from the air to his
+// feet and back; WATCH a pause in which he only watches; the STAFF_ moves throw his staff as a spear, call it home and
+// set it free to fight on its own; FLICKER, RIFT_STEP and VEIL are his other ways of going (WizardSteps); the
+// PASTIMES are what he does with no one to fight (WizardPastimes).
 public final class WizardMove {
     public static final int STRIKE = 1;
     public static final int SPARK = 2;
@@ -61,7 +64,28 @@ public final class WizardMove {
     public static final int FLARE = 51;
     public static final int ECLIPSE = 52;
     public static final int JUDGMENT = 53;
-    public static final int KINDS = 53;
+    public static final int ALIGHT = 54;
+    public static final int TAKEOFF = 55;
+    public static final int WATCH = 56;
+    public static final int STAFF_THROW = 57;
+    public static final int STAFF_CALL = 58;
+    public static final int STAFF_FREE = 59;
+    public static final int FLICKER = 60;
+    public static final int RIFT_STEP = 61;
+    public static final int VEIL = 62;
+    public static final int READ = 63;
+    public static final int PERCH = 64;
+    public static final int JUGGLE = 65;
+    public static final int MEDITATE = 66;
+    public static final int PORTALS = 67;
+    public static final int BREW = 68;
+    public static final int WISP = 69;
+    public static final int SCRIBE = 70;
+    public static final int PRACTICE = 71;
+    public static final int RIFT_VOLLEY = 72;
+    public static final int KINDS = 72;
+    // What he does at rest with no foe about (WizardPastimes).
+    public static final int[] PASTIMES = { READ, PERCH, JUGGLE, MEDITATE, PORTALS, BREW, WISP, SCRIBE, PRACTICE };
     // The last phase.
     public static final int PHASES = 5;
 
@@ -105,6 +129,16 @@ public final class WizardMove {
     // The whirl strikes all round him every WHIRL_EVERY ticks from its release until WHIRL_STOP.
     public static final int WHIRL_EVERY = 6;
     public static final int WHIRL_STOP = 28;
+    // The flicker hops from its release every FLICKER_EVERY ticks, FLICKERS times.
+    public static final int FLICKER_EVERY = 6;
+    public static final int FLICKERS = 3;
+    // The rift step: he steps into his rift at its release and out of the other at RIFT_OUT.
+    public static final int RIFT_OUT = 27;
+    // The veil: gone at its release, behind his foe at VEIL_BACK, his staff swung at VEIL_STRIKE.
+    public static final int VEIL_BACK = 28;
+    public static final int VEIL_STRIKE = 33;
+    // Called home, his staff is in his hand again by CALL_CATCH.
+    public static final int CALL_CATCH = 18;
 
     private static final int[] LENGTH = new int[KINDS + 1];
     private static final int[] RELEASE = new int[KINDS + 1];
@@ -126,32 +160,32 @@ public final class WizardMove {
         move(STRIKE, 26, JAB, 30, 1, 1.0);
         move(SPARK, 12, 6, 12, 1, 0.55);
         move(BOLT, 22, 11, 36, 1, 0.9);
-        big(FIREBALL, 28, 17, 130, 1, 1.5);
-        big(BLIZZARD, 34, 22, 380, 1, 0.25);
-        move(BLINK, 16, 8, 200, 1, 0.0);
-        big(CHAINS, 30, 14, 280, 1, 0.5);
-        big(LIGHTNING, 26, 14, 200, 1, 1.2);
-        big(ORBIT, 40, 18, 240, 1, 0.6);
-        big(STARFALL, 42, 20, 440, 2, 1.0);
-        big(RUNES, 32, 18, 320, 2, 1.5);
-        big(LIFT, 44, 14, 360, 2, 1.2);
-        big(FAMILIARS, 36, 22, 640, 2, 0.0);
-        big(LANCES, 34, 16, 260, 2, 1.1);
-        big(NOVA, 30, 16, 300, 2, 1.0);
-        big(TORNADO, 40, 24, 700, 2, 1.0);
+        big(FIREBALL, 28, 17, 100, 1, 1.5);
+        big(BLIZZARD, 34, 22, 100, 1, 0.25);
+        move(BLINK, 16, 8, 100, 1, 0.0);
+        big(CHAINS, 30, 14, 100, 1, 0.5);
+        big(LIGHTNING, 26, 14, 100, 1, 1.2);
+        big(ORBIT, 40, 18, 100, 1, 0.6);
+        big(STARFALL, 42, 20, 100, 2, 1.0);
+        big(RUNES, 32, 18, 100, 2, 1.5);
+        big(LIFT, 44, 14, 100, 2, 1.2);
+        big(FAMILIARS, 36, 22, 100, 2, 0.0);
+        big(LANCES, 34, 16, 100, 2, 1.1);
+        big(NOVA, 30, 16, 100, 2, 1.0);
+        big(TORNADO, 40, 24, 100, 2, 1.0);
         move(AIRSTEP, 10, 3, 70, 2, 0.0);
-        ultimate(BEAM, 90, 26, 520, 3, 0.4);
-        ultimate(METEOR, 50, 26, 760, 3, 2.0);
-        ultimate(WARP, 34, 20, 820, 3, 0.0);
-        ultimate(MIRRORS, 30, 22, 1000, 3, 0.6);
-        big(COMET, 56, COMET_DIVE, 520, 3, 1.8);
-        big(INFERNO, 36, 20, 480, 3, 1.2);
-        big(PHANTOM, 34, 6, 360, 3, 1.5);
-        big(TENDRILS, 36, 20, 520, 4, 0.35);
-        ultimate(VOID_ORB, 44, 26, 820, 4, 2.2);
-        big(DRAIN, 70, 18, 600, 4, 0.3);
-        big(SPIRAL, 64, 14, 420, 5, 0.45);
-        ultimate(SUPERNOVA, 132, 104, 1600, 5, 2.6);
+        ultimate(BEAM, 90, 26, 100, 3, 0.4);
+        ultimate(METEOR, 50, 26, 100, 3, 2.0);
+        ultimate(WARP, 34, 20, 100, 3, 0.0);
+        ultimate(MIRRORS, 30, 22, 100, 3, 0.6);
+        big(COMET, 56, COMET_DIVE, 100, 3, 1.8);
+        big(INFERNO, 36, 20, 100, 3, 1.2);
+        big(PHANTOM, 34, 6, 100, 3, 1.5);
+        big(TENDRILS, 36, 20, 100, 4, 0.35);
+        ultimate(VOID_ORB, 44, 26, 100, 4, 2.2);
+        big(DRAIN, 70, 18, 400, 4, 0.3);
+        big(SPIRAL, 64, 14, 100, 5, 0.45);
+        ultimate(SUPERNOVA, 132, 104, 100, 5, 2.6);
         move(ASCEND, 70, BURST, 0, NEVER, 0.0);
         move(UNBIND, 70, BURST, 0, NEVER, 0.0);
         move(AWAKEN, 70, BURST, 0, NEVER, 0.0);
@@ -162,20 +196,49 @@ public final class WizardMove {
         move(SKIP, 10, 1, 44, 1, 0.0);
         move(ARRIVE, 120, LAND, 0, NEVER, 1.0);
         move(DEATH, 112, BREAK, 0, NEVER, 0.0);
-        close(REPULSE, 20, 9, 150, 1, 0.9);
-        close(FROST_CONE, 30, 10, 220, 1, 0.3);
-        close(FLAME_LASH, 24, 11, 190, 2, 1.1);
-        close(COMBO, 42, COMBO_SMASH, 140, 1, 0.75);
-        close(WHIRL, 36, 10, 210, 2, 0.55);
-        move(TETHER, 30, 12, 300, 1, 0.5);
-        big(GLACIAL, 30, 15, 300, 2, 1.2);
-        big(PILLARS, 32, 18, 340, 3, 1.4);
-        big(SENTRY, 30, 20, 720, 2, 0.45);
+        close(REPULSE, 20, 9, 100, 1, 0.9);
+        close(FROST_CONE, 30, 10, 100, 1, 0.3);
+        close(FLAME_LASH, 24, 11, 100, 2, 1.1);
+        close(COMBO, 42, COMBO_SMASH, 100, 1, 0.75);
+        close(WHIRL, 36, 10, 100, 2, 0.55);
+        move(TETHER, 30, 12, 100, 1, 0.5);
+        big(GLACIAL, 30, 15, 100, 2, 1.2);
+        big(PILLARS, 32, 18, 100, 3, 1.4);
+        big(SENTRY, 30, 20, 100, 2, 0.45);
         move(SIGIL, 56, 22, 0, NEVER, 0.9);
         move(RAIN, 64, 18, 0, NEVER, 0.85);
         move(FLARE, 60, 22, 0, NEVER, 1.0);
         move(ECLIPSE, 64, 24, 0, NEVER, 1.2);
         move(JUDGMENT, 84, 18, 0, NEVER, 1.5);
+        move(ALIGHT, 24, 20, 0, NEVER, 0.0);
+        move(TAKEOFF, 18, 8, 0, NEVER, 0.0);
+        move(WATCH, 40, 0, 100, 1, 0.0);
+        big(STAFF_THROW, 26, 14, 160, 1, 1.4);
+        move(STAFF_CALL, 24, 6, 0, NEVER, 0.9);
+        big(STAFF_FREE, 30, 18, 400, 2, 0.5);
+        move(FLICKER, 24, 6, 100, 2, 0.0);
+        move(RIFT_STEP, 40, 20, 100, 1, 0.0);
+        move(VEIL, 40, 8, 100, 3, 1.3);
+        move(READ, 360, 20, 0, NEVER, 0.0);
+        move(PERCH, 400, 24, 0, NEVER, 0.0);
+        move(JUGGLE, 320, 30, 0, NEVER, 0.0);
+        move(MEDITATE, 360, 30, 0, NEVER, 0.0);
+        move(PORTALS, 300, 16, 0, NEVER, 0.0);
+        move(BREW, 340, 24, 0, NEVER, 0.0);
+        move(WISP, 300, 16, 0, NEVER, 0.0);
+        move(SCRIBE, 320, 20, 0, NEVER, 0.0);
+        move(PRACTICE, 280, 16, 0, NEVER, 0.0);
+        big(RIFT_VOLLEY, 40, 16, 100, 2, 0.55);
+    }
+
+    // Something he does at rest, with no foe about.
+    public static boolean pastime(int kind) {
+        return kind >= READ && kind <= PRACTICE;
+    }
+
+    // A way of going from one place to another in a moment.
+    public static boolean teleport(int kind) {
+        return kind == BLINK || kind == FLICKER || kind == RIFT_STEP || kind == VEIL || kind == AIRSTEP;
     }
 
     private static void close(int kind, int length, int release, int again, int phase, double harm) {
@@ -287,7 +350,8 @@ public final class WizardMove {
     // A move he makes with his crystal blazing and a circle of runes turning under his feet as it gathers (in the
     // air, under him where he hangs).
     public static boolean circled(int kind) {
-        return big(kind) && kind != FIREBALL && kind != COMET && kind != PHANTOM || isSpecial(kind);
+        return big(kind) && kind != FIREBALL && kind != COMET && kind != PHANTOM && kind != STAFF_THROW
+                || isSpecial(kind);
     }
 
     // The colour of a spell's light and its circle: arcane violet, fire, frost, the stars, gravity, time, lightning,

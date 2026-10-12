@@ -135,16 +135,25 @@ final class WizardFlight {
     void airstep(ServerLevel level, @Nullable LivingEntity target) {
         Vec3 middle = target == null ? this.wizard.position() : target.position();
         double up = height(this.wizard.phase());
-        Vec3 to = this.airSpot(level, middle, 7.0, 12.0, up - 1.0, up + 3.0, target, 5.0);
+        Vec3 to = this.airSpot(level, middle, 8.0, 16.0, up - 1.0, up + 4.0, target, 6.0);
         if (to != null) {
             this.blinkTo(level, to);
         }
     }
 
-    // Somewhere in the air 9 to 14 blocks from `middle`, in sight of `target`; whether he found one.
+    // A short hop to another spot in the air 4 to 8 blocks from where he is, keeping in sight of `target`.
+    void hop(ServerLevel level, @Nullable LivingEntity target) {
+        Vec3 to = this.airSpot(level, this.wizard.position(), 4.0, 8.0, -1.5, 2.0, target, 3.5);
+        if (to != null) {
+            this.wizard.teleportTo(to.x, to.y, to.z);
+            this.wizard.setDeltaMovement(Vec3.ZERO);
+        }
+    }
+
+    // Somewhere in the air 10 to 20 blocks from `middle`, in sight of `target`; whether he found one.
     boolean blinkNear(ServerLevel level, Vec3 middle, @Nullable LivingEntity target) {
         double up = height(this.wizard.phase());
-        Vec3 to = this.airSpot(level, middle, 9.0, 14.0, up, up + 4.0, target, 7.0);
+        Vec3 to = this.airSpot(level, middle, 10.0, 20.0, up, up + 5.0, target, 8.0);
         if (to == null) {
             return false;
         }
@@ -276,8 +285,45 @@ final class WizardFlight {
         }
     }
 
+    // Coming down to his feet: sinking, fast while high and slowing near the ground, until he stands on it (or the
+    // move's release, when he lets himself drop the rest).
+    void alight(ServerLevel level, int t) {
+        if (!this.wizard.aloft()) {
+            return;
+        }
+        double above = this.overGround(level);
+        if (above <= 0.05 || t >= WizardMove.release(WizardMove.ALIGHT)) {
+            this.wizard.setAloft(false);
+            Vec3 at = this.wizard.position();
+            ParticleFx.ring(level, Wizard.dust(Wizard.light(this.wizard.phase()), 1.3F), at.add(0.0, 0.1, 0.0), 1.2,
+                    18, 0.0);
+            ParticleFx.send(level, ParticleTypes.CLOUD, at.x, at.y + 0.1, at.z, 8, 0.4, 0.05, 0.4, 0.02);
+            level.playSound(null, at.x, at.y, at.z, SoundEvents.AMETHYST_BLOCK_STEP, SoundSource.HOSTILE, 1.4F, 0.7F);
+            return;
+        }
+        double speed = Mth.clamp(above * 0.18, 0.08, 0.7);
+        this.wizard.setDeltaMovement(this.wizard.getDeltaMovement().multiply(0.5, 0.0, 0.5).add(0.0, -speed, 0.0));
+    }
+
+    // Taking off: a crouch, then a spring up into the air, slowing as he rises.
+    void takeoff(int t) {
+        int release = WizardMove.release(WizardMove.TAKEOFF);
+        if (t == release) {
+            this.wizard.setAloft(true);
+            this.wizard.setDeltaMovement(0.0, 0.62, 0.0);
+            Vec3 at = this.wizard.position();
+            if (this.wizard.level() instanceof ServerLevel level) {
+                ParticleFx.shockwave(level, Wizard.dust(Wizard.light(this.wizard.phase()), 1.5F), at.add(0.0, 0.1,
+                        0.0), 24, 0.3);
+                level.playSound(null, at.x, at.y, at.z, SoundEvents.BREEZE_JUMP, SoundSource.HOSTILE, 1.4F, 0.8F);
+            }
+        } else if (t > release) {
+            this.wizard.setDeltaMovement(this.wizard.getDeltaMovement().scale(0.84));
+        }
+    }
+
     // How far over the ground under him he is (as far as it looks, 24 blocks).
-    private double overGround(ServerLevel level) {
+    double overGround(ServerLevel level) {
         Vec3 me = this.wizard.position();
         BlockHitResult down = LoadedWorld.clip(level, new ClipContext(me, me.add(0.0, -24.0, 0.0),
                 ClipContext.Block.COLLIDER, ClipContext.Fluid.ANY, this.wizard));

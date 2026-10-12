@@ -93,5 +93,31 @@ abstract class LineFrames {
         Vec3 sideAt(double s) {
             return this.side[this.piece(Mth.clamp(s, 0.0, this.length))];
         }
+
+        // The direction and side blended between neighbouring pieces, so rings across a tube turn smoothly.
+        Vec3 smoothDirectionAt(double s) {
+            return this.blend(this.direction, s);
+        }
+
+        Vec3 smoothSideAt(double s) {
+            Vec3 d = this.smoothDirectionAt(s);
+            Vec3 side = square(this.blend(this.side, s), d);
+            return side != null ? side : anySquare(d);
+        }
+
+        private Vec3 blend(Vec3[] values, double s) {
+            s = Mth.clamp(s, 0.0, this.length);
+            int i = this.piece(s);
+            double middle = (this.at[i] + this.at[i + 1]) / 2;
+            int j = s < middle ? i - 1 : i + 1;
+            if (j < 0 || j >= values.length) {
+                return values[i];
+            }
+            double other = (this.at[j] + this.at[j + 1]) / 2;
+            double t = Math.abs(other - middle) < 1.0E-9 ? 0.0 : Mth.clamp((s - middle) / (other - middle), 0.0, 1.0);
+            Vec3 mixed = values[i].lerp(values[j], t);
+            double size = mixed.length();
+            return size < 1.0E-6 ? values[i] : mixed.scale(1.0 / size);
+        }
     }
 }

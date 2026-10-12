@@ -5,12 +5,13 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.phys.Vec3;
+import nl.tivek.multiversepowers.creature.wizard.rift.RiftShows;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 
 // What the world sees of the Wizard's death on the server's side, tick by tick (WizardMove.DEATH; the body's own pose is
-// drawn by each game): light leaks from him as he sinks to his knees, cracks of it break out of his robe, a flash as it
-// bursts free and lifts him, a stream of it rising off him, the light drawn into him once more, and he is gone in a
-// last flash and a shower of stars.
+// drawn by each game): light leaks from him as he sinks to his knees while small rifts flicker open round him, cracks
+// of it break out of his robe, a flash as it bursts free and lifts him, a stream of it rising off him into a rift of the
+// void opening over him, the light drawn into him once more, and he is gone in a last flash and a shower of stars.
 final class WizardDeath {
     // How high the light lifts him before he is gone (blocks), as his pose shows it.
     private static final double RISE = 1.4;
@@ -24,6 +25,7 @@ final class WizardDeath {
         double lifted = t <= WizardMove.BREAK ? 0.0
                 : RISE * Math.min(1.0, (t - WizardMove.BREAK) / (double) (WizardMove.GONE - 10 - WizardMove.BREAK));
         Vec3 body = wizard.position().add(0.0, 1.0 + lifted, 0.0);
+        RiftShows.death(level, wizard, t);
         if (t == 1) {
             level.playSound(null, body.x, body.y, body.z, SoundEvents.BEACON_DEACTIVATE, SoundSource.HOSTILE, 2.0F,
                     0.6F);

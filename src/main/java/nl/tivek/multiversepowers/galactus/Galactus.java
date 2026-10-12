@@ -11,10 +11,11 @@ public final class Galactus {
     public static final int RAISE = 1500;
     public static final int REACHED = 1800;
     public static final int TOUCH = 1830;
-    public static final int LET_GO = 1850;
-    public static final int BACK = 1880;
-    public static final int LOWERED = 1960;
-    public static final int GONE = 2760;
+    // He keeps his fingertip on the moon for five seconds before he lets go.
+    public static final int LET_GO = 1930;
+    public static final int BACK = 1960;
+    public static final int LOWERED = 2040;
+    public static final int GONE = 2840;
     // How many times further off than at the poke he is while still a speck.
     public static final double FAR = 400.0;
 

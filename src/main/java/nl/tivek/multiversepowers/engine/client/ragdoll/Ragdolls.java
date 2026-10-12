@@ -271,6 +271,10 @@ public final class Ragdolls {
         if (blasted && entity.level() instanceof ClientLevel level) {
             RagdollCauses.throwByBlasts(doll, level, RANDOM);
         }
+        Vec3 spin = RagdollCauses.tumbling(entity.getId(), ticks);
+        if (spin != null) {
+            RagdollFalls.spin(doll, spin);
+        }
         // Limp, it no longer faces any way of its own.
         Facings.forget(entity.getId());
         if (state == Ragdoll.State.DEAD) {
@@ -282,6 +286,17 @@ public final class Ragdolls {
         }
         LIVE.put(entity.getId(), doll);
         return doll;
+    }
+
+    // A blow set a creature tumbling (Tumbles): its body, limp now or as soon as it goes limp, spins about `spin`
+    // (radians a second).
+    public static void tumble(int entity, Vec3 spin) {
+        Ragdoll doll = LIVE.get(entity);
+        if (doll != null) {
+            RagdollFalls.spin(doll, spin);
+            return;
+        }
+        RagdollCauses.tumble(entity, spin, ticks);
     }
 
     // The server tells how the blow that killed a creature struck it: from where (null: from nowhere in particular)

@@ -159,6 +159,27 @@ final class RagdollFalls {
         shove(doll, fx / flat, fz / flat, hard, 0.0, from, Vec3.ZERO);
     }
 
+    // The whole body set spinning about `spin` (radians a second) round its trunk, each part moving with the turn.
+    static void spin(Ragdoll doll, Vec3 spin) {
+        RigidWorld world = doll.world;
+        double[] at = new double[7];
+        double[] v = new double[6];
+        world.pose(doll.body[doll.core], at);
+        double cx = at[0];
+        double cy = at[1];
+        double cz = at[2];
+        for (int b = 0; b < world.count(); b++) {
+            world.pose(b, at);
+            world.velocity(b, v);
+            double rx = at[0] - cx;
+            double ry = at[1] - cy;
+            double rz = at[2] - cz;
+            world.velocity(b, v[0] + spin.y * rz - spin.z * ry, v[1] + spin.z * rx - spin.x * rz,
+                    v[2] + spin.x * ry - spin.y * rx, v[3] + spin.x, v[4] + spin.y, v[5] + spin.z);
+        }
+        world.wake();
+    }
+
     // Every part pushed (fx, fz) at `hard` blocks a second where the blow struck, less the further from there, and
     // lifted at `lift`; `was` (what every part was given as it went limp) taken back first. Its limbs give way.
     private static void shove(Ragdoll doll, double fx, double fz, double hard, double lift, @Nullable Vec3 from,

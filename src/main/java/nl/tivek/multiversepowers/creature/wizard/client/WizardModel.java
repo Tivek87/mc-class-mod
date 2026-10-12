@@ -14,6 +14,7 @@ import net.minecraft.client.model.geom.builders.CubeListBuilder;
 import net.minecraft.client.model.geom.builders.LayerDefinition;
 import net.minecraft.client.model.geom.builders.MeshDefinition;
 import net.minecraft.client.model.geom.builders.PartDefinition;
+import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.util.Mth;
 import nl.tivek.multiversepowers.creature.MovingMonster;
 import nl.tivek.multiversepowers.creature.client.Trunk;
@@ -56,6 +57,16 @@ public final class WizardModel<T extends MovingMonster> extends HumanoidModel<T>
     private static final float UPPER_ARM = 5.0F;
     private static final float ARM_LONG = 11.0F;
     private static final float SLEEVE = 2.0F;
+    // His eyes' middles, his brows and the top of his mouth on his face (pixels in the head).
+    private static final float EYE_X = 2.0F;
+    private static final float EYE_Y = -4.5F;
+    private static final float BROW_Y = -5.8F;
+    private static final float MOUTH_Y = -2.0F;
+    private final ModelPart[] irises;
+    private final ModelPart[] lids;
+    private final ModelPart[] brows;
+    private final ModelPart mouth;
+    final WizardFace face = new WizardFace();
     private final ModelPart beard;
     private final ModelPart beardTip;
     private final ModelPart beardPoint;
@@ -91,6 +102,38 @@ public final class WizardModel<T extends MovingMonster> extends HumanoidModel<T>
             this.spikes[k] = this.hat.getChild("spike" + k);
         }
         this.horns = new ModelPart[] { this.hat.getChild("right_horn"), this.hat.getChild("left_horn") };
+        this.irises = new ModelPart[] { this.head.getChild("right_iris"), this.head.getChild("left_iris") };
+        this.lids = new ModelPart[] { this.head.getChild("right_lid"), this.head.getChild("left_lid") };
+        this.brows = new ModelPart[] { this.head.getChild("right_brow"), this.head.getChild("left_brow") };
+        this.mouth = this.head.getChild("mouth");
+    }
+
+    // His irises alone, for his eyes' flare over the rest of his glow (WizardRenderer).
+    void irises(PoseStack pose, VertexConsumer buffer, int color) {
+        pose.pushPose();
+        this.head.translateAndRotate(pose);
+        for (ModelPart iris : this.irises) {
+            iris.render(pose, buffer, 15728640, OverlayTexture.NO_OVERLAY, color);
+        }
+        pose.popPose();
+    }
+
+    // The face's parts where WizardFace has them this frame; the jaw dropping pulls the beard down with it.
+    private void face(T caster, float age, float amount, float headYaw, float headPitch) {
+        WizardFace f = this.face;
+        f.of(caster, age, amount, headYaw, headPitch);
+        for (int s = 0; s < 2; s++) {
+            float side = s == 0 ? -1.0F : 1.0F;
+            this.irises[s].x = side * EYE_X + f.lookX;
+            this.irises[s].y = EYE_Y + f.lookY;
+            this.lids[s].yScale = Math.max(0.01F, f.blink);
+            this.lids[s].visible = f.blink > 0.04F;
+            this.brows[s].y = BROW_Y - f.raise;
+            this.brows[s].zRot = -side * f.frown;
+        }
+        this.mouth.yScale = 0.3F + 1.4F * f.open;
+        this.mouth.visible = f.open > 0.04F;
+        this.beard.y += 0.7F * f.open;
     }
 
     public static LayerDefinition createLayer() {
@@ -101,12 +144,26 @@ public final class WizardModel<T extends MovingMonster> extends HumanoidModel<T>
         PartDefinition head = root.addOrReplaceChild("head", CubeListBuilder.create()
                 .texOffs(0, 0).addBox(-4.0F, -8.0F, -4.0F, 8.0F, 8.0F, 8.0F)
                 .texOffs(32, 0).addBox(-1.0F, -5.3F, -5.5F, 2.0F, 3.0F, 2.0F)
-                .texOffs(40, 0).addBox(-3.5F, -6.3F, -4.6F, 7.0F, 1.0F, 1.0F)
                 .texOffs(40, 2).addBox(-3.5F, -2.5F, -4.7F, 7.0F, 2.0F, 1.0F)
                 .texOffs(56, 0).addBox(-4.5F, -7.6F, 3.2F, 9.0F, 7.0F, 2.0F)
                 .texOffs(78, 0).addBox(-4.6F, -6.7F, -1.0F, 1.0F, 6.0F, 4.0F)
                 .texOffs(78, 0).mirror().addBox(3.6F, -6.7F, -1.0F, 1.0F, 6.0F, 4.0F),
                 PartPose.offset(0.0F, HIP_Y + NECK_Y, 0.0F));
+        // What moves in his face (WizardFace): an iris over each eye's white, a lid that shuts down over it, each
+        // brow turning about its inner end, and a mouth that opens down from under his moustache.
+        for (int s = 0; s < 2; s++) {
+            float side = s == 0 ? -1.0F : 1.0F;
+            String name = s == 0 ? "right_" : "left_";
+            head.addOrReplaceChild(name + "iris", CubeListBuilder.create().texOffs(104, 0).addBox(-0.5F, -0.5F, 0.0F,
+                    1.0F, 1.0F, 0.0F), PartPose.offset(side * EYE_X, EYE_Y, -4.02F));
+            head.addOrReplaceChild(name + "lid", CubeListBuilder.create().texOffs(106, 0).addBox(-1.0F, 0.0F, 0.0F,
+                    2.0F, 1.0F, 0.0F), PartPose.offset(side * EYE_X, EYE_Y - 0.5F, -4.04F));
+            head.addOrReplaceChild(name + "brow", CubeListBuilder.create().mirror(s == 1).texOffs(110, 0)
+                    .addBox(s == 0 ? -3.5F : 0.0F, -0.5F, -0.5F, 3.5F, 1.0F, 1.0F), PartPose.offset(0.0F, BROW_Y,
+                    -4.1F));
+        }
+        head.addOrReplaceChild("mouth", CubeListBuilder.create().texOffs(120, 0).addBox(-1.0F, 0.0F, 0.0F, 2.0F, 1.0F,
+                0.0F), PartPose.offset(0.0F, MOUTH_Y, -4.03F));
         PartDefinition hat = root.addOrReplaceChild("hat", CubeListBuilder.create()
                 .texOffs(0, 16).addBox(-7.0F, -8.8F, -7.0F, 14.0F, 1.0F, 14.0F)
                 .texOffs(56, 16).addBox(-4.5F, -12.6F, -4.5F, 9.0F, 4.0F, 9.0F),
@@ -277,6 +334,8 @@ public final class WizardModel<T extends MovingMonster> extends HumanoidModel<T>
         this.skirt(c, hipY, p);
         this.beard(c, p);
         this.cape(c, p);
+        this.face(caster, ageInTicks, limbSwingAmount, Mth.clamp(netHeadYaw, -40.0F, 40.0F),
+                Mth.clamp(headPitch, -35.0F, 25.0F));
     }
 
     // The skirt's panels hang from the hips: the front swung forward as far as the leg that steps furthest forward, the

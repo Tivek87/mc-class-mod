@@ -8,6 +8,7 @@ import javax.annotation.Nullable;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.RenderType;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
@@ -207,20 +208,26 @@ public final class ClientOcto {
         float time = clock + partialTick;
         boolean firstPerson = minecraft.options.getCameraType().isFirstPerson();
         MultiBufferSource.BufferSource buffers = minecraft.renderBuffers().bufferSource();
-        TentaclePainter painter = new TentaclePainter(event.getPoseStack(), buffers, minecraft.getBlockRenderer(),
-                level, event.getCamera().getPosition(), firstPerson);
-        for (Map.Entry<Integer, View> entry : VIEWS.entrySet()) {
-            if (!(level.getEntity(entry.getKey()) instanceof Player owner) || owner.isInvisibleTo(minecraft.player)) {
-                continue;
-            }
-            View view = entry.getValue();
-            TentacleShapes.Body body = body(owner, partialTick);
-            boolean self = owner == minecraft.getCameraEntity() && firstPerson;
-            if (!self) {
-                painter.harness(body);
-            }
-            for (int i = 0; i < COUNT; i++) {
-                draw(level, painter, view, body, i, partialTick, time);
+        TentaclePainter painter = new TentaclePainter(event.getPoseStack(), level, event.getCamera().getPosition(),
+                firstPerson);
+        // All the metal first, then all the lamps' light: taking the second buffer ends the first.
+        for (boolean glow : new boolean[] { false, true }) {
+            painter.phase(buffers.getBuffer(glow ? RenderType.eyes(OctoSkin.TEXTURE.id())
+                    : RenderType.entityCutoutNoCull(OctoSkin.TEXTURE.id())), glow);
+            for (Map.Entry<Integer, View> entry : VIEWS.entrySet()) {
+                if (!(level.getEntity(entry.getKey()) instanceof Player owner)
+                        || owner.isInvisibleTo(minecraft.player)) {
+                    continue;
+                }
+                View view = entry.getValue();
+                TentacleShapes.Body body = body(owner, partialTick);
+                boolean self = owner == minecraft.getCameraEntity() && firstPerson;
+                if (!self) {
+                    painter.harness(body);
+                }
+                for (int i = 0; i < COUNT; i++) {
+                    draw(level, painter, view, body, i, partialTick, time);
+                }
             }
         }
         buffers.endBatch();

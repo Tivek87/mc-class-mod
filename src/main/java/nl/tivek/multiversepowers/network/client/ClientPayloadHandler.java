@@ -4,6 +4,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.network.protocol.game.ClientboundLevelParticlesPacket;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.phys.Vec3;
 import net.neoforged.fml.config.ConfigTracker;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
@@ -60,6 +61,7 @@ import nl.tivek.multiversepowers.engine.entity.DeathStyles;
 import nl.tivek.multiversepowers.engine.entity.FatiguePayload;
 import nl.tivek.multiversepowers.engine.entity.HeldPayload;
 import nl.tivek.multiversepowers.engine.entity.KnockdownPayload;
+import nl.tivek.multiversepowers.engine.entity.TumblePayload;
 import nl.tivek.multiversepowers.engine.fx.ParticlesPayload;
 import nl.tivek.multiversepowers.engine.fx.VoicePayload;
 import nl.tivek.multiversepowers.faction.StandingsPayload;
@@ -174,6 +176,10 @@ public final class ClientPayloadHandler {
 
     public static void handleHeld(HeldPayload payload, IPayloadContext context) {
         context.enqueueWork(() -> Ragdolls.held(payload.entity(), payload.held()));
+    }
+
+    public static void handleTumble(TumblePayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> Ragdolls.tumble(payload.entity(), new Vec3(payload.x(), payload.y(), payload.z())));
     }
 
     public static void handleKnockdown(KnockdownPayload payload, IPayloadContext context) {

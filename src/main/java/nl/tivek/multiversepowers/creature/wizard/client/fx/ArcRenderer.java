@@ -13,6 +13,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.creature.wizard.Wizard;
 import nl.tivek.multiversepowers.creature.wizard.spell.ArcLightning;
+import nl.tivek.multiversepowers.creature.wizard.staff.WizardStaff;
 
 // Chain lightning: from his crystal to the first he struck and on from each to the next, a jagged bolt with a white-hot
 // core in a blue-white glow, new jags every tick, a fork splitting off here and there; each leap shows the moment it
@@ -39,7 +40,8 @@ public final class ArcRenderer extends EntityRenderer<ArcLightning> {
         }
         Vec3 origin = arc.getPosition(partialTick);
         Vec3 eye = this.entityRenderDispatcher.camera.getPosition().subtract(origin);
-        Vec3 from = (caster instanceof Wizard wizard ? wizard.crystal() : caster.getEyePosition(partialTick))
+        Vec3 from = (caster instanceof Wizard wizard ? wizard.crystal()
+                : caster instanceof WizardStaff staff ? staff.tip() : caster.getEyePosition(partialTick))
                 .subtract(origin);
         float age = arc.tickCount + partialTick;
         VertexConsumer buffer = buffers.getBuffer(Additive.TYPE);

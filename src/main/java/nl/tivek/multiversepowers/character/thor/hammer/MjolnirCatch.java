@@ -11,27 +11,22 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-import nl.tivek.multiversepowers.character.thor.ThorCharge;
 import nl.tivek.multiversepowers.character.thor.ThorGrab;
 import nl.tivek.multiversepowers.character.thor.ThorMoves;
 import nl.tivek.multiversepowers.character.thor.ThorStatePayload;
-import nl.tivek.multiversepowers.engine.entity.Knockdowns;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 import nl.tivek.multiversepowers.engine.math.Vectors;
 import nl.tivek.multiversepowers.engine.world.ChunkPreloader;
 import nl.tivek.multiversepowers.engine.target.Targeting;
-import nl.tivek.multiversepowers.spell.SpellTargets;
 
 // The hammer flying back to Thor, called from wherever it is or by itself after a throw: it jerks free, turns its grip
-// to him and speeds up, flies straight through blocks, hits each creature in its way once (knocking it aside, never
+// to him and speeds up, flies straight through blocks, hits each creature in its way once (sending it tumbling aside, never
 // into him) and slams grip first into his hand: his right, his left in flight or when he called it to fly, or onto
 // his belt while his right hand holds a creature.
 abstract class MjolnirCatch extends MjolnirRest {
     private static final double CALLED_SPEED = 3.2;
     private static final double HOME_SPEED = 2.6;
     private static final int SPEED_UP = 4;
-    private static final double ASIDE = 1.0;
-    private static final double ASIDE_UP = 0.3;
     private static final double LOAD_AHEAD = 64.0;
 
     private boolean called;
@@ -114,12 +109,11 @@ abstract class MjolnirCatch extends MjolnirRest {
         this.trail(level, owner);
     }
 
-    // Each creature on its way back is hit once and knocked aside, out of its line.
+    // Each creature on its way back is hit once and sent tumbling aside, out of its line.
     private void passing(ServerLevel level, ServerPlayer owner, Vec3 from, Vec3 to) {
         if (this.backDamage <= 0.0F) {
             return;
         }
-        float more = ThorCharge.hammer(owner);
         for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, new AABB(from, to).inflate(1.0),
                 entity -> Targeting.mayStrike(owner, entity) && !this.hit.contains(entity.getUUID()))) {
             AABB box = target.getBoundingBox().inflate(0.5);
@@ -127,9 +121,6 @@ abstract class MjolnirCatch extends MjolnirRest {
                 continue;
             }
             this.hit.add(target.getUUID());
-            Knockdowns.brief(target);
-            target.invulnerableTime = 0;
-            target.hurt(level.damageSources().playerAttack(owner), this.backDamage);
             Vec3 middle = target.getBoundingBox().getCenter();
             Vec3 line = to.subtract(from);
             double along = line.lengthSqr() < 1.0E-6 ? 0.0
@@ -139,9 +130,7 @@ abstract class MjolnirCatch extends MjolnirRest {
             if (side.lengthSqr() < 1.0E-4) {
                 side = line.cross(Vectors.UP);
             }
-            if (side.lengthSqr() > 1.0E-6) {
-                SpellTargets.push(target, side.normalize(), ASIDE * more, ASIDE_UP * more);
-            }
+            tumble(level, owner, target, this.backDamage, side.lengthSqr() > 1.0E-6 ? side : line);
             ParticleFx.cloud(level, ParticleTypes.ELECTRIC_SPARK, middle, 14, 0.3, 0.25);
             level.playSound(null, middle.x, middle.y, middle.z, SoundEvents.MACE_SMASH_AIR, SoundSource.PLAYERS, 0.9F,
                     1.1F);

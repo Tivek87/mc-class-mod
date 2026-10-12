@@ -25,6 +25,7 @@ import nl.tivek.multiversepowers.creature.screamer.Screamer;
 import nl.tivek.multiversepowers.creature.stalker.Stalker;
 import nl.tivek.multiversepowers.creature.wizard.Wizard;
 import nl.tivek.multiversepowers.creature.wizard.ritual.WizardRitual;
+import nl.tivek.multiversepowers.creature.wizard.staff.WizardStaff;
 import nl.tivek.multiversepowers.engine.effect.Effects;
 import nl.tivek.multiversepowers.engine.entity.Captives;
 import nl.tivek.multiversepowers.engine.entity.DeathBlows;
@@ -92,6 +93,7 @@ public class MultiversePowers {
         ShortCommandRegistry.clear();
         Summons.clear();
         WizardRitual.clear();
+        WizardStaff.clear();
         GalactusCommand.clear();
         MobRules.forget();
         DeathStyles.clear();

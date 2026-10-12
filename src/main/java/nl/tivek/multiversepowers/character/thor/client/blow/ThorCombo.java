@@ -33,7 +33,7 @@ import nl.tivek.multiversepowers.spell.client.ClientClaps;
 // Thor's combo in his own game: every click throws the next blow, picked to flow out of the last as a fighter's
 // combination does (the other hand next, the short blows up close and the long ones further off, low blows down low,
 // now and then a kick, the big finishers once the combo has built up). With the hammer in hand it swings the hammer;
-// in flight only his right hand strikes. A click that comes while a blow is still going waits for it. It also shows
+// in flight only his right hand strikes. Swapping fists and hammer mid-combo carries the combo over to the other. A click that comes while a blow is still going waits for it. It also shows
 // his own thunderclap wind-up while the button is held, and tells the server so the others see it.
 @EventBusSubscriber(modid = MultiversePowers.MODID, value = Dist.CLIENT)
 public final class ThorCombo {
@@ -102,7 +102,9 @@ public final class ThorCombo {
 
     private static ThorBlow begin(LocalPlayer player) {
         int now = ClientThor.ticks();
-        if (last == null || now - startedAt > last.ticks() + CHAIN || last.finisher() || !fits(last, player)) {
+        // Taking the hammer up or hanging it back mid-combo keeps the combo going: it goes on, finisher and all, with
+        // whatever he holds now.
+        if (last == null || now - startedAt > last.ticks() + CHAIN || last.finisher()) {
             count = 0;
             RECENT.clear();
         }

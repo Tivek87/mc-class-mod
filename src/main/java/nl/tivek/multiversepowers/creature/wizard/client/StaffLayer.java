@@ -73,6 +73,10 @@ final class StaffLayer<T extends MovingMonster> extends RenderLayer<T, WizardMod
     public void render(PoseStack pose, MultiBufferSource buffers, int light, T caster, float limbSwing, float amount,
             float partialTick, float age, float headYaw, float headPitch) {
         WizardModel<T> model = this.getParentModel();
+        if (caster instanceof Wizard wizard && wizard.staffOut()) {
+            this.bareHand(pose, buffers, wizard, age);
+            return;
+        }
         float[] c = model.pose.c;
         boolean faded = model.alpha < 1.0F;
         ResourceLocation texture = WizardRenderer.texture(WizardRenderer.phase(caster));
@@ -105,6 +109,37 @@ final class StaffLayer<T extends MovingMonster> extends RenderLayer<T, WizardMod
         Vec3 hand = world(pose, 0.0F, 9.0F / 16.0F, -0.1F);
         pose.popPose();
         if (caster instanceof Wizard wizard && EntityPass.inWorld()) {
+            wizard.drawnAt(tip, hand);
+        }
+    }
+
+    // His staff away, he casts from his bare right hand: a mote of his phase's light turns in his palm, where his
+    // spells now leave from.
+    private void bareHand(PoseStack pose, MultiBufferSource buffers, Wizard wizard, float age) {
+        WizardModel<T> model = this.getParentModel();
+        int phase = wizard.phase();
+        pose.pushPose();
+        model.translateToHand(HumanoidArm.RIGHT, pose);
+        pose.translate(0.0F, 10.5F / 16.0F, -0.05F);
+        pose.scale(0.55F, 0.55F, 0.55F);
+        this.crystal.yRot = age * 0.2F;
+        this.crystal.xRot = age * 0.13F;
+        float bright = Mth.clamp(0.7F + 0.4F * model.pose.c[GLOW] + 0.1F * Mth.sin(age * 0.4F), 0.0F, 1.0F);
+        int colour = Wizard.light(phase);
+        int r = (int) ((colour >> 16 & 255) * bright);
+        int g = (int) ((colour >> 8 & 255) * bright);
+        int b = (int) ((colour & 255) * bright);
+        pose.translate(0.0F, -CRYSTAL / 16.0F, 0.0F);
+        this.crystal.render(pose, buffers.getBuffer(RenderType.eyes(WizardRenderer.glow(phase))), 15728640,
+                OverlayTexture.NO_OVERLAY, 0xFF000000 | r << 16 | g << 8 | b);
+        Vec3 tip = world(pose, 0.0F, CRYSTAL / 16.0F, 0.0F);
+        this.crystal.xRot = 0.0F;
+        pose.popPose();
+        pose.pushPose();
+        model.translateToHand(HumanoidArm.LEFT, pose);
+        Vec3 hand = world(pose, 0.0F, 9.0F / 16.0F, -0.1F);
+        pose.popPose();
+        if (EntityPass.inWorld()) {
             wizard.drawnAt(tip, hand);
         }
     }

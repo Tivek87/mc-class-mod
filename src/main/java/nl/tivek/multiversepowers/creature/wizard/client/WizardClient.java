@@ -31,6 +31,7 @@ import nl.tivek.multiversepowers.creature.wizard.client.fx.LanceRenderer;
 import nl.tivek.multiversepowers.creature.wizard.client.fx.MeteorRenderer;
 import nl.tivek.multiversepowers.creature.wizard.client.fx.OrbRenderer;
 import nl.tivek.multiversepowers.creature.wizard.client.fx.SentryRenderer;
+import nl.tivek.multiversepowers.creature.wizard.client.rift.PortalRenderer;
 import nl.tivek.multiversepowers.creature.wizard.client.special.OmenRenderer;
 import nl.tivek.multiversepowers.creature.wizard.client.special.SigilRenderer;
 import nl.tivek.multiversepowers.creature.wizard.client.special.WavesRenderer;
@@ -50,8 +51,12 @@ public final class WizardClient {
         for (EntityType<? extends MovingMonster> type : List.<EntityType<? extends MovingMonster>>of(
                 WizardEntities.WIZARD.get(), WizardEntities.DECOY.get())) {
             for (int kind : new int[] { WizardMove.STRIKE, WizardMove.BOLT, WizardMove.BLIZZARD, WizardMove.COMBO,
-                    WizardMove.WHIRL, WizardMove.FLAME_LASH, WizardMove.REPULSE }) {
+                    WizardMove.WHIRL, WizardMove.FLAME_LASH, WizardMove.REPULSE, WizardMove.WATCH }) {
                 MobPreview.move(type, WizardMove.length(kind) + 8, w -> w.play(kind), w -> w.play(0));
+            }
+            // A while of a pastime that needs nothing set down about him.
+            for (int kind : new int[] { WizardMove.READ, WizardMove.WISP, WizardMove.BREW, WizardMove.PRACTICE }) {
+                MobPreview.move(type, 160, w -> w.play(kind), w -> w.play(0));
             }
         }
         MobPreview.move(WizardEntities.FAMILIAR.get(), 40, f -> f.setIsCharging(true), f -> f.setIsCharging(false));
@@ -91,6 +96,8 @@ public final class WizardClient {
         event.registerEntityRenderer(WizardEntities.SIGIL.get(), SigilRenderer::new);
         event.registerEntityRenderer(WizardEntities.WAVES.get(), WavesRenderer::new);
         event.registerEntityRenderer(WizardEntities.OMEN.get(), OmenRenderer::new);
+        event.registerEntityRenderer(WizardEntities.PORTAL.get(), PortalRenderer::new);
+        event.registerEntityRenderer(WizardEntities.STAFF.get(), StaffRenderer::new);
     }
 
     public static void onRegisterLayers(EntityRenderersEvent.RegisterLayerDefinitions event) {

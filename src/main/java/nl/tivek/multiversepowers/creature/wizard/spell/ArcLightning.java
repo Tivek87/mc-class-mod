@@ -52,6 +52,12 @@ public final class ArcLightning extends Entity {
 
     // Strikes `target` and up to `jumps` more foes near each one before.
     public static void strike(ServerLevel level, Wizard wizard, LivingEntity target, float damage, int jumps) {
+        strikeFrom(level, wizard, wizard, target, damage, jumps);
+    }
+
+    // As strike, the first arc leaping from `from` (his staff fighting on its own).
+    public static void strikeFrom(ServerLevel level, Wizard wizard, Entity from, LivingEntity target, float damage,
+            int jumps) {
         List<LivingEntity> chain = new ArrayList<>();
         chain.add(target);
         LivingEntity last = target;
@@ -74,14 +80,13 @@ public final class ArcLightning extends Entity {
         ArcLightning arc = new ArcLightning(WizardEntities.ARC.get(), level);
         arc.setPos(target.getX(), target.getY(), target.getZ());
         arc.damage = damage;
-        arc.entityData.set(CASTER, wizard.getId());
+        arc.entityData.set(CASTER, from.getId());
         for (int i = 0; i < MOST; i++) {
             arc.entityData.set(STRUCK[i], i < chain.size() ? chain.get(i).getId() : -1);
         }
         level.addFreshEntity(arc);
-        Vec3 from = wizard.staffTip();
-        level.playSound(null, from.x, from.y, from.z, SoundEvents.LIGHTNING_BOLT_IMPACT, SoundSource.HOSTILE, 1.6F,
-                1.6F);
+        Vec3 at = from == wizard ? wizard.staffTip() : from.position();
+        level.playSound(null, at.x, at.y, at.z, SoundEvents.LIGHTNING_BOLT_IMPACT, SoundSource.HOSTILE, 1.6F, 1.6F);
     }
 
     @Override

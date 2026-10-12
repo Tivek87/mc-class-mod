@@ -4,7 +4,6 @@ import java.util.Optional;
 import java.util.UUID;
 import javax.annotation.Nullable;
 import net.minecraft.core.particles.DustParticleOptions;
-import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
@@ -43,7 +42,6 @@ import net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal;
 import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
 import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.entity.projectile.AbstractArrow;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.ServerLevelAccessor;
 import net.minecraft.world.phys.Vec3;
@@ -54,7 +52,7 @@ import nl.tivek.multiversepowers.creature.wizard.field.StarRift;
 import nl.tivek.multiversepowers.creature.wizard.spell.ArcaneFamiliar;
 import nl.tivek.multiversepowers.creature.wizard.spell.RuneSentry;
 import nl.tivek.multiversepowers.creature.wizard.spell.WardCrystal;
-import nl.tivek.multiversepowers.engine.fx.ParticleFx;
+import nl.tivek.multiversepowers.creature.wizard.staff.WizardStaff;
 import org.joml.Vector3f;
 
 // The Wizard: an old mage in a long robe and a pointed hat, a staff crowned with a glowing crystal in his right hand. A
@@ -93,6 +91,12 @@ public final class Wizard extends MovingMonster {
             EntityDataSerializers.FLOAT);
     private static final EntityDataAccessor<Integer> CRYSTALS = SynchedEntityData.defineId(Wizard.class,
             EntityDataSerializers.INT);
+    // From his second phase: whether he is up in the air or fighting on his feet for a while (WizardMoves).
+    private static final EntityDataAccessor<Boolean> ALOFT = SynchedEntityData.defineId(Wizard.class,
+            EntityDataSerializers.BOOLEAN);
+    // His staff out of his hand (staff/WizardStaff): thrown, planted, leaned, fighting on its own or broken.
+    private static final EntityDataAccessor<Boolean> STAFF_OUT = SynchedEntityData.defineId(Wizard.class,
+            EntityDataSerializers.BOOLEAN);
     private static final ResourceLocation PHASE_SPEED = ResourceLocation.fromNamespaceAndPath(MultiversePowers.MODID,
             "wizard_phase_speed");
     private static final EntityDimensions FLOATING = EntityDimensions.scalable(0.6F, 1.95F + (float) HOVER)
@@ -125,9 +129,9 @@ public final class Wizard extends MovingMonster {
     private float wardSeen;
     private int wardStruck = -100;
     private int wardBroke = -100;
-    // On the server: when a blow last struck the ward, and how hard.
-    private int wardHitAt = -100;
-    private float wardHit;
+    // On the server: when a blow last struck the ward, and how hard (WizardWard.struck).
+    int wardHitAt = -100;
+    float wardHit;
 
     public Wizard(EntityType<? extends Wizard> type, Level level) {
         super(type, level);
@@ -153,6 +157,8 @@ public final class Wizard extends MovingMonster {
         builder.define(BAR, Optional.empty());
         builder.define(WARD, 0.0F);
         builder.define(CRYSTALS, 0);
+        builder.define(ALOFT, true);
+        builder.define(STAFF_OUT, false);
     }
 
     @Override
@@ -170,6 +176,7 @@ public final class Wizard extends MovingMonster {
         this.moves = new WizardMoves(this);
         this.goalSelector.addGoal(0, new FloatGoal(this));
         this.goalSelector.addGoal(1, this.moves);
+        this.goalSelector.addGoal(2, new WizardIdle(this, this.moves));
         this.goalSelector.addGoal(6, new WaterAvoidingRandomStrollGoal(this, 0.6));
         this.goalSelector.addGoal(7, new LookAtPlayerGoal(this, Player.class, 12.0F));
         this.goalSelector.addGoal(8, new RandomLookAroundGoal(this));
@@ -188,7 +195,8 @@ public final class Wizard extends MovingMonster {
     // burst on.
     public static boolean ally(Entity entity) {
         return entity instanceof Wizard || entity instanceof WizardDecoy || entity instanceof ArcaneFamiliar
-                || entity instanceof WardCrystal || entity instanceof VoidTendrils || entity instanceof RuneSentry;
+                || entity instanceof WardCrystal || entity instanceof VoidTendrils || entity instanceof RuneSentry
+                || entity instanceof WizardStaff;
     }
 
     // His health where his phase began: his drain never heals him past it.
@@ -221,9 +229,32 @@ public final class Wizard extends MovingMonster {
         return PHASE_LIGHT[Mth.clamp(phase, 1, WizardMove.PHASES)];
     }
 
-    // From his second phase he flies (WizardFlight), until he dies.
+    // From his second phase he flies (WizardFlight) but for his spells on foot, until he dies.
     public boolean flies() {
-        return this.phase() > 1 && this.isAlive();
+        return this.floats() && this.isAlive();
+    }
+
+    // Drawn floating over the ground: up in the air from his second phase.
+    public boolean floats() {
+        return this.phase() > 1 && this.aloft();
+    }
+
+    public boolean aloft() {
+        return this.entityData.get(ALOFT);
+    }
+
+    void setAloft(boolean aloft) {
+        this.entityData.set(ALOFT, aloft);
+        this.setNoGravity(this.flies());
+        this.refreshDimensions();
+    }
+
+    public boolean staffOut() {
+        return this.entityData.get(STAFF_OUT);
+    }
+
+    public void setStaffOut(boolean out) {
+        this.entityData.set(STAFF_OUT, out);
     }
 
     // His ward (WizardWard): how much it can still take, how much it took when raised, and its crystals still whole.
@@ -261,7 +292,7 @@ public final class Wizard extends MovingMonster {
     @Override
     public void onSyncedDataUpdated(EntityDataAccessor<?> key) {
         super.onSyncedDataUpdated(key);
-        if (PHASE.equals(key)) {
+        if (PHASE.equals(key) || ALOFT.equals(key)) {
             this.refreshDimensions();
         }
         if (WARD.equals(key) && this.level().isClientSide) {
@@ -279,12 +310,12 @@ public final class Wizard extends MovingMonster {
 
     @Override
     protected EntityDimensions getDefaultDimensions(Pose pose) {
-        return this.phase() > 1 ? FLOATING : super.getDefaultDimensions(pose);
+        return this.floats() ? FLOATING : super.getDefaultDimensions(pose);
     }
 
     // How high above the ground he floats now.
     public double hover() {
-        return this.phase() > 1 ? HOVER : 0.0;
+        return this.floats() ? HOVER : 0.0;
     }
 
     // No harm reaches him while a phase takes him.
@@ -319,9 +350,10 @@ public final class Wizard extends MovingMonster {
         return this.position().add(-cos * right - sin * ahead, up + this.hover(), -sin * right + cos * ahead);
     }
 
-    // Where his spells leave from: the crystal of the staff in his right hand, and his left hand.
+    // Where his spells leave from: the crystal of the staff in his right hand (that hand while his staff is away), and
+    // his left hand.
     public Vec3 staffTip() {
-        return this.at(0.45, 2.25, 0.35);
+        return this.staffOut() ? this.at(0.45, 1.4, 0.55) : this.at(0.45, 2.25, 0.35);
     }
 
     public Vec3 palm() {
@@ -396,7 +428,7 @@ public final class Wizard extends MovingMonster {
             WizardWard.restore(level, this);
         }
         super.tick();
-        if (this.level().isClientSide && (this.isAlive() || this.move() == WizardMove.DEATH)) {
+        if (this.level().isClientSide && !this.isInvisible() && (this.isAlive() || this.move() == WizardMove.DEATH)) {
             WizardSparks.of(this, this.phase(), this.crystal == null ? this.staffTip() : this.crystal,
                     this.leftHand == null ? this.palm() : this.leftHand);
         }
@@ -428,27 +460,7 @@ public final class Wizard extends MovingMonster {
         }
         if (this.ward() > 0.0F && !bypass && this.isAlive()) {
             if (this.level() instanceof ServerLevel level && !this.isInvulnerableTo(source)) {
-                // An arrow breaks on the ward instead of glancing off it (a refused blow sends it back), and counts
-                // however soon after another it comes.
-                boolean arrow = source.getDirectEntity() instanceof AbstractArrow;
-                if (arrow) {
-                    Vec3 at = source.getDirectEntity().position();
-                    ParticleFx.send(level, ParticleTypes.CRIT, at.x, at.y, at.z, 8, 0.1, 0.1, 0.1, 0.2);
-                    source.getDirectEntity().discard();
-                }
-                // As his health does, the ward takes a blow at most twice a second, or only what a harder one adds.
-                boolean fresh = arrow || this.tickCount - this.wardHitAt >= 10;
-                float taken = fresh ? amount : amount - this.wardHit;
-                if (taken > 0.0F) {
-                    if (fresh) {
-                        this.wardHitAt = this.tickCount;
-                    }
-                    this.wardHit = amount;
-                    if (by instanceof LivingEntity living) {
-                        this.setLastHurtByMob(living);
-                    }
-                    WizardWard.absorb(level, this, taken, source, this.moves);
-                }
+                WizardWard.struck(level, this, source, amount, this.moves);
             }
             return false;
         }
@@ -486,7 +498,7 @@ public final class Wizard extends MovingMonster {
         }
         WizardWard.drop((ServerLevel) this.level(), this, false);
         // Up in the air he sinks to the ground as he dies (WizardDeath), and falls as anything does once he is down.
-        this.setNoGravity(this.phase() > 1);
+        this.setNoGravity(this.floats());
         this.bar.setProgress(0.0F);
         this.start(WizardMove.DEATH);
     }
@@ -541,11 +553,15 @@ public final class Wizard extends MovingMonster {
         tag.putInt("Phase", this.phase());
         tag.putFloat("Ward", this.ward());
         tag.putInt("Crystals", this.crystals());
+        tag.putBoolean("Aloft", this.aloft());
     }
 
     @Override
     public void readAdditionalSaveData(CompoundTag tag) {
         super.readAdditionalSaveData(tag);
+        if (tag.contains("Aloft")) {
+            this.entityData.set(ALOFT, tag.getBoolean("Aloft"));
+        }
         if (tag.contains("Phase")) {
             this.setPhase(Mth.clamp(tag.getInt("Phase"), 1, WizardMove.PHASES));
         }

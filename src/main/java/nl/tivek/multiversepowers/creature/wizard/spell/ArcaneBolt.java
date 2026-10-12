@@ -49,9 +49,13 @@ public final class ArcaneBolt extends ThrowableProjectile {
     }
 
     public static void cast(ServerLevel level, Wizard wizard, LivingEntity target, float damage) {
+        castFrom(level, wizard, wizard.staffTip(), target, damage);
+    }
+
+    // A seeking bolt from `from` (his staff fighting on its own) at `target`.
+    public static void castFrom(ServerLevel level, Wizard wizard, Vec3 from, LivingEntity target, float damage) {
         ArcaneBolt bolt = new ArcaneBolt(WizardEntities.BOLT.get(), level);
         bolt.setOwner(wizard);
-        Vec3 from = wizard.staffTip();
         bolt.setPos(from.x, from.y, from.z);
         Vec3 way = target.getBoundingBox().getCenter().subtract(from).normalize();
         bolt.setDeltaMovement(way.scale(SPEED));

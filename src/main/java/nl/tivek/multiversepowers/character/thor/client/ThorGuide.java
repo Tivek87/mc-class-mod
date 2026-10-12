@@ -68,6 +68,7 @@ final class ThorGuide {
                         hold(Input.LEFT, "shockwave").fires("air_shockwave"),
                         click(Input.RIGHT, "blink").fires("air_blink"), hold(Input.RIGHT, "dive").fires("grab_dash_dive"),
                         click(Input.SCROLL, "bolt").fires("air_bolt"),
+                        click(Input.SCROLL, "recall").fires("hammer_call"),
                         hold(Input.SHIFT, "lightning").fires("lightning_flight"),
                         heading("keys"), storm(), call(), calm(), stormThrow()));
     }

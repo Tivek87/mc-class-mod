@@ -372,5 +372,6 @@ final class WizardKeys {
         WizardKeysMore.fill(MOVES);
         WizardKeysClose.fill(MOVES);
         WizardKeysSpecial.fill(MOVES);
+        WizardKeysSteps.fill(MOVES);
     }
 }

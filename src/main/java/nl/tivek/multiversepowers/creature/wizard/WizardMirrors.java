@@ -26,7 +26,9 @@ final class WizardMirrors {
     private static final int RACE = 200;
     private static final int CLOSE = 14;
     private static final int DASH = 12;
-    private static final double RADIUS = 6.5;
+    // Close enough round the foe that a sword reaches the images.
+    private static final double RADIUS = 3.0;
+    private static final double SWELL = 0.45;
     private static final double DASH_REACH = 1.9;
 
     private final ServerLevel level;
@@ -185,7 +187,7 @@ final class WizardMirrors {
     }
 
     private Vec3 place(int i, LivingEntity target) {
-        double radius = RADIUS + 1.2 * Math.sin(this.t * 0.07);
+        double radius = RADIUS + SWELL * Math.sin(this.t * 0.07);
         if (this.t > RACE) {
             radius *= 1.0 - 0.8 * Math.min(1.0, (this.t - RACE) / (double) CLOSE);
         }

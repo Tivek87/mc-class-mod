@@ -37,6 +37,7 @@ import nl.tivek.multiversepowers.creature.wizard.field.MarkedStrike;
 import nl.tivek.multiversepowers.creature.wizard.field.RuneMine;
 import nl.tivek.multiversepowers.creature.wizard.field.StarRift;
 import nl.tivek.multiversepowers.creature.wizard.field.TimeWarp;
+import nl.tivek.multiversepowers.creature.wizard.rift.RiftShows;
 import nl.tivek.multiversepowers.creature.wizard.special.PhaseSpecials;
 import nl.tivek.multiversepowers.creature.wizard.spell.ArcLightning;
 import nl.tivek.multiversepowers.creature.wizard.spell.ArcaneBeam;
@@ -163,7 +164,7 @@ final class WizardCasts {
                     WizardMove.BEAM_STOP - WizardMove.release(WizardMove.BEAM));
             case WizardMove.METEOR -> GreatMeteor.call(level, wizard, ground(level, aim),
                     wizard.harm(WizardMove.METEOR));
-            case WizardMove.WARP -> TimeWarp.cast(level, wizard);
+            case WizardMove.WARP -> TimeWarp.cast(level, wizard, target);
             case WizardMove.ASCEND, WizardMove.UNBIND, WizardMove.AWAKEN, WizardMove.APOTHEOSIS -> burst(level,
                     wizard, WizardMove.carries(kind));
             case WizardMove.ARRIVE -> land(level, wizard);
@@ -379,14 +380,21 @@ final class WizardCasts {
                 0.9F);
     }
 
-    // Somewhere 9 to 14 blocks from `middle`, in sight of `target` if he can.
+    // Somewhere 10 to 20 blocks from `middle`, in sight of `target` if he can.
     static void teleportNear(Wizard wizard, Vec3 middle, @Nullable LivingEntity target, Vec3 from) {
+        teleportNear(wizard, middle, target, from, 10.0, 20.0);
+    }
+
+    // Somewhere `near` to `most` blocks from `middle` on the ground, well away from where he was, in sight of `target`
+    // if he can.
+    static void teleportNear(Wizard wizard, Vec3 middle, @Nullable LivingEntity target, Vec3 from, double near,
+            double most) {
         boolean moved = false;
         for (int tries = 0; tries < 16 && !moved; tries++) {
             double angle = wizard.getRandom().nextDouble() * Mth.TWO_PI;
-            double far = 9.0 + wizard.getRandom().nextDouble() * 5.0;
+            double far = near + wizard.getRandom().nextDouble() * (most - near);
             Vec3 to = middle.add(Math.cos(angle) * far, 4.0, Math.sin(angle) * far);
-            if (to.distanceTo(from) < 7.0) {
+            if (to.distanceTo(from) < Math.min(7.0, near * 0.75)) {
                 continue;
             }
             moved = wizard.randomTeleport(to.x, to.y, to.z, false);
@@ -411,6 +419,7 @@ final class WizardCasts {
         wizard.setDeltaMovement(Vec3.ZERO);
         wizard.moveTo(ground.x, y, ground.z, wizard.getYRot(), wizard.getXRot());
         Vec3 at = wizard.position().add(0.0, 1.0, 0.0);
+        RiftShows.arrival(level, wizard, ground, t);
         if (t % 2 == 0) {
             ParticleFx.helix(level, Wizard.dust(Wizard.VIOLET, 1.4F), at.add(0.0, -1.0, 0.0), 1.2, 2.4, 1.5, 10,
                     t * 0.25);
@@ -458,6 +467,7 @@ final class WizardCasts {
     // A phase bursting out of him: whoever stands near is thrown back, and he is the next phase.
     private static void burst(ServerLevel level, Wizard wizard, int phase) {
         wizard.setPhase(phase);
+        wizard.setAloft(true);
         WizardWard.raise(level, wizard);
         Vec3 at = wizard.position().add(0.0, 1.0 + wizard.hover(), 0.0);
         for (LivingEntity living : MonsterBlows.foes(wizard, wizard.getBoundingBox().inflate(BURST_REACH))) {

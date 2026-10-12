@@ -28,12 +28,14 @@ final class WizardSparks {
         int release = WizardMove.release(move);
         boolean gathering = move != 0 && t < release;
         Vec3 feet = body.position();
-        Vec3 middle = feet.add(0.0, 1.0 + (phase > 1 ? Wizard.HOVER : 0.0), 0.0);
+        double hover = body instanceof Wizard wizard ? wizard.hover()
+                : body instanceof WizardDecoy decoy ? decoy.hover() : 0.0;
+        Vec3 middle = feet.add(0.0, 1.0 + hover, 0.0);
         if (move == 0 && random.nextInt(5) == 0) {
             level.addParticle(Wizard.dust(Wizard.light(phase), 0.6F), crystal.x + spread(random, 0.3),
                     crystal.y + spread(random, 0.3), crystal.z + spread(random, 0.3), 0.0, 0.0, 0.0);
         }
-        if (phase > 1 && random.nextInt(3) == 0) {
+        if (hover > 0.0 && random.nextInt(3) == 0) {
             level.addParticle(Wizard.dust(Wizard.light(phase), 0.9F), feet.x + spread(random, 0.6), feet.y + 0.1
                     + random.nextDouble() * 0.5, feet.z + spread(random, 0.6), 0.0, -0.02, 0.0);
         }

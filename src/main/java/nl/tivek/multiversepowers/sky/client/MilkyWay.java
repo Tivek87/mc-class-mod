@@ -7,15 +7,18 @@ import nl.tivek.multiversepowers.engine.math.Perlin;
 import nl.tivek.multiversepowers.sky.client.SkyBodies.Cluster;
 import nl.tivek.multiversepowers.sky.client.SkyBodies.Nebula;
 
+// The Milky Way and the clouds of light in the night sky, each a thing of its own laid on the game's sky as the moon
+// is, the sky between them left as it is: the band a strip round the sky along its great circle (`band`, drawn in
+// PIECES x ROWS quads), each nebula and each cluster's glow a picture of its own (`nebula`, `cluster`). Painted in
+// sharp pixels the moon's size, the light only added to what is behind.
 final class MilkyWay {
-    static final int SIZE = SkyTexture.pixels(90.0);
-    static final Vec3[][] FACES = {
-        {new Vec3(1, 0, 0), new Vec3(0, 0, -1), new Vec3(0, -1, 0)},
-        {new Vec3(-1, 0, 0), new Vec3(0, 0, 1), new Vec3(0, -1, 0)},
-        {new Vec3(0, 1, 0), new Vec3(1, 0, 0), new Vec3(0, 0, 1)},
-        {new Vec3(0, -1, 0), new Vec3(1, 0, 0), new Vec3(0, 0, -1)},
-        {new Vec3(0, 0, 1), new Vec3(1, 0, 0), new Vec3(0, -1, 0)},
-        {new Vec3(0, 0, -1), new Vec3(-1, 0, 0), new Vec3(0, -1, 0)}};
+    // The band reaches this far either side of its middle line, in degrees.
+    static final double HALF = 24.0;
+    static final int PIECES = 48;
+    static final int ROWS = 4;
+    // A nebula's picture is this many times as wide as the nebula, a cluster's glow this many.
+    static final double NEBULA_REACH = 1.9;
+    static final double CLUSTER_REACH = 1.6;
 
     private static final Vec3 N = SkyBodies.BAND;
     private static final Vec3 C = SkyBodies.CORE.subtract(N.scale(SkyBodies.CORE.dot(N))).normalize();
@@ -24,45 +27,73 @@ final class MilkyWay {
     private MilkyWay() {
     }
 
-    static NativeImage face(int index) {
-        Vec3[] face = FACES[index];
-        NativeImage image = new NativeImage(SIZE, SIZE, false);
-        IntStream.range(0, SIZE).parallel().forEach(row -> {
+    // A point on the band, `lon` round from its core and `lat` off its middle line, both in radians.
+    static Vec3 along(double lon, double lat) {
+        return C.scale(Math.cos(lon)).add(S.scale(Math.sin(lon))).scale(Math.cos(lat)).add(N.scale(Math.sin(lat)));
+    }
+
+    // The band's strip, its left edge at lon -180, its top row at lat +HALF, fading out towards its edges.
+    static NativeImage band() {
+        int wide = SkyTexture.pixels(360.0);
+        int tall = SkyTexture.pixels(2.0 * HALF);
+        NativeImage image = new NativeImage(wide, tall, false);
+        IntStream.range(0, tall).parallel().forEach(row -> {
             double[] rgb = new double[3];
-            for (int col = 0; col < SIZE; col++) {
-                double a = (col + 0.5) / SIZE * 2.0 - 1.0;
-                double b = (row + 0.5) / SIZE * 2.0 - 1.0;
-                Vec3 d = face[0].add(face[1].scale(a)).add(face[2].scale(b)).normalize();
+            double lat = Math.toRadians((0.5 - (row + 0.5) / tall) * 2.0 * HALF);
+            double edge = 1.0 - Surfaces.smooth(0.6, 1.0, Math.abs(Math.toDegrees(lat)) / HALF);
+            for (int col = 0; col < wide; col++) {
+                double lon = ((col + 0.5) / wide * 2.0 - 1.0) * Math.PI;
                 rgb[0] = 0.0;
                 rgb[1] = 0.0;
                 rgb[2] = 0.0;
-                paint(d, rgb);
-                image.setPixelRGBA(col, row, SkyColors.added(rgb[0], rgb[1], rgb[2], col, row));
+                band(along(lon, lat), rgb);
+                image.setPixelRGBA(col, row, SkyColors.added(rgb[0] * edge, rgb[1] * edge, rgb[2] * edge, col, row));
             }
         });
         return image;
     }
 
-    private static void paint(Vec3 d, double[] rgb) {
-        double x = d.x;
-        double y = d.y;
-        double z = d.z;
-        double haze = 0.55 + 0.9 * Math.max(0.0, Perlin.fbm(x * 1.6 + 3.0, y * 1.6, z * 1.6, 4) + 0.25);
-        rgb[0] += 0.006 * haze;
-        rgb[1] += 0.010 * haze;
-        rgb[2] += 0.026 * haze;
-        band(d, rgb);
-        for (Nebula nebula : SkyBodies.NEBULAE) {
-            nebula(nebula, d, rgb);
-        }
-        for (Cluster cluster : SkyBodies.CLUSTERS) {
+    static NativeImage nebula(Nebula nebula) {
+        return picture(nebula.dir(), nebula.degrees() * NEBULA_REACH, (d, rgb) -> nebula(nebula, d, rgb));
+    }
+
+    // A cluster's soft glow; its stars are the star field's.
+    static NativeImage cluster(Cluster cluster) {
+        return picture(cluster.dir(), cluster.degrees() * CLUSTER_REACH, (d, rgb) -> {
             double angle = Math.acos(Math.max(-1.0, Math.min(1.0, d.dot(cluster.dir()))));
             double r = angle / Math.toRadians(cluster.degrees() * (cluster.globular() ? 0.45 : 0.6));
             double glow = Math.exp(-r * r) * (cluster.globular() ? 0.45 : 0.06);
             rgb[0] += glow * SkyColors.red(cluster.color());
             rgb[1] += glow * SkyColors.green(cluster.color());
             rgb[2] += glow * SkyColors.blue(cluster.color());
-        }
+        });
+    }
+
+    private interface Light {
+        void at(Vec3 d, double[] rgb);
+    }
+
+    // A square picture `degrees` wide round `dir`, its top towards the sun's side (SkyBodies.frame), its rim faded out.
+    private static NativeImage picture(Vec3 dir, double degrees, Light light) {
+        int size = SkyTexture.pixels(degrees);
+        Vec3[] frame = SkyBodies.frame(dir);
+        double span = Math.tan(Math.toRadians(degrees * 0.5));
+        NativeImage image = new NativeImage(size, size, false);
+        IntStream.range(0, size).parallel().forEach(row -> {
+            double[] rgb = new double[3];
+            for (int col = 0; col < size; col++) {
+                double a = (col + 0.5) / size * 2.0 - 1.0;
+                double b = 1.0 - (row + 0.5) / size * 2.0;
+                Vec3 d = dir.add(frame[0].scale(a * span)).add(frame[1].scale(b * span)).normalize();
+                rgb[0] = 0.0;
+                rgb[1] = 0.0;
+                rgb[2] = 0.0;
+                light.at(d, rgb);
+                double rim = 1.0 - Surfaces.smooth(0.75, 1.0, Math.sqrt(a * a + b * b));
+                image.setPixelRGBA(col, row, SkyColors.added(rgb[0] * rim, rgb[1] * rim, rgb[2] * rim, col, row));
+            }
+        });
+        return image;
     }
 
     private static void band(Vec3 d, double[] rgb) {

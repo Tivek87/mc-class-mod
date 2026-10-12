@@ -2,6 +2,8 @@ package nl.tivek.multiversepowers.creature.wizard.client;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
+import java.util.Map;
+import java.util.WeakHashMap;
 import net.minecraft.client.model.geom.ModelLayerLocation;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
@@ -39,6 +41,8 @@ public final class WizardRenderer<T extends MovingMonster> extends MobRenderer<T
     private static final float CIRCLE = 2.4F;
     // His body is drawn in on itself and fades into light from this tick of his death.
     private static final float FADE_FROM = 84.0F;
+    private static final Map<MovingMonster, float[]> HOVERS = new WeakHashMap<>();
+    private final PastimeProps props;
 
     static {
         for (int phase = 1; phase <= WizardMove.PHASES; phase++) {
@@ -67,10 +71,20 @@ public final class WizardRenderer<T extends MovingMonster> extends MobRenderer<T
                 int b = (int) ((colour & 255) * shown);
                 this.getParentModel().renderToBuffer(pose, buffers.getBuffer(RenderType.eyes(glow(phase))), 15728640,
                         OverlayTexture.NO_OVERLAY, 0xFF000000 | r << 16 | g << 8 | b);
+                // His eyes flaring as he gathers great magic or fixes you with a look: his irises again, brighter.
+                float flare = this.getParentModel().face.flare * shown;
+                if (flare > 0.02F) {
+                    int fr = (int) Math.min(255.0F, (r + 120) * flare);
+                    int fg = (int) Math.min(255.0F, (g + 120) * flare);
+                    int fb = (int) Math.min(255.0F, (b + 120) * flare);
+                    this.getParentModel().irises(pose, buffers.getBuffer(RenderType.eyes(glow(phase))),
+                            0xFF000000 | fr << 16 | fg << 8 | fb);
+                }
             }
         });
         this.addLayer(new RegaliaLayer<>(this));
         this.addLayer(new StaffLayer<>(this, context.bakeLayer(StaffLayer.LAYER)));
+        this.props = new PastimeProps(context);
     }
 
     // His dress and its glowing runes in `phase`.
@@ -87,7 +101,20 @@ public final class WizardRenderer<T extends MovingMonster> extends MobRenderer<T
     }
 
     static boolean floating(MovingMonster caster) {
-        return phase(caster) > 1;
+        if (caster instanceof Wizard wizard) {
+            return wizard.floats();
+        }
+        return caster instanceof WizardDecoy decoy && decoy.floats();
+    }
+
+    // How high he is drawn over his feet: easing to his hover as he takes off or comes down, so his body never jumps.
+    private static float hover(MovingMonster caster, float age) {
+        float want = floating(caster) ? (float) Wizard.HOVER : 0.0F;
+        float[] shown = HOVERS.computeIfAbsent(caster, c -> new float[] { age, want });
+        float dt = Mth.clamp(age - shown[0], 0.0F, 10.0F);
+        shown[0] = age;
+        shown[1] += (want - shown[1]) * (1.0F - (float) Math.exp(-0.25F * dt));
+        return shown[1];
     }
 
     static int phase(MovingMonster caster) {
@@ -103,6 +130,10 @@ public final class WizardRenderer<T extends MovingMonster> extends MobRenderer<T
 
     @Override
     public void render(T caster, float yaw, float partialTick, PoseStack pose, MultiBufferSource buffers, int light) {
+        // Unseen (stepping through his rifts, slipping behind a foe): nothing of him, his light and staff too.
+        if (caster.isInvisible()) {
+            return;
+        }
         if (caster instanceof Wizard) {
             this.circle(caster, partialTick, pose, buffers);
         }
@@ -112,12 +143,16 @@ public final class WizardRenderer<T extends MovingMonster> extends MobRenderer<T
         boolean dying = caster.move() == WizardMove.DEATH;
         float fade = dying ? Mth.clamp((t - FADE_FROM) / (WizardMove.GONE - FADE_FROM), 0.0F, 1.0F) : 0.0F;
         this.model.alpha = ghost ? 0.42F + 0.14F * Mth.sin(age * 0.45F) : 1.0F - fade;
-        double hover = floating(caster) ? Wizard.HOVER : 0.0;
+        double hover = hover(caster, age);
         if (dying) {
             hover *= 1.0 - Mth.clamp(t / 14.0F, 0.0F, 1.0F);
         }
         pose.pushPose();
         pose.translate(0.0, hover, 0.0);
+        if (WizardMove.pastime(caster.move())) {
+            this.props.draw(caster, partialTick, (float) hover, pose, buffers, light,
+                    this.entityRenderDispatcher.cameraOrientation());
+        }
         if (caster instanceof Wizard wizard) {
             Vec3 eye = this.entityRenderDispatcher.camera.getPosition().subtract(wizard.getPosition(partialTick))
                     .subtract(0.0, hover, 0.0);

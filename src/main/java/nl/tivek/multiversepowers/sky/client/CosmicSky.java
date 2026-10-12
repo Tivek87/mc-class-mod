@@ -15,6 +15,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.DimensionSpecialEffects;
 import net.minecraft.client.renderer.GameRenderer;
+import net.minecraft.client.renderer.ShaderInstance;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
@@ -23,19 +24,29 @@ import nl.tivek.multiversepowers.config.client.ClientSettings;
 import nl.tivek.multiversepowers.sky.client.SkyBodies.Planet;
 import org.joml.Matrix4f;
 
+// The cosmic night sky: on the game's own sky, whose colour, sun, moon and stars stay as they are, things of their own
+// as the moon is: the Milky Way's band and its stars, nebulae, clusters, a far galaxy and planets, each a picture
+// painted in code (never an image file) once on a background thread at client setup and uploaded one a frame. The
+// light is added in the stars' frame before the sun and moon, fading with the night; the planets, which hide what is
+// behind them, are laid on after the game's stars so none shines through them.
 public final class CosmicSky {
     private static final float DISTANCE_SCALE = 0.5F;
     // How far below the horizon (the sun's height, 1 overhead) the sky is wholly out.
     private static final float SUNK = 0.2F;
     private static volatile Pictures painted;
-    private static final List<SkyTexture> FACES = new ArrayList<>();
     private static final List<SkyTexture> PLANETS = new ArrayList<>();
+    private static final List<SkyTexture> NEBULAE = new ArrayList<>();
+    private static final List<SkyTexture> CLUSTERS = new ArrayList<>();
+    private static SkyTexture band;
     private static SkyTexture galaxy;
     private static VertexBuffer stars;
     private static boolean ready;
-    private static boolean active;
+    // This frame's sky, kept for the planets laid on after the game's stars; null when they are not shown.
+    private static Matrix4f shown;
+    private static float shownFade;
 
-    private record Pictures(NativeImage[] faces, NativeImage galaxy, NativeImage[] planets, float[] stars) {
+    private record Pictures(NativeImage band, NativeImage galaxy, NativeImage[] planets, NativeImage[] nebulae,
+            NativeImage[] clusters, float[] stars) {
     }
 
     private CosmicSky() {
@@ -50,12 +61,15 @@ public final class CosmicSky {
                 for (int i = 0; i < planets.length; i++) {
                     planets[i] = PlanetPainter.paint(SkyBodies.PLANETS.get(i));
                 }
-                NativeImage galaxy = GalaxyPainter.paint();
-                NativeImage[] faces = new NativeImage[MilkyWay.FACES.length];
-                for (int i = 0; i < faces.length; i++) {
-                    faces[i] = MilkyWay.face(i);
+                NativeImage[] nebulae = new NativeImage[SkyBodies.NEBULAE.size()];
+                for (int i = 0; i < nebulae.length; i++) {
+                    nebulae[i] = MilkyWay.nebula(SkyBodies.NEBULAE.get(i));
                 }
-                painted = new Pictures(faces, galaxy, planets, stars);
+                NativeImage[] clusters = new NativeImage[SkyBodies.CLUSTERS.size()];
+                for (int i = 0; i < clusters.length; i++) {
+                    clusters[i] = MilkyWay.cluster(SkyBodies.CLUSTERS.get(i));
+                }
+                painted = new Pictures(MilkyWay.band(), GalaxyPainter.paint(), planets, nebulae, clusters, stars);
                 MultiversePowers.LOGGER.debug("Cosmic sky painted in {} ms", (System.nanoTime() - start) / 1_000_000L);
             } catch (RuntimeException e) {
                 MultiversePowers.LOGGER.error("Could not paint the cosmic sky", e);
@@ -63,19 +77,14 @@ public final class CosmicSky {
         });
     }
 
-    public static boolean replacesStars() {
-        return active;
-    }
-
     public static void draw(Matrix4f frustum, Matrix4f projection, float partialTick) {
-        active = false;
+        shown = null;
         Minecraft minecraft = Minecraft.getInstance();
         ClientLevel level = minecraft.level;
         if (level == null || level.effects().skyType() != DimensionSpecialEffects.SkyType.NORMAL
                 || !ClientSettings.cosmicSky() || !upload()) {
             return;
         }
-        active = true;
         // Only once the sun is down, as deep as it sinks in twilight; never while it is up.
         float sunk = Mth.clamp(-Mth.cos(level.getTimeOfDay(partialTick) * Mth.TWO_PI) / SUNK, 0.0F, 1.0F);
         float fade = sunk * sunk * (3.0F - 2.0F * sunk) * (1.0F - level.getRainLevel(partialTick));
@@ -84,26 +93,43 @@ public final class CosmicSky {
         }
         Matrix4f sky = new Matrix4f(frustum).rotateY((float) Math.toRadians(-90.0))
                 .rotateX((float) Math.toRadians(level.getTimeOfDay(partialTick) * 360.0F)).scale(DISTANCE_SCALE);
+        shown = sky;
+        shownFade = fade;
         RenderSystem.disableCull();
         RenderSystem.setShaderColor(fade, fade, fade, fade);
         RenderSystem.blendFunc(GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ONE);
         RenderSystem.setShader(GameRenderer::getPositionTexShader);
-        for (int i = 0; i < FACES.size(); i++) {
-            Vec3[] face = MilkyWay.FACES[i];
-            RenderSystem.setShaderTexture(0, FACES.get(i).getId());
-            quad(sky, face[0].scale(100.0), face[1].scale(100.0), face[2].scale(-100.0));
+        RenderSystem.setShaderTexture(0, band.getId());
+        band(sky);
+        for (int i = 0; i < NEBULAE.size(); i++) {
+            SkyBodies.Nebula nebula = SkyBodies.NEBULAE.get(i);
+            picture(sky, NEBULAE.get(i), nebula.dir(), nebula.degrees() * MilkyWay.NEBULA_REACH, 0.0);
         }
-        Vec3[] frame = SkyBodies.frame(SkyBodies.GALAXY);
-        double half = 100.0 * Math.tan(Math.toRadians(SkyBodies.GALAXY_DEGREES * 0.5));
-        double c = Math.cos(SkyBodies.GALAXY_ROLL) * half;
-        double s = Math.sin(SkyBodies.GALAXY_ROLL) * half;
-        RenderSystem.setShaderTexture(0, galaxy.getId());
-        quad(sky, SkyBodies.GALAXY.scale(100.0), frame[0].scale(c).add(frame[1].scale(s)),
-                frame[1].scale(c).subtract(frame[0].scale(s)));
+        for (int i = 0; i < CLUSTERS.size(); i++) {
+            SkyBodies.Cluster cluster = SkyBodies.CLUSTERS.get(i);
+            picture(sky, CLUSTERS.get(i), cluster.dir(), cluster.degrees() * MilkyWay.CLUSTER_REACH, 0.0);
+        }
+        picture(sky, galaxy, SkyBodies.GALAXY, SkyBodies.GALAXY_DEGREES, SkyBodies.GALAXY_ROLL);
         RenderSystem.setShader(GameRenderer::getPositionColorShader);
         stars.bind();
         stars.drawWithShader(sky, projection, RenderSystem.getShader());
         VertexBuffer.unbind();
+        RenderSystem.blendFuncSeparate(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE,
+                GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ZERO);
+        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+        RenderSystem.enableCull();
+    }
+
+    // The planets, right after the game's stars: each hides what is behind it.
+    public static void planets() {
+        Matrix4f sky = shown;
+        if (sky == null) {
+            return;
+        }
+        float fade = shownFade;
+        float[] was = RenderSystem.getShaderColor().clone();
+        ShaderInstance shader = RenderSystem.getShader();
+        RenderSystem.disableCull();
         RenderSystem.blendFuncSeparate(GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA,
                 GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ZERO);
         // In twilight a world's dark side would show as a dark disc on the blue sky: it hides less than it shines.
@@ -111,15 +137,48 @@ public final class CosmicSky {
         RenderSystem.setShader(GameRenderer::getPositionTexShader);
         for (int i = 0; i < PLANETS.size(); i++) {
             Planet planet = SkyBodies.PLANETS.get(i);
-            Vec3[] f = SkyBodies.frame(planet.dir());
-            double h = 100.0 * Math.tan(Math.toRadians(planet.degrees() * planet.reach() * 0.5));
-            RenderSystem.setShaderTexture(0, PLANETS.get(i).getId());
-            quad(sky, planet.dir().scale(100.0), f[0].scale(h), f[1].scale(h));
+            picture(sky, PLANETS.get(i), planet.dir(), planet.degrees() * planet.reach(), 0.0);
         }
         RenderSystem.blendFuncSeparate(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE,
                 GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ZERO);
-        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+        RenderSystem.setShaderColor(was[0], was[1], was[2], was[3]);
+        RenderSystem.setShader(() -> shader);
         RenderSystem.enableCull();
+    }
+
+    // A square picture `degrees` wide round `dir`, its top towards the sun's side, turned by `roll`.
+    private static void picture(Matrix4f sky, SkyTexture texture, Vec3 dir, double degrees, double roll) {
+        Vec3[] frame = SkyBodies.frame(dir);
+        double half = 100.0 * Math.tan(Math.toRadians(degrees * 0.5));
+        double c = Math.cos(roll) * half;
+        double s = Math.sin(roll) * half;
+        RenderSystem.setShaderTexture(0, texture.getId());
+        quad(sky, dir.scale(100.0), frame[0].scale(c).add(frame[1].scale(s)),
+                frame[1].scale(c).subtract(frame[0].scale(s)));
+    }
+
+    // The Milky Way's strip round the sky, in pieces bent to the sphere.
+    private static void band(Matrix4f sky) {
+        BufferBuilder builder = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS,
+                DefaultVertexFormat.POSITION_TEX);
+        double half = Math.toRadians(MilkyWay.HALF);
+        for (int i = 0; i < MilkyWay.PIECES; i++) {
+            double lon0 = (2.0 * i / MilkyWay.PIECES - 1.0) * Math.PI;
+            double lon1 = (2.0 * (i + 1) / MilkyWay.PIECES - 1.0) * Math.PI;
+            float u0 = (float) i / MilkyWay.PIECES;
+            float u1 = (float) (i + 1) / MilkyWay.PIECES;
+            for (int r = 0; r < MilkyWay.ROWS; r++) {
+                double lat0 = half * (1.0 - 2.0 * r / MilkyWay.ROWS);
+                double lat1 = half * (1.0 - 2.0 * (r + 1) / MilkyWay.ROWS);
+                float v0 = (float) r / MilkyWay.ROWS;
+                float v1 = (float) (r + 1) / MilkyWay.ROWS;
+                vertex(builder, sky, MilkyWay.along(lon0, lat0).scale(100.0), u0, v0);
+                vertex(builder, sky, MilkyWay.along(lon1, lat0).scale(100.0), u1, v0);
+                vertex(builder, sky, MilkyWay.along(lon1, lat1).scale(100.0), u1, v1);
+                vertex(builder, sky, MilkyWay.along(lon0, lat1).scale(100.0), u0, v1);
+            }
+        }
+        BufferUploader.drawWithShader(builder.buildOrThrow());
     }
 
     private static void quad(Matrix4f pose, Vec3 middle, Vec3 right, Vec3 up) {
@@ -148,10 +207,14 @@ public final class CosmicSky {
             stars = starBuffer(pictures.stars());
         } else if (PLANETS.size() < pictures.planets().length) {
             PLANETS.add(new SkyTexture(pictures.planets()[PLANETS.size()]));
+        } else if (NEBULAE.size() < pictures.nebulae().length) {
+            NEBULAE.add(new SkyTexture(pictures.nebulae()[NEBULAE.size()]));
+        } else if (CLUSTERS.size() < pictures.clusters().length) {
+            CLUSTERS.add(new SkyTexture(pictures.clusters()[CLUSTERS.size()]));
         } else if (galaxy == null) {
             galaxy = new SkyTexture(pictures.galaxy());
-        } else if (FACES.size() < pictures.faces().length) {
-            FACES.add(new SkyTexture(pictures.faces()[FACES.size()]));
+        } else if (band == null) {
+            band = new SkyTexture(pictures.band());
         } else {
             ready = true;
             painted = null;

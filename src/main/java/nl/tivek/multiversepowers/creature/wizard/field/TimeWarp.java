@@ -1,5 +1,6 @@
 package nl.tivek.multiversepowers.creature.wizard.field;
 
+import javax.annotation.Nullable;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
@@ -31,9 +32,12 @@ public final class TimeWarp extends FieldSpell {
         super(type, level);
     }
 
-    public static void cast(ServerLevel level, Wizard wizard) {
+    // Spread on the ground between him and his foe, so both stand in it.
+    public static void cast(ServerLevel level, Wizard wizard, @Nullable LivingEntity target) {
         TimeWarp warp = new TimeWarp(WizardEntities.WARP.get(), level);
-        warp.setPos(wizard.getX(), wizard.getY(), wizard.getZ());
+        Vec3 middle = target == null ? wizard.position() : wizard.position().lerp(target.position(), 0.5);
+        Vec3 at = Wizard.groundUnder(level, middle);
+        warp.setPos(at.x, at.y, at.z);
         warp.castBy(wizard, 0.0F);
         level.addFreshEntity(warp);
         level.playSound(null, wizard.getX(), wizard.getY(), wizard.getZ(), SoundEvents.BELL_RESONATE,

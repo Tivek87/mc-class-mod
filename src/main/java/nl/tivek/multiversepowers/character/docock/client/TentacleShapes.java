@@ -6,7 +6,7 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.character.docock.TentacleReach;
 
-// The shapes of Doctor Octopus's tentacles: each a smooth curve out of its socket on his back, first straight out and
+// The shapes of Doctor Octopus's tentacles: each a smooth curve out of its socket on the small of his back, first straight out and
 // up (the upper pair over his shoulders, the lower pair out to his sides), then round to its tip. Free, a tentacle
 // hangs coiled at the ready and sways; on the ground its tip stands on a foot spot round him; holding, it reaches the
 // creature it holds.
@@ -39,7 +39,7 @@ final class TentacleShapes {
 
         Vec3 socket(int index) {
             double side = TentacleReach.side(index);
-            return TentacleReach.upper(index) ? this.at(side * 0.13, 1.3, -0.2) : this.at(side * 0.12, 0.95, -0.2);
+            return TentacleReach.upper(index) ? this.at(side * 0.11, 1.0, -0.22) : this.at(side * 0.13, 0.84, -0.22);
         }
 
         // The way a tentacle leaves its socket.

@@ -126,6 +126,13 @@ public final class ThorPowers implements CharacterPowers {
         if (on && LightningBomb.busy(player) && !ability.id().equals("storm")) {
             return false;
         }
+        // Called back, the hammer comes from wherever it is, flying out or falling too: a dash to it or a Storm Throw
+        // under way is broken off.
+        if (on && !slam && ability.id().equals("hammer_call") && !home) {
+            HammerPull.stop(player);
+            StormThrow.stop(player);
+            return Mjolnir.home(player) || Mjolnir.call(player, hammer, false);
+        }
         // Pulled to his hammer, nothing else until he is there; in a Storm Throw nothing else until it is hurled.
         if (on && HammerPull.pulling(player) && !(slam && ability.id().equals("hammer_follow"))) {
             return false;
@@ -168,7 +175,7 @@ public final class ThorPowers implements CharacterPowers {
             case "mjolnir" -> on && !flying && Mjolnir.toggle(player);
             case "charged" -> on && held && !flying && home
                     && ThorCharge.charge(player, ability.value("seconds"));
-            case "hammer_call" -> on && !flying && Mjolnir.call(player, hammer, false);
+            case "hammer_call" -> on && Mjolnir.call(player, hammer, false);
             // SLAM: his game says the pull got him there.
             case "hammer_follow" -> {
                 if (slam) {

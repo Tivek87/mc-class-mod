@@ -43,6 +43,8 @@ import nl.tivek.multiversepowers.creature.wizard.spell.PrismLance;
 import nl.tivek.multiversepowers.creature.wizard.spell.RuneSentry;
 import nl.tivek.multiversepowers.creature.wizard.spell.WardCrystal;
 import nl.tivek.multiversepowers.creature.wizard.spell.WizardFireball;
+import nl.tivek.multiversepowers.creature.wizard.rift.WizardPortal;
+import nl.tivek.multiversepowers.creature.wizard.staff.WizardStaff;
 
 // Every kind of thing the Wizard brings into the world: himself, his decoys and familiars, and his spells, with the
 // harm his magic does.
@@ -127,6 +129,13 @@ public final class WizardEntities {
     public static final DeferredHolder<EntityType<?>, EntityType<Omen>> OMEN = TYPES.register("wizard_omen",
             () -> EntityType.Builder.<Omen>of(Omen::new, MobCategory.MISC).sized(1.0F, 1.0F).fireImmune()
                     .clientTrackingRange(16).updateInterval(1).build("wizard_omen"));
+    public static final DeferredHolder<EntityType<?>, EntityType<WizardPortal>> PORTAL = TYPES.register(
+            "wizard_portal", () -> EntityType.Builder.<WizardPortal>of(WizardPortal::new, MobCategory.MISC)
+                    .sized(0.5F, 0.5F).fireImmune().clientTrackingRange(12).updateInterval(2).build("wizard_portal"));
+    // His staff out of his hand, flying, standing or fighting: told every tick.
+    public static final DeferredHolder<EntityType<?>, EntityType<WizardStaff>> STAFF = TYPES.register(
+            "wizard_staff", () -> EntityType.Builder.<WizardStaff>of(WizardStaff::new, MobCategory.MISC)
+                    .sized(0.7F, 2.4F).fireImmune().clientTrackingRange(12).updateInterval(1).build("wizard_staff"));
     public static final ResourceKey<DamageType> ARCANE = key("arcane");
     public static final ResourceKey<DamageType> FROST = key("frost");
     public static final ResourceKey<DamageType> STARFALL = key("starfall");

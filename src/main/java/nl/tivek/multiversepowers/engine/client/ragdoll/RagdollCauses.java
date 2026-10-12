@@ -42,6 +42,9 @@ final class RagdollCauses {
     private static final Int2IntOpenHashMap BLOWN_AT = new Int2IntOpenHashMap();
     private static final List<Blast> BLASTS = new ArrayList<>();
     private static final Int2ObjectOpenHashMap<Blow> BLOWS = new Int2ObjectOpenHashMap<>();
+    // How long word of a tumble waits for its body to go limp (ticks).
+    private static final int TUMBLE_TICKS = 10;
+    private static final Int2ObjectOpenHashMap<Tumble> TUMBLES = new Int2ObjectOpenHashMap<>();
 
     private RagdollCauses() {
     }
@@ -56,6 +59,21 @@ final class RagdollCauses {
 
     static void told(int entity, Blow blow) {
         BLOWS.put(entity, blow);
+    }
+
+    // A blow that set a creature tumbling: its spin (radians a second) and when word came.
+    private record Tumble(Vec3 spin, int tick) {
+    }
+
+    static void tumble(int entity, Vec3 spin, int now) {
+        TUMBLES.put(entity, new Tumble(spin, now));
+    }
+
+    // The spin a body going limp now takes, if word of one came just before.
+    @Nullable
+    static Vec3 tumbling(int entity, int now) {
+        Tumble tumble = TUMBLES.remove(entity);
+        return tumble != null && now - tumble.tick() <= TUMBLE_TICKS ? tumble.spin() : null;
     }
 
     @Nullable
@@ -123,12 +141,14 @@ final class RagdollCauses {
         BLASTS.removeIf(blast -> now - blast.tick() > BLAST_TICKS);
         BLOWN_AT.int2IntEntrySet().removeIf(entry -> now - entry.getIntValue() > BLAST_TICKS);
         BLOWS.values().removeIf(blow -> now - blow.tick() > BLOW_TICKS);
+        TUMBLES.values().removeIf(tumble -> now - tumble.tick() > TUMBLE_TICKS);
     }
 
     static void clear() {
         BLASTS.clear();
         BLOWN_AT.clear();
         BLOWS.clear();
+        TUMBLES.clear();
     }
 
     // Only a creature drawn at its true size and shape can go limp: not one squashed or stretched by some effect.

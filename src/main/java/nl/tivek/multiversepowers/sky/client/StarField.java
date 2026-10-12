@@ -4,24 +4,19 @@ import java.util.SplittableRandom;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.sky.client.SkyBodies.Cluster;
 
-// Square stars as the game's own, each turned its own way, a few bright ones a cross of five squares.
+// The stars that belong to the Milky Way and the clusters, square as the game's own (whose stars stay as they are),
+// each turned its own way, a cluster's brightest a cross of five squares.
 final class StarField {
     // Per star corner: x, y, z, red, green, blue.
     static final int STRIDE = 6;
-    private static final int FIELD = 2400;
     private static final int BAND = 1800;
-    private static final int BRIGHT = 160;
-    private static final int CROSSES = 30;
 
     private StarField() {
     }
 
     static float[] build() {
         SplittableRandom random = new SplittableRandom(0x57A25L);
-        StarList list = new StarList(FIELD + BAND + BRIGHT + CROSSES * 5 + 600);
-        for (int i = 0; i < FIELD; i++) {
-            faint(list, random, anywhere(random));
-        }
+        StarList list = new StarList(BAND + 600);
         Vec3 n = SkyBodies.BAND;
         Vec3 c = SkyBodies.CORE.subtract(n.scale(SkyBodies.CORE.dot(n))).normalize();
         Vec3 s = n.cross(c);
@@ -32,14 +27,6 @@ final class StarField {
             Vec3 d = c.scale(Math.cos(lon)).add(s.scale(Math.sin(lon))).scale(Math.cos(lat)).add(n.scale(
                     Math.sin(lat))).normalize();
             faint(list, random, d);
-        }
-        for (int i = 0; i < BRIGHT; i++) {
-            double b = random.nextDouble();
-            list.add(anywhere(random), 0.22 + 0.1 * b, random, color(random), 0.65 + 0.35 * b);
-        }
-        for (int i = 0; i < CROSSES; i++) {
-            double b = random.nextDouble();
-            list.cross(anywhere(random), 0.2 + 0.08 * b, random, color(random), 0.85 + 0.15 * b);
         }
         for (Cluster cluster : SkyBodies.CLUSTERS) {
             cluster(list, random, cluster);
@@ -72,13 +59,6 @@ final class StarField {
                 list.add(d, 0.13 + 0.07 * random.nextDouble(), random, tint, 0.4 + 0.4 * random.nextDouble());
             }
         }
-    }
-
-    private static Vec3 anywhere(SplittableRandom random) {
-        double y = random.nextDouble(-1.0, 1.0);
-        double a = random.nextDouble(Math.PI * 2.0);
-        double flat = Math.sqrt(1.0 - y * y);
-        return new Vec3(Math.cos(a) * flat, y, Math.sin(a) * flat);
     }
 
     private static double[] color(SplittableRandom random) {
