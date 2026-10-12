@@ -214,9 +214,9 @@ public final class WizardMove {
         move(ALIGHT, 24, 20, 0, NEVER, 0.0);
         move(TAKEOFF, 18, 8, 0, NEVER, 0.0);
         move(WATCH, 40, 0, 100, 1, 0.0);
-        big(STAFF_THROW, 26, 14, 160, 1, 1.4);
+        big(STAFF_THROW, 26, 14, 100, 1, 1.4);
         move(STAFF_CALL, 24, 6, 0, NEVER, 0.9);
-        big(STAFF_FREE, 30, 18, 400, 2, 0.5);
+        big(STAFF_FREE, 30, 18, 100, 1, 0.5);
         move(FLICKER, 24, 6, 100, 2, 0.0);
         move(RIFT_STEP, 40, 20, 100, 1, 0.0);
         move(VEIL, 40, 8, 100, 3, 1.3);

@@ -3,6 +3,17 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.9.4-alpha] - 2026-10-12
+
+### Changed
+- **Wizard: staff out more often:** he hurls his staff or sets it free far more often, from his first phase on.
+- **Wizard: staff left where it lands:** a hurled staff stays stuck up to 8 seconds, then flies home or wakes and
+  fights on its own.
+- **Wizard: staff fights longer:** on its own his staff fights up to 45 seconds instead of 30.
+- **Wizard: spells in rounds:** no big spell comes again before every other he can cast has had its turn, and he
+  waits a little less between them.
+- **Wizard: arrows on his ward:** an arrow harms his ward as any other blow does, no longer up to three times as much.
+
 ## [0.9.3-alpha] - 2026-10-12
 
 ### Added

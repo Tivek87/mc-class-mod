@@ -20,23 +20,20 @@ import nl.tivek.multiversepowers.update.client.tour.TourStep.Place;
 // while a line is in neither, or a tour text is too long. Only steps from `FROM` up to the version installed are ever
 // shown, so a release's steps replace the last one's. A player's first tour starts with `INTRO`.
 final class TourSteps {
-    static final String VERSION = "0.9.3-alpha";
+    static final String VERSION = "0.9.4-alpha";
     // The oldest version whose changes this tour shows: normally its own.
     static final String FROM = VERSION;
     // The card every release with a new character (`GameCharacter.newIn` = VERSION) shows: hold the wheel key, where
     // the newest is marked NEW.
     static final String NEW_CHARACTER = "new_character";
 
-    // Doctor Octopus's tentacles, always 12 blocks long and thicker, in the game.
+    // The Wizard's staff, out of his hand far more often and for longer, in the game.
     static final List<TourStep> ALL = List.of(
-            step(VERSION, "doc_ock_reach", Kind.CHANGED, Place.GAME).at("game.tentacles")
-                    .covers("Doctor Octopus: tentacles always 12 blocks", "Doctor Octopus: thicker tentacles",
-                            "Doctor Octopus: grab reach setting"));
+            step(VERSION, "wizard_staff_loose", Kind.CHANGED, Place.GAME).covers("Wizard: staff out more often",
+                    "Wizard: staff left where it lands", "Wizard: staff fights longer"));
 
     // Changes too small for a step of their own, each by how its changelog line starts, as in `covers`.
-    static final List<String> SMALL = List.of("Doctor Octopus: square crosshair", "Wizard: livelier face",
-            "Wizard: smoother staff", "Wizard: ground strike", "Wizard: staff planted at rest", "Wizard: calmer habits",
-            "Wizard: straight beard", "Wizard: short teleports", "Wizard: softer effects");
+    static final List<String> SMALL = List.of("Wizard: spells in rounds", "Wizard: arrows on his ward");
 
     // Shown first on a player's first tour, wherever it starts: what the tour is and how to use it.
     static final TourStep INTRO = step(VERSION, "tour_intro", Kind.HOW, Place.ANY);

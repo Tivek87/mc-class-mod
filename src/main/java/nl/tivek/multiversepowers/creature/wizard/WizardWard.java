@@ -21,8 +21,6 @@ import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 public final class WizardWard {
     public static final int CRYSTALS = 3;
     private static final float[] STRENGTH = { 0.0F, 25.5F, 31.9F, 38.3F, 44.7F, 51.0F };
-    // An arrow strikes the ward for its whole harm, crystals or not, and breaks on it.
-    static final float ARROW = 1.0F;
     // The share of a blow that reaches the ward with every crystal whole (with none it takes the whole blow).
     private static final float SOFT = 0.3F;
     // The share of the whole ward a crystal takes with it when it breaks.
@@ -54,17 +52,16 @@ public final class WizardWard {
     }
 
     // A blow meant for him reaches his ward. An arrow breaks on it instead of glancing off (a refused blow sends it
-    // back) and counts however soon after another it comes; else, as his health does, the ward takes a blow at most
-    // twice a second, or only what a harder one adds.
+    // back), and harms it as any blow does; as his health does, the ward takes a blow at most twice a second, or only
+    // what a harder one adds.
     static void struck(ServerLevel level, Wizard wizard, DamageSource source, float amount,
             @Nullable WizardMoves moves) {
-        boolean arrow = source.getDirectEntity() instanceof AbstractArrow;
-        if (arrow) {
-            Vec3 at = source.getDirectEntity().position();
+        if (source.getDirectEntity() instanceof AbstractArrow arrow) {
+            Vec3 at = arrow.position();
             ParticleFx.send(level, ParticleTypes.CRIT, at.x, at.y, at.z, 8, 0.1, 0.1, 0.1, 0.2);
-            source.getDirectEntity().discard();
+            arrow.discard();
         }
-        boolean fresh = arrow || wizard.tickCount - wizard.wardHitAt >= 10;
+        boolean fresh = wizard.tickCount - wizard.wardHitAt >= 10;
         float taken = fresh ? amount : amount - wizard.wardHit;
         if (taken <= 0.0F) {
             return;
@@ -82,8 +79,7 @@ public final class WizardWard {
     // A blow meant for him strikes his ward instead.
     private static void absorb(ServerLevel level, Wizard wizard, float amount, DamageSource source,
             @Nullable WizardMoves moves) {
-        boolean arrow = source.getDirectEntity() instanceof AbstractArrow;
-        float share = arrow ? ARROW : SOFT + (1.0F - SOFT) * (CRYSTALS - wizard.crystals()) / CRYSTALS;
+        float share = SOFT + (1.0F - SOFT) * (CRYSTALS - wizard.crystals()) / CRYSTALS;
         float left = wizard.ward() - amount * share;
         Vec3 at = middle(wizard);
         Vec3 from = source.getSourcePosition();

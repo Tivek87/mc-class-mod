@@ -63,7 +63,7 @@ public final class WizardStaff extends Entity {
     private static final double FALL = 0.025;
     private static final double REACH = 0.6;
     private static final int FLIGHT = 80;
-    private static final int FREE_LIFE = 600;
+    private static final int FREE_LIFE = 900;
     private static final int REFORM = 100;
     private static final float HEALTH = 40.0F;
     private static final float HEALTH_PER_PHASE = 18.0F;
@@ -151,13 +151,29 @@ public final class WizardStaff extends Entity {
     // Set free to fight on its own: it leaps out of his hand into the air over him.
     public static void free(ServerLevel level, Wizard wizard) {
         WizardStaff staff = make(level, wizard, FREE, wizard.at(0.45, 1.8, 0.6));
-        staff.most = HEALTH + HEALTH_PER_PHASE * wizard.phase();
-        staff.health = staff.most;
         staff.point(new Vec3(0.0, 1.0, 0.0));
         staff.setDeltaMovement(0.0, 0.5, 0.0);
-        staff.bar.setProgress(1.0F);
-        staff.bar.setVisible(true);
-        Vec3 at = staff.middle();
+        staff.arm(level, wizard);
+    }
+
+    // Stuck fast where he hurled it, it wrenches itself out to fight on its own.
+    public void wake() {
+        if (this.mode() != STUCK || this.wizard == null || !(this.level() instanceof ServerLevel level)) {
+            return;
+        }
+        this.setDeltaMovement(this.way().scale(-0.4).add(0.0, 0.3, 0.0));
+        this.setMode(FREE);
+        this.arm(level, this.wizard);
+    }
+
+    // Whole and awake as it starts to fight on its own.
+    private void arm(ServerLevel level, Wizard wizard) {
+        this.most = HEALTH + HEALTH_PER_PHASE * wizard.phase();
+        this.health = this.most;
+        this.nextAct = this.tickCount + 30;
+        this.bar.setProgress(1.0F);
+        this.bar.setVisible(true);
+        Vec3 at = this.middle();
         ParticleFx.sphereOut(level, Wizard.dust(Wizard.light(wizard.phase()), 1.6F), at, 40, 0.3);
         ParticleFx.send(level, ParticleTypes.END_ROD, at.x, at.y, at.z, 16, 0.2, 0.6, 0.2, 0.08);
         level.playSound(null, at.x, at.y, at.z, SoundEvents.EVOKER_PREPARE_SUMMON, SoundSource.HOSTILE, 1.8F, 1.3F);

@@ -1,5 +1,6 @@
 package nl.tivek.multiversepowers.creature.wizard;
 
+import java.util.Arrays;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.LivingEntity;
@@ -12,8 +13,9 @@ import nl.tivek.multiversepowers.creature.wizard.spell.RuneSentry;
 
 // Which move the Wizard picks next (WizardMoves): what is ready, fits how far his foe is and weighs most. Light spells
 // often; up close his staff (while it is in his hand) or a close spell, else away by a skip or one of his ways of
-// going; far off a way of going to them; now and then he stops a moment and only watches them. Every spell weighs more
-// the longer since he last cast it, so every one he knows comes round.
+// going; far off a way of going to them; now and then he stops a moment and only watches them. His big spells go in
+// rounds: none comes again before every other he could cast has had its turn. His staff is apart from them: a while
+// after it comes back to his hand he hurls it or sets it free again.
 abstract class WizardPicks extends Goal {
     // The least a spell he picks waits after he cast it (WizardMove's own waits are longer), and how many ticks
     // uncast make a spell weigh once more when he picks the next.
@@ -33,6 +35,10 @@ abstract class WizardPicks extends Goal {
     final int[] ready = new int[WizardMove.KINDS + 1];
     // When he last cast each spell (ticks of his).
     final int[] castAt = new int[WizardMove.KINDS + 1];
+    // The big spells he has cast this round.
+    private final boolean[] spent = new boolean[WizardMove.KINDS + 1];
+    // When his staff next leaves his hand: hurled, or set free.
+    int nextStaff = 100;
     // Ticks he has not seen his target: walled in, he goes elsewhere once it lasts.
     int blind;
     int nextBig = 40;
@@ -219,18 +225,50 @@ abstract class WizardPicks extends Goal {
         return WizardMove.SKIP;
     }
 
-    // A big spell that is ready and fits, picked by weight; none twice running. A phase's own spell comes first.
+    // A big spell that is ready and fits, picked by weight; none twice running, and none again before every other he
+    // could cast has had its turn. A phase's own spell comes first, and his staff leaves his hand when its time comes.
     private int big(double far, RandomSource random) {
-        int now = this.wizard.tickCount;
         if (this.opening != 0 && this.ready(this.opening) && this.fits(this.opening, far)) {
             int opening = this.opening;
             this.opening = 0;
+            this.spent[opening] = true;
             return opening;
         }
+        if (this.wizard.tickCount >= this.nextStaff) {
+            int staff = this.staff(far, random);
+            if (staff != 0) {
+                return staff;
+            }
+        }
+        int kind = this.draw(far, random);
+        if (kind == 0) {
+            Arrays.fill(this.spent, false);
+            kind = this.draw(far, random);
+        }
+        if (kind != 0) {
+            this.spent[kind] = true;
+        }
+        return kind;
+    }
+
+    // His staff out of his hand: hurled as a spear or set free to fight on its own, whichever fits.
+    private int staff(double far, RandomSource random) {
+        boolean hurl = this.ready(WizardMove.STAFF_THROW) && this.fits(WizardMove.STAFF_THROW, far);
+        boolean free = this.ready(WizardMove.STAFF_FREE) && this.fits(WizardMove.STAFF_FREE, far);
+        if (hurl && free) {
+            return random.nextInt(5) < 3 ? WizardMove.STAFF_THROW : WizardMove.STAFF_FREE;
+        }
+        return hurl ? WizardMove.STAFF_THROW : free ? WizardMove.STAFF_FREE : 0;
+    }
+
+    // One of the big spells still to come this round, by weight. 0 for none.
+    private int draw(double far, RandomSource random) {
+        int now = this.wizard.tickCount;
         double[] weight = new double[WizardMove.KINDS + 1];
         double total = 0.0;
         for (int kind = 1; kind <= WizardMove.KINDS; kind++) {
-            if (!WizardMove.big(kind) || kind == this.lastBig || !this.ready(kind) || !this.fits(kind, far)
+            if (!WizardMove.big(kind) || kind == WizardMove.STAFF_THROW || kind == WizardMove.STAFF_FREE
+                    || this.spent[kind] || kind == this.lastBig || !this.ready(kind) || !this.fits(kind, far)
                     || WizardMove.ultimate(kind) && now < this.nextUltimate) {
                 continue;
             }
@@ -263,8 +301,8 @@ abstract class WizardPicks extends Goal {
             case WizardMove.LIGHTNING, WizardMove.MIRRORS, WizardMove.ORBIT, WizardMove.LANCES, WizardMove.COMET,
                     WizardMove.INFERNO, WizardMove.PHANTOM, WizardMove.TENDRILS, WizardMove.SPIRAL,
                     WizardMove.SUPERNOVA -> 2.5;
-            case WizardMove.GLACIAL, WizardMove.PILLARS, WizardMove.STAFF_THROW -> 2.5;
-            case WizardMove.FAMILIARS, WizardMove.WARP, WizardMove.SENTRY, WizardMove.STAFF_FREE -> 1.5;
+            case WizardMove.GLACIAL, WizardMove.PILLARS -> 2.5;
+            case WizardMove.FAMILIARS, WizardMove.WARP, WizardMove.SENTRY -> 1.5;
             default -> 2.0;
         };
         return WizardMove.ultimate(kind) ? base * 1.5 : base;

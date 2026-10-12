@@ -27,7 +27,7 @@ import nl.tivek.multiversepowers.creature.wizard.staff.WizardStaff;
 // (ARRIVE). Among several players he turns on another now and then.
 final class WizardMoves extends WizardPicks {
     // The breath after a big spell, in each phase.
-    private static final int[] BREATH = { 0, 55, 46, 38, 31, 25 };
+    private static final int[] BREATH = { 0, 44, 37, 31, 26, 21 };
     private static final int ULTIMATE_GAP = 180;
     // How fast a skip glides (blocks a tick at its start).
     private static final double SKIP_SPEED = 0.95;
@@ -36,9 +36,10 @@ final class WizardMoves extends WizardPicks {
     // How long he stays up in the air, and down on his feet, before the other (ticks, at least and more at random).
     private static final int ALOFT_FOR = 400;
     private static final int GROUND_FOR = 240;
-    // His staff stuck fast this long, or out fighting this long, before he may call it home.
-    private static final int STUCK_FOR = 25;
-    private static final int FREE_FOR = 200;
+    // His staff out fighting this long before he may call it home, and back in his hand this long (and as much again
+    // at random) before it leaves it once more.
+    private static final int FREE_FOR = 500;
+    private static final int STAFF_HOME = 200;
 
     private final WizardFlight flight;
     private final WizardSteps steps;
@@ -55,6 +56,9 @@ final class WizardMoves extends WizardPicks {
     private int special;
     // Struck in the air: he blinks away at the next chance.
     private boolean dodge;
+    // How long he leaves his hurled staff where it stuck.
+    private int leftFor = 60;
+    private boolean staffWasOut;
     private Vec3 aim = Vec3.ZERO;
     @Nullable
     private WizardMirrors mirrors;
@@ -249,18 +253,26 @@ final class WizardMoves extends WizardPicks {
         }
     }
 
-    // Between moves: his staff called home once it sticks fast, or now and then while it fights on its own (one lost
-    // counts as back in his hand), and from his second phase down to his feet and up into the air again in turn (up at
-    // once for a foe high over him or a great spell he casts in the air). Whether he began a move.
+    // Between moves: his hurled staff left where it stuck a while, then called home or woken to fight on its own; one
+    // fighting on its own called home now and then (one lost counts as back in his hand); and from his second phase
+    // down to his feet and up into the air again in turn (up at once for a foe high over him or a great spell he casts
+    // in the air). Whether he began a move.
     private boolean manage(LivingEntity target, int now) {
         WizardStaff staff = WizardStaff.of(this.wizard);
+        RandomSource random = this.wizard.getRandom();
         if (this.wizard.staffOut() && staff == null) {
             this.wizard.setStaffOut(false);
         }
         if (staff != null) {
             int mode = staff.mode();
-            if (mode == WizardStaff.STUCK && staff.inMode() > STUCK_FOR || mode == WizardStaff.FREE
-                    && staff.inMode() > FREE_FOR && this.wizard.getRandom().nextInt(160) == 0) {
+            if (mode == WizardStaff.STUCK && staff.inMode() > this.leftFor) {
+                if (random.nextInt(5) < 2) {
+                    staff.wake();
+                } else {
+                    this.begin(WizardMove.STAFF_CALL, target);
+                    return true;
+                }
+            } else if (mode == WizardStaff.FREE && staff.inMode() > FREE_FOR && random.nextInt(120) == 0) {
                 this.begin(WizardMove.STAFF_CALL, target);
                 return true;
             }
@@ -268,6 +280,11 @@ final class WizardMoves extends WizardPicks {
                 staff.putAway();
             }
         }
+        boolean out = this.wizard.staffOut();
+        if (this.staffWasOut && !out) {
+            this.nextStaff = now + STAFF_HOME + random.nextInt(STAFF_HOME);
+        }
+        this.staffWasOut = out;
         if (this.wizard.phase() < 2) {
             return false;
         }
@@ -432,6 +449,8 @@ final class WizardMoves extends WizardPicks {
             this.special = WizardMove.special(1);
             this.nextLight = now + 10;
             this.nextBig = now + 40;
+        } else if (done == WizardMove.STAFF_THROW) {
+            this.leftFor = 40 + random.nextInt(120);
         } else if (done == WizardMove.TETHER) {
             // Dragged in, they meet his staff or a short spell at once.
             this.nextLight = now + 2;
