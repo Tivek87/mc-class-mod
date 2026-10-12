@@ -46,6 +46,8 @@ import nl.tivek.multiversepowers.network.ModNetwork;
 import nl.tivek.multiversepowers.schematic.SchematicServer;
 import nl.tivek.multiversepowers.schematic.blueprint.Blueprints;
 import nl.tivek.multiversepowers.schematic.paste.SchematicPastes;
+import nl.tivek.multiversepowers.space.MoonGenerator;
+import nl.tivek.multiversepowers.space.SpaceTravel;
 import nl.tivek.multiversepowers.spell.SpellCasting;
 import nl.tivek.multiversepowers.stage.StageBlocks;
 import nl.tivek.multiversepowers.stage.show.LightShow;
@@ -75,6 +77,8 @@ public class MultiversePowers {
         HardLight.register(modEventBus);
         StageBlocks.register(modEventBus);
         ModItems.register(modEventBus);
+        MoonGenerator.register(modEventBus);
+        SpaceTravel.register();
         ModConfigs.register(modContainer, modEventBus);
         PlayerKnockdowns.listen(Characters::knockedDown);
         PlayerKnockdowns.flight(Characters::flying, Characters::flyAgain);
@@ -95,6 +99,7 @@ public class MultiversePowers {
         WizardRitual.clear();
         WizardStaff.clear();
         GalactusCommand.clear();
+        SpaceTravel.clear();
         MobRules.forget();
         DeathStyles.clear();
         DeathBlows.clear();

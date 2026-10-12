@@ -25,6 +25,7 @@ import nl.tivek.multiversepowers.engine.effect.Effects;
 import nl.tivek.multiversepowers.engine.entity.HeldMobs;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 import nl.tivek.multiversepowers.engine.world.ChunkPreloader;
+import nl.tivek.multiversepowers.engine.world.FlightLanes;
 
 public final class Flight implements Effect {
     public static final int ARISE_TICKS = 24;
@@ -188,6 +189,11 @@ public final class Flight implements Effect {
         if (FLYING.get(this.owner.getUUID()) != this) {
             return false;
         }
+        // He flew into another world: his flight goes on there.
+        if (this.owner.level() != level && this.owner.isAlive() && !this.owner.isRemoved()) {
+            Effects.start(this.owner.serverLevel(), this);
+            return false;
+        }
         if (!PowerRing.fuels(this.owner, level) || this.owner.isPassenger() || this.owner.isSleeping()
                 || this.owner.isSpectator() || HeldMobs.isHeldByAnyone(this.owner)) {
             this.end();
@@ -228,7 +234,9 @@ public final class Flight implements Effect {
             this.dive = false;
             PowerRing.sync(this.owner);
         }
-        PowerRing.setPower(this.owner, power - this.perTick);
+        // Where his flight goes faster there is nothing to push through: it costs that much less, twice over.
+        double haste = FlightLanes.haste(this.owner);
+        PowerRing.setPower(this.owner, power - (float) (this.perTick / (haste * haste)));
         this.ram(level);
         this.scrape(level);
         return true;

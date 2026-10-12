@@ -72,6 +72,7 @@ import nl.tivek.multiversepowers.galactus.client.GalactusSky;
 import nl.tivek.multiversepowers.schematic.client.SchematicHud;
 import nl.tivek.multiversepowers.schematic.client.WandPanel;
 import nl.tivek.multiversepowers.sky.client.CosmicSky;
+import nl.tivek.multiversepowers.space.client.SpaceView;
 import nl.tivek.multiversepowers.spell.client.ClientClaps;
 import nl.tivek.multiversepowers.stage.client.StageLightRenderer;
 import nl.tivek.multiversepowers.testfight.client.FightClient;
@@ -122,6 +123,8 @@ public final class MultiversePowersClient {
         modEventBus.addListener(SoftGlow::onRegisterShaders);
         modEventBus.addListener(Cosmos::onRegisterShaders);
         modEventBus.addListener(MechPainter::onClientSetup);
+        modEventBus.addListener(SpaceView::onTransitionScreens);
+        modEventBus.addListener(SpaceView::onEffects);
         modEventBus.addListener(MinionPainter::onClientSetup);
         modEventBus.addListener(CosmicSky::onClientSetup);
         modEventBus.addListener(GalactusSky::onRegisterShaders);

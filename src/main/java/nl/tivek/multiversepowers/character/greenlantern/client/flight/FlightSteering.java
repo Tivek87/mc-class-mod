@@ -18,7 +18,9 @@ import nl.tivek.multiversepowers.character.greenlantern.RingPayload;
 import nl.tivek.multiversepowers.character.greenlantern.ability.flight.Flight;
 import nl.tivek.multiversepowers.character.greenlantern.client.ClientConstructs;
 import nl.tivek.multiversepowers.character.greenlantern.client.ClientRing;
+import nl.tivek.multiversepowers.engine.client.world.WorldTurn;
 import nl.tivek.multiversepowers.engine.math.Ease;
+import nl.tivek.multiversepowers.engine.world.FlightLanes;
 
 abstract class FlightSteering {
     public static final float GATHER = 7.0F;
@@ -66,6 +68,13 @@ abstract class FlightSteering {
     static final double DIVE_SPEED = 9.625 / 20.0;
     static final int SLAM_ROOT = 17;
     static int slamTick = Integer.MIN_VALUE;
+
+    static {
+        WorldTurn.keep(turned -> {
+            velocity = turned.apply(velocity);
+            velocityO = turned.apply(velocityO);
+        });
+    }
 
 
     FlightSteering() {
@@ -148,7 +157,8 @@ abstract class FlightSteering {
 
     static Vec3 steer(LocalPlayer player, float forward, float strafe, boolean up, boolean down,
             double grip) {
-        double top = topSpeed(player);
+        double haste = FlightLanes.haste(player);
+        double top = topSpeed(player) * haste;
         Vec3 look = player.getLookAngle();
         Vec3 flat = new Vec3(look.x, 0.0, look.z);
         flat = flat.lengthSqr() < 1.0E-6 ? new Vec3(0.0, 0.0, 1.0) : flat.normalize();
@@ -163,7 +173,8 @@ abstract class FlightSteering {
             double climb = up ? flightSetting("climbSpeed", 8.0) / 20.0 : SINK_SPEED * full;
             Vec3 drift = right.scale(-strafe).add(flat.scale(forward));
             drift = drift.lengthSqr() > 1.0 ? drift.normalize() : drift;
-            target = drift.scale(flightSetting("hoverSpeed", 5.0) / 20.0).add(0.0, vertical * climb, 0.0);
+            target = drift.scale(flightSetting("hoverSpeed", 5.0) / 20.0).add(0.0, vertical * climb, 0.0)
+                    .scale(haste);
         }
         double rate = target.lengthSqr() > velocity.lengthSqr() ? SPEED_UP : SLOW_DOWN;
         if (ClientRing.has(player, RingPayload.DOME) && velocity.length() > top) {

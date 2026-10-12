@@ -101,15 +101,34 @@ final class CubePainter {
                         double length = Math.sqrt(x * x + y * y + z * z);
                         skin.paint().at(x / length, y / length, z / length, rgba);
                     }
-                    boolean solid = rgba[3] >= 0.5;
-                    // Its brightness in a few shades, its colour kept: stepped each on its own, red, green and blue
-                    // would speckle a grey face pink and yellow.
-                    double most = Math.max(rgba[0], Math.max(rgba[1], rgba[2]));
-                    double shade = most < 1.0E-6 ? 0.0 : SkyColors.pixel(SkyColors.soft(most), ci, cj, 0.0) / most;
-                    image.setPixelRGBA(face * FACE + i, row * FACE + j, solid ? SkyColors.premultiplied(
-                            rgba[0] * shade, rgba[1] * shade, rgba[2] * shade, 1.0) : 0);
+                    image.setPixelRGBA(face * FACE + i, row * FACE + j, rgba[3] >= 0.5 ? pixel(rgba, ci, cj) : 0);
                 }
             }
         }
+    }
+
+    // One face of a skin, laid as in the atlas, `size` pixels square, into `image` from `left`, `top` on.
+    static void face(NativeImage image, int left, int top, int size, Skin skin, int face) {
+        double[] rgba = new double[4];
+        for (int j = 0; j < size; j++) {
+            for (int i = 0; i < size; i++) {
+                double u = (i + 0.5) / size * 2.0 - 1.0;
+                double v = (j + 0.5) / size * 2.0 - 1.0;
+                double x = face == 2 ? -1.0 : face == 3 ? 1.0 : u;
+                double y = face == 4 ? -1.0 : face == 5 ? 1.0 : v;
+                double z = face == 0 ? -1.0 : face == 1 ? 1.0 : face >= 4 ? v : u;
+                double length = Math.sqrt(x * x + y * y + z * z);
+                skin.paint().at(x / length, y / length, z / length, rgba);
+                image.setPixelRGBA(left + i, top + j, pixel(rgba, i, j));
+            }
+        }
+    }
+
+    // Its brightness in a few shades, its colour kept: stepped each on its own, red, green and blue would speckle a
+    // grey face pink and yellow.
+    private static int pixel(double[] rgba, int i, int j) {
+        double most = Math.max(rgba[0], Math.max(rgba[1], rgba[2]));
+        double shade = most < 1.0E-6 ? 0.0 : SkyColors.pixel(SkyColors.soft(most), i, j, 0.0) / most;
+        return SkyColors.premultiplied(rgba[0] * shade, rgba[1] * shade, rgba[2] * shade, 1.0);
     }
 }

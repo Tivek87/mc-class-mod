@@ -15,6 +15,7 @@ public final class PowerRules {
     public static final ModConfigSpec.IntValue FATIGUE_KNOCKDOWN;
     public static final ModConfigSpec.IntValue DOMINO;
     public static final ModConfigSpec.IntValue PLAYER_KNOCKDOWN;
+    public static final ModConfigSpec.IntValue SPACE_TRAVEL;
     public static final ModConfigSpec.IntValue SPELLS;
     public static final ModConfigSpec.IntValue OPERATORS;
     public static final ModConfigSpec.ConfigValue<List<? extends String>> OWNERS;
@@ -47,6 +48,9 @@ public final class PowerRules {
                 + " knocked down by a power or thrown hard by a blow or a blast they fall, lie a moment and get up,"
                 + " and a dying player's body falls limp (1 = yes, 0 = players never go limp)")
                 .defineInRange("playerKnockdown", 1, 0, 1);
+        SPACE_TRAVEL = builder.comment("Whether whoever flies 3500 blocks up comes out above the moon, and back the"
+                + " same way, a power's flight going faster up there (1 = yes, 0 = the sky only looks like space)")
+                .defineInRange("spaceTravel", 1, 0, 1);
         builder.pop();
         builder.comment("Which characters and spells can be chosen in this world. One switched off is taken away from"
                 + " whoever is it.").push("characters");
@@ -112,6 +116,10 @@ public final class PowerRules {
 
     public static boolean playerKnockdown() {
         return get(PLAYER_KNOCKDOWN) != 0;
+    }
+
+    public static boolean spaceTravel() {
+        return get(SPACE_TRAVEL) != 0;
     }
 
     public static boolean operatorsMayEdit() {

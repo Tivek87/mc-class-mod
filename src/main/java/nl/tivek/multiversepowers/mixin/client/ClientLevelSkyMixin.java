@@ -3,6 +3,7 @@ package nl.tivek.multiversepowers.mixin.client;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.engine.client.world.LocalSky;
+import nl.tivek.multiversepowers.space.client.SpaceView;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -14,7 +15,7 @@ public abstract class ClientLevelSkyMixin {
     // clock (ticked in its level data) is left as it is.
     public long dayTime() {
         ClientLevel level = (ClientLevel) (Object) this;
-        return LocalSky.dayTime(level, level.getLevelData().getDayTime());
+        return LocalSky.dayTime(level, level.getLevelData().getDayTime() + SpaceView.clock(level));
     }
 
     @Inject(method = "getSkyColor", at = @At("RETURN"), cancellable = true)

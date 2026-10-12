@@ -337,6 +337,11 @@ public final class ThorMoves {
         if (ALL.get(player.getUUID()) != this) {
             return false;
         }
+        // Flown into another world, his flight goes on there.
+        if (this.flying && player.level() != level && player.isAlive() && !player.isRemoved()) {
+            Effects.start(player.serverLevel(), (to, age) -> this.tick(to));
+            return false;
+        }
         if (player.isRemoved() || !player.isAlive() || player.level() != level) {
             this.stop();
             return false;

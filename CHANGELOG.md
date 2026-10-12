@@ -3,6 +3,23 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.9.6-alpha] - 2026-10-12
+
+### Added
+- **Space: fly to the moon:** fly straight up as Green Lantern or Thor and the moon waits 7000 blocks overhead,
+  about a minute away; half-way the view turns over and you fly on down to it, no loading screen.
+- **Space: the moon:** a world of its own, grey dust with craters, boulders and dark seas, where everything weighs a
+  fifth and falls hurt far less.
+- **Space: orbit:** high above the Earth or the moon, flying sideways takes you round it, its other sides and the
+  other world coming into view.
+- **Space: setting:** the world setting Fly to the moon turns all of it on or off.
+
+### Changed
+- **Flight: faster up high:** Green Lantern's and Thor's flight go up to 8 times faster high above the ground, for no
+  more ring power.
+- **Sky: from space:** climbing, the sky goes black, the land below fades into its haze and the Earth shows as a cube
+  below, while the moon grows overhead.
+
 ## [0.9.5-alpha] - 2026-10-12
 
 ### Added

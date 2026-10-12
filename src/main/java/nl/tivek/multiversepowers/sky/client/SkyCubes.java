@@ -13,15 +13,20 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.SplittableRandom;
+import java.util.stream.IntStream;
 import javax.annotation.Nullable;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.GameRenderer;
+import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.engine.client.world.LocalSky;
+import nl.tivek.multiversepowers.engine.math.Ease;
 import nl.tivek.multiversepowers.sky.SkyMoon;
 import nl.tivek.multiversepowers.sky.client.SkyBodies.Kind;
 import nl.tivek.multiversepowers.sky.client.SkyBodies.Planet;
+import nl.tivek.multiversepowers.space.Space;
 import org.joml.Matrix4f;
+import org.joml.Vector3f;
 
 // Everything solid in the cosmic sky is a cube: the sun, the moon, every planet (two with a square ring), the moons
 // going round them, a belt of tumbling rocks and a comet. Each is drawn from the eye in the sky's own frame, the
@@ -44,11 +49,24 @@ final class SkyCubes {
 
     static final int SUN_ROW = 0;
     static final int MOON_ROW = 1;
-    private static final int PLANET_ROW = 2;
+    private static final int EARTH_ROW = 2;
+    private static final int PLANET_ROW = 3;
+    // Sky units to a block on the way to the moon, and the pictures of the moon's and the Earth's near faces, side
+    // by side in one picture, for when they fill the view.
+    private static final double UNIT = FAR / (Space.DISTANCE + Space.MOON_HALF);
+    private static final int NEAR = 128;
+    // The Earth's dark side: dark from near it, but from the moon it always reads as the Earth.
+    private static final float EARTH_AMBIENT = 0.28F;
+    private static final float FAR_AMBIENT = 0.55F;
+    // Across a face, where its haze goes from the rim's to the middle's.
+    private static final double[] VEIL = { 0.0, 0.3, 0.7, 1.0 };
+    private static final float NEAR_AMBIENT = 0.3F;
     private static final int[] RING_ROW = new int[SkyBodies.PLANETS.size()];
     static final int ROWS;
     private static final int[] ROCK_ROWS;
 
+    private static final CubePainter.Skin MOON = CubePainter.globe(Kind.MOON, 7L, 40.0);
+    private static final CubePainter.Skin EARTH = CubePainter.globe(Kind.EARTH, 23L, 40.0);
     private static final Vec3[][] PLANET_AXES = new Vec3[SkyBodies.PLANETS.size()][];
     private static final List<Rock> ROCKS = new ArrayList<>();
     private static double struckAt = Double.NEGATIVE_INFINITY;
@@ -103,7 +121,8 @@ final class SkyCubes {
     static NativeImage paint() {
         List<CubePainter.Skin> skins = new ArrayList<>();
         skins.add(CubePainter.sun());
-        skins.add(CubePainter.globe(Kind.MOON, 7L, 40.0));
+        skins.add(MOON);
+        skins.add(EARTH);
         for (Planet planet : SkyBodies.PLANETS) {
             skins.add(CubePainter.globe(planet.kind(), planet.seed(), planet.degrees()));
         }
@@ -113,6 +132,15 @@ final class SkyCubes {
             }
         }
         return CubePainter.atlas(skins);
+    }
+
+    // The moon's and the Earth's six faces, painted finer than the sky's own cubes: a row each.
+    static NativeImage paintNear() {
+        NativeImage image = new NativeImage(NEAR * CubePainter.FACES, NEAR * 2, true);
+        IntStream.range(0, CubePainter.FACES * 2).parallel().forEach(n -> CubePainter.face(image,
+                n % CubePainter.FACES * NEAR, n / CubePainter.FACES * NEAR, NEAR, n < CubePainter.FACES ? MOON : EARTH,
+                n % CubePainter.FACES));
+        return image;
     }
 
     // The moon rings as something strikes it: it rocks on its place and comes to rest.
@@ -130,7 +158,7 @@ final class SkyCubes {
 
     // How bright each of the moon's faces stands in the sky now, by its phase.
     static float[] moonShades(ClientLevel level) {
-        Vec3[] axes = moonAxes(Double.NaN);
+        Vec3[] axes = moonAxes(Double.NaN, 1.0);
         Vec3 light = moonLight(level);
         float[] shades = new float[CubePainter.FACES];
         for (int face = 0; face < shades.length; face++) {
@@ -144,8 +172,10 @@ final class SkyCubes {
         return new Vec3(0.0, Math.cos(phase), Math.sin(phase));
     }
 
-    private static Vec3[] moonAxes(double time) {
-        Vec3[] axes = SkyMoon.tilted(new Vec3(-1.0, 0.0, 0.0), new Vec3(0.0, 0.0, 1.0), new Vec3(0.0, -1.0, 0.0));
+    // `tilt`: 1 as the sky shows it, three faces to the eye; 0 with one flat face to it.
+    private static Vec3[] moonAxes(double time, double tilt) {
+        Vec3[] axes = SkyMoon.tilted(new Vec3(-1.0, 0.0, 0.0), new Vec3(0.0, 0.0, 1.0), new Vec3(0.0, -1.0, 0.0),
+                tilt);
         double since = time - struckAt;
         if (!Double.isNaN(time) && since >= 0.0 && since < 200.0) {
             double rock = 0.28 * Math.exp(-since / 28.0) * Math.sin(since * 0.42);
@@ -192,19 +222,29 @@ final class SkyCubes {
     }
 
     // `night`: how far the night's own things are out, 0 to 1; the sun and moon only fade with the rain.
-    static void draw(Matrix4f sky, ClientLevel level, float partialTick, float night, int atlas, int glow) {
+    // `way`: where the eye is on the way to the moon; `near`: the picture of the two near faces.
+    static void draw(Matrix4f sky, ClientLevel level, float partialTick, float night, SkyWay way, int atlas,
+            int glow, int near) {
         double time = level.getGameTime() + (double) partialTick;
-        float clear = 1.0F - level.getRainLevel(partialTick);
+        // Above the clouds no rain dims them.
+        float clear = 1.0F - level.getRainLevel(partialTick) * (float) (1.0 - way.thin());
         List<Body> bodies = new ArrayList<>();
         List<Glow> glows = new ArrayList<>();
         Vec3 sun = SkyBodies.SUN.scale(FAR);
         bodies.add(new Body(sun, spun(poled(SUN_POLE), time * 0.0016), SUN_HALF, SUN_ROW, clear, 1.0F, null, 0.0F,
                 null));
-        if (!LocalSky.moonHidden(level)) {
-            Body moon = moon(level, time, clear);
-            float full = 0.3F + 0.7F * (float) (0.5 + 0.5 * moon.light().y);
+        Body moon = LocalSky.moonHidden(level) ? null : moon(level, time, clear, way);
+        if (moon != null) {
+            float full = 0.3F + 0.7F * (float) (0.5 + 0.5 * moonLight(level).y);
             bodies.add(moon);
-            glows.add(halo(moon.at(), moon.half() * 3.0, 0xBFD0FF, 0.3F * full * clear * (0.35F + 0.65F * night)));
+            glows.add(halo(moon.at(), moon.half() * 3.0, 0xBFD0FF, 0.3F * full * clear * (0.35F + 0.65F * night)
+                    * (float) (1.0 - way.swing())));
+        }
+        Body earth = way.earthShown() > 0.0 ? earth(way) : null;
+        if (earth != null) {
+            bodies.add(earth);
+            glows.add(halo(earth.at(), earth.half() * 2.2, Surfaces.airColor(Kind.EARTH),
+                    0.35F * (float) way.earthTilt()));
         }
         if (night > 0.002F) {
             ofTheNight(time, night, bodies, glows);
@@ -237,11 +277,129 @@ final class SkyCubes {
             }
         }
         flush(builder);
+        Body below = way.onMoon() ? moon : earth;
+        RenderSystem.setShaderTexture(0, near);
+        builder = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX_COLOR);
+        if (moon != null) {
+            near(builder, sky, moon, 0, Space.MOON_HALF / way.moonFace());
+        }
+        if (earth != null) {
+            near(builder, sky, earth, 1, Space.EARTH_HALF / Math.max(1.0, way.earthFace()));
+        }
+        flush(builder);
+        if (below != null && Math.max(way.haze(), way.rim()) > 0.003) {
+            veil(sky, below, (float) way.haze(), (float) way.rim());
+        }
     }
 
-    private static Body moon(ClientLevel level, double time, float alpha) {
-        return new Body(SkyBodies.SUN.scale(-FAR), moonAxes(time), SkyMoon.half() * FAR, MOON_ROW, alpha, 1.0F,
-                moonLight(level), MOON_AMBIENT, null);
+    // The moon: from its place in the sky it swings, as the eye climbs the way to it, to straight ahead on that way,
+    // as near as it then is, one face square to the eye, the sun's own light on it.
+    private static Body moon(ClientLevel level, double time, float alpha, SkyWay way) {
+        Vec3[] axes = moonAxes(time, SkyMoon.cube() ? 1.0 - way.square() : 1.0);
+        double turn = way.moonTurn() * way.swing();
+        for (int i = 0; i < axes.length; i++) {
+            axes[i] = about(axes[i], SKY_X, turn);
+        }
+        Vec3 light = about(moonLight(level), SKY_X, turn).lerp(SkyBodies.SUN, way.swing()).normalize();
+        return new Body(about(SkyBodies.SUN.scale(-1.0), SKY_X, turn).scale((way.moonFace() + Space.MOON_HALF) * UNIT)
+                .add(round(way)),
+                axes, SkyMoon.half() * FAR, MOON_ROW, alpha, 1.0F, light,
+                Mth.lerp((float) way.swing(), MOON_AMBIENT, NEAR_AMBIENT), null);
+    }
+
+    // The Earth, straight the other way from where the moon ends up: a flat face to the eye from near, three of them
+    // from the moon.
+    private static Body earth(SkyWay way) {
+        Vec3[] axes = SkyMoon.tilted(new Vec3(-1.0, 0.0, 0.0), new Vec3(0.0, 0.0, 1.0), new Vec3(0.0, -1.0, 0.0),
+                way.earthTilt());
+        double turn = way.moonTurn() + Math.PI;
+        for (int i = 0; i < axes.length; i++) {
+            axes[i] = about(axes[i], SKY_X, turn);
+        }
+        return new Body(about(SkyBodies.SUN.scale(-1.0), SKY_X, turn).scale((way.earthFace() + Space.EARTH_HALF)
+                * UNIT).add(round(way)), axes, Space.EARTH_HALF * UNIT, EARTH_ROW, (float) way.earthShown(), 1.0F,
+                SkyBodies.SUN, Mth.lerp((float) way.earthTilt(), EARTH_AMBIENT, FAR_AMBIENT), null);
+    }
+
+    // The sky's frame turns about the eye as it goes round the world below (SkyWay.orbit), but the moon and the Earth
+    // are near: what turns about that world's middle must stand this much further on in the sky's frame.
+    private static Vec3 round(SkyWay way) {
+        if (way.orbit().w() > 0.9999999F) {
+            return Vec3.ZERO;
+        }
+        Vec3 below = about(SkyBodies.SUN.scale(-1.0), SKY_X, way.moonTurn() + (way.onMoon() ? 0.0 : Math.PI))
+                .scale((way.onMoon() ? way.moonFace() + Space.MOON_HALF : way.earthFace() + Space.EARTH_HALF) * UNIT);
+        Vector3f back = way.orbit().transformInverse(below.toVector3f(), new Vector3f());
+        return new Vec3(back).subtract(below);
+    }
+
+    // A body's faces to the eye once more in their finer pictures (row `tile`), the more the bigger it stands
+    // (`size`: half its width by how far off it is).
+    private static void near(BufferBuilder builder, Matrix4f sky, Body body, int tile, double size) {
+        float share = (float) Ease.smooth((size - 0.2) / 0.5);
+        if (share <= 0.003F) {
+            return;
+        }
+        Vec3[] corners = corners(body);
+        float alpha = body.alpha() * share;
+        float inset = 0.5F / NEAR;
+        for (int face = 0; face < FACES.length; face++) {
+            Vec3 normal = body.axes()[AXIS[face]].scale(SIGN[face]);
+            if (normal.dot(body.at().add(normal.scale(body.half()))) >= 0.0) {
+                continue;
+            }
+            float shade = lit(normal, body.light(), body.ambient()) * body.shine();
+            float u0 = (face + inset) / CubePainter.FACES;
+            float u1 = (face + 1 - inset) / CubePainter.FACES;
+            float v0 = (tile + inset) * 0.5F;
+            float v1 = (tile + 1 - inset) * 0.5F;
+            int[] at = FACES[face];
+            vertex(builder, sky, corners[at[0]], u0, v0, shade, shade, shade, alpha);
+            vertex(builder, sky, corners[at[1]], u1, v0, shade, shade, shade, alpha);
+            vertex(builder, sky, corners[at[2]], u1, v1, shade, shade, shade, alpha);
+            vertex(builder, sky, corners[at[3]], u0, v1, shade, shade, shade, alpha);
+        }
+    }
+
+    // The colour far land fades to, laid over a body's face to the eye: seen from just above it, it is all haze
+    // (`share`), and its rim, seen through the most air, stays in it longest (`rim`).
+    private static void veil(Matrix4f sky, Body body, float share, float rim) {
+        Vec3 normal = body.axes()[AXIS[0]].scale(SIGN[0]);
+        if (normal.dot(body.at().add(normal.scale(body.half()))) >= 0.0) {
+            return;
+        }
+        float[] fog = RenderSystem.getShaderFogColor();
+        Vec3[] corners = corners(body);
+        Vec3 from = corners[FACES[0][0]];
+        Vec3 across = corners[FACES[0][1]].subtract(from);
+        Vec3 along = corners[FACES[0][3]].subtract(from);
+        BufferBuilder builder = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS,
+                DefaultVertexFormat.POSITION_COLOR);
+        for (int i = 0; i < VEIL.length - 1; i++) {
+            for (int j = 0; j < VEIL.length - 1; j++) {
+                for (int corner = 0; corner < 4; corner++) {
+                    int s = i + (corner == 1 || corner == 2 ? 1 : 0);
+                    int t = j + (corner >= 2 ? 1 : 0);
+                    boolean edge = s == 0 || t == 0 || s == VEIL.length - 1 || t == VEIL.length - 1;
+                    Vec3 p = from.add(across.scale(VEIL[s])).add(along.scale(VEIL[t]));
+                    builder.addVertex(sky, (float) p.x, (float) p.y, (float) p.z).setColor(fog[0], fog[1], fog[2],
+                            (edge ? Math.max(share, rim) : share) * body.alpha());
+                }
+            }
+        }
+        RenderSystem.setShader(GameRenderer::getPositionColorShader);
+        BufferUploader.drawWithShader(builder.buildOrThrow());
+    }
+
+    private static Vec3[] corners(Body body) {
+        Vec3[] axes = body.axes();
+        Vec3[] corners = new Vec3[8];
+        for (int i = 0; i < 8; i++) {
+            corners[i] = body.at().add(axes[0].scale(((i & 1) * 2 - 1) * body.half()))
+                    .add(axes[1].scale(((i >> 1 & 1) * 2 - 1) * body.half()))
+                    .add(axes[2].scale(((i >> 2 & 1) * 2 - 1) * body.half()));
+        }
+        return corners;
     }
 
     // The moon alone, once more, with whatever depth test is set: over something drawn after the sky that stands
@@ -254,7 +412,7 @@ final class SkyCubes {
         BufferBuilder builder = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS,
                 DefaultVertexFormat.POSITION_TEX_COLOR);
         cube(builder, pose, moon(level, level.getGameTime() + (double) partialTick,
-                1.0F - level.getRainLevel(partialTick)));
+                1.0F - level.getRainLevel(partialTick), SkyWay.now(level, partialTick)));
         flush(builder);
     }
 
@@ -366,12 +524,7 @@ final class SkyCubes {
             return;
         }
         Vec3[] axes = body.axes();
-        Vec3[] corners = new Vec3[8];
-        for (int i = 0; i < 8; i++) {
-            corners[i] = body.at().add(axes[0].scale(((i & 1) * 2 - 1) * body.half()))
-                    .add(axes[1].scale(((i >> 1 & 1) * 2 - 1) * body.half()))
-                    .add(axes[2].scale(((i >> 2 & 1) * 2 - 1) * body.half()));
-        }
+        Vec3[] corners = corners(body);
         for (int face = 0; face < FACES.length; face++) {
             Vec3 normal = axes[AXIS[face]].scale(SIGN[face]);
             if (normal.dot(body.at().add(normal.scale(body.half()))) >= 0.0) {

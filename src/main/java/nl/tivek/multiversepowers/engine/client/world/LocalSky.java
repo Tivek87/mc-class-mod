@@ -6,8 +6,8 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 
 // The sky as only this game draws it, never the world's own time: something near can turn it toward a time of night
-// (sun, moon, stars and light all going along), drain it to black and take the moon out of it. A wish holds only while
-// it is made again every tick; left alone the sky comes back by itself.
+// (sun, moon, stars and light all going along), drain it to black and take the moon out of it, and the air can thin
+// as it does high up. A wish holds only while it is made again every tick; left alone the sky comes back by itself.
 public final class LocalSky {
     // Ticks a wish holds without being made again.
     private static final long HOLD = 3L;
@@ -16,8 +16,24 @@ public final class LocalSky {
     private static double dark;
     private static boolean moonless;
     private static long wishedAt = Long.MIN_VALUE;
+    private static double thin;
+    private static long thinAt = Long.MIN_VALUE;
 
     private LocalSky() {
+    }
+
+    // The air thins by `share` (0 to 1), as high above the ground: the sky's colour drains to black. Made again every
+    // tick while it should last.
+    public static void thin(double share) {
+        Level level = Minecraft.getInstance().level;
+        if (level != null) {
+            thin = Mth.clamp(share, 0.0, 1.0);
+            thinAt = level.getGameTime();
+        }
+    }
+
+    private static double thin(Level level) {
+        return level == Minecraft.getInstance().level && level.getGameTime() - thinAt <= HOLD ? thin : 0.0;
     }
 
     // Turns the sky `toward` of the way to `dayTime` (0 to 24000, as /time set takes it), drains `black` of its light
@@ -57,7 +73,8 @@ public final class LocalSky {
     }
 
     public static Vec3 skyColor(Level level, Vec3 color) {
-        return on(level) && dark > 0.0 ? color.scale(1.0 - dark) : color;
+        double left = (on(level) ? 1.0 - dark : 1.0) * (1.0 - thin(level));
+        return left < 1.0 ? color.scale(left) : color;
     }
 
     public static float stars(Level level, float brightness) {

@@ -32,6 +32,8 @@ import nl.tivek.multiversepowers.character.thor.client.ClientThor;
 import nl.tivek.multiversepowers.character.thor.client.blow.ThorCombo;
 import nl.tivek.multiversepowers.character.thor.hammer.HammerRules;
 import nl.tivek.multiversepowers.engine.client.world.ChunkEdge;
+import nl.tivek.multiversepowers.engine.client.world.WorldTurn;
+import nl.tivek.multiversepowers.engine.world.FlightLanes;
 import org.joml.Vector3f;
 
 // Moves your own Thor: his game, not the server, moves a player, so every move of his is made here the moment its
@@ -85,6 +87,7 @@ public final class ThorMotion extends ThorGroundMotion {
         ClientCharacter.local(GameCharacter.THOR, ThorMotion::act);
         ClientCharacter.flying(GameCharacter.THOR, player -> flying);
         ClientCharacter.state(GameCharacter.THOR, ThorMotion::state);
+        WorldTurn.keep(turned -> velocity = turned.apply(velocity));
     }
 
     // With the hammer in hand or not, running or not, the hammer on him or away: which of his gestures are his now.
@@ -462,6 +465,7 @@ public final class ThorMotion extends ThorGroundMotion {
         double speed = (lightning && fast != null ? fast.value("speed") : flight == null ? 18.0
                 : flight.value("speed")) / 20.0;
         double climb = lightning || flight == null ? 0.8 : flight.value("climbSpeed") / 20.0 / speed;
+        speed *= FlightLanes.haste(player);
         if (blinkAge >= 0) {
             int t = blinkAge++;
             if (t < BLINK_TICKS) {

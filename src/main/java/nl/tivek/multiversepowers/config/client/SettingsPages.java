@@ -128,7 +128,8 @@ public final class SettingsPages {
         List<ConfigNumber> numbers = List.of(
                 fromSpec(spec, file, "general", "damageMultiplier", PowerRules.DAMAGE, Unit.STRENGTH, 0.1),
                 fromSpec(spec, file, "general", "cooldownMultiplier", PowerRules.COOLDOWNS, Unit.STRENGTH, 0.1),
-                fromSpec(spec, file, "general", "breakBlocks", PowerRules.BREAK_BLOCKS, Unit.SWITCH, 1.0));
+                fromSpec(spec, file, "general", "breakBlocks", PowerRules.BREAK_BLOCKS, Unit.SWITCH, 1.0),
+                fromSpec(spec, file, "general", "spaceTravel", PowerRules.SPACE_TRAVEL, Unit.SWITCH, 1.0));
         Section section = new Section(Component.translatable(PREFIX + "general.powers"), null,
                 List.of(new Group(null, numbers)));
         List<ConfigNumber> blows = List.of(

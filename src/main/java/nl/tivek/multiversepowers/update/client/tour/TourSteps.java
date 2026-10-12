@@ -20,28 +20,21 @@ import nl.tivek.multiversepowers.update.client.tour.TourStep.Place;
 // while a line is in neither, or a tour text is too long. Only steps from `FROM` up to the version installed are ever
 // shown, so a release's steps replace the last one's. A player's first tour starts with `INTRO`.
 final class TourSteps {
-    static final String VERSION = "0.9.5-alpha";
+    static final String VERSION = "0.9.6-alpha";
     // The oldest version whose changes this tour shows: normally its own.
     static final String FROM = VERSION;
     // The card every release with a new character (`GameCharacter.newIn` = VERSION) shows: hold the wheel key, where
     // the newest is marked NEW.
     static final String NEW_CHARACTER = "new_character";
 
-    // The sky's cubes, what is new among them, Doctor Octopus's reach and throw and the stronger Wizard, in the game.
+    // The way to the moon and round the Earth and the moon, in the game.
     static final List<TourStep> ALL = List.of(
-            step(VERSION, "cube_sky", Kind.CHANGED, Place.GAME).covers("Sky: cube sun and moon", "Sky: cube planets",
-                    "Sky: flat planets", "Sky: Earth"),
-            step(VERSION, "sky_wanderers", Kind.NEW, Place.GAME).covers("Sky: moons round the planets",
-                    "Sky: asteroid belt", "Sky: comet", "Sky: shooting stars"),
-            step(VERSION, "doc_ock_hurl", Kind.CHANGED, Place.GAME).covers("Doctor Octopus: 12 blocks for everything",
-                    "Doctor Octopus: harder throw"),
-            step(VERSION, "wizard_stronger", Kind.CHANGED, Place.GAME).covers("Wizard: stronger",
-                    "Wizard: more spells sooner"));
+            step(VERSION, "moon_flight", Kind.NEW, Place.GAME).covers("Space: fly to the moon", "Space: the moon",
+                    "Flight: faster up high", "Sky: from space"),
+            step(VERSION, "orbit", Kind.NEW, Place.GAME).covers("Space: orbit"));
 
     // Changes too small for a step of their own, each by how its changelog line starts, as in `covers`.
-    static final List<String> SMALL = List.of("Sky: more stars", "Sky: more nebulae and clusters",
-            "Sky: smaller Milky Way", "Sky: setting renamed", "Giant Hands: Cosmos Test takes the cube moon",
-            "Galactus: cube moon", "Galactus: truer look", "Doctor Octopus: clearer crosshair");
+    static final List<String> SMALL = List.of("Space: setting");
 
     // Shown first on a player's first tour, wherever it starts: what the tour is and how to use it.
     static final TourStep INTRO = step(VERSION, "tour_intro", Kind.HOW, Place.ANY);
