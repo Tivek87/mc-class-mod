@@ -4,6 +4,8 @@ import static nl.tivek.multiversepowers.creature.wizard.client.WizardKeys.*;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
+import java.util.Map;
+import java.util.WeakHashMap;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.geom.ModelLayerLocation;
 import net.minecraft.client.model.geom.ModelPart;
@@ -19,6 +21,7 @@ import net.minecraft.client.renderer.entity.layers.RenderLayer;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.MultiversePowers;
@@ -29,8 +32,9 @@ import org.joml.Vector3f;
 
 // The Wizard's staff in his right hand: a long shaft of dark twisted wood shod with iron, its head four claws round
 // a crystal that glows in his phase's colour, brighter as he casts (GLOW), the staff tilted (STAFF) and twirled about
-// its own length (SPIN) by his moves. An image's crystal is pale, the one sure sign it is not him. Where the crystal
-// and his left hand are drawn is told to the Wizard, so his spells' sparks gather there (Wizard.drawnAt).
+// its own length (SPIN) by his moves, its heavy head trailing his turns. An image's crystal is pale, the one sure
+// sign it is not him. Where the crystal and his left hand are drawn is told to the Wizard, so his spells' sparks
+// gather there (Wizard.drawnAt).
 final class StaffLayer<T extends MovingMonster> extends RenderLayer<T, WizardModel<T>> {
     static final ModelLayerLocation LAYER = new ModelLayerLocation(ResourceLocation.fromNamespaceAndPath(
             MultiversePowers.MODID, "wizard_staff"), "main");
@@ -38,6 +42,7 @@ final class StaffLayer<T extends MovingMonster> extends RenderLayer<T, WizardMod
     private static final float GRIP = 9.0F;
     private static final float CRYSTAL = -23.5F;
     private static final int PALE = 0xC8C4D0;
+    private static final Map<Entity, float[]> LAGS = new WeakHashMap<>();
     private final ModelPart staff;
     private final ModelPart crystal;
 
@@ -85,7 +90,9 @@ final class StaffLayer<T extends MovingMonster> extends RenderLayer<T, WizardMod
         pose.pushPose();
         model.translateToHand(HumanoidArm.RIGHT, pose);
         pose.translate(0.0F, GRIP / 16.0F, 0.0F);
-        pose.mulPose(Axis.XP.rotation(Mth.HALF_PI + c[STAFF]));
+        float[] lag = this.lag(caster, age, limbSwing, amount);
+        pose.mulPose(Axis.ZP.rotation(lag[0]));
+        pose.mulPose(Axis.XP.rotation(Mth.HALF_PI + c[STAFF] + lag[1]));
         pose.mulPose(Axis.YP.rotation(c[SPIN]));
         this.staff.render(pose, buffers.getBuffer(wood), light, OverlayTexture.NO_OVERLAY, tint);
         this.crystal.yRot = Mth.PI / 4.0F + age * 0.05F;
@@ -142,6 +149,24 @@ final class StaffLayer<T extends MovingMonster> extends RenderLayer<T, WizardMod
         if (EntityPass.inWorld()) {
             wizard.drawnAt(tip, hand);
         }
+    }
+
+    // The staff's head is heavy: it trails a turn of his body and sways a little with his steps. Kept per caster
+    // ({age, the body's turn as the head follows it, its swing}), as images share the model.
+    private float[] lag(T caster, float age, float limbSwing, float amount) {
+        float body = caster.yBodyRot;
+        float[] shown = LAGS.get(caster);
+        if (shown == null || Math.abs(age - shown[0]) > 20.0F) {
+            shown = new float[] { age, body, 0.0F };
+            LAGS.put(caster, shown);
+        }
+        float dt = Mth.clamp(age - shown[0], 0.0F, 3.0F);
+        shown[0] = age;
+        shown[1] += Mth.wrapDegrees(body - shown[1]) * (1.0F - (float) Math.exp(-0.3F * dt));
+        float behind = Mth.clamp(Mth.wrapDegrees(body - shown[1]) * Mth.DEG_TO_RAD * 0.5F, -0.22F, 0.22F);
+        shown[2] = Mth.lerp(1.0F - (float) Math.exp(-0.2F * dt), shown[2], Math.min(amount, 1.0F));
+        float step = 0.05F * Mth.sin(limbSwing * 0.6662F) * shown[2];
+        return new float[] { behind, step };
     }
 
     // A point in the pose's frame, in the world: the frame is the camera's place plus that.

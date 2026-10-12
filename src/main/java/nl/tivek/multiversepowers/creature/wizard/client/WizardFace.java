@@ -26,6 +26,7 @@ final class WizardFace {
     private static final int OPEN = 4;
     private static final int FLARE = 5;
     private static final int AGE = 6;
+    private static final int COCK = 7;
     // How far the irises move (pixels) and how far the head is turned for them to reach their edge (degrees).
     private static final float REACH_X = 0.5F;
     private static final float REACH_Y = 0.22F;
@@ -38,6 +39,8 @@ final class WizardFace {
     float frown;
     float open;
     float flare;
+    // The left brow this much higher than the right (below 0 lower).
+    float cock;
 
     void of(MovingMonster caster, float age, float amount, float headYaw, float headPitch) {
         int move = caster.move();
@@ -48,7 +51,7 @@ final class WizardFace {
         // Where he wants to look, before the moment's own look.
         float wantX;
         float wantY;
-        float flick = (float) Math.floor((age + id * 13) / (25.0F + 35.0F * noise(id, (int) (age / 60.0F))));
+        float flick = (float) Math.floor((age + id * 13) / (12.0F + 26.0F * noise(id, (int) (age / 60.0F))));
         float glance = noise(id * 7, (int) (age / 90.0F));
         Vec3 eye = Minecraft.getInstance().gameRenderer.getMainCamera().getPosition();
         boolean near = !preview && eye.distanceToSqr(caster.position()) < (angry ? 32.0 * 32.0 : 12.0 * 12.0);
@@ -65,9 +68,29 @@ final class WizardFace {
         float open = 0.0F;
         float flare = 0.0F;
         float shut = 0.0F;
+        // One brow up, the other down: doubt, a sly look, a question.
+        float cock = 0.0F;
         if (angry && near) {
             // A cold glint now and then as he looks at you.
             flare = 0.6F * WizardRest.bump(((age + id * 31) % 140.0F) / 22.0F);
+        }
+        // His brows never stay still long: a quick lift as a thought strikes him, or (angry) a hard knit, every few
+        // seconds; now and then one brow cocks for a while.
+        float beat = (age + id * 17) % 96.0F;
+        float twitch = WizardRest.bump(Mth.clamp(beat / 14.0F, 0.0F, 1.0F)) * (noise(id * 3, (int) ((age + id * 17)
+                / 96.0F)) < 0.7F ? 1.0F : 0.0F);
+        if (angry) {
+            frown += 0.14F * twitch;
+        } else {
+            raise += 0.22F * twitch;
+        }
+        float doubt = noise(id * 5, (int) ((age + id * 29) / 130.0F));
+        if (doubt > 0.72F) {
+            cock = (doubt > 0.86F ? 0.3F : -0.3F) * WizardRest.bump(((age + id * 29) % 130.0F) / 130.0F);
+        }
+        // Muttering to himself at rest, or the words of a spell as he gathers it.
+        if (!angry && noise(id * 11, (int) ((age + id * 23) / 110.0F)) < 0.4F) {
+            open = 0.24F * Math.abs(Mth.sin(age * 0.85F)) * (0.55F + 0.45F * Mth.sin(age * 0.31F));
         }
         if (move == 0 && amount < 0.1F && !angry) {
             int habit = WizardRest.habit(age + id * 37);
@@ -89,6 +112,7 @@ final class WizardFace {
                     wantY = -0.1F;
                     flare = Math.max(flare, 0.6F * w);
                     frown += 0.1F * w;
+                    cock = 0.25F * w;
                 }
                 case WizardRest.CHARM -> open = 0.3F * Math.abs(Mth.sin(age * 0.9F)) * w;
                 case WizardRest.FLAME -> {
@@ -148,6 +172,9 @@ final class WizardFace {
         } else if (move != 0) {
             float release = WizardMove.release(move);
             boolean great = WizardMove.big(move) || WizardMove.isSpecial(move) || WizardMove.carries(move) != 0;
+            if (t < release && (great || WizardMove.light(move))) {
+                open = Math.max(open, 0.3F * Math.abs(Mth.sin(t * 1.25F)));
+            }
             if (move == WizardMove.DEATH) {
                 raise = 0.5F;
                 frown = -0.3F;
@@ -168,14 +195,20 @@ final class WizardFace {
                 shut = 0.3F;
                 frown = 0.18F;
                 raise = -0.05F;
+                cock = 0.28F;
+                open = 0.0F;
             } else if (great) {
                 float gather = Mth.clamp(t / Math.max(1.0F, release), 0.0F, 1.0F);
                 frown = 0.22F + 0.2F * gather;
                 flare = Math.max(flare, t <= release ? gather : Mth.clamp(1.0F - (t - release) / 10.0F, 0.0F, 1.0F));
-                open = WizardRest.bump(Mth.clamp((t - release + 4.0F) / 14.0F, 0.0F, 1.0F));
+                open = Math.max(open, WizardRest.bump(Mth.clamp((t - release + 4.0F) / 14.0F, 0.0F, 1.0F)));
             } else if (WizardMove.light(move) || WizardMove.close(move)) {
-                open = 0.35F * WizardRest.bump(Mth.clamp((t - release + 2.0F) / 8.0F, 0.0F, 1.0F));
+                open = Math.max(open, 0.35F * WizardRest.bump(Mth.clamp((t - release + 2.0F) / 8.0F, 0.0F, 1.0F)));
                 frown += 0.1F;
+            } else if (WizardMove.teleport(move)) {
+                // Gone and back: a sly look as he goes.
+                cock = Math.max(cock, 0.2F);
+                flare = Math.max(flare, 0.5F * WizardRest.bump(Mth.clamp(t / Math.max(1.0F, release), 0.0F, 1.0F)));
             }
         }
         if (caster.hurtTime > 0) {
@@ -184,7 +217,8 @@ final class WizardFace {
             frown = Math.max(frown, 0.4F * f);
             open = Math.max(open, 0.6F * f);
         }
-        float[] shown = SHOWN.computeIfAbsent(caster, c -> new float[] { 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, age });
+        float[] shown = SHOWN.computeIfAbsent(caster, c -> new float[] { 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, age,
+                0.0F });
         float dt = Mth.clamp(age - shown[AGE], 0.0F, 10.0F);
         shown[AGE] = age;
         shown[LOOK_X] = follow(shown[LOOK_X], Mth.clamp(wantX, -REACH_X, REACH_X), 0.7F, dt);
@@ -193,16 +227,21 @@ final class WizardFace {
         shown[FROWN] = follow(shown[FROWN], frown, 0.3F, dt);
         shown[OPEN] = follow(shown[OPEN], open, 0.45F, dt);
         shown[FLARE] = follow(shown[FLARE], flare, 0.35F, dt);
+        shown[COCK] = follow(shown[COCK], cock, 0.2F, dt);
+        this.cock = shown[COCK];
         this.lookX = shown[LOOK_X];
         this.lookY = shown[LOOK_Y];
         this.raise = shown[RAISE];
         this.frown = shown[FROWN];
         this.open = shown[OPEN];
         this.flare = shown[FLARE];
-        // A blink every few seconds, quick: shut over two ticks and open over three.
-        float period = 70.0F + 80.0F * noise(id, (int) ((age + id * 11) / 150.0F));
+        // A blink every few seconds, quick: shut over two ticks and open over three; now and then twice.
+        float period = 50.0F + 60.0F * noise(id, (int) ((age + id * 11) / 150.0F));
         float into = (age + id * 11) % period;
-        float natural = into < 2.0F ? into / 2.0F : into < 5.0F ? 1.0F - (into - 2.0F) / 3.0F : 0.0F;
+        float natural = blink(into);
+        if (noise(id * 13, (int) ((age + id * 11) / period)) > 0.75F) {
+            natural = Math.max(natural, blink(into - 7.0F));
+        }
         this.blink = Mth.clamp(Math.max(shut, natural), 0.0F, 1.0F);
     }
 
@@ -217,6 +256,11 @@ final class WizardFace {
         float tilt = pitch - headPitch;
         return new float[] { -Mth.clamp(turn / TURN_X, -1.0F, 1.0F) * REACH_X,
                 Mth.clamp(tilt / TURN_Y, -1.0F, 1.0F) * REACH_Y };
+    }
+
+    // A blink `into` ticks after it began: shut over two ticks, open over three.
+    private static float blink(float into) {
+        return into < 0.0F ? 0.0F : into < 2.0F ? into / 2.0F : into < 5.0F ? 1.0F - (into - 2.0F) / 3.0F : 0.0F;
     }
 
     private static float follow(float shown, float want, float rate, float dt) {

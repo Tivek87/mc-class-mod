@@ -94,7 +94,7 @@ final class WizardCasts {
             case WizardMove.PHANTOM -> SoundEvents.PHANTOM_AMBIENT;
             case WizardMove.TENDRILS, WizardMove.VOID_ORB, WizardMove.DRAIN -> SoundEvents.WARDEN_NEARBY_CLOSER;
             case WizardMove.SPIRAL, WizardMove.SUPERNOVA -> SoundEvents.EVOKER_PREPARE_SUMMON;
-            case WizardMove.COMBO, WizardMove.WHIRL -> SoundEvents.PLAYER_ATTACK_NODAMAGE;
+            case WizardMove.COMBO, WizardMove.WHIRL, WizardMove.STAFF_PLANT -> SoundEvents.PLAYER_ATTACK_NODAMAGE;
             case WizardMove.REPULSE, WizardMove.TETHER -> SoundEvents.ILLUSIONER_PREPARE_BLINDNESS;
             case WizardMove.FROST_CONE, WizardMove.GLACIAL -> SoundEvents.POWDER_SNOW_STEP;
             case WizardMove.FLAME_LASH, WizardMove.PILLARS, WizardMove.FLARE -> SoundEvents.BLAZE_AMBIENT;
@@ -103,7 +103,8 @@ final class WizardCasts {
             case WizardMove.ECLIPSE -> SoundEvents.WARDEN_NEARBY_CLOSEST;
             default -> SoundEvents.EVOKER_PREPARE_ATTACK;
         };
-        float pitch = kind == WizardMove.STRIKE || kind == WizardMove.COMBO || kind == WizardMove.WHIRL ? 0.6F
+        float pitch = kind == WizardMove.STRIKE || kind == WizardMove.COMBO || kind == WizardMove.WHIRL
+                || kind == WizardMove.STAFF_PLANT ? 0.6F
                 : kind == WizardMove.SPARK ? 1.6F
                 : kind == WizardMove.SKIP || kind == WizardMove.AIRSTEP ? 1.5F : 0.7F;
         boolean changes = WizardMove.carries(kind) != 0;
@@ -195,7 +196,8 @@ final class WizardCasts {
             case WizardMove.DRAIN -> SoulDrain.reach(level, wizard, target, wizard.harm(WizardMove.DRAIN),
                     WizardMove.DRAIN_STOP - WizardMove.release(WizardMove.DRAIN));
             case WizardMove.REPULSE, WizardMove.FROST_CONE, WizardMove.FLAME_LASH, WizardMove.TETHER,
-                    WizardMove.COMBO, WizardMove.WHIRL -> CloseSpells.release(level, wizard, kind, target);
+                    WizardMove.COMBO, WizardMove.WHIRL, WizardMove.STAFF_PLANT ->
+                    CloseSpells.release(level, wizard, kind, target);
             case WizardMove.GLACIAL -> {
                 if (target != null) {
                     GlacialSpikes.run(level, wizard, ground(level, wizard.position()), target.position(),
@@ -393,12 +395,14 @@ final class WizardCasts {
         for (int tries = 0; tries < 16 && !moved; tries++) {
             double angle = wizard.getRandom().nextDouble() * Mth.TWO_PI;
             double far = near + wizard.getRandom().nextDouble() * (most - near);
-            Vec3 to = middle.add(Math.cos(angle) * far, 4.0, Math.sin(angle) * far);
+            Vec3 to = middle.add(Math.cos(angle) * far, 0.0, Math.sin(angle) * far);
+            to = Wizard.inReach(from, new Vec3(to.x, from.y, to.z)).add(0.0, 4.0, 0.0);
             if (to.distanceTo(from) < Math.min(7.0, near * 0.75)) {
                 continue;
             }
             moved = wizard.randomTeleport(to.x, to.y, to.z, false);
-            if (moved && target != null && !wizard.hasLineOfSight(target) && tries < 12) {
+            if (moved && (wizard.position().distanceTo(from) > Wizard.TELEPORT_RANGE
+                    || target != null && !wizard.hasLineOfSight(target) && tries < 12)) {
                 wizard.teleportTo(from.x, from.y, from.z);
                 moved = false;
             }

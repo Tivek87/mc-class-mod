@@ -31,7 +31,7 @@ import nl.tivek.multiversepowers.character.docock.TentacleReach;
 // to foot spot as he walks.
 @EventBusSubscriber(modid = MultiversePowers.MODID, value = Dist.CLIENT)
 public final class ClientOcto {
-    private static final double STEP_AFTER = 1.1;
+    private static final double STEP_AFTER = 1.6;
     private static final int STEP_TICKS = 5;
     private static final Map<Integer, View> VIEWS = new HashMap<>();
     private static int clock;
@@ -239,11 +239,13 @@ public final class ClientOcto {
         Vec3 out = body.out(i);
         Vec3 tip;
         Vec3 in;
+        Vec3 bow = body.reachBow(i);
         double open;
         Entity held = view.holding(i) ? level.getEntity(view.held(i)) : null;
         if (view.ground(i) && view.planted[i] != null) {
             tip = foot(view, i, partialTick);
             in = new Vec3(0.0, -1.0, 0.0);
+            bow = body.groundBow(i);
             open = 1.0;
         } else if (held != null) {
             Vec3 middle = held.getPosition(partialTick).add(0.0, held.getBbHeight() * 0.5, 0.0);
@@ -253,6 +255,7 @@ public final class ClientOcto {
         } else {
             tip = body.rest(i, time);
             in = body.forward().add(0.0, TentacleReach.upper(i) ? -0.4 : 0.1, 0.0).normalize();
+            bow = body.restBow(i, time);
             open = 0.65;
             Entity aimed = view.move(i) == TentacleReach.SLAP ? level.getEntity(view.target(i)) : null;
             if (aimed != null) {
@@ -262,9 +265,10 @@ public final class ClientOcto {
                 Vec3 rest = tip;
                 tip = rest.lerp(at, t);
                 in = at.distanceToSqr(rest) < 1.0E-4 ? in : at.subtract(rest).normalize();
+                bow = bow.lerp(body.reachBow(i), t);
                 open = 0.35;
             }
         }
-        painter.tentacle(TentacleShapes.curve(socket, out, tip, in), open, view.squeezing(i));
+        painter.tentacle(TentacleShapes.curve(socket, out, tip, in, bow), open, view.squeezing(i));
     }
 }

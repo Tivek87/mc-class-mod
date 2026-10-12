@@ -176,19 +176,21 @@ abstract class WizardPicks extends Goal {
     // blows wait while it is out of his hand.
     private int close(boolean blows, RandomSource random) {
         int[] kinds = blows ? new int[] { WizardMove.STRIKE, WizardMove.COMBO, WizardMove.WHIRL, WizardMove.REPULSE,
-                WizardMove.FROST_CONE, WizardMove.FLAME_LASH, WizardMove.BLINK }
+                WizardMove.FROST_CONE, WizardMove.FLAME_LASH, WizardMove.BLINK, WizardMove.STAFF_PLANT }
                 : new int[] { WizardMove.REPULSE, WizardMove.FROST_CONE, WizardMove.FLAME_LASH };
         double[] weight = new double[kinds.length];
         double total = 0.0;
         boolean staff = !this.wizard.staffOut();
         for (int i = 0; i < kinds.length; i++) {
             int kind = kinds[i];
-            if (!this.ready(kind) || kind == WizardMove.BLINK && this.wizard.flies()
-                    || !staff && (kind == WizardMove.STRIKE || kind == WizardMove.COMBO || kind == WizardMove.WHIRL)) {
+            boolean blow = kind == WizardMove.STRIKE || kind == WizardMove.COMBO || kind == WizardMove.WHIRL
+                    || kind == WizardMove.STAFF_PLANT;
+            boolean grounded = kind == WizardMove.BLINK || kind == WizardMove.STAFF_PLANT;
+            if (!this.ready(kind) || grounded && this.wizard.flies() || !staff && blow) {
                 continue;
             }
             weight[i] = switch (kind) {
-                case WizardMove.STRIKE, WizardMove.COMBO -> 3.0;
+                case WizardMove.STRIKE, WizardMove.COMBO, WizardMove.STAFF_PLANT -> 3.0;
                 case WizardMove.WHIRL, WizardMove.REPULSE -> 2.0;
                 case WizardMove.BLINK -> 1.0;
                 default -> 1.5;
@@ -274,7 +276,9 @@ abstract class WizardPicks extends Goal {
         return switch (kind) {
             case WizardMove.FIREBALL -> far > 4.0 && far < 24.0;
             case WizardMove.BLIZZARD -> far > 3.0 && far < 16.0;
-            case WizardMove.CHAINS, WizardMove.RUNES, WizardMove.MIRRORS -> far < 16.0;
+            case WizardMove.CHAINS, WizardMove.RUNES -> far < 16.0;
+            // He jumps into a ring 3 round them: no further than a jump of his takes him.
+            case WizardMove.MIRRORS -> far < Wizard.TELEPORT_RANGE + 3.0;
             case WizardMove.LIGHTNING, WizardMove.LIFT -> far < 14.0;
             case WizardMove.STARFALL -> far < 28.0;
             case WizardMove.FAMILIARS -> ArcaneFamiliar.owned(this.wizard) < MOST_FAMILIARS;

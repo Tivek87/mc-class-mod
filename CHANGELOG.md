@@ -3,6 +3,31 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.9.3-alpha] - 2026-10-12
+
+### Added
+- **Wizard: ground strike:** up close he drives his staff into the ground, a shock throwing back whoever stands near.
+
+### Changed
+- **Doctor Octopus: tentacles always 12 blocks:** his tentacles are always 12 blocks long, on his back, holding or
+  striking, and grab anything up to 12 blocks away.
+- **Doctor Octopus: thicker tentacles:** thicker tentacles with steel-grey rings and bigger claws.
+- **Doctor Octopus: square crosshair:** the tentacles are corner brackets close round the reticle, with no words.
+- **Wizard: livelier face:** he blinks more often, raises one brow, mutters to himself and chants as he casts.
+- **Wizard: smoother staff:** his staff kicks back as it casts, eases into its blade spin and trails his turns.
+- **Wizard: staff planted at rest:** standing idle he rests a hand on his staff, planted in the ground.
+- **Wizard: calmer habits:** his habits at rest come less often and move slower.
+- **Wizard: straight beard:** his beard hangs straight from his chin and turns with his head, never swinging.
+- **Wizard: short teleports:** every blink, rift step and jump takes him at most 10 blocks.
+- **Wizard: softer effects:** his magic's dust is the size of the game's own and his light less glaring.
+
+### Removed
+- **Doctor Octopus: grab reach setting:** the reach is always 12 blocks now.
+
+### Fixed
+- **Wizard: robe jumping:** his robe no longer jumps when he blinks away or turns fast.
+- **Wizard: flickering eyes:** his eyes no longer flicker.
+
 ## [0.9.2-alpha] - 2026-10-12
 
 ### Added

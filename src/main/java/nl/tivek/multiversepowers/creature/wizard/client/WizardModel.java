@@ -6,6 +6,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
+import java.util.EnumSet;
+import java.util.Set;
 import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.model.geom.PartPose;
@@ -15,6 +17,7 @@ import net.minecraft.client.model.geom.builders.LayerDefinition;
 import net.minecraft.client.model.geom.builders.MeshDefinition;
 import net.minecraft.client.model.geom.builders.PartDefinition;
 import net.minecraft.client.renderer.texture.OverlayTexture;
+import net.minecraft.core.Direction;
 import net.minecraft.util.Mth;
 import nl.tivek.multiversepowers.creature.MovingMonster;
 import nl.tivek.multiversepowers.creature.client.Trunk;
@@ -22,16 +25,14 @@ import nl.tivek.multiversepowers.engine.client.model.PlainDrawing;
 import nl.tivek.multiversepowers.engine.client.pose.Limbs;
 import nl.tivek.multiversepowers.engine.client.pose.Shoulders;
 import org.joml.Quaternionf;
-import org.joml.Vector3f;
 
 // The Wizard's body (and his images'), built as a person's: robe with a mantle over his shoulders, a belt, a cape from
 // his shoulders, and a long skirt from his hips in two panels, front and back, that part as his legs step so they never
 // pass through it; bell sleeves; a hooked nose, bushy brows, a moustache parted over his mouth, white hair at his
 // temples and the back of his head that ends above his shoulders and hangs on down his back over the cape, and a beard
-// in three joints, narrowing to a point, that hangs on his chest from under his chin (a part of the trunk, so a turning
-// head never swings it into the mantle; it lies over an arm crossing his chest); a tall hat, its tip bending back
-// in three joints. Beard, hat-tip, skirt and cape trail after him (WizardPoses). Grander each phase: pauldrons on his
-// shoulders from his second, a crown of spikes round his hat's brim from his third, curling horns through his hat and a
+// in three parts, narrowing to a point, hanging straight from under his chin as a part of his head; a tall hat, its
+// tip bending back in three joints. Hat-tip, skirt and cape trail after him (WizardPoses). Grander each phase:
+// pauldrons on his shoulders from his second, a crown of spikes round his hat's brim from his third, curling horns through his hat and a
 // longer cape from his fourth (the rest of each phase's dress is its texture and RegaliaLayer). His staff is drawn in
 // his right hand on its own (StaffLayer). Its textures are made by scripts/models/zombies.
 public final class WizardModel<T extends MovingMonster> extends HumanoidModel<T> implements PlainDrawing {
@@ -48,20 +49,12 @@ public final class WizardModel<T extends MovingMonster> extends HumanoidModel<T>
     static final int SPIKES = 7;
     // How much longer his cape hangs from his fourth phase.
     private static final float CAPE_LONGER = 1.15F;
-    // The beard's root never lies further back than this on the chest: its back stays clear of the mantle's front.
-    private static final float BEARD_FRONT = -4.0F;
-    private static final float BEARD_LONG = 14.0F;
-    // An arm as the beard meets it: points along it, its upper arm's length to the elbow, its whole length to the
-    // fingers, and how thick its sleeve is round its middle line.
-    private static final int ARM_SAMPLES = 6;
-    private static final float UPPER_ARM = 5.0F;
-    private static final float ARM_LONG = 11.0F;
-    private static final float SLEEVE = 2.0F;
     // His eyes' middles, his brows and the top of his mouth on his face (pixels in the head).
     private static final float EYE_X = 2.0F;
     private static final float EYE_Y = -4.5F;
     private static final float BROW_Y = -5.8F;
     private static final float MOUTH_Y = -2.0F;
+    private static final Set<Direction> FRONT = EnumSet.of(Direction.NORTH);
     private final ModelPart[] irises;
     private final ModelPart[] lids;
     private final ModelPart[] brows;
@@ -78,16 +71,12 @@ public final class WizardModel<T extends MovingMonster> extends HumanoidModel<T>
     private final ModelPart[] spikes;
     private final ModelPart[] horns;
     private final Quaternionf wrist = new Quaternionf();
-    private final Quaternionf turn = new Quaternionf();
-    private final Vector3f chin = new Vector3f();
-    private final Quaternionf bodyTurn = new Quaternionf();
-    private final Vector3f point = new Vector3f();
     final WizardPoses pose = new WizardPoses();
     float alpha = 1.0F;
 
     public WizardModel(ModelPart root) {
         super(root);
-        this.beard = this.body.getChild("beard");
+        this.beard = this.head.getChild("beard");
         this.beardTip = this.beard.getChild("tip");
         this.beardPoint = this.beardTip.getChild("point");
         this.skirtFront = root.getChild("skirt_front");
@@ -128,7 +117,7 @@ public final class WizardModel<T extends MovingMonster> extends HumanoidModel<T>
             this.irises[s].y = EYE_Y + f.lookY;
             this.lids[s].yScale = Math.max(0.01F, f.blink);
             this.lids[s].visible = f.blink > 0.04F;
-            this.brows[s].y = BROW_Y - f.raise;
+            this.brows[s].y = BROW_Y - f.raise - side * f.cock;
             this.brows[s].zRot = -side * f.frown;
         }
         this.mouth.yScale = 0.3F + 1.4F * f.open;
@@ -154,16 +143,17 @@ public final class WizardModel<T extends MovingMonster> extends HumanoidModel<T>
         for (int s = 0; s < 2; s++) {
             float side = s == 0 ? -1.0F : 1.0F;
             String name = s == 0 ? "right_" : "left_";
+            // Flat parts draw only their front: a flat box's back lies in the same plane and flickers through it.
             head.addOrReplaceChild(name + "iris", CubeListBuilder.create().texOffs(104, 0).addBox(-0.5F, -0.5F, 0.0F,
-                    1.0F, 1.0F, 0.0F), PartPose.offset(side * EYE_X, EYE_Y, -4.02F));
+                    1.0F, 1.0F, 0.0F, FRONT), PartPose.offset(side * EYE_X, EYE_Y, -4.1F));
             head.addOrReplaceChild(name + "lid", CubeListBuilder.create().texOffs(106, 0).addBox(-1.0F, 0.0F, 0.0F,
-                    2.0F, 1.0F, 0.0F), PartPose.offset(side * EYE_X, EYE_Y - 0.5F, -4.04F));
+                    2.0F, 1.0F, 0.0F, FRONT), PartPose.offset(side * EYE_X, EYE_Y - 0.5F, -4.2F));
             head.addOrReplaceChild(name + "brow", CubeListBuilder.create().mirror(s == 1).texOffs(110, 0)
                     .addBox(s == 0 ? -3.5F : 0.0F, -0.5F, -0.5F, 3.5F, 1.0F, 1.0F), PartPose.offset(0.0F, BROW_Y,
                     -4.1F));
         }
         head.addOrReplaceChild("mouth", CubeListBuilder.create().texOffs(120, 0).addBox(-1.0F, 0.0F, 0.0F, 2.0F, 1.0F,
-                0.0F), PartPose.offset(0.0F, MOUTH_Y, -4.03F));
+                0.0F, FRONT), PartPose.offset(0.0F, MOUTH_Y, -4.12F));
         PartDefinition hat = root.addOrReplaceChild("hat", CubeListBuilder.create()
                 .texOffs(0, 16).addBox(-7.0F, -8.8F, -7.0F, 14.0F, 1.0F, 14.0F)
                 .texOffs(56, 16).addBox(-4.5F, -12.6F, -4.5F, 9.0F, 4.0F, 9.0F),
@@ -209,9 +199,9 @@ public final class WizardModel<T extends MovingMonster> extends HumanoidModel<T>
                 0.0F));
         cape.addOrReplaceChild("mane", CubeListBuilder.create().texOffs(88, 80).addBox(-4.0F, 0.0F, 0.0F, 8.0F,
                 10.0F, 1.0F), PartPose.offset(0.0F, 0.0F, 1.0F));
-        // The beard hangs on the chest from where the chin is (placed every frame), never into the mantle.
-        PartDefinition beard = body.addOrReplaceChild("beard", CubeListBuilder.create().texOffs(40, 80)
-                .addBox(-3.5F, 0.0F, -1.6F, 7.0F, 5.0F, 2.0F), PartPose.offset(0.0F, -12.0F, -4.4F));
+        // The beard is part of his head, hanging from under his chin.
+        PartDefinition beard = head.addOrReplaceChild("beard", CubeListBuilder.create().texOffs(40, 80)
+                .addBox(-3.5F, 0.0F, -1.6F, 7.0F, 5.0F, 2.0F), PartPose.offset(0.0F, -0.8F, -4.4F));
         PartDefinition tip = beard.addOrReplaceChild("tip", CubeListBuilder.create().texOffs(60, 80).addBox(-2.5F,
                 0.0F, -1.4F, 5.0F, 5.0F, 2.0F), PartPose.offset(0.0F, 4.6F, 0.0F));
         tip.addOrReplaceChild("point", CubeListBuilder.create().texOffs(76, 80).addBox(-1.5F, 0.0F, -0.9F, 3.0F,
@@ -332,7 +322,7 @@ public final class WizardModel<T extends MovingMonster> extends HumanoidModel<T>
         // The shoulder blades follow the arms: up as an arm rises overhead, ahead as it reaches.
         Shoulders.follow(this, 1.0F);
         this.skirt(c, hipY, p);
-        this.beard(c, p);
+        this.beard();
         this.cape(c, p);
         this.face(caster, ageInTicks, limbSwingAmount, Mth.clamp(netHeadYaw, -40.0F, 40.0F),
                 Mth.clamp(headPitch, -35.0F, 25.0F));
@@ -357,63 +347,11 @@ public final class WizardModel<T extends MovingMonster> extends HumanoidModel<T>
         this.skirtBack.xRot = Math.max(back + 0.04F, p.skirt);
     }
 
-    // The beard hangs from under the chin, wherever the head has turned it, as its weight and his motion swing it: on
-    // the chest, it keeps in front of the mantle and the robe whatever the head does, turning with the head only a
-    // little, and never swings back into him.
-    private void beard(float[] c, WizardPoses p) {
-        this.turn.rotationZYX(this.head.zRot, this.head.yRot, this.head.xRot)
-                .transform(this.chin.set(0.0F, -0.8F, -4.4F))
-                .add(this.head.x - this.body.x, this.head.y - this.body.y, this.head.z - this.body.z);
-        this.turn.rotationZYX(this.body.zRot, this.body.yRot, this.body.xRot).conjugate().transform(this.chin);
-        this.beard.x = Mth.clamp(this.chin.x, -2.0F, 2.0F);
-        this.beard.y = this.chin.y;
-        this.beard.z = Math.min(this.chin.z, BEARD_FRONT);
-        float hang = Math.min(p.beard - c[LEAN], -0.06F);
-        // An arm across his chest lifts the beard over it rather than passing through.
-        hang = Math.min(hang, this.overArms(c, hang));
-        this.beard.xRot = hang * 0.6F;
-        this.beardTip.xRot = hang * 0.25F;
-        this.beardPoint.xRot = hang * 0.15F;
-        this.beard.yRot = Mth.clamp((this.head.yRot - this.body.yRot) * 0.35F, -0.3F, 0.3F);
-        this.beard.zRot = p.beardSide * 0.7F;
-        this.beardTip.zRot = p.beardSide * 0.5F;
-        this.beardPoint.zRot = p.beardSide * 0.3F;
-    }
-
-    // The steepest the beard may hang (radians, trunk frame, below 0 forward) to lie in front of both arms where
-    // they cross before his chest: points along each upper arm and forearm (the elbow folding the forearm ahead) in the
-    // trunk's frame, each pushing the beard out by the sleeve's thickness. The beard's three joints bend 1 in all.
-    private float overArms(float[] c, float hang) {
-        float most = 0.0F;
-        this.bodyTurn.rotationZYX(this.body.zRot, this.body.yRot, this.body.xRot).conjugate();
-        ModelPart[] arms = { this.rightArm, this.leftArm };
-        for (int s = 0; s < 2; s++) {
-            ModelPart arm = arms[s];
-            this.turn.rotationZYX(arm.zRot, arm.yRot, arm.xRot);
-            float elbow = Math.max(0.0F, c[R_ELBOW + s]);
-            for (int k = 1; k <= ARM_SAMPLES; k++) {
-                float along = ARM_LONG * k / ARM_SAMPLES;
-                if (along <= UPPER_ARM) {
-                    this.point.set(0.0F, along, 0.0F);
-                } else {
-                    float fore = along - UPPER_ARM;
-                    this.point.set(0.0F, UPPER_ARM + fore * Mth.cos(elbow), -fore * Mth.sin(elbow));
-                }
-                this.turn.transform(this.point).add(arm.x - this.body.x, arm.y - this.body.y, arm.z - this.body.z);
-                this.bodyTurn.transform(this.point);
-                float down = this.point.y - this.beard.y;
-                if (down < 1.0F || down > BEARD_LONG || Math.abs(this.point.x - this.beard.x) > 3.5F + SLEEVE) {
-                    continue;
-                }
-                // An arm reaching out well in front of the beard leaves it be.
-                if (this.point.z + SLEEVE < this.beard.z - 2.1F + down * Mth.sin(hang)) {
-                    continue;
-                }
-                float room = this.point.z - SLEEVE - this.beard.z - 0.4F;
-                most = Math.min(most, (float) Math.asin(Mth.clamp(room / down, -0.95F, 0.0F)));
-            }
-        }
-        return most == 0.0F ? 0.0F : most / 0.6F;
+    // The beard hangs straight down from his chin with no swing of its own: it turns with his head, but tilts back
+    // most of the way as he nods or cocks it, so it stays nearly upright; it may pass through what it meets.
+    private void beard() {
+        this.beard.xRot = -0.8F * this.head.xRot;
+        this.beard.zRot = -0.8F * this.head.zRot;
     }
 
     // The cape swings out behind as he moves, but never into the skirt's back panel.

@@ -6,8 +6,8 @@ import nl.tivek.multiversepowers.creature.wizard.WizardMove;
 import nl.tivek.multiversepowers.engine.math.Keyframes.Key;
 
 // The keyframes of his moves up close (WizardKeys holds the rest and how they are read): the three short spells, the
-// staff's combo and whirl, and the tether that drags a foe in to them. Each gathers with a pull back or a coil, strikes
-// with his weight stepping into it, and settles through a follow-through rather than snapping back.
+// staff's combo, whirl and plant, and the tether that drags a foe in to them. Each gathers with a pull back or a coil,
+// strikes with his weight stepping into it, and settles through a follow-through rather than snapping back.
 final class WizardKeysClose {
     private WizardKeysClose() {
     }
@@ -95,6 +95,20 @@ final class WizardKeysClose {
                 k(32, R_ARM, -1.0F, R_OUT, 0.9F, STAFF, 1.0F, L_ARM, -0.4F, L_OUT, 0.8F, LEAN, 0.05F, ROLL, 0.08F,
                         SINK, 1.2F, R_KNEE, 0.25F, L_KNEE, 0.3F, FLARE, 0.4F),
                 k(36) };
+        // The staff hoisted upright in both hands on his toes; then driven foot first into the ground at his side as
+        // he drops into a crouch over it, both hands on it; held while the ground shakes, then he straightens.
+        float[] driven = { R_ARM, -0.7F, R_IN, -0.35F, R_ELBOW, -1.25F, STAFF, -0.75F, L_ARM, -0.75F, L_IN, 0.75F,
+                L_ELBOW, 0.5F, LEAN, 0.3F, SINK, 2.2F, NOD, 0.18F, R_KNEE, 0.5F, L_KNEE, 0.6F, L_LEG, -0.35F,
+                R_LEG, 0.15F, GLOW, 1.8F, FLARE, 0.8F };
+        moves[WizardMove.STAFF_PLANT] = new Key[] { k(0),
+                k(7, R_ARM, -2.2F, R_ELBOW, -0.65F, STAFF, 0.75F, L_ARM, -2.1F, L_IN, 0.6F, L_ELBOW, 0.6F, LEAN,
+                        -0.15F, SINK, -0.3F, LIFT, 0.3F, NOD, -0.2F, GLOW, 0.8F),
+                hold(10, R_ARM, -2.35F, R_ELBOW, -0.7F, STAFF, 0.85F, L_ARM, -2.25F, L_IN, 0.6F, L_ELBOW, 0.55F, LEAN,
+                        -0.18F, SINK, -0.4F, LIFT, 0.4F, NOD, -0.25F, GLOW, 1.1F),
+                k(13, driven), hold(19, driven),
+                k(25, R_ARM, -0.4F, R_IN, -0.2F, R_ELBOW, -0.8F, STAFF, -0.45F, L_ARM, -0.3F, L_IN, 0.3F, LEAN, 0.1F,
+                        SINK, 0.8F, R_KNEE, 0.2F, L_KNEE, 0.2F),
+                k(30) };
         // The staff thrust at them as the chain flies out of its crystal; then wrenched back as he braces against the
         // pull, his left hand reaching out after it, his foe dragged in.
         moves[WizardMove.TETHER] = new Key[] { k(0),

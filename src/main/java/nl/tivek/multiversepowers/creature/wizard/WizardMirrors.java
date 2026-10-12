@@ -53,7 +53,9 @@ final class WizardMirrors {
     static WizardMirrors begin(ServerLevel level, Wizard wizard, LivingEntity target) {
         int count = CLONES + 1;
         WizardMirrors mirrors = new WizardMirrors(level, wizard, wizard.getRandom().nextInt(count));
-        mirrors.spin = wizard.getRandom().nextDouble() * Mth.TWO_PI;
+        // The circle turned so his own place in it is the one nearest him: his jump into it stays short.
+        mirrors.spin = Math.atan2(wizard.getZ() - target.getZ(), wizard.getX() - target.getX())
+                - mirrors.real * Mth.TWO_PI / count;
         for (int i = 0; i < count; i++) {
             if (i == mirrors.real) {
                 mirrors.members.add(wizard);

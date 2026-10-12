@@ -8,6 +8,9 @@ import net.minecraft.world.phys.Vec3;
 // upper tentacles' high over his shoulders, the lower ones' lower and wider; a move swings it from there.
 public final class TentacleReach {
     public static final int COUNT = 4;
+    // Every tentacle is this long (blocks), always: drawn so on his back, on the ground or striking, and no creature
+    // further than this is reached.
+    public static final double LENGTH = 12.0;
     // The order free tentacles take hold in (2, 1, 4, 3) and go down to the ground in (3, 4, 1, 2).
     public static final int[] GRAB_ORDER = { 1, 0, 3, 2 };
     public static final int[] GROUND_ORDER = { 2, 3, 0, 1 };
@@ -53,12 +56,12 @@ public final class TentacleReach {
     public static Vec3 hold(Vec3 feet, float bodyYaw, int index, double width) {
         Vec3 forward = forward(bodyYaw);
         Vec3 left = left(bodyYaw);
-        double out = 1.2 + width * 0.5;
+        double out = 2.6 + width * 0.5;
         if (upper(index)) {
-            return feet.add(left.scale(side(index) * (1.1 + width * 0.4))).add(0.0, 2.5, 0.0)
-                    .add(forward.scale(out + 0.3));
+            return feet.add(left.scale(side(index) * (1.6 + width * 0.4))).add(0.0, 3.2, 0.0)
+                    .add(forward.scale(out + 0.4));
         }
-        return feet.add(left.scale(side(index) * (1.6 + width * 0.5))).add(0.0, 1.2, 0.0).add(forward.scale(out));
+        return feet.add(left.scale(side(index) * (2.4 + width * 0.5))).add(0.0, 1.4, 0.0).add(forward.scale(out));
     }
 
     // How far a move carries the held creature from its hold, at `age` ticks into it and back: a slam 3 blocks out

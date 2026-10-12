@@ -1,11 +1,14 @@
 package nl.tivek.multiversepowers.creature.wizard.close;
 
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.BlockParticleOption;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.creature.MonsterBlows;
 import nl.tivek.multiversepowers.creature.wizard.Wizard;
@@ -15,12 +18,13 @@ import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 
 // The blows of the Wizard's staff: the combo (an overhead smash, a backhand sweep, then a rising thrust whose crystal
 // bursts in their face) and the whirl (the staff swung round him at arm's length, striking all round him again and
-// again); his thrust and sweep (STRIKE) land here too.
+// again) and the plant (driven into the ground, a shock all round him); his thrust and sweep (STRIKE) land here too.
 public final class StaffBlows {
     private static final double SMASH_REACH = 3.2;
     private static final double SWEEP_REACH = 3.5;
     private static final double THRUST_REACH = 3.8;
     private static final double WHIRL_REACH = 3.5;
+    private static final double PLANT_REACH = 3.6;
     // The thrust's crystal bursts this much harder than a blow.
     private static final float THRUST_HARM = 1.6F;
 
@@ -32,7 +36,26 @@ public final class StaffBlows {
             smash(level, wizard);
         } else if (kind == WizardMove.WHIRL) {
             whirl(level, wizard, 0);
+        } else if (kind == WizardMove.STAFF_PLANT) {
+            plant(level, wizard);
         }
+    }
+
+    // The staff driven foot first into the ground: a shock through it all round him, throwing whoever stands near
+    // out and up, the ground's own dust thrown up in a ring.
+    private static void plant(ServerLevel level, Wizard wizard) {
+        strike(level, wizard, PLANT_REACH, Math.PI, wizard.harm(WizardMove.STAFF_PLANT), 1.0, 0.45);
+        Vec3 foot = wizard.position().add(MonsterBlows.ahead(wizard).scale(0.6));
+        BlockState ground = level.getBlockState(BlockPos.containing(foot.x, foot.y - 0.5, foot.z));
+        if (!ground.isAir()) {
+            BlockParticleOption dust = new BlockParticleOption(ParticleTypes.BLOCK, ground);
+            ParticleFx.send(level, dust, foot.x, foot.y + 0.1, foot.z, 24, 0.3, 0.05, 0.3, 0.15);
+            ParticleFx.ring(level, dust, foot.add(0.0, 0.1, 0.0), 1.6, 20, 0.0);
+            ParticleFx.ring(level, dust, foot.add(0.0, 0.1, 0.0), PLANT_REACH - 0.6, 28, 0.4);
+        }
+        level.playSound(null, foot.x, foot.y, foot.z, SoundEvents.MACE_SMASH_GROUND, SoundSource.HOSTILE, 1.2F, 0.8F);
+        level.playSound(null, foot.x, foot.y, foot.z, SoundEvents.AMETHYST_BLOCK_RESONATE, SoundSource.HOSTILE, 0.8F,
+                0.7F);
     }
 
     static void during(ServerLevel level, Wizard wizard, int kind, int t) {

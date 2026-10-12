@@ -83,6 +83,8 @@ public final class Wizard extends MovingMonster {
             BossEvent.BossBarColor.PINK, BossEvent.BossBarColor.WHITE };
     // How far above the ground he floats from his second phase.
     public static final double HOVER = 0.8;
+    // No blink, rift step or other jump takes him further than this (blocks).
+    public static final double TELEPORT_RANGE = 10.0;
     private static final EntityDataAccessor<Integer> PHASE = SynchedEntityData.defineId(Wizard.class,
             EntityDataSerializers.INT);
     private static final EntityDataAccessor<Optional<UUID>> BAR = SynchedEntityData.defineId(Wizard.class,
@@ -335,6 +337,13 @@ public final class Wizard extends MovingMonster {
     public float harm(int kind) {
         return (float) (this.getAttributeValue(Attributes.ATTACK_DAMAGE) * WizardMove.harm(kind)
                 * WizardMove.power(this.phase()));
+    }
+
+    // `to`, or as far towards it from `from` as a jump of his can take him.
+    public static Vec3 inReach(Vec3 from, Vec3 to) {
+        Vec3 way = to.subtract(from);
+        double far = way.length();
+        return far <= TELEPORT_RANGE ? to : from.add(way.scale(TELEPORT_RANGE / far));
     }
 
     // The ground under (or a little below) `near`, as his spells find it.
@@ -600,9 +609,9 @@ public final class Wizard extends MovingMonster {
         return 0.8F + this.random.nextFloat() * 0.1F;
     }
 
-    // Dust in one of his colours.
+    // Dust in one of his colours, never bigger than the game's own redstone dust.
     public static DustParticleOptions dust(int rgb, float size) {
         return new DustParticleOptions(new Vector3f((rgb >> 16 & 255) / 255.0F, (rgb >> 8 & 255) / 255.0F,
-                (rgb & 255) / 255.0F), size);
+                (rgb & 255) / 255.0F), Math.min(size, 1.0F));
     }
 }

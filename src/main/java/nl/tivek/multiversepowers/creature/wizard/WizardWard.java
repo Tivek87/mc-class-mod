@@ -21,8 +21,8 @@ import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 public final class WizardWard {
     public static final int CRYSTALS = 3;
     private static final float[] STRENGTH = { 0.0F, 25.5F, 31.9F, 38.3F, 44.7F, 51.0F };
-    // An arrow strikes the ward for this share of its harm, crystals or not, and breaks on it.
-    static final float ARROW = 0.6F;
+    // An arrow strikes the ward for its whole harm, crystals or not, and breaks on it.
+    static final float ARROW = 1.0F;
     // The share of a blow that reaches the ward with every crystal whole (with none it takes the whole blow).
     private static final float SOFT = 0.3F;
     // The share of the whole ward a crystal takes with it when it breaks.

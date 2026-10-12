@@ -7,7 +7,7 @@ import nl.tivek.multiversepowers.engine.client.render.LitShapes.Skin;
 import nl.tivek.multiversepowers.engine.client.render.PaintedTexture;
 
 // The metal of Doctor Octopus's harness and tentacles, painted in code in sharp pixels as the game's own textures
-// are: brushed steel, dark gunmetal, the gold rings of his tentacles, the black rubber between them and the red lamp
+// are: brushed steel, dark gunmetal, the steel rings of his tentacles, the black rubber between them and the red lamp
 // of each claw. Each is a row of the texture.
 final class OctoSkin {
     private static final int SIZE = 32;
@@ -16,7 +16,7 @@ final class OctoSkin {
 
     static final Skin STEEL = row(0, 8);
     static final Skin DARK = row(8, 16);
-    static final Skin GOLD = row(16, 24);
+    static final Skin RING = row(16, 24);
     static final Skin RUBBER = row(24, 28);
     static final Skin LAMP = row(28, 32);
 
@@ -42,11 +42,11 @@ final class OctoSkin {
             return shade(0x30343B, 0.12F * grain + edge + rivet);
         }
         if (y < 24) {
-            // Gold rings: bright in the middle row, shadowed at their edges, a fine groove round them.
+            // Gunmetal rings: a cold bright line along their middle, shadowed at their edges, a fine groove round them.
             int r = y - 16;
-            float bulge = 0.22F - 0.09F * Math.abs(r - 3.5F);
-            float groove = r == 2 || r == 5 ? -0.12F : 0.0F;
-            return shade(0xC89B34, bulge + groove + 0.07F * grain);
+            float bulge = 0.3F - 0.12F * Math.abs(r - 3.5F);
+            float groove = r == 2 || r == 5 ? -0.2F : 0.0F;
+            return shade(0x5C626B, bulge + groove + 0.1F * grain);
         }
         if (y < 28) {
             int r = y - 24;

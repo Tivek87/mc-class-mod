@@ -21,6 +21,7 @@ public final class Additive {
     public static final RenderType TYPE = RenderType.eyes(ORB);
     public static final RenderType MIST = RenderType.entityTranslucent(ORB);
     private static final float[] NONE = { 0.0F, 0.0F, 0.0F };
+    private static final float SOFT = 0.6F;
 
     private Additive() {
     }
@@ -51,7 +52,13 @@ public final class Additive {
                 thick };
     }
 
+    // A colour at `strength`, toned down so his light sits in the game's world rather than blazing over it.
     public static float[] rgb(int colour, float strength) {
+        return full(colour, strength * SOFT);
+    }
+
+    // A colour at its whole `strength`: his rifts only.
+    public static float[] full(int colour, float strength) {
         return new float[] { (colour >> 16 & 255) / 255.0F * strength, (colour >> 8 & 255) / 255.0F * strength,
                 (colour & 255) / 255.0F * strength };
     }

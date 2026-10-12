@@ -177,8 +177,8 @@ final class OctoRig implements Effect {
     void grab(int targetId, int mask) {
         Entity entity = this.player.serverLevel().getEntity(targetId);
         if (!(entity instanceof Mob mob) || this.holds(mob) || !Targeting.isTargetable(this.player, mob)
-                || !Factions.mayHit(this.player, mob) || mob.distanceTo(this.player) > ability("grab").value(
-                        "reachBlocks") + mob.getBbWidth()) {
+                || !Factions.mayHit(this.player, mob) || mob.distanceTo(this.player) > TentacleReach.LENGTH
+                        + mob.getBbWidth() * 0.5) {
             return;
         }
         int i = -1;
@@ -304,7 +304,7 @@ final class OctoRig implements Effect {
         }
         Entity entity = this.player.serverLevel().getEntity(targetId);
         if (!(entity instanceof LivingEntity living) || this.holds(living) || !Factions.mayHit(this.player, living)
-                || living.distanceTo(this.player) > ability("grab").value("reachBlocks") + living.getBbWidth()) {
+                || living.distanceTo(this.player) > TentacleReach.LENGTH + living.getBbWidth() * 0.5) {
             return;
         }
         Vec3 middle = living.position().add(0.0, living.getBbHeight() * 0.5, 0.0);

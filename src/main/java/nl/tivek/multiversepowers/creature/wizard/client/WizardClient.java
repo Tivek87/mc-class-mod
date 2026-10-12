@@ -51,7 +51,8 @@ public final class WizardClient {
         for (EntityType<? extends MovingMonster> type : List.<EntityType<? extends MovingMonster>>of(
                 WizardEntities.WIZARD.get(), WizardEntities.DECOY.get())) {
             for (int kind : new int[] { WizardMove.STRIKE, WizardMove.BOLT, WizardMove.BLIZZARD, WizardMove.COMBO,
-                    WizardMove.WHIRL, WizardMove.FLAME_LASH, WizardMove.REPULSE, WizardMove.WATCH }) {
+                    WizardMove.WHIRL, WizardMove.FLAME_LASH, WizardMove.REPULSE, WizardMove.WATCH,
+                    WizardMove.STAFF_PLANT }) {
                 MobPreview.move(type, WizardMove.length(kind) + 8, w -> w.play(kind), w -> w.play(0));
             }
             // A while of a pastime that needs nothing set down about him.

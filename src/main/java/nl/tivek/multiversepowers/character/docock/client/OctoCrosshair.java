@@ -14,13 +14,14 @@ import nl.tivek.multiversepowers.character.docock.TentacleReach;
 import nl.tivek.multiversepowers.engine.client.gui.GuiShapes;
 import nl.tivek.multiversepowers.engine.client.gui.ScreenAnchors;
 
-// Doctor Octopus's crosshair: a steel ring round a point, like the lens of his goggles, and his four tentacles round
-// it, each an arc at the corner where it sits on his back (1 top left, 2 top right, 3 bottom left, 4 bottom right) in
-// the colour of what it does: free pale steel, on the ground sunk outward with a foot, holding amber and drawn in,
-// squeezing red and throbbing. An arc kicks as its tentacle changes, eases where it goes, and in Selection Mode the
-// picked ones light up blue with their numbers. It widens as he strikes or runs; on a creature four lens arcs turn in
-// and lock round it, the point in its colour, a thin arc of its health round them. A short message shows under it for
-// a moment when a pick or a key cannot be done. It reacts as every crosshair does (Crosshairs.Feel).
+// Doctor Octopus's crosshair: a steel ring round a point, like the lens of his goggles, and his four tentacles close
+// round it, each a bracket at the corner of a square where it sits on his back (1 top left, 2 top right, 3 bottom
+// left, 4 bottom right) in the colour of what it does, never a word: free pale steel, on the ground pushed outward
+// with a foot, holding amber and drawn in with a claw, squeezing red and throbbing. A bracket kicks as its tentacle
+// changes, eases where it goes, and in Selection Mode the picked ones light up blue with their numbers. It widens as
+// he strikes or runs; on a creature four lens arcs turn in and lock round it, the point in its colour, a thin arc of
+// its health round them. A short message shows under it for a moment when a pick or a key cannot be done. It reacts
+// as every crosshair does (Crosshairs.Feel).
 public final class OctoCrosshair {
     private static final String PREFIX = "octopus." + MultiversePowers.MODID + ".";
     private static final int STEEL = 0xE6ECF2;
@@ -73,8 +74,8 @@ public final class OctoCrosshair {
         Crosshairs.dot(graphics, cx, cy, 0.6F + 0.3F * aim, Crosshairs.tint(AMBER, feel, 1.0F), 0.95F);
         float outer = ring;
         if (aim >= 0.05F) {
-            float lens = ring + 3.0F - 1.0F * aim;
-            Crosshairs.health(graphics, rx, ry, lens + 2.2F, feel);
+            float lens = ring + 2.2F - 0.6F * aim;
+            Crosshairs.health(graphics, rx, ry, lens + 1.8F, feel);
             float turn = 45.0F * (1.0F - aim) + feel.turn() * Mth.RAD_TO_DEG;
             int color = Crosshairs.tint(STEEL, feel, 0.7F);
             for (int arc = 0; arc < 4; arc++) {
@@ -84,7 +85,7 @@ public final class OctoCrosshair {
                 GuiShapes.arc(graphics, rx, ry, lens - 0.45F, lens + 0.45F, from, from + 50.0F,
                         GuiShapes.fade(color, 0.9F * aim));
             }
-            outer = lens + 2.2F;
+            outer = lens + 1.8F;
         }
         ClientOcto.View view = ClientOcto.of(player);
         if (view != null) {
@@ -94,14 +95,15 @@ public final class OctoCrosshair {
         return outer;
     }
 
-    // The four tentacles' arcs round `inner`; says how far out they reach.
+    // The four tentacles' corner brackets on a square close round `inner`; says how far out they reach.
     private static float tentacles(GuiGraphics graphics, ClientOcto.View view, float cx, float cy, float inner,
             Crosshairs.Feel feel, float time, float step, boolean choosing) {
         int picked = OctoControls.picked();
-        float base = inner + 3.5F;
+        float base = inner + 1.6F;
         float far = base;
         ScreenAnchors.report("game.tentacles", (int) (cx - base - 8), (int) (cy - base - 8), (int) (2 * base + 16),
                 (int) (2 * base + 16));
+        float turn = feel.turn();
         for (int i = 0; i < COUNT; i++) {
             int now = view.ground(i) ? 1 : view.squeezing(i) ? 3 : view.holding(i) ? 2 : 0;
             if (now != state[i]) {
@@ -109,43 +111,57 @@ public final class OctoCrosshair {
                 changed[i] = time;
             }
             float throb = now == 3 ? 0.5F + 0.5F * Mth.sin(time * 0.9F + i) : 0.0F;
-            reach[i] = ease(reach[i], now == 1 ? 2.2F : now >= 2 ? -1.2F : 0.0F, step, 0.4F);
-            thick[i] = ease(thick[i], now == 1 ? 1.1F : now == 2 ? 1.5F : now == 3 ? 1.8F : 1.1F, step, 0.4F);
+            reach[i] = ease(reach[i], now == 1 ? 1.4F : now >= 2 ? -0.8F : 0.0F, step, 0.4F);
+            thick[i] = ease(thick[i], now == 1 ? 1.0F : now == 2 ? 1.3F : now == 3 ? 1.5F : 1.0F, step, 0.4F);
             boolean on = choosing && (picked & 1 << i) != 0;
             lit[i] = ease(lit[i], on ? 1.0F : 0.0F, step, 0.5F);
             float kick = 1.0F - Mth.clamp((time - changed[i]) / KICK_TICKS, 0.0F, 1.0F);
             kick *= kick;
             int color = now == 1 ? GROUND : now == 3 ? SQUEEZING : now == 2 ? HOLDING : FREE;
             color = GuiShapes.mix(Crosshairs.tint(color, feel, 0.0F), PICKED, lit[i]);
-            boolean left = TentacleReach.side(i) > 0;
-            float middle = (TentacleReach.upper(i) ? left ? 315.0F : 45.0F : left ? 225.0F : 135.0F)
-                    + feel.turn() * Mth.RAD_TO_DEG;
-            float half = 17.0F + 10.0F * kick + 5.0F * lit[i] - (now == 2 ? 5.0F : 0.0F);
-            float r = base + reach[i] + 2.0F * kick + 0.6F * throb + feel.radius(0.0F);
-            float w = (thick[i] + 0.9F * lit[i] + 0.6F * throb + 0.8F * kick) * 0.5F;
-            GuiShapes.arc(graphics, cx, cy, r - w - 0.6F, r + w + 0.6F, middle - half - 2.0F, middle + half + 2.0F,
-                    GuiShapes.fade(0x000000, 0.4F));
-            GuiShapes.arc(graphics, cx, cy, r - w, r + w, middle - half, middle + half, GuiShapes.fade(color, 0.95F));
-            float sin = Mth.sin(middle * Mth.DEG_TO_RAD);
-            float cos = -Mth.cos(middle * Mth.DEG_TO_RAD);
+            // The corner this tentacle sits at on his back: x -1 on the left, y -1 at the top.
+            float sx = TentacleReach.side(i) > 0 ? -1.0F : 1.0F;
+            float sy = TentacleReach.upper(i) ? -1.0F : 1.0F;
+            float s = base + reach[i] + 1.2F * kick + 0.4F * throb + feel.radius(0.0F);
+            float arm = 2.6F + 1.6F * kick + 0.8F * lit[i] - (now >= 2 ? 0.5F : 0.0F);
+            float w = thick[i] + 0.6F * lit[i] + 0.4F * throb + 0.5F * kick;
+            float[] corner = turned(sx * s, sy * s, turn);
+            float[] alongX = turned(sx * (s - arm), sy * s, turn);
+            float[] alongY = turned(sx * s, sy * (s - arm), turn);
+            for (boolean shadow : new boolean[] { true, false }) {
+                float width = shadow ? w + 1.0F : w;
+                int fill = shadow ? GuiShapes.fade(0x000000, 0.4F) : GuiShapes.fade(color, 0.95F);
+                GuiShapes.stroke(graphics, cx + alongX[0], cy + alongX[1], cx + corner[0], cy + corner[1], width, fill);
+                GuiShapes.stroke(graphics, cx + corner[0], cy + corner[1], cx + alongY[0], cy + alongY[1], width, fill);
+            }
             if (now == 1) {
-                // A foot planted outward: a short tick out from the arc's middle.
-                Crosshairs.stroke(graphics, cx + sin * (r + w), cy + cos * (r + w), cx + sin * (r + w + 2.5F),
-                        cy + cos * (r + w + 2.5F), 0.9F, color, 0.95F);
+                // A foot planted outward: a short tick out of the corner.
+                float[] foot = turned(sx * (s + 2.0F), sy * (s + 2.0F), turn);
+                Crosshairs.stroke(graphics, cx + corner[0], cy + corner[1], cx + foot[0], cy + foot[1], 0.9F, color,
+                        0.95F);
             }
             if (now >= 2) {
-                // Holding: a claw shut on the arc's middle, pointing in.
-                Crosshairs.stroke(graphics, cx + sin * (r - w), cy + cos * (r - w), cx + sin * (r - w - 1.8F),
-                        cy + cos * (r - w - 1.8F), 1.0F + 0.5F * throb, color, 0.95F);
+                // Holding: a claw shut in the corner, pointing in at the ring.
+                float[] claw = turned(sx * (s - 1.6F), sy * (s - 1.6F), turn);
+                Crosshairs.stroke(graphics, cx + corner[0], cy + corner[1], cx + claw[0], cy + claw[1],
+                        1.0F + 0.5F * throb, color, 0.95F);
             }
-            far = Math.max(far, r + w + (now == 1 ? 2.5F : 0.0F));
+            float out = (s + w * 0.5F + (now == 1 ? 2.0F : 0.0F)) * Mth.SQRT_OF_TWO;
+            far = Math.max(far, out);
             if (lit[i] > 0.05F || selecting > 0.05F) {
                 float alpha = Math.max(lit[i], 0.55F * selecting);
-                number(graphics, i + 1, cx + sin * (r + w + 4.0F), cy + cos * (r + w + 4.0F),
-                        GuiShapes.mix(FREE, PICKED, lit[i]), alpha);
+                float[] label = turned(sx * (s + 3.2F), sy * (s + 3.2F), turn);
+                number(graphics, i + 1, cx + label[0], cy + label[1], GuiShapes.mix(FREE, PICKED, lit[i]), alpha);
             }
         }
         return far;
+    }
+
+    // (x, y) turned by `angle` radians about the middle.
+    private static float[] turned(float x, float y, float angle) {
+        float cos = Mth.cos(angle);
+        float sin = Mth.sin(angle);
+        return new float[] { x * cos - y * sin, x * sin + y * cos };
     }
 
     private static void number(GuiGraphics graphics, int n, float x, float y, int rgb, float alpha) {

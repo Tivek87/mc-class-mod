@@ -7,7 +7,7 @@ import nl.tivek.multiversepowers.creature.wizard.WizardMove;
 
 // How the Wizard holds himself at rest, on his channels (WizardPoses adds it): with no foe about, standing still, one
 // of twelve small habits comes round in turn (IDLES: stroking his beard, looking round, tapping his staff, a stretch,
-// peering into his crystal, dusting off his robe, settling his hat, a flame on his fingertip, a yawn, twirling his
+// peering into his crystal, dusting off his robe, settling his hat, a flame on his fingertip, a yawn, twisting his
 // staff, muttering a charm, gazing up at the sky); and the poses of his pastimes (WizardPastimes), each faded in and
 // out over its first and last moments: reading, sitting on his staff with his legs swinging, juggling, meditating
 // cross-legged, walking through his rifts, stirring his cauldron, pointing after the wisp, drawing his circle,
@@ -27,8 +27,8 @@ final class WizardRest {
     static final int STARGAZE = 11;
     static final int IDLES = 12;
     // Each habit has a slot of this many ticks and lasts HABIT of them.
-    private static final float SLOT = 75.0F;
-    private static final float HABIT = 50.0F;
+    private static final float SLOT = 150.0F;
+    private static final float HABIT = 90.0F;
 
     private WizardRest() {
     }
@@ -130,7 +130,8 @@ final class WizardRest {
                 c[R_ARM] += -0.2F * w;
             }
             case TWIRL -> {
-                c[SPIN] += f * Mth.TWO_PI * 3.0F * w;
+                // Turned to and fro where it stands, never wound round and run back.
+                c[SPIN] += 0.7F * Mth.sin(f * Mth.TWO_PI * 2.0F) * w;
                 c[R_ARM] += -0.5F * w;
                 c[R_ELBOW] += 0.2F * w;
                 c[STAFF] += 0.15F * w;

@@ -37,8 +37,6 @@ public enum GameCharacter {
                             "How fast a hurled creature flies, in blocks a second");
             this.add(abilities, AbilitySlot.ABILITY_10, "selection");
             this.add(abilities, AbilitySlot.ABILITY_13, "grab").input(CharacterAbility.Input.RIGHT)
-                    .setting("reachBlocks", 8.0, 2.0, 24.0, Unit.BLOCKS,
-                            "How far the tentacles reach for a creature, in blocks")
                     .setting("slamDamage", 6.0, 0.0, 2000.0, Unit.HALF_HEARTS,
                             "Damage of a slam, to each creature slammed");
             this.add(abilities, AbilitySlot.ABILITY_14, "squeeze").input(CharacterAbility.Input.RIGHT)

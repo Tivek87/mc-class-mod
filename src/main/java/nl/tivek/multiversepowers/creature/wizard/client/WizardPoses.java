@@ -18,8 +18,8 @@ import nl.tivek.multiversepowers.faction.mob.client.MobPreview;
 // keyframes, and what no keyframe holds: the staff swung round in circles, the trembling as great magic passes through
 // him, the kick of each bolt, the circle his hand draws for the time warp and the tornado, the turning of the star
 // spiral, the clutch of a draining hand, the sway of a stunned head. All of it
-// followed on springs, each channel its own speed, so he never snaps from one pose into the next; beard, hat-tip and
-// robe trail after.
+// followed on springs, each channel its own speed, so he never snaps from one pose into the next; hat-tip and robe
+// trail after.
 final class WizardPoses {
     // Each channel on a spring of its own weight: the trunk and hips heavy and slow, swinging a little past; the head
     // and the arms quicker; elbows, wrists and the staff quicker again; legs and feet firm, so they never slide.
@@ -31,13 +31,13 @@ final class WizardPoses {
     private static final PoseSprings CLOTH = new PoseSprings(0.09, 0.32);
     // The whirl turns him round this many times between its first and last blow.
     private static final float WHIRL_TURNS = 3.0F;
+    // Further than this in a tick (blocks) he went in a moment, not by moving.
+    private static final double JUMPED = 2.5;
 
     final float[] c = new float[CHANNELS];
     private final float[] cloth = new float[8];
     float cape;
     float capeSide;
-    float beard;
-    float beardSide;
     float hat;
     float hatSide;
     float skirt;
@@ -96,6 +96,10 @@ final class WizardPoses {
         }
         if (move == 0 && amount < 0.1F && !caster.isAggressive()) {
             WizardRest.idle(this.c, age + caster.getId() * 37);
+            // Standing idle his staff stands planted in the ground at his side, whatever his other hand does.
+            if (!floating) {
+                this.planted();
+            }
         } else if (WizardMove.pastime(move)) {
             WizardRest.pastime(this.c, move, t, age);
         }
@@ -150,6 +154,9 @@ final class WizardPoses {
         float yaw = caster.yBodyRot * Mth.DEG_TO_RAD;
         double dx = caster.getX() - caster.xo;
         double dz = caster.getZ() - caster.zo;
+        if (dx * dx + dz * dz > JUMPED * JUMPED) {
+            return;
+        }
         float ahead = (float) (-dx * Mth.sin(yaw) + dz * Mth.cos(yaw));
         float across = (float) (dx * Mth.cos(yaw) + dz * Mth.sin(yaw));
         this.c[ROLL] += Mth.clamp(-turn * 0.025F + across * 0.6F, -0.35F, 0.35F);
@@ -231,8 +238,8 @@ final class WizardPoses {
         }
     }
 
-    // Standing for his picture (the Mobs page): the staff planted upright at his side, its foot on the ground, his
-    // hand resting on it.
+    // Standing idle or for his picture (the Mobs page): the staff planted upright at his side, its foot on the ground,
+    // his hand resting on it.
     private void planted() {
         // The arm straight, as the staff hangs from the arm and not the bent hand (StaffLayer), and out so far that
         // the staff's foot, a block under the grip, meets the ground.
@@ -394,23 +401,30 @@ final class WizardPoses {
         }
     }
 
-    // Beard, hat-tip, skirt and cape: cloth and hair on soft springs of their own, swung back by his speed, out to the
-    // side as he turns, up as he drops and down as he rises, shaken by bursts of magic, and waving slowly at rest. The
-    // beard's angle is in the world's tilt (WizardModel hangs it from his chin), the others in his trunk's.
+    // Hat-tip, skirt and cape: cloth on soft springs of their own, swung back by his speed, out to the side as he
+    // turns, up as he drops and down as he rises, shaken by bursts of magic, and waving slowly at rest (slots 0 and 1,
+    // once the beard's, stay still).
     private void trail(MovingMonster caster, float age, float amount, boolean floating, boolean still) {
         float sway = still ? 0.0F : Mth.sin(age * 0.11F + caster.getId());
         float yaw = caster.yBodyRot * Mth.DEG_TO_RAD;
         double dx = caster.getX() - caster.xo;
+        double dy = caster.getY() - caster.yo;
         double dz = caster.getZ() - caster.zo;
+        // A blink or a step through a rift moves him blocks in a tick: no wind of it reaches his cloth.
+        boolean jumped = dx * dx + dy * dy + dz * dz > JUMPED * JUMPED;
+        if (jumped) {
+            dx = 0.0;
+            dy = 0.0;
+            dz = 0.0;
+        }
         float ahead = (float) (-dx * Mth.sin(yaw) + dz * Mth.cos(yaw));
-        float across = (float) (dx * Mth.cos(yaw) + dz * Mth.sin(yaw));
-        float rise = (float) (caster.getY() - caster.yo);
-        float turn = Mth.wrapDegrees(caster.yBodyRot - caster.yBodyRotO) * Mth.DEG_TO_RAD;
+        float across = Mth.clamp((float) (dx * Mth.cos(yaw) + dz * Mth.sin(yaw)), -0.5F, 0.5F);
+        float rise = Mth.clamp((float) dy, -0.6F, 0.6F);
+        float turn = jumped ? 0.0F : Mth.clamp(Mth.wrapDegrees(caster.yBodyRot - caster.yBodyRotO) * Mth.DEG_TO_RAD,
+                -0.4F, 0.4F);
         float burst = Math.max(0.0F, this.c[FLARE]);
         float rush = Mth.clamp(ahead * 4.0F, -0.8F, 1.6F);
         float[] cloth = this.cloth;
-        cloth[0] = 0.04F * sway + 0.35F * rush - 0.8F * rise;
-        cloth[1] = -0.5F * this.c[ROLL] - 1.2F * turn - 0.4F * across * 4.0F + 0.04F * Mth.sin(age * 0.09F);
         cloth[2] = 0.05F * sway - 0.3F * this.c[LEAN] + 0.3F * rush;
         cloth[3] = -0.6F * this.c[ROLL] - 1.5F * turn + 0.05F * Mth.cos(age * 0.08F);
         cloth[4] = 0.03F * sway + 0.3F * rush - 0.6F * rise * 4.0F + (floating ? 0.12F : 0.0F) + 0.15F * burst;
@@ -418,8 +432,6 @@ final class WizardPoses {
         cloth[6] = 0.04F * sway + 0.55F * rush - 0.9F * rise * 4.0F + 0.25F * burst + (floating ? 0.1F : 0.0F);
         cloth[7] = -1.0F * turn - 0.5F * across * 4.0F + 0.04F * Mth.sin(age * 0.07F + 1.0F);
         CLOTH.follow(caster.getId(), cloth, age, caster.level().getGameTime());
-        this.beard = cloth[0];
-        this.beardSide = cloth[1];
         this.hat = cloth[2];
         this.hatSide = cloth[3];
         this.skirt = cloth[4];

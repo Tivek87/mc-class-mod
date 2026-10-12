@@ -20,31 +20,23 @@ import nl.tivek.multiversepowers.update.client.tour.TourStep.Place;
 // while a line is in neither, or a tour text is too long. Only steps from `FROM` up to the version installed are ever
 // shown, so a release's steps replace the last one's. A player's first tour starts with `INTRO`.
 final class TourSteps {
-    static final String VERSION = "0.9.2-alpha";
+    static final String VERSION = "0.9.3-alpha";
     // The oldest version whose changes this tour shows: normally its own.
     static final String FROM = VERSION;
     // The card every release with a new character (`GameCharacter.newIn` = VERSION) shows: hold the wheel key, where
     // the newest is marked NEW.
     static final String NEW_CHARACTER = "new_character";
 
-    // The Wizard's staff, his life out of a fight and his rifts; Doctor Octopus's new look and his tentacles in his
-    // crosshair, then Thor's recall and swap, in the game.
+    // Doctor Octopus's tentacles, always 12 blocks long and thicker, in the game.
     static final List<TourStep> ALL = List.of(
-            step(VERSION, "wizard_staff", Kind.NEW, Place.GAME).covers("Wizard: his staff fights"),
-            step(VERSION, "wizard_life", Kind.NEW, Place.GAME).covers("Wizard: on his feet",
-                    "Wizard: a life of his own", "Wizard: a face"),
-            step(VERSION, "wizard_rifts", Kind.NEW, Place.GAME).covers("Wizard: new ways to go",
-                    "Wizard: rifts of six kinds", "Wizard: grander coming and going"),
-            step(VERSION, "doc_ock_model", Kind.CHANGED, Place.GAME).covers("Doctor Octopus: a model of his own"),
-            step(VERSION, "doc_ock_crosshair", Kind.CHANGED, Place.GAME).at("game.tentacles")
-                    .covers("Doctor Octopus: tentacles in the crosshair"),
-            step(VERSION, "thor_recall", Kind.CHANGED, Place.GAME).covers("Thor: call the hammer anytime"),
-            step(VERSION, "thor_swap", Kind.CHANGED, Place.GAME).covers("Thor: swap mid-combo"));
+            step(VERSION, "doc_ock_reach", Kind.CHANGED, Place.GAME).at("game.tentacles")
+                    .covers("Doctor Octopus: tentacles always 12 blocks", "Doctor Octopus: thicker tentacles",
+                            "Doctor Octopus: grab reach setting"));
 
     // Changes too small for a step of their own, each by how its changelog line starts, as in `covers`.
-    static final List<String> SMALL = List.of("Controls: fixed gestures without keys", "Galactus: longer touch",
-            "Ability guide: only what works", "Thor: hammer hits tumble", "Night sky: the game's own sky stays",
-            "Wizard: stronger wards", "Wizard: every spell in turn", "Wizard: longer blinks", "Wizard: bare hands");
+    static final List<String> SMALL = List.of("Doctor Octopus: square crosshair", "Wizard: livelier face",
+            "Wizard: smoother staff", "Wizard: ground strike", "Wizard: staff planted at rest", "Wizard: calmer habits",
+            "Wizard: straight beard", "Wizard: short teleports", "Wizard: softer effects");
 
     // Shown first on a player's first tour, wherever it starts: what the tour is and how to use it.
     static final TourStep INTRO = step(VERSION, "tour_intro", Kind.HOW, Place.ANY);

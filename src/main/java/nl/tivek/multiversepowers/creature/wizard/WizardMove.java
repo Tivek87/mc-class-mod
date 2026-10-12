@@ -83,7 +83,8 @@ public final class WizardMove {
     public static final int SCRIBE = 70;
     public static final int PRACTICE = 71;
     public static final int RIFT_VOLLEY = 72;
-    public static final int KINDS = 72;
+    public static final int STAFF_PLANT = 73;
+    public static final int KINDS = 73;
     // What he does at rest with no foe about (WizardPastimes).
     public static final int[] PASTIMES = { READ, PERCH, JUGGLE, MEDITATE, PORTALS, BREW, WISP, SCRIBE, PRACTICE };
     // The last phase.
@@ -229,6 +230,7 @@ public final class WizardMove {
         move(SCRIBE, 320, 20, 0, NEVER, 0.0);
         move(PRACTICE, 280, 16, 0, NEVER, 0.0);
         big(RIFT_VOLLEY, 40, 16, 100, 2, 0.55);
+        close(STAFF_PLANT, 30, 13, 80, 1, 0.9);
     }
 
     // Something he does at rest, with no foe about.

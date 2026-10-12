@@ -14,20 +14,23 @@ import nl.tivek.multiversepowers.engine.client.render.LitShapes.Ring;
 import nl.tivek.multiversepowers.engine.client.render.LitShapes.Skin;
 
 // Doctor Octopus's harness and tentacles, a model of their own in the metal of `OctoSkin`, as in the films: each
-// tentacle a black hose ringed with gold, thinning to a claw of three long hooked talons (three short ones inside
-// them) round a red lamp; on his back a spine of steel vertebrae from his neck down to a corset of five steel bands
-// round his belly, the tentacles coming out of round mounts on its back. Drawn twice: the metal, then the lamps' light
-// (`phase`). What lies right at the first-person eye is left out.
+// tentacle a thick black hose ringed with dark steel, always TentacleReach.LENGTH long (TentacleShapes), thinning a
+// little to a claw of three long hooked talons (three short ones inside them) round a red lamp; on his back a spine
+// of steel vertebrae from his neck down to a corset of five steel bands round his belly, the tentacles coming out of
+// round mounts on its back. Drawn twice: the metal, then the lamps' light (`phase`). What lies right at the
+// first-person eye is left out.
 final class TentaclePainter extends LineFrames {
-    private static final double BASE_RADIUS = 0.1;
-    private static final double TIP_RADIUS = 0.055;
-    private static final double TAPER = 2.5;
-    // One rubber stretch and one gold ring, and the share of it the rubber takes.
-    private static final double RIB = 0.17;
-    private static final double[] RIB_AT = { 0.0, 0.58, 0.66, 0.92, 1.0 };
-    private static final double[] RIB_SIZE = { 1.0, 1.0, 1.18, 1.18, 1.0 };
-    private static final double WRIST = 0.1;
-    private static final int SIDES = 8;
+    private static final double BASE_RADIUS = 0.21;
+    private static final double TIP_RADIUS = 0.14;
+    private static final double TAPER = 4.0;
+    // One rubber stretch and one steel ring, and the share of it the rubber takes.
+    private static final double RIB = 0.3;
+    private static final double[] RIB_AT = { 0.0, 0.5, 0.58, 0.92, 1.0 };
+    private static final double[] RIB_SIZE = { 0.92, 0.92, 1.12, 1.12, 0.92 };
+    // The claw is drawn this many times its first size, to suit the thicker hose.
+    private static final double CLAW = 2.0;
+    private static final double WRIST = 0.1 * CLAW;
+    private static final int SIDES = 12;
     private static final double CORSET_LOW = 0.72;
     private static final double CORSET_STEP = 0.068;
     private static final double NEAR_EYE = 0.55;
@@ -124,8 +127,8 @@ final class TentaclePainter extends LineFrames {
                 Ring ring = across(frames.pointAt(s), frames.smoothDirectionAt(s), frames.smoothSideAt(s), radius,
                         radius);
                 if (last != null && k > 0) {
-                    Skin skin = k == 1 ? OctoSkin.RUBBER : k == 2 ? OctoSkin.GOLD.rows(0.0F, 0.3F)
-                            : k == 3 ? OctoSkin.GOLD : OctoSkin.GOLD.rows(0.7F, 1.0F);
+                    Skin skin = k == 1 ? OctoSkin.RUBBER : k == 2 ? OctoSkin.RING.rows(0.0F, 0.3F)
+                            : k == 3 ? OctoSkin.RING : OctoSkin.RING.rows(0.7F, 1.0F);
                     this.band(last, ring, SIDES, 0.0, skin, light);
                 }
                 last = ring;
@@ -143,36 +146,37 @@ final class TentaclePainter extends LineFrames {
     private void claw(Vec3 base, Vec3 d, Vec3 side, double radius, double open, boolean hot) {
         Vec3 across = d.cross(side);
         int light = this.light(base);
+        double c = CLAW;
         Vec3 wrist = base.add(d.scale(WRIST));
-        this.band(across(base, d, side, radius * 1.3, radius * 1.3), across(base.add(d.scale(0.04)), d, side,
+        this.band(across(base, d, side, radius * 1.3, radius * 1.3), across(base.add(d.scale(0.04 * c)), d, side,
                 radius * 1.5, radius * 1.5), SIDES, 0.0, OctoSkin.STEEL, light);
-        this.band(across(base.add(d.scale(0.04)), d, side, radius * 1.5, radius * 1.5), across(wrist, d, side, 0.085,
-                0.085), 6, Math.PI / 6, OctoSkin.STEEL, light);
-        Ring face = across(wrist.add(d.scale(0.12)), d, side, 0.06, 0.06);
-        this.band(across(wrist, d, side, 0.085, 0.085), face, 6, Math.PI / 6, OctoSkin.DARK, light);
+        this.band(across(base.add(d.scale(0.04 * c)), d, side, radius * 1.5, radius * 1.5), across(wrist, d, side,
+                0.085 * c, 0.085 * c), 6, Math.PI / 6, OctoSkin.STEEL, light);
+        Ring face = across(wrist.add(d.scale(0.12 * c)), d, side, 0.06 * c, 0.06 * c);
+        this.band(across(wrist, d, side, 0.085 * c, 0.085 * c), face, 6, Math.PI / 6, OctoSkin.DARK, light);
         if (!this.glow && !this.hidden(face.center())) {
             this.shapes.cap(face, 6, Math.PI / 6, d, OctoSkin.DARK, light);
         }
         float time = this.level.getGameTime() % 1000L;
         float bright = hot ? 0.85F + 0.15F * Mth.sin(time * 1.3F) : 0.6F;
-        this.lamp(face.center().add(d.scale(0.02)), side, d, 0.035, bright);
+        this.lamp(face.center().add(d.scale(0.02 * c)), side, d, 0.035 * c, bright);
         double spread = Mth.clamp(open, 0.0, 1.2);
         for (int k = 0; k < 3; k++) {
             double angle = k * Math.PI * 2 / 3;
             Vec3 out = side.scale(Math.cos(angle)).add(across.scale(Math.sin(angle)));
-            Vec3 root = wrist.add(d.scale(0.04)).add(out.scale(0.07));
-            Vec3 knuckle = root.add(d.scale(0.2)).add(out.scale(0.06 + spread * 0.36));
-            Vec3 point = knuckle.add(d.scale(0.22)).subtract(out.scale(spread * 0.25 + 0.07));
-            this.talon(root, knuckle, out, 0.036, 0.056, 0.03, 0.048, OctoSkin.DARK, light);
-            this.talon(knuckle, point, out, 0.03, 0.048, 0.004, 0.008, OctoSkin.STEEL, light);
-            this.box(knuckle, out, d, 0.04, 0.04, 0.04, OctoSkin.STEEL, light);
-            this.lamp(knuckle.add(out.scale(0.042)), out, d, 0.018, bright);
+            Vec3 root = wrist.add(d.scale(0.04 * c)).add(out.scale(0.07 * c));
+            Vec3 knuckle = root.add(d.scale(0.2 * c)).add(out.scale((0.06 + spread * 0.36) * c));
+            Vec3 point = knuckle.add(d.scale(0.22 * c)).subtract(out.scale((spread * 0.25 + 0.07) * c));
+            this.talon(root, knuckle, out, 0.036 * c, 0.056 * c, 0.03 * c, 0.048 * c, OctoSkin.DARK, light);
+            this.talon(knuckle, point, out, 0.03 * c, 0.048 * c, 0.004 * c, 0.008 * c, OctoSkin.STEEL, light);
+            this.box(knuckle, out, d, 0.04 * c, 0.04 * c, 0.04 * c, OctoSkin.STEEL, light);
+            this.lamp(knuckle.add(out.scale(0.042 * c)), out, d, 0.018 * c, bright);
             Vec3 inner = side.scale(Math.cos(angle + Math.PI / 3)).add(across.scale(Math.sin(angle + Math.PI / 3)));
-            Vec3 innerRoot = wrist.add(d.scale(0.1)).add(inner.scale(0.035));
-            Vec3 innerBend = innerRoot.add(d.scale(0.1)).add(inner.scale(0.03 + spread * 0.08));
-            this.talon(innerRoot, innerBend, inner, 0.012, 0.02, 0.01, 0.016, OctoSkin.STEEL, light);
-            this.talon(innerBend, innerBend.add(d.scale(0.06)).subtract(inner.scale(0.04)), inner, 0.01, 0.016,
-                    0.002, 0.004, OctoSkin.STEEL, light);
+            Vec3 innerRoot = wrist.add(d.scale(0.1 * c)).add(inner.scale(0.035 * c));
+            Vec3 innerBend = innerRoot.add(d.scale(0.1 * c)).add(inner.scale((0.03 + spread * 0.08) * c));
+            this.talon(innerRoot, innerBend, inner, 0.012 * c, 0.02 * c, 0.01 * c, 0.016 * c, OctoSkin.STEEL, light);
+            this.talon(innerBend, innerBend.add(d.scale(0.06 * c)).subtract(inner.scale(0.04 * c)), inner, 0.01 * c,
+                    0.016 * c, 0.002 * c, 0.004 * c, OctoSkin.STEEL, light);
         }
     }
 
@@ -211,17 +215,17 @@ final class TentaclePainter extends LineFrames {
                     light);
         }
         // The plate on the corset's back the tentacles are mounted on, and a round mount for each.
-        this.box(body.at(0.0, 0.92, -0.18), left, up, 0.17, 0.15, 0.025, OctoSkin.DARK, light);
+        this.box(body.at(0.0, 0.95, -0.2), left, up, 0.26, 0.26, 0.04, OctoSkin.DARK, light);
         for (int i = 0; i < 4; i++) {
             Vec3 socket = body.socket(i);
             Vec3 out = body.out(i);
-            Ring back = across(socket.subtract(out.scale(0.06)), out, up, 0.085, 0.085);
-            Ring rim = across(socket.subtract(out.scale(0.03)), out, up, 0.11, 0.11);
-            Ring front = across(socket.add(out.scale(0.05)), out, up, 0.11, 0.11);
-            Ring lip = across(socket.add(out.scale(0.07)), out, up, 0.09, 0.09);
-            this.band(back, rim, 10, 0.0, OctoSkin.STEEL.rows(0.0F, 0.3F), light);
-            this.band(rim, front, 10, 0.0, OctoSkin.STEEL, light);
-            this.band(front, lip, 10, 0.0, OctoSkin.STEEL.rows(0.7F, 1.0F), light);
+            Ring back = across(socket.subtract(out.scale(0.08)), out, up, 0.17, 0.17);
+            Ring rim = across(socket.subtract(out.scale(0.04)), out, up, 0.23, 0.23);
+            Ring front = across(socket.add(out.scale(0.07)), out, up, 0.23, 0.23);
+            Ring lip = across(socket.add(out.scale(0.1)), out, up, 0.2, 0.2);
+            this.band(back, rim, 14, 0.0, OctoSkin.STEEL.rows(0.0F, 0.3F), light);
+            this.band(rim, front, 14, 0.0, OctoSkin.STEEL, light);
+            this.band(front, lip, 14, 0.0, OctoSkin.STEEL.rows(0.7F, 1.0F), light);
         }
     }
 

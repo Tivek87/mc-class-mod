@@ -95,7 +95,7 @@ final class WizardFlight {
             double angle = this.wizard.getRandom().nextDouble() * Mth.TWO_PI;
             double out = Mth.lerp(this.wizard.getRandom().nextDouble(), near, far);
             double up = Mth.lerp(this.wizard.getRandom().nextDouble(), low, high);
-            Vec3 at = middle.add(Math.cos(angle) * out, up, Math.sin(angle) * out);
+            Vec3 at = Wizard.inReach(from, middle.add(Math.cos(angle) * out, up, Math.sin(angle) * out));
             if (this.free(level, at, from, least, target)) {
                 return at;
             }
@@ -104,7 +104,8 @@ final class WizardFlight {
     }
 
     private boolean free(ServerLevel level, Vec3 at, Vec3 from, double least, @Nullable LivingEntity target) {
-        if (at.distanceTo(from) < least || !level.isLoaded(BlockPos.containing(at))
+        if (at.distanceTo(from) < least || at.distanceTo(from) > Wizard.TELEPORT_RANGE + 1.0E-3
+                || !level.isLoaded(BlockPos.containing(at))
                 || at.y < level.getMinBuildHeight() + 2 || at.y > level.getMaxBuildHeight() - 4) {
             return false;
         }

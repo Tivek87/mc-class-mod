@@ -172,8 +172,12 @@ final class WizardSteps {
         for (int tries = 0; tries < 16; tries++) {
             double angle = this.wizard.getRandom().nextDouble() * Mth.TWO_PI;
             double far = 6.0 + this.wizard.getRandom().nextDouble() * 6.0;
-            Vec3 spot = WizardCasts.ground(level, middle.add(Math.cos(angle) * far, 3.0, Math.sin(angle) * far));
-            if (Math.abs(spot.y - middle.y) > 4.0 || !level.isLoaded(BlockPos.containing(spot))
+            Vec3 near = Wizard.inReach(this.wizard.position(), middle.add(Math.cos(angle) * far, 0.0,
+                    Math.sin(angle) * far));
+            Vec3 spot = WizardCasts.ground(level, near.add(0.0, 3.0, 0.0));
+            if (Math.abs(spot.y - middle.y) > 4.0
+                    || spot.distanceTo(this.wizard.position()) > Wizard.TELEPORT_RANGE
+                    || !level.isLoaded(BlockPos.containing(spot))
                     || !level.noCollision(this.wizard, this.wizard.getBoundingBox().move(spot.subtract(
                             this.wizard.position())))) {
                 continue;
@@ -245,7 +249,8 @@ final class WizardSteps {
             if (!this.wizard.flies()) {
                 spot = WizardCasts.ground(level, spot.add(0.0, 1.5, 0.0));
             }
-            if (level.noCollision(this.wizard, this.wizard.getBoundingBox().move(spot.subtract(from)))) {
+            if (spot.distanceTo(from) <= Wizard.TELEPORT_RANGE
+                    && level.noCollision(this.wizard, this.wizard.getBoundingBox().move(spot.subtract(from)))) {
                 this.wizard.teleportTo(spot.x, spot.y, spot.z);
                 break;
             }

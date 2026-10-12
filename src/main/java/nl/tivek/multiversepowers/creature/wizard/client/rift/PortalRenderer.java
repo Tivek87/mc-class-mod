@@ -68,14 +68,14 @@ public final class PortalRenderer extends EntityRenderer<WizardPortal> {
         PoseStack.Pose at = pose.last();
         Vec3 lift = normal.scale(0.02);
         int colour = WizardPortal.rim(style);
-        float[] none = Additive.rgb(0, 0.0F);
+        float[] none = Additive.full(0, 0.0F);
         for (int i = 0; i < SIDES; i++) {
             float[] p0 = rim[i];
             float[] p1 = rim[(i + 1) % SIDES];
             float flicker = 0.75F + 0.25F * Mth.sin(age * 0.7F + i * 1.9F);
-            float[] white = Additive.rgb(0xFFFFFF, 0.85F * open * flicker);
-            float[] lit = Additive.rgb(colour, 0.9F * open);
-            float[] soft = Additive.rgb(colour, 0.6F * open * flicker);
+            float[] white = Additive.full(0xFFFFFF, 0.85F * open * flicker);
+            float[] lit = Additive.full(colour, 0.9F * open);
+            float[] soft = Additive.full(colour, 0.6F * open * flicker);
             Additive.quad(at, buffer, scaled(p0, 0.93F, lift), scaled(p1, 0.93F, lift), scaled(p1, 1.04F, lift),
                     scaled(p0, 1.04F, lift), white, white, lit, lit);
             Additive.quad(at, buffer, scaled(p0, 1.04F, lift), scaled(p1, 1.04F, lift), scaled(p1, 1.4F, lift),
@@ -98,9 +98,9 @@ public final class PortalRenderer extends EntityRenderer<WizardPortal> {
             case WizardPortal.VOID -> -age * 0.04F;
             default -> age * 0.05F;
         };
-        float[] bright = Additive.rgb(colour, 0.9F * open);
-        float[] white = Additive.rgb(0xFFFFFF, 0.7F * open);
-        float[] none = Additive.rgb(0, 0.0F);
+        float[] bright = Additive.full(colour, 0.9F * open);
+        float[] white = Additive.full(0xFFFFFF, 0.7F * open);
+        float[] none = Additive.full(0, 0.0F);
         for (int k = 0; k < count; k++) {
             double a = turn + k * Mth.TWO_PI / count;
             Vec3 out = side.scale(Math.cos(a) * wide).add(up.scale(Math.sin(a) * tall));
@@ -130,7 +130,7 @@ public final class PortalRenderer extends EntityRenderer<WizardPortal> {
                 float[] p0 = rim[i];
                 float[] p1 = rim[(i + 1) % SIDES];
                 float pulse = 0.5F + 0.5F * Mth.sin(-age * 0.3F + i * 0.6F);
-                float[] gold = Additive.rgb(colour, 0.6F * open * pulse);
+                float[] gold = Additive.full(colour, 0.6F * open * pulse);
                 Additive.quad(at, buffer, scaled(p0, 0.78F, lift), scaled(p1, 0.78F, lift), scaled(p1, 0.82F, lift),
                         scaled(p0, 0.82F, lift), gold, gold, gold, gold);
             }

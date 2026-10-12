@@ -68,17 +68,17 @@ public final class RiftRenderer extends EntityRenderer<StarRift> {
             float flicker = 0.75F + 0.25F * Mth.sin(age * 0.6F + i * 1.7F);
             // The burning rim: white at its edge, violet outward.
             ring(at, buffer, c0, s0, c1, s1, reach[i], reach[j], 0.94F, 1.04F, lower,
-                    Additive.rgb(0xFFFFFF, 0.9F * open * flicker), Additive.rgb(Wizard.VIOLET, 0.9F * open));
+                    Additive.full(0xFFFFFF, 0.9F * open * flicker), Additive.full(Wizard.VIOLET, 0.9F * open));
             ring(at, buffer, c0, s0, c1, s1, reach[i], reach[j], 1.04F, 1.45F, lower,
-                    Additive.rgb(Wizard.VIOLET, 0.75F * open * flicker), Additive.rgb(0, 0.0F));
+                    Additive.full(Wizard.VIOLET, 0.75F * open * flicker), Additive.full(0, 0.0F));
             // Its light falling to the ground, fading as it goes.
             float[] top0 = { c0 * reach[i], lower, s0 * reach[i] };
             float[] top1 = { c1 * reach[j], lower, s1 * reach[j] };
             float spread = 1.15F;
             float[] low0 = { c0 * reach[i] * spread, (float) -SHAFT, s0 * reach[i] * spread };
             float[] low1 = { c1 * reach[j] * spread, (float) -SHAFT, s1 * reach[j] * spread };
-            float[] shaft = Additive.rgb(Wizard.VIOLET, 0.13F * open);
-            float[] none = Additive.rgb(0, 0.0F);
+            float[] shaft = Additive.full(Wizard.VIOLET, 0.13F * open);
+            float[] none = Additive.full(0, 0.0F);
             Additive.quad(at, buffer, top0, top1, low1, low0, shaft, shaft, none, none);
         }
         // Three arms of light wheeling in towards its middle.
@@ -90,8 +90,8 @@ public final class RiftRenderer extends EntityRenderer<StarRift> {
                 float[] p1 = spiral(arm, f1, age, radius);
                 float w0 = (float) radius * 0.09F * (1.0F - f0 * 0.7F);
                 float w1 = (float) radius * 0.09F * (1.0F - f1 * 0.7F);
-                float[] c = Additive.rgb(LIGHT, 0.45F * open * (1.0F - f0));
-                float[] d = Additive.rgb(LIGHT, 0.45F * open * (1.0F - f1));
+                float[] c = Additive.full(LIGHT, 0.45F * open * (1.0F - f0));
+                float[] d = Additive.full(LIGHT, 0.45F * open * (1.0F - f1));
                 Additive.quad(at, buffer, new float[] { p0[0] + p0[2] * w0, lower * 2.0F, p0[1] + p0[3] * w0 },
                         new float[] { p0[0] - p0[2] * w0, lower * 2.0F, p0[1] - p0[3] * w0 },
                         new float[] { p1[0] - p1[2] * w1, lower * 2.0F, p1[1] - p1[3] * w1 },

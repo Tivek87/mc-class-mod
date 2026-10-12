@@ -249,7 +249,7 @@ public final class OctoControls {
         if (!playing() || view == null || event.isPickBlock()) {
             return;
         }
-        double reach = GameCharacter.DOC_OCK.byName("grab").value("reachBlocks");
+        double reach = TentacleReach.LENGTH;
         if (event.isUseItem()) {
             if (PowerInputs.HOLD_SHIFT.isDown()) {
                 shiftUsed = true;
