@@ -8,7 +8,6 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
-import net.neoforged.neoforge.client.settings.KeyConflictContext;
 import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.character.AbilitySlot;
 import nl.tivek.multiversepowers.character.CharacterAbility;
@@ -18,12 +17,8 @@ import org.lwjgl.glfw.GLFW;
 public final class AbilityKeys {
     public static final String CATEGORY = "key.categories." + MultiversePowers.MODID;
 
-    public static final KeyMapping SPELL_WHEEL = new KeyMapping(
-            "key." + MultiversePowers.MODID + ".spell_wheel",
-            KeyConflictContext.IN_GAME,
-            InputConstants.Type.KEYSYM,
-            GLFW.GLFW_KEY_G,
-            CATEGORY);
+    public static final KeyMapping SPELL_WHEEL = new OrderedKey("key." + MultiversePowers.MODID + ".spell_wheel",
+            InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_G, 25);
 
     public static final KeyMapping[] SLOTS = {
             key(AbilitySlot.ABILITY_1, GLFW.GLFW_KEY_R),
@@ -37,7 +32,7 @@ public final class AbilityKeys {
             key(AbilitySlot.ABILITY_9, GLFW.GLFW_KEY_C),
             key(AbilitySlot.ABILITY_10, GLFW.GLFW_KEY_LEFT_ALT),
             key(AbilitySlot.ABILITY_11, GLFW.GLFW_KEY_K),
-            key(AbilitySlot.ABILITY_12, GLFW.GLFW_KEY_UNKNOWN) };
+            key(AbilitySlot.ABILITY_12, GLFW.GLFW_KEY_J) };
 
     public AbilityKeys(IEventBus modEventBus) {
         modEventBus.addListener(AbilityKeys::onRegisterKeys);
@@ -80,12 +75,8 @@ public final class AbilityKeys {
     }
 
     private static KeyMapping key(AbilitySlot slot, int defaultKey) {
-        return key(slot, InputConstants.Type.KEYSYM, defaultKey);
-    }
-
-    private static KeyMapping key(AbilitySlot slot, InputConstants.Type type, int defaultKey) {
-        return new KeyMapping("key." + MultiversePowers.MODID + ".ability_" + slot.getId(),
-                KeyConflictContext.IN_GAME, type, defaultKey, CATEGORY);
+        return new OrderedKey("key." + MultiversePowers.MODID + ".ability_" + slot.getId(), InputConstants.Type.KEYSYM,
+                defaultKey, slot.number());
     }
 
     private static void onRegisterKeys(RegisterKeyMappingsEvent event) {

@@ -1,12 +1,14 @@
 package nl.tivek.multiversepowers.character.client;
 
 import com.mojang.blaze3d.platform.InputConstants;
+import java.util.List;
 import java.util.Locale;
 import net.minecraft.Util;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundEvents;
+import net.minecraft.util.Mth;
 import net.minecraft.world.scores.PlayerTeam;
 import net.neoforged.neoforge.network.PacketDistributor;
 import nl.tivek.multiversepowers.MultiversePowers;
@@ -253,6 +255,7 @@ public class PowerWheelScreen extends PowerWheelLayout {
                 };
         guiGraphics.drawCenteredString(this.font, Component.translatable(KEY + hint,
                 AbilityKeys.SPELL_WHEEL.getTranslatedKeyMessage()), this.width / 2, this.height - 18, MUTED_COLOR);
+        this.newBanner(guiGraphics);
         this.faction(guiGraphics);
     }
 
@@ -303,6 +306,12 @@ public class PowerWheelScreen extends PowerWheelLayout {
                 !pickable ? CARD_FILL_OFF : hovered || inspected ? CARD_FILL_HOVER : CARD_FILL);
         GuiShapes.roundRect(guiGraphics, x + 3.0F, y + 4.0F, 2.0F, CARD_H - 8.0F, 1.0F,
                 GuiShapes.fade(color, pickable ? 1.0F : 0.3F));
+        if (this.isNew(card)) {
+            float pulse = 0.75F + 0.25F * Mth.sin(Util.getMillis() / 180.0F);
+            int badge = this.font.width(Component.translatable(KEY + "new")) + 6;
+            GuiShapes.roundRect(guiGraphics, x + w - badge - 3.0F, y - 5.0F, badge, 10.0F, 3.0F,
+                    GuiShapes.fade(NEW_COLOR & 0xFFFFFF, pulse));
+        }
         if (hovered && this.waiting()) {
             float filled = (float) ((w - 8.0F) * this.held());
             if (filled > 0.5F) {
@@ -325,6 +334,12 @@ public class PowerWheelScreen extends PowerWheelLayout {
                 line = playable == 0 ? Component.translatable(KEY + "coming_soon")
                         : Component.translatable(KEY + "playable", playable, Roster.of(franchise).size());
                 lineColor = playable == 0 ? MUTED_COLOR : ACTIVE_COLOR;
+                long fresh = Roster.of(franchise).stream().filter(entry -> NewCharacters.isNew(entry.character()))
+                        .count();
+                if (fresh > 0) {
+                    line = Component.translatable(KEY + (fresh == 1 ? "new_one" : "new_count"), fresh);
+                    lineColor = NEW_COLOR;
+                }
             }
             case SCHOOL -> {
                 MagicSchool school = this.schools[card.index()];
@@ -353,6 +368,9 @@ public class PowerWheelScreen extends PowerWheelLayout {
                 } else if (!entry.playable()) {
                     line = Component.translatable(KEY + "wip");
                     lineColor = WIP_COLOR;
+                } else if (NewCharacters.isNew(entry.character()) && !active) {
+                    line = Component.translatable(KEY + "new_become");
+                    lineColor = NEW_COLOR;
                 } else {
                     line = Component.translatable(KEY + (active ? "active" : "become"));
                     lineColor = active ? ACTIVE_COLOR : MUTED_COLOR;
@@ -379,6 +397,42 @@ public class PowerWheelScreen extends PowerWheelLayout {
         int room = card.w() - 12;
         guiGraphics.drawString(this.font, this.fit(name, room), textX, card.y() + 4, nameColor);
         guiGraphics.drawString(this.font, this.fit(line, room), textX, card.y() + 15, lineColor);
+        if (this.isNew(card)) {
+            Component badge = Component.translatable(KEY + "new");
+            int badgeW = this.font.width(badge) + 6;
+            guiGraphics.drawString(this.font, badge, card.x() + card.w() - badgeW, card.y() - 4, 0xFF1A1408, false);
+        }
+    }
+
+    // A character marked NEW, or a franchise holding one.
+    private boolean isNew(Card card) {
+        return switch (card.kind()) {
+            case CHARACTER -> NewCharacters.isNew(this.roster().get(card.index()).character());
+            case FRANCHISE -> Roster.of(this.franchises[card.index()]).stream()
+                    .anyMatch(entry -> NewCharacters.isNew(entry.character()));
+            default -> false;
+        };
+    }
+
+    // On the character pages, while a new character waits to be tried: who it is and where, over the hint line.
+    private void newBanner(GuiGraphics guiGraphics) {
+        List<GameCharacter> waiting = NewCharacters.waiting();
+        if (waiting.isEmpty() || this.page == Page.SCHOOL) {
+            return;
+        }
+        GameCharacter character = waiting.get(0);
+        Roster.Franchise franchise = Roster.franchiseOf(character);
+        Component text = Component.translatable(KEY + "new_banner", character.getDisplayName().copy()
+                .withColor(0xFF000000 | character.getColor()), franchise == null ? Component.empty()
+                : franchise.getDisplayName());
+        int width = this.font.width(text) + 16;
+        int x = (this.width - width) / 2;
+        int y = this.bannerY;
+        float pulse = 0.8F + 0.2F * Mth.sin(Util.getMillis() / 220.0F);
+        GuiShapes.roundRect(guiGraphics, x, y, width, 14.0F, 4.0F, GuiShapes.fade(NEW_COLOR & 0xFFFFFF, pulse));
+        GuiShapes.roundRect(guiGraphics, x + 1.0F, y + 1.0F, width - 2.0F, 12.0F, 3.0F, CARD_FILL);
+        GuiShapes.flush(guiGraphics);
+        guiGraphics.drawCenteredString(this.font, text, this.width / 2, y + 3, NEW_COLOR);
     }
 
     private Component fit(Component text, int width) {

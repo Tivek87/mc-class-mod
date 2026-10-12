@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import nl.tivek.multiversepowers.character.GameCharacter;
 import nl.tivek.multiversepowers.update.client.tour.TourStep.Kind;
 import org.junit.jupiter.api.Test;
 
@@ -73,6 +74,17 @@ class TourCoverageTest {
         }
         assertTrue(problems.isEmpty(), "The tour of " + version + " misses changes (TourSteps, covers):\n  "
                 + String.join("\n  ", problems));
+    }
+
+    @Test
+    void everyNewCharacterHasItsCard() {
+        for (GameCharacter character : GameCharacter.values()) {
+            if (TourSteps.VERSION.equals(character.newIn())) {
+                assertTrue(TourSteps.ALL.stream().anyMatch(step -> step.id().equals(TourSteps.NEW_CHARACTER)),
+                        character.getId() + " is new in " + TourSteps.VERSION + ": give the tour its "
+                                + TourSteps.NEW_CHARACTER + " step, covering the character's changelog line");
+            }
+        }
     }
 
     @Test

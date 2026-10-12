@@ -7,15 +7,48 @@ import java.util.Map;
 import javax.annotation.Nullable;
 import net.minecraft.network.chat.Component;
 import nl.tivek.multiversepowers.MultiversePowers;
+import nl.tivek.multiversepowers.character.docock.DocOckPowers;
 import nl.tivek.multiversepowers.character.greenlantern.GreenLanternPowers;
 import nl.tivek.multiversepowers.character.thor.ThorPowers;
 import nl.tivek.multiversepowers.config.Unit;
 
 public enum GameCharacter {
-    // In rework: listed, but never played (Characters.select refuses him).
-    DOC_OCK("doc_ock", 0xA8AEB8, CharacterPowers.NONE, false) {
+    DOC_OCK("doc_ock", 0xA8AEB8, new DocOckPowers()) {
+        @Override
+        public String newIn() {
+            return "0.9.1-alpha";
+        }
+
         @Override
         void fill(Map<AbilitySlot, CharacterAbility> abilities) {
+            // His stance key takes tentacles down to the ground and up; left alt picks tentacles to act with (the
+            // number keys and the scroll wheel then choose them). Right click takes hold of a creature, holding it
+            // squeezes, a quick turn of the view slams; his throw key hurls; a tap of shift lets go; left click on a
+            // creature strikes it. His other keys are kept free for powers to come.
+            for (AbilitySlot slot : AbilitySlot.values()) {
+                if (slot.keyed() && slot != AbilitySlot.ABILITY_1 && slot != AbilitySlot.ABILITY_9
+                        && slot != AbilitySlot.ABILITY_10) {
+                    this.add(abilities, slot, "key_" + slot.getId()).spare();
+                }
+            }
+            this.add(abilities, AbilitySlot.ABILITY_1, "stance");
+            this.add(abilities, AbilitySlot.ABILITY_9, "throw").cooldown(10).damage(6.0)
+                    .setting("speed", 24.0, 5.0, 80.0, Unit.BLOCKS_PER_SECOND,
+                            "How fast a hurled creature flies, in blocks a second");
+            this.add(abilities, AbilitySlot.ABILITY_10, "selection");
+            this.add(abilities, AbilitySlot.ABILITY_13, "grab").input(CharacterAbility.Input.RIGHT)
+                    .setting("reachBlocks", 8.0, 2.0, 24.0, Unit.BLOCKS,
+                            "How far the tentacles reach for a creature, in blocks")
+                    .setting("slamDamage", 6.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                            "Damage of a slam, to each creature slammed");
+            this.add(abilities, AbilitySlot.ABILITY_14, "squeeze").input(CharacterAbility.Input.RIGHT)
+                    .holdOnly(6).damage(2.0);
+            this.add(abilities, AbilitySlot.ABILITY_15, "slap").input(CharacterAbility.Input.LEFT).damage(5.0)
+                    .setting("weaponDamage", 8.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                            "Damage of a blow with a held creature, to the creature struck (the held one takes half)")
+                    .setting("clashDamage", 6.0, 0.0, 2000.0, Unit.HALF_HEARTS,
+                            "Damage to each held creature smashed together");
+            this.add(abilities, AbilitySlot.ABILITY_16, "release").input(CharacterAbility.Input.SHIFT);
         }
     },
     GREEN_LANTERN("green_lantern", 0x3CE86A, new GreenLanternPowers()) {
@@ -197,6 +230,13 @@ public enum GameCharacter {
 
     public Component getDisplayName() {
         return Component.translatable("character." + MultiversePowers.MODID + "." + this.id);
+    }
+
+    // The version this character first became playable in: the newest ones are marked NEW in the power wheel and get
+    // the tour's new-character card (`TourCoverageTest` holds every release's new characters to that card).
+    @Nullable
+    public String newIn() {
+        return null;
     }
 
     @Nullable

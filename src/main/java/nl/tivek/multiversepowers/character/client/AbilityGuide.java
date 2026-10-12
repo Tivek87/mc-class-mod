@@ -17,7 +17,6 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
-import net.neoforged.neoforge.client.settings.KeyConflictContext;
 import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.character.CharacterAbility;
 import nl.tivek.multiversepowers.character.GameCharacter;
@@ -28,8 +27,8 @@ import org.lwjgl.glfw.GLFW;
 // keys drops the other click), any other time the game's screen opens as always.
 @EventBusSubscriber(modid = MultiversePowers.MODID, value = Dist.CLIENT)
 public final class AbilityGuide {
-    public static final KeyMapping KEY = new KeyMapping("key." + MultiversePowers.MODID + ".ability_guide",
-            KeyConflictContext.IN_GAME, InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_P, AbilityKeys.CATEGORY);
+    public static final KeyMapping KEY = new OrderedKey("key." + MultiversePowers.MODID + ".ability_guide",
+            InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_P, 24);
 
     // What a guided tour asks the open guide to bring into view: the overview's row, or the first binds that belong
     // together.

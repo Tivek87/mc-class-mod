@@ -339,7 +339,7 @@ public final class SettingsPages {
     }
 
     private static Component hint(CharacterAbility ability) {
-        return PowerInputs.label(ability);
+        return PowerInputs.bindingName(ability);
     }
 
     private static double step(CharacterAbility.Setting setting) {

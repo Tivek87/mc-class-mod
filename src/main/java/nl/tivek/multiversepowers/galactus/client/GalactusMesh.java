@@ -16,8 +16,8 @@ import org.joml.Matrix4f;
 import org.joml.Vector3f;
 
 // Galactus's hulls as buffers kept on the graphics card, one per bone, made once and posed by matrices each frame, and
-// the shader that lights them: a key light (the moon's, or the sun's by day), rim lights in cosmic violet and teal, a
-// shine on the metal, crevices darker, the energy cracks pulsing over his armour and what glows (eyes, emblem).
+// the shader that lights them face by face: a key light (the moon's, or the sun's by day), the cosmos's violet and teal
+// on the faces turned to it, the cracks of energy pulsing over his plates and what glows (eyes, emblem).
 final class GalactusMesh {
     // The lights, every direction in view space (towards the light).
     record Lights(Vector3f key, Vector3f keyColor, Vector3f ambient, Vector3f rimA, Vector3f rimAColor, Vector3f rimB,

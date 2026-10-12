@@ -7,46 +7,55 @@ import nl.tivek.multiversepowers.engine.math.Perlin;
 import nl.tivek.multiversepowers.sky.client.SkyBodies.Kind;
 import nl.tivek.multiversepowers.sky.client.SkyBodies.Planet;
 
-// Colours are premultiplied: the globe hides what lies behind it, the glow of its air only adds.
+// Pixel art at the moon's pixel size: each pixel is either the globe (or its ring), solid, or the glow of its air,
+// which only adds; colours premultiplied, in a few shades.
 final class PlanetPainter {
-    private static final int SAMPLES = 3;
+    private static final int SAMPLES = 4;
     private static final double SUN = 1.18;
     private static final double BUMP = 0.12;
 
     private PlanetPainter() {
     }
 
-    static int size(Planet planet) {
-        double degrees = planet.degrees() * planet.reach();
-        int px = (int) Math.round(degrees * 30.0 / 4.0) * 4;
-        return Math.max(48, Math.min(720, px));
-    }
-
     static NativeImage paint(Planet planet) {
-        int size = size(planet);
+        int size = SkyTexture.pixels(planet.degrees() * planet.reach());
         NativeImage image = new NativeImage(size, size, false);
         Body body = new Body(planet);
         IntStream.range(0, size).parallel().forEach(row -> {
             double[] surface = new double[Surfaces.OUT];
-            double[] sum = new double[4];
+            double[] solid = new double[3];
+            double[] glow = new double[3];
             double[] one = new double[4];
             for (int col = 0; col < size; col++) {
-                java.util.Arrays.fill(sum, 0.0);
+                java.util.Arrays.fill(solid, 0.0);
+                java.util.Arrays.fill(glow, 0.0);
+                int covered = 0;
                 for (int a = 0; a < SAMPLES; a++) {
                     for (int b = 0; b < SAMPLES; b++) {
                         double sx = ((col + (a + 0.5) / SAMPLES) / size * 2.0 - 1.0) * body.reach;
                         double sy = (1.0 - (row + (b + 0.5) / SAMPLES) / size * 2.0) * body.reach;
                         body.sample(sx, sy, surface, one);
-                        for (int c = 0; c < 4; c++) {
-                            sum[c] += one[c];
+                        double[] into = one[3] >= 0.5 ? solid : glow;
+                        double cover = one[3] >= 0.5 ? one[3] : 1.0;
+                        covered += one[3] >= 0.5 ? 1 : 0;
+                        for (int c = 0; c < 3; c++) {
+                            into[c] += one[c] / cover;
                         }
                     }
                 }
-                double n = SAMPLES * SAMPLES;
-                image.setPixelRGBA(col, row, SkyColors.premultiplied(sum[0] / n, sum[1] / n, sum[2] / n, sum[3] / n));
+                int n = SAMPLES * SAMPLES;
+                boolean globe = covered * 2 >= n;
+                double[] rgb = globe ? solid : glow;
+                double count = globe ? covered : n - covered;
+                image.setPixelRGBA(col, row, SkyColors.premultiplied(shade(rgb[0] / count, col, row),
+                        shade(rgb[1] / count, col, row), shade(rgb[2] / count, col, row), globe ? 1.0 : 0.0));
             }
         });
         return image;
+    }
+
+    private static double shade(double v, int col, int row) {
+        return SkyColors.pixel(SkyColors.soft(v), col, row, 0.0);
     }
 
     private static final class Body {

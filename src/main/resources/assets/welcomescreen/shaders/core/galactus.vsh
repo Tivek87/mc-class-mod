@@ -14,7 +14,7 @@ out vec3 localPos;
 out vec4 paint;
 out vec2 material;
 
-// Galactus's parts, lit in view space; the part's own coordinates carry the patterns laid over it.
+// Galactus's boxes, lit in view space; the part's own height sets the pulse of what glows.
 void main() {
     vec4 at = ModelViewMat * vec4(Position, 1.0);
     gl_Position = ProjMat * at;

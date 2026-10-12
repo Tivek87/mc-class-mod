@@ -25,17 +25,17 @@ import org.joml.Matrix4f;
 
 public final class CosmicSky {
     private static final float DISTANCE_SCALE = 0.5F;
+    // How far below the horizon (the sun's height, 1 overhead) the sky is wholly out.
+    private static final float SUNK = 0.2F;
     private static volatile Pictures painted;
     private static final List<SkyTexture> FACES = new ArrayList<>();
     private static final List<SkyTexture> PLANETS = new ArrayList<>();
     private static SkyTexture galaxy;
-    private static SkyTexture sprites;
     private static VertexBuffer stars;
     private static boolean ready;
     private static boolean active;
 
-    private record Pictures(NativeImage[] faces, NativeImage galaxy, NativeImage sprites, NativeImage[] planets,
-            float[] stars) {
+    private record Pictures(NativeImage[] faces, NativeImage galaxy, NativeImage[] planets, float[] stars) {
     }
 
     private CosmicSky() {
@@ -45,7 +45,6 @@ public final class CosmicSky {
         Thread.ofPlatform().daemon().name("cosmic-sky").start(() -> {
             try {
                 long start = System.nanoTime();
-                NativeImage sprites = StarField.sprites();
                 float[] stars = StarField.build();
                 NativeImage[] planets = new NativeImage[SkyBodies.PLANETS.size()];
                 for (int i = 0; i < planets.length; i++) {
@@ -56,7 +55,7 @@ public final class CosmicSky {
                 for (int i = 0; i < faces.length; i++) {
                     faces[i] = MilkyWay.face(i);
                 }
-                painted = new Pictures(faces, galaxy, sprites, planets, stars);
+                painted = new Pictures(faces, galaxy, planets, stars);
                 MultiversePowers.LOGGER.debug("Cosmic sky painted in {} ms", (System.nanoTime() - start) / 1_000_000L);
             } catch (RuntimeException e) {
                 MultiversePowers.LOGGER.error("Could not paint the cosmic sky", e);
@@ -77,8 +76,9 @@ public final class CosmicSky {
             return;
         }
         active = true;
-        float fade = Mth.clamp(level.getStarBrightness(partialTick) * 2.0F, 0.0F, 1.0F)
-                * (1.0F - level.getRainLevel(partialTick));
+        // Only once the sun is down, as deep as it sinks in twilight; never while it is up.
+        float sunk = Mth.clamp(-Mth.cos(level.getTimeOfDay(partialTick) * Mth.TWO_PI) / SUNK, 0.0F, 1.0F);
+        float fade = sunk * sunk * (3.0F - 2.0F * sunk) * (1.0F - level.getRainLevel(partialTick));
         if (fade <= 0.002F) {
             return;
         }
@@ -100,8 +100,7 @@ public final class CosmicSky {
         RenderSystem.setShaderTexture(0, galaxy.getId());
         quad(sky, SkyBodies.GALAXY.scale(100.0), frame[0].scale(c).add(frame[1].scale(s)),
                 frame[1].scale(c).subtract(frame[0].scale(s)));
-        RenderSystem.setShader(GameRenderer::getPositionTexColorShader);
-        RenderSystem.setShaderTexture(0, sprites.getId());
+        RenderSystem.setShader(GameRenderer::getPositionColorShader);
         stars.bind();
         stars.drawWithShader(sky, projection, RenderSystem.getShader());
         VertexBuffer.unbind();
@@ -145,8 +144,7 @@ public final class CosmicSky {
         if (pictures == null) {
             return false;
         }
-        if (sprites == null) {
-            sprites = new SkyTexture(pictures.sprites());
+        if (stars == null) {
             stars = starBuffer(pictures.stars());
         } else if (PLANETS.size() < pictures.planets().length) {
             PLANETS.add(new SkyTexture(pictures.planets()[PLANETS.size()]));
@@ -163,10 +161,10 @@ public final class CosmicSky {
 
     private static VertexBuffer starBuffer(float[] data) {
         BufferBuilder builder = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS,
-                DefaultVertexFormat.POSITION_TEX_COLOR);
+                DefaultVertexFormat.POSITION_COLOR);
         for (int i = 0; i < data.length; i += StarField.STRIDE) {
-            builder.addVertex(data[i], data[i + 1], data[i + 2]).setUv(data[i + 3], data[i + 4])
-                    .setColor(data[i + 5], data[i + 6], data[i + 7], 1.0F);
+            builder.addVertex(data[i], data[i + 1], data[i + 2]).setColor(data[i + 3], data[i + 4], data[i + 5],
+                    1.0F);
         }
         VertexBuffer buffer = new VertexBuffer(VertexBuffer.Usage.STATIC);
         buffer.bind();

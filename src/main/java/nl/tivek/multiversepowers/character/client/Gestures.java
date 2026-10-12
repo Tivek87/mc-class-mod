@@ -2,8 +2,10 @@ package nl.tivek.multiversepowers.character.client;
 
 import java.util.Arrays;
 import java.util.EnumMap;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Predicate;
 import java.util.function.ToIntFunction;
 import javax.annotation.Nullable;
@@ -32,7 +34,7 @@ import nl.tivek.multiversepowers.testfight.client.FightClient;
 
 // The mouse and space gestures: per button the ability its click fires and the one its hold fires, which may be two
 // different ones (Thor dashes on a click and claps on a hold) and may change once the character flies.
-final class Gestures {
+public final class Gestures {
     // Two presses of space this close together, in ticks, are a double press (as the game's own creative flight).
     private static final int DOUBLE_WINDOW = 7;
     private static final int BLOCK_AFTER = 5;
@@ -43,6 +45,7 @@ final class Gestures {
     private static final Map<GameCharacter, ToIntFunction<LocalPlayer>> STATES = new EnumMap<>(GameCharacter.class);
     private static final Map<GameCharacter, Predicate<LocalPlayer>> MOUSE_FREE = new EnumMap<>(GameCharacter.class);
     private static final Map<GameCharacter, Predicate<LocalPlayer>> ONE_BUTTON = new EnumMap<>(GameCharacter.class);
+    private static final Set<GameCharacter> OWN_INPUT = EnumSet.noneOf(GameCharacter.class);
     private static final Map<CharacterAbility, Predicate<LocalPlayer>> GATES = new HashMap<>();
     private static final Map<CharacterAbility, ToIntFunction<LocalPlayer>> HOLD_TIMES = new HashMap<>();
 
@@ -149,6 +152,12 @@ final class Gestures {
     }
 
     static void tick(LocalPlayer player, Minecraft minecraft, @Nullable GameCharacter now) {
+        if (now != null && OWN_INPUT.contains(now)) {
+            for (int channel = 0; channel < MouseHold.CHANNELS; channel++) {
+                letGo(player, channel);
+            }
+            return;
+        }
         for (CharacterAbility.Input input : BUTTONS) {
             CharacterAbility click = clickOf(now, input, player);
             CharacterAbility hold = holdOf(now, input, player);
@@ -156,7 +165,7 @@ final class Gestures {
                 case LEFT, RIGHT -> mouse(player, minecraft, now, input, click, hold);
                 case SCROLL -> scroll(player, minecraft, click, hold);
                 case SPACE -> space(player, minecraft, click, hold);
-                case SHIFT -> shift(player, minecraft, hold);
+                case SHIFT -> shift(player, minecraft, click, hold);
                 case KEY -> {
                 }
             }
@@ -311,8 +320,8 @@ final class Gestures {
         }
     }
 
-    // Space still jumps as always: a second press quickly after the first is the double press, and holding it on
-    // after one press is the hold.
+    // Space still jumps as always: a press is the single press, a second press quickly after the first the double press,
+    // and holding it on after one press the hold.
     private static void space(LocalPlayer player, Minecraft minecraft, @Nullable CharacterAbility click,
             @Nullable CharacterAbility hold) {
         int clock = ClientCharacter.clock();
@@ -320,6 +329,7 @@ final class Gestures {
         boolean pressed = down && !spaceWas;
         spaceWas = down;
         CharacterAbility twice = click != null && click.tapWhen() == CharacterAbility.Tap.DOUBLE ? click : null;
+        CharacterAbility once = click != null && twice == null ? click : null;
         if (pressed) {
             if (twice != null && clock - lastSpace <= DOUBLE_WINDOW && allowed(twice, player)) {
                 lastSpace = Integer.MIN_VALUE / 2;
@@ -328,6 +338,9 @@ final class Gestures {
             } else {
                 lastSpace = clock;
                 spaceSpent = false;
+                if (once != null && allowed(once, player)) {
+                    ClientCharacter.press(player, once.slot());
+                }
             }
         }
         if (hold == null || spaceSpent) {
@@ -343,29 +356,50 @@ final class Gestures {
         }
     }
 
-    // Shift keeps doing what the game gives it (sneak or sprint); holding it on is the hold as well.
-    private static void shift(LocalPlayer player, Minecraft minecraft, @Nullable CharacterAbility hold) {
-        if (hold == null) {
+    // Shift keeps doing what the game gives it (sneak or sprint); a tap of it is the click, holding it on the hold.
+    private static void shift(LocalPlayer player, Minecraft minecraft, @Nullable CharacterAbility click,
+            @Nullable CharacterAbility hold) {
+        if (click == null && hold == null) {
             letGo(player, MouseHold.SHIFT);
             return;
         }
-        boolean down = inGame(minecraft) && PowerInputs.HOLD_SHIFT.isDown();
-        MouseHold.Step step = MouseHold.tick(MouseHold.SHIFT, hold.holdTicks(), CharacterAbility.Tap.NEVER, down,
-                true);
-        if (step == MouseHold.Step.HOLD) {
-            startHold(player, MouseHold.SHIFT, hold);
-        } else if (step == MouseHold.Step.RELEASE) {
-            letGo(player, MouseHold.SHIFT);
+        boolean inGame = inGame(minecraft);
+        boolean down = inGame && PowerInputs.HOLD_SHIFT.isDown();
+        MouseHold.Step step = MouseHold.tick(MouseHold.SHIFT, hold == null ? 0 : hold.holdTicks(),
+                tapMode(click, hold), down, !inGame);
+        switch (step) {
+            case TAP -> {
+                if (click != null && allowed(click, player)) {
+                    ClientCharacter.press(player, click.slot());
+                }
+            }
+            case HOLD -> {
+                if (hold != null) {
+                    startHold(player, MouseHold.SHIFT, hold);
+                }
+            }
+            case RELEASE -> letGo(player, MouseHold.SHIFT);
+            case LET_GO, NOTHING -> {
+            }
         }
     }
 
     static boolean takesMouse(LocalPlayer player) {
+        GameCharacter now = ClientCharacter.active();
+        if (now != null && OWN_INPUT.contains(now)) {
+            return false;
+        }
         if (player.getMainHandItem().isEmpty() && player.getOffhandItem().isEmpty()) {
             return true;
         }
-        GameCharacter now = ClientCharacter.active();
         Predicate<LocalPlayer> free = now == null ? null : MOUSE_FREE.get(now);
         return free != null && free.test(player);
+    }
+
+    // A character that reads the mouse, space and shift itself (Doctor Octopus): no gesture fires for it here, and
+    // the game's own clicks are left to it.
+    public static void ownInput(GameCharacter character) {
+        OWN_INPUT.add(character);
     }
 
     static void mouseFree(GameCharacter character, Predicate<LocalPlayer> free) {

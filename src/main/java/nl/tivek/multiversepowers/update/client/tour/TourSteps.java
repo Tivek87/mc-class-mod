@@ -7,6 +7,7 @@ import java.util.function.Supplier;
 import javax.annotation.Nullable;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.network.chat.Component;
+import nl.tivek.multiversepowers.character.AbilitySlot;
 import nl.tivek.multiversepowers.character.client.AbilityKeys;
 import nl.tivek.multiversepowers.update.client.tour.TourStep.Kind;
 import nl.tivek.multiversepowers.update.client.tour.TourStep.Place;
@@ -19,24 +20,28 @@ import nl.tivek.multiversepowers.update.client.tour.TourStep.Place;
 // while a line is in neither, or a tour text is too long. Only steps from `FROM` up to the version installed are ever
 // shown, so a release's steps replace the last one's. A player's first tour starts with `INTRO`.
 final class TourSteps {
-    static final String VERSION = "0.9.0-alpha";
+    static final String VERSION = "0.9.1-alpha";
     // The oldest version whose changes this tour shows: normally its own.
     static final String FROM = VERSION;
+    // The card every release with a new character (`GameCharacter.newIn` = VERSION) shows: hold the wheel key, where
+    // the newest is marked NEW.
+    static final String NEW_CHARACTER = "new_character";
 
-    // The Wizard's close spells and staff combos, his new spells, his phase specials and his easier fight, the cosmic
-    // night sky and the new Galactus, all in the game.
+    // The keys as one numbered list, then Doctor Octopus: his tentacles round the crosshair, his stance and Selection
+    // Mode, in the game.
     static final List<TourStep> ALL = List.of(
-            step(VERSION, "wizard_close", Kind.NEW, Place.GAME).covers(
-                    "Wizard: close spells", "Wizard: staff combos"),
-            step(VERSION, "wizard_four_spells", Kind.NEW, Place.GAME).covers("Wizard: 4 new spells"),
-            step(VERSION, "wizard_specials", Kind.NEW, Place.GAME).covers("Wizard: phase specials"),
-            step(VERSION, "wizard_easier", Kind.CHANGED, Place.GAME).covers(
-                    "Wizard: easier", "Wizard: ward and arrows"),
-            step(VERSION, "cosmic_sky", Kind.NEW, Place.GAME).covers("Cosmic night sky"),
-            step(VERSION, "galactus_remade", Kind.CHANGED, Place.GAME).covers("Galactus: remade"));
+            step(VERSION, "keys_numbered", Kind.CHANGED, Place.GAME).at("game.panel").covers(
+                    "Keys: one numbered list", "Ability 12 on J", "Single Space and Click Shift"),
+            step(VERSION, NEW_CHARACTER, Kind.NEW, Place.GAME).key(key(() -> AbilityKeys.SPELL_WHEEL)).covers(
+                    "Doctor Octopus playable", "New character badge"),
+            step(VERSION, "doc_ock_tentacles", Kind.NEW, Place.GAME).at("game.tentacles").covers("Tentacle HUD"),
+            step(VERSION, "doc_ock_stance", Kind.NEW, Place.GAME).at("game.tentacles")
+                    .key(key(() -> AbilityKeys.of(AbilitySlot.ABILITY_1))).covers("Tentacle stance"),
+            step(VERSION, "doc_ock_selection", Kind.NEW, Place.GAME).at("game.tentacles")
+                    .key(key(() -> AbilityKeys.of(AbilitySlot.ABILITY_10))).covers("Selection Mode"));
 
     // Changes too small for a step of their own, each by how its changelog line starts, as in `covers`.
-    static final List<String> SMALL = List.of("Wizard: smoother moves", "Wizard: new face and beard");
+    static final List<String> SMALL = List.of("Cosmic night sky: pixel art", "Galactus: blocky");
 
     // Shown first on a player's first tour, wherever it starts: what the tour is and how to use it.
     static final TourStep INTRO = step(VERSION, "tour_intro", Kind.HOW, Place.ANY);

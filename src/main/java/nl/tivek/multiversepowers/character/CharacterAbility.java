@@ -216,6 +216,19 @@ public final class CharacterAbility {
         return this.slot;
     }
 
+    // Its entry's number in Options > Controls: a key's own slot (1 to 12), else its gesture (13 to 23).
+    public int binding() {
+        boolean hold = this.tapWhen() == Tap.NEVER;
+        return switch (this.input()) {
+            case KEY -> this.slot.number();
+            case LEFT -> hold ? 14 : 13;
+            case RIGHT -> hold ? 16 : 15;
+            case SCROLL -> hold ? 18 : 17;
+            case SPACE -> this.tapWhen() == Tap.DOUBLE ? 20 : hold ? 21 : 19;
+            case SHIFT -> hold ? 23 : 22;
+        };
+    }
+
     public String id() {
         return this.id;
     }

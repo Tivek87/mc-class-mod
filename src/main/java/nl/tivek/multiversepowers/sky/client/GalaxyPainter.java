@@ -2,11 +2,10 @@ package nl.tivek.multiversepowers.sky.client;
 
 import com.mojang.blaze3d.platform.NativeImage;
 import java.util.stream.IntStream;
-import nl.tivek.multiversepowers.engine.math.Noise;
 import nl.tivek.multiversepowers.engine.math.Perlin;
 
 final class GalaxyPainter {
-    static final int SIZE = 640;
+    static final int SIZE = SkyTexture.pixels(SkyBodies.GALAXY_DEGREES);
     private static final double TIP = Math.cos(Math.toRadians(62.0));
     private static final double WIND = 3.0;
 
@@ -19,17 +18,16 @@ final class GalaxyPainter {
             for (int col = 0; col < SIZE; col++) {
                 double u = (col + 0.5) / SIZE * 2.0 - 1.0;
                 double v = (row + 0.5) / SIZE * 2.0 - 1.0;
-                double[] rgb = light(u, v, col, row);
+                double[] rgb = light(u, v);
                 double edge = Surfaces.smooth(1.0, 0.8, Math.max(Math.abs(u), Math.abs(v)));
-                double dither = Noise.of(col, row, 91) + Noise.of(col, row, 92) - 1.0;
-                image.setPixelRGBA(col, row, SkyColors.added(rgb[0] * edge, rgb[1] * edge, rgb[2] * edge,
-                        dither));
+                image.setPixelRGBA(col, row, SkyColors.added(rgb[0] * edge, rgb[1] * edge, rgb[2] * edge, col,
+                        row));
             }
         });
         return image;
     }
 
-    private static double[] light(double u, double v, int col, int row) {
+    private static double[] light(double u, double v) {
         double y = v / TIP;
         double r = Math.sqrt(u * u + y * y);
         double angle = Math.atan2(y, u);
@@ -56,12 +54,6 @@ final class GalaxyPainter {
         red += bulge * 1.0 + halo * 0.6;
         green += bulge * 0.82 + halo * 0.7;
         blue += bulge * 0.55 + halo * 1.0;
-        if (Noise.of(col, row, 95) < arm * disk * 0.04) {
-            double b = 0.15 + 0.35 * Noise.of(col, row, 96);
-            red += b * 0.75;
-            green += b * 0.85;
-            blue += b;
-        }
         return new double[] {red, green, blue};
     }
 }

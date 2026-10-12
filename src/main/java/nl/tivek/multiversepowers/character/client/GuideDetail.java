@@ -187,6 +187,9 @@ final class GuideDetail {
     // Its cooldown when it is the ability's own move, and what it costs.
     private static List<Component> tags(GuideMode mode, GuideMode.Control control, @Nullable CharacterAbility ability) {
         List<Component> tags = new ArrayList<>();
+        if (ability != null && control.describes()) {
+            tags.add(Component.translatable(PowerInputs.binding(ability).getName()));
+        }
         if (ability != null && control.describes() && ability.usesCooldown()) {
             double seconds = CharacterConfig.cooldown(ability) * PowerRules.cooldowns() / 20.0;
             if (seconds >= 0.05) {

@@ -22,9 +22,8 @@ import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 import net.neoforged.neoforge.client.event.RenderGuiEvent;
 import net.neoforged.neoforge.client.event.ScreenEvent;
-import net.neoforged.neoforge.client.settings.KeyConflictContext;
 import nl.tivek.multiversepowers.MultiversePowers;
-import nl.tivek.multiversepowers.character.client.AbilityKeys;
+import nl.tivek.multiversepowers.character.client.OrderedKey;
 import nl.tivek.multiversepowers.config.client.ClientSettings;
 import nl.tivek.multiversepowers.engine.client.gui.HudSpace;
 import nl.tivek.multiversepowers.engine.client.gui.PixelIcons;
@@ -32,8 +31,8 @@ import org.lwjgl.glfw.GLFW;
 
 @EventBusSubscriber(modid = MultiversePowers.MODID, value = Dist.CLIENT)
 public final class UpdatePopup {
-    public static final KeyMapping OPEN_KEY = new KeyMapping("key." + MultiversePowers.MODID + ".open_update",
-            KeyConflictContext.IN_GAME, InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_U, AbilityKeys.CATEGORY);
+    public static final KeyMapping OPEN_KEY = new OrderedKey("key." + MultiversePowers.MODID + ".open_update",
+            InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_U, 26);
 
     public static final int ACCENT = 0x6EE7A0;
     private static final int HEIGHT = 46;

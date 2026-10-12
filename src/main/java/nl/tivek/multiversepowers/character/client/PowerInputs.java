@@ -1,43 +1,46 @@
 package nl.tivek.multiversepowers.character.client;
 
 import com.mojang.blaze3d.platform.InputConstants;
+import javax.annotation.Nullable;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
-import net.neoforged.neoforge.client.settings.KeyConflictContext;
 import net.neoforged.neoforge.client.settings.KeyModifier;
 import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.character.CharacterAbility;
 import org.lwjgl.glfw.GLFW;
 
-// The mouse, space and shift gestures powers use, listed under Controls. Left, right and space follow the game's own
-// attack, use and jump keys and cannot be changed here; the scroll wheel's click and hold and the held shift can.
+// The mouse, space and shift gestures powers use, Ability 13 to 23 in Options > Controls, right after the ability keys:
+// each fixed to its button, as left, right and space follow the game's own attack, use and jump keys.
 public final class PowerInputs {
-    public static final String CATEGORY = "key.categories." + MultiversePowers.MODID + ".inputs";
-
     public static final KeyMapping LEFT_CLICK = locked("left_click", InputConstants.Type.MOUSE,
-            GLFW.GLFW_MOUSE_BUTTON_LEFT, CharacterAbility.Input.LEFT);
+            GLFW.GLFW_MOUSE_BUTTON_LEFT, CharacterAbility.Input.LEFT, 13);
     public static final KeyMapping LEFT_HOLD = locked("left_hold", InputConstants.Type.MOUSE,
-            GLFW.GLFW_MOUSE_BUTTON_LEFT, CharacterAbility.Input.LEFT);
+            GLFW.GLFW_MOUSE_BUTTON_LEFT, CharacterAbility.Input.LEFT, 14);
     public static final KeyMapping RIGHT_CLICK = locked("right_click", InputConstants.Type.MOUSE,
-            GLFW.GLFW_MOUSE_BUTTON_RIGHT, CharacterAbility.Input.RIGHT);
+            GLFW.GLFW_MOUSE_BUTTON_RIGHT, CharacterAbility.Input.RIGHT, 15);
     public static final KeyMapping RIGHT_HOLD = locked("right_hold", InputConstants.Type.MOUSE,
-            GLFW.GLFW_MOUSE_BUTTON_RIGHT, CharacterAbility.Input.RIGHT);
-    public static final KeyMapping SCROLL_CLICK = new KeyMapping(name("scroll_click"), KeyConflictContext.IN_GAME,
-            InputConstants.Type.MOUSE, GLFW.GLFW_MOUSE_BUTTON_MIDDLE, CATEGORY);
-    public static final KeyMapping SCROLL_HOLD = new KeyMapping(name("scroll_hold"), KeyConflictContext.IN_GAME,
-            InputConstants.Type.MOUSE, GLFW.GLFW_MOUSE_BUTTON_MIDDLE, CATEGORY);
+            GLFW.GLFW_MOUSE_BUTTON_RIGHT, CharacterAbility.Input.RIGHT, 16);
+    public static final KeyMapping SCROLL_CLICK = locked("scroll_click", InputConstants.Type.MOUSE,
+            GLFW.GLFW_MOUSE_BUTTON_MIDDLE, null, 17);
+    public static final KeyMapping SCROLL_HOLD = locked("scroll_hold", InputConstants.Type.MOUSE,
+            GLFW.GLFW_MOUSE_BUTTON_MIDDLE, null, 18);
+    public static final KeyMapping SINGLE_SPACE = locked("single_space", InputConstants.Type.KEYSYM,
+            GLFW.GLFW_KEY_SPACE, CharacterAbility.Input.SPACE, 19);
     public static final KeyMapping DOUBLE_SPACE = locked("double_space", InputConstants.Type.KEYSYM,
-            GLFW.GLFW_KEY_SPACE, CharacterAbility.Input.SPACE);
+            GLFW.GLFW_KEY_SPACE, CharacterAbility.Input.SPACE, 20);
     public static final KeyMapping HOLD_SPACE = locked("hold_space", InputConstants.Type.KEYSYM,
-            GLFW.GLFW_KEY_SPACE, CharacterAbility.Input.SPACE);
-    // Its own key, not the game's sneak: many play with shift on sprint and sneak elsewhere.
-    public static final KeyMapping HOLD_SHIFT = new KeyMapping(name("hold_shift"), KeyConflictContext.IN_GAME,
-            InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_LEFT_SHIFT, CATEGORY);
+            GLFW.GLFW_KEY_SPACE, CharacterAbility.Input.SPACE, 21);
+    // Shift's own keys, not the game's sneak: many play with shift on sprint and sneak elsewhere.
+    public static final KeyMapping CLICK_SHIFT = locked("click_shift", InputConstants.Type.KEYSYM,
+            GLFW.GLFW_KEY_LEFT_SHIFT, null, 22);
+    public static final KeyMapping HOLD_SHIFT = locked("hold_shift", InputConstants.Type.KEYSYM,
+            GLFW.GLFW_KEY_LEFT_SHIFT, null, 23);
 
     private static final KeyMapping[] ALL = { LEFT_CLICK, LEFT_HOLD, RIGHT_CLICK, RIGHT_HOLD, SCROLL_CLICK,
-            SCROLL_HOLD, DOUBLE_SPACE, HOLD_SPACE, HOLD_SHIFT };
+            SCROLL_HOLD, SINGLE_SPACE, DOUBLE_SPACE, HOLD_SPACE, CLICK_SHIFT, HOLD_SHIFT };
+    private static final String INPUT = "input." + MultiversePowers.MODID + ".";
 
     private PowerInputs() {
     }
@@ -55,14 +58,31 @@ public final class PowerInputs {
             case LEFT -> minecraft.options.keyAttack;
             case RIGHT -> minecraft.options.keyUse;
             case SCROLL -> SCROLL_CLICK;
-            case SHIFT -> HOLD_SHIFT;
+            case SHIFT -> CLICK_SHIFT;
             case SPACE, KEY -> minecraft.options.keyJump;
         };
     }
 
-    // The key a gesture's hold is read from: only the scroll wheel's can differ from its click.
+    // The key a gesture's hold is read from: the scroll wheel's and shift's are entries of their own.
     public static KeyMapping holdKey(CharacterAbility.Input input) {
-        return input == CharacterAbility.Input.SCROLL ? SCROLL_HOLD : clickKey(input);
+        return switch (input) {
+            case SCROLL -> SCROLL_HOLD;
+            case SHIFT -> HOLD_SHIFT;
+            default -> clickKey(input);
+        };
+    }
+
+    // The entry in Options > Controls that fires an ability, by its number (`CharacterAbility.binding`).
+    public static KeyMapping binding(CharacterAbility ability) {
+        int number = ability.binding();
+        return number <= AbilityKeys.SLOTS.length ? AbilityKeys.SLOTS[number - 1]
+                : ALL[number - AbilityKeys.SLOTS.length - 1];
+    }
+
+    // An ability's entry as Options > Controls names it, with what it is bound to: "Ability 20: Double Space (Space)".
+    public static Component bindingName(CharacterAbility ability) {
+        return Component.translatable(INPUT + "binding", Component.translatable(binding(ability).getName()),
+                label(ability));
     }
 
     // What the ability panel and the settings show for an ability's gesture.
@@ -73,14 +93,14 @@ public final class PowerInputs {
             return key == null ? Component.literal("-") : keyName(key);
         }
         if (ability.tapWhen() == CharacterAbility.Tap.DOUBLE) {
-            return Component.translatable("input." + MultiversePowers.MODID + ".double", keyName(clickKey(input)));
+            return Component.translatable(INPUT + "double", keyName(clickKey(input)));
         }
         return ability.tapWhen() == CharacterAbility.Tap.NEVER ? holdLabel(input) : keyName(clickKey(input));
     }
 
     // A gesture's hold on its own, beside its click.
     public static Component holdLabel(CharacterAbility.Input input) {
-        return Component.translatable("input." + MultiversePowers.MODID + ".hold", keyName(holdKey(input)));
+        return Component.translatable(INPUT + "hold", keyName(holdKey(input)));
     }
 
     // Whether a key or button fires the ability at all.
@@ -101,7 +121,7 @@ public final class PowerInputs {
             return key.getTranslatedKeyMessage();
         }
         int button = bound.getValue();
-        String mouse = "input." + MultiversePowers.MODID + ".mouse";
+        String mouse = INPUT + "mouse";
         return button <= GLFW.GLFW_MOUSE_BUTTON_MIDDLE ? Component.translatable(mouse + "." + button)
                 : Component.translatable(mouse, button + 1);
     }
@@ -135,22 +155,25 @@ public final class PowerInputs {
         return "key." + MultiversePowers.MODID + ".input." + id;
     }
 
-    private static KeyMapping locked(String id, InputConstants.Type type, int code, CharacterAbility.Input follows) {
-        return new Locked(name(id), type, code, follows);
+    private static KeyMapping locked(String id, InputConstants.Type type, int code,
+            @Nullable CharacterAbility.Input follows, int order) {
+        return new Locked(name(id), type, code, follows, order);
     }
 
-    private static final class Locked extends KeyMapping {
+    private static final class Locked extends OrderedKey {
+        @Nullable
         private final CharacterAbility.Input follows;
 
-        Locked(String name, InputConstants.Type type, int code, CharacterAbility.Input follows) {
-            super(name, KeyConflictContext.IN_GAME, type, code, CATEGORY);
+        Locked(String name, InputConstants.Type type, int code, @Nullable CharacterAbility.Input follows, int order) {
+            super(name, type, code, order);
             this.follows = follows;
         }
 
         // Shows the game's own key it follows, in case that one was moved.
         @Override
         public Component getTranslatedKeyMessage() {
-            return clickKey(this.follows).getTranslatedKeyMessage();
+            return this.follows == null ? super.getTranslatedKeyMessage()
+                    : clickKey(this.follows).getTranslatedKeyMessage();
         }
 
         @Override

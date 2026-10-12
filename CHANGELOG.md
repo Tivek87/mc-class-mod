@@ -3,6 +3,34 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.9.1-alpha] - 2026-10-12
+
+### Added
+- **Doctor Octopus playable:** four iron tentacles on a harness round his back and waist: right click grabs a
+  creature, holding right click squeezes, a flick of the mouse slams, his throw key hurls, a tap of shift lets go and
+  left click strikes.
+- **Tentacle stance:** his stance key takes tentacles to the ground and back up (none, two, three, all four); on the
+  ground they carry him up blocks and catch his falls.
+- **Selection Mode:** Left Alt, then 1 to 4, 5 or the scroll wheel pick which tentacles act; one holding a creature
+  swings it as a weapon, two or more smash theirs together.
+- **Tentacle HUD:** each tentacle's number and state (ground, free, holding, squeezing) round the crosshair.
+- **New character badge:** the power wheel marks the newest character with a gold NEW badge (its card, its
+  franchise and a banner) until you have tried them; the tour points it out too.
+- **Single Space and Click Shift:** two more gestures a power can sit on, a press of space and a tap of shift.
+
+### Changed
+- **Keys: one numbered list:** Options > Controls lists every key of the mod in one list, Ability 1 to 23, then the
+  Ability Guide, Power Wheel and Update Manager; the mouse, space and shift (13 to 23) are fixed, and the guide and
+  the settings name each ability by its number.
+- **Ability 12 on J:** the twelfth ability key now starts on J.
+- **Cosmic night sky: pixel art:** planets, stars, the Milky Way and nebulae are square pixels the size of the moon's,
+  and the sky only shows once the sun is down.
+- **Galactus: blocky:** built of boxes with pixel textures like the game's own creatures, his cracks of energy pulsing
+  pixel by pixel.
+
+### Fixed
+- **Power wheel:** Ultron's card showed a raw text key instead of his name.
+
 ## [0.9.0-alpha] - 2026-10-12
 
 ### Added

@@ -30,6 +30,8 @@ abstract class PowerWheelLayout extends Screen {
     static final int FRANCHISE_Y = 26;
     // From the bottom of one section's cards to the top of the next one's, room for its heading.
     private static final int SECTION = 34;
+    private static final int BANNER_GAP = 6;
+    private static final int BANNER_ROOM = 20;
     static final int PAGE_Y = 36;
     static final String[] TOOLS = { "bones", "hand" };
     static final int TOOL_COLOR = 0xFF9F43;
@@ -46,6 +48,7 @@ abstract class PowerWheelLayout extends Screen {
     static final int COOLDOWN_COLOR = 0xFFE06050;
     static final int ACTIVE_COLOR = 0xFF7FD46B;
     static final int WIP_COLOR = 0xFFFFB547;
+    static final int NEW_COLOR = 0xFFFFD54A;
 
     enum Page {
         HOME,
@@ -75,6 +78,8 @@ abstract class PowerWheelLayout extends Screen {
     int opened;
     int schoolY;
     int toolY;
+    // Where the new-character banner goes: under the franchises, or under a page's cards.
+    int bannerY;
     List<Card> cards = List.of();
     @Nullable
     Card hovered;
@@ -121,7 +126,8 @@ abstract class PowerWheelLayout extends Screen {
             int cardW = this.cardWidth(HOME_COLS, CARD_W_MAX, HOME_COLS);
             int bottom = this.grid(cards, slots(null, Kind.FRANCHISE, this.franchises.length), FRANCHISE_Y, cardW,
                     HOME_COLS);
-            this.schoolY = bottom + SECTION;
+            this.bannerY = bottom + BANNER_GAP;
+            this.schoolY = bottom + SECTION + (NewCharacters.waiting().isEmpty() ? 0 : BANNER_ROOM);
             bottom = this.grid(cards, slots(null, Kind.SCHOOL, this.schools.length), this.schoolY, cardW, HOME_COLS);
             this.toolY = bottom + SECTION;
             if (BoneView.allowed()) {
@@ -131,7 +137,8 @@ abstract class PowerWheelLayout extends Screen {
             List<Card> slots = this.page == Page.FRANCHISE
                     ? slots(Kind.BACK, Kind.CHARACTER, this.roster().size())
                     : slots(Kind.BACK, Kind.SPELL, this.spells().size());
-            this.grid(cards, slots, PAGE_Y, this.cardWidth(slots.size(), CARD_W_WIDE, COLS), COLS);
+            this.bannerY = this.grid(cards, slots, PAGE_Y, this.cardWidth(slots.size(), CARD_W_WIDE, COLS), COLS)
+                    + BANNER_GAP;
         }
         return cards;
     }

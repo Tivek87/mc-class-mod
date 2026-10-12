@@ -83,7 +83,7 @@ public final class Roster {
             new Entry("darth_vader", Franchise.DISNEY),
             new Entry("doctor_manhattan", Franchise.DC),
             new Entry("sentry", Franchise.MARVEL),
-            new Entry("Ultron", Franchise.MARVEL),
+            new Entry("ultron", Franchise.MARVEL),
             new Entry("darkseid", Franchise.DC),
             new Entry("doctor_fate", Franchise.DC),
             new Entry("dracula", Franchise.OTHER),
@@ -117,6 +117,16 @@ public final class Roster {
         List<Entry> sorted = new ArrayList<>(BY_FRANCHISE.get(franchise));
         sorted.sort((a, b) -> Boolean.compare(b.available(), a.available()));
         return sorted;
+    }
+
+    @Nullable
+    public static Franchise franchiseOf(GameCharacter character) {
+        for (Map.Entry<Franchise, List<Entry>> franchise : BY_FRANCHISE.entrySet()) {
+            if (franchise.getValue().stream().anyMatch(entry -> entry.character() == character)) {
+                return franchise.getKey();
+            }
+        }
+        return null;
     }
 
     public static int available(Franchise franchise) {

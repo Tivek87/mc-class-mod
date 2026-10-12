@@ -25,9 +25,12 @@ Back to the [overview](PROJECT.md). The plain spells anyone can cast are in [Spe
    - Picking the character you already are turns you back into yourself.
    - The schools open the same way; the spells are in [Spells](SPELLS.md).
 
+The newest character wears a gold **NEW** badge, and so does its franchise, with a banner under the franchises
+naming them. The badge stays until you have been that character once.
+
 | Franchise | Characters |
 |---|---|
-| Marvel | Doctor Octopus *(work in progress)*, Mysterio, Doctor Strange, Doctor Doom, Thanos, Loki, Iron Man, Magneto, Galactus, Spider-Man, The Hulk, Venom, Wolverine, Silver Surfer, The Sentry, Ultron |
+| Marvel | **Doctor Octopus**, Mysterio, Doctor Strange, Doctor Doom, Thanos, Loki, Iron Man, Magneto, Galactus, Spider-Man, The Hulk, Venom, Wolverine, Silver Surfer, The Sentry, Ultron |
 | DC | **Green Lantern**, The Flash, Black Adam, Doctor Manhattan, Darkseid, Doctor Fate |
 | Disney | Bill Cipher (Gravity Falls), Darth Vader (Star Wars, Lucasfilm) |
 | Warner Bros. | Rick Sanchez (Rick and Morty, Adult Swim) |
@@ -66,7 +69,7 @@ long cooldown; while it goes, the panel counts it down at its top right.
 | C | Ability 9 | Flight *(double space)* | *(free)* |
 | Left Alt | Ability 10 | Giant Hands | *(free)* |
 | K | Ability 11 | Light Cage | *(free)* |
-| *(none)* | Ability 12 | Beam Lock *(scroll wheel click)* | *(free)* |
+| J | Ability 12 | Beam Lock *(scroll wheel click)* | *(free)* |
 
 Green Lantern has one more past the twelfth: the Hard-Light Mech *(hold the scroll wheel 2 seconds)*.
 
@@ -79,6 +82,10 @@ click)*, Charge *(hold scroll wheel)*, Call the Hammer *(scroll wheel click, ham
 scroll wheel, hammer away)*, Super Jump *(double space)* and Flight *(hold space; with the hammer away it first
 flies into your hand)*. In flight: Sky Shockwave *(hold left click)*, Air Blink *(right click)*, Grab-Dash Dive *(hold
 right click)*, Lightning Bolt *(scroll wheel click)* and Lightning Speed *(hold shift)*.
+
+Doctor Octopus uses three keys: Stance *(R)*, Throw *(C)* and Selection Mode *(Left Alt)*; the other nine are kept
+free. His tentacles take the mouse and shift: Grab *(right click a creature)*, Squeeze *(hold right click)*, Slap
+*(left click a creature)* and Let Go *(tap shift)*.
 
 - Every key can be changed in Options > Controls, under "Multiverse Powers".
 - An ability on a mouse button or on space shows that in brackets: its number key does nothing for it.
@@ -156,17 +163,29 @@ with F3, in third person and without a character). It keeps its shape but moves 
 - Doctor Octopus's is a steel ring round an amber point, like the lens of his goggles. On a creature four steel lens
   arcs turn in and lock round it, with the thin health arc round them.
 
-### Mouse & space (Options > Controls, "Multiverse Powers: Mouse & Space")
+### Mouse, space and shift (Ability 13 to 23)
 
-The mouse buttons and space do more than one thing: a click, a hold, a double press. Controls lists them all:
-**left click, left hold, right click, right hold, scroll wheel click, scroll wheel hold, double space, hold
-space and hold shift**. Left, right and space follow the game's own attack, use and jump keys and are shown greyed
-out with **Locked** beside them: they cannot be changed there. **Hold shift** is left shift of its own, whatever
-the game's sneak and sprint keys are, and can be moved. The **scroll wheel click and hold can** be too: put either on any key or button you like (on the
-same one, as they come, a click and a hold tell themselves apart). A power with a click and a hold on the same
-button waits until you let go to know which you meant. The panel writes **hold** or **2×** before the key of a
-hold or a double press and the guide's list **Hold ...** and **2×...**; both shorten key names (**LAlt**,
-**RCtrl**, **PgUp**), and the guide's detail writes them out (**Double Space**, **Left Alt**).
+The mouse buttons, space and shift do more than one thing: a click, a hold, a double press. Options > Controls lists
+every key of the mod in one list, **Multiverse Powers**, in this order:
+
+| Number | Entry | Button |
+|---|---|---|
+| 1 to 12 | Ability 1 to Ability 12 (7 is the ultimate) | R, V, Z, B, H, N, Y, X, C, Left Alt, K, J |
+| 13, 14 | Left Click, Left Click Hold | left mouse button |
+| 15, 16 | Right Click, Right Click Hold | right mouse button |
+| 17, 18 | Scroll Wheel Click, Scroll Wheel Hold | middle mouse button |
+| 19, 20, 21 | Single Space, Double Space, Hold Space | space (it still jumps) |
+| 22, 23 | Click Shift, Hold Shift | left shift (it still sneaks or sprints) |
+| 24 | Ability Guide | P |
+| 25 | Power Wheel (Hold) | G |
+| 26 | Update Manager | U |
+
+Ability 1 to 12 and 24 to 26 can be moved. **13 to 23 are fixed**: they are greyed out with **Locked** beside them;
+left, right and space follow the game's own attack, use and jump keys. The guide and the settings name every ability by
+its number here ("Ability 20: Double Space"). A power with a click and a hold on the same button waits until you let go
+to know which you meant. The panel writes **hold** or **2×** before the key of a hold or a double press and the
+guide's list **Hold ...** and **2×...**; both shorten key names (**LAlt**, **RCtrl**, **PgUp**), and the guide's detail
+writes them out (**Double Space**, **Left Alt**).
 - **A character can also sit on the mouse.** Green Lantern does: left click throws his fists, right click
   shoots. The panel shows those as `[LMB]` and `[RMB]`. They only take the mouse over
   while both your hands are empty and the hand behind that button is free; any other time the mouse does
@@ -1339,11 +1358,60 @@ The ring's prison, straight out of the comics: a cage of hard light round your e
 
 ## Doctor Octopus
 
-**Work in progress.** Doctor Octopus is in heavy rework and cannot be played right now. He is still in the
-power wheel (Marvel), marked **Work in progress**; picking him only tells you so, and he has no settings page
-until he comes back.
+An iron harness sits on your back and round your waist, and four tentacles grow out of it:
 
-His crosshair stays as it is: see [Your crosshair](#your-crosshair).
+| Number | Where |
+|---|---|
+| 1 | top left |
+| 2 | top right |
+| 3 | bottom left |
+| 4 | bottom right |
+
+Four corner marks round the crosshair show each tentacle's number and what it does: **Ground**, **Free**,
+**Holding** or **Squeezing**. Your crosshair: see [Your crosshair](#your-crosshair).
+
+### Grab, squeeze, slam, throw
+
+- **Right click a creature:** the next free tentacle grabs it, in the order 2, 1, 4, 3. One tentacle holds one
+  creature. A tentacle on the ground cannot grab. On a block or in the air, right click works as normal.
+- **Hold right click:** every tentacle holding something squeezes it, hurting it again and again.
+- **Flick the mouse** while holding: everything held is slammed the way you turned.
+- **Throw (C):** everything held is hurled the way you look; with a creature in the crosshair, it flies at that
+  creature.
+- **Tap shift:** the creature grabbed last is let go; tap again for the one before.
+- **Left click a creature:** a free tentacle slaps it. On a block, left click mines as normal.
+- **Hold shift and right click:** use a door, chest, block or item as normal.
+
+A held creature that dies is let go. Everything is let go when you die, log out, change dimension or stop being him.
+
+### Stance (R)
+
+Each press takes tentacles down to the ground or back up, in turn:
+
+| Stance | Free | On the ground |
+|---|---|---|
+| 1 | 4 | none |
+| 2 | 2 | 3 and 4 |
+| 3 | 1 | 3, 4 and 1 |
+| 4 | none | all four |
+
+Then back to the first. A tentacle holding a creature stays up: an empty one goes down in its place. When too few
+tentacles are empty, the stance waits and says so. With two tentacles or more on the ground you step up whole blocks
+and take no fall damage.
+
+### Selection Mode (Left Alt)
+
+Press Left Alt to pick the tentacles yourself; press it again to stop. While it is on, your hotbar stays where it is:
+
+- **1 to 4** pick or unpick that tentacle; a tentacle on the ground cannot be picked.
+- **5** picks every tentacle that is up, or none.
+- **Scroll wheel** picks the next tentacle alone.
+- **6 to 9** do nothing.
+
+Now only the picked tentacles act: the lowest-numbered picked free one grabs, and only picked ones squeeze, slam,
+throw and let go. Left click a creature with one picked tentacle holding something: it swings that creature as a
+weapon. With two or more holding: they smash what they hold together. A squeezing tentacle is unpicked by itself.
+Selection Mode ends when all four tentacles go to the ground.
 
 ---
 

@@ -3,13 +3,12 @@ package nl.tivek.multiversepowers.sky.client;
 import com.mojang.blaze3d.platform.NativeImage;
 import java.util.stream.IntStream;
 import net.minecraft.world.phys.Vec3;
-import nl.tivek.multiversepowers.engine.math.Noise;
 import nl.tivek.multiversepowers.engine.math.Perlin;
 import nl.tivek.multiversepowers.sky.client.SkyBodies.Cluster;
 import nl.tivek.multiversepowers.sky.client.SkyBodies.Nebula;
 
 final class MilkyWay {
-    static final int SIZE = 1024;
+    static final int SIZE = SkyTexture.pixels(90.0);
     static final Vec3[][] FACES = {
         {new Vec3(1, 0, 0), new Vec3(0, 0, -1), new Vec3(0, -1, 0)},
         {new Vec3(-1, 0, 0), new Vec3(0, 0, 1), new Vec3(0, -1, 0)},
@@ -37,15 +36,14 @@ final class MilkyWay {
                 rgb[0] = 0.0;
                 rgb[1] = 0.0;
                 rgb[2] = 0.0;
-                paint(d, col + index * SIZE, row, rgb);
-                double dither = Noise.of(col, row, index + 40) + Noise.of(col, row, index + 80) - 1.0;
-                image.setPixelRGBA(col, row, SkyColors.added(rgb[0], rgb[1], rgb[2], dither));
+                paint(d, rgb);
+                image.setPixelRGBA(col, row, SkyColors.added(rgb[0], rgb[1], rgb[2], col, row));
             }
         });
         return image;
     }
 
-    private static void paint(Vec3 d, int px, int py, double[] rgb) {
+    private static void paint(Vec3 d, double[] rgb) {
         double x = d.x;
         double y = d.y;
         double z = d.z;
@@ -53,7 +51,7 @@ final class MilkyWay {
         rgb[0] += 0.006 * haze;
         rgb[1] += 0.010 * haze;
         rgb[2] += 0.026 * haze;
-        double band = band(d, rgb);
+        band(d, rgb);
         for (Nebula nebula : SkyBodies.NEBULAE) {
             nebula(nebula, d, rgb);
         }
@@ -65,21 +63,12 @@ final class MilkyWay {
             rgb[1] += glow * SkyColors.green(cluster.color());
             rgb[2] += glow * SkyColors.blue(cluster.color());
         }
-        double chance = Noise.of(px, py, 3);
-        double density = 0.004 + 0.12 * band;
-        if (chance < density) {
-            double bright = 0.08 + 0.6 * Math.pow(Noise.of(px, py, 5), 4.0);
-            double warm = Noise.of(px, py, 7);
-            rgb[0] += bright * (0.8 + 0.3 * warm);
-            rgb[1] += bright * 0.9;
-            rgb[2] += bright * (1.1 - 0.3 * warm);
-        }
     }
 
-    private static double band(Vec3 d, double[] rgb) {
+    private static void band(Vec3 d, double[] rgb) {
         double lat = d.dot(N);
         if (Math.abs(lat) > 0.6) {
-            return 0.0;
+            return;
         }
         double c = d.dot(C);
         double s = d.dot(S);
@@ -123,7 +112,6 @@ final class MilkyWay {
         rgb[0] += r;
         rgb[1] += g;
         rgb[2] += b;
-        return Math.min(1.0, (body + bulge) * clear);
     }
 
     private static void nebula(Nebula nebula, Vec3 d, double[] rgb) {

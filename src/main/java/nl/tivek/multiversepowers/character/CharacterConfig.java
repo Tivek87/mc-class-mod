@@ -61,9 +61,7 @@ public final class CharacterConfig {
             if (ability.isPlaceholder()) {
                 continue;
             }
-            builder.comment("Ability " + ability.slot().number() + (ability.onGesture()
-                    ? ": on the mouse, space or shift, in Options > Controls under \"Multiverse Powers: Mouse & Space\""
-                    : ": the key \"Ability " + ability.slot().number() + "\" in Options > Controls"))
+            builder.comment("Ability " + ability.binding() + " in Options > Controls > Multiverse Powers")
                     .push(ability.id());
             if (ability.usesCooldown()) {
                 COOLDOWNS.put(ability.path(), builder.comment("Cooldown in ticks (20 = 1 second)")

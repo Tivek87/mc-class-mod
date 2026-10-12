@@ -10,7 +10,7 @@ multiverse.
 - **Characters:** turn into one from the power wheel (hold **G**).
   - **Green Lantern:** a power ring that shapes solid green hard light: flight, weapons, giant hands, a steam train,
     an air strike and a mech.
-  - **Doctor Octopus:** work in progress, in heavy rework; he cannot be played right now.
+  - **Doctor Octopus:** four iron tentacles to grab, squeeze, slam and hurl creatures, or to stand on.
   - **Thor:** thunder fists, flight, Mjolnir to throw and fly after, a thunderclap and lightning from the sky.
 - **Classes:** pick a group and a class before you play, each with its own start ceremony.
 - **Spells:** cast from the same wheel; fifteen schools of magic, five spells so far.
@@ -39,7 +39,7 @@ A server and every player on it need the same version; joining one on another ve
 | Key | Does |
 |---|---|
 | **G** (hold) | Power wheel: pick a character or a spell |
-| **R V Z B H N Y X C**, **Left Alt**, **K** | Your character's abilities (**Y** is the ultimate); more on the mouse, space and shift (Thor uses only those) |
+| **R V Z B H N Y X C**, **Left Alt**, **K**, **J** | Ability 1 to 12 (**Y** is the ultimate); Ability 13 to 23 are the mouse, space and shift (Thor uses only those) |
 | **P** | Ability guide: every control of your character |
 | **U** | Update manager: updates, feedback and the tour |
 

@@ -1,60 +1,26 @@
 package nl.tivek.multiversepowers.sky.client;
 
-import com.mojang.blaze3d.platform.NativeImage;
 import java.util.SplittableRandom;
 import net.minecraft.world.phys.Vec3;
 import nl.tivek.multiversepowers.sky.client.SkyBodies.Cluster;
 
+// Square stars as the game's own, each turned its own way, a few bright ones a cross of five squares.
 final class StarField {
-    static final int SPRITE = 128;
-    // Per star corner: x, y, z, u, v, red, green, blue.
-    static final int STRIDE = 8;
-    private static final int FIELD = 7000;
-    private static final int BAND = 4500;
-    private static final int GLOWING = 220;
-    private static final int SPIKED = 46;
+    // Per star corner: x, y, z, red, green, blue.
+    static final int STRIDE = 6;
+    private static final int FIELD = 2400;
+    private static final int BAND = 1800;
+    private static final int BRIGHT = 160;
+    private static final int CROSSES = 30;
 
     private StarField() {
     }
 
-    static NativeImage sprites() {
-        NativeImage image = new NativeImage(SPRITE * 2, SPRITE, false);
-        for (int y = 0; y < SPRITE; y++) {
-            for (int x = 0; x < SPRITE * 2; x++) {
-                boolean spiked = x >= SPRITE;
-                double u = ((x % SPRITE) + 0.5) / SPRITE * 2.0 - 1.0;
-                double v = (y + 0.5) / SPRITE * 2.0 - 1.0;
-                double r = Math.sqrt(u * u + v * v);
-                double light;
-                if (spiked) {
-                    light = Math.exp(-r * r / 0.0025) + 0.45 * Math.exp(-r * r / 0.0144)
-                            + 0.12 * Math.exp(-r * r / 0.12);
-                    double au = Math.abs(u);
-                    double av = Math.abs(v);
-                    light += 0.75 * Math.exp(-av / 0.009) * Math.pow(Math.max(0.0, 1.0 - au), 3.0);
-                    light += 0.75 * Math.exp(-au / 0.009) * Math.pow(Math.max(0.0, 1.0 - av), 3.0);
-                } else {
-                    light = Math.exp(-r * r / 0.0625) + 0.2 * Math.exp(-r * r / 0.3);
-                }
-                if (!spiked) {
-                    light *= Surfaces.smooth(1.0, 0.82, r);
-                } else {
-                    light *= Surfaces.smooth(1.0, 0.94, Math.max(Math.abs(u), Math.abs(v)));
-                }
-                double l = Math.min(1.0, light);
-                int c = SkyColors.channel(l);
-                image.setPixelRGBA(x, y, 255 << 24 | c << 16 | c << 8 | c);
-            }
-        }
-        return image;
-    }
-
     static float[] build() {
         SplittableRandom random = new SplittableRandom(0x57A25L);
-        StarList list = new StarList(FIELD + BAND + GLOWING + SPIKED + 1000);
+        StarList list = new StarList(FIELD + BAND + BRIGHT + CROSSES * 5 + 600);
         for (int i = 0; i < FIELD; i++) {
-            Vec3 d = anywhere(random);
-            faint(list, random, d);
+            faint(list, random, anywhere(random));
         }
         Vec3 n = SkyBodies.BAND;
         Vec3 c = SkyBodies.CORE.subtract(n.scale(SkyBodies.CORE.dot(n))).normalize();
@@ -67,18 +33,13 @@ final class StarField {
                     Math.sin(lat))).normalize();
             faint(list, random, d);
         }
-        for (int i = 0; i < GLOWING; i++) {
-            Vec3 d = anywhere(random);
+        for (int i = 0; i < BRIGHT; i++) {
             double b = random.nextDouble();
-            double[] color = color(random);
-            double light = 0.6 + 0.4 * b;
-            list.add(d, 0.7 + 0.8 * b, color, light, false);
+            list.add(anywhere(random), 0.22 + 0.1 * b, random, color(random), 0.65 + 0.35 * b);
         }
-        for (int i = 0; i < SPIKED; i++) {
-            Vec3 d = anywhere(random);
-            double b = Math.pow(random.nextDouble(), 1.5);
-            double[] color = color(random);
-            list.add(d, 2.4 + 3.2 * b, color, 0.75 + 0.25 * b, true);
+        for (int i = 0; i < CROSSES; i++) {
+            double b = random.nextDouble();
+            list.cross(anywhere(random), 0.2 + 0.08 * b, random, color(random), 0.85 + 0.15 * b);
         }
         for (Cluster cluster : SkyBodies.CLUSTERS) {
             cluster(list, random, cluster);
@@ -87,8 +48,8 @@ final class StarField {
     }
 
     private static void faint(StarList list, SplittableRandom random, Vec3 d) {
-        double b = Math.pow(random.nextDouble(), 4.0);
-        list.add(d, 0.32 + 0.4 * b, color(random), 0.28 + 0.72 * b, false);
+        double b = Math.pow(random.nextDouble(), 3.0);
+        list.add(d, 0.13 + 0.09 * b, random, color(random), 0.3 + 0.6 * b);
     }
 
     private static void cluster(StarList list, SplittableRandom random, Cluster cluster) {
@@ -102,11 +63,13 @@ final class StarField {
             double y = random.nextGaussian() * sigma * spread;
             Vec3 d = cluster.dir().add(frame[0].scale(x)).add(frame[1].scale(y)).normalize();
             if (cluster.globular()) {
-                list.add(d, 0.3 + 0.18 * random.nextDouble(), tint, 0.55 + 0.45 * random.nextDouble(), false);
+                list.add(d, 0.11 + 0.04 * random.nextDouble(), random, tint, 0.5 + 0.5 * random.nextDouble());
+            } else if (i < 3) {
+                list.cross(d, 0.2 + 0.06 * random.nextDouble(), random, tint, 0.95);
             } else if (i < 7) {
-                list.add(d, 1.3 + 1.2 * random.nextDouble(), tint, 0.9, i < 3);
+                list.add(d, 0.24 + 0.08 * random.nextDouble(), random, tint, 0.9);
             } else {
-                list.add(d, 0.35 + 0.3 * random.nextDouble(), tint, 0.4 + 0.4 * random.nextDouble(), false);
+                list.add(d, 0.13 + 0.07 * random.nextDouble(), random, tint, 0.4 + 0.4 * random.nextDouble());
             }
         }
     }
@@ -140,29 +103,45 @@ final class StarField {
             this.data = new float[stars * 4 * STRIDE];
         }
 
-        void add(Vec3 dir, double half, double[] color, double light, boolean spiked) {
+        void add(Vec3 dir, double half, SplittableRandom random, double[] color, double light) {
+            Vec3[] axes = turned(dir, random.nextDouble(Math.PI * 2.0));
+            this.square(dir.scale(100.0), axes[0].scale(half), axes[1].scale(half), color, light);
+        }
+
+        // A plus of five squares, its arms a little dimmer.
+        void cross(Vec3 dir, double half, SplittableRandom random, double[] color, double light) {
+            Vec3[] axes = turned(dir, random.nextDouble(Math.PI * 2.0));
+            Vec3 middle = dir.scale(100.0);
+            Vec3 right = axes[0].scale(half);
+            Vec3 up = axes[1].scale(half);
+            this.square(middle, right, up, color, light);
+            for (Vec3 arm : new Vec3[] {right, up, right.scale(-1.0), up.scale(-1.0)}) {
+                this.square(middle.add(arm.scale(2.0)), right, up, color, light * 0.5);
+            }
+        }
+
+        private static Vec3[] turned(Vec3 dir, double roll) {
+            Vec3[] frame = SkyBodies.frame(dir);
+            double c = Math.cos(roll);
+            double s = Math.sin(roll);
+            return new Vec3[] {frame[0].scale(c).add(frame[1].scale(s)), frame[1].scale(c).subtract(frame[0].scale(s))};
+        }
+
+        private void square(Vec3 middle, Vec3 right, Vec3 up, double[] color, double light) {
             if (this.at + 4 * STRIDE > this.data.length) {
                 this.data = java.util.Arrays.copyOf(this.data, this.data.length * 2);
             }
-            Vec3[] frame = SkyBodies.frame(dir);
-            Vec3 middle = dir.scale(100.0);
-            Vec3 right = frame[0].scale(half);
-            Vec3 up = frame[1].scale(half);
-            float u0 = spiked ? 0.5F : 0.0F;
-            float u1 = spiked ? 1.0F : 0.5F;
-            this.corner(middle.subtract(right).add(up), u0, 0.0F, color, light);
-            this.corner(middle.add(right).add(up), u1, 0.0F, color, light);
-            this.corner(middle.add(right).subtract(up), u1, 1.0F, color, light);
-            this.corner(middle.subtract(right).subtract(up), u0, 1.0F, color, light);
+            this.corner(middle.subtract(right).add(up), color, light);
+            this.corner(middle.add(right).add(up), color, light);
+            this.corner(middle.add(right).subtract(up), color, light);
+            this.corner(middle.subtract(right).subtract(up), color, light);
         }
 
-        private void corner(Vec3 p, float u, float v, double[] color, double light) {
+        private void corner(Vec3 p, double[] color, double light) {
             float[] d = this.data;
             d[this.at++] = (float) p.x;
             d[this.at++] = (float) p.y;
             d[this.at++] = (float) p.z;
-            d[this.at++] = u;
-            d[this.at++] = v;
             d[this.at++] = (float) (color[0] * light);
             d[this.at++] = (float) (color[1] * light);
             d[this.at++] = (float) (color[2] * light);

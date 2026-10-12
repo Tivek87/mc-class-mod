@@ -10,6 +10,8 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 import nl.tivek.multiversepowers.character.CharacterLookPayload;
 import nl.tivek.multiversepowers.character.CharacterStatePayload;
 import nl.tivek.multiversepowers.character.client.ClientCharacter;
+import nl.tivek.multiversepowers.character.docock.OctoStatePayload;
+import nl.tivek.multiversepowers.character.docock.client.ClientOcto;
 import nl.tivek.multiversepowers.character.greenlantern.RingPayload;
 import nl.tivek.multiversepowers.character.greenlantern.client.ClientConstructs;
 import nl.tivek.multiversepowers.character.greenlantern.client.ClientLooks;
@@ -128,6 +130,10 @@ public final class ClientPayloadHandler {
 
     public static void handleFist(FistPayload payload, IPayloadContext context) {
         context.enqueueWork(() -> ClientFists.told(payload.owner(), payload.move(), payload.yaw()));
+    }
+
+    public static void handleOctoState(OctoStatePayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> ClientOcto.update(payload));
     }
 
     public static void handleThorState(ThorStatePayload payload, IPayloadContext context) {

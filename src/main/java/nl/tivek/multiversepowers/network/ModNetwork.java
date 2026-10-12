@@ -15,6 +15,9 @@ import nl.tivek.multiversepowers.character.CharacterStatePayload;
 import nl.tivek.multiversepowers.character.Characters;
 import nl.tivek.multiversepowers.character.GameCharacter;
 import nl.tivek.multiversepowers.character.TransformPayload;
+import nl.tivek.multiversepowers.character.docock.DocOckPowers;
+import nl.tivek.multiversepowers.character.docock.OctoInputPayload;
+import nl.tivek.multiversepowers.character.docock.OctoStatePayload;
 import nl.tivek.multiversepowers.character.greenlantern.RingPayload;
 import nl.tivek.multiversepowers.character.greenlantern.ability.flame.Flamethrower;
 import nl.tivek.multiversepowers.character.greenlantern.ability.mech.MechAssembly;
@@ -127,6 +130,8 @@ public final class ModNetwork {
         registrar.playToClient(ClassSyncPayload.TYPE, ClassSyncPayload.STREAM_CODEC, ModNetwork::onClassSync);
         registrar.playToServer(TestEffectPayload.TYPE, TestEffectPayload.STREAM_CODEC, ModNetwork::onTestEffect);
         registrar.playToServer(CastSpellPayload.TYPE, CastSpellPayload.STREAM_CODEC, ModNetwork::onCastSpell);
+        registrar.playToServer(OctoInputPayload.TYPE, OctoInputPayload.STREAM_CODEC, ModNetwork::onOctoInput);
+        registrar.playToClient(OctoStatePayload.TYPE, OctoStatePayload.STREAM_CODEC, ModNetwork::onOctoState);
         registrar.playToClient(SpellCooldownPayload.TYPE, SpellCooldownPayload.STREAM_CODEC,
                 ModNetwork::onSpellCooldown);
         registrar.playToClient(VoidStatePayload.TYPE, VoidStatePayload.STREAM_CODEC, ModNetwork::onVoidState);
@@ -567,6 +572,18 @@ public final class ModNetwork {
 
     private static void onFist(FistPayload payload, IPayloadContext context) {
         ClientPayloadHandler.handleFist(payload, context);
+    }
+
+    private static void onOctoInput(OctoInputPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> {
+            if (context.player() instanceof ServerPlayer player) {
+                DocOckPowers.input(player, payload);
+            }
+        });
+    }
+
+    private static void onOctoState(OctoStatePayload payload, IPayloadContext context) {
+        ClientPayloadHandler.handleOctoState(payload, context);
     }
 
     private static void onThorState(ThorStatePayload payload, IPayloadContext context) {

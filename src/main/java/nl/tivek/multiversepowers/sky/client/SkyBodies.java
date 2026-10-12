@@ -37,10 +37,10 @@ final class SkyBodies {
 
     static final List<Cluster> CLUSTERS = List.of(
             new Cluster(at(-80.0, -5.0), 3.2, 16, 0xB8D0FF, false, 19L),
-            new Cluster(at(62.0, -52.0), 2.2, 320, 0xFFE2B8, true, 29L),
+            new Cluster(at(62.0, -52.0), 2.2, 90, 0xFFE2B8, true, 29L),
             new Cluster(at(-150.0, 25.0), 4.0, 40, 0xFFF0D8, false, 31L),
             new Cluster(at(150.0, -20.0), 3.0, 30, 0xE6EEFF, false, 43L),
-            new Cluster(at(-6.0, -58.0), 1.7, 220, 0xFFF4E0, true, 47L));
+            new Cluster(at(-6.0, -58.0), 1.7, 70, 0xFFF4E0, true, 47L));
 
     enum Kind {
         EARTH, GAS, SATURN, MARS, ICE, TEAL, VIOLET, MOON, ICE_MOON, ROCK, LAVA
